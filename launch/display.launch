@@ -1,0 +1,9 @@
+<launch>
+  <arg name="model" default="$(find mrover)/mrover_arm_description/mrover_arm.urdf"/>
+  <arg name="gui" default="true" />
+  <param name="robot_description" command="cat $(arg model)" />
+
+  <node name="rviz" pkg="rviz" type="rviz" args="" required="true" />
+
+</launch>
+
