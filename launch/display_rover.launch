@@ -9,5 +9,19 @@
   <node name="robot_state_publisher" pkg="robot_state_publisher" type="robot_state_publisher" />
   <node name="rviz" pkg="rviz" type="rviz" args="-d $(arg rvizconfig)" required="true" />
 
+  <include file="$(find gazebo_ros)/launch/empty_world.launch">
+        <arg name="paused" value="false"/>
+        <arg name="use_sim_time" value="true"/>
+        <arg name="gui" value="true"/>
+        <arg name="headless" value="false"/>
+        <arg name="debug" value="false"/>
+        <arg name="verbose" default="false"/>
+        <arg name="gui_required" value="true"/>
+
+  </include>
+   <node name="onebot_spawn" pkg="gazebo_ros" type="spawn_model" output="screen" args="  -z 0.0 
+                        -urdf -param robot_description
+                        -model /" />
+
 </launch>
 
