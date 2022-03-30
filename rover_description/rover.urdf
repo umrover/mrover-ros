@@ -1,4 +1,4 @@
-<robot name="mrover_arm">
+<robot name="rover">
     <link name="chassis_link">
         <collision>
            <origin rpy="0.0 0 0" xyz="0 0 0"/>
@@ -18,7 +18,7 @@
         </inertial>
     </link>
     <joint name="back_left_wheel_joint" type="continuous">    
-        <origin rpy="1.570796 0 0" xyz="0.00 0.30 -0.1"/>    
+        <origin rpy="1.570796 0 0" xyz="-0.20 0.30 -0.1"/>    
         <child link="back_left_wheel_link" />    
         <parent link="chassis_link"/>    
         <axis rpy="0 0 0" xyz="0 0 1"/>    
@@ -44,7 +44,7 @@
         </inertial>
     </link>
     <joint name="back_right_wheel_joint" type="continuous">    
-        <origin rpy="1.570796 0 0" xyz="0.00 -0.30 -0.1"/>    
+        <origin rpy="1.570796 0 0" xyz="-0.20 -0.30 -0.1"/>    
         <child link="back_right_wheel_link" />    
         <parent link="chassis_link"/>    
         <axis rpy="0 0 0" xyz="0 0 1"/>    
@@ -52,6 +52,32 @@
         <joint_properties damping="1.0" friction="1.0" />  
     </joint>
     <link name="back_right_wheel_link">
+        <collision>
+           <origin rpy="0.0 0 0" xyz="0 0 0"/>
+           <geometry>
+                <cylinder length="0.2" radius="0.2"/>
+           </geometry> 
+        </collision>
+        <visual>
+           <origin rpy="0.0 0 0" xyz="0 0 0"/>
+           <geometry>
+                <cylinder length="0.2" radius="0.2"/>
+           </geometry> 
+        </visual>
+        <inertial>
+            <mass value="10"/>
+            <inertia ixx="0.4" ixy="0.0" ixz="0.0" iyy="0.4" iyz="0.0" izz="0.2"/>
+        </inertial>
+    </link>
+    <joint name="caster_joint" type="continuous">    
+        <origin rpy="1.570796 0 0" xyz="0.10 0.0 -0.1"/>    
+        <child link="caster_link" />    
+        <parent link="chassis_link"/>    
+        <axis rpy="0 0 0" xyz="0 0 1"/>    
+        <limit effort="10000" velocity="1000"/>    
+        <joint_properties damping="1.0" friction="1.0" />  
+    </joint>
+    <link name="caster_link">
         <collision>
            <origin rpy="0.0 0 0" xyz="0 0 0"/>
            <geometry>

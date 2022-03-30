@@ -1,6 +1,6 @@
 <launch>
   <arg name="model" default="$(find mrover)/rover_description/rover.urdf"/>
-  <arg name="gui" default="true" />
+  <arg name="gui" default="false" />
   <param name="robot_description" command="cat $(arg model)" />
   <arg name="rvizconfig" default="$(find mrover)/default.rviz" />
 
@@ -19,9 +19,12 @@
         <arg name="gui_required" value="true"/>
 
   </include>
-   <node name="onebot_spawn" pkg="gazebo_ros" type="spawn_model" output="screen" args="  -z 0.0 
+   <node name="mrover_sim_spawn" pkg="gazebo_ros" type="spawn_model" output="screen" args="  -z 0.0 
                         -urdf -param robot_description
-                        -model /rover" />
+                        -model rover" />
+
+  <rosparam command="load" file="$(find mrover)/control.yaml" />
+  <node name="base_controller_spawner" pkg="controller_manager" type="spawner" args="joint_state_controller velocity_controller"/>
 
 </launch>
 
