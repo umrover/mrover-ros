@@ -1,4 +1,11 @@
 <robot name="rover">
+
+    <gazebo>
+        <plugin name="gazebo_ros_control" filename="libgazebo_ros_control.so">
+            <robotNamespace>/rover</robotNamespace>
+        </plugin>
+    </gazebo>
+
     <link name="chassis_link">
         <collision>
            <origin rpy="0.0 0 0" xyz="0 0 0"/>
@@ -17,6 +24,7 @@
             <inertia ixx="0.4" ixy="0.0" ixz="0.0" iyy="0.4" iyz="0.0" izz="0.2"/>
         </inertial>
     </link>
+
     <joint name="back_left_wheel_joint" type="continuous">    
         <origin rpy="1.570796 0 0" xyz="-0.20 0.30 -0.1"/>    
         <child link="back_left_wheel_link" />    
@@ -25,6 +33,7 @@
         <limit effort="10000" velocity="1000"/>    
         <joint_properties damping="1.0" friction="1.0" />  
     </joint>
+
     <link name="back_left_wheel_link">
         <collision>
            <origin rpy="0.0 0 0" xyz="0 0 0"/>
@@ -43,6 +52,7 @@
             <inertia ixx="0.4" ixy="0.0" ixz="0.0" iyy="0.4" iyz="0.0" izz="0.2"/>
         </inertial>
     </link>
+
     <joint name="back_right_wheel_joint" type="continuous">    
         <origin rpy="1.570796 0 0" xyz="-0.20 -0.30 -0.1"/>    
         <child link="back_right_wheel_link" />    
@@ -51,6 +61,7 @@
         <limit effort="10000" velocity="1000"/>    
         <joint_properties damping="1.0" friction="1.0" />  
     </joint>
+
     <link name="back_right_wheel_link">
         <collision>
            <origin rpy="0.0 0 0" xyz="0 0 0"/>
@@ -69,6 +80,7 @@
             <inertia ixx="0.4" ixy="0.0" ixz="0.0" iyy="0.4" iyz="0.0" izz="0.2"/>
         </inertial>
     </link>
+
     <joint name="caster_joint" type="continuous">    
         <origin rpy="1.570796 0 0" xyz="0.10 0.0 -0.1"/>    
         <child link="caster_link" />    
@@ -77,6 +89,7 @@
         <limit effort="10000" velocity="1000"/>    
         <joint_properties damping="1.0" friction="1.0" />  
     </joint>
+
     <link name="caster_link">
         <collision>
            <origin rpy="0.0 0 0" xyz="0 0 0"/>
@@ -95,4 +108,5 @@
             <inertia ixx="0.4" ixy="0.0" ixz="0.0" iyy="0.4" iyz="0.0" izz="0.2"/>
         </inertial>
     </link>
+
 </robot>
