@@ -1,6 +1,6 @@
 <launch>
   <arg name="model" default="$(find mrover)/rover_description/rover.urdf"/>
-  <arg name="gui" default="false" />
+  <arg name="gui" default="true" />
   <param name="robot_description" command="cat $(arg model)" />
   <arg name="rvizconfig" default="$(find mrover)/default.rviz" />
 
