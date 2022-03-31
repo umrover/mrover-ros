@@ -1,10 +1,21 @@
 <robot name="rover">
-
     <gazebo>
-        <plugin name="gazebo_ros_control" filename="libgazebo_ros_control.so">
-            <robotNamespace>/rover</robotNamespace>
-        </plugin>
+    <plugin name="differential_drive_controller" filename="libgazebo_ros_diff_drive.so">
+        <alwaysOn>true</alwaysOn>
+        <legacyMode>false</legacyMode>
+        <updateRate>40</updateRate>
+        <leftJoint>back_left_wheel_joint</leftJoint>
+        <rightJoint>back_right_wheel_joint</rightJoint>
+        <wheelSeparation>0.6</wheelSeparation>
+        <wheelDiameter>0.4</wheelDiameter>
+        <torque>20</torque>
+        <commandTopic>cmd_vel</commandTopic>
+        <odometryTopic>odom</odometryTopic>
+        <odometryFrame>odom</odometryFrame>
+        <robotBaseFrame>chassis_link</robotBaseFrame>
+    </plugin>
     </gazebo>
+
 
     <link name="chassis_link">
         <collision>
@@ -109,4 +120,5 @@
         </inertial>
     </link>
 
+    
 </robot>
