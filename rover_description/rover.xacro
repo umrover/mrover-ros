@@ -1,5 +1,5 @@
 <?xml version="1.0"?>
-<robot xmlns:xacro="http://www.ros.org/wiki/xacro" name="kbot">
+<robot xmlns:xacro="http://www.ros.org/wiki/xacro" name="rover">
 
   <xacro:property name="base_width" value="0.16" />
   <xacro:property name="base_len" value="0.16" />
