@@ -1,8 +1,9 @@
 <?xml version="1.0"?>
 <robot xmlns:xacro="http://www.ros.org/wiki/xacro" name="rover">
 
-  <xacro:property name="base_width" value="0.16" />
-  <xacro:property name="base_len" value="0.16" />
+  <xacro:property name="base_width" value="0.6357" />
+  <xacro:property name="base_len" value="0.563" />
+  <xacro:property name="base_height" value="0.305" />
   <xacro:property name="wheel_radius" value="0.035" />
   <xacro:property name="base_wheel_gap" value="0.007" />
   <xacro:property name="wheel_separation" value="0.15" />
@@ -11,6 +12,8 @@
   <xacro:property name="caster_wheel_radius" value="${wheel_radius/2}" />
   <xacro:property name="caster_wheel_mass" value="0.001" />
   <xacro:property name="caster_wheel_joint_offset" value="-0.052" />
+  <xacro:property name="mesh_scale" value="0.0254 0.0254 0.0254" />
+  <xacro:property name="PI" value="3.141592" />
 
   <!--Color Properties-->
   <material name="blue">
@@ -61,19 +64,43 @@
 
   <!--Base link-->
   <link name="base_link">
-    <xacro:box_inertia m="10" w="${base_len}" h="${base_width}" d="0.01" />
+    <xacro:box_inertia m="45.0" w="${base_len}" h="${base_width}" d="${base_height}" />
     <visual>
+      <origin rpy="0 0 0" xyz="${base_len/2.0 + 0.05} ${-base_width/2.0 + 0.05} -0.03"/>
       <geometry>
-        <box size="${base_len} ${base_width} 0.01" />
+        <mesh filename="package://mrover/rover_description/meshes/chassis.stl" scale="${mesh_scale}"/>
       </geometry>
-      <material name="black" />
+      <material name="blue" />
     </visual>
     <collision>
       <geometry>
-        <box size="${base_len} ${base_width} 0.01" />
+        <box size="${base_len} ${base_width} ${base_height}" />
       </geometry>
     </collision>
   </link>
+
+  <link name="right_rocker_link">
+    <xacro:box_inertia m="3.0" w="${base_len}" h="${base_width}" d="${base_height}" />
+    <visual>
+      <origin rpy="${PI/2} 0 ${PI/2}" xyz="0.13 0.17 -0.5"/>
+      <geometry>
+        <mesh filename="package://mrover/rover_description/meshes/right_rocker.stl" scale="${mesh_scale}"/>
+      </geometry>
+      <material name="red" />
+    </visual>
+    <collision>
+      <geometry>
+        <box size="${base_len} 0.1 ${base_height}" />
+      </geometry>
+    </collision>
+  </link>
+
+  <joint name="base_right_rocker_joint" type="fixed">
+    <origin xyz="0 ${-base_width/2.0} 0" rpy="0 0 0" />
+    <parent link="base_link" />
+    <child link="right_rocker_link" />
+  </joint>
+
 
   <!--base_link to base_footprint Joint-->
   <joint name="base_link_joint" type="fixed">
