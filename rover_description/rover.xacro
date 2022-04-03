@@ -101,6 +101,28 @@
     <child link="right_rocker_link" />
   </joint>
 
+  <link name="left_rocker_link">
+    <xacro:box_inertia m="3.0" w="${base_len}" h="${base_width}" d="${base_height}" />
+    <visual>
+      <origin rpy="${-PI/8} ${1.1*PI} ${-PI/7}" xyz="0.0 0.0 0.0"/>
+      <geometry>
+        <mesh filename="package://mrover/rover_description/meshes/left_rocker.stl" scale="${mesh_scale}"/>
+      </geometry>
+      <material name="white" />
+    </visual>
+    <collision>
+      <geometry>
+        <box size="${base_len + 0.17} 0.05 ${base_height + 0.2}" />
+      </geometry>
+    </collision>
+  </link>
+
+  <joint name="base_left_rocker_joint" type="fixed">
+    <origin xyz="0.01 ${base_width/2.0 + 0.05} -0.2" rpy="0 0 0" />
+    <parent link="base_link" />
+    <child link="left_rocker_link" />
+  </joint>
+
 
   <!--base_link to base_footprint Joint-->
   <joint name="base_link_joint" type="fixed">
