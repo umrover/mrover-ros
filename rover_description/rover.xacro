@@ -12,7 +12,7 @@
   <xacro:property name="caster_wheel_radius" value="${wheel_radius/2}" />
   <xacro:property name="caster_wheel_mass" value="0.001" />
   <xacro:property name="caster_wheel_joint_offset" value="-0.052" />
-  <xacro:property name="mesh_scale" value="0.0254 0.0254 0.0254" />
+  <!-- <xacro:property name="mesh_scale" value="0.0254 0.0254 0.0254" /> -->
   <xacro:property name="PI" value="3.141592" />
 
   <!--Color Properties-->
@@ -66,9 +66,9 @@
   <link name="base_link">
     <xacro:box_inertia m="45.0" w="${base_len}" h="${base_width}" d="${base_height}" />
     <visual>
-      <origin rpy="0 0 0" xyz="${base_len/2.0 + 0.05} ${-base_width/2.0 + 0.05} -0.03"/>
+      <origin rpy="0 0 0" xyz="0 0 -0.03"/>
       <geometry>
-        <mesh filename="package://mrover/rover_description/meshes/chassis.stl" scale="${mesh_scale}"/>
+        <mesh filename="package://mrover/rover_description/meshes/chassis.stl" scale="1 1 1"/>
       </geometry>
       <material name="blue" />
     </visual>
@@ -82,9 +82,9 @@
   <link name="right_rocker_link">
     <xacro:box_inertia m="3.0" w="${base_len}" h="${base_width}" d="${base_height}" />
     <visual>
-      <origin rpy="${PI/2} 0 ${PI/2}" xyz="0.11 0.22 -0.3"/>
+      <origin rpy="0 0 0" xyz="0.0 0.0 0.0"/>
       <geometry>
-        <mesh filename="package://mrover/rover_description/meshes/right_rocker.stl" scale="${mesh_scale}"/>
+        <mesh filename="package://mrover/rover_description/meshes/right_rocker.stl" />
       </geometry>
       <material name="red" />
     </visual>
@@ -106,7 +106,7 @@
     <visual>
       <origin rpy="0.0 0.0 0.0" xyz="0.0 0.0 0.0"/>
       <geometry>
-        <mesh filename="package://mrover/rover_description/meshes/left_rocker.stl" scale="${mesh_scale}"/>
+        <mesh filename="package://mrover/rover_description/meshes/left_rocker.stl"/>
       </geometry>
       <material name="white" />
     </visual>
