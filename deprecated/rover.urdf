@@ -33,68 +33,21 @@
   <!--Base link-->
   <link name="base_link">
     <inertial>
-      <mass value="45.0"/>
-      <inertia ixx="1.8642730875" ixy="0.0" ixz="0.0" iyy="2.7040630875000002" iyz="0.0" izz="1.5374774999999998"/>
+      <mass value="10"/>
+      <inertia ixx="0.021416666666666667" ixy="0.0" ixz="0.0" iyy="0.04266666666666667" iyz="0.0" izz="0.021416666666666667"/>
     </inertial>
     <visual>
-      <origin rpy="0 0 0" xyz="0.33149999999999996 -0.26785000000000003 -0.03"/>
       <geometry>
-        <mesh filename="package://mrover/rover_description/meshes/chassis.stl" scale="0.0254 0.0254 0.0254"/>
+        <box size="0.16 0.16 0.01"/>
       </geometry>
-      <material name="blue"/>
+      <material name="black"/>
     </visual>
     <collision>
       <geometry>
-        <box size="0.563 0.6357 0.305"/>
+        <box size="0.16 0.16 0.01"/>
       </geometry>
     </collision>
   </link>
-  <link name="right_rocker_link">
-    <inertial>
-      <mass value="3.0"/>
-      <inertia ixx="0.1242848725" ixy="0.0" ixz="0.0" iyy="0.1802708725" iyz="0.0" izz="0.10249849999999999"/>
-    </inertial>
-    <visual>
-      <origin rpy="1.570796 0 1.570796" xyz="0.11 0.22 -0.3"/>
-      <geometry>
-        <mesh filename="package://mrover/rover_description/meshes/right_rocker.stl" scale="0.0254 0.0254 0.0254"/>
-      </geometry>
-      <material name="red"/>
-    </visual>
-    <collision>
-      <geometry>
-        <box size="0.733 0.05 0.505"/>
-      </geometry>
-    </collision>
-  </link>
-  <joint name="base_right_rocker_joint" type="fixed">
-    <origin rpy="0 0 0" xyz="0.01 -0.36785 -0.2"/>
-    <parent link="base_link"/>
-    <child link="right_rocker_link"/>
-  </joint>
-  <link name="left_rocker_link">
-    <inertial>
-      <mass value="3.0"/>
-      <inertia ixx="0.1242848725" ixy="0.0" ixz="0.0" iyy="0.1802708725" iyz="0.0" izz="0.10249849999999999"/>
-    </inertial>
-    <visual>
-      <origin rpy="-0.392699 3.4557512000000004 -0.44879885714285717" xyz="0.0 0.0 0.0"/>
-      <geometry>
-        <mesh filename="package://mrover/rover_description/meshes/left_rocker.stl" scale="0.0254 0.0254 0.0254"/>
-      </geometry>
-      <material name="white"/>
-    </visual>
-    <collision>
-      <geometry>
-        <box size="0.733 0.05 0.505"/>
-      </geometry>
-    </collision>
-  </link>
-  <joint name="base_left_rocker_joint" type="fixed">
-    <origin rpy="0 0 0" xyz="0.01 0.36785 -0.2"/>
-    <parent link="base_link"/>
-    <child link="left_rocker_link"/>
-  </joint>
   <!--base_link to base_footprint Joint-->
   <joint name="base_link_joint" type="fixed">
     <origin rpy="0 0 0" xyz="0 0 0.04"/>
@@ -124,7 +77,7 @@
     <axis rpy="0 0 0" xyz="0 1 0"/>
     <parent link="base_link"/>
     <child link="left_wheel"/>
-    <origin rpy="0 0 0" xyz="0.02 0.32485 -0.005"/>
+    <origin rpy="0 0 0" xyz="0.02 0.08700000000000001 -0.005"/>
   </joint>
   <link name="right_wheel">
     <visual>
@@ -149,7 +102,7 @@
     <axis rpy="0 0 0" xyz="0 1 0"/>
     <parent link="base_link"/>
     <child link="right_wheel"/>
-    <origin rpy="0 0 0" xyz="0.02 -0.32485 -0.005"/>
+    <origin rpy="0 0 0" xyz="0.02 -0.08700000000000001 -0.005"/>
   </joint>
   <!--Caster Wheel Link-->
   <link name="caster_wheel">
