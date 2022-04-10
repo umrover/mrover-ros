@@ -4,6 +4,8 @@ import smach_ros
 import smach
 from sensor_msgs.msg import NavSatFix
 
+EARTH_RADIUS = 10
+
 def gps_callback(data):
     print(data)
 
