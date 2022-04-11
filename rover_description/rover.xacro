@@ -1,8 +1,9 @@
 <?xml version="1.0"?>
 <robot xmlns:xacro="http://www.ros.org/wiki/xacro" name="rover">
 
-  <xacro:property name="base_width" value="0.16" />
-  <xacro:property name="base_len" value="0.16" />
+  <xacro:property name="base_width" value="0.6357" />
+  <xacro:property name="base_len" value="0.563" />
+  <xacro:property name="base_height" value="0.305" />
   <xacro:property name="wheel_radius" value="0.035" />
   <xacro:property name="base_wheel_gap" value="0.007" />
   <xacro:property name="wheel_separation" value="0.15" />
@@ -11,6 +12,8 @@
   <xacro:property name="caster_wheel_radius" value="${wheel_radius/2}" />
   <xacro:property name="caster_wheel_mass" value="0.001" />
   <xacro:property name="caster_wheel_joint_offset" value="-0.052" />
+  <!-- <xacro:property name="mesh_scale" value="0.0254 0.0254 0.0254" /> -->
+  <xacro:property name="PI" value="3.141592" />
 
   <!--Color Properties-->
   <material name="blue">
@@ -61,19 +64,108 @@
 
   <!--Base link-->
   <link name="base_link">
-    <xacro:box_inertia m="10" w="${base_len}" h="${base_width}" d="0.01" />
+    <xacro:box_inertia m="45.0" w="${base_len}" h="${base_width}" d="${base_height}" />
     <visual>
+      <origin rpy="0 0 0" xyz="0.1 0.0 -0.1"/>
       <geometry>
-        <box size="${base_len} ${base_width} 0.01" />
+        <mesh filename="package://mrover/rover_description/meshes/chassis.stl" scale="1 1 1"/>
       </geometry>
-      <material name="black" />
+      <material name="blue" />
     </visual>
     <collision>
       <geometry>
-        <box size="${base_len} ${base_width} 0.01" />
+        <box size="${base_len} ${base_width} ${base_height}" />
       </geometry>
     </collision>
   </link>
+
+  <link name="right_rocker_link">
+    <xacro:box_inertia m="3.0" w="${base_len}" h="${base_width}" d="${base_height}" />
+    <visual>
+      <origin rpy="0 0 0" xyz="0.1 0.03 0.1"/>
+      <geometry>
+        <mesh filename="package://mrover/rover_description/meshes/right_rocker.stl" />
+      </geometry>
+      <material name="red" />
+    </visual>
+    <collision>
+      <geometry>
+        <box size="${base_len + 0.17} 0.05 ${base_height + 0.2}" />
+      </geometry>
+    </collision>
+  </link>
+
+  <joint name="base_right_rocker_joint" type="fixed">
+    <origin xyz="0.01 ${-base_width/2.0 - 0.05} -0.2" rpy="0 0 0" />
+    <parent link="base_link" />
+    <child link="right_rocker_link" />
+  </joint>
+
+  <link name="left_rocker_link">
+    <xacro:box_inertia m="3.0" w="${base_len}" h="${base_width}" d="${base_height}" />
+    <visual>
+      <origin rpy="0.0 0.0 0.0" xyz="0.1 -0.04 0.1"/>
+      <geometry>
+        <mesh filename="package://mrover/rover_description/meshes/left_rocker.stl"/>
+      </geometry>
+      <material name="white" />
+    </visual>
+    <collision>
+      <geometry>
+        <box size="${base_len + 0.17} 0.05 ${base_height + 0.2}" />
+      </geometry>
+    </collision>
+  </link>
+
+  <joint name="base_left_rocker_joint" type="fixed">
+    <origin xyz="0.01 ${base_width/2.0 + 0.05} -0.2" rpy="0 0 0" />
+    <parent link="base_link" />
+    <child link="left_rocker_link" />
+  </joint>
+
+  <link name="left_bogie_link">
+    <xacro:box_inertia m="3.0" w="${base_len}" h="${base_width}" d="${base_height}" />
+    <visual>
+      <origin rpy="0.0 0.0 0.0" xyz="0.0 0.0 0.04"/>
+      <geometry>
+        <mesh filename="package://mrover/rover_description/meshes/left_bogie.stl"/>
+      </geometry>
+      <material name="white" />
+    </visual>
+    <collision>
+      <geometry>
+        <box size="0.32 0.05 0.2" />
+      </geometry>
+    </collision>
+  </link>
+
+  <joint name="left_bogie_joint" type="fixed">
+    <origin xyz="0.31 -0.01 -0.09" rpy="0 0 0" />
+    <parent link="left_rocker_link" />
+    <child link="left_bogie_link" />
+  </joint>
+
+  <link name="right_bogie_link">
+    <xacro:box_inertia m="3.0" w="${base_len}" h="${base_width}" d="${base_height}" />
+    <visual>
+      <origin rpy="0.0 0.0 0.0" xyz="0.0 0.0 0.0"/>
+      <geometry>
+        <mesh filename="package://mrover/rover_description/meshes/right_bogie.stl"/>
+      </geometry>
+      <material name="white" />
+    </visual>
+    <collision>
+      <geometry>
+        <box size="${base_len + 0.17} 0.05 ${base_height + 0.2}" />
+      </geometry>
+    </collision>
+  </link>
+
+  <joint name="base_rught_bogie_joint" type="fixed">
+    <origin xyz="0.01 ${-base_width/2.0 - 0.05} -0.2" rpy="0 0 0" />
+    <parent link="base_link" />
+    <child link="right_bogie_link" />
+  </joint>
 
   <!--base_link to base_footprint Joint-->
   <joint name="base_link_joint" type="fixed">
@@ -138,6 +230,38 @@
     <child link="caster_wheel" />
     <origin xyz="${caster_wheel_joint_offset} 0 -${caster_wheel_radius+0.005}" rpy="0 0 0" />
   </joint>
+
+  <!--Camera Joint-->
+  <joint name="camera_joint" type="fixed">
+    <axis xyz="0 1 0" />
+    <origin xyz="0 0 0.2" rpy="0 0 0"/>
+    <parent link="base_link"/>
+    <child link="camera_link"/>
+  </joint>
+
+  <!-- Camera -->
+  <link name="camera_link">
+    <collision>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <geometry>
+    <box size="0.01 0.1 0.01"/>
+      </geometry>
+    </collision>
+
+    <visual>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <geometry>
+    <box size="0.01 0.1 0.01"/>
+      </geometry>
+      <material name="red"/>
+    </visual>
+
+    <inertial>
+      <mass value="1e-5" />
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <inertia ixx="1e-6" ixy="0" ixz="0" iyy="1e-6" iyz="0" izz="1e-6" />
+    </inertial>
+  </link>
 
   <xacro:include filename="$(find mrover)/rover_description/rover_gazebo_plugins.xacro" />
 
