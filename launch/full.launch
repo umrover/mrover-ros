@@ -8,6 +8,7 @@
   <node unless="$(arg gui)" name="joint_state_publisher" pkg="joint_state_publisher" type="joint_state_publisher" />
   <node name="robot_state_publisher" pkg="robot_state_publisher" type="robot_state_publisher" />
   <node name="rviz" pkg="rviz" type="rviz" args="-d $(arg rvizconfig)" required="true" />
+  <node pkg="tf" type="static_transform_publisher" name="base_to_camera" args=" 0 0 0.2 -1.570796327 0 -1.570796327 base_link camera_link 100" />
 
   <include file="$(find gazebo_ros)/launch/empty_world.launch">
         <arg name="paused" value="false"/>
