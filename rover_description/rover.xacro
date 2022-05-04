@@ -82,15 +82,8 @@
       </collision>
     </link>
 
-    <joint name="front_${side}_wheel_joint" type="continuous">
-      <parent link="base_link"/>
-      <child link="front_${side}_wheel_link"/>
-      <origin xyz="0.42 ${reflect * (base_width/2 + 0.06)} -0.27" rpy="${-PI/2} 0 0" />
-      <axis xyz="0 0 1"/>
-    </joint>
-
     <link name="center_${side}_wheel_link">
-      <xacro:cylinder_inertia m="2.0" r="${wheel_radius}" h="${wheel_width}" />
+      <xacro:cylinder_inertia m="${wheel_mass}" r="${wheel_radius}" h="${wheel_width}" />
       <visual>
         <origin rpy="${reflect * PI/2} 0 0" xyz="0.0 0.0 0.0"/>
         <geometry>
@@ -104,6 +97,30 @@
         </geometry>
       </collision>
     </link>
+
+    <link name="back_${side}_wheel_link">
+      <xacro:cylinder_inertia m="${wheel_mass}" r="${wheel_radius}" h="${wheel_width}" />
+      <visual>
+        <origin rpy="${reflect * PI/2} 0 0" xyz="0.0 0.0 0.0"/>
+        <geometry>
+          <mesh filename="package://mrover/rover_description/meshes/wheel.stl" scale="1 1 1"/>
+        </geometry>
+        <material name="red" />
+      </visual>
+      <collision>
+        <geometry>
+          <cylinder length="${wheel_width}" radius="${wheel_radius}"/>
+        </geometry>
+      </collision>
+    </link>
+
+    <joint name="front_${side}_wheel_joint" type="continuous">
+      <parent link="base_link"/>
+      <child link="front_${side}_wheel_link"/>
+      <origin xyz="0.42 ${reflect * (base_width/2 + 0.06)} -0.27" rpy="${-PI/2} 0 0" />
+      <axis xyz="0 0 1"/>
+    </joint>
+
 
     <joint name="center_${side}_wheel_joint" type="continuous">
       <parent link="base_link"/>
@@ -112,21 +129,6 @@
       <axis xyz="0 0 1"/>
     </joint>
 
-    <link name="back_${side}_wheel_link">
-      <xacro:cylinder_inertia m="2.0" r="${wheel_radius}" h="${wheel_width}" />
-      <visual>
-        <origin rpy="${reflect * PI/2} 0 0" xyz="0.0 0.0 0.0"/>
-        <geometry>
-          <mesh filename="package://mrover/rover_description/meshes/wheel.stl" scale="1 1 1"/>
-        </geometry>
-        <material name="red" />
-      </visual>
-      <collision>
-        <geometry>
-          <cylinder length="${wheel_width}" radius="${wheel_radius}"/>
-        </geometry>
-      </collision>
-    </link>
 
     <joint name="back_${side}_wheel_joint" type="continuous">
       <parent link="base_link"/>
