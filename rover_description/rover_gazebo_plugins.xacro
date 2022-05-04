@@ -1,15 +1,19 @@
 <?xml version="1.0"?>
 <robot>
     <gazebo>
-        <plugin name="differential_drive_controller" filename="libgazebo_ros_diff_drive.so">
+        <plugin name="DiffDrivePlugin6W" filename="libdiffdrive_plugin_6w.so">
             <alwaysOn>false</alwaysOn>
             <legacyMode>false</legacyMode>
             <updateRate>20</updateRate>
-            <leftJoint>center_left_wheel_joint</leftJoint>
-            <rightJoint>center_right_wheel_joint</rightJoint>
+            <midLeftJoint>center_left_wheel_joint</midLeftJoint>
+            <midRightJoint>center_right_wheel_joint</midRightJoint>
+            <frontLeftJoint>front_left_wheel_joint</frontLeftJoint>
+            <frontRightJoint>front_right_wheel_joint</frontRightJoint>
+            <rearLeftJoint>back_left_wheel_joint</rearLeftJoint>
+            <rearRightJoint>back_right_wheel_joint</rearRightJoint>
             <wheelSeparation>${base_width}</wheelSeparation>
             <wheelDiameter>${wheel_radius * 2}</wheelDiameter>
-            <torque>20</torque>
+            <torque>200</torque>
             <commandTopic>/cmd_vel</commandTopic>
             <odometryTopic>/odom</odometryTopic>
             <odometryFrame>odom</odometryFrame>
