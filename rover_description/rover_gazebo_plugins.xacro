@@ -7,7 +7,7 @@
             <updateRate>20</updateRate>
             <leftJoint>left_wheel_joint</leftJoint>
             <rightJoint>right_wheel_joint</rightJoint>
-            <wheelSeparation>${wheel_separation}</wheelSeparation>
+            <wheelSeparation>${base_width}</wheelSeparation>
             <wheelDiameter>${wheel_radius * 2}</wheelDiameter>
             <torque>20</torque>
             <commandTopic>/cmd_vel</commandTopic>
