@@ -9,6 +9,8 @@
   <node name="robot_state_publisher" pkg="robot_state_publisher" type="robot_state_publisher" />
 
   <include file="$(find gazebo_ros)/launch/empty_world.launch">
+        <env name="GAZEBO_MODEL_PATH" value="$(find mrover)/env_description"/>
+        <arg name="world_name" value="$(find mrover)/env_description/world.world"/>
         <arg name="paused" value="false"/>
         <arg name="use_sim_time" value="true"/>
         <arg name="gui" value="true"/>
