@@ -52,9 +52,9 @@
   <link name="base_link">
     <xacro:box_inertia m="3.0" w="${base_len}" h="${base_width}" d="${base_height}" />
     <visual>
-      <origin rpy="0 0 0" xyz="-0.25 0.0 0.2"/>
+      <origin rpy="0 0 0" xyz="-0.25 0.0 0.2" />
       <geometry>
-        <mesh filename="package://mrover/rover_description/meshes/rover.stl" scale="1 1 1"/>
+        <mesh filename="package://mrover/rover_description/meshes/rover.stl" scale="1 1 1" />
       </geometry>
       <material name="blue" />
     </visual>
@@ -67,17 +67,17 @@
 
   <xacro:macro name="wheel" params="side reflect">
     <link name="front_${side}_wheel_link">
-      <xacro:sphere_inertia m="${wheel_mass}" r="${wheel_radius}"/>
+      <xacro:sphere_inertia m="${wheel_mass}" r="${wheel_radius}" />
       <visual>
-        <origin rpy="${reflect * PI/2} 0 0" xyz="0.0 0.0 0.0"/>
+        <origin rpy="${reflect * PI/2} 0 0" xyz="0.0 0.0 0.0" />
         <geometry>
-          <mesh filename="package://mrover/rover_description/meshes/wheel.stl" scale="1 1 1"/>
+          <mesh filename="package://mrover/rover_description/meshes/wheel.stl" scale="1 1 1" />
         </geometry>
         <material name="red" />
       </visual>
       <collision>
         <geometry>
-          <sphere radius="${wheel_radius}"/>
+          <sphere radius="${wheel_radius}" />
         </geometry>
       </collision>
     </link>
@@ -85,94 +85,94 @@
     <link name="center_${side}_wheel_link">
       <xacro:cylinder_inertia m="${wheel_mass}" r="${wheel_radius}" h="${wheel_width}" />
       <visual>
-        <origin rpy="${reflect * PI/2} 0 0" xyz="0.0 0.0 0.0"/>
+        <origin rpy="${reflect * PI/2} 0 0" xyz="0.0 0.0 0.0" />
         <geometry>
-          <mesh filename="package://mrover/rover_description/meshes/wheel.stl" scale="1 1 1"/>
+          <mesh filename="package://mrover/rover_description/meshes/wheel.stl" scale="1 1 1" />
         </geometry>
         <material name="red" />
       </visual>
       <collision>
         <geometry>
-          <cylinder length="${wheel_width}" radius="${wheel_radius}"/>
+          <cylinder length="${wheel_width}" radius="${wheel_radius}" />
         </geometry>
       </collision>
     </link>
 
     <link name="back_${side}_wheel_link">
-      <xacro:sphere_inertia m="${wheel_mass}" r="${wheel_radius}"/>
+      <xacro:sphere_inertia m="${wheel_mass}" r="${wheel_radius}" />
 
       <visual>
-        <origin rpy="${reflect * PI/2} 0 0" xyz="0.0 0.0 0.0"/>
+        <origin rpy="${reflect * PI/2} 0 0" xyz="0.0 0.0 0.0" />
         <geometry>
-          <mesh filename="package://mrover/rover_description/meshes/wheel.stl" scale="1 1 1"/>
+          <mesh filename="package://mrover/rover_description/meshes/wheel.stl" scale="1 1 1" />
         </geometry>
         <material name="red" />
       </visual>
       <collision>
         <geometry>
-          <sphere radius="${wheel_radius}"/>
+          <sphere radius="${wheel_radius}" />
         </geometry>
       </collision>
     </link>
 
     <joint name="front_${side}_wheel_joint" type="continuous">
-      <parent link="base_link"/>
-      <child link="front_${side}_wheel_link"/>
+      <parent link="base_link" />
+      <child link="front_${side}_wheel_link" />
       <origin xyz="0.42 ${reflect * (base_width/2 + 0.06)} -0.27" rpy="${-PI/2} 0 0" />
-      <axis xyz="0 0 1"/>
+      <axis xyz="0 0 1" />
     </joint>
 
 
     <joint name="center_${side}_wheel_joint" type="continuous">
-      <parent link="base_link"/>
-      <child link="center_${side}_wheel_link"/>
+      <parent link="base_link" />
+      <child link="center_${side}_wheel_link" />
       <origin xyz="0 ${reflect * (base_width/2 + 0.06)} -0.27" rpy="${-PI/2} 0 0" />
-      <axis xyz="0 0 1"/>
+      <axis xyz="0 0 1" />
     </joint>
 
 
     <joint name="back_${side}_wheel_joint" type="continuous">
-      <parent link="base_link"/>
-      <child link="back_${side}_wheel_link"/>
+      <parent link="base_link" />
+      <child link="back_${side}_wheel_link" />
       <origin xyz="-0.42 ${reflect*(base_width/2 + 0.06)} -0.27" rpy="${-PI/2} 0 0" />
-      <axis xyz="0 0 1"/>
+      <axis xyz="0 0 1" />
     </joint>
   </xacro:macro>
 
   <!--Camera Joint-->
   <joint name="camera_joint" type="fixed">
     <axis xyz="0 1 0" />
-    <origin xyz="0 0 0.2" rpy="0 0 0"/>
-    <parent link="base_link"/>
-    <child link="camera_link"/>
+    <origin xyz="0 0 0.2" rpy="0 0 0" />
+    <parent link="base_link" />
+    <child link="camera_link" />
   </joint>
 
   <!-- Camera -->
   <link name="camera_link">
     <collision>
-      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <origin xyz="0 0 0" rpy="0 0 0" />
       <geometry>
-    <box size="0.01 0.1 0.01"/>
+        <box size="0.01 0.1 0.01" />
       </geometry>
     </collision>
 
     <visual>
-      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <origin xyz="0 0 0" rpy="0 0 0" />
       <geometry>
-    <box size="0.01 0.1 0.01"/>
+        <box size="0.01 0.1 0.01" />
       </geometry>
-      <material name="red"/>
+      <material name="red" />
     </visual>
 
     <inertial>
       <mass value="1e-5" />
-      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <origin xyz="0 0 0" rpy="0 0 0" />
       <inertia ixx="1e-6" ixy="0" ixz="0" iyy="1e-6" iyz="0" izz="1e-6" />
     </inertial>
   </link>
 
   <xacro:include filename="$(find mrover)/rover_description/rover_gazebo_plugins.xacro" />
-  <xacro:wheel side="left" reflect="1"/>
-  <xacro:wheel side="right" reflect="-1"/>
+  <xacro:wheel side="left" reflect="1" />
+  <xacro:wheel side="right" reflect="-1" />
 
 </robot>
