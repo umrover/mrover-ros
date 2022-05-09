@@ -88,7 +88,7 @@
       <heading_deg>0</heading_deg>
     </spherical_coordinates>
     <model name='post'>
-      <pose>2.91142 0.126282 1 0 -0 0</pose>
+      <pose>0.8 0.1 0.5 0 0 4.71239</pose>
       <static>1</static>
       <link name='link'>
         <collision name='collision'>
@@ -123,35 +123,6 @@
         <kinematic>0</kinematic>
       </link>
     </model>
-    <state world_name='default'>
-      <sim_time>18 972000000</sim_time>
-      <real_time>60 864083665</real_time>
-      <wall_time>1651790260 747524175</wall_time>
-      <iterations>18972</iterations>
-      <model name='ground_plane'>
-        <pose>0 0 0 0 -0 0</pose>
-        <scale>1 1 1</scale>
-        <link name='link'>
-          <pose>0 0 0 0 -0 0</pose>
-          <velocity>0 0 0 0 -0 0</velocity>
-          <acceleration>0 0 0 0 -0 0</acceleration>
-          <wrench>0 0 0 0 -0 0</wrench>
-        </link>
-      </model>
-      <model name='post'>
-        <pose>2.91142 0.126282 1 0 -0 0</pose>
-        <scale>1 1 1</scale>
-        <link name='link'>
-          <pose>2.91142 0.126282 1 0 -0 0</pose>
-          <velocity>0 0 0 0 -0 0</velocity>
-          <acceleration>0 0 0 0 -0 0</acceleration>
-          <wrench>0 0 0 0 -0 0</wrench>
-        </link>
-      </model>
-      <light name='sun'>
-        <pose>0 0 10 0 -0 0</pose>
-      </light>
-    </state>
     <gui fullscreen='0'>
       <camera name='user_camera'>
         <pose>6.01711 -3.68905 2.02916 0 0.275643 2.35619</pose>
