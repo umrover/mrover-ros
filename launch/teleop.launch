@@ -18,10 +18,9 @@
     <arg name="debug" value="false" />
     <arg name="verbose" default="false" />
     <arg name="gui_required" value="true" />
-
   </include>
-  <node name="mrover_sim_spawn" pkg="gazebo_ros" type="spawn_model" output="screen" args="  -z 0.0 
+  
+  <node name="mrover_sim_spawn" pkg="gazebo_ros" type="spawn_model" output="screen" args="
                         -urdf -param robot_description
                         -model rover" />
-
 </launch>

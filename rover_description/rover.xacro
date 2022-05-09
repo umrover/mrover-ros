@@ -159,7 +159,7 @@
     <visual>
       <origin xyz="0 0 0" rpy="0 0 0" />
       <geometry>
-        <box size="0.01 0.1 0.01" />
+        <mesh filename="package://mrover/rover_description/meshes/ZED2i.dae" scale="1 1 1" />
       </geometry>
       <material name="red" />
     </visual>
@@ -174,5 +174,4 @@
   <xacro:include filename="$(find mrover)/rover_description/rover_gazebo_plugins.xacro" />
   <xacro:wheel side="left" reflect="1" />
   <xacro:wheel side="right" reflect="-1" />
-
 </robot>
