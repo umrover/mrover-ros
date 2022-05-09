@@ -74,7 +74,7 @@
           <format>R8G8B8</format>
         </image>
         <clip>
-          <near>0.3</near>
+          <near>0.2</near>
           <far>20</far>
         </clip>
       </camera>
@@ -99,7 +99,7 @@
         <CxPrime>0</CxPrime>
         <Cx>0</Cx>
         <Cy>0</Cy>
-        <focalLength>0.00212</focalLength>
+        <focalLength>0</focalLength>
         <hackBaseline>0</hackBaseline>
       </plugin>
     </sensor>

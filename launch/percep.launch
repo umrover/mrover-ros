@@ -12,6 +12,7 @@
   <node pkg="tf" type="static_transform_publisher" name="base_to_camera" args="0 0 0.2 -1.570796327 0 -1.570796327 base_link camera_link 100" />
 
   <include file="$(find gazebo_ros)/launch/empty_world.launch">
+    <env name="GAZEBO_MODEL_PATH" value="$(find mrover)/env_description" />
     <arg name="world_name" value="$(find mrover)/env_description/world.world" />
     <arg name="paused" value="false" />
     <arg name="use_sim_time" value="true" />
@@ -20,9 +21,18 @@
     <arg name="debug" value="false" />
     <arg name="verbose" default="false" />
     <arg name="gui_required" value="true" />
-
   </include>
+
   <node name="mrover_sim_spawn" pkg="gazebo_ros" type="spawn_model" output="screen" args="
             -urdf -param robot_description
             -model rover" />
+
+  <!-- Start marker detector-->
+  <node name="mrover_aruco_detect" pkg="aruco_detect" type="aruco_detect">
+    <param name="publish_images" value="true" />
+    <param name="fiducial_len" value="0.20" />
+    <param name="dictionary" value="0" /> <!-- DICT_4X4_50 -->
+    <remap from="/camera/compressed" to="/camera_link/color/image_raw" />
+    <remap from="/camera_info" to="/camera_link/color/camera_info" />
+  </node>
 </launch>

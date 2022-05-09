@@ -1,4 +1,4 @@
-<?xml version="1.0" ?>
+<!-- <?xml version="1.0" ?>
 <sdf version="1.6">
   <model name="post">
     <pose>0 0 1 0 0 0</pose>
@@ -7,7 +7,7 @@
       <collision name="collision">
         <geometry>
           <mesh>
-            <uri>model://post/meshes/post.dae</uri>
+            <uri>model://post/meshes/4x4_1000-0.dae</uri>
           </mesh>
         </geometry>
       </collision>
@@ -15,10 +15,10 @@
       <visual name="visual">
         <geometry>
           <mesh>
-            <uri>model://post/meshes/post.dae</uri>
+            <uri>model://post/meshes/4x4_1000-0.dae</uri>
           </mesh>
         </geometry>
       </visual>
     </link>
   </model>
-</sdf>
+</sdf> -->
