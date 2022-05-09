@@ -2,7 +2,7 @@
   <arg name="model" default="$(find mrover)/rover_description/rover.urdf" />
   <arg name="gui" default="false" />
   <param name="robot_description" command="xacro $(find mrover)/rover_description/rover.xacro" />
-  <arg name="rvizconfig" default="$(find mrover)/depth_camera.rviz" />
+  <arg name="rvizconfig" default="$(find mrover)/percep.rviz" />
 
   <node if="$(arg gui)" name="joint_state_publisher" pkg="joint_state_publisher_gui" type="joint_state_publisher_gui" />
   <node unless="$(arg gui)" name="joint_state_publisher" pkg="joint_state_publisher" type="joint_state_publisher" />
@@ -24,15 +24,15 @@
   </include>
 
   <node name="mrover_sim_spawn" pkg="gazebo_ros" type="spawn_model" output="screen" args="
-            -urdf -param robot_description
-            -model rover" />
+    -urdf -param robot_description
+    -model rover" />
 
   <!-- Start marker detector-->
   <node name="mrover_aruco_detect" pkg="aruco_detect" type="aruco_detect">
     <param name="publish_images" value="true" />
     <param name="fiducial_len" value="0.20" />
     <param name="dictionary" value="0" /> <!-- DICT_4X4_50 -->
-    <remap from="/camera/compressed" to="/camera_link/color/image_raw" />
+    <remap from="/camera" to="/camera_link/color/image_raw" />
     <remap from="/camera_info" to="/camera_link/color/camera_info" />
   </node>
 </launch>
