@@ -35,4 +35,7 @@
     <remap from="/camera" to="/camera_link/color/image_raw" />
     <remap from="/camera_info" to="/camera_link/color/camera_info" />
   </node>
+
+  <node name="mrover_localization" pkg="mrover" type="localization.py">
+  </node>
 </launch>

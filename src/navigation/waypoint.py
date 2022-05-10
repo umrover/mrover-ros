@@ -28,7 +28,7 @@ class WaypointState(BaseState):
             # print(rot_euler)
             print(np.rad2deg(rot_euler[2]))
             cmd_vel = Twist()
-            cmd_vel.angular.z = rot_euler[2] / math.tau / 2
+            cmd_vel.angular.z = rot_euler[2] / math.tau * 2
             self.context.vel_cmd_publisher.publish(cmd_vel)
         except (tf.LookupException, tf.ConnectivityException, tf.ExtrapolationException):
             # TODO: probably go into some waiting state
