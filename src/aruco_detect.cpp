@@ -29,10 +29,8 @@
  *
  */
 
-#include <ctime>
 #include <cmath>
 #include <unistd.h>
-#include <cassert>
 
 #include <ros/ros.h>
 #include <tf/transform_datatypes.h>
@@ -40,8 +38,6 @@
 #include <tf2_ros/buffer.h>
 #include <tf2_ros/transform_broadcaster.h>
 #include <tf2_ros/transform_listener.h>
-#include <tf2_geometry_msgs/tf2_geometry_msgs.h>
-#include <visualization_msgs/Marker.h>
 #include <image_transport/image_transport.h>
 #include <cv_bridge/cv_bridge.h>
 #include <sensor_msgs/image_encodings.h>
@@ -59,7 +55,6 @@
 #include <vision_msgs/Detection2DArray.h>
 #include <vision_msgs/ObjectHypothesisWithPose.h>
 
-#include <opencv2/highgui.hpp>
 #include <opencv2/aruco.hpp>
 #include <opencv2/calib3d.hpp>
 
@@ -326,7 +321,7 @@ void FiducialsNode::camInfoCallback(const sensor_msgs::CameraInfo::ConstPtr& msg
 }
 
 void FiducialsNode::imageCallback(const sensor_msgs::ImageConstPtr& msg) {
-    if (enable_detections == false) {
+    if (!enable_detections) {
         return; //return without doing anything
     }
 
@@ -372,6 +367,11 @@ void FiducialsNode::imageCallback(const sensor_msgs::ImageConstPtr& msg) {
         }
 
         vertices_pub.publish(fva);
+
+        for (const auto& tag: fva.fiducials)
+        {
+             // TODO: calculate center, use point cloud info to detect DISTANCE (not depth) and angle/bearing
+        }
 
         if (ids.size() > 0) {
             aruco::drawDetectedMarkers(cv_ptr->image, corners, ids);
