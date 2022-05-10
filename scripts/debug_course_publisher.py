@@ -1,3 +1,5 @@
+import time
+
 import rospy
 import tf
 
@@ -12,3 +14,4 @@ if __name__ == '__main__':
             'course',
             'base_link'
         )
+        time.sleep(0.1)

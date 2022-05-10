@@ -10,5 +10,5 @@ class SingleTagState(BaseState):
             output_keys=[]
         )
 
-    def execute(self, userdata):
+    def evaluate(self, ud):
         return 'single_tag'
