@@ -1,4 +1,5 @@
 import numpy as np
+
 import rospy
 from geometry_msgs.msg import TransformStamped
 from sensor_msgs.msg import NavSatFix, geometry_msgs
@@ -22,5 +23,6 @@ def gps_to_world(gps_coord: NavSatFix, ref_coord: NavSatFix, name: str, parent: 
     t.child_frame_id = name
     t.transform.translation.x = np.radians(gps_coord.longitude - ref_coord.longitude) * EARTH_RADIUS
     t.transform.translation.y = np.radians(gps_coord.latitude - ref_coord.latitude) * EARTH_RADIUS
-    t.transform.translation.z = gps_coord.altitude
+    # t.transform.translation.z = gps_coord.altitude
+    t.transform.rotation.w = 1.0
     return t

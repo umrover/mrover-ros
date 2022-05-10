@@ -21,6 +21,7 @@ find_package(catkin REQUIRED COMPONENTS
         sensor_msgs
         fiducial_msgs
         dynamic_reconfigure
+        geodesy
         )
 
 find_package(OpenCV REQUIRED)
