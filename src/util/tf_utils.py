@@ -1,21 +1,21 @@
-from localization import EARTH_RADIUS
-from sensor_msgs.msg import NavSatFix, geometry_msgs
-from geometry_msgs.msg import TransformStamped
-import rospy
 import numpy as np
+import rospy
+from geometry_msgs.msg import TransformStamped
+from sensor_msgs.msg import NavSatFix, geometry_msgs
 
 EARTH_RADIUS = 6371000
 
-def gps_to_world(gps_coord : NavSatFix, ref_coord : NavSatFix, name : str, parent : str="world") ->  TransformStamped:
-    '''
-    Returns the GPS to cartesian world transform using the GPS reference point 
-    of the world origin from the parameter server. Note that the 
 
-    Args:
-        gps_coord: The gps coordinate that we want in the cartesian world frame
-        name: The name of the returned transform frame
-        parent: The name of the reference world frame
-    '''
+def gps_to_world(gps_coord: NavSatFix, ref_coord: NavSatFix, name: str, parent: str = "world") -> TransformStamped:
+    """
+    Returns the GPS to cartesian world transform using
+    the GPS reference point of the world origin from the parameter server
+    :param gps_coord:   The gps coordinate that we want in the cartesian world frame
+    :param ref_coord:
+    :param name:        The name of the returned transform frame
+    :param parent:      The name of the reference world frame
+    :return:
+    """
     t = geometry_msgs.msg.TransformStamped()
     t.header.stamp = rospy.Time.now()
     t.header.frame_id = parent
