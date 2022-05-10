@@ -90,8 +90,7 @@ Visualization Manager:
       Show Arrows: true
       Show Axes: true
       Show Names: true
-      Tree:
-        {}
+      Tree: {}
       Update Interval: 0
       Value: false
     - Alpha: 1

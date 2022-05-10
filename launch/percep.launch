@@ -2,11 +2,14 @@
   <arg name="model" default="$(find mrover)/rover_description/rover.urdf" />
   <arg name="gui" default="false" />
   <param name="robot_description" command="xacro $(find mrover)/rover_description/rover.xacro" />
-  <arg name="rvizconfig" default="$(find mrover)/default.rviz" />
+  <arg name="rvizconfig" default="$(find mrover)/percep.rviz" />
 
   <node if="$(arg gui)" name="joint_state_publisher" pkg="joint_state_publisher_gui" type="joint_state_publisher_gui" />
   <node unless="$(arg gui)" name="joint_state_publisher" pkg="joint_state_publisher" type="joint_state_publisher" />
   <node name="robot_state_publisher" pkg="robot_state_publisher" type="robot_state_publisher" />
+  <node name="rviz" pkg="rviz" type="rviz" args="-d $(arg rvizconfig)" required="true" />
+
+  <node pkg="tf" type="static_transform_publisher" name="base_to_camera" args="0 0 0.2 -1.570796327 0 -1.570796327 base_link camera_link 100" />
 
   <include file="$(find gazebo_ros)/launch/empty_world.launch">
     <env name="GAZEBO_MODEL_PATH" value="$(find mrover)/env_description" />
@@ -19,8 +22,17 @@
     <arg name="verbose" default="false" />
     <arg name="gui_required" value="true" />
   </include>
-  
+
   <node name="mrover_sim_spawn" pkg="gazebo_ros" type="spawn_model" output="screen" args="
-                        -urdf -param robot_description
-                        -model rover" />
+    -urdf -param robot_description
+    -model rover" />
+
+  <!-- Start marker detector-->
+  <node name="mrover_aruco_detect" pkg="mrover" type="aruco_detect">
+    <param name="publish_images" value="true" />
+    <param name="fiducial_len" value="0.20" />
+    <param name="dictionary" value="0" /> <!-- DICT_4X4_50 -->
+    <remap from="/camera" to="/camera_link/color/image_raw" />
+    <remap from="/camera_info" to="/camera_link/color/camera_info" />
+  </node>
 </launch>
