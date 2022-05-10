@@ -1,4 +1,6 @@
+import rospy
 from common import Context, BaseState
+from geometry_msgs.msg import Twist
 
 
 class WaypointState(BaseState):
@@ -10,8 +12,10 @@ class WaypointState(BaseState):
             output_keys=[]
         )
 
-    def execute(self, userdata):
-        next_waypoint = self.transform('/<target>')
+    def evaluate(self, ud):
+        next_waypoint = self.transform('course')
         if next_waypoint:
-            self.context.vel_cmd_publisher.publish()
+            cmd_vel = Twist()
+            cmd_vel.angular.z = -1.0
+            self.context.vel_cmd_publisher.publish(cmd_vel)
         return 'waypoint'
