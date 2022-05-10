@@ -1,3 +1,5 @@
+#!/usr/bin/env python
+
 import rospy
 import smach
 import smach_ros
@@ -15,8 +17,7 @@ class Navigation:
         # rospy.Subscriber('/fiducial_vertices', FiducialArray, self.tag_callback)
         self.state_machine = smach.StateMachine(outcomes=['done'])
         self.context = Context()
-        sis = smach_ros.IntrospectionServer('server_name', self.state_machine, '/SM_ROOT')
-        sis.start()
+        smach_ros.IntrospectionServer('server_name', self.state_machine, '/SM_ROOT').start()
         with self.state_machine:
             self.state_machine.add(
                 'WaypointState', WaypointState(self.context),
@@ -37,13 +38,10 @@ class Navigation:
                 transitions={'done': 'DoneState'}
             )
 
-    # def tag_callback(self, data):
-    #     print(data)
-
     def run(self):
         return self.state_machine.execute()
 
 
 if __name__ == '__main__':
-    rospy.init_node('nav')
+    rospy.init_node('navigation')
     Navigation().run()

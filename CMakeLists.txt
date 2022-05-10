@@ -132,7 +132,7 @@ include_directories(
         ${OpenCV_INCLUDE_DIRS}
 )
 
-add_executable(aruco_detect src/aruco_detect.cpp)
+add_executable(aruco_detect src/perception/aruco_detect.cpp)
 
 add_dependencies(aruco_detect ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
 

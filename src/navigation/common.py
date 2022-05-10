@@ -1,5 +1,5 @@
 from abc import ABC
-from typing import Tuple
+from typing import Tuple, Optional
 
 import numpy as np
 import rospy
@@ -21,28 +21,28 @@ class Context:
 
 
 class BaseState(smach.State, ABC):
-    navigation: Context
+    context: Context
 
-    def transform(self, frame: str) -> Tuple[np.ndarray, np.ndarray]:
-        """Retrieve position and rotation of frame in tf tree. Relative to the point where we linearized.
-        :param: frame: Name of desired frame
-        :return: position, rotation which are both numpy arrays
+    def transform(self, frame: str) -> Optional[Tuple[np.ndarray, np.ndarray]]:
+        """Retrieve position and rotation of frame in tf tree. Relative to the point where we linearized
+        :param frame:   Name of desired frame
+        :return:        position (vector3), rotation (quaternion) which are both numpy arrays
         """
         try:
-            trans, rot = self.navigation.tf_listener.lookupTransform(frame, '/<source>', LATEST_TIME)
-            return np.array(trans), np.array(rot)
+            pos, rot = self.context.tf_listener.lookupTransform(frame, '/<source>', LATEST_TIME)
+            return np.array(pos), np.array(rot)
         except (tf.LookupException, tf.ConnectivityException, tf.ExtrapolationException):
-            pass
+            return None
 
-    def __init__(self, navigation: Context, *args, **kwargs):
+    def __init__(self, context: Context, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        self.navigation = navigation
+        self.context = context
 
 
 class DoneState(BaseState):
-    def __init__(self, navigation: Context):
+    def __init__(self, context: Context):
         super().__init__(
-            navigation,
+            context,
             outcomes=['done'],
             input_keys=[],
             output_keys=[]
