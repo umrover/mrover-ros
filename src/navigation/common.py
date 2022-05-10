@@ -1,14 +1,9 @@
 from abc import ABC
-from typing import Tuple, Optional
-
-import numpy as np
 
 import rospy
 import smach
 import tf
 from geometry_msgs.msg import Twist
-
-LATEST_TIME = rospy.Time(0)
 
 
 # TODO: rename?
@@ -42,17 +37,6 @@ class BaseState(smach.State, ABC):
 
     def evaluate(self, ud: smach.UserData) -> str:
         pass
-
-    def transform(self, frame: str) -> Optional[Tuple[np.ndarray, np.ndarray]]:
-        """Retrieve position and rotation of frame in tf tree. Relative to the point where we linearized
-        :param frame:   Name of desired frame
-        :return:        position (vector3), rotation (quaternion) which are both numpy arrays
-        """
-        try:
-            pos, rot = self.context.tf_listener.lookupTransform(frame, 'base_link', LATEST_TIME)
-            return np.array(pos), np.array(rot)
-        except (tf.LookupException, tf.ConnectivityException, tf.ExtrapolationException):
-            return None
 
 
 class DoneState(BaseState):

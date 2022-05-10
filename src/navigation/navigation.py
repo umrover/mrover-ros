@@ -62,6 +62,7 @@ def main():
     context = Context()
     navigation = Navigation(context)
 
+    # Define custom handler for Ctrl-C that shuts down smach properly
     def sigint_handler(sig, frame):
         navigation.stop()
         rospy.signal_shutdown('keyboard interrupt')
