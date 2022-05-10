@@ -1,53 +1,91 @@
+from abc import ABC
+
 import rospy
 import smach_ros
 import smach
+import tf
 
 from geometry_msgs.msg import TwistStamped
 
 
-class WaypointState(smach.State):
-    def __init__(self):
-        smach.State.__init__(self, outcomes=["waypoint", "waypoint_done"])
+class BaseState(smach.State, ABC):
+    navigation: 'Navigation'
+
+    def __init__(self, navigation: 'Navigation', *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.navigation = navigation
+
+
+class WaypointState(BaseState):
+    def __init__(self, navigation: 'Navigation'):
+        super().__init__(
+            navigation,
+            outcomes=['waypoint', 'waypoint_done'],
+            input_keys=[],
+            output_keys=[]
+        )
 
     def execute(self, userdata):
-        return "waypoint"
+        return 'waypoint'
 
 
-class SingleTagState(smach.State):
-    def __init__(self):
-        smach.State.__init__(self, outcomes=["single_tag", "single_tag_done"])
-
-    def execute(self, userdata):
-        return "single_tag"
-
-
-class DoneState(smach.State):
-    def __init__(self):
-        smach.State.__init__(self, outcomes=["done"])
+class SingleTagState(BaseState):
+    def __init__(self, navigation: 'Navigation'):
+        super().__init__(
+            navigation,
+            outcomes=['single_tag', 'single_tag_done'],
+            input_keys=[],
+            output_keys=[]
+        )
 
     def execute(self, userdata):
-        return "done"
+        return 'single_tag'
+
+
+class DoneState(BaseState):
+    def __init__(self, navigation: 'Navigation'):
+        super().__init__(
+            navigation,
+            outcomes=['done'],
+            input_keys=[],
+            output_keys=[]
+        )
+
+    def execute(self, userdata):
+        return 'done'
 
 
 class Navigation:
-    vel_cmd_publisher: rospy.Publisher
     state_machine: smach.StateMachine
+    vel_cmd_publisher: rospy.Publisher
+    tf_listener: tf.TransformListener
 
     def __init__(self):
-        self.vel_cmd_publisher = rospy.Publisher('cmd_vel', TwistStamped, queue_size=1)
         # rospy.Subscriber('/fiducial_vertices', FiducialArray, self.tag_callback)
         self.state_machine = smach.StateMachine(outcomes=['done'])
+        self.vel_cmd_publisher = rospy.Publisher('cmd_vel', TwistStamped, queue_size=1)
+        self.tf_listener = tf.TransformListener()
         sis = smach_ros.IntrospectionServer('server_name', self.state_machine, '/SM_ROOT')
         sis.start()
         with self.state_machine:
-            self.state_machine.add("WaypointState", WaypointState(), transitions={
-                "waypoint": "WaypointState",
-                "waypoint_done": "DoneState"
-            })
-            self.state_machine.add("SingleTagState", SingleTagState(), transitions={
-                "single_tag": "SingleTagState",
-                "single_tag_done": "DoneState"
-            })
+            self.state_machine.add(
+                'WaypointState', WaypointState(self),
+                transitions={
+                    'waypoint': 'WaypointState',
+                    'waypoint_done': 'DoneState'
+                },
+            )
+            self.state_machine.add(
+                'SingleTagState', SingleTagState(self),
+                transitions={
+                    'single_tag': 'SingleTagState',
+                    'single_tag_done': 'DoneState'
+                }
+            )
+            self.state_machine.add(
+                'DoneState', DoneState(self),
+                transitions={'done': 'DoneState'}
+            )
 
     # def tag_callback(self, data):
     #     print(data)
@@ -57,6 +95,5 @@ class Navigation:
 
 
 if __name__ == '__main__':
-    rospy.init_node("nav")
-    navigation = Navigation()
-    navigation.run()
+    rospy.init_node('nav')
+    Navigation().run()
