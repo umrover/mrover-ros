@@ -37,7 +37,7 @@ class WaypointState(BaseState):
 
             self.send_debug_arrow(rover_rot)
 
-            rover_dir_rotated = rover_dir[0] * -target_dir[1] + rover_dir[1] * target_dir[0]
+            rover_dir_90ccw = rover_dir[0] * -target_dir[1] + rover_dir[1] * target_dir[0]
             error = 1.0 - alignment
             # print('course_pos:', course_pos)
             # print('rover_pos:', rover_pos)
@@ -47,7 +47,7 @@ class WaypointState(BaseState):
             # print('error:', error)
 
             cmd_vel = Twist()
-            sign = -np.sign(rover_dir_rotated)
+            sign = -np.sign(rover_dir_90ccw)
             cmd_vel.angular.z = np.clip(error * 50.0 * sign, -1.0, 1.0)
             self.context.vel_cmd_publisher.publish(cmd_vel)
         except (tf2_ros.LookupException, tf2_ros.ConnectivityException, tf2_ros.ExtrapolationException):
@@ -60,7 +60,7 @@ class WaypointState(BaseState):
         marker = Marker()
         marker.id = 0
         marker.action = Marker.ADD
-        marker.header.frame_id = 'world'
+        marker.header.frame_id = 'map'
         marker.header.stamp = rospy.Time.now()
         marker.pose.orientation.x = rot[0]
         marker.pose.orientation.y = rot[1]

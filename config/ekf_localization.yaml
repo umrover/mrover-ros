@@ -1,0 +1,67 @@
+#Configuration for EKF localization node
+
+frequency: 50
+two_d_mode: true
+publish_tf: true
+
+odom_frame: world
+base_link_frame: base_link
+world_frame: world
+map_frame: map
+
+odom0: /odom
+odom0_config: [false, false, false,
+               false, false, false,
+               true,  true,  false,
+               false, false, true,
+               false, false, false]
+odom0_differential: true
+
+imu0: /imu/data
+imu0_config: [false, false, false,
+              false, false, true,
+              false, false, false,
+              false, false, true,
+              true,  false, false]
+imu0_differential: false
+
+odom1: /odometry/gps
+odom1_config: [false, false, false,
+               false, false, false,
+               true, true, false,
+               false, false, true,
+               false, false, false]
+odom1_differential: false
+
+process_noise_covariance: [0.05,    0,    0,    0,    0,    0,    0,     0,     0,    0,    0,    0,    0,    0,    0,
+                              0, 0.05,    0,    0,    0,    0,    0,     0,     0,    0,    0,    0,    0,    0,    0,
+                              0,    0, 0.06,    0,    0,    0,    0,     0,     0,    0,    0,    0,    0,    0,    0,
+                              0,    0,    0, 0.03,    0,    0,    0,     0,     0,    0,    0,    0,    0,    0,    0,
+                              0,    0,    0,    0, 0.03,    0,    0,     0,     0,    0,    0,    0,    0,    0,    0,
+                              0,    0,    0,    0,    0, 0.06,    0,     0,     0,    0,    0,    0,    0,    0,    0,
+                              0,    0,    0,    0,    0,    0,0.025,     0,     0,    0,    0,    0,    0,    0,    0,
+                              0,    0,    0,    0,    0,    0,    0, 0.025,     0,    0,    0,    0,    0,    0,    0,
+                              0,    0,    0,    0,    0,    0,    0,     0,  0.04,    0,    0,    0,    0,    0,    0,
+                              0,    0,    0,    0,    0,    0,    0,     0,     0, 0.01,    0,    0,    0,    0,    0,
+                              0,    0,    0,    0,    0,    0,    0,     0,     0,    0, 0.01,    0,    0,    0,    0,
+                              0,    0,    0,    0,    0,    0,    0,     0,     0,    0,    0, 0.02,    0,    0,    0,
+                              0,    0,    0,    0,    0,    0,    0,     0,     0,    0,    0,    0, 0.01,    0,    0,
+                              0,    0,    0,    0,    0,    0,    0,     0,     0,    0,    0,    0,    0, 0.01,    0,
+                              0,    0,    0,    0,    0,    0,    0,     0,     0,    0,    0,    0,    0,    0, 0.015]
+
+
+initial_estimate_covariance: [1e-9,    0,    0,    0,    0,    0,    0,    0,    0,    0,     0,     0,     0,    0,    0,
+                                 0, 1e-9,    0,    0,    0,    0,    0,    0,    0,    0,     0,     0,     0,    0,    0,
+                                 0,    0, 1e-9,    0,    0,    0,    0,    0,    0,    0,     0,     0,     0,    0,    0,
+                                 0,    0,    0, 1e-9,    0,    0,    0,    0,    0,    0,     0,     0,     0,    0,    0,
+                                 0,    0,    0,    0, 1e-9,    0,    0,    0,    0,    0,     0,     0,     0,    0,    0,
+                                 0,    0,    0,    0,    0, 1e-9,    0,    0,    0,    0,     0,     0,     0,    0,    0,
+                                 0,    0,    0,    0,    0,    0, 1e-9,    0,    0,    0,     0,     0,     0,    0,    0,
+                                 0,    0,    0,    0,    0,    0,    0, 1e-9,    0,    0,     0,     0,     0,    0,    0,
+                                 0,    0,    0,    0,    0,    0,    0,    0, 1e-9,    0,     0,     0,     0,    0,    0,
+                                 0,    0,    0,    0,    0,    0,    0,    0,    0, 1e-9,     0,     0,     0,    0,    0,
+                                 0,    0,    0,    0,    0,    0,    0,    0,    0,    0,  1e-9,     0,     0,    0,    0,
+                                 0,    0,    0,    0,    0,    0,    0,    0,    0,    0,     0,  1e-9,     0,    0,    0,
+                                 0,    0,    0,    0,    0,    0,    0,    0,    0,    0,     0,     0,  1e-9,    0,    0,
+                                 0,    0,    0,    0,    0,    0,    0,    0,    0,    0,     0,     0,     0, 1e-9,    0,
+                                 0,    0,    0,    0,    0,    0,    0,    0,    0,    0,     0,     0,     0,    0, 1e-9]
