@@ -1,7 +1,7 @@
 import numpy as np
 
 import rospy
-import tf
+import tf2_ros
 from common import Context, BaseState
 from geometry_msgs.msg import Twist, Point
 from tf.transformations import quaternion_matrix
@@ -9,6 +9,13 @@ from visualization_msgs.msg import Marker
 
 COURSE_FRAME = 'course'
 ROVER_FRAME = 'rover'
+
+
+def normalized(v):
+    norm = np.linalg.norm(v)
+    if norm == 0:
+        norm = np.finfo(v.dtype).eps
+    return v / norm
 
 
 class WaypointState(BaseState):
@@ -24,21 +31,26 @@ class WaypointState(BaseState):
         try:
             course_pos, course_rot = self.transform(COURSE_FRAME)
             rover_pos, rover_rot = self.transform(ROVER_FRAME)
-            target_dir = course_pos - rover_pos
-            target_dir /= np.linalg.norm(target_dir)
+            target_dir = normalized(course_pos - rover_pos)
             rover_dir = quaternion_matrix(rover_rot)[0:3, 0]
             alignment = np.dot(target_dir, rover_dir)
 
             self.send_debug_arrow(rover_rot)
 
             rover_dir_rotated = rover_dir[0] * -target_dir[1] + rover_dir[1] * target_dir[0]
-            print(course_pos, rover_pos, target_dir, rover_dir, alignment, np.sign(rover_dir_rotated))
-            error = 1.0 - alignment * np.sign(rover_dir_rotated)
+            error = 1.0 - alignment
+            # print('course_pos:', course_pos)
+            # print('rover_pos:', rover_pos)
+            # print('target_dir:', target_dir)
+            # print('rover_dir:', rover_dir)
+            print('alignment:', alignment)
+            # print('error:', error)
 
             cmd_vel = Twist()
-            cmd_vel.angular.z = error * 2.0
+            sign = -np.sign(rover_dir_rotated)
+            cmd_vel.angular.z = np.clip(error * 50.0 * sign, -1.0, 1.0)
             self.context.vel_cmd_publisher.publish(cmd_vel)
-        except (tf.LookupException, tf.ConnectivityException, tf.ExtrapolationException):
+        except (tf2_ros.LookupException, tf2_ros.ConnectivityException, tf2_ros.ExtrapolationException):
             # TODO: probably go into some waiting state
             pass
 
