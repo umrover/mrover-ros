@@ -19,7 +19,7 @@ def main():
     orientation = Quaternion(0, 0, 0, 1)
 
     def gps_callback(gps: NavSatFix):
-        stamped_cartesian_transform = gps_to_world(gps, ref_gps_point, 'rover', 'base_link')
+        stamped_cartesian_transform = gps_to_world(gps, ref_gps_point, "rover", "world")
         stamped_cartesian_transform.transform.rotation = orientation
         tf_broadcaster.sendTransformMessage(stamped_cartesian_transform)
         # utm = fromLatLong(gps.latitude, gps.longitude, gps.altitude)
@@ -31,6 +31,7 @@ def main():
         #     'base_link'
         # )
 
+    # TODO: do we want to only publish a transform when we get a GPS callback, not an IMU callback?
     def imu_callback(imu: Imu):
         nonlocal orientation
         orientation = imu.orientation
