@@ -5,7 +5,7 @@ import numpy as np
 
 import rospy
 import smach
-import tf
+import tf2_ros
 from geometry_msgs.msg import Twist
 from visualization_msgs.msg import Marker
 
@@ -15,13 +15,15 @@ class Context:
     is_shutdown: bool
     vel_cmd_publisher: rospy.Publisher
     vis_publisher: rospy.Publisher
-    tf_listener: tf.TransformListener
+    tf_buffer: tf2_ros.Buffer
+    tf_listener: tf2_ros.TransformListener
 
     def __init__(self):
         self.is_shutdown = False
         self.vel_cmd_publisher = rospy.Publisher('/cmd_vel', Twist, queue_size=1)
         self.vis_publisher = rospy.Publisher('/navigation', Marker, queue_size=1)
-        self.tf_listener = tf.TransformListener()
+        self.tf_buffer = tf2_ros.Buffer()
+        self.tf_listener = tf2_ros.TransformListener(self.tf_buffer)
 
 
 class BaseState(smach.State, ABC):
@@ -49,14 +51,15 @@ class BaseState(smach.State, ABC):
         """Override me instead of execute!"""
         pass
 
-    def transform(self, frame: str, parent_frame: str = 'world', time: rospy.Time = rospy.Time(0)) \
-            -> Tuple[np.ndarray, np.ndarray]:
+    def transform(self, frame: str, parent_frame: str = 'base_link') -> Tuple[np.ndarray, np.ndarray]:
         """Retrieve position and rotation of frame in tf tree. Relative to the point where we linearized.
         :param: frame: Name of desired frame
         :return: position, rotation which are both numpy arrays
         """
-        pos, rot = self.context.tf_listener.lookupTransform(parent_frame, frame, time)
-        return np.array(pos), np.array(rot)
+        stamped_transform = self.context.tf_buffer.lookup_transform(parent_frame, frame, rospy.Time(0))
+        p = stamped_transform.transform.translation
+        r = stamped_transform.transform.rotation
+        return np.array([p.x, p.y, p.z]), np.array([r.x, r.y, r.z, r.w])
 
 
 class DoneState(BaseState):

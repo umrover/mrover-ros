@@ -39,5 +39,5 @@
   <node name="mrover_localization" pkg="mrover" type="localization.py" />
   <node name="mrover_debug_course" pkg="mrover" type="debug_course_publisher.py" />
 
-  <node pkg="tf" type="static_transform_publisher" name="cartesian_world_publisher" args="0 0 0 0 0 0 /world /origin 100" />
+  <!-- <node pkg="tf" type="static_transform_publisher" name="cartesian_world_publisher" args="0 0 0 0 0 0 /world /origin 100" /> -->
 </launch>
