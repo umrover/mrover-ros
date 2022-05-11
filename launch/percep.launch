@@ -23,12 +23,12 @@
     <arg name="gui_required" value="true" />
   </include>
 
-  <node name="mrover_sim_spawn" pkg="gazebo_ros" type="spawn_model" output="screen" args="
+  <node name="spawn_model" pkg="gazebo_ros" type="spawn_model" output="screen" args="
     -urdf -param robot_description
     -model rover" />
 
   <!-- Start marker detector-->
-  <node name="mrover_aruco_detect" pkg="mrover" type="aruco_detect">
+  <node name="aruco_detect" pkg="mrover" type="aruco_detect">
     <param name="publish_images" value="true" />
     <param name="fiducial_len" value="0.20" />
     <param name="dictionary" value="0" /> <!-- DICT_4X4_50 -->
@@ -36,8 +36,30 @@
     <remap from="/camera_info" to="/camera_link/color/camera_info" />
   </node>
 
-  <node name="mrover_localization" pkg="mrover" type="localization.py" />
-  <node name="mrover_debug_course" pkg="mrover" type="debug_course_publisher.py" />
+  <!-- <node name="mrover_localization" pkg="mrover" type="localization.py" /> -->
+  <node name="debug_course_publisher" pkg="mrover" type="debug_course_publisher.py" />
 
-  <!-- <node pkg="tf" type="static_transform_publisher" name="cartesian_world_publisher" args="0 0 0 0 0 0 /world /origin 100" /> -->
+  <node pkg="tf2_ros" type="static_transform_publisher" name="bl_imu" args="0 0 0 0 0 0 1 base_link imu_link" />
+  <node pkg="tf2_ros" type="static_transform_publisher" name="bl_world" args="0 0 0 0 0 0 1 base_link world" />
+
+  <!-- Run the EKF Localization node -->
+  <node pkg="robot_localization" type="ekf_localization_node" name="ekf_localization">
+        <rosparam command="load" file="$(find mrover)/config/ekf_localization.yaml"/>
+  </node>
+
+  <node pkg="robot_localization" type="navsat_transform_node" name="navsat_transform_node" respawn="true">
+    <rosparam param="datum">[42.2, -83.7, 0.0, world, base_link]</rosparam>
+    <param name="magnetic_declination_radians" value="0" />
+    <param name="zero_altitude" value="true" />
+    <param name="yaw_offset" value="1.570796327" />
+    <param name="use_odometry_yaw" value="false"/>
+
+    <!-- Subscriptions -->
+    <remap from="/imu/data" to="/imu" />
+    <remap from="/gps/fix" to="/gps/fix" />
+    <remap from="/odometry/filtered" to="/odom" />
+    <!-- Publications -->
+    <remap from="gps/filtered" to="gps/filtered" />
+    <remap from="odometry/gps" to="odometry/gps" />
+  </node>
 </launch>

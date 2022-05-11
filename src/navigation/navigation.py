@@ -58,6 +58,7 @@ class Navigation(threading.Thread):
 
 
 def main():
+    print('===== navigation starting =====')
     rospy.init_node('navigation')
     context = Context()
     navigation = Navigation(context)

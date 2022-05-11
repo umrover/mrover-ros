@@ -2,34 +2,32 @@
 
 import rospy
 import tf2_ros
-# from geodesy.utm import fromLatLong
-from geometry_msgs.msg import Quaternion
-from sensor_msgs.msg import NavSatFix, Imu
-from util.tf_utils import gps_to_world
+from geometry_msgs.msg import TransformStamped
 
-SIM_SAT_FIX = NavSatFix(latitude=42.199999689512715, longitude=-83.69999929025072, altitude=0.4652098556018964)
+from nav_msgs.msg import Odometry
 
 
 def main():
     print('===== localization starting =====')
-    rospy.init_node("gps_to_odom")
-    ref_gps_point: NavSatFix = rospy.get_param('ref_gps_point', SIM_SAT_FIX)
-    tf_broadcaster = tf2_ros.TransformBroadcaster()
+    rospy.init_node("gps_to_tf")
+    tf2_broadcaster = tf2_ros.TransformBroadcaster()
 
-    orientation = Quaternion(0, 0, 0, 1)
+    def odom_callback(odom: Odometry):
+        pose = odom.pose.pose
+        t = TransformStamped()
+        t.header.frame_id = 'base_link'
+        t.child_frame_id = 'rover'
+        t.header.stamp = rospy.Time.now()
+        t.transform.translation.x = pose.position.x
+        t.transform.translation.y = pose.position.y
+        t.transform.translation.z = pose.position.z
+        t.transform.rotation.x = pose.orientation.x
+        t.transform.rotation.y = pose.orientation.y
+        t.transform.rotation.z = pose.orientation.z
+        t.transform.rotation.w = pose.orientation.w
+        tf2_broadcaster.sendTransform(t)
 
-    def gps_callback(gps: NavSatFix):
-        stamped_cartesian_transform = gps_to_world(gps, ref_gps_point, "rover", "base_link")
-        stamped_cartesian_transform.transform.rotation = orientation
-        tf_broadcaster.sendTransform(stamped_cartesian_transform)
-
-    # TODO: do we want to only publish a transform when we get a GPS callback, not an IMU callback?
-    def imu_callback(imu: Imu):
-        nonlocal orientation
-        orientation = imu.orientation
-
-    rospy.Subscriber('/imu', Imu, imu_callback)
-    rospy.Subscriber('/gps/fix', NavSatFix, gps_callback)
+    rospy.Subscriber('/odometry/filtered', Odometry, odom_callback)
 
     rospy.spin()
 
