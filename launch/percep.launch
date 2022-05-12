@@ -28,7 +28,7 @@
     -model rover" />
 
   <!-- Start marker detector-->
-  <node name="mrover_aruco_detect" pkg="mrover" type="aruco_detect">
+  <node name="mrover_aruco_detect" pkg="mrover" type="aruco_detect" output="screen">
     <param name="publish_images" value="true" />
     <param name="fiducial_len" value="0.20" />
     <param name="dictionary" value="0" /> <!-- DICT_4X4_50 -->

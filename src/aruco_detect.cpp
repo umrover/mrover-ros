@@ -29,120 +29,10 @@
  *
  */
 
-#include <cmath>
-#include <unistd.h>
-
-#include <ros/ros.h>
-#include <tf/transform_datatypes.h>
-#include <tf2/LinearMath/Transform.h>
-#include <tf2_ros/buffer.h>
-#include <tf2_ros/transform_broadcaster.h>
-#include <tf2_ros/transform_listener.h>
-#include <image_transport/image_transport.h>
-#include <cv_bridge/cv_bridge.h>
-#include <sensor_msgs/image_encodings.h>
-#include <dynamic_reconfigure/server.h>
-#include <std_srvs/SetBool.h>
-#include <std_msgs/String.h>
-
-#include "fiducial_msgs/Fiducial.h"
-#include "fiducial_msgs/FiducialArray.h"
-#include "fiducial_msgs/FiducialTransform.h"
-#include "fiducial_msgs/FiducialTransformArray.h"
-#include "aruco_detect/DetectorParamsConfig.h"
-
-#include <vision_msgs/Detection2D.h>
-#include <vision_msgs/Detection2DArray.h>
-#include <vision_msgs/ObjectHypothesisWithPose.h>
-
-#include <opencv2/aruco.hpp>
-#include <opencv2/calib3d.hpp>
-
-#include <list>
-#include <string>
-#include <boost/algorithm/string.hpp>
-#include <boost/shared_ptr.hpp>
+#include "aruco_detect.hpp"
 
 using namespace std;
 using namespace cv;
-
-typedef boost::shared_ptr<fiducial_msgs::FiducialArray const> FiducialArrayConstPtr;
-
-class FiducialsNode {
-private:
-    ros::Publisher vertices_pub;
-    ros::Publisher pose_pub;
-
-    ros::Subscriber caminfo_sub;
-    ros::Subscriber vertices_sub;
-    ros::Subscriber ignore_sub;
-    image_transport::ImageTransport it;
-    image_transport::Subscriber img_sub;
-    tf2_ros::TransformBroadcaster broadcaster;
-
-    ros::ServiceServer service_enable_detections;
-
-    // if set, we publish the images that contain fiducials
-    bool publish_images;
-    bool enable_detections;
-    bool vis_msgs;
-    bool verbose;
-
-    double fiducial_len;
-
-    bool doPoseEstimation;
-    bool haveCamInfo;
-    bool publishFiducialTf;
-    vector<vector<Point2f> > corners;
-    vector<int> ids;
-    cv_bridge::CvImagePtr cv_ptr;
-
-    cv::Mat cameraMatrix;
-    cv::Mat distortionCoeffs;
-    int frameNum;
-    std::string frameId;
-    std::vector<int> ignoreIds;
-    std::map<int, double> fiducialLens;
-    ros::NodeHandle nh;
-    ros::NodeHandle pnh;
-
-    image_transport::Publisher image_pub;
-
-    // log spam prevention
-    int prev_detected_count;
-
-    cv::Ptr<aruco::DetectorParameters> detectorParams;
-    cv::Ptr<aruco::Dictionary> dictionary;
-
-    void handleIgnoreString(const std::string& str);
-
-    void estimatePoseSingleMarkers(float markerLength,
-                                   const cv::Mat& cameraMatrix,
-                                   const cv::Mat& distCoeffs,
-                                   vector<Vec3d>& rvecs, vector<Vec3d>& tvecs,
-                                   vector<double>& reprojectionError);
-
-
-    void ignoreCallback(const std_msgs::String& msg);
-
-    void imageCallback(const sensor_msgs::ImageConstPtr& msg);
-
-    void poseEstimateCallback(const FiducialArrayConstPtr& msg);
-
-    void camInfoCallback(const sensor_msgs::CameraInfo::ConstPtr& msg);
-
-    void configCallback(aruco_detect::DetectorParamsConfig& config, uint32_t level);
-
-    bool enableDetectionsCallback(std_srvs::SetBool::Request& req,
-                                  std_srvs::SetBool::Response& res);
-
-    dynamic_reconfigure::Server<aruco_detect::DetectorParamsConfig> configServer;
-    dynamic_reconfigure::Server<aruco_detect::DetectorParamsConfig>::CallbackType callbackType;
-
-public:
-    FiducialsNode();
-};
-
 
 /**
   * @brief Return object points for the system centered in a single marker, given the marker length
@@ -170,6 +60,12 @@ static double dist(const cv::Point2f& p1, const cv::Point2f& p2) {
     double dy = y1 - y2;
 
     return sqrt(dx * dx + dy * dy);
+}
+
+static cv::Point2f getTagCentroidFromCorners(fiducial_msgs::Fiducial fiducial) {
+    float centerX = static_cast<float>((fiducial.x0 + fiducial.x1 + fiducial.x2 + fiducial.x3) / 4.0);
+    float centerY = static_cast<float>((fiducial.y0 + fiducial.y1 + fiducial.y2 + fiducial.y3) / 4.0);
+    return {centerX, centerY};
 }
 
 // Compute area in image of a fiducial, using Heron's formula
@@ -368,9 +264,29 @@ void FiducialsNode::imageCallback(const sensor_msgs::ImageConstPtr& msg) {
 
         vertices_pub.publish(fva);
 
-        for (const auto& tag: fva.fiducials)
-        {
-             // TODO: calculate center, use point cloud info to detect DISTANCE (not depth) and angle/bearing
+        if (fva.fiducials.empty()) {
+            // No tags found, return both tags as invalid
+            markerLocations.first.x = markerLocations.first.y = -1;
+            markerLocations.second.x = markerLocations.second.y = -1;
+        } else if (fva.fiducials.size() == 1) {
+            // One tag found, set second as invalid
+            markerLocations.first = getTagCentroidFromCorners(fva.fiducials[0]);
+            markerLocations.second.x = markerLocations.second.y = -1;
+        } else {
+            // Detected >= 2 tags
+            // If >= 3 tags, return the leftmost and rightmost detected tags
+            // to account for potentially seeing 2 of each tag on a post
+            vector<cv::Point2f> tagLocations;
+            tagLocations.reserve(fva.fiducials.size());
+            for (auto tag : fva.fiducials) {
+                tagLocations.push_back(getTagCentroidFromCorners(tag));
+            }
+            std::sort(tagLocations.begin(), tagLocations.end(),
+                    [] (const auto& lhs, const auto& rhs) {
+                 return lhs.x < rhs.x;
+            });
+            markerLocations.first = tagLocations[0];
+            markerLocations.second = tagLocations[tagLocations.size() - 1];
         }
 
         if (ids.size() > 0) {
@@ -387,6 +303,48 @@ void FiducialsNode::imageCallback(const sensor_msgs::ImageConstPtr& msg) {
     catch (cv::Exception& e) {
         ROS_ERROR("cv exception: %s", e.what());
     }
+}
+
+std::pair<double, double> getDistAndBearingFromPointCloud(const sensor_msgs::PointCloud2ConstPtr& msg, int u, int v) {
+    // Could be done using PCL point clouds instead
+    size_t arrayPos = v * msg->row_step + u * msg->point_step;
+    int arrayPosX = arrayPos + msg->fields[0].offset;
+    int arrayPosY = arrayPos + msg->fields[1].offset;
+    int arrayPosZ = arrayPos + msg->fields[2].offset;
+
+    float x, y, z;
+    memcpy(&x, &msg->data[arrayPosX], sizeof(float));
+    memcpy(&y, &msg->data[arrayPosY], sizeof(float));
+    memcpy(&z, &msg->data[arrayPosZ], sizeof(float));
+    
+    // Ensure xyz are valid
+    if (std::isnan(x) || std::isnan(y) || std::isnan(z)) return {-1, -1};
+
+    const float PI = 3.14159f;
+    double distance = std::sqrt(x * x + y * y + z * z);
+    double bearing = std::atan2(x, z) * 180.0 / PI;
+
+    return {distance, bearing};
+}
+
+void FiducialsNode::pointCloudCallback(const sensor_msgs::PointCloud2ConstPtr& msg) {
+    mrover::MarkerInfo detectedMarkerInfo;
+    detectedMarkerInfo.distance1 = detectedMarkerInfo.bearing1 = -1;
+    detectedMarkerInfo.distance2 = detectedMarkerInfo.bearing2 = -1;
+
+    if (markerLocations.first.x != -1 && markerLocations.first.y != -1) {
+        // Get the x/y/z from this point in the pointcloud
+        int x = static_cast<int>(std::lround(markerLocations.first.x));
+        int y = static_cast<int>(std::lround(markerLocations.first.y));
+        std::tie(detectedMarkerInfo.distance1, detectedMarkerInfo.bearing1) = getDistAndBearingFromPointCloud(msg, x, y);
+    }
+    if (markerLocations.second.x != -1 && markerLocations.second.y != -1) {
+        // Get the x/y/z from this point in the pointcloud
+        int x = static_cast<int>(std::lround(markerLocations.second.x));
+        int y = static_cast<int>(std::lround(markerLocations.second.y));
+        std::tie(detectedMarkerInfo.distance2, detectedMarkerInfo.bearing2) = getDistAndBearingFromPointCloud(msg, x, y);
+    }
+    markerInfo_pub.publish(detectedMarkerInfo);
 }
 
 void FiducialsNode::poseEstimateCallback(const FiducialArrayConstPtr& msg) {
@@ -643,6 +601,8 @@ FiducialsNode::FiducialsNode() : nh(), pnh("~"), it(nh) {
 
     image_pub = it.advertise("/fiducial_images", 1);
 
+    markerInfo_pub = nh.advertise<mrover::MarkerInfo>("marker_info", 1);
+
     vertices_pub = nh.advertise<fiducial_msgs::FiducialArray>("fiducial_vertices", 1);
 
     if (vis_msgs)
@@ -654,6 +614,8 @@ FiducialsNode::FiducialsNode() : nh(), pnh("~"), it(nh) {
 
     img_sub = it.subscribe("camera", 1,
                            &FiducialsNode::imageCallback, this);
+
+    pc_sub = nh.subscribe("camera_link/depth/points", 1, &FiducialsNode::pointCloudCallback, this);
 
     vertices_sub = nh.subscribe("fiducial_vertices", 1,
                                 &FiducialsNode::poseEstimateCallback, this);
