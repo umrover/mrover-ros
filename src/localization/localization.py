@@ -25,9 +25,10 @@ def main():
         t.transform.rotation.y = pose.orientation.y
         t.transform.rotation.z = pose.orientation.z
         t.transform.rotation.w = pose.orientation.w
-        tf2_broadcaster.sendTransform(t)
+        # tf2_broadcaster.sendTransform(t)
 
-    rospy.Subscriber('/odometry/filtered', Odometry, odom_callback)
+    # rospy.Subscriber('/odometry/filtered', Odometry, odom_callback)
+    rospy.Subscriber('/odom', Odometry, odom_callback)
 
     rospy.spin()
 
