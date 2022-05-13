@@ -1,8 +1,7 @@
 <?xml version="1.0"?>
 <robot>
   <gazebo>
-    <plugin name="DiffDrivePlugin6W" filename="libdiffdrive_plugin_6w.so">
-      <alwaysOn>false</alwaysOn>
+    <plugin name="differential_drive_plugin_6w" filename="libdifferential_drive_plugin_6w.so">
       <legacyMode>false</legacyMode>
       <updateRate>20</updateRate>
       <midLeftJoint>center_left_wheel_joint</midLeftJoint>
@@ -15,20 +14,10 @@
       <wheelDiameter>${wheel_radius * 2}</wheelDiameter>
       <torque>200</torque>
       <commandTopic>/cmd_vel</commandTopic>
-      <robotBaseFrame>base_link</robotBaseFrame>
-    </plugin>
-    <plugin name="p3d_base_controller" filename="libgazebo_ros_p3d.so">
-      <alwaysOn>true</alwaysOn>
-      <updateRate>50.0</updateRate>
       <bodyName>base_link</bodyName>
-      <topicName>/odom</topicName>
-      <gaussianNoise>0.01</gaussianNoise>
-      <frameName>world</frameName>
-      <xyzOffsets>0 0 0</xyzOffsets>
-      <rpyOffsets>0 0 0</rpyOffsets>
     </plugin>
     <plugin name="gazebo_ros_gps" filename="libhector_gazebo_ros_gps.so">
-      <updateRate>4.0</updateRate>
+      <updateRate>100.0</updateRate>
       <bodyName>base_link</bodyName>
       <frameId>base_link</frameId>
       <topicName>/gps/fix</topicName>
@@ -45,8 +34,8 @@
     </plugin>
   </gazebo>
 
-  <gazebo reference="base_link">
-    <gravity>true</gravity>
+  <gazebo reference="imu_link">
+    <gravity>false</gravity>
     <sensor name="imu_sensor" type="imu">
       <always_on>true</always_on>
       <update_rate>100</update_rate>

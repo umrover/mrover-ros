@@ -2,14 +2,12 @@
   <arg name="model" default="$(find mrover)/rover_description/rover.urdf" />
   <arg name="gui" default="false" />
   <param name="robot_description" command="xacro $(find mrover)/rover_description/rover.xacro" />
-  <arg name="rvizconfig" default="$(find mrover)/percep.rviz" />
+  <arg name="rvizconfig" default="$(find mrover)/localization.rviz" />
 
   <node if="$(arg gui)" name="joint_state_publisher" pkg="joint_state_publisher_gui" type="joint_state_publisher_gui" />
   <node unless="$(arg gui)" name="joint_state_publisher" pkg="joint_state_publisher" type="joint_state_publisher" />
   <node name="robot_state_publisher" pkg="robot_state_publisher" type="robot_state_publisher" />
   <node name="rviz" pkg="rviz" type="rviz" args="-d $(arg rvizconfig)" required="true" />
-
-  <node pkg="tf" type="static_transform_publisher" name="base_to_camera" args="0 0 0.2 -1.570796327 0 -1.570796327 base_link camera_link 100" />
 
   <include file="$(find gazebo_ros)/launch/empty_world.launch">
     <env name="GAZEBO_MODEL_PATH" value="$(find mrover)/env_description" />
@@ -36,28 +34,26 @@
     <remap from="/camera_info" to="/camera_link/color/camera_info" />
   </node>
 
-  <!-- <node name="mrover_localization" pkg="mrover" type="localization.py" /> -->
+  <node name="mrover_localization" pkg="mrover" type="localization.py" />
   <node name="debug_course_publisher" pkg="mrover" type="debug_course_publisher.py" />
 
-  <node pkg="tf2_ros" type="static_transform_publisher" name="bl_imu" args="0 0 0 0 0 0 1 base_link imu_link" />
-  <node pkg="tf2_ros" type="static_transform_publisher" name="bl_world" args="0 0 0 0 0 0 1 base_link world" />
 
-  <!-- Run the EKF Localization node -->
-  <node pkg="robot_localization" type="ekf_localization_node" name="ekf_localization">
-        <rosparam command="load" file="$(find mrover)/config/ekf_localization.yaml"/>
+  <rosparam command="load" file="$(find mrover)/params/ekf_localization.yaml" />
+
+  <node pkg="robot_localization" type="ekf_localization_node" name="ekf_se_odom" clear_params="true" />
+
+  <node pkg="robot_localization" type="ekf_localization_node" name="ekf_se_map" clear_params="true">
+    <!-- Publications -->
+    <remap from="odometry/filtered" to="odometry/filtered_map"/>
   </node>
 
-  <node pkg="robot_localization" type="navsat_transform_node" name="navsat_transform_node" respawn="true">
-    <rosparam param="datum">[42.2, -83.7, 0.0, world, base_link]</rosparam>
-    <param name="magnetic_declination_radians" value="0" />
-    <param name="zero_altitude" value="true" />
-    <param name="yaw_offset" value="1.570796327" />
-    <param name="use_odometry_yaw" value="false"/>
-
+  <node pkg="robot_localization" type="navsat_transform_node" name="navsat_transform" clear_params="true">
+    <!-- Reference latitude/longitude to linearize from -->
+    <rosparam param="datum">[42.2, -83.7, 0.0, map, base_link]</rosparam>
     <!-- Subscriptions -->
-    <remap from="/imu/data" to="/imu" />
-    <remap from="/gps/fix" to="/gps/fix" />
-    <remap from="/odometry/filtered" to="/odom" />
+    <remap from="imu/data" to="imu" />
+    <remap from="gps/fix" to="gps/fix" />
+    <remap from="odometry/filtered" to="odometry/filtered_map" />
     <!-- Publications -->
     <remap from="gps/filtered" to="gps/filtered" />
     <remap from="odometry/gps" to="odometry/gps" />
