@@ -85,10 +85,10 @@ ekf_se_map:
   world_frame: map
 
   odom0: odom
-  odom0_config: [false, false, false, #      X,     Y,       Z
+  odom0_config: [ true,  true,  true, #      X,     Y,       Z
                  false, false, false, # R(oll), Y(aw), P(itch)
                   true,  true,  true, #     dX,    dY,      dZ
-                 false, false,  true, #     dR,    dY,      dP
+                 false, false, false, #     dR,    dY,      dP
                  false, false, false] #    ddx,   ddy,     ddz
   odom0_queue_size: 10
   odom0_nodelay: true
@@ -108,7 +108,7 @@ ekf_se_map:
 
   imu0: imu
   imu0_config: [false, false, false, #      X,     Y,       Z
-                 true,  true, false, # R(oll), Y(aw), P(itch)
+                 true,  true,  true, # R(oll), Y(aw), P(itch)
                 false, false, false, #     dX,    dY,      dZ
                  true,  true,  true, #     dR,    dY,      dP
                  true,  true,  true] #    ddx,   ddy,     ddz
