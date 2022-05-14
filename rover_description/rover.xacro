@@ -139,10 +139,18 @@
     </joint>
   </xacro:macro>
 
+  <joint name="imu_joint" type="fixed">
+    <origin xyz="0 0 0.2"/>
+    <parent link="base_link"/>
+    <child link="imu_link"/>
+  </joint>
+
+  <link name="imu_link">
+  </link>
+
   <!--Camera Joint-->
   <joint name="camera_joint" type="fixed">
-    <axis xyz="0 1 0" />
-    <origin xyz="0 0 0.2" rpy="0 0 0" />
+    <origin xyz="0 0 0.2" />
     <parent link="base_link" />
     <child link="camera_link" />
   </joint>

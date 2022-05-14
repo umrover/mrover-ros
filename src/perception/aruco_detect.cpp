@@ -28,8 +28,8 @@
  * policies, either expressed or implied, of the FreeBSD Project.
  *
  */
-
 #include "aruco_detect.hpp"
+
 
 using namespace std;
 using namespace cv;
@@ -147,7 +147,7 @@ void FiducialsNode::estimatePoseSingleMarkers(float markerLength,
     }
 }
 
-void FiducialsNode::configCallback(aruco_detect::DetectorParamsConfig& config, uint32_t level) {
+void FiducialsNode::configCallback(mrover::DetectorParamsConfig& config, uint32_t level) {
     /* Don't load initial config, since it will overwrite the rosparam settings */
     if (level == 0xFFFFFFFF) {
         return;
@@ -549,10 +549,10 @@ FiducialsNode::FiducialsNode() : nh(), pnh("~"), it(nh) {
 
     detectorParams = new aruco::DetectorParameters();
 
-    pnh.param<bool>("publish_images", publish_images, false);
+    pnh.param<bool>("publish_images", publish_images, true);
     pnh.param<double>("fiducial_len", fiducial_len, 0.14);
     pnh.param<int>("dictionary", dicno, 7);
-    pnh.param<bool>("do_pose_estimation", doPoseEstimation, true);
+    pnh.param<bool>("do_pose_estimation", doPoseEstimation, false);
     pnh.param<bool>("publish_fiducial_tf", publishFiducialTf, true);
     pnh.param<bool>("vis_msgs", vis_msgs, false);
     pnh.param<bool>("verbose", verbose, false);
@@ -632,7 +632,7 @@ FiducialsNode::FiducialsNode() : nh(), pnh("~"), it(nh) {
     configServer.setCallback(callbackType);
 
     pnh.param<double>("adaptiveThreshConstant", detectorParams->adaptiveThreshConstant, 7);
-    pnh.param<int>("adaptiveThreshWinSizeMax", detectorParams->adaptiveThreshWinSizeMax, 53); /* defailt 23 */
+    pnh.param<int>("adaptiveThreshWinSizeMax", detectorParams->adaptiveThreshWinSizeMax, 53); /* default 23 */
     pnh.param<int>("adaptiveThreshWinSizeMin", detectorParams->adaptiveThreshWinSizeMin, 3);
     pnh.param<int>("adaptiveThreshWinSizeStep", detectorParams->adaptiveThreshWinSizeStep, 4); /* default 10 */
     pnh.param<int>("cornerRefinementMaxIterations", detectorParams->cornerRefinementMaxIterations, 30);
@@ -674,7 +674,7 @@ FiducialsNode::FiducialsNode() : nh(), pnh("~"), it(nh) {
 int main(int argc, char** argv) {
     ros::init(argc, argv, "aruco_detect");
 
-    FiducialsNode* fd_node = new FiducialsNode();
+    new boost::shared_ptr<FiducialsNode>{new FiducialsNode()};
 
     ros::spin();
 

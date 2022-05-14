@@ -51,7 +51,7 @@
 #include "fiducial_msgs/FiducialArray.h"
 #include "fiducial_msgs/FiducialTransform.h"
 #include "fiducial_msgs/FiducialTransformArray.h"
-#include "aruco_detect/DetectorParamsConfig.h"
+#include "mrover/DetectorParamsConfig.h"
 
 #include <vision_msgs/Detection2D.h>
 #include <vision_msgs/Detection2DArray.h>
@@ -138,13 +138,13 @@ private:
 
     void camInfoCallback(const sensor_msgs::CameraInfo::ConstPtr& msg);
 
-    void configCallback(aruco_detect::DetectorParamsConfig& config, uint32_t level);
+    void configCallback(mrover::DetectorParamsConfig& config, uint32_t level);
 
     bool enableDetectionsCallback(std_srvs::SetBool::Request& req,
                                   std_srvs::SetBool::Response& res);
 
-    dynamic_reconfigure::Server<aruco_detect::DetectorParamsConfig> configServer;
-    dynamic_reconfigure::Server<aruco_detect::DetectorParamsConfig>::CallbackType callbackType;
+    dynamic_reconfigure::Server<mrover::DetectorParamsConfig> configServer;
+    dynamic_reconfigure::Server<mrover::DetectorParamsConfig>::CallbackType callbackType;
 
 public:
     FiducialsNode();

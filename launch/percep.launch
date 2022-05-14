@@ -9,8 +9,6 @@
   <node name="robot_state_publisher" pkg="robot_state_publisher" type="robot_state_publisher" />
   <node name="rviz" pkg="rviz" type="rviz" args="-d $(arg rvizconfig)" required="true" />
 
-  <node pkg="tf" type="static_transform_publisher" name="base_to_camera" args="0 0 0.2 -1.570796327 0 -1.570796327 base_link camera_link 100" />
-
   <include file="$(find gazebo_ros)/launch/empty_world.launch">
     <env name="GAZEBO_MODEL_PATH" value="$(find mrover)/env_description" />
     <arg name="world_name" value="$(find mrover)/env_description/world.world" />
@@ -23,16 +21,39 @@
     <arg name="gui_required" value="true" />
   </include>
 
-  <node name="mrover_sim_spawn" pkg="gazebo_ros" type="spawn_model" output="screen" args="
+  <node name="spawn_model" pkg="gazebo_ros" type="spawn_model" output="screen" args="
     -urdf -param robot_description
     -model rover" />
 
   <!-- Start marker detector-->
-  <node name="mrover_aruco_detect" pkg="mrover" type="aruco_detect" output="screen">
+  <node name="aruco_detect" pkg="mrover" type="aruco_detect">
     <param name="publish_images" value="true" />
     <param name="fiducial_len" value="0.20" />
     <param name="dictionary" value="0" /> <!-- DICT_4X4_50 -->
     <remap from="/camera" to="/camera_link/color/image_raw" />
     <remap from="/camera_info" to="/camera_link/color/camera_info" />
+  </node>
+
+  <node name="mrover_localization" pkg="mrover" type="localization.py" />
+  <node name="debug_course_publisher" pkg="mrover" type="debug_course_publisher.py" />
+
+
+  <rosparam command="load" file="$(find mrover)/params/ekf_localization.yaml" />
+
+  <node pkg="robot_localization" type="ekf_localization_node" name="ekf_odom" clear_params="true">
+    <!-- Publications -->
+    <remap from="odometry/filtered" to="odometry/filtered"/>
+  </node>
+
+  <node pkg="robot_localization" type="navsat_transform_node" name="navsat_transform" clear_params="true">
+    <!-- Reference latitude/longitude to linearize from -->
+    <rosparam param="datum">[42.2, -83.7, 0.0, map, base_link]</rosparam>
+    <!-- Subscriptions -->
+    <remap from="imu/data" to="imu" />
+    <remap from="gps/fix" to="gps/fix" />
+    <remap from="odometry/filtered" to="odometry/filtered" />
+    <!-- Publications -->
+    <remap from="gps/filtered" to="gps/filtered" />
+    <remap from="odometry/gps" to="odometry/gps" />
   </node>
 </launch>
