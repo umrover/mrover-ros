@@ -39,7 +39,8 @@ class WaypointState(BaseState):
             target_dir = course_pos - rover_pos
             target_dist = np.linalg.norm(target_dir)
             if target_dist == 0:
-                target_dist = np.finfo(float).eps            # Normalize direction
+                target_dist = np.finfo(float).eps
+            # Normalize direction
             target_dir /= target_dist
             rover_dir = self.rover_forward()
             # Both vectors are unit vectors so the dot product magnitude is 0-1

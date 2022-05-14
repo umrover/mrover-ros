@@ -24,6 +24,4 @@
                         -urdf -param robot_description
                         -model rover" />
   <node pkg="mapviz" type="mapviz" name="mapviz"></node>
-
-<!--   <node pkg="tf" type="static_transform_publisher" name="cartesian_world_publisher" args="0 0 0 0 0 0 /world /origin 100" /> -->
 </launch>
