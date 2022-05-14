@@ -611,14 +611,14 @@ FiducialsNode::FiducialsNode() : nh(), pnh("~"), it(nh) {
 
     dictionary = aruco::getPredefinedDictionary(dicno);
 
-    img_sub = it.subscribe("camera", 1, &FiducialsNode::imageCallback, this);
+    img_sub = it.subscribe("/camera/color/image_raw", 1, &FiducialsNode::imageCallback, this);
 
-    pc_sub = nh.subscribe("camera/depth/points", 1, &FiducialsNode::pointCloudCallback, this);
+    pc_sub = nh.subscribe("/camera/depth/points", 1, &FiducialsNode::pointCloudCallback, this);
 
-    vertices_sub = nh.subscribe("fiducial_vertices", 1, &FiducialsNode::poseEstimateCallback, this);
-    caminfo_sub = nh.subscribe("camera_info", 1, &FiducialsNode::camInfoCallback, this);
+    vertices_sub = nh.subscribe("/fiducial_vertices", 1, &FiducialsNode::poseEstimateCallback, this);
+    caminfo_sub = nh.subscribe("/camera/color/camera_info", 1, &FiducialsNode::camInfoCallback, this);
 
-    ignore_sub = nh.subscribe("ignore_fiducials", 1, &FiducialsNode::ignoreCallback, this);
+    ignore_sub = nh.subscribe("/ignore_fiducials", 1, &FiducialsNode::ignoreCallback, this);
 
     service_enable_detections = nh.advertiseService("enable_detections", &FiducialsNode::enableDetectionsCallback, this);
 

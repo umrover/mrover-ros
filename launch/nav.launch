@@ -26,13 +26,11 @@
     -model rover" />
 
   <!-- Perception-->
-<!--   <node name="aruco_detect" pkg="mrover" type="aruco_detect"> -->
-<!--     <param name="publish_images" value="true" /> -->
-<!--     <param name="fiducial_len" value="0.20" /> -->
-<!--     <param name="dictionary" value="0" />  --><!-- DICT_4X4_50 -->
-<!--     <remap from="camera" to="camera/color/image_raw" /> -->
-<!--     <remap from="camera_info" to="camera/color/camera_info" /> -->
-<!--   </node> -->
+  <node name="aruco_detect" pkg="mrover" type="aruco_detect">
+    <param name="publish_images" value="true" />
+    <param name="fiducial_len" value="0.20" />
+    <param name="dictionary" value="0" />
+  </node>
 
   <!-- Navigation -->
   <!-- This publishes the transforms of the course waypoints -->
