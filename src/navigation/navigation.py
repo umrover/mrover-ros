@@ -20,8 +20,10 @@ class Navigation(threading.Thread):
 
     def __init__(self, context: Context):
         super().__init__()
-        self.setName('NavigationThread')
+        self.name = 'NavigationThread'
         self.state_machine = smach.StateMachine(outcomes=['terminated'])
+        self.state_machine.userdata.waypoint_index = 0
+        self.state_machine.userdata.waypoints = ['course1', 'course2', 'course3']
         self.context = context
         self.sis = smach_ros.IntrospectionServer('server_name', self.state_machine, '/SM_ROOT')
         self.sis.start()
@@ -29,8 +31,8 @@ class Navigation(threading.Thread):
             self.state_machine.add(
                 'WaypointState', WaypointState(self.context),
                 transitions={
-                    'waypoint': 'WaypointState',
-                    'waypoint_done': 'DoneState'
+                    'waypoint_traverse': 'WaypointState',
+                    'waypoint_done': 'DoneState',
                 },
             )
             self.state_machine.add(
@@ -70,7 +72,7 @@ def main():
         try:
             sys.exit(0)
         except SystemExit:
-            # TODO: not really sure why needed bug it is bugging me! >:(
+            # TODO: not really sure why needed but it is bugging me! >:(
             pass
 
     signal.signal(signal.SIGINT, sigint_handler)
