@@ -1,8 +1,8 @@
 cmake_minimum_required(VERSION 3.0.2)
 project(mrover)
 
-## Compile as C++11, supported in ROS Kinetic and newer
- add_compile_options(-std=c++17)
+## Compile as C++17, supported in ROS Kinetic and newer
+add_compile_options(-std=c++17)
 
 ## Find catkin macros and libraries
 ## if COMPONENTS list like find_package(catkin REQUIRED COMPONENTS xyz)
@@ -25,6 +25,15 @@ find_package(catkin REQUIRED COMPONENTS
         )
 
 find_package(OpenCV REQUIRED)
+
+# Find Gazebo
+if (POLICY CMP0054)
+    cmake_policy(SET CMP0054 NEW)
+endif ()
+find_package(gazebo REQUIRED)
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${GAZEBO_CXX_FLAGS}")
+include_directories(${GAZEBO_INCLUDE_DIRS})
+link_directories(${GAZEBO_LIBRARY_DIRS})
 
 ## System dependencies are found with CMake's conventions
 # find_package(Boost REQUIRED COMPONENTS system)
@@ -132,11 +141,13 @@ include_directories(
         ${OpenCV_INCLUDE_DIRS}
 )
 
-add_executable(aruco_detect src/aruco_detect.cpp)
-
+add_executable(aruco_detect src/perception/aruco_detect.cpp)
 add_dependencies(aruco_detect ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
-
 target_link_libraries(aruco_detect ${catkin_LIBRARIES} ${OpenCV_LIBS})
+
+add_library(differential_drive_plugin_6w src/gazebo/differential_drive_6w.cpp)
+add_dependencies(aruco_detect ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
+target_link_libraries(differential_drive_plugin_6w ${Boost_LIBRARIES} ${GAZEBO_LIBRARIES} ${catkin_LIBRARIES})
 
 ## Declare a C++ library
 # add_library(${PROJECT_NAME}
@@ -178,9 +189,6 @@ install(TARGETS aruco_detect
         RUNTIME DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
         )
 
-catkin_install_python(PROGRAMS scripts/create_markers.py
-        DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
-        )
 install(DIRECTORY launch/
         DESTINATION ${CATKIN_PACKAGE_SHARE_DESTINATION}/launch
         )
@@ -203,11 +211,11 @@ install(DIRECTORY launch/
 
 ## Mark libraries for installation
 ## See http://docs.ros.org/melodic/api/catkin/html/howto/format1/building_libraries.html
-# install(TARGETS ${PROJECT_NAME}
-#   ARCHIVE DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
-#   LIBRARY DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
-#   RUNTIME DESTINATION ${CATKIN_GLOBAL_BIN_DESTINATION}
-# )
+ install(TARGETS differential_drive_plugin_6w
+   ARCHIVE DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
+   LIBRARY DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
+   RUNTIME DESTINATION ${CATKIN_GLOBAL_BIN_DESTINATION}
+ )
 
 ## Mark cpp header files for installation
 # install(DIRECTORY include/${PROJECT_NAME}/
