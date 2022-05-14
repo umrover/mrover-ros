@@ -60,6 +60,16 @@
   <exec_depend>roscpp</exec_depend>
   <exec_depend>rospy</exec_depend>
   <exec_depend>std_msgs</exec_depend>
+  <exec_depend>xacro</exec_depend>
+
+  <!-- Visualization -->
+  <depend>rviz</depend>
+  <depend>mapviz</depend>
+
+  <!-- Simulation -->
+  <depend>gazebo_ros</depend>
+  <depend>hector_gazebo</depend>
+  <depend>teleop_twist_keyboard</depend>
 
   <!-- Perception -->
   <depend>compressed_depth_image_transport</depend>
@@ -77,6 +87,9 @@
   <depend>dynamic_reconfigure</depend>
   <depend>python3-cairosvg</depend>
   <depend>python3-joblib</depend>
+
+  <!-- Localization -->
+  <depend>robot_localization</depend>
 
   <!-- The export tag contains other, unspecified, tags -->
   <export>
