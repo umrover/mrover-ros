@@ -1,13 +1,11 @@
 from typing import Tuple
 
 import numpy as np
-
-import rospy
 import tf2_ros
-from common import Context, BaseState
-from geometry_msgs.msg import Twist, Point
+from geometry_msgs.msg import Twist
 from tf.transformations import quaternion_matrix
-from visualization_msgs.msg import Marker
+
+from common import Context, BaseState
 
 DRIVE_FWD_THRESH = 0.95
 
@@ -56,8 +54,9 @@ class WaypointState(BaseState):
                     error = target_dist
                     cmd_vel.linear.x = np.clip(error, 0.0, 1.0)
                 # Determine the sign of our effort by seeing if we are to the left or to the right of the target
-                rover_dir_90ccw = rover_dir[0] * -target_dir[1] + rover_dir[1] * target_dir[0]
-                sign = -np.sign(rover_dir_90ccw)
+                # This is done by dotting rover_dir and target_dir rotated 90 degrees ccw
+                perp_alignment = rover_dir[0] * -target_dir[1] + rover_dir[1] * target_dir[0]
+                sign = -np.sign(perp_alignment)
                 # 1 is target alignment
                 error = 1.0 - alignment
                 cmd_vel.angular.z = np.clip(error * 100.0 * sign, -1.0, 1.0)
@@ -67,22 +66,3 @@ class WaypointState(BaseState):
             pass
 
         return 'waypoint_traverse'
-
-    def send_debug_arrow(self, rot):
-        # TODO: not working
-        marker = Marker()
-        marker.header.frame_id = 'odom'
-        marker.header.stamp = rospy.Time.now()
-        marker.id = 0
-        marker.action = Marker.ADD
-        marker.type = Marker.ARROW
-        marker.pose.orientation.x = rot[0]
-        marker.pose.orientation.y = rot[1]
-        marker.pose.orientation.z = rot[2]
-        marker.pose.orientation.w = rot[3]
-        marker.scale = 2.0
-        marker.color.r = 0.0
-        marker.color.b = 1.0
-        marker.color.a = 1.0
-        marker.points = [Point(0, 0, 0), Point(2, 0, 0)]
-        self.context.vis_publisher.publish(marker)
