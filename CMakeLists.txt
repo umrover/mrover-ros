@@ -21,6 +21,7 @@ find_package(catkin REQUIRED COMPONENTS
         sensor_msgs
         fiducial_msgs
         dynamic_reconfigure
+        message_generation
         )
 
 find_package(OpenCV REQUIRED)
@@ -68,11 +69,10 @@ catkin_python_setup()
 ##   * add every package in MSG_DEP_SET to generate_messages(DEPENDENCIES ...)
 
 ## Generate messages in the 'msg' folder
-# add_message_files(
-#   FILES
-#   Message1.msg
-#   Message2.msg
-# )
+add_message_files(
+        FILES
+        MarkerInfo.msg
+)
 
 ## Generate services in the 'srv' folder
 # add_service_files(
@@ -89,10 +89,10 @@ catkin_python_setup()
 # )
 
 ## Generate added messages and services with any dependencies listed here
-# generate_messages(
-#   DEPENDENCIES
-#   std_msgs
-# )
+ generate_messages(
+         DEPENDENCIES
+         std_msgs
+ )
 
 ################################################
 ## Declare ROS dynamic reconfigure parameters ##
@@ -125,7 +125,7 @@ generate_dynamic_reconfigure_options(
 catkin_package(
         #  INCLUDE_DIRS include
         #  LIBRARIES mrover
-        #  CATKIN_DEPENDS roscpp rospy std_msgs
+          CATKIN_DEPENDS roscpp rospy std_msgs message_runtime
         #  DEPENDS system_lib
 )
 
