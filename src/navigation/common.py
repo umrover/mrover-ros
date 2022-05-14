@@ -75,4 +75,6 @@ class DoneState(BaseState):
         )
 
     def evaluate(self, ud):
+        cmd_vel = Twist()
+        self.context.vel_cmd_publisher.publish(cmd_vel)
         return 'done'
