@@ -21,7 +21,7 @@ class Context:
     def __init__(self):
         self.is_shutdown = False
         self.vel_cmd_publisher = rospy.Publisher('/cmd_vel', Twist, queue_size=1)
-        self.vis_publisher = rospy.Publisher('/navigation', Marker, queue_size=1)
+        self.vis_publisher = rospy.Publisher('/nav_vis', Marker)
         self.tf_buffer = tf2_ros.Buffer()
         self.tf_listener = tf2_ros.TransformListener(self.tf_buffer)
 
@@ -51,7 +51,10 @@ class BaseState(smach.State, ABC):
         """Override me instead of execute!"""
         pass
 
-    def transform(self, frame: str, parent_frame: str = 'base_link') -> Tuple[np.ndarray, np.ndarray]:
+    def rover_transform(self) -> Tuple[np.ndarray, np.ndarray]:
+        return self.transform('base_link')
+
+    def transform(self, frame: str, parent_frame: str = 'odom') -> Tuple[np.ndarray, np.ndarray]:
         """Retrieve position and rotation of frame in tf tree. Relative to the point where we linearized.
         :param: frame: Name of desired frame
         :return: position, rotation which are both numpy arrays
