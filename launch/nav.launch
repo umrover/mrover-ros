@@ -42,9 +42,9 @@
     ============
     Localization
     ============
-    Frames in the free tree:
+    Frames in the tf tree:
     odom: The topmost global frame
-    base_link: The rover, 
+    base_link: The rover
   -->
   <node name="mrover_localization" pkg="mrover" type="localization.py" />
 
