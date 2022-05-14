@@ -20,8 +20,8 @@ class Context:
 
     def __init__(self):
         self.is_shutdown = False
-        self.vel_cmd_publisher = rospy.Publisher('/cmd_vel', Twist, queue_size=1)
-        self.vis_publisher = rospy.Publisher('/nav_vis', Marker)
+        self.vel_cmd_publisher = rospy.Publisher('cmd_vel', Twist, queue_size=1)
+        self.vis_publisher = rospy.Publisher('nav_vis', Marker)
         self.tf_buffer = tf2_ros.Buffer()
         self.tf_listener = tf2_ros.TransformListener(self.tf_buffer)
 

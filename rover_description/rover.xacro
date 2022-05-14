@@ -139,23 +139,22 @@
     </joint>
   </xacro:macro>
 
+  <!-- IMU -->
   <joint name="imu_joint" type="fixed">
-    <origin xyz="0 0 0.2"/>
-    <parent link="base_link"/>
-    <child link="imu_link"/>
+    <origin xyz="0 0 0.2" />
+    <parent link="base_link" />
+    <child link="imu_link" />
   </joint>
 
-  <link name="imu_link">
-  </link>
+  <link name="imu_link"></link>
 
-  <!--Camera Joint-->
+  <!-- Camera -->
   <joint name="camera_joint" type="fixed">
     <origin xyz="0 0 0.2" />
     <parent link="base_link" />
     <child link="camera_link" />
   </joint>
 
-  <!-- Camera -->
   <link name="camera_link">
     <collision>
       <origin xyz="0 0 0" rpy="0 0 0" />

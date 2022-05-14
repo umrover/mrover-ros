@@ -369,9 +369,8 @@ void FiducialsNode::imageCallback(const sensor_msgs::ImageConstPtr& msg) {
 
         vertices_pub.publish(fva);
 
-        for (const auto& tag: fva.fiducials)
-        {
-             // TODO: calculate center, use point cloud info to detect DISTANCE (not depth) and angle/bearing
+        for (const auto& tag: fva.fiducials) {
+            // TODO: calculate center, use point cloud info to detect DISTANCE (not depth) and angle/bearing
         }
 
         if (ids.size() > 0) {
