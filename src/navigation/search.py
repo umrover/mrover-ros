@@ -17,6 +17,7 @@ def gen_square_spiral_search_pattern(center : np.ndarray, spacing : float, cover
         next_point = cur + (cur_segment_len * directions[direction_index])
         out.append(next_point)
         cur_segment_len += spacing / 2
+        direction_index = (direction_index + 1) % len(directions)
     return out
 
 
