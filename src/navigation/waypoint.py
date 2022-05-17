@@ -33,8 +33,8 @@ class WaypointState(BaseState):
         try:
             course_pos, course_rot = self.waypoint_transform(ud, ud.waypoint_index)
             rover_pos, _ = self.rover_transform()
-            cmd_vel, done = get_drive_command(course_pos, rover_pos, self.rover_forward(), 0.5, DRIVE_FWD_THRESH)
-            if done:
+            cmd_vel, is_done = get_drive_command(course_pos, rover_pos, self.rover_forward(), 0.5, DRIVE_FWD_THRESH)
+            if is_done:
                 ud.waypoint_index += 1
             else:
                 self.context.vel_cmd_publisher.publish(cmd_vel)
