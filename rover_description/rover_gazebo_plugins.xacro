@@ -1,10 +1,9 @@
 <?xml version="1.0"?>
 <robot>
   <gazebo>
-    <plugin name="DiffDrivePlugin6W" filename="libdiffdrive_plugin_6w.so">
-      <alwaysOn>false</alwaysOn>
+    <plugin name="differential_drive_plugin_6w" filename="libdifferential_drive_plugin_6w.so">
       <legacyMode>false</legacyMode>
-      <updateRate>20</updateRate>
+      <updateRate>50</updateRate>
       <midLeftJoint>center_left_wheel_joint</midLeftJoint>
       <midRightJoint>center_right_wheel_joint</midRightJoint>
       <frontLeftJoint>front_left_wheel_joint</frontLeftJoint>
@@ -15,33 +14,28 @@
       <wheelDiameter>${wheel_radius * 2}</wheelDiameter>
       <torque>200</torque>
       <commandTopic>/cmd_vel</commandTopic>
-      <odometryTopic>/odom</odometryTopic>
-      <odometryFrame>odom</odometryFrame>
-      <robotBaseFrame>base_link</robotBaseFrame>
+      <bodyName>base_link</bodyName>
     </plugin>
-  </gazebo>
-
-  <gazebo>
     <plugin name="gazebo_ros_gps" filename="libhector_gazebo_ros_gps.so">
-      <updateRate>4.0</updateRate>
+      <updateRate>100.0</updateRate>
       <bodyName>base_link</bodyName>
       <frameId>base_link</frameId>
-      <topicName>/gps/fix</topicName>
-      <velocityTopicName>/gps/fix_velocity</velocityTopicName>
+      <topicName>gps/fix</topicName>
+      <velocityTopicName>gps/fix_velocity</velocityTopicName>
       <referenceLatitude>42.2</referenceLatitude>
       <referenceLongitude>-83.7</referenceLongitude>
       <referenceHeading>0.0</referenceHeading>
       <referenceAltitude>0.0</referenceAltitude>
       <offset>0 0 0</offset>
       <drift>0.0 0.0 0.0</drift>
-      <gaussianNoise>0.05 0.05 0.05</gaussianNoise>
+      <gaussianNoise>0.02 0.02 0.02</gaussianNoise>
       <velocityDrift>0.0 0.0 0.0</velocityDrift>
-      <velocityGaussianNoise>0.5 0.5 0.5</velocityGaussianNoise>
+      <velocityGaussianNoise>0.2 0.2 0.2</velocityGaussianNoise>
     </plugin>
   </gazebo>
 
-  <gazebo reference="base_link">
-    <gravity>true</gravity>
+  <gazebo reference="imu_link">
+    <gravity>false</gravity>
     <sensor name="imu_sensor" type="imu">
       <always_on>true</always_on>
       <update_rate>100</update_rate>
@@ -50,7 +44,7 @@
       <plugin filename="libgazebo_ros_imu_sensor.so" name="imu_plugin">
         <topicName>imu</topicName>
         <bodyName>base_link</bodyName>
-        <updateRateHZ>10.0</updateRateHZ>
+        <updateRateHZ>100.0</updateRateHZ>
         <gaussianNoise>0.0</gaussianNoise>
         <xyzOffset>0 0 0</xyzOffset>
         <rpyOffset>0 0 0</rpyOffset>
@@ -61,7 +55,6 @@
     </sensor>
   </gazebo>
 
-
   <!-- camera -->
   <gazebo reference="camera_link">
     <sensor name="camera_link_camera" type="depth">
@@ -69,8 +62,8 @@
       <camera>
         <horizontal_fov>1.919862</horizontal_fov>
         <image>
-          <width>1920</width>
-          <height>1080</height>
+          <width>640</width>
+          <height>480</height>
           <format>R8G8B8</format>
         </image>
         <clip>
@@ -82,12 +75,12 @@
         <baseline>0.2</baseline>
         <alwaysOn>true</alwaysOn>
         <updateRate>1.0</updateRate>
-        <cameraName>camera_link_ir</cameraName>
-        <imageTopicName>/camera_link/color/image_raw</imageTopicName>
-        <cameraInfoTopicName>/camera_link/color/camera_info</cameraInfoTopicName>
-        <depthImageTopicName>/camera_link/depth/image_raw</depthImageTopicName>
-        <depthImageInfoTopicName>/camera_link/depth/camera_info</depthImageInfoTopicName>
-        <pointCloudTopicName>/camera_link/depth/points</pointCloudTopicName>
+        <cameraName>camera</cameraName>
+        <imageTopicName>color/image_raw</imageTopicName>
+        <cameraInfoTopicName>color/camera_info</cameraInfoTopicName>
+        <depthImageTopicName>depth/image_raw</depthImageTopicName>
+        <depthImageInfoTopicName>depth/camera_info</depthImageInfoTopicName>
+        <pointCloudTopicName>depth/points</pointCloudTopicName>
         <frameName>camera_link</frameName>
         <pointCloudCutoff>0.3</pointCloudCutoff>
         <pointCloudCutoffMax>20.0</pointCloudCutoffMax>
