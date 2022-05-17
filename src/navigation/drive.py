@@ -2,8 +2,12 @@ import numpy as np
 from geometry_msgs.msg import Twist
 from typing import Tuple
 
-#generalized drive to target command, returns a tuple of twist of how to get to a particular pos along with a boolean of whether it is done or not
+#
 def get_drive_command(target_pos : np.ndarray, rover_pos : np.ndarray, rover_dir : np.ndarray, completion_tolerance : float, DRIVE_FWD_THRESH : float) -> Tuple[Twist, bool]:
+    """generalized drive to target command, returns a 
+        :param: target_pos :  target position ndarray, rover_pos : current rover position ndarray, rover_dir : current rover rotatation ndarray, completion tolerance: float scalar distance threshold, drive_fwd_thresh : float angular threshold for turning vs driving
+        :return: Twist, Bool : twist is how to get to a particular pos along with a boolean of whether it is done or not
+    """
     # Get vector from rover to target
     target_dir = target_pos - rover_pos
     target_dist = np.linalg.norm(target_dir)
@@ -16,7 +20,7 @@ def get_drive_command(target_pos : np.ndarray, rover_pos : np.ndarray, rover_dir
     alignment = np.dot(target_dir, rover_dir)
 
     if target_dist < completion_tolerance:
-       return [Twist(), True]
+       return Twist(), True
     else:
         cmd_vel = Twist()
         if alignment > DRIVE_FWD_THRESH:
@@ -30,4 +34,4 @@ def get_drive_command(target_pos : np.ndarray, rover_pos : np.ndarray, rover_dir
         # 1 is target alignment
         error = 1.0 - alignment
         cmd_vel.angular.z = np.clip(error * 100.0 * sign, -1.0, 1.0)
-        return [cmd_vel, False]
+        return cmd_vel, False
