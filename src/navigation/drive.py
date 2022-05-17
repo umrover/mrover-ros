@@ -6,9 +6,9 @@ MAX_DRIVING_EFFORT = 1
 MIN_DRIVING_EFFORT = -1
 TURNING_P = 100.0
 
-def get_drive_command(target_pos : np.ndarray, rover_pos : np.ndarray, rover_dir : np.ndarray, completion_tolerance : float, turn_in_place_tolerance_rad : float) -> Tuple[Twist, bool]:
+def get_drive_command(target_pos : np.ndarray, rover_pos : np.ndarray, rover_dir : np.ndarray, completion_tolerance : float, turn_in_place_tolerance : float) -> Tuple[Twist, bool]:
     """generalized drive to target command, returns a 
-        :param: target_pos :  target position ndarray, rover_pos : current rover position ndarray, rover_dir : current rover rotatation (must be normalized) ndarray, completion tolerance: float scalar distance threshold, drive_fwd_thresh : float angular threshold for turning vs driving
+        :param: target_pos :  target position ndarray, rover_pos : current rover position ndarray, rover_dir : current rover rotatation (must be normalized) ndarray, completion tolerance: float scalar distance threshold, turn_in_place_tolerance : float dot-product threshold for turning vs driving
         :return: Twist, Bool : twist is how to get to a particular pos along with a boolean of whether it is done or not
     """
     # Get vector from rover to target
@@ -26,7 +26,7 @@ def get_drive_command(target_pos : np.ndarray, rover_pos : np.ndarray, rover_dir
        return Twist(), True
     
     cmd_vel = Twist()
-    if alignment > turn_in_place_tolerance_rad:
+    if alignment > turn_in_place_tolerance:
         # We are pretty aligned so we can drive straight
         error = target_dist
         cmd_vel.linear.x = np.clip(error, 0.0, MAX_DRIVING_EFFORT)
