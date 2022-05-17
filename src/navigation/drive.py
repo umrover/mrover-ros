@@ -7,7 +7,7 @@ MIN_DRIVING_EFFORT = -1
 TURNING_P = 100.0
 
 def get_drive_command(target_pos : np.ndarray, rover_pos : np.ndarray, rover_dir : np.ndarray, completion_tolerance : float, turn_in_place_tolerance : float) -> Tuple[Twist, bool]:
-    """generalized drive to target command, returns a 
+    """generalized drive to target command 
         :param: target_pos :  target position ndarray, rover_pos : current rover position ndarray, rover_dir : current rover rotatation (must be normalized) ndarray, completion tolerance: float scalar distance threshold, turn_in_place_tolerance : float dot-product threshold for turning vs driving
         :return: Twist, Bool : twist is how to get to a particular pos along with a boolean of whether it is done or not
     """
