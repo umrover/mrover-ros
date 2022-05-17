@@ -88,7 +88,7 @@
       <heading_deg>0</heading_deg>
     </spherical_coordinates>
     <model name='post'>
-      <pose>0.8 0.1 0.5 0 0 4.71239</pose>
+      <pose>1.0 1.0 0.5 0 0 4.71239</pose>
       <static>1</static>
       <link name='link'>
         <collision name='collision'>
