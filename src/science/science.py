@@ -7,7 +7,7 @@ import serial
 import numpy as np
 from enum import Enum
 import rospy
-from mrover import AutonLed, Enable, Heater, Mosfet, Servo, Spectral, Thermistor
+from mrover import AutonLed, Enable, Heater, Servo, Spectral, Thermistor
 
 
 class LED_state(Enum):
@@ -61,10 +61,10 @@ class ScienceBridge():
 
         self.Mosfet_dev_map={
             "ArmLaser" : 1
+            "RamanLaser" : 10
+            "UVBulb" : 6
             "UVLED" : 4
             "WhiteLED" : 5
-            "UVBulb" : 6
-            "RamanLaser" : 10
         }
 
     def __enter__(self):
@@ -72,8 +72,6 @@ class ScienceBridge():
         Opens a serial connection to the nucleo
         '''
         self.ser = serial.Serial(
-            # port='/dev/ttyS4',
-            # port='/dev/ttyTHS1',  # used on science nano
             port='/dev/ttyTHS0',
             baudrate=38400,
             parity=serial.PARITY_NONE,
@@ -88,23 +86,73 @@ class ScienceBridge():
         Closes serial connection to nucleo
         '''
         self.ser.close()
-
+    
     def add_padding(self, uart_msg):
         while(len(uart_msg) < UART_TRANSMIT_uart_msg_LEN):
             uart_msg += ","
         return uart_msg
 
-    def uart_send(self, message):
-        message = self.add_padding(message)
-        print(message)
-        self.ser.close()
-        self.ser.open()
-        if self.ser.isOpen():
-            self.ser.write(bytes(message, encoding='utf-8'))
+    def auton_led(self, ros_msg):
+        try:
+            requested_state = self.led_map[ros_msg.color]
+            print("Received new auton led request: Turning " + str(ros_msg.color))
+        except KeyError:
+            requested_state = LED_state.NONE
+            print("Received invalid/Off auton led request: Turning OFF all colors")
+
+        led_message = "$LED,{led_color}".format(led_color=requested_state.value)
+        self.uart_send(led_message)
 
     def format_mosfet_message(self, device, enable):
         mosfet_message = "$MOSFET,{dev},{en},"
         return mosfet_message.format(dev=device, en=enable)
+
+    def heater_auto_shut_off_transmit(self, ros_msg):
+        # Send the nucleo a message telling if auto shut off for heaters is off or on
+        message = "$AUTOSHUTOFF,{enable}"
+        message = message.format(enable=int(ros_msg.auto_shut_off_enabled))
+        self.uart_send(message)
+
+    def heater_shut_off_handler(self, uart_msg, ros_msg):
+        # uart_msg format: <"$AUTOSHUTOFF,device,enabled">
+        try:
+            arr = uart_msg.split(",")
+            enabled = bool(int(arr[1]))
+            ros_msg.enable = enabled
+        except Exception as e:
+            print(e)
+
+    def heater_state_handler(self, uart_msg, ros_msg):
+        # uart_msg format: <"$HEATER,device,enabled">
+        try:
+            arr = uart_msg.split(",")
+            # Send back the heater and the state
+            ros_msg.device = int(arr[1])
+            ros_msg.enable = bool(int(arr[2]))
+        except Exception as e:
+            print(e)
+
+    def heater_transmit(self, ros_msg):
+        # Upon Receiving a heater on/off command, send a command for the appropriate mosfet
+        print("Heater cmd callback")
+        translated_device = Heater_Map[ros_msg.device]
+        message = self.format_mosfet_message(translated_device, int(ros_msg.enable))
+        self.uart_send(message)
+
+    def mosfet_transmit(self, ros_msg, device_name):
+        print(device_name + "callback")
+        translated_device = self.Mosfet_dev_map[device_name]
+        message = self.format_mosfet_message(translated_device, int(ros_msg.enable))
+        self.uart_send(message)
+        pass
+
+    def servo_transmit(self, ros_msg):
+        # get cmd lcm and send to nucleo
+        print("Received Servo Cmd")
+        # parse data into expected format
+        message = "$SERVO,{angle_0},{angle_1},{angle_2}"
+        message = message.format(angle_0=ros_msg.angle_0, angle_1=ros_msg.angle_1, angle_2=ros_msg.angle_2)
+        self.uart_send(message)
 
     def spectral_handler(self, m, ros_msg):
         # uart_msg format: <"$SPECTRAL,d0_1,d0_2, .... , d2_6">
@@ -180,64 +228,13 @@ class ScienceBridge():
         '''
         print(uart_msg)
 
-    def heater_state_handler(self, uart_msg, ros_msg):
-        # uart_msg format: <"$HEATER,device,enabled">
-        try:
-            arr = uart_msg.split(",")
-            # Send back the heater and the state
-            ros_msg.device = int(arr[1])
-            ros_msg.enable = bool(int(arr[2]))
-        except Exception as e:
-            print(e)
-
-    def heater_shut_off_handler(self, uart_msg, ros_msg):
-        # uart_msg format: <"$AUTOSHUTOFF,device,enabled">
-        try:
-            arr = uart_msg.split(",")
-            enabled = bool(int(arr[1]))
-            ros_msg.enable = enabled
-        except Exception as e:
-            print(e)
-
-    def heater_transmit(self, ros_msg):
-        # Upon Receiving a heater on/off command, send a command for the appropriate mosfet
-        print("Heater cmd callback")
-
-        translated_device = Heater_Map[ros_msg.device]
-        message = self.format_mosfet_message(translated_device, int(ros_msg.enable))
-        self.uart_send(message)
-
-    def heater_auto_shut_off_transmit(self, ros_msg):
-        # Send the nucleo a message telling if auto shut off for heaters is off or on
-        message = "$AUTOSHUTOFF,{enable}"
-        message = message.format(enable=int(ros_msg.auto_shut_off_enabled))
-        self.uart_send(message)
-
-    def auton_led(self, ros_msg):
-        try:
-            requested_state = self.led_map[ros_msg.color]
-            print("Received new auton led request: Turning " + str(ros_msg.color))
-        except KeyError:
-            requested_state = LED_state.NONE
-            print("Received invalid/Off auton led request: Turning OFF all colors")
-
-        led_message = "$LED,{led_color}".format(led_color=requested_state.value)
-        self.uart_send(led_message)
-
-    def servo_transmit(self, ros_msg):
-        # get cmd lcm and send to nucleo
-        print("Received Servo Cmd")
-        # parse data into expected format
-        message = "$SERVO,{angle_0},{angle_1},{angle_2}"
-        message = message.format(angle_0=ros_msg.angle_0, angle_1=ros_msg.angle_1, angle_2=ros_msg.angle_2)
-        self.uart_send(message)
-
-    def mosfet_transmit(self, ros_msg, device_name):
-        print(device_name + "callback")
-        translated_device = self.Mosfet_dev_map[device_name]
-        message = self.format_mosfet_message(translated_device, int(ros_msg.enable))
-        self.uart_send(message)
-        pass
+    def uart_send(self, message):
+        message = self.add_padding(message)
+        print(message)
+        self.ser.close()
+        self.ser.open()
+        if self.ser.isOpen():
+            self.ser.write(bytes(message, encoding='utf-8'))
 
     async def receive(self, lcm):
         spectral = Spectral()
