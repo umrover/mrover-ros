@@ -13,34 +13,38 @@ from mrover import AutonLED, Enable, Heater, Servo, Spectral, Thermistor
 class ScienceBridge():
 
     def __init__(self):
+
         # UART.setup("UART4")  # Specific to beaglebone
-        # maps NMEA uart_msgs to their handler
+        
         self.NMEA_HANDLE_MAPPER = {
+            "AUTOSHUTOFF": self.heater_shut_off_handler,
+            "HEATER": self.heater_state_handler,
             "SPECTRAL": self.spectral_handler,
             "THERMISTOR": self.thermistor_handler,
-            "TRIAD": self.triad_handler,
-            "TXT": self.txt_handler,
-            "HEATER": self.heater_state_handler,
-            "AUTOSHUTOFF": self.heater_shut_off_handler
+            "TRIAD": self.triad_handler
         }
-
-        self.spectral_publisher = rospy.Publisher('spectral_data', Spectral, queue_size=1)
-        self.thermistor_publisher = rospy.Publisher('thermistor_data', Thermistor, queue_size=1)
-        self.triad_publisher = rospy.Publisher('spectral_triad_data', Spectral, queue_size=1)
-        self.heater_publisher = rospy.Publisher('heater_state_data', Heater, queue_size=1)
-        self.heater_auto_shut_off_publisher = rospy.Publisher('heater_auto_shut_off_data', Enable, queue_size=1)
-        
-
+        self.NMEA_PUBLISHER_MAPPER = {
+            "AUTOSHUTOFF": rospy.Publisher('heater_auto_shut_off_data', Enable, queue_size=1),
+            "HEATER": rospy.Publisher('heater_state_data', Heater, queue_size=1),
+            "SPECTRAL": rospy.Publisher('spectral_data', Spectral, queue_size=1),
+            "THERMISTOR": rospy.Publisher('thermistor_data', Thermistor, queue_size=1),
+            "TRIAD": rospy.Publisher('spectral_triad_data', Spectral, queue_size=1)
+        }
+        self.NMEA_MESSAGE_MAPPER = {
+            "AUTOSHUTOFF": Enable(),
+            "HEATER": Heater(),
+            "SPECTRAL": Spectral(),
+            "THERMISTOR": Thermistor(),
+            "TRIAD": Spectral()
+        }
         self.max_error_count = 20
         self.sleep = .01
-
         self.led_map = {
             "Red": 0,
             "Blue": 1,
             "Green": 2
             "Off": 3
         }
-
         # Mapping of onboard devices to mosfet devices
         self.mosfet_dev_map = {
             "arm_laser" : 1
@@ -50,7 +54,6 @@ class ScienceBridge():
             "white_led" : 5
         }
         self.heater_map = [7, 8, 9]
-
         self.UART_TRANSMIT_MSG_LEN = 30
 
     def __enter__(self):
@@ -86,17 +89,17 @@ class ScienceBridge():
             requested_state = self.led_map["Off"]
             print("Received invalid/off auton led request: Turning off all colors")
 
-        led_message = "$LED,{led_color}".format(led_color=requested_state.value)
-        self.uart_send(led_message)
+        uart_msg = "$LED,{led_color}".format(led_color=requested_state.value)
+        self.uart_send(uart_msg)
 
-    def format_mosfet_message(self, device, enable):
-        mosfet_message = "$MOSFET,{dev},{en},"
-        return mosfet_message.format(dev=device, en=enable)
+    def format_mosfet_msg(self, device, enable):
+        uart_msg = "$MOSFET,{dev},{en},"
+        return uart_msg.format(dev=device, en=enable)
 
     def heater_auto_shut_off_transmit(self, ros_msg):
-        message = "$AUTOSHUTOFF,{enable}"
-        message = message.format(enable=int(ros_msg.auto_shut_off_enabled))
-        self.uart_send(message)
+        uart_msg = "$AUTOSHUTOFF,{enable}"
+        uart_msg = uart_msg.format(enable=int(ros_msg.auto_shut_off_enabled))
+        self.uart_send(uart_msg)
 
     def heater_shut_off_handler(self, uart_msg, ros_msg):
         # uart_msg format: <"$AUTOSHUTOFF,device,enabled">
@@ -118,19 +121,19 @@ class ScienceBridge():
 
     def heater_transmit(self, ros_msg):
         translated_device = self.heater_map[ros_msg.device]
-        message = self.format_mosfet_message(translated_device, int(ros_msg.enable))
-        self.uart_send(message)
+        uart_msg = self.format_mosfet_msg(translated_device, int(ros_msg.enable))
+        self.uart_send(uart_msg)
 
     def mosfet_transmit(self, ros_msg, device_name):
         translated_device = self.mosfet_dev_map[device_name]
-        message = self.format_mosfet_message(translated_device, int(ros_msg.enable))
-        self.uart_send(message)
+        uart_msg = self.format_mosfet_msg(translated_device, int(ros_msg.enable))
+        self.uart_send(uart_msg)
         pass
 
     def servo_transmit(self, ros_msg):
-        message = "$SERVO,{angle_0},{angle_1},{angle_2}"
-        message = message.format(angle_0=ros_msg.angle_0, angle_1=ros_msg.angle_1, angle_2=ros_msg.angle_2)
-        self.uart_send(message)
+        uart_msg = "$SERVO,{angle_0},{angle_1},{angle_2}"
+        uart_msg = uart_msg.format(angle_0=ros_msg.angle_0, angle_1=ros_msg.angle_1, angle_2=ros_msg.angle_2)
+        self.uart_send(uart_msg)
 
     def spectral_handler(self, m, ros_msg):
         try:
@@ -181,7 +184,7 @@ class ScienceBridge():
             for var in ros_msg_variables:
                 if (not (count >= len(arr))):
                     pass
-                    setattr(ros_msg, var, 0xFFFF & ((np.uint8(arr[count+1]) << 8) | (np.uint8(arr[count]))))
+                    setattr(ros_msg, var, 0xFFFF & ((np.uint8(arr[count + 1]) << 8) | (np.uint8(arr[count]))))
                 else:
                     setattr(ros_msg, var, 0)
                 count += 2
@@ -195,76 +198,47 @@ class ScienceBridge():
         '''
         print(uart_msg)
 
-    def uart_send(self, message):
-        message = self.add_padding(message)
-        print(message)
+    def uart_send(self, uart_msg):
+        uart_msg = self.add_padding(uart_msg)
+        print(uart_msg)
         self.ser.close()
         self.ser.open()
         if self.ser.isOpen():
-            self.ser.write(bytes(message, encoding='utf-8'))
+            self.ser.write(bytes(uart_msg, encoding='utf-8'))
 
     async def receive(self, lcm):
-        heater = Heater()
-        heater_auto_shut_off = Enable()
-        spectral = Spectral()
-        thermistor = Thermistor()
-        triad = Spectral()
 
         # Mark TXT as always seen because they are not necessary
         seen_tags = {tag: False if not tag == 'TXT' else True
                      for tag in self.NMEA_HANDLE_MAPPER.keys()}
         while True:
-            # Wait for all tags to be seen
-            while (not all(seen_tags.values())):
-                try:
-                    error_counter = 0  # TODO - DELETE
-                    tx = self.ser.readline()
-                    uart_msg = str(tx)
-                except Exception as e:
-                    print("Errored")
-                    if error_counter < self.max_error_count:
-                        error_counter += 1
+            try:
+                error_counter = 0
+                tx = self.ser.readline()
+                uart_msg = str(tx)
+            except Exception as e:
+                print("Errored")
+                if error_counter < self.max_error_count:
+                    error_counter += 1
+                    print(e)
+                    await asyncio.sleep(self.sleep)
+                    continue
+                else:
+                    raise e
+            match_found = False
+            for tag, handler_func in self.NMEA_HANDLE_MAPPER.items():
+                if tag in uart_msg:  # TODO - why do we have tag in uart_msg, func is not even used
+                    print(uart_msg)
+                    match_found = True
+                    try:
+                        handler_func(uart_msg, self.NMEA_MESSAGE_MAPPER[tag])
+                        self.NMEA_PUBLISHER_MAPPER[tag].publish(self.NMEA_MESSAGE_MAPPER[tag])
+                    except Exception as e:
                         print(e)
-                        await asyncio.sleep(self.sleep)
-                        continue
-                    else:
-                        raise e
-                match_found = False
-                for tag, func in self.NMEA_HANDLE_MAPPER.items():
-                    if tag in uart_msg:  # TODO - why do we have tag in uart_msg, func is not even used
-                        print(uart_msg)
-                        match_found = True
-                        try:
-                            if (tag == "AUTOSHUTOFF"):
-                                self.heater_shut_off_handler(uart_msg, heater_auto_shut_off)
-                                heater_auto_shut_off_publisher.publish(heater_auto_shut_off)
-                            
-                            elif (tag == "HEATER"):
-                                self.heater_state_handler(uart_msg, heater)
-                                heater_publisher.publish(heater)
-
-                            elif (tag == "SPECTRAL"):
-                                self.spectral_handler(uart_msg, spectral)
-                                spectral_publisher.publish(spectral)
-
-                            elif (tag == "THERMISTOR"):
-                                self.thermistor_handler(uart_msg, thermistor)
-                                thermistor_publisher.publish(thermistor)
-                                
-                            elif (tag == "TRIAD"):
-                                self.triad_handler(uart_msg, triad)
-                                triad_publisher.publish(triad)
-                            
-                            seen_tags[tag] = True  # TODO - move to top so not hidden, or just don't use.
-                        except Exception as e:
-                            print(e)
-                        break
-                if not match_found:
-                    if not uart_msg:
-                        print('Error decoding message stream: {}'.format(uart_msg))
-                await asyncio.sleep(self.sleep)
-            seen_tags = {tag: False if not tag == 'TXT' else True
-                         for tag in self.NMEA_HANDLE_MAPPER.keys()}
+                    break
+            if not match_found:
+                if not uart_msg:
+                    print('Error decoding message stream: {}'.format(uart_msg))
             await asyncio.sleep(self.sleep)
 
 
