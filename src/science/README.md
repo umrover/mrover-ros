@@ -122,3 +122,4 @@ Format of the UART NMEA command
 - [ ] Move beaglebone stuff into config file
 - [ ] Don't need to wait for all tags to be seen
 - [ ] Test with ROS
+- [ ] Make sure stuff is consistent with the gui and teleop programs
