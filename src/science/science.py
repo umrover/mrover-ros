@@ -7,7 +7,7 @@ import serial
 import numpy as np
 from enum import Enum
 import rospy
-from mrover import AutonLed, Enable, Heater, Servo, Spectral, Thermistor
+from mrover import AutonLED, Enable, Heater, Servo, Spectral, Thermistor
 
 
 class LED_state(Enum):
@@ -306,7 +306,7 @@ def main():
     rospy.init_node("science")
 
     with ScienceBridge() as bridge:
-        rospy.Subscriber("auton_led", AutonLed, bridge.auton_led_transmit)
+        rospy.Subscriber("auton_led", AutonLED, bridge.auton_led_transmit)
         rospy.Subscriber("arm_laser_cmd", Enable, bridge.mosfet_transmit, "ArmLaser")
         rospy.Subscriber("heater_cmd", Heater, bridge.heater_transmit)
         rospy.Subscriber("heater_auto_shut_off_cmd", Enable, bridge.heater_auto_shut_off_transmit)

@@ -2,135 +2,119 @@ Code for the science bridge program that will interpret UART messages from a Nuc
 ======================================================================================
 ### About
 Writes, reads and parses NMEA like messages from the onboard 
-science nucleo to operate the science boxes and get relevant data.
+science nucleo to operate the science box and get relevant data.
 
 ### Hardware
 - NVIDIA JetsonNX
 - STM32G050C8 custom board
 - RX/TX connection cables 
 
-### Spectral Sensor Data
-Reads the 6 channel data from 3 different spectral sensors in one NMEA style sentence from an STM32 Nucleo Board over UART. 
-#### LCM Channels Publishing/Subscribed To
-**Spectral Data [publisher]** \
-Messages: [SpectralData.lcm](https://github.com/umrover/mrover-workspace/blob/main/rover_msgs/SpectralData.lcm) "/spectral_data" \
-Publishers: jetson/science_bridge \
-Subscribers: base_station/gui
-### UART Message
-Format of the data string
-- `$SPECTRAL, d0_msb_ch0, d0_lsb_ch0, d0_msb_ch1, d0_lsb_ch1, d0_msb_ch2, d0_lsb_ch2, d0_msb_ch3, d0_lsb_ch3, d0_msb_ch4, d0_lsb_ch4, d0_msb_ch5, d0_lsb_ch5, d1_msb_ch0, d1_lsb_ch0, d1_msb_ch1, d1_lsb_ch1, d1_msb_ch2, d1_lsb_ch2, d1_msb_ch3, d1_lsb_ch3, d1_msb_ch4, d1_lsb_ch4, d1_msb_ch5, d1_lsb_ch5,  d2_msb_ch0, d2_lsb_ch0, d2_msb_ch1, d2_lsb_ch1, d2_msb_ch2, d2_lsb_ch2, d2_msb_ch3, d2_lsb_ch3, d2_msb_ch4, d2_lsb_ch4, d2_msb_ch5, d2_lsb_ch5,`
-- String is 155 characters long
+#### Subscribers
 
-### Spectral Triad Data
-Reads the 18 channel data from a spectral triad sensor in one NMEA style sentence from an STM32 Nucleo Board over UART. 
-#### LCM Channels Publishing/Subscribed To
-**Spectral Triad Data [publisher]** \
-Messages: [SpectralData.lcm](https://github.com/umrover/mrover-workspace/blob/main/rover_msgs/SpectralData.lcm) "/spectral_triad_data" \
-Publishers: jetson/science_bridge \
-Subscribers: base_station/gui
-### UART Message
-Format of the data string
-- `$TRIAD, d0_msb_ch0, d0_lsb_ch0, d0_msb_ch1, d0_lsb_ch1, d0_msb_ch2, d0_lsb_ch2, d0_msb_ch3, d0_lsb_ch3, d0_msb_ch4, d0_lsb_ch4, d0_msb_ch5, d0_lsb_ch5, d1_msb_ch0, d1_lsb_ch0, d1_msb_ch1, d1_lsb_ch1, d1_msb_ch2, d1_lsb_ch2, d1_msb_ch3, d1_lsb_ch3, d1_msb_ch4, d1_lsb_ch4, d1_msb_ch5, d1_lsb_ch5,  d2_msb_ch0, d2_lsb_ch0, d2_msb_ch1, d2_lsb_ch1, d2_msb_ch2, d2_lsb_ch2, d2_msb_ch3, d2_lsb_ch3, d2_msb_ch4, d2_lsb_ch4, d2_msb_ch5, d2_lsb_ch5,`
-- String is 155 characters long
+**Arm Laser Command [subscriber]** \
+Messages: [Enable.msg](https://github.com/umrover/mrover-ros/blob/main/msg/Enable.msg) "/arm_laser_cmd" \
+Publishers: gui \
+Subscribers: science
 
-### Thermistor Data
-Reads three seperate temperatures from one NMEA-style sentence from the nucleo over UART.
-#### LCM Channels Publishing/Subscribed To
-**Thermistor Data [Publisher]** \
-Messages: [ThermistorData.lcm](https://github.com/umrover/mrover-workspace/blob/main/rover_msgs/ThermistorData.lcm) "/thermistor_data" \
-Publishers: jetson/science_bridge\
-Subscribers: jetson/teleop
-#### UART Message
-Format of the data string
-- `$THERMISTOR,<temp0>,<temp1>,<temp2>,<extra padding>`
-- String is 50 characters long
+**Heater Auto Shut Off Command [subscriber]** \
+Messsages: [Enable.msg](https://github.com/umrover/mrover-ros/blob/main/msg/Enable.msg) "/heater_auto_shut_off_cmd" \
+Publishers: gui \
+Subscribers: science
 
-### Mosfet Cmd
-Writes an NMEA like message over UART to the Nucleo in order to turn a specified mosfet device on or off. \
-Controls the auton LEDs, robotic arm laser, UV LEDs, UV Bulb, nichrome wires, and raman lasers.
-#### LCM Channels Publishing/Subscribed To
-**Mosfet Command [subscriber]** \
-Messages: [MosfetCmd.lcm](https://github.com/umrover/mrover-workspace/blob/main/rover_msgs/MosfetCmd.lcm) "/mosfet_cmd" \
-Publishers: base_station/gui \
-Subscribers: jetson/science_bridge
+**Heater Command [subscriber]** \
+Messsages: [Heater.msg](https://github.com/umrover/mrover-ros/blob/main/msg/Heater.msg) "/heater_cmd" \
+Publishers: gui \
+Subscribers: science
 
-**Nav Status [subscriber]** \
-Messages: [NavStatus.lcm](https://github.com/umrover/mrover-workspace/blob/main/rover_msgs/NavStatus.lcm) "/nav_status" \
-Publishers: jetson/nav \
-Subscribers: jetson/science_bridge
+**Raman Laser Command [subscriber]** \
+Messages: [Enable.msg](https://github.com/umrover/mrover-ros/blob/main/msg/Enable.msg) "/raman_laser_cmd" \
+Publishers: gui \
+Subscribers: science
 
-#### UART Message
-Format of the UART NMEA command
-- `$MOSFET,<device>,<enable>,<extra padding>`
-- String is 30 characters long
-- The device represents the mosfet device being activated (0 to 11)
-
-### Servo Cmd
-Writes NMEA like messages over UART to the Nucleo in order to move servo to specific angles (in degrees). 
-#### LCM Channels Publishing/Subscribed To 
 **Servo Command [subscriber]** \
-Messsages: [ServoCmd.lcm](https://github.com/umrover/mrover-workspace/blob/main/rover_msgs/ServoCmd.lcm) "/servo_cmd" \
-Publishers: base_station/gui \
-Subscribers: jetson/science_bridge
-#### UART Message
-Format of the UART NMEA command
-- `$SERVO,<angle0>,<angle1>,<angle2>,<extra padding>`
-- String is 30 characters long
-- The angles are in degrees
+Messsages: [Servo.msg](https://github.com/umrover/mrover-ros/blob/main/msg/Servo.msg) "/servo_cmd" \
+Publishers: gui \
+Subscribers: science
 
+**UV Bulb Command [subscriber]** \
+Messages: [Enable.msg](https://github.com/umrover/mrover-ros/blob/main/msg/Enable.msg) "/uv_bulb_cmd" \
+Publishers: gui \
+Subscribers: science
 
-### Heater Cmd
-Writes NMEA like messages over UART to the Nucleo in order to turn a specific heater on. 
-#### LCM Channels Publishing/Subscribed To 
-**Heater Command [subscriber]** \
-Messsages: [Heater.lcm](https://github.com/umrover/mrover-workspace/blob/main/rover_msgs/Heater.lcm) "/heater_cmd" \
-Publishers: base_station/gui \
-Subscribers: jetson/science_bridge
-#### UART Message
-Format of the UART NMEA command
-- `$MOSFET,<device>,<enable>,<extra padding>`
-- String is 30 characters long
-- The device represents the mosfet device being activated
-- Heaters are mosfet devices 5, 6, and 7
+**UV LED Command [subscriber]** \
+Messages: [Enable.msg](https://github.com/umrover/mrover-ros/blob/main/msg/Enable.msg) "/uv_led_cmd" \
+Publishers: gui \
+Subscribers: science
 
+**White LED Command [subscriber]** \
+Messages: [Enable.msg](https://github.com/umrover/mrover-ros/blob/main/msg/Enable.msg) "/white_led_cmd" \
+Publishers: gui \
+Subscribers: science
 
-### Heater State Data
-Reads data on whether or not the heater is on.
-#### LCM Channels Publishing/Subscribed To
-**Heater State Data [Publisher]** \
-Messages: [Heater.lcm](https://github.com/umrover/mrover-workspace/blob/main/rover_msgs/Heater.lcm) "/heater_state_data" \
-Publishers: jetson/science_bridge\
-Subscribers: jetson/teleop
-#### UART Message
-Format of the data string
-- `$HEATER,<device>,<enable>,<extra padding>`
-- String is 50 characters long
+#### Publishers
 
+**Heater Auto Shut Off Data [publisher]** \
+Messages: [Enable.msg](https://github.com/umrover/mrover-ros/blob/main/msg/Enable.msg) "/heater_auto_shut_off_data" \
+Publishers: science\
+Subscribers: teleop
 
-### Heater Auto Shutdown Cmd
-Writes NMEA like messages over UART to the Nucleo in order to turn the auto shutdown feature for heater on or off. 
-#### LCM Channels Publishing/Subscribed To 
-**Heater Command [subscriber]** \
-Messsages: [HeaterAutoShutdown.lcm](https://github.com/umrover/mrover-workspace/blob/main/rover_msgs/HeaterAutoShutdown.lcm) "/heater_auto_shutdown_cmd" \
-Publishers: base_station/gui \
-Subscribers: jetson/science_bridge
-#### UART Message
+**Heater State Data [publisher]** \
+Messages: [Heater.msg](https://github.com/umrover/mrover-ros/blob/main/msg/Heater.msg) "/heater_state_data" \
+Publishers: science\
+Subscribers: teleop
+
+**Spectral Data [publisher]** \
+Messages: [Spectral.msg](https://github.com/umrover/mrover-ros/blob/main/msg/Spectral.msg) "/spectral_data" \
+Publishers: science \
+Subscribers: gui
+
+**Spectral Triad Data [publisher]** \
+Messages: [Spectral.msg](https://github.com/umrover/mrover-ros/blob/main/msg/Spectral.msg) "/spectral_triad_data" \
+Publishers: science \
+Subscribers: gui
+
+**Thermistor Data [publisher]** \
+Messages: [Thermistor.msg](https://github.com/umrover/mrover-ros/blob/main/msg/Thermistor.msg) "/thermistor_data" \
+Publishers: science\
+Subscribers: gui
+
+### UART Messages
+
+**Heater Auto Shut Off Cmd/Data**
 Format of the UART NMEA command
 - `$AUTOSHUTOFF,<enable>,<extra padding>`
-- String is 30 characters long
-- The enable represents whether or not auto shutoff should be enabled or not
+- Cmd and data are 30 characters long
+- Enable is state of auto shut off feature
 
-### Heater Auto Shutdown Data
-Reads data on whether or not the heater auto shutdown feature is on.
-#### LCM Channels Publishing/Subscribed To
-**Heater Auto Shutdown Data [Publisher]** \
-Messages: [HeaterAutoShutdown.lcm](https://github.com/umrover/mrover-workspace/blob/main/rover_msgs/HeaterAutoShutdown.lcm) "/heater_auto_shutdown_data" \
-Publishers: jetson/science_bridge\
-Subscribers: jetson/teleop
-#### UART Message
-Format of the data string
-- `$AUTOSHUTOFF,<device>,<enable>,<extra padding>`
-- String is 30 characters long
+**Heater State Data Cmd/Data**
+- `$HEATER,<device>,<enable>,<extra padding>`
+- Cmd and data are 30 characters long
+- Enable is state of heater
+
+**Mosfet Cmd**
+- `$MOSFET,<device>,<enable>,<extra padding>`
+- Cmd is 30 characters long
+- The device represents the mosfet device being activated (0 to 11)
+
+**Spectral Data**
+- `$SPECTRAL, d0_msb_ch0, d0_lsb_ch0, d0_msb_ch1, d0_lsb_ch1, d0_msb_ch2, d0_lsb_ch2, d0_msb_ch3, d0_lsb_ch3, d0_msb_ch4, d0_lsb_ch4, d0_msb_ch5, d0_lsb_ch5, d1_msb_ch0, d1_lsb_ch0, d1_msb_ch1, d1_lsb_ch1, d1_msb_ch2, d1_lsb_ch2, d1_msb_ch3, d1_lsb_ch3, d1_msb_ch4, d1_lsb_ch4, d1_msb_ch5, d1_lsb_ch5,  d2_msb_ch0, d2_lsb_ch0, d2_msb_ch1, d2_lsb_ch1, d2_msb_ch2, d2_lsb_ch2, d2_msb_ch3, d2_lsb_ch3, d2_msb_ch4, d2_lsb_ch4, d2_msb_ch5, d2_lsb_ch5,<extra padding>`
+- Data is 155 characters long
+- 6 channel data from each of the three spectrals
+
+**Servo Cmd**
+- `$SERVO,<angle0>,<angle1>,<angle2>,<extra padding>`
+- Cmd is 155 characters long
+- The angles are in degrees
+
+**Thermistor Data**
+- `$THERMISTOR,<temp0>,<temp1>,<temp2>,<extra padding>`
+- Data is 155 characters long
+- Temperature is in celsius
+
+**Triad Data**
+- `$TRIAD, d0_msb_ch0, d0_lsb_ch0, d0_msb_ch1, d0_lsb_ch1, d0_msb_ch2, d0_lsb_ch2, d0_msb_ch3, d0_lsb_ch3, d0_msb_ch4, d0_lsb_ch4, d0_msb_ch5, d0_lsb_ch5, d1_msb_ch0, d1_lsb_ch0, d1_msb_ch1, d1_lsb_ch1, d1_msb_ch2, d1_lsb_ch2, d1_msb_ch3, d1_lsb_ch3, d1_msb_ch4, d1_lsb_ch4, d1_msb_ch5, d1_lsb_ch5,  d2_msb_ch0, d2_lsb_ch0, d2_msb_ch1, d2_lsb_ch1, d2_msb_ch2, d2_lsb_ch2, d2_msb_ch3, d2_lsb_ch3, d2_msb_ch4, d2_lsb_ch4, d2_msb_ch5, d2_lsb_ch5,<extra padding>`
+- Data is 158 characters long
+- 18 channel data
 
 
 ## TODO
