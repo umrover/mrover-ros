@@ -25,6 +25,6 @@
     -urdf -param robot_description
     -model rover" />
 
-  <!-- Perception-->
-<!--   <node name="aruco_detect" pkg="mrover" type="aruco_detect" /> -->
+  <!-- Perception -->
+  <node name="aruco_detect" pkg="mrover" type="aruco_detect" />
 </launch>

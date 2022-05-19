@@ -30,42 +30,6 @@
  */
 #include "aruco_detect.hpp"
 
-
-/**
- * @return Euclidean distance between two points
- */
-static double dist(cv::Point2f const& p1, cv::Point2f const& p2) {
-    double dx = p1.x - p2.x;
-    double dy = p1.y - p2.y;
-    return sqrt(dx * dx + dy * dy);
-}
-
-/**
- * @param   pts Four points of the tag
- * @return  Compute area in image of a fiducial, using Heron's formula to find the area of two triangles
- */
-static double calcFiducialArea(std::vector<cv::Point2f> const& pts) {
-    const cv::Point2f& p0 = pts.at(0);
-    const cv::Point2f& p1 = pts.at(1);
-    const cv::Point2f& p2 = pts.at(2);
-    const cv::Point2f& p3 = pts.at(3);
-
-    double a1 = dist(p0, p1);
-    double b1 = dist(p0, p3);
-    double c1 = dist(p1, p3);
-
-    double a2 = dist(p1, p2);
-    double b2 = dist(p2, p3);
-    double c2 = c1;
-
-    double s1 = (a1 + b1 + c1) / 2.0;
-    double s2 = (a2 + b2 + c2) / 2.0;
-
-    a1 = sqrt(s1 * (s1 - a1) * (s1 - b1) * (s1 - c1));
-    a2 = sqrt(s2 * (s2 - a2) * (s2 - b2) * (s2 - c2));
-    return a1 + a2;
-}
-
 void FiducialsNode::configCallback(mrover::DetectorParamsConfig& config, uint32_t level) {
     /* Don't load initial config, since it will overwrite the rosparam settings */
     if (level == 0xFFFFFFFF) {
@@ -253,9 +217,7 @@ void FiducialsNode::poseEstimateCallback(FiducialArrayConstPtr const& msg) {
     if (mDoPoseEstimation) {
         try {
             if (!mHasCamInfo) {
-                if (mFrameNum > 5) {
-                    ROS_ERROR("No camera intrinsics");
-                }
+                if (mFrameNum > 5) ROS_ERROR("No camera intrinsics");
                 return;
             }
 
@@ -278,27 +240,10 @@ void FiducialsNode::poseEstimateCallback(FiducialArrayConstPtr const& msg) {
 
                 Fiducial const& fid = *it;
 
-//                cv::aruco::drawAxis(cv_ptr->image, cameraMatrix, distortionCoeffs,
-//                                    rvecs[i], tvecs[i], (float) fiducial_len);
-
                 if (std::count(mIgnoreIds.begin(), mIgnoreIds.end(), fid.id)) {
-                    if (mIsVerbose) {
-                        ROS_INFO("Ignoring id %d", fid.id);
-                    }
+                    if (mIsVerbose) ROS_INFO("Ignoring id %d", fid.id);
                     continue;
                 }
-
-//                double angle = norm(rvecs[i]);
-//                cv::Vec3d axis = rvecs[i] / angle;
-//
-//                if (verbose) {
-//                    ROS_INFO("angle %f axis %f %f %f",
-//                             angle, axis[0], axis[1], axis[2]);
-//                }
-
-//                double object_error =
-//                        (reprojectionError[i] / dist(corners[i][0], corners[i][2])) *
-//                        (norm(tvecs[i]) / fiducial_len);
 
                 // Standard ROS vision_msgs
                 vision_msgs::Detection2D vm;
