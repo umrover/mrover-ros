@@ -90,7 +90,6 @@ private:
     // if set, we publish the images that contain fiducials
     bool publish_images{};
     bool enable_detections;
-    bool vis_msgs{};
     bool verbose{};
 
     double fiducial_len{};
@@ -121,13 +120,6 @@ private:
     std::pair<cv::Point2f, cv::Point2f> markerLocations;
 
     void handleIgnoreString(const std::string& str);
-
-    void estimatePoseSingleMarkers(float markerLength,
-                                   const cv::Mat& cameraMatrix,
-                                   const cv::Mat& distCoeffs,
-                                   std::vector<cv::Vec3d>& rvecs, std::vector<cv::Vec3d>& tvecs,
-                                   std::vector<double>& reprojectionError);
-
 
     void ignoreCallback(const std_msgs::String& msg);
 
