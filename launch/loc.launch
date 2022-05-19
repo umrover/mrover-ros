@@ -17,7 +17,7 @@
     <arg name="gui" value="true" />
     <arg name="headless" value="false" />
     <arg name="debug" value="false" />
-    <arg name="verbose" default="false" />
+    <arg name="mIsVerbose" default="false" />
     <arg name="gui_required" value="true" />
   </include>
 
@@ -47,7 +47,7 @@
     <remap from="odometry/filtered" to="odometry/filtered" />
   </node>
 
-  <!-- Reads the GPS topic and convert it to cartesian based on a reference point-->
+  <!-- Reads the GPS topic and convert mIt to cartesian based on a reference point-->
   <node pkg="robot_localization" type="navsat_transform_node" name="navsat_transform" clear_params="true">
     <!-- Reference latitude/longitude to linearize from -->
     <rosparam param="datum">[42.2, -83.7, 0.0, map, base_link]</rosparam>

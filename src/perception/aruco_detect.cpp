@@ -40,12 +40,6 @@ static double dist(const cv::Point2f& p1, const cv::Point2f& p2) {
     return sqrt(dx * dx + dy * dy);
 }
 
-static cv::Point2f getTagCentroidFromCorners(fiducial_msgs::Fiducial fiducial) {
-    auto centerX = static_cast<float>((fiducial.x0 + fiducial.x1 + fiducial.x2 + fiducial.x3) / 4.0);
-    auto centerY = static_cast<float>((fiducial.y0 + fiducial.y1 + fiducial.y2 + fiducial.y3) / 4.0);
-    return {centerX, centerY};
-}
-
 /**
  * @param   pts Four points of the tag
  * @return  Compute area in image of a fiducial, using Heron's formula to find the area of two triangles
@@ -78,136 +72,127 @@ void FiducialsNode::configCallback(mrover::DetectorParamsConfig& config, uint32_
         return;
     }
 
-    detectorParams->adaptiveThreshConstant = config.adaptiveThreshConstant;
-    detectorParams->adaptiveThreshWinSizeMin = config.adaptiveThreshWinSizeMin;
-    detectorParams->adaptiveThreshWinSizeMax = config.adaptiveThreshWinSizeMax;
-    detectorParams->adaptiveThreshWinSizeStep = config.adaptiveThreshWinSizeStep;
-    detectorParams->cornerRefinementMaxIterations = config.cornerRefinementMaxIterations;
-    detectorParams->cornerRefinementMinAccuracy = config.cornerRefinementMinAccuracy;
-    detectorParams->cornerRefinementWinSize = config.cornerRefinementWinSize;
-#if CV_MINOR_VERSION == 2 and CV_MAJOR_VERSION == 3
-    detectorParams->doCornerRefinement = config.doCornerRefinement;
-#else
+    mDetectorParams->adaptiveThreshConstant = config.adaptiveThreshConstant;
+    mDetectorParams->adaptiveThreshWinSizeMin = config.adaptiveThreshWinSizeMin;
+    mDetectorParams->adaptiveThreshWinSizeMax = config.adaptiveThreshWinSizeMax;
+    mDetectorParams->adaptiveThreshWinSizeStep = config.adaptiveThreshWinSizeStep;
+    mDetectorParams->cornerRefinementMaxIterations = config.cornerRefinementMaxIterations;
+    mDetectorParams->cornerRefinementMinAccuracy = config.cornerRefinementMinAccuracy;
+    mDetectorParams->cornerRefinementWinSize = config.cornerRefinementWinSize;
     if (config.doCornerRefinement) {
         if (config.cornerRefinementSubpix) {
-            detectorParams->cornerRefinementMethod = cv::aruco::CORNER_REFINE_SUBPIX;
+            mDetectorParams->cornerRefinementMethod = cv::aruco::CORNER_REFINE_SUBPIX;
         } else {
-            detectorParams->cornerRefinementMethod = cv::aruco::CORNER_REFINE_CONTOUR;
+            mDetectorParams->cornerRefinementMethod = cv::aruco::CORNER_REFINE_CONTOUR;
         }
     } else {
-        detectorParams->cornerRefinementMethod = cv::aruco::CORNER_REFINE_NONE;
+        mDetectorParams->cornerRefinementMethod = cv::aruco::CORNER_REFINE_NONE;
     }
-#endif
-    detectorParams->errorCorrectionRate = config.errorCorrectionRate;
-    detectorParams->minCornerDistanceRate = config.minCornerDistanceRate;
-    detectorParams->markerBorderBits = config.markerBorderBits;
-    detectorParams->maxErroneousBitsInBorderRate = config.maxErroneousBitsInBorderRate;
-    detectorParams->minDistanceToBorder = config.minDistanceToBorder;
-    detectorParams->minMarkerDistanceRate = config.minMarkerDistanceRate;
-    detectorParams->minMarkerPerimeterRate = config.minMarkerPerimeterRate;
-    detectorParams->maxMarkerPerimeterRate = config.maxMarkerPerimeterRate;
-    detectorParams->minOtsuStdDev = config.minOtsuStdDev;
-    detectorParams->perspectiveRemoveIgnoredMarginPerCell = config.perspectiveRemoveIgnoredMarginPerCell;
-    detectorParams->perspectiveRemovePixelPerCell = config.perspectiveRemovePixelPerCell;
-    detectorParams->polygonalApproxAccuracyRate = config.polygonalApproxAccuracyRate;
+    mDetectorParams->errorCorrectionRate = config.errorCorrectionRate;
+    mDetectorParams->minCornerDistanceRate = config.minCornerDistanceRate;
+    mDetectorParams->markerBorderBits = config.markerBorderBits;
+    mDetectorParams->maxErroneousBitsInBorderRate = config.maxErroneousBitsInBorderRate;
+    mDetectorParams->minDistanceToBorder = config.minDistanceToBorder;
+    mDetectorParams->minMarkerDistanceRate = config.minMarkerDistanceRate;
+    mDetectorParams->minMarkerPerimeterRate = config.minMarkerPerimeterRate;
+    mDetectorParams->maxMarkerPerimeterRate = config.maxMarkerPerimeterRate;
+    mDetectorParams->minOtsuStdDev = config.minOtsuStdDev;
+    mDetectorParams->perspectiveRemoveIgnoredMarginPerCell = config.perspectiveRemoveIgnoredMarginPerCell;
+    mDetectorParams->perspectiveRemovePixelPerCell = config.perspectiveRemovePixelPerCell;
+    mDetectorParams->polygonalApproxAccuracyRate = config.polygonalApproxAccuracyRate;
 }
 
 void FiducialsNode::ignoreCallback(const std_msgs::String& msg) {
-    ignoreIds.clear();
-    pnh.setParam("ignore_fiducials", msg.data);
+    mIgnoreIds.clear();
+    mPnh.setParam("ignore_fiducials", msg.data);
     handleIgnoreString(msg.data);
 }
 
 void FiducialsNode::camInfoCallback(const sensor_msgs::CameraInfo::ConstPtr& msg) {
-    if (haveCamInfo) {
+    if (mHasCamInfo) {
         return;
     }
 
     if (msg->K != boost::array<double, 9>({0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0})) {
         for (int i = 0; i < 3; i++) {
             for (int j = 0; j < 3; j++) {
-                cameraMatrix.at<double>(i, j) = msg->K[i * 3 + j];
+                mCamMat.at<double>(i, j) = msg->K[i * 3 + j];
             }
         }
 
         for (int i = 0; i < 5; i++) {
-            distortionCoeffs.at<double>(0, i) = msg->D[i];
+            mDistCoeffs.at<double>(0, i) = msg->D[i];
         }
 
-        haveCamInfo = true;
-        frameId = msg->header.frame_id;
+        mHasCamInfo = true;
+        mFrameId = msg->header.frame_id;
     } else {
         ROS_WARN("%s", "CameraInfo message has invalid intrinsics, K matrix all zeros");
     }
 }
 
 void FiducialsNode::imageCallback(const sensor_msgs::ImageConstPtr& msg) {
-    if (!enable_detections) {
-        return; //return without doing anything
+    if (!mEnableDetections) {
+        return;
     }
 
-    if (verbose) {
+    if (mIsVerbose) {
         ROS_INFO("Got image %d", msg->header.seq);
     }
 
     fiducial_msgs::FiducialArray fva;
     fva.header.stamp = msg->header.stamp;
-    fva.header.frame_id = frameId;
+    fva.header.frame_id = mFrameId;
     fva.image_seq = static_cast<int>(msg->header.seq);
 
     try {
-        cv_ptr = cv_bridge::toCvCopy(msg, sensor_msgs::image_encodings::BGR8);
+        mCvPtr = cv_bridge::toCvCopy(msg, sensor_msgs::image_encodings::BGR8);
 
-        cv::aruco::detectMarkers(cv_ptr->image, dictionary, corners, ids, detectorParams);
+        cv::aruco::detectMarkers(mCvPtr->image, mDictionary, mCornersCache, mIdsCache, mDetectorParams);
 
-        int detected_count = (int) ids.size();
-        if (verbose || detected_count != prev_detected_count) {
-            prev_detected_count = detected_count;
-            ROS_INFO("Detected %d markers", detected_count);
+        mFiducials.clear();
+        for (size_t i = 0; i < mIdsCache.size(); ++i) {
+            cv::Point2f center = std::accumulate(mCornersCache[i].begin(), mCornersCache[i].end(), cv::Point2f{}) / 4.0f;
+            mFiducials.push_back(Fiducial{mIdsCache[i], center, {}});
         }
 
-        for (size_t i = 0; i < ids.size(); i++) {
-            if (std::count(ignoreIds.begin(), ignoreIds.end(), ids[i]) != 0) {
-                if (verbose) {
-                    ROS_INFO("Ignoring id %d", ids[i]);
+        size_t detectedCount = mIdsCache.size();
+        if (mIsVerbose || detectedCount != mPrevDetectedCount) {
+            mPrevDetectedCount = detectedCount;
+            ROS_INFO("Detected %zu markers", detectedCount);
+        }
+
+        for (size_t i = 0; i < mIdsCache.size(); i++) {
+            if (std::count(mIgnoreIds.begin(), mIgnoreIds.end(), mIgnoreIds[i]) != 0) {
+                if (mIsVerbose) {
+                    ROS_INFO("Ignoring id %d", mIgnoreIds[i]);
                 }
                 continue;
             }
-            fiducial_msgs::Fiducial fid;
-            fid.fiducial_id = ids[i];
+        }
 
-            fid.x0 = corners[i][0].x;
-            fid.y0 = corners[i][0].y;
-            fid.x1 = corners[i][1].x;
-            fid.y1 = corners[i][1].y;
-            fid.x2 = corners[i][2].x;
-            fid.y2 = corners[i][2].y;
-            fid.x3 = corners[i][3].x;
-            fid.y3 = corners[i][3].y;
+        for (size_t i = 0; i < mIdsCache.size(); i++) {
+            fiducial_msgs::Fiducial fid;
+            fid.fiducial_id = mIdsCache[i];
+            fid.x0 = mCornersCache[i][0].x;
+            fid.y0 = mCornersCache[i][0].y;
+            fid.x1 = mCornersCache[i][1].x;
+            fid.y1 = mCornersCache[i][1].y;
+            fid.x2 = mCornersCache[i][2].x;
+            fid.y2 = mCornersCache[i][2].y;
+            fid.x3 = mCornersCache[i][3].x;
+            fid.y3 = mCornersCache[i][3].y;
             fva.fiducials.push_back(fid);
         }
 
-        vertices_pub.publish(fva);
+        mVerticesPub.publish(fva);
 
-        markerCenters.clear();
-        markerCenters.reserve(fva.fiducials.size());
-        for (auto& tag: fva.fiducials) {
-            markerCenters.push_back(getTagCentroidFromCorners(tag));
-        }
-        std::sort(markerCenters.begin(), markerCenters.end(),
-                  [](const auto& lhs, const auto& rhs) {
-                      return lhs.x < rhs.x;
-                  });
-
-        // Ensure <= 2 markers
-        markerCenters.erase(markerCenters.begin() + 1, markerCenters.end());
-
-        if (!ids.empty()) {
-            cv::aruco::drawDetectedMarkers(cv_ptr->image, corners, ids);
+        if (!mFiducials.empty()) {
+            cv::aruco::drawDetectedMarkers(mCvPtr->image, mCornersCache, mIdsCache);
         }
 
-        if (publish_images) {
-            image_pub.publish(cv_ptr->toImageMsg());
+        if (mPublishImages) {
+            mImgPub.publish(mCvPtr->toImageMsg());
         }
     }
     catch (cv_bridge::Exception& e) {
@@ -218,7 +203,7 @@ void FiducialsNode::imageCallback(const sensor_msgs::ImageConstPtr& msg) {
     }
 }
 
-cv::Point3f getPointFromPixel(const sensor_msgs::PointCloud2ConstPtr& msg, size_t u, size_t v) {
+cv::Point3f getWorldPosFromPixel(const sensor_msgs::PointCloud2ConstPtr& msg, size_t u, size_t v) {
     // Could be done using PCL point clouds instead
     size_t arrayPos = v * msg->row_step + u * msg->point_step;
     size_t arrayPosX = arrayPos + msg->fields[0].offset;
@@ -233,11 +218,10 @@ cv::Point3f getPointFromPixel(const sensor_msgs::PointCloud2ConstPtr& msg, size_
 }
 
 void FiducialsNode::pointCloudCallback(const sensor_msgs::PointCloud2ConstPtr& msg) {
-    markerPositions.clear();
-    for (auto& center: markerCenters) {
-        size_t u = std::lround(center.x);
-        size_t v = std::lround(center.y);
-        markerPositions.push_back(getPointFromPixel(msg, u, v));
+    for (auto& fid: mFiducials) {
+        size_t u = std::lround(fid.imageCenter.x);
+        size_t v = std::lround(fid.imageCenter.y);
+        fid.worldPosition = getWorldPosFromPixel(msg, u, v);
     }
 }
 
@@ -246,25 +230,33 @@ void FiducialsNode::poseEstimateCallback(const FiducialArrayConstPtr& msg) {
 
     vision_msgs::Detection2DArray vma;
     vma.header.stamp = msg->header.stamp;
-    vma.header.frame_id = frameId;
+    vma.header.frame_id = mFrameId;
     vma.header.seq = msg->header.seq;
-    frameNum++;
+    mFrameNum++;
 
-    if (doPoseEstimation) {
+    if (mDoPoseEstimation) {
         try {
-            if (!haveCamInfo) {
-                if (frameNum > 5) {
+            if (!mHasCamInfo) {
+                if (mFrameNum > 5) {
                     ROS_ERROR("No camera intrinsics");
                 }
                 return;
             }
 
-            for (size_t i = 0; i < ids.size(); i++) {
+
+            auto [leftFid, rightFid] = std::minmax_element(
+                    mFiducials.begin(), mFiducials.end(),
+                    [](const auto& lhs, const auto& rhs) {
+                        return lhs.imageCenter.x < rhs.imageCenter.x;
+                    }
+            );
+
+            for (size_t i = 0; i < mIdsCache.size(); i++) {
 //                cv::aruco::drawAxis(cv_ptr->image, cameraMatrix, distortionCoeffs,
 //                                    rvecs[i], tvecs[i], (float) fiducial_len);
-                if (std::count(ignoreIds.begin(), ignoreIds.end(), ids[i]) != 0) {
-                    if (verbose) {
-                        ROS_INFO("Ignoring id %d", ids[i]);
+                if (std::count(mIgnoreIds.begin(), mIgnoreIds.end(), mIdsCache[i]) != 0) {
+                    if (mIsVerbose) {
+                        ROS_INFO("Ignoring id %d", mIdsCache[i]);
                     }
                     continue;
                 }
@@ -286,7 +278,7 @@ void FiducialsNode::poseEstimateCallback(const FiducialArrayConstPtr& msg) {
                 fiducial_msgs::FiducialTransform ft;
                 vision_msgs::Detection2D vm;
                 vision_msgs::ObjectHypothesisWithPose vmh;
-                vmh.id = ids[i];
+                vmh.id = mIdsCache[i];
                 vmh.score = object_error;
                 vmh.pose.pose.position.x = tvecs[i][0];
                 vmh.pose.pose.position.y = tvecs[i][1];
@@ -307,7 +299,7 @@ void FiducialsNode::poseEstimateCallback(const FiducialArrayConstPtr& msg) {
             ROS_ERROR("cv exception: %s", e.what());
         }
     }
-    pose_pub.publish(vma);
+    mPosePub.publish(vma);
 }
 
 void FiducialsNode::handleIgnoreString(const std::string& str) {
@@ -326,12 +318,12 @@ void FiducialsNode::handleIgnoreString(const std::string& str) {
             int end = std::stoi(range[1]);
             ROS_INFO("Ignoring fiducial id range %d to %d", start, end);
             for (int j = start; j <= end; j++) {
-                ignoreIds.push_back(j);
+                mIgnoreIds.push_back(j);
             }
         } else if (range.size() == 1) {
             int fid = std::stoi(range[0]);
             ROS_INFO("Ignoring fiducial id %d", fid);
-            ignoreIds.push_back(fid);
+            mIgnoreIds.push_back(fid);
         } else {
             ROS_ERROR("Malformed ignore_fiducials: %s", element.c_str());
         }
@@ -340,8 +332,8 @@ void FiducialsNode::handleIgnoreString(const std::string& str) {
 
 bool FiducialsNode::enableDetectionsCallback(std_srvs::SetBool::Request& req,
                                              std_srvs::SetBool::Response& res) {
-    enable_detections = req.data;
-    if (enable_detections) {
+    mEnableDetections = req.data;
+    if (mEnableDetections) {
         res.message = "Enabled aruco detections.";
         ROS_INFO("Enabled aruco detections.");
     } else {
@@ -354,39 +346,39 @@ bool FiducialsNode::enableDetectionsCallback(std_srvs::SetBool::Request& req,
 }
 
 
-FiducialsNode::FiducialsNode() : nh(), pnh("~"), it(nh) {
-    frameNum = 0;
-    prev_detected_count = -1;
+FiducialsNode::FiducialsNode() : mNh(), mPnh("~"), mIt(mNh) {
+    mFrameNum = 0;
+    mPrevDetectedCount = -1;
 
     // Camera intrinsics
-    cameraMatrix = cv::Mat::zeros(3, 3, CV_64F);
+    mCamMat = cv::Mat::zeros(3, 3, CV_64F);
 
     // distortion coefficients
-    distortionCoeffs = cv::Mat::zeros(1, 5, CV_64F);
+    mDistCoeffs = cv::Mat::zeros(1, 5, CV_64F);
 
-    haveCamInfo = false;
-    enable_detections = true;
+    mHasCamInfo = false;
+    mEnableDetections = true;
 
     int dicNo;
 
-    detectorParams = new cv::aruco::DetectorParameters();
+    mDetectorParams = new cv::aruco::DetectorParameters();
 
-    pnh.param<bool>("publish_images", publish_images, true);
-    pnh.param<double>("fiducial_len", fiducial_len, 0.14);
-    pnh.param<int>("dictionary", dicNo, 7);
-    pnh.param<bool>("do_pose_estimation", doPoseEstimation, false);
-    pnh.param<bool>("publish_fiducial_tf", publishFiducialTf, true);
-    pnh.param<bool>("verbose", verbose, false);
+    mPnh.param<bool>("publish_images", mPublishImages, true);
+    mPnh.param<double>("fiducial_len", mFiducialLen, 0.14);
+    mPnh.param<int>("dictionary", dicNo, 7);
+    mPnh.param<bool>("do_pose_estimation", mDoPoseEstimation, false);
+    mPnh.param<bool>("publish_fiducial_tf", mPublishFiducialTf, true);
+    mPnh.param<bool>("verbose", mIsVerbose, false);
 
     std::string str;
     std::vector<std::string> strs;
 
-    pnh.param<std::string>("ignore_fiducials", str, "");
+    mPnh.param<std::string>("ignore_fiducials", str, "");
     handleIgnoreString(str);
 
     // fiducial size can take comma separated list of size: id or size: range,
     // e.g. "200.0: 12, 300.0: 200-300"
-    pnh.param<std::string>("fiducial_len_override", str, "");
+    mPnh.param<std::string>("fiducial_len_override", str, "");
     boost::split(strs, str, boost::is_any_of(","));
     for (const std::string& element: strs) {
         if (element.empty()) {
@@ -404,12 +396,12 @@ FiducialsNode::FiducialsNode() : nh(), pnh("~"), it(nh) {
                 ROS_INFO("Setting fiducial id range %d - %d length to %f",
                          start, end, len);
                 for (int j = start; j <= end; j++) {
-                    fiducialLens[j] = len;
+                    mFiducialLens[j] = len;
                 }
             } else if (range.size() == 1) {
                 int fid = std::stoi(range[0]);
                 ROS_INFO("Setting fiducial id %d length to %f", fid, len);
-                fiducialLens[fid] = len;
+                mFiducialLens[fid] = len;
             } else {
                 ROS_ERROR("Malformed fiducial_len_override: %s", element.c_str());
             }
@@ -418,65 +410,65 @@ FiducialsNode::FiducialsNode() : nh(), pnh("~"), it(nh) {
         }
     }
 
-    image_pub = it.advertise("/fiducial_images", 1);
+    mImgPub = mIt.advertise("/fiducial_images", 1);
 
-    vertices_pub = nh.advertise<fiducial_msgs::FiducialArray>("fiducial_vertices", 1);
+    mVerticesPub = mNh.advertise<fiducial_msgs::FiducialArray>("fiducial_vertices", 1);
 
-    pose_pub = nh.advertise<vision_msgs::Detection2DArray>("fiducial_transforms", 1);
+    mPosePub = mNh.advertise<vision_msgs::Detection2DArray>("fiducial_transforms", 1);
 
-    dictionary = cv::aruco::getPredefinedDictionary(dicNo);
+    mDictionary = cv::aruco::getPredefinedDictionary(dicNo);
 
 #pragma clang diagnostic push
 #pragma ide diagnostic ignored "UnusedValue"
-    img_sub = it.subscribe("/camera/color/image_raw", 1, &FiducialsNode::imageCallback, this);
+    mImgSub = mIt.subscribe("/camera/color/image_raw", 1, &FiducialsNode::imageCallback, this);
 
-    pc_sub = nh.subscribe("/camera/depth/points", 1, &FiducialsNode::pointCloudCallback, this);
+    mPcSub = mNh.subscribe("/camera/depth/points", 1, &FiducialsNode::pointCloudCallback, this);
 
-    vertices_sub = nh.subscribe("/fiducial_vertices", 1, &FiducialsNode::poseEstimateCallback, this);
+    mVerticesSub = mNh.subscribe("/fiducial_vertices", 1, &FiducialsNode::poseEstimateCallback, this);
 
-    caminfo_sub = nh.subscribe("/camera/color/camera_info", 1, &FiducialsNode::camInfoCallback, this);
+    mCamInfoSub = mNh.subscribe("/camera/color/camera_info", 1, &FiducialsNode::camInfoCallback, this);
 
-    ignore_sub = nh.subscribe("/ignore_fiducials", 1, &FiducialsNode::ignoreCallback, this);
+    mIgnoreSub = mNh.subscribe("/ignore_fiducials", 1, &FiducialsNode::ignoreCallback, this);
 
-    service_enable_detections = nh.advertiseService("enable_detections", &FiducialsNode::enableDetectionsCallback, this);
+    mServiceEnableDetections = mNh.advertiseService("enable_detections", &FiducialsNode::enableDetectionsCallback, this);
 #pragma clang diagnostic pop
 
     // Lambda handles passing class pointer (implicit first parameter) to configCallback
     callbackType = [this](mrover::DetectorParamsConfig& config, uint32_t level) { configCallback(config, level); };
     configServer.setCallback(callbackType);
 
-    pnh.param<double>("adaptiveThreshConstant", detectorParams->adaptiveThreshConstant, 7);
-    pnh.param<int>("adaptiveThreshWinSizeMax", detectorParams->adaptiveThreshWinSizeMax, 53); /* default 23 */
-    pnh.param<int>("adaptiveThreshWinSizeMin", detectorParams->adaptiveThreshWinSizeMin, 3);
-    pnh.param<int>("adaptiveThreshWinSizeStep", detectorParams->adaptiveThreshWinSizeStep, 4); /* default 10 */
-    pnh.param<int>("cornerRefinementMaxIterations", detectorParams->cornerRefinementMaxIterations, 30);
-    pnh.param<double>("cornerRefinementMinAccuracy", detectorParams->cornerRefinementMinAccuracy, 0.01); /* default 0.1 */
-    pnh.param<int>("cornerRefinementWinSize", detectorParams->cornerRefinementWinSize, 5);
+    mPnh.param<double>("adaptiveThreshConstant", mDetectorParams->adaptiveThreshConstant, 7);
+    mPnh.param<int>("adaptiveThreshWinSizeMax", mDetectorParams->adaptiveThreshWinSizeMax, 53); /* default 23 */
+    mPnh.param<int>("adaptiveThreshWinSizeMin", mDetectorParams->adaptiveThreshWinSizeMin, 3);
+    mPnh.param<int>("adaptiveThreshWinSizeStep", mDetectorParams->adaptiveThreshWinSizeStep, 4); /* default 10 */
+    mPnh.param<int>("cornerRefinementMaxIterations", mDetectorParams->cornerRefinementMaxIterations, 30);
+    mPnh.param<double>("cornerRefinementMinAccuracy", mDetectorParams->cornerRefinementMinAccuracy, 0.01); /* default 0.1 */
+    mPnh.param<int>("cornerRefinementWinSize", mDetectorParams->cornerRefinementWinSize, 5);
     bool doCornerRefinement = true;
-    pnh.param<bool>("doCornerRefinement", doCornerRefinement, true);
+    mPnh.param<bool>("doCornerRefinement", doCornerRefinement, true);
     if (doCornerRefinement) {
         bool cornerRefinementSubPix = true;
-        pnh.param<bool>("cornerRefinementSubPix", cornerRefinementSubPix, true);
+        mPnh.param<bool>("cornerRefinementSubPix", cornerRefinementSubPix, true);
         if (cornerRefinementSubPix) {
-            detectorParams->cornerRefinementMethod = cv::aruco::CORNER_REFINE_SUBPIX;
+            mDetectorParams->cornerRefinementMethod = cv::aruco::CORNER_REFINE_SUBPIX;
         } else {
-            detectorParams->cornerRefinementMethod = cv::aruco::CORNER_REFINE_CONTOUR;
+            mDetectorParams->cornerRefinementMethod = cv::aruco::CORNER_REFINE_CONTOUR;
         }
     } else {
-        detectorParams->cornerRefinementMethod = cv::aruco::CORNER_REFINE_NONE;
+        mDetectorParams->cornerRefinementMethod = cv::aruco::CORNER_REFINE_NONE;
     }
-    pnh.param<double>("errorCorrectionRate", detectorParams->errorCorrectionRate, 0.6);
-    pnh.param<double>("minCornerDistanceRate", detectorParams->minCornerDistanceRate, 0.05);
-    pnh.param<int>("markerBorderBits", detectorParams->markerBorderBits, 1);
-    pnh.param<double>("maxErroneousBitsInBorderRate", detectorParams->maxErroneousBitsInBorderRate, 0.04);
-    pnh.param<int>("minDistanceToBorder", detectorParams->minDistanceToBorder, 3);
-    pnh.param<double>("minMarkerDistanceRate", detectorParams->minMarkerDistanceRate, 0.05);
-    pnh.param<double>("minMarkerPerimeterRate", detectorParams->minMarkerPerimeterRate, 0.1); /* default 0.3 */
-    pnh.param<double>("maxMarkerPerimeterRate", detectorParams->maxMarkerPerimeterRate, 4.0);
-    pnh.param<double>("minOtsuStdDev", detectorParams->minOtsuStdDev, 5.0);
-    pnh.param<double>("perspectiveRemoveIgnoredMarginPerCell", detectorParams->perspectiveRemoveIgnoredMarginPerCell, 0.13);
-    pnh.param<int>("perspectiveRemovePixelPerCell", detectorParams->perspectiveRemovePixelPerCell, 8);
-    pnh.param<double>("polygonalApproxAccuracyRate", detectorParams->polygonalApproxAccuracyRate, 0.01); /* default 0.05 */
+    mPnh.param<double>("errorCorrectionRate", mDetectorParams->errorCorrectionRate, 0.6);
+    mPnh.param<double>("minCornerDistanceRate", mDetectorParams->minCornerDistanceRate, 0.05);
+    mPnh.param<int>("markerBorderBits", mDetectorParams->markerBorderBits, 1);
+    mPnh.param<double>("maxErroneousBitsInBorderRate", mDetectorParams->maxErroneousBitsInBorderRate, 0.04);
+    mPnh.param<int>("minDistanceToBorder", mDetectorParams->minDistanceToBorder, 3);
+    mPnh.param<double>("minMarkerDistanceRate", mDetectorParams->minMarkerDistanceRate, 0.05);
+    mPnh.param<double>("minMarkerPerimeterRate", mDetectorParams->minMarkerPerimeterRate, 0.1); /* default 0.3 */
+    mPnh.param<double>("maxMarkerPerimeterRate", mDetectorParams->maxMarkerPerimeterRate, 4.0);
+    mPnh.param<double>("minOtsuStdDev", mDetectorParams->minOtsuStdDev, 5.0);
+    mPnh.param<double>("perspectiveRemoveIgnoredMarginPerCell", mDetectorParams->perspectiveRemoveIgnoredMarginPerCell, 0.13);
+    mPnh.param<int>("perspectiveRemovePixelPerCell", mDetectorParams->perspectiveRemovePixelPerCell, 8);
+    mPnh.param<double>("polygonalApproxAccuracyRate", mDetectorParams->polygonalApproxAccuracyRate, 0.01); /* default 0.05 */
 
     ROS_INFO("Aruco detection ready");
 }

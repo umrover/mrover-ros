@@ -62,60 +62,63 @@
 
 #include <list>
 #include <string>
+#include <numeric>
 #include <boost/algorithm/string.hpp>
 #include <boost/shared_ptr.hpp>
 
 typedef boost::shared_ptr<fiducial_msgs::FiducialArray const> FiducialArrayConstPtr;
 
+struct Fiducial {
+    int id; // what id this ARUCO tag encodes
+    cv::Point2f imageCenter; // camera pixel space
+    cv::Point3f worldPosition; // 3d world position
+};
+
 class FiducialsNode {
 private:
-    ros::NodeHandle nh;
-    ros::NodeHandle pnh;
+    ros::NodeHandle mNh;
+    ros::NodeHandle mPnh;
 
-    ros::Publisher vertices_pub;
-    ros::Publisher pose_pub;
+    ros::Publisher mVerticesPub;
+    ros::Publisher mPosePub;
 
-    ros::Subscriber caminfo_sub;
-    ros::Subscriber vertices_sub;
-    ros::Subscriber ignore_sub;
-    image_transport::ImageTransport it;
-    image_transport::Subscriber img_sub;
-    ros::Subscriber pc_sub;
-    tf2_ros::TransformBroadcaster broadcaster;
+    ros::Subscriber mCamInfoSub;
+    ros::Subscriber mVerticesSub;
+    ros::Subscriber mIgnoreSub;
+    image_transport::ImageTransport mIt;
+    image_transport::Subscriber mImgSub;
+    ros::Subscriber mPcSub;
+    tf2_ros::TransformBroadcaster mTfBroadcaster;
 
-    ros::ServiceServer service_enable_detections;
+    ros::ServiceServer mServiceEnableDetections;
 
-    // if set, we publish the images that contain fiducials
-    bool publish_images{};
-    bool enable_detections;
-    bool verbose{};
+    bool mPublishImages{}; // if set, we publish the images that contain fiducials
+    bool mEnableDetections;
+    bool mIsVerbose{};
 
-    double fiducial_len{};
+    std::vector<std::vector<cv::Point2f>> mCornersCache;
+    std::vector<int> mIdsCache;
+    double mFiducialLen{};
 
-    bool doPoseEstimation{};
-    bool haveCamInfo;
-    bool publishFiducialTf{};
-    std::vector<std::vector<cv::Point2f> > corners;
-    std::vector<int> ids;
-    cv_bridge::CvImagePtr cv_ptr;
+    bool mDoPoseEstimation{};
+    bool mHasCamInfo;
+    bool mPublishFiducialTf{};
+    std::vector<Fiducial> mFiducials;
+    cv_bridge::CvImagePtr mCvPtr;
 
-    cv::Mat cameraMatrix;
-    cv::Mat distortionCoeffs;
-    int frameNum;
-    std::string frameId;
-    std::vector<int> ignoreIds;
-    std::map<int, double> fiducialLens;
+    cv::Mat mCamMat;
+    cv::Mat mDistCoeffs;
+    int mFrameNum;
+    std::string mFrameId;
+    std::vector<int> mIgnoreIds;
+    std::map<int, double> mFiducialLens;
 
-    image_transport::Publisher image_pub;
+    image_transport::Publisher mImgPub;
 
-    // log spam prevention
-    int prev_detected_count;
+    size_t mPrevDetectedCount; // log spam prevention
 
-    cv::Ptr<cv::aruco::DetectorParameters> detectorParams;
-    cv::Ptr<cv::aruco::Dictionary> dictionary;
-
-    std::vector<cv::Point2f> markerCenters;
-    std::vector<cv::Point3f> markerPositions;
+    cv::Ptr<cv::aruco::DetectorParameters> mDetectorParams;
+    cv::Ptr<cv::aruco::Dictionary> mDictionary;
 
     void handleIgnoreString(const std::string& str);
 
