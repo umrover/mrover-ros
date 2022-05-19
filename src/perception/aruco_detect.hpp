@@ -60,18 +60,20 @@
 #include <opencv2/aruco.hpp>
 #include <opencv2/calib3d.hpp>
 
-#include <list>
 #include <string>
 #include <numeric>
+#include <optional>
+#include <unordered_map>
 #include <boost/algorithm/string.hpp>
 #include <boost/shared_ptr.hpp>
 
 typedef boost::shared_ptr<fiducial_msgs::FiducialArray const> FiducialArrayConstPtr;
 
 struct Fiducial {
-    int id; // what id this ARUCO tag encodes
-    cv::Point2f imageCenter; // camera pixel space
-    cv::Point3f worldPosition; // 3d world position
+    int id = -1; // what id this ARUCO tag encodes
+    std::optional<cv::Point2f> imageCenter; // camera pixel space
+    // TODO: replace with filter
+    std::optional<cv::Point3f> worldPosition; // 3d world position
 };
 
 class FiducialsNode {
@@ -103,7 +105,8 @@ private:
     bool mDoPoseEstimation{};
     bool mHasCamInfo;
     bool mPublishFiducialTf{};
-    std::vector<Fiducial> mFiducials;
+
+    std::unordered_map<int, Fiducial> mFiducials;
     cv_bridge::CvImagePtr mCvPtr;
 
     cv::Mat mCamMat;
@@ -137,8 +140,8 @@ private:
     bool enableDetectionsCallback(std_srvs::SetBool::Request& req,
                                   std_srvs::SetBool::Response& res);
 
-    dynamic_reconfigure::Server<mrover::DetectorParamsConfig> configServer;
-    dynamic_reconfigure::Server<mrover::DetectorParamsConfig>::CallbackType callbackType;
+    dynamic_reconfigure::Server<mrover::DetectorParamsConfig> mConfigServer;
+    dynamic_reconfigure::Server<mrover::DetectorParamsConfig>::CallbackType mCallbackType;
 
 public:
     FiducialsNode();

@@ -34,7 +34,7 @@
 /**
  * @return Euclidean distance between two points
  */
-static double dist(const cv::Point2f& p1, const cv::Point2f& p2) {
+static double dist(cv::Point2f const& p1, cv::Point2f const& p2) {
     double dx = p1.x - p2.x;
     double dy = p1.y - p2.y;
     return sqrt(dx * dx + dy * dy);
@@ -44,7 +44,7 @@ static double dist(const cv::Point2f& p1, const cv::Point2f& p2) {
  * @param   pts Four points of the tag
  * @return  Compute area in image of a fiducial, using Heron's formula to find the area of two triangles
  */
-static double calcFiducialArea(const std::vector<cv::Point2f>& pts) {
+static double calcFiducialArea(std::vector<cv::Point2f> const& pts) {
     const cv::Point2f& p0 = pts.at(0);
     const cv::Point2f& p1 = pts.at(1);
     const cv::Point2f& p2 = pts.at(2);
@@ -102,13 +102,13 @@ void FiducialsNode::configCallback(mrover::DetectorParamsConfig& config, uint32_
     mDetectorParams->polygonalApproxAccuracyRate = config.polygonalApproxAccuracyRate;
 }
 
-void FiducialsNode::ignoreCallback(const std_msgs::String& msg) {
+void FiducialsNode::ignoreCallback(std_msgs::String const& msg) {
     mIgnoreIds.clear();
     mPnh.setParam("ignore_fiducials", msg.data);
     handleIgnoreString(msg.data);
 }
 
-void FiducialsNode::camInfoCallback(const sensor_msgs::CameraInfo::ConstPtr& msg) {
+void FiducialsNode::camInfoCallback(sensor_msgs::CameraInfo::ConstPtr const& msg) {
     if (mHasCamInfo) {
         return;
     }
@@ -131,7 +131,7 @@ void FiducialsNode::camInfoCallback(const sensor_msgs::CameraInfo::ConstPtr& msg
     }
 }
 
-void FiducialsNode::imageCallback(const sensor_msgs::ImageConstPtr& msg) {
+void FiducialsNode::imageCallback(sensor_msgs::ImageConstPtr const& msg) {
     if (!mEnableDetections) {
         return;
     }
@@ -150,25 +150,25 @@ void FiducialsNode::imageCallback(const sensor_msgs::ImageConstPtr& msg) {
 
         cv::aruco::detectMarkers(mCvPtr->image, mDictionary, mCornersCache, mIdsCache, mDetectorParams);
 
-        mFiducials.clear();
+        // Set IDs and centers of tags
         for (size_t i = 0; i < mIdsCache.size(); ++i) {
-            cv::Point2f center = std::accumulate(mCornersCache[i].begin(), mCornersCache[i].end(), cv::Point2f{}) / 4.0f;
-            mFiducials.push_back(Fiducial{mIdsCache[i], center, {}});
+            int id = mIdsCache[i];
+            cv::Point2f imageCenter = std::accumulate(mCornersCache[i].begin(), mCornersCache[i].end(), cv::Point2f{}) / 4.0f;
+            mFiducials[id].id = id;
+            mFiducials[id].imageCenter = imageCenter;
+        }
+
+        // Remove all centers from tags that are no longer in sight
+        for (auto& [id, fid]: mFiducials) {
+            if (std::find(mIdsCache.begin(), mIdsCache.end(), id) == mIdsCache.end()) {
+                fid.imageCenter = std::nullopt;
+            }
         }
 
         size_t detectedCount = mIdsCache.size();
         if (mIsVerbose || detectedCount != mPrevDetectedCount) {
             mPrevDetectedCount = detectedCount;
             ROS_INFO("Detected %zu markers", detectedCount);
-        }
-
-        for (size_t i = 0; i < mIdsCache.size(); i++) {
-            if (std::count(mIgnoreIds.begin(), mIgnoreIds.end(), mIgnoreIds[i]) != 0) {
-                if (mIsVerbose) {
-                    ROS_INFO("Ignoring id %d", mIgnoreIds[i]);
-                }
-                continue;
-            }
         }
 
         for (size_t i = 0; i < mIdsCache.size(); i++) {
@@ -203,7 +203,7 @@ void FiducialsNode::imageCallback(const sensor_msgs::ImageConstPtr& msg) {
     }
 }
 
-cv::Point3f getWorldPosFromPixel(const sensor_msgs::PointCloud2ConstPtr& msg, size_t u, size_t v) {
+cv::Point3f getWorldPosFromPixel(sensor_msgs::PointCloud2ConstPtr const& msg, size_t u, size_t v) {
     // Could be done using PCL point clouds instead
     size_t arrayPos = v * msg->row_step + u * msg->point_step;
     size_t arrayPosX = arrayPos + msg->fields[0].offset;
@@ -217,15 +217,31 @@ cv::Point3f getWorldPosFromPixel(const sensor_msgs::PointCloud2ConstPtr& msg, si
     return point;
 }
 
-void FiducialsNode::pointCloudCallback(const sensor_msgs::PointCloud2ConstPtr& msg) {
-    for (auto& fid: mFiducials) {
-        size_t u = std::lround(fid.imageCenter.x);
-        size_t v = std::lround(fid.imageCenter.y);
+void FiducialsNode::pointCloudCallback(sensor_msgs::PointCloud2ConstPtr const& msg) {
+    for (auto& [id, fid]: mFiducials) {
+        if (!fid.imageCenter) continue;
+
+        size_t u = std::lround(fid.imageCenter->x);
+        size_t v = std::lround(fid.imageCenter->y);
         fid.worldPosition = getWorldPosFromPixel(msg, u, v);
     }
 }
 
-void FiducialsNode::poseEstimateCallback(const FiducialArrayConstPtr& msg) {
+vision_msgs::ObjectHypothesisWithPose getObjectHypothesis(Fiducial const& fid) {
+    vision_msgs::ObjectHypothesisWithPose vmh;
+    vmh.id = fid.id;
+    vmh.score = 0.0;
+    vmh.pose.pose.position.x = fid.worldPosition->x;
+    vmh.pose.pose.position.y = fid.worldPosition->y;
+    vmh.pose.pose.position.z = fid.worldPosition->z;
+    vmh.pose.pose.orientation.w = 1.0;
+    vmh.pose.pose.orientation.x = 0.0;
+    vmh.pose.pose.orientation.y = 0.0;
+    vmh.pose.pose.orientation.z = 0.0;
+    return vmh;
+}
+
+void FiducialsNode::poseEstimateCallback(FiducialArrayConstPtr const& msg) {
     std::vector<cv::Vec3d> rvecs, tvecs;
 
     vision_msgs::Detection2DArray vma;
@@ -243,20 +259,31 @@ void FiducialsNode::poseEstimateCallback(const FiducialArrayConstPtr& msg) {
                 return;
             }
 
+            std::vector<Fiducial> readyFiducials;
+            for (auto& [id, fd]: mFiducials) {
+                if (fd.imageCenter && fd.worldPosition) {
+                    readyFiducials.push_back(fd);
+                }
+            }
 
-            auto [leftFid, rightFid] = std::minmax_element(
-                    mFiducials.begin(), mFiducials.end(),
-                    [](const auto& lhs, const auto& rhs) {
-                        return lhs.imageCenter.x < rhs.imageCenter.x;
+            auto [leftFidIt, rightFidIt] = std::minmax_element(
+                    readyFiducials.begin(), readyFiducials.end(),
+                    [](const Fiducial& fid1, const Fiducial& fid2) {
+                        return fid1.imageCenter->x < fid2.imageCenter->x;
                     }
             );
 
-            for (size_t i = 0; i < mIdsCache.size(); i++) {
+            for (auto it: {leftFidIt, rightFidIt}) {
+                if (it == readyFiducials.end()) continue;
+
+                Fiducial const& fid = *it;
+
 //                cv::aruco::drawAxis(cv_ptr->image, cameraMatrix, distortionCoeffs,
 //                                    rvecs[i], tvecs[i], (float) fiducial_len);
-                if (std::count(mIgnoreIds.begin(), mIgnoreIds.end(), mIdsCache[i]) != 0) {
+
+                if (std::count(mIgnoreIds.begin(), mIgnoreIds.end(), fid.id)) {
                     if (mIsVerbose) {
-                        ROS_INFO("Ignoring id %d", mIdsCache[i]);
+                        ROS_INFO("Ignoring id %d", fid.id);
                     }
                     continue;
                 }
@@ -274,21 +301,8 @@ void FiducialsNode::poseEstimateCallback(const FiducialArrayConstPtr& msg) {
 //                        (norm(tvecs[i]) / fiducial_len);
 
                 // Standard ROS vision_msgs
-                double object_error = 0.0;
-                fiducial_msgs::FiducialTransform ft;
                 vision_msgs::Detection2D vm;
-                vision_msgs::ObjectHypothesisWithPose vmh;
-                vmh.id = mIdsCache[i];
-                vmh.score = object_error;
-                vmh.pose.pose.position.x = tvecs[i][0];
-                vmh.pose.pose.position.y = tvecs[i][1];
-                vmh.pose.pose.position.z = tvecs[i][2];
-                vmh.pose.pose.orientation.w = 1.0;
-                vmh.pose.pose.orientation.x = 0.0;
-                vmh.pose.pose.orientation.y = 0.0;
-                vmh.pose.pose.orientation.z = 0.0;
-
-                vm.results.push_back(vmh);
+                vm.results.push_back(getObjectHypothesis(fid));
                 vma.detections.push_back(vm);
             }
         }
@@ -302,7 +316,7 @@ void FiducialsNode::poseEstimateCallback(const FiducialArrayConstPtr& msg) {
     mPosePub.publish(vma);
 }
 
-void FiducialsNode::handleIgnoreString(const std::string& str) {
+void FiducialsNode::handleIgnoreString(std::string const& str) {
     // ignore fiducials can take comma separated list of individual
     // fiducial ids or ranges, eg "1,4,8,9-12,30-40"
     std::vector<std::string> strs;
@@ -352,7 +366,6 @@ FiducialsNode::FiducialsNode() : mNh(), mPnh("~"), mIt(mNh) {
 
     // Camera intrinsics
     mCamMat = cv::Mat::zeros(3, 3, CV_64F);
-
     // distortion coefficients
     mDistCoeffs = cv::Mat::zeros(1, 5, CV_64F);
 
@@ -364,9 +377,9 @@ FiducialsNode::FiducialsNode() : mNh(), mPnh("~"), mIt(mNh) {
     mDetectorParams = new cv::aruco::DetectorParameters();
 
     mPnh.param<bool>("publish_images", mPublishImages, true);
-    mPnh.param<double>("fiducial_len", mFiducialLen, 0.14);
-    mPnh.param<int>("dictionary", dicNo, 7);
-    mPnh.param<bool>("do_pose_estimation", mDoPoseEstimation, false);
+    mPnh.param<double>("fiducial_len", mFiducialLen, 0.2);
+    mPnh.param<int>("dictionary", dicNo, 0);
+    mPnh.param<bool>("do_pose_estimation", mDoPoseEstimation, true);
     mPnh.param<bool>("publish_fiducial_tf", mPublishFiducialTf, true);
     mPnh.param<bool>("verbose", mIsVerbose, false);
 
@@ -410,32 +423,24 @@ FiducialsNode::FiducialsNode() : mNh(), mPnh("~"), mIt(mNh) {
         }
     }
 
-    mImgPub = mIt.advertise("/fiducial_images", 1);
-
+    mImgPub = mIt.advertise("fiducial_images", 1);
     mVerticesPub = mNh.advertise<fiducial_msgs::FiducialArray>("fiducial_vertices", 1);
-
     mPosePub = mNh.advertise<vision_msgs::Detection2DArray>("fiducial_transforms", 1);
-
     mDictionary = cv::aruco::getPredefinedDictionary(dicNo);
 
 #pragma clang diagnostic push
 #pragma ide diagnostic ignored "UnusedValue"
-    mImgSub = mIt.subscribe("/camera/color/image_raw", 1, &FiducialsNode::imageCallback, this);
-
-    mPcSub = mNh.subscribe("/camera/depth/points", 1, &FiducialsNode::pointCloudCallback, this);
-
-    mVerticesSub = mNh.subscribe("/fiducial_vertices", 1, &FiducialsNode::poseEstimateCallback, this);
-
-    mCamInfoSub = mNh.subscribe("/camera/color/camera_info", 1, &FiducialsNode::camInfoCallback, this);
-
-    mIgnoreSub = mNh.subscribe("/ignore_fiducials", 1, &FiducialsNode::ignoreCallback, this);
-
+    mImgSub = mIt.subscribe("camera/color/image_raw", 1, &FiducialsNode::imageCallback, this);
+    mPcSub = mNh.subscribe("camera/depth/points", 1, &FiducialsNode::pointCloudCallback, this);
+    mVerticesSub = mNh.subscribe("fiducial_vertices", 1, &FiducialsNode::poseEstimateCallback, this);
+    mCamInfoSub = mNh.subscribe("camera/color/camera_info", 1, &FiducialsNode::camInfoCallback, this);
+    mIgnoreSub = mNh.subscribe("ignore_fiducials", 1, &FiducialsNode::ignoreCallback, this);
     mServiceEnableDetections = mNh.advertiseService("enable_detections", &FiducialsNode::enableDetectionsCallback, this);
 #pragma clang diagnostic pop
 
     // Lambda handles passing class pointer (implicit first parameter) to configCallback
-    callbackType = [this](mrover::DetectorParamsConfig& config, uint32_t level) { configCallback(config, level); };
-    configServer.setCallback(callbackType);
+    mCallbackType = [this](mrover::DetectorParamsConfig& config, uint32_t level) { configCallback(config, level); };
+    mConfigServer.setCallback(mCallbackType);
 
     mPnh.param<double>("adaptiveThreshConstant", mDetectorParams->adaptiveThreshConstant, 7);
     mPnh.param<int>("adaptiveThreshWinSizeMax", mDetectorParams->adaptiveThreshWinSizeMax, 53); /* default 23 */
