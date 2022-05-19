@@ -71,7 +71,6 @@ catkin_python_setup()
 ## Generate messages in the 'msg' folder
 add_message_files(
         FILES
-        MarkerInfo.msg
 )
 
 ## Generate services in the 'srv' folder

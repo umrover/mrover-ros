@@ -189,30 +189,18 @@ void FiducialsNode::imageCallback(const sensor_msgs::ImageConstPtr& msg) {
 
         vertices_pub.publish(fva);
 
-        if (fva.fiducials.empty()) {
-            // No tags found, return both tags as invalid
-            markerLocations.first.x = markerLocations.first.y = -1;
-            markerLocations.second.x = markerLocations.second.y = -1;
-        } else if (fva.fiducials.size() == 1) {
-            // One tag found, set second as invalid
-            markerLocations.first = getTagCentroidFromCorners(fva.fiducials[0]);
-            markerLocations.second.x = markerLocations.second.y = -1;
-        } else {
-            // Detected >= 2 tags
-            // If >= 3 tags, return the leftmost and rightmost detected tags
-            // to account for potentially seeing 2 of each tag on a post
-            std::vector<cv::Point2f> tagLocations;
-            tagLocations.reserve(fva.fiducials.size());
-            for (auto tag: fva.fiducials) {
-                tagLocations.push_back(getTagCentroidFromCorners(tag));
-            }
-            std::sort(tagLocations.begin(), tagLocations.end(),
-                      [](const auto& lhs, const auto& rhs) {
-                          return lhs.x < rhs.x;
-                      });
-            markerLocations.first = tagLocations[0];
-            markerLocations.second = tagLocations[tagLocations.size() - 1];
+        markerCenters.clear();
+        markerCenters.reserve(fva.fiducials.size());
+        for (auto& tag: fva.fiducials) {
+            markerCenters.push_back(getTagCentroidFromCorners(tag));
         }
+        std::sort(markerCenters.begin(), markerCenters.end(),
+                  [](const auto& lhs, const auto& rhs) {
+                      return lhs.x < rhs.x;
+                  });
+
+        // Ensure <= 2 markers
+        markerCenters.erase(markerCenters.begin() + 1, markerCenters.end());
 
         if (!ids.empty()) {
             cv::aruco::drawDetectedMarkers(cv_ptr->image, corners, ids);
@@ -230,46 +218,27 @@ void FiducialsNode::imageCallback(const sensor_msgs::ImageConstPtr& msg) {
     }
 }
 
-std::pair<double, double> getDistAndBearingFromPointCloud(const sensor_msgs::PointCloud2ConstPtr& msg, int u, int v) {
+cv::Point3f getPointFromPixel(const sensor_msgs::PointCloud2ConstPtr& msg, size_t u, size_t v) {
     // Could be done using PCL point clouds instead
     size_t arrayPos = v * msg->row_step + u * msg->point_step;
     size_t arrayPosX = arrayPos + msg->fields[0].offset;
     size_t arrayPosY = arrayPos + msg->fields[1].offset;
     size_t arrayPosZ = arrayPos + msg->fields[2].offset;
 
-    float x, y, z;
-    memcpy(&x, &msg->data[arrayPosX], sizeof(float));
-    memcpy(&y, &msg->data[arrayPosY], sizeof(float));
-    memcpy(&z, &msg->data[arrayPosZ], sizeof(float));
-
-    // Ensure xyz are valid
-    if (std::isnan(x) || std::isnan(y) || std::isnan(z)) return {-1, -1};
-
-    const float PI = 3.14159f;
-    double distance = std::sqrt(x * x + y * y + z * z);
-    double bearing = std::atan2(x, z) * 180.0 / PI;
-
-    return {distance, bearing};
+    cv::Point3f point;
+    std::memcpy(&point.x, &msg->data[arrayPosX], sizeof(point.x));
+    std::memcpy(&point.y, &msg->data[arrayPosY], sizeof(point.y));
+    std::memcpy(&point.z, &msg->data[arrayPosZ], sizeof(point.z));
+    return point;
 }
 
 void FiducialsNode::pointCloudCallback(const sensor_msgs::PointCloud2ConstPtr& msg) {
-    mrover::MarkerInfo detectedMarkerInfo;
-    detectedMarkerInfo.distance1 = detectedMarkerInfo.bearing1 = -1;
-    detectedMarkerInfo.distance2 = detectedMarkerInfo.bearing2 = -1;
-
-    if (markerLocations.first.x != -1 && markerLocations.first.y != -1) {
-        // Get the x/y/z from this point in the pointcloud
-        auto x = static_cast<int>(std::lround(markerLocations.first.x));
-        auto y = static_cast<int>(std::lround(markerLocations.first.y));
-        std::tie(detectedMarkerInfo.distance1, detectedMarkerInfo.bearing1) = getDistAndBearingFromPointCloud(msg, x, y);
+    markerPositions.clear();
+    for (auto& center: markerCenters) {
+        size_t u = std::lround(center.x);
+        size_t v = std::lround(center.y);
+        markerPositions.push_back(getPointFromPixel(msg, u, v));
     }
-    if (markerLocations.second.x != -1 && markerLocations.second.y != -1) {
-        // Get the x/y/z from this point in the pointcloud
-        auto x = static_cast<int>(std::lround(markerLocations.second.x));
-        auto y = static_cast<int>(std::lround(markerLocations.second.y));
-        std::tie(detectedMarkerInfo.distance2, detectedMarkerInfo.bearing2) = getDistAndBearingFromPointCloud(msg, x, y);
-    }
-    markerInfo_pub.publish(detectedMarkerInfo);
 }
 
 void FiducialsNode::poseEstimateCallback(const FiducialArrayConstPtr& msg) {
@@ -290,22 +259,9 @@ void FiducialsNode::poseEstimateCallback(const FiducialArrayConstPtr& msg) {
                 return;
             }
 
-//            std::vector<double> reprojectionError;
-//            estimatePoseSingleMarkers((float) fiducial_len,
-//                                      cameraMatrix, distortionCoeffs,
-//                                      rvecs, tvecs,
-//                                      reprojectionError);
-
             for (size_t i = 0; i < ids.size(); i++) {
 //                cv::aruco::drawAxis(cv_ptr->image, cameraMatrix, distortionCoeffs,
 //                                    rvecs[i], tvecs[i], (float) fiducial_len);
-//                if (verbose) {
-//                    ROS_INFO("Detected id %d T %.2f %.2f %.2f R %.2f %.2f %.2f", ids[i],
-//                             tvecs[i][0], tvecs[i][1], tvecs[i][2],
-//                             rvecs[i][0], rvecs[i][1], rvecs[i][2]);
-//
-//                }
-
                 if (std::count(ignoreIds.begin(), ignoreIds.end(), ids[i]) != 0) {
                     if (verbose) {
                         ROS_INFO("Ignoring id %d", ids[i]);
@@ -326,60 +282,22 @@ void FiducialsNode::poseEstimateCallback(const FiducialArrayConstPtr& msg) {
 //                        (norm(tvecs[i]) / fiducial_len);
 
                 // Standard ROS vision_msgs
-//                fiducial_msgs::FiducialTransform ft;
-//                tf2::Quaternion q;
-//                if (vis_msgs) {
-//                    vision_msgs::Detection2D vm;
-//                    vision_msgs::ObjectHypothesisWithPose vmh;
-//                    vmh.id = ids[i];
-//                    vmh.score = exp(-2 * object_error); // [0, infinity] -> [1,0]
-//                    vmh.pose.pose.position.x = tvecs[i][0];
-//                    vmh.pose.pose.position.y = tvecs[i][1];
-//                    vmh.pose.pose.position.z = tvecs[i][2];
-//                    q.setRotation(tf2::Vector3(axis[0], axis[1], axis[2]), angle);
-//                    vmh.pose.pose.orientation.w = q.w();
-//                    vmh.pose.pose.orientation.x = q.x();
-//                    vmh.pose.pose.orientation.y = q.y();
-//                    vmh.pose.pose.orientation.z = q.z();
-//
-//                    vm.results.push_back(vmh);
-//                    vma.detections.push_back(vm);
-//                } else {
-//                    ft.fiducial_id = ids[i];
-//
-//                    ft.transform.translation.x = tvecs[i][0];
-//                    ft.transform.translation.y = tvecs[i][1];
-//                    ft.transform.translation.z = tvecs[i][2];
-//                    q.setRotation(tf2::Vector3(axis[0], axis[1], axis[2]), angle);
-//                    ft.transform.rotation.w = q.w();
-//                    ft.transform.rotation.x = q.x();
-//                    ft.transform.rotation.y = q.y();
-//                    ft.transform.rotation.z = q.z();
-//                    ft.fiducial_area = calcFiducialArea(corners[i]);
-//                    ft.image_error = reprojectionError[i];
-//                    // Convert image_error (in pixels) to object_error (in meters)
-//                    ft.object_error =
-//                            (reprojectionError[i] / dist(corners[i][0], corners[i][2])) *
-//                            (norm(tvecs[i]) / fiducial_len);
-//
-//                    fta.transforms.push_back(ft);
-//                }
+                double object_error = 0.0;
+                fiducial_msgs::FiducialTransform ft;
+                vision_msgs::Detection2D vm;
+                vision_msgs::ObjectHypothesisWithPose vmh;
+                vmh.id = ids[i];
+                vmh.score = object_error;
+                vmh.pose.pose.position.x = tvecs[i][0];
+                vmh.pose.pose.position.y = tvecs[i][1];
+                vmh.pose.pose.position.z = tvecs[i][2];
+                vmh.pose.pose.orientation.w = 1.0;
+                vmh.pose.pose.orientation.x = 0.0;
+                vmh.pose.pose.orientation.y = 0.0;
+                vmh.pose.pose.orientation.z = 0.0;
 
-                // Publish tf for the fiducial relative to the camera
-                if (publishFiducialTf) {
-                    geometry_msgs::TransformStamped ts;
-                    ts.transform.translation.x = tvecs[i][0];
-                    ts.transform.translation.y = tvecs[i][1];
-                    ts.transform.translation.z = tvecs[i][2];
-                    ts.transform.rotation.w = 1.0;
-                    ts.transform.rotation.x = 0.0;
-                    ts.transform.rotation.y = 0.0;
-                    ts.transform.rotation.z = 0.0;
-                    ts.header.frame_id = frameId;
-                    ts.header.stamp = msg->header.stamp;
-                    ts.child_frame_id = "fiducial_" + std::to_string(ids[i]);
-                    broadcaster.sendTransform(ts);
-                }
+                vm.results.push_back(vmh);
+                vma.detections.push_back(vm);
             }
         }
         catch (cv_bridge::Exception& e) {
@@ -501,8 +419,6 @@ FiducialsNode::FiducialsNode() : nh(), pnh("~"), it(nh) {
     }
 
     image_pub = it.advertise("/fiducial_images", 1);
-
-    markerInfo_pub = nh.advertise<mrover::MarkerInfo>("marker_info", 1);
 
     vertices_pub = nh.advertise<fiducial_msgs::FiducialArray>("fiducial_vertices", 1);
 

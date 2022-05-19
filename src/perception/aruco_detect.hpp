@@ -65,8 +65,6 @@
 #include <boost/algorithm/string.hpp>
 #include <boost/shared_ptr.hpp>
 
-#include "mrover/MarkerInfo.h"
-
 typedef boost::shared_ptr<fiducial_msgs::FiducialArray const> FiducialArrayConstPtr;
 
 class FiducialsNode {
@@ -109,7 +107,6 @@ private:
     std::map<int, double> fiducialLens;
 
     image_transport::Publisher image_pub;
-    ros::Publisher markerInfo_pub;
 
     // log spam prevention
     int prev_detected_count;
@@ -117,7 +114,8 @@ private:
     cv::Ptr<cv::aruco::DetectorParameters> detectorParams;
     cv::Ptr<cv::aruco::Dictionary> dictionary;
 
-    std::pair<cv::Point2f, cv::Point2f> markerLocations;
+    std::vector<cv::Point2f> markerCenters;
+    std::vector<cv::Point3f> markerPositions;
 
     void handleIgnoreString(const std::string& str);
 
