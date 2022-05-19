@@ -31,13 +31,10 @@
 #include "aruco_detect.hpp"
 
 
-using namespace std;
-using namespace cv;
-
 /**
   * @brief Return object points for the system centered in a single marker, given the marker length
   */
-static void getSingleMarkerObjectPoints(float markerLength, vector<Point3f>& objPoints) {
+static void getSingleMarkerObjectPoints(float markerLength, std::vector<cv::Point3f>& objPoints) {
 
     CV_Assert(markerLength > 0);
 
@@ -71,10 +68,10 @@ static cv::Point2f getTagCentroidFromCorners(fiducial_msgs::Fiducial fiducial) {
 // Compute area in image of a fiducial, using Heron's formula
 // to find the area of two triangles
 static double calcFiducialArea(const std::vector<cv::Point2f>& pts) {
-    const Point2f& p0 = pts.at(0);
-    const Point2f& p1 = pts.at(1);
-    const Point2f& p2 = pts.at(2);
-    const Point2f& p3 = pts.at(3);
+    const cv::Point2f& p0 = pts.at(0);
+    const cv::Point2f& p1 = pts.at(1);
+    const cv::Point2f& p2 = pts.at(2);
+    const cv::Point2f& p3 = pts.at(3);
 
     double a1 = dist(p0, p1);
     double b1 = dist(p0, p3);
@@ -93,12 +90,12 @@ static double calcFiducialArea(const std::vector<cv::Point2f>& pts) {
 }
 
 // estimate reprojection error
-static double getReprojectionError(const vector<Point3f>& objectPoints,
-                                   const vector<Point2f>& imagePoints,
-                                   const Mat& cameraMatrix, const Mat& distCoeffs,
-                                   const Vec3d& rvec, const Vec3d& tvec) {
+static double getReprojectionError(const std::vector<cv::Point3f>& objectPoints,
+                                   const std::vector<cv::Point2f>& imagePoints,
+                                   const cv::Mat& cameraMatrix, const cv::Mat& distCoeffs,
+                                   const cv::Vec3d& rvec, const cv::Vec3d& tvec) {
 
-    vector<Point2f> projectedPoints;
+    std::vector<cv::Point2f> projectedPoints;
 
     cv::projectPoints(objectPoints, rvec, tvec, cameraMatrix,
                       distCoeffs, projectedPoints);
@@ -116,12 +113,12 @@ static double getReprojectionError(const vector<Point3f>& objectPoints,
 void FiducialsNode::estimatePoseSingleMarkers(float markerLength,
                                               const cv::Mat& cameraMatrix,
                                               const cv::Mat& distCoeffs,
-                                              vector<Vec3d>& rvecs, vector<Vec3d>& tvecs,
-                                              vector<double>& reprojectionError) {
+                                              std::vector<cv::Vec3d>& rvecs, std::vector<cv::Vec3d>& tvecs,
+                                              std::vector<double>& reprojectionError) {
 
     CV_Assert(markerLength > 0);
 
-    vector<Point3f> markerObjPoints;
+    std::vector<cv::Point3f> markerObjPoints;
     int nMarkers = (int) corners.size();
     rvecs.reserve(nMarkers);
     tvecs.reserve(nMarkers);
@@ -131,12 +128,12 @@ void FiducialsNode::estimatePoseSingleMarkers(float markerLength,
     for (int i = 0; i < nMarkers; i++) {
         double fiducialSize = markerLength;
 
-        auto it = fiducialLens.find(ids[i]);
-        if (it != fiducialLens.end()) {
-            fiducialSize = it->second;
+        auto fiducialIt = fiducialLens.find(ids[i]);
+        if (fiducialIt != fiducialLens.end()) {
+            fiducialSize = fiducialIt->second;
         }
 
-        getSingleMarkerObjectPoints(fiducialSize, markerObjPoints);
+        getSingleMarkerObjectPoints(static_cast<float>(fiducialSize), markerObjPoints);
         cv::solvePnP(markerObjPoints, corners[i], cameraMatrix, distCoeffs,
                      rvecs[i], tvecs[i]);
 
@@ -164,12 +161,12 @@ void FiducialsNode::configCallback(mrover::DetectorParamsConfig& config, uint32_
 #else
     if (config.doCornerRefinement) {
         if (config.cornerRefinementSubpix) {
-            detectorParams->cornerRefinementMethod = aruco::CORNER_REFINE_SUBPIX;
+            detectorParams->cornerRefinementMethod = cv::aruco::CORNER_REFINE_SUBPIX;
         } else {
-            detectorParams->cornerRefinementMethod = aruco::CORNER_REFINE_CONTOUR;
+            detectorParams->cornerRefinementMethod = cv::aruco::CORNER_REFINE_CONTOUR;
         }
     } else {
-        detectorParams->cornerRefinementMethod = aruco::CORNER_REFINE_NONE;
+        detectorParams->cornerRefinementMethod = cv::aruco::CORNER_REFINE_NONE;
     }
 #endif
     detectorParams->errorCorrectionRate = config.errorCorrectionRate;
@@ -232,7 +229,7 @@ void FiducialsNode::imageCallback(const sensor_msgs::ImageConstPtr& msg) {
     try {
         cv_ptr = cv_bridge::toCvCopy(msg, sensor_msgs::image_encodings::BGR8);
 
-        aruco::detectMarkers(cv_ptr->image, dictionary, corners, ids, detectorParams);
+        cv::aruco::detectMarkers(cv_ptr->image, dictionary, corners, ids, detectorParams);
 
         int detected_count = (int) ids.size();
         if (verbose || detected_count != prev_detected_count) {
@@ -275,7 +272,7 @@ void FiducialsNode::imageCallback(const sensor_msgs::ImageConstPtr& msg) {
             // Detected >= 2 tags
             // If >= 3 tags, return the leftmost and rightmost detected tags
             // to account for potentially seeing 2 of each tag on a post
-            vector<cv::Point2f> tagLocations;
+            std::vector<cv::Point2f> tagLocations;
             tagLocations.reserve(fva.fiducials.size());
             for (auto tag: fva.fiducials) {
                 tagLocations.push_back(getTagCentroidFromCorners(tag));
@@ -289,7 +286,7 @@ void FiducialsNode::imageCallback(const sensor_msgs::ImageConstPtr& msg) {
         }
 
         if (!ids.empty()) {
-            aruco::drawDetectedMarkers(cv_ptr->image, corners, ids);
+            cv::aruco::drawDetectedMarkers(cv_ptr->image, corners, ids);
         }
 
         if (publish_images) {
@@ -333,21 +330,21 @@ void FiducialsNode::pointCloudCallback(const sensor_msgs::PointCloud2ConstPtr& m
 
     if (markerLocations.first.x != -1 && markerLocations.first.y != -1) {
         // Get the x/y/z from this point in the pointcloud
-        int x = static_cast<int>(std::lround(markerLocations.first.x));
-        int y = static_cast<int>(std::lround(markerLocations.first.y));
+        auto x = static_cast<int>(std::lround(markerLocations.first.x));
+        auto y = static_cast<int>(std::lround(markerLocations.first.y));
         std::tie(detectedMarkerInfo.distance1, detectedMarkerInfo.bearing1) = getDistAndBearingFromPointCloud(msg, x, y);
     }
     if (markerLocations.second.x != -1 && markerLocations.second.y != -1) {
         // Get the x/y/z from this point in the pointcloud
-        int x = static_cast<int>(std::lround(markerLocations.second.x));
-        int y = static_cast<int>(std::lround(markerLocations.second.y));
+        auto x = static_cast<int>(std::lround(markerLocations.second.x));
+        auto y = static_cast<int>(std::lround(markerLocations.second.y));
         std::tie(detectedMarkerInfo.distance2, detectedMarkerInfo.bearing2) = getDistAndBearingFromPointCloud(msg, x, y);
     }
     markerInfo_pub.publish(detectedMarkerInfo);
 }
 
 void FiducialsNode::poseEstimateCallback(const FiducialArrayConstPtr& msg) {
-    vector<Vec3d> rvecs, tvecs;
+    std::vector<cv::Vec3d> rvecs, tvecs;
 
     vision_msgs::Detection2DArray vma;
     fiducial_msgs::FiducialTransformArray fta;
@@ -371,14 +368,14 @@ void FiducialsNode::poseEstimateCallback(const FiducialArrayConstPtr& msg) {
                 return;
             }
 
-            vector<double> reprojectionError;
+            std::vector<double> reprojectionError;
             estimatePoseSingleMarkers((float) fiducial_len,
                                       cameraMatrix, distortionCoeffs,
                                       rvecs, tvecs,
                                       reprojectionError);
 
             for (size_t i = 0; i < ids.size(); i++) {
-                aruco::drawAxis(cv_ptr->image, cameraMatrix, distortionCoeffs,
+                cv::aruco::drawAxis(cv_ptr->image, cameraMatrix, distortionCoeffs,
                                 rvecs[i], tvecs[i], (float) fiducial_len);
                 if (verbose) {
                     ROS_INFO("Detected id %d T %.2f %.2f %.2f R %.2f %.2f %.2f", ids[i],
@@ -395,7 +392,7 @@ void FiducialsNode::poseEstimateCallback(const FiducialArrayConstPtr& msg) {
                 }
 
                 double angle = norm(rvecs[i]);
-                Vec3d axis = rvecs[i] / angle;
+                cv::Vec3d axis = rvecs[i] / angle;
 
                 if (verbose) {
                     ROS_INFO("angle %f axis %f %f %f",
@@ -486,13 +483,11 @@ void FiducialsNode::poseEstimateCallback(const FiducialArrayConstPtr& msg) {
 }
 
 void FiducialsNode::handleIgnoreString(const std::string& str) {
-    /*
-    ignore fiducials can take comma separated list of individual
-    fiducial ids or ranges, eg "1,4,8,9-12,30-40"
-    */
+    // ignore fiducials can take comma separated list of individual
+    // fiducial ids or ranges, eg "1,4,8,9-12,30-40"
     std::vector<std::string> strs;
     boost::split(strs, str, boost::is_any_of(","));
-    for (const string& element: strs) {
+    for (const std::string& element: strs) {
         if (element.empty()) {
             continue;
         }
@@ -544,13 +539,13 @@ FiducialsNode::FiducialsNode() : nh(), pnh("~"), it(nh) {
     haveCamInfo = false;
     enable_detections = true;
 
-    int dicno;
+    int dicNo;
 
-    detectorParams = new aruco::DetectorParameters();
+    detectorParams = new cv::aruco::DetectorParameters();
 
     pnh.param<bool>("publish_images", publish_images, true);
     pnh.param<double>("fiducial_len", fiducial_len, 0.14);
-    pnh.param<int>("dictionary", dicno, 7);
+    pnh.param<int>("dictionary", dicNo, 7);
     pnh.param<bool>("do_pose_estimation", doPoseEstimation, false);
     pnh.param<bool>("publish_fiducial_tf", publishFiducialTf, true);
     pnh.param<bool>("vis_msgs", vis_msgs, false);
@@ -559,16 +554,14 @@ FiducialsNode::FiducialsNode() : nh(), pnh("~"), it(nh) {
     std::string str;
     std::vector<std::string> strs;
 
-    pnh.param<string>("ignore_fiducials", str, "");
+    pnh.param<std::string>("ignore_fiducials", str, "");
     handleIgnoreString(str);
 
-    /*
-    fiducial size can take comma separated list of size: id or size: range,
-    e.g. "200.0: 12, 300.0: 200-300"
-    */
-    pnh.param<string>("fiducial_len_override", str, "");
+    // fiducial size can take comma separated list of size: id or size: range,
+    // e.g. "200.0: 12, 300.0: 200-300"
+    pnh.param<std::string>("fiducial_len_override", str, "");
     boost::split(strs, str, boost::is_any_of(","));
-    for (const string& element: strs) {
+    for (const std::string& element: strs) {
         if (element.empty()) {
             continue;
         }
@@ -609,7 +602,7 @@ FiducialsNode::FiducialsNode() : nh(), pnh("~"), it(nh) {
     else
         pose_pub = nh.advertise<fiducial_msgs::FiducialTransformArray>("fiducial_transforms", 1);
 
-    dictionary = aruco::getPredefinedDictionary(dicno);
+    dictionary = cv::aruco::getPredefinedDictionary(dicNo);
 
     img_sub = it.subscribe("/camera/color/image_raw", 1, &FiducialsNode::imageCallback, this);
 
@@ -622,7 +615,7 @@ FiducialsNode::FiducialsNode() : nh(), pnh("~"), it(nh) {
 
     service_enable_detections = nh.advertiseService("enable_detections", &FiducialsNode::enableDetectionsCallback, this);
 
-    callbackType = boost::bind(&FiducialsNode::configCallback, this, _1, _2);
+    callbackType = [this](mrover::DetectorParamsConfig& config, uint32_t level) { configCallback(config, level); };
     configServer.setCallback(callbackType);
 
     pnh.param<double>("adaptiveThreshConstant", detectorParams->adaptiveThreshConstant, 7);
@@ -632,23 +625,19 @@ FiducialsNode::FiducialsNode() : nh(), pnh("~"), it(nh) {
     pnh.param<int>("cornerRefinementMaxIterations", detectorParams->cornerRefinementMaxIterations, 30);
     pnh.param<double>("cornerRefinementMinAccuracy", detectorParams->cornerRefinementMinAccuracy, 0.01); /* default 0.1 */
     pnh.param<int>("cornerRefinementWinSize", detectorParams->cornerRefinementWinSize, 5);
-#if CV_MINOR_VERSION == 2 and CV_MAJOR_VERSION == 3
-    pnh.param<bool>("doCornerRefinement",detectorParams->doCornerRefinement, true); /* default false */
-#else
     bool doCornerRefinement = true;
     pnh.param<bool>("doCornerRefinement", doCornerRefinement, true);
     if (doCornerRefinement) {
         bool cornerRefinementSubPix = true;
         pnh.param<bool>("cornerRefinementSubPix", cornerRefinementSubPix, true);
         if (cornerRefinementSubPix) {
-            detectorParams->cornerRefinementMethod = aruco::CORNER_REFINE_SUBPIX;
+            detectorParams->cornerRefinementMethod = cv::aruco::CORNER_REFINE_SUBPIX;
         } else {
-            detectorParams->cornerRefinementMethod = aruco::CORNER_REFINE_CONTOUR;
+            detectorParams->cornerRefinementMethod = cv::aruco::CORNER_REFINE_CONTOUR;
         }
     } else {
-        detectorParams->cornerRefinementMethod = aruco::CORNER_REFINE_NONE;
+        detectorParams->cornerRefinementMethod = cv::aruco::CORNER_REFINE_NONE;
     }
-#endif
     pnh.param<double>("errorCorrectionRate", detectorParams->errorCorrectionRate, 0.6);
     pnh.param<double>("minCornerDistanceRate", detectorParams->minCornerDistanceRate, 0.05);
     pnh.param<int>("markerBorderBits", detectorParams->markerBorderBits, 1);
@@ -672,5 +661,5 @@ int main(int argc, char** argv) {
 
     ros::spin();
 
-    return 0;
+    return EXIT_SUCCESS;
 }

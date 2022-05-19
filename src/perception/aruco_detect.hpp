@@ -88,16 +88,16 @@ private:
     ros::ServiceServer service_enable_detections;
 
     // if set, we publish the images that contain fiducials
-    bool publish_images;
+    bool publish_images{};
     bool enable_detections;
-    bool vis_msgs;
-    bool verbose;
+    bool vis_msgs{};
+    bool verbose{};
 
-    double fiducial_len;
+    double fiducial_len{};
 
-    bool doPoseEstimation;
+    bool doPoseEstimation{};
     bool haveCamInfo;
-    bool publishFiducialTf;
+    bool publishFiducialTf{};
     std::vector<std::vector<cv::Point2f> > corners;
     std::vector<int> ids;
     cv_bridge::CvImagePtr cv_ptr;
@@ -133,7 +133,7 @@ private:
 
     void imageCallback(const sensor_msgs::ImageConstPtr& msg);
 
-    void pointCloudCallback(const sensor_msgs::PointCloud2ConstPtr & msg);
+    void pointCloudCallback(const sensor_msgs::PointCloud2ConstPtr& msg);
 
     void poseEstimateCallback(const FiducialArrayConstPtr& msg);
 
