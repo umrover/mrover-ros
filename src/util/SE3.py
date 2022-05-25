@@ -1,15 +1,15 @@
+from __future__ import annotations
 from gettext import translation
 import numpy as np
 from geometry_msgs.msg import Pose, Transform
 from tf.transformations import quaternion_matrix
 from ros_numpy import numpify
-from mrover.util.tf_utils import vector3_to_point, point_to_vector3
-from __future__ import annotations
+from tf_utils import vector3_to_point, point_to_vector3
 
 class SE3(Pose):
     
     def __init__(self, *args, **kwargs):
-        super().__init__(args, kwargs)
+        super().__init__(*args, **kwargs)
         
     @classmethod
     def from_tf(cls, tf: Transform) -> SE3:
@@ -26,7 +26,7 @@ class SE3(Pose):
         """
         point = vector3_to_point(tf.translation)
         orientation = tf.rotation
-        return SE3(point=point, orientation=orientation)
+        return SE3(position=point, orientation=orientation)
         
     def to_tf(self) -> Transform:
         """
@@ -37,7 +37,7 @@ class SE3(Pose):
             the created Transform message object
         """
         translation = point_to_vector3(self.position)
-        return Transform(translation=translation, orientation=self.orientation)
+        return Transform(translation=translation, rotation=self.orientation)
     
     def x_vector(self) -> np.ndarray:
         """
@@ -62,9 +62,9 @@ class SE3(Pose):
         Returns:
             euclidean distance between the two SE3 poses
         """
-        return np.linalg.norm(p.position() - self.position())
+        return np.linalg.norm(p.position_vector() - self.position_vector())
 
-    def position(self) -> np.ndarray:
+    def position_vector(self) -> np.ndarray:
         """
         Get the position vector of the SE3 pose.
         
