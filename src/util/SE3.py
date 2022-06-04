@@ -20,11 +20,8 @@ class SE3(Pose):
         The translation of the Transform will become the position of the Pose,
         and the rotation of the Transform will become the orientation of the Pose.
 
-        Args:
-            tf: the Transform message object
-
-        Returns:
-            the created SE3 pose object
+        :param tf: the Transform message object
+        :returns: the created SE3 pose object
         """
         point = vector3_to_point(tf.translation)
         orientation = tf.rotation
@@ -35,8 +32,7 @@ class SE3(Pose):
         Create a transform message from an SE3 pose object.
         The opposite of from_tf(), see its docs for details.
 
-        Returns:
-            the created Transform message object
+        :returns: the created Transform message object
         """
         translation = point_to_vector3(self.position)
         return Transform(translation=translation, rotation=self.orientation)
@@ -45,8 +41,7 @@ class SE3(Pose):
         """
         Get the unit direction vector of the SE3 pose's X axis.
 
-        Returns:
-            unit direction vector [x, y, z]
+        :returns: unit direction vector [x, y, z]
         """
         rotation_matrix = quaternion_matrix(self.quaternion_array())
 
@@ -58,11 +53,8 @@ class SE3(Pose):
         Get the euclidean distance from the position of this SE3 pose 
         to the position of another SE3 pose.
 
-        Args:
-            p: another SE3 pose object
-
-        Returns:
-            euclidean distance between the two SE3 poses
+        :param p: another SE3 pose object
+        :returns: euclidean distance between the two SE3 poses
         """
         return np.linalg.norm(p.position_vector() - self.position_vector())
 
@@ -70,8 +62,7 @@ class SE3(Pose):
         """
         Get the position vector of the SE3 pose.
 
-        Returns:
-            a position vector [x, y, z]
+        :returns: a position vector [x, y, z]
         """
         return numpify(self.position)
 
@@ -79,8 +70,7 @@ class SE3(Pose):
         """
         Get the quaternion array of the SE3 pose.
 
-        Returns:
-            a quaternion array [x, y, z, w]
+        :returns: a quaternion array [x, y, z, w]
         """
         return numpify(self.orientation)
 
@@ -88,8 +78,7 @@ class SE3(Pose):
         """
         Get the homogenous rotation matrix of the SE3 pose.
 
-        Returns:
-            a homogenous rotation matrix (4x4)
+        :returns: a homogenous rotation matrix (4x4)
         """
         return quaternion_matrix(self.quaternion_array())
 
@@ -98,11 +87,8 @@ class SE3(Pose):
         Get the rotational distance between this SE3 pose and another SE3 pose,
         defined as the angle of rotation from one quaternion to the other along the shortest arc.
 
-        Args:
-            p: the other SE3 pose object
-
-        Returns:
-            the angle in radians between the orientations of the two poses
+        :param p: the other SE3 pose object
+        :returns: the angle in radians between the orientations of the two poses
         """
         q1 = self.quaternion_array()
         q2 = p.quaternion_array()
