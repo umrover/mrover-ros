@@ -8,7 +8,7 @@ on:
       - master
 jobs:
   formatting-check:
-    name: Formatting Check
+    name: Code Style Check
     runs-on: ubuntu-20.04
     steps:
       - uses: actions/checkout@v2
@@ -18,3 +18,13 @@ jobs:
           clang-format-version: "13"
           check-path: "src"
       - uses: ricardochaves/python-lint@v1.4.0
+        with:
+          python-root-list: "src scripts"
+          use-isort: true
+          use-pycodestyle: true
+          extra-pycodestyle-options: "--max-line-length=119"
+          use-pylint: false # TODO: Would have to pip install everything for this
+          use-flake8: true
+          extra-flake8-options: "--max-line-length=119"
+          use-black: false
+          use-mypy: false
