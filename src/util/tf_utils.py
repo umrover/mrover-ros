@@ -1,6 +1,6 @@
 from localization import EARTH_RADIUS
 from sensor_msgs.msg import NavSatFix, geometry_msgs
-from geometry_msgs.msg import TransformStamped
+from geometry_msgs.msg import TransformStamped, Vector3, Point
 import rospy
 import numpy as np
 
@@ -24,3 +24,9 @@ def gps_to_world(gps_coord : NavSatFix, ref_coord : NavSatFix, name : str, paren
     t.transform.translation.y = np.radians(gps_coord.latitude - ref_coord.latitude) * EARTH_RADIUS
     t.transform.translation.z = gps_coord.altitude
     return t
+
+def vector3_to_point(vec3: Vector3) -> Point:
+    return Point(x=vec3.x, y=vec3.y, z=vec3.z)
+
+def point_to_vector3(pt: Point) -> Vector3:
+    return Vector3(x=pt.x, y=pt.y, z=pt.z)
