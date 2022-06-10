@@ -49,7 +49,7 @@ class ScienceBridge():
         self.mosfet_dev_map = {
             "arm_laser" : 1
             "raman_laser" : 10
-            "uv_bulb" : 6
+            "uv_bulb" : 1
             "uv_led" : 4
             "white_led" : 5
         }
