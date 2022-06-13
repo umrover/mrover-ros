@@ -110,7 +110,7 @@ add_message_files(
 
 ## Generate dynamic reconfigure parameters in the 'cfg' folder
 generate_dynamic_reconfigure_options(
-        cfg/DetectorParams.cfg
+        config/DetectorParams.cfg
 )
 
 ###################################
