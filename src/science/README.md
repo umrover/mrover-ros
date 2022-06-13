@@ -26,11 +26,6 @@ Messsages: [Heater.msg](https://github.com/umrover/mrover-ros/blob/main/msg/Heat
 Publishers: gui \
 Subscribers: science
 
-**Raman Laser Command [subscriber]** \
-Messages: [Enable.msg](https://github.com/umrover/mrover-ros/blob/main/msg/Enable.msg) "/raman_laser_cmd" \
-Publishers: gui \
-Subscribers: science
-
 **Servo Command [subscriber]** \
 Messsages: [Servo.msg](https://github.com/umrover/mrover-ros/blob/main/msg/Servo.msg) "/servo_cmd" \
 Publishers: gui \

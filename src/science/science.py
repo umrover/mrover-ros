@@ -47,7 +47,6 @@ class ScienceBridge():
         # Mapping of onboard devices to mosfet devices
         self.mosfet_dev_map = {
             "arm_laser": 1,
-            "raman_laser": 10,
             "uv_bulb": 1,
             "uv_led": 4,
             "white_led": 5
@@ -238,7 +237,6 @@ def main():
         rospy.Subscriber("arm_laser_cmd", Enable, bridge.mosfet_transmit, "arm_laser")
         rospy.Subscriber("heater_cmd", Heater, bridge.heater_transmit)
         rospy.Subscriber("heater_auto_shut_off_cmd", Enable, bridge.heater_auto_shut_off_transmit)
-        rospy.Subscriber("raman_laser_cmd", Enable, bridge.mosfet_transmit, "raman_laser")
         rospy.Subscriber("servo_cmd", Servo, bridge.servo_transmit)
         rospy.Subscriber("uv_bulb_cmd", Enable, bridge.mosfet_transmit, "uv_bulb")
         rospy.Subscriber("uv_led_cmd", Enable, bridge.mosfet_transmit, "uv_led")
