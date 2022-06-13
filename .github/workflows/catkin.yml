@@ -11,6 +11,7 @@ jobs:
     if: github.event.pull_request.draft == false
     steps:
       - uses: actions/checkout@v2
+      - run: sudo rosdep init
       - uses: betwo/github-setup-catkin@master
         with:
           ros-version: "noetic"
