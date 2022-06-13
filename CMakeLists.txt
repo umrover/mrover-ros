@@ -71,7 +71,13 @@ catkin_python_setup()
 ## Generate messages in the 'msg' folder
 add_message_files(
         FILES
+        AutonLED.msg
+        Enable.msg
+        Heater.msg
         MarkerInfo.msg
+        Servo.msg
+        Spectral.msg
+        Thermistor.msg
 )
 
 ## Generate services in the 'srv' folder
