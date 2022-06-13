@@ -17,22 +17,22 @@ ser = serial.Serial(
 ser.close()
 
 
-def add_padding(uart_msg: str) -> str:
+def add_padding(tx_msg: str) -> str:
     """Used to add padding since UART messages must be of certain length"""
-    while len(uart_msg) < UART_TRANSMIT_MSG_LEN:
-        uart_msg += ","
-    return uart_msg
+    while len(tx_msg) < UART_TRANSMIT_MSG_LEN:
+        tx_msg += ","
+    return tx_msg
 
 
-def send_msg(uart_msg: str) -> None:
+def send_msg(tx_msg: str) -> None:
     """Transmits a string over UART of proper length"""
     try:
-        uart_msg = add_padding(uart_msg)
-        if len(uart_msg) > UART_TRANSMIT_MSG_LEN:
-            uart_msg = uart_msg[:UART_TRANSMIT_MSG_LEN]
-        print(uart_msg)
+        tx_msg = add_padding(tx_msg)
+        if len(tx_msg) > UART_TRANSMIT_MSG_LEN:
+            tx_msg = tx_msg[:UART_TRANSMIT_MSG_LEN]
+        print(tx_msg)
         ser.open()
-        ser.write(bytes(uart_msg, encoding='utf-8'))
+        ser.write(bytes(tx_msg, encoding='utf-8'))
         ser.close()
     except serial.SerialException as exc:
         print("send_msg exception:", exc)

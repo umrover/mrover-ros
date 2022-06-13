@@ -5,7 +5,7 @@ science nucleo to operate the science boxes and get relevant data
 import numpy as np
 import rospy
 from mrover import Enable, Heater, Servo, Spectral, Thermistor
-from sciencecomms import send_msg, read_msg
+from sciencecomms import read_msg, send_msg
 
 
 class ScienceBridge():

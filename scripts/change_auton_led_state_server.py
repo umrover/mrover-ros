@@ -3,7 +3,7 @@ from __future__ import print_function
 
 import rospy
 from mrover.src.science.sciencecomms import send_msg
-from mrover.srv import (ChangeAutonLEDStateRequest, ChangeAutonLEDState,
+from mrover.srv import (ChangeAutonLEDState, ChangeAutonLEDStateRequest,
                         ChangeAutonLEDStateResponse)
 
 led_map = {
