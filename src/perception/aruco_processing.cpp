@@ -48,21 +48,9 @@ void FiducialsNode::imageCallback(sensor_msgs::ImageConstPtr const& msg) {
             PersistentFiducial& fid = mPersistentFiducials[id];
             if (!immediateFid.fidInCam.has_value()) continue;
 
-            geometry_msgs::PoseStamped fidInCam{};
-            fidInCam.header.frame_id = ROVER_FRAME;
-            fidInCam.header.stamp = ros::Time::now();
-            fidInCam.header.seq = mSeqNum;
-            fidInCam.pose = static_cast<geometry_msgs::Pose>(immediateFid.fidInCam.value());
-
-            geometry_msgs::PoseStamped fidInOdomStamped{};
-            geometry_msgs::TransformStamped odomToRover = mTfBuffer.lookupTransform(ODOM_FRAME, ROVER_FRAME, ros::Time(0));
-            tf2::doTransform(fidInCam, fidInOdomStamped, odomToRover);
-
             fid.id = id;
+            SE3 fidInOdom = SE3::transform(mTfBuffer, ROVER_FRAME, ODOM_FRAME, immediateFid.fidInCam.value(), mSeqNum);
             fid.setFilterParams(mFilterCount, mFilterProportion);
-            SE3 fidInOdom{};
-            fidInOdom.position = fidInOdomStamped.pose.position;
-            fidInOdom.orientation.w = 1.0;
             fid.addReading(fidInOdom);
         }
 
@@ -124,9 +112,9 @@ SE3 getCamToFidFromPixel(sensor_msgs::PointCloud2ConstPtr const& msg, size_t u, 
 
     SE3 camToPoint{};
     camToPoint.orientation.w = 1.0;
-    camToPoint.position.x = point.x;
+    camToPoint.position.x = +point.x;
     camToPoint.position.y = -point.y;
-    camToPoint.position.z = point.z;
+    camToPoint.position.z = +point.z;
     return camToPoint;
 }
 
@@ -141,7 +129,6 @@ void FiducialsNode::pointCloudCallback(sensor_msgs::PointCloud2ConstPtr const& m
         size_t u = std::lround(fid.imageCenter.x);
         size_t v = std::lround(fid.imageCenter.y);
 
-        geometry_msgs::TransformStamped robotTf;
         try {
             fid.fidInCam = getCamToFidFromPixel(msg, u, v);
         } catch (tf2::TransformException& ex) {

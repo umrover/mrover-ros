@@ -16,12 +16,11 @@
 #include <sensor_msgs/point_cloud2_iterator.h>
 #include <std_msgs/String.h>
 #include <std_srvs/SetBool.h>
-#include <tf2_geometry_msgs/tf2_geometry_msgs.h>
 
 #include <mrover/DetectorParamsConfig.h>
 
 #include "filter.hpp"
-#include "se3.h"
+#include "se3.hpp"
 
 constexpr char const* ODOM_FRAME = "odom";
 constexpr char const* ROVER_FRAME = "base_link";
@@ -73,7 +72,7 @@ private:
     cv::Ptr<cv::aruco::DetectorParameters> mDetectorParams;
     cv::Ptr<cv::aruco::Dictionary> mDictionary;
 
-    int mSeqNum{};
+    uint32_t mSeqNum{};
     cv_bridge::CvImagePtr mCvPtr;
     cv::Mat mCamMat;
     cv::Mat mDistCoeffs;
