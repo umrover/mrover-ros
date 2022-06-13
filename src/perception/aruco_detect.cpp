@@ -34,7 +34,7 @@
 #include <boost/algorithm/string/split.hpp>
 
 void FiducialsNode::configCallback(mrover::DetectorParamsConfig& config, uint32_t level) {
-    /* Don't load initial config, since it will overwrite the rosparam settings */
+    // Don't load initial config, since it will overwrite the rosparam settings
     if (level == 0xFFFFFFFF) {
         return;
     }
@@ -99,8 +99,8 @@ void FiducialsNode::camInfoCallback(sensor_msgs::CameraInfo::ConstPtr const& msg
 }
 
 void FiducialsNode::handleIgnoreString(std::string const& str) {
-    // ignore fiducials can take comma separated list of individual
-    // fiducial ids or ranges, eg "1,4,8,9-12,30-40"
+    // Ignore fiducials can take comma separated list of individual
+    // Fiducial ids or ranges, eg "1,4,8,9-12,30-40"
     std::vector<std::string> strs;
     boost::split(strs, str, boost::is_any_of(","));
     for (const std::string& element: strs) {
@@ -239,4 +239,13 @@ void PersistentFiducial::setFilterParams(size_t count, double proportion) {
     fidInOdomY.setProportion(static_cast<float>(proportion));
     fidInOdomZ.setFilterCount(count);
     fidInOdomZ.setProportion(static_cast<float>(proportion));
+}
+
+SE3 PersistentFiducial::getPose() const {
+    SE3 pose{};
+    pose.position.x = fidInOdomX.get();
+    pose.position.y = fidInOdomY.get();
+    pose.position.z = fidInOdomZ.get();
+    pose.orientation.w = 1.0;
+    return pose;
 }

@@ -37,9 +37,11 @@ struct PersistentFiducial {
     Filter<double> fidInOdomY;
     Filter<double> fidInOdomZ;
 
+    void setFilterParams(size_t count, double proportion);
+
     void addReading(SE3 const& fidInOdom);
 
-    void setFilterParams(size_t count, double proportion);
+    [[nodiscard]] SE3 getPose() const;
 };
 
 class FiducialsNode {

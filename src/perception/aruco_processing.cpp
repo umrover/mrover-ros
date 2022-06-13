@@ -2,8 +2,12 @@
 
 #include "filter.hpp"
 
+// TODO: add cache logic to filter out false positives
+
 /**
- * Detect fiducials from raw image and publish all of them.
+ * Detect fiducials from raw image using OpenCV and calculate their screen space centers.
+ * Maintain the immediate buffer - holds all fiducials seen currently on screen.
+ * Later camera space pose information is filled in when we receive point cloud data.
  *
  * @param msg
  */
@@ -17,9 +21,10 @@ void FiducialsNode::imageCallback(sensor_msgs::ImageConstPtr const& msg) {
     try {
         mCvPtr = cv_bridge::toCvCopy(msg, sensor_msgs::image_encodings::BGR8);
 
+        // Detect the fiducial vertices in screen space and their respective ids
         cv::aruco::detectMarkers(mCvPtr->image, mDictionary, mCornersCache, mIdsCache, mDetectorParams);
 
-        // Set IDs and centers of tags
+        // Save fiducials currently on screen to the immediate buffer
         for (size_t i = 0; i < mIdsCache.size(); ++i) {
             int id = mIdsCache[i];
             cv::Point2f imageCenter = std::accumulate(mCornersCache[i].begin(), mCornersCache[i].end(), cv::Point2f{}) / 4.0f;
@@ -27,7 +32,7 @@ void FiducialsNode::imageCallback(sensor_msgs::ImageConstPtr const& msg) {
             mImmediateFiducials[id].imageCenter = imageCenter;
         }
 
-        // Remove all centers from tags that are no longer in sight
+        // Remove fiducials in the immediate buffer that are no longer in sight
         auto it = mImmediateFiducials.begin();
         while (it != mImmediateFiducials.end()) {
             if (std::find(mIdsCache.begin(), mIdsCache.end(), it->first) == mIdsCache.end()) {
@@ -46,7 +51,7 @@ void FiducialsNode::imageCallback(sensor_msgs::ImageConstPtr const& msg) {
         // Add readings to the persistent representations of the fiducials
         for (auto [id, immediateFid]: mImmediateFiducials) {
             PersistentFiducial& fid = mPersistentFiducials[id];
-            if (!immediateFid.fidInCam.has_value()) continue;
+            if (!immediateFid.fidInCam.has_value()) continue; // This is set if the point cloud had a valid reading for this fiducial
 
             fid.id = id;
             SE3 fidInOdom = SE3::transform(mTfBuffer, ROVER_FRAME, ODOM_FRAME, immediateFid.fidInCam.value(), mSeqNum);
@@ -56,22 +61,9 @@ void FiducialsNode::imageCallback(sensor_msgs::ImageConstPtr const& msg) {
 
         // Send all transforms of persistent fiducials
         for (auto [id, fid]: mPersistentFiducials) {
-            if (!fid.fidInOdomX.ready()) continue;
+            if (!fid.fidInOdomX.ready()) continue; // Wait until the filters have enough readings to become meaningful
 
-            geometry_msgs::TransformStamped tf{};
-            tf.child_frame_id = "fiducial" + std::to_string(id);
-            tf.header.frame_id = ODOM_FRAME;
-            tf.header.stamp = ros::Time::now();
-            tf.header.seq = mSeqNum;
-            tf.transform.translation.x = fid.fidInOdomX.get();
-            tf.transform.translation.y = fid.fidInOdomY.get();
-            tf.transform.translation.z = fid.fidInOdomZ.get();
-            tf.transform.rotation.w = 1.0;
-            mTfBroadcaster.sendTransform(tf);
-            fiducial_msgs::FiducialTransform fidTf{};
-            fidTf.transform = tf.transform;
-            fidTf.fiducial_id = id;
-            fidArray.transforms.push_back(fidTf);
+            SE3::sendTransform(mTfBroadcaster, "fiducial" + std::to_string(id), ODOM_FRAME, fid.getPose(), mSeqNum);
         }
 
         mFidPub.publish(fidArray);
@@ -98,7 +90,13 @@ void FiducialsNode::imageCallback(sensor_msgs::ImageConstPtr const& msg) {
     }
 }
 
-SE3 getCamToFidFromPixel(sensor_msgs::PointCloud2ConstPtr const& msg, size_t u, size_t v) {
+/**
+ * @brief       Retrieve the pose of the fiducial in camera space
+ * @param msg   3D Point Cloud with points stored relative to the camera
+ * @param u     X Pixel Position
+ * @param v     Y Pixel Position
+ */
+SE3 getFidInCamFromPixel(sensor_msgs::PointCloud2ConstPtr const& msg, size_t u, size_t v) {
     // Could be done using PCL camToPoint clouds instead
     size_t arrayPos = v * msg->row_step + u * msg->point_step;
     size_t arrayPosY = arrayPos + msg->fields[0].offset;
@@ -110,12 +108,12 @@ SE3 getCamToFidFromPixel(sensor_msgs::PointCloud2ConstPtr const& msg, size_t u, 
     std::memcpy(&point.y, &msg->data[arrayPosY], sizeof(point.y));
     std::memcpy(&point.z, &msg->data[arrayPosZ], sizeof(point.z));
 
-    SE3 camToPoint{};
-    camToPoint.orientation.w = 1.0;
-    camToPoint.position.x = +point.x;
-    camToPoint.position.y = -point.y;
-    camToPoint.position.z = +point.z;
-    return camToPoint;
+    SE3 pointInCam{};
+    pointInCam.orientation.w = 1.0;
+    pointInCam.position.x = +point.x;
+    pointInCam.position.y = -point.y;
+    pointInCam.position.z = +point.z;
+    return pointInCam;
 }
 
 /**
@@ -130,7 +128,7 @@ void FiducialsNode::pointCloudCallback(sensor_msgs::PointCloud2ConstPtr const& m
         size_t v = std::lround(fid.imageCenter.y);
 
         try {
-            fid.fidInCam = getCamToFidFromPixel(msg, u, v);
+            fid.fidInCam = getFidInCamFromPixel(msg, u, v);
         } catch (tf2::TransformException& ex) {
             ROS_WARN("Transform lookup error: %s", ex.what());
         }
