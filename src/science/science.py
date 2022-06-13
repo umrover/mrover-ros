@@ -5,7 +5,6 @@ science nucleo to operate the science boxes and get relevant data
 import serial
 # import Adafruit_BBIO.UART as UART  # for beaglebone use only
 import numpy as np
-from enum import Enum
 import rospy
 from mrover import AutonLED, Enable, Heater, Servo, Spectral, Thermistor
 
@@ -70,9 +69,7 @@ class ScienceBridge():
         )
         return self
 
-    def __exit__(self, exc_type: Optional[BaseExceptionType],
-                 exc_value: Optional[BaseException],
-                 traceback: Optional[TracebackType]) -> None:
+    def __exit__(self, exc_type, exc_value, traceback) -> None:
         '''
         Closes serial connection to nucleo
         '''
@@ -200,11 +197,7 @@ class ScienceBridge():
         if self.ser.isOpen():
             self.ser.write(bytes(uart_msg, encoding='utf-8'))
 
-    async def receive(self) -> None:
-
-        # Mark TXT as always seen because they are not necessary
-        seen_tags = {tag: False if not tag == 'TXT' else True
-                     for tag in self.NMEA_HANDLE_MAPPER.keys()}
+    def receive(self) -> None:
         while True:
             try:
                 error_counter = 0
@@ -215,7 +208,7 @@ class ScienceBridge():
                 if error_counter < self.max_error_count:
                     error_counter += 1
                     print(e)
-                    await asyncio.sleep(self.sleep)
+                    rospy.sleep(self.sleep)
                     continue
                 else:
                     raise e
@@ -233,7 +226,7 @@ class ScienceBridge():
             if not match_found:
                 if not uart_msg:
                     print('Error decoding message stream: {}'.format(uart_msg))
-            await asyncio.sleep(self.sleep)
+            rospy.sleep(self.sleep)
 
 
 def main():
