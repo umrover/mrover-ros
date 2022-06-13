@@ -89,7 +89,7 @@ class ScienceBridge():
         """Transmits a servo angle command message"""
         tx_msg = "$SERVO,{angle_0},{angle_1},{angle_2}"
         tx_msg = tx_msg.format(angle_0=ros_msg.angle_0, angle_1=ros_msg.angle_1,
-                                   angle_2=ros_msg.angle_2)
+                               angle_2=ros_msg.angle_2)
         send_msg(tx_msg)
 
     def spectral_handler(self, msg: str, ros_msg: Spectral) -> None:
