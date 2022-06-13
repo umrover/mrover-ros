@@ -11,7 +11,7 @@ jobs:
     if: github.event.pull_request.draft == false
     steps:
       - uses: actions/checkout@v2
-      - run: rosdep update
+      - run: sudo apt-get update -y && rosdep update
       - uses: betwo/github-setup-catkin@master
         with:
           ros-version: "noetic"
