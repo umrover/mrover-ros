@@ -21,7 +21,7 @@ def add_padding(uart_msg: str) -> str:
     return uart_msg
 
 
-def uart_send(uart_msg: str) -> None:
+def msg_send(uart_msg: str) -> None:
     uart_msg = add_padding(uart_msg)
     if len(uart_msg) > UART_TRANSMIT_MSG_LEN:
         uart_msg = uart_msg[:UART_TRANSMIT_MSG_LEN]
@@ -30,9 +30,9 @@ def uart_send(uart_msg: str) -> None:
     ser.write(bytes(uart_msg, encoding='utf-8'))
     ser.close()
 
+
 def read_msg() -> str:
     ser.open()
     tx = ser.readline()
     ser.close()
     return str(tx)
-
