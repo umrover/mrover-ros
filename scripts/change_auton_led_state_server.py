@@ -34,7 +34,7 @@ def handle_change_auton_led_state(req: ChangeAutonLEDStateRequest) -> ChangeAuto
 def change_auton_led_state_server() -> None:
     rospy.init_node('change_auton_led_state_server')
     s = rospy.Service('change_auton_led_state', ChangeAutonLEDState, handle_change_auton_led_state)
-    rospy.spin()
+    s.spin()
 
 
 if __name__ == "__main__":
