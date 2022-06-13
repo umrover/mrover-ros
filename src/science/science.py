@@ -2,10 +2,10 @@
 Writes, reads and parses NMEA like messages from the onboard
 science nucleo to operate the science boxes and get relevant data
 '''
-import serial
 # import Adafruit_BBIO.UART as UART  # for beaglebone use only
 import numpy as np
 import rospy
+import serial
 from mrover import AutonLED, Enable, Heater, Servo, Spectral, Thermistor
 
 
