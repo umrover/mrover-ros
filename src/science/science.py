@@ -7,6 +7,7 @@ import rospy
 from mrover import Enable, Heater, Servo, Spectral, Thermistor
 from sciencecomms import msg_send, read_msg
 
+
 class ScienceBridge():
 
     def __init__(self):
