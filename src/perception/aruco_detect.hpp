@@ -33,19 +33,19 @@
 #include <cmath>
 #include <unistd.h>
 
+#include <cv_bridge/cv_bridge.h>
+#include <dynamic_reconfigure/server.h>
+#include <image_transport/image_transport.h>
 #include <ros/ros.h>
+#include <sensor_msgs/image_encodings.h>
+#include <sensor_msgs/point_cloud2_iterator.h>
+#include <std_msgs/String.h>
+#include <std_srvs/SetBool.h>
 #include <tf/transform_datatypes.h>
 #include <tf2/LinearMath/Transform.h>
 #include <tf2_ros/buffer.h>
 #include <tf2_ros/transform_broadcaster.h>
 #include <tf2_ros/transform_listener.h>
-#include <image_transport/image_transport.h>
-#include <cv_bridge/cv_bridge.h>
-#include <sensor_msgs/image_encodings.h>
-#include <sensor_msgs/point_cloud2_iterator.h>
-#include <dynamic_reconfigure/server.h>
-#include <std_srvs/SetBool.h>
-#include <std_msgs/String.h>
 
 #include "fiducial_msgs/Fiducial.h"
 #include "fiducial_msgs/FiducialArray.h"
@@ -60,20 +60,20 @@
 #include <opencv2/aruco.hpp>
 #include <opencv2/calib3d.hpp>
 
-#include <string>
-#include <numeric>
-#include <optional>
-#include <unordered_map>
 #include <boost/algorithm/string.hpp>
 #include <boost/shared_ptr.hpp>
+#include <numeric>
+#include <optional>
+#include <string>
+#include <unordered_map>
 
 typedef boost::shared_ptr<fiducial_msgs::FiducialArray const> FiducialArrayConstPtr;
 
 struct Fiducial {
-    int id = -1; // what id this ARUCO tag encodes
-    std::optional<cv::Point2f> imageCenter; // camera pixel space
+    int id = -1;                           // what id this ARUCO tag encodes
+    std::optional<cv::Point2f> imageCenter;// camera pixel space
     // TODO: replace with filter
-    std::optional<cv::Point3f> worldPosition; // 3d world position
+    std::optional<cv::Point3f> worldPosition;// 3d world position
 };
 
 class FiducialsNode {
@@ -94,7 +94,7 @@ private:
 
     ros::ServiceServer mServiceEnableDetections;
 
-    bool mPublishImages{}; // if set, we publish the images that contain fiducials
+    bool mPublishImages{};// if set, we publish the images that contain fiducials
     bool mEnableDetections;
     bool mIsVerbose{};
 
@@ -118,7 +118,7 @@ private:
 
     image_transport::Publisher mImgPub;
 
-    size_t mPrevDetectedCount; // log spam prevention
+    size_t mPrevDetectedCount;// log spam prevention
 
     cv::Ptr<cv::aruco::DetectorParameters> mDetectorParams;
     cv::Ptr<cv::aruco::Dictionary> mDictionary;

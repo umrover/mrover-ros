@@ -2,10 +2,9 @@ from typing import Tuple
 
 import numpy as np
 import tf2_ros
+from common import BaseState, Context
 from geometry_msgs.msg import Twist
 from tf.transformations import quaternion_matrix
-
-from common import Context, BaseState
 
 DRIVE_FWD_THRESH = 0.95
 

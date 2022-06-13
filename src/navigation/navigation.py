@@ -7,7 +7,7 @@ import threading
 import rospy
 import smach
 import smach_ros
-from common import DoneState, Context
+from common import Context, DoneState
 from geometry_msgs.msg import Twist
 from tag import SingleTagState
 from waypoint import WaypointState

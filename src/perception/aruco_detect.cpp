@@ -136,8 +136,7 @@ void FiducialsNode::poseEstimateCallback(FiducialArrayConstPtr const& msg) {
                     readyFiducials.begin(), readyFiducials.end(),
                     [](const Fiducial& fid1, const Fiducial& fid2) {
                         return fid1.imageCenter->x < fid2.imageCenter->x;
-                    }
-            );
+                    });
 
             for (auto it: {leftFidIt, rightFidIt}) {
                 if (it == readyFiducials.end()) continue;
@@ -154,11 +153,9 @@ void FiducialsNode::poseEstimateCallback(FiducialArrayConstPtr const& msg) {
                 vm.results.push_back(getObjectHypothesis(fid));
                 vma.detections.push_back(vm);
             }
-        }
-        catch (cv_bridge::Exception& e) {
+        } catch (cv_bridge::Exception const& e) {
             ROS_ERROR("cv_bridge exception: %s", e.what());
-        }
-        catch (cv::Exception& e) {
+        } catch (cv::Exception const& e) {
             ROS_ERROR("cv exception: %s", e.what());
         }
     }
@@ -298,6 +295,7 @@ FiducialsNode::FiducialsNode() : mNh(), mPnh("~"), mIt(mNh) {
     mPnh.param<int>("cornerRefinementMaxIterations", mDetectorParams->cornerRefinementMaxIterations, 30);
     mPnh.param<double>("cornerRefinementMinAccuracy", mDetectorParams->cornerRefinementMinAccuracy, 0.01); /* default 0.1 */
     mPnh.param<int>("cornerRefinementWinSize", mDetectorParams->cornerRefinementWinSize, 5);
+
     bool doCornerRefinement = true;
     mPnh.param<bool>("doCornerRefinement", doCornerRefinement, true);
     if (doCornerRefinement) {
