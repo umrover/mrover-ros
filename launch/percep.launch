@@ -26,5 +26,5 @@
     -model rover" />
 
   <!-- Perception -->
-  <node name="aruco_detect" pkg="mrover" type="aruco_detect" />
+<!--   <node name="aruco_detect" pkg="mrover" type="aruco_detect" /> -->
 </launch>
