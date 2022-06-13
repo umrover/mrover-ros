@@ -1,9 +1,0 @@
-runs-on: [ubuntu-20.04]
-steps:
-- uses: actions/checkout@v1
-- uses: betwo/github-setup-catkin@master
-  with:
-    ros-version: 'noetic'
-    build-tool: 'catkin_tools'
-    workspace: '$GITHUB_WORKSPACE'
-- run: catkin build

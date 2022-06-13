@@ -2,7 +2,6 @@ from abc import ABC
 from typing import Tuple
 
 import numpy as np
-
 import rospy
 import smach
 import tf2_ros

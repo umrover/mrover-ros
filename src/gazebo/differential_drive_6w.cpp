@@ -38,12 +38,12 @@
 #include <gazebo/common/Events.hh>
 #include <gazebo/physics/physics.hh>
 
+#include <boost/bind.hpp>
+#include <geometry_msgs/Twist.h>
+#include <nav_msgs/Odometry.h>
 #include <ros/ros.h>
 #include <tf/transform_broadcaster.h>
 #include <tf/transform_listener.h>
-#include <geometry_msgs/Twist.h>
-#include <nav_msgs/Odometry.h>
-#include <boost/bind.hpp>
 
 namespace gazebo {
 
@@ -57,10 +57,10 @@ namespace gazebo {
         NUM_WHEELS
     };
 
-// Constructor
+    // Constructor
     DiffDrivePlugin6W::DiffDrivePlugin6W() = default;
 
-// Destructor
+    // Destructor
     DiffDrivePlugin6W::~DiffDrivePlugin6W() {
         updateConnection.reset();
         delete transform_broadcaster_;
@@ -69,7 +69,7 @@ namespace gazebo {
         delete rosnode_;
     }
 
-// Load the controller
+    // Load the controller
     void DiffDrivePlugin6W::Load(physics::ModelPtr _model, sdf::ElementPtr _sdf) {
         world = _model->GetWorld();
 
@@ -128,7 +128,7 @@ namespace gazebo {
         // Make sure the ROS node for Gazebo has already been initialized
         if (!ros::isInitialized()) {
             ROS_FATAL_STREAM("A ROS node for Gazebo has not been initialized, unable to load plugin. "
-                                     << "Load the Gazebo system plugin 'libgazebo_ros_api_plugin.so' in the gazebo_ros package)");
+                             << "Load the Gazebo system plugin 'libgazebo_ros_api_plugin.so' in the gazebo_ros package)");
             return;
         }
 
@@ -141,8 +141,7 @@ namespace gazebo {
         ros::SubscribeOptions so = ros::SubscribeOptions::create<geometry_msgs::Twist>(
                 topic_, 1,
                 boost::bind(&DiffDrivePlugin6W::cmdVelCallback, this, _1),
-                ros::VoidPtr(), &queue_
-        );
+                ros::VoidPtr(), &queue_);
         sub_ = rosnode_->subscribe(so);
         pub_ = rosnode_->advertise<nav_msgs::Odometry>("odom", 1);
 
@@ -156,7 +155,7 @@ namespace gazebo {
         updateConnection = event::Events::ConnectWorldUpdateBegin(boost::bind(&DiffDrivePlugin6W::Update, this));
     }
 
-// Initialize the controller
+    // Initialize the controller
     void DiffDrivePlugin6W::Reset() {
         enableMotors = true;
 
@@ -180,7 +179,7 @@ namespace gazebo {
         odomVel[2] = 0.0;
     }
 
-// Update the controller
+    // Update the controller
     void DiffDrivePlugin6W::Update() {
         // TODO: Step should be in a parameter of this function
         double d1, d2;
@@ -231,19 +230,19 @@ namespace gazebo {
         publish_odometry();
     }
 
-// NEW: Now uses the target velocities from the ROS message, not the Iface
+    // NEW: Now uses the target velocities from the ROS message, not the Iface
     void DiffDrivePlugin6W::GetPositionCmd() {
         lock.lock();
 
         double vr, va;
 
-        vr = x_; //myIface->data->cmdVelocity.pos.x;
-        va = -rot_; //myIface->data->cmdVelocity.yaw;
+        vr = x_;   //myIface->data->cmdVelocity.pos.x;
+        va = -rot_;//myIface->data->cmdVelocity.yaw;
 
         //std::cout << "X: [" << x_ << "] ROT: [" << rot_ << "]" << std::endl;
 
         // Changed motors to be always on, which is probably what we want anyway
-        enableMotors = true; //myIface->data->cmdEnableMotors > 0;
+        enableMotors = true;//myIface->data->cmdEnableMotors > 0;
 
         //std::cout << enableMotors << std::endl;
 
@@ -253,7 +252,7 @@ namespace gazebo {
         lock.unlock();
     }
 
-// NEW: Store the velocities from the ROS message
+    // NEW: Store the velocities from the ROS message
     void DiffDrivePlugin6W::cmdVelCallback(const geometry_msgs::Twist::ConstPtr& cmd_msg) {
         //std::cout << "BEGIN CALLBACK\n";
 
@@ -267,7 +266,7 @@ namespace gazebo {
         //std::cout << "END CALLBACK\n";
     }
 
-// NEW: custom callback queue thread
+    // NEW: custom callback queue thread
     void DiffDrivePlugin6W::QueueThread() {
         static const double timeout = 0.01;
 
@@ -277,7 +276,7 @@ namespace gazebo {
         }
     }
 
-// NEW: Update this to publish odometry topic
+    // NEW: Update this to publish odometry topic
     void DiffDrivePlugin6W::publish_odometry() {
         // get current time
         ros::Time current_time_((world->SimTime()).sec, (world->SimTime()).nsec);
@@ -287,14 +286,14 @@ namespace gazebo {
         ignition::math::Vector3d velocity = link->WorldLinearVel();
         ignition::math::Vector3d angular_velocity = link->WorldAngularVel();
 
-//        tf::Quaternion qt(pose.Rot().X(), pose.Rot().Y(), pose.Rot().Z(), pose.Rot().W());
-//        tf::Vector3 vt(pose.Pos().X(), pose.Pos().Y(), pose.Pos().Z());
-//        tf::Transform base_footprint_to_odom(qt, vt);
+        //        tf::Quaternion qt(pose.Rot().X(), pose.Rot().Y(), pose.Rot().Z(), pose.Rot().W());
+        //        tf::Vector3 vt(pose.Pos().X(), pose.Pos().Y(), pose.Pos().Z());
+        //        tf::Transform base_footprint_to_odom(qt, vt);
 
-//        transform_broadcaster_->sendTransform(tf::StampedTransform(base_footprint_to_odom,
-//                                                                   current_time_,
-//                                                                   "odom",
-//                                                                   "base_link"));
+        //        transform_broadcaster_->sendTransform(tf::StampedTransform(base_footprint_to_odom,
+        //                                                                   current_time_,
+        //                                                                   "odom",
+        //                                                                   "base_link"));
 
         // publish odom topic
         odom_.pose.pose.position.x = pose.Pos().X();
@@ -318,4 +317,4 @@ namespace gazebo {
 
     GZ_REGISTER_MODEL_PLUGIN(DiffDrivePlugin6W)
 
-} // namespace gazebo
+}// namespace gazebo
