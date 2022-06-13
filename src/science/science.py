@@ -42,15 +42,15 @@ class ScienceBridge():
         self.led_map = {
             "Red": 0,
             "Blue": 1,
-            "Green": 2
+            "Green": 2,
             "Off": 3
         }
         # Mapping of onboard devices to mosfet devices
         self.mosfet_dev_map = {
-            "arm_laser": 1
-            "raman_laser": 10
-            "uv_bulb": 1
-            "uv_led": 4
+            "arm_laser": 1,
+            "raman_laser": 10,
+            "uv_bulb": 1,
+            "uv_led": 4,
             "white_led": 5
         }
         self.heater_map = [7, 8, 9]
