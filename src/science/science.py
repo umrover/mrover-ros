@@ -2,19 +2,14 @@
 Writes, reads and parses NMEA like messages from the onboard
 science nucleo to operate the science boxes and get relevant data
 '''
-# import Adafruit_BBIO.UART as UART  # for beaglebone use only
 import numpy as np
 import rospy
-import serial
 from mrover import AutonLED, Enable, Heater, Servo, Spectral, Thermistor
-
+from sciencecomms import uart_send, read_msg
 
 class ScienceBridge():
 
     def __init__(self):
-
-        # UART.setup("UART4")  # Specific to beaglebone
-
         self.NMEA_HANDLE_MAPPER = {
             "AUTOSHUTOFF": self.heater_auto_shut_off_handler,
             "HEATER": self.heater_state_handler,
@@ -52,33 +47,6 @@ class ScienceBridge():
             "white_led": 5
         }
         self.heater_map = [7, 8, 9]
-        self.UART_TRANSMIT_MSG_LEN = 30
-
-    def __enter__(self) -> None:
-        '''
-        Opens a serial connection to the nucleo
-        '''
-        self.ser = serial.Serial(
-            port='/dev/ttyTHS0',
-            baudrate=38400,
-            parity=serial.PARITY_NONE,
-            stopbits=serial.STOPBITS_ONE,
-            bytesize=serial.EIGHTBITS,
-            timeout=0
-        )
-        self.ser.close()
-        return self
-
-    def __exit__(self, exc_type, exc_value, traceback) -> None:
-        '''
-        Closes serial connection to nucleo
-        '''
-        self.ser.close()
-
-    def add_padding(self, uart_msg: str) -> str:
-        while(len(uart_msg) < self.UART_TRANSMIT_MSG_LEN):
-            uart_msg += ","
-        return uart_msg
 
     def auton_led_transmit(self, ros_msg: AutonLED) -> None:
         try:
@@ -89,7 +57,7 @@ class ScienceBridge():
             print("Received invalid/off auton led request: Turning off all colors")
 
         uart_msg = "$LED,{led_color}".format(led_color=requested_state.value)
-        self.uart_send(uart_msg)
+        uart_send(uart_msg)
 
     def format_mosfet_msg(self, device: int, enable: bool) -> str:
         uart_msg = "$MOSFET,{dev},{en},"
@@ -98,7 +66,7 @@ class ScienceBridge():
     def heater_auto_shut_off_transmit(self, ros_msg: Enable) -> None:
         uart_msg = "$AUTOSHUTOFF,{enable}"
         uart_msg = uart_msg.format(enable=int(ros_msg.auto_shut_off_enabled))
-        self.uart_send(uart_msg)
+        uart_send(uart_msg)
 
     def heater_auto_shut_off_handler(self, uart_msg: str, ros_msg: Enable) -> None:
         # uart_msg format: <"$AUTOSHUTOFF,device,enabled">
@@ -121,17 +89,17 @@ class ScienceBridge():
     def heater_transmit(self, ros_msg: Heater) -> None:
         translated_device = self.heater_map[ros_msg.device]
         uart_msg = self.format_mosfet_msg(translated_device, int(ros_msg.enable))
-        self.uart_send(uart_msg)
+        uart_send(uart_msg)
 
     def mosfet_transmit(self, ros_msg: Enable, device_name: str) -> None:
         translated_device = self.mosfet_dev_map[device_name]
         uart_msg = self.format_mosfet_msg(translated_device, int(ros_msg.enable))
-        self.uart_send(uart_msg)
+        uart_send(uart_msg)
 
     def servo_transmit(self, ros_msg: Servo) -> None:
         uart_msg = "$SERVO,{angle_0},{angle_1},{angle_2}"
         uart_msg = uart_msg.format(angle_0=ros_msg.angle_0, angle_1=ros_msg.angle_1, angle_2=ros_msg.angle_2)
-        self.uart_send(uart_msg)
+        uart_send(uart_msg)
 
     def spectral_handler(self, m: str, ros_msg: Spectral) -> None:
         try:
@@ -189,27 +157,16 @@ class ScienceBridge():
             print("triad exception:", e)
             pass
 
-    def uart_send(self, uart_msg: str) -> None:
-        uart_msg = self.add_padding(uart_msg)
-        print(uart_msg)
-        self.ser.open()
-        self.ser.write(bytes(uart_msg, encoding='utf-8'))
-        self.ser.close()
-
     def receive(self) -> None:
         while True:
             try:
                 error_counter = 0
-                self.ser.open()
-                tx = self.ser.readline()
-                self.ser.close()
-                uart_msg = str(tx)
+                uart_msg = read_msg()
             except Exception as e:
                 print("Errored")
                 if error_counter < self.max_error_count:
                     error_counter += 1
                     print(e)
-                    rospy.sleep(self.sleep)
                     continue
                 else:
                     raise e
