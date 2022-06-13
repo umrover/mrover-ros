@@ -1,16 +1,26 @@
+from typing import Tuple
+
 import numpy as np
 from geometry_msgs.msg import Twist
-from typing import Tuple
+
+from util.SE3 import SE3
 
 MAX_DRIVING_EFFORT = 1
 MIN_DRIVING_EFFORT = -1
 TURNING_P = 100.0
 
-def get_drive_command(target_pos : np.ndarray, rover_pos : np.ndarray, rover_dir : np.ndarray, completion_tolerance : float, turn_in_place_tolerance : float) -> Tuple[Twist, bool]:
-    """generalized drive to target command 
-        :param: target_pos :  target position ndarray, rover_pos : current rover position ndarray, rover_dir : current rover rotatation (must be normalized) ndarray, completion tolerance: float scalar distance threshold, turn_in_place_tolerance : float dot-product threshold for turning vs driving
-        :return: Twist, Bool : twist is how to get to a particular pos along with a boolean of whether it is done or not
+
+def get_drive_command(target_pos: np.ndarray, rover_pose: SE3,
+                      completion_tolerance: float, turn_in_place_tolerance: float) -> Tuple[Twist, bool]:
     """
+    :param target_pos:
+    :param rover_pose:
+    :param completion_tolerance:
+    :param turn_in_place_tolerance:
+    :return:
+    """
+    rover_pos = rover_pose.position_vector()
+    rover_dir = rover_pose.x_vector()
     # Get vector from rover to target
     target_dir = target_pos - rover_pos
     target_dist = np.linalg.norm(target_dir)
@@ -23,8 +33,8 @@ def get_drive_command(target_pos : np.ndarray, rover_pos : np.ndarray, rover_dir
     alignment = np.dot(target_dir, rover_dir)
 
     if target_dist < completion_tolerance:
-       return Twist(), True
-    
+        return Twist(), True
+
     cmd_vel = Twist()
     if alignment > turn_in_place_tolerance:
         # We are pretty aligned so we can drive straight
@@ -34,7 +44,7 @@ def get_drive_command(target_pos : np.ndarray, rover_pos : np.ndarray, rover_dir
     # This is done by dotting rover_dir and target_dir rotated 90 degrees ccw
     perp_alignment = rover_dir[0] * -target_dir[1] + rover_dir[1] * target_dir[0]
     sign = -np.sign(perp_alignment)
-    # 1 is target alignment (dot product of two normalized vectors that are parrallel is 1)
+    # 1 is target alignment (dot product of two normalized vectors that are parallel is 1)
     error = 1.0 - alignment
     cmd_vel.angular.z = np.clip(error * TURNING_P * sign, MIN_DRIVING_EFFORT, MAX_DRIVING_EFFORT)
     return cmd_vel, False

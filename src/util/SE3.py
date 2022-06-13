@@ -50,7 +50,7 @@ class SE3(Pose):
 
     def pos_distance_to(self, p: SE3) -> float:
         """
-        Get the euclidean distance from the position of this SE3 pose to the position of another SE3 pose.
+        Get the euclidean distance from the position of this SE3 pose to the position of another SE3 pose
 
         :param p: another SE3 pose object
         :returns: euclidean distance between the two SE3 poses

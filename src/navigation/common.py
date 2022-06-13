@@ -1,26 +1,33 @@
 from abc import ABC
-from typing import Tuple
 
-import numpy as np
 import rospy
 import smach
 import tf2_ros
+from fiducial_msgs.msg import FiducialArray
 from geometry_msgs.msg import Twist
 from visualization_msgs.msg import Marker
+
+from util.SE3 import SE3
 
 
 # TODO: rename?
 class Context:
     vel_cmd_publisher: rospy.Publisher
     vis_publisher: rospy.Publisher
+    fid_listener: rospy.Subscriber
     tf_buffer: tf2_ros.Buffer
     tf_listener: tf2_ros.TransformListener
+    fiducial_transforms: FiducialArray
+
+    def fiducial_transforms_callback(self, fiducial_transforms: FiducialArray):
+        self.fiducial_transforms = fiducial_transforms
 
     def __init__(self):
         self.vel_cmd_publisher = rospy.Publisher('cmd_vel', Twist, queue_size=1)
         self.vis_publisher = rospy.Publisher('nav_vis', Marker)
         self.tf_buffer = tf2_ros.Buffer()
         self.tf_listener = tf2_ros.TransformListener(self.tf_buffer)
+        self.fid_listener = rospy.Subscriber('fiducial_transforms', FiducialArray, self.fiducial_transforms_callback)
 
 
 class BaseState(smach.State, ABC):
@@ -48,18 +55,17 @@ class BaseState(smach.State, ABC):
         """Override me instead of execute!"""
         pass
 
-    def rover_transform(self) -> Tuple[np.ndarray, np.ndarray]:
+    def rover_pose(self) -> SE3:
         return self.transform('base_link')
 
-    def transform(self, frame: str, parent_frame: str = 'odom') -> Tuple[np.ndarray, np.ndarray]:
-        """Retrieve position and rotation of frame in tf tree. Relative to the point where we linearized.
-        :param: frame: Name of desired frame
-        :return: position, rotation which are both numpy arrays
+    def transform(self, frame: str, parent_frame: str = 'odom') -> SE3:
+        """
+        :param frame:
+        :param parent_frame:
+        :return:
         """
         stamped_transform = self.context.tf_buffer.lookup_transform(parent_frame, frame, rospy.Time(0))
-        p = stamped_transform.transform.translation
-        r = stamped_transform.transform.rotation
-        return np.array([p.x, p.y, p.z]), np.array([r.x, r.y, r.z, r.w])
+        return SE3.from_tf(stamped_transform.transform)
 
 
 class DoneState(BaseState):

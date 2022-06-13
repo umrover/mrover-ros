@@ -1,12 +1,16 @@
 from typing import List
-from common import BaseState, Context
-import numpy as np
 
-def gen_square_spiral_search_pattern(center : np.ndarray, spacing : float, coverage_radius : float) -> List(np.ndarray):
+import numpy as np
+from common import BaseState, Context
+
+
+def gen_square_spiral_search_pattern(center: np.ndarray, spacing: float, coverage_radius: float) -> List[np.ndarray]:
     """
     Generates a square spiral search pattern around a center position, assumes rover is at the center position
-    :param: center: position to center spiral on (np.ndarray), spacing : distance in between each spiral (float), coverage_radius : spiral covers at least this far out
-    :return: list of positions for the rover to traverse List(np.ndarray)
+    :param center:          position to center spiral on (np.ndarray),
+    :param spacing:         distance in between each spiral (float)
+    :param coverage_radius: spiral covers at least this far out
+    :return:                list of positions for the rover to traverse List(np.ndarray)
     """
     out = []
     cur = center

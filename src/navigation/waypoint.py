@@ -1,38 +1,32 @@
-from typing import Tuple
-
 import numpy as np
 import tf2_ros
 from common import BaseState, Context
-from geometry_msgs.msg import Twist
-from tf.transformations import quaternion_matrix
 from drive import get_drive_command
+
+from util import SE3
 
 DRIVE_FWD_THRESH = 0.95
 
-class WaypointState(BaseState):
-    def __init__(self, context: Context):
-        super().__init__(
-            context,
-            outcomes=['waypoint_traverse', 'waypoint_done'],
-            input_keys=['waypoint_index', 'waypoints'],
-            output_keys=['waypoint_index']
-        )
 
-    def waypoint_transform(self, ud, wp_idx: int) -> Tuple[np.ndarray, np.ndarray]:
+class WaypointState(BaseState):
+    def __init__(self, context: Context, *args, **kwargs):
+        kwargs['outcomes'].extend(['waypoint_traverse', 'waypoint_done'])
+        kwargs['input_keys'].extend(['waypoint_index', 'waypoints'])
+        kwargs['waypoint_index'].extend(['waypoint_index'])
+        super().__init__(context, *args, **kwargs)
+
+    def waypoint_pose(self, ud, wp_idx: int) -> SE3:
         return self.transform(ud.waypoints[wp_idx])
 
     def rover_forward(self) -> np.ndarray:
-        _, rover_rot = self.rover_transform()
-        # Extract what the x-axis (forward) is with respect to our rover rotation
-        return quaternion_matrix(rover_rot)[0:3, 0]
+        return self.rover_pose().x_vector()
 
     def evaluate(self, ud):
         if ud.waypoint_index >= len(ud.waypoints):
             return 'waypoint_done'
         try:
-            course_pos, course_rot = self.waypoint_transform(ud, ud.waypoint_index)
-            rover_pos, _ = self.rover_transform()
-            cmd_vel, is_done = get_drive_command(course_pos, rover_pos, self.rover_forward(), 0.5, DRIVE_FWD_THRESH)
+            course_pos = self.waypoint_pose(ud, ud.waypoint_index).position_vector()
+            cmd_vel, is_done = get_drive_command(course_pos, self.rover_pose(), 0.5, DRIVE_FWD_THRESH)
             if is_done:
                 ud.waypoint_index += 1
             else:
