@@ -251,8 +251,9 @@ def main():
         rospy.Subscriber("uv_bulb_cmd", Enable, bridge.mosfet_transmit, "uv_bulb")
         rospy.Subscriber("uv_led_cmd", Enable, bridge.mosfet_transmit, "uv_led")
         rospy.Subscriber("white_led_cmd", Enable, bridge.mosfet_transmit, "white_led")
-    
-    rospy.spin()
+
+        while not rospy.is_shutdown():
+            bridge.receive()
 
 if __name__ == "__main__":
     main()
