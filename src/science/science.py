@@ -15,7 +15,7 @@ class ScienceBridge():
     def __init__(self):
 
         # UART.setup("UART4")  # Specific to beaglebone
-        
+
         self.NMEA_HANDLE_MAPPER = {
             "AUTOSHUTOFF": self.heater_auto_shut_off_handler,
             "HEATER": self.heater_state_handler,
@@ -47,11 +47,11 @@ class ScienceBridge():
         }
         # Mapping of onboard devices to mosfet devices
         self.mosfet_dev_map = {
-            "arm_laser" : 1
-            "raman_laser" : 10
-            "uv_bulb" : 1
-            "uv_led" : 4
-            "white_led" : 5
+            "arm_laser": 1
+            "raman_laser": 10
+            "uv_bulb": 1
+            "uv_led": 4
+            "white_led": 5
         }
         self.heater_map = [7, 8, 9]
         self.UART_TRANSMIT_MSG_LEN = 30
@@ -70,15 +70,14 @@ class ScienceBridge():
         )
         return self
 
-    def __exit__(
-        self, exc_type: Optional[BaseExceptionType],
-        exc_value: Optional[BaseException],
-        traceback: Optional[TracebackType]) -> None:
+    def __exit__(self, exc_type: Optional[BaseExceptionType],
+                 exc_value: Optional[BaseException],
+                 traceback: Optional[TracebackType]) -> None:
         '''
         Closes serial connection to nucleo
         '''
         self.ser.close()
-    
+
     def add_padding(self, uart_msg: str) -> str:
         while(len(uart_msg) < self.UART_TRANSMIT_MSG_LEN):
             uart_msg += ","
@@ -142,8 +141,8 @@ class ScienceBridge():
             m.split(',')
             arr = [s.strip().strip('\x00') for s in m.split(',')]
             ros_msg_variables = ["d0_1", "d0_2", "d0_3", "d0_4", "d0_5", "d0_6",
-                                "d1_1", "d1_2", "d1_3", "d1_4", "d1_5", "d1_6",
-                                "d2_1", "d2_2", "d2_3", "d2_4", "d2_5", "d2_6"]
+                                 "d1_1", "d1_2", "d1_3", "d1_4", "d1_5", "d1_6",
+                                 "d2_1", "d2_2", "d2_3", "d2_4", "d2_5", "d2_6"]
             # There are 3 spectral sensors, each having 6 channels.
             # We read a uint16_t from each channel.
             # The jetson reads byte by byte, so the program combines every two byte of information
@@ -174,8 +173,8 @@ class ScienceBridge():
             m.split(',')
             arr = [s.strip().strip('\x00') for s in m.split(',')]
             ros_msg_variables = ["d0_1", "d0_2", "d0_3", "d0_4", "d0_5", "d0_6",
-                                "d1_1", "d1_2", "d1_3", "d1_4", "d1_5", "d1_6",
-                                "d2_1", "d2_2", "d2_3", "d2_4", "d2_5", "d2_6"]
+                                 "d1_1", "d1_2", "d1_3", "d1_4", "d1_5", "d1_6",
+                                 "d2_1", "d2_2", "d2_3", "d2_4", "d2_5", "d2_6"]
 
             # There are 18 channels.
             # We read a uint16_t from each channel.
@@ -254,6 +253,7 @@ def main():
 
         while not rospy.is_shutdown():
             bridge.receive()
+
 
 if __name__ == "__main__":
     main()
