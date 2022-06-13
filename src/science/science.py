@@ -17,7 +17,7 @@ class ScienceBridge():
         # UART.setup("UART4")  # Specific to beaglebone
         
         self.NMEA_HANDLE_MAPPER = {
-            "AUTOSHUTOFF": self.heater_shut_off_handler,
+            "AUTOSHUTOFF": self.heater_auto_shut_off_handler,
             "HEATER": self.heater_state_handler,
             "SPECTRAL": self.spectral_handler,
             "THERMISTOR": self.thermistor_handler,
@@ -56,7 +56,7 @@ class ScienceBridge():
         self.heater_map = [7, 8, 9]
         self.UART_TRANSMIT_MSG_LEN = 30
 
-    def __enter__(self):
+    def __enter__(self) -> None:
         '''
         Opens a serial connection to the nucleo
         '''
@@ -70,18 +70,21 @@ class ScienceBridge():
         )
         return self
 
-    def __exit__(self, exc_type, exc_value, traceback):
+    def __exit__(
+        self, exc_type: Optional[BaseExceptionType],
+        exc_value: Optional[BaseException],
+        traceback: Optional[TracebackType]) -> None:
         '''
         Closes serial connection to nucleo
         '''
         self.ser.close()
     
-    def add_padding(self, uart_msg):
+    def add_padding(self, uart_msg: str) -> str:
         while(len(uart_msg) < self.UART_TRANSMIT_MSG_LEN):
             uart_msg += ","
         return uart_msg
 
-    def auton_led(self, ros_msg):
+    def auton_led_transmit(self, ros_msg: AutonLED) -> None:
         try:
             requested_state = self.led_map[ros_msg.color]
             print("Received new auton led request: Turning " + str(ros_msg.color))
@@ -92,16 +95,16 @@ class ScienceBridge():
         uart_msg = "$LED,{led_color}".format(led_color=requested_state.value)
         self.uart_send(uart_msg)
 
-    def format_mosfet_msg(self, device, enable):
+    def format_mosfet_msg(self, device: int, enable: bool) -> str:
         uart_msg = "$MOSFET,{dev},{en},"
         return uart_msg.format(dev=device, en=enable)
 
-    def heater_auto_shut_off_transmit(self, ros_msg):
+    def heater_auto_shut_off_transmit(self, ros_msg: Enable) -> None:
         uart_msg = "$AUTOSHUTOFF,{enable}"
         uart_msg = uart_msg.format(enable=int(ros_msg.auto_shut_off_enabled))
         self.uart_send(uart_msg)
 
-    def heater_shut_off_handler(self, uart_msg, ros_msg):
+    def heater_auto_shut_off_handler(self, uart_msg: str, ros_msg: Enable) -> None:
         # uart_msg format: <"$AUTOSHUTOFF,device,enabled">
         try:
             arr = uart_msg.split(",")
@@ -110,7 +113,7 @@ class ScienceBridge():
         except Exception as e:
             print(e)
 
-    def heater_state_handler(self, uart_msg, ros_msg):
+    def heater_state_handler(self, uart_msg: str, ros_msg: Heater) -> None:
         # uart_msg format: <"$HEATER,device,enabled">
         try:
             arr = uart_msg.split(",")
@@ -119,23 +122,22 @@ class ScienceBridge():
         except Exception as e:
             print(e)
 
-    def heater_transmit(self, ros_msg):
+    def heater_transmit(self, ros_msg: Heater) -> None:
         translated_device = self.heater_map[ros_msg.device]
         uart_msg = self.format_mosfet_msg(translated_device, int(ros_msg.enable))
         self.uart_send(uart_msg)
 
-    def mosfet_transmit(self, ros_msg, device_name):
+    def mosfet_transmit(self, ros_msg: Enable, device_name: str) -> None:
         translated_device = self.mosfet_dev_map[device_name]
         uart_msg = self.format_mosfet_msg(translated_device, int(ros_msg.enable))
         self.uart_send(uart_msg)
-        pass
 
-    def servo_transmit(self, ros_msg):
+    def servo_transmit(self, ros_msg: Servo) -> None:
         uart_msg = "$SERVO,{angle_0},{angle_1},{angle_2}"
         uart_msg = uart_msg.format(angle_0=ros_msg.angle_0, angle_1=ros_msg.angle_1, angle_2=ros_msg.angle_2)
         self.uart_send(uart_msg)
 
-    def spectral_handler(self, m, ros_msg):
+    def spectral_handler(self, m: str, ros_msg: Spectral) -> None:
         try:
             m.split(',')
             arr = [s.strip().strip('\x00') for s in m.split(',')]
@@ -157,7 +159,7 @@ class ScienceBridge():
             print("spectral exception:", e)
             pass
 
-    def thermistor_handler(self, uart_msg, ros_msg):
+    def thermistor_handler(self, uart_msg: str, ros_msg: Thermistor) -> None:
         try:
             arr = uart_msg.split(",")
             ros_msg.temp_0 = float(arr[1])
@@ -165,9 +167,8 @@ class ScienceBridge():
             ros_msg.temp_2 = float(arr[3])
         except Exception as e:
             print("thermistor exception:", e)
-            pass
 
-    def triad_handler(self, m, ros_msg):
+    def triad_handler(self, m: str, ros_msg: Spectral) -> None:
         try:
 
             m.split(',')
@@ -192,13 +193,7 @@ class ScienceBridge():
             print("triad exception:", e)
             pass
 
-    def txt_handler(self, uart_msg, ros_msg):
-        '''
-        Prints info messages revieved from nucleo to screen
-        '''
-        print(uart_msg)
-
-    def uart_send(self, uart_msg):
+    def uart_send(self, uart_msg: str) -> None:
         uart_msg = self.add_padding(uart_msg)
         print(uart_msg)
         self.ser.close()
@@ -206,7 +201,7 @@ class ScienceBridge():
         if self.ser.isOpen():
             self.ser.write(bytes(uart_msg, encoding='utf-8'))
 
-    async def receive(self, lcm):
+    async def receive(self) -> None:
 
         # Mark TXT as always seen because they are not necessary
         seen_tags = {tag: False if not tag == 'TXT' else True
