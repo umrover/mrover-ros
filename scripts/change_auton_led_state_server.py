@@ -1,10 +1,10 @@
-#!/usr/bin/env python
-
+"""Used for printing"""
 from __future__ import print_function
 
-from mrover.srv import ChangeAutonLEDStateRequest, ChangeAutonLEDState, ChangeAutonLEDStateResponse
-from mrover.src.science.sciencecomms import msg_send
 import rospy
+from mrover.src.science.sciencecomms import send_msg
+from mrover.srv import (ChangeAutonLEDStateRequest, ChangeAutonLEDState,
+                        ChangeAutonLEDStateResponse)
 
 led_map = {
     "Red": 0,
@@ -14,7 +14,8 @@ led_map = {
 }
 
 
-def auton_led_transmit(self, color: str) -> None:
+def auton_led_transmit(color: str) -> None:
+    """Sends an auton LED command message via UART"""
     try:
         requested_state = led_map[color]
         print("Received new auton led request: Turning " + color)
@@ -22,19 +23,22 @@ def auton_led_transmit(self, color: str) -> None:
         requested_state = led_map["Off"]
         print("Received invalid/off auton led request: Turning off all colors")
 
-    msg = "$LED,{led_color}".format(led_color=requested_state.value)
-    msg_send(msg)
+    msg = f"$LED,{requested_state.value}"
+    send_msg(msg)
 
 
 def handle_change_auton_led_state(req: ChangeAutonLEDStateRequest) -> ChangeAutonLEDStateResponse:
+    """Handle/callback for changing auton led state service"""
     auton_led_transmit(req.color)
     return ChangeAutonLEDStateResponse(True)
 
 
 def change_auton_led_state_server() -> None:
+    """Starts the server for change auton led state service"""
     rospy.init_node('change_auton_led_state_server')
-    s = rospy.Service('change_auton_led_state', ChangeAutonLEDState, handle_change_auton_led_state)
-    s.spin()
+    service = rospy.Service('change_auton_led_state', ChangeAutonLEDState,
+                            handle_change_auton_led_state)
+    service.spin()
 
 
 if __name__ == "__main__":
