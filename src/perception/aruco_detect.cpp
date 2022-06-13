@@ -217,7 +217,7 @@ void FiducialsNode::camInfoCallback(const sensor_msgs::CameraInfo::ConstPtr& msg
 
 void FiducialsNode::imageCallback(const sensor_msgs::ImageConstPtr& msg) {
     if (!enable_detections) {
-        return; //return without doing anything
+        return;//return without doing anything
     }
 
     if (verbose) {
@@ -295,11 +295,9 @@ void FiducialsNode::imageCallback(const sensor_msgs::ImageConstPtr& msg) {
         if (publish_images) {
             image_pub.publish(cv_ptr->toImageMsg());
         }
-    }
-    catch (cv_bridge::Exception& e) {
+    } catch (cv_bridge::Exception& e) {
         ROS_ERROR("cv_bridge exception: %s", e.what());
-    }
-    catch (cv::Exception& e) {
+    } catch (cv::Exception& e) {
         ROS_ERROR("cv exception: %s", e.what());
     }
 }
@@ -384,7 +382,6 @@ void FiducialsNode::poseEstimateCallback(const FiducialArrayConstPtr& msg) {
                     ROS_INFO("Detected id %d T %.2f %.2f %.2f R %.2f %.2f %.2f", ids[i],
                              tvecs[i][0], tvecs[i][1], tvecs[i][2],
                              rvecs[i][0], rvecs[i][1], rvecs[i][2]);
-
                 }
 
                 if (std::count(ignoreIds.begin(), ignoreIds.end(), ids[i]) != 0) {
@@ -413,7 +410,7 @@ void FiducialsNode::poseEstimateCallback(const FiducialArrayConstPtr& msg) {
                     vision_msgs::Detection2D vm;
                     vision_msgs::ObjectHypothesisWithPose vmh;
                     vmh.id = ids[i];
-                    vmh.score = exp(-2 * object_error); // [0, infinity] -> [1,0]
+                    vmh.score = exp(-2 * object_error);// [0, infinity] -> [1,0]
                     vmh.pose.pose.position.x = tvecs[i][0];
                     vmh.pose.pose.position.y = tvecs[i][1];
                     vmh.pose.pose.position.z = tvecs[i][2];
@@ -471,11 +468,9 @@ void FiducialsNode::poseEstimateCallback(const FiducialArrayConstPtr& msg) {
                     }
                 }
             }
-        }
-        catch (cv_bridge::Exception& e) {
+        } catch (cv_bridge::Exception& e) {
             ROS_ERROR("cv_bridge exception: %s", e.what());
-        }
-        catch (cv::Exception& e) {
+        } catch (cv::Exception& e) {
             ROS_ERROR("cv exception: %s", e.what());
         }
     }
@@ -633,7 +628,7 @@ FiducialsNode::FiducialsNode() : nh(), pnh("~"), it(nh) {
     pnh.param<double>("cornerRefinementMinAccuracy", detectorParams->cornerRefinementMinAccuracy, 0.01); /* default 0.1 */
     pnh.param<int>("cornerRefinementWinSize", detectorParams->cornerRefinementWinSize, 5);
 #if CV_MINOR_VERSION == 2 and CV_MAJOR_VERSION == 3
-    pnh.param<bool>("doCornerRefinement",detectorParams->doCornerRefinement, true); /* default false */
+    pnh.param<bool>("doCornerRefinement", detectorParams->doCornerRefinement, true); /* default false */
 #else
     bool doCornerRefinement = true;
     pnh.param<bool>("doCornerRefinement", doCornerRefinement, true);
