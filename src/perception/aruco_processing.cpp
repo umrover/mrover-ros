@@ -55,12 +55,13 @@ void FiducialsNode::imageCallback(sensor_msgs::ImageConstPtr const& msg) {
             fidInCam.pose = static_cast<geometry_msgs::Pose>(immediateFid.fidInCam.value());
 
             geometry_msgs::PoseStamped fidInOdomStamped{};
-            tf2::doTransform(fidInCam, fidInOdomStamped, mTfBuffer.lookupTransform(ODOM_FRAME, ROVER_FRAME, ros::Time(0)));
+            geometry_msgs::TransformStamped odomToRover = mTfBuffer.lookupTransform(ODOM_FRAME, ROVER_FRAME, ros::Time(0));
+            tf2::doTransform(fidInCam, fidInOdomStamped, odomToRover);
 
             fid.id = id;
             fid.setFilterParams(mFilterCount, mFilterProportion);
             SE3 fidInOdom{};
-            fidInOdom.position = fidInCam.pose.position;
+            fidInOdom.position = fidInOdomStamped.pose.position;
             fidInOdom.orientation.w = 1.0;
             fid.addReading(fidInOdom);
         }
@@ -112,9 +113,9 @@ void FiducialsNode::imageCallback(sensor_msgs::ImageConstPtr const& msg) {
 SE3 getCamToFidFromPixel(sensor_msgs::PointCloud2ConstPtr const& msg, size_t u, size_t v) {
     // Could be done using PCL camToPoint clouds instead
     size_t arrayPos = v * msg->row_step + u * msg->point_step;
-    size_t arrayPosX = arrayPos + msg->fields[0].offset;
-    size_t arrayPosY = arrayPos + msg->fields[1].offset;
-    size_t arrayPosZ = arrayPos + msg->fields[2].offset;
+    size_t arrayPosY = arrayPos + msg->fields[0].offset;
+    size_t arrayPosZ = arrayPos + msg->fields[1].offset;
+    size_t arrayPosX = arrayPos + msg->fields[2].offset;
 
     cv::Point3f point;
     std::memcpy(&point.x, &msg->data[arrayPosX], sizeof(point.x));
@@ -124,7 +125,7 @@ SE3 getCamToFidFromPixel(sensor_msgs::PointCloud2ConstPtr const& msg, size_t u, 
     SE3 camToPoint{};
     camToPoint.orientation.w = 1.0;
     camToPoint.position.x = point.x;
-    camToPoint.position.y = point.y;
+    camToPoint.position.y = -point.y;
     camToPoint.position.z = point.z;
     return camToPoint;
 }

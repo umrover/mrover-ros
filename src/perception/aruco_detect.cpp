@@ -30,6 +30,9 @@
  */
 #include "aruco_detect.hpp"
 
+#include <boost/algorithm/string/classification.hpp>
+#include <boost/algorithm/string/split.hpp>
+
 void FiducialsNode::configCallback(mrover::DetectorParamsConfig& config, uint32_t level) {
     /* Don't load initial config, since it will overwrite the rosparam settings */
     if (level == 0xFFFFFFFF) {
@@ -223,10 +226,10 @@ int main(int argc, char** argv) {
     return EXIT_SUCCESS;
 }
 
-void PersistentFiducial::addReading(const SE3& fidInCam) {
-    fidInOdomX.push(fidInCam.position.x);
-    fidInOdomY.push(fidInCam.position.y);
-    fidInOdomZ.push(fidInCam.position.z);
+void PersistentFiducial::addReading(const SE3& fidInOdom) {
+    fidInOdomX.push(fidInOdom.position.x);
+    fidInOdomY.push(fidInOdom.position.y);
+    fidInOdomZ.push(fidInOdom.position.z);
 }
 
 void PersistentFiducial::setFilterParams(size_t count, double proportion) {

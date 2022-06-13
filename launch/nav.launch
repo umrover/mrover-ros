@@ -25,10 +25,18 @@
     -urdf -param robot_description
     -model rover" />
 
-  <!-- Perception -->
+  <!--
+    ==========
+    Perception
+    ==========
+  -->
   <node name="aruco_detect" pkg="mrover" type="aruco_detect" />
 
-  <!-- Navigation -->
+  <!--
+    ===========
+    Navigation
+    ===========
+  -->
   <!-- This publishes the transforms of the course waypoints -->
   <node name="debug_course_publisher" pkg="mrover" type="debug_course_publisher.py" />
 

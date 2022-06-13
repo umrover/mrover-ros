@@ -1,28 +1,22 @@
-#include <cmath>
-#include <numeric>
 #include <optional>
 #include <string>
 #include <unordered_map>
 
-#include <boost/algorithm/string.hpp>
-#include <boost/shared_ptr.hpp>
-#include <opencv2/aruco.hpp>
-
 #include <cv_bridge/cv_bridge.h>
 #include <dynamic_reconfigure/server.h>
 #include <image_transport/image_transport.h>
-#include <ros/ros.h>
-#include <std_msgs/String.h>
-#include <std_srvs/SetBool.h>
-#include <tf2/LinearMath/Transform.h>
-#include <tf2_ros/buffer.h>
+#include <opencv2/aruco.hpp>
+#include <opencv2/core/mat.hpp>
 #include <tf2_ros/transform_broadcaster.h>
 #include <tf2_ros/transform_listener.h>
 
-#include <geometry_msgs/PoseStamped.h>
 #include <fiducial_msgs/FiducialTransformArray.h>
+#include <geometry_msgs/PoseStamped.h>
 #include <sensor_msgs/image_encodings.h>
 #include <sensor_msgs/point_cloud2_iterator.h>
+#include <std_msgs/String.h>
+#include <std_srvs/SetBool.h>
+#include <tf2_geometry_msgs/tf2_geometry_msgs.h>
 
 #include <mrover/DetectorParamsConfig.h>
 
@@ -44,7 +38,7 @@ struct PersistentFiducial {
     Filter<double> fidInOdomY;
     Filter<double> fidInOdomZ;
 
-    void addReading(SE3 const& fidInCam);
+    void addReading(SE3 const& fidInOdom);
 
     void setFilterParams(size_t count, double proportion);
 };
