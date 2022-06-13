@@ -71,7 +71,6 @@ catkin_python_setup()
 ## Generate messages in the 'msg' folder
 add_message_files(
         FILES
-        AutonLED.msg
         Enable.msg
         Heater.msg
         MarkerInfo.msg
@@ -80,12 +79,18 @@ add_message_files(
         Thermistor.msg
 )
 
-## Generate services in the 'srv' folder
-# add_service_files(
-#   FILES
-#   Service1.srv
-#   Service2.srv
-# )
+# Generate services in the 'srv' folder
+add_service_files(
+  FILES
+  change_auton_led_state.srv
+  change_arm_laser_state.srv
+  change_heater_state.srv
+  change_heater_auto_shut_off_state.srv
+  change_servo_angle.srv
+  change_uv_led_carousel_state.srv
+  change_uv_led_end_effector_state.srv
+  change_white_led_state.srv
+)
 
 ## Generate actions in the 'action' folder
 # add_action_files(

@@ -4,8 +4,8 @@ science nucleo to operate the science boxes and get relevant data
 '''
 import numpy as np
 import rospy
-from mrover import AutonLED, Enable, Heater, Servo, Spectral, Thermistor
-from sciencecomms import uart_send, read_msg
+from mrover import Enable, Heater, Servo, Spectral, Thermistor
+from sciencecomms import msg_send, read_msg
 
 class ScienceBridge():
 
@@ -33,12 +33,6 @@ class ScienceBridge():
         }
         self.max_error_count = 20
         self.sleep = .01
-        self.led_map = {
-            "Red": 0,
-            "Blue": 1,
-            "Green": 2,
-            "Off": 3
-        }
         # Mapping of onboard devices to mosfet devices
         self.mosfet_dev_map = {
             "arm_laser": 1,
@@ -48,17 +42,6 @@ class ScienceBridge():
         }
         self.heater_map = [7, 8, 9]
 
-    def auton_led_transmit(self, ros_msg: AutonLED) -> None:
-        try:
-            requested_state = self.led_map[ros_msg.color]
-            print("Received new auton led request: Turning " + str(ros_msg.color))
-        except KeyError:
-            requested_state = self.led_map["Off"]
-            print("Received invalid/off auton led request: Turning off all colors")
-
-        uart_msg = "$LED,{led_color}".format(led_color=requested_state.value)
-        uart_send(uart_msg)
-
     def format_mosfet_msg(self, device: int, enable: bool) -> str:
         uart_msg = "$MOSFET,{dev},{en},"
         return uart_msg.format(dev=device, en=enable)
@@ -66,7 +49,7 @@ class ScienceBridge():
     def heater_auto_shut_off_transmit(self, ros_msg: Enable) -> None:
         uart_msg = "$AUTOSHUTOFF,{enable}"
         uart_msg = uart_msg.format(enable=int(ros_msg.auto_shut_off_enabled))
-        uart_send(uart_msg)
+        msg_send(uart_msg)
 
     def heater_auto_shut_off_handler(self, uart_msg: str, ros_msg: Enable) -> None:
         # uart_msg format: <"$AUTOSHUTOFF,device,enabled">
@@ -89,17 +72,17 @@ class ScienceBridge():
     def heater_transmit(self, ros_msg: Heater) -> None:
         translated_device = self.heater_map[ros_msg.device]
         uart_msg = self.format_mosfet_msg(translated_device, int(ros_msg.enable))
-        uart_send(uart_msg)
+        msg_send(uart_msg)
 
     def mosfet_transmit(self, ros_msg: Enable, device_name: str) -> None:
         translated_device = self.mosfet_dev_map[device_name]
         uart_msg = self.format_mosfet_msg(translated_device, int(ros_msg.enable))
-        uart_send(uart_msg)
+        msg_send(uart_msg)
 
     def servo_transmit(self, ros_msg: Servo) -> None:
         uart_msg = "$SERVO,{angle_0},{angle_1},{angle_2}"
         uart_msg = uart_msg.format(angle_0=ros_msg.angle_0, angle_1=ros_msg.angle_1, angle_2=ros_msg.angle_2)
-        uart_send(uart_msg)
+        msg_send(uart_msg)
 
     def spectral_handler(self, m: str, ros_msg: Spectral) -> None:
         try:
@@ -192,7 +175,6 @@ def main():
     rospy.init_node("science")
 
     with ScienceBridge() as bridge:
-        rospy.Subscriber("auton_led", AutonLED, bridge.auton_led_transmit)
         rospy.Subscriber("arm_laser_cmd", Enable, bridge.mosfet_transmit, "arm_laser")
         rospy.Subscriber("heater_cmd", Heater, bridge.heater_transmit)
         rospy.Subscriber("heater_auto_shut_off_cmd", Enable, bridge.heater_auto_shut_off_transmit)
