@@ -33,19 +33,19 @@
 #include <cmath>
 #include <unistd.h>
 
+#include <cv_bridge/cv_bridge.h>
+#include <dynamic_reconfigure/server.h>
+#include <image_transport/image_transport.h>
 #include <ros/ros.h>
+#include <sensor_msgs/image_encodings.h>
+#include <sensor_msgs/point_cloud2_iterator.h>
+#include <std_msgs/String.h>
+#include <std_srvs/SetBool.h>
 #include <tf/transform_datatypes.h>
 #include <tf2/LinearMath/Transform.h>
 #include <tf2_ros/buffer.h>
 #include <tf2_ros/transform_broadcaster.h>
 #include <tf2_ros/transform_listener.h>
-#include <image_transport/image_transport.h>
-#include <cv_bridge/cv_bridge.h>
-#include <sensor_msgs/image_encodings.h>
-#include <sensor_msgs/point_cloud2_iterator.h>
-#include <dynamic_reconfigure/server.h>
-#include <std_srvs/SetBool.h>
-#include <std_msgs/String.h>
 
 #include "fiducial_msgs/Fiducial.h"
 #include "fiducial_msgs/FiducialArray.h"
@@ -60,10 +60,10 @@
 #include <opencv2/aruco.hpp>
 #include <opencv2/calib3d.hpp>
 
-#include <list>
-#include <string>
 #include <boost/algorithm/string.hpp>
 #include <boost/shared_ptr.hpp>
+#include <list>
+#include <string>
 
 #include "mrover/MarkerInfo.h"
 
@@ -98,7 +98,7 @@ private:
     bool doPoseEstimation;
     bool haveCamInfo;
     bool publishFiducialTf;
-    std::vector<std::vector<cv::Point2f> > corners;
+    std::vector<std::vector<cv::Point2f>> corners;
     std::vector<int> ids;
     cv_bridge::CvImagePtr cv_ptr;
 
@@ -133,7 +133,7 @@ private:
 
     void imageCallback(const sensor_msgs::ImageConstPtr& msg);
 
-    void pointCloudCallback(const sensor_msgs::PointCloud2ConstPtr & msg);
+    void pointCloudCallback(const sensor_msgs::PointCloud2ConstPtr& msg);
 
     void poseEstimateCallback(const FiducialArrayConstPtr& msg);
 
