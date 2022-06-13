@@ -66,6 +66,7 @@ class ScienceBridge():
             bytesize=serial.EIGHTBITS,
             timeout=0
         )
+        self.ser.close()
         return self
 
     def __exit__(self, exc_type, exc_value, traceback) -> None:
@@ -191,16 +192,17 @@ class ScienceBridge():
     def uart_send(self, uart_msg: str) -> None:
         uart_msg = self.add_padding(uart_msg)
         print(uart_msg)
-        self.ser.close()
         self.ser.open()
-        if self.ser.isOpen():
-            self.ser.write(bytes(uart_msg, encoding='utf-8'))
+        self.ser.write(bytes(uart_msg, encoding='utf-8'))
+        self.ser.close()
 
     def receive(self) -> None:
         while True:
             try:
                 error_counter = 0
+                self.ser.open()
                 tx = self.ser.readline()
+                self.ser.close()
                 uart_msg = str(tx)
             except Exception as e:
                 print("Errored")
