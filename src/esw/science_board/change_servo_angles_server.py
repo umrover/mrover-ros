@@ -1,7 +1,7 @@
 import rospy
-from sciencecomms import send_msg
 from mrover.srv import (ChangeServoAngles, ChangeServoAnglesRequest,
                         ChangeServoAnglesResponse)
+from sciencecomms import send_msg
 
 
 def servo_transmit(angle_0: float, angle_1: float, angle_2: float) -> None:

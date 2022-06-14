@@ -1,7 +1,7 @@
 import rospy
-from sciencecomms import send_mosfet_msg
 from mrover.srv import (ChangeDeviceState, ChangeDeviceStateRequest,
                         ChangeDeviceStateResponse)
+from sciencecomms import send_mosfet_msg
 
 
 def handle_change_uv_led_end_effector_state(

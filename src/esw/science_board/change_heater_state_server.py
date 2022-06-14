@@ -1,8 +1,8 @@
 import rospy
-from sciencecomms import (format_mosfet_msg, mosfet_dev_map,
-                          send_msg)
 from mrover.srv import (ChangeHeaterState, ChangeHeaterStateRequest,
                         ChangeHeaterStateResponse)
+from sciencecomms import (format_mosfet_msg, mosfet_dev_map,
+                          send_msg)
 
 heater_map = {
     0: "heater_0",

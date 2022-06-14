@@ -1,7 +1,7 @@
 import rospy
-from sciencecomms import send_msg
 from mrover.srv import (ChangeDeviceState, ChangeDeviceStateRequest,
                         ChangeDeviceStateResponse)
+from sciencecomms import send_msg
 
 
 def heater_auto_shut_off_transmit(enable: bool) -> None:

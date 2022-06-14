@@ -27,38 +27,46 @@ The services make use of sciencecomms.py to transmit
 messages over UART.
 The server for these services can be located in this folder.
 
+### Programs by Mission
+
+During the autonomous mission, only change_auton_led_state_server.py needs to be running.
+During the equipment servicing mission, only change_arm_laser_state_server.py needs to be running.
+During the extreme retrieval and delivery mission, none of the programs need to be running.
+During the science mission, science.py and all of the other 
+change_[device]_server.py files not listed above need to be running.
+
 #### Services
 
 **Change Arm Laser State [service]** \
-Server: [change_arm_laser_state_server](https://github.com/umrover/mrover-ros/blob/main/scripts/science/change_arm_laser_state_server.py) \
+Server: [change_arm_laser_state_server](https://github.com/umrover/mrover-ros/blob/main/src/esw/science/change_arm_laser_state_server.py) \
 Client: gui \
 
 **Change Auton LED State [service]** \
-Server: [change_auton_led_state_server](https://github.com/umrover/mrover-ros/blob/main/scripts/science/change_auton_led_state_server.py) \
+Server: [change_auton_led_state_server](https://github.com/umrover/mrover-ros/blob/main/src/esw/science/change_auton_led_state_server.py) \
 Client: gui \
 
 **Change Heater Auto Shut Off State [service]** \
-Server: [change_heater_auto_shut_off_state](https://github.com/umrover/mrover-ros/blob/main/scripts/science/change_heater_auto_shut_off_state.py) \
+Server: [change_heater_auto_shut_off_state](https://github.com/umrover/mrover-ros/blob/main/src/esw/science/change_heater_auto_shut_off_state.py) \
 Client: gui \
 
 **Change Heater State [service]** \
-Server: [change_heater_state_server](https://github.com/umrover/mrover-ros/blob/main/scripts/science/change_heater_state_server.py) \
+Server: [change_heater_state_server](https://github.com/umrover/mrover-ros/blob/main/src/esw/science/change_heater_state_server.py) \
 Client: gui \
 
 **Change Servo Angles [service]** \
-Server: [change_servo_angles_server](https://github.com/umrover/mrover-ros/blob/main/scripts/science/change_servo_angles_server.py) \
+Server: [change_servo_angles_server](https://github.com/umrover/mrover-ros/blob/main/src/esw/science/change_servo_angles_server.py) \
 Client: gui \
 
 **Change UV LED Carousel State [service]** \
-Server: [change_uv_led_carousel_server](https://github.com/umrover/mrover-ros/blob/main/scripts/science/change_uv_led_carousel_server.py) \
+Server: [change_uv_led_carousel_server](https://github.com/umrover/mrover-ros/blob/main/src/esw/science/change_uv_led_carousel_server.py) \
 Client: gui \
 
 **Change UV LED End Effector State [service]** \
-Server: [change_uv_led_end_effector_server](https://github.com/umrover/mrover-ros/blob/main/scripts/science/change_uv_led_end_effector_server.py) \
+Server: [change_uv_led_end_effector_server](https://github.com/umrover/mrover-ros/blob/main/src/esw/science/change_uv_led_end_effector_server.py) \
 Client: gui \
 
 **Change White LED State [service]** \
-Server: [change_white_led_server](https://github.com/umrover/mrover-ros/blob/main/scripts/science/change_white_led_server.py) \
+Server: [change_white_led_server](https://github.com/umrover/mrover-ros/blob/main/src/esw/science/change_white_led_server.py) \
 Client: gui \
 
 #### Publishers

@@ -1,7 +1,7 @@
 import rospy
-from sciencecomms import led_map, send_msg
 from mrover.srv import (ChangeAutonLEDState, ChangeAutonLEDStateRequest,
                         ChangeAutonLEDStateResponse)
+from sciencecomms import led_map, send_msg
 
 
 def auton_led_transmit(color: str) -> None:
