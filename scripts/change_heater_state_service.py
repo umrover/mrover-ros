@@ -21,7 +21,7 @@ def heater_transmit(device: int, enable: bool) -> None:
 
 def handle_change_heater_state(
         req: ChangeHeaterStateRequest) -> ChangeHeaterStateResponse:
-    """Handle/callback for changing auton led state service"""
+    """Handle/callback for changing heater state service"""
     heater_transmit(req.device, req.color)
     return ChangeHeaterStateResponse(True)
 

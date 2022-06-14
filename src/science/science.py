@@ -66,9 +66,9 @@ class ScienceBridge():
         """Handles a received spectral data message"""
         msg.split(',')
         arr = [s.strip().strip('\x00') for s in msg.split(',')]
-        ros_msg_variables = ["d0_1", "d0_2", "d0_3", "d0_4", "d0_5", "d0_6",
-                             "d1_1", "d1_2", "d1_3", "d1_4", "d1_5", "d1_6",
-                             "d2_1", "d2_2", "d2_3", "d2_4", "d2_5", "d2_6"]
+        ros_msg_variables = ["d0_0", "d0_1", "d0_2", "d0_3", "d0_4", "d0_5",
+                             "d1_0", "d1_1", "d1_2", "d1_3", "d1_4", "d1_5",
+                             "d2_0", "d2_1", "d2_2", "d2_3", "d2_4", "d2_5"]
         # There are 3 spectral sensors, each having 6 channels.
         # We read a uint16_t from each channel.
         # The jetson reads byte by byte, so the program
@@ -96,9 +96,9 @@ class ScienceBridge():
         """Handles a received triad data message"""
         msg.split(',')
         arr = [s.strip().strip('\x00') for s in msg.split(',')]
-        ros_msg_variables = ["d0_1", "d0_2", "d0_3", "d0_4", "d0_5", "d0_6",
-                             "d1_1", "d1_2", "d1_3", "d1_4", "d1_5", "d1_6",
-                             "d2_1", "d2_2", "d2_3", "d2_4", "d2_5", "d2_6"]
+        ros_msg_variables = ["d0_0", "d0_1", "d0_2", "d0_3", "d0_4", "d0_5",
+                             "d1_0", "d1_1", "d1_2", "d1_3", "d1_4", "d1_5",
+                             "d2_0", "d2_1", "d2_2", "d2_3", "d2_4", "d2_5"]
 
         # There are 18 channels.
         # We read a uint16_t from each channel.
