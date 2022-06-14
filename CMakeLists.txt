@@ -205,14 +205,14 @@ install(DIRECTORY launch/
 ## Mark executable scripts (Python etc.) for installation
 ## in contrast to setup.py, you can choose the destination
 catkin_install_python(PROGRAMS
-  scripts/change_arm_laser_state_service.py
-  scripts/change_auton_led_state_service.py
-  scripts/change_heater_auto_shut_off_state_service.py
-  scripts/change_heater_state_service.py
-  scripts/change_servo_angles_service.py
-  scripts/change_uv_led_carousel_state_service.py
-  scripts/change_uv_led_end_effector_state_service.py
-  scripts/change_white_led_state_service.py
+  scripts/change_arm_laser_state_server.py
+  scripts/change_auton_led_state_server.py
+  scripts/change_heater_auto_shut_off_state_server.py
+  scripts/change_heater_state_server.py
+  scripts/change_servo_angles_server.py
+  scripts/change_uv_led_carousel_state_server.py
+  scripts/change_uv_led_end_effector_state_server.py
+  scripts/change_white_led_state_server.py
   DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
 )
 
