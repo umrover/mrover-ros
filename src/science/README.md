@@ -1,7 +1,7 @@
 Code for the science bridge program that will interpret UART messages from a Nucleo
 ======================================================================================
 ### About
-Writes, reads and parses NMEA like messages from the onboard 
+Reads and parses NMEA like messages from the onboard 
 science nucleo to operate the science box and get relevant data.
 
 ### Hardware
@@ -9,42 +9,55 @@ science nucleo to operate the science box and get relevant data.
 - STM32G050C8 custom board
 - RX/TX connection cables 
 
-#### Subscribers
 
-**Arm Laser Command [subscriber]** \
-Messages: [Enable.msg](https://github.com/umrover/mrover-ros/blob/main/msg/Enable.msg) "/arm_laser_cmd" \
-Publishers: gui \
-Subscribers: science
+### Overview
+The science.py program will constantly read in UART messages from the Nucleo 
+and it will publish them to certain topics depending on the data received. 
+The sciencecomms.py program includes all the commonly shared functions 
+and data needed for UART communication between the jetson and the nucleo. 
+sciencecomms.py also has information on the configuration of the science, 
+including which devices map to which mosfet devices.
 
-**Heater Auto Shut Off Command [subscriber]** \
-Messsages: [Enable.msg](https://github.com/umrover/mrover-ros/blob/main/msg/Enable.msg) "/heater_auto_shut_off_cmd" \
-Publishers: gui \
-Subscribers: science
+In order for the user to control certain science devices 
+(such as heaters and various LEDs),
+there are services that have been made.
+The services make use of sciencecomms.py to transmit
+messages over UART.
+The services can be located in the scripts folder.
 
-**Heater Command [subscriber]** \
-Messsages: [Heater.msg](https://github.com/umrover/mrover-ros/blob/main/msg/Heater.msg) "/heater_cmd" \
-Publishers: gui \
-Subscribers: science
+#### Services
 
-**Servo Command [subscriber]** \
-Messsages: [Servo.msg](https://github.com/umrover/mrover-ros/blob/main/msg/Servo.msg) "/servo_cmd" \
-Publishers: gui \
-Subscribers: science
+**Change Arm Laser State [service]** \
+Server: [change_arm_laser_state_server](https://github.com/umrover/mrover-ros/blob/main/scripts/change_arm_laser_state_server.py) \
+Client: gui \
 
-**UV Bulb Command [subscriber]** \
-Messages: [Enable.msg](https://github.com/umrover/mrover-ros/blob/main/msg/Enable.msg) "/uv_bulb_cmd" \
-Publishers: gui \
-Subscribers: science
+**Change Auton LED State [service]** \
+Server: [change_auton_led_state_server](https://github.com/umrover/mrover-ros/blob/main/scripts/change_auton_led_state_server.py) \
+Client: gui \
 
-**UV LED Command [subscriber]** \
-Messages: [Enable.msg](https://github.com/umrover/mrover-ros/blob/main/msg/Enable.msg) "/uv_led_cmd" \
-Publishers: gui \
-Subscribers: science
+**Change Heater Auto Shut Off State [service]** \
+Server: [change_heater_auto_shut_off_state](https://github.com/umrover/mrover-ros/blob/main/scripts/change_heater_auto_shut_off_state.py) \
+Client: gui \
 
-**White LED Command [subscriber]** \
-Messages: [Enable.msg](https://github.com/umrover/mrover-ros/blob/main/msg/Enable.msg) "/white_led_cmd" \
-Publishers: gui \
-Subscribers: science
+**Change Heater State [service]** \
+Server: [change_heater_state_server](https://github.com/umrover/mrover-ros/blob/main/scripts/change_heater_state_server.py) \
+Client: gui \
+
+**Change Servo Angles [service]** \
+Server: [change_servo_angles_server](https://github.com/umrover/mrover-ros/blob/main/scripts/change_servo_angles_server.py) \
+Client: gui \
+
+**Change UV LED Carousel State [service]** \
+Server: [change_uv_led_carousel_server](https://github.com/umrover/mrover-ros/blob/main/scripts/change_uv_led_carousel_server.py) \
+Client: gui \
+
+**Change UV LED End Effector State [service]** \
+Server: [change_uv_led_end_effector_server](https://github.com/umrover/mrover-ros/blob/main/scripts/change_uv_led_end_effector_server.py) \
+Client: gui \
+
+**Change White LED State [service]** \
+Server: [change_white_led_server](https://github.com/umrover/mrover-ros/blob/main/scripts/change_white_led_server.py) \
+Client: gui \
 
 #### Publishers
 
