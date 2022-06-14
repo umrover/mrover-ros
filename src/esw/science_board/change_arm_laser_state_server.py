@@ -7,8 +7,8 @@ from sciencecomms import send_mosfet_msg
 def handle_change_arm_laser_state(
         req: ChangeDeviceStateRequest) -> ChangeDeviceStateResponse:
     """Handle/callback for changing arm laser state service"""
-    send_mosfet_msg("arm_laser", req.enable)
-    return ChangeDeviceStateResponse(True)
+    success = send_mosfet_msg("arm_laser", req.enable)
+    return ChangeDeviceStateResponse(success)
 
 
 def change_arm_laser_state_server() -> None:

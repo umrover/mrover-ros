@@ -66,14 +66,15 @@ def read_msg() -> str:
             raise exc
 
 
-def send_mosfet_msg(device_name: str, enable: bool) -> None:
+def send_mosfet_msg(device_name: str, enable: bool) -> bool:
     """Transmits a mosfet device state command message"""
     translated_device = mosfet_dev_map[device_name]
     tx_msg = format_mosfet_msg(translated_device, int(enable))
-    send_msg(tx_msg)
+    success = send_msg(tx_msg)
+    return success
 
 
-def send_msg(tx_msg: str) -> None:
+def send_msg(tx_msg: str) -> bool:
     """Transmits a string over UART of proper length"""
     try:
         tx_msg = add_padding(tx_msg)
@@ -83,5 +84,7 @@ def send_msg(tx_msg: str) -> None:
         ser.open()
         ser.write(bytes(tx_msg, encoding='utf-8'))
         ser.close()
+        return True
     except serial.SerialException as exc:
         print("send_msg exception:", exc)
+    return False

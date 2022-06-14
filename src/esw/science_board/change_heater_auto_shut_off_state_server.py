@@ -4,17 +4,18 @@ from mrover.srv import (ChangeDeviceState, ChangeDeviceStateRequest,
 from sciencecomms import send_msg
 
 
-def heater_auto_shut_off_transmit(enable: bool) -> None:
+def heater_auto_shut_off_transmit(enable: bool) -> bool:
     """Transmits a heater auto shut off command over uart"""
     tx_msg = f"$AUTOSHUTOFF,{enable}"
-    send_msg(tx_msg)
+    success = send_msg(tx_msg)
+    return success
 
 
 def handle_change_heater_auto_shut_off_state(
         req: ChangeDeviceStateRequest) -> ChangeDeviceStateResponse:
     """Handle/callback for changing heater auto shut off state service"""
-    heater_auto_shut_off_transmit(req.enable)
-    return ChangeDeviceStateResponse(True)
+    success = heater_auto_shut_off_transmit(req.enable)
+    return ChangeDeviceStateResponse(success)
 
 
 def change_heater_auto_shut_off_state_server() -> None:

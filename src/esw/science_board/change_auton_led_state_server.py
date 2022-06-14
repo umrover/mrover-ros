@@ -4,22 +4,24 @@ from mrover.srv import (ChangeAutonLEDState, ChangeAutonLEDStateRequest,
 from sciencecomms import led_map, send_msg
 
 
-def auton_led_transmit(color: str) -> None:
+def auton_led_transmit(color: str) -> bool:
     """Sends an auton LED command message via UART"""
     try:
         requested_state = led_map[color]
     except KeyError:
-        requested_state = led_map["Off"]
+        # Done if an invalid color is sent
+        return False
 
     msg = f"$LED,{requested_state.value}"
-    send_msg(msg)
+    success = send_msg(msg)
+    return success
 
 
 def handle_change_auton_led_state(
         req: ChangeAutonLEDStateRequest) -> ChangeAutonLEDStateResponse:
     """Handle/callback for changing auton led state service"""
-    auton_led_transmit(req.color)
-    return ChangeAutonLEDStateResponse(True)
+    success = auton_led_transmit(req.color)
+    return ChangeAutonLEDStateResponse(success)
 
 
 def change_auton_led_state_server() -> None:

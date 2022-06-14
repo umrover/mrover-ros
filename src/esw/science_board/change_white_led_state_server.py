@@ -7,8 +7,8 @@ from sciencecomms import send_mosfet_msg
 def handle_change_white_led_state(
         req: ChangeDeviceStateRequest) -> ChangeDeviceStateResponse:
     """Handle/callback for changing white led state service"""
-    send_mosfet_msg("white_led", req.enable)
-    return ChangeDeviceStateResponse(True)
+    success = send_mosfet_msg("white_led", req.enable)
+    return ChangeDeviceStateResponse(success)
 
 
 def change_white_led_state_server() -> None:

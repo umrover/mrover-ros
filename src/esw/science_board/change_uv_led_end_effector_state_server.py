@@ -7,8 +7,8 @@ from sciencecomms import send_mosfet_msg
 def handle_change_uv_led_end_effector_state(
         req: ChangeDeviceStateRequest) -> ChangeDeviceStateResponse:
     """Handle/callback for changing uv led end effector state service"""
-    send_mosfet_msg("uv_led_end_effector", req.enable)
-    return ChangeDeviceStateResponse(True)
+    success = send_mosfet_msg("uv_led_end_effector", req.enable)
+    return ChangeDeviceStateResponse(success)
 
 
 def change_uv_led_end_effector_state_server() -> None:

@@ -10,19 +10,20 @@ heater_map = {
 }
 
 
-def heater_transmit(device: int, enable: bool) -> None:
+def heater_transmit(device: int, enable: bool) -> bool:
     """Sends a heater state command message via UART"""
     heater_device_string = heater_map[device]
     translated_device = mosfet_dev_map[heater_device_string]
     tx_msg = format_mosfet_msg(translated_device, int(enable))
-    send_msg(tx_msg)
+    success = send_msg(tx_msg)
+    return success
 
 
 def handle_change_heater_state(
         req: ChangeHeaterStateRequest) -> ChangeHeaterStateResponse:
     """Handle/callback for changing heater state service"""
-    heater_transmit(req.device, req.color)
-    return ChangeHeaterStateResponse(True)
+    success = heater_transmit(req.device, req.color)
+    return ChangeHeaterStateResponse(success)
 
 
 def change_heater_state_server() -> None:
