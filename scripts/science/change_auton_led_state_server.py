@@ -1,5 +1,5 @@
 import rospy
-from mrover.src.science.sciencecomms import led_map, send_msg
+from sciencecomms import led_map, send_msg
 from mrover.srv import (ChangeAutonLEDState, ChangeAutonLEDStateRequest,
                         ChangeAutonLEDStateResponse)
 

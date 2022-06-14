@@ -1,10 +1,10 @@
 '''
 Writes, reads and parses NMEA like messages from the onboard
-science nucleo to operate the science boxes and get relevant data
+science Nucleo to operate the science boxes and get relevant data
 '''
 import numpy as np
 import rospy
-from mrover import Enable, Heater, Spectral, Thermistor
+from mrover.msg import Enable, Heater, Spectral, Thermistor
 from sciencecomms import read_msg
 
 

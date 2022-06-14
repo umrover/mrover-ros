@@ -1,8 +1,10 @@
-Code for the science bridge program that will interpret UART messages from a Nucleo
+Code for the custom science Nucleo board to transmit and receive UART messages 
 ======================================================================================
 ### About
 Reads and parses NMEA like messages from the onboard 
-science nucleo to operate the science box and get relevant data.
+custom science Nucleo board to do various tasks such as
+operate the science box and get relevant data and also
+control the arm laser and auton LED array.
 
 ### Hardware
 - NVIDIA JetsonNX
@@ -14,7 +16,7 @@ science nucleo to operate the science box and get relevant data.
 The science.py program will constantly read in UART messages from the Nucleo 
 and it will publish them to certain topics depending on the data received. 
 The sciencecomms.py program includes all the commonly shared functions 
-and data needed for UART communication between the jetson and the nucleo. 
+and data needed for UART communication between the jetson and the Nucleo. 
 sciencecomms.py also has information on the configuration of the science, 
 including which devices map to which mosfet devices.
 
@@ -23,40 +25,40 @@ In order for the user to control certain science devices
 there are services that have been made.
 The services make use of sciencecomms.py to transmit
 messages over UART.
-The services can be located in the scripts folder.
+The server for these services can be located in this folder.
 
 #### Services
 
 **Change Arm Laser State [service]** \
-Server: [change_arm_laser_state_server](https://github.com/umrover/mrover-ros/blob/main/scripts/change_arm_laser_state_server.py) \
+Server: [change_arm_laser_state_server](https://github.com/umrover/mrover-ros/blob/main/scripts/science/change_arm_laser_state_server.py) \
 Client: gui \
 
 **Change Auton LED State [service]** \
-Server: [change_auton_led_state_server](https://github.com/umrover/mrover-ros/blob/main/scripts/change_auton_led_state_server.py) \
+Server: [change_auton_led_state_server](https://github.com/umrover/mrover-ros/blob/main/scripts/science/change_auton_led_state_server.py) \
 Client: gui \
 
 **Change Heater Auto Shut Off State [service]** \
-Server: [change_heater_auto_shut_off_state](https://github.com/umrover/mrover-ros/blob/main/scripts/change_heater_auto_shut_off_state.py) \
+Server: [change_heater_auto_shut_off_state](https://github.com/umrover/mrover-ros/blob/main/scripts/science/change_heater_auto_shut_off_state.py) \
 Client: gui \
 
 **Change Heater State [service]** \
-Server: [change_heater_state_server](https://github.com/umrover/mrover-ros/blob/main/scripts/change_heater_state_server.py) \
+Server: [change_heater_state_server](https://github.com/umrover/mrover-ros/blob/main/scripts/science/change_heater_state_server.py) \
 Client: gui \
 
 **Change Servo Angles [service]** \
-Server: [change_servo_angles_server](https://github.com/umrover/mrover-ros/blob/main/scripts/change_servo_angles_server.py) \
+Server: [change_servo_angles_server](https://github.com/umrover/mrover-ros/blob/main/scripts/science/change_servo_angles_server.py) \
 Client: gui \
 
 **Change UV LED Carousel State [service]** \
-Server: [change_uv_led_carousel_server](https://github.com/umrover/mrover-ros/blob/main/scripts/change_uv_led_carousel_server.py) \
+Server: [change_uv_led_carousel_server](https://github.com/umrover/mrover-ros/blob/main/scripts/science/change_uv_led_carousel_server.py) \
 Client: gui \
 
 **Change UV LED End Effector State [service]** \
-Server: [change_uv_led_end_effector_server](https://github.com/umrover/mrover-ros/blob/main/scripts/change_uv_led_end_effector_server.py) \
+Server: [change_uv_led_end_effector_server](https://github.com/umrover/mrover-ros/blob/main/scripts/science/change_uv_led_end_effector_server.py) \
 Client: gui \
 
 **Change White LED State [service]** \
-Server: [change_white_led_server](https://github.com/umrover/mrover-ros/blob/main/scripts/change_white_led_server.py) \
+Server: [change_white_led_server](https://github.com/umrover/mrover-ros/blob/main/scripts/science/change_white_led_server.py) \
 Client: gui \
 
 #### Publishers
@@ -130,3 +132,7 @@ Format of the UART NMEA command
 - [ ] Move beaglebone stuff into config file
 - [ ] Test with ROS
 - [ ] Make sure messages and topics are consistent with the gui and teleop programs
+
+## TODO - ROS Migration
+- [ ] See if services make sense
+- [ ] See if services should just be moved into science.py

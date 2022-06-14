@@ -1,5 +1,5 @@
 import rospy
-from mrover.src.science.sciencecomms import send_msg
+from sciencecomms import send_msg
 from mrover.srv import (ChangeDeviceState, ChangeDeviceStateRequest,
                         ChangeDeviceStateResponse)
 
