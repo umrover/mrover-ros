@@ -10,7 +10,8 @@ def servo_transmit(angle_0: float, angle_1: float, angle_2: float) -> None:
     send_msg(tx_msg)
 
 
-def handle_change_servo_angles(req: ChangeServoAnglesRequest) -> ChangeServoAnglesResponse:
+def handle_change_servo_angles(
+        req: ChangeServoAnglesRequest) -> ChangeServoAnglesResponse:
     """Handle/callback for changing servo angles service"""
     servo_transmit(req.angle_0, req.angle_1, req.angle_2)
     return ChangeServoAnglesResponse(True)

@@ -4,7 +4,8 @@ from mrover.srv import (ChangeDeviceState, ChangeDeviceStateRequest,
                         ChangeDeviceStateResponse)
 
 
-def handle_change_white_led_state(req: ChangeDeviceStateRequest) -> ChangeDeviceStateResponse:
+def handle_change_white_led_state(
+        req: ChangeDeviceStateRequest) -> ChangeDeviceStateResponse:
     """Handle/callback for changing white led state service"""
     send_mosfet_msg("white_led", req.enable)
     return ChangeDeviceStateResponse(True)

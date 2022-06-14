@@ -4,7 +4,8 @@ from mrover.srv import (ChangeDeviceState, ChangeDeviceStateRequest,
                         ChangeDeviceStateResponse)
 
 
-def handle_change_arm_laser_state(req: ChangeDeviceStateRequest) -> ChangeDeviceStateResponse:
+def handle_change_arm_laser_state(
+        req: ChangeDeviceStateRequest) -> ChangeDeviceStateResponse:
     """Handle/callback for changing arm laser state service"""
     send_mosfet_msg("arm_laser", req.enable)
     return ChangeDeviceStateResponse(True)

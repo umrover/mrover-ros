@@ -4,7 +4,8 @@ from mrover.srv import (ChangeDeviceState, ChangeDeviceStateRequest,
                         ChangeDeviceStateResponse)
 
 
-def handle_change_uv_led_carousel_state(req: ChangeDeviceStateRequest) -> ChangeDeviceStateResponse:
+def handle_change_uv_led_carousel_state(
+        req: ChangeDeviceStateRequest) -> ChangeDeviceStateResponse:
     """Handle/callback for changing uv led carousel state service"""
     send_mosfet_msg("uv_led_carousel", req.enable)
     return ChangeDeviceStateResponse(True)

@@ -1,5 +1,6 @@
 import rospy
-from mrover.src.science.sciencecomms import format_mosfet_msg, mosfet_dev_map, send_msg
+from mrover.src.science.sciencecomms import (
+    format_mosfet_msg, mosfet_dev_map, send_msg)
 from mrover.srv import (ChangeHeaterState, ChangeHeaterStateRequest,
                         ChangeHeaterStateResponse)
 
@@ -18,7 +19,8 @@ def heater_transmit(device: int, enable: bool) -> None:
     send_msg(tx_msg)
 
 
-def handle_change_heater_state(req: ChangeHeaterStateRequest) -> ChangeHeaterStateResponse:
+def handle_change_heater_state(
+        req: ChangeHeaterStateRequest) -> ChangeHeaterStateResponse:
     """Handle/callback for changing auton led state service"""
     heater_transmit(req.device, req.color)
     return ChangeHeaterStateResponse(True)

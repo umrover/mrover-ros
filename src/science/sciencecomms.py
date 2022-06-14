@@ -7,13 +7,13 @@ import serial
 UART_TRANSMIT_MSG_LEN = 30
 MAX_ERROR_COUNT = 20
 ser = serial.Serial(
-        port='/dev/ttyTHS0',
-        baudrate=38400,
-        parity=serial.PARITY_NONE,
-        stopbits=serial.STOPBITS_ONE,
-        bytesize=serial.EIGHTBITS,
-        timeout=0
-    )
+    port='/dev/ttyTHS0',
+    baudrate=38400,
+    parity=serial.PARITY_NONE,
+    stopbits=serial.STOPBITS_ONE,
+    bytesize=serial.EIGHTBITS,
+    timeout=0
+)
 ser.close()
 
 # Mapping of onboard devices to mosfet devices

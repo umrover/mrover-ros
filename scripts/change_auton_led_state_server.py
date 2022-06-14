@@ -15,7 +15,8 @@ def auton_led_transmit(color: str) -> None:
     send_msg(msg)
 
 
-def handle_change_auton_led_state(req: ChangeAutonLEDStateRequest) -> ChangeAutonLEDStateResponse:
+def handle_change_auton_led_state(
+        req: ChangeAutonLEDStateRequest) -> ChangeAutonLEDStateResponse:
     """Handle/callback for changing auton led state service"""
     auton_led_transmit(req.color)
     return ChangeAutonLEDStateResponse(True)
