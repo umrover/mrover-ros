@@ -54,7 +54,7 @@ void FiducialsNode::imageCallback(sensor_msgs::ImageConstPtr const& msg) {
             if (!immediateFid.fidInCam.has_value()) continue; // This is set if the point cloud had a valid reading for this fiducial
 
             fid.id = id;
-            SE3 fidInOdom = SE3::transform(mTfBuffer, ROVER_FRAME, ODOM_FRAME, immediateFid.fidInCam.value(), mSeqNum);
+            SE3 fidInOdom = SE3::fromTfTree(mTfBuffer, ROVER_FRAME, ODOM_FRAME, immediateFid.fidInCam.value(), mSeqNum);
             fid.setFilterParams(mFilterCount, mFilterProportion);
             fid.addReading(fidInOdom);
         }
@@ -63,7 +63,7 @@ void FiducialsNode::imageCallback(sensor_msgs::ImageConstPtr const& msg) {
         for (auto [id, fid]: mPersistentFiducials) {
             if (!fid.fidInOdomX.ready()) continue; // Wait until the filters have enough readings to become meaningful
 
-            SE3::sendTransform(mTfBroadcaster, "fiducial" + std::to_string(id), ODOM_FRAME, fid.getPose(), mSeqNum);
+            SE3::sendTfToTree(mTfBroadcaster, "fiducial" + std::to_string(id), ODOM_FRAME, fid.getPose(), mSeqNum);
         }
 
         mFidPub.publish(fidArray);

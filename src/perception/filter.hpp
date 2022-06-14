@@ -13,7 +13,7 @@
  * @tparam T Reading type
  */
 template<typename T>
-class Filter {
+class MeanMedianFilter {
 private:
     std::vector<T> mValues;
     std::vector<T> mSortedValues;
@@ -27,9 +27,9 @@ private:
     size_t mHead = 0;
 
 public:
-    Filter() : mValues(1), mProportion(0.0) {}
+    MeanMedianFilter() : mValues(1), mProportion(0.0) {}
 
-    Filter(size_t size, double centerProportion) : mValues(size), mSortedValues(size), mProportion(centerProportion) {}
+    MeanMedianFilter(size_t size, double centerProportion) : mValues(size), mSortedValues(size), mProportion(centerProportion) {}
 
     void setFilterCount(size_t filterCount) {
         mValues.resize(filterCount);

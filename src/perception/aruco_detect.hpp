@@ -33,9 +33,9 @@ struct ImmediateFiducial {
 
 struct PersistentFiducial {
     int id = -1;
-    Filter<double> fidInOdomX;
-    Filter<double> fidInOdomY;
-    Filter<double> fidInOdomZ;
+    MeanMedianFilter<double> fidInOdomX;
+    MeanMedianFilter<double> fidInOdomY;
+    MeanMedianFilter<double> fidInOdomZ;
 
     void setFilterParams(size_t count, double proportion);
 
