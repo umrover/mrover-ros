@@ -134,5 +134,8 @@ Format of the UART NMEA command
 - [ ] Make sure messages and topics are consistent with the gui and teleop programs
 
 ## TODO - ROS Migration
-- [ ] See if services make sense
+- [ ] See if code builds in ROS
 - [ ] See if services should just be moved into science.py
+- [ ] Check to see if we want to keep in scripts folder or src folder 
+(it's probably the src folder but this isn't a big change)
+- [ ] See if we need to include the files in some sort of launch file?
