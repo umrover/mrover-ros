@@ -1,1 +1,1 @@
-float64 throttle[4]
+float64[4] throttle

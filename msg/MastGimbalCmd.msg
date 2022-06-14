@@ -1,2 +1,2 @@
-float64 pitch[2]
-float64 yaw[2]
+float64[2] pitch
+float64[2] yaw
