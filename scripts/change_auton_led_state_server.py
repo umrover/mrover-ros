@@ -1,27 +1,15 @@
-"""Used for printing"""
-from __future__ import print_function
-
 import rospy
-from mrover.src.science.sciencecomms import send_msg
+from mrover.src.science.sciencecomms import led_map, send_msg
 from mrover.srv import (ChangeAutonLEDState, ChangeAutonLEDStateRequest,
                         ChangeAutonLEDStateResponse)
-
-led_map = {
-    "Red": 0,
-    "Blue": 1,
-    "Green": 2,
-    "Off": 3
-}
 
 
 def auton_led_transmit(color: str) -> None:
     """Sends an auton LED command message via UART"""
     try:
         requested_state = led_map[color]
-        print("Received new auton led request: Turning " + color)
     except KeyError:
         requested_state = led_map["Off"]
-        print("Received invalid/off auton led request: Turning off all colors")
 
     msg = f"$LED,{requested_state.value}"
     send_msg(msg)

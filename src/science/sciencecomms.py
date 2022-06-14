@@ -16,6 +16,25 @@ ser = serial.Serial(
     )
 ser.close()
 
+# Mapping of onboard devices to mosfet devices
+mosfet_dev_map = {
+    "arm_laser": 1,
+    "heater_0": 7,
+    "heater_1": 8,
+    "heater_2": 9,
+    "uv_led_carousel": 4,
+    "uv_led_end_effector": 1,
+    "white_led": 5
+}
+
+# Mapping of device color to number
+led_map = {
+    "Red": 0,
+    "Blue": 1,
+    "Green": 2,
+    "Off": 3
+}
+
 
 def add_padding(tx_msg: str) -> str:
     """Used to add padding since UART messages must be of certain length"""
@@ -24,18 +43,10 @@ def add_padding(tx_msg: str) -> str:
     return tx_msg
 
 
-def send_msg(tx_msg: str) -> None:
-    """Transmits a string over UART of proper length"""
-    try:
-        tx_msg = add_padding(tx_msg)
-        if len(tx_msg) > UART_TRANSMIT_MSG_LEN:
-            tx_msg = tx_msg[:UART_TRANSMIT_MSG_LEN]
-        print(tx_msg)
-        ser.open()
-        ser.write(bytes(tx_msg, encoding='utf-8'))
-        ser.close()
-    except serial.SerialException as exc:
-        print("send_msg exception:", exc)
+def format_mosfet_msg(device: int, enable: bool) -> str:
+    """Formats a mosfet message"""
+    tx_msg = f"$MOSFET,{device},{enable}"
+    return tx_msg
 
 
 def read_msg() -> str:
@@ -53,3 +64,24 @@ def read_msg() -> str:
             print(exc)
         else:
             raise exc
+
+
+def send_mosfet_msg(device_name: str, enable: bool) -> None:
+    """Transmits a mosfet device state command message"""
+    translated_device = mosfet_dev_map[device_name]
+    tx_msg = format_mosfet_msg(translated_device, int(enable))
+    send_msg(tx_msg)
+
+
+def send_msg(tx_msg: str) -> None:
+    """Transmits a string over UART of proper length"""
+    try:
+        tx_msg = add_padding(tx_msg)
+        if len(tx_msg) > UART_TRANSMIT_MSG_LEN:
+            tx_msg = tx_msg[:UART_TRANSMIT_MSG_LEN]
+        print(tx_msg)
+        ser.open()
+        ser.write(bytes(tx_msg, encoding='utf-8'))
+        ser.close()
+    except serial.SerialException as exc:
+        print("send_msg exception:", exc)

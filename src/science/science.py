@@ -4,8 +4,8 @@ science nucleo to operate the science boxes and get relevant data
 '''
 import numpy as np
 import rospy
-from mrover import Enable, Heater, Servo, Spectral, Thermistor
-from sciencecomms import read_msg, send_msg
+from mrover import Enable, Heater, Spectral, Thermistor
+from sciencecomms import read_msg
 
 
 class ScienceBridge():
@@ -33,31 +33,12 @@ class ScienceBridge():
             "TRIAD": Spectral()
         }
         self.sleep = .01
-        # Mapping of onboard devices to mosfet devices
-        self.mosfet_dev_map = {
-            "arm_laser": 1,
-            "uv_bulb": 1,
-            "uv_led": 4,
-            "white_led": 5
-        }
-        self.heater_map = [7, 8, 9]
 
     def __enter__(self) -> None:
         return self
 
     def __exit__(self, exc_type, exc_value, traceback) -> None:
-        pass
-
-    def format_mosfet_msg(self, device: int, enable: bool) -> str:
-        """Formats a mosfet message"""
-        tx_msg = "$MOSFET,{dev},{en},"
-        return tx_msg.format(dev=device, en=enable)
-
-    def heater_auto_shut_off_transmit(self, ros_msg: Enable) -> None:
-        """Transmits a heater auto shut off command over uart"""
-        tx_msg = "$AUTOSHUTOFF,{enable}"
-        tx_msg = tx_msg.format(enable=int(ros_msg.auto_shut_off_enabled))
-        send_msg(tx_msg)
+        return
 
     def heater_auto_shut_off_handler(self, tx_msg: str, ros_msg: Enable) -> None:
         """Handles a received heater auto shut off message"""
@@ -72,25 +53,6 @@ class ScienceBridge():
         arr = tx_msg.split(",")
         ros_msg.device = int(arr[1])
         ros_msg.enable = bool(int(arr[2]))
-
-    def heater_transmit(self, ros_msg: Heater) -> None:
-        """Transmits a heater state command message"""
-        translated_device = self.heater_map[ros_msg.device]
-        tx_msg = self.format_mosfet_msg(translated_device, int(ros_msg.enable))
-        send_msg(tx_msg)
-
-    def mosfet_transmit(self, ros_msg: Enable, device_name: str) -> None:
-        """Transmits a mosfet device state command message"""
-        translated_device = self.mosfet_dev_map[device_name]
-        tx_msg = self.format_mosfet_msg(translated_device, int(ros_msg.enable))
-        send_msg(tx_msg)
-
-    def servo_transmit(self, ros_msg: Servo) -> None:
-        """Transmits a servo angle command message"""
-        tx_msg = "$SERVO,{angle_0},{angle_1},{angle_2}"
-        tx_msg = tx_msg.format(angle_0=ros_msg.angle_0, angle_1=ros_msg.angle_1,
-                               angle_2=ros_msg.angle_2)
-        send_msg(tx_msg)
 
     def spectral_handler(self, msg: str, ros_msg: Spectral) -> None:
         """Handles a received spectral data message"""
@@ -141,21 +103,20 @@ class ScienceBridge():
             count += 2
 
     def receive(self) -> None:
-        """Infinite loop that reads in messages from the UART RX line and processes them"""
-        while True:
-            tx_msg = read_msg()
-            match_found = False
-            for tag, handler_func in self.nmea_handle_mapper.items():
-                if tag in tx_msg:
-                    print(tx_msg)
-                    match_found = True
-                    handler_func(tx_msg, self.nmea_message_mapper[tag])
-                    self.nmea_publisher_mapper[tag].publish(self.nmea_message_mapper[tag])
-                    break
-            if not match_found:
-                if not tx_msg:
-                    print(f'Error decoding message stream: {tx_msg}')
-            rospy.sleep(self.sleep)
+        """Reads in a message from the UART RX line and processes it"""
+        tx_msg = read_msg()
+        match_found = False
+        for tag, handler_func in self.nmea_handle_mapper.items():
+            if tag in tx_msg:
+                print(tx_msg)
+                match_found = True
+                handler_func(tx_msg, self.nmea_message_mapper[tag])
+                self.nmea_publisher_mapper[tag].publish(self.nmea_message_mapper[tag])
+                break
+        if not match_found:
+            if not tx_msg:
+                print(f'Error decoding message stream: {tx_msg}')
+        rospy.sleep(self.sleep)
 
 
 def main():
@@ -163,14 +124,6 @@ def main():
     rospy.init_node("science")
 
     with ScienceBridge() as bridge:
-        rospy.Subscriber("arm_laser_cmd", Enable, bridge.mosfet_transmit, "arm_laser")
-        rospy.Subscriber("heater_cmd", Heater, bridge.heater_transmit)
-        rospy.Subscriber("heater_auto_shut_off_cmd", Enable, bridge.heater_auto_shut_off_transmit)
-        rospy.Subscriber("servo_cmd", Servo, bridge.servo_transmit)
-        rospy.Subscriber("uv_bulb_cmd", Enable, bridge.mosfet_transmit, "uv_bulb")
-        rospy.Subscriber("uv_led_cmd", Enable, bridge.mosfet_transmit, "uv_led")
-        rospy.Subscriber("white_led_cmd", Enable, bridge.mosfet_transmit, "white_led")
-
         while not rospy.is_shutdown():
             bridge.receive()
 

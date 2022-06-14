@@ -1,3 +1,3 @@
-string color
+bool enable
 ---
 bool success

@@ -74,7 +74,6 @@ add_message_files(
         Enable.msg
         Heater.msg
         MarkerInfo.msg
-        Servo.msg
         Spectral.msg
         Thermistor.msg
 )
@@ -82,14 +81,10 @@ add_message_files(
 # Generate services in the 'srv' folder
 add_service_files(
   FILES
-  change_auton_led_state.srv
-  change_arm_laser_state.srv
-  change_heater_state.srv
-  change_heater_auto_shut_off_state.srv
-  change_servo_angle.srv
-  change_uv_led_carousel_state.srv
-  change_uv_led_end_effector_state.srv
-  change_white_led_state.srv
+  ChangeAutonLEDState.srv
+  ChangeDeviceState.srv
+  ChangeHeaterState.srv
+  ChangeServoAngles.srv
 )
 
 ## Generate actions in the 'action' folder
@@ -209,10 +204,17 @@ install(DIRECTORY launch/
 
 ## Mark executable scripts (Python etc.) for installation
 ## in contrast to setup.py, you can choose the destination
-# catkin_install_python(PROGRAMS
-#   scripts/my_python_script
-#   DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
-# )
+catkin_install_python(PROGRAMS
+  scripts/change_arm_laser_state_service.py
+  scripts/change_auton_led_state_service.py
+  scripts/change_heater_auto_shut_off_state_service.py
+  scripts/change_heater_state_service.py
+  scripts/change_servo_angles_service.py
+  scripts/change_uv_led_carousel_state_service.py
+  scripts/change_uv_led_end_effector_state_service.py
+  scripts/change_white_led_state_service.py
+  DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
+)
 
 ## Mark executables for installation
 ## See http://docs.ros.org/melodic/api/catkin/html/howto/format1/building_executables.html
