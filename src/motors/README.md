@@ -168,6 +168,7 @@ If two devices share the same i2c address but their functions are continuously c
 - [ ] Perhaps custom nucleos (to replace the current 3 nucleos taking up so much space)
 
 ### ToDo - ROS Migration
+- [ ] Use clang format (alt-shift-f on VSCode)
 - [ ] See how to fix meson.build (distinction between real main vs test)
 - [ ] Make sure project builds
 - [ ] Consider whether services should be implemented over topics (probably not)

@@ -1,10 +1,10 @@
 #ifndef CONTROLLER_MAP_H
 #define CONTROLLER_MAP_H
-#include <stdint.h>
+#include "rapidjson/document.h"
 #include <fstream>
+#include <stdint.h>
 #include <string>
 #include <unordered_map>
-#include "rapidjson/document.h"
 
 //Forward declaration of Controller class for compilation
 class Controller;
@@ -12,15 +12,14 @@ class Controller;
 /*
 The ControllerMap class creates a hash table of virtual Controller objects from the config file located at "mrover-workspace/config_src/motors/controller_config.json".These virtual Controllers are used to contact the physical controller on the rover, across both RA/SA configurations.
 */
-class ControllerMap
-{
+class ControllerMap {
 private:
     //Map of i2c_addresses to "live" virtual controllers
     inline static std::unordered_map<uint8_t, std::string> live_map = std::unordered_map<uint8_t, std::string>();
-    
+
     //Map of virtual controllers to supposed i2c addresses
     inline static std::unordered_map<std::string, uint8_t> name_map = std::unordered_map<std::string, uint8_t>();
-    
+
     //Helper function to get the path of the config file
     static std::string get_config();
 
@@ -29,7 +28,7 @@ private:
 
 public:
     //Map of virtual controller names to virtual Controller objects
-    inline static std::unordered_map<std::string, Controller *> controllers = std::unordered_map<std::string, Controller *>();
+    inline static std::unordered_map<std::string, Controller*> controllers = std::unordered_map<std::string, Controller*>();
 
     //Initialization function
     static void init();

@@ -1,16 +1,16 @@
 #ifndef CONTROLLER_H
 #define CONTROLLER_H
 
-#include <cstring>
-#include <vector>
-#include <cmath>
-#include <mutex>
-#include <limits>
+#include "ControllerMap.h"
 #include "Hardware.h"
 #include "I2C.h"
-#include "ControllerMap.h"
 #include <chrono>
+#include <cmath>
+#include <cstring>
+#include <limits>
+#include <mutex>
 #include <thread>
+#include <vector>
 
 #define OFF 0x00, 0, 0
 #define ON 0x0F, 0, 0
@@ -26,7 +26,7 @@
 #define LIMIT 0x60, 0, 1
 #define CALIBRATED 0x6F, 0, 1
 #define LIMIT_ON 0x7F, 1, 0
-#define UINT8_POINTER_T reinterpret_cast<uint8_t *>
+#define UINT8_POINTER_T reinterpret_cast<uint8_t*>
 
 #define CALIBRATED_BOOL 0xFF
 
@@ -39,8 +39,7 @@ sent. This is to prevent multiple virtual Controller objects from trying to cont
 */
 
 
-class Controller
-{
+class Controller {
 public:
     float start_angle = 0.0;
     float torque_scale = 1.0;
@@ -60,7 +59,7 @@ private:
     Hardware hardware;
 
     // Wrapper for I2C transact, autofilling the i2c address of the Controller by using ControllerMap::get_i2c_address()
-    void transact(uint8_t cmd, uint8_t write_num, uint8_t read_num, uint8_t *writeBuf, uint8_t *read_buf);
+    void transact(uint8_t cmd, uint8_t write_num, uint8_t read_num, uint8_t* writeBuf, uint8_t* read_buf);
 
     // If this Controller is not live, make it live by configuring the real controller
     void make_live();
@@ -98,7 +97,6 @@ public:
 
     // get current angle (safely)
     float get_current_angle();
-
 };
 
 #endif
