@@ -24,11 +24,11 @@ void ROSHandler::init()
     *carousel_closed_loop_sub = n->subscribe("carousel_closed_loop_cmd", 1, ROSHandler::InternalHandler::carousel_closed_loop_cmd);
     *carousel_open_loop_sub = n->subscribe("carousel_open_loop_cmd", 1, ROSHandler::InternalHandler::carousel_open_loop_cmd);
     *carousel_zero_sub = n->subscribe("carousel_zero_cmd", 1, ROSHandler::InternalHandler::carousel_zero_cmd);
-    *foot_open_loop_sub = n->subscribe("foot_open_loop_cmd", 1, ROSHandler::InternalHandler::foot_open_loop_cmd);
     *hand_open_loop_sub = n->subscribe("hand_open_loop_cmd", 1, ROSHandler::InternalHandler::hand_open_loop_cmd);
     *mast_gimbal_sub = n->subscribe("mast_gimbal_cmd", 1, ROSHandler::InternalHandler::mast_gimbal_cmd);
     *sa_ik_sub = n->subscribe("sa_ik_cmd", 1, ROSHandler::InternalHandler::sa_closed_loop_cmd);
     *sa_open_loop_sub = n->subscribe("sa_open_loop_cmd", 1, ROSHandler::InternalHandler::sa_open_loop_cmd);
+    *science_hand_open_loop_sub = n->subscribe("science_hand_open_loop_cmd", 1, ROSHandler::InternalHandler::science_hand_open_loop_cmd);
     *scoop_limit_switch_enable_sub = n->subscribe("scoop_limit_switch_enable_cmd", 1, ROSHandler::InternalHandler::scoop_limit_switch_enable_cmd);
 
     *arm_b_calib_data_pub = n->advertise<mrover::Calibrate>("arm_b_calib_data", 1);
@@ -109,12 +109,6 @@ void ROSHandler::InternalHandler::carousel_open_loop_cmd(mrover::CarouselOpenLoo
 void ROSHandler::InternalHandler::carousel_zero_cmd(mrover::Signal& msg)
 {
     ControllerMap::controllers["CAROUSEL_MOTOR"]->zero();
-}
-
-void ROSHandler::InternalHandler::foot_open_loop_cmd(mrover::ScienceHandCmd& msg)
-{
-    ControllerMap::controllers["FOOT_SENSOR"]->open_loop(msg->microscope_triad);
-    ControllerMap::controllers["FOOT_SCOOP"]->open_loop(msg->scoop);
 }
 
 void ROSHandler::InternalHandler::hand_open_loop_cmd(mrover::HandCmd& msg)
@@ -205,9 +199,15 @@ void ROSHandler::InternalHandler::sa_open_loop_cmd(mrover::SAOpenLoopCmd& msg)
     publish_sa_pos_data();
 }
 
+void ROSHandler::InternalHandler::science_hand_open_loop_cmd(mrover::ScienceHandCmd& msg)
+{
+    ControllerMap::controllers["SCIENCE_HAND_SENSOR"]->open_loop(msg->microscope_triad);
+    ControllerMap::controllers["SCIENCE_HAND_SCOOP"]->open_loop(msg->scoop);
+}
+
 void ROSHandler::InternalHandler::scoop_limit_switch_enable_cmd(mrover::Enable& msg)
 {
-    ControllerMap::controllers["FOOT_SCOOP"]->limit_switch_enable(msg->enable);
+    ControllerMap::controllers["SCIENCE_HAND_SCOOP"]->limit_switch_enable(msg->enable);
 }
 
 void ROSHandler::InternalHandler::publish_carousel_calib_data()

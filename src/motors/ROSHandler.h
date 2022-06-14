@@ -76,8 +76,6 @@ private:
 
         void carousel_zero_cmd(mrover::Signal& msg);
 
-        void foot_open_loop_cmd(mrover::ScienceHandCmd& msg);
-
         void hand_open_loop_cmd(mrover::HandCmd& msg);
 
         void mast_gimbal_cmd(mrover::MastGimbalCmd& msg);
@@ -97,6 +95,8 @@ private:
         void sa_closed_loop_cmd(mrover::SAPosition& msg);
 
         void sa_open_loop_cmd(mrover::SAOpenLoopCmd& msg);
+
+        void science_hand_open_loop_cmd(mrover::ScienceHandCmd& msg);
 
         void scoop_limit_switch_enable_cmd(mrover::Enable& msg);
 

@@ -1,4 +1,4 @@
-Code to control the brushed motors, using Nucleo F303REs
+Code to control the brushed motors, using Nucleo STM32F303REs
 ===============================================
 ### About
 
@@ -27,40 +27,16 @@ I2C.h is responsible for translating communications by virtual Controllers into 
 
 The following watchdog is implemented: If the nucleos do not receive any I2C messages for a given amount of time (currently about 443 ms), then they reset.
 
-### ROS Channels Publishing/Subscribed To
+### Subscribers
+
 #### Arm Closed Loop \[Subscriber\] "/arm_ik_cmd"
 Message: [ArmPosition.msg](https://github.com/umrover/mrover-ros/blob/main/msg/ArmPosition.msg) \
 Publisher: arm_kinematics \
 Subscriber: motors
 
-#### Arm Joint B Calibration Data \[Publisher\] "/arm_b_calib_data"
-Message: [Calibrate.msg](https://github.com/umrover/mrover-ros/blob/main/msg/Calibrate.msg) \
-Publisher: motors \
-Subscriber: gui + arm_kinematics
-
 #### Arm Open Loop \[Subscriber\] "/arm_open_loop_cmd"
 Message: [ArmOpenLoopCmd.msg](https://github.com/umrover/mrover-ros/blob/main/msg/ArmOpenLoopCmd.msg) \
 Publisher: teleop \
-Subscriber: motors
-
-#### Arm Pos Data \[Publisher\] "/arm_pos_data"
-Message: [ArmPosition.msg](https://github.com/umrover/mrover-ros/blob/main/msg/ArmPosition.msg) \
-Publisher: motors \
-Subscriber: arm_kinematics + gui
-
-#### SA Open Loop \[Subscriber\] "/sa_open_loop_cmd"
-Message: [SAOpenLoopCmd.msg](https://github.com/umrover/mrover-ros/blob/main/msg/SAOpenLoopCmd.msg) \
-Publisher: teleop \
-Subscriber: motors
-
-#### Carousel Open Loop \[Subscriber\] "/carousel_open_loop_cmd"
-Message: [CarouselOpenLoopCmd.msg](https://github.com/umrover/mrover-ros/blob/main/msg/CarouselOpenLoopCmd.msg) \
-Publisher: gui \
-Subscriber: motors
-
-#### SA Closed Loop \[Subscriber\] "/sa_ik_cmd"
-Message: [SAPosition.msg](https://github.com/umrover/mrover-ros/blob/main/msg/SAPosition.msg) \
-Publisher: arm_kinematics \
 Subscriber: motors
 
 #### Carousel Closed Loop \[Subscriber\] "/carousel_closed_loop_cmd"
@@ -68,20 +44,57 @@ Message: [CarouselPosition.msg](https://github.com/umrover/mrover-ros/blob/main/
 Publisher: gui \
 Subscriber: motors
 
-#### Mast Gimbal Open Loop \[Subscriber\] "/mast_gimbal_cmd"
-Message: [MastGimbalCmd.msg](https://github.com/umrover/mrover-ros/blob/main/msg/MastGimbalCmd.msg) \
-Publisher: teleop \
-Subscriber: src/motors
+#### Carousel Open Loop \[Subscriber\] "/carousel_open_loop_cmd"
+Message: [CarouselOpenLoopCmd.msg](https://github.com/umrover/mrover-ros/blob/main/msg/CarouselOpenLoopCmd.msg) \
+Publisher: gui \
+Subscriber: motors
 
 #### Hand Open Loop \[Subscriber\] "/hand_open_loop_cmd"
 Message: [HandCmd.msg](https://github.com/umrover/mrover-ros/blob/main/msg/HandCmd.msg) \
 Publisher: teleop \
 Subscriber: src/motors
 
-#### Foot Open Loop \[Subscriber\] "/foot_open_loop_cmd"
+#### Mast Gimbal Open Loop \[Subscriber\] "/mast_gimbal_cmd"
+Message: [MastGimbalCmd.msg](https://github.com/umrover/mrover-ros/blob/main/msg/MastGimbalCmd.msg) \
+Publisher: teleop \
+Subscriber: src/motors
+
+#### SA Closed Loop \[Subscriber\] "/sa_ik_cmd"
+Message: [SAPosition.msg](https://github.com/umrover/mrover-ros/blob/main/msg/SAPosition.msg) \
+Publisher: arm_kinematics \
+Subscriber: motors
+
+#### SA Open Loop \[Subscriber\] "/sa_open_loop_cmd"
+Message: [SAOpenLoopCmd.msg](https://github.com/umrover/mrover-ros/blob/main/msg/SAOpenLoopCmd.msg) \
+Publisher: teleop \
+Subscriber: motors
+
+#### Science Hand Open Loop \[Subscriber\] "/science_hand_open_loop_cmd"
 Message: [ScienceHandCmd.msg](https://github.com/umrover/mrover-workspace/blob/rnucleo/rover_msgs/ScienceHandCmd.msg) \
 Publisher: teleop \
 Subscriber: src/motors
+
+#### Scoop Limit Switch Enable Cmd \[Subscriber\] "/scoop_limit_switch_enable_cmd"
+Message: [Enable.msg](https://github.com/umrover/mrover-ros/blob/main/msg/Enable.msg) \
+Publisher: gui \
+Subscriber: src/motors
+
+#### Zero Carousel Cmd \[Subscriber\] "/carousel_zero_cmd"
+Message: [Signal.msg](https://github.com/umrover/mrover-ros/blob/main/msg/Signal.msg) \
+Publisher: gui \
+Subscriber: src/motors
+
+### Publishers
+
+#### Arm Joint B Calibration Data \[Publisher\] "/arm_b_calib_data"
+Message: [Calibrate.msg](https://github.com/umrover/mrover-ros/blob/main/msg/Calibrate.msg) \
+Publisher: motors \
+Subscriber: gui + arm_kinematics
+
+#### Arm Pos Data \[Publisher\] "/arm_pos_data"
+Message: [ArmPosition.msg](https://github.com/umrover/mrover-ros/blob/main/msg/ArmPosition.msg) \
+Publisher: motors \
+Subscriber: arm_kinematics + gui
 
 #### SA Pos Data \[Publisher\] "/sa_pos_data"
 Message: [SAPosData.msg](https://github.com/umrover/mrover-ros/blob/main/msg/SAPosData.msg) \
@@ -103,35 +116,20 @@ Message: [Calibrate.msg](https://github.com/umrover/mrover-ros/blob/main/msg/Cal
 Publisher: src/motors \
 Subscriber: gui + arm_kinematics
 
-#### Scoop Limit Switch Enable Cmd \[Subscriber\] "/scoop_limit_switch_enable_cmd"
-Message: [Enable.msg](https://github.com/umrover/mrover-ros/blob/main/msg/Enable.msg) \
-Publisher: gui \
-Subscriber: src/motors
-
-#### Zero Carousel Cmd \[Subscriber\] "/carousel_zero_cmd"
-Message: [Signal.msg](https://github.com/umrover/mrover-ros/blob/main/msg/Signal.msg) \
-Publisher: gui \
-Subscriber: src/motors
-
 ### Watchdog Timeout Period
 
 See above, but the watchdog timeout period is currently set to 443 ms.
 
 ### Usage
 
-To build src/motors use `$./jarvis build src/motors/ ` from the mrover-workspace directory.
-
-To run src/motors use `$./jarvis exec src/motors/ `
-from the mrover-workspace directory.
-
-After initializing the LCM bus, I2C bus, and virtual Controller objects, the CLI will only show errors, since printing output to the console is time expensive. A blank CLI is a good thing.
+After initializing the ROS object, I2C bus, and virtual Controller objects, the CLI will only show errors, since printing output to the console is time expensive. A blank CLI is a good thing.
 
 To control the RA/SA through open-loop
 * Ensure teleop is running on the same platform
 * Ensure gui is running on the base station
-* Operate the joysticks with the RA/SA Task page open on the base station GUI
+* Operate the joysticks with the ES/ERD/SA Task page open on the base station GUI
 
-To control the RA/SA through closed-loop
+To control the ES/ERD/SA through closed-loop
 * Ensure teleop is running on the same platform
 * Ensure arm_kinematics is running on the same platform
 * Ensure kineval_stencil is running on the base station
@@ -169,6 +167,16 @@ If two devices share the same i2c address but their functions are continuously c
 - [ ] Verify wrist encoder CPR
 - [ ] Perhaps custom nucleos (to replace the current 3 nucleos taking up so much space)
 
+### ToDo - ROS Migration
+- [ ] See how to fix meson.build (distinction between real main vs test)
+- [ ] Make sure project builds
+- [ ] Consider whether services should be implemented over topics (probably not)
+- [ ] Fix the Usage section
+
+### ToDo - 2023 Migration
+- [ ] Make sure we zero-index on the nucleo end (reflash everything)
+- [ ] Remove Science Hand lcm once SA system has been figured out
+
 ### Notes
 
-To reference the firmware that is loaded onto the Nucleos, [see this] (https://github.com/umrover/embedded-testbench/tree/motor_nucleo/motor_nucleo). An updated README for the firmware is coming soon, which will point out details such as watchdog timers and common issues.
+To reference the firmware that is loaded onto the Nucleos, [see this] (https://github.com/umrover/embedded-testbench/tree/motor_nucleo/motor_nucleo).

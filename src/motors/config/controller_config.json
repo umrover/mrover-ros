@@ -1,100 +1,8 @@
 [
     {
-        "name":"HAND_FINGER",
-        "type":"HBridge",
-        "nucleo": 3,
-        "channel": 2,
-        "inversion": 1.0
-    },
-    {
-        "name":"HAND_GRIP",
-        "type":"HBridge",
-        "nucleo": 2,
-        "channel": 2,
-        "inversion": 1.0
-    },
-    {
-        "name":"FOOT_SCOOP",
-        "type":"HBridge",
-        "nucleo": 2,
-        "channel": 2,
-        "inversion": 1.0
-    },
-    {
-        "name":"FOOT_SENSOR",
-        "type":"HBridge",
-        "nucleo": 3,
-        "channel": 2,
-        "inversion": 1.0
-    },
-    {
-        "name":"GIMBAL_YAW",
-        "type":"HBridge",
-        "nucleo": 2,
-        "channel": 3,
-        "inversion": -1.0
-    },
-    {
-        "name":"GIMBAL_PITCH",
-        "type":"HBridge",
-        "nucleo": 3,
-        "channel": 3,
-        "inversion": -1.0
-    },
-    {
-        "name":"SA_A",
-        "type":"Motor29Percent",
-        "nucleo": 1,
-        "channel": 0,
-        "quadCPR": -28800.0,
-        "kP": -0.005,
-        "kI": -0.0,
-        "inversion": -1.0
-    },
-    {
-        "name":"SA_B",
-        "type":"Motor12V",
-        "nucleo": 1,
-        "channel": 1,
-        "quadCPR": 4096.0,
-        "kP": -1.0,
-        "kI": -0.0,
-        "inversion": 1.0
-    },
-    {
-        "name":"SA_C",
-        "type":"Motor24V",
-        "nucleo": 2,
-        "channel": 0,
-        "quadCPR": 136800.0,
-        "kP": -0.005,
-        "kI": -0.0,
-        "inversion": 1.0
-    },
-    {
-        "name":"SA_E",
-        "type":"Motor24V",
-        "nucleo": 3,
-        "channel": 0,
-        "quadCPR": -72000.0,
-        "kP": -0.005,
-        "kI": -0.0,
-        "inversion": 1.0
-    },
-    {
-        "name":"CAROUSEL_MOTOR",
-        "type":"Motor12V",
-        "nucleo": 3,
-        "channel": 1,
-        "quadCPR": -9072.0,
-        "kP": -0.05,
-        "kI": -0.0,
-        "inversion": 1.0
-    },
-    {
         "name":"ARM_A",
         "type":"Motor29Percent",
-        "nucleo": 1,
+        "nucleo": 0,
         "channel": 0,
         "quadCPR": -28800.0,
         "kP": -0.005,
@@ -104,7 +12,7 @@
     {
         "name":"ARM_B",
         "type":"Motor12V",
-        "nucleo": 1,
+        "nucleo": 0,
         "channel": 1,
         "quadCPR": 4096.0,
         "kP": -0.1,
@@ -114,7 +22,7 @@
     {
         "name":"ARM_C",
         "type":"Motor24V",
-        "nucleo": 2,
+        "nucleo": 1,
         "channel": 0,
         "quadCPR": 136800.0,
         "kP": -0.005,
@@ -124,7 +32,7 @@
     {
         "name":"ARM_D",
         "type":"Motor24V",
-        "nucleo": 2,
+        "nucleo": 1,
         "channel": 1,
         "quadCPR": -72000.0,
         "kP": -0.005,
@@ -134,7 +42,7 @@
     {
         "name":"ARM_E",
         "type":"Motor24V",
-        "nucleo": 3,
+        "nucleo": 2,
         "channel": 0,
         "quadCPR": -72000.0,
         "kP": -0.005,
@@ -144,11 +52,103 @@
     {
         "name":"ARM_F",
         "type":"Motor12V",
-        "nucleo": 3,
+        "nucleo": 2,
         "channel": 1,
         "quadCPR": -2048.0,
         "kP": 0.05,
         "kI": 0.0,
+        "inversion": 1.0
+    },
+    {
+        "name":"CAROUSEL_MOTOR",
+        "type":"Motor12V",
+        "nucleo": 2,
+        "channel": 1,
+        "quadCPR": -9072.0,
+        "kP": -0.05,
+        "kI": -0.0,
+        "inversion": 1.0
+    },
+    {
+        "name":"GIMBAL_PITCH",
+        "type":"HBridge",
+        "nucleo": 2,
+        "channel": 3,
+        "inversion": -1.0
+    },
+    {
+        "name":"GIMBAL_YAW",
+        "type":"HBridge",
+        "nucleo": 1,
+        "channel": 3,
+        "inversion": -1.0
+    },
+    {
+        "name":"HAND_FINGER",
+        "type":"HBridge",
+        "nucleo": 2,
+        "channel": 2,
+        "inversion": 1.0
+    },
+    {
+        "name":"HAND_GRIP",
+        "type":"HBridge",
+        "nucleo": 1,
+        "channel": 2,
+        "inversion": 1.0
+    },
+    {
+        "name":"SA_A",
+        "type":"Motor29Percent",
+        "nucleo": 0,
+        "channel": 0,
+        "quadCPR": -28800.0,
+        "kP": -0.005,
+        "kI": -0.0,
+        "inversion": -1.0
+    },
+    {
+        "name":"SA_B",
+        "type":"Motor12V",
+        "nucleo": 0,
+        "channel": 1,
+        "quadCPR": 4096.0,
+        "kP": -1.0,
+        "kI": -0.0,
+        "inversion": 1.0
+    },
+    {
+        "name":"SA_C",
+        "type":"Motor24V",
+        "nucleo": 1,
+        "channel": 0,
+        "quadCPR": 136800.0,
+        "kP": -0.005,
+        "kI": -0.0,
+        "inversion": 1.0
+    },
+    {
+        "name":"SA_E",
+        "type":"Motor24V",
+        "nucleo": 2,
+        "channel": 0,
+        "quadCPR": -72000.0,
+        "kP": -0.005,
+        "kI": -0.0,
+        "inversion": 1.0
+    },
+    {
+        "name":"SCIENCE_HAND_SCOOP",
+        "type":"HBridge",
+        "nucleo": 1,
+        "channel": 2,
+        "inversion": 1.0
+    },
+    {
+        "name":"SCIENCE_HAND_SENSOR",
+        "type":"HBridge",
+        "nucleo": 2,
+        "channel": 2,
         "inversion": 1.0
     }
 ]

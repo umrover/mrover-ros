@@ -11,8 +11,8 @@ uint8_t ControllerMap::calculate_i2c_address(uint8_t nucleo, uint8_t channel)
 std::string ControllerMap::get_config()
 {
     // TODO - fix path
-    std::string configPath = getenv("MROVER_CONFIG");
-    configPath += "/config_src/motors/controller_config.json";
+    std::string configPath = getenv("mrover");
+    configPath += "/src/motors/config/controller_config.json";
     std::ifstream configFile;
     configFile.open(configPath);
 
