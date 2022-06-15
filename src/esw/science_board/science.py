@@ -2,10 +2,18 @@
 Writes, reads and parses NMEA like messages from the onboard
 science Nucleo to operate the science boxes and get relevant data
 '''
+import threading
+
 import numpy as np
 import rospy
+import serial
 from mrover.msg import Enable, Heater, Spectral, Thermistor
-from sciencecomms import read_msg
+from mrover.srv import (ChangeAutonLEDState, ChangeAutonLEDStateRequest,
+                        ChangeAutonLEDStateResponse, ChangeDeviceState,
+                        ChangeDeviceStateRequest, ChangeDeviceStateResponse,
+                        ChangeHeaterState, ChangeHeaterStateRequest,
+                        ChangeHeaterStateResponse, ChangeServoAngles,
+                        ChangeServoAnglesRequest, ChangeServoAnglesResponse)
 
 
 class ScienceBridge():
@@ -37,13 +45,126 @@ class ScienceBridge():
             "THERMISTOR": Thermistor(),
             "TRIAD": Spectral()
         }
+        self.UART_TRANSMIT_MSG_LEN = 30
+        self.MAX_ERROR_COUNT = 20
+        self.ser = serial.Serial(
+            port='/dev/ttyTHS0',
+            baudrate=38400,
+            parity=serial.PARITY_NONE,
+            stopbits=serial.STOPBITS_ONE,
+            bytesize=serial.EIGHTBITS,
+            timeout=0
+        )
+        self.ser.close()
+        # Mapping of onboard devices to mosfet devices
+        self.mosfet_dev_map = {
+            "arm_laser": 1,
+            "heater_0": 7,
+            "heater_1": 8,
+            "heater_2": 9,
+            "uv_led_carousel": 4,
+            "uv_led_end_effector": 1,
+            "white_led": 5
+        }
+        # Mapping of device color to number
+        self.led_map = {
+            "Red": 0,
+            "Blue": 1,
+            "Green": 2,
+            "Off": 3
+        }
+        # Mapping of heater number to name
+        self.heater_map = {
+            0: "heater_0",
+            1: "heater_1",
+            2: "heater_2"
+        }
         self.sleep = .01
+        self.UART_LOCK = threading.Lock()
 
     def __enter__(self) -> None:
         return self
 
     def __exit__(self, exc_type, exc_value, traceback) -> None:
         return
+
+    def add_padding(self, tx_msg: str) -> str:
+        """Used to add padding since UART messages must be of certain length"""
+        while len(tx_msg) < self.UART_TRANSMIT_MSG_LEN:
+            tx_msg += ","
+        return tx_msg
+
+    def auton_led_transmit(self, color: str) -> bool:
+        """Sends an auton LED command message via UART"""
+        try:
+            requested_state = self.led_map[color]
+        except KeyError:
+            # Done if an invalid color is sent
+            return False
+
+        msg = f"$LED,{requested_state.value}"
+        success = self.send_msg(msg)
+        return success
+
+    def format_mosfet_msg(device: int, enable: bool) -> str:
+        """Formats a mosfet message"""
+        tx_msg = f"$MOSFET,{device},{enable}"
+        return tx_msg
+
+    def handle_change_arm_laser_state(
+            self, req: ChangeDeviceStateRequest) -> \
+            ChangeDeviceStateResponse:
+        """Handle/callback for changing arm laser state service"""
+        success = self.send_mosfet_msg("arm_laser", req.enable)
+        return ChangeDeviceStateResponse(success)
+
+    def handle_change_auton_led_state(
+            self, req: ChangeAutonLEDStateRequest) -> \
+            ChangeAutonLEDStateResponse:
+        """Handle/callback for changing auton LED state service"""
+        success = self.auton_led_transmit(req.color)
+        return ChangeAutonLEDStateResponse(success)
+
+    def handle_change_heater_auto_shut_off_state(
+            self, req: ChangeDeviceStateRequest) -> \
+            ChangeDeviceStateResponse:
+        """Handle/callback for changing heater auto shut off state service"""
+        success = self.heater_auto_shut_off_transmit(req.enable)
+        return ChangeDeviceStateResponse(success)
+
+    def handle_change_heater_state(
+            self, req: ChangeHeaterStateRequest) -> \
+            ChangeHeaterStateResponse:
+        """Handle/callback for changing heater state service"""
+        success = self.heater_transmit(req.device, req.color)
+        return ChangeHeaterStateResponse(success)
+
+    def handle_change_servo_angles(
+            self, req: ChangeServoAnglesRequest) -> \
+            ChangeServoAnglesResponse:
+        """Handle/callback for changing servo angles service"""
+        success = self.servo_transmit(req.angle_0, req.angle_1, req.angle_2)
+        return ChangeServoAnglesResponse(success)
+
+    def handle_change_uv_led_carousel_state(
+            self, req: ChangeDeviceStateRequest) -> \
+            ChangeDeviceStateResponse:
+        """Handle/callback for changing UV LED carousel state service"""
+        success = self.send_mosfet_msg("uv_led_carousel", req.enable)
+        return ChangeDeviceStateResponse(success)
+
+    def handle_change_uv_led_end_effector_state(
+            self, req: ChangeDeviceStateRequest) -> ChangeDeviceStateResponse:
+        """Handle/callback for changing UV LED end effector state service"""
+        success = self.send_mosfet_msg("uv_led_end_effector", req.enable)
+        return ChangeDeviceStateResponse(success)
+
+    def handle_change_white_led_state(
+            self, req: ChangeDeviceStateRequest) -> \
+            ChangeDeviceStateResponse:
+        """Handle/callback for changing white LED state service"""
+        success = self.send_mosfet_msg("white_led", req.enable)
+        return ChangeDeviceStateResponse(success)
 
     def heater_auto_shut_off_handler(
             self, tx_msg: str, ros_msg: Enable) -> None:
@@ -53,6 +174,12 @@ class ScienceBridge():
         enabled = bool(int(arr[1]))
         ros_msg.enable = enabled
 
+    def heater_auto_shut_off_transmit(self, enable: bool) -> bool:
+        """Transmits a heater auto shut off command over uart"""
+        tx_msg = f"$AUTOSHUTOFF,{enable}"
+        success = self.send_msg(tx_msg)
+        return success
+
     def heater_state_handler(
             self, tx_msg: str, ros_msg: Heater) -> None:
         """Handles a received heater state message"""
@@ -60,6 +187,63 @@ class ScienceBridge():
         arr = tx_msg.split(",")
         ros_msg.device = int(arr[1])
         ros_msg.enable = bool(int(arr[2]))
+
+    def heater_transmit(self, device: int, enable: bool) -> bool:
+        """Sends a heater state command message via UART"""
+        heater_device_string = self.heater_map[device]
+        translated_device = self.mosfet_dev_map[heater_device_string]
+        tx_msg = self.format_mosfet_msg(translated_device, int(enable))
+        success = self.send_msg(tx_msg)
+        return success
+
+    def read_msg(self) -> str:
+        """Used to read a message on the UART receive line"""
+        error_counter = 0
+        try:
+            self.UART_LOCK.acquire()
+            self.ser.open()
+            msg = self.ser.readline()
+            self.ser.close()
+            self.UART_LOCK.release()
+            return str(msg)
+        except serial.SerialException as exc:
+            print("Errored")
+            if error_counter < self.MAX_ERROR_COUNT:
+                error_counter += 1
+                print(exc)
+            else:
+                raise exc
+
+    def send_mosfet_msg(self, device_name: str, enable: bool) -> bool:
+        """Transmits a mosfet device state command message"""
+        translated_device = self.mosfet_dev_map[device_name]
+        tx_msg = self.format_mosfet_msg(translated_device, int(enable))
+        success = self.send_msg(tx_msg)
+        return success
+
+    def send_msg(self, tx_msg: str) -> bool:
+        """Transmits a string over UART of proper length"""
+        try:
+            tx_msg = self.add_padding(tx_msg)
+            if len(tx_msg) > self.UART_TRANSMIT_MSG_LEN:
+                tx_msg = tx_msg[:self.UART_TRANSMIT_MSG_LEN]
+            print(tx_msg)
+            self.UART_LOCK.acquire()
+            self.ser.open()
+            self.ser.write(bytes(tx_msg, encoding='utf-8'))
+            self.ser.close()
+            self.UART_LOCK.release()
+            return True
+        except serial.SerialException as exc:
+            print("send_msg exception:", exc)
+        return False
+
+    def servo_transmit(
+            self, angle_0: float, angle_1: float, angle_2: float) -> bool:
+        """Transmits a servo angle command message"""
+        tx_msg = f"$SERVO,{angle_0},{angle_1},{angle_2}"
+        success = self.send_msg(tx_msg)
+        return success
 
     def spectral_handler(
             self, msg: str, ros_msg: Spectral) -> None:
@@ -117,7 +301,7 @@ class ScienceBridge():
 
     def receive(self) -> None:
         """Reads in a message from the UART RX line and processes it"""
-        tx_msg = read_msg()
+        tx_msg = self.read_msg()
         match_found = False
         for tag, handler_func in self.nmea_handle_mapper.items():
             if tag in tx_msg:
@@ -137,6 +321,25 @@ def main():
     rospy.init_node("science")
 
     with ScienceBridge() as bridge:
+        rospy.Service('change_arm_laser_state', ChangeDeviceState,
+                      bridge.handle_change_arm_laser_state)
+        rospy.Service('change_auton_led_state', ChangeAutonLEDState,
+                      bridge.handle_change_auton_led_state)
+        rospy.Service('change_heater_auto_shut_off_state',
+                      ChangeDeviceState,
+                      bridge.handle_change_heater_auto_shut_off_state)
+        rospy.Service('change_heater_state', ChangeHeaterState,
+                      bridge.handle_change_heater_state)
+        rospy.Service('change_servo_angles', ChangeServoAngles,
+                      bridge.handle_change_servo_angles)
+        rospy.Service('change_uv_led_carousel_state', ChangeDeviceState,
+                      bridge.handle_change_uv_led_carousel_state)
+        rospy.Service('change_uv_led_end_effector_state',
+                      ChangeDeviceState,
+                      bridge.handle_change_uv_led_end_effector_state)
+        rospy.Service('change_white_led_state', ChangeDeviceState,
+                      bridge.handle_change_white_led_state)
+
         while not rospy.is_shutdown():
             bridge.receive()
 

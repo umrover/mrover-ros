@@ -15,25 +15,19 @@ control the arm laser and auton LED array.
 ### Overview
 The science.py program will constantly read in UART messages from the Nucleo 
 and it will publish them to certain topics depending on the data received. 
-The sciencecomms.py program includes all the commonly shared functions 
-and data needed for UART communication between the jetson and the Nucleo. 
-sciencecomms.py also has information on the configuration of the science, 
+This program includes all the functions 
+and data needed for UART communication between the Jetson and the Nucleo. 
+It also has information on the configuration of the science, 
 including which devices map to which mosfet devices.
 
 In order for the user to control certain science devices 
 (such as heaters and various LEDs),
 there are services that have been made.
-The services make use of sciencecomms.py to transmit
-messages over UART.
-The server for these services can be located in this folder.
+The servers for these services run in science.py.
+The servers will transmit
+messages over UART if a client tries to talk with it.
 
-### Programs by Mission
-
-During the autonomous mission, only change_auton_led_state_server.py needs to be running.
-During the equipment servicing mission, only change_arm_laser_state_server.py needs to be running.
-During the extreme retrieval and delivery mission, none of the programs need to be running.
-During the science mission, science.py and all of the other 
-change_[device]_server.py files not listed above need to be running.
+Locks exist to prevent two functions from trying to access the UART line at the same time
 
 ### Services - Server
 
@@ -69,7 +63,7 @@ Client: gui \
 Server: [change_white_led_server](https://github.com/umrover/mrover-ros/blob/main/srv/ChangeDeviceState.srv)  "change_white_led" \
 Client: gui \
 
-### Topics - Publishing
+### Topics - Publisher
 
 **Heater Auto Shut Off Data [Publisher]** \
 Messages: [Enable.msg](https://github.com/umrover/mrover-ros/blob/main/msg/Enable.msg) "heater_auto_shut_off_data" \
@@ -143,7 +137,9 @@ Format of the UART NMEA command
 
 ## TODO - ROS Migration
 - [ ] See if code builds in ROS
-- [ ] See if services should just be moved into science.py
 - [ ] Check to see if we want to keep in scripts folder or src folder 
 (it's probably the src folder but this isn't a big change)
 - [ ] See if we need to include the files in some sort of launch file?
+- [ ] See if UART locks work. If they do not, maybe try to revert back to how it worked in 2022 code?
+Otherwise, need to deal with exception handling. If that does not work either, then look for another
+solution.
