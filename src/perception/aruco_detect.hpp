@@ -80,8 +80,8 @@ private:
     cv::Mat mDistCoeffs;
     std::string mFrameId;
     std::optional<size_t> mPrevDetectedCount; // Log spam prevention
-    std::vector<std::vector<cv::Point2f>> mCornersCache;
-    std::vector<int> mIdsCache;
+    std::vector<std::vector<cv::Point2f>> mCorners;
+    std::vector<int> mIds;
     std::unordered_map<int, ImmediateFiducial> mImmediateFiducials;
     std::unordered_map<int, PersistentFiducial> mPersistentFiducials;
     dynamic_reconfigure::Server<mrover::DetectorParamsConfig> mConfigServer;

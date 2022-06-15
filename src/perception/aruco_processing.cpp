@@ -22,12 +22,12 @@ void FiducialsNode::imageCallback(sensor_msgs::ImageConstPtr const& msg) {
         mCvPtr = cv_bridge::toCvCopy(msg, sensor_msgs::image_encodings::BGR8);
 
         // Detect the fiducial vertices in screen space and their respective ids
-        cv::aruco::detectMarkers(mCvPtr->image, mDictionary, mCornersCache, mIdsCache, mDetectorParams);
+        cv::aruco::detectMarkers(mCvPtr->image, mDictionary, mCorners, mIds, mDetectorParams);
 
         // Remove fiducials in the immediate buffer that are no longer in sight
         auto it = mImmediateFiducials.begin();
         while (it != mImmediateFiducials.end()) {
-            if (std::find(mIdsCache.begin(), mIdsCache.end(), it->first) == mIdsCache.end()) {
+            if (std::find(mIds.begin(), mIds.end(), it->first) == mIds.end()) {
                 it = mImmediateFiducials.erase(it);
             } else {
                 ++it;
@@ -35,11 +35,12 @@ void FiducialsNode::imageCallback(sensor_msgs::ImageConstPtr const& msg) {
         }
 
         // Save fiducials currently on screen to the immediate buffer
-        for (size_t i = 0; i < mIdsCache.size(); ++i) {
-            int id = mIdsCache[i];
-            cv::Point2f imageCenter = std::accumulate(mCornersCache[i].begin(), mCornersCache[i].end(), cv::Point2f{}) / 4.0f;
-            mImmediateFiducials[id].id = id;
-            mImmediateFiducials[id].imageCenter = imageCenter;
+        for (size_t i = 0; i < mIds.size(); ++i) {
+            int id = mIds[i];
+            cv::Point2f imageCenter = std::accumulate(mCorners[i].begin(), mCorners[i].end(), cv::Point2f{}) / 4.0f;
+            ImmediateFiducial& immediateFid = mImmediateFiducials[id];
+            immediateFid.id = id;
+            immediateFid.imageCenter = imageCenter;
         }
 
         fiducial_msgs::FiducialTransformArray fidArray{};
@@ -53,31 +54,37 @@ void FiducialsNode::imageCallback(sensor_msgs::ImageConstPtr const& msg) {
             PersistentFiducial& fid = mPersistentFiducials[id];
             if (!immediateFid.fidInCam.has_value()) continue; // This is set if the point cloud had a valid reading for this fiducial
 
+            std::string immediateFrameName = "immediateFiducial" + std::to_string(id);
+            SE3::pushToTfTree(mTfBroadcaster, immediateFrameName, ROVER_FRAME, immediateFid.fidInCam.value());
+
             fid.id = id;
-            SE3 fidInRover = immediateFid.fidInCam.value(); // For now treat camera and rover space as the same
-            SE3 odomToRover = SE3::fromTfTree(mTfBuffer, ODOM_FRAME, ROVER_FRAME);
-            SE3 fidInOdom = fidInRover.applyLeft(odomToRover);
-            fid.setFilterParams(mFilterCount, mFilterProportion);
-            fid.addReading(fidInOdom);
+            try {
+                SE3 fidInOdom = SE3::fromTfTree(mTfBuffer, ODOM_FRAME, immediateFrameName);
+                fid.setFilterParams(mFilterCount, mFilterProportion);
+                fid.addReading(fidInOdom);
+            } catch (tf2::ExtrapolationException const&) {
+                ROS_WARN("Old data for immediate fiducial");
+            } catch (tf2::LookupException const&) {
+            }
         }
 
         // Send all transforms of persistent fiducials
         for (auto [id, fid]: mPersistentFiducials) {
             if (!fid.fidInOdomX.ready()) continue; // Wait until the filters have enough readings to become meaningful
 
-            SE3::sendTfToTree(mTfBroadcaster, "fiducial" + std::to_string(id), ODOM_FRAME, fid.getFidInOdom());
+            SE3::pushToTfTree(mTfBroadcaster, "fiducial" + std::to_string(id), ODOM_FRAME, fid.getFidInOdom());
         }
 
         mFidPub.publish(fidArray);
 
-        size_t detectedCount = mIdsCache.size();
+        size_t detectedCount = mIds.size();
         if (mIsVerbose || !mPrevDetectedCount.has_value() || detectedCount != mPrevDetectedCount.value()) {
             mPrevDetectedCount = detectedCount;
             ROS_INFO("Detected %zu markers", detectedCount);
         }
 
         if (!mImmediateFiducials.empty()) {
-            cv::aruco::drawDetectedMarkers(mCvPtr->image, mCornersCache, mIdsCache);
+            cv::aruco::drawDetectedMarkers(mCvPtr->image, mCorners, mIds);
         }
 
         if (mPublishImages) {

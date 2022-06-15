@@ -39,6 +39,6 @@ SE3 SE3::fromTfTree(tf2_ros::Buffer const& buffer, std::string const& fromFrameI
  * @param parentFrameId
  * @param tf
  */
-void SE3::sendTfToTree(tf2_ros::TransformBroadcaster& broadcaster, std::string const& childFrameId, std::string const& parentFrameId, SE3 const& tf) {
+void SE3::pushToTfTree(tf2_ros::TransformBroadcaster& broadcaster, std::string const& childFrameId, std::string const& parentFrameId, SE3 const& tf) {
     broadcaster.sendTransform(tf.toTransformStamped(parentFrameId, childFrameId));
 }
