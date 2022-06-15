@@ -35,63 +35,63 @@ During the extreme retrieval and delivery mission, none of the programs need to 
 During the science mission, science.py and all of the other 
 change_[device]_server.py files not listed above need to be running.
 
-#### Services
+### Services - Server
 
-**Change Arm Laser State [service]** \
-Server: [change_arm_laser_state_server](https://github.com/umrover/mrover-ros/blob/main/src/esw/science/change_arm_laser_state_server.py) \
+**Change Arm Laser State [Server]** \
+Server: [ChangeDeviceState](https://github.com/umrover/mrover-ros/blob/main/srv/ChangeDeviceState.srv) "change_arm_laser_state" \
 Client: gui \
 
-**Change Auton LED State [service]** \
-Server: [change_auton_led_state_server](https://github.com/umrover/mrover-ros/blob/main/src/esw/science/change_auton_led_state_server.py) \
+**Change Auton LED State [Server]** \
+Server: [ChangeAutonLEDState](https://github.com/umrover/mrover-ros/blob/main/srv/ChangeAutonLEDState.srv)  "change_auton_led_state" \
 Client: gui \
 
-**Change Heater Auto Shut Off State [service]** \
-Server: [change_heater_auto_shut_off_state](https://github.com/umrover/mrover-ros/blob/main/src/esw/science/change_heater_auto_shut_off_state.py) \
+**Change Heater Auto Shut Off State [Server]** \
+Server: [change_heater_auto_shut_off_state](https://github.com/umrover/mrover-ros/blob/main/srv/ChangeDeviceState.srv)  "change_heater_auto_shut_off" \
 Client: gui \
 
-**Change Heater State [service]** \
-Server: [change_heater_state_server](https://github.com/umrover/mrover-ros/blob/main/src/esw/science/change_heater_state_server.py) \
+**Change Heater State [Server]** \
+Server: [ChangeHeaterState](https://github.com/umrover/mrover-ros/blob/main/srv/ChangeHeaterState.srv)  "change_heater_state" \
 Client: gui \
 
-**Change Servo Angles [service]** \
-Server: [change_servo_angles_server](https://github.com/umrover/mrover-ros/blob/main/src/esw/science/change_servo_angles_server.py) \
+**Change Servo Angles [Server]** \
+Server: [change_servo_angles_server](https://github.com/umrover/mrover-ros/blob/main/srv/ChangeDeviceState.srv)  "change_servo_angles" \
 Client: gui \
 
-**Change UV LED Carousel State [service]** \
-Server: [change_uv_led_carousel_server](https://github.com/umrover/mrover-ros/blob/main/src/esw/science/change_uv_led_carousel_server.py) \
+**Change UV LED Carousel State [Server]** \
+Server: [change_uv_led_carousel_server](https://github.com/umrover/mrover-ros/blob/main/srv/ChangeDeviceState.srv) ) "change_uv_led_carousel" \
 Client: gui \
 
-**Change UV LED End Effector State [service]** \
-Server: [change_uv_led_end_effector_server](https://github.com/umrover/mrover-ros/blob/main/src/esw/science/change_uv_led_end_effector_server.py) \
+**Change UV LED End Effector State [Server]** \
+Server: [change_uv_led_end_effector_server](https://github.com/umrover/mrover-ros/blob/main/srv/ChangeDeviceState.srv)  "change_uv_led_end_effector" \
 Client: gui \
 
-**Change White LED State [service]** \
-Server: [change_white_led_server](https://github.com/umrover/mrover-ros/blob/main/src/esw/science/change_white_led_server.py) \
+**Change White LED State [Server]** \
+Server: [change_white_led_server](https://github.com/umrover/mrover-ros/blob/main/srv/ChangeDeviceState.srv)  "change_white_led" \
 Client: gui \
 
-#### Publishers
+### Topics - Publishing
 
-**Heater Auto Shut Off Data [publisher]** \
+**Heater Auto Shut Off Data [Publisher]** \
 Messages: [Enable.msg](https://github.com/umrover/mrover-ros/blob/main/msg/Enable.msg) "/heater_auto_shut_off_data" \
 Publishers: science\
 Subscribers: teleop
 
-**Heater State Data [publisher]** \
+**Heater State Data [Publisher]** \
 Messages: [Heater.msg](https://github.com/umrover/mrover-ros/blob/main/msg/Heater.msg) "/heater_state_data" \
 Publishers: science\
 Subscribers: teleop
 
-**Spectral Data [publisher]** \
+**Spectral Data [Publisher]** \
 Messages: [Spectral.msg](https://github.com/umrover/mrover-ros/blob/main/msg/Spectral.msg) "/spectral_data" \
 Publishers: science \
 Subscribers: gui
 
-**Spectral Triad Data [publisher]** \
+**Spectral Triad Data [Publisher]** \
 Messages: [Spectral.msg](https://github.com/umrover/mrover-ros/blob/main/msg/Spectral.msg) "/spectral_triad_data" \
 Publishers: science \
 Subscribers: gui
 
-**Thermistor Data [publisher]** \
+**Thermistor Data [Publisher]** \
 Messages: [Thermistor.msg](https://github.com/umrover/mrover-ros/blob/main/msg/Thermistor.msg) "/thermistor_data" \
 Publishers: science\
 Subscribers: gui
