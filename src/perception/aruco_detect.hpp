@@ -41,7 +41,7 @@ struct PersistentFiducial {
 
     void addReading(SE3 const& fidInOdom);
 
-    [[nodiscard]] SE3 getPose() const;
+    [[nodiscard]] SE3 getFidInOdom() const;
 };
 
 class FiducialsNode {

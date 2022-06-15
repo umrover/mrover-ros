@@ -24,14 +24,6 @@ void FiducialsNode::imageCallback(sensor_msgs::ImageConstPtr const& msg) {
         // Detect the fiducial vertices in screen space and their respective ids
         cv::aruco::detectMarkers(mCvPtr->image, mDictionary, mCornersCache, mIdsCache, mDetectorParams);
 
-        // Save fiducials currently on screen to the immediate buffer
-        for (size_t i = 0; i < mIdsCache.size(); ++i) {
-            int id = mIdsCache[i];
-            cv::Point2f imageCenter = std::accumulate(mCornersCache[i].begin(), mCornersCache[i].end(), cv::Point2f{}) / 4.0f;
-            mImmediateFiducials[id].id = id;
-            mImmediateFiducials[id].imageCenter = imageCenter;
-        }
-
         // Remove fiducials in the immediate buffer that are no longer in sight
         auto it = mImmediateFiducials.begin();
         while (it != mImmediateFiducials.end()) {
@@ -40,6 +32,14 @@ void FiducialsNode::imageCallback(sensor_msgs::ImageConstPtr const& msg) {
             } else {
                 ++it;
             }
+        }
+
+        // Save fiducials currently on screen to the immediate buffer
+        for (size_t i = 0; i < mIdsCache.size(); ++i) {
+            int id = mIdsCache[i];
+            cv::Point2f imageCenter = std::accumulate(mCornersCache[i].begin(), mCornersCache[i].end(), cv::Point2f{}) / 4.0f;
+            mImmediateFiducials[id].id = id;
+            mImmediateFiducials[id].imageCenter = imageCenter;
         }
 
         fiducial_msgs::FiducialTransformArray fidArray{};
@@ -54,7 +54,9 @@ void FiducialsNode::imageCallback(sensor_msgs::ImageConstPtr const& msg) {
             if (!immediateFid.fidInCam.has_value()) continue; // This is set if the point cloud had a valid reading for this fiducial
 
             fid.id = id;
-            SE3 fidInOdom = SE3::fromTfTree(mTfBuffer, ROVER_FRAME, ODOM_FRAME, immediateFid.fidInCam.value(), mSeqNum);
+            SE3 fidInRover = immediateFid.fidInCam.value(); // For now treat camera and rover space as the same
+            SE3 odomToRover = SE3::fromTfTree(mTfBuffer, ODOM_FRAME, ROVER_FRAME);
+            SE3 fidInOdom = fidInRover.applyLeft(odomToRover);
             fid.setFilterParams(mFilterCount, mFilterProportion);
             fid.addReading(fidInOdom);
         }
@@ -63,7 +65,7 @@ void FiducialsNode::imageCallback(sensor_msgs::ImageConstPtr const& msg) {
         for (auto [id, fid]: mPersistentFiducials) {
             if (!fid.fidInOdomX.ready()) continue; // Wait until the filters have enough readings to become meaningful
 
-            SE3::sendTfToTree(mTfBroadcaster, "fiducial" + std::to_string(id), ODOM_FRAME, fid.getPose(), mSeqNum);
+            SE3::sendTfToTree(mTfBroadcaster, "fiducial" + std::to_string(id), ODOM_FRAME, fid.getFidInOdom());
         }
 
         mFidPub.publish(fidArray);
@@ -97,7 +99,7 @@ void FiducialsNode::imageCallback(sensor_msgs::ImageConstPtr const& msg) {
  * @param v     Y Pixel Position
  */
 SE3 getFidInCamFromPixel(sensor_msgs::PointCloud2ConstPtr const& msg, size_t u, size_t v) {
-    // Could be done using PCL camToPoint clouds instead
+    // If PCL ends up being needed, use its camToPoint function instead
     size_t arrayPos = v * msg->row_step + u * msg->point_step;
     size_t arrayPosY = arrayPos + msg->fields[0].offset;
     size_t arrayPosZ = arrayPos + msg->fields[1].offset;
@@ -108,12 +110,7 @@ SE3 getFidInCamFromPixel(sensor_msgs::PointCloud2ConstPtr const& msg, size_t u, 
     std::memcpy(&point.y, &msg->data[arrayPosY], sizeof(point.y));
     std::memcpy(&point.z, &msg->data[arrayPosZ], sizeof(point.z));
 
-    SE3 pointInCam{};
-    pointInCam.orientation.w = 1.0;
-    pointInCam.position.x = +point.x;
-    pointInCam.position.y = -point.y;
-    pointInCam.position.z = +point.z;
-    return pointInCam;
+    return {{+point.x, -point.y, +point.z}, Eigen::Quaterniond::Identity()};
 }
 
 /**

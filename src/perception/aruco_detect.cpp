@@ -28,6 +28,7 @@
  * policies, either expressed or implied, of the FreeBSD Project.
  *
  */
+
 #include "aruco_detect.hpp"
 
 #include <boost/algorithm/string/classification.hpp>
@@ -219,17 +220,17 @@ FiducialsNode::FiducialsNode() : mNh(), mPnh("~"), mIt(mNh), mTfListener(mTfBuff
 int main(int argc, char** argv) {
     ros::init(argc, argv, "aruco_detect");
 
-    [[maybe_unused]] auto node = boost::make_shared<FiducialsNode>();
+    [[maybe_unused]] auto node = std::make_unique<FiducialsNode>();
 
     ros::spin();
 
     return EXIT_SUCCESS;
 }
 
-void PersistentFiducial::addReading(const SE3& fidInOdom) {
-    fidInOdomX.push(fidInOdom.position.x);
-    fidInOdomY.push(fidInOdom.position.y);
-    fidInOdomZ.push(fidInOdom.position.z);
+void PersistentFiducial::addReading(SE3 const& fidInOdom) {
+    fidInOdomX.push(fidInOdom.x());
+    fidInOdomY.push(fidInOdom.y());
+    fidInOdomZ.push(fidInOdom.z());
 }
 
 void PersistentFiducial::setFilterParams(size_t count, double proportion) {
@@ -241,11 +242,6 @@ void PersistentFiducial::setFilterParams(size_t count, double proportion) {
     fidInOdomZ.setProportion(static_cast<float>(proportion));
 }
 
-SE3 PersistentFiducial::getPose() const {
-    SE3 pose{};
-    pose.position.x = fidInOdomX.get();
-    pose.position.y = fidInOdomY.get();
-    pose.position.z = fidInOdomZ.get();
-    pose.orientation.w = 1.0;
-    return pose;
+SE3 PersistentFiducial::getFidInOdom() const {
+    return {{fidInOdomX.get(), fidInOdomY.get(), fidInOdomZ.get()}, Eigen::Quaterniond::Identity()};
 }
