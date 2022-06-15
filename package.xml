@@ -61,8 +61,8 @@
   <exec_depend>rospy</exec_depend>
   <exec_depend>std_msgs</exec_depend>
   <exec_depend>xacro</exec_depend>
-  <exec_depend>joint_STATE_PUBlisher</exec_depend>
-  <exec_depend>robot_STATE_PUBlisher</exec_depend>
+  <exec_depend>joint_state_publisher</exec_depend>
+  <exec_depend>robot_state_publisher</exec_depend>
   <exec_depend>ros_numpy</exec_depend>
 
   <!-- Visualization -->
