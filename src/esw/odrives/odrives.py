@@ -19,8 +19,7 @@ import odrive as odv
 import rospy
 from config import (AXIS_SPEED_MULTIPLIER_MAP,
                     AXIS_VEL_ESTIMATE_MULTIPLIER_MAP, CURRENT_LIM, MOTOR_MAP,
-                    ODRIVE_IDS, ODRIVE_WATCHDOG_TIMEOUT, Axis,
-                    OdriveEvent)
+                    ODRIVE_IDS, ODRIVE_WATCHDOG_TIMEOUT, Axis, OdriveEvent)
 from mrover.msg import DriveStateData, DriveVelCmd, DriveVelData
 from odrive.enums import (AXIS_STATE_CLOSED_LOOP_CONTROL, AXIS_STATE_IDLE,
                           CONTROL_MODE_VELOCITY_CONTROL)
