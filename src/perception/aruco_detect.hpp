@@ -25,12 +25,18 @@
 constexpr char const* ODOM_FRAME = "odom";
 constexpr char const* ROVER_FRAME = "base_link";
 
+/**
+ * @brief Fiducials that are currently visible by the camera.
+ */
 struct ImmediateFiducial {
     int id = -1;
     cv::Point2f imageCenter{};
     std::optional<SE3> fidInCam;
 };
 
+/**
+ * @brief Filtered global positioning of fiducials that persist even when off screen.
+ */
 struct PersistentFiducial {
     int id = -1;
     MeanMedianFilter<double> fidInOdomX;
