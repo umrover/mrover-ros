@@ -34,7 +34,7 @@ Publishers: odrives \
 Subscribers: gui
 
 **Drive State Data [Publisher]** \
-Messages: [ DriveStateData.msg ](https://github.com/umrover/mrover-ros/blob/main/msg/DriveStateData.msg) "drive_vel_data" \
+Messages: [ DriveStateData.msg ](https://github.com/umrover/mrover-ros/blob/main/msg/DriveStateData.msg) "drive_state_data" \
 Publishers: odrives \
 Subscribers: gui
 
