@@ -72,27 +72,27 @@ Client: gui \
 ### Topics - Publishing
 
 **Heater Auto Shut Off Data [Publisher]** \
-Messages: [Enable.msg](https://github.com/umrover/mrover-ros/blob/main/msg/Enable.msg) "/heater_auto_shut_off_data" \
+Messages: [Enable.msg](https://github.com/umrover/mrover-ros/blob/main/msg/Enable.msg) "heater_auto_shut_off_data" \
 Publishers: science\
 Subscribers: teleop
 
 **Heater State Data [Publisher]** \
-Messages: [Heater.msg](https://github.com/umrover/mrover-ros/blob/main/msg/Heater.msg) "/heater_state_data" \
+Messages: [Heater.msg](https://github.com/umrover/mrover-ros/blob/main/msg/Heater.msg) "heater_state_data" \
 Publishers: science\
 Subscribers: teleop
 
 **Spectral Data [Publisher]** \
-Messages: [Spectral.msg](https://github.com/umrover/mrover-ros/blob/main/msg/Spectral.msg) "/spectral_data" \
+Messages: [Spectral.msg](https://github.com/umrover/mrover-ros/blob/main/msg/Spectral.msg) "spectral_data" \
 Publishers: science \
 Subscribers: gui
 
 **Spectral Triad Data [Publisher]** \
-Messages: [Spectral.msg](https://github.com/umrover/mrover-ros/blob/main/msg/Spectral.msg) "/spectral_triad_data" \
+Messages: [Spectral.msg](https://github.com/umrover/mrover-ros/blob/main/msg/Spectral.msg) "spectral_triad_data" \
 Publishers: science \
 Subscribers: gui
 
 **Thermistor Data [Publisher]** \
-Messages: [Thermistor.msg](https://github.com/umrover/mrover-ros/blob/main/msg/Thermistor.msg) "/thermistor_data" \
+Messages: [Thermistor.msg](https://github.com/umrover/mrover-ros/blob/main/msg/Thermistor.msg) "thermistor_data" \
 Publishers: science\
 Subscribers: gui
 
