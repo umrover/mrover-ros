@@ -7,7 +7,7 @@ jobs:
   build:
     name: Build
     runs-on: ubuntu-latest
-    container: ros:noetic-perception
+    container: umrover1/ros:auton
     if: github.event.pull_request.draft == false
     steps:
       - uses: actions/checkout@v2
