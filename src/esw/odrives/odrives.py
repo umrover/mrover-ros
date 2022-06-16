@@ -1,14 +1,17 @@
 """This code controls one ODrive.
 It takes in a command line argument (0, 1, or 2) to see which
-ODrive it is controlling. 0 means front, 1 means middle,
-2 means back. This means that to contrl 3 separate ODrives,
+ODrive it is controlling. The numbers determine whether it is front, middle,
+or back, as indicated in the config.yaml file.
+This means that to control 3 separate ODrives,
 3 of these programs must be running simultaneously.
-Configuration variables are located
-in the config.py file. The ODriveBridge object controls
+Configuration variables can be changed in the config.yaml file
+and are initialized by the program in the config.py file.
+The ODriveBridge object controls
 the behavior of the ODrive.
 The ODriveBridge object keeps track of a state that it is in.
-A State may change to a different state depending on an Event.
+A State may change to a different state depending on an event.
 The ODrive may either be in an error, disconnected, or armed state.
+The Modrive object controls the ODrive itself.
 """
 import sys
 import threading
@@ -20,7 +23,7 @@ import odrive as odv
 import rospy
 from config import (AXIS_SPEED_MULTIPLIER_MAP,
                     AXIS_VEL_ESTIMATE_MULTIPLIER_MAP, CURRENT_LIM, MOTOR_MAP,
-                    ODRIVE_IDS, ODRIVE_WATCHDOG_TIMEOUT, PAIR, Axis)
+                    ODRIVE_IDS, ODRIVE_WATCHDOG_TIMEOUT, Axis, Pair)
 from mrover.msg import DriveStateData, DriveVelCmd, DriveVelData
 from odrive.enums import (AXIS_STATE_CLOSED_LOOP_CONTROL, AXIS_STATE_IDLE,
                           CONTROL_MODE_VELOCITY_CONTROL)
@@ -71,7 +74,7 @@ class Modrive:
             print(exc)
 
     def disable_watchdog(self) -> None:
-        """This disables the watchdog of the odrives"""
+        """This disables the watchdog of the ODrives"""
         try:
             print("Disabling watchdog")
             for axis in self.axes:
@@ -108,7 +111,7 @@ class Modrive:
         self.set_requested_state(AXIS_STATE_IDLE)
 
     def reset_watchdog(self) -> None:
-        """This resets the watchdog of the odrives.
+        """This resets the watchdog of the ODrives.
         This is done in case there was previously an error
         caused by the watchdog."""
         try:
@@ -249,7 +252,7 @@ class ODriveBridge(object):
         """
         self.left_speed = self.right_speed = 0.0
         self.modrive = None
-        self.odrive_pair = PAIR(int(sys.argv[1]))
+        self.odrive_pair = Pair(int(sys.argv[1]))
         self.speed_lock = threading.Lock()
         self.start_time = t.clock()
         self.state = DisconnectedState()
@@ -275,7 +278,7 @@ class ODriveBridge(object):
         """This will attempt to connect to an ODrive.
         This will use the ODrive library to look for an
         ODrive with the specified ID on the Jetson."""
-        print("looking for odrive")
+        print("looking for ODrive")
 
         odrive_id = ODRIVE_IDS[int(sys.argv[1])]
 
@@ -426,9 +429,7 @@ class ODriveBridge(object):
 def main():
     """In main, the ros_publish_data_loop and
     rospy drive_vel_cmd subscriber thread
-    runs in the background
-    at the same time as the watchdog while loop
-    is running."""
+    and watchdog_while_loop all run simultaneously"""
     rospy.init_node("odrive_" + str(int(sys.argv[1])))
 
     bridge = ODriveBridge()

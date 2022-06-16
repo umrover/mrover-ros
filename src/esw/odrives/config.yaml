@@ -1,0 +1,38 @@
+axis:
+  # The side the ODrive axis controls
+  # Should only be 0 or 1
+  left: 0
+  right: 1
+pair:
+  # The pair each ODrive number controls
+  # Should only be 0 1 or 2
+  front: 0
+  middle: 1
+  back: 2
+ids:
+  # The ODrive IDs
+  front: "335D36623539"
+  middle: "335B36563539"
+  back: "2066377F5753"
+config:
+  # Various ODrive config settings
+  current_lim: 4
+  watchdog_timeout: 0.1
+info:
+  # Scales normalized inputs to max physical speed of rover in turn/s
+  # The magnitude should be same for both wheels, but sign may differ
+  speed_multiplier_left: -50
+  speed_multiplier_right: 50
+  # Multipier to turn turns/sec to m/s (for 2022 rover)
+  # The magnitude should be same for both wheels, but sign may differ
+  turns_to_m_s_multiplier_left: 0.02513
+  turns_to_m_s_multiplier_right: -0.02513
+combo:
+  # The number assigned to each combination
+  # Should only be 0, 1, 2, 3, 4, or 5
+  front_left: 0
+  front_right: 1
+  middle_left: 2
+  middle_right: 3
+  back_left: 4
+  back_right: 5
