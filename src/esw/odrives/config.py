@@ -3,15 +3,6 @@ in odrives.py"""
 from enum import Enum
 
 
-class ODriveEvent(Enum):
-    """These are the the possible ODrive events.
-    The ODriveBridge keeps track of a State. This
-    State will change depending on the current ODrive event."""
-    DISCONNECTED_ODRIVE_EVENT = 0
-    ARM_CMD_EVENT = 1
-    ODRIVE_ERROR_EVENT = 2
-
-
 class Axis(Enum):
     """Each ODrive controls two wheels with its axis0 and axis1.
     This keeps track of which axis maps to the side of the wheel pair."""

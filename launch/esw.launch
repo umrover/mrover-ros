@@ -1,0 +1,8 @@
+<launch>
+  <!--
+    Run the drive programs
+  -->
+  <node pkg="mrover" type="odrives.py" args="0"></node>
+  <node pkg="mrover" type="odrives.py" args="1"></node>
+  <node pkg="mrover" type="odrives.py" args="2"></node>
+</launch>
