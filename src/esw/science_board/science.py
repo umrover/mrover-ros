@@ -47,15 +47,6 @@ class ScienceBridge():
         }
         self.UART_TRANSMIT_MSG_LEN = 30
         self.MAX_ERROR_COUNT = 20
-        self.ser = serial.Serial(
-            port='/dev/ttyTHS0',
-            baudrate=38400,
-            parity=serial.PARITY_NONE,
-            stopbits=serial.STOPBITS_ONE,
-            bytesize=serial.EIGHTBITS,
-            timeout=0
-        )
-        self.ser.close()
         # Mapping of onboard devices to mosfet devices
         self.mosfet_dev_map = {
             "arm_laser": 1,
@@ -83,10 +74,26 @@ class ScienceBridge():
         self.UART_LOCK = threading.Lock()
 
     def __enter__(self) -> None:
+        '''
+        Opens a serial connection to the nucleo
+        '''
+        self.ser = serial.Serial(
+            # port='/dev/ttyS4',
+            # port='/dev/ttyTHS1',  # used on science nano
+            port='/dev/ttyTHS0',
+            baudrate=38400,
+            parity=serial.PARITY_NONE,
+            stopbits=serial.STOPBITS_ONE,
+            bytesize=serial.EIGHTBITS,
+            timeout=0
+        )
         return self
 
     def __exit__(self, exc_type, exc_value, traceback) -> None:
-        return
+        '''
+        Closes serial connection to nucleo
+        '''
+        self.ser.close()
 
     def add_padding(self, tx_msg: str) -> str:
         """Used to add padding since UART messages must be of certain length"""
@@ -201,12 +208,12 @@ class ScienceBridge():
         error_counter = 0
         try:
             self.UART_LOCK.acquire()
-            self.ser.open()
             msg = self.ser.readline()
-            self.ser.close()
             self.UART_LOCK.release()
             return str(msg)
         except serial.SerialException as exc:
+            if self.UART_LOCK.locked():
+                self.UART_LOCK.release()
             print("Errored")
             if error_counter < self.MAX_ERROR_COUNT:
                 error_counter += 1
@@ -229,12 +236,14 @@ class ScienceBridge():
                 tx_msg = tx_msg[:self.UART_TRANSMIT_MSG_LEN]
             print(tx_msg)
             self.UART_LOCK.acquire()
+            self.ser.close()
             self.ser.open()
             self.ser.write(bytes(tx_msg, encoding='utf-8'))
-            self.ser.close()
             self.UART_LOCK.release()
             return True
         except serial.SerialException as exc:
+            if self.UART_LOCK.locked():
+                self.UART_LOCK.release()
             print("send_msg exception:", exc)
         return False
 
