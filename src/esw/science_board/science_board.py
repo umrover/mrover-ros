@@ -19,14 +19,39 @@ from mrover.srv import (ChangeAutonLEDState, ChangeAutonLEDStateRequest,
 class ScienceBridge():
     """ScienceBridge class"""
     def __init__(self):
-        self.nmea_handle_mapper = {
+        # Mapping of device color to number
+        self.LED_MAP = {
+            "Red": 0,
+            "Blue": 1,
+            "Green": 2,
+            "Off": 3
+        }
+        self.MAX_ERROR_COUNT = 20
+        # Mapping of onboard devices to mosfet devices
+        self.MOSFET_DEV_MAP = {
+            "arm_laser": 1,
+            "heater_0": 7,
+            "heater_1": 8,
+            "heater_2": 9,
+            "uv_led_carousel": 4,
+            "uv_led_end_effector": 1,
+            "white_led": 5
+        }
+        self.NMEA_HANDLE_MAPPER = {
             "AUTOSHUTOFF": self.heater_auto_shut_off_handler,
             "HEATER": self.heater_state_handler,
             "SPECTRAL": self.spectral_handler,
             "THERMISTOR": self.thermistor_handler,
             "TRIAD": self.triad_handler
         }
-        self.nmea_publisher_mapper = {
+        self.NMEA_MESSAGE_MAPPER = {
+            "AUTOSHUTOFF": Enable(),
+            "HEATER": Heater(),
+            "SPECTRAL": Spectral(),
+            "THERMISTOR": Thermistor(),
+            "TRIAD": Spectral()
+        }
+        self.NMEA_PUBLISHER_MAPPER = {
             "AUTOSHUTOFF": rospy.Publisher(
                 'heater_auto_shut_off_data', Enable, queue_size=1),
             "HEATER": rospy.Publisher(
@@ -38,33 +63,8 @@ class ScienceBridge():
             "TRIAD": rospy.Publisher(
                 'spectral_triad_data', Spectral, queue_size=1)
         }
-        self.nmea_message_mapper = {
-            "AUTOSHUTOFF": Enable(),
-            "HEATER": Heater(),
-            "SPECTRAL": Spectral(),
-            "THERMISTOR": Thermistor(),
-            "TRIAD": Spectral()
-        }
+        self.SLEEP = .01
         self.UART_TRANSMIT_MSG_LEN = 30
-        self.MAX_ERROR_COUNT = 20
-        # Mapping of onboard devices to mosfet devices
-        self.mosfet_dev_map = {
-            "arm_laser": 1,
-            "heater_0": 7,
-            "heater_1": 8,
-            "heater_2": 9,
-            "uv_led_carousel": 4,
-            "uv_led_end_effector": 1,
-            "white_led": 5
-        }
-        # Mapping of device color to number
-        self.led_map = {
-            "Red": 0,
-            "Blue": 1,
-            "Green": 2,
-            "Off": 3
-        }
-        self.sleep = .01
         self.UART_LOCK = threading.Lock()
 
     def __enter__(self) -> None:
@@ -98,7 +98,7 @@ class ScienceBridge():
     def auton_led_transmit(self, color: str) -> bool:
         """Sends an auton LED command message via UART"""
         try:
-            requested_state = self.led_map[color]
+            requested_state = self.LED_MAP[color]
         except KeyError:
             # Done if an invalid color is sent
             return False
@@ -192,7 +192,7 @@ class ScienceBridge():
     def heater_transmit(self, device: int, enable: bool) -> bool:
         """Sends a heater state command message via UART"""
         heater_device_string = "heater_" + str(device)  # e.g. heater_0
-        translated_device = self.mosfet_dev_map[heater_device_string]
+        translated_device = self.MOSFET_DEV_MAP[heater_device_string]
         tx_msg = self.format_mosfet_msg(translated_device, int(enable))
         success = self.send_msg(tx_msg)
         return success
@@ -215,9 +215,25 @@ class ScienceBridge():
             else:
                 raise exc
 
+    def receive(self) -> None:
+        """Reads in a message from the UART RX line and processes it"""
+        tx_msg = self.read_msg()
+        match_found = False
+        for tag, handler_func in self.NMEA_HANDLE_MAPPER.items():
+            if tag in tx_msg:
+                print(tx_msg)
+                match_found = True
+                handler_func(tx_msg, self.NMEA_MESSAGE_MAPPER[tag])
+                self.NMEA_PUBLISHER_MAPPER[tag].publish(
+                    self.NMEA_MESSAGE_MAPPER[tag])
+                break
+        if (not match_found) and (not tx_msg):
+            print(f'Error decoding message stream: {tx_msg}')
+        rospy.sleep(self.SLEEP)
+
     def send_mosfet_msg(self, device_name: str, enable: bool) -> bool:
         """Transmits a mosfet device state command message"""
-        translated_device = self.mosfet_dev_map[device_name]
+        translated_device = self.MOSFET_DEV_MAP[device_name]
         tx_msg = self.format_mosfet_msg(translated_device, int(enable))
         success = self.send_msg(tx_msg)
         return success
@@ -301,22 +317,6 @@ class ScienceBridge():
             else:
                 setattr(ros_msg, var, 0)
             count += 2
-
-    def receive(self) -> None:
-        """Reads in a message from the UART RX line and processes it"""
-        tx_msg = self.read_msg()
-        match_found = False
-        for tag, handler_func in self.nmea_handle_mapper.items():
-            if tag in tx_msg:
-                print(tx_msg)
-                match_found = True
-                handler_func(tx_msg, self.nmea_message_mapper[tag])
-                self.nmea_publisher_mapper[tag].publish(
-                    self.nmea_message_mapper[tag])
-                break
-        if (not match_found) and (not tx_msg):
-            print(f'Error decoding message stream: {tx_msg}')
-        rospy.sleep(self.sleep)
 
 
 def main():

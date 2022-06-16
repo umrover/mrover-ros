@@ -134,7 +134,7 @@ Format of the UART NMEA command
 - [ ] Move beaglebone stuff into config file
 - [ ] Test with ROS
 - [ ] Make sure messages and topics are consistent with the gui and teleop programs
-- [ ] Move self.mosfet_dev_map and self.ser into a config file
+- [ ] Move self.MOSFET_DEV_MAP and self.ser into a config file
 
 ## TODO - ROS Migration
 - [ ] See if code builds in ROS
