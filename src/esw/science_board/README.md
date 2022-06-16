@@ -13,7 +13,7 @@ control the arm laser and auton LED array.
 
 
 ### Overview
-The science.py program will constantly read in UART messages from the Nucleo 
+The science_board.py program will constantly read in UART messages from the Nucleo 
 and it will publish them to certain topics depending on the data received. 
 This program includes all the functions 
 and data needed for UART communication between the Jetson and the Nucleo. 
@@ -23,7 +23,7 @@ including which devices map to which mosfet devices.
 In order for the user to control certain science devices 
 (such as heaters and various LEDs),
 there are services that have been made.
-The servers for these services run in science.py.
+The servers for these services run in science_board.py.
 The servers will transmit
 messages over UART if a client tries to talk with it.
 
@@ -67,27 +67,27 @@ Client: gui \
 
 **Heater Auto Shut Off Data [Publisher]** \
 Messages: [Enable.msg](https://github.com/umrover/mrover-ros/blob/main/msg/Enable.msg) "heater_auto_shut_off_data" \
-Publishers: science\
+science_board \
 Subscribers: teleop
 
 **Heater State Data [Publisher]** \
 Messages: [Heater.msg](https://github.com/umrover/mrover-ros/blob/main/msg/Heater.msg) "heater_state_data" \
-Publishers: science\
+science_board \
 Subscribers: teleop
 
 **Spectral Data [Publisher]** \
 Messages: [Spectral.msg](https://github.com/umrover/mrover-ros/blob/main/msg/Spectral.msg) "spectral_data" \
-Publishers: science \
+science_board \
 Subscribers: gui
 
 **Spectral Triad Data [Publisher]** \
 Messages: [Spectral.msg](https://github.com/umrover/mrover-ros/blob/main/msg/Spectral.msg) "spectral_triad_data" \
-Publishers: science \
+science_board \
 Subscribers: gui
 
 **Thermistor Data [Publisher]** \
 Messages: [Thermistor.msg](https://github.com/umrover/mrover-ros/blob/main/msg/Thermistor.msg) "thermistor_data" \
-Publishers: science\
+science_board \
 Subscribers: gui
 
 ### UART Messages

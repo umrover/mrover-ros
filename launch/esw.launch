@@ -1,0 +1,12 @@
+<launch>
+  <!--
+    Operate science board for Auton, ES, and Science missions.
+  -->
+  <node pkg="mrover" type="science_board.py">
+    <!--
+      The serial port of the Jetson Science Nano is /dev/ttyTHS1
+      <param name="serial_port" value="/dev/ttyTHS1" />
+    -->
+    <param name="serial_port" value="/dev/ttyTHS0" />
+  </node>
+</launch>

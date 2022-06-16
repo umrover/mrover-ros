@@ -64,12 +64,6 @@ class ScienceBridge():
             "Green": 2,
             "Off": 3
         }
-        # Mapping of heater number to name
-        self.heater_map = {
-            0: "heater_0",
-            1: "heater_1",
-            2: "heater_2"
-        }
         self.sleep = .01
         self.UART_LOCK = threading.Lock()
 
@@ -80,7 +74,7 @@ class ScienceBridge():
         self.ser = serial.Serial(
             # port='/dev/ttyS4',
             # port='/dev/ttyTHS1',  # used on science nano
-            port='/dev/ttyTHS0',
+            port=rospy.get_param("/serial_port"),
             baudrate=38400,
             parity=serial.PARITY_NONE,
             stopbits=serial.STOPBITS_ONE,
@@ -197,7 +191,7 @@ class ScienceBridge():
 
     def heater_transmit(self, device: int, enable: bool) -> bool:
         """Sends a heater state command message via UART"""
-        heater_device_string = self.heater_map[device]
+        heater_device_string = "heater_" + str(device)  # e.g. heater_0
         translated_device = self.mosfet_dev_map[heater_device_string]
         tx_msg = self.format_mosfet_msg(translated_device, int(enable))
         success = self.send_msg(tx_msg)
@@ -327,7 +321,7 @@ class ScienceBridge():
 
 def main():
     """Main function"""
-    rospy.init_node("science")
+    rospy.init_node("science_board")
 
     with ScienceBridge() as bridge:
         rospy.Service('change_arm_laser_state', ChangeDeviceState,
