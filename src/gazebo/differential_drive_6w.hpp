@@ -38,19 +38,19 @@
 #include <gazebo/common/Time.hh>
 
 // ROS
+#include <geometry_msgs/Twist.h>
+#include <nav_msgs/Odometry.h>
 #include <ros/ros.h>
 #include <tf/transform_broadcaster.h>
 #include <tf/transform_listener.h>
-#include <geometry_msgs/Twist.h>
-#include <nav_msgs/Odometry.h>
 
 // Custom Callback Queue
-#include <ros/callback_queue.h>
 #include <ros/advertise_options.h>
+#include <ros/callback_queue.h>
 
 // Boost
-#include <boost/thread.hpp>
 #include <boost/bind.hpp>
+#include <boost/thread.hpp>
 
 namespace gazebo {
 
@@ -120,7 +120,6 @@ namespace gazebo {
         event::ConnectionPtr updateConnection;
     };
 
-}
+}// namespace gazebo
 
 #endif
-
