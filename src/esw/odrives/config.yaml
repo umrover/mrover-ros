@@ -30,9 +30,3 @@ info:
   # The magnitude should be same for both wheels, but sign may differ
   turns_to_m_s_multiplier_left: 0.02513
   turns_to_m_s_multiplier_right: -0.02513
-pair:
-  # The pair each ODrive number controls
-  # Should only be 0 1 or 2
-  front: 0
-  middle: 1
-  back: 2
