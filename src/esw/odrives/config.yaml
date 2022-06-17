@@ -3,15 +3,6 @@ axis:
   # Should only be 0 or 1
   left: 0
   right: 1
-combo:
-  # The number assigned to each combination
-  # Should only be 0, 1, 2, 3, 4, or 5
-  front_left: 0
-  front_right: 1
-  middle_left: 2
-  middle_right: 3
-  back_left: 4
-  back_right: 5
 config:
   # Various ODrive config settings
   current_lim: 4

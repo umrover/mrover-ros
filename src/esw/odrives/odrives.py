@@ -262,19 +262,6 @@ class ODriveBridge(object):
         self.current_lim: float = config['config']['current_lim']
         self.left_speed: float = 0.0
         self.modrive = None
-        self.motor_map: dict[(str, str), int] = \
-            {('front', 'left'):
-                config['combo']['front_left'],
-             ('front', 'right'):
-                config['combo']['front_right'],
-             ('middle', 'left'):
-                config['combo']['middle_left'],
-             ('middle', 'right'):
-                config['combo']['middle_right'],
-             ('back', 'left'):
-                config['combo']['back_left'],
-             ('back', 'right'):
-                config['combo']['back_right']}
         self.odrive_ids: dict[str, str] = {
             'front': config['ids']['front'],
             'middle': config['ids']['middle'],
@@ -369,7 +356,8 @@ class ODriveBridge(object):
             direction_multiplier
         self.usb_lock.release()
 
-        ros_msg.axis = self.motor_map[(self.pair, axis)]
+        # e.g. "back_left" or "middle_right" or "front_left"
+        ros_msg.wheel = self.pair + "_" + axis
 
         self.vel_pub.publish(ros_msg)
 
