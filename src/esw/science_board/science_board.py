@@ -26,7 +26,7 @@ class ScienceBridge():
         # Mapping of device color to number
         self.led_map = config['led_map']
         self.max_error_count = config['info']['max_error_count']
-        # Mapping of onboard devices to mosfet devices
+        # Mapping of onboard devices to MOSFET devices
         self.mosfet_dev_map: dict[str, int] = config['mosfet_device_map']
         self.nmea_handle_mapper = {
             "AUTOSHUTOFF": self.heater_auto_shut_off_handler,
@@ -101,7 +101,7 @@ class ScienceBridge():
         return success
 
     def format_mosfet_msg(device: int, enable: bool) -> str:
-        """Formats a mosfet message"""
+        """Formats a MOSFET message"""
         tx_msg = f"$MOSFET,{device},{enable}"
         return tx_msg
 
@@ -163,10 +163,10 @@ class ScienceBridge():
     def heater_auto_shut_off_handler(
             self, tx_msg: str, ros_msg: Enable) -> None:
         """Handles a received heater auto shut off message"""
-        # tx_msg format: <"$AUTOSHUTOFF,device,enabled">
+        # tx_msg format: <"$AUTOSHUTOFF,device,enable">
         arr = tx_msg.split(",")
-        enabled = bool(int(arr[1]))
-        ros_msg.enable = enabled
+        enable = bool(int(arr[1]))
+        ros_msg.enable = enable
 
     def heater_auto_shut_off_transmit(self, enable: bool) -> bool:
         """Transmits a heater auto shut off command over uart"""
@@ -177,7 +177,7 @@ class ScienceBridge():
     def heater_state_handler(
             self, tx_msg: str, ros_msg: Heater) -> None:
         """Handles a received heater state message"""
-        # tx_msg format: <"$HEATER,device,enabled">
+        # tx_msg format: <"$HEATER,device,enable">
         arr = tx_msg.split(",")
         ros_msg.device = int(arr[1])
         ros_msg.enable = bool(int(arr[2]))
@@ -225,7 +225,7 @@ class ScienceBridge():
         rospy.sleep(self.sleep)
 
     def send_mosfet_msg(self, device_name: str, enable: bool) -> bool:
-        """Transmits a mosfet device state command message"""
+        """Transmits a MOSFET device state command message"""
         translated_device = self.mosfet_dev_map[device_name]
         tx_msg = self.format_mosfet_msg(translated_device, int(enable))
         success = self.send_msg(tx_msg)

@@ -18,7 +18,7 @@ and it will publish them to certain topics depending on the data received.
 This program includes all the functions 
 and data needed for UART communication between the Jetson and the Nucleo. 
 It also has information on the configuration of the science, 
-including which devices map to which mosfet devices.
+including which devices map to which MOSFET devices.
 
 In order for the user to control certain science devices 
 (such as heaters and various LEDs),
