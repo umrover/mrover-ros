@@ -7,6 +7,7 @@ import threading
 import numpy as np
 import rospy
 import serial
+import yaml
 from mrover.msg import Enable, Heater, Spectral, Thermistor
 from mrover.srv import (ChangeAutonLEDState, ChangeAutonLEDStateRequest,
                         ChangeAutonLEDStateResponse, ChangeDeviceState,
@@ -19,39 +20,29 @@ from mrover.srv import (ChangeAutonLEDState, ChangeAutonLEDStateRequest,
 class ScienceBridge():
     """ScienceBridge class"""
     def __init__(self):
+        with open('config.yml', 'r') as file:
+            config = yaml.safe_load(file)
+        self.baudrate = config['serial']['baudrate']
         # Mapping of device color to number
-        self.LED_MAP = {
-            "Red": 0,
-            "Blue": 1,
-            "Green": 2,
-            "Off": 3
-        }
-        self.MAX_ERROR_COUNT = 20
+        self.led_map = config['led_map']
+        self.max_error_count = config['info']['max_error_count']
         # Mapping of onboard devices to mosfet devices
-        self.MOSFET_DEV_MAP = {
-            "arm_laser": 1,
-            "heater_0": 7,
-            "heater_1": 8,
-            "heater_2": 9,
-            "uv_led_carousel": 4,
-            "uv_led_end_effector": 1,
-            "white_led": 5
-        }
-        self.NMEA_HANDLE_MAPPER = {
+        self.mosfet_dev_map: dict[str, int] = config['mosfet_device_map']
+        self.nmea_handle_mapper = {
             "AUTOSHUTOFF": self.heater_auto_shut_off_handler,
             "HEATER": self.heater_state_handler,
             "SPECTRAL": self.spectral_handler,
             "THERMISTOR": self.thermistor_handler,
             "TRIAD": self.triad_handler
         }
-        self.NMEA_MESSAGE_MAPPER = {
+        self.nmea_message_mapper = {
             "AUTOSHUTOFF": Enable(),
             "HEATER": Heater(),
             "SPECTRAL": Spectral(),
             "THERMISTOR": Thermistor(),
             "TRIAD": Spectral()
         }
-        self.NMEA_PUBLISHER_MAPPER = {
+        self.nmea_publisher_mapper = {
             "AUTOSHUTOFF": rospy.Publisher(
                 'heater_auto_shut_off_data', Enable, queue_size=1),
             "HEATER": rospy.Publisher(
@@ -63,9 +54,11 @@ class ScienceBridge():
             "TRIAD": rospy.Publisher(
                 'spectral_triad_data', Spectral, queue_size=1)
         }
-        self.SLEEP = .01
-        self.UART_TRANSMIT_MSG_LEN = 30
-        self.UART_LOCK = threading.Lock()
+        self.sleep = config['info']['sleep']
+        self.timeout = config['serial']['timeout']
+        self.uart_transmit_msg_len = \
+            config['info']['uart_transmit_msg_len']
+        self.uart_lock = threading.Lock()
 
     def __enter__(self) -> None:
         '''
@@ -75,11 +68,11 @@ class ScienceBridge():
             # port='/dev/ttyS4',
             # port='/dev/ttyTHS1',  # used on science nano
             port=rospy.get_param("/serial_port"),
-            baudrate=38400,
+            baudrate=self.baudrate,
             parity=serial.PARITY_NONE,
             stopbits=serial.STOPBITS_ONE,
             bytesize=serial.EIGHTBITS,
-            timeout=0
+            timeout=self.timeout
         )
         return self
 
@@ -91,14 +84,14 @@ class ScienceBridge():
 
     def add_padding(self, tx_msg: str) -> str:
         """Used to add padding since UART messages must be of certain length"""
-        while len(tx_msg) < self.UART_TRANSMIT_MSG_LEN:
+        while len(tx_msg) < self.uart_transmit_msg_len:
             tx_msg += ","
         return tx_msg
 
     def auton_led_transmit(self, color: str) -> bool:
         """Sends an auton LED command message via UART"""
         try:
-            requested_state = self.LED_MAP[color]
+            requested_state = self.led_map[color.lower()]
         except KeyError:
             # Done if an invalid color is sent
             return False
@@ -192,7 +185,7 @@ class ScienceBridge():
     def heater_transmit(self, device: int, enable: bool) -> bool:
         """Sends a heater state command message via UART"""
         heater_device_string = "heater_" + str(device)  # e.g. heater_0
-        translated_device = self.MOSFET_DEV_MAP[heater_device_string]
+        translated_device = self.mosfet_dev_map[heater_device_string]
         tx_msg = self.format_mosfet_msg(translated_device, int(enable))
         success = self.send_msg(tx_msg)
         return success
@@ -201,15 +194,15 @@ class ScienceBridge():
         """Used to read a message on the UART receive line"""
         error_counter = 0
         try:
-            self.UART_LOCK.acquire()
+            self.uart_lock.acquire()
             msg = self.ser.readline()
-            self.UART_LOCK.release()
+            self.uart_lock.release()
             return str(msg)
         except serial.SerialException as exc:
-            if self.UART_LOCK.locked():
-                self.UART_LOCK.release()
+            if self.uart_lock.locked():
+                self.uart_lock.release()
             print("Errored")
-            if error_counter < self.MAX_ERROR_COUNT:
+            if error_counter < self.max_error_count:
                 error_counter += 1
                 print(exc)
             else:
@@ -219,21 +212,21 @@ class ScienceBridge():
         """Reads in a message from the UART RX line and processes it"""
         tx_msg = self.read_msg()
         match_found = False
-        for tag, handler_func in self.NMEA_HANDLE_MAPPER.items():
+        for tag, handler_func in self.nmea_handle_mapper.items():
             if tag in tx_msg:
                 print(tx_msg)
                 match_found = True
-                handler_func(tx_msg, self.NMEA_MESSAGE_MAPPER[tag])
-                self.NMEA_PUBLISHER_MAPPER[tag].publish(
-                    self.NMEA_MESSAGE_MAPPER[tag])
+                handler_func(tx_msg, self.nmea_message_mapper[tag])
+                self.nmea_publisher_mapper[tag].publish(
+                    self.nmea_message_mapper[tag])
                 break
         if (not match_found) and (not tx_msg):
             print(f'Error decoding message stream: {tx_msg}')
-        rospy.sleep(self.SLEEP)
+        rospy.sleep(self.sleep)
 
     def send_mosfet_msg(self, device_name: str, enable: bool) -> bool:
         """Transmits a mosfet device state command message"""
-        translated_device = self.MOSFET_DEV_MAP[device_name]
+        translated_device = self.mosfet_dev_map[device_name]
         tx_msg = self.format_mosfet_msg(translated_device, int(enable))
         success = self.send_msg(tx_msg)
         return success
@@ -242,18 +235,18 @@ class ScienceBridge():
         """Transmits a string over UART of proper length"""
         try:
             tx_msg = self.add_padding(tx_msg)
-            if len(tx_msg) > self.UART_TRANSMIT_MSG_LEN:
-                tx_msg = tx_msg[:self.UART_TRANSMIT_MSG_LEN]
+            if len(tx_msg) > self.uart_transmit_msg_len:
+                tx_msg = tx_msg[:self.uart_transmit_msg_len]
             print(tx_msg)
-            self.UART_LOCK.acquire()
+            self.uart_lock.acquire()
             self.ser.close()
             self.ser.open()
             self.ser.write(bytes(tx_msg, encoding='utf-8'))
-            self.UART_LOCK.release()
+            self.uart_lock.release()
             return True
         except serial.SerialException as exc:
-            if self.UART_LOCK.locked():
-                self.UART_LOCK.release()
+            if self.uart_lock.locked():
+                self.uart_lock.release()
             print("send_msg exception:", exc)
         return False
 

@@ -37,7 +37,7 @@ Client: gui \
 
 **Change Auton LED State [Server]** \
 Server: [ChangeAutonLEDState](https://github.com/umrover/mrover-ros/blob/main/srv/ChangeAutonLEDState.srv)  "change_auton_led_state" \
-Client: gui \
+Client: teleop \
 
 **Change Heater Auto Shut Off State [Server]** \
 Server: [change_heater_auto_shut_off_state](https://github.com/umrover/mrover-ros/blob/main/srv/ChangeDeviceState.srv)  "change_heater_auto_shut_off" \
@@ -67,28 +67,28 @@ Client: gui \
 
 **Heater Auto Shut Off Data [Publisher]** \
 Messages: [Enable.msg](https://github.com/umrover/mrover-ros/blob/main/msg/Enable.msg) "heater_auto_shut_off_data" \
-science_board \
-Subscribers: teleop
+Publisher: science_board \
+Subscriber: gui
 
 **Heater State Data [Publisher]** \
 Messages: [Heater.msg](https://github.com/umrover/mrover-ros/blob/main/msg/Heater.msg) "heater_state_data" \
-science_board \
-Subscribers: teleop
+Publisher: science_board \
+Subscriber: gui
 
 **Spectral Data [Publisher]** \
 Messages: [Spectral.msg](https://github.com/umrover/mrover-ros/blob/main/msg/Spectral.msg) "spectral_data" \
-science_board \
-Subscribers: gui
+Publisher: science_board \
+Subscriber: gui
 
 **Spectral Triad Data [Publisher]** \
 Messages: [Spectral.msg](https://github.com/umrover/mrover-ros/blob/main/msg/Spectral.msg) "spectral_triad_data" \
-science_board \
-Subscribers: gui
+Publisher: science_board \
+Subscriber: gui
 
 **Thermistor Data [Publisher]** \
 Messages: [Thermistor.msg](https://github.com/umrover/mrover-ros/blob/main/msg/Thermistor.msg) "thermistor_data" \
-science_board \
-Subscribers: gui
+Publisher: science_board \
+Subscriber: gui
 
 ### UART Messages
 
@@ -103,10 +103,10 @@ Format of the UART NMEA command
 - Cmd and data are 30 characters long
 - Enable is state of heater
 
-**Mosfet Cmd**
+**MOSFET Cmd**
 - `$MOSFET,<device>,<enable>,<extra padding>`
 - Cmd is 30 characters long
-- The device represents the mosfet device being activated (0 to 11)
+- The device represents the MOSFET device being activated (0 to 11)
 
 **Spectral Data**
 - `$SPECTRAL, d0_msb_ch0, d0_lsb_ch0, d0_msb_ch1, d0_lsb_ch1, d0_msb_ch2, d0_lsb_ch2, d0_msb_ch3, d0_lsb_ch3, d0_msb_ch4, d0_lsb_ch4, d0_msb_ch5, d0_lsb_ch5, d1_msb_ch0, d1_lsb_ch0, d1_msb_ch1, d1_lsb_ch1, d1_msb_ch2, d1_lsb_ch2, d1_msb_ch3, d1_lsb_ch3, d1_msb_ch4, d1_lsb_ch4, d1_msb_ch5, d1_lsb_ch5,  d2_msb_ch0, d2_lsb_ch0, d2_msb_ch1, d2_lsb_ch1, d2_msb_ch2, d2_lsb_ch2, d2_msb_ch3, d2_lsb_ch3, d2_msb_ch4, d2_lsb_ch4, d2_msb_ch5, d2_lsb_ch5,<extra padding>`
