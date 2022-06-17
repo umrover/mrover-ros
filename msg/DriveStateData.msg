@@ -1,2 +1,2 @@
-int odrive_index
+string odrive_pair
 string state
