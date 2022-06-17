@@ -41,19 +41,23 @@ class Modrive:
     """This has the functions that are used to control
     and command the ODrive."""
     def __init__(self, odr, axis_0_str: str, axis_1_str: str,
-                 speed_mult_left: float, speed_mult_right: float,
-                 vel_mult_left: float, vel_mult_right: float,
+                 vel_cmd_mult_left: float, vel_cmd_mult_right: float,
+                 vel_est_mult_left: float, vel_est_mult_right: float,
                  watchdog_timeout: float):
         self.odrive = odr
         self.axes = {
             axis_0_str: self.odrive.axis0,
             axis_1_str: self.odrive.axis1}
-        self.axis_speed_multiplier_map: dict[str, float] = {
-            'left': speed_mult_left,
-            'right': speed_mult_right}
+
+        # This scales [0, 1] to [0, vel_cmd_mult] turns per second
+        self.axis_vel_command_multiplier_map = {
+            'left': vel_cmd_mult_left,
+            'right': vel_cmd_mult_right}
+
+        # This scales turns/sec to m/sec
         self.axis_vel_estimate_multiplier_map = {
-            'left': vel_mult_left,
-            'right': vel_mult_right}
+            'left': vel_est_mult_left,
+            'right': vel_est_mult_right}
         self.watchdog_timeout = watchdog_timeout
 
     def __getattr__(self, attr):
@@ -108,7 +112,7 @@ class Modrive:
         # measured current [Amps]
         return self.axes[axis].motor.current_control.Iq_measured
 
-    def get_vel_estimate(self, axis: str) -> float:
+    def get_vel_estimate_m_s(self, axis: str) -> float:
         """Returns the estimated velocity of
         the requested axis of the ODrive"""
         return self.axes[axis].encoder.vel_estimate * \
@@ -154,9 +158,9 @@ class Modrive:
     def set_vel(self, axis: str, vel: float) -> None:
         """Sets the requested ODrive axis to run the
         motors at the requested velocity"""
-        desired_input_vel = vel * \
-            self.axis_speed_multiplier_map[axis]
-        self.axes[axis].controller.input_vel = desired_input_vel
+        desired_input_vel_turns_s = vel * \
+            self.axis_vel_command_multiplier_map[axis]
+        self.axes[axis].controller.input_vel = desired_input_vel_turns_s
 
     def set_velocity_ctrl(self) -> None:
         """Sets the ODrive to velocity control"""
@@ -243,6 +247,7 @@ class ODriveBridge(object):
     """This object controls the behavior
     of one ODrive. It manages the ODrive
     state and various other behavior."""
+
     def __init__(self) -> None:
         """
         Initialize the components.
@@ -254,42 +259,44 @@ class ODriveBridge(object):
         self.axis_map: dict[int, str] = {
             config['axis']['left']: 'left',
             config['axis']['right']: 'right'}
-        self.speed_mult_left = config['info']['speed_multiplier_left']
-        self.speed_mult_right = config['info']['speed_multiplier_right']
-        self.axis_speed_multiplier_map: dict[str, float] = {
-            'left': config['info']['speed_multiplier_left'],
-            'right': config['info']['speed_multiplier_right']}
-        self.vel_mult_left = config['info']['turns_to_m_s_multiplier_left']
-        self.vel_mult_right = config['info']['turns_to_m_s_multiplier_right']
-        self.current_lim = config['config']['current_lim']
-        self.left_speed = self.right_speed = 0.0
+        self.current_lim: float = config['config']['current_lim']
+        self.left_speed: float = 0.0
         self.modrive = None
-        self.motor_map = \
-            {('left', 'front'):
+        self.motor_map: dict[(str, str), int] = \
+            {('front', 'left'):
                 config['combo']['front_left'],
-             ('right', 'front'):
+             ('front', 'right'):
                 config['combo']['front_right'],
-             ('left', 'middle'):
+             ('middle', 'left'):
                 config['combo']['middle_left'],
-             ('right', 'middle'):
+             ('middle', 'right'):
                 config['combo']['middle_right'],
-             ('left', 'back'):
+             ('back', 'left'):
                 config['combo']['back_left'],
-             ('right', 'back'):
+             ('back', 'right'):
                 config['combo']['back_right']}
         self.odrive_ids: dict[str, str] = {
             'front': config['ids']['front'],
             'middle': config['ids']['middle'],
             'back': config['ids']['back']}
-        self.odrive_pair = sys.argv[1]
+        self.right_speed: float = 0.0
+        self.pair = sys.argv[1]
         self.speed_lock = threading.Lock()
+        # This scales [0, 1] to [0, vel_cmd_mult] turns per second
+        self.vel_cmd_mult_left: float = \
+            config['info']['vel_cmd_multiplier_left']
+        self.vel_cmd_mult_right: float = \
+            config['info']['vel_cmd_multiplier_right']
         self.start_time = t.clock()
         self.state = DisconnectedState()
         self.state_pub = rospy.Publisher(
             'drive_state_data', DriveStateData, queue_size=1)
-        self.turns_to_m_s_multiplier = \
-            config['info']['turns_to_m_s_multiplier']
         self.usb_lock = threading.Lock()
+        # This scales turns/sec to m/sec
+        self.vel_est_mult_left: float = \
+            config['info']['vel_est_multiplier_left']
+        self.vel_est_mult_right: float = \
+            config['info']['vel_est_multiplier_right']
         self.vel_pub = rospy.Publisher(
             'drive_vel_data', DriveVelData, queue_size=1)
         self.watchdog_timeout = config['config']['watchdog_timeout']
@@ -312,7 +319,7 @@ class ODriveBridge(object):
         ODrive with the specified ID on the Jetson."""
         print("looking for ODrive")
 
-        odrive_id = self.odrive_ids[self.odrive_pair]
+        odrive_id = self.odrive_ids[self.pair]
 
         print(odrive_id)
         odrive = odv.find_any(serial_number=odrive_id)
@@ -321,8 +328,8 @@ class ODriveBridge(object):
         self.usb_lock.acquire()
         self.modrive = Modrive(
             odrive, self.axis_map[0], self.axis_map[1],
-            self.speed_mult_left, self.speed_mult_right,
-            self.vel_mult_left, self.vel_mult_right,
+            self.vel_cmd_mult_left, self.vel_cmd_mult_right,
+            self.vel_est_mult_left, self.vel_est_mult_right,
             self.watchdog_timeout)
         self.modrive.set_current_lim(self.current_lim)
         self.usb_lock.release()
@@ -358,11 +365,11 @@ class ODriveBridge(object):
         self.usb_lock.acquire()
         ros_msg.current_amps = self.modrive.get_measured_current(axis) * \
             direction_multiplier
-        ros_msg.vel_m_s = self.modrive.get_vel_estimate(axis) * \
+        ros_msg.vel_m_s = self.modrive.get_vel_estimate_m_s(axis) * \
             direction_multiplier
         self.usb_lock.release()
 
-        ros_msg.axis = self.motor_map[(axis, self.odrive_pair)]
+        ros_msg.axis = self.motor_map[(self.pair, axis)]
 
         self.vel_pub.publish(ros_msg)
 
@@ -377,7 +384,7 @@ class ODriveBridge(object):
         over ROS to a topic"""
         ros_msg = DriveStateData()
         ros_msg.state = state
-        ros_msg.odrive_pair = self.odrive_pair
+        ros_msg.pair = self.pair
         self.state_pub.publish(ros_msg)
         print("changed state to " + state)
 
@@ -436,32 +443,34 @@ class ODriveBridge(object):
             self.usb_lock.release()
 
     def watchdog_while_loop(self):
+        """Watchdog while loop"""
         # flag for state when we have comms with base_station vs not
         previously_lost_comms = True
-        watchdog = t.clock() - self.start_time
-        lost_comms = watchdog > 1.0
-        if lost_comms:
-            if not previously_lost_comms:
-                # done to print "loss of comms" once
-                print("loss of comms")
-                previously_lost_comms = True
+        while not rospy.is_shutdown():
+            watchdog = t.clock() - self.start_time
+            lost_comms = watchdog > 1.0
+            if lost_comms:
+                if not previously_lost_comms:
+                    # done to print "loss of comms" once
+                    print("loss of comms")
+                    previously_lost_comms = True
 
-            self.speed_lock.acquire()
-            self.left_speed = self.right_speed = 0.0
-            self.speed_lock.release()
-        elif previously_lost_comms:
-            previously_lost_comms = False
-            print("regained comms")
-        try:
-            self.update()
-        except Exception:
-            if self.usb_lock.locked():
+                self.speed_lock.acquire()
+                self.left_speed = self.right_speed = 0.0
+                self.speed_lock.release()
+            elif previously_lost_comms:
+                previously_lost_comms = False
+                print("regained comms")
+            try:
+                self.update()
+            except Exception:
+                if self.usb_lock.locked():
+                    self.usb_lock.release()
+
+                self.usb_lock.acquire()
+                self.bridge_on_event(
+                    ODriveEvent.DISCONNECTED_ODRIVE_EVENT)
                 self.usb_lock.release()
-
-            self.usb_lock.acquire()
-            self.bridge_on_event(
-                ODriveEvent.DISCONNECTED_ODRIVE_EVENT)
-            self.usb_lock.release()
 
 
 def main():

@@ -1,2 +1,2 @@
-string odrive_pair
+string pair
 string state
