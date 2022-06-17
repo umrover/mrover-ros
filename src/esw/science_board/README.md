@@ -32,35 +32,43 @@ Locks exist to prevent two functions from trying to access the UART line at the 
 ### Services - Server
 
 **Change Arm Laser State [Server]** \
-Server: [ChangeDeviceState](https://github.com/umrover/mrover-ros/blob/main/srv/ChangeDeviceState.srv) "change_arm_laser_state" \
+Service: [ChangeDeviceState.srv](https://github.com/umrover/mrover-ros/blob/main/srv/ChangeDeviceState.srv) "change_arm_laser_state" \
+Server: science_board \
 Client: gui \
 
 **Change Auton LED State [Server]** \
-Server: [ChangeAutonLEDState](https://github.com/umrover/mrover-ros/blob/main/srv/ChangeAutonLEDState.srv)  "change_auton_led_state" \
+Service: [ChangeAutonLEDState.srv](https://github.com/umrover/mrover-ros/blob/main/srv/ChangeAutonLEDState.srv)  "change_auton_led_state" \
+Server: science_board \
 Client: teleop \
 
 **Change Heater Auto Shut Off State [Server]** \
-Server: [change_heater_auto_shut_off_state](https://github.com/umrover/mrover-ros/blob/main/srv/ChangeDeviceState.srv)  "change_heater_auto_shut_off" \
+Service: [ChangeDeviceState.srv](https://github.com/umrover/mrover-ros/blob/main/srv/ChangeDeviceState.srv)  "change_heater_auto_shut_off" \
+Server: science_board \
 Client: gui \
 
 **Change Heater State [Server]** \
-Server: [ChangeHeaterState](https://github.com/umrover/mrover-ros/blob/main/srv/ChangeHeaterState.srv)  "change_heater_state" \
+Service: [ChangeHeaterState.srv](https://github.com/umrover/mrover-ros/blob/main/srv/ChangeHeaterState.srv)  "change_heater_state" \
+Server: science_board \
 Client: gui \
 
 **Change Servo Angles [Server]** \
-Server: [change_servo_angles_server](https://github.com/umrover/mrover-ros/blob/main/srv/ChangeDeviceState.srv)  "change_servo_angles" \
+Service: [ChangeDeviceState.srv](https://github.com/umrover/mrover-ros/blob/main/srv/ChangeDeviceState.srv)  "change_servo_angles" \
+Server: science_board \
 Client: gui \
 
 **Change UV LED Carousel State [Server]** \
-Server: [change_uv_led_carousel_server](https://github.com/umrover/mrover-ros/blob/main/srv/ChangeDeviceState.srv) ) "change_uv_led_carousel" \
+Service: [ChangeDeviceState.srv](https://github.com/umrover/mrover-ros/blob/main/srv/ChangeDeviceState.srv) ) "change_uv_led_carousel" \
+Server: science_board \
 Client: gui \
 
 **Change UV LED End Effector State [Server]** \
-Server: [change_uv_led_end_effector_server](https://github.com/umrover/mrover-ros/blob/main/srv/ChangeDeviceState.srv)  "change_uv_led_end_effector" \
+Service: [ChangeDeviceState.srv](https://github.com/umrover/mrover-ros/blob/main/srv/ChangeDeviceState.srv)  "change_uv_led_end_effector" \
+Server: science_board \
 Client: gui \
 
 **Change White LED State [Server]** \
-Server: [change_white_led_server](https://github.com/umrover/mrover-ros/blob/main/srv/ChangeDeviceState.srv)  "change_white_led" \
+Service: [ChangeDeviceState.srv](https://github.com/umrover/mrover-ros/blob/main/srv/ChangeDeviceState.srv)  "change_white_led" \
+Server: science_board \
 Client: gui \
 
 ### Topics - Publisher
