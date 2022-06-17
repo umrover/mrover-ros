@@ -3,7 +3,6 @@ import rospy
 from geometry_msgs.msg import Point, TransformStamped, Vector3
 from sensor_msgs.msg import NavSatFix, geometry_msgs
 
-
 EARTH_RADIUS = 6371000
 
 
