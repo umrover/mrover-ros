@@ -25,12 +25,41 @@
     -urdf -param robot_description
     -model rover" />
 
-  <!-- Perception-->
-  <node name="aruco_detect" pkg="mrover" type="aruco_detect">
-    <param name="publish_images" value="true" />
-    <param name="fiducial_len" value="0.20" />
-    <param name="dictionary" value="0" /> <!-- DICT_4X4_50 -->
-    <remap from="camera" to="camera/color/image_raw" />
-    <remap from="camera_info" to="camera/color/camera_info" />
+  <!--
+    ==========
+    Perception
+    ==========
+  -->
+<!--   <node name="aruco_detect" pkg="mrover" type="aruco_detect" /> -->
+
+  <!--
+    ============
+    Localization
+    ============
+    Frames in the free tree:
+    odom: The topmost global frame
+    base_link: The rover
+  -->
+  <node name="mrover_localization" pkg="mrover" type="localization.py" />
+
+  <rosparam command="load" file="$(find mrover)/params/ekf_localization.yaml" />
+
+  <!-- Fuses together GPS position and IMU orientation with an Extended Kalman Filter (EKF) -->
+  <node pkg="robot_localization" type="ekf_localization_node" name="ekf_odom" clear_params="true">
+    <!-- Publications -->
+    <remap from="odometry/filtered" to="odometry/filtered" />
+  </node>
+
+  <!-- Reads the GPS topic and convert it to cartesian based on a reference point-->
+  <node pkg="robot_localization" type="navsat_transform_node" name="navsat_transform" clear_params="true">
+    <!-- Reference latitude/longitude to linearize from -->
+    <rosparam param="datum">[42.2, -83.7, 0.0, map, base_link]</rosparam>
+    <!-- Subscriptions -->
+    <remap from="imu/data" to="imu" />
+    <remap from="gps/fix" to="gps/fix" />
+    <remap from="odometry/filtered" to="odometry/filtered" />
+    <!-- Publications -->
+    <remap from="gps/filtered" to="gps/filtered" />
+    <remap from="odometry/gps" to="odometry/gps" />
   </node>
 </launch>

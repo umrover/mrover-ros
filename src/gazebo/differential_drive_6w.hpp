@@ -29,8 +29,7 @@
  * Desc: ROS interface to a Position2d controller for a Differential drive.
  * Author: Daniel Hewlett (adapted from Nathan Koenig)
  */
-#ifndef DIFFDRIVE_PLUGIN_HH
-#define DIFFDRIVE_PLUGIN_HH
+#pragma once
 
 #include <map>
 
@@ -62,9 +61,9 @@ namespace gazebo {
         ~DiffDrivePlugin6W() override;
 
     protected:
-        virtual void Load(physics::ModelPtr _model, sdf::ElementPtr _sdf);
+        void Load(physics::ModelPtr _model, sdf::ElementPtr _sdf) override;
 
-        virtual void Reset();
+        void Reset() override;
 
         virtual void Update();
 
@@ -120,6 +119,4 @@ namespace gazebo {
         event::ConnectionPtr updateConnection;
     };
 
-}// namespace gazebo
-
-#endif
+} // namespace gazebo
