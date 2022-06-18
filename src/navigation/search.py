@@ -1,7 +1,6 @@
 from typing import List
 
 import numpy as np
-
 from context import Context
 from state import BaseState
 

@@ -5,8 +5,8 @@ import time
 import rospy
 import tf2_ros
 from geometry_msgs.msg import TransformStamped
+from mrover.msg import Course, Waypoint
 
-from mrover.msg import Waypoint, Course
 
 def send_waypoint(frame_id: str, x: float, y: float, fid_id: int = -1) -> Waypoint:
     t = TransformStamped()

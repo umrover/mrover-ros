@@ -7,9 +7,8 @@ import threading
 import rospy
 import smach
 import smach_ros
-from geometry_msgs.msg import Twist
-
 from context import Context
+from geometry_msgs.msg import Twist
 from single_fiducial import SingleFiducialState
 from state import DoneState
 from waypoint import WaypointState
