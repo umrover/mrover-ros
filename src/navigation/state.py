@@ -1,33 +1,12 @@
 from abc import ABC
+from typing import List
 
 import rospy
 import smach
-import tf2_ros
-from fiducial_msgs.msg import FiducialArray
 from geometry_msgs.msg import Twist
-from visualization_msgs.msg import Marker
 
+from context import Context
 from util.SE3 import SE3
-
-
-# TODO: rename?
-class Context:
-    vel_cmd_publisher: rospy.Publisher
-    vis_publisher: rospy.Publisher
-    fid_listener: rospy.Subscriber
-    tf_buffer: tf2_ros.Buffer
-    tf_listener: tf2_ros.TransformListener
-    fiducial_transforms: FiducialArray
-
-    def fiducial_transforms_callback(self, fiducial_transforms: FiducialArray):
-        self.fiducial_transforms = fiducial_transforms
-
-    def __init__(self):
-        self.vel_cmd_publisher = rospy.Publisher('cmd_vel', Twist, queue_size=1)
-        self.vis_publisher = rospy.Publisher('nav_vis', Marker)
-        self.tf_buffer = tf2_ros.Buffer()
-        self.tf_listener = tf2_ros.TransformListener(self.tf_buffer)
-        self.fid_listener = rospy.Subscriber('fiducial_transforms', FiducialArray, self.fiducial_transforms_callback)
 
 
 class BaseState(smach.State, ABC):
@@ -36,9 +15,12 @@ class BaseState(smach.State, ABC):
     """
     context: Context
 
-    def __init__(self, context: Context, *args, **kwargs):
-        kwargs['outcomes'].append('terminated')
-        super().__init__(*args, **kwargs)
+    def __init__(self, context: Context, outcomes: List[str], input_keys: List[str], output_keys: List[str]):
+        super().__init__(
+            outcomes + ['terminated'],
+            input_keys + ['waypoint_index'],
+            output_keys + ['waypoint_index']
+        )
         self.context = context
 
     def execute(self, ud):
@@ -72,12 +54,15 @@ class DoneState(BaseState):
     def __init__(self, context: Context):
         super().__init__(
             context,
-            outcomes=['done'],
+            outcomes=['done', 'waypoint_traverse'],
             input_keys=[],
             output_keys=[]
         )
 
     def evaluate(self, ud):
+        if self.context.course and ud.waypoint_index != len(self.context.course.waypoints):
+            return 'waypoint_traverse'
+
         cmd_vel = Twist()
         self.context.vel_cmd_publisher.publish(cmd_vel)
         return 'done'

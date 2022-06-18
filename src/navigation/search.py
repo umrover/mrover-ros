@@ -1,7 +1,9 @@
 from typing import List
 
 import numpy as np
-from common import BaseState, Context
+
+from context import Context
+from state import BaseState
 
 
 def gen_square_spiral_search_pattern(center: np.ndarray, spacing: float, coverage_radius: float) -> List[np.ndarray]:

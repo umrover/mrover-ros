@@ -62,6 +62,12 @@ void FiducialsNode::imageCallback(sensor_msgs::ImageConstPtr const& msg) {
                 SE3 fidInOdom = SE3::fromTfTree(mTfBuffer, ODOM_FRAME, immediateFrameName);
                 fid.setFilterParams(mFilterCount, mFilterProportion);
                 fid.addReading(fidInOdom);
+                fiducial_msgs::FiducialTransform fidTf;
+                fidTf.fiducial_id = id;
+                fidTf.transform.translation.x = fidInOdom.x();
+                fidTf.transform.translation.y = fidInOdom.y();
+                fidTf.transform.translation.z = fidInOdom.z();
+                fidArray.transforms.push_back(fidTf);
             } catch (tf2::ExtrapolationException const&) {
                 ROS_WARN("Old data for immediate fiducial");
             } catch (tf2::LookupException const&) {

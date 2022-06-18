@@ -76,7 +76,7 @@
     </physics>
     <scene>
       <ambient>0.6 0.6 0.6 1</ambient>
-      <background>0.7 0.7 0.7 1</background>
+      <background>0.2 0.2 0.8 1</background>
       <shadows>1</shadows>
     </scene>
     <wind />
@@ -87,8 +87,8 @@
       <elevation>0</elevation>
       <heading_deg>0</heading_deg>
     </spherical_coordinates>
-    <model name='post'>
-      <pose>1.0 1.0 0.5 0 0 4.71239</pose>
+    <model name='waypoint_post'>
+      <pose>-5.5 -5.5 0.5 0 0 4.71239</pose>
       <static>1</static>
       <link name='link'>
         <collision name='collision'>
