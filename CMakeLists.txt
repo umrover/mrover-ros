@@ -74,7 +74,6 @@ add_message_files(
         DriveStateData.msg
         DriveVelCmd.msg
         DriveVelData.msg
-        MarkerInfo.msg
 )
 
 ## Generate services in the 'srv' folder
