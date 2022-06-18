@@ -3,7 +3,7 @@ import rospy
 from geometry_msgs.msg import Point, TransformStamped, Vector3
 from sensor_msgs.msg import NavSatFix, geometry_msgs
 
-from localization import EARTH_RADIUS
+EARTH_RADIUS = 6371000
 
 
 def gps_to_world(gps_coord: NavSatFix, ref_coord: NavSatFix, name: str, parent: str = "world") -> TransformStamped:

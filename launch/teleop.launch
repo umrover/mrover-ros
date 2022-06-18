@@ -2,15 +2,16 @@
   <arg name="model" default="$(find mrover)/rover_description/rover.urdf" />
   <arg name="gui" default="false" />
   <param name="robot_description" command="xacro $(find mrover)/rover_description/rover.xacro" />
-  <arg name="rvizconfig" default="$(find mrover)/default.rviz" />
+  <arg name="rvizconfig" default="$(find mrover)/config/rviz/default.rviz" />
+  <arg name="gazebo_config_path" default="$(find mrover)/config/gazebo" />
 
   <node if="$(arg gui)" name="joint_state_publisher" pkg="joint_state_publisher_gui" type="joint_state_publisher_gui" />
   <node unless="$(arg gui)" name="joint_state_publisher" pkg="joint_state_publisher" type="joint_state_publisher" />
   <node name="robot_state_publisher" pkg="robot_state_publisher" type="robot_state_publisher" />
 
   <include file="$(find gazebo_ros)/launch/empty_world.launch">
-    <env name="GAZEBO_MODEL_PATH" value="$(find mrover)/env_description" />
-    <arg name="world_name" value="$(find mrover)/env_description/world.world" />
+    <env name="GAZEBO_MODEL_PATH" value="$(arg gazebo_config_path)/env_description" />
+    <arg name="world_name" value="$(arg gazebo_config_path)/env_description/world.world" />
     <arg name="paused" value="false" />
     <arg name="use_sim_time" value="true" />
     <arg name="gui" value="true" />
