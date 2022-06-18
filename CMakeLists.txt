@@ -69,10 +69,9 @@ catkin_python_setup()
 ##   * add every package in MSG_DEP_SET to generate_messages(DEPENDENCIES ...)
 
 ## Generate messages in the 'msg' folder
-add_message_files(
-        FILES
-        MarkerInfo.msg
-)
+#add_message_files(
+#        FILES
+#)
 
 ## Generate services in the 'srv' folder
 # add_service_files(
@@ -89,10 +88,10 @@ add_message_files(
 # )
 
 ## Generate added messages and services with any dependencies listed here
- generate_messages(
-         DEPENDENCIES
-         std_msgs
- )
+generate_messages(
+        DEPENDENCIES
+        std_msgs
+)
 
 ################################################
 ## Declare ROS dynamic reconfigure parameters ##
@@ -125,7 +124,7 @@ generate_dynamic_reconfigure_options(
 catkin_package(
         #  INCLUDE_DIRS include
         #  LIBRARIES mrover
-          CATKIN_DEPENDS roscpp rospy std_msgs message_runtime
+        CATKIN_DEPENDS roscpp rospy std_msgs message_runtime
         #  DEPENDS system_lib
 )
 
@@ -141,7 +140,8 @@ include_directories(
         ${OpenCV_INCLUDE_DIRS}
 )
 
-add_executable(aruco_detect src/perception/aruco_detect.cpp)
+file(GLOB_RECURSE PERCEPTION_SOURCES "src/perception/*.cpp")
+add_executable(aruco_detect ${PERCEPTION_SOURCES})
 add_dependencies(aruco_detect ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
 target_link_libraries(aruco_detect ${catkin_LIBRARIES} ${OpenCV_LIBS})
 
@@ -211,11 +211,11 @@ install(DIRECTORY launch/
 
 ## Mark libraries for installation
 ## See http://docs.ros.org/melodic/api/catkin/html/howto/format1/building_libraries.html
- install(TARGETS differential_drive_plugin_6w
-   ARCHIVE DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
-   LIBRARY DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
-   RUNTIME DESTINATION ${CATKIN_GLOBAL_BIN_DESTINATION}
- )
+install(TARGETS differential_drive_plugin_6w
+        ARCHIVE DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
+        LIBRARY DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
+        RUNTIME DESTINATION ${CATKIN_GLOBAL_BIN_DESTINATION}
+        )
 
 ## Mark cpp header files for installation
 # install(DIRECTORY include/${PROJECT_NAME}/
