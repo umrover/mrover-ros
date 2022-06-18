@@ -4,11 +4,12 @@ This file controls the cameras that the jetson will stream.
 import sys
 
 import rospy
-from config import (DEFAULT_MISSION, MAX_VIDEO_DEVICE_ID_NUMBER, MISSION_MAP,
-                    NUMBER_OF_PIPELINES)
 from mrover.srv import (ChangeCameraMission, ChangeCameraMissionRequest,
                         ChangeCameraMissionResponse, ChangeCameras,
                         ChangeCamerasRequest, ChangeCamerasResponse)
+
+from config import (DEFAULT_MISSION, MAX_VIDEO_DEVICE_ID_NUMBER, MISSION_MAP,
+                    NUMBER_OF_PIPELINES)
 
 sys.path.insert(0, "/usr/lib/python3.6/dist-packages")  # 3.6 vs 3.8
 import jetson.utils  # noqa
