@@ -2,7 +2,7 @@
   <arg name="model" default="$(find mrover)/rover_description/rover.urdf" />
   <arg name="gui" default="false" />
   <param name="robot_description" command="xacro $(find mrover)/rover_description/rover.xacro" />
-  <arg name="rvizconfig" default="$(find mrover)/default.rviz" />
+  <arg name="rvizconfig" default="$(find mrover)/config/rviz/default.rviz" />
 
   <node if="$(arg gui)" name="joint_state_publisher" pkg="joint_state_publisher_gui" type="joint_state_publisher_gui" />
   <node unless="$(arg gui)" name="joint_state_publisher" pkg="joint_state_publisher" type="joint_state_publisher" />
