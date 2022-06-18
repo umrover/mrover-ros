@@ -236,13 +236,13 @@ namespace gazebo {
 
         double vr, va;
 
-        vr = x_;   //myIface->data->cmdVelocity.pos.x;
-        va = -rot_;//myIface->data->cmdVelocity.yaw;
+        vr = x_;    //myIface->data->cmdVelocity.pos.x;
+        va = -rot_; //myIface->data->cmdVelocity.yaw;
 
         //std::cout << "X: [" << x_ << "] ROT: [" << rot_ << "]" << std::endl;
 
         // Changed motors to be always on, which is probably what we want anyway
-        enableMotors = true;//myIface->data->cmdEnableMotors > 0;
+        enableMotors = true; //myIface->data->cmdEnableMotors > 0;
 
         //std::cout << enableMotors << std::endl;
 
@@ -317,4 +317,4 @@ namespace gazebo {
 
     GZ_REGISTER_MODEL_PLUGIN(DiffDrivePlugin6W)
 
-}// namespace gazebo
+} // namespace gazebo
