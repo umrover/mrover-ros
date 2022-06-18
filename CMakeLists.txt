@@ -2,7 +2,7 @@ cmake_minimum_required(VERSION 3.0.2)
 project(mrover)
 
 ## Compile as C++17, supported in ROS Kinetic and newer
-add_compile_options(-std=c++17)
+add_compile_options(-std=c++17 -Wall -Wextra -Werror -pedantic)
 
 ## Find catkin macros and libraries
 ## if COMPONENTS list like find_package(catkin REQUIRED COMPONENTS xyz)
@@ -88,10 +88,10 @@ catkin_python_setup()
 # )
 
 ## Generate added messages and services with any dependencies listed here
-generate_messages(
-        DEPENDENCIES
-        std_msgs
-)
+# generate_messages(
+#         DEPENDENCIES
+#         std_msgs
+# )
 
 ################################################
 ## Declare ROS dynamic reconfigure parameters ##

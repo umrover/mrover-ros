@@ -157,7 +157,6 @@ FiducialsNode::FiducialsNode() : mNh(), mPnh("~"), mIt(mNh), mTfListener(mTfBuff
     mPnh.param<bool>("verbose", mIsVerbose, false);
 
     std::string str;
-    std::vector<std::string> strs;
 
     mPnh.param<std::string>("ignore_fiducials", str, "");
     handleIgnoreString(str);
