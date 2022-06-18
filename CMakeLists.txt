@@ -73,7 +73,6 @@ add_message_files(
         FILES
         Enable.msg
         Heater.msg
-        MarkerInfo.msg
         Spectral.msg
         Thermistor.msg
 )
