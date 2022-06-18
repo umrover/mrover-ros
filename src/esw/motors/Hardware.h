@@ -18,7 +18,7 @@ enum HardwareType {
 //Helper class to abstract away Motor Controller details
 class Hardware {
 public:
-    uint16_t speed_max;//out of 100 to avoid sending floats
+    uint16_t speed_max; //out of 100 to avoid sending floats
     HardwareType type;
 
     HardwareType getType(std::string input) {
@@ -46,22 +46,22 @@ public:
     Hardware(std::string input) : type(getType(input)) {
         switch (type) {
             case Motor6V:
-                speed_max = 16;// 5.76 V
+                speed_max = 16; // 5.76 V
                 break;
             case Motor9V:
-                speed_max = 25;// 9 V
+                speed_max = 25; // 9 V
                 break;
             case Motor12V:
-                speed_max = 33;// 11.88 V
+                speed_max = 33; // 11.88 V
                 break;
             case Motor24V:
-                speed_max = 60;// 21.6 V
+                speed_max = 60; // 21.6 V
                 break;
             case Motor22Percent:
-                speed_max = 22;// 7.92 V, or 24V * 0.33 / 36 %
+                speed_max = 22; // 7.92 V, or 24V * 0.33 / 36 %
                 break;
             case Motor29Percent:
-                speed_max = 29;// 10.44 V, or 24V * 0.44 / 36 %
+                speed_max = 29; // 10.44 V, or 24V * 0.44 / 36 %
                 break;
             case HBridge:
                 speed_max = 100;

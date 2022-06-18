@@ -4,8 +4,8 @@
 #include "I2C.h"
 #include <iostream>
 
-#include <cmath> // M_PI
-#include <thread>// std::this_thread::sleep_for(std::chrono::milliseconds(50));
+#include <cmath>  // M_PI
+#include <thread> // std::this_thread::sleep_for(std::chrono::milliseconds(50));
 #include <vector>
 
 #define PRINT_TEST_START printf("Running Test #%2d, %s\n", ++num_tests_ran, __FUNCTION__);
@@ -113,7 +113,7 @@ void testClosed() {
         p = ControllerMap::controllers[name]->kP;
         i = ControllerMap::controllers[name]->kI;
         d = ControllerMap::controllers[name]->kD;
-        setKPID(name, p, i, d);// highly optional, but useful as a sanity check
+        setKPID(name, p, i, d); // highly optional, but useful as a sanity check
         printf("joint %s, kp is %f, ki is %f, kd is %f \n", name.c_str(), p, i, d);
         sleep(10);
     }

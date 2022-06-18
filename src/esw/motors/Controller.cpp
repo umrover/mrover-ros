@@ -132,7 +132,7 @@ void Controller::closed_loop(float torque, float target) {
         }
         */
 
-        float feed_forward = 0;// torque * torque_scale;
+        float feed_forward = 0; // torque * torque_scale;
         uint8_t buffer[32];
         int32_t angle;
         memcpy(buffer, UINT8_POINTER_T(&feed_forward), sizeof(feed_forward));
