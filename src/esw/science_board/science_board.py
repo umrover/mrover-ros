@@ -9,7 +9,6 @@ import threading
 import numpy as np
 import rospy
 import serial
-import yaml
 from mrover.msg import Enable, Heater, Spectral, Thermistor
 from mrover.srv import (ChangeAutonLEDState, ChangeAutonLEDStateRequest,
                         ChangeAutonLEDStateResponse, ChangeDeviceState,
