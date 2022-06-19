@@ -1,3 +1,5 @@
+#!/usr/bin/env python3
+
 '''
 Writes, reads and parses NMEA like messages from the onboard
 science Nucleo to operate the science boxes and get relevant data
@@ -20,14 +22,14 @@ from mrover.srv import (ChangeAutonLEDState, ChangeAutonLEDStateRequest,
 class ScienceBridge():
     """ScienceBridge class"""
     def __init__(self):
-        with open('config.yml', 'r') as file:
-            config = yaml.safe_load(file)
-        self.baudrate = config['serial']['baudrate']
+
+        self.baudrate = rospy.get_param("/science_serial/baudrate")
         # Mapping of device color to number
-        self.led_map = config['led_map']
-        self.max_error_count = config['info']['max_error_count']
+        self.led_map = rospy.get_param("/led_map")
+        self.max_error_count = rospy.get_param("/science_info/max_error_count")
         # Mapping of onboard devices to MOSFET devices
-        self.mosfet_dev_map: dict[str, int] = config['mosfet_device_map']
+        self.mosfet_dev_map: dict[str, int] = \
+            rospy.get_param("/mosfet_device_map")
         self.nmea_handle_mapper = {
             "AUTOSHUTOFF": self.heater_auto_shut_off_handler,
             "HEATER": self.heater_state_handler,
@@ -54,10 +56,10 @@ class ScienceBridge():
             "TRIAD": rospy.Publisher(
                 'spectral_triad_data', Spectral, queue_size=1)
         }
-        self.sleep = config['info']['sleep']
-        self.timeout = config['serial']['timeout']
+        self.sleep = rospy.get_param("/science_info/sleep")
+        self.timeout = rospy.get_param("/science_serial/timeout")
         self.uart_transmit_msg_len = \
-            config['info']['uart_transmit_msg_len']
+            rospy.get_param("/science_info/uart_transmit_msg_len")
         self.uart_lock = threading.Lock()
 
     def __enter__(self) -> None:
@@ -65,9 +67,7 @@ class ScienceBridge():
         Opens a serial connection to the nucleo
         '''
         self.ser = serial.Serial(
-            # port='/dev/ttyS4',
-            # port='/dev/ttyTHS1',  # used on science nano
-            port=rospy.get_param("/serial_port"),
+            port=rospy.get_param("/science_serial/port"),
             baudrate=self.baudrate,
             parity=serial.PARITY_NONE,
             stopbits=serial.STOPBITS_ONE,
