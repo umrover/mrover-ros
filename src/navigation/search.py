@@ -14,6 +14,7 @@ def gen_square_spiral_search_pattern(center: np.ndarray, spacing: float, coverag
     :param coverage_radius: spiral covers at least this far out
     :return:                list of positions for the rover to traverse List(np.ndarray)
     """
+    # TODO: refactor
     out = []
     cur = center
     cur_segment_len = spacing / 2

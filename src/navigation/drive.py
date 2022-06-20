@@ -11,13 +11,14 @@ TURNING_P = 100.0
 
 
 def get_drive_command(target_pos: np.ndarray, rover_pose: SE3,
-                      completion_tolerance: float, turn_in_place_tolerance: float) -> Tuple[Twist, bool]:
+                      completion_thresh: float, turn_in_place_thresh: float) -> Tuple[Twist, bool]:
     """
-    :param target_pos:
-    :param rover_pose:
-    :param completion_tolerance:
-    :param turn_in_place_tolerance:
-    :return:
+    :param target_pos:              Target position to drive to.
+    :param rover_pose:              Current rover pose.
+    :param completion_thresh:       If the distance to the target is less than this stop.
+    :param turn_in_place_thresh     A threshold within [0-1] that determines when to turn in place instead of driving
+                                    forward with a bias.
+    :return:                        Rover drive effort command.
     """
     rover_pos = rover_pose.position_vector()
     rover_dir = rover_pose.x_vector()
@@ -32,11 +33,11 @@ def get_drive_command(target_pos: np.ndarray, rover_pose: SE3,
     # 0 alignment is perpendicular, 1 is parallel (fully aligned)
     alignment = np.dot(target_dir, rover_dir)
 
-    if target_dist < completion_tolerance:
+    if target_dist < completion_thresh:
         return Twist(), True
 
     cmd_vel = Twist()
-    if alignment > turn_in_place_tolerance:
+    if alignment > turn_in_place_thresh:
         # We are pretty aligned so we can drive straight
         error = target_dist
         cmd_vel.linear.x = np.clip(error, 0.0, MAX_DRIVING_EFFORT)

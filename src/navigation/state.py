@@ -26,6 +26,8 @@ class BaseState(smach.State, ABC):
         """
         Override execute method to add logic for early termination.
         Base classes should override evaluate instead of this!
+        :param ud:  State machine user data
+        :return:    Next state, 'terminated' if we want to quit early
         """
         if self.preempt_requested():
             self.service_preempt()
@@ -60,9 +62,11 @@ class DoneState(BaseState):
         )
 
     def evaluate(self, ud):
+        # Check if we have a course to traverse
         if self.context.course and ud.waypoint_index != len(self.context.course.waypoints):
             return 'waypoint_traverse'
 
+        # Stop rover
         cmd_vel = Twist()
         self.context.vel_cmd_publisher.publish(cmd_vel)
         return 'done'

@@ -4,6 +4,7 @@ from drive import get_drive_command
 from geometry_msgs.msg import Twist
 from waypoint import DRIVE_FWD_THRESH, BaseWaypointState
 
+STOP_THRESH = 0.7
 FIDUCIAL_STOP_THRESHOLD = 1.75
 
 
@@ -12,15 +13,23 @@ class SingleFiducialState(BaseWaypointState):
         super().__init__(context, outcomes=[], input_keys=['fiducial_id'], output_keys=[])
 
     def evaluate(self, ud) -> str:
+        """
+        Drive towards a single fiducial if we see it and stop within a certain threshold if we see it.
+        Else conduct a search to find it.
+        :param ud:  State machine user data
+        :return:    Next state
+        """
         fid_pos = self.current_fid_pos(ud)
         if fid_pos is None:
+            # We have arrived at the waypoint where the fiducial should be but we have not seen it yet
+            # TODO: add more advanced logic than just driving forward
             cmd_vel = Twist()
             cmd_vel.linear.x = 0.5
             self.context.vel_cmd_publisher.publish(cmd_vel)
             return 'single_fiducial'
 
         try:
-            cmd_vel, arrived = get_drive_command(fid_pos, self.rover_pose(), 0.7, DRIVE_FWD_THRESH)
+            cmd_vel, arrived = get_drive_command(fid_pos, self.rover_pose(), STOP_THRESH, DRIVE_FWD_THRESH)
             if arrived:
                 ud.waypoint_index += 1
                 return 'waypoint_traverse'
