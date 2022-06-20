@@ -8,7 +8,7 @@ on:
       - master
 jobs:
   formatting-check:
-    name: Code Style Checkg
+    name: Code Style Check
     runs-on: ubuntu-20.04
     steps:
       - uses: actions/checkout@v3
