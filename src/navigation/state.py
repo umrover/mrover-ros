@@ -46,6 +46,7 @@ class BaseState(smach.State, ABC):
         :param parent_frame:
         :return:
         """
+        # TODO: use SE3 function to lookup
         stamped_transform = self.context.tf_buffer.lookup_transform(parent_frame, frame, rospy.Time(0))
         return SE3.from_tf(stamped_transform.transform)
 

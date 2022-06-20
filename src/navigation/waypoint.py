@@ -4,9 +4,9 @@ import numpy as np
 import tf2_ros
 from context import Context
 from drive import get_drive_command
-from mrover.msg import Waypoint
 from state import BaseState
 
+from mrover.msg import Waypoint
 from util import SE3
 
 DRIVE_FWD_THRESH = 0.95
@@ -29,11 +29,11 @@ class BaseWaypointState(BaseState):
         return self.rover_pose().x_vector()
 
     def get_fid_pos(self, fid_id: int) -> Optional[np.ndarray]:
-        for fid in self.context.fiducial_transforms.transforms:
-            if fid.fiducial_id == fid_id:
-                t = fid.transform.translation
-                return np.array([t.x, t.y, t.z])
-        return None
+        try:
+            fid_pose = self.transform(f'fiducial{fid_id}')
+            return fid_pose.position_vector()
+        except (tf2_ros.LookupException, tf2_ros.ConnectivityException, tf2_ros.ExtrapolationException):
+            return None
 
     def current_waypoint(self, ud) -> Optional[Waypoint]:
         if self.context.course is None or ud.waypoint_index >= len(self.context.course.waypoints):
