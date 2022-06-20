@@ -1,8 +1,8 @@
 from typing import Tuple
 
 import numpy as np
-from geometry_msgs.msg import Twist
 
+from geometry_msgs.msg import Twist
 from util.SE3 import SE3
 
 MAX_DRIVING_EFFORT = 1

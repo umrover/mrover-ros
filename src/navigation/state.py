@@ -5,7 +5,6 @@ import rospy
 import smach
 from context import Context
 from geometry_msgs.msg import Twist
-
 from util.SE3 import SE3
 
 

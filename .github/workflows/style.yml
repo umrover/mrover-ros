@@ -22,8 +22,7 @@ jobs:
       - uses: ricardochaves/python-lint@v1.4.0
         with:
           python-root-list: "."
-          use-isort: true
-          extra-isort-options: "-p util -v"
+          use-isort: false
           use-pycodestyle: true
           extra-pycodestyle-options: "--max-line-length=119"
           use-pylint: false # TODO: Would have to pip install everything for this

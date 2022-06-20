@@ -1,9 +1,8 @@
 import rospy
 import tf2_ros
 from geometry_msgs.msg import Twist
-from visualization_msgs.msg import Marker
-
 from mrover.msg import Course
+from visualization_msgs.msg import Marker
 
 
 # TODO: rename?

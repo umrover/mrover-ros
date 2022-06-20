@@ -1,14 +1,15 @@
 from __future__ import annotations
 
 import numpy as np
+
 from geometry_msgs.msg import Pose, Transform
 from ros_numpy import numpify
 from tf.transformations import (quaternion_inverse, quaternion_matrix,
                                 quaternion_multiply, rotation_from_matrix)
+from tf_utils import point_to_vector3, vector3_to_point
 
-from .tf_utils import point_to_vector3, vector3_to_point
 
-
+# TODO: adhere to https://github.com/umrover/mrover-ros/discussions/46
 class SE3(Pose):
 
     def __init__(self, *args, **kwargs):

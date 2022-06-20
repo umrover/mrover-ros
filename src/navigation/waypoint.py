@@ -1,12 +1,12 @@
 from typing import List, Optional
 
 import numpy as np
+
 import tf2_ros
 from context import Context
 from drive import get_drive_command
-from state import BaseState
-
 from mrover.msg import Waypoint
+from state import BaseState
 from util import SE3
 
 DRIVE_FWD_THRESH = 0.95

@@ -226,9 +226,9 @@ int main(int argc, char** argv) {
 }
 
 void PersistentFiducial::addReading(SE3 const& fidInOdom) {
-    fidInOdomX.push(fidInOdom.x());
-    fidInOdomY.push(fidInOdom.y());
-    fidInOdomZ.push(fidInOdom.z());
+    fidInOdomX.push(fidInOdom.positionVector().x());
+    fidInOdomY.push(fidInOdom.positionVector().y());
+    fidInOdomZ.push(fidInOdom.positionVector().z());
 }
 
 void PersistentFiducial::setFilterParams(size_t count, double proportion) {
