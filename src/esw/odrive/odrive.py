@@ -1,11 +1,11 @@
 """This code controls one ODrive.
 It takes in a command line argument (0, 1, or 2) to see which
 ODrive it is controlling. The numbers determine whether it is front, middle,
-or back, as indicated in the config.yaml file.
+or back, as indicated in the config/odrive_config.yaml file.
 This means that to control 3 separate ODrives,
 3 of these programs must be running simultaneously.
-Configuration variables can be changed in the config.yaml file
-and are initialized by the program in the config.py file.
+Configuration variables can be changed in the config/odrive_config.yaml file
+and are initialized by the program in the config/odrive_config.py file.
 The ODriveBridge object controls
 the behavior of the ODrive.
 The ODriveBridge object keeps track of a state that it is in.
@@ -257,23 +257,23 @@ class ODriveBridge(object):
             config = yaml.safe_load(file)
         # Maps the ODrive axis to either left or right
         self.axis_map: dict[int, str] = {
-            config['axis']['left']: 'left',
-            config['axis']['right']: 'right'}
-        self.current_lim: float = config['config']['current_lim']
+            rospy.get_param("/odrive/axis/left"): 'left',
+            rospy.get_param("/odrive/axis/right"): 'right'}
+        self.current_lim: float = rospy.get_param("/odrive/config/current_lim")
         self.left_speed: float = 0.0
         self.modrive = None
         self.odrive_ids: dict[str, str] = {
-            'front': config['ids']['front'],
-            'middle': config['ids']['middle'],
-            'back': config['ids']['back']}
+            'front': rospy.get_param("/odrive/ids/front"),
+            'middle': rospy.get_param("/odrive/ids/middle"),
+            'back': rospy.get_param("/odrive/ids/back")}
         self.right_speed: float = 0.0
         self.pair = sys.argv[1]
         self.speed_lock = threading.Lock()
         # This scales [0, 1] to [0, vel_cmd_mult] turns per second
         self.vel_cmd_mult_left: float = \
-            config['info']['vel_cmd_multiplier_left']
+            rospy.get_param("/odrive/info/vel_cmd_multiplier_left")
         self.vel_cmd_mult_right: float = \
-            config['info']['vel_cmd_multiplier_right']
+            rospy.get_param("/odrive/info/vel_cmd_multiplier_right")
         self.start_time = t.clock()
         self.state = DisconnectedState()
         self.state_pub = rospy.Publisher(
@@ -281,12 +281,13 @@ class ODriveBridge(object):
         self.usb_lock = threading.Lock()
         # This scales turns/sec to m/sec
         self.vel_est_mult_left: float = \
-            config['info']['vel_est_multiplier_left']
+            rospy.get_param("/odrive/info/vel_est_multiplier_left")
         self.vel_est_mult_right: float = \
-            config['info']['vel_est_multiplier_right']
+            rospy.get_param("/odrive/info/vel_est_multiplier_right")
         self.vel_pub = rospy.Publisher(
             'drive_vel_data', DriveVelData, queue_size=1)
-        self.watchdog_timeout = config['config']['watchdog_timeout']
+        self.watchdog_timeout = \
+            rospy.get_param("/odrive/config/watchdog_timeout")
 
     def bridge_on_event(self, event: ODriveEvent) -> None:
         """
