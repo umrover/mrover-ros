@@ -2,22 +2,47 @@
 This file controls the cameras that the jetson will stream.
 """
 import sys
+from enum import Enum
 
 import rospy
 from mrover.srv import (ChangeCameraMission, ChangeCameraMissionRequest,
                         ChangeCameraMissionResponse, ChangeCameras,
                         ChangeCamerasRequest, ChangeCamerasResponse)
 
-from config import (DEFAULT_MISSION, MAX_VIDEO_DEVICE_ID_NUMBER, MISSION_MAP,
-                    NUMBER_OF_PIPELINES)
-
 sys.path.insert(0, "/usr/lib/python3.6/dist-packages")  # 3.6 vs 3.8
+
 import jetson.utils  # noqa
 
+
+class Mission(Enum):
+    "This creates all the mission enums and sets them equal to a number"
+    AUTON = 0
+    ERD = 1
+    ES = 2
+    SCIENCE = 3
+
+
+DEFAULT_MISSION = rospy.get_param("cameras/default_mission")
+MAX_VIDEO_DEVICE_ID_NUMBER = rospy.get_param("cameras/number_of_pipelines")
+
+MISSION_MAP = {
+    "AUTON":
+        [Mission.AUTON, rospy.get_param("cameras/ips/auton").values(),
+         rospy.get_param("cameras/arguments/144").values()],
+    "ERD":
+        [Mission.ERD, rospy.get_param("cameras/ips/erd").values(),
+         rospy.get_param("cameras/arguments/144").values()],
+    "ES":
+        [Mission.ES, rospy.get_param("cameras/ips/es").values(),
+         rospy.get_param("cameras/arguments/720").values()],
+    "SCIENCE":
+        [Mission.SCIENCE, rospy.get_param("cameras/ips/science").values(),
+         rospy.get_param("cameras/arguments/144").values()]
+}
+
+NUMBER_OF_PIPELINES = rospy.get_param("cameras/number_of_pipelines")
 PIPELINES = [None] * NUMBER_OF_PIPELINES
-
 CURRENT_MISSION, CURRENT_MISSION_IPS, ARGUMENTS = MISSION_MAP[DEFAULT_MISSION]
-
 VIDEO_SOURCES = [None] * MAX_VIDEO_DEVICE_ID_NUMBER
 
 

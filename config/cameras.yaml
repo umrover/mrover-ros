@@ -1,0 +1,35 @@
+cameras:
+    number_of_pipelines: 4
+    max_video_device_id_number: 10
+    arguments:
+        "144":
+            headless: "--headless"
+            bitrate: "--bitrate=300000"
+            width: "--width=256"
+            height: "--height=144"
+        "360":
+            headless: "--headless"
+            bitrate: "--bitrate=800000"
+            width: "--width=480"
+            height: "--height=360"
+        "720":
+            headless: "--headless"
+            bitrate: "--bitrate=1800000"
+            width: "--width=1280"
+            height: "--height=720"
+    default_mission: "ERD"
+    ips:
+        auton:
+            ip_0: "10.0.0.1:5000"
+            ip_1: "10.0.0.1:5001"
+        erd:
+            ip_0: "10.0.0.1:5000"
+            ip_1: "10.0.0.1:5001"
+        es:
+            ip_0: "10.0.0.1:5000"
+            ip_1: "10.0.0.1:5001"
+        science:
+            ip_0: "10.0.0.1:5000"
+            ip_1: "10.0.0.1:5001"
+            ip_2: "10.0.0.2:5000"
+            ip_3: "10.0.0.2:5001"

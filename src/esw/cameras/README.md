@@ -5,7 +5,7 @@ Code to control the USB Cameras
 For the 2022 Mars Rover Rosie, there are 8 USB cameras. This is the program
 responsible for handling service messages received from the base station. \
 
-Up to 4 streams can be requested. The available IPs and video quality of the output streams are determined by the ChangeCameraMission service, which changes the IP of the output streams depending on the mission stated. This information can be located in the config.py file. The ChangeCameras service request has 4 integers representing the device number that the user wants on each of the ports. -1 means no device, and positive integers represent what the jetson recognizes in /dev/video* (e.g. /dev/video0 and /dev/video6). The program does not crash if the video device does not exist.
+Up to 4 streams can be requested. The available IPs and video quality of the output streams are determined by the ChangeCameraMission service, which changes the IP of the output streams depending on the mission stated. This information can be located in the config/cameras.yaml file. The ChangeCameras service request has 4 integers representing the device number that the user wants on each of the ports. -1 means no device, and positive integers represent what the jetson recognizes in /dev/video* (e.g. /dev/video0 and /dev/video6). The program does not crash if the video device does not exist.
 
 The program relies on jetson-utils to operate. Its Python functions are called in order to get feed from the camera and render them to a stream. Two pipelines (two streams) are constantly capturing images and rendering them to the output. 
 
