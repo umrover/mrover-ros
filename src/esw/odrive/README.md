@@ -3,7 +3,7 @@ Code to control the drive motors using the ODrive Brushless Motor Controller
 
 ### About
 For the 2022 Mars Rover Rosie, we used 3 ODrive motor controllers to drive the wheels. odrives.py is the program
-responsible for handling ODrive ROS messages recieved from the base station. config/odrive_config.yaml has the config info used
+responsible for handling ODrive ROS messages recieved from the base station. config/odrive.yaml has the config info used
 in odrives.py.
 
 The program subscribes to a ROS topic to receive velocity. The states of the ODrive are **ArmedState**,
@@ -79,7 +79,7 @@ Type \
 `$ quit()` \
 `$ deactivate` \
 to get out of this state. \
-In the config/odrive_config.yaml, look at the line that sets the IDs. 
+In the config/odrive.yaml, look at the line that sets the IDs. 
 Depending on which ODrive you replaced, change its ID to the new one. 
 Rebuild the program. \
 

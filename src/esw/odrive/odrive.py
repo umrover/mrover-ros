@@ -1,11 +1,11 @@
 """This code controls one ODrive.
 It takes in a command line argument (0, 1, or 2) to see which
 ODrive it is controlling. The numbers determine whether it is front, middle,
-or back, as indicated in the config/odrive_config.yaml file.
+or back, as indicated in the config/odrive.yaml file.
 This means that to control 3 separate ODrives,
 3 of these programs must be running simultaneously.
-Configuration variables can be changed in the config/odrive_config.yaml file
-and are initialized by the program in the config/odrive_config.py file.
+Configuration variables can be changed in the config/odrive.yaml file
+and are initialized by the program in the config/odrive.py file.
 The ODriveBridge object controls
 the behavior of the ODrive.
 The ODriveBridge object keeps track of a state that it is in.
@@ -21,7 +21,6 @@ from enum import Enum
 import fibre
 import odrive as odv
 import rospy
-import yaml
 from mrover.msg import DriveStateData, DriveVelCmd, DriveVelData
 from odrive.enums import (AXIS_STATE_CLOSED_LOOP_CONTROL, AXIS_STATE_IDLE,
                           CONTROL_MODE_VELOCITY_CONTROL)
@@ -253,8 +252,6 @@ class ODriveBridge(object):
         Initialize the components.
         Start with a Default State
         """
-        with open('config.yml', 'r') as file:
-            config = yaml.safe_load(file)
         # Maps the ODrive axis to either left or right
         self.axis_map: dict[int, str] = {
             rospy.get_param("/odrive/axis/left"): 'left',
