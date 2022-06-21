@@ -1,6 +1,4 @@
 cameras:
-    number_of_pipelines: 4
-    max_video_device_id_number: 10
     arguments:
         "144":
             headless: "--headless"
@@ -17,7 +15,7 @@ cameras:
             bitrate: "--bitrate=1800000"
             width: "--width=1280"
             height: "--height=720"
-    default_mission: "ERD"
+    default_mission: "erd"
     ips:
         auton:
             ip_0: "10.0.0.1:5000"
@@ -33,3 +31,5 @@ cameras:
             ip_1: "10.0.0.1:5001"
             ip_2: "10.0.0.2:5000"
             ip_3: "10.0.0.2:5001"
+    max_video_device_id_number: 10
+    number_of_pipelines: 4
