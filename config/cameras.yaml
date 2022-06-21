@@ -1,5 +1,5 @@
 cameras:
-    arguments:
+    resolution_arguments:
         "144":
             headless: "--headless"
             bitrate: "--bitrate=300000"
@@ -40,4 +40,6 @@ cameras:
                 ip_2: "10.0.0.2:5000"
                 ip_3: "10.0.0.2:5001"
             resolution: "144"
+    # If number_of_pipelines is changed,
+    # then ChangeCameras.srv must be changed too
     number_of_pipelines: 4
