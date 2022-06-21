@@ -25,22 +25,16 @@ class Mission(Enum):
 class Pipeline:
     """Every Pipeline object is control of streaming one
     camera to its assigned port"""
-    def __init__(self, pipeline_number: int) -> None:
-        self.current_ips = self.current_mission_ips
+    def __init__(
+            self, arguments: list[str],
+            current_mission_ips: list[str],
+            pipeline_number: int) -> None:
         self.video_source = None
         self.pipeline_number = pipeline_number
         self.video_output = jetson.utils.videoOutput(
             f"rtp://{self.current_ips[self.pipeline_number]}",
-            argv=self.arguments)
+            argv=arguments)
         self.device_number = -1
-
-    def update_video_output(self) -> None:
-        """Updates the video output to ensure that pipeline
-        is streaming to the proper IP"""
-        self.current_ips = self.current_mission_ips
-        self.video_output = jetson.utils.videoOutput(
-                f"rtp://{self.current_ips[self.pipeline_number]}",
-                argv=self.arguments)
 
     def capture_and_render_image(self) -> None:
         """Captures an image from the video device and streams it"""
@@ -61,18 +55,24 @@ class Pipeline:
         """Returns the camera device which the pipeline is assigned"""
         return self.device_number
 
-    def update_device_number(self, index: int) -> None:
+    def is_currently_streaming(self) -> bool:
+        """Returns whether or not the pipeline is
+        assigned an active camera device"""
+        return self.device_number != -1
+
+    def update_device_number(
+            self, arguments: list[str], index: int, video_sources) -> None:
         """Takes in a requested camera device.
         The pipeline will then be assigned this camera device
         unless it does not exist. A -1 means that the pipeline
         is no longer assigned a device."""
         self.device_number = index
         if index != -1:
-            self.video_source = self.video_sources[index]
+            self.video_source = video_sources[index]
             if self.video_source is not None:
                 self.video_output = jetson.utils.videoOutput(
                     f"rtp://{self.current_ips[self.pipeline_number]}",
-                    argv=self.arguments)
+                    argv=arguments)
             else:
                 print(f"Unable to play camera {index} on \
                     {self.current_ips[self.pipeline_number]}.")
@@ -80,47 +80,35 @@ class Pipeline:
         else:
             self.video_source = None
 
-    def is_currently_streaming(self) -> bool:
-        """Returns whether or not the pipeline is
-        assigned an active camera device"""
-        return self.device_number != -1
+    def update_video_output(
+            self, arguments: list[str],
+            current_mission_ips: list[str]) -> None:
+        """Updates the video output to ensure that pipeline
+        is streaming to the proper IP"""
+        self.current_ips = current_mission_ips
+        self.video_output = jetson.utils.videoOutput(
+                f"rtp://{self.current_ips[self.pipeline_number]}",
+                argv=arguments)
 
 
 class PipelineManager:
     def __init__(self) -> None:
+        self.arguments_map = rospy.get_param("cameras/arguments")
         self.default_mission = rospy.get_param("cameras/default_mission")
         self.max_video_device_id_number = \
-            rospy.get_param("cameras/number_of_pipelines")
-        self.mission_map = {
-            "auton":
-                [Mission.AUTON,
-                 rospy.get_param("cameras/ips/auton").values(),
-                 rospy.get_param("cameras/arguments/144").values()],
-            "erd":
-                [Mission.ERD,
-                 rospy.get_param("cameras/ips/erd").values(),
-                 rospy.get_param("cameras/arguments/144").values()],
-            "es":
-                [Mission.ES,
-                 rospy.get_param("cameras/ips/es").values(),
-                 rospy.get_param("cameras/arguments/720").values()],
-            "science":
-                [Mission.SCIENCE,
-                 rospy.get_param("cameras/ips/science").values(),
-                 rospy.get_param("cameras/arguments/144").values()]
-        }
+            rospy.get_param("cameras/max_video_device_id_number")
+        self.mission_map = rospy.get_param("cameras/missions")
+
         self.pipelines = \
             [None] * rospy.get_param("cameras/number_of_pipelines")
-        self.current_mission, self.current_mission_ips, self.arguments = \
-            self.mission_map[self.default_mission]
+        self.current_mission = self.default_mission
+        self.current_mission_ips = \
+            self.mission_map[self.current_mission]["ips"].values()
+        self.arguments = self.arguments_map[self.current_mission]
         self.video_sources = [None] * self.max_video_device_id_number
         for pipeline_number in range(len(self.pipelines)):
-            self.pipelines[pipeline_number] = Pipeline(pipeline_number)
-
-        rospy.Service('change_cameras', ChangeCameras,
-                      self.handle_change_cameras)
-        rospy.Service('change_camera_mission', ChangeCameraMission,
-                      self.handle_change_camera_mission)
+            self.pipelines[pipeline_number] = \
+                Pipeline(pipeline_number)
 
     def update(self):
         for pipeline in self.pipelines:
@@ -131,7 +119,8 @@ class PipelineManager:
         """Takes in index as the camera device and port as which pipeline number.
         This assigns a camera device to that pipeline."""
         try:
-            self.pipelines[port].update_device_number(index)
+            self.pipelines[port].update_device_number(
+                self.arguments, index, self.video_sources)
             print(f"Playing camera {index} on \
                 {self.current_mission_ips[port]}.")
         except Exception:
@@ -162,11 +151,15 @@ class PipelineManager:
         camera mission service."""
         mission_name = req.mission.lower()
         try:
-            current_mission_request, self.current_mission_ips, \
-                self.arguments = self.mission_map[mission_name]
+            current_mission_request = mission_name
+            self.current_mission_ips = \
+                self.mission_map[current_mission_request]["ips"].values()
+            self.arguments = self.arguments_map[current_mission_request]
         except KeyError:
-            current_mission_request, self.current_mission_ips, \
-                self.arguments = self.mission_map[self.default_mission]
+            current_mission_request = self.default_mission
+            self.current_mission_ips = \
+                self.mission_map[current_mission_request]["ips"].values()
+            self.arguments = self.arguments_map[current_mission_request]
             print(f"invalid mission name, \
                 setting to {self.default_mission}")
 
@@ -178,7 +171,8 @@ class PipelineManager:
             # only skip if 0 or 1 because it's the same either way
             if pipeline_number == 0 or pipeline_number == 1:
                 continue
-            pipeline.update_video_output()
+            pipeline.update_video_output(
+                self.arguments, self.current_mission_ips)
 
         return ChangeCameraMissionResponse(self.current_mission)
 
@@ -232,6 +226,10 @@ def main():
     rospy.init_node("cameras")
 
     pipeline_manager = PipelineManager()
+    rospy.Service('change_cameras', ChangeCameras,
+                  pipeline_manager.handle_change_cameras)
+    rospy.Service('change_camera_mission', ChangeCameraMission,
+                  pipeline_manager.handle_change_camera_mission)
     while not rospy.is_shutdown():
         pipeline_manager.update()
 
