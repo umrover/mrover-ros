@@ -22,13 +22,14 @@ class ScienceBridge():
     """ScienceBridge class"""
     def __init__(self):
 
-        self.baudrate = rospy.get_param("/science_serial/baudrate")
+        self.baudrate = rospy.get_param("/science_board/serial/baudrate")
         # Mapping of device color to number
-        self.led_map = rospy.get_param("/led_map")
-        self.max_error_count = rospy.get_param("/science_info/max_error_count")
+        self.led_map = rospy.get_param("/science_board/led_map")
+        self.max_error_count = \
+            rospy.get_param("/science_board/info/max_error_count")
         # Mapping of onboard devices to MOSFET devices
         self.mosfet_dev_map: dict[str, int] = \
-            rospy.get_param("/mosfet_device_map")
+            rospy.get_param("/science_board/mosfet_device_map")
         self.nmea_handle_mapper = {
             "AUTOSHUTOFF": self.heater_auto_shut_off_handler,
             "HEATER": self.heater_state_handler,
@@ -55,10 +56,10 @@ class ScienceBridge():
             "TRIAD": rospy.Publisher(
                 'spectral_triad_data', Spectral, queue_size=1)
         }
-        self.sleep = rospy.get_param("/science_info/sleep")
-        self.timeout = rospy.get_param("/science_serial/timeout")
+        self.sleep = rospy.get_param("/science_board/info/sleep")
+        self.timeout = rospy.get_param("/science_board/serial/timeout")
         self.uart_transmit_msg_len = \
-            rospy.get_param("/science_info/uart_transmit_msg_len")
+            rospy.get_param("/science_board/info/uart_transmit_msg_len")
         self.uart_lock = threading.Lock()
 
     def __enter__(self) -> None:
@@ -66,7 +67,7 @@ class ScienceBridge():
         Opens a serial connection to the nucleo
         '''
         self.ser = serial.Serial(
-            port=rospy.get_param("/science_serial/port"),
+            port=rospy.get_param("/science_board/serial/port"),
             baudrate=self.baudrate,
             parity=serial.PARITY_NONE,
             stopbits=serial.STOPBITS_ONE,

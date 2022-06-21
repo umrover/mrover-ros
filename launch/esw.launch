@@ -2,13 +2,6 @@
   <!--
     Operate science board for Auton, ES, and Science missions.
   -->
-  <node name="science_board" pkg="mrover" type="science_board.py">
-    <!--
-      The serial port of the Jetson Science Nano is /dev/ttyTHS1
-      <param name="serial_port" value="/dev/ttyTHS1" />
-    -->
-    <!-- <param name="serial_port" type="str"  value="/dev/ttyTHS0" />-->
-  </node>
-  
-  <rosparam command="load" file="$(find mrover)/config/science_board_config.yaml" />
+  <node name="science_board" pkg="mrover" type="science_board.py"></node>
+  <rosparam command="load" file="$(find mrover)/config/science_board.yaml" />
 </launch>
