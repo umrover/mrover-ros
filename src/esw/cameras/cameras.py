@@ -24,7 +24,7 @@ class Mission(Enum):
 
 class Pipeline:
     """Every Pipeline object is control of streaming one
-    camera to its assigned port"""
+    camera to its assigned ip"""
     def __init__(
             self, arguments: list[str],
             current_mission_ip: str,
@@ -91,27 +91,41 @@ class Pipeline:
 
 class PipelineManager:
     def __init__(self) -> None:
-        self.resolution_arguments_map: dict[str, list[str]] = \
-            rospy.get_param("cameras/resolution_arguments")
+        self.resolution_arguments_map: dict[str, list[str]] = {}
+        for input_map in rospy.get_param("cameras/input").items():
+            quality = input_map['resolution']
+            self.resolution_arguments_map[quality] = \
+                input_map['arguments']
+
         self.default_mission = rospy.get_param("cameras/default_mission")
         self.max_video_device_id_number = \
             rospy.get_param("cameras/max_video_device_id_number")
-        self.mission_map = rospy.get_param("cameras/missions")
-        self.number_of_pipelines = \
+
+        self.mission_ips_map = {}
+        self.mission_resolution_map = {}
+        for missions_map in rospy.get_param("cameras/missions").items():
+            mission_name = missions_map['name']
+            self.mission_ips_map[mission_name] = missions_map['ips']
+            self.mission_resolution_map[mission_name] = \
+                missions_map['resolution']
+
+        self.current_mission = self.default_mission
+
+        self.arguments: list[str] = self.resolution_arguments_map[
+            self.mission_resolution_map[self.current_mission]['resolution']]
+        self.video_sources = [None] * self.max_video_device_id_number
+
+        number_of_pipelines = \
             rospy.get_param("cameras/number_of_pipelines")
         self.pipelines: list[Pipeline] = \
-            [None] * self.number_of_pipelines
-        self.current_mission = self.default_mission
-        self.current_mission_ips: list[str] = \
-            self.mission_map[self.current_mission]["ips"].values()
-        self.arguments: list[str] = self.resolution_arguments_map[
-            self.mission_map[self.current_mission]['resolution']]
-        self.video_sources = [None] * self.max_video_device_id_number
+            [None] * number_of_pipelines
+        self.active_cameras: list[Pipeline] = \
+            [-1] * number_of_pipelines
         for pipeline_number in range(len(self.pipelines)):
             self.pipelines[pipeline_number] = \
                 Pipeline(
                     self.arguments,
-                    self.current_mission_ips[pipeline_number],
+                    self.get_ip(pipeline_number),
                     pipeline_number)
 
     def update(self):
@@ -120,7 +134,7 @@ class PipelineManager:
                 success = pipeline.capture_and_render_image()
                 if not success:
                     print(f"Camera {pipeline_number} capture \
-                        on {self.current_mission_ips[pipeline_number]} \
+                        on {self.get_ip(pipeline_number)} \
                         failed. Stopping stream.")
                     failed_device_number = pipeline_number
                     pipeline.update_device_number(self.arguments, -1)
@@ -128,13 +142,14 @@ class PipelineManager:
                             pipeline_number, failed_device_number):
                         self.close_video_source(failed_device_number)
 
-    def start_pipeline(self, index: int, port: int) -> None:
-        """Takes in index as the camera device and port as which pipeline number.
+    def start_pipeline(self, index: int, pipeline_number: int) -> None:
+        """Takes in index as the camera device and pipeline_number
+        as which pipeline number.
         This assigns a camera device to that pipeline."""
-        self.pipelines[port].update_device_number(
+        self.pipelines[pipeline_number].update_device_number(
             self.arguments, index)
         print(f"Playing camera {index} on \
-            {self.current_mission_ips[port]}.")
+            {self.get_ip(pipeline_number)}.")
 
     def close_video_source(self, index: int) -> None:
         """The program will close the connection
@@ -157,6 +172,12 @@ class PipelineManager:
             # if the video source does not exist
             return False
 
+    def get_all_ips(self) -> list[str]:
+        return self.mission_ips_map[self.current_mission]["ips"]
+
+    def get_ip(self, pipeline_number: int) -> str:
+        return self.get_ips()[pipeline_number]
+
     def handle_change_camera_mission(
             self, req: ChangeCameraMissionRequest) -> \
             ChangeCameraMissionResponse:
@@ -165,18 +186,16 @@ class PipelineManager:
         mission_name = req.mission.lower()
         try:
             current_mission_request = mission_name
-            self.current_mission_ips = \
-                self.mission_map[current_mission_request]["ips"]
             self.arguments = self.resolution_arguments_map[
-                self.mission_map[current_mission_request]['resolution']]
+                self.mission_resolution_map[
+                    current_mission_request]['resolution']]
         except KeyError:
             # We may expect to catch an exception
             # if we do not recognize the ChangeCameraMission mission name
             current_mission_request = self.default_mission
-            self.current_mission_ips = \
-                self.mission_map[current_mission_request]["ips"]
             self.arguments = self.resolution_arguments_map[
-                self.mission_map[current_mission_request]['resolution']]
+                self.mission_resolution_map[
+                    current_mission_request]['resolution']]
             print(f"Invalid mission name, \
                 setting to {self.default_mission}")
 
@@ -193,7 +212,7 @@ class PipelineManager:
             if pipeline_number == 0 or pipeline_number == 1:
                 continue
             pipeline.update_video_output(
-                self.arguments, self.current_mission_ips[pipeline_number])
+                self.arguments, self.get_ip(pipeline_number))
 
         return ChangeCameraMissionResponse(self.current_mission)
 
@@ -202,16 +221,16 @@ class PipelineManager:
         """Handle/callback for changing cameras service"""
         requested_devices = req.cameras
 
-        for ip_number in range(len(self.current_mission_ips)):
-            # enumerate through self.current_mission_ips because
-            # the length of self.current_mission_ips is always less
+        for ip_number in range(len(self.get_all_ips())):
+            # enumerate through current_mission_ips because
+            # the length of current_mission_ips is always less
             # than the length of requested_devices.
             pipeline_number = ip_number
-            requested_port_device = requested_devices[pipeline_number]
+            requested_pipeline_device = requested_devices[pipeline_number]
             current_device_number = \
                 self.pipelines[pipeline_number].get_device_number()
 
-            if current_device_number == requested_port_device:
+            if current_device_number == requested_pipeline_device:
                 continue
 
             # check if we need to close current video source or not
@@ -219,16 +238,15 @@ class PipelineManager:
                     pipeline_number, current_device_number):
                 self.close_video_source(current_device_number)
 
-            success = self.create_video_source(requested_port_device)
+            success = self.create_video_source(requested_pipeline_device)
             if not success:
-                requested_port_device = -1
-            self.start_pipeline(requested_port_device, pipeline_number)
+                requested_pipeline_device = -1
+            self.start_pipeline(requested_pipeline_device, pipeline_number)
 
-        active_cameras = [-1] * self.number_of_pipelines
         for pipeline_number, pipeline in enumerate(self.pipelines):
-            active_cameras[pipeline_number] = pipeline.get_device_number()
+            self.active_cameras[pipeline_number] = pipeline.get_device_number()
 
-        return ChangeCamerasResponse(active_cameras)
+        return ChangeCamerasResponse(self.active_cameras)
 
     def pipeline_device_is_unique(
             self, excluded_pipeline: int, device_number: int) -> bool:
