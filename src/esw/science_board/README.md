@@ -4,10 +4,11 @@
 [Hardware](#hardware) \
 [Top-Level Code](#top-level-code) \
 [Configuration](#configuration) \
-[Services - Server](#services_-_server) \
-[Topics - Publisher](#topics_-_publisher) \
+[Services - Server](#services---server) \
+[Topics - Publisher](#topics---publisher) \
+[UART Messages](#uart-messages) \
 [TODO](#todo) \
-[TODO - ROS Migration](#todo_-_ros_migration)
+[TODO - ROS Migration](#todo---ros-migration)
 
 ---
 
@@ -73,74 +74,74 @@ STM32 chip.
 
 ## Services - Server
 
-**Change Arm Laser State [Server]** \
-Service: [ChangeDeviceState.srv](https://github.com/umrover/mrover-ros/blob/main/srv/ChangeDeviceState.srv) "change_arm_laser_state" \
+#### Change Arm Laser State
+Service: [`ChangeDeviceState.srv`](../../../srv/ChangeDeviceState.srv) "change_arm_laser_state" \
 Server: science_board \
 Client: gui \
 
-**Change Auton LED State [Server]** \
-Service: [ChangeAutonLEDState.srv](https://github.com/umrover/mrover-ros/blob/main/srv/ChangeAutonLEDState.srv)  "change_auton_led_state" \
+#### Change Auton LED State
+Service: [`ChangeAutonLEDState.srv`](../../../srv/ChangeAutonLEDState.srv) "change_auton_led_state" \
 Server: science_board \
 Client: teleop \
 
-**Change Heater Auto Shut Off State [Server]** \
-Service: [ChangeDeviceState.srv](https://github.com/umrover/mrover-ros/blob/main/srv/ChangeDeviceState.srv)  "change_heater_auto_shut_off" \
+#### Change Heater Auto Shut Off State
+Service: [`ChangeDeviceState.srv`](../../../srv/ChangeDeviceState.srv) "change_heater_auto_shut_off" \
 Server: science_board \
 Client: gui \
 
-**Change Heater State [Server]** \
-Service: [ChangeHeaterState.srv](https://github.com/umrover/mrover-ros/blob/main/srv/ChangeHeaterState.srv)  "change_heater_state" \
+#### Change Heater State
+Service: [`ChangeHeaterState.srv`](../../../srv/ChangeHeaterState.srv) "change_heater_state" \
 Server: science_board \
 Client: gui \
 
-**Change Servo Angles [Server]** \
-Service: [ChangeDeviceState.srv](https://github.com/umrover/mrover-ros/blob/main/srv/ChangeDeviceState.srv)  "change_servo_angles" \
+#### Change Servo Angles
+Service: [`ChangeDeviceState.srv`](../../../srv/ChangeDeviceState.srv) "change_servo_angles" \
 Server: science_board \
 Client: gui \
 
-**Change UV LED Carousel State [Server]** \
-Service: [ChangeDeviceState.srv](https://github.com/umrover/mrover-ros/blob/main/srv/ChangeDeviceState.srv) ) "change_uv_led_carousel" \
+#### Change UV LED Carousel State
+Service: [`ChangeDeviceState.srv`](../../../srv/ChangeDeviceState.srv) "change_uv_led_carousel" \
 Server: science_board \
 Client: gui \
 
-**Change UV LED End Effector State [Server]** \
-Service: [ChangeDeviceState.srv](https://github.com/umrover/mrover-ros/blob/main/srv/ChangeDeviceState.srv)  "change_uv_led_end_effector" \
+#### Change UV LED End Effector State
+Service: [`ChangeDeviceState.srv`](../../../srv/ChangeDeviceState.srv) "change_uv_led_end_effector" \
 Server: science_board \
 Client: gui \
 
-**Change White LED State [Server]** \
-Service: [ChangeDeviceState.srv](https://github.com/umrover/mrover-ros/blob/main/srv/ChangeDeviceState.srv)  "change_white_led" \
+#### Change White LED State
+Service: [`ChangeDeviceState.srv`](../../../srv/ChangeDeviceState.srv) "change_white_led" \
 Server: science_board \
 Client: gui \
 
 ## Topics - Publisher
 
-**Heater Auto Shut Off Data [Publisher]** \
-Messages: [Enable.msg](https://github.com/umrover/mrover-ros/blob/main/msg/Enable.msg) "heater_auto_shut_off_data" \
+#### Heater Auto Shut Off Data
+Messages: [`Enable.msg`](../../../msg/Enable.msg) "heater_auto_shut_off_data" \
 Publisher: science_board \
 Subscriber: gui
 
-**Heater State Data [Publisher]** \
-Messages: [Heater.msg](https://github.com/umrover/mrover-ros/blob/main/msg/Heater.msg) "heater_state_data" \
+#### Heater State Data
+Messages: [`Heater.msg`](../../../msg/Heater.msg) "heater_state_data" \
 Publisher: science_board \
 Subscriber: gui
 
-**Spectral Data [Publisher]** \
-Messages: [Spectral.msg](https://github.com/umrover/mrover-ros/blob/main/msg/Spectral.msg) "spectral_data" \
+#### Spectral Data
+Messages: [`Spectral.msg`](../../../msg/Spectral.msg) "spectral_data" \
 Publisher: science_board \
 Subscriber: gui
 
-**Spectral Triad Data [Publisher]** \
-Messages: [Spectral.msg](https://github.com/umrover/mrover-ros/blob/main/msg/Spectral.msg) "spectral_triad_data" \
+#### Spectral Triad Data
+Messages: [`Spectral.msg`](../../../msg/Spectral.msg) "spectral_triad_data" \
 Publisher: science_board \
 Subscriber: gui
 
-**Thermistor Data [Publisher]** \
-Messages: [Thermistor.msg](https://github.com/umrover/mrover-ros/blob/main/msg/Thermistor.msg) "thermistor_data" \
+#### Thermistor Data
+Messages: [`Thermistor.msg`](../../../msg/Thermistor.msg) "thermistor_data" \
 Publisher: science_board \
 Subscriber: gui
 
-### UART Messages
+## UART Messages
 
 **Heater Auto Shut Off Cmd/Data**
 Format of the UART NMEA command
