@@ -4,38 +4,70 @@ import numpy as np
 
 from context import Context
 from state import BaseState
+from waypoint import STOP_THRESH, DRIVE_FWD_THRESH, BaseWaypointState
+from drive import get_drive_command
 
 
-def gen_square_spiral_search_pattern(center: np.ndarray, spacing: float, coverage_radius: float) -> List[np.ndarray]:
-    """
-    Generates a square spiral search pattern around a center position, assumes rover is at the center position
-    :param center:          position to center spiral on (np.ndarray),
-    :param spacing:         distance in between each spiral (float)
-    :param coverage_radius: spiral covers at least this far out
-    :return:                list of positions for the rover to traverse List(np.ndarray)
-    """
-    # TODO: refactor
-    out = []
-    cur = center
-    cur_segment_len = spacing / 2
-    directions = [np.array(1, 0), np.array(0, -1), np.array(-1, 0), np.array(1, 0)]
-    direction_index = 0
-    while cur_segment_len <= coverage_radius:
-        next_point = cur + (cur_segment_len * directions[direction_index])
-        out.append(next_point)
-        cur_segment_len += spacing / 2
-        direction_index = (direction_index + 1) % len(directions)
-    return out
 
+SPIRAL_POINTS = 13
+SPIRAL_DISTANCE = 3.0
 
-class SearchState(BaseState):
+class SearchState(BaseWaypointState):
     def __init__(self, context: Context):
         super().__init__(
             context,
-            outcomes=['found_tag', 'finished_search'],
+            outcomes=['single_fiducial', 'done', 'search'],
             input_keys=['search_point_index', 'searchPoints'],
             output_keys=['search_point_index']
         )
+        self.search_path = None
+        self.cur_search_point_index = None
+
+    def gen_square_spiral_search_pattern(self, center: np.ndarray, points: int, distance: int) -> List[np.ndarray]:
+        """
+        Generates a square spiral search pattern around a center position, assumes rover is at the center position
+        :param center:          position to center spiral on (np.ndarray),
+        :param points:          number of points (int)
+        :param distance:        initial distance and increment (int)     
+        :return:                list of positions for the rover to traverse List(np.ndarray)
+        """
+        # TODO: refactor (I just copied the current spiral generation code for now but it needs to be npified)
+        directions = [(0, 1), (-1, 0), (0, -1), (1, 0)]
+        coordinates = [np.array([center[0], center[1], 0.0])]
+        new_distance = distance
+        for i in range(0, points):
+            coordinates.append(np.array([coordinates[-1][0]+new_distance*directions[i%4][0], coordinates[-1][1]+new_distance*directions[i % 4][1], 0.0]))
+            new_distance += (i % 2)*distance
+        return coordinates
+
 
     def evaluate(self, ud):
-        pass
+        #if first evaluation pass, generate the search pattern
+        if self.search_path == None:
+            print(self.rover_pose().position_vector())
+            self.search_path = self.gen_square_spiral_search_pattern(self.rover_pose().position_vector(), SPIRAL_POINTS, SPIRAL_DISTANCE)
+            self.cur_search_point_index = 0
+        
+        #we've completed the search and still haven't found the tag
+        if self.cur_search_point_index >=  len(self.search_path):
+            return 'done'
+
+        
+        #TODO actually get the fid pos lol (also check ID - should probably just abstract this)
+        fid_pos = None
+        #if we have seen the target, switch to the single_fiducial state
+        if fid_pos is not None:
+            self.search_path = None
+            return 'single_fiducial'
+
+
+        search_point = self.search_path[self.cur_search_point_index]
+        cmd_vel, arrived = get_drive_command(search_point, self.rover_pose(), STOP_THRESH, DRIVE_FWD_THRESH)
+        #move onto next search point
+        if arrived:
+            self.cur_search_point_index += 1
+        self.context.vel_cmd_publisher.publish(cmd_vel)
+        return 'search'
+
+
+

@@ -12,6 +12,7 @@ from geometry_msgs.msg import Twist
 from single_fiducial import SingleFiducialState
 from state import DoneState
 from waypoint import WaypointState
+from search import SearchState
 
 
 class Navigation(threading.Thread):
@@ -34,6 +35,7 @@ class Navigation(threading.Thread):
                     'waypoint_traverse': 'WaypointState',
                     'single_fiducial': 'SingleFiducialState',
                     'done': 'DoneState',
+                    'search':'SearchState'
                 },
             )
             self.state_machine.add(
@@ -41,7 +43,8 @@ class Navigation(threading.Thread):
                 transitions={
                     'waypoint_traverse': 'WaypointState',
                     'single_fiducial': 'SingleFiducialState',
-                    'done': 'DoneState'
+                    'done': 'DoneState',
+                    'search':'SearchState'
                 }
             )
             self.state_machine.add(
@@ -49,6 +52,15 @@ class Navigation(threading.Thread):
                 transitions={
                     'waypoint_traverse': 'WaypointState',
                     'done': 'DoneState'
+                }
+            )
+            self.state_machine.add(
+                'SearchState', SearchState(self.context),
+                transitions={
+                    'search':'SearchState',
+                    'done':'DoneState',
+                    'single_fiducial':'SingleFiducialState',
+                    'waypoint_traverse':'WaypointState'
                 }
             )
 

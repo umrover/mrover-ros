@@ -19,7 +19,7 @@ class BaseWaypointState(BaseState):
                  outcomes: List[str], input_keys: List[str], output_keys: List[str]):
         super().__init__(
             context,
-            outcomes + ['waypoint_traverse', 'single_fiducial', 'done'],
+            outcomes + ['waypoint_traverse', 'single_fiducial', 'done', 'search'],
             input_keys, output_keys
         )
 
@@ -65,6 +65,7 @@ class BaseWaypointState(BaseState):
             return 'done'
 
         # Go into the single fiducial state if we see it early
+        #TODO: check if ID's match
         if current_waypoint.fiducial_id != NO_FIDUCIAL and self.current_fid_pos(ud) is not None:
             return 'single_fiducial'
 
@@ -77,7 +78,7 @@ class BaseWaypointState(BaseState):
                     ud.waypoint_index += 1
                 else:
                     # We finished a waypoint associated with a fiducial id, but we have not seen it yet.
-                    return 'single_fiducial'
+                    return 'search'
             self.context.vel_cmd_publisher.publish(cmd_vel)
         except (tf2_ros.LookupException, tf2_ros.ConnectivityException, tf2_ros.ExtrapolationException):
             # TODO: probably go into some waiting state
