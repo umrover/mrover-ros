@@ -1,3 +1,5 @@
+#!/usr/bin/env python3
+
 """
 This file controls the cameras that the Jetson will stream.
 """
