@@ -117,34 +117,33 @@ Client: gui \
 ## Topics - Publisher
 
 #### Heater Auto Shut Off Data
-Messages: [`Enable.msg`](../../../msg/Enable.msg) "heater_auto_shut_off_data" \
+Message: [`Enable.msg`](../../../msg/Enable.msg) "heater_auto_shut_off_data" \
 Publisher: science_board \
 Subscriber: gui
 
 #### Heater State Data
-Messages: [`Heater.msg`](../../../msg/Heater.msg) "heater_state_data" \
+Message: [`Heater.msg`](../../../msg/Heater.msg) "heater_state_data" \
 Publisher: science_board \
 Subscriber: gui
 
 #### Spectral Data
-Messages: [`Spectral.msg`](../../../msg/Spectral.msg) "spectral_data" \
+Message: [`Spectral.msg`](../../../msg/Spectral.msg) "spectral_data" \
 Publisher: science_board \
 Subscriber: gui
 
 #### Spectral Triad Data
-Messages: [`Spectral.msg`](../../../msg/Spectral.msg) "spectral_triad_data" \
+Message: [`Spectral.msg`](../../../msg/Spectral.msg) "spectral_triad_data" \
 Publisher: science_board \
 Subscriber: gui
 
 #### Thermistor Data
-Messages: [`Thermistor.msg`](../../../msg/Thermistor.msg) "thermistor_data" \
+Message: [`Thermistor.msg`](../../../msg/Thermistor.msg) "thermistor_data" \
 Publisher: science_board \
 Subscriber: gui
 
 ## UART Messages
 
 #### Heater Auto Shut Off Cmd/Data
-Format of the UART NMEA command
 - `$AUTOSHUTOFF,<enable>,<extra padding>`
 - Cmd and data are 30 characters long
 - Enable is state of auto shut off feature
@@ -185,13 +184,9 @@ Format of the UART NMEA command
 - [ ] Move beaglebone stuff into config file
 - [ ] Test with ROS
 - [ ] Make sure messages and topics are consistent with the gui and teleop programs
-- [ ] Move self.MOSFET_DEV_MAP and self.ser into a config file
 
 ## TODO - ROS Migration
 - [ ] See if code builds in ROS
-- [ ] Check to see if we want to keep in scripts folder or src folder 
-(it's probably the src folder but this isn't a big change)
-- [ ] See if we need to include the files in some sort of launch file?
 - [ ] See if UART locks work. If they do not, maybe try to revert back to how it worked in 2022 code?
 Otherwise, need to deal with exception handling. If that does not work either, then look for another
 solution.
