@@ -43,6 +43,8 @@ STM32 chip to issue out the command.
 
 Locks exist to prevent two functions from trying to access the UART line at the same time
 
+---
+
 ## Configuration
 
 #### [`science_board.yaml`](../../../config/science_board.yaml)
@@ -71,6 +73,8 @@ You may choose to configure settings such as the maximum amount of errors permit
 the sleep duration, and the length of every UART message transmitted.
 The UART transmit message length must be consistent with the firmware flashed on the
 STM32 chip.
+
+---
 
 ## Services - Server
 
@@ -114,6 +118,8 @@ Service: [`ChangeDeviceState.srv`](../../../srv/ChangeDeviceState.srv) "change_w
 Server: science_board \
 Client: gui \
 
+---
+
 ## Topics - Publisher
 
 #### Heater Auto Shut Off Data
@@ -140,6 +146,8 @@ Subscriber: gui
 Message: [`Thermistor.msg`](../../../msg/Thermistor.msg) "thermistor_data" \
 Publisher: science_board \
 Subscriber: gui
+
+---
 
 ## UART Messages
 
@@ -178,12 +186,15 @@ Subscriber: gui
 - Data is 158 characters long
 - 18 channel data
 
+---
 
 ## TODO
 - [ ] Code clean up
 - [ ] Move beaglebone stuff into config file
 - [ ] Test with ROS
 - [ ] Make sure messages and topics are consistent with the gui and teleop programs
+
+---
 
 ## TODO - ROS Migration
 - [ ] See if code builds in ROS
