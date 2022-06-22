@@ -9,7 +9,7 @@ uint8_t ControllerMap::calculate_i2c_address(uint8_t nucleo, uint8_t channel) {
 // Initialization function
 void ControllerMap::init() {
     XmlRpc::XmlRpcValue root;
-    ros::param::get("motors", root);
+    ros::param::get("motors/controllers", root);
     for (int32_t i = 0; i < root.size(); ++i) {
         assert(root[i].hasMember("name") && root[i]["name"].getType() == XmlRpc::XmlRpcValue::TypeString);
         std::string name = static_cast<std::string>(root[i]["name"]);
