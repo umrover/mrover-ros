@@ -27,7 +27,7 @@ I2C.h is responsible for translating communications by virtual Controllers into 
 
 The following watchdog is implemented: If the nucleos do not receive any I2C messages for a given amount of time (currently about 443 ms), then they reset.
 
-### Subscribers
+### Topics - Subscribers
 
 #### Arm Closed Loop \[Subscriber\] "/arm_ik_cmd"
 Message: [ArmPosition.msg](https://github.com/umrover/mrover-ros/blob/main/msg/ArmPosition.msg) \
@@ -84,7 +84,7 @@ Message: [Signal.msg](https://github.com/umrover/mrover-ros/blob/main/msg/Signal
 Publisher: gui \
 Subscriber: src/motors
 
-### Publishers
+### Topics - Publishers
 
 #### Arm Joint B Calibration Data \[Publisher\] "/arm_b_calib_data"
 Message: [Calibrate.msg](https://github.com/umrover/mrover-ros/blob/main/msg/Calibrate.msg) \
