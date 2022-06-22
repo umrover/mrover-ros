@@ -47,21 +47,45 @@ Depending on which Jetson you use, you may not be able to stream as many cameras
 
 Still need to figure out a way to get camera streams onto the gui.
 
-### ToDo 
+### Error Handling
 
-- [ ] Map physical ports to video so cameras are known by default
-- [ ] Camera program freezes if USB is disconnected while streaming
+### If user requests a camera that does not exist
+If the user requests to view the stream from a device but it does not exist, then the code does not crash.
+Shown through an example, the behavior in the code is as follows: 
+In this example, a ChangeCameras service requests to view /dev/video5 on pipeline 0.
+The program will enter the service callback function handle_change_cameras and eventually
+enter the create_video_source function. 
+
+Here, one of the following may be happening (need to do more research but not high priority):
+
+1. It will throw an exception
+after attempting to create a jetson.utils.videoSource that is caught by
+an exception handler. Then, it will just assign no camera to it. 
+
+2. It creates the video source with ease. Then it leaves the service callback
+function. Once it heads into the capture_and_render_image function, an exception is caught
+once the jetson.utils.videoSource object is unable to run the capture function.
+
+### If the camera disconnects while the device is currently streaming
+Currently, if the camera disconnects while the user is streaming it, the program hangs. The current reason is unknown.
+To fix this, one should check where it hangs. If it hangs on the Capture function, then one should look into seeing if the video source is available first or not.
+
+The intended behavior is the following: An exception is caught on the Capture function. Then the program resumes as normal.
+
+Actual behavior: The program freezes (presumably on the Capture function).
+
+### ToDo 
+- [ ] Test the exact behavior for when "user requests a camera that does not exist" and update README and optimize code.
+- [ ] Map physical ports to video so cameras are known by default (low priority)
+- [ ] Fix how camera program freezes if USB is disconnected while streaming
 - [ ] Low priority - Get camera streams onto the gui
 
 ### ToDo - ROS Migration
-- [ ] Make sure there is error checking, make sure that MISSION_MAP has array number and error checking
 - [ ] Migrate basics of code that runs on Jetson
 - [ ] Migrate basics of code that runs on base station
 - [ ] Make sure stuff builds
 - [ ] Fix up README.md
 - [ ] Figure out how jetson-utils should be included in the system
-- [ ] Enforce that we pass linter
 
 ### ToDo - Pylint
 - [ ] Too general exceptions - Figure out what the exact exceptions are
-- [ ] Globals are bad
