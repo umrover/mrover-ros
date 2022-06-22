@@ -31,7 +31,7 @@ class SearchState(BaseWaypointState):
         :param distance:        initial distance and increment (int)     
         :return:                list of positions for the rover to traverse List(np.ndarray)
         """
-        # TODO: refactor (I just copied the current spiral generation code for now but it needs to be npified)
+        # TODO: refactor (I just copied the current spiral generation code for now but it needs to be vectorized)
         directions = [(0, 1), (-1, 0), (0, -1), (1, 0)]
         coordinates = [np.array([center[0], center[1], 0.0])]
         new_distance = distance
@@ -53,8 +53,8 @@ class SearchState(BaseWaypointState):
             return 'done'
 
         
-        #TODO actually get the fid pos lol (also check ID - should probably just abstract this)
-        fid_pos = None
+        #TODO: test
+        fid_pos = self.current_fid_pos(ud)
         #if we have seen the target, switch to the single_fiducial state
         if fid_pos is not None:
             self.search_path = None
