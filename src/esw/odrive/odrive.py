@@ -268,9 +268,9 @@ class ODriveBridge(object):
         self.speed_lock = threading.Lock()
         # This scales [0, 1] to [0, vel_cmd_mult] turns per second
         self.vel_cmd_mult_left: float = \
-            rospy.get_param("/odrive/info/vel_cmd_multiplier_left")
+            rospy.get_param("/odrive/multiplier/vel_cmd_multiplier_left")
         self.vel_cmd_mult_right: float = \
-            rospy.get_param("/odrive/info/vel_cmd_multiplier_right")
+            rospy.get_param("/odrive/multiplier/vel_cmd_multiplier_right")
         self.start_time = t.clock()
         self.state = DisconnectedState()
         self.state_pub = rospy.Publisher(
@@ -278,9 +278,9 @@ class ODriveBridge(object):
         self.usb_lock = threading.Lock()
         # This scales turns/sec to m/sec
         self.vel_est_mult_left: float = \
-            rospy.get_param("/odrive/info/vel_est_multiplier_left")
+            rospy.get_param("/odrive/multiplier/vel_est_multiplier_left")
         self.vel_est_mult_right: float = \
-            rospy.get_param("/odrive/info/vel_est_multiplier_right")
+            rospy.get_param("/odrive/multiplier/vel_est_multiplier_right")
         self.vel_pub = rospy.Publisher(
             'drive_vel_data', DriveVelData, queue_size=1)
         self.watchdog_timeout = \

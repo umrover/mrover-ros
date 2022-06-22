@@ -13,7 +13,7 @@ odrive:
     front: "335D36623539"
     middle: "335B36563539"
     back: "2066377F5753"
-  info:
+  multiplier:
     # Scales normalized inputs to max physical speed of rover in turn/s
     # The magnitude should be same for both wheels, but sign may differ
     # This scales [0, 1] units to [0, 50] turns per second
