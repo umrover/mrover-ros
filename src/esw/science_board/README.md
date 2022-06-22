@@ -1,35 +1,77 @@
-Code for the custom science Nucleo board to transmit and receive UART messages 
-======================================================================================
-### About
-Reads and parses NMEA like messages from the onboard 
-custom science Nucleo board to do various tasks such as
-operate the science box and get relevant data and also
-control the arm laser and auton LED array.
+## Table of Contents
 
-### Hardware
+[Project Overview](#project-overview) \
+[Hardware](#hardware) \
+[Top-Level Code](#top-level-code) \
+[Configuration](#configuration) \
+[Services - Server](#services_-_server) \
+[Topics - Publisher](#topics_-_publisher) \
+[TODO](#todo) \
+[TODO - ROS Migration](#todo_-_ros_migration)
+
+---
+
+## Project Overview
+The science_board codebase deals with reading and parsing NMEA like messages from the STM32 chip on the
+science PCB to complete tasks for almost every mission. These tasks
+include operating the science box and getting relevant data during the Science task,
+controlling the arm laser dring the Equipment Servicing task, and controlling
+the LED array used during the Autonomous Traversal task.
+
+---
+
+## Hardware
 - NVIDIA JetsonNX
-- STM32G050C8 custom board
+- PCB with a STM32G050C8 chip
 - RX/TX connection cables 
 
+---
 
-### Overview
-The science_board.py program will constantly read in UART messages from the Nucleo 
-and it will publish them to certain topics depending on the data received. 
-This program includes all the functions 
-and data needed for UART communication between the Jetson and the Nucleo. 
-It also has information on the configuration of the science, 
-including which devices map to which MOSFET devices.
+## Top Level Code
 
-In order for the user to control certain science devices 
-(such as heaters and various LEDs),
-there are services that have been made.
-The servers for these services run in science_board.py.
-The servers will transmit
-messages over UART if a client tries to talk with it.
+#### [`science_board.py`](./science_board.py)
+
+This program runs main.
+This reads NMEA like messages via UART from the STM32 chip and depending on the
+data received, it will publish the data to ROS topics.
+
+In order for the user to control devices such as heaters and various LEDs,
+this program acts as the server for various services. Upon receiving
+a service request, the program will send an NMEA like message via UART to the
+STM32 chip to issue out the command.
 
 Locks exist to prevent two functions from trying to access the UART line at the same time
 
-### Services - Server
+## Configuration
+
+#### [`science_board.yaml`](../../../config/science_board.yaml)
+
+This configuration file allows you to configure various things.
+
+#### LED Array to UART Mapping - science_board/led_map/
+
+You may choose to configure what number to pack
+into the UART message in order to get the particular color to appear on the
+LED Array. This must be consistent with the firmware flashed on the STM32 chip.
+
+#### Device to MOSFET Device Mapping - science_board/mosfet_device_map/
+
+You may choose to configure which device maps to which MOSFET device.
+This must be consistent to which MOSFET device the device is connected to electrically.
+
+#### UART Serial Info - science_board/serial/
+
+You may choose to configure the UART serial info, such as baudrate and timeout.
+The baudrate must be consistent with the firmware flased on the STM32 chip.
+
+#### Miscellaneous Info - science_board/info/
+
+You may choose to configure settings such as the maximum amount of errors permitted,
+the sleep duration, and the length of every UART message transmitted.
+The UART transmit message length must be consistent with the firmware flashed on the
+STM32 chip.
+
+## Services - Server
 
 **Change Arm Laser State [Server]** \
 Service: [ChangeDeviceState.srv](https://github.com/umrover/mrover-ros/blob/main/srv/ChangeDeviceState.srv) "change_arm_laser_state" \
@@ -71,7 +113,7 @@ Service: [ChangeDeviceState.srv](https://github.com/umrover/mrover-ros/blob/main
 Server: science_board \
 Client: gui \
 
-### Topics - Publisher
+## Topics - Publisher
 
 **Heater Auto Shut Off Data [Publisher]** \
 Messages: [Enable.msg](https://github.com/umrover/mrover-ros/blob/main/msg/Enable.msg) "heater_auto_shut_off_data" \
