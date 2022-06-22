@@ -7,13 +7,12 @@
 [Topics - Subscriber](#topics---subscriber) \
 [Topics - Publisher](#topics---publisher) \
 [Watchdog Timeout Period](#watchdog-timeout-period) \
-[States](#states) \
 [Setting Up a New ODrive](#setting-up-a-new-odrive) \
 [Changing the USB Permissions](#changing-the-usb-permissions) \
 [Calibrating The ODrive](#calibrating-the-odrive) \
 [ODrive Errors](#odrive-errors) \
 [USB Disconnects](#usb-disconnects) \
-[Debugging (on the Jetson)](#debugging--on-the-jetson-) \
+[Debugging (on the Jetson)](#debugging-on-the-jetson) \
 [Common Errors](#common-errors) \
 [TODO](#todo) \
 [TODO - ROS Migration](#todo---ros-migration)
@@ -47,11 +46,23 @@ and one thread to manage the watchdog.
 One ODriveBridge object is created in main to store all the configuration data and
 manage the states of the ODrive and various other behavior.
 
-#### State
+#### States
 
 The State object is kept track of in ODriveBridge.
 There are various types of States: ArmedState, DisconnectedState, and ErrorState.
 The State may change depending on the current ODriveEvent.
+
+#### Disconnected State
+
+In this state the program is searching for the ODrive by its ID number. Once it has found the ODrive, the state will immediately change to Armed.
+
+#### Armed State
+
+In this state the ODrive will respond to velocity commands until instructed otherwise or errors out.
+
+#### Error State
+
+In this state the ODrive has detected a system error and will reboot, going from Disconnected to Armed immediately.
 
 #### Event 
 
@@ -132,22 +143,6 @@ Subscriber: gui
 ## Watchdog Timeout Period
 
 1 second
-
----
-
-## States
-
-#### Disconnected State
-
-In this state the program is searching for the ODrive by its ID number. Once it has found the ODrive, the state will immediately change to Armed.
-
-#### Armed State
-
-In this state the ODrive will respond to velocity commands until instructed otherwise or errors out.
-
-#### Error State
-
-In this state the ODrive has detected a system error and will reboot, going from Disconnected to Armed immediately.
 
 ---
 
@@ -284,6 +279,8 @@ Make sure you are connected to wifi. \
 
 #### Other Errors
 Find someone on ESW. Or just go ahead and contact madcowswe himself.
+
+---
 
 ## TODO
 - [ ] Look into changing multiplier so config changes from [0, 1] to m/s and there is a different value for turns to meters
