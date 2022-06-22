@@ -11,7 +11,7 @@ main.cpp creates two threads to run an outgoing function and an incoming functio
 The outgoing function calls on the ROSHandler's handle_outgoing() function every millisecond
 The incoming function calls on the ROSHandler's handle_incoming() function continuously
 
-The ControllerMap class creates a hash table of virtual Controller objects from the config file located at "mrover-workspace/config_src/motors/controller_config.json".These virtual Controllers are used to contact the physical controller on the rover, across both RA/SA configurations.
+The ControllerMap class creates a hash table of virtual Controller objects from the config file located at "config/motors.yaml".These virtual Controllers are used to contact the physical controller on the rover, across both RA/SA configurations.
 
 The virtual Controller class is defined in Controller.h.\
 Virtual Controllers store information about various controller-specific parameters (such as encoder cpr)\
@@ -168,6 +168,8 @@ If two devices share the same i2c address but their functions are continuously c
 - [ ] Perhaps custom nucleos (to replace the current 3 nucleos taking up so much space)
 
 ### ToDo - ROS Migration
+- [ ] CREATE LAUNCH FILE SOMEHOW
+- [ ] FIX UP CONFIG AND CONTROLLERMAP.H ASAP
 - [ ] Use clang format (alt-shift-f on VSCode)
 - [ ] See how to fix meson.build (distinction between real main vs test)
 - [ ] Make sure project builds

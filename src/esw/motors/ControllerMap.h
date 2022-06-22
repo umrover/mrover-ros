@@ -1,10 +1,11 @@
 #ifndef CONTROLLER_MAP_H
 #define CONTROLLER_MAP_H
-#include "rapidjson/document.h"
 #include <fstream>
 #include <stdint.h>
 #include <string>
 #include <unordered_map>
+#include "ROSHandler.h"
+
 
 //Forward declaration of Controller class for compilation
 class Controller;
@@ -19,9 +20,6 @@ private:
 
     //Map of virtual controllers to supposed i2c addresses
     inline static std::unordered_map<std::string, uint8_t> name_map = std::unordered_map<std::string, uint8_t>();
-
-    //Helper function to get the path of the config file
-    static std::string get_config();
 
     //Helper function to calculate an i2c address based off of nucleo # and channel #
     static uint8_t calculate_i2c_address(uint8_t nucleo, uint8_t channel);
