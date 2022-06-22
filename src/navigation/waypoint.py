@@ -19,7 +19,8 @@ class BaseWaypointState(BaseState):
                  outcomes: List[str], input_keys: List[str], output_keys: List[str]):
         super().__init__(
             context,
-            outcomes + ['waypoint_traverse', 'single_fiducial', 'done', 'search'],
+            outcomes + ['waypoint_traverse',
+                        'single_fiducial', 'done', 'search'],
             input_keys, output_keys
         )
 
@@ -65,13 +66,15 @@ class BaseWaypointState(BaseState):
             return 'done'
 
         # Go into the single fiducial state if we see it early
-        #TODO: check if ID's match
+        # TODO: check if ID's match
         if current_waypoint.fiducial_id != NO_FIDUCIAL and self.current_fid_pos(ud) is not None:
             return 'single_fiducial'
 
         try:
-            waypoint_pos = self.waypoint_pose(ud.waypoint_index).position_vector()
-            cmd_vel, arrived = get_drive_command(waypoint_pos, self.rover_pose(), STOP_THRESH, DRIVE_FWD_THRESH)
+            waypoint_pos = self.waypoint_pose(
+                ud.waypoint_index).position_vector()
+            cmd_vel, arrived = get_drive_command(
+                waypoint_pos, self.rover_pose(), STOP_THRESH, DRIVE_FWD_THRESH)
             if arrived:
                 if current_waypoint.fiducial_id == NO_FIDUCIAL:
                     # We finished a regular waypoint, go onto the next one

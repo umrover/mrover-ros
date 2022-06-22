@@ -35,7 +35,7 @@ class Navigation(threading.Thread):
                     'waypoint_traverse': 'WaypointState',
                     'single_fiducial': 'SingleFiducialState',
                     'done': 'DoneState',
-                    'search':'SearchState'
+                    'search': 'SearchState'
                 },
             )
             self.state_machine.add(
@@ -44,7 +44,7 @@ class Navigation(threading.Thread):
                     'waypoint_traverse': 'WaypointState',
                     'single_fiducial': 'SingleFiducialState',
                     'done': 'DoneState',
-                    'search':'SearchState'
+                    'search': 'SearchState'
                 }
             )
             self.state_machine.add(
@@ -57,10 +57,10 @@ class Navigation(threading.Thread):
             self.state_machine.add(
                 'SearchState', SearchState(self.context),
                 transitions={
-                    'search':'SearchState',
-                    'done':'DoneState',
-                    'single_fiducial':'SingleFiducialState',
-                    'waypoint_traverse':'WaypointState'
+                    'search': 'SearchState',
+                    'done': 'DoneState',
+                    'single_fiducial': 'SingleFiducialState',
+                    'waypoint_traverse': 'WaypointState'
                 }
             )
 
