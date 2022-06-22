@@ -1,44 +1,44 @@
 cameras:
     resolution_arguments:
         "144":
-            headless: "--headless"
-            bitrate: "--bitrate=300000"
-            width: "--width=256"
-            height: "--height=144"
+            "--headless"
+            "--bitrate=300000"
+            "--width=256"
+            "--height=144"
         "360":
-            headless: "--headless"
-            bitrate: "--bitrate=800000"
-            width: "--width=480"
-            height: "--height=360"
+            "--headless"
+            "--bitrate=800000"
+            "--width=480"
+            "--height=360"
         "720":
-            headless: "--headless"
-            bitrate: "--bitrate=1800000"
-            width: "--width=1280"
-            height: "--height=720"
+            "--headless"
+            "--bitrate=1800000"
+            "--width=1280"
+            "--height=720"
     default_mission: "erd"
     max_video_device_id_number: 10
     missions:
         auton:
             ips:
-                ip_0: "10.0.0.1:5000"
-                ip_1: "10.0.0.1:5001"
+                "10.0.0.1:5000"
+                "10.0.0.1:5001"
             resolution: "144"
         erd:
             ips:
-                ip_0: "10.0.0.1:5000"
-                ip_1: "10.0.0.1:5001"
+                "10.0.0.1:5000"
+                "10.0.0.1:5001"
             resolution: "144"
         es:
             ips:
-                ip_0: "10.0.0.1:5000"
-                ip_1: "10.0.0.1:5001"
+                "10.0.0.1:5000"
+                "10.0.0.1:5001"
             resolution: "720"
         science:
             ips:
-                ip_0: "10.0.0.1:5000"
-                ip_1: "10.0.0.1:5001"
-                ip_2: "10.0.0.2:5000"
-                ip_3: "10.0.0.2:5001"
+                "10.0.0.1:5000"
+                "10.0.0.1:5001"
+                "10.0.0.2:5000"
+                "10.0.0.2:5001"
             resolution: "144"
     # If number_of_pipelines is changed,
     # then ChangeCameras.srv must be changed too

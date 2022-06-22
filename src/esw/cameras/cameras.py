@@ -91,7 +91,7 @@ class Pipeline:
 
 class PipelineManager:
     def __init__(self) -> None:
-        self.resolution_arguments_map: dict[str, list[str, str]] = \
+        self.resolution_arguments_map: dict[str, list[str]] = \
             rospy.get_param("cameras/resolution_arguments")
         self.default_mission = rospy.get_param("cameras/default_mission")
         self.max_video_device_id_number = \
@@ -105,8 +105,7 @@ class PipelineManager:
         self.current_mission_ips: list[str] = \
             self.mission_map[self.current_mission]["ips"].values()
         self.arguments: list[str] = self.resolution_arguments_map[
-            self.mission_map[self.current_mission]['resolution']
-            ].values()
+            self.mission_map[self.current_mission]['resolution']]
         self.video_sources = [None] * self.max_video_device_id_number
         for pipeline_number in range(len(self.pipelines)):
             self.pipelines[pipeline_number] = \
@@ -167,19 +166,17 @@ class PipelineManager:
         try:
             current_mission_request = mission_name
             self.current_mission_ips = \
-                self.mission_map[current_mission_request]["ips"].values()
+                self.mission_map[current_mission_request]["ips"]
             self.arguments = self.resolution_arguments_map[
-                self.mission_map[current_mission_request]['resolution']
-                ].values()
+                self.mission_map[current_mission_request]['resolution']]
         except KeyError:
             # We may expect to catch an exception
             # if we do not recognize the ChangeCameraMission mission name
             current_mission_request = self.default_mission
             self.current_mission_ips = \
-                self.mission_map[current_mission_request]["ips"].values()
+                self.mission_map[current_mission_request]["ips"]
             self.arguments = self.resolution_arguments_map[
-                self.mission_map[current_mission_request]['resolution']
-                ].values()
+                self.mission_map[current_mission_request]['resolution']]
             print(f"Invalid mission name, \
                 setting to {self.default_mission}")
 
