@@ -1,3 +1,5 @@
+#!/usr/bin/env python3
+
 """This code controls one ODrive.
 It takes in a command line argument (0, 1, or 2) to see which
 ODrive it is controlling. The numbers determine whether it is front, middle,
