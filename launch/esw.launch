@@ -1,4 +1,4 @@
 <launch>
-  <node name="aruco_detect" pkg="mrover" type="motors" />
+  <node name="motors" pkg="mrover" type="motors" />
   <rosparam command="load" file="$(find mrover)/config/motors.yaml" />
 </launch>
