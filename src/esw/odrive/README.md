@@ -283,6 +283,7 @@ Find someone on ESW. Or just go ahead and contact madcowswe himself.
 ---
 
 ## TODO
+- [ ] _usb_lock.acquire is called so many times... try to find a pattern
 - [ ] Look into changing multiplier so config changes from [0, 1] to m/s and there is a different value for turns to meters
 - [ ] Code clean up
 - [ ] Move beaglebone stuff into config file

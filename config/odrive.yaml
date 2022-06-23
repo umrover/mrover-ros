@@ -17,9 +17,9 @@ odrive:
     # Scales normalized inputs to max physical speed of rover in turn/s
     # The magnitude should be same for both wheels, but sign may differ
     # This scales [0, 1] units to [0, 50] turns per second
-    vel_cmd_multiplier_left: -50
-    vel_cmd_multiplier_right: 50
+    vel_cmd_multiplier_left: 50
+    vel_cmd_multiplier_right: -50
     # Multipier to turn turns/sec to m/s (for 2022 rover)
     # The magnitude should be same for both wheels, but sign may differ
-    vel_est_multiplier_left: 0.02513
-    vel_est_multiplier_right: -0.02513
+    vel_est_multiplier_left: -0.02513
+    vel_est_multiplier_right: 0.02513

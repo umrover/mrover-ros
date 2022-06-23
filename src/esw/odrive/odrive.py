@@ -306,10 +306,7 @@ class ODriveBridge(object):
         to be called for that to happen."""
         try:
             if self._get_state_string() == "Armed":
-                self._speed_lock.acquire()
-                self._left_speed = ros_msg.left
-                self._right_speed = ros_msg.right
-                self._speed_lock.release()
+                self._change_left_and_right_speed(ros_msg.left, ros_msg.right)
         except Exception:
             return
 
@@ -337,9 +334,7 @@ class ODriveBridge(object):
                     print("loss of comms")
                     previously_lost_comms = True
 
-                self._speed_lock.acquire()
-                self._left_speed = self._right_speed = 0.0
-                self._speed_lock.release()
+                self._change_left_and_right_speed(0.0, 0.0)
             elif previously_lost_comms:
                 previously_lost_comms = False
                 print("regained comms")
@@ -362,9 +357,16 @@ class ODriveBridge(object):
         """
 
         print("on event called, ODrive event:", event)
-
+        self._usb_lock.acquire()
         self._state = self._state.on_event(event, self._modrive)
+        self._usb_lock.release()
         self._publish_state_msg(self._get_state_string())
+
+    def _change_left_and_right_speed(self, left: float, right: float) -> None:
+        self._speed_lock.acquire()
+        self._left_speed = left
+        self._right_speed = right
+        self._speed_lock.release()
 
     def _connect(self) -> None:
         """This will attempt to connect to an ODrive.
@@ -397,13 +399,10 @@ class ODriveBridge(object):
         """Publishes the velocity and current
         data message over ROS of the requested axis"""
         ros_msg = DriveVelData()
-        direction_multiplier = -1
 
         self._usb_lock.acquire()
-        ros_msg.current_amps = self._modrive.get_measured_current(axis) * \
-            direction_multiplier
-        ros_msg.vel_m_s = self._modrive.get_vel_estimate_m_s(axis) * \
-            direction_multiplier
+        ros_msg.current_amps = self._modrive.get_measured_current(axis)
+        ros_msg.vel_m_s = self._modrive.get_vel_estimate_m_s(axis)
         self._usb_lock.release()
 
         # e.g. "back_left" or "middle_right" or "front_left"
@@ -440,17 +439,14 @@ class ODriveBridge(object):
                 self._usb_lock.release()
 
             except Exception:
+                # Enter this statement if unable to talk to ODrive.
                 if self._usb_lock.locked():
                     self._usb_lock.release()
                 errors = 0
-                self._usb_lock.acquire()
                 self._bridge_on_event(ODriveEvent.DISCONNECTED_ODRIVE_EVENT)
-                self._usb_lock.release()
 
             if errors:
-                self._usb_lock.acquire()
                 self._bridge_on_event(ODriveEvent.ODRIVE_ERROR_EVENT)
-                self._usb_lock.release()
                 return
 
             self._usb_lock.acquire()
@@ -460,14 +456,10 @@ class ODriveBridge(object):
 
         elif str(self._state) == "DisconnectedState":
             self._connect()
-            self._usb_lock.acquire()
             self._bridge_on_event(ODriveEvent.ARM_CMD_EVENT)
-            self._usb_lock.release()
 
         elif str(self._state) == "ErrorState":
-            self._usb_lock.acquire()
             self._bridge_on_event(ODriveEvent.ODRIVE_ERROR_EVENT)
-            self._usb_lock.release()
 
 
 def main():
