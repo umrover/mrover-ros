@@ -88,16 +88,14 @@ class ScienceBridge():
         '''
         self.ser.close()
 
-    def handle_change_arm_laser_state(
-            self, req: ChangeDeviceStateRequest
-            ) -> ChangeDeviceStateResponse:
+    def handle_change_arm_laser_state(self, req: ChangeDeviceStateRequest
+                                      ) -> ChangeDeviceStateResponse:
         """Handle/callback for changing arm laser state service"""
         success = self._send_mosfet_msg("arm_laser", req.enable)
         return ChangeDeviceStateResponse(success)
 
-    def handle_change_auton_led_state(
-            self, req: ChangeAutonLEDStateRequest
-            ) -> ChangeAutonLEDStateResponse:
+    def handle_change_auton_led_state(self, req: ChangeAutonLEDStateRequest
+                                      ) -> ChangeAutonLEDStateResponse:
         """Handle/callback for changing auton LED state service"""
         success = self._auton_led_transmit(req.color)
         return ChangeAutonLEDStateResponse(success)
@@ -109,36 +107,33 @@ class ScienceBridge():
         success = self._heater_auto_shut_off_transmit(req.enable)
         return ChangeDeviceStateResponse(success)
 
-    def handle_change_heater_state(
-            self, req: ChangeHeaterStateRequest
-            ) -> ChangeHeaterStateResponse:
+    def handle_change_heater_state(self, req: ChangeHeaterStateRequest
+                                   ) -> ChangeHeaterStateResponse:
         """Handle/callback for changing heater state service"""
         success = self._heater_transmit(req.device, req.color)
         return ChangeHeaterStateResponse(success)
 
-    def handle_change_servo_angles(
-            self, req: ChangeServoAnglesRequest
-            ) -> ChangeServoAnglesResponse:
+    def handle_change_servo_angles(self, req: ChangeServoAnglesRequest
+                                   ) -> ChangeServoAnglesResponse:
         """Handle/callback for changing servo angles service"""
         success = self._servo_transmit(req.angle_0, req.angle_1, req.angle_2)
         return ChangeServoAnglesResponse(success)
 
-    def handle_change_uv_led_carousel_state(
-            self, req: ChangeDeviceStateRequest
-            ) -> ChangeDeviceStateResponse:
+    def handle_change_uv_led_carousel_state(self, req: ChangeDeviceStateRequest
+                                            ) -> ChangeDeviceStateResponse:
         """Handle/callback for changing UV LED carousel state service"""
         success = self._send_mosfet_msg("uv_led_carousel", req.enable)
         return ChangeDeviceStateResponse(success)
 
-    def handle_change_uv_led_end_effector_state(
-            self, req: ChangeDeviceStateRequest) -> ChangeDeviceStateResponse:
+    def handle_change_uv_led_end_effector_state(self, req:
+                                                ChangeDeviceStateRequest
+                                                ) -> ChangeDeviceStateResponse:
         """Handle/callback for changing UV LED end effector state service"""
         success = self._send_mosfet_msg("uv_led_end_effector", req.enable)
         return ChangeDeviceStateResponse(success)
 
-    def handle_change_white_led_state(
-            self, req: ChangeDeviceStateRequest
-            ) -> ChangeDeviceStateResponse:
+    def handle_change_white_led_state(self, req: ChangeDeviceStateRequest
+                                      ) -> ChangeDeviceStateResponse:
         """Handle/callback for changing white LED state service"""
         success = self._send_mosfet_msg("white_led", req.enable)
         return ChangeDeviceStateResponse(success)
@@ -182,8 +177,8 @@ class ScienceBridge():
         tx_msg = f"$MOSFET,{device},{enable}"
         return tx_msg
 
-    def _heater_auto_shut_off_handler(
-            self, tx_msg: str, ros_msg: Enable) -> None:
+    def _heater_auto_shut_off_handler(self, tx_msg: str, ros_msg: Enable
+                                      ) -> None:
         """Handles a received heater auto shut off message"""
         # tx_msg format: <"$AUTOSHUTOFF,device,enable">
         arr = tx_msg.split(",")
@@ -196,8 +191,7 @@ class ScienceBridge():
         success = self._send_msg(tx_msg)
         return success
 
-    def _heater_state_handler(
-            self, tx_msg: str, ros_msg: Heater) -> None:
+    def _heater_state_handler(self, tx_msg: str, ros_msg: Heater) -> None:
         """Handles a received heater state message"""
         # tx_msg format: <"$HEATER,device,enable">
         arr = tx_msg.split(",")
@@ -250,15 +244,15 @@ class ScienceBridge():
             print("_send_msg exception:", exc)
         return False
 
-    def _servo_transmit(
-            self, angle_0: float, angle_1: float, angle_2: float) -> bool:
+    def _servo_transmit(self, angle_0: float, angle_1: float, angle_2: float
+                        ) -> bool:
         """Transmits a servo angle command message"""
         tx_msg = f"$SERVO,{angle_0},{angle_1},{angle_2}"
         success = self._send_msg(tx_msg)
         return success
 
-    def _spectral_handler(
-            self, msg: str, ros_msg: Spectral) -> None:
+    def _spectral_handler(self, msg: str, ros_msg: Spectral
+                          ) -> None:
         """Handles a received spectral data message"""
         msg.split(',')
         arr = [s.strip().strip('\x00') for s in msg.split(',')]
@@ -277,16 +271,14 @@ class ScienceBridge():
                 setattr(ros_msg, var, 0)
             count += 2
 
-    def _thermistor_handler(
-            self, tx_msg: str, ros_msg: Thermistor) -> None:
+    def _thermistor_handler(self, tx_msg: str, ros_msg: Thermistor) -> None:
         """Handles a receieved thermistor data message"""
         arr = tx_msg.split(",")
         ros_msg.temp_0 = float(arr[1])
         ros_msg.temp_1 = float(arr[2])
         ros_msg.temp_2 = float(arr[3])
 
-    def _triad_handler(
-            self, msg: str, ros_msg: Spectral) -> None:
+    def _triad_handler(self, msg: str, ros_msg: Spectral) -> None:
         """Handles a received triad data message"""
         msg.split(',')
         arr = [s.strip().strip('\x00') for s in msg.split(',')]
