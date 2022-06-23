@@ -44,8 +44,8 @@ class Modrive:
     and command the ODrive."""
     _odrive: Any
     _axes: Any
-    _axis_vel_command_multiplier_map: dict[str, float]
-    _axis_vel_estimate_multiplier_map: dict[str, float]
+    _axis_vel_cmd_mult_map: dict[str, float]
+    _axis_vel_est_mult_map: dict[str, float]
     _watchdog_timeout: float
 
     def __init__(self, odr, axis_0_str: str, axis_1_str: str):
@@ -61,14 +61,14 @@ class Modrive:
             axis_map[1]: self._odrive.axis1}
 
         # This scales [0, 1] to [0, vel_cmd_mult] turns per second
-        self._axis_vel_command_multiplier_map = {
+        self._axis_vel_cmd_mult_map = {
             'left': rospy.get_param(
                 "/odrive/multiplier/vel_cmd_multiplier_left"),
             'right': rospy.get_param(
                 "/odrive/multiplier/vel_cmd_multiplier_right")}
 
         # This scales turns/sec to m/sec
-        self._axis_vel_estimate_multiplier_map = {
+        self._axis_vel_est_mult_map = {
             'left': rospy.get_param(
                 "/odrive/multiplier/vel_est_multiplier_left"),
             'right': rospy.get_param(
@@ -88,8 +88,8 @@ class Modrive:
 
     def check_errors(self) -> bool:
         """Returns value of sum of errors"""
-        return self._axes['left'].error + \
-            self._axes['right'].error != 0
+        return (self._axes['left'].error
+                + self._axes['right'].error != 0)
 
     def disarm(self) -> None:
         """Disarms the ODrive and sets the velocity to 0"""
@@ -110,8 +110,8 @@ class Modrive:
     def get_vel_estimate_m_s(self, axis: str) -> float:
         """Returns the estimated velocity of
         the requested axis of the ODrive"""
-        return self._axes[axis].encoder.vel_estimate * \
-            self._axis_vel_estimate_multiplier_map[axis]
+        return (self._axes[axis].encoder.vel_estimate
+                * self._axis_vel_est_mult_map[axis])
 
     def reset_watchdog(self) -> None:
         """This resets the watchdog of the ODrives.
@@ -135,8 +135,7 @@ class Modrive:
     def set_vel(self, axis: str, vel: float) -> None:
         """Sets the requested ODrive axis to run the
         motors at the requested velocity"""
-        desired_input_vel_turns_s = vel * \
-            self._axis_vel_command_multiplier_map[axis]
+        desired_input_vel_turns_s = vel * self._axis_vel_cmd_mult_map[axis]
         self._axes[axis].controller.input_vel = desired_input_vel_turns_s
 
     def watchdog_feed(self) -> None:
@@ -344,10 +343,8 @@ class ODriveBridge(object):
                 if self._usb_lock.locked():
                     self._usb_lock.release()
 
-                self._usb_lock.acquire()
                 self._bridge_on_event(
                     ODriveEvent.DISCONNECTED_ODRIVE_EVENT)
-                self._usb_lock.release()
 
     def _bridge_on_event(self, event: ODriveEvent) -> None:
         """
