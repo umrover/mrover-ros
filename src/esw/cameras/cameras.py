@@ -136,38 +136,23 @@ class PipelineManager:
         for pipeline_number in range(len(self._pipelines)):
             self._pipelines[pipeline_number] = Pipeline(
                 self._arguments,
-                self.get_ip(pipeline_number))
+                self._get_ip(pipeline_number))
 
-    def update(self):
-        for pipeline_number, pipeline in enumerate(self._pipelines):
-            if pipeline.is_currently_streaming():
-                success = pipeline.capture_and_render_image()
-                if not success:
-                    print(f"Camera {pipeline_number} capture \
-                        on {self.get_ip(pipeline_number)} \
-                        failed. Stopping stream.")
-                    failed_device_number = pipeline_number
-                    pipeline.update_device_number(
-                        self._arguments, -1, self._video_sources)
-                    if self.pipeline_device_is_unique(
-                            pipeline_number, failed_device_number):
-                        self.close_video_source(failed_device_number)
-
-    def start_pipeline(self, index: int, pipeline_number: int) -> None:
+    def _start_pipeline(self, index: int, pipeline_number: int) -> None:
         """Takes in index as the camera device and pipeline_number
         as which pipeline number.
         This assigns a camera device to that pipeline."""
         self._pipelines[pipeline_number].update_device_number(
             self._arguments, index, self._video_sources)
         print(f"Playing camera {index} on \
-            {self.get_ip(pipeline_number)}.")
+            {self._get_ip(pipeline_number)}.")
 
-    def close_video_source(self, index: int) -> None:
+    def _close_video_source(self, index: int) -> None:
         """The program will close the connection
         to the video camera at index"""
         self._video_sources[index] = None
 
-    def create_video_source(self, index: int) -> bool:
+    def _create_video_source(self, index: int) -> bool:
         """The program will open a connection to the video camera at index
         unless it does not exist. It returns a bool representing
         whether or not the request was a success."""
@@ -183,11 +168,39 @@ class PipelineManager:
             # if the video source does not exist
             return False
 
-    def get_all_ips(self) -> List[str]:
+    def _get_all_ips(self) -> List[str]:
         return self._mission_ips_map[self._current_mission]
 
-    def get_ip(self, pipeline_number: int) -> str:
-        return self.get_all_ips()[pipeline_number]
+    def _get_ip(self, pipeline_number: int) -> str:
+        return self._get_all_ips()[pipeline_number]
+
+    def _pipeline_device_is_unique(
+            self, excluded_pipeline: int, device_number: int) -> bool:
+        """This function checks whether excluded_pipeline is the
+        only pipeline streaming device device_number.
+        This function is used to check if any of the other
+        pipelines are using the current device."""
+        for pipeline_number, pipeline in enumerate(self._pipelines):
+            if pipeline_number == excluded_pipeline:
+                continue
+            if pipeline.get_device_number() == device_number:
+                return False
+        return True
+
+    def update(self):
+        for pipeline_number, pipeline in enumerate(self._pipelines):
+            if pipeline.is_currently_streaming():
+                success = pipeline.capture_and_render_image()
+                if not success:
+                    print(f"Camera {pipeline_number} capture \
+                        on {self._get_ip(pipeline_number)} \
+                        failed. Stopping stream.")
+                    failed_device_number = pipeline_number
+                    pipeline.update_device_number(
+                        self._arguments, -1, self._video_sources)
+                    if self._pipeline_device_is_unique(
+                            pipeline_number, failed_device_number):
+                        self._close_video_source(failed_device_number)
 
     def handle_change_camera_mission(
             self, req: ChangeCameraMissionRequest) \
@@ -221,7 +234,7 @@ class PipelineManager:
             if pipeline_number == 0 or pipeline_number == 1:
                 continue
             pipeline.update_video_output(
-                self._arguments, self.get_ip(pipeline_number))
+                self._arguments, self._get_ip(pipeline_number))
 
         return ChangeCameraMissionResponse(self._current_mission)
 
@@ -230,7 +243,7 @@ class PipelineManager:
         """Handle/callback for changing cameras service"""
         requested_devices = req.cameras
 
-        for ip_number in range(len(self.get_all_ips())):
+        for ip_number in range(len(self._get_all_ips())):
             # enumerate through current_mission_ips because
             # the length of current_mission_ips is always less
             # than the length of requested_devices.
@@ -243,33 +256,20 @@ class PipelineManager:
                 continue
 
             # check if we need to close current video source or not
-            if self.pipeline_device_is_unique(
+            if self._pipeline_device_is_unique(
                     pipeline_number, current_device_number):
-                self.close_video_source(current_device_number)
+                self._close_video_source(current_device_number)
 
-            success = self.create_video_source(requested_pipeline_device)
+            success = self._create_video_source(requested_pipeline_device)
             if not success:
                 requested_pipeline_device = -1
-            self.start_pipeline(requested_pipeline_device, pipeline_number)
+            self._start_pipeline(requested_pipeline_device, pipeline_number)
 
         for pipeline_number, pipeline in enumerate(self._pipelines):
             self._active_cameras[
                 pipeline_number] = pipeline.get_device_number()
 
         return ChangeCamerasResponse(self._active_cameras)
-
-    def pipeline_device_is_unique(
-            self, excluded_pipeline: int, device_number: int) -> bool:
-        """This function checks whether excluded_pipeline is the
-        only pipeline streaming device device_number.
-        This function is used to check if any of the other
-        pipelines are using the current device."""
-        for pipeline_number, pipeline in enumerate(self._pipelines):
-            if pipeline_number == excluded_pipeline:
-                continue
-            if pipeline.get_device_number() == device_number:
-                return False
-        return True
 
 
 def main():
