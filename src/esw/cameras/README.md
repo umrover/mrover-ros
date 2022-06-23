@@ -75,6 +75,7 @@ The intended behavior is the following: An exception is caught on the Capture fu
 Actual behavior: The program freezes (presumably on the Capture function).
 
 ### ToDo 
+- [ ] Make sure that code makes logical sense... I'm reading through logic and head hurts
 - [ ] Test the exact behavior for when "user requests a camera that does not exist" and update README and optimize code.
 - [ ] Map physical ports to video so cameras are known by default (low priority)
 - [ ] Fix how camera program freezes if USB is disconnected while streaming
