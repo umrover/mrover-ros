@@ -69,8 +69,8 @@ The baudrate must be consistent with the firmware flased on the STM32 chip.
 
 #### Miscellaneous Info - science_board/info/
 
-You may choose to configure settings such as the maximum amount of errors permitted,
-the sleep duration, and the length of every UART message transmitted.
+You may choose to configure settings such as
+the sleep duration and the length of every UART message transmitted.
 The UART transmit message length must be consistent with the firmware flashed on the
 STM32 chip.
 
@@ -179,7 +179,7 @@ Subscriber: gui
 #### Thermistor Data
 - `$THERMISTOR,<temp0>,<temp1>,<temp2>,<extra padding>`
 - Data is 155 characters long
-- Temperature is in celsius
+- Temperature is in Celsius
 
 #### Triad Data
 - `$TRIAD, d0_msb_ch0, d0_lsb_ch0, d0_msb_ch1, d0_lsb_ch1, d0_msb_ch2, d0_lsb_ch2, d0_msb_ch3, d0_lsb_ch3, d0_msb_ch4, d0_lsb_ch4, d0_msb_ch5, d0_lsb_ch5, d1_msb_ch0, d1_lsb_ch0, d1_msb_ch1, d1_lsb_ch1, d1_msb_ch2, d1_lsb_ch2, d1_msb_ch3, d1_lsb_ch3, d1_msb_ch4, d1_lsb_ch4, d1_msb_ch5, d1_lsb_ch5,  d2_msb_ch0, d2_lsb_ch0, d2_msb_ch1, d2_lsb_ch1, d2_msb_ch2, d2_lsb_ch2, d2_msb_ch3, d2_lsb_ch3, d2_msb_ch4, d2_lsb_ch4, d2_msb_ch5, d2_lsb_ch5,<extra padding>`

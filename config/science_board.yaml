@@ -18,6 +18,5 @@ science_board:
     timeout: 0
     port: "/dev/ttyTHS0"
   info:
-    max_error_count: 20
     sleep: 0.01
     uart_transmit_msg_len: 30
