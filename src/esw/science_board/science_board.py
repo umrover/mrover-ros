@@ -5,7 +5,7 @@ Writes, reads and parses NMEA like messages from the onboard
 science Nucleo to operate the science boxes and get relevant data
 '''
 import threading
-from typing import Any
+from typing import Any, Callable
 
 import numpy as np
 import rospy
@@ -23,7 +23,7 @@ class ScienceBridge():
     """ScienceBridge class"""
     _led_map: dict[str, int]
     _mosfet_dev_map: dict[str, int]
-    _nmea_handle_mapper: dict[str, function]
+    _nmea_handle_mapper: dict[str, Callable]
     _nmea_message_mapper: dict[str, Any]
     _nmea_publisher_mapper: dict[str, rospy.Publisher]
     _sleep: float
@@ -34,8 +34,8 @@ class ScienceBridge():
         # Mapping of device color to number
         self._led_map = rospy.get_param("/science_board/led_map")
         # Mapping of onboard devices to MOSFET devices
-        self._mosfet_dev_map = \
-            rospy.get_param("/science_board/mosfet_device_map")
+        self._mosfet_dev_map = rospy.get_param(
+            "/science_board/mosfet_device_map")
         self._nmea_handle_mapper = {
             "AUTOSHUTOFF": self._heater_auto_shut_off_handler,
             "HEATER": self._heater_state_handler,
@@ -63,8 +63,8 @@ class ScienceBridge():
                 'spectral_triad_data', Spectral, queue_size=1)
         }
         self._sleep = rospy.get_param("/science_board/info/sleep")
-        self._uart_transmit_msg_len = \
-            rospy.get_param("/science_board/info/_uart_transmit_msg_len")
+        self._uart_transmit_msg_len = rospy.get_param(
+            "/science_board/info/_uart_transmit_msg_len")
         self._uart_lock = threading.Lock()
 
     def __enter__(self) -> None:
@@ -148,7 +148,7 @@ class ScienceBridge():
             msg = self.ser.readline()
             self._uart_lock.release()
             return str(msg)
-        except serial.SerialException as exc:
+        except serial.SerialException:
             if self._uart_lock.locked():
                 self._uart_lock.release()
             print("Errored")
@@ -237,43 +237,43 @@ class ScienceBridge():
             count += 2
 
     def handle_change_arm_laser_state(
-            self, req: ChangeDeviceStateRequest) -> \
-            ChangeDeviceStateResponse:
+            self, req: ChangeDeviceStateRequest
+            ) -> ChangeDeviceStateResponse:
         """Handle/callback for changing arm laser state service"""
         success = self._send_mosfet_msg("arm_laser", req.enable)
         return ChangeDeviceStateResponse(success)
 
     def handle_change_auton_led_state(
-            self, req: ChangeAutonLEDStateRequest) -> \
-            ChangeAutonLEDStateResponse:
+            self, req: ChangeAutonLEDStateRequest
+            ) -> ChangeAutonLEDStateResponse:
         """Handle/callback for changing auton LED state service"""
         success = self._auton_led_transmit(req.color)
         return ChangeAutonLEDStateResponse(success)
 
     def handle_change_heater_auto_shut_off_state(
-            self, req: ChangeDeviceStateRequest) -> \
-            ChangeDeviceStateResponse:
+            self, req: ChangeDeviceStateRequest
+            ) -> ChangeDeviceStateResponse:
         """Handle/callback for changing heater auto shut off state service"""
         success = self._heater_auto_shut_off_transmit(req.enable)
         return ChangeDeviceStateResponse(success)
 
     def handle_change_heater_state(
-            self, req: ChangeHeaterStateRequest) -> \
-            ChangeHeaterStateResponse:
+            self, req: ChangeHeaterStateRequest
+            ) -> ChangeHeaterStateResponse:
         """Handle/callback for changing heater state service"""
         success = self._heater_transmit(req.device, req.color)
         return ChangeHeaterStateResponse(success)
 
     def handle_change_servo_angles(
-            self, req: ChangeServoAnglesRequest) -> \
-            ChangeServoAnglesResponse:
+            self, req: ChangeServoAnglesRequest
+            ) -> ChangeServoAnglesResponse:
         """Handle/callback for changing servo angles service"""
         success = self._servo_transmit(req.angle_0, req.angle_1, req.angle_2)
         return ChangeServoAnglesResponse(success)
 
     def handle_change_uv_led_carousel_state(
-            self, req: ChangeDeviceStateRequest) -> \
-            ChangeDeviceStateResponse:
+            self, req: ChangeDeviceStateRequest
+            ) -> ChangeDeviceStateResponse:
         """Handle/callback for changing UV LED carousel state service"""
         success = self._send_mosfet_msg("uv_led_carousel", req.enable)
         return ChangeDeviceStateResponse(success)
@@ -285,8 +285,8 @@ class ScienceBridge():
         return ChangeDeviceStateResponse(success)
 
     def handle_change_white_led_state(
-            self, req: ChangeDeviceStateRequest) -> \
-            ChangeDeviceStateResponse:
+            self, req: ChangeDeviceStateRequest
+            ) -> ChangeDeviceStateResponse:
         """Handle/callback for changing white LED state service"""
         success = self._send_mosfet_msg("white_led", req.enable)
         return ChangeDeviceStateResponse(success)
