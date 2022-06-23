@@ -403,7 +403,7 @@ class ODriveBridge(object):
         self._usb_lock.release()
 
         # e.g. "back_left" or "middle_right" or "front_left"
-        ros_msg.wheel = self._pair + "_" + axis
+        ros_msg.wheel = f'{self.pair}_{axis}'
 
         self._vel_pub.publish(ros_msg)
 
@@ -420,7 +420,7 @@ class ODriveBridge(object):
         ros_msg.state = state
         ros_msg.pair = self._pair
         self._state_pub.publish(ros_msg)
-        print("changed state to " + state)
+        print(f'changed state to {state}')
 
     def _update(self) -> None:
         """Depending on the current state, it will change the action.
@@ -463,7 +463,7 @@ def main():
     """In main, the ros_publish_data_loop and
     rospy drive_vel_cmd subscriber thread
     and watchdog_while_loop all run simultaneously"""
-    rospy.init_node("odrive_" + str(int(sys.argv[1])))
+    rospy.init_node(f"odrive_{int(sys.argv[1])}")
 
     bridge = ODriveBridge()
 
