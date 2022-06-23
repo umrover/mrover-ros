@@ -193,6 +193,10 @@ Subscriber: gui
 - [ ] Move beaglebone stuff into config file
 - [ ] Test with ROS
 - [ ] Make sure messages and topics are consistent with the gui and teleop programs
+- [ ] Perhaps make it so that if there is a hardware mapping problem,
+it can be fixed in the config instead of reflashing the firmware (would prob make
+life easier if there is a map issue... only problem is that you'll need
+to rewrite logic for auto shutoff which can be annoying.)
 
 ---
 

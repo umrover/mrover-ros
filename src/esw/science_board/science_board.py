@@ -88,6 +88,77 @@ class ScienceBridge():
         '''
         self.ser.close()
 
+    def handle_change_arm_laser_state(
+            self, req: ChangeDeviceStateRequest
+            ) -> ChangeDeviceStateResponse:
+        """Handle/callback for changing arm laser state service"""
+        success = self._send_mosfet_msg("arm_laser", req.enable)
+        return ChangeDeviceStateResponse(success)
+
+    def handle_change_auton_led_state(
+            self, req: ChangeAutonLEDStateRequest
+            ) -> ChangeAutonLEDStateResponse:
+        """Handle/callback for changing auton LED state service"""
+        success = self._auton_led_transmit(req.color)
+        return ChangeAutonLEDStateResponse(success)
+
+    def handle_change_heater_auto_shut_off_state(
+            self, req: ChangeDeviceStateRequest
+            ) -> ChangeDeviceStateResponse:
+        """Handle/callback for changing heater auto shut off state service"""
+        success = self._heater_auto_shut_off_transmit(req.enable)
+        return ChangeDeviceStateResponse(success)
+
+    def handle_change_heater_state(
+            self, req: ChangeHeaterStateRequest
+            ) -> ChangeHeaterStateResponse:
+        """Handle/callback for changing heater state service"""
+        success = self._heater_transmit(req.device, req.color)
+        return ChangeHeaterStateResponse(success)
+
+    def handle_change_servo_angles(
+            self, req: ChangeServoAnglesRequest
+            ) -> ChangeServoAnglesResponse:
+        """Handle/callback for changing servo angles service"""
+        success = self._servo_transmit(req.angle_0, req.angle_1, req.angle_2)
+        return ChangeServoAnglesResponse(success)
+
+    def handle_change_uv_led_carousel_state(
+            self, req: ChangeDeviceStateRequest
+            ) -> ChangeDeviceStateResponse:
+        """Handle/callback for changing UV LED carousel state service"""
+        success = self._send_mosfet_msg("uv_led_carousel", req.enable)
+        return ChangeDeviceStateResponse(success)
+
+    def handle_change_uv_led_end_effector_state(
+            self, req: ChangeDeviceStateRequest) -> ChangeDeviceStateResponse:
+        """Handle/callback for changing UV LED end effector state service"""
+        success = self._send_mosfet_msg("uv_led_end_effector", req.enable)
+        return ChangeDeviceStateResponse(success)
+
+    def handle_change_white_led_state(
+            self, req: ChangeDeviceStateRequest
+            ) -> ChangeDeviceStateResponse:
+        """Handle/callback for changing white LED state service"""
+        success = self._send_mosfet_msg("white_led", req.enable)
+        return ChangeDeviceStateResponse(success)
+
+    def receive(self) -> None:
+        """Reads in a message from the UART RX line and processes it"""
+        tx_msg = self._read_msg()
+        match_found = False
+        for tag, handler_func in self._nmea_handle_mapper.items():
+            if tag in tx_msg:
+                print(tx_msg)
+                match_found = True
+                handler_func(tx_msg, self._nmea_message_mapper[tag])
+                self._nmea_publisher_mapper[tag].publish(
+                    self._nmea_message_mapper[tag])
+                break
+        if (not match_found) and (not tx_msg):
+            print(f'Error decoding message stream: {tx_msg}')
+        rospy.sleep(self._sleep)
+
     def _add_padding(self, tx_msg: str) -> str:
         """Used to add padding since UART messages must be of certain length"""
         while len(tx_msg) < self._uart_transmit_msg_len:
@@ -235,77 +306,6 @@ class ScienceBridge():
             else:
                 setattr(ros_msg, var, 0)
             count += 2
-
-    def handle_change_arm_laser_state(
-            self, req: ChangeDeviceStateRequest
-            ) -> ChangeDeviceStateResponse:
-        """Handle/callback for changing arm laser state service"""
-        success = self._send_mosfet_msg("arm_laser", req.enable)
-        return ChangeDeviceStateResponse(success)
-
-    def handle_change_auton_led_state(
-            self, req: ChangeAutonLEDStateRequest
-            ) -> ChangeAutonLEDStateResponse:
-        """Handle/callback for changing auton LED state service"""
-        success = self._auton_led_transmit(req.color)
-        return ChangeAutonLEDStateResponse(success)
-
-    def handle_change_heater_auto_shut_off_state(
-            self, req: ChangeDeviceStateRequest
-            ) -> ChangeDeviceStateResponse:
-        """Handle/callback for changing heater auto shut off state service"""
-        success = self._heater_auto_shut_off_transmit(req.enable)
-        return ChangeDeviceStateResponse(success)
-
-    def handle_change_heater_state(
-            self, req: ChangeHeaterStateRequest
-            ) -> ChangeHeaterStateResponse:
-        """Handle/callback for changing heater state service"""
-        success = self._heater_transmit(req.device, req.color)
-        return ChangeHeaterStateResponse(success)
-
-    def handle_change_servo_angles(
-            self, req: ChangeServoAnglesRequest
-            ) -> ChangeServoAnglesResponse:
-        """Handle/callback for changing servo angles service"""
-        success = self._servo_transmit(req.angle_0, req.angle_1, req.angle_2)
-        return ChangeServoAnglesResponse(success)
-
-    def handle_change_uv_led_carousel_state(
-            self, req: ChangeDeviceStateRequest
-            ) -> ChangeDeviceStateResponse:
-        """Handle/callback for changing UV LED carousel state service"""
-        success = self._send_mosfet_msg("uv_led_carousel", req.enable)
-        return ChangeDeviceStateResponse(success)
-
-    def handle_change_uv_led_end_effector_state(
-            self, req: ChangeDeviceStateRequest) -> ChangeDeviceStateResponse:
-        """Handle/callback for changing UV LED end effector state service"""
-        success = self._send_mosfet_msg("uv_led_end_effector", req.enable)
-        return ChangeDeviceStateResponse(success)
-
-    def handle_change_white_led_state(
-            self, req: ChangeDeviceStateRequest
-            ) -> ChangeDeviceStateResponse:
-        """Handle/callback for changing white LED state service"""
-        success = self._send_mosfet_msg("white_led", req.enable)
-        return ChangeDeviceStateResponse(success)
-
-    def receive(self) -> None:
-        """Reads in a message from the UART RX line and processes it"""
-        tx_msg = self._read_msg()
-        match_found = False
-        for tag, handler_func in self._nmea_handle_mapper.items():
-            if tag in tx_msg:
-                print(tx_msg)
-                match_found = True
-                handler_func(tx_msg, self._nmea_message_mapper[tag])
-                self._nmea_publisher_mapper[tag].publish(
-                    self._nmea_message_mapper[tag])
-                break
-        if (not match_found) and (not tx_msg):
-            print(f'Error decoding message stream: {tx_msg}')
-        rospy.sleep(self._sleep)
 
 
 def main():
