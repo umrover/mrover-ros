@@ -19,6 +19,7 @@ import sys
 import threading
 import time as t
 from enum import Enum
+from typing import Any
 
 import fibre
 import odrive as odv
@@ -41,87 +42,119 @@ class ODriveEvent(Enum):
 class Modrive:
     """This has the functions that are used to control
     and command the ODrive."""
-    def __init__(self, odr, axis_0_str: str, axis_1_str: str,
-                 vel_cmd_mult_left: float, vel_cmd_mult_right: float,
-                 vel_est_mult_left: float, vel_est_mult_right: float,
-                 watchdog_timeout: float):
-        self.odrive = odr
-        self.axes = {
-            axis_0_str: self.odrive.axis0,
-            axis_1_str: self.odrive.axis1}
+    _odrive: Any
+    _axes: Any
+    _axis_vel_command_multiplier_map: dict[str, float]
+    _axis_vel_estimate_multiplier_map: dict[str, float]
+    _watchdog_timeout: float
+
+    def __init__(self, odr, axis_0_str: str, axis_1_str: str):
+
+        self._odrive = odr
+
+        axis_map: dict[int, str] = {
+            rospy.get_param("/odrive/axis/left"): 'left',
+            rospy.get_param("/odrive/axis/right"): 'right'}
+
+        self._axes = {
+            axis_map[0]: self._odrive.axis0,
+            axis_map[1]: self._odrive.axis1}
 
         # This scales [0, 1] to [0, vel_cmd_mult] turns per second
-        self.axis_vel_command_multiplier_map = {
-            'left': vel_cmd_mult_left,
-            'right': vel_cmd_mult_right}
+        self._axis_vel_command_multiplier_map = {
+            'left': rospy.get_param(
+                "/odrive/multiplier/vel_cmd_multiplier_left"),
+            'right': rospy.get_param(
+                "/odrive/multiplier/vel_cmd_multiplier_right")}
 
         # This scales turns/sec to m/sec
-        self.axis_vel_estimate_multiplier_map = {
-            'left': vel_est_mult_left,
-            'right': vel_est_mult_right}
-        self.watchdog_timeout = watchdog_timeout
+        self._axis_vel_estimate_multiplier_map = {
+            'left': rospy.get_param(
+                "/odrive/multiplier/vel_est_multiplier_left"),
+            'right': rospy.get_param(
+                "/odrive/multiplier/vel_est_multiplier_right")}
+        self._watchdog_timeout = rospy.get_param(
+            "/odrive/config/watchdog_timeout")
 
     def __getattr__(self, attr):
         if attr in self.__dict__:
             return getattr(self, attr)
-        return getattr(self.odrive, attr)
+        return getattr(self._odrive, attr)
 
-    def arm(self) -> None:
-        """Arms the ODrive"""
-        self.set_closed_loop_ctrl()
-        self.set_velocity_ctrl()
-
-    def check_errors(self) -> bool:
-        """Returns value of sum of errors"""
-        return self.axes['left'].error + \
-            self.axes['right'].error != 0
-
-    def enable_watchdog(self) -> None:
+    def _enable_watchdog(self) -> None:
         """This enables the watchdog of the ODrives."""
         try:
             print("Enabling watchdog")
-            for axis in self.axes.values():
-                axis.config.watchdog_timeout = self.watchdog_timeout
+            for axis in self._axes.values():
+                axis.config.watchdog_timeout = self._watchdog_timeout
                 self.watchdog_feed()
                 axis.config.enable_watchdog = True
         except Exception as exc:
             print(exc)
 
-    def disable_watchdog(self) -> None:
+    def _disable_watchdog(self) -> None:
         """This disables the watchdog of the ODrives"""
         try:
             print("Disabling watchdog")
-            for axis in self.axes.values():
+            for axis in self._axes.values():
                 axis.config.watchdog_timeout = 0
                 axis.config.enable_watchdog = False
         except fibre.protocol.ChannelBrokenException:
-            print("Failed in disable_watchdog. Unplugged")
+            print("Failed in _disable_watchdog. Unplugged")
+
+    def _idle(self) -> None:
+        """Sets the ODrive state to idle"""
+        self._set_requested_state(AXIS_STATE_IDLE)
+
+    def _set_closed_loop_ctrl(self) -> None:
+        """Sets the ODrive state to closed loop control"""
+        self._set_requested_state(AXIS_STATE_CLOSED_LOOP_CONTROL)
+
+    def _set_control_mode(self, mode) -> None:
+        """Sets the control mode of the ODrive"""
+        for axis in self._axes.values():
+            axis.controller.config.control_mode = mode
+
+    def _set_requested_state(self, state) -> None:
+        """Sets each ODrive axis state to the requested state"""
+        for axis in self._axes.values():
+            axis.requested_state = state
+
+    def _set_velocity_ctrl(self) -> None:
+        """Sets the ODrive to velocity control"""
+        self._set_control_mode(CONTROL_MODE_VELOCITY_CONTROL)
+
+    def arm(self) -> None:
+        """Arms the ODrive"""
+        self._set_closed_loop_ctrl()
+        self._set_velocity_ctrl()
+
+    def check_errors(self) -> bool:
+        """Returns value of sum of errors"""
+        return self._axes['left'].error + \
+            self._axes['right'].error != 0
 
     def disarm(self) -> None:
         """Disarms the ODrive and sets the velocity to 0"""
-        self.set_closed_loop_ctrl()
-        self.set_velocity_ctrl()
+        self._set_closed_loop_ctrl()
+        self._set_velocity_ctrl()
 
         self.set_vel('left', 0.0)
         self.set_vel('right', 0.0)
 
-        self.idle()
+        self._idle()
 
     def get_measured_current(self, axis: str) -> float:
         """Returns the measured current of
         the requested axis of the ODrive"""
         # measured current [Amps]
-        return self.axes[axis].motor.current_control.Iq_measured
+        return self._axes[axis].motor.current_control.Iq_measured
 
     def get_vel_estimate_m_s(self, axis: str) -> float:
         """Returns the estimated velocity of
         the requested axis of the ODrive"""
-        return self.axes[axis].encoder.vel_estimate * \
-            self.axis_vel_estimate_multiplier_map[axis]
-
-    def idle(self) -> None:
-        """Sets the ODrive state to idle"""
-        self.set_requested_state(AXIS_STATE_IDLE)
+        return self._axes[axis].encoder.vel_estimate * \
+            self._axis_vel_estimate_multiplier_map[axis]
 
     def reset_watchdog(self) -> None:
         """This resets the watchdog of the ODrives.
@@ -129,48 +162,30 @@ class Modrive:
         caused by the watchdog."""
         try:
             print("Resetting watchdog")
-            self.disable_watchdog()
+            self._disable_watchdog()
             # clears errors cleanly
-            for axis in self.axes.values():
+            for axis in self._axes.values():
                 axis.error = 0
-            self.enable_watchdog()
+            self._enable_watchdog()
         except fibre.protocol.ChannelBrokenException:
-            print("Failed in disable_watchdog. Unplugged")
-
-    def set_closed_loop_ctrl(self) -> None:
-        """Sets the ODrive state to closed loop control"""
-        self.set_requested_state(AXIS_STATE_CLOSED_LOOP_CONTROL)
-
-    def set_control_mode(self, mode) -> None:
-        """Sets the control mode of the ODrive"""
-        for axis in self.axes.values():
-            axis.controller.config.control_mode = mode
+            print("Failed in _disable_watchdog. Unplugged")
 
     def set_current_lim(self, lim: float):
         """Sets the current limit of both ODrive axes"""
-        for axis in self.axes.values():
+        for axis in self._axes.values():
             axis.motor.config.current_lim = lim
-
-    def set_requested_state(self, state) -> None:
-        """Sets each ODrive axis state to the requested state"""
-        for axis in self.axes.values():
-            axis.requested_state = state
 
     def set_vel(self, axis: str, vel: float) -> None:
         """Sets the requested ODrive axis to run the
         motors at the requested velocity"""
         desired_input_vel_turns_s = vel * \
-            self.axis_vel_command_multiplier_map[axis]
-        self.axes[axis].controller.input_vel = desired_input_vel_turns_s
-
-    def set_velocity_ctrl(self) -> None:
-        """Sets the ODrive to velocity control"""
-        self.set_control_mode(CONTROL_MODE_VELOCITY_CONTROL)
+            self._axis_vel_command_multiplier_map[axis]
+        self._axes[axis].controller.input_vel = desired_input_vel_turns_s
 
     def watchdog_feed(self) -> None:
         """Refreshes the watchdog feed."""
         try:
-            for axis in self.axes.values():
+            for axis in self._axes.values():
                 axis.watchdog_feed()
         except fibre.protocol.ChannelBrokenException:
             print("Failed in watchdog_feed. Unplugged")
@@ -248,47 +263,43 @@ class ODriveBridge(object):
     """This object controls the behavior
     of one ODrive. It manages the ODrive
     state and various other behavior."""
+    _current_lim: float
+    _left_speed: float
+    _modrive: Any
+    _odrive_ids: dict[str, str]
+    _pair: str
+    _right_speed: float
+    _speed_lock: threading.Lock
+    _start_time: t.clock
+    _state: State
+    _state_pub: rospy.Publisher
+    _usb_lock: threading.Lock
+    _vel_pub: rospy.Publisher
 
     def __init__(self) -> None:
         """
         Initialize the components.
         Start with a Default State
         """
-        # Maps the ODrive axis to either left or right
-        self.axis_map: dict[int, str] = {
-            rospy.get_param("/odrive/axis/left"): 'left',
-            rospy.get_param("/odrive/axis/right"): 'right'}
-        self.current_lim: float = rospy.get_param("/odrive/config/current_lim")
-        self.left_speed: float = 0.0
-        self.modrive = None
-        self.odrive_ids: dict[str, str] = {
+        self._current_lim = rospy.get_param("/odrive/config/current_lim")
+        self._left_speed = 0.0
+        self._modrive = None
+        self._odrive_ids = {
             'front': rospy.get_param("/odrive/ids/front"),
             'middle': rospy.get_param("/odrive/ids/middle"),
             'back': rospy.get_param("/odrive/ids/back")}
-        self.right_speed: float = 0.0
-        self.pair = sys.argv[1]
-        self.speed_lock = threading.Lock()
-        # This scales [0, 1] to [0, vel_cmd_mult] turns per second
-        self.vel_cmd_mult_left: float = \
-            rospy.get_param("/odrive/multiplier/vel_cmd_multiplier_left")
-        self.vel_cmd_mult_right: float = \
-            rospy.get_param("/odrive/multiplier/vel_cmd_multiplier_right")
-        self.start_time = t.clock()
-        self.state = DisconnectedState()
-        self.state_pub = rospy.Publisher(
+        self._right_speed = 0.0
+        self._pair = sys.argv[1]
+        self._speed_lock = threading.Lock()
+        self._start_time = t.clock()
+        self._state = DisconnectedState()
+        self._state_pub = rospy.Publisher(
             'drive_state_data', DriveStateData, queue_size=1)
-        self.usb_lock = threading.Lock()
-        # This scales turns/sec to m/sec
-        self.vel_est_mult_left: float = \
-            rospy.get_param("/odrive/multiplier/vel_est_multiplier_left")
-        self.vel_est_mult_right: float = \
-            rospy.get_param("/odrive/multiplier/vel_est_multiplier_right")
-        self.vel_pub = rospy.Publisher(
+        self._usb_lock = threading.Lock()
+        self._vel_pub = rospy.Publisher(
             'drive_vel_data', DriveVelData, queue_size=1)
-        self.watchdog_timeout = \
-            rospy.get_param("/odrive/config/watchdog_timeout")
 
-    def bridge_on_event(self, event: ODriveEvent) -> None:
+    def _bridge_on_event(self, event: ODriveEvent) -> None:
         """
         Incoming events are
         delegated to the given states which then handle the event.
@@ -297,145 +308,143 @@ class ODriveBridge(object):
 
         print("on event called, ODrive event:", event)
 
-        self.state = self.state.on_event(event, self.modrive)
-        self.publish_state_msg(self.get_state_string())
+        self._state = self._state.on_event(event, self._modrive)
+        self._publish_state_msg(self._get_state_string())
 
-    def connect(self) -> None:
+    def _connect(self) -> None:
         """This will attempt to connect to an ODrive.
         This will use the ODrive library to look for an
         ODrive with the specified ID on the Jetson."""
         print("looking for ODrive")
 
-        odrive_id = self.odrive_ids[self.pair]
+        odrive_id = self._odrive_ids[self._pair]
 
         print(odrive_id)
         odrive = odv.find_any(serial_number=odrive_id)
 
         print("found odrive")
-        self.usb_lock.acquire()
-        self.modrive = Modrive(
-            odrive, self.axis_map[0], self.axis_map[1],
-            self.vel_cmd_mult_left, self.vel_cmd_mult_right,
-            self.vel_est_mult_left, self.vel_est_mult_right,
-            self.watchdog_timeout)
-        self.modrive.set_current_lim(self.current_lim)
-        self.usb_lock.release()
+        self._usb_lock.acquire()
+        self._modrive = Modrive(
+            odrive)
+        self._modrive.set_current_lim(self._current_lim)
+        self._usb_lock.release()
 
-    def drive_vel_cmd_callback(self, ros_msg: DriveVelCmd) -> None:
-        """Set the global speed to the requested speed in the ROS message.
-        Note that this does NOT actually change speed that the ODrive comands
-        the motors at. One must wait for the ODriveBridge.update() function
-        to be called for that to happen."""
-        try:
-            if self.get_state_string() == "Armed":
-                self.speed_lock.acquire()
-                self.left_speed, self.right_speed = ros_msg.left, ros_msg.right
-                self.speed_lock.release()
-        except Exception:
-            return
-
-    def get_state_string(self) -> str:
+    def _get_state_string(self) -> str:
         """Returns the state of the ODriveBridge
         as a short string which is of
         the form "[insert_odrive_state]State"
         e.g. state is ErrorState,
         so ros_msg.state is Error"""
-        state = str(self.state)
+        state = str(self._state)
         return state[:len(state) - len("State")]
 
-    def publish_encoder_helper(self, axis: str) -> None:
+    def _publish_encoder_helper(self, axis: str) -> None:
         """Publishes the velocity and current
         data message over ROS of the requested axis"""
         ros_msg = DriveVelData()
         direction_multiplier = -1
 
-        self.usb_lock.acquire()
-        ros_msg.current_amps = self.modrive.get_measured_current(axis) * \
+        self._usb_lock.acquire()
+        ros_msg.current_amps = self._modrive.get_measured_current(axis) * \
             direction_multiplier
-        ros_msg.vel_m_s = self.modrive.get_vel_estimate_m_s(axis) * \
+        ros_msg.vel_m_s = self._modrive.get_vel_estimate_m_s(axis) * \
             direction_multiplier
-        self.usb_lock.release()
+        self._usb_lock.release()
 
         # e.g. "back_left" or "middle_right" or "front_left"
-        ros_msg.wheel = self.pair + "_" + axis
+        ros_msg.wheel = self._pair + "_" + axis
 
-        self.vel_pub.publish(ros_msg)
+        self._vel_pub.publish(ros_msg)
 
-    def publish_encoder_msg(self) -> None:
+    def _publish_encoder_msg(self) -> None:
         """Publishes velocity and current data over ROS
         of both the left and right axes."""
-        self.publish_encoder_helper('left')
-        self.publish_encoder_helper('right')
+        self._publish_encoder_helper('left')
+        self._publish_encoder_helper('right')
 
-    def publish_state_msg(self, state: str) -> None:
+    def _publish_state_msg(self, state: str) -> None:
         """Publishes the ODrive state message
         over ROS to a topic"""
         ros_msg = DriveStateData()
         ros_msg.state = state
-        ros_msg.pair = self.pair
-        self.state_pub.publish(ros_msg)
+        ros_msg.pair = self._pair
+        self._state_pub.publish(ros_msg)
         print("changed state to " + state)
+
+    def _update(self) -> None:
+        """Depending on the current state, it will change the action.
+        In the armed state, it will first check for ODrive errors.
+        Then, it will _update the speed.
+        In the disconnected state, it will create an arm event.
+        In the error state, it will create an error event."""
+        if str(self._state) == "ArmedState":
+            try:
+                self._usb_lock.acquire()
+                errors = self._modrive.check_errors()
+                self._modrive.watchdog_feed()
+                self._usb_lock.release()
+
+            except Exception:
+                if self._usb_lock.locked():
+                    self._usb_lock.release()
+                errors = 0
+                self._usb_lock.acquire()
+                self._bridge_on_event(ODriveEvent.DISCONNECTED_ODRIVE_EVENT)
+                self._usb_lock.release()
+
+            if errors:
+                self._usb_lock.acquire()
+                self._bridge_on_event(ODriveEvent.ODRIVE_ERROR_EVENT)
+                self._usb_lock.release()
+                return
+
+            self._usb_lock.acquire()
+            self._modrive.set_vel('left', self._left_speed)
+            self._modrive.set_vel('right', self._right_speed)
+            self._usb_lock.release()
+
+        elif str(self._state) == "DisconnectedState":
+            self._connect()
+            self._usb_lock.acquire()
+            self._bridge_on_event(ODriveEvent.ARM_CMD_EVENT)
+            self._usb_lock.release()
+
+        elif str(self._state) == "ErrorState":
+            self._usb_lock.acquire()
+            self._bridge_on_event(ODriveEvent.ODRIVE_ERROR_EVENT)
+            self._usb_lock.release()
+
+    def drive_vel_cmd_callback(self, ros_msg: DriveVelCmd) -> None:
+        """Set the global speed to the requested speed in the ROS message.
+        Note that this does NOT actually change speed that the ODrive comands
+        the motors at. One must wait for the ODriveBridge._update() function
+        to be called for that to happen."""
+        try:
+            if self._get_state_string() == "Armed":
+                self._speed_lock.acquire()
+                self._left_speed = ros_msg.left
+                self._right_speed = ros_msg.right
+                self._speed_lock.release()
+        except Exception:
+            return
 
     def ros_publish_data_loop(self) -> None:
         """This loop continuously publishes
         velocity and current data."""
         while not rospy.is_shutdown():
-            self.start_time = t.clock()
+            self._start_time = t.clock()
             try:
-                self.publish_encoder_msg()
+                self._publish_encoder_msg()
             except Exception:
-                if self.usb_lock.locked():
-                    self.usb_lock.release()
-
-    def update(self) -> None:
-        """Depending on the current state, it will change the action.
-        In the armed state, it will first check for ODrive errors.
-        Then, it will update the speed.
-        In the disconnected state, it will create an arm event.
-        In the error state, it will create an error event."""
-        if str(self.state) == "ArmedState":
-            try:
-                self.usb_lock.acquire()
-                errors = self.modrive.check_errors()
-                self.modrive.watchdog_feed()
-                self.usb_lock.release()
-
-            except Exception:
-                if self.usb_lock.locked():
-                    self.usb_lock.release()
-                errors = 0
-                self.usb_lock.acquire()
-                self.bridge_on_event(ODriveEvent.DISCONNECTED_ODRIVE_EVENT)
-                self.usb_lock.release()
-
-            if errors:
-                self.usb_lock.acquire()
-                self.bridge_on_event(ODriveEvent.ODRIVE_ERROR_EVENT)
-                self.usb_lock.release()
-                return
-
-            self.usb_lock.acquire()
-            self.modrive.set_vel('left', self.left_speed)
-            self.modrive.set_vel('right', self.right_speed)
-            self.usb_lock.release()
-
-        elif str(self.state) == "DisconnectedState":
-            self.connect()
-            self.usb_lock.acquire()
-            self.bridge_on_event(ODriveEvent.ARM_CMD_EVENT)
-            self.usb_lock.release()
-
-        elif str(self.state) == "ErrorState":
-            self.usb_lock.acquire()
-            self.bridge_on_event(ODriveEvent.ODRIVE_ERROR_EVENT)
-            self.usb_lock.release()
+                if self._usb_lock.locked():
+                    self._usb_lock.release()
 
     def watchdog_while_loop(self):
         """Watchdog while loop"""
         # flag for state when we have comms with base_station vs not
         previously_lost_comms = True
         while not rospy.is_shutdown():
-            watchdog = t.clock() - self.start_time
+            watchdog = t.clock() - self._start_time
             lost_comms = watchdog > 1.0
             if lost_comms:
                 if not previously_lost_comms:
@@ -443,22 +452,22 @@ class ODriveBridge(object):
                     print("loss of comms")
                     previously_lost_comms = True
 
-                self.speed_lock.acquire()
-                self.left_speed = self.right_speed = 0.0
-                self.speed_lock.release()
+                self._speed_lock.acquire()
+                self._left_speed = self._right_speed = 0.0
+                self._speed_lock.release()
             elif previously_lost_comms:
                 previously_lost_comms = False
                 print("regained comms")
             try:
-                self.update()
+                self._update()
             except Exception:
-                if self.usb_lock.locked():
-                    self.usb_lock.release()
+                if self._usb_lock.locked():
+                    self._usb_lock.release()
 
-                self.usb_lock.acquire()
-                self.bridge_on_event(
+                self._usb_lock.acquire()
+                self._bridge_on_event(
                     ODriveEvent.DISCONNECTED_ODRIVE_EVENT)
-                self.usb_lock.release()
+                self._usb_lock.release()
 
 
 def main():
