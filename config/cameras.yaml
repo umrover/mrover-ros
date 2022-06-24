@@ -43,6 +43,4 @@ cameras:
               "10.0.0.2:5000"
               "10.0.0.2:5001"
           resolution: 144
-    # If number_of_pipelines is changed,
-    # then ChangeCameras.srv must be changed too
     number_of_pipelines: 4
