@@ -75,6 +75,8 @@ The intended behavior is the following: An exception is caught on the Capture fu
 Actual behavior: The program freezes (presumably on the Capture function).
 
 ### ToDo 
+- [ ] Standardize naming and order for whether pipeline or device goes first in arguments.
+- [ ] Test the following: If an invalid device is being requested, does the response actually say -1 or does it not? Basically, does it only realize the device is invalid too late, as in after it sends the response?
 - [ ] Make sure that code makes logical sense... I'm reading through logic and head hurts
 - [ ] Test the exact behavior for when "user requests a camera that does not exist" and update README and optimize code.
 - [ ] Map physical ports to video so cameras are known by default (low priority)
