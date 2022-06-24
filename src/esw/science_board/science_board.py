@@ -134,7 +134,7 @@ class ScienceBridge():
         Returns:
             A boolean that is the success of sent UART transaction.
         """
-        success = self._auton_led_transmit(req.color)
+        success = self._auton_led_transmit(req.color.lower())
         return ChangeAutonLEDStateResponse(success)
 
     def handle_change_heater_auto_shut_off_state(
@@ -277,15 +277,11 @@ class ScienceBridge():
         Returns:
             The filled string that is to be sent with padding and is of certain
             length.
-
-        Raises:
-            AssertionError: An error occurred when tx_msg is already greater
-            than the certain length.
         """
 
         length = len(tx_msg)
-        assert length <= self._uart_transmit_msg_len
-
+        assert length <= self._uart_transmit_msg_len, (
+            "tx_msg should not be greater than self._uart_transmit_msg_len")
         list_msg = ["f{tx_msg}"]
         missing_characters = self._uart_transmit_msg_len - length
         list_dummy = [","] * missing_characters
@@ -300,17 +296,17 @@ class ScienceBridge():
         Args:
             color: A string that is the color of the requested state of
             the auton LED array. Note that green actually means blinking green.
+            The string should be lower case.
 
         Returns:
             A boolean that is the success of the transaction. Note that
             this could be because an invalid color was sent.
         """
-        try:
-            requested_state = self._led_map[color.lower()]
-        except KeyError:
+        assert color.islower(), "color should be lower case"
+        if color not in self._led_map.keys():
             return False
-
-        msg = f"$LED,{requested_state.value}"
+        requested_state = self._led_map[color]
+        msg = f"$LED,{requested_state}"
         success = self._send_msg(msg)
         return success
 
@@ -564,7 +560,6 @@ class ScienceBridge():
 
 def main():
     rospy.init_node("science_board")
-
     with ScienceBridge() as bridge:
         rospy.Service('change_arm_laser_state', ChangeDeviceState,
                       bridge.handle_change_arm_laser_state)
@@ -584,7 +579,6 @@ def main():
                       bridge.handle_change_uv_led_end_effector_state)
         rospy.Service('change_white_led_state', ChangeDeviceState,
                       bridge.handle_change_white_led_state)
-
         while not rospy.is_shutdown():
             bridge.receive()
 
