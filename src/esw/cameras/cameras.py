@@ -1,7 +1,11 @@
 #!/usr/bin/env python3
 
-"""
-This file controls the cameras that the Jetson will stream.
+"""Manages the streams for the USB cameras on the rover.
+
+The cameras codebase deals with managing the streams for the USB cameras on
+the rover. It manages messages that tell it which devices to stream, at which
+quality, and to which IPs.
+
 """
 import sys
 from typing import List
@@ -205,8 +209,8 @@ class PipelineManager:
         Returns:
             A string that represents to the name of the active mission.
             Note that if the requested string was invalid, the mission
-            may have changed to the default mission and the returned string
-            will be that mision.
+            will not have changed and the returned string will be the previous
+            mission.
         """
         mission_name = req.mission.lower()
         if self._current_mission == mission_name:
@@ -489,9 +493,8 @@ class PipelineManager:
         """
         assert mission_name.islower(), "mission_name should be lower case"
         if not self._is_mission_name_valid(mission_name):
-            mission_name = self._default_mission
-            print(f"Invalid mission name, \
-                setting to {self._default_mission}")
+            print("Invalid mission name. Not changing the mission.")
+            return
         self._current_mission = mission_name
 
 

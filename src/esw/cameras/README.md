@@ -1,32 +1,105 @@
 Code to control the USB Cameras
-----
+## Table of Contents
 
-### About
-For the 2022 Mars Rover Rosie, there are 8 USB cameras. This is the program
-responsible for handling service messages received from the base station. \
+[Project Overview](#project-overview) \
+[Top-Level Code](#top-level-code) \
+[Configuration](#configuration) \
+[Services - Server](#services---server) \
+[Usage](#usage) \
+[Setup](#setup) \
+[Issues](#issues) \
+[Error Handling](#error-handling) \
+[TODO](#todo) \
+[TODO - ROS Migration](#todo---ros-migration)
 
-Up to 4 streams can be requested. The available IPs and video quality of the output streams are determined by the ChangeCameraMission service, which changes the IP of the output streams depending on the mission stated. This information can be located in the config/cameras.yaml file. The ChangeCameras service request has 4 integers representing the device number that the user wants on each of the ports. -1 means no device, and positive integers represent what the jetson recognizes in /dev/video* (e.g. /dev/video0 and /dev/video6). The program does not crash if the video device does not exist.
+---
 
-The program relies on jetson-utils to operate. Its Python functions are called in order to get feed from the camera and render them to a stream. Two pipelines (two streams) are constantly capturing images and rendering them to the output. 
+## Project Overview
 
-### Services - Server
+The cameras codebase deals with managing the streams for the USB cameras on
+the rover. It manages messages that tell it which devices to stream, at which
+quality, and to which IPs.
 
-**Change Camera Mission [Server]** \
-Service: [ChangeCameraMission.srv](https://github.com/umrover/mrover-ros/blob/main/srv/ChangeCameraMission.srv "change_camera_mission" \
+---
+
+## Top Level Code
+
+#### [`cameras.py`](./cameras.py)
+
+This program runs main.
+
+#### PipelineManager
+
+One PipelineManager object is created in main to store all the configuration data and
+manage the states of the pipelines and various other behavior.
+
+#### Pipeline
+
+Controls the streaming of one camera to its assigned IP.
+The PipelineManager will store multiple of these Pipeline objects
+based on the number of maximum pipelines.
+
+---
+
+## Configuration
+
+#### [`cameras.yaml`](../../../config/cameras.yaml)
+
+This configuration file allows you to configure various things.
+
+#### Camera Input Resolution Qualities - cameras/input/
+
+You may choose to configure what resolution qualities are available.
+The resolution represents the resolution number. The arguments represent
+the arguments that are used when creating a jetson.utils object.
+You must test to figure out which numbers make sense for the desired resolution.
+
+#### Default Mission - cameras/default_mission
+
+You may choose to configure the default mission. This will change the default mission
+on startup.
+
+#### Maximum Video Device ID Number - cameras/max_video_device_id_number
+
+You may choose to configure the maximum video device ID number.
+This determines up to which number we can look inside /dev/video*.
+
+#### Available Missions - cameras/missions
+
+You may choose to configure the available missions. Each mission has a name,
+a list of ips, and a resolution suited for the mission. You should not have more ips than
+the amount listed in number_of_pipelines (this will cause errors).
+
+#### Number of Pipelines - cameras/number_of_pipelines
+
+You may choose to configure the total number of pipelines that can be streaming at once.
+The total number of pipelines must be consistent with the number in ChangeCameras.srv.
+It makes sense to keep this number equal to the maximum amount of IPs one would stream
+for any given mission.
+
+---
+
+## Services - Server
+
+#### Change Camera Mission
+Service: [`ChangeCameraMission.srv`](../../../srv/ChangeCameraMission.srv) "change_camera_mission" \
 Server: cameras \
 Client: gui \
 
-**Change Cameras [Server]** \
-Service: [ChangeCameras.srv](https://github.com/umrover/mrover-ros/blob/main/srv/ChangeCameras.srv) "change_cameras" \
+#### Change Cameras
+Service: [`ChangeCameras.srv`](../../../srv/ChangeCameras.srv) "change_cameras" \
 Server: cameras \
 Client: gui \
 
-### Usage 
+---
 
-Make sure that you are able to receive streams on the base station by listening to the IPs via GStreamer.
-Then you can run the cameras.py program.
+## Usage
 
-### Setup
+Make sure that you are able to receive streams on the base station by listening to the IPs via GStreamer. Then you can run the cameras.py program.
+
+---
+
+## Setup
 
 In a Docker container, do the equivalent of the following:
 Clone [jetson-utils](https://github.com/dusty-nv/jetson-utils) on the Jetson in home directory, make build folder, cd into that and run cmake .. then make. Without the jetson program, you can just run ```./aarch64/bin/video-viewer /dev/video0 rtp://10.0.0.1:5000 --headless``` on the jetson.
@@ -42,12 +115,16 @@ make
 
 Depending on your version of Python, you may need to change the CMakeLists.txt inside the jetson-utils/python/ folder and include your version for the PYTHON_BINDING_VERSIONS. In addition to this, you should edit the jetson/cameras/src/\_\_main\_\_.py file and replace "/usr/lib/python3.6/dist-packages" with your version of Python.  
 
-### Issues
+---
+
+## Issues
 Depending on which Jetson you use, you may not be able to stream as many cameras as you'd like at the same time. We use the Jetson Xavier NX, which can only stream up to 4 cameras via USB at a time.
 
 Still need to figure out a way to get camera streams onto the gui.
 
-### Error Handling
+---
+
+## Error Handling
 
 ### If user requests a camera that does not exist
 If the user requests to view the stream from a device but it does not exist, then the code does not crash.
@@ -74,7 +151,9 @@ The intended behavior is the following: An exception is caught on the Capture fu
 
 Actual behavior: The program freezes (presumably on the Capture function).
 
-### ToDo 
+---
+
+## TODO
 - [ ] Standardize naming and order for whether pipeline or device goes first in arguments.
 - [ ] Test the following: If an invalid device is being requested, does the response actually say -1 or does it not? Basically, does it only realize the device is invalid too late, as in after it sends the response?
 - [ ] Make sure that code makes logical sense... I'm reading through logic and head hurts
@@ -82,13 +161,13 @@ Actual behavior: The program freezes (presumably on the Capture function).
 - [ ] Map physical ports to video so cameras are known by default (low priority)
 - [ ] Fix how camera program freezes if USB is disconnected while streaming
 - [ ] Low priority - Get camera streams onto the gui
+- [ ] Too general exceptions - Figure out what the exact exceptions are for Pylint
 
-### ToDo - ROS Migration
+---
+
+## TODO - ROS Migration
 - [ ] Migrate basics of code that runs on Jetson
 - [ ] Migrate basics of code that runs on base station
 - [ ] Make sure stuff builds
 - [ ] Fix up README.md
 - [ ] Figure out how jetson-utils should be included in the system
-
-### ToDo - Pylint
-- [ ] Too general exceptions - Figure out what the exact exceptions are
