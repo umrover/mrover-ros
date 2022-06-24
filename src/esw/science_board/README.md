@@ -13,11 +13,12 @@
 ---
 
 ## Project Overview
-The science_board codebase deals with reading and parsing NMEA like messages from the STM32 chip on the
-science PCB to complete tasks for almost every mission. These tasks
-include operating the science box and getting relevant data during the Science task,
-controlling the arm laser dring the Equipment Servicing task, and controlling
-the LED array used during the Autonomous Traversal task.
+The science_board codebase deals with reading and parsing NMEA like messages
+from the STM32 chip on the science PCB over UART to complete tasks for almost
+every mission. These tasks include operating the science box and getting
+relevant data during the Science task, controlling the arm laser during the
+Equipment Servicing task, and controlling the LED array used during the
+Autonomous Traversal task.
 
 ---
 
@@ -172,12 +173,12 @@ Subscriber: gui
 - 6 channel data from each of the three spectrals
 
 #### Servo Cmd
-- `$SERVO,<angle0>,<angle1>,<angle2>,<extra padding>`
+- `$SERVO,<angle_0>,<angle_1>,<angle_2>,<extra padding>`
 - Cmd is 155 characters long
 - The angles are in degrees
 
 #### Thermistor Data
-- `$THERMISTOR,<temp0>,<temp1>,<temp2>,<extra padding>`
+- `$THERMISTOR,<temp_0>,<temp_1>,<temp_2>,<extra padding>`
 - Data is 155 characters long
 - Temperature is in Celsius
 
@@ -189,6 +190,9 @@ Subscriber: gui
 ---
 
 ## TODO
+- [ ] simplify the mapper logic (can put into a function instead), don't need both _nmea_handle_mapper and _nmea_publisher_mapper probably
+- [ ] Analyze behavior when MOSFET device is out of bounds. See if it should be handled by firmware or here or both.
+It is preferred if it is both, but this program does not currently have any checking.
 - [ ] Code clean up
 - [ ] Move beaglebone stuff into config file
 - [ ] Test with ROS

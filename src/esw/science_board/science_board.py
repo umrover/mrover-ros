@@ -1,8 +1,13 @@
 #!/usr/bin/env python3
 
-'''
-Writes, reads and parses NMEA like messages from the onboard
-science Nucleo to operate the science boxes and get relevant data
+''' Manages communication to and from the science board.
+
+The science_board codebase deals with reading and parsing NMEA like messages
+from the STM32 chip on the science PCB over UART to complete tasks for almost
+every mission. These tasks include operating the science box and getting
+relevant data during the Science task, controlling the arm laser during the
+Equipment Servicing task, and controlling the LED array used during the
+Autonomous Traversal task.
 '''
 import threading
 from typing import Any, Callable
@@ -20,20 +25,38 @@ from mrover.srv import (ChangeAutonLEDState, ChangeAutonLEDStateRequest,
 
 
 class ScienceBridge():
-    """ScienceBridge class"""
+    """Manages all the information and functions used for dealing with the
+    bridge between the science board and the Jetson.
+
+    One ScienceBridge will be made in main.
+
+    Attributes:
+        _led_map: A dictionary that maps the possible colors to an integer for
+        the UART message.
+        _mosfet_dev_map: A dictionary that maps each actual device to a MOSFET
+        device number.
+        _nmea_handle_mapper: A dictionay that maps each NMEA tag for a UART
+        message to its corresponding callback function that returns a ROS
+        struct with the packaged data.
+        _nmea_publisher_mapper: A dictionary that maps each NMEA tag for a
+        UART message to its corresponding ROS Publisher object.
+        _sleep: A float representing the sleep duration used for when the
+        sleep function is called.
+        _uart_transmit_msg_len: An integer representing the maximum length for
+        a transmitted UART message.
+        _uart_lock: A lock used to prevent clashing over the UART transmit
+        line.
+    """
     _led_map: dict[str, int]
     _mosfet_dev_map: dict[str, int]
     _nmea_handle_mapper: dict[str, Callable]
-    _nmea_message_mapper: dict[str, Any]
     _nmea_publisher_mapper: dict[str, rospy.Publisher]
     _sleep: float
     _uart_transmit_msg_len: int
     _uart_lock: threading.Lock
 
     def __init__(self):
-        # Mapping of device color to number
         self._led_map = rospy.get_param("/science_board/led_map")
-        # Mapping of onboard devices to MOSFET devices
         self._mosfet_dev_map = rospy.get_param(
             "/science_board/mosfet_device_map")
         self._nmea_handle_mapper = {
@@ -42,13 +65,6 @@ class ScienceBridge():
             "SPECTRAL": self._spectral_handler,
             "THERMISTOR": self._thermistor_handler,
             "TRIAD": self._triad_handler
-        }
-        self._nmea_message_mapper = {
-            "AUTOSHUTOFF": Enable(),
-            "HEATER": Heater(),
-            "SPECTRAL": Spectral(),
-            "THERMISTOR": Thermistor(),
-            "TRIAD": Spectral()
         }
         self._nmea_publisher_mapper = {
             "AUTOSHUTOFF": rospy.Publisher(
@@ -69,7 +85,7 @@ class ScienceBridge():
 
     def __enter__(self) -> None:
         '''
-        Opens a serial connection to the nucleo
+        Opens a serial connection to the STM32 chip
         '''
 
         self.ser = serial.Serial(
@@ -84,88 +100,214 @@ class ScienceBridge():
 
     def __exit__(self, exc_type, exc_value, traceback) -> None:
         '''
-        Closes serial connection to nucleo
+        Closes serial connection to STM32 chip
         '''
         self.ser.close()
 
-    def handle_change_arm_laser_state(self, req: ChangeDeviceStateRequest
-                                      ) -> ChangeDeviceStateResponse:
-        """Handle/callback for changing arm laser state service"""
+    def handle_change_arm_laser_state(
+        self, req: ChangeDeviceStateRequest
+    ) -> ChangeDeviceStateResponse:
+        """Processes a request to change the laser state of the arm by issuing
+        the command to the STM32 chip via UART. Returns the success of the
+        transaction.
+
+        Args:
+            req: A boolean that is the requested arm laser state.
+
+        Returns:
+            A boolean that is the success of sent UART transaction.
+        """
         success = self._send_mosfet_msg("arm_laser", req.enable)
         return ChangeDeviceStateResponse(success)
 
-    def handle_change_auton_led_state(self, req: ChangeAutonLEDStateRequest
-                                      ) -> ChangeAutonLEDStateResponse:
-        """Handle/callback for changing auton LED state service"""
+    def handle_change_auton_led_state(
+        self, req: ChangeAutonLEDStateRequest
+    ) -> ChangeAutonLEDStateResponse:
+        """Processes a request to change the auton LED array state by issuing
+        the command to the STM32 chip via UART. Returns the success of the
+        transaction.
+
+        Args:
+            req: A string that is the color of the requested state of the
+            auton LED array. Note that green actually means blinking green.
+
+        Returns:
+            A boolean that is the success of sent UART transaction.
+        """
         success = self._auton_led_transmit(req.color)
         return ChangeAutonLEDStateResponse(success)
 
     def handle_change_heater_auto_shut_off_state(
-            self, req: ChangeDeviceStateRequest
-            ) -> ChangeDeviceStateResponse:
-        """Handle/callback for changing heater auto shut off state service"""
+        self, req: ChangeDeviceStateRequest
+    ) -> ChangeDeviceStateResponse:
+        """Processes a request to change the auto shut off state of the
+        carousel heaters by issuing the command to the STM32 chip via UART.
+        Returns the success of the transaction.
+
+        Args:
+            req: A boolean that is the requested auto shut off state of the
+            carousel heaters.
+
+        Returns:
+            A boolean that is the success of sent UART transaction.
+        """
         success = self._heater_auto_shut_off_transmit(req.enable)
         return ChangeDeviceStateResponse(success)
 
-    def handle_change_heater_state(self, req: ChangeHeaterStateRequest
-                                   ) -> ChangeHeaterStateResponse:
-        """Handle/callback for changing heater state service"""
+    def handle_change_heater_state(
+        self, req: ChangeHeaterStateRequest
+    ) -> ChangeHeaterStateResponse:
+        """Processes a request to change the carousel heater state by issuing
+        the command to the STM32 chip via UART. Returns the success of the
+        transaction.
+
+        Args:
+            req: A ChangeHeaterStateRequest object that has the following:
+            - an int that is the heater device that should be changed.
+            - a boolean that is the requested heater state of that device.
+
+        Returns:
+            A boolean that is the success of sent UART transaction.
+        """
         success = self._heater_transmit(req.device, req.color)
         return ChangeHeaterStateResponse(success)
 
-    def handle_change_servo_angles(self, req: ChangeServoAnglesRequest
-                                   ) -> ChangeServoAnglesResponse:
-        """Handle/callback for changing servo angles service"""
+    def handle_change_servo_angles(
+        self, req: ChangeServoAnglesRequest
+    ) -> ChangeServoAnglesResponse:
+        """Processes a request to change the angles of three carousel servos by
+        issuing the command to the STM32 chip via UART. Returns the success of
+        transaction.
+
+        Args:
+             req: A ChangeServoAnglesRequest object that has three floats that
+             represent the requested angles of the three servos.
+
+        Returns:
+            A boolean that is the success of sent UART transaction.
+        """
         success = self._servo_transmit(req.angle_0, req.angle_1, req.angle_2)
         return ChangeServoAnglesResponse(success)
 
-    def handle_change_uv_led_carousel_state(self, req: ChangeDeviceStateRequest
-                                            ) -> ChangeDeviceStateResponse:
-        """Handle/callback for changing UV LED carousel state service"""
+    def handle_change_uv_led_carousel_state(
+        self, req: ChangeDeviceStateRequest
+    ) -> ChangeDeviceStateResponse:
+        """Processes a request to change the carousel UV LED by
+        issuing the command to the STM32 chip via UART. Returns the success of
+        transaction.
+
+        Args:
+            req: A boolean that is the requested UV LED state.
+
+        Returns:
+            A boolean that is the success of sent UART transaction.
+        """
         success = self._send_mosfet_msg("uv_led_carousel", req.enable)
         return ChangeDeviceStateResponse(success)
 
-    def handle_change_uv_led_end_effector_state(self, req:
-                                                ChangeDeviceStateRequest
-                                                ) -> ChangeDeviceStateResponse:
-        """Handle/callback for changing UV LED end effector state service"""
+    def handle_change_uv_led_end_effector_state(
+        self, req: ChangeDeviceStateRequest
+    ) -> ChangeDeviceStateResponse:
+        """Processes a request to change the UV LED on the end effector by
+        issuing the command to the STM32 chip via UART. Returns the success of
+        transaction.
+
+        Args:
+            req: A boolean that is the requested UV LED state.
+
+        Returns:
+            A boolean that is the success of sent UART transaction.
+        """
         success = self._send_mosfet_msg("uv_led_end_effector", req.enable)
         return ChangeDeviceStateResponse(success)
 
-    def handle_change_white_led_state(self, req: ChangeDeviceStateRequest
-                                      ) -> ChangeDeviceStateResponse:
-        """Handle/callback for changing white LED state service"""
+    def handle_change_white_led_state(
+        self, req: ChangeDeviceStateRequest
+    ) -> ChangeDeviceStateResponse:
+        """Processes a request to change the carousel white LED by
+        issuing the command to the STM32 chip via UART. Returns the success of
+        transaction.
+
+        Args:
+            req: A boolean that is the requested white LED state.
+
+        Returns:
+            A boolean that is the success of sent UART transaction.
+        """
         success = self._send_mosfet_msg("white_led", req.enable)
         return ChangeDeviceStateResponse(success)
 
     def receive(self) -> None:
-        """Reads in a message from the UART RX line and processes it"""
+        """Reads in a message from the UART RX line and processes it. If there
+        is data, then the data will be published to the corresponding ROS
+        topic.
+
+        Depending on the NMEA tag of the message, the proper function
+        will be called to process the message.
+
+        Args:
+            None.
+
+        Returns:
+            None.
+        """
         tx_msg = self._read_msg()
         match_found = False
         for tag, handler_func in self._nmea_handle_mapper.items():
             if tag in tx_msg:
                 print(tx_msg)
                 match_found = True
-                handler_func(tx_msg, self._nmea_message_mapper[tag])
-                self._nmea_publisher_mapper[tag].publish(
-                    self._nmea_message_mapper[tag])
+                ros_msg: Any = handler_func(tx_msg)
+                self._nmea_publisher_mapper[tag].publish(ros_msg)
                 break
         if (not match_found) and (not tx_msg):
             print(f'Error decoding message stream: {tx_msg}')
         rospy.sleep(self._sleep)
 
     def _add_padding(self, tx_msg: str) -> str:
-        """Used to add padding since UART messages must be of certain length"""
-        while len(tx_msg) < self._uart_transmit_msg_len:
-            tx_msg += ","
-        return tx_msg
+        """Adds padding to a UART messages until it is a certain length.
+
+        This certain length is determined by the input in the
+        config/science_board.yaml file. This is so that the STM32 chip can
+        expect to only receive messages of this particular length.
+
+        Args:
+            tx_msg: The raw string that is to be sent without padding.
+
+        Returns:
+            The filled string that is to be sent with padding and is of certain
+            length.
+
+        Raises:
+            AssertionError: An error occurred when tx_msg is already greater
+            than the certain length.
+        """
+
+        length = len(tx_msg)
+        assert length <= self._uart_transmit_msg_len
+
+        list_msg = ["f{tx_msg}"]
+        missing_characters = self._uart_transmit_msg_len - length
+        list_dummy = [","] * missing_characters
+        list_total = list_msg + list_dummy
+        new_msg = ''.join(list_total)
+        return new_msg
 
     def _auton_led_transmit(self, color: str) -> bool:
-        """Sends an auton LED command message via UART"""
+        """Sends a UART message to the STM32 commanding the auton LED array
+        state.
+
+        Args:
+            color: A string that is the color of the requested state of
+            the auton LED array. Note that green actually means blinking green.
+
+        Returns:
+            A boolean that is the success of the transaction. Note that
+            this could be because an invalid color was sent.
+        """
         try:
             requested_state = self._led_map[color.lower()]
         except KeyError:
-            # Done if an invalid color is sent
             return False
 
         msg = f"$LED,{requested_state.value}"
@@ -173,41 +315,99 @@ class ScienceBridge():
         return success
 
     def _format_mosfet_msg(device: int, enable: bool) -> str:
-        """Formats a MOSFET message"""
+        """Creates a message that can be sent over UART to command a MOSFET
+        device.
+
+        Args:
+            device: An int that is the MOSFET device that can be changed.
+            enable: A boolean that is the requested MOSFET device state.
+            True means that the MOSFET device will connect to ground and
+            activate the device.
+
+        Returns:
+            The raw string that has the device and enable information. Note
+            that this is not yet ready to be transmitted to the STM32 chip
+            over UART since it is not of the proper length yet.
+        """
         tx_msg = f"$MOSFET,{device},{enable}"
         return tx_msg
 
-    def _heater_auto_shut_off_handler(self, tx_msg: str, ros_msg: Enable
-                                      ) -> None:
-        """Handles a received heater auto shut off message"""
-        # tx_msg format: <"$AUTOSHUTOFF,device,enable">
+    def _heater_auto_shut_off_handler(self, tx_msg: str) -> Enable:
+        """Processes a UART message that contains data of the auto shut off
+        state of the carousel heaters and packages it into a ROS struct.
+
+        Args:
+            tx_msg: A string that was received from UART that contains data of
+            the carousel heater auto shut off state.
+                - Format: <"$AUTOSHUTOFF,device,enable">
+
+        Returns:
+            An Enable struct that has a boolean that is the requested auto
+            shut off state of the carousel heaters.
+        """
         arr = tx_msg.split(",")
-        enable = bool(int(arr[1]))
-        ros_msg.enable = enable
+        return Enable(enable=bool(int(arr[1])))
 
     def _heater_auto_shut_off_transmit(self, enable: bool) -> bool:
-        """Transmits a heater auto shut off command over uart"""
+        """Sends a UART message to the STM32 chip commanding the auto shut off
+        state of the carousel heaters.
+
+        Args:
+            enable: A boolean that is the auto shut off state of the carousel
+            heaters.
+
+        Returns:
+            A boolean that is the success of the transaction.
+        """
         tx_msg = f"$AUTOSHUTOFF,{enable}"
         success = self._send_msg(tx_msg)
         return success
 
-    def _heater_state_handler(self, tx_msg: str, ros_msg: Heater) -> None:
-        """Handles a received heater state message"""
-        # tx_msg format: <"$HEATER,device,enable">
+    def _heater_state_handler(self, tx_msg: str) -> Heater:
+        """Processes a UART message that contains data of the state of a
+        carousel heater and packages it into a ROS struct.
+
+        Args:
+            tx_msg: A string that was received from UART that contains data of
+            the carousel heater auto shut off state.
+                - Format: <"$HEATER,device,enable">
+
+        Returns:
+            An Heater struct that has the following:
+            - an int that is the heater device that was changed.
+            - a boolean that is the heater state of that device.
+        """
         arr = tx_msg.split(",")
-        ros_msg.device = int(arr[1])
-        ros_msg.enable = bool(int(arr[2]))
+        return Heater(device=int(arr[1]), enable=bool(int(arr[2])))
 
     def _heater_transmit(self, device: int, enable: bool) -> bool:
-        """Sends a heater state command message via UART"""
-        heater_device_string = "heater_" + str(device)  # e.g. heater_0
+        """Sends a UART message to the STM32 chip commanding the state of a
+        particular heater device.
+
+        Args:
+            device: An int that is the heater device that should be changed.
+            enable: A boolean that is the requested heater state of that
+            device.
+
+        Returns:
+            A boolean that is the success of the transaction.
+        """
+        heater_device_string = f"heater_{device}"
         translated_device = self._mosfet_dev_map[heater_device_string]
         tx_msg = self._format_mosfet_msg(translated_device, int(enable))
         success = self._send_msg(tx_msg)
         return success
 
     def _read_msg(self) -> str:
-        """Used to read a message on the UART receive line"""
+        """Reads a message on the UART receive line from the STM32 chip.
+
+        Args:
+            None
+
+        Returns:
+            A string that is the received message. Note that this may be an
+            empty string if there are no messages.
+        """
         try:
             self._uart_lock.acquire()
             msg = self.ser.readline()
@@ -219,14 +419,30 @@ class ScienceBridge():
             print("Errored")
 
     def _send_mosfet_msg(self, device_name: str, enable: bool) -> bool:
-        """Transmits a MOSFET device state command message"""
+        """Sends a MOSFET message on the UART transmit line to the STM32 chip.
+
+        Args:
+            device_name: A string that is the device that wants to be changed.
+            enable: A boolean that is the requested device state.
+
+        Returns:
+            A boolean that is the success of sent UART transaction.
+        """
         translated_device = self._mosfet_dev_map[device_name]
         tx_msg = self._format_mosfet_msg(translated_device, int(enable))
         success = self._send_msg(tx_msg)
         return success
 
     def _send_msg(self, tx_msg: str) -> bool:
-        """Transmits a string over UART of proper length"""
+        """Sends the message on the UART transmit line to the STM32 chip.
+
+        Args:
+            tx_msg: The raw string that is to be sent to the UART transmit
+            line.
+
+        Returns:
+            A boolean that is the success of sent UART transaction.
+        """
         try:
             tx_msg = self._add_padding(tx_msg)
             if len(tx_msg) > self._uart_transmit_msg_len:
@@ -244,24 +460,47 @@ class ScienceBridge():
             print("_send_msg exception:", exc)
         return False
 
-    def _servo_transmit(self, angle_0: float, angle_1: float, angle_2: float
-                        ) -> bool:
-        """Transmits a servo angle command message"""
+    def _servo_transmit(
+        self, angle_0: float, angle_1: float, angle_2: float
+    ) -> bool:
+        """Sends a UART message to the STM32 commanding the angles of the
+        three carousel servos.
+
+        Args:
+            angle_0, angle_1, angle_2: A float that represents the angles of
+            the servos. Note that this angle is what the servo interprets as
+            the angle, and it may differ from servo to servo. Also note that
+            the range of angles may vary (the safe range is between about 0
+            and 150).
+
+        Returns:
+            A boolean that is the success of the transaction.
+        """
         tx_msg = f"$SERVO,{angle_0},{angle_1},{angle_2}"
         success = self._send_msg(tx_msg)
         return success
 
-    def _spectral_handler(self, msg: str, ros_msg: Spectral
-                          ) -> None:
-        """Handles a received spectral data message"""
-        msg.split(',')
-        arr = [s.strip().strip('\x00') for s in msg.split(',')]
+    def _spectral_handler(self, tx_msg: str) -> Spectral:
+        """Processes a UART message that contains data of the three carousel
+        spectral sensors and packages it into a ROS struct.
+
+        There are 3 spectral sensors, each having 6 channels. We read a
+        uint16_t from each channel. The Jetson reads byte by byte, so the
+        program combines every two bytes of information into a uint16_t.
+
+        Args:
+            tx_msg: A string that was received from UART that contains data of
+            the three carousel spectral sensors.
+                - Format: <"SPECTRAL,d0_0,d0_1,....d2_5">
+
+        Returns:
+            An Spectral struct that has 18 floats that is the data of the
+            three carousel spectral sensors.
+        """
+        tx_msg.split(',')
+        arr = [s.strip().strip('\x00') for s in tx_msg.split(',')]
         ros_msg_variables = [None] * 18
-        # There are 3 spectral sensors, each having 6 channels.
-        # We read a uint16_t from each channel.
-        # The jetson reads byte by byte, so the program
-        # combines every two bytes of information
-        # into a uint16_t.
+        ros_msg = Spectral()
         count = 1
         for var in ros_msg_variables:
             if not count >= len(arr):
@@ -270,25 +509,47 @@ class ScienceBridge():
             else:
                 setattr(ros_msg, var, 0)
             count += 2
+        return ros_msg
 
-    def _thermistor_handler(self, tx_msg: str, ros_msg: Thermistor) -> None:
-        """Handles a receieved thermistor data message"""
+    def _thermistor_handler(self, tx_msg: str) -> Thermistor:
+        """Processes a UART message that contains data of the three carousel
+        thermistors and packages it into a ROS struct.
+
+        Args:
+            tx_msg: A string that was received from UART that contains data of
+            the three carousel spectral sensors.
+                - Format: <"THERMISTOR,temp_0,temp_1,temp_2">
+
+        Returns:
+            An Thermistor struct that has 3 floats that is the temperature of
+            the three carousel thermistors in Celsius.
+        """
         arr = tx_msg.split(",")
-        ros_msg.temp_0 = float(arr[1])
-        ros_msg.temp_1 = float(arr[2])
-        ros_msg.temp_2 = float(arr[3])
+        return Thermistor(
+            temp_0=float(arr[1]), temp_1=float(arr[2]), temp_2=float(arr[3])
+        )
 
-    def _triad_handler(self, msg: str, ros_msg: Spectral) -> None:
-        """Handles a received triad data message"""
-        msg.split(',')
-        arr = [s.strip().strip('\x00') for s in msg.split(',')]
+    def _triad_handler(self, tx_msg: str) -> Spectral:
+        """Processes a UART message that contains data of the triad sensor on
+        the end effector and packages it into a ROS struct.
+
+        There are triad sensor has 18 channels. We read a uint16_t from each
+        channel. The Jetson reads byte by byte, so the program combines every
+        two bytes of information into a uint16_t.
+
+        Args:
+            tx_msg: A string that was received from UART that contains data of
+            the triad sensor.
+                - Format: <"TRIAD,d0_0,d0_1,....d2_5">
+
+        Returns:
+            An Triad struct that has 18 floats that is the data of the triad
+            sensor.
+        """
+        tx_msg.split(',')
+        arr = [s.strip().strip('\x00') for s in tx_msg.split(',')]
         ros_msg_variables = [None] * 18
-
-        # There are 18 channels.
-        # We read a uint16_t from each channel.
-        # The jetson reads byte by byte, so the program
-        # combines every two byte of information
-        # into a uint16_t.
+        ros_msg = Spectral()
         count = 1
         for var in ros_msg_variables:
             if not count >= len(arr):
@@ -298,10 +559,10 @@ class ScienceBridge():
             else:
                 setattr(ros_msg, var, 0)
             count += 2
+        return ros_msg
 
 
 def main():
-    """Main function"""
     rospy.init_node("science_board")
 
     with ScienceBridge() as bridge:
