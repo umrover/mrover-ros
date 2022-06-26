@@ -80,7 +80,7 @@ STM32 chip.
 ## Services - Server
 
 #### Change Arm Laser State
-Service: [`ChangeDeviceState.srv`](../../../srv/ChangeDeviceState.srv) "change_arm_laser_state" \
+Service: [`ChangeDeviceState.srv`](../../../srv/ChangeDeviceState.srv) "science/change_arm_laser_state" \
 Server: science_board \
 Client: gui \
 
@@ -124,27 +124,27 @@ Client: gui \
 ## Topics - Publisher
 
 #### Heater Auto Shut Off Data
-Message: [`Enable.msg`](../../../msg/Enable.msg) "heater_auto_shut_off_data" \
+Message: [`Enable.msg`](../../../msg/Enable.msg) "science/heater_auto_shut_off_data" \
 Publisher: science_board \
 Subscriber: gui
 
 #### Heater State Data
-Message: [`Heater.msg`](../../../msg/Heater.msg) "heater_state_data" \
+Message: [`Heater.msg`](../../../msg/Heater.msg) "science/heater_state_data" \
 Publisher: science_board \
 Subscriber: gui
 
 #### Spectral Data
-Message: [`Spectral.msg`](../../../msg/Spectral.msg) "spectral_data" \
+Message: [`Spectral.msg`](../../../msg/Spectral.msg) "science/spectral_data" \
 Publisher: science_board \
 Subscriber: gui
 
 #### Spectral Triad Data
-Message: [`Spectral.msg`](../../../msg/Spectral.msg) "spectral_triad_data" \
+Message: [`Spectral.msg`](../../../msg/Spectral.msg) "science/spectral_triad_data" \
 Publisher: science_board \
 Subscriber: gui
 
 #### Thermistor Data
-Message: [`Thermistor.msg`](../../../msg/Thermistor.msg) "thermistor_data" \
+Message: [`Thermistor.msg`](../../../msg/Thermistor.msg) "science/thermistor_data" \
 Publisher: science_board \
 Subscriber: gui
 

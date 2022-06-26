@@ -10,7 +10,7 @@ Equipment Servicing task, and controlling the LED array used during the
 Autonomous Traversal task.
 '''
 import threading
-from typing import Any, Callable
+from typing import Any, Callable, List, TypedDict
 
 import numpy as np
 import rospy
@@ -47,10 +47,10 @@ class ScienceBridge():
         _uart_lock: A lock used to prevent clashing over the UART transmit
         line.
     """
-    _led_map: dict[str, int]
-    _mosfet_dev_map: dict[str, int]
-    _nmea_handle_mapper: dict[str, Callable]
-    _nmea_publisher_mapper: dict[str, rospy.Publisher]
+    _led_map: TypedDict[str, int]
+    _mosfet_dev_map: TypedDict[str, int]
+    _nmea_handle_mapper: TypedDict[str, Callable[[str], Any]]
+    _nmea_publisher_mapper: TypedDict[str, rospy.Publisher]
     _sleep: float
     _uart_transmit_msg_len: int
     _uart_lock: threading.Lock
@@ -68,15 +68,15 @@ class ScienceBridge():
         }
         self._nmea_publisher_mapper = {
             "AUTOSHUTOFF": rospy.Publisher(
-                'heater_auto_shut_off_data', Enable, queue_size=1),
+                'science/heater_auto_shut_off_data', Enable, queue_size=1),
             "HEATER": rospy.Publisher(
-                'heater_state_data', Heater, queue_size=1),
+                'science/heater_state_data', Heater, queue_size=1),
             "SPECTRAL": rospy.Publisher(
-                'spectral_data', Spectral, queue_size=1),
+                'science/spectral_data', Spectral, queue_size=1),
             "THERMISTOR": rospy.Publisher(
-                'thermistor_data', Thermistor, queue_size=1),
+                'science/thermistor_data', Thermistor, queue_size=1),
             "TRIAD": rospy.Publisher(
-                'spectral_triad_data', Spectral, queue_size=1)
+                'science/spectral_triad_data', Spectral, queue_size=1)
         }
         self._sleep = rospy.get_param("/science_board/info/sleep")
         self._uart_transmit_msg_len = rospy.get_param(
@@ -186,7 +186,7 @@ class ScienceBridge():
         Returns:
             A boolean that is the success of sent UART transaction.
         """
-        success = self._servo_transmit(req.angle_0, req.angle_1, req.angle_2)
+        success = self._servo_transmit(req.angles)
         return ChangeServoAnglesResponse(success)
 
     def handle_change_uv_led_carousel_state(
@@ -456,14 +456,12 @@ class ScienceBridge():
             print("_send_msg exception:", exc)
         return False
 
-    def _servo_transmit(
-        self, angle_0: float, angle_1: float, angle_2: float
-    ) -> bool:
-        """Sends a UART message to the STM32 commanding the angles of the
+    def _servo_transmit(self, angles: List[float]) -> bool:
+        """Sends a UART message to the STM32 chip commanding the angles of the
         three carousel servos.
 
         Args:
-            angle_0, angle_1, angle_2: A float that represents the angles of
+            angles: Three floats in an array that represent the angles of
             the servos. Note that this angle is what the servo interprets as
             the angle, and it may differ from servo to servo. Also note that
             the range of angles may vary (the safe range is between about 0
@@ -472,7 +470,7 @@ class ScienceBridge():
         Returns:
             A boolean that is the success of the transaction.
         """
-        tx_msg = f"$SERVO,{angle_0},{angle_1},{angle_2}"
+        tx_msg = f"$SERVO,{angles[0]},{angles[1]},{angles[2]}"
         success = self._send_msg(tx_msg)
         return success
 
@@ -487,7 +485,7 @@ class ScienceBridge():
         Args:
             tx_msg: A string that was received from UART that contains data of
             the three carousel spectral sensors.
-                - Format: <"SPECTRAL,d0_0,d0_1,....d2_5">
+                - Format: <"SPECTRAL,ch_0_0,ch_0_1,....ch_2_5">
 
         Returns:
             An Spectral struct that has 18 floats that is the data of the
@@ -495,15 +493,15 @@ class ScienceBridge():
         """
         tx_msg.split(',')
         arr = [s.strip().strip('\x00') for s in tx_msg.split(',')]
-        ros_msg_variables = [None] * 18
         ros_msg = Spectral()
         count = 1
-        for var in ros_msg_variables:
+        for index in range(len(ros_msg.data)):
             if not count >= len(arr):
-                setattr(ros_msg, var, 0xFFFF & ((np.uint8(arr[count]) << 8) |
-                        (np.uint8(arr[count + 1]))))
+                ros_msg.data[index] = 0xFFFF & (
+                    (np.uint8(arr[count]) << 8) | np.uint8(arr[count + 1])
+                )
             else:
-                setattr(ros_msg, var, 0)
+                ros_msg.data[index] = 0
             count += 2
         return ros_msg
 
@@ -536,7 +534,7 @@ class ScienceBridge():
         Args:
             tx_msg: A string that was received from UART that contains data of
             the triad sensor.
-                - Format: <"TRIAD,d0_0,d0_1,....d2_5">
+                - Format: <"TRIAD,ch_0_0,ch_0_1,....ch_2_5">
 
         Returns:
             An Triad struct that has 18 floats that is the data of the triad
@@ -544,16 +542,15 @@ class ScienceBridge():
         """
         tx_msg.split(',')
         arr = [s.strip().strip('\x00') for s in tx_msg.split(',')]
-        ros_msg_variables = [None] * 18
         ros_msg = Spectral()
         count = 1
-        for var in ros_msg_variables:
+        for index in range(len(ros_msg.data)):
             if not count >= len(arr):
-                setattr(ros_msg, var, 0xFFFF & (
-                    (np.uint8(arr[count + 1]) << 8) |
-                    (np.uint8(arr[count]))))
+                ros_msg.data[index] = 0xFFFF & (
+                    (np.uint8(arr[count + 1]) << 8) | np.uint8(arr[count])
+                )
             else:
-                setattr(ros_msg, var, 0)
+                ros_msg.data[index] = 0
             count += 2
         return ros_msg
 
