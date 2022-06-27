@@ -90,7 +90,7 @@ class ScienceBridge():
 
         self.ser = serial.Serial(
             port=rospy.get_param("/science_board/serial/port"),
-            baudrate=rospy.get_param("/science_board/serial/baudrate"),
+            baudrate=rospy.get_param("/science_board/serial/baud_rate"),
             parity=serial.PARITY_NONE,
             stopbits=serial.STOPBITS_ONE,
             bytesize=serial.EIGHTBITS,

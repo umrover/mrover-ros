@@ -65,8 +65,8 @@ This must be consistent to which MOSFET device the device is connected to electr
 
 #### UART Serial Info - science_board/serial/
 
-You may choose to configure the UART serial info, such as baudrate and timeout.
-The baudrate must be consistent with the firmware flased on the STM32 chip.
+You may choose to configure the UART serial info, such as baud rate and timeout.
+The baud rate must be consistent with the firmware flased on the STM32 chip.
 
 #### Miscellaneous Info - science_board/info/
 

@@ -14,7 +14,7 @@ science_board:
     uv_led_end_effector: 1
     white_led: 5
   serial:
-    baudrate: 38400
+    baud_rate: 38400
     timeout: 0
     port: "/dev/ttyTHS0"
   info:
