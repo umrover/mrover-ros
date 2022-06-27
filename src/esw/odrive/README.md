@@ -90,6 +90,7 @@ This configuration file allows you to configure various things.
 
 You may choose to configure what axis corresponds to either left or right.
 This must be consistent with which axes the left and right wheel are connected to electrically.
+This must only be 0 or 1 (and both should not share the same number).
 
 #### ODrive Config - odrive/config/
 

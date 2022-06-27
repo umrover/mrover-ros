@@ -30,6 +30,10 @@ from odrive.enums import (AXIS_STATE_CLOSED_LOOP_CONTROL, AXIS_STATE_IDLE,
 from odrive.utils import dump_errors
 
 
+class DisconnectedError(Exception):
+    pass
+
+
 class ODriveEvent(Enum):
     """These are the the possible ODrive events.
     The ODriveBridge keeps track of a State. This
@@ -42,16 +46,16 @@ class ODriveEvent(Enum):
 class Modrive:
     """This has the functions that are used to control
     and command the ODrive."""
-    _odrive: Any
     _axes: Any
     _axis_vel_cmd_mult_map: dict[str, float]
     _axis_vel_est_mult_map: dict[str, float]
+    _odrive: Any
+    _usb_lock = threading.Lock
     _watchdog_timeout: float
 
     def __init__(self, odr, axis_0_str: str, axis_1_str: str):
 
         self._odrive = odr
-
         axis_map: dict[int, str] = {
             rospy.get_param("/odrive/axis/left"): 'left',
             rospy.get_param("/odrive/axis/right"): 'right'}
@@ -73,6 +77,7 @@ class Modrive:
                 "/odrive/multiplier/vel_est_multiplier_left"),
             'right': rospy.get_param(
                 "/odrive/multiplier/vel_est_multiplier_right")}
+        self._usb_lock = threading.Lock()
         self._watchdog_timeout = rospy.get_param(
             "/odrive/config/watchdog_timeout")
 
@@ -88,30 +93,51 @@ class Modrive:
 
     def check_errors(self) -> bool:
         """Returns value of sum of errors"""
-        return (self._axes['left'].error
-                + self._axes['right'].error != 0)
+        try:
+            self._usb_lock.acquire()
+            errors = self._axes['left'].error + self._axes['right'].error != 0
+            self._usb_lock.release()
+        except Exception:
+            self._release_if_locked()
+            raise DisconnectedError
+        return errors
 
     def disarm(self) -> None:
         """Disarms the ODrive and sets the velocity to 0"""
         self._set_closed_loop_ctrl()
         self._set_velocity_ctrl()
-
         self.set_vel('left', 0.0)
         self.set_vel('right', 0.0)
-
         self._idle()
 
     def get_measured_current(self, axis: str) -> float:
         """Returns the measured current of
         the requested axis of the ODrive"""
         # measured current [Amps]
-        return self._axes[axis].motor.current_control.Iq_measured
+        try:
+            self._usb_lock.acquire()
+            measured_current = \
+                self._axes[axis].motor.current_control.Iq_measured
+            self._usb_lock.release()
+        except Exception:
+            self._release_if_locked()
+            raise DisconnectedError
+        return measured_current
 
     def get_vel_estimate_m_s(self, axis: str) -> float:
         """Returns the estimated velocity of
         the requested axis of the ODrive"""
-        return (self._axes[axis].encoder.vel_estimate
-                * self._axis_vel_est_mult_map[axis])
+        try:
+            self._usb_lock.acquire()
+            vel_est_m_s = (
+                self._axes[axis].encoder.vel_estimate
+                * self._axis_vel_est_mult_map[axis]
+            )
+            self._usb_lock.release()
+        except Exception:
+            self._release_if_locked()
+            raise DisconnectedError
+        return vel_est_m_s
 
     def reset_watchdog(self) -> None:
         """This resets the watchdog of the ODrives.
@@ -121,22 +147,39 @@ class Modrive:
             print("Resetting watchdog")
             self._disable_watchdog()
             # clears errors cleanly
+            self._usb_lock.acquire()
             for axis in self._axes.values():
                 axis.error = 0
+            self._usb_lock.release()
             self._enable_watchdog()
         except fibre.protocol.ChannelBrokenException:
+            self._release_if_locked()
             print("Failed in _disable_watchdog. Unplugged")
+        except Exception:
+            raise DisconnectedError
 
     def set_current_lim(self, lim: float):
         """Sets the current limit of both ODrive axes"""
-        for axis in self._axes.values():
-            axis.motor.config.current_lim = lim
+        try:
+            self._usb_lock.acquire()
+            for axis in self._axes.values():
+                axis.motor.config.current_lim = lim
+            self._usb_lock.release()
+        except Exception:
+            self._release_if_locked()
+            raise DisconnectedError
 
     def set_vel(self, axis: str, vel: float) -> None:
         """Sets the requested ODrive axis to run the
         motors at the requested velocity"""
-        desired_input_vel_turns_s = vel * self._axis_vel_cmd_mult_map[axis]
-        self._axes[axis].controller.input_vel = desired_input_vel_turns_s
+        try:
+            desired_input_vel_turns_s = vel * self._axis_vel_cmd_mult_map[axis]
+            self._usb_lock.acquire()
+            self._axes[axis].controller.input_vel = desired_input_vel_turns_s
+            self._usb_lock.release()
+        except Exception:
+            self._release_if_locked()
+            raise DisconnectedError
 
     def watchdog_feed(self) -> None:
         """Refreshes the watchdog feed."""
@@ -144,6 +187,7 @@ class Modrive:
             for axis in self._axes.values():
                 axis.watchdog_feed()
         except fibre.protocol.ChannelBrokenException:
+            self._release_if_locked()
             print("Failed in watchdog_feed. Unplugged")
 
     def _enable_watchdog(self) -> None:
@@ -151,25 +195,41 @@ class Modrive:
         try:
             print("Enabling watchdog")
             for axis in self._axes.values():
+                self._usb_lock.acquire()
                 axis.config.watchdog_timeout = self._watchdog_timeout
+                self._usb_lock.release()
                 self.watchdog_feed()
+                self._usb_lock.acquire()
                 axis.config.enable_watchdog = True
-        except Exception as exc:
-            print(exc)
+                self._usb_lock.release()
+        except Exception:
+            self._release_if_locked()
+            raise DisconnectedError
 
     def _disable_watchdog(self) -> None:
         """This disables the watchdog of the ODrives"""
         try:
             print("Disabling watchdog")
+            self._usb_lock.acquire()
             for axis in self._axes.values():
                 axis.config.watchdog_timeout = 0
                 axis.config.enable_watchdog = False
+            self._usb_lock.release()
         except fibre.protocol.ChannelBrokenException:
+            self._release_if_locked()
             print("Failed in _disable_watchdog. Unplugged")
+        except Exception:
+            self._release_if_locked()
+            raise DisconnectedError
 
     def _idle(self) -> None:
         """Sets the ODrive state to idle"""
         self._set_requested_state(AXIS_STATE_IDLE)
+
+    def _release_if_locked(self) -> None:
+        "Release USB if locked"
+        if self._usb_lock.locked():
+            self._usb_lock.release()
 
     def _set_closed_loop_ctrl(self) -> None:
         """Sets the ODrive state to closed loop control"""
@@ -177,13 +237,25 @@ class Modrive:
 
     def _set_control_mode(self, mode) -> None:
         """Sets the control mode of the ODrive"""
-        for axis in self._axes.values():
-            axis.controller.config.control_mode = mode
+        try:
+            self._usb_lock.acquire()
+            for axis in self._axes.values():
+                axis.controller.config.control_mode = mode
+            self._usb_lock.release()
+        except Exception:
+            self._release_if_locked()
+            raise DisconnectedError
 
     def _set_requested_state(self, state) -> None:
         """Sets each ODrive axis state to the requested state"""
-        for axis in self._axes.values():
-            axis.requested_state = state
+        try:
+            self._usb_lock.acquire()
+            for axis in self._axes.values():
+                axis.requested_state = state
+            self._usb_lock.release()
+        except Exception:
+            self._release_if_locked()
+            raise DisconnectedError
 
     def _set_velocity_ctrl(self) -> None:
         """Sets the ODrive to velocity control"""
@@ -264,7 +336,7 @@ class ODriveBridge(object):
     state and various other behavior."""
     _current_lim: float
     _left_speed: float
-    _modrive: Any
+    _modrive: Modrive
     _odrive_ids: dict[str, str]
     _pair: str
     _right_speed: float
@@ -272,7 +344,6 @@ class ODriveBridge(object):
     _start_time: t.clock
     _state: State
     _state_pub: rospy.Publisher
-    _usb_lock: threading.Lock
     _vel_pub: rospy.Publisher
 
     def __init__(self) -> None:
@@ -294,7 +365,6 @@ class ODriveBridge(object):
         self._state = DisconnectedState()
         self._state_pub = rospy.Publisher(
             'drive_state_data', DriveStateData, queue_size=1)
-        self._usb_lock = threading.Lock()
         self._vel_pub = rospy.Publisher(
             'drive_vel_data', DriveVelData, queue_size=1)
 
@@ -306,7 +376,7 @@ class ODriveBridge(object):
         try:
             if self._get_state_string() == "Armed":
                 self._change_left_and_right_speed(ros_msg.left, ros_msg.right)
-        except Exception:
+        except DisconnectedError:
             return
 
     def ros_publish_data_loop(self) -> None:
@@ -314,11 +384,7 @@ class ODriveBridge(object):
         velocity and current data."""
         while not rospy.is_shutdown():
             self._start_time = t.clock()
-            try:
-                self._publish_encoder_msg()
-            except Exception:
-                if self._usb_lock.locked():
-                    self._usb_lock.release()
+            self._publish_encoder_msg()
 
     def watchdog_while_loop(self):
         """Watchdog while loop"""
@@ -337,14 +403,13 @@ class ODriveBridge(object):
             elif previously_lost_comms:
                 previously_lost_comms = False
                 print("regained comms")
+
             try:
                 self._update()
-            except Exception:
-                if self._usb_lock.locked():
-                    self._usb_lock.release()
-
+            except DisconnectedError:
                 self._bridge_on_event(
-                    ODriveEvent.DISCONNECTED_ODRIVE_EVENT)
+                    ODriveEvent.DISCONNECTED_ODRIVE_EVENT
+                )
 
     def _bridge_on_event(self, event: ODriveEvent) -> None:
         """
@@ -352,12 +417,12 @@ class ODriveBridge(object):
         delegated to the given states which then handle the event.
         The result is then assigned as the new state.
         """
-
-        print("on event called, ODrive event:", event)
-        self._usb_lock.acquire()
-        self._state = self._state.on_event(event, self._modrive)
-        self._usb_lock.release()
-        self._publish_state_msg(self._get_state_string())
+        try:
+            print("on event called, ODrive event:", event)
+            self._state = self._state.on_event(event, self._modrive)
+            self._publish_state_msg(self._get_state_string())
+        except Exception:
+            pass
 
     def _change_left_and_right_speed(self, left: float, right: float) -> None:
         self._speed_lock.acquire()
@@ -377,11 +442,9 @@ class ODriveBridge(object):
         odrive = odv.find_any(serial_number=odrive_id)
 
         print("found odrive")
-        self._usb_lock.acquire()
         self._modrive = Modrive(
             odrive)
         self._modrive.set_current_lim(self._current_lim)
-        self._usb_lock.release()
 
     def _get_state_string(self) -> str:
         """Returns the state of the ODriveBridge
@@ -396,16 +459,14 @@ class ODriveBridge(object):
         """Publishes the velocity and current
         data message over ROS of the requested axis"""
         ros_msg = DriveVelData()
-
-        self._usb_lock.acquire()
-        ros_msg.current_amps = self._modrive.get_measured_current(axis)
-        ros_msg.vel_m_s = self._modrive.get_vel_estimate_m_s(axis)
-        self._usb_lock.release()
-
-        # e.g. "back_left" or "middle_right" or "front_left"
-        ros_msg.wheel = f'{self.pair}_{axis}'
-
-        self._vel_pub.publish(ros_msg)
+        try:
+            ros_msg.current_amps = self._modrive.get_measured_current(axis)
+            ros_msg.vel_m_s = self._modrive.get_vel_estimate_m_s(axis)
+            # e.g. "back_left" or "middle_right" or "front_left"
+            ros_msg.wheel = f'{self.pair}_{axis}'
+            self._vel_pub.publish(ros_msg)
+        except DisconnectedError:
+            return
 
     def _publish_encoder_msg(self) -> None:
         """Publishes velocity and current data over ROS
@@ -430,26 +491,19 @@ class ODriveBridge(object):
         In the error state, it will create an error event."""
         if str(self._state) == "ArmedState":
             try:
-                self._usb_lock.acquire()
                 errors = self._modrive.check_errors()
                 self._modrive.watchdog_feed()
-                self._usb_lock.release()
-
-            except Exception:
-                # Enter this statement if unable to talk to ODrive.
-                if self._usb_lock.locked():
-                    self._usb_lock.release()
+            except DisconnectedError:
                 errors = 0
                 self._bridge_on_event(ODriveEvent.DISCONNECTED_ODRIVE_EVENT)
+                return
 
             if errors:
                 self._bridge_on_event(ODriveEvent.ODRIVE_ERROR_EVENT)
                 return
 
-            self._usb_lock.acquire()
             self._modrive.set_vel('left', self._left_speed)
             self._modrive.set_vel('right', self._right_speed)
-            self._usb_lock.release()
 
         elif str(self._state) == "DisconnectedState":
             self._connect()
