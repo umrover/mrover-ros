@@ -1,4 +1,3 @@
-Code to control the USB Cameras
 ## Table of Contents
 
 [Project Overview](#project-overview) \
@@ -126,7 +125,7 @@ Still need to figure out a way to get camera streams onto the gui.
 
 ## Error Handling
 
-### If user requests a camera that does not exist
+#### If user requests a camera that does not exist
 If the user requests to view the stream from a device but it does not exist, then the code does not crash.
 Shown through an example, the behavior in the code is as follows: 
 In this example, a ChangeCameras service requests to view /dev/video5 on pipeline 0.
@@ -143,7 +142,7 @@ an exception handler. Then, it will just assign no camera to it.
 function. Once it heads into the capture_and_render_image function, an exception is caught
 once the jetson.utils.videoSource object is unable to run the capture function.
 
-### If the camera disconnects while the device is currently streaming
+#### If the camera disconnects while the device is currently streaming
 Currently, if the camera disconnects while the user is streaming it, the program hangs. The current reason is unknown.
 To fix this, one should check where it hangs. If it hangs on the Capture function, then one should look into seeing if the video source is available first or not.
 
@@ -154,7 +153,6 @@ Actual behavior: The program freezes (presumably on the Capture function).
 ---
 
 ## TODO
-- [ ] Standardize naming and order for whether pipeline or device goes first in arguments.
 - [ ] Test the following: If an invalid device is being requested, does the response actually say -1 or does it not? Basically, does it only realize the device is invalid too late, as in after it sends the response?
 - [ ] Make sure that code makes logical sense... I'm reading through logic and head hurts
 - [ ] Test the exact behavior for when "user requests a camera that does not exist" and update README and optimize code.
