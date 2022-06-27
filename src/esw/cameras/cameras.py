@@ -128,7 +128,7 @@ class Pipeline:
         Args:
             arguments: A list of strings that is needed for the
             jetson.utils objects' capture arguments.
-            ip: A string that is the assigned mission_ip
+            ip: A string that is the assigned mission_ip.
 
         Returns:
             None.
@@ -457,7 +457,7 @@ class PipelineManager:
             that is being assigned a camera device.
 
         Returns:
-            None
+            None.
         """
         self._pipelines[pipe_index].update_device_number(
             self._get_current_arguments(),
@@ -473,10 +473,10 @@ class PipelineManager:
         self._active_cameras.
 
         Args:
-            None
+            None.
 
         Returns:
-            None
+            None.
         """
         for index, pipeline in enumerate(self._pipelines):
             self._active_cameras[index] = pipeline.device_number
@@ -485,16 +485,16 @@ class PipelineManager:
         """Updates the video outputs and IPs and video resolutions to what is
         currently being requested.
 
-        Only skip if 0 or 1 because it's the same either way
+        Only skip if 0 or 1 because it's the same either way.
         NOTE: This is an optimization trick made because of how we made the
         camera system on the rover. This may change in the future if we decide
         to make the first two ips different per mission.
 
         Args:
-            None
+            None.
 
         Returns:
-            None
+            None.
         """
         for pipeline_number, pipeline in enumerate(self._pipelines):
             if pipeline_number == 0 or pipeline_number == 1:
@@ -512,7 +512,7 @@ class PipelineManager:
             Requires mission_name to be lower case.
 
         Returns:
-            None
+            None.
         """
         assert mission_name.islower(), "mission_name should be lower case"
         if not self._is_mission_name_valid(mission_name):
