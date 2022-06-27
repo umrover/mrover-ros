@@ -387,16 +387,16 @@ class PipelineManager:
         quality = self._mission_res_map[self._current_mission]
         return self._res_args_map[quality]
 
-    def _get_ip(self, pipeline_number: int) -> str:
+    def _get_ip(self, pipe_index: int) -> str:
         """Returns the ip of a pipeline.
 
         Args:
-            pipeline_number: An integer that is the number of the pipeline.
+            pipe_index: An integer that is the number of the pipeline.
 
         Returns:
             A string that that is the ip of the pipeline.
         """
-        return self._get_all_ips()[pipeline_number]
+        return self._get_all_ips()[pipe_index]
 
     def _is_mission_name_valid(self, mission_name: str) -> bool:
         """Returns True if the mission_name is valid.
@@ -411,18 +411,20 @@ class PipelineManager:
         assert mission_name.islower(), "mission_name should be lower case"
         return mission_name in self._mission_res_map.keys()
 
-    def _is_pipeline_streaming_device(self, index: int, device: int) -> bool:
+    def _is_pipeline_streaming_device(
+        self, pipe_index: int, device: int
+    ) -> bool:
         """Returns True if the pipeline is streaming the device.
 
         Args:
-            index: An integer that is the number of the pipeline.
+            pipe_index: An integer that is the number of the pipeline.
             device: The number of the camera device.
 
         Returns:
             A boolean that tells if the pipeline is currently streaming the
             device.
         """
-        pipeline_device_number = self._pipelines[index].device_number
+        pipeline_device_number = self._pipelines[pipe_index].device_number
         return pipeline_device_number == device
 
     def _pipeline_device_is_unique(self, excluded_pipe_index: int) -> bool:
@@ -446,24 +448,24 @@ class PipelineManager:
                 return False
         return True
 
-    def _start_pipeline(self, dev_index: int, pip_index: int) -> None:
+    def _start_pipeline(self, dev_index: int, pipe_index: int) -> None:
         """Assigns a camera device a pipeline.
 
         Args:
             dev_index: An integer that is the assigned camera device.
-            pip_index: An integer that is the number of the pipeline
+            pipe_index: An integer that is the number of the pipeline
             that is being assigned a camera device.
 
         Returns:
             None
         """
-        self._pipelines[pip_index].update_device_number(
+        self._pipelines[pipe_index].update_device_number(
             self._get_current_arguments(),
             dev_index, self._video_sources[dev_index]
         )
         print(
             f"Playing camera {dev_index} on \
-            {self._get_ip(pip_index)}."
+            {self._get_ip(pipe_index)}."
         )
 
     def _update_active_cameras(self) -> None:
