@@ -54,7 +54,7 @@
     <visual>
       <origin rpy="0 0 0" xyz="-0.25 0.0 0.2" />
       <geometry>
-        <mesh filename="package://mrover/rover_description/meshes/rover.stl" scale="1 1 1" />
+        <mesh filename="package://mrover/rover_description/meshes/rover.dae" scale="1 1 1" />
       </geometry>
       <material name="blue" />
     </visual>
@@ -71,7 +71,7 @@
       <visual>
         <origin rpy="${reflect * PI/2} 0 0" xyz="0.0 0.0 0.0" />
         <geometry>
-          <mesh filename="package://mrover/rover_description/meshes/wheel.stl" scale="1 1 1" />
+          <mesh filename="package://mrover/rover_description/meshes/wheel.dae" scale="1 1 1" />
         </geometry>
         <material name="red" />
       </visual>
@@ -87,7 +87,7 @@
       <visual>
         <origin rpy="${reflect * PI/2} 0 0" xyz="0.0 0.0 0.0" />
         <geometry>
-          <mesh filename="package://mrover/rover_description/meshes/wheel.stl" scale="1 1 1" />
+          <mesh filename="package://mrover/rover_description/meshes/wheel.dae" scale="1 1 1" />
         </geometry>
         <material name="red" />
       </visual>
@@ -104,7 +104,7 @@
       <visual>
         <origin rpy="${reflect * PI/2} 0 0" xyz="0.0 0.0 0.0" />
         <geometry>
-          <mesh filename="package://mrover/rover_description/meshes/wheel.stl" scale="1 1 1" />
+          <mesh filename="package://mrover/rover_description/meshes/wheel.dae" scale="1 1 1" />
         </geometry>
         <material name="red" />
       </visual>
