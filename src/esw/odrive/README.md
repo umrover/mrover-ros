@@ -21,12 +21,13 @@
 
 ## Project Overview
 
-The ODrives codebase deals with controlling the ODrive motor controllers to drive the wheels.
-For the 2022 Mars Rover Rosie, there are 3 ODrive motor controllers to drive the wheels.
-Each ODrive connects to the Jetson via USB. Each ODrive has two axes and each axis is assigned
-a wheel. To simplify wiring and code, the axis of each ODrive are either all left or all right.
-Also, the wheels that are connected to one singular ODrive are opposite each other (i.e. an ODrive
-is assigned either the front, middle, or back wheels).
+The ODrives codebase deals with controlling the ODrive motor controllers to
+drive the wheels. For the 2022 Mars Rover Rosie, there are 3 ODrive motor
+controllers to drive the wheels. Each ODrive connects to the Jetson via USB.
+Each ODrive has two axes and each axis is assigned a wheel. To simplify wiring
+and code, the axis of each ODrive are either all left or all right. Also, the
+wheels that are connected to one singular ODrive are opposite each other (i.e.
+an ODrive is assigned either the front, middle, or back wheels).
 
 ---
 
@@ -66,9 +67,9 @@ In this state the ODrive has detected a system error and will reboot, going from
 
 #### Event 
 
-The ODriveEvent enums dictate the behavior of the changing of States.
-There ODriveEvents are the following: When the ODrive is disconnected, trying to arm, or
-if there is an error.
+Dictates the behavior of the changing of States.
+The ODriveEvents are the following: When the ODrive is disconnected,
+trying to arm, or if there is an error.
 
 #### Modrive
 
@@ -253,7 +254,7 @@ Upon reboot check ```cat /proc/cmdline``` to verify the change was put into plac
 
 Also make sure nothing else is on the usb bus (including the wifi chip)
 
-### USB Forwarding on VM 
+#### USB Forwarding on VM 
 
 Make sure the ODrive is connected via USB and type \
 `$ lsusb` . From list find the idVendor, idProduct, and MODE of the odrive. It will be listed under the info for the InterBiometrics 
