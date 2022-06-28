@@ -11,20 +11,6 @@
   <!-- <xacro:property name="mesh_scale" value="0.0254 0.0254 0.0254" /> -->
   <xacro:property name="PI" value="3.141592" />
 
-  <!--Color Properties-->
-  <material name="blue">
-    <color rgba="0 0 0.8 1" />
-  </material>
-  <material name="black">
-    <color rgba="0 0 0 1" />
-  </material>
-  <material name="white">
-    <color rgba="1 1 1 1" />
-  </material>
-  <material name="red">
-    <color rgba="0.8 0.0 0.0 1.0" />
-  </material>
-
   <!--Interial macros-->
   <xacro:macro name="cylinder_inertia" params="m r h">
     <inertial>
@@ -56,7 +42,6 @@
       <geometry>
         <mesh filename="package://mrover/rover_description/meshes/rover.dae" scale="1 1 1" />
       </geometry>
-      <material name="blue" />
     </visual>
     <collision>
       <geometry>
@@ -73,7 +58,6 @@
         <geometry>
           <mesh filename="package://mrover/rover_description/meshes/wheel.dae" scale="1 1 1" />
         </geometry>
-        <material name="red" />
       </visual>
       <collision>
         <geometry>
@@ -89,7 +73,6 @@
         <geometry>
           <mesh filename="package://mrover/rover_description/meshes/wheel.dae" scale="1 1 1" />
         </geometry>
-        <material name="red" />
       </visual>
       <collision>
         <geometry>
@@ -106,7 +89,6 @@
         <geometry>
           <mesh filename="package://mrover/rover_description/meshes/wheel.dae" scale="1 1 1" />
         </geometry>
-        <material name="red" />
       </visual>
       <collision>
         <geometry>
@@ -168,7 +150,6 @@
       <geometry>
         <mesh filename="package://mrover/rover_description/meshes/ZED2i.dae" scale="1 1 1" />
       </geometry>
-      <material name="red" />
     </visual>
 
     <inertial>

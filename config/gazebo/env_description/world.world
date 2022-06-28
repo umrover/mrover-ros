@@ -109,6 +109,11 @@
               <uri>model://ground.dae</uri>
             </mesh>
           </geometry>
+          <material>
+            <shader type="normal_map_object_space">
+              <normal_map>model://soil_normal.png</normal_map>
+            </shader>
+          </material>
         </visual>
         <self_collide>0</self_collide>
         <enable_wind>0</enable_wind>
