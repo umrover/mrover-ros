@@ -1,13 +1,15 @@
 from __future__ import annotations
 
 import numpy as np
+
 from geometry_msgs.msg import Pose, Transform
 from ros_numpy import numpify
 from tf.transformations import (quaternion_inverse, quaternion_matrix,
                                 quaternion_multiply, rotation_from_matrix)
-from tf_utils import point_to_vector3, vector3_to_point
+from .tf_utils import point_to_vector3, vector3_to_point
 
 
+# TODO: adhere to https://github.com/umrover/mrover-ros/discussions/46
 class SE3(Pose):
 
     def __init__(self, *args, **kwargs):
@@ -50,7 +52,7 @@ class SE3(Pose):
 
     def pos_distance_to(self, p: SE3) -> float:
         """
-        Get the euclidean distance from the position of this SE3 pose to the position of another SE3 pose.
+        Get the euclidean distance from the position of this SE3 pose to the position of another SE3 pose
 
         :param p: another SE3 pose object
         :returns: euclidean distance between the two SE3 poses

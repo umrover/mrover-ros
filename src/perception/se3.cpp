@@ -10,7 +10,7 @@ SE3::SE3(Eigen::Vector3d const& position, Eigen::Quaterniond const& rotation) : 
 
 /**
  *
- * @param pose
+ * @param transform
  * @return
  */
 SE3 SE3::applyLeft(SE3 const& transform) {
@@ -18,6 +18,15 @@ SE3 SE3::applyLeft(SE3 const& transform) {
     affine.translate(transform.position);
     affine.rotate(transform.rotation);
     return {affine * position, transform.rotation * rotation};
+}
+
+/**
+ *
+ * @param transform
+ * @return
+ */
+SE3 SE3::applyRight([[maybe_unused]] SE3 const& transform) {
+    throw std::logic_error("Not implemented yet!");
 }
 
 /**
@@ -41,4 +50,39 @@ SE3 SE3::fromTfTree(tf2_ros::Buffer const& buffer, std::string const& fromFrameI
  */
 void SE3::pushToTfTree(tf2_ros::TransformBroadcaster& broadcaster, std::string const& childFrameId, std::string const& parentFrameId, SE3 const& tf) {
     broadcaster.sendTransform(tf.toTransformStamped(parentFrameId, childFrameId));
+}
+
+/**
+ *
+ * @return
+ */
+Eigen::Vector3d const& SE3::positionVector() const {
+    return position;
+}
+
+/**
+ *
+ * @return
+ */
+Eigen::Quaterniond const& SE3::rotationQuaternion() const {
+    return rotation;
+}
+
+/**
+ *
+ * @return
+ */
+Eigen::Matrix4d SE3::rotationMatrix() const {
+    auto affine = Eigen::Affine3d::Identity();
+    affine.rotate(rotation);
+    return affine.matrix();
+}
+
+/**
+ *
+ * @param other
+ * @return
+ */
+double SE3::distanceTo(SE3 const& other) {
+    return (position - other.position).squaredNorm();
 }

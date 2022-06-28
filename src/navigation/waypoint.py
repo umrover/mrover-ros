@@ -1,65 +1,90 @@
-from typing import Tuple
+from typing import List, Optional
 
 import numpy as np
-import tf2_ros
-from common import BaseState, Context
-from geometry_msgs.msg import Twist
-from tf.transformations import quaternion_matrix
 
+import tf2_ros
+from context import Context
+from drive import get_drive_command
+from mrover.msg import Waypoint
+from state import BaseState
+from util import SE3
+
+STOP_THRESH = 0.5
 DRIVE_FWD_THRESH = 0.95
+NO_FIDUCIAL = -1
 
 
 class WaypointState(BaseState):
-    def __init__(self, context: Context):
+    def __init__(self, context: Context,
+                 add_outcomes: List[str] = None,
+                 add_input_keys: List[str] = None,
+                 add_output_keys: List[str] = None):
+        add_outcomes = add_outcomes or []
+        add_input_keys = add_input_keys or []
+        add_output_keys = add_output_keys or []
         super().__init__(
             context,
-            outcomes=['waypoint_traverse', 'waypoint_done'],
-            input_keys=['waypoint_index', 'waypoints'],
-            output_keys=['waypoint_index']
+            add_outcomes + ['waypoint_traverse', 'single_fiducial', 'done'],
+            add_input_keys, add_output_keys
         )
 
-    def waypoint_transform(self, ud, wp_idx: int) -> Tuple[np.ndarray, np.ndarray]:
-        return self.transform(ud.waypoints[wp_idx])
+    def waypoint_pose(self, wp_idx: int) -> SE3:
+        return self.context.get_transform(self.context.course.waypoints[wp_idx].tf_id)
 
     def rover_forward(self) -> np.ndarray:
-        _, rover_rot = self.rover_transform()
-        # Extract what the x-axis (forward) is with respect to our rover rotation
-        return quaternion_matrix(rover_rot)[0:3, 0]
+        return self.context.get_rover_pose().x_vector()
 
-    def evaluate(self, ud):
-        if ud.waypoint_index >= len(ud.waypoints):
-            return 'waypoint_done'
+    def get_fid_pos(self, fid_id: int) -> Optional[np.ndarray]:
         try:
-            course_pos, course_rot = self.waypoint_transform(ud, ud.waypoint_index)
-            rover_pos, _ = self.rover_transform()
-            # Get vector from rover to waypoint
-            target_dir = course_pos - rover_pos
-            target_dist = np.linalg.norm(target_dir)
-            if target_dist == 0:
-                target_dist = np.finfo(float).eps
-            # Normalize direction
-            target_dir /= target_dist
-            rover_dir = self.rover_forward()
-            # Both vectors are unit vectors so the dot product magnitude is 0-1
-            # 0 alignment is perpendicular, 1 is parallel (fully aligned)
-            alignment = np.dot(target_dir, rover_dir)
+            fid_pose = self.context.get_transform(f'fiducial{fid_id}')
+            return fid_pose.position_vector()
+        except (tf2_ros.LookupException, tf2_ros.ConnectivityException, tf2_ros.ExtrapolationException):
+            return None
 
-            if target_dist < 0.5:
-                ud.waypoint_index += 1
-            else:
-                cmd_vel = Twist()
-                if alignment > DRIVE_FWD_THRESH:
-                    # We are pretty aligned so we can drive straight
-                    error = target_dist
-                    cmd_vel.linear.x = np.clip(error, 0.0, 1.0)
-                # Determine the sign of our effort by seeing if we are to the left or to the right of the target
-                # This is done by dotting rover_dir and target_dir rotated 90 degrees ccw
-                perp_alignment = rover_dir[0] * -target_dir[1] + rover_dir[1] * target_dir[0]
-                sign = -np.sign(perp_alignment)
-                # 1 is target alignment
-                error = 1.0 - alignment
-                cmd_vel.angular.z = np.clip(error * 100.0 * sign, -1.0, 1.0)
-                self.context.vel_cmd_publisher.publish(cmd_vel)
+    def current_waypoint(self, ud) -> Optional[Waypoint]:
+        """
+        :param ud:  State machine user data
+        :return:    Next waypoint to reach if we have an active course
+        """
+        if self.context.course is None or ud.waypoint_index >= len(self.context.course.waypoints):
+            return None
+        return self.context.course.waypoints[ud.waypoint_index]
+
+    def current_fid_pos(self, ud) -> Optional[np.ndarray]:
+        current_waypoint = self.current_waypoint(ud)
+        if current_waypoint is None or current_waypoint.fiducial_id == NO_FIDUCIAL:
+            return None
+
+        return self.get_fid_pos(current_waypoint.fiducial_id)
+
+    def evaluate(self, ud) -> str:
+        """
+        Handle driving to a waypoint defined by a linearized cartesian position.
+        If the waypoint is associated with a fiducial id, go into that state early if we see it,
+        otherwise wait until we get there to conduct a more thorough search.
+        :param ud:  State machine user data
+        :return:    Next state
+        """
+        current_waypoint = self.current_waypoint(ud)
+        if current_waypoint is None:
+            return 'done'
+
+        # Go into the single fiducial state if we see it early
+        if current_waypoint.fiducial_id != NO_FIDUCIAL and self.current_fid_pos(ud) is not None:
+            return 'single_fiducial'
+
+        try:
+            waypoint_pos = self.waypoint_pose(ud.waypoint_index).position_vector()
+            cmd_vel, arrived = get_drive_command(waypoint_pos, self.context.get_rover_pose(),
+                                                 STOP_THRESH, DRIVE_FWD_THRESH)
+            if arrived:
+                if current_waypoint.fiducial_id == NO_FIDUCIAL:
+                    # We finished a regular waypoint, go onto the next one
+                    ud.waypoint_index += 1
+                else:
+                    # We finished a waypoint associated with a fiducial id, but we have not seen it yet.
+                    return 'single_fiducial'
+            self.context.drive_command(cmd_vel)
         except (tf2_ros.LookupException, tf2_ros.ConnectivityException, tf2_ros.ExtrapolationException):
             # TODO: probably go into some waiting state
             pass

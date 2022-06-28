@@ -11,7 +11,9 @@ jobs:
     name: Code Style Check
     runs-on: ubuntu-20.04
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v3
+        with:
+          path: 'mrover'
       - name: Run clang-format style check for C/C++/Protobuf programs.
         uses: jidicula/clang-format-action@v4.6.2
         with:
@@ -19,8 +21,8 @@ jobs:
           check-path: "src"
       - uses: ricardochaves/python-lint@v1.4.0
         with:
-          python-root-list: "src scripts"
-          use-isort: true
+          python-root-list: "."
+          use-isort: false
           use-pycodestyle: true
           extra-pycodestyle-options: "--max-line-length=119"
           use-pylint: false # TODO: Would have to pip install everything for this

@@ -43,12 +43,6 @@ void FiducialsNode::imageCallback(sensor_msgs::ImageConstPtr const& msg) {
             immediateFid.imageCenter = imageCenter;
         }
 
-        fiducial_msgs::FiducialTransformArray fidArray{};
-        fidArray.header.frame_id = ODOM_FRAME;
-        fidArray.header.stamp = ros::Time::now();
-        fidArray.header.seq = mSeqNum;
-        fidArray.transforms.reserve(mPersistentFiducials.size());
-
         // Add readings to the persistent representations of the fiducials
         for (auto [id, immediateFid]: mImmediateFiducials) {
             PersistentFiducial& fid = mPersistentFiducials[id];
@@ -74,8 +68,6 @@ void FiducialsNode::imageCallback(sensor_msgs::ImageConstPtr const& msg) {
 
             SE3::pushToTfTree(mTfBroadcaster, "fiducial" + std::to_string(id), ODOM_FRAME, fid.getFidInOdom());
         }
-
-        mFidPub.publish(fidArray);
 
         size_t detectedCount = mIds.size();
         if (mIsVerbose || !mPrevDetectedCount.has_value() || detectedCount != mPrevDetectedCount.value()) {
