@@ -48,8 +48,6 @@ class DoneState(BaseState):
         super().__init__(
             context,
             add_outcomes=['done', 'waypoint_traverse'],
-            add_input_keys=[],
-            add_output_keys=[]
         )
 
     def evaluate(self, ud):
