@@ -29,14 +29,14 @@ class WaypointState(BaseState):
         )
 
     def waypoint_pose(self, wp_idx: int) -> SE3:
-        return self.transform(self.context.goal.course.waypoints[wp_idx].tf_id)
+        return self.context.get_transform(self.context.course.waypoints[wp_idx].tf_id)
 
     def rover_forward(self) -> np.ndarray:
-        return self.rover_pose().x_vector()
+        return self.context.get_rover_pose().x_vector()
 
     def get_fid_pos(self, fid_id: int) -> Optional[np.ndarray]:
         try:
-            fid_pose = self.transform(f'fiducial{fid_id}')
+            fid_pose = self.context.get_transform(f'fiducial{fid_id}')
             return fid_pose.position_vector()
         except (tf2_ros.LookupException, tf2_ros.ConnectivityException, tf2_ros.ExtrapolationException):
             return None
@@ -46,9 +46,9 @@ class WaypointState(BaseState):
         :param ud:  State machine user data
         :return:    Next waypoint to reach if we have an active course
         """
-        if self.context.goal.course is None or ud.waypoint_index >= len(self.context.goal.course.waypoints):
+        if self.context.course is None or ud.waypoint_index >= len(self.context.course.waypoints):
             return None
-        return self.context.goal.course.waypoints[ud.waypoint_index]
+        return self.context.course.waypoints[ud.waypoint_index]
 
     def current_fid_pos(self, ud) -> Optional[np.ndarray]:
         current_waypoint = self.current_waypoint(ud)
@@ -75,7 +75,8 @@ class WaypointState(BaseState):
 
         try:
             waypoint_pos = self.waypoint_pose(ud.waypoint_index).position_vector()
-            cmd_vel, arrived = get_drive_command(waypoint_pos, self.rover_pose(), STOP_THRESH, DRIVE_FWD_THRESH)
+            cmd_vel, arrived = get_drive_command(waypoint_pos, self.context.get_rover_pose(),
+                                                 STOP_THRESH, DRIVE_FWD_THRESH)
             if arrived:
                 if current_waypoint.fiducial_id == NO_FIDUCIAL:
                     # We finished a regular waypoint, go onto the next one
@@ -83,7 +84,7 @@ class WaypointState(BaseState):
                 else:
                     # We finished a waypoint associated with a fiducial id, but we have not seen it yet.
                     return 'single_fiducial'
-            self.context.rover.drive_command(cmd_vel)
+            self.context.drive_command(cmd_vel)
         except (tf2_ros.LookupException, tf2_ros.ConnectivityException, tf2_ros.ExtrapolationException):
             # TODO: probably go into some waiting state
             pass

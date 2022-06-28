@@ -10,7 +10,7 @@ FIDUCIAL_STOP_THRESHOLD = 1.75
 
 class SingleFiducialState(WaypointState):
     def __init__(self, context: Context):
-        super().__init__(context, add_outcomes=[], add_input_keys=['fiducial_id'], add_output_keys=[])
+        super().__init__(context, add_input_keys=['fiducial_id'])
 
     def evaluate(self, ud) -> str:
         """
@@ -25,15 +25,15 @@ class SingleFiducialState(WaypointState):
             # TODO: add more advanced logic than just driving forward
             cmd_vel = Twist()
             cmd_vel.linear.x = 0.5
-            self.context.rover.drive_command(cmd_vel)
+            self.context.drive_command(cmd_vel)
             return 'single_fiducial'
 
         try:
-            cmd_vel, arrived = get_drive_command(fid_pos, self.rover_pose(), STOP_THRESH, DRIVE_FWD_THRESH)
+            cmd_vel, arrived = get_drive_command(fid_pos, self.context.get_rover_pose(), STOP_THRESH, DRIVE_FWD_THRESH)
             if arrived:
                 ud.waypoint_index += 1
                 return 'waypoint_traverse'
-            self.context.rover.drive_command(cmd_vel)
+            self.context.drive_command(cmd_vel)
         except (tf2_ros.LookupException, tf2_ros.ConnectivityException, tf2_ros.ExtrapolationException):
             # TODO: probably go into some waiting state
             pass

@@ -1,11 +1,9 @@
 from abc import ABC
 from typing import List
 
-import rospy
 import smach
 from context import Context
 from geometry_msgs.msg import Twist
-from util.SE3 import SE3
 
 
 class BaseState(smach.State, ABC):
@@ -44,19 +42,6 @@ class BaseState(smach.State, ABC):
         """Override me instead of execute!"""
         pass
 
-    def rover_pose(self) -> SE3:
-        return self.transform('base_link')
-
-    def transform(self, frame: str, parent_frame: str = 'odom') -> SE3:
-        """
-        :param frame:
-        :param parent_frame:
-        :return:
-        """
-        # TODO: use SE3 function to lookup
-        stamped_transform = self.context.environment.tf_buffer.lookup_transform(parent_frame, frame, rospy.Time(0))
-        return SE3.from_tf(stamped_transform.transform)
-
 
 class DoneState(BaseState):
     def __init__(self, context: Context):
@@ -69,10 +54,10 @@ class DoneState(BaseState):
 
     def evaluate(self, ud):
         # Check if we have a course to traverse
-        if self.context.goal.course and ud.waypoint_index != len(self.context.goal.course.waypoints):
+        if self.context.course and ud.waypoint_index != len(self.context.course.waypoints):
             return 'waypoint_traverse'
 
         # Stop rover
         cmd_vel = Twist()
-        self.context.rover.drive_command(cmd_vel)
+        self.context.drive_command(cmd_vel)
         return 'done'
