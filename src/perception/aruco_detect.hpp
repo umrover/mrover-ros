@@ -55,7 +55,6 @@ private:
     ros::NodeHandle mNh;
     ros::NodeHandle mPnh;
 
-    ros::Publisher mFidPub;
     image_transport::Publisher mImgPub;
     ros::ServiceServer mServiceEnableDetections;
 

@@ -10,7 +10,7 @@ jobs:
     container: umrover1/ros:auton
     if: github.event.pull_request.draft == false
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v3
       - run: sudo apt-get update -y && sudo apt-get install python3-catkin-tools -y && rosdep update
       - uses: betwo/github-setup-catkin@master
         with:
