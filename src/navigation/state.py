@@ -14,11 +14,17 @@ class BaseState(smach.State, ABC):
     """
     context: Context
 
-    def __init__(self, context: Context, outcomes: List[str], input_keys: List[str], output_keys: List[str]):
+    def __init__(self, context: Context,
+                 add_outcomes: List[str] = None,
+                 add_input_keys: List[str] = None,
+                 add_output_keys: List[str] = None):
+        add_outcomes = add_outcomes or []
+        add_input_keys = add_input_keys or []
+        add_output_keys = add_output_keys or []
         super().__init__(
-            outcomes + ['terminated'],
-            input_keys + ['waypoint_index'],
-            output_keys + ['waypoint_index']
+            add_outcomes + ['terminated'],
+            add_input_keys + ['waypoint_index'],
+            add_output_keys + ['waypoint_index']
         )
         self.context = context
 
@@ -48,7 +54,7 @@ class BaseState(smach.State, ABC):
         :return:
         """
         # TODO: use SE3 function to lookup
-        stamped_transform = self.context.tf_buffer.lookup_transform(parent_frame, frame, rospy.Time(0))
+        stamped_transform = self.context.environment.tf_buffer.lookup_transform(parent_frame, frame, rospy.Time(0))
         return SE3.from_tf(stamped_transform.transform)
 
 
@@ -56,17 +62,17 @@ class DoneState(BaseState):
     def __init__(self, context: Context):
         super().__init__(
             context,
-            outcomes=['done', 'waypoint_traverse'],
-            input_keys=[],
-            output_keys=[]
+            add_outcomes=['done', 'waypoint_traverse'],
+            add_input_keys=[],
+            add_output_keys=[]
         )
 
     def evaluate(self, ud):
         # Check if we have a course to traverse
-        if self.context.course and ud.waypoint_index != len(self.context.course.waypoints):
+        if self.context.goal.course and ud.waypoint_index != len(self.context.goal.course.waypoints):
             return 'waypoint_traverse'
 
         # Stop rover
         cmd_vel = Twist()
-        self.context.vel_cmd_publisher.publish(cmd_vel)
+        self.context.rover.drive_command(cmd_vel)
         return 'done'

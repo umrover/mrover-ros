@@ -8,7 +8,6 @@ import rospy
 import smach
 import smach_ros
 from context import Context
-from geometry_msgs.msg import Twist
 from single_fiducial import SingleFiducialState
 from state import DoneState
 from waypoint import WaypointState
@@ -61,7 +60,7 @@ class Navigation(threading.Thread):
         self.state_machine.request_preempt()
         # Wait for smach thread to terminate
         self.join()
-        self.context.vel_cmd_publisher.publish(Twist())
+        self.context.rover.drive_stop()
 
 
 def main():

@@ -32,9 +32,9 @@ class SearchState(BaseState):
     def __init__(self, context: Context):
         super().__init__(
             context,
-            outcomes=['found_tag', 'finished_search'],
-            input_keys=['search_point_index', 'searchPoints'],
-            output_keys=['search_point_index']
+            add_outcomes=['found_tag', 'finished_search'],
+            add_input_keys=['search_point_index', 'searchPoints'],
+            add_output_keys=['search_point_index']
         )
 
     def evaluate(self, ud):

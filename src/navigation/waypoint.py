@@ -14,17 +14,22 @@ DRIVE_FWD_THRESH = 0.95
 NO_FIDUCIAL = -1
 
 
-class BaseWaypointState(BaseState):
+class WaypointState(BaseState):
     def __init__(self, context: Context,
-                 outcomes: List[str], input_keys: List[str], output_keys: List[str]):
+                 add_outcomes: List[str] = None,
+                 add_input_keys: List[str] = None,
+                 add_output_keys: List[str] = None):
+        add_outcomes = add_outcomes or []
+        add_input_keys = add_input_keys or []
+        add_output_keys = add_output_keys or []
         super().__init__(
             context,
-            outcomes + ['waypoint_traverse', 'single_fiducial', 'done'],
-            input_keys, output_keys
+            add_outcomes + ['waypoint_traverse', 'single_fiducial', 'done'],
+            add_input_keys, add_output_keys
         )
 
     def waypoint_pose(self, wp_idx: int) -> SE3:
-        return self.transform(self.context.course.waypoints[wp_idx].tf_id)
+        return self.transform(self.context.goal.course.waypoints[wp_idx].tf_id)
 
     def rover_forward(self) -> np.ndarray:
         return self.rover_pose().x_vector()
@@ -41,9 +46,9 @@ class BaseWaypointState(BaseState):
         :param ud:  State machine user data
         :return:    Next waypoint to reach if we have an active course
         """
-        if self.context.course is None or ud.waypoint_index >= len(self.context.course.waypoints):
+        if self.context.goal.course is None or ud.waypoint_index >= len(self.context.goal.course.waypoints):
             return None
-        return self.context.course.waypoints[ud.waypoint_index]
+        return self.context.goal.course.waypoints[ud.waypoint_index]
 
     def current_fid_pos(self, ud) -> Optional[np.ndarray]:
         current_waypoint = self.current_waypoint(ud)
@@ -78,14 +83,9 @@ class BaseWaypointState(BaseState):
                 else:
                     # We finished a waypoint associated with a fiducial id, but we have not seen it yet.
                     return 'single_fiducial'
-            self.context.vel_cmd_publisher.publish(cmd_vel)
+            self.context.rover.drive_command(cmd_vel)
         except (tf2_ros.LookupException, tf2_ros.ConnectivityException, tf2_ros.ExtrapolationException):
             # TODO: probably go into some waiting state
             pass
 
         return 'waypoint_traverse'
-
-
-class WaypointState(BaseWaypointState):
-    def __init__(self, context: Context):
-        super().__init__(context, [], [], [])
