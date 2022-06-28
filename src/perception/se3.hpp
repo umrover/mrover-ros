@@ -40,9 +40,13 @@ public:
 
     [[nodiscard]] SE3 applyLeft(SE3 const& transform);
 
-    [[nodiscard]] double x() const { return position.x(); }
+    [[nodiscard]] SE3 applyRight(SE3 const& transform);
 
-    [[nodiscard]] double y() const { return position.y(); }
+    [[nodiscard]] Eigen::Vector3d const& positionVector() const;
 
-    [[nodiscard]] double z() const { return position.z(); }
+    [[nodiscard]] Eigen::Quaterniond const& rotationQuaternion() const;
+
+    [[nodiscard]] Eigen::Matrix4d rotationMatrix() const;
+
+    [[nodiscard]] double distanceTo(SE3 const& transform);
 };

@@ -157,13 +157,11 @@ FiducialsNode::FiducialsNode() : mNh(), mPnh("~"), mIt(mNh), mTfListener(mTfBuff
     mPnh.param<bool>("verbose", mIsVerbose, false);
 
     std::string str;
-    std::vector<std::string> strs;
 
     mPnh.param<std::string>("ignore_fiducials", str, "");
     handleIgnoreString(str);
 
     mImgPub = mIt.advertise("fiducial_images", 1);
-    mFidPub = mNh.advertise<fiducial_msgs::FiducialTransformArray>("fiducial_transforms", 1);
     mDictionary = cv::aruco::getPredefinedDictionary(dicNo);
 
     mImgSub = mIt.subscribe("camera/color/image_raw", 1, &FiducialsNode::imageCallback, this);
@@ -228,9 +226,9 @@ int main(int argc, char** argv) {
 }
 
 void PersistentFiducial::addReading(SE3 const& fidInOdom) {
-    fidInOdomX.push(fidInOdom.x());
-    fidInOdomY.push(fidInOdom.y());
-    fidInOdomZ.push(fidInOdom.z());
+    fidInOdomX.push(fidInOdom.positionVector().x());
+    fidInOdomY.push(fidInOdom.positionVector().y());
+    fidInOdomZ.push(fidInOdom.positionVector().z());
 }
 
 void PersistentFiducial::setFilterParams(size_t count, double proportion) {

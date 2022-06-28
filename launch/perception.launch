@@ -41,9 +41,8 @@
     odom: The topmost global frame
     base_link: The rover
   -->
-  <node name="mrover_localization" pkg="mrover" type="localization.py" />
 
-  <rosparam command="load" file="$(find mrover)/params/ekf_localization.yaml" />
+  <rosparam command="load" file="$(find mrover)/config/ekf_localization.yaml" />
 
   <!-- Fuses together GPS position and IMU orientation with an Extended Kalman Filter (EKF) -->
   <node pkg="robot_localization" type="ekf_localization_node" name="ekf_odom" clear_params="true">
