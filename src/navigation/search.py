@@ -22,22 +22,18 @@ class SearchState(BaseWaypointState):
         self.search_path = None
         self.cur_search_point_index = None
 
-    def gen_square_spiral_search_pattern(self, center: np.ndarray, points: int, distance: int) -> List[np.ndarray]:
+    def gen_square_spiral_search_pattern(self, center: np.ndarray, num_turns: int, distance: int) -> np.ndarray:
         """
         Generates a square spiral search pattern around a center position, assumes rover is at the center position
         :param center:      position to center spiral on (np.ndarray)
-        :param points:      number of points (int)
+        :param num_turns:   number of times to spiral around
         :param distance:    initial distance and increment (int)
         :return:            list of positions for the rover to traverse List(np.ndarray)
         """
-        # TODO: refactor (I just copied the current spiral generation code for now but it needs to be vectorized)
-        directions = [(0, 1), (-1, 0), (0, -1), (1, 0)]
-        coordinates = [np.array([center[0], center[1], 0.0])]
-        new_distance = distance
-        for i in range(0, points):
-            coordinates.append(np.array([coordinates[-1][0]+new_distance*directions[i %
-                               4][0], coordinates[-1][1]+new_distance*directions[i % 4][1], 0.0]))
-            new_distance += (i % 2)*distance
+        dirs = np.array([ [0, -1], [-1, 0], [0, 1], [1, 0] ])
+        dirs_rep = np.tile(dirs, (num_turns, 1)) * distance
+        seq = np.repeat(np.arange(1, num_turns*2+1), 2).reshape(-1, 1)
+        coordinates = np.cumsum(np.vstack((center, dirs_rep * seq)), axis=0)
         return coordinates
 
     def evaluate(self, ud):
