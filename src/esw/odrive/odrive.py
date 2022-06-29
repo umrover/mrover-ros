@@ -735,8 +735,12 @@ class ODriveBridge(object):
                 self._bridge_on_event(ODriveEvent.ODRIVE_ERROR_EVENT)
                 return
 
-            self._modrive.set_vel('left', self._left_speed)
-            self._modrive.set_vel('right', self._right_speed)
+            self._speed_lock.acquire()
+            left_speed = self._left_speed
+            right_speed = self._right_speed
+            self._speed_lock.release()
+            self._modrive.set_vel('left', left_speed)
+            self._modrive.set_vel('right', right_speed)
 
         elif str(self._state) == "DisconnectedState":
             self._connect()
