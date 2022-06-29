@@ -30,10 +30,20 @@ class SearchState(BaseWaypointState):
         :param distance:    initial distance and increment (int)
         :return:            list of positions for the rover to traverse List(np.ndarray)
         """
+        # First we will attempt to create the "delta" vectors that get added add each point 
+        # in the spiral to get to the next. 
         dirs = np.array([ [0, -1], [-1, 0], [0, 1], [1, 0] ])
-        dirs_rep = np.tile(dirs, (num_turns, 1)) * distance
-        seq = np.repeat(np.arange(1, num_turns*2+1), 2).reshape(-1, 1)
-        coordinates = np.cumsum(np.vstack((center, dirs_rep * seq)), axis=0)
+        deltas = np.tile(dirs, (num_turns, 1))
+        # We will build the coeficients for the delta vecs now that we have the correct
+        # layout of unit vectors Given the distance parameter 'd', the coef layout we 
+        # need is [d,d,2d,2d,3d,3d...]
+        dist_coefs = distance * np.repeat(np.arange(1, num_turns*2+1), 2).reshape(-1, 1)
+        deltas *= dist_coefs
+        # At this point we use cumsum to create a new array of vectors where each vector
+        # is the sum of all the previous deltas up to that index in the old array. We
+        # also make sure to add the center coordinate in here too so the spiral is in
+        # the correct location
+        coordinates = np.cumsum(np.vstack((center, deltas)), axis=0)
         return coordinates
 
     def evaluate(self, ud):
