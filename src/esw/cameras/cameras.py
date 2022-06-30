@@ -27,7 +27,9 @@ class Pipeline:
     based on the number of maximum pipelines.
 
     Attributes:
-        _current_ip: A string that is IP it is assigned to.
+        arguments: A list of strings that is needed for the jetson.utils
+        objects' capture arguments.
+        current_ip: A string that is IP it is assigned to.
         _device_number: An int that is the device number it is assigned to as
         its input. -1 means it is not assigned any device.
         _video_output: A jetson.utils.videoOutput object that holds its output
@@ -35,16 +37,18 @@ class Pipeline:
         _video_source: A jetson.utils.videoSource object that holds the video
         source info.
     """
-    _current_ip: str
+    arguments: List[str]
+    current_ip: str
     _device_number: int
     _video_output: jetson.utils.videoOutput
     _video_source: jetson.utils.videoSource
 
-    def __init__(self, arguments: List[str],
-                 current_mission_ip: str) -> None:
-        self._current_ip = current_mission_ip
+    def __init__(self) -> None:
+        self.arguments = []
+        self.current_ip = ""
         self.device_number = -1
-        self.update_video_output(arguments, self._current_ip)
+        self._video_output = None
+        self._video_source = None
 
     def capture_and_render_image(self) -> bool:
         """Captures an image from the video device and streams it. Returns
@@ -67,7 +71,8 @@ class Pipeline:
             return False
 
     def is_currently_streaming(self) -> bool:
-        """Returns whether or not the pipeline is assigned an active camera device.
+        """Returns whether or not the pipeline is assigned a active camera
+        device.
 
         Args:
             None.
@@ -91,8 +96,7 @@ class Pipeline:
         self.device_number = -1
 
     def update_device_number(
-        self, arguments: List[str], dev_index: int,
-        video_source: jetson.utils.videoSource
+        self, dev_index: int, video_source: jetson.utils.videoSource
     ) -> None:
         """Assigns the pipeline a camera device. This will also recreate the
         video output for in case the camera device resolution changes. If the
@@ -100,8 +104,6 @@ class Pipeline:
         assigned a device.
 
         Args:
-            arguments: A list of strings that is needed for the
-            jetson.utils objects' capture arguments.
             dev_index: An int that is the camera device that it is assigned.
             video_sources: A jetson.utils.videoSource that it will be
             streaming from. This may be None.
@@ -113,15 +115,15 @@ class Pipeline:
         if dev_index != -1:
             self._video_source = video_source
             if self._video_source is not None:
-                self.update_video_output(arguments, self._current_ip)
+                self.update_video_output()
             else:
                 print(
                     f"Unable to play camera {dev_index} on \
-                    {self._current_ip}."
+                    {self.current_ip}."
                 )
                 self.stop_streaming()
 
-    def update_video_output(self, arguments: List[str], ip: str) -> None:
+    def update_video_output(self) -> None:
         """Updates the video output to ensure that pipeline is streaming to
         the assigned IP and has the proper arguments.
 
@@ -133,10 +135,9 @@ class Pipeline:
         Returns:
             None.
         """
-        self._current_ip = ip
         self._video_output = jetson.utils.videoOutput(
-            f"rtp://{self._current_ip}",
-            argv=arguments
+            f"rtp://{self.current_ip}",
+            argv=self.arguments
         )
 
 
@@ -198,9 +199,11 @@ class PipelineManager:
         self._pipelines = [None] * number_of_pipelines
         self._active_cameras = [-1] * number_of_pipelines
         for pipeline_number in range(len(self._pipelines)):
-            self._pipelines[pipeline_number] = Pipeline(
-                self._get_current_arguments(), self._get_ip(pipeline_number)
-            )
+            self._pipelines[pipeline_number] = Pipeline()
+
+        self._update_all_resolution_arguments()
+        self._update_all_ips()
+        self._update_all_video_outputs()
 
     def handle_change_camera_mission(
         self, req: ChangeCameraMissionRequest
@@ -221,6 +224,8 @@ class PipelineManager:
         if self._current_mission == mission_name:
             return ChangeCameraMissionResponse(self._current_mission)
         self._update_mission(mission_name)
+        self._update_all_resolution_arguments()
+        self._update_all_ips()
         self._update_all_video_outputs()
 
         return ChangeCameraMissionResponse(self._current_mission)
@@ -460,7 +465,6 @@ class PipelineManager:
             None.
         """
         self._pipelines[pipe_index].update_device_number(
-            self._get_current_arguments(),
             dev_index, self._video_sources[dev_index]
         )
         print(
@@ -481,6 +485,38 @@ class PipelineManager:
         for index, pipeline in enumerate(self._pipelines):
             self._active_cameras[index] = pipeline.device_number
 
+    def _update_all_ips(self) -> None:
+        """Updates the IPs to what is currently being requested.
+
+        Only skip if 0 or 1 because it's the same either way.
+        NOTE: This is an optimization trick made because of how we made the
+        camera system on the rover. This may change in the future if we decide
+        to make the first two ips different per mission.
+
+        Args:
+            None.
+
+        Returns:
+            None.
+        """
+        for pipeline_number, pipeline in enumerate(self._pipelines):
+            if pipeline_number == 0 or pipeline_number == 1:
+                continue
+            pipeline.current_ip = self._get_ip(pipeline_number)
+
+    def _update_all_resolution_arguments(self) -> None:
+        """Updates the video resolutions to what is currently being requested.
+
+        Args:
+            None.
+
+        Returns:
+            None.
+        """
+        current_arguments = self._get_current_arguments()
+        for pipeline in self._pipelines:
+            pipeline.arguments = current_arguments
+
     def _update_all_video_outputs(self) -> None:
         """Updates the video outputs and IPs and video resolutions to what is
         currently being requested.
@@ -499,10 +535,7 @@ class PipelineManager:
         for pipeline_number, pipeline in enumerate(self._pipelines):
             if pipeline_number == 0 or pipeline_number == 1:
                 continue
-            pipeline.update_video_output(
-                self._get_current_arguments(),
-                self._get_ip(pipeline_number)
-            )
+            pipeline.update_video_output()
 
     def _update_mission(self, mission_name: str) -> None:
         """Updates the mission name.
