@@ -66,7 +66,7 @@ This determines up to which number we can look inside /dev/video*.
 #### Available Missions - cameras/missions
 
 You may choose to configure the available missions. Each mission has a name,
-a list of ips, and a resolution suited for the mission. You should not have more ips than
+a list of ips, and a resolution for each ip. You should not have more ips than
 the amount listed in number_of_pipelines (this will cause errors).
 
 #### Number of Pipelines - cameras/number_of_pipelines
