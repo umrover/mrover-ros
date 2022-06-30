@@ -8,6 +8,7 @@
 [Setup](#setup) \
 [Issues](#issues) \
 [Error Handling](#error-handling) \
+[Software Requirements](#software-requirements) \
 [TODO](#todo) \
 [TODO - ROS Migration](#todo---ros-migration)
 
@@ -149,6 +150,24 @@ To fix this, one should check where it hangs. If it hangs on the Capture functio
 The intended behavior is the following: An exception is caught on the Capture function. Then the program resumes as normal.
 
 Actual behavior: The program freezes (presumably on the Capture function).
+
+---
+
+## Software Requirements
+
+- Can stream the feeds of up to four cameras at the same time.
+- Can stream up to a total of four IPs.
+- Can stream the feed of one device to multiple IPs.
+- Does not crash when camera is unplugged while not streaming.
+- Does not crash when camera is unplugged while streaming.
+- Properly changes cameras upon ChangeCameras service request.
+- Properly sends ChangeCameras service response.
+- Properly changes camera mission upon ChangeCameraMission service request.
+- Properly sends ChangeCameraMission service response.
+- Changing mission allows one to modify IPs and resolutions.
+- Can configure IPs used per mission.
+- Can configure resolutions used per mission.
+- Does not switch cameras when mission is switched.
 
 ---
 
