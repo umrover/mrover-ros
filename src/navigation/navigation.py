@@ -8,7 +8,6 @@ import rospy
 import smach
 import smach_ros
 from context import Context
-from geometry_msgs.msg import Twist
 from single_fiducial import SingleFiducialState
 from state import DoneState
 from waypoint import WaypointState
@@ -73,7 +72,7 @@ class Navigation(threading.Thread):
         self.state_machine.request_preempt()
         # Wait for smach thread to terminate
         self.join()
-        self.context.vel_cmd_publisher.publish(Twist())
+        self.context.drive_stop()
 
 
 def main():
@@ -83,7 +82,7 @@ def main():
     navigation = Navigation(context)
 
     # Define custom handler for Ctrl-C that shuts down smach properly
-    def sigint_handler(sig, frame):
+    def sigint_handler(_sig, _frame):
         navigation.stop()
         rospy.signal_shutdown('keyboard interrupt')
         try:

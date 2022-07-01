@@ -41,7 +41,6 @@
     odom: The topmost global frame
     base_link: The rover
   -->
-  <node name="mrover_localization" pkg="mrover" type="localization.py" />
 
   <rosparam command="load" file="$(find mrover)/config/ekf_localization.yaml" />
 

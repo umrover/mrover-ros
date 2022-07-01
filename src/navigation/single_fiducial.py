@@ -2,15 +2,15 @@ import tf2_ros
 from context import Context
 from drive import get_drive_command
 from geometry_msgs.msg import Twist
-from waypoint import DRIVE_FWD_THRESH, BaseWaypointState
+from waypoint import DRIVE_FWD_THRESH, WaypointState
 
 STOP_THRESH = 0.7
 FIDUCIAL_STOP_THRESHOLD = 1.75
 
 
-class SingleFiducialState(BaseWaypointState):
+class SingleFiducialState(WaypointState):
     def __init__(self, context: Context):
-        super().__init__(context, outcomes=[], input_keys=['fiducial_id'], output_keys=[])
+        super().__init__(context, add_input_keys=['fiducial_id'])
 
     def evaluate(self, ud) -> str:
         """
@@ -25,16 +25,15 @@ class SingleFiducialState(BaseWaypointState):
             # TODO: add more advanced logic than just driving forward
             cmd_vel = Twist()
             cmd_vel.linear.x = 0.5
-            self.context.vel_cmd_publisher.publish(cmd_vel)
+            self.context.drive_command(cmd_vel)
             return 'single_fiducial'
 
         try:
-            cmd_vel, arrived = get_drive_command(
-                fid_pos, self.rover_pose(), STOP_THRESH, DRIVE_FWD_THRESH)
+            cmd_vel, arrived = get_drive_command(fid_pos, self.context.get_rover_pose(), STOP_THRESH, DRIVE_FWD_THRESH)
             if arrived:
                 ud.waypoint_index += 1
                 return 'waypoint_traverse'
-            self.context.vel_cmd_publisher.publish(cmd_vel)
+            self.context.drive_command(cmd_vel)
         except (tf2_ros.LookupException, tf2_ros.ConnectivityException, tf2_ros.ExtrapolationException):
             # TODO: probably go into some waiting state
             pass

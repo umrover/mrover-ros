@@ -3,7 +3,7 @@ from typing import List
 import numpy as np
 
 from context import Context
-from waypoint import STOP_THRESH, DRIVE_FWD_THRESH, BaseWaypointState
+from waypoint import STOP_THRESH, DRIVE_FWD_THRESH, WaypointState
 from drive import get_drive_command
 
 
@@ -11,7 +11,7 @@ SPIRAL_POINTS = 13
 SPIRAL_DISTANCE = 3.0
 
 
-class SearchState(BaseWaypointState):
+class SearchState(WaypointState):
     def __init__(self, context: Context):
         super().__init__(
             context,
