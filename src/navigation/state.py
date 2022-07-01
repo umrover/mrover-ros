@@ -1,9 +1,11 @@
 from abc import ABC
 from typing import List
 
+import rospy
 import smach
 from context import Context
 from geometry_msgs.msg import Twist
+from util.SE3 import SE3
 
 
 class BaseState(smach.State, ABC):
@@ -12,17 +14,11 @@ class BaseState(smach.State, ABC):
     """
     context: Context
 
-    def __init__(self, context: Context,
-                 add_outcomes: List[str] = None,
-                 add_input_keys: List[str] = None,
-                 add_output_keys: List[str] = None):
-        add_outcomes = add_outcomes or []
-        add_input_keys = add_input_keys or []
-        add_output_keys = add_output_keys or []
+    def __init__(self, context: Context, outcomes: List[str], input_keys: List[str], output_keys: List[str]):
         super().__init__(
-            add_outcomes + ['terminated'],
-            add_input_keys + ['waypoint_index'],
-            add_output_keys + ['waypoint_index']
+            outcomes + ['terminated'],
+            input_keys + ['waypoint_index'],
+            output_keys + ['waypoint_index']
         )
         self.context = context
 
@@ -42,12 +38,27 @@ class BaseState(smach.State, ABC):
         """Override me instead of execute!"""
         pass
 
+    def rover_pose(self) -> SE3:
+        return self.transform('base_link')
+
+    def transform(self, frame: str, parent_frame: str = 'odom') -> SE3:
+        """
+        :param frame:
+        :param parent_frame:
+        :return:
+        """
+        # TODO: use SE3 function to lookup
+        stamped_transform = self.context.tf_buffer.lookup_transform(parent_frame, frame, rospy.Time(0))
+        return SE3.from_tf(stamped_transform.transform)
+
 
 class DoneState(BaseState):
     def __init__(self, context: Context):
         super().__init__(
             context,
-            add_outcomes=['done', 'waypoint_traverse'],
+            outcomes=['done', 'waypoint_traverse'],
+            input_keys=[],
+            output_keys=[]
         )
 
     def evaluate(self, ud):
@@ -57,5 +68,5 @@ class DoneState(BaseState):
 
         # Stop rover
         cmd_vel = Twist()
-        self.context.drive_command(cmd_vel)
+        self.context.vel_cmd_publisher.publish(cmd_vel)
         return 'done'

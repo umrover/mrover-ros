@@ -90,3 +90,8 @@ class WaypointState(BaseState):
             pass
 
         return 'waypoint_traverse'
+
+
+class WaypointState(BaseWaypointState):
+    def __init__(self, context: Context):
+        super().__init__(context, [], [], [])
