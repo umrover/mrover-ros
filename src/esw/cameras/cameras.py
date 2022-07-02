@@ -8,6 +8,7 @@ quality, and to which endpoints.
 
 """
 import sys
+import threading
 from typing import Dict, List
 
 import rospy
@@ -29,20 +30,24 @@ class Pipeline:
     :var arguments: A list of strings that is needed for the jetson.utils
         objects' capture arguments.
     :var current_endpoint: A string that is endpoint it is assigned to.
-    :var _device_number: An int that is the device number it is assigned to as
+    :var device_number: An int that is the device number it is assigned to as
         its input. -1 means it is not assigned any device.
+    :var _device_number_lock: A lock used to prevent threads from accessing
+        shared variables such as device_number at the same time.
     :var _video_output: A jetson.utils.videoOutput object that holds its output
         info.
     """
     arguments: List[str]
     current_endpoint: str
-    _device_number: int
+    device_number: int
+    _device_number_lock: threading.Lock
     _video_output: jetson.utils.videoOutput
 
     def __init__(self) -> None:
         self.arguments = []
         self.current_endpoint = ""
         self.device_number = -1
+        self._device_number_lock = threading.Lock()
         self._video_output = None
 
     def capture_and_render_image(
@@ -71,13 +76,18 @@ class Pipeline:
         :return: A boolean that returns True if the pipeline is assigned an
             active camera device.
         """
-        return self.device_number != -1
+        self._device_number_lock.acquire()
+        is_streaming = self.device_number != -1
+        self._device_number_lock.release()
+        return is_streaming
 
     def stop_streaming(self) -> None:
         """Stops streaming a camera device. This means that the pipeline is
             not assigned to a camera device.
         """
+        self._device_number_lock.acquire()
         self.device_number = -1
+        self._device_number_lock.release()
 
     def update_device_number(
         self, dev_index: int, video_sources: List[jetson.utils.videoSource]
@@ -91,7 +101,9 @@ class Pipeline:
             assigned.
         :param video_sources: A list of jetson.utils.videoSource's.
         """
+        self._device_number_lock.acquire()
         self.device_number = dev_index
+        self._device_number_lock.release()
         if dev_index != -1:
             if video_sources[self._device_number] is not None:
                 self.update_video_output()
@@ -106,10 +118,16 @@ class Pipeline:
         """Updates the video output to ensure that pipeline is streaming to
         the assigned endpoint and has the proper arguments.
         """
-        self._video_output = jetson.utils.videoOutput(
-            f"rtp://{self.current_endpoint}",
-            argv=self.arguments
-        )
+        try:
+            self._video_output = jetson.utils.videoOutput(
+                f"rtp://{self.current_endpoint}",
+                argv=self.arguments
+            )
+        except Exception:
+            print(
+                f"Update video output failed on endpoint \
+                {self.current_endpoint}."
+            )
 
 
 class PipelineManager:
@@ -130,6 +148,8 @@ class PipelineManager:
         of a device to an IP.
     :var _res_args_map: A dictionary that maps a resolution quality to a list
         of arguments needed for jetson.utils.
+    :var _video_source_lock: A lock used to prevent threads from accessing
+        shared variables such as _video_sources at the same time.
     :var _video_sources: A list of jetson.utils.videoSource's.
     """
     _active_cameras: List[int]
@@ -139,6 +159,7 @@ class PipelineManager:
     _mission_streams_map: 'Dict[str, List[Dict[str, str | int]]]'
     _pipelines: List[Pipeline]
     _res_args_map: Dict[int, List[str]]
+    _video_source_lock: threading.Lock
     _video_sources: List[jetson.utils.videoSource]
 
     def __init__(self) -> None:
@@ -155,6 +176,7 @@ class PipelineManager:
         self._update_mission_streams_map()
 
         self._current_mission = self._default_mission
+        self._video_source_lock = threading.Lock()
         self._video_sources = [None] * self._max_vid_dev_id_number
         number_of_pipelines = rospy.get_param(
             "cameras/number_of_pipelines"
@@ -234,9 +256,11 @@ class PipelineManager:
         """
         for pipe_index, pipeline in enumerate(self._pipelines):
             if pipeline.is_currently_streaming():
+                self._video_source_lock.acquire()
                 success = pipeline.capture_and_render_image(
                     self._video_sources
                 )
+                self._video_source_lock.release()
                 if not success:
                     self._clean_up_failed_pipeline(pipe_index)
 
@@ -286,7 +310,9 @@ class PipelineManager:
         :param dev_index: An integer that is the number of the video camera
             device that is being closed.
         """
+        self._video_source_lock.acquire()
         self._video_sources[dev_index] = None
+        self._video_source_lock.release()
 
     def _create_video_source_for_pipe_if_possible(
         self, dev_index: int, pipe_index: int
@@ -305,15 +331,18 @@ class PipelineManager:
         """
         if dev_index == -1:
             return
-        if self._video_sources[dev_index] is not None:
-            return
         try:
+            self._video_source_lock.acquire()
+            if self._video_sources[dev_index] is not None:
+                return
             self._video_sources[dev_index] = jetson.utils.videoSource(
                 f"/dev/video{dev_index}",
                 argv=self._get_pipe_arguments(pipe_index)
             )
         except Exception:
             return
+        finally:
+            self._video_source_lock.release()
 
     def _get_all_streams(self) -> 'List[Dict[str, str | int]]':
         """Returns a list of all the streams.
@@ -393,9 +422,11 @@ class PipelineManager:
         :param pipe_index: An integer that is the number of the pipeline
             that is being assigned a camera device.
         """
+        self._video_source_lock.acquire()
         self._pipelines[pipe_index].update_device_number(
             dev_index, self._video_sources
         )
+        self._video_source_lock.release()
         print(
             f"Playing camera {dev_index} on \
             {self._get_endpoint(pipe_index)}."
