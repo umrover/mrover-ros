@@ -67,7 +67,7 @@ This determines up to which number we can look inside /dev/video*.
 #### Available Missions - cameras/missions
 
 You may choose to configure the available missions. Each mission has a name,
-a list of ips, and a resolution suited for the mission. You should not have more ips than
+a list of ips, and a resolution for each ip. You should not have more ips than
 the amount listed in number_of_pipelines (this will cause errors).
 
 #### Number of Pipelines - cameras/number_of_pipelines
@@ -172,6 +172,7 @@ Actual behavior: The program freezes (presumably on the Capture function).
 ---
 
 ## TODO
+- [ ] Test the following: Test what happens when the one input device is being requested to be used for multiple output streams that differ in the resolution that it requests. Does the program fail and error?
 - [ ] Test the following: If an invalid device is being requested, does the response actually say -1 or does it not? Basically, does it only realize the device is invalid too late, as in after it sends the response?
 - [ ] Make sure that code makes logical sense... I'm reading through logic and head hurts
 - [ ] Test the exact behavior for when "user requests a camera that does not exist" and update README and optimize code.

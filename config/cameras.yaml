@@ -3,44 +3,50 @@ cameras:
         - resolution: 144
           arguments:
             - "--headless"
-              "--bitrate=300000"
-              "--width=256"
-              "--height=144"
+            - "--bitrate=300000"
+            - "--width=256"
+            - "--height=144"
         - resolution: 360
           arguments: 
             - "--headless"
-              "--bitrate=800000"
-              "--width=480"
-              "--height=360"
+            - "--bitrate=800000"
+            - "--width=480"
+            - "--height=360"
         - resolution: 720
           arguments:
             - "--headless"
-              "--bitrate=1800000"
-              "--width=1280"
-              "--height=720"
+            - "--bitrate=1800000"
+            - "--width=1280"
+            - "--height=720"
     default_mission: "erd"
     max_video_device_id_number: 10
     missions:
         - name: auton
-          ips:
-            - "10.0.0.1:5000"
-              "10.0.0.1:5001"
-          resolution: 144
+          streams:
+          - endpoint: "10.0.0.1:5000"
+            resolution: 144
+          - endpoint: "10.0.0.1:5001"
+            resolution: 144
         - name: erd
-          ips:
-            - "10.0.0.1:5000"
-              "10.0.0.1:5001"
-          resolution: 144
+          streams:
+          - endpoint: "10.0.0.1:5000"
+            resolution: 144
+          - endpoint: "10.0.0.1:5001"
+            resolution: 144
         - name: es
-          ips:
-            - "10.0.0.1:5000"
-              "10.0.0.1:5001"
-          resolution: 720
+          streams:
+          - endpoint: "10.0.0.1:5000"
+            resolution: 720
+          - endpoint: "10.0.0.1:5001"
+            resolution: 720
         - name: science
-          ips:
-            - "10.0.0.1:5000"
-              "10.0.0.1:5001"
-              "10.0.0.2:5000"
-              "10.0.0.2:5001"
-          resolution: 144
+          streams:
+          - endpoint: "10.0.0.1:5000"
+            resolution: 144
+          - endpoint: "10.0.0.1:5001"
+            resolution: 144
+          - endpoint: "10.0.0.2:5000"
+            resolution: 144
+          - endpoint: "10.0.0.2:5001"
+            resolution: 144
     number_of_pipelines: 4
