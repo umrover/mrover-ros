@@ -141,10 +141,10 @@ class Modrive:
             self._usb_lock.acquire()
             measured_current = \
                 self._axes[axis].motor.current_control.Iq_measured
-            self._usb_lock.release()
-        except Exception:
-            self._release_if_locked()
+        except fibre.protocol.ChannelBrokenException:
             raise DisconnectedError
+        finally:
+            self._usb_lock.release()
         return measured_current
 
     def get_vel_estimate_m_s(self, axis: str) -> float:
@@ -171,10 +171,10 @@ class Modrive:
                 self._axes[axis].encoder.vel_estimate
                 * self._axis_vel_est_mult_map[axis]
             )
-            self._usb_lock.release()
-        except Exception:
-            self._release_if_locked()
+        except fibre.protocol.ChannelBrokenException:
             raise DisconnectedError
+        finally:
+            self._usb_lock.release()
         return vel_est_m_s
 
     def has_errors(self) -> bool:
@@ -191,10 +191,10 @@ class Modrive:
         try:
             self._usb_lock.acquire()
             errors = self._axes['left'].error + self._axes['right'].error != 0
-            self._usb_lock.release()
-        except Exception:
-            self._release_if_locked()
+        except fibre.protocol.ChannelBrokenException:
             raise DisconnectedError
+        finally:
+            self._usb_lock.release()
         return errors
 
     def reset_watchdog(self) -> None:
@@ -208,24 +208,11 @@ class Modrive:
 
         Returns:
             None.
-
-        Raises:
-            DisconnectedError: If Jetson is unable to communicate with ODrive.
         """
-        try:
-            print("Resetting watchdog")
-            self._disable_watchdog()
-            # clears errors cleanly
-            self._usb_lock.acquire()
-            for axis in self._axes.values():
-                axis.error = 0
-            self._usb_lock.release()
-            self._enable_watchdog()
-        except fibre.protocol.ChannelBrokenException:
-            self._release_if_locked()
-            print("Failed in _disable_watchdog. Unplugged")
-        except Exception:
-            raise DisconnectedError
+        print("Resetting watchdog")
+        self._disable_watchdog()
+        self._reset_errors()
+        self._enable_watchdog()
 
     def set_current_lim(self, lim: float) -> None:
         """Sets the current limit of each ODrive axis.
@@ -243,10 +230,10 @@ class Modrive:
             self._usb_lock.acquire()
             for axis in self._axes.values():
                 axis.motor.config.current_lim = lim
-            self._usb_lock.release()
-        except Exception:
-            self._release_if_locked()
+        except fibre.protocol.ChannelBrokenException:
             raise DisconnectedError
+        finally:
+            self._usb_lock.release()
 
     def set_vel(self, axis: str, vel: float) -> None:
         """Sets the requested ODrive axis to run the motors at the requested
@@ -270,10 +257,10 @@ class Modrive:
             desired_input_vel_turns_s = vel * self._axis_vel_cmd_mult_map[axis]
             self._usb_lock.acquire()
             self._axes[axis].controller.input_vel = desired_input_vel_turns_s
-            self._usb_lock.release()
-        except Exception:
-            self._release_if_locked()
+        except fibre.protocol.ChannelBrokenException:
             raise DisconnectedError
+        finally:
+            self._usb_lock.release()
 
     def watchdog_feed(self) -> None:
         """Refreshes the ODrive watchdog feed.
@@ -285,11 +272,14 @@ class Modrive:
             None:
         """
         try:
+            self._usb_lock.acquire()
             for axis in self._axes.values():
                 axis.watchdog_feed()
         except fibre.protocol.ChannelBrokenException:
-            self._release_if_locked()
             print("Failed in watchdog_feed. Unplugged")
+            raise DisconnectedError
+        finally:
+            self._usb_lock.release()
 
     def _enable_watchdog(self) -> None:
         """Enables the ODrive watchdog.
@@ -307,14 +297,13 @@ class Modrive:
             for axis in self._axes.values():
                 self._usb_lock.acquire()
                 axis.config.watchdog_timeout = self._watchdog_timeout
-                self._usb_lock.release()
-                self.watchdog_feed()
-                self._usb_lock.acquire()
+                axis.watchdog_feed()
                 axis.config.enable_watchdog = True
-                self._usb_lock.release()
-        except Exception:
-            self._release_if_locked()
+        except fibre.protocol.ChannelBrokenException:
+            print("Failed in _enable_watchdog. Unplugged")
             raise DisconnectedError
+        finally:
+            self._usb_lock.release()
 
     def _disable_watchdog(self) -> None:
         """Disables the ODrive watchdog.
@@ -333,13 +322,11 @@ class Modrive:
             for axis in self._axes.values():
                 axis.config.watchdog_timeout = 0
                 axis.config.enable_watchdog = False
-            self._usb_lock.release()
         except fibre.protocol.ChannelBrokenException:
-            self._release_if_locked()
             print("Failed in _disable_watchdog. Unplugged")
-        except Exception:
-            self._release_if_locked()
             raise DisconnectedError
+        finally:
+            self._usb_lock.release()
 
     def _idle(self) -> None:
         """Sets the ODrive state to idle.
@@ -352,8 +339,8 @@ class Modrive:
         """
         self._set_requested_state(AXIS_STATE_IDLE)
 
-    def _release_if_locked(self) -> None:
-        """Releases the usb lock if locked.
+    def _reset_errors(self) -> None:
+        """Resets the errors cleanly for all axes.
 
         Args:
             None.
@@ -361,7 +348,13 @@ class Modrive:
         Returns:
             None.
         """
-        if self._usb_lock.locked():
+        try:
+            self._usb_lock.acquire()
+            for axis in self._axes.values():
+                axis.error = 0
+        except fibre.protocol.ChannelBrokenException:
+            raise DisconnectedError
+        finally:
             self._usb_lock.release()
 
     def _set_closed_loop_ctrl(self) -> None:
@@ -391,10 +384,10 @@ class Modrive:
             self._usb_lock.acquire()
             for axis in self._axes.values():
                 axis.controller.config.control_mode = mode
-            self._usb_lock.release()
-        except Exception:
-            self._release_if_locked()
+        except fibre.protocol.ChannelBrokenException:
             raise DisconnectedError
+        finally:
+            self._usb_lock.release()
 
     def _set_requested_state(self, state: Any) -> None:
         """Sets the ODrive state to the requested state.
@@ -412,10 +405,10 @@ class Modrive:
             self._usb_lock.acquire()
             for axis in self._axes.values():
                 axis.requested_state = state
-            self._usb_lock.release()
-        except Exception:
-            self._release_if_locked()
+        except fibre.protocol.ChannelBrokenException:
             raise DisconnectedError
+        finally:
+            self._usb_lock.release()
 
     def _set_velocity_ctrl(self) -> None:
         """Sets the ODrive to velocity control"""
@@ -608,8 +601,8 @@ class ODriveBridge(object):
             print("on event called, ODrive event:", event)
             self._state = self._state.on_event(event, self._modrive)
             self._publish_state_msg(self._get_state_string())
-        except Exception:
-            pass
+        except DisconnectedError:
+            return
 
     def _change_speeds(self, left: float, right: float) -> None:
         """Sets the self._left_speed and self._right_speed to the requested
