@@ -33,33 +33,32 @@ class Pipeline:
         its input. -1 means it is not assigned any device.
     :var _video_output: A jetson.utils.videoOutput object that holds its output
         info.
-    :var _video_source: A jetson.utils.videoSource object that holds the video
-        source info.
     """
     arguments: List[str]
     current_endpoint: str
     _device_number: int
     _video_output: jetson.utils.videoOutput
-    _video_source: jetson.utils.videoSource
 
     def __init__(self) -> None:
         self.arguments = []
         self.current_endpoint = ""
         self.device_number = -1
         self._video_output = None
-        self._video_source = None
 
-    def capture_and_render_image(self) -> bool:
+    def capture_and_render_image(
+        self, video_sources: List[jetson.utils.videoSource]
+    ) -> bool:
         """Captures an image from the video device and streams it. Returns
         boolean that is the success of capture and render.
 
         An exception will be caught if the program is unable to capture or
         render while streaming. In this case, False will be returned.
 
+        :param video_sources: A list of jetson.utils.videoSource's.
         :return: A boolean that is the success of capture and render.
         """
         try:
-            image = self._video_source.Capture()
+            image = video_sources[self._device_number].Capture()
             self._video_output.Render(image)
             return True
         except Exception:
@@ -81,7 +80,7 @@ class Pipeline:
         self.device_number = -1
 
     def update_device_number(
-        self, dev_index: int, video_source: jetson.utils.videoSource
+        self, dev_index: int, video_sources: List[jetson.utils.videoSource]
     ) -> None:
         """Assigns the pipeline a camera device. This will also recreate the
         video output for in case the camera device resolution changes. If the
@@ -90,13 +89,11 @@ class Pipeline:
 
         :param dev_index: An integer that is the camera device that it is
             assigned.
-        :param video_sources: A jetson.utils.videoSource that it will be
-        streaming from. This may be None.
+        :param video_sources: A list of jetson.utils.videoSource's.
         """
         self.device_number = dev_index
         if dev_index != -1:
-            self._video_source = video_source
-            if self._video_source is not None:
+            if video_sources[self._device_number] is not None:
                 self.update_video_output()
             else:
                 print(
@@ -237,7 +234,9 @@ class PipelineManager:
         """
         for pipe_index, pipeline in enumerate(self._pipelines):
             if pipeline.is_currently_streaming():
-                success = pipeline.capture_and_render_image()
+                success = pipeline.capture_and_render_image(
+                    self._video_sources
+                )
                 if not success:
                     self._clean_up_failed_pipeline(pipe_index)
 
@@ -395,7 +394,7 @@ class PipelineManager:
             that is being assigned a camera device.
         """
         self._pipelines[pipe_index].update_device_number(
-            dev_index, self._video_sources[dev_index]
+            dev_index, self._video_sources
         )
         print(
             f"Playing camera {dev_index} on \

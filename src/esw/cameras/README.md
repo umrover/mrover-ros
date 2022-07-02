@@ -172,6 +172,7 @@ Actual behavior: The program freezes (presumably on the Capture function).
 ---
 
 ## TODO
+- [ ] Test the following: Are we allowed to copy a jetson.utils.videoSource object? I forgot behavior. Once this is found out, add to documentation/README.
 - [ ] Test the following: Test what happens when the one input device is being requested to be used for multiple output streams that differ in the resolution that it requests. Does the program fail and error?
 - [ ] Test the following: If an invalid device is being requested, does the response actually say -1 or does it not? Basically, does it only realize the device is invalid too late, as in after it sends the response?
 - [ ] Make sure that code makes logical sense... I'm reading through logic and head hurts
