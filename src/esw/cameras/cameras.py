@@ -324,19 +324,6 @@ class PipelineManager:
         """
         return self._mission_streams_map[self._current_mission]
 
-    def _get_pipe_arguments(self, pipe_index: int) -> List[str]:
-        """Returns a list of the current arguments for the pipeline.
-
-        :param pipe_index: An integer that is the number of the pipeline whose
-            device is being checked.
-        :return: A list of strings that represent the arguments used to create
-            the jetson.utils objects.
-        """
-        streams = self._mission_streams_map[self._current_mission]
-        stream = streams[pipe_index]
-        quality = stream['resolution']
-        return self._res_args_map[quality]
-
     def _get_stream(self, pipe_index: int) -> 'Dict[str, str | int]':
         """Returns the stream of a pipeline.
         :param pipe_index: An integer that is the number of the pipeline.
