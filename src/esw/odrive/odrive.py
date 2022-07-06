@@ -95,7 +95,7 @@ class Modrive:
 
     def arm(self) -> None:
         """
-        Arms the ODrive by setting it to closed loop control and 
+        Arms the ODrive by setting it to closed loop control and
         velocity control.
         """
         self._set_closed_loop_ctrl()
@@ -103,7 +103,7 @@ class Modrive:
 
     def disarm(self) -> None:
         """
-        Disarms the ODrive by setting the velocity to zero and making 
+        Disarms the ODrive by setting the velocity to zero and making
         it idle.
         """
         self._set_closed_loop_ctrl()
@@ -116,12 +116,13 @@ class Modrive:
         """
         Returns the measured current of the requested axis of the ODrive in
         Amperes.
-        
+
         :param axis: A string that represents which wheel to read current from.
             The string must be "left" or "right"
         :returns: A float that is the measured current of the corresponding
             ODrive axis in Amperes.
-        :raises DisconnectedError: If Jetson is unable to communicate with ODrive.
+        :raises DisconnectedError: If Jetson is unable to communicate with
+            ODrive.
         """
         assert axis == "left" or axis == "right", (
             'axis must be "left" or "right"'
@@ -144,7 +145,8 @@ class Modrive:
             The string must be "left" or "right"
         :returns: A float that is the measured current of the corresponding
             ODrive axis in Amperes.
-        :raises DisconnectedError: If Jetson is unable to communicate with ODrive.
+        :raises DisconnectedError: If Jetson is unable to communicate with
+            ODrive.
         """
         assert axis == "left" or axis == "right", (
             'axis must be "left" or "right"'
@@ -165,7 +167,8 @@ class Modrive:
         """
         Returns a boolean to show if there are ODrive errors.
         :returns: A boolean that is True if there are errors.
-        :raises DisconnectedError: If Jetson is unable to communicate with ODrive.
+        :raises DisconnectedError: If Jetson is unable to communicate with
+            ODrive.
         """
         try:
             self._usb_lock.acquire()
@@ -191,7 +194,8 @@ class Modrive:
         """
         Sets the current limit of each ODrive axis.
         :param lim: A float that is the requested current limit.
-        :raises DisconnectedError: If Jetson is unable to communicate with ODrive.
+        :raises DisconnectedError: If Jetson is unable to communicate with
+            ODrive.
         """
         try:
             self._usb_lock.acquire()
@@ -209,7 +213,8 @@ class Modrive:
         :param axis: A string that represents which wheel to read current from.
         The string must be "left" or "right"
         :param vel: A float that is the requested velocity
-        :raises DisconnectedError: If Jetson is unable to communicate with ODrive.
+        :raises DisconnectedError: If Jetson is unable to communicate with
+            ODrive.
         """
         assert axis == "left" or axis == "right", (
             'axis must be "left" or "right"'
@@ -240,7 +245,8 @@ class Modrive:
     def _enable_watchdog(self) -> None:
         """
         Enables the ODrive watchdog.
-        :raises DisconnectedError: If Jetson is unable to communicate with ODrive.
+        :raises DisconnectedError: If Jetson is unable to communicate with
+            ODrive.
         """
         try:
             for axis in self._axes.values():
@@ -257,7 +263,8 @@ class Modrive:
     def _disable_watchdog(self) -> None:
         """
         Disables the ODrive watchdog.
-        :raises DisconnectedError: If Jetson is unable to communicate with ODrive.
+        :raises DisconnectedError: If Jetson is unable to communicate with
+            ODrive.
         """
         try:
             self._usb_lock.acquire()
@@ -299,7 +306,8 @@ class Modrive:
         """
         Sets the ODrive control mode to the requested control mode.
         :param mode: A control mode that is the requested ODrive control mode.
-        :raises DisconnectedError: If Jetson is unable to communicate with ODrive.
+        :raises DisconnectedError: If Jetson is unable to communicate with
+            ODrive.
         """
         try:
             self._usb_lock.acquire()
@@ -314,7 +322,8 @@ class Modrive:
         """
         Sets the ODrive state to the requested state.
         :param state: A state that is the requested ODrive state.
-        :raises DisconnectedError: If Jetson is unable to communicate with ODrive.
+        :raises DisconnectedError: If Jetson is unable to communicate with
+            ODrive.
         """
         try:
             self._usb_lock.acquire()
