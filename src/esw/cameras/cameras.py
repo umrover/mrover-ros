@@ -467,10 +467,10 @@ class PipelineManager:
         """Updates the video resolutions to what is currently being requested.
         """
         for pipe_number, pipeline in enumerate(self._pipelines):
-            pipeline.video_info.arguments = self._get_pipe_arguments(
-                pipe_number
+            pipeline.video_info = VideoInfo(
+                self._get_pipe_arguments(pipe_number),
+                self._get_endpoint(pipe_number)
             )
-            pipeline.video_info.endpoint = self._get_endpoint(pipe_number)
 
     def _update_all_video_outputs(self) -> None:
         """Updates the video outputs and endpoints and video resolutions to
