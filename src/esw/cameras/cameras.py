@@ -9,6 +9,7 @@ quality, and to which endpoints.
 """
 import sys
 import threading
+from dataclasses import dataclass
 from typing import Dict, List
 
 import rospy
@@ -21,10 +22,17 @@ sys.path.insert(0, "/usr/lib/python3.6/dist-packages")  # 3.6 vs 3.8
 import jetson.utils  # noqa
 
 
+@dataclass
 class VideoInfo:
-    def __init__(self, arguments: List[str] = [], endpoint: str = "") -> None:
-        self.arguments = arguments
-        self.endpoint = endpoint
+    """Stores video info information by keeping track of the arguments and
+    endpoint that is needed to create jetson.utils objects.
+
+    :var arguments: A list of strings that is needed for the jetson.utils
+        objects' capture arguments.
+    :var current_endpoint: A string that is endpoint it is assigned to.
+    """
+    arguments: List[str] = []
+    endpoint: str = ""
 
 
 class Pipeline:
@@ -33,11 +41,8 @@ class Pipeline:
     The PipelineManager will store multiple of these Pipeline objects
     based on the number of maximum pipelines.
 
-    :var arguments: A list of strings that is needed for the jetson.utils
-        objects' capture arguments.
     :var video_info: A VideoInfo object that has the arguments
         and endpoint that is needed to create jetson.utils objects.
-    :var current_endpoint: A string that is endpoint it is assigned to.
     :var device_number: An int that is the device number it is assigned to as
         its input. -1 means it is not assigned any device.
     :var _device_number_lock: A lock used to prevent threads from accessing
@@ -116,7 +121,7 @@ class Pipeline:
             else:
                 print(
                     f"Unable to play camera {dev_index} on \
-                    {self.video_info.current_endpoint}."
+                    {self.video_info.endpoint}."
                 )
                 self.stop_streaming()
 
@@ -126,13 +131,13 @@ class Pipeline:
         """
         try:
             self._video_output = jetson.utils.videoOutput(
-                f"rtp://{self.video_info.current_endpoint}",
+                f"rtp://{self.video_info.endpoint}",
                 argv=self.video_info.arguments
             )
         except Exception:
             print(
                 f"Update video output failed on endpoint \
-                {self.video_info.current_endpoint}."
+                {self.video_info.endpoint}."
             )
 
 
