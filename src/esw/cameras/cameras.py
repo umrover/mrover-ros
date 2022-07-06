@@ -130,6 +130,12 @@ class Pipeline:
             )
 
 
+class Mission:
+
+    def __init__(self) -> None:
+        pass
+
+
 class PipelineManager:
     """Manages the behavior of all the pipelines.
 
