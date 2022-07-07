@@ -66,12 +66,12 @@ void ROSHandler::handle_outgoing() {
 
 // The following functions are handlers for the corresponding ROS messages
 void ROSHandler::InternalHandler::arm_closed_loop_cmd(mrover::ArmPosition& msg) {
-    ControllerMap::controllers["ARM_A"]->closed_loop(0, msg->joint_a);
-    ControllerMap::controllers["ARM_B"]->closed_loop(0, msg->joint_b);
-    ControllerMap::controllers["ARM_C"]->closed_loop(0, msg->joint_c);
-    ControllerMap::controllers["ARM_D"]->closed_loop(0, msg->joint_d);
-    ControllerMap::controllers["ARM_E"]->closed_loop(0, msg->joint_e);
-    ControllerMap::controllers["ARM_F"]->closed_loop(0, msg->joint_f);
+    ControllerMap::controllers["ARM_A"]->closed_loop(0.0f, msg->joint_a);
+    ControllerMap::controllers["ARM_B"]->closed_loop(0.0f, msg->joint_b);
+    ControllerMap::controllers["ARM_C"]->closed_loop(0.0f, msg->joint_c);
+    ControllerMap::controllers["ARM_D"]->closed_loop(0.0f, msg->joint_d);
+    ControllerMap::controllers["ARM_E"]->closed_loop(0.0f, msg->joint_e);
+    ControllerMap::controllers["ARM_F"]->closed_loop(0.0f, msg->joint_f);
     publish_arm_pos_data();
 }
 
@@ -87,7 +87,7 @@ void ROSHandler::InternalHandler::arm_open_loop_cmd(mrover::ArmOpenLoopCmd& msg)
 }
 
 void ROSHandler::InternalHandler::carousel_closed_loop_cmd(mrover::CarouselPosition& msg) {
-    ControllerMap::controllers["CAROUSEL_MOTOR"]->closed_loop(0, msg->position);
+    ControllerMap::controllers["CAROUSEL_MOTOR"]->closed_loop(0.0f, msg->position);
 }
 
 void ROSHandler::InternalHandler::carousel_open_loop_cmd(mrover::CarouselOpenLoopCmd& msg) {
@@ -157,10 +157,10 @@ void ROSHandler::InternalHandler::refresh_sa_quad_angles() {
 }
 
 void ROSHandler::InternalHandler::sa_closed_loop_cmd(mrover::SAPosition& msg) {
-    ControllerMap::controllers["SA_A"]->closed_loop(0, msg->joint_a);
-    ControllerMap::controllers["SA_B"]->closed_loop(0, msg->joint_b);
-    ControllerMap::controllers["SA_C"]->closed_loop(0, msg->joint_c);
-    ControllerMap::controllers["SA_E"]->closed_loop(0, msg->joint_e);
+    ControllerMap::controllers["SA_A"]->closed_loop(0.0f, msg->joint_a);
+    ControllerMap::controllers["SA_B"]->closed_loop(0.0f, msg->joint_b);
+    ControllerMap::controllers["SA_C"]->closed_loop(0.0f, msg->joint_c);
+    ControllerMap::controllers["SA_E"]->closed_loop(0.0f, msg->joint_e);
 
     publish_sa_pos_data();
 }

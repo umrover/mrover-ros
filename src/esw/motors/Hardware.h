@@ -45,6 +45,10 @@ public:
 
     Hardware(std::string input) : type(getType(input)) {
         switch (type) {
+            // TODO - make it more configurable what numbers we need
+            // Can do this by having a "desired voltage" and "input voltage"
+            // e.g. HBridge is 100 since it has desired volt of 12V and input of 12V
+            // e.g. Motor 9V is 25 because desired is 9V and input is 36V
             case Motor6V:
                 speed_max = 16; // 5.76 V
                 break;
@@ -78,10 +82,10 @@ public:
 
     //limits throttle
     float throttle(float input) {
-        if (input > 1.0) {
-            input = 1.0;
-        } else if (input < -1.0) {
-            input = -1.0;
+        if (input > 1.0f) {
+            input = 1.0f;
+        } else if (input < -1.0f) {
+            input = -1.0f;
         }
         return input;
     }

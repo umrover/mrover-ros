@@ -41,16 +41,16 @@ sent. This is to prevent multiple virtual Controller objects from trying to cont
 
 class Controller {
 public:
-    float start_angle = 0.0;
-    float torque_scale = 1.0;
+    float start_angle = 0.0f;
+    float torque_scale = 1.0f;
     float quad_cpr = std::numeric_limits<float>::infinity();
-    float current_angle = 0.0;
-    float kP = 0.01;
-    float kI = 0.0;
-    float kD = 0.0;
+    float current_angle = 0.0f;
+    float kP = 0.01f;
+    float kI = 0.0f;
+    float kD = 0.0f;
     bool calibrated = false;
     int inversion = 1;
-    float last_speed = 0;
+    float last_speed = 0.0f;
 
     std::string name;
     std::mutex current_angle_m;

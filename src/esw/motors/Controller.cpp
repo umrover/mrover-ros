@@ -29,7 +29,7 @@ void Controller::make_live() {
         // get absolute encoder correction #
         // not needed for joint F
 
-        float abs_raw_angle = 0;
+        float abs_raw_angle = 0.0f;
 
         if (name == "ARM_B" || name == "SA_B" || name == "ARM_F") {
             abs_raw_angle = M_PI;
@@ -38,7 +38,7 @@ void Controller::make_live() {
         }
 
         // get value in quad counts adjust quadrature encoder
-        int32_t adjusted_quad = (abs_raw_angle / (2 * M_PI)) * quad_cpr;
+        int32_t adjusted_quad = (abs_raw_angle / (2.0f * M_PI)) * quad_cpr;
         memcpy(buffer, UINT8_POINTER_T(&(adjusted_quad)), sizeof(adjusted_quad));
         transact(ADJUST, buffer, nullptr);
 
@@ -62,12 +62,12 @@ void Controller::make_live() {
 void Controller::record_angle(int32_t raw_angle) {
     // record quadrature
     current_angle_m.lock();
-    current_angle = ((raw_angle / quad_cpr) * 2 * M_PI) - M_PI;
+    current_angle = ((raw_angle / quad_cpr) * 2.0f * M_PI) - M_PI;
     current_angle_m.unlock();
 }
 
 float Controller::get_current_angle() {
-    float return_angle = 0.0;
+    float return_angle = 0.0f;
     current_angle_m.lock();
     return_angle = current_angle;
     current_angle_m.unlock();
@@ -121,7 +121,6 @@ void Controller::calibrate_joint() {
 void Controller::closed_loop(float torque, float target) {
     try {
         make_live();
-
         // TODO - UNCOMMENT ONCE LIMIT SWITCHES ARE IMPLEMENTED
         /*
         refresh_calibration_data();
@@ -131,8 +130,10 @@ void Controller::closed_loop(float torque, float target) {
             return;
         }
         */
-
-        float feed_forward = 0; // torque * torque_scale;
+        // TODO - INVESTIGATE IF parameter torque IS NEEDED. if not, then we should just get rid
+        // of it and simplify
+        // the function to closed_loop(float target). 
+        float feed_forward = 0.0f; // torque * torque_scale;
         uint8_t buffer[32];
         int32_t angle;
         memcpy(buffer, UINT8_POINTER_T(&feed_forward), sizeof(feed_forward));
@@ -140,7 +141,7 @@ void Controller::closed_loop(float torque, float target) {
         // we read values from 0 - 2pi, teleop sends in -pi to pi
         target += M_PI;
 
-        int32_t closed_setpoint = static_cast<int32_t>((target / (2.0 * M_PI)) * quad_cpr);
+        int32_t closed_setpoint = static_cast<int32_t>((target / (2.0f * M_PI)) * quad_cpr);
         memcpy(buffer + 4, UINT8_POINTER_T(&closed_setpoint), sizeof(closed_setpoint));
 
         transact(CLOSED_PLUS, buffer, UINT8_POINTER_T(&angle));
@@ -192,7 +193,7 @@ void Controller::open_loop(float input) {
         refresh_calibration_data();
         if ((name == "ARM_B" || name == "SA_B") && !calibrated)
         {
-            printf("closed_loop failed because joint B is not yet calibrated");
+            printf("open_loop failed because joint B is not yet calibrated");
             return;
         }
         */
@@ -202,8 +203,10 @@ void Controller::open_loop(float input) {
 
         // When closing the gripper, we want 0.84 * 12 V = 10 V.
         // Closing is currently when speed is positive
+        // TODO - make this more configurable for what we want closing
+        // gripper voltage to be.
         if (name == "HAND_GRIP") {
-            speed = speed > 0.84 ? 0.84 : speed;
+            speed = speed > 0.84f ? 0.84f : speed;
         }
 
 
