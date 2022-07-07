@@ -436,7 +436,6 @@ class ODriveBridge(object):
     Controls the behavior of one ODrive. It manages the ODrive state and
     various other behavior.
 
-    TODO - param stuff
     :param _current_lim: A float that is the current limit in Amperes.
     :param str: A string that is the current ODrive's ID.
     :param _left_speed: A float that is the requested left wheel speed.
