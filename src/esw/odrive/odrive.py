@@ -430,11 +430,28 @@ class ODriveBridge(object):
     """
     Controls the behavior of one ODrive. It manages the ODrive state and
     various other behavior.
+
+    TODO - param stuff
+    :param _current_lim: A float that is the current limit in Amperes.
+    :param str: A string that is the current ODrive's ID.
+    :param _left_speed: A float that is the requested left wheel speed.
+    :param _modrive: A Modrive object that abstracts away the ODrive functions.
+    :param _pair: A string that is front, middle, or back.
+    :param _right_speed: A float that is the requested right wheel speed.
+    :param _speed_lock: A lock that prevents multiple threads from accessing
+        self._left_speed and self._right_speed simultaneously.
+    :param _start_time: An object that helps keep track of time for the
+        watchdog.
+    :param _state: A State object that keeps track of the current state.
+    :param _state_pub: A rospy Publisher object that is used for publishing
+        state data.
+    :param _vel_pub: A rospy Publisher object that is used for publishing
+        velocity data.
     """
     _current_lim: float
+    _id: str
     _left_speed: float
     _modrive: Modrive
-    _odrive_ids: dict[str, str]
     _pair: str
     _right_speed: float
     _speed_lock: threading.Lock
@@ -450,12 +467,13 @@ class ODriveBridge(object):
         self._current_lim = rospy.get_param("/odrive/config/current_lim")
         self._left_speed = 0.0
         self._modrive = None
-        self._odrive_ids = {
+        self._right_speed = 0.0
+        _odrive_ids = {
             'front': rospy.get_param("/odrive/ids/front"),
             'middle': rospy.get_param("/odrive/ids/middle"),
             'back': rospy.get_param("/odrive/ids/back")}
-        self._right_speed = 0.0
         self._pair = sys.argv[1]
+        self._id = _odrive_ids[self._pair]
         self._speed_lock = threading.Lock()
         self._start_time = t.clock()
         self._state = DisconnectedState()
@@ -557,7 +575,7 @@ class ODriveBridge(object):
         This uses the ODrive library to look for an ODrive by its ID.
         """
         print("looking for ODrive")
-        odrive_id = self._odrive_ids[self._pair]
+        odrive_id = self._id
         print(odrive_id)
         odrive = odv.find_any(serial_number=odrive_id)
         print("found odrive")
