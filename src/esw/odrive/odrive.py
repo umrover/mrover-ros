@@ -100,6 +100,9 @@ class Modrive:
             "/odrive/config/watchdog_timeout")
 
     def __getattr__(self, attr: Any) -> Any:
+        """
+        TODO - I'M BAD AT PYTHON, SOMEONE ADD A COMMENT WHY THIS IS HERE.
+        """
         if attr in self.__dict__:
             return getattr(self, attr)
         return getattr(self._odrive, attr)
