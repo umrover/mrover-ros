@@ -2,7 +2,6 @@
 #define CONTROLLER_H
 
 #include "ControllerMap.h"
-#include "Hardware.h"
 #include "I2C.h"
 #include <chrono>
 #include <cmath>
@@ -49,15 +48,14 @@ public:
     float kI = 0.0f;
     float kD = 0.0f;
     bool calibrated = false;
-    int inversion = 1;
+    float inversion = 1.0f;
     float last_speed = 0.0f;
+    uint16_t speed_max = 0;
 
     std::string name;
     std::mutex current_angle_m;
 
 private:
-    Hardware hardware;
-
     // Wrapper for I2C transact, autofilling the i2c address of the Controller by using ControllerMap::get_i2c_address()
     void transact(uint8_t cmd, uint8_t write_num, uint8_t read_num, uint8_t* writeBuf, uint8_t* read_buf);
 
@@ -68,8 +66,8 @@ private:
     void record_angle(int32_t angle);
 
 public:
-    // Initialize the Controller. Need to know which type of hardware to use
-    Controller(std::string name, std::string type);
+    // Initialize the Controller. Need to know which nucleo and which channel on the nucleo to use
+    Controller(std::string name, uint16_t pwm_max);
 
     // Sends a calibrated command
     void refresh_calibration_data();
@@ -91,6 +89,9 @@ public:
 
     // Sends a get angle command
     void refresh_quad_angle();
+
+    // Limits throttle
+    float throttle(float input);
 
     // Sends a zero command
     void zero();

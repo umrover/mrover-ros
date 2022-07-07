@@ -1,6 +1,5 @@
 #include "Controller.h"
 #include "ControllerMap.h"
-#include "Hardware.h"
 #include "I2C.h"
 #include <iostream>
 

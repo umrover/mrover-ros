@@ -2,7 +2,6 @@
 #define ROSHandler_H
 
 #include "Controller.h"
-#include "Hardware.h"
 
 #include <chrono>
 #include <cmath>

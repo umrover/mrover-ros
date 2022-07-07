@@ -5,7 +5,6 @@
 #include <unordered_map>
 
 #include "Controller.h"
-#include "Hardware.h"
 #include "I2C.h"
 #include "ROSHandler.h"
 

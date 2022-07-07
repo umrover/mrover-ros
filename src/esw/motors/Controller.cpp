@@ -17,7 +17,7 @@ void Controller::make_live() {
 
         uint8_t buffer[32];
         // buffer sends max percentage speed
-        memcpy(buffer, UINT8_POINTER_T(&(hardware.speed_max)), sizeof(hardware.speed_max));
+        memcpy(buffer, UINT8_POINTER_T(&speed_max), sizeof(speed_max);
         transact(CONFIG_PWM, buffer, nullptr);
 
         // config kp, ki, pd
@@ -75,7 +75,7 @@ float Controller::get_current_angle() {
 }
 
 // Initialize the Controller. Need to know which nucleo and which channel on the nucleo to use
-Controller::Controller(std::string name, std::string type) : name(name), hardware(Hardware(type)) {}
+Controller::Controller(std::string name, uint16_t pwm_max) : name(name), speed_max(pwm_max) {}
 
 // Sends a get angle command
 void Controller::refresh_calibration_data() {
@@ -199,7 +199,7 @@ void Controller::open_loop(float input) {
         */
 
         uint8_t buffer[4];
-        float speed = hardware.throttle(input) * inversion;
+        float speed = throttle(input) * inversion;
 
         // When closing the gripper, we want 0.84 * 12 V = 10 V.
         // Closing is currently when speed is positive
@@ -211,19 +211,6 @@ void Controller::open_loop(float input) {
 
 
         memcpy(buffer, UINT8_POINTER_T(&speed), sizeof(speed));
-
-        if (hardware.type == HBridge) {
-            if (speed == last_speed) {
-                return;
-            } else {
-                last_speed = speed;
-                int32_t raw_angle;
-                // TODO - when OPEN is supported, change to this
-                // transact(OPEN, buffer, nullptr);
-                transact(OPEN_PLUS, buffer, UINT8_POINTER_T(&raw_angle));
-                return;
-            }
-        }
 
         int32_t raw_angle;
 
@@ -249,6 +236,16 @@ void Controller::refresh_quad_angle() {
     } catch (IOFailure& e) {
         printf("angle failed on %s\n", name.c_str());
     }
+}
+
+// Limits throttle
+float Controller::throttle(float input) {
+    if (input > 1.0f) {
+        input = 1.0f;
+    } else if (input < -1.0f) {
+        input = -1.0f;
+    }
+    return input;
 }
 
 // Sends a zero command

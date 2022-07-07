@@ -8,7 +8,7 @@ all_deps = [lcm, rapidjson]
 unit_test = get_option('unit_test')
 
 if unit_test
-    install_headers('Controller.h', 'ControllerMap.h', 'I2C.h', 'Hardware.h')
+    install_headers('Controller.h', 'ControllerMap.h', 'I2C.h')
     src = ['test.cpp', 'ControllerMap.cpp', 'I2C.cpp', 'Controller.cpp']
 
 
@@ -17,7 +17,7 @@ if unit_test
             dependencies : all_deps,
             install : true)
 else
-    install_headers('Controller.h', 'ControllerMap.h', 'I2C.h', 'ROSHandler.h', 'Hardware.h')
+    install_headers('Controller.h', 'ControllerMap.h', 'I2C.h', 'ROSHandler.h')
     src = ['main.cpp', 'ControllerMap.cpp', 'I2C.cpp', 'ROSHandler.cpp', 'Controller.cpp']
 
     executable('src/motors',
