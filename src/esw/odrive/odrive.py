@@ -212,10 +212,12 @@ class Modrive:
         velocity.
         :param axis: A string that represents which wheel to read current from.
         The string must be "left" or "right"
-        :param vel: A float that is the requested velocity
+        :param vel: A float that is the requested velocity that is in range
+            [-1.0, 1.0]
         :raises DisconnectedError: If Jetson is unable to communicate with
             ODrive.
         """
+        assert -1.0 <= vel and vel <= 1.0, 'vel must be in range [-1.0, 1.0]'
         assert axis == "left" or axis == "right", (
             'axis must be "left" or "right"'
         )
@@ -462,6 +464,8 @@ class ODriveBridge(object):
             requested speeds for the left and right wheels.
         """
         if self._get_state_string() == "Armed":
+            ros_msg.left = self._throttle(ros_msg.left)
+            ros_msg.right = self._throttle(ros_msg.right)
             self._change_speeds(ros_msg.left, ros_msg.right)
 
     def ros_publish_data_loop(self) -> None:
@@ -521,10 +525,16 @@ class ODriveBridge(object):
     def _change_speeds(self, left: float, right: float) -> None:
         """
         Sets the self._left_speed and self._right_speed to the requested
-        speeds.
+        speeds. The speeds must be in the range [-1.0, 1.0]
         :param left: A float representing the requested left wheel speed.
         :param right: A float representing the requested right wheel speed.
         """
+        assert -1.0 <= left and left <= 1.0, (
+            'left must be in range[-1.0, 1.0]'
+        )
+        assert -1.0 <= right and right <= 1.0, (
+            'right must be in range [-1.0, 1.0]'
+        )
         self._speed_lock.acquire()
         self._left_speed = left
         self._right_speed = right
@@ -587,12 +597,24 @@ class ODriveBridge(object):
         """
         Publishes the ODrive state message
         over ROS to a topic
+
+        :param state: A string that is the current state.
         """
         ros_msg = DriveStateData()
         ros_msg.state = state
         ros_msg.pair = self._pair
         self._state_pub.publish(ros_msg)
-        print(f'changed state to {state}')
+        print(f'The state is now {state}')
+
+    def _throttle(self, speed: float) -> float:
+        """
+        Throttles the speed to a range of [-1.0, 1.0].
+        :param speed: A float that is the input speed.
+        :return: A float that limits the input to the range [-1.0, 1.0].
+        """
+        speed = max(-1.0, speed)
+        speed = min(speed, 1.0)
+        return speed
 
     def _update(self) -> None:
         """
