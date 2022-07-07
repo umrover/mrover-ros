@@ -211,12 +211,12 @@ Repeat these three commands for axis1 as well. Then type \
 
 ## ODrive Errors
 
-If the ODrive throws an error, odrive_bridge will tell it to reboot. The error will be displayed in the terminal and the state will be displayed as ErrorState. Depending on which ODrive this happens on, either the front or back motors will be unresponsive for a minute until the ODrive finishes rebooting. The state will automatically change from DisconnectedState to Armed upon completion.
+If the ODrive throws an error, the program will change the state into an error state, then a disconnected state, then try to rearm (cleaning errors in between). This happens quickly. If the errors are still there, then this cycle will continuously happen. The user should be able to see state messages being published to the corresponding LCM topic, notifying the user of such transitions.
 
 ---
 
 ## USB Disconnects 
-If the ODrive is disconnected from the USB port, odrive_bridge will print "ODrive has been unplugged" to the terminal, and will change the state to DisconnectedState until the connection is reestablished. At that point the state will automantically change to Armed.
+If the ODrive is disconnected from the USB port, the program will change into a disconnected state. It will stay at a disconnected state until a connection is reestablished, in which it will go back to an armed state.
 
 ---
 
@@ -285,7 +285,7 @@ Find someone on ESW. Or just go ahead and contact madcowswe himself.
 ---
 
 ## TODO
-- [ ] _usb_lock.acquire is called so many times... try to find a pattern
+- [ ] Proof read the README.md ... old documentation is BAD documentation.
 - [ ] Look into changing multiplier so config changes from [0, 1] to m/s and there is a different value for turns to meters
 - [ ] Code clean up
 - [ ] Move beaglebone stuff into config file
