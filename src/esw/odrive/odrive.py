@@ -222,9 +222,9 @@ class Modrive:
         Sets the requested ODrive axis to run the motors at the requested
         velocity.
         :param axis: A string that represents which wheel to read current from.
-        The string must be "left" or "right"
+        The string must be "left" or "right".
         :param vel: A float that is the requested velocity that is in range
-            [-1.0, 1.0]
+            [-1.0, 1.0].
         :raises DisconnectedError: If Jetson is unable to communicate with
             ODrive.
         """
@@ -348,7 +348,9 @@ class Modrive:
             self._usb_lock.release()
 
     def _set_velocity_ctrl(self) -> None:
-        """Sets the ODrive to velocity control"""
+        """
+        Sets the ODrive to velocity control.
+        """
         self._set_control_mode(CONTROL_MODE_VELOCITY_CONTROL)
 
 
@@ -383,7 +385,7 @@ class State(object):
 
 class ArmedState(State):
     """
-    Reveals that the ODrive is armed
+    Reveals that the ODrive is armed.
     """
     def on_event(self, event: ODriveEvent, modrive: Modrive) -> None:
         """
@@ -398,7 +400,7 @@ class ArmedState(State):
 
 class DisconnectedState(State):
     """
-    Reveals that the ODrive has disconnected
+    Reveals that the ODrive has disconnected.
     """
     def on_event(self, event: ODriveEvent, modrive: Modrive) -> None:
         """
@@ -414,7 +416,7 @@ class DisconnectedState(State):
 
 class ErrorState(State):
     """
-    Reveals that the ODrive is receiving errors
+    Reveals that the ODrive is receiving errors.
     """
     def on_event(self, event: ODriveEvent, modrive: Modrive) -> None:
         """
@@ -554,7 +556,7 @@ class ODriveBridge(object):
     def _change_speeds(self, left: float, right: float) -> None:
         """
         Sets the self._left_speed and self._right_speed to the requested
-        speeds. The speeds must be in the range [-1.0, 1.0]
+        speeds. The speeds must be in the range [-1.0, 1.0].
         :param left: A float representing the requested left wheel speed.
         :param right: A float representing the requested right wheel speed.
         """
@@ -572,6 +574,7 @@ class ODriveBridge(object):
     def _connect(self) -> None:
         """
         Connects to an ODrive if one is connected.
+
         This uses the ODrive library to look for an ODrive by its ID.
         """
         print("looking for ODrive")
@@ -586,8 +589,7 @@ class ODriveBridge(object):
         """
         Returns the state of the ODriveBridge as a short string.
 
-        The form is of "[insert_odrive_state]State"
-        e.g. state is ErrorState,
+        The form is of "[insert_odrive_state]State". e.g. state is ErrorState,
         so ros_msg.state is Error
         :returns: A string that is the state of the ODriveBridge.
         """
@@ -596,8 +598,8 @@ class ODriveBridge(object):
 
     def _publish_encoder_helper(self, axis: str) -> None:
         """
-        Publishes the velocity and current data of the requested axis
-        to a ROS topic.
+        Publishes the velocity and current data of the requested axis to a ROS
+        topic.
         :param axis: A string that represents which wheel to read current from.
             The string must be "left" or "right"
         """
@@ -616,17 +618,14 @@ class ODriveBridge(object):
 
     def _publish_encoder_msg(self) -> None:
         """
-        Publishes the velocity and current data of all the axes
-        to a ROS topic.
+        Publishes the velocity and current data of all the axes to a ROS topic.
         """
         self._publish_encoder_helper('left')
         self._publish_encoder_helper('right')
 
     def _publish_state_msg(self, state: str) -> None:
         """
-        Publishes the ODrive state message
-        over ROS to a topic
-
+        Publishes the ODrive state message over ROS to a topic.
         :param state: A string that is the current state.
         """
         ros_msg = DriveStateData()
@@ -649,10 +648,9 @@ class ODriveBridge(object):
         """
         Updates based on the current state.
 
-        In the armed state, it will first check for ODrive errors.
-        Then, it will _update the speed.
-        In the disconnected state, it will create an arm event.
-        In the error state, it will create an error event.
+        In the armed state, it will first check for ODrive errors. Then, it
+        will _update the speed. In the disconnected state, it will create an
+        arm event. In the error state, it will create an error event.
         """
         if str(self._state) == "ArmedState":
             try:
@@ -685,7 +683,7 @@ class ODriveBridge(object):
 def main():
     """
     Runs the ros_publish_data_loop, rospy drive_vel_cmd subscriber thread,
-    and watchdog_while_loop all run simultaneously
+    and watchdog_while_loop all run simultaneously.
     """
     rospy.init_node(f"odrive_{int(sys.argv[1])}")
 
