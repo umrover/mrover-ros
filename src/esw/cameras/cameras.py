@@ -130,14 +130,15 @@ class Pipeline:
         """Updates the video output to ensure that pipeline is streaming to
         the assigned endpoint and has the proper arguments.
 
-        Requires that self.current_endpoint and self.arguments are not empty.
+        Requires that self.video_info.endpoint and self.video_info.arguments
+        are not empty.
         """
         try:
-            assert len(self.current_endpoint), (
-                "self.current_endpoint should not be empty"
+            assert len(self.video_info.endpoint), (
+                "self.video_info.endpoint should not be empty"
             )
-            assert len(self.arguments), (
-                "self.arguments should not be empty"
+            assert len(self.video_info.arguments), (
+                "self.video_info.arguments should not be empty"
             )
             self._video_output = jetson.utils.videoOutput(
                 f"rtp://{self.video_info.endpoint}",
@@ -206,8 +207,8 @@ class PipelineManager:
         self._active_cameras = [-1] * number_of_pipelines
         for pipe_index in range(len(self._pipelines)):
             self._pipelines[pipe_index] = Pipeline()
-        self._update_all_video_info()
-        self._update_all_video_outputs()
+        self._update_all_pipe_video_info()
+        self._update_all_pipe_video_outputs()
 
     def handle_change_camera_mission(
         self, req: ChangeCameraMissionRequest
@@ -225,8 +226,8 @@ class PipelineManager:
         if self._current_mission == mission_name:
             return ChangeCameraMissionResponse(self._current_mission)
         self._update_mission(mission_name)
-        self._update_all_video_info()
-        self._update_all_video_outputs()
+        self._update_all_pipe_video_info()
+        self._update_all_pipe_video_outputs()
         return ChangeCameraMissionResponse(self._current_mission)
 
     def handle_change_cameras(
@@ -267,7 +268,7 @@ class PipelineManager:
 
         return ChangeCamerasResponse(self._active_cameras)
 
-    def update(self) -> None:
+    def update_all_pipe_streams(self) -> None:
         """Updates the stream for each pipeline. This means that in order to
         stream feed from a camera, this function must be constantly called.
         """
@@ -514,7 +515,7 @@ class PipelineManager:
         for index, pipeline in enumerate(self._pipelines):
             self._active_cameras[index] = pipeline.device_number
 
-    def _update_all_video_info(self) -> None:
+    def _update_all_pipe_video_info(self) -> None:
         """Updates the video resolutions to what is currently being requested.
         """
         for pipe_number, pipeline in enumerate(self._pipelines):
@@ -523,7 +524,7 @@ class PipelineManager:
                 self._get_endpoint(pipe_number)
             )
 
-    def _update_all_video_outputs(self) -> None:
+    def _update_all_pipe_video_outputs(self) -> None:
         """Updates the video outputs and endpoints and video resolutions to
         what is currently being requested.
 
@@ -562,7 +563,7 @@ def main():
         pipeline_manager.handle_change_camera_mission
     )
     while not rospy.is_shutdown():
-        pipeline_manager.update()
+        pipeline_manager.update_all_pipe_streams()
 
 
 if __name__ == "__main__":
