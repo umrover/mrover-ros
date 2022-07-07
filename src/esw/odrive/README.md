@@ -7,12 +7,15 @@
 [Topics - Subscriber](#topics---subscriber) \
 [Topics - Publisher](#topics---publisher) \
 [Watchdog Timeout Period](#watchdog-timeout-period) \
-[Setting Up a New ODrive](#setting-up-a-new-odrive) \
+[Setting up a New ODrive](#setting-up-a-new-odrive) \
+[Getting the ID](#getting-the-id) \
 [Changing the USB Permissions](#changing-the-usb-permissions) \
-[Calibrating The ODrive](#calibrating-the-odrive) \
-[ODrive Errors](#odrive-errors) \
-[USB Disconnects](#usb-disconnects) \
-[Debugging (on the Jetson)](#debugging-on-the-jetson) \
+[Calibrating the ODrive](#calibrating-the-odrive) \
+[Testing the Motor using odrivetool](#testing-the-motor-using-odrivetool) \
+[Tuning Control Loops](#tuning-control-loops) \
+[Program Behavior if ODrive Errors](#program-behavior-if-odrive-errors) \
+[Program Behavior if USB Disconnects](#program-behavior-if-usb-disconnects) \ 
+[Checking if There are Errors](#checking-if-there-are-errors) \
 [Common Errors](#common-errors) \
 [TODO](#todo) \
 [TODO - ROS Migration](#todo---ros-migration)
@@ -21,7 +24,7 @@
 
 ## Project Overview
 
-The ODrives codebase deals with controlling the ODrive motor controllers to
+The ODrive codebase deals with controlling the ODrive motor controllers to
 drive the wheels. For the 2022 Mars Rover Rosie, there are 3 ODrive motor
 controllers to drive the wheels. Each ODrive connects to the Jetson via USB.
 Each ODrive has two axes and each axis is assigned a wheel. To simplify wiring
@@ -148,7 +151,7 @@ Subscriber: gui
 
 ---
 
-## Setting Up a New ODrive
+## Setting up a New ODrive
 
 Guide for the Nanotec/Maxon motors
 
@@ -191,7 +194,7 @@ Restart the Jetson.
 
 ---
 
-## Calibrating The ODrive 
+## Calibrating the ODrive 
 
 Calibration must be done manually. Once again ssh into the Jetson and go to the .mrover folder 
 and start running odrivetool. \
@@ -214,7 +217,7 @@ Repeat these three commands for axis1 as well. Then type \
 
 ---
 
-## Testing the motor using odrivetool
+## Testing the Motor Using odrivetool
 
 1. Open up odrivetool. On the Jetson run `source ~/.mrover/build_env/bin/activate` and type `odrivetool`.
 2. Put the odrive in closed loop by doing `odrvX.axisY.requested_state = AXIS_STATE_CLOSED_LOOP_CONTROL`
@@ -223,7 +226,7 @@ Repeat these three commands for axis1 as well. Then type \
 
 ---
 
-## Getting a graph when tuning the control loops
+## Tuning Control Loops
 
 1. For velocity control you want to plot `odrvX.axisY.encoder.vel_estimate` and `odrvX.axisY.controller.input_vel`.
 2. Type in `start_liveplotter(lambda:[var1, var])` to get a graph.
@@ -232,18 +235,18 @@ Repeat these three commands for axis1 as well. Then type \
 
 ---
 
-## ODrive Errors
+## Program Behavior if ODrive Errors
 
 If the ODrive throws an error, odrive_bridge will tell it to reboot. The error will be displayed in the terminal and the state will be displayed as ErrorState. Depending on which ODrive this happens on, either the front or back motors will be unresponsive for a minute until the ODrive finishes rebooting. The state will automatically change from DisconnectedState to Armed upon completion.
 
 ---
 
-## USB Disconnects 
+## Program Behavior if USB Disconnects 
 If the ODrive is disconnected from the USB port, odrive_bridge will print "ODrive has been unplugged" to the terminal, and will change the state to DisconnectedState until the connection is reestablished. At that point the state will automantically change to Armed.
 
 ---
 
-## Checking if there are errors
+## Checking if There are Errors
 First make sure that the odrives.py is not running.
 Open up odrivetool. On the Jetson run `source ~/.mrover/build_env/bin/activate` and type `odrivetool`.
 `$ dump_errors(odrv0)` \
@@ -253,7 +256,7 @@ Open up odrivetool. On the Jetson run `source ~/.mrover/build_env/bin/activate` 
 
 ## Common Errors
 
-#### ODrive is Not Responding to Calibration 
+#### ODrive Is Not Responding To Calibration 
 Open up odrivetool. On the Jetson run `source ~/.mrover/build_env/bin/activate` and type `odrivetool`.
 `$ dump_errors(odrvX, True)` \
 `$ dump_errors(odrvX, True)` \
