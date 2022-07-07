@@ -149,7 +149,13 @@ Subscriber: gui
 ---
 
 ## Setting Up a New ODrive
-[Link to the most updated guide as of 2021](https://docs.google.com/document/d/1HmKRBJYMA4qaA--7KrE8OWiwN6Ck05E5CHhxUegaq0A/edit)
+
+Guide for the Nanotec/Maxon motors
+
+1. Open up odrivetool. On the Jetson run `source ~/.mrover/build_env/bin/activate` and type `odrivetool`.
+This should open up and say we connected to ODrive. We want (I think) version 0.5.4.
+2. If it's an ODrive we used before, just double check these parameters. Otherwise, set the following anyway: `odrvX.axisY.motor.config.pole_pairs` which depends on the motor and is on the data sheet, `odrvX.axisY.motor.config.resstance_calib_max_voltage` which should be either 1.2 or 0.6, and `odrvX.axisY.motor.config.requested_current_range` which should probably be 8.0, and `odrvX.axisY.motor.config.torque_constant` which it should say on the motor's data sheet and the units are Nm per amp and it might be 52.5/1000, and `odrvX.axisY.encoder.config.cpr` which should be 6 x pole_pairs, and `odrvX.axisY.controller.config.pos_gain` which should be 0.01, `odrvX.axisY.controller.config.vel_gain` which should be 0.01, and `odrvX.axisY.controller.config.vel_integrator_gain` which should be 0, and `odrvX.axisY.controller.config.vel_limit` which is speed and it could be 1000 or so unit is turns/second and we once wanted 5300 rpm, `odrvX.axisY.motor.config.calibration_current` which should be 1.45 or 0.7. 
+3. Save configuration and reboot by running `odrvX.save_configuration`. If this returns false, make sure all axes are in the IDLE state by doing `odrvX.axisY.requested_state = AXIS_STATE_IDLE`. Then reboot by running `odrvX.reboot`.
 
 ---
 
@@ -159,11 +165,7 @@ Each ODrive has a unique serial ID. In order to determine that this ID is, follo
 [this](https://docs.odriverobotics.com/#downloading-and-installing-tools) website on the hoverboard guide page. To activate odrivetool
  follow the steps below. You can do this on the base station or the Jetson. On the Jetson make sure the \
  odrive_bridge program on the Jetson is [deactivated](Debugging). \
-`$ ssh mrover@10.1.0.1` \
-`$ mrover` \
-`$ cd ~/.mrover` \
-`$ source build_env/bin/activate` \
-`$ odrivetool` \
+Open up odrivetool. On the Jetson run `source ~/.mrover/build_env/bin/activate` and type `odrivetool`.
 This will start up odrivetool, and after a few seconds *Connected to ODrive [ID number] as odrvX* should appear on the screen. \
 Type \
 `$ quit()` \
@@ -193,14 +195,17 @@ Restart the Jetson.
 
 Calibration must be done manually. Once again ssh into the Jetson and go to the .mrover folder 
 and start running odrivetool. \
-`$ ssh mrover@10.1.0.1` \
-`$ mrover` \
-`$ cd ~/.mrover` \
-`$ source build_env/bin/activate` \
-`$ odrivetool` \
+Run `source ~/.mrover/build_env/bin/activate` and type `odrivetool`.
 The odrives should automatically connect. Using the odrvX.axisY (0 or 1 depending on the ODrive with the id) in place of m_axis, execute all of the following commands for axis0 and axis1. \
+
 `$ odrvX.axis0.requestedstate = AXIS_STATE_FULL_CALIBRATION_SEQUENCE ` \
-The motor should beep and start calibrating now. If it does not go to the **Errors** section below. 
+The motor should beep and start calibrating now.
+
+You can check to see if it completed successfully by running `dump_errors(odrvX)`.
+If there are errors, you can try doing `dump_errors(odrvX, True)` to first dump the errors,
+and then you can retry the calibration sequence.
+
+If there are still errors, you may need to check the **Errors** section below. 
 Once it has finished, type \
 `$ odrvX.axis0.motor.config.pre_calibrated = True ` \
 `$ odrvX.axis0.encoder.config.pre_calibrated = True ` \
@@ -209,26 +214,38 @@ Repeat these three commands for axis1 as well. Then type \
 
 ---
 
+## Testing the motor using odrivetool
+
+1. Open up odrivetool. On the Jetson run `source ~/.mrover/build_env/bin/activate` and type `odrivetool`.
+2. Put the odrive in closed loop by doing `odrvX.axisY.requested_state = AXIS_STATE_CLOSED_LOOP_CONTROL`
+3. Set the velocity by doing `odrvX.axisY.controller.input_vel = [insert velocity]` where velocity is in turns per second.
+4. To get the actual speed it's going at, run `odrvX.axisY.encoder.vel_estimate` where it returns a number in turns per second.
+
+---
+
+## Getting a graph when tuning the control loops
+
+1. For velocity control you want to plot `odrvX.axisY.encoder.vel_estimate` and `odrvX.axisY.controller.input_vel`.
+2. Type in `start_liveplotter(lambda:[var1, var])` to get a graph.
+3. If it's saying from matplotlib_image does not exist, then in the odrive tool terminal, run `import matplotlib` and `matplotlib.use('GTKAgg')`
+4. Tune the control loops as you please, hopefully you are following a forum and/or know what you're doing (do not kill the ODrives/motors please!)
+
+---
+
 ## ODrive Errors
 
-If the ODrive throws an error, the program will change the state into an error state, then a disconnected state, then try to rearm (cleaning errors in between). This happens quickly. If the errors are still there, then this cycle will continuously happen. The user should be able to see state messages being published to the corresponding LCM topic, notifying the user of such transitions.
+If the ODrive throws an error, odrive_bridge will tell it to reboot. The error will be displayed in the terminal and the state will be displayed as ErrorState. Depending on which ODrive this happens on, either the front or back motors will be unresponsive for a minute until the ODrive finishes rebooting. The state will automatically change from DisconnectedState to Armed upon completion.
 
 ---
 
 ## USB Disconnects 
-If the ODrive is disconnected from the USB port, the program will change into a disconnected state. It will stay at a disconnected state until a connection is reestablished, in which it will go back to an armed state.
+If the ODrive is disconnected from the USB port, odrive_bridge will print "ODrive has been unplugged" to the terminal, and will change the state to DisconnectedState until the connection is reestablished. At that point the state will automantically change to Armed.
 
 ---
 
-## Debugging (on the Jetson)
+## Checking if there are errors
 First make sure that the odrives.py is not running.
-In order to see if there are any ODrive errors, ssh into the Jetson \
-`$ ssh mrover@10.1.0.1` \
-`$ mrover` \
-The terminal should now display that you are on the Jetson.
-`$ cd ~/.mrover` \
-`$ source bin/activate` \
-`$ odrivetool` \
+Open up odrivetool. On the Jetson run `source ~/.mrover/build_env/bin/activate` and type `odrivetool`.
 `$ dump_errors(odrv0)` \
 `$ dump_errors(odrv1)` 
 
@@ -237,7 +254,7 @@ The terminal should now display that you are on the Jetson.
 ## Common Errors
 
 #### ODrive is Not Responding to Calibration 
-At this point you should be in odrivetool, if not, follow steps above to get there. \
+Open up odrivetool. On the Jetson run `source ~/.mrover/build_env/bin/activate` and type `odrivetool`.
 `$ dump_errors(odrvX, True)` \
 `$ dump_errors(odrvX, True)` \
 If an `ENCODER_HALL_ERROR` shows up only the first time, you are good to try calibration again. If no errors show up at all,
@@ -275,8 +292,7 @@ In this case, stop and restart the ODrive program. The problem is also still bei
 
 #### No ODrive Module
 Make sure you are connected to wifi. \
-`$ cd ~/.mrover` \
-`$ source bin/activate` \
+On the Jetson run `source ~/.mrover/build_env/bin/activate`.
 `$ pip3 install odrive`
 
 #### Other Errors
@@ -285,7 +301,6 @@ Find someone on ESW. Or just go ahead and contact madcowswe himself.
 ---
 
 ## TODO
-- [ ] Proof read the README.md ... old documentation is BAD documentation.
 - [ ] Look into changing multiplier so config changes from [0, 1] to m/s and there is a different value for turns to meters
 - [ ] Code clean up
 - [ ] Move beaglebone stuff into config file
