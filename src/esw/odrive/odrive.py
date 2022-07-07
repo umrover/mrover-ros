@@ -53,8 +53,20 @@ class Modrive:
     every time it tries to connect to an ODrive. The Modrive object
     has functions that allows it to get encoder data, get state data,
     set velocity, and much more.
+
+    :param _axes: A dictionary that maps left or right to an ODrive axes
+        object.
+    :param _axis_vel_cmd_mult_map: A dictionary that maps left or right to the
+        vel cmd multiplier that converts [0, 1] to [0, vel_cmd_mult] turns per
+        second.
+    :param _axis_vel_est_mult_map: A dictionary that maps left or right to a
+        multipler that converts turns/sec to m/sec.
+    :param _odrive: An ODrive object
+    :param _usb_lock: A lock that prevents multiple threads from accessing
+        ODrive objects simultaneously.
+    :param _watchdog_timeout: A float that represents the watchdog timeout.
     """
-    _axes: Any
+    _axes: dict[str, Any]
     _axis_vel_cmd_mult_map: dict[str, float]
     _axis_vel_est_mult_map: dict[str, float]
     _odrive: Any
@@ -69,16 +81,15 @@ class Modrive:
 
         self._axes = {
             axis_map[0]: self._odrive.axis0,
-            axis_map[1]: self._odrive.axis1}
+            axis_map[1]: self._odrive.axis1
+        }
 
-        # This scales [0, 1] to [0, vel_cmd_mult] turns per second
         self._axis_vel_cmd_mult_map = {
             'left': rospy.get_param(
                 "/odrive/multiplier/vel_cmd_multiplier_left"),
             'right': rospy.get_param(
                 "/odrive/multiplier/vel_cmd_multiplier_right")}
 
-        # This scales turns/sec to m/sec
         self._axis_vel_est_mult_map = {
             'left': rospy.get_param(
                 "/odrive/multiplier/vel_est_multiplier_left"),
@@ -251,8 +262,8 @@ class Modrive:
             ODrive.
         """
         try:
+            self._usb_lock.acquire()
             for axis in self._axes.values():
-                self._usb_lock.acquire()
                 axis.config.watchdog_timeout = self._watchdog_timeout
                 axis.watchdog_feed()
                 axis.config.enable_watchdog = True
@@ -610,7 +621,7 @@ class ODriveBridge(object):
         """
         Throttles the speed to a range of [-1.0, 1.0].
         :param speed: A float that is the input speed.
-        :return: A float that limits the input to the range [-1.0, 1.0].
+        :returns: A float that limits the input to the range [-1.0, 1.0].
         """
         speed = max(-1.0, speed)
         speed = min(speed, 1.0)
