@@ -30,21 +30,20 @@ class ScienceBridge():
 
     One ScienceBridge will be made in main.
 
-    Attributes:
-        _led_map: A dictionary that maps the possible colors to an integer for
-        the UART message.
-        _mosfet_dev_map: A dictionary that maps each actual device to a MOSFET
-        device number.
-        _nmea_handle_mapper: A dictionay that maps each NMEA tag for a UART
+    :param _led_map: A dictionary that maps the possible colors to an integer
+        for the UART message.
+    :param _mosfet_dev_map: A dictionary that maps each actual device to a
+        MOSFET device number.
+    :param _nmea_handle_mapper: A dictionay that maps each NMEA tag for a UART
         message to its corresponding callback function that returns a ROS
         struct with the packaged data.
-        _nmea_publisher_mapper: A dictionary that maps each NMEA tag for a
+    :param _nmea_publisher_mapper: A dictionary that maps each NMEA tag for a
         UART message to its corresponding ROS Publisher object.
-        _sleep: A float representing the sleep duration used for when the
+    :param _sleep: A float representing the sleep duration used for when the
         sleep function is called.
-        _uart_transmit_msg_len: An integer representing the maximum length for
-        a transmitted UART message.
-        _uart_lock: A lock used to prevent clashing over the UART transmit
+    :param _uart_transmit_msg_len: An integer representing the maximum length
+        for a transmitted UART message.
+    :param _uart_lock: A lock used to prevent clashing over the UART transmit
         line.
     """
     _led_map: TypedDict[str, int]
@@ -55,7 +54,7 @@ class ScienceBridge():
     _uart_transmit_msg_len: int
     _uart_lock: threading.Lock
 
-    def __init__(self):
+    def __init__(self) -> None:
         self._led_map = rospy.get_param("/science_board/led_map")
         self._mosfet_dev_map = rospy.get_param(
             "/science_board/mosfet_device_map")
@@ -111,11 +110,8 @@ class ScienceBridge():
         the command to the STM32 chip via UART. Returns the success of the
         transaction.
 
-        Args:
-            req: A boolean that is the requested arm laser state.
-
-        Returns:
-            A boolean that is the success of sent UART transaction.
+        :param req: A boolean that is the requested arm laser state.
+        :returns: A boolean that is the success of sent UART transaction.
         """
         success = self._send_mosfet_msg("arm_laser", req.enable)
         return ChangeDeviceStateResponse(success)
@@ -127,12 +123,9 @@ class ScienceBridge():
         the command to the STM32 chip via UART. Returns the success of the
         transaction.
 
-        Args:
-            req: A string that is the color of the requested state of the
+        :param req: A string that is the color of the requested state of the
             auton LED array. Note that green actually means blinking green.
-
-        Returns:
-            A boolean that is the success of sent UART transaction.
+        :returns: A boolean that is the success of sent UART transaction.
         """
         success = self._auton_led_transmit(req.color.lower())
         return ChangeAutonLEDStateResponse(success)
@@ -144,12 +137,9 @@ class ScienceBridge():
         carousel heaters by issuing the command to the STM32 chip via UART.
         Returns the success of the transaction.
 
-        Args:
-            req: A boolean that is the requested auto shut off state of the
+        :param req: A boolean that is the requested auto shut off state of the
             carousel heaters.
-
-        Returns:
-            A boolean that is the success of sent UART transaction.
+        :returns: A boolean that is the success of sent UART transaction.
         """
         success = self._heater_auto_shut_off_transmit(req.enable)
         return ChangeDeviceStateResponse(success)
@@ -161,13 +151,10 @@ class ScienceBridge():
         the command to the STM32 chip via UART. Returns the success of the
         transaction.
 
-        Args:
-            req: A ChangeHeaterStateRequest object that has the following:
+        :param req: A ChangeHeaterStateRequest object that has the following:
             - an int that is the heater device that should be changed.
             - a boolean that is the requested heater state of that device.
-
-        Returns:
-            A boolean that is the success of sent UART transaction.
+        :returns: A boolean that is the success of sent UART transaction.
         """
         success = self._heater_transmit(req.device, req.color)
         return ChangeHeaterStateResponse(success)
@@ -179,12 +166,9 @@ class ScienceBridge():
         issuing the command to the STM32 chip via UART. Returns the success of
         transaction.
 
-        Args:
-             req: A ChangeServoAnglesRequest object that has three floats that
-             represent the requested angles of the three servos.
-
-        Returns:
-            A boolean that is the success of sent UART transaction.
+        :param req: A ChangeServoAnglesRequest object that has three floats
+            that represent the requested angles of the three servos.
+        :returns: A boolean that is the success of sent UART transaction.
         """
         success = self._servo_transmit(req.angles)
         return ChangeServoAnglesResponse(success)
@@ -196,11 +180,8 @@ class ScienceBridge():
         issuing the command to the STM32 chip via UART. Returns the success of
         transaction.
 
-        Args:
-            req: A boolean that is the requested UV LED state.
-
-        Returns:
-            A boolean that is the success of sent UART transaction.
+        :param req: A boolean that is the requested UV LED state.
+        :returns: A boolean that is the success of sent UART transaction.
         """
         success = self._send_mosfet_msg("uv_led_carousel", req.enable)
         return ChangeDeviceStateResponse(success)
@@ -212,11 +193,8 @@ class ScienceBridge():
         issuing the command to the STM32 chip via UART. Returns the success of
         transaction.
 
-        Args:
-            req: A boolean that is the requested UV LED state.
-
-        Returns:
-            A boolean that is the success of sent UART transaction.
+        :param req: A boolean that is the requested UV LED state.
+        :returns: A boolean that is the success of sent UART transaction.
         """
         success = self._send_mosfet_msg("uv_led_end_effector", req.enable)
         return ChangeDeviceStateResponse(success)
@@ -227,12 +205,8 @@ class ScienceBridge():
         """Processes a request to change the carousel white LED by
         issuing the command to the STM32 chip via UART. Returns the success of
         transaction.
-
-        Args:
-            req: A boolean that is the requested white LED state.
-
-        Returns:
-            A boolean that is the success of sent UART transaction.
+        :param: req: A boolean that is the requested white LED state.
+        :returns: A boolean that is the success of sent UART transaction.
         """
         success = self._send_mosfet_msg("white_led", req.enable)
         return ChangeDeviceStateResponse(success)
@@ -244,12 +218,6 @@ class ScienceBridge():
 
         Depending on the NMEA tag of the message, the proper function
         will be called to process the message.
-
-        Args:
-            None.
-
-        Returns:
-            None.
         """
         tx_msg = self._read_msg()
         match_found = False
@@ -271,12 +239,9 @@ class ScienceBridge():
         config/science_board.yaml file. This is so that the STM32 chip can
         expect to only receive messages of this particular length.
 
-        Args:
-            tx_msg: The raw string that is to be sent without padding.
-
-        Returns:
-            The filled string that is to be sent with padding and is of certain
-            length.
+        :param tx_msg: The raw string that is to be sent without padding.
+        :returns: The filled string that is to be sent with padding and is of
+            certain length.
         """
 
         length = len(tx_msg)
@@ -293,13 +258,10 @@ class ScienceBridge():
         """Sends a UART message to the STM32 commanding the auton LED array
         state.
 
-        Args:
-            color: A string that is the color of the requested state of
+        :param color: A string that is the color of the requested state of
             the auton LED array. Note that green actually means blinking green.
             The string should be lower case.
-
-        Returns:
-            A boolean that is the success of the transaction. Note that
+        :returns: A boolean that is the success of the transaction. Note that
             this could be because an invalid color was sent.
         """
         assert color.islower(), "color should be lower case"
@@ -314,15 +276,12 @@ class ScienceBridge():
         """Creates a message that can be sent over UART to command a MOSFET
         device.
 
-        Args:
-            device: An int that is the MOSFET device that can be changed.
-            enable: A boolean that is the requested MOSFET device state.
+        :param device: An int that is the MOSFET device that can be changed.
+        :param enable: A boolean that is the requested MOSFET device state.
             True means that the MOSFET device will connect to ground and
             activate the device.
-
-        Returns:
-            The raw string that has the device and enable information. Note
-            that this is not yet ready to be transmitted to the STM32 chip
+        :returns: The raw string that has the device and enable information.
+            Note that this is not yet ready to be transmitted to the STM32 chip
             over UART since it is not of the proper length yet.
         """
         tx_msg = f"$MOSFET,{device},{enable}"
@@ -332,14 +291,11 @@ class ScienceBridge():
         """Processes a UART message that contains data of the auto shut off
         state of the carousel heaters and packages it into a ROS struct.
 
-        Args:
-            tx_msg: A string that was received from UART that contains data of
-            the carousel heater auto shut off state.
-                - Format: <"$AUTOSHUTOFF,device,enable">
-
-        Returns:
-            An Enable struct that has a boolean that is the requested auto
-            shut off state of the carousel heaters.
+        :param tx_msg: A string that was received from UART that contains data
+            of the carousel heater auto shut off state.
+            - Format: <"$AUTOSHUTOFF,device,enable">
+        :returns: An Enable struct that has a boolean that is the requested
+            auto shut off state of the carousel heaters.
         """
         arr = tx_msg.split(",")
         return Enable(enable=bool(int(arr[1])))
@@ -348,12 +304,9 @@ class ScienceBridge():
         """Sends a UART message to the STM32 chip commanding the auto shut off
         state of the carousel heaters.
 
-        Args:
-            enable: A boolean that is the auto shut off state of the carousel
-            heaters.
-
-        Returns:
-            A boolean that is the success of the transaction.
+        :param enable: A boolean that is the auto shut off state of the
+            carousel heaters.
+        :returns: A boolean that is the success of the transaction.
         """
         tx_msg = f"$AUTOSHUTOFF,{enable}"
         success = self._send_msg(tx_msg)
@@ -362,14 +315,10 @@ class ScienceBridge():
     def _heater_state_handler(self, tx_msg: str) -> Heater:
         """Processes a UART message that contains data of the state of a
         carousel heater and packages it into a ROS struct.
-
-        Args:
-            tx_msg: A string that was received from UART that contains data of
-            the carousel heater auto shut off state.
-                - Format: <"$HEATER,device,enable">
-
-        Returns:
-            An Heater struct that has the following:
+        :param tx_msg: A string that was received from UART that contains data
+            of the carousel heater auto shut off state.
+            - Format: <"$HEATER,device,enable">
+        :returns: An Heater struct that has the following:
             - an int that is the heater device that was changed.
             - a boolean that is the heater state of that device.
         """
@@ -380,13 +329,10 @@ class ScienceBridge():
         """Sends a UART message to the STM32 chip commanding the state of a
         particular heater device.
 
-        Args:
-            device: An int that is the heater device that should be changed.
-            enable: A boolean that is the requested heater state of that
+        :param device: An int that is the heater device that should be changed.
+        :param enable: A boolean that is the requested heater state of that
             device.
-
-        Returns:
-            A boolean that is the success of the transaction.
+        :returns: A boolean that is the success of the transaction.
         """
         heater_device_string = f"heater_{device}"
         translated_device = self._mosfet_dev_map[heater_device_string]
@@ -397,12 +343,8 @@ class ScienceBridge():
     def _read_msg(self) -> str:
         """Reads a message on the UART receive line from the STM32 chip.
 
-        Args:
-            None
-
-        Returns:
-            A string that is the received message. Note that this may be an
-            empty string if there are no messages.
+        :returns: A string that is the received message. Note that this may be
+            an empty string if there are no messages.
         """
         try:
             self._uart_lock.acquire()
@@ -417,12 +359,10 @@ class ScienceBridge():
     def _send_mosfet_msg(self, device_name: str, enable: bool) -> bool:
         """Sends a MOSFET message on the UART transmit line to the STM32 chip.
 
-        Args:
-            device_name: A string that is the device that wants to be changed.
-            enable: A boolean that is the requested device state.
-
-        Returns:
-            A boolean that is the success of sent UART transaction.
+        :param device_name: A string that is the device that wants to be
+            changed.
+        :param enable: A boolean that is the requested device state.
+        :returns: A boolean that is the success of sent UART transaction.
         """
         translated_device = self._mosfet_dev_map[device_name]
         tx_msg = self._format_mosfet_msg(translated_device, int(enable))
@@ -432,12 +372,9 @@ class ScienceBridge():
     def _send_msg(self, tx_msg: str) -> bool:
         """Sends the message on the UART transmit line to the STM32 chip.
 
-        Args:
-            tx_msg: The raw string that is to be sent to the UART transmit
+        :param tx_msg: The raw string that is to be sent to the UART transmit
             line.
-
-        Returns:
-            A boolean that is the success of sent UART transaction.
+        :returns: A boolean that is the success of sent UART transaction.
         """
         try:
             tx_msg = self._add_padding(tx_msg)
@@ -460,15 +397,13 @@ class ScienceBridge():
         """Sends a UART message to the STM32 chip commanding the angles of the
         three carousel servos.
 
-        Args:
-            angles: Three floats in an array that represent the angles of
+        :param angles: Three floats in an array that represent the angles of
             the servos. Note that this angle is what the servo interprets as
             the angle, and it may differ from servo to servo. Also note that
             the range of angles may vary (the safe range is between about 0
             and 150).
 
-        Returns:
-            A boolean that is the success of the transaction.
+        :returns: A boolean that is the success of the transaction.
         """
         tx_msg = f"$SERVO,{angles[0]},{angles[1]},{angles[2]}"
         success = self._send_msg(tx_msg)
@@ -482,13 +417,10 @@ class ScienceBridge():
         uint16_t from each channel. The Jetson reads byte by byte, so the
         program combines every two bytes of information into a uint16_t.
 
-        Args:
-            tx_msg: A string that was received from UART that contains data of
-            the three carousel spectral sensors.
-                - Format: <"SPECTRAL,ch_0_0,ch_0_1,....ch_2_5">
-
-        Returns:
-            An Spectral struct that has 18 floats that is the data of the
+        :param tx_msg: A string that was received from UART that contains data
+            of the three carousel spectral sensors.
+            - Format: <"SPECTRAL,ch_0_0,ch_0_1,....ch_2_5">
+        :returns: A Spectral struct that has 18 floats that is the data of the
             three carousel spectral sensors.
         """
         tx_msg.split(',')
@@ -509,14 +441,11 @@ class ScienceBridge():
         """Processes a UART message that contains data of the three carousel
         thermistors and packages it into a ROS struct.
 
-        Args:
-            tx_msg: A string that was received from UART that contains data of
-            the three carousel spectral sensors.
-                - Format: <"THERMISTOR,temp_0,temp_1,temp_2">
-
-        Returns:
-            An Thermistor struct that has 3 floats that is the temperature of
-            the three carousel thermistors in Celsius.
+        :param tx_msg: A string that was received from UART that contains data
+            of the three carousel spectral sensors.
+            - Format: <"THERMISTOR,temp_0,temp_1,temp_2">
+        :returns: A Thermistor struct that has 3 floats that is the
+            temperature of the three carousel thermistors in Celsius.
         """
         arr = tx_msg.split(",")
         return Thermistor(
@@ -531,14 +460,11 @@ class ScienceBridge():
         channel. The Jetson reads byte by byte, so the program combines every
         two bytes of information into a uint16_t.
 
-        Args:
-            tx_msg: A string that was received from UART that contains data of
-            the triad sensor.
-                - Format: <"TRIAD,ch_0_0,ch_0_1,....ch_2_5">
-
-        Returns:
-            An Triad struct that has 18 floats that is the data of the triad
-            sensor.
+        :param tx_msg: A string that was received from UART that contains data
+            of the triad sensor.
+            - Format: <"TRIAD,ch_0_0,ch_0_1,....ch_2_5">
+        :returns: A Triad struct that has 18 floats that is the data of the
+            triad sensor.
         """
         tx_msg.split(',')
         arr = [s.strip().strip('\x00') for s in tx_msg.split(',')]
