@@ -132,7 +132,7 @@ void Controller::closed_loop(float torque, float target) {
         */
         // TODO - INVESTIGATE IF parameter torque IS NEEDED. if not, then we should just get rid
         // of it and simplify
-        // the function to closed_loop(float target). 
+        // the function to closed_loop(float target).
         float feed_forward = 0.0f; // torque * torque_scale;
         uint8_t buffer[32];
         int32_t angle;
