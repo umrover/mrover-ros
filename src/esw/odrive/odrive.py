@@ -35,8 +35,8 @@ class DisconnectedError(Exception):
 class ODriveEvent(Enum):
     """Dictates the behavior of the changing of States.
 
-    The ODriveEvents are the following: When the ODrive is disconnected,
-    trying to arm, or if there is an error.
+    The ODriveEvents reveal the following: When the ODrive is disconnected,
+    is trying to arm, or has encountered an error.
     """
     DISCONNECTED_ODRIVE_EVENT = 0
     ARM_CMD_EVENT = 1
@@ -113,18 +113,18 @@ class Modrive:
         """Arms the ODrive by setting it to closed loop control and
         velocity control.
         """
-        self._set_closed_loop_ctrl()
+        self._set_requested_state(AXIS_STATE_CLOSED_LOOP_CONTROL)
         self._set_velocity_ctrl()
 
     def disarm(self) -> None:
         """Disarms the ODrive by setting the velocity to zero and making
         it idle.
         """
-        self._set_closed_loop_ctrl()
+        self._set_requested_state(AXIS_STATE_CLOSED_LOOP_CONTROL)
         self._set_velocity_ctrl()
         self.set_vel('left', 0.0)
         self.set_vel('right', 0.0)
-        self._idle()
+        self._set_requested_state(AXIS_STATE_IDLE)
 
     def get_measured_current(self, axis: str) -> float:
         """Returns the measured current of the requested axis of the ODrive in
@@ -242,7 +242,6 @@ class Modrive:
                     desired_input_vel_turns_s <= 50), (
                 'magnitude of desired_input_vel_turns_sec is dangerously high'
             )
-
             self._usb_lock.acquire()
             self._axes[axis].controller.input_vel = desired_input_vel_turns_s
         except fibre.protocol.ChannelBrokenException:
@@ -296,10 +295,6 @@ class Modrive:
         finally:
             self._usb_lock.release()
 
-    def _idle(self) -> None:
-        """Sets the ODrive state to idle."""
-        self._set_requested_state(AXIS_STATE_IDLE)
-
     def _reset_errors(self) -> None:
         """Resets the errors cleanly for all axes."""
         try:
@@ -310,10 +305,6 @@ class Modrive:
             raise DisconnectedError
         finally:
             self._usb_lock.release()
-
-    def _set_closed_loop_ctrl(self) -> None:
-        """Sets the ODrive state to closed loop control."""
-        self._set_requested_state(AXIS_STATE_CLOSED_LOOP_CONTROL)
 
     def _set_control_mode(self, mode: Any) -> None:
         """Sets the ODrive control mode to the requested control mode.
@@ -478,23 +469,22 @@ class ODriveBridge(object):
     def watchdog_while_loop(self) -> None:
         """Calls the update() function continuously and checks if comms has
         been lost.
+
+        A flag is set to keep track fo the state for when we have comms with
+        the base station or not.
         """
-        # flag for state when we have comms with base_station vs not
         previously_lost_comms = True
         while not rospy.is_shutdown():
             watchdog = t.clock() - self._start_time
             lost_comms = watchdog > 1.0
             if lost_comms:
                 if not previously_lost_comms:
-                    # done to print "loss of comms" once
                     print("loss of comms")
                     previously_lost_comms = True
-
                 self._change_speeds(0.0, 0.0)
             elif previously_lost_comms:
                 previously_lost_comms = False
                 print("regained comms")
-
             try:
                 self._update()
             except DisconnectedError:
@@ -600,9 +590,7 @@ class ODriveBridge(object):
         :param speed: A float that is the input speed.
         :returns: A float that limits the input to the range [-1.0, 1.0].
         """
-        speed = max(-1.0, speed)
-        speed = min(speed, 1.0)
-        return speed
+        return max(min(1.0, speed), -1.0)
 
     def _update(self) -> None:
         """Updates based on the current state.
@@ -616,7 +604,6 @@ class ODriveBridge(object):
                 errors = self._modrive.has_errors()
                 self._modrive.watchdog_feed()
             except DisconnectedError:
-                errors = 0
                 self._bridge_on_event(ODriveEvent.DISCONNECTED_ODRIVE_EVENT)
                 return
 
@@ -642,20 +629,18 @@ class ODriveBridge(object):
 def main():
     """Runs the ros_publish_data_loop, rospy drive_vel_cmd subscriber thread,
     and watchdog_while_loop all run simultaneously.
+
+    It runs the following threads:
+        - A thread to listen to drive commands.
+        - A thread to listen to continuously publish data.
+        - A thread to continuously monitor comms between base station and
+            Jetson to act as watchdog.
     """
     rospy.init_node(f"odrive_{int(sys.argv[1])}")
-
     bridge = ODriveBridge()
-
-    # Starts the thread to listen to drive commands
     rospy.Subscriber("drive_vel_cmd", DriveVelCmd,
                      bridge.drive_vel_cmd_callback)
-
-    # Starts the thread to listen to continuously publish data
     threading._start_new_thread(bridge.ros_publish_data_loop, ())
-
-    # Starts the thread to continuously monitor comms between
-    # basestation and jetson to act as watchdog.
     threading._start_new_thread(bridge.watchdog_while_loop, ())
     rospy.spin()
     exit()
