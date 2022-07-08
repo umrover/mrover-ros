@@ -52,7 +52,7 @@ Locks exist to prevent two functions from trying to access the UART line at the 
 
 This configuration file allows you to configure various things.
 
-#### LED Array to UART Mapping - science_board/led_map/
+#### LED Array to UART Mapping - science_board/led_to_id/
 
 You may choose to configure what number to pack
 into the UART message in order to get the particular color to appear on the
@@ -190,7 +190,7 @@ Subscriber: gui
 ---
 
 ## TODO
-- [ ] simplify the mapper logic (can put into a function instead), don't need both _nmea_handle_mapper and _nmea_publisher_mapper probably
+- [ ] simplify the mapper logic (can put into a function instead), don't need both _handler_function_by_tag and _ros_publisherr_by_tag probably
 - [ ] Analyze behavior when MOSFET device is out of bounds. See if it should be handled by firmware or here or both.
 It is preferred if it is both, but this program does not currently have any checking.
 - [ ] Code clean up

@@ -30,14 +30,14 @@ class ScienceBridge():
 
     One ScienceBridge will be made in main.
 
-    :param _led_map: A dictionary that maps the possible colors to an integer
-        for the UART message.
-    :param _mosfet_dev_map: A dictionary that maps each actual device to a
-        MOSFET device number.
-    :param _nmea_handle_mapper: A dictionay that maps each NMEA tag for a UART
-        message to its corresponding callback function that returns a ROS
+    :param _id_by_color: A dictionary that maps the possible colors to an
+        integer for the UART message.
+    :param _mosfet_number_by_device_name: A dictionary that maps each actual
+        device to a MOSFET device number.
+    :param _handler_function_by_tag: A dictionay that maps each NMEA tag for a
+        UART message to its corresponding callback function that returns a ROS
         struct with the packaged data.
-    :param _nmea_publisher_mapper: A dictionary that maps each NMEA tag for a
+    :param _ros_publisherr_by_tag: A dictionary that maps each NMEA tag for a
         UART message to its corresponding ROS Publisher object.
     :param _sleep: A float representing the sleep duration used for when the
         sleep function is called.
@@ -46,26 +46,26 @@ class ScienceBridge():
     :param _uart_lock: A lock used to prevent clashing over the UART transmit
         line.
     """
-    _led_map: TypedDict[str, int]
-    _mosfet_dev_map: TypedDict[str, int]
-    _nmea_handle_mapper: TypedDict[str, Callable[[str], Any]]
-    _nmea_publisher_mapper: TypedDict[str, rospy.Publisher]
+    _id_by_color: TypedDict[str, int]
+    _mosfet_number_by_device_name: TypedDict[str, int]
+    _handler_function_by_tag: TypedDict[str, Callable[[str], Any]]
+    _ros_publisherr_by_tag: TypedDict[str, rospy.Publisher]
     _sleep: float
     _uart_transmit_msg_len: int
     _uart_lock: threading.Lock
 
     def __init__(self) -> None:
-        self._led_map = rospy.get_param("/science_board/led_map")
-        self._mosfet_dev_map = rospy.get_param(
+        self._id_by_color = rospy.get_param("/science_board/led_to_id")
+        self._mosfet_number_by_device_name = rospy.get_param(
             "/science_board/mosfet_device_map")
-        self._nmea_handle_mapper = {
+        self._handler_function_by_tag = {
             "AUTOSHUTOFF": self._heater_auto_shut_off_handler,
             "HEATER": self._heater_state_handler,
             "SPECTRAL": self._spectral_handler,
             "THERMISTOR": self._thermistor_handler,
             "TRIAD": self._triad_handler
         }
-        self._nmea_publisher_mapper = {
+        self._ros_publisherr_by_tag = {
             "AUTOSHUTOFF": rospy.Publisher(
                 'science/heater_auto_shut_off_data', Enable, queue_size=1),
             "HEATER": rospy.Publisher(
@@ -221,12 +221,12 @@ class ScienceBridge():
         """
         tx_msg = self._read_msg()
         match_found = False
-        for tag, handler_func in self._nmea_handle_mapper.items():
+        for tag, handler_func in self._handler_function_by_tag.items():
             if tag in tx_msg:
                 print(tx_msg)
                 match_found = True
                 ros_msg: Any = handler_func(tx_msg)
-                self._nmea_publisher_mapper[tag].publish(ros_msg)
+                self._ros_publisherr_by_tag[tag].publish(ros_msg)
                 break
         if (not match_found) and (not tx_msg):
             print(f'Error decoding message stream: {tx_msg}')
@@ -265,9 +265,9 @@ class ScienceBridge():
             this could be because an invalid color was sent.
         """
         assert color.islower(), "color should be lower case"
-        if color not in self._led_map.keys():
+        if color not in self._id_by_color.keys():
             return False
-        requested_state = self._led_map[color]
+        requested_state = self._id_by_color[color]
         msg = f"$LED,{requested_state}"
         success = self._send_msg(msg)
         return success
@@ -335,7 +335,9 @@ class ScienceBridge():
         :returns: A boolean that is the success of the transaction.
         """
         heater_device_string = f"heater_{device}"
-        translated_device = self._mosfet_dev_map[heater_device_string]
+        translated_device = (
+            self._mosfet_number_by_device_name[heater_device_string]
+        )
         tx_msg = self._format_mosfet_msg(translated_device, int(enable))
         success = self._send_msg(tx_msg)
         return success
@@ -364,7 +366,7 @@ class ScienceBridge():
         :param enable: A boolean that is the requested device state.
         :returns: A boolean that is the success of sent UART transaction.
         """
-        translated_device = self._mosfet_dev_map[device_name]
+        translated_device = self._mosfet_number_by_device_name[device_name]
         tx_msg = self._format_mosfet_msg(translated_device, int(enable))
         success = self._send_msg(tx_msg)
         return success
