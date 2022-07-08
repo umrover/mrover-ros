@@ -239,8 +239,9 @@ class Modrive:
                 vel * self._turns_to_raw_ratio_by_side[axis]
             )
             assert (-50 <= desired_input_vel_turns_s and
-                    desired_input_vel_turns_s <= 50), \
+                    desired_input_vel_turns_s <= 50), (
                 'magnitude of desired_input_vel_turns_sec is dangerously high'
+            )
 
             self._usb_lock.acquire()
             self._axes[axis].controller.input_vel = desired_input_vel_turns_s
