@@ -107,18 +107,14 @@ You may choose to configure which ODrive controls which wheel pair by listing it
 The ODrive IDs of each ODrive can be found using odrivetool. Follow the steps [here](#getting-the-id).
 This must be consistent with which ODrive is connected to which wheel pairs electrically.
 
-#### Multiplier - odrive/multiplier/
+#### Ratio - odrive/ratio/
 
-You may choose to configure the multiplier for the commands and data of the ODrives.
-The incoming velocity commands are between 0 and 1,
-and the multiplier turns it into turns per second,
-which is what the ODrive library accepts.
-The vel estimates from the ODrive library are returned in turns per second,
-and the multiplier turns it into meters per second,
-which is what the GUI expects.
-The magnitudes for the left and right multipliers are the same, but the sign may differ.
-The velocity estimate multiplier must be consistent with the actual conversion
-of turns per second to meters per second.
+You may choose to configure the ratios of the wheels for the ODrives.
+By changing the ratios, this will affect the magnitude of what the raw speed [0, 1] means
+from incoming VelCmdData messages and also affect the data received. This is desired because the ODrives
+keep track of everything in terms of turns.
+The way to change the ratio config is the following: If one turn is equal to 40 meters for the right wheel, then the meters_to_turns_ratio_right variable should be set to 40.
+The ratios must be consistent with the actual conversions between incoming commands, turns, and meters.
 
 ---
 
@@ -304,7 +300,8 @@ Find someone on ESW. Or just go ahead and contact madcowswe himself.
 ---
 
 ## TODO
-- [ ] Look into changing multiplier so config changes from [0, 1] to m/s and there is a different value for turns to meters
+- [ ] SOMEONE DOUBLE CHECK IF THE meters_to_turns_ratio IS CORRECT... IT IS LIKELY WRONG.
+I ADDED ASSERTS IN CASE I MESSED UP SOMEWHERE.
 - [ ] Test with ROS
 - [ ] Make sure messages and topics are consistent with the gui and teleop programs
 
