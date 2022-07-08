@@ -57,7 +57,8 @@ class ScienceBridge():
     def __init__(self) -> None:
         self._id_by_color = rospy.get_param("/science_board/color_ids")
         self._mosfet_number_by_device_name = rospy.get_param(
-            "/science_board/device_mosfet_numbers")
+            "/science_board/device_mosfet_numbers"
+        )
         self._handler_function_by_tag = {
             "AUTOSHUTOFF": self._heater_auto_shut_off_handler,
             "HEATER": self._heater_state_handler,
@@ -67,19 +68,25 @@ class ScienceBridge():
         }
         self._ros_publisherr_by_tag = {
             "AUTOSHUTOFF": rospy.Publisher(
-                'science/heater_auto_shut_off_data', Enable, queue_size=1),
+                'science/heater_auto_shut_off_data', Enable, queue_size=1
+            ),
             "HEATER": rospy.Publisher(
-                'science/heater_state_data', Heater, queue_size=1),
+                'science/heater_state_data', Heater, queue_size=1
+            ),
             "SPECTRAL": rospy.Publisher(
-                'science/spectral_data', Spectral, queue_size=1),
+                'science/spectral_data', Spectral, queue_size=1
+            ),
             "THERMISTOR": rospy.Publisher(
-                'science/thermistor_data', Thermistor, queue_size=1),
+                'science/thermistor_data', Thermistor, queue_size=1
+            ),
             "TRIAD": rospy.Publisher(
-                'science/spectral_triad_data', Spectral, queue_size=1)
+                'science/spectral_triad_data', Spectral, queue_size=1
+            )
         }
         self._sleep = rospy.get_param("/science_board/info/sleep")
         self._uart_transmit_msg_len = rospy.get_param(
-            "/science_board/info/_uart_transmit_msg_len")
+            "/science_board/info/_uart_transmit_msg_len"
+        )
         self._uart_lock = threading.Lock()
 
     def __enter__(self) -> None:
