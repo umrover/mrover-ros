@@ -58,10 +58,10 @@ You may choose to configure what number to pack
 into the UART message in order to get the particular color to appear on the
 LED Array. This must be consistent with the firmware flashed on the STM32 chip.
 
-#### Device to MOSFET Device Mapping - science_board/mosfet_device_map/
+#### Device to MOSFET Number Mapping - science_board/device_mosfet_numbers/
 
-You may choose to configure which device maps to which MOSFET device.
-This must be consistent to which MOSFET device the device is connected to electrically.
+You may choose to configure which device maps to which MOSFET device number.
+This must be consistent to which MOSFET device number the device is connected to electrically.
 
 #### UART Serial Info - science_board/serial/
 

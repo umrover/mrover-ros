@@ -10,7 +10,7 @@ Equipment Servicing task, and controlling the LED array used during the
 Autonomous Traversal task.
 '''
 import threading
-from typing import Any, Callable, List, TypedDict
+from typing import Any, Callable, Dict, List
 
 import numpy as np
 import rospy
@@ -32,11 +32,11 @@ class ScienceBridge():
 
     :param _id_by_color: A dictionary that maps the possible colors to an
         integer for the UART message.
-    :param _mosfet_number_by_device_name: A dictionary that maps each actual
-        device to a MOSFET device number.
     :param _handler_function_by_tag: A dictionay that maps each NMEA tag for a
         UART message to its corresponding callback function that returns a ROS
         struct with the packaged data.
+    :param _mosfet_number_by_device_name: A dictionary that maps each actual
+        device to a MOSFET device number.
     :param _ros_publisherr_by_tag: A dictionary that maps each NMEA tag for a
         UART message to its corresponding ROS Publisher object.
     :param _sleep: A float representing the sleep duration used for when the
@@ -46,18 +46,18 @@ class ScienceBridge():
     :param _uart_lock: A lock used to prevent clashing over the UART transmit
         line.
     """
-    _id_by_color: TypedDict[str, int]
-    _mosfet_number_by_device_name: TypedDict[str, int]
-    _handler_function_by_tag: TypedDict[str, Callable[[str], Any]]
-    _ros_publisherr_by_tag: TypedDict[str, rospy.Publisher]
+    _id_by_color: Dict[str, int]
+    _handler_function_by_tag: Dict[str, Callable[[str], Any]]
+    _mosfet_number_by_device_name: Dict[str, int]
+    _ros_publisherr_by_tag: Dict[str, rospy.Publisher]
     _sleep: float
     _uart_transmit_msg_len: int
     _uart_lock: threading.Lock
 
     def __init__(self) -> None:
-        self._id_by_color = rospy.get_param("/science_board/led_to_id")
+        self._id_by_color = rospy.get_param("/science_board/color_ids")
         self._mosfet_number_by_device_name = rospy.get_param(
-            "/science_board/mosfet_device_map")
+            "/science_board/device_mosfet_numbers")
         self._handler_function_by_tag = {
             "AUTOSHUTOFF": self._heater_auto_shut_off_handler,
             "HEATER": self._heater_state_handler,
