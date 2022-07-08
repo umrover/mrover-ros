@@ -22,7 +22,7 @@ sys.path.insert(0, "/usr/lib/python3.6/dist-packages")  # 3.6 vs 3.8
 import jetson.utils  # noqa
 
 
-@dataclass
+@dataclass(eq=False)
 class VideoInfo:
     """Stores video info information by keeping track of the arguments and
     endpoint that is needed to create jetson.utils objects.
@@ -33,6 +33,14 @@ class VideoInfo:
     """
     arguments: List[str] = []
     endpoint: str = ""
+
+    def __eq__(self, other):
+        """Overrides the equality comparator operator.
+        """
+        return (
+            self.arguments == other.arguments
+            and self.endpoint == other.endpoint
+        )
 
 
 class Pipeline:
@@ -157,9 +165,8 @@ class PipelineManager:
     :var _active_cameras: A list of integers that is the camera devices
         that are being streaming by each pipeline.
     :var _current_mission: A string that is the current mission. The
-        camera qualities and endpoints depend on the mission.
-    :var _default_mission: A string that is the default mission to fall
-        back to.
+        camera qualities and endpoints depend on the mission. Initialized
+        to the default mission initialized in the config.
     :var _max_vid_dev_id_number: An integer that is the maximum possible
         video devices connected to the Jetson. This determines up to which
         number we can look inside /dev/video*.
@@ -175,7 +182,6 @@ class PipelineManager:
     """
     _active_cameras: List[int]
     _current_mission: str
-    _default_mission: str
     _max_vid_dev_id_number: int
     _mission_streams_map: 'Dict[str, List[Dict[str, str | int]]]'
     _pipelines: List[Pipeline]
@@ -189,15 +195,13 @@ class PipelineManager:
             quality = input_map['resolution']
             self._res_args_map[quality] = input_map['arguments']
 
-        self._default_mission = \
-            rospy.get_param("cameras/default_mission").lower()
         self._max_vid_dev_id_number = rospy.get_param(
             "cameras/max_video_device_id_number"
         )
         self._mission_streams_map = {}
         self.__initialize_mission_streams_map()
 
-        self._current_mission = self._default_mission
+        self._current_mission = ""
         self._video_source_lock = threading.Lock()
         self._video_sources = [None] * self._max_vid_dev_id_number
         number_of_pipelines = rospy.get_param(
@@ -207,8 +211,9 @@ class PipelineManager:
         self._active_cameras = [-1] * number_of_pipelines
         for pipe_index in range(len(self._pipelines)):
             self._pipelines[pipe_index] = Pipeline()
-        self._update_all_pipe_video_info()
-        self._update_all_pipe_video_outputs()
+        self._update_mission(
+            rospy.get_param("cameras/default_mission").lower()
+        )
 
     def handle_change_camera_mission(
         self, req: ChangeCameraMissionRequest
@@ -226,8 +231,6 @@ class PipelineManager:
         if self._current_mission == mission_name:
             return ChangeCameraMissionResponse(self._current_mission)
         self._update_mission(mission_name)
-        self._update_all_pipe_video_info()
-        self._update_all_pipe_video_outputs()
         return ChangeCameraMissionResponse(self._current_mission)
 
     def handle_change_cameras(
@@ -515,31 +518,23 @@ class PipelineManager:
         for index, pipeline in enumerate(self._pipelines):
             self._active_cameras[index] = pipeline.device_number
 
-    def _update_all_pipe_video_info(self) -> None:
+    def _update_all_pipe_video_info_and_outputs(self) -> None:
         """Updates the video resolutions to what is currently being requested.
+
+        Does not update the video output if the video info is already the same.
         """
         for pipe_number, pipeline in enumerate(self._pipelines):
-            pipeline.video_info = VideoInfo(
+            video_info = VideoInfo(
                 self._get_pipe_arguments(pipe_number),
                 self._get_endpoint(pipe_number)
             )
-
-    def _update_all_pipe_video_outputs(self) -> None:
-        """Updates the video outputs and endpoints and video resolutions to
-        what is currently being requested.
-
-        Only skip if 0 or 1 because it's the same either way.
-        NOTE: This is an optimization trick made because of how we made the
-        camera system on the rover. This may change in the future if we decide
-        to make the first two endpoints different per mission.
-        """
-        for pipe_index, pipeline in enumerate(self._pipelines):
-            if pipe_index == 0 or pipe_index == 1:
+            if pipeline.video_info == video_info:
                 continue
+            pipeline.video_info = video_info
             pipeline.update_video_output()
 
     def _update_mission(self, mission_name: str) -> None:
-        """Updates the mission name.
+        """Updates the mission name and pipeline info and outputs.
 
         :param mission_name: A string that is the name of the requested
             mission. Requires mission_name to be lower case.
@@ -548,7 +543,10 @@ class PipelineManager:
         if not self._is_mission_name_valid(mission_name):
             print("Invalid mission name. Not changing the mission.")
             return
+        if self._current_mission == mission_name:
+            return
         self._current_mission = mission_name
+        self._update_all_pipe_video_info_and_outputs()
 
 
 def main():

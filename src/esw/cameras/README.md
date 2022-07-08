@@ -172,6 +172,7 @@ Actual behavior: The program freezes (presumably on the Capture function).
 ---
 
 ## TODO
+- [ ] Might need to add more locks for all pipeline variables
 - [ ] Test to make sure that locks don't slow down or bug out the program.
 - [ ] Test the following: Are we allowed to copy a jetson.utils.videoSource object? I forgot behavior. Once this is found out, add to documentation/README.
 - [ ] Test the following: Test what happens when the one input device is being requested to be used for multiple output streams that differ in the resolution that it requests. Does the program fail and error?
