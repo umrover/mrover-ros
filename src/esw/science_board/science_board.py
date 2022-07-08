@@ -15,7 +15,7 @@ from typing import Any, Callable, Dict, List
 import numpy as np
 import rospy
 import serial
-from mrover.msg import Enable, Heater, Spectral, Thermistor
+from mrover.msg import Enable, Heater, Spectral, Thermistor, Triad
 from mrover.srv import (ChangeAutonLEDState, ChangeAutonLEDStateRequest,
                         ChangeAutonLEDStateResponse, ChangeDeviceState,
                         ChangeDeviceStateRequest, ChangeDeviceStateResponse,
@@ -37,7 +37,7 @@ class ScienceBridge():
         struct with the packaged data.
     :param _mosfet_number_by_device_name: A dictionary that maps each actual
         device to a MOSFET device number.
-    :param _ros_publisherr_by_tag: A dictionary that maps each NMEA tag for a
+    :param _ros_publisher_by_tag: A dictionary that maps each NMEA tag for a
         UART message to its corresponding ROS Publisher object.
     :param _sleep: A float representing the sleep duration used for when the
         sleep function is called.
@@ -49,7 +49,7 @@ class ScienceBridge():
     _id_by_color: Dict[str, int]
     _handler_function_by_tag: Dict[str, Callable[[str], Any]]
     _mosfet_number_by_device_name: Dict[str, int]
-    _ros_publisherr_by_tag: Dict[str, rospy.Publisher]
+    _ros_publisher_by_tag: Dict[str, rospy.Publisher]
     _sleep: float
     _uart_transmit_msg_len: int
     _uart_lock: threading.Lock
@@ -66,7 +66,7 @@ class ScienceBridge():
             "THERMISTOR": self._thermistor_handler,
             "TRIAD": self._triad_handler
         }
-        self._ros_publisherr_by_tag = {
+        self._ros_publisher_by_tag = {
             "AUTOSHUTOFF": rospy.Publisher(
                 'science/heater_auto_shut_off_data', Enable, queue_size=1
             ),
@@ -80,8 +80,7 @@ class ScienceBridge():
                 'science/thermistor_data', Thermistor, queue_size=1
             ),
             "TRIAD": rospy.Publisher(
-                'science/spectral_triad_data', Spectral, queue_size=1
-            )
+                'science/spectral_triad_data', Triad, queue_size=1)
         }
         self._sleep = rospy.get_param("/science_board/info/sleep")
         self._uart_transmit_msg_len = rospy.get_param(
@@ -233,7 +232,7 @@ class ScienceBridge():
                 print(tx_msg)
                 match_found = True
                 ros_msg: Any = handler_func(tx_msg)
-                self._ros_publisherr_by_tag[tag].publish(ros_msg)
+                self._ros_publisher_by_tag[tag].publish(ros_msg)
                 break
         if (not match_found) and (not tx_msg):
             print(f'Error decoding message stream: {tx_msg}')
@@ -423,19 +422,22 @@ class ScienceBridge():
         spectral sensors and packages it into a ROS struct.
 
         There are 3 spectral sensors, each having 6 channels. We read a
-        uint16_t from each channel. The Jetson reads byte by byte, so the
-        program combines every two bytes of information into a uint16_t.
+        uint16_t from each channel. We know which sensor is which because we
+        know what the site is. The Jetson reads byte by byte, so the program
+        combines every two bytes of information into a uint16_t.
 
         :param tx_msg: A string that was received from UART that contains data
             of the three carousel spectral sensors.
-            - Format: <"SPECTRAL,ch_0_0,ch_0_1,....ch_2_5">
-        :returns: A Spectral struct that has 18 floats that is the data of the
-            three carousel spectral sensors.
+            - Format: <"SPECTRAL,site,ch_0,ch_1,....ch_5">
+        :returns: A Spectral struct that has a string that is the site of the
+            spectral and six floats that is the data of the a carousel
+            spectral sensor.
         """
         tx_msg.split(',')
         arr = [s.strip().strip('\x00') for s in tx_msg.split(',')]
         ros_msg = Spectral()
-        count = 1
+        ros_msg.site = arr[1]
+        count = 2
         for index in range(len(ros_msg.data)):
             if not count >= len(arr):
                 ros_msg.data[index] = 0xFFFF & (
@@ -477,7 +479,7 @@ class ScienceBridge():
         """
         tx_msg.split(',')
         arr = [s.strip().strip('\x00') for s in tx_msg.split(',')]
-        ros_msg = Spectral()
+        ros_msg = Triad()
         count = 1
         for index in range(len(ros_msg.data)):
             if not count >= len(arr):

@@ -76,6 +76,7 @@ add_message_files(
         Heater.msg
         Spectral.msg
         Thermistor.msg
+        Triad.msg
         Waypoint.msg
 )
 

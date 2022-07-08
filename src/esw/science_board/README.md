@@ -139,7 +139,7 @@ Publisher: science_board \
 Subscriber: gui
 
 #### Spectral Triad Data
-Message: [`Spectral.msg`](../../../msg/Spectral.msg) "science/spectral_triad_data" \
+Message: [`Triad.msg`](../../../msg/Triad.msg) "science/spectral_triad_data" \
 Publisher: science_board \
 Subscriber: gui
 
@@ -168,9 +168,9 @@ Subscriber: gui
 - The device represents the MOSFET device being activated (0 to 11)
 
 #### Spectral Data
-- `$SPECTRAL, d0_msb_ch0, d0_lsb_ch0, d0_msb_ch1, d0_lsb_ch1, d0_msb_ch2, d0_lsb_ch2, d0_msb_ch3, d0_lsb_ch3, d0_msb_ch4, d0_lsb_ch4, d0_msb_ch5, d0_lsb_ch5, d1_msb_ch0, d1_lsb_ch0, d1_msb_ch1, d1_lsb_ch1, d1_msb_ch2, d1_lsb_ch2, d1_msb_ch3, d1_lsb_ch3, d1_msb_ch4, d1_lsb_ch4, d1_msb_ch5, d1_lsb_ch5,  d2_msb_ch0, d2_lsb_ch0, d2_msb_ch1, d2_lsb_ch1, d2_msb_ch2, d2_lsb_ch2, d2_msb_ch3, d2_lsb_ch3, d2_msb_ch4, d2_lsb_ch4, d2_msb_ch5, d2_lsb_ch5,<extra padding>`
-- Data is 155 characters long
-- 6 channel data from each of the three spectrals
+- `$SPECTRAL, site, msb_ch0, lsb_ch0, msb_ch1, lsb_ch1, msb_ch2, lsb_ch2, msb_ch3, lsb_ch3, msb_ch4, lsb_ch4, d0_msb_ch5, lsb_ch5, <extra padding>`
+- Data is 155 characters long (probably will change tbh)
+- 6 channel data from a spectral
 
 #### Servo Cmd
 - `$SERVO,<angle_0>,<angle_1>,<angle_2>,<extra padding>`
@@ -190,6 +190,7 @@ Subscriber: gui
 ---
 
 ## TODO
+- [ ] IMPORTANT - UPDATE SPECTRAL NMEA MESSAGE IN HARDWARE, make sure to also maybe change length of msg
 - [ ] simplify the mapper logic (can put into a function instead), don't need both _handler_function_by_tag and _ros_publisherr_by_tag probably
 - [ ] Analyze behavior when MOSFET device is out of bounds. See if it should be handled by firmware or here or both.
 It is preferred if it is both, but this program does not currently have any checking.
