@@ -146,12 +146,15 @@ add_executable(aruco_detect ${PERCEPTION_SOURCES})
 add_dependencies(aruco_detect ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
 target_link_libraries(aruco_detect ${catkin_LIBRARIES} ${OpenCV_LIBS})
 
-## RUST TODO(amg) possibly unstable
-add_subdirectory(src/experimental/rust/drive)
-
 add_library(differential_drive_plugin_6w src/gazebo/differential_drive_6w.cpp)
 add_dependencies(aruco_detect ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
 target_link_libraries(differential_drive_plugin_6w ${Boost_LIBRARIES} ${GAZEBO_LIBRARIES} ${catkin_LIBRARIES})
+
+## Rust binaries 
+# TODO(amg): work in progress, might be unstable. 
+# TODO(amg): tag me on any PR where you add a new Rust subdir
+add_subdirectory(src/experimental/rust/drive)
+
 
 ## Declare a C++ library
 # add_library(${PROJECT_NAME}
