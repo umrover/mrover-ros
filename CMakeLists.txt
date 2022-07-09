@@ -72,6 +72,7 @@ add_message_files(
         FILES
         Course.msg
         Waypoint.msg
+        Chassis.msg
 )
 
 ## Generate services in the 'srv' folder
@@ -153,6 +154,7 @@ target_link_libraries(differential_drive_plugin_6w ${Boost_LIBRARIES} ${GAZEBO_L
 ## Rust binaries 
 # TODO(amg): work in progress, might be unstable. 
 # TODO(amg): tag me on any PR where you add a new Rust subdir
+add_subdirectory(src/experimental/rust/demo)
 add_subdirectory(src/experimental/rust/drive)
 
 
