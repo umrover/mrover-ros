@@ -146,6 +146,9 @@ add_executable(aruco_detect ${PERCEPTION_SOURCES})
 add_dependencies(aruco_detect ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
 target_link_libraries(aruco_detect ${catkin_LIBRARIES} ${OpenCV_LIBS})
 
+## RUST TODO(amg) possibly unstable
+add_subdirectory(src/experimental/rust/drive)
+
 add_library(differential_drive_plugin_6w src/gazebo/differential_drive_6w.cpp)
 add_dependencies(aruco_detect ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
 target_link_libraries(differential_drive_plugin_6w ${Boost_LIBRARIES} ${GAZEBO_LIBRARIES} ${catkin_LIBRARIES})
@@ -245,5 +248,3 @@ install(TARGETS differential_drive_plugin_6w
 ## Add folders to be run by python nosetests
 # catkin_add_nosetests(test)
 
-## RUST TODO(amg) possibly unstable
-add_subdirectory(src/experimental/rust)
