@@ -51,8 +51,7 @@ catkin_python_setup()
 ## To declare and build messages, services or actions from within this
 ## package, follow these steps:
 ## * Let MSG_DEP_SET be the set of packages whose message types you use in
-##   your messages/services/actions (e.g. std_msgs, actionlib_msgs, ...).
-## * In the file package.xml:
+##   your messages/services/actions (e.g. std_msgs, actionlib_msgs, ...).  ## * In the file package.xml:
 ##   * add a build_depend tag for "message_generation"
 ##   * add a build_depend and a exec_depend tag for each package in MSG_DEP_SET
 ##   * If MSG_DEP_SET isn't empty the following dependency has been pulled in
@@ -245,3 +244,6 @@ install(TARGETS differential_drive_plugin_6w
 
 ## Add folders to be run by python nosetests
 # catkin_add_nosetests(test)
+
+## RUST TODO(amg) possibly unstable
+add_subdirectory(src/experimental/rust)
