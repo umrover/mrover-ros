@@ -9,11 +9,13 @@ from tf.transformations import (quaternion_inverse, quaternion_matrix,
 from .tf_utils import point_to_vector3, vector3_to_point
 
 
-# TODO: adhere to https://github.com/umrover/mrover-ros/discussions/46
-class SE3(Pose):
-
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
+class SE3:
+    position: np.ndarray
+    rotation: SO3
+    
+    def __init__(self):
+        self.position = np.zeros(3)
+        self.rotation = SO3()
 
     @classmethod
     def from_tf(cls, tf: Transform) -> SE3:
@@ -40,14 +42,8 @@ class SE3(Pose):
         return Transform(translation=translation, rotation=self.orientation)
 
     def x_vector(self) -> np.ndarray:
-        """
-        Get the unit direction vector of the SE3 pose's X axis.
-
-        :returns: unit direction vector [x, y, z]
-        """
         rotation_matrix = quaternion_matrix(self.quaternion_array())
 
-        # Extract what the x-axis (forward) is with respect to our rover rotation
         return rotation_matrix[0:3, 0]
 
     def pos_distance_to(self, p: SE3) -> float:
@@ -68,11 +64,6 @@ class SE3(Pose):
         return numpify(self.position)
 
     def quaternion_array(self) -> np.ndarray:
-        """
-        Get the quaternion array of the SE3 pose.
-
-        :returns: a quaternion array [x, y, z, w]
-        """
         return numpify(self.orientation)
 
     def rotation_matrix(self) -> np.ndarray:
