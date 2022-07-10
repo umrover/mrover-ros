@@ -343,7 +343,6 @@ name = "drive"
 version = "0.1.0"
 dependencies = [
  "rosrust",
- "rosrust_msg",
 ]
 
 [[package]]
@@ -927,15 +926,6 @@ dependencies = [
  "quote",
  "ros_message",
  "syn",
-]
-
-[[package]]
-name = "rosrust_msg"
-version = "0.1.6"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "63666545686a08085fe9167816c21c7edafe12b1a055f3852cb279be9d05e227"
-dependencies = [
- "rosrust",
 ]
 
 [[package]]

@@ -1,8 +1,8 @@
 use rosrust;
-use rosrust_msg;
-
 const TRACK_RADIUS : f64 = 10.0; // meter
 const WHEEL_RADIUS : f64 = 0.5; // meter
+
+rosrust::rosmsg_include!(mrover/Chassis, geometry_msgs/Twist);
 
 fn main() {
     rosrust::init("drive");
@@ -11,7 +11,7 @@ fn main() {
     // Subscriber lifetime is dicatated by RAII
     let sub = rosrust::subscribe(
        "/cmd_vel", 100,
-       move | vel_msg : rosrust_msg::geometry_msgs::Twist | {
+       move | vel_msg : geometry_msgs::Twist | {
             // Get linear and angular velocities
             let v = vel_msg.linear.x;
             let omega = vel_msg.angular.z;
@@ -21,7 +21,7 @@ fn main() {
             let omega_r = (v + omega * TRACK_RADIUS / 2.0)/WHEEL_RADIUS;
 
             // Publish to /cmd_wheel
-            let mut wheel_cmd = rosrust_msg::mrover::Chassis::default();
+            let mut wheel_cmd = mrover::Chassis::default();
             wheel_cmd.omega_l = omega_l;
             wheel_cmd.omega_r = omega_r;
             wheel_cmd_publisher.send(wheel_cmd).unwrap();
@@ -30,5 +30,4 @@ fn main() {
     ).unwrap();
 
     rosrust::spin();
-    println!("Hello, world!");
 }
