@@ -14,6 +14,7 @@ an ODrive is assigned either the front, middle, or back wheels).
 import sys
 import threading
 import time as t
+from dataclasses import dataclass
 from enum import Enum
 from typing import Any
 
@@ -24,6 +25,24 @@ from mrover.msg import DriveStateData, DriveVelCmd, DriveVelData
 from odrive.enums import (AXIS_STATE_CLOSED_LOOP_CONTROL, AXIS_STATE_IDLE,
                           CONTROL_MODE_VELOCITY_CONTROL)
 from odrive.utils import dump_errors
+
+
+@dataclass(eq=False)
+class Speed:
+    """Stores speed info.
+    :var left: A float that is the speed of the left wheel.
+    :var right: A float that is the speed of the right wheel
+    """
+    left: float = 0
+    right: float = 0
+
+    def __eq__(self, other):
+        """Overrides the equality comparator operator.
+        """
+        return (
+            self.left == other.left
+            and self.right == other.right
+        )
 
 
 class DisconnectedError(Exception):
@@ -400,12 +419,12 @@ class ODriveBridge(object):
 
     :param _current_lim: A float that is the current limit in Amperes.
     :param str: A string that is the current ODrive's ID.
-    :param _left_speed: A float that is the requested left wheel speed.
     :param _modrive: A Modrive object that abstracts away the ODrive functions.
     :param _pair: A string that is front, middle, or back.
-    :param _right_speed: A float that is the requested right wheel speed.
+    :param _speed: A Speed object that has requested left and right wheel
+        speed.
     :param _speed_lock: A lock that prevents multiple threads from accessing
-        self._left_speed and self._right_speed simultaneously.
+        self._speed simultaneously.
     :param _start_time: An object that helps keep track of time for the
         watchdog.
     :param _state: A State object that keeps track of the current state.
@@ -416,10 +435,9 @@ class ODriveBridge(object):
     """
     _current_lim: float
     _id: str
-    _left_speed: float
     _modrive: Modrive
     _pair: str
-    _right_speed: float
+    _speed: Speed
     _speed_lock: threading.Lock
     _start_time: t.clock
     _state: State
@@ -429,9 +447,8 @@ class ODriveBridge(object):
     def __init__(self) -> None:
         """Initializes the components, starting with a Disconnected State."""
         self._current_lim = rospy.get_param("/odrive/config/current_lim")
-        self._left_speed = 0.0
+        self._speed = Speed()
         self._modrive = None
-        self._right_speed = 0.0
         _odrive_ids = {
             'front': rospy.get_param("/odrive/ids/front"),
             'middle': rospy.get_param("/odrive/ids/middle"),
@@ -509,21 +526,19 @@ class ODriveBridge(object):
         except DisconnectedError:
             return
 
-    def _change_speeds(self, left: float, right: float) -> None:
-        """Sets the self._left_speed and self._right_speed to the requested
-        speeds. The speeds must be in the range [-1.0, 1.0].
-        :param left: A float representing the requested left wheel speed.
-        :param right: A float representing the requested right wheel speed.
+    def _change_speeds(self, speed: Speed) -> None:
+        """Sets the self._speed to the requested speeds. The speeds must be in
+        the range [-1.0, 1.0].
+        :param speed: A speed object that has the requested speeds.
         """
-        assert -1.0 <= left and left <= 1.0, (
-            'left must be in range[-1.0, 1.0]'
+        assert -1.0 <= speed.left and speed.left <= 1.0, (
+            'speed.left must be in range[-1.0, 1.0]'
         )
-        assert -1.0 <= right and right <= 1.0, (
-            'right must be in range [-1.0, 1.0]'
+        assert -1.0 <= speed.right and speed.right <= 1.0, (
+            'speed.right must be in range [-1.0, 1.0]'
         )
         self._speed_lock.acquire()
-        self._left_speed = left
-        self._right_speed = right
+        self._speed = Speed(speed.left, speed.right)
         self._speed_lock.release()
 
     def _connect(self) -> None:
@@ -612,8 +627,8 @@ class ODriveBridge(object):
                 return
 
             self._speed_lock.acquire()
-            left_speed = self._left_speed
-            right_speed = self._right_speed
+            left_speed = self._speed.left
+            right_speed = self._speed.right
             self._speed_lock.release()
             self._modrive.set_vel('left', left_speed)
             self._modrive.set_vel('right', right_speed)
