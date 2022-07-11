@@ -1,10 +1,5 @@
 #include "Controller.h"
 
-// Wrapper for I2C transact, autofilling the i2c address of the Controller by using ControllerMap::get_i2c_address()
-void Controller::transact(uint8_t cmd, uint8_t write_num, uint8_t read_num, uint8_t* write_buf, uint8_t* read_buf) {
-    I2C::transact(ControllerMap::get_i2c_address(name), cmd, write_num, read_num, write_buf, read_buf);
-}
-
 // If this Controller is not live, make it live by configuring the real controller
 void Controller::make_live() {
     if (ControllerMap::check_if_live(name)) {
@@ -66,35 +61,13 @@ void Controller::record_angle(int32_t raw_angle) {
     current_angle_m.unlock();
 }
 
-float Controller::get_current_angle() {
-    float return_angle = 0.0f;
-    current_angle_m.lock();
-    return_angle = current_angle;
-    current_angle_m.unlock();
-    return return_angle;
+// Wrapper for I2C transact, autofilling the i2c address of the Controller by using ControllerMap::get_i2c_address()
+void Controller::transact(uint8_t cmd, uint8_t write_num, uint8_t read_num, uint8_t* write_buf, uint8_t* read_buf) {
+    I2C::transact(ControllerMap::get_i2c_address(name), cmd, write_num, read_num, write_buf, read_buf);
 }
 
 // Initialize the Controller. Need to know which nucleo and which channel on the nucleo to use
 Controller::Controller(std::string name, uint16_t pwm_max) : name(name), speed_max(pwm_max) {}
-
-// Sends a get angle command
-void Controller::refresh_calibration_data() {
-    if (!ControllerMap::check_if_live(name)) {
-        return;
-    }
-
-    try {
-        uint8_t calibration_state;
-
-        transact(CALIBRATED, nullptr, UINT8_POINTER_T(&calibration_state));
-
-        // calibration_state is either 0xFF or 0x00.
-        // 0xFF means it is calibrated, 0x00 means not calibrated.
-        calibrated = calibration_state == CALIBRATED_BOOL;
-    } catch (IOFailure& e) {
-        printf("calibration data failed on %s\n", name.c_str());
-    }
-}
 
 // Calibrate joint -- should only be used for joint b
 void Controller::calibrate_joint() {
@@ -110,15 +83,54 @@ void Controller::calibrate_joint() {
 
         do {
             refresh_calibration_data();
-            open_loop(0.3);
+            move_open_loop(0.3);
         } while (!calibrated);
     } catch (IOFailure& e) {
         printf("calibrate joint failed on %s\n", name.c_str());
     }
 }
 
+// Sends a config command with PID inputs
+void Controller::config_pid(float KP, float KI, float KD) {
+    for (int attempts = 0; attempts < 100; ++attempts) {
+        try {
+            make_live();
+
+            uint8_t buffer[32];
+            memcpy(buffer, UINT8_POINTER_T(&KP), sizeof(KP));
+            memcpy(buffer + 4, UINT8_POINTER_T(&KI), sizeof(KI));
+            memcpy(buffer + 8, UINT8_POINTER_T(&KD), sizeof(KD));
+            transact(CONFIG_K, buffer, nullptr);
+        } catch (IOFailure& e) {
+            printf("config failed on %s\n", name.c_str());
+        }
+    }
+}
+
+// Sends a limit switch enable command
+void Controller::enable_limit_switch(bool enable) {
+    if (!ControllerMap::check_if_live(name)) {
+        return;
+    }
+    try {
+        int8_t limit_enabled = enable ? 0xFF : 0x00;
+        transact(LIMIT_ON, nullptr, UINT8_POINTER_T(&limit_enabled));
+    } catch (IOFailure& e) {
+        printf("limit switch enable failed on %s\n", name.c_str());
+    }
+}
+
+// Gets current angle (safely)
+float Controller::get_current_angle() {
+    float return_angle = 0.0f;
+    current_angle_m.lock();
+    return_angle = current_angle;
+    current_angle_m.unlock();
+    return return_angle;
+}
+
 // Sends a closed loop command with target angle in radians and optional precalculated torque in Nm
-void Controller::closed_loop(float torque, float target) {
+void Controller::move_closed_loop(float torque, float target) {
     try {
         make_live();
         // TODO - UNCOMMENT ONCE LIMIT SWITCHES ARE IMPLEMENTED
@@ -126,13 +138,13 @@ void Controller::closed_loop(float torque, float target) {
         refresh_calibration_data();
         if ((name == "ARM_B" || name == "SA_B") && !calibrated)
         {
-            printf("closed_loop failed because joint B is not yet calibrated");
+            printf("move_closed_loop failed because joint B is not yet calibrated");
             return;
         }
         */
         // TODO - INVESTIGATE IF parameter torque IS NEEDED. if not, then we should just get rid
         // of it and simplify
-        // the function to closed_loop(float target).
+        // the function to move_closed_loop(float target).
         float feed_forward = 0.0f; // torque * torque_scale;
         uint8_t buffer[32];
         int32_t angle;
@@ -153,38 +165,8 @@ void Controller::closed_loop(float torque, float target) {
     }
 }
 
-// Sends a config command with PID inputs
-void Controller::config(float KP, float KI, float KD) {
-    for (int attempts = 0; attempts < 100; ++attempts) {
-        try {
-            make_live();
-
-            uint8_t buffer[32];
-            memcpy(buffer, UINT8_POINTER_T(&KP), sizeof(KP));
-            memcpy(buffer + 4, UINT8_POINTER_T(&KI), sizeof(KI));
-            memcpy(buffer + 8, UINT8_POINTER_T(&KD), sizeof(KD));
-            transact(CONFIG_K, buffer, nullptr);
-        } catch (IOFailure& e) {
-            printf("config failed on %s\n", name.c_str());
-        }
-    }
-}
-
-// Sends a limit switch enable command
-void Controller::limit_switch_enable(bool enable) {
-    if (!ControllerMap::check_if_live(name)) {
-        return;
-    }
-    try {
-        int8_t limit_enabled = enable ? 0xFF : 0x00;
-        transact(LIMIT_ON, nullptr, UINT8_POINTER_T(&limit_enabled));
-    } catch (IOFailure& e) {
-        printf("limit switch enable failed on %s\n", name.c_str());
-    }
-}
-
 // Handles an open loop command with input [-1.0, 1.0], scaled to PWM limits
-void Controller::open_loop(float input) {
+void Controller::move_open_loop(float input) {
     try {
         make_live();
 
@@ -193,7 +175,7 @@ void Controller::open_loop(float input) {
         refresh_calibration_data();
         if ((name == "ARM_B" || name == "SA_B") && !calibrated)
         {
-            printf("open_loop failed because joint B is not yet calibrated");
+            printf("move_open_loop failed because joint B is not yet calibrated");
             return;
         }
         */
@@ -219,6 +201,25 @@ void Controller::open_loop(float input) {
         record_angle(raw_angle);
     } catch (IOFailure& e) {
         printf("open loop failed on %s\n", name.c_str());
+    }
+}
+
+// Sends a get angle command
+void Controller::refresh_calibration_data() {
+    if (!ControllerMap::check_if_live(name)) {
+        return;
+    }
+
+    try {
+        uint8_t calibration_state;
+
+        transact(CALIBRATED, nullptr, UINT8_POINTER_T(&calibration_state));
+
+        // calibration_state is either 0xFF or 0x00.
+        // 0xFF means it is calibrated, 0x00 means not calibrated.
+        calibrated = calibration_state == CALIBRATED_BOOL;
+    } catch (IOFailure& e) {
+        printf("calibration data failed on %s\n", name.c_str());
     }
 }
 

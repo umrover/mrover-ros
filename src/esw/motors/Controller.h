@@ -56,36 +56,39 @@ public:
     std::mutex current_angle_m;
 
 private:
-    // Wrapper for I2C transact, autofilling the i2c address of the Controller by using ControllerMap::get_i2c_address()
-    void transact(uint8_t cmd, uint8_t write_num, uint8_t read_num, uint8_t* writeBuf, uint8_t* read_buf);
-
     // If this Controller is not live, make it live by configuring the real controller
     void make_live();
 
     // Helper function to convert raw angle to radians. Also checks if new angle is close to old angle
     void record_angle(int32_t angle);
 
+    // Wrapper for I2C transact, autofilling the i2c address of the Controller by using ControllerMap::get_i2c_address()
+    void transact(uint8_t cmd, uint8_t write_num, uint8_t read_num, uint8_t* writeBuf, uint8_t* read_buf);
+
 public:
     // Initialize the Controller. Need to know which nucleo and which channel on the nucleo to use
     Controller(std::string name, uint16_t pwm_max);
 
-    // Sends a calibrated command
-    void refresh_calibration_data();
-
     // Calibrate joint -- should only be used for joint b
     void calibrate_joint();
 
-    // Sends a closed loop command with target angle in radians and optional precalculated torque in Nm
-    void closed_loop(float torque, float angle);
-
     // Sends a config command with PID inputs
-    void config(float KP, float KI, float KD);
+    void config_pid(float KP, float KI, float KD);
 
     // Sends a limit switch enable command
-    void limit_switch_enable(bool enable);
+    void enable_limit_switch(bool enable);
+
+    // Gets current angle (safely)
+    float get_current_angle();
+
+    // Sends a closed loop command with target angle in radians and optional precalculated torque in Nm
+    void move_closed_loop(float torque, float angle);
 
     // Handles an open loop command with input [-1.0, 1.0], scaled to PWM limits
-    void open_loop(float input);
+    void move_open_loop(float input);
+
+    // Sends a calibrated command
+    void refresh_calibration_data();
 
     // Sends a get angle command
     void refresh_quad_angle();
@@ -95,9 +98,6 @@ public:
 
     // Sends a zero command
     void zero();
-
-    // get current angle (safely)
-    float get_current_angle();
 };
 
 #endif

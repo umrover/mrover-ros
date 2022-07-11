@@ -23,7 +23,7 @@ void sleep(int ms) {
 // speed_unit is a float between -1 and 1
 float open_plus(std::string name, float speed_unit) {
     try {
-        ControllerMap::controllers[name]->open_loop(speed_unit);
+        ControllerMap::controllers[name]->move_open_loop(speed_unit);
         float quad_angle_rad = ControllerMap::controllers[name]->get_current_angle();
         float quad_angle_deg = quad_angle_rad / (2 * M_PI) * 360;
         printf("open_plus %s: Quad degrees is %f \n", name.c_str(), quad_angle_deg);
@@ -38,7 +38,7 @@ float open_plus(std::string name, float speed_unit) {
 float closedPlus(std::string name, float target_angle_deg) {
     try {
         float target_angle_rad = target_angle_deg * M_PI / 180.0;
-        ControllerMap::controllers[name]->closed_loop(0, target_angle_rad);
+        ControllerMap::controllers[name]->move_closed_loop(0, target_angle_rad);
         float quad_angle_rad = ControllerMap::controllers[name]->get_current_angle();
         float quad_angle_deg = quad_angle_rad / (2 * M_PI) * 360;
         float diff_error_degree = target_angle_deg - quad_angle_deg;

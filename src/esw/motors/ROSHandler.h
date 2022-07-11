@@ -39,21 +39,21 @@ private:
 
     // TODO - someone verify that this works
     inline static ros::NodeHandle* n = nullptr;
-    inline static ros::Subscriber* arm_ik_cmd = nullptr;
-    inline static ros::Subscriber* arm_open_loop_sub = nullptr;
-    inline static ros::Subscriber* carousel_closed_loop_sub = nullptr;
-    inline static ros::Subscriber* carousel_open_loop_sub = nullptr;
-    inline static ros::Subscriber* carousel_zero_sub = nullptr;
-    inline static ros::Subscriber* foot_open_loop_sub = nullptr;
-    inline static ros::Subscriber* hand_open_loop_sub = nullptr;
-    inline static ros::Subscriber* mast_gimbal_sub = nullptr;
-    inline static ros::Subscriber* sa_ik_sub = nullptr;
-    inline static ros::Subscriber* sa_open_loop_sub = nullptr;
-    inline static ros::Subscriber* scoop_limit_switch_enable_sub = nullptr;
-    inline static ros::Publisher* carousel_calib_data_pub = nullptr;
-    inline static ros::Publisher* carousel_pos_data_pub = nullptr;
+    inline static ros::Subscriber* enable_scoop_limit_switch_sub = nullptr;
+    inline static ros::Subscriber* move_arm_closed_loop_sub = nullptr;
+    inline static ros::Subscriber* move_arm_open_loop_sub = nullptr;
+    inline static ros::Subscriber* move_carousel_closed_loop_sub = nullptr;
+    inline static ros::Subscriber* move_carousel_open_loop_sub = nullptr;
+    inline static ros::Subscriber* move_hand_open_loop_sub = nullptr;
+    inline static ros::Subscriber* move_mast_gimbal_sub = nullptr;
+    inline static ros::Subscriber* move_sa_closed_loop_sub = nullptr;
+    inline static ros::Subscriber* move_sa_open_loop_sub = nullptr;
+    inline static ros::Subscriber* move_science_hand_open_loop_sub = nullptr;
+    inline static ros::Subscriber* zero_carousel_sub = nullptr;
     inline static ros::Publisher* arm_b_calib_data_pub = nullptr;
     inline static ros::Publisher* arm_position_pub = nullptr;
+    inline static ros::Publisher* carousel_calib_data_pub = nullptr;
+    inline static ros::Publisher* carousel_pos_data_pub = nullptr;
     inline static ros::Publisher* sa_b_calib_data_pub = nullptr;
     inline static ros::Publisher* sa_position_pub = nullptr;
 
@@ -61,29 +61,29 @@ private:
     class InternalHandler {
     public:
         //The following functions are handlers for the corresponding ROS messages
-        void arm_closed_loop_cmd(mrover::ArmPosition& msg);
-        void arm_open_loop_cmd(mrover::ArmOpenLoopCmd& msg);
-        void carousel_closed_loop_cmd(mrover::CarouselPosition& msg);
-        void carousel_open_loop_cmd(mrover::CarouselOpenLoopCmd& msg);
-        void carousel_zero_cmd(mrover::Signal& msg);
-        void hand_open_loop_cmd(mrover::HandCmd& msg);
-        void mast_gimbal_cmd(mrover::MastGimbalCmd& msg);
+        void enable_scoop_limit_switch_cmd(mrover::Enable& msg);
+        void move_arm_closed_loop_cmd(mrover::ArmPosition& msg);
+        void move_arm_open_loop_cmd(mrover::ArmOpenLoopCmd& msg);
+        void move_carousel_closed_loop_cmd(mrover::CarouselPosition& msg);
+        void move_carousel_open_loop_cmd(mrover::CarouselOpenLoopCmd& msg);
+        void move_hand_open_loop_cmd(mrover::HandCmd& msg);
+        void move_mast_gimbal_cmd(mrover::MastGimbalCmd& msg);
+        void move_sa_closed_loop_cmd(mrover::SAPosition& msg);
+        void move_sa_open_loop_cmd(mrover::SAOpenLoopCmd& msg);
+        void move_science_hand_open_loop_cmd(mrover::ScienceHandCmd& msg);
+        void publish_arm_calib_data();
+        void publish_arm_pos_data();
+        void publish_carousel_calib_data();
+        void publish_carousel_pos_data();
+        void publish_sa_calib_data();
+        void publish_sa_pos_data();
         void refresh_arm_calib_data();
         void refresh_arm_quad_angles();
         void refresh_carousel_calib_data();
         void refresh_carousel_quad_angles();
         void refresh_sa_calib_data();
         void refresh_sa_quad_angles();
-        void sa_closed_loop_cmd(mrover::SAPosition& msg);
-        void sa_open_loop_cmd(mrover::SAOpenLoopCmd& msg);
-        void science_hand_open_loop_cmd(mrover::ScienceHandCmd& msg);
-        void scoop_limit_switch_enable_cmd(mrover::Enable& msg);
-        void publish_carousel_calib_data();
-        void publish_carousel_pos_data();
-        void publish_arm_calib_data();
-        void publish_arm_pos_data();
-        void publish_sa_calib_data();
-        void publish_sa_pos_data();
+        void zero_carousel_cmd(mrover::Signal& msg);
     };
 
     inline static InternalHandler* internal_object = nullptr;

@@ -29,57 +29,57 @@ The following watchdog is implemented: If the nucleos do not receive any I2C mes
 
 ### Topics - Subscribers
 
-#### Arm Closed Loop \[Subscriber\] "/arm_ik_cmd"
+#### Arm Closed Loop \[Subscriber\] "/arm_closed_loop_cmd"
 Message: [ArmPosition.msg](https://github.com/umrover/mrover-ros/blob/main/msg/ArmPosition.msg) \
 Publisher: arm_kinematics \
 Subscriber: motors
 
-#### Arm Open Loop \[Subscriber\] "/arm_open_loop_cmd"
+#### Arm Open Loop \[Subscriber\] "/move_arm_open_loop_cmd"
 Message: [ArmOpenLoopCmd.msg](https://github.com/umrover/mrover-ros/blob/main/msg/ArmOpenLoopCmd.msg) \
 Publisher: teleop \
 Subscriber: motors
 
-#### Carousel Closed Loop \[Subscriber\] "/carousel_closed_loop_cmd"
+#### Carousel Closed Loop \[Subscriber\] "/move_carousel_closed_loop_cmd"
 Message: [CarouselPosition.msg](https://github.com/umrover/mrover-ros/blob/main/msg/CarouselPosition.msg) \
 Publisher: gui \
 Subscriber: motors
 
-#### Carousel Open Loop \[Subscriber\] "/carousel_open_loop_cmd"
+#### Carousel Open Loop \[Subscriber\] "/move_carousel_open_loop_cmd"
 Message: [CarouselOpenLoopCmd.msg](https://github.com/umrover/mrover-ros/blob/main/msg/CarouselOpenLoopCmd.msg) \
 Publisher: gui \
 Subscriber: motors
 
-#### Hand Open Loop \[Subscriber\] "/hand_open_loop_cmd"
+#### Hand Open Loop \[Subscriber\] "/move_hand_open_loop_cmd"
 Message: [HandCmd.msg](https://github.com/umrover/mrover-ros/blob/main/msg/HandCmd.msg) \
 Publisher: teleop \
 Subscriber: src/motors
 
-#### Mast Gimbal Open Loop \[Subscriber\] "/mast_gimbal_cmd"
+#### Mast Gimbal Open Loop \[Subscriber\] "/move_mast_gimbal_cmd"
 Message: [MastGimbalCmd.msg](https://github.com/umrover/mrover-ros/blob/main/msg/MastGimbalCmd.msg) \
 Publisher: teleop \
 Subscriber: src/motors
 
-#### SA Closed Loop \[Subscriber\] "/sa_ik_cmd"
+#### SA Closed Loop \[Subscriber\] "/sa_closed_loop_cmd"
 Message: [SAPosition.msg](https://github.com/umrover/mrover-ros/blob/main/msg/SAPosition.msg) \
 Publisher: arm_kinematics \
 Subscriber: motors
 
-#### SA Open Loop \[Subscriber\] "/sa_open_loop_cmd"
+#### SA Open Loop \[Subscriber\] "/move_sa_open_loop_cmd"
 Message: [SAOpenLoopCmd.msg](https://github.com/umrover/mrover-ros/blob/main/msg/SAOpenLoopCmd.msg) \
 Publisher: teleop \
 Subscriber: motors
 
-#### Science Hand Open Loop \[Subscriber\] "/science_hand_open_loop_cmd"
+#### Science Hand Open Loop \[Subscriber\] "/move_science_hand_open_loop_cmd"
 Message: [ScienceHandCmd.msg](https://github.com/umrover/mrover-workspace/blob/rnucleo/rover_msgs/ScienceHandCmd.msg) \
 Publisher: teleop \
 Subscriber: src/motors
 
-#### Scoop Limit Switch Enable Cmd \[Subscriber\] "/scoop_limit_switch_enable_cmd"
+#### Scoop Limit Switch Enable Cmd \[Subscriber\] "/enable_scoop_limit_switch_cmd"
 Message: [Enable.msg](https://github.com/umrover/mrover-ros/blob/main/msg/Enable.msg) \
 Publisher: gui \
 Subscriber: src/motors
 
-#### Zero Carousel Cmd \[Subscriber\] "/carousel_zero_cmd"
+#### Zero Carousel Cmd \[Subscriber\] "/zero_carousel_cmd"
 Message: [Signal.msg](https://github.com/umrover/mrover-ros/blob/main/msg/Signal.msg) \
 Publisher: gui \
 Subscriber: src/motors
