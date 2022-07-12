@@ -8,7 +8,7 @@ class SO3:
 
     def __init__(self, quaternion: np.ndarray = None):
         if quaternion is None:
-            self.quaternion = np.zeros(4)
+            self.quaternion = np.array([0, 0, 0, 1])
         else:
             self.quaternion = quaternion
 
