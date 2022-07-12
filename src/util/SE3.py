@@ -1,54 +1,65 @@
 from __future__ import annotations
+from typing import Optional
 
 import numpy as np
+import tf2_ros
+import rospy
 
-from geometry_msgs.msg import Pose, Transform
 from ros_numpy import numpify
-from tf.transformations import (
-    quaternion_inverse,
-    quaternion_matrix,
-    quaternion_multiply,
-    rotation_from_matrix,
-)
-from .tf_utils import point_to_vector3, vector3_to_point
+from tf.transformations import (quaternion_inverse, quaternion_matrix,
+                                quaternion_multiply, rotation_from_matrix)
+from .SO3 import SO3
 
 
 class SE3:
     position: np.ndarray
     rotation: SO3
-    
-    def __init__(self):
-        self.position = np.zeros(3)
-        self.rotation = SO3()
+
+    def __init__(self, position: np.ndarray = None, rotation: np.ndarray = None):
+        """
+        Initialize an SE3 object
+
+        :param position: optional numpy position vector [x, y, z], defaults to zero vector
+        :param rotation: optional numpy quaternion vector [x, y, z, w], defaults to [0, 0, 0, 1]
+        """
+        if position is None:
+            self.position = np.zeros(3)
+        else:
+            self.position = position
+
+        if rotation is None:
+            self.rotation = SO3()
+        else:
+            self.rotation = rotation
 
     @classmethod
-    def from_tf(cls, tf: Transform) -> SE3:
+    def from_tf_tree(cls, tf_buffer: tf2_ros.Buffer, parent_frame: str, child_frame: str) -> Optional[SE3]:
         """
-        Create an SE3 pose object from a Transform message.
-        The translation of the Transform will become the position of the Pose,
-        and the rotation of the Transform will become the orientation of the Pose.
+        Ask the TF tree for a transform from parent_frame to child_frame,
+        and return it as an SE3.
 
-        :param tf: the Transform message object
-        :returns: the created SE3 pose object
+        :param tf_buffer: the tf buffer used to query the TF tree
+        :param parent_frame: the parent frame of the desired transform
+        :param child_frame: the child frame of the desired transform
+
+        :returns: an SE3 containing the tranform from parent_frame to child_frame,
+                  or None if the transform can't be found 
         """
-        point = vector3_to_point(tf.translation)
-        orientation = tf.rotation
-        return SE3(position=point, orientation=orientation)
+        try:
+            tf_msg = tf_buffer.lookup_transform(
+                parent_frame, child_frame, rospy.Time()).transform
 
-    def to_tf(self) -> Transform:
-        """
-        Create a transform message from an SE3 pose object.
-        The opposite of from_tf(), see its docs for details.
+        except (tf2_ros.LookupException, tf2_ros.ConnectivityException,
+                tf2_ros.ExtrapolationException):
+            return None
 
-        :returns: the created Transform message object
-        """
-        translation = point_to_vector3(self.position)
-        return Transform(translation=translation, rotation=self.orientation)
+        result = SE3()
+        result.position = numpify(tf_msg.translation)
+        result.rotation = SO3(numpify(tf_msg.rotation))
+        return result
 
-    def x_vector(self) -> np.ndarray:
-        rotation_matrix = quaternion_matrix(self.quaternion_array())
-
-        return rotation_matrix[0:3, 0]
+    def publish_to_tf_tree(self, parent_frame: str, child_frame: str):
+        ...
 
     def pos_distance_to(self, p: SE3) -> float:
         """
@@ -58,25 +69,6 @@ class SE3:
         :returns: euclidean distance between the two SE3 poses
         """
         return np.linalg.norm(p.position_vector() - self.position_vector())
-
-    def position_vector(self) -> np.ndarray:
-        """
-        Get the position vector of the SE3 pose.
-
-        :returns: a position vector [x, y, z]
-        """
-        return numpify(self.position)
-
-    def quaternion_array(self) -> np.ndarray:
-        return numpify(self.orientation)
-
-    def rotation_matrix(self) -> np.ndarray:
-        """
-        Get the homogenous rotation matrix of the SE3 pose.
-
-        :returns: a homogenous rotation matrix (4x4)
-        """
-        return quaternion_matrix(self.quaternion_array())
 
     def rot_distance_to(self, p: SE3) -> float:
         """
