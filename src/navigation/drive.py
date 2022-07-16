@@ -10,8 +10,12 @@ MIN_DRIVING_EFFORT = -1
 TURNING_P = 100.0
 
 
-def get_drive_command(target_pos: np.ndarray, rover_pose: SE3,
-                      completion_thresh: float, turn_in_place_thresh: float) -> Tuple[Twist, bool]:
+def get_drive_command(
+    target_pos: np.ndarray,
+    rover_pose: SE3,
+    completion_thresh: float,
+    turn_in_place_thresh: float,
+) -> Tuple[Twist, bool]:
     """
     :param target_pos:              Target position to drive to.
     :param rover_pose:              Current rover pose.
@@ -49,5 +53,7 @@ def get_drive_command(target_pos: np.ndarray, rover_pose: SE3,
     sign = np.sign(perp_alignment)
     # 1 is target alignment (dot product of two normalized vectors that are parallel is 1)
     error = 1.0 - alignment
-    cmd_vel.angular.z = np.clip(error * TURNING_P * sign, MIN_DRIVING_EFFORT, MAX_DRIVING_EFFORT)
+    cmd_vel.angular.z = np.clip(
+        error * TURNING_P * sign, MIN_DRIVING_EFFORT, MAX_DRIVING_EFFORT
+    )
     return cmd_vel, False
