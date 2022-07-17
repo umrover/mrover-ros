@@ -34,11 +34,7 @@ class SingleFiducialState(WaypointState):
                 ud.waypoint_index += 1
                 return "waypoint_traverse"
             self.context.drive_command(cmd_vel)
-        except (
-            tf2_ros.LookupException,
-            tf2_ros.ConnectivityException,
-            tf2_ros.ExtrapolationException,
-        ):
+        except (tf2_ros.LookupException, tf2_ros.ConnectivityException, tf2_ros.ExtrapolationException):
             # TODO: probably go into some waiting state
             pass
 

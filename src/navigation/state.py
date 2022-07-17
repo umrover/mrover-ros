@@ -24,9 +24,7 @@ class BaseState(smach.State, ABC):
         add_input_keys = add_input_keys or []
         add_output_keys = add_output_keys or []
         super().__init__(
-            add_outcomes + ["terminated"],
-            add_input_keys + ["waypoint_index"],
-            add_output_keys + ["waypoint_index"],
+            add_outcomes + ["terminated"], add_input_keys + ["waypoint_index"], add_output_keys + ["waypoint_index"]
         )
         self.context = context
 
@@ -49,10 +47,7 @@ class BaseState(smach.State, ABC):
 
 class DoneState(BaseState):
     def __init__(self, context: Context):
-        super().__init__(
-            context,
-            add_outcomes=["done", "waypoint_traverse"],
-        )
+        super().__init__(context, add_outcomes=["done", "waypoint_traverse"])
 
     def evaluate(self, ud):
         # Check if we have a course to traverse

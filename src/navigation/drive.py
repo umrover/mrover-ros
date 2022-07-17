@@ -11,10 +11,7 @@ TURNING_P = 100.0
 
 
 def get_drive_command(
-    target_pos: np.ndarray,
-    rover_pose: SE3,
-    completion_thresh: float,
-    turn_in_place_thresh: float,
+    target_pos: np.ndarray, rover_pose: SE3, completion_thresh: float, turn_in_place_thresh: float
 ) -> Tuple[Twist, bool]:
     """
     :param target_pos:              Target position to drive to.

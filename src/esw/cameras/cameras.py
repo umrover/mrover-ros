@@ -10,12 +10,17 @@ quality, and to which endpoints.
 import sys
 import threading
 from dataclasses import dataclass
-from typing import Dict, List
+from typing import Dict, List, TypedDict
 
 import rospy
-from mrover.srv import (ChangeCameraMission, ChangeCameraMissionRequest,
-                        ChangeCameraMissionResponse, ChangeCameras,
-                        ChangeCamerasRequest, ChangeCamerasResponse)
+from mrover.srv import (
+    ChangeCameraMission,
+    ChangeCameraMissionRequest,
+    ChangeCameraMissionResponse,
+    ChangeCameras,
+    ChangeCamerasRequest,
+    ChangeCamerasResponse,
+)
 
 sys.path.insert(0, "/usr/lib/python3.6/dist-packages")  # 3.6 vs 3.8
 
@@ -31,16 +36,19 @@ class VideoInfo:
         objects' capture arguments.
     :var current_endpoint: A string that is endpoint it is assigned to.
     """
+
     arguments: List[str] = []
     endpoint: str = ""
 
     def __eq__(self, other):
         """Overrides the equality comparator operator.
         """
-        return (
-            self.arguments == other.arguments
-            and self.endpoint == other.endpoint
-        )
+        return self.arguments == other.arguments and self.endpoint == other.endpoint
+
+
+class StreamDict(TypedDict):
+    endpoint: str
+    resolution: int
 
 
 class Pipeline:
@@ -58,6 +66,7 @@ class Pipeline:
     :var _video_output: A jetson.utils.videoOutput object that holds its output
         info.
     """
+
     device_number: int
     video_info: VideoInfo
     _device_number_lock: threading.Lock
@@ -69,9 +78,7 @@ class Pipeline:
         self._device_number_lock = threading.Lock()
         self._video_output = None
 
-    def capture_and_render_image(
-        self, video_sources: List[jetson.utils.videoSource]
-    ) -> bool:
+    def capture_and_render_image(self, video_sources: List[jetson.utils.videoSource]) -> bool:
         """Captures an image from the video device and streams it. Returns
         boolean that is the success of capture and render.
 
@@ -109,9 +116,7 @@ class Pipeline:
         self.device_number = -1
         self._device_number_lock.release()
 
-    def update_device_number(
-        self, dev_index: int, video_sources: List[jetson.utils.videoSource]
-    ) -> None:
+    def update_device_number(self, dev_index: int, video_sources: List[jetson.utils.videoSource]) -> None:
         """Assigns the pipeline a camera device. This will also recreate the
         video output for in case the camera device resolution changes. If the
         camera device does not exist or if the request is -1, it will not be
@@ -142,15 +147,10 @@ class Pipeline:
         are not empty.
         """
         try:
-            assert len(self.video_info.endpoint), (
-                "self.video_info.endpoint should not be empty"
-            )
-            assert len(self.video_info.arguments), (
-                "self.video_info.arguments should not be empty"
-            )
+            assert len(self.video_info.endpoint), "self.video_info.endpoint should not be empty"
+            assert len(self.video_info.arguments), "self.video_info.arguments should not be empty"
             self._video_output = jetson.utils.videoOutput(
-                f"rtp://{self.video_info.endpoint}",
-                argv=self.video_info.arguments
+                f"rtp://{self.video_info.endpoint}", argv=self.video_info.arguments
             )
         except Exception:
             print(
@@ -180,10 +180,11 @@ class PipelineManager:
         shared variables such as _video_sources at the same time.
     :var _video_sources: A list of jetson.utils.videoSource's.
     """
+
     _active_cameras: List[int]
     _current_mission: str
     _max_vid_dev_id_number: int
-    _mission_streams_map: 'Dict[str, List[Dict[str, str | int]]]'
+    _mission_streams_map: Dict[str, List[StreamDict]]
     _pipelines: List[Pipeline]
     _res_args_map: Dict[int, List[str]]
     _video_source_lock: threading.Lock
@@ -192,32 +193,24 @@ class PipelineManager:
     def __init__(self) -> None:
         self._res_args_map = {}
         for input_map in rospy.get_param("cameras/input").items():
-            quality = input_map['resolution']
-            self._res_args_map[quality] = input_map['arguments']
+            quality = input_map["resolution"]
+            self._res_args_map[quality] = input_map["arguments"]
 
-        self._max_vid_dev_id_number = rospy.get_param(
-            "cameras/max_video_device_id_number"
-        )
+        self._max_vid_dev_id_number = rospy.get_param("cameras/max_video_device_id_number")
         self._mission_streams_map = {}
         self.__initialize_mission_streams_map()
 
         self._current_mission = ""
         self._video_source_lock = threading.Lock()
         self._video_sources = [None] * self._max_vid_dev_id_number
-        number_of_pipelines = rospy.get_param(
-            "cameras/number_of_pipelines"
-        )
-        self._pipelines = [None] * number_of_pipelines
+        number_of_pipelines = rospy.get_param("cameras/number_of_pipelines")
+        self._pipelines = [Pipeline()] * number_of_pipelines
         self._active_cameras = [-1] * number_of_pipelines
         for pipe_index in range(len(self._pipelines)):
             self._pipelines[pipe_index] = Pipeline()
-        self._update_mission(
-            rospy.get_param("cameras/default_mission").lower()
-        )
+        self._update_mission(rospy.get_param("cameras/default_mission").lower())
 
-    def handle_change_camera_mission(
-        self, req: ChangeCameraMissionRequest
-    ) -> ChangeCameraMissionResponse:
+    def handle_change_camera_mission(self, req: ChangeCameraMissionRequest) -> ChangeCameraMissionResponse:
         """Processes a request to change the current camera mission.
         Returns the active camera mission after processing the request.
 
@@ -233,9 +226,7 @@ class PipelineManager:
         self._update_mission(mission_name)
         return ChangeCameraMissionResponse(self._current_mission)
 
-    def handle_change_cameras(
-        self, req: ChangeCamerasRequest
-    ) -> ChangeCamerasResponse:
+    def handle_change_cameras(self, req: ChangeCamerasRequest) -> ChangeCamerasResponse:
         """Processes a request to change the active cameras. Returns a list of
         the active cameras after processing the request.
 
@@ -257,14 +248,10 @@ class PipelineManager:
 
         for stream_index in range(len(requested_devices)):
             requested_device = requested_devices[stream_index]
-            if self._is_device_streamed_by_pipe(
-                requested_device, stream_index
-            ):
+            if self._is_device_streamed_by_pipe(requested_device, stream_index):
                 continue
             self._close_device_of_pipeline_if_no_others_are_using(stream_index)
-            self._create_video_source_for_pipe_if_possible(
-                requested_device, stream_index
-            )
+            self._create_video_source_for_pipe_if_possible(requested_device, stream_index)
             self._stream_device_on_pipe(requested_device, stream_index)
 
         self._update_active_cameras()
@@ -278,9 +265,7 @@ class PipelineManager:
         for pipe_index, pipeline in enumerate(self._pipelines):
             if pipeline.is_currently_streaming():
                 self._video_source_lock.acquire()
-                success = pipeline.capture_and_render_image(
-                    self._video_sources
-                )
+                success = pipeline.capture_and_render_image(self._video_sources)
                 self._video_source_lock.release()
                 if not success:
                     self._clean_up_failed_pipeline(pipe_index)
@@ -296,13 +281,13 @@ class PipelineManager:
         for pipe_index, pipeline in enumerate(self._pipelines):
             if pipe_index == 0 or pipe_index == 1:
                 continue
-            pipeline.current_endpoint = self._get_endpoint(pipe_index)
+            pipeline.video_info.endpoint = self._get_endpoint(pipe_index)
 
     def _change_all_pipe_resolution_arguments(self) -> None:
         """Updates the video resolutions to what is currently being requested.
         """
         for pipe_number, pipeline in enumerate(self._pipelines):
-            pipeline.arguments = self._get_pipe_arguments(pipe_number)
+            pipeline.video_info.arguments = self._get_pipe_arguments(pipe_number)
 
     def _change_all_pipe_video_outputs(self) -> None:
         """Updates the video outputs and endpoints and video resolutions to
@@ -333,9 +318,7 @@ class PipelineManager:
         )
         self._stop_all_pipelines_using_this_device(failed_device)
 
-    def _close_device_of_pipeline_if_no_others_are_using(
-        self, pipe_index: int
-    ) -> None:
+    def _close_device_of_pipeline_if_no_others_are_using(self, pipe_index: int) -> None:
         """Closes the video source of the current device if no other pipelines
         are using the current video source.
 
@@ -352,9 +335,7 @@ class PipelineManager:
             device is being checked.
         """
         if self._pipeline_device_is_unique(pipe_index):
-            pipeline_device_number = (
-                self._pipelines[pipe_index].device_number
-            )
+            pipeline_device_number = self._pipelines[pipe_index].device_number
             self._close_video_source(pipeline_device_number)
 
     def _close_video_source(self, dev_index: int) -> None:
@@ -368,9 +349,7 @@ class PipelineManager:
         self._video_sources[dev_index] = None
         self._video_source_lock.release()
 
-    def _create_video_source_for_pipe_if_possible(
-        self, dev_index: int, pipe_index: int
-    ) -> None:
+    def _create_video_source_for_pipe_if_possible(self, dev_index: int, pipe_index: int) -> None:
         """Opens a connection to a video camera by creating the
         jetson.utils.videoSource.
 
@@ -390,15 +369,14 @@ class PipelineManager:
             if self._video_sources[dev_index] is not None:
                 return
             self._video_sources[dev_index] = jetson.utils.videoSource(
-                f"/dev/video{dev_index}",
-                argv=self._get_pipe_arguments(pipe_index)
+                f"/dev/video{dev_index}", argv=self._get_pipe_arguments(pipe_index)
             )
         except Exception:
             return
         finally:
             self._video_source_lock.release()
 
-    def _get_all_streams(self) -> 'List[Dict[str, str | int]]':
+    def _get_all_streams(self) -> List[StreamDict]:
         """Returns a list of all the streams.
 
         :return: A list of dictionaries, where the list represents all the
@@ -406,7 +384,7 @@ class PipelineManager:
         """
         return self._mission_streams_map[self._current_mission]
 
-    def _get_stream(self, pipe_index: int) -> 'Dict[str, str | int]':
+    def _get_stream(self, pipe_index: int) -> StreamDict:
         """Returns the stream of a pipeline.
         :param pipe_index: An integer that is the number of the pipeline.
         :return: A dictionary that that is the stream info of the pipeline.
@@ -418,22 +396,22 @@ class PipelineManager:
         :param pipe_index: An integer that is the number of the pipeline.
         :return: A string that that is the endpoint of the pipeline.
         """
-        return self._get_stream(pipe_index)['endpoint']
+        return self._get_stream(pipe_index)["endpoint"]
 
     def _get_pipe_arguments(self, pipe_index: int) -> List[str]:
         """Returns the resolution arguments of a pipeline.
         :param pipe_index: An integer that is the number of the pipeline.
         :return: A string that that is the resolution arguments of a pipeline.
         """
-        resolution = self._get_stream(pipe_index)['resolution']
+        resolution = self._get_stream(pipe_index)["resolution"]
         return self._res_args_map[resolution]
 
     def __initialize_mission_streams_map(self) -> None:
         """Fills in mission endpoints and resolutions maps from cameras.yaml.
         """
         for mission in rospy.get_param("cameras/missions"):
-            mission_name = mission['name'].lower()
-            streams = mission['streams']
+            mission_name = mission["name"].lower()
+            streams = mission["streams"]
             self._mission_streams_map[mission_name] = streams
 
     def _is_mission_name_valid(self, mission_name: str) -> bool:
@@ -446,9 +424,7 @@ class PipelineManager:
         assert mission_name.islower(), "mission_name should be lower case"
         return mission_name in self._mission_streams_map.keys()
 
-    def _is_device_streamed_by_pipe(
-        self, dev_index: int, pipe_index: int
-    ) -> bool:
+    def _is_device_streamed_by_pipe(self, dev_index: int, pipe_index: int) -> bool:
         """Returns True if the pipeline is streaming the device.
 
         :param dev_index: An integer that is the number of the camera device.
@@ -486,9 +462,7 @@ class PipelineManager:
             that is being assigned a camera device.
         """
         self._video_source_lock.acquire()
-        self._pipelines[pipe_index].update_device_number(
-            dev_index, self._video_sources
-        )
+        self._pipelines[pipe_index].update_device_number(dev_index, self._video_sources)
         self._video_source_lock.release()
         print(
             f"Playing camera {dev_index} on \
@@ -524,10 +498,7 @@ class PipelineManager:
         Does not update the video output if the video info is already the same.
         """
         for pipe_number, pipeline in enumerate(self._pipelines):
-            video_info = VideoInfo(
-                self._get_pipe_arguments(pipe_number),
-                self._get_endpoint(pipe_number)
-            )
+            video_info = VideoInfo(self._get_pipe_arguments(pipe_number), self._get_endpoint(pipe_number))
             if pipeline.video_info == video_info:
                 continue
             pipeline.video_info = video_info
@@ -552,14 +523,8 @@ class PipelineManager:
 def main():
     rospy.init_node("cameras")
     pipeline_manager = PipelineManager()
-    rospy.Service(
-        'change_cameras', ChangeCameras,
-        pipeline_manager.handle_change_cameras
-    )
-    rospy.Service(
-        'change_camera_mission', ChangeCameraMission,
-        pipeline_manager.handle_change_camera_mission
-    )
+    rospy.Service("change_cameras", ChangeCameras, pipeline_manager.handle_change_cameras)
+    rospy.Service("change_camera_mission", ChangeCameraMission, pipeline_manager.handle_change_camera_mission)
     while not rospy.is_shutdown():
         pipeline_manager.update_all_pipe_streams()
 
