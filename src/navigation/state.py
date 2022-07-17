@@ -56,9 +56,7 @@ class DoneState(BaseState):
 
     def evaluate(self, ud):
         # Check if we have a course to traverse
-        if self.context.course and ud.waypoint_index != len(
-            self.context.course.waypoints
-        ):
+        if self.context.course and ud.waypoint_index != len(self.context.course.waypoints):
             return "waypoint_traverse"
 
         # Stop rover

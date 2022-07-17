@@ -29,9 +29,7 @@ class SingleFiducialState(WaypointState):
             return "single_fiducial"
 
         try:
-            cmd_vel, arrived = get_drive_command(
-                fid_pos, self.context.get_rover_pose(), STOP_THRESH, DRIVE_FWD_THRESH
-            )
+            cmd_vel, arrived = get_drive_command(fid_pos, self.context.get_rover_pose(), STOP_THRESH, DRIVE_FWD_THRESH)
             if arrived:
                 ud.waypoint_index += 1
                 return "waypoint_traverse"

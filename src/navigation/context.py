@@ -41,7 +41,5 @@ class Context:
         :return:
         """
         # TODO: use SE3 function to lookup
-        stamped_transform = self.tf_buffer.lookup_transform(
-            parent_frame, frame, rospy.Time(0)
-        )
+        stamped_transform = self.tf_buffer.lookup_transform(parent_frame, frame, rospy.Time(0))
         return SE3.from_tf(stamped_transform.transform)

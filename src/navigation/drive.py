@@ -53,7 +53,5 @@ def get_drive_command(
     sign = np.sign(perp_alignment)
     # 1 is target alignment (dot product of two normalized vectors that are parallel is 1)
     error = 1.0 - alignment
-    cmd_vel.angular.z = np.clip(
-        error * TURNING_P * sign, MIN_DRIVING_EFFORT, MAX_DRIVING_EFFORT
-    )
+    cmd_vel.angular.z = np.clip(error * TURNING_P * sign, MIN_DRIVING_EFFORT, MAX_DRIVING_EFFORT)
     return cmd_vel, False

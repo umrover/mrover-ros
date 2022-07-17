@@ -54,9 +54,7 @@ class WaypointState(BaseState):
         :param ud:  State machine user data
         :return:    Next waypoint to reach if we have an active course
         """
-        if self.context.course is None or ud.waypoint_index >= len(
-            self.context.course.waypoints
-        ):
+        if self.context.course is None or ud.waypoint_index >= len(self.context.course.waypoints):
             return None
         return self.context.course.waypoints[ud.waypoint_index]
 
@@ -80,10 +78,7 @@ class WaypointState(BaseState):
             return "done"
 
         # Go into the single fiducial state if we see it early
-        if (
-            current_waypoint.fiducial_id != NO_FIDUCIAL
-            and self.current_fid_pos(ud) is not None
-        ):
+        if current_waypoint.fiducial_id != NO_FIDUCIAL and self.current_fid_pos(ud) is not None:
             return "single_fiducial"
 
         try:

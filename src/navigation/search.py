@@ -6,9 +6,7 @@ from context import Context
 from state import BaseState
 
 
-def gen_square_spiral_search_pattern(
-    center: np.ndarray, spacing: float, coverage_radius: float
-) -> List[np.ndarray]:
+def gen_square_spiral_search_pattern(center: np.ndarray, spacing: float, coverage_radius: float) -> List[np.ndarray]:
     """
     Generates a square spiral search pattern around a center position, assumes rover is at the center position
     :param center:          position to center spiral on (np.ndarray),

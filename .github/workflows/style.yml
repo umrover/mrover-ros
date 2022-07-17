@@ -29,4 +29,5 @@ jobs:
           use-black: true
           use-mypy: true
           extra-mypy-options: "--config-file=mrover/mypy.ini"
+          extra-black-options: "--line-length=120"
  

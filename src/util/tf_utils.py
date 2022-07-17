@@ -7,9 +7,7 @@ from sensor_msgs.msg import NavSatFix, geometry_msgs
 EARTH_RADIUS = 6371000
 
 
-def gps_to_world(
-    gps_coord: NavSatFix, ref_coord: NavSatFix, name: str, parent: str = "world"
-) -> TransformStamped:
+def gps_to_world(gps_coord: NavSatFix, ref_coord: NavSatFix, name: str, parent: str = "world") -> TransformStamped:
     """
     Returns the GPS to cartesian world transform.
 
