@@ -41,8 +41,7 @@ class VideoInfo:
     endpoint: str = ""
 
     def __eq__(self, other):
-        """Overrides the equality comparator operator.
-        """
+        """Overrides the equality comparator operator."""
         return self.arguments == other.arguments and self.endpoint == other.endpoint
 
 
@@ -284,8 +283,7 @@ class PipelineManager:
             pipeline.video_info.endpoint = self._get_endpoint(pipe_index)
 
     def _change_all_pipe_resolution_arguments(self) -> None:
-        """Updates the video resolutions to what is currently being requested.
-        """
+        """Updates the video resolutions to what is currently being requested."""
         for pipe_number, pipeline in enumerate(self._pipelines):
             pipeline.video_info.arguments = self._get_pipe_arguments(pipe_number)
 
@@ -407,8 +405,7 @@ class PipelineManager:
         return self._res_args_map[resolution]
 
     def __initialize_mission_streams_map(self) -> None:
-        """Fills in mission endpoints and resolutions maps from cameras.yaml.
-        """
+        """Fills in mission endpoints and resolutions maps from cameras.yaml."""
         for mission in rospy.get_param("cameras/missions"):
             mission_name = mission["name"].lower()
             streams = mission["streams"]
