@@ -18,3 +18,5 @@ jobs:
           build-tool: "catkin_tools"
           workspace: "$GITHUB_WORKSPACE"
       - run: catkin build
+      - run: catkin test
+
