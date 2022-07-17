@@ -51,8 +51,7 @@ catkin_python_setup()
 ## To declare and build messages, services or actions from within this
 ## package, follow these steps:
 ## * Let MSG_DEP_SET be the set of packages whose message types you use in
-##   your messages/services/actions (e.g. std_msgs, actionlib_msgs, ...).
-## * In the file package.xml:
+##   your messages/services/actions (e.g. std_msgs, actionlib_msgs, ...).  ## * In the file package.xml:
 ##   * add a build_depend tag for "message_generation"
 ##   * add a build_depend and a exec_depend tag for each package in MSG_DEP_SET
 ##   * If MSG_DEP_SET isn't empty the following dependency has been pulled in
@@ -73,6 +72,7 @@ add_message_files(
         FILES
         Course.msg
         Waypoint.msg
+        Chassis.msg
 )
 
 ## Generate services in the 'srv' folder
@@ -150,6 +150,13 @@ target_link_libraries(aruco_detect ${catkin_LIBRARIES} ${OpenCV_LIBS})
 add_library(differential_drive_plugin_6w src/gazebo/differential_drive_6w.cpp)
 add_dependencies(aruco_detect ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
 target_link_libraries(differential_drive_plugin_6w ${Boost_LIBRARIES} ${GAZEBO_LIBRARIES} ${catkin_LIBRARIES})
+
+## Rust binaries 
+# TODO(amg): work in progress, might be unstable. 
+# TODO(amg): tag me on any PR where you add a new Rust subdir
+add_subdirectory(src/experimental/rust/demo)
+add_subdirectory(src/experimental/rust/drive)
+
 
 ## Declare a C++ library
 # add_library(${PROJECT_NAME}
@@ -245,3 +252,4 @@ install(TARGETS differential_drive_plugin_6w
 
 ## Add folders to be run by python nosetests
 # catkin_add_nosetests(test)
+
