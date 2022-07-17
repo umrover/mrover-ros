@@ -6,7 +6,7 @@ from visualization_msgs.msg import Marker
 def send_debug_arrow(self, rot):
     # TODO: not working
     marker = Marker()
-    marker.header.frame_id = 'odom'
+    marker.header.frame_id = "odom"
     marker.header.stamp = rospy.Time.now()
     marker.id = 0
     marker.action = Marker.ADD

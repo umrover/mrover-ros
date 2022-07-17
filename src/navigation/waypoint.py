@@ -7,7 +7,7 @@ from context import Context
 from drive import get_drive_command
 from mrover.msg import Waypoint
 from state import BaseState
-from util import SE3
+from util.SE3 import SE3
 
 STOP_THRESH = 0.5
 DRIVE_FWD_THRESH = 0.95
@@ -15,17 +15,21 @@ NO_FIDUCIAL = -1
 
 
 class WaypointState(BaseState):
-    def __init__(self, context: Context,
-                 add_outcomes: List[str] = None,
-                 add_input_keys: List[str] = None,
-                 add_output_keys: List[str] = None):
+    def __init__(
+        self,
+        context: Context,
+        add_outcomes: List[str] = None,
+        add_input_keys: List[str] = None,
+        add_output_keys: List[str] = None,
+    ):
         add_outcomes = add_outcomes or []
         add_input_keys = add_input_keys or []
         add_output_keys = add_output_keys or []
         super().__init__(
             context,
-            add_outcomes + ['waypoint_traverse', 'single_fiducial', 'done'],
-            add_input_keys, add_output_keys
+            add_outcomes + ["waypoint_traverse", "single_fiducial", "done"],
+            add_input_keys,
+            add_output_keys,
         )
 
     def waypoint_pose(self, wp_idx: int) -> SE3:
@@ -36,9 +40,13 @@ class WaypointState(BaseState):
 
     def get_fid_pos(self, fid_id: int) -> Optional[np.ndarray]:
         try:
-            fid_pose = self.context.get_transform(f'fiducial{fid_id}')
+            fid_pose = self.context.get_transform(f"fiducial{fid_id}")
             return fid_pose.position_vector()
-        except (tf2_ros.LookupException, tf2_ros.ConnectivityException, tf2_ros.ExtrapolationException):
+        except (
+            tf2_ros.LookupException,
+            tf2_ros.ConnectivityException,
+            tf2_ros.ExtrapolationException,
+        ):
             return None
 
     def current_waypoint(self, ud) -> Optional[Waypoint]:
@@ -67,26 +75,34 @@ class WaypointState(BaseState):
         """
         current_waypoint = self.current_waypoint(ud)
         if current_waypoint is None:
-            return 'done'
+            return "done"
 
         # Go into the single fiducial state if we see it early
         if current_waypoint.fiducial_id != NO_FIDUCIAL and self.current_fid_pos(ud) is not None:
-            return 'single_fiducial'
+            return "single_fiducial"
 
         try:
             waypoint_pos = self.waypoint_pose(ud.waypoint_index).position_vector()
-            cmd_vel, arrived = get_drive_command(waypoint_pos, self.context.get_rover_pose(),
-                                                 STOP_THRESH, DRIVE_FWD_THRESH)
+            cmd_vel, arrived = get_drive_command(
+                waypoint_pos,
+                self.context.get_rover_pose(),
+                STOP_THRESH,
+                DRIVE_FWD_THRESH,
+            )
             if arrived:
                 if current_waypoint.fiducial_id == NO_FIDUCIAL:
                     # We finished a regular waypoint, go onto the next one
                     ud.waypoint_index += 1
                 else:
                     # We finished a waypoint associated with a fiducial id, but we have not seen it yet.
-                    return 'single_fiducial'
+                    return "single_fiducial"
             self.context.drive_command(cmd_vel)
-        except (tf2_ros.LookupException, tf2_ros.ConnectivityException, tf2_ros.ExtrapolationException):
+        except (
+            tf2_ros.LookupException,
+            tf2_ros.ConnectivityException,
+            tf2_ros.ExtrapolationException,
+        ):
             # TODO: probably go into some waiting state
             pass
 
-        return 'waypoint_traverse'
+        return "waypoint_traverse"
