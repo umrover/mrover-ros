@@ -21,10 +21,12 @@ jobs:
           check-path: "src"
       - uses: ricardochaves/python-lint@v1.4.0
         with:
-          python-root-list: "."
+          python-root-list: "src scripts"
           use-isort: false
           use-pycodestyle: false
           use-pylint: false 
           use-flake8: false
           use-black: true
           use-mypy: true
+          extra-mypy-options: "--config-file=mypy.ini"
+ 
