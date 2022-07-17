@@ -20,7 +20,12 @@ def gen_square_spiral_search_pattern(
     out = []
     cur = center
     cur_segment_len = spacing / 2
-    directions = [np.array(1, 0), np.array(0, -1), np.array(-1, 0), np.array(1, 0)]
+    directions = [
+        np.array([1, 0]),
+        np.array([0, -1]),
+        np.array([-1, 0]),
+        np.array([1, 0]),
+    ]
     direction_index = 0
     while cur_segment_len <= coverage_radius:
         next_point = cur + (cur_segment_len * directions[direction_index])

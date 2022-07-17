@@ -7,7 +7,7 @@ from context import Context
 from drive import get_drive_command
 from mrover.msg import Waypoint
 from state import BaseState
-from util import SE3
+from util.SE3 import SE3
 
 STOP_THRESH = 0.5
 DRIVE_FWD_THRESH = 0.95
