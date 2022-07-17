@@ -28,5 +28,5 @@ jobs:
           use-flake8: false
           use-black: true
           use-mypy: true
-          extra-mypy-options: "--config-file=mypy.ini"
+          extra-mypy-options: "--config-file=mrover/mypy.ini"
  
