@@ -18,7 +18,12 @@ def gen_square_spiral_search_pattern(center: np.ndarray, spacing: float, coverag
     out = []
     cur = center
     cur_segment_len = spacing / 2
-    directions = [np.array(1, 0), np.array(0, -1), np.array(-1, 0), np.array(1, 0)]
+    directions = [
+        np.array([1, 0]),
+        np.array([0, -1]),
+        np.array([-1, 0]),
+        np.array([1, 0]),
+    ]
     direction_index = 0
     while cur_segment_len <= coverage_radius:
         next_point = cur + (cur_segment_len * directions[direction_index])
@@ -32,9 +37,9 @@ class SearchState(BaseState):
     def __init__(self, context: Context):
         super().__init__(
             context,
-            add_outcomes=['found_tag', 'finished_search'],
-            add_input_keys=['search_point_index', 'searchPoints'],
-            add_output_keys=['search_point_index']
+            add_outcomes=["found_tag", "finished_search"],
+            add_input_keys=["search_point_index", "searchPoints"],
+            add_output_keys=["search_point_index"],
         )
 
     def evaluate(self, ud):

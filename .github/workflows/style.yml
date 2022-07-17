@@ -21,12 +21,13 @@ jobs:
           check-path: "src"
       - uses: ricardochaves/python-lint@v1.4.0
         with:
-          python-root-list: "."
+          python-root-list: "mrover/src mrover/scripts"
           use-isort: false
-          use-pycodestyle: true
-          extra-pycodestyle-options: "--max-line-length=119"
-          use-pylint: false # TODO: Would have to pip install everything for this
-          use-flake8: true
-          extra-flake8-options: "--max-line-length=119"
-          use-black: false
-          use-mypy: false
+          use-pycodestyle: false
+          use-pylint: false 
+          use-flake8: false
+          use-black: true
+          use-mypy: true
+          extra-mypy-options: "--config-file=mrover/mypy.ini"
+          extra-black-options: "--line-length=120"
+ 
