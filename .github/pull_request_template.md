@@ -1,4 +1,6 @@
 ## Summary
+Addresses Issue: \# (Your issue number here) 
+
 What features did you add, bugs did you fix, etc? 
 
 ### Did you add documentation to the wiki?
