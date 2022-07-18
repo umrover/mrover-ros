@@ -10,8 +10,12 @@ MIN_DRIVING_EFFORT = -1
 TURNING_P = 100.0
 
 
-def get_drive_command(target_pos: np.ndarray, rover_pose: SE3,
-                      completion_thresh: float, turn_in_place_thresh: float) -> Tuple[Twist, bool]:
+def get_drive_command(
+    target_pos: np.ndarray,
+    rover_pose: SE3,
+    completion_thresh: float,
+    turn_in_place_thresh: float,
+) -> Tuple[Twist, bool]:
     """
     :param target_pos:              Target position to drive to.
     :param rover_pose:              Current rover pose.
