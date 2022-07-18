@@ -7,7 +7,7 @@ odrive:
     watchdog_timeout: 0.1
   ids:
     front: "335D36623539"
-    middle: "335B36563539"
+    middle: "205535833056"
     back: "2066377F5753"
   ratio:
     meters_to_turns_ratio_left: -39.793

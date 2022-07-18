@@ -153,8 +153,18 @@ Guide for the Nanotec/Maxon motors
 
 1. Open up odrivetool. On the Jetson run `source ~/.mrover/build_env/bin/activate` and type `odrivetool`.
 This should open up and say we connected to ODrive. We want (I think) version 0.5.4.
-2. If it's an ODrive we used before, just double check these parameters. Otherwise, set the following anyway: `odrvX.axisY.motor.config.pole_pairs` which depends on the motor and is on the data sheet, `odrvX.axisY.motor.config.resstance_calib_max_voltage` which should be either 1.2 or 0.6, and `odrvX.axisY.motor.config.requested_current_range` which should probably be 8.0, and `odrvX.axisY.motor.config.torque_constant` which it should say on the motor's data sheet and the units are Nm per amp and it might be 52.5/1000, and `odrvX.axisY.encoder.config.cpr` which should be 6 x pole_pairs, and `odrvX.axisY.controller.config.pos_gain` which should be 0.01, `odrvX.axisY.controller.config.vel_gain` which should be 0.01, and `odrvX.axisY.controller.config.vel_integrator_gain` which should be 0, and `odrvX.axisY.controller.config.vel_limit` which is speed and it could be 1000 or so unit is turns/second and we once wanted 5300 rpm, `odrvX.axisY.motor.config.calibration_current` which should be 1.45 or 0.7. 
-3. Save configuration and reboot by running `odrvX.save_configuration`. If this returns false, make sure all axes are in the IDLE state by doing `odrvX.axisY.requested_state = AXIS_STATE_IDLE`. Then reboot by running `odrvX.reboot`.
+2. If it's an ODrive we used before, just double check these parameters. Otherwise, set the following anyway (numbers in parentheses were used for Rosie '22): 
+- `odrvX.axisY.motor.config.pole_pairs` which depends on the motor and is on the data sheet (was 7),
+- `odrvX.axisY.motor.config.resstance_calib_max_voltage` which should be either 1.2 or 0.6 (was 0.6),
+- `odrvX.axisY.motor.config.requested_current_range` which should probably be 8.0 (was 8.0),
+- `odrvX.axisY.motor.config.torque_constant` which it should say on the motor's data sheet and the units are Nm per amp and it might be 52.5/1000 (was 52.5/1000)
+- `odrvX.axisY.encoder.config.cpr` which should be 6 x pole_pairs (was 42)
+- `odrvX.axisY.controller.config.pos_gain` which should be 0.01 (was 0.01)
+- `odrvX.axisY.controller.config.vel_gain` which should be 0.01 (was 0.01)
+- `odrvX.axisY.controller.config.vel_integrator_gain` which should be 0 (was 0)
+- `odrvX.axisY.controller.config.vel_limit` which is speed and it could be 1000 or so unit is turns/second and we once wanted 5300 rpm (was 1000)
+- `odrvX.axisY.motor.config.calibration_current` which should be 1.45 or 0.7 (was 0.7). 
+3. Save configuration and reboot by running `odrvX.save_configuration()`. If this returns false, make sure all axes are in the IDLE state by doing `odrvX.axisY.requested_state = AXIS_STATE_IDLE`. Then reboot by running `odrvX.reboot`.
 
 ---
 
@@ -197,7 +207,7 @@ and start running odrivetool. \
 Run `source ~/.mrover/build_env/bin/activate` and type `odrivetool`.
 The odrives should automatically connect. Using the odrvX.axisY (0 or 1 depending on the ODrive with the id) in place of m_axis, execute all of the following commands for axis0 and axis1. \
 
-`$ odrvX.axis0.requestedstate = AXIS_STATE_FULL_CALIBRATION_SEQUENCE ` \
+`$ odrvX.axis0.requested_state = AXIS_STATE_FULL_CALIBRATION_SEQUENCE ` \
 The motor should beep and start calibrating now.
 
 You can check to see if it completed successfully by running `dump_errors(odrvX)`.
@@ -283,7 +293,7 @@ Restart the VM.
 `dump_errors(odrvX, True)` \
 If the error persists, the encoder wires are probaby disconnected. Tell electrical to recheck the wires\connectors. </
 
-#### Suddenly No Resposne 
+#### Suddenly No Response
 In this case, stop and restart the ODrive program. The problem is still being investigated \
   
 #### Unknown ACK and Failure 
