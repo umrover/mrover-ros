@@ -20,35 +20,35 @@ class Navigation(threading.Thread):
 
     def __init__(self, context: Context):
         super().__init__()
-        self.name = 'NavigationThread'
-        self.state_machine = smach.StateMachine(outcomes=['terminated'])
+        self.name = "NavigationThread"
+        self.state_machine = smach.StateMachine(outcomes=["terminated"])
         self.state_machine.userdata.waypoint_index = 0
         self.context = context
-        self.sis = smach_ros.IntrospectionServer('server_name', self.state_machine, '/SM_ROOT')
+        self.sis = smach_ros.IntrospectionServer("server_name", self.state_machine, "/SM_ROOT")
         self.sis.start()
         with self.state_machine:
             self.state_machine.add(
-                'WaypointState', WaypointState(self.context),
+                "WaypointState",
+                WaypointState(self.context),
                 transitions={
-                    'waypoint_traverse': 'WaypointState',
-                    'single_fiducial': 'SingleFiducialState',
-                    'done': 'DoneState',
+                    "waypoint_traverse": "WaypointState",
+                    "single_fiducial": "SingleFiducialState",
+                    "done": "DoneState",
                 },
             )
             self.state_machine.add(
-                'SingleFiducialState', SingleFiducialState(self.context),
+                "SingleFiducialState",
+                SingleFiducialState(self.context),
                 transitions={
-                    'waypoint_traverse': 'WaypointState',
-                    'single_fiducial': 'SingleFiducialState',
-                    'done': 'DoneState'
-                }
+                    "waypoint_traverse": "WaypointState",
+                    "single_fiducial": "SingleFiducialState",
+                    "done": "DoneState",
+                },
             )
             self.state_machine.add(
-                'DoneState', DoneState(self.context),
-                transitions={
-                    'waypoint_traverse': 'WaypointState',
-                    'done': 'DoneState'
-                }
+                "DoneState",
+                DoneState(self.context),
+                transitions={"waypoint_traverse": "WaypointState", "done": "DoneState"},
             )
 
     def run(self):
@@ -64,15 +64,15 @@ class Navigation(threading.Thread):
 
 
 def main():
-    rospy.loginfo('===== navigation starting =====')
-    rospy.init_node('navigation')
+    rospy.loginfo("===== navigation starting =====")
+    rospy.init_node("navigation")
     context = Context()
     navigation = Navigation(context)
 
     # Define custom handler for Ctrl-C that shuts down smach properly
     def sigint_handler(_sig, _frame):
         navigation.stop()
-        rospy.signal_shutdown('keyboard interrupt')
+        rospy.signal_shutdown("keyboard interrupt")
         try:
             sys.exit(0)
         except SystemExit:
@@ -83,5 +83,5 @@ def main():
     navigation.start()
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     main()

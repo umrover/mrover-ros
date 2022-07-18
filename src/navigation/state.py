@@ -10,19 +10,23 @@ class BaseState(smach.State, ABC):
     """
     Custom base state which handles termination cleanly via smach preemption.
     """
+
     context: Context
 
-    def __init__(self, context: Context,
-                 add_outcomes: List[str] = None,
-                 add_input_keys: List[str] = None,
-                 add_output_keys: List[str] = None):
+    def __init__(
+        self,
+        context: Context,
+        add_outcomes: List[str] = None,
+        add_input_keys: List[str] = None,
+        add_output_keys: List[str] = None,
+    ):
         add_outcomes = add_outcomes or []
         add_input_keys = add_input_keys or []
         add_output_keys = add_output_keys or []
         super().__init__(
-            add_outcomes + ['terminated'],
-            add_input_keys + ['waypoint_index'],
-            add_output_keys + ['waypoint_index']
+            add_outcomes + ["terminated"],
+            add_input_keys + ["waypoint_index"],
+            add_output_keys + ["waypoint_index"],
         )
         self.context = context
 
@@ -35,7 +39,7 @@ class BaseState(smach.State, ABC):
         """
         if self.preempt_requested():
             self.service_preempt()
-            return 'terminated'
+            return "terminated"
         return self.evaluate(ud)
 
     def evaluate(self, ud: smach.UserData) -> str:
@@ -47,15 +51,15 @@ class DoneState(BaseState):
     def __init__(self, context: Context):
         super().__init__(
             context,
-            add_outcomes=['done', 'waypoint_traverse'],
+            add_outcomes=["done", "waypoint_traverse"],
         )
 
     def evaluate(self, ud):
         # Check if we have a course to traverse
         if self.context.course and ud.waypoint_index != len(self.context.course.waypoints):
-            return 'waypoint_traverse'
+            return "waypoint_traverse"
 
         # Stop rover
         cmd_vel = Twist()
         self.context.drive_command(cmd_vel)
-        return 'done'
+        return "done"

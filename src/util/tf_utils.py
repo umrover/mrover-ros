@@ -8,13 +8,13 @@ EARTH_RADIUS = 6371000
 
 
 def gps_to_world(gps_coord: NavSatFix, ref_coord: NavSatFix, name: str, parent: str = "world") -> TransformStamped:
-    '''
+    """
     Returns the GPS to cartesian world transform.
 
     :param gps_coord: The gps coordinate that we want in the cartesian world frame
     :param name: The name of the returned transform frame
     :param parent: The name of the reference world frame
-    '''
+    """
     t = geometry_msgs.msg.TransformStamped()
     t.header.stamp = rospy.Time.now()
     t.header.frame_id = parent
