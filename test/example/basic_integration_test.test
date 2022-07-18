@@ -1,0 +1,9 @@
+<launch>
+  <!-- Set necessary params-->
+  <param name="string"  value="mystring" />
+  <!-- Launch a necessary node-->
+   
+  <!-- Execute multiple tests after configuring nodes-->
+  <test test-name="basic_python_test" pkg="mrover" type="python_test.py" />
+  <test test-name="basic_cpp_test" pkg="mrover" type="example-cpp-test" />
+</launch>
