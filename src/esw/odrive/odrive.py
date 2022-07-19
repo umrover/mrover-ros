@@ -16,14 +16,14 @@ import threading
 import time as t
 from dataclasses import dataclass
 from enum import Enum
-from typing import Any
+from typing import Any, Dict
 
 import fibre
 import odrive as odv
+from odv import find_any
 import rospy
 from mrover.msg import DriveStateData, DriveVelCmd, DriveVelData
-from odrive.enums import (AXIS_STATE_CLOSED_LOOP_CONTROL, AXIS_STATE_IDLE,
-                          CONTROL_MODE_VELOCITY_CONTROL)
+from odrive.enums import AXIS_STATE_CLOSED_LOOP_CONTROL, AXIS_STATE_IDLE, CONTROL_MODE_VELOCITY_CONTROL
 from odrive.utils import dump_errors
 
 
@@ -33,21 +33,18 @@ class Speed:
     :var left: A float that is the speed of the left wheel.
     :var right: A float that is the speed of the right wheel
     """
-    left: float = 0
-    right: float = 0
+
+    left: float = 0.0
+    right: float = 0.0
 
     def __eq__(self, other):
-        """Overrides the equality comparator operator.
-        """
-        return (
-            self.left == other.left
-            and self.right == other.right
-        )
+        """Overrides the equality comparator operator."""
+        return self.left == other.left and self.right == other.right
 
 
 class DisconnectedError(Exception):
-    """An exception thrown when the Jetson is unable to talk with the ODrive.
-    """
+    """An exception thrown when the Jetson is unable to talk with the ODrive."""
+
     pass
 
 
@@ -57,6 +54,7 @@ class ODriveEvent(Enum):
     The ODriveEvents reveal the following: When the ODrive is disconnected,
     is trying to arm, or has encountered an error.
     """
+
     DISCONNECTED_ODRIVE_EVENT = 0
     ARM_CMD_EVENT = 1
     ODRIVE_ERROR_EVENT = 2
@@ -82,43 +80,32 @@ class Modrive:
         ODrive objects simultaneously.
     :param _watchdog_timeout: A float that represents the watchdog timeout.
     """
-    _axes: dict[str, Any]
-    _meters_to_turns_ratio_by_side: dict[str, float]
+
+    _axes: Dict[str, Any]
+    _meters_to_turns_ratio_by_side: Dict[str, float]
     _odrive: Any
-    _turns_to_raw_ratio_by_side: dict[str, float]
-    _usb_lock = threading.Lock
+    _turns_to_raw_ratio_by_side: Dict[str, float]
+    _usb_lock: threading.Lock
     _watchdog_timeout: float
 
     def __init__(self, odr) -> None:
         self._odrive = odr
-        _side_by_axis: dict[int, str] = {
-            rospy.get_param("/odrive/axis/left"): 'left',
-            rospy.get_param("/odrive/axis/right"): 'right'}
-
-        self._axes = {
-            _side_by_axis[0]: self._odrive.axis0,
-            _side_by_axis[1]: self._odrive.axis1
+        _side_by_axis: Dict[int, str] = {
+            rospy.get_param("/odrive/axis/left"): "left",
+            rospy.get_param("/odrive/axis/right"): "right",
         }
+
+        self._axes = {_side_by_axis[0]: self._odrive.axis0, _side_by_axis[1]: self._odrive.axis1}
         self._meters_to_turns_ratio_by_side = {
-            'left': rospy.get_param(
-                "/odrive/ratio/meters_to_turns_ratio_left"
-            ),
-            'right': rospy.get_param(
-                "/odrive/ratio/meters_to_turns_ratio_right"
-            )
+            "left": rospy.get_param("/odrive/ratio/meters_to_turns_ratio_left"),
+            "right": rospy.get_param("/odrive/ratio/meters_to_turns_ratio_right"),
         }
         self._turns_to_raw_ratio_by_side = {
-            'left': rospy.get_param(
-                "/odrive/ratio/turns_to_raw_ratio_left"
-            ),
-            'right': rospy.get_param(
-                "/odrive/ratio/turns_to_raw_ratio_right"
-            )
+            "left": rospy.get_param("/odrive/ratio/turns_to_raw_ratio_left"),
+            "right": rospy.get_param("/odrive/ratio/turns_to_raw_ratio_right"),
         }
         self._usb_lock = threading.Lock()
-        self._watchdog_timeout = rospy.get_param(
-            "/odrive/config/watchdog_timeout"
-        )
+        self._watchdog_timeout = rospy.get_param("/odrive/config/watchdog_timeout")
 
     def __getattr__(self, attr: Any) -> Any:
         """
@@ -141,8 +128,8 @@ class Modrive:
         """
         self._set_requested_state(AXIS_STATE_CLOSED_LOOP_CONTROL)
         self._set_velocity_ctrl()
-        self.set_vel('left', 0.0)
-        self.set_vel('right', 0.0)
+        self.set_vel("left", 0.0)
+        self.set_vel("right", 0.0)
         self._set_requested_state(AXIS_STATE_IDLE)
 
     def get_measured_current(self, axis: str) -> float:
@@ -156,14 +143,10 @@ class Modrive:
         :raises DisconnectedError: If Jetson is unable to communicate with
             ODrive.
         """
-        assert axis == "left" or axis == "right", (
-            'axis must be "left" or "right"'
-        )
+        assert axis == "left" or axis == "right", 'axis must be "left" or "right"'
         try:
             self._usb_lock.acquire()
-            measured_current = (
-                self._axes[axis].motor.current_control.Iq_measured
-            )
+            measured_current = self._axes[axis].motor.current_control.Iq_measured
         except fibre.protocol.ChannelBrokenException:
             raise DisconnectedError
         finally:
@@ -183,15 +166,10 @@ class Modrive:
         :raises DisconnectedError: If Jetson is unable to communicate with
             ODrive.
         """
-        assert axis == "left" or axis == "right", (
-            'axis must be "left" or "right"'
-        )
+        assert axis == "left" or axis == "right", 'axis must be "left" or "right"'
         try:
             self._usb_lock.acquire()
-            vel_est_m_s = (
-                self._axes[axis].encoder.vel_estimate
-                / self._meters_to_turns_ratio_by_side[axis]
-            )
+            vel_est_m_s = self._axes[axis].encoder.vel_estimate / self._meters_to_turns_ratio_by_side[axis]
         except fibre.protocol.ChannelBrokenException:
             raise DisconnectedError
         finally:
@@ -206,7 +184,7 @@ class Modrive:
         """
         try:
             self._usb_lock.acquire()
-            errors = self._axes['left'].error + self._axes['right'].error != 0
+            errors = self._axes["left"].error + self._axes["right"].error != 0
         except fibre.protocol.ChannelBrokenException:
             raise DisconnectedError
         finally:
@@ -249,18 +227,13 @@ class Modrive:
         :raises DisconnectedError: If Jetson is unable to communicate with
             ODrive.
         """
-        assert -1.0 <= vel and vel <= 1.0, 'vel must be in range [-1.0, 1.0]'
-        assert axis == "left" or axis == "right", (
-            'axis must be "left" or "right"'
-        )
+        assert -1.0 <= vel and vel <= 1.0, "vel must be in range [-1.0, 1.0]"
+        assert axis == "left" or axis == "right", 'axis must be "left" or "right"'
         try:
-            desired_input_vel_turns_s = (
-                vel * self._turns_to_raw_ratio_by_side[axis]
-            )
-            assert (-50 <= desired_input_vel_turns_s and
-                    desired_input_vel_turns_s <= 50), (
-                'magnitude of desired_input_vel_turns_sec is dangerously high'
-            )
+            desired_input_vel_turns_s = vel * self._turns_to_raw_ratio_by_side[axis]
+            assert (
+                -50 <= desired_input_vel_turns_s and desired_input_vel_turns_s <= 50
+            ), "magnitude of desired_input_vel_turns_sec is dangerously high"
             self._usb_lock.acquire()
             self._axes[axis].controller.input_vel = desired_input_vel_turns_s
         except fibre.protocol.ChannelBrokenException:
@@ -269,8 +242,7 @@ class Modrive:
             self._usb_lock.release()
 
     def watchdog_feed(self) -> None:
-        """Refreshes the ODrive watchdog feed.
-        """
+        """Refreshes the ODrive watchdog feed."""
         try:
             self._usb_lock.acquire()
             for axis in self._axes.values():
@@ -366,23 +338,24 @@ class State(object):
     """
 
     def __init__(self) -> None:
-        print('Processing current state:', str(self))
+        print("Processing current state:", str(self))
 
-    def on_event(self, event: ODriveEvent, modrive: Modrive) -> None:
+    def on_event(self, event: ODriveEvent, modrive: Modrive):
         """Handles events that are delegated to this State."""
 
-    def __repr__(self) -> None:
+    def __repr__(self) -> str:
         """Makes it so __str__ method can describe the State."""
         return self.__str__()
 
-    def __str__(self) -> None:
+    def __str__(self) -> str:
         """Returns the name of the State."""
         return self.__class__.__name__
 
 
 class ArmedState(State):
     """Reveals that the ODrive is armed."""
-    def on_event(self, event: ODriveEvent, modrive: Modrive) -> None:
+
+    def on_event(self, event: ODriveEvent, modrive: Modrive) -> State:
         """Handles events that are delegated to the Armed State."""
         if event == ODriveEvent.DISCONNECTED_ODRIVE_EVENT:
             return DisconnectedState()
@@ -393,7 +366,8 @@ class ArmedState(State):
 
 class DisconnectedState(State):
     """Reveals that the ODrive has disconnected."""
-    def on_event(self, event: ODriveEvent, modrive: Modrive) -> None:
+
+    def on_event(self, event: ODriveEvent, modrive: Modrive) -> State:
         """Handles events that are delegated to the Disconnected State."""
         if event == ODriveEvent.ARM_CMD_EVENT:
             modrive.disarm()
@@ -405,7 +379,8 @@ class DisconnectedState(State):
 
 class ErrorState(State):
     """Reveals that the ODrive is receiving errors."""
-    def on_event(self, event: ODriveEvent, modrive: Modrive) -> None:
+
+    def on_event(self, event: ODriveEvent, modrive: Modrive) -> State:
         """Handles events that are delegated to the Error State."""
         print(dump_errors(modrive.odrive, True))
         if event == ODriveEvent.ODRIVE_ERROR_EVENT:
@@ -433,13 +408,14 @@ class ODriveBridge(object):
     :param _vel_pub: A rospy Publisher object that is used for publishing
         velocity data.
     """
+
     _current_lim: float
     _id: str
     _modrive: Modrive
     _pair: str
     _speed: Speed
     _speed_lock: threading.Lock
-    _start_time: t.clock
+    _start_time: float
     _state: State
     _state_pub: rospy.Publisher
     _vel_pub: rospy.Publisher
@@ -448,20 +424,18 @@ class ODriveBridge(object):
         """Initializes the components, starting with a Disconnected State."""
         self._current_lim = rospy.get_param("/odrive/config/current_lim")
         self._speed = Speed()
-        self._modrive = None
         _odrive_ids = {
-            'front': rospy.get_param("/odrive/ids/front"),
-            'middle': rospy.get_param("/odrive/ids/middle"),
-            'back': rospy.get_param("/odrive/ids/back")}
+            "front": rospy.get_param("/odrive/ids/front"),
+            "middle": rospy.get_param("/odrive/ids/middle"),
+            "back": rospy.get_param("/odrive/ids/back"),
+        }
         self._pair = sys.argv[1]
         self._id = _odrive_ids[self._pair]
         self._speed_lock = threading.Lock()
-        self._start_time = t.clock()
+        self._start_time = t.process_time()
         self._state = DisconnectedState()
-        self._state_pub = rospy.Publisher(
-            'drive_state_data', DriveStateData, queue_size=1)
-        self._vel_pub = rospy.Publisher(
-            'drive_vel_data', DriveVelData, queue_size=1)
+        self._state_pub = rospy.Publisher("drive_state_data", DriveStateData, queue_size=1)
+        self._vel_pub = rospy.Publisher("drive_vel_data", DriveVelData, queue_size=1)
 
     def drive_vel_cmd_callback(self, ros_msg: DriveVelCmd) -> None:
         """Calls the change speeds function.
@@ -475,12 +449,12 @@ class ODriveBridge(object):
         if self._get_state_string() == "Armed":
             ros_msg.left = self._throttle(ros_msg.left)
             ros_msg.right = self._throttle(ros_msg.right)
-            self._change_speeds(ros_msg.left, ros_msg.right)
+            self._change_speeds(Speed(ros_msg.left, ros_msg.right))
 
     def ros_publish_data_loop(self) -> None:
         """Publishes velocity and current data continuously."""
         while not rospy.is_shutdown():
-            self._start_time = t.clock()
+            self._start_time = t.process_time()
             self._publish_encoder_msg()
 
     def watchdog_while_loop(self) -> None:
@@ -492,22 +466,20 @@ class ODriveBridge(object):
         """
         previously_lost_comms = True
         while not rospy.is_shutdown():
-            watchdog = t.clock() - self._start_time
+            watchdog = t.process_time() - self._start_time
             lost_comms = watchdog > 1.0
             if lost_comms:
                 if not previously_lost_comms:
                     print("loss of comms")
                     previously_lost_comms = True
-                self._change_speeds(0.0, 0.0)
+                self._change_speeds(Speed(0.0, 0.0))
             elif previously_lost_comms:
                 previously_lost_comms = False
                 print("regained comms")
             try:
                 self._update()
             except DisconnectedError:
-                self._bridge_on_event(
-                    ODriveEvent.DISCONNECTED_ODRIVE_EVENT
-                )
+                self._bridge_on_event(ODriveEvent.DISCONNECTED_ODRIVE_EVENT)
 
     def _bridge_on_event(self, event: ODriveEvent) -> None:
         """Delegates incoming events to the given states which then handle
@@ -531,12 +503,8 @@ class ODriveBridge(object):
         the range [-1.0, 1.0].
         :param speed: A speed object that has the requested speeds.
         """
-        assert -1.0 <= speed.left and speed.left <= 1.0, (
-            'speed.left must be in range[-1.0, 1.0]'
-        )
-        assert -1.0 <= speed.right and speed.right <= 1.0, (
-            'speed.right must be in range [-1.0, 1.0]'
-        )
+        assert -1.0 <= speed.left and speed.left <= 1.0, "speed.left must be in range[-1.0, 1.0]"
+        assert -1.0 <= speed.right and speed.right <= 1.0, "speed.right must be in range [-1.0, 1.0]"
         self._speed_lock.acquire()
         self._speed = Speed(speed.left, speed.right)
         self._speed_lock.release()
@@ -562,7 +530,7 @@ class ODriveBridge(object):
         :returns: A string that is the state of the ODriveBridge.
         """
         state = str(self._state)
-        return state[:len(state) - len("State")]
+        return state[: len(state) - len("State")]
 
     def _publish_encoder_helper(self, axis: str) -> None:
         """Publishes the velocity and current data of the requested axis to a
@@ -570,15 +538,13 @@ class ODriveBridge(object):
         :param axis: A string that represents which wheel to read current from.
             The string must be "left" or "right"
         """
-        assert axis == "left" or axis == "right", (
-            'axis must be "left" or "right"'
-        )
+        assert axis == "left" or axis == "right", 'axis must be "left" or "right"'
         ros_msg = DriveVelData()
         try:
             ros_msg.current_amps = self._modrive.get_measured_current(axis)
             ros_msg.vel_m_s = self._modrive.get_vel_estimate_m_s(axis)
             # e.g. "back_left" or "middle_right" or "front_left"
-            ros_msg.wheel = f'{self.pair}_{axis}'
+            ros_msg.wheel = f"{self._pair}_{axis}"
             self._vel_pub.publish(ros_msg)
         except DisconnectedError:
             return
@@ -587,8 +553,8 @@ class ODriveBridge(object):
         """Publishes the velocity and current data of all the axes to a ROS
         topic.
         """
-        self._publish_encoder_helper('left')
-        self._publish_encoder_helper('right')
+        self._publish_encoder_helper("left")
+        self._publish_encoder_helper("right")
 
     def _publish_state_msg(self, state: str) -> None:
         """Publishes the ODrive state message over ROS to a topic.
@@ -598,7 +564,7 @@ class ODriveBridge(object):
         ros_msg.state = state
         ros_msg.pair = self._pair
         self._state_pub.publish(ros_msg)
-        print(f'The state is now {state}')
+        print(f"The state is now {state}")
 
     def _throttle(self, speed: float) -> float:
         """Throttles the speed to a range of [-1.0, 1.0].
@@ -630,8 +596,8 @@ class ODriveBridge(object):
             left_speed = self._speed.left
             right_speed = self._speed.right
             self._speed_lock.release()
-            self._modrive.set_vel('left', left_speed)
-            self._modrive.set_vel('right', right_speed)
+            self._modrive.set_vel("left", left_speed)
+            self._modrive.set_vel("right", right_speed)
 
         elif str(self._state) == "DisconnectedState":
             self._connect()
@@ -653,8 +619,7 @@ def main():
     """
     rospy.init_node(f"odrive_{int(sys.argv[1])}")
     bridge = ODriveBridge()
-    rospy.Subscriber("drive_vel_cmd", DriveVelCmd,
-                     bridge.drive_vel_cmd_callback)
+    rospy.Subscriber("drive_vel_cmd", DriveVelCmd, bridge.drive_vel_cmd_callback)
     threading._start_new_thread(bridge.ros_publish_data_loop, ())
     threading._start_new_thread(bridge.watchdog_while_loop, ())
     rospy.spin()
