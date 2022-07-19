@@ -97,7 +97,6 @@ class ScienceBridge:
             bytesize=serial.EIGHTBITS,
             timeout=rospy.get_param("/science_board/serial/timeout"),
         )
-        return self
 
     def __exit__(self, exc_type, exc_value, traceback) -> None:
         """
@@ -257,7 +256,7 @@ class ScienceBridge:
         success = self._send_msg(msg)
         return success
 
-    def _format_mosfet_msg(device: int, enable: bool) -> str:
+    def _format_mosfet_msg(self, device: int, enable: bool) -> str:
         """Creates a message that can be sent over UART to command a MOSFET
         device.
 
@@ -269,7 +268,7 @@ class ScienceBridge:
             Note that this is not yet ready to be transmitted to the STM32 chip
             over UART since it is not of the proper length yet.
         """
-        tx_msg = f"$MOSFET,{device},{enable}"
+        tx_msg = f"$MOSFET,{device},{int(enable)}"
         return tx_msg
 
     def _heater_auto_shut_off_handler(self, tx_msg: str) -> Enable:
@@ -321,7 +320,7 @@ class ScienceBridge:
         """
         heater_device_string = f"heater_{device}"
         translated_device = self._mosfet_number_by_device_name[heater_device_string]
-        tx_msg = self._format_mosfet_msg(translated_device, int(enable))
+        tx_msg = self._format_mosfet_msg(translated_device, enable)
         success = self._send_msg(tx_msg)
         return success
 
@@ -335,11 +334,11 @@ class ScienceBridge:
             self._uart_lock.acquire()
             msg = self.ser.readline()
             self._uart_lock.release()
-            return str(msg)
         except serial.SerialException:
             if self._uart_lock.locked():
                 self._uart_lock.release()
             print("Errored")
+        return str(msg)
 
     def _send_mosfet_msg(self, device_name: str, enable: bool) -> bool:
         """Sends a MOSFET message on the UART transmit line to the STM32 chip.
@@ -350,7 +349,7 @@ class ScienceBridge:
         :returns: A boolean that is the success of sent UART transaction.
         """
         translated_device = self._mosfet_number_by_device_name[device_name]
-        tx_msg = self._format_mosfet_msg(translated_device, int(enable))
+        tx_msg = self._format_mosfet_msg(translated_device, enable)
         success = self._send_msg(tx_msg)
         return success
 
