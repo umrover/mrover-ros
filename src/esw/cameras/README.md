@@ -27,7 +27,7 @@ quality, and to which IPs.
 
 The Rosie '22 rover uses multiple USB cameras for every mission.
 
-The USB Cameras are connected straight into the Jetson. The Jetson views these cameras as /dev/video* depending on the order they are read into the system (e.g. /dev/video0 or /dev/video6). We have up to 8 devices connected at the same time so we cycle through these cameras and stream the desired cameras only when we need to.
+The USB Cameras are connected straight into the Jetson via USB (the Jetson does not have that many USB ports so we use a USB Hub too). The Jetson views these cameras as /dev/video* depending on the order they are read into the system (e.g. /dev/video0 or /dev/video6). We have up to 8 devices connected at the same time so we cycle through these cameras and stream the desired cameras only when we need to.
 
 The camera program running on the Jetson takes in requests of which cameras to stream and then publishes it to specific endpoints. An endpoint consists of an IP and a port. The IP is either the base station laptop, or the alternate laptop which is used only during the science mission. We stream up to 2 streams per laptop at once. 
 
