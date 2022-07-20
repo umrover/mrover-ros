@@ -11,7 +11,9 @@
 class Controller;
 
 /*
-The ControllerMap class creates a hash table of virtual Controller objects from the config file located at "mrover-workspace/config_src/motors/controller_config.json".These virtual Controllers are used to contact the physical controller on the rover, across both RA/SA configurations.
+The ControllerMap class creates a hash table of virtual Controller objects from the config file
+located at "config/motors.yaml". These virtual Controllers are used to contact the physical
+controller on the rover, across both RA/SA configurations.
 */
 class ControllerMap {
 private:
