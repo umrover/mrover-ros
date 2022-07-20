@@ -1,7 +1,7 @@
 ## Table of Contents
 
 [Project Overview](#project-overview) \
-[Hardware](#hardware) \
+[System Explaiend](#system-explained) \
 [Top-Level Code](#top-level-code) \
 [Configuration](#configuration) \
 [Topics - Subscriber](#topics---subscriber) \
@@ -31,6 +31,20 @@ Each ODrive has two axes and each axis is assigned a wheel. To simplify wiring
 and code, the axis of each ODrive are either all left or all right. Also, the
 wheels that are connected to one singular ODrive are opposite each other (i.e.
 an ODrive is assigned either the front, middle, or back wheels).
+
+---
+
+## System Explained
+
+The Rosie '22 rover has 6 brushless motors. These brushless motors are controlled by 3 ODrive motor controllers. Each ODrive motor controller controls two brushless motors. The ODrive motor controller connects to the Jetson Xavier via USB.
+
+The way the ODrives are mapped to each of the wheels is that each ODrive controls either the front pair, middle pair, or back pair of wheels. The ODrive itself receives battery voltage. It is connected to the Hall Effect sensors and the power of the wheels.
+
+The ODrives can be controlled via the ODrive Python library. Our script is able to control one ODrive, which can be identified by its ODrive ID. Because our script can only control one ODrive and we have three total ODrives to control, we run our script three times, each taking different command line arguments.
+
+Our program and the ODrive firmware also have watchdog capabilities. If the ODrive disconnects from the Jetson, then the wheels will stop moving. If the Jetson no longer receives new comms from the base station, then the wheels will stop moving. In all states, our program is able to recover (whether there be a watchdog error, ODrive error, a disconnection error, and more).
+
+In our system, if there is an error in one axis, then the corresponding axis of that same ODrive will not run (e.g. if encoder does not work for left front wheel, then the front ODrive will run into an error state, and the right front wheel will not process commands either).
 
 ---
 
