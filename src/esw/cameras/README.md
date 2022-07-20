@@ -1,6 +1,7 @@
 ## Table of Contents
 
 [Project Overview](#project-overview) \
+[System Explained](#system-explained) \
 [Top-Level Code](#top-level-code) \
 [Configuration](#configuration) \
 [Services - Server](#services---server) \
@@ -19,6 +20,24 @@
 The cameras codebase deals with managing the streams for the USB cameras on
 the rover. It manages messages that tell it which devices to stream, at which
 quality, and to which IPs.
+
+---
+
+## System Explained
+
+The Rosie '22 rover uses multiple USB cameras for every mission.
+
+The USB Cameras are connected straight into the Jetson. The Jetson views these cameras as /dev/video* depending on the order they are read into the system (e.g. /dev/video0 or /dev/video6). We have up to 8 devices connected at the same time so we cycle through these cameras and stream the desired cameras only when we need to.
+
+The camera program running on the Jetson takes in requests of which cameras to stream and then publishes it to specific endpoints. An endpoint consists of an IP and a port. The IP is either the base station laptop, or the alternate laptop which is used only during the science mission. We stream up to 2 streams per laptop at once. 
+
+Because of bandwidth issues, we choose to stream a specific number of cameras at maximum at a specific resolution quality. The number of cameras and the resolution quality is changed depending on the mission.
+
+Our program streams the cameras to a specific stream using a library called jetson-utils, which uses gstreamer. Our base station laptops listen to the streams using gstreamer in the command line.
+
+When the base station laptop listens to the stream at a particular endpoint and the Jetson is streaming camera feed to that specific endpoint, a screen will pop-up on the laptop.
+
+The people operating the base station may choose to turn off the streams whenever or switch to alternate camera views.
 
 ---
 
