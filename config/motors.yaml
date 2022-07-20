@@ -1,0 +1,140 @@
+motors:
+  test: no
+  controllers:
+    - name: "ARM_A"
+      input_voltage: 36
+      output_voltage: 24
+      voltage_multiplier: 0.44
+      nucleo: 0
+      channel: 0
+      quadCPR: -28800.0
+      kP: -0.005
+      kI: -0.0
+      inversion: -1.0
+    - name: "ARM_B"
+      input_voltage: 36
+      output_voltage: 12
+      nucleo: 0
+      channel: 1
+      quadCPR: 4096.0
+      kP: -0.1
+      kI: -0.0
+      inversion: 1.0
+    - name: "ARM_C"
+      input_voltage: 36
+      output_voltage: 24
+      nucleo: 1
+      channel: 0
+      quadCPR: 136800.0
+      kP: -0.005
+      kI: -0.0
+      inversion: 1.0
+    - name: "ARM_D"
+      input_voltage: 36
+      output_voltage: 24
+      nucleo: 1
+      channel: 1
+      quadCPR: 72000.0
+      kP: -0.005
+      kI: -0.0
+      inversion: 1.0
+    - name: "ARM_E"
+      input_voltage: 36
+      output_voltage: 24
+      nucleo: 2
+      channel: 0
+      quadCPR: -72000.0
+      kP: -0.005
+      kI: -0.0
+      inversion: 1.0
+    - name: "ARM_F"
+      input_voltage: 36
+      output_voltage: 24
+      nucleo: 2
+      channel: 1
+      quadCPR: -2048.0
+      kP: 0.05
+      kI: 0.0
+      inversion: 1.0
+    - name: "CAROUSEL_MOTOR"
+      input_voltage: 36
+      output_voltage: 12
+      nucleo: 2
+      channel: 1
+      quadCPR: -9072.0
+      kP: -0.05
+      kI: -0.0
+      inversion: 1.0
+    - name: "GIMBAL_PITCH"
+      input_voltage: 12
+      output_voltage: 12
+      nucleo: 2
+      channel: 3
+      inversion: -1.0
+    - name: "GIMBAL_YAW"
+      input_voltage: 12
+      output_voltage: 12
+      nucleo: 1
+      channel: 3
+      inversion: -1.0
+    - name: "HAND_FINGER"
+      input_voltage: 12
+      output_voltage: 12
+      nucleo: 2
+      channel: 2
+      inversion: 1.0
+    - name: "HAND_GRIP"
+      input_voltage: 12
+      output_voltage: 12
+      nucleo: 1
+      channel: 2
+      inversion: 1.0
+    - name: "SA_A"
+      input_voltage: 36
+      output_voltage: 24
+      voltage_multiplier: 0.44
+      nucleo: 0
+      channel: 0
+      quadCPR: -28800.0
+      kP: -0.005
+      kI: -0.0
+      inversion: -1.0
+    - name: "SA_B"
+      input_voltage: 36
+      output_voltage: 12
+      nucleo: 0
+      channel: 1
+      quadCPR: 4096.0
+      kP: -0.1
+      kI: -0.0
+      inversion: 1.0
+    - name: "SA_C"
+      input_voltage: 36
+      output_voltage: 24
+      nucleo: 1
+      channel: 0
+      quadCPR: 136800.0
+      kP: -0.005
+      kI: -0.0
+      inversion: 1.0
+    - name: "SA_E"
+      input_voltage: 36
+      output_voltage: 24
+      nucleo: 2
+      channel: 0
+      quadCPR: -72000.0
+      kP: -0.005
+      kI: -0.0
+      inversion: 1.0
+    - name: "SCIENCE_HAND_SCOOP"
+      input_voltage: 12
+      output_voltage: 12
+      nucleo: 1
+      channel: 2
+      inversion: 1.0
+    - name: "SCIENCE_HAND_SENSOR"
+      input_voltage: 12
+      output_voltage: 12
+      nucleo: 2
+      channel: 2
+      inversion: 1.0

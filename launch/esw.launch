@@ -1,0 +1,4 @@
+<launch>
+  <node name="motors" pkg="mrover" type="motors" />
+  <rosparam command="load" file="$(find mrover)/config/motors.yaml" />
+</launch>
