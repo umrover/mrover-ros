@@ -446,6 +446,7 @@ class ODriveBridge(object):
         :param ros_msg: A ROS message that has two floats that represents the
             requested speeds for the left and right wheels.
         """
+        self._start_time = t.process_time()
         if self._get_state_string() == "Armed":
             ros_msg.left = self._throttle(ros_msg.left)
             ros_msg.right = self._throttle(ros_msg.right)
@@ -454,7 +455,6 @@ class ODriveBridge(object):
     def ros_publish_data_loop(self) -> None:
         """Publishes velocity and current data continuously."""
         while not rospy.is_shutdown():
-            self._start_time = t.process_time()
             self._publish_encoder_msg()
 
     def watchdog_while_loop(self) -> None:
