@@ -20,22 +20,24 @@ from typing import Any, Dict
 
 import fibre
 import odrive as odv
-from odv import find_any
 import rospy
 from mrover.msg import DriveStateData, DriveVelCmd, DriveVelData
 from odrive.enums import AXIS_STATE_CLOSED_LOOP_CONTROL, AXIS_STATE_IDLE, CONTROL_MODE_VELOCITY_CONTROL
 from odrive.utils import dump_errors
 
 
-@dataclass(eq=False)
 class Speed:
     """Stores speed info.
     :var left: A float that is the speed of the left wheel.
     :var right: A float that is the speed of the right wheel
     """
 
-    left: float = 0.0
-    right: float = 0.0
+    left: float
+    right: float
+
+    def __init__(self, left: float = 0.0, right: float = 0.0) -> None:
+        self.left = left
+        self.right = right
 
     def __eq__(self, other):
         """Overrides the equality comparator operator."""
@@ -131,6 +133,10 @@ class Modrive:
         self.set_vel("left", 0.0)
         self.set_vel("right", 0.0)
         self._set_requested_state(AXIS_STATE_IDLE)
+
+    def dump_errors(self) -> None:
+        """Dump errors and prints them out."""
+        print(dump_errors(self._odrive, True))
 
     def get_measured_current(self, axis: str) -> float:
         """Returns the measured current of the requested axis of the ODrive in
@@ -382,7 +388,7 @@ class ErrorState(State):
 
     def on_event(self, event: ODriveEvent, modrive: Modrive) -> State:
         """Handles events that are delegated to the Error State."""
-        print(dump_errors(modrive.odrive, True))
+        modrive.dump_errors()
         if event == ODriveEvent.ODRIVE_ERROR_EVENT:
             return DisconnectedState()
         return self
