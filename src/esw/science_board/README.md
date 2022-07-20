@@ -1,7 +1,7 @@
 ## Table of Contents
 
 [Project Overview](#project-overview) \
-[Hardware](#hardware) \
+[System Overview](#system-overview) \
 [Top-Level Code](#top-level-code) \
 [Configuration](#configuration) \
 [Services - Server](#services---server) \
@@ -13,6 +13,7 @@
 ---
 
 ## Project Overview
+
 The science_board codebase deals with reading and parsing NMEA like messages
 from the STM32 chip on the science PCB over UART to complete tasks for almost
 every mission. These tasks include operating the science box and getting
@@ -22,10 +23,29 @@ Autonomous Traversal task.
 
 ---
 
-## Hardware
-- NVIDIA JetsonNX
-- PCB with a STM32G050C8 chip
-- RX/TX connection cables 
+## System Overview
+
+Almost all of the onboard science system is controlled by the science board.
+
+The science system can be described as follows: On the rover is a carousel that houses three sites that have instruments to test soil samples. Soil is deposited on the top of carousel to one of the sites, where the soil travels through funnels to beakers that test for different things.
+
+Each site has their own thermistor, heater, spectral sensor, and servos motors. The thermistor and heater are used for the ninhydrin test. The servo motors are used for the strip test to test for ammonia, nitrates, and nitrites as well as pH. The servo motors dip the strips into the solution containing the soil.  The spectral sensor is used for the autofluorescence test which tests for chlorophyll.
+
+A shared UV LED is used inside the carousel for all the sites, as well as a white LED to aid with camera viewing.
+
+Because many of these functions require just the presence or absence of a voltage difference, we use MOSFETs for many of our devices. The high level view of the MOSFET is that our science board sets the voltage of a particular MOSFET high and the corresponding device turns on.
+
+Our science board has an STM32 chip which we write code for that controls all the logic flow for controlling the MOSFET, reading in spectral data, reading in thermistor data, and controlling the servo sensors. Here, the MOSFET is controlled via output pins from the science board.
+
+The three spectral sensors are close to identical. The communication protocol between the science board and the spectral sensors is I2C, which requires each of the slave devices to have different addresses. Thus, we use an I2C mux.
+
+The thermistor data is read in through the STM32 chip's ADC input pins.
+
+The servo sensors are commanded via PWM (where a certain PWM corresponds to a certain angle).
+
+The Jetson is the one that runs the program to connect the science board system to the ROS network. A script runs on the Jetson to run all the logic to handle this connection.
+
+The Jetson is connected to the STM32 chip via USART. NMEA-like messages are used to transmit information via USART.
 
 ---
 
