@@ -72,15 +72,22 @@ catkin_python_setup()
 add_message_files(
         FILES
         Course.msg
+        Enable.msg
+        Heater.msg
+        Spectral.msg
+        Thermistor.msg
+        Triad.msg
         Waypoint.msg
 )
 
-## Generate services in the 'srv' folder
-# add_service_files(
-#   FILES
-#   Service1.srv
-#   Service2.srv
-# )
+# Generate services in the 'srv' folder
+add_service_files(
+  FILES
+  ChangeAutonLEDState.srv
+  ChangeDeviceState.srv
+  ChangeHeaterState.srv
+  ChangeServoAngles.srv
+)
 
 ## Generate actions in the 'action' folder
 # add_action_files(

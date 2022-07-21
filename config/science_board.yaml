@@ -1,0 +1,21 @@
+science_board:
+  color_ids:
+    red: 0
+    blue: 1
+    green: 2
+    "off": 3
+  device_mosfet_numbers:
+    arm_laser: 1
+    heater_0: 7
+    heater_1: 8
+    heater_2: 9
+    uv_led_carousel: 4
+    uv_led_end_effector: 1
+    white_led: 5
+  serial:
+    baud_rate: 38400
+    timeout: 0
+    port: "/dev/ttyTHS0"
+  info:
+    sleep: 0.01
+    uart_transmit_msg_len: 30

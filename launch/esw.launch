@@ -1,0 +1,7 @@
+<launch>
+  <!--
+    Operate science board for Auton, ES, and Science missions.
+  -->
+  <node name="science_board" pkg="mrover" type="science_board.py"></node>
+  <rosparam command="load" file="$(find mrover)/config/science_board.yaml" />
+</launch>
