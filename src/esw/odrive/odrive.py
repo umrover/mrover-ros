@@ -624,7 +624,7 @@ def main():
         - A thread to continuously monitor comms between base station and
             Jetson to act as watchdog.
     """
-    rospy.init_node(f"odrive_{int(sys.argv[1])}")
+    rospy.init_node(f"odrive_{sys.argv[1]}")
     bridge = ODriveBridge()
     rospy.Subscriber("drive_vel_cmd", DriveVelCmd, bridge.drive_vel_cmd_callback)
     threading._start_new_thread(bridge.ros_publish_data_loop, ())
