@@ -555,6 +555,9 @@ class ODriveBridge(object):
             self._vel_pub.publish(ros_msg)
         except DisconnectedError:
             return
+        except AttributeError:
+            # since self._modrive may be None if not connected yet
+            return
 
     def _publish_encoder_msg(self) -> None:
         """Publishes the velocity and current data of all the axes to a ROS
