@@ -132,7 +132,7 @@ class Pipeline:
             if video_sources[self.device_number] is not None:
                 self.update_video_output()
             else:
-                print(
+                rospy.logwarn(
                     f"Unable to play camera {dev_index} on \
                     {self.video_info.endpoint}."
                 )
@@ -152,7 +152,7 @@ class Pipeline:
                 f"rtp://{self.video_info.endpoint}", argv=self.video_info.arguments
             )
         except Exception:
-            print(
+            rospy.logerror(
                 f"Update video output failed on endpoint \
                 {self.video_info.endpoint}."
             )
@@ -309,7 +309,7 @@ class PipelineManager:
             has failed.
         """
         failed_device = self._pipelines[pipe_index].device_number
-        print(
+        rospy.logerror(
             f"Camera {failed_device} capture \
             on {self._get_endpoint(pipe_index)} \
             failed. Stopping stream."
@@ -461,7 +461,7 @@ class PipelineManager:
         self._video_source_lock.acquire()
         self._pipelines[pipe_index].update_device_number(dev_index, self._video_sources)
         self._video_source_lock.release()
-        print(
+        rospy.loginfo(
             f"Playing camera {dev_index} on \
             {self._get_endpoint(pipe_index)}."
         )
@@ -509,7 +509,7 @@ class PipelineManager:
         """
         assert mission_name.islower(), "mission_name should be lower case"
         if not self._is_mission_name_valid(mission_name):
-            print("Invalid mission name. Not changing the mission.")
+            rospy.logwarn("Invalid mission name. Not changing the mission.")
             return
         if self._current_mission == mission_name:
             return
