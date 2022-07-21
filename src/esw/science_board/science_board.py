@@ -208,13 +208,13 @@ class ScienceBridge:
         match_found = False
         for tag, handler_func in self._handler_function_by_tag.items():
             if tag in tx_msg:
-                print(tx_msg)
+                rospy.loginfo(tx_msg)
                 match_found = True
                 ros_msg: Any = handler_func(tx_msg)
                 self._ros_publisher_by_tag[tag].publish(ros_msg)
                 break
         if (not match_found) and (not tx_msg):
-            print(f"Error decoding message stream: {tx_msg}")
+            rospy.loginfo(f"Error decoding message stream: {tx_msg}")
         rospy.sleep(self._sleep)
 
     def _add_padding(self, tx_msg: str) -> str:
@@ -337,7 +337,7 @@ class ScienceBridge:
         except serial.SerialException:
             if self._uart_lock.locked():
                 self._uart_lock.release()
-            print("Errored")
+            rospy.logerror("Errored in _read_msg")
         return str(msg)
 
     def _send_mosfet_msg(self, device_name: str, enable: bool) -> bool:
@@ -364,7 +364,7 @@ class ScienceBridge:
             tx_msg = self._add_padding(tx_msg)
             if len(tx_msg) > self._uart_transmit_msg_len:
                 tx_msg = tx_msg[: self._uart_transmit_msg_len]
-            print(tx_msg)
+            rospy.loginfo(tx_msg)
             self._uart_lock.acquire()
             self.ser.close()
             self.ser.open()
@@ -374,7 +374,7 @@ class ScienceBridge:
         except serial.SerialException as exc:
             if self._uart_lock.locked():
                 self._uart_lock.release()
-            print("_send_msg exception:", exc)
+            rospy.logerror(f"Error in _send_msg: {exc}")
         return False
 
     def _servo_transmit(self, angles: List[float]) -> bool:
