@@ -137,7 +137,7 @@ class Modrive:
 
     def dump_errors(self) -> None:
         """Dump errors and prints them out."""
-        print(dump_errors(self._odrive, True))
+        rospy.loginfo(dump_errors(self._odrive, True))
 
     def get_measured_current(self, axis: str) -> float:
         """Returns the measured current of the requested axis of the ODrive in
@@ -204,7 +204,7 @@ class Modrive:
         This function is usually called if the ODrive has previously errored
         out or was disconnected.
         """
-        print("Resetting watchdog")
+        rospy.loginfo("Resetting watchdog")
         self._disable_watchdog()
         self._reset_errors()
         self._enable_watchdog()
@@ -255,7 +255,7 @@ class Modrive:
             for axis in self._axes.values():
                 axis.watchdog_feed()
         except fibre.protocol.ChannelBrokenException:
-            print("Failed in watchdog_feed. Unplugged")
+            rospy.logerror("Failed in watchdog_feed. Unplugged")
             raise DisconnectedError
         finally:
             self._usb_lock.release()
@@ -272,7 +272,7 @@ class Modrive:
                 axis.watchdog_feed()
                 axis.config.enable_watchdog = True
         except fibre.protocol.ChannelBrokenException:
-            print("Failed in _enable_watchdog. Unplugged")
+            rospy.logerror("Failed in _enable_watchdog. Unplugged")
             raise DisconnectedError
         finally:
             self._usb_lock.release()
@@ -288,7 +288,7 @@ class Modrive:
                 axis.config.watchdog_timeout = 0
                 axis.config.enable_watchdog = False
         except fibre.protocol.ChannelBrokenException:
-            print("Failed in _disable_watchdog. Unplugged")
+            rospy.logerror("Failed in _disable_watchdog. Unplugged")
             raise DisconnectedError
         finally:
             self._usb_lock.release()
@@ -345,7 +345,7 @@ class State(object):
     """
 
     def __init__(self) -> None:
-        print("Processing current state:", str(self))
+        rospy.loginfo("Processing current state:", str(self))
 
     def on_event(self, event: ODriveEvent, modrive: Modrive):
         """Handles events that are delegated to this State."""
@@ -477,12 +477,12 @@ class ODriveBridge(object):
             lost_comms = watchdog > 1.0
             if lost_comms:
                 if not previously_lost_comms:
-                    print("loss of comms")
+                    rospy.loginfo("Lost comms")
                     previously_lost_comms = True
                 self._change_speeds(Speed(0.0, 0.0))
             elif previously_lost_comms:
                 previously_lost_comms = False
-                print("regained comms")
+                rospy.loginfo("Regained comms")
             try:
                 self._update()
             except DisconnectedError:
@@ -499,7 +499,7 @@ class ODriveBridge(object):
             switching of states.
         """
         try:
-            print("on event called, ODrive event:", event)
+            rospy.loginfo("On event called, ODrive event:", event)
             self._state = self._state.on_event(event, self._modrive)
             self._publish_state_msg(self._get_state_string())
         except DisconnectedError:
@@ -521,11 +521,10 @@ class ODriveBridge(object):
 
         This uses the ODrive library to look for an ODrive by its ID.
         """
-        print("looking for ODrive")
         odrive_id = self._id
-        print(odrive_id)
+        rospy.loginfo(f"Looking for ODrive with ID {odrive_id}")
         odrive = odv.find_any(serial_number=odrive_id)
-        print("found odrive")
+        rospy.loginfo("Found ODrive")
         self._modrive = Modrive(odrive)
         self._modrive.set_current_lim(self._current_lim)
 
@@ -574,7 +573,7 @@ class ODriveBridge(object):
         ros_msg.state = state
         ros_msg.pair = self._pair
         self._state_pub.publish(ros_msg)
-        print(f"The state is now {state}")
+        rospy.loginfo(f"The state is now {state}")
 
     def _throttle(self, speed: float) -> float:
         """Throttles the speed to a range of [-1.0, 1.0].
