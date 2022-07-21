@@ -26,10 +26,7 @@ class WaypointState(BaseState):
         add_input_keys = add_input_keys or []
         add_output_keys = add_output_keys or []
         super().__init__(
-            context,
-            add_outcomes + ["waypoint_traverse", "single_fiducial", "done"],
-            add_input_keys,
-            add_output_keys,
+            context, add_outcomes + ["waypoint_traverse", "single_fiducial", "done"], add_input_keys, add_output_keys
         )
 
     def waypoint_pose(self, wp_idx: int) -> SE3:
@@ -42,11 +39,7 @@ class WaypointState(BaseState):
         try:
             fid_pose = self.context.get_transform(f"fiducial{fid_id}")
             return fid_pose.position_vector()
-        except (
-            tf2_ros.LookupException,
-            tf2_ros.ConnectivityException,
-            tf2_ros.ExtrapolationException,
-        ):
+        except (tf2_ros.LookupException, tf2_ros.ConnectivityException, tf2_ros.ExtrapolationException):
             return None
 
     def current_waypoint(self, ud) -> Optional[Waypoint]:
@@ -84,10 +77,7 @@ class WaypointState(BaseState):
         try:
             waypoint_pos = self.waypoint_pose(ud.waypoint_index).position_vector()
             cmd_vel, arrived = get_drive_command(
-                waypoint_pos,
-                self.context.get_rover_pose(),
-                STOP_THRESH,
-                DRIVE_FWD_THRESH,
+                waypoint_pos, self.context.get_rover_pose(), STOP_THRESH, DRIVE_FWD_THRESH
             )
             if arrived:
                 if current_waypoint.fiducial_id == NO_FIDUCIAL:
@@ -97,11 +87,7 @@ class WaypointState(BaseState):
                     # We finished a waypoint associated with a fiducial id, but we have not seen it yet.
                     return "single_fiducial"
             self.context.drive_command(cmd_vel)
-        except (
-            tf2_ros.LookupException,
-            tf2_ros.ConnectivityException,
-            tf2_ros.ExtrapolationException,
-        ):
+        except (tf2_ros.LookupException, tf2_ros.ConnectivityException, tf2_ros.ExtrapolationException):
             # TODO: probably go into some waiting state
             pass
 

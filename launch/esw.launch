@@ -1,0 +1,7 @@
+<launch>
+  <!--
+    Operate Jetson cameras for all missions.
+  -->
+  <node name="cameras" pkg="mrover" type="cameras.py"></node>
+  <rosparam command="load" file="$(find mrover)/config/cameras.yaml" />
+</launch>
