@@ -149,17 +149,27 @@ Publisher: science_board \
 Subscriber: gui
 
 #### Spectral Data
-Message: [`Spectral.msg`](../../../msg/Spectral.msg) "science/spectral_data" \
+Message: [`Spectral.msg`](../../../msg/Spectral.msg) "science/spectral" \
 Publisher: science_board \
 Subscriber: gui
 
 #### Spectral Triad Data
-Message: [`Triad.msg`](../../../msg/Triad.msg) "science/spectral_triad_data" \
+Message: [`Triad.msg`](../../../msg/Triad.msg) "science/spectral_triad" \
 Publisher: science_board \
 Subscriber: gui
 
-#### Thermistor Data
-Message: [`Thermistor.msg`](../../../msg/Thermistor.msg) "science/thermistor_data" \
+#### Thermistor 0 Data
+Message: [Temperature.msg](https://docs.ros.org/en/melodic/api/sensor_msgs/html/msg/Temperature.html) "science/thermistor_0" \
+Publisher: science_board \
+Subscriber: gui
+
+#### Thermistor 1 Data
+Message: [Temperature.msg](https://docs.ros.org/en/melodic/api/sensor_msgs/html/msg/Temperature.html) "science/thermistor_1" \
+Publisher: science_board \
+Subscriber: gui
+
+#### Thermistor 2 Data
+Message: [Temperature.msg](https://docs.ros.org/en/melodic/api/sensor_msgs/html/msg/Temperature.html) "science/thermistor_2" \
 Publisher: science_board \
 Subscriber: gui
 
