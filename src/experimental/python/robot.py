@@ -6,7 +6,7 @@ from typing import Tuple, Union
 import numpy as np
 
 
-@dataclass # type: ignore
+@dataclass  # type: ignore
 class Robot(ABC):
     """
     Generic robot dynamics model x' = f(x, u)
@@ -31,7 +31,7 @@ class Robot(ABC):
         """
 
 
-@dataclass # type: ignore
+@dataclass  # type: ignore
 class LinearRobot(Robot):
     """
     Discrete time LTI dynamics model x' = Ax + Bu
