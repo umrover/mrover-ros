@@ -32,8 +32,8 @@ class Trajectory:
     def get_poses_lookahead(self, start_time: float, N: float, dt: float) -> np.ndarray:
         """
         Retrieves the poses of the trajectory from the start time to
-        start time + duration at the given time discretization by 
-        linearly interpolating between the specified points of the 
+        start time + duration at the given time discretization by
+        linearly interpolating between the specified points of the
         trajectory.
 
         """
@@ -42,7 +42,14 @@ class Trajectory:
 
 
 class PoseMPC(Controller):
-    def __init__(self, traj: Trajectory, Q: np.ndarray, max_vel: np.ndarray, horizon: float, dt: float):
+    def __init__(
+        self,
+        traj: Trajectory,
+        Q: np.ndarray,
+        max_vel: np.ndarray,
+        horizon: float,
+        dt: float,
+    ):
         """
         Generates control inputs to make a robot track the given trajectory.
         Minimizes 1/2 e'Qe where e represents the vector of pose errors over

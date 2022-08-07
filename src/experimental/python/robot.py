@@ -27,8 +27,7 @@ class Robot(ABC):
 
     @abstractmethod
     def get_drawable(self) -> Tuple[np.ndarray, float]:
-        """ Our sim can draw a 2d robot with a position and orientation
-        """
+        """Our sim can draw a 2d robot with a position and orientation"""
 
 
 @dataclass  # type: ignore
@@ -57,7 +56,7 @@ class UnicycleKinematics(Robot):
     y' = v sin (theta)
     theta' = omega
 
-    With control inputs: v, omega. 
+    With control inputs: v, omega.
     """
 
     def get_drawable(self) -> Tuple[np.ndarray, float]:
@@ -66,7 +65,7 @@ class UnicycleKinematics(Robot):
     def update_state(self, u: np.ndarray, dt: float, noise_cov: Union[np.ndarray, None] = None) -> np.ndarray:
         """
         Provides a first-order discrete time Euler integration update
-        Optionally introduce additive zero mean white gaussian noise 
+        Optionally introduce additive zero mean white gaussian noise
         """
         if noise_cov is None:
             noise_cov = np.zeros((3, 3))
@@ -90,6 +89,12 @@ class LinearUnicycleKinematics(LinearRobot):
 
     @classmethod
     def from_dt(cls, x: np.ndarray, u: np.ndarray, dt: float) -> LinearUnicycleKinematics:
-        A = np.array([[1, 0, -u[0] * np.sin(x[2]) * dt], [0, 1, u[0] * np.cos(x[2]) * dt], [0, 0, 1]])
+        A = np.array(
+            [
+                [1, 0, -u[0] * np.sin(x[2]) * dt],
+                [0, 1, u[0] * np.cos(x[2]) * dt],
+                [0, 0, 1],
+            ]
+        )
         B = np.array([[np.cos(x[2]) * dt, 0], [np.sin(x[2]) * dt, 0], [0, dt]])
         return LinearUnicycleKinematics(x, A, B)
