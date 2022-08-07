@@ -1,0 +1,3 @@
+[submodule "src/experimental/python/mpc-trajectory-tracker"]
+	path = src/experimental/python/mpc-trajectory-tracker
+	url = https://github.com/niwhsa9/mpc-trajectory-tracker.git
