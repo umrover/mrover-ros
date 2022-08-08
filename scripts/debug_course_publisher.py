@@ -7,9 +7,11 @@ import tf2_ros
 from geometry_msgs.msg import TransformStamped
 
 from mrover.msg import Course, Waypoint
+import mrover.srv
 
 
 def send_waypoint(frame_id: str, x: float, y: float, fid_id: int = -1) -> Waypoint:
+    tf_broadcaster = tf2_ros.TransformBroadcaster()
     t = TransformStamped()
     t.header.stamp = rospy.Time.now()
     t.header.frame_id = "odom"
@@ -18,6 +20,7 @@ def send_waypoint(frame_id: str, x: float, y: float, fid_id: int = -1) -> Waypoi
     t.transform.translation.y = y
     t.transform.rotation.w = 1
     tf_broadcaster.sendTransform(t)
+    print(f'sending {frame_id}')
     w = Waypoint()
     w.fiducial_id = fid_id
     w.tf_id = frame_id
@@ -26,14 +29,12 @@ def send_waypoint(frame_id: str, x: float, y: float, fid_id: int = -1) -> Waypoi
 
 if __name__ == "__main__":
     rospy.init_node("debug_course_publisher")
-    tf_broadcaster = tf2_ros.TransformBroadcaster()
-    course_publisher = rospy.Publisher("course", Course)
+
+    publish_course = rospy.ServiceProxy('course_service', mrover.srv.PublishCourse)
+
+    c = Course()
+    c.waypoints.append(send_waypoint("course1", -3, -3))
+    c.waypoints.append(send_waypoint("course2", -5, -5, 0))
+    publish_course(c)
     while not rospy.is_shutdown():
-        c = Course()
-        c.waypoints.append(send_waypoint("course1", -3, -3))
-        c.waypoints.append(send_waypoint("course2", -5, -5, 0))
-        # c.waypoints.append(send_waypoint('course1', -5, -5))
-        # c.waypoints.append(send_waypoint('course2', -5, 5))
-        # c.waypoints.append(send_waypoint('course3', 5, 5, 1))
-        time.sleep(0.1)
-        course_publisher.publish(c)
+        pass

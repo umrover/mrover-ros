@@ -11,6 +11,7 @@ from context import Context
 from single_fiducial import SingleFiducialState
 from state import DoneState
 from waypoint import WaypointState
+from search import SearchState
 
 
 class Navigation(threading.Thread):
@@ -28,11 +29,17 @@ class Navigation(threading.Thread):
         self.sis.start()
         with self.state_machine:
             self.state_machine.add(
+                "DoneState",
+                DoneState(self.context),
+                transitions={"waypoint_traverse": "WaypointState", "done": "DoneState"},
+            )
+            self.state_machine.add(
                 "WaypointState",
                 WaypointState(self.context),
                 transitions={
                     "waypoint_traverse": "WaypointState",
                     "single_fiducial": "SingleFiducialState",
+                    "search" : "SearchState",
                     "done": "DoneState",
                 },
             )
@@ -42,13 +49,17 @@ class Navigation(threading.Thread):
                 transitions={
                     "waypoint_traverse": "WaypointState",
                     "single_fiducial": "SingleFiducialState",
+                    "search" : "SearchState",
                     "done": "DoneState",
                 },
             )
             self.state_machine.add(
-                "DoneState",
-                DoneState(self.context),
-                transitions={"waypoint_traverse": "WaypointState", "done": "DoneState"},
+                "SearchState",
+                SearchState(self.context),
+                transitions={
+                    "waypoint_traverse": "WaypointState",
+                    "single_fiducial": "SingleFiducialState",
+                },
             )
 
     def run(self):

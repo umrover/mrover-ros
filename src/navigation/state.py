@@ -56,10 +56,10 @@ class DoneState(BaseState):
 
     def evaluate(self, ud):
         # Check if we have a course to traverse
-        if self.context.course and ud.waypoint_index != len(self.context.course.waypoints):
+        if self.context.course and (not self.context.course.is_complete()):
             return "waypoint_traverse"
 
         # Stop rover
         cmd_vel = Twist()
-        self.context.drive_command(cmd_vel)
+        self.context.rover.send_drive_command(cmd_vel)
         return "done"
