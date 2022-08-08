@@ -1,11 +1,16 @@
 from __future__ import annotations
 from typing import List
+from black import color_diff
 
 import numpy as np
 
 from context import Context
 from state import BaseState
 from dataclasses import dataclass
+from drive import get_drive_command
+
+STOP_THRESH = 0.2
+DRIVE_FWD_THRESH = 0.95
 
 @dataclass
 class SearchTrajectory:
@@ -13,6 +18,19 @@ class SearchTrajectory:
     coordinates : np.ndarray
     # Associated fiducial for this trajectory
     fid_id : int
+    # pt
+    cur_pt : int = 0
+
+    def get_cur_pt(self) -> np.ndarray:
+        return self.coordinates[self.cur_pt]
+    
+    def inc_pt(self) -> bool:
+        """
+        Increments the tracked point in the trajectory, returns true if
+        the trajectory is finished
+        """
+        self.cur_pt += 1
+        return self.cur_pt >= len(self.coordinates)
 
     @classmethod
     def spiral_traj(cls, center: np.ndarray, num_turns: int, distance: int, fid_id : int) -> SearchTrajectory:
@@ -37,7 +55,7 @@ class SearchTrajectory:
         # also make sure to add the center coordinate in here too so the spiral is in
         # the correct location
         coordinates = np.cumsum(np.vstack((center, deltas)), axis=0)
-        return SearchTrajectory(coordinates, fid_id)
+        return SearchTrajectory(np.hstack((coordinates, np.zeros(coordinates.shape[0]).reshape(-1, 1) )), fid_id)
 
 class SearchState(BaseState):
     def __init__(
@@ -46,21 +64,33 @@ class SearchState(BaseState):
     ):
         super().__init__(
             context,
-            add_outcomes=["waypoint_traverse", "single_fiducial"],
+            add_outcomes=["waypoint_traverse", "single_fiducial", "search"],
         )
         self.traj = None
 
     def evaluate(self, ud):
         # Check if a path has been generated and its associated with the same
-        # waypoint as the previous one  
-        if self.traj is None:
-            self.traj = SearchTrajectory.spiral_traj()
+        # waypoint as the previous one. Generate one if not
+        waypoint = self.context.course.current_waypoint()
+        if self.traj is None or self.traj.fid_id != waypoint.fiducial_id:
+            self.traj = SearchTrajectory.spiral_traj(
+                self.context.rover.get_pose().position_vector()[0:2], 5, 2, waypoint.fiducial_id)
 
-        # if so continue executing this path from wherever it left off
+        # continue executing this path from wherever it left off
+        target_pos = self.traj.get_cur_pt()
+        cmd_vel, arrived = get_drive_command(
+            target_pos,
+            self.context.rover.get_pose(),
+            STOP_THRESH,
+            DRIVE_FWD_THRESH,
+        )
+        if arrived:
+            # if we finish the spiral without seeing the fiducial, move on with course
+            if self.traj.inc_pt():
+                return "waypoint_traverse"
 
-        # otherwise we generate a new path
 
+        self.context.rover.send_drive_command(cmd_vel)
         # if we see the fiduicial, go to the fiducial state
 
-        # if we finish the spiral without seeing the fiducial, move on with course
-        return "waypoint_traverse"
+        return "search"

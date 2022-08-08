@@ -36,8 +36,9 @@ if __name__ == "__main__":
 
     # These are the waypoints (name, x, y, fiducial) 
     waypoints = [
-        ("course1", -3, -3),
-        ("course2", -5, -5, 0)
+        ("course1", 3, 3,0),
+        #("course1", -3, -3),
+        #("course2", -5, -5, 0)
     ]
 
     # This executes an RPC that gives the state machine the course

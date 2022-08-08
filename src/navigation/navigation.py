@@ -59,6 +59,7 @@ class Navigation(threading.Thread):
                 transitions={
                     "waypoint_traverse": "WaypointState",
                     "single_fiducial": "SingleFiducialState",
+                    "search" : "SearchState",
                 },
             )
 
