@@ -19,7 +19,7 @@ class SingleFiducialState(WaypointState):
         :param ud:  State machine user data
         :return:    Next state
         """
-        fid_pos = self.context.env.current_fid_pos(ud)
+        fid_pos = self.context.env.current_fid_pos()
         if fid_pos is None:
             # We have arrived at the waypoint where the fiducial should be but we have not seen it yet
             # TODO: add more advanced logic than just driving forward

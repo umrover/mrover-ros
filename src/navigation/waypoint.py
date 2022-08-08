@@ -46,7 +46,7 @@ class WaypointState(BaseState):
 
         # Go into the single fiducial state if we see it early
         if (current_waypoint.fiducial_id != Environment.NO_FIDUCIAL and 
-            self.context.env.current_fid_pos(ud) is not None):
+            self.context.env.current_fid_pos() is not None):
             return "single_fiducial"
 
         # Attempt to find the waypoint in the TF tree and drive to it

@@ -38,7 +38,7 @@ class Environment:
         if it exists, otherwise returns None
         """
         try:
-            fid_pose = self.context.get_transform(f"fiducial{fid_id}")
+            fid_pose = self.ctx.get_transform(f"fiducial{fid_id}")
             return fid_pose.position_vector()
         except (
             tf2_ros.LookupException,
@@ -47,11 +47,11 @@ class Environment:
         ):
             return None
     
-    def current_fid_pos(self, ud) -> Optional[np.ndarray]:
+    def current_fid_pos(self) -> Optional[np.ndarray]:
         """
         Retrieves the position of the current fiducial
         """
-        current_waypoint = self.current_waypoint(ud)
+        current_waypoint = self.ctx.course.current_waypoint()
         if current_waypoint is None or current_waypoint.fiducial_id == self.NO_FIDUCIAL:
             return None
 
@@ -91,7 +91,7 @@ class Course:
         return self.course_data.waypoints[self.waypoint_index]
     
     def is_complete(self):
-        return self.current_waypoint == len(self.course_data.waypoints)
+        return self.waypoint_index == len(self.course_data.waypoints)
 
 class Context:
     tf_buffer: tf2_ros.Buffer
