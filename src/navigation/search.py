@@ -25,7 +25,7 @@ class SearchTrajectory:
     def get_cur_pt(self) -> np.ndarray:
         return self.coordinates[self.cur_pt]
 
-    def inc_pt(self) -> bool:
+    def increment_point(self) -> bool:
         """
         Increments the tracked point in the trajectory, returns true if
         the trajectory is finished
@@ -89,7 +89,7 @@ class SearchState(BaseState):
         )
         if arrived:
             # if we finish the spiral without seeing the fiducial, move on with course
-            if self.traj.inc_pt():
+            if self.traj.increment_point():
                 return "waypoint_traverse"
 
         self.context.rover.send_drive_command(cmd_vel)

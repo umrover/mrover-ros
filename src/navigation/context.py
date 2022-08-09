@@ -68,7 +68,7 @@ class Course:
     # Currently active waypoint
     waypoint_index: int = 0
 
-    def inc_waypoint(self):
+    def increment_waypoint(self):
         self.waypoint_index += 1
 
     def waypoint_pose(self, wp_idx: int) -> SE3:
