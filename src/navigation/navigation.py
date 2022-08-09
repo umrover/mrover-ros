@@ -39,7 +39,7 @@ class Navigation(threading.Thread):
                 transitions={
                     "waypoint_traverse": "WaypointState",
                     "single_fiducial": "SingleFiducialState",
-                    "search" : "SearchState",
+                    "search": "SearchState",
                     "done": "DoneState",
                 },
             )
@@ -49,7 +49,7 @@ class Navigation(threading.Thread):
                 transitions={
                     "waypoint_traverse": "WaypointState",
                     "single_fiducial": "SingleFiducialState",
-                    "search" : "SearchState",
+                    "search": "SearchState",
                     "done": "DoneState",
                 },
             )
@@ -59,7 +59,7 @@ class Navigation(threading.Thread):
                 transitions={
                     "waypoint_traverse": "WaypointState",
                     "single_fiducial": "SingleFiducialState",
-                    "search" : "SearchState",
+                    "search": "SearchState",
                 },
             )
 

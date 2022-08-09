@@ -10,9 +10,10 @@ from typing import ClassVar, Optional
 import numpy as np
 from dataclasses import dataclass
 
+
 @dataclass
 class Rover:
-    ctx : Context
+    ctx: Context
 
     def get_pose(self) -> SE3:
         return self.ctx.get_transform("base_link")
@@ -23,14 +24,16 @@ class Rover:
     def send_drive_stop(self):
         self.send_drive_command(Twist())
 
+
 @dataclass
 class Environment:
     """
-    Context class to represent the rover's envrionment 
+    Context class to represent the rover's envrionment
     Information such as locations of fiducials or obstacles
     """
-    ctx : Context
-    NO_FIDUCIAL : ClassVar[int] = -1
+
+    ctx: Context
+    NO_FIDUCIAL: ClassVar[int] = -1
 
     def get_fid_pos(self, fid_id: int) -> Optional[np.ndarray]:
         """
@@ -46,7 +49,7 @@ class Environment:
             tf2_ros.ExtrapolationException,
         ):
             return None
-    
+
     def current_fid_pos(self) -> Optional[np.ndarray]:
         """
         Retrieves the position of the current fiducial
@@ -57,31 +60,32 @@ class Environment:
 
         return self.get_fid_pos(current_waypoint.fiducial_id)
 
+
 @dataclass
 class Course:
-    ctx : Context
-    course_data : mrover.msg.Course 
+    ctx: Context
+    course_data: mrover.msg.Course
     # Currently active waypoint
-    waypoint_index : int = 0
+    waypoint_index: int = 0
 
     def inc_waypoint(self):
         self.waypoint_index += 1
 
     def waypoint_pose(self, wp_idx: int) -> SE3:
         """
-        Gets the pose of the waypoint with the given index 
+        Gets the pose of the waypoint with the given index
         """
         return self.ctx.get_transform(self.course_data.waypoints[wp_idx].tf_id)
-    
+
     def current_waypoint_pose(self):
         """
-        Gets the pose of the current waypoint 
+        Gets the pose of the current waypoint
         """
         return self.waypoint_pose(self.waypoint_index)
 
     def current_waypoint(self) -> Optional[mrover.msg.Waypoint]:
         """
-        Returns the currently active waypoint 
+        Returns the currently active waypoint
 
         :param ud:  State machine user data
         :return:    Next waypoint to reach if we have an active course
@@ -89,9 +93,10 @@ class Course:
         if self.course_data is None or self.waypoint_index >= len(self.course_data.waypoints):
             return None
         return self.course_data.waypoints[self.waypoint_index]
-    
+
     def is_complete(self):
         return self.waypoint_index == len(self.course_data.waypoints)
+
 
 class Context:
     tf_buffer: tf2_ros.Buffer
@@ -102,8 +107,8 @@ class Context:
 
     # Use these as the primary interfaces in states
     course: Course
-    rover : Rover
-    env : Environment
+    rover: Rover
+    env: Environment
 
     def __init__(self):
         self.tf_buffer = tf2_ros.Buffer()
