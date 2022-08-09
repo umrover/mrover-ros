@@ -10,7 +10,7 @@ FIDUCIAL_STOP_THRESHOLD = 1.75
 
 class SingleFiducialState(WaypointState):
     def __init__(self, context: Context):
-        super().__init__(context, add_input_keys=["fiducial_id"])
+        super().__init__(context)
 
     def evaluate(self, ud) -> str:
         """
@@ -19,21 +19,21 @@ class SingleFiducialState(WaypointState):
         :param ud:  State machine user data
         :return:    Next state
         """
-        fid_pos = self.current_fid_pos(ud)
+        fid_pos = self.context.env.current_fid_pos()
         if fid_pos is None:
             # We have arrived at the waypoint where the fiducial should be but we have not seen it yet
             # TODO: add more advanced logic than just driving forward
             cmd_vel = Twist()
             cmd_vel.linear.x = 0.5
-            self.context.drive_command(cmd_vel)
+            self.context.rover.send_drive_command(cmd_vel)
             return "single_fiducial"
 
         try:
-            cmd_vel, arrived = get_drive_command(fid_pos, self.context.get_rover_pose(), STOP_THRESH, DRIVE_FWD_THRESH)
+            cmd_vel, arrived = get_drive_command(fid_pos, self.context.rover.get_pose(), STOP_THRESH, DRIVE_FWD_THRESH)
             if arrived:
-                ud.waypoint_index += 1
+                self.context.course.increment_waypoint()
                 return "waypoint_traverse"
-            self.context.drive_command(cmd_vel)
+            self.context.rover.send_drive_command(cmd_vel)
         except (
             tf2_ros.LookupException,
             tf2_ros.ConnectivityException,

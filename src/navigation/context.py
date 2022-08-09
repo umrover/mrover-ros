@@ -1,9 +1,101 @@
+from __future__ import annotations
 import rospy
 import tf2_ros
 from geometry_msgs.msg import Twist
-from mrover.msg import Course
+import mrover.msg
+import mrover.srv
 from util.SE3 import SE3
 from visualization_msgs.msg import Marker
+from typing import ClassVar, Optional
+import numpy as np
+from dataclasses import dataclass
+
+
+@dataclass
+class Rover:
+    ctx: Context
+
+    def get_pose(self) -> SE3:
+        return self.ctx.get_transform("base_link")
+
+    def send_drive_command(self, twist: Twist):
+        self.ctx.vel_cmd_publisher.publish(twist)
+
+    def send_drive_stop(self):
+        self.send_drive_command(Twist())
+
+
+@dataclass
+class Environment:
+    """
+    Context class to represent the rover's envrionment
+    Information such as locations of fiducials or obstacles
+    """
+
+    ctx: Context
+    NO_FIDUCIAL: ClassVar[int] = -1
+
+    def get_fid_pos(self, fid_id: int) -> Optional[np.ndarray]:
+        """
+        Retrieves the pose of the given fiducial ID from the TF tree
+        if it exists, otherwise returns None
+        """
+        try:
+            fid_pose = self.ctx.get_transform(f"fiducial{fid_id}")
+            return fid_pose.position_vector()
+        except (
+            tf2_ros.LookupException,
+            tf2_ros.ConnectivityException,
+            tf2_ros.ExtrapolationException,
+        ):
+            return None
+
+    def current_fid_pos(self) -> Optional[np.ndarray]:
+        """
+        Retrieves the position of the current fiducial
+        """
+        current_waypoint = self.ctx.course.current_waypoint()
+        if current_waypoint is None or current_waypoint.fiducial_id == self.NO_FIDUCIAL:
+            return None
+
+        return self.get_fid_pos(current_waypoint.fiducial_id)
+
+
+@dataclass
+class Course:
+    ctx: Context
+    course_data: mrover.msg.Course
+    # Currently active waypoint
+    waypoint_index: int = 0
+
+    def increment_waypoint(self):
+        self.waypoint_index += 1
+
+    def waypoint_pose(self, wp_idx: int) -> SE3:
+        """
+        Gets the pose of the waypoint with the given index
+        """
+        return self.ctx.get_transform(self.course_data.waypoints[wp_idx].tf_id)
+
+    def current_waypoint_pose(self):
+        """
+        Gets the pose of the current waypoint
+        """
+        return self.waypoint_pose(self.waypoint_index)
+
+    def current_waypoint(self) -> Optional[mrover.msg.Waypoint]:
+        """
+        Returns the currently active waypoint
+
+        :param ud:  State machine user data
+        :return:    Next waypoint to reach if we have an active course
+        """
+        if self.course_data is None or self.waypoint_index >= len(self.course_data.waypoints):
+            return None
+        return self.course_data.waypoints[self.waypoint_index]
+
+    def is_complete(self):
+        return self.waypoint_index == len(self.course_data.waypoints)
 
 
 class Context:
@@ -13,26 +105,24 @@ class Context:
     vis_publisher: rospy.Publisher
     course_listener: rospy.Subscriber
 
-    course: Course = None
-
-    def course_callback(self, course: Course):
-        self.course = course
+    # Use these as the primary interfaces in states
+    course: Course
+    rover: Rover
+    env: Environment
 
     def __init__(self):
         self.tf_buffer = tf2_ros.Buffer()
         self.tf_listener = tf2_ros.TransformListener(self.tf_buffer)
         self.vel_cmd_publisher = rospy.Publisher("cmd_vel", Twist, queue_size=1)
         self.vis_publisher = rospy.Publisher("nav_vis", Marker)
-        self.course_listener = rospy.Subscriber("course", Course, self.course_callback)
+        self.course_service = rospy.Service("course_service", mrover.srv.PublishCourse, self.recv_course)
+        self.course = None
+        self.rover = Rover(self)
+        self.env = Environment(self)
 
-    def drive_command(self, twist: Twist):
-        self.vel_cmd_publisher.publish(twist)
-
-    def drive_stop(self):
-        self.drive_command(Twist())
-
-    def get_rover_pose(self) -> SE3:
-        return self.get_transform("base_link")
+    def recv_course(self, req: mrover.srv.PublishCourseRequest) -> mrover.srv.PublishCourseResponse:
+        self.course = Course(self, req.course)
+        return mrover.srv.PublishCourseResponse(True)
 
     def get_transform(self, frame: str, parent_frame: str = "odom") -> SE3:
         """
