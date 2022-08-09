@@ -40,7 +40,7 @@ def get_waypoint_tf(frame_id: str, x: float, y: float):
     return t
 
 
-def send_waypoints(waypoints: List[Tuple]) -> Waypoint:
+def send_waypoints(waypoints: List[Tuple[str, int, int, int]]) -> Waypoint:
     """
     Publishes the array of waypoint tuples over TF
     """
