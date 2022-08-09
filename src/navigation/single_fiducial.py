@@ -31,7 +31,7 @@ class SingleFiducialState(WaypointState):
         try:
             cmd_vel, arrived = get_drive_command(fid_pos, self.context.rover.get_pose(), STOP_THRESH, DRIVE_FWD_THRESH)
             if arrived:
-                self.context.course.inc_waypoint()
+                self.context.course.increment_waypoint()
                 return "waypoint_traverse"
             self.context.rover.send_drive_command(cmd_vel)
         except (

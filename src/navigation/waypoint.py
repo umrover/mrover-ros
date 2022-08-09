@@ -61,7 +61,7 @@ class WaypointState(BaseState):
             if arrived:
                 if current_waypoint.fiducial_id == NO_FIDUCIAL:
                     # We finished a regular waypoint, go onto the next one
-                    self.context.course.inc_waypoint()
+                    self.context.course.increment_waypoint()
                 else:
                     # We finished a waypoint associated with a fiducial id, but we have not seen it yet.
                     return "search"
