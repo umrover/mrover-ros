@@ -1,0 +1,16 @@
+odrive:
+  axis:
+    left: 0
+    right: 1
+  config:
+    current_lim: 4
+    watchdog_timeout: 0.1
+  ids:
+    front: "335D36623539"
+    middle: "205535833056"
+    back: "2066377F5753"
+  ratio:
+    meters_to_turns_ratio_left: -39.793
+    meters_to_turns_ratio_right: 39.793
+    turns_to_raw_ratio_left: -50.0
+    turns_to_raw_ratio_right: 50.0

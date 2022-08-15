@@ -98,6 +98,9 @@
   <!-- Navigation -->
   <depend>smach_ros</depend>
 
+  <!-- Embedded Software -->
+  <depend>python3-odrive-pip</depend>
+
   <!-- Test -->
   <test_depend>rosunit</test_depend>
   <test_depend>rostest</test_depend>
