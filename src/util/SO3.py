@@ -13,6 +13,9 @@ class SO3:
     quaternion: np.ndarray
 
     def __init__(self, quaternion: np.ndarray = None):
+        """
+        Create an SO3 object from a quaternion vector
+        """
         if quaternion is None:
             self.quaternion = np.array([0, 0, 0, 1])
         else:

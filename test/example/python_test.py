@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 # NOTE: the above line is very important
 # also make sure to chmod +x any python test files
 
