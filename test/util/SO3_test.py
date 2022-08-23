@@ -60,18 +60,25 @@ class TestSO3(unittest.TestCase):
         self.assertTrue(np.isclose(r2.rot_distance_to(r2), 0))
         self.assertTrue(np.isclose(r1.rot_distance_to(r2), 0))
         self.assertTrue(np.isclose(r2.rot_distance_to(r1), 0))
-        
-        r3 = SO3(quaternion=np.array([0, 0, 2**(1/2)/2, 2**(1/2)/2]))
-        self.assertTrue(np.isclose(r3.rot_distance_to(r3), 0))
-        self.assertTrue(np.isclose(r1.rot_distance_to(r3), np.pi/2))
-        self.assertTrue(np.isclose(r3.rot_distance_to(r1), np.pi/2))
 
-        r4 = SO3(quaternion=np.array([0, 0, -2**(1/2)/2, 2**(1/2)/2]))
+        # 90 degrees around the z axis
+        r3 = SO3(quaternion=np.array([0, 0, 2 ** (1 / 2) / 2, 2 ** (1 / 2) / 2]))
+        self.assertTrue(np.isclose(r3.rot_distance_to(r3), 0))
+        self.assertTrue(np.isclose(r1.rot_distance_to(r3), np.pi / 2))
+        self.assertTrue(np.isclose(r3.rot_distance_to(r1), np.pi / 2))
+
+        # -90 degrees around the z axis
+        r4 = SO3(quaternion=np.array([0, 0, -(2 ** (1 / 2)) / 2, 2 ** (1 / 2) / 2]))
         self.assertTrue(np.isclose(r4.rot_distance_to(r4), 0))
-        self.assertTrue(np.isclose(r1.rot_distance_to(r4), np.pi/2))
-        self.assertTrue(np.isclose(r4.rot_distance_to(r1), np.pi/2))
+        self.assertTrue(np.isclose(r1.rot_distance_to(r4), np.pi / 2))
+        self.assertTrue(np.isclose(r4.rot_distance_to(r1), np.pi / 2))
         self.assertTrue(np.isclose(r3.rot_distance_to(r4), np.pi))
         self.assertTrue(np.isclose(r4.rot_distance_to(r3), np.pi))
+
+        # 45 degrees around the x axis, then 90 degrees around the y axis
+        r5 = SO3(quaternion=np.array([0.2705981, 0.6532815, 0.2705981, 0.6532815]))
+        self.assertTrue(np.isclose(r5.rot_distance_to(r4), 2.5935642935144156))
+        self.assertTrue(np.isclose(r4.rot_distance_to(r5), 2.5935642935144156))
 
 
 if __name__ == "__main__":

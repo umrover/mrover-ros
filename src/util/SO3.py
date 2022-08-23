@@ -5,7 +5,6 @@ from tf.transformations import (
     quaternion_matrix,
     quaternion_from_matrix,
     quaternion_multiply,
-    rotation_from_matrix,
 )
 
 
@@ -66,9 +65,8 @@ class SO3:
         :param p: the other SO3
         :returns: the angle in radians between the orientations of the two SO3s
         """
-        q1 = self.quaternion_vector()
-        q2 = r.quaternion_vector()
+        q1 = self.quaternion
+        q2 = r.quaternion
         q_diff = quaternion_multiply(quaternion_inverse(q1), q2)
-        rotation_matrix = quaternion_matrix(q_diff)
-        angle, _, _ = rotation_from_matrix(rotation_matrix)
+        angle = 2 * np.arccos(q_diff[3])
         return angle
