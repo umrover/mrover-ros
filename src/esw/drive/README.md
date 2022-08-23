@@ -50,7 +50,7 @@ In our system, if there is an error in one axis, then the corresponding axis of 
 
 ## Top Level Code
 
-#### [`odrive.py`](./odrive.py)
+#### [`drive.py`](./drive.py)
 
 This program runs main for one particular ODrive,
 taking a command line argument (either front, middle, or back).
@@ -100,7 +100,7 @@ set velocity, and much more.
 
 ## Configuration
 
-#### [`odrive.yaml`](../../../config/odrive.yaml)
+#### [`drive.yaml`](../../../config/drive.yaml)
 
 This configuration file allows you to configure various things.
 
@@ -194,7 +194,7 @@ Type \
 `$ quit()` \
 `$ deactivate` \
 to get out of this state. \
-In the config/odrive.yaml, look at the line that sets the IDs. 
+In the config/drive.yaml, look at the line that sets the IDs. 
 Depending on which ODrive you replaced, change its ID to the new one. 
 Rebuild the program. \
 

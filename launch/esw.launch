@@ -2,8 +2,8 @@
   <!--
     Run the drive programs
   -->
-  <node name="odrive_front" pkg="mrover" type="odrive.py" args="front"></node>
-  <!-- <node name="odrive_middle" pkg="mrover" type="odrive.py" args="middle"></node>
-  <node name="odrive_back" pkg="mrover" type="odrive.py" args="back"></node> -->
-  <rosparam command="load" file="$(find mrover)/config/odrive.yaml" />
+  <node name="odrive_front" pkg="mrover" type="drive.py" args="front"></node>
+  <!-- <node name="odrive_middle" pkg="mrover" type="drive.py" args="middle"></node>
+  <node name="odrive_back" pkg="mrover" type="drive.py" args="back"></node> -->
+  <rosparam command="load" file="$(find mrover)/config/drive.yaml" />
 </launch>
