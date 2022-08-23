@@ -29,9 +29,9 @@ class SO3:
         :param rotation_matrix: the 3x3 rotation matrix
         :returns: the created SO3 object
         """
-        homogenous = np.eye((4, 4))
+        homogenous = np.eye(4)
         homogenous[:3, :3] = rotation_matrix
-        return quaternion_from_matrix(homogenous)
+        return SO3(quaternion_from_matrix(homogenous))
 
     # TODO: is this method necessary?
     def quaternion_vector(self) -> np.ndarray:

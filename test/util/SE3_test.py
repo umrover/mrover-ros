@@ -15,7 +15,18 @@ import numpy as np
 
 from util.SE3 import SE3
 
+
 class TestSE3(unittest.TestCase):
+    def test_init(self):
+        p1 = SE3()
+        self.assertTrue(np.array_equal(p1.position, np.zeros(3)))
+        self.assertTrue(np.array_equal(p1.rotation.quaternion, np.array([0, 0, 0, 1])))
+
+        p2 = SE3(position=np.array([1, 2, 3]), rotation=np.array([0.247404, 0, 0, 0.9689124]))
+
+        self.assertTrue(np.array_equal(p2.position, np.array([1, 2, 3])))
+        self.assertTrue(np.array_equal(p2.rotation.quaternion, np.array([0.247404, 0, 0, 0.9689124])))
+
     def test_pos_distance_to(self):
         p1 = SE3(position=np.array([1, 2, 3]))
         p2 = SE3(position=np.array([-4, 8, -7]))
