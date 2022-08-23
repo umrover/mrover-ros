@@ -1,7 +1,12 @@
 from __future__ import annotations
 import numpy as np
-from tf.transformations import (quaternion_inverse, quaternion_matrix, quaternion_from_matrix,
-                                quaternion_multiply, rotation_from_matrix)
+from tf.transformations import (
+    quaternion_inverse,
+    quaternion_matrix,
+    quaternion_from_matrix,
+    quaternion_multiply,
+    rotation_from_matrix,
+)
 
 
 class SO3:
@@ -48,7 +53,7 @@ class SO3:
 
         :returns: unit direction vector [x, y, z]
         """
-        return self.rotation_matrix[:, 0]
+        return self.rotation_matrix()[:, 0]
 
     def rot_distance_to(self, r: SO3) -> float:
         """

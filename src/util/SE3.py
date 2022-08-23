@@ -42,14 +42,12 @@ class SE3:
         :param child_frame: the child frame of the desired transform
 
         :returns: an SE3 containing the tranform from parent_frame to child_frame,
-                  or None if the transform can't be found 
+                  or None if the transform can't be found
         """
         try:
-            tf_msg = tf_buffer.lookup_transform(
-                parent_frame, child_frame, rospy.Time()).transform
+            tf_msg = tf_buffer.lookup_transform(parent_frame, child_frame, rospy.Time()).transform
 
-        except (tf2_ros.LookupException, tf2_ros.ConnectivityException,
-                tf2_ros.ExtrapolationException):
+        except (tf2_ros.LookupException, tf2_ros.ConnectivityException, tf2_ros.ExtrapolationException):
             return None
 
         result = SE3()
@@ -57,8 +55,7 @@ class SE3:
         result.rotation = SO3(numpify(tf_msg.rotation))
         return result
 
-    def publish_to_tf_tree(self, tf_broadcaster: tf2_ros.TransformBroadcaster,
-                           parent_frame: str, child_frame: str):
+    def publish_to_tf_tree(self, tf_broadcaster: tf2_ros.TransformBroadcaster, parent_frame: str, child_frame: str):
         """
         Publish the SE3 to the TF tree as a transform from parent_frame to child_frame.
 
