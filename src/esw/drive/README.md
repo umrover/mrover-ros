@@ -50,7 +50,7 @@ In our system, if there is an error in one axis, then the corresponding axis of 
 
 ## Top Level Code
 
-#### [`drive.py`](./drive.py)
+#### [`odrive_control.py`](./odrive_control.py)
 
 This program runs main for one particular ODrive,
 taking a command line argument (either front, middle, or back).
