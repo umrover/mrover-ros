@@ -18,42 +18,57 @@ from util.SO3 import SO3
 
 class TestSO3(unittest.TestCase):
     def test_init(self):
+
+        # test default init values
         r1 = SO3()
         self.assertTrue(np.allclose(r1.quaternion, np.array([0, 0, 0, 1])))
 
+        # test init values passed to constructor
         r2 = SO3(quaternion=np.array([0, 1, 0, 0]))
         self.assertTrue(np.allclose(r2.quaternion, np.array([0, 1, 0, 0])))
 
     def test_from_matrix(self):
+
+        # test identity matrix
         r1 = SO3.from_matrix(np.eye(3))
         self.assertTrue(np.allclose(r1.quaternion, np.array([0, 0, 0, 1])))
 
+        # test "random" matrix
         matrix = np.array([[-1, 0, 0], [0, 1, 0], [0, 0, -1]])
         r2 = SO3.from_matrix(matrix)
         self.assertTrue(np.allclose(r2.quaternion, np.array([0, 1, 0, 0])))
 
     def test_rotation_matrix(self):
+
+        # test returning an identity matrix
         r1 = SO3()
         self.assertTrue(np.allclose(r1.rotation_matrix(), np.eye(3)))
 
+        # test returning a "random" matrix
         r2 = SO3(quaternion=np.array([0.5, 0.5, 0.5, 0.5]))
         matrix = np.array([[0, 0, 1], [1, 0, 0], [0, 1, 0]])
         self.assertTrue(np.allclose(r2.rotation_matrix(), matrix))
 
     def test_direction_vector(self):
+        
+        # test standard direction
         r1 = SO3()
         dir = np.array([1, 0, 0])
         self.assertTrue(np.allclose(r1.direction_vector(), dir))
 
+        # test "random" direction
         r2 = SO3(quaternion=np.array([0, 0, 0.3826834, 0.9238795]))
         dir = np.array([2 ** (1 / 2) / 2, 2 ** (1 / 2) / 2, 0])
         self.assertTrue(np.allclose(r2.direction_vector(), dir))
 
+        # test another "random" direction
         r3 = SO3(quaternion=np.array([0.5, -0.5, 0.5, 0.5]))
         dir = np.array([0, 0, 1])
         self.assertTrue(np.allclose(r3.direction_vector(), dir))
 
     def test_rot_distance_to(self):
+
+        # make sure distances between the same SE3 and identical SE3s are the same, in both directions
         r1 = SO3()
         r2 = SO3()
         self.assertTrue(np.isclose(r1.rot_distance_to(r1), 0))
@@ -61,13 +76,13 @@ class TestSO3(unittest.TestCase):
         self.assertTrue(np.isclose(r1.rot_distance_to(r2), 0))
         self.assertTrue(np.isclose(r2.rot_distance_to(r1), 0))
 
-        # 90 degrees around the z axis
+        # test a rotation 90 degrees around the z axis
         r3 = SO3(quaternion=np.array([0, 0, 2 ** (1 / 2) / 2, 2 ** (1 / 2) / 2]))
         self.assertTrue(np.isclose(r3.rot_distance_to(r3), 0))
         self.assertTrue(np.isclose(r1.rot_distance_to(r3), np.pi / 2))
         self.assertTrue(np.isclose(r3.rot_distance_to(r1), np.pi / 2))
 
-        # -90 degrees around the z axis
+        # test a rotation -90 degrees around the z axis
         r4 = SO3(quaternion=np.array([0, 0, -(2 ** (1 / 2)) / 2, 2 ** (1 / 2) / 2]))
         self.assertTrue(np.isclose(r4.rot_distance_to(r4), 0))
         self.assertTrue(np.isclose(r1.rot_distance_to(r4), np.pi / 2))
