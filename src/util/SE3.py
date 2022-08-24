@@ -1,5 +1,5 @@
 from __future__ import annotations
-from typing import Optional
+from typing import Optional, Union
 
 import numpy as np
 import tf2_ros
@@ -61,12 +61,15 @@ class SE3:
 
     def publish_to_tf_tree(
         self,
-        tf_broadcaster: tf2_ros.TransformBroadcaster,
+        tf_broadcaster: tf2_ros.TransformBroadcaster | tf2_ros.StaticTransformBroadcaster,
         parent_frame: str,
         child_frame: str,
     ):
         """
         Publish the SE3 to the TF tree as a transform from parent_frame to child_frame.
+        Transform can be published as either a regular transform, which will expire after a short delay,
+        or a static transform, which will not expire. This will be decided by the type of
+        transform broadcaster passed to the function.
 
         :param tf_broadcaster: the TF broadcaster used to publish to the TF tree
         :param parent_frame: the parent frame of the transform to be published
@@ -74,7 +77,7 @@ class SE3:
         """
         tf = TransformStamped()
         tf.transform.translation = Vector3(*self.position)
-        tf.transform.rotation = Quaternion(*self.rotation.quaternion_vector())
+        tf.transform.rotation = Quaternion(*self.rotation.quaternion)
         tf.header.stamp = rospy.Time.now()
         tf.header.frame_id = parent_frame
         tf.child_frame_id = child_frame
