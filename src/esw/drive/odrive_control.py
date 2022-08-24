@@ -147,7 +147,7 @@ class Modrive:
         try:
             self._usb_lock.acquire()
             measured_current = self._axes[axis].motor.current_control.Iq_measured
-        except fibre.protocol.ChannelBrokenException:
+        except Exception:
             raise DisconnectedError
         finally:
             self._usb_lock.release()
@@ -169,7 +169,7 @@ class Modrive:
         try:
             self._usb_lock.acquire()
             vel_est_m_s = self._axes[axis].encoder.vel_estimate / self._meters_to_turns_ratio_by_side[axis]
-        except fibre.protocol.ChannelBrokenException:
+        except Exception:
             raise DisconnectedError
         finally:
             self._usb_lock.release()
@@ -184,7 +184,7 @@ class Modrive:
         try:
             self._usb_lock.acquire()
             errors = self._axes["left"].error + self._axes["right"].error != 0
-        except fibre.protocol.ChannelBrokenException:
+        except Exception:
             raise DisconnectedError
         finally:
             self._usb_lock.release()
@@ -210,7 +210,7 @@ class Modrive:
             self._usb_lock.acquire()
             for axis in self._axes.values():
                 axis.motor.config.current_lim = lim
-        except fibre.protocol.ChannelBrokenException:
+        except Exception:
             raise DisconnectedError
         finally:
             self._usb_lock.release()
@@ -234,7 +234,7 @@ class Modrive:
             ), "magnitude of desired_input_vel_turns_sec is dangerously high"
             self._usb_lock.acquire()
             self._axes[axis].controller.input_vel = desired_input_vel_turns_s
-        except fibre.protocol.ChannelBrokenException:
+        except Exception:
             raise DisconnectedError
         finally:
             self._usb_lock.release()
@@ -245,7 +245,7 @@ class Modrive:
             self._usb_lock.acquire()
             for axis in self._axes.values():
                 axis.watchdog_feed()
-        except fibre.protocol.ChannelBrokenException:
+        except Exception:
             rospy.logerror("Failed in watchdog_feed. Unplugged")
             raise DisconnectedError
         finally:
@@ -262,7 +262,7 @@ class Modrive:
                 axis.config.watchdog_timeout = self._watchdog_timeout
                 axis.watchdog_feed()
                 axis.config.enable_watchdog = True
-        except fibre.protocol.ChannelBrokenException:
+        except Exception:
             rospy.logerror("Failed in _enable_watchdog. Unplugged")
             raise DisconnectedError
         finally:
@@ -278,7 +278,7 @@ class Modrive:
             for axis in self._axes.values():
                 axis.config.watchdog_timeout = 0
                 axis.config.enable_watchdog = False
-        except fibre.protocol.ChannelBrokenException:
+        except Exception:
             rospy.logerror("Failed in _disable_watchdog. Unplugged")
             raise DisconnectedError
         finally:
@@ -290,7 +290,7 @@ class Modrive:
             self._usb_lock.acquire()
             for axis in self._axes.values():
                 axis.error = 0
-        except fibre.protocol.ChannelBrokenException:
+        except Exception:
             raise DisconnectedError
         finally:
             self._usb_lock.release()
@@ -305,7 +305,7 @@ class Modrive:
             self._usb_lock.acquire()
             for axis in self._axes.values():
                 axis.controller.config.control_mode = mode
-        except fibre.protocol.ChannelBrokenException:
+        except Exception:
             raise DisconnectedError
         finally:
             self._usb_lock.release()
@@ -320,7 +320,7 @@ class Modrive:
             self._usb_lock.acquire()
             for axis in self._axes.values():
                 axis.requested_state = state
-        except fibre.protocol.ChannelBrokenException:
+        except Exception:
             raise DisconnectedError
         finally:
             self._usb_lock.release()
