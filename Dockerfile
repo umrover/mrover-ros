@@ -26,5 +26,6 @@ RUN apt update && apt install -y \
     ros-noetic-dynamic-reconfigure \
     ros-noetic-aruco-detect \
     ros-noetic-robot-localization \
-    ros-noetic-smach-ros
+    ros-noetic-smach-ros \
+    python3-pip
 
