@@ -145,7 +145,8 @@ namespace gazebo {
         sub_ = rosnode_->subscribe(so);
         pub_ = rosnode_->advertise<nav_msgs::Odometry>("odom", 1);
 
-        callback_queue_thread_ = boost::thread(boost::bind(&DiffDrivePlugin6W::QueueThread, this));
+        // TODO(amg): disabled due to weirdness where the thread would die and callbacks stop
+        //callback_queue_thread_ = boost::thread(boost::bind(&DiffDrivePlugin6W::QueueThread, this));
 
         Reset();
 
@@ -181,6 +182,11 @@ namespace gazebo {
 
     // Update the controller
     void DiffDrivePlugin6W::Update() {
+
+        // TODO(amg): This is probably bad...
+        static const double timeout = 0.01;
+        queue_.callAvailable(ros::WallDuration(timeout));
+
         // TODO: Step should be in a parameter of this function
         double d1, d2;
         double dr, da;

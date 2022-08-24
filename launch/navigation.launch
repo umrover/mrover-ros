@@ -4,11 +4,11 @@
   <param name="robot_description" command="xacro $(find mrover)/rover_description/rover.xacro" />
   <arg name="rvizconfig" default="$(find mrover)/config/rviz/navigation.rviz" />
   <arg name="gazebo_config_path" default="$(find mrover)/config/gazebo" />
+  <node name="rviz" pkg="rviz" type="rviz" args="-d $(arg rvizconfig)" required="true" />
 
   <node if="$(arg gui)" name="joint_state_publisher" pkg="joint_state_publisher_gui" type="joint_state_publisher_gui" />
   <node unless="$(arg gui)" name="joint_state_publisher" pkg="joint_state_publisher" type="joint_state_publisher" />
   <node name="robot_state_publisher" pkg="robot_state_publisher" type="robot_state_publisher" />
-  <node name="rviz" pkg="rviz" type="rviz" args="-d $(arg rvizconfig)" required="true" />
 
   <include file="$(find gazebo_ros)/launch/empty_world.launch">
     <env name="GAZEBO_MODEL_PATH" value="$(arg gazebo_config_path)/env_description" />
@@ -39,6 +39,7 @@
     ===========
   -->
   <!-- This publishes the transforms of the course waypoints -->
+  <node name="nav" pkg="mrover" type="navigation.py" />
 
   <!--
     ============
