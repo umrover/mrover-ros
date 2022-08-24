@@ -50,7 +50,7 @@ class TestSO3(unittest.TestCase):
         self.assertTrue(np.allclose(r2.rotation_matrix(), matrix))
 
     def test_direction_vector(self):
-        
+
         # test standard direction
         r1 = SO3()
         dir = np.array([1, 0, 0])

@@ -19,14 +19,13 @@ from util.SE3 import SE3
 
 
 class TestSE3(unittest.TestCase):
-
     def test_from_tf_tree(self):
 
         # setup testing node and TF infrastructure
         rospy.init_node("SE3_tf_test")
         buffer = tf2_ros.Buffer()
         listener = tf2_ros.TransformListener(buffer)
-        
+
         # wait for TFs to become available
         rospy.sleep(1)
 
@@ -57,9 +56,9 @@ class TestSE3(unittest.TestCase):
         quaternion = np.array([0, 0, 1, 0])
         self.assertTrue(np.allclose(p4.position, position))
         self.assertTrue(np.allclose(p4.rotation.quaternion, quaternion))
-        
+
     def test_publish_to_tf_tree_static(self):
-        
+
         # setup testing node and TF infrastructure
         # use static TF publisher since we only publish once and it might take a while
         rospy.init_node("SE3_tf_test")
@@ -106,6 +105,7 @@ class TestSE3(unittest.TestCase):
     #       just replacing the static TF publisher with a regular one causes the TFs not to be found
     def test_publish_to_tf_tree_regular(self):
         ...
+
 
 if __name__ == "__main__":
     import rostest

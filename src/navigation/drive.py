@@ -26,8 +26,8 @@ def get_drive_command(
     """
     if not (0.0 < turn_in_place_thresh < 1.0):
         raise ValueError(f"Argument {turn_in_place_thresh} should be between 0 and 1")
-    rover_pos = rover_pose.position_vector()
-    rover_dir = rover_pose.x_vector()
+    rover_pos = rover_pose.position
+    rover_dir = rover_pose.rotation.direction_vector()
     # Get vector from rover to target
     target_dir = target_pos - rover_pos
     target_dist = np.linalg.norm(target_dir)

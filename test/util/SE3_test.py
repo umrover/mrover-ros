@@ -32,7 +32,7 @@ class TestSE3(unittest.TestCase):
         self.assertTrue(np.array_equal(p2.rotation.quaternion, np.array([0.247404, 0, 0, 0.9689124])))
 
     def test_pos_distance_to(self):
-        
+
         # distance between 2 "random" points
         p1 = SE3(position=np.array([1, 2, 3]))
         p2 = SE3(position=np.array([-4, 8, -7]))
@@ -60,7 +60,8 @@ class TestSE3(unittest.TestCase):
         d2 = p2.pos_distance_to(p1)
         self.assertTrue(np.isclose(d1, 0))
         self.assertTrue(np.isclose(d2, 0))
-    
+
+
 if __name__ == "__main__":
     import rostest
 
