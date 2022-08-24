@@ -7,5 +7,5 @@
         args="0 2 -3 3.14159265 0 0 odom base_link 100" />
   
   <!-- Execute multiple tests after configuring nodes-->
-  <test test-name="SE3_test" pkg="mrover" type="SE3_test.py" />
+  <test test-name="SE3_tf_test" pkg="mrover" type="SE3_tf_test.py" />
 </launch>
