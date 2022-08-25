@@ -34,7 +34,7 @@ class SE3:
             self.rotation = SO3(rotation)
 
     @classmethod
-    def from_tf_tree(cls, tf_buffer: tf2_ros.Buffer, parent_frame: str, child_frame: str) -> Optional[SE3]:
+    def from_tf_tree(cls, tf_buffer: tf2_ros.Buffer, parent_frame: str, child_frame: str) -> SE3:
         """
         Ask the TF tree for a transform from parent_frame to child_frame,
         and return it as an SE3.
@@ -43,19 +43,14 @@ class SE3:
         :param parent_frame: the parent frame of the desired transform
         :param child_frame: the child frame of the desired transform
 
-        :returns: an SE3 containing the tranform from parent_frame to child_frame,
-                  or None if the transform can't be found
+        :raises tf2_ros.LookupException: if one or both of the requested frames don't exist in the TF tree
+        :raises tf2_ros.ConnectivityException: if no connection can be found between the two requested frames
+        :raises tf2_ros.ExtrapolationException: if the transform would've required extrapolation
+                                                (forward or backward in time) beyond current limits
+
+        :returns: an SE3 containing the tranform from parent_frame to child_frame
         """
-        try:
-            tf_msg = tf_buffer.lookup_transform(parent_frame, child_frame, rospy.Time()).transform
-
-        except (
-            tf2_ros.LookupException,
-            tf2_ros.ConnectivityException,
-            tf2_ros.ExtrapolationException,
-        ):
-            return None
-
+        tf_msg = tf_buffer.lookup_transform(parent_frame, child_frame, rospy.Time()).transform
         result = SE3()
         result.position = numpify(tf_msg.translation)
         result.rotation = SO3(numpify(tf_msg.rotation))

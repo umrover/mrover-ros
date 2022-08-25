@@ -67,7 +67,11 @@ class WaypointState(BaseState):
                     return "search"
             self.context.rover.send_drive_command(cmd_vel)
 
-        except AttributeError:
+        except (
+            tf2_ros.LookupException,
+            tf2_ros.ConnectivityException,
+            tf2_ros.ExtrapolationException,
+        ):
             pass
 
         return "waypoint_traverse"
