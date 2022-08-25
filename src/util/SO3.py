@@ -1,4 +1,5 @@
 from __future__ import annotations
+from dataclasses import dataclass
 import numpy as np
 from tf.transformations import (
     quaternion_inverse,
@@ -7,7 +8,7 @@ from tf.transformations import (
     quaternion_multiply,
 )
 
-
+@dataclass
 class SO3:
     quaternion: np.ndarray
 
@@ -31,15 +32,6 @@ class SO3:
         homogenous = np.eye(4)
         homogenous[:3, :3] = rotation_matrix
         return SO3(quaternion_from_matrix(homogenous))
-
-    # TODO: is this method necessary?
-    def quaternion_vector(self) -> np.ndarray:
-        """
-        Get the quaternion vector of the SO3.
-
-        :returns: a quaternion vector [x, y, z, w]
-        """
-        return self.quaternion
 
     def rotation_matrix(self) -> np.ndarray:
         """
@@ -68,5 +60,29 @@ class SO3:
         q1 = self.quaternion
         q2 = r.quaternion
         q_diff = quaternion_multiply(quaternion_inverse(q1), q2)
-        angle = 2 * np.arccos(q_diff[3])
+        angle = (2 * np.arccos(q_diff[3]))
+        if angle > np.pi:
+            angle -= np.pi
         return angle
+
+    def is_approx(self, r: SO3, tolerance=1e-8) -> bool:
+        """
+        Check if two SO3s are approximately equal within a tolerance by checking that each 
+        element of the quaternion vector is approximately equal.
+
+        :param p: another SO3
+        :returns: True if the two SO3s are approximately equal, False otherwise
+        """
+        return np.allclose(self.quaternion, r.quaternion, atol=tolerance)
+    
+    def __eq__(self, other: object) -> bool:
+        """
+        Override of the equals operator to determine if two SO3s are approximately equal,
+        meaning each element of their quaternion vectors are equal within a tolerance of 1e-8.
+
+        :param other: another object to check equality with
+        :returns: True if the two objects are approximately equal, False otherwise
+        """
+        if isinstance(other, SO3):
+            return self.is_approx(other)
+        return False

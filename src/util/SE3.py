@@ -1,5 +1,6 @@
 from __future__ import annotations
 from typing import Optional, Union
+from dataclasses import dataclass
 
 import numpy as np
 import tf2_ros
@@ -10,6 +11,7 @@ from geometry_msgs.msg import TransformStamped, Vector3, Quaternion
 from .SO3 import SO3
 
 
+@dataclass
 class SE3:
     position: np.ndarray
     rotation: SO3
@@ -91,3 +93,25 @@ class SE3:
         :returns: euclidean distance between the two SE3s
         """
         return np.linalg.norm(p.position - self.position)
+
+    def is_approx(self, p: SE3, tolerance=1e-8) -> bool:
+        """
+        Check if two SE3s are approximately equal within a tolerance by checking that each 
+        position vector is approximately equal and that each rotation is approximately equal.
+
+        :param p: another SE3
+        :returns: True if the two SE3s are approximately equal, False otherwise
+        """
+        return np.allclose(self.position, p.position, atol=tolerance) and self.rotation.is_approx(p.rotation, tolerance)
+    
+    def __eq__(self, other: object) -> bool:
+        """
+        Override of the equals operator to determine if two SE3s are approximately equal,
+        meaning each element of the position and quaternion are equal within a tolerance of 1e-8.
+
+        :param other: another object to check equality with
+        :returns: True if the two objects are approximately equal, False otherwise
+        """
+        if isinstance(other, SE3):
+            return self.is_approx(other)
+        return False
