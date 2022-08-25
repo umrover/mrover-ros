@@ -96,14 +96,14 @@ class SE3:
 
     def is_approx(self, p: SE3, tolerance=1e-8) -> bool:
         """
-        Check if two SE3s are approximately equal within a tolerance by checking that each 
+        Check if two SE3s are approximately equal within a tolerance by checking that each
         position vector is approximately equal and that each rotation is approximately equal.
 
         :param p: another SE3
         :returns: True if the two SE3s are approximately equal, False otherwise
         """
         return np.allclose(self.position, p.position, atol=tolerance) and self.rotation.is_approx(p.rotation, tolerance)
-    
+
     def __eq__(self, other: object) -> bool:
         """
         Override of the equals operator to determine if two SE3s are approximately equal,

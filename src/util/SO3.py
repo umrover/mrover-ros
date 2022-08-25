@@ -8,6 +8,7 @@ from tf.transformations import (
     quaternion_multiply,
 )
 
+
 @dataclass
 class SO3:
     quaternion: np.ndarray
@@ -60,21 +61,21 @@ class SO3:
         q1 = self.quaternion
         q2 = r.quaternion
         q_diff = quaternion_multiply(quaternion_inverse(q1), q2)
-        angle = (2 * np.arccos(q_diff[3]))
+        angle = 2 * np.arccos(q_diff[3])
         if angle > np.pi:
             angle -= np.pi
         return angle
 
     def is_approx(self, r: SO3, tolerance=1e-8) -> bool:
         """
-        Check if two SO3s are approximately equal within a tolerance by checking that each 
+        Check if two SO3s are approximately equal within a tolerance by checking that each
         element of the quaternion vector is approximately equal.
 
         :param p: another SO3
         :returns: True if the two SO3s are approximately equal, False otherwise
         """
         return np.allclose(self.quaternion, r.quaternion, atol=tolerance)
-    
+
     def __eq__(self, other: object) -> bool:
         """
         Override of the equals operator to determine if two SO3s are approximately equal,
