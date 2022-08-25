@@ -22,6 +22,7 @@ find_package(catkin REQUIRED COMPONENTS
         fiducial_msgs
         dynamic_reconfigure
         message_generation
+        rosbridge_server
         )
 
 find_package(OpenCV REQUIRED)

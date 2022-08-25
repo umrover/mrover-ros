@@ -64,6 +64,7 @@
   <exec_depend>joint_state_publisher</exec_depend>
   <exec_depend>robot_state_publisher</exec_depend>
   <exec_depend>ros_numpy</exec_depend>
+  <exec_depend>rosbridge_server</exec_depend>
 
   <!-- Visualization -->
   <depend>rviz</depend>
