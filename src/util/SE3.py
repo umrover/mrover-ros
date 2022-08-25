@@ -26,7 +26,7 @@ class SE3:
         if position is None:
             self.position = np.zeros(3)
         else:
-            self.position = position
+            self.position = position.copy()
 
         if rotation is None:
             self.rotation = SO3()

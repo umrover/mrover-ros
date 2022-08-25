@@ -20,7 +20,7 @@ class SO3:
         if quaternion is None:
             self.quaternion = np.array([0, 0, 0, 1])
         else:
-            self.quaternion = quaternion
+            self.quaternion = quaternion.copy()
 
     @classmethod
     def from_matrix(cls, rotation_matrix: np.ndarray) -> SO3:

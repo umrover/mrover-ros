@@ -27,6 +27,18 @@ class TestSO3(unittest.TestCase):
         r2 = SO3(quaternion=np.array([0, 1, 0, 0]))
         self.assertTrue(np.allclose(r2.quaternion, np.array([0, 1, 0, 0])))
 
+        # test that np arrays passed to constructor aren't still references to the np arrays inside the object
+        x = np.array([1, 2, 3, 4])
+        y = x.copy()
+        r3 = SO3(quaternion=x)
+        self.assertTrue(np.allclose(r3.quaternion, x))
+        x[0] = 7
+        self.assertFalse(np.allclose(r3.quaternion, x))
+        self.assertTrue(np.allclose(r3.quaternion, y))
+        r3.quaternion[1] = 6
+        self.assertFalse(np.allclose(r3.quaternion, x))
+        self.assertFalse(np.allclose(r3.quaternion, y))
+
     def test_from_matrix(self):
 
         # test identity matrix

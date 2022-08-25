@@ -31,6 +31,27 @@ class TestSE3(unittest.TestCase):
         self.assertTrue(np.array_equal(p2.position, np.array([1, 2, 3])))
         self.assertTrue(np.array_equal(p2.rotation.quaternion, np.array([0.247404, 0, 0, 0.9689124])))
 
+        # test that np arrays passed to constructor aren't still references to the np arrays inside the object
+        x = np.array([1, 2, 3])
+        y = x.copy()
+        q1 = np.array([1, 2, 3, 4])
+        q2 = q1.copy()
+        r3 = SE3(position=x, rotation=q1)
+        self.assertTrue(np.allclose(r3.position, x))
+        self.assertTrue(np.allclose(r3.rotation.quaternion, q1))
+        x[0] = 7
+        q1[0] = 7
+        self.assertFalse(np.allclose(r3.position, x))
+        self.assertTrue(np.allclose(r3.position, y))
+        self.assertFalse(np.allclose(r3.rotation.quaternion, q1))
+        self.assertTrue(np.allclose(r3.rotation.quaternion, q2))
+        r3.position[1] = 6
+        r3.rotation.quaternion[1] = 6
+        self.assertFalse(np.allclose(r3.position, x))
+        self.assertFalse(np.allclose(r3.position, y))
+        self.assertFalse(np.allclose(r3.rotation.quaternion, q1))
+        self.assertFalse(np.allclose(r3.rotation.quaternion, q2))
+
     def test_pos_distance_to(self):
 
         # distance between 2 "random" points
