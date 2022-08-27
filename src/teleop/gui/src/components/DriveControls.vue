@@ -41,6 +41,7 @@ export default {
         for (let i = 0; i < 4; i++) {
           const gamepad = gamepads[i]
           if (gamepad) {
+            //DONT FORGET TO CHANGE BACK TO LOGITECH
             if (gamepad.id.includes('Xbox')) {
             
               let buttons = gamepad.buttons.map((button) =>{
@@ -52,6 +53,8 @@ export default {
               let axes = gamepad.axes.map((axis) => {
                 return Math.abs(axis) <= deadzone ? 0 : axis
               })
+              //Invert Forward/Back Stick, forward is normally -1
+              axes[JOYSTICK_CONFIG['forward_back']] = -1 * axes[JOYSTICK_CONFIG['forward_back']]
 
               //Done so that teleop_twist_joy will always be enabled
               buttons.unshift(1)

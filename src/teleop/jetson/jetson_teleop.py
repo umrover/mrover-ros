@@ -1,8 +1,11 @@
-import asyncio
+#!/usr/bin/env python3
+#Node for teleop-related callback functions
+
 from math import copysign
 from enum import Enum
 import rospy as ros
-from sensor_msgs.msg import Joy
+from geometry_msgs.msg import Twist
+from mrover.msg import DriveVelCmd
 
 
 def quadratic(val):
@@ -27,29 +30,18 @@ class Drive:
       pan: 4
       tilt: 5
 
-    def __init__(self, reverse: bool):
-        self.auton_enabled = False
-        self.teleop_enabled = True
-        self.reverse = reverse
-
+    #TODO: Reimplement Dampen Switch
     def teleop_drive_callback(self, msg):
-        if self.auton_enabled or not self.teleop_enabled:
-            return
-        
 
-        linear = deadzone(input.forward_back, 0.05) * input.dampen
-        angular = deadzone(input.left_right, 0.1) * input.dampen
+        #teleop_twist_joy message is maxed at 0.5, multiply by 2 to make range [-1,1]
+        linear = msg.linear.x * 2
+        angular = msg.angular.z * 2
 
         # Convert arcade drive to tank drive
+        # Inversions may need to be done for logitech joystick
         angular_op = (angular / 2) / (abs(linear) + 0.5)
-        vel_left = linear - angular_op
-        vel_right = linear + angular_op
-
-        # Account for reverse
-        if self.reverse:
-            tmp = vel_left
-            vel_left = -1 * vel_right
-            vel_right = -1 * tmp
+        vel_left = linear + angular_op
+        vel_right = linear - angular_op
 
         # Scale to be within [-1, 1], if necessary
         if abs(vel_left) > 1 or abs(vel_right) > 1:
@@ -67,65 +59,68 @@ class Drive:
         drive_vel_pub = ros.Publisher('/drive_vel_cmd', DriveVelCmd)
         drive_vel_pub.publish(command)
 
-class ArmControl:
+# class ArmControl:
 
 
-    def ra_control_callback(self, channel, msg):
-        if (self.arm_control_state != "open-loop"):
-            return
+#     def ra_control_callback(self, channel, msg):
+#         if (self.arm_control_state != "open-loop"):
+#             return
 
-        self.arm_type = self.ArmType.RA
+#         self.arm_type = self.ArmType.RA
 
-        xboxData = Xbox.decode(msg)
+#         xboxData = Xbox.decode(msg)
 
-        motor_speeds = [quadratic(deadzone(xboxData.left_js_x, 0.15)),
-                        quadratic(-deadzone(xboxData.left_js_y, 0.15)),
-                        quadratic(-deadzone(xboxData.right_js_y, 0.15)),
-                        quadratic(deadzone(xboxData.right_js_x, 0.15)),
-                        quadratic(xboxData.right_trigger - xboxData.left_trigger),
-                        (xboxData.right_bumper - xboxData.left_bumper)]
+#         motor_speeds = [quadratic(deadzone(xboxData.left_js_x, 0.15)),
+#                         quadratic(-deadzone(xboxData.left_js_y, 0.15)),
+#                         quadratic(-deadzone(xboxData.right_js_y, 0.15)),
+#                         quadratic(deadzone(xboxData.right_js_x, 0.15)),
+#                         quadratic(xboxData.right_trigger - xboxData.left_trigger),
+#                         (xboxData.right_bumper - xboxData.left_bumper)]
 
-        if self.slow_mode:
-            # slow down joints a, c, e, and f
-            motor_speeds[0] *= 0.5
-            motor_speeds[2] *= 0.5
-            motor_speeds[4] *= 0.5
-            motor_speeds[5] *= 0.5
+#         if self.slow_mode:
+#             # slow down joints a, c, e, and f
+#             motor_speeds[0] *= 0.5
+#             motor_speeds[2] *= 0.5
+#             motor_speeds[4] *= 0.5
+#             motor_speeds[5] *= 0.5
 
-        openloop_msg = RAOpenLoopCmd()
-        openloop_msg.throttle = motor_speeds
+#         openloop_msg = RAOpenLoopCmd()
+#         openloop_msg.throttle = motor_speeds
 
-        lcm_.publish('/ra_open_loop_cmd', openloop_msg.encode())
+#         lcm_.publish('/ra_open_loop_cmd', openloop_msg.encode())
 
-        hand_msg = HandCmd()
-        hand_msg.finger = xboxData.y - xboxData.a
-        hand_msg.grip = xboxData.b - xboxData.x
+#         hand_msg = HandCmd()
+#         hand_msg.finger = xboxData.y - xboxData.a
+#         hand_msg.grip = xboxData.b - xboxData.x
 
-        lcm_.publish('/hand_open_loop_cmd', hand_msg.encode())
+#         lcm_.publish('/hand_open_loop_cmd', hand_msg.encode())
 
-    def send_ra_kill(self):
-        if self.arm_type != self.ArmType.RA:
-            return
+#     def send_ra_kill(self):
+#         if self.arm_type != self.ArmType.RA:
+#             return
 
-        arm_motor = RAOpenLoopCmd()
-        arm_motor.throttle = [0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
-        lcm_.publish('/ra_open_loop_cmd', arm_motor.encode())
+#         arm_motor = RAOpenLoopCmd()
+#         arm_motor.throttle = [0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
+#         lcm_.publish('/ra_open_loop_cmd', arm_motor.encode())
 
-        hand_msg = HandCmd()
-        hand_msg.finger = 0
-        hand_msg.grip = 0
-        lcm_.publish('/hand_open_loop_cmd', hand_msg.encode())
+#         hand_msg = HandCmd()
+#         hand_msg.finger = 0
+#         hand_msg.grip = 0
+#         lcm_.publish('/hand_open_loop_cmd', hand_msg.encode())
 
 
 
 
 def main():
-    arm = arm
-    drive = Drive(reverse=False)
+    #arm = arm
+    drive = Drive()
 
-    ros.init_node("jetson_teleop")
+    ros.init_node("teleop")
 
-    ros.Subscriber("/drive_control",Joy,drive.teleop_drive_callback)
+    ros.Subscriber("/drive_cmd_twist",Twist,drive.teleop_drive_callback)
+
+    ros.spin()
 
 
+main()
 

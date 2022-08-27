@@ -26,9 +26,10 @@
                         -model rover" /> -->
     <include file="$(find rosbridge_server)/launch/rosbridge_websocket.launch"></include>
     <node name="gui" pkg="mrover" type="gui.py" cwd="node"/>
+    <node name="jetson_teleop" pkg="mrover" type="jetson_teleop.py"/>
     <node name="teleop_twist_joy" pkg="teleop_twist_joy" type="teleop_node">
       <param name="enable_button" value="0"/>
       <remap from="/joy" to="/joystick" />
-      <remap from="/cmd_vel" to="/drive_cmd_vel" />
+      <remap from="/cmd_vel" to="/drive_cmd_twist" />
     </node>
 </launch>
