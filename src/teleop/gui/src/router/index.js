@@ -6,6 +6,7 @@ import ESTask from '../components/ESTask.vue'
 import AutonTask from '../components/AutonTask.vue'
 import SATask from '../components/SATask.vue'
 import ISHTask from '../components/ISHTask.vue'
+import ControlGUI from '../components/ControlGUI.vue'
 
 Vue.use(Router)
 
@@ -40,6 +41,11 @@ export default new Router({
       path: '/AutonTask',
       name: 'AutonTask',
       component: AutonTask
+    },
+    {
+      path: '/Control',
+      name: 'ControlsGUI',
+      component: ControlGUI
     },
   ]
 })

@@ -62,7 +62,7 @@ export default {
       const gamepads = navigator.getGamepads()
       for (let i = 0; i < 4; i++) {
         const gamepad = gamepads[i]
-        if (gamepad) {
+        if (gamepad && this.arm_enabled) {
           if (gamepad.id.includes('Microsoft') || gamepad.id.includes('Xbox')) {
             let buttons = gamepad.buttons.map((button) =>{
                 return button.value

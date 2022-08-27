@@ -1,6 +1,6 @@
 <template>
     <div>
-        <p>Drive Controls Present</p>
+        <h4>Drive Controls</h4>
     </div>
 </template>
 
