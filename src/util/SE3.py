@@ -98,15 +98,3 @@ class SE3:
         :returns: True if the two SE3s are approximately equal, False otherwise
         """
         return np.allclose(self.position, p.position, atol=tolerance) and self.rotation.is_approx(p.rotation, tolerance)
-
-    def __eq__(self, other: object) -> bool:
-        """
-        Override of the equals operator to determine if two SE3s are approximately equal,
-        meaning each element of the position and quaternion are equal within a tolerance of 1e-8.
-
-        :param other: another object to check equality with
-        :returns: True if the two objects are approximately equal, False otherwise
-        """
-        if isinstance(other, SE3):
-            return self.is_approx(other)
-        return False

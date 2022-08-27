@@ -91,10 +91,6 @@ class TestSE3(unittest.TestCase):
         self.assertTrue(r2.is_approx(r2))
         self.assertTrue(r1.is_approx(r2))
         self.assertTrue(r2.is_approx(r1))
-        self.assertEqual(r1, r1)
-        self.assertEqual(r2, r2)
-        self.assertEqual(r1, r2)
-        self.assertEqual(r2, r1)
 
         # test two non zero SE3s that are within the default tolerance
         r3 = SE3(position=np.array([1, 2, 3]), rotation=np.array([1, 2, 3, 4]))
@@ -107,14 +103,6 @@ class TestSE3(unittest.TestCase):
         self.assertFalse(r3.is_approx(r1))
         self.assertFalse(r1.is_approx(r4))
         self.assertFalse(r4.is_approx(r1))
-        self.assertEqual(r3, r3)
-        self.assertEqual(r4, r4)
-        self.assertEqual(r3, r4)
-        self.assertEqual(r4, r3)
-        self.assertNotEqual(r1, r3)
-        self.assertNotEqual(r3, r1)
-        self.assertNotEqual(r1, r4)
-        self.assertNotEqual(r4, r1)
 
         # test two SE3s that are within a tolerance of 1e-3, not within the default tolerance
         r5 = SE3(position=np.array([1.0004, 2, 3]), rotation=np.array([1.0005, 2, 3, 4]))
@@ -122,30 +110,20 @@ class TestSE3(unittest.TestCase):
         self.assertTrue(r5.is_approx(r3, tolerance=1e-3))
         self.assertFalse(r3.is_approx(r5))
         self.assertFalse(r5.is_approx(r3))
-        self.assertNotEqual(r3, r5)
-        self.assertNotEqual(r5, r3)
 
         # test two SE3s that have equal position but not rotation
         r6 = SE3(position=np.array([1, 2, 3]), rotation=np.array([2, 2, 3, 4]))
         self.assertFalse(r6.rotation.is_approx(r3.rotation))
         self.assertFalse(r3.rotation.is_approx(r6.rotation))
-        self.assertNotEqual(r3.rotation, r6.rotation)
-        self.assertNotEqual(r6.rotation, r3.rotation)
         self.assertFalse(r3.is_approx(r6))
         self.assertFalse(r6.is_approx(r3))
-        self.assertNotEqual(r3, r6)
-        self.assertNotEqual(r6, r3)
 
         # test two SE3s that have equal rotation but not position
         r7 = SE3(position=np.array([7, 2, 3]), rotation=np.array([1, 2, 3, 4]))
         self.assertTrue(r7.rotation.is_approx(r3.rotation))
         self.assertTrue(r3.rotation.is_approx(r7.rotation))
-        self.assertEqual(r3.rotation, r7.rotation)
-        self.assertEqual(r7.rotation, r3.rotation)
         self.assertFalse(r3.is_approx(r7))
         self.assertFalse(r7.is_approx(r3))
-        self.assertNotEqual(r3, r7)
-        self.assertNotEqual(r7, r3)
 
 
 if __name__ == "__main__":

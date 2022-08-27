@@ -121,10 +121,6 @@ class TestSO3(unittest.TestCase):
         self.assertTrue(r2.is_approx(r2))
         self.assertTrue(r1.is_approx(r2))
         self.assertTrue(r2.is_approx(r1))
-        self.assertEqual(r1, r1)
-        self.assertEqual(r2, r2)
-        self.assertEqual(r1, r2)
-        self.assertEqual(r2, r1)
 
         # test two non zero rotations that are within the default tolerance
         r3 = SO3(quaternion=np.array([1, 2, 3, 4]))
@@ -137,14 +133,6 @@ class TestSO3(unittest.TestCase):
         self.assertFalse(r3.is_approx(r1))
         self.assertFalse(r1.is_approx(r4))
         self.assertFalse(r4.is_approx(r1))
-        self.assertEqual(r3, r3)
-        self.assertEqual(r4, r4)
-        self.assertEqual(r3, r4)
-        self.assertEqual(r4, r3)
-        self.assertNotEqual(r1, r3)
-        self.assertNotEqual(r3, r1)
-        self.assertNotEqual(r1, r4)
-        self.assertNotEqual(r4, r1)
 
         # test two rotations that are within a tolerance of 1e-3, not within the default tolerance
         r5 = SO3(quaternion=np.array([1.0005, 2, 3, 4]))
@@ -152,8 +140,6 @@ class TestSO3(unittest.TestCase):
         self.assertTrue(r5.is_approx(r3, tolerance=1e-3))
         self.assertFalse(r3.is_approx(r5))
         self.assertFalse(r5.is_approx(r3))
-        self.assertNotEqual(r3, r5)
-        self.assertNotEqual(r5, r3)
 
 
 if __name__ == "__main__":

@@ -75,15 +75,3 @@ class SO3:
         :returns: True if the two SO3s are approximately equal, False otherwise
         """
         return np.allclose(self.quaternion, r.quaternion, atol=tolerance)
-
-    def __eq__(self, other: object) -> bool:
-        """
-        Override of the equals operator to determine if two SO3s are approximately equal,
-        meaning each element of their quaternion vectors are equal within a tolerance of 1e-8.
-
-        :param other: another object to check equality with
-        :returns: True if the two objects are approximately equal, False otherwise
-        """
-        if isinstance(other, SO3):
-            return self.is_approx(other)
-        return False
