@@ -1,2 +1,2 @@
-float32 left
-float32 right
+float64 left
+float64 right

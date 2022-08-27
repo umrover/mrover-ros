@@ -41,8 +41,7 @@ export default {
         for (let i = 0; i < 4; i++) {
           const gamepad = gamepads[i]
           if (gamepad) {
-            //DONT FORGET TO CHANGE BACK TO LOGITECH
-            if (gamepad.id.includes('Xbox')) {
+            if (gamepad.id.includes('Logitech')) {
             
               let buttons = gamepad.buttons.map((button) =>{
                 return button.value
@@ -63,6 +62,7 @@ export default {
                 axes: axes,
                 buttons: buttons
               }
+              
               var joystickTopic = new ROSLIB.Topic({
                 ros : this.$ros,
                 name : '/joystick',
