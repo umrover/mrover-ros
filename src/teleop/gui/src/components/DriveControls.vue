@@ -41,28 +41,29 @@ export default {
         for (let i = 0; i < 4; i++) {
           const gamepad = gamepads[i]
           if (gamepad) {
-            if (gamepad.id.includes('Logitech')) {
-              // Make dampen 1 when slider is pushed forward, 0 when pulled back
-              // Raw value is -1 to 1
-              this.dampen = gamepad.axes[JOYSTICK_CONFIG['dampen']] * -0.5 + 0.5
-              // -1 multiplier to make turning left a positive value
-              let rotation = -1 * (gamepad.axes[JOYSTICK_CONFIG['left_right']] + gamepad.axes[JOYSTICK_CONFIG['twist']])
-              if (rotation > 1) {
-                rotation = 1
-              }
-              else if (rotation < -1) {
-                rotation = -1
-              }
+            if (gamepad.id.includes('Xbox')) {
+            
+              let buttons = gamepad.buttons.map((button) =>{
+                return button.value
+              })
+
+              //Deadzone applied to all axis
+              const deadzone = 0.05
+              let axes = gamepad.axes.map((axis) => {
+                return Math.abs(axis) <= deadzone ? 0 : axis
+              })
+
+              //Done so that teleop_twist_joy will always be enabled
+              buttons.unshift(1)
+
               const joystickData = {
-                // forward on joystick is -1, so invert
-                'forward_back': -1 * gamepad.axes[JOYSTICK_CONFIG['forward_back']],
-                'left_right': rotation,
-                'dampen': this.dampen
+                axes: axes,
+                buttons: buttons
               }
               var joystickTopic = new ROSLIB.Topic({
                 ros : this.$ros,
                 name : '/joystick',
-                messageType : 'mrover/Joystick'
+                messageType : 'sensor_msgs/Joy'
               })
               var joystickMsg = new ROSLIB.Message(joystickData)
               joystickTopic.publish(joystickMsg)

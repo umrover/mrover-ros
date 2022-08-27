@@ -1,5 +1,5 @@
 <launch>
-  <arg name="model" default="$(find mrover)/rover_description/rover.urdf" />
+  <!-- <arg name="model" default="$(find mrover)/rover_description/rover.urdf" />
   <arg name="gui" default="false" />
   <param name="robot_description" command="xacro $(find mrover)/rover_description/rover.xacro" />
   <arg name="rvizconfig" default="$(find mrover)/config/rviz/default.rviz" />
@@ -23,5 +23,12 @@
 
   <node name="mrover_sim_spawn" pkg="gazebo_ros" type="spawn_model" output="screen" args="
                         -urdf -param robot_description
-                        -model rover" />
+                        -model rover" /> -->
+    <include file="$(find rosbridge_server)/launch/rosbridge_websocket.launch"></include>
+    <node name="gui" pkg="mrover" type="gui.py" cwd="node"/>
+    <node name="teleop_twist_joy" pkg="teleop_twist_joy" type="teleop_node">
+      <param name="enable_button" value="0"/>
+      <remap from="/joy" to="/joystick" />
+      <remap from="/cmd_vel" to="/drive_cmd_vel" />
+    </node>
 </launch>

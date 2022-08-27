@@ -23,6 +23,7 @@ find_package(catkin REQUIRED COMPONENTS
         dynamic_reconfigure
         message_generation
         rosbridge_server
+        teleop_twist_joy
         )
 
 find_package(OpenCV REQUIRED)
