@@ -35,8 +35,8 @@ class Drive:
     # TODO: Reimplement Dampen Switch
     def teleop_drive_callback(self, msg):
 
-        # teleop_twist_joy message is maxed at 0.5, multiply by 2 to make range [-1,1]
-        linear = msg.linear.x * 2
+        # teleop_twist_joy angular message is maxed at 0.5, multiply by 2 to make range [-1,1]
+        linear = msg.linear.x
         angular = msg.angular.z * 2
 
         # Convert arcade drive to tank drive
