@@ -76,7 +76,7 @@ export default {
             }
             var joystickTopic = new ROSLIB.Topic({
                 ros : this.$ros,
-                name : '/xbox_ra_control',
+                name : '/xbox/ra_control',
                 messageType : 'sensor_msgs/Joy'
             })
             var joystickMsg = new ROSLIB.Message(joystickData)

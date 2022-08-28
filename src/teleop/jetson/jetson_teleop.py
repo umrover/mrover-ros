@@ -4,7 +4,7 @@
 from math import copysign
 from enum import Enum
 import rospy as ros
-from sensor_msgs.msg import Joy
+from sensor_msgs.msg import Joy, JointState
 from geometry_msgs.msg import Twist
 from mrover.msg import DriveVelCmd, RAOpenLoopCmd, HandCmd
 
@@ -35,7 +35,8 @@ class Drive:
     # TODO: Reimplement Dampen Switch
     def teleop_drive_callback(self, msg):
 
-        # teleop_twist_joy angular message is maxed at 0.5, multiply by 2 to make range [-1,1]
+        # teleop_twist_joy angular message is maxed at 0.5 regardless of
+        # turbo mode, multiply by 2 to make range [-1,1]
         linear = msg.linear.x
         angular = msg.angular.z * 2
 
@@ -64,9 +65,6 @@ class Drive:
 
 class ArmControl:
 
-    # Leaving in slow mode for now for testing
-    slow_mode = True
-
     class XboxMappings(Enum):
         left_js_x = 0
         left_js_y = 1
@@ -88,36 +86,46 @@ class ArmControl:
     def ra_control_callback(self, msg):
 
         print(self.XboxMappings.left_js_x)
-        motor_speeds = [
-            quadratic(deadzone(msg.axes[self.XboxMappings.left_js_x.value], 0.15)),
-            quadratic(-deadzone(msg.axes[self.XboxMappings.left_js_y.value], 0.15)),
-            quadratic(-deadzone(msg.axes[self.XboxMappings.right_js_y.value], 0.15)),
-            quadratic(deadzone(msg.axes[self.XboxMappings.right_js_x.value], 0.15)),
-            quadratic(
-                msg.buttons[self.XboxMappings.right_trigger.value] - msg.buttons[self.XboxMappings.left_trigger.value]
-            ),
-            (msg.axes[self.XboxMappings.right_bumper.value] - msg.axes[self.XboxMappings.left_bumper.value]),
-        ]
 
-        if self.slow_mode:
-            # slow down joints a, c, e, and f
-            motor_speeds[0] *= 0.5
-            motor_speeds[2] *= 0.5
-            motor_speeds[4] *= 0.5
-            motor_speeds[5] *= 0.5
+        joint_a = JointState()
+        joint_a.velocity.append(quadratic(deadzone(msg.axes[self.XboxMappings.left_js_x.value], 0.15)))
+        joint_b = JointState()
+        joint_b.velocity.append(quadratic(-deadzone(msg.axes[self.XboxMappings.left_js_y.value], 0.15)))
+        joint_c = JointState()
+        joint_c.velocity.append(quadratic(-deadzone(msg.axes[self.XboxMappings.right_js_y.value], 0.15)))
+        joint_d = JointState()
+        joint_d.velocity.append(quadratic(deadzone(msg.axes[self.XboxMappings.right_js_x.value], 0.15)))
+        joint_e = JointState()
+        joint_e.velocity.append(quadratic(
+                    msg.buttons[self.XboxMappings.right_trigger.value] - msg.buttons[self.XboxMappings.left_trigger.value]
+                    ))
+        joint_f = JointState()
+        joint_f.velocity.append(msg.axes[self.XboxMappings.right_bumper.value] - msg.axes[self.XboxMappings.left_bumper.value])
 
-        openloop_msg = RAOpenLoopCmd()
-        openloop_msg.throttle = motor_speeds
+        joint_a_pub = ros.Publisher("/ra/open_loop/joint_a", JointState, queue_size=100)
+        joint_b_pub = ros.Publisher("/ra/open_loop/joint_b", JointState, queue_size=100)
+        joint_c_pub = ros.Publisher("/ra/open_loop/joint_c", JointState, queue_size=100)
+        joint_d_pub = ros.Publisher("/ra/open_loop/joint_d", JointState, queue_size=100)
+        joint_e_pub = ros.Publisher("/ra/open_loop/joint_e", JointState, queue_size=100)
+        joint_f_pub = ros.Publisher("/ra/open_loop/joint_f", JointState, queue_size=100)
 
-        ra_open_loop_pub = ros.Publisher("/ra_open_loop_cmd", RAOpenLoopCmd, queue_size=100)
-        ra_open_loop_pub.publish(openloop_msg)
+        joint_a_pub.publish(joint_a)
+        joint_b_pub.publish(joint_b)
+        joint_c_pub.publish(joint_c)
+        joint_d_pub.publish(joint_d)
+        joint_e_pub.publish(joint_e)
+        joint_f_pub.publish(joint_f)
 
-        hand_msg = HandCmd()
-        hand_msg.finger = msg.buttons[self.XboxMappings.y.value] - msg.buttons[self.XboxMappings.a.value]
-        hand_msg.grip = msg.buttons[self.XboxMappings.b.value] - msg.buttons[self.XboxMappings.x.value]
+        hand_finger = JointState()
+        hand_finger.velocity.append(msg.buttons[self.XboxMappings.y.value] - msg.buttons[self.XboxMappings.a.value])
+        hand_grip = JointState()
+        hand_grip.velocity.append(msg.buttons[self.XboxMappings.b.value] - msg.buttons[self.XboxMappings.x.value])
 
-        hand_open_loop_pub = ros.Publisher("/hand_open_loop_cmd", HandCmd, queue_size=100)
-        hand_open_loop_pub.publish(hand_msg)
+        finger_pub = ros.Publisher("/hand/open_loop/finger", JointState, queue_size=100)
+        grip_pub = ros.Publisher("/hand/open_loop/grip", JointState, queue_size=100)
+
+        finger_pub.publish(hand_finger)
+        grip_pub.publish(hand_grip)
 
 
 def main():
@@ -127,7 +135,7 @@ def main():
     ros.init_node("teleop")
 
     ros.Subscriber("/drive_cmd_twist", Twist, drive.teleop_drive_callback)
-    ros.Subscriber("/xbox_ra_control", Joy, arm.ra_control_callback)
+    ros.Subscriber("/xbox/ra_control", Joy, arm.ra_control_callback)
 
     ros.spin()
 
