@@ -60,7 +60,7 @@ class GateTrajectory:
         return GateTrajectory(coordinates)
 
 
-class GateState(BaseState):
+class GateTraverseState(BaseState):
     def __init__(
         self,
         context: Context,
