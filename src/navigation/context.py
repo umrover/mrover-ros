@@ -64,7 +64,7 @@ class Environment:
 
         return self.get_fid_pos(current_waypoint.fiducial_id)
 
-    def current_gate_pos(self) -> Optional[Gate]:
+    def current_gate(self) -> Optional[Gate]:
         """
         retrieves the position of the gate (if we know where it is)
         """
@@ -78,9 +78,6 @@ class Environment:
             return None
         
         return Gate(post1[0:2], post2[0:2])
-
-
-
 
 @dataclass
 class Course:

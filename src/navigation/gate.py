@@ -14,6 +14,7 @@ from util.np_utils import normalized, perpendicular_2d
 STOP_THRESH = 0.2
 DRIVE_FWD_THRESH = 0.95
 
+APPROACH_DISTANCE = 2.0
 @dataclass
 class GateTrajectory:
 
@@ -59,46 +60,42 @@ class GateTrajectory:
         return GateTrajectory(coordinates)
 
 
-# class GateState(BaseState):
-#     def __init__(
-#         self,
-#         context: Context,
-#     ):
-#         super().__init__(
-#             context,
-#             add_outcomes=["waypoint_traverse", "single_fiducial", "search"],
-#         )
-#         self.traj = None
+class GateState(BaseState):
+    def __init__(
+        self,
+        context: Context,
+    ):
+        super().__init__(
+            context,
+            add_outcomes=["gate_traverse", "search", "done"],
+        )
+        self.traj = None
 
-#     def evaluate(self, ud):
-#         # Check if a path has been generated and its associated with the same
-#         # waypoint as the previous one. Generate one if not
-#         waypoint = self.context.course.current_waypoint()
-#         if self.traj is None or self.traj.fid_id != waypoint.fiducial_id:
-#             self.traj = SearchTrajectory.spiral_traj(
-#                 self.context.rover.get_pose().position_vector()[0:2],
-#                 5,
-#                 2,
-#                 waypoint.fiducial_id,
-#             )
+    def evaluate(self, ud):
+        # Check if a path has been generated and its associated with the same
+        # waypoint as the previous one. Generate one if not
+        waypoint = self.context.course.current_waypoint()
+        gate = self.context.env.current_gate()
+        if gate is None:
+            return "search"
+        if self.traj is None or self.traj.fid_id != waypoint.fiducial_id:
+            self.traj = GateTrajectory.spider_gate_trajectory(
+                APPROACH_DISTANCE,
+                gate,
+                self.context.rover.get_pose().position_vector()
+            )
 
-#         # continue executing this path from wherever it left off
-#         target_pos = self.traj.get_cur_pt()
-#         cmd_vel, arrived = get_drive_command(
-#             target_pos,
-#             self.context.rover.get_pose(),
-#             STOP_THRESH,
-#             DRIVE_FWD_THRESH,
-#         )
-#         if arrived:
-#             # if we finish the spiral without seeing the fiducial, move on with course
-#             if self.traj.increment_point():
-#                 return "waypoint_traverse"
+        # continue executing this path from wherever it left off
+        target_pos = self.traj.get_cur_pt()
+        cmd_vel, arrived = get_drive_command(
+            target_pos,
+            self.context.rover.get_pose(),
+            STOP_THRESH,
+            DRIVE_FWD_THRESH,
+        )
+        if arrived:
+            # if we finish the gate path, we're done
+            if self.traj.increment_point():
+                return "done"
 
-#         self.context.rover.send_drive_command(cmd_vel)
-#         # if we see the fiduicial, go to the fiducial state
-#         current_waypoint = self.context.course.current_waypoint()
-#         if current_waypoint.fiducial_id != Environment.NO_FIDUCIAL and self.context.env.current_fid_pos() is not None:
-#             return "single_fiducial"
-
-#         return "search"
+        return "gate_traverse"
