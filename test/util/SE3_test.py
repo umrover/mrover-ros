@@ -16,6 +16,7 @@ import rospy
 import tf2_ros
 
 from util.SE3 import SE3
+from util.SO3 import SO3
 
 
 class TestSE3(unittest.TestCase):
@@ -26,31 +27,13 @@ class TestSE3(unittest.TestCase):
         self.assertTrue(np.array_equal(p1.position, np.zeros(3)))
         self.assertTrue(np.array_equal(p1.rotation.quaternion, np.array([0, 0, 0, 1])))
 
-        # test init values passed to constructor
-        p2 = SE3(position=np.array([1, 2, 3]), rotation=np.array([0.247404, 0, 0, 0.9689124]))
+        # test init value passed to constructor
+        p2 = SE3(
+            position=np.array([1, 2, 3]),
+            rotation=SO3(quaternion=np.array([1, 2, 3, 4])),
+        )
         self.assertTrue(np.array_equal(p2.position, np.array([1, 2, 3])))
-        self.assertTrue(np.array_equal(p2.rotation.quaternion, np.array([0.247404, 0, 0, 0.9689124])))
-
-        # test that np arrays passed to constructor aren't still references to the np arrays inside the object
-        x = np.array([1, 2, 3])
-        y = x.copy()
-        q1 = np.array([1, 2, 3, 4])
-        q2 = q1.copy()
-        r3 = SE3(position=x, rotation=q1)
-        self.assertTrue(np.allclose(r3.position, x))
-        self.assertTrue(np.allclose(r3.rotation.quaternion, q1))
-        x[0] = 7
-        q1[0] = 7
-        self.assertFalse(np.allclose(r3.position, x))
-        self.assertTrue(np.allclose(r3.position, y))
-        self.assertFalse(np.allclose(r3.rotation.quaternion, q1))
-        self.assertTrue(np.allclose(r3.rotation.quaternion, q2))
-        r3.position[1] = 6
-        r3.rotation.quaternion[1] = 6
-        self.assertFalse(np.allclose(r3.position, x))
-        self.assertFalse(np.allclose(r3.position, y))
-        self.assertFalse(np.allclose(r3.rotation.quaternion, q1))
-        self.assertFalse(np.allclose(r3.rotation.quaternion, q2))
+        self.assertTrue(np.array_equal(p2.rotation.quaternion, np.array([1, 2, 3, 4])))
 
     def test_pos_distance_to(self):
 
@@ -93,8 +76,11 @@ class TestSE3(unittest.TestCase):
         self.assertTrue(r2.is_approx(r1))
 
         # test two non zero SE3s that are within the default tolerance
-        r3 = SE3(position=np.array([1, 2, 3]), rotation=np.array([1, 2, 3, 4]))
-        r4 = SE3(position=np.array([1.000000008, 2, 3]), rotation=np.array([1.000000008, 2, 3, 4]))
+        r3 = SE3.from_pos_quat(position=np.array([1, 2, 3]), quaternion=np.array([1, 2, 3, 4]))
+        r4 = SE3.from_pos_quat(
+            position=np.array([1.000000008, 2, 3]),
+            quaternion=np.array([1.000000008, 2, 3, 4]),
+        )
         self.assertTrue(r3.is_approx(r3))
         self.assertTrue(r4.is_approx(r4))
         self.assertTrue(r3.is_approx(r4))
@@ -105,21 +91,21 @@ class TestSE3(unittest.TestCase):
         self.assertFalse(r4.is_approx(r1))
 
         # test two SE3s that are within a tolerance of 1e-3, not within the default tolerance
-        r5 = SE3(position=np.array([1.0004, 2, 3]), rotation=np.array([1.0005, 2, 3, 4]))
+        r5 = SE3.from_pos_quat(position=np.array([1.0004, 2, 3]), quaternion=np.array([1.0005, 2, 3, 4]))
         self.assertTrue(r3.is_approx(r5, tolerance=1e-3))
         self.assertTrue(r5.is_approx(r3, tolerance=1e-3))
         self.assertFalse(r3.is_approx(r5))
         self.assertFalse(r5.is_approx(r3))
 
         # test two SE3s that have equal position but not rotation
-        r6 = SE3(position=np.array([1, 2, 3]), rotation=np.array([2, 2, 3, 4]))
+        r6 = SE3.from_pos_quat(position=np.array([1, 2, 3]), quaternion=np.array([2, 2, 3, 4]))
         self.assertFalse(r6.rotation.is_approx(r3.rotation))
         self.assertFalse(r3.rotation.is_approx(r6.rotation))
         self.assertFalse(r3.is_approx(r6))
         self.assertFalse(r6.is_approx(r3))
 
         # test two SE3s that have equal rotation but not position
-        r7 = SE3(position=np.array([7, 2, 3]), rotation=np.array([1, 2, 3, 4]))
+        r7 = SE3.from_pos_quat(position=np.array([7, 2, 3]), quaternion=np.array([1, 2, 3, 4]))
         self.assertTrue(r7.rotation.is_approx(r3.rotation))
         self.assertTrue(r3.rotation.is_approx(r7.rotation))
         self.assertFalse(r3.is_approx(r7))

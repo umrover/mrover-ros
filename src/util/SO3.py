@@ -1,5 +1,5 @@
 from __future__ import annotations
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 import numpy as np
 from tf.transformations import (
     quaternion_inverse,
@@ -9,18 +9,31 @@ from tf.transformations import (
 )
 
 
-@dataclass
+@dataclass(frozen=True)
 class SO3:
-    quaternion: np.ndarray
+    """
+    An SO3 object represents a rotation in 3 dimensions,
+    AKA a member of the Special Orthogonal group in 3 dimensions (SO3).
 
-    def __init__(self, quaternion: np.ndarray = None):
-        """
-        Create an SO3 object from a quaternion vector
-        """
-        if quaternion is None:
-            self.quaternion = np.array([0, 0, 0, 1])
-        else:
-            self.quaternion = quaternion.copy()
+    NOTE: when passing an already existing numpy array to the constructor as the `quaternion` argument,
+          make sure to call `.copy()` on it in order to avoid transferring ownership of the array.
+
+          For example:
+          >>> arr = np.array([1, 2, 3, 4])
+          >>> r = SO3(arr.copy())
+
+    """
+
+    quaternion: np.ndarray = field(default_factory=lambda: np.array([0, 0, 0, 1]))
+
+    # def __init__(self, quaternion: np.ndarray = None):
+    #     """
+    #     Create an SO3 object from a quaternion vector
+    #     """
+    #     if quaternion is None:
+    #         self.quaternion = np.array([0, 0, 0, 1])
+    #     else:
+    #         self.quaternion = quaternion.copy()
 
     @classmethod
     def from_matrix(cls, rotation_matrix: np.ndarray) -> SO3:

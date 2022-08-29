@@ -74,8 +74,8 @@ class TestSE3(unittest.TestCase):
         position2 = np.array([0, -1, 0])
         q2 = np.array([0, 0, 0, 1])
         p1 = SE3()
-        p2 = SE3(position=position1, rotation=q1)
-        p3 = SE3(position=position2, rotation=q2)
+        p2 = SE3.from_pos_quat(position=position1, quaternion=q1)
+        p3 = SE3.from_pos_quat(position=position2, quaternion=q2)
 
         # test zero TF
         p1.publish_to_tf_tree(broadcaster, parent_frame="frame_a", child_frame="frame_b")

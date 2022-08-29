@@ -1,6 +1,5 @@
 from __future__ import annotations
-from typing import Optional, Union
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 
 import numpy as np
 import tf2_ros
@@ -11,27 +10,46 @@ from geometry_msgs.msg import TransformStamped, Vector3, Quaternion
 from .SO3 import SO3
 
 
-@dataclass
+@dataclass(frozen=True)
 class SE3:
-    position: np.ndarray
-    rotation: SO3
+    """
+    An SE3 object represents a pose in 3 dimensions,
+    AKA a member of the Special Euclidean group in 3 dimensions (SE3).
+    This consists of a 3D position and a 3D rotation (represented as an SO3).
 
-    def __init__(self, position: np.ndarray = None, rotation: np.ndarray = None):
+    NOTE: when passing an already existing numpy array to the constructor as the `position` argument,
+          make sure to call `.copy()` on it in order to avoid transferring ownership of the array.
+
+          For example:
+          >>> arr = np.array([1, 2, 3])
+          >>> p = SE3(arr.copy())
+
+    """
+
+    position: np.ndarray = field(default_factory=lambda: np.zeros(3))
+    rotation: SO3 = SO3()
+
+    # def __init__(self, position: np.ndarray = None, rotation: np.ndarray = None):
+    #     if position is None:
+    #         self.position = np.zeros(3)
+    #     else:
+    #         self.position = position.copy()
+
+    #     if rotation is None:
+    #         self.rotation = SO3()
+    #     else:
+    #         self.rotation = SO3(rotation)
+
+    @classmethod
+    def from_pos_quat(cls, position: np.ndarray, quaternion: np.ndarray):
         """
-        Initialize an SE3 object
+        Initialize an SE3 object using a position vector to specify position
+        and a quaternion vector to specify rotation.
 
         :param position: optional numpy position vector [x, y, z], defaults to zero vector
         :param rotation: optional numpy quaternion vector [x, y, z, w], defaults to [0, 0, 0, 1]
         """
-        if position is None:
-            self.position = np.zeros(3)
-        else:
-            self.position = position.copy()
-
-        if rotation is None:
-            self.rotation = SO3()
-        else:
-            self.rotation = SO3(rotation)
+        return SE3(position, SO3(quaternion))
 
     @classmethod
     def from_tf_tree(cls, tf_buffer: tf2_ros.Buffer, parent_frame: str, child_frame: str) -> SE3:
@@ -48,12 +66,10 @@ class SE3:
         :raises tf2_ros.ExtrapolationException: if the transform would've required extrapolation
                                                 (forward or backward in time) beyond current limits
 
-        :returns: an SE3 containing the tranform from parent_frame to child_frame
+        :returns: an SE3 containing the transform from parent_frame to child_frame
         """
         tf_msg = tf_buffer.lookup_transform(parent_frame, child_frame, rospy.Time()).transform
-        result = SE3()
-        result.position = numpify(tf_msg.translation)
-        result.rotation = SO3(numpify(tf_msg.rotation))
+        result = SE3(position=numpify(tf_msg.translation), rotation=SO3(numpify(tf_msg.rotation)))
         return result
 
     def publish_to_tf_tree(
