@@ -7,32 +7,18 @@ from context import Context, Environment
 from state import BaseState
 from dataclasses import dataclass
 from drive import get_drive_command
+from trajectory import Trajectory
 
 STOP_THRESH = 0.2
 DRIVE_FWD_THRESH = 0.95
 
 
 @dataclass
-class SearchTrajectory:
-    # Coordinates of the trajectory
-    coordinates: np.ndarray
+class SearchTrajectory(Trajectory):
     # Associated fiducial for this trajectory
     fid_id: int
-    # Currently tracked coordinate index along trajectory
-    cur_pt: int = 0
     # Helper for building spiral
     dirs: ClassVar[np.ndarray] = np.array([[0, -1], [-1, 0], [0, 1], [1, 0]])
-
-    def get_cur_pt(self) -> np.ndarray:
-        return self.coordinates[self.cur_pt]
-
-    def increment_point(self) -> bool:
-        """
-        Increments the tracked point in the trajectory, returns true if
-        the trajectory is finished
-        """
-        self.cur_pt += 1
-        return self.cur_pt >= len(self.coordinates)
 
     @classmethod
     def spiral_traj(cls, center: np.ndarray, num_turns: int, distance: int, fid_id: int) -> SearchTrajectory:
