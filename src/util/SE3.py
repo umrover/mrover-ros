@@ -22,23 +22,12 @@ class SE3:
 
           For example:
           >>> arr = np.array([1, 2, 3])
-          >>> p = SE3(arr.copy())
+          >>> p = SE3(position=arr.copy())
 
     """
 
     position: np.ndarray = field(default_factory=lambda: np.zeros(3))
     rotation: SO3 = SO3()
-
-    # def __init__(self, position: np.ndarray = None, rotation: np.ndarray = None):
-    #     if position is None:
-    #         self.position = np.zeros(3)
-    #     else:
-    #         self.position = position.copy()
-
-    #     if rotation is None:
-    #         self.rotation = SO3()
-    #     else:
-    #         self.rotation = SO3(rotation)
 
     @classmethod
     def from_pos_quat(cls, position: np.ndarray, quaternion: np.ndarray):
@@ -46,8 +35,8 @@ class SE3:
         Initialize an SE3 object using a position vector to specify position
         and a quaternion vector to specify rotation.
 
-        :param position: optional numpy position vector [x, y, z], defaults to zero vector
-        :param rotation: optional numpy quaternion vector [x, y, z, w], defaults to [0, 0, 0, 1]
+        :param position: position vector [x, y, z], defaults to zero vector
+        :param rotation: quaternion vector [x, y, z, w], defaults to [0, 0, 0, 1]
         """
         return SE3(position, SO3(quaternion))
 

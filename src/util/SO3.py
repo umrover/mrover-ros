@@ -20,20 +20,11 @@ class SO3:
 
           For example:
           >>> arr = np.array([1, 2, 3, 4])
-          >>> r = SO3(arr.copy())
+          >>> r = SO3(quaternion=arr.copy())
 
     """
 
     quaternion: np.ndarray = field(default_factory=lambda: np.array([0, 0, 0, 1]))
-
-    # def __init__(self, quaternion: np.ndarray = None):
-    #     """
-    #     Create an SO3 object from a quaternion vector
-    #     """
-    #     if quaternion is None:
-    #         self.quaternion = np.array([0, 0, 0, 1])
-    #     else:
-    #         self.quaternion = quaternion.copy()
 
     @classmethod
     def from_matrix(cls, rotation_matrix: np.ndarray) -> SO3:
