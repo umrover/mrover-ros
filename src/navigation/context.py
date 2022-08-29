@@ -1,4 +1,5 @@
 from __future__ import annotations
+from pdb import post_mortem
 import rospy
 import tf2_ros
 from geometry_msgs.msg import Twist
@@ -10,6 +11,12 @@ from typing import ClassVar, Optional
 import numpy as np
 from dataclasses import dataclass
 
+
+@dataclass
+class Post:
+    locationKnown: bool
+    position: np.ndarray
+    id: int
 
 @dataclass
 class Rover:
@@ -34,6 +41,8 @@ class Environment:
 
     ctx: Context
     NO_FIDUCIAL: ClassVar[int] = -1
+    post1: Post
+    post2: Post
 
     def get_fid_pos(self, fid_id: int) -> Optional[np.ndarray]:
         """
@@ -59,7 +68,6 @@ class Environment:
             return None
 
         return self.get_fid_pos(current_waypoint.fiducial_id)
-
 
 @dataclass
 class Course:
