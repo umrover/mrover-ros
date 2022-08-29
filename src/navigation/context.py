@@ -11,13 +11,10 @@ from typing import ClassVar, Optional
 import numpy as np
 from dataclasses import dataclass
 
-
 @dataclass
-class Post:
-    locationKnown: bool
-    position: np.ndarray
-    id: int
-
+class Gate:
+    post1: np.ndarray
+    post2: np.ndarray
 @dataclass
 class Rover:
     ctx: Context
@@ -41,10 +38,8 @@ class Environment:
 
     ctx: Context
     NO_FIDUCIAL: ClassVar[int] = -1
-    post1: Post
-    post2: Post
 
-    def get_fid_pos(self, fid_id: int) -> Optional[np.ndarray]:
+    def get_fid_pos(self, fid_id: int, frame: str = "odom") -> Optional[np.ndarray]:
         """
         Retrieves the pose of the given fiducial ID from the TF tree
         if it exists, otherwise returns None
@@ -68,6 +63,24 @@ class Environment:
             return None
 
         return self.get_fid_pos(current_waypoint.fiducial_id)
+
+    def current_gate_pos(self) -> Optional[Gate]:
+        """
+        retrieves the position of the gate (if we know where it is)
+        """
+        current_waypoint = self.ctx.course.current_waypoint()
+        if current_waypoint is None or current_waypoint.fiducial_id == self.NO_FIDUCIAL:
+            return None
+        
+        post1 = self.get_fid_pos(current_waypoint.fiducial_id)
+        post2 = self.get_fid_pos(current_waypoint.fiducial_id)
+        if post1 is None or post2 is None:
+            return None
+        
+        return Gate(post1[0:2], post2[0:2])
+
+
+
 
 @dataclass
 class Course:
