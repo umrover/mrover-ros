@@ -6,7 +6,7 @@ from enum import IntEnum
 import rospy as ros
 from sensor_msgs.msg import Joy, JointState
 from geometry_msgs.msg import Twist
-from mrover.msg import DriveVelCmd, RAOpenLoopCmd, HandCmd
+from mrover.msg import Chassis, RAOpenLoopCmd, HandCmd
 
 
 def quadratic(val):
@@ -32,35 +32,29 @@ class Drive:
         pan = 4
         tilt = 5
 
+    # Constants for diff drive
+    TRACK_RADIUS = 10.0  # meter
+    WHEEL_RADIUS = 0.5  # meter
+
+    drive_vel_pub = ros.Publisher("/drive_cmd_wheels", Chassis, queue_size=100)
+
     # TODO: Reimplement Dampen Switch
     def teleop_drive_callback(self, msg):
 
         # teleop_twist_joy angular message is maxed at 0.5 regardless of
         # turbo mode, multiply by 2 to make range [-1,1]
-        linear = msg.linear.x
-        angular = msg.angular.z * 2
+        v = msg.linear.x
+        omega = msg.angular.z * 2
 
-        # Convert arcade drive to tank drive
-        # Inversions may need to be done for logitech joystick
-        angular_op = (angular / 2) / (abs(linear) + 0.5)
-        vel_left = linear + angular_op
-        vel_right = linear - angular_op
+        # Transform into L & R wheel angular velocities using diff drive kinematics
+        omega_l = (v - omega * self.TRACK_RADIUS / 2.0) / self.WHEEL_RADIUS
+        omega_r = (v + omega * self.TRACK_RADIUS / 2.0) / self.WHEEL_RADIUS
 
-        # Scale to be within [-1, 1], if necessary
-        if abs(vel_left) > 1 or abs(vel_right) > 1:
-            if abs(vel_left) > abs(vel_right):
-                vel_right /= abs(vel_left)
-                vel_left /= abs(vel_left)
-            else:
-                vel_left /= abs(vel_right)
-                vel_right /= abs(vel_right)
+        command = Chassis()
+        command.omega_l = omega_l
+        command.omega_r = omega_r
 
-        command = DriveVelCmd()
-        command.left = vel_left
-        command.right = vel_right
-
-        drive_vel_pub = ros.Publisher("/drive_vel_cmd", DriveVelCmd, queue_size=100)
-        drive_vel_pub.publish(command)
+        self.drive_vel_pub.publish(command)
 
 
 class ArmControl:
