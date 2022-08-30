@@ -25,7 +25,7 @@
                         -urdf -param robot_description
                         -model rover" />
     <include file="$(find rosbridge_server)/launch/rosbridge_websocket.launch"></include>
-    <node name="gui" pkg="mrover" type="gui.py" cwd="node"/>
+    <node name="gui" pkg="mrover" type="gui.sh" cwd="node"/>
     <node name="jetson_teleop" pkg="mrover" type="jetson_teleop.py"/>
     <node name="teleop_twist_joy" pkg="teleop_twist_joy" type="teleop_node">
       <param name="enable_button" value="-1"/>
