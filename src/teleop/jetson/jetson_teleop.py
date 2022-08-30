@@ -2,7 +2,7 @@
 # Node for teleop-related callback functions
 
 from math import copysign
-from enum import Enum
+from enum import IntEnum
 import rospy as ros
 from sensor_msgs.msg import Joy, JointState
 from geometry_msgs.msg import Twist
@@ -24,7 +24,7 @@ def deadzone(magnitude, threshold):
 
 
 class Drive:
-    class LogitechAxes(Enum):
+    class LogitechAxes(IntEnum):
         left_right = 0
         forward_back = 1
         twist = 2
@@ -64,8 +64,7 @@ class Drive:
 
 
 class ArmControl:
-
-    class XboxMappings(Enum):
+    class XboxMappings(IntEnum):
         left_js_x = 0
         left_js_y = 1
         left_trigger = 6
@@ -83,49 +82,51 @@ class ArmControl:
         x = 2
         y = 3
 
+    # RA Joint Publishers
+    joint_a_pub = ros.Publisher("/ra/open_loop/joint_a", JointState, queue_size=100)
+    joint_b_pub = ros.Publisher("/ra/open_loop/joint_b", JointState, queue_size=100)
+    joint_c_pub = ros.Publisher("/ra/open_loop/joint_c", JointState, queue_size=100)
+    joint_d_pub = ros.Publisher("/ra/open_loop/joint_d", JointState, queue_size=100)
+    joint_e_pub = ros.Publisher("/ra/open_loop/joint_e", JointState, queue_size=100)
+    joint_f_pub = ros.Publisher("/ra/open_loop/joint_f", JointState, queue_size=100)
+
+    # Hand Publishers
+    finger_pub = ros.Publisher("/hand/open_loop/finger", JointState, queue_size=100)
+    grip_pub = ros.Publisher("/hand/open_loop/grip", JointState, queue_size=100)
+
     def ra_control_callback(self, msg):
 
         print(self.XboxMappings.left_js_x)
 
         joint_a = JointState()
-        joint_a.velocity.append(quadratic(deadzone(msg.axes[self.XboxMappings.left_js_x.value], 0.15)))
+        joint_a.velocity.append(quadratic(deadzone(msg.axes[self.XboxMappings.left_js_x], 0.15)))
         joint_b = JointState()
-        joint_b.velocity.append(quadratic(-deadzone(msg.axes[self.XboxMappings.left_js_y.value], 0.15)))
+        joint_b.velocity.append(quadratic(-deadzone(msg.axes[self.XboxMappings.left_js_y], 0.15)))
         joint_c = JointState()
-        joint_c.velocity.append(quadratic(-deadzone(msg.axes[self.XboxMappings.right_js_y.value], 0.15)))
+        joint_c.velocity.append(quadratic(-deadzone(msg.axes[self.XboxMappings.right_js_y], 0.15)))
         joint_d = JointState()
-        joint_d.velocity.append(quadratic(deadzone(msg.axes[self.XboxMappings.right_js_x.value], 0.15)))
+        joint_d.velocity.append(quadratic(deadzone(msg.axes[self.XboxMappings.right_js_x], 0.15)))
         joint_e = JointState()
-        joint_e.velocity.append(quadratic(
-                    msg.buttons[self.XboxMappings.right_trigger.value] - msg.buttons[self.XboxMappings.left_trigger.value]
-                    ))
+        joint_e.velocity.append(
+            quadratic(msg.buttons[self.XboxMappings.right_trigger] - msg.buttons[self.XboxMappings.left_trigger])
+        )
         joint_f = JointState()
-        joint_f.velocity.append(msg.axes[self.XboxMappings.right_bumper.value] - msg.axes[self.XboxMappings.left_bumper.value])
+        joint_f.velocity.append(msg.axes[self.XboxMappings.right_bumper] - msg.axes[self.XboxMappings.left_bumper])
 
-        joint_a_pub = ros.Publisher("/ra/open_loop/joint_a", JointState, queue_size=100)
-        joint_b_pub = ros.Publisher("/ra/open_loop/joint_b", JointState, queue_size=100)
-        joint_c_pub = ros.Publisher("/ra/open_loop/joint_c", JointState, queue_size=100)
-        joint_d_pub = ros.Publisher("/ra/open_loop/joint_d", JointState, queue_size=100)
-        joint_e_pub = ros.Publisher("/ra/open_loop/joint_e", JointState, queue_size=100)
-        joint_f_pub = ros.Publisher("/ra/open_loop/joint_f", JointState, queue_size=100)
-
-        joint_a_pub.publish(joint_a)
-        joint_b_pub.publish(joint_b)
-        joint_c_pub.publish(joint_c)
-        joint_d_pub.publish(joint_d)
-        joint_e_pub.publish(joint_e)
-        joint_f_pub.publish(joint_f)
+        self.joint_a_pub.publish(joint_a)
+        self.joint_b_pub.publish(joint_b)
+        self.joint_c_pub.publish(joint_c)
+        self.joint_d_pub.publish(joint_d)
+        self.joint_e_pub.publish(joint_e)
+        self.joint_f_pub.publish(joint_f)
 
         hand_finger = JointState()
-        hand_finger.velocity.append(msg.buttons[self.XboxMappings.y.value] - msg.buttons[self.XboxMappings.a.value])
+        hand_finger.velocity.append(msg.buttons[self.XboxMappings.y] - msg.buttons[self.XboxMappings.a])
         hand_grip = JointState()
-        hand_grip.velocity.append(msg.buttons[self.XboxMappings.b.value] - msg.buttons[self.XboxMappings.x.value])
+        hand_grip.velocity.append(msg.buttons[self.XboxMappings.b] - msg.buttons[self.XboxMappings.x])
 
-        finger_pub = ros.Publisher("/hand/open_loop/finger", JointState, queue_size=100)
-        grip_pub = ros.Publisher("/hand/open_loop/grip", JointState, queue_size=100)
-
-        finger_pub.publish(hand_finger)
-        grip_pub.publish(hand_grip)
+        self.finger_pub.publish(hand_finger)
+        self.grip_pub.publish(hand_grip)
 
 
 def main():
