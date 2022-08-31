@@ -64,9 +64,9 @@ namespace gazebo {
 
     // Destructor
     DiffDrivePlugin6W::~DiffDrivePlugin6W() {
+        mSpinner->stop();
         mUpdateConnection.reset();
         mNode->shutdown();
-        mCallbackQueueThread.join();
     }
 
     // Load the controller
@@ -137,28 +137,28 @@ namespace gazebo {
             return;
         }
 
-        mNode = std::make_unique<ros::NodeHandle>(mNamespace);
+        mNode = ros::NodeHandle(mNamespace);
 
         mTfPrefix = tf::getPrefixParam(*mNode);
-        mTfBroadcaster = std::make_unique<tf::TransformBroadcaster>();
+        mTfBroadcaster = tf::TransformBroadcaster();
 
         // ROS: Subscribe to the velocity command topic (usually "cmd_vel")
         ros::SubscribeOptions so = ros::SubscribeOptions::create<geometry_msgs::Twist>(
                 mVelocityCommandTopic, 1,
                 [this](const geometry_msgs::Twist::ConstPtr& velocityCommand) { commandVelocityCallback(velocityCommand); },
-                ros::VoidPtr(), &mQueue);
+                ros::VoidPtr(), &mVelocityCommandQueue);
         mSubscriber = mNode->subscribe(so);
         mPublisher = mNode->advertise<nav_msgs::Odometry>("odom", 1);
+        mSpinner = ros::AsyncSpinner(1, &mVelocityCommandQueue); // 1 core for now
+        mSpinner->start();
 
-        //mCallbackQueueThread = boost::thread(boost::bind(&DiffDrivePlugin6W::queueThread, this));
 
         Reset();
-
-//        mCallbackQueueThread = std::thread([this]() { queueThread(); });
 
         // New Mechanism for Updating every World Cycle
         // Listen to the update event. This event is broadcast every
         // simulation iteration.
+        // TODO: (quintin) not sure how to get rid of this std::bind
         mUpdateConnection = event::Events::ConnectWorldUpdateBegin(std::bind(&DiffDrivePlugin6W::update, this));
     }
 
@@ -180,8 +180,6 @@ namespace gazebo {
 
     // Update the controller
     void DiffDrivePlugin6W::update() {
-
-        mQueue.callAvailable();
 
         // TODO: Step should be in a parameter of this function
         double d1, d2;
@@ -252,13 +250,6 @@ namespace gazebo {
 
         mForwardVelocity = velocityCommand->linear.x;
         mPitch = velocityCommand->angular.z;
-    }
-
-    // NEW: custom callback queue thread
-    void DiffDrivePlugin6W::queueThread() {
-        while (mNode->ok()) {
-            mQueue.callAvailable(ros::WallDuration(CALLBACK_TIMEOUT));
-        }
     }
 
     // NEW: Update this to publish odometry topic

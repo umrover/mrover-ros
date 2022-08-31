@@ -88,10 +88,10 @@ namespace gazebo {
         std::array<double, 3> mOdomVelocity{};
 
         // ROS STUFF
-        std::unique_ptr<ros::NodeHandle> mNode;
+        std::optional<ros::NodeHandle> mNode;
         ros::Publisher mPublisher;
         ros::Subscriber mSubscriber;
-        std::unique_ptr<tf::TransformBroadcaster> mTfBroadcaster{};
+        std::optional<tf::TransformBroadcaster> mTfBroadcaster{};
         nav_msgs::Odometry mOdometry;
         std::string mTfPrefix;
 
@@ -102,10 +102,8 @@ namespace gazebo {
         std::string mBodyLinkName;
 
         // Custom Callback Queue
-        ros::CallbackQueue mQueue;
-        std::thread mCallbackQueueThread;
-
-        void queueThread();
+        ros::CallbackQueue mVelocityCommandQueue;
+        std::optional<ros::AsyncSpinner> mSpinner;
 
         // DiffDrive stuff
         void commandVelocityCallback(const geometry_msgs::Twist::ConstPtr& twistCommand);
