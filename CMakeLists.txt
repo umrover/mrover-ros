@@ -75,7 +75,7 @@ add_message_files(
         FILES
         Course.msg
         Waypoint.msg
-        DriveVelCmd.msg
+        Chassis.msg
         RAOpenLoopCmd.msg
         HandCmd.msg
 )
