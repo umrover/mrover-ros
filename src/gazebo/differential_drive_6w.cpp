@@ -38,7 +38,6 @@
 #include <gazebo/common/Events.hh>
 #include <gazebo/physics/physics.hh>
 
-#include <boost/bind.hpp>
 #include <geometry_msgs/Twist.h>
 #include <nav_msgs/Odometry.h>
 #include <ros/ros.h>
@@ -48,6 +47,7 @@
 namespace gazebo {
 
     constexpr auto VELOCITY_COMMAND_TOPIC = "cmd_vel";
+    constexpr auto CALLBACK_TIMEOUT = 0.01;
 
     enum {
         FRONT_LEFT,
@@ -145,53 +145,43 @@ namespace gazebo {
         // ROS: Subscribe to the velocity command topic (usually "cmd_vel")
         ros::SubscribeOptions so = ros::SubscribeOptions::create<geometry_msgs::Twist>(
                 mVelocityCommandTopic, 1,
-
-                boost::bind(&DiffDrivePlugin6W::cmdVelCallback, this, _1),
+                [this](const geometry_msgs::Twist::ConstPtr& velocityCommand) { commandVelocityCallback(velocityCommand); },
                 ros::VoidPtr(), &mQueue);
         mSubscriber = mNode->subscribe(so);
         mPublisher = mNode->advertise<nav_msgs::Odometry>("odom", 1);
 
-        // TODO(amg): disabled due to weirdness where the thread would die and callbacks stop
-        //mCallbackQueueThread = boost::thread(boost::bind(&DiffDrivePlugin6W::QueueThread, this));
+        //mCallbackQueueThread = boost::thread(boost::bind(&DiffDrivePlugin6W::queueThread, this));
 
         Reset();
+
+//        mCallbackQueueThread = std::thread([this]() { queueThread(); });
 
         // New Mechanism for Updating every World Cycle
         // Listen to the update event. This event is broadcast every
         // simulation iteration.
-        mUpdateConnection = event::Events::ConnectWorldUpdateBegin(boost::bind(&DiffDrivePlugin6W::Update, this));
+        mUpdateConnection = event::Events::ConnectWorldUpdateBegin(std::bind(&DiffDrivePlugin6W::update, this));
     }
 
     // Initialize the controller
     void DiffDrivePlugin6W::Reset() {
         mEnableMotors = true;
 
-        for (double& ws: mWheelSpeed) {
-            ws = 0;
-        }
+        mWheelSpeeds = {};
 
         mPreviousUpdateTime = mWorld->SimTime();
 
         mForwardVelocity = 0;
         mPitch = 0;
-        mIsAlive = true;
 
         // Reset odometric pose
-        odomPose[0] = 0.0;
-        odomPose[1] = 0.0;
-        odomPose[2] = 0.0;
-
-        odomVel[0] = 0.0;
-        odomVel[1] = 0.0;
-        odomVel[2] = 0.0;
+        mOdomPose = {};
+        mOdomVelocity = {};
     }
 
     // Update the controller
-    void DiffDrivePlugin6W::Update() {
+    void DiffDrivePlugin6W::update() {
 
-        // TODO(amg): This is probably bad...
-        static const double timeout = 0.01;
-        mQueue.callAvailable(ros::WallDuration(timeout));
+        mQueue.callAvailable();
 
         // TODO: Step should be in a parameter of this function
         double d1, d2;
@@ -212,23 +202,23 @@ namespace gazebo {
         da = (d1 - d2) / mWheelSeparation;
 
         // Compute odometric pose
-        odomPose[0] += dr * cos(odomPose[2]);
-        odomPose[1] += dr * sin(odomPose[2]);
-        odomPose[2] += da;
+        mOdomPose[0] += dr * std::cos(mOdomPose[2]);
+        mOdomPose[1] += dr * std::sin(mOdomPose[2]);
+        mOdomPose[2] += da;
 
         // Compute odometric instantaneous velocity
-        odomVel[0] = dr / stepTime.Double();
-        odomVel[1] = 0.0;
-        odomVel[2] = da / stepTime.Double();
+        mOdomVelocity[0] = dr / stepTime.Double();
+        mOdomVelocity[1] = 0.0;
+        mOdomVelocity[2] = da / stepTime.Double();
 
         if (mEnableMotors) {
-            mJoints[FRONT_LEFT]->SetVelocity(0, mWheelSpeed[0] / (mWheelDiameter / 2.0));
-            mJoints[MID_LEFT]->SetVelocity(0, mWheelSpeed[0] / (mWheelDiameter / 2.0));
-            mJoints[REAR_LEFT]->SetVelocity(0, mWheelSpeed[0] / (mWheelDiameter / 2.0));
+            mJoints[FRONT_LEFT]->SetVelocity(0, mWheelSpeeds[0] / (mWheelDiameter / 2.0));
+            mJoints[MID_LEFT]->SetVelocity(0, mWheelSpeeds[0] / (mWheelDiameter / 2.0));
+            mJoints[REAR_LEFT]->SetVelocity(0, mWheelSpeeds[0] / (mWheelDiameter / 2.0));
 
-            mJoints[FRONT_RIGHT]->SetVelocity(0, mWheelSpeed[1] / (mWheelDiameter / 2.0));
-            mJoints[MID_RIGHT]->SetVelocity(0, mWheelSpeed[1] / (mWheelDiameter / 2.0));
-            mJoints[REAR_RIGHT]->SetVelocity(0, mWheelSpeed[1] / (mWheelDiameter / 2.0));
+            mJoints[FRONT_RIGHT]->SetVelocity(0, mWheelSpeeds[1] / (mWheelDiameter / 2.0));
+            mJoints[MID_RIGHT]->SetVelocity(0, mWheelSpeeds[1] / (mWheelDiameter / 2.0));
+            mJoints[REAR_RIGHT]->SetVelocity(0, mWheelSpeeds[1] / (mWheelDiameter / 2.0));
 
             mJoints[FRONT_LEFT]->SetEffortLimit(0, mTorque);
             mJoints[MID_LEFT]->SetEffortLimit(0, mTorque);
@@ -242,7 +232,6 @@ namespace gazebo {
         publish_odometry();
     }
 
-    // NEW: Now uses the target velocities from the ROS message, not the Iface
     void DiffDrivePlugin6W::GetPositionCmd() {
         std::lock_guard guard(mLock);
 
@@ -254,24 +243,21 @@ namespace gazebo {
         // Changed motors to be always on, which is probably what we want anyway
         mEnableMotors = true;
 
-        mWheelSpeed[0] = vr + va * mWheelSeparation / 2;
-        mWheelSpeed[1] = vr - va * mWheelSeparation / 2;
+        mWheelSpeeds[0] = vr + va * mWheelSeparation / 2;
+        mWheelSpeeds[1] = vr - va * mWheelSeparation / 2;
     }
 
-    // NEW: Store the velocities from the ROS message
-    void DiffDrivePlugin6W::cmdVelCallback(const geometry_msgs::Twist::ConstPtr& twistCommand) {
+    void DiffDrivePlugin6W::commandVelocityCallback(const geometry_msgs::Twist::ConstPtr& velocityCommand) {
         std::lock_guard guard(mLock);
 
-        mForwardVelocity = twistCommand->linear.x;
-        mPitch = twistCommand->angular.z;
+        mForwardVelocity = velocityCommand->linear.x;
+        mPitch = velocityCommand->angular.z;
     }
 
     // NEW: custom callback queue thread
-    void DiffDrivePlugin6W::QueueThread() {
-        static const double timeout = 0.01;
-
-        while (mIsAlive && mNode->ok()) {
-            mQueue.callAvailable(ros::WallDuration(timeout));
+    void DiffDrivePlugin6W::queueThread() {
+        while (mNode->ok()) {
+            mQueue.callAvailable(ros::WallDuration(CALLBACK_TIMEOUT));
         }
     }
 

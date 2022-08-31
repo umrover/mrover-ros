@@ -34,6 +34,7 @@
 #include <map>
 #include <array>
 #include <memory>
+#include <thread>
 
 #include <gazebo/common/Plugin.hh>
 #include <gazebo/common/Time.hh>
@@ -63,7 +64,7 @@ namespace gazebo {
 
         void Reset() override;
 
-        virtual void Update();
+        virtual void update();
 
     private:
         void publish_odometry();
@@ -77,14 +78,14 @@ namespace gazebo {
         double mWheelSeparation{};
         double mWheelDiameter{};
         double mTorque{};
-        std::array<double, 2> mWheelSpeed{};
+        std::array<double, 2> mWheelSpeeds{};
 
         // Simulation time of the last update
         common::Time mPreviousUpdateTime;
 
         bool mEnableMotors{};
-        double odomPose[3]{};
-        double odomVel[3]{};
+        std::array<double, 3> mOdomPose{};
+        std::array<double, 3> mOdomVelocity{};
 
         // ROS STUFF
         std::unique_ptr<ros::NodeHandle> mNode;
@@ -102,16 +103,15 @@ namespace gazebo {
 
         // Custom Callback Queue
         ros::CallbackQueue mQueue;
-        boost::thread mCallbackQueueThread;
+        std::thread mCallbackQueueThread;
 
-        void QueueThread();
+        void queueThread();
 
         // DiffDrive stuff
-        void cmdVelCallback(const geometry_msgs::Twist::ConstPtr& twistCommand);
+        void commandVelocityCallback(const geometry_msgs::Twist::ConstPtr& twistCommand);
 
         double mForwardVelocity{};
         double mPitch{};
-        bool mIsAlive{};
 
         // Pointer to the update event connection
         event::ConnectionPtr mUpdateConnection;
