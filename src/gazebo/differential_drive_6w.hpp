@@ -31,8 +31,8 @@
  */
 #pragma once
 
-#include <map>
 #include <array>
+#include <map>
 #include <memory>
 #include <thread>
 
