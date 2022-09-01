@@ -1,1 +1,0 @@
-float64[6] throttle # [-1.0,1.0]
