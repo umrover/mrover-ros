@@ -27,11 +27,22 @@ void FiducialsNode::imageCallback(sensor_msgs::ImageConstPtr const& msg) {
         // Remove fiducials in the immediate buffer that are no longer in sight
         auto it = mImmediateFiducials.begin();
         while (it != mImmediateFiducials.end()) {
-            if (std::find(mIds.begin(), mIds.end(), it->first) == mIds.end()) {
-                it = mImmediateFiducials.erase(it);
+            bool isPresent = std::find(mIds.begin(), mIds.end(), it->first) != mIds.end();
+            bool doErase = false;
+
+            ImmediateFiducial& fiducial = it->second;
+            if (isPresent) {
+                fiducial.hitCount++;
             } else {
-                ++it;
+                fiducial.missCount++;
+                if (fiducial.missCount >= 5) // TODO: replace hardcode
+                    doErase = true;
             }
+
+            if (doErase)
+                it = mImmediateFiducials.erase(it);
+            else
+                ++it;
         }
 
         // Save fiducials currently on screen to the immediate buffer
