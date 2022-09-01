@@ -40,7 +40,7 @@ The Rosie '22 rover has 6 brushless motors. These brushless motors are controlle
 
 The way the ODrives are mapped to each of the wheels is that each ODrive controls either the front pair, middle pair, or back pair of wheels. The ODrive itself receives battery voltage. It is connected to the Hall Effect sensors and the power of the wheels.
 
-The ODrives can be controlled via the ODrive Python library. Our script is able to control one ODrive, which can be identified by its ODrive ID. Because our script can only control one ODrive and we have three total ODrives to control, we run our script three times, each taking different command line arguments.
+The ODrives can be controlled via the ODrive Python library. Our script is able to control the three ODrives, which can be identified by its ODrive ID.
 
 Our program and the ODrive firmware also have watchdog capabilities. If the ODrive disconnects from the Jetson, then the wheels will stop moving. If the Jetson no longer receives new comms from the base station, then the wheels will stop moving. In all states, our program is able to recover (whether there be a watchdog error, ODrive error, a disconnection error, and more).
 
@@ -52,12 +52,11 @@ In our system, if there is an error in one axis, then the corresponding axis of 
 
 #### [`odrive_control.py`](./odrive_control.py)
 
-This program runs main for one particular ODrive,
-taking a command line argument (either front, middle, or back).
-Three threads run simultaneously:
+This program controls the behavior of three ODrives.
+Various threads run simultaneously:
 One thread to process incoming commands,
-one thread to publish ODrive data,
-and one thread to manage the watchdog.
+three threads to publish ODrive data for the three ODrives,
+and three thread to manage the watchdog for the three ODrives.
 
 #### ODriveBridge
 
@@ -328,8 +327,3 @@ Find someone on ESW. Or just go ahead and contact madcowswe himself.
 I ADDED ASSERTS IN CASE I MESSED UP SOMEWHERE.
 - [ ] Test with ROS
 - [ ] Make sure messages and topics are consistent with the gui and teleop programs
-
----
-
-## TODO - ROS Migration
-- [ ] See if code builds in ROS

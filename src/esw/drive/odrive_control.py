@@ -14,7 +14,7 @@ import threading
 import time as t
 from dataclasses import dataclass
 from enum import Enum
-from typing import Any, Dict, List
+from typing import Any, Dict
 
 import odrive
 from odrive import find_any
@@ -598,15 +598,13 @@ class Application(object):
             threading._start_new_thread(bridge.watchdog_while_loop, ())
         rospy.spin()
 
-    def _drive_vel_cmd_callback(self, ros_msg: DriveVelCmd, bridges: List[ODriveBridge]) -> None:
+    def _drive_vel_cmd_callback(self, ros_msg: DriveVelCmd) -> None:
         """Calls the change speeds function.
         Note that this does NOT actually change speed that the ODrive comands
         the motors at. One must wait for the ODriveBridge._update() function
         to be called for that to happen.
         :param ros_msg: A ROS message that has two floats that represents the
             requested speeds for the left and right wheels.
-        :param bridges: A list of three ODriveBridges representing front, middle,
-            and right.
         """
         ros_msg.left = self._throttle(ros_msg.left)
         ros_msg.right = self._throttle(ros_msg.right)
