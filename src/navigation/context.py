@@ -16,7 +16,7 @@ class Rover:
     ctx: Context
 
     def get_pose(self) -> SE3:
-        return self.ctx.get_transform("base_link")
+        return SE3.from_tf_tree(self.ctx.tf_buffer, parent_frame="odom", child_frame="base_link")
 
     def send_drive_command(self, twist: Twist):
         self.ctx.vel_cmd_publisher.publish(twist)
@@ -41,14 +41,14 @@ class Environment:
         if it exists, otherwise returns None
         """
         try:
-            fid_pose = self.ctx.get_transform(f"fiducial{fid_id}")
-            return fid_pose.position_vector()
+            fid_pose = SE3.from_tf_tree(self.ctx.tf_buffer, parent_frame="odom", child_frame=f"fiducial{fid_id}")
         except (
             tf2_ros.LookupException,
             tf2_ros.ConnectivityException,
             tf2_ros.ExtrapolationException,
         ):
             return None
+        return fid_pose.position
 
     def current_fid_pos(self) -> Optional[np.ndarray]:
         """
@@ -75,7 +75,8 @@ class Course:
         """
         Gets the pose of the waypoint with the given index
         """
-        return self.ctx.get_transform(self.course_data.waypoints[wp_idx].tf_id)
+        waypoint_frame = self.course_data.waypoints[wp_idx].tf_id
+        return SE3.from_tf_tree(self.ctx.tf_buffer, parent_frame="odom", child_frame=waypoint_frame)
 
     def current_waypoint_pose(self):
         """
@@ -123,13 +124,3 @@ class Context:
     def recv_course(self, req: mrover.srv.PublishCourseRequest) -> mrover.srv.PublishCourseResponse:
         self.course = Course(self, req.course)
         return mrover.srv.PublishCourseResponse(True)
-
-    def get_transform(self, frame: str, parent_frame: str = "odom") -> SE3:
-        """
-        :param frame:
-        :param parent_frame:
-        :return:
-        """
-        # TODO: use SE3 function to lookup
-        stamped_transform = self.tf_buffer.lookup_transform(parent_frame, frame, rospy.Time(0))
-        return SE3.from_tf(stamped_transform.transform)
