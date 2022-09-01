@@ -76,8 +76,8 @@ class SO3:
         element of the quaternion vector is approximately equal.
 
         :param r: another SO3
-        :param tolerance: the tolerance for comparing each number, if the difference 
-                          between each number is less than or equal to this tolerance, 
+        :param tolerance: the tolerance for comparing each number, if the difference
+                          between each number is less than or equal to this tolerance,
                           they will be considered equal
         :returns: True if the two SO3s are approximately equal, False otherwise
         """

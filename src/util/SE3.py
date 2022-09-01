@@ -100,8 +100,8 @@ class SE3:
         position vector is approximately equal and that each rotation is approximately equal.
 
         :param p: another SE3
-        :param tolerance: the tolerance for comparing each number, if the difference 
-                          between each number is less than or equal to this tolerance, 
+        :param tolerance: the tolerance for comparing each number, if the difference
+                          between each number is less than or equal to this tolerance,
                           they will be considered equal
         :returns: True if the two SE3s are approximately equal, False otherwise
         """
