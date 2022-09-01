@@ -226,9 +226,9 @@ int main(int argc, char** argv) {
 }
 
 void PersistentFiducial::addReading(SE3 const& fidInOdom) {
-    fidInOdomX.push(fidInOdom.positionVector().x());
-    fidInOdomY.push(fidInOdom.positionVector().y());
-    fidInOdomZ.push(fidInOdom.positionVector().z());
+    fidInOdomX.push(fidInOdom.posVector().x());
+    fidInOdomY.push(fidInOdom.posVector().y());
+    fidInOdomZ.push(fidInOdom.posVector().z());
 }
 
 void PersistentFiducial::setFilterParams(size_t count, double proportion) {
@@ -241,5 +241,5 @@ void PersistentFiducial::setFilterParams(size_t count, double proportion) {
 }
 
 SE3 PersistentFiducial::getFidInOdom() const {
-    return {{fidInOdomX.get(), fidInOdomY.get(), fidInOdomZ.get()}, Eigen::Quaterniond::Identity()};
+    return {{fidInOdomX.get(), fidInOdomY.get(), fidInOdomZ.get()}, SO3::identity()};
 }

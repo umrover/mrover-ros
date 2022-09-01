@@ -49,7 +49,7 @@ void FiducialsNode::imageCallback(sensor_msgs::ImageConstPtr const& msg) {
             if (!immediateFid.fidInCam.has_value()) continue; // This is set if the point cloud had a valid reading for this fiducial
 
             std::string immediateFrameName = "immediateFiducial" + std::to_string(id);
-            SE3::pushToTfTree(mTfBroadcaster, immediateFrameName, ROVER_FRAME, immediateFid.fidInCam.value());
+            immediateFid.fidInCam.value().publishToTfTree(mTfBroadcaster, immediateFrameName, ROVER_FRAME);
 
             fid.id = id;
             try {
@@ -66,7 +66,7 @@ void FiducialsNode::imageCallback(sensor_msgs::ImageConstPtr const& msg) {
         for (auto [id, fid]: mPersistentFiducials) {
             if (!fid.fidInOdomX.ready()) continue; // Wait until the filters have enough readings to become meaningful
 
-            SE3::pushToTfTree(mTfBroadcaster, "fiducial" + std::to_string(id), ODOM_FRAME, fid.getFidInOdom());
+            fid.getFidInOdom().publishToTfTree(mTfBroadcaster, "fiducial" + std::to_string(id), ODOM_FRAME);
         }
 
         size_t detectedCount = mIds.size();
@@ -109,7 +109,7 @@ SE3 getFidInCamFromPixel(sensor_msgs::PointCloud2ConstPtr const& msg, size_t u, 
     std::memcpy(&point.y, &msg->data[arrayPosY], sizeof(point.y));
     std::memcpy(&point.z, &msg->data[arrayPosZ], sizeof(point.z));
 
-    return {{+point.x, -point.y, +point.z}, Eigen::Quaterniond::Identity()};
+    return {{+point.x, -point.y, +point.z}, SO3::identity()};
 }
 
 /**
