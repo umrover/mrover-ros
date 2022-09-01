@@ -30,6 +30,8 @@ constexpr char const* ROVER_FRAME = "base_link";
  */
 struct ImmediateFiducial {
     int id = -1;
+    uint64_t missCount = 0;
+    uint64_t hitCount = 0;
     cv::Point2f imageCenter{};
     std::optional<SE3> fidInCam;
 };

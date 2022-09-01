@@ -44,7 +44,7 @@ void FiducialsNode::imageCallback(sensor_msgs::ImageConstPtr const& msg) {
         }
 
         // Add readings to the persistent representations of the fiducials
-        for (auto [id, immediateFid]: mImmediateFiducials) {
+        for (auto& [id, immediateFid]: mImmediateFiducials) {
             PersistentFiducial& fid = mPersistentFiducials[id];
             if (!immediateFid.fidInCam.has_value()) continue; // This is set if the point cloud had a valid reading for this fiducial
 
@@ -63,7 +63,7 @@ void FiducialsNode::imageCallback(sensor_msgs::ImageConstPtr const& msg) {
         }
 
         // Send all transforms of persistent fiducials
-        for (auto [id, fid]: mPersistentFiducials) {
+        for (auto& [id, fid]: mPersistentFiducials) {
             if (!fid.fidInOdomX.ready()) continue; // Wait until the filters have enough readings to become meaningful
 
             SE3::pushToTfTree(mTfBroadcaster, "fiducial" + std::to_string(id), ODOM_FRAME, fid.getFidInOdom());
