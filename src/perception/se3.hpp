@@ -52,4 +52,6 @@ public:
     [[nodiscard]] double posDistanceTo(SE3 const& other);
 
     [[nodiscard]] Vector const& posVector() const;
+
+    [[nodiscard]] bool isApprox(SE3 const& other, double tolerance = 1e-8);
 };

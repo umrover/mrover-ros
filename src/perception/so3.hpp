@@ -12,8 +12,6 @@
 
 #include <Eigen/Dense>
 
-constexpr double APPROX_TOLERANCE = 1e-8;
-
 class SO3 {
 private:
     using Quaternion = Eigen::Quaterniond;
@@ -39,5 +37,5 @@ public:
 
     [[nodiscard]] double rotDistanceTo(SO3 const& other);
 
-    [[nodiscard]] bool isApprox(SO3 const& other, double tolerance = APPROX_TOLERANCE);
+    [[nodiscard]] bool isApprox(SO3 const& other, double tolerance = 1e-8);
 };

@@ -20,7 +20,7 @@ double SO3::rotDistanceTo(SO3 const& other) {
 }
 
 bool SO3::isApprox(SO3 const& other, double tolerance) {
-    return std::fabs(quaternion.dot(other.quaternion)) > 1.0 - tolerance;
+    return rotDistanceTo(other) < tolerance;
 }
 
 SO3 SO3::identity() {

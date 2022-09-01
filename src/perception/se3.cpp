@@ -36,3 +36,7 @@ double SE3::posDistanceTo(SE3 const& other) {
 SE3::Vector const& SE3::posVector() const {
     return position;
 }
+
+bool SE3::isApprox(SE3 const& other, double tolerance) {
+    return (position - other.position).norm() < tolerance && rotation.isApprox(other.rotation, tolerance);
+}
