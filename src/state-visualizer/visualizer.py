@@ -108,9 +108,12 @@ class GUI(QWidget):
         self.repaint()
 
 if __name__ == "__main__":
-    rospy.init_node('smach visualizer',anonymous=False, disable_signals=True,log_level=rospy.INFO)
-    rospy.Subscriber("/server_name/smach/container_structure", SmachContainerStructure, container_structure_callback)
-    rospy.Subscriber("/server_name/smach/container_status", SmachContainerStatus, container_status_callback)
+    rospy.init_node('smach visualizer', anonymous=False, 
+                    disable_signals=True,log_level=rospy.INFO)
+    rospy.Subscriber("/server_name/smach/container_structure", 
+        SmachContainerStructure, container_structure_callback)
+    rospy.Subscriber("/server_name/smach/container_status", 
+        SmachContainerStatus, container_status_callback)
     app = QApplication([])
     g = GUI()
     g.show()
