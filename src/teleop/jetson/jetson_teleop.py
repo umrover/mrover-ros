@@ -32,11 +32,11 @@ class Drive:
         pan = 4
         tilt = 5
 
-    # Constants for diff drive
-    TRACK_RADIUS = 10.0  # meter
-    WHEEL_RADIUS = 0.5  # meter
-
-    drive_vel_pub = ros.Publisher("/drive_cmd_wheels", Chassis, queue_size=100)
+    def __init__(self):
+        # Constants for diff drive
+        self.TRACK_RADIUS = 10.0  # meter
+        self.WHEEL_RADIUS = 0.5  # meter
+        self.drive_vel_pub = ros.Publisher("/drive_cmd_wheels", Chassis, queue_size=100)
 
     # TODO: Reimplement Dampen Switch
     def teleop_drive_callback(self, msg):
@@ -76,17 +76,18 @@ class ArmControl:
         x = 2
         y = 3
 
-    # RA Joint Publishers
-    joint_a_pub = ros.Publisher("/ra/open_loop/joint_a", JointState, queue_size=100)
-    joint_b_pub = ros.Publisher("/ra/open_loop/joint_b", JointState, queue_size=100)
-    joint_c_pub = ros.Publisher("/ra/open_loop/joint_c", JointState, queue_size=100)
-    joint_d_pub = ros.Publisher("/ra/open_loop/joint_d", JointState, queue_size=100)
-    joint_e_pub = ros.Publisher("/ra/open_loop/joint_e", JointState, queue_size=100)
-    joint_f_pub = ros.Publisher("/ra/open_loop/joint_f", JointState, queue_size=100)
+    def __init__(self):
+        # RA Joint Publishers
+        self.joint_a_pub = ros.Publisher("/ra/open_loop/joint_a", JointState, queue_size=100)
+        self.joint_b_pub = ros.Publisher("/ra/open_loop/joint_b", JointState, queue_size=100)
+        self.joint_c_pub = ros.Publisher("/ra/open_loop/joint_c", JointState, queue_size=100)
+        self.joint_d_pub = ros.Publisher("/ra/open_loop/joint_d", JointState, queue_size=100)
+        self.joint_e_pub = ros.Publisher("/ra/open_loop/joint_e", JointState, queue_size=100)
+        self.joint_f_pub = ros.Publisher("/ra/open_loop/joint_f", JointState, queue_size=100)
 
-    # Hand Publishers
-    finger_pub = ros.Publisher("/hand/open_loop/finger", JointState, queue_size=100)
-    grip_pub = ros.Publisher("/hand/open_loop/grip", JointState, queue_size=100)
+        # Hand Publishers
+        self.finger_pub = ros.Publisher("/hand/open_loop/finger", JointState, queue_size=100)
+        self.grip_pub = ros.Publisher("/hand/open_loop/grip", JointState, queue_size=100)
 
     def ra_control_callback(self, msg):
 
