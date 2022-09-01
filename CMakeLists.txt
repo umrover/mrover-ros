@@ -76,8 +76,6 @@ add_message_files(
         Course.msg
         Waypoint.msg
         Chassis.msg
-        RAOpenLoopCmd.msg
-        HandCmd.msg
 )
 
 ## Generate services in the 'srv' folder
