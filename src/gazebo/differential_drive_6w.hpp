@@ -67,9 +67,9 @@ namespace gazebo {
         virtual void update();
 
     private:
-        void publish_odometry();
+        void publishOdometry();
 
-        void GetPositionCmd();
+        void getPositionCommand();
 
         physics::LinkPtr mBodyLink;
         physics::WorldPtr mWorld;

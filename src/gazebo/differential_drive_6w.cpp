@@ -149,9 +149,12 @@ namespace gazebo {
                 ros::VoidPtr(), &mVelocityCommandQueue);
         mSubscriber = mNode->subscribe(so);
         mPublisher = mNode->advertise<nav_msgs::Odometry>("odom", 1);
+
+        // Spinner runs in the background until the node dies
+        // We want the callback to update as soon as possible so do this instead of callAvailable on the queue
+        // Note that this means we have to make it thread safe, which is done via a mutex
         mSpinner = ros::AsyncSpinner(1, &mVelocityCommandQueue); // 1 core for now
         mSpinner->start();
-
 
         Reset();
 
@@ -186,7 +189,7 @@ namespace gazebo {
         double dr, da;
         common::Time stepTime;
 
-        GetPositionCmd();
+        getPositionCommand();
 
         //stepTime = World::Instance()->GetPhysicsEngine()->GetStepTime();
         stepTime = mWorld->SimTime() - mPreviousUpdateTime;
@@ -227,10 +230,10 @@ namespace gazebo {
             mJoints[REAR_RIGHT]->SetEffortLimit(0, mTorque);
         }
 
-        publish_odometry();
+        publishOdometry();
     }
 
-    void DiffDrivePlugin6W::GetPositionCmd() {
+    void DiffDrivePlugin6W::getPositionCommand() {
         std::lock_guard guard(mLock);
 
         double vr, va;
@@ -253,7 +256,7 @@ namespace gazebo {
     }
 
     // NEW: Update this to publish odometry topic
-    void DiffDrivePlugin6W::publish_odometry() {
+    void DiffDrivePlugin6W::publishOdometry() {
         // get current time
         ros::Time currentTime((mWorld->SimTime()).sec, (mWorld->SimTime()).nsec);
 
