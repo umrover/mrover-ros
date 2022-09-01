@@ -150,6 +150,12 @@ add_library(differential_drive_plugin_6w src/gazebo/differential_drive_6w.cpp)
 add_dependencies(aruco_detect ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
 target_link_libraries(differential_drive_plugin_6w ${Boost_LIBRARIES} ${GAZEBO_LIBRARIES} ${catkin_LIBRARIES})
 
+# Starter Project
+file(GLOB_RECURSE STARTER_PROJECT_PERCEPTION_SOURCES "starter_project/src/*.cpp")
+add_executable(starter_project_perception ${STARTER_PROJECT_PERCEPTION_SOURCES})
+add_dependencies(starter_project_perception ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
+target_link_libraries(starter_project_perception ${catkin_LIBRARIES} ${OpenCV_LIBS})
+
 ## Declare a C++ library
 # add_library(${PROJECT_NAME}
 #   src/${PROJECT_NAME}/mrover.cpp
