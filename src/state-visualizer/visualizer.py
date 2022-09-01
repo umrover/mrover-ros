@@ -10,7 +10,7 @@ from PyQt5.QtSvg import QSvgRenderer
 import rospy
 from smach_msgs.msg import SmachContainerStatus,SmachContainerStructure
 from threading import Lock
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from typing import Optional, List, Dict
 
 @dataclass
@@ -18,13 +18,14 @@ class State:
     name : str
     children : List[State]
 
-@dataclass(eq=False)
-class state_machine:
-    states : Dict[str, State]  = field(default_factory=dict)#maps string name to State
-    structure : Optional[SmachContainerStructure] = None
-    mutex : Lock = Lock()
-    cur_active : str = ""
-    needs_redraw : bool = True
+class StateMachine:
+    def __init__(self):
+        self.states : Dict[str, State]  = {}
+        self.structure : Optional[SmachContainerStructure] = None
+        self.mutex : Lock = Lock()
+        self.cur_active : str = ""
+        self.needs_redraw : bool = True
+
     def set_active_state(self, active_state):
         """
         sets the state specified to be active
@@ -53,7 +54,7 @@ class state_machine:
         else:
             self.rebuild(structure)
 
-state_machine = state_machine()
+state_machine = StateMachine()
 
 def container_status_callback(status : SmachContainerStatus):
     with state_machine.mutex:
