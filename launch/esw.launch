@@ -2,8 +2,6 @@
   <!--
     Run the drive programs
   -->
-  <node name="odrive_front" pkg="mrover" type="odrive_control.py" args="front"></node>
-  <!-- <node name="odrive_middle" pkg="mrover" type="odrive_control.py" args="middle"></node>
-  <node name="odrive_back" pkg="mrover" type="odrive_control.py" args="back"></node> -->
+  <node name="odrive_control" pkg="mrover" type="odrive_control.py"></node>
   <rosparam command="load" file="$(find mrover)/config/odrive_control.yaml" />
 </launch>

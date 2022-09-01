@@ -14,7 +14,7 @@ import threading
 import time as t
 from dataclasses import dataclass
 from enum import Enum
-from typing import Any, Dict
+from typing import Any, Dict, List
 
 import odrive
 from odrive import find_any
@@ -390,7 +390,7 @@ class ODriveBridge(object):
     """Controls the behavior of one ODrive. It manages the ODrive state and
     various other behavior.
     :param _current_lim: A float that is the current limit in Amperes.
-    :param str: A string that is the current ODrive's ID.
+    :param _id: A string that is the current ODrive's ID.
     :param _modrive: A Modrive object that abstracts away the ODrive functions.
     :param _pair: A string that is front, middle, or back.
     :param _speed: A Speed object that has requested left and right wheel
@@ -417,8 +417,9 @@ class ODriveBridge(object):
     _state_pub: rospy.Publisher
     _vel_pub: rospy.Publisher
 
-    def __init__(self) -> None:
-        """Initializes the components, starting with a Disconnected State."""
+    def __init__(self, pair: str) -> None:
+        """Initializes the components, starting with a Disconnected State.
+        :param pair: A string that is front, middle, or back"""
         self._current_lim = rospy.get_param("/odrive/config/current_lim")
         self._speed = Speed()
         _odrive_ids = {
@@ -426,27 +427,13 @@ class ODriveBridge(object):
             "middle": rospy.get_param("/odrive/ids/middle"),
             "back": rospy.get_param("/odrive/ids/back"),
         }
-        self._pair = sys.argv[1]
+        self._pair = pair
         self._id = _odrive_ids[self._pair]
         self._speed_lock = threading.Lock()
         self._start_time = t.process_time()
         self._state = DisconnectedState()
         self._state_pub = rospy.Publisher("drive_state_data", DriveStateData, queue_size=1)
         self._vel_pub = rospy.Publisher("drive_vel_data", DriveVelData, queue_size=1)
-
-    def drive_vel_cmd_callback(self, ros_msg: DriveVelCmd) -> None:
-        """Calls the change speeds function.
-        Note that this does NOT actually change speed that the ODrive comands
-        the motors at. One must wait for the ODriveBridge._update() function
-        to be called for that to happen.
-        :param ros_msg: A ROS message that has two floats that represents the
-            requested speeds for the left and right wheels.
-        """
-        self._start_time = t.process_time()
-        if self._get_state_string() == "Armed":
-            ros_msg.left = self._throttle(ros_msg.left)
-            ros_msg.right = self._throttle(ros_msg.right)
-            self._change_speeds(Speed(ros_msg.left, ros_msg.right))
 
     def ros_publish_data_loop(self) -> None:
         """Publishes velocity and current data continuously."""
@@ -560,13 +547,6 @@ class ODriveBridge(object):
         self._state_pub.publish(ros_msg)
         rospy.loginfo("The state is now %s", state)
 
-    def _throttle(self, speed: float) -> float:
-        """Throttles the speed to a range of [-1.0, 1.0].
-        :param speed: A float that is the input speed.
-        :returns: A float that limits the input to the range [-1.0, 1.0].
-        """
-        return max(min(1.0, speed), -1.0)
-
     def _update(self) -> None:
         """Updates based on the current state.
         In the armed state, it will first check for ODrive errors. Then, it
@@ -600,21 +580,54 @@ class ODriveBridge(object):
             self._bridge_on_event(ODriveEvent.ODRIVE_ERROR_EVENT)
 
 
+class Application(object):
+    """Manages the ODriveBridge objects and keeps track of communication.
+    :param _bridges: A list of bridges that are contain data for the ODrives controlling
+        the front, middle, and back wheels."""
+
+    def __init__(self):
+
+        rospy.init_node(f"odrive_control")
+        self._bridges = [ODriveBridge("front"), ODriveBridge("middle"), ODriveBridge("back")]
+        rospy.Subscriber("drive_vel_cmd", DriveVelCmd, self._drive_vel_cmd_callback)
+
+    def run(self):
+        """Runs the publish data loop and watchdog loops for all bridges"""
+        for bridge in self._bridges:
+            threading._start_new_thread(bridge.ros_publish_data_loop, ())
+            threading._start_new_thread(bridge.watchdog_while_loop, ())
+        rospy.spin()
+
+    def _drive_vel_cmd_callback(self, ros_msg: DriveVelCmd, bridges: List[ODriveBridge]) -> None:
+        """Calls the change speeds function.
+        Note that this does NOT actually change speed that the ODrive comands
+        the motors at. One must wait for the ODriveBridge._update() function
+        to be called for that to happen.
+        :param ros_msg: A ROS message that has two floats that represents the
+            requested speeds for the left and right wheels.
+        :param bridges: A list of three ODriveBridges representing front, middle,
+            and right.
+        """
+        ros_msg.left = self._throttle(ros_msg.left)
+        ros_msg.right = self._throttle(ros_msg.right)
+        for bridge in self._bridges:
+            bridge._start_time = t.process_time()
+            if bridge._get_state_string() == "Armed":
+                bridge._change_speeds(Speed(ros_msg.left, ros_msg.right))
+
+    def _throttle(self, speed: float) -> float:
+        """Throttles the speed to a range of [-1.0, 1.0].
+        :param speed: A float that is the input speed.
+        :returns: A float that limits the input to the range [-1.0, 1.0].
+        """
+        return max(min(1.0, speed), -1.0)
+
+
 def main():
-    """Runs the ros_publish_data_loop, rospy drive_vel_cmd subscriber thread,
-    and watchdog_while_loop all run simultaneously.
-    It runs the following threads:
-        - A thread to listen to drive commands.
-        - A thread to listen to continuously publish data.
-        - A thread to continuously monitor comms between base station and
-            Jetson to act as watchdog.
-    """
-    rospy.init_node(f"odrive_{sys.argv[1]}")
-    bridge = ODriveBridge()
-    rospy.Subscriber("drive_vel_cmd", DriveVelCmd, bridge.drive_vel_cmd_callback)
-    threading._start_new_thread(bridge.ros_publish_data_loop, ())
-    threading._start_new_thread(bridge.watchdog_while_loop, ())
-    rospy.spin()
+    """Creates the Application object and runs the program."""
+
+    app = Application()
+    app.run()
     exit()
 
 
