@@ -59,7 +59,7 @@ class SO3:
         Get the rotational distance between this SO3 and another SO3,
         defined as the angle of rotation from one SO3 to the other along the shortest arc.
 
-        :param p: the other SO3
+        :param r: the other SO3
         :returns: the angle in radians between the orientations of the two SO3s
         """
         q1 = self.quaternion
@@ -75,7 +75,10 @@ class SO3:
         Check if two SO3s are approximately equal within a tolerance by checking that each
         element of the quaternion vector is approximately equal.
 
-        :param p: another SO3
+        :param r: another SO3
+        :param tolerance: the tolerance for comparing each number, if the difference 
+                          between each number is less than or equal to this tolerance, 
+                          they will be considered equal
         :returns: True if the two SO3s are approximately equal, False otherwise
         """
         return np.allclose(self.quaternion, r.quaternion, atol=tolerance)

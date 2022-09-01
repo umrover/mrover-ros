@@ -36,7 +36,7 @@ class SE3:
         and a quaternion vector to specify rotation.
 
         :param position: position vector [x, y, z], defaults to zero vector
-        :param rotation: quaternion vector [x, y, z, w], defaults to [0, 0, 0, 1]
+        :param quaternion: quaternion vector [x, y, z, w], defaults to [0, 0, 0, 1]
         """
         return SE3(position, SO3(quaternion))
 
@@ -100,6 +100,9 @@ class SE3:
         position vector is approximately equal and that each rotation is approximately equal.
 
         :param p: another SE3
+        :param tolerance: the tolerance for comparing each number, if the difference 
+                          between each number is less than or equal to this tolerance, 
+                          they will be considered equal
         :returns: True if the two SE3s are approximately equal, False otherwise
         """
         return np.allclose(self.position, p.position, atol=tolerance) and self.rotation.is_approx(p.rotation, tolerance)
