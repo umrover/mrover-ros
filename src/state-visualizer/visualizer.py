@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import graphviz
 import time
 from PyQt5.QtWidgets import *
@@ -9,16 +11,16 @@ import rospy
 from smach_msgs.msg import SmachContainerStatus,SmachContainerStructure
 from threading import Lock
 from dataclasses import dataclass, field
-from typing import Optional
+from typing import Optional, List, Dict
 
 @dataclass
 class State:
     name : str
-    children : list #of states
+    children : List[State]
 
-@dataclass
-class StateMachine:
-    states : dict  = field(default_factory=dict)#maps string name to State
+@dataclass(eq=False)
+class state_machine:
+    states : Dict[str, State]  = field(default_factory=dict)#maps string name to State
     structure : Optional[SmachContainerStructure] = None
     mutex : Lock = Lock()
     cur_active : str = ""
@@ -51,19 +53,15 @@ class StateMachine:
         else:
             self.rebuild(structure)
 
-stateMachine = StateMachine()
+state_machine = state_machine()
 
 def container_status_callback(status : SmachContainerStatus):
-    #rospy.loginfo(status.active_states)
-    stateMachine.mutex.acquire()
-    stateMachine.set_active_state(status.active_states[0])
-    stateMachine.mutex.release()
+    with state_machine.mutex:
+        state_machine.set_active_state(status.active_states[0])
 
 def container_structure_callback(structure : SmachContainerStructure):
-    stateMachine.mutex.acquire()
-    #rospy.loginfo(f"structure received\n path: {structure.path} \n  children: {structure.children}\n  internal outcomes: {structure.internal_outcomes}\n, outcomes from: {structure.outcomes_from} \n, outcomes to: {structure.outcomes_to}\n.")
-    stateMachine.check_rebuild(structure)
-    stateMachine.mutex.release()
+    with state_machine.mutex:
+        state_machine.check_rebuild(structure)
 
 class GUI(QWidget):
     def __init__(self):
@@ -71,8 +69,6 @@ class GUI(QWidget):
         self.label = QLabel()
         self.timer = QTimer()
         self.renderer = QSvgRenderer()
-        self.iter = 0
-        self.node_color = "black"
         self.prev_time = time.time()
         self.timer.timeout.connect(self.update)
         self.timer.start(1)
@@ -88,54 +84,33 @@ class GUI(QWidget):
 
     def update(self):
 
-        stateMachine.mutex.acquire()
+        with state_machine.mutex:
 
-        #print(time.time() - self.prev_time)
-        self.prev_time = time.time()
+            print(time.time() - self.prev_time)
+            self.prev_time = time.time()
 
-        if self.graph is None or stateMachine.needs_redraw:
-            self.graph = graphviz.Digraph(comment="State Machine Diagram", format = "svg")
-            for state_name in stateMachine.states.keys():
-                color = "red" if stateMachine.cur_active == state_name else "black"
-                print(state_name)
-                self.graph.node(state_name, color=color)
-            
-            #not sure if I can just do this in the above loop
-            for state in stateMachine.states.values():
-                for child in state.children:
-                    print(state.name, child)
-
-                    self.graph.edge(state.name, child.name)
+            if self.graph is None or state_machine.needs_redraw:
+                self.graph = graphviz.Digraph(comment="State Machine Diagram", format = "svg")
+                for state_name in state_machine.states.keys():
+                    color = "red" if state_machine.cur_active == state_name else "black"
+                    self.graph.node(state_name, color=color)
+                
+                #not sure if I can just do this in the above loop
+                for state in state_machine.states.values():
+                    for child in state.children:
+                        self.graph.edge(state.name, child.name)
 
 
-            stateMachine.needs_redraw = False
+                state_machine.needs_redraw = False
 
-
-
-        stateMachine.mutex.release()
-
-        
-        # self.iter += 1
-        # if(self.iter % 10 == 0):
-        #     if(self.node_color == "red"):
-        #         self.node_color = "black"
-        #     else:
-        #         self.node_color = "red"
-
-        # graph = graphviz.Digraph(comment="My Graph", format="svg")
-        # graph.node("node A", color=self.node_color)
-        # graph.node("node B")
-        # graph.edge("node A", "node B", "edge label")
-        # graph.edge("node B", "node A", "edge label 2")
         self.img = self.graph.pipe()
         self.repaint()
 
-
-rospy.init_node('smach visualizer',anonymous=False, disable_signals=True,log_level=rospy.INFO)
-rospy.Subscriber("/server_name/smach/container_structure", SmachContainerStructure, container_structure_callback)
-rospy.Subscriber("/server_name/smach/container_status", SmachContainerStatus, container_status_callback)
-#rospy.spin()
-app = QApplication([])
-g = GUI()
-g.show()
-app.exec()
+if __name__ == "__main__":
+    rospy.init_node('smach visualizer',anonymous=False, disable_signals=True,log_level=rospy.INFO)
+    rospy.Subscriber("/server_name/smach/container_structure", SmachContainerStructure, container_structure_callback)
+    rospy.Subscriber("/server_name/smach/container_status", SmachContainerStatus, container_status_callback)
+    app = QApplication([])
+    g = GUI()
+    g.show()
+    app.exec()
