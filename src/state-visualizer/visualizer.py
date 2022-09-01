@@ -1,5 +1,4 @@
 from __future__ import annotations
-
 import graphviz
 import time
 from PyQt5.QtWidgets import *
@@ -69,7 +68,7 @@ def container_structure_callback(structure: SmachContainerStructure):
         state_machine.check_rebuild(structure)
 
 
-class GUI(QWidget):
+class GUI(QWidget): # type: ignore
     def __init__(self):
         super().__init__()
         self.label: QLabel = QLabel()
@@ -116,7 +115,7 @@ if __name__ == "__main__":
     rospy.init_node("smach visualizer", anonymous=False, disable_signals=True, log_level=rospy.INFO)
     rospy.Subscriber("/server_name/smach/container_structure", SmachContainerStructure, container_structure_callback)
     rospy.Subscriber("/server_name/smach/container_status", SmachContainerStatus, container_status_callback)
-    app = QApplication([])
+    app = QApplication([]) # type: ignore
     g = GUI()
     g.show()
     app.exec()
