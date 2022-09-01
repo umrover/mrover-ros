@@ -72,13 +72,13 @@ def container_structure_callback(structure: SmachContainerStructure):
 class GUI(QWidget):
     def __init__(self):
         super().__init__()
-        self.label = QLabel()
-        self.timer = QTimer()
-        self.renderer = QSvgRenderer()
-        self.prev_time = time.time()
+        self.label: QLabel = QLabel()
+        self.timer: QTimer = QTimer()
+        self.renderer: QSvgRenderer = QSvgRenderer()
+        self.prev_time: float = time.time()
         self.timer.timeout.connect(self.update)
         self.timer.start(1)
-        self.graph = None
+        self.graph: Optional[graphviz.Digraph] = None
         self.img = None
 
     def paintEvent(self, event):
