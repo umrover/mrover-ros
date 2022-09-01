@@ -68,7 +68,7 @@ def container_structure_callback(structure: SmachContainerStructure):
         state_machine.check_rebuild(structure)
 
 
-class GUI(QWidget): # type: ignore
+class GUI(QWidget):  # type: ignore
     def __init__(self):
         super().__init__()
         self.label: QLabel = QLabel()
@@ -95,7 +95,9 @@ class GUI(QWidget): # type: ignore
             self.prev_time = time.time()
 
             if self.graph is None or state_machine.needs_redraw:
-                self.graph = graphviz.Digraph(comment="State Machine Diagram", format="svg")
+                self.graph = graphviz.Digraph(
+                    comment="State Machine Diagram", format="svg"
+                )
                 for state_name in state_machine.states.keys():
                     color = "red" if state_machine.cur_active == state_name else "black"
                     self.graph.node(state_name, color=color)
@@ -112,10 +114,20 @@ class GUI(QWidget): # type: ignore
 
 
 if __name__ == "__main__":
-    rospy.init_node("smach visualizer", anonymous=False, disable_signals=True, log_level=rospy.INFO)
-    rospy.Subscriber("/server_name/smach/container_structure", SmachContainerStructure, container_structure_callback)
-    rospy.Subscriber("/server_name/smach/container_status", SmachContainerStatus, container_status_callback)
-    app = QApplication([]) # type: ignore
+    rospy.init_node(
+        "smach visualizer", anonymous=False, disable_signals=True, log_level=rospy.INFO
+    )
+    rospy.Subscriber(
+        "/server_name/smach/container_structure",
+        SmachContainerStructure,
+        container_structure_callback,
+    )
+    rospy.Subscriber(
+        "/server_name/smach/container_status",
+        SmachContainerStatus,
+        container_status_callback,
+    )
+    app = QApplication([])  # type: ignore
     g = GUI()
     g.show()
     app.exec()
