@@ -38,7 +38,6 @@
 #include <gazebo/common/Events.hh>
 #include <gazebo/physics/physics.hh>
 
-#include <boost/bind.hpp>
 #include <geometry_msgs/Twist.h>
 #include <nav_msgs/Odometry.h>
 #include <ros/ros.h>
@@ -46,6 +45,9 @@
 #include <tf/transform_listener.h>
 
 namespace gazebo {
+
+    constexpr auto VELOCITY_COMMAND_TOPIC = "cmd_vel";
+    constexpr auto CALLBACK_TIMEOUT = 0.01;
 
     enum {
         FRONT_LEFT,
@@ -62,263 +64,234 @@ namespace gazebo {
 
     // Destructor
     DiffDrivePlugin6W::~DiffDrivePlugin6W() {
-        updateConnection.reset();
-        delete transform_broadcaster_;
-        rosnode_->shutdown();
-        callback_queue_thread_.join();
-        delete rosnode_;
+        mSpinner->stop();
+        mUpdateConnection.reset();
+        mNode->shutdown();
     }
 
     // Load the controller
-    void DiffDrivePlugin6W::Load(physics::ModelPtr _model, sdf::ElementPtr _sdf) {
-        world = _model->GetWorld();
+    void DiffDrivePlugin6W::Load(physics::ModelPtr mModel, sdf::ElementPtr mSdf) {
+        mWorld = mModel->GetWorld();
 
         // default parameters
-        namespace_.clear();
-        topic_ = "cmd_vel";
-        wheelSep = 0.34;
-        wheelDiam = 0.15;
-        torque = 10.0;
+        mNamespace.clear();
+        mVelocityCommandTopic = VELOCITY_COMMAND_TOPIC;
+        mWheelSeparation = 0.34;
+        mWheelDiameter = 0.15;
+        mTorque = 10.0;
 
         // load parameters
-        if (_sdf->HasElement("robotNamespace"))
-            namespace_ = _sdf->GetElement("robotNamespace")->GetValue()->GetAsString();
+        if (mSdf->HasElement("robotNamespace"))
+            mNamespace = mSdf->GetElement("robotNamespace")->GetValue()->GetAsString();
 
-        if (_sdf->HasElement("topicName"))
-            topic_ = _sdf->GetElement("topicName")->GetValue()->GetAsString();
+        if (mSdf->HasElement("topicName"))
+            mVelocityCommandTopic = mSdf->GetElement("topicName")->GetValue()->GetAsString();
 
-        if (_sdf->HasElement("bodyName")) {
-            link_name_ = _sdf->GetElement("bodyName")->GetValue()->GetAsString();
-            link = _model->GetLink(link_name_);
+        if (mSdf->HasElement("bodyName")) {
+            mBodyLinkName = mSdf->GetElement("bodyName")->GetValue()->GetAsString();
+            mBodyLink = mModel->GetLink(mBodyLinkName);
         } else {
-            link = _model->GetLink();
-            link_name_ = link->GetName();
+            mBodyLink = mModel->GetLink();
+            mBodyLinkName = mBodyLink->GetName();
         }
 
-        // assert that the body by link_name_ exists
-        if (!link) {
-            ROS_FATAL("DiffDrivePlugin6W plugin error: bodyName: %s does not exist\n", link_name_.c_str());
+        // assert that the body by mBodyLinkName exists
+        if (!mBodyLink) {
+            ROS_FATAL("DiffDrivePlugin6W plugin error: bodyName: %s does not exist\n", mBodyLinkName.c_str());
             return;
         }
 
-        if (_sdf->HasElement("frontLeftJoint")) joints[FRONT_LEFT] = _model->GetJoint(_sdf->GetElement("frontLeftJoint")->GetValue()->GetAsString());
-        if (_sdf->HasElement("frontRightJoint"))
-            joints[FRONT_RIGHT] = _model->GetJoint(_sdf->GetElement("frontRightJoint")->GetValue()->GetAsString());
-        if (_sdf->HasElement("midLeftJoint")) joints[MID_LEFT] = _model->GetJoint(_sdf->GetElement("midLeftJoint")->GetValue()->GetAsString());
-        if (_sdf->HasElement("midRightJoint")) joints[MID_RIGHT] = _model->GetJoint(_sdf->GetElement("midRightJoint")->GetValue()->GetAsString());
-        if (_sdf->HasElement("rearLeftJoint")) joints[REAR_LEFT] = _model->GetJoint(_sdf->GetElement("rearLeftJoint")->GetValue()->GetAsString());
-        if (_sdf->HasElement("rearRightJoint")) joints[REAR_RIGHT] = _model->GetJoint(_sdf->GetElement("rearRightJoint")->GetValue()->GetAsString());
+        if (mSdf->HasElement("frontLeftJoint"))
+            mJoints[FRONT_LEFT] = mModel->GetJoint(mSdf->GetElement("frontLeftJoint")->GetValue()->GetAsString());
+        if (mSdf->HasElement("frontRightJoint"))
+            mJoints[FRONT_RIGHT] = mModel->GetJoint(mSdf->GetElement("frontRightJoint")->GetValue()->GetAsString());
+        if (mSdf->HasElement("midLeftJoint"))
+            mJoints[MID_LEFT] = mModel->GetJoint(mSdf->GetElement("midLeftJoint")->GetValue()->GetAsString());
+        if (mSdf->HasElement("midRightJoint"))
+            mJoints[MID_RIGHT] = mModel->GetJoint(mSdf->GetElement("midRightJoint")->GetValue()->GetAsString());
+        if (mSdf->HasElement("rearLeftJoint"))
+            mJoints[REAR_LEFT] = mModel->GetJoint(mSdf->GetElement("rearLeftJoint")->GetValue()->GetAsString());
+        if (mSdf->HasElement("rearRightJoint"))
+            mJoints[REAR_RIGHT] = mModel->GetJoint(mSdf->GetElement("rearRightJoint")->GetValue()->GetAsString());
 
-        if (!joints[FRONT_LEFT]) ROS_FATAL("diffdrive_plugin_6w error: The controller couldn't get front left joint");
-        if (!joints[FRONT_RIGHT]) ROS_FATAL("diffdrive_plugin_6w error: The controller couldn't get front right joint");
-        if (!joints[MID_LEFT]) ROS_FATAL("diffdrive_plugin_6w error: The controller couldn't get mid left joint");
-        if (!joints[MID_RIGHT]) ROS_FATAL("diffdrive_plugin_6w error: The controller couldn't get mid right joint");
-        if (!joints[REAR_LEFT]) ROS_FATAL("diffdrive_plugin_6w error: The controller couldn't get rear left joint");
-        if (!joints[REAR_RIGHT]) ROS_FATAL("diffdrive_plugin_6w error: The controller couldn't get rear right joint");
+        if (!mJoints[FRONT_LEFT]) ROS_FATAL("diffdrive_plugin_6w error: The controller couldn't get front left joint");
+        if (!mJoints[FRONT_RIGHT]) ROS_FATAL("diffdrive_plugin_6w error: The controller couldn't get front right joint");
+        if (!mJoints[MID_LEFT]) ROS_FATAL("diffdrive_plugin_6w error: The controller couldn't get mid left joint");
+        if (!mJoints[MID_RIGHT]) ROS_FATAL("diffdrive_plugin_6w error: The controller couldn't get mid right joint");
+        if (!mJoints[REAR_LEFT]) ROS_FATAL("diffdrive_plugin_6w error: The controller couldn't get rear left joint");
+        if (!mJoints[REAR_RIGHT]) ROS_FATAL("diffdrive_plugin_6w error: The controller couldn't get rear right joint");
 
-        if (_sdf->HasElement("wheelSeparation"))
-            _sdf->GetElement("wheelSeparation")->GetValue()->Get(wheelSep);
+        if (mSdf->HasElement("wheelSeparation"))
+            mSdf->GetElement("wheelSeparation")->GetValue()->Get(mWheelSeparation);
 
-        if (_sdf->HasElement("wheelDiameter"))
-            _sdf->GetElement("wheelDiameter")->GetValue()->Get(wheelDiam);
+        if (mSdf->HasElement("wheelDiameter"))
+            mSdf->GetElement("wheelDiameter")->GetValue()->Get(mWheelDiameter);
 
-        if (_sdf->HasElement("torque"))
-            _sdf->GetElement("torque")->GetValue()->Get(torque);
+        if (mSdf->HasElement("torque"))
+            mSdf->GetElement("torque")->GetValue()->Get(mTorque);
 
         // Make sure the ROS node for Gazebo has already been initialized
         if (!ros::isInitialized()) {
-            ROS_FATAL_STREAM("A ROS node for Gazebo has not been initialized, unable to load plugin. "
-                             << "Load the Gazebo system plugin 'libgazebo_ros_api_plugin.so' in the gazebo_ros package)");
+            ROS_FATAL("A ROS node for Gazebo has not been initialized, unable to load plugin. "
+                      "Load the Gazebo system plugin 'libgazebo_ros_api_plugin.so' in the gazebo_ros package)");
             return;
         }
 
-        rosnode_ = new ros::NodeHandle(namespace_);
+        mNode = ros::NodeHandle(mNamespace);
 
-        tf_prefix_ = tf::getPrefixParam(*rosnode_);
-        transform_broadcaster_ = new tf::TransformBroadcaster();
+        mTfPrefix = tf::getPrefixParam(*mNode);
+        mTfBroadcaster = tf::TransformBroadcaster();
 
         // ROS: Subscribe to the velocity command topic (usually "cmd_vel")
         ros::SubscribeOptions so = ros::SubscribeOptions::create<geometry_msgs::Twist>(
-                topic_, 1,
-                boost::bind(&DiffDrivePlugin6W::cmdVelCallback, this, _1),
-                ros::VoidPtr(), &queue_);
-        sub_ = rosnode_->subscribe(so);
-        pub_ = rosnode_->advertise<nav_msgs::Odometry>("odom", 1);
+                mVelocityCommandTopic, 1,
+                [this](const geometry_msgs::Twist::ConstPtr& velocityCommand) { commandVelocityCallback(velocityCommand); },
+                ros::VoidPtr(), &mVelocityCommandQueue);
+        mSubscriber = mNode->subscribe(so);
+        mPublisher = mNode->advertise<nav_msgs::Odometry>("odom", 1);
 
-        // TODO(amg): disabled due to weirdness where the thread would die and callbacks stop
-        //callback_queue_thread_ = boost::thread(boost::bind(&DiffDrivePlugin6W::QueueThread, this));
+        // Spinner runs in the background until the node dies
+        // We want the callback to update as soon as possible so do this instead of callAvailable on the queue
+        // Note that this means we have to make it thread safe, which is done via a mutex
+        mSpinner = ros::AsyncSpinner(1, &mVelocityCommandQueue); // 1 core for now
+        mSpinner->start();
 
         Reset();
 
         // New Mechanism for Updating every World Cycle
         // Listen to the update event. This event is broadcast every
         // simulation iteration.
-        updateConnection = event::Events::ConnectWorldUpdateBegin(boost::bind(&DiffDrivePlugin6W::Update, this));
+        // TODO: (quintin) not sure how to get rid of this std::bind
+        mUpdateConnection = event::Events::ConnectWorldUpdateBegin(std::bind(&DiffDrivePlugin6W::update, this));
     }
 
     // Initialize the controller
     void DiffDrivePlugin6W::Reset() {
-        enableMotors = true;
+        mEnableMotors = true;
 
-        for (float& ws: wheelSpeed) {
-            ws = 0;
-        }
+        mWheelSpeeds = {};
 
-        prevUpdateTime = world->SimTime();
+        mPreviousUpdateTime = mWorld->SimTime();
 
-        x_ = 0;
-        rot_ = 0;
-        alive_ = true;
+        mForwardVelocity = 0;
+        mPitch = 0;
 
         // Reset odometric pose
-        odomPose[0] = 0.0;
-        odomPose[1] = 0.0;
-        odomPose[2] = 0.0;
-
-        odomVel[0] = 0.0;
-        odomVel[1] = 0.0;
-        odomVel[2] = 0.0;
+        mOdomPose = {};
+        mOdomVelocity = {};
     }
 
     // Update the controller
-    void DiffDrivePlugin6W::Update() {
-
-        // TODO(amg): This is probably bad...
-        static const double timeout = 0.01;
-        queue_.callAvailable(ros::WallDuration(timeout));
+    void DiffDrivePlugin6W::update() {
 
         // TODO: Step should be in a parameter of this function
         double d1, d2;
         double dr, da;
         common::Time stepTime;
 
-        GetPositionCmd();
+        getPositionCommand();
 
         //stepTime = World::Instance()->GetPhysicsEngine()->GetStepTime();
-        stepTime = world->SimTime() - prevUpdateTime;
-        prevUpdateTime = world->SimTime();
+        stepTime = mWorld->SimTime() - mPreviousUpdateTime;
+        mPreviousUpdateTime = mWorld->SimTime();
 
         // Distance travelled by front wheels
-        d1 = stepTime.Double() * wheelDiam / 2 * joints[MID_LEFT]->GetVelocity(0);
-        d2 = stepTime.Double() * wheelDiam / 2 * joints[MID_RIGHT]->GetVelocity(0);
+        d1 = stepTime.Double() * mWheelDiameter / 2 * mJoints[MID_LEFT]->GetVelocity(0);
+        d2 = stepTime.Double() * mWheelDiameter / 2 * mJoints[MID_RIGHT]->GetVelocity(0);
 
         dr = (d1 + d2) / 2;
-        da = (d1 - d2) / wheelSep;
+        da = (d1 - d2) / mWheelSeparation;
 
         // Compute odometric pose
-        odomPose[0] += dr * cos(odomPose[2]);
-        odomPose[1] += dr * sin(odomPose[2]);
-        odomPose[2] += da;
+        mOdomPose[0] += dr * std::cos(mOdomPose[2]);
+        mOdomPose[1] += dr * std::sin(mOdomPose[2]);
+        mOdomPose[2] += da;
 
         // Compute odometric instantaneous velocity
-        odomVel[0] = dr / stepTime.Double();
-        odomVel[1] = 0.0;
-        odomVel[2] = da / stepTime.Double();
+        mOdomVelocity[0] = dr / stepTime.Double();
+        mOdomVelocity[1] = 0.0;
+        mOdomVelocity[2] = da / stepTime.Double();
 
-        if (enableMotors) {
-            joints[FRONT_LEFT]->SetVelocity(0, wheelSpeed[0] / (wheelDiam / 2.0));
-            joints[MID_LEFT]->SetVelocity(0, wheelSpeed[0] / (wheelDiam / 2.0));
-            joints[REAR_LEFT]->SetVelocity(0, wheelSpeed[0] / (wheelDiam / 2.0));
+        if (mEnableMotors) {
+            mJoints[FRONT_LEFT]->SetVelocity(0, mWheelSpeeds[0] / (mWheelDiameter / 2.0));
+            mJoints[MID_LEFT]->SetVelocity(0, mWheelSpeeds[0] / (mWheelDiameter / 2.0));
+            mJoints[REAR_LEFT]->SetVelocity(0, mWheelSpeeds[0] / (mWheelDiameter / 2.0));
 
-            joints[FRONT_RIGHT]->SetVelocity(0, wheelSpeed[1] / (wheelDiam / 2.0));
-            joints[MID_RIGHT]->SetVelocity(0, wheelSpeed[1] / (wheelDiam / 2.0));
-            joints[REAR_RIGHT]->SetVelocity(0, wheelSpeed[1] / (wheelDiam / 2.0));
+            mJoints[FRONT_RIGHT]->SetVelocity(0, mWheelSpeeds[1] / (mWheelDiameter / 2.0));
+            mJoints[MID_RIGHT]->SetVelocity(0, mWheelSpeeds[1] / (mWheelDiameter / 2.0));
+            mJoints[REAR_RIGHT]->SetVelocity(0, mWheelSpeeds[1] / (mWheelDiameter / 2.0));
 
-            joints[FRONT_LEFT]->SetEffortLimit(0, torque);
-            joints[MID_LEFT]->SetEffortLimit(0, torque);
-            joints[REAR_LEFT]->SetEffortLimit(0, torque);
+            mJoints[FRONT_LEFT]->SetEffortLimit(0, mTorque);
+            mJoints[MID_LEFT]->SetEffortLimit(0, mTorque);
+            mJoints[REAR_LEFT]->SetEffortLimit(0, mTorque);
 
-            joints[FRONT_RIGHT]->SetEffortLimit(0, torque);
-            joints[MID_RIGHT]->SetEffortLimit(0, torque);
-            joints[REAR_RIGHT]->SetEffortLimit(0, torque);
+            mJoints[FRONT_RIGHT]->SetEffortLimit(0, mTorque);
+            mJoints[MID_RIGHT]->SetEffortLimit(0, mTorque);
+            mJoints[REAR_RIGHT]->SetEffortLimit(0, mTorque);
         }
 
-        publish_odometry();
+        publishOdometry();
     }
 
-    // NEW: Now uses the target velocities from the ROS message, not the Iface
-    void DiffDrivePlugin6W::GetPositionCmd() {
-        lock.lock();
+    void DiffDrivePlugin6W::getPositionCommand() {
+        std::lock_guard guard(mLock);
 
         double vr, va;
 
-        vr = x_;    //myIface->data->cmdVelocity.pos.x;
-        va = -rot_; //myIface->data->cmdVelocity.yaw;
-
-        //std::cout << "X: [" << x_ << "] ROT: [" << rot_ << "]" << std::endl;
+        vr = mForwardVelocity;
+        va = -mPitch;
 
         // Changed motors to be always on, which is probably what we want anyway
-        enableMotors = true; //myIface->data->cmdEnableMotors > 0;
+        mEnableMotors = true;
 
-        //std::cout << enableMotors << std::endl;
-
-        wheelSpeed[0] = vr + va * wheelSep / 2;
-        wheelSpeed[1] = vr - va * wheelSep / 2;
-
-        lock.unlock();
+        mWheelSpeeds[0] = vr + va * mWheelSeparation / 2;
+        mWheelSpeeds[1] = vr - va * mWheelSeparation / 2;
     }
 
-    // NEW: Store the velocities from the ROS message
-    void DiffDrivePlugin6W::cmdVelCallback(const geometry_msgs::Twist::ConstPtr& cmd_msg) {
-        //std::cout << "BEGIN CALLBACK\n";
+    void DiffDrivePlugin6W::commandVelocityCallback(const geometry_msgs::Twist::ConstPtr& velocityCommand) {
+        std::lock_guard guard(mLock);
 
-        lock.lock();
-
-        x_ = cmd_msg->linear.x;
-        rot_ = cmd_msg->angular.z;
-
-        lock.unlock();
-
-        //std::cout << "END CALLBACK\n";
-    }
-
-    // NEW: custom callback queue thread
-    void DiffDrivePlugin6W::QueueThread() {
-        static const double timeout = 0.01;
-
-        while (alive_ && rosnode_->ok()) {
-            //    std::cout << "CALLING STUFF\n";
-            queue_.callAvailable(ros::WallDuration(timeout));
-        }
+        mForwardVelocity = velocityCommand->linear.x;
+        mPitch = velocityCommand->angular.z;
     }
 
     // NEW: Update this to publish odometry topic
-    void DiffDrivePlugin6W::publish_odometry() {
+    void DiffDrivePlugin6W::publishOdometry() {
         // get current time
-        ros::Time current_time_((world->SimTime()).sec, (world->SimTime()).nsec);
+        ros::Time currentTime((mWorld->SimTime()).sec, (mWorld->SimTime()).nsec);
 
         // getting data for base_footprint to odom transform
-        ignition::math::Pose3d pose = link->WorldPose();
-        ignition::math::Vector3d velocity = link->WorldLinearVel();
-        ignition::math::Vector3d angular_velocity = link->WorldAngularVel();
+        ignition::math::Pose3d pose = mBodyLink->WorldPose();
+        ignition::math::Vector3d velocity = mBodyLink->WorldLinearVel();
+        ignition::math::Vector3d angularVelocity = mBodyLink->WorldAngularVel();
 
         //        tf::Quaternion qt(pose.Rot().X(), pose.Rot().Y(), pose.Rot().Z(), pose.Rot().W());
         //        tf::Vector3 vt(pose.Pos().X(), pose.Pos().Y(), pose.Pos().Z());
         //        tf::Transform base_footprint_to_odom(qt, vt);
 
         //        transform_broadcaster_->sendTransform(tf::StampedTransform(base_footprint_to_odom,
-        //                                                                   current_time_,
+        //                                                                   currentTime,
         //                                                                   "odom",
         //                                                                   "base_link"));
 
         // publish odom topic
-        odom_.pose.pose.position.x = pose.Pos().X();
-        odom_.pose.pose.position.y = pose.Pos().Y();
+        mOdometry.pose.pose.position.x = pose.Pos().X();
+        mOdometry.pose.pose.position.y = pose.Pos().Y();
 
-        odom_.pose.pose.orientation.x = pose.Rot().X();
-        odom_.pose.pose.orientation.y = pose.Rot().Y();
-        odom_.pose.pose.orientation.z = pose.Rot().Z();
-        odom_.pose.pose.orientation.w = pose.Rot().W();
+        mOdometry.pose.pose.orientation.x = pose.Rot().X();
+        mOdometry.pose.pose.orientation.y = pose.Rot().Y();
+        mOdometry.pose.pose.orientation.z = pose.Rot().Z();
+        mOdometry.pose.pose.orientation.w = pose.Rot().W();
 
-        odom_.twist.twist.linear.x = velocity.X();
-        odom_.twist.twist.linear.y = velocity.Y();
-        odom_.twist.twist.angular.z = angular_velocity.Z();
+        mOdometry.twist.twist.linear.x = velocity.X();
+        mOdometry.twist.twist.linear.y = velocity.Y();
+        mOdometry.twist.twist.angular.z = angularVelocity.Z();
 
-        odom_.header.frame_id = tf::resolve(tf_prefix_, "odom");
-        odom_.child_frame_id = "base_link";
-        odom_.header.stamp = current_time_;
+        mOdometry.header.frame_id = tf::resolve(mTfPrefix, "odom");
+        mOdometry.child_frame_id = "base_link";
+        mOdometry.header.stamp = currentTime;
 
-        pub_.publish(odom_);
+        mPublisher.publish(mOdometry);
     }
 
     GZ_REGISTER_MODEL_PLUGIN(DiffDrivePlugin6W)

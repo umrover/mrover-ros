@@ -1,0 +1,11 @@
+<launch>
+  <!-- publish some fake map -> odom -> baselink transforms -->
+  <node pkg="tf" type="static_transform_publisher" name="map_odom_publisher" 
+        args="1 0 0 0 0 0 map odom 100" />
+
+  <node pkg="tf" type="static_transform_publisher" name="odom_baselink_publisher" 
+        args="0 2 -3 3.14159265 0 0 odom base_link 100" />
+  
+  <!-- Execute multiple tests after configuring nodes-->
+  <test test-name="SE3_tf_test" pkg="mrover" type="SE3_tf_test.py" />
+</launch>
