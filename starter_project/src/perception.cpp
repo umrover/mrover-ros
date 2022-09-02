@@ -65,7 +65,7 @@ namespace mrover {
         // TODO: implement me!
     }
 
-    std::optional<float> Perception::getDistance(const sensor_msgs::PointCloud2ConstPtr& pointCloud, size_t xPixel, size_t yPixel) {
+    std::optional<float> Perception::getDistance(const sensor_msgs::PointCloud2ConstPtr& pointCloud, StarterProjectTag const& tag) {
         // TODO: implement me!
         return std::nullopt;
     }

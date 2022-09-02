@@ -77,7 +77,7 @@ namespace mrover {
          * @param yPixel
          * @return
          */
-        [[nodiscard]] std::optional<float> getDistance(sensor_msgs::PointCloud2ConstPtr const& pointCloud, size_t xPixel, size_t yPixel);
+        [[nodiscard]] std::optional<float> getDistance(sensor_msgs::PointCloud2ConstPtr const& pointCloud, StarterProjectTag const& tag);
     };
 
 } // namespace mrover

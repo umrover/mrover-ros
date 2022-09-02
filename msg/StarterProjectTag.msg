@@ -1,3 +1,4 @@
 int32 tag_id
-float32 x
-float32 y
+float32 xTagCenterPixel
+float32 yTagCenterPixel
+float32 distance
