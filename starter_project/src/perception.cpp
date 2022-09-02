@@ -28,10 +28,6 @@ namespace mrover {
         // Specifically the callback we passed will be invoked
         imageTransport.subscribe("camera/color/image_raw", 1, &Perception::imageCallback, this);
 
-        // Subscribe to point cloud messages
-        // Think of a point cloud as an image that has 3D pixels, each pixel is x,y,z position relative to the camera (and thus the rover)
-        nodeHandle.subscribe("camera/depth/points", 1, &Perception::pointCloudCallback, this);
-
         mTagPublisher = nodeHandle.advertise<StarterProjectTag>("tag", 1);
     }
 
@@ -47,8 +43,10 @@ namespace mrover {
 
     void Perception::findTagsInImage(cv_bridge::CvImagePtr const& image, std::vector<StarterProjectTag>& tags) {
         // TODO: implement me!
+        // TODO: find a way to fill the "distance" metric for the tag message. It can be an approximation.
         // hint: you have mTagDictionary, mTagCorners, mTagIds, and mTagDetectorParams member variables already defined!
         // hint: you can access the raw image (cv::Mat) with image->image
+        // hint: fill in and use the "getDistanceApproxFromTagCorners" function
         cv::aruco::detectMarkers(image->image, mTagDictionary, mTagCorners, mTagIds, mTagDetectorParams);
     }
 
@@ -61,12 +59,8 @@ namespace mrover {
         // TODO: implement me!
     }
 
-    void Perception::pointCloudCallback(const sensor_msgs::PointCloud2ConstPtr& pointCloud) {
+    float Perception::getDistanceApproxFromTagCorners(const std::vector<cv::Point2f>& tagCorners) {
         // TODO: implement me!
-    }
-
-    std::optional<float> Perception::getDistance(const sensor_msgs::PointCloud2ConstPtr& pointCloud, StarterProjectTag const& tag) {
-        // TODO: implement me!
-        return std::nullopt;
+        return {};
     }
 } // namespace mrover

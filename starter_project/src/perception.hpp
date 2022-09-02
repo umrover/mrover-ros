@@ -46,12 +46,6 @@ namespace mrover {
 
         /**
          *
-         * @param pointCloud
-         */
-        void pointCloudCallback(sensor_msgs::PointCloud2ConstPtr const& pointCloud);
-
-        /**
-         *
          * @param image
          * @param tags
          */
@@ -65,19 +59,17 @@ namespace mrover {
 
         /**
          *
+         * @param tagCorners
+         * @return
+         */
+        [[nodiscard]] float getDistanceApproxFromTagCorners(std::vector<cv::Point2f> const& tagCorners);
+
+        /**
+         *
          * @param tags
          * @return
          */
         [[nodiscard]] StarterProjectTag selectTag(std::vector<StarterProjectTag> const& tags);
-
-        /**
-         *
-         * @param pointCloud
-         * @param xPixel
-         * @param yPixel
-         * @return
-         */
-        [[nodiscard]] std::optional<float> getDistance(sensor_msgs::PointCloud2ConstPtr const& pointCloud, StarterProjectTag const& tag);
     };
 
 } // namespace mrover
