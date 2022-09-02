@@ -31,7 +31,7 @@
     Perception
     ==========
   -->
-  <!-- <node name="aruco_detect" pkg="mrover" type="aruco_detect" /> -->
+  <node name="perception_starter_project" pkg="mrover" type="perception_starter_project" />
 
   <!--
     ===========

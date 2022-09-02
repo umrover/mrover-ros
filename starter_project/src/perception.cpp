@@ -15,14 +15,18 @@
 #include <ros/init.h>
 
 int main(int argc, char** argv) {
-    ros::init(argc, argv, "perception_starter_project");
-    ros::NodeHandle nodeHandle("starter_project"); // Set namespace (See: http://wiki.ros.org/Names)
+    ros::init(argc, argv, "perception_starter_project"); // Our node name (See: http://wiki.ros.org/Nodes)
+    ros::NodeHandle nodeHandle("starter_project");       // Set namespace (See: http://wiki.ros.org/Names)
 
     image_transport::ImageTransport imageTransport(nodeHandle);
     imageTransport.subscribe("camera/color/image_raw", 1, &imageCallback);
 
+    // "spin" blocks until our node dies
+    // It listens for new messages and calls our subscribed functions with them
     ros::spin();
+
+    return EXIT_SUCCESS;
 }
 
-void imageCallback(const sensor_msgs::ImageConstPtr& image) {
+void imageCallback(sensor_msgs::ImageConstPtr const& image) {
 }
