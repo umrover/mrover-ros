@@ -2,7 +2,7 @@
   <arg name="model" default="$(find mrover)/rover_description/rover.urdf" />
   <arg name="gui" default="false" />
   <param name="robot_description" command="xacro $(find mrover)/rover_description/rover.xacro" />
-  <arg name="rvizconfig" default="$(find mrover)/config/rviz/navigation.rviz" />
+  <arg name="rvizconfig" default="$(find mrover)/config/rviz/starter_project.rviz" />
   <arg name="gazebo_config_path" default="$(find mrover)/config/gazebo" />
   <node name="rviz" pkg="rviz" type="rviz" args="-d $(arg rvizconfig)" required="true" />
 
