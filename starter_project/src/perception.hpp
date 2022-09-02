@@ -1,12 +1,22 @@
 #pragma once
 
+// C++ Standard Library Headers, std namespace
+#include <memory>
+#include <optional>
+#include <string>
+#include <unordered_map>
+#include <vector>
+
+// OpenCV Headers, cv namespace
 #include <opencv2/aruco.hpp>
+#include <opencv2/core/mat.hpp>
 
+// ROS Headers, ros namespace
 #include <cv_bridge/cv_bridge.h>
-#include <ros/publisher.h>
-
 #include <mrover/StarterProjectTag.h>
+#include <ros/publisher.h>
 #include <sensor_msgs/Image.h>
+#include <sensor_msgs/PointCloud2.h>
 
 namespace mrover {
 
@@ -36,6 +46,12 @@ namespace mrover {
 
         /**
          *
+         * @param pointCloud
+         */
+        void pointCloudCallback(sensor_msgs::PointCloud2ConstPtr const& pointCloud);
+
+        /**
+         *
          * @param image
          * @param tags
          */
@@ -53,6 +69,15 @@ namespace mrover {
          * @return
          */
         [[nodiscard]] StarterProjectTag selectTag(std::vector<StarterProjectTag> const& tags);
+
+        /**
+         *
+         * @param pointCloud
+         * @param xPixel
+         * @param yPixel
+         * @return
+         */
+        [[nodiscard]] std::optional<float> getDistance(sensor_msgs::PointCloud2ConstPtr const& pointCloud, size_t xPixel, size_t yPixel);
     };
 
 } // namespace mrover

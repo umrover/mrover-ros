@@ -1,18 +1,7 @@
 #include "perception.hpp"
 
-// C++ Standard Library Headers, std namespace
-#include <memory>
-#include <optional>
-#include <string>
-#include <unordered_map>
-#include <vector>
-
-// OpenCV Headers, cv namespace
-#include <opencv2/aruco.hpp>
-#include <opencv2/core/mat.hpp>
 
 // ROS Headers, ros namespace
-#include <cv_bridge/cv_bridge.h>
 #include <image_transport/image_transport.h>
 #include <ros/init.h>
 
@@ -37,11 +26,11 @@ namespace mrover {
         // Subscribe to camera image messages
         // Every time another node publishes to this topic we will be notified
         // Specifically the callback we passed will be invoked
-        // Extra note: We need to use a lambda to bind "this" to "imageCallback"
-        imageTransport.subscribe("camera/color/image_raw", 1,
-                                 [this](sensor_msgs::ImageConstPtr const& image) {
-                                     imageCallback(image);
-                                 });
+        imageTransport.subscribe("camera/color/image_raw", 1, &Perception::imageCallback, this);
+
+        // Subscribe to point cloud messages
+        // Think of a point cloud as an image that has 3D pixels, each pixel is x,y,z position relative to the camera (and thus the rover)
+        nodeHandle.subscribe("camera/depth/points", 1, &Perception::pointCloudCallback, this);
 
         mTagPublisher = nodeHandle.advertise<StarterProjectTag>("tag", 1);
     }
@@ -70,5 +59,14 @@ namespace mrover {
 
     void Perception::publishTag(const StarterProjectTag& tag) {
         // TODO: implement me!
+    }
+
+    void Perception::pointCloudCallback(const sensor_msgs::PointCloud2ConstPtr& pointCloud) {
+        // TODO: implement me!
+    }
+
+    std::optional<float> Perception::getDistance(const sensor_msgs::PointCloud2ConstPtr& pointCloud, size_t xPixel, size_t yPixel) {
+        // TODO: implement me!
+        return std::nullopt;
     }
 } // namespace mrover
