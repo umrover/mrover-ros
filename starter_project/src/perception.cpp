@@ -57,6 +57,9 @@ namespace mrover {
     }
 
     void Perception::findTagsInImage(cv_bridge::CvImagePtr const& image, std::vector<StarterProjectTag>& tags) {
+        // TODO: implement me!
+        // hint: you have mTagDictionary, mTagCorners, mTagIds, and mTagDetectorParams member variables already defined!
+        // hint: you can access the raw image (cv::Mat) with image->image
         cv::aruco::detectMarkers(image->image, mTagDictionary, mTagCorners, mTagIds, mTagDetectorParams);
     }
 

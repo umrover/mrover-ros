@@ -12,7 +12,7 @@
 
   <include file="$(find gazebo_ros)/launch/empty_world.launch">
     <env name="GAZEBO_MODEL_PATH" value="$(arg gazebo_config_path)/env_description" />
-    <arg name="world_name" value="$(arg gazebo_config_path)/env_description/world.world" />
+    <arg name="world_name" value="$(arg gazebo_config_path)/env_description/starter_project.world" />
     <arg name="paused" value="false" />
     <arg name="use_sim_time" value="true" />
     <arg name="gui" value="true" />
@@ -31,7 +31,7 @@
     Perception
     ==========
   -->
-  <node name="perception_starter_project" pkg="mrover" type="perception_starter_project" />
+  <!--   <node name="perception_starter_project" pkg="mrover" type="perception_starter_project" /> -->
 
   <!--
     ===========
