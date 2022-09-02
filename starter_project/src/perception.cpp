@@ -19,8 +19,9 @@ int main(int argc, char** argv) {
 }
 
 namespace mrover {
+
     Perception::Perception() {
-        ros::NodeHandle nodeHandle("starter_project"); // Set namespace (See: http://wiki.ros.org/Names)
+        ros::NodeHandle nodeHandle("starter_project"); // Parameter is namespace (See: http://wiki.ros.org/Names)
 
         image_transport::ImageTransport imageTransport(nodeHandle);
         // Subscribe to camera image messages
@@ -28,6 +29,8 @@ namespace mrover {
         // Specifically the callback we passed will be invoked
         imageTransport.subscribe("camera/color/image_raw", 1, &Perception::imageCallback, this);
 
+        // Create a publisher for our tag topic
+        // See: http://wiki.ros.org/ROS/Tutorials/WritingPublisherSubscriber%28c%2B%2B%29
         mTagPublisher = nodeHandle.advertise<StarterProjectTag>("tag", 1);
     }
 
@@ -42,12 +45,14 @@ namespace mrover {
     }
 
     void Perception::findTagsInImage(cv_bridge::CvImagePtr const& image, std::vector<StarterProjectTag>& tags) {
-        // TODO: implement me!
         // TODO: find a way to fill the "distance" metric for the tag message. It can be an approximation.
         // hint: you have mTagDictionary, mTagCorners, mTagIds, and mTagDetectorParams member variables already defined!
         // hint: you can access the raw image (cv::Mat) with image->image
-        // hint: fill in and use the "getDistanceApproxFromTagCorners" function
-        cv::aruco::detectMarkers(image->image, mTagDictionary, mTagCorners, mTagIds, mTagDetectorParams);
+        // hint: write and use the "getCenterFromTagCorners" and "getDistanceApproxFromTagCorners" functions
+
+        tags.clear(); // Clear old tags in output vector
+
+        // TODO: implement me!
     }
 
     StarterProjectTag Perception::selectTag(std::vector<StarterProjectTag> const& tags) {
@@ -59,8 +64,15 @@ namespace mrover {
         // TODO: implement me!
     }
 
-    float Perception::getDistanceApproxFromTagCorners(const std::vector<cv::Point2f>& tagCorners) {
+    float Perception::getDistanceApproxFromTagCorners(cv::Mat const& image, const std::vector<cv::Point2f>& tagCorners) {
+        // TODO: implement me!
+        // hint: think about how you can use the "image" parameter
+        return {};
+    }
+
+    std::pair<float, float> Perception::getCenterFromTagCorners(const std::vector<cv::Point2f>& tagCorners) {
         // TODO: implement me!
         return {};
     }
+
 } // namespace mrover

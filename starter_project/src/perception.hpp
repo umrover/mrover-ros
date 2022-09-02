@@ -23,8 +23,9 @@ namespace mrover {
     /**
      *  Starter project perception node
      *
-     *  Input: Image data
-     *  Output: ArUco tag pixel coordinates that is closest to the center of the camera
+     *  Input:  Image data.
+     *  Output: ArUco tag pixel coordinates that is closest to the center of the camera.
+     *          Also an approximation for how far away the tag is.
      */
     class Perception {
     private:
@@ -39,30 +40,44 @@ namespace mrover {
         Perception();
 
         /**
+         * Called when we receive a new image message from the camera.
+         * Specifically this is one frame.
          *
          * @param image
          */
         void imageCallback(sensor_msgs::ImageConstPtr const& image);
 
         /**
+         *  Given an image, detect ArUco tags, and fill a vector full of output messages.
          *
-         * @param image
-         * @param tags
+         * @param image Image
+         * @param tags  Output vector of tags
          */
         void findTagsInImage(cv_bridge::CvImagePtr const& image, std::vector<StarterProjectTag>& tags);
 
         /**
+         * Publish our processed tag
          *
-         * @param tag
+         * @param tag Selected tag message
          */
         void publishTag(StarterProjectTag const& tag);
 
         /**
+         *  Given an ArUco tag in pixel space, find approximately how far away we are.
          *
-         * @param tagCorners
-         * @return
+         * @param image         Access to the raw OpenCV image as a matrix
+         * @param tagCorners    4-tuple of the tag pixel coordinates representing the corners
+         * @return              Approximate distance from rover to the tag
          */
-        [[nodiscard]] float getDistanceApproxFromTagCorners(std::vector<cv::Point2f> const& tagCorners);
+        [[nodiscard]] float getDistanceApproxFromTagCorners(cv::Mat const& image, std::vector<cv::Point2f> const& tagCorners);
+
+        /**
+         *  Given an ArUco tag in pixel space, find the approximate center in pixel space
+         *
+         * @param tagCorners    4-tuple of tag pixel coordinates representing the corners
+         * @return              2-tuple (x,y) approximate center in pixel space
+         */
+        [[nodiscard]] std::pair<float, float> getCenterFromTagCorners(std::vector<cv::Point2f> const& tagCorners);
 
         /**
          *
