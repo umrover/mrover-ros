@@ -2,6 +2,7 @@
   <arg name="model" default="$(find mrover)/rover_description/rover.urdf" />
   <arg name="gui" default="false" />
   <param name="robot_description" command="xacro $(find mrover)/rover_description/rover.xacro" />
+  <rosparam command="load" file="$(find mrover)/config/teleop.yaml" />
   <arg name="rvizconfig" default="$(find mrover)/config/rviz/default.rviz" />
   <arg name="gazebo_config_path" default="$(find mrover)/config/gazebo" />
 
@@ -23,10 +24,12 @@
 
   <node name="mrover_sim_spawn" pkg="gazebo_ros" type="spawn_model" output="screen" args="
                         -urdf -param robot_description
-                        -model rover" />
+                        -model rover" /> -->
     <include file="$(find rosbridge_server)/launch/rosbridge_websocket.launch"></include>
     <node name="gui" pkg="mrover" type="gui.sh" cwd="node"/>
+    <!--Node for teleop control callbacks-->
     <node name="jetson_teleop" pkg="mrover" type="jetson_teleop.py"/>
+    <!--Translate joystick inputs to twist velocity values-->
     <node name="teleop_twist_joy" pkg="teleop_twist_joy" type="teleop_node">
       <param name="enable_button" value="-1"/>
       <param name="enable_turbo_button" value="0"/>

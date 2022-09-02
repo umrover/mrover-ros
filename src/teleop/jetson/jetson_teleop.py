@@ -32,10 +32,13 @@ class Drive:
         pan = 4
         tilt = 5
 
-    def __init__(self):
+    def __init__(self, joystick_mappings, drive_config, track_radius, wheel_radius):
+        self.joystick_mappings = joystick_mappings
+        self.drive_config = drive_config
+
         # Constants for diff drive
-        self.TRACK_RADIUS = 10.0  # meter
-        self.WHEEL_RADIUS = 0.5  # meter
+        self.TRACK_RADIUS = track_radius  # meter
+        self.WHEEL_RADIUS = wheel_radius  # meter
         self.drive_vel_pub = ros.Publisher("/drive_cmd_wheels", Chassis, queue_size=100)
 
     # TODO: Reimplement Dampen Switch
@@ -58,25 +61,10 @@ class Drive:
 
 
 class ArmControl:
-    class XboxMappings(IntEnum):
-        left_js_x = 0
-        left_js_y = 1
-        left_trigger = 6
-        right_trigger = 7
-        right_js_x = 2
-        right_js_y = 3
-        right_bumper = 5
-        left_bumper = 4
-        d_pad_up = 12
-        d_pad_down = 13
-        d_pad_right = 14
-        d_pad_left = 15
-        a = 0
-        b = 1
-        x = 2
-        y = 3
+    def __init__(self, xbox_mappings, ra_config):
+        self.xbox_mappings = xbox_mappings
+        self.ra_config = ra_config
 
-    def __init__(self):
         # RA Joint Publishers
         self.joint_a_pub = ros.Publisher("/ra/open_loop/joint_a", JointState, queue_size=100)
         self.joint_b_pub = ros.Publisher("/ra/open_loop/joint_b", JointState, queue_size=100)
@@ -91,22 +79,38 @@ class ArmControl:
 
     def ra_control_callback(self, msg):
 
-        print(self.XboxMappings.left_js_x)
-
         joint_a = JointState()
-        joint_a.velocity.append(quadratic(deadzone(msg.axes[self.XboxMappings.left_js_x], 0.15)))
+        joint_a.velocity.append(
+            self.ra_config["joint_a"]["multiplier"]
+            * quadratic(deadzone(msg.axes[self.xbox_mappings["left_js_x"]], 0.15))
+        )
         joint_b = JointState()
-        joint_b.velocity.append(quadratic(-deadzone(msg.axes[self.XboxMappings.left_js_y], 0.15)))
+        joint_b.velocity.append(
+            self.ra_config["joint_b"]["multiplier"]
+            * quadratic(-deadzone(msg.axes[self.xbox_mappings["left_js_y"]], 0.15))
+        )
         joint_c = JointState()
-        joint_c.velocity.append(quadratic(-deadzone(msg.axes[self.XboxMappings.right_js_y], 0.15)))
+        joint_c.velocity.append(
+            self.ra_config["joint_c"]["multiplier"]
+            * quadratic(-deadzone(msg.axes[self.xbox_mappings["right_js_y"]], 0.15))
+        )
         joint_d = JointState()
-        joint_d.velocity.append(quadratic(deadzone(msg.axes[self.XboxMappings.right_js_x], 0.15)))
+        joint_d.velocity.append(
+            self.ra_config["joint_d"]["multiplier"]
+            * quadratic(deadzone(msg.axes[self.xbox_mappings["right_js_x"]], 0.15))
+        )
         joint_e = JointState()
         joint_e.velocity.append(
-            quadratic(msg.buttons[self.XboxMappings.right_trigger] - msg.buttons[self.XboxMappings.left_trigger])
+            self.ra_config["joint_e"]["multiplier"]
+            * quadratic(
+                msg.buttons[self.xbox_mappings["right_trigger"]] - msg.buttons[self.xbox_mappings["left_trigger"]]
+            )
         )
         joint_f = JointState()
-        joint_f.velocity.append(msg.axes[self.XboxMappings.right_bumper] - msg.axes[self.XboxMappings.left_bumper])
+        joint_f.velocity.append(
+            self.ra_config["joint_f"]["multiplier"]
+            * (msg.axes[self.xbox_mappings["right_bumper"]] - msg.axes[self.xbox_mappings["left_bumper"]])
+        )
 
         self.joint_a_pub.publish(joint_a)
         self.joint_b_pub.publish(joint_b)
@@ -116,19 +120,33 @@ class ArmControl:
         self.joint_f_pub.publish(joint_f)
 
         hand_finger = JointState()
-        hand_finger.velocity.append(msg.buttons[self.XboxMappings.y] - msg.buttons[self.XboxMappings.a])
+        hand_finger.velocity.append(
+            self.ra_config["finger"]["multiplier"]
+            * (msg.buttons[self.xbox_mappings["y"]] - msg.buttons[self.xbox_mappings["a"]])
+        )
         hand_grip = JointState()
-        hand_grip.velocity.append(msg.buttons[self.XboxMappings.b] - msg.buttons[self.XboxMappings.x])
+        hand_grip.velocity.append(
+            self.ra_config["grip"]["multiplier"]
+            * (msg.buttons[self.xbox_mappings["b"]] - msg.buttons[self.xbox_mappings["x"]])
+        )
 
         self.finger_pub.publish(hand_finger)
         self.grip_pub.publish(hand_grip)
 
 
 def main():
-    arm = ArmControl()
-    drive = Drive()
-
     ros.init_node("teleop")
+    xbox = ros.get_param("/teleop/xbox_mappings")
+    joystick = ros.get_param("/teleop/xbox_mappings")
+    ra_config = ros.get_param("/teleop/ra_controls")
+    drive_config = ros.get_param("/teleop/drive_controls")
+    track_radius = ros.get_param("/teleop/constants/track_radius")
+    wheel_radius = ros.get_param("/teleop/constants/wheel_radius")
+
+    arm = ArmControl(xbox_mappings=xbox, ra_config=ra_config)
+    drive = Drive(
+        joystick_mappings=joystick, drive_config=drive_config, track_radius=track_radius, wheel_radius=wheel_radius
+    )
 
     ros.Subscriber("/drive_cmd_twist", Twist, drive.teleop_drive_callback)
     ros.Subscriber("/xbox/ra_control", Joy, arm.ra_control_callback)
