@@ -27,16 +27,6 @@ export default {
 
   created: function () {
 
-    const JOYSTICK_CONFIG = {
-      'left_right': 0,
-      'forward_back': 1,
-      'twist': 2,
-      'dampen': 3,
-      'pan': 4,
-      'tilt': 5
-    }
-
-
     var drive_control_param = new ROSLIB.Param({
       ros : this.$ros,
       name :  '/teleop/drive_controls'

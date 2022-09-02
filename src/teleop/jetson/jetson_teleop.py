@@ -24,14 +24,6 @@ def deadzone(magnitude, threshold):
 
 
 class Drive:
-    class LogitechAxes(IntEnum):
-        left_right = 0
-        forward_back = 1
-        twist = 2
-        dampen = 3
-        pan = 4
-        tilt = 5
-
     def __init__(self, joystick_mappings, drive_config, track_radius, wheel_radius):
         self.joystick_mappings = joystick_mappings
         self.drive_config = drive_config
