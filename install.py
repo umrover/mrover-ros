@@ -46,13 +46,17 @@ def main() -> int:
     workplace_src_path = workplace_path / 'src'
     workplace_src_path.mkdir(exist_ok=True, parents=True)
     print(f'Selecting workspace path: {workplace_path}')
-    run_command(['git', 'clone', 'https://github.com/umrover/mrover-ros.git','mrover'], cwd=workplace_src_path)
+    run_command(['git', 'clone', 'https://github.com/umrover/mrover-ros.git', 'mrover'], cwd=workplace_src_path)
     run_command(['catkin', 'init'], cwd=workplace_path)
     print('Checking MRover dependency packages...')
     run_command(['sudo', 'rosdep', 'init'])
     run_command(['rosdep', 'update'])
     run_command(['rosdep', 'install', '--from-paths', str(workplace_src_path), '--ignore-src', '-y', '--rosdistro=noetic'])
-    run_command(['catkin', 'build'], cwd=workplace_path)
+    print(f'Repository setup successful! Now do:\n'
+          f'\tcd {workplace_src_path}\n'
+          '\tsource /opt/ros/noetic/setup.bash\n'
+          f'\tsource {workplace_path}/devel/setup.bash\n'
+          '\tcatkin build')
     return 0
 
 
