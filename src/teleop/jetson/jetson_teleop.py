@@ -6,7 +6,7 @@ from enum import IntEnum
 import rospy as ros
 from sensor_msgs.msg import Joy, JointState
 from geometry_msgs.msg import Twist
-from mrover.msg import Chassis, RAOpenLoopCmd, HandCmd
+from mrover.msg import Chassis
 
 
 def quadratic(val):
