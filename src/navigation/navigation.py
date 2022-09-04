@@ -3,7 +3,7 @@
 import signal
 import sys
 import threading
-from navigation.gate import GateTraverseState
+from gate import GateTraverseState
 
 import rospy
 import smach
@@ -61,6 +61,7 @@ class Navigation(threading.Thread):
                     "waypoint_traverse": "WaypointState",
                     "single_fiducial": "SingleFiducialState",
                     "search": "SearchState",
+                    "gate_traverse":"GateTraverseState"
                 },
             )
             self.state_machine.add(

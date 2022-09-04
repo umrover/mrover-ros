@@ -1,7 +1,7 @@
 from __future__ import annotations
 from typing import ClassVar
 from unicodedata import normalize
-from navigation.context import Gate, Post
+from context import Gate
 
 import numpy as np
 
