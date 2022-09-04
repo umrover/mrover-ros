@@ -10,7 +10,7 @@ from mrover.msg import Chassis, RAOpenLoopCmd, HandCmd
 
 
 def quadratic(val):
-    return copysign(val**2, val)
+    return copysign(val ** 2, val)
 
 
 def deadzone(magnitude, threshold):

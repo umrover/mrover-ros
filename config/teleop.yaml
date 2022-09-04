@@ -1,7 +1,7 @@
 teleop:
   constants:
-    track_radius: 10.0
-    wheel_radius: 0.5
+    track_radius: 10.0 # Meters
+    wheel_radius: 0.5 # Meters
   ra_controls:
     joint_a:
       multiplier: 1
