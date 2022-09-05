@@ -101,7 +101,7 @@ class ArmControl:
         joint_f = JointState()
         joint_f.velocity.append(
             self.ra_config["joint_f"]["multiplier"]
-            * (msg.axes[self.xbox_mappings["right_bumper"]] - msg.axes[self.xbox_mappings["left_bumper"]])
+            * (msg.buttons[self.xbox_mappings["right_bumper"]] - msg.buttons[self.xbox_mappings["left_bumper"]])
         )
 
         self.joint_a_pub.publish(joint_a)
