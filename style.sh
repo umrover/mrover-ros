@@ -20,9 +20,15 @@ echo "Done"
 black_executable=black
 black_executable_path=$(which "$black_executable")
 if [ ! -x "$black_executable_path" ]; then
-  echo "[Error] Please install black"
+  echo "[Error] Please run pip3 install -r requirements.txt"
   exit 1
 fi
+
+if ! black --version | grep -q 'black, 22.8.0'; then
+  echo "[Error] Wrong black version"
+   exit 1
+fi
+
 
 # TODO: don't hardcode settings!
 
@@ -34,7 +40,7 @@ echo "Done"
 mypy_executable=mypy
 mypy_executable_path=$(which "$mypy_executable")
 if [ ! -x "$mypy_executable_path" ]; then
-  echo "[Error] Please install mypy"
+  echo "[Error] Please run pip3 install -r requirements.txt"
   exit 1
 fi
 
