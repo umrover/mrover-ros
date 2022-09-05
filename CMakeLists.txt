@@ -7,33 +7,56 @@ add_compile_options(-std=c++17 -Wall -Wextra -Werror -pedantic)
 ## Find catkin macros and libraries
 ## if COMPONENTS list like find_package(catkin REQUIRED COMPONENTS xyz)
 ## is used, also find other catkin packages
-find_package(catkin REQUIRED COMPONENTS
-        roscpp
-        rospy
-        std_msgs
-        tf2_geometry_msgs
-        tf2_ros
-        tf2
-        visualization_msgs
-        vision_msgs
-        image_transport
-        cv_bridge
-        sensor_msgs
-        fiducial_msgs
-        dynamic_reconfigure
-        message_generation
+
+# Only look for these if not on raspi4
+if (NOT ${DEVICE} MATCHES "raspi4")
+        find_package(catkin REQUIRED COMPONENTS
+                roscpp
+                rospy
+                std_msgs
+                tf2_geometry_msgs
+                tf2_ros
+                tf2
+                visualization_msgs
+                vision_msgs
+                image_transport
+                cv_bridge
+                sensor_msgs
+                fiducial_msgs
+                dynamic_reconfigure
+                message_generation
+                )
+else()
+        find_package(catkin REQUIRED COMPONENTS  
+                rospy
+                std_msgs
+                message_generation
+                dynamic_reconfigure
         )
+endif()
 
-find_package(OpenCV REQUIRED)
+# Only look for openCV if not on raspi4
+if (NOT ${DEVICE} MATCHES "raspi4")
+        message("Finding OpenCV")
+        find_package(OpenCV REQUIRED)
+endif()
 
-# Find Gazebo
-if (POLICY CMP0054)
-    cmake_policy(SET CMP0054 NEW)
-endif ()
-find_package(gazebo REQUIRED)
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${GAZEBO_CXX_FLAGS}")
-include_directories(${GAZEBO_INCLUDE_DIRS})
-link_directories(${GAZEBO_LIBRARY_DIRS})
+message("Build for device: ${DEVICE}")
+message("Default is Ubuntu 20.04")
+message("<raspi4> flag will disable problematic deps")
+
+# Only look for Gazebo if not on raspi4
+if (NOT ${DEVICE} MATCHES "raspi4")
+        # Find Gazebo
+        message("Finding Gazebo")
+        if (POLICY CMP0054)
+                cmake_policy(SET CMP0054 NEW)
+        endif ()
+        find_package(gazebo REQUIRED)
+        set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${GAZEBO_CXX_FLAGS}")
+        include_directories(${GAZEBO_INCLUDE_DIRS})
+        link_directories(${GAZEBO_LIBRARY_DIRS})
+endif()
 
 ## System dependencies are found with CMake's conventions
 # find_package(Boost REQUIRED COMPONENTS system)
@@ -135,20 +158,24 @@ catkin_package(
 
 ## Specify additional locations of header files
 ## Your package locations should be listed before other locations
-include_directories(
-        # include
-        ${catkin_INCLUDE_DIRS},
-        ${OpenCV_INCLUDE_DIRS}
-)
+# Only build if NOT on raspi4
+if (NOT ${DEVICE} MATCHES "raspi4")
+        include_directories(
+                # include
+                ${catkin_INCLUDE_DIRS},
+                ${OpenCV_INCLUDE_DIRS}
+        )
 
-file(GLOB_RECURSE PERCEPTION_SOURCES "src/perception/*.cpp")
-add_executable(aruco_detect ${PERCEPTION_SOURCES})
-add_dependencies(aruco_detect ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
-target_link_libraries(aruco_detect ${catkin_LIBRARIES} ${OpenCV_LIBS})
+        file(GLOB_RECURSE PERCEPTION_SOURCES "src/perception/*.cpp")
+        add_executable(aruco_detect ${PERCEPTION_SOURCES})
+        add_dependencies(aruco_detect ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
+        target_link_libraries(aruco_detect ${catkin_LIBRARIES} ${OpenCV_LIBS})
 
-add_library(differential_drive_plugin_6w src/gazebo/differential_drive_6w.cpp)
-add_dependencies(aruco_detect ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
-target_link_libraries(differential_drive_plugin_6w ${Boost_LIBRARIES} ${GAZEBO_LIBRARIES} ${catkin_LIBRARIES})
+        message("Adding diffdrive libraries")
+        add_library(differential_drive_plugin_6w src/gazebo/differential_drive_6w.cpp)
+        add_dependencies(aruco_detect ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
+        target_link_libraries(differential_drive_plugin_6w ${Boost_LIBRARIES} ${GAZEBO_LIBRARIES} ${catkin_LIBRARIES})
+endif()
 
 ## Declare a C++ library
 # add_library(${PROJECT_NAME}
@@ -183,12 +210,14 @@ target_link_libraries(differential_drive_plugin_6w ${Boost_LIBRARIES} ${GAZEBO_L
 #############
 ## Install ##
 #############
-
-install(TARGETS aruco_detect
-        ARCHIVE DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
-        LIBRARY DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
-        RUNTIME DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
-        )
+# Only install if not on raspi4
+if (NOT ${DEVICE} MATCHES "raspi4")
+        install(TARGETS aruco_detect
+                ARCHIVE DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
+                LIBRARY DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
+                RUNTIME DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
+                )
+endif()
 
 install(DIRECTORY launch/
         DESTINATION ${CATKIN_PACKAGE_SHARE_DESTINATION}/launch
@@ -212,11 +241,15 @@ install(DIRECTORY launch/
 
 ## Mark libraries for installation
 ## See http://docs.ros.org/melodic/api/catkin/html/howto/format1/building_libraries.html
-install(TARGETS differential_drive_plugin_6w
-        ARCHIVE DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
-        LIBRARY DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
-        RUNTIME DESTINATION ${CATKIN_GLOBAL_BIN_DESTINATION}
-        )
+# Only install if NOT on raspi4
+if (NOT ${DEVICE} MATCHES "raspi4")
+        message("Installing diffdrive targets")
+        install(TARGETS differential_drive_plugin_6w
+                ARCHIVE DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
+                LIBRARY DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
+                RUNTIME DESTINATION ${CATKIN_GLOBAL_BIN_DESTINATION}
+                )
+endif()
 
 ## Mark cpp header files for installation
 # install(DIRECTORY include/${PROJECT_NAME}/

@@ -98,6 +98,10 @@
   <!-- Navigation -->
   <depend>smach_ros</depend>
 
+  <!-- Drive -->
+  <depend>moteus</depend>
+  <depend>moteus-pi3hat</depend>
+
   <!-- Test -->
   <test_depend>rosunit</test_depend>
   <test_depend>rostest</test_depend>

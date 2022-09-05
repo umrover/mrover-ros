@@ -1,0 +1,5 @@
+<launch>
+    <!-- Run drive program -->
+    <node name="brushless_control" pkg="mrover" type="drive_placeholder.py" output="screen"></node> 
+    <rosparam command="load" file="$(find mrover)/config/brushless_control.yaml" />
+</launch>
