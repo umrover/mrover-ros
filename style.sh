@@ -1,5 +1,9 @@
 #!/usr/bin/env bash
 
+# See https://vaneyckt.io/posts/safer_bash_scripts_with_set_euxo_pipefail/
+set -Eeuo pipefail
+set -x
+
 # Style check C++ with clang-format
 clang_format_executable=clang-format-12
 clang_format_executable_path=$(which "$clang_format_executable")
