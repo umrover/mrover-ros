@@ -109,9 +109,9 @@ std::optional<SE3> getFidInCamFromPixel(sensor_msgs::PointCloud2ConstPtr const& 
     std::memcpy(&point.y, &msg->data[arrayPosY], sizeof(point.y));
     std::memcpy(&point.z, &msg->data[arrayPosZ], sizeof(point.z));
 
-    return (std::isfinite(point.x) && std::isfinite(point.y) && std::isfinite(point.z)) ?
-            std::optional<SE3>(SE3({+point.x, -point.y, +point.z}, Eigen::Quaterniond::Identity())) :
-            std::nullopt;
+    return (std::isfinite(point.x) && std::isfinite(point.y) && std::isfinite(point.z))
+                   ? std::optional<SE3>(SE3({+point.x, -point.y, +point.z}, Eigen::Quaterniond::Identity()))
+                   : std::nullopt;
 }
 
 /**
