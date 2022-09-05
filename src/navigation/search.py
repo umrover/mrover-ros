@@ -79,7 +79,7 @@ class SearchState(BaseState):
         waypoint = self.context.course.current_waypoint()
         if self.traj is None or self.traj.fid_id != waypoint.fiducial_id:
             self.traj = SearchTrajectory.spiral_traj(
-                self.context.rover.get_pose().position_vector()[0:2],
+                self.context.rover.get_pose().position[0:2],
                 5,
                 2,
                 waypoint.fiducial_id,
