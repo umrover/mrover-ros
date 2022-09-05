@@ -15,10 +15,12 @@
 #include <Eigen/Dense>
 
 class SE3 {
-private:
+
+public:
     using Quaternion = Eigen::Quaterniond;
     using Vector = Eigen::Vector3d;
 
+private:
     static SE3 fromTf(geometry_msgs::Transform const& transform);
 
     static SE3 fromPose(geometry_msgs::Pose const& pose);
@@ -42,6 +44,8 @@ public:
     SE3() = default;
 
     SE3(Vector position, SO3 rotation);
+
+
 
     void publishToTfTree(tf2_ros::TransformBroadcaster& broadcaster, std::string const& childFrame, std::string const& parentFrame);
 

@@ -18,9 +18,9 @@
 #include <std_srvs/SetBool.h>
 
 #include <mrover/DetectorParamsConfig.h>
+#include <se3/se3.hpp>
 
 #include "filter.hpp"
-#include "se3.hpp"
 
 constexpr char const* ODOM_FRAME = "odom";
 constexpr char const* ROVER_FRAME = "base_link";

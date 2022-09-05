@@ -13,11 +13,13 @@
 #include <Eigen/Dense>
 
 class SO3 {
-private:
+
+public:
     using Quaternion = Eigen::Quaterniond;
     using Vector = Eigen::Vector3d;
     using RotationMatrix = Eigen::Matrix3d;
 
+private:
     friend class SE3;
 
     Quaternion quaternion;

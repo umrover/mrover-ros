@@ -76,10 +76,10 @@ add_message_files(
 )
 
 ## Generate services in the 'srv' folder
- add_service_files(
-   FILES
-   PublishCourse.srv
- )
+add_service_files(
+        FILES
+        PublishCourse.srv
+)
 
 ## Generate actions in the 'action' folder
 # add_action_files(
@@ -141,19 +141,18 @@ include_directories(
         ${OpenCV_INCLUDE_DIRS}
 )
 
+file(GLOB_RECURSE SE3_SOURCES "src/util/*.cpp")
+add_library(se3 ${SE3_SOURCES})
+target_link_libraries(se3 ${catkin_LIBRARIES})
+include_directories(src/util)
+
+add_library(differential_drive_plugin_6w src/gazebo/differential_drive_6w.cpp)
+target_link_libraries(differential_drive_plugin_6w ${Boost_LIBRARIES} ${GAZEBO_LIBRARIES} ${catkin_LIBRARIES})
+
 file(GLOB_RECURSE PERCEPTION_SOURCES "src/perception/*.cpp")
 add_executable(aruco_detect ${PERCEPTION_SOURCES})
 add_dependencies(aruco_detect ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
-target_link_libraries(aruco_detect ${catkin_LIBRARIES} ${OpenCV_LIBS})
-
-add_library(differential_drive_plugin_6w src/gazebo/differential_drive_6w.cpp)
-add_dependencies(aruco_detect ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
-target_link_libraries(differential_drive_plugin_6w ${Boost_LIBRARIES} ${GAZEBO_LIBRARIES} ${catkin_LIBRARIES})
-
-## Declare a C++ library
-# add_library(${PROJECT_NAME}
-#   src/${PROJECT_NAME}/mrover.cpp
-# )
+target_link_libraries(aruco_detect ${catkin_LIBRARIES} ${OpenCV_LIBS} se3)
 
 ## Add cmake target dependencies of the library
 ## as an example, code may need to be generated before libraries
@@ -238,6 +237,8 @@ install(TARGETS differential_drive_plugin_6w
 
 # Add C++ unit tests
 catkin_add_gtest(example-cpp-test test/example/cpp_test.cpp)
+catkin_add_gtest(se3-cpp-test test/util/se3_test.cpp)
+target_link_libraries(se3-cpp-test se3)
 # catkin_add_gtest(${PROJECT_NAME}-test test/test_mrover.cpp)
 # if(TARGET ${PROJECT_NAME}-test)
 #   target_link_libraries(${PROJECT_NAME}-test ${PROJECT_NAME})
