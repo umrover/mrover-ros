@@ -44,6 +44,9 @@ link_directories(${GAZEBO_LIBRARY_DIRS})
 ## See http://ros.org/doc/api/catkin/html/user_guide/setup_dot_py.html
 catkin_python_setup()
 
+# Subdirectories before message declarations
+add_subdirectory(starter_project/teleop)
+
 ################################################
 ## Declare ROS messages, services and actions ##
 ################################################
