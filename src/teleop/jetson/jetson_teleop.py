@@ -27,7 +27,6 @@ def deadzone(magnitude, threshold):
 def create_joint_msg(joints, joint, value):
     joints[joint] = JointState()
     joints[joint].velocity.append(value)
-    return joints
 
 
 class Drive:
@@ -80,31 +79,31 @@ class ArmControl:
         joints: typing.Dict[str, JointState] = {}
 
         # Arm Joints
-        joints = create_joint_msg(
+        create_joint_msg(
             joints,
             "joint_a",
             self.ra_config["joint_a"]["multiplier"]
             * quadratic(deadzone(msg.axes[self.xbox_mappings["left_js_x"]], 0.15)),
         )
-        joints = create_joint_msg(
+        create_joint_msg(
             joints,
             "joint_b",
             self.ra_config["joint_b"]["multiplier"]
             * quadratic(-deadzone(msg.axes[self.xbox_mappings["left_js_y"]], 0.15)),
         )
-        joints = create_joint_msg(
+        create_joint_msg(
             joints,
             "joint_c",
             self.ra_config["joint_c"]["multiplier"]
             * quadratic(-deadzone(msg.axes[self.xbox_mappings["right_js_y"]], 0.15)),
         )
-        joints = create_joint_msg(
+        create_joint_msg(
             joints,
             "joint_d",
             self.ra_config["joint_d"]["multiplier"]
             * quadratic(deadzone(msg.axes[self.xbox_mappings["right_js_x"]], 0.15)),
         )
-        joints = create_joint_msg(
+        create_joint_msg(
             joints,
             "joint_e",
             self.ra_config["joint_e"]["multiplier"]
@@ -112,7 +111,7 @@ class ArmControl:
                 msg.buttons[self.xbox_mappings["right_trigger"]] - msg.buttons[self.xbox_mappings["left_trigger"]]
             ),
         )
-        joints = create_joint_msg(
+        create_joint_msg(
             joints,
             "joint_f",
             self.ra_config["joint_f"]["multiplier"]
@@ -120,13 +119,13 @@ class ArmControl:
         )
 
         # Hand Joints
-        joints = create_joint_msg(
+        create_joint_msg(
             joints,
             "hand_finger",
             self.ra_config["finger"]["multiplier"]
             * (msg.buttons[self.xbox_mappings["y"]] - msg.buttons[self.xbox_mappings["a"]]),
         )
-        joints = create_joint_msg(
+        create_joint_msg(
             joints,
             "hand_grip",
             self.ra_config["grip"]["multiplier"]

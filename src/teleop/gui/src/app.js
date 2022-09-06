@@ -4,7 +4,6 @@ import Vue from 'vue'
 import App from './App.vue'
 import ROSLIB from "roslib"
 import router from './router'
-import store from './store'
 import 'leaflet/dist/leaflet.css'
 
 Vue.config.productionTip = false
@@ -16,7 +15,6 @@ Vue.prototype.$ros = new ROSLIB.Ros({
 new Vue({
   el: '#app',
   router,
-  store,
   components: { App },
   template: '<App/>'
 })
