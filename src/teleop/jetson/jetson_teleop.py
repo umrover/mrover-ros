@@ -2,6 +2,7 @@
 # Node for teleop-related callback functions
 
 from math import copysign
+import typing
 from enum import IntEnum
 import rospy as ros
 from sensor_msgs.msg import Joy, JointState
@@ -76,7 +77,7 @@ class ArmControl:
         self.grip_pub = ros.Publisher("/hand/open_loop/grip", JointState, queue_size=100)
 
     def ra_control_callback(self, msg):
-        joints = {}
+        joints: typing.Dict[str, JointState] = {}
 
         # Arm Joints
         joints = create_joint_msg(
