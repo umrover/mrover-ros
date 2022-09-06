@@ -146,4 +146,5 @@ def main():
     ros.spin()
 
 
-main()
+if __name__ == '__main__': 
+    main()

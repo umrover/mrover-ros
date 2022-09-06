@@ -1,7 +1,7 @@
 teleop:
   constants:
-    track_radius: 10.0 # Meters
-    wheel_radius: 0.5 # Meters
+    track_radius: 10.0 # Distance between left and right wheels in meters
+    wheel_radius: 0.5 # Radius of the rover wheels in meters
   ra_controls:
     joint_a:
       multiplier: 1
