@@ -389,6 +389,8 @@ class ErrorState(State):
 class ODriveBridge(object):
     """Controls the behavior of one ODrive. It manages the ODrive state and
     various other behavior.
+    :param start_time: An object that helps keep track of time for the
+        watchdog.
     :param _current_lim: A float that is the current limit in Amperes.
     :param _id: A string that is the current ODrive's ID.
     :param _modrive: A Modrive object that abstracts away the ODrive functions.
@@ -397,8 +399,6 @@ class ODriveBridge(object):
         speed.
     :param _speed_lock: A lock that prevents multiple threads from accessing
         self._speed simultaneously.
-    :param _start_time: An object that helps keep track of time for the
-        watchdog.
     :param _state: A State object that keeps track of the current state.
     :param _state_pub: A rospy Publisher object that is used for publishing
         state data.
@@ -406,13 +406,13 @@ class ODriveBridge(object):
         velocity data.
     """
 
+    start_time: float
     _current_lim: float
     _id: str
     _modrive: Modrive
     _pair: str
     _speed: Speed
     _speed_lock: threading.Lock
-    _start_time: float
     _state: State
     _state_pub: rospy.Publisher
     _vel_pub: rospy.Publisher
@@ -430,10 +430,30 @@ class ODriveBridge(object):
         self._pair = pair
         self._id = _odrive_ids[self._pair]
         self._speed_lock = threading.Lock()
-        self._start_time = t.process_time()
+        self.start_time = t.process_time()
         self._state = DisconnectedState()
         self._state_pub = rospy.Publisher("drive_state_data", DriveStateData, queue_size=1)
         self._vel_pub = rospy.Publisher("drive_vel_data", DriveVelData, queue_size=1)
+
+    def change_speeds(self, speed: Speed) -> None:
+        """Sets the self._speed to the requested speeds. The speeds must be in
+        the range [-1.0, 1.0].
+        :param speed: A speed object that has the requested speeds.
+        """
+        assert -1.0 <= speed.left and speed.left <= 1.0, "speed.left must be in range[-1.0, 1.0]"
+        assert -1.0 <= speed.right and speed.right <= 1.0, "speed.right must be in range [-1.0, 1.0]"
+        self._speed_lock.acquire()
+        self._speed = Speed(speed.left, speed.right)
+        self._speed_lock.release()
+
+    def get_state_string(self) -> str:
+        """Returns the state of the ODriveBridge as a short string.
+        The form is of "[insert_odrive_state]State". e.g. state is ErrorState,
+        so ros_msg.state is Error
+        :returns: A string that is the state of the ODriveBridge.
+        """
+        state = str(self._state)
+        return state[: len(state) - len("State")]
 
     def ros_publish_data_loop(self) -> None:
         """Publishes velocity and current data continuously."""
@@ -448,13 +468,13 @@ class ODriveBridge(object):
         """
         previously_lost_comms = True
         while not rospy.is_shutdown():
-            watchdog = t.process_time() - self._start_time
+            watchdog = t.process_time() - self.start_time
             lost_comms = watchdog > 1.0
             if lost_comms:
                 if not previously_lost_comms:
                     rospy.loginfo("Lost comms")
                     previously_lost_comms = True
-                self._change_speeds(Speed(0.0, 0.0))
+                self.change_speeds(Speed(0.0, 0.0))
             elif previously_lost_comms:
                 previously_lost_comms = False
                 rospy.loginfo("Regained comms")
@@ -475,20 +495,9 @@ class ODriveBridge(object):
         try:
             rospy.loginfo("On event called, ODrive event:", event)
             self._state = self._state.on_event(event, self._modrive)
-            self._publish_state_msg(self._get_state_string())
+            self._publish_state_msg(self.get_state_string())
         except DisconnectedError:
             return
-
-    def _change_speeds(self, speed: Speed) -> None:
-        """Sets the self._speed to the requested speeds. The speeds must be in
-        the range [-1.0, 1.0].
-        :param speed: A speed object that has the requested speeds.
-        """
-        assert -1.0 <= speed.left and speed.left <= 1.0, "speed.left must be in range[-1.0, 1.0]"
-        assert -1.0 <= speed.right and speed.right <= 1.0, "speed.right must be in range [-1.0, 1.0]"
-        self._speed_lock.acquire()
-        self._speed = Speed(speed.left, speed.right)
-        self._speed_lock.release()
 
     def _connect(self) -> None:
         """Connects to an ODrive if one is connected.
@@ -500,15 +509,6 @@ class ODriveBridge(object):
         rospy.loginfo("Found ODrive")
         self._modrive = Modrive(odrive_object)
         self._modrive.set_current_lim(self._current_lim)
-
-    def _get_state_string(self) -> str:
-        """Returns the state of the ODriveBridge as a short string.
-        The form is of "[insert_odrive_state]State". e.g. state is ErrorState,
-        so ros_msg.state is Error
-        :returns: A string that is the state of the ODriveBridge.
-        """
-        state = str(self._state)
-        return state[: len(state) - len("State")]
 
     def _publish_encoder_helper(self, axis: str) -> None:
         """Publishes the velocity and current data of the requested axis to a
@@ -615,9 +615,9 @@ class Application(object):
         ros_msg.left = self._throttle(ros_msg.left)
         ros_msg.right = self._throttle(ros_msg.right)
         for bridge in self._bridges:
-            bridge._start_time = t.process_time()
-            if bridge._get_state_string() == "Armed":
-                bridge._change_speeds(Speed(ros_msg.left, ros_msg.right))
+            bridge.start_time = t.process_time()
+            if bridge.get_state_string() == "Armed":
+                bridge.change_speeds(Speed(ros_msg.left, ros_msg.right))
 
     def _throttle(self, speed: float) -> float:
         """Throttles the speed to a range of [-1.0, 1.0].
