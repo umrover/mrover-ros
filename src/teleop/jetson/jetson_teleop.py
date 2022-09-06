@@ -23,6 +23,12 @@ def deadzone(magnitude, threshold):
     return copysign(temp_mag, magnitude)
 
 
+def create_joint_msg(joints, joint, value):
+    joints[joint] = JointState()
+    joints[joint].velocity.append(value)
+    return joints
+
+
 class Drive:
     def __init__(self, joystick_mappings, drive_config, track_radius, wheel_radius):
         self.joystick_mappings = joystick_mappings
@@ -70,60 +76,70 @@ class ArmControl:
         self.grip_pub = ros.Publisher("/hand/open_loop/grip", JointState, queue_size=100)
 
     def ra_control_callback(self, msg):
+        joints = {}
 
-        joint_a = JointState()
-        joint_a.velocity.append(
+        # Arm Joints
+        joints = create_joint_msg(
+            joints,
+            "joint_a",
             self.ra_config["joint_a"]["multiplier"]
-            * quadratic(deadzone(msg.axes[self.xbox_mappings["left_js_x"]], 0.15))
+            * quadratic(deadzone(msg.axes[self.xbox_mappings["left_js_x"]], 0.15)),
         )
-        joint_b = JointState()
-        joint_b.velocity.append(
+        joints = create_joint_msg(
+            joints,
+            "joint_b",
             self.ra_config["joint_b"]["multiplier"]
-            * quadratic(-deadzone(msg.axes[self.xbox_mappings["left_js_y"]], 0.15))
+            * quadratic(-deadzone(msg.axes[self.xbox_mappings["left_js_y"]], 0.15)),
         )
-        joint_c = JointState()
-        joint_c.velocity.append(
+        joints = create_joint_msg(
+            joints,
+            "joint_c",
             self.ra_config["joint_c"]["multiplier"]
-            * quadratic(-deadzone(msg.axes[self.xbox_mappings["right_js_y"]], 0.15))
+            * quadratic(-deadzone(msg.axes[self.xbox_mappings["right_js_y"]], 0.15)),
         )
-        joint_d = JointState()
-        joint_d.velocity.append(
+        joints = create_joint_msg(
+            joints,
+            "joint_d",
             self.ra_config["joint_d"]["multiplier"]
-            * quadratic(deadzone(msg.axes[self.xbox_mappings["right_js_x"]], 0.15))
+            * quadratic(deadzone(msg.axes[self.xbox_mappings["right_js_x"]], 0.15)),
         )
-        joint_e = JointState()
-        joint_e.velocity.append(
+        joints = create_joint_msg(
+            joints,
+            "joint_e",
             self.ra_config["joint_e"]["multiplier"]
             * quadratic(
                 msg.buttons[self.xbox_mappings["right_trigger"]] - msg.buttons[self.xbox_mappings["left_trigger"]]
-            )
+            ),
         )
-        joint_f = JointState()
-        joint_f.velocity.append(
+        joints = create_joint_msg(
+            joints,
+            "joint_f",
             self.ra_config["joint_f"]["multiplier"]
-            * (msg.buttons[self.xbox_mappings["right_bumper"]] - msg.buttons[self.xbox_mappings["left_bumper"]])
+            * (msg.buttons[self.xbox_mappings["right_bumper"]] - msg.buttons[self.xbox_mappings["left_bumper"]]),
         )
 
-        self.joint_a_pub.publish(joint_a)
-        self.joint_b_pub.publish(joint_b)
-        self.joint_c_pub.publish(joint_c)
-        self.joint_d_pub.publish(joint_d)
-        self.joint_e_pub.publish(joint_e)
-        self.joint_f_pub.publish(joint_f)
-
-        hand_finger = JointState()
-        hand_finger.velocity.append(
+        # Hand Joints
+        joints = create_joint_msg(
+            joints,
+            "hand_finger",
             self.ra_config["finger"]["multiplier"]
-            * (msg.buttons[self.xbox_mappings["y"]] - msg.buttons[self.xbox_mappings["a"]])
+            * (msg.buttons[self.xbox_mappings["y"]] - msg.buttons[self.xbox_mappings["a"]]),
         )
-        hand_grip = JointState()
-        hand_grip.velocity.append(
+        joints = create_joint_msg(
+            joints,
+            "hand_grip",
             self.ra_config["grip"]["multiplier"]
-            * (msg.buttons[self.xbox_mappings["b"]] - msg.buttons[self.xbox_mappings["x"]])
+            * (msg.buttons[self.xbox_mappings["b"]] - msg.buttons[self.xbox_mappings["x"]]),
         )
 
-        self.finger_pub.publish(hand_finger)
-        self.grip_pub.publish(hand_grip)
+        self.joint_a_pub.publish(joints["joint_a"])
+        self.joint_b_pub.publish(joints["joint_b"])
+        self.joint_c_pub.publish(joints["joint_c"])
+        self.joint_d_pub.publish(joints["joint_d"])
+        self.joint_e_pub.publish(joints["joint_e"])
+        self.joint_f_pub.publish(joints["joint_f"])
+        self.finger_pub.publish(joints["hand_finger"])
+        self.grip_pub.publish(joints["hand_grip"])
 
 
 def main():
@@ -146,5 +162,5 @@ def main():
     ros.spin()
 
 
-if __name__ == '__main__': 
+if __name__ == "__main__":
     main()
