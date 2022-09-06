@@ -51,7 +51,7 @@ class WaypointState(BaseState):
 
         # Attempt to find the waypoint in the TF tree and drive to it
         try:
-            waypoint_pos = self.context.course.current_waypoint_pose().position_vector()
+            waypoint_pos = self.context.course.current_waypoint_pose().position
             cmd_vel, arrived = get_drive_command(
                 waypoint_pos,
                 self.context.rover.get_pose(),
@@ -66,6 +66,7 @@ class WaypointState(BaseState):
                     # We finished a waypoint associated with a fiducial id, but we have not seen it yet.
                     return "search"
             self.context.rover.send_drive_command(cmd_vel)
+
         except (
             tf2_ros.LookupException,
             tf2_ros.ConnectivityException,

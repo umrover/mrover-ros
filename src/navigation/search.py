@@ -1,5 +1,5 @@
 from __future__ import annotations
-from typing import ClassVar
+from typing import ClassVar, Optional
 
 import numpy as np
 
@@ -71,7 +71,7 @@ class SearchState(BaseState):
             context,
             add_outcomes=["waypoint_traverse", "single_fiducial", "search"],
         )
-        self.traj = None
+        self.traj: Optional[SearchTrajectory] = None
 
     def evaluate(self, ud):
         # Check if a path has been generated and its associated with the same
@@ -79,7 +79,7 @@ class SearchState(BaseState):
         waypoint = self.context.course.current_waypoint()
         if self.traj is None or self.traj.fid_id != waypoint.fiducial_id:
             self.traj = SearchTrajectory.spiral_traj(
-                self.context.rover.get_pose().position_vector()[0:2],
+                self.context.rover.get_pose().position[0:2],
                 5,
                 2,
                 waypoint.fiducial_id,
