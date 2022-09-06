@@ -10,7 +10,7 @@ from mrover.msg import Chassis
 
 
 def quadratic(val):
-    return copysign(val ** 2, val)
+    return copysign(val**2, val)
 
 
 def deadzone(magnitude, threshold):
