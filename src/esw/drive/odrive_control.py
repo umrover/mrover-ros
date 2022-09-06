@@ -594,8 +594,14 @@ class Application(object):
     def run(self):
         """Runs the publish data loop and watchdog loops for all bridges"""
         for bridge in self._bridges:
-            threading._start_new_thread(bridge.ros_publish_data_loop, ())
-            threading._start_new_thread(bridge.watchdog_while_loop, ())
+            thread_0 = threading.Thread(target=bridge.ros_publish_data_loop)
+            thread_1 = threading.Thread(target=bridge.watchdog_while_loop)
+
+            thread_0.start()
+            thread_1.start()
+
+            thread_0.join()
+            thread_1.join()
         rospy.spin()
 
     def _drive_vel_cmd_callback(self, ros_msg: DriveVelCmd) -> None:
