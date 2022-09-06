@@ -52,24 +52,25 @@ def main() -> int:
         run_bash_command(['sudo', 'apt-get', 'update', '-y'])
         run_bash_command(['sudo', 'apt-get', 'install'] + ROS_APT_DEPS + ['-y'])
         print('Checking ROS workspace...')
-        workplace_path = input(f'Enter path to ROS workspace... [leave blank for {DEFAULT_CATKIN_PATH}] ')
-        workplace_path = Path(workplace_path) if workplace_path else DEFAULT_CATKIN_PATH
-        workplace_src_path = workplace_path / 'src'
-        workplace_src_path.mkdir(exist_ok=True, parents=True)
-        print(f'Selecting workspace path: {workplace_path}')
-        run_bash_command(['git', 'clone', MROVER_ROS_GIT_URL, 'mrover'], cwd=workplace_src_path)
-        run_bash_command(['catkin', 'init'], cwd=workplace_path)
+        workspace_path = input(f'Enter path to ROS workspace... [leave blank for {DEFAULT_CATKIN_PATH}] ')
+        workspace_path = Path(workspace_path) if workspace_path else DEFAULT_CATKIN_PATH
+        workspace_src_path = workspace_path / 'src'
+        workspace_src_path.mkdir(exist_ok=True, parents=True)
+        print(f'Selecting workspace path: {workspace_path}')
+        run_bash_command(['git', 'clone', '--progress', MROVER_ROS_GIT_URL, 'mrover'], cwd=workspace_src_path)
+        run_bash_command(['catkin', 'init'], cwd=workspace_path)
         print('Checking MRover dependency packages...')
         run_bash_command(['sudo', 'rosdep', 'init'])
         run_bash_command(['rosdep', 'update'])
         run_bash_command(
-            ['rosdep', 'install', '--from-paths', str(workplace_src_path), '--ignore-src', '-y', '--rosdistro=noetic'])
-        run_bash_command(['pip3', 'install', '-r', 'requirements.txt'], cwd=workplace_src_path)
+            ['rosdep', 'install', '--from-paths', str(workspace_src_path), '--ignore-src', '-y', '--rosdistro=noetic'])
+        mrover_repo_path = workspace_src_path / 'mrover'
+        run_bash_command(['pip3', 'install', '-r', 'requirements.txt'], cwd=mrover_repo_path)
         print(f'Repository and dependency setup successful! Now do:\n'
-              f'\tcd {workplace_src_path}\n'
+              f'\tcd {mrover_repo_path}\n'
               '\tsource /opt/ros/noetic/setup.bash\n'
-              f'\tsource {workplace_path}/devel/setup.bash\n'
-              '\tcatkin build')
+              '\tcatkin build\n'
+              f'\tsource {workspace_path}/devel/setup.bash')
         return 0
     except Exception as exception:
         print(exception, file=sys.stderr)
