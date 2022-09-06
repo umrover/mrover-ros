@@ -1,16 +1,19 @@
 from __future__ import annotations
-import graphviz
+import graphviz  # type: ignore
 import time
-from PyQt5.QtWidgets import *
-from PyQt5.QtCore import *
-from PyQt5.QtGui import QPainter
-from PyQt5.QtSvg import QSvgRenderer
+from PyQt5.QtWidgets import *  # type: ignore
+from PyQt5.QtCore import *  # type: ignore
+from PyQt5.QtGui import QPainter  # type: ignore
+from PyQt5.QtSvg import QSvgRenderer  # type:ignore
 
 import rospy
 from smach_msgs.msg import SmachContainerStatus, SmachContainerStructure
 from threading import Lock
 from dataclasses import dataclass
 from typing import Optional, List, Dict
+
+STRUCTURE_TOPIC = "/smach/container_structure"
+STATUS_TOPIC = "/smach/container_status"
 
 
 @dataclass
@@ -65,12 +68,11 @@ class StateMachine:
 
 
 class GUI(QWidget):  # type: ignore
-    def __init__(self, state_machine):
+    def __init__(self, state_machine_instance):
         super().__init__()
         self.label: QLabel = QLabel()
         self.timer: QTimer = QTimer()
         self.renderer: QSvgRenderer = QSvgRenderer()
-        self.prev_time: float = time.time()
         self.timer.timeout.connect(self.update)
         self.timer.start(1)
         self.graph: Optional[graphviz.Digraph] = None
@@ -87,16 +89,12 @@ class GUI(QWidget):  # type: ignore
     def update(self):
         with self.state_machine.mutex:
 
-            print(time.time() - self.prev_time)
-            self.prev_time = time.time()
-
             if self.graph is None or self.state_machine.needs_redraw:
                 self.graph = graphviz.Digraph(comment="State Machine Diagram", format="svg")
                 for state_name in self.state_machine.states.keys():
                     color = "red" if self.state_machine.cur_active == state_name else "black"
                     self.graph.node(state_name, color=color)
 
-                # not sure if I can just do this in the above loop
                 for state in self.state_machine.states.values():
                     for child in state.children:
                         self.graph.edge(state.name, child.name)
@@ -109,14 +107,14 @@ class GUI(QWidget):  # type: ignore
 
 if __name__ == "__main__":
     state_machine = StateMachine()
-    rospy.init_node("smach visualizer", anonymous=False, disable_signals=True, log_level=rospy.INFO)
+    rospy.init_node("smach_visualizer", anonymous=False, disable_signals=True, log_level=rospy.INFO)
     rospy.Subscriber(
-        "/server_name/smach/container_structure",
+        STRUCTURE_TOPIC,
         SmachContainerStructure,
         state_machine.container_structure_callback,
     )
     rospy.Subscriber(
-        "/server_name/smach/container_status",
+        STATUS_TOPIC,
         SmachContainerStatus,
         state_machine.container_status_callback,
     )
