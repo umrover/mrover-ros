@@ -54,11 +54,11 @@ created: function () {
             // forward on joystick is -1, so invert
             this.linear = -1 * gamepad.axes[JOYSTICK_CONFIG['forward_back']]
             
+            const joystickData = {
+              'forward_back': this.linear,
+              'left_right': this.rotational,
+            }
           }
-        }
-        const joystickData = {
-          'forward_back': this.linear,
-          'left_right': this.rotational,
         }
         
       }
