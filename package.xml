@@ -90,7 +90,6 @@
   <depend>dynamic_reconfigure</depend>
   <depend>python3-cairosvg</depend>
   <depend>python3-joblib</depend>
-  <depend>aruco_detect</depend>
 
   <!-- Localization -->
   <depend>robot_localization</depend>
