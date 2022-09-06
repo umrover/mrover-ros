@@ -5,14 +5,14 @@ import sys
 from pathlib import Path
 from typing import List
 
-BASE_APT_DEPS = ['curl', 'vim', 'git', 'git-lfs', 'python3-pip']
+BASE_APT_DEPS = ['curl', 'vim', 'zsh', 'git', 'git-lfs', 'python3-pip']
 ROS_APT_DEPS = ['ros-noetic-desktop', 'python3-catkin-tools', 'python3-rosdep']
 
 MROVER_ROS_GIT_URL = 'https://github.com/umrover/mrover-ros.git'
 DEFAULT_CATKIN_PATH = Path.home() / 'catkin_ws'
 
 ROS_APT_KEY_URL = 'https://raw.githubusercontent.com/ros/rosdistro/master/ros.asc'
-ROS_APT_SOURCE = 'deb https://packages.ros.org/ros/ubuntu focal main'
+ROS_APT_SOURCE = 'deb http://packages.ros.org/ros/ubuntu focal main'
 
 
 def run_bash_command(args: List[str], **kwargs):
