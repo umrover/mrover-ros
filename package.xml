@@ -51,6 +51,8 @@
 
   <!-- Common -->
   <buildtool_depend>catkin</buildtool_depend>
+  <buildtool_depend>nodejs</buildtool_depend>
+  <buildtool_depend>yarn</buildtool_depend>
   <build_depend>roscpp</build_depend>
   <build_depend>rospy</build_depend>
   <build_depend>std_msgs</build_depend>
@@ -64,6 +66,7 @@
   <exec_depend>joint_state_publisher</exec_depend>
   <exec_depend>robot_state_publisher</exec_depend>
   <exec_depend>ros_numpy</exec_depend>
+  <exec_depend>rosbridge_server</exec_depend>
 
   <!-- Visualization -->
   <depend>rviz</depend>
@@ -96,6 +99,9 @@
 
   <!-- Navigation -->
   <depend>smach_ros</depend>
+
+  <!-- Teleop -->
+  <depend>teleop_twist_joy</depend>
 
   <!-- Test -->
   <test_depend>rosunit</test_depend>
