@@ -68,10 +68,10 @@ class StateMachine:
 
 
 class GUI(QWidget):  # type: ignore
-    def __init__(self, state_machine_instance):
-        super().__init__()
-        self.label: QLabel = QLabel()
-        self.timer: QTimer = QTimer()
+    def __init__(self, state_machine_instance, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.label: QLabel = QLabel()  # type: ignore
+        self.timer: QTimer = QTimer()  # type: ignore
         self.renderer: QSvgRenderer = QSvgRenderer()
         self.timer.timeout.connect(self.update)
         self.timer.start(1)
