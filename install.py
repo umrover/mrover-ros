@@ -9,6 +9,7 @@ BASE_APT_DEPS = ['curl', 'vim', 'zsh', 'git', 'git-lfs', 'python3-pip']
 ROS_APT_DEPS = ['ros-noetic-desktop', 'python3-catkin-tools', 'python3-rosdep']
 
 MROVER_ROS_GIT_URL = 'https://github.com/umrover/mrover-ros.git'
+WIKI_URL = 'https://github.com/umrover/mrover-ros/wiki'
 DEFAULT_CATKIN_PATH = Path.home() / 'catkin_ws'
 
 ROS_APT_KEY_URL = 'https://raw.githubusercontent.com/ros/rosdistro/master/ros.asc'
@@ -71,6 +72,9 @@ def main() -> int:
               '\tsource /opt/ros/noetic/setup.bash\n'
               '\tcatkin build\n'
               f'\tsource {workspace_path}/devel/setup.bash')
+        print('Note you will have to run the source commands for each terminal session!\n'
+              f'\tSee: {WIKI_URL}/2.-Install-ROS#install-ros-natively to modify .bashrc to automatically do this')
+        print('To run a basic demo run: roslaunch mrover full.launch')
         return 0
     except Exception as exception:
         print(exception, file=sys.stderr)
