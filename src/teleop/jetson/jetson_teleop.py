@@ -24,6 +24,8 @@ def deadzone(magnitude, threshold):
     return copysign(temp_mag, magnitude)
 
 
+# Modifies joints dict when passed
+# Function to assing values to a joint in a joint dict
 def create_joint_msg(joints, joint, value):
     joints[joint] = JointState()
     joints[joint].velocity.append(value)
