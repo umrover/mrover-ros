@@ -604,8 +604,8 @@ class Application(object):
         """Runs the publish data loop and watchdog loops for all bridges"""
 
         threads_dict = {}
-        threads_dict["publish_data_threads"] = [None] * len(self._bridges)
-        threads_dict["watchdog_while_threads"] = [None] * len(self._bridges)
+        threads_dict["publish_data_threads"] = [threading.Thread()] * len(self._bridges)
+        threads_dict["watchdog_while_threads"] = [threading.Thread()] * len(self._bridges)
         for i in range(len(self._bridges)):
             threads_dict["publish_data_threads"][i] = threading.Thread(target=bridge.ros_publish_data_loop)
             threads_dict["watchdog_while_threads"][i] = threading.Thread(target=bridge.watchdog_while_loop)
