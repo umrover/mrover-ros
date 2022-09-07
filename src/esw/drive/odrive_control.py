@@ -132,9 +132,9 @@ class Modrive:
 
     def dump_errors(self) -> None:
         """Dump errors and prints them out."""
-        
+
         # dump_errors(self._odrive, True)
-        modrive._reset_errors()
+        self._reset_errors()
         rospy.loginfo("Dumped errors")
 
     def get_measured_current(self, axis: str) -> float:
@@ -499,7 +499,7 @@ class ODriveBridge(object):
         """
         try:
             rospy.loginfo("On event called, ODrive event: %s", str(event))
-            self._state = self._state.on_event(str(event), self._modrive)
+            self._state = self._state.on_event(event, self._modrive)
             rospy.loginfo("Current state is now: %s", self.get_state_string())
             self._publish_state_msg(self.get_state_string())
         except DisconnectedError:
@@ -602,21 +602,21 @@ class Application(object):
 
     def run(self):
         """Runs the publish data loop and watchdog loops for all bridges"""
-        publish_data_threads = [None] * len(self._bridges)
-        watchdog_while_threads = [None] * len(self._bridges)
-        for i, bridge in enumerate(self._bridges):
-            publish_data_threads[i] = threading.Thread(target=bridge.ros_publish_data_loop)
-            watchdog_while_threads[i] = threading.Thread(target=bridge.watchdog_while_loop)
 
-        for thread in publish_data_threads:
-            thread.start()
-        for thread in watchdog_while_threads:
-            thread.start()
+        threads_dict = {}
+        threads_dict["publish_data_threads"] = [None] * len(self._bridges)
+        threads_dict["watchdog_while_threads"] = [None] * len(self._bridges)
+        for i in range(len(self._bridges)):
+            threads_dict["publish_data_threads"][i] = threading.Thread(target=bridge.ros_publish_data_loop)
+            threads_dict["watchdog_while_threads"][i] = threading.Thread(target=bridge.watchdog_while_loop)
 
-        for thread in publish_data_threads:
-            thread.join()
-        for thread in watchdog_while_threads:
-            thread.join()
+        for i in range(len(self._bridges)):
+            threads_dict["publish_data_threads"][i].start()
+            threads_dict["watchdog_while_threads"][i].start()
+
+        for i in range(len(self._bridges)):
+            threads_dict["publish_data_threads"][i].join()
+            threads_dict["watchdog_while_threads"][i].join()
 
         rospy.spin()
 
