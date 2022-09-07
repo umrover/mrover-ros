@@ -41,7 +41,7 @@ class StateMachine:
                 self.cur_active = active_state
                 self.needs_redraw = True
 
-    def __rebuild(self, structure: SmachContainerStructure):
+    def _rebuild(self, structure: SmachContainerStructure):
         """
         rebuilds the state dictionary with a new structure message
         """
@@ -59,7 +59,7 @@ class StateMachine:
             if structure == self.structure:
                 return False
             else:
-                self.__rebuild(structure)
+                self._rebuild(structure)
                 self.structure = structure
 
     def container_status_callback(self, status: SmachContainerStatus):
