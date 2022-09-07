@@ -3,6 +3,7 @@
 SO3::SO3() : mQuaternion(Quaternion::Identity()) {}
 
 SO3::SO3(Quaternion const& quaternion) : mQuaternion(quaternion) {
+    mQuaternion.normalize();
 }
 
 SO3 SO3::fromMatrix(RotationMatrix const& rotationMatrix) {

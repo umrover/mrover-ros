@@ -30,7 +30,7 @@ void SE3::publishToTfTree(tf2_ros::TransformBroadcaster& broadcaster, std::strin
 }
 
 double SE3::posDistanceTo(SE3 const& other) const {
-    return (mPosition - other.mPosition).squaredNorm();
+    return (mPosition - other.mPosition).norm();
 }
 
 SE3::Vector const& SE3::posVector() const {
