@@ -25,8 +25,8 @@ private:
 
     static SE3 fromPose(geometry_msgs::Pose const& pose);
 
-    Vector position;
-    SO3 rotation;
+    Vector mPosition;
+    SO3 mRotation;
 
     [[nodiscard]] geometry_msgs::Pose toPose() const;
 
@@ -45,17 +45,17 @@ public:
 
     SE3(Vector position, SO3 rotation);
 
-
-
-    void publishToTfTree(tf2_ros::TransformBroadcaster& broadcaster, std::string const& childFrame, std::string const& parentFrame);
+    void publishToTfTree(tf2_ros::TransformBroadcaster& broadcaster, std::string const& childFrame, std::string const& parentFrame) const;
 
     [[nodiscard]] SE3 applyLeft(SE3 const& other);
 
     [[nodiscard]] SE3 applyRight(SE3 const& other);
 
-    [[nodiscard]] double posDistanceTo(SE3 const& other);
+    [[nodiscard]] double posDistanceTo(SE3 const& other) const;
+
+    [[nodiscard]] SO3 const& rotation() const;
 
     [[nodiscard]] Vector const& posVector() const;
 
-    [[nodiscard]] bool isApprox(SE3 const& other, double tolerance = 1e-8);
+    [[nodiscard]] bool isApprox(SE3 const& other, double tolerance = 1e-8) const;
 };

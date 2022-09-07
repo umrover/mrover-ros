@@ -72,7 +72,7 @@ class Navigation(threading.Thread):
         self.state_machine.request_preempt()
         # Wait for smach thread to terminate
         self.join()
-        self.context.drive_stop()
+        self.context.rover.send_drive_stop()
 
 
 def main():

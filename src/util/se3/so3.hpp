@@ -22,22 +22,24 @@ public:
 private:
     friend class SE3;
 
-    Quaternion quaternion;
+    Quaternion mQuaternion;
 
 public:
     [[nodiscard]] static SO3 identity();
 
     [[nodiscard]] static SO3 fromMatrix(Eigen::Matrix3d const& rotationMatrix);
 
-    SO3() = default;
+    SO3();
 
     explicit SO3(Quaternion const& quaternion);
 
-    [[nodiscard]] RotationMatrix rotationMatrix();
+    [[nodiscard]] Quaternion const& rotationQuaternion() const;
 
-    [[nodiscard]] Vector directionVector();
+    [[nodiscard]] RotationMatrix rotationMatrix() const;
 
-    [[nodiscard]] double rotDistanceTo(SO3 const& other);
+    [[nodiscard]] Vector directionVector() const;
 
-    [[nodiscard]] bool isApprox(SO3 const& other, double tolerance = 1e-8);
+    [[nodiscard]] double rotDistanceTo(SO3 const& other) const;
+
+    [[nodiscard]] bool isApprox(SO3 const& other, double tolerance = 1e-8) const;
 };

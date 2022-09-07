@@ -2,7 +2,7 @@
 
 #include <utility>
 
-SE3::SE3(Vector position, SO3 rotation) : position(std::move(position)), rotation(std::move(rotation)) {
+SE3::SE3(Vector position, SO3 rotation) : mPosition(std::move(position)), mRotation(std::move(rotation)) {
 }
 
 SE3 SE3::fromPosQuat(Vector const& position, Quaternion const& rotation) {
@@ -11,9 +11,9 @@ SE3 SE3::fromPosQuat(Vector const& position, Quaternion const& rotation) {
 
 SE3 SE3::applyLeft(SE3 const& other) {
     auto affine = Eigen::Affine3d::Identity();
-    affine.translate(other.position);
-    affine.rotate(other.rotation.quaternion);
-    return {affine * position, SO3{other.rotation.quaternion * rotation.quaternion}};
+    affine.translate(other.mPosition);
+    affine.rotate(other.mRotation.mQuaternion);
+    return {affine * mPosition, SO3{other.mRotation.mQuaternion * mRotation.mQuaternion}};
 }
 
 SE3 SE3::applyRight([[maybe_unused]] SE3 const& other) {
@@ -25,18 +25,22 @@ SE3 SE3::fromTfTree(tf2_ros::Buffer const& buffer, std::string const& parentFram
     return SE3::fromTf(transform.transform);
 }
 
-void SE3::publishToTfTree(tf2_ros::TransformBroadcaster& broadcaster, std::string const& childFrame, std::string const& parentFrame) {
+void SE3::publishToTfTree(tf2_ros::TransformBroadcaster& broadcaster, std::string const& childFrame, std::string const& parentFrame) const {
     broadcaster.sendTransform(toTransformStamped(parentFrame, childFrame));
 }
 
-double SE3::posDistanceTo(SE3 const& other) {
-    return (position - other.position).squaredNorm();
+double SE3::posDistanceTo(SE3 const& other) const {
+    return (mPosition - other.mPosition).squaredNorm();
 }
 
 SE3::Vector const& SE3::posVector() const {
-    return position;
+    return mPosition;
 }
 
-bool SE3::isApprox(SE3 const& other, double tolerance) {
-    return posDistanceTo(other) < tolerance && rotation.isApprox(other.rotation, tolerance);
+SO3 const& SE3::rotation() const {
+    return mRotation;
+}
+
+bool SE3::isApprox(SE3 const& other, double tolerance) const {
+    return mPosition.isApprox(other.mPosition, tolerance) && mRotation.isApprox(other.mRotation, tolerance);
 }

@@ -54,6 +54,7 @@ class Environment:
         """
         Retrieves the position of the current fiducial
         """
+        assert self.ctx.course
         current_waypoint = self.ctx.course.current_waypoint()
         if current_waypoint is None or current_waypoint.fiducial_id == self.NO_FIDUCIAL:
             return None
@@ -107,7 +108,7 @@ class Context:
     course_listener: rospy.Subscriber
 
     # Use these as the primary interfaces in states
-    course: Course
+    course: Optional[Course]
     rover: Rover
     env: Environment
 
