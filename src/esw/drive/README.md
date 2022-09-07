@@ -7,6 +7,7 @@
 [Topics - Subscriber](#topics---subscriber) \
 [Topics - Publisher](#topics---publisher) \
 [Watchdog Timeout Period](#watchdog-timeout-period) \
+[Installing odrivetool](#installing-odrivetool) \
 [Setting up a New ODrive](#setting-up-a-new-odrive) \
 [Getting the ID](#getting-the-id) \
 [Changing the USB Permissions](#changing-the-usb-permissions) \
@@ -159,6 +160,14 @@ Subscriber: gui
 1 second
 
 ---
+
+## Installing odrivetool
+
+View the Getting Started guide [here](https://docs.odriverobotics.com/v/latest/getting-started.html#install-odrivetool).
+
+Make sure to set up USB device permissions by running the following:
+
+`sudo bash -c "curl https://cdn.odriverobotics.com/files/odrive-udev-rules.rules > /etc/udev/rules.d/91-odrive.rules && udevadm control --reload-rules && udevadm trigger"`
 
 ## Setting up a New ODrive
 

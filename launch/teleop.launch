@@ -36,4 +36,7 @@
       <remap from="/joy" to="/joystick" />
       <remap from="/cmd_vel" to="/drive_cmd_twist" />
     </node>
+
+  <node name="odrive_control" pkg="mrover" type="odrive_control.py" output="screen"></node>
+  <rosparam command="load" file="$(find mrover)/config/odrive_control.yaml" />
 </launch>

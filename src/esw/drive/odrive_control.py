@@ -21,6 +21,7 @@ from odrive import find_any
 from odrive.enums import AXIS_STATE_CLOSED_LOOP_CONTROL, AXIS_STATE_IDLE, CONTROL_MODE_VELOCITY_CONTROL
 from odrive.utils import dump_errors
 import rospy
+from sensor_msgs.msg import JointState
 from mrover.msg import DriveStateData, DriveVelCmd, DriveVelData
 
 
@@ -131,7 +132,10 @@ class Modrive:
 
     def dump_errors(self) -> None:
         """Dump errors and prints them out."""
-        rospy.loginfo("%s", dump_errors(self._odrive, True))
+        
+        # dump_errors(self._odrive, True)
+        modrive._reset_errors()
+        rospy.loginfo("Dumped errors")
 
     def get_measured_current(self, axis: str) -> float:
         """Returns the measured current of the requested axis of the ODrive in
@@ -246,7 +250,7 @@ class Modrive:
             for axis in self._axes.values():
                 axis.watchdog_feed()
         except Exception:
-            rospy.logerror("Failed in watchdog_feed. Unplugged")
+            rospy.logerr("Failed in watchdog_feed. Unplugged")
             raise DisconnectedError
         finally:
             self._usb_lock.release()
@@ -263,7 +267,7 @@ class Modrive:
                 axis.watchdog_feed()
                 axis.config.enable_watchdog = True
         except Exception:
-            rospy.logerror("Failed in _enable_watchdog. Unplugged")
+            rospy.logerr("Failed in _enable_watchdog. Unplugged")
             raise DisconnectedError
         finally:
             self._usb_lock.release()
@@ -279,7 +283,7 @@ class Modrive:
                 axis.config.watchdog_timeout = 0
                 axis.config.enable_watchdog = False
         except Exception:
-            rospy.logerror("Failed in _disable_watchdog. Unplugged")
+            rospy.logerr("Failed in _disable_watchdog. Unplugged")
             raise DisconnectedError
         finally:
             self._usb_lock.release()
@@ -355,9 +359,9 @@ class ArmedState(State):
 
     def on_event(self, event: ODriveEvent, modrive: Modrive) -> State:
         """Handles events that are delegated to the Armed State."""
-        if event == ODriveEvent.DISCONNECTED_ODRIVE_EVENT:
+        if str(event) == str(ODriveEvent.DISCONNECTED_ODRIVE_EVENT):
             return DisconnectedState()
-        elif event == ODriveEvent.ODRIVE_ERROR_EVENT:
+        elif str(event) == str(ODriveEvent.ODRIVE_ERROR_EVENT):
             return ErrorState()
         return self
 
@@ -367,10 +371,11 @@ class DisconnectedState(State):
 
     def on_event(self, event: ODriveEvent, modrive: Modrive) -> State:
         """Handles events that are delegated to the Disconnected State."""
-        if event == ODriveEvent.ARM_CMD_EVENT:
+        if str(event) == str(ODriveEvent.ARM_CMD_EVENT):
             modrive.disarm()
             modrive.reset_watchdog()
             modrive.arm()
+            rospy.loginfo("Currently disconnected state but now arming. Should be armed state.")
             return ArmedState()
         return self
 
@@ -381,7 +386,7 @@ class ErrorState(State):
     def on_event(self, event: ODriveEvent, modrive: Modrive) -> State:
         """Handles events that are delegated to the Error State."""
         modrive.dump_errors()
-        if event == ODriveEvent.ODRIVE_ERROR_EVENT:
+        if str(event) == str(ODriveEvent.ODRIVE_ERROR_EVENT):
             return DisconnectedState()
         return self
 
@@ -493,8 +498,9 @@ class ODriveBridge(object):
             switching of states.
         """
         try:
-            rospy.loginfo("On event called, ODrive event:", event)
-            self._state = self._state.on_event(event, self._modrive)
+            rospy.loginfo("On event called, ODrive event: %s", str(event))
+            self._state = self._state.on_event(str(event), self._modrive)
+            rospy.loginfo("Current state is now: %s", self.get_state_string())
             self._publish_state_msg(self.get_state_string())
         except DisconnectedError:
             return
@@ -571,6 +577,7 @@ class ODriveBridge(object):
             self._speed_lock.release()
             self._modrive.set_vel("left", left_speed)
             self._modrive.set_vel("right", right_speed)
+            rospy.loginfo("Left speed is %s and right speed is %s", left_speed, right_speed)
 
         elif str(self._state) == "DisconnectedState":
             self._connect()
@@ -588,23 +595,33 @@ class Application(object):
     def __init__(self):
 
         rospy.init_node(f"odrive_control")
-        self._bridges = [ODriveBridge("front"), ODriveBridge("middle"), ODriveBridge("back")]
-        rospy.Subscriber("drive_vel_cmd", DriveVelCmd, self._drive_vel_cmd_callback)
+        # self._bridges = [ODriveBridge("front"), ODriveBridge("middle"), ODriveBridge("back")]
+        self._bridges = [ODriveBridge("middle")]
+        # rospy.Subscriber("drive_vel_cmd", DriveVelCmd, self._drive_vel_cmd_callback)
+        rospy.Subscriber("/ra/open_loop/joint_a", JointState, self._drive_vel_cmd_callback)
 
     def run(self):
         """Runs the publish data loop and watchdog loops for all bridges"""
-        for bridge in self._bridges:
-            thread_0 = threading.Thread(target=bridge.ros_publish_data_loop)
-            thread_1 = threading.Thread(target=bridge.watchdog_while_loop)
+        publish_data_threads = [None] * len(self._bridges)
+        watchdog_while_threads = [None] * len(self._bridges)
+        for i, bridge in enumerate(self._bridges):
+            publish_data_threads[i] = threading.Thread(target=bridge.ros_publish_data_loop)
+            watchdog_while_threads[i] = threading.Thread(target=bridge.watchdog_while_loop)
 
-            thread_0.start()
-            thread_1.start()
+        for thread in publish_data_threads:
+            thread.start()
+        for thread in watchdog_while_threads:
+            thread.start()
 
-            thread_0.join()
-            thread_1.join()
+        for thread in publish_data_threads:
+            thread.join()
+        for thread in watchdog_while_threads:
+            thread.join()
+
         rospy.spin()
 
-    def _drive_vel_cmd_callback(self, ros_msg: DriveVelCmd) -> None:
+    # def _drive_vel_cmd_callback(self, ros_msg: DriveVelCmd) -> None:
+    def _drive_vel_cmd_callback(self, ros_msg: JointState) -> None:
         """Calls the change speeds function.
         Note that this does NOT actually change speed that the ODrive comands
         the motors at. One must wait for the ODriveBridge._update() function
@@ -612,12 +629,16 @@ class Application(object):
         :param ros_msg: A ROS message that has two floats that represents the
             requested speeds for the left and right wheels.
         """
-        ros_msg.left = self._throttle(ros_msg.left)
-        ros_msg.right = self._throttle(ros_msg.right)
+        # ros_msg.left = self._throttle(ros_msg.left)
+        # ros_msg.right = self._throttle(ros_msg.right)
+        speed = (ros_msg.velocity)[0]
+        speed = self._throttle(speed)
+        # print(speed)
         for bridge in self._bridges:
             bridge.start_time = t.process_time()
             if bridge.get_state_string() == "Armed":
-                bridge.change_speeds(Speed(ros_msg.left, ros_msg.right))
+                # bridge.change_speeds(Speed(ros_msg.left, ros_msg.right))
+                bridge.change_speeds(Speed(speed, speed))
 
     def _throttle(self, speed: float) -> float:
         """Throttles the speed to a range of [-1.0, 1.0].
