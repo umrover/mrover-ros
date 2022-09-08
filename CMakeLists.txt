@@ -240,18 +240,19 @@ install(TARGETS differential_drive_plugin_6w
 #############
 
 # Add C++ unit tests
-catkin_add_gtest(example-cpp-test test/example/cpp_test.cpp)
+#catkin_add_gtest(example-cpp-test test/example/cpp_test.cpp)
 # catkin_add_gtest(${PROJECT_NAME}-test test/test_mrover.cpp)
 # if(TARGET ${PROJECT_NAME}-test)
 #   target_link_libraries(${PROJECT_NAME}-test ${PROJECT_NAME})
 # endif()
 
 # Python unit tests
+catkin_add_nosetests(test/integration/integration.py)
 catkin_add_nosetests(test/navigation/drive.py)
 catkin_add_nosetests(test/util/SE3_test.py)
 catkin_add_nosetests(test/util/SO3_test.py)
 
 # Integration tests (python and c++)
 find_package(rostest REQUIRED)
-add_rostest(test/example/basic_integration_test.test)
+add_rostest(test/integration/integration.test)
 add_rostest(test/util/SE3_tf_test.test)
