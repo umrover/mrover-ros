@@ -88,12 +88,6 @@ add_message_files(
 #   Action2.action
 # )
 
-## Generate added messages and services with any dependencies listed here
-generate_messages(
-        DEPENDENCIES
-        std_msgs
-)
-
 ################################################
 ## Declare ROS dynamic reconfigure parameters ##
 ################################################
@@ -111,22 +105,6 @@ generate_messages(
 ## Generate dynamic reconfigure parameters in the 'cfg' folder
 generate_dynamic_reconfigure_options(
         config/DetectorParams.cfg
-)
-
-###################################
-## catkin specific configuration ##
-###################################
-## The catkin_package macro generates cmake config files for your package
-## Declare things to be passed to dependent projects
-## INCLUDE_DIRS: uncomment this if your package contains header files
-## LIBRARIES: libraries you create in this project that dependent projects also need
-## CATKIN_DEPENDS: catkin_packages dependent projects also need
-## DEPENDS: system dependencies of this project that dependent projects also need
-catkin_package(
-        #  INCLUDE_DIRS include
-        #  LIBRARIES mrover
-        CATKIN_DEPENDS roscpp rospy std_msgs message_runtime
-        #  DEPENDS system_lib
 )
 
 ###########
@@ -150,11 +128,7 @@ add_library(differential_drive_plugin_6w src/gazebo/differential_drive_6w.cpp)
 add_dependencies(aruco_detect ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
 target_link_libraries(differential_drive_plugin_6w ${Boost_LIBRARIES} ${GAZEBO_LIBRARIES} ${catkin_LIBRARIES})
 
-# Starter Project
-file(GLOB_RECURSE STARTER_PROJECT_PERCEPTION_SOURCES "starter_project/src/*.cpp")
-add_executable(starter_project_perception ${STARTER_PROJECT_PERCEPTION_SOURCES})
-add_dependencies(starter_project_perception ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
-target_link_libraries(starter_project_perception ${catkin_LIBRARIES} ${OpenCV_LIBS})
+add_subdirectory(starter_project)
 
 ## Declare a C++ library
 # add_library(${PROJECT_NAME}
@@ -258,3 +232,29 @@ catkin_add_nosetests(test/util/SO3_test.py)
 find_package(rostest REQUIRED)
 add_rostest(test/example/basic_integration_test.test)
 add_rostest(test/util/SE3_tf_test.test)
+
+#############
+## Package ##
+#############
+
+## Generate added messages and services with any dependencies listed here
+generate_messages(
+        DEPENDENCIES
+        std_msgs
+)
+
+###################################
+## catkin specific configuration ##
+###################################
+## The catkin_package macro generates cmake config files for your package
+## Declare things to be passed to dependent projects
+## INCLUDE_DIRS: uncomment this if your package contains header files
+## LIBRARIES: libraries you create in this project that dependent projects also need
+## CATKIN_DEPENDS: catkin_packages dependent projects also need
+## DEPENDS: system dependencies of this project that dependent projects also need
+catkin_package(
+        #  INCLUDE_DIRS include
+        #  LIBRARIES mrover
+        CATKIN_DEPENDS roscpp rospy std_msgs message_runtime
+        #  DEPENDS system_lib
+)
