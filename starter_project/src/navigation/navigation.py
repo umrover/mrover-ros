@@ -4,17 +4,18 @@ import signal
 import sys
 import threading
 
-#ros and state machine imports
+# ros and state machine imports
 import rospy
 import smach
 import smach_ros
 
-#navigation specific imports
+# navigation specific imports
 from context import Context
 from single_fiducial import SingleFiducialState
 from state import DoneState
 from waypoint import WaypointState
 from search import SearchState
+
 
 class Navigation(threading.Thread):
     state_machine: smach.StateMachine
@@ -35,7 +36,7 @@ class Navigation(threading.Thread):
                 DoneState(self.context),
                 transitions={"waypoint_traverse": "WaypointState", "done": "DoneState"},
             )
-            #TODO: add Drive to Target State
+            # TODO: add Drive to Target State
 
     def run(self):
         self.state_machine.execute()
@@ -50,9 +51,9 @@ class Navigation(threading.Thread):
 
 
 def main():
-	#TODO: init a node called "navigation"
+    # TODO: init a node called "navigation"
 
-	#context and navigation objects
+    # context and navigation objects
     context = Context()
     navigation = Navigation(context)
 

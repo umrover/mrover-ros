@@ -25,8 +25,8 @@ class BaseState(smach.State, ABC):
         add_output_keys = add_output_keys or []
         super().__init__(
             add_outcomes + ["terminated"],
-            add_input_keys + ["waypoint_index"],
-            add_output_keys + ["waypoint_index"],
+            add_input_keys,
+            add_output_keys,
         )
         self.context = context
 

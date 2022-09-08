@@ -35,22 +35,16 @@ class Environment:
     """
 
     ctx: Context
-    NO_FIDUCIAL: ClassVar[int] = -1
 
-    def get_fid_pos(self, fid_id: int) -> Optional[np.ndarray]:
+    def get_fid_data(self) -> Optional[StarterProjectTag]:
         """
-        Retrieves the pose of the given fiducial ID from the TF tree
-        if it exists, otherwise returns None
+        Retrieves the last recieved message regarding fid pose
+        if it exists, otherwise returns None (hint: you will need to create an additonal instance variable in the class)
         """
-        try:
-            #TODO: return the position of the AR tag (hint use the SE3.from_tf_tree function)
-            pass
-        except (
-            tf2_ros.LookupException,
-            tf2_ros.ConnectivityException,
-            tf2_ros.ExtrapolationException,
-        ):
-            return None
+
+    def recieve_fid_data(self, message : StarterProjectTag):
+        #TODO: (fill in the correct type for message) and handle incoming FID data messages here
+        
 
 
 class Context:
@@ -58,6 +52,7 @@ class Context:
     tf_listener: tf2_ros.TransformListener
     vel_cmd_publisher: rospy.Publisher
     vis_publisher: rospy.Publisher
+    fid_listener: rospy.Subscriber
 
     # Use these as the primary interfaces in states
     rover: Rover
@@ -70,3 +65,4 @@ class Context:
         self.vis_publisher = rospy.Publisher("nav_vis", Marker)
         self.rover = Rover(self)
         self.env = Environment(self)
+        self.fid_listener = rospy.Subscriber("/tag", StarterProjectTag,self.env.recieve_fid_data)
