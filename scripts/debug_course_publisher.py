@@ -15,12 +15,12 @@ and without fiducials and these will get published to nav
 
 if __name__ == "__main__":
     rospy.init_node("debug_course_publisher")
-    publish_course = CourseService("debug_course_service")
+    publish_course = CourseService()
 
     waypoints = [
-        (Waypoint(fiducial_id=0, tf_id="course0"), SE3(position=np.ndarray([3, 3, 0]))),
-        # (Waypoint(fiducial_id=0, tf_id="course1"), SE3(position=np.ndarray([-3, -3, -1]))),
-        # (Waypoint(fiducial_id=0, tf_id="course2"), SE3(position=np.ndarray([-5, -5, 0]))),
+        (Waypoint(fiducial_id=0, tf_id="course0"), SE3(position=np.array([3, 3, 0]))),
+        # (Waypoint(fiducial_id=0, tf_id="course1"), SE3(position=np.array([-3, -3, -1]))),
+        # (Waypoint(fiducial_id=0, tf_id="course2"), SE3(position=np.array([-5, -5, 0]))),
     ]
 
     publish_course(waypoints)
