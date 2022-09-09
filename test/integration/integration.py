@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+
 import sys
 import unittest
 
@@ -16,7 +17,7 @@ class TestIntegration(unittest.TestCase):
     def test_integration(self):
         rospy.logdebug("Integration Test Starting")
 
-        rospy.sleep(5.0)
+        rospy.wait_for_service(CourseService.SERVICE_NAME)  # Wait until we can run our service
 
         rospy.init_node("integration_test")
         publish_course = CourseService()
@@ -31,8 +32,11 @@ class TestIntegration(unittest.TestCase):
         tf2_ros.TransformListener(tf_buffer)
 
         while not rospy.is_shutdown():
-            rover_pose = SE3.from_tf_tree(tf_buffer, "odom", "base_link")
-            rospy.loginfo(rover_pose.position)
+            try:
+                rover_in_world = SE3.from_tf_tree(tf_buffer, parent_frame="odom", child_frame="base_link")
+                rospy.loginfo(rover_in_world.position)
+            except tf2_ros.TransformException as exception:
+                pass
 
 
 if __name__ == "__main__":

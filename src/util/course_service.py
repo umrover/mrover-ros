@@ -10,10 +10,12 @@ from util.SE3 import SE3
 
 
 class CourseService(rospy.ServiceProxy):
+    SERVICE_NAME = "course_service"
+
     tf_broadcaster: tf2_ros.StaticTransformBroadcaster = tf2_ros.StaticTransformBroadcaster()
 
     def __init__(self, **kwargs):
-        super().__init__("course_service", PublishCourse, **kwargs)
+        super().__init__(self.SERVICE_NAME, PublishCourse, **kwargs)
 
     def call(self, waypoints: List[Tuple[Waypoint, SE3]]):
         all_waypoint_info = []
