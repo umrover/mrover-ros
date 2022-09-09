@@ -7,19 +7,18 @@
 </template>
 
 <script>
-    import DriveControls from './DriveControls.vue';
-    import ArmControls from './ArmControls.vue';
+import DriveControls from './DriveControls.vue'
+import ArmControls from './ArmControls.vue'
 
-    export default {
-        data() {
-            return {
-            }
-        },
-
-
-        components:{
-            DriveControls,
-            ArmControls
-        }
+export default {
+  data () {
+    return {
     }
+  },
+
+  components: {
+    DriveControls,
+    ArmControls
+  }
+}
 </script>

@@ -1,6 +1,6 @@
 import Vue from 'vue'
 import Router from 'vue-router'
-import Menu from '../components/Menu.vue'
+import MainMenu from '../components/MainMenu.vue'
 import ERDTask from '../components/ERDTask.vue'
 import ESTask from '../components/ESTask.vue'
 import AutonTask from '../components/AutonTask.vue'
@@ -14,8 +14,8 @@ export default new Router({
   routes: [
     {
       path: '/',
-      name: 'Menu',
-      component: Menu
+      name: 'MainMenu',
+      component: MainMenu
     },
     {
       path: '/ERDTask',
@@ -46,6 +46,6 @@ export default new Router({
       path: '/Control',
       name: 'ControlsGUI',
       component: ControlGUI
-    },
+    }
   ]
 })

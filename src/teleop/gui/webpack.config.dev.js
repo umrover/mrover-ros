@@ -1,13 +1,12 @@
 'use strict'
 const CopyWebpackPlugin = require('copy-webpack-plugin')
-const HtmlWebpackPlugin = require('html-webpack-plugin')
 const { VueLoaderPlugin } = require('vue-loader')
 module.exports = {
   mode: 'development',
   entry: [
     './src/app.js'
   ],
-  "devtool": "source-map",
+  devtool: 'source-map',
   module: {
     rules: [
       {
@@ -23,9 +22,9 @@ module.exports = {
       },
       {
         test: /\.(gif|svg|jpg|png)$/,
-        loader: "file-loader",
+        loader: 'file-loader'
       }
-    ],
+    ]
   },
   plugins: [
     new VueLoaderPlugin(),
@@ -35,7 +34,7 @@ module.exports = {
   ],
   resolve: {
     alias: {
-        'vue$': 'vue/dist/vue.esm.js'
+      vue$: 'vue/dist/vue.esm.js'
     },
     modules: [
       'deps',

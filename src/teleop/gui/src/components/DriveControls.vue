@@ -6,9 +6,9 @@
 
 <script>
 
-import ROSLIB from "roslib"
+import ROSLIB from 'roslib'
 
-let interval;
+let interval
 
 export default {
   data () {
@@ -20,80 +20,75 @@ export default {
     }
   },
 
-
-  beforeDestroy: function () {
-    window.clearInterval(interval);
+  beforeUnmount: function () {
+    window.clearInterval(interval)
   },
 
   created: function () {
+    const driveControlParam = new ROSLIB.Param({
+      ros: this.$ros,
+      name: '/teleop/drive_controls'
+    })
 
-    var drive_control_param = new ROSLIB.Param({
-      ros : this.$ros,
-      name :  '/teleop/drive_controls'
-    });
+    const joystickMappingParam = new ROSLIB.Param({
+      ros: this.$ros,
+      name: '/teleop/joystick_mappings'
+    })
 
-    
-    var joystick_mapping_param = new ROSLIB.Param({
-      ros : this.$ros,
-      name :  '/teleop/joystick_mappings'
-    });
-
-    drive_control_param.get((value) => {
+    driveControlParam.get((value) => {
       if (value != null) {
-          this.drive_config = value;
-          console.log(this.drive_config.forward_back.multiplier)
+        this.drive_config = value
+        console.log(this.drive_config.forward_back.multiplier)
       }
-    });
-      
-    joystick_mapping_param.get((value) => {
+    })
+
+    joystickMappingParam.get((value) => {
       if (value != null) {
-        this.joystick_mapping = value;
+        this.joystick_mapping = value
         console.log(this.joystick_mapping)
       }
-    });
+    })
 
-
-    const updateRate = 0.05;
+    const updateRate = 0.05
     interval = window.setInterval(() => {
-        const gamepads = navigator.getGamepads()
-        for (let i = 0; i < 4; i++) {
-          const gamepad = gamepads[i]
-          if (gamepad) {
-            if (gamepad.id.includes('Logitech')) {
-            
-              let buttons = gamepad.buttons.map((button) =>{
-                return button.value
-              })
+      const gamepads = navigator.getGamepads()
+      for (let i = 0; i < 4; i++) {
+        const gamepad = gamepads[i]
+        if (gamepad) {
+          if (gamepad.id.includes('Logitech')) {
+            const buttons = gamepad.buttons.map((button) => {
+              return button.value
+            })
 
-              //Deadzone applied to all axis
-              const deadzone = 0.05
-              let axes = gamepad.axes.map((axis) => {
-                return Math.abs(axis) <= deadzone ? 0 : axis
-              })
-              //Invert Forward/Back Stick, forward is normally -1
-              axes[this.joystick_mapping.forward_back] = this.drive_config.forward_back.multiplier * axes[this.joystick_mapping.forward_back]
-              axes[this.joystick_mapping.left_right] = this.drive_config.left_right.multiplier * axes[this.joystick_mapping.left_right]
+            // Deadzone applied to all axis
+            const deadzone = 0.05
+            const axes = gamepad.axes.map((axis) => {
+              return Math.abs(axis) <= deadzone ? 0 : axis
+            })
+            // Invert Forward/Back Stick, forward is normally -1
+            axes[this.joystick_mapping.forward_back] = this.drive_config.forward_back.multiplier * axes[this.joystick_mapping.forward_back]
+            axes[this.joystick_mapping.left_right] = this.drive_config.left_right.multiplier * axes[this.joystick_mapping.left_right]
 
-              //Done so that teleop_twist_joy will always be enabled
-              buttons.unshift(1)
+            // Done so that teleop_twist_joy will always be enabled
+            buttons.unshift(1)
 
-              const joystickData = {
-                axes: axes,
-                buttons: buttons
-              }
-              
-              var joystickTopic = new ROSLIB.Topic({
-                ros : this.$ros,
-                name : '/joystick',
-                messageType : 'sensor_msgs/Joy'
-              })
-              var joystickMsg = new ROSLIB.Message(joystickData)
-              joystickTopic.publish(joystickMsg)
+            const joystickData = {
+              axes,
+              buttons
             }
+
+            const joystickTopic = new ROSLIB.Topic({
+              ros: this.$ros,
+              name: '/joystick',
+              messageType: 'sensor_msgs/Joy'
+            })
+            const joystickMsg = new ROSLIB.Message(joystickData)
+            joystickTopic.publish(joystickMsg)
           }
         }
-    }, updateRate*1000)
-  },
+      }
+    }, updateRate * 1000)
+  }
 
 }
 </script>

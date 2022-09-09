@@ -24,7 +24,7 @@
 import MenuButton from './MenuButton.vue'
 
 export default {
-  name: 'Menu',
+  name: 'MainMenu',
 
   components: {
     MenuButton
