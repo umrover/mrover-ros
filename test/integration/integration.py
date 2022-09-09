@@ -20,6 +20,7 @@ class TestIntegration(unittest.TestCase):
         rospy.logdebug("Integration Test Starting")
 
         rospy.wait_for_service(CourseService.SERVICE_NAME)  # Wait until we can run our service
+        rospy.sleep(0.5)
 
         rospy.init_node("integration_test")
         publish_course = CourseService()

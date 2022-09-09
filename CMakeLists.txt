@@ -247,7 +247,6 @@ install(TARGETS differential_drive_plugin_6w
 # endif()
 
 # Python unit tests
-catkin_add_nosetests(test/integration/integration.py)
 catkin_add_nosetests(test/navigation/drive.py)
 catkin_add_nosetests(test/util/SE3_test.py)
 catkin_add_nosetests(test/util/SO3_test.py)
