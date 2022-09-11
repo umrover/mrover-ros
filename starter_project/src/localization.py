@@ -16,8 +16,8 @@ class Localization:
 
     def __init__(self):
         # create subscribers for GPS and IMU data, linking them to our callback functions
-        rospy.Subscriber("gps", NavSatFix, self.gps_callback)
-        rospy.Subscriber("imu", Imu, self.imu_callback)
+        # TODO
+        ...
 
     def gps_callback(msg: NavSatFix):
         """
