@@ -38,11 +38,11 @@ class Localization:
 
     def spherical_to_cartesian(spherical_coord: np.ndarray, reference_coord: np.ndarray) -> np.ndarray:
         """
-        This is a utility function that should convert spherical (latitude, longitude) 
-        coordinates into cartesian (x, y, z) coordinates using the specified reference point 
+        This is a utility function that should convert spherical (latitude, longitude)
+        coordinates into cartesian (x, y, z) coordinates using the specified reference point
         as the center of the tangent plane used for approximation.
-        
-        :param spherical_coord: the spherical coordinate to convert, 
+
+        :param spherical_coord: the spherical coordinate to convert,
                                 given as a numpy array [latiude, longitude]
         :param reference_coord: the reference coordinate to use for conversion,
                                 given as a numpy array [latiude, longitude]
@@ -50,6 +50,7 @@ class Localization:
         :returns: the approximated cartesian coordinates, given as a numpy array [x, y, z]
         """
         # TODO
+
 
 def main():
     # initialize the node
