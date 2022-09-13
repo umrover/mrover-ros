@@ -1,8 +1,11 @@
+#!/usr/bin/env python3
+
 # python linear algebra library
 import numpy as np
 
-# library for interacting with ROS
+# library for interacting with ROS and TF tree
 import rospy
+import tf2_ros
 
 # ROS message types we need to use
 from sensor_msgs.msg import NavSatFix, Imu
@@ -17,9 +20,14 @@ class Localization:
     def __init__(self):
         # create subscribers for GPS and IMU data, linking them to our callback functions
         # TODO
-        ...
 
-    def gps_callback(msg: NavSatFix):
+        # create a transform broadcaster for publishing to the TF tree
+        self.tf_broadcaster = tf2_ros.TransformBroadcaster()
+
+        # initialize pose to all zeros
+        self.pose = SE3()
+
+    def gps_callback(self, msg: NavSatFix):
         """
         This function will be called every time this node receives a NavSatFix message
         on the /gps topic. It should read the GPS location from the given NavSatFix message,
@@ -27,8 +35,8 @@ class Localization:
         that pose to the TF tree.
         """
         # TODO
-
-    def imu_callback(msg: Imu):
+        
+    def imu_callback(self, msg: Imu):
         """
         This function will be called every time this node receives an Imu message
         on the /imu topic. It should read the orientation data from the given Imu message,
@@ -47,7 +55,7 @@ class Localization:
         :param reference_coord: the reference coordinate to use for conversion,
                                 given as a numpy array [latiude, longitude]
 
-        :returns: the approximated cartesian coordinates, given as a numpy array [x, y, z]
+        :returns: the approximated cartesian coordinates in meters, given as a numpy array [x, y, z]
         """
         # TODO
 
