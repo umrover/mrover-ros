@@ -31,7 +31,10 @@
  */
 #pragma once
 
+#include <array>
 #include <map>
+#include <memory>
+#include <thread>
 
 #include <gazebo/common/Plugin.hh>
 #include <gazebo/common/Time.hh>
@@ -47,10 +50,6 @@
 #include <ros/advertise_options.h>
 #include <ros/callback_queue.h>
 
-// Boost
-#include <boost/bind.hpp>
-#include <boost/thread.hpp>
-
 namespace gazebo {
 
     class DiffDrivePlugin6W : public ModelPlugin {
@@ -61,62 +60,59 @@ namespace gazebo {
         ~DiffDrivePlugin6W() override;
 
     protected:
-        void Load(physics::ModelPtr _model, sdf::ElementPtr _sdf) override;
+        void Load(physics::ModelPtr mModel, sdf::ElementPtr mSdf) override;
 
         void Reset() override;
 
-        virtual void Update();
+        virtual void update();
 
     private:
-        void publish_odometry();
+        void publishOdometry();
 
-        void GetPositionCmd();
+        void getPositionCommand();
 
-        physics::LinkPtr link;
-        physics::WorldPtr world;
-        physics::JointPtr joints[6];
+        physics::LinkPtr mBodyLink;
+        physics::WorldPtr mWorld;
+        std::array<physics::JointPtr, 6> mJoints;
 
-        float wheelSep{};
-        float wheelDiam{};
-        float torque{};
-        float wheelSpeed[2]{};
+        double mWheelSeparation{};
+        double mWheelDiameter{};
+        double mTorque{};
+        std::array<double, 2> mWheelSpeeds{};
 
         // Simulation time of the last update
-        common::Time prevUpdateTime;
+        common::Time mPreviousUpdateTime;
 
-        bool enableMotors{};
-        float odomPose[3]{};
-        float odomVel[3]{};
+        bool mEnableMotors{};
+        std::array<double, 3> mOdomPose{};
+        std::array<double, 3> mOdomVelocity{};
 
         // ROS STUFF
-        ros::NodeHandle* rosnode_{};
-        ros::Publisher pub_;
-        ros::Subscriber sub_;
-        tf::TransformBroadcaster* transform_broadcaster_{};
-        nav_msgs::Odometry odom_;
-        std::string tf_prefix_;
+        std::optional<ros::NodeHandle> mNode;
+        ros::Publisher mPublisher;
+        ros::Subscriber mSubscriber;
+        std::optional<tf::TransformBroadcaster> mTfBroadcaster{};
+        nav_msgs::Odometry mOdometry;
+        std::string mTfPrefix;
 
-        boost::mutex lock;
+        std::mutex mLock;
 
-        std::string namespace_;
-        std::string topic_;
-        std::string link_name_;
+        std::string mNamespace;
+        std::string mVelocityCommandTopic;
+        std::string mBodyLinkName;
 
         // Custom Callback Queue
-        ros::CallbackQueue queue_;
-        boost::thread callback_queue_thread_;
-
-        void QueueThread();
+        ros::CallbackQueue mVelocityCommandQueue;
+        std::optional<ros::AsyncSpinner> mSpinner;
 
         // DiffDrive stuff
-        void cmdVelCallback(const geometry_msgs::Twist::ConstPtr& cmd_msg);
+        void commandVelocityCallback(const geometry_msgs::Twist::ConstPtr& twistCommand);
 
-        float x_{};
-        float rot_{};
-        bool alive_{};
+        double mForwardVelocity{};
+        double mPitch{};
 
         // Pointer to the update event connection
-        event::ConnectionPtr updateConnection;
+        event::ConnectionPtr mUpdateConnection;
     };
 
 } // namespace gazebo

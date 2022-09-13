@@ -7,27 +7,12 @@ on:
     branches:
       - master
 jobs:
-  formatting-check:
+  code-style:
     name: Code Style Check
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-latest
+    container: umrover1/ros:latest
     steps:
       - uses: actions/checkout@v3
-        with:
-          path: 'mrover'
-      - name: Run clang-format style check for C/C++/Protobuf programs.
-        uses: jidicula/clang-format-action@v4.6.2
-        with:
-          clang-format-version: "13"
-          check-path: "src"
-      - uses: ricardochaves/python-lint@v1.4.0
-        with:
-          python-root-list: "mrover/src mrover/scripts"
-          use-isort: false
-          use-pycodestyle: false
-          use-pylint: false 
-          use-flake8: false
-          use-black: true
-          use-mypy: true
-          extra-mypy-options: "--config-file=mrover/mypy.ini"
-          extra-black-options: "--line-length=120"
+      - name: Style check C++ and Python files
+        run: ./style.sh
  

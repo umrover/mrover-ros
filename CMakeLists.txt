@@ -22,6 +22,8 @@ find_package(catkin REQUIRED COMPONENTS
         fiducial_msgs
         dynamic_reconfigure
         message_generation
+        rosbridge_server
+        teleop_twist_joy
         )
 
 find_package(OpenCV REQUIRED)
@@ -73,6 +75,7 @@ add_message_files(
         FILES
         Course.msg
         Waypoint.msg
+        Chassis.msg
 )
 
 ## Generate services in the 'srv' folder

@@ -97,7 +97,7 @@ void FiducialsNode::imageCallback(sensor_msgs::ImageConstPtr const& msg) {
  * @param u     X Pixel Position
  * @param v     Y Pixel Position
  */
-SE3 getFidInCamFromPixel(sensor_msgs::PointCloud2ConstPtr const& msg, size_t u, size_t v) {
+std::optional<SE3> getFidInCamFromPixel(sensor_msgs::PointCloud2ConstPtr const& msg, size_t u, size_t v) {
     // If PCL ends up being needed, use its camToPoint function instead
     size_t arrayPos = v * msg->row_step + u * msg->point_step;
     size_t arrayPosY = arrayPos + msg->fields[0].offset;
@@ -109,7 +109,9 @@ SE3 getFidInCamFromPixel(sensor_msgs::PointCloud2ConstPtr const& msg, size_t u, 
     std::memcpy(&point.y, &msg->data[arrayPosY], sizeof(point.y));
     std::memcpy(&point.z, &msg->data[arrayPosZ], sizeof(point.z));
 
-    return {{+point.x, -point.y, +point.z}, Eigen::Quaterniond::Identity()};
+    return (std::isfinite(point.x) && std::isfinite(point.y) && std::isfinite(point.z))
+                   ? std::optional<SE3>(SE3({+point.x, -point.y, +point.z}, Eigen::Quaterniond::Identity()))
+                   : std::nullopt;
 }
 
 /**
