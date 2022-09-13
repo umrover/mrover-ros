@@ -11,6 +11,8 @@ jobs:
     if: github.event.pull_request.draft == false
     steps:
       - uses: actions/checkout@v3
+        with:
+          lfs: 'true'
       - run: sudo apt-get update -y && rosdep update
       - uses: betwo/github-setup-catkin@master
         with:
@@ -18,4 +20,5 @@ jobs:
           build-tool: "catkin_tools"
           workspace: "$GITHUB_WORKSPACE"
       - run: catkin build
-      - run: catkin test -j1
+      - run: git lfs pull
+      - run: catkin test
