@@ -6,7 +6,7 @@
   <arg name="rvizconfig" default="$(find mrover)/config/rviz/default.rviz" />
   <arg name="gazebo_config_path" default="$(find mrover)/config/gazebo" />
 
-  <node if="$(arg gui)" name="joint_state_publisher" pkg="joint_state_publisher_gui" type="joint_state_publisher_gui" />
+  <!-- <node if="$(arg gui)" name="joint_state_publisher" pkg="joint_state_publisher_gui" type="joint_state_publisher_gui" />
   <node unless="$(arg gui)" name="joint_state_publisher" pkg="joint_state_publisher" type="joint_state_publisher" />
   <node name="robot_state_publisher" pkg="robot_state_publisher" type="robot_state_publisher" />
 
@@ -24,7 +24,7 @@
 
   <node name="mrover_sim_spawn" pkg="gazebo_ros" type="spawn_model" output="screen" args="
                         -urdf -param robot_description
-                        -model rover" /> -->
+                        -model rover" /> --> -->
     <include file="$(find rosbridge_server)/launch/rosbridge_websocket.launch"></include>
     <node name="gui" pkg="mrover" type="gui.sh" cwd="node"/>
     <!--Node for teleop control callbacks-->
