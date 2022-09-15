@@ -47,61 +47,40 @@ namespace mrover {
         // hint: write and use the "getCenterFromTagCorners" and "getClosenessMetricFromTagCorners" functions
 
         tags.clear(); // Clear old tags in output vector
-        cv::aruco::detectMarkers(image->image, mTagDictionary, mTagCorners, mTagIds);
-        for (size_t i = 0; i < mTagIds.size(); ++i) {
-            auto corner = mTagCorners[i];
-            auto id = mTagIds[i];
-            auto[x, y] = getCenterFromTagCorners(corner);
-            float dist = getClosenessMetricFromTagCorners(image->image, corner);
-            StarterProjectTag tag;
-            tag.id = id;
-            tag.x = x;
-            tag.y = y;
-            tag.dist = dist;
-            tags.push_back(tag);
-        }
 
-    }
-
-    float distCenter(StarterProjectTag t){
-        return sqrt(pow(t.x, 2) + pow(t.y, 2));
+        // TODO: remove below & implement me!
+        (void) image;
     }
 
     StarterProjectTag Perception::selectTag(std::vector<StarterProjectTag> const& tags) {
-        
-        auto distanceCompF = [](StarterProjectTag t1, StarterProjectTag t2){
-            return distCenter(t1) < distCenter(t2);
-        };
-        return *(std::min_element(tags.begin(), tags.end(), distanceCompF));
+        // TODO: remove below & implement me!
+        (void) tags;
+
+        return {};
     }
 
-    void Perception::publishTag(const StarterProjectTag& tag) {
-        mTagPublisher.publish(tag);
+    void Perception::publishTag(StarterProjectTag const& tag) {
+        // TODO: remove below & implement me!
+        (void) tag;
     }
 
     float Perception::getClosenessMetricFromTagCorners(cv::Mat const& image, std::vector<cv::Point2f> const& tagCorners) {
         // hint: think about how you can use the "image" parameter
-        auto compXF = [](cv::Point2f p1 , cv::Point2f p2){
-            return p1.x < p2.x;
-        };
-        auto compYF = [](cv::Point2f p1, cv::Point2f p2){
-            return p1.y < p2.y;
-        };
-        float w = (std::max_element(tagCorners.begin(), tagCorners.end(), compXF))->x - 
-                  (std::min_element(tagCorners.begin(), tagCorners.end(), compXF))->x;
-        float h = (std::max_element(tagCorners.begin(), tagCorners.end(), compYF))->y - 
-                  (std::min_element(tagCorners.begin(), tagCorners.end(), compYF))->y;
-        return (w * h) / (image.rows * image.cols);
+        // hint: this will be used later by navigation to stop "close enough" to a tag. units are your choice!
+        // hint: do not overcomplicate, this metric does not have to be perfectly accurate, it just has to be correlated with distance away
+
+        // TODO: remove below & implement me!
+        (void) image;
+        (void) tagCorners;
+
+        return {};
     }
 
-    std::pair<float, float> Perception::getCenterFromTagCorners(const std::vector<cv::Point2f>& tagCorners) {
-        // TODO: implement me!
-        float xAv, yAv;
-        for (auto corner : tagCorners){
-            xAv += corner.x / 4.0;
-            yAv += corner.y / 4.0;
-        }
-        return {xAv, yAv};
+    std::pair<float, float> Perception::getCenterFromTagCorners(std::vector<cv::Point2f> const& tagCorners) {
+        // TODO: remove below & implement me!
+        (void) tagCorners;
+
+        return {};
     }
 
 } // namespace mrover
