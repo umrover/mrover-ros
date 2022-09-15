@@ -11,10 +11,9 @@ import smach_ros
 
 # navigation specific imports
 from context import Context
-from single_fiducial import SingleFiducialState
 from state import DoneState
-from waypoint import WaypointState
-from search import SearchState
+from drive_state import DriveState
+from tag_seek import TagSeekState
 
 
 class Navigation(threading.Thread):
@@ -36,6 +35,7 @@ class Navigation(threading.Thread):
                 DoneState(self.context),
                 transitions={"waypoint_traverse": "WaypointState", "done": "DoneState"},
             )
+
             # TODO: add Drive to Target State
 
     def run(self):
