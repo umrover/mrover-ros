@@ -35,7 +35,7 @@ class Localization:
         that pose to the TF tree.
         """
         # TODO
-        
+
     def imu_callback(self, msg: Imu):
         """
         This function will be called every time this node receives an Imu message
