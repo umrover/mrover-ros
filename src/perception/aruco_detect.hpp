@@ -32,7 +32,6 @@ struct ImmediateFiducial {
    int id = -1;
    cv::Point2f imageCenter{};
    std::optional<SE3> fidInCam;
-   int timesSeen = 1; //will be removed once intermediate is implemented
 };
  
 /**
@@ -41,7 +40,7 @@ struct ImmediateFiducial {
 struct IntermediateFiducial {
    int id = -1;
    XYZFilter fidInOdomXYZ;
-   int timesSeen = 1;
+   int timesSeen = 0;
    //THIS STRUCT ISN'T BEING USED YET FOR THE RUDIMENTARY CACHE, JUST HERE FOR SAFEKEEPING
 };
  
@@ -102,6 +101,7 @@ private:
    std::vector<std::vector<cv::Point2f>> mCorners;
    std::vector<int> mIds;
    std::unordered_map<int, ImmediateFiducial> mImmediateFiducials;
+   std::unordered_map<int, IntermediateFiducial> mIntermediateFiducials; 
    std::unordered_map<int, PersistentFiducial> mPersistentFiducials;
    dynamic_reconfigure::Server<mrover::DetectorParamsConfig> mConfigServer;
    dynamic_reconfigure::Server<mrover::DetectorParamsConfig>::CallbackType mCallbackType;

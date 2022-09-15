@@ -30,9 +30,6 @@ void FiducialsNode::imageCallback(sensor_msgs::ImageConstPtr const& msg) {
        while (it != mImmediateFiducials.end()) {
            if (std::find(mIds.begin(), mIds.end(), it->first) == mIds.end()) {
                it = mImmediateFiducials.erase(it);
-           } else {
-               it->second.timesSeen++;
-               ++it;
            }
        }
  
@@ -47,27 +44,46 @@ void FiducialsNode::imageCallback(sensor_msgs::ImageConstPtr const& msg) {
  
        // Add readings to the persistent representations of the fiducials
        for (auto [id, immediateFid]: mImmediateFiducials) {
-           PersistentFiducial& fid = mPersistentFiducials[id];
+           IntermediateFiducial &inter_fid = mIntermediateFiducials[id]; 
+           PersistentFiducial& persistent_fid = mPersistentFiducials[id];
+
            if (!immediateFid.fidInCam.has_value()) continue;
            // This is set if the point cloud had no valid reading for this fiducial
-           if(immediateFid.timesSeen < mMinTimesSeen) { //If it hasn't been seen enough times
-               //add code here to update immediate fiducial's filter?
-               continue;
-           }
-          
- 
+
            std::string immediateFrameName = "immediateFiducial" + std::to_string(id);
            SE3::pushToTfTree(mTfBroadcaster, immediateFrameName, ROVER_FRAME, immediateFid.fidInCam.value());
- 
-           fid.id = id;
-           try {
-               SE3 fidInOdom = SE3::fromTfTree(mTfBuffer, ODOM_FRAME, immediateFrameName);
-               fid.fidInOdomXYZ.setFilterParams(mFilterCount, mFilterProportion);
-               fid.fidInOdomXYZ.addReading(fidInOdom);
-           } catch (tf2::ExtrapolationException const&) {
-               ROS_WARN("Old data for immediate fiducial");
-           } catch (tf2::LookupException const&) {
-               ROS_WARN("No transform from immediate fiducial to odom");
+
+           if(inter_fid.timesSeen < mMinTimesSeen) { //has not been seen enough times to be persisisent
+               inter_fid.id = id; 
+               ++inter_fid.timesSeen; 
+
+                try {
+                    SE3 fidInOdom = SE3::fromTfTree(mTfBuffer, ODOM_FRAME, immediateFrameName);
+                    inter_fid.fidInOdomXYZ.setFilterParams(mFilterCount, mFilterProportion);
+                    inter_fid.fidInOdomXYZ.addReading(fidInOdom);
+                } catch (tf2::ExtrapolationException const&) {
+                    ROS_WARN("Old data for immediate fiducial");
+                } catch (tf2::LookupException const&) {
+                    ROS_WARN("No transform from immediate fiducial to odom");
+                }
+
+                if(inter_fid.timesSeen == mMinTimesSeen) // graduate to persistent fiducial 
+                {
+                    persistent_fid.id = id; 
+                    persistent_fid.fidInOdomXYZ = inter_fid.fidInOdomXYZ; 
+                }                
+           } 
+           else { // already a persistent fiducial
+                persistent_fid.id = id;
+                try {
+                    SE3 fidInOdom = SE3::fromTfTree(mTfBuffer, ODOM_FRAME, immediateFrameName);
+                    persistent_fid.fidInOdomXYZ.setFilterParams(mFilterCount, mFilterProportion);
+                    persistent_fid.fidInOdomXYZ.addReading(fidInOdom);
+                } catch (tf2::ExtrapolationException const&) {
+                    ROS_WARN("Old data for immediate fiducial");
+                } catch (tf2::LookupException const&) {
+                    ROS_WARN("No transform from immediate fiducial to odom");
+                }
            }
        }
  
