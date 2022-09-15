@@ -9,3 +9,8 @@ __pycache__/
 
 /src/teleop/gui/dist/
 /src/teleop/gui/node_modules/
+
+build/
+.catkin_tools/
+devel/
+logs/
