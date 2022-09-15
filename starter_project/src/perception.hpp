@@ -13,6 +13,7 @@
 
 // ROS Headers, ros namespace
 #include <cv_bridge/cv_bridge.h>
+#include <ros/node_handle.h>
 #include <ros/publisher.h>
 #include <sensor_msgs/Image.h>
 #include <sensor_msgs/PointCloud2.h>
@@ -35,6 +36,7 @@ namespace mrover {
      */
     class Perception {
     private:
+        ros::NodeHandle mNodeHandle;
         cv::Ptr<cv::aruco::DetectorParameters> mTagDetectorParams;
         cv::Ptr<cv::aruco::Dictionary> mTagDictionary;
         std::vector<std::vector<cv::Point2f>> mTagCorners;

@@ -5,7 +5,7 @@
 #include <ros/init.h>
 
 int main(int argc, char** argv) {
-    ros::init(argc, argv, "perception_starter_project"); // Our node name (See: http://wiki.ros.org/Nodes)
+    ros::init(argc, argv, "starter_project_perception"); // Our node name (See: http://wiki.ros.org/Nodes)
 
     [[maybe_unused]] mrover::Perception perception;
 
@@ -18,10 +18,8 @@ int main(int argc, char** argv) {
 
 namespace mrover {
 
-    Perception::Perception() {
-        ros::NodeHandle nodeHandle("perception_starter_project"); // Parameter is namespace (See: http://wiki.ros.org/Names)
-
-        image_transport::ImageTransport imageTransport(nodeHandle);
+    Perception::Perception() : mNodeHandle{} {
+        image_transport::ImageTransport imageTransport(mNodeHandle);
         // Subscribe to camera image messages
         // Every time another node publishes to this topic we will be notified
         // Specifically the callback we passed will be invoked
@@ -29,7 +27,8 @@ namespace mrover {
 
         // Create a publisher for our tag topic
         // See: http://wiki.ros.org/ROS/Tutorials/WritingPublisherSubscriber%28c%2B%2B%29
-        mTagPublisher = nodeHandle.advertise<StarterProjectTag>("tag", 1);
+        // TODO: uncomment me!
+        // mTagPublisher = mNodeHandle.advertise<StarterProjectTag>("tag", 1);
     }
 
     void Perception::imageCallback(sensor_msgs::ImageConstPtr const& image) {
