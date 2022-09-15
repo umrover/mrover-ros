@@ -13,22 +13,30 @@
 
 // ROS Headers, ros namespace
 #include <cv_bridge/cv_bridge.h>
-#include <mrover/StarterProjectTag.h>
+#include <ros/node_handle.h>
 #include <ros/publisher.h>
 #include <sensor_msgs/Image.h>
 #include <sensor_msgs/PointCloud2.h>
+
+// TODO: band-aid fix until we figure out why CMake doesn't generate message first
+#if __has_include(<mrover/StarterProjectTag.h>)
+#include <mrover/StarterProjectTag.h>
+#else
+struct StarterProjectTag {};
+#endif
 
 namespace mrover {
 
     /**
      *  Starter project perception node
      *
-     *  Input:  Image data.
+     *  Input:  Image data, just RGB pixels.
      *  Output: ArUco tag pixel coordinates that is closest to the center of the camera.
      *          Also an approximation for how far away the tag is.
      */
     class Perception {
     private:
+        ros::NodeHandle mNodeHandle;
         cv::Ptr<cv::aruco::DetectorParameters> mTagDetectorParams;
         cv::Ptr<cv::aruco::Dictionary> mTagDictionary;
         std::vector<std::vector<cv::Point2f>> mTagCorners;
@@ -63,13 +71,13 @@ namespace mrover {
         void publishTag(StarterProjectTag const& tag);
 
         /**
-         *  Given an ArUco tag in pixel space, find approximately how far away we are.
+         *  Given an ArUco tag in pixel space, find a metric for how close we are.
          *
          * @param image         Access to the raw OpenCV image as a matrix
          * @param tagCorners    4-tuple of the tag pixel coordinates representing the corners
-         * @return              Approximate distance from rover to the tag
+         * @return              Closeness metric from rover to the tag
          */
-        [[nodiscard]] float getDistanceApproxFromTagCorners(cv::Mat const& image, std::vector<cv::Point2f> const& tagCorners);
+        [[nodiscard]] float getClosenessMetricFromTagCorners(cv::Mat const& image, std::vector<cv::Point2f> const& tagCorners);
 
         /**
          *  Given an ArUco tag in pixel space, find the approximate center in pixel space

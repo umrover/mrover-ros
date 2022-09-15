@@ -35,7 +35,7 @@ class Localization:
         that pose to the TF tree.
         """
         # TODO
-        
+
     def imu_callback(self, msg: Imu):
         """
         This function will be called every time this node receives an Imu message
@@ -44,6 +44,7 @@ class Localization:
         """
         # TODO
 
+    @staticmethod
     def spherical_to_cartesian(spherical_coord: np.ndarray, reference_coord: np.ndarray) -> np.ndarray:
         """
         This is a utility function that should convert spherical (latitude, longitude)
