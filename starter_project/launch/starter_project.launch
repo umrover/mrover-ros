@@ -30,7 +30,7 @@
     Perception
     ==========
   -->
-  <!--   <node name="perception_starter_project" pkg="mrover" type="perception_starter_project" /> -->
+  <!-- <node name="perception_starter_project" pkg="mrover" type="perception_starter_project" /> -->
 
   <!--
     ===========
