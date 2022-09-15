@@ -5,7 +5,7 @@
 
 add_message_files(
         FILES
-        # Add your new message here
+        StarterProjectTag.msg
 )
 
 # Collect all cpp files in the src subdirectory to be used for perception

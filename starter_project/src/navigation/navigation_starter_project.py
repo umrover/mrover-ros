@@ -25,19 +25,18 @@ class Navigation(threading.Thread):
         super().__init__()
         self.name = "NavigationThread"
         self.state_machine = smach.StateMachine(outcomes=["terminated"])
-        self.state_machine.userdata.waypoint_index = 0
         self.context = context
-        self.sis = smach_ros.IntrospectionServer("server_name", self.state_machine, "/SM_ROOT")
+        self.sis = smach_ros.IntrospectionServer("", self.state_machine, "/SM_ROOT")
         self.sis.start()
         with self.state_machine:
+            #TODO: add DriveState and its transitions here
             self.state_machine.add(
                 "DoneState",
                 DoneState(self.context),
-                transitions={"waypoint_traverse": "WaypointState", "done": "DoneState"},
+                transitions={"done": "DoneState"},
             )
-
-            # TODO: add Drive to Target State
-
+            #TODO: add TagSeekState and its transitions here
+            
     def run(self):
         self.state_machine.execute()
 
@@ -47,7 +46,7 @@ class Navigation(threading.Thread):
         self.state_machine.request_preempt()
         # Wait for smach thread to terminate
         self.join()
-        self.context.drive_stop()
+        self.context.rover.send_drive_stop()
 
 
 def main():
@@ -64,7 +63,6 @@ def main():
         try:
             sys.exit(0)
         except SystemExit:
-            # TODO: not really sure why needed but it is bugging me! >:(
             pass
 
     signal.signal(signal.SIGINT, sigint_handler)

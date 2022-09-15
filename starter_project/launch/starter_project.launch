@@ -30,14 +30,14 @@
     Perception
     ==========
   -->
-  <node name="starter_project_perception" pkg="mrover" type="starter_project_perception" />
+     <node name="perception_starter_project" pkg="mrover" type="perception_starter_project" />
 
   <!--
     ===========
     Navigation
     ===========
   -->
-  <!-- <node name="nav" pkg="mrover" type="navigation.py" /> -->
+    <!-- <node name="nav" pkg="mrover" type="navigation_starter_project.py" />-->
 
   <!--
     ============

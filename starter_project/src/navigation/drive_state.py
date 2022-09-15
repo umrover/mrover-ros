@@ -1,3 +1,4 @@
+from multiprocessing import context
 from state import BaseState
 import numpy as np
 from context import Context
@@ -8,16 +9,19 @@ class DriveState(BaseState):
         super().__init__(
             context,
             #TODO:
-            add_outcomes=["TODO: add the outcomes of the DriveState to this list"],
+            add_outcomes=["TODO: add outcomes here"],
         )
 
     def evaluate(self, ud):
-        target = np.ndarray([5.0, 5.0, 0.0])
-        #TODO: get the rovers pose
+        target = np.array([3.0, 3.0, 0.0])
+        #TODO: get the rovers pose, if it doesn't exist stay in DriveState with outcome "driving_to_point"
 
-        #TODO: get the drive command based on target and pose (HINT: use get_drive_command())
+        #TODO: get the drive command (and completion status) based on target and pose (HINT: use get_drive_command())
 
         #TODO: if we are finished getting to the target, return with outcome "reached_point"
+
         #TODO: send the drive command to the rover
 
-        #TODO: tell smach to say in the DriveState by returning with outcome "driving_to_point"
+        #TODO: tell smach to stay in the DriveState by returning with outcome "driving_to_point"
+
+        pass
