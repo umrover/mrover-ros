@@ -44,6 +44,7 @@ class Localization:
         """
         # TODO
 
+    @staticmethod
     def spherical_to_cartesian(spherical_coord: np.ndarray, reference_coord: np.ndarray) -> np.ndarray:
         """
         This is a utility function that should convert spherical (latitude, longitude)
