@@ -1,29 +1,23 @@
 from state import BaseState
 import numpy as np
 from context import Context
+from drive import get_drive_command
 
 class DriveState(BaseState):
-	def __init__(self, context: Context):
+    def __init__(self, context: Context):
         super().__init__(
             context,
+            #TODO:
             add_outcomes=["TODO: add the outcomes of the DriveState to this list"],
         )
 
     def evaluate(self, ud):
-       #TODO get the rovers pose and 
+        target = np.ndarray([5.0, 5.0, 0.0])
+        #TODO: get the rovers pose
 
-       goal = np.array([5.0, 5.0])
+        #TODO: get the drive command based on target and pose (HINT: use get_drive_command())
 
-       #TODO: calculate the vector towards the goal
+        #TODO: if we are finished getting to the target, return with outcome "reached_point"
+        #TODO: send the drive command to the rover
 
-       #TODO: if we are close enough to the goal (say 0.5 meters, return outcome "reached_point")
-
-       #TODO: calculate the turning effort
-
-       #TODO: calculate the driving effort
-
-       #TODO: create twist message
-
-       #TODO: send twist message
-
-       #TODO: return outcome "driving_to_point"
+        #TODO: tell smach to say in the DriveState by returning with outcome "driving_to_point"
