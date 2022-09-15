@@ -13,10 +13,16 @@
 
 // ROS Headers, ros namespace
 #include <cv_bridge/cv_bridge.h>
-#include <mrover/StarterProjectTag.h>
 #include <ros/publisher.h>
 #include <sensor_msgs/Image.h>
 #include <sensor_msgs/PointCloud2.h>
+
+// TODO: band-aid fix until we figure out why CMake doesn't generate message first
+#if __has_include(<mrover/StarterProjectTag.h>)
+#include <mrover/StarterProjectTag.h>
+#else
+struct StarterProjectTag {};
+#endif
 
 namespace mrover {
 

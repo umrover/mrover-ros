@@ -45,33 +45,42 @@ namespace mrover {
     }
 
     void Perception::findTagsInImage(cv_bridge::CvImagePtr const& image, std::vector<StarterProjectTag>& tags) {
-        // TODO: find a way to fill the "distance" metric for the tag message. It can be an approximation.
         // hint: you have mTagDictionary, mTagCorners, mTagIds, and mTagDetectorParams member variables already defined!
         // hint: you can access the raw image (cv::Mat) with image->image
         // hint: write and use the "getCenterFromTagCorners" and "getDistanceApproxFromTagCorners" functions
 
         tags.clear(); // Clear old tags in output vector
 
-        // TODO: implement me!
+        // TODO: remove below & implement me!
+        (void) image;
     }
 
     StarterProjectTag Perception::selectTag(std::vector<StarterProjectTag> const& tags) {
-        // TODO: implement me!
+        // TODO: remove below & implement me!
+        (void) tags;
+
         return {};
     }
 
     void Perception::publishTag(const StarterProjectTag& tag) {
-        // TODO: implement me!
+        // TODO: remove below & implement me!
+        (void) tag;
     }
 
     float Perception::getDistanceApproxFromTagCorners(cv::Mat const& image, const std::vector<cv::Point2f>& tagCorners) {
-        // TODO: implement me!
         // hint: think about how you can use the "image" parameter
+
+        // TODO: remove below & implement me!
+        (void) image;
+        (void) tagCorners;
+
         return {};
     }
 
     std::pair<float, float> Perception::getCenterFromTagCorners(const std::vector<cv::Point2f>& tagCorners) {
-        // TODO: implement me!
+        // TODO: remove below & implement me!
+        (void) tagCorners;
+
         return {};
     }
 
