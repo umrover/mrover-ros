@@ -258,3 +258,11 @@ catkin_add_nosetests(test/util/SO3_test.py)
 find_package(rostest REQUIRED)
 add_rostest(test/example/basic_integration_test.test)
 add_rostest(test/util/SE3_tf_test.test)
+
+# Base Station GUI Script to ensure proper deps
+# and node_modules up to date
+add_custom_command(
+        OUTPUT test.txt
+        WORKING_DIRECTORY ${PROJECT_SOURCE_DIR}/src/teleop/gui
+        COMMAND ./gui_install.sh
+        )
