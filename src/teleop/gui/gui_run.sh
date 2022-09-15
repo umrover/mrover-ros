@@ -1,33 +1,32 @@
 #!/bin/bash
 
-#Ensure proper NODE_PATH
+# Ensure proper NODE_PATH
 export NODE_PATH=/usr/lib/nodejs:/usr/share/nodejs
 
-#Check for yarn vs yarnpkg
+
+node_executable=node
+node_executable_path=$(which "$node_executable")
 yarn_executable=yarn
 yarn_executable_path=$(which "$yarn_executable")
-yarnpkg_executable=yarnpkg
-yarnpkg_executable_path=$(which "$yarnpkg_executable")
 
-#Install web packages if no node_modules folder
-if [ ! -d "./node_modules/" ] 
+if [ -z "$node_executable_path" ]
 then
-    if [ ! -z "$yarn_executable_path" ]; then
-        yarn install
-    elif [ ! -z "$yarnpkg_executable_path" ]; then
-        yarnpkg install 
-    else
-        echo "Please run sudo apt install yarn"
-        exit 1
-    fi
-fi
-
-
-if [ ! -z "$yarn_executable_path" ]; then
-    yarn run serve
-elif [ ! -z "$yarnpkg_executable_path" ]; then
-    yarnpkg run serve 
-else
-    echo "Please run sudo apt install yarn"
+    echo "Node installation not found, please run gui_install.sh"
     exit 1
 fi
+if [ -z "$yarn_executable_path" ]
+then
+    echo "Yarn installation not found, please run gui_install.sh"
+    exit 1
+fi
+
+# Check if node_modules up to date
+yarn check --verify-tree
+
+# If not up to date, install
+if [ $? == 1 ]
+then
+    yarn install --check-files
+fi
+
+yarn run serve

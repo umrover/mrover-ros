@@ -5,7 +5,7 @@ node_executable_path=$(which "$node_executable")
 yarn_executable=yarn
 yarn_executable_path=$(which "$yarn_executable")
 
-#Install node and yarn if not found
+# Install node and yarn if not found
 if [ -z "$node_executable_path" ]
 then
     curl -fsSL https://deb.nodesource.com/setup_18.x | sudo -E bash -
@@ -20,10 +20,10 @@ then
     sudo apt install yarn -y
 fi
 
-#Check if node_modules up to date
+# Check if node_modules up to date
 yarn check --verify-tree
 
-#If not up to date, install
+# If not up to date, install
 if [ $? == 1 ]
 then
     yarn install --check-files
