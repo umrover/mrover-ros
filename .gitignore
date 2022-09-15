@@ -14,3 +14,8 @@ cmake-build*/
 /src/teleop/gui/dist/
 /src/teleop/gui/node_modules/
 **/yarn.lock*
+
+build/
+.catkin_tools/
+devel/
+logs/
