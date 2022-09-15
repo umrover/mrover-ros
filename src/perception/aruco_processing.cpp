@@ -50,7 +50,7 @@ void FiducialsNode::imageCallback(sensor_msgs::ImageConstPtr const& msg) {
            PersistentFiducial& fid = mPersistentFiducials[id];
            if (!immediateFid.fidInCam.has_value()) continue;
            // This is set if the point cloud had no valid reading for this fiducial
-           if(immediateFid.timesSeen > mMinTimesSeen) { //If it hasn't been seen enough times
+           if(immediateFid.timesSeen < mMinTimesSeen) { //If it hasn't been seen enough times
                //add code here to update immediate fiducial's filter?
                continue;
            }
