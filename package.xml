@@ -100,10 +100,6 @@
   <!-- Navigation -->
   <depend>smach_ros</depend>
 
-  <!-- Drive -->
-  <depend>moteus</depend>
-  <depend>moteus-pi3hat</depend>
-
   <!-- Teleop -->
   <depend>teleop_twist_joy</depend>
 
