@@ -59,7 +59,7 @@ export default {
         for (let i = 0; i < 4; i++) {
           const gamepad = gamepads[i]
           if (gamepad) {
-            if (gamepad.id.includes('Logitech')) {
+            if (gamepad.id.includes('Xbox')) {
             
               let buttons = gamepad.buttons.map((button) =>{
                 return button.value
@@ -70,12 +70,10 @@ export default {
               let axes = gamepad.axes.map((axis) => {
                 return Math.abs(axis) <= deadzone ? 0 : axis
               })
+              
               //Invert Forward/Back Stick, forward is normally -1
               axes[this.joystick_mapping.forward_back] = this.drive_config.forward_back.multiplier * axes[this.joystick_mapping.forward_back]
               axes[this.joystick_mapping.left_right] = this.drive_config.left_right.multiplier * axes[this.joystick_mapping.left_right]
-
-              //Done so that teleop_twist_joy will always be enabled
-              buttons.unshift(1)
 
               const joystickData = {
                 axes: axes,
