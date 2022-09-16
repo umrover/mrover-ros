@@ -25,7 +25,7 @@ class Navigation(threading.Thread):
         self.state_machine = smach.StateMachine(outcomes=["terminated"])
         self.state_machine.userdata.waypoint_index = 0
         self.context = context
-        self.sis = smach_ros.IntrospectionServer("server_name", self.state_machine, "/SM_ROOT")
+        self.sis = smach_ros.IntrospectionServer("", self.state_machine, "/SM_ROOT")
         self.sis.start()
         with self.state_machine:
             self.state_machine.add(

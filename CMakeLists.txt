@@ -67,6 +67,9 @@ endif()
 ## See http://ros.org/doc/api/catkin/html/user_guide/setup_dot_py.html
 catkin_python_setup()
 
+# Subdirectories before message declarations
+add_subdirectory(starter_project/teleop)
+
 ################################################
 ## Declare ROS messages, services and actions ##
 ################################################
@@ -96,6 +99,7 @@ add_message_files(
         FILES
         Course.msg
         Waypoint.msg
+        Chassis.msg
 )
 
 ## Generate services in the 'srv' folder
