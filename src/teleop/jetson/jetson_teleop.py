@@ -12,7 +12,10 @@ from sensor_msgs.msg import Joy, JointState
 def quadratic(val):
     return copysign(val**2, val)
 
+<<<<<<< HEAD
 
+=======
+>>>>>>> Changed wheel control interface back to [-1,1]
 # If below threshold, make output zero
 def deadzone(magnitude, threshold):
     temp_mag = abs(magnitude)
@@ -45,6 +48,7 @@ class Drive:
     def teleop_drive_callback(self, msg):
         joints: typing.Dict[str, JointState] = {}
 
+<<<<<<< HEAD
         forward_back = deadzone(
             msg.axes[self.joystick_mappings["forward_back"]] * self.drive_config["forward_back"]["multiplier"], 0.05
         )
@@ -52,6 +56,11 @@ class Drive:
             msg.axes[self.joystick_mappings["left_right"]] * self.drive_config["left_right"]["multiplier"]
             + msg.axes[self.joystick_mappings["twist"]] * self.drive_config["twist"]["multiplier"],
             0.05,
+=======
+        forward_back = deadzone(msg.axes[self.joystick_mappings["forward_back"]], 0.05)
+        left_right = deadzone(
+            msg.axes[self.joystick_mappings["left_right"]] + msg.axes[self.joystick_mappings["twist"]], 0.05
+>>>>>>> Changed wheel control interface back to [-1,1]
         )
 
         # Super small deadzone so we can safely e-stop with dampen switch
