@@ -425,6 +425,7 @@ class ODriveBridge(object):
     def __init__(self, pair: str) -> None:
         """Initializes the components, starting with a Disconnected State.
         :param pair: A string that is front, middle, or back"""
+        self.start_time = t.process_time()
         self._current_lim = rospy.get_param("/odrive/config/current_lim")
         self._speed = Speed()
         _odrive_ids = {
@@ -435,7 +436,6 @@ class ODriveBridge(object):
         self._pair = pair
         self._id = _odrive_ids[self._pair]
         self._speed_lock = threading.Lock()
-        self.start_time = t.process_time()
         self._state = DisconnectedState()
         self._state_pub = rospy.Publisher("drive_state_data", DriveStateData, queue_size=1)
         self._vel_pub = rospy.Publisher("drive_vel_data", DriveVelData, queue_size=1)
@@ -595,10 +595,8 @@ class Application(object):
     def __init__(self):
 
         rospy.init_node(f"odrive_control")
-        # self._bridges = [ODriveBridge("front"), ODriveBridge("middle"), ODriveBridge("back")]
-        self._bridges = [ODriveBridge("middle")]
-        # rospy.Subscriber("drive_vel_cmd", DriveVelCmd, self._drive_vel_cmd_callback)
-        rospy.Subscriber("/ra/open_loop/joint_a", JointState, self._drive_vel_cmd_callback)
+        self._bridges = [ODriveBridge("front"), ODriveBridge("middle"), ODriveBridge("back")]
+        rospy.Subscriber("drive_vel_cmd", DriveVelCmd, self._drive_vel_cmd_callback)
 
     def run(self):
         """Runs the publish data loop and watchdog loops for all bridges"""
@@ -620,8 +618,7 @@ class Application(object):
 
         rospy.spin()
 
-    # def _drive_vel_cmd_callback(self, ros_msg: DriveVelCmd) -> None:
-    def _drive_vel_cmd_callback(self, ros_msg: JointState) -> None:
+    def _drive_vel_cmd_callback(self, ros_msg: DriveVelCmd) -> None:
         """Calls the change speeds function.
         Note that this does NOT actually change speed that the ODrive comands
         the motors at. One must wait for the ODriveBridge._update() function
@@ -629,16 +626,12 @@ class Application(object):
         :param ros_msg: A ROS message that has two floats that represents the
             requested speeds for the left and right wheels.
         """
-        # ros_msg.left = self._throttle(ros_msg.left)
-        # ros_msg.right = self._throttle(ros_msg.right)
-        speed = (ros_msg.velocity)[0]
-        speed = self._throttle(speed)
-        # print(speed)
+        ros_msg.left = self._throttle(ros_msg.left)
+        ros_msg.right = self._throttle(ros_msg.right)
         for bridge in self._bridges:
             bridge.start_time = t.process_time()
             if bridge.get_state_string() == "Armed":
-                # bridge.change_speeds(Speed(ros_msg.left, ros_msg.right))
-                bridge.change_speeds(Speed(speed, speed))
+                bridge.change_speeds(Speed(ros_msg.left, ros_msg.right))
 
     def _throttle(self, speed: float) -> float:
         """Throttles the speed to a range of [-1.0, 1.0].
