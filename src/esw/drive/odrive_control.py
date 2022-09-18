@@ -23,6 +23,12 @@ from odrive.utils import dump_errors
 import rospy
 from sensor_msgs.msg import JointState
 from mrover.msg import DriveStateData, DriveVelData
+from enum import Enum
+
+
+class Axis(Enum):
+    LEFT = 0
+    RIGHT = 1
 
 
 class Speed:
@@ -132,10 +138,7 @@ class Modrive:
 
     def dump_errors(self) -> None:
         """Dump errors and prints them out."""
-
-        # dump_errors(self._odrive, True)
         self._reset_errors()
-        rospy.loginfo("Dumped errors")
 
     def get_measured_current(self, axis: str) -> float:
         """Returns the measured current of the requested axis of the ODrive in
@@ -199,7 +202,6 @@ class Modrive:
         This function is usually called if the ODrive has previously errored
         out or was disconnected.
         """
-        rospy.loginfo("Resetting watchdog")
         self._disable_watchdog()
         self._reset_errors()
         self._enable_watchdog()
@@ -340,7 +342,7 @@ class State(object):
     """
 
     def __init__(self) -> None:
-        rospy.loginfo("Processing current state: %s", str(self))
+        return
 
     def on_event(self, event: ODriveEvent, modrive: Modrive):
         """Handles events that are delegated to this State."""
@@ -375,7 +377,6 @@ class DisconnectedState(State):
             modrive.disarm()
             modrive.reset_watchdog()
             modrive.arm()
-            rospy.loginfo("Currently disconnected state but now arming. Should be armed state.")
             return ArmedState()
         return self
 
@@ -440,24 +441,18 @@ class ODriveBridge(object):
         self._state_pub = rospy.Publisher("drive_state_data", DriveStateData, queue_size=1)
         self._vel_pub = rospy.Publisher("drive_vel_data", DriveVelData, queue_size=1)
 
-    def change_left_speeds(self, speed: float) -> None:
+    def change_axis_speed(self, axis: Axis, speed: float) -> None:
         """Sets the self._speed to the requested speeds. The speeds must be in
         the range [-1.0, 1.0].
-        :param speed: A speed object that has the requested speeds.
+        :param axis: An Axis object that is either Axis.LEFT or Axis.RIGHT
+        :param speed: A float that has the requested speed of the axis.
         """
         assert -1.0 <= speed <= 1.0, "speed must be in range[-1.0, 1.0]"
         self._speed_lock.acquire()
-        self._speed = Speed(speed, self._speed.right)
-        self._speed_lock.release()
-
-    def change_right_speeds(self, speed: float) -> None:
-        """Sets the self._speed to the requested speeds. The speeds must be in
-        the range [-1.0, 1.0].
-        :param speed: A speed object that has the requested speeds.
-        """
-        assert -1.0 <= speed <= 1.0, "speed must be in range[-1.0, 1.0]"
-        self._speed_lock.acquire()
-        self._speed = Speed(self._speed.left, speed)
+        if axis == Axis.LEFT: 
+            self._speed = Speed(speed, self._speed.right)
+        else:
+            self._speed = Speed(self._speed.left, speed)
         self._speed_lock.release()
 
     def get_state_string(self) -> str:
@@ -488,8 +483,8 @@ class ODriveBridge(object):
                 if not previously_lost_comms:
                     rospy.loginfo("Lost comms")
                     previously_lost_comms = True
-                self.change_left_speeds(0.0)
-                self.change_right_speeds(0.0)
+                self.change_axis_speed(Axis.LEFT, 0.0)
+                self.change_axis_speed(Axis.RIGHT, 0.0)
             elif previously_lost_comms:
                 previously_lost_comms = False
                 rospy.loginfo("Regained comms")
@@ -508,9 +503,8 @@ class ODriveBridge(object):
             switching of states.
         """
         try:
-            rospy.loginfo("On event called, ODrive event: %s", str(event))
             self._state = self._state.on_event(event, self._modrive)
-            rospy.loginfo("Current state is now: %s", self.get_state_string())
+            rospy.loginfo("Current state for %s ODrive is now: %s", self._pair, self.get_state_string())
             self._publish_state_msg(self.get_state_string())
         except DisconnectedError:
             return
@@ -520,9 +514,9 @@ class ODriveBridge(object):
         This uses the ODrive library to look for an ODrive by its ID.
         """
         odrive_id = self._id
-        rospy.loginfo("Looking for ODrive with ID %s", odrive_id)
+        rospy.loginfo("Looking for %s ODrive with ID %s", self._pair, odrive_id)
         odrive_object = odrive.find_any(serial_number=odrive_id)
-        rospy.loginfo("Found ODrive")
+        rospy.loginfo("Found %s ODrive with ID %s", self._pair, odrive_id)
         self._modrive = Modrive(odrive_object)
         self._modrive.set_current_lim(self._current_lim)
 
@@ -561,7 +555,6 @@ class ODriveBridge(object):
         ros_msg.state = state
         ros_msg.pair = self._pair
         self._state_pub.publish(ros_msg)
-        rospy.loginfo("The state is now %s", state)
 
     def _update(self) -> None:
         """Updates based on the current state.
@@ -587,7 +580,6 @@ class ODriveBridge(object):
             self._speed_lock.release()
             self._modrive.set_vel("left", left_speed)
             self._modrive.set_vel("right", right_speed)
-            rospy.loginfo("Left speed is %s and right speed is %s", left_speed, right_speed)
 
         elif str(self._state) == "DisconnectedState":
             self._connect()
@@ -606,8 +598,8 @@ class Application(object):
 
         rospy.init_node(f"odrive_control")
         self._bridges = [ODriveBridge("front"), ODriveBridge("middle"), ODriveBridge("back")]
-        rospy.Subscriber("/drive_cmd/wheels/left", JointState, self._drive_left_vel_cmd_callback)
-        rospy.Subscriber("/drive_cmd/wheels/right", JointState, self._drive_right_vel_cmd_callback)
+        rospy.Subscriber("/drive_cmd/wheels/left", JointState, self._drive_vel_cmd_callback, Axis.LEFT)
+        rospy.Subscriber("/drive_cmd/wheels/right", JointState, self._drive_vel_cmd_callback, Axis.RIGHT)
 
     def run(self):
         """Runs the publish data loop and watchdog loops for all bridges"""
@@ -629,35 +621,20 @@ class Application(object):
 
         rospy.spin()
 
-    def _drive_left_vel_cmd_callback(self, ros_msg: JointState) -> None:
-        """Calls the change left speeds function.
+    def _drive_vel_cmd_callback(self, ros_msg: JointState, axis: Axis) -> None:
+        """Calls the change_axis_speed function.
         Note that this does NOT actually change speed that the ODrive comands
         the motors at. One must wait for the ODriveBridge._update() function
         to be called for that to happen.
         :param ros_msg: A ROS message that is JointState.
+        :param axis: An Axis enum that is either Axis.LEFT or Axis.RIGHT
         """
         velocity = ros_msg.velocity[0]
         velocity = self._throttle(velocity)
         for bridge in self._bridges:
             bridge.start_time = t.process_time()
             if bridge.get_state_string() == "Armed":
-                # TODO - COMBINE CHANGE_LEFT_SPEEDS AND RIGHT SPEEDS TO ONE FUNCTION
-                # USING ENUM FOR LEFT AND RIGHT
-                bridge.change_left_speeds(velocity)
-
-    def _drive_right_vel_cmd_callback(self, ros_msg: JointState) -> None:
-        """Calls the change right speeds function.
-        Note that this does NOT actually change speed that the ODrive comands
-        the motors at. One must wait for the ODriveBridge._update() function
-        to be called for that to happen.
-        :param ros_msg: A ROS message that is JointState.
-        """
-        velocity = ros_msg.velocity[0]
-        velocity = self._throttle(velocity)
-        for bridge in self._bridges:
-            bridge.start_time = t.process_time()
-            if bridge.get_state_string() == "Armed":
-                bridge.change_right_speeds(velocity)
+                bridge.change_axis_speed(axis, velocity)
 
     def _throttle(self, speed: float) -> float:
         """Throttles the speed to a range of [-1.0, 1.0].

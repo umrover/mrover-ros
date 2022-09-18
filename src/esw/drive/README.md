@@ -19,7 +19,6 @@
 [Checking if There are Errors](#checking-if-there-are-errors) \
 [Common Errors](#common-errors) \
 [TODO](#todo) \
-[TODO - ROS Migration](#todo---ros-migration)
 
 ---
 
@@ -134,11 +133,15 @@ The ratios must be consistent with the actual conversions between incoming comma
 
 ## Topics - Subscriber
 
-#### Drive Velocity Command
-Message: JointState.msg "drive_vel_cmd" \
+#### Left Drive Velocity Command
+Message: JointState.msg "/drive_cmd/wheels/left" \
 Publisher: teleop \
 Subscriber: odrives
 
+#### Right Drive Velocity Command
+Message: JointState.msg "/drive_cmd/wheels/left" \
+Publisher: teleop \
+Subscriber: odrives
 ---
 
 ## Topics - Publisher
@@ -332,7 +335,4 @@ Find someone on ESW. Or just go ahead and contact madcowswe himself.
 ---
 
 ## TODO
-- [ ] SOMEONE DOUBLE CHECK IF THE meters_to_turns_ratio IS CORRECT... IT IS LIKELY WRONG.
-I ADDED ASSERTS IN CASE I MESSED UP SOMEWHERE.
-- [ ] Test with ROS
-- [ ] Make sure messages and topics are consistent with the gui and teleop programs
+- [ ] Stress test
