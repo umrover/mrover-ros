@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 
 from __future__ import annotations
+import signal
 import graphviz  # type: ignore
 import time
 from PyQt5.QtWidgets import *  # type: ignore
@@ -9,10 +10,12 @@ from PyQt5.QtGui import QPainter  # type: ignore
 from PyQt5.QtSvg import QSvgRenderer  # type:ignore
 
 import rospy
+import sys
 from smach_msgs.msg import SmachContainerStatus, SmachContainerStructure
 from threading import Lock
 from dataclasses import dataclass
 from typing import Optional, List, Dict
+
 
 STRUCTURE_TOPIC = "/smach/container_structure"
 STATUS_TOPIC = "/smach/container_status"
@@ -108,6 +111,7 @@ class GUI(QWidget):  # type: ignore
 
 
 if __name__ == "__main__":
+    signal.signal(signal.SIGINT, signal.SIG_DFL)
     state_machine = StateMachine()
     rospy.init_node("smach_visualizer", anonymous=False, disable_signals=True, log_level=rospy.INFO)
     rospy.Subscriber(
@@ -123,4 +127,6 @@ if __name__ == "__main__":
     app = QApplication([])  # type: ignore
     g = GUI(state_machine)
     g.show()
-    app.exec()
+    app.exec_()
+    
+
