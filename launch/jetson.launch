@@ -3,7 +3,7 @@
   <rosparam command="load" file="$(find mrover)/config/teleop.yaml" />
   <node name="jetson_teleop" pkg="mrover" type="jetson_teleop.py"/>
   <!--
-    Run the drive programs
+    Run the drive program
   -->
   <node name="odrive_control" pkg="mrover" type="odrive_control.py" output="screen"></node>
   <rosparam command="load" file="$(find mrover)/config/odrive_control.yaml" />
