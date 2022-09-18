@@ -34,23 +34,7 @@ export default {
                 return button.value
               })
 
-<<<<<<< HEAD
-<<<<<<< HEAD
               let axes=gamepad.axes
-=======
-              //Deadzone applied to all axis
-              const deadzone = 0.05
-              let axes = gamepad.axes.map((axis) => {
-                return Math.abs(axis) <= deadzone ? 0 : axis
-              })
-              
-              //Invert Forward/Back Stick, forward is normally -1
-              axes[this.joystick_mapping.forward_back] = this.drive_config.forward_back.multiplier * axes[this.joystick_mapping.forward_back]
-              axes[this.joystick_mapping.left_right] = this.drive_config.left_right.multiplier * axes[this.joystick_mapping.left_right]
->>>>>>> Changed wheel control interface back to [-1,1]
-=======
-              let axes=gamepad.axes
->>>>>>> Moved axis multiplier logic to jetson_teleop
 
               const joystickData = {
                 axes: axes,

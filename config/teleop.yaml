@@ -21,11 +21,11 @@ teleop:
       multiplier: 1
   drive_controls:
     forward_back:
-      multiplier: -1
+      multiplier: 1
     left_right:
-      multiplier: 1
+      multiplier: -1
     twist:
-      multiplier: 1
+      multiplier: -1
   xbox_mappings:
     left_js_x: 0
     left_js_y: 1
