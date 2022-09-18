@@ -78,7 +78,6 @@ add_message_files(
         FILES
         Course.msg
         DriveStateData.msg
-        DriveVelCmd.msg
         DriveVelData.msg
         Waypoint.msg
         Chassis.msg

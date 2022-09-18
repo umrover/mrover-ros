@@ -135,7 +135,7 @@ The ratios must be consistent with the actual conversions between incoming comma
 ## Topics - Subscriber
 
 #### Drive Velocity Command
-Message: [`DriveVelCmd.msg`](../../../msg/DriveVelCmd.msg) "drive_vel_cmd" \
+Message: JointState.msg "drive_vel_cmd" \
 Publisher: teleop \
 Subscriber: odrives
 
