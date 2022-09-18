@@ -12,14 +12,6 @@ from sensor_msgs.msg import Joy, JointState
 def quadratic(val):
     return copysign(val**2, val)
 
-<<<<<<< HEAD
-<<<<<<< HEAD
-
-=======
->>>>>>> Changed wheel control interface back to [-1,1]
-=======
-
->>>>>>> Moved axis multiplier logic to jetson_teleop
 # If below threshold, make output zero
 def deadzone(magnitude, threshold):
     temp_mag = abs(magnitude)
@@ -52,8 +44,6 @@ class Drive:
     def teleop_drive_callback(self, msg):
         joints: typing.Dict[str, JointState] = {}
 
-<<<<<<< HEAD
-<<<<<<< HEAD
         forward_back = deadzone(
             msg.axes[self.joystick_mappings["forward_back"]] * self.drive_config["forward_back"]["multiplier"], 0.05
         )
@@ -61,27 +51,10 @@ class Drive:
             msg.axes[self.joystick_mappings["left_right"]] * self.drive_config["left_right"]["multiplier"]
             + msg.axes[self.joystick_mappings["twist"]] * self.drive_config["twist"]["multiplier"],
             0.05,
-=======
-        forward_back = deadzone(msg.axes[self.joystick_mappings["forward_back"]], 0.05)
-        left_right = deadzone(
-            msg.axes[self.joystick_mappings["left_right"]] + msg.axes[self.joystick_mappings["twist"]], 0.05
->>>>>>> Changed wheel control interface back to [-1,1]
-=======
-        forward_back = deadzone(
-            msg.axes[self.joystick_mappings["forward_back"]] * self.drive_config["forward_back"]["multiplier"], 0.05
         )
-        left_right = deadzone(
-            msg.axes[self.joystick_mappings["left_right"]] * self.drive_config["left_right"]["multiplier"]
-            + msg.axes[self.joystick_mappings["twist"]] * self.drive_config["twist"]["multiplier"],
-            0.05,
->>>>>>> Moved axis multiplier logic to jetson_teleop
-        )
-
-        # Change Dampen range from [-1,1] to [0,1]
-        dampen = msg.axes[self.joystick_mappings["dampen"]] * -0.5 + 0.5
 
         # Super small deadzone so we can safely e-stop with dampen switch
-        dampen = deadzone(dampen, 0.01)
+        dampen = deadzone(msg.axes[self.joystick_mappings["dampen"]], 0.01)
 
         left = dampen * (forward_back + left_right)
         right = dampen * (forward_back - left_right)
