@@ -28,7 +28,7 @@ export default {
         for (let i = 0; i < 4; i++) {
           const gamepad = gamepads[i]
           if (gamepad) {
-            if (gamepad.id.includes('Xbox')) {
+            if (gamepad.id.includes('Logitech')) {
             
               let buttons = gamepad.buttons.map((button) =>{
                 return button.value

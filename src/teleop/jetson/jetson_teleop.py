@@ -77,8 +77,11 @@ class Drive:
 >>>>>>> Moved axis multiplier logic to jetson_teleop
         )
 
+        # Change Dampen range from [-1,1] to [0,1]
+        dampen = msg.axes[self.joystick_mappings["dampen"]] * -0.5 + 0.5
+
         # Super small deadzone so we can safely e-stop with dampen switch
-        dampen = deadzone(msg.axes[self.joystick_mappings["dampen"]], 0.01)
+        dampen = deadzone(dampen, 0.01)
 
         left = dampen * (forward_back + left_right)
         right = dampen * (forward_back - left_right)
