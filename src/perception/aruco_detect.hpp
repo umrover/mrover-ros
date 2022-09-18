@@ -41,9 +41,7 @@ struct IntermediateFiducial {
    int id = -1;
    XYZFilter fidInOdomXYZ;
    int timesSeen = 0;
-   //THIS STRUCT ISN'T BEING USED YET FOR THE RUDIMENTARY CACHE, JUST HERE FOR SAFEKEEPING
 };
- 
  
 /**
 * @brief Filtered global positioning of fiducials that persist even when off screen.
@@ -51,15 +49,6 @@ struct IntermediateFiducial {
 struct PersistentFiducial {
    int id = -1;
    XYZFilter fidInOdomXYZ;
-   // MeanMedianFilter<double> fidInOdomX;
-   // MeanMedianFilter<double> fidInOdomY;
-   // MeanMedianFilter<double> fidInOdomZ;
- 
-   // void setFilterParams(size_t count, double proportion);
- 
-   // void addReading(SE3 const& fidInOdom);
- 
-   // [[nodiscard]] SE3 getFidInOdom() const;
 };
  
 class FiducialsNode {
