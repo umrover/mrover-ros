@@ -5,9 +5,4 @@
   <include file="$(find rosbridge_server)/launch/rosbridge_websocket.launch"></include>
   <!--Node for running the gui with bash script-->
   <node name="gui" pkg="mrover" type="gui_run.sh" cwd="node"/>
-  <!--Node for teleop control callbacks-->
-  <node name="jetson_teleop" pkg="mrover" type="jetson_teleop.py"/>
-
-  <node name="odrive_control" pkg="mrover" type="odrive_control.py" output="screen"></node>
-  <rosparam command="load" file="$(find mrover)/config/odrive_control.yaml" />
 </launch>
