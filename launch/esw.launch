@@ -1,5 +1,6 @@
 <launch>
   <!--Node for teleop control callbacks-->
+  <rosparam command="load" file="$(find mrover)/config/teleop.yaml" />
   <node name="jetson_teleop" pkg="mrover" type="jetson_teleop.py"/>
   <!--
     Run the drive programs
