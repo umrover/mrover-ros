@@ -1,7 +1,6 @@
 #include "perception.hpp"
 
 // ROS Headers, ros namespace
-#include <image_transport/image_transport.h>
 #include <ros/init.h>
 
 int main(int argc, char** argv) {
@@ -18,17 +17,18 @@ int main(int argc, char** argv) {
 
 namespace mrover {
 
-    Perception::Perception() : mNodeHandle{} {
-        image_transport::ImageTransport imageTransport(mNodeHandle);
+    Perception::Perception() : mNodeHandle{}, mImageTransport{mNodeHandle} {
         // Subscribe to camera image messages
         // Every time another node publishes to this topic we will be notified
         // Specifically the callback we passed will be invoked
-        imageTransport.subscribe("camera/color/image_raw", 1, &Perception::imageCallback, this);
+        mImageSubscriber = mImageTransport.subscribe("camera/color/image_raw", 1, &Perception::imageCallback, this);
 
         // Create a publisher for our tag topic
         // See: http://wiki.ros.org/ROS/Tutorials/WritingPublisherSubscriber%28c%2B%2B%29
         // TODO: uncomment me!
-        // mTagPublisher = mNodeHandle.advertise<StarterProjectTag>("tag", 1);
+        mTagPublisher = mNodeHandle.advertise<StarterProjectTag>("tag", 1);
+
+        mTagDictionary = cv::aruco::getPredefinedDictionary(0);
     }
 
     void Perception::imageCallback(sensor_msgs::ImageConstPtr const& image) {

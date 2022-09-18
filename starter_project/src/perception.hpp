@@ -17,6 +17,7 @@
 #include <ros/publisher.h>
 #include <sensor_msgs/Image.h>
 #include <sensor_msgs/PointCloud2.h>
+#include <image_transport/image_transport.h>
 
 // TODO: band-aid fix until we figure out why CMake doesn't generate message first
 #if __has_include(<mrover/StarterProjectTag.h>)
@@ -37,6 +38,8 @@ namespace mrover {
     class Perception {
     private:
         ros::NodeHandle mNodeHandle;
+        image_transport::ImageTransport mImageTransport;
+        image_transport::Subscriber mImageSubscriber;
         cv::Ptr<cv::aruco::DetectorParameters> mTagDetectorParams;
         cv::Ptr<cv::aruco::Dictionary> mTagDictionary;
         std::vector<std::vector<cv::Point2f>> mTagCorners;
