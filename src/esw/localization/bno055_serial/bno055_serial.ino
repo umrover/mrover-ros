@@ -26,10 +26,14 @@
 #define G 9.81
 
 ros::NodeHandle nh;
+
 sensor_msgs::Imu imu_msg;
 sensor_msgs::MagneticField mag_msg;
+sensor_msgs::Temperature temp_msg;
+
 ros::Publisher imu_pub("imu", &imu_msg);
 ros::Publisher mag_pub("magnetometer", &mag_msg);
+ros::Publisher temp_pub("imu_temp", &temp_msg);
 
 Adafruit_BNO055 imu = Adafruit_BNO055(SENSOR_ID, I2C_ADDRESS);
 
@@ -39,6 +43,7 @@ void setup()
   nh.initNode();
   nh.advertise(imu_pub);
   nh.advertise(mag_pub);
+  nh.advertise(temp_pub);
 
   // init the IMU, defaults to NDOF mode
   if (!imu.begin())
@@ -92,7 +97,7 @@ void loop()
 
   // TODO: fill in covariance
 
-  // TODO: send temperature message
+  temp_msg.temperature = imu.getTemp();
 
   // TODO: create custom calibration status message and publish it
   // Serial.print(system_cal, DEC);
@@ -102,8 +107,10 @@ void loop()
 
   // TODO: find out what getSystemStatus() does
 
+  // publish IMU data
   imu_pub.publish(&imu_msg);
-  mag_pub.publish(&mag_pub);
+  mag_pub.publish(&mag_msg);
+  temp_pub.publish(&temp_msg);
   nh.spinOnce();
   delay(BNO055_SAMPLERATE_DELAY_MS);
 }
