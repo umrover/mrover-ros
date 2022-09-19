@@ -102,7 +102,7 @@
         <visual name='visual'>
           <geometry>
             <mesh>
-              <uri>model://post/meshes/4x4_1000-0.dae</uri>
+              <uri>model://post/meshes/4x4_1000-1.dae</uri>
             </mesh>
           </geometry>
         </visual>
