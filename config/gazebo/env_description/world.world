@@ -76,13 +76,13 @@
       </link>
     </model>
     <model name='waypoint_post_2'>
-      <pose>-8.5 -5.5 0.5 0 0 4.71239</pose>
+      <pose>-3.5 -5.5 0.5 0 0 4.71239</pose>
       <static>1</static>
       <link name='link'>
         <collision name='collision'>
           <geometry>
             <mesh>
-              <uri>model://post/meshes/4x4_1000-0.dae</uri>
+              <uri>model://post/meshes/4x4_1000-1.dae</uri>
             </mesh>
           </geometry>
           <max_contacts>10</max_contacts>

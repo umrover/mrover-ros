@@ -7,6 +7,7 @@ import numpy as np
 
 from context import Context, Environment
 from state import BaseState
+from trajectory import Trajectory
 from dataclasses import dataclass
 from drive import get_drive_command
 from util.np_utils import normalized, perpendicular_2d
@@ -16,7 +17,7 @@ DRIVE_FWD_THRESH = 0.95
 
 APPROACH_DISTANCE = 2.0
 @dataclass
-class GateTrajectory:
+class GateTrajectory(Trajectory):
 
     @classmethod
     def spider_gate_trajectory(cls, approach_distance: float, gate: Gate, rover_position: np.ndarray) -> GateTrajectory:
@@ -46,17 +47,17 @@ class GateTrajectory:
         
         #get closest prepration point
         prep_distance_to_rover = [np.linalg.norm(point) - rover_position[0:2] for point in possible_preparation_points]
-        prep_idx = np.argmin(np.array(prep_distance_to_rover), axis = 0)
+        prep_idx = np.argmin(np.array(prep_distance_to_rover))
         closest_prep_point = possible_preparation_points[prep_idx]
 
         #get closest approach point (to selected prep point), set other one to victory point
         approach_dist_to_prep = [np.linalg.norm(point - closest_prep_point) for point in possible_approach_points]
-        approach_idx = np.argmin(np.array(approach_dist_to_prep), axis = 0)
+        approach_idx = np.argmin(np.array(approach_dist_to_prep))
         closest_approach_point = possible_approach_points[approach_idx]
         victory_point = possible_preparation_points[1 - approach_idx]
 
         coordinates = [closest_prep_point, closest_approach_point, victory_point]
-        coordinates = [c for c in coordinates]
+        coordinates = [np.hstack((c, np.array([0]))) for c in coordinates]
         return GateTrajectory(coordinates)
 
 
@@ -74,11 +75,10 @@ class GateTraverseState(BaseState):
     def evaluate(self, ud):
         # Check if a path has been generated and its associated with the same
         # waypoint as the previous one. Generate one if not
-        waypoint = self.context.course.current_waypoint()
         gate = self.context.env.current_gate()
         if gate is None:
             return "search"
-        if self.traj is None or self.traj.fid_id != waypoint.fiducial_id:
+        if self.traj is None:
             self.traj = GateTrajectory.spider_gate_trajectory(
                 APPROACH_DISTANCE,
                 gate,
@@ -98,4 +98,5 @@ class GateTraverseState(BaseState):
             if self.traj.increment_point():
                 return "done"
 
+        self.context.rover.send_drive_command(cmd_vel)
         return "gate_traverse"
