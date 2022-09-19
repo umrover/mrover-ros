@@ -3,6 +3,9 @@
 #include <Adafruit_BNO055.h>
 #include <utility/imumaths.h>
 
+#include <ros.h>
+#include <sensor_msgs/Imu.h>
+
 /* This driver uses the Adafruit unified sensor library (Adafruit_Sensor),
    which provides a common 'type' for sensor data and some helper functions.
 
@@ -17,86 +20,90 @@
    Connect GND to common ground
 */
 
-/* Set the delay between fresh samples */
 #define BNO055_SAMPLERATE_DELAY_MS (100)
 #define I2C_ADDRESS 0x28
 #define SENSOR_ID 55
-
 #define G 9.81
 
-Adafruit_BNO055 bno = Adafruit_BNO055(SENSOR_ID, I2C_ADDRESS);
+ros::NodeHandle nh;
+sensor_msgs::Imu imu_msg;
+sensor_msgs::MagneticField mag_msg;
+ros::Publisher imu_pub("imu", &imu_msg);
+ros::Publisher mag_pub("magnetometer", &mag_msg);
 
-void setup(void)
+Adafruit_BNO055 imu = Adafruit_BNO055(SENSOR_ID, I2C_ADDRESS);
+
+void setup()
 {
-  Serial.begin(115200);
+  // init ROS serial node
+  nh.initNode();
+  nh.advertise(imu_pub);
+  nh.advertise(mag_pub);
 
-  // init the IMU
-  if (!bno.begin())
+  // init the IMU, defaults to NDOF mode
+  if (!imu.begin())
   {
-    // There was a problem detecting the BNO055 ... check your connections
     Serial.print("Ooops, no BNO055 detected ... Check your wiring or I2C ADDR!");
     while (1);
   }
   delay(1000);
 
   // use the external crystal clock for better accuracy
-  bno.setExtCrystalUse(true);
+  imu.setExtCrystalUse(true);
 }
 
-void loop(void)
+void loop()
 {
   // get orientation, acceleration, and gyroscope data,
   // each from their own sensor event
-  sensors_event_t accelData, gyroData, magData;
-  imu::Quaternion orientationQuaternion;
+  sensors_event_t accel_data, gyro_data, mag_data;
+  imu::Quaternion orientation_quat;
 
-  orientationQuaternion = bno.getQuat();
-  bno.getEvent(&accelData, Adafruit_BNO055::VECTOR_ACCELEROMETER);
-  bno.getEvent(&gyroData, Adafruit_BNO055::VECTOR_GYROSCOPE);
-  bno.getEvent(&magData, Adafruit_BNO055::VECTOR_MAGNETOMETER);
+  orientationQuaternion = imu.getQuat();
+  imu.getEvent(&accel_data, Adafruit_BNO055::VECTOR_ACCELEROMETER);
+  imu.getEvent(&gyro_data, Adafruit_BNO055::VECTOR_GYROSCOPE);
+  imu.getEvent(&mag_data, Adafruit_BNO055::VECTOR_MAGNETOMETER);
 
   // get calibration status for each sensor
   uint8_t system_cal, gyro_cal, accel_cal, mag_cal;
   system_cal = gyro_cal = accel_cal = mag_cal = 0;
-  bno.getCalibration(&system_cal, &gyro_cal, &accel_cal, &mag_cal);
+  imu.getCalibration(&system_cal, &gyro_cal, &accel_cal, &mag_cal);
 
-  // send the floating point data over serial in the following format:
-  // accel_x accel_y accel_z gyro_x gyro_y gyro_z bearing sys_calibration gyro_calibration accel_calibration mag_calibration
-  Serial.print(accelData.acceleration.x / G, 4);
-  Serial.print(" ");
-  Serial.print(accelData.acceleration.y / G, 4);
-  Serial.print(" ");
-  Serial.print(accelData.acceleration.z / G, 4);
+  // populate IMU ROS message
+  imu_msg.orientation.x = orientation_quat.x();
+  imu_msg.orientation.y = orientation_quat.y();
+  imu_msg.orientation.z = orientation_quat.z();
+  imu_msg.orientation.w = orientation_quat.w();
 
-  Serial.print(" ");
-  Serial.print(gyroData.gyro.x * (180/PI), 4);
-  Serial.print(" ");
-  Serial.print(gyroData.gyro.y * (180/PI), 4);
-  Serial.print(" ");
-  Serial.print(gyroData.gyro.z * (180/PI), 4);
+  imu_msg.linear_acceleration.x = accel_data.acceleration.x;
+  imu_msg.linear_acceleration.y = accel_data.acceleration.y;
+  imu_msg.linear_acceleration.z = accel_data.acceleration.z;
 
-  Serial.print(" ");
-  Serial.print(magData.magnetic.x, 4);
-  Serial.print(" ");
-  Serial.print(magData.magnetic.y, 4);
-  Serial.print(" ");
-  Serial.print(magData.magnetic.z, 4);
+  imu_msg.angular_velocity.x = gyro_data.gyro.x;
+  imu_msg.angular_velocity.y = gyro_data.gyro.y;
+  imu_msg.angular_velocity.z = gyro_data.gyro.z;
 
-  Serial.print(" ");
-  Serial.print(system_cal, DEC);
-  Serial.print(" ");
-  Serial.print(gyro_cal, DEC);
-  Serial.print(" ");
-  Serial.print(accel_cal, DEC);
-  Serial.print(" ");
-  Serial.print(mag_cal, DEC);
+  // TODO: fill in convariance
 
-  // print the bearing around the axis perpendicular to the board,
-  // for some reason it is labeled as the x axis for orientation data,
-  // should be the Z axis
-  Serial.print(" ");
-  Serial.println(orientationData.orientation.x, 4);
+  // populate magnetometer ROS message
+  mag_msg.magnetic_field.x = mag_data.magnetic.x;  
+  mag_msg.magnetic_field.y = mag_data.magnetic.y;  
+  mag_msg.magnetic_field.z = mag_data.magnetic.z;  
 
-  // wait the specified delay before requesting nex data
+  // TODO: fill in covariance
+
+  // TODO: send temperature message
+
+  // TODO: create custom calibration status message and publish it
+  // Serial.print(system_cal, DEC);
+  // Serial.print(gyro_cal, DEC);
+  // Serial.print(accel_cal, DEC);
+  // Serial.print(mag_cal, DEC);
+
+  // TODO: find out what getSystemStatus() does
+
+  imu_pub.publish(&imu_msg);
+  mag_pub.publish(&mag_pub);
+  nh.spinOnce();
   delay(BNO055_SAMPLERATE_DELAY_MS);
 }
