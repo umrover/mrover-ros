@@ -1,0 +1,4 @@
+<launch>
+    <include file="$(find rosbridge_server)/launch/rosbridge_websocket.launch"></include>
+    <node name="gui" pkg="mrover" type="gui_starter.sh" cwd="node"/>
+</launch>
