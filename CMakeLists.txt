@@ -73,6 +73,7 @@ add_message_files(
         FILES
         Course.msg
         Waypoint.msg
+        CalibrationStatus.msg
 )
 
 ## Generate services in the 'srv' folder
