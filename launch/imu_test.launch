@@ -1,0 +1,8 @@
+<launch>
+  <arg name="rvizconfig" default="$(find mrover)/config/rviz/navigation.rviz" />
+  <node name="rviz" pkg="rviz" type="rviz" args="-d $(arg rvizconfig)" required="true" />
+
+  <!-- Serial adapter node that publishes messages from serial nodes -->
+  <!-- TODO: put port in a rosparam config file -->
+  <node name="serial_adapter" pkg="rosserial_arduino" type="serial_node.py" args="_port:=/dev/ttyUSB0" />
+</launch>
