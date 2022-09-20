@@ -64,6 +64,7 @@
   <exec_depend>joint_state_publisher</exec_depend>
   <exec_depend>robot_state_publisher</exec_depend>
   <exec_depend>ros_numpy</exec_depend>
+  <exec_depend>rosbridge_server</exec_depend>
 
   <!-- Visualization -->
   <depend>rviz</depend>
@@ -90,13 +91,15 @@
   <depend>dynamic_reconfigure</depend>
   <depend>python3-cairosvg</depend>
   <depend>python3-joblib</depend>
-  <depend>aruco_detect</depend>
 
   <!-- Localization -->
   <depend>robot_localization</depend>
 
   <!-- Navigation -->
   <depend>smach_ros</depend>
+
+  <!-- Teleop -->
+  <depend>teleop_twist_joy</depend>
 
   <!-- Test -->
   <test_depend>rosunit</test_depend>

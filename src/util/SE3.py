@@ -92,7 +92,7 @@ class SE3:
         :param p: another SE3
         :returns: euclidean distance between the two SE3s
         """
-        return np.linalg.norm(p.position - self.position)
+        return np.linalg.norm(p.position - self.position)  # type: ignore
 
     def is_approx(self, p: SE3, tolerance=1e-8) -> bool:
         """

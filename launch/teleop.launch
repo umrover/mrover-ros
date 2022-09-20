@@ -1,27 +1,17 @@
 <launch>
-  <arg name="model" default="$(find mrover)/rover_description/rover.urdf" />
-  <arg name="gui" default="false" />
   <param name="robot_description" command="xacro $(find mrover)/rover_description/rover.xacro" />
-  <arg name="rvizconfig" default="$(find mrover)/config/rviz/default.rviz" />
-  <arg name="gazebo_config_path" default="$(find mrover)/config/gazebo" />
-
-  <node if="$(arg gui)" name="joint_state_publisher" pkg="joint_state_publisher_gui" type="joint_state_publisher_gui" />
-  <node unless="$(arg gui)" name="joint_state_publisher" pkg="joint_state_publisher" type="joint_state_publisher" />
-  <node name="robot_state_publisher" pkg="robot_state_publisher" type="robot_state_publisher" />
-
-  <include file="$(find gazebo_ros)/launch/empty_world.launch">
-    <env name="GAZEBO_MODEL_PATH" value="$(arg gazebo_config_path)/env_description" />
-    <arg name="world_name" value="$(arg gazebo_config_path)/env_description/world.world" />
-    <arg name="paused" value="false" />
-    <arg name="use_sim_time" value="true" />
-    <arg name="gui" value="true" />
-    <arg name="headless" value="false" />
-    <arg name="debug" value="false" />
-    <arg name="verbose" default="false" />
-    <arg name="gui_required" value="true" />
-  </include>
-
-  <node name="mrover_sim_spawn" pkg="gazebo_ros" type="spawn_model" output="screen" args="
-                        -urdf -param robot_description
-                        -model rover" />
+  <rosparam command="load" file="$(find mrover)/config/teleop.yaml" />
+  
+  <include file="$(find rosbridge_server)/launch/rosbridge_websocket.launch"></include>
+  <!--Node for running the gui with bash script-->
+  <node name="gui" pkg="mrover" type="gui_run.sh" cwd="node"/>
+  <!--Node for teleop control callbacks-->
+  <node name="jetson_teleop" pkg="mrover" type="jetson_teleop.py"/>
+  <!--Translate joystick inputs to twist velocity values-->
+  <node name="teleop_twist_joy" pkg="teleop_twist_joy" type="teleop_node">
+    <param name="enable_button" value="-1"/>
+    <param name="enable_turbo_button" value="0"/>
+    <remap from="/joy" to="/joystick" />
+    <remap from="/cmd_vel" to="/drive_cmd_twist" />
+  </node>
 </launch>

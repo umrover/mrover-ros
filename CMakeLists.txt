@@ -22,6 +22,8 @@ find_package(catkin REQUIRED COMPONENTS
         fiducial_msgs
         dynamic_reconfigure
         message_generation
+        rosbridge_server
+        teleop_twist_joy
         )
 
 find_package(OpenCV REQUIRED)
@@ -43,6 +45,9 @@ link_directories(${GAZEBO_LIBRARY_DIRS})
 ## modules and global scripts declared therein get installed
 ## See http://ros.org/doc/api/catkin/html/user_guide/setup_dot_py.html
 catkin_python_setup()
+
+# Subdirectories before message declarations
+add_subdirectory(starter_project/teleop)
 
 ################################################
 ## Declare ROS messages, services and actions ##
@@ -74,6 +79,7 @@ add_message_files(
         Course.msg
         Waypoint.msg
         CalibrationStatus.msg
+        Chassis.msg
 )
 
 ## Generate services in the 'srv' folder

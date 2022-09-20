@@ -1,5 +1,5 @@
 ## Summary
-Addresses Issue: # (Your issue number here) 
+Closes #(Your issue number here)
 
 What features did you add, bugs did you fix, etc? 
 
