@@ -1,6 +1,0 @@
-<launch>
-  <arg name="rvizconfig" default="$(find mrover)/config/rviz/navigation.rviz" />
-  <node name="rviz" pkg="rviz" type="rviz" args="-d $(arg rvizconfig)" required="true" />
-  <rosparam command="load" file="$(find mrover)/config/esw.yaml" />
-  <node name="imu_driver" pkg="mrover" type="imu_driver.py" />
-</launch>

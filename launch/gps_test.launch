@@ -1,9 +1,0 @@
-<launch>
-  <arg name="rvizconfig" default="$(find mrover)/config/rviz/navigation.rviz" />
-  <node name="rviz" pkg="rviz" type="rviz" args="-d $(arg rvizconfig)" required="true" />
-
-  <!-- TODO: put port in a rosparam config file -->
-  <!-- args="_port:=/dev/ttyACM0 _baud:=115200" -->
-  <rosparam command="load" file="$(find mrover)/config/esw.yaml" />
-  <node name="gps_driver" pkg="nmea_navsat_driver" type="nmea_serial_driver" />
-</launch>
