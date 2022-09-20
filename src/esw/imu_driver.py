@@ -38,13 +38,17 @@ def main():
                 break
 
         try:
+            # parse data into a list of floats
             vals = [float(val.strip()) for val in line.split()]
+
+            # convert calibration values to ints
+            vals[-4:] = [int(val) for val in vals[-4:]]
         except ValueError:
             vals = []
             print("invalid msg format")
 
-        print("vals: ", vals)
-        
+        # print("vals: ", vals)
+
         # TODO: should we assign timestamps in the arduino driver and send them over serial with the rest of the data?
         # TODO: add calibration msg
         # TODO: figure out if linear acceleration is different from our acceleration
@@ -61,25 +65,20 @@ def main():
                 imu_msg.orientation.y,
                 imu_msg.orientation.z,
                 imu_msg.orientation.w,
-
-                imu_msg.linear_acceleration.x, 
+                imu_msg.linear_acceleration.x,
                 imu_msg.linear_acceleration.y,
-                imu_msg.linear_acceleration.z, 
-
+                imu_msg.linear_acceleration.z,
                 imu_msg.angular_velocity.x,
                 imu_msg.angular_velocity.y,
                 imu_msg.angular_velocity.z,
-
                 mag_msg.magnetic_field.x,
                 mag_msg.magnetic_field.y,
                 mag_msg.magnetic_field.z,
-
                 temp_msg.temperature,
-
                 calibration_msg.system_calibration,
                 calibration_msg.gyroscope_calibration,
                 calibration_msg.accelerometer_calibration,
-                calibration_msg.magnetometer_calibration
+                calibration_msg.magnetometer_calibration,
             ) = vals
 
         except (IndexError, ValueError):
@@ -99,7 +98,7 @@ def main():
         mag_pub.publish(mag_msg)
         temp_pub.publish(temp_msg)
         calibration_pub.publish(calibration_msg)
-        
+
 
 if __name__ == "__main__":
     main()
