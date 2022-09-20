@@ -2,7 +2,6 @@
 # Node for teleop-related callback functions
 
 from math import copysign
-from turtle import forward
 import typing
 from enum import IntEnum
 import rospy as ros
