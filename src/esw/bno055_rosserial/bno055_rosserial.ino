@@ -1,3 +1,5 @@
+#define USE_USBCON
+
 #include <Wire.h>
 #include <Adafruit_Sensor.h>
 #include <Adafruit_BNO055.h>
@@ -5,6 +7,8 @@
 
 #include <ros.h>
 #include <sensor_msgs/Imu.h>
+#include <sensor_msgs/MagneticField.h>
+#include <sensor_msgs/Temperature.h>
 
 /* This driver uses the Adafruit unified sensor library (Adafruit_Sensor),
    which provides a common 'type' for sensor data and some helper functions.
@@ -35,7 +39,7 @@ ros::Publisher imu_pub("imu", &imu_msg);
 ros::Publisher mag_pub("magnetometer", &mag_msg);
 ros::Publisher temp_pub("imu_temp", &temp_msg);
 
-Adafruit_BNO055 imu = Adafruit_BNO055(SENSOR_ID, I2C_ADDRESS);
+Adafruit_BNO055 bno_imu = Adafruit_BNO055(SENSOR_ID, I2C_ADDRESS);
 
 void setup()
 {
@@ -46,7 +50,7 @@ void setup()
   nh.advertise(temp_pub);
 
   // init the IMU, defaults to NDOF mode
-  if (!imu.begin())
+  if (!bno_imu.begin())
   {
     Serial.print("Ooops, no BNO055 detected ... Check your wiring or I2C ADDR!");
     while (1);
@@ -54,7 +58,7 @@ void setup()
   delay(1000);
 
   // use the external crystal clock for better accuracy
-  imu.setExtCrystalUse(true);
+  bno_imu.setExtCrystalUse(true);
 }
 
 void loop()
@@ -64,15 +68,15 @@ void loop()
   sensors_event_t accel_data, gyro_data, mag_data;
   imu::Quaternion orientation_quat;
 
-  orientationQuaternion = imu.getQuat();
-  imu.getEvent(&accel_data, Adafruit_BNO055::VECTOR_ACCELEROMETER);
-  imu.getEvent(&gyro_data, Adafruit_BNO055::VECTOR_GYROSCOPE);
-  imu.getEvent(&mag_data, Adafruit_BNO055::VECTOR_MAGNETOMETER);
+  orientation_quat = bno_imu.getQuat();
+  bno_imu.getEvent(&accel_data, Adafruit_BNO055::VECTOR_ACCELEROMETER);
+  bno_imu.getEvent(&gyro_data, Adafruit_BNO055::VECTOR_GYROSCOPE);
+  bno_imu.getEvent(&mag_data, Adafruit_BNO055::VECTOR_MAGNETOMETER);
 
   // get calibration status for each sensor
   uint8_t system_cal, gyro_cal, accel_cal, mag_cal;
   system_cal = gyro_cal = accel_cal = mag_cal = 0;
-  imu.getCalibration(&system_cal, &gyro_cal, &accel_cal, &mag_cal);
+  bno_imu.getCalibration(&system_cal, &gyro_cal, &accel_cal, &mag_cal);
 
   // populate IMU ROS message
   imu_msg.orientation.x = orientation_quat.x();
@@ -97,7 +101,7 @@ void loop()
 
   // TODO: fill in covariance
 
-  temp_msg.temperature = imu.getTemp();
+  temp_msg.temperature = bno_imu.getTemp();
 
   // TODO: create custom calibration status message and publish it
   // Serial.print(system_cal, DEC);
