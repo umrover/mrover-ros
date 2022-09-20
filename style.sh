@@ -50,3 +50,15 @@ fi
 echo "Style checking Python with mypy ..."
 "$mypy_executable_path" --config-file mypy.ini --check src scripts
 echo "Done"
+
+# Style check Vue with eslint, local install in node_modules
+echo "Style checking Vue.js with eslint"
+eslint_executable_path=$(rospack find mrover)/src/teleop/gui/node_modules/.bin/
+if [ -d "$eslint_executable_path" ]; then
+  eslint_executable_path="$eslint_executable_path"eslint
+else
+  echo "[Error] Could not find eslint, please run src/teleop/gui/gui_install.sh script"
+  exit 1
+fi
+"$eslint_executable_path" ./src/teleop/gui/src --ext .vue,.js
+echo "Done"
