@@ -49,6 +49,8 @@ void loop()
   imu::Quaternion orientation_quat;
 
   orientation_quat = bno_imu.getQuat();
+
+  // not using "linear acceleration" because we want accel from gravity to be included
   bno_imu.getEvent(&accel_data, Adafruit_BNO055::VECTOR_ACCELEROMETER);
   bno_imu.getEvent(&gyro_data, Adafruit_BNO055::VECTOR_GYROSCOPE);
   bno_imu.getEvent(&mag_data, Adafruit_BNO055::VECTOR_MAGNETOMETER);
