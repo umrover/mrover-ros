@@ -31,7 +31,7 @@
     Perception
     ==========
   -->
-  <node name="aruco_detect" pkg="mrover" type="aruco_detect" />
+  <!-- <node name="aruco_detect" pkg="mrover" type="aruco_detect" /> -->
 
   <!--
     ===========
@@ -39,7 +39,7 @@
     ===========
   -->
   <!-- This publishes the transforms of the course waypoints -->
-  <node name="nav" pkg="mrover" type="navigation.py" />
+  <!-- <node name="nav" pkg="mrover" type="navigation.py" /> -->
 
   <!--
     ============

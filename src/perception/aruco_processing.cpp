@@ -19,6 +19,7 @@ void FiducialsNode::imageCallback(sensor_msgs::ImageConstPtr const& msg) {
     }
  
     try {
+        ROS_INFO("here");
         mCvPtr = cv_bridge::toCvCopy(msg, sensor_msgs::image_encodings::BGR8);
  
         // Detect the fiducial vertices in screen space and their respective ids
@@ -32,7 +33,9 @@ void FiducialsNode::imageCallback(sensor_msgs::ImageConstPtr const& msg) {
                 it = mImmediateFiducials.erase(it);
             }
         }
- 
+
+        ROS_INFO("%ld", mIds.size());
+
         // Save fiducials currently on screen to the immediate buffer
         for (size_t i = 0; i < mIds.size(); ++i) {
             int id = mIds[i];
@@ -41,9 +44,12 @@ void FiducialsNode::imageCallback(sensor_msgs::ImageConstPtr const& msg) {
             immediateFid.id = id;
             immediateFid.imageCenter = imageCenter;
         }
+
+        ROS_INFO("%ld", mImmediateFiducials.size());
         // Increment Intermediate Fiducials timesseen and update filters
         // Add readings to the persistent representations of the fiducials if they exist otherwise
         for (auto [id, immediateFid]: mImmediateFiducials) {
+            ROS_INFO("something in immediate"); 
             IntermediateFiducial &intermediate_fid = mIntermediateFiducials[id]; 
             PersistentFiducial& persistent_fid = mPersistentFiducials[id];
 
@@ -54,6 +60,7 @@ void FiducialsNode::imageCallback(sensor_msgs::ImageConstPtr const& msg) {
             SE3::pushToTfTree(mTfBroadcaster, immediateFrameName, ROVER_FRAME, immediateFid.fidInCam.value());
 
             if(intermediate_fid.timesSeen < mMinTimesSeen) { //has not been seen enough times to be persisisent
+                ROS_INFO("times seen is less than min times seen");  
                 intermediate_fid.id = id; 
                 ++intermediate_fid.timesSeen; 
 
@@ -74,6 +81,7 @@ void FiducialsNode::imageCallback(sensor_msgs::ImageConstPtr const& msg) {
                 }                
             } 
             else { // already a persistent fiducial
+                ROS_INFO("already persistent"); 
                 persistent_fid.id = id;
                 try {
                     SE3 fidInOdom = SE3::fromTfTree(mTfBuffer, ODOM_FRAME, immediateFrameName);

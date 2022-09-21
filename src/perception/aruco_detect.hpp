@@ -73,7 +73,7 @@ private:
    bool mIsVerbose = false;
    bool mHasCamInfo = false;
    bool mPublishFiducialTf = false;
-   int mMinTimesSeen = 3;
+   int mMinTimesSeen = 0;
    double mFiducialLen{};
    std::vector<int> mIgnoreIds;
    int mFilterCount{};
