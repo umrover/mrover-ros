@@ -14,3 +14,5 @@ odrive:
     meters_to_turns_ratio_right: 39.793
     turns_to_raw_ratio_left: -50.0
     turns_to_raw_ratio_right: 50.0
+  ros:
+    publish_rate_hz: 20

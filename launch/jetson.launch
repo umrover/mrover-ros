@@ -6,5 +6,5 @@
     Run the drive program
   -->
   <node name="odrive_control" pkg="mrover" type="odrive_control.py" output="screen"></node>
-  <rosparam command="load" file="$(find mrover)/config/odrive_control.yaml" />
+  <rosparam command="load" file="$(find mrover)/config/esw.yaml" />
 </launch>

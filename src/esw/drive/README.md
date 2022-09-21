@@ -129,6 +129,10 @@ keep track of everything in terms of turns.
 The way to change the ratio config is the following: If one turn is equal to 40 meters for the right wheel, then the meters_to_turns_ratio_right variable should be set to 40.
 The ratios must be consistent with the actual conversions between incoming commands, turns, and meters.
 
+#### ROS - odrive/ros/
+
+You may choose to configure the ros specific stuff such as the rate at which we publish encoder data in Hz.
+
 ---
 
 ## Topics - Subscriber

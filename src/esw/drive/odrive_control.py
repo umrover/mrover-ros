@@ -113,7 +113,7 @@ class Modrive:
 
     def __getattr__(self, attr: Any) -> Any:
         """
-        TODO - I'M BAD AT PYTHON, SOMEONE ADD A COMMENT WHY THIS IS HERE.
+        Used as a failsafe in case object does not exist.
         """
         if attr in self.__dict__:
             return getattr(self, attr)
@@ -401,6 +401,8 @@ class ODriveBridge(object):
     :param _id: A string that is the current ODrive's ID.
     :param _modrive: A Modrive object that abstracts away the ODrive functions.
     :param _pair: A string that is front, middle, or back.
+    :param _rate: A Rate object that is used for sleep to make sure publish
+        does not spam.
     :param _speed: A Speed object that has requested left and right wheel
         speed.
     :param _speed_lock: A lock that prevents multiple threads from accessing
@@ -417,6 +419,7 @@ class ODriveBridge(object):
     _id: str
     _modrive: Modrive
     _pair: str
+    _rate: rospy.Rate
     _speed: Speed
     _speed_lock: threading.Lock
     _state: State
@@ -436,6 +439,7 @@ class ODriveBridge(object):
         }
         self._pair = pair
         self._id = _odrive_ids[self._pair]
+        self._rate = rospy.Rate(rospy.get_param("/odrive/ros/publish_rate_hz"))
         self._speed_lock = threading.Lock()
         self._state = DisconnectedState()
         self._state_pub = rospy.Publisher("drive_state_data", DriveStateData, queue_size=1)
@@ -468,6 +472,7 @@ class ODriveBridge(object):
         """Publishes velocity and current data continuously."""
         while not rospy.is_shutdown():
             self._publish_encoder_msg()
+            self._rate.sleep()
 
     def watchdog_while_loop(self) -> None:
         """Calls the update() function continuously and checks if comms has
