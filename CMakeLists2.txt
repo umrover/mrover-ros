@@ -1,0 +1,54 @@
+cmake_minimum_required(VERSION 3.0.2)
+project(mrover)
+
+## Compile as C++17, supported in ROS Kinetic and newer
+add_compile_options(-std=c++17 -Wall -Wextra -Werror -pedantic)
+
+# Generate list of universal packages to find
+set(_PACKAGES
+    rospy
+    std_msgs
+    message_generation
+    dynamic_reconfigure
+    )
+
+if(${DEVICE} MATCHES "raspi4")
+    # Add any raspi4 specific packages here
+    list(APPEND _PACKAGES )
+else()
+    # Add any laptop specific packages here
+    list(APPEND _PACKAGES 
+        roscpp
+        tf2_geometry_msgs
+        tf2_ros
+        tf2
+        visualization_msgs
+        vision_msgs
+        image_transport
+        cv_bridge
+        sensor_msgs
+        fiducial_msgs
+        rosbridge_server
+        teleop_twist_joy
+        )
+endif()
+
+
+
+# 3. Find Packages
+
+
+# 4. Python module support
+catkin_python_setup()
+
+# 5. Message Generators
+
+# 6. Invoke messages
+
+# 7. Specify package build info export
+
+# 8. Libraries/Executables to build
+
+# 9. Tests to build
+
+# 10. Install rules

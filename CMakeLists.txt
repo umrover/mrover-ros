@@ -8,11 +8,17 @@ add_compile_options(-std=c++17 -Wall -Wextra -Werror -pedantic)
 if (${DEVICE} MATCHES "raspi4")
     message("Building for device: ${DEVICE}")
 
-    find_package(catkin REQUIRED COMPONENTS  
+    set(_PACKAGES)
+    list(APPEND _PACKAGES 
         rospy
         std_msgs
         message_generation
         dynamic_reconfigure
+    )
+    string(REPLACE ";" "\n" str "${_PACKAGES}")
+    message("Building with packages: \n${str}")
+    find_package(catkin REQUIRED COMPONENTS  
+        "${_PACKAGES}"
     )
     catkin_python_setup()
 
