@@ -68,7 +68,6 @@
     <!-- Reference latitude/longitude to linearize from -->
     <rosparam param="datum">[42.2, -83.7, 0.0, map, base_link]</rosparam>
     <!-- Subscriptions -->
-    <remap from="imu/data" to="imu" />
     <remap from="gps/fix" to="fix" />
     <!-- Confusing: This is needed in the event that your first GPS reading comes after your robot has attained some non-zero pose -->
     <remap from="odometry/filtered" to="odometry/filtered" />
