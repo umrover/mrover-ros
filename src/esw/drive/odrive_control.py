@@ -401,6 +401,8 @@ class ODriveBridge(object):
     :param _id: A string that is the current ODrive's ID.
     :param _modrive: A Modrive object that abstracts away the ODrive functions.
     :param _pair: A string that is front, middle, or back.
+    :param _publishers: A dictionary that holds rospy Publisher object
+        for odrive state data and drive joint velocity and current data.
     :param _rate: A Rate object that is used for sleep to make sure publish
         does not spam.
     :param _speed: A Speed object that has requested left and right wheel
@@ -408,10 +410,6 @@ class ODriveBridge(object):
     :param _speed_lock: A lock that prevents multiple threads from accessing
         self._speed simultaneously.
     :param _state: A State object that keeps track of the current state.
-    :param _state_pub: A rospy Publisher object that is used for publishing
-        state data.
-    :param _vel_pub: A rospy Publisher object that is used for publishing
-        velocity data.
     """
 
     start_time: float
@@ -419,12 +417,11 @@ class ODriveBridge(object):
     _id: str
     _modrive: Modrive
     _pair: str
+    _publishers: Dict[str, rospy.Publisher]
     _rate: rospy.Rate
     _speed: Speed
     _speed_lock: threading.Lock
     _state: State
-    _state_pub: rospy.Publisher
-    _vel_pub: rospy.Publisher
 
     def __init__(self, pair: str) -> None:
         """Initializes the components, starting with a Disconnected State.
@@ -438,12 +435,15 @@ class ODriveBridge(object):
             "back": rospy.get_param("/odrive/ids/back"),
         }
         self._pair = pair
-        self._id = _odrive_ids[self._pair]
+        self._publishers = {
+            "odrive": rospy.Publisher(f"/drive_data/odrive/{pair}", DriveStateData, queue_size=1),
+            "left_wheel": rospy.Publisher(f"/drive_data/joint/left/{pair}", DriveVelData, queue_size=1),
+            "right_wheel": rospy.Publisher(f"/drive_data/joint/right/{pair}", DriveVelData, queue_size=1)
+        }
+        self._id = _odrive_ids[pair]
         self._rate = rospy.Rate(rospy.get_param("/odrive/ros/publish_rate_hz"))
         self._speed_lock = threading.Lock()
         self._state = DisconnectedState()
-        self._state_pub = rospy.Publisher("drive_state_data", DriveStateData, queue_size=1)
-        self._vel_pub = rospy.Publisher("drive_vel_data", DriveVelData, queue_size=1)
 
     def change_axis_speed(self, axis: Axis, speed: float) -> None:
         """Sets the self._speed to the requested speeds. The speeds must be in
@@ -535,10 +535,8 @@ class ODriveBridge(object):
         ros_msg = DriveVelData()
         try:
             ros_msg.current_amps = self._modrive.get_measured_current(axis)
-            ros_msg.vel_m_s = self._modrive.get_vel_estimate_m_s(axis)
-            # e.g. "back_left" or "middle_right" or "front_left"
-            ros_msg.wheel = f"{self._pair}_{axis}"
-            self._vel_pub.publish(ros_msg)
+            ros_msg.velocity.append(self._modrive.get_vel_estimate_m_s(axis))
+            self.publishers[f"{axis}_wheel"].publish(ros_msg)
         except DisconnectedError:
             return
         except AttributeError:
@@ -558,8 +556,7 @@ class ODriveBridge(object):
         """
         ros_msg = DriveStateData()
         ros_msg.state = state
-        ros_msg.pair = self._pair
-        self._state_pub.publish(ros_msg)
+        self.publishers["odrive"].publish(ros_msg)
 
     def _update(self) -> None:
         """Updates based on the current state.

@@ -1,2 +1,1 @@
-string pair
 string state

@@ -137,27 +137,22 @@ You may choose to configure the ros specific stuff such as the rate at which we 
 
 ## Topics - Subscriber
 
-#### Left Drive Velocity Command
-Message: JointState.msg "/drive_cmd/wheels/left" \
+#### Drive Velocity Commands
+Message: JointState.msg "/drive_cmd/wheels/{left/right}" \
 Publisher: teleop \
-Subscriber: odrives
-
-#### Right Drive Velocity Command
-Message: JointState.msg "/drive_cmd/wheels/left" \
-Publisher: teleop \
-Subscriber: odrives
+Subscriber: odrive_control
 ---
 
 ## Topics - Publisher
 
 #### Drive Velocity Data
-Message: [`DriveVelData.msg`](../../../msg/DriveVelData.msg) "drive_vel_data" \
-Publisher: odrives \
+Message: [`DriveVelData.msg`](../../../msg/DriveVelData.msg) "/drive_data/joint/{left/right}/{front/middle/back}" \
+Publisher: odrive_control \
 Subscriber: gui
 
 #### Drive State Data
-Message: [`DriveStateData.msg`](../../../msg/DriveStateData.msg) "drive_state_data" \
-Publisher: odrives \
+Message: [`DriveStateData.msg`](../../../msg/DriveStateData.msg) "/drive_data/odrive/{front/middle/back}" \
+Publisher: odrive_control \
 Subscriber: gui
 
 ---
@@ -339,4 +334,3 @@ Find someone on ESW. Or just go ahead and contact madcowswe himself.
 ---
 
 ## TODO
-- [ ] Stress test
