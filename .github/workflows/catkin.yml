@@ -15,7 +15,5 @@ jobs:
           lfs: 'true'
           path: 'src'
       - run: . /opt/ros/noetic/setup.sh && catkin init
-      - run: . /opt/ros/noetic/setup.sh && catkin build --cmake-args -DCMAKE_BUILD_TYPE=Release
-      - run: . /opt/ros/noetic/setup.sh && . $GITHUB_WORKSPACE/devel/setup.sh && echo $LD_LIBRARY_PATH && catkin test
-      # - run: cat $GITHUB_WORKSPACE/devel/setup.bash
-      # - run: bash -c "source /opt/ros/noetic/setup.bash && source $GITHUB_WORKSPACE/devel/setup.bash && echo $LD_LIBRARY_PATH && catkin test"
+      - run: . /opt/ros/noetic/setup.sh && catkin build --interleave-output --cmake-args -DCMAKE_BUILD_TYPE=Release
+      - run: . /opt/ros/noetic/setup.sh && . $GITHUB_WORKSPACE/devel/setup.sh && catkin test -j1

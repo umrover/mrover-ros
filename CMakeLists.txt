@@ -24,6 +24,7 @@ find_package(catkin REQUIRED COMPONENTS
         message_generation
         rosbridge_server
         teleop_twist_joy
+        gazebo_ros
         )
 
 find_package(OpenCV REQUIRED)
