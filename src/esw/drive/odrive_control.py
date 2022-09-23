@@ -535,7 +535,7 @@ class ODriveBridge(object):
         ros_msg = WheelData()
         try:
             ros_msg.current = self._modrive.get_measured_current(axis)
-            ros_msg.velocity.append(self._modrive.get_velocity(axis))
+            ros_msg.velocity = self._modrive.get_velocity(axis)
             self._publishers[f"{axis}_wheel"].publish(ros_msg)
         except DisconnectedError:
             return
