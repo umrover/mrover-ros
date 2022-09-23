@@ -536,7 +536,7 @@ class ODriveBridge(object):
         try:
             ros_msg.current_amps = self._modrive.get_measured_current(axis)
             ros_msg.velocity.append(self._modrive.get_vel_estimate_m_s(axis))
-            self.publishers[f"{axis}_wheel"].publish(ros_msg)
+            self._publishers[f"{axis}_wheel"].publish(ros_msg)
         except DisconnectedError:
             return
         except AttributeError:
@@ -556,7 +556,7 @@ class ODriveBridge(object):
         """
         ros_msg = ODriveState()
         ros_msg.state = state
-        self.publishers["odrive"].publish(ros_msg)
+        self._publishers["odrive"].publish(ros_msg)
 
     def _update(self) -> None:
         """Updates based on the current state.
