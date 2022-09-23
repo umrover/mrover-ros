@@ -4,111 +4,74 @@ project(mrover)
 ## Compile as C++17, supported in ROS Kinetic and newer
 add_compile_options(-std=c++17 -Wall -Wextra -Werror -pedantic)
 
-# Macro to run find_package with variable list input
-macro(find_package_macro _PACK)
-    message("Inside package macro!")
-    string(REPLACE ";" "\n" str "${_PACK}")
-    message("Building with packages: \n${str}")
-    find_package(catkin REQUIRED COMPONENTS  
-        "${_PACK}"
-    )
-endmacro()
+# Generate lists of universal packages to find
 
-# Test macro
-macro(test_macro)
-    message("Test Macro")
-endmacro()
-
-
-## If on raspberry pi (RPi 4 w/ 64-bit Buster)
-if (${DEVICE} MATCHES "raspi4")
-    message(STATUS "Building for device: ${DEVICE}")
-
-    set(_PACKAGES)
-    list(APPEND _PACKAGES 
-        rospy
-        std_msgs
-        message_generation
-        dynamic_reconfigure
-        rostest
-    )
-    # string(REPLACE ";" "\n" str "${_PACKAGES}")
-    # message("Building with packages: \n${str}")
-    # find_package(catkin REQUIRED COMPONENTS  
-    #     "${_PACKAGES}"
-    # )
-    if(COMMAND find_package_macro)
-        message("valid command")
-        find_package_macro("${_PACKAGES}")
-    endif()
-
-    # set(_MACROS)
-    # list(APPEND _MACROS test_macro)
-    # foreach(M IN LISTS _MACROS)
-     #    message("In foreach")
-     #    cmake_language(CALL test_macro)
-    # endforeach()
-
-    # cmake_language(CALL find_package_macro "${_PACKAGES}")
-
-    catkin_python_setup()
-
-    ## Generate messages in the 'msg' folder
-    add_message_files(
-        FILES
-        Course.msg
-        Waypoint.msg
-        Chassis.msg
+# find_package
+set(_PACKAGES
+    rospy
+    std_msgs
+    message_generation
+    dynamic_reconfigure
+    rostest
     )
 
-    ## Generate services in the 'srv' folder
-    add_service_files(
-        FILES
-        PublishCourse.srv
+# link_directories
+set(_LINK_DIRS "")
+
+# message files
+set(_MESSAGE_FILES 
+    Course.msg
+    Waypoint.msg
+    Chassis.msg
     )
 
-    ## Generate added messages and services with any dependencies listed here
-    generate_messages(
-        DEPENDENCIES
-        std_msgs
+# service files
+set(_SERVICE_FILES
+    PublishCourse.srv
     )
 
-    ## Generate dynamic reconfigure parameters in the 'cfg' folder
-    generate_dynamic_reconfigure_options(
-        config/DetectorParams.cfg
+# generate messages list
+set(_MESSAGES
+    std_msgs
     )
 
-    catkin_package(
-        #  INCLUDE_DIRS include
-        #  LIBRARIES mrover
-        CATKIN_DEPENDS roscpp rospy std_msgs message_runtime
-        #  DEPENDS system_lib
+# dynamic reconfigure
+set(_DYNAMIC_RECON
+    config/DetectorParams.cfg
     )
 
+# catkin_package
+set(_CAT_PACKAGES
+    roscpp rospy std_msgs message_runtime
+    )
+
+# launch install macro
+macro(install_launch_macro)
     install(DIRECTORY launch/
         DESTINATION ${CATKIN_PACKAGE_SHARE_DESTINATION}/launch
         )
-    
-    # Python unit tests
-    catkin_add_nosetests(test/navigation/drive.py)
-    catkin_add_nosetests(test/util/SE3_test.py)
-    catkin_add_nosetests(test/util/SO3_test.py)
+endmacro()
 
-    # Integration tests (python and c++)
-    # find_package(rostest REQUIRED)
-    add_rostest(test/example/basic_integration_test.test)
-    add_rostest(test/util/SE3_tf_test.test)
+# Subdirectories before message declarations
+set(_SUBDIR "")
 
-    return()
-endif()
 
-## Find catkin macros and libraries
-## if COMPONENTS list like find_package(catkin REQUIRED COMPONENTS xyz)
-## is used, also find other catkin packages
-find_package(catkin REQUIRED COMPONENTS
+
+# -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+# Specify build details by appending to lists
+# and implementing the some extra macros
+# Add new devices as elseif blocks
+# Select device with --cmake-flags -D DEVICE=<fill in device>
+# -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+
+if(${DEVICE} MATCHES "raspi4")
+    # Add any raspi4 specific packages here
+    # list(APPEND _PACKAGES )
+
+else()
+    # Add any laptop specific packages here
+    list(APPEND _PACKAGES 
         roscpp
-        rospy
-        std_msgs
         tf2_geometry_msgs
         tf2_ros
         tf2
@@ -118,242 +81,163 @@ find_package(catkin REQUIRED COMPONENTS
         cv_bridge
         sensor_msgs
         fiducial_msgs
-        dynamic_reconfigure
-        message_generation
         rosbridge_server
         teleop_twist_joy
         OpenCV
+        gazebo
         )
 
-# find_package(OpenCV REQUIRED)
+    # append include directories
+    list(APPEND _INCLUDE_DIREC
+        GAZEBO_INCLUDE_DIRS
+        OpenCV_INCLUDE_DIRS
+        )
 
-# Find Gazebo
-if (POLICY CMP0054)
-    cmake_policy(SET CMP0054 NEW)
-endif ()
-find_package(gazebo REQUIRED)
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${GAZEBO_CXX_FLAGS}")
-include_directories(${GAZEBO_INCLUDE_DIRS})
-link_directories(${GAZEBO_LIBRARY_DIRS})
+    # append link directories
+    list(APPEND _LINK_DIRS
+        ${GAZEBO_LIBRARY_DIRS}
+        )
 
-## System dependencies are found with CMake's conventions
-# find_package(Boost REQUIRED COMPONENTS system)
+    # append subdirectories
+    list(APPEND _SUBDIR
+        starter_project/teleop
+        )
+
+    # define a test macro
+    macro(test_macro)
+        # Add C++ unit tests
+        catkin_add_gtest(example-cpp-test test/example/cpp_test.cpp)
+
+        # Python unit tests
+        catkin_add_nosetests(test/navigation/drive.py)
+        catkin_add_nosetests(test/util/SE3_test.py)
+        catkin_add_nosetests(test/util/SO3_test.py)
+
+        # Integration tests (python and c++)
+        # find_package(rostest REQUIRED)
+        add_rostest(test/example/basic_integration_test.test)
+        add_rostest(test/util/SE3_tf_test.test)
+    endmacro()
+
+    macro(include_directories_macro)
+        include_directories(
+            ${GAZEBO_INCLUDE_DIRS}
+            ${OpenCV_INCLUDE_DIRS}
+        )
+    endmacro()
+
+    # define an add and link macro
+    # Put items here to build
+    macro(add_and_link_macro)
+        file(GLOB_RECURSE PERCEPTION_SOURCES "src/perception/*.cpp")
+        add_executable(aruco_detect ${PERCEPTION_SOURCES})
+        add_dependencies(aruco_detect ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
+        target_link_libraries(aruco_detect ${catkin_LIBRARIES} ${OpenCV_LIBS})
+
+        add_library(differential_drive_plugin_6w src/gazebo/differential_drive_6w.cpp)
+        add_dependencies(aruco_detect ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
+        target_link_libraries(differential_drive_plugin_6w ${Boost_LIBRARIES} ${GAZEBO_LIBRARIES} ${catkin_LIBRARIES})
+    endmacro()
+
+    macro(additional_install_macro)
+        install(TARGETS aruco_detect
+            ARCHIVE DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
+            LIBRARY DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
+            RUNTIME DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
+            )
+        install(TARGETS differential_drive_plugin_6w
+            ARCHIVE DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
+            LIBRARY DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
+            RUNTIME DESTINATION ${CATKIN_GLOBAL_BIN_DESTINATION}
+            )
+    endmacro()
+    
+    # Set policy
+    if (POLICY CMP0054)
+        cmake_policy(SET CMP0054 NEW)
+    endif ()
+
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${GAZEBO_CXX_FLAGS}")
+    
+endif()
 
 
-## Uncomment this if the package has a setup.py. This macro ensures
-## modules and global scripts declared therein get installed
-## See http://ros.org/doc/api/catkin/html/user_guide/setup_dot_py.html
+
+# 3. Find Packages
+find_package(
+    catkin REQUIRED COMPONENTS
+    ${_PACKAGES}
+)
+
+
+# 4. Python module support
 catkin_python_setup()
 
-# Subdirectories before message declarations
-add_subdirectory(starter_project/teleop)
 
-################################################
-## Declare ROS messages, services and actions ##
-################################################
+# 4.5. Subdirectories before message declarations
+if(NOT "${_SUBDIR}" MATCHES "")
+    add_subdirectory(
+        ${_SUBDIR}
+    )
+endif()
 
-## To declare and build messages, services or actions from within this
-## package, follow these steps:
-## * Let MSG_DEP_SET be the set of packages whose message types you use in
-##   your messages/services/actions (e.g. std_msgs, actionlib_msgs, ...).
-## * In the file package.xml:
-##   * add a build_depend tag for "message_generation"
-##   * add a build_depend and a exec_depend tag for each package in MSG_DEP_SET
-##   * If MSG_DEP_SET isn't empty the following dependency has been pulled in
-##     but can be declared for certainty nonetheless:
-##     * add a exec_depend tag for "message_runtime"
-## * In this file (CMakeLists.txt):
-##   * add "message_generation" and every package in MSG_DEP_SET to
-##     find_package(catkin REQUIRED COMPONENTS ...)
-##   * add "message_runtime" and every package in MSG_DEP_SET to
-##     catkin_package(CATKIN_DEPENDS ...)
-##   * uncomment the add_*_files sections below as needed
-##     and list every .msg/.srv/.action file to be processed
-##   * uncomment the generate_messages entry below
-##   * add every package in MSG_DEP_SET to generate_messages(DEPENDENCIES ...)
 
-## Generate messages in the 'msg' folder
+# 5. Message Generators (add_xxx)
 add_message_files(
-        FILES
-        Course.msg
-        Waypoint.msg
-        Chassis.msg
+    FILES
+    ${_MESSAGE_FILES}
 )
 
-## Generate services in the 'srv' folder
- add_service_files(
-   FILES
-   PublishCourse.srv
- )
+add_service_files(
+    FILES
+    ${_SERVICE_FILES}
+)
 
-## Generate actions in the 'action' folder
-# add_action_files(
-#   FILES
-#   Action1.action
-#   Action2.action
-# )
 
-## Generate added messages and services with any dependencies listed here
+# 6. Invoke messages (generate_messages)
 generate_messages(
-        DEPENDENCIES
-        std_msgs
+    DEPENDENCIES
+    ${_MESSAGES}
 )
 
-################################################
-## Declare ROS dynamic reconfigure parameters ##
-################################################
-
-## To declare and build dynamic reconfigure parameters within this
-## package, follow these steps:
-## * In the file package.xml:
-##   * add a build_depend and a exec_depend tag for "dynamic_reconfigure"
-## * In this file (CMakeLists.txt):
-##   * add "dynamic_reconfigure" to
-##     find_package(catkin REQUIRED COMPONENTS ...)
-##   * uncomment the "generate_dynamic_reconfigure_options" section below
-##     and list every .cfg file to be processed
-
-## Generate dynamic reconfigure parameters in the 'cfg' folder
 generate_dynamic_reconfigure_options(
-        config/DetectorParams.cfg
+    ${_DYNAMIC_RECON}
 )
 
-###################################
-## catkin specific configuration ##
-###################################
-## The catkin_package macro generates cmake config files for your package
-## Declare things to be passed to dependent projects
-## INCLUDE_DIRS: uncomment this if your package contains header files
-## LIBRARIES: libraries you create in this project that dependent projects also need
-## CATKIN_DEPENDS: catkin_packages dependent projects also need
-## DEPENDS: system dependencies of this project that dependent projects also need
+
+# 7. Specify package build info export (catkin_package)
 catkin_package(
-        #  INCLUDE_DIRS include
-        #  LIBRARIES mrover
-        CATKIN_DEPENDS roscpp rospy std_msgs message_runtime
-        #  DEPENDS system_lib
+    CATKIN_DEPENDS
+    ${_CAT_PACKAGES}
 )
 
-###########
-## Build ##
-###########
 
-## Specify additional locations of header files
-## Your package locations should be listed before other locations
+# 8. Libraries/Executables to build (add_executable)
+# These only exist after find_packages
 include_directories(
-        # include
-        ${catkin_INCLUDE_DIRS},
-        ${OpenCV_INCLUDE_DIRS}
+    ${catkin_INCLUDE_DIRS}
+)
+if(COMMAND include_directories_macro)
+    include_directories_macro()
+endif()
+
+link_directories(
+    ${_LINK_DIRS}
 )
 
-file(GLOB_RECURSE PERCEPTION_SOURCES "src/perception/*.cpp")
-add_executable(aruco_detect ${PERCEPTION_SOURCES})
-add_dependencies(aruco_detect ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
-target_link_libraries(aruco_detect ${catkin_LIBRARIES} ${OpenCV_LIBS})
+if(COMMAND add_and_link_macro)
+    add_and_link_macro()
+endif()
 
-add_library(differential_drive_plugin_6w src/gazebo/differential_drive_6w.cpp)
-add_dependencies(aruco_detect ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
-target_link_libraries(differential_drive_plugin_6w ${Boost_LIBRARIES} ${GAZEBO_LIBRARIES} ${catkin_LIBRARIES})
 
-## Declare a C++ library
-# add_library(${PROJECT_NAME}
-#   src/${PROJECT_NAME}/mrover.cpp
-# )
+# 9. Tests to build
+if(COMMAND add_tests_macro)
+    add_tests_macro()
+endif()
 
-## Add cmake target dependencies of the library
-## as an example, code may need to be generated before libraries
-## either from message generation or dynamic reconfigure
-# add_dependencies(${PROJECT_NAME} ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
 
-## Declare a C++ executable
-## With catkin_make all packages are built within a single CMake context
-## The recommended prefix ensures that target names across packages don't collide
-# add_executable(${PROJECT_NAME}_node src/mrover_node.cpp)
-
-## Rename C++ executable without prefix
-## The above recommended prefix causes long target names, the following renames the
-## target back to the shorter version for ease of user use
-## e.g. "rosrun someones_pkg node" instead of "rosrun someones_pkg someones_pkg_node"
-# set_target_properties(${PROJECT_NAME}_node PROPERTIES OUTPUT_NAME node PREFIX "")
-
-## Add cmake target dependencies of the executable
-## same as for the library above
-# add_dependencies(${PROJECT_NAME}_node ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
-
-## Specify libraries to link a library or executable target against
-# target_link_libraries(${PROJECT_NAME}_node
-#   ${catkin_LIBRARIES}
-# )
-
-#############
-## Install ##
-#############
-
-install(TARGETS aruco_detect
-        ARCHIVE DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
-        LIBRARY DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
-        RUNTIME DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
-        )
-
-install(DIRECTORY launch/
-        DESTINATION ${CATKIN_PACKAGE_SHARE_DESTINATION}/launch
-        )
-
-# all install targets should use catkin DESTINATION variables
-# See http://ros.org/doc/api/catkin/html/adv_user_guide/variables.html
-
-## Mark executable scripts (Python etc.) for installation
-## in contrast to setup.py, you can choose the destination
-# catkin_install_python(PROGRAMS
-#   scripts/my_python_script
-#   DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
-# )
-
-## Mark executables for installation
-## See http://docs.ros.org/melodic/api/catkin/html/howto/format1/building_executables.html
-# install(TARGETS ${PROJECT_NAME}_node
-#   RUNTIME DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
-# )
-
-## Mark libraries for installation
-## See http://docs.ros.org/melodic/api/catkin/html/howto/format1/building_libraries.html
-install(TARGETS differential_drive_plugin_6w
-        ARCHIVE DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
-        LIBRARY DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
-        RUNTIME DESTINATION ${CATKIN_GLOBAL_BIN_DESTINATION}
-        )
-
-## Mark cpp header files for installation
-# install(DIRECTORY include/${PROJECT_NAME}/
-#   DESTINATION ${CATKIN_PACKAGE_INCLUDE_DESTINATION}
-#   FILES_MATCHING PATTERN "*.h"
-#   PATTERN ".svn" EXCLUDE
-# )
-
-## Mark other files for installation (e.g. launch and bag files, etc.)
-# install(FILES
-#   # myfile1
-#   # myfile2
-#   DESTINATION ${CATKIN_PACKAGE_SHARE_DESTINATION}
-# )
-
-#############
-## Testing ##
-#############
-
-# Add C++ unit tests
-catkin_add_gtest(example-cpp-test test/example/cpp_test.cpp)
-# catkin_add_gtest(${PROJECT_NAME}-test test/test_mrover.cpp)
-# if(TARGET ${PROJECT_NAME}-test)
-#   target_link_libraries(${PROJECT_NAME}-test ${PROJECT_NAME})
-# endif()
-
-# Python unit tests
-catkin_add_nosetests(test/navigation/drive.py)
-catkin_add_nosetests(test/util/SE3_test.py)
-catkin_add_nosetests(test/util/SO3_test.py)
-
-# Integration tests (python and c++)
-find_package(rostest REQUIRED)
-add_rostest(test/example/basic_integration_test.test)
-add_rostest(test/util/SE3_tf_test.test)
+# 10. Install rules
+install_launch_macro()
+if(COMMAND additional_install_macro)
+    additional_install_macro()
+endif()
