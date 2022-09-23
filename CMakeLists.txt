@@ -4,9 +4,25 @@ project(mrover)
 ## Compile as C++17, supported in ROS Kinetic and newer
 add_compile_options(-std=c++17 -Wall -Wextra -Werror -pedantic)
 
+# Macro to run find_package with variable list input
+macro(find_package_macro _PACK)
+    message("Inside package macro!")
+    string(REPLACE ";" "\n" str "${_PACK}")
+    message("Building with packages: \n${str}")
+    find_package(catkin REQUIRED COMPONENTS  
+        "${_PACK}"
+    )
+endmacro()
+
+# Test macro
+macro(test_macro)
+    message("Test Macro")
+endmacro()
+
+
 ## If on raspberry pi (RPi 4 w/ 64-bit Buster)
 if (${DEVICE} MATCHES "raspi4")
-    message("Building for device: ${DEVICE}")
+    message(STATUS "Building for device: ${DEVICE}")
 
     set(_PACKAGES)
     list(APPEND _PACKAGES 
@@ -14,12 +30,27 @@ if (${DEVICE} MATCHES "raspi4")
         std_msgs
         message_generation
         dynamic_reconfigure
+        rostest
     )
-    string(REPLACE ";" "\n" str "${_PACKAGES}")
-    message("Building with packages: \n${str}")
-    find_package(catkin REQUIRED COMPONENTS  
-        "${_PACKAGES}"
-    )
+    # string(REPLACE ";" "\n" str "${_PACKAGES}")
+    # message("Building with packages: \n${str}")
+    # find_package(catkin REQUIRED COMPONENTS  
+    #     "${_PACKAGES}"
+    # )
+    if(COMMAND find_package_macro)
+        message("valid command")
+        find_package_macro("${_PACKAGES}")
+    endif()
+
+    # set(_MACROS)
+    # list(APPEND _MACROS test_macro)
+    # foreach(M IN LISTS _MACROS)
+     #    message("In foreach")
+     #    cmake_language(CALL test_macro)
+    # endforeach()
+
+    # cmake_language(CALL find_package_macro "${_PACKAGES}")
+
     catkin_python_setup()
 
     ## Generate messages in the 'msg' folder
@@ -64,7 +95,7 @@ if (${DEVICE} MATCHES "raspi4")
     catkin_add_nosetests(test/util/SO3_test.py)
 
     # Integration tests (python and c++)
-    find_package(rostest REQUIRED)
+    # find_package(rostest REQUIRED)
     add_rostest(test/example/basic_integration_test.test)
     add_rostest(test/util/SE3_tf_test.test)
 
@@ -91,9 +122,10 @@ find_package(catkin REQUIRED COMPONENTS
         message_generation
         rosbridge_server
         teleop_twist_joy
+        OpenCV
         )
 
-find_package(OpenCV REQUIRED)
+# find_package(OpenCV REQUIRED)
 
 # Find Gazebo
 if (POLICY CMP0054)
