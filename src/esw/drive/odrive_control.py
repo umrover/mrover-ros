@@ -160,7 +160,7 @@ class Modrive:
             self._usb_lock.release()
         return measured_current
 
-    def get_vel_estimate_m_s(self, axis: str) -> float:
+    def get_velocity(self, axis: str) -> float:
         """Returns the estimated velocity of the requested wheel of the ODrive
         in meters per second.
         The raw encoder.vel_estimate returns the estimate in turns per second,
@@ -175,12 +175,12 @@ class Modrive:
         assert axis == "left" or axis == "right", 'axis must be "left" or "right"'
         try:
             self._usb_lock.acquire()
-            vel_est_m_s = self._axes[axis].encoder.vel_estimate / self._meters_to_turns_ratio_by_side[axis]
+            velocity = self._axes[axis].encoder.vel_estimate / self._meters_to_turns_ratio_by_side[axis]
         except Exception:
             raise DisconnectedError
         finally:
             self._usb_lock.release()
-        return vel_est_m_s
+        return velocity
 
     def has_errors(self) -> bool:
         """Returns a boolean to show if there are ODrive errors.
@@ -527,15 +527,15 @@ class ODriveBridge(object):
 
     def _publish_encoder_helper(self, axis: str) -> None:
         """Publishes the velocity and current data of the requested axis to a
-        ROS topic.
+        ROS topic. Published in m/s and Amps.
         :param axis: A string that represents which wheel to read current from.
             The string must be "left" or "right"
         """
         assert axis == "left" or axis == "right", 'axis must be "left" or "right"'
         ros_msg = WheelData()
         try:
-            ros_msg.current_amps = self._modrive.get_measured_current(axis)
-            ros_msg.velocity.append(self._modrive.get_vel_estimate_m_s(axis))
+            ros_msg.current = self._modrive.get_measured_current(axis)
+            ros_msg.velocity.append(self._modrive.get_velocity(axis))
             self._publishers[f"{axis}_wheel"].publish(ros_msg)
         except DisconnectedError:
             return
@@ -545,7 +545,7 @@ class ODriveBridge(object):
 
     def _publish_encoder_msg(self) -> None:
         """Publishes the velocity and current data of all the axes to a ROS
-        topic.
+        topic. Published in m/s and Amps.
         """
         self._publish_encoder_helper("left")
         self._publish_encoder_helper("right")
