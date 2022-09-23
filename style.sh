@@ -3,12 +3,15 @@
 # Print each command, fail on unset variables
 set -xu
 
+RED='\033[0;31m'
+NC='\033[0m'
+
 ## Check that all tools are installed
 
 clang_format_executable=clang-format-12
 clang_format_executable_path=$(which "$clang_format_executable")
 if [ ! -x "$clang_format_executable_path" ]; then
-  echo "[Error] Please install clang-format with: sudo apt install $clang_format_executable"
+  printf "${RED}[Error] Please install clang-format with: sudo apt install ${clang_format_executable}${NC}\n"
   exit 1
 fi
 
