@@ -2,6 +2,7 @@
 __pycache__/
 *.py[cod]
 *$py.class
+.mypy_cache/
 
 # Common IDE's, ideally this should be in global gitignore per user
 **/.vscode/
@@ -9,5 +10,7 @@ __pycache__/
 build/
 cmake-build*/
 
-src/teleop/gui/dist/
-src/teleop/gui/node_modules/
+#GUI Files
+/src/teleop/gui/dist/
+/src/teleop/gui/node_modules/
+**/yarn.lock*
