@@ -10,7 +10,7 @@ jobs:
     container: umrover1/ros:latest
     if: github.event.pull_request.draft == false
     steps:
-      - run: sudo mkdir /__w && sudo chown mrover:mrover /__w
+      - run: sudo chown -R mrover:mrover /__w
       - uses: actions/checkout@v3
         with:
           lfs: 'true'
