@@ -56,7 +56,7 @@ if __name__ == "__main__":
 
     # These are the waypoints (name, x, y, fiducial)
     waypoints = [
-        ("course1", -3, -3, 0),
+        ("course1", -2, -6, 0),
         # ("course1", -3, -3, -1),
         # ("course2", -5, -5, 0)
     ]

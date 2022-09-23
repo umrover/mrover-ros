@@ -74,7 +74,7 @@ class Environment:
             return None
         
         post1 = self.get_fid_pos(current_waypoint.fiducial_id)
-        post2 = self.get_fid_pos(current_waypoint.fiducial_id)
+        post2 = self.get_fid_pos(current_waypoint.fiducial_id + 1)
         if post1 is None or post2 is None:
             return None
         
