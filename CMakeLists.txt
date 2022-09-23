@@ -77,8 +77,8 @@ add_subdirectory(starter_project/teleop)
 add_message_files(
         FILES
         Course.msg
-        DriveStateData.msg
-        DriveVelData.msg
+        ODriveState.msg
+        WheelData.msg
         Waypoint.msg
         Chassis.msg
 )

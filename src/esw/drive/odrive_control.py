@@ -22,7 +22,7 @@ from odrive.enums import AXIS_STATE_CLOSED_LOOP_CONTROL, AXIS_STATE_IDLE, CONTRO
 from odrive.utils import dump_errors
 import rospy
 from sensor_msgs.msg import JointState
-from mrover.msg import DriveStateData, DriveVelData
+from mrover.msg import ODriveState, WheelData
 from enum import Enum
 
 
@@ -436,9 +436,9 @@ class ODriveBridge(object):
         }
         self._pair = pair
         self._publishers = {
-            "odrive": rospy.Publisher(f"/drive_data/odrive/{pair}", DriveStateData, queue_size=1),
-            "left_wheel": rospy.Publisher(f"/drive_data/joint/left/{pair}", DriveVelData, queue_size=1),
-            "right_wheel": rospy.Publisher(f"/drive_data/joint/right/{pair}", DriveVelData, queue_size=1)
+            "odrive": rospy.Publisher(f"/drive_data/odrive/{pair}", ODriveState, queue_size=1),
+            "left_wheel": rospy.Publisher(f"/drive_data/joint/{pair}/left", WheelData, queue_size=1),
+            "right_wheel": rospy.Publisher(f"/drive_data/joint/{pair}/right", WheelData, queue_size=1)
         }
         self._id = _odrive_ids[pair]
         self._rate = rospy.Rate(rospy.get_param("/odrive/ros/publish_rate_hz"))
@@ -532,7 +532,7 @@ class ODriveBridge(object):
             The string must be "left" or "right"
         """
         assert axis == "left" or axis == "right", 'axis must be "left" or "right"'
-        ros_msg = DriveVelData()
+        ros_msg = WheelData()
         try:
             ros_msg.current_amps = self._modrive.get_measured_current(axis)
             ros_msg.velocity.append(self._modrive.get_vel_estimate_m_s(axis))
@@ -554,7 +554,7 @@ class ODriveBridge(object):
         """Publishes the ODrive state message over ROS to a topic.
         :param state: A string that is the current state.
         """
-        ros_msg = DriveStateData()
+        ros_msg = ODriveState()
         ros_msg.state = state
         self.publishers["odrive"].publish(ros_msg)
 
