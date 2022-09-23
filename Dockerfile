@@ -1,7 +1,12 @@
 FROM ros:noetic
 
+RUN apt-get update && apt-get upgrade -y
+
+# Add apt repo for latest version of Git
+RUN apt-get install software-properties-common -y && add-apt-repository ppa:git-core/ppa -y
+
 RUN apt-get update && apt-get install -y \
-    zsh neovim sudo \
+    zsh neovim sudo git \
     clang-format-12 clangd-12 \
     python3-catkin-tools python3-pip
 
@@ -11,11 +16,11 @@ RUN echo '%sudo ALL=(ALL) NOPASSWD:ALL' >> /etc/sudoers
 USER mrover
 WORKDIR /home/mrover
 
-RUN mkdir -p ./catkin_ws/src
+RUN mkdir -p ./catkin_ws/src    
 ADD . ./catkin_ws/src/mrover
 
-RUN sudo pip3 install -r ./catkin_ws/src/mrover/requirements.txt
-
 RUN rosdep update && rosdep install --from-paths ./catkin_ws/src --ignore-src -y --rosdistro=noetic
+
+RUN sudo pip3 install -r ./catkin_ws/src/mrover/requirements.txt
 
 ENTRYPOINT [ "/bin/zsh" ]
