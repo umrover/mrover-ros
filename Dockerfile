@@ -2,10 +2,11 @@ FROM ros:noetic
 
 RUN apt-get update && apt-get install -y \
     zsh neovim sudo \
-    clang-format-12 \
+    clang-format-12 clangd-12 \
     python3-catkin-tools python3-pip
 
-RUN useradd --create-home --groups sudo --shell /bin/zsh mrover
+RUN useradd --create-home --groups sudo,root --shell /bin/zsh mrover
+# Give mrover user sudo access with no password
 RUN echo '%sudo ALL=(ALL) NOPASSWD:ALL' >> /etc/sudoers
 USER mrover
 WORKDIR /home/mrover
