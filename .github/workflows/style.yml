@@ -10,9 +10,10 @@ jobs:
   code-style:
     name: Code Style Check
     runs-on: ubuntu-latest
-    container: umrover1/ros:latest
+    container:
+      image: umrover1/ros:latest
+      options: --user root
     steps:
-      - run: sudo chown -R mrover:mrover /__w
       - uses: actions/checkout@v3
       - name: Style check C++ and Python files
         run: ./style.sh

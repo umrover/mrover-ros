@@ -7,10 +7,11 @@ jobs:
   build:
     name: Build and Test
     runs-on: ubuntu-latest
-    container: umrover1/ros:latest
+    container:
+      image: umrover1/ros:latest
+      options: --user root
     if: github.event.pull_request.draft == false
     steps:
-      - run: sudo chown -R mrover:mrover /__w
       - uses: actions/checkout@v3
         with:
           lfs: 'true'
