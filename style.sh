@@ -12,7 +12,7 @@ if [ ! -x "$clang_format_executable_path" ]; then
 fi
 
 echo "Style checking C++ ..."
-find . -regex '.*\.\(cpp\|hpp\|h\)' -exec "$clang_format_executable_path" --dry-run -style=file -i {} \;
+find ./src -regex '.*\.\(cpp\|hpp\|h\)' -exec "$clang_format_executable_path" --dry-run -style=file -i {} \;
 echo "Done"
 
 # Style check Python with black

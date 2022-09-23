@@ -13,11 +13,9 @@ jobs:
       - uses: actions/checkout@v3
         with:
           lfs: 'true'
-      - run: sudo apt-get update -y && rosdep update
-      - uses: betwo/github-setup-catkin@master
-        with:
-          ros-version: "noetic"
-          build-tool: "catkin_tools"
-          workspace: "$GITHUB_WORKSPACE"
-      - run: catkin build
-      - run: catkin test
+          path: 'src'
+      - run: . /opt/ros/noetic/setup.sh && catkin init
+      - run: . /opt/ros/noetic/setup.sh && catkin build --cmake-args -DCMAKE_BUILD_TYPE=Release
+      - run: . /opt/ros/noetic/setup.sh && . $GITHUB_WORKSPACE/devel/setup.sh && echo $LD_LIBRARY_PATH && catkin test
+      # - run: cat $GITHUB_WORKSPACE/devel/setup.bash
+      # - run: bash -c "source /opt/ros/noetic/setup.bash && source $GITHUB_WORKSPACE/devel/setup.bash && echo $LD_LIBRARY_PATH && catkin test"
