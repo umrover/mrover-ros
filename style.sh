@@ -11,7 +11,7 @@ NC='\033[0m'
 clang_format_executable=clang-format-12
 clang_format_executable_path=$(which "$clang_format_executable")
 if [ ! -x "$clang_format_executable_path" ]; then
-  printf "${RED}[Error] Please install clang-format with: sudo apt install ${clang_format_executable}${NC}\n"
+  echo -e "${RED}[Error] Please install clang-format with: sudo apt install ${clang_format_executable}${NC}"
   exit 1
 fi
 
@@ -19,13 +19,13 @@ fi
 black_executable=black
 black_executable_path=$(which "$black_executable")
 if [ ! -x "$black_executable_path" ]; then
-  echo "[Error] Please run pip3 install -r requirements.txt"
+  echo -e "${RED}[Error] Please run pip3 install -r requirements.txt${NC}"
   exit 1
 fi
 
 # Style check Python with black
 if ! black --version | grep -q 'black, 22.8.0'; then
-  echo "[Error] Wrong black version"
+  echo -e "${RED}[Error] Wrong black version${NC}"
   exit 1
 fi
 
@@ -33,12 +33,12 @@ fi
 mypy_executable=mypy
 mypy_executable_path=$(which "$mypy_executable")
 if [ ! -x "$mypy_executable_path" ]; then
-  echo "[Error] Please run pip3 install -r requirements.txt"
+  echo -e "${RED}[Error] Please run pip3 install -r requirements.txt${NC}"
   exit 1
 fi
 
 if ! mypy --version | grep -q 'mypy 0.971'; then
-  echo "[Error] Wrong mypy version"
+  echo -e "${RED}[Error] Wrong mypy version${NC}"
   exit 1
 fi
 
@@ -52,9 +52,9 @@ find ./src -regex '.*\.\(cpp\|hpp\|h\)' -exec "$clang_format_executable_path" --
 echo "Done"
 
 echo "Style checking Python with black ..."
-"$black_executable_path" --check --diff --line-length=120 src scripts
+"$black_executable_path" --check --diff --line-length=120 ./src ./scripts
 echo "Done"
 
 echo "Style checking Python with mypy ..."
-"$mypy_executable_path" --config-file mypy.ini --check src scripts
+"$mypy_executable_path" --config-file mypy.ini --check ./src ./scripts
 echo "Done"
