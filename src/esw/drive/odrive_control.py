@@ -95,21 +95,21 @@ class Modrive:
     def __init__(self, odr) -> None:
         self._odrive = odr
         _side_by_axis: Dict[int, str] = {
-            rospy.get_param("/odrive/axis/left"): "left",
-            rospy.get_param("/odrive/axis/right"): "right",
+            rospy.get_param("odrive/axis/left"): "left",
+            rospy.get_param("odrive/axis/right"): "right",
         }
 
         self._axes = {_side_by_axis[0]: self._odrive.axis0, _side_by_axis[1]: self._odrive.axis1}
         self._meters_to_turns_ratio_by_side = {
-            "left": rospy.get_param("/odrive/ratio/meters_to_turns_ratio_left"),
-            "right": rospy.get_param("/odrive/ratio/meters_to_turns_ratio_right"),
+            "left": rospy.get_param("odrive/ratio/meters_to_turns_ratio_left"),
+            "right": rospy.get_param("odrive/ratio/meters_to_turns_ratio_right"),
         }
         self._turns_to_raw_ratio_by_side = {
-            "left": rospy.get_param("/odrive/ratio/turns_to_raw_ratio_left"),
-            "right": rospy.get_param("/odrive/ratio/turns_to_raw_ratio_right"),
+            "left": rospy.get_param("odrive/ratio/turns_to_raw_ratio_left"),
+            "right": rospy.get_param("odrive/ratio/turns_to_raw_ratio_right"),
         }
         self._usb_lock = threading.Lock()
-        self._watchdog_timeout = rospy.get_param("/odrive/config/watchdog_timeout")
+        self._watchdog_timeout = rospy.get_param("odrive/config/watchdog_timeout")
 
     def __getattr__(self, attr: Any) -> Any:
         """
@@ -427,21 +427,21 @@ class ODriveBridge(object):
         """Initializes the components, starting with a Disconnected State.
         :param pair: A string that is front, middle, or back"""
         self.start_time = t.process_time()
-        self._current_lim = rospy.get_param("/odrive/config/current_lim")
+        self._current_lim = rospy.get_param("odrive/config/current_lim")
         self._speed = Speed()
         _odrive_ids = {
-            "front": rospy.get_param("/odrive/ids/front"),
-            "middle": rospy.get_param("/odrive/ids/middle"),
-            "back": rospy.get_param("/odrive/ids/back"),
+            "front": rospy.get_param("odrive/ids/front"),
+            "middle": rospy.get_param("odrive/ids/middle"),
+            "back": rospy.get_param("odrive/ids/back"),
         }
         self._pair = pair
         self._publishers = {
-            "odrive": rospy.Publisher(f"/drive_data/odrive/{pair}", ODriveState, queue_size=1),
-            "left_wheel": rospy.Publisher(f"/drive_data/joint/{pair}/left", WheelData, queue_size=1),
-            "right_wheel": rospy.Publisher(f"/drive_data/joint/{pair}/right", WheelData, queue_size=1)
+            "odrive": rospy.Publisher(f"drive_data/odrive/{pair}", ODriveState, queue_size=1),
+            "left_wheel": rospy.Publisher(f"drive_data/joint/{pair}/left", WheelData, queue_size=1),
+            "right_wheel": rospy.Publisher(f"drive_data/joint/{pair}/right", WheelData, queue_size=1),
         }
         self._id = _odrive_ids[pair]
-        self._rate = rospy.Rate(rospy.get_param("/odrive/ros/publish_rate_hz"))
+        self._rate = rospy.Rate(rospy.get_param("odrive/ros/publish_rate_hz"))
         self._speed_lock = threading.Lock()
         self._state = DisconnectedState()
 
@@ -453,7 +453,7 @@ class ODriveBridge(object):
         """
         assert -1.0 <= speed <= 1.0, "speed must be in range[-1.0, 1.0]"
         self._speed_lock.acquire()
-        if axis == Axis.LEFT: 
+        if axis == Axis.LEFT:
             self._speed = Speed(speed, self._speed.right)
         else:
             self._speed = Speed(self._speed.left, speed)
@@ -600,8 +600,8 @@ class Application(object):
 
         rospy.init_node(f"odrive_control")
         self._bridges = [ODriveBridge("front"), ODriveBridge("middle"), ODriveBridge("back")]
-        rospy.Subscriber("/drive_cmd/wheels/left", JointState, self._drive_vel_cmd_callback, Axis.LEFT)
-        rospy.Subscriber("/drive_cmd/wheels/right", JointState, self._drive_vel_cmd_callback, Axis.RIGHT)
+        rospy.Subscriber("drive_cmd/wheels/left", JointState, self._drive_vel_cmd_callback, Axis.LEFT)
+        rospy.Subscriber("drive_cmd/wheels/right", JointState, self._drive_vel_cmd_callback, Axis.RIGHT)
 
     def run(self):
         """Runs the publish data loop and watchdog loops for all bridges"""
