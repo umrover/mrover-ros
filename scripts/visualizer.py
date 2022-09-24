@@ -128,5 +128,3 @@ if __name__ == "__main__":
     g = GUI(state_machine)
     g.show()
     app.exec_()
-    
-

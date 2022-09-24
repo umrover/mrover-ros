@@ -438,7 +438,7 @@ class ODriveBridge(object):
         self._publishers = {
             "odrive": rospy.Publisher(f"/drive_data/odrive/{pair}", ODriveState, queue_size=1),
             "left_wheel": rospy.Publisher(f"/drive_data/joint/{pair}/left", WheelData, queue_size=1),
-            "right_wheel": rospy.Publisher(f"/drive_data/joint/{pair}/right", WheelData, queue_size=1)
+            "right_wheel": rospy.Publisher(f"/drive_data/joint/{pair}/right", WheelData, queue_size=1),
         }
         self._id = _odrive_ids[pair]
         self._rate = rospy.Rate(rospy.get_param("/odrive/ros/publish_rate_hz"))
@@ -453,7 +453,7 @@ class ODriveBridge(object):
         """
         assert -1.0 <= speed <= 1.0, "speed must be in range[-1.0, 1.0]"
         self._speed_lock.acquire()
-        if axis == Axis.LEFT: 
+        if axis == Axis.LEFT:
             self._speed = Speed(speed, self._speed.right)
         else:
             self._speed = Speed(self._speed.left, speed)
