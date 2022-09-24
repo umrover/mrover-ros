@@ -1,13 +1,11 @@
 #include "I2C.h"
 
-
 // REQUIRES: device_file is the i2c device file
 // e.g. /dev/i2c-0, /dev/i2c-1, etc.
 // MODIFIES: nothing
-// RETURNS: nothing
+// EFFECTS: Opens the I2C bus.
 void I2C::init(std::string& device_file) {
-
-    file = open(device_file, O_RDWR);
+    file = open(device_file.c_str(), O_RDWR);
     if (file == -1) {
         printf("Failed to open I2C bus\n");
         throw IOFailure();
@@ -24,7 +22,7 @@ void I2C::init(std::string& device_file) {
 // readBuf must be nullptr if and only if readNum is 0.
 // 0 <= writeNum <= 31 and 0 <= readNum <= 32.
 // MODIFIES: readBuf
-// RETURNS: nothing
+// EFFECTS: Executes a read and/or write transaction.
 void I2C::transact(
         const uint8_t addr,
         const uint8_t cmd,
@@ -40,8 +38,8 @@ void I2C::transact(
     assert(0 <= writeNum <= 31);
     assert(0 <= readNum <= 32);
 
-            std::unique_lock<std::mutex>
-                    lck(transact_m);
+    std::unique_lock<std::mutex>
+            lck(transact_m);
 
     if (file == -1) {
         printf("I2C Port never opened. Make sure to first run I2C::init.");
