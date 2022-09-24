@@ -27,27 +27,11 @@ Controller::Controller(
 }
 
 // REQUIRES: nothing
-// MODIFIES: currentAngle.
-// EFFECTS: If controller is live,
-// updates the current angle and
-// returns the value in radians.
-// Otherwise, do nothing.
+// MODIFIES: nothing
+// EFFECTS: Returns last saved value of angle.
 // Expect a value between -M_PI and M_PI.
 float Controller::getCurrentAngle() {
-    if (!isLive) {
-        return;
-    }
-
-    float return_angle = 0.0f;
-    try {
-        int32_t raw_angle;
-        I2C::transact(deviceAddress, QUAD, nullptr, UINT8_POINTER_T(&raw_angle));
-
-        return_angle = ((raw_angle / quadCPR) * 2.0f * M_PI) - M_PI;
-    } catch (IOFailure& e) {
-        printf("getCurrentAngle failed on %s\n", name.c_str());
-    }
-    return return_angle;
+    return currentAngle;
 }
 
 // REQUIRES: nothing
@@ -58,9 +42,9 @@ bool Controller::isControllerLive() {
 }
 
 // REQUIRES: -M_PI <= targetAngle <= M_PI
-// MODIFIES: Makes controller live if not already.
+// MODIFIES: currentAngle. Also makes controller live if not already.
 // EFFECTS: Sends a closed loop command
-// to target angle in radians.
+// to target angle in radians. Also updates angle.
 void Controller::moveClosedLoop(float targetAngle) {
     try {
         assert(-M_PI <= targetAngle);
@@ -74,7 +58,10 @@ void Controller::moveClosedLoop(float targetAngle) {
 
         uint8_t buffer[32];
         memcpy(buffer + 4, UINT8_POINTER_T(&closedSetpoint), sizeof(closedSetpoint));
-        I2C::transact(deviceAddress, CLOSED, buffer, nullptr);
+
+        int32_t angle;
+        I2C::transact(deviceAddress, CLOSED_PLUS, buffer, UINT8_POINTER_T(&angle));
+        currentAngle = angle;
 
     } catch (IOFailure& e) {
         printf("moveClosedLoop failed on %s\n", name.c_str());
@@ -82,9 +69,9 @@ void Controller::moveClosedLoop(float targetAngle) {
 }
 
 // REQUIRES: -1.0 <= input <= 1.0
-// MODIFIES: Makes controller live if not already.
+// MODIFIES: currentAngle. Also makes controller live if not already.
 // EFFECTS: Sends an open loop command scaled to PWM limits
-// based on allowed voltage of the motor.
+// based on allowed voltage of the motor. Also updates angle.
 void Controller::moveOpenLoop(float input) {
     try {
         assert(-1.0f <= input);
@@ -97,23 +84,47 @@ void Controller::moveOpenLoop(float input) {
         // When closing the gripper,
         // We only want to apply 10 Volts
         if (name == "HAND_GRIP") {
-            float handGripClosingVoltage = 10;
+            float handGripClosingVoltage = 10.0f;
             float handGripClosingPercent = handGripClosingVoltage / motorMaxVoltage;
             speed = speed > handGripClosingPercent ? handGripClosingPercent : speed;
         }
 
-
         uint8_t buffer[4];
         memcpy(buffer, UINT8_POINTER_T(&speed), sizeof(speed));
 
-        I2C::transact(deviceAddress, OPEN, buffer, nullptr);
+        int32_t angle;
+        I2C::transact(deviceAddress, OPEN_PLUS, buffer, UINT8_POINTER_T(&angle));
+        currentAngle = angle;
     } catch (IOFailure& e) {
         printf("moveOpenLoop failed on %s\n", name.c_str());
     }
 }
 
 // REQUIRES: nothing
-// MODIFIES: Makes controller live if not already.
+// MODIFIES: currentAngle.
+// EFFECTS: If controller is live,
+// updates the current angle and
+// returns the value in radians.
+// Also, saves value in currentAngle.
+// Otherwise, do nothing.
+// Expect a value between -M_PI and M_PI.
+float Controller::refreshCurrentAngle() {
+    if (!isLive) {
+        return;
+    }
+
+    try {
+        int32_t raw_angle;
+        I2C::transact(deviceAddress, QUAD, nullptr, UINT8_POINTER_T(&raw_angle));
+        currentAngle = ((raw_angle / quadCPR) * 2.0f * M_PI) - M_PI;
+    } catch (IOFailure& e) {
+        printf("getCurrentAngle failed on %s\n", name.c_str());
+    }
+    return currentAngle;
+}
+
+// REQUIRES: nothing
+// MODIFIES: currentAngle. Also makes controller live if not already.
 // EFFECTS: Zeroes the angle of the physical controller.
 void Controller::zeroAngle() {
     try {
@@ -121,6 +132,8 @@ void Controller::zeroAngle() {
 
         int32_t zero = 0;
         I2C::transact(deviceAddress, ADJUST, UINT8_POINTER_T(&zero), nullptr);
+
+        currentAngle = 0.0f;
     } catch (IOFailure& e) {
         printf("zeroAngle failed on %s\n", name.c_str());
     }
