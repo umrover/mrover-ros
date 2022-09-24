@@ -5,8 +5,6 @@
 #include <sensor_msgs/JointState.h> // for JointState
 #include <unordered_map>            // for unordered_map
 
-#define NOW std::chrono::high_resolution_clock::now()
-
 /*
 ROSHandler.h is responsible for handling incoming and outgoing ROS messages.
 Incoming ROS messages will trigger functions which call the functions on the appropriate virtual Controllers. 
@@ -33,7 +31,8 @@ private:
 
 public:
     // REQUIRES: root is created from calling ros::param::get("motors/controllers", root)
+    // and rosNode is a pointer to the created node.
     // MODIFIES: n, subscribersByName, and publishersByName.
     // EFFECTS: Initializes all subscribers and publishers.
-    static void init(XmlRpc::XmlRpcValue& root);
+    static void init(XmlRpc::XmlRpcValue& root, ros::NodeHandle* rosNode);
 };

@@ -1,11 +1,12 @@
 #include "ROSHandler.h"
 
 // REQUIRES: root is created from calling ros::param::get("motors/controllers", root)
+// and rosNode is a pointer to the created node.
 // MODIFIES: n, subscribersByName, and publishersByName.
 // EFFECTS: Initializes all subscribers and publishers.
-void ROSHandler::init(XmlRpc::XmlRpcValue& root) {
+void ROSHandler::init(XmlRpc::XmlRpcValue& root, ros::NodeHandle* rosNode) {
 
-    n = new ros::NodeHandle();
+    n = rosNode;
 
     for (int32_t i = 0; i < root.size(); ++i) {
         assert(root[i].hasMember("name") &&
