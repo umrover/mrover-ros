@@ -1,5 +1,4 @@
-#ifndef CONTROLLER_MAP_H
-#define CONTROLLER_MAP_H
+#pragma once
 
 #include "Controller.h"
 
@@ -7,6 +6,7 @@
 // #include <stdint.h>
 // #include <string>
 
+#include <XmlRpcValue.h>  // for XmlRpc::XmlRpcValue
 #include <unordered_map> // for unordered_map
 
 /*
@@ -24,5 +24,3 @@ public:
     // EFFECTS: Creates all the controller objects based on data in root.
     static void init(XmlRpc::XmlRpcValue& root);
 };
-
-#endif

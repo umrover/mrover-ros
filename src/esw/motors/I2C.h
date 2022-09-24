@@ -1,5 +1,4 @@
-#ifndef I2C_H
-#define I2C_H
+#pragma once
 
 #include <assert.h>        // for assert
 #include <exception>       // for std::exception
@@ -50,5 +49,3 @@ public:
             uint8_t* writeBuf,
             uint8_t* readBuf);
 };
-
-#endif

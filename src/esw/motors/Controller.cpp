@@ -43,7 +43,7 @@ float Controller::getCurrentAngle() {
         int32_t raw_angle;
         I2C::transact(deviceAddress, QUAD, nullptr, UINT8_POINTER_T(&raw_angle));
 
-        return_angle = ((raw_angle / quadCpr) * 2.0f * M_PI) - M_PI;
+        return_angle = ((raw_angle / quadCPR) * 2.0f * M_PI) - M_PI;
     } catch (IOFailure& e) {
         printf("getCurrentAngle failed on %s\n", name.c_str());
     }
@@ -70,7 +70,7 @@ void Controller::moveClosedLoop(float targetAngle) {
         // The physical controller reads values from 0 - 2*M_PI.
         // Teleop sends in -M_PI to M_PI.
         targetAngle += M_PI;
-        int32_t closedSetpoint = static_cast<int32_t>((targetAngle / (2.0f * M_PI)) * quadCpr);
+        int32_t closedSetpoint = static_cast<int32_t>((targetAngle / (2.0f * M_PI)) * quadCPR);
 
         uint8_t buffer[32];
         memcpy(buffer + 4, UINT8_POINTER_T(&closedSetpoint), sizeof(closedSetpoint));
@@ -166,7 +166,7 @@ void Controller::makeLive() {
                     UINT8_POINTER_T(&(absRawAngle)));
         }
 
-        int32_t adjustedQuad = (absRawAngle / (2.0f * M_PI)) * quadCpr;
+        int32_t adjustedQuad = (absRawAngle / (2.0f * M_PI)) * quadCPR;
         memcpy(buffer, UINT8_POINTER_T(&(adjustedQuad)), sizeof(adjustedQuad));
         I2C::transact(deviceAddress, ADJUST, buffer, nullptr);
 

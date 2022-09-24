@@ -1,5 +1,4 @@
-#ifndef CONTROLLER_H
-#define CONTROLLER_H
+#pragma once
 
 #include "I2C.h"    // for I2C and IOFailure
 #include <assert.h> // for assert
@@ -43,7 +42,7 @@ trying to contact the same physical Controller object.)
 
 class Controller {
 public:
-    float quadCpr = std::numeric_limits<float>::infinity();
+    float quadCPR = std::numeric_limits<float>::infinity();
     float kP = 0.01f;
     float kI = 0.0f;
     float kD = 0.0f;
@@ -113,5 +112,3 @@ private:
 
     bool isLive = false;
 };
-
-#endif
