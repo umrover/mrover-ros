@@ -76,6 +76,11 @@ public:
     // Expect a value between -M_PI and M_PI.
     float getCurrentAngle();
 
+    // REQUIRES: nothing
+    // MODIFIES: nothing
+    // EFFECTS: Returns true if Controller is live.
+    bool isControllerLive();
+
     // REQUIRES: -M_PI <= targetAngle <= M_PI
     // MODIFIES: Makes controller live if not already.
     // EFFECTS: Sends a closed loop command

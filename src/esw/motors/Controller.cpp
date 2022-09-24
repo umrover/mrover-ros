@@ -50,6 +50,13 @@ float Controller::getCurrentAngle() {
     return return_angle;
 }
 
+// REQUIRES: nothing
+// MODIFIES: nothing
+// EFFECTS: Returns true if Controller is live.
+bool Controller::isControllerLive() {
+    return isLive;
+}
+
 // REQUIRES: -M_PI <= targetAngle <= M_PI
 // MODIFIES: Makes controller live if not already.
 // EFFECTS: Sends a closed loop command

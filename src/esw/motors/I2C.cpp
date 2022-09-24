@@ -10,7 +10,7 @@ void I2C::init(std::string& device_file) {
         printf("Failed to open I2C bus\n");
         throw IOFailure();
     }
-} // I2C::init
+}
 
 // REQUIRES: addr is the address of the slave,
 // cmd is the register/command,
@@ -71,4 +71,4 @@ void I2C::transact(
 
     // Copy data to readBuf.
     memcpy(readBuf, buffer, readNum);
-} // I2C::transact
+}
