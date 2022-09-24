@@ -24,6 +24,7 @@ find_package(catkin REQUIRED COMPONENTS
         message_generation
         rosbridge_server
         teleop_twist_joy
+        gazebo_ros
         )
 
 find_package(OpenCV REQUIRED)
@@ -259,4 +260,5 @@ catkin_add_nosetests(test/util/SO3_test.py)
 # Integration tests (python and c++)
 find_package(rostest REQUIRED)
 add_rostest(test/example/basic_integration_test.test)
+add_rostest(test/integration/integration.test)
 add_rostest(test/util/SE3_tf_test.test)

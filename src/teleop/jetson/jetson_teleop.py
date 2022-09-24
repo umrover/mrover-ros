@@ -11,6 +11,7 @@ from sensor_msgs.msg import Joy, JointState
 def quadratic(val):
     return copysign(val**2, val)
 
+
 # If below threshold, make output zero
 def deadzone(magnitude, threshold):
     temp_mag = abs(magnitude)
