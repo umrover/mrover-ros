@@ -7,15 +7,18 @@ jobs:
   build:
     name: Build and Test
     runs-on: ubuntu-latest
-    container: umrover1/ros:latest
+    container:
+      image: umrover1/ros:latest
+      options: --user root
     if: github.event.pull_request.draft == false
     steps:
       - uses: actions/checkout@v3
-      - run: sudo apt-get update -y && rosdep update
-      - uses: betwo/github-setup-catkin@master
         with:
-          ros-version: "noetic"
-          build-tool: "catkin_tools"
-          workspace: "$GITHUB_WORKSPACE"
-      - run: catkin build
-      - run: catkin test
+          lfs: "true"
+          path: "src"
+      - name: Initialize catkin workspace
+        run: . /opt/ros/noetic/setup.sh && catkin init
+      - name: Build
+        run: . /opt/ros/noetic/setup.sh && catkin build --interleave-output --cmake-args -DCMAKE_BUILD_TYPE=Release
+      - name: Test
+        run: . /opt/ros/noetic/setup.sh && . $GITHUB_WORKSPACE/devel/setup.sh && catkin test -j1

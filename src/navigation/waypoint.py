@@ -1,4 +1,4 @@
-from typing import List, Optional
+from typing import List
 
 import numpy as np
 
@@ -31,7 +31,7 @@ class WaypointState(BaseState):
         )
 
     def rover_forward(self) -> np.ndarray:
-        return self.context.get_rover_pose().x_vector()
+        return self.context.rover.get_pose().rotation.direction_vector()
 
     def evaluate(self, ud) -> str:
         """

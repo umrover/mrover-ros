@@ -11,12 +11,12 @@ yarn_executable_path=$(which "$yarn_executable")
 
 if [ -z "$node_executable_path" ]
 then
-    echo "Node installation not found, please run src/teleop/gui/gui_install.sh"
+    echo "Node installation not found, please run gui_install.sh"
     exit 1
 fi
 if [ -z "$yarn_executable_path" ]
 then
-    echo "Yarn installation not found, please run src/teleop/gui/gui_install.sh"
+    echo "Yarn installation not found, please run gui_install.sh"
     exit 1
 fi
 
