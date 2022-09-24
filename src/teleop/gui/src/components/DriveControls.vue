@@ -13,10 +13,6 @@ let interval;
 export default {
   data () {
     return {
-      dampen: 0,
-      reverse: false,
-      drive_config: null,
-      joystick_mapping: null
     }
   },
 
@@ -26,33 +22,6 @@ export default {
   },
 
   created: function () {
-
-    var drive_control_param = new ROSLIB.Param({
-      ros : this.$ros,
-      name :  '/teleop/drive_controls'
-    });
-
-    
-    var joystick_mapping_param = new ROSLIB.Param({
-      ros : this.$ros,
-      name :  '/teleop/joystick_mappings'
-    });
-
-    drive_control_param.get((value) => {
-      if (value != null) {
-          this.drive_config = value;
-          console.log(this.drive_config.forward_back.multiplier)
-      }
-    });
-      
-    joystick_mapping_param.get((value) => {
-      if (value != null) {
-        this.joystick_mapping = value;
-        console.log(this.joystick_mapping)
-      }
-    });
-
-
     const updateRate = 0.05;
     interval = window.setInterval(() => {
         const gamepads = navigator.getGamepads()
@@ -65,17 +34,7 @@ export default {
                 return button.value
               })
 
-              //Deadzone applied to all axis
-              const deadzone = 0.05
-              let axes = gamepad.axes.map((axis) => {
-                return Math.abs(axis) <= deadzone ? 0 : axis
-              })
-              //Invert Forward/Back Stick, forward is normally -1
-              axes[this.joystick_mapping.forward_back] = this.drive_config.forward_back.multiplier * axes[this.joystick_mapping.forward_back]
-              axes[this.joystick_mapping.left_right] = this.drive_config.left_right.multiplier * axes[this.joystick_mapping.left_right]
-
-              //Done so that teleop_twist_joy will always be enabled
-              buttons.unshift(1)
+              let axes=gamepad.axes
 
               const joystickData = {
                 axes: axes,

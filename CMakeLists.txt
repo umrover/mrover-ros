@@ -76,10 +76,13 @@ add_subdirectory(starter_project/teleop)
 ## Generate messages in the 'msg' folder
 add_message_files(
         FILES
+        Chassis.msg
         Course.msg
+        ODriveState.msg
         Waypoint.msg
         CalibrationStatus.msg
         Chassis.msg
+        WheelData.msg
 )
 
 ## Generate services in the 'srv' folder
