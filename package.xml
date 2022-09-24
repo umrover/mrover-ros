@@ -94,6 +94,7 @@
 
   <!-- Localization -->
   <depend>robot_localization</depend>
+  <depend>nmea_navsat_driver</depend>
 
   <!-- Navigation -->
   <depend>smach_ros</depend>

@@ -1,3 +1,13 @@
+gps_driver:
+  port: "/dev/gps"
+  baud: 115200
+  useRMC: false # get covariance instead of velocity, see wiki for more info
+
+imu_driver:
+  port: "/dev/imu"
+  baud: 115200
+  frame_id: "imu_link"
+
 odrive:
   axis:
     left: 0
