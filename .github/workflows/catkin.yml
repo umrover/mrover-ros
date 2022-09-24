@@ -14,8 +14,11 @@ jobs:
     steps:
       - uses: actions/checkout@v3
         with:
-          lfs: 'true'
-          path: 'src'
-      - run: . /opt/ros/noetic/setup.sh && catkin init
-      - run: . /opt/ros/noetic/setup.sh && catkin build --interleave-output --cmake-args -DCMAKE_BUILD_TYPE=Release
-      - run: . /opt/ros/noetic/setup.sh && . $GITHUB_WORKSPACE/devel/setup.sh && catkin test -j1
+          lfs: "true"
+          path: "src"
+      - name: Initialize catkin workspace
+        run: . /opt/ros/noetic/setup.sh && catkin init
+      - name: Build
+        run: . /opt/ros/noetic/setup.sh && catkin build --interleave-output --cmake-args -DCMAKE_BUILD_TYPE=Release
+      - name: Test
+        run: . /opt/ros/noetic/setup.sh && . $GITHUB_WORKSPACE/devel/setup.sh && catkin test -j1

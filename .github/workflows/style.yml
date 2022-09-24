@@ -15,6 +15,5 @@ jobs:
       options: --user root
     steps:
       - uses: actions/checkout@v3
-      - name: Style check C++ and Python files
+      - name: Style check C++/Python
         run: ./style.sh
- 
