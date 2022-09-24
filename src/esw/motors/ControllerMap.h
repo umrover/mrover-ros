@@ -17,7 +17,7 @@ controller on the rover, across both RA/SA configurations.
 class ControllerMap {
 public:
     // Map of virtual controller names to virtual Controller objects
-    inline static std::unordered_map<std::string, Controller*> controllersByName;
+    static std::unordered_map<std::string, Controller*> controllersByName;
 
     // REQUIRES: root is created from calling ros::param::get("motors/controllers", root)
     // MODIFIES: controllersByName
