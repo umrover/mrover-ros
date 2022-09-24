@@ -38,8 +38,8 @@ class Drive:
         # Constants for diff drive
         self.TRACK_RADIUS = track_radius  # meter
         self.WHEEL_RADIUS = wheel_radius  # meter
-        self.left_wheel_pub = ros.Publisher("/drive_cmd/wheels/left", JointState, queue_size=100)
-        self.right_wheel_pub = ros.Publisher("/drive_cmd/wheels/right", JointState, queue_size=100)
+        self.left_wheel_pub = ros.Publisher("drive_cmd/wheels/left", JointState, queue_size=100)
+        self.right_wheel_pub = ros.Publisher("drive_cmd/wheels/right", JointState, queue_size=100)
 
     def teleop_drive_callback(self, msg):
         joints: typing.Dict[str, JointState] = {}
@@ -78,16 +78,16 @@ class ArmControl:
         self.ra_config = ra_config
 
         # RA Joint Publishers
-        self.joint_a_pub = ros.Publisher("/ra/open_loop/joint_a", JointState, queue_size=100)
-        self.joint_b_pub = ros.Publisher("/ra/open_loop/joint_b", JointState, queue_size=100)
-        self.joint_c_pub = ros.Publisher("/ra/open_loop/joint_c", JointState, queue_size=100)
-        self.joint_d_pub = ros.Publisher("/ra/open_loop/joint_d", JointState, queue_size=100)
-        self.joint_e_pub = ros.Publisher("/ra/open_loop/joint_e", JointState, queue_size=100)
-        self.joint_f_pub = ros.Publisher("/ra/open_loop/joint_f", JointState, queue_size=100)
+        self.joint_a_pub = ros.Publisher("ra/open_loop/joint_a", JointState, queue_size=100)
+        self.joint_b_pub = ros.Publisher("ra/open_loop/joint_b", JointState, queue_size=100)
+        self.joint_c_pub = ros.Publisher("ra/open_loop/joint_c", JointState, queue_size=100)
+        self.joint_d_pub = ros.Publisher("ra/open_loop/joint_d", JointState, queue_size=100)
+        self.joint_e_pub = ros.Publisher("ra/open_loop/joint_e", JointState, queue_size=100)
+        self.joint_f_pub = ros.Publisher("ra/open_loop/joint_f", JointState, queue_size=100)
 
         # Hand Publishers
-        self.finger_pub = ros.Publisher("/hand/open_loop/finger", JointState, queue_size=100)
-        self.grip_pub = ros.Publisher("/hand/open_loop/grip", JointState, queue_size=100)
+        self.finger_pub = ros.Publisher("hand/open_loop/finger", JointState, queue_size=100)
+        self.grip_pub = ros.Publisher("hand/open_loop/grip", JointState, queue_size=100)
 
     def ra_control_callback(self, msg):
         joints: typing.Dict[str, JointState] = {}
@@ -158,20 +158,20 @@ class ArmControl:
 
 def main():
     ros.init_node("teleop")
-    xbox = ros.get_param("/teleop/xbox_mappings")
-    joystick = ros.get_param("/teleop/joystick_mappings")
-    ra_config = ros.get_param("/teleop/ra_controls")
-    drive_config = ros.get_param("/teleop/drive_controls")
-    track_radius = ros.get_param("/teleop/constants/track_radius")
-    wheel_radius = ros.get_param("/teleop/constants/wheel_radius")
+    xbox = ros.get_param("teleop/xbox_mappings")
+    joystick = ros.get_param("teleop/joystick_mappings")
+    ra_config = ros.get_param("teleop/ra_controls")
+    drive_config = ros.get_param("teleop/drive_controls")
+    track_radius = ros.get_param("teleop/constants/track_radius")
+    wheel_radius = ros.get_param("teleop/constants/wheel_radius")
 
     arm = ArmControl(xbox_mappings=xbox, ra_config=ra_config)
     drive = Drive(
         joystick_mappings=joystick, drive_config=drive_config, track_radius=track_radius, wheel_radius=wheel_radius
     )
 
-    ros.Subscriber("/joystick", Joy, drive.teleop_drive_callback)
-    ros.Subscriber("/xbox/ra_control", Joy, arm.ra_control_callback)
+    ros.Subscriber("joystick", Joy, drive.teleop_drive_callback)
+    ros.Subscriber("xbox/ra_control", Joy, arm.ra_control_callback)
 
     ros.spin()
 
