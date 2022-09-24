@@ -51,8 +51,6 @@
 
   <!-- Common -->
   <buildtool_depend>catkin</buildtool_depend>
-  <buildtool_depend>nodejs</buildtool_depend>
-  <buildtool_depend>yarn</buildtool_depend>
   <build_depend>roscpp</build_depend>
   <build_depend>rospy</build_depend>
   <build_depend>std_msgs</build_depend>
@@ -102,6 +100,9 @@
 
   <!-- Teleop -->
   <depend>teleop_twist_joy</depend>
+
+  <!-- Embedded Software -->
+  <depend>python3-odrive-pip</depend>
 
   <!-- Test -->
   <test_depend>rosunit</test_depend>

@@ -7,5 +7,9 @@ __pycache__/
 **/.vscode/
 **/.idea/
 
+#GUI Files
 /src/teleop/gui/dist/
 /src/teleop/gui/node_modules/
+**/yarn.lock*
+
+.mypy_cache/
