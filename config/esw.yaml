@@ -20,9 +20,13 @@ odrive:
     middle: "205535833056"
     back: "2066377F5753"
   ratio:
-    meters_to_turns_ratio_left: -39.793
-    meters_to_turns_ratio_right: 39.793
-    turns_to_raw_ratio_left: -50.0
-    turns_to_raw_ratio_right: 50.0
+    direction_left: -1.0
+    direction_right: 1.0
   ros:
     publish_rate_hz: 20
+
+wheels:
+  base: 0.86
+  radius: 0.13
+  ratio: 48.0
+  max_speed: 1.0

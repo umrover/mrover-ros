@@ -7,6 +7,4 @@
   -->
   <node name="odrive_control" pkg="mrover" type="odrive_control.py" output="screen"></node>
   <rosparam command="load" file="$(find mrover)/config/esw.yaml" />
-
-  <node name="driveControl" pkg="mrover" type="driveController.py"/>
 </launch>
