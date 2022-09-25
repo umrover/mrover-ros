@@ -8,12 +8,12 @@ add_compile_options(-std=c++17 -Wall -Wextra -Werror -pedantic)
 
 # find_package
 set(_PACKAGES
-    rospy
-    std_msgs
-    message_generation
-    dynamic_reconfigure
-    rostest
-    )
+        rospy
+        std_msgs
+        message_generation
+        dynamic_reconfigure
+        rostest
+        )
 
 # link_directories
 set(_LINK_DIRS "")
@@ -30,34 +30,33 @@ set(_MESSAGE_FILES
 
 # service files
 set(_SERVICE_FILES
-    PublishCourse.srv
-    )
+        PublishCourse.srv
+        )
 
 # generate messages list
 set(_MESSAGES
-    std_msgs
-    )
+        std_msgs
+        )
 
 # dynamic reconfigure
 set(_DYNAMIC_RECON
-    config/DetectorParams.cfg
-    )
+        config/DetectorParams.cfg
+        )
 
 # catkin_package
 set(_CAT_PACKAGES
-    roscpp rospy std_msgs message_runtime
-    )
+        roscpp rospy std_msgs message_runtime
+        )
 
 # launch install macro
 macro(install_launch_macro)
     install(DIRECTORY launch/
-        DESTINATION ${CATKIN_PACKAGE_SHARE_DESTINATION}/launch
-        )
+            DESTINATION ${CATKIN_PACKAGE_SHARE_DESTINATION}/launch
+            )
 endmacro()
 
 # Subdirectories before message declarations
 set(_SUBDIR "")
-
 
 
 # -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
@@ -67,45 +66,45 @@ set(_SUBDIR "")
 # Select device with --cmake-flags -D DEVICE=<fill in device>
 # -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-if(${DEVICE} MATCHES "raspi4")
+if (${DEVICE} MATCHES "raspi4")
     # Add any raspi4 specific packages here
     # list(APPEND _PACKAGES )
 
-else()
+else ()
     # Add any laptop specific packages here
-    list(APPEND _PACKAGES 
-        roscpp
-        tf2_geometry_msgs
-        tf2_ros
-        tf2
-        visualization_msgs
-        vision_msgs
-        image_transport
-        cv_bridge
-        sensor_msgs
-        fiducial_msgs
-        rosbridge_server
-        teleop_twist_joy
-        OpenCV
-        gazebo
-        gazebo_ros
-        )
+    list(APPEND _PACKAGES
+            roscpp
+            tf2_geometry_msgs
+            tf2_ros
+            tf2
+            visualization_msgs
+            vision_msgs
+            image_transport
+            cv_bridge
+            sensor_msgs
+            fiducial_msgs
+            rosbridge_server
+            teleop_twist_joy
+            OpenCV
+            gazebo
+            gazebo_ros
+            )
 
     # append include directories
     list(APPEND _INCLUDE_DIREC
-        GAZEBO_INCLUDE_DIRS
-        OpenCV_INCLUDE_DIRS
-        )
+            GAZEBO_INCLUDE_DIRS
+            OpenCV_INCLUDE_DIRS
+            )
 
     # append link directories
     list(APPEND _LINK_DIRS
-        ${GAZEBO_LIBRARY_DIRS}
-        )
+            ${GAZEBO_LIBRARY_DIRS}
+            )
 
     # append subdirectories
     list(APPEND _SUBDIR
-        starter_project/teleop
-        )
+            starter_project/teleop
+            )
 
     # define a test macro
     macro(test_macro)
@@ -125,8 +124,8 @@ else()
 
     macro(include_directories_macro)
         include_directories(
-            ${GAZEBO_INCLUDE_DIRS}
-            ${OpenCV_INCLUDE_DIRS}
+                ${GAZEBO_INCLUDE_DIRS}
+                ${OpenCV_INCLUDE_DIRS}
         )
     endmacro()
 
@@ -145,32 +144,31 @@ else()
 
     macro(additional_install_macro)
         install(TARGETS aruco_detect
-            ARCHIVE DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
-            LIBRARY DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
-            RUNTIME DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
-            )
+                ARCHIVE DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
+                LIBRARY DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
+                RUNTIME DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
+                )
         install(TARGETS differential_drive_plugin_6w
-            ARCHIVE DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
-            LIBRARY DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
-            RUNTIME DESTINATION ${CATKIN_GLOBAL_BIN_DESTINATION}
-            )
+                ARCHIVE DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
+                LIBRARY DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
+                RUNTIME DESTINATION ${CATKIN_GLOBAL_BIN_DESTINATION}
+                )
     endmacro()
-    
+
     # Set policy
     if (POLICY CMP0054)
         cmake_policy(SET CMP0054 NEW)
     endif ()
 
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${GAZEBO_CXX_FLAGS}")
-    
-endif()
 
+endif ()
 
 
 # 3. Find Packages
 find_package(
-    catkin REQUIRED COMPONENTS
-    ${_PACKAGES}
+        catkin REQUIRED COMPONENTS
+        ${_PACKAGES}
 )
 
 
@@ -179,69 +177,69 @@ catkin_python_setup()
 
 
 # 4.5. Subdirectories before message declarations
-if(NOT "${_SUBDIR}" MATCHES "")
+if (NOT "${_SUBDIR}" MATCHES "")
     add_subdirectory(
-        ${_SUBDIR}
+            ${_SUBDIR}
     )
-endif()
+endif ()
 
 
 # 5. Message Generators (add_xxx)
 add_message_files(
-    FILES
-    ${_MESSAGE_FILES}
+        FILES
+        ${_MESSAGE_FILES}
 )
 
 add_service_files(
-    FILES
-    ${_SERVICE_FILES}
+        FILES
+        ${_SERVICE_FILES}
 )
 
 
 # 6. Invoke messages (generate_messages)
 generate_messages(
-    DEPENDENCIES
-    ${_MESSAGES}
+        DEPENDENCIES
+        ${_MESSAGES}
 )
 
 generate_dynamic_reconfigure_options(
-    ${_DYNAMIC_RECON}
+        ${_DYNAMIC_RECON}
 )
 
 
 # 7. Specify package build info export (catkin_package)
 catkin_package(
-    CATKIN_DEPENDS
-    ${_CAT_PACKAGES}
+        CATKIN_DEPENDS
+        ${_CAT_PACKAGES}
 )
 
 
 # 8. Libraries/Executables to build (add_executable)
 # These only exist after find_packages
 include_directories(
-    ${catkin_INCLUDE_DIRS}
+        ${catkin_INCLUDE_DIRS}
 )
-if(COMMAND include_directories_macro)
+if (COMMAND include_directories_macro)
     include_directories_macro()
-endif()
+endif ()
 
 link_directories(
-    ${_LINK_DIRS}
+        ${_LINK_DIRS}
 )
 
-if(COMMAND add_and_link_macro)
+if (COMMAND add_and_link_macro)
     add_and_link_macro()
-endif()
+endif ()
 
 
 # 9. Tests to build
-if(COMMAND add_tests_macro)
+if (COMMAND add_tests_macro)
     add_tests_macro()
-endif()
+endif ()
 
 
 # 10. Install rules
 install_launch_macro()
-if(COMMAND additional_install_macro)
+if (COMMAND additional_install_macro)
     additional_install_macro()
 endif()
