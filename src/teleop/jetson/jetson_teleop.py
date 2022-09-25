@@ -86,8 +86,8 @@ class ArmControl:
         self.joint_f_pub = ros.Publisher("open_loop/ra/joint_f", JointState, queue_size=100)
 
         # Hand Publishers
-        self.finger_pub = ros.Publisher("open_loop/hand/finger", JointState, queue_size=100)
-        self.grip_pub = ros.Publisher("open_loop/hand/grip", JointState, queue_size=100)
+        self.finger_pub = ros.Publisher("open_loop/ra/finger", JointState, queue_size=100)
+        self.gripper_pub = ros.Publisher("open_loop/ra/gripper", JointState, queue_size=100)
 
     def ra_control_callback(self, msg):
         joints: typing.Dict[str, JointState] = {}
@@ -141,8 +141,8 @@ class ArmControl:
         )
         create_joint_msg(
             joints,
-            "hand_grip",
-            self.ra_config["grip"]["multiplier"]
+            "hand_gripper",
+            self.ra_config["gripper"]["multiplier"]
             * (msg.buttons[self.xbox_mappings["b"]] - msg.buttons[self.xbox_mappings["x"]]),
         )
 
@@ -153,7 +153,7 @@ class ArmControl:
         self.joint_e_pub.publish(joints["joint_e"])
         self.joint_f_pub.publish(joints["joint_f"])
         self.finger_pub.publish(joints["hand_finger"])
-        self.grip_pub.publish(joints["hand_grip"])
+        self.gripper_pub.publish(joints["hand_gripper"])
 
 
 def main():

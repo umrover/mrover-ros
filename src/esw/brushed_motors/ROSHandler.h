@@ -4,6 +4,21 @@
 #include <ros/ros.h>                // for ros
 #include <sensor_msgs/JointState.h> // for JointState
 #include <unordered_map>            // for unordered_map
+#include <vector>                   // for vector
+
+// A struct used for keeping track of subscriber data
+struct subscriberData {
+    ros::Subscriber* subscriber;
+    std::string topic;
+    std::string name;
+};
+
+// A struct used for keeping track of publisher data
+struct publisherData {
+    ros::Publisher* publisher;
+    std::string topic;
+    std::string name;
+};
 
 /*
 ROSHandler.h is responsible for handling incoming and outgoing ROS messages.
@@ -15,26 +30,36 @@ private:
     // This holds the ROS Node.
     inline static ros::NodeHandle* n;
 
-    // This keeps track of all the open loop subscribers
-    inline static std::unordered_map<std::string, ros::Subscriber> openLoopSubscribersByName =
-            std::unordered_map<std::string, ros::Subscriber>();
+    // This keeps track of all the open loop subscribers and publishers
+    inline static ros::Subscriber openLoopSubscriberRAJointA;
+    inline static ros::Subscriber openLoopSubscriberRAJointB;
+    inline static ros::Subscriber openLoopSubscriberRAJointC;
+    inline static ros::Subscriber openLoopSubscriberRAJointD;
+    inline static ros::Subscriber openLoopSubscriberRAJointE;
+    inline static ros::Subscriber openLoopSubscriberRAJointF;
+    inline static ros::Subscriber openLoopSubscriberRAGripper;
+    inline static ros::Subscriber openLoopSubscriberRAFinger;
 
-    // This keeps track of all the angle data publishers
-    inline static std::unordered_map<std::string, ros::Publisher> jointDataPublishersByName =
-            std::unordered_map<std::string, ros::Publisher>();
+    inline static ros::Publisher jointDataPublisherJointA;
+    inline static ros::Publisher jointDataPublisherJointB;
+    inline static ros::Publisher jointDataPublisherJointC;
+    inline static ros::Publisher jointDataPublisherJointD;
+    inline static ros::Publisher jointDataPublisherJointE;
+    inline static ros::Publisher jointDataPublisherJointF;
+
+    inline static std::unordered_map<std::string, ros::Publisher*> jointDataPublishersByName;
 
     // REQUIRES: name is a valid name
     // MODIFIES: nothing
     // EFFECTS: Moves a joint in open loop
     // and publishes angle data right after.
     static void moveJointOpenLoopCommand(
-            const sensor_msgs::JointState& state,
-            std::string& name);
+            const sensor_msgs::JointState::ConstPtr& state,
+            const std::string& name);
 
 public:
-    // REQUIRES: root is created from calling ros::param::get("motors/controllers", root)
-    // and rosNode is a pointer to the created node.
+    // REQUIRES: rosNode is a pointer to the created node.
     // MODIFIES: n, subscribersByName, and publishersByName.
     // EFFECTS: Initializes all subscribers and publishers.
-    static void init(XmlRpc::XmlRpcValue& root, ros::NodeHandle* rosNode);
+    static void init(ros::NodeHandle* rosNode);
 };

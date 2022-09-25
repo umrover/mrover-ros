@@ -10,9 +10,7 @@ imu_driver:
 
 brushed_motors:
   controllers:
-    - name: "ARM_A"
-      open_loop_topic: "open_loop/ra/joint_a"
-      joint_data_topic: "joint_data/ra/joint_a"
+    - name: "ra_joint_a"
       driver_voltage: 36.0
       motor_max_voltage: 24.0
       voltage_multiplier: 0.44
@@ -22,9 +20,7 @@ brushed_motors:
       kP: -0.005
       kI: -0.0
       inversion: -1.0
-    - name: "ARM_B"
-      open_loop_topic: "open_loop/ra/joint_b"
-      joint_data_topic: "joint_data/ra/joint_b"
+    - name: "ra_joint_b"
       driver_voltage: 36.0
       motor_max_voltage: 12.0
       nucleo: 0
@@ -33,9 +29,7 @@ brushed_motors:
       kP: -0.1
       kI: -0.0
       inversion: 1.0
-    - name: "ARM_C"
-      open_loop_topic: "open_loop/ra/joint_c"
-      joint_data_topic: "joint_data/ra/joint_c"
+    - name: "ra_joint_c"
       driver_voltage: 36.0
       motor_max_voltage: 24.0
       nucleo: 0
@@ -44,9 +38,7 @@ brushed_motors:
       kP: -0.005
       kI: -0.0
       inversion: 1.0
-    - name: "ARM_D"
-      open_loop_topic: "open_loop/ra/joint_d"
-      joint_data_topic: "joint_data/ra/joint_d"
+    - name: "ra_joint_d"
       driver_voltage: 36.0
       motor_max_voltage: 24.0
       nucleo: 1
@@ -55,9 +47,7 @@ brushed_motors:
       kP: -0.005
       kI: -0.0
       inversion: 1.0
-    - name: "ARM_E"
-      open_loop_topic: "open_loop/ra/joint_e"
-      joint_data_topic: "joint_data/ra/joint_e"
+    - name: "ra_joint_e"
       driver_voltage: 36.0
       motor_max_voltage: 24.0
       nucleo: 2
@@ -66,9 +56,7 @@ brushed_motors:
       kP: -0.005
       kI: -0.0
       inversion: 1.0
-    - name: "ARM_F"
-      open_loop_topic: "open_loop/ra/joint_f"
-      joint_data_topic: "joint_data/ra/joint_f"
+    - name: "ra_joint_f"
       driver_voltage: 36.0
       motor_max_voltage: 24.0
       nucleo: 2
@@ -77,15 +65,13 @@ brushed_motors:
       kP: 0.05
       kI: 0.0
       inversion: 1.0
-    - name: "HAND_FINGER"
-      open_loop_topic: "open_loop/hand/finger"
+    - name: "ra_finger"
       driver_voltage: 12.0
       motor_max_voltage: 12.0
       nucleo: 2
       channel: 2
       inversion: 1.0
-    - name: "HAND_GRIP"
-      open_loop_topic: "open_loop/hand/grip"
+    - name: "ra_gripper"
       driver_voltage: 12.0
       motor_max_voltage: 12.0
       nucleo: 1

@@ -12,7 +12,7 @@ int main(int argc, char* argv[]) {
     nh.getParam("brushed_motors/controllers", controllersRoot);
 
     ControllerMap::init(controllersRoot);
-    ROSHandler::init(controllersRoot, &nh);
+    ROSHandler::init(&nh);
 
     std::string i2cDeviceFile;
     nh.getParam("brushed_motors/i2c_device_file", i2cDeviceFile);
