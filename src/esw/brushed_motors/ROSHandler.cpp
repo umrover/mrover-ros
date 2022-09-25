@@ -13,9 +13,9 @@ void ROSHandler::init(XmlRpc::XmlRpcValue& root, ros::NodeHandle* rosNode) {
                root[i]["name"].getType() == XmlRpc::XmlRpcValue::TypeString);
         std::string name = static_cast<std::string>(root[i]["name"]);
 
-        assert(root[i].hasMember("openLoopTopic") &&
-               root[i]["openLoopTopic"].getType() == XmlRpc::XmlRpcValue::TypeString);
-        std::string openLoopTopic = static_cast<std::string>(root[i]["openLoopTopic"]);
+        assert(root[i].hasMember("open_loop_topic") &&
+               root[i]["open_loop_topic"].getType() == XmlRpc::XmlRpcValue::TypeString);
+        std::string openLoopTopic = static_cast<std::string>(root[i]["open_loop_topic"]);
 
         openLoopSubscribersByName[name] =
                 n->subscribe<sensor_msgs::JointState>(
@@ -23,10 +23,10 @@ void ROSHandler::init(XmlRpc::XmlRpcValue& root, ros::NodeHandle* rosNode) {
                         1,
                         boost::bind(moveJointOpenLoopCommand, _1, name));
 
-        if (root[i].hasMember("publishTopic") &&
-            root[i]["publishTopic"].getType() == XmlRpc::XmlRpcValue::TypeString) {
-            std::string publishTopic = static_cast<std::string>(root[i]["publishTopic"]);
-            angleDataPublishersByName[name] =
+        if (root[i].hasMember("joint_data_topic") &&
+            root[i]["joint_data_topic"].getType() == XmlRpc::XmlRpcValue::TypeString) {
+            std::string publishTopic = static_cast<std::string>(root[i]["joint_data_topic"]);
+            jointDataPublishersByName[name] =
                     n->advertise<sensor_msgs::JointState>(publishTopic, 1);
         }
     }
@@ -43,10 +43,9 @@ void ROSHandler::moveJointOpenLoopCommand(
 
     float jointAngle = ControllerMap::controllersByName[name]->getCurrentAngle();
 
-    if (angleDataPublishersByName.find(name) != angleDataPublishersByName.end()) {
+    if (jointDataPublishersByName.find(name) != jointDataPublishersByName.end()) {
         sensor_msgs::JointState msg;
-        msg.velocity.push_back(state.velocity[0]);
         msg.position.push_back(jointAngle);
-        angleDataPublishersByName[name].publish(msg);
+        jointDataPublishersByName[name].publish(msg);
     }
 }

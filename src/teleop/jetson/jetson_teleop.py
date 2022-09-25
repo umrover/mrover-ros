@@ -78,16 +78,16 @@ class ArmControl:
         self.ra_config = ra_config
 
         # RA Joint Publishers
-        self.joint_a_pub = ros.Publisher("ra/open_loop/joint_a", JointState, queue_size=100)
-        self.joint_b_pub = ros.Publisher("ra/open_loop/joint_b", JointState, queue_size=100)
-        self.joint_c_pub = ros.Publisher("ra/open_loop/joint_c", JointState, queue_size=100)
-        self.joint_d_pub = ros.Publisher("ra/open_loop/joint_d", JointState, queue_size=100)
-        self.joint_e_pub = ros.Publisher("ra/open_loop/joint_e", JointState, queue_size=100)
-        self.joint_f_pub = ros.Publisher("ra/open_loop/joint_f", JointState, queue_size=100)
+        self.joint_a_pub = ros.Publisher("open_loop/ra/joint_a", JointState, queue_size=100)
+        self.joint_b_pub = ros.Publisher("open_loop/ra/joint_b", JointState, queue_size=100)
+        self.joint_c_pub = ros.Publisher("open_loop/ra/joint_c", JointState, queue_size=100)
+        self.joint_d_pub = ros.Publisher("open_loop/ra/joint_d", JointState, queue_size=100)
+        self.joint_e_pub = ros.Publisher("open_loop/ra/joint_e", JointState, queue_size=100)
+        self.joint_f_pub = ros.Publisher("open_loop/ra/joint_f", JointState, queue_size=100)
 
         # Hand Publishers
-        self.finger_pub = ros.Publisher("hand/open_loop/finger", JointState, queue_size=100)
-        self.grip_pub = ros.Publisher("hand/open_loop/grip", JointState, queue_size=100)
+        self.finger_pub = ros.Publisher("open_loop/hand/finger", JointState, queue_size=100)
+        self.grip_pub = ros.Publisher("open_loop/hand/grip", JointState, queue_size=100)
 
     def ra_control_callback(self, msg):
         joints: typing.Dict[str, JointState] = {}

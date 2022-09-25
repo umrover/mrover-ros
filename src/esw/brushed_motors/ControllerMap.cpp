@@ -6,13 +6,20 @@ void ControllerMap::init(XmlRpc::XmlRpcValue& root) {
                root[i]["name"].getType() == XmlRpc::XmlRpcValue::TypeString);
         std::string name = static_cast<std::string>(root[i]["name"]);
 
-        assert(root[i].hasMember("motorMaxVoltage") &&
-               root[i]["motorMaxVoltage"].getType() == XmlRpc::XmlRpcValue::TypeDouble);
-        double motorMaxVoltage = static_cast<double>(root[i]["motorMaxVoltage"]);
+        assert(root[i].hasMember("driver_voltage") &&
+               root[i]["driver_voltage"].getType() == XmlRpc::XmlRpcValue::TypeDouble);
+        float driverVoltage = (float)static_cast<double>(root[i]["driver_voltage"]);
 
-        assert(root[i].hasMember("driverVoltage") &&
-               root[i]["driverVoltage"].getType() == XmlRpc::XmlRpcValue::TypeDouble);
-        double driverVoltage = static_cast<double>(root[i]["driverVoltage"]);
+        assert(root[i].hasMember("motor_max_voltage") &&
+               root[i]["motor_max_voltage"].getType() == XmlRpc::XmlRpcValue::TypeDouble);
+        float motorMaxVoltage = (float)static_cast<double>(root[i]["motor_max_voltage"]);
+
+        float voltageMultiplier = 1.0f;
+        if (root[i].hasMember("voltage_multiplier") &&
+            root[i]["voltage_multiplier"].getType() == XmlRpc::XmlRpcValue::TypeDouble) {
+            voltageMultiplier = (float)static_cast<double>(root[i]["voltage_multiplier"]);
+        }
+        motorMaxVoltage *= voltageMultiplier;
 
         assert(root[i].hasMember("nucleo") &&
                root[i]["nucleo"].getType() == XmlRpc::XmlRpcValue::TypeInt);
@@ -26,9 +33,9 @@ void ControllerMap::init(XmlRpc::XmlRpcValue& root) {
         controllersByName[name] =
                 new Controller(name, calculatedAddress, motorMaxVoltage, driverVoltage);
 
-        if (root[i].hasMember("quadCPR") &&
-            root[i]["quadCPR"].getType() == XmlRpc::XmlRpcValue::TypeDouble) {
-            controllersByName[name]->quadCPR = (float)static_cast<double>(root[i]["quadCPR"]);
+        if (root[i].hasMember("quad_cpr") &&
+            root[i]["quad_cpr"].getType() == XmlRpc::XmlRpcValue::TypeDouble) {
+            controllersByName[name]->quadCPR = (float)static_cast<double>(root[i]["quad_cpr"]);
         }
         if (root[i].hasMember("kP") &&
             root[i]["kP"].getType() == XmlRpc::XmlRpcValue::TypeDouble) {
@@ -46,6 +53,6 @@ void ControllerMap::init(XmlRpc::XmlRpcValue& root) {
             root[i]["inversion"].getType() == XmlRpc::XmlRpcValue::TypeDouble) {
             controllersByName[name]->inversion = (float)static_cast<double>(root[i]["inversion"]);
         }
-        printf("Virtual Controller %s on Nucleo %i channel %i \n", name.c_str(), nucleo, channel);
+        ROS_INFO("Made virtual Controller %s on Nucleo %i channel %i \n", name.c_str(), nucleo, channel);
     }
 }

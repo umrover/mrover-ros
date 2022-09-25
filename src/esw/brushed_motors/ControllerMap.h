@@ -6,7 +6,8 @@
 // #include <stdint.h>
 // #include <string>
 
-#include <XmlRpcValue.h>  // for XmlRpc::XmlRpcValue
+#include <XmlRpcValue.h> // for XmlRpc::XmlRpcValue
+#include <ros/console.h> // for ROS_INFO
 #include <unordered_map> // for unordered_map
 
 /*

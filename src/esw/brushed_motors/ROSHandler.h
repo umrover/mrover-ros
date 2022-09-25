@@ -19,7 +19,7 @@ private:
     static std::unordered_map<std::string, ros::Subscriber> openLoopSubscribersByName;
 
     // This keeps track of all the angle data publishers
-    static std::unordered_map<std::string, ros::Publisher> angleDataPublishersByName;
+    static std::unordered_map<std::string, ros::Publisher> jointDataPublishersByName;
 
     // REQUIRES: name is a valid name
     // MODIFIES: nothing

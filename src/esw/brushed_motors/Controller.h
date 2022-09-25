@@ -1,11 +1,12 @@
 #pragma once
 
-#include "I2C.h"    // for I2C and IOFailure
-#include <assert.h> // for assert
-#include <cmath>    // for M_PI
-#include <limits>   // for numeric limits
-#include <mutex>    // for mutex
-#include <string.h> // for string and memcpy
+#include "I2C.h"         // for I2C and IOFailure
+#include <assert.h>      // for assert
+#include <cmath>         // for M_PI
+#include <limits>        // for numeric limits
+#include <mutex>         // for mutex
+#include <ros/console.h> // for ROS_INFO
+#include <string.h>      // for string and memcpy
 
 #define OFF 0x00, 0, 0
 #define ON 0x0F, 0, 0

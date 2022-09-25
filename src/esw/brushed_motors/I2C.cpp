@@ -7,7 +7,7 @@
 void I2C::init(std::string& device_file) {
     file = open(device_file.c_str(), O_RDWR);
     if (file == -1) {
-        printf("Failed to open I2C bus\n");
+        ROS_ERROR("Failed to open I2C bus\n");
         throw IOFailure();
     }
 }
@@ -42,7 +42,7 @@ void I2C::transact(
             lck(transact_m);
 
     if (file == -1) {
-        printf("I2C Port never opened. Make sure to first run I2C::init.");
+        ROS_ERROR("I2C Port never opened. Make sure to first run I2C::init.");
         throw IOFailure();
     }
 
@@ -57,14 +57,14 @@ void I2C::transact(
     // Write bytes and confirm that all bytes were written.
     if (writeNum) {
         if (write(file, buffer, writeNum + 1) != writeNum + 1) {
-            fprintf(stderr, "Write error %d\n", errno);
+            ROS_ERROR("Write error %d\n", errno);
             throw IOFailure();
         }
     }
     // Read bytes and confirm that all bytes were read.
     if (readNum) {
         if (read(file, buffer, readNum) != readNum) {
-            fprintf(stderr, "read error %d\n", errno);
+            ROS_ERROR("read error %d\n", errno);
             throw IOFailure();
         }
     }

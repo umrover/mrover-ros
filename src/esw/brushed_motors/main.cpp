@@ -1,7 +1,7 @@
 #include "ControllerMap.h" // for ControllerMap
 #include "I2C.h"           // for I2C
 #include "ROSHandler.h"    // for ROSHandler
-#include <ros/ros.h>       // for ros
+#include <ros/ros.h>       // for ros and ROS_INFO
 
 int main(int argc, char* argv[]) {
 
@@ -18,7 +18,7 @@ int main(int argc, char* argv[]) {
     nh.getParam("brushed_motors/i2c_device_file", i2cDeviceFile);
     I2C::init(i2cDeviceFile);
 
-    printf("Initialization Done. Looping. \n");
+    ROS_INFO("Initialization Done. Looping. \n");
 
     ros::spin();
 
