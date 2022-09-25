@@ -22,8 +22,9 @@ struct publisherData {
 
 /*
 ROSHandler.h is responsible for handling incoming and outgoing ROS messages.
-Incoming ROS messages will trigger functions which call the functions on the appropriate virtual Controllers. 
-Outgoing ROS messages are triggered by a clock, which query the functions on the appropriate virtual Controllers for data.
+Incoming ROS messages will trigger functions which call the functions
+on the appropriate virtual Controllers. With each incoming ROS message,
+if there exists a corresponding publisher, data will be published.
 */
 class ROSHandler {
 private:
