@@ -80,6 +80,7 @@ add_message_files(
         CalibrationStatus.msg
         Chassis.msg
         Course.msg
+        GimbalCmd.msg
         ODriveState.msg
         Waypoint.msg
         WheelData.msg
