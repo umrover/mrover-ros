@@ -13,14 +13,14 @@
 // that when live, will control the
 // physical controller (the STM32).
 Controller::Controller(
-        std::string& name,
+        std::string& _name,
         uint8_t i2cAddress,
         float _motorMaxVoltage,
         float _driverVoltage) {
     assert(0.0f < _motorMaxVoltage);
     assert(_motorMaxVoltage <= _driverVoltage);
     assert(_driverVoltage <= 36.0f);
-    name = name;
+    name = _name;
     deviceAddress = i2cAddress;
     motorMaxVoltage = _motorMaxVoltage;
     driverVoltage = _driverVoltage;
