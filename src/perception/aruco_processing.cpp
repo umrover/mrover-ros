@@ -14,9 +14,9 @@
 void FiducialsNode::imageCallback(sensor_msgs::ImageConstPtr const &msg) {
     if (!mEnableDetections) return;
 
-    if (mIsVerbose) {
-        ROS_INFO("Got image %d", msg->header.seq);
-    }
+    ROS_DEBUG("Got image %d", msg->header.seq);
+
+    double timestamp = msg->header.stamp.sec + msg->header.stamp.nsec * pow(10, -9);
 
     try {
         mCvPtr = cv_bridge::toCvCopy(msg, sensor_msgs::image_encodings::BGR8);
@@ -49,10 +49,17 @@ void FiducialsNode::imageCallback(sensor_msgs::ImageConstPtr const &msg) {
         ROS_INFO("Immediate size: %ld", mImmediateFiducials.size());
         // Increment Intermediate Fiducials times seen and update filters
         // Add readings to the persistent representations of the fiducials if they exist otherwise
-        for (auto [id, immediateFid]: mImmediateFiducials) {
-            ROS_INFO("something in immediate");
+        for (auto const &[id, immediateFid]: mImmediateFiducials) {
+
+            if (mIntermediateFiducials.find(id) == mIntermediateFiducials.end() &&
+                // Does not already exist in intermediate or persistent
+                mPersistentFiducials.find(id) == mPersistentFiducials.end()) {
+                IntermediateFiducial &temp = mIntermediateFiducials[id];
+                temp.initTimestamp = timestamp; // initialize with timestamp
+                temp.id = id; //set correct id
+            }
+
             IntermediateFiducial &intermediate_fid = mIntermediateFiducials[id];
-            PersistentFiducial &persistent_fid = mPersistentFiducials[id];
 
             if (!immediateFid.fidInCam.has_value()) continue;
             // This is set if the point cloud had no valid reading for this fiducial
@@ -60,10 +67,10 @@ void FiducialsNode::imageCallback(sensor_msgs::ImageConstPtr const &msg) {
             std::string immediateFrameName = "immediateFiducial" + std::to_string(id);
             SE3::pushToTfTree(mTfBroadcaster, immediateFrameName, ROVER_FRAME, immediateFid.fidInCam.value());
 
-            if (intermediate_fid.timesSeen < mMinTimesSeen) { //has not been seen enough times to be persisisent
-                ROS_INFO("times seen is less than min times seen");
-                intermediate_fid.id = id;
-                ++intermediate_fid.timesSeen;
+            if (timestamp - intermediate_fid.initTimestamp < mMinTimeSeen) { //has not been seen enough amount of time
+                ROS_INFO("Tag not seen for sufficient time");
+
+                intermediate_fid.seenThisIteration = true; //to make sure that it is not deleted later
 
                 try {
                     SE3 fidInOdom = SE3::fromTfTree(mTfBuffer, ODOM_FRAME, immediateFrameName);
@@ -75,14 +82,17 @@ void FiducialsNode::imageCallback(sensor_msgs::ImageConstPtr const &msg) {
                     ROS_WARN("No transform from immediate fiducial to odom");
                 }
 
-                if (intermediate_fid.timesSeen == mMinTimesSeen) // graduate to persistent fiducial
+            } else { //now a persistent fiducial
+
+                if (mPersistentFiducials.find(id) == mPersistentFiducials.end()) //not already in persistent
                 {
-                    persistent_fid.id = id;
-                    persistent_fid.fidInOdomXYZ = intermediate_fid.fidInOdomXYZ;
+                    PersistentFiducial &temp = mPersistentFiducials[id];
+                    temp.id = id;
+                    temp.fidInOdomXYZ = intermediate_fid.fidInOdomXYZ;
                 }
-            } else { // already a persistent fiducial
-                ROS_INFO("already persistent");
-                persistent_fid.id = id;
+
+                PersistentFiducial &persistent_fid = mPersistentFiducials[id];
+
                 try {
                     SE3 fidInOdom = SE3::fromTfTree(mTfBuffer, ODOM_FRAME, immediateFrameName);
                     persistent_fid.fidInOdomXYZ.setFilterParams(mFilterCount, mFilterProportion);
@@ -95,6 +105,17 @@ void FiducialsNode::imageCallback(sensor_msgs::ImageConstPtr const &msg) {
             }
         }
 
+        // Not using for-each loop here because need to delete within loop
+        for (auto inter_it = mIntermediateFiducials.begin(); inter_it != mIntermediateFiducials.end();) {
+            auto& [_, tag] = *inter_it;
+            if (tag.seenThisIteration) {
+                inter_it->second.seenThisIteration = false;
+                ++inter_it;
+            } else {
+                mIntermediateFiducials.erase(inter_it++);
+            }
+        }
+
         // Send all transforms of persistent fiducials
         for (auto [id, fid]: mPersistentFiducials) {
             if (!fid.fidInOdomXYZ.ready()) continue; // Wait until the filters have enough readings to become meaningful
@@ -104,9 +125,9 @@ void FiducialsNode::imageCallback(sensor_msgs::ImageConstPtr const &msg) {
         }
 
         size_t detectedCount = mIds.size();
-        if (mIsVerbose || !mPrevDetectedCount.has_value() || detectedCount != mPrevDetectedCount.value()) {
+        if (!mPrevDetectedCount.has_value() || detectedCount != mPrevDetectedCount.value()) {
             mPrevDetectedCount = detectedCount;
-            ROS_INFO("Detected %zu markers", detectedCount);
+            ROS_DEBUG("Detected %zu markers", detectedCount);
         }
 
         if (!mImmediateFiducials.empty()) {
