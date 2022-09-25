@@ -19,14 +19,14 @@ set(_PACKAGES
 set(_LINK_DIRS "")
 
 # message files
-set(_MESSAGE_FILES 
-    Course.msg
-    Waypoint.msg
-    Chassis.msg
-    CalibrationStatus.msg
-    ODriveState.msg
-    WheelData.msg
-    )
+set(_MESSAGE_FILES
+        Course.msg
+        Waypoint.msg
+        Chassis.msg
+        CalibrationStatus.msg
+        ODriveState.msg
+        WheelData.msg
+        )
 
 # service files
 set(_SERVICE_FILES
@@ -85,7 +85,6 @@ else ()
             fiducial_msgs
             rosbridge_server
             teleop_twist_joy
-            gazebo
             gazebo_ros
             )
 
@@ -243,4 +242,4 @@ endif ()
 install_launch_macro()
 if (COMMAND additional_install_macro)
     additional_install_macro()
-endif()
+endif ()
