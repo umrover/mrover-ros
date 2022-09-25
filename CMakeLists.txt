@@ -85,10 +85,11 @@ else ()
             fiducial_msgs
             rosbridge_server
             teleop_twist_joy
-            OpenCV
             gazebo
             gazebo_ros
             )
+
+    find_package(OpenCV REQUIRED)
 
     # append include directories
     list(APPEND _INCLUDE_DIREC
