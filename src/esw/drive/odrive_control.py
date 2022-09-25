@@ -21,7 +21,6 @@ from odrive import find_any
 from odrive.enums import AXIS_STATE_CLOSED_LOOP_CONTROL, AXIS_STATE_IDLE, CONTROL_MODE_VELOCITY_CONTROL
 from odrive.utils import dump_errors
 import rospy
-from sensor_msgs.msg import JointState
 from geometry_msgs.msg import Twist
 from mrover.msg import ODriveState, WheelData
 from enum import Enum
@@ -175,12 +174,14 @@ class Modrive:
         assert axis == "left" or axis == "right", 'axis must be "left" or "right"'
         try:
             self._usb_lock.acquire()
-            velocity = self._axes[axis].encoder.vel_estimate / self._meters_to_turns_ratio_by_side[axis]
+            vel_turns = self._axes[axis].encoder.vel_estimate
+            vel_motor_m_s = vel_turns * 2 * math.pi * self._radius
+            vel_wheel_m_s = vel_motor_m_s / self._direction_by_side[axis]
         except Exception:
             raise DisconnectedError
         finally:
             self._usb_lock.release()
-        return velocity
+        return vel_wheel_m_s
 
     def has_errors(self) -> bool:
         """Returns a boolean to show if there are ODrive errors.
@@ -615,8 +616,6 @@ class Application(object):
         assert self._max_speed_m_s > 0, "wheels/max_speed config must be greater than 0"
 
         rospy.Subscriber("cmd_vel", Twist, self._process_twist_message)
-        rospy.Subscriber("drive_cmd/wheels/left", JointState, self._drive_vel_cmd_callback, Axis.LEFT)
-        rospy.Subscriber("drive_cmd/wheels/right", JointState, self._drive_vel_cmd_callback, Axis.RIGHT)
 
     def run(self):
         """Runs the publish data loop and watchdog loops for all bridges"""
