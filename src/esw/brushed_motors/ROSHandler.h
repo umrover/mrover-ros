@@ -26,8 +26,8 @@ private:
     // EFFECTS: Moves a joint in open loop
     // and publishes angle data right after.
     static void moveJointOpenLoopCommand(
-            sensor_msgs::JointState& state,
-            std::string& name);
+            std::string& name,
+            const sensor_msgs::JointState& state);
 
 public:
     // REQUIRES: root is created from calling ros::param::get("motors/controllers", root)

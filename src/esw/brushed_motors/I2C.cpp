@@ -35,8 +35,10 @@ void I2C::transact(
     assert((bool) writeNum == (bool) writeBuf);
     // writeBuf must be nullptr if and only if writeNum is 0.
     assert((bool) readNum == (bool) readNum);
-    assert(0 <= writeNum <= 31);
-    assert(0 <= readNum <= 32);
+    assert(0 <= writeNum);
+    assert(writeNum <= 31);
+    assert(0 <= readNum);
+    assert(readNum <= 32);
 
     std::unique_lock<std::mutex>
             lck(transact_m);

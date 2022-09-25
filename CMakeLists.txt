@@ -160,6 +160,11 @@ add_library(differential_drive_plugin_6w src/gazebo/differential_drive_6w.cpp)
 add_dependencies(aruco_detect ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
 target_link_libraries(differential_drive_plugin_6w ${Boost_LIBRARIES} ${GAZEBO_LIBRARIES} ${catkin_LIBRARIES})
 
+file(GLOB_RECURSE BRUSHED_MOTORS_SOURCES "src/esw/brushed_motors/*.cpp")
+add_executable(brushed_motors ${BRUSHED_MOTORS_SOURCES})
+add_dependencies(brushed_motors ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
+target_link_libraries(brushed_motors ${catkin_LIBRARIES})
+
 ## Declare a C++ library
 # add_library(${PROJECT_NAME}
 #   src/${PROJECT_NAME}/mrover.cpp
@@ -194,7 +199,7 @@ target_link_libraries(differential_drive_plugin_6w ${Boost_LIBRARIES} ${GAZEBO_L
 ## Install ##
 #############
 
-install(TARGETS aruco_detect
+install(TARGETS aruco_detect brushed_motors
         ARCHIVE DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
         LIBRARY DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
         RUNTIME DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}

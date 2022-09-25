@@ -93,12 +93,10 @@ public:
     // REQUIRES: nothing
     // MODIFIES: currentAngle.
     // EFFECTS: If controller is live,
-    // updates the current angle and
-    // returns the value in radians.
-    // Also, saves value in currentAngle.
+    // updates the current angle and saves value in currentAngle.
     // Otherwise, do nothing.
     // Expect a value between -M_PI and M_PI.
-    float refreshCurrentAngle();
+    void refreshCurrentAngle();
 
     // REQUIRES: nothing
     // MODIFIES: currentAngle. Also makes controller live if not already.

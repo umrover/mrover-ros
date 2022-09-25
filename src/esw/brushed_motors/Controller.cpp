@@ -103,12 +103,10 @@ void Controller::moveOpenLoop(float input) {
 // REQUIRES: nothing
 // MODIFIES: currentAngle.
 // EFFECTS: If controller is live,
-// updates the current angle and
-// returns the value in radians.
-// Also, saves value in currentAngle.
+// updates the current angle and saves value in currentAngle.
 // Otherwise, do nothing.
 // Expect a value between -M_PI and M_PI.
-float Controller::refreshCurrentAngle() {
+void Controller::refreshCurrentAngle() {
     if (!isLive) {
         return;
     }
@@ -120,7 +118,7 @@ float Controller::refreshCurrentAngle() {
     } catch (IOFailure& e) {
         ROS_ERROR("getCurrentAngle failed on %s\n", name.c_str());
     }
-    return currentAngle;
+    return;
 }
 
 // REQUIRES: nothing

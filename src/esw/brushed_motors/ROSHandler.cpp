@@ -18,10 +18,11 @@ void ROSHandler::init(XmlRpc::XmlRpcValue& root, ros::NodeHandle* rosNode) {
         std::string openLoopTopic = static_cast<std::string>(root[i]["open_loop_topic"]);
 
         openLoopSubscribersByName[name] =
-                n->subscribe<sensor_msgs::JointState>(
+                n->subscribe(
                         openLoopTopic,
                         1,
-                        boost::bind(moveJointOpenLoopCommand, _1, name));
+                        &ROSHandler::moveJointOpenLoopCommand,
+                        name);
 
         if (root[i].hasMember("joint_data_topic") &&
             root[i]["joint_data_topic"].getType() == XmlRpc::XmlRpcValue::TypeString) {
@@ -37,8 +38,8 @@ void ROSHandler::init(XmlRpc::XmlRpcValue& root, ros::NodeHandle* rosNode) {
 // EFFECTS: Moves a joint in open loop
 // and publishes angle data right after.
 void ROSHandler::moveJointOpenLoopCommand(
-        sensor_msgs::JointState& state,
-        std::string& name) {
+        std::string& name,
+        const sensor_msgs::JointState& state) {
     ControllerMap::controllersByName[name]->moveOpenLoop(state.velocity[0]);
 
     float jointAngle = ControllerMap::controllersByName[name]->getCurrentAngle();
