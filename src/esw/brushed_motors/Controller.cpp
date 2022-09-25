@@ -151,8 +151,6 @@ void Controller::makeLive() {
         // turn on
         I2C::transact(deviceAddress, ON, nullptr, nullptr);
 
-        ROS_INFO("Successfully turned ON");
-
         uint8_t buffer[32];
 
         uint16_t maxPWM = (uint16_t) (motorMaxVoltage / driverVoltage);
@@ -162,14 +160,10 @@ void Controller::makeLive() {
         memcpy(buffer, UINT8_POINTER_T(&maxPWM), sizeof(maxPWM));
         I2C::transact(deviceAddress, CONFIG_PWM, buffer, nullptr);
 
-        ROS_INFO("Successfully configured PWM");
-
         memcpy(buffer, UINT8_POINTER_T(&(kP)), sizeof(kP));
         memcpy(buffer + 4, UINT8_POINTER_T(&(kI)), sizeof(kI));
         memcpy(buffer + 8, UINT8_POINTER_T(&(kD)), sizeof(kD));
         I2C::transact(deviceAddress, CONFIG_K, buffer, nullptr);
-
-        ROS_INFO("Successfully configured PID");
 
         // Adjust the physical controller angle to
         // angle reported by the absolute encoder,
@@ -186,8 +180,6 @@ void Controller::makeLive() {
         int32_t adjustedQuad = (absRawAngle / (2.0f * M_PI)) * quadCPR;
         memcpy(buffer, UINT8_POINTER_T(&(adjustedQuad)), sizeof(adjustedQuad));
         I2C::transact(deviceAddress, ADJUST, buffer, nullptr);
-
-        ROS_INFO("Successfully adjusted");
 
         isLive = true;
 

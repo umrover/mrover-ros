@@ -20,11 +20,7 @@ int main(int argc, char* argv[]) {
 
     ROS_INFO("Initialization Done. Looping. \n");
 
-    ros::Rate loopRate(10);
-    while (ros::ok()) {
-        ros::spinOnce();
-        loopRate.sleep();
-    }
+    ros::spin();
 
     return 0;
 }

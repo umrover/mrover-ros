@@ -56,8 +56,6 @@ void I2C::transact(
     // Switch to this slave address.
     ioctl(file, I2C_SLAVE, addr);
 
-    ROS_INFO("addr is %i writeNum is %i readNum is %i\n", addr, writeNum, readNum);
-
     // Write bytes and confirm that all bytes were written.
     if (writeNum) {
         if (write(file, buffer, writeNum + 1) != writeNum + 1) {
