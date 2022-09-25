@@ -1,8 +1,8 @@
 cmake_minimum_required(VERSION 3.0.2)
 project(mrover)
 
-## Compile as C++17, supported in ROS Kinetic and newer
-add_compile_options(-std=c++17 -Wall -Wextra -Werror -pedantic)
+## Compile as C++17, supported in ROS Kinetic and newer, enable some static analysis
+set(MROVER_CPP_COMPILE_OPTIONS -std=c++17 -Wall -Wextra -Werror -pedantic)
 
 # Generate lists of universal packages to find
 
@@ -48,6 +48,20 @@ set(_CAT_PACKAGES
         roscpp rospy std_msgs message_runtime
         )
 
+macro(add_cpp_node_macro name sources)
+    file(GLOB_RECURSE PERCEPTION_SOURCES ${sources})
+    add_executable(${name} ${PERCEPTION_SOURCES})
+    add_dependencies(${name} ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
+    target_link_libraries(${name} ${catkin_LIBRARIES})
+    target_compile_options(${name} PRIVATE ${MROVER_CPP_COMPILE_OPTIONS})
+
+    install(TARGETS ${name}
+            ARCHIVE DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
+            LIBRARY DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
+            RUNTIME DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
+            )
+endmacro()
+
 # launch install macro
 macro(install_launch_macro)
     install(DIRECTORY launch/
@@ -89,6 +103,7 @@ else ()
             )
 
     find_package(OpenCV REQUIRED)
+    find_package(gazebo REQUIRED)
 
     # append include directories
     list(APPEND _INCLUDE_DIREC
@@ -132,22 +147,16 @@ else ()
     # define an add and link macro
     # Put items here to build
     macro(add_and_link_macro)
-        file(GLOB_RECURSE PERCEPTION_SOURCES "src/perception/*.cpp")
-        add_executable(aruco_detect ${PERCEPTION_SOURCES})
-        add_dependencies(aruco_detect ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
-        target_link_libraries(aruco_detect ${catkin_LIBRARIES} ${OpenCV_LIBS})
+        add_cpp_node_macro(aruco_detect "src/perception/*.cpp")
+        target_link_libraries(aruco_detect ${OpenCV_LIBS})
 
         add_library(differential_drive_plugin_6w src/gazebo/differential_drive_6w.cpp)
-        add_dependencies(aruco_detect ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
+        add_dependencies(differential_drive_plugin_6w ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
         target_link_libraries(differential_drive_plugin_6w ${Boost_LIBRARIES} ${GAZEBO_LIBRARIES} ${catkin_LIBRARIES})
+        target_compile_options(differential_drive_plugin_6w PRIVATE ${MROVER_CPP_COMPILE_OPTIONS})
     endmacro()
 
     macro(additional_install_macro)
-        install(TARGETS aruco_detect
-                ARCHIVE DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
-                LIBRARY DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
-                RUNTIME DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
-                )
         install(TARGETS differential_drive_plugin_6w
                 ARCHIVE DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
                 LIBRARY DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
@@ -219,6 +228,7 @@ catkin_package(
 include_directories(
         ${catkin_INCLUDE_DIRS}
 )
+
 if (COMMAND include_directories_macro)
     include_directories_macro()
 endif ()
