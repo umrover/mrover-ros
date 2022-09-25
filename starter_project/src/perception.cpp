@@ -35,16 +35,15 @@ namespace mrover {
     void Perception::imageCallback(sensor_msgs::ImageConstPtr const& image) {
         cv_bridge::CvImagePtr cvImage = cv_bridge::toCvCopy(image, sensor_msgs::image_encodings::BGR8);
         // Detect tags in the image pixels
-        findTagsInImage(cvImage, mTags);
+        findTagsInImage(cvImage->image, mTags);
         // Select the tag that is closest to the middle of the screen
-        StarterProjectTag tag = selectTag(mTags);
+        StarterProjectTag tag = selectTag(cvImage->image, mTags);
         // Publish the message to our topic so navigation or others can receive it
         publishTag(tag);
     }
 
-    void Perception::findTagsInImage(cv_bridge::CvImagePtr const& image, std::vector<StarterProjectTag>& tags) {
+    void Perception::findTagsInImage(cv::Mat const& image, std::vector<StarterProjectTag>& tags) {
         // hint: you have mTagDictionary, mTagCorners, mTagIds, and mTagDetectorParams member variables already defined!
-        // hint: you can access the raw image (cv::Mat) with image->image
         // hint: write and use the "getCenterFromTagCorners" and "getClosenessMetricFromTagCorners" functions
 
         tags.clear(); // Clear old tags in output vector
@@ -53,8 +52,9 @@ namespace mrover {
         (void) image;
     }
 
-    StarterProjectTag Perception::selectTag(std::vector<StarterProjectTag> const& tags) {
+    StarterProjectTag Perception::selectTag(cv::Mat const& image, std::vector<StarterProjectTag> const& tags) {
         // TODO: remove below & implement me!
+        (void) image;
         (void) tags;
 
         return {};
