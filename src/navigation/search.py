@@ -43,10 +43,10 @@ class SearchTrajectory:
         :param distance:    initial distance and increment (int)
         :return:            list of positions for the rover to traverse List(np.ndarray)
         """
-        # First we will attempt to create the "delta" vectors that get added add each point
+        # First we will attempt to create the "delta" vectors that get added at each point
         # in the spiral to get to the next.
         deltas = np.tile(cls.dirs, (num_turns, 1))
-        # We will build the coeficients for the delta vecs now that we have the correct
+        # We will build the coefficients for the delta vecs now that we have the correct
         # layout of unit vectors Given the distance parameter 'd', the coef layout we
         # need is [d,d,2d,2d,3d,3d...]
         dist_coefs = distance * np.repeat(np.arange(1, num_turns * 2 + 1), 2).reshape(-1, 1)
@@ -74,7 +74,7 @@ class SearchState(BaseState):
         self.traj: Optional[SearchTrajectory] = None
 
     def evaluate(self, ud):
-        # Check if a path has been generated and its associated with the same
+        # Check if a path has been generated, and it's associated with the same
         # waypoint as the previous one. Generate one if not
         waypoint = self.context.course.current_waypoint()
         if self.traj is None or self.traj.fid_id != waypoint.fiducial_id:
