@@ -2,9 +2,10 @@
   <!--Node for teleop control callbacks-->
   <rosparam command="load" file="$(find mrover)/config/teleop.yaml" />
   <node name="jetson_teleop" pkg="mrover" type="jetson_teleop.py"/>
-  <!--
-    Run the drive program
-  -->
+  <!--Run the drive program-->
   <node name="odrive_control" pkg="mrover" type="odrive_control.py" output="screen"></node>
+  <!--Run the brushed motors program-->
+  <node name="brushed_motors" pkg="mrover" type="brushed_motors" output="screen"></node>
   <rosparam command="load" file="$(find mrover)/config/esw.yaml" />
+
 </launch>
