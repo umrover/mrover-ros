@@ -1,11 +1,6 @@
 #pragma once
 
 #include "Controller.h"
-
-// #include <fstream>
-// #include <stdint.h>
-// #include <string>
-
 #include <XmlRpcValue.h> // for XmlRpc::XmlRpcValue
 #include <ros/console.h> // for ROS_INFO
 #include <unordered_map> // for unordered_map
@@ -18,7 +13,8 @@ controller on the rover, across both RA/SA configurations.
 class ControllerMap {
 public:
     // Map of virtual controller names to virtual Controller objects
-    static std::unordered_map<std::string, Controller*> controllersByName;
+    inline static std::unordered_map<std::string, Controller*> controllersByName =
+            std::unordered_map<std::string, Controller*>();
 
     // REQUIRES: root is created from calling ros::param::get("motors/controllers", root)
     // MODIFIES: controllersByName

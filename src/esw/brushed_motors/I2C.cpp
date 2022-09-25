@@ -41,7 +41,7 @@ void I2C::transact(
     assert(readNum <= 32);
 
     std::unique_lock<std::mutex>
-            lck(transact_m);
+            lck(transactLock);
 
     if (file == -1) {
         ROS_ERROR("I2C Port never opened. Make sure to first run I2C::init.");

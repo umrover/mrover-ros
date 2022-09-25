@@ -13,21 +13,23 @@ Outgoing ROS messages are triggered by a clock, which query the functions on the
 class ROSHandler {
 private:
     // This holds the ROS Node.
-    static ros::NodeHandle* n;
+    inline static ros::NodeHandle* n;
 
     // This keeps track of all the open loop subscribers
-    static std::unordered_map<std::string, ros::Subscriber> openLoopSubscribersByName;
+    inline static std::unordered_map<std::string, ros::Subscriber> openLoopSubscribersByName =
+            std::unordered_map<std::string, ros::Subscriber>();
 
     // This keeps track of all the angle data publishers
-    static std::unordered_map<std::string, ros::Publisher> jointDataPublishersByName;
+    inline static std::unordered_map<std::string, ros::Publisher> jointDataPublishersByName =
+            std::unordered_map<std::string, ros::Publisher>();
 
     // REQUIRES: name is a valid name
     // MODIFIES: nothing
     // EFFECTS: Moves a joint in open loop
     // and publishes angle data right after.
     static void moveJointOpenLoopCommand(
-            std::string& name,
-            const sensor_msgs::JointState& state);
+            const sensor_msgs::JointState& state,
+            std::string& name);
 
 public:
     // REQUIRES: root is created from calling ros::param::get("motors/controllers", root)
