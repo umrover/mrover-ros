@@ -49,8 +49,8 @@ set(_CAT_PACKAGES
         )
 
 macro(add_cpp_node_macro name sources)
-    file(GLOB_RECURSE PERCEPTION_SOURCES ${sources})
-    add_executable(${name} ${PERCEPTION_SOURCES})
+    file(GLOB_RECURSE CPP_NODE_SOURCES ${sources})
+    add_executable(${name} ${CPP_NODE_SOURCES})
     add_dependencies(${name} ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
     target_link_libraries(${name} ${catkin_LIBRARIES})
     target_compile_options(${name} PRIVATE ${MROVER_CPP_COMPILE_OPTIONS})
@@ -67,6 +67,22 @@ macro(install_launch_macro)
     install(DIRECTORY launch/
             DESTINATION ${CATKIN_PACKAGE_SHARE_DESTINATION}/launch
             )
+endmacro()
+
+macro(add_tests_macro)
+    # Add C++ unit tests
+    catkin_add_gtest(example-cpp-test test/example/cpp_test.cpp)
+
+    # Python unit tests
+    catkin_add_nosetests(test/navigation/drive.py)
+    catkin_add_nosetests(test/util/SE3_test.py)
+    catkin_add_nosetests(test/util/SO3_test.py)
+
+    # Integration tests (python and c++)
+    find_package(rostest REQUIRED)
+    add_rostest(test/example/basic_integration_test.test)
+    add_rostest(test/integration/integration.test)
+    add_rostest(test/util/SE3_tf_test.test)
 endmacro()
 
 # Subdirectories before message declarations
@@ -120,22 +136,6 @@ else ()
     list(APPEND _SUBDIR
             starter_project/teleop
             )
-
-    # define a test macro
-    macro(test_macro)
-        # Add C++ unit tests
-        catkin_add_gtest(example-cpp-test test/example/cpp_test.cpp)
-
-        # Python unit tests
-        catkin_add_nosetests(test/navigation/drive.py)
-        catkin_add_nosetests(test/util/SE3_test.py)
-        catkin_add_nosetests(test/util/SO3_test.py)
-
-        # Integration tests (python and c++)
-        # find_package(rostest REQUIRED)
-        add_rostest(test/example/basic_integration_test.test)
-        add_rostest(test/util/SE3_tf_test.test)
-    endmacro()
 
     macro(include_directories_macro)
         include_directories(
