@@ -23,6 +23,9 @@ set(_MESSAGE_FILES
     Course.msg
     Waypoint.msg
     Chassis.msg
+    CalibrationStatus.msg
+    ODriveState.msg
+    WheelData.msg
     )
 
 # service files
@@ -85,6 +88,7 @@ else()
         teleop_twist_joy
         OpenCV
         gazebo
+        gazebo_ros
         )
 
     # append include directories
