@@ -97,10 +97,18 @@ set(_SUBDIR "")
 # -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
 if (${DEVICE} MATCHES "raspi4")
+    # -=-=-=-=-
+    # Lists
+    # -=-=-=-=-
+
     # Add any raspi4 specific packages here
     # list(APPEND _PACKAGES )
 
 else ()
+    # -=-=-=-=-
+    # Lists
+    # -=-=-=-=-
+
     # Add any laptop specific packages here
     list(APPEND _PACKAGES
             roscpp
@@ -118,9 +126,6 @@ else ()
             gazebo_ros
             )
 
-    find_package(OpenCV REQUIRED)
-    find_package(gazebo REQUIRED)
-
     # append include directories
     list(APPEND _INCLUDE_DIREC
             GAZEBO_INCLUDE_DIRS
@@ -136,6 +141,16 @@ else ()
     list(APPEND _SUBDIR
             starter_project/teleop
             )
+
+    # -=-=-=-=-
+    # Macros
+    # -=-=-=-=-
+    
+    # These packages need to be found individually
+    macro(add_packages_macro)
+        find_package(OpenCV REQUIRED)
+        find_package(gazebo REQUIRED)
+    endmacro()
 
     macro(include_directories_macro)
         include_directories(
@@ -179,6 +194,10 @@ find_package(
         catkin REQUIRED COMPONENTS
         ${_PACKAGES}
 )
+
+if(COMMAND add_packages_macro)
+    add_packages_macro()
+endif()
 
 
 # 4. Python module support
