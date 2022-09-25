@@ -64,8 +64,8 @@ public:
     Controller(
             std::string& _name,
             uint8_t i2cAddress,
-            float motorMaxVoltage,
-            float driverVoltage);
+            float _motorMaxVoltage,
+            float _driverVoltage);
 
     // REQUIRES: nothing
     // MODIFIES: nothing
