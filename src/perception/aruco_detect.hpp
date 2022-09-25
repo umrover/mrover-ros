@@ -40,7 +40,8 @@ struct ImmediateFiducial {
 struct IntermediateFiducial {
    int id = -1;
    XYZFilter fidInOdomXYZ;
-   int timesSeen = 0;
+   double initTimestamp = std::numeric_limits<double>::max();
+   bool seenThisIteration = true;
 };
  
 /**
@@ -73,7 +74,7 @@ private:
    bool mIsVerbose = false;
    bool mHasCamInfo = false;
    bool mPublishFiducialTf = false;
-   int mMinTimesSeen = 100;
+   double mMinTimeSeen = 5; //in seconds
    double mFiducialLen{};
    std::vector<int> mIgnoreIds;
    int mFilterCount{};
