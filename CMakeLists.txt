@@ -7,7 +7,7 @@ set(MROVER_CPP_COMPILE_OPTIONS -std=c++17 -Wall -Wextra -Werror -pedantic)
 # Generate lists of universal packages to find
 
 # find_package
-set(_PACKAGES
+set(MROVER_PACKAGES
         rospy
         std_msgs
         message_generation
@@ -16,10 +16,10 @@ set(_PACKAGES
         )
 
 # link_directories
-set(_LINK_DIRS "")
+set(MROVER_LINK_DIRS "")
 
 # message files
-set(_MESSAGE_FILES
+set(MROVER_MESSAGE_FILES
         Course.msg
         Waypoint.msg
         Chassis.msg
@@ -29,22 +29,22 @@ set(_MESSAGE_FILES
         )
 
 # service files
-set(_SERVICE_FILES
+set(MROVER_SERVICE_FILES
         PublishCourse.srv
         )
 
 # generate messages list
-set(_MESSAGES
+set(MROVER_ROS_MESSAGES
         std_msgs
         )
 
 # dynamic reconfigure
-set(_DYNAMIC_RECON
+set(MROVER_PARAMETERS
         config/DetectorParams.cfg
         )
 
 # catkin_package
-set(_CAT_PACKAGES
+set(MROVER_CATKIN_PACKAGES
         roscpp rospy std_msgs message_runtime
         )
 
@@ -86,7 +86,7 @@ macro(add_tests_macro)
 endmacro()
 
 # Subdirectories before message declarations
-set(_SUBDIR "")
+set(CMAKE_SUBDIRS "")
 
 
 # -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
@@ -110,7 +110,7 @@ else ()
     # -=-=-=-=-
 
     # Add any laptop specific packages here
-    list(APPEND _PACKAGES
+    list(APPEND MROVER_PACKAGES
             roscpp
             tf2_geometry_msgs
             tf2_ros
@@ -133,19 +133,19 @@ else ()
             )
 
     # append link directories
-    list(APPEND _LINK_DIRS
+    list(APPEND MROVER_LINK_DIRS
             ${GAZEBO_LIBRARY_DIRS}
             )
 
     # append subdirectories
-    list(APPEND _SUBDIR
+    list(APPEND CMAKE_SUBDIRS
             starter_project/teleop
             )
 
     # -=-=-=-=-
     # Macros
     # -=-=-=-=-
-    
+
     # These packages need to be found individually
     macro(add_packages_macro)
         find_package(OpenCV REQUIRED)
@@ -192,12 +192,12 @@ endif ()
 # 3. Find Packages
 find_package(
         catkin REQUIRED COMPONENTS
-        ${_PACKAGES}
+        ${MROVER_PACKAGES}
 )
 
-if(COMMAND add_packages_macro)
+if (COMMAND add_packages_macro)
     add_packages_macro()
-endif()
+endif ()
 
 
 # 4. Python module support
@@ -205,9 +205,9 @@ catkin_python_setup()
 
 
 # 4.5. Subdirectories before message declarations
-if (NOT "${_SUBDIR}" MATCHES "")
+if (NOT "${CMAKE_SUBDIRS}" MATCHES "")
     add_subdirectory(
-            ${_SUBDIR}
+            ${CMAKE_SUBDIRS}
     )
 endif ()
 
@@ -215,30 +215,30 @@ endif ()
 # 5. Message Generators (add_xxx)
 add_message_files(
         FILES
-        ${_MESSAGE_FILES}
+        ${MROVER_MESSAGE_FILES}
 )
 
 add_service_files(
         FILES
-        ${_SERVICE_FILES}
+        ${MROVER_SERVICE_FILES}
 )
 
 
 # 6. Invoke messages (generate_messages)
 generate_messages(
         DEPENDENCIES
-        ${_MESSAGES}
+        ${MROVER_ROS_MESSAGES}
 )
 
 generate_dynamic_reconfigure_options(
-        ${_DYNAMIC_RECON}
+        ${MROVER_PARAMETERS}
 )
 
 
 # 7. Specify package build info export (catkin_package)
 catkin_package(
         CATKIN_DEPENDS
-        ${_CAT_PACKAGES}
+        ${MROVER_CATKIN_PACKAGES}
 )
 
 
@@ -253,7 +253,7 @@ if (COMMAND include_directories_macro)
 endif ()
 
 link_directories(
-        ${_LINK_DIRS}
+        ${MROVER_LINK_DIRS}
 )
 
 if (COMMAND add_and_link_macro)
