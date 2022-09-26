@@ -3,9 +3,9 @@
 # It is a program whose sole purpose is to generate Makefiles (or Ninja build files)
 # It is used extensively in industry
 
+# TODO: add your new message file here
 add_message_files(
         FILES
-        StarterProjectTag.msg
 )
 
 # Collect all cpp files in the src subdirectory to be used for perception

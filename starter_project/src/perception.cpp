@@ -26,7 +26,7 @@ namespace mrover {
         // Create a publisher for our tag topic
         // See: http://wiki.ros.org/ROS/Tutorials/WritingPublisherSubscriber%28c%2B%2B%29
         // TODO: uncomment me!
-        mTagPublisher = mNodeHandle.advertise<StarterProjectTag>("tag", 1);
+//        mTagPublisher = mNodeHandle.advertise<StarterProjectTag>("tag", 1);
 
         mTagDetectorParams = cv::aruco::DetectorParameters::create();
         mTagDictionary = cv::aruco::getPredefinedDictionary(0);
