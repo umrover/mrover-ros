@@ -11,10 +11,13 @@ from typing import ClassVar, Optional
 import numpy as np
 from dataclasses import dataclass
 
+
 @dataclass
 class Gate:
     post1: np.ndarray
     post2: np.ndarray
+
+
 @dataclass
 class Rover:
     ctx: Context
@@ -72,13 +75,14 @@ class Environment:
         current_waypoint = self.ctx.course.current_waypoint()
         if current_waypoint is None or current_waypoint.fiducial_id == self.NO_FIDUCIAL:
             return None
-        
+
         post1 = self.get_fid_pos(current_waypoint.fiducial_id)
         post2 = self.get_fid_pos(current_waypoint.fiducial_id + 1)
         if post1 is None or post2 is None:
             return None
-        
+
         return Gate(post1[0:2], post2[0:2])
+
 
 @dataclass
 class Course:

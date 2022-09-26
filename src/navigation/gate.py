@@ -16,9 +16,10 @@ STOP_THRESH = 0.2
 DRIVE_FWD_THRESH = 0.95
 
 APPROACH_DISTANCE = 2.0
+
+
 @dataclass
 class GateTrajectory(Trajectory):
-
     @classmethod
     def spider_gate_trajectory(cls, approach_distance: float, gate: Gate, rover_position: np.ndarray) -> GateTrajectory:
         """
@@ -29,32 +30,36 @@ class GateTrajectory(Trajectory):
         :return:            GateTrajectory object containing the coordinates the rover will need to traverse
         """
 
-        #first we get the positions of the two posts
+        # first we get the positions of the two posts
         post1 = gate.post1
         post2 = gate.post2
 
         center = (post1 + post2) / 2
         post_direction = normalized(post2 - post1)
         perpendicular = perpendicular_2d(post_direction)
-        
-        possible_approach_points = [approach_distance * perpendicular + center, 
-                                    -approach_distance * perpendicular + center]
-        
-        possible_preparation_points = [(2 * approach_distance * perpendicular) + post1,
-                              (2 * approach_distance * perpendicular) + post2,
-                              (-2 * approach_distance * perpendicular) + post1,
-                              (-2 * approach_distance * perpendicular) + post2]
-        
-        #get closest prepration point
+
+        possible_approach_points = [
+            approach_distance * perpendicular + center,
+            -approach_distance * perpendicular + center,
+        ]
+
+        possible_preparation_points = [
+            (2 * approach_distance * perpendicular) + post1,
+            (2 * approach_distance * perpendicular) + post2,
+            (-2 * approach_distance * perpendicular) + post1,
+            (-2 * approach_distance * perpendicular) + post2,
+        ]
+
+        # get closest prepration point
         prep_distance_to_rover = [np.linalg.norm(point - rover_position[0:2]) for point in possible_preparation_points]
         prep_idx = np.argmin(np.array(prep_distance_to_rover))
         closest_prep_point = possible_preparation_points[prep_idx]
 
-        #get closest approach point (to selected prep point), set other one to victory point
+        # get closest approach point (to selected prep point), set other one to victory point
         approach_dist_to_prep = [np.linalg.norm(point - closest_prep_point) for point in possible_approach_points]
         approach_idx = np.argmin(np.array(approach_dist_to_prep))
         closest_approach_point = possible_approach_points[approach_idx]
-        print(prep_idx, approach_idx, (1-approach_idx))
+        print(prep_idx, approach_idx, (1 - approach_idx))
         victory_point = possible_approach_points[1 - approach_idx]
 
         coordinates = [closest_prep_point, closest_approach_point, victory_point]
@@ -82,9 +87,7 @@ class GateTraverseState(BaseState):
             return "search"
         if self.traj is None:
             self.traj = GateTrajectory.spider_gate_trajectory(
-                APPROACH_DISTANCE,
-                gate,
-                self.context.rover.get_pose().position
+                APPROACH_DISTANCE, gate, self.context.rover.get_pose().position
             )
 
         # continue executing this path from wherever it left off

@@ -10,8 +10,7 @@ FIDUCIAL_STOP_THRESHOLD = 1.75
 
 class SingleFiducialState(WaypointState):
     def __init__(self, context: Context):
-        super().__init__(context,
-        add_outcomes=["waypoint_traverse","single_fiducial"])
+        super().__init__(context, add_outcomes=["waypoint_traverse", "single_fiducial"])
 
     def evaluate(self, ud) -> str:
         """
