@@ -28,5 +28,5 @@ odrive:
 wheels:
   base: 0.86
   radius: 0.13
-  ratio: 48.0
+  ratio: 50.0
   max_speed: 1.0
