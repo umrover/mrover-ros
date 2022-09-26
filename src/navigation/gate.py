@@ -35,14 +35,20 @@ class GateTrajectory(Trajectory):
         post2 = gate.post2
 
         center = (post1 + post2) / 2
+        # the direction of the post is just the normalized vector from post1 to post2
         post_direction = normalized(post2 - post1)
         perpendicular = perpendicular_2d(post_direction)
 
+        # appraoch points are the points that are directly out from the center (a straight line) of
+        # the gate "approach_distance" away
         possible_approach_points = [
             approach_distance * perpendicular + center,
             -approach_distance * perpendicular + center,
         ]
 
+        # prep points are points that are direclty out in either direction from the posts
+        # the idea here is that if we go to the closest prep point then an approach point,
+        # we will never collide with the post
         possible_preparation_points = [
             (2 * approach_distance * perpendicular) + post1,
             (2 * approach_distance * perpendicular) + post2,
@@ -59,12 +65,11 @@ class GateTrajectory(Trajectory):
         approach_dist_to_prep = [np.linalg.norm(point - closest_prep_point) for point in possible_approach_points]
         approach_idx = np.argmin(np.array(approach_dist_to_prep))
         closest_approach_point = possible_approach_points[approach_idx]
-        print(prep_idx, approach_idx, (1 - approach_idx))
         victory_point = possible_approach_points[1 - approach_idx]
 
+        # put the list of coordinates together
         coordinates = [closest_prep_point, closest_approach_point, victory_point]
         coordinates = [np.hstack((c, np.array([0]))) for c in coordinates]
-        print(f"path: {coordinates}, gate: {[gate.post1, gate.post2]}")
         return GateTrajectory(coordinates)
 
 
