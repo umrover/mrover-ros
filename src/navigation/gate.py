@@ -1,5 +1,5 @@
 from __future__ import annotations
-from typing import ClassVar
+from typing import ClassVar, Optional
 from unicodedata import normalize
 from context import Gate
 
@@ -77,7 +77,7 @@ class GateTraverseState(BaseState):
             context,
             add_outcomes=["gate_traverse", "search", "done"],
         )
-        self.traj = None
+        self.traj: Optional[GateTrajectory] = None
 
     def evaluate(self, ud):
         # Check if a path has been generated and its associated with the same

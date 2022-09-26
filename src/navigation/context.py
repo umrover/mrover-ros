@@ -72,16 +72,19 @@ class Environment:
         """
         retrieves the position of the gate (if we know where it is)
         """
-        current_waypoint = self.ctx.course.current_waypoint()
-        if current_waypoint is None or current_waypoint.fiducial_id == self.NO_FIDUCIAL:
-            return None
+        if self.ctx.course:
+            current_waypoint = self.ctx.course.current_waypoint()
+            if current_waypoint is None or current_waypoint.fiducial_id == self.NO_FIDUCIAL:
+                return None
 
-        post1 = self.get_fid_pos(current_waypoint.fiducial_id)
-        post2 = self.get_fid_pos(current_waypoint.fiducial_id + 1)
-        if post1 is None or post2 is None:
-            return None
+            post1 = self.get_fid_pos(current_waypoint.fiducial_id)
+            post2 = self.get_fid_pos(current_waypoint.fiducial_id + 1)
+            if post1 is None or post2 is None:
+                return None
 
-        return Gate(post1[0:2], post2[0:2])
+            return Gate(post1[0:2], post2[0:2])
+        else:
+            return None
 
 
 @dataclass
