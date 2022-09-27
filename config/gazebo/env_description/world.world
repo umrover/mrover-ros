@@ -82,7 +82,7 @@
         <collision name='collision'>
           <geometry>
             <mesh>
-              <uri>model://ground.dae</uri>
+              <uri>model://ground_flat.dae</uri>
             </mesh>
           </geometry>
           <max_contacts>10</max_contacts>
