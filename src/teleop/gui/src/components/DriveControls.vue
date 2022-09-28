@@ -1,18 +1,25 @@
 <template>
     <div>
-        <h4>Drive Controls</h4>
+      <div>
+          <h4>Drive Controls</h4>
+      </div>
+      <div class="controls">
+        <Checkbox ref="teleop-enabled" v-bind:name="'Teleop Drive Enabled'" v-on:toggle="teleopEnabled = $event"/>
+      </div>
     </div>
 </template>
 
 <script>
 
 import ROSLIB from "roslib"
+import Checkbox from "./Checkbox.vue"
 
 let interval;
 
 export default {
   data () {
     return {
+      teleopEnabled: false
     }
   },
 
@@ -27,7 +34,7 @@ export default {
         const gamepads = navigator.getGamepads()
         for (let i = 0; i < 4; i++) {
           const gamepad = gamepads[i]
-          if (gamepad) {
+          if (gamepad && this.teleopEnabled) {
             if (gamepad.id.includes('Logitech')) {
             
               let buttons = gamepad.buttons.map((button) =>{
@@ -54,9 +61,19 @@ export default {
     }, updateRate*1000)
   },
 
+  components:{
+    Checkbox
+  }
+
 }
 </script>
 
 <style scoped>
+.controls {
+  display: flex;
+  align-items:center;
+}
+
+
 
 </style>
