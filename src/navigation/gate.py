@@ -49,27 +49,27 @@ class GateTrajectory(Trajectory):
         # prep points are points that are direclty out in either direction from the posts
         # the idea here is that if we go to the closest prep point then an approach point,
         # we will never collide with the post
-        possible_preparation_points = [
+        possible_preparation_points = np.array([
             (2 * approach_distance * perpendicular) + post1,
             (2 * approach_distance * perpendicular) + post2,
             (-2 * approach_distance * perpendicular) + post1,
             (-2 * approach_distance * perpendicular) + post2,
-        ]
+        ])
 
         # get closest prepration point
-        prep_distance_to_rover = [np.linalg.norm(point - rover_position[0:2]) for point in possible_preparation_points]
-        prep_idx = np.argmin(np.array(prep_distance_to_rover))
+        prep_distance_to_rover = np.linalg.norm(possible_preparation_points - rover_position[0:2])
+        prep_idx = np.argmin(prep_distance_to_rover)
         closest_prep_point = possible_preparation_points[prep_idx]
 
         # get closest approach point (to selected prep point), set other one to victory point
-        approach_dist_to_prep = [np.linalg.norm(point - closest_prep_point) for point in possible_approach_points]
-        approach_idx = np.argmin(np.array(approach_dist_to_prep))
+        approach_dist_to_prep = np.linalg.norm(possible_approach_points - closest_prep_point)
+        approach_idx = np.argmin(approach_dist_to_prep)
         closest_approach_point = possible_approach_points[approach_idx]
         victory_point = possible_approach_points[1 - approach_idx]
 
         # put the list of coordinates together
-        coordinates = [closest_prep_point, closest_approach_point, victory_point]
-        coordinates = [np.hstack((c, np.array([0]))) for c in coordinates]
+        coordinates = np.array([closest_prep_point, closest_approach_point, victory_point])
+        coordinates = np.hstack((coordinates, np.zeros(coordinates.shape[0]).reshape(-1, 1)))
         return GateTrajectory(coordinates)
 
 
