@@ -1,1 +1,1 @@
-Waypoint[] waypoints
+Waypoint[] waypoints # TODO: Add bool gate, post fields
