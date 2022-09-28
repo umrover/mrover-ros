@@ -14,7 +14,7 @@ import math
 import threading
 import time as t
 from enum import Enum
-from typing import Any, Dict
+from typing import Any, Dict, List
 
 import odrive
 from odrive import find_any
@@ -78,8 +78,6 @@ class Modrive:
         to direction of actual wheel.
     :param _odrive: An ODrive object.
     :param _radius: The radius of the wheels.
-    :param _ratio_motor_to_wheel: The ratio of the motor to the wheels
-        (rev per motor to rev per wheel).
     :param _usb_lock: A lock that prevents multiple threads from accessing
         ODrive objects simultaneously.
     :param _watchdog_timeout: A float that represents the watchdog timeout.
@@ -89,7 +87,6 @@ class Modrive:
     _direction_by_side: Dict[str, float]
     _odrive: Any
     _radius: float
-    _ratio_motor_to_wheel: float
     _usb_lock: threading.Lock
     _watchdog_timeout: float
 
@@ -106,7 +103,6 @@ class Modrive:
             "right": rospy.get_param("odrive/ratio/direction_right"),
         }
         self._radius = rospy.get_param("wheels/radius")
-        self._ratio_motor_to_wheel = rospy.get_param("wheels/ratio")
         self._usb_lock = threading.Lock()
         self._watchdog_timeout = rospy.get_param("odrive/config/watchdog_timeout")
 
@@ -222,7 +218,7 @@ class Modrive:
         finally:
             self._usb_lock.release()
 
-    def set_vel(self, axis: str, vel_rad_s: float) -> None:
+    def set_vel(self, axis: str, motor_rad_s: float) -> None:
         """Sets the requested ODrive axis to run the motors at the requested
         velocity.
         :param axis: A string that represents which wheel to read current from.
@@ -233,12 +229,8 @@ class Modrive:
         """
         assert axis == "left" or axis == "right", 'axis must be "left" or "right"'
         try:
-            motor_rad_s = vel_rad_s * self._ratio_motor_to_wheel
             motor_turns_s = motor_rad_s / (2 * math.pi)
             motor_turns_s *= self._direction_by_side[axis]
-            assert (
-                -50 <= motor_turns_s and motor_turns_s <= 50
-            ), "requested turns per second of the motor is dangerously high"
             self._usb_lock.acquire()
             self._axes[axis].controller.input_vel = motor_turns_s
         except Exception:
@@ -595,9 +587,19 @@ class Application(object):
     """Manages the ODriveBridge objects and keeps track of communication.
     :param _bridges: A list of bridges that are contain data for the ODrives controlling
         the front, middle, and back wheels.
+    :param _max_motor_speed_rad_s: Max permitted speed of the motor in rad/s.
+    :param _max_speed_m_s: Max permitted speed of the wheels in m/s.
+    :param _ratio_motor_to_wheel: The ratio of the motor to the wheels
+        (rev per motor to rev per wheel).
     :param _wheels_base: Width of rover in meters.
-    :param _wheels_radius: Radius of the wheels in meters.
-    :param _max_speed_m_s: Max permitted speed of the wheels in m/s"""
+    :param _wheels_radius: Radius of the wheels in meters."""
+
+    _bridges: List[ODriveBridge]
+    _max_motor_speed_rad_s: float
+    _max_speed_m_s: float
+    _ratio_motor_to_wheel: float
+    _wheel_base: float
+    _wheel_radius: float
 
     def __init__(self):
 
@@ -605,6 +607,7 @@ class Application(object):
         self._bridges = [ODriveBridge("front"), ODriveBridge("middle"), ODriveBridge("back")]
         self._wheel_base = rospy.get_param("wheels/base")
         self._wheel_radius = rospy.get_param("wheels/radius")
+        self._max_motor_speed_rad_s = 50  # Should not be changed. Derived from testing.
         self._max_speed_m_s = rospy.get_param("wheels/max_speed")
 
         assert self._max_speed_m_s > 0, "wheels/max_speed config must be greater than 0"
@@ -648,10 +651,16 @@ class Application(object):
             right_m_s = (right_m_s / larger_abs_m_s) * self._max_speed_m_s
         left_rad = left_m_s / self._wheel_radius
         right_rad = right_m_s / self._wheel_radius
-        self._drive_vel_cmd_callback(left_rad, Axis.LEFT)
-        self._drive_vel_cmd_callback(right_rad, Axis.RIGHT)
+        left_rad *= self._ratio_motor_to_wheel
+        right_rad *= self._ratio_motor_to_wheel
+        if (abs(left_rad) > self._max_motor_speed_rad_s) or (abs(right_rad) > self._max_motor_speed_rad_s):
+            larger_abs_rad_s = max(abs(left_rad), abs(right_rad))
+            left_rad = (left_rad / larger_abs_rad_s) * self._max_motor_speed_rad_s
+            right_rad = (right_rad / larger_abs_rad_s) * self._max_speed_m_s
+        self._set_motor_axis_speed(left_rad, Axis.LEFT)
+        self._set_motor_axis_speed(right_rad, Axis.RIGHT)
 
-    def _drive_vel_cmd_callback(self, vel_rad_s: float, axis: Axis) -> None:
+    def _set_motor_axis_speed(self, vel_rad_s: float, axis: Axis) -> None:
         """Calls the change_axis_speed function.
 
         Note that this does NOT actually change speed that the ODrive comands
