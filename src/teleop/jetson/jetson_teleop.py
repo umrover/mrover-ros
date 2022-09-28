@@ -43,7 +43,7 @@ class Drive:
 
     def teleop_drive_callback(self, msg):
         joints: typing.Dict[str, JointState] = {}
-        
+
         # Super small deadzone so we can safely e-stop with dampen switch
         dampen = deadzone(msg.axes[self.joystick_mappings["dampen"]], 0.01)
 
@@ -61,8 +61,10 @@ class Drive:
         )
 
         # Same as linear but for angular speed
-        angular = dampen * (angular * (self.max_wheel_speed/self.wheel_radius))
-
+        angular = dampen * (angular * (self.max_wheel_speed / self.wheel_radius))
+        # Clamp if both twist and left_right are used at the same time
+        if angular > (self.max_wheel_speed / self.wheel_radius):
+            angular = self.max_wheel_speed / self.wheel_radius
         twist_msg = Twist()
         twist_msg.linear.x = linear
         twist_msg.angular.z = angular
@@ -162,9 +164,7 @@ def main():
     drive_config = ros.get_param("teleop/drive_controls")
 
     arm = ArmControl(xbox_mappings=xbox, ra_config=ra_config)
-    drive = Drive(
-        joystick_mappings=joystick, drive_config=drive_config
-    )
+    drive = Drive(joystick_mappings=joystick, drive_config=drive_config)
 
     ros.Subscriber("joystick", Joy, drive.teleop_drive_callback)
     ros.Subscriber("xbox/ra_control", Joy, arm.ra_control_callback)
