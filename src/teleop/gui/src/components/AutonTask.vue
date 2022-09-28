@@ -20,6 +20,18 @@
         <img src="/static/joystick.png" alt="Joystick" title="Joystick Controls" style="width: auto; height: 70%; display: inline-block" />
       </div>
     </div>
+    <div class="box1 data" v-bind:style="{backgroundColor: nav_state_color}">
+      <h2>Nav State: {{this.nav_status.nav_state_name}}</h2>
+      <div class="raw-data raw-sensors">
+        <!-- <RawSensorData v-bind:GPS=“GPS” v-bind:IMU=“IMU”/>
+        <Obstacle v-bind:Obstacle=“Obstacle”/>
+        <TargetList v-bind:TargetList=“TargetList”/>
+        <DriveControls/>
+        <DriveVelDataH/>
+        <SaveAutonData v-bind:odom=“odom” v-bind:IMU=“IMU” v-bind:GPS=“GPS” v-bind:TargetBearing=“TargetBearing” v-bind:nav_status=“nav_status” v-bind:AutonDriveControl=“AutonDriveControl” v-bind:TargetList=“TargetList”/>
+        <PlaybackAutonData/> -->
+      </div>
+    </div>
     <div class="box map light-bg">  
       <AutonRoverMap v-bind:odom="odom" v-bind:GPS="GPS" v-bind:TargetBearing="TargetBearing"/>
     </div>
@@ -30,8 +42,18 @@
 </template>
 
 <script>
+
+import ROSLIB from "roslib"
+
+let interval;
+
 import AutonRoverMap from "./AutonRoverMap.vue"
 import AutonWaypointEditor from './AutonWaypointEditor.vue'
+
+const navBlue = "#4695FF"
+const navGreen = "yellowgreen"
+const navRed = "lightcoral"
+const navGrey = "lightgrey"
 
 export default {
   data() {
@@ -66,6 +88,58 @@ export default {
         right_percent_velocity: 0
       },
 
+      nav_status: {
+        nav_state_name: "Off",
+        completed_wps: 0,
+        total_wps: 0
+      },
+      navBlink: false,
+      greenHook: false,
+
+    }
+  },
+
+  computed: {
+    nav_state_color: function() {
+      if(this.teleopEnabled){
+        return navBlue
+      }
+      else if(this.autonEnabled){
+        if(this.nav_status.nav_state_name == "Done" && this.navBlink){
+          return navGreen
+        }
+        else if(this.nav_status.nav_state_name == "Done" && !this.navBlink){
+          return navGrey
+        }
+        else{
+          return navRed
+        }
+      }
+      return navRed
+    },
+  },
+
+  watch: {
+    nav_state_color: function(color){
+      let ledMsg = {
+        type: 'AutonLed',
+        color: 'Null'
+      }
+      if(color == navBlue){
+        ledMsg.color = 'Blue'
+        this.greenHook = false
+      }
+      else if(color == navRed){
+        ledMsg.color = 'Red'
+        this.greenHook = false
+      }
+      else if(color == navGreen && !this.greenHook){
+        ledMsg.color = 'Green'
+        this.greenHook = true //Accounting for the blinking between navGrey and navGreen
+      }
+      if(!this.greenHook || ledMsg.color == 'Green'){
+        this.publish('/auton_led',ledMsg)
+      }
     }
   },
 

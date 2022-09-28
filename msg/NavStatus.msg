@@ -1,0 +1,3 @@
+string nav_state_name
+int32 completed_wps
+int32 total_wps
