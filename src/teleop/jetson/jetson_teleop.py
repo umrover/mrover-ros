@@ -63,8 +63,8 @@ class Drive:
         # Same as linear but for angular speed
         angular = dampen * (angular * (self.max_wheel_speed / self.wheel_radius))
         # Clamp if both twist and left_right are used at the same time
-        if angular > (self.max_wheel_speed / self.wheel_radius):
-            angular = self.max_wheel_speed / self.wheel_radius
+        if abs(angular) > abs(self.max_wheel_speed / self.wheel_radius):
+            angular = copysign(self.max_wheel_speed / self.wheel_radius, angular)
         twist_msg = Twist()
         twist_msg.linear.x = linear
         twist_msg.angular.z = angular
