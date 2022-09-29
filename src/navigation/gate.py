@@ -23,7 +23,7 @@ class GateTrajectory(Trajectory):
     @classmethod
     def spider_gate_trajectory(cls, approach_distance: float, gate: Gate, rover_position: np.ndarray) -> GateTrajectory:
         """
-        Generates the "Spider" path through the gate
+        Generates the "Spider" path through the gate, see https://github.com/umrover/mrover-ros/wiki/Navigation#searchtrajectory
         :param approach_distance: distance to the point straight out from the gate that the rover will drive to
         :param gate:    Gate object representing the gate that the rover will drive through
         :param rover_position: position vector of the rover
