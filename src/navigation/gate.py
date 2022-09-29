@@ -57,12 +57,12 @@ class GateTrajectory(Trajectory):
         ])
 
         # get closest prepration point
-        prep_distance_to_rover = np.linalg.norm(possible_preparation_points - rover_position[0:2])
+        prep_distance_to_rover = np.linalg.norm(possible_preparation_points - rover_position[0:2], axis = 1)
         prep_idx = np.argmin(prep_distance_to_rover)
         closest_prep_point = possible_preparation_points[prep_idx]
 
         # get closest approach point (to selected prep point), set other one to victory point
-        approach_dist_to_prep = np.linalg.norm(possible_approach_points - closest_prep_point)
+        approach_dist_to_prep = np.linalg.norm(possible_approach_points - closest_prep_point, axis = 1)
         approach_idx = np.argmin(approach_dist_to_prep)
         closest_approach_point = possible_approach_points[approach_idx]
         victory_point = possible_approach_points[1 - approach_idx]
