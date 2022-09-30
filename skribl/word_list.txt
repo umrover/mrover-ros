@@ -11,3 +11,12 @@ imu
 kalman filter
 gps
 tf tree
+gate
+spider search
+J-Turn
+simulator
+gazebo
+filter
+cache
+spiral search
+ros
