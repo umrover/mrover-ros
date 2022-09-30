@@ -8,7 +8,6 @@ perception
 percep-memes
 localization
 imu
-kalman filter
 gps
 tf tree
 gate
