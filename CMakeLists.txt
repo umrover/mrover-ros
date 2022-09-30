@@ -2,7 +2,7 @@ cmake_minimum_required(VERSION 3.0.2)
 project(mrover)
 
 ## Compile as C++17, supported in ROS Kinetic and newer
-add_compile_options(-std=c++17 -Wall -Wextra -Werror -pedantic)
+add_compile_options(-std=c++17 -Wall -Wextra -Werror)
 
 ## Find catkin macros and libraries
 ## if COMPONENTS list like find_package(catkin REQUIRED COMPONENTS xyz)
@@ -160,9 +160,13 @@ add_library(differential_drive_plugin_6w src/gazebo/differential_drive_6w.cpp)
 add_dependencies(differential_drive_plugin_6w ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
 target_link_libraries(differential_drive_plugin_6w ${Boost_LIBRARIES} ${GAZEBO_LIBRARIES} ${catkin_LIBRARIES})
 
+add_library(gazebo_ros_camera_utils src/gazebo/gazebo_ros_camera_utils.cpp)
+add_dependencies(gazebo_ros_camera_utils ${PROJECT_NAME}_gencfg)
+target_link_libraries(gazebo_ros_camera_utils ${catkin_LIBRARIES} ${Boost_LIBRARIES})
+
 add_library(gazebo_ros_openni_kinect_plugin src/gazebo/gazebo_ros_openni_kinect.cpp)
 add_dependencies(gazebo_ros_openni_kinect_plugin ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
-target_link_libraries(gazebo_ros_openni_kinect_plugin ${Boost_LIBRARIES} ${GAZEBO_LIBRARIES} ${catkin_LIBRARIES})
+target_link_libraries(gazebo_ros_openni_kinect_plugin gazebo_ros_camera_utils DepthCameraPlugin ${Boost_LIBRARIES} ${GAZEBO_LIBRARIES} ${catkin_LIBRARIES})
 
 ## Declare a C++ library
 # add_library(${PROJECT_NAME}
