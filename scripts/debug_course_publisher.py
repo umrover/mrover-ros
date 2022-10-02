@@ -18,7 +18,10 @@ if __name__ == "__main__":
     publish_course = CourseService()
 
     waypoints = [
-        (Waypoint(fiducial_id=0, tf_id="course0"), SE3(position=np.array([3, 3, 0]))),
+        # ("course1", -2, -6, 0),
+        # ("course1", -3, -3, -1),
+        # ("course2", -5, -5, 0)
+        (Waypoint(fiducial_id=0, tf_id="course0"), SE3(position=np.array([-2, -6, 0]))),
         # (Waypoint(fiducial_id=0, tf_id="course1"), SE3(position=np.array([-3, -3, -1]))),
         # (Waypoint(fiducial_id=0, tf_id="course2"), SE3(position=np.array([-5, -5, 0]))),
     ]
