@@ -4,13 +4,6 @@
       <img src="/static/mrover.png" alt="MRover" title="MRover" width="48" height="48" />
       <h1>Auton Dashboard</h1>
       <div class="spacer"></div>
-      <!-- TODO: Add back comms indicators for ROSBridge Server Connection and Rover Connection -->
-      <!-- <div class="comms">
-        <ul id="vitals">
-          <li><CommIndicator v-bind:connected="connections.websocket" name="Web Socket" /></li>
-          <li><CommIndicator v-bind:connected="connections.lcm" name="Rover Connection Status" /></li>
-        </ul>
-      </div> -->
       <div class="spacer"></div>
       <div class="help">
         <img src="/static/help.png" alt="Help" title="Help" width="48" height="48" />
@@ -22,15 +15,6 @@
     </div>
     <div class="box1 data" v-bind:style="{backgroundColor: nav_state_color}">
       <h2>Nav State: {{this.nav_status.nav_state_name}}</h2>
-      <div class="raw-data raw-sensors">
-        <!-- <RawSensorData v-bind:GPS=“GPS” v-bind:IMU=“IMU”/>
-        <Obstacle v-bind:Obstacle=“Obstacle”/>
-        <TargetList v-bind:TargetList=“TargetList”/>
-        <DriveControls/>
-        <DriveVelDataH/>
-        <SaveAutonData v-bind:odom=“odom” v-bind:IMU=“IMU” v-bind:GPS=“GPS” v-bind:TargetBearing=“TargetBearing” v-bind:nav_status=“nav_status” v-bind:AutonDriveControl=“AutonDriveControl” v-bind:TargetList=“TargetList”/>
-        <PlaybackAutonData/> -->
-      </div>
     </div>
     <div class="box map light-bg">  
       <AutonRoverMap v-bind:odom="odom" v-bind:GPS="GPS" v-bind:TargetBearing="TargetBearing"/>
@@ -38,17 +22,21 @@
     <div class="box waypoints light-bg">
       <AutonWaypointEditor v-bind:odom="odom" v-bind:AutonDriveControl="AutonDriveControl"/>
     </div>
+    <!--Display the drive controls if auton is off-->
+    <div class="box driveControls light-bg" v-if="!this.enable">
+      <DriveControls/>
+    </div>
 </div>
 </template>
 
 <script>
-
 import ROSLIB from "roslib"
-
-let interval;
-
 import AutonRoverMap from "./AutonRoverMap.vue"
 import AutonWaypointEditor from './AutonWaypointEditor.vue'
+<<<<<<< Updated upstream
+=======
+import DriveControls from "./DriveControls.vue";
+>>>>>>> Stashed changes
 import { mapGetters } from 'vuex';
 
 const navBlue = "#4695FF"
@@ -94,6 +82,12 @@ export default {
         completed_wps: 0,
         total_wps: 0
       },
+
+      enableAuton: {
+        enable: false,
+        GPSWaypoint: []
+      },
+
       navBlink: false,
       greenHook: false,
       nav_status_sub: null,
@@ -140,7 +134,7 @@ export default {
         }
       }
       return navRed
-    },
+    }
   },
 
   watch: {
@@ -164,12 +158,13 @@ export default {
       if(!this.greenHook || ledMsg.color == 'Green'){
         // this.publish('/auton_led',ledMsg)
       }
-    }
+    },
   },
 
   components:{
     AutonRoverMap,
-    AutonWaypointEditor
+    AutonWaypointEditor,
+    DriveControls
 }
 }
 </script>
@@ -299,4 +294,3 @@ h2 {
 }
 
 </style>
-

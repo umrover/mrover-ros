@@ -138,19 +138,16 @@ export default {
     this.toggleTeleopMode(false);
     this.toggleAutonMode(false);
 
-    // this.$parent.subscribe('/nav_status', (msg) => {
-    //   this.nav_status = msg
-    //   if(this.waitingForNav){
-    //     if(this.nav_status.nav_state_name!="Off" && this.autonEnabled){
-    //       this.waitingForNav = false
-    //       this.autonButtonColor = "green"
-    //     }
-    //     else if(this.nav_status.nav_state_name=="Off" && !this.autonEnabled){
-    //       this.waitingForNav = false
-    //       this.autonButtonColor = "red"
-    //     }
-    //   }
-    // })
+    nav_status_sub = new ROSLIB.Topic({
+          ros : this.$ros,
+          name : 'smach/container_status',
+          messageType : 'smach_msgs/SmachContainerStatus'
+    }),
+
+    this.nav_status_sub.subscribe((msg) => {
+      this.waitingForNav = false;
+      this.autonButtonColor = "green";
+    },
 
     interval = window.setInterval(() => {
 
@@ -186,7 +183,7 @@ export default {
       course.hash = fnvPlus.fast1a52(JSON.stringify(course));
       course.type = 'Course'
       // this.$parent.publish('/course', course)
-    }, 100);
+    }, 100));
   },
 
   methods: {
