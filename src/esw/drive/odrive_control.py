@@ -646,18 +646,23 @@ class Application(object):
 
         left_m_s = forward + turn_difference
         right_m_s = forward - turn_difference
+
         if (abs(left_m_s) > self._max_speed_m_s) or (abs(right_m_s) > self._max_speed_m_s):
             larger_abs_m_s = max(abs(left_m_s), abs(right_m_s))
             left_m_s = (left_m_s / larger_abs_m_s) * self._max_speed_m_s
             right_m_s = (right_m_s / larger_abs_m_s) * self._max_speed_m_s
+    
         left_rad = left_m_s / self._wheel_radius
         right_rad = right_m_s / self._wheel_radius
+
         left_rad *= self._ratio_motor_to_wheel
         right_rad *= self._ratio_motor_to_wheel
+
         if (abs(left_rad) > self._max_motor_speed_rad_s) or (abs(right_rad) > self._max_motor_speed_rad_s):
             larger_abs_rad_s = max(abs(left_rad), abs(right_rad))
             left_rad = (left_rad / larger_abs_rad_s) * self._max_motor_speed_rad_s
             right_rad = (right_rad / larger_abs_rad_s) * self._max_motor_speed_rad_s
+
         self._set_motor_axis_speed(left_rad, Axis.LEFT)
         self._set_motor_axis_speed(right_rad, Axis.RIGHT)
 
