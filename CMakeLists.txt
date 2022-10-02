@@ -25,6 +25,7 @@ find_package(catkin REQUIRED COMPONENTS
         rosbridge_server
         teleop_twist_joy
         gazebo_ros
+        camera_info_manager
         )
 
 find_package(OpenCV REQUIRED)
@@ -135,7 +136,7 @@ generate_dynamic_reconfigure_options(
 catkin_package(
         #  INCLUDE_DIRS include
         #  LIBRARIES mrover
-        CATKIN_DEPENDS roscpp rospy std_msgs message_runtime
+        CATKIN_DEPENDS roscpp rospy std_msgs message_runtime camera_info_manager
         #  DEPENDS system_lib
 )
 
@@ -231,6 +232,12 @@ install(DIRECTORY launch/
 ## Mark libraries for installation
 ## See http://docs.ros.org/melodic/api/catkin/html/howto/format1/building_libraries.html
 install(TARGETS differential_drive_plugin_6w
+        ARCHIVE DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
+        LIBRARY DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
+        RUNTIME DESTINATION ${CATKIN_GLOBAL_BIN_DESTINATION}
+        )
+
+install(TARGETS gazebo_ros_camera_utils
         ARCHIVE DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
         LIBRARY DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
         RUNTIME DESTINATION ${CATKIN_GLOBAL_BIN_DESTINATION}
