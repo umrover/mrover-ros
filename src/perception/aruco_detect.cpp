@@ -97,9 +97,9 @@ void FiducialsNode::camInfoCallback(sensor_msgs::CameraInfo::ConstPtr const& msg
     } else {
         ROS_WARN("%s", "CameraInfo message has invalid intrinsics, K matrix all zeros");
     }
-    }
+}
 
-    void FiducialsNode::handleIgnoreString(std::string const& str) {
+void FiducialsNode::handleIgnoreString(std::string const& str) {
     // Ignore fiducials can take comma separated list of individual
     // Fiducial ids or ranges, eg "1,4,8,9-12,30-40"
     std::vector<std::string> strs;
@@ -125,9 +125,9 @@ void FiducialsNode::camInfoCallback(sensor_msgs::CameraInfo::ConstPtr const& msg
             ROS_ERROR("Malformed ignore_fiducials: %s", element.c_str());
         }
     }
-    }
+}
 
-    bool FiducialsNode::enableDetectionsCallback(std_srvs::SetBool::Request& req, std_srvs::SetBool::Response& res) {
+bool FiducialsNode::enableDetectionsCallback(std_srvs::SetBool::Request& req, std_srvs::SetBool::Response& res) {
     mEnableDetections = req.data;
     if (mEnableDetections) {
         res.message = "Enabled aruco detections.";
@@ -139,9 +139,9 @@ void FiducialsNode::camInfoCallback(sensor_msgs::CameraInfo::ConstPtr const& msg
 
     res.success = true;
     return true;
-    }
+}
 
-    FiducialsNode::FiducialsNode() : mNh(), mPnh("~"), mIt(mNh), mTfListener(mTfBuffer) {
+FiducialsNode::FiducialsNode() : mNh(), mPnh("~"), mIt(mNh), mTfListener(mTfBuffer) {
     // Camera intrinsics
     mCamMat = cv::Mat::zeros(3, 3, CV_64F);
     // distortion coefficients
@@ -182,7 +182,7 @@ void FiducialsNode::camInfoCallback(sensor_msgs::CameraInfo::ConstPtr const& msg
     mPnh.param<double>("cornerRefinementMinAccuracy", mDetectorParams->cornerRefinementMinAccuracy, 0.01); /* default 0.1 */
     mPnh.param<int>("cornerRefinementWinSize", mDetectorParams->cornerRefinementWinSize, 5);
 
-    bool doCornerRefinement = true;
+	bool doCornerRefinement = true;
     mPnh.param<bool>("doCornerRefinement", doCornerRefinement, true);
     if (doCornerRefinement) {
         bool cornerRefinementSubPix = true;
