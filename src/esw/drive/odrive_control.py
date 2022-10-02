@@ -671,8 +671,8 @@ class Application(object):
         :param axis: An Axis enum that is either Axis.LEFT or Axis.RIGHT
         """
         assert abs(vel_rad_s) <= (
-            self._max_speed_m_s / self._wheel_radius
-        ), "vel_m_s is greater than self._max_speed_m_s"
+            self._max_motor_speed_rad_s
+        ), "vel_rad_s is greater than self._max_motor_speed_rad_s"
         for bridge in self._bridges:
             bridge.start_time = t.process_time()
             if bridge.get_state_string() == "Armed":
