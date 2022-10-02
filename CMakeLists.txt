@@ -30,6 +30,8 @@ set(MROVER_MESSAGE_FILES
 
 # service files
 set(MROVER_SERVICE_FILES
+        ChangeCameraMission.srv
+        ChangeCameras.srv
         PublishCourse.srv
         )
 
