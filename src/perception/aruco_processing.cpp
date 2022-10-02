@@ -5,12 +5,12 @@
 // TODO: add cache logic to filter out false positives
 
 /**
-* Detect fiducials from raw image using OpenCV and calculate their screen space centers.
-* Maintain the immediate buffer - holds all fiducials seen currently on screen.
-* Later camera space pose information is filled in when we receive point cloud data.
-*
-* @param msg
-*/
+ * Detect fiducials from raw image using OpenCV and calculate their screen space centers.
+ * Maintain the immediate buffer - holds all fiducials seen currently on screen.
+ * Later camera space pose information is filled in when we receive point cloud data.
+ *
+ * @param msg
+ */
 void FiducialsNode::imageCallback(sensor_msgs::ImageConstPtr const &msg) {
     if (!mEnableDetections) return;
 
@@ -157,11 +157,11 @@ void FiducialsNode::imageCallback(sensor_msgs::ImageConstPtr const &msg) {
 }
 
 /**
-* @brief       Retrieve the pose of the fiducial in camera space
-* @param msg   3D Point Cloud with points stored relative to the camera
-* @param u     X Pixel Position
-* @param v     Y Pixel Position
-*/
+ * @brief       Retrieve the pose of the fiducial in camera space
+ * @param msg   3D Point Cloud with points stored relative to the camera
+ * @param u     X Pixel Position
+ * @param v     Y Pixel Position
+ */
 std::optional<SE3> getFidInCamFromPixel(sensor_msgs::PointCloud2ConstPtr const &msg, size_t u, size_t v) {
     // If PCL ends up being needed, use its camToPoint function instead
     size_t arrayPos = v * msg->row_step + u * msg->point_step;
@@ -180,11 +180,11 @@ std::optional<SE3> getFidInCamFromPixel(sensor_msgs::PointCloud2ConstPtr const &
 }
 
 /**
-* For each active fiducial image we have detected so far, fuse point cloud information.
-* This information is where it is in the world.
-*
-* @param msg   Point cloud message
-*/
+ * For each active fiducial image we have detected so far, fuse point cloud information.
+ * This information is where it is in the world.
+ *
+ * @param msg   Point cloud message
+ */
 void FiducialsNode::pointCloudCallback(sensor_msgs::PointCloud2ConstPtr const &msg) {
     for (auto &[id, fid]: mImmediateFiducials) {
         size_t u = std::lround(fid.imageCenter.x);

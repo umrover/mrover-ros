@@ -8,12 +8,12 @@
 #include "se3.hpp"
 
 /***
-* A filter that combines multiple readings into one.
-* A user defined proportion acts as a median filter that gets rids of outliers,
-* which are then piped into a mean filter that averages out the values.
-*
-* @tparam T Reading type
-*/
+ * A filter that combines multiple readings into one.
+ * A user defined proportion acts as a median filter that gets rids of outliers,
+ * which are then piped into a mean filter that averages out the values.
+ *
+ * @tparam T Reading type
+ */
 template<typename T>
 class MeanMedianFilter {
 private:
@@ -42,8 +42,8 @@ public:
 	}
 
 	/**
-	* @brief Add a value to the filter, overwrites old values if full.
-	*/
+	 * @brief Add a value to the filter, overwrites old values if full.
+	 */
 	void push(T value) {
 		mHead = (mHead + 1) % size();
 		mValues[mHead] = value;
@@ -69,8 +69,8 @@ public:
 	}
 
 	/***
-	* @return If we have enough readings to use the filter
-	*/
+	 * @return If we have enough readings to use the filter
+	 */
 	[[nodiscard]] bool ready() const {
 		return mFilterCount > 0;
 	}
@@ -80,8 +80,8 @@ public:
 	}
 
 	/***
-	* @return Filtered reading if full, or else the most recent reading if we don't have enough readings yet.
-	*/
+	 * @return Filtered reading if full, or else the most recent reading if we don't have enough readings yet.
+	 */
 	[[nodiscard]] T get() const {
 		if (!full()) {
 			return mValues[mHead];
