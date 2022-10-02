@@ -57,10 +57,10 @@ class FiducialsNode {
 private:
    ros::NodeHandle mNh;
    ros::NodeHandle mPnh;
- 
+
    image_transport::Publisher mImgPub;
    ros::ServiceServer mServiceEnableDetections;
- 
+
    ros::Subscriber mCamInfoSub;
    ros::Subscriber mIgnoreSub;
    ros::Subscriber mPcSub;
@@ -69,7 +69,7 @@ private:
    tf2_ros::Buffer mTfBuffer;
    tf2_ros::TransformListener mTfListener;
    tf2_ros::TransformBroadcaster mTfBroadcaster;
- 
+
    bool mPublishImages = false; // If set, we publish the images with the fiducials drawn on top
    bool mEnableDetections = true;
    bool mIsVerbose = false;
@@ -84,7 +84,7 @@ private:
    double mFilterProportion{};
    cv::Ptr<cv::aruco::DetectorParameters> mDetectorParams;
    cv::Ptr<cv::aruco::Dictionary> mDictionary;
- 
+
    uint32_t mSeqNum{};
    cv_bridge::CvImagePtr mCvPtr;
    cv::Mat mCamMat;
@@ -98,19 +98,19 @@ private:
    std::unordered_map<int, PersistentFiducial> mPersistentFiducials;
    dynamic_reconfigure::Server<mrover::DetectorParamsConfig> mConfigServer;
    dynamic_reconfigure::Server<mrover::DetectorParamsConfig>::CallbackType mCallbackType;
- 
+
    void handleIgnoreString(std::string const& str);
- 
+
    void ignoreCallback(std_msgs::String const& msg);
- 
+
    void imageCallback(sensor_msgs::ImageConstPtr const& msg);
- 
+
    void pointCloudCallback(sensor_msgs::PointCloud2ConstPtr const& msg);
- 
+
    void camInfoCallback(sensor_msgs::CameraInfo::ConstPtr const& msg);
- 
+
    void configCallback(mrover::DetectorParamsConfig& config, uint32_t level);
- 
+
    bool enableDetectionsCallback(std_srvs::SetBool::Request& req, std_srvs::SetBool::Response& res);
  
 public:
