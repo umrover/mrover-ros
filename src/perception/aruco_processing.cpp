@@ -55,7 +55,12 @@ void FiducialsNode::imageCallback(sensor_msgs::ImageConstPtr const &msg) {
                 // Does not already exist in intermediate or persistent
                 mPersistentFiducials.find(id) == mPersistentFiducials.end()) {
                 IntermediateFiducial &temp = mIntermediateFiducials[id];
-                temp.initTimestamp = timestamp; // initialize with timestamp
+                if(mIsTimeBased) {
+                    temp.initTimestamp = timestamp; // initialize with timestamp
+                }
+                else {
+                    temp.timesSeen = 1; // initialize with 1
+                }
                 temp.id = id; //set correct id
             }
 
@@ -67,7 +72,8 @@ void FiducialsNode::imageCallback(sensor_msgs::ImageConstPtr const &msg) {
             std::string immediateFrameName = "immediateFiducial" + std::to_string(id);
             SE3::pushToTfTree(mTfBroadcaster, immediateFrameName, ROVER_FRAME, immediateFid.fidInCam.value());
 
-            if (timestamp - intermediate_fid.initTimestamp < mMinTimeSeen) { //has not been seen enough amount of time
+            if ((mIsTimeBased && (timestamp - intermediate_fid.initTimestamp < mMinTimeSeen)) 
+            || (!mIsTimeBased && intermediate_fid.timesSeen < mMinFramesSeen)) { //has not been seen enough amount of time
                 ROS_INFO("Tag not seen for sufficient time");
 
                 intermediate_fid.seenThisIteration = true; //to make sure that it is not deleted later
