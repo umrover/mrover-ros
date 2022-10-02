@@ -49,6 +49,7 @@ let interval;
 
 import AutonRoverMap from "./AutonRoverMap.vue"
 import AutonWaypointEditor from './AutonWaypointEditor.vue'
+import { mapGetters } from 'vuex';
 
 const navBlue = "#4695FF"
 const navGreen = "yellowgreen"
@@ -95,16 +96,39 @@ export default {
       },
       navBlink: false,
       greenHook: false,
+      nav_status_sub: null,
 
     }
   },
 
+  created: function() {
+    this.nav_status_sub = new ROSLIB.Topic({
+      ros : this.$ros,
+      name : '/smach/container_status',
+      messageType : 'smach_msgs/SmachContainerStatus'
+    });
+
+    this.nav_status_sub.subscribe((msg) => {
+      this.nav_status.nav_state_name = msg.active_states[0]
+      console.log('subscription running')
+    });
+
+    setInterval(() => {
+      this.navBlink = !this.navBlink
+    }, 500)
+  },
+
   computed: {
+    ...mapGetters('autonomy', {
+      autonEnabled: 'autonEnabled',
+      teleopEnabled: 'teleopEnabled'
+    }),
+    
     nav_state_color: function() {
       if(this.teleopEnabled){
         return navBlue
       }
-      else if(this.autonEnabled){
+      else if(true){ // add back this.autonEnabled
         if(this.nav_status.nav_state_name == "Done" && this.navBlink){
           return navGreen
         }
@@ -138,7 +162,7 @@ export default {
         this.greenHook = true //Accounting for the blinking between navGrey and navGreen
       }
       if(!this.greenHook || ledMsg.color == 'Green'){
-        this.publish('/auton_led',ledMsg)
+        // this.publish('/auton_led',ledMsg)
       }
     }
   },
