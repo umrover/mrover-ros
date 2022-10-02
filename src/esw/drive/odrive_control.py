@@ -607,7 +607,7 @@ class Application(object):
         self._bridges = [ODriveBridge("front"), ODriveBridge("middle"), ODriveBridge("back")]
         self._wheel_base = rospy.get_param("wheels/base")
         self._wheel_radius = rospy.get_param("wheels/radius")
-        self._max_motor_speed_rad_s = 50  # Should not be changed. Derived from testing.
+        self._max_motor_speed_rad_s = 50 * 2 * math.pi # Should not be changed. Derived from testing.
         self._max_speed_m_s = rospy.get_param("wheels/max_speed")
         self._ratio_motor_to_wheel = rospy.get_param("wheels/ratio")
 
@@ -657,7 +657,7 @@ class Application(object):
         if (abs(left_rad) > self._max_motor_speed_rad_s) or (abs(right_rad) > self._max_motor_speed_rad_s):
             larger_abs_rad_s = max(abs(left_rad), abs(right_rad))
             left_rad = (left_rad / larger_abs_rad_s) * self._max_motor_speed_rad_s
-            right_rad = (right_rad / larger_abs_rad_s) * self._max_speed_m_s
+            right_rad = (right_rad / larger_abs_rad_s) * self._max_motor_speed_rad_s
         self._set_motor_axis_speed(left_rad, Axis.LEFT)
         self._set_motor_axis_speed(right_rad, Axis.RIGHT)
 
