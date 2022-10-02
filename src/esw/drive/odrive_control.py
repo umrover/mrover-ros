@@ -609,6 +609,7 @@ class Application(object):
         self._wheel_radius = rospy.get_param("wheels/radius")
         self._max_motor_speed_rad_s = 50  # Should not be changed. Derived from testing.
         self._max_speed_m_s = rospy.get_param("wheels/max_speed")
+        self._ratio_motor_to_wheel = rospy.get_param("wheels/ratio")
 
         assert self._max_speed_m_s > 0, "wheels/max_speed config must be greater than 0"
 
