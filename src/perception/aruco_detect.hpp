@@ -42,7 +42,7 @@ struct IntermediateFiducial {
    XYZFilter fidInOdomXYZ;
    double initTimestamp = std::numeric_limits<double>::max();
    bool seenThisIteration = true;
-   int timesSeen = 0;
+   int timesSeen;
 };
  
 /**
@@ -76,8 +76,8 @@ private:
    bool mHasCamInfo = false;
    bool mPublishFiducialTf = false;
    double mMinTimeSeen = 5; //in seconds
-   double mMinFramesSeen = 5;
-   bool mIsTimeBased = true; //as opposed to frame based
+   double mMinFramesSeen = 30;
+   bool mIsTimeBased = false; //as opposed to frame based
    double mFiducialLen{};
    std::vector<int> mIgnoreIds;
    int mFilterCount{};

@@ -59,7 +59,7 @@ void FiducialsNode::imageCallback(sensor_msgs::ImageConstPtr const &msg) {
                     temp.initTimestamp = timestamp; // initialize with timestamp
                 }
                 else {
-                    temp.timesSeen = 1; // initialize with 1
+                    temp.timesSeen = 0; // initialize with 0
                 }
                 temp.id = id; //set correct id
             }
@@ -77,6 +77,10 @@ void FiducialsNode::imageCallback(sensor_msgs::ImageConstPtr const &msg) {
                 ROS_INFO("Tag not seen for sufficient time");
 
                 intermediate_fid.seenThisIteration = true; //to make sure that it is not deleted later
+
+                if(!mIsTimeBased) {
+                    intermediate_fid.timesSeen++; //increment times seen
+                }
 
                 try {
                     SE3 fidInOdom = SE3::fromTfTree(mTfBuffer, ODOM_FRAME, immediateFrameName);
