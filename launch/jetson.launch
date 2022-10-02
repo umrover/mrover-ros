@@ -7,4 +7,8 @@
   -->
   <node name="odrive_control" pkg="mrover" type="odrive_control.py" output="screen"></node>
   <rosparam command="load" file="$(find mrover)/config/esw.yaml" />
+  <!--
+    Operate science board for Auton, ES, and Science missions.
+  -->
+  <node name="science_board" pkg="mrover" type="science_board.py"></node>
 </launch>
