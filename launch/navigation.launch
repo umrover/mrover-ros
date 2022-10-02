@@ -57,7 +57,7 @@
     <!-- Publications -->
     <remap from="odometry/filtered" to="odometry/filtered" />
   </node>
-
+  <node name="enable_read" pkg="mrover" type="convert_GPS_waypoints.py" />
   <!-- Reads the GPS topic and convert it to cartesian based on a reference point-->
   <node pkg="robot_localization" type="navsat_transform_node" name="navsat_transform" clear_params="true">
     <!-- Reference latitude/longitude to linearize from -->

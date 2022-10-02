@@ -3,8 +3,8 @@
 import numpy as np
 import rospy
 
-from mrover.src.util.course_service import CourseService
 from mrover.msg import EnableAuton,  Waypoint, GPSWaypoint
+from util.course_service import CourseService
 
 from util.SE3 import SE3
 from util.tf_utils import EARTH_RADIUS
@@ -33,10 +33,10 @@ class Converter:
         """
 
         # Create odom position based on GPS latitude and longitude
-        base = np.array([0, 0]) # Our base/reference is in latitude, longitude coordinates (degrees)
+        base = np.array([42.2, -83.7, 0.0]) # Our base/reference is in latitude, longitude, altitude coordinates (degrees)
         x = EARTH_RADIUS * np.radians(waypoint.latitude_degrees - base[0])
         y = EARTH_RADIUS * np.radians(waypoint.longitude_degrees - base[1])
-        z = 0
+        z = base[2]
         odom = np.array([x, y, z])
         return (Waypoint(fiducial_id=0, tf_id=f"course{waypoint.id}"), SE3(position=odom))
 
@@ -44,6 +44,7 @@ class Converter:
         # If auton is enabled, publish the waypoints to the course
         if (data.enable):
             waypoints = [self.convert(i) for i in data.waypoints]
+            rospy.loginfo(f"GOING to Publish waypoints {waypoints}")
             self.publish_course(waypoints)
 
 def main():

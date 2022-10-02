@@ -26,6 +26,8 @@ set(MROVER_MESSAGE_FILES
         CalibrationStatus.msg
         ODriveState.msg
         WheelData.msg
+        GPSWaypoint.msg
+        EnableAuton.msg
         )
 
 # service files
