@@ -26,8 +26,11 @@ odrive:
   ros:
     publish_rate_hz: 20
 
+rover:
+  length: 0.86
+  width: 0.86
+
 wheels:
-  base: 0.86
   radius: 0.13
   ratio: 50.0
   max_speed: 0.8

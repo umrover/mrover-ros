@@ -591,21 +591,26 @@ class Application(object):
     :param _max_speed_m_s: Max permitted speed of the wheels in m/s.
     :param _ratio_motor_to_wheel: The ratio of the motor to the wheels
         (rev per motor to rev per wheel).
-    :param _wheels_base: Width of rover in meters.
+    :param _wheel_distance_inner: Distance of inner wheels (middle) from center in meters
+    :param _wheel_distance_outer: Distance of outer wheels (front/back) from center in meters
     :param _wheels_radius: Radius of the wheels in meters."""
 
     _bridges: List[ODriveBridge]
     _max_motor_speed_rad_s: float
     _max_speed_m_s: float
     _ratio_motor_to_wheel: float
-    _wheel_base: float
     _wheel_radius: float
+    _wheel_distance_inner: float
+    _wheel_distance_outer: float
 
     def __init__(self):
 
         rospy.init_node(f"odrive_control")
         self._bridges = [ODriveBridge("front"), ODriveBridge("middle"), ODriveBridge("back")]
-        self._wheel_base = rospy.get_param("wheels/base")
+        rover_width = rospy.get_param("rover/width")
+        rover_length = rospy.get_param("rover/length")
+        self._wheel_distance_inner = rover_width / 2.0
+        self._wheel_distance_outer = math.sqrt(((rover_width / 2.0) ** 2) + ((rover_length / 2.0) ** 2))
         self._wheel_radius = rospy.get_param("wheels/radius")
         self._max_motor_speed_rad_s = 50 * 2 * math.pi  # Should not be changed. Derived from testing.
         self._max_speed_m_s = rospy.get_param("wheels/max_speed")
@@ -642,45 +647,54 @@ class Application(object):
         forward = ros_msg.linear.x
         turn = ros_msg.angular.z
 
-        turn_difference = turn * self._wheel_base / 2
+        turn_difference_inner = turn * self._wheel_distance_inner
+        turn_difference_outer = turn * self._wheel_distance_outer
 
-        left_m_s = forward + turn_difference
-        right_m_s = forward - turn_difference
+        left_m_s_inner = forward + turn_difference_inner
+        right_m_s_inner = forward - turn_difference_inner
+        left_m_s_outer = forward + turn_difference_outer
+        right_m_s_outer = forward - turn_difference_outer
 
-        if (abs(left_m_s) > self._max_speed_m_s) or (abs(right_m_s) > self._max_speed_m_s):
-            larger_abs_m_s = max(abs(left_m_s), abs(right_m_s))
-            left_m_s = (left_m_s / larger_abs_m_s) * self._max_speed_m_s
-            right_m_s = (right_m_s / larger_abs_m_s) * self._max_speed_m_s
+        larger_abs_m_s = max(abs(left_m_s_inner), max(right_m_s_inner, max(left_m_s_outer, right_m_s_outer)))
+        if larger_abs_m_s > self._max_speed_m_s:
+            left_m_s_inner *= (1 / larger_abs_m_s) * self._max_speed_m_s
+            right_m_s_inner *= (1 / larger_abs_m_s) * self._max_speed_m_s
+            left_m_s_outer *= (1 / larger_abs_m_s) * self._max_speed_m_s
+            right_m_s_outer *= (1 / larger_abs_m_s) * self._max_speed_m_s
 
-        left_rad = left_m_s / self._wheel_radius
-        right_rad = right_m_s / self._wheel_radius
+        left_rad_inner = left_m_s_inner / self._wheel_radius
+        right_rad_inner = right_m_s_inner / self._wheel_radius
+        left_rad_outer = left_m_s_outer / self._wheel_radius
+        right_rad_outer = right_m_s_outer / self._wheel_radius
 
-        left_rad *= self._ratio_motor_to_wheel
-        right_rad *= self._ratio_motor_to_wheel
+        left_rad_inner *= self._ratio_motor_to_wheel
+        right_rad_inner *= self._ratio_motor_to_wheel
+        left_rad_outer *= self._ratio_motor_to_wheel
+        right_rad_outer *= self._ratio_motor_to_wheel
 
-        if (abs(left_rad) > self._max_motor_speed_rad_s) or (abs(right_rad) > self._max_motor_speed_rad_s):
-            larger_abs_rad_s = max(abs(left_rad), abs(right_rad))
-            left_rad = (left_rad / larger_abs_rad_s) * self._max_motor_speed_rad_s
-            right_rad = (right_rad / larger_abs_rad_s) * self._max_motor_speed_rad_s
+        larger_abs_rad_s = max(abs(left_rad_inner), max(right_rad_inner, max(left_rad_outer, right_rad_outer)))
+        if larger_abs_rad_s > self._max_motor_speed_rad_s:
+            left_rad_inner *= (1 / larger_abs_rad_s) * self._max_motor_speed_rad_s
+            right_rad_inner *= (1 / larger_abs_rad_s) * self._max_motor_speed_rad_s
+            left_rad_outer *= (1 / larger_abs_rad_s) * self._max_motor_speed_rad_s
+            right_rad_outer *= (1 / larger_abs_rad_s) * self._max_motor_speed_rad_s
 
-        self._set_motor_axis_speed(left_rad, Axis.LEFT)
-        self._set_motor_axis_speed(right_rad, Axis.RIGHT)
-
-    def _set_motor_axis_speed(self, vel_rad_s: float, axis: Axis) -> None:
-        """Calls the change_axis_speed function.
-
-        Note that this does NOT actually change speed that the ODrive comands
-        the motors at. One must wait for the ODriveBridge._update() function
-        to be called for that to happen.
-        :param vel_rad_s: A float that is the desired velocity in rad/s
-        :param axis: An Axis enum that is either Axis.LEFT or Axis.RIGHT
-        """
-        assert abs(vel_rad_s) <= (self._max_motor_speed_rad_s), "vel_rad_s is greater than self._max_motor_speed_rad_s"
         for bridge in self._bridges:
             bridge.start_time = t.process_time()
-            if bridge.get_state_string() == "Armed":
-                bridge.change_axis_speed(axis, vel_rad_s)
 
+        # Handle inner wheels
+        if self._bridges[1].get_state_string() == "Armed":
+            self._bridges[1].change_axis_speed(Axis.LEFT, left_rad_inner)
+            self._bridges[1].change_axis_speed(Axis.RIGHT, right_rad_inner)
+
+        # Handle outer wheels
+        if self._bridges[0].get_state_string() == "Armed":
+            self._bridges[0].change_axis_speed(Axis.LEFT, left_rad_outer)
+            self._bridges[0].change_axis_speed(Axis.RIGHT, right_rad_outer)
+
+        if self._bridges[2].get_state_string() == "Armed":
+            self._bridges[2].change_axis_speed(Axis.LEFT, left_rad_outer)
+            self._bridges[2].change_axis_speed(Axis.RIGHT, right_rad_outer)
 
 def main():
     """Creates the Application object and runs the program."""
