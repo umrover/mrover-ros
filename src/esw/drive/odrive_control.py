@@ -171,8 +171,7 @@ class Modrive:
         try:
             self._usb_lock.acquire()
             vel_turns = self._axes[axis].encoder.vel_estimate
-            vel_motor_m_s = vel_turns * 2 * math.pi * self._radius
-            vel_wheel_m_s = vel_motor_m_s / self._direction_by_side[axis]
+            vel_wheel_m_s = vel_turns * self._direction_by_side[axis] / self._wheels_m_s_to_motor_rad_ratio
         except Exception:
             raise DisconnectedError
         finally:
@@ -403,6 +402,7 @@ class ODriveBridge(object):
     :param _speed_lock: A lock that prevents multiple threads from accessing
         self._speed simultaneously.
     :param _state: A State object that keeps track of the current state.
+    :param _wheels_m_s_to_motor_rad_ratio: Multipler to convert from wheel m/s to motor rad
     """
 
     start_time: float
@@ -415,6 +415,7 @@ class ODriveBridge(object):
     _speed: Speed
     _speed_lock: threading.Lock
     _state: State
+    _wheels_m_s_to_motor_rad_ratio: float
 
     def __init__(self, pair: str) -> None:
         """Initializes the components, starting with a Disconnected State.
@@ -437,6 +438,10 @@ class ODriveBridge(object):
         self._rate = rospy.Rate(rospy.get_param("odrive/ros/publish_rate_hz"))
         self._speed_lock = threading.Lock()
         self._state = DisconnectedState()
+
+        wheel_radius = rospy.get_param("wheel/radius")
+        _ratio_motor_to_wheel = rospy.get_param("wheel/gear_ratio")
+        self._wheels_m_s_to_motor_rad_ratio = (1 / wheel_radius) * _ratio_motor_to_wheel
 
     def change_axis_speed(self, axis: Axis, speed: float) -> None:
         """Sets the self._speed to the requested speeds. The speeds must be in
