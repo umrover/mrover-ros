@@ -593,7 +593,8 @@ class Application(object):
         (rev per motor to rev per wheel).
     :param _wheel_distance_inner: Distance of inner wheels (middle) from center in meters
     :param _wheel_distance_outer: Distance of outer wheels (front/back) from center in meters
-    :param _wheels_radius: Radius of the wheels in meters."""
+    :param _wheels_radius: Radius of the wheels in meters.
+    :param _wheels_m_s_to_motor_rad_ratio: Multipler to convert from wheel m/s to motor rad"""
 
     _bridges: List[ODriveBridge]
     _max_motor_speed_rad_s: float
@@ -602,6 +603,7 @@ class Application(object):
     _wheel_radius: float
     _wheel_distance_inner: float
     _wheel_distance_outer: float
+    _wheels_m_s_to_motor_rad_ratio: float
 
     def __init__(self):
 
@@ -612,12 +614,16 @@ class Application(object):
         self._wheel_distance_inner = rover_width / 2.0
         self._wheel_distance_outer = math.sqrt(((rover_width / 2.0) ** 2) + ((rover_length / 2.0) ** 2))
         self._wheel_radius = rospy.get_param("wheels/radius")
-        self._max_motor_speed_rad_s = 50 * 2 * math.pi  # Should not be changed. Derived from testing.
-        self._max_speed_m_s = rospy.get_param("wheels/max_speed")
+        _max_speed_m_s = rospy.get_param("wheels/max_speed")
         self._ratio_motor_to_wheel = rospy.get_param("wheels/ratio")
+        self._wheels_m_s_to_motor_rad_ratio = (1 / self._wheel_radius) * self._ratio_motor_to_wheel
 
         assert self._max_speed_m_s > 0, "wheels/max_speed config must be greater than 0"
 
+        max_motor_rad_s = _max_speed_m_s * self._wheels_m_s_to_motor_rad_ratio
+        measured_max_motor_rad_s = 50 * 2 * math.pi  # Should not be changed. Derived from testing.
+
+        self._max_motor_speed_rad_s = min(measured_max_motor_rad_s, max_motor_rad_s)
         rospy.Subscriber("cmd_vel", Twist, self._process_twist_message)
 
     def run(self):
@@ -650,34 +656,19 @@ class Application(object):
         turn_difference_inner = turn * self._wheel_distance_inner
         turn_difference_outer = turn * self._wheel_distance_outer
 
-        left_m_s_inner = forward + turn_difference_inner
-        right_m_s_inner = forward - turn_difference_inner
-        left_m_s_outer = forward + turn_difference_outer
-        right_m_s_outer = forward - turn_difference_outer
+        left_rad_inner = (forward + turn_difference_inner) * self._wheels_m_s_to_motor_rad_ratio
+        right_rad_inner = (forward - turn_difference_inner) * self._wheels_m_s_to_motor_rad_ratio
+        left_rad_outer = (forward + turn_difference_outer) * self._wheels_m_s_to_motor_rad_ratio
+        right_rad_outer = (forward - turn_difference_outer) * self._wheels_m_s_to_motor_rad_ratio
 
-        larger_abs_m_s = max(abs(left_m_s_inner), max(right_m_s_inner, max(left_m_s_outer, right_m_s_outer)))
-        if larger_abs_m_s > self._max_speed_m_s:
-            left_m_s_inner *= (1 / larger_abs_m_s) * self._max_speed_m_s
-            right_m_s_inner *= (1 / larger_abs_m_s) * self._max_speed_m_s
-            left_m_s_outer *= (1 / larger_abs_m_s) * self._max_speed_m_s
-            right_m_s_outer *= (1 / larger_abs_m_s) * self._max_speed_m_s
-
-        left_rad_inner = left_m_s_inner / self._wheel_radius
-        right_rad_inner = right_m_s_inner / self._wheel_radius
-        left_rad_outer = left_m_s_outer / self._wheel_radius
-        right_rad_outer = right_m_s_outer / self._wheel_radius
-
-        left_rad_inner *= self._ratio_motor_to_wheel
-        right_rad_inner *= self._ratio_motor_to_wheel
-        left_rad_outer *= self._ratio_motor_to_wheel
-        right_rad_outer *= self._ratio_motor_to_wheel
-
-        larger_abs_rad_s = max(abs(left_rad_inner), max(right_rad_inner, max(left_rad_outer, right_rad_outer)))
+        # Ignore inner since outer > inner always
+        larger_abs_rad_s = max(left_rad_outer, right_rad_outer)
         if larger_abs_rad_s > self._max_motor_speed_rad_s:
-            left_rad_inner *= (1 / larger_abs_rad_s) * self._max_motor_speed_rad_s
-            right_rad_inner *= (1 / larger_abs_rad_s) * self._max_motor_speed_rad_s
-            left_rad_outer *= (1 / larger_abs_rad_s) * self._max_motor_speed_rad_s
-            right_rad_outer *= (1 / larger_abs_rad_s) * self._max_motor_speed_rad_s
+            change_ratio = self._max_motor_speed_rad_s / larger_abs_rad_s
+            left_rad_inner *= change_ratio
+            right_rad_inner *= change_ratio
+            left_rad_outer *= change_ratio
+            right_rad_outer *= change_ratio
 
         for bridge in self._bridges:
             bridge.start_time = t.process_time()
