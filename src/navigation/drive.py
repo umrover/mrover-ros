@@ -50,8 +50,9 @@ def get_drive_command(
     # Determine the sign of our effort by seeing if we are to the left or to the right of the target
     # This is done by dotting rover_dir and target_dir rotated 90 degrees ccw
     perp_alignment = target_dir[0] * -rover_dir[1] + target_dir[1] * rover_dir[0]
-    sign = np.sign(perp_alignment)
+    sign = -np.sign(perp_alignment)
     # 1 is target alignment (dot product of two normalized vectors that are parallel is 1)
     error = 1.0 - alignment
     cmd_vel.angular.z = np.clip(error * TURNING_P * sign, MIN_DRIVING_EFFORT, MAX_DRIVING_EFFORT)
+    print(cmd_vel.linear.x, cmd_vel.angular.z)
     return cmd_vel, False
