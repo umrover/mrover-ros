@@ -607,7 +607,7 @@ class Application(object):
         self._bridges = [ODriveBridge("front"), ODriveBridge("middle"), ODriveBridge("back")]
         self._wheel_base = rospy.get_param("wheels/base")
         self._wheel_radius = rospy.get_param("wheels/radius")
-        self._max_motor_speed_rad_s = 50 * 2 * math.pi # Should not be changed. Derived from testing.
+        self._max_motor_speed_rad_s = 50 * 2 * math.pi  # Should not be changed. Derived from testing.
         self._max_speed_m_s = rospy.get_param("wheels/max_speed")
         self._ratio_motor_to_wheel = rospy.get_param("wheels/ratio")
 
@@ -651,7 +651,7 @@ class Application(object):
             larger_abs_m_s = max(abs(left_m_s), abs(right_m_s))
             left_m_s = (left_m_s / larger_abs_m_s) * self._max_speed_m_s
             right_m_s = (right_m_s / larger_abs_m_s) * self._max_speed_m_s
-    
+
         left_rad = left_m_s / self._wheel_radius
         right_rad = right_m_s / self._wheel_radius
 
@@ -675,9 +675,7 @@ class Application(object):
         :param vel_rad_s: A float that is the desired velocity in rad/s
         :param axis: An Axis enum that is either Axis.LEFT or Axis.RIGHT
         """
-        assert abs(vel_rad_s) <= (
-            self._max_motor_speed_rad_s
-        ), "vel_rad_s is greater than self._max_motor_speed_rad_s"
+        assert abs(vel_rad_s) <= (self._max_motor_speed_rad_s), "vel_rad_s is greater than self._max_motor_speed_rad_s"
         for bridge in self._bridges:
             bridge.start_time = t.process_time()
             if bridge.get_state_string() == "Armed":
