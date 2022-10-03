@@ -81,6 +81,8 @@ class Modrive:
     :param _usb_lock: A lock that prevents multiple threads from accessing
         ODrive objects simultaneously.
     :param _watchdog_timeout: A float that represents the watchdog timeout.
+    :param _wheels_m_s_to_motor_rad_ratio: Multipler to convert from wheel m/s to motor rad
+
     """
 
     _axes: Dict[str, Any]
@@ -89,6 +91,7 @@ class Modrive:
     _radius: float
     _usb_lock: threading.Lock
     _watchdog_timeout: float
+    _wheels_m_s_to_motor_rad_ratio: float
 
     def __init__(self, odr) -> None:
         self._odrive = odr
@@ -105,6 +108,10 @@ class Modrive:
         self._radius = rospy.get_param("wheel/radius")
         self._usb_lock = threading.Lock()
         self._watchdog_timeout = rospy.get_param("odrive/config/watchdog_timeout")
+
+        wheel_radius = rospy.get_param("wheel/radius")
+        _ratio_motor_to_wheel = rospy.get_param("wheel/gear_ratio")
+        self._wheels_m_s_to_motor_rad_ratio = (1 / wheel_radius) * _ratio_motor_to_wheel
 
     def __getattr__(self, attr: Any) -> Any:
         """
@@ -402,7 +409,6 @@ class ODriveBridge(object):
     :param _speed_lock: A lock that prevents multiple threads from accessing
         self._speed simultaneously.
     :param _state: A State object that keeps track of the current state.
-    :param _wheels_m_s_to_motor_rad_ratio: Multipler to convert from wheel m/s to motor rad
     """
 
     start_time: float
@@ -415,7 +421,6 @@ class ODriveBridge(object):
     _speed: Speed
     _speed_lock: threading.Lock
     _state: State
-    _wheels_m_s_to_motor_rad_ratio: float
 
     def __init__(self, pair: str) -> None:
         """Initializes the components, starting with a Disconnected State.
@@ -438,10 +443,6 @@ class ODriveBridge(object):
         self._rate = rospy.Rate(rospy.get_param("odrive/ros/publish_rate_hz"))
         self._speed_lock = threading.Lock()
         self._state = DisconnectedState()
-
-        wheel_radius = rospy.get_param("wheel/radius")
-        _ratio_motor_to_wheel = rospy.get_param("wheel/gear_ratio")
-        self._wheels_m_s_to_motor_rad_ratio = (1 / wheel_radius) * _ratio_motor_to_wheel
 
     def change_axis_speed(self, axis: Axis, speed: float) -> None:
         """Sets the self._speed to the requested speeds. The speeds must be in
