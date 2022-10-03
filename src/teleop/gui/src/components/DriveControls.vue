@@ -19,18 +19,25 @@ let interval;
 export default {
   data () {
     return {
-      teleopEnabled: false
+      teleopEnabled: false,
+      joystick_pub: null
     }
   },
-
-
+  
+  
   beforeDestroy: function () {
     window.clearInterval(interval);
   },
-
+  
   created: function () {
     const updateRate = 0.05;
+    this.joystick_pub = new ROSLIB.Topic({
+      ros : this.$ros,
+      name : '/joystick',
+      messageType : 'sensor_msgs/Joy'
+    })
     interval = window.setInterval(() => {
+      if(this.teleopEnabled){       
         const gamepads = navigator.getGamepads()
         for (let i = 0; i < 4; i++) {
           const gamepad = gamepads[i]
@@ -41,23 +48,17 @@ export default {
                 return button.value
               })
 
-              let axes=gamepad.axes
-
               const joystickData = {
-                axes: axes,
+                axes: gamepad.axes,
                 buttons: buttons
               }
               
-              var joystickTopic = new ROSLIB.Topic({
-                ros : this.$ros,
-                name : '/joystick',
-                messageType : 'sensor_msgs/Joy'
-              })
               var joystickMsg = new ROSLIB.Message(joystickData)
-              joystickTopic.publish(joystickMsg)
+              this.joystick_pub.publish(joystickMsg)
             }
           }
         }
+      }
     }, updateRate*1000)
   },
 
