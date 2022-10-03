@@ -37,8 +37,8 @@ class Drive:
         self.drive_config = drive_config
 
         # Constants for diff drive
-        self.max_wheel_speed = ros.get_param("wheels/max_speed")
-        self.wheel_radius = ros.get_param("wheels/radius")
+        self.max_wheel_speed = ros.get_param("rover/max_speed")
+        self.wheel_radius = ros.get_param("wheel/radius")
         self.twist_pub = ros.Publisher("/cmd_vel", Twist, queue_size=100)
 
     def teleop_drive_callback(self, msg):

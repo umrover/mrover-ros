@@ -102,7 +102,7 @@ class Modrive:
             "left": rospy.get_param("odrive/ratio/direction_left"),
             "right": rospy.get_param("odrive/ratio/direction_right"),
         }
-        self._radius = rospy.get_param("wheels/radius")
+        self._radius = rospy.get_param("wheel/radius")
         self._usb_lock = threading.Lock()
         self._watchdog_timeout = rospy.get_param("odrive/config/watchdog_timeout")
 
@@ -588,19 +588,12 @@ class Application(object):
     :param _bridges: A list of bridges that are contain data for the ODrives controlling
         the front, middle, and back wheels.
     :param _max_motor_speed_rad_s: Max permitted speed of the motor in rad/s.
-    :param _max_speed_m_s: Max permitted speed of the wheels in m/s.
-    :param _ratio_motor_to_wheel: The ratio of the motor to the wheels
-        (rev per motor to rev per wheel).
     :param _wheel_distance_inner: Distance of inner wheels (middle) from center in meters
     :param _wheel_distance_outer: Distance of outer wheels (front/back) from center in meters
-    :param _wheels_radius: Radius of the wheels in meters.
     :param _wheels_m_s_to_motor_rad_ratio: Multipler to convert from wheel m/s to motor rad"""
 
     _bridges: List[ODriveBridge]
     _max_motor_speed_rad_s: float
-    _max_speed_m_s: float
-    _ratio_motor_to_wheel: float
-    _wheel_radius: float
     _wheel_distance_inner: float
     _wheel_distance_outer: float
     _wheels_m_s_to_motor_rad_ratio: float
@@ -609,21 +602,24 @@ class Application(object):
 
         rospy.init_node(f"odrive_control")
         self._bridges = [ODriveBridge("front"), ODriveBridge("middle"), ODriveBridge("back")]
+
         rover_width = rospy.get_param("rover/width")
         rover_length = rospy.get_param("rover/length")
+
         self._wheel_distance_inner = rover_width / 2.0
         self._wheel_distance_outer = math.sqrt(((rover_width / 2.0) ** 2) + ((rover_length / 2.0) ** 2))
-        self._wheel_radius = rospy.get_param("wheels/radius")
-        _max_speed_m_s = rospy.get_param("wheels/max_speed")
-        self._ratio_motor_to_wheel = rospy.get_param("wheels/ratio")
-        self._wheels_m_s_to_motor_rad_ratio = (1 / self._wheel_radius) * self._ratio_motor_to_wheel
 
-        assert self._max_speed_m_s > 0, "wheels/max_speed config must be greater than 0"
+        wheel_radius = rospy.get_param("wheel/radius")
+        _ratio_motor_to_wheel = rospy.get_param("wheel/gear_ratio")
+        self._wheels_m_s_to_motor_rad_ratio = (1 / wheel_radius) * _ratio_motor_to_wheel
+
+        _max_speed_m_s = rospy.get_param("rover/max_speed")
+        assert _max_speed_m_s > 0, "rover/max_speed config must be greater than 0"
 
         max_motor_rad_s = _max_speed_m_s * self._wheels_m_s_to_motor_rad_ratio
         measured_max_motor_rad_s = 50 * 2 * math.pi  # Should not be changed. Derived from testing.
-
         self._max_motor_speed_rad_s = min(measured_max_motor_rad_s, max_motor_rad_s)
+
         rospy.Subscriber("cmd_vel", Twist, self._process_twist_message)
 
     def run(self):
@@ -686,6 +682,7 @@ class Application(object):
         if self._bridges[2].get_state_string() == "Armed":
             self._bridges[2].change_axis_speed(Axis.LEFT, left_rad_outer)
             self._bridges[2].change_axis_speed(Axis.RIGHT, right_rad_outer)
+
 
 def main():
     """Creates the Application object and runs the program."""
