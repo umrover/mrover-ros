@@ -81,7 +81,7 @@ class Modrive:
     :param _usb_lock: A lock that prevents multiple threads from accessing
         ODrive objects simultaneously.
     :param _watchdog_timeout: A float that represents the watchdog timeout.
-    :param _wheels_m_s_to_motor_rad_ratio: Multipler to convert from wheel m/s to motor rad
+    :param _motor_turns_to_wheels_m_s_ratio: Multipler to convert from motor turns to wheel m/s
 
     """
 
@@ -91,7 +91,7 @@ class Modrive:
     _radius: float
     _usb_lock: threading.Lock
     _watchdog_timeout: float
-    _wheels_m_s_to_motor_rad_ratio: float
+    _motor_turns_to_wheels_m_s_ratio: float
 
     def __init__(self, odr) -> None:
         self._odrive = odr
@@ -111,7 +111,7 @@ class Modrive:
 
         wheel_radius = rospy.get_param("wheel/radius")
         _ratio_motor_to_wheel = rospy.get_param("wheel/gear_ratio")
-        self._wheels_m_s_to_motor_rad_ratio = (1 / wheel_radius) * _ratio_motor_to_wheel
+        self._motor_turns_to_wheels_m_s_ratio = 2 * math.pi / _ratio_motor_to_wheel* wheel_radius
 
     def __getattr__(self, attr: Any) -> Any:
         """
@@ -178,7 +178,7 @@ class Modrive:
         try:
             self._usb_lock.acquire()
             vel_turns = self._axes[axis].encoder.vel_estimate
-            vel_wheel_m_s = vel_turns * self._direction_by_side[axis] / self._wheels_m_s_to_motor_rad_ratio
+            vel_wheel_m_s = vel_turns* self._direction_by_side[axis] * self._motor_turns_to_wheels_m_s_ratio
         except Exception:
             raise DisconnectedError
         finally:
