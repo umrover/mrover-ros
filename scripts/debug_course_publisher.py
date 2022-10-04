@@ -22,7 +22,7 @@ if __name__ == "__main__":
         # ("course1", -3, -3, -1),
         # ("course2", -5, -5, 0)
         # (Waypoint(fiducial_id=0, tf_id="course0"), SE3(position=np.array([-2, -6, 0]))),[-1.542, 0.144, -0.109]
-        (Waypoint(fiducial_id=-1, tf_id="course0"), SE3(position=np.array([-1.181, -3.928, 0]))),
+        (Waypoint(fiducial_id=0, tf_id="course0"), SE3(position=np.array([-1.181, -3.928, 0]))),
         # (Waypoint(fiducial_id=0, tf_id="course2"), SE3(position=np.array([-5, -5, 0]))),
     ]
 
