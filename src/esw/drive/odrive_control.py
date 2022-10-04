@@ -111,7 +111,7 @@ class Modrive:
 
         wheel_radius = rospy.get_param("wheel/radius")
         _ratio_motor_to_wheel = rospy.get_param("wheel/gear_ratio")
-        self._motor_turns_to_wheels_m_s_ratio = 2 * math.pi / _ratio_motor_to_wheel* wheel_radius
+        self._motor_turns_to_wheels_m_s_ratio = 2 * math.pi / _ratio_motor_to_wheel * wheel_radius
 
     def __getattr__(self, attr: Any) -> Any:
         """
@@ -178,7 +178,7 @@ class Modrive:
         try:
             self._usb_lock.acquire()
             vel_turns = self._axes[axis].encoder.vel_estimate
-            vel_wheel_m_s = vel_turns* self._direction_by_side[axis] * self._motor_turns_to_wheels_m_s_ratio
+            vel_wheel_m_s = vel_turns * self._direction_by_side[axis] * self._motor_turns_to_wheels_m_s_ratio
         except Exception:
             raise DisconnectedError
         finally:
