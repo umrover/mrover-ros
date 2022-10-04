@@ -86,7 +86,7 @@ macro(add_tests_macro)
 endmacro()
 
 # Subdirectories before message declarations
-set(CMAKE_SUBDIRS "")
+set(MROVER_SUBDIRS "")
 
 
 # -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
@@ -138,7 +138,7 @@ else ()
             )
 
     # append subdirectories
-    list(APPEND CMAKE_SUBDIRS
+    list(APPEND MROVER_SUBDIRS
             starter_project/teleop
             starter_project/autonomy
             )
@@ -200,17 +200,26 @@ if (COMMAND add_packages_macro)
     add_packages_macro()
 endif ()
 
+# 3.5 Include directories
+
+include_directories(
+        ${catkin_INCLUDE_DIRS}
+)
+
+if (COMMAND include_directories_macro)
+    include_directories_macro()
+endif ()
+
 
 # 4. Python module support
 catkin_python_setup()
 
-
 # 4.5. Subdirectories before message declarations
-if (NOT "${CMAKE_SUBDIRS}" MATCHES "")
+foreach (SUBDIR ${MROVER_SUBDIRS})
     add_subdirectory(
-            ${CMAKE_SUBDIRS}
+            ${SUBDIR}
     )
-endif ()
+endforeach()
 
 
 # 5. Message Generators (add_xxx)
@@ -235,7 +244,6 @@ generate_dynamic_reconfigure_options(
         ${MROVER_PARAMETERS}
 )
 
-
 # 7. Specify package build info export (catkin_package)
 catkin_package(
         CATKIN_DEPENDS
@@ -245,13 +253,6 @@ catkin_package(
 
 # 8. Libraries/Executables to build (add_executable)
 # These only exist after find_packages
-include_directories(
-        ${catkin_INCLUDE_DIRS}
-)
-
-if (COMMAND include_directories_macro)
-    include_directories_macro()
-endif ()
 
 link_directories(
         ${MROVER_LINK_DIRS}
