@@ -271,10 +271,6 @@ export default {
       this.waitingForNav = true;
     },
 
-    toggleTeleopMode: function (val) {
-      console.log(val)
-      this.setTeleopMode(val)
-    }
   },
 
   watch: {

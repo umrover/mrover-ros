@@ -113,8 +113,8 @@ export default {
 
     this.localization_sub = new ROSLIB.Topic({
       ros : this.$ros,
-      name : '/tf',
-      messageType : 'geometry_msgs/TransformStamped'
+      name : '/imu/data',
+      messageType : 'sensor_msgs/Imu'
     });
 
     this.nav_status_sub.subscribe((msg) => {
@@ -136,15 +136,13 @@ export default {
 
     });
 
-    // Need a way to tell which transform is coming through
-    // Would prefer if localization just sent us the quaternion we need
-    // this.localization_sub.subscribe((msg) => {
-    //     let quaternion = msg.transform.rotation
-    //     quaternion = [quaternion.w, quaternion.x, quaternion.y, quaternion.z]
-    //     let euler = qte(quaternion)
+    this.localization_sub.subscribe((msg) => {
+        let quaternion = msg.orientation
+        quaternion = [quaternion.w, quaternion.x, quaternion.y, quaternion.z]
+        let euler = qte(quaternion)
         
-    //     this.odom.bearing_deg = euler[2] * (180/Math.PI)
-    // })
+        this.odom.bearing_deg = euler[2] * (180/Math.PI)
+    })
 
     setInterval(() => {
       this.navBlink = !this.navBlink

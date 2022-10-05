@@ -232,8 +232,6 @@ export default {
     odom: {
       handler: function (val) {
         // Trigger every time rover odom is changed
-        console.log("ODOM MESSAGE")
-        console.log(val)
   
         const lat = val.latitude_deg + val.latitude_min / 60
         const lng = val.longitude_deg + val.longitude_min / 60
@@ -285,7 +283,6 @@ export default {
   // Pull objects from refs to be able to access data and change w functions
   mounted: function () {
     this.$nextTick(() => {
-      console.log(this.$refs)
       this.map = this.$refs.map.mapObject
       this.roverMarker = this.$refs.rover.mapObject
       // More Tangent Marker stuff
