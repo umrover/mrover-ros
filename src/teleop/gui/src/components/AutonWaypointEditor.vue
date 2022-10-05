@@ -5,7 +5,6 @@
         <div class="identification">
           Name: <input v-model="name" size="15">
           ID: <input v-model="id" type="number" max="249" min="-1" step="1">
-          Gate Width: <input v-model="gate_width" type="number" max="3" min="2" step="1">
         </div>
         <br>
         <input type="radio" v-model="odom_format_in" value="D" class="checkbox"><font size="2">D</font>
@@ -100,7 +99,6 @@ export default {
     return {
       name: "Waypoint",
       id: "-1",
-      gate_width: "3",
       odom_format_in: 'DM',
       input: {
         lat: {
@@ -260,7 +258,6 @@ export default {
         lon: Object.assign({}, coord.lon),
         gate: false,
         post: false,
-        gate_width: this.gate_width
       });
     },
 

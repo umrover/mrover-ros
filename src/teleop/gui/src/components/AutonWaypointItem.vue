@@ -1,7 +1,7 @@
 <template>
   <div class="waypoint-item">
     <div class="identification">
-      <p>{{waypoint.name}}, ID: {{waypoint.id}} Gate Width: {{waypoint.gate ? waypoint.gate_width : 'n/a'}}</p>
+      <p>{{waypoint.name}}, ID: {{waypoint.id}}</p>
     </div>
     <div class="buttons">
       <button class="red" v-on:click="$emit('add', {'list': list, 'index': index})">Add</button>
