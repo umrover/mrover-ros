@@ -33,10 +33,7 @@
 import ROSLIB from "roslib"
 import AutonRoverMap from "./AutonRoverMap.vue"
 import AutonWaypointEditor from './AutonWaypointEditor.vue'
-<<<<<<< Updated upstream
-=======
 import DriveControls from "./DriveControls.vue";
->>>>>>> Stashed changes
 import { mapGetters } from 'vuex';
 
 const navBlue = "#4695FF"
