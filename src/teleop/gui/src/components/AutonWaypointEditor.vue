@@ -36,7 +36,9 @@
         </div>
         <!-- TODO: Test all features of waypoint items -->
         <draggable v-model="storedWaypoints" class="dragArea" draggable=".item'">
-          <WaypointItem v-for="waypoint, i in storedWaypoints" :key="i" v-bind:waypoint="waypoint" v-bind:list="0" v-bind:index="i" v-on:delete="deleteItem($event)" v-on:toggleSearch="toggleSearch($event)" v-on:toggleGate="toggleGate($event)" v-on:add="addItem($event)" v-on:find="findWaypoint($event)"/>
+          <WaypointItem v-for="waypoint, i in storedWaypoints" :key="i" v-bind:waypoint="waypoint" 
+            v-bind:list="0" v-bind:index="i" v-on:delete="deleteItem($event)"
+            v-on:toggleGate="toggleGate($event)" v-on:togglePost="togglePost($event)" v-on:add="addItem($event)" v-on:find="findWaypoint($event)"/>
         </draggable>
       </div>
     </div>
@@ -58,7 +60,9 @@
       <div class="box1">
         <h4 class="waypoint-headers">Current Course</h4>
         <draggable v-model="route" class="dragArea" draggable=".item'">
-          <WaypointItem v-for="waypoint, i in route" :key="i" v-bind:waypoint="waypoint" v-bind:list="1" v-bind:index="i" v-bind:name="name" v-bind:id="id" v-on:delete="deleteItem($event)" v-on:toggleSearch="toggleSearch($event)" v-on:toggleGate="toggleGate($event)" v-on:add="addItem($event)" v-on:find="findWaypoint($event)"/>
+          <WaypointItem v-for="waypoint, i in route" :key="i" v-bind:waypoint="waypoint" 
+            v-bind:list="1" v-bind:index="i" v-bind:name="name" v-bind:id="id" v-on:delete="deleteItem($event)" 
+            v-on:toggleGate="toggleGate($event)" v-on:togglePost="togglePost($event)" v-on:add="addItem($event)" v-on:find="findWaypoint($event)"/>
         </draggable>
       </div>
     </div>
@@ -124,7 +128,8 @@ export default {
       waitingForNav: false,
 
       //Pubs and Subs
-      nav_status_sub: null
+      nav_status_sub: null,
+      course_pub: null
 
     }
   },
@@ -134,6 +139,12 @@ export default {
   },
 
   created: function () {
+
+    this.course_pub = new ROSLIB.Topic({
+          ros : this.$ros,
+          name : '/auton/enable_state',
+          messageType : 'mrover/EnableAuton'
+    }),
 
     this.nav_status_sub = new ROSLIB.Topic({
           ros : this.$ros,
@@ -149,37 +160,40 @@ export default {
       this.autonButtonColor = this.autonEnabled ? "green" : "red";
     },
 
+    // Interval for publishing Course
     interval = window.setInterval(() => {
 
-      let course = {
-        num_waypoints: this.route.length,
-        waypoints: _.map(this.route, (waypoint) => {
-          const lat = waypoint.lat.d + waypoint.lat.m/60 + waypoint.lat.s/3600;
-          const lon = waypoint.lon.d + waypoint.lon.m/60 + waypoint.lon.s/3600;
-          const latitude_deg = Math.trunc(lat);
-          const longitude_deg = Math.trunc(lon);
+      let course
 
-          return {
-            type: "Waypoint",
-            search: waypoint.search,
-            gate: waypoint.gate,
-            gate_width: parseFloat(waypoint.gate_width),
-            id: parseFloat(waypoint.id),
-            odom: {
-              latitude_deg: latitude_deg,
-              latitude_min: (lat - latitude_deg) * 60,
-              longitude_deg: longitude_deg,
-              longitude_min: (lon - longitude_deg) * 60,
-              bearing_deg: 0,
-              speed: -1,
-              type: "Odometry"
-            },
-          }
-        })
-      };
-      course.hash = fnvPlus.fast1a52(JSON.stringify(course));
-      course.type = 'Course'
-      // this.$parent.publish('/course', course)
+      if(this.autonEnabled){ 
+        course = {
+          enable: true,
+          // Map for every waypoint in the current route
+          waypoints: _.map(this.route, (waypoint) => {
+            const lat = waypoint.lat.d + waypoint.lat.m/60 + waypoint.lat.s/3600;
+            const lon = waypoint.lon.d + waypoint.lon.m/60 + waypoint.lon.s/3600;
+
+            // Return a GPSWaypoint.msg formatted object for each
+            return {
+              latitude_degrees: lat,
+              longitude_degrees: lon,
+              gate: waypoint.gate,
+              post: waypoint.post,
+              id: parseFloat(waypoint.id),
+            }
+          })
+        };
+      }
+      else{ // Else send false and no array
+        course = {
+          enable: false,
+          waypoints: []
+        }
+      }
+
+      const courseMsg = new ROSLIB.Message(course)
+
+      this.course_pub.publish(courseMsg)
     }, 100));
   },
 
@@ -222,19 +236,19 @@ export default {
       }
     },
 
-    toggleSearch: function (payload) {
-      if(payload.list === 0) {
-        this.storedWaypoints[payload.index].search = !this.storedWaypoints[payload.index].search
-      } else if(payload.list === 1) {
-        this.route[payload.index].search = !this.route[payload.index].search
-      }
-    },
-
     toggleGate: function (payload) {
       if(payload.list === 0) {
         this.storedWaypoints[payload.index].gate = !this.storedWaypoints[payload.index].gate
       } else if(payload.list === 1) {
         this.route[payload.index].gate = !this.route[payload.index].gate
+      }
+    },
+
+    togglePost: function (payload) {
+      if(payload.list === 0) {
+        this.storedWaypoints[payload.index].post = !this.storedWaypoints[payload.index].post
+      } else if(payload.list === 1) {
+        this.route[payload.index].post = !this.route[payload.index].post
       }
     },
 
@@ -244,8 +258,8 @@ export default {
         id: this.id,
         lat: Object.assign({}, coord.lat),
         lon: Object.assign({}, coord.lon),
-        search: false,
         gate: false,
+        post: false,
         gate_width: this.gate_width
       });
     },

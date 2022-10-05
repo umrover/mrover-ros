@@ -5,7 +5,7 @@
     </div>
     <div class="buttons">
       <button class="red" v-on:click="$emit('add', {'list': list, 'index': index})">Add</button>
-      <button v-bind:class="[waypoint.search ? 'green' : 'red']" v-on:click="$emit('toggleSearch', {'list': list, 'index': index})">Search</button>
+      <button v-bind:class="[waypoint.post ? 'green' : 'red']" v-on:click="$emit('togglePost', {'list': list, 'index': index})">Post</button>
       <button v-bind:class="[waypoint.gate ? 'green' : 'red']" v-on:click="$emit('toggleGate', {'list': list, 'index': index})">Gate</button>
       <button class="red" v-on:click="$emit('delete', {'list': list, 'index': index})">Delete</button>
       <button v-bind:class="[index===highlightedWaypoint ? 'green' : 'red']" v-on:click="$emit('find', {'list': list, 'index': index})">Find</button>
