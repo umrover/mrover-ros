@@ -7,8 +7,9 @@
       <l-tile-layer :url="this.online ? this.onlineUrl : this.offlineUrl" :attribution="attribution" :options="tileLayerOptions"/>
       
       <!-- Markers for rover location -->
-      <l-marker ref="tangent" :lat-lng="odomLatLng" :icon="tangentIcon"/>
-      <l-marker ref="target_bearing" :lat-lng="odomLatLng" :icon="targetBearingIcon"/>
+      <!-- TODO: Figure out if we still want these -->
+      <!-- <l-marker ref="tangent" :lat-lng="odomLatLng" :icon="tangentIcon"/>
+      <l-marker ref="target_bearing" :lat-lng="odomLatLng" :icon="targetBearingIcon"/> -->
       <l-marker ref="rover" :lat-lng="odomLatLng" :icon="locationIcon"/>
 
       <!-- Waypoint Icons -->
@@ -46,7 +47,7 @@
 <script>
 import { LMap, LTileLayer, LMarker, LPolyline, LPopup, LTooltip, LControlScale } from 'vue2-leaflet'
 import { mapGetters, mapMutations } from 'vuex'
-import L from '../leaflet-rotatedmarker.js'
+import L from '../leaflet-rotatedmarker'
 
 const MAX_ODOM_COUNT = 1000
 const DRAW_FREQUENCY = 10
@@ -231,8 +232,8 @@ export default {
     odom: {
       handler: function (val) {
         // Trigger every time rover odom is changed
-  
         console.log("ODOM MESSAGE")
+        console.log(val)
   
         const lat = val.latitude_deg + val.latitude_min / 60
         const lng = val.longitude_deg + val.longitude_min / 60
@@ -250,8 +251,8 @@ export default {
         this.roverMarker.setRotationAngle(angle)
   
         this.roverMarker.setLatLng(latLng)
-        this.tangentMarker.setLatLng(latLng)
-        this.targetBearingMarker.setLatLng(latLng)
+        // this.tangentMarker.setLatLng(latLng)
+        // this.targetBearingMarker.setLatLng(latLng)
   
         // Update the rover path
         this.odomCount++
@@ -284,10 +285,12 @@ export default {
   // Pull objects from refs to be able to access data and change w functions
   mounted: function () {
     this.$nextTick(() => {
+      console.log(this.$refs)
       this.map = this.$refs.map.mapObject
       this.roverMarker = this.$refs.rover.mapObject
-      this.tangentMarker = this.$refs.tangent.mapObject
-      this.targetBearingMarker = this.$refs.target_bearing.mapObject
+      // More Tangent Marker stuff
+      // this.tangentMarker = this.$refs.tangent.mapObject
+      // this.targetBearingMarker = this.$refs.target_bearing.mapObject
     })
   }
 }

@@ -36,6 +36,7 @@ import AutonWaypointEditor from './AutonWaypointEditor.vue'
 import DriveControls from "./DriveControls.vue";
 import { mapGetters } from 'vuex';
 import { convertDMS } from "../utils";
+import * as qte from "quaternion-to-euler";
 
 const navBlue = "#4695FF"
 const navGreen = "yellowgreen"
@@ -91,7 +92,8 @@ export default {
 
       // Pubs and Subs
       nav_status_sub: null,
-      odom_sub: null
+      odom_sub: null,
+      localization_sub: null
 
     }
   },
@@ -107,6 +109,12 @@ export default {
       ros : this.$ros,
       name : '/gps/fix',
       messageType : 'sensor_msgs/NavSatFix'
+    });
+
+    this.localization_sub = new ROSLIB.Topic({
+      ros : this.$ros,
+      name : '/tf',
+      messageType : 'geometry_msgs/TransformStamped'
     });
 
     this.nav_status_sub.subscribe((msg) => {
@@ -127,6 +135,16 @@ export default {
       this.odom.longitude_min = coord.m
 
     });
+
+    // Need a way to tell which transform is coming through
+    // Would prefer if localization just sent us the quaternion we need
+    // this.localization_sub.subscribe((msg) => {
+    //     let quaternion = msg.transform.rotation
+    //     quaternion = [quaternion.w, quaternion.x, quaternion.y, quaternion.z]
+    //     let euler = qte(quaternion)
+        
+    //     this.odom.bearing_deg = euler[2] * (180/Math.PI)
+    // })
 
     setInterval(() => {
       this.navBlink = !this.navBlink
