@@ -22,8 +22,8 @@
     <div class="box waypoints light-bg">
       <AutonWaypointEditor v-bind:odom="odom" v-bind:AutonDriveControl="AutonDriveControl"/>
     </div>
-    <!--Display the drive controls if auton is off-->
-    <div class="box driveControls light-bg" v-if="!this.enable">
+    <!--Enable the drive controls if auton is off-->
+    <div class="driveControls" v-if="!this.autonEnabled" v-show="false">
       <DriveControls/>
     </div>
 </div>
@@ -87,6 +87,8 @@ export default {
 
       navBlink: false,
       greenHook: false,
+
+      // Pubs and Subs
       nav_status_sub: null,
 
     }
@@ -101,7 +103,6 @@ export default {
 
     this.nav_status_sub.subscribe((msg) => {
       this.nav_status.nav_state_name = msg.active_states[0]
-      console.log('subscription running')
     });
 
     setInterval(() => {
@@ -116,10 +117,10 @@ export default {
     }),
     
     nav_state_color: function() {
-      if(this.teleopEnabled){
+      if(!this.autonEnabled){
         return navBlue
       }
-      else if(true){ // add back this.autonEnabled
+      else if(true){
         if(this.nav_status.nav_state_name == "Done" && this.navBlink){
           return navGreen
         }
@@ -135,6 +136,7 @@ export default {
   },
 
   watch: {
+    // Publish auton LED color to ESW
     nav_state_color: function(color){
       let ledMsg = {
         type: 'AutonLed',
@@ -153,6 +155,7 @@ export default {
         this.greenHook = true //Accounting for the blinking between navGrey and navGreen
       }
       if(!this.greenHook || ledMsg.color == 'Green'){
+        // TODO: Implement this once ESW has this interface back up
         // this.publish('/auton_led',ledMsg)
       }
     },
@@ -173,12 +176,11 @@ export default {
   min-height: 98vh;
   grid-gap: 10px;
   grid-template-columns: 2fr 1.25fr 0.75fr;
-  grid-template-rows: 50px 2fr 1fr 6vh 24vh;
+  grid-template-rows: 50px 2fr 1fr 6vh;
   grid-template-areas: "header header header" 
                        "map waypoints waypoints"
                        "map waypoints waypoints" 
-                       "data waypoints waypoints" 
-                       "data angles odom";
+                       "data waypoints waypoints";
   font-family: sans-serif;
   height: auto;
   width: auto;

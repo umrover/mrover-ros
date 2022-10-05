@@ -17,9 +17,9 @@
       </l-marker>
 
       <!-- Projected Point Icons -->
-      <l-marker :lat-lng="projected_point.latLng" :icon="projectedPointIcon" v-for="(projected_point, index) in projectedPoints" :key="index">
+      <!-- <l-marker :lat-lng="projected_point.latLng" :icon="projectedPointIcon" v-for="(projected_point, index) in projectedPoints" :key="index">
         <l-tooltip :options="{permanent: 'true', direction: 'top'}">{{ projectedPointsType }} {{ index }}</l-tooltip>
-      </l-marker>
+      </l-marker> -->
       
       <!-- Gate Post Icons -->
       <l-marker :lat-lng="post1" :icon="postIcon" v-if="post1">
@@ -262,7 +262,7 @@ export default {
       this.odomPath[this.odomPath.length - 1] = latLng
     },
 
-    // Rotate rover icon based on bearing
+    // Rotate tangent icon based on bearing
     GPS: function (val) {
       this.tangentMarker.setRotationAngle(val.bearing_deg)
     },

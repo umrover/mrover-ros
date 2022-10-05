@@ -42,12 +42,8 @@
     </div>
     <div class="col-wrap" style="left: 50%">
       <div class="box datagrid">
-        <!-- TODO: Talk to Ankith about new interface for switching between Auton and Teleop-->
         <div class="auton-check">
           <AutonModeCheckbox ref="autonCheckbox" v-bind:name="autonButtonText" v-bind:color="autonButtonColor"  v-on:toggle="toggleAutonMode($event)"/>
-        </div>
-        <div class="teleop-check">
-          <Checkbox ref="teleopCheckbox" v-bind:name="'Teleop Enabled'" v-on:toggle="toggleTeleopMode($event)"/>
         </div>
         <div class="stats">
           <p>
@@ -79,6 +75,7 @@ import {mapMutations, mapGetters} from 'vuex'
 import _ from 'lodash';
 import fnvPlus from 'fnv-plus';
 import L from 'leaflet'
+import ROSLIB from 'roslib'
 
 let interval;
 
@@ -124,7 +121,10 @@ export default {
       route: [],
 
       autonButtonColor: "red",
-      waitingForNav: false
+      waitingForNav: false,
+
+      //Pubs and Subs
+      nav_status_sub: null
 
     }
   },
@@ -135,24 +135,21 @@ export default {
 
   created: function () {
 
-    this.toggleTeleopMode(false);
-    this.toggleAutonMode(false);
-
-    nav_status_sub = new ROSLIB.Topic({
+    this.nav_status_sub = new ROSLIB.Topic({
           ros : this.$ros,
-          name : 'smach/container_status',
+          name : '/smach/container_status',
           messageType : 'smach_msgs/SmachContainerStatus'
     }),
 
     this.nav_status_sub.subscribe((msg) => {
+      if(msg.active_states[0] != "Off" && !this.autonEnabled){
+          return
+      }
       this.waitingForNav = false;
-      this.autonButtonColor = "green";
+      this.autonButtonColor = this.autonEnabled ? "green" : "red";
     },
 
     interval = window.setInterval(() => {
-
-      // this.$parent.publish('/auton_enabled', {type: 'Enable', enabled: this.autonEnabled})
-      // this.$parent.publish('/teleop_enabled', {type: 'Enable', enabled: this.teleopEnabled})
 
       let course = {
         num_waypoints: this.route.length,
