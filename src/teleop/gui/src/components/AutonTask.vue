@@ -35,6 +35,7 @@ import AutonRoverMap from "./AutonRoverMap.vue"
 import AutonWaypointEditor from './AutonWaypointEditor.vue'
 import DriveControls from "./DriveControls.vue";
 import { mapGetters } from 'vuex';
+import { convertDMS } from "../utils";
 
 const navBlue = "#4695FF"
 const navGreen = "yellowgreen"
@@ -45,15 +46,15 @@ export default {
   data() {
     return {
 
+      // Default coordinates are at URC location
       odom: {
-        latitude_deg: 0,
-        latitude_min: 0,
-        longitude_deg: 0,
-        longitude_min: 0,
-        bearing_deg: 0,
-        speed: 0
+        latitude_deg: 38,
+        latitude_min: 24.38226,
+        longitude_deg: -110,
+        longitude_min: -47.51724,
+        bearing_deg: 0
       },
-
+      
       // Default coordinates are at URC location
       GPS: {
         latitude_deg: 38,
@@ -90,6 +91,7 @@ export default {
 
       // Pubs and Subs
       nav_status_sub: null,
+      odom_sub: null
 
     }
   },
@@ -101,8 +103,29 @@ export default {
       messageType : 'smach_msgs/SmachContainerStatus'
     });
 
+    this.odom_sub = new ROSLIB.Topic({
+      ros : this.$ros,
+      name : '/gps/fix',
+      messageType : 'sensor_msgs/NavSatFix'
+    });
+
     this.nav_status_sub.subscribe((msg) => {
       this.nav_status.nav_state_name = msg.active_states[0]
+    });
+
+    this.odom_sub.subscribe((msg) => {
+      // Object format to pass to ConvertDMS
+      let coord = {d: msg.latitude, m: 0, s: 0}
+      coord = convertDMS(coord, "DM")
+      this.odom.latitude_deg = coord.d
+      this.odom.latitude_min = coord.m
+
+      // Object format to pass to ConvertDMS
+      coord = {d: msg.longitude, m: 0, s: 0}
+      coord = convertDMS(coord, "DM")
+      this.odom.longitude_deg = coord.d
+      this.odom.longitude_min = coord.m
+
     });
 
     setInterval(() => {

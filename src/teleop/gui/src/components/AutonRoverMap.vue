@@ -228,38 +228,44 @@ export default {
 
 
   watch: {
-    odom: function (val) {
-      // Trigger every time rover odom is changed
-
-      const lat = val.latitude_deg + val.latitude_min / 60
-      const lng = val.longitude_deg + val.longitude_min / 60
-      const angle = val.bearing_deg
-
-      const latLng = L.latLng(lat, lng)
-
-      // Move to rover on first odom message
-      if (!this.findRover) {
-        this.findRover = true
-        this.center = latLng
-      }
-      
-      // Update the rover markers
-      this.roverMarker.setRotationAngle(angle)
-
-      this.roverMarker.setLatLng(latLng)
-      this.tangentMarker.setLatLng(latLng)
-      this.targetBearingMarker.setLatLng(latLng)
-
-      // Update the rover path
-      this.odomCount++
-      if (this.odomCount % DRAW_FREQUENCY === 0) {
-        if (this.odomCount > MAX_ODOM_COUNT * DRAW_FREQUENCY) {
-          this.odomPath.splice(0, 1)
+    odom: {
+      handler: function (val) {
+        // Trigger every time rover odom is changed
+  
+        console.log("ODOM MESSAGE")
+  
+        const lat = val.latitude_deg + val.latitude_min / 60
+        const lng = val.longitude_deg + val.longitude_min / 60
+        const angle = val.bearing_deg
+  
+        const latLng = L.latLng(lat, lng)
+  
+        // Move to rover on first odom message
+        if (!this.findRover) {
+          this.findRover = true
+          this.center = latLng
         }
-        this.odomPath.push(latLng)
-      }
-
-      this.odomPath[this.odomPath.length - 1] = latLng
+        
+        // Update the rover markers
+        this.roverMarker.setRotationAngle(angle)
+  
+        this.roverMarker.setLatLng(latLng)
+        this.tangentMarker.setLatLng(latLng)
+        this.targetBearingMarker.setLatLng(latLng)
+  
+        // Update the rover path
+        this.odomCount++
+        if (this.odomCount % DRAW_FREQUENCY === 0) {
+          if (this.odomCount > MAX_ODOM_COUNT * DRAW_FREQUENCY) {
+            this.odomPath.splice(0, 1)
+          }
+          this.odomPath.push(latLng)
+        }
+  
+        this.odomPath[this.odomPath.length - 1] = latLng
+      },
+      // Deep will watch for changes in children of an object
+      deep: true
     },
 
     // Rotate tangent icon based on bearing
