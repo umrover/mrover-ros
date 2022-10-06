@@ -1,6 +1,13 @@
+<!-- 
+    This launch file runs the core nodes required for most of our other software to run.
+ -->
 <launch>
-  <param name="robot_description" command="xacro $(find mrover)/rover_description/rover.xacro" />
-  <node name="joint_state_publisher" pkg="joint_state_publisher" type="joint_state_publisher" />
-  <node name="robot_state_publisher" pkg="robot_state_publisher" type="robot_state_publisher" />
+    <!-- load our rover's model -->
+    <param name="robot_description" command="xacro $(find mrover)/rover_description/rover.xacro" />
 
+    <!-- publish the state of each joint as a JointState message -->
+    <node name="joint_state_publisher" pkg="joint_state_publisher" type="joint_state_publisher" />
+
+    <!-- publish the state of each joint as a transform in the TF tree -->
+    <node name="robot_state_publisher" pkg="robot_state_publisher" type="robot_state_publisher" />
 </launch>

@@ -34,5 +34,7 @@
   <node pkg="robot_localization" type="ekf_localization_node" name="ekf_odom" clear_params="true" />
 
   <!-- Reads the GPS topic and convert it to cartesian based on a reference point-->
-  <node pkg="robot_localization" type="navsat_transform_node" name="navsat_transform" clear_params="true" />
+  <node pkg="robot_localization" type="navsat_transform_node" name="navsat_transform" clear_params="true" >
+    <!-- <remap from="gps/filtered" to="something" /> -->
+  </node>
 </launch>
