@@ -2,7 +2,7 @@
     This launch file launches everything necessary to run auton code in the simulator.
  -->
 <launch>
-    <arg name="rvizconfig" default="$(find mrover)/config/rviz/localization.rviz" />
+    <arg name="rvizconfig" default="$(find mrover)/config/rviz/auton_sim.rviz" />
     <node name="rviz" pkg="rviz" type="rviz" args="-d $(arg rvizconfig)" required="true" />
 
     <!-- launch rover core nodes -->

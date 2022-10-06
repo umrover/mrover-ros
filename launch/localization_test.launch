@@ -3,7 +3,7 @@
     <include file="$(find mrover)/launch/rover_core.launch" />
 
     <!-- launch rviz -->
-    <arg name="rvizconfig" default="$(find mrover)/config/rviz/navigation.rviz" />
+    <arg name="rvizconfig" default="$(find mrover)/config/rviz/auton_sim.rviz" />
     <node name="rviz" pkg="rviz" type="rviz" args="-d $(arg rvizconfig)" required="true" />
 
     <!-- GPS + IMU driver nodes and params -->
