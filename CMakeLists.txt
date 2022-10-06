@@ -20,14 +20,14 @@ set(MROVER_LINK_DIRS "")
 
 # message files
 set(MROVER_MESSAGE_FILES
-        Course.msg
-        Waypoint.msg
-        Chassis.msg
         CalibrationStatus.msg
-        ODriveState.msg
-        WheelData.msg
-        GPSWaypoint.msg
+        Chassis.msg
+        Course.msg
         EnableAuton.msg
+        GPSWaypoint.msg
+        ODriveState.msg
+        Waypoint.msg
+        WheelData.msg
         )
 
 # service files
