@@ -11,11 +11,13 @@ Autonomous Traversal task.
 import threading
 from typing import Any, Callable, Dict, List
 
+# TODO: Look at Science/PDB/Fuse MCU Documentation, add handler for each topic, check yaml for number range for Publisher range
+
 import numpy as np
 import rospy
 import serial
-from sensor_msgs.msg import Temperature
-from mrover.msg import Enable, Heater, Spectral, Triad
+#from sensor_msgs.msg import Temperature
+from mrover.msg import Current, Enable, Heater, Spectral, Triad, Temperature
 from mrover.srv import (
     ChangeAutonLEDState,
     ChangeAutonLEDStateRequest,
@@ -53,39 +55,74 @@ class ScienceBridge:
         line.
     """
 
+    _fuse_current_pub: rospy.Publisher
+    _fuse_thermistor_pub: rospy.Publisher
     _id_by_color: Dict[str, int]
     _handler_function_by_tag: Dict[str, Callable[[str], Any]]
     _heater_auto_shut_off_pub: rospy.Publisher
     _heater_state_pub: rospy.Publisher
     _mosfet_number_by_device_name: Dict[str, int]
+    #_num_fuse_current : int
+    #_num_pdb_current : int
+    #_num_fuse_thermistors : int
+    #_num_pdb_thermistors : int
+    #_num_science_thermistors: int
+    _pdb_current_pub: rospy.Publisher
+    _pdb_thermistor_pub: rospy.Publisher
     _sleep: float
     _spectral_pub: rospy.Publisher
-    _thermistor_0_pub: rospy.Publisher
-    _thermistor_1_pub: rospy.Publisher
-    _thermistor_2_pub: rospy.Publisher
+    _science_thermistor_pub: rospy.Publisher
     _triad_pub: rospy.Publisher
     _uart_transmit_msg_len: int
     _uart_lock: threading.Lock
 
     def __init__(self) -> None:
+        self._fuse_thermistor_pub = rospy.Publisher(
+            "fuse_data/temperatures", Temperature, queue_size=1)
+        self._fuse_current_pub = rospy.Publisher(
+            "fuse_data/current", Current, queue_size=1)
         self._id_by_color = rospy.get_param("/science_board/color_ids")
-        self._mosfet_number_by_device_name = rospy.get_param("/science_board/device_mosfet_numbers")
+        self._mosfet_number_by_device_name = rospy.get_param(
+            "science_board/device_mosfet_numbers")
+        self._num_fuse_current = rospy.get_param(
+            "/science_board/info/fuse_current")
+        self._num_pdb_current = rospy.get_param(
+            "/science_board/info/pdb_current")
+        self._num_fuse_thermistors = rospy.get_param(
+            "/science_board/info/fuse_thermistors")
+        self._num_pdb_thermistors = rospy.get_param(
+            "/science_board/info/pdb_thermistors")
+        self._num_science_thermistors = rospy.get_param(
+            "/science_board/info/science_thermistors")
         self._handler_function_by_tag = {
             "AUTOSHUTOFF": self._heater_auto_shut_off_handler,
+            "FUSE_CURRENT": self._fuse_current_handler,
+            "FUSE_TEMP": self._fuse_thermistor_handler,
             "HEATER": self._heater_state_handler,
+            "PDB_CURRENT": self._pdb_current_handler,
+            "PDB_TEMP": self._pdb_thermistor_handler,
             "SPECTRAL": self._spectral_handler,
-            "THERMISTOR": self._thermistor_handler,
+            "SCIENCE_TEMP": self._science_thermistor_handler,
             "TRIAD": self._triad_handler,
         }
-        self._heater_auto_shut_off_pub = rospy.Publisher("science/heater_auto_shut_off_state_data", Enable, queue_size=1),
-        self._heater_state_pub = rospy.Publisher("science/heater_state_data", Heater, queue_size=1),
+        self._heater_auto_shut_off_pub = rospy.Publisher(
+            "science/heater_auto_shut_off_state_data", Enable, queue_size=1)
+        self._heater_state_pub = rospy.Publisher(
+            "science/heater_state_data", Heater, queue_size=1)
+        self._pdb_current_pub = rospy.Publisher(
+            "pdb_data/current", Current, queue_size=1)
+        self._pdb_thermistor_pub = rospy.Publisher(
+            "pdb_data/temperatures", Temperature, queue_size=1)
+        self._science_thermistor_pub = rospy.Publisher(
+            "science_data/thermistors", Temperature, queue_size=1)
         self._sleep = rospy.get_param("/science_board/info/sleep")
-        self._spectral_pub = rospy.Publisher("science/spectral", Spectral, queue_size=1),
-        self._thermistor_0_pub = rospy.Publisher("science/thermistor_0", Temperature, queue_size=1),
-        self._thermistor_1_pub = rospy.Publisher("science/thermistor_1", Temperature, queue_size=1),
-        self._thermistor_2_pub = rospy.Publisher("science/thermistor_2", Temperature, queue_size=1),
-        self._triad_pub = rospy.Publisher("science/spectral_triad", Triad, queue_size=1),
-        self._uart_transmit_msg_len = rospy.get_param("/science_board/info/uart_transmit_msg_len")
+        self._spectral_pub = rospy.Publisher(
+            "science/spectral", Spectral, queue_size=1)
+
+        self._triad_pub = rospy.Publisher(
+            "science/spectral_triad", Triad, queue_size=1)
+        self._uart_transmit_msg_len = rospy.get_param(
+            "/science_board/info/uart_transmit_msg_len")
         self._uart_lock = threading.Lock()
 
     def __enter__(self) -> None:
@@ -399,26 +436,80 @@ class ScienceBridge:
         count = 2
         for index in range(len(ros_msg.data)):
             if not count >= len(arr):
-                ros_msg.data[index] = 0xFFFF & ((np.uint8(arr[count]) << 8) | np.uint8(arr[count + 1]))
+                ros_msg.data[index] = 0xFFFF & (
+                    (np.uint8(arr[count]) << 8) | np.uint8(arr[count + 1]))
             else:
                 ros_msg.data[index] = 0
             count += 2
         self._spectral_pub.publish(ros_msg)
 
-    def _thermistor_handler(self, tx_msg: str) -> None:
-        """Processes a UART message that contains data of the three carousel
-        thermistors and packages it into a ROS struct.
+    def _science_thermistor_handler(self, tx_msg: str) -> None:
+        """TODO: explain function 
         :param tx_msg: A string that was received from UART that contains data
             of the three carousel spectral sensors.
-            - Format: <"THERMISTOR,temp_0,temp_1,temp_2">
+            - Format: $SCIENCE_TEMP,<TEMP_0>,<TEMP_1>,<TEMP_2>
+        :returns: A Thermistor struct that has an int thermistor ID and a float
+            that is the temperature of the carousel thermistor in Celsius.
+        """
+        arr = tx_msg.split(",")
+
+        for i in range(self._num_science_thermistors):
+            ros_msg = Temperature(id=i, temperature=float(arr[i + 1]))
+            self._science_thermistor_pub.publish(ros_msg)
+
+    def _pdb_thermistor_handler(self, tx_msg: str) -> None:
+        """TODO: explain function 
+        :param tx_msg: A string that was received from UART that contains data
+            of the three carousel spectral sensors.
+            - Format: $PDB_TEMP,<TEMP_0>,<TEMP_1>,<TEMP_2>
+        :returns: A Thermistor struct that has an int thermistor ID and a float
+            that is the temperature of the carousel thermistor in Celsius.
+        """
+        arr = tx_msg.split(",")
+
+        for i in range(self._num_pdb_thermistors):
+            ros_msg = Temperature(id=i, temperature=float(arr[i + 1]))
+            self._pdb_thermistor_pub.publish(ros_msg)
+
+    def _fuse_thermistor_handler(self, tx_msg: str) -> None:
+        """TODO: explain function 
+            - Format: $FUSE_TEMP,<TEMP_0>,<TEMP_1>
+        :returns: A Thermistor struct that has an int thermistor ID and a float
+            that is the temperature of the carousel thermistor in Celsius.
+        """
+        arr = tx_msg.split(",")
+
+        for i in range(self._num_fuse_thermistors):
+            ros_msg = Temperature(id=i, temperature=float(arr[i + 1]))
+            self._fuse_thermistor_pub.publish(ros_msg)
+
+    def _pdb_current_handler(self, tx_msg: str) -> None:
+        """ TODO: explain function 
+        :param tx_msg: A string that was received from UART that contains data
+            of the three carousel spectral sensors.
+            - Format: $PDB_CURRENT,<CURR_0>,<CURR_1>,<TEMP_2>
         :returns: A Thermistor struct that has 3 floats that is the
             temperature of the three carousel thermistors in Celsius.
         """
         arr = tx_msg.split(",")
-        thermistor_pubs = [self._thermistor_0_pub, self._thermistor_1_pub, self._thermistor_2_pub]
-        for i in range(3):
-            ros_msg = Temperature(temperature=float(arr[i + 1]))
-            thermistor_pubs[i].publish(ros_msg)
+
+        for i in range(self._num_pdb_current):
+            ros_msg = Current(id=i, amps=float(arr[i + 1]))
+            self._pdb_current_pub.publish(ros_msg)
+
+    def _fuse_current_handler(self, tx_msg: str) -> None:
+        """ TODO: explain function 
+        :param tx_msg: A string that was received from UART that contains data
+            of the three carousel spectral sensors.
+            - Format: $FUSE_CURRENT,<CURR_0>,<CURR_1>
+        :returns: A Current struct that has the integer sensor ID and a float
+            for the current in amps.
+        """
+        arr = tx_msg.split(",")
+
+        for i in range(self._num_fuse_current):
+            ros_msg = Current(id=i, amps=float(arr[i + 1]))
+            self._fuse_current_pub.publish(ros_msg)
 
     def _triad_handler(self, tx_msg: str) -> None:
         """Processes a UART message that contains data of the triad sensor on
@@ -438,7 +529,8 @@ class ScienceBridge:
         count = 1
         for index in range(len(ros_msg.data)):
             if not count >= len(arr):
-                ros_msg.data[index] = 0xFFFF & ((np.uint8(arr[count + 1]) << 8) | np.uint8(arr[count]))
+                ros_msg.data[index] = 0xFFFF & (
+                    (np.uint8(arr[count + 1]) << 8) | np.uint8(arr[count]))
             else:
                 ros_msg.data[index] = 0
             count += 2
@@ -448,18 +540,24 @@ class ScienceBridge:
 def main():
     rospy.init_node("science_board")
     with ScienceBridge() as bridge:
-        rospy.Service("change_arm_laser_state", ChangeDeviceState, bridge.handle_change_arm_laser_state)
-        rospy.Service("change_auton_led_state", ChangeAutonLEDState, bridge.handle_change_auton_led_state)
+        rospy.Service("change_arm_laser_state", ChangeDeviceState,
+                      bridge.handle_change_arm_laser_state)
+        rospy.Service("change_auton_led_state", ChangeAutonLEDState,
+                      bridge.handle_change_auton_led_state)
         rospy.Service(
             "change_heater_auto_shut_off_state", ChangeDeviceState, bridge.handle_change_heater_auto_shut_off_state
         )
-        rospy.Service("change_heater_state", ChangeHeaterState, bridge.handle_change_heater_state)
-        rospy.Service("change_servo_angles", ChangeServoAngles, bridge.handle_change_servo_angles)
-        rospy.Service("change_uv_led_carousel_state", ChangeDeviceState, bridge.handle_change_uv_led_carousel_state)
+        rospy.Service("change_heater_state", ChangeHeaterState,
+                      bridge.handle_change_heater_state)
+        rospy.Service("change_servo_angles", ChangeServoAngles,
+                      bridge.handle_change_servo_angles)
+        rospy.Service("change_uv_led_carousel_state", ChangeDeviceState,
+                      bridge.handle_change_uv_led_carousel_state)
         rospy.Service(
             "change_uv_led_end_effector_state", ChangeDeviceState, bridge.handle_change_uv_led_end_effector_state
         )
-        rospy.Service("change_white_led_state", ChangeDeviceState, bridge.handle_change_white_led_state)
+        rospy.Service("change_white_led_state", ChangeDeviceState,
+                      bridge.handle_change_white_led_state)
         while not rospy.is_shutdown():
             bridge.receive()
 

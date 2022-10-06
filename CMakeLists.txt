@@ -23,6 +23,7 @@ set(MROVER_MESSAGE_FILES
         CalibrationStatus.msg
         Chassis.msg
         Course.msg
+        Current.msg
         Enable.msg
         Heater.msg
         ODriveState.msg

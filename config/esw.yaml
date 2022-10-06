@@ -47,4 +47,10 @@ science_board:
     port: "/dev/ttyTHS0"
   info:
     sleep: 0.01
+    science_thermistors: 3
+    pdb_thermistors: 3
+    fuse_thermistors: 2
+    pdb_current: 3
+    fuse_current: 2
+
     uart_transmit_msg_len: 30
