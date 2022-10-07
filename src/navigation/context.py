@@ -120,7 +120,7 @@ class Course:
         if self.course_data is None or self.waypoint_index >= len(self.course_data.waypoints):
             return None
         return self.course_data.waypoints[self.waypoint_index]
-    
+
     def look_for_gate(self) -> bool:
         """
         Returns whether the currently active waypoint (if it exists) indicates
@@ -131,7 +131,7 @@ class Course:
             return waypoint.gate
         else:
             return False
-    
+
     def look_for_post(self) -> bool:
         """
         Returns whether the currently active waypoint (if it exists) indicates

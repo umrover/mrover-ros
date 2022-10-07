@@ -45,14 +45,13 @@ class WaypointState(BaseState):
         if current_waypoint is None:
             return "done"
 
-        # Go into either gate or search if we see them early (and are looking) 
+        # Go into either gate or search if we see them early (and are looking)
         if self.context.course.look_for_gate():
             if self.context.env.current_gate() is not None:
                 return "gate_traverse"
         if self.context.course.look_for_post():
             if self.context.env.current_fid_pos() is not None:
                 return "single_fiducial"
-
 
         # Attempt to find the waypoint in the TF tree and drive to it
         try:
