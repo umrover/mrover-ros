@@ -16,8 +16,7 @@ from typing import Any, Callable, Dict, List
 import numpy as np
 import rospy
 import serial
-#from sensor_msgs.msg import Temperature
-from mrover.msg import Current, Enable, Heater, Spectral, Triad, Temperature
+from mrover.msg import Current, Enable, Heater, Spectral, Triad, Temperature, ScienceTemperature, DiagTemperature
 from mrover.srv import (
     ChangeAutonLEDState,
     ChangeAutonLEDStateRequest,
@@ -55,20 +54,13 @@ class ScienceBridge:
         line.
     """
 
-    _fuse_current_pub: rospy.Publisher
-    _fuse_thermistor_pub: rospy.Publisher
+    _fuse_pdb_current_pub: rospy.Publisher
+    _fuse_pdb_thermistor_pub: rospy.Publisher
     _id_by_color: Dict[str, int]
     _handler_function_by_tag: Dict[str, Callable[[str], Any]]
     _heater_auto_shut_off_pub: rospy.Publisher
     _heater_state_pub: rospy.Publisher
     _mosfet_number_by_device_name: Dict[str, int]
-    #_num_fuse_current : int
-    #_num_pdb_current : int
-    #_num_fuse_thermistors : int
-    #_num_pdb_thermistors : int
-    #_num_science_thermistors: int
-    _pdb_current_pub: rospy.Publisher
-    _pdb_thermistor_pub: rospy.Publisher
     _sleep: float
     _spectral_pub: rospy.Publisher
     _science_thermistor_pub: rospy.Publisher
@@ -77,10 +69,10 @@ class ScienceBridge:
     _uart_lock: threading.Lock
 
     def __init__(self) -> None:
-        self._fuse_thermistor_pub = rospy.Publisher(
-            "fuse_data/temperatures", Temperature, queue_size=1)
-        self._fuse_current_pub = rospy.Publisher(
-            "fuse_data/current", Current, queue_size=1)
+        self._fuse_pdb_thermistor_pub = rospy.Publisher(
+            "diagnostic_data/temperatures", Temperature, queue_size=1)
+        self._fuse_pdb_current_pub = rospy.Publisher(
+            "diagnostic_data/current", Current, queue_size=1)
         self._id_by_color = rospy.get_param("/science_board/color_ids")
         self._mosfet_number_by_device_name = rospy.get_param(
             "science_board/device_mosfet_numbers")
@@ -96,11 +88,9 @@ class ScienceBridge:
             "/science_board/info/science_thermistors")
         self._handler_function_by_tag = {
             "AUTOSHUTOFF": self._heater_auto_shut_off_handler,
-            "FUSE_CURRENT": self._fuse_current_handler,
-            "FUSE_TEMP": self._fuse_thermistor_handler,
+            "DIAG_CURRENT": self._fuse_pdb_current_handler,
+            "DIAG_TEMP": self._fuse_pdb_thermistor_handler,
             "HEATER": self._heater_state_handler,
-            "PDB_CURRENT": self._pdb_current_handler,
-            "PDB_TEMP": self._pdb_thermistor_handler,
             "SPECTRAL": self._spectral_handler,
             "SCIENCE_TEMP": self._science_thermistor_handler,
             "TRIAD": self._triad_handler,
@@ -109,15 +99,11 @@ class ScienceBridge:
             "science/heater_auto_shut_off_state_data", Enable, queue_size=1)
         self._heater_state_pub = rospy.Publisher(
             "science/heater_state_data", Heater, queue_size=1)
-        self._pdb_current_pub = rospy.Publisher(
-            "pdb_data/current", Current, queue_size=1)
-        self._pdb_thermistor_pub = rospy.Publisher(
-            "pdb_data/temperatures", Temperature, queue_size=1)
         self._science_thermistor_pub = rospy.Publisher(
-            "science_data/thermistors", Temperature, queue_size=1)
+            "science_data/temperatures", Temperature, queue_size=1)
         self._sleep = rospy.get_param("/science_board/info/sleep")
         self._spectral_pub = rospy.Publisher(
-            "science/spectral", Spectral, queue_size=1)
+            "science_data/spectral", Spectral, queue_size=1)
 
         self._triad_pub = rospy.Publisher(
             "science/spectral_triad", Triad, queue_size=1)
@@ -193,11 +179,11 @@ class ScienceBridge:
         """Processes a request to change the angles of three carousel servos by
         issuing the command to the STM32 chip via UART. Returns the success of
         transaction.
-        :param req: A ChangeServoAnglesRequest object that has three floats
-            that represent the requested angles of the three servos.
+        :param req: A ChangeServoAnglesRequest object that has an int and
+            a float representing the id and the angle respectively.
         :returns: A boolean that is the success of sent UART transaction.
         """
-        success = self._servo_transmit(req.angles)
+        success = self._servo_transmit(req.id, req.angle)
         return ChangeServoAnglesResponse(success)
 
     def handle_change_uv_led_carousel_state(self, req: ChangeDeviceStateRequest) -> ChangeDeviceStateResponse:
@@ -238,16 +224,20 @@ class ScienceBridge:
         will be called to process the message.
         """
         tx_msg = self._read_msg()
-        match_found = False
-        for tag, handler_func in self._handler_function_by_tag.items():
-            if tag in tx_msg:
-                rospy.loginfo(tx_msg)
-                match_found = True
-                handler_func(tx_msg)
-                break
-        if (not match_found) and (not tx_msg):
+        arr = tx_msg.split(",")
+
+        # error if tag doesn't start with '$' or is empty
+        if len(tx_msg) == 0 or arr[0][0] != '$':
             rospy.loginfo(f"Error decoding message stream: {tx_msg}")
-        rospy.sleep(self._sleep)
+            rospy.sleep(self._sleep)
+
+        tag = arr[0][1:]
+        if not self._handler_function_by_tag.get_key(tag):
+            rospy.loginfo(f"Error decoding message stream: {tx_msg}")
+            rospy.sleep(self._sleep)
+
+        rospy.loginfo(tx_msg)
+        self._handler_function_by_tag(tag)
 
     def _add_padding(self, tx_msg: str) -> str:
         """Adds padding to a UART messages until it is a certain length.
@@ -401,7 +391,7 @@ class ScienceBridge:
             rospy.logerror(f"Error in _send_msg: {exc}")
         return False
 
-    def _servo_transmit(self, angles: List[float]) -> bool:
+    def _servo_transmit(self, id: int, angle: float) -> bool:
         """Sends a UART message to the STM32 chip commanding the angles of the
         three carousel servos.
         :param angles: Three floats in an array that represent the angles of
@@ -411,7 +401,7 @@ class ScienceBridge:
             and 150).
         :returns: A boolean that is the success of the transaction.
         """
-        tx_msg = f"$SERVO,{angles[0]},{angles[1]},{angles[2]}"
+        tx_msg = f"$SERVO,{id},{angle}"
         success = self._send_msg(tx_msg)
         return success
 
@@ -429,19 +419,8 @@ class ScienceBridge:
             spectral and six floats that is the data of the a carousel
             spectral sensor.
         """
-        tx_msg.split(",")
-        arr = [s.strip().strip("\x00") for s in tx_msg.split(",")]
-        ros_msg = Spectral()
-        ros_msg.site = arr[1]
-        count = 2
-        for index in range(len(ros_msg.data)):
-            if not count >= len(arr):
-                ros_msg.data[index] = 0xFFFF & (
-                    (np.uint8(arr[count]) << 8) | np.uint8(arr[count + 1]))
-            else:
-                ros_msg.data[index] = 0
-            count += 2
-        self._spectral_pub.publish(ros_msg)
+        arr = tx_msg.split(",")
+        self._spectral_pub.publish(Spectral([int(i) for i in arr[1:]]))
 
     def _science_thermistor_handler(self, tx_msg: str) -> None:
         """TODO: explain function 
@@ -452,64 +431,35 @@ class ScienceBridge:
             that is the temperature of the carousel thermistor in Celsius.
         """
         arr = tx_msg.split(",")
+        arr.pop(0)
+        ros_msg = ScienceTemperature([Temperature(float(i)) for i in arr])
+        self._science_thermistor_pub.publish(ros_msg)
 
-        for i in range(self._num_science_thermistors):
-            ros_msg = Temperature(id=i, temperature=float(arr[i + 1]))
-            self._science_thermistor_pub.publish(ros_msg)
-
-    def _pdb_thermistor_handler(self, tx_msg: str) -> None:
+    def _fuse_pdb_thermistor_handler(self, tx_msg: str) -> None:
         """TODO: explain function 
-        :param tx_msg: A string that was received from UART that contains data
-            of the three carousel spectral sensors.
-            - Format: $PDB_TEMP,<TEMP_0>,<TEMP_1>,<TEMP_2>
+            - Format: $DIAG_TEMP,<TEMP_0>,<TEMP_1>,<TEMP_2>
         :returns: A Thermistor struct that has an int thermistor ID and a float
             that is the temperature of the carousel thermistor in Celsius.
         """
         arr = tx_msg.split(",")
 
-        for i in range(self._num_pdb_thermistors):
-            ros_msg = Temperature(id=i, temperature=float(arr[i + 1]))
-            self._pdb_thermistor_pub.publish(ros_msg)
+        arr.pop(0)
+        ros_msg = DiagTemperature([Temperature(float(i)) for i in arr])
+        self._fuse_thermistor_pub.publish(ros_msg)
 
-    def _fuse_thermistor_handler(self, tx_msg: str) -> None:
-        """TODO: explain function 
-            - Format: $FUSE_TEMP,<TEMP_0>,<TEMP_1>
-        :returns: A Thermistor struct that has an int thermistor ID and a float
-            that is the temperature of the carousel thermistor in Celsius.
-        """
-        arr = tx_msg.split(",")
-
-        for i in range(self._num_fuse_thermistors):
-            ros_msg = Temperature(id=i, temperature=float(arr[i + 1]))
-            self._fuse_thermistor_pub.publish(ros_msg)
-
-    def _pdb_current_handler(self, tx_msg: str) -> None:
+    def _fuse_pdb_current_handler(self, tx_msg: str) -> None:
         """ TODO: explain function 
         :param tx_msg: A string that was received from UART that contains data
             of the three carousel spectral sensors.
-            - Format: $PDB_CURRENT,<CURR_0>,<CURR_1>,<TEMP_2>
-        :returns: A Thermistor struct that has 3 floats that is the
-            temperature of the three carousel thermistors in Celsius.
-        """
-        arr = tx_msg.split(",")
-
-        for i in range(self._num_pdb_current):
-            ros_msg = Current(id=i, amps=float(arr[i + 1]))
-            self._pdb_current_pub.publish(ros_msg)
-
-    def _fuse_current_handler(self, tx_msg: str) -> None:
-        """ TODO: explain function 
-        :param tx_msg: A string that was received from UART that contains data
-            of the three carousel spectral sensors.
-            - Format: $FUSE_CURRENT,<CURR_0>,<CURR_1>
+            - Format: $DIAG_CURRENT,<CURR_0>
         :returns: A Current struct that has the integer sensor ID and a float
             for the current in amps.
         """
         arr = tx_msg.split(",")
 
-        for i in range(self._num_fuse_current):
-            ros_msg = Current(id=i, amps=float(arr[i + 1]))
-            self._fuse_current_pub.publish(ros_msg)
+        arr.pop(0)
+        ros_msg = Current([float(i) for i in arr])
+        self._fuse_current_pub.publish(ros_msg)
 
     def _triad_handler(self, tx_msg: str) -> None:
         """Processes a UART message that contains data of the triad sensor on

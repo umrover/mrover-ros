@@ -1,2 +1,1 @@
-string site
-int32[6] data
+int16[6] data

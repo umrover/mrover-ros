@@ -1,2 +1,1 @@
-uint8_t id
-double temperature
+float32 temperature
