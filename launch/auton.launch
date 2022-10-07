@@ -14,13 +14,6 @@
   -->
   <!-- node to navigate to a series of waypoints, AR tags, and gates -->
   <node name="nav" pkg="mrover" type="navigation.py" />
-  <!-- 
-      publishes:
-        ...
-      
-      subscribes:
-        ...
-   -->
 
   <!--
     ============
@@ -36,7 +29,5 @@
   </node>
 
   <!-- Reads the GPS topic and convert it to cartesian based on a reference point-->
-  <node pkg="robot_localization" type="navsat_transform_node" name="navsat_transform" clear_params="true" >
-    <!-- <remap from="gps/filtered" to="something" /> -->
-  </node>
+  <node pkg="robot_localization" type="navsat_transform_node" name="navsat_transform" clear_params="true" />
 </launch>
