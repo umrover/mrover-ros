@@ -140,7 +140,7 @@ export default {
 
     // Convert to latLng object for Leaflet to use
     odomLatLng: function () {
-      return L.latLng(this.odom.latitude_deg + this.odom.latitude_min/60, this.odom.longitude_deg + this.odom.longitude_min/60)
+      return L.latLng(this.odom.latitude_deg, this.odom.longitude_deg)
     },
     
     // Concat waypoints on course with rover marker at index 0 for polyline
@@ -157,7 +157,8 @@ export default {
 
   data () {
     return {
-      center: L.latLng(38.406371, -110.791954),
+      // Default Center In NC 53 Parking Lot
+      center: L.latLng(42.294864932393835, -83.70781314674628,),
       attribution: '&copy; <a href="http://osm.org/copyright">OpenStreetMap</a> contributors',
       online: true,
       onlineUrl: onlineUrl,
@@ -199,10 +200,6 @@ export default {
       type: Object,
       required: true
     },
-    GPS: {
-      type: Object,
-      required: true
-    },
     TargetBearing: {
       type: Object,
       required: true
@@ -233,8 +230,8 @@ export default {
       handler: function (val) {
         // Trigger every time rover odom is changed
   
-        const lat = val.latitude_deg + val.latitude_min / 60
-        const lng = val.longitude_deg + val.longitude_min / 60
+        const lat = val.latitude_deg
+        const lng = val.longitude_deg
         const angle = val.bearing_deg
   
         const latLng = L.latLng(lat, lng)
@@ -245,7 +242,7 @@ export default {
           this.center = latLng
         }
         
-        // Update the rover markers
+        // Update the rover marker using bearing angle
         this.roverMarker.setRotationAngle(angle)
   
         this.roverMarker.setLatLng(latLng)
@@ -266,12 +263,6 @@ export default {
       // Deep will watch for changes in children of an object
       deep: true
     },
-
-    // Rotate tangent icon based on bearing
-    GPS: function (val) {
-      this.tangentMarker.setRotationAngle(val.bearing_deg)
-    },
-
 
     // Rotate target icon based on bearing
     TargetBearing: function (val) {

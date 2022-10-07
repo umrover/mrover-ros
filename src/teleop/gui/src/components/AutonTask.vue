@@ -17,7 +17,7 @@
       <h2>Nav State: {{this.nav_status.nav_state_name}}</h2>
     </div>
     <div class="box map light-bg">  
-      <AutonRoverMap v-bind:odom="odom" v-bind:GPS="GPS" v-bind:TargetBearing="TargetBearing"/>
+      <AutonRoverMap v-bind:odom="odom" v-bind:TargetBearing="TargetBearing"/>
     </div>
     <div class="box waypoints light-bg">
       <AutonWaypointEditor v-bind:odom="odom" v-bind:AutonDriveControl="AutonDriveControl"/>
@@ -35,7 +35,6 @@ import AutonRoverMap from "./AutonRoverMap.vue"
 import AutonWaypointEditor from './AutonWaypointEditor.vue'
 import DriveControls from "./DriveControls.vue";
 import { mapGetters } from 'vuex';
-import { convertDMS } from "../utils";
 import * as qte from "quaternion-to-euler";
 
 const navBlue = "#4695FF"
@@ -47,23 +46,11 @@ export default {
   data() {
     return {
 
-      // Default coordinates are at URC location
+      // Default coordinates are at NC 53 Parking Lot
       odom: {
-        latitude_deg: 38,
-        latitude_min: 24.38226,
-        longitude_deg: -110,
-        longitude_min: -47.51724,
+        latitude_deg: 42.294864932393835,
+        longitude_deg: -83.70781314674628,
         bearing_deg: 0
-      },
-      
-      // Default coordinates are at URC location
-      GPS: {
-        latitude_deg: 38,
-        latitude_min: 24.38226,
-        longitude_deg: -110,
-        longitude_min: -47.51724,
-        bearing_deg: 0,
-        speed: 0
       },
 
       TargetBearing: {
@@ -118,29 +105,23 @@ export default {
     });
 
     this.nav_status_sub.subscribe((msg) => {
+      // Callback for nav_status
       this.nav_status.nav_state_name = msg.active_states[0]
     });
 
     this.odom_sub.subscribe((msg) => {
-      // Object format to pass to ConvertDMS
-      let coord = {d: msg.latitude, m: 0, s: 0}
-      coord = convertDMS(coord, "DM")
-      this.odom.latitude_deg = coord.d
-      this.odom.latitude_min = coord.m
-
-      // Object format to pass to ConvertDMS
-      coord = {d: msg.longitude, m: 0, s: 0}
-      coord = convertDMS(coord, "DM")
-      this.odom.longitude_deg = coord.d
-      this.odom.longitude_min = coord.m
-
+      // Callback for latLng to be set
+      this.odom.latitude_deg = msg.latitude
+      this.odom.longitude_deg = msg.longitude
     });
 
     this.localization_sub.subscribe((msg) => {
+        // Callback for IMU quaternion that describes bearing
         let quaternion = msg.orientation
         quaternion = [quaternion.w, quaternion.x, quaternion.y, quaternion.z]
+        //Quaternion to euler angles
         let euler = qte(quaternion)
-        
+        // euler[2] == euler z component
         this.odom.bearing_deg = euler[2] * (180/Math.PI)
     })
 
