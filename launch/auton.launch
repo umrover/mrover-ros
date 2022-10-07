@@ -1,11 +1,19 @@
+<!-- 
+  This launch file launches all of the nodes necessary for autonomous navigation.
+    
+    :arg run_perception: true/false value deciding whether or not to run perception as
+                         part of the auton system. Should only be used for testing.
+ -->
 <launch>
+  <arg name="run_perception" default="true" />
+
   <!--
     ==========
     Perception
     ==========
   -->
   <!-- node to detect AR tags and publish them to the TF tree -->
-  <node name="aruco_detect" pkg="mrover" type="aruco_detect" />
+  <node if="$(arg run_perception)" name="aruco_detect" pkg="mrover" type="aruco_detect" />
 
   <!--
     ===========
