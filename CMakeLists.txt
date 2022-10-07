@@ -126,21 +126,15 @@ else ()
             gazebo_ros
             )
 
-    # append include directories
-    list(APPEND _INCLUDE_DIREC
-            GAZEBO_INCLUDE_DIRS
-            OpenCV_INCLUDE_DIRS
-            )
-
     # append link directories
     list(APPEND MROVER_LINK_DIRS
             ${GAZEBO_LIBRARY_DIRS}
             )
 
     # append subdirectories
-    list(APPEND MROVER_SUBDIRS
-            starter_project/teleop
-            starter_project/autonomy
+    list(APPEND MROVER_CMAKE_INCLUDES
+            starter_project/autonomy/AutonomyStarterProject.cmake
+            starter_project/teleop/TeleopStarterProject.cmake
             )
 
     # -=-=-=-=-
@@ -215,11 +209,9 @@ endif ()
 catkin_python_setup()
 
 # 4.5. Subdirectories before message declarations
-foreach (SUBDIR ${MROVER_SUBDIRS})
-    add_subdirectory(
-            ${SUBDIR}
-    )
-endforeach()
+foreach (CMAKE_INCLUDE ${MROVER_CMAKE_INCLUDES})
+    include(${CMAKE_INCLUDE})
+endforeach ()
 
 
 # 5. Message Generators (add_xxx)

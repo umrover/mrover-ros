@@ -3,13 +3,15 @@
 # It is a program whose sole purpose is to generate Makefiles (or Ninja build files)
 # It is used extensively in industry
 
-# TODO: add your new message file here
+# TODO: add your new message file here under FILES
 add_message_files(
+        DIRECTORY
+        ${CMAKE_CURRENT_LIST_DIR}/msg
         FILES
 )
 
 # Collect all cpp files in the src subdirectory to be used for perception
-file(GLOB_RECURSE STARTER_PROJECT_PERCEPTION_SOURCES "src/*.cpp")
+file(GLOB_RECURSE STARTER_PROJECT_PERCEPTION_SOURCES "${CMAKE_CURRENT_LIST_DIR}/src/*.cpp")
 # Define a new CMake target, specifically a built C++ executable, that uses the found source files
 add_executable(starter_project_perception ${STARTER_PROJECT_PERCEPTION_SOURCES})
 # Ensure that our project builds after message generation
@@ -24,6 +26,3 @@ install(TARGETS starter_project_perception
         LIBRARY DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
         RUNTIME DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
         )
-
-# Hack to make sub CMake directories generate messages
-set(mrover_MESSAGE_FILES ${mrover_MESSAGE_FILES} PARENT_SCOPE)
