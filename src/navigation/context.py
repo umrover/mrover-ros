@@ -63,7 +63,7 @@ class Environment:
         """
         assert self.ctx.course
         current_waypoint = self.ctx.course.current_waypoint()
-        if current_waypoint is None or current_waypoint.fiducial_id == self.NO_FIDUCIAL:
+        if current_waypoint is None or (current_waypoint.gate == False and current_waypoint.post == False):
             return None
 
         return self.get_fid_pos(current_waypoint.fiducial_id)
@@ -74,7 +74,7 @@ class Environment:
         """
         if self.ctx.course:
             current_waypoint = self.ctx.course.current_waypoint()
-            if current_waypoint is None or current_waypoint.fiducial_id == self.NO_FIDUCIAL:
+            if current_waypoint is None or (current_waypoint.gate == False and current_waypoint.post == False):
                 return None
 
             post1 = self.get_fid_pos(current_waypoint.fiducial_id)
@@ -120,6 +120,28 @@ class Course:
         if self.course_data is None or self.waypoint_index >= len(self.course_data.waypoints):
             return None
         return self.course_data.waypoints[self.waypoint_index]
+    
+    def look_for_gate(self) -> bool:
+        """
+        Returns whether the currently active waypoint (if it exists) indicates
+        that we should go to a gate
+        """
+        waypoint = self.current_waypoint()
+        if waypoint is not None:
+            return waypoint.gate
+        else:
+            return False
+    
+    def look_for_post(self) -> bool:
+        """
+        Returns whether the currently active waypoint (if it exists) indicates
+        that we should go to a post
+        """
+        waypoint = self.current_waypoint()
+        if waypoint is not None:
+            return (not waypoint.gate) and waypoint.post
+        else:
+            return False
 
     def is_complete(self):
         return self.waypoint_index == len(self.course_data.waypoints)
