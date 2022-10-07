@@ -5,9 +5,6 @@
     <!-- load our rover's model -->
     <param name="robot_description" command="xacro $(find mrover)/rover_description/rover.xacro" />
 
-    <!-- publish the state of each joint as a JointState message -->
-    <node name="joint_state_publisher" pkg="joint_state_publisher" type="joint_state_publisher" />
-
     <!-- publish the state of each joint as a transform in the TF tree -->
     <node name="robot_state_publisher" pkg="robot_state_publisher" type="robot_state_publisher" />
 </launch>

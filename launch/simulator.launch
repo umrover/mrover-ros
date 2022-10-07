@@ -27,4 +27,7 @@
     <!-- spawn the rover model in gazebo, requires robot_description rosparam to be set -->
     <node name="spawn_model" pkg="gazebo_ros" type="spawn_model" output="screen" 
           args="-urdf -param robot_description -model rover" />
+
+    <!-- publish the state of each joint as a JointState message -->
+    <node name="joint_state_publisher" pkg="joint_state_publisher" type="joint_state_publisher" />
 </launch>
