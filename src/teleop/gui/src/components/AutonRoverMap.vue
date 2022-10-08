@@ -1,10 +1,11 @@
 <template>
   <div class="wrap">
     <!-- Leaflet Map Definition-->
-    <l-map ref="map" class="map" :zoom="15" :center="center" v-on:click="getClickedLatLon($event)">
+    <l-map ref="map" class="map" :zoom="22" :center="center" v-on:click="getClickedLatLon($event)">
       <l-control-scale :imperial="false"/>
       <!-- Tile Layer for map background -->
-      <l-tile-layer :url="this.online ? this.onlineUrl : this.offlineUrl" :attribution="attribution" :options="tileLayerOptions"/>
+      <l-tile-layer ref="tileLayer" :url="this.online ? this.onlineUrl : this.offlineUrl" :attribution="attribution" 
+        :options="this.online ? this.onlineTileOptions : this.offlineTileOptions"/>
       
       <!-- Markers for rover location -->
       <!-- TODO: Figure out if we still want these -->
@@ -51,8 +52,18 @@ import L from '../leaflet-rotatedmarker'
 
 const MAX_ODOM_COUNT = 1000
 const DRAW_FREQUENCY = 10
-const onlineUrl = 'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png'
+// Options for the tilelayer object on the map
+const onlineUrl = 'http://{s}.google.com/vt/lyrs=s&x={x}&y={y}&z={z}'
 const offlineUrl = '/static/map/{z}/{x}/{y}.png'
+const onlineTileOptions = {
+        maxNativeZoom: 22,
+        maxZoom: 100,
+        subdomains: ['mt0','mt1','mt2','mt3'] 
+      }
+const offlineTileOptions = {
+        maxNativeZoom: 22,
+        maxZoom: 100,
+      }
 
 export default {
   name: 'AutonRoverMap',
@@ -163,6 +174,8 @@ export default {
       online: true,
       onlineUrl: onlineUrl,
       offlineUrl: offlineUrl,
+      onlineTileOptions: onlineTileOptions,
+      offlineTileOptions: offlineTileOptions,
       roverMarker: null,
       waypointIcon: null,
       map: null,
@@ -188,10 +201,6 @@ export default {
         type: Object,
         default: () => ({})
       },
-      tileLayerOptions: {
-        maxNativeZoom: 18,
-        maxZoom: 100
-      }
     }
   },
 
