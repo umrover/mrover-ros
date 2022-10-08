@@ -86,9 +86,9 @@ class SearchState(BaseState):
 
         self.context.rover.send_drive_command(cmd_vel)
         # if we see the fiduicial or gate, go to either fiducial or gate state
-        if self.context.course.look_for_gate() and self.context.env.current_gate() is not None:
+        if self.context.env.current_gate() is not None:
             return "gate_traverse"
-        elif self.context.course.look_for_post() and self.context.env.current_fid_pos() is not None:
+        elif self.context.env.current_fid_pos() is not None:
             return "single_fiducial"
 
         return "search"
