@@ -29,7 +29,7 @@ class TestIntegration(unittest.TestCase):
 
         waypoint_in_world = SE3(position=np.array([-5.5, -5.5, 0.0]))
         publish_course([
-            (Waypoint(fiducial_id=0, tf_id="course0"), waypoint_in_world),
+            (Waypoint(fiducial_id=0, tf_id="course0", gate = False, post = True), waypoint_in_world),
         ])
 
         tf_buffer = tf2_ros.Buffer()
