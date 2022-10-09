@@ -6,23 +6,17 @@ from math import copysign
 from struct import pack
 import rospy as ros
 import rosmsg
-from mrover.srv._FetchPackages import FetchPackages, FetchPackagesResponse
+import rospkg
+from mrover.srv._FetchPackages import FetchPackages, FetchPackagesResponse, FetchPackagesRequest
 import subprocess
 
 class TopicServices():
     
-    def fetch_packages_service(self) -> FetchPackagesResponse:
-        process = subprocess.Popen(
-            ["rosmsg", "packages" ], stdout=subprocess.PIPE, stderr=subprocess.STDOUT  # Combine stderr and stdout
-        )
-        packages = []
-        while process.stdout.readable():
-            output = process.stdout.readline().decode("utf-8").strip()
-            if output:
-                packages.append(output)
-            else:
-                break
-        return FetchPackagesResponse(packages)
+    def fetch_packages_service(self, req: FetchPackagesRequest) -> FetchPackagesResponse:
+        rospack = rospkg.RosPack()
+        res = [p for p, _ in rosmsg.iterate_packages(rospack, ".msg")]
+        res.sort()
+        return FetchPackagesResponse(res)
 
 def main():
     ros.init_node("topic_services")
