@@ -31,6 +31,7 @@ set(MROVER_MESSAGE_FILES
 
 # service files
 set(MROVER_SERVICE_FILES
+        FetchPackages.srv
         PublishCourse.srv
         )
 
