@@ -63,7 +63,7 @@
     <param name="target_frame_name" type="string" value="odom" />
     <param name="source_frame_name" type="string" value="base_link" /> 
     <param name="trajectory_update_rate" type="double" value="4" /> 
-    <param name="trajectory_publish_rate" type="double" value="0.25" />
+    <param name="trajectory_publish_rate" type="double" value="4" />
   </node>
 
 
