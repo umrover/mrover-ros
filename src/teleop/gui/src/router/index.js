@@ -7,6 +7,8 @@ import AutonTask from '../components/AutonTask.vue'
 import SATask from '../components/SATask.vue'
 import ISHTask from '../components/ISHTask.vue'
 import ControlGUI from '../components/ControlGUI.vue'
+import ROSSend from '../components/ROSSend.vue'
+import ROSEcho from '../components/ROSEcho.vue'
 
 Vue.use(Router)
 
@@ -46,6 +48,16 @@ export default new Router({
       path: '/Control',
       name: 'ControlsGUI',
       component: ControlGUI
+    },
+    {
+      path: '/ROSSend',
+      name: 'ROSSend',
+      component: ROSSend
+    },
+    {
+      path: '/ROSEcho',
+      name: 'ROSEcho',
+      component: ROSEcho
     },
   ]
 })

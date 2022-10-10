@@ -28,6 +28,34 @@ export default {
 
 <style scoped>
 #app {
-  font-family: 'Avenir', Helvetica, Arial, sans-serif;
+  font-family: 'Avenir', Helvetica, Arial, sans-serif, "Product Sans";
+}
+
+@font-face {
+  font-family: "Product Sans";
+  src: url('/assets/fonts/Product Sans Regular.ttf');
+  font-weight: normal;
+  font-style: normal;
+}
+
+@font-face {
+  font-family: "Product Sans";
+  src: url('/assets/fonts/Product Sans Bold.ttf');
+  font-weight: bold;
+  font-style: normal;
+}
+
+@font-face {
+  font-family: "Product Sans";
+  src: url('/assets/fonts/Product Sans Bold Italic.ttf');
+  font-weight: bold;
+  font-style: italic;
+}
+
+@font-face {
+  font-family: "Product Sans";
+  src: url('/assets/fonts/Product Sans Italic.ttf');
+  font-weight: normal;
+  font-style: italic;
 }
 </style>
