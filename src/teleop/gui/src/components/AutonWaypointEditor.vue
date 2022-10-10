@@ -253,8 +253,8 @@ export default {
       this.storedWaypoints.push({
         name: this.name,
         id: this.id,
-        lat: Object.assign({}, coord.lat),
-        lon: Object.assign({}, coord.lon),
+        lat: (convertDMS(coord.lat, "D").d),
+        lon: (convertDMS(coord.lon, "D").d),
         gate: false,
         post: false,
       });
@@ -275,18 +275,18 @@ export default {
   watch: {
     route: function (newRoute) {
       const waypoints = newRoute.map((waypoint) => {
-        const lat = waypoint.lat.d + waypoint.lat.m/60 + waypoint.lat.s/3600;
-        const lon = waypoint.lon.d + waypoint.lon.m/60 + waypoint.lon.s/3600;
-        return { latLng: L.latLng(lat, lon), name: waypoint.name };
+        const lat = waypoint.lat
+        const lon = waypoint.lon
+        return { latLng: L.latLng(lat, lon), name: waypoint.name }
       });
       this.setRoute(waypoints);
     },
 
     storedWaypoints: function (newList) {
       const waypoints = newList.map((waypoint) => {
-        const lat = waypoint.lat.d + waypoint.lat.m/60 + waypoint.lat.s/3600;
-        const lon = waypoint.lon.d + waypoint.lon.m/60 + waypoint.lon.s/3600;
-        return { latLng: L.latLng(lat, lon), name: waypoint.name };
+        const lat = waypoint.lat
+        const lon = waypoint.lon
+        return { latLng: L.latLng(lat, lon), name: waypoint.name }
       });
       this.setWaypointList(waypoints);
     },
@@ -295,16 +295,6 @@ export default {
       this.setOdomFormat(newOdomFormat);
       this.input.lat = convertDMS(this.input.lat, newOdomFormat);
       this.input.lon = convertDMS(this.input.lon, newOdomFormat);
-      this.storedWaypoints.map((waypoint) => {
-        waypoint.lat = convertDMS(waypoint.lat, newOdomFormat);
-        waypoint.lon = convertDMS(waypoint.lon, newOdomFormat);
-        return waypoint;
-      });
-      this.route.map((waypoint) => {
-        waypoint.lat = convertDMS(waypoint.lat, newOdomFormat);
-        waypoint.lon = convertDMS(waypoint.lon, newOdomFormat);
-        return waypoint;
-      });
     },
 
     clickPoint: function (newClickPoint){

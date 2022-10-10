@@ -12,13 +12,13 @@
     </div>
     <div class="location">
       <div>
-        <p>{{waypoint.lat.d}}º</p>
-        <p v-if="this.min_enabled">{{waypoint.lat.m}}'</p>
-        <p  v-if="this.sec_enabled">{{waypoint.lat.s}}"</p>
+        <p>{{output.lat.d}}º</p>
+        <p v-if="this.min_enabled">{{output.lat.m}}'</p>
+        <p  v-if="this.sec_enabled">{{output.lat.s}}"</p>
         N <b>&nbsp;|</b> 
-        <p>{{waypoint.lon.d}}º</p>
-        <p v-if="this.min_enabled">{{waypoint.lon.m}}'</p>
-        <p  v-if="this.sec_enabled">{{waypoint.lon.s}}"</p>
+        <p>{{output.lon.d}}º</p>
+        <p v-if="this.min_enabled">{{output.lon.m}}'</p>
+        <p  v-if="this.sec_enabled">{{output.lon.s}}"</p>
         W
       </div>
     </div>
@@ -27,6 +27,7 @@
 
 <script>
 import {mapGetters} from 'vuex';
+import { convertDMS } from '../utils';
 
 export default {
 
@@ -59,7 +60,29 @@ export default {
 
     sec_enabled: function() {
       return this.odom_format == 'DMS';
+    },
+
+    output: function() {
+      switch(this.odom_format) {
+        case "D":
+          return {
+            lat: convertDMS({d: this.waypoint.lat, m: 0, s: 0}, "D"),
+            lon: convertDMS({d: this.waypoint.lon, m: 0, s: 0}, "D")
+          }
+        case "DM":
+          return {
+            lat: convertDMS({d: this.waypoint.lat, m: 0, s: 0}, "DM"),
+            lon: convertDMS({d: this.waypoint.lon, m: 0, s: 0}, "DM")
+          }
+        case "DMS":
+          return {
+            lat: convertDMS({d: this.waypoint.lat, m: 0, s: 0}, "DMS"),
+            lon: convertDMS({d: this.waypoint.lon, m: 0, s: 0}, "DMS")
+          }
+        
+      }
     }
+
   },
 }
 </script>
