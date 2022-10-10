@@ -13,7 +13,7 @@
         <div class="wp-input">
           <p><input v-model.number="input.lat.d" size="13">º</p>
           <p v-if="this.min_enabled"><input v-model.number="input.lat.m" size="13">'</p>
-          <p  v-if="this.sec_enabled"><input v-model.number="input.lat.s" size="13">"</p>
+          <p v-if="this.sec_enabled"><input v-model.number="input.lat.s" size="13">"</p>
           N
         </div>
         <div class="wp-input">
@@ -33,7 +33,6 @@
           <h4 class="waypoint-headers">All Waypoints</h4>
           <button v-on:click="clearWaypoint">Clear Waypoints</button>
         </div>
-        <!-- TODO: Test all features of waypoint items -->
         <draggable v-model="storedWaypoints" class="dragArea" draggable=".item'">
           <WaypointItem v-for="waypoint, i in storedWaypoints" :key="i" v-bind:waypoint="waypoint" 
             v-bind:list="0" v-bind:index="i" v-on:delete="deleteItem($event)"
@@ -330,8 +329,8 @@ export default {
 
     formatted_odom: function() {
       return {
-        lat: convertDMS({d: this.odom.latitude_deg, m: this.odom.latitude_min, s: 0}, this.odom_format),
-        lon: convertDMS({d: this.odom.longitude_deg, m: this.odom.longitude_min, s: 0}, this.odom_format)
+        lat: convertDMS({d: this.odom.latitude_deg, m: 0, s: 0}, this.odom_format),
+        lon: convertDMS({d: this.odom.longitude_deg, m: 0, s: 0}, this.odom_format)
       }
     },
 
