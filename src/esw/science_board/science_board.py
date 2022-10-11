@@ -82,6 +82,8 @@ class ScienceBridge:
             "/science_board/info/diag_thermistors")
         self._num_science_thermistors = rospy.get_param(
             "/science_board/info/science_thermistors")
+        self._num_spectral = rospy.get_param(
+            "/science_board/info/spectral")
         self._handler_function_by_tag = {
             "AUTOSHUTOFF": self._heater_auto_shut_off_handler,
             "DIAG_CURRENT": self._fuse_pdb_current_handler,
@@ -416,7 +418,10 @@ class ScienceBridge:
             spectral sensor.
         """
         arr = tx_msg.split(",")
-        self._spectral_pub.publish(Spectral([int(i) for i in arr[1:]]))
+        spectral_data = []
+        for i in range(self._num_spectral):
+            spectral_data.append(Spectral(int(arr[i + 1])))
+        self._spectral_pub.publish(spectral_data)
 
     def _science_thermistor_handler(self, tx_msg: str) -> None:
         """TODO: explain function 
