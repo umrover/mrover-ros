@@ -48,9 +48,7 @@ science_board:
   info:
     sleep: 0.01
     science_thermistors: 3
-    pdb_thermistors: 3
-    fuse_thermistors: 2
-    pdb_current: 3
-    fuse_current: 2
+    diag_thermistors: 3
+    diag_current: 3
 
     uart_transmit_msg_len: 30

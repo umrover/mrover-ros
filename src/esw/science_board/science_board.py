@@ -76,14 +76,10 @@ class ScienceBridge:
         self._id_by_color = rospy.get_param("/science_board/color_ids")
         self._mosfet_number_by_device_name = rospy.get_param(
             "science_board/device_mosfet_numbers")
-        self._num_fuse_current = rospy.get_param(
-            "/science_board/info/fuse_current")
-        self._num_pdb_current = rospy.get_param(
-            "/science_board/info/pdb_current")
-        self._num_fuse_thermistors = rospy.get_param(
-            "/science_board/info/fuse_thermistors")
-        self._num_pdb_thermistors = rospy.get_param(
-            "/science_board/info/pdb_thermistors")
+        self._num_diag_current = rospy.get_param(
+            "/science_board/info/diag_current")
+        self._num_diag_thermistors = rospy.get_param(
+            "/science_board/info/diag_thermistors")
         self._num_science_thermistors = rospy.get_param(
             "/science_board/info/science_thermistors")
         self._handler_function_by_tag = {
@@ -431,8 +427,12 @@ class ScienceBridge:
             that is the temperature of the carousel thermistor in Celsius.
         """
         arr = tx_msg.split(",")
-        arr.pop(0)
-        ros_msg = ScienceTemperature([Temperature(float(i)) for i in arr])
+        temperature_values = []
+
+        for i in range(self._num_science_thermistors):
+            temperature_values.append(Temperature(float(arr[i + 1])))
+
+        ros_msg = ScienceTemperature(temperature_values)
         self._science_thermistor_pub.publish(ros_msg)
 
     def _fuse_pdb_thermistor_handler(self, tx_msg: str) -> None:
@@ -442,10 +442,13 @@ class ScienceBridge:
             that is the temperature of the carousel thermistor in Celsius.
         """
         arr = tx_msg.split(",")
+        temperature_values = []
 
-        arr.pop(0)
-        ros_msg = DiagTemperature([Temperature(float(i)) for i in arr])
-        self._fuse_thermistor_pub.publish(ros_msg)
+        for i in range(self._num_diag_thermistors):
+            temperature_values.append(Temperature(float(arr[i + 1])))
+
+        ros_msg = DiagTemperature(temperature_values)
+        self._fuse_pdb_thermistor_pub.publish(ros_msg)
 
     def _fuse_pdb_current_handler(self, tx_msg: str) -> None:
         """ TODO: explain function 
@@ -456,10 +459,11 @@ class ScienceBridge:
             for the current in amps.
         """
         arr = tx_msg.split(",")
-
-        arr.pop(0)
-        ros_msg = Current([float(i) for i in arr])
-        self._fuse_current_pub.publish(ros_msg)
+        current_values = []
+        for i in range(self._num_diag_current):
+            current_values.append(float(arr[i + 1]))
+        ros_msg = Current(current_values)
+        self._fuse_pdb_current_pub.publish(ros_msg)
 
     def _triad_handler(self, tx_msg: str) -> None:
         """Processes a UART message that contains data of the triad sensor on
