@@ -78,3 +78,7 @@ navsat_transform:
   zero_altitude: true
   publish_filtered_gps: true
   use_odometry_yaw: false
+
+reference_point_latitude: 42.2
+reference_point_longitude: -83.7
+reference_point_altitude: 0
