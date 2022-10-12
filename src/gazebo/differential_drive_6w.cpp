@@ -237,7 +237,7 @@ namespace gazebo {
         double vr, va;
 
         vr = mForwardVelocity;
-        va = mPitch;
+        va = -mPitch;
 
         // Changed motors to be always on, which is probably what we want anyway
         mEnableMotors = true;
