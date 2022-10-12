@@ -63,23 +63,10 @@ export default {
     },
 
     output: function() {
-      switch(this.odom_format) {
-        case "D":
-          return {
-            lat: convertDMS({d: this.waypoint.lat, m: 0, s: 0}, "D"),
-            lon: convertDMS({d: this.waypoint.lon, m: 0, s: 0}, "D")
-          }
-        case "DM":
-          return {
-            lat: convertDMS({d: this.waypoint.lat, m: 0, s: 0}, "DM"),
-            lon: convertDMS({d: this.waypoint.lon, m: 0, s: 0}, "DM")
-          }
-        case "DMS":
-          return {
-            lat: convertDMS({d: this.waypoint.lat, m: 0, s: 0}, "DMS"),
-            lon: convertDMS({d: this.waypoint.lon, m: 0, s: 0}, "DMS")
-          }
-        
+        return {
+          lat: convertDMS({d: this.waypoint.lat, m: 0, s: 0}, this.odom_format),
+          lon: convertDMS({d: this.waypoint.lon, m: 0, s: 0}, this.odom_format)
+        }
       }
     }
 
