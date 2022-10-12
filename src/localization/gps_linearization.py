@@ -35,9 +35,9 @@ class GPSLinearization:
 
         :param msg: The NavSatFix message containing GPS data that was just received
         """
-        cartesian = np.array(geodetic2enu(
-            msg.latitude, msg.longitude, msg.altitude, self.ref_lat, self.ref_lon, self.ref_alt, deg=True
-        ))
+        cartesian = np.array(
+            geodetic2enu(msg.latitude, msg.longitude, msg.altitude, self.ref_lat, self.ref_lon, self.ref_alt, deg=True)
+        )
         cartesian[2] = 0
         self.pose = SE3(position=cartesian, rotation=self.pose.rotation)
         self.pose.publish_to_tf_tree(self.tf_broadcaster, parent_frame=self.world_frame, child_frame=self.rover_frame)
