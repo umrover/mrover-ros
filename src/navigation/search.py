@@ -10,7 +10,7 @@ from drive import get_drive_command
 from trajectory import Trajectory
 
 STOP_THRESH = 0.2
-DRIVE_FWD_THRESH = 0.34 #20 degrees
+DRIVE_FWD_THRESH = 0.34  # 20 degrees
 
 
 @dataclass
