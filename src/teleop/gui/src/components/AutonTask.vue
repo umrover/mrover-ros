@@ -17,7 +17,7 @@
       <h2>Nav State: {{this.nav_status.nav_state_name}}</h2>
     </div>
     <div class="box map light-bg">  
-      <AutonRoverMap v-bind:odom="odom" v-bind:TargetBearing="TargetBearing"/>
+      <AutonRoverMap v-bind:odom="odom"/>
     </div>
     <div class="box waypoints light-bg">
       <AutonWaypointEditor v-bind:odom="odom" v-bind:AutonDriveControl="AutonDriveControl"/>
@@ -51,10 +51,6 @@ export default {
         latitude_deg: 42.294864932393835,
         longitude_deg: -83.70781314674628,
         bearing_deg: 0
-      },
-
-      TargetBearing: {
-        target_bearing: 0
       },
 
       // Current Values being output to drivetrain for auton

@@ -167,8 +167,8 @@ export default {
           enable: true,
           // Map for every waypoint in the current route
           waypoints: _.map(this.route, (waypoint) => {
-            const lat = waypoint.lat.d + waypoint.lat.m/60 + waypoint.lat.s/3600;
-            const lon = waypoint.lon.d + waypoint.lon.m/60 + waypoint.lon.s/3600;
+            const lat = waypoint.lat;
+            const lon = waypoint.lon;
 
             // Return a GPSWaypoint.msg formatted object for each
             return {

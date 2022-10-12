@@ -9,19 +9,12 @@
       
       <!-- Markers for rover location -->
       <!-- TODO: Figure out if we still want these -->
-      <!-- <l-marker ref="tangent" :lat-lng="odomLatLng" :icon="tangentIcon"/>
-      <l-marker ref="target_bearing" :lat-lng="odomLatLng" :icon="targetBearingIcon"/> -->
       <l-marker ref="rover" :lat-lng="odomLatLng" :icon="locationIcon"/>
 
       <!-- Waypoint Icons -->
       <l-marker :lat-lng="waypoint.latLng" :icon="waypointIcon" v-for="(waypoint, index) in waypointList" :key="index">
          <l-tooltip :options="{permanent: 'true', direction: 'top'}"> {{ waypoint.name }}, {{ index }} </l-tooltip>
       </l-marker>
-
-      <!-- Projected Point Icons -->
-      <!-- <l-marker :lat-lng="projected_point.latLng" :icon="projectedPointIcon" v-for="(projected_point, index) in projectedPoints" :key="index">
-        <l-tooltip :options="{permanent: 'true', direction: 'top'}">{{ projectedPointsType }} {{ index }}</l-tooltip>
-      </l-marker> -->
       
       <!-- Gate Post Icons -->
       <l-marker :lat-lng="post1" :icon="postIcon" v-if="post1">
@@ -33,7 +26,6 @@
 
       <!-- Polylines -->
       <l-polyline :lat-lngs="polylinePath" :color="'red'" :dash-array="'5, 5'"/>
-      <l-polyline :lat-lngs="projectedPath" :color="'black'" :dash-array="'5, 5'" :fill="false"/>
       <l-polyline :lat-lngs="odomPath" :color="'blue'"/>
     </l-map>
     <!-- Controls that go directly under the map -->
@@ -85,24 +77,8 @@ export default {
       iconSize: [40, 40],
       iconAnchor: [20, 20]
     })
-    this.tangentIcon = L.icon({
-      iconUrl: '/static/gps_tangent_icon.png',
-      iconSize: [44, 80],
-      iconAnchor: [22, 60]
-    })
-    this.targetBearingIcon = L.icon({
-      iconUrl: '/static/gps_tangent_icon.png',
-      iconSize: [30, 56],
-      iconAnchor: [15, 42]
-    })
     this.waypointIcon = L.icon({
       iconUrl: '/static/map_marker.png',
-      iconSize: [64, 64],
-      iconAnchor: [32, 64],
-      popupAnchor: [0, -32]
-    })
-    this.projectedPointIcon = L.icon({
-      iconUrl: '/static/map_marker_projected.png',
       iconSize: [64, 64],
       iconAnchor: [32, 64],
       popupAnchor: [0, -32]
@@ -113,34 +89,6 @@ export default {
       iconAnchor: [32, 64],
       popupAnchor: [0, -32]
     })
-
-    // TODO: Remove these and replace with ROS topics if still needed
-    //
-    // this.$parent.subscribe('/projected_points', (msg) => {
-    //   let newProjectedList = msg.points
-    //   this.projectedPoints = newProjectedList.map((projected_point) => {
-    //     return {
-    //       latLng: L.latLng(
-    //         projected_point.latitude_deg + projected_point.latitude_min/60,
-    //         projected_point.longitude_deg + projected_point.longitude_min/60
-    //       )
-    //     }
-    //   })
-
-    //   this.projectedPointsType = msg.path_type
-    // })
-
-    // this.$parent.subscribe('/estimated_gate_location', (msg) => {
-    //   this.post1 =  L.latLng(
-    //     msg.post1.latitude_deg + msg.post1.latitude_min/60,
-    //     msg.post1.longitude_deg + msg.post1.longitude_min/60
-    //   )
-    //   this.post2 = L.latLng(
-    //     msg.post2.latitude_deg + msg.post2.latitude_min/60,
-    //     msg.post2.longitude_deg + msg.post2.longitude_min/60
-    //   )
-    // })
-
   },
 
   computed: {
@@ -157,11 +105,6 @@ export default {
     // Concat waypoints on course with rover marker at index 0 for polyline
     polylinePath: function () {
       return [this.odomLatLng].concat(this.route.map(waypoint => waypoint.latLng))
-    },
-    
-    // Concat waypoints on projected course with rover marker at index 0 for polyline
-    projectedPath: function () {
-      return [this.odomLatLng].concat(this.projectedPoints.map(projected_point => projected_point.latLng))
     },
 
   },
@@ -183,33 +126,16 @@ export default {
       locationIcon: null,
       odomPath: [],
 
-      tangentMarker: null,
-      tangentIcon: null,
-
-      targetBearingMarker: null,
-      targetBearingIcon: null,
-
-      projectedPoints: [],
-      projectedPointsType: '',
-
       post1: null,
       post2: null,
 
       findRover: false,
 
-      options: {
-        type: Object,
-        default: () => ({})
-      },
     }
   },
 
   props: {
     odom: {
-      type: Object,
-      required: true
-    },
-    TargetBearing: {
       type: Object,
       required: true
     }
@@ -255,8 +181,6 @@ export default {
         this.roverMarker.setRotationAngle(angle)
   
         this.roverMarker.setLatLng(latLng)
-        // this.tangentMarker.setLatLng(latLng)
-        // this.targetBearingMarker.setLatLng(latLng)
   
         // Update the rover path
         this.odomCount++
@@ -272,12 +196,6 @@ export default {
       // Deep will watch for changes in children of an object
       deep: true
     },
-
-    // Rotate target icon based on bearing
-    TargetBearing: function (val) {
-      this.targetBearingMarker.setRotationAngle(val.target_bearing)
-    },
-
   },
 
   // Pull objects from refs to be able to access data and change w functions
@@ -285,9 +203,6 @@ export default {
     this.$nextTick(() => {
       this.map = this.$refs.map.mapObject
       this.roverMarker = this.$refs.rover.mapObject
-      // More Tangent Marker stuff
-      // this.tangentMarker = this.$refs.tangent.mapObject
-      // this.targetBearingMarker = this.$refs.target_bearing.mapObject
     })
   }
 }
