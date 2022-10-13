@@ -16,7 +16,9 @@ from typing import Any, Callable, Dict, List
 import numpy as np
 import rospy
 import serial
-from mrover.msg import Current, Enable, Heater, Spectral, Triad, Temperature, ScienceTemperature, DiagTemperature
+from mrover.msg import Current, Enable, Heater, Spectral, Triad, \
+    Temperature, ScienceTemperature, DiagTemperature
+
 from mrover.srv import (
     ChangeAutonLEDState,
     ChangeAutonLEDStateRequest,
@@ -54,13 +56,13 @@ class ScienceBridge:
         line.
     """
 
-    _fuse_pdb_current_pub: rospy.Publisher
-    _fuse_pdb_thermistor_pub: rospy.Publisher
+    _diagnostic_pub: rospy.Publisher
     _id_by_color: Dict[str, int]
     _handler_function_by_tag: Dict[str, Callable[[str], Any]]
     _heater_auto_shut_off_pub: rospy.Publisher
     _heater_state_pub: rospy.Publisher
     _mosfet_number_by_device_name: Dict[str, int]
+    _sa_pub: rospy.Publisher
     _sleep: float
     _spectral_pub: rospy.Publisher
     _science_thermistor_pub: rospy.Publisher
@@ -80,18 +82,20 @@ class ScienceBridge:
             "/science_board/info/diag_current")
         self._num_diag_thermistors = rospy.get_param(
             "/science_board/info/diag_thermistors")
+        self._num_sa_data = rospy.get_param(
+            "/science_board/info/sa_data")
         self._num_science_thermistors = rospy.get_param(
             "/science_board/info/science_thermistors")
         self._num_spectral = rospy.get_param(
             "/science_board/info/spectral")
         self._handler_function_by_tag = {
             "AUTOSHUTOFF": self._heater_auto_shut_off_handler,
-            "DIAG_CURRENT": self._fuse_pdb_current_handler,
-            "DIAG_TEMP": self._fuse_pdb_thermistor_handler,
+            "DIAG": self._diagnostic_pub,
             "HEATER": self._heater_state_handler,
             "SPECTRAL": self._spectral_handler,
             "SCIENCE_TEMP": self._science_thermistor_handler,
             "TRIAD": self._triad_handler,
+            "SA_POS": self._sa_handler,
         }
         self._heater_auto_shut_off_pub = rospy.Publisher(
             "science/heater_auto_shut_off_state_data", Enable, queue_size=1)
@@ -424,7 +428,7 @@ class ScienceBridge:
         self._spectral_pub.publish(spectral_data)
 
     def _science_thermistor_handler(self, tx_msg: str) -> None:
-        """TODO: explain function 
+        """TODO: explain function
         :param tx_msg: A string that was received from UART that contains data
             of the three carousel spectral sensors.
             - Format: $SCIENCE_TEMP,<TEMP_0>,<TEMP_1>,<TEMP_2>
@@ -441,7 +445,7 @@ class ScienceBridge:
         self._science_thermistor_pub.publish(ros_msg)
 
     def _fuse_pdb_thermistor_handler(self, tx_msg: str) -> None:
-        """TODO: explain function 
+        """TODO: explain function
             - Format: $DIAG_TEMP,<TEMP_0>,<TEMP_1>,<TEMP_2>
         :returns: A Thermistor struct that has an int thermistor ID and a float
             that is the temperature of the carousel thermistor in Celsius.
@@ -456,7 +460,7 @@ class ScienceBridge:
         self._fuse_pdb_thermistor_pub.publish(ros_msg)
 
     def _fuse_pdb_current_handler(self, tx_msg: str) -> None:
-        """ TODO: explain function 
+        """ TODO: explain function
         :param tx_msg: A string that was received from UART that contains data
             of the three carousel spectral sensors.
             - Format: $DIAG_CURRENT,<CURR_0>
@@ -517,6 +521,12 @@ def main():
         )
         rospy.Service("change_white_led_state", ChangeDeviceState,
                       bridge.handle_change_white_led_state)
+
+        # rospy.Subscriber("ish_cmd", ChangeCarouselAngle,
+        #                  bridge.handle_change_carousel_angle)
+        # rospy.Subscriber("sa_cmd", SAPosition,
+        #                  bridge.handle_change_sa_angles)
+
         while not rospy.is_shutdown():
             bridge.receive()
 

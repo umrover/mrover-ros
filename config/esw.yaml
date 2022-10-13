@@ -51,5 +51,5 @@ science_board:
     diag_thermistors: 3
     diag_current: 3
     spectral: 1
-
+    sa_data: 4
     uart_transmit_msg_len: 30
