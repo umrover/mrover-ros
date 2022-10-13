@@ -5,11 +5,18 @@ import numpy as np
 import tf2_ros
 from context import Context, Environment
 from drive import get_drive_command
+from enum import Enum
 from state import BaseState
 
 STOP_THRESH = 0.5
 DRIVE_FWD_THRESH = 0.95
 NO_FIDUCIAL = -1
+
+
+class WaypointStateTransitions(Enum):
+    continue_waypoint_traverse = 'WaypointState'
+    search_at_waypoint = 'SearchState'
+    no_waypoint = 'DoneState'
 
 
 class WaypointState(BaseState):
@@ -25,7 +32,7 @@ class WaypointState(BaseState):
         add_output_keys = add_output_keys or []
         super().__init__(
             context,
-            add_outcomes + ["waypoint_traverse", "single_fiducial", "search", "done"],
+            add_outcomes + [transition.name for transition in WaypointStateTransitions],
             add_input_keys,
             add_output_keys,
         )
@@ -43,7 +50,7 @@ class WaypointState(BaseState):
         """
         current_waypoint = self.context.course.current_waypoint()
         if current_waypoint is None:
-            return "done"
+            return WaypointStateTransitions.no_waypoint.name
 
         # Go into the single fiducial state if we see it early
         # if current_waypoint.fiducial_id != Environment.NO_FIDUCIAL and self.context.env.current_fid_pos() is not None:
@@ -65,7 +72,7 @@ class WaypointState(BaseState):
                     self.context.course.increment_waypoint()
                 else:
                     # We finished a waypoint associated with a fiducial id, but we have not seen it yet.
-                    return "search"
+                    return WaypointStateTransitions.search_at_waypoint.name
             self.context.rover.send_drive_command(cmd_vel)
 
         except (
@@ -75,4 +82,4 @@ class WaypointState(BaseState):
         ):
             pass
 
-        return "waypoint_traverse"
+        return WaypointStateTransitions.continue_waypoint_traverse.name

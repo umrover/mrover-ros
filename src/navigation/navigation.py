@@ -3,17 +3,16 @@
 import signal
 import sys
 import threading
-from gate import GateTraverseState
 
 import rospy
 import smach
 import smach_ros
 from context import Context
-from single_fiducial import SingleFiducialState
-from state import DoneState
-from waypoint import WaypointState
-from search import SearchState
-
+from gate import GateTraverseState, GateTraverseStateTransitions
+from single_fiducial import SingleFiducialState, SingleFiducialStateTransitions
+from state import DoneState, DoneStateTransitions
+from waypoint import WaypointState, WaypointStateTransitions
+from search import SearchState, SearchStateTransitions
 
 class Navigation(threading.Thread):
     state_machine: smach.StateMachine
@@ -32,42 +31,30 @@ class Navigation(threading.Thread):
             self.state_machine.add(
                 "DoneState",
                 DoneState(self.context),
-                transitions={"waypoint_traverse": "WaypointState", "done": "DoneState"},
+                transitions={transition.name: transition.value for transition in DoneStateTransitions}
             )
             self.state_machine.add(
                 "WaypointState",
                 WaypointState(self.context),
-                transitions={
-                    "waypoint_traverse": "WaypointState",
-                    "single_fiducial": "SingleFiducialState",
-                    "search": "SearchState",
-                    "done": "DoneState",
-                },
+                transitions={transition.name: transition.value for transition in WaypointStateTransitions}
             )
             self.state_machine.add(
                 "SingleFiducialState",
                 SingleFiducialState(self.context),
-                transitions={
-                    "waypoint_traverse": "WaypointState",
-                    "single_fiducial": "SingleFiducialState",
-                    "search": "SearchState",
-                    "done": "DoneState",
-                },
+                transitions=dict(
+                    {transition.name: transition.value for transition in SingleFiducialStateTransitions}, 
+                    **{transition.name: transition.value for transition in WaypointStateTransitions}
+                ),
             )
             self.state_machine.add(
                 "SearchState",
                 SearchState(self.context),
-                transitions={
-                    "waypoint_traverse": "WaypointState",
-                    "single_fiducial": "SingleFiducialState",
-                    "search": "SearchState",
-                    "gate_traverse": "GateTraverseState",
-                },
+                transitions={transition.name: transition.value for transition in SearchStateTransitions}
             )
             self.state_machine.add(
                 "GateTraverseState",
                 GateTraverseState(self.context),
-                transitions={"search": "SearchState", "done": "DoneState", "gate_traverse": "GateTraverseState"},
+                transitions={transition.name: transition.value for transition in GateTraverseStateTransitions}
             )
 
     def run(self):
