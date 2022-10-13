@@ -12,6 +12,7 @@ FIDUCIAL_STOP_THRESHOLD = 1.75
 class SingleFiducialStateTransitions(Enum):
     finished_fiducial = 'WaypointState'
     continue_fiducial_id = 'SingleFiducialState'
+    no_fiducial = 'SearchState'
 
 
 class SingleFiducialState(WaypointState):
@@ -30,9 +31,9 @@ class SingleFiducialState(WaypointState):
             # We have arrived at the waypoint where the fiducial should be but we have not seen it yet
             # TODO: add more advanced logic than just driving forward
             cmd_vel = Twist()
-            cmd_vel.linear.x = 0.5
+            cmd_vel.linear.x = 0.0
             self.context.rover.send_drive_command(cmd_vel)
-            return SingleFiducialStateTransitions.continue_fiducial_id.name
+            return SingleFiducialStateTransitions.no_fiducial.name
 
         try:
             cmd_vel, arrived = get_drive_command(fid_pos, self.context.rover.get_pose(), STOP_THRESH, DRIVE_FWD_THRESH)
