@@ -41,6 +41,8 @@ class Navigation(threading.Thread):
             self.state_machine.add(
                 "SingleFiducialState",
                 SingleFiducialState(self.context),
+                # The lines below are necessary because SingleFiducialState inherits from WaypointState, so 
+                # WaypointState's transitions need to be registered for SingleFiducialState as well.
                 transitions=dict(
                     {transition.name: transition.value for transition in SingleFiducialStateTransitions}, 
                     **{transition.name: transition.value for transition in WaypointStateTransitions}
