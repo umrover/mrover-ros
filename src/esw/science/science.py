@@ -62,6 +62,7 @@ class ScienceBridge:
     _heater_state_pub: rospy.Publisher
     _mosfet_number_by_device_name: Dict[str, int]
     _sa_pub: rospy.Publisher
+    ser: serial.Serial
     _sleep: float
     _spectral_pub: rospy.Publisher
     _science_thermistor_pub: rospy.Publisher
@@ -204,17 +205,11 @@ class ScienceBridge:
         tx_msg = self._read_msg()
         arr = tx_msg.split(",")
 
-        # error if tag doesn't start with '$' or is empty
-        if len(tx_msg) == 0 or arr[0][0] != "$":
-            rospy.loginfo(f"Error decoding message stream: {tx_msg}")
+        if not (tag in self._handler_function_by_tag):
             rospy.sleep(self._sleep)
+            return
 
-        tag = arr[0][1:]
-        if not tag in self._handler_function_by_tag:
-            rospy.loginfo(f"Error decoding message stream: {tx_msg}")
-            rospy.sleep(self._sleep)
-
-        rospy.loginfo(tx_msg)
+        # rospy.loginfo(tag)
         self._handler_function_by_tag[tag](tx_msg)
 
     def _add_padding(self, tx_msg: str) -> str:
@@ -264,13 +259,15 @@ class ScienceBridge:
         arr = tx_msg.split(",")
         temperature_values = []
         current_values = []
+        if len(arr) < 1 + self._num_diag_thermistors + self._num_diag_current:
+            return
         for i in range(self._num_diag_thermistors):
             temperature_values.append(Temperature(float(arr[i + 1])))
         for i in range(self._num_diag_current):
             current_values.append(Current(arr[self._num_diag_thermistors + i + 1]))
 
         ros_msg = Diagnostic(temperature_values, current_values)
-        self._diagnostic_pub.publish(ros_msg)
+        self._publisher_by_tag[arr[0][3:]].publish(ros_msg)
 
     def _format_mosfet_msg(self, device: int, enable: bool) -> str:
         """Creates a message that can be sent over UART to command a MOSFET
@@ -294,8 +291,10 @@ class ScienceBridge:
             - Format: <"$AUTOSHUTOFF,device,enable">
         """
         arr = tx_msg.split(",")
+        if len(arr) < 2:
+            return
         ros_msg = Enable(enable=bool(int(arr[1])))
-        self._heater_auto_shut_off_pub.publish(ros_msg)
+        self._publisher_by_tag[arr[0][3:]].publish(ros_msg)
 
     def _heater_auto_shut_off_transmit(self, enable: bool) -> bool:
         """Sends a UART message to the STM32 chip commanding the auto shut off
@@ -316,8 +315,10 @@ class ScienceBridge:
             - Format: <"$HEATER,device,enable">
         """
         arr = tx_msg.split(",")
+        if len(arr) < 3:
+            return
         ros_msg = Heater(device=int(arr[1]), enable=bool(int(arr[2])))
-        self._heater_state_pub.publish(ros_msg)
+        self._publisher_by_tag[arr[0][3:]].publish(ros_msg)
 
     def _heater_transmit(self, device: int, enable: bool) -> bool:
         """Sends a UART message to the STM32 chip commanding the state of a
@@ -345,7 +346,7 @@ class ScienceBridge:
         except serial.SerialException:
             if self._uart_lock.locked():
                 self._uart_lock.release()
-            rospy.logerror("Errored in _read_msg")
+            rospy.logerr("Errored in _read_msg")
         return str(msg)
 
     def _science_thermistor_handler(self, tx_msg: str) -> None:
@@ -358,13 +359,16 @@ class ScienceBridge:
             - Format: $SCIENCE_TEMP,<TEMP_0>,<TEMP_1>,<TEMP_2>
         """
         arr = tx_msg.split(",")
+        if len(arr) < 4:
+            return
+
         temperature_values = []
 
         for i in range(self._num_science_thermistors):
             temperature_values.append(Temperature(float(arr[i + 1])))
 
         ros_msg = ScienceTemperature(temperature_values)
-        self._science_thermistor_pub.publish(ros_msg)
+        self._publisher_by_tag[arr[0][3:]].publish(ros_msg)
 
     def _send_mosfet_msg(self, device_name: str, enable: bool) -> bool:
         """Sends a MOSFET message on the UART transmit line to the STM32 chip.
@@ -388,7 +392,7 @@ class ScienceBridge:
             tx_msg = self._add_padding(tx_msg)
             if len(tx_msg) > self._uart_transmit_msg_len:
                 tx_msg = tx_msg[: self._uart_transmit_msg_len]
-            rospy.loginfo(tx_msg)
+            # rospy.loginfo(tx_msg)
             self._uart_lock.acquire()
             self.ser.close()
             self.ser.open()
@@ -398,7 +402,7 @@ class ScienceBridge:
         except serial.SerialException as exc:
             if self._uart_lock.locked():
                 self._uart_lock.release()
-            rospy.logerror(f"Error in _send_msg: {exc}")
+            rospy.logerr(f"Error in _send_msg: {exc}")
         return False
 
     def _servo_transmit(self, id: int, angle: float) -> bool:
@@ -428,10 +432,12 @@ class ScienceBridge:
         the data of the carousel spectral sensor.
         """
         arr = tx_msg.split(",")
-        spectral_data = []
-        for i in range(self._num_spectral):
-            spectral_data.append(Spectral(int(arr[i + 1])))
-        self._spectral_pub.publish(spectral_data)
+        if len(arr) < 7:
+            return
+        spectral_data = Spectral()
+        for i in range(6):
+            spectral_data.data[i] = (int(arr[i + 1]))
+        self._publisher_by_tag[arr[0][3:]].publish(spectral_data)
 
 
 def main():
