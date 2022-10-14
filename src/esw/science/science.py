@@ -436,7 +436,7 @@ class ScienceBridge:
             return
         spectral_data = Spectral()
         for i in range(6):
-            spectral_data.data[i] = (int(arr[i + 1]))
+            spectral_data.data[i] = int(arr[i + 1])
         self._publisher_by_tag[arr[0][3:]].publish(spectral_data)
 
 
