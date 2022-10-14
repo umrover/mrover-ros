@@ -1,10 +1,11 @@
-cmake_minimum_required(VERSION 3.0.2)
+cmake_minimum_required(VERSION 3.16)
 project(mrover)
 
 ## Compile as C++17, supported in ROS Kinetic and newer, enable some static analysis
 set(MROVER_CPP_COMPILE_OPTIONS -std=c++17 -Wall -Wextra -Werror -pedantic)
 
-# Generate lists of universal packages to find
+# clang-tidy
+set(CMAKE_CXX_CLANG_TIDY clang-tidy-12)
 
 # find_package
 set(MROVER_PACKAGES
@@ -26,6 +27,8 @@ set(MROVER_MESSAGE_FILES
         Current.msg
         Diagnostic.msg
         Enable.msg
+        EnableAuton.msg
+        GPSWaypoint.msg
         Heater.msg
         ODriveState.msg
         Spectral.msg

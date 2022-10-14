@@ -13,6 +13,7 @@ BASE_APT_DEPS = [
     "git-lfs",
     "python3-pip",
     "clang-format-12",
+    "clang-tidy-12",
     "clangd-12",
     "nodejs",
     "yarn",
