@@ -24,10 +24,12 @@ set(MROVER_MESSAGE_FILES
         Chassis.msg
         Course.msg
         Current.msg
+        Diagnostic.msg
         Enable.msg
         Heater.msg
         ODriveState.msg
         Spectral.msg
+        Temperature.msg
         Triad.msg
         Waypoint.msg
         WheelData.msg

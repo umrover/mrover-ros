@@ -16,8 +16,9 @@ from typing import Any, Callable, Dict, List
 import numpy as np
 import rospy
 import serial
-from mrover.msg import Current, Enable, Heater, Spectral, Triad, \
-    Temperature, ScienceTemperature, DiagTemperature
+
+from mrover.msg import Current, Diagnostic, Enable, Heater, Spectral, \
+    Temperature, ScienceTemperature
 
 from mrover.srv import (
     ChangeAutonLEDState,
@@ -66,51 +67,43 @@ class ScienceBridge:
     _sleep: float
     _spectral_pub: rospy.Publisher
     _science_thermistor_pub: rospy.Publisher
-    _triad_pub: rospy.Publisher
     _uart_transmit_msg_len: int
     _uart_lock: threading.Lock
 
     def __init__(self) -> None:
-        self._fuse_pdb_thermistor_pub = rospy.Publisher(
-            "diagnostic_data/temperatures", Temperature, queue_size=1)
-        self._fuse_pdb_current_pub = rospy.Publisher(
-            "diagnostic_data/current", Current, queue_size=1)
-        self._id_by_color = rospy.get_param("/science_board/color_ids")
+        self._id_by_color = rospy.get_param("science_board/color_ids")
         self._mosfet_number_by_device_name = rospy.get_param(
             "science_board/device_mosfet_numbers")
         self._num_diag_current = rospy.get_param(
             "/science_board/info/diag_current")
         self._num_diag_thermistors = rospy.get_param(
             "/science_board/info/diag_thermistors")
-        self._num_sa_data = rospy.get_param(
-            "/science_board/info/sa_data")
         self._num_science_thermistors = rospy.get_param(
             "/science_board/info/science_thermistors")
         self._num_spectral = rospy.get_param(
             "/science_board/info/spectral")
         self._handler_function_by_tag = {
             "AUTOSHUTOFF": self._heater_auto_shut_off_handler,
-            "DIAG": self._diagnostic_pub,
+            "DIAG": self._diagnostic_handler,
             "HEATER": self._heater_state_handler,
             "SPECTRAL": self._spectral_handler,
             "SCIENCE_TEMP": self._science_thermistor_handler,
-            "TRIAD": self._triad_handler,
-            "SA_POS": self._sa_handler,
         }
-        self._heater_auto_shut_off_pub = rospy.Publisher(
-            "science/heater_auto_shut_off_state_data", Enable, queue_size=1)
-        self._heater_state_pub = rospy.Publisher(
-            "science/heater_state_data", Heater, queue_size=1)
-        self._science_thermistor_pub = rospy.Publisher(
-            "science_data/temperatures", Temperature, queue_size=1)
-        self._sleep = rospy.get_param("/science_board/info/sleep")
-        self._spectral_pub = rospy.Publisher(
-            "science_data/spectral", Spectral, queue_size=1)
-
-        self._triad_pub = rospy.Publisher(
-            "science/spectral_triad", Triad, queue_size=1)
+        self._publisher_by_tag = {
+            "DIAGNOSTIC": rospy.Publisher(
+                "diagnostic_data", Current, queue_size=1),
+            "AUTOSHUTOFF": rospy.Publisher(
+                "science/heater_auto_shut_off_state_data", Enable, queue_size=1),
+            "HEATER": rospy.Publisher(
+                "science/heater_state_data", Heater, queue_size=1),
+            "SCIENCE_TEMP": rospy.Publisher(
+                "science_data/temperatures", Temperature, queue_size=1),
+            "SPECTRAL": rospy.Publisher(
+                "science_data/spectral", Spectral, queue_size=1),
+        }
+        self._sleep = rospy.get_param("science_board/info/sleep")
         self._uart_transmit_msg_len = rospy.get_param(
-            "/science_board/info/uart_transmit_msg_len")
+            "science_board/info/uart_transmit_msg_len")
         self._uart_lock = threading.Lock()
 
     def __enter__(self) -> None:
@@ -119,12 +112,12 @@ class ScienceBridge:
         """
 
         self.ser = serial.Serial(
-            port=rospy.get_param("/science_board/serial/port"),
-            baudrate=rospy.get_param("/science_board/serial/baud_rate"),
+            port=rospy.get_param("science_board/serial/port"),
+            baudrate=rospy.get_param("science_board/serial/baud_rate"),
             parity=serial.PARITY_NONE,
             stopbits=serial.STOPBITS_ONE,
             bytesize=serial.EIGHTBITS,
-            timeout=rospy.get_param("/science_board/serial/timeout"),
+            timeout=rospy.get_param("science_board/serial/timeout"),
         )
 
     def __exit__(self, exc_type, exc_value, traceback) -> None:
@@ -277,6 +270,26 @@ class ScienceBridge:
         success = self._send_msg(msg)
         return success
 
+    def _diagnostic_handler(self, tx_msg: str) -> None:
+        """Processes a UART message that contains data of the temperature
+        and current data of the 3.3V, 5V, and 12V lines. Then publishes
+        the data into the corresponding topic.
+        :param tx_msg: A string that was received from UART that contains data
+            of the temperature and current data of the 3.3V, 5V, and 12V lines.
+            - Format: $DIAG,<TEMP_0>,<TEMP_1>,<TEMP_2>,<CURR_0>,<CURR_1>,<CURR_2>
+        """
+        arr = tx_msg.split(",")
+        temperature_values = []
+        current_values = []
+        for i in range(self._num_diag_thermistors):
+            temperature_values.append(Temperature(float(arr[i + 1])))
+        for i in range(self._num_diag_current):
+            current_values.append(
+                Current(arr[self._num_diag_thermistors + i + 1]))
+
+        ros_msg = Diagnostic(temperature_values, current_values)
+        self._diagnostic_pub.publish(ros_msg)
+
     def _format_mosfet_msg(self, device: int, enable: bool) -> str:
         """Creates a message that can be sent over UART to command a MOSFET
         device.
@@ -293,12 +306,10 @@ class ScienceBridge:
 
     def _heater_auto_shut_off_handler(self, tx_msg: str) -> None:
         """Processes a UART message that contains data of the auto shut off
-        state of the carousel heaters and packages it into a ROS struct.
+        state of the carousel heaters and publishes to the corresponding topic.
         :param tx_msg: A string that was received from UART that contains data
             of the carousel heater auto shut off state.
             - Format: <"$AUTOSHUTOFF,device,enable">
-        :returns: An Enable struct that has a boolean that is the requested
-            auto shut off state of the carousel heaters.
         """
         arr = tx_msg.split(",")
         ros_msg = Enable(enable=bool(int(arr[1])))
@@ -321,9 +332,6 @@ class ScienceBridge:
         :param tx_msg: A string that was received from UART that contains data
             of the carousel heater auto shut off state.
             - Format: <"$HEATER,device,enable">
-        :returns: An Heater struct that has the following:
-            - an int that is the heater device that was changed.
-            - a boolean that is the heater state of that device.
         """
         arr = tx_msg.split(",")
         ros_msg = Heater(device=int(arr[1]), enable=bool(int(arr[2])))
@@ -357,6 +365,24 @@ class ScienceBridge:
                 self._uart_lock.release()
             rospy.logerror("Errored in _read_msg")
         return str(msg)
+
+    def _science_thermistor_handler(self, tx_msg: str) -> None:
+        """Processes a UART message that contains data of the three
+        thermistors onboard the carousel in Celsius. We know which sensor
+        is which because we know what the site is.
+        Then publishes to the associated ros channel.
+        :param tx_msg: A string that was received from UART that contains data
+            of the three carousel temperature sensors.
+            - Format: $SCIENCE_TEMP,<TEMP_0>,<TEMP_1>,<TEMP_2>
+        """
+        arr = tx_msg.split(",")
+        temperature_values = []
+
+        for i in range(self._num_science_thermistors):
+            temperature_values.append(Temperature(float(arr[i + 1])))
+
+        ros_msg = ScienceTemperature(temperature_values)
+        self._science_thermistor_pub.publish(ros_msg)
 
     def _send_mosfet_msg(self, device_name: str, enable: bool) -> bool:
         """Sends a MOSFET message on the UART transmit line to the STM32 chip.
@@ -409,95 +435,21 @@ class ScienceBridge:
 
     def _spectral_handler(self, tx_msg: str) -> None:
         """Processes a UART message that contains data of the three carousel
-        spectral sensors and packages it into a ROS struct.
+        spectral sensors and publishes it to the corresponding topic.
         There are 3 spectral sensors, each having 6 channels. We read a
-        uint16_t from each channel. We know which sensor is which because we
-        know what the site is. The Jetson reads byte by byte, so the program
-        combines every two bytes of information into a uint16_t.
+        uint32_t from each channel. We know which sensor is which because we
+        know what the site is.
         :param tx_msg: A string that was received from UART that contains data
             of the three carousel spectral sensors.
-            - Format: <"SPECTRAL,site,ch_0,ch_1,....ch_5">
-        :returns: A Spectral struct that has a string that is the site of the
-            spectral and six floats that is the data of the a carousel
-            spectral sensor.
+            - Format: <"SPECTRAL,ch_0,ch_1,....ch_5">
+        :returns: A Spectral struct that has a string has six floats that is
+        the data of the carousel spectral sensor.
         """
         arr = tx_msg.split(",")
         spectral_data = []
         for i in range(self._num_spectral):
             spectral_data.append(Spectral(int(arr[i + 1])))
         self._spectral_pub.publish(spectral_data)
-
-    def _science_thermistor_handler(self, tx_msg: str) -> None:
-        """TODO: explain function
-        :param tx_msg: A string that was received from UART that contains data
-            of the three carousel spectral sensors.
-            - Format: $SCIENCE_TEMP,<TEMP_0>,<TEMP_1>,<TEMP_2>
-        :returns: A Thermistor struct that has an int thermistor ID and a float
-            that is the temperature of the carousel thermistor in Celsius.
-        """
-        arr = tx_msg.split(",")
-        temperature_values = []
-
-        for i in range(self._num_science_thermistors):
-            temperature_values.append(Temperature(float(arr[i + 1])))
-
-        ros_msg = ScienceTemperature(temperature_values)
-        self._science_thermistor_pub.publish(ros_msg)
-
-    def _fuse_pdb_thermistor_handler(self, tx_msg: str) -> None:
-        """TODO: explain function
-            - Format: $DIAG_TEMP,<TEMP_0>,<TEMP_1>,<TEMP_2>
-        :returns: A Thermistor struct that has an int thermistor ID and a float
-            that is the temperature of the carousel thermistor in Celsius.
-        """
-        arr = tx_msg.split(",")
-        temperature_values = []
-
-        for i in range(self._num_diag_thermistors):
-            temperature_values.append(Temperature(float(arr[i + 1])))
-
-        ros_msg = DiagTemperature(temperature_values)
-        self._fuse_pdb_thermistor_pub.publish(ros_msg)
-
-    def _fuse_pdb_current_handler(self, tx_msg: str) -> None:
-        """ TODO: explain function
-        :param tx_msg: A string that was received from UART that contains data
-            of the three carousel spectral sensors.
-            - Format: $DIAG_CURRENT,<CURR_0>
-        :returns: A Current struct that has the integer sensor ID and a float
-            for the current in amps.
-        """
-        arr = tx_msg.split(",")
-        current_values = []
-        for i in range(self._num_diag_current):
-            current_values.append(float(arr[i + 1]))
-        ros_msg = Current(current_values)
-        self._fuse_pdb_current_pub.publish(ros_msg)
-
-    def _triad_handler(self, tx_msg: str) -> None:
-        """Processes a UART message that contains data of the triad sensor on
-        the end effector and packages it into a ROS struct.
-        There are triad sensor has 18 channels. We read a uint16_t from each
-        channel. The Jetson reads byte by byte, so the program combines every
-        two bytes of information into a uint16_t.
-        :param tx_msg: A string that was received from UART that contains data
-            of the triad sensor.
-            - Format: <"TRIAD,ch_0_0,ch_0_1,....ch_2_5">
-        :returns: A Triad struct that has 18 floats that is the data of the
-            triad sensor.
-        """
-        tx_msg.split(",")
-        arr = [s.strip().strip("\x00") for s in tx_msg.split(",")]
-        ros_msg = Triad()
-        count = 1
-        for index in range(len(ros_msg.data)):
-            if not count >= len(arr):
-                ros_msg.data[index] = 0xFFFF & (
-                    (np.uint8(arr[count + 1]) << 8) | np.uint8(arr[count]))
-            else:
-                ros_msg.data[index] = 0
-            count += 2
-        self._triad_pub.publish(ros_msg)
 
 
 def main():
@@ -521,11 +473,6 @@ def main():
         )
         rospy.Service("change_white_led_state", ChangeDeviceState,
                       bridge.handle_change_white_led_state)
-
-        # rospy.Subscriber("ish_cmd", ChangeCarouselAngle,
-        #                  bridge.handle_change_carousel_angle)
-        # rospy.Subscriber("sa_cmd", SAPosition,
-        #                  bridge.handle_change_sa_angles)
 
         while not rospy.is_shutdown():
             bridge.receive()

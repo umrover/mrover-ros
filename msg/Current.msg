@@ -1,1 +1,1 @@
-float32[] amps
+float32 current  # in amperes

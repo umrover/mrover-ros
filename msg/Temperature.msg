@@ -1,1 +1,1 @@
-float32 temperature
+float32 temperature  # Celsius
