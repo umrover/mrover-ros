@@ -14,7 +14,7 @@
 
 ## Project Overview
 
-The science_board codebase deals with reading and parsing NMEA like messages
+The science codebase deals with reading and parsing NMEA like messages
 from the STM32 chip on the science PCB over UART to complete tasks for almost
 every mission. These tasks include operating the science box and getting
 relevant data during the Science task, controlling the arm laser during the
@@ -46,7 +46,7 @@ The Jetson is connected to the STM32 chip via USART. NMEA-like messages are used
 
 ## Top Level Code
 
-#### [`science_board.py`](./science_board.py)
+#### [`science.py`](./science.py)
 
 This program runs main.
 This reads NMEA like messages via UART from the STM32 chip and depending on the
@@ -63,27 +63,27 @@ Locks exist to prevent two functions from trying to access the UART line at the 
 
 ## Configuration
 
-#### [`science_board.yaml`](../../../config/science_board.yaml)
+#### [`science.yaml`](../../../config/science.yaml)
 
 This configuration file allows you to configure various things.
 
-#### LED Array to UART Mapping - science_board/led_to_id/
+#### LED Array to UART Mapping - science/led_to_id/
 
 You may choose to configure what number to pack
 into the UART message in order to get the particular color to appear on the
 LED Array. This must be consistent with the firmware flashed on the STM32 chip.
 
-#### Device to MOSFET Number Mapping - science_board/device_mosfet_numbers/
+#### Device to MOSFET Number Mapping - science/device_mosfet_numbers/
 
 You may choose to configure which device maps to which MOSFET device number.
 This must be consistent to which MOSFET device number the device is connected to electrically.
 
-#### UART Serial Info - science_board/serial/
+#### UART Serial Info - science/serial/
 
 You may choose to configure the UART serial info, such as baud rate and timeout.
 The baud rate must be consistent with the firmware flased on the STM32 chip.
 
-#### Miscellaneous Info - science_board/info/
+#### Miscellaneous Info - science/info/
 
 You may choose to configure settings such as
 the sleep duration and the length of every UART message transmitted.
@@ -96,42 +96,42 @@ STM32 chip.
 
 #### Change Arm Laser State
 Service: [`ChangeDeviceState.srv`](../../../srv/ChangeDeviceState.srv) "science/change_arm_laser_state" \
-Server: science_board \
+Server: science \
 Client: gui \
 
 #### Change Auton LED State
 Service: [`ChangeAutonLEDState.srv`](../../../srv/ChangeAutonLEDState.srv) "change_auton_led_state" \
-Server: science_board \
+Server: science \
 Client: teleop \
 
 #### Change Heater Auto Shut Off State
 Service: [`ChangeDeviceState.srv`](../../../srv/ChangeDeviceState.srv) "change_heater_auto_shut_off" \
-Server: science_board \
+Server: science \
 Client: gui \
 
 #### Change Heater State
 Service: [`ChangeHeaterState.srv`](../../../srv/ChangeHeaterState.srv) "change_heater_state" \
-Server: science_board \
+Server: science \
 Client: gui \
 
 #### Change Servo Angles
 Service: [`ChangeDeviceState.srv`](../../../srv/ChangeDeviceState.srv) "change_servo_angles" \
-Server: science_board \
+Server: science \
 Client: gui \
 
 #### Change UV LED Carousel State
 Service: [`ChangeDeviceState.srv`](../../../srv/ChangeDeviceState.srv) "change_uv_led_carousel" \
-Server: science_board \
+Server: science \
 Client: gui \
 
 #### Change UV LED End Effector State
 Service: [`ChangeDeviceState.srv`](../../../srv/ChangeDeviceState.srv) "change_uv_led_end_effector" \
-Server: science_board \
+Server: science \
 Client: gui \
 
 #### Change White LED State
 Service: [`ChangeDeviceState.srv`](../../../srv/ChangeDeviceState.srv) "change_white_led" \
-Server: science_board \
+Server: science \
 Client: gui \
 
 ---
@@ -140,37 +140,37 @@ Client: gui \
 
 #### Heater Auto Shut Off Data
 Message: [`Enable.msg`](../../../msg/Enable.msg) "science/heater_auto_shut_off_data" \
-Publisher: science_board \
+Publisher: science \
 Subscriber: gui
 
 #### Heater State Data
 Message: [`Heater.msg`](../../../msg/Heater.msg) "science/heater_state_data" \
-Publisher: science_board \
+Publisher: science \
 Subscriber: gui
 
 #### Spectral Data
 Message: [`Spectral.msg`](../../../msg/Spectral.msg) "science/spectral" \
-Publisher: science_board \
+Publisher: science \
 Subscriber: gui
 
 #### Spectral Triad Data
 Message: [`Triad.msg`](../../../msg/Triad.msg) "science/spectral_triad" \
-Publisher: science_board \
+Publisher: science \
 Subscriber: gui
 
 #### Thermistor 0 Data
 Message: [Temperature.msg](https://docs.ros.org/en/melodic/api/sensor_msgs/html/msg/Temperature.html) "science/thermistor_0" \
-Publisher: science_board \
+Publisher: science \
 Subscriber: gui
 
 #### Thermistor 1 Data
 Message: [Temperature.msg](https://docs.ros.org/en/melodic/api/sensor_msgs/html/msg/Temperature.html) "science/thermistor_1" \
-Publisher: science_board \
+Publisher: science \
 Subscriber: gui
 
 #### Thermistor 2 Data
 Message: [Temperature.msg](https://docs.ros.org/en/melodic/api/sensor_msgs/html/msg/Temperature.html) "science/thermistor_2" \
-Publisher: science_board \
+Publisher: science \
 Subscriber: gui
 
 ---
@@ -207,14 +207,10 @@ Subscriber: gui
 - Data is 155 characters long
 - Temperature is in Celsius
 
-#### Triad Data
-- `$TRIAD, d0_msb_ch0, d0_lsb_ch0, d0_msb_ch1, d0_lsb_ch1, d0_msb_ch2, d0_lsb_ch2, d0_msb_ch3, d0_lsb_ch3, d0_msb_ch4, d0_lsb_ch4, d0_msb_ch5, d0_lsb_ch5, d1_msb_ch0, d1_lsb_ch0, d1_msb_ch1, d1_lsb_ch1, d1_msb_ch2, d1_lsb_ch2, d1_msb_ch3, d1_lsb_ch3, d1_msb_ch4, d1_lsb_ch4, d1_msb_ch5, d1_lsb_ch5,  d2_msb_ch0, d2_lsb_ch0, d2_msb_ch1, d2_lsb_ch1, d2_msb_ch2, d2_lsb_ch2, d2_msb_ch3, d2_lsb_ch3, d2_msb_ch4, d2_lsb_ch4, d2_msb_ch5, d2_lsb_ch5,<extra padding>`
-- Data is 158 characters long
-- 18 channel data
-
 ---
 
 ## TODO
+- [ ] UPDATE README AND MOVE TO WIKI DOCUMENTATION
 - [ ] IMPORTANT - UPDATE SPECTRAL NMEA MESSAGE IN HARDWARE, make sure to also maybe change length of msg
 - [ ] simplify the mapper logic (can put into a function instead), don't need both _handler_function_by_tag and _ros_publisherr_by_tag probably
 - [ ] Analyze behavior when MOSFET device is out of bounds. See if it should be handled by firmware or here or both.
@@ -227,12 +223,3 @@ It is preferred if it is both, but this program does not currently have any chec
 it can be fixed in the config instead of reflashing the firmware (would prob make
 life easier if there is a map issue... only problem is that you'll need
 to rewrite logic for auto shutoff which can be annoying.)
-
----
-
-## TODO - ROS Migration
-- [ ] See if code builds in ROS
-- [ ] See if UART locks work. If they do not, maybe try to revert back to how it worked in 2022 code?
-Otherwise, need to deal with exception handling. If that does not work either, then look for another
-solution.
-- [ ] MOVE THIS README TO THE ESW WIKI ON MROVER-ROS

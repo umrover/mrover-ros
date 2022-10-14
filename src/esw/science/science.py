@@ -1,24 +1,22 @@
 #!/usr/bin/env python3
 
-""" Manages communication to and from the science board.
-The science_board codebase deals with reading and parsing NMEA like messages
-from the STM32 chip on the science PCB over UART to complete tasks for almost
+""" Manages communication to and from the science.
+The science codebase deals with reading and parsing NMEA like messages
+from the STM32 chip over UART to complete tasks for almost
 every mission. These tasks include operating the science box and getting
 relevant data during the Science task, controlling the arm laser during the
 Equipment Servicing task, and controlling the LED array used during the
-Autonomous Traversal task.
+Autonomous Traversal task. It also transmits diagnostic data on temperature
+and current on the 3.3V, 5V, and 12V lines for the PDB.
 """
 import threading
 from typing import Any, Callable, Dict, List
-
-# TODO: Look at Science/PDB/Fuse MCU Documentation, add handler for each topic, check yaml for number range for Publisher range
 
 import numpy as np
 import rospy
 import serial
 
-from mrover.msg import Current, Diagnostic, Enable, Heater, Spectral, \
-    Temperature, ScienceTemperature
+from mrover.msg import Current, Diagnostic, Enable, Heater, Spectral, Temperature, ScienceTemperature
 
 from mrover.srv import (
     ChangeAutonLEDState,
@@ -71,17 +69,12 @@ class ScienceBridge:
     _uart_lock: threading.Lock
 
     def __init__(self) -> None:
-        self._id_by_color = rospy.get_param("science_board/color_ids")
-        self._mosfet_number_by_device_name = rospy.get_param(
-            "science_board/device_mosfet_numbers")
-        self._num_diag_current = rospy.get_param(
-            "/science_board/info/diag_current")
-        self._num_diag_thermistors = rospy.get_param(
-            "/science_board/info/diag_thermistors")
-        self._num_science_thermistors = rospy.get_param(
-            "/science_board/info/science_thermistors")
-        self._num_spectral = rospy.get_param(
-            "/science_board/info/spectral")
+        self._id_by_color = rospy.get_param("science/color_ids")
+        self._mosfet_number_by_device_name = rospy.get_param("science/device_mosfet_numbers")
+        self._num_diag_current = rospy.get_param("/science/info/diag_current")
+        self._num_diag_thermistors = rospy.get_param("/science/info/diag_thermistors")
+        self._num_science_thermistors = rospy.get_param("/science/info/science_thermistors")
+        self._num_spectral = rospy.get_param("/science/info/spectral")
         self._handler_function_by_tag = {
             "AUTOSHUTOFF": self._heater_auto_shut_off_handler,
             "DIAG": self._diagnostic_handler,
@@ -90,37 +83,27 @@ class ScienceBridge:
             "SCIENCE_TEMP": self._science_thermistor_handler,
         }
         self._publisher_by_tag = {
-            "DIAGNOSTIC": rospy.Publisher(
-                "diagnostic_data", Current, queue_size=1),
-            "AUTOSHUTOFF": rospy.Publisher(
-                "science/heater_auto_shut_off_state_data", Enable, queue_size=1),
-            "HEATER": rospy.Publisher(
-                "science/heater_state_data", Heater, queue_size=1),
-            "SCIENCE_TEMP": rospy.Publisher(
-                "science_data/temperatures", Temperature, queue_size=1),
-            "SPECTRAL": rospy.Publisher(
-                "science_data/spectral", Spectral, queue_size=1),
+            "DIAGNOSTIC": rospy.Publisher("diagnostic_data", Current, queue_size=1),
+            "AUTOSHUTOFF": rospy.Publisher("science/heater_auto_shut_off_state_data", Enable, queue_size=1),
+            "HEATER": rospy.Publisher("science/heater_state_data", Heater, queue_size=1),
+            "SCIENCE_TEMP": rospy.Publisher("science_data/temperatures", Temperature, queue_size=1),
+            "SPECTRAL": rospy.Publisher("science_data/spectral", Spectral, queue_size=1),
         }
-        self._sleep = rospy.get_param("science_board/info/sleep")
-        self._uart_transmit_msg_len = rospy.get_param(
-            "science_board/info/uart_transmit_msg_len")
+        self._sleep = rospy.get_param("science/info/sleep")
+        self._uart_transmit_msg_len = rospy.get_param("science/info/uart_transmit_msg_len")
         self._uart_lock = threading.Lock()
 
-    def __enter__(self) -> None:
-        """
-        Opens a serial connection to the STM32 chip
-        """
-
+        # Opens a serial connection to the STM32 chip
         self.ser = serial.Serial(
-            port=rospy.get_param("science_board/serial/port"),
-            baudrate=rospy.get_param("science_board/serial/baud_rate"),
+            port=rospy.get_param("science/serial/port"),
+            baudrate=rospy.get_param("science/serial/baud_rate"),
             parity=serial.PARITY_NONE,
             stopbits=serial.STOPBITS_ONE,
             bytesize=serial.EIGHTBITS,
-            timeout=rospy.get_param("science_board/serial/timeout"),
+            timeout=rospy.get_param("science/serial/timeout"),
         )
 
-    def __exit__(self, exc_type, exc_value, traceback) -> None:
+    def __del__(self) -> None:
         """
         Closes serial connection to STM32 chip
         """
@@ -222,22 +205,22 @@ class ScienceBridge:
         arr = tx_msg.split(",")
 
         # error if tag doesn't start with '$' or is empty
-        if len(tx_msg) == 0 or arr[0][0] != '$':
+        if len(tx_msg) == 0 or arr[0][0] != "$":
             rospy.loginfo(f"Error decoding message stream: {tx_msg}")
             rospy.sleep(self._sleep)
 
         tag = arr[0][1:]
-        if not self._handler_function_by_tag.get_key(tag):
+        if not tag in self._handler_function_by_tag:
             rospy.loginfo(f"Error decoding message stream: {tx_msg}")
             rospy.sleep(self._sleep)
 
         rospy.loginfo(tx_msg)
-        self._handler_function_by_tag(tag)
+        self._handler_function_by_tag[tag](tx_msg)
 
     def _add_padding(self, tx_msg: str) -> str:
         """Adds padding to a UART messages until it is a certain length.
         This certain length is determined by the input in the
-        config/science_board.yaml file. This is so that the STM32 chip can
+        config/science.yaml file. This is so that the STM32 chip can
         expect to only receive messages of this particular length.
         :param tx_msg: The raw string that is to be sent without padding.
         :returns: The filled string that is to be sent with padding and is of
@@ -284,8 +267,7 @@ class ScienceBridge:
         for i in range(self._num_diag_thermistors):
             temperature_values.append(Temperature(float(arr[i + 1])))
         for i in range(self._num_diag_current):
-            current_values.append(
-                Current(arr[self._num_diag_thermistors + i + 1]))
+            current_values.append(Current(arr[self._num_diag_thermistors + i + 1]))
 
         ros_msg = Diagnostic(temperature_values, current_values)
         self._diagnostic_pub.publish(ros_msg)
@@ -453,29 +435,21 @@ class ScienceBridge:
 
 
 def main():
-    rospy.init_node("science_board")
-    with ScienceBridge() as bridge:
-        rospy.Service("change_arm_laser_state", ChangeDeviceState,
-                      bridge.handle_change_arm_laser_state)
-        rospy.Service("change_auton_led_state", ChangeAutonLEDState,
-                      bridge.handle_change_auton_led_state)
-        rospy.Service(
-            "change_heater_auto_shut_off_state", ChangeDeviceState, bridge.handle_change_heater_auto_shut_off_state
-        )
-        rospy.Service("change_heater_state", ChangeHeaterState,
-                      bridge.handle_change_heater_state)
-        rospy.Service("change_servo_angles", ChangeServoAngles,
-                      bridge.handle_change_servo_angles)
-        rospy.Service("change_uv_led_carousel_state", ChangeDeviceState,
-                      bridge.handle_change_uv_led_carousel_state)
-        rospy.Service(
-            "change_uv_led_end_effector_state", ChangeDeviceState, bridge.handle_change_uv_led_end_effector_state
-        )
-        rospy.Service("change_white_led_state", ChangeDeviceState,
-                      bridge.handle_change_white_led_state)
+    rospy.init_node("science")
+    bridge = ScienceBridge()
+    rospy.Service("change_arm_laser_state", ChangeDeviceState, bridge.handle_change_arm_laser_state)
+    rospy.Service("change_auton_led_state", ChangeAutonLEDState, bridge.handle_change_auton_led_state)
+    rospy.Service(
+        "change_heater_auto_shut_off_state", ChangeDeviceState, bridge.handle_change_heater_auto_shut_off_state
+    )
+    rospy.Service("change_heater_state", ChangeHeaterState, bridge.handle_change_heater_state)
+    rospy.Service("change_servo_angles", ChangeServoAngles, bridge.handle_change_servo_angles)
+    rospy.Service("change_uv_led_carousel_state", ChangeDeviceState, bridge.handle_change_uv_led_carousel_state)
+    rospy.Service("change_uv_led_end_effector_state", ChangeDeviceState, bridge.handle_change_uv_led_end_effector_state)
+    rospy.Service("change_white_led_state", ChangeDeviceState, bridge.handle_change_white_led_state)
 
-        while not rospy.is_shutdown():
-            bridge.receive()
+    while not rospy.is_shutdown():
+        bridge.receive()
 
 
 if __name__ == "__main__":

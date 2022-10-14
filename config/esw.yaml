@@ -27,7 +27,7 @@ odrive:
   ros:
     publish_rate_hz: 20
 
-science_board:
+science:
   color_ids:
     red: 0
     blue: 1

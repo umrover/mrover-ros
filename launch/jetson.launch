@@ -10,5 +10,5 @@
   <!--
     Operate science board for Auton, ES, and Science missions.
   -->
-  <node name="science_board" pkg="mrover" type="science_board.py"></node>
+  <node name="science" pkg="mrover" type="science.py"></node>
 </launch>
