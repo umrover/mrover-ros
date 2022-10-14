@@ -16,7 +16,7 @@ import numpy as np
 import rospy
 import serial
 
-from mrover.msg import Current, Diagnostic, Enable, Heater, Spectral, Temperature, ScienceTemperature
+from mrover.msg import Current, Diagnostic, Enable, Heater, ScienceTemperature, Spectral, Temperature
 
 from mrover.srv import (
     ChangeAutonLEDState,
@@ -205,6 +205,7 @@ class ScienceBridge:
         tx_msg = self._read_msg()
         arr = tx_msg.split(",")
 
+        tag = arr[0][3:]
         if not (tag in self._handler_function_by_tag):
             rospy.sleep(self._sleep)
             return
@@ -262,11 +263,11 @@ class ScienceBridge:
         if len(arr) < 1 + self._num_diag_thermistors + self._num_diag_current:
             return
         for i in range(self._num_diag_thermistors):
-            temperature_values.append(Temperature(float(arr[i + 1])))
+            temperature_values.append(Temperature(temperature=float(arr[i + 1])))
         for i in range(self._num_diag_current):
-            current_values.append(Current(arr[self._num_diag_thermistors + i + 1]))
+            current_values.append(Current(current=float(arr[self._num_diag_thermistors + i + 1])))
 
-        ros_msg = Diagnostic(temperature_values, current_values)
+        ros_msg = Diagnostic(temperatures=temperature_values, currents=current_values)
         self._publisher_by_tag[arr[0][3:]].publish(ros_msg)
 
     def _format_mosfet_msg(self, device: int, enable: bool) -> str:
@@ -362,13 +363,12 @@ class ScienceBridge:
         if len(arr) < 4:
             return
 
-        temperature_values = []
+        temperature_values = ScienceTemperature()
 
         for i in range(self._num_science_thermistors):
-            temperature_values.append(Temperature(float(arr[i + 1])))
+            temperature_values.append(Temperature(temperature=float(arr[i + 1])))
 
-        ros_msg = ScienceTemperature(temperature_values)
-        self._publisher_by_tag[arr[0][3:]].publish(ros_msg)
+        self._publisher_by_tag[arr[0][3:]].publish(temperature_values)
 
     def _send_mosfet_msg(self, device_name: str, enable: bool) -> bool:
         """Sends a MOSFET message on the UART transmit line to the STM32 chip.
