@@ -660,7 +660,7 @@ class Application(object):
         right_rad_outer = (forward - turn_difference_outer) * self._wheels_m_s_to_motor_rad_ratio
 
         # Ignore inner since outer > inner always
-        larger_abs_rad_s = max(left_rad_outer, right_rad_outer)
+        larger_abs_rad_s = max(abs(left_rad_outer), abs(right_rad_outer))
         if larger_abs_rad_s > self._max_motor_speed_rad_s:
             change_ratio = self._max_motor_speed_rad_s / larger_abs_rad_s
             left_rad_inner *= change_ratio
