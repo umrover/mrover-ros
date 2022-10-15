@@ -642,10 +642,6 @@ class Application(object):
             threads_dict["publish_data_threads"][i].start()
             threads_dict["watchdog_while_threads"][i].start()
 
-        for i in range(len(self._bridges)):
-            threads_dict["publish_data_threads"][i].join()
-            threads_dict["watchdog_while_threads"][i].join()
-
         rospy.spin()
 
     def _process_twist_message(self, ros_msg: Twist):
