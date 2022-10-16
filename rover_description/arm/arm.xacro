@@ -2,13 +2,13 @@
 <robot xmlns:xacro="http://www.ros.org/wiki/xacro" name="mrover_arm">
     <virtual_joint name="" type="fixed" parent_frame="world" child_link="chassis-a" />
 
-    <xacro:property name="scale_factor" value="0.7357" />
+    <xacro:property name="PI" value="3.141592" />
 
-    <xacro:macro name="link-visual" params="fileName x y z col r g b">
+    <xacro:macro name="link-visual" params="fileName x y z col r g b roll:=0 pitch:=0 yaw:=0">
         <visual>
-            <origin xyz="${x} ${y} ${z}" rpy="0 0 0" />
+            <origin xyz="${x} ${y} ${z}" rpy="${roll} ${pitch} ${yaw}" />
             <geometry>
-                <mesh filename="package://mrover/rover_description/arm/${fileName}.stl" />
+                <mesh filename="package://mrover/rover_description/arm/${fileName}" />
             </geometry>
             <material name="${col}">
                 <color rgba="${r} ${g} ${b} 1" />
@@ -73,17 +73,17 @@
     </xacro:macro>
 
     <link name="chassis-a">
-        <xacro:link-visual fileName="chassis-a" x="0" y="0" z="0" col="red" r="1" g="0" b="0" />
+        <xacro:link-visual fileName="chassis-a.stl" x="0" y="0" z="0" col="red" r="1" g="0" b="0" />
         <!-- TODO: fill in collision objects for all links -->
         <!-- <xacro:link-collision radius="" x1="" y1="" z1="" x2="" y2="" z2="" />
         <xacro:link-collision radius="" x1="" y1="" z1="" x2="" y2="" z2="" />
         <xacro:link-collision radius="" x1="" y1="" z1="" x2="" y2="" z2="" /> -->
     </link>
     <link name="a-b">
-        <xacro:link-visual fileName="a-b" x="0" y="0" z="0" col="orange" r="1" g="0.43" b="0" />
+        <xacro:link-visual fileName="a-b.stl" x="0" y="0" z="0" col="orange" r="1" g="0.43" b="0" />
     </link>
     <link name="b-c">
-        <xacro:link-visual fileName="b-c" x="0" y="30" z="1" col="yellow" r="1" g="1" b="0" />
+        <xacro:link-visual fileName="b-c-blender.stl" x="0" y="1.5" z="0" col="yellow" r="1" g="1" b="0" roll="0.558505"/>
     </link>
     <!-- <link name="c-d">
         <xacro:link-visual fileName="c-d" x="0" y="${0.5393*scale_factor}" z="${0*scale_factor}" col="green" r="0.43" g="1" b="0" />
