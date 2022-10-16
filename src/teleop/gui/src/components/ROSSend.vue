@@ -37,6 +37,7 @@
                 <textarea class="box" id="textarea" v-model="message"></textarea>
 
                 <p> {{schema}} </p>
+                <p v-if="error">JSON Syntax Error! Cannot send...</p>
 
                 <button class="box" id="send" type="button" v-on:click="sendMessage()">Send</button>
             </div>
@@ -65,7 +66,8 @@
             selectedPackage: '',
             message: '',
             customTopic: '',
-            schema: ''
+            schema: '',
+            error: false
         }
     },
     
@@ -120,7 +122,6 @@
 
             var request1 = new ROSLIB.ServiceRequest({package: this.selectedPackage});
             topicTypeClient.callService(request1, (result) => {
-              console.log(result)
               for(var i = 0; i < result.messages.length; i++){
                 this.topic_types.push(result.messages[i]);
               }
@@ -129,6 +130,7 @@
 
         
         switchType: function(){
+          this.message = "";
           var messageClient = new ROSLIB.Service({
               ros : this.$ros,
               name : '/rosapi/message_details',
@@ -177,17 +179,22 @@
         },
 
         sendMessage : function(){
+          this.error = false;
           var topic = this.selectedTopic;
           if(this.selectedTopic == 'Custom topic') topic = this.customTopic;
           if(this.message[0] != "{") this.message = "{" + this.message + "}";
-          var publisher_msg = new ROSLIB.Message(JSON.parse(this.message));
+          var publisher_msg;
+          try {
+            publisher_msg = new ROSLIB.Message(JSON.parse(this.message));
+          } catch {
+              this.error = true;
+          }
           var publisher = new ROSLIB.Topic({
             ros: this.$ros,
             name: topic, 
             messageType: this.selectedType
           });
           publisher.publish(publisher_msg)
-          console.log(this.selectedTopic)
         }
     },
   
@@ -207,6 +214,7 @@
   <style scoped>
 
     p {
+      width: 300px;
         white-space: pre-wrap;
     }
 
@@ -219,10 +227,9 @@
     }
 
     .header {
-        grid-area: header;
+        /* grid-area: header; */
         display: flex;
         align-items: center;
-        border-color: red red rgba(236, 236, 236, 0.966) red;
         box-shadow: 0px 10px 8px -4px rgba(236, 236, 236, 0.966);
     }
 
@@ -231,11 +238,11 @@
     }
 
     .pages > * {
-        /* grid-area: pages;
-        border: black solid 1px;
+        /* grid-area: pages; */
+        /* border: black solid 1px;
         border-radius: 5px;
         background-color: lightgray; */
-        /* display: block; */
+        /* display: flex; */
         margin: 10px;
     }
 
@@ -245,21 +252,22 @@
     }
 
     .wrapper {
-        display: grid;
+        /* display: grid;
         grid-gap: 10px;
         grid-template-columns: 1fr;
         grid-template-rows: 60px 1fr;
-        grid-template-areas: "header" "pages";
-        font-family: "Product Sans";
+        grid-template-areas: "header" "pages"; */
+        font-family: "Arial";
         height: auto;
     }
 
     #textarea {
         display: flex;
+        resize: none;
         height: 300px;
         width: 900px;
         border-radius: 10px;
-        font-family: "Product Sans";
+        font-family: "Arial";
         font-size: large;
         
     }
@@ -269,7 +277,7 @@
         height: 50px;
         background-color: rgb(132, 169, 224);
         color: rgb(255, 255, 255);
-        font-family: "Product Sans";
+        font-family: "Arial";
         font-size: medium;
         border-radius: 10px;
         border-color: transparent;
@@ -280,7 +288,6 @@
     }
 
     #send:active {
-      /* box-shadow: inset 0px 5px 5px rgb(142, 143, 145); */
       background-color: rgb(92, 124, 172);
     }
 

@@ -1,28 +1,36 @@
 <template>
     <div>
         <div class="wrapper">
-            <div class="box header">
+            <div class="header">
                 <img src="/static/mrover.png" alt="MRover" title="MRover" width="48" height="48" />
                 <h1>ROS Echo</h1>
                 <div class="spacer"></div>
             </div>
 
-            <div class="pages">
-                <input v-model="customTopic" placeholder="Enter topic">
-                <button type="button" v-on:click="addTopic()">Add</button>
+            <div class="box pages">
 
+                <label for="topic">Available Topics:</label>
                 <ul id="topic">
-                    <li v-for="topic in topics" :key="topic">
+                    <li v-for="topic in topics" :key="topic.name">
                     <input type="checkbox" :id="topic" :value="topic" @change="addType()" v-model="selectedTopics">
-                    <label :for="topic">{{ topic }}</label>
+                    <label :for="topic">{{ topic.name }}</label>
                     </li>
                 </ul>
 
-                <ul id="feed">
-                    <li v-for="(msg, i) in feed" :key="i">
-                    {{i+1}}: {{ msg }}
-                    </li>
-                </ul>
+                <table>
+                    <tr>
+                        <td class="box" v-for="c in cols">
+                            {{ c.name }}
+                            <button id="mute" class="box button" type="button" v-on:click="mute(c)">Mute</button>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td class="box" v-for="c in cols">
+                            <p id="feed" v-if="!c.muted" v-for="message in c.messages"> {{message}} </p>
+                        </td>
+                    </tr>
+                </table>
+
             </div>
         </div>
     </div>
@@ -32,7 +40,8 @@
   
   import ROSLIB from "roslib"
   
-  
+  let interval;
+
   export default {
     name: 'ROSEcho',
     mounted() {
@@ -41,11 +50,9 @@
     data() {
         return {
             topics: [],
-            types: [],
             selectedTopics : [],
-            selectedTypes: [],
             feed: [],
-            customTopic: ''
+            cols: []
         }
     },
     
@@ -60,77 +67,47 @@
 
             var request = new ROSLIB.ServiceRequest();
             topicsClient.callService(request, (result) => {
-                var topicsSorted = result.topics.sort();
-                var typesSorted = result.types.sort();
-                for(var i = 0; i < topicsSorted.length; i++){
-                    this.topics.push(topicsSorted[i]);
-                    this.types.push(typesSorted[i]);
+                for(var i = 0; i < result.topics.length; i++){
+                    this.topics.push(new ROSLIB.Topic({
+                    ros: this.$ros,
+                    name: result.topics[i],
+                    messageType: result.types[i]
+                    }));
                 }
             });
 
         },
 
         addType : function(){
-
-            var topicTypeClient = new ROSLIB.Service({
-              ros : this.$ros,
-              name : '/rosapi/topic_type',
-              serviceType : 'rosapi/TopicType'
-            });
-
-            var request1 = new ROSLIB.ServiceRequest({topic: this.selectedTopics[this.selectedTopics.length-1]});
-            topicTypeClient.callService(request1, (result) => {
-                this.selectedTypes.push(result.type);
-            });
-
-            var sub = new ROSLIB.Topic({
-            ros: this.$ros,
-            name: this.selectedTopics[this.selectedTopics.length-1],
-            messageType: this.selectedTypes[this.selectedTopics.length-1]
-            });
-
-            sub.subscribe((msg) => {
-                if(this.feed.length > 3){
-                    this.feed.splice(0, 1);
+            //Add newly added topics to the column display and subscribe
+            this.selectedTopics.forEach(prev => {
+                const found = this.cols.find(newTopic => newTopic.name === prev.name);
+                if(!found){
+                    prev.subscribe((msg) => {
+                        var topicCol = this.cols.find(c => c.name === prev.name);
+                        if(topicCol) topicCol.messages.push(JSON.stringify(msg, null, '\t'));
+                        if(topicCol.messages.length > 3) topicCol.messages.splice(0,1);
+                    });
+                    this.cols.push({name: prev.name, messages: [], muted: false});
                 }
-                this.feed.push(sub.name + ":\n" + JSON.stringify(msg, null, '\t'));
             });
-
-            console.log(this.selectedTopics)
             
+            //Remove topics from column display if unchecked and unsubscribe
+            this.cols.forEach(prev => {
+                const found = this.selectedTopics.find(newTopic => newTopic.name === prev.name);
+                if(!found){
+                    var index = this.cols.findIndex(obj => obj === prev);
+                    this.selectedTopics[index].unsubscribe();
+                    this.cols.splice(index, 1);
+                }
+            });
         },
 
-        addTopic : function(){
-            var topicTypeClient = new ROSLIB.Service({
-              ros : this.$ros,
-              name : '/rosapi/topic_type',
-              serviceType : 'rosapi/TopicType'
-            });
-
-            var type;
-            var request1 = new ROSLIB.ServiceRequest({topic: this.customTopic});
-            topicTypeClient.callService(request1, (result) => {
-                type = result.type;
-            });
-
-            var sub = new ROSLIB.Topic({
-            ros: this.$ros,
-            name: this.customTopic,
-            messageType: type
-            });
-
-            sub.subscribe((msg) => {
-                if(this.feed.length > 8){
-                    this.feed.splice(0, 1);
-                }
-                this.feed.push(sub.name + ":\n" + JSON.stringify(msg, null, '\t'));
-            });
-
-            this.topics.push(this.customTopic);
-            this.selectedTopics.push(this.customTopic)
-            this.types.push(type);
-            this.selectedTypes.push(type);
+        mute: function(c) {
+            c.muted = !c.muted;
+            console.log(c.muted)
         }
+
     },
   
   
@@ -138,17 +115,30 @@
   },
   
   created: function () {
-    
+    interval = window.setInterval(() => {
+        var topicsClient = new ROSLIB.Service({
+              ros : this.$ros,
+              name : '/rosapi/topics',
+              serviceType : 'rosapi/Topics'
+            });
+
+            var request = new ROSLIB.ServiceRequest();
+            topicsClient.callService(request, (result) => {
+                if(this.topics.length != result.topics.length){
+                    this.topics.push(new ROSLIB.Topic({
+                        ros: this.$ros,
+                        name: result.topics[result.topics.length-1],
+                        messageType: result.types[result.topics.length-1]
+                    }));
+                }
+            });
+    }, 1000);
   },
   
   }
   </script>
   
   <style scoped>
-
-    #feed {
-        color: orange
-    }
 
     ul {
       list-style-type: none;
@@ -157,15 +147,18 @@
     }
 
     .box {
+        background-color: white;
         border-radius: 5px;
         padding: 10px;
-        border: 1px solid black;
+        border-color: rgba(236, 236, 236, 0.966);
+        box-shadow: 2px 2px 15px rgba(236, 236, 236, 0.966), -2px -2px 15px rgba(236,236,236,0.966);
     }
 
     .header {
         grid-area: header;
         display: flex;
         align-items: center;
+        box-shadow: 0px 10px 8px -4px rgba(236, 236, 236, 0.966);
     }
 
     .header h1 {
@@ -173,10 +166,11 @@
     }
 
     .pages {
-        grid-area: pages;
+        /* grid-area: pages;
         border: black solid 1px;
         border-radius: 5px;
-        background-color: lightgray;
+        background-color: lightgray; */
+        margin: 15px;
     }
 
     img {
@@ -190,7 +184,47 @@
         grid-template-columns: 1fr;
         grid-template-rows: 60px 1fr;
         grid-template-areas: "header" "pages";
-        font-family: sans-serif;
+        font-family: "Arial";
         height: auto;
     }
+
+    #mute {
+        width: 80px;
+        height: 40px;
+        background-color: rgb(132, 169, 224);
+        color: rgb(255, 255, 255);
+        font-family: "Arial";
+        font-size: medium;
+        border-radius: 10px;
+        border-color: transparent;
+    }
+
+    #mute:hover {
+      background-color: rgb(116, 150, 201);
+    }
+
+    #mute:active {
+      /* box-shadow: inset 0px 5px 5px rgb(142, 143, 145); */
+      background-color: rgb(92, 124, 172);
+    }
+
+    table {
+        width: 100%;
+        table-layout: fixed;
+    }
+
+    td {
+        vertical-align: top;
+        text-align: left;
+    }
+
+    .button {
+        float: right;
+        text-align: center;
+    }
+    
+    #feed {
+        white-space: pre-wrap;
+    }
+    
   </style>
