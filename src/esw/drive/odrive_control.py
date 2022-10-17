@@ -606,7 +606,7 @@ class Application(object):
 
     def __init__(self):
 
-        rospy.init_node(f"odrive_control")
+        rospy.init_node("odrive_control")
         self._bridges = [ODriveBridge("front"), ODriveBridge("middle"), ODriveBridge("back")]
 
         rover_width = rospy.get_param("rover/width")
