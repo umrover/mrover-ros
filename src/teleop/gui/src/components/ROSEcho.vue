@@ -21,7 +21,7 @@
                     <tr>
                         <td class="box" v-for="c in cols">
                             {{ c.name }}
-                            <button id="mute" class="box button" type="button" v-on:click="mute(c)">Mute</button>
+                            <button id="mute" class="box button" type="button" v-bind:class="[c.muted ? 'inactive' : 'active']" v-on:click="mute(c)">Mute</button>
                         </td>
                     </tr>
                     <tr>
@@ -191,21 +191,11 @@
     #mute {
         width: 80px;
         height: 40px;
-        background-color: rgb(132, 169, 224);
         color: rgb(255, 255, 255);
         font-family: "Arial";
         font-size: medium;
         border-radius: 10px;
         border-color: transparent;
-    }
-
-    #mute:hover {
-      background-color: rgb(116, 150, 201);
-    }
-
-    #mute:active {
-      /* box-shadow: inset 0px 5px 5px rgb(142, 143, 145); */
-      background-color: rgb(92, 124, 172);
     }
 
     table {
@@ -225,6 +215,30 @@
     
     #feed {
         white-space: pre-wrap;
+    }
+
+    .active {
+        background-color: rgb(132, 169, 224);
+    }
+
+    .inactive {
+        background-color: rgb(129, 141, 158);
+    }
+
+    .active:hover {
+        background-color: rgb(116, 150, 201);
+    }
+
+    .active:active {
+        background-color: rgb(92, 124, 172);
+    }
+
+    .inactive:hover {
+        background-color: rgb(120, 130, 145);
+    }
+    
+    .inactive:active {
+        background-color: rgb(99, 106, 116);
     }
     
   </style>
