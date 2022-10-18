@@ -39,7 +39,7 @@
       <elevation>0</elevation>
       <heading_deg>0</heading_deg>
     </spherical_coordinates>
-    <model name='waypoint_post'>
+    <model name='waypoint_post_1'>
       <pose>-5.5 -5.5 0.5 0 0 4.71239</pose>
       <static>1</static>
       <link name='link'>
@@ -67,6 +67,42 @@
           <geometry>
             <mesh>
               <uri>model://post/meshes/4x4_1000-0.dae</uri>
+            </mesh>
+          </geometry>
+        </visual>
+        <self_collide>0</self_collide>
+        <enable_wind>0</enable_wind>
+        <kinematic>0</kinematic>
+      </link>
+    </model>
+    <model name='waypoint_post_2'>
+      <pose>-3.5 -5.5 0.5 0 0 4.71239</pose>
+      <static>1</static>
+      <link name='link'>
+        <collision name='collision'>
+          <geometry>
+            <mesh>
+              <uri>model://post/meshes/4x4_1000-1.dae</uri>
+            </mesh>
+          </geometry>
+          <max_contacts>10</max_contacts>
+          <surface>
+            <contact>
+              <ode />
+            </contact>
+            <bounce />
+            <friction>
+              <torsional>
+                <ode />
+              </torsional>
+              <ode />
+            </friction>
+          </surface>
+        </collision>
+        <visual name='visual'>
+          <geometry>
+            <mesh>
+              <uri>model://post/meshes/4x4_1000-1.dae</uri>
             </mesh>
           </geometry>
         </visual>
