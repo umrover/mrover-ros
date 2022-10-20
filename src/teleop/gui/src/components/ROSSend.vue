@@ -131,6 +131,7 @@
         
         switchType: function(){
           this.message = "";
+          this.schema = '';
           var messageClient = new ROSLIB.Service({
               ros : this.$ros,
               name : '/rosapi/message_details',
@@ -153,7 +154,7 @@
                     this.message += " {";
                     ctr += 1; 
                     displayMessage(result.typedefs[ctr]);
-                    this.message += "\n}";
+                    this.message += "\n},\n";
                     if(arr.fieldarraylen[i] != -1){
                       this.message += ", ]";
                     }
@@ -186,9 +187,12 @@
           var publisher_msg;
           try {
             publisher_msg = new ROSLIB.Message(JSON.parse(this.message));
-          } catch {
+            console.log(publisher_msg)
+          } catch (e) {
+            console.log(e);
               this.error = true;
           }
+          console.log(publisher_msg)
           var publisher = new ROSLIB.Topic({
             ros: this.$ros,
             name: topic, 

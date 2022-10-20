@@ -9,6 +9,7 @@ import ISHTask from '../components/ISHTask.vue'
 import ControlGUI from '../components/ControlGUI.vue'
 import ROSSend from '../components/ROSSend.vue'
 import ROSEcho from '../components/ROSEcho.vue'
+import ROSService from '../components/ROSService.vue'
 
 Vue.use(Router)
 
@@ -58,6 +59,11 @@ export default new Router({
       path: '/ROSEcho',
       name: 'ROSEcho',
       component: ROSEcho
+    },
+    {
+      path: '/ROSService',
+      name: 'ROSService',
+      component: ROSService
     },
   ]
 })

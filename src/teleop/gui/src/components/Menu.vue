@@ -17,6 +17,7 @@
         <MenuButton link="#/Control" name="Temp Controls GUI" />
         <MenuButton link="#/ROSSend" name="ROS Send Message" />
         <MenuButton link="#/ROSEcho" name="ROS Echo Message" />
+        <MenuButton link="#/ROSService" name="ROS Service" />
       </fieldset>
     </div>
   </div>
