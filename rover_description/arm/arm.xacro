@@ -94,15 +94,14 @@
      <link name="e-f">
         <xacro:link-visual fileName="e-f-blender.stl" x="0" y="0" z="0" col="violet" r="0.5" g="0" b="1" roll="1.67552" />
     </link>
-    <!--<link name="hand">
-        <xacro:link-visual fileName="hand" x="${2.5166*scale_factor}" y="${-2.7226*scale_factor}" z="${-34.3566*scale_factor}" col="pink" r="1" g="0" b="1" />
-    </link> -->
-
+    <link name="hand">
+        <xacro:link-visual fileName="hand.stl" x="0" y="0" z="0" col="pink" r="1" g="0" b="1" yaw="${PI}" roll="-1.67552"/>
+    </link>
     <xacro:joints name="joint_a" type="continuous" parent="chassis-a" child="a-b" origin_x="0" origin_y="0" origin_z="0" axis_z="1" lower="-3.14" upper="3.14" />
     <xacro:joints name="joint_b" parent="a-b" child="b-c" origin_x="0" origin_y="1.41293" origin_z="1.13303" axis_x="1" lower="0.035" upper="1.09" />
     <xacro:joints name="joint_c" parent="b-c" child="c-d" origin_x="-4.59961" origin_y="22.83397" origin_z="0.38119" axis_x="1" lower="-3.01" upper="2.73" />
     <xacro:joints name="joint_d" parent="c-d" child="d-e" origin_x="0" origin_y="-1.4699" origin_z="0.963976" axis_z="-0.52992" axis_y="0.84805" lower="-3.14" upper="3.14" />
     <xacro:joints name="joint_e" parent="d-e" child="e-f" origin_x="-2.30884" origin_y="-14.2085" origin_z="9.01643" axis_x="1" lower="-2.68" upper="2.68" />
-    <!--<xacro:joints name="joint_f" parent="e-f" child="hand" origin_x="0.021" origin_y="0.164741225" origin_z="0" axis_z="1" lower="-3.14" upper="3.14" /> -->
+    <xacro:joints name="joint_f" parent="e-f" child="hand" origin_x="-0.817441" origin_y="0.678501" origin_z="-6.45623" axis_z="1" lower="-3.14" upper="3.14" />
     
 </robot>
