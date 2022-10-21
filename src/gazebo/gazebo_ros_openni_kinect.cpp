@@ -23,6 +23,7 @@
 
 #include <algorithm>
 #include <boost/bind.hpp>
+#include <eigen>
 
 #include <gazebo_plugins/gazebo_ros_openni_kinect.h>
 
@@ -334,9 +335,24 @@ namespace gazebo {
                     // hardcoded rotation rpy(-M_PI/2, 0, -M_PI/2) is built-in
                     // to urdf, where the *_optical_frame should have above relative
                     // rotation from the physical camera *_frame
-                    *iter_x = depth * tan(yAngle);
-                    *iter_y = depth * tan(pAngle);
-                    *iter_z = depth;
+                    // *iter_x = depth * tan(yAngle);
+                    // *iter_y = depth * tan(pAngle);
+                    // *iter_z = depth;
+
+                    Eigen::AngleAxisd rollAngle(M_PI_2, Eigen::Vector3d::UnitX());
+                    Eigen::AngleAxisd pitchAngle(0, Eigen::Vector3d:UnitY());
+                    Eigen::AngleAxisD yawAngle(M_PI_2, Eigen::Vector3d::UnitZ());
+
+                    Eigen::Quaternion<double> rot = rollAngle * pitchAngle * yawAngle;
+                    Eigen::Matrix3d rotMatrix = rot.matrix();
+
+                    Eigen::Vector3d originVec(depth * tan(yAngle), depth * tan(pAngle), depth);
+                    Eigen::Vector3d rotated = originVec*rotMatrix;
+
+                    *iter_x = rotated(0);
+                    *iter_y = rotated(1);
+                    *iter_z = rotated(2);
+
                 } else //point in the unseeable range
                 {
                     *iter_x = *iter_y = *iter_z = std::numeric_limits<float>::quiet_NaN();
