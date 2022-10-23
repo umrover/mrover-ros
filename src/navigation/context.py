@@ -128,7 +128,7 @@ class Course:
         """
         waypoint = self.current_waypoint()
         if waypoint is not None:
-            return waypoint.gate
+            return waypoint.type.val == mrover.msg.WaypointType.GATE
         else:
             return False
 
@@ -139,7 +139,7 @@ class Course:
         """
         waypoint = self.current_waypoint()
         if waypoint is not None:
-            return (not waypoint.gate) and waypoint.post
+            return waypoint.type.val == mrover.msg.WaypointType.POST
         else:
             return False
 

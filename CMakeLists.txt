@@ -23,6 +23,7 @@ set(MROVER_LINK_DIRS "")
 set(MROVER_MESSAGE_FILES
         Course.msg
         Waypoint.msg
+        WaypointType.msg
         Chassis.msg
         CalibrationStatus.msg
         ODriveState.msg
