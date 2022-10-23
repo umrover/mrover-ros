@@ -16,25 +16,19 @@
         </visual>
     </xacro:macro>
 
-    <!-- defines a capsule collision object -->
-    <xacro:macro name="link-collision" params="radius x1 y1 z1 x2 y2 z2">
+    <!-- defines a cylinder collision object with two endpoints -->
+    <xacro:macro name="link-collision-cylinder" params="radius x1 y1 z1 x2 y2 z2">
         <xacro:property name="dx" value="${x2-x1}" />
         <xacro:property name="dy" value="${y2-y1}" />
         <xacro:property name="dz" value="${z2-z1}" />
-        
-        <xacro:property name="mx" value="${x1+dx/2}" />
-        <xacro:property name="my" value="${y1+dy/2}" />
-        <xacro:property name="mz" value="${z1+dz/2}" />
-
-        <xacro:property name="pi" value="3.1415926" />
 
         <xacro:if value="${dx != 0}">
             <xacro:property name="length" value="${dx}" />
-            <xacro:property name="rpy" value="0 ${pi/2} 0" />
+            <xacro:property name="rpy" value="0 ${PI/2} 0" />
         </xacro:if> 
         <xacro:if value="${dy != 0}">
             <xacro:property name="length" value="${dy}" />
-            <xacro:property name="rpy" value="${pi/2} 0 0" />
+            <xacro:property name="rpy" value="${PI/2} 0 0" />
         </xacro:if>
         <xacro:if value="${dz != 0}">
             <xacro:property name="length" value="${dz}" />
@@ -44,19 +38,17 @@
         <collision>
             <origin xyz="${x1+dx/2} ${y1+dy/2} ${z1+dz/2}" rpy="${rpy}" />
             <geometry>
-                <cylinder radius="${radius}" length="length" />
+                <cylinder radius="${radius}" length="${length}" />
             </geometry>
         </collision>
+    </xacro:macro>
+
+    <!-- defines a box collision object with the center and dimensions -->
+    <xacro:macro name="link-collision-box" params="x:=0 y:=0 z:=0 lx ly lz">
         <collision>
-            <origin xyz="${x1} ${y1} ${z1}" rpy="0 0 0" />
+            <origin xyz="${x} ${y} ${z}" rpy="0 0 0" />
             <geometry>
-                <sphere radius="${radius}" />
-            </geometry>
-        </collision>
-        <collision>
-            <origin xyz="${x2} ${y2} ${z2}" rpy="0 0 0" />
-            <geometry>
-                <sphere radius="${radius}" />
+                <box size="${lx} ${ly} ${lz}" />
             </geometry>
         </collision>
     </xacro:macro>
@@ -84,6 +76,8 @@
     </link>
     <link name="b-c">
         <xacro:link-visual fileName="b-c.stl" x="0" y="0" z="0" col="yellow" r="1" g="1" b="0" roll="0"/>
+        <!-- <xacro:link-collision radius="2" x1="0" y1="0" z1="0" x2="0" y2="25" z2="0" /> -->
+        <xacro:link-collision-box y="12" lx="4" ly="24" lz="4" />
     </link>
     <link name="c-d">
         <xacro:link-visual fileName="c-d-blender.stl" x="0" y="0" z="0" col="green" r="0.43" g="1" b="0"/>
