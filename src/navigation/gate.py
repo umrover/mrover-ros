@@ -6,7 +6,7 @@ from context import Gate
 import numpy as np
 
 from context import Context, Environment
-from enum import Enum
+from aenum import Enum, NoAlias
 from state import BaseState
 from trajectory import Trajectory
 from dataclasses import dataclass
@@ -77,9 +77,11 @@ class GateTrajectory(Trajectory):
 
 
 class GateTraverseStateTransitions(Enum):
-    no_gate = 'SearchState'
-    finished_gate = 'DoneState'
-    continue_gate_traverse = 'GateTraverseState'
+    _settings_ = NoAlias
+
+    no_gate = "SearchState"
+    finished_gate = "DoneState"
+    continue_gate_traverse = "GateTraverseState"
 
 
 class GateTraverseState(BaseState):
@@ -89,7 +91,7 @@ class GateTraverseState(BaseState):
     ):
         super().__init__(
             context,
-            add_outcomes=[transition.name for transition in GateTraverseStateTransitions],
+            add_outcomes=[transition.name for transition in GateTraverseStateTransitions],  # type: ignore
         )
         self.traj: Optional[GateTrajectory] = None
 
@@ -98,7 +100,7 @@ class GateTraverseState(BaseState):
         # waypoint as the previous one. Generate one if not
         gate = self.context.env.current_gate()
         if gate is None:
-            return GateTraverseStateTransitions.no_gate.name
+            return GateTraverseStateTransitions.no_gate.name  # type: ignore
         if self.traj is None:
             self.traj = GateTrajectory.spider_gate_trajectory(
                 APPROACH_DISTANCE, gate, self.context.rover.get_pose().position
@@ -117,7 +119,7 @@ class GateTraverseState(BaseState):
             if self.traj.increment_point():
                 self.traj = None
                 self.context.course.increment_waypoint()
-                return GateTraverseStateTransitions.finished_gate.name
+                return GateTraverseStateTransitions.finished_gate.name  # type: ignore
 
         self.context.rover.send_drive_command(cmd_vel)
-        return GateTraverseStateTransitions.continue_gate_traverse.name
+        return GateTraverseStateTransitions.continue_gate_traverse.name  # type: ignore

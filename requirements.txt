@@ -3,3 +3,4 @@ mypy==0.971
 PyQt5==5.14.1
 graphviz==0.20.1
 pyserial==3.5
+aenum==3.1.11

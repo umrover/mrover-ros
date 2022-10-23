@@ -1,7 +1,7 @@
 import tf2_ros
 from context import Context
 from drive import get_drive_command
-from enum import Enum
+from aenum import Enum, NoAlias
 from geometry_msgs.msg import Twist
 from waypoint import DRIVE_FWD_THRESH, WaypointState
 
@@ -10,14 +10,16 @@ FIDUCIAL_STOP_THRESHOLD = 1.75
 
 
 class SingleFiducialStateTransitions(Enum):
-    finished_fiducial = 'WaypointState'
-    continue_fiducial_id = 'SingleFiducialState'
-    no_fiducial = 'SearchState'
+    _settings_ = NoAlias
+
+    finished_fiducial = "WaypointState"
+    continue_fiducial_id = "SingleFiducialState"
+    no_fiducial = "SearchState"
 
 
 class SingleFiducialState(WaypointState):
     def __init__(self, context: Context):
-        super().__init__(context, add_outcomes=[transition.name for transition in SingleFiducialStateTransitions])
+        super().__init__(context, add_outcomes=[transition.name for transition in SingleFiducialStateTransitions])  # type: ignore
 
     def evaluate(self, ud) -> str:
         """
@@ -33,13 +35,13 @@ class SingleFiducialState(WaypointState):
             cmd_vel = Twist()
             cmd_vel.linear.x = 0.0
             self.context.rover.send_drive_command(cmd_vel)
-            return SingleFiducialStateTransitions.no_fiducial.name
+            return SingleFiducialStateTransitions.no_fiducial.name  # type: ignore
 
         try:
             cmd_vel, arrived = get_drive_command(fid_pos, self.context.rover.get_pose(), STOP_THRESH, DRIVE_FWD_THRESH)
             if arrived:
                 self.context.course.increment_waypoint()
-                return SingleFiducialStateTransitions.finished_fiducial.name
+                return SingleFiducialStateTransitions.finished_fiducial.name  # type: ignore
             self.context.rover.send_drive_command(cmd_vel)
         except (
             tf2_ros.LookupException,
@@ -49,4 +51,4 @@ class SingleFiducialState(WaypointState):
             # TODO: probably go into some waiting state
             pass
 
-        return SingleFiducialStateTransitions.continue_fiducial_id.name
+        return SingleFiducialStateTransitions.continue_fiducial_id.name  # type: ignore

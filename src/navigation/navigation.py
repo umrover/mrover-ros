@@ -14,6 +14,7 @@ from state import DoneState, DoneStateTransitions
 from waypoint import WaypointState, WaypointStateTransitions
 from search import SearchState, SearchStateTransitions
 
+
 class Navigation(threading.Thread):
     state_machine: smach.StateMachine
     context: Context
@@ -29,35 +30,32 @@ class Navigation(threading.Thread):
         self.sis.start()
         with self.state_machine:
             self.state_machine.add(
-                "DoneState",
-                DoneState(self.context),
-                transitions={transition.name: transition.value for transition in DoneStateTransitions}
+                "DoneState", DoneState(self.context), transitions=self.get_transitions(DoneStateTransitions)
             )
             self.state_machine.add(
-                "WaypointState",
-                WaypointState(self.context),
-                transitions={transition.name: transition.value for transition in WaypointStateTransitions}
+                "WaypointState", WaypointState(self.context), transitions=self.get_transitions(WaypointStateTransitions)
             )
             self.state_machine.add(
                 "SingleFiducialState",
                 SingleFiducialState(self.context),
-                # The lines below are necessary because SingleFiducialState inherits from WaypointState, so 
-                # WaypointState's transitions need to be registered for SingleFiducialState as well.
+                # The lines below are necessary because SingleFiducialState inherits from WaypointState, so WaypointState's transitions
+                # need to be registered for SingleFiducialState as well.
                 transitions=dict(
-                    {transition.name: transition.value for transition in SingleFiducialStateTransitions}, 
-                    **{transition.name: transition.value for transition in WaypointStateTransitions}
+                    self.get_transitions(SingleFiducialStateTransitions),
+                    **self.get_transitions(WaypointStateTransitions)
                 ),
             )
             self.state_machine.add(
-                "SearchState",
-                SearchState(self.context),
-                transitions={transition.name: transition.value for transition in SearchStateTransitions}
+                "SearchState", SearchState(self.context), transitions=self.get_transitions(SearchStateTransitions)
             )
             self.state_machine.add(
                 "GateTraverseState",
                 GateTraverseState(self.context),
-                transitions={transition.name: transition.value for transition in GateTraverseStateTransitions}
+                transitions=self.get_transitions(GateTraverseStateTransitions),
             )
+
+    def get_transitions(self, transitions_enum):
+        return {transition.name: transition.value for transition in transitions_enum}
 
     def run(self):
         self.state_machine.execute()
