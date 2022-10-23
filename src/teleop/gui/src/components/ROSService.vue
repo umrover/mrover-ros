@@ -194,22 +194,25 @@
           var parsed_args;
           try {
             if(this.args == '{}') parsed_args = '';
-            else parsed_args = new ROSLIB.args(JSON.parse(this.args));
-          } catch {
+            else parsed_args = new ROSLIB.ServiceRequest(JSON.parse(this.args));
+          } catch (e){
+              console.log(e)
               this.error = true;
           }
           
           console.log(parsed_args)
-          var serviceClient = new ROSLIB.Service({
-              ros : this.$ros,
-              name : this.selectedService,
-              serviceType : this.selectedType
-            });
-
-            var request = new ROSLIB.ServiceRequest(parsed_args);
-            serviceClient.callService(request, (result) => {
-                this.response = result;
-            });
+          if (!this.error){
+            var serviceClient = new ROSLIB.Service({
+                ros : this.$ros,
+                name : this.selectedService,
+                serviceType : this.selectedType
+              });
+  
+              var request = new ROSLIB.ServiceRequest(parsed_args);
+              serviceClient.callService(request, (result) => {
+                  this.response = result;
+              });
+          }
         }
     },
   
