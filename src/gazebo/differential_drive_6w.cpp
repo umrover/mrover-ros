@@ -47,7 +47,6 @@
 namespace gazebo {
 
     constexpr auto VELOCITY_COMMAND_TOPIC = "cmd_vel";
-    constexpr auto CALLBACK_TIMEOUT = 0.01;
 
     enum {
         FRONT_LEFT,
@@ -145,7 +144,7 @@ namespace gazebo {
         // ROS: Subscribe to the velocity command topic (usually "cmd_vel")
         ros::SubscribeOptions so = ros::SubscribeOptions::create<geometry_msgs::Twist>(
                 mVelocityCommandTopic, 1,
-                [this](const geometry_msgs::Twist::ConstPtr& velocityCommand) { commandVelocityCallback(velocityCommand); },
+                [this](geometry_msgs::Twist::ConstPtr const& velocityCommand) { commandVelocityCallback(velocityCommand); },
                 ros::VoidPtr(), &mVelocityCommandQueue);
         mSubscriber = mNode->subscribe(so);
         mPublisher = mNode->advertise<nav_msgs::Odometry>("odom", 1);
@@ -161,8 +160,7 @@ namespace gazebo {
         // New Mechanism for Updating every World Cycle
         // Listen to the update event. This event is broadcast every
         // simulation iteration.
-        // TODO: (quintin) not sure how to get rid of this std::bind
-        mUpdateConnection = event::Events::ConnectWorldUpdateBegin(std::bind(&DiffDrivePlugin6W::update, this));
+        mUpdateConnection = event::Events::ConnectWorldUpdateBegin([this](common::UpdateInfo const& updateInfo) { update(updateInfo); });
     }
 
     // Initialize the controller
@@ -182,7 +180,7 @@ namespace gazebo {
     }
 
     // Update the controller
-    void DiffDrivePlugin6W::update() {
+    void DiffDrivePlugin6W::update(common::UpdateInfo const& updateInfo) {
 
         // TODO: Step should be in a parameter of this function
         double d1, d2;
@@ -248,11 +246,11 @@ namespace gazebo {
         mWheelSpeeds[1] = vr - va * mWheelSeparation / 2;
     }
 
-    void DiffDrivePlugin6W::commandVelocityCallback(const geometry_msgs::Twist::ConstPtr& velocityCommand) {
+    void DiffDrivePlugin6W::commandVelocityCallback(const geometry_msgs::Twist::ConstPtr& twistCommand) {
         std::lock_guard guard(mLock);
 
-        mForwardVelocity = velocityCommand->linear.x;
-        mPitch = velocityCommand->angular.z;
+        mForwardVelocity = twistCommand->linear.x;
+        mPitch = twistCommand->angular.z;
     }
 
     // NEW: Update this to publish odometry topic
