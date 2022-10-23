@@ -63,3 +63,21 @@ class DoneState(BaseState):
         cmd_vel = Twist()
         self.context.rover.send_drive_command(cmd_vel)
         return "done"
+
+class OffState(BaseState):
+    def __init__(self, context: Context):
+        super().__init__(
+            context,
+            add_outcomes=["off", "ignore"],
+        )
+
+    def evaluate(self, ud):
+        # Check if we need to ignore on
+        if self.context.course and (not self.context.course.is_complete()):
+            return "ignore"
+
+        # Stop rover
+        cmd_vel = Twist()
+        self.context.rover.send_drive_command(cmd_vel)
+        return "off"
+        # We have determined the Rover is off, now ignore Rover on ...
