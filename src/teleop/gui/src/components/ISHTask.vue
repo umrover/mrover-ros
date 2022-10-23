@@ -1,27 +1,45 @@
 <template>
 <div class="wrapper">
   <div class="box header">
-      <img src="/static/mrover.png" alt="MRover" title="MRover" width="48" height="48" />
-      <h1>ISH Dashboard</h1>
-      <div class="spacer"></div>
-      <!-- TODO: Add back comms indicators for ROSBridge Server Connection and Rover Connection -->
-      <!-- <div class="comms">
-        <ul id="vitals">
-          <li><CommIndicator v-bind:connected="connections.websocket" name="Web Socket" /></li>
-          <li><CommIndicator v-bind:connected="connections.lcm" name="Rover Connection Status" /></li>
-        </ul>
-      </div> -->
-      <div class="spacer"></div>
-      <div class="help">
-        <img src="/static/help.png" alt="Help" title="Help" width="48" height="48" />
-      </div>
-      <div class="helpscreen"></div>
-      <div class="helpimages" style="display: flex; align-items: center; justify-content: space-evenly">
-        <img src="/static/joystick.png" alt="Joystick" title="Joystick Controls" style="width: auto; height: 70%; display: inline-block" />
-      </div>
+    <img src="/static/mrover.png" alt="MRover" title="MRover" width="48" height="48" />
+    <h1>ISH Dashboard</h1>
+    <div class="spacer"></div>
+    <!-- TODO: Add back comms indicators for ROSBridge Server Connection and Rover Connection -->
+    <!-- <div class="comms">
+      <ul id="vitals">
+        <li><CommIndicator v-bind:connected="connections.websocket" name="Web Socket" /></li>
+        <li><CommIndicator v-bind:connected="connections.lcm" name="Rover Connection Status" /></li>
+      </ul>
+    </div> -->
+    <div class="spacer"></div>
+    <div class="help">
+      <img src="/static/help.png" alt="Help" title="Help" width="48" height="48" />
     </div>
+    <div class="helpscreen"></div>
+    <div class="helpimages" style="display: flex; align-items: center; justify-content: space-evenly">
+      <img src="/static/joystick.png" alt="Joystick" title="Joystick Controls" style="width: auto; height: 70%; display: inline-block" />
+    </div>
+  </div>
   <div class="box light-bg siteSelect">
     <SelectSite/>
+  </div>
+  <div class="box light-bg raman">
+    <Raman/>
+  </div>
+  <div class="box light-bg sudan">
+    <Sudan/>
+  </div>
+  <div class="box light-bg cameras">
+    <Cameras/>
+  </div>
+  <div class="box light-bg carousel">
+    <Carousel/>
+  </div>
+  <div class="box light-bg cache">
+    <Cache/>
+  </div>
+  <div class="box light-bg chlorophyll">
+    <Chlorophyll v-bind:spectral_data="spectral_data"/>
   </div>
 </div>
 </template>
@@ -29,16 +47,47 @@
 <script>
 
 import SelectSite from "./SelectSite.vue"
+import Raman from './Raman.vue'
+import Sudan from './Sudan.vue'
+import Cameras from './Cameras.vue'
+import Carousel from './Carousel.vue'
+import Cache from './Cache.vue'
+import Chlorophyll from './Chlorophyll.vue'
 
 export default {
   data() {
     return {
-
+      spectral_data: {
+          d0_1:0,
+          d0_2:0,
+          d0_3:0,
+          d0_4:0,
+          d0_5:0,
+          d0_6:0,
+          d1_1:0,
+          d1_2:0,
+          d1_3:0,
+          d1_4:0,
+          d1_5:0,
+          d1_6:0,
+          d2_1:0,
+          d2_2:0,
+          d2_3:0,
+          d2_4:0,
+          d2_5:0,
+          d2_6:0
+      }
     }
   },
 
   components:{
-    SelectSite
+    SelectSite,
+    Raman,
+    Sudan,
+    Cameras,
+    Carousel,
+    Cache,
+    Chlorophyll
 }
 }
 </script>
@@ -143,12 +192,16 @@ export default {
       grid-area: raman;
   }
 
+  .sudan {
+    grid-area: sudan;
+  }
+
   .carousel {
       grid-area: carousel;
   }
 
   .chlorophyll {
-      grid-area: chloropyhll;
+      grid-area: chlorophyll;
   }
 
   .cache {

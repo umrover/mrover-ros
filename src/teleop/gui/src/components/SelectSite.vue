@@ -7,9 +7,9 @@
         <div>
           <label for="position">Change site to position:</label>
           <select>
-            <option> Position 0 </option>
-            <option> Position 1 </option>
-            <option> Position 2 </option>
+            <option> Position A </option>
+            <option> Position B </option>
+            <option> Position C </option>
           </select>
         </div>
       </div>
@@ -26,7 +26,7 @@ export default {
   },
 
   components:{
-}
+  }
 }
 </script>
 
