@@ -142,6 +142,7 @@ else ()
     macro(add_packages_macro)
         find_package(OpenCV REQUIRED)
         find_package(gazebo REQUIRED)
+        find_package (Eigen3 REQUIRED)
     endmacro()
 
     macro(include_directories_macro)
@@ -165,7 +166,7 @@ else ()
 
         add_library(kinect_plugin src/gazebo/gazebo_ros_openni_kinect.cpp)
         add_dependencies(kinect_plugin ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
-        target_link_libraries(kinect_plugin ${Boost_LIBRARIES} ${GAZEBO_LIBRARIES} gazebo_ros_camera_utils DepthCameraPlugin ${catkin_LIBRARIES})
+        target_link_libraries(kinect_plugin ${Boost_LIBRARIES} ${GAZEBO_LIBRARIES} gazebo_ros_camera_utils DepthCameraPlugin ${catkin_LIBRARIES} Eigen3::Eigen)
         set_target_properties(kinect_plugin PROPERTIES CXX_CLANG_TIDY "")
     endmacro()
 

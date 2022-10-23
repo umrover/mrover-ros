@@ -23,7 +23,7 @@
 
 #include <algorithm>
 #include <boost/bind.hpp>
-#include <eigen>
+#include <Eigen/Dense>
 
 #include <gazebo_plugins/gazebo_ros_openni_kinect.h>
 
@@ -314,6 +314,14 @@ namespace gazebo {
         double hfov = this->parentSensor->DepthCamera()->HFOV().Radian();
         double fl = ((double) this->width) / (2.0 * tan(hfov / 2.0));
 
+        // Define rotation matrix to align gazebo axes 
+        Eigen::AngleAxisd rollAngle(-M_PI_2, Eigen::Vector3d::UnitX());
+        Eigen::AngleAxisd pitchAngle(0.0, Eigen::Vector3d::UnitY());
+        Eigen::AngleAxisd yawAngle(-M_PI_2, Eigen::Vector3d::UnitZ());
+
+        Eigen::Quaternion<double> rot = yawAngle * rollAngle * pitchAngle;
+        Eigen::Matrix3d rotMatrix = rot.matrix();
+
         // convert depth to point cloud
         for (uint32_t j = 0; j < rows_arg; j++) {
             double pAngle;
@@ -335,19 +343,10 @@ namespace gazebo {
                     // hardcoded rotation rpy(-M_PI/2, 0, -M_PI/2) is built-in
                     // to urdf, where the *_optical_frame should have above relative
                     // rotation from the physical camera *_frame
-                    // *iter_x = depth * tan(yAngle);
-                    // *iter_y = depth * tan(pAngle);
-                    // *iter_z = depth;
 
-                    Eigen::AngleAxisd rollAngle(M_PI_2, Eigen::Vector3d::UnitX());
-                    Eigen::AngleAxisd pitchAngle(0, Eigen::Vector3d:UnitY());
-                    Eigen::AngleAxisD yawAngle(M_PI_2, Eigen::Vector3d::UnitZ());
-
-                    Eigen::Quaternion<double> rot = rollAngle * pitchAngle * yawAngle;
-                    Eigen::Matrix3d rotMatrix = rot.matrix();
-
+                    // Rectifies the hardcoded rotation discussed above
                     Eigen::Vector3d originVec(depth * tan(yAngle), depth * tan(pAngle), depth);
-                    Eigen::Vector3d rotated = originVec*rotMatrix;
+                    Eigen::Vector3d rotated = rotMatrix*originVec;
 
                     *iter_x = rotated(0);
                     *iter_y = rotated(1);
