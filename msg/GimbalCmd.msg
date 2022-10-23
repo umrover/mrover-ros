@@ -1,2 +1,2 @@
-int8 left_right # 'a' -> -1 = left, 'd' -> 1 = right, 0 = noop
-int8 up_down # 's' -> -1 = down, 'w' -> 1 = up, 0 = noop
+int8 left_right # -1 = left, 1 = right, 0 = noop
+int8 up_down # -1 = down, 1 = up, 0 = noop
