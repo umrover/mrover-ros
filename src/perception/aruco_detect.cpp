@@ -101,7 +101,7 @@ void FiducialsNode::camInfoCallback(sensor_msgs::CameraInfo::ConstPtr const& msg
 
 void FiducialsNode::handleIgnoreString(std::string const& str) {
     // Ignore fiducials can take comma separated list of individual
-    // Fiducial ids or ranges, eg "1,4,8,9-12,30-40"
+    // Tag ids or ranges, eg "1,4,8,9-12,30-40"
     std::vector<std::string> strs;
     boost::split(strs, str, boost::is_any_of(","));
     for (const std::string& element: strs) {
@@ -151,7 +151,6 @@ FiducialsNode::FiducialsNode() : mNh(), mPnh("~"), mIt(mNh), mTfListener(mTfBuff
 
     int dicNo;
     mPnh.param<bool>("publish_images", mPublishImages, true);
-    mPnh.param<double>("fiducial_len", mFiducialLen, 0.2);
     mPnh.param<int>("dictionary", dicNo, 0);
     mPnh.param<bool>("publish_fiducial_tf", mPublishFiducialTf, true);
     mPnh.param<bool>("verbose", mIsVerbose, false);
