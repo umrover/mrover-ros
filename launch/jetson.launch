@@ -3,6 +3,9 @@
 	on the physical rover.
  -->
 <launch>
+<!--    <arg name="rvizconfig" default="$(find mrover)/config/rviz/auton_sim.rviz"/>-->
+    <!--    <node name="rviz" pkg="rviz" type="rviz" args="-d $(arg rvizconfig)" required="true"/>-->
+
     <!-- launch rover core nodes -->
     <include file="$(find mrover)/launch/rover_core.launch"/>
 
@@ -23,10 +26,6 @@
     <!-- launch auton -->
     <include file="$(find mrover)/launch/auton.launch"/>
 
-    <include file="$(find zed_wrapper)/">
-
-    </include>
-
     <group ns="zed2i">
         <!-- ZED wrapper node -->
         <node name="zed_node" pkg="zed_wrapper" type="zed_wrapper_node" output="screen" required="true">
@@ -37,5 +36,13 @@
             <remap to="/camera/depth/points" from="/zed2i/zed_node/point_cloud/cloud_registered"/>
             <remap to="/camera/color/camera_info" from="/zed2i/zed_node/rgb/camera_info"/>
         </node>
+
+        <!-- static TF publisher for ZED mount -->
+        <node pkg="tf" type="static_transform_publisher" name="zed_mount_link_publisher"
+              args="0.00635 0.169545 0.43815 1.570796 0 0 base_link zed_mount_link 100"/>
+
+        <!-- static TF publisher for ZED mount -->
+<!--        <node pkg="tf" type="static_transform_publisher" name="bruh"-->
+        <!--              args="0 0 0 0 0 0 1 odom base_link 100"/>-->
     </group>
 </launch>
