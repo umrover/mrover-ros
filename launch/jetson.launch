@@ -22,4 +22,20 @@
 
     <!-- launch auton -->
     <include file="$(find mrover)/launch/auton.launch"/>
+
+    <include file="$(find zed_wrapper)/">
+
+    </include>
+
+    <group ns="zed2i">
+        <!-- ZED wrapper node -->
+        <node name="zed_node" pkg="zed_wrapper" type="zed_wrapper_node" output="screen" required="true">
+            <rosparam file="$(find mrover)/config/zed/common.yaml" command="load"/>
+            <rosparam file="$(find mrover)/config/zed/zed2i.yaml" command="load"/>
+
+            <remap to="/camera/color/image_raw" from="/zed2i/zed_node/rgb/image_rect_color"/>
+            <remap to="/camera/depth/points" from="/zed2i/zed_node/point_cloud/cloud_registered"/>
+            <remap to="/camera/color/camera_info" from="/zed2i/zed_node/rgb/camera_info"/>
+        </node>
+    </group>
 </launch>
