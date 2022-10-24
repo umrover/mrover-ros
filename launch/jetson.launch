@@ -1,10 +1,43 @@
 <launch>
-  <!--Node for teleop control callbacks-->
-  <rosparam command="load" file="$(find mrover)/config/teleop.yaml" />
-  <node name="jetson_teleop" pkg="mrover" type="jetson_teleop.py"/>
-  <!--
-    Run the drive program
-  -->
-  <node name="odrive_control" pkg="mrover" type="odrive_control.py" output="screen"></node>
-  <rosparam command="load" file="$(find mrover)/config/esw.yaml" />
+    <!--Node for teleop control callbacks-->
+    <rosparam command="load" file="$(find mrover)/config/teleop.yaml"/>
+    <node name="jetson_teleop" pkg="mrover" type="jetson_teleop.py"/>
+    <!--
+      Run the drive program
+    -->
+    <node name="odrive_control" pkg="mrover" type="odrive_control.py" output="screen"/>
+    <rosparam command="load" file="$(find mrover)/config/esw.yaml"/>
+    <rosparam command="load" file="$(find mrover)/config/esw.yaml"/>
+
+    <arg name="rvizconfig" default="$(find mrover)/config/rviz/perception.rviz"/>
+    <node name="rviz" pkg="rviz" type="rviz" args="-d $(arg rvizconfig)" required="true"/>
+
+    <node name="aruco_detect" pkg="mrover" type="aruco_detect">
+        <remap from="camera/color/image_raw" to="/zed2i/zed_node/rgb/image_rect_color"/>
+        <remap from="camera/depth/points" to="/zed2i/zed_node/point_cloud/cloud_registered"/>
+        <remap from="camera/color/camera_info" to="/zed2i/zed_node/rgb/camera_info"/>
+    </node>
+
+    <group ns="zed2i">
+        <!-- ZED wrapper node -->
+        <node name="zed_node" pkg="zed_wrapper" type="zed_wrapper_node" output="screen" required="true">
+            <rosparam file="$(find mrover)/config/zed/common.yaml" command="load"/>
+            <rosparam file="$(find mrover)/config/zed/zed2i.yaml" command="load"/>
+        </node>
+
+        <!-- static TF publisher for ZED mount -->
+        <node pkg="tf" type="static_transform_publisher" name="bruh"
+              args="0 0 0 0 0 0 1 odom base_link 100"/>
+
+        <!-- load ZED URDF -->
+        <!--        <param name="zed2i_description" command="$(find xacro)/xacro '$(find zed_wrapper)/urdf/zed_descr.urdf.xacro'-->
+        <!--                        camera_name:=zed2i-->
+        <!--                        camera_model:=zed2i-->
+        <!--                        base_frame:=$(arg zed_frame)"/>-->
+
+        <!-- ZED URDF publisher -->
+        <!--        <node name="zed2i_state_publisher" pkg="robot_state_publisher" type="robot_state_publisher" output="screen" required="true">-->
+        <!--            <remap from="robot_description" to="zed2i_description"/>-->
+        <!--        </node>-->
+    </group>
 </launch>

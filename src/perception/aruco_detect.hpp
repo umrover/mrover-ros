@@ -56,7 +56,8 @@ private:
     bool mEnableDetections = true;
     bool mIsVerbose = false;
     bool mPublishFiducialTf = false;
-    double mMinFramesSeen = 5;
+    int mMinHitCountBeforePublish = 5;
+    int mMaxHitCount = 10;
     std::vector<int> mIgnoreIds;
     int mFilterCount{};
     double mFilterProportion{};

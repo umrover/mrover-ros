@@ -26,7 +26,7 @@ void FiducialsNode::imageCallback(sensor_msgs::ImageConstPtr const& msg) {
         for (size_t i = 0; i < mIds.size(); ++i) {
             int id = mIds[i];
             Tag& tag = mTags[id];
-            tag.hitCount++;
+            tag.hitCount = std::clamp(tag.hitCount + 1, 0, mMaxHitCount);
             tag.id = id;
             tag.imageCenter = std::accumulate(mCorners[i].begin(), mCorners[i].end(), cv::Point2f{}) / 4.0f;
 
@@ -54,7 +54,7 @@ void FiducialsNode::imageCallback(sensor_msgs::ImageConstPtr const& msg) {
 
         // Publish all tags to the tf tree that have been seen enough times
         for (auto const& [id, tag]: mTags) {
-            if (tag.hitCount >= mMinFramesSeen) {
+            if (tag.hitCount >= mMinHitCountBeforePublish) {
                 if (tag.tagInCam) {
                     try {
                         std::string immediateFrameName = "immediateFiducial" + std::to_string(tag.id);
@@ -67,7 +67,7 @@ void FiducialsNode::imageCallback(sensor_msgs::ImageConstPtr const& msg) {
                         ROS_WARN("Expected transform for immediate tag");
                     }
                 } else {
-                    ROS_WARN("Had tag detection but no corresponding point cloud information");
+                    ROS_DEBUG("Had tag detection but no corresponding point cloud information");
                 }
             }
         }
@@ -103,7 +103,7 @@ void FiducialsNode::imageCallback(sensor_msgs::ImageConstPtr const& msg) {
 std::optional<SE3> getFidInCamFromPixel(PointCloudPtr const& cloudPtr, size_t u, size_t v) {
     pcl::PointXYZRGBNormal const& point = cloudPtr->at(static_cast<int>(u), static_cast<int>(v));
     return (std::isfinite(point.x) && std::isfinite(point.y) && std::isfinite(point.z))
-           ? std::optional<SE3>(SE3({+point.z, -point.x, +point.y}, Eigen::Quaterniond::Identity()))
+           ? std::optional<SE3>(SE3({point.z, point.x, point.y}, Eigen::Quaterniond::Identity()))
            : std::nullopt;
 }
 
