@@ -4,7 +4,7 @@
  -->
 <launch>
 	<!-- launch rover core nodes -->
-	<include file="$(find mrover)/launch/auton.launch" />
+	<include file="$(find mrover)/launch/rover_core.launch" />
 
 	<!-- params for hardware interfaces including IMU, GPS, and odrives -->
 	<rosparam command="load" file="$(find mrover)/config/esw.yaml" />
