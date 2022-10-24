@@ -93,7 +93,7 @@ public:
 };
 
 /**
- * @brief Combined filter for XYZ coordinates of a fiducial. Type is always double.
+ * @brief Combined filter for XYZ coordinates. Type is always double.
  */ 
 struct XYZFilter {
 	MeanMedianFilter<double> fidInOdomX;
@@ -104,7 +104,7 @@ struct XYZFilter {
 
 	void addReading(SE3 const& fidInOdom);
 
-	bool ready();
+	bool ready() const;
 
 	[[nodiscard]] SE3 getFidInOdom() const;
 };

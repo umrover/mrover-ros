@@ -239,7 +239,7 @@ void XYZFilter::setFilterParams(size_t count, double proportion) {
     fidInOdomZ.setProportion(static_cast<float>(proportion));
 }
 
-bool XYZFilter::ready() {
+bool XYZFilter::ready() const {
     return fidInOdomX.ready();
 }
 
