@@ -1,4 +1,4 @@
-float lattitude_degrees
-float longitude_degrees
+float64 lattitude_degrees
+float64 longitude_degrees
 WaypointType type
 int32 id
