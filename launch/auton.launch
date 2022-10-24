@@ -1,0 +1,68 @@
+<!-- 
+  This launch file launches all of the nodes necessary for autonomous navigation.
+    
+    :arg run_perception: true/false value deciding whether or not to run perception as
+                         part of the auton system. Should only be used for testing.
+ -->
+<launch>
+    <arg name="run_perception" default="true"/>
+
+    <!--
+      ==========
+      Perception
+      ==========
+    -->
+    <!-- node to detect AR tags and publish them to the TF tree -->
+    <node name="aruco_detect" pkg="mrover" type="aruco_detect">
+        <remap from="camera/color/image_raw" to="/zed2i/zed_node/rgb/image_rect_color"/>
+        <remap from="camera/depth/points" to="/zed2i/zed_node/point_cloud/cloud_registered"/>
+        <remap from="camera/color/camera_info" to="/zed2i/zed_node/rgb/camera_info"/>
+    </node>
+
+    <group ns="zed2i">
+        <!-- ZED wrapper node -->
+        <node name="zed_node" pkg="zed_wrapper" type="zed_wrapper_node" output="screen" required="true">
+            <rosparam file="$(find zed_wrapper)/params/common.yaml" command="load"/>
+            <rosparam file="$(find zed_wrapper)/params/zed2i.yaml" command="load"/>
+        </node>
+
+        <!-- static TF publisher for ZED mount -->
+        <node pkg="tf" type="static_transform_publisher" name="bruh"
+              args="0 0 0 0 0 0 1 odom base_link 100"/>
+
+        <!-- load ZED URDF -->
+        <!--        <param name="zed2i_description" command="$(find xacro)/xacro '$(find zed_wrapper)/urdf/zed_descr.urdf.xacro'-->
+        <!--                        camera_name:=zed2i-->
+        <!--                        camera_model:=zed2i-->
+        <!--                        base_frame:=$(arg zed_frame)"/>-->
+
+        <!-- ZED URDF publisher -->
+        <!--        <node name="zed2i_state_publisher" pkg="robot_state_publisher" type="robot_state_publisher" output="screen" required="true">-->
+        <!--            <remap from="robot_description" to="zed2i_description"/>-->
+        <!--        </node>-->
+    </group>
+
+    <!--
+      ===========
+      Navigation
+      ===========
+    -->
+    <!-- node to navigate to a series of waypoints, AR tags, and gates -->
+    <node name="nav" pkg="mrover" type="navigation.py"/>
+
+    <!--
+      ============
+      Localization
+      ============
+    -->
+    <rosparam command="load" file="$(find mrover)/config/localization.yaml"/>
+
+    <!-- Fuses together GPS position and IMU orientation with an Extended Kalman Filter (EKF) -->
+    <!-- Publishes a resulting tf entry between odom and base_link -->
+    <node pkg="robot_localization" type="ekf_localization_node" name="ekf_odom" clear_params="true">
+        <remap from="imu" to="imu/data"/>
+    </node>
+
+    <!-- Reads the GPS topic and convert it to cartesian based on a reference point-->
+    <node pkg="robot_localization" type="navsat_transform_node" name="navsat_transform" clear_params="true"/>
+</launch>
