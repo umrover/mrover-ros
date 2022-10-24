@@ -21,8 +21,8 @@
     <group ns="zed2i">
         <!-- ZED wrapper node -->
         <node name="zed_node" pkg="zed_wrapper" type="zed_wrapper_node" output="screen" required="true">
-            <rosparam file="$(find mrover)/config/zed/common.yaml" command="load"/>
-            <rosparam file="$(find mrover)/config/zed/zed2i.yaml" command="load"/>
+            <rosparam file="$(find zed_wrapper)/params/common.yaml" command="load"/>
+            <rosparam file="$(find zed_wrapper)/params/zed2i.yaml" command="load"/>
         </node>
 
         <!-- static TF publisher for ZED mount -->
