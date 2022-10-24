@@ -28,12 +28,12 @@
  * policies, either expressed or implied, of the FreeBSD Project.
  *
  */
- 
+
 #include "aruco_detect.hpp"
- 
+
 #include <boost/algorithm/string/classification.hpp>
 #include <boost/algorithm/string/split.hpp>
- 
+
 void FiducialsNode::configCallback(mrover::DetectorParamsConfig& config, uint32_t level) {
     // Don't load initial config, since it will overwrite the rosparam settings
     if (level == 0xFFFFFFFF) {
@@ -69,13 +69,13 @@ void FiducialsNode::configCallback(mrover::DetectorParamsConfig& config, uint32_
     mDetectorParams->perspectiveRemovePixelPerCell = config.perspectiveRemovePixelPerCell;
     mDetectorParams->polygonalApproxAccuracyRate = config.polygonalApproxAccuracyRate;
 }
- 
+
 void FiducialsNode::ignoreCallback(std_msgs::String const& msg) {
     mIgnoreIds.clear();
     mPnh.setParam("ignore_fiducials", msg.data);
     handleIgnoreString(msg.data);
 }
- 
+
 void FiducialsNode::camInfoCallback(sensor_msgs::CameraInfo::ConstPtr const& msg) {
     if (mHasCamInfo) {
         return;
@@ -181,7 +181,7 @@ FiducialsNode::FiducialsNode() : mNh(), mPnh("~"), mIt(mNh), mTfListener(mTfBuff
     mPnh.param<double>("cornerRefinementMinAccuracy", mDetectorParams->cornerRefinementMinAccuracy, 0.01); /* default 0.1 */
     mPnh.param<int>("cornerRefinementWinSize", mDetectorParams->cornerRefinementWinSize, 5);
 
-	bool doCornerRefinement = true;
+    bool doCornerRefinement = true;
     mPnh.param<bool>("doCornerRefinement", doCornerRefinement, true);
     if (doCornerRefinement) {
         bool cornerRefinementSubPix = true;
@@ -213,7 +213,7 @@ FiducialsNode::FiducialsNode() : mNh(), mPnh("~"), mIt(mNh), mTfListener(mTfBuff
 
     ROS_INFO("Aruco detection ready");
 }
- 
+
 int main(int argc, char** argv) {
     ros::init(argc, argv, "aruco_detect");
 
@@ -223,13 +223,13 @@ int main(int argc, char** argv) {
 
     return EXIT_SUCCESS;
 }
- 
+
 void XYZFilter::addReading(SE3 const& fidInOdom) {
     fidInOdomX.push(fidInOdom.positionVector().x());
     fidInOdomY.push(fidInOdom.positionVector().y());
     fidInOdomZ.push(fidInOdom.positionVector().z());
 }
- 
+
 void XYZFilter::setFilterParams(size_t count, double proportion) {
     fidInOdomX.setFilterCount(count);
     fidInOdomX.setProportion(static_cast<float>(proportion));
@@ -238,11 +238,11 @@ void XYZFilter::setFilterParams(size_t count, double proportion) {
     fidInOdomZ.setFilterCount(count);
     fidInOdomZ.setProportion(static_cast<float>(proportion));
 }
- 
+
 bool XYZFilter::ready() {
     return fidInOdomX.ready();
 }
- 
+
 SE3 XYZFilter::getFidInOdom() const {
     return {{fidInOdomX.get(), fidInOdomY.get(), fidInOdomZ.get()}, Eigen::Quaterniond::Identity()};
 }

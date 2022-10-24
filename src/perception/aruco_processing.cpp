@@ -100,20 +100,10 @@ void FiducialsNode::imageCallback(sensor_msgs::ImageConstPtr const& msg) {
  * @param u     X Pixel Position
  * @param v     Y Pixel Position
  */
-std::optional<SE3> getFidInCamFromPixel(sensor_msgs::PointCloud2ConstPtr const& msg, size_t u, size_t v) {
-    // If PCL ends up being needed, use its camToPoint function instead
-    size_t arrayPos = v * msg->row_step + u * msg->point_step;
-    size_t arrayPosY = arrayPos + msg->fields[0].offset;
-    size_t arrayPosZ = arrayPos + msg->fields[1].offset;
-    size_t arrayPosX = arrayPos + msg->fields[2].offset;
-
-    cv::Point3f point;
-    std::memcpy(&point.x, &msg->data[arrayPosX], sizeof(point.x));
-    std::memcpy(&point.y, &msg->data[arrayPosY], sizeof(point.y));
-    std::memcpy(&point.z, &msg->data[arrayPosZ], sizeof(point.z));
-
+std::optional<SE3> getFidInCamFromPixel(PointCloudPtr const& cloudPtr, size_t u, size_t v) {
+    pcl::PointXYZRGBNormal const& point = cloudPtr->at(static_cast<int>(u), static_cast<int>(v));
     return (std::isfinite(point.x) && std::isfinite(point.y) && std::isfinite(point.z))
-           ? std::optional<SE3>(SE3({+point.x, -point.y, +point.z}, Eigen::Quaterniond::Identity()))
+           ? std::optional<SE3>(SE3({+point.z, -point.x, +point.y}, Eigen::Quaterniond::Identity()))
            : std::nullopt;
 }
 
@@ -124,12 +114,13 @@ std::optional<SE3> getFidInCamFromPixel(sensor_msgs::PointCloud2ConstPtr const& 
  * @param msg   Point cloud message
  */
 void FiducialsNode::pointCloudCallback(sensor_msgs::PointCloud2ConstPtr const& msg) {
+    pcl::fromROSMsg(*msg, *mCloudPtr);
     for (auto& [id, tag]: mTags) {
         size_t u = std::lround(tag.imageCenter.x);
         size_t v = std::lround(tag.imageCenter.y);
 
         try {
-            tag.tagInCam = getFidInCamFromPixel(msg, u, v);
+            tag.tagInCam = getFidInCamFromPixel(mCloudPtr, u, v);
         } catch (tf2::TransformException& ex) {
             ROS_WARN("Transform lookup error: %s", ex.what());
         }

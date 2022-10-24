@@ -7,6 +7,7 @@
 #include <image_transport/image_transport.h>
 #include <opencv2/aruco.hpp>
 #include <opencv2/core/mat.hpp>
+#include <pcl_ros/point_cloud.h>
 #include <tf2_ros/transform_broadcaster.h>
 #include <tf2_ros/transform_listener.h>
 
@@ -24,6 +25,8 @@
 
 constexpr char const* ODOM_FRAME = "odom";
 constexpr char const* ROVER_FRAME = "base_link";
+
+using PointCloudPtr = pcl::PointCloud<pcl::PointXYZRGBNormal>::Ptr;
 
 struct Tag {
     int id = -1;
@@ -60,6 +63,7 @@ private:
     cv::Ptr<cv::aruco::DetectorParameters> mDetectorParams;
     cv::Ptr<cv::aruco::Dictionary> mDictionary;
 
+    PointCloudPtr mCloudPtr = boost::make_shared<PointCloudPtr::element_type>();
     uint32_t mSeqNum{};
     bool mHasCamInfo = false;
     cv::Mat mCamMat;

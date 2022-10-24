@@ -5,7 +5,9 @@ project(mrover)
 set(MROVER_CPP_COMPILE_OPTIONS -std=c++17 -Wall -Wextra -Werror -pedantic)
 
 # clang-tidy
-set(CMAKE_CXX_CLANG_TIDY clang-tidy-12)
+if (CMAKE_BUILD_TYPE EQUAL "RELEASE")
+    set(CMAKE_CXX_CLANG_TIDY clang-tidy-12)
+endif ()
 
 # find_package
 set(MROVER_PACKAGES
@@ -153,6 +155,7 @@ else ()
     macro(add_packages_macro)
         find_package(OpenCV REQUIRED)
         find_package(gazebo REQUIRED)
+        find_package(PCL REQUIRED)
     endmacro()
 
     macro(include_directories_macro)
@@ -166,7 +169,7 @@ else ()
     # Put items here to build
     macro(add_and_link_macro)
         add_cpp_node_macro(aruco_detect "src/perception/*.cpp")
-        target_link_libraries(aruco_detect ${OpenCV_LIBS})
+        target_link_libraries(aruco_detect ${OpenCV_LIBS} ${PCL_LIBRARIES})
 
         add_library(differential_drive_plugin_6w src/gazebo/differential_drive_6w.cpp)
         add_dependencies(differential_drive_plugin_6w ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
