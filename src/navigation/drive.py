@@ -4,14 +4,14 @@ import numpy as np
 
 from geometry_msgs.msg import Twist
 from util.SE3 import SE3
-from data_collection_1 import State
+from data_collection import Data_collection
 
 MAX_DRIVING_EFFORT = 1
 MIN_DRIVING_EFFORT = -1
 TURNING_P = 100.0
 
 
-def get_drive_command(
+def get_dri ve_command(
     target_pos: np.ndarray,
     rover_pose: SE3,
     completion_thresh: float,
@@ -42,7 +42,7 @@ def get_drive_command(
 
     if target_dist < completion_thresh:
         #getting commanded velocity into the data collection
-        State.update_commanded_vel(Twist(), True)
+        Data_collection.update_commanded_vel(Twist())
         return Twist(), True
 
     cmd_vel = Twist()
@@ -58,5 +58,5 @@ def get_drive_command(
     error = 1.0 - alignment
     cmd_vel.angular.z = np.clip(error * TURNING_P * sign, MIN_DRIVING_EFFORT, MAX_DRIVING_EFFORT)
     #getting commanded velocity into the data collection
-    State.update_commanded_vel(cmd_vel, False)
+    Data_collection.update_commanded_vel(cmd_vel)
     return cmd_vel, False
