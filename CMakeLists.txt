@@ -131,17 +131,6 @@ else ()
             gazebo_ros
             )
 
-    # append include directories
-    list(APPEND _INCLUDE_DIREC
-            GAZEBO_INCLUDE_DIRS
-            OpenCV_INCLUDE_DIRS
-            )
-
-    # append link directories
-    list(APPEND MROVER_LINK_DIRS
-            ${GAZEBO_LIBRARY_DIRS}
-            )
-
     # append subdirectories
     list(APPEND CMAKE_SUBDIRS
             starter_project/teleop
@@ -156,10 +145,12 @@ else ()
         find_package(OpenCV REQUIRED)
         find_package(gazebo REQUIRED)
         find_package(PCL REQUIRED)
+        find_package(Eigen3 REQUIRED)
     endmacro()
 
     macro(include_directories_macro)
         include_directories(
+                ${catkin_INCLUDE_DIRS}
                 ${GAZEBO_INCLUDE_DIRS}
                 ${OpenCV_INCLUDE_DIRS}
         )
@@ -175,10 +166,21 @@ else ()
         add_dependencies(differential_drive_plugin_6w ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
         target_link_libraries(differential_drive_plugin_6w ${Boost_LIBRARIES} ${GAZEBO_LIBRARIES} ${catkin_LIBRARIES})
         target_compile_options(differential_drive_plugin_6w PRIVATE ${MROVER_CPP_COMPILE_OPTIONS})
+
+        add_library(kinect_plugin src/gazebo/gazebo_ros_openni_kinect.cpp)
+        add_dependencies(kinect_plugin ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
+        target_link_libraries(kinect_plugin ${Boost_LIBRARIES} ${GAZEBO_LIBRARIES} gazebo_ros_camera_utils DepthCameraPlugin ${catkin_LIBRARIES} Eigen3::Eigen)
+        set_target_properties(kinect_plugin PROPERTIES CXX_CLANG_TIDY "")
     endmacro()
 
     macro(additional_install_macro)
         install(TARGETS differential_drive_plugin_6w
+                ARCHIVE DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
+                LIBRARY DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
+                RUNTIME DESTINATION ${CATKIN_GLOBAL_BIN_DESTINATION}
+                )
+
+        install(TARGETS kinect_plugin
                 ARCHIVE DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
                 LIBRARY DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
                 RUNTIME DESTINATION ${CATKIN_GLOBAL_BIN_DESTINATION}
@@ -250,17 +252,14 @@ catkin_package(
 
 # 8. Libraries/Executables to build (add_executable)
 # These only exist after find_packages
-include_directories(
-        ${catkin_INCLUDE_DIRS}
+link_directories(
+        ${GAZEBO_LIBRARY_DIRS}
+        /opt/ros/noetic/lib/
 )
 
 if (COMMAND include_directories_macro)
     include_directories_macro()
 endif ()
-
-link_directories(
-        ${MROVER_LINK_DIRS}
-)
 
 if (COMMAND add_and_link_macro)
     add_and_link_macro()

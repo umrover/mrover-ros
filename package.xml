@@ -92,6 +92,7 @@
   <depend>dynamic_reconfigure</depend>
   <depend>python3-cairosvg</depend>
   <depend>python3-joblib</depend>
+  <depend>camera_info_manager</depend>
 
   <!-- Localization -->
   <depend>robot_localization</depend>
