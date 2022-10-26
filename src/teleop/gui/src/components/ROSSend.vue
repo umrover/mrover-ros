@@ -193,13 +193,14 @@
               this.error = true;
           }
           console.log(publisher_msg)
-          var publisher = new ROSLIB.Topic({
-            ros: this.$ros,
-            name: topic, 
-            messageType: this.selectedType
-          });
-          publisher.publish(publisher_msg)
-        }
+          if (!this.error){
+            var publisher = new ROSLIB.Topic({
+              ros: this.$ros,
+              name: topic, 
+              messageType: this.selectedType
+            });
+            publisher.publish(publisher_msg)        }
+          }
     },
   
   
