@@ -8,6 +8,12 @@ from pymap3d.enu import geodetic2enu
 
 
 class GPSLinearization:
+    """
+    This node subscribes to GPS and IMU data, linearizes the GPS data
+    into ENU coordinates, then combines the linearized GPS position and the IMU
+    orientation into a pose estimate for the rover and publishes it to the TF tree.
+    """
+
     def __init__(self):
         # subscribe to the topics containing GPS and IMU data,
         # assigning them our corresponding callback functions
