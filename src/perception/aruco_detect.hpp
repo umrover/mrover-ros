@@ -26,7 +26,8 @@
 constexpr char const* ODOM_FRAME = "odom";
 constexpr char const* ROVER_FRAME = "base_link";
 
-using PointCloudPtr = pcl::PointCloud<pcl::PointXYZRGBNormal>::Ptr;
+using PointCloud = pcl::PointCloud<pcl::PointXYZRGBNormal>;
+using PointCloudPtr = std::shared_ptr<PointCloud>;
 
 struct Tag {
     int id = -1;
@@ -64,7 +65,7 @@ private:
     cv::Ptr<cv::aruco::DetectorParameters> mDetectorParams;
     cv::Ptr<cv::aruco::Dictionary> mDictionary;
 
-    PointCloudPtr mCloudPtr = boost::make_shared<PointCloudPtr::element_type>();
+    PointCloudPtr mCloudPtr = std::make_shared<PointCloud>();
     uint32_t mSeqNum{};
     bool mHasCamInfo = false;
     cv::Mat mCamMat;
