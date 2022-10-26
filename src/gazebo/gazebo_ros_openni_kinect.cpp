@@ -21,9 +21,9 @@
    Date: 24 Sept 2008
  */
 
+#include <Eigen/Dense>
 #include <algorithm>
 #include <boost/bind.hpp>
-#include <Eigen/Dense>
 
 #include <gazebo_plugins/gazebo_ros_openni_kinect.h>
 
@@ -314,7 +314,7 @@ namespace gazebo {
         double hfov = this->parentSensor->DepthCamera()->HFOV().Radian();
         double fl = ((double) this->width) / (2.0 * tan(hfov / 2.0));
 
-        // Define rotation matrix to align gazebo axes 
+        // Define rotation matrix to align gazebo axes
         Eigen::AngleAxisd rollAngle(-M_PI_2, Eigen::Vector3d::UnitX());
         Eigen::AngleAxisd pitchAngle(0.0, Eigen::Vector3d::UnitY());
         Eigen::AngleAxisd yawAngle(-M_PI_2, Eigen::Vector3d::UnitZ());
@@ -346,7 +346,7 @@ namespace gazebo {
 
                     // Rectifies the hardcoded rotation discussed above
                     Eigen::Vector3d originVec(depth * tan(yAngle), depth * tan(pAngle), depth);
-                    Eigen::Vector3d rotated = rotMatrix*originVec;
+                    Eigen::Vector3d rotated = rotMatrix * originVec;
 
                     *iter_x = rotated(0);
                     *iter_y = rotated(1);
