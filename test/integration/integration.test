@@ -1,0 +1,20 @@
+<!-- 
+    This rostest file launches an integration test that tests basic
+    drive to waypoint functionality.
+ -->
+<launch>
+    <!-- launch rover core nodes -->
+    <include file="$(find mrover)/launch/rover_core.launch" />
+
+    <!-- launch the simulator with no GUI -->
+    <include file="$(find mrover)/launch/simulator.launch">
+        <arg name="gui" value="false" />
+    </include>
+
+    <include file="$(find mrover)/launch/auton.launch">
+        <arg name="run_perception" value="false" />
+    </include>
+
+    <!-- node to manage and run the integration test -->
+    <test test-name="integration" pkg="mrover" type="integration.py" />
+</launch>

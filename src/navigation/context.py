@@ -1,4 +1,5 @@
 from __future__ import annotations
+from pdb import post_mortem
 import rospy
 import tf2_ros
 from geometry_msgs.msg import Twist
@@ -9,6 +10,12 @@ from visualization_msgs.msg import Marker
 from typing import ClassVar, Optional
 import numpy as np
 from dataclasses import dataclass
+
+
+@dataclass
+class Gate:
+    post1: np.ndarray
+    post2: np.ndarray
 
 
 @dataclass
@@ -35,7 +42,7 @@ class Environment:
     ctx: Context
     NO_FIDUCIAL: ClassVar[int] = -1
 
-    def get_fid_pos(self, fid_id: int) -> Optional[np.ndarray]:
+    def get_fid_pos(self, fid_id: int, frame: str = "odom") -> Optional[np.ndarray]:
         """
         Retrieves the pose of the given fiducial ID from the TF tree
         if it exists, otherwise returns None
@@ -60,6 +67,24 @@ class Environment:
             return None
 
         return self.get_fid_pos(current_waypoint.fiducial_id)
+
+    def current_gate(self) -> Optional[Gate]:
+        """
+        retrieves the position of the gate (if we know where it is)
+        """
+        if self.ctx.course:
+            current_waypoint = self.ctx.course.current_waypoint()
+            if current_waypoint is None or current_waypoint.fiducial_id == self.NO_FIDUCIAL:
+                return None
+
+            post1 = self.get_fid_pos(current_waypoint.fiducial_id)
+            post2 = self.get_fid_pos(current_waypoint.fiducial_id + 1)
+            if post1 is None or post2 is None:
+                return None
+
+            return Gate(post1[0:2], post2[0:2])
+        else:
+            return None
 
 
 @dataclass
@@ -116,7 +141,7 @@ class Context:
         self.tf_buffer = tf2_ros.Buffer()
         self.tf_listener = tf2_ros.TransformListener(self.tf_buffer)
         self.vel_cmd_publisher = rospy.Publisher("cmd_vel", Twist, queue_size=1)
-        self.vis_publisher = rospy.Publisher("nav_vis", Marker)
+        self.vis_publisher = rospy.Publisher("nav_vis", Marker, queue_size=1)
         self.course_service = rospy.Service("course_service", mrover.srv.PublishCourse, self.recv_course)
         self.course = None
         self.rover = Rover(self)

@@ -1,4 +1,4 @@
-from typing import List, Optional
+from typing import List
 
 import numpy as np
 
@@ -31,7 +31,7 @@ class WaypointState(BaseState):
         )
 
     def rover_forward(self) -> np.ndarray:
-        return self.context.get_rover_pose().x_vector()
+        return self.context.rover.get_pose().rotation.direction_vector()
 
     def evaluate(self, ud) -> str:
         """
@@ -46,8 +46,9 @@ class WaypointState(BaseState):
             return "done"
 
         # Go into the single fiducial state if we see it early
-        if current_waypoint.fiducial_id != Environment.NO_FIDUCIAL and self.context.env.current_fid_pos() is not None:
-            return "single_fiducial"
+        # if current_waypoint.fiducial_id != Environment.NO_FIDUCIAL and self.context.env.current_fid_pos() is not None:
+        #    #return "single_fiducial"
+        #    return "gate_traverse"
 
         # Attempt to find the waypoint in the TF tree and drive to it
         try:
