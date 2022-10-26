@@ -103,8 +103,8 @@ void FiducialsNode::imageCallback(sensor_msgs::ImageConstPtr const& msg) {
 std::optional<SE3> getFidInCamFromPixel(PointCloudPtr const& cloudPtr, size_t u, size_t v) {
     pcl::PointXYZRGBNormal const& point = cloudPtr->at(static_cast<int>(u), static_cast<int>(v));
     return (std::isfinite(point.x) && std::isfinite(point.y) && std::isfinite(point.z))
-           ? std::optional<SE3>(SE3({point.x, point.y, point.z}, Eigen::Quaterniond::Identity()))
-           : std::nullopt;
+                   ? std::optional<SE3>(SE3({point.x, point.y, point.z}, Eigen::Quaterniond::Identity()))
+                   : std::nullopt;
 }
 
 /**
