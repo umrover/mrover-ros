@@ -11,8 +11,8 @@ def main():
     result = subprocess.Popen(
         ["rospack", "find", "mrover"], stdout=subprocess.PIPE, stderr=subprocess.PIPE
     )  # runs rospack find mrover to get directory
-    m, err = result.communicate()
-    m = m.decode("utf-8")  # convert byte to string type
+    m_bytes, err = result.communicate()
+    m = m_bytes.decode("utf-8")  # convert byte to string type
     m = m[: len(m) - 1]  # the old m includes the '\n' and this gets rid of that
     mrover = Path(m)  # load directory into path
     path_exists = Path.exists(mrover / "src" / "teleop" / "download_map" / "keys.json")
