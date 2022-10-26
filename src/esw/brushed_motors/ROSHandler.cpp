@@ -33,7 +33,7 @@ void ROSHandler::init(ros::NodeHandle* rosNode) {
                         [capture0 = subData.name](auto && PH1) { return moveJointOpenLoopCommand(std::forward<decltype(PH1)>(PH1), capture0); });
     }
 
-    n->subscribe<mrover::GimbalCmd>("gimbal_control", 1, moveGimbal);
+    openLoopSubscriberMast = n->subscribe<mrover::GimbalCmd>("gimbal_control", 1, moveGimbal);
 
     for (publisherData& pubData: jointDataPublishers) {
         *(pubData.publisher) =
@@ -64,6 +64,7 @@ void ROSHandler::moveJointOpenLoopCommand(
 // MODIFIES: nothing
 // EFFECTS: Moves a gimbal.
 void ROSHandler::moveGimbal(const mrover::GimbalCmd::ConstPtr& msg) {
+    ROS_INFO("Initialization Done. Looping. \n");
     ControllerMap::controllersByName["mast_up_down"]->moveOpenLoop((float)msg->up_down);
     ControllerMap::controllersByName["mast_left_right"]->moveOpenLoop((float)msg->left_right);
 }

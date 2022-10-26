@@ -42,8 +42,7 @@ private:
     inline static ros::Subscriber openLoopSubscriberRAGripper;
     inline static ros::Subscriber openLoopSubscriberRAFinger;
 
-    inline static ros::Subscriber openLoopSubscriberMastUpDown;
-    inline static ros::Subscriber openLoopSubscriberMastLeftRight;
+    inline static ros::Subscriber openLoopSubscriberMast;
 
     inline static ros::Publisher jointDataPublisherJointA;
     inline static ros::Publisher jointDataPublisherJointB;
