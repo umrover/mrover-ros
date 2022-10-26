@@ -103,18 +103,26 @@
   <depend>teleop_twist_joy</depend>
   
   <!-- MoveIt -->
-  <build_depend>moveit_core</build_depend>
-  <build_depend>moveit_ros_planning_interface</build_depend>
-  <build_depend>moveit_ros_perception</build_depend>
-  <build_depend>interactive_markers</build_depend>
-  <build_depend>geometric_shapes</build_depend>
-  <build_depend>moveit_visual_tools</build_depend>
-  <exec_depend>moveit_core</exec_depend>
-  <exec_depend>moveit_fake_controller_manager</exec_depend>
-  <exec_depend>moveit_ros_planning_interface</exec_depend>
-  <exec_depend>moveit_ros_perception</exec_depend>
-  <exec_depend>moveit_simple_controller_manager</exec_depend>
-  <exec_depend>moveit_visual_tools</exec_depend>
+  <depend>moveit_commander</depend>
+  <depend>moveit_core</depend>
+  <depend>moveit_fake_controller_manager</depend>
+  <depend>moveit_kinematics</depend>
+  <depend>moveit_msgs</depend>
+  <depend>moveit_planners_chomp</depend>
+  <depend>moveit_planners_ompl</depend>
+  <depend>moveit_ros_benchmarks</depend>
+  <depend>moveit_ros_control_interface</depend>
+  <depend>moveit_ros_manipulation</depend>
+  <depend>moveit_ros_move_group</depend>
+  <depend>moveit_ros_occupancy_map_monitor</depend>
+  <depend>moveit_ros_perception</depend>
+  <depend>moveit_ros_planning</depend>
+  <depend>moveit_ros_planning_interface</depend>
+  <depend>moveit_ros_robot_interaction</depend>
+  <depend>moveit_ros_visualization</depend>
+  <depend>moveit_ros_warehouse</depend>
+  <depend>moveit_setup_assistant</depend>
+  <depend>moveit_simple_controller_manager</depend>
 
   <!-- Embedded Software -->
   <depend>python3-odrive-pip</depend>
