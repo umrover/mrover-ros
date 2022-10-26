@@ -28,6 +28,7 @@ set(MROVER_MESSAGE_FILES
         GPSWaypoint.msg
         ODriveState.msg
         Waypoint.msg
+        WaypointType.msg
         WheelData.msg
         )
 
