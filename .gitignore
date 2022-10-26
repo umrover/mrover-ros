@@ -10,5 +10,6 @@ __pycache__/
 #GUI Files
 /src/teleop/gui/dist/
 /src/teleop/gui/node_modules/
+/src/teleop/gui/src/static/map
 **/keys.json*
 **/yarn.lock*
