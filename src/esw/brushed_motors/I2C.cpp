@@ -58,15 +58,17 @@ void I2C::transact(
 
     // Write bytes and confirm that all bytes were written.
     if (writeNum) {
-        if (write(file, buffer, writeNum + 1) != writeNum + 1) {
-            ROS_ERROR("Write error %d\n", errno);
+        int bitsWritten = (int) write(file, buffer, writeNum + 1);
+        if (bitsWritten != writeNum + 1) {
+            ROS_ERROR("Write error %d, wrote %i bits", errno, bitsWritten);
             throw IOFailure();
         }
     }
     // Read bytes and confirm that all bytes were read.
     if (readNum) {
-        if (read(file, buffer, readNum) != readNum) {
-            ROS_ERROR("read error %d\n", errno);
+        int bitsRead = (int) read(file, buffer, readNum);
+        if (bitsRead != readNum) {
+            ROS_ERROR("read error %d, read %i bits", errno, bitsRead);
             throw IOFailure();
         }
     }

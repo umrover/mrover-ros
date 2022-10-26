@@ -66,8 +66,7 @@ void Controller::moveClosedLoop(float targetAngle) {
         currentAngle = (float) ((((float) angle / quadCPR) * 2 * M_PI) - M_PI);
 
     } catch (IOFailure& e) {
-        ROS_ERROR("moveClosedLoop failed on %s\n", name.c_str());
-        ROS_ERROR("%s", e.what());
+        ROS_ERROR("moveClosedLoop failed on %s", name.c_str());
     }
 }
 
@@ -99,8 +98,7 @@ void Controller::moveOpenLoop(float input) {
         I2C::transact(deviceAddress, OPEN_PLUS, buffer, UINT8_POINTER_T(&angle));
         currentAngle = (float) ((((float) angle / quadCPR) * 2 * M_PI) - M_PI);
     } catch (IOFailure& e) {
-        ROS_ERROR("moveOpenLoop failed on %s\n", name.c_str());
-        ROS_ERROR("%s", e.what());
+        ROS_ERROR("moveOpenLoop failed on %s", name.c_str());
     }
 }
 
@@ -120,8 +118,7 @@ void Controller::refreshCurrentAngle() {
         I2C::transact(deviceAddress, QUAD, nullptr, UINT8_POINTER_T(&raw_angle));
         currentAngle = (float) ((((float) raw_angle / quadCPR) * 2.0f * M_PI) - M_PI);
     } catch (IOFailure& e) {
-        ROS_ERROR("getCurrentAngle failed on %s\n", name.c_str());
-        ROS_ERROR("%s", e.what());
+        ROS_ERROR("getCurrentAngle failed on %s", name.c_str());
     }
 }
 
@@ -137,8 +134,7 @@ void Controller::zeroAngle() {
 
         currentAngle = 0.0f;
     } catch (IOFailure& e) {
-        ROS_ERROR("zeroAngle failed on %s\n", name.c_str());
-        ROS_ERROR("%s", e.what());
+        ROS_ERROR("zeroAngle failed on %s", name.c_str());
     }
 }
 
@@ -189,8 +185,7 @@ void Controller::makeLive() {
         isLive = true;
 
     } catch (IOFailure& e) {
-        ROS_ERROR("makeLive failed on %s\n", name.c_str());
-        ROS_ERROR("%s", e.what());
+        ROS_ERROR("makeLive failed on %s", name.c_str());
         throw IOFailure();
     }
 }
