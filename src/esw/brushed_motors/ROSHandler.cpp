@@ -64,7 +64,6 @@ void ROSHandler::moveJointOpenLoopCommand(
 // MODIFIES: nothing
 // EFFECTS: Moves a gimbal.
 void ROSHandler::moveGimbal(const mrover::GimbalCmd::ConstPtr& msg) {
-    ROS_INFO("Initialization Done. Looping. \n");
     ControllerMap::controllersByName["mast_up_down"]->moveOpenLoop((float)msg->up_down);
     ControllerMap::controllersByName["mast_left_right"]->moveOpenLoop((float)msg->left_right);
 }
