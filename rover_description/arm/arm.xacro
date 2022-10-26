@@ -86,6 +86,7 @@
     <link name="d-e">
         <xacro:link-visual fileName="d-e-blender.stl" x="0" y="0" z="0" col="blue" r="0" g="0" b="1"/>
         <xacro:link-collision-box y="-7.6324" z="4.7693" lx="2.5" ly="20" lz="2.5" roll="-0.558505" />
+        <xacro:link-collision-box x="1" y="-13.75" z="9.5" lx="3" ly="3" lz="6" roll="-0.558505" />
     </link>
     <link name="e-f">
         <xacro:link-visual fileName="e-f-blender.stl" x="0" y="0" z="0" col="violet" r="0.5" g="0" b="1" roll="1.67552" />
@@ -93,7 +94,7 @@
     </link>
     <link name="hand">
         <xacro:link-visual fileName="hand.stl" x="0" y="0" z="0" col="pink" r="1" g="0" b="1" yaw="${PI}" roll="-1.67552"/>
-        <xacro:link-collision-box z="-2.5" lx="5" ly="2" lz="7" />
+        <xacro:link-collision-box z="-2.5" lx="7" ly="2" lz="7" />
         <xacro:link-collision-box y="-8" lx="3" ly="2" lz="4" />
         <xacro:link-collision-cylinder radius="0.75" x1="-1.5" y1="0" z1="-0.5" x2="-1.5" y2="-9" z2="-0.5" />
     </link>
