@@ -17,22 +17,22 @@
     </xacro:macro>
 
     <!-- defines a cylinder collision object with two endpoints -->
-    <xacro:macro name="link-collision-cylinder" params="radius x1 y1 z1 x2 y2 z2">
+    <xacro:macro name="link-collision-cylinder" params="radius x1 y1 z1 x2 y2 z2 roll:=0 pitch:=0 yaw:=0">
         <xacro:property name="dx" value="${x2-x1}" />
         <xacro:property name="dy" value="${y2-y1}" />
         <xacro:property name="dz" value="${z2-z1}" />
 
         <xacro:if value="${dx != 0}">
-            <xacro:property name="length" value="${dx}" />
-            <xacro:property name="rpy" value="0 ${PI/2} 0" />
+            <xacro:property name="length" value="${fabs(dx)}" />
+            <xacro:property name="rpy" value="${roll} ${pitch+PI/2} ${yaw}" />
         </xacro:if> 
         <xacro:if value="${dy != 0}">
-            <xacro:property name="length" value="${dy}" />
-            <xacro:property name="rpy" value="${PI/2} 0 0" />
+            <xacro:property name="length" value="${fabs(dy)}" />
+            <xacro:property name="rpy" value="${roll+PI/2} ${pitch} ${yaw}" />
         </xacro:if>
         <xacro:if value="${dz != 0}">
-            <xacro:property name="length" value="${dz}" />
-            <xacro:property name="rpy" value="0 0 0" />
+            <xacro:property name="length" value="${fabs(dz)}" />
+            <xacro:property name="rpy" value="${roll} ${pitch} ${yaw}" />
         </xacro:if>
 
         <collision>
@@ -44,9 +44,9 @@
     </xacro:macro>
 
     <!-- defines a box collision object with the center and dimensions -->
-    <xacro:macro name="link-collision-box" params="x:=0 y:=0 z:=0 lx ly lz">
+    <xacro:macro name="link-collision-box" params="x:=0 y:=0 z:=0 lx ly lz roll:=0 pitch:=0 yaw:=0">
         <collision>
-            <origin xyz="${x} ${y} ${z}" rpy="0 0 0" />
+            <origin xyz="${x} ${y} ${z}" rpy="${roll} ${pitch} ${yaw}" />
             <geometry>
                 <box size="${lx} ${ly} ${lz}" />
             </geometry>
@@ -66,30 +66,36 @@
 
     <link name="chassis-a">
         <xacro:link-visual fileName="chassis-a.stl" x="0" y="0" z="0" col="red" r="1" g="0" b="0" />
-        <!-- TODO: fill in collision objects for all links -->
-        <!-- <xacro:link-collision radius="" x1="" y1="" z1="" x2="" y2="" z2="" />
-        <xacro:link-collision radius="" x1="" y1="" z1="" x2="" y2="" z2="" />
-        <xacro:link-collision radius="" x1="" y1="" z1="" x2="" y2="" z2="" /> -->
+        <xacro:link-collision-cylinder radius="3.75" x1="0" y1="0" z1="-1.25" x2="0" y2="0" z2="-3.75" />
+        <xacro:link-collision-cylinder radius="1.75" x1="-3.6467207" y1="3.6590503" z1="-0.6913988" x2="-3.6467207" y2="3.6590503" z2="-2.6913988" />
     </link>
     <link name="a-b">
         <xacro:link-visual fileName="a-b.stl" x="0" y="0" z="0" col="orange" r="1" g="0.43" b="0" />
+        <xacro:link-collision-box y="-1.75" z="3" lx="2" ly="3" lz="6" />
+        <xacro:link-collision-cylinder radius="2" x1="0" y1="0" z1="-0.25" x2="0" y2="0" z2="0.75" />
     </link>
     <link name="b-c">
         <xacro:link-visual fileName="b-c.stl" x="0" y="0" z="0" col="yellow" r="1" g="1" b="0" roll="0"/>
-        <!-- <xacro:link-collision radius="2" x1="0" y1="0" z1="0" x2="0" y2="25" z2="0" /> -->
-        <xacro:link-collision-box y="12" lx="4" ly="24" lz="4" />
+        <xacro:link-collision-box y="12" lx="3" ly="24" lz="3" />
+        <xacro:link-collision-cylinder radius="1" x1="0" y1="23" z1="0" x2="5" y2="23" z2="0" />
     </link>
     <link name="c-d">
         <xacro:link-visual fileName="c-d-blender.stl" x="0" y="0" z="0" col="green" r="0.43" g="1" b="0"/>
+        <xacro:link-collision-cylinder radius="2" x1="3" y1="0" z1="0" x2="-5" y2="0" z2="0" />
     </link>
     <link name="d-e">
         <xacro:link-visual fileName="d-e-blender.stl" x="0" y="0" z="0" col="blue" r="0" g="0" b="1"/>
+        <xacro:link-collision-box y="-7.6324" z="4.7693" lx="2.5" ly="20" lz="2.5" roll="-0.558505" />
     </link>
-     <link name="e-f">
+    <link name="e-f">
         <xacro:link-visual fileName="e-f-blender.stl" x="0" y="0" z="0" col="violet" r="0.5" g="0" b="1" roll="1.67552" />
+        <xacro:link-collision-cylinder radius="1" x1="-0.75" y1="0" z1="0" x2="-0.75" y2="0" z2="-6" />
     </link>
     <link name="hand">
         <xacro:link-visual fileName="hand.stl" x="0" y="0" z="0" col="pink" r="1" g="0" b="1" yaw="${PI}" roll="-1.67552"/>
+        <xacro:link-collision-box z="-2.5" lx="5" ly="2" lz="7" />
+        <xacro:link-collision-box y="-8" lx="3" ly="2" lz="4" />
+        <xacro:link-collision-cylinder radius="0.75" x1="-1.5" y1="0" z1="-0.5" x2="-1.5" y2="-9" z2="-0.5" />
     </link>
     <xacro:joints name="joint_a" type="continuous" parent="chassis-a" child="a-b" origin_x="0" origin_y="0" origin_z="0" axis_z="1" lower="-3.14" upper="3.14" />
     <xacro:joints name="joint_b" parent="a-b" child="b-c" origin_x="0" origin_y="1.41293" origin_z="1.13303" axis_x="1" lower="0.035" upper="1.09" />
