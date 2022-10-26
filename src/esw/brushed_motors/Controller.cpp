@@ -24,20 +24,22 @@ Controller::Controller(
     deviceAddress = i2cAddress;
     motorMaxVoltage = _motorMaxVoltage;
     driverVoltage = _driverVoltage;
+
+    currentAngle = 0.0f;
 }
 
 // REQUIRES: nothing
 // MODIFIES: nothing
 // EFFECTS: Returns last saved value of angle.
 // Expect a value between -M_PI and M_PI.
-float Controller::getCurrentAngle() {
+float Controller::getCurrentAngle() const {
     return currentAngle;
 }
 
 // REQUIRES: nothing
 // MODIFIES: nothing
 // EFFECTS: Returns true if Controller is live.
-bool Controller::isControllerLive() {
+bool Controller::isControllerLive() const {
     return isLive;
 }
 
@@ -54,14 +56,14 @@ void Controller::moveClosedLoop(float targetAngle) {
         // The physical controller reads values from 0 - 2*M_PI.
         // Teleop sends in -M_PI to M_PI.
         targetAngle += M_PI;
-        int32_t closedSetpoint = static_cast<int32_t>((targetAngle / (2.0f * M_PI)) * quadCPR);
+        auto closedSetpoint = static_cast<int32_t>((targetAngle / (2.0f * M_PI)) * quadCPR);
 
         uint8_t buffer[32];
         memcpy(buffer + 4, UINT8_POINTER_T(&closedSetpoint), sizeof(closedSetpoint));
 
         int32_t angle;
         I2C::transact(deviceAddress, CLOSED_PLUS, buffer, UINT8_POINTER_T(&angle));
-        currentAngle = angle;
+        currentAngle = (float) ((((float) angle / quadCPR) * 2 * M_PI) - M_PI);
 
     } catch (IOFailure& e) {
         ROS_ERROR("moveClosedLoop failed on %s\n", name.c_str());
@@ -94,7 +96,7 @@ void Controller::moveOpenLoop(float input) {
 
         int32_t angle;
         I2C::transact(deviceAddress, OPEN_PLUS, buffer, UINT8_POINTER_T(&angle));
-        currentAngle = angle;
+        currentAngle = (float) ((((float) angle / quadCPR) * 2 * M_PI) - M_PI);
     } catch (IOFailure& e) {
         ROS_ERROR("moveOpenLoop failed on %s\n", name.c_str());
     }
@@ -114,11 +116,10 @@ void Controller::refreshCurrentAngle() {
     try {
         int32_t raw_angle;
         I2C::transact(deviceAddress, QUAD, nullptr, UINT8_POINTER_T(&raw_angle));
-        currentAngle = ((raw_angle / quadCPR) * 2.0f * M_PI) - M_PI;
+        currentAngle = (float) ((((float) raw_angle / quadCPR) * 2.0f * M_PI) - M_PI);
     } catch (IOFailure& e) {
         ROS_ERROR("getCurrentAngle failed on %s\n", name.c_str());
     }
-    return;
 }
 
 // REQUIRES: nothing
@@ -153,7 +154,7 @@ void Controller::makeLive() {
 
         uint8_t buffer[32];
 
-        uint16_t maxPWM = (uint16_t) (motorMaxVoltage / driverVoltage);
+        auto maxPWM = (uint16_t) (motorMaxVoltage / driverVoltage);
         assert(0 <= maxPWM);
         assert(maxPWM <= 100);
 
@@ -177,7 +178,7 @@ void Controller::makeLive() {
                     UINT8_POINTER_T(&(absRawAngle)));
         }
 
-        int32_t adjustedQuad = (absRawAngle / (2.0f * M_PI)) * quadCPR;
+        auto adjustedQuad = (int32_t) ((absRawAngle / (2.0f * M_PI)) * quadCPR);
         memcpy(buffer, UINT8_POINTER_T(&(adjustedQuad)), sizeof(adjustedQuad));
         I2C::transact(deviceAddress, ADJUST, buffer, nullptr);
 

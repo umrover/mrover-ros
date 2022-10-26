@@ -12,21 +12,21 @@ int main(int argc, char* argv[]) {
     bool isTest;
     nh.getParam("brushed_motors/test", isTest);
 
+    XmlRpc::XmlRpcValue controllersRoot;
+    nh.getParam("brushed_motors/controllers", controllersRoot);
+
+    ControllerMap::init(controllersRoot);
+
+    std::string i2cDeviceFile;
+    nh.getParam("brushed_motors/i2c_device_file", i2cDeviceFile);
+    I2C::init(i2cDeviceFile);
+
     if (isTest) {
-        Test t(&nh);
-        for (auto it: ControllerMap::controllersByName) {
-            t.testOpenLoop(it.second);
+        for (auto &it: ControllerMap::controllersByName) {
+            Test::testOpenLoop(it.second);
         }
     } else {
-        XmlRpc::XmlRpcValue controllersRoot;
-        nh.getParam("brushed_motors/controllers", controllersRoot);
-
-        ControllerMap::init(controllersRoot);
         ROSHandler::init(&nh);
-
-        std::string i2cDeviceFile;
-        nh.getParam("brushed_motors/i2c_device_file", i2cDeviceFile);
-        I2C::init(i2cDeviceFile);
 
         ROS_INFO("Initialization Done. Looping. \n");
 

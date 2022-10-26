@@ -30,7 +30,7 @@ void ROSHandler::init(ros::NodeHandle* rosNode) {
                 n->subscribe<sensor_msgs::JointState>(
                         subData.topic,
                         1,
-                        boost::bind(moveJointOpenLoopCommand, _1, subData.name));
+                        [capture0 = subData.name](auto && PH1) { return moveJointOpenLoopCommand(std::forward<decltype(PH1)>(PH1), capture0); });
     }
 
     for (publisherData& pubData: jointDataPublishers) {
@@ -47,7 +47,7 @@ void ROSHandler::init(ros::NodeHandle* rosNode) {
 void ROSHandler::moveJointOpenLoopCommand(
         const sensor_msgs::JointState::ConstPtr& state,
         const std::string& name) {
-    ControllerMap::controllersByName[name]->moveOpenLoop(state->velocity[0]);
+    ControllerMap::controllersByName[name]->moveOpenLoop((float)state->velocity[0]);
 
     float jointAngle = ControllerMap::controllersByName[name]->getCurrentAngle();
 

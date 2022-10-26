@@ -70,13 +70,13 @@ public:
     // REQUIRES: nothing
     // MODIFIES: nothing
     // EFFECTS: Returns true if Controller is live.
-    bool isControllerLive();
+    bool isControllerLive() const;
 
     // REQUIRES: nothing
     // MODIFIES: nothing
     // EFFECTS: Returns last saved value of angle.
     // Expect a value between -M_PI and M_PI.
-    float getCurrentAngle();
+    float getCurrentAngle() const;
 
     // REQUIRES: -M_PI <= targetAngle <= M_PI
     // MODIFIES: currentAngle. Also makes controller live if not already.
