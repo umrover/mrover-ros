@@ -3,13 +3,7 @@
     <div class="box header">
       <img src="/static/mrover.png" alt="MRover" title="MRover" width="48" height="48" />
       <h1>ERD Dashboard</h1>
-      <div class="spacer"></div>
-      <div class="comms">
-        <ul id="vitals">
-          <li><CommIndicator v-bind:connected="connections.websocket" name="Web Socket" /></li>
-          <li><CommIndicator v-bind:connected="connections.lcm" name="Rover Connection Status" /></li>
-        </ul>
-      </div>
+      <!-- Here lies where CommIndicator used to be -->
       <div class="spacer"></div>
       <div class="help">
         <img src="/static/help.png" alt="Help" title="Help" width="48" height="48" />
@@ -21,7 +15,7 @@
         <img src="/static/joystick.png" alt="Joystick" title="Joystick Controls" style="width: auto; height: 70%; display: inline-block" />
       </div>
     </div>
-
+    <!-- CHANGE HERE, ODOM AND CAMERA -->
     <div class="box odom light-bg">
       <OdometryReading v-bind:odom="odom"/>
     </div>
@@ -33,6 +27,7 @@
       <IKControls/>
     </div>
     <div class="box map light-bg">
+      <!-- Change Later When Adding ESTask -->
       <RoverMap v-bind:odom="odom"/>
     </div>
     <div class="box controls light-bg">
@@ -57,35 +52,63 @@
 <script>
 import { mapGetters } from 'vuex'
 import Cameras from './Cameras.vue'
-import IKControls from './IKControls.vue'
+//import IKControls from './IKControls.vue'
 import RoverMap from './ERDRoverMap.vue'
 import CommIndicator from './CommIndicator.vue'
+
 import OdometryReading from './OdometryReading.vue'
 import ArmControls from './ArmControls.vue'
 import DriveControls from './DriveControls.vue'
 //import PDBFuse from './PDBFuse.vue'
 //import DriveVelDataV from './DriveVelDataV.vue' 
 import ERDWaypointEditor from './ERDWaypointEditor.vue'
-i//mport GimbalControls from './GimbalControls.vue'
+//import GimbalControls from './GimbalControls.vue'
+
+//new imports
+import * as qte from "quaternion-to-euler";
+import ROSLIB from "roslib"
+const Subscriptions =
+[
+        //ODOMETRY change /odometry to /gps/fix,
+        {'topic': '/gps/fix', 'type': 'sensor_msgs/NavSatFix'},
+        //LOCALIZATION
+        {'topic': '/imu/data', 'type': 'sensor_msgs/Imu'},
+        //SENSORS
+        {'topic': '/sensors', 'type': 'mrover/Sensors'},
+        //TEMPERATURE
+        {'topic': '/temperature', 'type': 'mrover/Temperature'},
+        //UNKNOWN
+        {'topic': '/ra_offset_pos', 'type': 'mrover/RAPosition'},
+        {'topic': '/arm_control_state', 'type': 'mrover/ArmControlState'},
+        {'topic': '/drive_vel_data', 'type': 'mrover/DriveVelData'},
+        {'topic': '/drive_state_data', 'type': 'mrover/DriveStateData'},
+        {'topic': '/ik_reset', 'type': 'mrover/Signal'},
+        {'topic': '/ra_b_calib_data', 'type': 'mrover/Calibrate'},
+        {'topic': '/sa_b_calib_data', 'type': 'mrover/Calibrate'}
+]
 
 export default {
   name: 'RATask',
   data () {
     return {
+      
       lcm_: null,
+      //created to hold topic paths, from dict from above
+      topicSubscriptions : {},
 
       odom: {
         latitude_deg: 38,
-        latitude_min: 24.38226,
+        //latitude_min: 24.38226,
         longitude_deg: -110,
-        longitude_min: -47.51724,
+        //longitude_min: -47.51724,
         bearing_deg: 0,
         speed: 0
       },
-
+      //DELETE
       connections: {
         websocket: false,
-        lcm: false
+        lcm: false,
+        ros: false
       },
 
       nav_status: {
@@ -94,7 +117,8 @@ export default {
       }
     }
   },
-
+  //#region Not Sure, probably don't need
+  
   methods: {
     publish: function (channel, payload) {
       this.lcm_.publish(channel, payload)
@@ -107,14 +131,44 @@ export default {
       this.lcm_.subscribe(channel, callbackFn)
     }
   },
-
+  //#endregion
   computed: {
     ...mapGetters('controls', {
       controlMode: 'controlMode'
     }),
   },
-
+  
   created: function () {
+    //prototype ROS, mimicing LCM idea
+    //Functions the same as LCM at bottom, subscribing to each topic from-
+    //Subscriptions dictoinary declared above
+    for(i = 0; i < Subscriptions.length; ++i)
+    {
+      //topicSubscriptions, in data, Sub[i]['topic'] = topic of dict
+      this.topicSubscriptions[Subscriptions[i]['topic']] = new ROSLIB.topic({
+        ros : this.$ros,
+        name : Subscriptions[i]['topic'],
+        messageType : Subscriptions[i]['type'],
+      });
+    }
+
+    this.topicSubscriptions['/gpx/fix'].subscribe((msg)=>{
+      this.odom.latitude_deg = msg.latitude_deg
+      this.odom.longitude_deg = msg.longitude_deg
+    });
+
+    this.topicSubscriptions['/imu/data'].subscribe((msg)=>{
+      // Callback for IMU quaternion that describes bearing
+      let quaternion = msg.orientation
+      quaternion = [quaternion.w, quaternion.x, quaternion.y, quaternion.z]
+      //Quaternion to euler angles
+      let euler = qte(quaternion)
+      // euler[2] == euler z component
+      this.odom.bearing_deg = euler[2] * (180/Math.PI)
+    });
+    
+    //DELETE
+    //#region OLD LCM CODE
     this.lcm_ = new LCMBridge(
       'ws://localhost:8001',
       // Update WebSocket connection state
@@ -146,6 +200,8 @@ export default {
         {'topic': '/sa_b_calib_data', 'type': 'Calibrate'}
       ]
     )
+    //#endregion
+    
   },
 
   components: {
@@ -155,7 +211,7 @@ export default {
     ArmControls,
     DriveControls,
     OdometryReading,
-    IKControls,
+    //IKControls,
     //PDBFuse,
     //DriveVelDataV,
     ERDWaypointEditor,
