@@ -3,6 +3,7 @@
 #include "ControllerMap.h"          // for ControllerMap
 #include <ros/ros.h>                // for ros
 #include <sensor_msgs/JointState.h> // for JointState
+#include <mrover/GimbalCmd.h>       // for GimbalCmd
 #include <unordered_map>            // for unordered_map
 #include <vector>                   // for vector
 
@@ -41,6 +42,9 @@ private:
     inline static ros::Subscriber openLoopSubscriberRAGripper;
     inline static ros::Subscriber openLoopSubscriberRAFinger;
 
+    inline static ros::Subscriber openLoopSubscriberMastUpDown;
+    inline static ros::Subscriber openLoopSubscriberMastLeftRight;
+
     inline static ros::Publisher jointDataPublisherJointA;
     inline static ros::Publisher jointDataPublisherJointB;
     inline static ros::Publisher jointDataPublisherJointC;
@@ -57,6 +61,11 @@ private:
     static void moveJointOpenLoopCommand(
             const sensor_msgs::JointState::ConstPtr& state,
             const std::string& name);
+
+    // REQUIRES: nothing
+    // MODIFIES: nothing
+    // EFFECTS: Moves a gimbal.
+    static void moveGimbal(const mrover::GimbalCmd::ConstPtr& msg);
 
 public:
     // REQUIRES: rosNode is a pointer to the created node.

@@ -78,6 +78,18 @@ brushed_motors:
       nucleo: 1
       channel: 2
       inversion: 1.0
+    - name: "mast_up_down"
+      driver_voltage: 12.0
+      motor_max_voltage: 12.0
+      nucleo: 3
+      channel: 3
+      inversion: -1.0
+    - name: "mast_left_right"
+      driver_voltage: 12.0
+      motor_max_voltage: 12.0
+      nucleo: 2
+      channel: 3
+      inversion: 1.0
   i2c_device_file: "/dev/i2c-1"
   test: false
 
