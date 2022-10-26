@@ -1,11 +1,13 @@
 #include "se3.hpp"
 
+#include <utility>
+
 /**
  *
  * @param position
  * @param rotation
  */
-SE3::SE3(Eigen::Vector3d const& position, Eigen::Quaterniond const& rotation) : position(position), rotation(rotation) {
+SE3::SE3(Eigen::Vector3d position, Eigen::Quaterniond const& rotation) : position(std::move(position)), rotation(rotation) {
 }
 
 /**
@@ -26,6 +28,7 @@ SE3 SE3::applyLeft(SE3 const& transform) {
  * @return
  */
 SE3 SE3::applyRight([[maybe_unused]] SE3 const& transform) {
+    (void) this;
     throw std::logic_error("Not implemented yet!");
 }
 

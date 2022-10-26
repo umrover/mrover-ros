@@ -50,6 +50,8 @@
 #include <ros/advertise_options.h>
 #include <ros/callback_queue.h>
 
+#include <gazebo/common/UpdateInfo.hh>
+
 namespace gazebo {
 
     class DiffDrivePlugin6W : public ModelPlugin {
@@ -64,7 +66,7 @@ namespace gazebo {
 
         void Reset() override;
 
-        virtual void update();
+        virtual void update(common::UpdateInfo const& updateInfo);
 
     private:
         void publishOdometry();

@@ -5,7 +5,7 @@ import sys
 from pathlib import Path
 from typing import List
 
-BASE_APT_DEPS = ["curl", "vim", "zsh", "git", "git-lfs", "python3-pip", "clang-format-12", "clangd-12", "nodejs", "yarn"]
+BASE_APT_DEPS = ["curl", "vim", "zsh", "git", "git-lfs", "python3-pip", "clang-format-12", "clang-tidy-12", "nodejs", "yarn"]
 ROS_APT_DEPS = ["ros-noetic-desktop", "python3-catkin-tools", "python3-rosdep"]
 
 MROVER_ROS_GIT_URL = "https://github.com/umrover/mrover-ros.git"
