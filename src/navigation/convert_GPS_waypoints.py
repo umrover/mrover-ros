@@ -2,6 +2,7 @@
 
 import numpy as np
 import rospy
+import pymap3d
 
 from mrover.msg import EnableAuton,  Waypoint, GPSWaypoint
 from util.course_service import CourseService
@@ -34,10 +35,12 @@ class Converter:
 
         # Create odom position based on GPS latitude and longitude
         base = np.array([42.2, -83.7, 0.0]) # Our base/reference is in latitude, longitude, altitude coordinates (degrees)
-        x = EARTH_RADIUS * np.radians(waypoint.latitude_degrees - base[0])
-        y = EARTH_RADIUS * np.radians(waypoint.longitude_degrees - base[1])
-        z = base[2]
-        odom = np.array([x, y, z])
+        odom = np.array(pymap3d.geodetic2enu(waypoint.latitude_degrees, waypoint.longitude_degrees, base[2], base[0], base[1]))
+
+        # x = EARTH_RADIUS * np.radians(waypoint.latitude_degrees - base[0])
+        # y = EARTH_RADIUS * np.radians(waypoint.longitude_degrees - base[1])
+        # z = base[2]
+        # odom = np.array([x, y, z])
         return (Waypoint(fiducial_id=0, tf_id=f"course{waypoint.id}"), SE3(position=odom))
 
     def read_data(self, data: EnableAuton):
