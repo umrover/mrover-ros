@@ -67,7 +67,7 @@ void Controller::moveClosedLoop(float targetAngle) {
 
     } catch (IOFailure& e) {
         ROS_ERROR("moveClosedLoop failed on %s\n", name.c_str());
-        ROS_ERROR(e.what());
+        ROS_ERROR("%s", e.what());
     }
 }
 
@@ -100,7 +100,7 @@ void Controller::moveOpenLoop(float input) {
         currentAngle = (float) ((((float) angle / quadCPR) * 2 * M_PI) - M_PI);
     } catch (IOFailure& e) {
         ROS_ERROR("moveOpenLoop failed on %s\n", name.c_str());
-        ROS_ERROR(e.what());
+        ROS_ERROR("%s", e.what());
     }
 }
 
@@ -121,7 +121,7 @@ void Controller::refreshCurrentAngle() {
         currentAngle = (float) ((((float) raw_angle / quadCPR) * 2.0f * M_PI) - M_PI);
     } catch (IOFailure& e) {
         ROS_ERROR("getCurrentAngle failed on %s\n", name.c_str());
-        ROS_ERROR(e.what());
+        ROS_ERROR("%s", e.what());
     }
 }
 
@@ -138,7 +138,7 @@ void Controller::zeroAngle() {
         currentAngle = 0.0f;
     } catch (IOFailure& e) {
         ROS_ERROR("zeroAngle failed on %s\n", name.c_str());
-        ROS_ERROR(e.what());
+        ROS_ERROR("%s", e.what());
     }
 }
 
@@ -190,7 +190,7 @@ void Controller::makeLive() {
 
     } catch (IOFailure& e) {
         ROS_ERROR("makeLive failed on %s\n", name.c_str());
-        ROS_ERROR(e.what());
+        ROS_ERROR("%s", e.what());
         throw IOFailure();
     }
 }
