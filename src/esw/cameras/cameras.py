@@ -3,7 +3,7 @@
 import sys
 
 from mrover.msg import CameraCmd
-from typing import List
+from typing import List, Any
 
 import rospy
 from mrover.srv import (
@@ -17,35 +17,58 @@ sys.path.insert(0, "/usr/lib/python3.8/dist-packages")  # 3.6 vs 3.8
 import jetson.utils  # noqa
 
 
-class PipelineManager:
+class LaptopService:
+
+    camera_commands: List[CameraCmd]
+    endpoints: List[str]
+    video_outputs: List[jetson.utils.videoOutput]
+
+    def __init__(self, endpoints: List[str]) -> None:
+        self.camera_commands = [CameraCmd(-1, 0)] * 4
+        self.endpoints = endpoints
+        self.video_outputs = [jetson.utils.videoOutput] * 4
+
+    def create_video_output(self, stream: int, args: List[str]) -> None:
+        try:
+            self.video_outputs[stream] = jetson.utils.videoOutput(f"rtp://{self.endpoints[stream]}", argv=args)
+        except Exception:
+            rospy.logerror(f"Update video output failed on endpoint {self.endpoints[stream]}.")
+
+
+class StreamingManager:
+
+    _services: List[LaptopService]
+    _resolution_args: List[List[str]]
+    _video_sources: List[jetson.utils.videoSource]
+
     def __init__(self) -> None:
+
         self._video_sources = [None] * rospy.get_param("cameras/max_video_device_id_number")
-        self._primary_pipelines = [CameraCmd(-1, 0)] * 4
-        self._secondary_pipelines = [CameraCmd(-1, 0)] * 4
-        self._resolution_args = [
-            rospy.get_param("cameras/arguments/144_res"),
-            rospy.get_param("cameras/arguments/360_res"),
-            rospy.get_param("cameras/arguments/720_res"),
-        ]
-        self._primary_endpoints = [
+        _primary_endpoints = [
             rospy.get_param("cameras/endpoints/primary_0"),
             rospy.get_param("cameras/endpoints/primary_1"),
             rospy.get_param("cameras/endpoints/primary_2"),
             rospy.get_param("cameras/endpoints/primary_3"),
         ]
-        self._secondary_endpoints = [
+        _secondary_endpoints = [
             rospy.get_param("cameras/endpoints/secondary_0"),
             rospy.get_param("cameras/endpoints/secondary_1"),
             rospy.get_param("cameras/endpoints/secondary_2"),
             rospy.get_param("cameras/endpoints/secondary_3"),
         ]
-        self._primary_video_outputs = [None] * 4
-        self._secondary_video_outputs = [None] * 4
+        self._services = [LaptopService(_primary_endpoints), LaptopService(_secondary_endpoints)]
+        self._resolution_args = [
+            rospy.get_param("cameras/arguments/144_res"),
+            rospy.get_param("cameras/arguments/360_res"),
+            rospy.get_param("cameras/arguments/720_res"),
+        ]
 
     def handle_change_cameras(self, req: ChangeCamerasRequest) -> ChangeCamerasResponse:
-        camera_cmds = req.cameras
+        camera_commands = req.cameras
 
-        for stream, camera_cmd in enumerate(camera_cmds):
+        service = self._services[0] if req.primary else self._services[1]
+
+        for stream, camera_cmd in enumerate(camera_commands):
             device = camera_cmd.device
             resolution = camera_cmd.resolution
             if device != -1:
@@ -55,109 +78,66 @@ class PipelineManager:
                     pass
                 else:
                     # Attempt to create video source if possible
-                    camera_cmds[stream].device = self._create_video_source(device, resolution_args)
-                self._primary_video_outputs = self._create_video_output(req.primary, stream, resolution_args)
+                    camera_commands[stream].device = self._create_video_source(device, resolution_args)
+                service.create_video_output(stream, resolution_args)
             elif device == -1:
                 # If others are using, then do not do anything
-                if device in self._primary_pipelines or device in self._secondary_pipelines:
+                if (
+                    device in self._services[0].camera_commands.device
+                    or device in self._services[1].camera_commands.device
+                ):
                     pass
                 else:
-                    self._video_sources = None
+                    self._video_sources[device] = None
 
         if req.primary:
-            self._primary_pipelines = camera_cmds
+            self._services[0].camera_commands = camera_commands
         else:
-            self._secondary_pipelines = camera_cmds
+            self._services[1].camera_commands = camera_commands
 
-        return ChangeCamerasResponse(self._primary_pipelines, self._secondary_pipelines)
+        return ChangeCamerasResponse(self._services[0].camera_commands, self._services[1].camera_commands)
 
-    def update_all_pipe_streams(self) -> None:
-        for stream, camera_cmd in enumerate(self._primary_pipelines):
-            device = camera_cmd.device
-            success = True
-            if device != -1:
-                try:
-                    image = self._video_sources[device].Capture()
-                    self._primary_video_outputs[stream].Render(image)
-                except Exception:
-                    success = False
-            if not success:
-                rospy.logerror(
-                    f"Camera {device} capture \
-                    on {self._primary_endpoints[stream]} \
-                    failed. Stopping stream."
-                )
-                self._stop_all_from_using_device(device)
-        for stream, camera_cmd in enumerate(self._secondary_pipelines):
-            device = camera_cmd.device
-            success = True
-            if device != -1:
-                try:
-                    image = self._video_sources[device].Capture()
-                    self._primary_video_outputs[stream].Render(image)
-                except Exception:
-                    success = False
-            if not success:
-                rospy.logerror(
-                    f"Camera {device} capture \
-                    on {self._secondary_endpoints[stream]} \
-                    failed. Stopping stream."
-                )
-                self._stop_all_from_using_device(device)
+    def update_all_streams(self) -> None:
+        for service in self._services:
+            for stream, camera_cmd in enumerate(service.camera_commands):
+                device = camera_cmd.device
+                if device != -1:
+                    success = True
+                    try:
+                        image = self._video_sources[device].Capture()
+                        service.video_outputs[stream].Render(image)
+                    except Exception:
+                        success = False
+                    if not success:
+                        rospy.logerror(
+                            f"Camera {device} capture on {service.endpoints[stream]} failed. Stopping stream."
+                        )
+                        self._stop_all_from_using_device(device)
 
     def _stop_all_from_using_device(self, device: int) -> None:
         self._video_sources[device] = None
-        for stream, camera_cmd in self._primary_pipelines:
-            if camera_cmd.device == device:
-                self._primary_pipelines[stream].device = -1
-                self._primary_video_outputs[stream] = None
-        for stream, camera_cmd in self._secondary_pipelines:
-            if camera_cmd.device == device:
-                self._secondary_pipelines[stream].device = -1
-                self._secondary_video_outputs[stream] = None
-
-    def _create_video_output(self, is_primary: bool, stream: int, args: List[str]) -> int:
-        try:
-            assert len(self.video_info.endpoint), "self.video_info.endpoint should not be empty"
-            assert len(self.video_info.arguments), "self.video_info.arguments should not be empty"
-            if is_primary:
-                self._primary_video_outputs[stream] = jetson.utils.videoOutput(
-                    f"rtp://{self._primary_endpoints[stream]}", argv=args
-                )
-            else:
-                self._secondary_video_outputs[stream] = jetson.utils.videoOutput(
-                    f"rtp://{self._secondary_endpoints[stream]}", argv=args
-                )
-        except Exception:
-            if is_primary:
-                rospy.logerror(
-                    f"Update video output failed on endpoint \
-                    {self._primary_endpoints[stream]}."
-                )
-            else:
-                rospy.logerror(
-                    f"Update video output failed on endpoint \
-                    {self._secondary_endpoints[stream]}."
-                )
+        for service in services:
+            for stream, camera_cmd in service.camera_commands:
+                if camera_cmd.device == device:
+                    service.camera_commands[stream].device = -1
+                    service.video_outputs[stream] = None
 
     def _create_video_source(self, device: int, args: List[str]) -> int:
         # return device number if successfully created, otherwise return -1
         try:
             self._video_sources[device] = jetson.utils.videoSource(f"/dev/video{device}", argv=args)
         except Exception:
-            rospy.logerror(
-                f"Failed to create video source for device \
-                {device}."
-            )
-            return
+            rospy.logerror(f"Failed to create video source for device {device}.")
+            return -1
+        return device
 
 
 def main():
     rospy.init_node("cameras")
-    pipeline_manager = PipelineManager()
-    rospy.Service("change_cameras", ChangeCameras, pipeline_manager.handle_change_cameras)
+    streaming_manager = StreamingManager()
+    rospy.Service("change_cameras", ChangeCameras, streaming_manager.handle_change_cameras)
     while not rospy.is_shutdown():
-        pipeline_manager.update_all_pipe_streams()
+        streaming_manager.update_all_streams()
 
 
 if __name__ == "__main__":
