@@ -17,13 +17,16 @@ class TopicServices:
         # Return output from bash terminal as array of strings of each line out ouput
         process = subprocess.Popen(command, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
         output = []
-        while process.stdout.readable():
-            line = process.stdout.readline().decode("utf-8").strip()
-            if line:
-                output.append(line)
-            else:
-                break
-        return output
+        if process.stdout is not None:
+            while process.stdout.readable():
+                line = process.stdout.readline().decode("utf-8").strip()
+                if line:
+                    output.append(line)
+                else:
+                    break
+            return output
+        else:
+            return ["Error"]
 
     def fetch_packages_service(self, req: FetchPackagesRequest) -> FetchPackagesResponse:
         packages = self.get_bash_output(["rosmsg", "packages"])
