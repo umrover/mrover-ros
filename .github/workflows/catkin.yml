@@ -19,6 +19,6 @@ jobs:
       - name: Initialize catkin workspace
         run: . /opt/ros/noetic/setup.sh && catkin init
       - name: Build
-        run: . /opt/ros/noetic/setup.sh && catkin build --interleave-output --cmake-args -DCMAKE_BUILD_TYPE=Release
+        run: . /opt/ros/noetic/setup.sh && catkin build --interleave-output --cmake-args -DCMAKE_BUILD_TYPE=Release -DCMAKE_CXX_CLANG_TIDY=clang-tidy-12
       - name: Test
         run: . /opt/ros/noetic/setup.sh && . $GITHUB_WORKSPACE/devel/setup.sh && catkin test -j1

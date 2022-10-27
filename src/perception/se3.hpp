@@ -36,7 +36,7 @@ public:
 
     SE3() = default;
 
-    SE3(Eigen::Vector3d const& position, Eigen::Quaterniond const& rotation);
+    SE3(Eigen::Vector3d position, Eigen::Quaterniond const& rotation);
 
     [[nodiscard]] SE3 applyLeft(SE3 const& transform);
 
@@ -48,5 +48,5 @@ public:
 
     [[nodiscard]] Eigen::Matrix4d rotationMatrix() const;
 
-    [[nodiscard]] double distanceTo(SE3 const& transform);
+    [[nodiscard]] double distanceTo(SE3 const& other);
 };

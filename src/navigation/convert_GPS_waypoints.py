@@ -41,7 +41,7 @@ class Converter:
         # y = EARTH_RADIUS * np.radians(waypoint.longitude_degrees - base[1])
         # z = base[2]
         # odom = np.array([x, y, z])
-        return (Waypoint(fiducial_id=0, tf_id=f"course{waypoint.id}"), SE3(position=odom))
+        return (Waypoint(fiducial_id=0, tf_id=f"course{waypoint.id}", waypoint.type), SE3(position=odom))
 
     def read_data(self, data: EnableAuton):
         # If auton is enabled, publish the waypoints to the course

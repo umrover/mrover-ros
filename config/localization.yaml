@@ -71,6 +71,8 @@ ekf_odom:
                                 0,    0,    0,    0,    0,    0,    0,    0,    0,    0,     0,     0,     0,    0,    1.0]
 
 navsat_transform:
+  # reference latitude/longitude to linearize from
+  datum: [42.2, -83.7, 0.0, map, base_link]
   frequency: 60
   delay: 3.0
   magnetic_declination_radians: 0.0

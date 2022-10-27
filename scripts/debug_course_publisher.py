@@ -3,7 +3,7 @@
 import numpy as np
 
 import rospy
-from mrover.msg import Waypoint
+from mrover.msg import Waypoint, WaypointType
 from util.SE3 import SE3
 from util.course_service import CourseService
 
@@ -18,7 +18,13 @@ if __name__ == "__main__":
     publish_course = CourseService()
 
     waypoints = [
-        (Waypoint(fiducial_id=0, tf_id="course0"), SE3(position=np.array([3, 3, 0]))),
+        # ("course1", -2, -6, 0),
+        # ("course1", -3, -3, -1),
+        # ("course2", -5, -5, 0)
+        (
+            Waypoint(fiducial_id=0, tf_id="course0", type=WaypointType(val=WaypointType.POST)),
+            SE3(position=np.array([-3, -6, 0])),
+        ),
         # (Waypoint(fiducial_id=0, tf_id="course1"), SE3(position=np.array([-3, -3, -1]))),
         # (Waypoint(fiducial_id=0, tf_id="course2"), SE3(position=np.array([-5, -5, 0]))),
     ]
