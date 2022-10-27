@@ -1,7 +1,5 @@
 #!/usr/bin/env python3
 
-import sys
-
 from mrover.msg import CameraCmd
 from typing import List, Any
 
@@ -12,9 +10,7 @@ from mrover.srv import (
     ChangeCamerasResponse,
 )
 
-sys.path.insert(0, "/usr/lib/python3.8/dist-packages")  # 3.6 vs 3.8
-
-import jetson.utils  # noqa
+import jetson.utils
 
 
 class LaptopService:
@@ -82,12 +78,15 @@ class StreamingManager:
                 service.create_video_output(stream, resolution_args)
             elif device == -1:
                 # If others are using, then do not do anything
-                if (
-                    device in self._services[0].camera_commands.device
-                    or device in self._services[1].camera_commands.device
-                ):
-                    pass
-                else:
+                others_are_using = False
+                for service in self._services:
+                    if others_are_using:
+                        break
+                    for camera_cmd in service.camera_commands:
+                        if camera_cmd.device == device:
+                            others_are_using = True
+                            break
+                if not others_are_using:
                     self._video_sources[device] = None
 
         if req.primary:
@@ -116,7 +115,7 @@ class StreamingManager:
 
     def _stop_all_from_using_device(self, device: int) -> None:
         self._video_sources[device] = None
-        for service in services:
+        for service in self._services:
             for stream, camera_cmd in service.camera_commands:
                 if camera_cmd.device == device:
                     service.camera_commands[stream].device = -1
