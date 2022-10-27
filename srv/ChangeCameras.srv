@@ -1,3 +1,5 @@
-int8[4] cameras
+bool primary # true if requesting streams for primary laptop
+CameraCmd[4] camera_cmds
 ---
-int8[4] cameras
+CameraCmd[4] primary_cameras
+CameraCmd[4] secondary_cameras

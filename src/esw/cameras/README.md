@@ -95,11 +95,6 @@ for any given mission.
 
 ## Services - Server
 
-#### Change Camera Mission
-Service: [`ChangeCameraMission.srv`](../../../srv/ChangeCameraMission.srv) "change_camera_mission" \
-Server: cameras \
-Client: gui \
-
 #### Change Cameras
 Service: [`ChangeCameras.srv`](../../../srv/ChangeCameras.srv) "change_cameras" \
 Server: cameras \
@@ -176,8 +171,6 @@ Actual behavior: The program freezes (presumably on the Capture function).
 - Does not crash when camera is unplugged while streaming.
 - Properly changes cameras upon ChangeCameras service request.
 - Properly sends ChangeCameras service response.
-- Properly changes camera mission upon ChangeCameraMission service request.
-- Properly sends ChangeCameraMission service response.
 - Changing mission allows one to modify IPs and resolutions.
 - Can configure IPs used per mission.
 - Can configure resolutions used per mission.

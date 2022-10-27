@@ -22,6 +22,7 @@ set(MROVER_LINK_DIRS "")
 # message files
 set(MROVER_MESSAGE_FILES
         CalibrationStatus.msg
+        CameraCmd.msg
         Chassis.msg
         Course.msg
         EnableAuton.msg
@@ -33,7 +34,6 @@ set(MROVER_MESSAGE_FILES
 
 # service files
 set(MROVER_SERVICE_FILES
-        ChangeCameraMission.srv
         ChangeCameras.srv
         PublishCourse.srv
         )
