@@ -1,2 +1,2 @@
-bool enable
 GPSWaypoint[] waypoints
+bool enable
