@@ -6,9 +6,12 @@ import sensor_msgs
 from datetime import datetime
 from util.SE3 import SE3
 from util.SO3 import SO3
+from threading import Lock
 
-class Data_collection:
+class Data:
+    #Default constructor for each data object
     def __init__(self):
+        self.mutex = Lock()
         self.wheel_vel= np.array([0,0,0,0,0,0]) # m/s
         self.effort = np.array([0,0,0,0,0,0]) # Nm
         self.wheel_names = np.array(["", "", "", "", "", ""]) # FrontLeft, FrontRight, MiddleLeft, MiddleRight, BackLeft, BackRight 
@@ -19,75 +22,75 @@ class Data_collection:
         self.timestamp = 0.0
         self.curr_position = np.ndarray([0,0,0])
         self.curr_rotation = SO3()
-        #self.stuck = False
 
-    def update_wheel_vel(self, data):
-        self.wheel_vel = np.array([data.velocity[0], data.velocity[1], data.velocity[2],
-                                    data.velocity[3], data.velocity[4], data.velocity[5]])
+    # Uses data published by ESW to figure out wheel names, current wheel velocity, and effort
+    #when one paramter is passed (i.e., len(args) == 1) we have received ESW data from the subscriber
+    #If there is no ESW data received and we are calling from make_cmd_vel_obj() then we just pass 3 arguments:
+    #These are the wheel_vel, effort, and wheel_names from the previous data object in the list
+    def set_esw_data(self, *args):
+        with self.mutex:
+            if len(args) == 1:
+                self.wheel_names = np.array([args[0].name[:5]])
+                self.effort = np.array([args[0].effort[:5]])
+                self.wheel_vel = np.array([args[0].velocity[:5]])
+            else:
+                self.wheel_vel = args[0]
+                self.effort = args[1]
+                self.wheel_names = args[2]
 
-    def update_current_effort(self, data):
-        self.effort = np.array([data.effort[0], data.effort[1], data.effort[2],
-                                    data.effort[3], data.effort[4], data.effort[5]])
-
-    def update_wheel_names(self, data):
-        self.wheel_names = np.array([data.name[0], data.name[1], data.name[2],
-                                    data.name[3], data.name[4], data.name[5]])
-    
     # This function is called in drive.py. We are then send the commanded velocity
-    #TODO: if not called from outside functions, maintain previous values
-    def update_commanded_vel(self, cmd_vel):
-        self.commanded_linear_vel = cmd_vel.linear.x
-        self.commanded_angular_vel = cmd_vel.angular.z
+    #If there is one argument passed, we are calling from drive.py (i.e. we received new commanded velocity data)
+    #If there are two arguments passed, we are calling when we get new ESW data and the arguments passed are just
+    #The commanded linear and commanded angular velocities from the the previous data object in the list
+    def update_commanded_vel(self, *args):
+        with self.mutex:
+            if(len(args) == 1):
+                self.commanded_linear_vel = args[0].linear.x
+                self.commanded_angular_vel = args[0].angular.z
+            else:
+                self.commanded_linear_vel = args[0]
+                self.commanded_angular_vel = args[1]
 
-    def update_tf_vel(self, prev, greaterThanZero):
-        # Query the tf tree to get odometry. Calculate the linear and angular velocities with this data
-        self.curr_position = Rover.get_pose().position
-        self.curr_rotation = Rover.get_pose().rotation
-        self.timestamp = datetime.now().time()
-        #if there is a previous entry in array calculate linear and angular velocity
-        if greaterThanZero:
+     # Query the tf tree to get odometry. Calculate the linear and angular velocities with this data
+     #We will only call this when the object list is not empty. When the list is empty the initial actual
+     # linear and angular velocities will be their default values set to zero. 
+    def update_tf_vel(self, prev):
+        with self.mutex:
+            self.curr_position = Rover.get_pose().position
+            self.curr_rotation = Rover.get_pose().rotation
+            self.timestamp = datetime.now().time()
             self.actual_linear_vel = (self.curr_position - prev.curr_postion) / (self.timestamp - prev.timestamp)
             self.actual_angular_vel = self.curr_rotation.rot_distance_to(prev.curr_rotation) / (self.timestamp - prev.timestamp)
-    
-    # Uses data published by ESW to figure out wheel names, current wheel velocity, and effort
-    #to get ESW data
-    #TODO: if not called from outside functions, maintain previous values
-    #TODO: figure out if Subscriber is a "listener"/continuous or one time 
-    def init_subscribers(self):
-        # rospy.init_node("listener", anonymous=True)
-        rospy.Subscriber("/drive_vel_data", JointState, self.update_wheel_vel)
-        rospy.Subscriber("/drive_vel_data", JointState, self.update_current_effort)
-        rospy.Subscriber("/drive_vel_data", JointState, self.update_wheel_names)
 
+
+#The data collector will only create new data objects when there is new ESW data published or there is 
+#a commanded velocity from drive.py
 class DataCollector:
     def __init__(self):
-        self.states = [] # array holding Data_collection type objects
+        self.data_objs = [] # array holding Data_collection type objects
         self.collecting = False
+        rospy.Subscriber("/drive_vel_data", JointState, self.make_esw_data_obj)
+        rospy.Subscriber("/drive_vel_data", JointState, self.make_esw_data_obj)
+        rospy.Subscriber("/drive_vel_data", JointState, self.make_esw_data_obj)
+
+    #This function will only be called/invoked when we receive new esw data
+    def make_esw_data_obj(self, esw_data):
+        d = Data()
+        if len(self.data_objs) > 0:
+            d.update_commanded_vel(self.data_objs[-1].commanded_linear_vel, self.data_objs[-1].commanded_angular_vel)
+            d.update_tf_vel(self.data_objs[-1])
+        d.set_esw_data(esw_data)
+        self.data_objs.append(d)
     
-    def make_data_obj(self, prev: Data_collection):
-        d = Data_collection()
-        d.get_wheel_data()
-        d.update_commanded_vel()
-        #greaterThanZero = True if len(self.states) > 0 else False
-        d.update_tf_vel(prev, True if len(self.states) > 0 else False)
-        self.states.append(d)
-        
-    def update(self):
-        self.make_data_obj(self.states[-1])
-        # Everything below don't need
-        # state = Data_collection()
-        # state.update_current_vel()
-        # state.update_current_effort()
-        # state.update_state_machine_name()
-        # state.update_current_linear_vel()
-        # state.update_current_angular_vel()
-        # state.update_wheel_names()
-        # state.update_tf_vel()
-        # self.states.append(state)
+    #This function will only be called/invoked when there is a commanded velocity
+    def make_cmd_vel_obj(self, cmd_vel):
+        d = Data()
+        if len(self.data_objs) > 0:
+            d.set_esw_data(self.data_objs[-1].wheel_vel, self.data_objs[-1].effort, self.data_objs[-1].wheel_names)
+            d.update_tf_vel(self.data_objs[-1]) 
+        d.update_commanded_vel(cmd_vel)
+        self.data_objs.append(d)
 
-    def start_collection(self):
+    #Output to the csv file using pandas. I did not write this as I am not familiar with pandas
+    def output_to_file(self):
         pass
-        # while self.collecting
-        # every 10 seconds ???
-        # make_data_obj
-

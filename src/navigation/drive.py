@@ -3,6 +3,7 @@ from typing import Tuple
 import numpy as np
 
 from geometry_msgs.msg import Twist
+from navigation.data_collection import DataCollector
 from util.SE3 import SE3
 from data_collection import Data_collection
 
@@ -42,7 +43,7 @@ def get_dri ve_command(
 
     if target_dist < completion_thresh:
         #getting commanded velocity into the data collection
-        Data_collection.update_commanded_vel(Twist())
+        DataCollector.make_cmd_vel_obj(Twist())
         return Twist(), True
 
     cmd_vel = Twist()
@@ -58,5 +59,5 @@ def get_dri ve_command(
     error = 1.0 - alignment
     cmd_vel.angular.z = np.clip(error * TURNING_P * sign, MIN_DRIVING_EFFORT, MAX_DRIVING_EFFORT)
     #getting commanded velocity into the data collection
-    Data_collection.update_commanded_vel(cmd_vel)
+    DataCollector.make_cmd_vel_obj(cmd_vel)
     return cmd_vel, False
