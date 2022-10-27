@@ -78,6 +78,7 @@
         <xacro:link-visual fileName="b-c.stl" x="0" y="0" z="0" col="yellow" r="1" g="1" b="0" roll="0"/>
         <xacro:link-collision-box y="12" lx="3" ly="24" lz="3" />
         <xacro:link-collision-cylinder radius="1" x1="0" y1="23" z1="0" x2="5" y2="23" z2="0" />
+        <xacro:link-collision-cylinder radius="1" x1="0" y1="0" z1="3.75" x2="0" y2="17" z2="3.75" roll="-0.3"/>
     </link>
     <link name="c-d">
         <xacro:link-visual fileName="c-d-blender.stl" x="0" y="0" z="0" col="green" r="0.43" g="1" b="0"/>

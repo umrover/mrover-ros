@@ -6,6 +6,7 @@ Panels:
       Expanded:
         - /Global Options1
         - /Status1
+        - /RobotModel1
         - /MotionPlanning1/Scene Geometry1
         - /MotionPlanning1/Scene Robot1
       Splitter Ratio: 0.5
@@ -265,9 +266,9 @@ Visualization Manager:
       Invert Z Axis: false
       Name: Current View
       Near Clip Distance: 0.009999999776482582
-      Pitch: 0.4047972857952118
+      Pitch: 0.40479719638824463
       Target Frame: <Fixed Frame>
-      Yaw: 2.3586318492889404
+      Yaw: 2.3436620235443115
     Saved: ~
 Window Geometry:
   Displays:
