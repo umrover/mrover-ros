@@ -28,7 +28,7 @@ class LaptopService:
         try:
             self.video_outputs[stream] = jetson.utils.videoOutput(f"rtp://{self.endpoints[stream]}", argv=args)
         except Exception:
-            rospy.logerror(f"Update video output failed on endpoint {self.endpoints[stream]}.")
+            rospy.logerr(f"Update video output failed on endpoint {self.endpoints[stream]}.")
 
 
 class StreamingManager:
@@ -60,7 +60,10 @@ class StreamingManager:
         ]
 
     def handle_change_cameras(self, req: ChangeCamerasRequest) -> ChangeCamerasResponse:
+<<<<<<< HEAD
 
+=======
+>>>>>>> 208d2093a359c29f08c8ce775c14cbafb916713f
         camera_commands = req.camera_cmds
 
         service = self._services[0] if req.primary else self._services[1]
@@ -106,7 +109,7 @@ class StreamingManager:
                     except Exception:
                         success = False
                     if not success:
-                        rospy.logerror(
+                        rospy.logerr(
                             f"Camera {device} capture on {service.endpoints[stream]} failed. Stopping stream."
                         )
                         self._stop_all_from_using_device(device)
@@ -114,7 +117,7 @@ class StreamingManager:
     def _stop_all_from_using_device(self, device: int) -> None:
         self._video_sources[device] = None
         for service in self._services:
-            for stream, camera_cmd in service.camera_commands:
+            for stream, camera_cmd in enumerate(service.camera_commands):
                 if camera_cmd.device == device:
                     service.camera_commands[stream].device = -1
                     service.video_outputs[stream] = None
@@ -124,7 +127,7 @@ class StreamingManager:
         try:
             self._video_sources[device] = jetson.utils.videoSource(f"/dev/video{device}", argv=args)
         except Exception:
-            rospy.logerror(f"Failed to create video source for device {device}.")
+            rospy.logerr(f"Failed to create video source for device {device}.")
             return -1
         return device
 
