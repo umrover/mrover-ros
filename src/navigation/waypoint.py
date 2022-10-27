@@ -22,6 +22,7 @@ class WaypointStateTransitions(Enum):
     find_single_fiducial = "SingleFiducialState"
     go_to_gate = "GateTraverseState"
 
+
 class WaypointState(BaseState):
     def __init__(
         self,

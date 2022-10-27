@@ -57,6 +57,7 @@ class SearchStateTransitions(Enum):
     found_fiducial = "SingleFiducialState"
     found_gate = "GateTraverseState"
 
+
 class SearchState(BaseState):
     def __init__(
         self,
