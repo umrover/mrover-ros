@@ -60,10 +60,6 @@ class StreamingManager:
         ]
 
     def handle_change_cameras(self, req: ChangeCamerasRequest) -> ChangeCamerasResponse:
-<<<<<<< HEAD
-
-=======
->>>>>>> 208d2093a359c29f08c8ce775c14cbafb916713f
         camera_commands = req.camera_cmds
 
         service = self._services[0] if req.primary else self._services[1]
