@@ -60,7 +60,8 @@ class StreamingManager:
         ]
 
     def handle_change_cameras(self, req: ChangeCamerasRequest) -> ChangeCamerasResponse:
-        camera_commands = req.cameras
+
+        camera_commands = req.camera_cmds
 
         service = self._services[0] if req.primary else self._services[1]
 
@@ -82,17 +83,14 @@ class StreamingManager:
                 for service in self._services:
                     if others_are_using:
                         break
-                    for camera_cmd in service.camera_commands:
-                        if camera_cmd.device == device:
+                    for current_camera_cmd in service.camera_commands:
+                        if current_camera_cmd.device == device:
                             others_are_using = True
                             break
                 if not others_are_using:
                     self._video_sources[device] = None
 
-        if req.primary:
-            self._services[0].camera_commands = camera_commands
-        else:
-            self._services[1].camera_commands = camera_commands
+        self._services[int(req.primary)].camera_commands = camera_commands
 
         return ChangeCamerasResponse(self._services[0].camera_commands, self._services[1].camera_commands)
 
