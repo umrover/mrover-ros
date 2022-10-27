@@ -654,10 +654,10 @@ class Application(object):
         turn_difference_inner = turn * self._wheel_distance_inner
         turn_difference_outer = turn * self._wheel_distance_outer
 
-        left_rad_inner = (forward + turn_difference_inner) * self._wheels_m_s_to_motor_rad_ratio
-        right_rad_inner = (forward - turn_difference_inner) * self._wheels_m_s_to_motor_rad_ratio
-        left_rad_outer = (forward + turn_difference_outer) * self._wheels_m_s_to_motor_rad_ratio
-        right_rad_outer = (forward - turn_difference_outer) * self._wheels_m_s_to_motor_rad_ratio
+        left_rad_inner = (forward - turn_difference_inner) * self._wheels_m_s_to_motor_rad_ratio
+        right_rad_inner = (forward + turn_difference_inner) * self._wheels_m_s_to_motor_rad_ratio
+        left_rad_outer = (forward - turn_difference_outer) * self._wheels_m_s_to_motor_rad_ratio
+        right_rad_outer = (forward + turn_difference_outer) * self._wheels_m_s_to_motor_rad_ratio
 
         # Ignore inner since outer > inner always
         larger_abs_rad_s = max(abs(left_rad_outer), abs(right_rad_outer))
