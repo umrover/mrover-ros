@@ -14,7 +14,7 @@ from mrover.srv import (
 
 sys.path.insert(0, "/usr/lib/python3.8/dist-packages")  # 3.6 vs 3.8
 
-# import jetson.utils  # noqa
+import jetson.utils  # noqa
 
 
 class PipelineManager:
