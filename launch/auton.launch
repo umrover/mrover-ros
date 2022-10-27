@@ -1,0 +1,41 @@
+<!-- 
+  This launch file launches all of the nodes necessary for autonomous navigation.
+    
+    :arg run_perception: true/false value deciding whether or not to run perception as
+                         part of the auton system. Should only be used for testing.
+ -->
+<launch>
+  <arg name="run_perception" default="true" />
+
+  <!--
+    ==========
+    Perception
+    ==========
+  -->
+  <!-- node to detect AR tags and publish them to the TF tree -->
+  <node if="$(arg run_perception)" name="aruco_detect" pkg="mrover" type="aruco_detect" />
+
+  <!--
+    ===========
+    Navigation
+    ===========
+  -->
+  <!-- node to navigate to a series of waypoints, AR tags, and gates -->
+  <node name="nav" pkg="mrover" type="navigation.py" />
+
+  <!--
+    ============
+    Localization
+    ============
+  -->
+  <rosparam command="load" file="$(find mrover)/config/localization.yaml" />
+
+  <!-- Fuses together GPS position and IMU orientation with an Extended Kalman Filter (EKF) -->
+  <!-- Publishes a resulting tf entry between odom and base_link -->
+  <node pkg="robot_localization" type="ekf_localization_node" name="ekf_odom" clear_params="true">
+    <remap from="imu" to="imu/data"/>
+  </node>
+
+  <!-- Reads the GPS topic and convert it to cartesian based on a reference point-->
+  <node pkg="robot_localization" type="navsat_transform_node" name="navsat_transform" clear_params="true" />
+</launch>
