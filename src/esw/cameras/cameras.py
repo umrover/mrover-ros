@@ -100,7 +100,7 @@ class StreamingManager:
                 if device != -1:
                     success = True
                     try:
-                        image = self._video_sources[device].Capture()
+                        image = self._video_sources[device].Capture(timeout=15000)
                         service.video_outputs[stream].Render(image)
                     except Exception:
                         success = False
