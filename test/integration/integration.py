@@ -8,7 +8,7 @@ import numpy as np
 import rospy
 import rostest
 import tf2_ros
-from mrover.msg import Waypoint
+from mrover.msg import Waypoint, WaypointType
 from util.SE3 import SE3
 from util.course_service import CourseService
 
@@ -30,7 +30,10 @@ class TestIntegration(unittest.TestCase):
         waypoint_in_world = SE3(position=np.array([-5.5, -5.5, 0.0]))
         publish_course(
             [
-                (Waypoint(fiducial_id=0, tf_id="course0"), waypoint_in_world),
+                (
+                    Waypoint(fiducial_id=0, tf_id="course0", type=WaypointType(val=WaypointType.NO_SEARCH)),
+                    waypoint_in_world,
+                ),
             ]
         )
 
