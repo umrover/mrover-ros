@@ -39,7 +39,7 @@ export default {
 
         this.keyboard_pub = new ROSLIB.Topic({
             ros : this.$ros,
-            name : '/gimbal_control',
+            name : '/gimbal_cmd',
             messageType : 'mrover/GimbalCmd'
         });
     },
