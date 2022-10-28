@@ -4,6 +4,7 @@ from unicodedata import normalize
 from context import Gate
 
 import numpy as np
+import rospy
 
 from context import Context, Environment
 from state import BaseState
@@ -12,10 +13,10 @@ from dataclasses import dataclass
 from drive import get_drive_command
 from util.np_utils import normalized, perpendicular_2d
 
-STOP_THRESH = 0.2
-DRIVE_FWD_THRESH = 0.95
+STOP_THRESH = rospy.get_param("gate/stop_thresh", 0.2)
+DRIVE_FWD_THRESH = rospy.get_param("gate/drive_fwd_thresh", 0.95)
 
-APPROACH_DISTANCE = 2.0
+APPROACH_DISTANCE = rospy.get_param("gate/approach_distance", 2.0)
 
 
 @dataclass

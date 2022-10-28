@@ -1,15 +1,16 @@
 from typing import List
 
 import numpy as np
+import rospy
 
 import tf2_ros
 from context import Context, Environment
 from drive import get_drive_command
 from state import BaseState
 
-STOP_THRESH = 0.5
-DRIVE_FWD_THRESH = 0.95
-NO_FIDUCIAL = -1
+STOP_THRESH = rospy.get_param("waypoint/stop_thresh", 0.5)
+DRIVE_FWD_THRESH = rospy.get_param("waypoint/drive_fwd_thresh", 0.95)
+NO_FIDUCIAL = rospy.get_param("waypoint/no_fiducial", -1)
 
 
 class WaypointState(BaseState):

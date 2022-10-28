@@ -1,13 +1,14 @@
 from typing import Tuple
 
 import numpy as np
+import rospy
 
 from geometry_msgs.msg import Twist
 from util.SE3 import SE3
 
-MAX_DRIVING_EFFORT = 1
-MIN_DRIVING_EFFORT = -1
-TURNING_P = 100.0
+MAX_DRIVING_EFFORT = rospy.get_param("drive/max_driving_effort", 1)
+MIN_DRIVING_EFFORT = rospy.get_param("drive/min_driving_effort", -1)
+TURNING_P = rospy.get_param("drive/turning_p", 100.0)
 
 
 def get_drive_command(

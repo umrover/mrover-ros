@@ -1,11 +1,13 @@
 import tf2_ros
+import rospy
 from context import Context
 from drive import get_drive_command
 from geometry_msgs.msg import Twist
 from waypoint import DRIVE_FWD_THRESH, WaypointState
 
-STOP_THRESH = 0.7
-FIDUCIAL_STOP_THRESHOLD = 1.75
+
+STOP_THRESH = rospy.get_param("single_fiducial/stop_thresh", 0.7)
+FIDUCIAL_STOP_THRESHOLD = rospy.get_param("single_fiducial/fiducial_stop_threshold", 1.75)
 
 
 class SingleFiducialState(WaypointState):

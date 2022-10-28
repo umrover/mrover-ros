@@ -1,7 +1,8 @@
 from __future__ import annotations
 from typing import ClassVar, Optional
 
-import numpy as np
+import numpy as n
+import rospy
 
 from context import Context, Environment
 from state import BaseState
@@ -9,8 +10,8 @@ from dataclasses import dataclass
 from drive import get_drive_command
 from trajectory import Trajectory
 
-STOP_THRESH = 0.2
-DRIVE_FWD_THRESH = 0.95
+STOP_THRESH = rospy.get_param("search/stop_thresh", 0.2)
+DRIVE_FWD_THRESH = rospy.get_param("search/drive_fwd_thresh", 0.95)
 
 
 @dataclass
