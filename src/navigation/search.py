@@ -1,7 +1,7 @@
 from __future__ import annotations
 from typing import ClassVar, Optional
 
-import numpy as n
+import numpy as np
 import rospy
 
 from context import Context, Environment
