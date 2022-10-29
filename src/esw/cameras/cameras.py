@@ -78,8 +78,11 @@ class StreamingManager:
 
     def __init__(self) -> None:
 
-        self._services = [[CameraCmd(-1, 0)] * 4, [CameraCmd(-1, 0)] * 4]
+        self._services = [[CameraCmd(-1, 0), CameraCmd(-1, 0), CameraCmd(-1, 0), CameraCmd(-1, 0)],
+            [CameraCmd(-1, 0), CameraCmd(-1, 0), CameraCmd(-1, 0), CameraCmd(-1, 0)]]
         self._video_devices = []
+        for i in range(rospy.get_param("cameras/max_video_device_id_number")):
+            self._video_devices.append(VideoDevices(i))
         self._endpoints = [
             rospy.get_param("cameras/endpoints/primary_0"),
             rospy.get_param("cameras/endpoints/primary_1"),
@@ -111,8 +114,8 @@ class StreamingManager:
     def handle_change_cameras(self, req: ChangeCamerasRequest) -> ChangeCamerasResponse:
         camera_commands = req.camera_cmds
 
-        service = self._services[0] if req.primary else self._services[1]
-        endpoints = self._endpoints[0:3] if req.primary else self._endpoints[4:7]
+        service_index = 0 if req.primary else 1
+        endpoints = self._endpoints[0:4] if req.primary else self._endpoints[4:8]
 
         # Only care about turning off streams in first iteration
         for stream, camera_cmd in enumerate(camera_commands):
@@ -120,17 +123,18 @@ class StreamingManager:
             requested_device = camera_cmd.device
             requested_resolution = camera_cmd.resolution
 
-            current_device = service[stream].device
-            if current_device == requested_device:
-                if current_device == -1 or requested_resolution == self._video_devices[requested_device].resolution:
+            previous_device = self._services[service_index][stream].device
+            if previous_device == requested_device:
+                if previous_device == -1 or (requested_device != -1 and requested_resolution == self._video_devices[requested_device].resolution):
                     continue
 
             if requested_device == -1:
-                previously_was_video_source = self._video_devices[requested_device].video_source is not None
-                self._video_devices[current_device].remove_endpoint(endpoint)
-                service[stream] = -1
-                currently_is_no_video_source = self._video_devices[requested_device].video_source is None
-                if previously_was_video_source and currently_is_no_video_source:
+                # this means that there was previously a device, but now we don't want the device to be streamed
+                assert self._video_devices[previous_device].video_source is not None
+                self._video_devices[previous_device].remove_endpoint(endpoint)
+                self._services[service_index][stream].device = -1
+                currently_is_no_video_source = self._video_devices[previous_device].video_source is None
+                if currently_is_no_video_source:
                     self._active_devices -= 1
 
         # after turning off streams, then you can turn on
@@ -139,23 +143,24 @@ class StreamingManager:
             requested_device = camera_cmd.device
             requested_resolution = camera_cmd.resolution
 
-            current_device = service[stream].device
-            if current_device == requested_device:
-                if current_device == -1 or requested_resolution == self._video_devices[requested_device].resolution:
+            previous_device = self._services[service_index][stream].device
+            if previous_device == requested_device:
+                if previous_device == -1 or (requested_device != -1 and requested_resolution == self._video_devices[requested_device].resolution):
                     continue
 
             if requested_device != -1:
-                if self._active_devices == self._max_devices and current_device == -1:
+                if self._active_devices == self._max_devices and previous_device == -1:
                     # can not add more than four devices. just continue.
                     continue
 
                 # create a new stream
-                previously_no_video_source = self._video_devices[requested_device].video_source is None
+                previously_no_video_source = previous_device == -1 and self._video_devices[requested_device].video_source is None
 
-                service[stream].device = self._video_devices[requested_device].create_stream(
+                self._video_devices[requested_device].create_stream(
                     endpoint, self._resolution_args[requested_resolution]
                 )
                 currently_is_video_source = self._video_devices[requested_device].video_source is not None
+                self._services[service_index][stream].device = requested_device if currently_is_video_source else -1
 
                 if previously_no_video_source and currently_is_video_source:
                     self._active_devices += 1
@@ -168,16 +173,16 @@ class StreamingManager:
                 continue
             try:
                 image = video_device.video_source.Capture(timeout=15000)
-
-                for output in video_device.output_by_endpoint.values():
-                    output.Render(image)
             except Exception:
                 rospy.logerr(f"Camera {index} capture failed. Stopping stream(s).")
                 self._close_down_device(index)
+            for output in video_device.output_by_endpoint.values():
+                output.Render(image)
 
     def _close_down_device(self, device: int):
         previously_was_video_source = self._video_devices[device].video_source is not None
-        for endpoint in self._video_devices[device].output_by_endpoint.keys():
+        while len(self._video_devices[device].output_by_endpoint.keys()) != 0:
+            endpoint = list(self._video_devices[device].output_by_endpoint.keys())[0]
             self._video_devices[device].remove_endpoint(endpoint)
             service, stream = self._service_streams_by_endpoints[endpoint]
             self._services[service][stream].device = -1
