@@ -156,6 +156,9 @@ class StreamingManager:
                 # create a new stream
                 previously_no_video_source = previous_device == -1 and self._video_devices[requested_device].video_source is None
 
+                if previous_device != -1:
+                    self._video_devices[previous_device].remove_endpoint(endpoint)
+
                 self._video_devices[requested_device].create_stream(
                     endpoint, self._resolution_args[requested_resolution]
                 )
