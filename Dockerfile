@@ -8,8 +8,7 @@ RUN apt-get install software-properties-common -y && add-apt-repository ppa:git-
 RUN apt-get update && apt-get install -y \
     zsh neovim sudo git git-lfs \
     clang-format-12 clang-tidy-12 \
-    python3-catkin-tools python3-pip \
-    ros-noetic-moveit
+    python3-catkin-tools python3-pip
 
 RUN useradd --create-home --groups sudo --shell /bin/zsh mrover
 # Give mrover user sudo access with no password
