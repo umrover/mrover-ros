@@ -81,8 +81,10 @@ class StreamingManager:
 
     def __init__(self) -> None:
 
-        self._services = [[CameraCmd(-1, 0), CameraCmd(-1, 0), CameraCmd(-1, 0), CameraCmd(-1, 0)],
-            [CameraCmd(-1, 0), CameraCmd(-1, 0), CameraCmd(-1, 0), CameraCmd(-1, 0)]]
+        self._services = [
+            [CameraCmd(-1, 0), CameraCmd(-1, 0), CameraCmd(-1, 0), CameraCmd(-1, 0)],
+            [CameraCmd(-1, 0), CameraCmd(-1, 0), CameraCmd(-1, 0), CameraCmd(-1, 0)],
+        ]
         self._video_devices = []
         for i in range(rospy.get_param("cameras/max_video_device_id_number")):
             self._video_devices.append(VideoDevices(i))
@@ -130,7 +132,9 @@ class StreamingManager:
 
             previous_device = self._services[service_index][stream].device
             if previous_device == requested_device:
-                if previous_device == -1 or (requested_device != -1 and requested_resolution == self._video_devices[requested_device].resolution):
+                if previous_device == -1 or (
+                    requested_device != -1 and requested_resolution == self._video_devices[requested_device].resolution
+                ):
                     continue
 
             if requested_device == -1:
@@ -142,7 +146,6 @@ class StreamingManager:
                 if currently_is_no_video_source:
                     self._active_devices -= 1
 
-
         # after turning off streams, then you can turn on
         for stream, camera_cmd in enumerate(camera_commands):
             endpoint = endpoints[stream]
@@ -151,7 +154,9 @@ class StreamingManager:
 
             previous_device = self._services[service_index][stream].device
             if previous_device == requested_device:
-                if previous_device == -1 or (requested_device != -1 and requested_resolution == self._video_devices[requested_device].resolution):
+                if previous_device == -1 or (
+                    requested_device != -1 and requested_resolution == self._video_devices[requested_device].resolution
+                ):
                     continue
 
             if requested_device != -1:
@@ -160,7 +165,9 @@ class StreamingManager:
                     continue
 
                 # create a new stream
-                previously_no_video_source = previous_device == -1 and self._video_devices[requested_device].video_source is None
+                previously_no_video_source = (
+                    previous_device == -1 and self._video_devices[requested_device].video_source is None
+                )
 
                 if previous_device != -1:
                     self._video_devices[previous_device].remove_endpoint(endpoint)
