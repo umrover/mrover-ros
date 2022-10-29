@@ -17,7 +17,6 @@ import jetson.utils
 
 class VideoDevices:
 
-    device_lock: threading.Lock
     device: int
     resolution: List[str]
     video_source: jetson.utils.videoSource
@@ -28,7 +27,6 @@ class VideoDevices:
         self.device = device
         self.video_source = None
         self.output_by_endpoint = {}
-        self.device_lock = threading.Lock()
 
     def remove_endpoint(self, endpoint: str):
         assert endpoint in self.output_by_endpoint.keys()
@@ -73,6 +71,7 @@ class VideoDevices:
 class StreamingManager:
 
     _services: List[List[CameraCmd]]
+    _device_lock: threading.Lock
     _resolution_args: List[List[str]]
     _endpoints: List[str]
     _service_streams_by_endpoints: Dict[str, Tuple[int, int]]
@@ -114,9 +113,10 @@ class StreamingManager:
         ]
         self._active_devices = 0
         self._max_devices = 4  # determined by hardware. this is a constant. do not change.
+        self._device_lock = threading.Lock()
 
     def handle_change_cameras(self, req: ChangeCamerasRequest) -> ChangeCamerasResponse:
-        device_lock.acquire()
+        self._device_lock.acquire()
         camera_commands = req.camera_cmds
 
         service_index = 0 if req.primary else 1
@@ -176,12 +176,12 @@ class StreamingManager:
 
         response = ChangeCamerasResponse(self._services[0], self._services[1])
 
-        device_lock.release()
+        self._device_lock.release()
 
         return response
 
     def update_all_streams(self) -> None:
-        device_lock.acquire()
+        self._device_lock.acquire()
         for index, video_device in enumerate(self._video_devices):
             if video_device.video_source is None:
                 continue
@@ -192,10 +192,10 @@ class StreamingManager:
                 self._close_down_device(index)
             for output in video_device.output_by_endpoint.values():
                 output.Render(image)
-        device_lock.release()
+        self._device_lock.release()
 
     def _close_down_device(self, device: int):
-        device_lock.acquire()
+        self._device_lock.acquire()
         previously_was_video_source = self._video_devices[device].video_source is not None
         while len(self._video_devices[device].output_by_endpoint.keys()) != 0:
             endpoint = list(self._video_devices[device].output_by_endpoint.keys())[0]
@@ -205,7 +205,7 @@ class StreamingManager:
         currently_is_no_video_source = self._video_devices[device].video_source is None
         if previously_was_video_source and currently_is_no_video_source:
             self._active_devices -= 1
-        device_lock.release()
+        self._device_lock.release()
 
 
 def main():
