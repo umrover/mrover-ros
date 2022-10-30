@@ -13,6 +13,7 @@ from single_fiducial import SingleFiducialState
 from state import DoneState
 from waypoint import WaypointState
 from search import SearchState
+from single_post import SinglePostState
 
 
 class Navigation(threading.Thread):
@@ -41,6 +42,7 @@ class Navigation(threading.Thread):
                     "waypoint_traverse": "WaypointState",
                     "single_fiducial": "SingleFiducialState",
                     "search": "SearchState",
+					"single_post": "SinglePostState",
                     "done": "DoneState",
                 },
             )
@@ -51,6 +53,7 @@ class Navigation(threading.Thread):
                     "waypoint_traverse": "WaypointState",
                     "single_fiducial": "SingleFiducialState",
                     "search": "SearchState",
+					"single_post": "SinglePostState",
                     "done": "DoneState",
                 },
             )
@@ -61,14 +64,29 @@ class Navigation(threading.Thread):
                     "waypoint_traverse": "WaypointState",
                     "single_fiducial": "SingleFiducialState",
                     "search": "SearchState",
+					"single_post": "SinglePostState",
                     "gate_traverse": "GateTraverseState",
                 },
             )
             self.state_machine.add(
                 "GateTraverseState",
                 GateTraverseState(self.context),
-                transitions={"search": "SearchState", "done": "DoneState", "gate_traverse": "GateTraverseState"},
+                transitions={
+					"search": "SearchState", 
+					"done": "DoneState", 
+					"gate_traverse": "GateTraverseState"
+				},
             )
+            self.state_machine.add(
+				"SinglePostState",
+				SinglePostState(self.context),
+				transitions={ 
+					"search": "SearchState",
+					"single_post": "SinglePostState",
+                    "gate_traverse": "GateTraverseState",
+					"done": "DoneState",
+				},
+			)
 
     def run(self):
         self.state_machine.execute()

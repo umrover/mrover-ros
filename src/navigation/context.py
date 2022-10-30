@@ -103,6 +103,12 @@ class Course:
         """
         waypoint_frame = self.course_data.waypoints[wp_idx].tf_id
         return SE3.from_tf_tree(self.ctx.tf_buffer, parent_frame="odom", child_frame=waypoint_frame)
+		
+    def next_waypoint_pose(self):
+        """
+        Gets the pose of the next waypoint
+        """
+        return self.waypoint_pose(self.waypoint_index + 1)
 
     def current_waypoint_pose(self):
         """
