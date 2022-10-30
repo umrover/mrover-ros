@@ -2,7 +2,8 @@
 <div>
     <DriveControls></DriveControls>
     <ArmControls></ArmControls>
-    <GimbalControls></GimbalControls>>
+    <GimbalControls></GimbalControls>
+    <PDBFuse></PDBFuse>
 </div>
 
 </template>
@@ -11,6 +12,7 @@
     import DriveControls from './DriveControls.vue';
     import ArmControls from './ArmControls.vue';
     import GimbalControls from './GimbalControls.vue';
+    import PDBFuse from './PDBFuse.vue';
 
     export default {
         data() {
@@ -22,7 +24,8 @@
         components:{
             DriveControls,
             ArmControls,
-            GimbalControls
+            GimbalControls,
+            PDBFuse
         }
     }
 </script>
