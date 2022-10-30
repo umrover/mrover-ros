@@ -30,8 +30,6 @@ class Data:
         self.actual_linear_vel = np.array([0,0,0])
         self.actual_angular_vel = np.array([0,0,0])
         self.timestamp = 0.0
-        self.curr_position = np.ndarray([0,0,0])
-        self.curr_rotation = SO3()
 
     # Uses data published by ESW to figure out wheel names, current wheel velocity, and effort
     #when one paramter is passed (i.e., len(args) == 1) we have received ESW data from the subscriber
@@ -40,9 +38,9 @@ class Data:
     def set_esw_data(self, *args):
         with self.mutex:
             if len(args) == 1:
-                self.wheel_names = np.array([args[0].name[:5]])
-                self.effort = np.array([args[0].effort[:5]])
-                self.wheel_vel = np.array([args[0].velocity[:5]])
+                self.wheel_names = np.array([args[0].name[0:5]])
+                self.effort = np.array([args[0].effort[0:5]])
+                self.wheel_vel = np.array([args[0].velocity[0:5]])
             else:
                 self.wheel_vel = args[0]
                 self.effort = args[1]
@@ -64,14 +62,17 @@ class Data:
      # Query the tf tree to get odometry. Calculate the linear and angular velocities with this data
      #We will only call this when the object list is not empty. When the list is empty the initial actual
      # linear and angular velocities will be their default values set to zero. 
-    def update_tf_vel(self, prev):
+    def update_tf_vel(self):
         with self.mutex:
-            self.curr_position = Rover.get_pose().position
-            self.curr_rotation = Rover.get_pose().rotation
-            self.timestamp = datetime.now().time()
-            self.actual_linear_vel = (self.curr_position - prev.curr_postion) / (self.timestamp - prev.timestamp)
-            self.actual_angular_vel = self.curr_rotation.rot_distance_to(prev.curr_rotation) / (self.timestamp - prev.timestamp)
-
+            curr_position = Rover.get_pose().position
+            curr_rotation = Rover.get_pose().rotation
+            #Wait delta_t seconds
+            delta_t = 3
+            time.sleep(delta_t)
+            final_position = Rover.get_pose().position
+            final_rotation = Rover.get_pose().rotation
+            self.actual_linear_vel = (final_position - curr_position) / delta_t
+            self.actual_angular_vel = (final_rotation - curr_rotation) / delta_t
 
 #The data collector will only create new data objects when there is new ESW data published or there is 
 #a commanded velocity from drive.py
