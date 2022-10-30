@@ -33,7 +33,6 @@ set(MROVER_MESSAGE_FILES
         ODriveState.msg
         Spectral.msg
         Temperature.msg
-        Triad.msg
         Waypoint.msg
         WheelData.msg
         )
