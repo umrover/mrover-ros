@@ -123,11 +123,9 @@ else ()
             tf2_ros
             tf2
             visualization_msgs
-            vision_msgs
             image_transport
             cv_bridge
             sensor_msgs
-            fiducial_msgs
             rosbridge_server
             teleop_twist_joy
             gazebo_ros
