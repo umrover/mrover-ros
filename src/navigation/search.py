@@ -85,9 +85,10 @@ class SearchState(BaseState):
                 return "waypoint_traverse"
 
         self.context.rover.send_drive_command(cmd_vel)
-        # if we see the fiduicial, go to the fiducial state
-        current_waypoint = self.context.course.current_waypoint()
-        if current_waypoint.fiducial_id != Environment.NO_FIDUCIAL and self.context.env.current_fid_pos() is not None:
+        # if we see the fiduicial or gate, go to either fiducial or gate state
+        if self.context.env.current_gate() is not None:
+            return "gate_traverse"
+        elif self.context.env.current_fid_pos() is not None:
             return "single_fiducial"
 
         return "search"
