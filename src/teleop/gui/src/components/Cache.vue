@@ -14,9 +14,16 @@
 export default {
     data() {
         return {
-            site: "A"
+            
         }
-    }
+    },
+
+    props: {
+        site: {
+            type: String,
+            required: true,
+        }
+    },
 }
 </script>
 

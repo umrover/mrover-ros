@@ -1,7 +1,7 @@
 <template>
     <div>
         <h3>Sudan III Drop</h3>
-        <button id="sudan-button">Start Site A Test</button>
+        <button id="sudan-button">Start Site {{site}} Test</button>
     </div>
 </template>
 
@@ -9,9 +9,16 @@
 export default {
     data() {
         return {
-
+            
         }
-    }
+    },
+
+    props: {
+        site: {
+            type: String,
+            required: true,
+        }
+    },
 }
 </script>
 

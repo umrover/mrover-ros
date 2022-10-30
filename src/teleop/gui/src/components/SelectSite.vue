@@ -6,10 +6,10 @@
       <div class="box1">
         <div>
           <label for="position">Change site to position:</label>
-          <select>
-            <option> Position A </option>
-            <option> Position B </option>
-            <option> Position C </option>
+          <select v-model="site" name="site" id="site" @change="onChange($event)">
+            <option value="A"> Position A </option>
+            <option value="B"> Position B </option>
+            <option value="C"> Position C </option>
           </select>
         </div>
       </div>
@@ -21,11 +21,17 @@
 export default {
   data() {
     return {
-
+      site: "A"
     }
   },
 
   components:{
+  },
+
+  methods:{
+    onChange(event) {
+      this.$emit('site', event.target.value)
+    }
   }
 }
 </script>

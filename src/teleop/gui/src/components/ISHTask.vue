@@ -21,13 +21,13 @@
     </div>
   </div>
   <div class="box light-bg siteSelect">
-    <SelectSite/>
+    <SelectSite @site="onSiteChange"/>
   </div>
   <div class="box light-bg raman">
     <Raman/>
   </div>
   <div class="box light-bg sudan">
-    <Sudan/>
+    <Sudan v-bind:site="site"/>
   </div>
   <div class="box light-bg cameras">
     <Cameras/>
@@ -36,10 +36,13 @@
     <Carousel/>
   </div>
   <div class="box light-bg cache">
-    <Cache/>
+    <Cache v-bind:site="site"/>
   </div>
   <div class="box light-bg chlorophyll">
     <Chlorophyll v-bind:spectral_data="spectral_data"/>
+  </div>
+  <div class="box light-bg amino">
+    <Amino v-bind:site="site"/>
   </div>
 </div>
 </template>
@@ -53,10 +56,13 @@ import Cameras from './Cameras.vue'
 import Carousel from './Carousel.vue'
 import Cache from './Cache.vue'
 import Chlorophyll from './Chlorophyll.vue'
+import Amino from './Amino.vue'
 
 export default {
   data() {
     return {
+      site: "A",
+
       spectral_data: {
           d0_1:0,
           d0_2:0,
@@ -87,8 +93,15 @@ export default {
     Cameras,
     Carousel,
     Cache,
-    Chlorophyll
-}
+    Chlorophyll,
+    Amino
+  }, 
+
+  methods:{
+    onSiteChange (value) {
+      this.site = value
+    }
+  }
 }
 </script>
 

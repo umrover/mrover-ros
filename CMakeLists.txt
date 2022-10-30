@@ -27,6 +27,7 @@ set(MROVER_MESSAGE_FILES
         EnableAuton.msg
         GPSWaypoint.msg
         ODriveState.msg
+        SpectralData.msg
         Waypoint.msg
         WheelData.msg
         )
