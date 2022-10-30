@@ -59,22 +59,22 @@ class Environment:
 
     def current_fid_pos(self) -> Optional[np.ndarray]:
         """
-        Retrieves the position of the current fiducial
+        Retrieves the position of the current fiducial (and we are looking for it)
         """
         assert self.ctx.course
         current_waypoint = self.ctx.course.current_waypoint()
-        if current_waypoint is None or current_waypoint.fiducial_id == self.NO_FIDUCIAL:
+        if current_waypoint is None or not self.ctx.course.look_for_post():
             return None
 
         return self.get_fid_pos(current_waypoint.fiducial_id)
 
     def current_gate(self) -> Optional[Gate]:
         """
-        retrieves the position of the gate (if we know where it is)
+        retrieves the position of the gate (if we know where it is, and we are looking for one)
         """
         if self.ctx.course:
             current_waypoint = self.ctx.course.current_waypoint()
-            if current_waypoint is None or current_waypoint.fiducial_id == self.NO_FIDUCIAL:
+            if current_waypoint is None or not self.ctx.course.look_for_gate():
                 return None
 
             post1 = self.get_fid_pos(current_waypoint.fiducial_id)
@@ -120,6 +120,28 @@ class Course:
         if self.course_data is None or self.waypoint_index >= len(self.course_data.waypoints):
             return None
         return self.course_data.waypoints[self.waypoint_index]
+
+    def look_for_gate(self) -> bool:
+        """
+        Returns whether the currently active waypoint (if it exists) indicates
+        that we should go to a gate
+        """
+        waypoint = self.current_waypoint()
+        if waypoint is not None:
+            return waypoint.type.val == mrover.msg.WaypointType.GATE
+        else:
+            return False
+
+    def look_for_post(self) -> bool:
+        """
+        Returns whether the currently active waypoint (if it exists) indicates
+        that we should go to a post
+        """
+        waypoint = self.current_waypoint()
+        if waypoint is not None:
+            return waypoint.type.val == mrover.msg.WaypointType.POST
+        else:
+            return False
 
     def is_complete(self):
         return self.waypoint_index == len(self.course_data.waypoints)
