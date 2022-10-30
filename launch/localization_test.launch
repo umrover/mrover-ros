@@ -1,78 +1,20 @@
 <launch>
-  <arg name="model" default="$(find mrover)/rover_description/rover.urdf" />
-  <arg name="gui" default="false" />
-  <param name="robot_description" command="xacro $(find mrover)/rover_description/rover.xacro" />
-  <arg name="rvizconfig" default="$(find mrover)/config/rviz/navigation.rviz" />
-  <!-- <arg name="gazebo_config_path" default="$(find mrover)/config/gazebo" /> -->
-  <node name="rviz" pkg="rviz" type="rviz" args="-d $(arg rvizconfig)" required="true" />
+    <!-- launch rover core processes -->
+    <include file="$(find mrover)/launch/rover_core.launch" />
 
-  <node if="$(arg gui)" name="joint_state_publisher" pkg="joint_state_publisher_gui" type="joint_state_publisher_gui" />
-  <node unless="$(arg gui)" name="joint_state_publisher" pkg="joint_state_publisher" type="joint_state_publisher" />
-  <node name="robot_state_publisher" pkg="robot_state_publisher" type="robot_state_publisher" />
+    <!-- launch rviz -->
+    <arg name="rvizconfig" default="$(find mrover)/config/rviz/auton_sim.rviz" />
+    <node name="rviz" pkg="rviz" type="rviz" args="-d $(arg rvizconfig)" required="true" />
 
-  <!-- <include file="$(find gazebo_ros)/launch/empty_world.launch">
-    <env name="GAZEBO_MODEL_PATH" value="$(arg gazebo_config_path)/env_description" />
-    <arg name="world_name" value="$(arg gazebo_config_path)/env_description/world.world" />
-    <arg name="paused" value="false" />
-    <arg name="use_sim_time" value="true" />
-    <arg name="gui" value="true" />
-    <arg name="headless" value="false" />
-    <arg name="debug" value="false" />
-    <arg name="verbose" default="false" />
-    <arg name="gui_required" value="true" />
-  </include> -->
+    <!-- GPS + IMU driver nodes and params -->
+    <rosparam command="load" file="$(find mrover)/config/esw.yaml" />
+    <node name="imu_driver" pkg="mrover" type="imu_driver.py" output="screen" />
+    <node name="gps_driver" pkg="nmea_navsat_driver" type="nmea_serial_driver">
+        <remap from="fix" to="gps/fix" />
+    </node>
 
-  <!-- <node name="spawn_model" pkg="gazebo_ros" type="spawn_model" output="screen" args="
-    -urdf -param robot_description
-    -model rover" /> -->
-
-  <!--
-    ==========
-    Perception
-    ==========
-  -->
-  <!-- <node name="aruco_detect" pkg="mrover" type="aruco_detect" /> -->
-
-  <!--
-    ===========
-    Navigation
-    ===========
-  -->
-  <!-- This publishes the transforms of the course waypoints -->
-  <!-- <node name="nav" pkg="mrover" type="navigation.py" /> -->
-
-  <!--
-    ============
-    Localization
-    ============
-    Frames in the tf tree:
-    odom: The topmost global frame
-    base_link: The rover
-  -->
-  <rosparam command="load" file="$(find mrover)/config/esw.yaml" />
-  <rosparam command="load" file="$(find mrover)/config/ekf_localization.yaml" />
-
-  <rosparam command="load" file="$(find mrover)/config/esw.yaml" />
-  <node name="imu_driver" pkg="mrover" type="imu_driver.py" output="screen" />
-  <node name="gps_driver" pkg="nmea_navsat_driver" type="nmea_serial_driver" />
-  
-  <!-- Fuses together GPS position and IMU orientation with an Extended Kalman Filter (EKF) -->
-  <!-- Publishes a resulting tf entry between odom and base_link -->
-  <!-- <node pkg="robot_localization" type="ekf_localization_node" name="ekf_odom" clear_params="true"> -->
-    <!-- Publications -->
-    <!-- <remap from="odometry/filtered" to="odometry/filtered" /> -->
-  <!-- </node> -->
-
-  <!-- Reads the GPS topic and convert it to cartesian based on a reference point-->
-  <node pkg="robot_localization" type="navsat_transform_node" name="navsat_transform" clear_params="true">
-    <!-- Reference latitude/longitude to linearize from -->
-    <rosparam param="datum">[42.2, -83.7, 0.0, map, base_link]</rosparam>
-    <!-- Subscriptions -->
-    <remap from="gps/fix" to="fix" />
-    <!-- Confusing: This is needed in the event that your first GPS reading comes after your robot has attained some non-zero pose -->
-    <remap from="odometry/filtered" to="odometry/filtered" />
-    <!-- Publications -->
-    <remap from="gps/filtered" to="gps/filtered" />
-    <remap from="odometry/gps" to="odometry/gps" />
-  </node>
+    <!-- Reads the GPS topic and convert it to cartesian based on a reference point-->
+    <node pkg="robot_localization" type="navsat_transform_node" name="navsat_transform" clear_params="true">
+        <remap from="gps/fix" to="fix" />
+    </node>
 </launch>

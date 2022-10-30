@@ -34,6 +34,7 @@ set(MROVER_MESSAGE_FILES
         Spectral.msg
         Temperature.msg
         Waypoint.msg
+        WaypointType.msg
         WheelData.msg
         )
 
