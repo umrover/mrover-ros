@@ -25,6 +25,7 @@ set(MROVER_MESSAGE_FILES
         Chassis.msg
         Course.msg
         EnableAuton.msg
+        GimbalCmd.msg
         GPSWaypoint.msg
         ODriveState.msg
         Waypoint.msg
