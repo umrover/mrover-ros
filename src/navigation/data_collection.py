@@ -1,12 +1,22 @@
+from time import time
 from context import Rover
 import numpy as np
 import pandas as pd
 import rospy
 import sensor_msgs
-from datetime import datetime
+import datetime
 from util.SE3 import SE3
 from util.SO3 import SO3
 from threading import Lock
+
+def make_filename():
+    # makes filename based on current time. "output_mmddyyyy_hr-min-sec.csv"
+    now = datetime.datetime.now()
+    day = now.strftime("%m%d%Y")
+    hour = now.strftime("%H-%M-%S")
+    time_stamp = day+"_"+hour
+    file = "output_"+time_stamp+".csv"
+    return file
 
 class Data:
     #Default constructor for each data object
@@ -70,8 +80,36 @@ class DataCollector:
         self.data_objs = [] # array holding Data_collection type objects
         self.collecting = False
         rospy.Subscriber("/drive_vel_data", JointState, self.make_esw_data_obj)
-        rospy.Subscriber("/drive_vel_data", JointState, self.make_esw_data_obj)
-        rospy.Subscriber("/drive_vel_data", JointState, self.make_esw_data_obj)
+        out_file = make_filename()
+        csv_data = {"time":0.0,
+                    "wheel_names":[],
+                    "wheel_vel":[],
+                    "wheel_effort":[],
+                    "commanded_linear_vel":[],
+                    "actual_linear_vel":[],
+                    "commanded_angular_vel":[],
+                    "actual_angular_vel":[],
+                    "curr_position":[],
+                    "curr_rotation": SO3()
+                    }
+
+        # rospy.Subscriber("/drive_vel_data", JointState, self.make_esw_data_obj)
+        # rospy.Subscriber("/drive_vel_data", JointState, self.make_esw_data_obj)
+    
+    # This creates a dataframe containing one Data object to send to the csv file 
+    def create_dataframe(self, d:Data):
+        self.csv_data["time"] = d.timestamp
+        self.csv_data["wheel_names"] = d.wheel_names
+        self.csv_data["wheel_vel"] = d.wheel_names
+        self.csv_data["wheel_effort"] = d.effort
+        self.csv_data["commanded_linear_vel"] = d.commanded_linear_vel
+        self.csv_data["actual_linear_vel"] = d.actual_linear_vel
+        self.csv_data["commanded_angular_vel"] = d.commanded_angular_vel
+        self.csv_data["actual_angular_vel"] = d.actual_angular_vel
+        self.csv_data["curr_position"] = d.curr_position
+        self.csv_data["curr_rotation"] = d.curr_rotation
+        df = pd.DataFrame(self.csv_data)
+        return df
 
     #This function will only be called/invoked when we receive new esw data
     def make_esw_data_obj(self, esw_data):
@@ -80,6 +118,9 @@ class DataCollector:
             d.update_commanded_vel(self.data_objs[-1].commanded_linear_vel, self.data_objs[-1].commanded_angular_vel)
             d.update_tf_vel(self.data_objs[-1])
         d.set_esw_data(esw_data)
+        # create dataframe and send to csv
+        df = self.create_dataframe(d)
+        df.to_csv(self.out_file)
         self.data_objs.append(d)
     
     #This function will only be called/invoked when there is a commanded velocity
@@ -89,8 +130,8 @@ class DataCollector:
             d.set_esw_data(self.data_objs[-1].wheel_vel, self.data_objs[-1].effort, self.data_objs[-1].wheel_names)
             d.update_tf_vel(self.data_objs[-1]) 
         d.update_commanded_vel(cmd_vel)
+        # create dataframe and send to csv
+        df = self.create_dataframe(d)
+        df.to_csv(self.out_file)
         self.data_objs.append(d)
 
-    #Output to the csv file using pandas. I did not write this as I am not familiar with pandas
-    def output_to_file(self):
-        pass
