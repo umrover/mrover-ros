@@ -44,7 +44,7 @@ set(MROVER_SERVICE_FILES
         ChangeAutonLEDState.srv
         ChangeDeviceState.srv
         ChangeHeaterState.srv   
-        ChangeServoAngles.srv
+        ChangeServoAngle.srv
         PublishCourse.srv
         )
 

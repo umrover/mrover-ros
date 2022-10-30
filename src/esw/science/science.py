@@ -28,9 +28,9 @@ from mrover.srv import (
     ChangeHeaterState,
     ChangeHeaterStateRequest,
     ChangeHeaterStateResponse,
-    ChangeServoAngles,
-    ChangeServoAnglesRequest,
-    ChangeServoAnglesResponse,
+    ChangeServoAngle,
+    ChangeServoAngleRequest,
+    ChangeServoAngleResponse,
 )
 
 
@@ -152,16 +152,16 @@ class ScienceBridge:
         success = self._heater_transmit(req.device, req.color)
         return ChangeHeaterStateResponse(success)
 
-    def handle_change_servo_angles(self, req: ChangeServoAnglesRequest) -> ChangeServoAnglesResponse:
+    def handle_change_servo_angles(self, req: ChangeServoAngleRequest) -> ChangeServoAngleResponse:
         """Processes a request to change the angles of three carousel servos by
         issuing the command to the STM32 chip via UART. Returns the success of
         transaction.
-        :param req: A ChangeServoAnglesRequest object that has an int and
+        :param req: A ChangeServoAngleRequest object that has an int and
             a float representing the id and the angle respectively.
         :returns: A boolean that is the success of sent UART transaction.
         """
         success = self._servo_transmit(req.id, req.angle)
-        return ChangeServoAnglesResponse(success)
+        return ChangeServoAngleResponse(success)
 
     def handle_change_uv_led_carousel_state(self, req: ChangeDeviceStateRequest) -> ChangeDeviceStateResponse:
         """Processes a request to change the carousel UV LED by
@@ -454,7 +454,7 @@ def main():
     )
     rospy.Service("change_heater_state", ChangeHeaterState,
                   bridge.handle_change_heater_state)
-    rospy.Service("change_servo_angles", ChangeServoAngles,
+    rospy.Service("change_servo_angles", ChangeServoAngle,
                   bridge.handle_change_servo_angles)
     rospy.Service("change_uv_led_carousel_state", ChangeDeviceState,
                   bridge.handle_change_uv_led_carousel_state)
