@@ -52,7 +52,7 @@ def get_drive_command(
     perp_alignment = target_dir[0] * -rover_dir[1] + target_dir[1] * rover_dir[0]
     sign = -np.sign(perp_alignment)
     # we want to drive the angular offset to zero so the error is just 0 - alignment
-    error = -alignment
+    error = alignment
     cmd_vel.angular.z = np.clip(error * TURNING_P * sign, MIN_DRIVING_EFFORT, MAX_DRIVING_EFFORT)
     print(cmd_vel.linear.x, cmd_vel.angular.z)
     return cmd_vel, False
