@@ -27,9 +27,11 @@ set(MROVER_MESSAGE_FILES
         Chassis.msg
         Course.msg
         EnableAuton.msg
+        GimbalCmd.msg
         GPSWaypoint.msg
         ODriveState.msg
         Waypoint.msg
+        WaypointType.msg
         WheelData.msg
         )
 
@@ -129,6 +131,31 @@ else ()
             rosbridge_server
             teleop_twist_joy
             gazebo_ros
+            moveit_commander
+            moveit_core
+            moveit_fake_controller_manager
+            moveit_kinematics
+            moveit_msgs
+            moveit_planners_chomp
+            moveit_planners_ompl
+            moveit_ros_benchmarks
+            moveit_ros_control_interface
+            moveit_ros_manipulation
+            moveit_ros_move_group
+            moveit_ros_occupancy_map_monitor
+            moveit_ros_perception
+            moveit_ros_planning
+            moveit_ros_planning_interface
+            moveit_ros_robot_interaction
+            moveit_ros_visualization
+            moveit_ros_warehouse
+            moveit_setup_assistant
+            moveit_simple_controller_manager
+            )
+
+    # append link directories
+    list(APPEND MROVER_LINK_DIRS
+            ${GAZEBO_LIBRARY_DIRS}
             )
 
     # append subdirectories
