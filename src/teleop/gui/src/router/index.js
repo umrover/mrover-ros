@@ -7,6 +7,7 @@ import AutonTask from '../components/AutonTask.vue'
 import SATask from '../components/SATask.vue'
 import ISHTask from '../components/ISHTask.vue'
 import ControlGUI from '../components/ControlGUI.vue'
+import Cameras from '../components/Cameras.vue'
 
 Vue.use(Router)
 
@@ -46,6 +47,6 @@ export default new Router({
       path: '/Control',
       name: 'ControlsGUI',
       component: ControlGUI
-    },
+    }
   ]
 })

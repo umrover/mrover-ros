@@ -1,0 +1,153 @@
+<template>
+    <div class="wrap">
+      <h3>Cameras</h3>
+      <div class="input">
+        Camera name: <input class="rounded" type='message' v-model ='cameraName'>
+        Camera number: <input class="rounded" type='Number' min="0" max="9" v-model ='cameraIdx'>
+        <button class="rounded button" v-on:click="addCameraName()">Change name</button>
+      </div>
+      <div class="cameraselection">
+        <CameraSelection class="cameraspace1" v-bind:camsEnabled="camsEnabled" v-bind:names="names" v-bind:numCams="numCams" v-on:cam_index="setCamIndex($event)"/>
+      </div>
+      <h3>All Cameras</h3>
+      Capacity: <input class="rounded" type='Number' min="2" max="4" v-model ='capacity'>
+      <div class="camerainfo" v-for="i in camsEnabled.length" :key="i">
+        <CameraInfo v-if="camsEnabled[i-1] && checkCapacity" v-bind:name="names[i-1]" v-bind:id="i-1"  v-on:newQuality="changeQuality($event)" v-bind:stream="getStreamNum(i-1)"></CameraInfo>
+      </div>
+    </div>
+  </template>
+  
+  <script>
+  import ROSLIB from 'roslib/src/RosLib'
+  import CameraSelection from '../components/CameraSelection.vue'
+  import CameraInfo from '../components/CameraInfo.vue'
+  
+  export default {
+    data() {
+      return {
+        camsEnabled: new Array(9).fill(false),
+        names: Array.from({length: 9}, (_,i) => "Camera: " + i),
+        cameraIdx: 1,
+        cameraName: "",
+        capacity: 2,
+        qualities: new Array(9).fill(1),
+        streamOrder: []
+      }
+    },
+
+    props: {
+      numCams: {
+        type: Number,
+        required: true
+      },
+      mission: {
+        type: String,
+        required: true
+      },
+      channel: {
+        type: String,
+        required: true
+      },
+      primary: {
+        type: Boolean,
+        required: true
+      }
+
+    },
+
+
+    methods: {
+
+      setCamIndex: function (index) { //every time a button is pressed, it changes cam status and adds/removes from stream
+        this.camsEnabled.splice(index, 1, !this.camsEnabled[index]);
+        this.addToStream(index);
+        this.sendCameras();
+      },
+
+      sendCameras: function() { //sends cameras to a service to display on screen
+        var msgs = [];
+        for(var i = 0; i < 4; i++){
+          var camId;
+          var res;
+          if(i < this.streamOrder.length){
+            camId = this.streamOrder[i];
+            res = this.qualities[camId];
+          }
+          else {
+            camId = -1;
+            res = 0;
+          }
+          msgs.push(new ROSLIB.Message({device: camId, resolution: res})); //CameraCmd msg
+        }
+
+        var changeCamsService = new ROSLIB.Service({
+              ros : this.$ros,
+              name : 'change_cameras',
+              serviceType : 'ChangeCameras'
+          });
+
+        var request = new ROSLIB.ServiceRequest({primary: this.primary, camera_cmds: msgs});
+        changeCamsService.callService(request, (result) => {});
+
+      },
+
+      addCameraName: function() {
+        this.names.splice(this.cameraIdx, 1, this.cameraName)
+      },
+
+      changeQuality({index, value}){
+        this.qualities.splice(index,1,value);
+      },
+
+      addToStream(index){
+        const found = this.streamOrder.includes(index);
+        if(found){ 
+          this.streamOrder.splice(this.streamOrder.indexOf(index),1);
+        }
+        else this.streamOrder.push(index);
+      },
+
+      getStreamNum(index){
+        return this.streamOrder.indexOf(index);
+      }
+
+    },
+
+    computed: {
+      checkCapacity(){
+        return this.streamOrder.length < this.capacity+1;
+      }
+    },
+  
+    components: {
+        CameraSelection,
+        CameraInfo
+    }
+
+  }
+  </script>
+  
+  <style scoped>
+
+    .rounded {
+      border: 1px solid var(--shadow-color);
+      border-radius: 5px;
+      box-shadow: 2px 2px 15px var(--shadow-color), -2px -2px 15px var(--shadow-color);
+    }
+
+    .button {
+      height: 25px;
+      background-color: var(--secondary-color);
+      color: white;
+      
+    }
+
+    .input > * {
+      margin: 5px 0 5px 0;
+    }
+
+    .cameraselection {
+      margin: 10px;
+    }
+
+  </style>
