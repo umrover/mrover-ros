@@ -18,7 +18,7 @@ class GPSLinearization:
         # subscribe to the topics containing GPS and IMU data,
         # assigning them our corresponding callback functions
         rospy.Subscriber("gps/fix", NavSatFix, self.gps_callback)
-        rospy.Subscriber("imu", Imu, self.imu_callback)
+        rospy.Subscriber("imu/data", Imu, self.imu_callback)
 
         # create a transform broadcaster so we can publish to the TF tree
         self.tf_broadcaster = tf2_ros.TransformBroadcaster()
