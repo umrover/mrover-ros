@@ -40,4 +40,5 @@
 
   <!-- Reads the GPS topic and convert it to cartesian based on a reference point-->
   <node pkg="robot_localization" type="navsat_transform_node" name="navsat_transform" clear_params="true" />
+  <node name="gps_linearization" pkg="mrover" type="gps_linearization.py" output="screen" />
 </launch>
