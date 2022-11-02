@@ -5,6 +5,8 @@
 #include <numeric>
 #include <vector>
 
+#include "se3.hpp"
+
 /***
  * A filter that combines multiple readings into one.
  * A user defined proportion acts as a median filter that gets rids of outliers,
@@ -88,4 +90,21 @@ public:
         auto end = mSortedValues.end() - (mProportion * size() / 4);
         return std::accumulate(begin, end, T{}) / (end - begin);
     }
+};
+
+/**
+ * @brief Combined filter for XYZ coordinates. Type is always double.
+ */
+struct XYZFilter {
+    MeanMedianFilter<double> fidInOdomX;
+    MeanMedianFilter<double> fidInOdomY;
+    MeanMedianFilter<double> fidInOdomZ;
+
+    void setFilterParams(size_t count, double proportion);
+
+    void addReading(SE3 const& fidInOdom);
+
+    bool ready() const;
+
+    [[nodiscard]] SE3 getFidInOdom() const;
 };
