@@ -16,7 +16,7 @@ import numpy as np
 import rospy
 import serial
 
-from mrover.msg import Current, Diagnostic, Enable, Heater, ScienceTemperature, Spectral, Temperature
+from mrover.msg import Diagnostic, Enable, Heater, ScienceTemperature, Spectral
 
 from mrover.srv import (
     ChangeAutonLEDState,
@@ -84,7 +84,7 @@ class ScienceBridge:
             "DIAGNOSTIC": rospy.Publisher("diagnostic_data", Current, queue_size=1),
             "AUTOSHUTOFF": rospy.Publisher("science/heater_auto_shut_off_state_data", Enable, queue_size=1),
             "HEATER": rospy.Publisher("science/heater_state_data", Heater, queue_size=1),
-            "SCIENCE_TEMP": rospy.Publisher("science_data/temperatures", Temperature, queue_size=1),
+            "SCIENCE_TEMP": rospy.Publisher("science_data/temperatures", ScienceTemperature, queue_size=1),
             "SPECTRAL": rospy.Publisher("science_data/spectral", Spectral, queue_size=1),
         }
         self._sleep = rospy.get_param("science/info/sleep")
@@ -261,11 +261,9 @@ class ScienceBridge:
         if len(arr) < 1 + self._num_diag_thermistors + self._num_diag_current:
             return
         for i in range(self._num_diag_thermistors):
-            temperature_values.append(
-                Temperature(temperature=float(arr[i + 1])))
+            temperature_values.append(float(arr[i + 1]))
         for i in range(self._num_diag_current):
-            current_values.append(Current(current=float(
-                arr[self._num_diag_thermistors + i + 1])))
+            current_values.append(arr[self._num_diag_thermistors + i + 1])
 
         ros_msg = Diagnostic(
             temperatures=temperature_values, currents=current_values)
@@ -367,8 +365,7 @@ class ScienceBridge:
         temperature_values = ScienceTemperature()
 
         for i in range(self._num_science_thermistors):
-            temperature_values.append(
-                Temperature(temperature=float(arr[i + 1])))
+            temperature_values.append(float(arr[i + 1]))
 
         self._publisher_by_tag[arr[0][3:]].publish(temperature_values)
 

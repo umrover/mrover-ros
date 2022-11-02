@@ -1,1 +1,1 @@
-Temperature[] temperatures
+float32[3] temperatures  # Celsius

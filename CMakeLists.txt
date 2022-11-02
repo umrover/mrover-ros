@@ -24,7 +24,6 @@ set(MROVER_MESSAGE_FILES
         CalibrationStatus.msg
         Chassis.msg
         Course.msg
-        Current.msg
         Diagnostic.msg
         Enable.msg
         EnableAuton.msg
@@ -32,8 +31,8 @@ set(MROVER_MESSAGE_FILES
         GPSWaypoint.msg
         Heater.msg
         ODriveState.msg
+        ScienceTemperature.msg
         Spectral.msg
-        Temperature.msg
         Waypoint.msg
         WaypointType.msg
         WheelData.msg
