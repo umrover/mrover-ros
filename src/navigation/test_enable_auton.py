@@ -8,10 +8,8 @@ from mrover.msg import Waypoint, EnableAuton, GPSWaypoint, WaypointType
 
 def main():
     rospy.init_node("debug_gps_publisher")
-    # target = np.array([42.2, -83.7, 0.0])
     target = np.array([42.2, -83.7001, 0.0])
     pub = rospy.Publisher("auton/enable_state", EnableAuton, queue_size=1)
-
     waypoints = [
         GPSWaypoint(target[0], target[1], WaypointType(val=WaypointType.POST), 1)
     ]

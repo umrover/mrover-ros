@@ -35,6 +35,8 @@
   <node pkg="robot_localization" type="ekf_localization_node" name="ekf_odom" clear_params="true">
     <remap from="imu" to="imu/data"/>
   </node>
+  <!-- Convert Enable Auton GPS waypoints into local cartesian waypoints -->
+  <node name="enable_read" pkg="mrover" type="convert_GPS_waypoints.py" />
 
   <!-- Reads the GPS topic and convert it to cartesian based on a reference point-->
   <node pkg="robot_localization" type="navsat_transform_node" name="navsat_transform" clear_params="true" />
