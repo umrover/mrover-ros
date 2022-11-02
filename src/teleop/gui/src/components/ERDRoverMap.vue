@@ -2,7 +2,8 @@
     <div class="wrap">
         <l-map ref="map" class="map" :zoom="15" :center="center">
         <l-control-scale :imperial="false"/>
-        <l-tile-layer :url="this.online ? this.onlineUrl : this.offlineUrl" :attribution="attribution" :options="tileLayerOptions"/>
+        <l-tile-layer ref="tileLayer" :url="this.online ? this.onlineUrl : this.offlineUrl" :attribution="attribution" 
+                      :options="this.online ? this.onlineTileOptions : this.offlineTileOptions"/>
         <l-marker ref="rover" :lat-lng="odomLatLng" :icon="locationIcon"/>
 
         <div v-for="(waypoint, index) in waypointList" :key="index">
@@ -35,19 +36,31 @@
 
     const MAX_ODOM_COUNT = 1000
     const DRAW_FREQUENCY = 10
-    const onlineUrl = 'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png'
+    const onlineUrl = 'http://{s}.google.com/vt/lyrs=s&x={x}&y={y}&z={z}'
     const offlineUrl = '/static/map/{z}/{x}/{y}.png'
+    const onlineTileOptions = {
+        maxNativeZoom: 22,
+        maxZoom: 100,
+        subdomains: ['mt0','mt1','mt2','mt3'] 
+    }
+    const offlineTileOptions = {
+            maxNativeZoom: 22,
+            maxZoom: 100,
+    }
 
     export default {
         name: 'RoverMap',
 
         data () {
             return {
-                center: L.latLng(38.406371, -110.791954),
+                // Default Center In NC 53 Parking Lot
+                center: L.latLng(42.294864932393835, -83.70781314674628,),
                 attribution: '&copy; <a href="http://osm.org/copyright">OpenStreetMap</a> contributors',
                 online: true,
                 onlineUrl: onlineUrl,
                 offlineUrl: offlineUrl,
+                onlineTileOptions: onlineTileOptions,
+                offlineTileOptions: offlineTileOptions,
                 roverMarker: null,
                 waypointIcon: null,
                 highlightedWaypointIcon: null,
@@ -55,15 +68,7 @@
                 odomCount: 0,
                 locationIcon: null,
                 odomPath: [],
-                findRover: false,
-                options: {
-                    type: Object,
-                    default: () => ({})
-                },
-                tileLayerOptions: {
-                    maxNativeZoom: 18,
-                    maxZoom: 100
-                }
+                findRover: false
             }
         },
 

@@ -2,7 +2,7 @@
   <div class="wrapper">
     <div class="box header">
       <img src="/static/mrover.png" alt="MRover" title="MRover" width="48" height="48" />
-      <h1>ERD Dashboard</h1>
+      <h1>EDM/ES Dashboard</h1>
       <div class="spacer"></div>
       <div class="help">
         <img src="/static/help.png" alt="Help" title="Help" width="48" height="48" />
@@ -15,7 +15,7 @@
       </div>
     </div>
     <div class="box cameras light-bg">
-      <Cameras/>
+      <Cameras v-bind:numCams="2" v-bind:mission="'ERD'"/>
     </div>
     <div class="box arm-controls light-bg">
       <ArmControls/>
@@ -26,7 +26,7 @@
     <div class="box map light-bg">
       <ERDMap v-bind:odom="odom"/>
     </div>
-    <div class="box drive light-bg">
+    <div class="box drive light-bg" v-show="false">
       <DriveControls/>
     </div>
     <div class="box pdb light-bg">
@@ -35,11 +35,16 @@
     <div class="box drive-vel-data light-bg">
       <DriveVelData/>
     </div>
+    <div class="box waypoint-editor light-bg">
+      <ERDWaypointEditor/>
+    </div>
   </div>
 </template>
 
 <script>
 import { mapGetters } from 'vuex'
+import * as qte from "quaternion-to-euler"
+import ROSLIB from "roslib"
 import ArmControls from './ArmControls.vue'
 import Cameras from './Cameras.vue'
 import ERDMap from './ERDRoverMap.vue'
@@ -47,6 +52,13 @@ import OdometryReading from './OdometryReading.vue'
 import DriveControls from './DriveControls.vue'
 import PDBFuse from './PDBFuse.vue'
 import DriveVelData from './DriveVelDataV.vue'
+import ERDWaypointEditor from './ERDWaypointEditor.vue'
+
+const subscriptions =
+[
+  {'topic': '/gps/fix', 'type': 'sensor_msgs/NavSatFix'},
+  {'topic': '/imu/data', 'type': 'sensor_msgs/Imu'}
+]
 
 export default {
   data() {
@@ -58,7 +70,8 @@ export default {
         longitude_min: -47.51724,
         bearing_deg: 0,
         speed: 0
-      }
+      },
+      topic_subscriptions : {},
     }
   },
 
@@ -68,6 +81,28 @@ export default {
     }),
   },
 
+  created: function () {
+    for(let i = 0; i < subscriptions.length; ++i) {
+      this.topic_subscriptions[subscriptions[i]['topic']] = new ROSLIB.topic({
+        ros : this.$ros,
+        name : subscriptions[i]['topic'],
+        messageType : subscriptions[i]['type'],
+      });
+    }
+    this.topic_subscriptions['/gpx/fix'].subscribe((msg)=> {
+      this.odom.latitude_deg = msg.latitude_deg
+      this.odom.longitude_deg = msg.longitude_deg
+    });
+    this.topic_subscriptions['/imu/data'].subscribe((msg)=> {
+      // Callback for IMU quaternion that describes bearing
+      let quaternion = msg.orientation
+      quaternion = [quaternion.w, quaternion.x, quaternion.y, quaternion.z]
+      let euler = qte(quaternion)
+      // euler[2] == euler z component
+      this.odom.bearing_deg = euler[2] * (180/Math.PI)
+    });
+  },
+
   components: {
     ERDMap,
     ArmControls,
@@ -75,7 +110,8 @@ export default {
     OdometryReading,
     DriveControls,
     PDBFuse,
-    DriveVelData
+    DriveVelData,
+    ERDWaypointEditor
   }
 }
 </script>
@@ -85,11 +121,11 @@ export default {
     display: grid;
     grid-gap: 10px;
     grid-template-columns: auto auto;
-    grid-template-rows: 60px 250px 150px auto;
+    grid-template-rows: 60px 250px auto auto;
     grid-template-areas: "header header"
+                         "map waypoint-editor"
                          "map cameras"
-                         "map arm-controls"
-                         "odom drive"
+                         "odom arm-controls"
                          "pdb drive-vel-data";
     font-family: sans-serif;
     height: auto;
@@ -189,6 +225,10 @@ export default {
 
   .drive-vel-data {
     grid-area: drive-vel-data;
+  }
+
+  .waypoint-editor {
+    grid-area: waypoint-editor;
   }
 
 </style>

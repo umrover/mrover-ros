@@ -61,36 +61,11 @@
             mission: {
                 type: String,
                 required: true
-            },
-            channel: {
-                type: String,
-                required: true
             }
         },
         methods: {
             setCamIndex: function (index) {
                 this.camsEnabled.splice(index, 1, !this.camsEnabled[index])
-                this.sendCameras();
-            },
-            sendCameras: function() {
-                this.$parent.publish('/cameras_mission', {
-                    'type': 'Mission',
-                    'name': this.mission
-                })
-                let ports = []
-                for (let i = 0; i < this.camsEnabled.length && ports.length < this.numCams; i++) {
-                    if (this.camsEnabled[i]) {
-                    ports.push(i)
-                    }
-                }
-                // The condition (i < 4) must match the length of port in GUICameras.
-                for (let i = ports.length; i < 4; i++) {
-                    ports.push(-1)
-                }
-                this.$parent.publish(this.channel, {
-                    'type': 'GUICameras',
-                    'port': ports,
-                })
             },
             addCameraName: function() {
                 this.names.splice(this.cameraIdx, 1, this.cameraName)
