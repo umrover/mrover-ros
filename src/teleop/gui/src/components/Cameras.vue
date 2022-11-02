@@ -12,7 +12,7 @@
       <h3>All Cameras</h3>
       Capacity: <input class="rounded" type='Number' min="2" max="4" v-model ='capacity'>
       <div class="camerainfo" v-for="i in camsEnabled.length" :key="i">
-        <CameraInfo v-if="camsEnabled[i-1] && checkCapacity" v-bind:name="names[i-1]" v-bind:id="i-1"  v-on:newQuality="changeQuality($event)" v-bind:stream="getStreamNum(i-1)"></CameraInfo>
+        <CameraInfo v-if="camsEnabled[i-1] && checkCapacity" v-bind:name="names[i-1]" v-bind:id="i-1" v-on:newQuality="changeQuality($event)" v-on:swapStream="swapStream($event)" v-bind:stream="getStreamNum(i-1)"></CameraInfo>
       </div>
     </div>
   </template>
@@ -31,7 +31,7 @@
         cameraName: "",
         capacity: 2,
         qualities: new Array(9).fill(1),
-        streamOrder: []
+        streamOrder: [-1, -1, -1, -1]
       }
     },
 
@@ -67,16 +67,8 @@
       sendCameras: function() { //sends cameras to a service to display on screen
         var msgs = [];
         for(var i = 0; i < 4; i++){
-          var camId;
-          var res;
-          if(i < this.streamOrder.length){
-            camId = this.streamOrder[i];
-            res = this.qualities[camId];
-          }
-          else {
-            camId = -1;
-            res = 0;
-          }
+          var camId = this.streamOrder[i];
+          var res = this.qualities[camId];
           msgs.push(new ROSLIB.Message({device: camId, resolution: res})); //CameraCmd msg
         }
 
@@ -99,12 +91,22 @@
         this.qualities.splice(index,1,value);
       },
 
+      swapStream({prev, newest}){
+        var temp = this.streamOrder[prev];
+        this.streamOrder.splice(prev,1, this.streamOrder[newest]);
+        this.streamOrder.splice(newest,1,temp);
+        console.log(this.streamOrder)
+      },
+
       addToStream(index){
         const found = this.streamOrder.includes(index);
         if(found){ 
           this.streamOrder.splice(this.streamOrder.indexOf(index),1);
+          this.streamOrder.push(-1);
         }
-        else this.streamOrder.push(index);
+        else this.streamOrder.splice(this.streamOrder.indexOf(-1), 1, index);
+        
+        console.log(this.streamOrder)
       },
 
       getStreamNum(index){
@@ -115,7 +117,8 @@
 
     computed: {
       checkCapacity(){
-        return this.streamOrder.length < this.capacity+1;
+        var numStreaming = this.streamOrder.filter(index => index != -1);
+        return numStreaming.length < this.capacity+1;
       }
     },
   

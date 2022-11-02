@@ -1,7 +1,8 @@
 <template>
     <div class="wrap box">
         <p>{{name}} ID: {{id}}</p>
-        <p>Stream: {{stream}}</p>
+        Stream: <input class="box" type='Number' min="0" max="3" v-model ='selectedStream'>
+        <button class="box" v-on:click="swapStream()">Change stream</button>
         <label for="quality">Quality:</label>
         <select class="box" id="quality" v-model="selectedQuality" @change="changeQuality()">
           <option value="0">Low</option>
@@ -16,7 +17,9 @@
   export default {
     data() {
       return {
-        selectedQuality: "1"
+        selectedQuality: "1",
+        selectedStream: this.stream,
+        prevStream: this.stream
       }
     },
 
@@ -39,6 +42,19 @@
     methods: {
       changeQuality: function(){
         this.$emit('newQuality', {index: this.id, value: parseInt(this.selectedQuality)});
+      },
+
+      swapStream(){
+        console.log(this.prevStream, this.selectedStream)
+        this.$emit('swapStream', {prev: this.prevStream, newest: this.selectedStream});
+        this.prevStream = this.selectedStream;
+      }
+    },
+
+    watch: {
+      stream: function(){
+        this.prevStream = this.stream;
+        this.selectedStream = this.stream;
       }
     }
 
