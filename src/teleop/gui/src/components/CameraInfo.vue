@@ -45,7 +45,6 @@
       },
 
       swapStream(){
-        console.log(this.prevStream, this.selectedStream)
         this.$emit('swapStream', {prev: this.prevStream, newest: this.selectedStream});
         this.prevStream = this.selectedStream;
       }

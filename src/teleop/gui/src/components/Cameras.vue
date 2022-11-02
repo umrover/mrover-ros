@@ -7,12 +7,12 @@
         <button class="rounded button" v-on:click="addCameraName()">Change name</button>
       </div>
       <div class="cameraselection">
-        <CameraSelection class="cameraspace1" v-bind:camsEnabled="camsEnabled" v-bind:names="names" v-bind:numCams="numCams" v-on:cam_index="setCamIndex($event)"/>
+        <CameraSelection class="cameraspace1" v-bind:camsEnabled="camsEnabled" v-bind:names="names" v-bind:capacity="parseInt(capacity)" v-on:cam_index="setCamIndex($event)"/>
       </div>
       <h3>All Cameras</h3>
       Capacity: <input class="rounded" type='Number' min="2" max="4" v-model ='capacity'>
       <div class="camerainfo" v-for="i in camsEnabled.length" :key="i">
-        <CameraInfo v-if="camsEnabled[i-1] && checkCapacity" v-bind:name="names[i-1]" v-bind:id="i-1" v-on:newQuality="changeQuality($event)" v-on:swapStream="swapStream($event)" v-bind:stream="getStreamNum(i-1)"></CameraInfo>
+        <CameraInfo v-if="camsEnabled[i-1]" v-bind:name="names[i-1]" v-bind:id="i-1" v-on:newQuality="changeQuality($event)" v-on:swapStream="swapStream($event)" v-bind:stream="getStreamNum(i-1)"></CameraInfo>
       </div>
     </div>
   </template>
@@ -60,7 +60,7 @@
 
       setCamIndex: function (index) { //every time a button is pressed, it changes cam status and adds/removes from stream
         this.camsEnabled.splice(index, 1, !this.camsEnabled[index]);
-        this.addToStream(index);
+        this.changeStream(index);
         this.sendCameras();
       },
 
@@ -95,18 +95,15 @@
         var temp = this.streamOrder[prev];
         this.streamOrder.splice(prev,1, this.streamOrder[newest]);
         this.streamOrder.splice(newest,1,temp);
-        console.log(this.streamOrder)
       },
 
-      addToStream(index){
+      changeStream(index){
         const found = this.streamOrder.includes(index);
         if(found){ 
           this.streamOrder.splice(this.streamOrder.indexOf(index),1);
           this.streamOrder.push(-1);
         }
         else this.streamOrder.splice(this.streamOrder.indexOf(-1), 1, index);
-        
-        console.log(this.streamOrder)
       },
 
       getStreamNum(index){
@@ -119,7 +116,19 @@
       checkCapacity(){
         var numStreaming = this.streamOrder.filter(index => index != -1);
         return numStreaming.length < this.capacity+1;
-      }
+      },
+
+    },
+
+    watch: {
+        capacity: function(newCap, oldCap){
+          if(newCap < oldCap){
+          var numStreaming = this.streamOrder.filter(index => index != -1);
+          var ind = numStreaming.length-1;
+          this.camsEnabled.splice(numStreaming[ind], 1, !this.camsEnabled[numStreaming[ind]]);
+          this.changeStream(numStreaming[ind]);
+          }
+        }
     },
   
     components: {

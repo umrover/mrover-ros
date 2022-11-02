@@ -31,7 +31,7 @@
     },
 
     props: {
-      numCams: {
+      capacity: {
         type: Number,
         required: true
       },
@@ -53,7 +53,7 @@
             num_enabled++
           }
         }
-        return num_enabled == this.numCams
+        return num_enabled == this.capacity;
       }
     },
 

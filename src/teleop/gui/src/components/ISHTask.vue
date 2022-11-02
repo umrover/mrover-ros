@@ -2,7 +2,7 @@
 <div>
     <p>ISH</p>
     <div class="box camera">
-      <Cameras v-bind:numCams="2" v-bind:primary="true" v-bind:mission="'Science'" v-bind:channel="'/cameras_control_ish'"/>
+      <Cameras v-bind:numCams="4" v-bind:primary="true" v-bind:mission="'Science'" v-bind:channel="'/cameras_control_ish'"/>
     </div>
 </div>
 </template>
