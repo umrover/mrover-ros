@@ -40,6 +40,7 @@ class Navigation(threading.Thread):
                 transitions={
                     "waypoint_traverse": "WaypointState",
                     "single_fiducial": "SingleFiducialState",
+                    "gate_traverse": "GateTraverseState",
                     "search": "SearchState",
                     "done": "DoneState",
                 },
@@ -52,6 +53,7 @@ class Navigation(threading.Thread):
                     "single_fiducial": "SingleFiducialState",
                     "search": "SearchState",
                     "done": "DoneState",
+                    "gate_traverse": "GateTraverseState",
                 },
             )
             self.state_machine.add(
