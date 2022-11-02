@@ -20,18 +20,18 @@
           <tbody>
             <tr>
               <td class = "tableElement">3.3V</td>
-              <td class = "tableElement" v-bind:style="{color: pdb_data[0].temp.color}">{{pdb_data[0].temp.val.toFixed(5)}}°C</td>
-              <td class = "tableElement" v-bind:style="{color: pdb_data[0].current.color}">{{pdb_data[0].current.val.toFixed(5)}}A</td>
+              <td class = "tableElement" v-bind:style="{color: pdb_data[0].temp.color}">{{pdb_data[0].temp.val.toFixed(2)}}°C</td>
+              <td class = "tableElement" v-bind:style="{color: pdb_data[0].current.color}">{{pdb_data[0].current.val.toFixed(2)}}A</td>
             </tr>
             <tr>
               <td class = "tableElement">5V</td>
-              <td class = "tableElement" v-bind:style="{color: pdb_data[1].temp.color}">{{pdb_data[1].temp.val.toFixed(5)}}°C</td>
-              <td class = "tableElement" v-bind:style="{color: pdb_data[1].current.color}">{{pdb_data[1].current.val.toFixed(5)}}A</td>
+              <td class = "tableElement" v-bind:style="{color: pdb_data[1].temp.color}">{{pdb_data[1].temp.val.toFixed(2)}}°C</td>
+              <td class = "tableElement" v-bind:style="{color: pdb_data[1].current.color}">{{pdb_data[1].current.val.toFixed(2)}}A</td>
             </tr>
             <tr>
               <td class = "tableElement">12V</td>
-              <td class = "tableElement" v-bind:style="{color: pdb_data[2].temp.color}">{{pdb_data[2].temp.val.toFixed(5)}}°C</td>
-              <td class = "tableElement" v-bind:style="{color: pdb_data[2].current.color}">{{pdb_data[2].current.val.toFixed(5)}}A</td>
+              <td class = "tableElement" v-bind:style="{color: pdb_data[2].temp.color}">{{pdb_data[2].temp.val.toFixed(2)}}°C</td>
+              <td class = "tableElement" v-bind:style="{color: pdb_data[2].current.color}">{{pdb_data[2].current.val.toFixed(2)}}A</td>
             </tr>
           </tbody>
         </table>
