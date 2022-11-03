@@ -13,7 +13,14 @@ from single_fiducial import SingleFiducialState
 from state import DoneState
 from waypoint import WaypointState
 from search import SearchState
+from drive import collector
 
+'''
+class collector_class:
+    def __init__(self):
+        self.collector = DataCollector()
+'''
+    
 
 class Navigation(threading.Thread):
     state_machine: smach.StateMachine
@@ -88,6 +95,7 @@ def main():
     rospy.loginfo("===== navigation starting =====")
     rospy.init_node("navigation")
     context = Context()
+    collector.set_context(context)
     navigation = Navigation(context)
 
     # Define custom handler for Ctrl-C that shuts down smach properly

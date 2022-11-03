@@ -1,9 +1,8 @@
-from time import time
-from context import Rover
+import time
 import numpy as np
 import pandas as pd
 import rospy
-import sensor_msgs
+from sensor_msgs.msg import JointState
 import datetime
 from util.SE3 import SE3
 from util.SO3 import SO3
@@ -16,6 +15,7 @@ def make_filename():
     hour = now.strftime("%H-%M-%S")
     time_stamp = day+"_"+hour
     file = "output_"+time_stamp+".csv"
+    rospy.logerr(f"{file}")
     return file
 
 class Data:
@@ -28,8 +28,10 @@ class Data:
         self.commanded_linear_vel = np.array([0,0,0])
         self.commanded_angular_vel = np.array([0,0,0])
         self.actual_linear_vel = np.array([0,0,0])
-        self.actual_angular_vel = np.array([0,0,0])
+        self.actual_angular_speed = 0
         self.timestamp = 0.0
+        self.curr_position = np.array([0,0,0])
+        self.curr_rotation = SO3()
 
     # Uses data published by ESW to figure out wheel names, current wheel velocity, and effort
     #when one paramter is passed (i.e., len(args) == 1) we have received ESW data from the subscriber
@@ -62,17 +64,19 @@ class Data:
      # Query the tf tree to get odometry. Calculate the linear and angular velocities with this data
      #We will only call this when the object list is not empty. When the list is empty the initial actual
      # linear and angular velocities will be their default values set to zero. 
-    def update_tf_vel(self):
+    def update_tf_vel(self, context):
         with self.mutex:
-            curr_position = Rover.get_pose().position
-            curr_rotation = Rover.get_pose().rotation
+            curr_position = context.rover.get_pose().position
+            curr_rotation_so3 = context.rover.get_pose().rotation
+            self.curr_position = curr_position
             #Wait delta_t seconds
             delta_t = 3
             time.sleep(delta_t)
-            final_position = Rover.get_pose().position
-            final_rotation = Rover.get_pose().rotation
+            final_position = context.rover.get_pose().position
+            final_rotation_so3 = context.rover.get_pose().rotation
+            delta_theta = final_rotation_so3.rot_distance_to(curr_rotation_so3)
             self.actual_linear_vel = (final_position - curr_position) / delta_t
-            self.actual_angular_vel = (final_rotation - curr_rotation) / delta_t
+            self.actual_angular_vel = delta_theta / delta_t
 
 #The data collector will only create new data objects when there is new ESW data published or there is 
 #a commanded velocity from drive.py
@@ -80,16 +84,17 @@ class DataCollector:
     def __init__(self):
         self.data_objs = [] # array holding Data_collection type objects
         self.collecting = False
+        self.context = ""
         rospy.Subscriber("/drive_vel_data", JointState, self.make_esw_data_obj)
-        out_file = make_filename()
-        csv_data = {"time":0.0,
+        self.out_file = make_filename()
+        self.csv_data = {"time":0.0,
                     "wheel_names":[],
                     "wheel_vel":[],
                     "wheel_effort":[],
                     "commanded_linear_vel":[],
                     "actual_linear_vel":[],
                     "commanded_angular_vel":[],
-                    "actual_angular_vel":[],
+                    "actual_angular_vel":0,
                     "curr_position":[],
                     "curr_rotation": SO3()
                     }
@@ -100,15 +105,15 @@ class DataCollector:
     # This creates a dataframe containing one Data object to send to the csv file 
     def create_dataframe(self, d:Data):
         self.csv_data["time"] = d.timestamp
-        self.csv_data["wheel_names"] = d.wheel_names
-        self.csv_data["wheel_vel"] = d.wheel_names
-        self.csv_data["wheel_effort"] = d.effort
-        self.csv_data["commanded_linear_vel"] = d.commanded_linear_vel
-        self.csv_data["actual_linear_vel"] = d.actual_linear_vel
-        self.csv_data["commanded_angular_vel"] = d.commanded_angular_vel
-        self.csv_data["actual_angular_vel"] = d.actual_angular_vel
-        self.csv_data["curr_position"] = d.curr_position
-        self.csv_data["curr_rotation"] = d.curr_rotation
+        self.csv_data["wheel_names"] = [d.wheel_names]
+        self.csv_data["wheel_vel"] = [d.wheel_vel]
+        self.csv_data["wheel_effort"] = [d.effort]
+        self.csv_data["commanded_linear_vel"] = [d.commanded_linear_vel]
+        self.csv_data["actual_linear_vel"] = [d.actual_linear_vel]
+        self.csv_data["commanded_angular_vel"] = [d.commanded_angular_vel]
+        self.csv_data["actual_angular_vel"] = [d.actual_angular_vel]
+        self.csv_data["curr_position"] = [d.curr_position]
+        self.csv_data["curr_rotation"] = [d.curr_rotation]
         df = pd.DataFrame(self.csv_data)
         return df
 
@@ -117,7 +122,7 @@ class DataCollector:
         d = Data()
         if len(self.data_objs) > 0:
             d.update_commanded_vel(self.data_objs[-1].commanded_linear_vel, self.data_objs[-1].commanded_angular_vel)
-            d.update_tf_vel(self.data_objs[-1])
+            d.update_tf_vel(self.context)
         d.set_esw_data(esw_data)
         # create dataframe and send to csv
         df = self.create_dataframe(d)
@@ -129,10 +134,14 @@ class DataCollector:
         d = Data()
         if len(self.data_objs) > 0:
             d.set_esw_data(self.data_objs[-1].wheel_vel, self.data_objs[-1].effort, self.data_objs[-1].wheel_names)
-            d.update_tf_vel(self.data_objs[-1]) 
+            d.update_tf_vel(self.context) 
         d.update_commanded_vel(cmd_vel)
         # create dataframe and send to csv
         df = self.create_dataframe(d)
         df.to_csv(self.out_file)
         self.data_objs.append(d)
 
+    def set_context(self, context_in):
+        self.context = context_in
+
+collection = DataCollector()

@@ -4,9 +4,7 @@ from typing import List
 import smach
 from context import Context
 from geometry_msgs.msg import Twist
-from navigation.data_collection import DataCollector
 
-collection = DataCollector()
 class BaseState(smach.State, ABC):
     """
     Custom base state which handles termination cleanly via smach preemption.
@@ -30,6 +28,7 @@ class BaseState(smach.State, ABC):
             add_output_keys + ["waypoint_index"],
         )
         self.context = context
+        
 
     def execute(self, ud):
         """
@@ -38,7 +37,6 @@ class BaseState(smach.State, ABC):
         :param ud:  State machine user data
         :return:    Next state, 'terminated' if we want to quit early
         """
-        
         if self.preempt_requested():
             self.service_preempt()
             return "terminated"
