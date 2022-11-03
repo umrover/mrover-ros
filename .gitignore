@@ -14,3 +14,6 @@ cmake-build*/
 /src/teleop/gui/dist/
 /src/teleop/gui/node_modules/
 **/yarn.lock*
+
+# Bag Files
+bag/
