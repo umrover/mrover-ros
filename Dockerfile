@@ -10,6 +10,8 @@ RUN apt-get update && apt-get install -y \
     clang-format-12 clang-tidy-12 \
     python3-catkin-tools python3-pip
 
+RUN DEBIAN_FRONTEND=noninteractive apt-get install keyboard-configuration -y
+
 RUN useradd --create-home --groups sudo --shell /bin/zsh mrover
 # Give mrover user sudo access with no password
 RUN echo '%sudo ALL=(ALL) NOPASSWD:ALL' >> /etc/sudoers
