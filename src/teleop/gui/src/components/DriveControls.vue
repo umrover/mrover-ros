@@ -1,11 +1,8 @@
 <template>
     <div>
-      <div>
-          <h4>Drive Controls</h4>
-      </div>
-      <div class="controls">
+      <!-- <div class="controls">
         <Checkbox ref="teleop-enabled" v-bind:name="'Teleop Drive Enabled'" v-on:toggle="teleopEnabled = $event"/>
-      </div>
+      </div> -->
     </div>
 </template>
 
@@ -19,7 +16,6 @@ let interval;
 export default {
   data () {
     return {
-      teleopEnabled: false,
       joystick_pub: null
     }
   },
@@ -37,11 +33,10 @@ export default {
       messageType : 'sensor_msgs/Joy'
     })
     interval = window.setInterval(() => {
-      if(this.teleopEnabled){       
         const gamepads = navigator.getGamepads()
         for (let i = 0; i < 4; i++) {
           const gamepad = gamepads[i]
-          if (gamepad && this.teleopEnabled) {
+          if (gamepad) {
             if (gamepad.id.includes('Logitech')) {
             
               let buttons = gamepad.buttons.map((button) =>{
@@ -58,7 +53,6 @@ export default {
             }
           }
         }
-      }
     }, updateRate*1000)
   },
 
