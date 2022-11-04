@@ -7,6 +7,7 @@ import datetime
 from util.SE3 import SE3
 from util.SO3 import SO3
 from threading import Lock
+from pathlib import Path
 
 def make_filename():
     # makes filename based on current time. "output_mmddyyyy_hr-min-sec.csv"
@@ -14,8 +15,9 @@ def make_filename():
     day = now.strftime("%m%d%Y")
     hour = now.strftime("%H-%M-%S")
     time_stamp = day+"_"+hour
-    file = "output_"+time_stamp+".csv"
-    rospy.logerr(f"{file}")
+    home = str(Path.home())
+    file = home+"/catkin_ws/src/mrover/output_"+time_stamp+".csv"
+    rospy.logerr(f"Created {file} in data_collection.py")
     return file
 
 class Data:
@@ -28,7 +30,7 @@ class Data:
         self.commanded_linear_vel = np.array([0,0,0])
         self.commanded_angular_vel = np.array([0,0,0])
         self.actual_linear_vel = np.array([0,0,0])
-        self.actual_angular_speed = 0
+        self.actual_angular_vel = 0
         self.timestamp = 0.0
         self.curr_position = np.array([0,0,0])
         self.curr_rotation = SO3()
@@ -82,26 +84,24 @@ class Data:
 #a commanded velocity from drive.py
 class DataCollector:
     def __init__(self):
+        rospy.logerr(f"Ran __init__ in data_collection.py")
         self.data_objs = [] # array holding Data_collection type objects
         self.collecting = False
         self.context = ""
         rospy.Subscriber("/drive_vel_data", JointState, self.make_esw_data_obj)
         self.out_file = make_filename()
         self.csv_data = {"time":0.0,
-                    "wheel_names":[],
-                    "wheel_vel":[],
-                    "wheel_effort":[],
-                    "commanded_linear_vel":[],
-                    "actual_linear_vel":[],
-                    "commanded_angular_vel":[],
+                    "wheel_names":[[]],
+                    "wheel_vel":[[]],
+                    "wheel_effort":[[]],
+                    "commanded_linear_vel":[[]],
+                    "actual_linear_vel":[[]],
+                    "commanded_angular_vel":[[]],
                     "actual_angular_vel":0,
-                    "curr_position":[],
-                    "curr_rotation": SO3()
+                    "curr_position":[[]],
+                    "curr_rotation": [SO3()]
                     }
 
-        # rospy.Subscriber("/drive_vel_data", JointState, self.make_esw_data_obj)
-        # rospy.Subscriber("/drive_vel_data", JointState, self.make_esw_data_obj)
-    
     # This creates a dataframe containing one Data object to send to the csv file 
     def create_dataframe(self, d:Data):
         self.csv_data["time"] = d.timestamp
@@ -125,8 +125,9 @@ class DataCollector:
             d.update_tf_vel(self.context)
         d.set_esw_data(esw_data)
         # create dataframe and send to csv
+        rospy.logerr(f"Create dataframe in esw data and send to csv")
         df = self.create_dataframe(d)
-        df.to_csv(self.out_file)
+        df.to_csv(self.out_file, header=None, mode="a")
         self.data_objs.append(d)
     
     #This function will only be called/invoked when there is a commanded velocity
@@ -137,11 +138,13 @@ class DataCollector:
             d.update_tf_vel(self.context) 
         d.update_commanded_vel(cmd_vel)
         # create dataframe and send to csv
+        rospy.logerr(f"Create dataframe in cmd vel and send to csv")
         df = self.create_dataframe(d)
-        df.to_csv(self.out_file)
+        df.to_csv(self.out_file, header=None, mode="a")
         self.data_objs.append(d)
+        rospy.logerr(f"Length: {len(self.data_objs)}")
 
     def set_context(self, context_in):
         self.context = context_in
 
-collection = DataCollector()
+#collection = DataCollector()

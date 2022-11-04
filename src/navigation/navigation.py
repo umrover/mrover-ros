@@ -95,6 +95,7 @@ def main():
     rospy.loginfo("===== navigation starting =====")
     rospy.init_node("navigation")
     context = Context()
+    rospy.logerr(f"Set context in navigation.py")
     collector.set_context(context)
     navigation = Navigation(context)
 

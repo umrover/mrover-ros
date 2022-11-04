@@ -1,11 +1,13 @@
 from typing import Tuple
 
 import numpy as np
+import rospy
 
 from geometry_msgs.msg import Twist
 from util.SE3 import SE3
 import data_collection
 
+rospy.logerr(f"Make DataCollector in drive.py")
 collector = data_collection.DataCollector()
 MAX_DRIVING_EFFORT = 1
 MIN_DRIVING_EFFORT = -1
@@ -43,6 +45,7 @@ def get_drive_command(
 
     if target_dist < completion_thresh:
         #getting commanded velocity into the data collection
+        rospy.logerr(f"Called make_cmd_vel_obj from drive.py")
         collector.make_cmd_vel_obj(Twist())
         return Twist(), True
 
@@ -59,5 +62,6 @@ def get_drive_command(
     error = 1.0 - alignment
     cmd_vel.angular.z = np.clip(error * TURNING_P * sign, MIN_DRIVING_EFFORT, MAX_DRIVING_EFFORT)
     #getting commanded velocity into the data collection
+    rospy.logerr(f"Called make_cmd_vel_obj from drive.py")
     collector.make_cmd_vel_obj(cmd_vel)
     return cmd_vel, False
