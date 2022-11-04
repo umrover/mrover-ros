@@ -11,8 +11,9 @@
 
 	<!-- IMU and GPS driver nodes -->
 	<node name="imu_driver" pkg="mrover" type="imu_driver.py" output="screen" />
-	<node name="gps_driver" pkg="nmea_navsat_driver" type="nmea_serial_driver" />
-	<remap from="fix" to="gps/fix" />
+	<node name="gps_driver" pkg="nmea_navsat_driver" type="nmea_serial_driver">
+        <remap from="fix" to="gps/fix" />
+    </node>
 
     <!-- teleop node for receiving commands from the gui -->
     <rosparam command="load" file="$(find mrover)/config/teleop.yaml"/>
