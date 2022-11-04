@@ -47,8 +47,9 @@ class Drive:
         # Super small deadzone so we can safely e-stop with dampen switch
         dampen = deadzone(msg.axes[self.joystick_mappings["dampen"]], 0.01)
 
-        #Makes dampen [0,1] instead of [-1,1]
-        # dampen = (dampen+1)/2
+        # Makes dampen [0,1] instead of [-1,1]
+        # negative sign required to drive forward by default instead of backward
+        dampen = -(dampen+1)/2
 
         linear = deadzone(
             msg.axes[self.joystick_mappings["forward_back"]] * self.drive_config["forward_back"]["multiplier"], 0.05
