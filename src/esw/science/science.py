@@ -81,7 +81,7 @@ class ScienceBridge:
             "SCIENCE_TEMP": self._science_thermistor_handler,
         }
         self._publisher_by_tag = {
-            "DIAGNOSTIC": rospy.Publisher("diagnostic_data", Current, queue_size=1),
+            "DIAG": rospy.Publisher("diagnostic_data", Diagnostic, queue_size=1),
             "AUTOSHUTOFF": rospy.Publisher("science/heater_auto_shut_off_state_data", Enable, queue_size=1),
             "HEATER": rospy.Publisher("science/heater_state_data", Heater, queue_size=1),
             "SCIENCE_TEMP": rospy.Publisher("science_data/temperatures", ScienceTemperature, queue_size=1),
