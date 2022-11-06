@@ -3,7 +3,7 @@
       <h3>Cameras</h3>
       <div class="input">
         Camera name: <input class="rounded" type='message' v-model ='cameraName'>
-        Camera number: <input class="rounded" type='Number' min="0" max="9" v-model ='cameraIdx'>
+        Camera number: <input class="rounded" type='Number' min="0" max="8" v-model ='cameraIdx'>
         <button class="rounded button" v-on:click="addCameraName()">Change name</button>
       </div>
       <div class="cameraselection">
@@ -18,6 +18,7 @@
   </template>
   
   <script>
+  import Vue from 'vue'
   import ROSLIB from 'roslib/src/RosLib'
   import CameraSelection from '../components/CameraSelection.vue'
   import CameraInfo from '../components/CameraInfo.vue'
@@ -40,14 +41,6 @@
         type: Number,
         required: true
       },
-      mission: {
-        type: String,
-        required: true
-      },
-      channel: {
-        type: String,
-        required: true
-      },
       primary: {
         type: Boolean,
         required: true
@@ -59,7 +52,7 @@
     methods: {
 
       setCamIndex: function (index) { //every time a button is pressed, it changes cam status and adds/removes from stream
-        this.camsEnabled.splice(index, 1, !this.camsEnabled[index]);
+        Vue.set(this.camsEnabled, index, !this.camsEnabled[index]);
         this.changeStream(index);
         this.sendCameras();
       },
@@ -84,26 +77,27 @@
       },
 
       addCameraName: function() {
-        this.names.splice(this.cameraIdx, 1, this.cameraName)
+        Vue.set(this.names, this.cameraIdx, this.cameraName);
       },
 
       changeQuality({index, value}){
-        this.qualities.splice(index,1,value);
+        Vue.set(this.qualities, index, value);
       },
 
       swapStream({prev, newest}){
         var temp = this.streamOrder[prev];
-        this.streamOrder.splice(prev,1, this.streamOrder[newest]);
-        this.streamOrder.splice(newest,1,temp);
+        Vue.set(this.streamOrder, prev, this.streamOrder[newest]);
+        Vue.set(this.streamOrder, newest, temp);
+        this.sendCameras();
       },
 
       changeStream(index){
         const found = this.streamOrder.includes(index);
-        if(found){ 
+        if(found){
           this.streamOrder.splice(this.streamOrder.indexOf(index),1);
           this.streamOrder.push(-1);
         }
-        else this.streamOrder.splice(this.streamOrder.indexOf(-1), 1, index);
+        else Vue.set(this.streamOrder, this.streamOrder.indexOf(-1), index);
       },
 
       getStreamNum(index){
@@ -123,10 +117,10 @@
     watch: {
         capacity: function(newCap, oldCap){
           if(newCap < oldCap){
-          var numStreaming = this.streamOrder.filter(index => index != -1);
-          var ind = numStreaming.length-1;
-          this.camsEnabled.splice(numStreaming[ind], 1, !this.camsEnabled[numStreaming[ind]]);
-          this.changeStream(numStreaming[ind]);
+            var numStreaming = this.streamOrder.filter(index => index != -1);
+            var ind = numStreaming.length-1;
+            Vue.set(this.camsEnabled, numStreaming[ind], !this.camsEnabled[numStreaming[ind]]);
+            this.changeStream(numStreaming[ind]);
           }
         }
     },
@@ -142,16 +136,12 @@
   <style scoped>
 
     .rounded {
-      border: 1px solid var(--shadow-color);
+      border: 1px solid black;
       border-radius: 5px;
-      box-shadow: 2px 2px 15px var(--shadow-color), -2px -2px 15px var(--shadow-color);
     }
 
     .button {
       height: 25px;
-      background-color: var(--secondary-color);
-      color: white;
-      
     }
 
     .input > * {

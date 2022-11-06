@@ -63,9 +63,9 @@
   <style scoped>
 
   .box {
-    border-radius: 10px;
-    border: 1px solid var(--shadow-color);
-    box-shadow: 2px 2px 15px var(--shadow-color), -2px -2px 15px var(--shadow-color);
+    border-radius: 5px;
+    padding: 10px;
+    border: 1px solid black;
   }
   .wrap {
     margin: 10px;
@@ -74,14 +74,6 @@
 
   .wrap > * {
     margin: 5px 0 5px 0;
-  }
-
-  p {
-    margin: 0px;
-  }
-
-  #quality {
-    background-color: white;
   }
 
   </style>
