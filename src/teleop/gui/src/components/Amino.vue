@@ -1,27 +1,19 @@
 <template>
 <div class="wrap">
-  <div class="title">
-    <h3>Amino Test Controls</h3>
-  </div>
+  <h3>Amino Test Controls</h3>
   <div class="box1 heaters">
     <ToggleButton id="heater" v-bind:currentState="heaters[siteIndex].intended" :labelEnableText="'Heater '+(site)+' Intended'" :labelDisableText="'Heater '+(site)+' Intended'" v-on:change="toggleHeater(siteIndex)"/>
     <p v-bind:style="{color: heaters[siteIndex].color}">Thermistor {{site}}: {{heaters[siteIndex].temp.toFixed(2)}} C°</p>
   </div>
-  <div class="comms heaterStatus">
-    <!-- <CommIndicator v-bind:connected="heaters[site].enabled" v-bind:name="'Heater '+(site)+' Status'"/> -->
-  </div>
   <div class="box1 shutdown">
     <ToggleButton id="autoshutdown" v-bind:currentState="autoShutdownIntended" :labelEnableText="'Auto Shutdown Intended'" :labelDisableText="'Auto Shutdown Intended'" v-on:change="sendAutoShutdownCmd(!autoShutdownIntended)"/>
-  </div>
-  <div class="comms shutdownStatus">
-    <!-- <CommIndicator v-bind:connected="autoShutdownEnabled" v-bind:name="'Auto Shutdown Status'"/> -->
   </div>
 </div>  
 </template>
 
 <script>
 import ToggleButton from './ToggleButton.vue'
-// import CommIndicator from './CommIndicator.vue'
+import ROSLIB from 'roslib/src/RosLib'
 
 export default {
   data () {
@@ -60,10 +52,6 @@ export default {
     }
   },
 
-  created: function () {
-    
-  },
-
   components: {
     ToggleButton,
   },
@@ -71,22 +59,51 @@ export default {
   methods: {
     toggleHeater: function(id) {
       this.heaters[id].intended = !this.heaters[id].intended
+      let toggleHeaterServ = new ROSLIB.Service({
+        ros : this.$ros,
+        name : 'change_heater_state',
+        serviceType : 'mrover/change_heater_state'
+      });
+      let request = new ROSLIB.ServiceRequest({
+        device: id,
+        enable: this.heaters[id].intended
+      });
+      toggleHeaterServ.callService(request, (result) => {
+        if (!result) {
+          alert(`Toggling heater ${id} failed.`)
+        }
+      });
     },
 
     sendAutoShutdownCmd: function(enabled) {
       this.autoShutdownIntended = enabled
+      let autoShutdownServ = new ROSLIB.Service({
+        ros : this.$ros,
+        name : 'change_heater_auto_shut_off_state',
+        serviceType : 'mrover/change_heater_auto_shut_off_state'
+      });
+      let request = new ROSLIB.ServiceRequest({
+        enable: this.autoShutdownIntended
+      });
+      autoShutdownServ.callService(request, (result) => {
+        if (!result) {
+          alert(`Toggling autoshutdown failed.`)
+        }
+      });
     }
   },
 
   watch: {
-    site(newVal, oldVal) {
-        if (newVal === "A") {
-            this.siteIndex = 0
-        } else if (newVal === "B") {
-            this.siteIndex = 1
-        } else {
-            this.siteIndex = 2
-        }
+    site(newVal) {
+      if (newVal === "A") {
+        this.siteIndex = 0
+      }
+      else if (newVal === "B") {
+        this.siteIndex = 1
+      }
+      else {
+        this.siteIndex = 2
+      }
     }
   }
 }
@@ -104,22 +121,22 @@ export default {
                           "shutdown shutdownStatus";
     height: auto;
   }
-  .title {
-    grid-area: title;
-    text-align: left;
-  }
+
   .select {
     grid-area: select;
   }
+
   .heaters {
     grid-area: heaters;
   }
   .heaterStatus {
     grid-area: heaterStatus;
   }
+
   .shutdown {
     grid-area: shutdown;
   }
+
   .shutdownStatus {
     grid-area: shutdownStatus;
   }
@@ -129,6 +146,7 @@ export default {
     vertical-align: top;
     display: inline-block;
   }
+
   .comms {
         display: flex;
         flex-direction: column;
