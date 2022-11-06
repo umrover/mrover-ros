@@ -36,9 +36,9 @@ global_publish_joint_state_data.name.append("MiddleRight")
 global_publish_joint_state_data.name.append("BackLeft")
 global_publish_joint_state_data.name.append("BackRight")
 for i in range(6):
-    global_publish_joint_state_data.position(0)
-    global_publish_joint_state_data.velocity(0)
-    global_publish_joint_state_data.effort(0)
+    global_publish_joint_state_data.position = 0
+    global_publish_joint_state_data.velocity = 0
+    global_publish_joint_state_data.effort = 0
 
 
 class Axis(Enum):
