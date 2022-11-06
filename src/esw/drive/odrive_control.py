@@ -22,8 +22,23 @@ from odrive.enums import AXIS_STATE_CLOSED_LOOP_CONTROL, AXIS_STATE_IDLE, CONTRO
 from odrive.utils import dump_errors
 import rospy
 from geometry_msgs.msg import Twist
-from mrover.msg import ODriveState, WheelData
+from sensor_msgs.msg import JointState
+from mrover.msg import ODriveState
 from enum import Enum
+
+
+global_publish_joint_state_data_publisher = rospy.Publisher(f"drive_data", JointState, queue_size=1)
+global_publish_joint_state_data = JointState()
+global_publish_joint_state_data.name.append("FrontLeft")
+global_publish_joint_state_data.name.append("FrontRight")
+global_publish_joint_state_data.name.append("MiddleLeft")
+global_publish_joint_state_data.name.append("MiddleRight")
+global_publish_joint_state_data.name.append("BackLeft")
+global_publish_joint_state_data.name.append("BackRight")
+for i in range(6):
+    global_publish_joint_state_data.position(0)
+    global_publish_joint_state_data.velocity(0)
+    global_publish_joint_state_data.effort(0)
 
 
 class Axis(Enum):
@@ -400,8 +415,7 @@ class ODriveBridge(object):
     :param _id: A string that is the current ODrive's ID.
     :param _modrive: A Modrive object that abstracts away the ODrive functions.
     :param _pair: A string that is front, middle, or back.
-    :param _publishers: A dictionary that holds rospy Publisher object
-        for odrive state data and drive joint velocity and current data.
+    :param _odrive_publisher: Holds the rospy Publisher object for odrive state data
     :param _rate: A Rate object that is used for sleep to make sure publish
         does not spam.
     :param _speed: A Speed object that has requested left and right wheel
@@ -416,7 +430,7 @@ class ODriveBridge(object):
     _id: str
     _modrive: Modrive
     _pair: str
-    _publishers: Dict[str, rospy.Publisher]
+    _odrive_publisher: rospy.Publisher
     _rate: rospy.Rate
     _speed: Speed
     _speed_lock: threading.Lock
@@ -434,11 +448,7 @@ class ODriveBridge(object):
             "back": rospy.get_param("odrive/ids/back"),
         }
         self._pair = pair
-        self._publishers = {
-            "odrive": rospy.Publisher(f"drive_data/odrive/{pair}", ODriveState, queue_size=1),
-            "left_wheel": rospy.Publisher(f"drive_data/joint/{pair}/left", WheelData, queue_size=1),
-            "right_wheel": rospy.Publisher(f"drive_data/joint/{pair}/right", WheelData, queue_size=1),
-        }
+        self._odrive_publisher = rospy.Publisher(f"drive_data/odrive/{pair}", ODriveState, queue_size=1)
         self._id = _odrive_ids[pair]
         self._rate = rospy.Rate(rospy.get_param("odrive/ros/publish_rate_hz"))
         self._speed_lock = threading.Lock()
@@ -530,11 +540,29 @@ class ODriveBridge(object):
             The string must be "left" or "right"
         """
         assert axis == "left" or axis == "right", 'axis must be "left" or "right"'
-        ros_msg = WheelData()
         try:
-            ros_msg.current = self._modrive.get_measured_current(axis)
-            ros_msg.velocity = self._modrive.get_velocity(axis)
-            self._publishers[f"{axis}_wheel"].publish(ros_msg)
+            if self._pair == "front":
+                if axis == "left":
+                    global_publish_joint_state_data.velocity[0] = self._modrive.get_velocity(axis)
+                    global_publish_joint_state_data.effort[0] = self._modrive.get_measured_current(axis)
+                elif axis == "right":
+                    global_publish_joint_state_data.velocity[1] = self._modrive.get_velocity(axis)
+                    global_publish_joint_state_data.effort[1] = self._modrive.get_measured_current(axis)
+            elif self._pair == "middle":
+                if axis == "left":
+                    global_publish_joint_state_data.velocity[2] = self._modrive.get_velocity(axis)
+                    global_publish_joint_state_data.effort[2] = self._modrive.get_measured_current(axis)
+                elif axis == "right":
+                    global_publish_joint_state_data.velocity[3] = self._modrive.get_velocity(axis)
+                    global_publish_joint_state_data.effort[3] = self._modrive.get_measured_current(axis)
+            elif self._pair == "back":
+                if axis == "left":
+                    global_publish_joint_state_data.velocity[4] = self._modrive.get_velocity(axis)
+                    global_publish_joint_state_data.effort[4] = self._modrive.get_measured_current(axis)
+                elif axis == "right":
+                    global_publish_joint_state_data.velocity[5] = self._modrive.get_velocity(axis)
+                    global_publish_joint_state_data.effort[5] = self._modrive.get_measured_current(axis)
+            global_publish_joint_state_data_publisher.publish(global_publish_joint_state_data)
         except DisconnectedError:
             return
         except AttributeError:
@@ -554,7 +582,7 @@ class ODriveBridge(object):
         """
         ros_msg = ODriveState()
         ros_msg.state = state
-        self._publishers["odrive"].publish(ros_msg)
+        self._odrive_publisher.publish(ros_msg)
 
     def _update(self) -> None:
         """Updates based on the current state.
