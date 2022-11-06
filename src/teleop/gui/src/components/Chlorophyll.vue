@@ -53,6 +53,7 @@
 <script>
 import ToggleButton from './ToggleButton.vue';
 import GenerateReport from './GenerateReport.vue';
+import ROSLIB from 'roslib/src/RosLib';
 
 export default {
     data() {
@@ -77,10 +78,36 @@ export default {
     methods: {
         toggle_whiteLEDS: function () {
             this.whiteLEDS_active = !this.whiteLEDS_active
+            let whiteLedService = new ROSLIB.Service({
+                ros : this.$ros,
+                name : 'change_white_led_state',
+                serviceType : 'mrover/change_white_led_state'
+            });
+            let request = new ROSLIB.ServiceRequest({
+                enable: this.whiteLEDS_active
+            });
+            whiteLedService.callService(request, (result) => {
+                if (!result) {
+                    alert("Toggling white LEDs failed.")
+                }
+            });
         },
 
         toggle_UV_LEDs: function () {
             this.UV_active = !this.UV_active
+            let uvService = new ROSLIB.Service({
+                ros : this.$ros,
+                name : 'change_uv_led_end_effector_state',
+                serviceType : 'mrover/change_uv_led_end_effector_state'
+            });
+            let request = new ROSLIB.ServiceRequest({
+                enable: this.UV_active
+            });
+            uvService.callService(request, (result) => {
+                if (!result) {
+                    alert("Toggling UV LEDs failed.")
+                }
+            });
         }
     }
 }
