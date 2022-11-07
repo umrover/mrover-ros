@@ -7,10 +7,10 @@
 #include <image_transport/image_transport.h>
 #include <opencv2/aruco.hpp>
 #include <opencv2/core/mat.hpp>
+#include <pcl_ros/point_cloud.h>
 #include <tf2_ros/transform_broadcaster.h>
 #include <tf2_ros/transform_listener.h>
 
-#include <fiducial_msgs/FiducialTransformArray.h>
 #include <geometry_msgs/PoseStamped.h>
 #include <sensor_msgs/image_encodings.h>
 #include <sensor_msgs/point_cloud2_iterator.h>
@@ -25,29 +25,14 @@
 constexpr char const* ODOM_FRAME = "odom";
 constexpr char const* ROVER_FRAME = "base_link";
 
-/**
- * @brief Fiducials that are currently visible by the camera.
- */
-struct ImmediateFiducial {
+using PointCloud = pcl::PointCloud<pcl::PointXYZRGBNormal>;
+using PointCloudPtr = std::shared_ptr<PointCloud>;
+
+struct Tag {
     int id = -1;
+    int hitCount = 0;
     cv::Point2f imageCenter{};
-    std::optional<SE3> fidInCam;
-};
-
-/**
- * @brief Filtered global positioning of fiducials that persist even when off screen.
- */
-struct PersistentFiducial {
-    int id = -1;
-    MeanMedianFilter<double> fidInOdomX;
-    MeanMedianFilter<double> fidInOdomY;
-    MeanMedianFilter<double> fidInOdomZ;
-
-    void setFilterParams(size_t count, double proportion);
-
-    void addReading(SE3 const& fidInOdom);
-
-    [[nodiscard]] SE3 getFidInOdom() const;
+    std::optional<SE3> tagInCam;
 };
 
 class FiducialsNode {
@@ -70,25 +55,25 @@ private:
     bool mPublishImages = false; // If set, we publish the images with the fiducials drawn on top
     bool mEnableDetections = true;
     bool mIsVerbose = false;
-    bool mHasCamInfo = false;
     bool mPublishFiducialTf = false;
-    double mFiducialLen{};
+    int mMinHitCountBeforePublish = 5;
+    int mMaxHitCount = 10;
     std::vector<int> mIgnoreIds;
     int mFilterCount{};
     double mFilterProportion{};
     cv::Ptr<cv::aruco::DetectorParameters> mDetectorParams;
     cv::Ptr<cv::aruco::Dictionary> mDictionary;
 
+    PointCloudPtr mCloudPtr = std::make_shared<PointCloud>();
     uint32_t mSeqNum{};
-    cv_bridge::CvImagePtr mCvPtr;
+    bool mHasCamInfo = false;
     cv::Mat mCamMat;
     cv::Mat mDistCoeffs;
     std::string mFrameId;
     std::optional<size_t> mPrevDetectedCount; // Log spam prevention
     std::vector<std::vector<cv::Point2f>> mCorners;
     std::vector<int> mIds;
-    std::unordered_map<int, ImmediateFiducial> mImmediateFiducials;
-    std::unordered_map<int, PersistentFiducial> mPersistentFiducials;
+    std::unordered_map<int, Tag> mTags;
     dynamic_reconfigure::Server<mrover::DetectorParamsConfig> mConfigServer;
     dynamic_reconfigure::Server<mrover::DetectorParamsConfig>::CallbackType mCallbackType;
 
