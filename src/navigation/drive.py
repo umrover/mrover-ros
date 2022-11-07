@@ -44,7 +44,7 @@ def get_drive_command(
     alignment = np.dot(target_dir, rover_dir)
 
     if target_dist < completion_thresh:
-        #getting commanded velocity into the data collection
+        # getting commanded velocity into the data collection
         rospy.logerr(f"Called make_cmd_vel_obj from drive.py")
         collector.make_cmd_vel_obj(Twist())
         return Twist(), True
@@ -61,7 +61,7 @@ def get_drive_command(
     # 1 is target alignment (dot product of two normalized vectors that are parallel is 1)
     error = 1.0 - alignment
     cmd_vel.angular.z = np.clip(error * TURNING_P * sign, MIN_DRIVING_EFFORT, MAX_DRIVING_EFFORT)
-    #getting commanded velocity into the data collection
+    # getting commanded velocity into the data collection
     rospy.logerr(f"Called make_cmd_vel_obj from drive.py")
     collector.make_cmd_vel_obj(cmd_vel)
     return cmd_vel, False

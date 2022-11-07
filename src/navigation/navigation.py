@@ -15,12 +15,12 @@ from waypoint import WaypointState
 from search import SearchState
 from drive import collector
 
-'''
+"""
 class collector_class:
     def __init__(self):
         self.collector = DataCollector()
-'''
-    
+"""
+
 
 class Navigation(threading.Thread):
     state_machine: smach.StateMachine
