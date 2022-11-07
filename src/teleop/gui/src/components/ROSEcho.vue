@@ -60,15 +60,16 @@
     methods: {
         populateTopics : function(){ //populates active topics to the display
             this.serviceClient.callService(this.serviceRequest, (result) => {
+                let temp = [];
                 for(var i = 0; i < result.topics.length; i++){
-                    this.topics.push(new ROSLIB.Topic({
+                    temp.push(new ROSLIB.Topic({
                     ros: this.$ros,
                     name: result.topics[i],
                     messageType: result.types[i]
                     }));
                 }
+                this.topics = temp;
             });
-
         },
 
         addType : function(){ //method to handle checking/unchecking the topics
@@ -112,16 +113,8 @@
 
     this.serviceRequest = new ROSLIB.ServiceRequest();
 
-    let interval = window.setInterval(() => { //auto-refreshes so newly activated topics (custom topics) are displayed
-            this.serviceClient.callService(this.serviceRequest, (result) => {
-                if(this.topics.length != result.topics.length){
-                    this.topics.push(new ROSLIB.Topic({
-                        ros: this.$ros,
-                        name: result.topics[result.topics.length-1],
-                        messageType: result.types[result.topics.length-1]
-                    }));
-                }
-            });
+    let interval = window.setInterval(() => {
+            this.populateTopics();
     }, 1000);
   },
   
