@@ -25,6 +25,13 @@ odrive:
     direction_right: 1.0
   ros:
     publish_rate_hz: 20
+  publish_index:
+    front_left: 0
+    front_right: 1
+    middle_left: 2
+    middle_right: 3
+    back_left: 4
+    back_right: 5
 
 rover:
   length: 0.86

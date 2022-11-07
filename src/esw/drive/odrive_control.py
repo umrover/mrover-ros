@@ -413,6 +413,7 @@ class ODriveBridge(object):
         watchdog.
     :param _current_lim: A float that is the current limit in Amperes.
     :param _id: A string that is the current ODrive's ID.
+    :param _data_publish_idx_by_pair: A dictionary that maps a pair to its publish index id
     :param _modrive: A Modrive object that abstracts away the ODrive functions.
     :param _pair: A string that is front, middle, or back.
     :param _odrive_publisher: Holds the rospy Publisher object for odrive state data
@@ -428,6 +429,7 @@ class ODriveBridge(object):
     start_time: float
     _current_lim: float
     _id: str
+    _data_publish_idx_by_pair: Dict[str, int]
     _modrive: Modrive
     _pair: str
     _odrive_publisher: rospy.Publisher
@@ -442,14 +444,13 @@ class ODriveBridge(object):
         self.start_time = t.process_time()
         self._current_lim = rospy.get_param("odrive/config/current_lim")
         self._speed = Speed()
-        _odrive_ids = {
-            "front": rospy.get_param("odrive/ids/front"),
-            "middle": rospy.get_param("odrive/ids/middle"),
-            "back": rospy.get_param("odrive/ids/back"),
-        }
         self._pair = pair
         self._odrive_publisher = rospy.Publisher(f"drive_data/odrive/{pair}", ODriveState, queue_size=1)
-        self._id = _odrive_ids[pair]
+        self._id = rospy.get_param(f"odrive/ids/{pair}")
+        self._data_publish_idx_by_pair = {
+            "left": rospy.get_param(f"odrive/publish_index/{pair}_left"),
+            "right": rospy.get_param(f"odrive/publish_index/{pair}_right"),
+        }
         self._rate = rospy.Rate(rospy.get_param("odrive/ros/publish_rate_hz"))
         self._speed_lock = threading.Lock()
         self._state = DisconnectedState()
@@ -541,27 +542,11 @@ class ODriveBridge(object):
         """
         assert axis == "left" or axis == "right", 'axis must be "left" or "right"'
         try:
-            if self._pair == "front":
-                if axis == "left":
-                    global_publish_joint_state_data.velocity[0] = self._modrive.get_velocity(axis)
-                    global_publish_joint_state_data.effort[0] = self._modrive.get_measured_current(axis)
-                elif axis == "right":
-                    global_publish_joint_state_data.velocity[1] = self._modrive.get_velocity(axis)
-                    global_publish_joint_state_data.effort[1] = self._modrive.get_measured_current(axis)
-            elif self._pair == "middle":
-                if axis == "left":
-                    global_publish_joint_state_data.velocity[2] = self._modrive.get_velocity(axis)
-                    global_publish_joint_state_data.effort[2] = self._modrive.get_measured_current(axis)
-                elif axis == "right":
-                    global_publish_joint_state_data.velocity[3] = self._modrive.get_velocity(axis)
-                    global_publish_joint_state_data.effort[3] = self._modrive.get_measured_current(axis)
-            elif self._pair == "back":
-                if axis == "left":
-                    global_publish_joint_state_data.velocity[4] = self._modrive.get_velocity(axis)
-                    global_publish_joint_state_data.effort[4] = self._modrive.get_measured_current(axis)
-                elif axis == "right":
-                    global_publish_joint_state_data.velocity[5] = self._modrive.get_velocity(axis)
-                    global_publish_joint_state_data.effort[5] = self._modrive.get_measured_current(axis)
+            publish_index = self._data_publish_idx_by_pair[axis]
+
+            global_publish_joint_state_data.velocity[publish_index] = self._modrive.get_velocity(axis)
+            global_publish_joint_state_data.effort[publish_index] = self._modrive.get_measured_current(axis)
+
             global_publish_joint_state_data_publisher.publish(global_publish_joint_state_data)
         except DisconnectedError:
             return
