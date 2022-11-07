@@ -48,13 +48,17 @@
   <script>
   
   import ROSLIB from "roslib"
+
+  const datatypes = ['bool', 'int8', 'uint8', 'int16', 'uint16', 
+                  'int32', 'uint32', 'int64', 'uint64', 'float32', 
+                  'float64', 'string', 'time', 'duration']
   
   
   export default {
     name: 'ROSSend',
     mounted() {
       this.populateTopics();
-      this.populatePackagesAndTopics();
+      this.populatePackages();
     },
     data() {
         return {
@@ -73,7 +77,7 @@
     
 
     methods: {
-        populateTopics: function() {
+        populateTopics: function() {  //populates all active topics for dropdown menu in addition to a Custom Topic option
           var topicsClient = new ROSLIB.Service({
               ros : this.$ros,
               name : '/rosapi/topics',
@@ -92,7 +96,7 @@
           this.topic_options.push('Custom topic');
         },
 
-        populatePackagesAndTopics : function(){
+        populatePackages : function(){ //populates all active packages for the dropdown menu
             var packageClient = new ROSLIB.Service({
               ros : this.$ros,
               name : 'topic_services/fetch_packages',
@@ -101,7 +105,6 @@
 
             var request = new ROSLIB.ServiceRequest();
             packageClient.callService(request, (result) => {
-                console.log(result)
                 for(var i = 0; i < result.packages.length; i++){
                     this.packages.push(result.packages[i]);
                 }
@@ -110,6 +113,8 @@
         },
 
         switchPackage : function(){
+           //anytime a package is changed, it clears out the topics types 
+           //available with that package and replaces it with the newly selected one
           this.topic_types = [];
           this.message = "";
           this.selectedType = '';
@@ -130,6 +135,8 @@
 
         
         switchType: function(){
+          //anytime a type changes, the display changes its schema to the new type. 
+          //It's recursive so any non-primitive data type will be rooted down to its basic components. Also handles showing arrays
           this.message = "";
           this.schema = '';
           var messageClient = new ROSLIB.Service({
@@ -143,9 +150,7 @@
 
             const displayMessage = (arr) => {
               for(var i = 0; i < arr.fieldtypes.length; i++){
-                if(!(['bool', 'int8', 'uint8', 'int16', 'uint16', 
-                  'int32', 'uint32', 'int64', 'uint64', 'float32', 
-                  'float64', 'string', 'time', 'duration'].includes(arr.fieldtypes[i]))){
+                if(!(datatypes.includes(arr.fieldtypes[i]))){
 
                     this.message += "\"" + arr.fieldnames[i] + "\": ";
                     if(arr.fieldarraylen[i] != -1){
@@ -179,7 +184,7 @@
           });
         },
 
-        sendMessage : function(){
+        sendMessage : function(){ //when the send button is pressed, it publishes that message
           this.error = false;
           var topic = this.selectedTopic;
           if(this.selectedTopic == 'Custom topic') topic = this.customTopic;
@@ -187,12 +192,9 @@
           var publisher_msg;
           try {
             publisher_msg = new ROSLIB.Message(JSON.parse(this.message));
-            console.log(publisher_msg)
           } catch (e) {
-            console.log(e);
               this.error = true;
           }
-          console.log(publisher_msg)
           if (!this.error){
             var publisher = new ROSLIB.Topic({
               ros: this.$ros,
@@ -202,16 +204,6 @@
             publisher.publish(publisher_msg)        }
           }
     },
-  
-  
-  beforeDestroy: function () {
-    //window.clearInterval(interval);
-  },
-  
-  created: function () {
-  
-  
-  },
   
   }
   </script>
@@ -232,7 +224,6 @@
     }
 
     .header {
-        /* grid-area: header; */
         display: flex;
         align-items: center;
         box-shadow: 0px 10px 8px -4px rgba(236, 236, 236, 0.966);
@@ -243,11 +234,6 @@
     }
 
     .pages > * {
-        /* grid-area: pages; */
-        /* border: black solid 1px;
-        border-radius: 5px;
-        background-color: lightgray; */
-        /* display: flex; */
         margin: 10px;
     }
 
@@ -257,11 +243,6 @@
     }
 
     .wrapper {
-        /* display: grid;
-        grid-gap: 10px;
-        grid-template-columns: 1fr;
-        grid-template-rows: 60px 1fr;
-        grid-template-areas: "header" "pages"; */
         font-family: "Arial";
         height: auto;
     }

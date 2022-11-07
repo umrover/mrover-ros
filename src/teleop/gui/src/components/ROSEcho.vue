@@ -39,8 +39,6 @@
   <script>
   
   import ROSLIB from "roslib"
-  
-  let interval;
 
   export default {
     name: 'ROSEcho',
@@ -52,21 +50,16 @@
             topics: [],
             selectedTopics : [],
             feed: [],
-            cols: []
+            cols: [],
+            topicsService: null,
+            serviceRequest: null
         }
     },
     
 
     methods: {
-        populateTopics : function(){
-            var topicsClient = new ROSLIB.Service({
-              ros : this.$ros,
-              name : '/rosapi/topics',
-              serviceType : 'rosapi/Topics'
-            });
-
-            var request = new ROSLIB.ServiceRequest();
-            topicsClient.callService(request, (result) => {
+        populateTopics : function(){ //populates active topics to the display
+            this.serviceClient.callService(this.serviceRequest, (result) => {
                 for(var i = 0; i < result.topics.length; i++){
                     this.topics.push(new ROSLIB.Topic({
                     ros: this.$ros,
@@ -78,7 +71,7 @@
 
         },
 
-        addType : function(){
+        addType : function(){ //method to handle checking/unchecking the topics
             //Add newly added topics to the column display and subscribe
             this.selectedTopics.forEach(prev => {
                 const found = this.cols.find(newTopic => newTopic.name === prev.name);
@@ -105,25 +98,22 @@
 
         mute: function(c) {
             c.muted = !c.muted;
-            console.log(c.muted)
         }
 
     },
   
-  
-  beforeDestroy: function () {
-  },
-  
   created: function () {
-    interval = window.setInterval(() => {
-        var topicsClient = new ROSLIB.Service({
-              ros : this.$ros,
-              name : '/rosapi/topics',
-              serviceType : 'rosapi/Topics'
-            });
 
-            var request = new ROSLIB.ServiceRequest();
-            topicsClient.callService(request, (result) => {
+    this.serviceClient = new ROSLIB.Service({
+        ros : this.$ros,
+        name : '/rosapi/topics',
+        serviceType : 'rosapi/Topics'
+    });
+
+    this.serviceRequest = new ROSLIB.ServiceRequest();
+
+    let interval = window.setInterval(() => { //auto-refreshes so newly activated topics (custom topics) are displayed
+            this.serviceClient.callService(this.serviceRequest, (result) => {
                 if(this.topics.length != result.topics.length){
                     this.topics.push(new ROSLIB.Topic({
                         ros: this.$ros,
@@ -166,10 +156,6 @@
     }
 
     .pages {
-        /* grid-area: pages;
-        border: black solid 1px;
-        border-radius: 5px;
-        background-color: lightgray; */
         margin: 15px;
     }
 

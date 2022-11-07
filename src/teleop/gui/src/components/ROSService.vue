@@ -35,6 +35,10 @@
   <script>
   
   import ROSLIB from "roslib"
+
+  const datatypes = ['bool', 'int8', 'uint8', 'int16', 'uint16', 
+                  'int32', 'uint32', 'int64', 'uint64', 'float32', 
+                  'float64', 'string', 'time', 'duration']
   
   
   export default {
@@ -56,7 +60,7 @@
     
 
     methods: {
-        populateServices: function() {
+        populateServices: function() { //populates list of active services for the dropdown menu
           var topicsClient = new ROSLIB.Service({
               ros : this.$ros,
               name : '/rosapi/services',
@@ -74,7 +78,7 @@
 
         },
 
-        switchService : function(){
+        switchService : function(){ //any time a service changes, it clears the display and displays the new schema (similar to ROSSend)
             this.args = '';
             this.schema = '';
             this.error = false;
@@ -101,9 +105,7 @@
                 serviceClient.callService(request1, (result) => {
                     const displayArgs = (arr) => {
                         for(var i = 0; i < arr.fieldtypes.length; i++){
-                            if(!(['bool', 'int8', 'uint8', 'int16', 'uint16', 
-                            'int32', 'uint32', 'int64', 'uint64', 'float32', 
-                            'float64', 'string', 'time', 'duration'].includes(arr.fieldtypes[i]))){
+                            if(!(datatypes.includes(arr.fieldtypes[i]))){
 
                                 this.args += "\"" + arr.fieldnames[i] + "\": ";
                                 if(arr.fieldarraylen[i] != -1){
@@ -138,57 +140,7 @@
 
         },
 
-        
-        switchType: function(){
-          this.args = "";
-          var argsClient = new ROSLIB.Service({
-              ros : this.$ros,
-              name : '/rosapi/args_details',
-              serviceType : 'rosapi/argsDetails'
-          });
-
-          var request2 = new ROSLIB.ServiceRequest({type: this.selectedType});
-          argsClient.callService(request2, (result) => {
-
-            const displayargs = (arr) => {
-              for(var i = 0; i < arr.fieldtypes.length; i++){
-                if(!(['bool', 'int8', 'uint8', 'int16', 'uint16', 
-                  'int32', 'uint32', 'int64', 'uint64', 'float32', 
-                  'float64', 'string', 'time', 'duration'].includes(arr.fieldtypes[i]))){
-
-                    this.args += "\"" + arr.fieldnames[i] + "\": ";
-                    if(arr.fieldarraylen[i] != -1){
-                      this.args += "[ ";
-                    }
-                    this.args += " {";
-                    ctr += 1; 
-                    displayargs(result.typedefs[ctr]);
-                    this.args += "\n}";
-                    if(arr.fieldarraylen[i] != -1){
-                      this.args += ", ]";
-                    }
-                }
-                else {
-                  this.args += "\""+ arr.fieldnames[i] + "\": ";
-                  if(arr.fieldarraylen[i] != -1){
-                    this.args += "[]";
-                  }
-                  if(i != arr.fieldnames.length-1) {
-                    this.args += ",\n";
-                  }
-
-                  this.schema += "\n" + arr.fieldtypes[i] + "\t" + arr.fieldnames[i];
-                }
-
-              }
-            }
-
-            var ctr = 0;
-            displayargs(result.typedefs[0]);
-          });
-        },
-
-        sendArgs : function(){
+        sendArgs : function(){ //when button pressed, send service and show response
           this.error = false;
           if(this.args[0] != "{") this.args = "{" + this.args + "}";
           var parsed_args;
@@ -196,11 +148,9 @@
             if(this.args == '{}') parsed_args = '';
             else parsed_args = new ROSLIB.ServiceRequest(JSON.parse(this.args));
           } catch (e){
-              console.log(e)
               this.error = true;
           }
           
-          console.log(parsed_args)
           if (!this.error){
             var serviceClient = new ROSLIB.Service({
                 ros : this.$ros,
@@ -215,16 +165,6 @@
           }
         }
     },
-  
-  
-  beforeDestroy: function () {
-    //window.clearInterval(interval);
-  },
-  
-  created: function () {
-  
-  
-  },
   
   }
   </script>
@@ -245,7 +185,6 @@
     }
 
     .header {
-        /* grid-area: header; */
         display: flex;
         align-items: center;
         box-shadow: 0px 10px 8px -4px rgba(236, 236, 236, 0.966);
@@ -256,11 +195,6 @@
     }
 
     .pages {
-        /* grid-area: pages; */
-        /* border: black solid 1px;
-        border-radius: 5px;
-        background-color: lightgray; */
-        /* display: flex; */
         display: grid;
         grid-gap: 10px;
         grid-template-columns: repeat(2, 1fr);

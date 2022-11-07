@@ -15,9 +15,7 @@
         <MenuButton link="#/SATask" name="Sample Acquisition GUI" />
         <MenuButton link="#/AutonTask" name="Autonomy Mission" />
         <MenuButton link="#/Control" name="Temp Controls GUI" />
-        <MenuButton link="#/ROSSend" name="ROS Send Message" />
-        <MenuButton link="#/ROSEcho" name="ROS Echo Message" />
-        <MenuButton link="#/ROSService" name="ROS Service" />
+        <MenuButton link="#/ROSDebug" name="ROS Debug Tools" />
       </fieldset>
     </div>
   </div>
