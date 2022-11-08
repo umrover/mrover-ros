@@ -5,7 +5,7 @@ from sensor_msgs.msg import NavSatFix, Imu
 import tf2_ros
 import numpy as np
 from pymap3d.enu import geodetic2enu
-
+from tf.transformations import quaternion_about_axis, quaternion_multiply
 
 class GPSLinearization:
     """
@@ -55,8 +55,15 @@ class GPSLinearization:
 
         :param msg: The Imu message containing IMU data that was just received
         """
+        # convert ROS msg quaternion to numpy array
         quaternion = np.array([msg.orientation.x, msg.orientation.y, msg.orientation.z, msg.orientation.w])
-        self.pose = SE3.from_pos_quat(position=self.pose.position, quaternion=quaternion)
+
+        # get a quaternion to rotate about the Z axis by 90 degrees
+        imu_offset_quat = quaternion_about_axis(np.pi/2, np.array([0, 0, 1]))
+
+        # rotate the IMU quaternion by the offset to convert it to the ENU frame
+        enu_quat = quaternion_multiply(imu_offset_quat, quaternion)
+        self.pose = SE3.from_pos_quat(position=self.pose.position, quaternion=enu_quat)
         self.pose.publish_to_tf_tree(self.tf_broadcaster, parent_frame=self.world_frame, child_frame=self.rover_frame)
 
 
