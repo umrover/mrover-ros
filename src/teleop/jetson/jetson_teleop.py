@@ -49,7 +49,8 @@ class Drive:
 
         # Makes dampen [0,1] instead of [-1,1]
         # negative sign required to drive forward by default instead of backward
-        dampen = -(dampen + 1) / 2
+        # (-1*dampen) because the top of the dampen switch is -1.0
+        dampen = -1*((-1*dampen) + 1) / 2
 
         linear = deadzone(
             msg.axes[self.joystick_mappings["forward_back"]] * self.drive_config["forward_back"]["multiplier"], 0.05
