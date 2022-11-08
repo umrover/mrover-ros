@@ -8,7 +8,4 @@
     <!-- run the teleop gui by starting the rosbridge server and then launching with a bash script -->
     <include file="$(find rosbridge_server)/launch/rosbridge_websocket.launch"></include>
     <node name="gui" pkg="mrover" type="gui_run.sh" cwd="node" />
-
-    <!--  dummy camera nodes -->
-	<node name="cameras" pkg="mrover" type="dummy_cameras.py"></node>
 </launch>
