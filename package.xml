@@ -83,17 +83,19 @@
   <depend>tf2_ros</depend>
   <depend>tf2</depend>
   <depend>visualization_msgs</depend>
-  <depend>vision_msgs</depend>
   <depend>image_transport</depend>
   <depend>sensor_msgs</depend>
   <depend>cv_bridge</depend>
-  <depend>fiducial_msgs</depend>
+  <depend>pcl_ros</depend>
   <depend>dynamic_reconfigure</depend>
   <depend>python3-cairosvg</depend>
   <depend>python3-joblib</depend>
+  <depend>camera_info_manager</depend>
+  <depend>rtabmap_ros</depend>
 
   <!-- Localization -->
   <depend>robot_localization</depend>
+  <depend>nmea_navsat_driver</depend>
 
   <!-- Navigation -->
   <depend>smach_ros</depend>
@@ -101,10 +103,21 @@
   <!-- Teleop -->
   <depend>teleop_twist_joy</depend>
 
+  <!-- MoveIt -->
+  <depend>moveit</depend>
+
+  <!-- Embedded Software -->
+  <depend>python3-odrive-pip</depend>
+
+  <!-- Drone -->
+  <depend>mavlink</depend>
+  <depend>mavros</depend>
+  <depend>mavros_extras</depend>
+  <depend>mavros_msgs</depend>
+
   <!-- Test -->
   <test_depend>rosunit</test_depend>
   <test_depend>rostest</test_depend>
-
 
   <!-- The export tag contains other, unspecified, tags -->
   <export>

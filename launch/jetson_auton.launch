@@ -1,0 +1,34 @@
+<launch>
+    <arg name="run_perception" default="true"/>
+
+    <!-- ZED wrapper node -->
+    <node if="$(arg run_perception)"
+          name="zed_node" pkg="zed_wrapper" type="zed_wrapper_node" output="screen" required="true">
+        <rosparam file="$(find mrover)/config/zed/common.yaml" command="load"/>
+        <rosparam file="$(find mrover)/config/zed/zed2i.yaml" command="load"/>
+
+        <remap to="/camera/color/image_raw" from="/zed_node/rgb/image_rect_color"/>
+        <remap to="/camera/depth/points" from="/zed_node/point_cloud/cloud_registered"/>
+        <remap to="/camera/color/camera_info" from="/zed_node/rgb/camera_info"/>
+    </node>
+
+    <!-- Static TF publisher for ZED mount-->
+    <node pkg="tf" type="static_transform_publisher" name="zed_mount_link_publisher"
+          args="0 0 0 0 0 0 base_link zed_mount_link 100"/>
+
+    <!-- Load ZED URDF -->
+    <param name="zed2i_description" command="$(find xacro)/xacro '$(find zed_wrapper)/urdf/zed_descr.urdf.xacro'
+                        camera_name:=zed2i
+                        camera_model:=zed2i
+                        base_frame:=base_link"/>
+
+    <!-- ZED URDF publisher -->
+    <node name="zed2i_state_publisher" pkg="robot_state_publisher" type="robot_state_publisher" output="screen"
+          required="true">
+        <remap from="robot_description" to="zed2i_description"/>
+    </node>
+
+    <include file="$(find mrover)/launch/jetson.launch"/>
+
+    <include file="$(find mrover)/launch/auton.launch"/>
+</launch>

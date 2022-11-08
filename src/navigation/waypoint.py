@@ -1,4 +1,4 @@
-from typing import List, Optional
+from typing import List
 
 import numpy as np
 
@@ -25,13 +25,13 @@ class WaypointState(BaseState):
         add_output_keys = add_output_keys or []
         super().__init__(
             context,
-            add_outcomes + ["waypoint_traverse", "single_fiducial", "search", "done"],
+            add_outcomes + ["waypoint_traverse", "single_fiducial", "search", "done", "gate_traverse"],
             add_input_keys,
             add_output_keys,
         )
 
     def rover_forward(self) -> np.ndarray:
-        return self.context.get_rover_pose().x_vector()
+        return self.context.rover.get_pose().rotation.direction_vector()
 
     def evaluate(self, ud) -> str:
         """
@@ -45,9 +45,13 @@ class WaypointState(BaseState):
         if current_waypoint is None:
             return "done"
 
-        # Go into the single fiducial state if we see it early
-        if current_waypoint.fiducial_id != Environment.NO_FIDUCIAL and self.context.env.current_fid_pos() is not None:
-            return "single_fiducial"
+        # Go into either gate or search if we see them early (and are looking)
+        if self.context.course.look_for_gate():
+            if self.context.env.current_gate() is not None:
+                return "gate_traverse"
+        if self.context.course.look_for_post():
+            if self.context.env.current_fid_pos() is not None:
+                return "single_fiducial"
 
         # Attempt to find the waypoint in the TF tree and drive to it
         try:
@@ -59,7 +63,7 @@ class WaypointState(BaseState):
                 DRIVE_FWD_THRESH,
             )
             if arrived:
-                if current_waypoint.fiducial_id == NO_FIDUCIAL:
+                if not self.context.course.look_for_gate() and not self.context.course.look_for_post():
                     # We finished a regular waypoint, go onto the next one
                     self.context.course.increment_waypoint()
                 else:

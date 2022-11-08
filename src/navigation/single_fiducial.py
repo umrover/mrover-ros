@@ -10,7 +10,7 @@ FIDUCIAL_STOP_THRESHOLD = 1.75
 
 class SingleFiducialState(WaypointState):
     def __init__(self, context: Context):
-        super().__init__(context)
+        super().__init__(context, add_outcomes=["waypoint_traverse", "single_fiducial", "search"])
 
     def evaluate(self, ud) -> str:
         """
@@ -24,9 +24,9 @@ class SingleFiducialState(WaypointState):
             # We have arrived at the waypoint where the fiducial should be but we have not seen it yet
             # TODO: add more advanced logic than just driving forward
             cmd_vel = Twist()
-            cmd_vel.linear.x = 0.5
+            cmd_vel.linear.x = 0.0
             self.context.rover.send_drive_command(cmd_vel)
-            return "single_fiducial"
+            return "search"
 
         try:
             cmd_vel, arrived = get_drive_command(fid_pos, self.context.rover.get_pose(), STOP_THRESH, DRIVE_FWD_THRESH)

@@ -1,0 +1,2 @@
+GPSWaypoint[] waypoints
+bool enable
