@@ -2,7 +2,7 @@
 <template>
     <div class="wrap">
         <div>
-            <h3> Motor Data </h3>
+            <h3> Motor Data  </h3>
         </div>
         <table class="tableFormat" style="undefined;table-layout: fixed; width: 745px">
         <colgroup>

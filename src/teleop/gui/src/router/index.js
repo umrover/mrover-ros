@@ -47,5 +47,7 @@ export default new Router({
       name: 'ControlsGUI',
       component: ControlGUI
     },
+    
+    
   ]
 })
