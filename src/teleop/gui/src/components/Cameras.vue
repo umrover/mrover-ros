@@ -28,8 +28,8 @@
       return {
         camsEnabled: new Array(9).fill(false),
         names: Array.from({length: 9}, (_,i) => "Camera: " + i),
-        cameraIdx: 1,
-        cameraName: "",
+        cameraIdx: 0,
+        cameraName: "Default",
         capacity: 2,
         qualities: new Array(9).fill(1),
         streamOrder: [-1, -1, -1, -1]
