@@ -13,7 +13,7 @@
 
 <script>
 import ToggleButton from './ToggleButton.vue'
-import ROSLIB from 'roslib/src/RosLib'
+import ROSLIB from 'roslib'
 
 export default {
   data () {
@@ -41,8 +41,26 @@ export default {
       ],
 
       autoShutdownEnabled: true,
-      autoShutdownIntended: true
+      autoShutdownIntended: true,
+
+      temp_sub: null
     }
+  },
+
+  created: function(){
+    this.temp_sub = new ROSLIB.Topic({
+      ros : this.$ros,
+      name : 'science_data/temperatures',
+      messageType : 'mrover/ScienceTemperatures'
+    });
+
+    this.temp_sub.subscribe((msg) => {
+      // Callback for temp_sub
+      console.log(msg)
+      for(let i = 0; i < 3; i++){
+        this.heaters[i].temp = msg.temperatures[i]
+      }
+    });
   },
 
   props: {
@@ -62,7 +80,7 @@ export default {
       let toggleHeaterServ = new ROSLIB.Service({
         ros : this.$ros,
         name : 'change_heater_state',
-        serviceType : 'mrover/change_heater_state'
+        serviceType : 'mrover/ChangeHeaterState'
       });
       let request = new ROSLIB.ServiceRequest({
         device: id,
@@ -80,7 +98,7 @@ export default {
       let autoShutdownServ = new ROSLIB.Service({
         ros : this.$ros,
         name : 'change_heater_auto_shut_off_state',
-        serviceType : 'mrover/change_heater_auto_shut_off_state'
+        serviceType : 'mrover/ChangeDeviceState'
       });
       let request = new ROSLIB.ServiceRequest({
         enable: this.autoShutdownIntended

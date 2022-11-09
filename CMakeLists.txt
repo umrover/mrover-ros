@@ -28,6 +28,7 @@ set(MROVER_MESSAGE_FILES
         GimbalCmd.msg
         GPSWaypoint.msg
         ODriveState.msg
+        ScienceTemperatures.msg
         Spectral.msg
         Waypoint.msg
         WaypointType.msg
