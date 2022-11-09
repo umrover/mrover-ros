@@ -30,7 +30,7 @@
     <Sudan v-bind:site="site"/>
   </div>
   <div class="box light-bg cameras">
-    <Cameras/>
+    <!-- <Cameras/> -->
   </div>
   <div class="box light-bg carousel">
     <Carousel/>
@@ -49,6 +49,7 @@
 
 <script>
 
+import ROSLIB from "roslib"
 import SelectSite from "./SelectSite.vue"
 import Raman from './Raman.vue'
 import Sudan from './Sudan.vue'
@@ -63,27 +64,24 @@ export default {
     return {
       site: "A",
 
-      spectral_data: {
-          d0_1:0,
-          d0_2:0,
-          d0_3:0,
-          d0_4:0,
-          d0_5:0,
-          d0_6:0,
-          d1_1:0,
-          d1_2:0,
-          d1_3:0,
-          d1_4:0,
-          d1_5:0,
-          d1_6:0,
-          d2_1:0,
-          d2_2:0,
-          d2_3:0,
-          d2_4:0,
-          d2_5:0,
-          d2_6:0
-      }
+      spectral_data: [0,0,0,0,0,0],
+
+      //Data Subscribers
+      spectral_sub: null
     }
+  },
+
+  created: function(){
+    this.spectral_sub = new ROSLIB.Topic({
+      ros : this.$ros,
+      name : 'science_data/spectral',
+      messageType : 'mrover/Spectral'
+    });
+
+    this.spectral_sub.subscribe((msg) => {
+      // Callback for spectral_sub
+      this.spectral_data = msg.data
+    });
   },
 
   components:{

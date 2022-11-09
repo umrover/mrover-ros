@@ -14,7 +14,7 @@ export default {
     },
   props: {
     spectral_data: {
-      type: Object,
+      type: Array,
       required: true
     },
   },
@@ -23,12 +23,12 @@ export default {
       const time = new Date(Date.now())
       const timeString = time.toTimeString().substring(0,17) +" "+time.toDateString()
       this.csvFileData = [
-        [timeString, spectral_data.d0_1.toFixed(0), spectral_data.d1_1.toFixed(0), spectral_data.d2_1.toFixed(0)],
-        [timeString, spectral_data.d0_2.toFixed(0), spectral_data.d1_2.toFixed(0), spectral_data.d2_2.toFixed(0)],
-        [timeString, spectral_data.d0_3.toFixed(0), spectral_data.d1_3.toFixed(0), spectral_data.d2_3.toFixed(0)],
-        [timeString, spectral_data.d0_4.toFixed(0), spectral_data.d1_4.toFixed(0), spectral_data.d2_4.toFixed(0)],
-        [timeString, spectral_data.d0_5.toFixed(0), spectral_data.d1_5.toFixed(0), spectral_data.d2_5.toFixed(0)],
-        [timeString, spectral_data.d0_6.toFixed(0), spectral_data.d1_6.toFixed(0), spectral_data.d2_6.toFixed(0)]
+        [timeString, (spectral_data[0]).toFixed(0)],
+        [timeString, (spectral_data[1]).toFixed(0)],
+        [timeString, (spectral_data[2]).toFixed(0)],
+        [timeString, (spectral_data[3]).toFixed(0)],
+        [timeString, (spectral_data[4]).toFixed(0)],
+        [timeString, (spectral_data[5]).toFixed(0)]
       ];
       //define the heading for each row of the data
       var csv = 'Timestamp,Spectral 0,Spectral 1,Spectral 2\n';

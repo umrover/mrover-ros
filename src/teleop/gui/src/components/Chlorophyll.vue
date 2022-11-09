@@ -37,12 +37,7 @@
                 <tbody>
                     <tr>
                         <td class = "tableElement">Spec 0</td>
-                        <td class = "tableElement">{{ spectral_data.d0_1.toFixed(0) }}</td>
-                        <td class = "tableElement">{{ spectral_data.d0_2.toFixed(0) }}</td>
-                        <td class = "tableElement">{{ spectral_data.d0_3.toFixed(0) }}</td>
-                        <td class = "tableElement">{{ spectral_data.d0_4.toFixed(0) }}</td>
-                        <td class = "tableElement">{{ spectral_data.d0_5.toFixed(0) }}</td>
-                        <td class = "tableElement">{{ spectral_data.d0_6.toFixed(0) }}</td>
+                        <td class = "tableElement" v-for="i in 6" :key="i">{{ (spectral_data[i-1]).toFixed(0) }}</td>
                     </tr>
                 </tbody>
             </table>
@@ -67,7 +62,7 @@ export default {
 
     props: {
         spectral_data: {
-            type: Object,
+            type: Array,
             required: true
         }
     },
