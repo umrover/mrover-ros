@@ -1,8 +1,9 @@
 <template>
     <div>
+        <!-- Cache is open loop for now 11/9/22 -->
         <h3>Cache Controls</h3>
-        <button>Close cache</button>
-        <button>Open cache</button>
+        <button>Reverse</button>
+        <button>Forward</button>
         <div id="box-1">
             <div id="circle"></div>
             Site {{site}} Cache Open

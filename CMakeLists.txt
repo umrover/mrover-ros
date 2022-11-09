@@ -22,6 +22,7 @@ set(MROVER_LINK_DIRS "")
 # message files
 set(MROVER_MESSAGE_FILES
         CalibrationStatus.msg
+        Carousel.msg
         Chassis.msg
         Course.msg
         EnableAuton.msg
