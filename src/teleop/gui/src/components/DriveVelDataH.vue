@@ -42,10 +42,6 @@
 </div>
 </template>
 
-    
-    
-    
-    
 <style scoped>
 .wrap {
     display: inline-block;
@@ -105,14 +101,7 @@
     vertical-align: top
 }
 </style>
-    
-    
-    
-    
-    
-        
-        
-        
+
 <script>
 import ROSLIB from "roslib"
 

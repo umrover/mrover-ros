@@ -97,9 +97,6 @@
 }
 </style>
 
-    
-    
-    
 <script>
 import ROSLIB from "roslib"
 
