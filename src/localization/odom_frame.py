@@ -3,15 +3,30 @@ import rospy
 from util.SE3 import SE3
 from sensor_msgs.msg import Imu
 import tf2_ros
+import tf
 import numpy as np
  
-class OdomFrame:
+class WorldToOdom:
     def __init__(self):
-        self.tf2_broadcaster = tf2_ros.TransformBroadcaster()
-        #self.IMU_Subscriber  = 
+        self.imu_transform_subscriber  = tf2_ros.TransformListener()
 
-    
-    def imu_callback(self, msg: Imu)
+    def world_to_odom(self, world_to_base):
+        """
+        Call every time we get a new world_to_base transform from the GPS
+        Get the latest odom_to_base transform and calculate world_to_odom, then publish it to the tf tree
+        """
+        imu_transform_subscriber = tf.transformListener()
+        #Need to get these values
+        odom_to_base = SE3.from_tf_tree()
+
+        world_to_odom = SE3()
+        # make sure these are SE3 objects
+        homogenous_world_to_base = SE3.get_homogenous_transform(world_to_base) 
+        homogenous_odom_to_base = SE3.get_homogenous_transform(odom_to_base)
+
+        homogenous_world_to_odom = np.matmul(np.inv(homogenous_odom_to_base), homogenous_world_to_base)
+        world_to_odom = SE3.from_homogenous_transform(homogenous_world_to_odom)
+        world_to_odom.publish_to_tf_tree(tf2_ros.TransformBroadcaster, "world", "odom")
 
 
 # TODO:
