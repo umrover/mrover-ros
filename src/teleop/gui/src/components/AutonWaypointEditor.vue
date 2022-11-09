@@ -44,6 +44,7 @@
       <div class="box datagrid">
         <div class="auton-check">
           <AutonModeCheckbox ref="autonCheckbox" v-bind:name="autonButtonText" v-bind:color="autonButtonColor"  v-on:toggle="toggleAutonMode($event)"/>
+          <Checkbox ref="teleopCheckbox" v-bind:name="teleopButtonText" v-bind:color="teleopButtonColor" v-on:toggle="toggleTeleopMode($event)"/>
         </div>
         <div class="stats">
           <p>
@@ -270,6 +271,11 @@ export default {
       this.waitingForNav = true;
     },
 
+    toggleTeleopMode: function (val){
+      this.setTeleopMode(val)
+      this.teleopButtonColor = "yellow"
+    },
+
   },
 
   watch: {
@@ -334,7 +340,10 @@ export default {
 
     autonButtonText: function() {
       return (this.autonButtonColor == "yellow") ? "Setting to "+this.autonEnabled : "Autonomy Mode"
-    }
+    },
+    teleopButtonText: function(){
+      return(this.teleopButtonColor == "yellow" ? "Setting to "+this.teleopEnabled : "TeleopMode")
+    },
 
   },
 

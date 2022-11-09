@@ -26,6 +26,9 @@
     <div class="driveControls" v-if="!this.autonEnabled" v-show="false">
       <DriveControls/>
     </div>
+    <div>
+      <CheckboxVue/>
+    </div>
 </div>
 </template>
 
@@ -36,6 +39,7 @@ import AutonWaypointEditor from './AutonWaypointEditor.vue'
 import DriveControls from "./DriveControls.vue";
 import { mapGetters } from 'vuex';
 import * as qte from "quaternion-to-euler";
+import CheckboxVue from "./Checkbox.vue";
 
 const navBlue = "#4695FF"
 const navGreen = "yellowgreen"
@@ -69,6 +73,8 @@ export default {
         enable: false,
         GPSWaypoint: []
       },
+   
+      teleopEnabledCheck : false,
 
       navBlink: false,
       greenHook: false,
@@ -180,7 +186,8 @@ export default {
   components:{
     AutonRoverMap,
     AutonWaypointEditor,
-    DriveControls
+    DriveControls,
+    CheckboxVue
 }
 }
 </script>
