@@ -23,7 +23,7 @@ if __name__ == "__main__":
         # ("course2", -5, -5, 0)
         (
             Waypoint(fiducial_id=0, tf_id="course0", type=WaypointType(val=WaypointType.POST)),
-            SE3(position=np.array([-3, -6, 0])),
+            SE3(position=np.array([-839.9, 10353.2, 0])),
         ),
         # (Waypoint(fiducial_id=0, tf_id="course1"), SE3(position=np.array([-3, -3, -1]))),
         # (Waypoint(fiducial_id=0, tf_id="course2"), SE3(position=np.array([-5, -5, 0]))),
