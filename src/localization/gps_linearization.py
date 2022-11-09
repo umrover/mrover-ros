@@ -7,6 +7,7 @@ import numpy as np
 from pymap3d.enu import geodetic2enu
 from tf.transformations import quaternion_about_axis, quaternion_multiply
 
+
 class GPSLinearization:
     """
     This node subscribes to GPS and IMU data, linearizes the GPS data
@@ -59,7 +60,7 @@ class GPSLinearization:
         quaternion = np.array([msg.orientation.x, msg.orientation.y, msg.orientation.z, msg.orientation.w])
 
         # get a quaternion to rotate about the Z axis by 90 degrees
-        imu_offset_quat = quaternion_about_axis(np.pi/2, np.array([0, 0, 1]))
+        imu_offset_quat = quaternion_about_axis(np.pi / 2, np.array([0, 0, 1]))
 
         # rotate the IMU quaternion by the offset to convert it to the ENU frame
         enu_quat = quaternion_multiply(imu_offset_quat, quaternion)
