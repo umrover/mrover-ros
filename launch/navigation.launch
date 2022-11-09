@@ -46,7 +46,7 @@
     <param name="trajectory_publish_rate" type="double" value="4" />
   </node>
   <!-- This publishes the transforms of the course waypoints -->
-  <node name="nav" pkg="mrover" type="navigation.py" />
+  <node name="nav" pkg="mrover" type="navigation.py" output="screen" />
 
   <!--
     ============
@@ -60,22 +60,18 @@
 
   <!-- Fuses together GPS position and IMU orientation with an Extended Kalman Filter (EKF) -->
   <!-- Publishes a resulting tf entry between odom and base_link -->
-  <node pkg="robot_localization" type="ekf_localization_node" name="ekf_odom" clear_params="true">
-    <!-- Publications -->
+  <!-- <node pkg="robot_localization" type="ekf_localization_node" name="ekf_odom" clear_params="true">
     <remap from="odometry/filtered" to="odometry/filtered" />
-  </node>
+  </node> -->
 
   <!-- Reads the GPS topic and convert it to cartesian based on a reference point-->
-  <node pkg="robot_localization" type="navsat_transform_node" name="navsat_transform" clear_params="true">
-    <!-- Reference latitude/longitude to linearize from -->
+  <!-- <node pkg="robot_localization" type="navsat_transform_node" name="navsat_transform" clear_params="true">
     <rosparam param="datum">[42.2, -83.7, 0.0, map, base_link]</rosparam>
-    <!-- Subscriptions -->
     <remap from="imu/data" to="imu" />
     <remap from="gps/fix" to="gps/fix" />
-    <!-- Confusing: This is needed in the event that your first GPS reading comes after your robot has attained some non-zero pose -->
     <remap from="odometry/filtered" to="odometry/filtered" />
-    <!-- Publications -->
     <remap from="gps/filtered" to="gps/filtered" />
     <remap from="odometry/gps" to="odometry/gps" />
-  </node>
+  </node> -->
+  <node name="gps_linearization" pkg="mrover" type="gps_linearization.py" output="screen" />
 </launch>
