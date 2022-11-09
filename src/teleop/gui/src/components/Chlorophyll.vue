@@ -48,8 +48,8 @@
 
 <script>
 import ToggleButton from './ToggleButton.vue';
+import ROSLIB from 'roslib';
 import GenerateReport from './GenerateReport.vue';
-import ROSLIB from 'roslib/src/RosLib';
 
 export default {
     data() {
@@ -99,7 +99,7 @@ export default {
                 serviceType : 'mrover/ChangeDeviceState'
             });
             let request = new ROSLIB.ServiceRequest({
-                enable: this.UV_active
+                enable: this.UV_endEffector
             });
             uvService.callService(request, (result) => {
                 if (!result) {
@@ -117,7 +117,7 @@ export default {
                 serviceType : 'mrover/ChangeDeviceState'
             });
             let request = new ROSLIB.ServiceRequest({
-                enable: this.UV_active
+                enable: this.UV_carousel
             });
             uvService.callService(request, (result) => {
                 if (!result) {
