@@ -44,7 +44,7 @@ def main():
     f = open(mrover / "src" / "teleop" / "download_map" / "keys.json", "r")
     keys = json.load(f)
 
-    # dowload and verify
+    # download and verify
     print("Downloading map... (This should take around a minute)")
     try:
         s3 = boto3.client("s3", aws_access_key_id=keys["accessKey"], aws_secret_access_key=keys["secretKey"])
