@@ -5,6 +5,7 @@ from sensor_msgs.msg import NavSatFix, Imu
 import tf2_ros
 import numpy as np
 from pymap3d.enu import geodetic2enu
+from tf.transformations import quaternion_about_axis, quaternion_multiply
 
 
 class GPSLinearization:
@@ -18,10 +19,13 @@ class GPSLinearization:
         # subscribe to the topics containing GPS and IMU data,
         # assigning them our corresponding callback functions
         rospy.Subscriber("gps/fix", NavSatFix, self.gps_callback)
-        rospy.Subscriber("imu", Imu, self.imu_callback)
+        rospy.Subscriber("imu/data", Imu, self.imu_callback)
 
-        # create a transform broadcaster so we can publish to the TF tree
+        # TF infrastructure objects to interact with the TF tree
         self.tf_broadcaster = tf2_ros.TransformBroadcaster()
+        self.tf_buffer = tf2_ros.Buffer()
+        self.tf_listener = tf2_ros.TransformListener()
+
         # TODO: is this valid init state?
         self.pose = SE3()
 
@@ -32,7 +36,15 @@ class GPSLinearization:
 
         self.world_frame = rospy.get_param("gps_linearization/world_frame")
         # TODO: account for separate GPS and IMU frames?
+        self.middle_frame = rospy.get_param("gps_linearization/middle_frame")
         self.rover_frame = rospy.get_param("gps_linearization/rover_frame")
+    
+    def get_indirect_transform(self, rover_in_map: SE3) -> SE3:
+        rover_in_odom = SE3.from_tf_tree(self.tf_buffer, self.middle_frame, self.rover_frame)
+        odom_to_rover = rover_in_odom.transform_matrix()
+        map_to_rover = rover_in_map.transform_matrix()
+        map_to_odom = np.inv(odom_to_rover) @ map_to_rover
+        return SE3.from_transform_matrix(map_to_odom)
 
     def gps_callback(self, msg: NavSatFix):
         """
@@ -55,8 +67,15 @@ class GPSLinearization:
 
         :param msg: The Imu message containing IMU data that was just received
         """
-        quaternion = np.array([msg.orientation.x, msg.orientation.y, msg.orientation.z, msg.orientation.w])
-        self.pose = SE3.from_pos_quat(position=self.pose.position, quaternion=quaternion)
+        # convert ROS msg quaternion to numpy array
+        imu_quat = np.array([msg.orientation.x, msg.orientation.y, msg.orientation.z, msg.orientation.w])
+
+        # get a quaternion to rotate about the Z axis by 90 degrees
+        offset_quat = quaternion_about_axis(np.pi / 2, np.array([0, 0, 1]))
+
+        # rotate the IMU quaternion by the offset to convert it to the ENU frame
+        enu_quat = quaternion_multiply(offset_quat, imu_quat)
+        self.pose = SE3.from_pos_quat(position=self.pose.position, quaternion=enu_quat)
         self.pose.publish_to_tf_tree(self.tf_broadcaster, parent_frame=self.world_frame, child_frame=self.rover_frame)
 
 

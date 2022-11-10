@@ -43,7 +43,7 @@
       <visualize>true</visualize>
       <topic>__default_topic__</topic>
       <plugin filename="libgazebo_ros_imu_sensor.so" name="imu_plugin">
-        <topicName>imu</topicName>
+        <topicName>imu/data</topicName>
         <bodyName>base_link</bodyName>
         <updateRateHZ>100.0</updateRateHZ>
         <gaussianNoise>0.0</gaussianNoise>
@@ -72,7 +72,7 @@
           <far>20</far>
         </clip>
       </camera>
-      <plugin name="camera_link_controller" filename="libgazebo_ros_openni_kinect.so">
+      <plugin name="gazebo_ros_openni_kinect_plugin" filename="libkinect_plugin.so">
         <baseline>0.2</baseline>
         <alwaysOn>true</alwaysOn>
         <updateRate>1.0</updateRate>

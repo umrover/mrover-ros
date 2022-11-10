@@ -10,7 +10,7 @@ from drive import get_drive_command
 from trajectory import Trajectory
 
 STOP_THRESH = 0.2
-DRIVE_FWD_THRESH = 0.95
+DRIVE_FWD_THRESH = 0.34  # 20 degrees
 
 
 @dataclass
@@ -72,7 +72,11 @@ class SearchState(BaseState):
             )
 
         # continue executing this path from wherever it left off
+        print(self.traj.coordinates)
+        print(self.traj.coordinates[0])
+        print(self.traj.cur_pt)
         target_pos = self.traj.get_cur_pt()
+        print(target_pos)
         cmd_vel, arrived = get_drive_command(
             target_pos,
             self.context.rover.get_pose(),
@@ -85,9 +89,10 @@ class SearchState(BaseState):
                 return "waypoint_traverse"
 
         self.context.rover.send_drive_command(cmd_vel)
-        # if we see the fiduicial, go to the fiducial state
-        current_waypoint = self.context.course.current_waypoint()
-        if current_waypoint.fiducial_id != Environment.NO_FIDUCIAL and self.context.env.current_gate() is not None:
+        # if we see the fiduicial or gate, go to either fiducial or gate state
+        if self.context.env.current_gate() is not None:
             return "gate_traverse"
+        elif self.context.env.current_fid_pos() is not None:
+            return "single_fiducial"
 
         return "search"
