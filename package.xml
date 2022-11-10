@@ -124,9 +124,6 @@
   <depend>moveit_setup_assistant</depend>
   <depend>moveit_simple_controller_manager</depend>
 
-  <!-- Embedded Software -->
-  <depend>python3-odrive-pip</depend>
-
   <!-- Test -->
   <test_depend>rosunit</test_depend>
   <test_depend>rostest</test_depend>

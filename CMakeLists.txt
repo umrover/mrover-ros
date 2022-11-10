@@ -25,9 +25,12 @@ set(MROVER_MESSAGE_FILES
         Carousel.msg
         Chassis.msg
         Course.msg
+        Diagnostic.msg
+        Enable.msg
         EnableAuton.msg
         GimbalCmd.msg
         GPSWaypoint.msg
+        Heater.msg
         ODriveState.msg
         ScienceTemperatures.msg
         Spectral.msg
@@ -38,6 +41,10 @@ set(MROVER_MESSAGE_FILES
 
 # service files
 set(MROVER_SERVICE_FILES
+        ChangeAutonLEDState.srv
+        ChangeDeviceState.srv
+        ChangeHeaterState.srv   
+        ChangeServoAngle.srv
         PublishCourse.srv
         )
 

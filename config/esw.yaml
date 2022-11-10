@@ -28,7 +28,35 @@ odrive:
   ros:
     publish_rate_hz: 20
 
-syringe_servos:
-  site_A: 135
-  site_B: 120
-  site_C: 140
+
+
+science:
+  color_ids:
+    red: 0
+    blue: 1
+    green: 2
+    "off": 3
+  device_mosfet_numbers:
+    arm_laser: 1
+    heater_0: 7
+    heater_1: 8
+    heater_2: 9
+    uv_led_carousel: 4
+    uv_led_end_effector: 1
+    white_led: 5
+  serial:
+    baud_rate: 38400
+    timeout: 0
+    port: "/dev/ttyTHS0"
+  syringe_servos:
+    site_A: 135
+    site_B: 120
+    site_C: 140
+  info:
+    sleep: 0.01
+    science_thermistors: 3
+    diag_thermistors: 3
+    diag_current: 3
+    spectral: 1
+    sa_data: 4
+    uart_transmit_msg_len: 30
