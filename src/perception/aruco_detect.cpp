@@ -101,7 +101,7 @@ void FiducialsNode::camInfoCallback(sensor_msgs::CameraInfo::ConstPtr const& msg
 
 void FiducialsNode::handleIgnoreString(std::string const& str) {
     // Ignore fiducials can take comma separated list of individual
-    // Fiducial ids or ranges, eg "1,4,8,9-12,30-40"
+    // Tag ids or ranges, eg "1,4,8,9-12,30-40"
     std::vector<std::string> strs;
     boost::split(strs, str, boost::is_any_of(","));
     for (const std::string& element: strs) {
@@ -151,7 +151,6 @@ FiducialsNode::FiducialsNode() : mNh(), mPnh("~"), mIt(mNh), mTfListener(mTfBuff
 
     int dicNo;
     mPnh.param<bool>("publish_images", mPublishImages, true);
-    mPnh.param<double>("fiducial_len", mFiducialLen, 0.2);
     mPnh.param<int>("dictionary", dicNo, 0);
     mPnh.param<bool>("publish_fiducial_tf", mPublishFiducialTf, true);
     mPnh.param<bool>("verbose", mIsVerbose, false);
@@ -225,13 +224,13 @@ int main(int argc, char** argv) {
     return EXIT_SUCCESS;
 }
 
-void PersistentFiducial::addReading(SE3 const& fidInOdom) {
+void XYZFilter::addReading(SE3 const& fidInOdom) {
     fidInOdomX.push(fidInOdom.positionVector().x());
     fidInOdomY.push(fidInOdom.positionVector().y());
     fidInOdomZ.push(fidInOdom.positionVector().z());
 }
 
-void PersistentFiducial::setFilterParams(size_t count, double proportion) {
+void XYZFilter::setFilterParams(size_t count, double proportion) {
     fidInOdomX.setFilterCount(count);
     fidInOdomX.setProportion(static_cast<float>(proportion));
     fidInOdomY.setFilterCount(count);
@@ -240,6 +239,10 @@ void PersistentFiducial::setFilterParams(size_t count, double proportion) {
     fidInOdomZ.setProportion(static_cast<float>(proportion));
 }
 
-SE3 PersistentFiducial::getFidInOdom() const {
+bool XYZFilter::ready() const {
+    return fidInOdomX.ready();
+}
+
+SE3 XYZFilter::getFidInOdom() const {
     return {{fidInOdomX.get(), fidInOdomY.get(), fidInOdomZ.get()}, Eigen::Quaterniond::Identity()};
 }
