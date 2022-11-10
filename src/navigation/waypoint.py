@@ -8,7 +8,7 @@ from drive import get_drive_command
 from state import BaseState
 
 STOP_THRESH = 0.5
-DRIVE_FWD_THRESH = 0.95
+DRIVE_FWD_THRESH = 0.34  # 20 degrees
 NO_FIDUCIAL = -1
 
 

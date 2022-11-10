@@ -32,9 +32,6 @@ set(MROVER_MESSAGE_FILES
         ODriveState.msg
         Waypoint.msg
         WaypointType.msg
-        WheelData.msg
-        GPSWaypoint.msg
-        EnableAuton.msg
         )
 
 # service files

@@ -13,7 +13,7 @@ from drive import get_drive_command
 from util.np_utils import normalized, perpendicular_2d
 
 STOP_THRESH = 0.2
-DRIVE_FWD_THRESH = 0.95
+DRIVE_FWD_THRESH = 0.34  # 20 degrees
 
 APPROACH_DISTANCE = 2.0
 
