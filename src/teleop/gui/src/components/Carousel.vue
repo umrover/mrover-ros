@@ -14,8 +14,9 @@
           </div>
           <div v-else>
             <!-- TODO: Add Event listeners for these buttons -->
-            <button>Reverse</button>
-            <button>Forward</button>
+            <button v-on:pointerdown="velocity = -1*velocityScaleDecimal" v-on:pointerup="velocity = 0" v-on:mouseout="velocity = 0">Reverse</button>
+            <button v-on:pointerdown="velocity = velocityScaleDecimal" v-on:pointerup="velocity = 0"  v-on:mouseout="velocity = 0">Forward</button>
+            <input type="range" min="0" max="100" id="myRange" v-model="velocityScale">Velocity Scaling: {{velocityScale}}%</input>
           </div>
         </div>
       </div>
@@ -34,6 +35,7 @@ export default {
           openLoop: false,
           velocity: 0,
           site: "A",
+          velocityScale: 100,
 
 
           carousel_pub: null
@@ -57,6 +59,10 @@ export default {
           site: this.site
         }
         return new ROSLIB.Message(msg)
+      },
+
+      velocityScaleDecimal: function(){
+        return this.velocityScale/100
       }
     },
 
