@@ -21,8 +21,11 @@ class GPSLinearization:
         rospy.Subscriber("gps/fix", NavSatFix, self.gps_callback)
         rospy.Subscriber("imu/data", Imu, self.imu_callback)
 
-        # create a transform broadcaster so we can publish to the TF tree
+        # TF infrastructure objects to interact with the TF tree
         self.tf_broadcaster = tf2_ros.TransformBroadcaster()
+        self.tf_buffer = tf2_ros.Buffer()
+        self.tf_listener = tf2_ros.TransformListener()
+
         # TODO: is this valid init state?
         self.pose = SE3()
 
@@ -33,7 +36,15 @@ class GPSLinearization:
 
         self.world_frame = rospy.get_param("gps_linearization/world_frame")
         # TODO: account for separate GPS and IMU frames?
+        self.middle_frame = rospy.get_param("gps_linearization/middle_frame")
         self.rover_frame = rospy.get_param("gps_linearization/rover_frame")
+    
+    def get_indirect_transform(self, rover_in_map: SE3) -> SE3:
+        rover_in_odom = SE3.from_tf_tree(self.tf_buffer, self.middle_frame, self.rover_frame)
+        odom_to_rover = rover_in_odom.transform_matrix()
+        map_to_rover = rover_in_map.transform_matrix()
+        map_to_odom = np.inv(odom_to_rover) @ map_to_rover
+        return SE3.from_transform_matrix(map_to_odom)
 
     def gps_callback(self, msg: NavSatFix):
         """
