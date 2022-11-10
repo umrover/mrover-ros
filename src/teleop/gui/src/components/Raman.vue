@@ -1,49 +1,47 @@
 <template>
-    <div>
-        <h3>Raman</h3>
-        <ToggleButton id="uv_carousel" v-bind:currentState="RamanLaserState" labelEnableText="Raman Laser On" labelDisableText="Raman Laser Off" v-on:change="toggleRamanLaser()"/>
-    </div>
+<div>
+    <h3>Raman</h3>
+    <ToggleButton id="uv_carousel" v-bind:currentState="ramanLaserState" labelEnableText="Raman Laser On" labelDisableText="Raman Laser Off" v-on:change="toggleRamanLaser()" />
+</div>
 </template>
 
 <script>
 import ToggleButton from './ToggleButton.vue';
 import ROSLIB from 'roslib';
 
-
 export default {
     data() {
         return {
-            RamanLaserState: false,
+            ramanLaserState: false,
             ramanService: null
         }
     },
 
-    created: function (){
+    created: function () {
         this.ramanService = new ROSLIB.Service({
-                ros : this.$ros,
-                name : 'change_arm_laser_state',
-                serviceType : 'mrover/ChangeDeviceState'
+            ros: this.$ros,
+            name: 'change_arm_laser_state',
+            serviceType: 'mrover/ChangeDeviceState'
         });
     },
 
-    methods:{
+    methods: {
         toggleRamanLaser: function () {
-                this.RamanLaserState = !this.RamanLaserState
-                let request = new ROSLIB.ServiceRequest({
-                    enable: this.RamanLaserState
-                });
-                console.log(request)
-                this.ramanService.callService(request, (result) => {
-                    if (!result) {
-                        this.RamanLaserState = !this.RamanLaserState
-                        alert("Toggling Raman Laser failed.")
-                    }
-                });
-            },
+            this.ramanLaserState = !this.ramanLaserState
+            let request = new ROSLIB.ServiceRequest({
+                enable: this.ramanLaserState
+            });
+            console.log(request)
+            this.ramanService.callService(request, (result) => {
+                if (!result) {
+                    this.ramanLaserState = !this.ramanLaserState
+                    alert("Toggling Raman Laser failed.")
+                }
+            });
+        },
     },
 
-
-    components:{
+    components: {
         ToggleButton
     }
 
