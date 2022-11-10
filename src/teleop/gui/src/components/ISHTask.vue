@@ -53,7 +53,6 @@ import ROSLIB from "roslib"
 import SelectSite from "./SelectSite.vue"
 import Raman from './Raman.vue'
 import Sudan from './Sudan.vue'
-import Cameras from './Cameras.vue'
 import Carousel from './Carousel.vue'
 import Cache from './Cache.vue'
 import Chlorophyll from './Chlorophyll.vue'
@@ -88,7 +87,6 @@ export default {
     SelectSite,
     Raman,
     Sudan,
-    Cameras,
     Carousel,
     Cache,
     Chlorophyll,
