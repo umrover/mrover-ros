@@ -8,17 +8,24 @@ from util.SE3 import SE3
 from util.SO3 import SO3
 from threading import Lock
 from pathlib import Path
+import os
 
 
-def make_filename():
+def make_filename(csv_data):
     # makes filename based on current time. "output_mmddyyyy_hr-min-sec.csv"
     now = datetime.datetime.now()
     day = now.strftime("%m%d%Y")
     hour = now.strftime("%H-%M-%S")
     time_stamp = day + "_" + hour
     home = str(Path.home())
-    file = home + "/catkin_ws/src/mrover/output_" + time_stamp + ".csv"
+    folder = home + "/catkin_ws/src/mrover/failure_data"
+    if not os.path.exists(folder):
+        os.makedirs(folder)
+    file = folder + "/output_" + time_stamp + ".csv"
     rospy.logerr(f"Created {file} in data_collection.py")
+    # Add header and default values to csv file
+    df = pd.DataFrame(csv_data)
+    df.to_csv(file, header=1, sep="\t")
     return file
 
 
@@ -35,7 +42,7 @@ class Data:
         self.commanded_angular_vel = np.array([0, 0, 0])
         self.actual_linear_vel = np.array([0, 0, 0])
         self.actual_angular_vel = 0
-        self.timestamp = 0.0
+        self.timestamp = datetime.datetime.now()
         self.curr_position = np.array([0, 0, 0])
         self.curr_rotation = SO3()
 
@@ -63,6 +70,7 @@ class Data:
             if len(args) == 1:
                 self.commanded_linear_vel = args[0].linear.x
                 self.commanded_angular_vel = args[0].angular.z
+
             else:
                 self.commanded_linear_vel = args[0]
                 self.commanded_angular_vel = args[1]
@@ -70,18 +78,17 @@ class Data:
     # Query the tf tree to get odometry. Calculate the linear and angular velocities with this data
     # We will only call this when the object list is not empty. When the list is empty the initial actual
     # linear and angular velocities will be their default values set to zero.
-    def update_tf_vel(self, context):
+    def update_tf_vel(self, context, previous):
         with self.mutex:
             curr_position = context.rover.get_pose().position
             curr_rotation_so3 = context.rover.get_pose().rotation
             self.curr_position = curr_position
-            # Wait delta_t seconds
-            delta_t = 3
-            time.sleep(delta_t)
-            final_position = context.rover.get_pose().position
-            final_rotation_so3 = context.rover.get_pose().rotation
-            delta_theta = final_rotation_so3.rot_distance_to(curr_rotation_so3)
-            self.actual_linear_vel = (final_position - curr_position) / delta_t
+            self.curr_rotation = curr_rotation_so3
+            delta_t = (self.timestamp - previous.timestamp).total_seconds()
+            previous_position = previous.curr_position
+            previous_rotation = previous.curr_rotation
+            delta_theta = curr_rotation_so3.rot_distance_to(previous_rotation)
+            self.actual_linear_vel = (curr_position - previous_position) / delta_t
             self.actual_angular_vel = delta_theta / delta_t
 
 
@@ -90,11 +97,10 @@ class Data:
 class DataCollector:
     def __init__(self):
         rospy.logerr(f"Ran __init__ in data_collection.py")
-        self.data_objs = []  # array holding Data_collection type objects
+        self.previous_obj = Data()
         self.collecting = False
         self.context = ""
         rospy.Subscriber("/drive_vel_data", JointState, self.make_esw_data_obj)
-        self.out_file = make_filename()
         self.csv_data = {
             "time": 0.0,
             "wheel_names": [[]],
@@ -105,8 +111,9 @@ class DataCollector:
             "commanded_angular_vel": [[]],
             "actual_angular_vel": 0,
             "curr_position": [[]],
-            "curr_rotation": [SO3()],
+            "curr_rotation": [[]],
         }
+        self.out_file = make_filename(self.csv_data)
 
     # This creates a dataframe containing one Data object to send to the csv file
     def create_dataframe(self, d: Data):
@@ -119,40 +126,36 @@ class DataCollector:
         self.csv_data["commanded_angular_vel"] = [d.commanded_angular_vel]
         self.csv_data["actual_angular_vel"] = [d.actual_angular_vel]
         self.csv_data["curr_position"] = [d.curr_position]
-        self.csv_data["curr_rotation"] = [d.curr_rotation]
+        self.csv_data["curr_rotation"] = [d.curr_rotation.quaternion]
         df = pd.DataFrame(self.csv_data)
         return df
 
     # This function will only be called/invoked when we receive new esw data
+    # Callback function for subscriber to JointState
     def make_esw_data_obj(self, esw_data):
         rospy.logerr(f"Called make_esw_data_obj")
         d = Data()
-        if len(self.data_objs) > 0:
-            d.update_commanded_vel(self.data_objs[-1].commanded_linear_vel, self.data_objs[-1].commanded_angular_vel)
-            d.update_tf_vel(self.context)
+        d.update_commanded_vel(self.previous_obj.commanded_linear_vel, self.previous_obj.commanded_angular_vel)
+        d.update_tf_vel(self.context, self.previous_obj)
         d.set_esw_data(esw_data)
         # create dataframe and send to csv
         rospy.logerr(f"Create dataframe in esw data and send to csv")
         df = self.create_dataframe(d)
-        df.to_csv(self.out_file, header=None, mode="a")
-        self.data_objs.append(d)
+        df.to_csv(self.out_file, header=0, mode="a", sep="\t")
+        self.previous_obj = d
 
     # This function will only be called/invoked when there is a commanded velocity
+    # Called in drive.py
     def make_cmd_vel_obj(self, cmd_vel):
         d = Data()
-        if len(self.data_objs) > 0:
-            d.set_esw_data(self.data_objs[-1].wheel_vel, self.data_objs[-1].effort, self.data_objs[-1].wheel_names)
-            d.update_tf_vel(self.context)
+        d.set_esw_data(self.previous_obj.wheel_vel, self.previous_obj.effort, self.previous_obj.wheel_names)
+        d.update_tf_vel(self.context, self.previous_obj)
         d.update_commanded_vel(cmd_vel)
         # create dataframe and send to csv
         rospy.logerr(f"Create dataframe in cmd vel and send to csv")
         df = self.create_dataframe(d)
-        df.to_csv(self.out_file, header=None, mode="a")
-        self.data_objs.append(d)
-        rospy.logerr(f"Length: {len(self.data_objs)}")
+        df.to_csv(self.out_file, header=0, mode="a", sep="\t")
+        self.previous_obj = d
 
     def set_context(self, context_in):
         self.context = context_in
-
-
-# collection = DataCollector()
