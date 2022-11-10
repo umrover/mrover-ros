@@ -2,6 +2,7 @@
 <div>
     <DriveControls></DriveControls>
     <ArmControls></ArmControls>
+    <GimbalControls></GimbalControls>
     <DriveVelDataH></DriveVelDataH>
     <DriveVelDataV></DriveVelDataV>
 
