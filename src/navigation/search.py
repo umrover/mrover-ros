@@ -72,7 +72,11 @@ class SearchState(BaseState):
             )
 
         # continue executing this path from wherever it left off
+        print(self.traj.coordinates)
+        print(self.traj.coordinates[0])
+        print(self.traj.cur_pt)
         target_pos = self.traj.get_cur_pt()
+        print(target_pos)
         cmd_vel, arrived = get_drive_command(
             target_pos,
             self.context.rover.get_pose(),
