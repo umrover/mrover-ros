@@ -6,11 +6,7 @@
         <input type="range" min="0" max="100" id="myRange" v-model="velocityScale">Velocity Scaling: {{velocityScale}}%</input>
 
         <!-- Cache is open loop for now 11/9/22 -->
-        <!-- Add this back once we know we can do this closed loop and get feedback that cache is closed -->
-        <!-- <div id="box-1">
-            <div id="circle"></div>
-            Site {{site}} Cache Open
-        </div> -->
+        <!-- TODO: Add Indicator for cache being opened or closed once we have closed loop -->
     </div>
 </template>
 
@@ -57,13 +53,6 @@ export default {
       }
     },
 
-
-    // props: {
-    //     site: {
-    //         type: String,
-    //         required: true,
-    //     }
-    // },
 }
 </script>
 

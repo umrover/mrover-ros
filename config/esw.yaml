@@ -48,6 +48,8 @@ science:
     baud_rate: 38400
     timeout: 0
     port: "/dev/ttyTHS0"
+  # These position are random for now
+  # Please configure once we know what positions we want to turn them to
   syringe_servo_positions:
     site_A: 135
     site_B: 120
