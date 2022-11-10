@@ -174,11 +174,11 @@ FiducialsNode::FiducialsNode() : mNh(), mPnh("~"), mIt(mNh), mTfListener(mTfBuff
     mConfigServer.setCallback(mCallbackType);
 
     mPnh.param<double>("adaptiveThreshConstant", mDetectorParams->adaptiveThreshConstant, 7);
-    mPnh.param<int>("adaptiveThreshWinSizeMax", mDetectorParams->adaptiveThreshWinSizeMax, 53); /* default 23 */
+    mPnh.param<int>("adaptiveThreshWinSizeMax", mDetectorParams->adaptiveThreshWinSizeMax, 23);
     mPnh.param<int>("adaptiveThreshWinSizeMin", mDetectorParams->adaptiveThreshWinSizeMin, 3);
-    mPnh.param<int>("adaptiveThreshWinSizeStep", mDetectorParams->adaptiveThreshWinSizeStep, 4); /* default 10 */
+    mPnh.param<int>("adaptiveThreshWinSizeStep", mDetectorParams->adaptiveThreshWinSizeStep, 10);
     mPnh.param<int>("cornerRefinementMaxIterations", mDetectorParams->cornerRefinementMaxIterations, 30);
-    mPnh.param<double>("cornerRefinementMinAccuracy", mDetectorParams->cornerRefinementMinAccuracy, 0.01); /* default 0.1 */
+    mPnh.param<double>("cornerRefinementMinAccuracy", mDetectorParams->cornerRefinementMinAccuracy, 0.1);
     mPnh.param<int>("cornerRefinementWinSize", mDetectorParams->cornerRefinementWinSize, 5);
 
     bool doCornerRefinement = true;
@@ -201,12 +201,12 @@ FiducialsNode::FiducialsNode() : mNh(), mPnh("~"), mIt(mNh), mTfListener(mTfBuff
     mPnh.param<double>("maxErroneousBitsInBorderRate", mDetectorParams->maxErroneousBitsInBorderRate, 0.04);
     mPnh.param<int>("minDistanceToBorder", mDetectorParams->minDistanceToBorder, 3);
     mPnh.param<double>("minMarkerDistanceRate", mDetectorParams->minMarkerDistanceRate, 0.05);
-    mPnh.param<double>("minMarkerPerimeterRate", mDetectorParams->minMarkerPerimeterRate, 0.1); /* default 0.3 */
+    mPnh.param<double>("minMarkerPerimeterRate", mDetectorParams->minMarkerPerimeterRate, 0.3);
     mPnh.param<double>("maxMarkerPerimeterRate", mDetectorParams->maxMarkerPerimeterRate, 4.0);
     mPnh.param<double>("minOtsuStdDev", mDetectorParams->minOtsuStdDev, 5.0);
     mPnh.param<double>("perspectiveRemoveIgnoredMarginPerCell", mDetectorParams->perspectiveRemoveIgnoredMarginPerCell, 0.13);
     mPnh.param<int>("perspectiveRemovePixelPerCell", mDetectorParams->perspectiveRemovePixelPerCell, 8);
-    mPnh.param<double>("polygonalApproxAccuracyRate", mDetectorParams->polygonalApproxAccuracyRate, 0.01); /* default 0.05 */
+    mPnh.param<double>("polygonalApproxAccuracyRate", mDetectorParams->polygonalApproxAccuracyRate, 0.08);
 
     mPnh.param<int>("filterCount", mFilterCount, 8);
     mPnh.param<double>("filterProportion", mFilterProportion, 0.75);

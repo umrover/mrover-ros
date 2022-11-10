@@ -80,7 +80,7 @@ macro(add_tests_macro)
     catkin_add_gtest(example-cpp-test test/example/cpp_test.cpp)
 
     # Python unit tests
-    catkin_add_nosetests(test/navigation/drive.py)
+#     catkin_add_nosetests(test/navigation/drive.py)
     catkin_add_nosetests(test/util/SE3_test.py)
     catkin_add_nosetests(test/util/SO3_test.py)
 

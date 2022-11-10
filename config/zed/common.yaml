@@ -16,7 +16,7 @@ auto_whitebalance:          true                                # Dynamic
 whitebalance_temperature:   42                                  # Dynamic - works only if `auto_whitebalance` is false
 depth_confidence:           30                                  # Dynamic
 depth_texture_conf:         100                                 # Dynamic
-pub_frame_rate:             60.0                                # Dynamic - frequency of publishing of video and depth data
+pub_frame_rate:             20.0                                # Dynamic - frequency of publishing of video and depth data
 point_cloud_freq:           10.0                                # Dynamic - frequency of the pointcloud publishing (equal or less to `grab_frame_rate` value)
 
 general:
@@ -24,7 +24,7 @@ general:
     zed_id:                     0
     serial_number:              0
     resolution:                 2                               # '0': HD2K, '1': HD1080, '2': HD720, '3': VGA
-    grab_frame_rate:            60                              # Frequency of frame grabbing for internal SDK operations
+    grab_frame_rate:            20                              # Frequency of frame grabbing for internal SDK operations
     gpu_id:                     -1
     base_frame:                 'base_link'                     # must be equal to the frame_id used in the URDF file
     verbose:                    false                           # Enable info message by the ZED SDK
@@ -48,7 +48,7 @@ pos_tracking:
     publish_tf:                 true                            # publish `visual_odom -> base_link` TF
     publish_map_tf:             false                           # publish `map -> visual_odom` TF
     map_frame:                  'map'                           # main frame
-    odometry_frame:             'visual_odom'                   # odometry frame
+    odometry_frame:             'odom'                   # odometry frame
     area_memory_db_path:        'zed_area_memory.area'          # file loaded when the node starts to restore the "known visual features" map. 
     save_area_memory_db_on_exit: false                          # save the "known visual features" map when the node is correctly closed to the path indicated by `area_memory_db_path`
     area_memory:                true                            # Enable to detect loop closure
