@@ -48,7 +48,7 @@ science:
     baud_rate: 38400
     timeout: 0
     port: "/dev/ttyTHS0"
-  syringe_servos:
+  syringe_servo_positions:
     site_A: 135
     site_B: 120
     site_C: 140

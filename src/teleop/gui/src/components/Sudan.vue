@@ -56,7 +56,7 @@ export default {
         for(var i = 0; i < 3; i++){
             let a = new ROSLIB.Param({
                 ros: this.$ros,
-                name: '/syringe_servos/site_' + letter
+                name: 'science/syringe_servos_positions/site_' + letter
             });
 
             a.get((value) => {
