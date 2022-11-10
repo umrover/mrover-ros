@@ -21,6 +21,6 @@ point = (42.381420, -83.563339, 0)
 # measured: 6.515km
 
 e, n, u = geodetic2enu(*point, *ref, deg=True)
-dist = (e**2 + n**2 + u**2)**(1/2)
+dist = (e**2 + n**2 + u**2) ** (1 / 2)
 print(e, n, u)
 print(dist)
