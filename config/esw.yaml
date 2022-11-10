@@ -27,3 +27,8 @@ odrive:
     turns_to_raw_ratio_right: 50.0
   ros:
     publish_rate_hz: 20
+
+syringe_servos:
+  site_A: 135
+  site_B: 120
+  site_C: 140
