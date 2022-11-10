@@ -7,7 +7,6 @@ __pycache__/
 # Common IDE's, ideally this should be in global gitignore per user
 **/.vscode/
 **/.idea/
-build/
 cmake-build*/
 
 #GUI Files
@@ -16,3 +15,9 @@ cmake-build*/
 /src/teleop/gui/src/static/map
 **/keys.json*
 **/yarn.lock*
+
+# Catkin
+.catkin_tools/
+build/
+devel/
+logs/

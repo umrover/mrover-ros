@@ -3,23 +3,20 @@
 	on the physical rover.
  -->
 <launch>
-	<!-- launch rover core nodes -->
-	<include file="$(find mrover)/launch/rover_core.launch" />
+    <!-- launch rover core nodes -->
+    <include file="$(find mrover)/launch/rover_core.launch"/>
 
-	<!-- params for hardware interfaces including IMU, GPS, and odrives -->
-	<rosparam command="load" file="$(find mrover)/config/esw.yaml" />
+    <!-- params for hardware interfaces including IMU, GPS, and odrives -->
+    <rosparam command="load" file="$(find mrover)/config/esw.yaml"/>
 
-	<!-- IMU and GPS driver nodes -->
-	<node name="imu_driver" pkg="mrover" type="imu_driver.py" output="screen" />
-	<node name="gps_driver" pkg="nmea_navsat_driver" type="nmea_serial_driver" />
+    <!-- IMU and GPS driver nodes -->
+    <node name="imu_driver" pkg="mrover" type="imu_driver.py" output="screen"/>
+    <node name="gps_driver" pkg="nmea_navsat_driver" type="nmea_serial_driver"/>
 
-	<!-- teleop node for receiving commands from the gui -->
-	<rosparam command="load" file="$(find mrover)/config/teleop.yaml" />
-	<node name="jetson_teleop" pkg="mrover" type="jetson_teleop.py" />
+    <!-- teleop node for receiving commands from the gui -->
+    <rosparam command="load" file="$(find mrover)/config/teleop.yaml"/>
+    <node name="jetson_teleop" pkg="mrover" type="jetson_teleop.py"/>
 
-	<!-- odrive controller node -->
-	<node name="odrive_control" pkg="mrover" type="odrive_control.py" output="screen" />
-
-	<!-- launch auton -->
-	<include file="$(find mrover)/launch/auton.launch" />
+    <!-- odrive controller node -->
+    <node name="odrive_control" pkg="mrover" type="odrive_control.py" output="screen"/>
 </launch>
