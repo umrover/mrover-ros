@@ -53,12 +53,6 @@ export default {
         bearing_deg: 0
       },
 
-      // Current Values being output to drivetrain for auton
-      AutonDriveControl: {
-        left_percent_velocity: 0,
-        right_percent_velocity: 0
-      },
-
       nav_status: {
         nav_state_name: "Off",
         completed_wps: 0,
@@ -76,7 +70,7 @@ export default {
       // Pubs and Subs
       nav_status_sub: null,
       odom_sub: null,
-      localization_sub: null
+      tfClient: null
 
     }
   },
@@ -94,11 +88,24 @@ export default {
       messageType : 'sensor_msgs/NavSatFix'
     });
 
-    this.localization_sub = new ROSLIB.Topic({
+    this.tfClient = new ROSLIB.TFClient({
       ros : this.$ros,
-      name : '/imu/data',
-      messageType : 'sensor_msgs/Imu'
+      fixedFrame : 'odom',
+      angularThres : 0.01,
+      transThres : 0.01
     });
+
+    this.tfClient.subscribe('base_link', (tf) => {
+        console.log(tf)
+        // Callback for IMU quaternion that describes bearing
+        let quaternion = tf.rotation
+        quaternion = [quaternion.w, quaternion.x, quaternion.y, quaternion.z]
+        //Quaternion to euler angles
+        let euler = qte(quaternion)
+        // euler[2] == euler z component
+        this.odom.bearing_deg = euler[2] * (180/Math.PI)
+    });
+
 
     this.nav_status_sub.subscribe((msg) => {
       // Callback for nav_status
@@ -110,16 +117,6 @@ export default {
       this.odom.latitude_deg = msg.latitude
       this.odom.longitude_deg = msg.longitude
     });
-
-    this.localization_sub.subscribe((msg) => {
-        // Callback for IMU quaternion that describes bearing
-        let quaternion = msg.orientation
-        quaternion = [quaternion.w, quaternion.x, quaternion.y, quaternion.z]
-        //Quaternion to euler angles
-        let euler = qte(quaternion)
-        // euler[2] == euler z component
-        this.odom.bearing_deg = euler[2] * (180/Math.PI)
-    })
 
     setInterval(() => {
       this.navBlink = !this.navBlink
@@ -137,17 +134,16 @@ export default {
         return navBlue
       }
       else if(true){
-        if(this.nav_status.nav_state_name == "Done" && this.navBlink){
+        if(this.nav_status.nav_state_name == "DoneState" && this.navBlink){
           return navGreen
         }
-        else if(this.nav_status.nav_state_name == "Done" && !this.navBlink){
+        else if(this.nav_status.nav_state_name == "DoneState" && !this.navBlink){
           return navGrey
         }
         else{
           return navRed
         }
       }
-      return navRed
     }
   },
 
