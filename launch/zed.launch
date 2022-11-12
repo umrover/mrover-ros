@@ -1,9 +1,4 @@
 <launch>
-    <arg name="rvizconfig" default="$(find mrover)/config/rviz/auton_sim.rviz" />
-    <node name="rviz" pkg="rviz" type="rviz" args="-d $(arg rvizconfig)" required="true" />
-
-    <arg name="run_perception" default="true"/>
-
     <!-- ZED wrapper node -->
     <node if="$(arg run_perception)"
           name="zed_node" pkg="zed_wrapper" type="zed_wrapper_node" output="screen" required="true">
@@ -30,6 +25,4 @@
           required="true">
         <remap from="robot_description" to="zed2i_description"/>
     </node>
-
-    <node name="aruco_detect" pkg="mrover" type="aruco_detect" />
 </launch>
