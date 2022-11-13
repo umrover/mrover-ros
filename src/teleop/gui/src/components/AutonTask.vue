@@ -93,12 +93,13 @@ export default {
         this.tfClient = new ROSLIB.TFClient({
             ros: this.$ros,
             fixedFrame: 'odom',
+            // Thresholds to trigger subscription callback
             angularThres: 0.01,
             transThres: 0.01
         });
 
+        // Subscriber for odom to base_link transform
         this.tfClient.subscribe('base_link', (tf) => {
-            console.log(tf)
             // Callback for IMU quaternion that describes bearing
             let quaternion = tf.rotation
             quaternion = [quaternion.w, quaternion.x, quaternion.y, quaternion.z]
