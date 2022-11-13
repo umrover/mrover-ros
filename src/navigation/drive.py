@@ -5,11 +5,8 @@ import rospy
 
 from geometry_msgs.msg import Twist
 from util.SE3 import SE3
-<<<<<<< HEAD
 import data_collection
-=======
 from util.np_utils import angle_to_rotate
->>>>>>> drive_controller
 
 rospy.logerr(f"Make DataCollector in drive.py")
 collector = data_collection.DataCollector()
@@ -70,4 +67,14 @@ def get_drive_command(
         np.sign(error) if full_turn_override else np.clip(error * TURNING_P, MIN_DRIVING_EFFORT, MAX_DRIVING_EFFORT)
     )
     print(cmd_vel.linear.x, cmd_vel.angular.z)
+        # Determine the sign of our effort by seeing if we are to the left or to the right of the target
+    # This is done by dotting rover_dir and target_dir rotated 90 degrees ccw
+    perp_alignment = target_dir[0] * -rover_dir[1] + target_dir[1] * rover_dir[0]
+    sign = np.sign(perp_alignment)
+    # 1 is target alignment (dot product of two normalized vectors that are parallel is 1)
+    error = 1.0 - alignment
+    cmd_vel.angular.z = np.clip(error * TURNING_P * sign, MIN_DRIVING_EFFORT, MAX_DRIVING_EFFORT)
+    # getting commanded velocity into the data collection
+    rospy.logerr(f"Called make_cmd_vel_obj from drive.py")
+    collector.make_cmd_vel_obj(cmd_vel)
     return cmd_vel, False
