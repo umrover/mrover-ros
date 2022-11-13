@@ -1,2 +1,18 @@
 controller_list:
-  []
+  - name: arm_controller
+    action_ns: follow_joint_trajectory
+    type: FollowJointTrajectory
+    default: True
+    joints:
+      - joint_a
+      - joint_b
+      - joint_c
+      - joint_d
+      - joint_e
+      - joint_f
+  - name: hand_controller
+    action_ns: follow_joint_trajectory
+    type: FollowJointTrajectory
+    default: True
+    joints:
+      - joint_f
