@@ -20,15 +20,13 @@
       <AutonRoverMap v-bind:odom="odom"/>
     </div>
     <div class="box waypoints light-bg">
-      <AutonWaypointEditor v-bind:odom="odom" v-bind:AutonDriveControl="AutonDriveControl"/>
+      <AutonWaypointEditor v-bind:odom="odom" v-bind:AutonDriveControl="AutonDriveControl" v-on:toggleTeleop="teleopEnabledCheck=$event" />
     </div>
     <!--Enable the drive controls if auton is off-->
-    <div class="driveControls" v-if="!this.autonEnabled" v-show="false">
+    <div class="driveControls" v-if="!this.autonEnabled && this.teleopEnabledCheck" v-show="false">
       <DriveControls/>
     </div>
-    <div>
-      <CheckboxVue/>
-    </div>
+
 </div>
 </template>
 
@@ -39,7 +37,7 @@ import AutonWaypointEditor from './AutonWaypointEditor.vue'
 import DriveControls from "./DriveControls.vue";
 import { mapGetters } from 'vuex';
 import * as qte from "quaternion-to-euler";
-import CheckboxVue from "./Checkbox.vue";
+import Checkbox from "./Checkbox.vue";
 
 const navBlue = "#4695FF"
 const navGreen = "yellowgreen"
@@ -187,7 +185,7 @@ export default {
     AutonRoverMap,
     AutonWaypointEditor,
     DriveControls,
-    CheckboxVue
+    Checkbox
 }
 }
 </script>

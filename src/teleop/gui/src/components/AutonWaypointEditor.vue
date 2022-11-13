@@ -92,7 +92,7 @@ export default {
     AutonDriveControl: {
       type: Object,
       required: true
-    }
+    },
   },
 
   data () {
@@ -112,6 +112,8 @@ export default {
           s: 0
         }
       },
+      
+      teleopEnabledCheck : false,
 
       nav_status: {
         nav_state_name: "Off",
@@ -272,8 +274,9 @@ export default {
     },
 
     toggleTeleopMode: function (val){
-      this.setTeleopMode(val)
-      this.teleopButtonColor = "yellow"
+      this.teleopEnabledCheck = !this.teleopEnabledCheck
+      this.$emit('toggleTeleop', this.teleopEnabledCheck)
+      this.teleopButtonColor = "green"
     },
 
   },
