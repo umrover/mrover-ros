@@ -8,4 +8,5 @@
     <!-- run the teleop gui by starting the rosbridge server and then launching with a bash script -->
     <include file="$(find rosbridge_server)/launch/rosbridge_websocket.launch"></include>
     <node name="gui" pkg="mrover" type="gui_run.sh" cwd="node" />
+    <node name="topic_services" pkg="mrover" type="topic_services.py"/>
 </launch>
