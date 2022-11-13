@@ -23,7 +23,7 @@ class Rover:
     ctx: Context
 
     def get_pose(self) -> SE3:
-        return SE3.from_tf_tree(self.ctx.tf_buffer, parent_frame="odom", child_frame="base_link")
+        return SE3.from_tf_tree(self.ctx.tf_buffer, parent_frame="map", child_frame="base_link")
 
     def send_drive_command(self, twist: Twist):
         self.ctx.vel_cmd_publisher.publish(twist)
@@ -42,13 +42,13 @@ class Environment:
     ctx: Context
     NO_FIDUCIAL: ClassVar[int] = -1
 
-    def get_fid_pos(self, fid_id: int, frame: str = "odom") -> Optional[np.ndarray]:
+    def get_fid_pos(self, fid_id: int, frame: str = "map") -> Optional[np.ndarray]:
         """
         Retrieves the pose of the given fiducial ID from the TF tree
         if it exists, otherwise returns None
         """
         try:
-            fid_pose = SE3.from_tf_tree(self.ctx.tf_buffer, parent_frame="odom", child_frame=f"fiducial{fid_id}")
+            fid_pose = SE3.from_tf_tree(self.ctx.tf_buffer, parent_frame="map", child_frame=f"fiducial{fid_id}")
         except (
             tf2_ros.LookupException,
             tf2_ros.ConnectivityException,
@@ -102,7 +102,7 @@ class Course:
         Gets the pose of the waypoint with the given index
         """
         waypoint_frame = self.course_data.waypoints[wp_idx].tf_id
-        return SE3.from_tf_tree(self.ctx.tf_buffer, parent_frame="odom", child_frame=waypoint_frame)
+        return SE3.from_tf_tree(self.ctx.tf_buffer, parent_frame="map", child_frame=waypoint_frame)
 
     def current_waypoint_pose(self):
         """

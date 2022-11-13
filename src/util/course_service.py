@@ -21,7 +21,7 @@ class CourseService(rospy.ServiceProxy):
         all_waypoint_info = []
         for waypoint_info, pose in waypoints:
             all_waypoint_info.append(waypoint_info)
-            pose.publish_to_tf_tree(self.tf_broadcaster, "odom", waypoint_info.tf_id)
+            pose.publish_to_tf_tree(self.tf_broadcaster, "map", waypoint_info.tf_id)
         course = Course(waypoints=all_waypoint_info)
         super().call(course)
 

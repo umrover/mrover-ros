@@ -3,5 +3,5 @@ gps_linearization:
   reference_point_longitude: -83.7
   reference_point_altitude: 224
 
-  world_frame: "odom"
+  world_frame: "map"
   rover_frame: "base_link"

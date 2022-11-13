@@ -22,7 +22,7 @@
 #include "filter.hpp"
 #include "se3.hpp"
 
-constexpr char const* ODOM_FRAME = "odom";
+constexpr char const* ODOM_FRAME = "map";
 constexpr char const* ROVER_FRAME = "base_link";
 
 using PointCloud = pcl::PointCloud<pcl::PointXYZRGBNormal>;
