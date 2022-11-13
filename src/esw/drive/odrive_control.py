@@ -9,21 +9,30 @@ and code, the axis of each ODrive are either all left or all right. Also, the
 wheels that are connected to one singular ODrive are opposite each other (i.e.
 an ODrive is assigned either the front, middle, or back wheels).
 """
-import sys
+
+import math
 import threading
 import time as t
-from dataclasses import dataclass
 from enum import Enum
-from typing import Any, Dict
+from typing import Any, Dict, List
 
 import odrive
 from odrive import find_any
 from odrive.enums import AXIS_STATE_CLOSED_LOOP_CONTROL, AXIS_STATE_IDLE, CONTROL_MODE_VELOCITY_CONTROL
 from odrive.utils import dump_errors
 import rospy
+from geometry_msgs.msg import Twist
 from sensor_msgs.msg import JointState
-from mrover.msg import ODriveState, WheelData
+from mrover.msg import ODriveState
 from enum import Enum
+
+
+global_publish_joint_state_data_publisher = rospy.Publisher(f"drive_data", JointState, queue_size=1)
+global_publish_joint_state_data = JointState()
+global_publish_joint_state_data.name = ["FrontLeft", "FrontRight", "MiddleLeft", "MiddleRight", "BackLeft", "BackRight"]
+global_publish_joint_state_data.position = [0, 0, 0, 0, 0, 0]
+global_publish_joint_state_data.velocity = [0, 0, 0, 0, 0, 0]
+global_publish_joint_state_data.effort = [0, 0, 0, 0, 0, 0]
 
 
 class Axis(Enum):
@@ -74,23 +83,24 @@ class Modrive:
     set velocity, and much more.
     :param _axes: A dictionary that maps left or right to an ODrive axes
         object.
-    :param _meters_to_turns_ratio_by_side: A dictionary that maps left or
-        right to a multiplier that can be used to convert turns into meters.
+    :param _direction_by_side: A dictionary that maps direction of motor
+        to direction of actual wheel.
     :param _odrive: An ODrive object.
-    :param _turns_to_raw_ratio_by_side: A dictionary that maps left or right
-        to the vel cmd multiplier that can be used to convert a raw [0, 1]
-        command to desired turns.
+    :param _radius: The radius of the wheels.
     :param _usb_lock: A lock that prevents multiple threads from accessing
         ODrive objects simultaneously.
     :param _watchdog_timeout: A float that represents the watchdog timeout.
+    :param _motor_turns_to_wheels_m_s_ratio: Multipler to convert from motor turns to wheel m/s
+
     """
 
     _axes: Dict[str, Any]
-    _meters_to_turns_ratio_by_side: Dict[str, float]
+    _direction_by_side: Dict[str, float]
     _odrive: Any
-    _turns_to_raw_ratio_by_side: Dict[str, float]
+    _radius: float
     _usb_lock: threading.Lock
     _watchdog_timeout: float
+    _motor_turns_to_wheels_m_s_ratio: float
 
     def __init__(self, odr) -> None:
         self._odrive = odr
@@ -100,16 +110,17 @@ class Modrive:
         }
 
         self._axes = {_side_by_axis[0]: self._odrive.axis0, _side_by_axis[1]: self._odrive.axis1}
-        self._meters_to_turns_ratio_by_side = {
-            "left": rospy.get_param("odrive/ratio/meters_to_turns_ratio_left"),
-            "right": rospy.get_param("odrive/ratio/meters_to_turns_ratio_right"),
+        self._direction_by_side = {
+            "left": rospy.get_param("odrive/ratio/direction_left"),
+            "right": rospy.get_param("odrive/ratio/direction_right"),
         }
-        self._turns_to_raw_ratio_by_side = {
-            "left": rospy.get_param("odrive/ratio/turns_to_raw_ratio_left"),
-            "right": rospy.get_param("odrive/ratio/turns_to_raw_ratio_right"),
-        }
+        self._radius = rospy.get_param("wheel/radius")
         self._usb_lock = threading.Lock()
         self._watchdog_timeout = rospy.get_param("odrive/config/watchdog_timeout")
+
+        wheel_radius = rospy.get_param("wheel/radius")
+        _ratio_motor_to_wheel = rospy.get_param("wheel/gear_ratio")
+        self._motor_turns_to_wheels_m_s_ratio = 2 * math.pi / _ratio_motor_to_wheel * wheel_radius
 
     def __getattr__(self, attr: Any) -> Any:
         """
@@ -175,12 +186,13 @@ class Modrive:
         assert axis == "left" or axis == "right", 'axis must be "left" or "right"'
         try:
             self._usb_lock.acquire()
-            velocity = self._axes[axis].encoder.vel_estimate / self._meters_to_turns_ratio_by_side[axis]
+            vel_turns = self._axes[axis].encoder.vel_estimate
+            vel_wheel_m_s = vel_turns * self._direction_by_side[axis] * self._motor_turns_to_wheels_m_s_ratio
         except Exception:
             raise DisconnectedError
         finally:
             self._usb_lock.release()
-        return velocity
+        return vel_wheel_m_s
 
     def has_errors(self) -> bool:
         """Returns a boolean to show if there are ODrive errors.
@@ -221,25 +233,21 @@ class Modrive:
         finally:
             self._usb_lock.release()
 
-    def set_vel(self, axis: str, vel: float) -> None:
+    def set_vel(self, axis: str, motor_rad_s: float) -> None:
         """Sets the requested ODrive axis to run the motors at the requested
         velocity.
         :param axis: A string that represents which wheel to read current from.
         The string must be "left" or "right".
-        :param vel: A float that is the requested velocity that is in range
-            [-1.0, 1.0].
+        :param vel_rad_s: A float that is the requested velocity that is in rad/s.
         :raises DisconnectedError: If Jetson is unable to communicate with
             ODrive.
         """
-        assert -1.0 <= vel and vel <= 1.0, "vel must be in range [-1.0, 1.0]"
         assert axis == "left" or axis == "right", 'axis must be "left" or "right"'
         try:
-            desired_input_vel_turns_s = vel * self._turns_to_raw_ratio_by_side[axis]
-            assert (
-                -50 <= desired_input_vel_turns_s and desired_input_vel_turns_s <= 50
-            ), "magnitude of desired_input_vel_turns_sec is dangerously high"
+            motor_turns_s = motor_rad_s / (2 * math.pi)
+            motor_turns_s *= self._direction_by_side[axis]
             self._usb_lock.acquire()
-            self._axes[axis].controller.input_vel = desired_input_vel_turns_s
+            self._axes[axis].controller.input_vel = motor_turns_s
         except Exception:
             raise DisconnectedError
         finally:
@@ -257,6 +265,22 @@ class Modrive:
         finally:
             self._usb_lock.release()
 
+    def _disable_watchdog(self) -> None:
+        """Disables the ODrive watchdog.
+        :raises DisconnectedError: If Jetson is unable to communicate with
+            ODrive.
+        """
+        try:
+            self._usb_lock.acquire()
+            for axis in self._axes.values():
+                axis.config.watchdog_timeout = 0
+                axis.config.enable_watchdog = False
+        except Exception:
+            rospy.logerr("Failed in _disable_watchdog. Unplugged")
+            raise DisconnectedError
+        finally:
+            self._usb_lock.release()
+
     def _enable_watchdog(self) -> None:
         """Enables the ODrive watchdog.
         :raises DisconnectedError: If Jetson is unable to communicate with
@@ -270,22 +294,6 @@ class Modrive:
                 axis.config.enable_watchdog = True
         except Exception:
             rospy.logerr("Failed in _enable_watchdog. Unplugged")
-            raise DisconnectedError
-        finally:
-            self._usb_lock.release()
-
-    def _disable_watchdog(self) -> None:
-        """Disables the ODrive watchdog.
-        :raises DisconnectedError: If Jetson is unable to communicate with
-            ODrive.
-        """
-        try:
-            self._usb_lock.acquire()
-            for axis in self._axes.values():
-                axis.config.watchdog_timeout = 0
-                axis.config.enable_watchdog = False
-        except Exception:
-            rospy.logerr("Failed in _disable_watchdog. Unplugged")
             raise DisconnectedError
         finally:
             self._usb_lock.release()
@@ -399,10 +407,10 @@ class ODriveBridge(object):
         watchdog.
     :param _current_lim: A float that is the current limit in Amperes.
     :param _id: A string that is the current ODrive's ID.
+    :param _data_publish_idx_by_pair: A dictionary that maps a pair to its publish index id
     :param _modrive: A Modrive object that abstracts away the ODrive functions.
     :param _pair: A string that is front, middle, or back.
-    :param _publishers: A dictionary that holds rospy Publisher object
-        for odrive state data and drive joint velocity and current data.
+    :param _odrive_publisher: Holds the rospy Publisher object for odrive state data
     :param _rate: A Rate object that is used for sleep to make sure publish
         does not spam.
     :param _speed: A Speed object that has requested left and right wheel
@@ -415,9 +423,10 @@ class ODriveBridge(object):
     start_time: float
     _current_lim: float
     _id: str
+    _data_publish_idx_by_pair: Dict[str, int]
     _modrive: Modrive
     _pair: str
-    _publishers: Dict[str, rospy.Publisher]
+    _odrive_publisher: rospy.Publisher
     _rate: rospy.Rate
     _speed: Speed
     _speed_lock: threading.Lock
@@ -429,29 +438,23 @@ class ODriveBridge(object):
         self.start_time = t.process_time()
         self._current_lim = rospy.get_param("odrive/config/current_lim")
         self._speed = Speed()
-        _odrive_ids = {
-            "front": rospy.get_param("odrive/ids/front"),
-            "middle": rospy.get_param("odrive/ids/middle"),
-            "back": rospy.get_param("odrive/ids/back"),
-        }
         self._pair = pair
-        self._publishers = {
-            "odrive": rospy.Publisher(f"drive_data/odrive/{pair}", ODriveState, queue_size=1),
-            "left_wheel": rospy.Publisher(f"drive_data/joint/{pair}/left", WheelData, queue_size=1),
-            "right_wheel": rospy.Publisher(f"drive_data/joint/{pair}/right", WheelData, queue_size=1),
+        self._odrive_publisher = rospy.Publisher(f"drive_data/odrive/{pair}", ODriveState, queue_size=1)
+        self._id = rospy.get_param(f"odrive/ids/{pair}")
+        self._data_publish_idx_by_pair = {
+            "left": rospy.get_param(f"odrive/publish_index/{pair}_left"),
+            "right": rospy.get_param(f"odrive/publish_index/{pair}_right"),
         }
-        self._id = _odrive_ids[pair]
         self._rate = rospy.Rate(rospy.get_param("odrive/ros/publish_rate_hz"))
         self._speed_lock = threading.Lock()
         self._state = DisconnectedState()
 
     def change_axis_speed(self, axis: Axis, speed: float) -> None:
         """Sets the self._speed to the requested speeds. The speeds must be in
-        the range [-1.0, 1.0].
+        rad/s.
         :param axis: An Axis object that is either Axis.LEFT or Axis.RIGHT
-        :param speed: A float that has the requested speed of the axis.
+        :param speed: A float that has the requested speed of the axis in m/s.
         """
-        assert -1.0 <= speed <= 1.0, "speed must be in range[-1.0, 1.0]"
         self._speed_lock.acquire()
         if axis == Axis.LEFT:
             self._speed = Speed(speed, self._speed.right)
@@ -532,11 +535,13 @@ class ODriveBridge(object):
             The string must be "left" or "right"
         """
         assert axis == "left" or axis == "right", 'axis must be "left" or "right"'
-        ros_msg = WheelData()
         try:
-            ros_msg.current = self._modrive.get_measured_current(axis)
-            ros_msg.velocity = self._modrive.get_velocity(axis)
-            self._publishers[f"{axis}_wheel"].publish(ros_msg)
+            publish_index = self._data_publish_idx_by_pair[axis]
+
+            global_publish_joint_state_data.velocity[publish_index] = self._modrive.get_velocity(axis)
+            global_publish_joint_state_data.effort[publish_index] = self._modrive.get_measured_current(axis)
+
+            global_publish_joint_state_data_publisher.publish(global_publish_joint_state_data)
         except DisconnectedError:
             return
         except AttributeError:
@@ -556,7 +561,7 @@ class ODriveBridge(object):
         """
         ros_msg = ODriveState()
         ros_msg.state = state
-        self._publishers["odrive"].publish(ros_msg)
+        self._odrive_publisher.publish(ros_msg)
 
     def _update(self) -> None:
         """Updates based on the current state.
@@ -594,14 +599,41 @@ class ODriveBridge(object):
 class Application(object):
     """Manages the ODriveBridge objects and keeps track of communication.
     :param _bridges: A list of bridges that are contain data for the ODrives controlling
-        the front, middle, and back wheels."""
+        the front, middle, and back wheels.
+    :param _max_motor_speed_rad_s: Max permitted speed of the motor in rad/s.
+    :param _wheel_distance_inner: Distance of inner wheels (middle) from center in meters
+    :param _wheel_distance_outer: Distance of outer wheels (front/back) from center in meters
+    :param _wheels_m_s_to_motor_rad_ratio: Multipler to convert from wheel m/s to motor rad"""
+
+    _bridges: List[ODriveBridge]
+    _max_motor_speed_rad_s: float
+    _wheel_distance_inner: float
+    _wheel_distance_outer: float
+    _wheels_m_s_to_motor_rad_ratio: float
 
     def __init__(self):
 
-        rospy.init_node(f"odrive_control")
+        rospy.init_node("odrive_control")
         self._bridges = [ODriveBridge("front"), ODriveBridge("middle"), ODriveBridge("back")]
-        rospy.Subscriber("drive_cmd/wheels/left", JointState, self._drive_vel_cmd_callback, Axis.LEFT)
-        rospy.Subscriber("drive_cmd/wheels/right", JointState, self._drive_vel_cmd_callback, Axis.RIGHT)
+
+        rover_width = rospy.get_param("rover/width")
+        rover_length = rospy.get_param("rover/length")
+
+        self._wheel_distance_inner = rover_width / 2.0
+        self._wheel_distance_outer = math.sqrt(((rover_width / 2.0) ** 2) + ((rover_length / 2.0) ** 2))
+
+        wheel_radius = rospy.get_param("wheel/radius")
+        _ratio_motor_to_wheel = rospy.get_param("wheel/gear_ratio")
+        self._wheels_m_s_to_motor_rad_ratio = (1 / wheel_radius) * _ratio_motor_to_wheel
+
+        _max_speed_m_s = rospy.get_param("rover/max_speed")
+        assert _max_speed_m_s > 0, "rover/max_speed config must be greater than 0"
+
+        max_motor_rad_s = _max_speed_m_s * self._wheels_m_s_to_motor_rad_ratio
+        measured_max_motor_rad_s = 50 * 2 * math.pi  # Should not be changed. Derived from testing.
+        self._max_motor_speed_rad_s = min(measured_max_motor_rad_s, max_motor_rad_s)
+
+        rospy.Subscriber("cmd_vel", Twist, self._process_twist_message)
 
     def run(self):
         """Runs the publish data loop and watchdog loops for all bridges"""
@@ -617,33 +649,48 @@ class Application(object):
             threads_dict["publish_data_threads"][i].start()
             threads_dict["watchdog_while_threads"][i].start()
 
-        for i in range(len(self._bridges)):
-            threads_dict["publish_data_threads"][i].join()
-            threads_dict["watchdog_while_threads"][i].join()
-
         rospy.spin()
 
-    def _drive_vel_cmd_callback(self, ros_msg: JointState, axis: Axis) -> None:
-        """Calls the change_axis_speed function.
-        Note that this does NOT actually change speed that the ODrive comands
-        the motors at. One must wait for the ODriveBridge._update() function
-        to be called for that to happen.
-        :param ros_msg: A ROS message that is JointState.
-        :param axis: An Axis enum that is either Axis.LEFT or Axis.RIGHT
-        """
-        velocity = ros_msg.velocity[0]
-        velocity = self._throttle(velocity)
+    def _process_twist_message(self, ros_msg: Twist):
+        """Converts the twist message into rad/s to turn per wheel.
+        Then tells the wheels to move at that speed.
+        :param ros_msg: A Twist message of the rover to turn."""
+        forward = ros_msg.linear.x
+        turn = ros_msg.angular.z
+
+        turn_difference_inner = turn * self._wheel_distance_inner
+        turn_difference_outer = turn * self._wheel_distance_outer
+
+        left_rad_inner = (forward - turn_difference_inner) * self._wheels_m_s_to_motor_rad_ratio
+        right_rad_inner = (forward + turn_difference_inner) * self._wheels_m_s_to_motor_rad_ratio
+        left_rad_outer = (forward - turn_difference_outer) * self._wheels_m_s_to_motor_rad_ratio
+        right_rad_outer = (forward + turn_difference_outer) * self._wheels_m_s_to_motor_rad_ratio
+
+        # Ignore inner since outer > inner always
+        larger_abs_rad_s = max(abs(left_rad_outer), abs(right_rad_outer))
+        if larger_abs_rad_s > self._max_motor_speed_rad_s:
+            change_ratio = self._max_motor_speed_rad_s / larger_abs_rad_s
+            left_rad_inner *= change_ratio
+            right_rad_inner *= change_ratio
+            left_rad_outer *= change_ratio
+            right_rad_outer *= change_ratio
+
         for bridge in self._bridges:
             bridge.start_time = t.process_time()
-            if bridge.get_state_string() == "Armed":
-                bridge.change_axis_speed(axis, velocity)
 
-    def _throttle(self, speed: float) -> float:
-        """Throttles the speed to a range of [-1.0, 1.0].
-        :param speed: A float that is the input speed.
-        :returns: A float that limits the input to the range [-1.0, 1.0].
-        """
-        return max(min(1.0, speed), -1.0)
+        # Handle inner wheels
+        if self._bridges[1].get_state_string() == "Armed":
+            self._bridges[1].change_axis_speed(Axis.LEFT, left_rad_inner)
+            self._bridges[1].change_axis_speed(Axis.RIGHT, right_rad_inner)
+
+        # Handle outer wheels
+        if self._bridges[0].get_state_string() == "Armed":
+            self._bridges[0].change_axis_speed(Axis.LEFT, left_rad_outer)
+            self._bridges[0].change_axis_speed(Axis.RIGHT, right_rad_outer)
+
+        if self._bridges[2].get_state_string() == "Armed":
+            self._bridges[2].change_axis_speed(Axis.LEFT, left_rad_outer)
+            self._bridges[2].change_axis_speed(Axis.RIGHT, right_rad_outer)
 
 
 def main():

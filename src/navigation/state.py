@@ -60,6 +60,6 @@ class DoneState(BaseState):
             return "waypoint_traverse"
 
         # Stop rover
-        cmd_vel = Twist()
-        self.context.rover.send_drive_command(cmd_vel)
+        # cmd_vel = Twist()
+        # self.context.rover.send_drive_command(cmd_vel)
         return "done"
