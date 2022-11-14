@@ -24,7 +24,8 @@
       <velocityTopicName>gps/fix_velocity</velocityTopicName>
       <referenceLatitude>42.2</referenceLatitude>
       <referenceLongitude>-83.7</referenceLongitude>
-      <referenceHeading>0.0</referenceHeading>
+      <referenceHeading>90.0</referenceHeading>
+      <!-- <referenceHeading>0.0</referenceHeading> -->
       <referenceAltitude>0.0</referenceAltitude>
       <offset>0 0 0</offset>
       <drift>0.0 0.0 0.0</drift>
@@ -47,8 +48,8 @@
         <updateRateHZ>100.0</updateRateHZ>
         <gaussianNoise>0.0</gaussianNoise>
         <xyzOffset>0 0 0</xyzOffset>
-        <rpyOffset>0 0 0</rpyOffset>
-        <frameName>imu_link</frameName>
+        <rpyOffset>0 0 -1.570796</rpyOffset>
+        <frameName>base_link</frameName>
         <initialOrientationAsReference>false</initialOrientationAsReference>
       </plugin>
       <pose>0 0 0 0 0 0</pose>

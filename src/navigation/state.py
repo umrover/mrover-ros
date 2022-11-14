@@ -58,8 +58,4 @@ class DoneState(BaseState):
         # Check if we have a course to traverse
         if self.context.course and (not self.context.course.is_complete()):
             return "waypoint_traverse"
-
-        # Stop rover
-        cmd_vel = Twist()
-        self.context.rover.send_drive_command(cmd_vel)
         return "done"
