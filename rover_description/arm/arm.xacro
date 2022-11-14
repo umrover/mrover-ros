@@ -16,6 +16,13 @@
         </visual>
     </xacro:macro>
 
+    <xacro:macro name="link-inertial" params="x:=0 y:=0 z:=0 roll:=0 pitch:=0 yaw:=0 mass ixx iyy izz ixy:=0 iyz:=0 ixz:=0">
+        <origin xyz="${x} ${y} ${z}" rpy="${roll} ${pitch} ${yaw}" />
+        <!-- mass in kg -->
+        <mass value="${mass}" />
+        <inertia ixx="${ixx}" iyy="${iyy}" izz="${izz}" ixy="${ixy}" iyz="${iyz}" ixz="${ixz}" />
+    </xacro:macro>
+
     <!-- defines a cylinder collision object with two endpoints -->
     <xacro:macro name="link-collision-cylinder" params="radius x1 y1 z1 x2 y2 z2 roll:=0 pitch:=0 yaw:=0">
         <xacro:property name="dx" value="${x2-x1}" />
