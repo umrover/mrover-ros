@@ -16,14 +16,12 @@ class GPSLinearization:
     """
 
     def __init__(self):
-        # subscribe to the topics containing GPS and IMU data,
-        # assigning them our corresponding callback functions
         rospy.Subscriber("gps/fix", NavSatFix, self.gps_callback)
         rospy.Subscriber("imu/data", Imu, self.imu_callback)
 
-        # create a transform broadcaster so we can publish to the TF tree
         self.tf_broadcaster = tf2_ros.TransformBroadcaster()
-        # TODO: is this valid init state?
+
+        # init to zero pose
         self.pose = SE3()
 
         # read required parameters, if they don't exist an error will be thrown
@@ -32,7 +30,6 @@ class GPSLinearization:
         self.ref_alt = rospy.get_param("gps_linearization/reference_point_altitude")
 
         self.world_frame = rospy.get_param("gps_linearization/world_frame")
-        # TODO: account for separate GPS and IMU frames?
         self.rover_frame = rospy.get_param("gps_linearization/rover_frame")
 
     def gps_callback(self, msg: NavSatFix):
@@ -45,6 +42,8 @@ class GPSLinearization:
         cartesian = np.array(
             geodetic2enu(msg.latitude, msg.longitude, msg.altitude, self.ref_lat, self.ref_lon, self.ref_alt, deg=True)
         )
+
+        # ignore Z
         cartesian[2] = 0
         self.pose = SE3(position=cartesian, rotation=self.pose.rotation)
         self.pose.publish_to_tf_tree(self.tf_broadcaster, parent_frame=self.world_frame, child_frame=self.rover_frame)
