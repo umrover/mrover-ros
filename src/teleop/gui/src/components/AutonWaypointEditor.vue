@@ -202,7 +202,6 @@ export default {
 
       const courseMsg = new ROSLIB.Message(course)
       
-      // Publish Inital Values
       this.course_pub.publish(courseMsg)
       this.rover_stuck_pub.publish({data: this.roverStuck})
       
