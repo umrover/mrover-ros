@@ -44,7 +44,7 @@ class TestIntegration(unittest.TestCase):
 
         while not rospy.is_shutdown():
             try:
-                rover_in_world = SE3.from_tf_tree(tf_buffer, parent_frame="odom", child_frame="base_link")
+                rover_in_world = SE3.from_tf_tree(tf_buffer, parent_frame="map", child_frame="base_link")
                 distance_to_target = waypoint_in_world.pos_distance_to(rover_in_world)
                 rospy.logdebug(distance_to_target)
                 if distance_to_target < COMPLETION_TOLERANCE:

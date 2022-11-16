@@ -7,7 +7,7 @@ class Trajectory:
     # Coordinates of the trajectory
     coordinates: np.ndarray
     # Currently tracked coordinate index along trajectory
-    cur_pt: int = field(default=False, init=False)
+    cur_pt: int = field(default=0, init=False)
 
     def get_cur_pt(self) -> np.ndarray:
         return self.coordinates[self.cur_pt]

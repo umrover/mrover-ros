@@ -6,6 +6,7 @@ import typing
 from enum import IntEnum
 import rospy as ros
 from sensor_msgs.msg import Joy, JointState
+from geometry_msgs.msg import Twist
 
 
 def quadratic(val):
@@ -31,45 +32,49 @@ def create_joint_msg(joints, joint, value):
 
 
 class Drive:
-    def __init__(self, joystick_mappings, drive_config, track_radius, wheel_radius):
+    def __init__(self, joystick_mappings, drive_config):
         self.joystick_mappings = joystick_mappings
         self.drive_config = drive_config
 
         # Constants for diff drive
-        self.TRACK_RADIUS = track_radius  # meter
-        self.WHEEL_RADIUS = wheel_radius  # meter
-        self.left_wheel_pub = ros.Publisher("drive_cmd/wheels/left", JointState, queue_size=100)
-        self.right_wheel_pub = ros.Publisher("drive_cmd/wheels/right", JointState, queue_size=100)
+        self.max_wheel_speed = ros.get_param("rover/max_speed")
+        self.wheel_radius = ros.get_param("wheel/radius")
+        self.twist_pub = ros.Publisher("/cmd_vel", Twist, queue_size=100)
 
     def teleop_drive_callback(self, msg):
         joints: typing.Dict[str, JointState] = {}
 
-        forward_back = deadzone(
+        # Super small deadzone so we can safely e-stop with dampen switch
+        dampen = deadzone(msg.axes[self.joystick_mappings["dampen"]], 0.01)
+
+        # Makes dampen [0,1] instead of [-1,1]
+        # negative sign required to drive forward by default instead of backward
+        # (-1*dampen) because the top of the dampen switch is -1.0
+        dampen = -1 * ((-1 * dampen) + 1) / 2
+
+        linear = deadzone(
             msg.axes[self.joystick_mappings["forward_back"]] * self.drive_config["forward_back"]["multiplier"], 0.05
         )
-        left_right = deadzone(
+
+        # Convert from [-1,1] to range from +-max_wheel_speed and apply dampen
+        linear = dampen * (linear * self.max_wheel_speed)
+
+        angular = deadzone(
             msg.axes[self.joystick_mappings["left_right"]] * self.drive_config["left_right"]["multiplier"]
             + msg.axes[self.joystick_mappings["twist"]] * self.drive_config["twist"]["multiplier"],
             0.05,
         )
 
-        # Super small deadzone so we can safely e-stop with dampen switch
-        dampen = deadzone(msg.axes[self.joystick_mappings["dampen"]], 0.01)
+        # Same as linear but for angular speed
+        angular = dampen * (angular * (self.max_wheel_speed / self.wheel_radius))
+        # Clamp if both twist and left_right are used at the same time
+        if abs(angular) > abs(self.max_wheel_speed / self.wheel_radius):
+            angular = copysign(self.max_wheel_speed / self.wheel_radius, angular)
+        twist_msg = Twist()
+        twist_msg.linear.x = linear
+        twist_msg.angular.z = angular
 
-        left = dampen * (forward_back + left_right)
-        right = dampen * (forward_back - left_right)
-
-        # Ensure values are [-1,1] for each side
-        if abs(left) > 1:
-            left = left / abs(left)
-        if abs(right) > 1:
-            right = right / abs(right)
-
-        create_joint_msg(joints, "left_wheels", left)
-        create_joint_msg(joints, "right_wheels", right)
-
-        self.left_wheel_pub.publish(joints["left_wheels"])
-        self.right_wheel_pub.publish(joints["right_wheels"])
+        self.twist_pub.publish(twist_msg)
 
 
 class ArmControl:
@@ -162,13 +167,9 @@ def main():
     joystick = ros.get_param("teleop/joystick_mappings")
     ra_config = ros.get_param("teleop/ra_controls")
     drive_config = ros.get_param("teleop/drive_controls")
-    track_radius = ros.get_param("teleop/constants/track_radius")
-    wheel_radius = ros.get_param("teleop/constants/wheel_radius")
 
     arm = ArmControl(xbox_mappings=xbox, ra_config=ra_config)
-    drive = Drive(
-        joystick_mappings=joystick, drive_config=drive_config, track_radius=track_radius, wheel_radius=wheel_radius
-    )
+    drive = Drive(joystick_mappings=joystick, drive_config=drive_config)
 
     ros.Subscriber("joystick", Joy, drive.teleop_drive_callback)
     ros.Subscriber("xbox/ra_control", Joy, arm.ra_control_callback)

@@ -5,7 +5,18 @@ import sys
 from pathlib import Path
 from typing import List
 
-BASE_APT_DEPS = ["curl", "vim", "zsh", "git", "git-lfs", "python3-pip", "clang-format-12", "clang-tidy-12", "nodejs", "yarn"]
+BASE_APT_DEPS = [
+    "curl",
+    "vim",
+    "zsh",
+    "git",
+    "git-lfs",
+    "python3-pip",
+    "clang-format-12",
+    "clangd-12",
+    "nodejs",
+    "yarn",
+]
 ROS_APT_DEPS = ["ros-noetic-desktop", "python3-catkin-tools", "python3-rosdep"]
 DRONE_ROS_APT_DEPS = [f'ros-noetic-{dep}' for dep in ["mavlink", "mavros", "mavros-extras", "mavros-msgs"]]
 DRONE_ROS_APT_DEPS += ["gstreamer1.0-plugins-bad", "gstreamer1.0-plugins-base", "gstreamer1.0-plugins-good",

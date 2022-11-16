@@ -9,7 +9,7 @@ from aenum import Enum, NoAlias
 from state import BaseState
 
 STOP_THRESH = 0.5
-DRIVE_FWD_THRESH = 0.95
+DRIVE_FWD_THRESH = 0.34  # 20 degrees
 NO_FIDUCIAL = -1
 
 
