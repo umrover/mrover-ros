@@ -179,7 +179,7 @@ class StreamingManager:
         # all requests' resolution get set to lowest one. nlogn + n, but n ~ 4
         requests = sorted(requests, key=lambda x: (x[0], x[1]))
         for i in range(1, len(requests)):
-            if requests[i][0] == requests[i-1][0]:
+            if requests[i][0] == requests[i-1][0] and requests[i][0] != -1:
                 req.camera_commands[requests[i][2]
                                     ].resolution = requests[i-1][1]
 
