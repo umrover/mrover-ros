@@ -12,9 +12,12 @@ from util.tf_utils import EARTH_RADIUS
 
 class Converter:
     def __init__(self):
-        rospy.init_node("gps-converter")
+        rospy.init_node("course-listener")
         rospy.Subscriber("auton/enable_state", EnableAuton, self.read_data)
         self.publish_course = CourseService()
+        # read required parameters, if they don't exist an error will be thrown
+        self.ref_lat = rospy.get_param("gps_linearization/reference_point_latitude")
+        self.ref_lon = rospy.get_param("gps_linearization/reference_point_longitude")
     
     def convert(self, waypoint: GPSWaypoint):
         """
@@ -22,10 +25,9 @@ class Converter:
         """
 
         # Create odom position based on GPS latitude and longitude
-        base = np.array([42.2, -83.7, 0.0]) # Our base/reference is in latitude, longitude, altitude coordinates (degrees)
-        odom = np.array(pymap3d.geodetic2enu(waypoint.latitude_degrees, waypoint.longitude_degrees, base[2], base[0], base[1], base[2]))
+        odom = np.array(pymap3d.geodetic2enu(waypoint.lattitude_degrees, waypoint.longitude_degrees, 0.0, self.ref_lat, self.ref_lon, 0.0, deg = True))
 
-        return (Waypoint(fiducial_id=0, tf_id=f"course{waypoint.id}", type=waypoint.type), SE3(position=odom))
+        return (Waypoint(fiducial_id=waypoint.id, tf_id=f"course{waypoint.id}", type=waypoint.type), SE3(position=odom))
 
     def read_data(self, data: EnableAuton):
         # If auton is enabled, publish the waypoints to the course
