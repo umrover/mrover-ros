@@ -18,11 +18,23 @@ BASE_APT_DEPS = [
     "yarn",
 ]
 ROS_APT_DEPS = ["ros-noetic-desktop", "python3-catkin-tools", "python3-rosdep"]
-DRONE_ROS_APT_DEPS = [f'ros-noetic-{dep}' for dep in ["mavlink", "mavros", "mavros-extras", "mavros-msgs"]]
-DRONE_ROS_APT_DEPS += ["gstreamer1.0-plugins-bad", "gstreamer1.0-plugins-base", "gstreamer1.0-plugins-good",
-                       "gstreamer1.0-plugins-ugly", "gstreamer1.0-libav", "libeigen3-dev", "libgstreamer-plugins-base1.0-dev",
-                       "libimage-exiftool-perl", "libopencv-dev", "libxml2-utils", "pkg-config", "protobuf-compiler",
-                       "libqt5gui5", "libfuse2"]
+DRONE_ROS_APT_DEPS = [f"ros-noetic-{dep}" for dep in ["mavlink", "mavros", "mavros-extras", "mavros-msgs"]]
+DRONE_ROS_APT_DEPS += [
+    "gstreamer1.0-plugins-bad",
+    "gstreamer1.0-plugins-base",
+    "gstreamer1.0-plugins-good",
+    "gstreamer1.0-plugins-ugly",
+    "gstreamer1.0-libav",
+    "libeigen3-dev",
+    "libgstreamer-plugins-base1.0-dev",
+    "libimage-exiftool-perl",
+    "libopencv-dev",
+    "libxml2-utils",
+    "pkg-config",
+    "protobuf-compiler",
+    "libqt5gui5",
+    "libfuse2",
+]
 
 MROVER_ROS_GIT_URL = "https://github.com/umrover/mrover-ros.git"
 PX4_GIT_URL = "https://github.com/px4/px4-autopilot"
@@ -66,7 +78,7 @@ def main() -> int:
 
     try:
         install_drone_deps = False
-        if len(sys.argv) > 1 and sys.argv[1] == '--install-drone':
+        if len(sys.argv) > 1 and sys.argv[1] == "--install-drone":
             install_drone_deps = True
             print("Install script will install drone dependencies")
         print("Checking for global system updates... this may take a while after a fresh install...")
@@ -107,14 +119,21 @@ def main() -> int:
             print("Installing drone dependencies...")
             run_bash_command(["sudo", "apt-get", "install", "-y"] + DRONE_ROS_APT_DEPS)
             print("Installing GeographicLib Datasets")
-            run_bash_command(["wget -O - https://raw.githubusercontent.com/mavlink/mavros/master/mavros/scripts/install_geographiclib_datasets.sh | sudo bash"], shell=True)
+            run_bash_command(
+                [
+                    "wget -O - https://raw.githubusercontent.com/mavlink/mavros/master/mavros/scripts/install_geographiclib_datasets.sh | sudo bash"
+                ],
+                shell=True,
+            )
             print("Granting permission to the serial ports...")
             run_bash_command(["sudo usermod -a -G dialout $USER"], shell=True)
             run_bash_command(["sudo", "apt-get", "remove", "modemmanager", "-y"])
             print("Downloading ground control software...")
-            qgc_dir = input(f"Enter download location for QGroundControl software... [leave blank for {DEFAULT_GROUND_CONTROL_PATH}] ")
+            qgc_dir = input(
+                f"Enter download location for QGroundControl software... [leave blank for {DEFAULT_GROUND_CONTROL_PATH}] "
+            )
             qgc_dir = Path(qgc_dir) if qgc_dir else DEFAULT_GROUND_CONTROL_PATH
-            qgc_path = qgc_dir/"QGroundControl"
+            qgc_path = qgc_dir / "QGroundControl"
             run_bash_command(["wget", GROUND_CONTROL_URL, "-O", str(qgc_path)])
             run_bash_command(["chmod", "+x", str(qgc_path)])
 
