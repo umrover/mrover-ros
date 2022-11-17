@@ -29,6 +29,7 @@ set(MROVER_MESSAGE_FILES
         EnableAuton.msg
         GimbalCmd.msg
         GPSWaypoint.msg
+        ImuAndMag.msg
         ODriveState.msg
         Waypoint.msg
         WaypointType.msg
@@ -44,6 +45,7 @@ set(MROVER_SERVICE_FILES
 # generate messages list
 set(MROVER_ROS_MESSAGES
         std_msgs
+        geometry_msgs
         )
 
 # dynamic reconfigure

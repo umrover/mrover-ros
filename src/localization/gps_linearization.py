@@ -1,7 +1,8 @@
 #!/usr/bin/env python3
 import rospy
 from util.SE3 import SE3
-from sensor_msgs.msg import NavSatFix, Imu
+from mrover.msg import ImuAndMag
+from sensor_msgs.msg import NavSatFix
 import tf2_ros
 import numpy as np
 from pymap3d.enu import geodetic2enu
@@ -17,7 +18,7 @@ class GPSLinearization:
 
     def __init__(self):
         rospy.Subscriber("gps/fix", NavSatFix, self.gps_callback)
-        rospy.Subscriber("imu/data", Imu, self.imu_callback)
+        rospy.Subscriber("imu/data", ImuAndMag, self.imu_callback)
 
         self.tf_broadcaster = tf2_ros.TransformBroadcaster()
 
@@ -48,7 +49,7 @@ class GPSLinearization:
         self.pose = SE3(position=cartesian, rotation=self.pose.rotation)
         self.pose.publish_to_tf_tree(self.tf_broadcaster, parent_frame=self.world_frame, child_frame=self.rover_frame)
 
-    def imu_callback(self, msg: Imu):
+    def imu_callback(self, msg: ImuAndMag):
         """
         Callback function that receives IMU messages, updates the rover pose,
         and publishes it to the TF tree.
