@@ -1,10 +1,12 @@
 from dataclasses import dataclass
+from turtle import done
 import numpy as np
 
 from typing import Optional
 from state import BaseState
 from trajectory import Trajectory
 from drive import get_drive_command
+from aenum import Enum, NoAlias
 from context import Context
 
 STOP_THRESH = 0.2
@@ -36,6 +38,14 @@ class SinglePostTrajectory(Trajectory):
         coords = np.hstack((coords, np.zeros(coords.shape[0]).reshape(-1, 1)))
 
         return SinglePostTrajectory(coords)
+class SinglePostStateTransitions(Enum):
+    _settings_ = NoAlias
+    # State Transitions
+    no_fiducial = "SearchState"
+    single_post = "SinglePostState"
+    found_gate = "GateTraverseState"
+    done = "DoneState"
+
 
 class SinglePostState(BaseState):
     def __init__(
@@ -44,7 +54,7 @@ class SinglePostState(BaseState):
     ):
         super().__init__(
             context,
-            add_outcomes=["search", "single_post", "gate_traverse", "done"],
+            add_outcomes=[transition.name for transition in SinglePostStateTransitions]
         )
         self.traj: Optional[SinglePostTrajectory] = None
     
@@ -54,7 +64,7 @@ class SinglePostState(BaseState):
         gate = self.context.course.gate_pose()
 
         if gate is not None: #If we have a gate, we are done
-            return "gate_traverse"
+            return SinglePostStateTransitions.found_gate.name
         elif post_pos1 is not None: #Searching for second post
             if self.traj is None:
                 self.traj = SinglePostTrajectory.single_post_traj(post_pos1, self.context.rover.get_pose().position)
@@ -62,7 +72,7 @@ class SinglePostState(BaseState):
             if self.traj is None:
                 self.traj = SinglePostTrajectory.single_post_traj(post_pos2, self.context.rover.get_pose().position)
         else: 
-            return "search"
+            return SinglePostStateTransitions.no_fiducial.name
 
         target_pos = self.traj.get_cur_pt()
         cmd_vel, arrived = get_drive_command(
@@ -72,12 +82,12 @@ class SinglePostState(BaseState):
             DRIVE_FWD_THRESH,
         )
         if arrived:
-            # if we finish the gate path, we're done
+            # if we finish the gate path, we're done (or continue search) CHECK THIS***
             if self.traj.increment_point():
                 self.traj = None
                 self.context.course.increment_waypoint()
-                return "done"
+                return SinglePostStateTransitions.done.name
         
         self.context.rover.send_drive_command(cmd_vel)
 
-        return "single_post"
+        return SinglePostStateTransitions.single_post.name

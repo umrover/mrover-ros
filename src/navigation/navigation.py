@@ -13,6 +13,7 @@ from single_fiducial import SingleFiducialState, SingleFiducialStateTransitions
 from state import DoneState, DoneStateTransitions
 from waypoint import WaypointState, WaypointStateTransitions
 from search import SearchState, SearchStateTransitions
+from single_post import SinglePostState, SinglePostStateTransitions
 
 
 class Navigation(threading.Thread):
@@ -51,17 +52,12 @@ class Navigation(threading.Thread):
             self.state_machine.add(
                 "GateTraverseState",
                 GateTraverseState(self.context),
-                transitions=self.get_transitions(GateTraverseStateTransitions),
+                transitions=self.get_transitions(GateTraverseStateTransitions)
             )
             self.state_machine.add(
 				"SinglePostState",
 				SinglePostState(self.context),
-				transitions={ 
-					"search": "SearchState",
-					"single_post": "SinglePostState",
-                    "gate_traverse": "GateTraverseState",
-					"done": "DoneState",
-				},
+				transitions=self.get_transitions(SinglePostStateTransitions)
 			)
 
     def get_transitions(self, transitions_enum):

@@ -12,7 +12,7 @@ FIDUCIAL_STOP_THRESHOLD = 1.75
 class SingleFiducialStateTransitions(Enum):
     _settings_ = NoAlias
 
-    finished_fiducial = "WaypointState"
+    finished_fiducial = "SinglePostState"
     continue_fiducial_id = "SingleFiducialState"
     no_fiducial = "SearchState"
 
