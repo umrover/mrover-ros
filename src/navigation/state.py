@@ -3,6 +3,7 @@ from typing import List
 
 import smach
 from context import Context
+from aenum import Enum, NoAlias
 from geometry_msgs.msg import Twist
 
 
@@ -47,15 +48,26 @@ class BaseState(smach.State, ABC):
         pass
 
 
+class DoneStateTransitions(Enum):
+    _settings_ = NoAlias
+
+    idle = "DoneState"
+    begin_course = "WaypointState"
+
+
 class DoneState(BaseState):
     def __init__(self, context: Context):
         super().__init__(
             context,
-            add_outcomes=["done", "waypoint_traverse"],
+            add_outcomes=[transition.name for transition in DoneStateTransitions],  # type: ignore
         )
 
     def evaluate(self, ud):
         # Check if we have a course to traverse
         if self.context.course and (not self.context.course.is_complete()):
-            return "waypoint_traverse"
-        return "done"
+            return DoneStateTransitions.begin_course.name  # type: ignore
+
+        # Stop rover
+        cmd_vel = Twist()
+        self.context.rover.send_drive_command(cmd_vel)
+        return DoneStateTransitions.idle.name  # type: ignore

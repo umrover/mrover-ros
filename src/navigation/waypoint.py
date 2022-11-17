@@ -5,11 +5,22 @@ import numpy as np
 import tf2_ros
 from context import Context, Environment
 from drive import get_drive_command
+from aenum import Enum, NoAlias
 from state import BaseState
 
 STOP_THRESH = 0.5
 DRIVE_FWD_THRESH = 0.34  # 20 degrees
 NO_FIDUCIAL = -1
+
+
+class WaypointStateTransitions(Enum):
+    _settings_ = NoAlias
+
+    continue_waypoint_traverse = "WaypointState"
+    search_at_waypoint = "SearchState"
+    no_waypoint = "DoneState"
+    find_single_fiducial = "SingleFiducialState"
+    go_to_gate = "GateTraverseState"
 
 
 class WaypointState(BaseState):
@@ -25,7 +36,7 @@ class WaypointState(BaseState):
         add_output_keys = add_output_keys or []
         super().__init__(
             context,
-            add_outcomes + ["waypoint_traverse", "single_fiducial", "search", "done", "gate_traverse"],
+            add_outcomes + [transition.name for transition in WaypointStateTransitions],  # type: ignore
             add_input_keys,
             add_output_keys,
         )
@@ -43,15 +54,15 @@ class WaypointState(BaseState):
         """
         current_waypoint = self.context.course.current_waypoint()
         if current_waypoint is None:
-            return "done"
+            return WaypointStateTransitions.no_waypoint.name  # type: ignore
 
         # Go into either gate or search if we see them early (and are looking)
         if self.context.course.look_for_gate():
             if self.context.env.current_gate() is not None:
-                return "gate_traverse"
+                return WaypointStateTransitions.go_to_gate.name  # type: ignore
         if self.context.course.look_for_post():
             if self.context.env.current_fid_pos() is not None:
-                return "single_fiducial"
+                return WaypointStateTransitions.find_single_fiducial.name  # type: ignore
 
         # Attempt to find the waypoint in the TF tree and drive to it
         try:
@@ -68,7 +79,7 @@ class WaypointState(BaseState):
                     self.context.course.increment_waypoint()
                 else:
                     # We finished a waypoint associated with a fiducial id, but we have not seen it yet.
-                    return "search"
+                    return WaypointStateTransitions.search_at_waypoint.name  # type: ignore
             self.context.rover.send_drive_command(cmd_vel)
 
         except (
@@ -78,4 +89,4 @@ class WaypointState(BaseState):
         ):
             pass
 
-        return "waypoint_traverse"
+        return WaypointStateTransitions.continue_waypoint_traverse.name  # type: ignore

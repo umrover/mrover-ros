@@ -4,6 +4,7 @@ PyQt5==5.14.1
 graphviz==0.20.1
 boto3 == 1.24.86
 pyserial==3.5
+aenum==3.1.11
 odrive==0.6.3
 pymap3d==2.9.1
 kconfiglib==14.1.0
