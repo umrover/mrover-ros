@@ -23,7 +23,7 @@ class Rover:
     ctx: Context
 
     def get_pose(self) -> SE3:
-        return SE3.from_tf_tree(self.ctx.tf_buffer, parent_frame="odom", child_frame="base_link")
+        return SE3.from_tf_tree(self.ctx.tf_buffer, parent_frame="map", child_frame="base_link")
 
     def send_drive_command(self, twist: Twist):
         self.ctx.vel_cmd_publisher.publish(twist)
@@ -42,13 +42,13 @@ class Environment:
     ctx: Context
     NO_FIDUCIAL: ClassVar[int] = -1
 
-    def get_fid_pos(self, fid_id: int, frame: str = "odom") -> Optional[np.ndarray]:
+    def get_fid_pos(self, fid_id: int, frame: str = "map") -> Optional[np.ndarray]:
         """
         Retrieves the pose of the given fiducial ID from the TF tree
         if it exists, otherwise returns None
         """
         try:
-            fid_pose = SE3.from_tf_tree(self.ctx.tf_buffer, parent_frame="odom", child_frame=f"fiducial{fid_id}")
+            fid_pose = SE3.from_tf_tree(self.ctx.tf_buffer, parent_frame="map", child_frame=f"fiducial{fid_id}")
         except (
             tf2_ros.LookupException,
             tf2_ros.ConnectivityException,
@@ -59,22 +59,22 @@ class Environment:
 
     def current_fid_pos(self) -> Optional[np.ndarray]:
         """
-        Retrieves the position of the current fiducial
+        Retrieves the position of the current fiducial (and we are looking for it)
         """
         assert self.ctx.course
         current_waypoint = self.ctx.course.current_waypoint()
-        if current_waypoint is None or current_waypoint.fiducial_id == self.NO_FIDUCIAL:
+        if current_waypoint is None or not self.ctx.course.look_for_post():
             return None
 
         return self.get_fid_pos(current_waypoint.fiducial_id)
 
     def current_gate(self) -> Optional[Gate]:
         """
-        retrieves the position of the gate (if we know where it is)
+        retrieves the position of the gate (if we know where it is, and we are looking for one)
         """
         if self.ctx.course:
             current_waypoint = self.ctx.course.current_waypoint()
-            if current_waypoint is None or current_waypoint.fiducial_id == self.NO_FIDUCIAL:
+            if current_waypoint is None or not self.ctx.course.look_for_gate():
                 return None
 
             post1 = self.get_fid_pos(current_waypoint.fiducial_id)
@@ -102,13 +102,7 @@ class Course:
         Gets the pose of the waypoint with the given index
         """
         waypoint_frame = self.course_data.waypoints[wp_idx].tf_id
-        return SE3.from_tf_tree(self.ctx.tf_buffer, parent_frame="odom", child_frame=waypoint_frame)
-		
-    def next_waypoint_pose(self):
-        """
-        Gets the pose of the next waypoint
-        """
-        return self.waypoint_pose(self.waypoint_index + 1)
+        return SE3.from_tf_tree(self.ctx.tf_buffer, parent_frame="map", child_frame=waypoint_frame)
 
     def current_waypoint_pose(self):
         """
@@ -126,6 +120,28 @@ class Course:
         if self.course_data is None or self.waypoint_index >= len(self.course_data.waypoints):
             return None
         return self.course_data.waypoints[self.waypoint_index]
+
+    def look_for_gate(self) -> bool:
+        """
+        Returns whether the currently active waypoint (if it exists) indicates
+        that we should go to a gate
+        """
+        waypoint = self.current_waypoint()
+        if waypoint is not None:
+            return waypoint.type.val == mrover.msg.WaypointType.GATE
+        else:
+            return False
+
+    def look_for_post(self) -> bool:
+        """
+        Returns whether the currently active waypoint (if it exists) indicates
+        that we should go to a post
+        """
+        waypoint = self.current_waypoint()
+        if waypoint is not None:
+            return waypoint.type.val == mrover.msg.WaypointType.POST
+        else:
+            return False
 
     def is_complete(self):
         return self.waypoint_index == len(self.course_data.waypoints)

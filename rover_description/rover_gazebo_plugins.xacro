@@ -24,7 +24,8 @@
       <velocityTopicName>gps/fix_velocity</velocityTopicName>
       <referenceLatitude>42.2</referenceLatitude>
       <referenceLongitude>-83.7</referenceLongitude>
-      <referenceHeading>0.0</referenceHeading>
+      <referenceHeading>90.0</referenceHeading>
+      <!-- <referenceHeading>0.0</referenceHeading> -->
       <referenceAltitude>0.0</referenceAltitude>
       <offset>0 0 0</offset>
       <drift>0.0 0.0 0.0</drift>
@@ -42,13 +43,13 @@
       <visualize>true</visualize>
       <topic>__default_topic__</topic>
       <plugin filename="libgazebo_ros_imu_sensor.so" name="imu_plugin">
-        <topicName>imu</topicName>
+        <topicName>imu/data</topicName>
         <bodyName>base_link</bodyName>
         <updateRateHZ>100.0</updateRateHZ>
         <gaussianNoise>0.0</gaussianNoise>
         <xyzOffset>0 0 0</xyzOffset>
-        <rpyOffset>0 0 0</rpyOffset>
-        <frameName>imu_link</frameName>
+        <rpyOffset>0 0 -1.570796</rpyOffset>
+        <frameName>base_link</frameName>
         <initialOrientationAsReference>false</initialOrientationAsReference>
       </plugin>
       <pose>0 0 0 0 0 0</pose>
@@ -71,7 +72,7 @@
           <far>20</far>
         </clip>
       </camera>
-      <plugin name="camera_link_controller" filename="libgazebo_ros_openni_kinect.so">
+      <plugin name="gazebo_ros_openni_kinect_plugin" filename="libkinect_plugin.so">
         <baseline>0.2</baseline>
         <alwaysOn>true</alwaysOn>
         <updateRate>1.0</updateRate>

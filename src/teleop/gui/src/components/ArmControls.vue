@@ -18,7 +18,8 @@ let interval;
 export default {
   data() {
     return {
-      arm_enabled: false
+      arm_enabled: false,
+      joystick_pub: null
     }
   },
 
@@ -35,52 +36,31 @@ export default {
 
 
   created: function () {
-
-
-    const XBOX_CONFIG = {
-      'left_js_x': 0,
-      'left_js_y': 1,
-      'left_trigger': 6,
-      'right_trigger': 7,
-      'right_js_x': 2,
-      'right_js_y': 3,
-      'right_bumper': 5,
-      'left_bumper': 4,
-      'd_pad_up': 12,
-      'd_pad_down': 13,
-      'd_pad_right': 14,
-      'd_pad_left': 15,
-      'a': 0,
-      'b': 1,
-      'x': 2,
-      'y': 3
-    }
-
-
+    this.joystick_pub = new ROSLIB.Topic({
+        ros : this.$ros,
+        name : '/xbox/ra_control',
+        messageType : 'sensor_msgs/Joy'
+    })
     const updateRate = 0.1
     interval = window.setInterval(() => {
-      const gamepads = navigator.getGamepads()
-      for (let i = 0; i < 4; i++) {
-        const gamepad = gamepads[i]
-        if (gamepad && this.arm_enabled) {
-          if (gamepad.id.includes('Microsoft') || gamepad.id.includes('Xbox')) {
-            let buttons = gamepad.buttons.map((button) =>{
-                return button.value
-              })
-
-            let axes = gamepad.axes
-
-            const joystickData = {
-                axes: axes,
-                buttons: buttons
+      if(this.arm_enabled){
+        const gamepads = navigator.getGamepads()
+        for (let i = 0; i < 4; i++) {
+          const gamepad = gamepads[i]
+          if (gamepad) {
+            if (gamepad.id.includes('Microsoft') || gamepad.id.includes('Xbox')) {
+              let buttons = gamepad.buttons.map((button) =>{
+                  return button.value
+                })
+  
+  
+              const joystickData = {
+                  axes: gamepad.axes,
+                  buttons: buttons
+              }
+              var joystickMsg = new ROSLIB.Message(joystickData)
+              this.joystick_pub.publish(joystickMsg)
             }
-            var joystickTopic = new ROSLIB.Topic({
-                ros : this.$ros,
-                name : '/xbox/ra_control',
-                messageType : 'sensor_msgs/Joy'
-            })
-            var joystickMsg = new ROSLIB.Message(joystickData)
-            joystickTopic.publish(joystickMsg)
           }
         }
       }
