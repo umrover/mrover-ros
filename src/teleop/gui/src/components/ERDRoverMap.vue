@@ -33,6 +33,7 @@
     import { LMap, LTileLayer, LMarker, LPolyline, LPopup, LTooltip, LControlScale } from 'vue2-leaflet'
     import { mapGetters } from 'vuex'
     import L from '../leaflet-rotatedmarker.js'
+    import * as qte from "quaternion-to-euler";
 
     const MAX_ODOM_COUNT = 1000
     const DRAW_FREQUENCY = 10
@@ -100,6 +101,23 @@
                 iconAnchor: [32, 64],
                 popupAnchor: [0, -32]
             })
+            this.tfClient = new ROSLIB.TFClient({
+                ros: this.$ros,
+                fixedFrame: 'odom',
+                // Thresholds to trigger subscription callback
+                angularThres: 0.01,
+                transThres: 0.01
+            });
+            // Subscriber for odom to base_link transform
+            this.tfClient.subscribe('base_link', (tf) => {
+                // Callback for IMU quaternion that describes bearing
+                let quaternion = tf.rotation
+                quaternion = [quaternion.w, quaternion.x, quaternion.y, quaternion.z]
+                //Quaternion to euler angles
+                let euler = qte(quaternion)
+                // euler[2] == euler z component
+                this.odom.bearing_deg = euler[2] * (180 / Math.PI)
+            });
         },
 
         computed: {

@@ -19,7 +19,18 @@ export default new Router({
     {
       path: '/EDMTask',
       name: 'EDMTask',
-      component: ERDTask
+      component: ERDTask,
+      props: {
+        type: "EDM"
+      }
+    },
+    {
+      path: '/ESTask',
+      name: 'ESTask',
+      component: ERDTask,
+      props: {
+        type: "ES"
+      }
     },
     {
       path: '/SATask',

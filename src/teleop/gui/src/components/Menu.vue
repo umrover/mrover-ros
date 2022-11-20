@@ -10,6 +10,7 @@
       <fieldset class="tasks row">
         <legend>Tasks</legend>
         <MenuButton link="#/EDMTask" name="EDM Mission" />
+        <MenuButton link="#/ESTask" name="ES Mission" />
         <MenuButton link="#/ISHTask" name="ISH GUI" />
         <MenuButton link="#/SATask" name="Sample Acquisition GUI" />
         <MenuButton link="#/AutonTask" name="Autonomy Mission" />

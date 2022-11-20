@@ -1,8 +1,10 @@
 <template>
-  <div class="wrapper">
+  <div 
+    :class="type === 'ES' ? 'wrapper-es' : 'wrapper-edm'">
     <div class="box header">
       <img src="/static/mrover.png" alt="MRover" title="MRover" width="48" height="48" />
-      <h1>EDM/ES Dashboard</h1>
+      <h1 v-if="type === 'ES'">ES GUI Dashboard</h1>
+      <h1 v-else>EDM GUI Dashboard</h1>
       <div class="spacer"></div>
       <div class="help">
         <img src="/static/help.png" alt="Help" title="Help" width="48" height="48" />
@@ -20,10 +22,10 @@
     <div class="box arm-controls light-bg">
       <ArmControls/>
     </div>
-    <div class="box odom light-bg">
+    <div class="box odom light-bg" v-if="type === 'EDM'">
       <OdometryReading v-bind:odom="odom"/>
     </div>
-    <div class="box map light-bg">
+    <div class="box map light-bg" v-if="type === 'EDM'">
       <ERDMap v-bind:odom="odom"/>
     </div>
     <div class="box drive light-bg" v-show="false">
@@ -35,7 +37,7 @@
     <div class="box drive-vel-data light-bg">
       <DriveVelData/>
     </div>
-    <div class="box waypoint-editor light-bg">
+    <div class="box waypoint-editor light-bg" v-if="type === 'EDM'">
       <ERDWaypointEditor/>
     </div>
   </div>
@@ -112,21 +114,41 @@ export default {
     PDBFuse,
     DriveVelData,
     ERDWaypointEditor
+  },
+
+  props: {
+    type: {
+      type: String,
+      required: true
+    },
   }
 }
 </script>
 
 <style scoped>
-  .wrapper {
+  .wrapper-edm {
     display: grid;
     grid-gap: 10px;
     grid-template-columns: auto auto;
-    grid-template-rows: 60px 250px auto auto;
+    grid-template-rows: 60px 250px auto auto auto;
     grid-template-areas: "header header"
                          "map waypoint-editor"
                          "map cameras"
                          "odom arm-controls"
                          "pdb drive-vel-data";
+    font-family: sans-serif;
+    height: auto;
+  }
+
+  .wrapper-es {
+    display: grid;
+    grid-gap: 10px;
+    grid-template-columns: auto auto;
+    grid-template-rows: 60px 250px auto auto;
+    grid-template-areas: "header header"
+                         "cameras cameras"
+                         "drive-vel-data pdb"
+                         "arm-controls pdb ";
     font-family: sans-serif;
     height: auto;
   }
