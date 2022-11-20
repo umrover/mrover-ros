@@ -29,12 +29,12 @@
  *
  */
 
-#include "aruco_detect.hpp"
+#include "tag_detector.hpp"
 
 #include <boost/algorithm/string/classification.hpp>
 #include <boost/algorithm/string/split.hpp>
 
-void FiducialsNode::configCallback(mrover::DetectorParamsConfig& config, uint32_t level) {
+void FiducialsNode::configCallback(mrover::DetectorParamsConfig &config, uint32_t level) {
     // Don't load initial config, since it will overwrite the rosparam settings
     if (level == 0xFFFFFFFF) {
         return;
@@ -70,13 +70,13 @@ void FiducialsNode::configCallback(mrover::DetectorParamsConfig& config, uint32_
     mDetectorParams->polygonalApproxAccuracyRate = config.polygonalApproxAccuracyRate;
 }
 
-void FiducialsNode::ignoreCallback(std_msgs::String const& msg) {
+void FiducialsNode::ignoreCallback(std_msgs::String const &msg) {
     mIgnoreIds.clear();
     mPnh.setParam("ignore_fiducials", msg.data);
     handleIgnoreString(msg.data);
 }
 
-void FiducialsNode::camInfoCallback(sensor_msgs::CameraInfo::ConstPtr const& msg) {
+void FiducialsNode::camInfoCallback(sensor_msgs::CameraInfo::ConstPtr const &msg) {
     if (mHasCamInfo) {
         return;
     }
@@ -99,12 +99,12 @@ void FiducialsNode::camInfoCallback(sensor_msgs::CameraInfo::ConstPtr const& msg
     }
 }
 
-void FiducialsNode::handleIgnoreString(std::string const& str) {
+void FiducialsNode::handleIgnoreString(std::string const &str) {
     // Ignore fiducials can take comma separated list of individual
     // Tag ids or ranges, eg "1,4,8,9-12,30-40"
     std::vector<std::string> strs;
     boost::split(strs, str, boost::is_any_of(","));
-    for (const std::string& element: strs) {
+    for (const std::string &element: strs) {
         if (element.empty()) {
             continue;
         }
@@ -127,7 +127,7 @@ void FiducialsNode::handleIgnoreString(std::string const& str) {
     }
 }
 
-bool FiducialsNode::enableDetectionsCallback(std_srvs::SetBool::Request& req, std_srvs::SetBool::Response& res) {
+bool FiducialsNode::enableDetectionsCallback(std_srvs::SetBool::Request &req, std_srvs::SetBool::Response &res) {
     mEnableDetections = req.data;
     if (mEnableDetections) {
         res.message = "Enabled aruco detections.";
@@ -148,6 +148,7 @@ FiducialsNode::FiducialsNode() : mNh(), mPnh("~"), mIt(mNh), mTfListener(mTfBuff
     mDistCoeffs = cv::Mat::zeros(1, 5, CV_64F);
 
     mDetectorParams = new cv::aruco::DetectorParameters();
+    auto defaultDetectorParams = cv::aruco::DetectorParameters::create();
 
     int dicNo;
     mPnh.param<bool>("publish_images", mPublishImages, true);
@@ -167,19 +168,29 @@ FiducialsNode::FiducialsNode() : mNh(), mPnh("~"), mIt(mNh), mTfListener(mTfBuff
     mPcSub = mNh.subscribe("camera/depth/points", 1, &FiducialsNode::pointCloudCallback, this);
     mCamInfoSub = mNh.subscribe("camera/color/camera_info", 1, &FiducialsNode::camInfoCallback, this);
     mIgnoreSub = mNh.subscribe("ignore_fiducials", 1, &FiducialsNode::ignoreCallback, this);
-    mServiceEnableDetections = mNh.advertiseService("enable_detections", &FiducialsNode::enableDetectionsCallback, this);
+    mServiceEnableDetections = mNh.advertiseService("enable_detections", &FiducialsNode::enableDetectionsCallback,
+                                                    this);
 
     // Lambda handles passing class pointer (implicit first parameter) to configCallback
-    mCallbackType = [this](mrover::DetectorParamsConfig& config, uint32_t level) { configCallback(config, level); };
+    mCallbackType = [this](mrover::DetectorParamsConfig &config, uint32_t level) { configCallback(config, level); };
     mConfigServer.setCallback(mCallbackType);
 
-    mPnh.param<double>("adaptiveThreshConstant", mDetectorParams->adaptiveThreshConstant, 7);
-    mPnh.param<int>("adaptiveThreshWinSizeMax", mDetectorParams->adaptiveThreshWinSizeMax, 23);
-    mPnh.param<int>("adaptiveThreshWinSizeMin", mDetectorParams->adaptiveThreshWinSizeMin, 3);
-    mPnh.param<int>("adaptiveThreshWinSizeStep", mDetectorParams->adaptiveThreshWinSizeStep, 10);
-    mPnh.param<int>("cornerRefinementMaxIterations", mDetectorParams->cornerRefinementMaxIterations, 30);
-    mPnh.param<double>("cornerRefinementMinAccuracy", mDetectorParams->cornerRefinementMinAccuracy, 0.1);
-    mPnh.param<int>("cornerRefinementWinSize", mDetectorParams->cornerRefinementWinSize, 5);
+    mPnh.param<double>("adaptiveThreshConstant",
+                       mDetectorParams->adaptiveThreshConstant, defaultDetectorParams->adaptiveThreshConstant);
+    mPnh.param<int>("adaptiveThreshWinSizeMax",
+                    mDetectorParams->adaptiveThreshWinSizeMax, defaultDetectorParams->adaptiveThreshWinSizeMax);
+    mPnh.param<int>("adaptiveThreshWinSizeMin",
+                    mDetectorParams->adaptiveThreshWinSizeMin, defaultDetectorParams->adaptiveThreshWinSizeMin);
+    mPnh.param<int>("adaptiveThreshWinSizeStep",
+                    mDetectorParams->adaptiveThreshWinSizeStep, defaultDetectorParams->adaptiveThreshWinSizeStep);
+    mPnh.param<int>("cornerRefinementMaxIterations",
+                    mDetectorParams->cornerRefinementMaxIterations,
+                    defaultDetectorParams->cornerRefinementMaxIterations);
+    mPnh.param<double>("cornerRefinementMinAccuracy",
+                       mDetectorParams->cornerRefinementMinAccuracy,
+                       defaultDetectorParams->cornerRefinementMinAccuracy);
+    mPnh.param<int>("cornerRefinementWinSize",
+                    mDetectorParams->cornerRefinementWinSize, defaultDetectorParams->cornerRefinementWinSize);
 
     bool doCornerRefinement = true;
     mPnh.param<bool>("doCornerRefinement", doCornerRefinement, true);
@@ -195,26 +206,38 @@ FiducialsNode::FiducialsNode() : mNh(), mPnh("~"), mIt(mNh), mTfListener(mTfBuff
         mDetectorParams->cornerRefinementMethod = cv::aruco::CORNER_REFINE_NONE;
     }
 
-    mPnh.param<double>("errorCorrectionRate", mDetectorParams->errorCorrectionRate, 0.6);
-    mPnh.param<double>("minCornerDistanceRate", mDetectorParams->minCornerDistanceRate, 0.05);
-    mPnh.param<int>("markerBorderBits", mDetectorParams->markerBorderBits, 1);
-    mPnh.param<double>("maxErroneousBitsInBorderRate", mDetectorParams->maxErroneousBitsInBorderRate, 0.04);
-    mPnh.param<int>("minDistanceToBorder", mDetectorParams->minDistanceToBorder, 3);
-    mPnh.param<double>("minMarkerDistanceRate", mDetectorParams->minMarkerDistanceRate, 0.05);
-    mPnh.param<double>("minMarkerPerimeterRate", mDetectorParams->minMarkerPerimeterRate, 0.3);
-    mPnh.param<double>("maxMarkerPerimeterRate", mDetectorParams->maxMarkerPerimeterRate, 4.0);
-    mPnh.param<double>("minOtsuStdDev", mDetectorParams->minOtsuStdDev, 5.0);
-    mPnh.param<double>("perspectiveRemoveIgnoredMarginPerCell", mDetectorParams->perspectiveRemoveIgnoredMarginPerCell, 0.13);
-    mPnh.param<int>("perspectiveRemovePixelPerCell", mDetectorParams->perspectiveRemovePixelPerCell, 8);
-    mPnh.param<double>("polygonalApproxAccuracyRate", mDetectorParams->polygonalApproxAccuracyRate, 0.08);
-
-    mPnh.param<int>("filterCount", mFilterCount, 8);
-    mPnh.param<double>("filterProportion", mFilterProportion, 0.75);
+    mPnh.param<double>("errorCorrectionRate",
+                       mDetectorParams->errorCorrectionRate, defaultDetectorParams->errorCorrectionRate);
+    mPnh.param<double>("minCornerDistanceRate",
+                       mDetectorParams->minCornerDistanceRate, defaultDetectorParams->minCornerDistanceRate);
+    mPnh.param<int>("markerBorderBits",
+                    mDetectorParams->markerBorderBits, defaultDetectorParams->markerBorderBits);
+    mPnh.param<double>("maxErroneousBitsInBorderRate",
+                       mDetectorParams->maxErroneousBitsInBorderRate,
+                       defaultDetectorParams->maxErroneousBitsInBorderRate);
+    mPnh.param<int>("minDistanceToBorder",
+                    mDetectorParams->minDistanceToBorder, defaultDetectorParams->minDistanceToBorder);
+    mPnh.param<double>("minMarkerDistanceRate",
+                       mDetectorParams->minMarkerDistanceRate, defaultDetectorParams->minMarkerDistanceRate);
+    mPnh.param<double>("minMarkerPerimeterRate",
+                       mDetectorParams->minMarkerPerimeterRate, defaultDetectorParams->minMarkerPerimeterRate);
+    mPnh.param<double>("maxMarkerPerimeterRate",
+                       mDetectorParams->maxMarkerPerimeterRate, defaultDetectorParams->maxMarkerPerimeterRate);
+    mPnh.param<double>("minOtsuStdDev", mDetectorParams->minOtsuStdDev, defaultDetectorParams->minOtsuStdDev);
+    mPnh.param<double>("perspectiveRemoveIgnoredMarginPerCell",
+                       mDetectorParams->perspectiveRemoveIgnoredMarginPerCell,
+                       defaultDetectorParams->perspectiveRemoveIgnoredMarginPerCell);
+    mPnh.param<int>("perspectiveRemovePixelPerCell",
+                    mDetectorParams->perspectiveRemovePixelPerCell,
+                    defaultDetectorParams->perspectiveRemovePixelPerCell);
+    mPnh.param<double>("polygonalApproxAccuracyRate",
+                       mDetectorParams->polygonalApproxAccuracyRate,
+                       defaultDetectorParams->polygonalApproxAccuracyRate);
 
     ROS_INFO("Aruco detection ready");
 }
 
-int main(int argc, char** argv) {
+int main(int argc, char **argv) {
     ros::init(argc, argv, "aruco_detect");
 
     [[maybe_unused]] auto node = std::make_unique<FiducialsNode>();
@@ -224,7 +247,7 @@ int main(int argc, char** argv) {
     return EXIT_SUCCESS;
 }
 
-void XYZFilter::addReading(SE3 const& fidInOdom) {
+void XYZFilter::addReading(SE3 const &fidInOdom) {
     fidInOdomX.push(fidInOdom.positionVector().x());
     fidInOdomY.push(fidInOdom.positionVector().y());
     fidInOdomZ.push(fidInOdom.positionVector().z());
