@@ -21,6 +21,7 @@
       ===========
     -->
     <!-- node to navigate to a series of waypoints, AR tags, and gates -->
+    <node name = "course_converter" pkg="mrover" type="course_listener.py"/>
     <node name="nav" pkg="mrover" type="navigation.py"/>
 
   <!--
