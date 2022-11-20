@@ -67,7 +67,7 @@ def get_drive_command(
         np.sign(error) if full_turn_override else np.clip(error * TURNING_P, MIN_DRIVING_EFFORT, MAX_DRIVING_EFFORT)
     )
     print(cmd_vel.linear.x, cmd_vel.angular.z)
-        # Determine the sign of our effort by seeing if we are to the left or to the right of the target
+    # Determine the sign of our effort by seeing if we are to the left or to the right of the target
     # This is done by dotting rover_dir and target_dir rotated 90 degrees ccw
     perp_alignment = target_dir[0] * -rover_dir[1] + target_dir[1] * rover_dir[0]
     sign = np.sign(perp_alignment)

@@ -113,8 +113,8 @@ class DataCollector:
             "curr_rotation": [[]],
         }
         self.out_file = make_filename(self.csv_data)
-    
-    #Sets the bool value for if we are collecting data when the rover is stuck
+
+    # Sets the bool value for if we are collecting data when the rover is stuck
     def set_collecting(self, data):
         self.collecting = data
 
@@ -148,8 +148,8 @@ class DataCollector:
         rospy.logerr(f"Create dataframe in esw data and send to csv")
         df = self.create_dataframe(d)
         # Only add header once at the top
-        hdr = False  if os.path.isfile(self.out_file) else True
-        df.to_csv(self.out_file, header=hdr, mode='a', sep = '\t')
+        hdr = False if os.path.isfile(self.out_file) else True
+        df.to_csv(self.out_file, header=hdr, mode="a", sep="\t")
         self.previous_obj = d
 
     # This function will only be called/invoked when there is a commanded velocity
@@ -157,7 +157,7 @@ class DataCollector:
     def make_cmd_vel_obj(self, cmd_vel):
         if not self.collecting:
             return
-            
+
         d = Data()
         d.set_esw_data(self.previous_obj.wheel_vel, self.previous_obj.effort, self.previous_obj.wheel_names)
         d.update_tf_vel(self.context, self.previous_obj)
@@ -166,8 +166,8 @@ class DataCollector:
         rospy.logerr(f"Create dataframe in cmd vel and send to csv")
         df = self.create_dataframe(d)
         # Only add header once at the top
-        hdr = False  if os.path.isfile(self.out_file) else True
-        df.to_csv(self.out_file, header=hdr, mode='a', sep = '\t')
+        hdr = False if os.path.isfile(self.out_file) else True
+        df.to_csv(self.out_file, header=hdr, mode="a", sep="\t")
         self.previous_obj = d
 
     def set_context(self, context_in):

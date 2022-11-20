@@ -10,7 +10,7 @@ from visualization_msgs.msg import Marker
 from typing import ClassVar, Optional
 import numpy as np
 from dataclasses import dataclass
-import watchdog 
+import watchdog
 
 
 @dataclass

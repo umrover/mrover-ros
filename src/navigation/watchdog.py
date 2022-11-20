@@ -1,9 +1,10 @@
 from data_collection import Data
 
-#10 or more data objects flagged as stuck, then you are actually stuck
+# 10 or more data objects flagged as stuck, then you are actually stuck
 STUCK_THRESHOLD = 10
 ANGULAR_THRESHOLD = 0.001
 LINEAR_THRESHOLD = 0.001
+
 
 class WatchdogBase:
     def __init__(self):
@@ -11,14 +12,14 @@ class WatchdogBase:
         self.history = []
         pass
 
-    #check if 10 or more consecutive objects iinn the self.stuck list get flagged
-    #as stuck and if they do enter the recovery sequence
+    # check if 10 or more consecutive objects in the self.stuck list get flagged
+    # as stuck and if they do enter the recovery sequence
     # Returns bool
     def is_stuck(self, data_obj: Data) -> bool:
         self.history.append(data_obj)
         if len(self.history) < STUCK_THRESHOLD:
-            return
-        
+            return False
+
         if len(self.stuck_list) >= STUCK_THRESHOLD:
             self.clear_history()
             self.stuck_list.clear()
@@ -26,8 +27,9 @@ class WatchdogBase:
         decision = self.evaluate_stuck()
         if decision:
             self.stuck_list.append(decision)
+        return False
 
-    def evalute_stuck():
+    def evaluate_stuck(self):
         pass
 
     def clear_history(self):
@@ -35,23 +37,25 @@ class WatchdogBase:
 
     def recover(self):
         self.stuck_list.clear()
-    
-    def euclidean_distance(self, vector1, vector2):
-        return (sum((element1-element2)**2 for element1, element2 in zip(vector1,vector2)))**0.5
 
-#Each child class will have a different is_stuck function which evaluate whether the rover is stuck differently
-#Each child class will have its own history of data objects
+    def euclidean_distance(self, vector1, vector2):
+        return (sum((element1 - element2) ** 2 for element1, element2 in zip(vector1, vector2))) ** 0.5
+
+
+# Each child class will have a different is_stuck function which evaluate whether the rover is stuck differently
+# Each child class will have its own history of data objects
 class WatchdogSimpleLinear(WatchdogBase):
     def __init__(self):
         super().__init__()
 
-    #compare actual and commanded velocities
-    #for each element in the history, if the commanded and angular velocities are different
-    #append true to the stuck_list
+    # compare actual and commanded velocities
+    # for each element in the history, if the commanded and angular velocities are different
+    # append true to the stuck_list
     def evaluate_stuck(self):
         for data in super().history:
             if super().euclidean_distance(data.commanded_linear_vel, data.actual_linear_vel) < LINEAR_THRESHOLD:
                 super().stuck_list.append(True)
+
 
 class WatchdogSimpleAngular(WatchdogBase):
     def __init__(self):
@@ -61,15 +65,16 @@ class WatchdogSimpleAngular(WatchdogBase):
         for data in super().history:
             if abs(data.commanded_angular_vel[3] - data.actual_angular_vel) < ANGULAR_THRESHOLD:
                 super().stuck_list.append(True)
-        
+
 
 class WatchdogWheel(WatchdogBase):
     def __init__(self):
         super().__init__()
 
-    #compare actual velocities with effort and wheel velocities
-    def evaluate_stuck(self, data_obj: Data):
+    # compare actual velocities with effort and wheel velocities
+    def evaluate_stuck(self):
         pass
+
 
 class WatchdogOff(WatchdogBase):
     def __init__(self):
