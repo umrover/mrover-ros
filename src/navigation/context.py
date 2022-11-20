@@ -10,7 +10,7 @@ from visualization_msgs.msg import Marker
 from typing import ClassVar, Optional
 import numpy as np
 from dataclasses import dataclass
-from watchdog import Watchdog
+import watchdog 
 
 
 @dataclass
@@ -22,7 +22,7 @@ class Gate:
 @dataclass
 class Rover:
     ctx: Context
-    wdg: Watchdog
+    wdg: watchdog.WatchdogBase
 
     def get_pose(self) -> SE3:
         return SE3.from_tf_tree(self.ctx.tf_buffer, parent_frame="map", child_frame="base_link")
@@ -168,7 +168,7 @@ class Context:
         self.vis_publisher = rospy.Publisher("nav_vis", Marker, queue_size=1)
         self.course_service = rospy.Service("course_service", mrover.srv.PublishCourse, self.recv_course)
         self.course = None
-        self.rover = Rover(self)
+        self.rover = Rover(self, watchdog.WatchdogOff())
         self.env = Environment(self)
 
     def recv_course(self, req: mrover.srv.PublishCourseRequest) -> mrover.srv.PublishCourseResponse:

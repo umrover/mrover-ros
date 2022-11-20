@@ -24,9 +24,6 @@ def make_filename(csv_data):
         os.makedirs(folder)
     file = folder + "/output_" + time_stamp + ".csv"
     rospy.logerr(f"Created {file} in data_collection.py")
-    # Add header and default values to csv file
-    df = pd.DataFrame(csv_data)
-    df.to_csv(file, header=1, sep="\t")
     return file
 
 
@@ -103,7 +100,6 @@ class DataCollector:
         self.context = ""
         rospy.Subscriber("/drive_vel_data", JointState, self.make_esw_data_obj)
         rospy.Subscriber("/rover_stuck", Bool, self.set_collecting)
-        #subscriber to rover_stuck
         self.csv_data = {
             "time": 0.0,
             "wheel_names": [[]],
@@ -151,8 +147,9 @@ class DataCollector:
         # create dataframe and send to csv
         rospy.logerr(f"Create dataframe in esw data and send to csv")
         df = self.create_dataframe(d)
-        file_exists = self.out_file.exists()
-        df.to_csv(self.out_file, header=not file_exists, mode='a' if file_exists else 'w', sep = '\t')
+        # Only add header once at the top
+        hdr = False  if os.path.isfile(self.out_file) else True
+        df.to_csv(self.out_file, header=hdr, mode='a', sep = '\t')
         self.previous_obj = d
 
     # This function will only be called/invoked when there is a commanded velocity
@@ -168,8 +165,9 @@ class DataCollector:
         # create dataframe and send to csv
         rospy.logerr(f"Create dataframe in cmd vel and send to csv")
         df = self.create_dataframe(d)
-        file_exists = self.out_file.exists()
-        df.to_csv(self.out_file, header=not file_exists, mode='a' if file_exists else 'w', sep = '\t')
+        # Only add header once at the top
+        hdr = False  if os.path.isfile(self.out_file) else True
+        df.to_csv(self.out_file, header=hdr, mode='a', sep = '\t')
         self.previous_obj = d
 
     def set_context(self, context_in):
