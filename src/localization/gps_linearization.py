@@ -57,7 +57,7 @@ class GPSLinearization:
         :param msg: The Imu message containing IMU data that was just received
         """
         # convert ROS msg quaternion to numpy array
-        imu_quat = np.array([msg.orientation.x, msg.orientation.y, msg.orientation.z, msg.orientation.w])
+        imu_quat = np.array([msg.imu.orientation.x, msg.imu.orientation.y, msg.imu.orientation.z, msg.imu.orientation.w])
 
         # get a quaternion to rotate about the Z axis by 90 degrees
         offset_quat = quaternion_about_axis(np.pi / 2, np.array([0, 0, 1]))

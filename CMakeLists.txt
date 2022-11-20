@@ -45,7 +45,7 @@ set(MROVER_SERVICE_FILES
 # generate messages list
 set(MROVER_ROS_MESSAGES
         std_msgs
-        geometry_msgs
+        sensor_msgs
         )
 
 # dynamic reconfigure

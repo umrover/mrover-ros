@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 import rospy
-from sensor_msgs.msg import Temperature
+from sensor_msgs.msg import Temperature, Imu, MagneticField
 from geometry_msgs.msg import Quaternion, Vector3
 from std_msgs.msg import Header
 from mrover.msg import CalibrationStatus, ImuAndMag
@@ -67,10 +67,16 @@ def main():
         # and setting the reference frame of all messages to IMU frame
         imu_msg = ImuAndMag(
             header=Header(stamp=rospy.Time.now(), frame_id=imu_frame),
-            orientation=Quaternion(*orientation_data),
-            linear_acceleration=Vector3(*accel_data),
-            angular_velocity=Vector3(*gyro_data),
-            magnetic_field=Vector3(*mag_data)
+            imu=Imu(
+                header=Header(stamp=rospy.Time.now(), frame_id=imu_frame),
+                orientation=Quaternion(*orientation_data),
+                linear_acceleration=Vector3(*accel_data),
+                angular_velocity=Vector3(*gyro_data),
+            ),
+            mag=MagneticField(
+                header=Header(stamp=rospy.Time.now(), frame_id=imu_frame),
+                magnetic_field=Vector3(*mag_data)
+            )
         )
 
         temp_msg = Temperature(header=Header(stamp=rospy.Time.now(), frame_id=imu_frame), temperature=temp_data)
