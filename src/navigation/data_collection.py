@@ -3,6 +3,7 @@ import numpy as np
 import pandas as pd
 import rospy
 from sensor_msgs.msg import JointState
+from std_msgs.msg import Bool
 import datetime
 from util.SE3 import SE3
 from util.SO3 import SO3
@@ -101,6 +102,8 @@ class DataCollector:
         self.collecting = False
         self.context = ""
         rospy.Subscriber("/drive_vel_data", JointState, self.make_esw_data_obj)
+        rospy.Subscriber("/rover_stuck", Bool, self.set_collecting)
+        #subscriber to rover_stuck
         self.csv_data = {
             "time": 0.0,
             "wheel_names": [[]],
@@ -114,6 +117,10 @@ class DataCollector:
             "curr_rotation": [[]],
         }
         self.out_file = make_filename(self.csv_data)
+    
+    #Sets the bool value for if we are collecting data when the rover is stuck
+    def set_collecting(self, data):
+        self.collecting = data
 
     # This creates a dataframe containing one Data object to send to the csv file
     def create_dataframe(self, d: Data):
@@ -133,6 +140,9 @@ class DataCollector:
     # This function will only be called/invoked when we receive new esw data
     # Callback function for subscriber to JointState
     def make_esw_data_obj(self, esw_data):
+        if not self.collecting:
+            return
+
         rospy.logerr(f"Called make_esw_data_obj")
         d = Data()
         d.update_commanded_vel(self.previous_obj.commanded_linear_vel, self.previous_obj.commanded_angular_vel)
@@ -141,12 +151,16 @@ class DataCollector:
         # create dataframe and send to csv
         rospy.logerr(f"Create dataframe in esw data and send to csv")
         df = self.create_dataframe(d)
-        df.to_csv(self.out_file, header=0, mode="a", sep="\t")
+        file_exists = self.out_file.exists()
+        df.to_csv(self.out_file, header=not file_exists, mode='a' if file_exists else 'w', sep = '\t')
         self.previous_obj = d
 
     # This function will only be called/invoked when there is a commanded velocity
     # Called in drive.py
     def make_cmd_vel_obj(self, cmd_vel):
+        if not self.collecting:
+            return
+            
         d = Data()
         d.set_esw_data(self.previous_obj.wheel_vel, self.previous_obj.effort, self.previous_obj.wheel_names)
         d.update_tf_vel(self.context, self.previous_obj)
@@ -154,7 +168,8 @@ class DataCollector:
         # create dataframe and send to csv
         rospy.logerr(f"Create dataframe in cmd vel and send to csv")
         df = self.create_dataframe(d)
-        df.to_csv(self.out_file, header=0, mode="a", sep="\t")
+        file_exists = self.out_file.exists()
+        df.to_csv(self.out_file, header=not file_exists, mode='a' if file_exists else 'w', sep = '\t')
         self.previous_obj = d
 
     def set_context(self, context_in):

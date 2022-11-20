@@ -10,6 +10,7 @@ from visualization_msgs.msg import Marker
 from typing import ClassVar, Optional
 import numpy as np
 from dataclasses import dataclass
+from watchdog import Watchdog
 
 
 @dataclass
@@ -21,6 +22,7 @@ class Gate:
 @dataclass
 class Rover:
     ctx: Context
+    wdg: Watchdog
 
     def get_pose(self) -> SE3:
         return SE3.from_tf_tree(self.ctx.tf_buffer, parent_frame="map", child_frame="base_link")
