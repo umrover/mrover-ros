@@ -1,0 +1,162 @@
+<launch>
+
+    <arg name="rvizconfig" default="$(find mrover)/config/rviz/auton_sim.rviz" />
+    <node name="rviz" pkg="rviz" type="rviz" args="-d $(arg rvizconfig)" required="true" />
+
+    <!-- ZED params -->
+    <arg name="left_image" value="/zed_node/left/image_rect_color" />
+    <arg name="imu_ignore_acc"          default="true" />
+    <arg name="imu_remove_gravitational_acceleration" default="true" />
+    <arg name="right_image" value="/zed_node/right/image_rect_color" />
+    <arg name="left_camera_info" value="/zed_node/left/camera_info" />
+    <arg name="right_camera_info" value="/zed_node/right/camera_info" />
+
+    <arg name="zed_frame" default="base_link" />
+
+    <!-- ZED wrapper node -->
+    <node name="zed_node" pkg="zed_wrapper" type="zed_wrapper_node" output="screen" required="true">
+        <rosparam file="$(find mrover)/config/zed/common.yaml" command="load"/>
+        <rosparam file="$(find mrover)/config/zed/zed.yaml" command="load"/>
+
+        <remap to="/camera/color/image_raw" from="/zed_node/rgb/image_rect_color"/>
+        <remap to="/camera/depth/points" from="/zed_node/point_cloud/cloud_registered"/>
+        <remap to="/camera/color/camera_info" from="/zed_node/rgb/camera_info"/>
+    </node>
+
+    <!-- Load ZED URDF -->
+    <param name="zed_description" command="$(find xacro)/xacro '$(find zed_wrapper)/urdf/zed_descr.urdf.xacro'
+                        camera_name:=zed
+                        camera_model:=zed
+                        base_frame:=base_link"/>
+
+    <!-- ZED URDF publisher -->
+    <node name="zed_state_publisher" pkg="robot_state_publisher" type="robot_state_publisher" output="screen"
+          required="true">
+        <remap from="robot_description" to="zed_description"/>
+    </node>
+
+    <node name="stereo_odometry" pkg="rtabmap_ros" type="stereo_odometry" output="screen">
+        <remap from="left/image_rect" to="$(arg left_image)" />
+        <remap from="right/image_rect" to="$(arg right_image)" />
+        <remap from="left/camera_info" to="$(arg left_camera_info)" />
+        <remap from="right/camera_info" to="$(arg right_camera_info)" />
+        <remap from="odom" to="/odometry" />
+        
+        <param name="frame_id" type="string" value="base_link" />
+        <param name="odom_frame_id" type="string" value="odom" />
+
+        <param name="Vis/InlierDistance" type="string" value="0.1"/>
+        <param name="Vis/MinInliers" type="string" value="20"/>
+        <param name="GFTT/MinDistance" type="string" value="7"/>
+    </node>
+<!--    <node pkg="rtabmap_ros" type="stereo_odometry" name="stereo_odometry" output="screen">-->
+<!--        <remap from="left/image_rect" to="/stereo_camera/left/image_rect"/>-->
+<!--        <remap from="right/image_rect" to="/stereo_camera/right/image_rect"/>-->
+<!--        <remap from="left/camera_info" to="/stereo_camera/left/camera_info_throttle"/>-->
+<!--        <remap from="right/camera_info" to="/stereo_camera/right/camera_info_throttle"/>-->
+<!--        <remap from="rgbd_image" to="/stereo_camera/rgbd_image"/>-->
+<!--        <remap from="odom" to="/stereo_odometry"/>-->
+
+<!--        <param name="subscribe_rgbd" type="bool" value="true"/>-->
+<!--        <param name="frame_id" type="string" value="base_footprint"/>-->
+<!--        <param name="odom_frame_id" type="string" value="odom"/>-->
+
+<!--        <param name="Odom/Strategy" type="string" value="0"/> &lt;!&ndash; 0=Frame-to-Map, 1=Frame=to=Frame &ndash;&gt;-->
+<!--        <param name="Vis/EstimationType" type="string" value="1"/> &lt;!&ndash; 0=3D->3D 1=3D->2D (PnP) &ndash;&gt;-->
+<!--        <param name="Vis/MaxDepth" type="string" value="0"/>-->
+<!--        <param name="Odom/GuessMotion" type="string" value="true"/>-->
+<!--        <param name="Vis/MinInliers" type="string" value="10"/>-->
+<!--        <param name="OdomF2M/BundleAdjustment" type="string" value="0"/>-->
+<!--        <param name="OdomF2M/MaxSize" type="string" value="1000"/>-->
+<!--        <param name="GFTT/MinDistance" type="string" value="10"/>-->
+<!--        <param name="GFTT/QualityLevel" type="string" value="0.00001"/>-->
+<!--        <param name="GFTT/QualityLevel" type="string" value="0.00001"/>-->
+<!--    </node>-->
+  <!-- Odometry fusion (EKF), refer to demo launch file in robot_localization for more info -->
+  <node pkg="robot_localization" type="ekf_localization_node" name="ekf_localization" clear_params="true" output="screen">
+      <param name="frame_id" type="string" value="base_link" />
+      <param name="odom_frame_id" type="string" value="odom" />
+      <param name="frequency" value="50"/>
+      <param name="sensor_timeout" value="0.1"/>
+      <param name="two_d_mode" value="false"/>
+
+      <param name="odom_frame" value="odom"/>
+      <param name="base_link_frame" value="base_link"/>
+      <param name="world_frame" value="odom"/>
+
+      <param name="transform_time_offset" value="0.0"/>
+
+      <param name="odom0" value="/vo"/>
+      <param name="imu0" value="/zed_node/imu/data"/> 
+
+      <!-- The order of the values is x, y, z, roll, pitch, yaw, vx, vy, vz, vroll, vpitch, vyaw, ax, ay, az. -->
+      <rosparam param="odom0_config">[true, true, true,
+                                      false, false, false,
+                                      true, true, true,
+                                      false, false, false,
+                                      false, false, false]</rosparam>
+
+      <rosparam     if="$(arg imu_ignore_acc)" param="imu0_config">[
+                                     false, false, false,
+                                     true,  true,  true,
+                                     false, false, false,
+                                     true,  true,  true,
+                                     false,  false,  false] </rosparam>
+      <rosparam unless="$(arg imu_ignore_acc)" param="imu0_config">[
+                                     false, false, false,
+                                     true,  true,  true,
+                                     false, false, false,
+                                     true,  true,  true,
+                                     true,  true,  true] </rosparam>  
+      
+      <param name="odom0_differential" value="false"/>
+      <param name="imu0_differential" value="false"/>
+
+      <param name="odom0_relative" value="true"/>
+      <param name="imu0_relative" value="true"/>
+      <param name="imu0_remove_gravitational_acceleration" value="$(arg imu_remove_gravitational_acceleration)"/>
+
+      <param name="print_diagnostics" value="true"/>
+
+      <!-- ======== ADVANCED PARAMETERS ======== -->
+      <param name="odom0_queue_size" value="5"/>
+      <param name="imu0_queue_size" value="50"/> 
+
+      <!-- The values are ordered as x, y, z, roll, pitch, yaw, vx, vy, vz,
+           vroll, vpitch, vyaw, ax, ay, az. -->
+      <rosparam param="process_noise_covariance">[0.005, 0,    0,    0,    0,    0,    0,     0,     0,    0,    0,    0,    0,    0,    0,
+                                                  0,    0.005, 0,    0,    0,    0,    0,     0,     0,    0,    0,    0,    0,    0,    0,
+                                                  0,    0,    0.006, 0,    0,    0,    0,     0,     0,    0,    0,    0,    0,    0,    0,
+                                                  0,    0,    0,    0.003, 0,    0,    0,     0,     0,    0,    0,    0,    0,    0,    0,
+                                                  0,    0,    0,    0,    0.003, 0,    0,     0,     0,    0,    0,    0,    0,    0,    0,
+                                                  0,    0,    0,    0,    0,    0.006, 0,     0,     0,    0,    0,    0,    0,    0,    0,
+                                                  0,    0,    0,    0,    0,    0,    0.0025, 0,     0,    0,    0,    0,    0,    0,    0,
+                                                  0,    0,    0,    0,    0,    0,    0,     0.0025, 0,    0,    0,    0,    0,    0,    0,
+                                                  0,    0,    0,    0,    0,    0,    0,     0,     0.004, 0,    0,    0,    0,    0,    0,
+                                                  0,    0,    0,    0,    0,    0,    0,     0,     0,    0.001, 0,    0,    0,    0,    0,
+                                                  0,    0,    0,    0,    0,    0,    0,     0,     0,    0,    0.001, 0,    0,    0,    0,
+                                                  0,    0,    0,    0,    0,    0,    0,     0,     0,    0,    0,    0.002, 0,    0,    0,
+                                                  0,    0,    0,    0,    0,    0,    0,     0,     0,    0,    0,    0,    0.001, 0,    0,
+                                                  0,    0,    0,    0,    0,    0,    0,     0,     0,    0,    0,    0,    0,    0.001, 0,
+                                                  0,    0,    0,    0,    0,    0,    0,     0,     0,    0,    0,    0,    0,    0,    0.0015]</rosparam>
+
+      <!-- The values are ordered as x, y,
+           z, roll, pitch, yaw, vx, vy, vz, vroll, vpitch, vyaw, ax, ay, az. -->
+           <rosparam param="initial_estimate_covariance">[1e-9, 0,    0,    0,    0,    0,    0,    0,    0,    0,     0,     0,     0,    0,    0,
+                                                          0,    1e-9, 0,    0,    0,    0,    0,    0,    0,    0,     0,     0,     0,    0,    0,
+                                                          0,    0,    1e-9, 0,    0,    0,    0,    0,    0,    0,     0,     0,     0,    0,    0,
+                                                          0,    0,    0,    1e-9, 0,    0,    0,    0,    0,    0,     0,     0,     0,    0,    0,
+                                                          0,    0,    0,    0,    1e-9, 0,    0,    0,    0,    0,     0,     0,     0,    0,    0,
+                                                          0,    0,    0,    0,    0,    1e-9, 0,    0,    0,    0,     0,     0,     0,    0,    0,
+                                                          0,    0,    0,    0,    0,    0,    1e-9, 0,    0,    0,     0,     0,     0,    0,    0,
+                                                          0,    0,    0,    0,    0,    0,    0,    1e-9, 0,    0,     0,     0,     0,    0,    0,
+                                                          0,    0,    0,    0,    0,    0,    0,    0,    1e-9, 0,     0,     0,     0,    0,    0,
+                                                          0,    0,    0,    0,    0,    0,    0,    0,    0,    1e-9,  0,     0,     0,    0,    0,
+                                                          0,    0,    0,    0,    0,    0,    0,    0,    0,    0,     1e-9,  0,     0,    0,    0,
+                                                          0,    0,    0,    0,    0,    0,    0,    0,    0,    0,     0,     1e-9,  0,    0,    0,
+                                                          0,    0,    0,    0,    0,    0,    0,    0,    0,    0,     0,     0,     1e-9, 0,    0,
+                                                          0,    0,    0,    0,    0,    0,    0,    0,    0,    0,     0,     0,     0,    1e-9, 0,
+                                                          0,    0,    0,    0,    0,    0,    0,    0,    0,    0,     0,     0,     0,    0,    1e-9]</rosparam>
+
+    </node>
+</launch>
