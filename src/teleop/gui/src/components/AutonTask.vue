@@ -15,6 +15,7 @@
     </div>
     <div class="box1 data" v-bind:style="{backgroundColor: nav_state_color}">
       <h2>Nav State: {{this.nav_status.nav_state_name}}</h2>
+      <JoystickValues/>
     </div>
     <div class="box map light-bg">  
       <AutonRoverMap v-bind:odom="odom"/>
@@ -36,6 +37,7 @@ import AutonWaypointEditor from './AutonWaypointEditor.vue'
 import DriveControls from "./DriveControls.vue";
 import { mapGetters } from 'vuex';
 import * as qte from "quaternion-to-euler";
+import JoystickValues from "./JoystickValues.vue";
 
 const navBlue = "#4695FF"
 const navGreen = "yellowgreen"
@@ -180,7 +182,8 @@ export default {
   components:{
     AutonRoverMap,
     AutonWaypointEditor,
-    DriveControls
+    DriveControls,
+    JoystickValues
 }
 }
 </script>
