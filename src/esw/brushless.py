@@ -88,7 +88,7 @@ class MoteusBridge:
         elif str(self.state) == "Disconnected":
             await self.connect()
 
-        elif str(self.state) == "ErrorState":
+        elif str(self.state) == "Error":
             await self.clean_error()
 
     async def clean_error(self):
@@ -107,7 +107,6 @@ class MoteusBridge:
                 rospy.logerr("Disconnected!")
             self.state = "Disconnected"
             return
-
         self.fault_response = state.values[moteus.Register.FAULT]
         if self.has_error():
             self.state = "Error"
@@ -185,8 +184,8 @@ class DriveApp:
         previously_lost_communication = True
         while not rospy.is_shutdown():
             for name, bridge in self.drive_bridge_by_name.items():
-                # if name != "middle_left" and name != "front_right":
-                #     continue
+                if name != "middle_left" and name != "front_right":
+                    continue
                 watchdog = t.process_time() - bridge.start_time
                 lost_communication = watchdog > 1.0
                 if lost_communication:
