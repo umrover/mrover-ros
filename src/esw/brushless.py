@@ -30,44 +30,50 @@ class MoteusBridge:
         self.command = CommandData(position=math.nan, velocity=0.0, torque=0.5)
         self.fault_response = 0
 
-    def set_command(self, command: CommandData):
+    def set_command(self, command: CommandData) -> None:
         self.command_lock.acquire()
         self.command = command
         self.command_lock.release()
 
-    async def send_command(self):
+    async def send_command(self) -> None:
         self.command_lock.acquire()
         command = self.command
         self.command_lock.release()
         try:
-            state = await asyncio.wait_for(self.controller.set_position(
-                position=command.position,
-                velocity=command.velocity,
-                velocity_limit=5,
-                maximum_torque=command.torque,
-                watchdog_timeout=1,
-                query=True,
-            ), timeout=0.1)
+            state = await asyncio.wait_for(
+                self.controller.set_position(
+                    position=command.position,
+                    velocity=command.velocity,
+                    velocity_limit=5,  # TODO - Change after regenerative braking is solved
+                    maximum_torque=command.torque,
+                    watchdog_timeout=1,
+                    query=True,
+                ),
+                timeout=0.1,
+            )
             self.fault_response = state.values[moteus.Register.FAULT]
         except asyncio.TimeoutError:
             if self.state != "Disconnected":
                 rospy.logerr("Disconnected!")
             self.state = "Disconnected"
 
-    def has_error(self):
+    def has_error(self) -> bool:
         return self.fault_response != 0
 
-    async def connect(self):
+    async def connect(self) -> None:
         try:
             await asyncio.wait_for(self.controller.set_stop(), timeout=0.1)
-            await asyncio.wait_for(self.controller.set_position(
-                position=math.nan,
-                velocity=0,
-                velocity_limit=5,
-                maximum_torque=0.5,
-                watchdog_timeout=1,
-                query=True,
-            ), timeout=0.1)
+            await asyncio.wait_for(
+                self.controller.set_position(
+                    position=math.nan,
+                    velocity=0,
+                    velocity_limit=5,
+                    maximum_torque=0.5,
+                    watchdog_timeout=1,
+                    query=True,
+                ),
+                timeout=0.1,
+            )
         except asyncio.TimeoutError:
             if self.state != "Disconnected":
                 rospy.logerr("Disconnected when trying to connect!")
@@ -75,33 +81,38 @@ class MoteusBridge:
             return
         self.state = "Armed"
 
-    async def update(self):
-        if str(self.state) == "Armed":
+    async def update(self) -> None:
+        if self.state == "Armed":
             errors = self.has_error()
 
             if errors:
                 self.state = "Error"
-                return
+                return "Error"
 
             await self.send_command()
 
-        elif str(self.state) == "Disconnected":
+        elif self.state == "Disconnected":
             await self.connect()
 
-        elif str(self.state) == "Error":
+        elif self.state == "Error":
             await self.clean_error()
 
-    async def clean_error(self):
+        self.state()
+
+    async def clean_error(self) -> None:
         try:
             await asyncio.wait_for(self.controller.set_stop(), timeout=0.1)
-            state = await asyncio.wait_for(self.controller.set_position(
-                position=math.nan,
-                velocity=0,
-                velocity_limit=5,
-                maximum_torque=0.5,
-                watchdog_timeout=1,
-                query=True,
-            ), timeout=0.1)
+            state = await asyncio.wait_for(
+                self.controller.set_position(
+                    position=math.nan,
+                    velocity=0,
+                    velocity_limit=5,  # TODO - Change after regenerative braking is solved
+                    maximum_torque=0.5,
+                    watchdog_timeout=1,
+                    query=True,
+                ),
+                timeout=0.1,
+            )
         except asyncio.TimeoutError:
             if self.state != "Disconnected":
                 rospy.logerr("Disconnected!")
@@ -138,7 +149,7 @@ class DriveApp:
 
         rospy.Subscriber("cmd_vel", Twist, self._process_twist_message)
 
-    def _process_twist_message(self, ros_msg: Twist):
+    def _process_twist_message(self, ros_msg: Twist) -> None:
         """Converts the twist message into rad/s to turn per wheel.
         Then tells the wheels to move at that speed.
         :param ros_msg: A Twist message of the rover to turn."""
@@ -180,12 +191,10 @@ class DriveApp:
             if bridge.state == "Armed":
                 bridge.set_command(CommandData(position=math.nan, velocity=commanded_velocity, torque=0.5))
 
-    async def run(self):
+    async def run(self) -> None:
         previously_lost_communication = True
         while not rospy.is_shutdown():
             for name, bridge in self.drive_bridge_by_name.items():
-                if name != "middle_left" and name != "front_right":
-                    continue
                 watchdog = t.time() - bridge.last_updated_time
                 lost_communication = watchdog > 1.0
                 if lost_communication:
@@ -204,9 +213,7 @@ class Application:
         rospy.init_node(f"brushless")
         self.drive_app = DriveApp()
 
-    def run(self):
-        """Creates MoteusBridge objects and starts the task associated with each one.
-        Tasks run concurrently according to asyncio.gather."""
+    def run(self) -> None:
         asyncio.run(self.drive_app.run())
 
 
