@@ -15,20 +15,26 @@ import moteus
 
 
 class CommandData:
-    def __init__(self, position: float = math.nan, velocity: float = 0.0, torque: float = 0.5):
+    MAX_TORQUE = 0.5
+    VELOCITY_LIMIT = 5
+
+    def __init__(self, position: float = math.nan, velocity: float = 0.0, torque: float = MAX_TORQUE):
         self.position = position
-        self.velocity = velocity
-        self.torque = max(0, min(0.5, torque))
+        self.velocity = max(-CommandData.VELOCITY_LIMIT, min(CommandData.VELOCITY_LIMIT, velocity))
+        self.torque = max(0, min(CommandData.MAX_TORQUE, torque))
 
 
 class MoteusBridge:
     def __init__(self, can_id: int):
+        self.can_id = can_id
         self.last_updated_time = t.time()
         self.controller = moteus.Controller(id=can_id)
         self.state = "Disconnected"
         self.command_lock = threading.Lock()
-        self.command = CommandData(position=math.nan, velocity=0.0, torque=0.5)
+        self.command = CommandData(position=math.nan, velocity=0.0, torque=CommandData.MAX_TORQUE)
         self.fault_response = 0
+        self.TIME_INDICATING_DISCONNECTED = 0.01
+        self.WATCHDOG_LIMIT = 0.1
 
     def set_command(self, command: CommandData) -> None:
         self.command_lock.acquire()
@@ -44,15 +50,16 @@ class MoteusBridge:
                 self.controller.set_position(
                     position=command.position,
                     velocity=command.velocity,
-                    velocity_limit=5,  # TODO - Change after regenerative braking is solved
+                    velocity_limit=CommandData.VELOCITY_LIMIT,  # TODO - Change after regenerative braking is solved
                     maximum_torque=command.torque,
-                    watchdog_timeout=1,
+                    watchdog_timeout=self.WATCHDOG_LIMIT,
                     query=True,
                 ),
-                timeout=0.1,
+                timeout=self.TIME_INDICATING_DISCONNECTED,
             )
             self.fault_response = state.values[moteus.Register.FAULT]
         except asyncio.TimeoutError:
+            rospy.logerr("YOU'RE A FAILURE HARRY")
             if self.state != "Disconnected":
                 rospy.logerr("Disconnected!")
             self.state = "Disconnected"
@@ -67,12 +74,12 @@ class MoteusBridge:
                 self.controller.set_position(
                     position=math.nan,
                     velocity=0,
-                    velocity_limit=5,
-                    maximum_torque=0.5,
-                    watchdog_timeout=1,
+                    velocity_limit=CommandData.VELOCITY_LIMIT,
+                    maximum_torque=CommandData.MAX_TORQUE,
+                    watchdog_timeout=self.WATCHDOG_LIMIT,
                     query=True,
                 ),
-                timeout=0.1,
+                timeout=self.TIME_INDICATING_DISCONNECTED,
             )
         except asyncio.TimeoutError:
             if self.state != "Disconnected":
@@ -99,17 +106,17 @@ class MoteusBridge:
 
     async def clean_error(self) -> None:
         try:
-            await asyncio.wait_for(self.controller.set_stop(), timeout=0.1)
+            await asyncio.wait_for(self.controller.set_stop(), timeout=self.TIME_INDICATING_DISCONNECTED)
             state = await asyncio.wait_for(
                 self.controller.set_position(
                     position=math.nan,
                     velocity=0,
-                    velocity_limit=5,  # TODO - Change after regenerative braking is solved
-                    maximum_torque=0.5,
-                    watchdog_timeout=1,
+                    velocity_limit=CommandData.VELOCITY_LIMIT,
+                    maximum_torque=CommandData.MAX_TORQUE,
+                    watchdog_timeout=self.WATCHDOG_LIMIT,
                     query=True,
                 ),
-                timeout=0.1,
+                timeout=self.TIME_INDICATING_DISCONNECTED,
             )
         except asyncio.TimeoutError:
             if self.state != "Disconnected":
@@ -131,20 +138,20 @@ class DriveApp:
             self.drive_bridge_by_name[name] = MoteusBridge(info["id"])
         rover_width = rospy.get_param("rover/width")
         rover_length = rospy.get_param("rover/length")
-        self._wheel_distance_inner = rover_width / 2.0
-        self._wheel_distance_outer = math.sqrt(((rover_width / 2.0) ** 2) + ((rover_length / 2.0) ** 2))
+        self.WHEEL_DISTANCE_INNER = rover_width / 2.0
+        self.WHEEL_DISTANCE_OUTER = math.sqrt(((rover_width / 2.0) ** 2) + ((rover_length / 2.0) ** 2))
 
-        wheel_radius = rospy.get_param("wheel/radius")
         _ratio_motor_to_wheel = rospy.get_param("wheel/gear_ratio")
-        self._wheels_m_s_to_motor_rad_ratio = (1 / wheel_radius) * _ratio_motor_to_wheel
+        self.WHEELS_M_S_TO_MOTOR_RAD_RATIO = (1 / rospy.get_param("wheel/radius")) * rospy.get_param("wheel/gear_ratio")
 
         _max_speed_m_s = rospy.get_param("rover/max_speed")
         assert _max_speed_m_s > 0, "rover/max_speed config must be greater than 0"
 
-        max_motor_rad_s = _max_speed_m_s * self._wheels_m_s_to_motor_rad_ratio
-        measured_max_motor_rad_s = 1 * 2 * math.pi  # Should not be changed. Derived from testing.
-        self._max_motor_speed_rad_s = min(measured_max_motor_rad_s, max_motor_rad_s)
-        self.watchdog_timeout = 1
+        max_motor_rad_s = _max_speed_m_s * self.WHEELS_M_S_TO_MOTOR_RAD_RATIO
+        self.MEASURED_MAX_MOTOR_RAD_S = 1 * 2 * math.pi  # Should not be changed. Derived from testing.
+        self._max_motor_speed_rad_s = min(self.MEASURED_MAX_MOTOR_RAD_S, max_motor_rad_s)
+        self.WATCHDOG_TIMEOUT = 1
+        self.DEFAULT_TORQUE = 0.3
 
         rospy.Subscriber("cmd_vel", Twist, self._process_twist_message)
 
@@ -155,13 +162,13 @@ class DriveApp:
         forward = ros_msg.linear.x
         turn = ros_msg.angular.z
 
-        turn_difference_inner = turn * self._wheel_distance_inner
-        turn_difference_outer = turn * self._wheel_distance_outer
+        turn_difference_inner = turn * self.WHEEL_DISTANCE_INNER
+        turn_difference_outer = turn * self.WHEEL_DISTANCE_OUTER
 
-        left_rad_inner = (forward - turn_difference_inner) * self._wheels_m_s_to_motor_rad_ratio
-        right_rad_inner = (forward + turn_difference_inner) * self._wheels_m_s_to_motor_rad_ratio
-        left_rad_outer = (forward - turn_difference_outer) * self._wheels_m_s_to_motor_rad_ratio
-        right_rad_outer = (forward + turn_difference_outer) * self._wheels_m_s_to_motor_rad_ratio
+        left_rad_inner = (forward - turn_difference_inner) * self.WHEELS_M_S_TO_MOTOR_RAD_RATIO
+        right_rad_inner = (forward + turn_difference_inner) * self.WHEELS_M_S_TO_MOTOR_RAD_RATIO
+        left_rad_outer = (forward - turn_difference_outer) * self.WHEELS_M_S_TO_MOTOR_RAD_RATIO
+        right_rad_outer = (forward + turn_difference_outer) * self.WHEELS_M_S_TO_MOTOR_RAD_RATIO
 
         # Ignore inner since outer > inner always
         larger_abs_rad_s = max(abs(left_rad_outer), abs(right_rad_outer))
@@ -188,19 +195,21 @@ class DriveApp:
                 continue
 
             if bridge.state == "Armed":
-                bridge.set_command(CommandData(position=math.nan, velocity=commanded_velocity, torque=0.5))
+                bridge.set_command(
+                    CommandData(position=math.nan, velocity=commanded_velocity, torque=self.DEFAULT_TORQUE)
+                )
 
     async def run(self) -> None:
         previously_lost_communication = True
         while not rospy.is_shutdown():
             for name, bridge in self.drive_bridge_by_name.items():
                 time_diff_since_updated = t.time() - bridge.last_updated_time
-                lost_communication = time_diff_since_updated > self.watchdog_timeout
+                lost_communication = time_diff_since_updated > self.WATCHDOG_TIMEOUT
                 if lost_communication:
                     if not previously_lost_communication:
                         rospy.loginfo("Lost communication")
                         previously_lost_communication = True
-                    bridge.command = CommandData(position=math.nan, velocity=0.0, torque=0.5)
+                    bridge.command = CommandData(position=math.nan, velocity=0.0, torque=self.DEFAULT_TORQUE)
                 elif previously_lost_communication:
                     previously_lost_communication = False
                     rospy.loginfo("Regained communication")

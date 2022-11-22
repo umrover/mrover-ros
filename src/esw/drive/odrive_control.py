@@ -273,7 +273,7 @@ class Modrive:
         try:
             self._usb_lock.acquire()
             for axis in self._axes.values():
-                axis.config.watchdog_timeout = 0
+                axis.config.WATCHDOG_TIMEOUT = 0
                 axis.config.enable_watchdog = False
         except Exception:
             rospy.logerr("Failed in _disable_watchdog. Unplugged")
@@ -289,7 +289,7 @@ class Modrive:
         try:
             self._usb_lock.acquire()
             for axis in self._axes.values():
-                axis.config.watchdog_timeout = self._watchdog_timeout
+                axis.config.WATCHDOG_TIMEOUT = self._watchdog_timeout
                 axis.watchdog_feed()
                 axis.config.enable_watchdog = True
         except Exception:
