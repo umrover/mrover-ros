@@ -16,7 +16,7 @@ import moteus
 
 class CommandData:
     MAX_TORQUE = 0.5
-    VELOCITY_LIMIT = 5
+    VELOCITY_LIMIT = 5  # TODO - Change after regenerative braking is solved
 
     def __init__(self, position: float = math.nan, velocity: float = 0.0, torque: float = MAX_TORQUE):
         self.position = position
@@ -26,48 +26,47 @@ class CommandData:
 
 class MoteusBridge:
     def __init__(self, can_id: int):
-        self.can_id = can_id
+        self.CAN_ID = can_id
         self.last_updated_time = t.time()
         self.controller = moteus.Controller(id=can_id)
         self.state = "Disconnected"
         self.command_lock = threading.Lock()
-        self.command = CommandData(position=math.nan, velocity=0.0, torque=CommandData.MAX_TORQUE)
-        self.fault_response = 0
+        self._command = CommandData(position=math.nan, velocity=0.0, torque=CommandData.MAX_TORQUE)
+        self._fault_response = 0
         self.TIME_INDICATING_DISCONNECTED = 0.01
         self.WATCHDOG_LIMIT = 0.1
 
     def set_command(self, command: CommandData) -> None:
         self.command_lock.acquire()
-        self.command = command
+        self._command = command
         self.command_lock.release()
 
-    async def send_command(self) -> None:
+    async def _send_command(self) -> None:
         self.command_lock.acquire()
-        command = self.command
+        command = self._command
         self.command_lock.release()
         try:
             state = await asyncio.wait_for(
                 self.controller.set_position(
                     position=command.position,
                     velocity=command.velocity,
-                    velocity_limit=CommandData.VELOCITY_LIMIT,  # TODO - Change after regenerative braking is solved
+                    velocity_limit=CommandData.VELOCITY_LIMIT,
                     maximum_torque=command.torque,
                     watchdog_timeout=self.WATCHDOG_LIMIT,
                     query=True,
                 ),
                 timeout=self.TIME_INDICATING_DISCONNECTED,
             )
-            self.fault_response = state.values[moteus.Register.FAULT]
+            self._fault_response = state.values[moteus.Register.FAULT]
         except asyncio.TimeoutError:
-            rospy.logerr("YOU'RE A FAILURE HARRY")
             if self.state != "Disconnected":
-                rospy.logerr("Disconnected!")
+                rospy.logerr(f"CAN ID {self.CAN_ID} disconnected when trying to send command")
             self.state = "Disconnected"
 
-    def has_error(self) -> bool:
-        return self.fault_response != 0
+    def _has_error(self) -> bool:
+        return self._fault_response != 0
 
-    async def connect(self) -> None:
+    async def _connect(self) -> None:
         try:
             await asyncio.wait_for(self.controller.set_stop(), timeout=0.1)
             await asyncio.wait_for(
@@ -83,23 +82,24 @@ class MoteusBridge:
             )
         except asyncio.TimeoutError:
             if self.state != "Disconnected":
-                rospy.logerr("Disconnected when trying to connect!")
+                rospy.logerr(f"CAN ID {self.CAN_ID} disconnected when trying to connect")
             self.state = "Disconnected"
             return
         self.state = "Armed"
 
     async def update(self) -> None:
         if self.state == "Armed":
-            errors = self.has_error()
+            errors = self._has_error()
 
             if errors:
+                rospy.logerr(f"CAN ID {self.CAN_ID} has error {self._fault_response}")
                 self.state = "Error"
                 return
 
-            await self.send_command()
+            await self._send_command()
 
         elif self.state == "Disconnected":
-            await self.connect()
+            await self._connect()
 
         elif self.state == "Error":
             await self.clean_error()
@@ -120,11 +120,11 @@ class MoteusBridge:
             )
         except asyncio.TimeoutError:
             if self.state != "Disconnected":
-                rospy.logerr("Disconnected!")
+                rospy.logerr(f"CAN ID {self.CAN_ID} disconnected when trying to clean error")
             self.state = "Disconnected"
             return
-        self.fault_response = state.values[moteus.Register.FAULT]
-        if self.has_error():
+        self._fault_response = state.values[moteus.Register.FAULT]
+        if self._has_error():
             self.state = "Error"
         else:
             self.state = "Armed"
@@ -156,9 +156,6 @@ class DriveApp:
         rospy.Subscriber("cmd_vel", Twist, self._process_twist_message)
 
     def _process_twist_message(self, ros_msg: Twist) -> None:
-        """Converts the twist message into rad/s to turn per wheel.
-        Then tells the wheels to move at that speed.
-        :param ros_msg: A Twist message of the rover to turn."""
         forward = ros_msg.linear.x
         turn = ros_msg.angular.z
 
@@ -209,7 +206,7 @@ class DriveApp:
                     if not previously_lost_communication:
                         rospy.loginfo("Lost communication")
                         previously_lost_communication = True
-                    bridge.command = CommandData(position=math.nan, velocity=0.0, torque=self.DEFAULT_TORQUE)
+                    bridge.set_command(CommandData(position=math.nan, velocity=0.0, torque=self.DEFAULT_TORQUE))
                 elif previously_lost_communication:
                     previously_lost_communication = False
                     rospy.loginfo("Regained communication")
