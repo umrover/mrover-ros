@@ -39,25 +39,45 @@ class MoteusBridge:
         self.command_lock.acquire()
         command = self.command
         self.command_lock.release()
-        state = await self.controller.set_position(
-            position=command.position,
-            velocity=command.velocity,
-            velocity_limit=5,
-            maximum_torque=command.torque,
-            watchdog_timeout=1,
-            query=True,
-        )
-        self.fault_response = state.values[moteus.Register.FAULT]
+        try:
+            state = await asyncio.wait_for(self.controller.set_position(
+                position=command.position,
+                velocity=command.velocity,
+                velocity_limit=5,
+                maximum_torque=command.torque,
+                watchdog_timeout=1,
+                query=True,
+            ), timeout=0.1)
+            self.fault_response = state.values[moteus.Register.FAULT]
+        except asyncio.TimeoutError:
+            if self.state != "Disconnected":
+                rospy.logerr("Disconnected!")
+            self.state = "Disconnected"
 
-    async def has_error(self):
+    def has_error(self):
         return self.fault_response != 0
 
     async def connect(self):
-        await self.controller.set_stop()
+        try:
+            await asyncio.wait_for(self.controller.set_stop(), timeout=0.1)
+            await asyncio.wait_for(self.controller.set_position(
+                position=math.nan,
+                velocity=0,
+                velocity_limit=5,
+                maximum_torque=0.5,
+                watchdog_timeout=1,
+                query=True,
+            ), timeout=0.1)
+        except asyncio.TimeoutError:
+            if self.state != "Disconnected":
+                rospy.logerr("Disconnected when trying to connect!")
+            self.state = "Disconnected"
+            return
+        self.state = "Armed"
 
     async def update(self):
         if str(self.state) == "Armed":
-            errors = await self.has_error()
+            errors = self.has_error()
 
             if errors:
                 self.state = "Error"
@@ -67,14 +87,32 @@ class MoteusBridge:
 
         elif str(self.state) == "Disconnected":
             await self.connect()
-            self.state = "Armed"
 
         elif str(self.state) == "ErrorState":
             await self.clean_error()
-            self.state = "Disconnected"
 
     async def clean_error(self):
-        await self.controller.set_stop()
+        try:
+            await asyncio.wait_for(self.controller.set_stop(), timeout=0.1)
+            state = await asyncio.wait_for(self.controller.set_position(
+                position=math.nan,
+                velocity=0,
+                velocity_limit=5,
+                maximum_torque=0.5,
+                watchdog_timeout=1,
+                query=True,
+            ), timeout=0.1)
+        except asyncio.TimeoutError:
+            if self.state != "Disconnected":
+                rospy.logerr("Disconnected!")
+            self.state = "Disconnected"
+            return
+
+        self.fault_response = state.values[moteus.Register.FAULT]
+        if self.has_error():
+            self.state = "Error"
+        else:
+            self.state = "Armed"
 
 
 class DriveApp:
