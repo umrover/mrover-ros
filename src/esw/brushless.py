@@ -141,9 +141,7 @@ class DriveApp:
                 continue
 
             if bridge.state == "Armed":
-                bridge.set_command(
-                    CommandData(position=math.nan, velocity=commanded_velocity, torque=0.5)
-                )
+                bridge.set_command(CommandData(position=math.nan, velocity=commanded_velocity, torque=0.5))
 
     async def run(self):
         previously_lost_communication = True
