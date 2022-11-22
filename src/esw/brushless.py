@@ -23,7 +23,7 @@ class CommandData:
 
 class MoteusBridge:
     def __init__(self, can_id: int):
-        self.start_time = t.process_time()
+        self.last_updated_time = t.time()
         self.controller = moteus.Controller(id=can_id)
         self.state = "Disconnected"
         self.command_lock = threading.Lock()
@@ -163,7 +163,7 @@ class DriveApp:
             right_rad_outer *= change_ratio
 
         for name, bridge in self.drive_bridge_by_name.items():
-            bridge.start_time = t.process_time()
+            bridge.last_updated_time = t.time()
 
             if name == "front_left" or name == "back_left":
                 commanded_velocity = left_rad_outer
@@ -186,7 +186,7 @@ class DriveApp:
             for name, bridge in self.drive_bridge_by_name.items():
                 if name != "middle_left" and name != "front_right":
                     continue
-                watchdog = t.process_time() - bridge.start_time
+                watchdog = t.time() - bridge.last_updated_time
                 lost_communication = watchdog > 1.0
                 if lost_communication:
                     if not previously_lost_communication:
