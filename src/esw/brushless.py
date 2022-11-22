@@ -87,7 +87,7 @@ class MoteusBridge:
 
             if errors:
                 self.state = "Error"
-                return "Error"
+                return
 
             await self.send_command()
 
@@ -96,8 +96,6 @@ class MoteusBridge:
 
         elif self.state == "Error":
             await self.clean_error()
-
-        self.state()
 
     async def clean_error(self) -> None:
         try:
@@ -146,6 +144,7 @@ class DriveApp:
         max_motor_rad_s = _max_speed_m_s * self._wheels_m_s_to_motor_rad_ratio
         measured_max_motor_rad_s = 1 * 2 * math.pi  # Should not be changed. Derived from testing.
         self._max_motor_speed_rad_s = min(measured_max_motor_rad_s, max_motor_rad_s)
+        self.watchdog_timeout = 1
 
         rospy.Subscriber("cmd_vel", Twist, self._process_twist_message)
 
@@ -195,8 +194,8 @@ class DriveApp:
         previously_lost_communication = True
         while not rospy.is_shutdown():
             for name, bridge in self.drive_bridge_by_name.items():
-                watchdog = t.time() - bridge.last_updated_time
-                lost_communication = watchdog > 1.0
+                time_diff_since_updated = t.time() - bridge.last_updated_time
+                lost_communication = time_diff_since_updated > self.watchdog_timeout
                 if lost_communication:
                     if not previously_lost_communication:
                         rospy.loginfo("Lost communication")
