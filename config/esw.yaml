@@ -41,3 +41,18 @@ rover:
 wheel:
   gear_ratio: 50.0
   radius: 0.13
+
+brushless:
+  drive:
+    front_left:
+      id: 0
+    front_right:
+      id: 1
+    middle_left:
+      id: 2
+    middle_right:
+      id: 3
+    back_left:
+      id: 4
+    back_right:
+      id: 5
