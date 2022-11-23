@@ -45,15 +45,15 @@ wheel:
 brushless:
   using_pi3_hat: false
   drive:
-    front_left:
+    FrontLeft:
       id: 0
-    front_right:
+    FrontRight:
       id: 1
-    middle_left:
+    MiddleLeft:
       id: 2
-    middle_right:
+    MiddleRight:
       id: 3
-    back_left:
+    BackLeft:
       id: 4
-    back_right:
+    BackRight:
       id: 5

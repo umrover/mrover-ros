@@ -26,7 +26,7 @@ set(MROVER_MESSAGE_FILES
         CalibrationStatus.msg
         Chassis.msg
         Course.msg
-        DriveStates.msg
+        DriveStatus.msg
         EnableAuton.msg
         GimbalCmd.msg
         GPSWaypoint.msg
@@ -45,6 +45,7 @@ set(MROVER_SERVICE_FILES
 
 # generate messages list
 set(MROVER_ROS_MESSAGES
+        sensor_msgs
         std_msgs
         )
 

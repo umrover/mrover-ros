@@ -1,3 +1,3 @@
 string[6] name
-JointState joint_states
+sensor_msgs/JointState joint_states
 MoteusState moteus_states
