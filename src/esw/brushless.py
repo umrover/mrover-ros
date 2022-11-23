@@ -13,13 +13,17 @@ import moteus
 
 
 class CommandData:
-    MAX_TORQUE = 0.5
-    VELOCITY_LIMIT = 5  # TODO - Change after regenerative braking is solved
-    POSITION_FOR_VELOCITY_CONTROL = math.nan
     DEFAULT_TORQUE = 0.3
+    MAX_TORQUE = 0.5
+    POSITION_FOR_VELOCITY_CONTROL = math.nan
+    VELOCITY_LIMIT = 5  # TODO - Change after regenerative braking is solved
+    ZERO_VELOCITY = 0.0
 
     def __init__(
-        self, position: float = POSITION_FOR_VELOCITY_CONTROL, velocity: float = 0.0, torque: float = DEFAULT_TORQUE
+        self,
+        position: float = POSITION_FOR_VELOCITY_CONTROL,
+        velocity: float = ZERO_VELOCITY,
+        torque: float = DEFAULT_TORQUE,
     ):
         self.position = position
         self.velocity = max(-CommandData.VELOCITY_LIMIT, min(CommandData.VELOCITY_LIMIT, velocity))
@@ -49,10 +53,10 @@ class MoteusBridge:
         42: "ThetaInvalid",
         43: "PositionInvalid",
     }
-
-    ROVER_NODE_TO_MOTEUS_WATCHDOG_TIMEOUT_S = 0.1
-    MOTEUS_RESPONSE_TIME_INDICATING_DISCONNECTED_S = 0.01
     UNKNOWN_ERROR_NAME = "Unknown Error"
+
+    MOTEUS_RESPONSE_TIME_INDICATING_DISCONNECTED_S = 0.01
+    ROVER_NODE_TO_MOTEUS_WATCHDOG_TIMEOUT_S = 0.1
 
     DISCONNECTED_STATE = "Disconnected"
     ARMED_STATE = "Armed"
@@ -65,7 +69,9 @@ class MoteusBridge:
         self.state = MoteusBridge.DISCONNECTED_STATE
         self.command_lock = threading.Lock()
         self._command = CommandData(
-            position=CommandData.POSITION_FOR_VELOCITY_CONTROL, velocity=0.0, torque=CommandData.MAX_TORQUE
+            position=CommandData.POSITION_FOR_VELOCITY_CONTROL,
+            velocity=CommandData.ZERO_VELOCITY,
+            torque=CommandData.MAX_TORQUE,
         )
         self._prev_error_name = MoteusBridge.UNKNOWN_ERROR_NAME
 
@@ -144,7 +150,7 @@ class MoteusBridge:
             # state = await asyncio.wait_for(
             #     self.controller.set_position(
             #         position=math.nan,
-            #         velocity=0,
+            #         velocity=CommandData.ZERO_VELOCITY,
             #         velocity_limit=CommandData.VELOCITY_LIMIT,
             #         maximum_torque=CommandData.MAX_TORQUE,
             #         watchdog_timeout=MoteusBridge.ROVER_NODE_TO_MOTEUS_WATCHDOG_TIMEOUT_S,
@@ -263,7 +269,7 @@ class DriveApp:
                     bridge.set_command(
                         CommandData(
                             position=CommandData.POSITION_FOR_VELOCITY_CONTROL,
-                            velocity=0.0,
+                            velocity=CommandData.ZERO_VELOCITY,
                             torque=CommandData.DEFAULT_TORQUE,
                         )
                     )
