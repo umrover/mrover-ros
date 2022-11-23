@@ -267,7 +267,6 @@ class DriveApp:
         """
         Runs an infinite loop and only gives commands to the moteus (by updating the bridge) if communication is still
         maintained between the basestation and the rover node.
-        :return:
         """
         previously_lost_communication = True
         while not rospy.is_shutdown():
@@ -289,6 +288,7 @@ class DriveApp:
                     previously_lost_communication = False
                     rospy.loginfo("Regained communication")
                 await bridge.update()
+        assert False
 
 
 class Application:
