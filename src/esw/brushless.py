@@ -5,6 +5,7 @@ import asyncio
 import rospy
 import math
 from geometry_msgs.msg import Twist
+from typing import NoReturn
 import moteus
 
 
@@ -26,6 +27,7 @@ class CommandData:
 
 
 class MoteusBridge:
+
     ERROR_CODE_DICTIONARY = {
         1: "DmaStreamTransferError",
         2: "DmaStreamFifiError",
@@ -34,7 +36,6 @@ class MoteusBridge:
         5: "UartNoiseError",
         6: "UartBufferOverrunError",
         7: "UartParityError",
-
         32: "CalibrationFault",
         33: "MotorDriverFault",
         34: "OverVoltage",
@@ -46,7 +47,7 @@ class MoteusBridge:
         40: "UnderVoltage",
         41: "ConfigChanged",
         42: "ThetaInvalid",
-        43: "PositionInvalid"
+        43: "PositionInvalid",
     }
 
     ROVER_NODE_TO_MOTEUS_WATCHDOG_TIMEOUT_S = 0.1
@@ -58,8 +59,8 @@ class MoteusBridge:
     ERROR_STATE = "Error"
 
     def __init__(self, can_id: int):
+
         self._can_id = can_id
-        self.last_updated_time = t.time()
         self.controller = moteus.Controller(id=can_id)
         self.state = MoteusBridge.DISCONNECTED_STATE
         self.command_lock = threading.Lock()
@@ -67,14 +68,25 @@ class MoteusBridge:
             position=CommandData.POSITION_FOR_VELOCITY_CONTROL, velocity=0.0, torque=CommandData.MAX_TORQUE
         )
         self._prev_error_name = MoteusBridge.UNKNOWN_ERROR_NAME
-        self._fault_response = 0
 
     def set_command(self, command: CommandData) -> None:
+        """
+        Changes the values of the arguments of set_position for when it is next called.
+        :param command: contains arguments that are used in the moteus controller.set_position function
+        :return: none
+        """
         self.command_lock.acquire()
         self._command = command
         self.command_lock.release()
 
     async def _send_command(self) -> None:
+        """
+        Calls controller.set_position (which controls the moteus over CAN) with previously the most recent requested
+        commands. If the message has not been received within a certain amount of time, disconnected state is entered.
+        Otherwise, error state is entered. State must be in armed state.
+        :return: none
+        """
+        assert self.state == MoteusBridge.ARMED_STATE
         self.command_lock.acquire()
         command = self._command
         self.command_lock.release()
@@ -90,17 +102,38 @@ class MoteusBridge:
                 ),
                 timeout=self.MOTEUS_RESPONSE_TIME_INDICATING_DISCONNECTED_S,
             )
-            self._fault_response = state.values[moteus.Register.FAULT]
         except asyncio.TimeoutError:
             if self.state != MoteusBridge.DISCONNECTED_STATE:
                 rospy.logerr(f"CAN ID {self._can_id} disconnected when trying to send command")
             self.state = MoteusBridge.DISCONNECTED_STATE
+        self._check_has_error(state.values[moteus.Register.FAULT])
 
-    def _has_error(self) -> bool:
-        return self._fault_response != 0
+    def _check_has_error(self, fault_response: int) -> None:
+        """
+        Checks if the controller has encountered an error. If there is an error, error state is set.
+        :param fault_response: the value read in from the fault register of the moteus CAN message
+        """
+        has_error = fault_response != 0
+        if has_error:
+            try:
+                error_description = MoteusBridge.ERROR_CODE_DICTIONARY[fault_response]
+            except KeyError:
+                error_description = MoteusBridge.UNKNOWN_ERROR_NAME
+
+            if self._prev_error_name != error_description:
+                rospy.logerr(f"CAN ID {self._can_id} has encountered an error: {error_description}")
+                self._prev_error_name = error_description
+
+            self.state = MoteusBridge.ERROR_STATE
+        else:
+            self.state = MoteusBridge.ARMED_STATE
 
     async def _connect(self) -> None:
+        """
+        Attempts to establish a connection to the moteus. State must be in error or disconnected state.
+        """
         try:
+            assert self.state != MoteusBridge.ARMED_STATE
             await asyncio.wait_for(
                 self.controller.set_stop(), timeout=self.MOTEUS_RESPONSE_TIME_INDICATING_DISCONNECTED_S
             )
@@ -124,31 +157,15 @@ class MoteusBridge:
                 rospy.logerr(f"CAN ID {self._can_id} disconnected when trying to connect")
             self.state = MoteusBridge.DISCONNECTED_STATE
             return
-        self._fault_response = state.values[moteus.Register.FAULT]
-        if self._has_error():
-            self.state = MoteusBridge.ERROR_STATE
-        else:
-            self.state = MoteusBridge.ARMED_STATE
+        self._check_has_error(state.values[moteus.Register.FAULT])
 
     async def update(self) -> None:
+        """
+        Determines actions based on state. If in armed state, commands will be sent to the moteus.
+        If in disconnected or error state, attempts will be made to return to armed state.
+        """
         if self.state == MoteusBridge.ARMED_STATE:
-            errors = self._has_error()
-            if errors:
-
-                if MoteusBridge.ERROR_CODE_DICTIONARY.has(self._fault_response):
-                    error_description = MoteusBridge.ERROR_CODE_DICTIONARY[self._fault_response]
-                else:
-                    error_description = MoteusBridge.UNKNOWN_ERROR_NAME
-
-                if self._prev_error_name != error_description:
-                    rospy.logerr(f"CAN ID {self._can_id} has encountered an error: {error_description}")
-                    self._prev_error_name = error_description
-
-                self.state = MoteusBridge.ERROR_STATE
-                return
-
             await self._send_command()
-
         elif self.state == MoteusBridge.DISCONNECTED_STATE or self.state == MoteusBridge.ERROR_STATE:
             await self._connect()
 
@@ -175,10 +192,15 @@ class DriveApp:
         max_motor_rad_s = _max_speed_m_s * self.WHEELS_M_S_TO_MOTOR_RAD_RATIO
         self.MEASURED_MAX_MOTOR_RAD_S = 1 * 2 * math.pi  # Should not be changed. Derived from testing.
         self._max_motor_speed_rad_s = min(self.MEASURED_MAX_MOTOR_RAD_S, max_motor_rad_s)
+        self._last_updated_time = t.time()
 
         rospy.Subscriber("cmd_vel", Twist, self._process_twist_message)
 
     def _process_twist_message(self, ros_msg: Twist) -> None:
+        """
+        Converts a Twist message to individual motor speeds.
+        :param ros_msg: Has linear x and angular z velocity components.
+        """
         forward = ros_msg.linear.x
         turn = ros_msg.angular.z
 
@@ -199,8 +221,8 @@ class DriveApp:
             left_rad_outer *= change_ratio
             right_rad_outer *= change_ratio
 
+        self._last_updated_time = t.time()
         for name, bridge in self.drive_bridge_by_name.items():
-            bridge.last_updated_time = t.time()
 
             if name == "front_left" or name == "back_left":
                 commanded_velocity = left_rad_outer
@@ -223,11 +245,16 @@ class DriveApp:
                     )
                 )
 
-    async def run(self) -> None:
+    async def run(self) -> NoReturn:
+        """
+        Runs an infinite loop and only gives commands to the moteus (by updating the bridge) if communication is still
+        maintained between the basestation and the rover node.
+        :return:
+        """
         previously_lost_communication = True
         while not rospy.is_shutdown():
             for name, bridge in self.drive_bridge_by_name.items():
-                time_diff_since_updated = t.time() - bridge.last_updated_time
+                time_diff_since_updated = t.time() - self._last_updated_time
                 lost_communication = time_diff_since_updated > DriveApp.BASESTATION_TO_ROVER_NODE_WATCHDOG_TIMEOUT_S
                 if lost_communication:
                     if not previously_lost_communication:
@@ -251,7 +278,11 @@ class Application:
         rospy.init_node(f"brushless")
         self.drive_app = DriveApp()
 
-    def run(self) -> None:
+    def run(self) -> NoReturn:
+        """
+        Allows the functions to run.
+        :return:
+        """
         asyncio.run(self.drive_app.run())
 
 
