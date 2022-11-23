@@ -6,6 +6,8 @@ import rospy
 import math
 from geometry_msgs.msg import Twist
 from typing import NoReturn
+from sensor_msgs.msg import JointState
+from mrover.msg import DriveStatus, MoteusState
 import moteus
 
 
@@ -27,7 +29,17 @@ class CommandData:
         self.torque = max(0, min(CommandData.MAX_TORQUE, torque))
 
 
-class MoteusBridge:
+class MoteusData:
+    def __init__(self, position: float, velocity: float, torque: float):
+        self.position = position
+        self.velocity = velocity
+        self.torque = torque
+
+
+class MoteusState:
+    DISCONNECTED_STATE = "Disconnected"
+    ARMED_STATE = "Armed"
+    ERROR_STATE = "Error"
 
     ERROR_CODE_DICTIONARY = {
         1: "DmaStreamTransferError",
@@ -52,25 +64,28 @@ class MoteusBridge:
     }
     UNKNOWN_ERROR_NAME = "Unknown Error"
 
+    def __init__(self, state: str, error_name: str):
+        self.state = state
+        self.error_name = error_name
+
+
+class MoteusBridge:
+
     MOTEUS_RESPONSE_TIME_INDICATING_DISCONNECTED_S = 0.01
     ROVER_NODE_TO_MOTEUS_WATCHDOG_TIMEOUT_S = 0.1
-
-    DISCONNECTED_STATE = "Disconnected"
-    ARMED_STATE = "Armed"
-    ERROR_STATE = "Error"
 
     def __init__(self, can_id: int, transport):
 
         self._can_id = can_id
         self.controller = moteus.Controller(id=can_id, transport=transport)
-        self.state = MoteusBridge.DISCONNECTED_STATE
         self.command_lock = threading.Lock()
         self._command = CommandData(
             position=CommandData.POSITION_FOR_VELOCITY_CONTROL,
             velocity=CommandData.ZERO_VELOCITY,
             torque=CommandData.MAX_TORQUE,
         )
-        self._prev_error_name = MoteusBridge.UNKNOWN_ERROR_NAME
+        self.moteus_state = MoteusState(state=MoteusState.DISCONNECTED_STATE, error_name=MoteusState.UNKNOWN_ERROR_NAME)
+        self.moteus_data = MoteusData(position=math.nan, velocity=math.nan, torque=math.nan)
 
     def set_command(self, command: CommandData) -> None:
         """
@@ -87,9 +102,8 @@ class MoteusBridge:
         Calls controller.set_position (which controls the moteus over CAN) with previously the most recent requested
         commands. If the message has not been received within a certain amount of time, disconnected state is entered.
         Otherwise, error state is entered. State must be in armed state.
-        :return: none
         """
-        assert self.state == MoteusBridge.ARMED_STATE
+        assert self.moteus_state.state == MoteusBridge.ARMED_STATE
         self.command_lock.acquire()
         command = self._command
         self.command_lock.release()
@@ -106,9 +120,9 @@ class MoteusBridge:
                 timeout=self.MOTEUS_RESPONSE_TIME_INDICATING_DISCONNECTED_S,
             )
         except asyncio.TimeoutError:
-            if self.state != MoteusBridge.DISCONNECTED_STATE:
+            if self.moteus_state.state != MoteusBridge.DISCONNECTED_STATE:
                 rospy.logerr(f"CAN ID {self._can_id} disconnected when trying to send command")
-            self.state = MoteusBridge.DISCONNECTED_STATE
+            self._change_state(MoteusBridge.DISCONNECTED_STATE)
         self._check_has_error(state.values[moteus.Register.FAULT])
 
     def _check_has_error(self, fault_response: int) -> None:
@@ -118,25 +132,27 @@ class MoteusBridge:
         """
         has_error = fault_response != 0
         if has_error:
+
+            self._change_state(MoteusState.ERROR_STATE)
+
             try:
-                error_description = MoteusBridge.ERROR_CODE_DICTIONARY[fault_response]
+                error_description = MoteusState.ERROR_CODE_DICTIONARY[fault_response]
             except KeyError:
-                error_description = MoteusBridge.UNKNOWN_ERROR_NAME
+                error_description = MoteusState.UNKNOWN_ERROR_NAME
 
-            if self._prev_error_name != error_description:
+            if self.moteus_state.error_name != error_description:
                 rospy.logerr(f"CAN ID {self._can_id} has encountered an error: {error_description}")
-                self._prev_error_name = error_description
+                self.moteus_state.error_name = error_description
 
-            self.state = MoteusBridge.ERROR_STATE
         else:
-            self.state = MoteusBridge.ARMED_STATE
+            self._change_state(MoteusState.ARMED_STATE)
 
     async def _connect(self) -> None:
         """
         Attempts to establish a connection to the moteus. State must be in error or disconnected state.
         """
         try:
-            assert self.state != MoteusBridge.ARMED_STATE
+            assert self.state != MoteusState.ARMED_STATE
             await asyncio.wait_for(
                 self.controller.set_stop(), timeout=self.MOTEUS_RESPONSE_TIME_INDICATING_DISCONNECTED_S
             )
@@ -156,25 +172,44 @@ class MoteusBridge:
             #     timeout=self.TIME_INDICATING_DISCONNECTED,
             # )
         except asyncio.TimeoutError:
-            if self.state != MoteusBridge.DISCONNECTED_STATE:
+            if self.state != MoteusState.DISCONNECTED_STATE:
                 rospy.logerr(f"CAN ID {self._can_id} disconnected when trying to connect")
-            self.state = MoteusBridge.DISCONNECTED_STATE
+            self._change_state(MoteusState.DISCONNECTED_STATE)
             return
         self._check_has_error(state.values[moteus.Register.FAULT])
+
+    def _change_state(self, state: str) -> None:
+        """
+        Changes the state as needed. If no longer armed, then the data will be set to math.nan.
+        If no longer in an error state, error name is set to Unknown.
+        :param state: Must be disconnected, armed, or error
+        """
+
+        if state == MoteusState.ARMED_STATE:
+            self.moteus_state.state = MoteusState.ARMED_STATE
+            self.moteus_state.error_name = MoteusState.UNKNOWN_ERROR_NAME
+        elif state == MoteusState.DISCONNECTED_STATE:
+            self.moteus_state.state = MoteusState.DISCONNECTED_STATE
+            self.moteus_state.error_name = MoteusState.UNKNOWN_ERROR_NAME
+            self.moteus_data = MoteusData(position=math.nan, velocity=math.nan, torque=math.nan)
+        else:
+            self.moteus_state.state = MoteusState.ERROR_STATE
+            self.moteus_data = MoteusData(position=math.nan, velocity=math.nan, torque=math.nan)
 
     async def update(self) -> None:
         """
         Determines actions based on state. If in armed state, commands will be sent to the moteus.
         If in disconnected or error state, attempts will be made to return to armed state.
         """
-        if self.state == MoteusBridge.ARMED_STATE:
+        if self.state == MoteusState.ARMED_STATE:
             await self._send_command()
-        elif self.state == MoteusBridge.DISCONNECTED_STATE or self.state == MoteusBridge.ERROR_STATE:
+        elif self.state == MoteusState.DISCONNECTED_STATE or self.state == MoteusState.ERROR_STATE:
             await self._connect()
 
 
 class DriveApp:
     BASESTATION_TO_ROVER_NODE_WATCHDOG_TIMEOUT_S = 1
+    DRIVE_NAMES = ["FrontLeft", "FrontRight", "MiddleLeft", "MiddleRight", "BackLeft", "BackRight"]
 
     def __init__(self):
         drive_info_by_name = rospy.get_param("brushless/drive")
@@ -213,6 +248,22 @@ class DriveApp:
         self._last_updated_time = t.time()
 
         rospy.Subscriber("cmd_vel", Twist, self._process_twist_message)
+
+        self._drive_status_publisher = rospy.Publisher("drive_status", DriveStatus, queue_size=1)
+        self._drive_status = DriveStatus(
+            name=[name for name in DriveApp.DRIVE_NAMES],
+            joint_states=JointState(
+                name=[name for name in DriveApp.DRIVE_NAMES],
+                position=[self.drive_bridge_by_name[name].moteus_data.position for name in DriveApp.DRIVE_NAMES],
+                velocity=[self.drive_bridge_by_name[name].moteus_data.velocity for name in DriveApp.DRIVE_NAMES],
+                effort=[self.drive_bridge_by_name[name].moteus_data.torque for name in DriveApp.DRIVE_NAMES],
+            ),
+            moteus_states=MoteusState(
+                name=[name for name in DriveApp.DRIVE_NAMES],
+                state=[self.drive_bridge_by_name[name].moteus_state.state for name in DriveApp.DRIVE_NAMES],
+                error_name=[self.drive_bridge_by_name[name].moteus_state.error_name for name in DriveApp.DRIVE_NAMES],
+            ),
+        )
 
     def _process_twist_message(self, ros_msg: Twist) -> None:
         """
@@ -254,7 +305,7 @@ class DriveApp:
                 rospy.logerr(f"Invalid name {name}")
                 continue
 
-            if bridge.state == MoteusBridge.ARMED_STATE:
+            if bridge.moteus_state.state == MoteusState.ARMED_STATE:
                 bridge.set_command(
                     CommandData(
                         position=CommandData.POSITION_FOR_VELOCITY_CONTROL,
@@ -287,7 +338,17 @@ class DriveApp:
                 elif previously_lost_communication:
                     previously_lost_communication = False
                     rospy.loginfo("Regained communication")
+
                 await bridge.update()
+
+                index = self.drive_bridge_by_name.index(name)
+                self._drive_status.joint_states.position[index] = bridge.moteus_data.position
+                self._drive_status.joint_states.velocity[index] = bridge.moteus_data.velocity
+                self._drive_status.joint_states.effort[index] = bridge.moteus_data.torque
+                self._drive_status.moteus_states.state = bridge.moteus_state.state
+                self._drive_status.moteus_states.error_name = bridge.moteus_state.error_name
+
+                self._drive_status_publisher.publish(self._drive_status)
         assert False
 
 
