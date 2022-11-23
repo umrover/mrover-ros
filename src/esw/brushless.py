@@ -9,9 +9,6 @@ from typing import NoReturn
 import moteus
 
 
-# import moteus_pi3hat
-
-
 class CommandData:
     DEFAULT_TORQUE = 0.3
     MAX_TORQUE = 0.5
@@ -62,10 +59,10 @@ class MoteusBridge:
     ARMED_STATE = "Armed"
     ERROR_STATE = "Error"
 
-    def __init__(self, can_id: int):
+    def __init__(self, can_id: int, transport):
 
         self._can_id = can_id
-        self.controller = moteus.Controller(id=can_id)
+        self.controller = moteus.Controller(id=can_id, transport=transport)
         self.state = MoteusBridge.DISCONNECTED_STATE
         self.command_lock = threading.Lock()
         self._command = CommandData(
@@ -180,10 +177,25 @@ class DriveApp:
     BASESTATION_TO_ROVER_NODE_WATCHDOG_TIMEOUT_S = 1
 
     def __init__(self):
-        drive_info_by_name = rospy.get_param("brushless/drive/")
+        drive_info_by_name = rospy.get_param("brushless/drive")
         self.drive_bridge_by_name = {}
+        using_pi3_hat = rospy.get_param("brushless/using_pi3_hat")
+        if using_pi3_hat:
+            # import moteus_pi3hat
+            # transport = moteus_pi3hat.Pi3HatRouter(
+            #     servo_bus_map={
+            #         1: [11],
+            #         2: [12],
+            #         3: [13],
+            #         4: [14],
+            #     },
+            # )
+            pass
+        else:
+            transport = moteus.Fdcanusb()
+
         for name, info in drive_info_by_name.items():
-            self.drive_bridge_by_name[name] = MoteusBridge(info["id"])
+            self.drive_bridge_by_name[name] = MoteusBridge(info["id"], transport)
         rover_width = rospy.get_param("rover/width")
         rover_length = rospy.get_param("rover/length")
         self.WHEEL_DISTANCE_INNER = rover_width / 2.0

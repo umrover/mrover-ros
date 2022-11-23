@@ -43,6 +43,7 @@ wheel:
   radius: 0.13
 
 brushless:
+  using_pi3_hat: false
   drive:
     front_left:
       id: 0
