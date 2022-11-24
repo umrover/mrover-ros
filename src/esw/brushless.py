@@ -15,7 +15,7 @@ class CommandData:
     DEFAULT_TORQUE = 0.3
     MAX_TORQUE = 0.5
     POSITION_FOR_VELOCITY_CONTROL = math.nan
-    VELOCITY_LIMIT = 5  # TODO - Change after regenerative braking is solved
+    VELOCITY_LIMIT = 5
     ZERO_VELOCITY = 0.0
 
     def __init__(
@@ -162,21 +162,17 @@ class MoteusBridge:
             await asyncio.wait_for(
                 self.controller.set_stop(), timeout=self.MOTEUS_RESPONSE_TIME_INDICATING_DISCONNECTED_S
             )
-            # TODO - verify that this will timeout if controller is disconnected
             state = await asyncio.wait_for(
-                self.controller.query(), timeout=self.MOTEUS_RESPONSE_TIME_INDICATING_DISCONNECTED_S
+                self.controller.set_position(
+                    position=math.nan,
+                    velocity=CommandData.ZERO_VELOCITY,
+                    velocity_limit=CommandData.VELOCITY_LIMIT,
+                    maximum_torque=CommandData.MAX_TORQUE,
+                    watchdog_timeout=MoteusBridge.ROVER_NODE_TO_MOTEUS_WATCHDOG_TIMEOUT_S,
+                    query=True,
+                ),
+                timeout=self.TIME_INDICATING_DISCONNECTED,
             )
-            # state = await asyncio.wait_for(
-            #     self.controller.set_position(
-            #         position=math.nan,
-            #         velocity=CommandData.ZERO_VELOCITY,
-            #         velocity_limit=CommandData.VELOCITY_LIMIT,
-            #         maximum_torque=CommandData.MAX_TORQUE,
-            #         watchdog_timeout=MoteusBridge.ROVER_NODE_TO_MOTEUS_WATCHDOG_TIMEOUT_S,
-            #         query=True,
-            #     ),
-            #     timeout=self.TIME_INDICATING_DISCONNECTED,
-            # )
             self._check_has_error(state.values[moteus.Register.FAULT])
         except asyncio.TimeoutError:
             if self.moteus_state.state != MoteusState.DISCONNECTED_STATE:
