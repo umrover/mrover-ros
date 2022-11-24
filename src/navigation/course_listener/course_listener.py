@@ -28,7 +28,7 @@ class Converter:
         # Create odom position based on GPS latitude and longitude
         odom = np.array(
             pymap3d.geodetic2enu(
-                waypoint.lattitude_degrees, waypoint.longitude_degrees, 0.0, self.ref_lat, self.ref_lon, 0.0, deg=True
+                waypoint.latitude_degrees, waypoint.longitude_degrees, 0.0, self.ref_lat, self.ref_lon, 0.0, deg=True
             )
         )
 
