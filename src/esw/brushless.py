@@ -353,7 +353,7 @@ class DriveApp:
                 self._drive_status.moteus_states.state[index] = bridge.moteus_state.state
                 self._drive_status.moteus_states.error[index] = bridge.moteus_state.error_name
 
-                self._drive_status_publisher.publish(self._drive_status)
+            self._drive_status_publisher.publish(self._drive_status)
         assert False
 
 
