@@ -171,7 +171,7 @@ class MoteusBridge:
                     watchdog_timeout=MoteusBridge.ROVER_NODE_TO_MOTEUS_WATCHDOG_TIMEOUT_S,
                     query=True,
                 ),
-                timeout=self.TIME_INDICATING_DISCONNECTED,
+                timeout=self.MOTEUS_RESPONSE_TIME_INDICATING_DISCONNECTED_S,
             )
             self._check_has_error(state.values[moteus.Register.FAULT])
         except asyncio.TimeoutError:
