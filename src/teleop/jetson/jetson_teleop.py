@@ -79,7 +79,7 @@ class ArmControl:
 
         self.ra_cmd_pub = ros.Publisher("ra_cmd", JointState, queue_size=100)
 
-        ra_names = [
+        self.ra_names = [
             "ra_joint_a",
             "ra_joint_b",
             "ra_joint_c",
@@ -90,10 +90,10 @@ class ArmControl:
             "ra_gripper",
         ]
         self.ra_cmd = JointState(
-            name=[name for name in ra_names],
-            position=[math.nan for i in range(len(ra_names))],
-            velocity=[0.0 for i in range(len(ra_names))],
-            effort=[math.nan for i in range(len(ra_names))],
+            name=[name for name in self.ra_names],
+            position=[math.nan for i in range(len(self.ra_names))],
+            velocity=[0.0 for i in range(len(self.ra_names))],
+            effort=[math.nan for i in range(len(self.ra_names))],
         )
 
     def ra_control_callback(self, msg):
