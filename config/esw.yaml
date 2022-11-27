@@ -15,7 +15,7 @@ brushed_motors:
       driver_voltage: 36.0
       motor_max_voltage: 24.0
       voltage_multiplier: 0.44
-      nucleo: 0
+      nucleo: 1
       channel: 0
       quad_cpr: -28800.0
       kP: -0.005
@@ -24,7 +24,7 @@ brushed_motors:
     - name: "ra_joint_b"
       driver_voltage: 36.0
       motor_max_voltage: 12.0
-      nucleo: 0
+      nucleo: 1
       channel: 1
       quad_cpr: 4096.0
       kP: -0.1
@@ -33,8 +33,8 @@ brushed_motors:
     - name: "ra_joint_c"
       driver_voltage: 36.0
       motor_max_voltage: 24.0
-      nucleo: 0
-      channel: 1
+      nucleo: 2
+      channel: 0
       quad_cpr: 136800.0
       kP: -0.005
       kI: -0.0
@@ -42,7 +42,7 @@ brushed_motors:
     - name: "ra_joint_d"
       driver_voltage: 36.0
       motor_max_voltage: 24.0
-      nucleo: 1
+      nucleo: 2
       channel: 1
       quad_cpr: 72000.0
       kP: -0.005
@@ -51,7 +51,7 @@ brushed_motors:
     - name: "ra_joint_e"
       driver_voltage: 36.0
       motor_max_voltage: 24.0
-      nucleo: 2
+      nucleo: 3
       channel: 0
       quad_cpr: -72000.0
       kP: -0.005
@@ -60,7 +60,7 @@ brushed_motors:
     - name: "ra_joint_f"
       driver_voltage: 36.0
       motor_max_voltage: 24.0
-      nucleo: 2
+      nucleo: 3
       channel: 1
       quad_cpr: -2048.0
       kP: 0.05
@@ -69,13 +69,13 @@ brushed_motors:
     - name: "ra_finger"
       driver_voltage: 12.0
       motor_max_voltage: 12.0
-      nucleo: 2
+      nucleo: 3
       channel: 2
       inversion: 1.0
     - name: "ra_gripper"
       driver_voltage: 12.0
       motor_max_voltage: 12.0
-      nucleo: 1
+      nucleo: 2
       channel: 2
       inversion: 1.0
     - name: "mast_up_down"
