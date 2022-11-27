@@ -166,22 +166,6 @@ void Controller::makeLive() {
         memcpy(buffer + 8, UINT8_POINTER_T(&(kD)), sizeof(kD));
         I2C::transact(deviceAddress, CONFIG_K, buffer, nullptr);
 
-        // Adjust the physical controller angle to
-        // angle reported by the absolute encoder,
-        // unless absolute encoder does not exist.
-        float absRawAngle = M_PI;
-        if (name != "ARM_B" && name != "SA_B" && name != "ARM_F") {
-            I2C::transact(
-                    deviceAddress,
-                    ABS_ENC,
-                    nullptr,
-                    UINT8_POINTER_T(&(absRawAngle)));
-        }
-
-        auto adjustedQuad = (int32_t) ((absRawAngle / (2.0f * M_PI)) * quadCPR);
-        memcpy(buffer, UINT8_POINTER_T(&(adjustedQuad)), sizeof(adjustedQuad));
-        I2C::transact(deviceAddress, ADJUST, buffer, nullptr);
-
         isLive = true;
 
     } catch (IOFailure& e) {
