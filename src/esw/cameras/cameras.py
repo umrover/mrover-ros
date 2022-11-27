@@ -66,9 +66,9 @@ class VideoDevices:
                         self.output_by_endpoint[other_endpoint] = jetson.utils.videoOutput(
                             f"rtp://{other_endpoint}", argv=args
                         )
-                    self.output_by_endpoint[other_endpoint] = jetson.utils.videoOutput(
+                    self.output_by_endpoint[endpoint] = jetson.utils.videoOutput(
                         f"rtp://{endpoint}", argv=args
-                    )  # How is other_endpoint defined here
+                    )
                     self.resolution = args
                 except Exception:
                     rospy.logerr(f"Failed to create video source for device {self.device}.")
@@ -166,6 +166,7 @@ class StreamingManager:
             requested_device = camera_cmd.device
             if requested_device >= len(self._video_devices):
                 rospy.logerr(f"Request device {requested_device} invalid.")
+                continue
             requested_resolution = camera_cmd.resolution
 
             requests.append((requested_device, camera_cmd.resolution, request_num))
@@ -190,10 +191,11 @@ class StreamingManager:
 
         # If two or more requests ask for same video source in different resolution,
         # all requests' resolution get set to the one with the lowest resolution. nlogn + n, but n ~ 4
+        # TODO - verify if this works
         requests = sorted(requests, key=lambda x: (x[0], x[1]))
         for i in range(1, len(requests)):
             if requests[i][0] == requests[i - 1][0] and requests[i][0] != -1:
-                req.camera_commands[requests[i][2]].resolution = requests[i - 1][1]
+                camera_commands[requests[i][2]].resolution = requests[i - 1][1]
 
         # after turning off streams, then you can turn on
         for stream, camera_cmd in enumerate(camera_commands):
