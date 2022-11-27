@@ -51,7 +51,7 @@ class Drive:
             msg.axes[self.joystick_mappings["forward_back"]] * self.drive_config["forward_back"]["multiplier"], 0.05
         )
 
-        # Convert from [0,1] to range from [0, max_wheel_speed] and apply dampen
+        # Convert from [0,1] to [0, max_wheel_speed] and apply dampen
         linear *= self.max_wheel_speed * dampen
 
         angular = deadzone(
