@@ -14,7 +14,7 @@ teleop:
       multiplier: 1
     finger:
       multiplier: 1
-    grip:
+    gripper:
       multiplier: 1
   
   drive_controls:
