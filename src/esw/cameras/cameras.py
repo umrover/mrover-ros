@@ -29,58 +29,71 @@ class VideoDevices:
         self.video_source = None
         self.output_by_endpoint = {}
 
-    def remove_endpoint(self, endpoint: str):
-        """Removes screen endpoint from video source list.  
-        If endpoint dictionary is empty, it deletes video source.
+    def remove_endpoint(self, endpoint: str) -> None:
+        """
+        Removes screen endpoint from video source list.
+        If endpoint dictionary is empty, it also deletes video source.
+        :param endpoint: the endpoint (e.g. 10.0.0.7:5000)
         """
         assert endpoint in self.output_by_endpoint.keys()
         del self.output_by_endpoint[endpoint]
         if len(self.output_by_endpoint) == 0:
             self.video_source = None
 
-    def create_stream(self, endpoint: str, args: List[str]):
-        """Adds endpoint to video source list and creates video_source if not existing."""
-        if len(self.output_by_endpoint) == 0 and self.video_source is None:
+    def create_stream(self, endpoint: str, args: List[str]) -> None:
+        """
+        Adds endpoint to video source list and creates video_source if not existing.
+        :param endpoint: the endpoint (e.g. 10.0.0.7:5000)
+        :param args: a list of strings that are the arguments
+        """
+        if self._is_streaming():
             # If it does not exist already
             try:
-                self.video_source = jetson.utils.videoSource(
-                    f"/dev/video{self.device}", argv=args)
-                self.output_by_endpoint[endpoint] = jetson.utils.videoOutput(
-                    f"rtp://{endpoint}", argv=args)
+                self.video_source = jetson.utils.videoSource(f"/dev/video{self.device}", argv=args)
+                self.output_by_endpoint[endpoint] = jetson.utils.videoOutput(f"rtp://{endpoint}", argv=args)
                 self.resolution = args
             except Exception:
-                rospy.logerr(
-                    f"Failed to create video source for device {self.device}.")
-                self.output_by_endpoint = {}  # Why is this here?
-        elif len(self.output_by_endpoint) != 0 and self.video_source is not None:
+                rospy.logerr(f"Failed to create video source for device {self.device}.")
+                if len(self.output_by_endpoint[endpoint]) == 1:
+                    self.output_by_endpoint = {}
+        else:
             # It exists and another stream is using it
             if self.resolution != args:
-                # if different args, just recreate video source and every output
+                # If different args, just recreate video source and every output
                 try:
-                    self.video_source = jetson.utils.videoSource(
-                        f"/dev/video{self.device}", argv=args)
+                    self.video_source = jetson.utils.videoSource(f"/dev/video{self.device}", argv=args)
                     for other_endpoint in self.output_by_endpoint.values():
                         self.output_by_endpoint[other_endpoint] = jetson.utils.videoOutput(
                             f"rtp://{other_endpoint}", argv=args
                         )
                     self.output_by_endpoint[other_endpoint] = jetson.utils.videoOutput(
-                        f"rtp://{endpoint}", argv=args)  # How is other_endpoint defined here
+                        f"rtp://{endpoint}", argv=args
+                    )  # How is other_endpoint defined here
                     self.resolution = args
                 except Exception:
-                    rospy.logerr(
-                        f"Failed to create video source for device {self.device}.")
+                    rospy.logerr(f"Failed to create video source for device {self.device}.")
                     self.output_by_endpoint = {}
             else:
-                # If same args, just create a new output
-                self.output_by_endpoint[endpoint] = jetson.utils.videoOutput(
-                    f"rtp://{endpoint}", argv=args)
-        else:
-            # This should not happen.
-            assert False
+                # If same args and endpoint is already being streamed to, then do nothing
+                if endpoint in self.output_by_endpoint.keys():
+                    return
 
-    def add_stream(self, endpoint: str, args: List[str]):
-        self.output_by_endpoint[endpoint] = jetson.utils.videoOutput(
-            f"rtp://{endpoint}", argv=args)
+                # If same args, just create a new output
+                self.output_by_endpoint[endpoint] = jetson.utils.videoOutput(f"rtp://{endpoint}", argv=args)
+
+    def _is_streaming(self) -> bool:
+        """
+        Returns if streaming or not
+        :return: a bool if streaming
+        """
+        is_streaming = len(self.output_by_endpoint) != 0
+        if is_streaming and self.video_source is not None:
+            return True
+        elif not is_streaming and self.video_source is None:
+            return False
+        else:
+            rospy.logerr("Should not have entered this state.")
+            assert False
 
 
 class StreamingManager:
@@ -94,13 +107,11 @@ class StreamingManager:
     _active_devices: int
     _max_devices: int
 
-    def __init__(self) -> None:
+    def __init__(self):
 
         self._services = [
-            [CameraCmd(-1, 0), CameraCmd(-1, 0),
-             CameraCmd(-1, 0), CameraCmd(-1, 0)],
-            [CameraCmd(-1, 0), CameraCmd(-1, 0),
-             CameraCmd(-1, 0), CameraCmd(-1, 0)],
+            [CameraCmd(-1, 0), CameraCmd(-1, 0), CameraCmd(-1, 0), CameraCmd(-1, 0)],
+            [CameraCmd(-1, 0), CameraCmd(-1, 0), CameraCmd(-1, 0), CameraCmd(-1, 0)],
         ]
         self._video_devices = []
         for i in range(rospy.get_param("cameras/max_video_device_id_number")):
@@ -136,6 +147,11 @@ class StreamingManager:
         self._device_lock = threading.Lock()
 
     def handle_change_cameras(self, req: ChangeCamerasRequest) -> ChangeCamerasResponse:
+        """
+        The callback function for changing cameras.
+        :param req: Has information on the requested devices and resolutions for the four streams of a device.
+        :return: The processed devices and resolutions for the four streams of the primary and secondary laptops.
+        """
         self._device_lock.acquire()
         camera_commands = req.camera_cmds
 
@@ -149,20 +165,17 @@ class StreamingManager:
             endpoint = endpoints[stream]
             requested_device = camera_cmd.device
             if requested_device >= len(self._video_devices):
-                rospy.logerr(
-                    f"Request device {requested_device} invalid.")
+                rospy.logerr(f"Request device {requested_device} invalid.")
             requested_resolution = camera_cmd.resolution
 
-            requests.append(
-                (requested_device, camera_cmd.resolution, request_num))
+            requests.append((requested_device, camera_cmd.resolution, request_num))
             request_num += 1
 
             previous_device = self._services[service_index][stream].device
             # skip if device is the same, already closed, or a different resolution
             if previous_device == requested_device:
                 if previous_device == -1 or (
-                    requested_device != -
-                        1 and requested_resolution == self._video_devices[requested_device].resolution
+                    requested_device != -1 and requested_resolution == self._video_devices[requested_device].resolution
                 ):
                     continue
 
@@ -176,12 +189,11 @@ class StreamingManager:
                     self._active_devices -= 1
 
         # If two or more requests ask for same video source in different resolution,
-        # all requests' resolution get set to lowest one. nlogn + n, but n ~ 4
+        # all requests' resolution get set to the one with the lowest resolution. nlogn + n, but n ~ 4
         requests = sorted(requests, key=lambda x: (x[0], x[1]))
         for i in range(1, len(requests)):
-            if requests[i][0] == requests[i-1][0] and requests[i][0] != -1:
-                req.camera_commands[requests[i][2]
-                                    ].resolution = requests[i-1][1]
+            if requests[i][0] == requests[i - 1][0] and requests[i][0] != -1:
+                req.camera_commands[requests[i][2]].resolution = requests[i - 1][1]
 
         # after turning off streams, then you can turn on
         for stream, camera_cmd in enumerate(camera_commands):
@@ -193,8 +205,7 @@ class StreamingManager:
             # skip if previous and current requests are -1 or same resolution
             if previous_device == requested_device:
                 if previous_device == -1 or (
-                    requested_device != -
-                        1 and requested_resolution == self._video_devices[requested_device].resolution
+                    requested_device != -1 and requested_resolution == self._video_devices[requested_device].resolution
                 ):
                     continue
 
@@ -205,13 +216,11 @@ class StreamingManager:
 
                 # create a new stream
                 previously_no_video_source = (
-                    previous_device == -
-                    1 and self._video_devices[requested_device].video_source is None
+                    previous_device == -1 and self._video_devices[requested_device].video_source is None
                 )
 
                 if previous_device != -1:
-                    self._video_devices[previous_device].remove_endpoint(
-                        endpoint)
+                    self._video_devices[previous_device].remove_endpoint(endpoint)
                 self._video_devices[requested_device].create_stream(
                     endpoint, self._resolution_args[requested_resolution]
                 )
@@ -228,26 +237,36 @@ class StreamingManager:
         return response
 
     def update_all_streams(self) -> None:
+        """
+        Updates the streams of all devices
+        """
         self._device_lock.acquire()
         for index, video_device in enumerate(self._video_devices):
             if video_device.video_source is None:
                 continue
             try:
-                image = video_device.video_source.Capture(timeout=15000)
+                # TODO - See if timeout=100 is fine. We have tested with 15,000.
+                image = video_device.video_source.Capture(timeout=100)
             except Exception:
-                rospy.logerr(
-                    f"Camera {index} capture failed. Stopping stream(s).")
-                self._close_down_device(index)
+                # TODO - figure out what this timeout is
+                # TODO - See if this works: Instead of closing, just ignore
+                rospy.logerr(f"Camera {index} capture failed. Will still try to attempt to stream.")
+                pass
+                # rospy.logerr(f"Camera {index} capture failed. Stopping stream(s).")
+                # self._close_down_device(index)
             for output in video_device.output_by_endpoint.values():
                 output.Render(image)
         self._device_lock.release()
 
-    def _close_down_device(self, device: int):
+    def _close_down_device(self, device: int) -> None:
+        """
+        Closes down a video device. Usually called if a device crashes while streaming
+        :param device: The integer ID of the device to be closed.
+        """
         self._device_lock.acquire()
         previously_was_video_source = self._video_devices[device].video_source is not None
         while len(self._video_devices[device].output_by_endpoint.keys()) != 0:
-            endpoint = list(
-                self._video_devices[device].output_by_endpoint.keys())[0]
+            endpoint = list(self._video_devices[device].output_by_endpoint.keys())[0]
             self._video_devices[device].remove_endpoint(endpoint)
             service, stream = self._service_streams_by_endpoints[endpoint]
             self._services[service][stream].device = -1
@@ -260,8 +279,7 @@ class StreamingManager:
 def main():
     rospy.init_node("cameras")
     streaming_manager = StreamingManager()
-    rospy.Service("change_cameras", ChangeCameras,
-                  streaming_manager.handle_change_cameras)
+    rospy.Service("change_cameras", ChangeCameras, streaming_manager.handle_change_cameras)
     while not rospy.is_shutdown():
         streaming_manager.update_all_streams()
 
