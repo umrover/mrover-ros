@@ -33,7 +33,7 @@ void ROSHandler::init(ros::NodeHandle* rosNode) {
                         [capture0 = subData.name](auto && PH1) { return moveJointOpenLoopCommand(std::forward<decltype(PH1)>(PH1), capture0); });
     }
 
-    openLoopSubscriberMast = n->subscribe<mrover::GimbalCmd>("gimbal_control", 1, moveGimbal);
+    openLoopSubscriberMast = n->subscribe<mrover::GimbalCmd>("gimbal_cmd", 1, moveGimbal);
 
     for (publisherData& pubData: jointDataPublishers) {
         *(pubData.publisher) =
