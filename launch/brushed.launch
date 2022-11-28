@@ -1,6 +1,5 @@
 <!--
-	This launch file should be run on the Jetson in order to start our drive, control, and auton software
-	on the physical rover.
+	This launch file is used for testing brushed motors alone.
  -->
 <launch>
 
