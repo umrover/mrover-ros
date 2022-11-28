@@ -22,8 +22,10 @@ int main(int argc, char* argv[]) {
     I2C::init(i2cDeviceFile);
 
     if (isTest) {
-        for (auto &it: ControllerMap::controllersByName) {
-            Test::testOpenLoop(it.second);
+        for (auto &[name, controller]: ControllerMap::controllersByName) {
+            ROS_INFO("Conducting tests on %s \n", name.c_str());
+            Test::testOpenLoop(controller);
+            Test::testAngle(controller);
         }
     } else {
         ROSHandler::init(&nh);
