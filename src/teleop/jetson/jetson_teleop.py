@@ -80,14 +80,14 @@ class ArmControl:
         self.ra_cmd_pub = ros.Publisher("ra_cmd", JointState, queue_size=100)
 
         self.ra_names = [
-            "ra_joint_a",
-            "ra_joint_b",
-            "ra_joint_c",
-            "ra_joint_d",
-            "ra_joint_e",
-            "ra_joint_f",
-            "ra_finger",
-            "ra_gripper",
+            "joint_a",
+            "joint_b",
+            "joint_c",
+            "joint_d",
+            "joint_e",
+            "joint_f",
+            "finger",
+            "gripper",
         ]
         self.ra_cmd = JointState(
             name=[name for name in self.ra_names],
@@ -97,29 +97,29 @@ class ArmControl:
         )
 
     def ra_control_callback(self, msg):
-        self.ra_cmd[self.ra_names.index("joint_a")] = self.ra_config["joint_a"]["multiplier"] * quadratic(
+        self.ra_cmd.velocity[self.ra_names.index("joint_a")] = self.ra_config["joint_a"]["multiplier"] * quadratic(
             deadzone(msg.axes[self.xbox_mappings["left_js_x"]], 0.15)
         )
-        self.ra_cmd[self.ra_names.index("joint_b")] = self.ra_config["joint_b"]["multiplier"] * quadratic(
+        self.ra_cmd.velocity[self.ra_names.index("joint_b")] = self.ra_config["joint_b"]["multiplier"] * quadratic(
             -deadzone(msg.axes[self.xbox_mappings["left_js_y"]], 0.15)
         )
-        self.ra_cmd[self.ra_names.index("joint_c")] = self.ra_config["joint_c"]["multiplier"] * quadratic(
+        self.ra_cmd.velocity[self.ra_names.index("joint_c")] = self.ra_config["joint_c"]["multiplier"] * quadratic(
             -deadzone(msg.axes[self.xbox_mappings["right_js_y"]], 0.15)
         )
-        self.ra_cmd[self.ra_names.index("joint_d")] = self.ra_config["joint_d"]["multiplier"] * quadratic(
+        self.ra_cmd.velocity[self.ra_names.index("joint_d")] = self.ra_config["joint_d"]["multiplier"] * quadratic(
             deadzone(msg.axes[self.xbox_mappings["right_js_x"]], 0.15)
         )
-        self.ra_cmd[self.ra_names.index("joint_e")] = self.ra_config["joint_e"]["multiplier"] * quadratic(
+        self.ra_cmd.velocity[self.ra_names.index("joint_e")] = self.ra_config["joint_e"]["multiplier"] * quadratic(
             msg.buttons[self.xbox_mappings["right_trigger"]] - msg.buttons[self.xbox_mappings["left_trigger"]]
         )
-        self.ra_cmd[self.ra_names.index("joint_f")] = self.ra_config["joint_f"]["multiplier"] * (
+        self.ra_cmd.velocity[self.ra_names.index("joint_f")] = self.ra_config["joint_f"]["multiplier"] * (
             msg.buttons[self.xbox_mappings["right_bumper"]] - msg.buttons[self.xbox_mappings["left_bumper"]]
         )
 
-        self.ra_cmd[self.ra_names.index("finger")] = self.ra_config["finger"]["multiplier"] * (
+        self.ra_cmd.velocity[self.ra_names.index("finger")] = self.ra_config["finger"]["multiplier"] * (
             msg.buttons[self.xbox_mappings["y"]] - msg.buttons[self.xbox_mappings["a"]]
         )
-        self.ra_cmd[self.ra_names.index("gripper")] = self.ra_config["gripper"]["multiplier"] * (
+        self.ra_cmd.velocity[self.ra_names.index("gripper")] = self.ra_config["gripper"]["multiplier"] * (
             msg.buttons[self.xbox_mappings["b"]] - msg.buttons[self.xbox_mappings["x"]]
         )
 
