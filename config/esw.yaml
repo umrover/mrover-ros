@@ -11,7 +11,7 @@ imu_driver:
 
 brushed_motors:
   controllers:
-    - name: "ra_joint_a"
+    - name: "joint_a"
       driver_voltage: 36.0
       motor_max_voltage: 24.0
       voltage_multiplier: 0.44
@@ -21,7 +21,7 @@ brushed_motors:
       kP: -0.005
       kI: -0.0
       inversion: -1.0
-    - name: "ra_joint_b"
+    - name: "joint_b"
       driver_voltage: 36.0
       motor_max_voltage: 12.0
       nucleo: 1
@@ -30,7 +30,7 @@ brushed_motors:
       kP: -0.1
       kI: -0.0
       inversion: 1.0
-    - name: "ra_joint_c"
+    - name: "joint_c"
       driver_voltage: 36.0
       motor_max_voltage: 24.0
       nucleo: 2
@@ -39,7 +39,7 @@ brushed_motors:
       kP: -0.005
       kI: -0.0
       inversion: 1.0
-    - name: "ra_joint_d"
+    - name: "joint_d"
       driver_voltage: 36.0
       motor_max_voltage: 24.0
       nucleo: 2
@@ -48,7 +48,7 @@ brushed_motors:
       kP: -0.005
       kI: -0.0
       inversion: 1.0
-    - name: "ra_joint_e"
+    - name: "joint_e"
       driver_voltage: 36.0
       motor_max_voltage: 24.0
       nucleo: 3
@@ -57,7 +57,7 @@ brushed_motors:
       kP: -0.005
       kI: -0.0
       inversion: 1.0
-    - name: "ra_joint_f"
+    - name: "joint_f"
       driver_voltage: 36.0
       motor_max_voltage: 24.0
       nucleo: 3
@@ -66,13 +66,13 @@ brushed_motors:
       kP: 0.05
       kI: 0.0
       inversion: 1.0
-    - name: "ra_finger"
+    - name: "finger"
       driver_voltage: 12.0
       motor_max_voltage: 12.0
       nucleo: 3
       channel: 2
       inversion: 1.0
-    - name: "ra_gripper"
+    - name: "gripper"
       driver_voltage: 12.0
       motor_max_voltage: 12.0
       nucleo: 2
