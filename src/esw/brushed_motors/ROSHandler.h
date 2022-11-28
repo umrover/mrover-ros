@@ -41,7 +41,7 @@ private:
     // REQUIRES: nothing
     // MODIFIES: nothing
     // EFFECTS: Moves a gimbal.
-    static void moveGimbal(const mrover::GimbalCmd::ConstPtr& cmd);
+    static void moveGimbal(const mrover::GimbalCmd::ConstPtr& msg);
 
 public:
     // REQUIRES: rosNode is a pointer to the created node.
