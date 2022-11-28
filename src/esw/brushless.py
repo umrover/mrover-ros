@@ -7,8 +7,9 @@ import math
 from geometry_msgs.msg import Twist
 from typing import NoReturn
 from sensor_msgs.msg import JointState
-from mrover.msg import DriveStatus, MoteusState as MoteusStateMsg
+from mrover.msg import ArmStatus, DriveStatus, MoteusState as MoteusStateMsg
 import moteus
+import numpy as np
 
 
 class CommandData:
@@ -212,13 +213,103 @@ class MoteusBridge:
             await self._connect()
 
 
+class ArmApp:
+    BASESTATION_TO_ROVER_NODE_WATCHDOG_TIMEOUT_S = 1
+    ARM_NAMES = ["joint_a", "joint_c", "joint_d", "joint_e", "joint_f", "gripper"]
+
+    def __init__(self):
+        arm_info_by_name = rospy.get_param("brushless/arm")
+        self._arm_bridge_by_name = {}
+        using_pi3_hat = rospy.get_param("brushless/using_pi3_hat")
+        if using_pi3_hat:
+            # import moteus_pi3hat
+            # transport = moteus_pi3hat.Pi3HatRouter(
+            #     servo_bus_map={
+            #         1: [11],
+            #         2: [12],
+            #         3: [13],
+            #         4: [14],
+            #     },
+            # )
+            pass
+        else:
+            transport = None
+
+        for name, info in arm_info_by_name.items():
+            self._arm_bridge_by_name[name] = MoteusBridge(info["id"], transport)
+
+        self._last_updated_time = t.time()
+
+        rospy.Subscriber("ra_cmd", JointState, self._process_ra_cmd)
+
+        self._arm_status_publisher = rospy.Publisher("arm_status", ArmStatus, query_size=1)
+        self._arm_status = ArmStatus(
+            name=[name for name in ArmApp.ARM_NAMES],
+            joint_states=JointState(
+                name=[name for name in ArmApp.ARM_NAMES],
+                position=[self._arm_bridge_by_name[name].moteus_data.position for name in ArmApp.ARM_NAMES],
+                velocity=[self._arm_bridge_by_name[name].moteus_data.velocity for name in ArmApp.ARM_NAMES],
+                effort=[self._arm_bridge_by_name[name].moteus_data.torque for name in ArmApp.ARM_NAMES],
+            ),
+            moteus_states=MoteusStateMsg(
+                name=[name for name in DriveApp.DRIVE_NAMES],
+                state=[self._arm_bridge_by_name[name].moteus_state.state for name in ArmApp.ARM_NAMES],
+                error=[self._arm_bridge_by_name[name].moteus_state.error_name for name in ArmApp.ARM_NAMES],
+            ),
+        )
+
+    def _process_ra_cmd(self, ros_msg: JointState) -> None:
+        """
+        Process a JointState command controls individual motor speeds.
+        :param ros_msg: Has information to control the joints controlled by both brushed and brushless motors.
+        We only care about the joints controlled by brushless motors.
+        """
+        self._last_updated_time = t.time()
+
+        joint_cmd_info = np.stack((ros_msg.name, ros_msg.position, ros_msg.velocity, ros_msg.effort))
+        for name, position, velocity, torque in joint_cmd_info:
+            if name in self._arm_bridge_by_name.keys():
+                if self._arm_bridge_by_name[name].moteus_state.state == MoteusState.ARMED_STATE:
+                    self._arm_bridge_by_name[name].set_command(
+                        CommandData(
+                            position=CommandData.POSITION_FOR_VELOCITY_CONTROL,
+                            velocity=velocity,
+                            torque=CommandData.DEFAULT_TORQUE,
+                        )
+                    )
+
+    async def run(self) -> NoReturn:
+        previously_lost_communication = True
+        while not rospy.is_shutdown():
+            for name, bridge in self._arm_bridge_by_name.items():
+                time_diff_since_updated = t.time() - self._last_updated_time
+                lost_communication = time_diff_since_updated > ArmApp.BASESTATION_TO_ROVER_NODE_WATCHDOG_TIMEOUT_S
+                if lost_communication:
+                    if not previously_lost_communication:
+                        rospy.loginfo("Lost communication")
+                        previously_lost_communication = True
+                    bridge.set_command(
+                        CommandData(
+                            position=CommandData.POSITION_FOR_VELOCITY_CONTROL,
+                            velocity=CommandData.ZERO_VELOCITY,
+                            torque=CommandData.DEFAULT_TORQUE,
+                        )
+                    )
+                elif previously_lost_communication:
+                    previously_lost_communication = False
+                    rospy.loginfo("Regained communication")
+
+                await bridge.update()
+        assert False
+
+
 class DriveApp:
     BASESTATION_TO_ROVER_NODE_WATCHDOG_TIMEOUT_S = 1
     DRIVE_NAMES = ["FrontLeft", "FrontRight", "MiddleLeft", "MiddleRight", "BackLeft", "BackRight"]
 
     def __init__(self):
         drive_info_by_name = rospy.get_param("brushless/drive")
-        self.drive_bridge_by_name = {}
+        self._drive_bridge_by_name = {}
         using_pi3_hat = rospy.get_param("brushless/using_pi3_hat")
         if using_pi3_hat:
             # import moteus_pi3hat
@@ -235,7 +326,7 @@ class DriveApp:
             transport = None
 
         for name, info in drive_info_by_name.items():
-            self.drive_bridge_by_name[name] = MoteusBridge(info["id"], transport)
+            self._drive_bridge_by_name[name] = MoteusBridge(info["id"], transport)
         rover_width = rospy.get_param("rover/width")
         rover_length = rospy.get_param("rover/length")
         self.WHEEL_DISTANCE_INNER = rover_width / 2.0
@@ -259,22 +350,24 @@ class DriveApp:
             name=[name for name in DriveApp.DRIVE_NAMES],
             joint_states=JointState(
                 name=[name for name in DriveApp.DRIVE_NAMES],
-                position=[self.drive_bridge_by_name[name].moteus_data.position for name in DriveApp.DRIVE_NAMES],
-                velocity=[self.drive_bridge_by_name[name].moteus_data.velocity for name in DriveApp.DRIVE_NAMES],
-                effort=[self.drive_bridge_by_name[name].moteus_data.torque for name in DriveApp.DRIVE_NAMES],
+                position=[self._drive_bridge_by_name[name].moteus_data.position for name in DriveApp.DRIVE_NAMES],
+                velocity=[self._drive_bridge_by_name[name].moteus_data.velocity for name in DriveApp.DRIVE_NAMES],
+                effort=[self._drive_bridge_by_name[name].moteus_data.torque for name in DriveApp.DRIVE_NAMES],
             ),
             moteus_states=MoteusStateMsg(
                 name=[name for name in DriveApp.DRIVE_NAMES],
-                state=[self.drive_bridge_by_name[name].moteus_state.state for name in DriveApp.DRIVE_NAMES],
-                error=[self.drive_bridge_by_name[name].moteus_state.error_name for name in DriveApp.DRIVE_NAMES],
+                state=[self._drive_bridge_by_name[name].moteus_state.state for name in DriveApp.DRIVE_NAMES],
+                error=[self._drive_bridge_by_name[name].moteus_state.error_name for name in DriveApp.DRIVE_NAMES],
             ),
         )
 
     def _process_twist_message(self, ros_msg: Twist) -> None:
         """
-        Converts a Twist message to individual motor speeds.
+        Processes a Twist message and controls individual motor speeds.
         :param ros_msg: Has linear x and angular z velocity components.
         """
+        self._last_updated_time = t.time()
+
         forward = ros_msg.linear.x
         turn = ros_msg.angular.z
 
@@ -295,8 +388,7 @@ class DriveApp:
             left_rad_outer *= change_ratio
             right_rad_outer *= change_ratio
 
-        self._last_updated_time = t.time()
-        for name, bridge in self.drive_bridge_by_name.items():
+        for name, bridge in self._drive_bridge_by_name.items():
 
             if name == "FrontLeft" or name == "BackLeft":
                 commanded_velocity = left_rad_outer
@@ -326,7 +418,7 @@ class DriveApp:
         """
         previously_lost_communication = True
         while not rospy.is_shutdown():
-            for name, bridge in self.drive_bridge_by_name.items():
+            for name, bridge in self._drive_bridge_by_name.items():
                 time_diff_since_updated = t.time() - self._last_updated_time
                 lost_communication = time_diff_since_updated > DriveApp.BASESTATION_TO_ROVER_NODE_WATCHDOG_TIMEOUT_S
                 if lost_communication:
@@ -361,13 +453,21 @@ class Application:
     def __init__(self):
         rospy.init_node(f"brushless")
         self.drive_app = DriveApp()
+        self.arm_app = ArmApp()
 
     def run(self) -> NoReturn:
         """
         Allows the functions to run.
-        :return:
         """
-        asyncio.run(self.drive_app.run())
+        asyncio.run(self.run_tasks())
+
+    async def run_tasks(self) -> NoReturn:
+        """
+        Creates an async function to run both drive and arm tasks
+        """
+        coroutines = [self.drive_app.run(), self.arm_app.run()]
+        await asyncio.gather(*coroutines, return_exceptions=True)
+        assert False
 
 
 def main():
