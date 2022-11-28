@@ -75,8 +75,8 @@ def main():
             ),
             mag=MagneticField(
                 header=Header(stamp=rospy.Time.now(), frame_id=imu_frame),
-                magnetic_field=Vector3(*mag_data)
-            )
+                magnetic_field=Vector3(*mag_data),
+            ),
         )
 
         temp_msg = Temperature(header=Header(stamp=rospy.Time.now(), frame_id=imu_frame), temperature=temp_data)
