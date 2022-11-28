@@ -15,11 +15,11 @@
     <arg name="world_name" value="$(arg gazebo_config_path)/env_description/world.world" />
     <arg name="paused" value="false" />
     <arg name="use_sim_time" value="true" />
-    <arg name="gui" value="true" />
-    <arg name="headless" value="false" />
+    <arg name="gui" value="false" />
+    <arg name="headless" value="true" />
     <arg name="debug" value="false" />
     <arg name="verbose" default="false" />
-    <arg name="gui_required" value="true" />
+    <arg name="gui_required" value="false" />
   </include>
 
   <node name="spawn_model" pkg="gazebo_ros" type="spawn_model" output="screen" args="

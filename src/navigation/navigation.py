@@ -3,7 +3,6 @@
 import signal
 import sys
 import threading
-from gate import GateTraverseState
 
 import rospy
 import smach
@@ -13,6 +12,7 @@ from single_fiducial import SingleFiducialState
 from state import DoneState
 from waypoint import WaypointState
 from search import SearchState
+from state import OffState
 
 
 class Navigation(threading.Thread):
@@ -42,6 +42,7 @@ class Navigation(threading.Thread):
                     "single_fiducial": "SingleFiducialState",
                     "search": "SearchState",
                     "done": "DoneState",
+                    "off" : "OffState"
                 },
             )
             self.state_machine.add(
@@ -52,6 +53,7 @@ class Navigation(threading.Thread):
                     "single_fiducial": "SingleFiducialState",
                     "search": "SearchState",
                     "done": "DoneState",
+                    "off" : "OffState"
                 },
             )
             self.state_machine.add(
@@ -61,13 +63,20 @@ class Navigation(threading.Thread):
                     "waypoint_traverse": "WaypointState",
                     "single_fiducial": "SingleFiducialState",
                     "search": "SearchState",
-                    "gate_traverse": "GateTraverseState",
-                },
+                    "off" : "OffState"
+                                },
             )
             self.state_machine.add(
-                "GateTraverseState",
-                GateTraverseState(self.context),
-                transitions={"search": "SearchState", "done": "DoneState", "gate_traverse": "GateTraverseState"},
+                "OffState",
+                OffState(self.context),
+                transitions={
+                    "waypoint_traverse": "WaypointState",
+                     "single_fiducial": "SingleFiducialState",
+                     "search": "SearchState",
+                     "done": "DoneState",
+                },
+                
+                
             )
 
     def run(self):
