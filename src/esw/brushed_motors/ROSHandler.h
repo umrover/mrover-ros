@@ -6,13 +6,7 @@
 #include <mrover/GimbalCmd.h>       // for GimbalCmd
 #include <unordered_map>            // for unordered_map
 #include <vector>                   // for vector
-
-// A struct used for keeping track of publisher data
-struct publisherData {
-    ros::Publisher* publisher;
-    std::string topic;
-    std::string name;
-};
+#include <cmath>                    // for nan
 
 /*
 ROSHandler.h is responsible for handling incoming and outgoing ROS messages.
@@ -31,6 +25,7 @@ private:
     inline static ros::Subscriber openLoopSubscriberMast;
 
     inline static ros::Publisher jointDataPublisherRA;
+    inline static sensor_msgs::JointState jointData;
 
     // REQUIRES: name is a valid name
     // MODIFIES: nothing
