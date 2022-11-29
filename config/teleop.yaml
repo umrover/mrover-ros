@@ -28,8 +28,8 @@ teleop:
   xbox_mappings:
     left_js_x: 0
     left_js_y: 1
-    left_trigger: 6
-    right_trigger: 7
+    left_trigger: 4
+    right_trigger: 5
     right_js_x: 2
     right_js_y: 3
     right_bumper: 5
