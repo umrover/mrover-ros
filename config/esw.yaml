@@ -89,7 +89,7 @@ brushed_motors:
       motor_max_voltage: 12.0
       nucleo: 2
       channel: 3
-      inversion: 1.0
+      inversion: -1.0
   i2c_device_file: "/dev/i2c-1"
   test: false
 
