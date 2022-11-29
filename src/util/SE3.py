@@ -7,6 +7,8 @@ import rospy
 
 from ros_numpy import numpify
 from geometry_msgs.msg import TransformStamped, Vector3, Quaternion
+from std_msgs.msg import Time
+from typing import Tuple
 from .SO3 import SO3
 
 
@@ -60,6 +62,18 @@ class SE3:
         tf_msg = tf_buffer.lookup_transform(parent_frame, child_frame, rospy.Time()).transform
         result = SE3(position=numpify(tf_msg.translation), rotation=SO3(numpify(tf_msg.rotation)))
         return result
+
+    @classmethod
+    def from_se3_time(cls, tf_buffer: tf2_ros.Buffer, parent_frame: str, child_frame: str) -> Tuple[SE3, Time]:
+        """
+        Ask the TF tree for the time stamp of a frame and return it in a tuple with an
+        SE3 that holds the transform from the parent to the child_frame
+        """
+
+        tf_msg = tf_buffer.lookup_transform(parent_frame, child_frame, rospy.Time()).transform
+        result = SE3(position=numpify(tf_msg.translation), rotation=SO3(numpify(tf_msg.rotation)))
+        time_stamp = tf_buffer.lookup_transform(parent_frame, child_frame, rospy.Time()).header.stamp
+        return (result, time_stamp)
 
     def publish_to_tf_tree(
         self,

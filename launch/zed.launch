@@ -1,4 +1,6 @@
 <launch>
+    <arg name="run_perception" default="true"/>
+
     <!-- ZED wrapper node -->
     <node if="$(arg run_perception)"
           name="zed_node" pkg="zed_wrapper" type="zed_wrapper_node" output="screen" required="true">
