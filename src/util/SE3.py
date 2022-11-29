@@ -64,15 +64,15 @@ class SE3:
         return result
 
     @classmethod
-    def from_se3_time(cls, tf_buffer: tf2_ros.Buffer, parent_frame: str, child_frame: str) -> Tuple[SE3, Time]:
+    def from_tf_time(cls, tf_buffer: tf2_ros.Buffer, parent_frame: str, child_frame: str) -> Tuple[SE3, Time]:
         """
         Ask the TF tree for the time stamp of a frame and return it in a tuple with an
         SE3 that holds the transform from the parent to the child_frame
         """
-
-        tf_msg = tf_buffer.lookup_transform(parent_frame, child_frame, rospy.Time()).transform
+        tf_lookup = tf_buffer.lookup_transform(parent_frame, child_frame, rospy.Time())
+        tf_msg = tf_lookup.transform
         result = SE3(position=numpify(tf_msg.translation), rotation=SO3(numpify(tf_msg.rotation)))
-        time_stamp = tf_buffer.lookup_transform(parent_frame, child_frame, rospy.Time()).header.stamp
+        time_stamp = tf_lookup.header.stamp
         return (result, time_stamp)
 
     def publish_to_tf_tree(
