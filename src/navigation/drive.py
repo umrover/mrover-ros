@@ -68,7 +68,7 @@ def get_drive_command(
         np.sign(error) if full_turn_override else np.clip(error * TURNING_P, MIN_DRIVING_EFFORT, MAX_DRIVING_EFFORT)
     )
     print(cmd_vel.linear.x, cmd_vel.angular.z)
-        full_turn_override = False
+    full_turn_override = False
 
     # we want to drive the angular offset to zero so the error is just 0 - alignment
     error = alignment
