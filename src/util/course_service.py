@@ -18,7 +18,7 @@ class CourseService(rospy.ServiceProxy):
 
     def __init__(self, **kwargs):
         super().__init__(self.SERVICE_NAME, PublishCourse, **kwargs)
-    
+
     def call(self, waypoints: List[Tuple[Waypoint, SE3]]):
         all_waypoint_info = []
         for waypoint_info, pose in waypoints:
@@ -40,7 +40,6 @@ class EnableService(rospy.ServiceProxy):
         # read required parameters, if they don't exist an error will be thrown
         self.ref_lat = rospy.get_param("gps_linearization/reference_point_latitude")
         self.ref_lon = rospy.get_param("gps_linearization/reference_point_longitude")
-    
 
     def convert(self, waypoint: GPSWaypoint) -> Waypoint:
         """
@@ -61,7 +60,6 @@ class EnableService(rospy.ServiceProxy):
         if data.enable:
             waypoints = [self.convert(i) for i in data.waypoints]
             self.publish_course(waypoints)
-    
+
     def __call__(self, enableMsg: EnableAuton):
         self.convert_and_publish_course(enableMsg)
-        
