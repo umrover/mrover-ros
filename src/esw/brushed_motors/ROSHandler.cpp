@@ -7,7 +7,7 @@ void ROSHandler::init(ros::NodeHandle* rosNode) {
 
     n = rosNode;
 
-    RANames = {"joint_a", "joint_b", "joint_c", "joint_d", "joint_e", "joint_f", "gripper", "finger"};
+    RANames = {"joint_a", "joint_b", "joint_c", "joint_d", "joint_e", "joint_f", "finger", "gripper"};
 
     openLoopSubscriberRA = n->subscribe<sensor_msgs::JointState>(
             "ra_cmd",
