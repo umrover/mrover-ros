@@ -34,7 +34,7 @@ class Rover:
         self.send_drive_command(Twist())
 
     def get_pose_with_time(self):
-        return SE3.from_se3_time(self.ctx.tf_buffer, parent_frame="map", child_frame="base_link")
+        return SE3.from_tf_time(self.ctx.tf_buffer, parent_frame="map", child_frame="base_link")
 
 
 @dataclass
