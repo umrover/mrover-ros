@@ -72,11 +72,18 @@ class DoneState(BaseState):
         self.context.rover.send_drive_command(cmd_vel)
         return DoneStateTransitions.idle.name  # type: ignore
 
+class OffStateTransitions(Enum):
+    _settings_ = NoAlias
+
+    idle = "OffState"
+    begin_course = "WaypointState"
+
+
 class OffState(BaseState):
     def __init__(self, context: Context):
         super().__init__(
             context,
-            add_outcomes=["off", "ignore"],
+             add_outcomes=[transition.name for transition in OffStateTransitions],
         )
 
     def evaluate(self, ud):
