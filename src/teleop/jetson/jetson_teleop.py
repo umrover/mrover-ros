@@ -110,7 +110,7 @@ class ArmControl:
             * quadratic(-deadzone(msg.axes[self.xbox_mappings["right_js_y"]], 0.15)),
             self.ra_config["joint_d"]["multiplier"]
             * quadratic(deadzone(msg.axes[self.xbox_mappings["right_js_x"]], 0.15)),
-            self.ra_config["joint_e"]["multiplier"] * (left_trigger - right_trigger),
+            self.ra_config["joint_e"]["multiplier"] * (right_trigger - left_trigger),
             self.ra_config["joint_f"]["multiplier"]
             * (msg.buttons[self.xbox_mappings["right_bumper"]] - msg.buttons[self.xbox_mappings["left_bumper"]]),
             self.ra_config["finger"]["multiplier"]
