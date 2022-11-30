@@ -2,8 +2,7 @@
 <div>
     <DriveControls></DriveControls>
     <ArmControls></ArmControls>
-    <DriveVelDataH></DriveVelDataH>
-    <DriveVelDataV></DriveVelDataV>
+    <JointStateTable v-bind:name="'/drive_data'" v-bind:vertical ="false"></JointStateTable>
 
 </div>
 </template>
@@ -12,8 +11,7 @@
 import DriveControls from './DriveControls.vue';
 import ArmControls from './ArmControls.vue';
 import GimbalControls from './GimbalControls.vue';
-import DriveVelDataH from './DriveVelDataH.vue'
-import DriveVelDataV from './DriveVelDataV.vue'
+import JointStateTable from './JointStateTable.vue'
 
 export default {
     data() {
@@ -24,8 +22,7 @@ export default {
         DriveControls,
         ArmControls,
         GimbalControls,
-        DriveVelDataV,
-        DriveVelDataH
+        JointStateTable
     }
 }
 </script>

@@ -1,5 +1,6 @@
 <template>
 <div class="wrap">
+<div v-if="vertical">
     <div>
         <h3> Motor Data </h3>
     </div>
@@ -39,6 +40,50 @@
             </tr>
         </tbody>
     </table>
+</div>
+
+<div v-else>
+    <div>
+        <h3> Motor Data </h3>
+    </div>
+    <table class="tableFormat" style="undefined;table-layout: fixed; width: 745px">
+        <colgroup>
+            <col style="width: 85px">
+            <col style="width: 60px">
+            <col style="width: 75px">
+            <col style="width: 85px">
+            <col style="width: 60px">
+            <col style="width: 75px">
+            <col style="width: 85px">
+            <col style="width: 60px">
+            <col style="width: 75px">
+            <col style="width: 85px">
+        </colgroup>
+
+        <thead>
+
+            <tr class="Bold">
+                <th class="tableElement">Motor</th>
+                <th v-for="motor in motors" class="tableElement">{{motor.name}}</th>
+            </tr>
+            <tr class="Bold">
+                <th class="tableElement">Position (m)</th>
+                <td v-for="motor in motors" class="tableElement">{{motor.position}} </td>
+            </tr>
+            <tr class="Bold">
+                <th class="tableElement">Velocity (m/s)</th>
+                <td v-for="motor in motors" class="tableElement">{{motor.velocity}} </td>
+            </tr>
+            <tr class="Bold">
+                <th class="tableElement">Effort (Nm)</th>
+                <td v-for="motor in motors" class="tableElement">{{motor.effort}} </td>
+            </tr>
+        </thead>
+
+    </table>
+
+</div>
+
 
 </div>
 </template>
@@ -107,11 +152,22 @@ export default {
 
         }
     },
+    props: {
+    name: {
+      type: String,
+      required: true
+    },
+
+    vertical: {
+        type: Boolean,
+        required: true
+    }
+    },
 
     created: function () {
         this.brushless_motors = new ROSLIB.Topic({
             ros: this.$ros,
-            name: '/drive_data',
+            name: this.name,
             messageType: 'sensor_msgs/JointState'
         });
 
