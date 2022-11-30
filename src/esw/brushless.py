@@ -229,7 +229,7 @@ class MotorsManager:
         self._last_updated_time = t.time()
         self._motor_names = motor_names
 
-        self._motors_status_publisher = rospy.Publisher(publish_topic, MotorsStatus, query_size=1)
+        self._motors_status_publisher = rospy.Publisher(publish_topic, MotorsStatus, queue_size=1)
         self._motors_status = MotorsStatus(
             name=[name for name in self._motor_names],
             joint_states=JointState(

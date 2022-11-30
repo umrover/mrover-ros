@@ -57,3 +57,16 @@ brushless:
       id: 4
     BackRight:
       id: 5
+  arm:
+    joint_a:
+      id: 6
+    joint_c:
+      id: 7
+    joint_d:
+      id: 8
+    joint_e:
+      id: 9
+    joint_f:
+      id: 10
+    gripper:
+      id: 11
