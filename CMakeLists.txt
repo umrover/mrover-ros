@@ -23,15 +23,13 @@ set(MROVER_LINK_DIRS "")
 
 # message files
 set(MROVER_MESSAGE_FILES
-        ArmStatus.msg
         CalibrationStatus.msg
         Chassis.msg
         Course.msg
-        DriveStatus.msg
-        EnableAuton.msg
         GimbalCmd.msg
         GPSWaypoint.msg
         MoteusState.msg
+        MotorsStatus.msg
         ODriveState.msg
         Waypoint.msg
         WaypointType.msg
