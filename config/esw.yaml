@@ -45,28 +45,37 @@ wheel:
 brushless:
   using_pi3_hat: false
   drive:
-    FrontLeft:
-      id: 0
-    FrontRight:
-      id: 1
-    MiddleLeft:
-      id: 2
-    MiddleRight:
-      id: 3
-    BackLeft:
-      id: 4
-    BackRight:
-      id: 5
+    controllers:
+      FrontLeft:
+        id: 0
+      FrontRight:
+        id: 1
+      MiddleLeft:
+        id: 2
+      MiddleRight:
+        id: 3
+      BackLeft:
+        id: 4
+      BackRight:
+        id: 5
+    max_motor_rps: 50.0
   arm:
-    joint_a:
-      id: 6
-    joint_c:
-      id: 7
-    joint_d:
-      id: 8
-    joint_e:
-      id: 9
-    joint_f:
-      id: 10
-    gripper:
-      id: 11
+    controllers:
+      joint_a:
+        id: 6
+        max_rps: 50
+      joint_c:
+        id: 7
+        max_rps: 50
+      joint_d:
+        id: 8
+        max_rps: 50
+      joint_e:
+        id: 9
+        max_rps: 50
+      joint_f:
+        id: 10
+        max_rps: 50
+      gripper:
+        id: 11
+        max_rps: 50

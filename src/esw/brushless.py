@@ -15,7 +15,7 @@ class CommandData:
     DEFAULT_TORQUE = 0.3
     MAX_TORQUE = 0.5
     POSITION_FOR_VELOCITY_CONTROL = math.nan
-    VELOCITY_LIMIT = 5
+    VELOCITY_LIMIT = 5  # TODO - KEEP FOR NOW. DO NOT CHANGE UNTIL WE ARE FINE WITH CHANGING MAX SPEED
     ZERO_VELOCITY = 0.0
 
     def __init__(
@@ -219,9 +219,9 @@ class MoteusBridge:
 class MotorsManager:
     BASESTATION_TO_ROVER_NODE_WATCHDOG_TIMEOUT_S = 1
 
-    def __init__(self, motor_info_by_name, motor_names: List[str], transport, publish_topic: str):
+    def __init__(self, motor_controller_info_by_name, motor_names: List[str], transport, publish_topic: str):
         self._motor_bridge_by_name = {}
-        for name, info in motor_info_by_name.items():
+        for name, info in motor_controller_info_by_name.items():
             self._motor_bridge_by_name[name] = MoteusBridge(info["id"], transport)
 
         self._last_updated_time = t.time()
@@ -325,8 +325,13 @@ class ArmManager:
         else:
             transport = None
 
-        arm_info_by_name = rospy.get_param("brushless/arm")
-        self._motors_manager = MotorsManager(arm_info_by_name, ArmManager.ARM_NAMES, transport, "arm_status")
+        arm_controller_info_by_name = rospy.get_param("brushless/arm/controllers")
+
+        self._max_rps_by_name = {}
+        for name, info in arm_controller_info_by_name.items():
+            self._max_rps_by_name[name] = info["max_rps"]
+
+        self._motors_manager = MotorsManager(arm_controller_info_by_name, ArmManager.ARM_NAMES, transport, "arm_status")
         rospy.Subscriber("ra_cmd", JointState, self._process_ra_cmd)
 
     def _process_ra_cmd(self, ros_msg: JointState) -> None:
@@ -344,8 +349,13 @@ class ArmManager:
                     ros_msg.velocity[i],
                     ros_msg.effort[i],
                 )
-                # TODO - For now, ignore position and torque since we don't trust teleop.
-                # We can assume that the ros_msg sends velocity commands from -1 to 1.
+
+                # We usually assume that the ros_msg sends velocity commands from -1 to 1,
+                # but change it just in case.
+                if abs(velocity) < 1:
+                    rospy.logerr("Commanded arm velocity is too low or high (should be [-1, 1]")
+                    velocity = 0
+                velocity *= self._max_rps_by_name[name]
                 # self._arm_command_data_list[ArmManager.ARM_NAMES.index(name)].position = position
                 self._arm_command_data_list[ArmManager.ARM_NAMES.index(name)].velocity = velocity
                 # self._arm_command_data_list[ArmManager.ARM_NAMES.index(name)].torque = torque
@@ -369,13 +379,8 @@ class DriveManager:
         _ratio_motor_to_wheel = rospy.get_param("wheel/gear_ratio")
         self.WHEELS_M_S_TO_MOTOR_RAD_RATIO = (1 / rospy.get_param("wheel/radius")) * rospy.get_param("wheel/gear_ratio")
 
-        _max_speed_m_s = rospy.get_param("rover/max_speed")
-        assert _max_speed_m_s > 0, "rover/max_speed config must be greater than 0"
-
-        max_motor_rad_s = _max_speed_m_s * self.WHEELS_M_S_TO_MOTOR_RAD_RATIO
-        self.MEASURED_MAX_MOTOR_RAD_S = 1 * 2 * math.pi  # Should not be changed. Derived from testing.
-
-        self._max_motor_speed_rad_s = min(self.MEASURED_MAX_MOTOR_RAD_S, max_motor_rad_s)
+        self.max_motor_rps = rospy.get_param("brushless/drive/max_motor_rps")
+        self._max_motor_speed_rad_s = self.max_motor_rps * 2 * math.pi
 
         self._drive_command_data_list = [
             CommandData(
@@ -399,8 +404,10 @@ class DriveManager:
         else:
             transport = None
 
-        drive_info_by_name = rospy.get_param("brushless/drive")
-        self._motors_manager = MotorsManager(drive_info_by_name, DriveManager.DRIVE_NAMES, transport, "drive_status")
+        drive_controller_info_by_name = rospy.get_param("brushless/drive/controllers")
+        self._motors_manager = MotorsManager(
+            drive_controller_info_by_name, DriveManager.DRIVE_NAMES, transport, "drive_status"
+        )
         rospy.Subscriber("cmd_vel", Twist, self._process_twist_message)
 
     def _process_twist_message(self, ros_msg: Twist) -> None:
