@@ -277,6 +277,16 @@ class MotorsManager:
 
                 await bridge.update()
 
+                index = self._motor_names.index(name)
+
+                self._motors_status.joint_states.position[index] = bridge.moteus_data.position
+                self._motors_status.joint_states.velocity[index] = bridge.moteus_data.velocity
+                self._motors_status.joint_states.effort[index] = bridge.moteus_data.torque
+                self._motors_status.moteus_states.state[index] = bridge.moteus_state.state
+                self._motors_status.moteus_states.error[index] = bridge.moteus_state.error_name
+
+            self._motors_status_publisher.publish(self._motors_status)
+
     def update_command_data(self, command_data_list: List[CommandData]) -> None:
         """
         Updates the commands
