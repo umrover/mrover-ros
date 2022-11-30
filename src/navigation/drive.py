@@ -4,10 +4,11 @@ import numpy as np
 
 from geometry_msgs.msg import Twist
 from util.SE3 import SE3
+from util.np_utils import angle_to_rotate
 
 MAX_DRIVING_EFFORT = 1
 MIN_DRIVING_EFFORT = -1
-TURNING_P = 100.0
+TURNING_P = 10.0
 
 
 def get_drive_command(
@@ -28,30 +29,35 @@ def get_drive_command(
         raise ValueError(f"Argument {turn_in_place_thresh} should be between 0 and 1")
     rover_pos = rover_pose.position
     rover_dir = rover_pose.rotation.direction_vector()
+    rover_dir[2] = 0
+
     # Get vector from rover to target
     target_dir = target_pos - rover_pos
+    print(
+        f"rover direction: {rover_dir}, target direction: {target_dir}, rover position: {rover_pos} , goal: {target_pos}"
+    )
+
     target_dist = np.linalg.norm(target_dir)
     if target_dist == 0:
         target_dist = np.finfo(float).eps
-    # Normalize direction
-    target_dir /= target_dist
-    # Both vectors are unit vectors so the dot product magnitude is 0-1
-    # 0 alignment is perpendicular, 1 is parallel (fully aligned)
-    alignment = np.dot(target_dir, rover_dir)
+
+    alignment = angle_to_rotate(rover_dir, target_dir)
 
     if target_dist < completion_thresh:
         return Twist(), True
 
     cmd_vel = Twist()
-    if alignment > turn_in_place_thresh:
+    full_turn_override = True
+    if abs(alignment) < turn_in_place_thresh:
         # We are pretty aligned so we can drive straight
         error = target_dist
         cmd_vel.linear.x = np.clip(error, 0.0, MAX_DRIVING_EFFORT)
-    # Determine the sign of our effort by seeing if we are to the left or to the right of the target
-    # This is done by dotting rover_dir and target_dir rotated 90 degrees ccw
-    perp_alignment = target_dir[0] * -rover_dir[1] + target_dir[1] * rover_dir[0]
-    sign = np.sign(perp_alignment)
-    # 1 is target alignment (dot product of two normalized vectors that are parallel is 1)
-    error = 1.0 - alignment
-    cmd_vel.angular.z = np.clip(error * TURNING_P * sign, MIN_DRIVING_EFFORT, MAX_DRIVING_EFFORT)
+        full_turn_override = False
+
+    # we want to drive the angular offset to zero so the error is just 0 - alignment
+    error = alignment
+    cmd_vel.angular.z = (
+        np.sign(error) if full_turn_override else np.clip(error * TURNING_P, MIN_DRIVING_EFFORT, MAX_DRIVING_EFFORT)
+    )
+    print(cmd_vel.linear.x, cmd_vel.angular.z)
     return cmd_vel, False
