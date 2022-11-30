@@ -16,6 +16,13 @@
         </visual>
     </xacro:macro>
 
+    <xacro:macro name="link-inertial" params="x:=0 y:=0 z:=0 roll:=0 pitch:=0 yaw:=0 mass ixx iyy izz ixy:=0 iyz:=0 ixz:=0">
+        <origin xyz="${x} ${y} ${z}" rpy="${roll} ${pitch} ${yaw}" />
+        <!-- mass in kg -->
+        <mass value="${mass}" />
+        <inertia ixx="${ixx}" iyy="${iyy}" izz="${izz}" ixy="${ixy}" iyz="${iyz}" ixz="${ixz}" />
+    </xacro:macro>
+
     <!-- defines a cylinder collision object with two endpoints -->
     <xacro:macro name="link-collision-cylinder" params="radius x1 y1 z1 x2 y2 z2 roll:=0 pitch:=0 yaw:=0">
         <xacro:property name="dx" value="${x2-x1}" />
@@ -64,6 +71,19 @@
         </joint>
     </xacro:macro>
 
+    <xacro:macro name="transmissions" params="name">
+        <transmission name="trans_${name}">
+            <type>transmission_interface/SimpleTransmission</type>
+            <joint name="${name}">
+                <hardwareInterface>hardware_interface/EffortJointInterface</hardwareInterface>
+            </joint>
+            <actuator name="${name}_motor">
+                <hardwareInterface>hardware_interface/EffortJointInterface</hardwareInterface>
+                <mechanicalReduction>1</mechanicalReduction>
+            </actuator>
+        </transmission>
+    </xacro:macro>
+
     <link name="chassisToa">
         <xacro:link-visual fileName="chassis-a.stl" x="0" y="0" z="0" col="red" r="1" g="0" b="0" />
         <xacro:link-collision-cylinder radius="3.75" x1="0" y1="0" z1="-1.25" x2="0" y2="0" z2="-3.75" />
@@ -99,11 +119,25 @@
         <xacro:link-collision-box y="-8" lx="3" ly="2" lz="4" />
         <xacro:link-collision-cylinder radius="0.75" x1="-1.5" y1="0" z1="-0.5" x2="-1.5" y2="-9" z2="-0.5" />
     </link>
+
     <xacro:joints name="joint_a" type="continuous" parent="chassisToa" child="aTob" origin_x="0" origin_y="0" origin_z="0" axis_z="1" lower="-3.14" upper="3.14" />
     <xacro:joints name="joint_b" parent="aTob" child="bToc" origin_x="0" origin_y="1.41293" origin_z="1.13303" axis_x="1" lower="0.035" upper="1.09" />
     <xacro:joints name="joint_c" parent="bToc" child="cTod" origin_x="-4.59961" origin_y="22.83397" origin_z="0.38119" axis_x="1" lower="-3.01" upper="2.73" />
     <xacro:joints name="joint_d" parent="cTod" child="dToe" origin_x="0" origin_y="-1.4699" origin_z="0.963976" axis_z="-0.52992" axis_y="0.84805" lower="-3.14" upper="3.14" />
     <xacro:joints name="joint_e" parent="dToe" child="eTof" origin_x="-2.30884" origin_y="-14.2085" origin_z="9.01643" axis_x="1" lower="-2.68" upper="2.68" />
     <xacro:joints name="joint_f" parent="eTof" child="hand" origin_x="-0.817441" origin_y="0.678501" origin_z="-6.45623" axis_z="1" lower="-3.14" upper="3.14" />
+    
+    <xacro:transmissions name="joint_a" />
+    <xacro:transmissions name="joint_b" />
+    <xacro:transmissions name="joint_c" />
+    <xacro:transmissions name="joint_d" />
+    <xacro:transmissions name="joint_e" />
+    <xacro:transmissions name="joint_f" />
+
+    <gazebo>
+        <plugin name="gazebo_ros_control">
+            <robotNamespace>/</robotNamespace>
+        </plugin>
+    </gazebo>
     
 </robot>
