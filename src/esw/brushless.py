@@ -5,11 +5,10 @@ import asyncio
 import rospy
 import math
 from geometry_msgs.msg import Twist
-from typing import List, NoReturn
+from typing import List
 from sensor_msgs.msg import JointState
 from mrover.msg import MoteusState as MoteusStateMsg, MotorsStatus
 import moteus
-import numpy as np
 
 
 class CommandData:
@@ -96,7 +95,6 @@ class MoteusBridge:
         """
         Changes the values of the arguments of set_position for when it is next called.
         :param command: contains arguments that are used in the moteus controller.set_position function
-        :return: none
         """
         self.command_lock.acquire()
         self._command = command
@@ -122,7 +120,7 @@ class MoteusBridge:
                     watchdog_timeout=MoteusBridge.ROVER_NODE_TO_MOTEUS_WATCHDOG_TIMEOUT_S,
                     query=True,
                 ),
-                timeout=self.MOTEUS_RESPONSE_TIME_INDICATING_DISCONNECTED_S,
+                timeout=MoteusBridge.MOTEUS_RESPONSE_TIME_INDICATING_DISCONNECTED_S,
             )
             self.moteus_data = MoteusData(
                 position=state.values[moteus.Register.POSITION],
@@ -165,7 +163,7 @@ class MoteusBridge:
         try:
             assert self.moteus_state.state != MoteusState.ARMED_STATE
             await asyncio.wait_for(
-                self.controller.set_stop(), timeout=self.MOTEUS_RESPONSE_TIME_INDICATING_DISCONNECTED_S
+                self.controller.set_stop(), timeout=MoteusBridge.MOTEUS_RESPONSE_TIME_INDICATING_DISCONNECTED_S
             )
             state = await asyncio.wait_for(
                 self.controller.set_position(
@@ -176,7 +174,7 @@ class MoteusBridge:
                     watchdog_timeout=MoteusBridge.ROVER_NODE_TO_MOTEUS_WATCHDOG_TIMEOUT_S,
                     query=True,
                 ),
-                timeout=self.MOTEUS_RESPONSE_TIME_INDICATING_DISCONNECTED_S,
+                timeout=MoteusBridge.MOTEUS_RESPONSE_TIME_INDICATING_DISCONNECTED_S,
             )
             self._check_has_error(state.values[moteus.Register.FAULT])
         except asyncio.TimeoutError:
@@ -251,7 +249,7 @@ class MotorsManager:
         """
         self._last_updated_time = t.time()
 
-    async def run(self) -> NoReturn:
+    async def run(self) -> None:
         """
         Constantly updates the bridges.
         """
@@ -278,13 +276,11 @@ class MotorsManager:
                     rospy.loginfo("Regained communication")
 
                 await bridge.update()
-        assert False
 
     def update_command_data(self, command_data_list: List[CommandData]) -> None:
         """
         Updates the commands
         :param command_data_list: Has an array of command data that represents the commands for each motor.
-        :return:
         """
         assert len(command_data_list) == len(self._motor_names)
         for i, command_data in enumerate(command_data_list):
@@ -331,16 +327,22 @@ class ArmManager:
         """
         self._motors_manager.update_time()
 
-        joint_cmd_info = np.stack((ros_msg.name, ros_msg.position, ros_msg.velocity, ros_msg.effort))
-        for name, position, velocity, torque in joint_cmd_info:
+        for i, name in enumerate(ros_msg.name):
             if name in ArmManager.ARM_NAMES:
-                self._arm_command_data_list[ArmManager.ARM_NAMES.index(name)].position = position
+                position, velocity, torque = (
+                    ros_msg.position[i],
+                    ros_msg.velocity[i],
+                    ros_msg.effort[i],
+                )
+                # TODO - For now, ignore position and torque since we don't trust teleop.
+                # We can assume that the ros_msg sends velocity commands from -1 to 1.
+                # self._arm_command_data_list[ArmManager.ARM_NAMES.index(name)].position = position
                 self._arm_command_data_list[ArmManager.ARM_NAMES.index(name)].velocity = velocity
-                self._arm_command_data_list[ArmManager.ARM_NAMES.index(name)].torque = torque
+                # self._arm_command_data_list[ArmManager.ARM_NAMES.index(name)].torque = torque
 
         self._motors_manager.update_command_data(self._arm_command_data_list)
 
-    async def run(self) -> NoReturn:
+    async def run(self) -> None:
         await self._motors_manager.run()
 
 
@@ -432,7 +434,7 @@ class DriveManager:
 
         self._motors_manager.update_command_data(self._drive_command_data_list)
 
-    async def run(self) -> NoReturn:
+    async def run(self) -> None:
         """
         Runs an infinite loop and only gives commands to the moteus (by updating the bridge) if communication is still
         maintained between the basestation and the rover node.
@@ -446,19 +448,18 @@ class Application:
         self._drive_manager = DriveManager()
         self._arm_manager = ArmManager()
 
-    def run(self) -> NoReturn:
+    def run(self) -> None:
         """
         Allows the functions to run.
         """
         asyncio.run(self.run_tasks())
 
-    async def run_tasks(self) -> NoReturn:
+    async def run_tasks(self) -> None:
         """
         Creates an async function to run both drive and arm tasks
         """
         coroutines = [self._drive_manager.run(), self._arm_manager.run()]
         await asyncio.gather(*coroutines, return_exceptions=True)
-        assert False
 
 
 def main():
