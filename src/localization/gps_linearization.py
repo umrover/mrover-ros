@@ -36,24 +36,32 @@ class GPSLinearization:
 
         self.world_frame = rospy.get_param("gps_linearization/world_frame")
         # TODO: account for separate GPS and IMU frames?
-        self.middle_frame = rospy.get_param("gps_linearization/middle_frame")
+        self.odom_frame = rospy.get_param("gps_linearization/odom_frame")
         self.rover_frame = rospy.get_param("gps_linearization/rover_frame")
     
-    def get_indirect_transform(self, rover_in_map: SE3) -> SE3:
+    def publish_pose(self) -> SE3:
         """
-        Function that takes in a map to rover transform and returns the intermediate transform
-        of map to middle_frame where middle_frame to rover is a transform pulled from the tf tree
+        Publishes the pose of the rover in relative to the map frame to the TF tree,
+        either as a direct map->base_link transform, or if the odom frame is in use,
+        indirectly as a map->odom transform.
+        """
+        rover_in_map = self.pose
 
-        :param rover_in_map: A transform matrix from the map frame to the rover frame
-        """
-        # Get the odom to rover transform from the TF tree 
-        rover_in_odom = SE3.from_tf_tree(self.tf_buffer, self.middle_frame, self.rover_frame)
-        odom_to_rover = rover_in_odom.transform_matrix()
-        map_to_rover = rover_in_map.transform_matrix()
-        
-        # Calculate the intermediate transform from the overall transform and odom to rover
-        map_to_odom = np.inv(odom_to_rover) @ map_to_rover
-        return SE3.from_transform_matrix(map_to_odom)
+        try:
+            # Get the odom to rover transform from the TF tree 
+            rover_in_odom = SE3.from_tf_tree(self.tf_buffer, self.odom_frame, self.rover_frame)
+            odom_to_rover = rover_in_odom.transform_matrix()
+            map_to_rover = rover_in_map.transform_matrix()
+            
+            # Calculate the intermediate transform from the overall transform and odom to rover
+            map_to_odom = np.inv(odom_to_rover) @ map_to_rover
+            odom_in_map = SE3.from_transform_matrix(map_to_odom)
+            odom_in_map.publish_to_tf_tree(self.tf_broadcaster, parent_frame=self.world_frame, child_frame=self.odom_frame)
+
+        except (tf2_ros.LookupException, tf2_ros.ConnectivityException, tf2_ros.ExtrapolationException):
+            # odom frame not found, publish directly as map->base_link
+            rover_in_map.publish_to_tf_tree(self.tf_broadcaster, parent_frame=self.world_frame, child_frame=self.rover_frame)
+            
 
     def gps_callback(self, msg: NavSatFix):
         """
@@ -62,18 +70,13 @@ class GPSLinearization:
 
         :param msg: The NavSatFix message containing GPS data that was just received
         """
+        # linearize GPS coordinates into cartesian
         cartesian = np.array(
             geodetic2enu(msg.latitude, msg.longitude, msg.altitude, self.ref_lat, self.ref_lon, self.ref_alt, deg=True)
         )
         cartesian[2] = 0
         self.pose = SE3(position=cartesian, rotation=self.pose.rotation)
-
-        # Calculate the Map to Odom transform using the Odom to Map transform from the TF tree 
-        # and publish it instead of the overall transform
-        middle_frame_mat = self.get_indirect_transform(self, self.pose)
-        middle_frame_mat.publish_to_tf_tree(self.tf_broadcaster, parent_frame=self.world_frame, child_frame=self.middle_frame)
-        # Don't publish the overall Map to Base transform
-        # self.pose.publish_to_tf_tree(self.tf_broadcaster, parent_frame=self.world_frame, child_frame=self.rover_frame)
+        self.publish_pose()
 
     def imu_callback(self, msg: Imu):
         """
@@ -91,13 +94,7 @@ class GPSLinearization:
         # rotate the IMU quaternion by the offset to convert it to the ENU frame
         enu_quat = quaternion_multiply(offset_quat, imu_quat)
         self.pose = SE3.from_pos_quat(position=self.pose.position, quaternion=enu_quat)
-
-        # Calculate the Map to Odom transform using the Odom to Map transform from the TF tree 
-        # and publish it instead of the overall transform        
-        middle_frame_mat = self.get_indirect_transform(self, self.pose)
-        middle_frame_mat.publish_to_tf_tree(self.tf_broadcaster, parent_frame=self.world_frame, child_frame=self.middle_frame)
-        # Don't publish the overall Map to Base transform
-        # self.pose.publish_to_tf_tree(self.tf_broadcaster, parent_frame=self.world_frame, child_frame=self.rover_frame)
+        self.publish_pose()
 
 
 def main():
