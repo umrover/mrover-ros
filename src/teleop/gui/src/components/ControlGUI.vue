@@ -1,20 +1,22 @@
 <template>
 <div>
-    <DriveControls></DriveControls>
     <ArmControls></ArmControls>
-    <GimbalControls></GimbalControls>
+    <DriveControls></DriveControls>
     <DriveVelDataH></DriveVelDataH>
     <DriveVelDataV></DriveVelDataV>
+    <GimbalControls></GimbalControls>
+    <PDBFuse></PDBFuse>
 
 </div>
 </template>
 
 <script>
-import DriveControls from './DriveControls.vue';
 import ArmControls from './ArmControls.vue';
+import DriveControls from './DriveControls.vue';
 import GimbalControls from './GimbalControls.vue';
-import DriveVelDataH from './DriveVelDataH.vue'
-import DriveVelDataV from './DriveVelDataV.vue'
+import DriveVelDataH from './DriveVelDataH.vue';
+import DriveVelDataV from './DriveVelDataV.vue';
+import PDBFuse from './PDBFuse.vue';
 
 export default {
     data() {
@@ -22,11 +24,12 @@ export default {
     },
 
     components: {
-        DriveControls,
         ArmControls,
-        GimbalControls,
+        DriveControls,
         DriveVelDataV,
-        DriveVelDataH
+        DriveVelDataH,
+        GimbalControls,
+        PDBFuse,
     }
 }
 </script>

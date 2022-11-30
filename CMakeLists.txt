@@ -26,6 +26,7 @@ set(MROVER_MESSAGE_FILES
         CalibrationStatus.msg
         Chassis.msg
         Course.msg
+        Diagnostic.msg
         DriveStatus.msg
         EnableAuton.msg
         GimbalCmd.msg
