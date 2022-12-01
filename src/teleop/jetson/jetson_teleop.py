@@ -54,11 +54,11 @@ class Drive:
         # Convert from [0,1] to [0, max_wheel_speed] and apply dampen
         linear *= self.max_wheel_speed * dampen
 
-        angular = deadzone(
-            msg.axes[self.joystick_mappings["left_right"]] * self.drive_config["left_right"]["multiplier"]
-            + msg.axes[self.joystick_mappings["twist"]] * self.drive_config["twist"]["multiplier"],
-            0.05,
-        )
+        # Deadzones for each axis
+        left_right = deadzone(msg.axes[self.joystick_mappings["left_right"]] * self.drive_config["left_right"]["multiplier"], 0.4) if self.drive_config["left_right"]["enabled"] else 0
+        twist = deadzone(msg.axes[self.joystick_mappings["twist"]] * self.drive_config["twist"]["multiplier"], 0.1)
+
+        angular = twist + left_right
 
         # Same as linear but for angular speed
         angular *= self.max_angular_speed * dampen
