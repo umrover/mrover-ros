@@ -25,9 +25,13 @@ odrive:
     direction_right: 1.0
   ros:
     publish_rate_hz: 20
-<<<<<<< HEAD
-
-
+  publish_index:
+    front_left: 0
+    front_right: 1
+    middle_left: 2
+    middle_right: 3
+    back_left: 4
+    back_right: 5
 
 science:
   color_ids:
@@ -61,14 +65,6 @@ science:
     spectral: 1
     sa_data: 4
     uart_transmit_msg_len: 30
-=======
-  publish_index:
-    front_left: 0
-    front_right: 1
-    middle_left: 2
-    middle_right: 3
-    back_left: 4
-    back_right: 5
 
 rover:
   length: 0.86
