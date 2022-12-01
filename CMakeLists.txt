@@ -24,6 +24,7 @@ set(MROVER_LINK_DIRS "")
 # message files
 set(MROVER_MESSAGE_FILES
         CalibrationStatus.msg
+        Carousel.msg
         Chassis.msg
         Course.msg
         Diagnostic.msg
@@ -35,7 +36,7 @@ set(MROVER_MESSAGE_FILES
         Heater.msg
         MoteusState.msg
         ODriveState.msg
-        ScienceTemperature.msg
+        ScienceTemperatures.msg
         Spectral.msg
         Waypoint.msg
         WaypointType.msg
