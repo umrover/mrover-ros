@@ -1,0 +1,5 @@
+<launch>
+	<node name="fake_joint_state_publisher" pkg="mrover" type="fake_joint_states.py"/>
+	<node name="mrover_arm_follow_joint_trajectory" pkg="mrover" type="arm_trajectory_server.py"/>
+	<include file="$(find mrover_arm)/launch/demo.launch"/>
+</launch>

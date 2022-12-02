@@ -10,7 +10,7 @@ from control_msgs.msg import FollowJointTrajectoryGoal
 from control_msgs.msg import FollowJointTrajectoryResult
 from control_msgs.msg import FollowJointTrajectoryFeedback
 from control_msgs.msg import FollowJointTrajectoryAction
-from trajectory_msgs.msg import JointTrajectory
+from trajectory_msgs.msg import JointTrajectory, JointTrajectoryPoint
 from sensor_msgs.msg import JointState
 
 conf_joint_names = ["joint_a", "joint_b", "joint_c", "joint_d", "joint_e", "joint_f"]
@@ -65,18 +65,21 @@ class MoveItAction(object):
 
     # Action initialisation
     def __init__(self, name: str) -> None:
-        self.publisher = rospy.Publisher("ra_cmd", JointState)
+        self.publisher = rospy.Publisher("ra_cmd", JointState, queue_size=100)
         self._action_name = name
         self._as = actionlib.SimpleActionServer(
             self._action_name, FollowJointTrajectoryAction, execute_cb=self.execute_cb, auto_start=False
         )
         self.trajectory_point_queue = deque()
         self.desired_joint_state = JointState(name=conf_joint_names)
+        self.fake_controller = True
+        self.joint_pub = rospy.Publisher("joint_states", JointState, queue_size=100)
         self._as.start()
 
     # Action callback
     def execute_cb(self, goal: FollowJointTrajectoryGoal) -> None:
 
+        rospy.logerr("Execute Callback")
         # It is required to rearrange the arrays because MoveIt doesn't guarantee order preservation
         self.rearrange(goal.trajectory)
 
@@ -87,6 +90,12 @@ class MoveItAction(object):
         time_start = rospy.Time.from_sec(time.time())
 
         # ------------- Send command list
+
+        if self.fake_controller:
+            rospy.logdebug("fsdfsdfdsfsd")
+            joint_states.position = goal.trajectory.points[0].positions
+            joint_states.velocity= goal.trajectory.points[0].velocities
+            self.joint_pub.publish(joint_states)
 
         for point in goal.trajectory.points:
             self.trajectory_point_queue.append(point)
@@ -102,6 +111,9 @@ class MoveItAction(object):
             self.publisher.publish(self.desired_joint_state)
             # Wait
             rospy.sleep(point.time_from_start - last_point.time_from_start)
+            if self.fake_controller:
+                joint_states.position = point.positions
+                self.joint_pub.publish(joint_states)
             # Trajectory abort!
             # To abort the current movement, it is possible to send an empty trajectory
             if self._as.is_preempt_requested():
@@ -125,6 +137,7 @@ class MoveItAction(object):
         self._result.error_code = 0
         self._as.set_succeeded(self._result)
         # ---------------------------------------
+    
 
 
 if __name__ == "__main__":
