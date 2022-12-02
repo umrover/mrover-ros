@@ -78,30 +78,11 @@ public:
     // Expect a value between -M_PI and M_PI.
     float getCurrentAngle() const;
 
-    // REQUIRES: -M_PI <= targetAngle <= M_PI
-    // MODIFIES: currentAngle. Also makes controller live if not already.
-    // EFFECTS: Sends a closed loop command
-    // to target angle in radians. Also updates angle.
-    void moveClosedLoop(float targetAngle);
-
     // REQUIRES: -1.0 <= input <= 1.0
     // MODIFIES: currentAngle. Also makes controller live if not already.
     // EFFECTS: Sends an open loop command scaled to PWM limits
     // based on allowed voltage of the motor. Also updates angle.
     void moveOpenLoop(float input);
-
-    // REQUIRES: nothing
-    // MODIFIES: currentAngle.
-    // EFFECTS: If controller is live,
-    // updates the current angle and saves value in currentAngle.
-    // Otherwise, do nothing.
-    // Expect a value between -M_PI and M_PI.
-    void refreshCurrentAngle();
-
-    // REQUIRES: nothing
-    // MODIFIES: currentAngle. Also makes controller live if not already.
-    // EFFECTS: Zeroes the angle of the physical controller.
-    void zeroAngle();
 
 private:
     // REQUIRES: nothing

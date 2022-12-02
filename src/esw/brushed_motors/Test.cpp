@@ -17,14 +17,3 @@ void Test::testOpenLoop(Controller* controller) {
         }
     }
 }
-
-// Test reading in quadrature values
-void Test::testAngle(Controller* controller) {
-    const int timePerAction = 500;
-
-    for (int i = 0; i < (int) (timePerAction / SLEEP_MS); ++i) {
-        controller->refreshCurrentAngle();
-        ROS_INFO("Angle is %f \n", controller->getCurrentAngle());
-        sleepHelper(SLEEP_MS);
-    }
-}

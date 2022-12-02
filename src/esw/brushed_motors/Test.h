@@ -13,9 +13,6 @@ public:
     // Test function movement types, with focus on open loop
     static void testOpenLoop(Controller* controller);
 
-    // Test reading in quadrature values
-    static void testAngle(Controller* controller);
-
 private:
     // Helper sleep function
     static void sleepHelper(int ms);
