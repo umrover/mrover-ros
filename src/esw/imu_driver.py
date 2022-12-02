@@ -46,7 +46,7 @@ def main():
             data = [float(val.strip()) for val in line.split()]
 
         except ValueError:
-            rospy.logerr("invalid msg format")
+            print("invalid msg format")
             continue
 
         # partition data into different sensors, converting calibration data from float to int
@@ -60,7 +60,7 @@ def main():
             cal_data = [int(n) for n in data[14:18]]
 
         except IndexError:
-            rospy.logerr("incomplete msg")
+            print("incomplete msg")
             continue
 
         # fill in all sensor messages, setting timestamps of each message to right now,
