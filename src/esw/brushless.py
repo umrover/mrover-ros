@@ -20,9 +20,9 @@ class CommandData:
 
     def __init__(
         self,
-        position: float = POSITION_FOR_VELOCITY_CONTROL,
-        velocity: float = ZERO_VELOCITY,
-        torque: float = DEFAULT_TORQUE,
+        position: float,
+        velocity: float,
+        torque: float,
     ):
         self.position = position
         self.velocity = max(-CommandData.VELOCITY_LIMIT, min(CommandData.VELOCITY_LIMIT, velocity))
@@ -79,6 +79,8 @@ class MoteusBridge:
         self._can_id = can_id
         self.controller = moteus.Controller(id=can_id, transport=transport)
         self.command_lock = threading.Lock()
+        # self._command is the next command that this ROS node will send to the Moteus
+        # once self._send_command is called.
         self._command = CommandData(
             position=CommandData.POSITION_FOR_VELOCITY_CONTROL,
             velocity=CommandData.ZERO_VELOCITY,
@@ -93,7 +95,7 @@ class MoteusBridge:
 
     def set_command(self, command: CommandData) -> None:
         """
-        Changes the values of the arguments of set_position for when it is next called.
+        Changes the values of the arguments of set_position for when it is used in self._send_command.
         :param command: contains arguments that are used in the moteus controller.set_position function
         """
         self.command_lock.acquire()
@@ -219,13 +221,14 @@ class MoteusBridge:
 class MotorsManager:
     BASESTATION_TO_ROVER_NODE_WATCHDOG_TIMEOUT_S = 1
 
-    def __init__(self, motor_controller_info_by_name, motor_names: List[str], transport, publish_topic: str):
+    def __init__(self, motor_controller_info_by_name, transport, publish_topic: str):
         self._motor_bridge_by_name = {}
+        self._motor_names = []
         for name, info in motor_controller_info_by_name.items():
+            self._motor_names.append(name)
             self._motor_bridge_by_name[name] = MoteusBridge(info["id"], transport)
 
         self._last_updated_time = t.time()
-        self._motor_names = motor_names
 
         self._motors_status_publisher = rospy.Publisher(publish_topic, MotorsStatus, queue_size=1)
         self._motors_status = MotorsStatus(
@@ -300,15 +303,21 @@ class MotorsManager:
 
 
 class ArmManager:
-    ARM_NAMES = ["joint_a", "joint_c", "joint_d", "joint_e", "joint_f", "gripper"]
-
     def __init__(self):
-        self._arm_command_data_list = [
-            CommandData(
-                CommandData.POSITION_FOR_VELOCITY_CONTROL, CommandData.ZERO_VELOCITY, CommandData.DEFAULT_TORQUE
+
+        arm_controller_info_by_name = rospy.get_param("brushless/arm/controllers")
+
+        self._arm_names = []
+        self._arm_command_data_list = []
+        self._max_rps_by_name = {}
+        for name, info in arm_controller_info_by_name.items():
+            self._arm_names.append(name)
+            self._max_rps_by_name[name] = info["max_rps"]
+            self._arm_command_data_list.append(
+                CommandData(
+                    CommandData.POSITION_FOR_VELOCITY_CONTROL, CommandData.ZERO_VELOCITY, CommandData.DEFAULT_TORQUE
+                )
             )
-            for name in ArmManager.ARM_NAMES
-        ]
 
         using_pi3_hat = rospy.get_param("brushless/using_pi3_hat")
         if using_pi3_hat:
@@ -325,13 +334,7 @@ class ArmManager:
         else:
             transport = None
 
-        arm_controller_info_by_name = rospy.get_param("brushless/arm/controllers")
-
-        self._max_rps_by_name = {}
-        for name, info in arm_controller_info_by_name.items():
-            self._max_rps_by_name[name] = info["max_rps"]
-
-        self._motors_manager = MotorsManager(arm_controller_info_by_name, ArmManager.ARM_NAMES, transport, "arm_status")
+        self._motors_manager = MotorsManager(arm_controller_info_by_name, transport, "arm_status")
         rospy.Subscriber("ra_cmd", JointState, self._process_ra_cmd)
 
     def _process_ra_cmd(self, ros_msg: JointState) -> None:
@@ -343,7 +346,7 @@ class ArmManager:
         self._motors_manager.update_time()
 
         for i, name in enumerate(ros_msg.name):
-            if name in ArmManager.ARM_NAMES:
+            if name in self._arm_names:
                 position, velocity, torque = (
                     ros_msg.position[i],
                     ros_msg.velocity[i],
@@ -352,13 +355,13 @@ class ArmManager:
 
                 # We usually assume that the ros_msg sends velocity commands from -1 to 1,
                 # but change it just in case.
-                if abs(velocity) < 1:
+                if abs(velocity) > 1:
                     rospy.logerr("Commanded arm velocity is too low or high (should be [-1, 1]")
                     velocity = 0
                 velocity *= self._max_rps_by_name[name]
-                # self._arm_command_data_list[ArmManager.ARM_NAMES.index(name)].position = position
-                self._arm_command_data_list[ArmManager.ARM_NAMES.index(name)].velocity = velocity
-                # self._arm_command_data_list[ArmManager.ARM_NAMES.index(name)].torque = torque
+                # self._arm_command_data_list[self._arm_names.index(name)].position = position
+                self._arm_command_data_list[self._arm_names.index(name)].velocity = velocity
+                # self._arm_command_data_list[self._arm_names.index(name)].torque = torque
 
         self._motors_manager.update_command_data(self._arm_command_data_list)
 
@@ -367,8 +370,6 @@ class ArmManager:
 
 
 class DriveManager:
-    DRIVE_NAMES = ["FrontLeft", "FrontRight", "MiddleLeft", "MiddleRight", "BackLeft", "BackRight"]
-
     def __init__(self):
 
         rover_width = rospy.get_param("rover/width")
@@ -382,12 +383,16 @@ class DriveManager:
         self.max_motor_rps = rospy.get_param("brushless/drive/max_motor_rps")
         self._max_motor_speed_rad_s = self.max_motor_rps * 2 * math.pi
 
-        self._drive_command_data_list = [
-            CommandData(
-                CommandData.POSITION_FOR_VELOCITY_CONTROL, CommandData.ZERO_VELOCITY, CommandData.DEFAULT_TORQUE
+        drive_controller_info_by_name = rospy.get_param("brushless/drive/controllers")
+        self._drive_names = []
+        self._drive_command_data_list = []
+        for name, info in drive_controller_info_by_name.items():
+            self._drive_names.append(name)
+            self._drive_command_data_list.append(
+                CommandData(
+                    CommandData.POSITION_FOR_VELOCITY_CONTROL, CommandData.ZERO_VELOCITY, CommandData.DEFAULT_TORQUE
+                )
             )
-            for name in DriveManager.DRIVE_NAMES
-        ]
 
         using_pi3_hat = rospy.get_param("brushless/using_pi3_hat")
         if using_pi3_hat:
@@ -404,10 +409,7 @@ class DriveManager:
         else:
             transport = None
 
-        drive_controller_info_by_name = rospy.get_param("brushless/drive/controllers")
-        self._motors_manager = MotorsManager(
-            drive_controller_info_by_name, DriveManager.DRIVE_NAMES, transport, "drive_status"
-        )
+        self._motors_manager = MotorsManager(drive_controller_info_by_name, transport, "drive_status")
         rospy.Subscriber("cmd_vel", Twist, self._process_twist_message)
 
     def _process_twist_message(self, ros_msg: Twist) -> None:
@@ -437,6 +439,8 @@ class DriveManager:
             left_rad_outer *= change_ratio
             right_rad_outer *= change_ratio
 
+        # This assumes the convention that the names are in the form FrontLeft, FrontRight,
+        # MiddleLeft, MiddleRight, BackLeft, then BackRight
         drive_command_velocities = [
             left_rad_outer,
             right_rad_outer,
