@@ -22,7 +22,7 @@ teleop:
       multiplier: 1
     left_right:
       # Can be disabled here since left_right axis sucks
-      enabled: 1
+      enabled: false
       multiplier: 1
     twist:
       multiplier: 0.7
