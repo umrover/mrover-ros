@@ -14,7 +14,13 @@
       </div>
     </div>
     <div class="box1 data" v-bind:style="{backgroundColor: nav_state_color}">
-      <h2>Nav State: {{this.nav_status.nav_state_name}}</h2>
+      <div>
+        <h2>Nav State: {{this.nav_status.nav_state_name}}</h2>
+      </div>
+      <div>
+        <p style="margin-top:6px;">Joystick Values</p>
+      </div>
+      <div></div>
       <JoystickValues/>
     </div>
     <div class="box map light-bg">  
@@ -195,7 +201,7 @@ export default {
   min-height: 98vh;
   grid-gap: 10px;
   grid-template-columns: 2fr 1.25fr 0.75fr;
-  grid-template-rows: 50px 2fr 1fr 6vh;
+  grid-template-rows: 50px 2fr 1fr 15vh;
   grid-template-areas: "header header header" 
                        "map waypoints waypoints"
                        "map waypoints waypoints" 
@@ -217,6 +223,9 @@ export default {
   padding: 10px;
   border: 1px solid black;
   overflow-y: scroll;
+  height: 12 px;
+  display: grid;
+  grid-template-columns: 40% 60%;
 }
 
 .box2 {

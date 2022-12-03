@@ -1,12 +1,15 @@
 <template>
-<div>
-    <p>Joystick Values</p>
-    <p>left_right: {{joystick_values.left_right}}</p>
-    <p>forward_back: {{joystick_values.forward_back}}</p>
-    <p>twist: {{joystick_values.twist}}</p>
-    <p>dampen: {{joystick_values.dampen}}</p>
-    <p>pan: {{joystick_values.pan}}</p>
-    <p>tilt: {{joystick_values.tilt}}</p>
+<div class = "datagrid">
+    <div>
+        <p style="margin-top:0px;">left_right: {{joystick_values.left_right}}</p>
+        <p>forward_back: {{joystick_values.forward_back}}</p>
+        <p>twist: {{joystick_values.twist}}</p>
+    </div>
+    <div>
+        <p style="margin-top:0px;">dampen: {{joystick_values.dampen}}</p>
+        <p>pan: {{joystick_values.pan}}</p>
+        <p>tilt: {{joystick_values.tilt}}</p>
+    </div>
 </div>
 </template>
 
@@ -56,3 +59,10 @@ export default {
     }
 }
 </script>
+<style scoped>
+.datagrid{
+    display: grid;
+    grid-template-columns: 50% 50%;
+    line-height: 0.5em;
+}
+</style>
