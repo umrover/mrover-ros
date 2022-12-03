@@ -9,6 +9,90 @@ imu_driver:
   baud: 115200
   frame_id: "imu_link"
 
+brushed_motors:
+  controllers:
+    - name: "joint_a"
+      driver_voltage: 36.0
+      motor_max_voltage: 24.0
+      voltage_multiplier: 0.44
+      nucleo: 1
+      channel: 0
+      quad_cpr: -28800.0
+      kP: -0.005
+      kI: -0.0
+      inversion: -1.0
+    - name: "joint_b"
+      driver_voltage: 36.0
+      motor_max_voltage: 12.0
+      nucleo: 1
+      channel: 1
+      quad_cpr: 4096.0
+      kP: -0.1
+      kI: -0.0
+      inversion: 1.0
+    - name: "joint_c"
+      driver_voltage: 36.0
+      motor_max_voltage: 24.0
+      nucleo: 2
+      channel: 0
+      quad_cpr: 136800.0
+      kP: -0.005
+      kI: -0.0
+      inversion: 1.0
+    - name: "joint_d"
+      driver_voltage: 36.0
+      motor_max_voltage: 24.0
+      nucleo: 2
+      channel: 1
+      quad_cpr: 72000.0
+      kP: -0.005
+      kI: -0.0
+      inversion: 1.0
+    - name: "joint_e"
+      driver_voltage: 36.0
+      motor_max_voltage: 24.0
+      nucleo: 3
+      channel: 0
+      quad_cpr: -72000.0
+      kP: -0.005
+      kI: -0.0
+      inversion: 1.0
+    - name: "joint_f"
+      driver_voltage: 36.0
+      motor_max_voltage: 24.0
+      nucleo: 3
+      channel: 1
+      quad_cpr: -2048.0
+      kP: 0.05
+      kI: 0.0
+      inversion: 1.0
+    - name: "finger"
+      driver_voltage: 12.0
+      motor_max_voltage: 12.0
+      nucleo: 3
+      channel: 2
+      inversion: 1.0
+    - name: "gripper"
+      driver_voltage: 12.0
+      motor_max_voltage: 12.0
+      nucleo: 2
+      channel: 2
+      inversion: 1.0
+    - name: "mast_up_down"
+      driver_voltage: 12.0
+      motor_max_voltage: 12.0
+      nucleo: 3
+      channel: 3
+      inversion: -1.0
+    - name: "mast_left_right"
+      driver_voltage: 12.0
+      motor_max_voltage: 12.0
+      nucleo: 2
+      channel: 3
+      inversion: -1.0
+  i2c_device_file: "/dev/i2c-1"
+  test: false
+
 odrive:
   axis:
     left: 0

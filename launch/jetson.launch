@@ -19,6 +19,9 @@
     <rosparam command="load" file="$(find mrover)/config/teleop.yaml"/>
     <node name="jetson_teleop" pkg="mrover" type="jetson_teleop.py"/>
 
+    <!-- brushed motors node-->
+	<node name="brushed_motors" pkg="mrover" type="brushed_motors" output="screen"></node>
+
     <!-- odrive controller node -->
     <node name="odrive_control" pkg="mrover" type="odrive_control.py" output="screen"/>
 
