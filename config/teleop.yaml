@@ -21,17 +21,20 @@ teleop:
     forward_back:
       multiplier: 1
     left_right:
+      # Can be disabled here since left_right axis sucks
+      enabled: 1
       multiplier: 1
     twist:
       multiplier: 0.7
+    
 
   xbox_mappings:
     left_js_x: 0
     left_js_y: 1
-    left_trigger: 6
-    right_trigger: 7
-    right_js_x: 2
-    right_js_y: 3
+    left_trigger: 2
+    right_trigger: 5
+    right_js_x: 3
+    right_js_y: 4
     right_bumper: 5
     left_bumper: 4
     d_pad_up: 12

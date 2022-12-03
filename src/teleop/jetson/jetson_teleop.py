@@ -54,11 +54,17 @@ class Drive:
         # Convert from [0,1] to [0, max_wheel_speed] and apply dampen
         linear *= self.max_wheel_speed * dampen
 
-        angular = deadzone(
-            msg.axes[self.joystick_mappings["left_right"]] * self.drive_config["left_right"]["multiplier"]
-            + msg.axes[self.joystick_mappings["twist"]] * self.drive_config["twist"]["multiplier"],
-            0.05,
+        # Deadzones for each axis
+        left_right = (
+            deadzone(
+                msg.axes[self.joystick_mappings["left_right"]] * self.drive_config["left_right"]["multiplier"], 0.4
+            )
+            if self.drive_config["left_right"]["enabled"]
+            else 0
         )
+        twist = deadzone(msg.axes[self.joystick_mappings["twist"]] * self.drive_config["twist"]["multiplier"], 0.1)
+
+        angular = twist + left_right
 
         # Same as linear but for angular speed
         angular *= self.max_angular_speed * dampen
@@ -97,32 +103,27 @@ class ArmControl:
         )
 
     def ra_control_callback(self, msg):
-        self.ra_cmd.velocity[self.ra_names.index("joint_a")] = self.ra_config["joint_a"]["multiplier"] * quadratic(
-            deadzone(msg.axes[self.xbox_mappings["left_js_x"]], 0.15)
-        )
-        self.ra_cmd.velocity[self.ra_names.index("joint_b")] = self.ra_config["joint_b"]["multiplier"] * quadratic(
-            -deadzone(msg.axes[self.xbox_mappings["left_js_y"]], 0.15)
-        )
-        self.ra_cmd.velocity[self.ra_names.index("joint_c")] = self.ra_config["joint_c"]["multiplier"] * quadratic(
-            -deadzone(msg.axes[self.xbox_mappings["right_js_y"]], 0.15)
-        )
-        self.ra_cmd.velocity[self.ra_names.index("joint_d")] = self.ra_config["joint_d"]["multiplier"] * quadratic(
-            deadzone(msg.axes[self.xbox_mappings["right_js_x"]], 0.15)
-        )
-        self.ra_cmd.velocity[self.ra_names.index("joint_e")] = self.ra_config["joint_e"]["multiplier"] * quadratic(
-            msg.buttons[self.xbox_mappings["right_trigger"]] - msg.buttons[self.xbox_mappings["left_trigger"]]
-        )
-        self.ra_cmd.velocity[self.ra_names.index("joint_f")] = self.ra_config["joint_f"]["multiplier"] * (
-            msg.buttons[self.xbox_mappings["right_bumper"]] - msg.buttons[self.xbox_mappings["left_bumper"]]
-        )
-
-        self.ra_cmd.velocity[self.ra_names.index("finger")] = self.ra_config["finger"]["multiplier"] * (
-            msg.buttons[self.xbox_mappings["y"]] - msg.buttons[self.xbox_mappings["a"]]
-        )
-        self.ra_cmd.velocity[self.ra_names.index("gripper")] = self.ra_config["gripper"]["multiplier"] * (
-            msg.buttons[self.xbox_mappings["b"]] - msg.buttons[self.xbox_mappings["x"]]
-        )
-
+        raw_left_trigger = msg.axes[self.xbox_mappings["left_trigger"]]
+        left_trigger = raw_left_trigger if raw_left_trigger > 0 else 0
+        raw_right_trigger = msg.axes[self.xbox_mappings["right_trigger"]]
+        right_trigger = raw_right_trigger if raw_right_trigger > 0 else 0
+        self.ra_cmd.velocity = [
+            self.ra_config["joint_a"]["multiplier"]
+            * quadratic(deadzone(msg.axes[self.xbox_mappings["left_js_x"]], 0.15)),
+            self.ra_config["joint_b"]["multiplier"]
+            * quadratic(-deadzone(msg.axes[self.xbox_mappings["left_js_y"]], 0.15)),
+            self.ra_config["joint_c"]["multiplier"]
+            * quadratic(-deadzone(msg.axes[self.xbox_mappings["right_js_y"]], 0.15)),
+            self.ra_config["joint_d"]["multiplier"]
+            * quadratic(deadzone(msg.axes[self.xbox_mappings["right_js_x"]], 0.15)),
+            self.ra_config["joint_e"]["multiplier"] * (right_trigger - left_trigger),
+            self.ra_config["joint_f"]["multiplier"]
+            * (msg.buttons[self.xbox_mappings["right_bumper"]] - msg.buttons[self.xbox_mappings["left_bumper"]]),
+            self.ra_config["finger"]["multiplier"]
+            * (msg.buttons[self.xbox_mappings["y"]] - msg.buttons[self.xbox_mappings["a"]]),
+            self.ra_config["gripper"]["multiplier"]
+            * (msg.buttons[self.xbox_mappings["b"]] - msg.buttons[self.xbox_mappings["x"]]),
+        ]
         self.ra_cmd_pub.publish(self.ra_cmd)
 
 
