@@ -27,7 +27,10 @@ export default {
                 dampen: 0,
                 pan: 0,
                 tilt: 0
-            }
+            },
+
+            // Pubs and Subs
+            joystick_sub: null
         }
     },
 

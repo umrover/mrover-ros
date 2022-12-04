@@ -47,13 +47,11 @@
         </div>
         <div class="stats">
           <p>
-            Waypoints Traveled: {{nav_status.completed_wps}}/{{nav_status.total_wps}}<br>
+            Velocity Commands<br>
+            Linear x: {{linear_x}} m/s<br>
+            Angular z: {{angular_z}} rad/s
           </p>
         </div>
-        <!-- TODO: Add back using ros topic data from /joystick -->
-        <!-- <div class="joystick light-bg">
-          <AutonJoystickReading v-bind:AutonDriveControl="AutonDriveControl"/>
-        </div> -->
       </div>
       <div class="box1">
         <h4 class="waypoint-headers">Current Course</h4>
@@ -124,9 +122,13 @@ export default {
       autonButtonColor: "red",
       waitingForNav: false,
 
+      linear_x: 0,
+      angular_z: 0,
+
       //Pubs and Subs
       nav_status_sub: null,
-      course_pub: null
+      course_pub: null,
+      cmd_vel_sub: null
 
     }
   },
@@ -141,6 +143,18 @@ export default {
           ros : this.$ros,
           name : '/auton/enable_state',
           messageType : 'mrover/EnableAuton'
+    }),
+
+    this.cmd_vel_sub = new ROSLIB.Topic({
+          ros : this.$ros,
+          name : 'cmd_vel',
+          messageType : 'geometry_msgs/Twist'
+    }),
+
+    this.cmd_vel_sub.subscribe((msg) => {
+      // Only use linear x and angular z
+      this.linear_x = msg.linear.x
+      this.angular_z = msg.angular.z
     }),
 
     this.nav_status_sub = new ROSLIB.Topic({
@@ -400,11 +414,9 @@ export default {
 
   .datagrid {
       display: grid;
-      grid-gap: 2px;
+      grid-gap: 5%;
       grid-template-columns: 1fr 1fr;
-      grid-template-rows: 1fr 0.25fr;
-      grid-template-areas: "auton-check stats"
-                           "teleop-check joystick";
+      grid-template-areas: "auton-check stats";
       font-family: sans-serif;
       min-height: min-content;
   }
