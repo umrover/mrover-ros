@@ -11,6 +11,7 @@ MAX_DRIVING_EFFORT = rospy.get_param("drive/max_driving_effort", 1)
 MIN_DRIVING_EFFORT = rospy.get_param("drive/min_driving_effort", -1)
 TURNING_P = rospy.get_param("drive/turning_p", 10.0)
 
+
 def get_drive_command(
     target_pos: np.ndarray,
     rover_pose: SE3,

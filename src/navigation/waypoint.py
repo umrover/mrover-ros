@@ -10,8 +10,9 @@ from aenum import Enum, NoAlias
 from state import BaseState
 
 STOP_THRESH = rospy.get_param("waypoint/stop_thresh", 0.5)
-DRIVE_FWD_THRESH = rospy.get_param("waypoint/drive_fwd_thresh", 0.34) # 20 degrees
+DRIVE_FWD_THRESH = rospy.get_param("waypoint/drive_fwd_thresh", 0.34)  # 20 degrees
 NO_FIDUCIAL = rospy.get_param("waypoint/no_fiducial", -1)
+
 
 class WaypointStateTransitions(Enum):
     _settings_ = NoAlias

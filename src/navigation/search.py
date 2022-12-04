@@ -12,7 +12,8 @@ from drive import get_drive_command
 from trajectory import Trajectory
 
 STOP_THRESH = rospy.get_param("search/stop_thresh", 0.2)
-DRIVE_FWD_THRESH = rospy.get_param("search/drive_fwd_thresh", 0.34) # 20 degrees
+DRIVE_FWD_THRESH = rospy.get_param("search/drive_fwd_thresh", 0.34)  # 20 degrees
+
 
 @dataclass
 class SearchTrajectory(Trajectory):
