@@ -1,16 +1,16 @@
 drive:
   max_driving_effort: 1
   min_driving_effort: -1
-  turning_p: 100.0
+  turning_p: 10.0
 
 gate:
   stop_thresh: 0.2
-  drive_fwd_thresh: 0.95
+  drive_fwd_thresh: 0.34
   approach_distance: 2.0
 
 search:
   stop_thresh: 0.2
-  drive_fwd_thresh: 0.95
+  drive_fwd_thresh: 0.34
 
 single_fiducial:
   stop_thresh: 0.7
@@ -18,5 +18,5 @@ single_fiducial:
 
 waypoint:
   stop_thresh: 0.5
-  drive_fwd_thresh: 0.95
+  drive_fwd_thresh: 0.34
   no_fiducial: -1
