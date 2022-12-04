@@ -41,6 +41,7 @@ set(MROVER_MESSAGE_FILES
 set(MROVER_SERVICE_FILES
         FetchMessageFromPackage.srv        
         FetchPackages.srv
+        PublishEnableAuton.srv
         PublishCourse.srv
         )
 
