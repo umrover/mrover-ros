@@ -101,7 +101,7 @@ void FiducialsNode::camInfoCallback(sensor_msgs::CameraInfo::ConstPtr const& msg
 
 void FiducialsNode::handleIgnoreString(std::string const& str) {
     // Ignore fiducials can take comma separated list of individual
-    // Fiducial ids or ranges, eg "1,4,8,9-12,30-40"
+    // Tag ids or ranges, eg "1,4,8,9-12,30-40"
     std::vector<std::string> strs;
     boost::split(strs, str, boost::is_any_of(","));
     for (const std::string& element: strs) {
@@ -151,7 +151,6 @@ FiducialsNode::FiducialsNode() : mNh(), mPnh("~"), mIt(mNh), mTfListener(mTfBuff
 
     int dicNo;
     mPnh.param<bool>("publish_images", mPublishImages, true);
-    mPnh.param<double>("fiducial_len", mFiducialLen, 0.2);
     mPnh.param<int>("dictionary", dicNo, 0);
     mPnh.param<bool>("publish_fiducial_tf", mPublishFiducialTf, true);
     mPnh.param<bool>("verbose", mIsVerbose, false);
@@ -175,11 +174,11 @@ FiducialsNode::FiducialsNode() : mNh(), mPnh("~"), mIt(mNh), mTfListener(mTfBuff
     mConfigServer.setCallback(mCallbackType);
 
     mPnh.param<double>("adaptiveThreshConstant", mDetectorParams->adaptiveThreshConstant, 7);
-    mPnh.param<int>("adaptiveThreshWinSizeMax", mDetectorParams->adaptiveThreshWinSizeMax, 53); /* default 23 */
+    mPnh.param<int>("adaptiveThreshWinSizeMax", mDetectorParams->adaptiveThreshWinSizeMax, 23);
     mPnh.param<int>("adaptiveThreshWinSizeMin", mDetectorParams->adaptiveThreshWinSizeMin, 3);
-    mPnh.param<int>("adaptiveThreshWinSizeStep", mDetectorParams->adaptiveThreshWinSizeStep, 4); /* default 10 */
+    mPnh.param<int>("adaptiveThreshWinSizeStep", mDetectorParams->adaptiveThreshWinSizeStep, 10);
     mPnh.param<int>("cornerRefinementMaxIterations", mDetectorParams->cornerRefinementMaxIterations, 30);
-    mPnh.param<double>("cornerRefinementMinAccuracy", mDetectorParams->cornerRefinementMinAccuracy, 0.01); /* default 0.1 */
+    mPnh.param<double>("cornerRefinementMinAccuracy", mDetectorParams->cornerRefinementMinAccuracy, 0.1);
     mPnh.param<int>("cornerRefinementWinSize", mDetectorParams->cornerRefinementWinSize, 5);
 
     bool doCornerRefinement = true;
@@ -202,12 +201,12 @@ FiducialsNode::FiducialsNode() : mNh(), mPnh("~"), mIt(mNh), mTfListener(mTfBuff
     mPnh.param<double>("maxErroneousBitsInBorderRate", mDetectorParams->maxErroneousBitsInBorderRate, 0.04);
     mPnh.param<int>("minDistanceToBorder", mDetectorParams->minDistanceToBorder, 3);
     mPnh.param<double>("minMarkerDistanceRate", mDetectorParams->minMarkerDistanceRate, 0.05);
-    mPnh.param<double>("minMarkerPerimeterRate", mDetectorParams->minMarkerPerimeterRate, 0.1); /* default 0.3 */
+    mPnh.param<double>("minMarkerPerimeterRate", mDetectorParams->minMarkerPerimeterRate, 0.3);
     mPnh.param<double>("maxMarkerPerimeterRate", mDetectorParams->maxMarkerPerimeterRate, 4.0);
     mPnh.param<double>("minOtsuStdDev", mDetectorParams->minOtsuStdDev, 5.0);
     mPnh.param<double>("perspectiveRemoveIgnoredMarginPerCell", mDetectorParams->perspectiveRemoveIgnoredMarginPerCell, 0.13);
     mPnh.param<int>("perspectiveRemovePixelPerCell", mDetectorParams->perspectiveRemovePixelPerCell, 8);
-    mPnh.param<double>("polygonalApproxAccuracyRate", mDetectorParams->polygonalApproxAccuracyRate, 0.01); /* default 0.05 */
+    mPnh.param<double>("polygonalApproxAccuracyRate", mDetectorParams->polygonalApproxAccuracyRate, 0.08);
 
     mPnh.param<int>("filterCount", mFilterCount, 8);
     mPnh.param<double>("filterProportion", mFilterProportion, 0.75);
@@ -225,13 +224,13 @@ int main(int argc, char** argv) {
     return EXIT_SUCCESS;
 }
 
-void PersistentFiducial::addReading(SE3 const& fidInOdom) {
+void XYZFilter::addReading(SE3 const& fidInOdom) {
     fidInOdomX.push(fidInOdom.positionVector().x());
     fidInOdomY.push(fidInOdom.positionVector().y());
     fidInOdomZ.push(fidInOdom.positionVector().z());
 }
 
-void PersistentFiducial::setFilterParams(size_t count, double proportion) {
+void XYZFilter::setFilterParams(size_t count, double proportion) {
     fidInOdomX.setFilterCount(count);
     fidInOdomX.setProportion(static_cast<float>(proportion));
     fidInOdomY.setFilterCount(count);
@@ -240,6 +239,10 @@ void PersistentFiducial::setFilterParams(size_t count, double proportion) {
     fidInOdomZ.setProportion(static_cast<float>(proportion));
 }
 
-SE3 PersistentFiducial::getFidInOdom() const {
+bool XYZFilter::ready() const {
+    return fidInOdomX.ready();
+}
+
+SE3 XYZFilter::getFidInOdom() const {
     return {{fidInOdomX.get(), fidInOdomY.get(), fidInOdomZ.get()}, Eigen::Quaterniond::Identity()};
 }

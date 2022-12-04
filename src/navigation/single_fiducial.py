@@ -2,6 +2,7 @@ import tf2_ros
 import rospy
 from context import Context
 from drive import get_drive_command
+from aenum import Enum, NoAlias
 from geometry_msgs.msg import Twist
 from waypoint import DRIVE_FWD_THRESH, WaypointState
 
@@ -10,9 +11,17 @@ STOP_THRESH = rospy.get_param("single_fiducial/stop_thresh", 0.7)
 FIDUCIAL_STOP_THRESHOLD = rospy.get_param("single_fiducial/fiducial_stop_threshold", 1.75)
 
 
+class SingleFiducialStateTransitions(Enum):
+    _settings_ = NoAlias
+
+    finished_fiducial = "WaypointState"
+    continue_fiducial_id = "SingleFiducialState"
+    no_fiducial = "SearchState"
+
+
 class SingleFiducialState(WaypointState):
     def __init__(self, context: Context):
-        super().__init__(context, add_outcomes=["waypoint_traverse", "single_fiducial", "search"])
+        super().__init__(context, add_outcomes=[transition.name for transition in SingleFiducialStateTransitions])  # type: ignore
 
     def evaluate(self, ud) -> str:
         """
@@ -28,13 +37,13 @@ class SingleFiducialState(WaypointState):
             cmd_vel = Twist()
             cmd_vel.linear.x = 0.0
             self.context.rover.send_drive_command(cmd_vel)
-            return "search"
+            return SingleFiducialStateTransitions.no_fiducial.name  # type: ignore
 
         try:
             cmd_vel, arrived = get_drive_command(fid_pos, self.context.rover.get_pose(), STOP_THRESH, DRIVE_FWD_THRESH)
             if arrived:
                 self.context.course.increment_waypoint()
-                return "waypoint_traverse"
+                return SingleFiducialStateTransitions.finished_fiducial.name  # type: ignore
             self.context.rover.send_drive_command(cmd_vel)
         except (
             tf2_ros.LookupException,
@@ -44,4 +53,4 @@ class SingleFiducialState(WaypointState):
             # TODO: probably go into some waiting state
             pass
 
-        return "single_fiducial"
+        return SingleFiducialStateTransitions.continue_fiducial_id.name  # type: ignore

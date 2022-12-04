@@ -7,6 +7,7 @@ import numpy as np
 import rospy
 
 from context import Context, Environment
+from aenum import Enum, NoAlias
 from state import BaseState
 from trajectory import Trajectory
 from dataclasses import dataclass
@@ -14,8 +15,7 @@ from drive import get_drive_command
 from util.np_utils import normalized, perpendicular_2d
 
 STOP_THRESH = rospy.get_param("gate/stop_thresh", 0.2)
-DRIVE_FWD_THRESH = rospy.get_param("gate/drive_fwd_thresh", 0.95)
-
+DRIVE_FWD_THRESH = rospy.get_param("gate/drive_fwd_thresh", 0.34) # 20 degrees
 APPROACH_DISTANCE = rospy.get_param("gate/approach_distance", 2.0)
 
 
@@ -76,6 +76,14 @@ class GateTrajectory(Trajectory):
         return GateTrajectory(coordinates)
 
 
+class GateTraverseStateTransitions(Enum):
+    _settings_ = NoAlias
+
+    no_gate = "SearchState"
+    finished_gate = "DoneState"
+    continue_gate_traverse = "GateTraverseState"
+
+
 class GateTraverseState(BaseState):
     def __init__(
         self,
@@ -83,7 +91,7 @@ class GateTraverseState(BaseState):
     ):
         super().__init__(
             context,
-            add_outcomes=["gate_traverse", "search", "done"],
+            add_outcomes=[transition.name for transition in GateTraverseStateTransitions],  # type: ignore
         )
         self.traj: Optional[GateTrajectory] = None
 
@@ -92,7 +100,7 @@ class GateTraverseState(BaseState):
         # waypoint as the previous one. Generate one if not
         gate = self.context.env.current_gate()
         if gate is None:
-            return "search"
+            return GateTraverseStateTransitions.no_gate.name  # type: ignore
         if self.traj is None:
             self.traj = GateTrajectory.spider_gate_trajectory(
                 APPROACH_DISTANCE, gate, self.context.rover.get_pose().position
@@ -111,7 +119,7 @@ class GateTraverseState(BaseState):
             if self.traj.increment_point():
                 self.traj = None
                 self.context.course.increment_waypoint()
-                return "done"
+                return GateTraverseStateTransitions.finished_gate.name  # type: ignore
 
         self.context.rover.send_drive_command(cmd_vel)
-        return "gate_traverse"
+        return GateTraverseStateTransitions.continue_gate_traverse.name  # type: ignore
