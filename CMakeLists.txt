@@ -26,9 +26,12 @@ set(MROVER_MESSAGE_FILES
         CalibrationStatus.msg
         Chassis.msg
         Course.msg
+        Diagnostic.msg
+        DriveStatus.msg
         EnableAuton.msg
         GimbalCmd.msg
         GPSWaypoint.msg
+        MoteusState.msg
         ODriveState.msg
         Waypoint.msg
         WaypointType.msg
@@ -43,6 +46,7 @@ set(MROVER_SERVICE_FILES
 
 # generate messages list
 set(MROVER_ROS_MESSAGES
+        sensor_msgs
         std_msgs
         )
 
@@ -187,6 +191,8 @@ else ()
     macro(add_and_link_macro)
         add_cpp_node_macro(aruco_detect "src/perception/*.cpp")
         target_link_libraries(aruco_detect ${OpenCV_LIBS} ${PCL_LIBRARIES})
+
+        add_cpp_node_macro(brushed_motors "src/esw/brushed_motors/*.cpp")
 
         add_library(differential_drive_plugin_6w src/gazebo/differential_drive_6w.cpp)
         add_dependencies(differential_drive_plugin_6w ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})

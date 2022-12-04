@@ -45,6 +45,9 @@
         <div class="auton-check">
           <AutonModeCheckbox ref="autonCheckbox" v-bind:name="autonButtonText" v-bind:color="autonButtonColor"  v-on:toggle="toggleAutonMode($event)"/>
         </div>
+        <div class="stuck-check">
+          <Checkbox v-on:toggle="roverStuck=!roverStuck" name="Stuck"></Checkbox>
+        </div>
         <div class="stats">
           <p>
             Waypoints Traveled: {{nav_status.completed_wps}}/{{nav_status.total_wps}}<br>
@@ -124,10 +127,13 @@ export default {
       autonButtonColor: "red",
       waitingForNav: false,
 
+      roverStuck: false,
+
       //Pubs and Subs
       nav_status_sub: null,
-      course_pub: null
-
+      course_pub: null,
+      rover_stuck_pub: null
+      
     }
   },
 
@@ -149,6 +155,12 @@ export default {
           messageType : 'smach_msgs/SmachContainerStatus'
     }),
 
+    this.rover_stuck_pub = new ROSLIB.Topic({
+      ros : this.$ros,
+      name : '/rover_stuck',
+      messageType : 'std_msgs/Bool'
+    }),
+    
     this.nav_status_sub.subscribe((msg) => {
       if(msg.active_states[0] != "Off" && !this.autonEnabled){
           return
@@ -189,8 +201,10 @@ export default {
       }
 
       const courseMsg = new ROSLIB.Message(course)
-
+      
       this.course_pub.publish(courseMsg)
+      this.rover_stuck_pub.publish({data: this.roverStuck})
+      
     }, 100));
   },
 
@@ -404,7 +418,7 @@ export default {
       grid-template-columns: 1fr 1fr;
       grid-template-rows: 1fr 0.25fr;
       grid-template-areas: "auton-check stats"
-                           "teleop-check joystick";
+                           "teleop-check stuck-check";
       font-family: sans-serif;
       min-height: min-content;
   }
@@ -432,15 +446,20 @@ export default {
     align-content: center;
     grid-area: auton-check;
   }
-
+  
   .teleop-check{
     align-content: center;
     grid-area: teleop-check;
   }
-
+  
   .stats{
     margin-top: -10px;
     grid-area: stats;
+  }
+  
+  .stuck-check{
+    align-content: center;
+    grid-area: stuck-check;
   }
   
   .joystick{
