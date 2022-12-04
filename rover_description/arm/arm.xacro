@@ -75,12 +75,13 @@
         </joint>
     </xacro:macro>
 
-    <xacro:macro name="gazebo_friction" params="link">
-      <gazebo reference="${link}">
-         <material>Gazebo/White</material>
-         <mu1>0.2</mu1>
-         <mu2>0.2</mu2>
-      </gazebo>
+    <xacro:macro name="gazebo_ref" params="link">
+        <gazebo reference="${link}">
+            <material>Gazebo/White</material>
+            <mu1>0.2</mu1>
+            <mu2>0.2</mu2>
+            <selfCollide>false</selfCollide>
+        </gazebo>
    </xacro:macro>
 
     <xacro:macro name="transmissions" params="name">
@@ -160,13 +161,13 @@
     <xacro:transmissions name="joint_e" />
     <xacro:transmissions name="joint_f" />
 
-    <xacro:gazebo_friction link="chassisToa" />
-    <xacro:gazebo_friction link="aTob" />
-    <xacro:gazebo_friction link="bToc" />
-    <xacro:gazebo_friction link="cTod" />
-    <xacro:gazebo_friction link="dToe" />
-    <xacro:gazebo_friction link="eTof" />
-    <xacro:gazebo_friction link="hand" />
+    <xacro:gazebo_ref link="chassisToa" />
+    <xacro:gazebo_ref link="aTob" />
+    <xacro:gazebo_ref link="bToc" />
+    <xacro:gazebo_ref link="cTod" />
+    <xacro:gazebo_ref link="dToe" />
+    <xacro:gazebo_ref link="eTof" />
+    <xacro:gazebo_ref link="hand" />
 
     <gazebo>
         <plugin name="gazebo_ros_control" filename="libgazebo_ros_control.so" />
