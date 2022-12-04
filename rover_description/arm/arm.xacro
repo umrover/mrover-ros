@@ -101,43 +101,48 @@
         <xacro:link-visual fileName="chassis-a.stl" x="0" y="0" z="0" col="red" r="1" g="0" b="0" />
         <xacro:link-collision-cylinder radius="3.75" x1="0" y1="0" z1="-1.25" x2="0" y2="0" z2="-3.75" />
         <xacro:link-collision-cylinder radius="1.75" x1="-3.6467207" y1="3.6590503" z1="-0.6913988" x2="-3.6467207" y2="3.6590503" z2="-2.6913988" />
-        <xacro:link-inertial mass="2" ixx="0.3" iyy="0.3" izz="0.3" />
+        <!-- calculated based on cylinder1 -->
+        <xacro:link-inertial z="-2.5" mass="0.5" ixx="2.3" iyy="2.3" izz="3.5" />
     </link>
     <link name="aTob">
         <xacro:link-visual fileName="a-b.stl" x="0" y="0" z="0" col="orange" r="1" g="0.43" b="0" />
         <xacro:link-collision-box y="-1.75" z="3" lx="2" ly="3" lz="6" />
         <xacro:link-collision-cylinder radius="2" x1="0" y1="0" z1="-0.25" x2="0" y2="0" z2="0.75" />
-        <xacro:link-inertial mass="2" ixx="0.3" iyy="0.3" izz="0.3" />
+        <!-- box -->
+        <xacro:link-inertial y="-1.75" z="3" mass="0.5" ixx="1.9" iyy="0.7" izz="0.5" />
     </link>
     <link name="bToc">
         <xacro:link-visual fileName="b-c.stl" x="0" y="0" z="0" col="yellow" r="1" g="1" b="0" roll="0"/>
         <xacro:link-collision-box y="12" lx="3" ly="24" lz="3" />
         <xacro:link-collision-cylinder radius="1" x1="0" y1="23" z1="0" x2="5" y2="23" z2="0" />
         <xacro:link-collision-cylinder radius="1" x1="0" y1="0" z1="3.75" x2="0" y2="17" z2="3.75" roll="-0.3"/>
-        <xacro:link-inertial mass="2" ixx="0.3" iyy="0.3" izz="0.3" />
+        <!-- box -->
+        <xacro:link-inertial y="12" mass="0.5" ixx="24" iyy="0.75" izz="24" />
     </link>
     <link name="cTod">
         <xacro:link-visual fileName="c-d-blender.stl" x="0" y="0" z="0" col="green" r="0.43" g="1" b="0"/>
         <xacro:link-collision-cylinder radius="2" x1="3" y1="0" z1="0" x2="-5" y2="0" z2="0" />
-        <xacro:link-inertial mass="2" ixx="0.3" iyy="0.3" izz="0.3" />
+        <xacro:link-inertial x="-1" mass="0.5" ixx="3.2" iyy="3.2" izz="16" />
     </link>
     <link name="dToe">
         <xacro:link-visual fileName="d-e-blender.stl" x="0" y="0" z="0" col="blue" r="0" g="0" b="1"/>
         <xacro:link-collision-box y="-7.6324" z="4.7693" lx="2.5" ly="20" lz="2.5" roll="-0.558505" />
         <xacro:link-collision-box x="1" y="-13.75" z="9.5" lx="3" ly="3" lz="6" roll="-0.558505" />
-        <xacro:link-inertial mass="2" ixx="0.3" iyy="0.3" izz="0.3" />
+        <!-- box1 -->
+        <xacro:link-inertial y="-7.6324" z="4.7693" roll="-0.558505" mass="0.5" ixx="17" iyy="0.5" izz="17" />
     </link>
     <link name="eTof">
         <xacro:link-visual fileName="e-f-blender.stl" x="0" y="0" z="0" col="violet" r="0.5" g="0" b="1" roll="1.67552" />
         <xacro:link-collision-cylinder radius="1" x1="-0.75" y1="0" z1="0" x2="-0.75" y2="0" z2="-6" />
-        <xacro:link-inertial mass="2" ixx="0.3" iyy="0.3" izz="0.3" />
+        <xacro:link-inertial z="-3" mass="0.5" ixx="1.6" iyy="1.6" izz="0.25" />
     </link>
     <link name="hand">
         <xacro:link-visual fileName="hand.stl" x="0" y="0" z="0" col="pink" r="1" g="0" b="1" yaw="${PI}" roll="-1.67552"/>
         <xacro:link-collision-box z="-2.5" lx="7" ly="2" lz="7" />
         <xacro:link-collision-box y="-8" lx="3" ly="2" lz="4" />
         <xacro:link-collision-cylinder radius="0.75" x1="-1.5" y1="0" z1="-0.5" x2="-1.5" y2="-9" z2="-0.5" />
-        <xacro:link-inertial mass="2" ixx="0.3" iyy="0.3" izz="0.3" />
+        <!-- box1 -->
+        <xacro:link-inertial z="-2.5" mass="0.5" ixx="2.2" iyy="4" izz="2.2" />
     </link>
 
     <link name="world" />
