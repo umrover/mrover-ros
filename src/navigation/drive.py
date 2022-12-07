@@ -72,11 +72,10 @@ def get_drive_command(
 
     # we want to drive the angular offset to zero so the error is just 0 - alignment
     error = alignment
-    cmd_vel.angular.z = (
-        np.sign(error) if full_turn_override else np.clip(error * TURNING_P, MIN_DRIVING_EFFORT, MAX_DRIVING_EFFORT)
+    cmd_vel.angular.z = (np.sign(error) if full_turn_override else np.clip(error * TURNING_P, MIN_DRIVING_EFFORT, MAX_DRIVING_EFFORT))
     # getting commanded velocity into the data collection
     rospy.logerr(f"Called make_cmd_vel_obj from drive.py")
     collector.make_cmd_vel_obj(cmd_vel)
-    )
+    
     print(cmd_vel.linear.x, cmd_vel.angular.z)
     return cmd_vel, False

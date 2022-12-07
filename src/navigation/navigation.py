@@ -13,6 +13,7 @@ from single_fiducial import SingleFiducialState, SingleFiducialStateTransitions
 from state import DoneState, DoneStateTransitions
 from waypoint import WaypointState, WaypointStateTransitions
 from search import SearchState, SearchStateTransitions
+from drive import collector
 
 
 class Navigation(threading.Thread):

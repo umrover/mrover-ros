@@ -40,7 +40,7 @@ class Data:
         self.commanded_angular_vel = np.array([0, 0, 0])
         self.actual_linear_vel = np.array([0, 0, 0])
         self.actual_angular_vel = 0
-        self.timestamp = rospy.Time()
+        self.timestamp = rospy.Time().to_sec()
         self.curr_position = np.array([0, 0, 0])
         self.curr_rotation = SO3()
 
@@ -81,13 +81,13 @@ class Data:
             se3_time = context.rover.get_pose_with_time()
             curr_position = se3_time[0].position
             curr_rotation_so3 = se3_time[0].rotation
-            self.timestamp = se3_time[1]
+            self.timestamp = se3_time[1].to_sec()
 
             # curr_position = context.rover.get_pose().position
             # curr_rotation_so3 = context.rover.get_pose().rotation
             self.curr_position = curr_position
             self.curr_rotation = curr_rotation_so3
-            delta_t = (self.timestamp - previous.timestamp).to_sec()
+            delta_t = (self.timestamp - previous.timestamp)
             previous_position = previous.curr_position
             previous_rotation = previous.curr_rotation
             delta_theta = curr_rotation_so3.rot_distance_to(previous_rotation)
