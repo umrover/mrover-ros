@@ -19,12 +19,36 @@
     <div class="box waypoints light-bg">
       <SAWaypointEditor v-bind:odom="odom"/>
     </div>
+    <div class="box light-bg cameras">
+      <!-- <Cameras/> -->
+    </div>
+    <div class="box light-bg drive">
+      <DriveControls/>
+    </div>
+    <div class="box light-bg scoop">
+      <ScoopUV/>
+    </div>
+    <div class="box light-bg arm">
+      <ArmControls/>
+    </div>
+    <div class="box light-bg pdb">
+      <PDBFuse/>
+    </div>
+    <div class="box light-bg driveVel">
+      <DriveVelDataV/>
+    </div>
   </div>
 </template>
 
 <script>
+import ROSLIB from "roslib"
 import SARoverMap from './SARoverMap.vue';
 import SAWaypointEditor from './SAWaypointEditor.vue'
+import DriveControls from "./DriveControls.vue";
+import ScoopUV from "./ScoopUV.vue"
+import ArmControls from "./ArmControls.vue"
+import PDBFuse from "./PDBFuse.vue"
+import DriveVelDataV from "./DriveVelDataV.vue"
 
 
   export default {
@@ -41,9 +65,15 @@ import SAWaypointEditor from './SAWaypointEditor.vue'
 
     components:{
       SARoverMap,
-      SAWaypointEditor
+      SAWaypointEditor,
+      DriveControls,
+      ScoopUV,
+      ArmControls,
+      PDBFuse,
+      DriveVelDataV
     }
   }
+
 </script>
 
 <!-- Add "scoped" attribute to limit CSS to this component only -->
@@ -53,10 +83,14 @@ import SAWaypointEditor from './SAWaypointEditor.vue'
     overflow: hidden;
     min-height: 98vh;
     grid-gap: 10px;
-    grid-template-columns: 85vh auto auto;
-    grid-template-rows: 60px auto;
+    grid-template-columns: 85vh 40vh auto;
+    grid-template-rows: 60px 70vh 20vh auto auto auto;
     grid-template-areas: "header header header"
-                         "map waypoint waypoint";
+                         "map waypoints waypoints"
+                         "cameras cameras drive"
+                         "cameras cameras scoop"
+                         "arm arm driveVel"
+                         "pdb pdb driveVel";
     font-family: sans-serif;
     height: auto;
     width: auto;
@@ -143,13 +177,36 @@ import SAWaypointEditor from './SAWaypointEditor.vue'
   .help:hover ~ .helpscreen, .help:hover ~ .helpimages {
     visibility: visible;
   }
-
-  .cameras {
-    overflow: auto;
-  }
-
   .map {
     grid-area: map;
+  }
+
+  .drive {
+    grid-area: drive;
+  }
+
+  .cameras {
+    grid-area: cameras;
+  }
+
+  .waypoints {
+    grid-area: waypoints;
+  }
+
+  .scoop {
+    grid-area: scoop;
+  }
+
+  .arm {
+    grid-area: arm;
+  }
+
+  .pdb {
+    grid-area: pdb;
+  }
+
+  .driveVel {
+    grid-area: driveVel;
   }
 
   .Joystick {
@@ -167,6 +224,7 @@ import SAWaypointEditor from './SAWaypointEditor.vue'
     height: 40.5%;
     display: block;
   }
+
   ul#vitals li {
     display: inline;
     float: left;

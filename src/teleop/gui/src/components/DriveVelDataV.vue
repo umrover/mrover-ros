@@ -47,7 +47,6 @@
 .wrap {
     display: inline-block;
     align-content: center;
-    /* height: 300px; */
 }
 
 .box {

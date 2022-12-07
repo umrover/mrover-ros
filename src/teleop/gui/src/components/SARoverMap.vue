@@ -98,7 +98,7 @@
                 highlightedWaypoint: "highlightedWaypoint",
             }),
             odomLatLng: function () {
-                return L.latLng(this.odom.latitude_deg + this.odom.latitude_min/60, this.odom.longitude_deg + this.odom.longitude_min/60)
+                return L.latLng(this.odom.latitude_deg, this.odom.longitude_deg)
             },
             polylinePath: function () {
                 return [this.odomLatLng].concat(this.route.map(waypoint => waypoint.latLng))
