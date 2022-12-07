@@ -52,6 +52,7 @@ class EnableService(rospy.ServiceProxy):
                 waypoint.latitude_degrees, waypoint.longitude_degrees, 0.0, self.ref_lat, self.ref_lon, 0.0, deg=True
             )
         )
+        odom[2] = 0
 
         return Waypoint(fiducial_id=waypoint.id, tf_id=f"course{waypoint.id}", type=waypoint.type), SE3(position=odom)
 
