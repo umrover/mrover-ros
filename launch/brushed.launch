@@ -1,0 +1,15 @@
+<!--
+	This launch file is used for testing brushed motors alone.
+ -->
+<launch>
+
+    <!-- params for hardware interfaces including IMU, GPS, and odrives -->
+    <rosparam command="load" file="$(find mrover)/config/esw.yaml"/>
+
+    <!-- teleop node for receiving commands from the gui -->
+    <rosparam command="load" file="$(find mrover)/config/teleop.yaml"/>
+    <node name="jetson_teleop" pkg="mrover" type="jetson_teleop.py"/>
+
+    <!-- brushed motors node-->
+	<node name="brushed_motors" pkg="mrover" type="brushed_motors" output="screen"></node>
+</launch>
