@@ -44,7 +44,7 @@
       <div class="box datagrid">
         <div class="auton-check">
           <AutonModeCheckbox ref="autonCheckbox" v-bind:name="autonButtonText" v-bind:color="autonButtonColor"  v-on:toggle="toggleAutonMode($event)"/>
-          <Checkbox ref="teleopCheckbox" v-bind:name="'Teleop Controls'" v-bind:color="teleopButtonColor" v-on:toggle="toggleTeleopMode($event)"/>
+          <Checkbox ref="teleopCheckbox" v-bind:name="'Teleop Controls'" v-on:toggle="toggleTeleopMode($event)"/>
         </div>
         <div class="stats">
           <p>
@@ -276,7 +276,6 @@ export default {
     toggleTeleopMode: function (val){
       this.teleopEnabledCheck = !this.teleopEnabledCheck
       this.$emit('toggleTeleop', this.teleopEnabledCheck)
-      this.teleopButtonColor = "green"
     },
 
   },
