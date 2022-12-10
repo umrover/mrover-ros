@@ -52,9 +52,9 @@ class EnableService(rospy.ServiceProxy):
                 waypoint.latitude_degrees, waypoint.longitude_degrees, 0.0, self.ref_lat, self.ref_lon, 0.0, deg=True
             )
         )
-        #zero the z-coordinate of the odom because even though the altitudes are set to zero,
-        #two points on a sphere are not going to have the same z coordinate
-        #navigation algorithmns currently require all coordinates to have zero as the z coordinate
+        # zero the z-coordinate of the odom because even though the altitudes are set to zero,
+        # two points on a sphere are not going to have the same z coordinate
+        # navigation algorithmns currently require all coordinates to have zero as the z coordinate
         odom[2] = 0
 
         return Waypoint(fiducial_id=waypoint.id, tf_id=f"course{waypoint.id}", type=waypoint.type), SE3(position=odom)
