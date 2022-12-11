@@ -83,8 +83,6 @@
     </table>
 
 </div>
-
-
 </div>
 </template>
 
@@ -153,7 +151,7 @@ export default {
         }
     },
     props: {
-    name: {
+    JointStateData: {
       type: String,
       required: true
     },
@@ -163,29 +161,20 @@ export default {
         required: true
     }
     },
-
-    created: function () {
-        this.brushless_motors = new ROSLIB.Topic({
-            ros: this.$ros,
-            name: this.name,
-            messageType: 'sensor_msgs/JointState'
-        });
-
-        this.brushless_motors.subscribe((msg) => {
-            const length = msg.velocity.length
-            this.motors = []
-            for (let i = 0; i < length; i++) {
+   
+    watch:  {
+        JointStateData: function(JointStateData){
+        const length = JointStateData.velocity.length
+        this.motors = []
+        for (let i = 0; i < length; i++) {
                 this.motors.push({
-                    name: msg.name[i],
-                    position: msg.position[i],
-                    velocity: msg.velocity[i],
-                    effort: msg.effort[i]
+                name: JointStateData.name[i],
+                position: JointStateData.position[i],
+                velocity: JointStateData.velocity[i],
+                effort: JointStateData.effort[i]
                 })
             }
-
-        })
-
     }
-
+    }
 }
 </script>
