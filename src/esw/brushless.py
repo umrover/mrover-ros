@@ -258,6 +258,7 @@ class MotorsManager:
         """
         previously_lost_communication = True
         while not rospy.is_shutdown():
+            await asyncio.sleep(0)  # Causes a task switch
             for name, bridge in self._motor_bridge_by_name.items():
                 time_diff_since_updated = t.time() - self._last_updated_time
                 lost_communication = (
