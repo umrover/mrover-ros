@@ -15,6 +15,7 @@ from mrover.srv import (
 primary_cameras = [CameraCmd(), CameraCmd(), CameraCmd(), CameraCmd()]
 secondary_cameras = [CameraCmd(), CameraCmd(), CameraCmd(), CameraCmd()]
 
+
 def handle_change_cameras(req: ChangeCamerasRequest) -> ChangeCamerasResponse:
 
     global primary_cameras, secondary_cameras
@@ -27,6 +28,7 @@ def handle_change_cameras(req: ChangeCamerasRequest) -> ChangeCamerasResponse:
     response = ChangeCamerasResponse(primary_cameras, secondary_cameras)
 
     return response
+
 
 def main():
     rospy.init_node("cameras")

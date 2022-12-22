@@ -66,9 +66,7 @@ class VideoDevices:
                         self.output_by_endpoint[other_endpoint] = jetson.utils.videoOutput(
                             f"rtp://{other_endpoint}", argv=args
                         )
-                    self.output_by_endpoint[endpoint] = jetson.utils.videoOutput(
-                        f"rtp://{endpoint}", argv=args
-                    )
+                    self.output_by_endpoint[endpoint] = jetson.utils.videoOutput(f"rtp://{endpoint}", argv=args)
                     self.resolution = args
                 except Exception:
                     rospy.logerr(f"Failed to create video source for device {self.device}.")
@@ -81,7 +79,7 @@ class VideoDevices:
                 # If same args, just create a new output
                 self.output_by_endpoint[endpoint] = jetson.utils.videoOutput(f"rtp://{endpoint}", argv=args)
 
-    def _is_streaming(self) -> bool:
+    def is_streaming(self) -> bool:
         """
         Returns if streaming or not
         :return: a bool if streaming
@@ -182,10 +180,10 @@ class StreamingManager:
 
             if requested_device == -1:
                 # this means that there was previously a device, but now we don't want the device to be streamed
-                assert self._video_devices[previous_device].video_source is not None
+                assert self._video_devices[previous_device].is_streaming()
                 self._video_devices[previous_device].remove_endpoint(endpoint)
                 self._services[service_index][stream].device = -1
-                currently_is_no_video_source = self._video_devices[previous_device].video_source is None
+                currently_is_no_video_source = not self._video_devices[previous_device].is_streaming()
                 if currently_is_no_video_source:
                     self._active_devices -= 1
 
@@ -218,7 +216,7 @@ class StreamingManager:
 
                 # create a new stream
                 previously_no_video_source = (
-                    previous_device == -1 and self._video_devices[requested_device].video_source is None
+                    previous_device == -1 and not self._video_devices[requested_device].is_streaming()
                 )
 
                 if previous_device != -1:
@@ -226,7 +224,7 @@ class StreamingManager:
                 self._video_devices[requested_device].create_stream(
                     endpoint, self._resolution_args[requested_resolution]
                 )
-                currently_is_video_source = self._video_devices[requested_device].video_source is not None
+                currently_is_video_source = self._video_devices[requested_device].is_streaming()
                 self._services[service_index][stream].device = requested_device if currently_is_video_source else -1
 
                 if previously_no_video_source and currently_is_video_source:
@@ -266,7 +264,7 @@ class StreamingManager:
         :param device: The integer ID of the device to be closed.
         """
         self._device_lock.acquire()
-        previously_was_video_source = self._video_devices[device].video_source is not None
+        previously_was_video_source = self._video_devices[device].is_streaming()
         while len(self._video_devices[device].output_by_endpoint.keys()) != 0:
             endpoint = list(self._video_devices[device].output_by_endpoint.keys())[0]
             self._video_devices[device].remove_endpoint(endpoint)
