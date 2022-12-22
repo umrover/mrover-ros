@@ -12,16 +12,16 @@ from mrover.srv import (
     ChangeCamerasResponse,
 )
 
-# import jetson.utils
+import jetson.utils
 
 
 class VideoDevices:
 
     device: int
     resolution: List[str]
-    # video_source: jetson.utils.videoSource
+    video_source: jetson.utils.videoSource
     # Screens video source is displayed on
-    # output_by_endpoint: Dict[str, jetson.utils.videoOutput]
+    output_by_endpoint: Dict[str, jetson.utils.videoOutput]
 
     def __init__(self, device: int):
         self.resolution = []
@@ -49,8 +49,8 @@ class VideoDevices:
         if self._is_streaming():
             # If it does not exist already
             try:
-                self.video_source = None  # jetson.utils.videoSource(f"/dev/video{self.device}", argv=args)
-                self.output_by_endpoint[endpoint] = None  # jetson.utils.videoOutput(f"rtp://{endpoint}", argv=args)
+                self.video_source = jetson.utils.videoSource(f"/dev/video{self.device}", argv=args)
+                self.output_by_endpoint[endpoint] = jetson.utils.videoOutput(f"rtp://{endpoint}", argv=args)
                 self.resolution = args
             except Exception:
                 rospy.logerr(f"Failed to create video source for device {self.device}.")
@@ -61,14 +61,14 @@ class VideoDevices:
             if self.resolution != args:
                 # If different args, just recreate video source and every output
                 try:
-                    self.video_source = None  # jetson.utils.videoSource(f"/dev/video{self.device}", argv=args)
+                    self.video_source = jetson.utils.videoSource(f"/dev/video{self.device}", argv=args)
                     for other_endpoint in self.output_by_endpoint.values():
-                        self.output_by_endpoint[other_endpoint] = None  # jetson.utils.videoOutput(
-                        #     f"rtp://{other_endpoint}", argv=args
-                        # )
-                    self.output_by_endpoint[endpoint] = None  # jetson.utils.videoOutput(
-                    #     f"rtp://{endpoint}", argv=args
-                    # )
+                        self.output_by_endpoint[other_endpoint] = jetson.utils.videoOutput(
+                            f"rtp://{other_endpoint}", argv=args
+                        )
+                    self.output_by_endpoint[endpoint] = jetson.utils.videoOutput(
+                        f"rtp://{endpoint}", argv=args
+                    )
                     self.resolution = args
                 except Exception:
                     rospy.logerr(f"Failed to create video source for device {self.device}.")
@@ -79,7 +79,7 @@ class VideoDevices:
                     return
 
                 # If same args, just create a new output
-                self.output_by_endpoint[endpoint] = None  # jetson.utils.videoOutput(f"rtp://{endpoint}", argv=args)
+                self.output_by_endpoint[endpoint] = jetson.utils.videoOutput(f"rtp://{endpoint}", argv=args)
 
     def _is_streaming(self) -> bool:
         """
@@ -248,8 +248,7 @@ class StreamingManager:
                 continue
             try:
                 # TODO - See if timeout=100 is fine. We have tested with 15,000.
-                image = None  # video_device.video_source.Capture(timeout=100)
-                print(f"Capturing image at index {index}")
+                image = video_device.video_source.Capture(timeout=100)
             except Exception:
                 # TODO - figure out what this timeout is
                 # TODO - See if this works: Instead of closing, just ignore
@@ -258,8 +257,7 @@ class StreamingManager:
                 # rospy.logerr(f"Camera {index} capture failed. Stopping stream(s).")
                 # self._close_down_device(index)
             for output in video_device.output_by_endpoint.values():
-                # output.Render(image)
-                print(f"Rendering image at index {index}")
+                output.Render(image)
         self._device_lock.release()
 
     def _close_down_device(self, device: int) -> None:
