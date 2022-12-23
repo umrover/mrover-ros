@@ -46,7 +46,7 @@ class VideoDevices:
         :param endpoint: the endpoint (e.g. 10.0.0.7:5000)
         :param args: a list of strings that are the arguments
         """
-        if self._is_streaming():
+        if self.is_streaming():
             # If it does not exist already
             try:
                 self.video_source = jetson.utils.videoSource(f"/dev/video{self.device}", argv=args)
@@ -242,38 +242,39 @@ class StreamingManager:
         """
         self._device_lock.acquire()
         for index, video_device in enumerate(self._video_devices):
-            if video_device.video_source is None:
-                continue
-            try:
-                # TODO - See if timeout=100 is fine. We have tested with 15,000.
-                image = video_device.video_source.Capture(timeout=100)
-            except Exception:
-                # TODO - figure out what this timeout is
-                # TODO - See if this works: Instead of closing, just ignore
-                rospy.logerr(f"Camera {index} capture failed. Will still try to attempt to stream.")
-                pass
-                # rospy.logerr(f"Camera {index} capture failed. Stopping stream(s).")
-                # self._close_down_device(index)
-            for output in video_device.output_by_endpoint.values():
-                output.Render(image)
+            if video_device.is_streaming():
+                try:
+                    # TODO - See if timeout=100 is fine. We have tested with 15,000.
+                    image = video_device.video_source.Capture(timeout=100)
+                    for output in video_device.output_by_endpoint.values():
+                        output.Render(image)
+                except Exception as e:
+                    rospy.logerr(f"Error encountered: {e}")
+                    # TODO - figure out what the exception is
+                    # TODO - See if this works: Instead of closing, just ignore
+                    rospy.logerr(f"Camera {index} capture failed. Will still try to attempt to stream.")
+                    # rospy.logerr(f"Camera {index} capture failed. Stopping stream(s).")
+                    # self._close_down_device(index)
         self._device_lock.release()
 
-    def _close_down_device(self, device: int) -> None:
+    def _close_down_all_streams_of_device(self, device: int) -> None:
         """
-        Closes down a video device. Usually called if a device crashes while streaming
+        Closes down a video device. Usually called if a device crashes while streaming.
+        Must make sure that the device lock is locked.
         :param device: The integer ID of the device to be closed.
         """
-        self._device_lock.acquire()
+        assert self._device_lock.locked(), "self._device_lock must be locked first."
         previously_was_video_source = self._video_devices[device].is_streaming()
+        assert (
+            previously_was_video_source
+        ), "_close_down_all_streams_of_device should only be called if a streamed device failed"
         while len(self._video_devices[device].output_by_endpoint.keys()) != 0:
             endpoint = list(self._video_devices[device].output_by_endpoint.keys())[0]
             self._video_devices[device].remove_endpoint(endpoint)
             service, stream = self._service_streams_by_endpoints[endpoint]
             self._services[service][stream].device = -1
-        currently_is_no_video_source = self._video_devices[device].video_source is None
-        if previously_was_video_source and currently_is_no_video_source:
-            self._active_devices -= 1
-        self._device_lock.release()
+        assert self._video_devices[device].video_source is None, "The video source should be None by now"
+        self._active_devices -= 1
 
 
 def main():
