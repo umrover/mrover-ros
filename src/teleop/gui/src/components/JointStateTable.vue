@@ -1,5 +1,6 @@
 <template>
 <div class="wrap">
+<div v-if="vertical">
     <div>
         <h3> Motor Data </h3>
     </div>
@@ -39,7 +40,49 @@
             </tr>
         </tbody>
     </table>
+</div>
 
+<div v-else>
+    <div>
+        <h3> Motor Data </h3>
+    </div>
+    <table class="tableFormat" style="undefined;table-layout: fixed; width: 745px">
+        <colgroup>
+            <col style="width: 85px">
+            <col style="width: 60px">
+            <col style="width: 75px">
+            <col style="width: 85px">
+            <col style="width: 60px">
+            <col style="width: 75px">
+            <col style="width: 85px">
+            <col style="width: 60px">
+            <col style="width: 75px">
+            <col style="width: 85px">
+        </colgroup>
+
+        <thead>
+
+            <tr class="Bold">
+                <th class="tableElement">Motor</th>
+                <th v-for="motor in motors" class="tableElement">{{motor.name}}</th>
+            </tr>
+            <tr class="Bold">
+                <th class="tableElement">Position (m)</th>
+                <td v-for="motor in motors" class="tableElement">{{motor.position}} </td>
+            </tr>
+            <tr class="Bold">
+                <th class="tableElement">Velocity (m/s)</th>
+                <td v-for="motor in motors" class="tableElement">{{motor.velocity}} </td>
+            </tr>
+            <tr class="Bold">
+                <th class="tableElement">Effort (Nm)</th>
+                <td v-for="motor in motors" class="tableElement">{{motor.effort}} </td>
+            </tr>
+        </thead>
+
+    </table>
+
+</div>
 </div>
 </template>
 
@@ -107,29 +150,31 @@ export default {
 
         }
     },
+    props: {
+    JointStateData: {
+      type: String,
+      required: true
+    },
 
-    created: function () {
-        this.brushless_motors = new ROSLIB.Topic({
-            ros: this.$ros,
-            name: '/drive_data',
-            messageType: 'sensor_msgs/JointState'
-        });
-
-        this.brushless_motors.subscribe((msg) => {
-            const length = msg.velocity.length
-            this.motors = []
-            for (let i = 0; i < length; i++) {
+    vertical: {
+        type: Boolean,
+        required: true
+    }
+    },
+   
+    watch:  {
+        JointStateData: function(JointStateData){
+        const length = JointStateData.velocity.length
+        this.motors = []
+        for (let i = 0; i < length; i++) {
                 this.motors.push({
-                    name: msg.name[i],
-                    position: msg.position[i],
-                    velocity: msg.velocity[i],
-                    effort: msg.effort[i]
+                name: JointStateData.name[i],
+                position: JointStateData.position[i],
+                velocity: JointStateData.velocity[i],
+                effort: JointStateData.effort[i]
                 })
             }
-
-        })
-
     }
-
+    }
 }
 </script>
