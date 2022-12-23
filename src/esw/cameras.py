@@ -150,6 +150,8 @@ class StreamingManager:
         :param req: Has information on the requested devices and resolutions for the four streams of a device.
         :return: The processed devices and resolutions for the four streams of the primary and secondary laptops.
         """
+        # TODO - This function is a bit long. Try to make this shorter.
+
         self._device_lock.acquire()
         camera_commands = req.camera_cmds
 
@@ -268,7 +270,7 @@ class StreamingManager:
         assert (
             previously_was_video_source
         ), "_close_down_all_streams_of_device should only be called if a streamed device failed"
-        while len(self._video_devices[device].output_by_endpoint.keys()) != 0:
+        while not self._video_devices[device].output_by_endpoint.keys().empty():
             endpoint = list(self._video_devices[device].output_by_endpoint.keys())[0]
             self._video_devices[device].remove_endpoint(endpoint)
             service, stream = self._service_streams_by_endpoints[endpoint]
