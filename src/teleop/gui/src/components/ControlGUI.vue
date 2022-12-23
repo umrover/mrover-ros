@@ -10,6 +10,7 @@
 </template>
 
 <script>
+import ROSLIB from "roslib"
 import DriveControls from './DriveControls.vue';
 import ArmControls from './ArmControls.vue';
 import GimbalControls from './GimbalControls.vue';
@@ -35,7 +36,7 @@ export default {
         this.brushless_motors = new ROSLIB.Topic({
             ros: this.$ros,
             name: 'drive_status',
-            messageType: 'mrover/DriveStatus'
+            messageType: 'mrover/MotorsStatus'
         });
 
         this.brushless_motors.subscribe((msg) => {
