@@ -94,27 +94,6 @@ class VideoDevices:
             assert False
 
 
-def sort_camera_commands_by_resolution(camera_commands: List[CameraCmd]) -> CameraCmd:
-    """
-    Sorts a list of camera commands by resolution. Also checks for invalid requested devices and resolutions
-    :param camera_commands: The list of camera commands to be sorted
-    :return: The sorted list of camera commands
-    """
-    # TODO - test this code in a testbench
-    # If two or more requests ask for same video source in different resolution,
-    # all requests' resolution get set to the one with the lowest resolution. nlogn + n, but n ~ 4
-    requests: List[Tuple[int, str, int]] = [
-        (camera_cmd.device, camera_cmd.resolution, stream) for stream, camera_cmd in enumerate(camera_commands)
-    ]
-
-    requests = sorted(requests, key=lambda x: (x[0], x[1]))
-    for i in range(1, len(requests)):
-        if requests[i][0] == requests[i - 1][0] and requests[i][0] != -1:
-            camera_commands[requests[i][2]].resolution = requests[i - 1][1]
-
-    return camera_commands
-
-
 class StreamingManager:
 
     _services: List[List[CameraCmd]]
@@ -183,20 +162,12 @@ class StreamingManager:
 
         # 1. Sort the vector based on resolutions
 
-        camera_commands = sort_camera_commands_by_resolution(camera_commands)
+        camera_commands = self._sort_camera_commands_by_resolution_and_error_check(camera_commands)
         # Only care about turning off streams in first iteration
         for stream, camera_cmd in enumerate(camera_commands):
             endpoint = endpoints[stream]
             requested_device = camera_cmd.device
-            if requested_device >= len(self._video_devices):
-                rospy.logerr(f"Request device {requested_device} invalid. Treating as no device instead.")
-                requested_device = -1
             requested_resolution = camera_cmd.resolution
-            if requested_resolution >= len(self._resolution_args):
-                rospy.logerr(
-                    f"Request resolution {requested_resolution} invalid. Treating as lowest resolution instead."
-                )
-                requested_resolution = 0
 
             previous_device = self._services[service_index][stream].device
             # skip if device is the same, already closed, or a different resolution
@@ -288,13 +259,43 @@ class StreamingManager:
         assert (
             previously_was_video_source
         ), "_close_down_all_streams_of_device should only be called if a streamed device failed"
-        while not self._video_devices[device].output_by_endpoint.keys().empty():
+        while len(self._video_devices[device].output_by_endpoint.keys()) != 0:
             endpoint = list(self._video_devices[device].output_by_endpoint.keys())[0]
             self._video_devices[device].remove_endpoint(endpoint)
             service, stream = self._service_streams_by_endpoints[endpoint]
             self._services[service][stream].device = -1
         assert self._video_devices[device].video_source is None, "The video source should be None by now"
         self._active_devices -= 1
+
+    def _sort_camera_commands_by_resolution_and_error_check(self, camera_commands: List[CameraCmd]) -> CameraCmd:
+        """
+        Sorts a list of camera commands by resolution. Also checks for invalid requested devices and resolutions
+        :param camera_commands: The list of camera commands to be sorted
+        :return: The sorted list of camera commands
+        """
+        # If two or more requests ask for same video source in different resolution,
+        # all requests' resolution get set to the one with the lowest resolution. nlogn + n, but n ~ 4
+
+        for stream, camera_cmd in enumerate(camera_commands):
+            if camera_cmd.device >= len(self._video_devices):
+                rospy.logerr(f"Request device {camera_cmd.device} invalid. Treating as no device instead.")
+                camera_cmd.device = -1
+            if camera_cmd.resolution >= len(self._resolution_args):
+                rospy.logerr(
+                    f"Request resolution {camera_cmd.resolution} invalid. Treating as lowest resolution instead."
+                )
+                camera_cmd.resolution = 0
+
+        requests: List[Tuple[int, str, int]] = [
+            (camera_cmd.device, camera_cmd.resolution, stream) for stream, camera_cmd in enumerate(camera_commands)
+        ]
+
+        requests = sorted(requests, key=lambda x: (x[0], x[1]))
+        for i in range(1, len(requests)):
+            if requests[i][0] == requests[i - 1][0] and requests[i][0] != -1:
+                camera_commands[requests[i][2]].resolution = requests[i - 1][1]
+
+        return camera_commands
 
 
 def main():
