@@ -150,76 +150,22 @@ class StreamingManager:
         :param req: Has information on the requested devices and resolutions for the four streams of a device.
         :return: The processed devices and resolutions for the four streams of the primary and secondary laptops.
         """
-        # TODO - This function is a bit long. Try to make this shorter.
+        #   This function may not be as fast as desired. For example, if previously there was a device
+        #   streaming camera 3, but then it does not want 3, but then another stream wants three, then you will
+        #   end up turning it off and turning it back on for no reason (could have just swapped streams instead).
+        #   A better implementation would prioritize requests that share the same camera as previously.
+        #   However, we can expect this program to only change one device at a time, so it is actually fine.
 
         self._device_lock.acquire()
         camera_commands = req.camera_cmds
 
-        service_index = 0 if req.primary else 1
-        endpoints = self._endpoints[0:4] if req.primary else self._endpoints[4:8]
-
-        requests: List[Tuple[int, str, int]] = []
-
-        # 1. Sort the vector based on resolutions
+        # 1. Sort the vector based on resolutions and also error check if out of bounds device/resolution
+        # 2. Turn off all streams (we turn off first in order to not accidentally create too many devices)
+        # 3. After turning off streams, then you can turn on
 
         camera_commands = self._sort_camera_commands_by_resolution_and_error_check(camera_commands)
-        # Only care about turning off streams in first iteration
-        for stream, camera_cmd in enumerate(camera_commands):
-            endpoint = endpoints[stream]
-            requested_device = camera_cmd.device
-            requested_resolution = camera_cmd.resolution
-
-            previous_device = self._services[service_index][stream].device
-            # skip if device is the same, already closed, or a different resolution
-            if previous_device == requested_device:
-                if previous_device == -1 or (
-                    requested_device != -1 and requested_resolution == self._video_devices[requested_device].resolution
-                ):
-                    continue
-
-            if requested_device == -1:
-                # this means that there was previously a device, but now we don't want the device to be streamed
-                assert self._video_devices[previous_device].is_streaming()
-                self._video_devices[previous_device].remove_endpoint(endpoint)
-                self._services[service_index][stream].device = -1
-                currently_is_no_video_source = not self._video_devices[previous_device].is_streaming()
-                if currently_is_no_video_source:
-                    self._active_devices -= 1
-
-        # after turning off streams, then you can turn on
-        for stream, camera_cmd in enumerate(camera_commands):
-            endpoint = endpoints[stream]
-            requested_device = camera_cmd.device
-            requested_resolution = camera_cmd.resolution
-
-            previous_device = self._services[service_index][stream].device
-            # skip if previous and current requests are -1 or same resolution
-            if previous_device == requested_device:
-                if previous_device == -1 or (
-                    requested_device != -1 and requested_resolution == self._video_devices[requested_device].resolution
-                ):
-                    continue
-
-            if requested_device != -1:
-                if self._active_devices == self._max_devices and previous_device == -1:
-                    # can not add more than four devices. just continue.
-                    continue
-
-                # create a new stream
-                previously_no_video_source = (
-                    previous_device == -1 and not self._video_devices[requested_device].is_streaming()
-                )
-
-                if previous_device != -1:
-                    self._video_devices[previous_device].remove_endpoint(endpoint)
-                self._video_devices[requested_device].create_stream(
-                    endpoint, self._resolution_args[requested_resolution]
-                )
-                currently_is_video_source = self._video_devices[requested_device].is_streaming()
-                self._services[service_index][stream].device = requested_device if currently_is_video_source else -1
-
-                if previously_no_video_source and currently_is_video_source:
-                    self._active_devices += 1
+        self._turn_off_streams_based_on_camera_cmd(camera_commands, req.primary)
+        self._turn_on_streams_based_on_camera_cmd(camera_commands, req.primary)
 
         response = ChangeCamerasResponse(self._services[0], self._services[1])
 
@@ -276,6 +222,14 @@ class StreamingManager:
         # If two or more requests ask for same video source in different resolution,
         # all requests' resolution get set to the one with the lowest resolution. nlogn + n, but n ~ 4
 
+        # TODO - this function does not actually behave properly.
+        #   e.g. When running this function with the following, you get the wrong output:
+        #   Input: my_list = [CameraCmd(0, 0), CameraCmd(0, 1), CameraCmd(0, 2), CameraCmd(0, 3)]
+        #   Expected Output: output = [CameraCmd(0, 0), CameraCmd(0, 0), CameraCmd(0, 0), CameraCmd(0, 0)]
+        #   Actual Output: output = [CameraCmd(0, 0), CameraCmd(0, 0), CameraCmd(0, 1), CameraCmd(0, 2)]
+
+        assert self._device_lock.locked(), "self._device_lock must be locked first."
+
         for stream, camera_cmd in enumerate(camera_commands):
             if camera_cmd.device >= len(self._video_devices):
                 rospy.logerr(f"Request device {camera_cmd.device} invalid. Treating as no device instead.")
@@ -296,6 +250,89 @@ class StreamingManager:
                 camera_commands[requests[i][2]].resolution = requests[i - 1][1]
 
         return camera_commands
+
+    def _turn_off_streams_based_on_camera_cmd(
+        self, camera_commands: List[CameraCmd], is_req_for_primary_stream: bool
+    ) -> None:
+        """
+        Turns off streams based on camera cmd
+        :param camera_commands: List of CameraCmd which show request
+        :param is_req_for_primary_stream: A bool representing if this is a request for primary laptop or not
+        """
+
+        service_index = 0 if is_req_for_primary_stream else 1
+        endpoints = self._endpoints[0:4] if is_req_for_primary_stream else self._endpoints[4:8]
+
+        assert self._device_lock.locked(), "self._device_lock must be locked first."
+
+        for stream, camera_cmd in enumerate(camera_commands):
+            endpoint = endpoints[stream]
+            requested_device = camera_cmd.device
+            requested_resolution = camera_cmd.resolution
+
+            previous_device = self._services[service_index][stream].device
+            # skip if device is the same, already closed, or a different resolution
+            if previous_device == requested_device:
+                if previous_device == -1 or (
+                    requested_device != -1 and requested_resolution == self._video_devices[requested_device].resolution
+                ):
+                    continue
+
+            if requested_device == -1:
+                # this means that there was previously a device, but now we don't want the device to be streamed
+                assert self._video_devices[previous_device].is_streaming()
+                self._video_devices[previous_device].remove_endpoint(endpoint)
+                self._services[service_index][stream].device = -1
+                currently_is_no_video_source = not self._video_devices[previous_device].is_streaming()
+                if currently_is_no_video_source:
+                    self._active_devices -= 1
+
+    def _turn_on_streams_based_on_camera_cmd(
+        self, camera_commands: List[CameraCmd], is_req_for_primary_stream: bool
+    ) -> None:
+        """
+        Turns on streams based on camera cmd
+        :param camera_commands: List of CameraCmd which show request
+        :param is_req_for_primary_stream: A bool representing if this is a request for primary laptop or not
+        """
+        service_index = 0 if is_req_for_primary_stream else 1
+        endpoints = self._endpoints[0:4] if is_req_for_primary_stream else self._endpoints[4:8]
+
+        assert self._device_lock.locked(), "self._device_lock must be locked first."
+
+        for stream, camera_cmd in enumerate(camera_commands):
+            endpoint = endpoints[stream]
+            requested_device = camera_cmd.device
+            requested_resolution = camera_cmd.resolution
+
+            previous_device = self._services[service_index][stream].device
+            # skip if previous and current requests are -1 or same resolution
+            if previous_device == requested_device:
+                if previous_device == -1 or (
+                    requested_device != -1 and requested_resolution == self._video_devices[requested_device].resolution
+                ):
+                    continue
+
+            if requested_device != -1:
+                if self._active_devices == self._max_devices and previous_device == -1:
+                    # can not add more than four devices. just continue.
+                    continue
+
+                # create a new stream
+                previously_no_video_source = (
+                    previous_device == -1 and not self._video_devices[requested_device].is_streaming()
+                )
+
+                if previous_device != -1:
+                    self._video_devices[previous_device].remove_endpoint(endpoint)
+                self._video_devices[requested_device].create_stream(
+                    endpoint, self._resolution_args[requested_resolution]
+                )
+                currently_is_video_source = self._video_devices[requested_device].is_streaming()
+                self._services[service_index][stream].device = requested_device if currently_is_video_source else -1
+
+                if previously_no_video_source and currently_is_video_source:
+                    self._active_devices += 1
 
 
 def main():
