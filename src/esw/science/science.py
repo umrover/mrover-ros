@@ -65,13 +65,10 @@ class ScienceBridge:
 
     def __init__(self) -> None:
         self._id_by_color = rospy.get_param("science/color_ids")
-        self._mosfet_number_by_device_name = rospy.get_param(
-            "science/device_mosfet_numbers")
+        self._mosfet_number_by_device_name = rospy.get_param("science/device_mosfet_numbers")
         self._num_diag_current = rospy.get_param("/science/info/diag_current")
-        self._num_diag_thermistors = rospy.get_param(
-            "/science/info/diag_thermistors")
-        self._num_science_thermistors = rospy.get_param(
-            "/science/info/science_thermistors")
+        self._num_diag_thermistors = rospy.get_param("/science/info/diag_thermistors")
+        self._num_science_thermistors = rospy.get_param("/science/info/science_thermistors")
         self._num_spectral = rospy.get_param("/science/info/spectral")
         self._handler_function_by_tag = {
             "AUTO_SHUTOFF": self._heater_auto_shutoff_handler,
@@ -88,8 +85,7 @@ class ScienceBridge:
             "SPECTRAL": rospy.Publisher("science_data/spectral", Spectral, queue_size=1),
         }
         self._sleep = rospy.get_param("science/info/sleep")
-        self._uart_transmit_msg_len = rospy.get_param(
-            "science/info/uart_transmit_msg_len")
+        self._uart_transmit_msg_len = rospy.get_param("science/info/uart_transmit_msg_len")
         self._uart_lock = threading.Lock()
 
         # Opens a serial connection to the STM32 chip
@@ -265,8 +261,7 @@ class ScienceBridge:
         for i in range(self._num_diag_current):
             current_values.append(arr[self._num_diag_thermistors + i + 1])
 
-        ros_msg = Diagnostic(
-            temperatures=temperature_values, currents=current_values)
+        ros_msg = Diagnostic(temperatures=temperature_values, currents=current_values)
         self._publisher_by_tag[arr[0][3:]].publish(ros_msg)
 
     def _format_mosfet_msg(self, device: int, enable: bool) -> str:
@@ -444,23 +439,14 @@ class ScienceBridge:
 def main():
     rospy.init_node("science")
     bridge = ScienceBridge()
-    rospy.Service("change_arm_laser_state", ChangeDeviceState,
-                  bridge.handle_change_arm_laser_state)
-    rospy.Service("change_auton_led_state", ChangeAutonLEDState,
-                  bridge.handle_change_auton_led_state)
-    rospy.Service(
-        "change_heater_auto_shutoff_state", ChangeDeviceState, bridge.handle_change_heater_auto_shutoff_state
-    )
-    rospy.Service("change_heater_state", ChangeHeaterState,
-                  bridge.handle_change_heater_state)
-    rospy.Service("change_servo_angles", ChangeServoAngle,
-                  bridge.handle_change_servo_angles)
-    rospy.Service("change_uv_led_carousel_state", ChangeDeviceState,
-                  bridge.handle_change_uv_led_carousel_state)
-    rospy.Service("change_uv_led_end_effector_state", ChangeDeviceState,
-                  bridge.handle_change_uv_led_end_effector_state)
-    rospy.Service("change_white_led_state", ChangeDeviceState,
-                  bridge.handle_change_white_led_state)
+    rospy.Service("change_arm_laser_state", ChangeDeviceState, bridge.handle_change_arm_laser_state)
+    rospy.Service("change_auton_led_state", ChangeAutonLEDState, bridge.handle_change_auton_led_state)
+    rospy.Service("change_heater_auto_shutoff_state", ChangeDeviceState, bridge.handle_change_heater_auto_shutoff_state)
+    rospy.Service("change_heater_state", ChangeHeaterState, bridge.handle_change_heater_state)
+    rospy.Service("change_servo_angles", ChangeServoAngle, bridge.handle_change_servo_angles)
+    rospy.Service("change_uv_led_carousel_state", ChangeDeviceState, bridge.handle_change_uv_led_carousel_state)
+    rospy.Service("change_uv_led_end_effector_state", ChangeDeviceState, bridge.handle_change_uv_led_end_effector_state)
+    rospy.Service("change_white_led_state", ChangeDeviceState, bridge.handle_change_white_led_state)
 
     while not rospy.is_shutdown():
         bridge.receive()
