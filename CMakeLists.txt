@@ -33,7 +33,7 @@ set(MROVER_MESSAGE_FILES
         EnableAuton.msg
         GimbalCmd.msg
         GPSWaypoint.msg
-        Heater.msg
+        HeaterData.msg
         MoteusState.msg
         ODriveState.msg
         ScienceTemperatures.msg

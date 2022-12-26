@@ -16,7 +16,7 @@ import numpy as np
 import rospy
 import serial
 
-from mrover.msg import Diagnostic, Enable, Heater, ScienceTemperature, Spectral
+from mrover.msg import Diagnostic, Enable, HeaterData, ScienceTemperature, Spectral
 
 from mrover.srv import (
     ChangeAutonLEDState,
@@ -74,16 +74,16 @@ class ScienceBridge:
             "/science/info/science_thermistors")
         self._num_spectral = rospy.get_param("/science/info/spectral")
         self._handler_function_by_tag = {
-            "AUTOSHUTOFF": self._heater_auto_shut_off_handler,
+            "AUTO_SHUTOFF": self._heater_auto_shutoff_handler,
             "DIAG": self._diagnostic_handler,
-            "HEATER": self._heater_state_handler,
+            "HEATER_DATA": self._heater_state_handler,
             "SPECTRAL": self._spectral_handler,
             "SCIENCE_TEMP": self._science_thermistor_handler,
         }
         self._publisher_by_tag = {
+            "AUTO_SHUTOFF": rospy.Publisher("science/heater_auto_shutoff_state_data", Enable, queue_size=1),
             "DIAG": rospy.Publisher("diagnostic_data", Diagnostic, queue_size=1),
-            "AUTOSHUTOFF": rospy.Publisher("science/heater_auto_shut_off_state_data", Enable, queue_size=1),
-            "HEATER": rospy.Publisher("science/heater_state_data", Heater, queue_size=1),
+            "HEATER_CMD": rospy.Publisher("science/heater_state_data", HeaterData, queue_size=1),
             "SCIENCE_TEMP": rospy.Publisher("science_data/temperatures", ScienceTemperature, queue_size=1),
             "SPECTRAL": rospy.Publisher("science_data/spectral", Spectral, queue_size=1),
         }
@@ -129,7 +129,7 @@ class ScienceBridge:
         success = self._auton_led_transmit(req.color.lower())
         return ChangeAutonLEDStateResponse(success)
 
-    def handle_change_heater_auto_shut_off_state(self, req: ChangeDeviceStateRequest) -> ChangeDeviceStateResponse:
+    def handle_change_heater_auto_shutoff_state(self, req: ChangeDeviceStateRequest) -> ChangeDeviceStateResponse:
         """Processes a request to change the auto shut off state of the
         carousel heaters by issuing the command to the STM32 chip via UART.
         Returns the success of the transaction.
@@ -137,7 +137,7 @@ class ScienceBridge:
             carousel heaters.
         :returns: A boolean that is the success of sent UART transaction.
         """
-        success = self._heater_auto_shut_off_transmit(req.enable)
+        success = self._heater_auto_shutoff_transmit(req.enable)
         return ChangeDeviceStateResponse(success)
 
     def handle_change_heater_state(self, req: ChangeHeaterStateRequest) -> ChangeHeaterStateResponse:
@@ -283,12 +283,12 @@ class ScienceBridge:
         tx_msg = f"$MOSFET,{device},{int(enable)}"
         return tx_msg
 
-    def _heater_auto_shut_off_handler(self, tx_msg: str) -> None:
+    def _heater_auto_shutoff_handler(self, tx_msg: str) -> None:
         """Processes a UART message that contains data of the auto shut off
         state of the carousel heaters and publishes to the corresponding topic.
         :param tx_msg: A string that was received from UART that contains data
             of the carousel heater auto shut off state.
-            - Format: <"$AUTOSHUTOFF,device,enable">
+            - Format: <"$AUTO_SHUTOFF,enable">
         """
         arr = tx_msg.split(",")
         if len(arr) < 2:
@@ -296,14 +296,15 @@ class ScienceBridge:
         ros_msg = Enable(enable=bool(int(arr[1])))
         self._publisher_by_tag[arr[0][3:]].publish(ros_msg)
 
-    def _heater_auto_shut_off_transmit(self, enable: bool) -> bool:
+    def _heater_auto_shutoff_transmit(self, enable: bool) -> bool:
         """Sends a UART message to the STM32 chip commanding the auto shut off
         state of the carousel heaters.
+            - Format: <"$AUTO_SHUTOFF,<VAL>">
         :param enable: A boolean that is the auto shut off state of the
             carousel heaters.
         :returns: A boolean that is the success of the transaction.
         """
-        tx_msg = f"$AUTOSHUTOFF,{enable}"
+        tx_msg = f"$AUTO_SHUTOFF,{enable}"
         success = self._send_msg(tx_msg)
         return success
 
@@ -312,26 +313,27 @@ class ScienceBridge:
         carousel heater and packages it into a ROS struct.
         :param tx_msg: A string that was received from UART that contains data
             of the carousel heater auto shut off state.
-            - Format: <"$HEATER,device,enable">
+            - Format: <"$HEATER_DATA,<STATE_0>,<STATE_1>,<STATE_2>">
         """
         arr = tx_msg.split(",")
-        if len(arr) < 3:
+        if len(arr) < 4:
             return
-        ros_msg = Heater(device=int(arr[1]), enable=bool(int(arr[2])))
+        heater_state = [bool(int(arr[0])), bool(int(arr[1])), bool(int(arr[2]))]
+        ros_msg = HeaterData(state=heater_state)
         self._publisher_by_tag[arr[0][3:]].publish(ros_msg)
 
     def _heater_transmit(self, device: int, enable: bool) -> bool:
         """Sends a UART message to the STM32 chip commanding the state of a
         particular heater device.
+            - Format: <"$HEATER_CMD,<DEVICE>,<ENABLE>">
         :param device: An int that is the heater device that should be changed.
         :param enable: A boolean that is the requested heater state of that
             device.
         :returns: A boolean that is the success of the transaction.
         """
-        heater_device_string = f"heater_{device}"
-        translated_device = self._mosfet_number_by_device_name[heater_device_string]
-        tx_msg = self._format_mosfet_msg(translated_device, enable)
+        tx_msg = f"$HEATER_CMD,{device},{int(enable)}"
         success = self._send_msg(tx_msg)
+
         return success
 
     def _read_msg(self) -> str:
@@ -447,7 +449,7 @@ def main():
     rospy.Service("change_auton_led_state", ChangeAutonLEDState,
                   bridge.handle_change_auton_led_state)
     rospy.Service(
-        "change_heater_auto_shut_off_state", ChangeDeviceState, bridge.handle_change_heater_auto_shut_off_state
+        "change_heater_auto_shutoff_state", ChangeDeviceState, bridge.handle_change_heater_auto_shutoff_state
     )
     rospy.Service("change_heater_state", ChangeHeaterState,
                   bridge.handle_change_heater_state)

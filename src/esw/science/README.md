@@ -105,7 +105,7 @@ Server: science \
 Client: teleop \
 
 #### Change Heater Auto Shut Off State
-Service: [`ChangeDeviceState.srv`](../../../srv/ChangeDeviceState.srv) "change_heater_auto_shut_off" \
+Service: [`ChangeDeviceState.srv`](../../../srv/ChangeDeviceState.srv) "change_heater_auto_shutoff" \
 Server: science \
 Client: gui \
 
@@ -139,12 +139,12 @@ Client: gui \
 ## Topics - Publisher
 
 #### Heater Auto Shut Off Data
-Message: [`Enable.msg`](../../../msg/Enable.msg) "science/heater_auto_shut_off_data" \
+Message: [`Enable.msg`](../../../msg/Enable.msg) "science/heater_auto_shutoff_data" \
 Publisher: science \
 Subscriber: gui
 
 #### Heater State Data
-Message: [`Heater.msg`](../../../msg/Heater.msg) "science/heater_state_data" \
+Message: [`Heater.msg`](../../../msg/HeaterCmd.msg) "science/heater_state_data" \
 Publisher: science \
 Subscriber: gui
 
@@ -178,7 +178,7 @@ Subscriber: gui
 ## UART Messages
 
 #### Heater Auto Shut Off Cmd/Data
-- `$AUTOSHUTOFF,<enable>,<extra padding>`
+- `$AUTO_SHUTOFF,<enable>,<extra padding>`
 - Cmd and data are 30 characters long
 - Enable is state of auto shut off feature
 

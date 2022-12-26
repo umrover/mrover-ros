@@ -41,9 +41,6 @@ science:
     "off": 3
   device_mosfet_numbers:
     arm_laser: 1
-    heater_0: 7
-    heater_1: 8
-    heater_2: 9
     uv_led_carousel: 4
     uv_led_end_effector: 1
     white_led: 5
