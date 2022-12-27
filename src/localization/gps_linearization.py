@@ -42,6 +42,8 @@ class GPSLinearization:
         cartesian = np.array(
             geodetic2enu(msg.latitude, msg.longitude, msg.altitude, self.ref_lat, self.ref_lon, self.ref_alt, deg=True)
         )
+        if np.any(np.isnan(cartesian)):
+            return
 
         # ignore Z
         cartesian[2] = 0
@@ -57,6 +59,9 @@ class GPSLinearization:
         """
         # convert ROS msg quaternion to numpy array
         imu_quat = np.array([msg.orientation.x, msg.orientation.y, msg.orientation.z, msg.orientation.w])
+
+        # normalize to avoid rounding errors
+        imu_quat = imu_quat / np.linalg.norm(imu_quat)
 
         # get a quaternion to rotate about the Z axis by 90 degrees
         offset_quat = quaternion_about_axis(np.pi / 2, np.array([0, 0, 1]))

@@ -3,21 +3,24 @@
 import numpy as np
 
 import rospy
-from mrover.msg import Waypoint, EnableAuton, GPSWaypoint, WaypointType
+from mrover.msg import GPSWaypoint, WaypointType, EnableAuton
+from util.SE3 import SE3
+from util.course_service import EnableService
 
-
-def main():
-    rospy.init_node("debug_gps_publisher")
-    target = np.array([42.2, -83.7001, 0.0])
-    pub = rospy.Publisher("auton/enable_state", EnableAuton, queue_size=1)
-    waypoints = [GPSWaypoint(target[0], target[1], WaypointType(val=WaypointType.POST), 1)]
-
-    r = rospy.Rate(10)  # 10hz
-    while not rospy.is_shutdown():
-        enable_msg = EnableAuton(waypoints, True)
-        pub.publish(enable_msg)
-        r.sleep()
-
+"""
+The purpose of this file is for testing courses in the sim 
+without needing the auton GUI. You can add waypoints with
+and without fiducials and these will get published to nav
+"""
 
 if __name__ == "__main__":
-    main()
+    rospy.init_node("debug_enable_auton")
+    publish_enable = EnableService()
+    waypoints = [
+        GPSWaypoint(42.2, -83.7001, WaypointType(val=WaypointType.NO_SEARCH), 1),
+        GPSWaypoint(42.2, -83.7002, WaypointType(val=WaypointType.NO_SEARCH), 1),
+    ]
+    msg = EnableAuton(waypoints, True)
+    publish_enable(msg)
+
+    rospy.spin()
