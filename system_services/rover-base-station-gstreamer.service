@@ -1,8 +1,0 @@
-[Unit]
-Description=Base Station Gstreamer Services
-
-[Service]
-Environment="DISPLAY=:0"
-Environment="XAUTHORITY=/home/mrover/.Xauthority"
-User=mrover
-ExecStart=/usr/bin/rover-gstreamer.sh
