@@ -1,6 +1,4 @@
 #!/usr/bin/env python3
-
-
 import rospy
 from geometry_msgs.msg import Vector3Stamped
 from mrover.msg import ImuAndMag
@@ -13,15 +11,12 @@ class ImuPackager:
     published by gazebo & publish to /imu/data, to replicate the behavior of imu_driver.py
     """
 
-    imu_pub: rospy.Subscriber = None
-
-    curr_mag: Vector3Stamped = None
-
     def __init__(self):
         rospy.Subscriber("imu/imu_only", Imu, self.imu_callback)
         rospy.Subscriber("imu/mag_only", Vector3Stamped, self.mag_callback)
 
         self.imu_pub = rospy.Publisher("imu/data", ImuAndMag, queue_size=1)
+        self.curr_mag = None
 
     def imu_callback(self, msg: Imu):
         if self.curr_mag is not None:
