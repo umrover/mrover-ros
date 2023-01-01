@@ -62,7 +62,7 @@
       <updateRate>100</updateRate>
       <bodyName>base_link</bodyName>
       <topicName>imu/mag_only</topicName>
-      <referenceHeading>0.0</referenceHeading>
+      <referenceHeading>90.0</referenceHeading>
       <declination>3.0333</declination>
       <inclination>60.0</inclination>
       <driftFrequency>0 0 0</driftFrequency>
