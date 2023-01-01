@@ -1,6 +1,7 @@
 <?xml version="1.0"?>
 <robot>
   <gazebo>
+    <!-- differential drive -->
     <plugin name="differential_drive_plugin_6w" filename="libdifferential_drive_plugin_6w.so">
       <legacyMode>false</legacyMode>
       <updateRate>50</updateRate>
@@ -16,6 +17,8 @@
       <commandTopic>/cmd_vel</commandTopic>
       <bodyName>base_link</bodyName>
     </plugin>
+
+    <!-- GPS -->
     <plugin name="gazebo_ros_gps" filename="libhector_gazebo_ros_gps.so">
       <updateRate>100.0</updateRate>
       <bodyName>base_link</bodyName>
@@ -35,6 +38,7 @@
     </plugin>
   </gazebo>
 
+  <!-- IMU -->
   <gazebo reference="imu_link">
     <gravity>false</gravity>
     <sensor name="imu_sensor" type="imu">
