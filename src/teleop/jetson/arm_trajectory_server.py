@@ -10,7 +10,8 @@ from control_msgs.msg import FollowJointTrajectoryGoal
 from control_msgs.msg import FollowJointTrajectoryResult
 from control_msgs.msg import FollowJointTrajectoryFeedback
 from control_msgs.msg import FollowJointTrajectoryAction
-from trajectory_msgs.msg import JointTrajectory, JointTrajectoryPoint
+from trajectory_msgs.msg import JointTrajectory
+from std_msgs.msg import Float64MultiArray
 from sensor_msgs.msg import JointState
 
 conf_joint_names = ["joint_a", "joint_b", "joint_c", "joint_d", "joint_e", "joint_f"]
@@ -72,8 +73,8 @@ class MoveItAction(object):
         )
         self.trajectory_point_queue = deque()
         self.desired_joint_state = JointState(name=conf_joint_names)
-        self.fake_controller = True
-        self.joint_pub = rospy.Publisher("joint_states", JointState, queue_size=100)
+        # Publisher for gazebo position controller
+        self.gazebo_pub = rospy.Publisher("gazebo_arm_controller/command", Float64MultiArray, queue_size=100)
         self._as.start()
 
     # Action callback
@@ -91,12 +92,6 @@ class MoveItAction(object):
 
         # ------------- Send command list
 
-        if self.fake_controller:
-            rospy.logdebug("fsdfsdfdsfsd")
-            joint_states.position = goal.trajectory.points[0].positions
-            joint_states.velocity= goal.trajectory.points[0].velocities
-            self.joint_pub.publish(joint_states)
-
         for point in goal.trajectory.points:
             self.trajectory_point_queue.append(point)
 
@@ -104,16 +99,17 @@ class MoveItAction(object):
 
         last_point = self.trajectory_point_queue[0]
         self.trajectory_point_queue.popleft()
+        #Initialize gazebo Float array
+        gazebo_positions = Float64MultiArray(data = [0.0, 0.0, 0.0, 0.0, 0.0, 0.0])
         while len(self.trajectory_point_queue) > 0:
             point = self.trajectory_point_queue[0]
             self.trajectory_point_queue.popleft()
             self.desired_joint_state.position = point.positions
             self.publisher.publish(self.desired_joint_state)
+            gazebo_positions.data = point.positions
+            self.gazebo_pub.publish(gazebo_positions)
             # Wait
             rospy.sleep(point.time_from_start - last_point.time_from_start)
-            if self.fake_controller:
-                joint_states.position = point.positions
-                self.joint_pub.publish(joint_states)
             # Trajectory abort!
             # To abort the current movement, it is possible to send an empty trajectory
             if self._as.is_preempt_requested():
@@ -142,6 +138,6 @@ class MoveItAction(object):
 
 if __name__ == "__main__":
     rospy.init_node("mrover_arm_follow_joint_trajectory")
-    rospy.Subscriber("ra_data", JointState, joint_states_callback)
+    rospy.Subscriber("joint_states", JointState, joint_states_callback)
     MoveItAction("arm_controller/follow_joint_trajectory")
     rospy.spin()
