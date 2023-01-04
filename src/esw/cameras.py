@@ -222,12 +222,6 @@ class StreamingManager:
         # If two or more requests ask for same video source in different resolution,
         # all requests' resolution get set to the one with the lowest resolution. nlogn + n, but n ~ 4
 
-        # TODO - this function does not actually behave properly.
-        #   e.g. When running this function with the following, you get the wrong output:
-        #   Input: my_list = [CameraCmd(0, 0), CameraCmd(0, 1), CameraCmd(0, 2), CameraCmd(0, 3)]
-        #   Expected Output: output = [CameraCmd(0, 0), CameraCmd(0, 0), CameraCmd(0, 0), CameraCmd(0, 0)]
-        #   Actual Output: output = [CameraCmd(0, 0), CameraCmd(0, 0), CameraCmd(0, 1), CameraCmd(0, 2)]
-
         assert self._device_lock.locked(), "self._device_lock must be locked first."
 
         for stream, camera_cmd in enumerate(camera_commands):
