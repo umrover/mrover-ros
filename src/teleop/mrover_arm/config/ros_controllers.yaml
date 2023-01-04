@@ -1,3 +1,4 @@
+# This is the controller that actually sends positions to the joint group in gazebo
 gazebo_arm_controller:
   type: position_controllers/JointGroupPositionController
   joints:
@@ -7,6 +8,7 @@ gazebo_arm_controller:
     - joint_d
     - joint_e
     - joint_f
+  # These PID Tunes suck, good enough for testing in sim though
   gains:
     joint_a:
       p: 100

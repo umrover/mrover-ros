@@ -16,6 +16,7 @@
   <include file="$(dirname)/demo.launch" pass_all_args="true">
     <!-- robot description is loaded by gazebo.launch, to enable Gazebo features -->
     <arg name="load_robot_description" value="false" />
+    <!-- Changed value to simple instead of ros_control in order to use FollowJointTrajectory Action -->
     <arg name="moveit_controller_manager" value="simple" />
   </include>
 </launch>

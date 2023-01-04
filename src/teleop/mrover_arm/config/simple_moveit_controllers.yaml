@@ -1,3 +1,4 @@
+# Specification for simple action server controller
 controller_list:
   - name: arm_controller
     action_ns: follow_joint_trajectory
