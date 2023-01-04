@@ -240,14 +240,14 @@ class StreamingManager:
                 )
                 camera_cmd.resolution = 0
 
-        requests: List[Tuple[int, str, int]] = [
+        requests: List[Tuple[int, int, int]] = [
             (camera_cmd.device, camera_cmd.resolution, stream) for stream, camera_cmd in enumerate(camera_commands)
         ]
 
         requests = sorted(requests, key=lambda x: (x[0], x[1]))
         for i in range(1, len(requests)):
             if requests[i][0] == requests[i - 1][0] and requests[i][0] != -1:
-                camera_commands[requests[i][2]].resolution = requests[i - 1][1]
+                camera_commands[requests[i][2]].resolution = camera_commands[requests[i - 1][2]].resolution
 
         return camera_commands
 
