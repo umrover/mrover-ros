@@ -144,6 +144,7 @@ cameras:
       secondary_1: "10.0.0.8:5001"
       secondary_2: "10.0.0.8:5002"
       secondary_3: "10.0.0.8:5003"
+    skip_every_other_device: true
 
 rover:
   length: 0.86

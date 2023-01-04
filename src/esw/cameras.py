@@ -113,7 +113,11 @@ class StreamingManager:
         ]
         self._video_devices = []
         for i in range(rospy.get_param("cameras/max_video_device_id_number")):
-            self._video_devices.append(VideoDevices(i))
+            skip_every_other_device = rospy.get_param("cameras/skip_every_other_device")
+            if skip_every_other_device:
+                self._video_devices.append(VideoDevices(i * 2))
+            else:
+                self._video_devices.append(VideoDevices(i))
         self._endpoints = [
             rospy.get_param("cameras/endpoints/primary_0"),
             rospy.get_param("cameras/endpoints/primary_1"),
