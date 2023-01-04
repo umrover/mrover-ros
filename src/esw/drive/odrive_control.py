@@ -478,9 +478,9 @@ class ODriveBridge(object):
             self._rate.sleep()
 
     def watchdog_while_loop(self) -> None:
-        """Calls the update() function continuously and checks if comms has
+        """Calls the update() function continuously and checks if communication has
         been lost.
-        A flag is set to keep track fo the state for when we have comms with
+        A flag is set to keep track fo the state for when we have communication with
         the base station or not.
         """
         previously_lost_comms = True
@@ -504,7 +504,7 @@ class ODriveBridge(object):
     def _bridge_on_event(self, event: ODriveEvent) -> None:
         """Delegates incoming events to the given states which then handle
         the event. The result is then assigned as the new state.
-        Note that this does NOT actually change speed that the ODrive comands
+        Note that this does NOT actually change speed that the ODrive commands
         the motors at. One must wait for the ODriveBridge._update() function
         to be called for that to happen.
         :param event: An ODriveEvent that determines the behavior of the
