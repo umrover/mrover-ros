@@ -80,7 +80,7 @@ class MoveItAction(object):
     # Action callback
     def execute_cb(self, goal: FollowJointTrajectoryGoal) -> None:
 
-        rospy.logerr("Execute Callback")
+        rospy.loginfo("Executing FollowJointTrajectory Action")
         # It is required to rearrange the arrays because MoveIt doesn't guarantee order preservation
         self.rearrange(goal.trajectory)
 

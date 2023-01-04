@@ -8,12 +8,12 @@
   <!-- startup simulated world -->
   <include file="$(find gazebo_ros)/launch/empty_world.launch">
     <arg name="world_name" default="worlds/empty.world"/>
-    <arg name="paused" value="$(arg paused)"/>
+    <arg name="paused" value="true"/>
     <arg name="gui" value="$(arg gazebo_gui)"/>
   </include>
 
   <!-- send robot urdf to param server -->
-  <param name="robot_description" command="$(find xacro)/xacro '$(find mrover)/rover_description/arm/arm.xacro'" />
+  <param name="robot_description" textfile="$(find mrover_arm2)/config/gazebo_mrover_arm.urdf" />
 
   <!-- unpause only after loading robot model -->
   <arg name="unpause" value="$(eval '' if arg('paused') else '-unpause')" />
@@ -23,11 +23,10 @@
     respawn="false" output="screen" />
 
   <!-- Load joint controller parameters for Gazebo -->
-  <rosparam file="$(find mrover_arm)/config/gazebo_controllers.yaml" />
+  <rosparam file="$(find mrover_arm2)/config/gazebo_controllers.yaml" />
   <!-- Spawn Gazebo ROS controllers -->
-  <node name="gazebo_controller_spawner" pkg="controller_manager" type="spawner" respawn="false" output="screen" args="joint_state_controller arm_controller hand_controller" />
+  <node name="gazebo_controller_spawner" pkg="controller_manager" type="spawner" respawn="false" output="screen" args="joint_state_controller" />
   <!-- Load ROS controllers -->
   <include file="$(dirname)/ros_controllers.launch"/>
 
-  <node name="robot_state_publisher" pkg="robot_state_publisher" type="robot_state_publisher" respawn="true" output="screen" />
 </launch>

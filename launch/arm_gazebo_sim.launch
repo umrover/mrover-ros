@@ -1,0 +1,6 @@
+<launch>
+	<include file="$(find mrover_arm)/launch/demo_gazebo.launch">
+    </include>
+	
+	<node name="mrover_arm_follow_joint_trajectory" pkg="mrover" type="arm_trajectory_server.py"/>
+</launch>
