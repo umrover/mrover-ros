@@ -33,6 +33,7 @@ class StateMachine:
         self.structure: Optional[SmachContainerStructure] = None
         self.mutex: Lock = Lock()
         self.cur_active: str = ""
+        self.previous_state: str = ""
         self.needs_redraw: bool = True
 
     def set_active_state(self, active_state):
@@ -41,8 +42,13 @@ class StateMachine:
         """
         with self.mutex:
             if active_state != self.cur_active and active_state in self.states:
+                self.previous_state = self.cur_active
                 self.cur_active = active_state
                 self.needs_redraw = True
+                now = rospy.Time.now()
+                rospy.loginfo(
+                    f"Current time: {now} Previous state: {self.previous_state} Current State: { self.cur_active}"
+                )
 
     def _rebuild(self, structure: SmachContainerStructure):
         """
