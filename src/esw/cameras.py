@@ -46,18 +46,12 @@ class VideoDevices:
         :param endpoint: the endpoint (e.g. 10.0.0.7:5000)
         :param args: a list of strings that are the arguments
         """
+
+        assert not (endpoint in self.output_by_endpoint.keys())
+
         if self.is_streaming():
-            # If it does not exist already
-            try:
-                self.video_source = jetson.utils.videoSource(f"/dev/video{self.device}", argv=args)
-                self.output_by_endpoint[endpoint] = jetson.utils.videoOutput(f"rtp://{endpoint}", argv=args)
-                self.resolution = args
-            except Exception:
-                rospy.logerr(f"Failed to create video source for device {self.device}.")
-                if len(self.output_by_endpoint[endpoint]) == 1:
-                    self.output_by_endpoint = {}
-        else:
             # It exists and another stream is using it
+            # TODO - make sure that this check does what we want to do (self.resolution != args)
             if self.resolution != args:
                 # If different args, just recreate video source and every output
                 try:
@@ -70,6 +64,7 @@ class VideoDevices:
                     self.resolution = args
                 except Exception:
                     rospy.logerr(f"Failed to create video source for device {self.device}.")
+                    self.video_source = None
                     self.output_by_endpoint = {}
             else:
                 # If same args and endpoint is already being streamed to, then do nothing
@@ -78,6 +73,16 @@ class VideoDevices:
 
                 # If same args, just create a new output
                 self.output_by_endpoint[endpoint] = jetson.utils.videoOutput(f"rtp://{endpoint}", argv=args)
+        else:
+            # If it does not exist already
+            try:
+                self.video_source = jetson.utils.videoSource(f"/dev/video{self.device}", argv=args)
+                self.output_by_endpoint[endpoint] = jetson.utils.videoOutput(f"rtp://{endpoint}", argv=args)
+                self.resolution = args
+            except Exception:
+                rospy.logerr(f"Failed to create video source for device {self.device}.")
+                self.video_source = None
+                self.output_by_endpoint = {}
 
     def is_streaming(self) -> bool:
         """
@@ -186,7 +191,7 @@ class StreamingManager:
             if video_device.is_streaming():
                 try:
                     # TODO - See if timeout=100 is fine. We have tested with 15,000.
-                    image = video_device.video_source.Capture(timeout=100)
+                    image = video_device.video_source.Capture(timeout=15000)
                     for output in video_device.output_by_endpoint.values():
                         output.Render(image)
                 except Exception as e:
@@ -195,7 +200,7 @@ class StreamingManager:
                     # TODO - See if this works: Instead of closing, just ignore
                     rospy.logerr(f"Camera {index} capture failed. Will still try to attempt to stream.")
                     # rospy.logerr(f"Camera {index} capture failed. Stopping stream(s).")
-                    # self._close_down_device(index)
+                    # self._close_down_all_streams_of_device(index)
         self._device_lock.release()
 
     def _close_down_all_streams_of_device(self, device: int) -> None:
