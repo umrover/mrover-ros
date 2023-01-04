@@ -16,6 +16,9 @@ cmake-build*/
 **/keys.json*
 **/yarn.lock*
 
+# Bag Files
+bags/
+
 # Catkin
 .catkin_tools/
 build/
