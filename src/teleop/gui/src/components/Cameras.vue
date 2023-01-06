@@ -82,6 +82,7 @@
 
       changeQuality({index, value}){
         Vue.set(this.qualities, index, value);
+        this.sendCameras();
       },
 
       swapStream({prev, newest}){
@@ -103,14 +104,6 @@
       getStreamNum(index){
         return this.streamOrder.indexOf(index);
       }
-
-    },
-
-    computed: {
-      checkCapacity(){
-        var numStreaming = this.streamOrder.filter(index => index != -1);
-        return numStreaming.length < this.capacity+1;
-      },
 
     },
 
