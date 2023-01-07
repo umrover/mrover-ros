@@ -22,13 +22,6 @@ export default {
     }
   },
 
-  computed: {
-
-    ...mapGetters('controls', {
-      controlMode: 'controlMode'
-    }),
-  },
-
   beforeDestroy: function () {
     window.clearInterval(interval)
   },

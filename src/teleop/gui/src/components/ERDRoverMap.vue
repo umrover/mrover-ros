@@ -1,6 +1,6 @@
 <template>
     <div class="wrap">
-        <l-map ref="map" class="map" :zoom="15" :center="center">
+        <l-map ref="map" class="map" :zoom="22" :center="center" v-on:click="getClickedLatLon($event)">
         <l-control-scale :imperial="false"/>
         <l-tile-layer ref="tileLayer" :url="this.online ? this.onlineUrl : this.offlineUrl" :attribution="attribution" 
                       :options="this.online ? this.onlineTileOptions : this.offlineTileOptions"/>
@@ -31,7 +31,7 @@
   
 <script>
     import { LMap, LTileLayer, LMarker, LPolyline, LPopup, LTooltip, LControlScale } from 'vue2-leaflet'
-    import { mapGetters } from 'vuex'
+    import { mapGetters, mapMutations } from 'vuex'
     import L from '../leaflet-rotatedmarker.js'
     import * as qte from "quaternion-to-euler";
 
@@ -118,6 +118,23 @@
                 // euler[2] == euler z component
                 this.odom.bearing_deg = euler[2] * (180 / Math.PI)
             });
+        },
+
+        methods: {
+            // Event listener for setting store values to get data to waypoint Editor
+            getClickedLatLon: function (e) {
+            this.setClickPoint(
+                { 
+                    lat: e.latlng.lat,
+                    lon: e.latlng.lng
+                }
+                )
+            },
+            ...mapMutations('erd',{
+            setClickPoint: 'setClickPoint',
+            setWaypointList: 'setWaypointList',
+            setOdomFormat: 'setOdomFormat'
+            }),
         },
 
         computed: {
