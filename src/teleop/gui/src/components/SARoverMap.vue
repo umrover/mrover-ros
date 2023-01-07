@@ -34,7 +34,7 @@
   
 <script>
     import { LMap, LTileLayer, LMarker, LPolyline, LPopup, LTooltip, LControlScale } from 'vue2-leaflet'
-    import { mapGetters } from 'vuex'
+    import { mapGetters, mapMutations } from 'vuex'
     import L from '../leaflet-rotatedmarker'
 
     const MAX_ODOM_COUNT = 1000
@@ -90,7 +90,13 @@
                     lon: e.latlng.lng
                 }
                 )
-            }
+            },
+
+            ...mapMutations('sa',{
+                setClickPoint: 'setClickPoint',
+                setWaypointList: 'setWaypointList',
+                setOdomFormat: 'setOdomFormat'
+            }),
         },
         computed: {
             ...mapGetters('sa', {
