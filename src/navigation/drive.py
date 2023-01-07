@@ -10,7 +10,7 @@ from util.np_utils import angle_to_rotate
 from util.np_utils import angle_to_rotate
 
 rospy.logerr(f"Make DataCollector in drive.py")
-collector = data_collection.DataCollector()
+collector = data_collection.DataManager()
 MAX_DRIVING_EFFORT = 1
 MIN_DRIVING_EFFORT = -1
 TURNING_P = 10.0
@@ -51,7 +51,7 @@ def get_drive_command(
     if target_dist < completion_thresh:
         # getting commanded velocity into the data collection
         rospy.logerr(f"Called make_cmd_vel_obj from drive.py")
-        collector.make_cmd_vel_obj(Twist())
+        collector.make_cmd_vel_dataframe(Twist())
         return Twist(), True
 
     cmd_vel = Twist()
@@ -75,7 +75,7 @@ def get_drive_command(
     cmd_vel.angular.z = (np.sign(error) if full_turn_override else np.clip(error * TURNING_P, MIN_DRIVING_EFFORT, MAX_DRIVING_EFFORT))
     # getting commanded velocity into the data collection
     rospy.logerr(f"Called make_cmd_vel_obj from drive.py")
-    collector.make_cmd_vel_obj(cmd_vel)
+    collector.make_cmd_vel_dataframe(cmd_vel)
     
     print(cmd_vel.linear.x, cmd_vel.angular.z)
     return cmd_vel, False
