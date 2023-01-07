@@ -2,7 +2,7 @@
 <div>
     <DriveControls></DriveControls>
     <ArmControls></ArmControls>
-    <JointStateTable v-bind:JointStateData="'/drive_status'" v-bind:vertical ="true"></JointStateTable>
+    <JointStateTable v-bind:JointStateData="JointState" v-bind:vertical ="true"></JointStateTable>
     <MoteusStateTable></MoteusStateTable>
 
 </div>
@@ -14,7 +14,7 @@ import ArmControls from './ArmControls.vue';
 import GimbalControls from './GimbalControls.vue';
 import JointStateTable from './JointStateTable.vue';
 import MoteusStateTable from './MoteusStateTable.vue'
-
+import ROSLIB from "roslib"
 export default {
     data() {
         return {
@@ -34,7 +34,7 @@ export default {
         this.brushless_motors = new ROSLIB.Topic({
             ros: this.$ros,
             name: 'drive_status',
-            messageType: 'mrover/DriveStatus'
+            messageType: 'mrover/MotorsStatus'
         });
 
         this.brushless_motors.subscribe((msg) => {

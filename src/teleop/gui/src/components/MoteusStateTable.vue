@@ -108,11 +108,10 @@ export default {
         this.brushless_motors = new ROSLIB.Topic({
             ros: this.$ros,
             name: '/drive_status',
-            messageType: 'mrover/MotorStatus'
+            messageType: 'mrover/MotorsStatus'
         });
         
         this.brushless_motors.subscribe((msg) => {
-            console.log(msg)
             //const length = Moteus_State.name.length
             this.motors = []
             let Moteus_State = msg.moteus_states
@@ -120,7 +119,7 @@ export default {
                 this.motors.push({
                     name: Moteus_State.name[i],
                     state: Moteus_State.state[i],
-                    error: Moteus_state.error[i],
+                    error: Moteus_State.error[i],
                     
             })
             

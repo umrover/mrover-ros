@@ -86,6 +86,47 @@
 </div>
 </template>
 
+<script>
+import ROSLIB from "roslib"
+
+export default {
+    data() {
+        return {
+            motors: []
+
+        }
+    },
+    props: {
+    JointStateData: {
+      type: Object,
+      required: true
+    },
+
+    vertical: {
+        type: Boolean,
+        required: true
+    }
+    },
+   
+    watch:  {
+        JointStateData: function(JointStateData){
+        const length = JointStateData.velocity.length
+        this.motors = []
+        for (let i = 0; i < length; i++) {
+                this.motors.push({
+                name: JointStateData.name[i],
+                position: JointStateData.position[i],
+                velocity: JointStateData.velocity[i],
+                effort: JointStateData.effort[i]
+                })
+            }
+    }
+    }
+}
+</script>
+
+
+
 <style scoped>
 .wrap {
     display: inline-block;
@@ -140,41 +181,3 @@
 }
 </style>
 
-<script>
-import ROSLIB from "roslib"
-
-export default {
-    data() {
-        return {
-            motors: []
-
-        }
-    },
-    props: {
-    JointStateData: {
-      type: String,
-      required: true
-    },
-
-    vertical: {
-        type: Boolean,
-        required: true
-    }
-    },
-   
-    watch:  {
-        JointStateData: function(JointStateData){
-        const length = JointStateData.velocity.length
-        this.motors = []
-        for (let i = 0; i < length; i++) {
-                this.motors.push({
-                name: JointStateData.name[i],
-                position: JointStateData.position[i],
-                velocity: JointStateData.velocity[i],
-                effort: JointStateData.effort[i]
-                })
-            }
-    }
-    }
-}
-</script>
