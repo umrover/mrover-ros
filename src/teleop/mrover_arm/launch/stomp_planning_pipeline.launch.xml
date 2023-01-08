@@ -22,5 +22,5 @@
   <!-- Add MoveGroup capabilities specific to this pipeline -->
   <!-- <param name="capabilities" value="" /> -->
 
-  <rosparam command="load" file="$(find mrover_arm2)/config/stomp_planning.yaml"/>
+  <rosparam command="load" file="$(find mrover_arm)/config/stomp_planning.yaml"/>
 </launch>
