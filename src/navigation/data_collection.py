@@ -17,13 +17,19 @@ class DataManager:
     _df : DataFrame
     _cur_row : DataFrame
     collector_context = ""
-    collecting = False
+    collecting = True
 
-    #Initializes the first _cur_row dataframe and calle the subscribers
+    #Initializes the first _cur_row dataframe and call the subscribers
+    #Initialize the dictionary with the Rover's first position, rotation, and timestamp
+    #When the datacollection starts.
     def __init__(self):
-        dict = {"timestamp":0, "rotation":[], "position":[], "actual_linear_vel":[], "actual_angular_vel":[],
-        "wheel_names":[], "wheel_effort":[], "wheel_vel":[], "commanded_linear":[], "commanded_angular":[]}
-        self._cur_row = DataFrame(dict)
+        self.dict = {"timestamp": 0, "rotation":np.array(np.zeros(4)), "position":np.array([np.zeros(3)]), 
+        "actual_linear_vel":np.array(np.zeros(3)), "actual_angular_vel":np.array(np.zeros(3)),
+        "wheel_names":np.array(["","","","","",""]), "wheel_effort": np.array(np.zeros(6)), 
+        "wheel_vel":np.array(np.zeros(6)), "commanded_linear":np.array(np.zeros(3)),
+        "commanded_angular":np.array(np.zeros(3))}
+        self._df = DataFrame()
+        self._cur_row = DataFrame(self.dict)
         rospy.logerr(f"Ran __init__ in data_collection.py")
         rospy.Subscriber("/drive_vel_data", JointState, self.make_esw_dataframe)
         rospy.Subscriber("/rover_stuck", Bool, self.set_collecting)
@@ -33,23 +39,22 @@ class DataManager:
     # We will only call this when the object list is not empty. When the list is empty the initial actual
     # linear and angular velocities will be their default values set to zero.
     def update_tf_vel(self):
-        with self.mutex:
-            se3_time = self.context.rover.get_pose_with_time()
-            newest_position = se3_time[0].position
-            newest_rotation_so3 = se3_time[0].rotation
-            newest_timestamp = se3_time[1].to_sec()
+        se3_time = self.collector_context.rover.get_pose_with_time()
+        newest_position = se3_time[0].position
+        newest_rotation_so3 = se3_time[0].rotation
+        newest_timestamp = se3_time[1].to_sec()
 
-            delta_t = (newest_timestamp - self._cur_row["timestamp"])
+        delta_t = (newest_timestamp - self._cur_row["timestamp"])
 
-            delta_theta = newest_rotation_so3.rot_distance_to(self._cur_row["rotation"])
-            actual_linear_vel = (newest_position - self._cur_row["position"]) / delta_t
-            actual_angular_vel = delta_theta / delta_t
+        delta_theta = newest_rotation_so3.rot_distance_to(SO3(((self._cur_row["rotation"])[0]).copy()))
+        actual_linear_vel = (newest_position - (self._cur_row["position"])[0]) / delta_t
+        actual_angular_vel = delta_theta / delta_t
 
-            self._cur_row["timestamp"] = newest_timestamp
-            self._cur_row["position"] = newest_position
-            self._cur_row["rotation"] = newest_rotation_so3
-            self._cur_row["actual_linear_vel"] = actual_linear_vel
-            self._cur_row["actual_angular_vel"] = actual_angular_vel
+        self._cur_row["timestamp"] = newest_timestamp
+        self._cur_row["position"] = np.array(newest_position)
+        self._cur_row["rotation"] = np.array(newest_rotation_so3.quaternion)
+        self._cur_row["actual_linear_vel"] = np.array(actual_linear_vel)
+        self._cur_row["actual_angular_vel"] = np.array(actual_angular_vel)
 
     # This function will only be called/invoked when we receive new esw data
     # Callback function for subscriber to JointState
@@ -61,6 +66,7 @@ class DataManager:
         self._cur_row["wheel_effort"] = np.array(esw_data.effort[0:5])
         self._cur_row["wheel_vel"] = np.array(esw_data.velocity[0:5])
         self.update_tf_vel()
+        
         self._df.merge(self._cur_row)
 
     # This function will only be called/invoked when there is a commanded velocity
@@ -94,3 +100,10 @@ class DataManager:
         file = folder + "/output_" + time_stamp + ".csv"
         rospy.logerr(f"Created {file} in data_collection.py")
         self._df.to_csv(file)
+
+    def set_context(self, context_in):
+        self.collector_context = context_in
+        # se3_time = self.collector_context.rover.get_pose_with_time()
+        # first_position = se3_time[0].position
+        # first_rotation_so3 = se3_time[0].rotation.quaternion
+        # first_timestamp = se3_time[1].to_sec()

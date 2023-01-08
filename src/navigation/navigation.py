@@ -75,14 +75,14 @@ def main():
     rospy.init_node("navigation")
     context = Context()
     rospy.logerr(f"Set context in navigation.py")
-    collector.collector_context = context
+    collector.set_context(context)
     navigation = Navigation(context)
 
     # Define custom handler for Ctrl-C that shuts down smach properly
     def sigint_handler(_sig, _frame):
+        collector.write_to_csv()
         navigation.stop()
         rospy.signal_shutdown("keyboard interrupt")
-        collector.write_to_csv()
         try:
             sys.exit(0)
         except SystemExit:
