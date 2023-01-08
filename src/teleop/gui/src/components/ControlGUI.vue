@@ -1,28 +1,35 @@
 <template>
 <div>
-    <DriveControls></DriveControls>
     <ArmControls></ArmControls>
-    <GimbalControls></GimbalControls>>
-</div>
+    <DriveControls></DriveControls>
+    <DriveVelDataH></DriveVelDataH>
+    <DriveVelDataV></DriveVelDataV>
+    <GimbalControls></GimbalControls>
+    <PDBFuse></PDBFuse>
 
+</div>
 </template>
 
 <script>
-    import DriveControls from './DriveControls.vue';
-    import ArmControls from './ArmControls.vue';
-    import GimbalControls from './GimbalControls.vue';
+import ArmControls from './ArmControls.vue';
+import DriveControls from './DriveControls.vue';
+import GimbalControls from './GimbalControls.vue';
+import DriveVelDataH from './DriveVelDataH.vue';
+import DriveVelDataV from './DriveVelDataV.vue';
+import PDBFuse from './PDBFuse.vue';
 
-    export default {
-        data() {
-            return {
-            }
-        },
+export default {
+    data() {
+        return {}
+    },
 
-
-        components:{
-            DriveControls,
-            ArmControls,
-            GimbalControls
-        }
+    components: {
+        ArmControls,
+        DriveControls,
+        DriveVelDataV,
+        DriveVelDataH,
+        GimbalControls,
+        PDBFuse,
     }
+}
 </script>

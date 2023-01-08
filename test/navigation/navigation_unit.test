@@ -1,0 +1,6 @@
+
+<launch>
+
+    <!-- node to manage and run the integration test -->
+    <test test-name="drive_test" pkg="mrover" type="drive_test.py" />
+</launch>
