@@ -112,17 +112,27 @@ export default {
         });
         
         this.brushless_motors.subscribe((msg) => {
+<<<<<<< HEAD
             //const length = Moteus_State.name.length
+=======
+>>>>>>> a374370d69d4436b0541b69e2b81db6f110b538d
             this.motors = []
-            let Moteus_State = msg.moteus_states
-            for (let i = 0; i <6; i++) {
+            const moteus_state = msg.moteus_states
+            for (let i = 0; i < 6; i++) {
                 this.motors.push({
+<<<<<<< HEAD
                     name: Moteus_State.name[i],
                     state: Moteus_State.state[i],
                     error: Moteus_State.error[i],
                     
             })
             
+=======
+                    name: moteus_state.name[i],
+                    state: moteus_state.state[i],
+                    error: moteus_state.error[i],
+                })
+>>>>>>> a374370d69d4436b0541b69e2b81db6f110b538d
             }
             
         })

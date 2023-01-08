@@ -2,6 +2,7 @@
 <div>
     <DriveControls></DriveControls>
     <ArmControls></ArmControls>
+    <GimbalControls></GimbalControls>
     <JointStateTable v-bind:JointStateData="JointState" v-bind:vertical ="true"></JointStateTable>
     <MoteusStateTable></MoteusStateTable>
 
@@ -9,12 +10,13 @@
 </template>
 
 <script>
+import ROSLIB from "roslib"
 import DriveControls from './DriveControls.vue';
 import ArmControls from './ArmControls.vue';
 import GimbalControls from './GimbalControls.vue';
 import JointStateTable from './JointStateTable.vue';
 import MoteusStateTable from './MoteusStateTable.vue'
-import ROSLIB from "roslib"
+
 export default {
     data() {
         return {
