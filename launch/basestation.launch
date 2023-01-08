@@ -9,5 +9,6 @@
 
     <!-- run the teleop gui by starting the rosbridge server and then launching with a bash script -->
     <include file="$(find rosbridge_server)/launch/rosbridge_websocket.launch"></include>
+    <node pkg="tf2_web_republisher" type="tf2_web_republisher" name="tf2_web_republisher" />
     <node name="gui" pkg="mrover" type="gui_run.sh" cwd="node" />
 </launch>

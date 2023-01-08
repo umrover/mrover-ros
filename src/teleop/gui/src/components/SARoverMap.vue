@@ -30,7 +30,7 @@
       </div>
   
     </div>
-  </template>
+</template>
   
 <script>
     import { LMap, LTileLayer, LMarker, LPolyline, LPopup, LTooltip, LControlScale } from 'vue2-leaflet'

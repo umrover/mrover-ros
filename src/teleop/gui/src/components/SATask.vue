@@ -41,14 +41,15 @@
 </template>
 
 <script>
-import ROSLIB from "roslib"
-import SARoverMap from './SARoverMap.vue';
-import SAWaypointEditor from './SAWaypointEditor.vue'
-import DriveControls from "./DriveControls.vue";
-import ScoopUV from "./ScoopUV.vue"
-import ArmControls from "./ArmControls.vue"
-import PDBFuse from "./PDBFuse.vue"
-import DriveVelDataV from "./DriveVelDataV.vue"
+  import ROSLIB from "roslib"
+  import SARoverMap from './SARoverMap.vue';
+  import SAWaypointEditor from './SAWaypointEditor.vue'
+  import DriveControls from "./DriveControls.vue";
+  import ScoopUV from "./ScoopUV.vue"
+  import ArmControls from "./ArmControls.vue"
+  import PDBFuse from "./PDBFuse.vue"
+  import DriveVelDataV from "./DriveVelDataV.vue"
+  import * as qte from "quaternion-to-euler";
 
 
   export default {
@@ -59,8 +60,45 @@ import DriveVelDataV from "./DriveVelDataV.vue"
           latitude_deg: 42.294864932393835,
           longitude_deg: -83.70781314674628,
           bearing_deg: 0
-        }
+        },
+
+        // Pubs and Subs
+        odom_sub: null,
+        tfClient: null
       }
+    },
+
+    created: function () {
+      this.odom_sub = new ROSLIB.Topic({
+        ros: this.$ros,
+        name: '/gps/fix',
+        messageType: 'sensor_msgs/NavSatFix'
+      });
+
+      this.tfClient = new ROSLIB.TFClient({
+        ros: this.$ros,
+        fixedFrame: 'odom',
+        // Thresholds to trigger subscription callback
+        angularThres: 0.01,
+        transThres: 0.01
+      });
+
+      this.odom_sub.subscribe((msg) => {
+        // Callback for latLng to be set
+        this.odom.latitude_deg = msg.latitude
+        this.odom.longitude_deg = msg.longitude
+      });
+
+      // Subscriber for odom to base_link transform
+      this.tfClient.subscribe('base_link', (tf) => {
+        // Callback for IMU quaternion that describes bearing
+        let quaternion = tf.rotation
+        quaternion = [quaternion.w, quaternion.x, quaternion.y, quaternion.z]
+        //Quaternion to euler angles
+        let euler = qte(quaternion)
+        // euler[2] == euler z component
+        this.odom.bearing_deg = euler[2] * (180 / Math.PI)
+      });
     },
 
     components:{
