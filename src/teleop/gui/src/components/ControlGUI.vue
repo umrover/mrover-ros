@@ -4,7 +4,7 @@
     <ArmControls></ArmControls>
     <GimbalControls></GimbalControls>
     <JointStateTable v-bind:JointStateData="JointState" v-bind:vertical ="true"></JointStateTable>
-    <MoteusStateTable></MoteusStateTable>
+    <MoteusStateTable v-bind:MoteusStateData="MoteusState"></MoteusStateTable>
 
 </div>
 </template>
@@ -20,7 +20,8 @@ import MoteusStateTable from './MoteusStateTable.vue'
 export default {
     data() {
         return {
-            JointState:{}
+            JointState:{},
+            MoteusState:{}
         }
     },
 
@@ -41,7 +42,7 @@ export default {
 
         this.brushless_motors.subscribe((msg) => {
             this.JointState = msg.joint_states
-
+            this.MoteusState = msg.moteus_states
 
         })
     }

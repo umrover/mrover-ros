@@ -17,25 +17,68 @@
                 <col style="width: 85px">
             </colgroup>
     
-            <thead>
-    
-                <tr class="Bold">
-                    <th class="tableElement">Name</th>
-                    <th class="tableElement">State</th>
-                    <th class="tableElement">Error</th>
-                </tr>
-            </thead>
-    
-            <tbody>
-    
-                <tr v-for="motor in motors">
-                    <th class="tableElement">{{motor.name}}</th>
-                    <td class="tableElement">{{motor.state}} </td>
-                    <td class="tableElement">{{motor.error}} </td>
-                </tr>
-            </tbody>
+        
+        <thead>
+        <tr class="Bold">
+            <th class="tableElement">Name</th>
+            <th  class="tableElement">{{MoteusStateData.name[FrontLeft]}}</th>
+            <th  class="tableElement">{{MoteusStateData.name[FrontRight]}}</th>
+        </tr>
+
+        <tr class="Bold">
+            <th class="tableElement">State</th>
+            <th  class="tableElement">{{MoteusStateData.state[FrontLeft]}}</th>
+            <th  class="tableElement">{{MoteusStateData.state[FrontRight]}}</th>
+        </tr>
+        
+        <tr class="Bold">
+            <th class="tableElement">Error</th>
+            <th  class="tableElement">{{MoteusStateData.error[FrontLeft]}}</th>
+            <th  class="tableElement">{{MoteusStateData.error[FrontRight]}}</th>
+        </tr>
+
+        <tr class="Bold">
+            <th class="tableElement">Name</th>
+            <th  class="tableElement">{{MoteusStateData.name[MiddleLeft]}}</th>
+            <th  class="tableElement">{{MoteusStateData.name[MiddleRight]}}</th>
+        </tr>
+
+        <tr class="Bold">
+            <th class="tableElement">State</th>
+            <th  class="tableElement">{{MoteusStateData.state[MiddleLeft]}}</th>
+            <th  class="tableElement">{{MoteusStateData.state[MiddleRight]}}</th>
+        </tr>
+        
+        <tr class="Bold">
+            <th class="tableElement">Error</th>
+            <th  class="tableElement">{{MoteusStateData.error[MiddleLeft]}}</th>
+            <th  class="tableElement">{{MoteusStateData.error[MiddleRight]}}</th>
+        </tr>
+        <tr class="Bold">
+            <th class="tableElement">Name</th>
+            <th  class="tableElement">{{MoteusStateData.name[BackLeft]}}</th>
+            <th  class="tableElement">{{MoteusStateData.name[BackRight]}}</th>
+        </tr>
+
+        <tr class="Bold">
+            <th class="tableElement">State</th>
+            <th  class="tableElement">{{MoteusStateData.state[BackLeft]}}</th>
+            <th  class="tableElement">{{MoteusStateData.state[BackRight]}}</th>
+        </tr>
+        
+        <tr class="Bold">
+            <th class="tableElement">Error</th>
+            <th  class="tableElement">{{MoteusStateData.error[BackLeft]}}</th>
+            <th  class="tableElement">{{MoteusStateData.error[BackRight]}}</th>
+        </tr>
+
+        
+        
+        
+        
+        </thead>
         </table>
-    
+       
     </div>
 </template>
     
@@ -99,47 +142,39 @@ import ROSLIB from "roslib"
 export default {
     data() {
         return {
-            motors: []
-             
+            motors: [],
+            FrontLeft: 0,
+            FrontRight: 1,
+            MiddleLeft: 2,
+            MiddleRight: 3,
+            BackLeft: 4,
+            BackRight: 5,
         }
     },
-    
-    created: function () {
-        this.brushless_motors = new ROSLIB.Topic({
-            ros: this.$ros,
-            name: '/drive_status',
-            messageType: 'mrover/MotorsStatus'
-        });
-        
-        this.brushless_motors.subscribe((msg) => {
-<<<<<<< HEAD
-            //const length = Moteus_State.name.length
-=======
->>>>>>> a374370d69d4436b0541b69e2b81db6f110b538d
-            this.motors = []
-            const moteus_state = msg.moteus_states
-            for (let i = 0; i < 6; i++) {
+    props: {
+    MoteusStateData: {
+      type: Object,
+      required: true
+    },
+
+   
+    watch:  {
+        MoteusStateData: function(NewVal){
+        this.motors = []
+        console.log(NewVal)
+        for (let i = 0; i < 6; i++) {
                 this.motors.push({
-<<<<<<< HEAD
-                    name: Moteus_State.name[i],
-                    state: Moteus_State.state[i],
-                    error: Moteus_State.error[i],
-                    
-            })
-            
-=======
-                    name: moteus_state.name[i],
-                    state: moteus_state.state[i],
-                    error: moteus_state.error[i],
+                    name: NewVal.name[i],
+                    state: NewVal.state[i],
+                    error: NewVal.error[i],
                 })
->>>>>>> a374370d69d4436b0541b69e2b81db6f110b538d
             }
-            
-        })
-        
     }
- 
     }
+
+
+    }
+}
 
 </script>
     

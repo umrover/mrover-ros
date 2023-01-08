@@ -50,3 +50,5 @@ teleop:
     dampen: 3
     pan: 4
     tilt: 5
+  topic_echo_presets:
+    esw: ["/joystick"]
