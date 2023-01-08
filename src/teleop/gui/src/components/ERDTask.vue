@@ -71,29 +71,45 @@ export default {
         bearing_deg: 0,
         speed: 0
       },
+
       topic_subscriptions : {},
+
+      // Pubs and Subs
+      odom_sub: null,
+      tfClient: null
     }
   },
 
   created: function () {
-    for(let i = 0; i < subscriptions.length; ++i) {
-      this.topic_subscriptions[subscriptions[i]['topic']] = new ROSLIB.topic({
-        ros : this.$ros,
-        name : subscriptions[i]['topic'],
-        messageType : subscriptions[i]['type'],
-      });
-    }
-    this.topic_subscriptions['/gpx/fix'].subscribe((msg)=> {
-      this.odom.latitude_deg = msg.latitude_deg
-      this.odom.longitude_deg = msg.longitude_deg
+    this.odom_sub = new ROSLIB.Topic({
+      ros: this.$ros,
+      name: '/gps/fix',
+      messageType: 'sensor_msgs/NavSatFix'
     });
-    this.topic_subscriptions['/imu/data'].subscribe((msg)=> {
+
+    this.tfClient = new ROSLIB.TFClient({
+      ros: this.$ros,
+      fixedFrame: 'odom',
+      // Thresholds to trigger subscription callback
+      angularThres: 0.01,
+      transThres: 0.01
+    });
+
+    // Subscriber for odom to base_link transform
+    this.tfClient.subscribe('base_link', (tf) => {
       // Callback for IMU quaternion that describes bearing
-      let quaternion = msg.orientation
+      let quaternion = tf.rotation
       quaternion = [quaternion.w, quaternion.x, quaternion.y, quaternion.z]
+      //Quaternion to euler angles
       let euler = qte(quaternion)
       // euler[2] == euler z component
-      this.odom.bearing_deg = euler[2] * (180/Math.PI)
+      this.odom.bearing_deg = euler[2] * (180 / Math.PI)
+    });
+
+    this.odom_sub.subscribe((msg) => {
+      // Callback for latLng to be set
+      this.odom.latitude_deg = msg.latitude
+      this.odom.longitude_deg = msg.longitude
     });
   },
 

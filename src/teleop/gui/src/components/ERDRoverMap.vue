@@ -4,6 +4,7 @@
         <l-control-scale :imperial="false"/>
         <l-tile-layer ref="tileLayer" :url="this.online ? this.onlineUrl : this.offlineUrl" :attribution="attribution" 
                       :options="this.online ? this.onlineTileOptions : this.offlineTileOptions"/>
+
         <l-marker ref="rover" :lat-lng="odomLatLng" :icon="locationIcon"/>
 
         <div v-for="(waypoint, index) in waypointList" :key="index">
@@ -33,7 +34,7 @@
     import { LMap, LTileLayer, LMarker, LPolyline, LPopup, LTooltip, LControlScale } from 'vue2-leaflet'
     import { mapGetters, mapMutations } from 'vuex'
     import L from '../leaflet-rotatedmarker.js'
-    import * as qte from "quaternion-to-euler";
+    import ROSLIB from 'roslib';
 
     const MAX_ODOM_COUNT = 1000
     const DRAW_FREQUENCY = 10
@@ -101,23 +102,6 @@
                 iconAnchor: [32, 64],
                 popupAnchor: [0, -32]
             })
-            this.tfClient = new ROSLIB.TFClient({
-                ros: this.$ros,
-                fixedFrame: 'odom',
-                // Thresholds to trigger subscription callback
-                angularThres: 0.01,
-                transThres: 0.01
-            });
-            // Subscriber for odom to base_link transform
-            this.tfClient.subscribe('base_link', (tf) => {
-                // Callback for IMU quaternion that describes bearing
-                let quaternion = tf.rotation
-                quaternion = [quaternion.w, quaternion.x, quaternion.y, quaternion.z]
-                //Quaternion to euler angles
-                let euler = qte(quaternion)
-                // euler[2] == euler z component
-                this.odom.bearing_deg = euler[2] * (180 / Math.PI)
-            });
         },
 
         methods: {
@@ -143,9 +127,11 @@
                 highlightedWaypoint: "highlightedWaypoint",
             }),
 
+            // Convert to latLng object for Leaflet to use
             odomLatLng: function () {
-                return L.latLng(this.odom.latitude_deg + this.odom.latitude_min/60, this.odom.longitude_deg + this.odom.longitude_min/60)
+                return L.latLng(this.odom.latitude_deg, this.odom.longitude_deg)
             },
+
             polylinePath: function () {
                 return [this.odomLatLng].concat(this.route.map(waypoint => waypoint.latLng))
             }
@@ -159,29 +145,41 @@
         },
 
         watch: {
-            odom: function (val) {
-                // Trigger every time rover odom is changed
-                const lat = val.latitude_deg + val.latitude_min / 60
-                const lng = val.longitude_deg + val.longitude_min / 60
-                const angle = val.bearing_deg
-                // Move to rover on first odom message
-                if (!this.findRover) {
-                    this.findRover = true
-                    this.center = L.latLng(lat, lng)
-                }
-                // Update the rover marker
-                this.roverMarker.setRotationAngle(angle)
-                this.roverMarker.setLatLng(L.latLng(lat, lng))
-                // Update the rover path
-                this.odomCount++
-                if (this.odomCount % DRAW_FREQUENCY === 0) {
-                    if (this.odomCount > MAX_ODOM_COUNT * DRAW_FREQUENCY) {
-                        this.odomPath.splice(0, 1)
+            odom: {
+                handler: function (val) {
+                    // Trigger every time rover odom is changed
+            
+                    const lat = val.latitude_deg
+                    const lng = val.longitude_deg
+                    const angle = val.bearing_deg
+            
+                    const latLng = L.latLng(lat, lng)
+            
+                    // Move to rover on first odom message
+                    if (!this.findRover) {
+                        this.findRover = true
+                        this.center = latLng
                     }
-                    this.odomPath.push(L.latLng(lat, lng))
-                }
-                this.odomPath[this.odomPath.length - 1] = L.latLng(lat, lng)
-            }
+                    
+                    // Update the rover marker using bearing angle
+                    this.roverMarker.setRotationAngle(angle)
+            
+                    this.roverMarker.setLatLng(latLng)
+            
+                    // Update the rover path
+                    this.odomCount++
+                    if (this.odomCount % DRAW_FREQUENCY === 0) {
+                        if (this.odomCount > MAX_ODOM_COUNT * DRAW_FREQUENCY) {
+                            this.odomPath.splice(0, 1)
+                        }
+                        this.odomPath.push(latLng)
+                    }
+            
+                    this.odomPath[this.odomPath.length - 1] = latLng
+                },
+                // Deep will watch for changes in children of an object
+                deep: true
+            },
         },
         mounted: function () {
             this.$nextTick(() => {
