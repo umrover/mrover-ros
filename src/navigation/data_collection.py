@@ -23,7 +23,7 @@ class DataManager:
     def __init__(self):
         dict = {"timestamp":0, "rotation":[], "position":[], "actual_linear_vel":[], "actual_angular_vel":[],
         "wheel_names":[], "wheel_effort":[], "wheel_vel":[], "commanded_linear":[], "commanded_angular":[]}
-        self._cur_row(data = dict)
+        self._cur_row = DataFrame(dict)
         rospy.logerr(f"Ran __init__ in data_collection.py")
         rospy.Subscriber("/drive_vel_data", JointState, self.make_esw_dataframe)
         rospy.Subscriber("/rover_stuck", Bool, self.set_collecting)

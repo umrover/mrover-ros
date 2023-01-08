@@ -1,3 +1,4 @@
+'''
 from data_collection import Data
 
 # 10 or more data objects flagged as stuck, then you are actually stuck
@@ -82,3 +83,4 @@ class WatchdogOff(WatchdogBase):
 
     def is_stuck(self, data_obj: Data):
         return False
+'''

@@ -5,12 +5,12 @@ import rospy
 
 from geometry_msgs.msg import Twist
 from util.SE3 import SE3
-import data_collection
+from data_collection import DataManager
 from util.np_utils import angle_to_rotate
 from util.np_utils import angle_to_rotate
 
 rospy.logerr(f"Make DataCollector in drive.py")
-collector = data_collection.DataManager()
+collector = DataManager()
 MAX_DRIVING_EFFORT = 1
 MIN_DRIVING_EFFORT = -1
 TURNING_P = 10.0
