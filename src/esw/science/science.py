@@ -145,7 +145,7 @@ class ScienceBridge:
             - a boolean that is the requested heater state of that device.
         :returns: A boolean that is the success of sent UART transaction.
         """
-        success = self._heater_transmit(req.device, req.color)
+        success = self._heater_transmit(req.device, req.enable)
         return ChangeHeaterStateResponse(success)
 
     def handle_change_servo_angles(self, req: ChangeServoAngleRequest) -> ChangeServoAngleResponse:
