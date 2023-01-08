@@ -42,7 +42,7 @@ export default {
             });
 
             let request = new ROSLIB.ServiceRequest({
-                id: this.site,
+                id: this.index,
                 angle: this.angles[this.index]
             });
 
