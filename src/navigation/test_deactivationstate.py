@@ -11,7 +11,7 @@ from util.tf_utils import EARTH_RADIUS
 
 class Converter:
     def __init__(self):
-        rospy.init_node("gps-converter")
+        rospy.init_node("OffState")
         rospy.Subscriber("auton/enable_state", EnableAuton, self.read_data)
         self.publish_course = CourseService()
     
@@ -37,6 +37,7 @@ class Converter:
         z = base[2]
         odom = np.array([x, y, z])
         return (Waypoint(fiducial_id=0, tf_id=f"course{waypoint.id}"), SE3(position=odom))
+
 
     def read_data(self, data: EnableAuton):
         # If auton is enabled, publish the waypoints to the course

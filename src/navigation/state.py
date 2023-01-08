@@ -94,5 +94,5 @@ class OffState(BaseState):
         # Stop rover
         cmd_vel = Twist()
         self.context.rover.send_drive_command(cmd_vel)
-        return "off"
+        return "idle"
         # We have determined the Rover is off, now ignore Rover on ...

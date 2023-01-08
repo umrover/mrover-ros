@@ -128,6 +128,7 @@ else ()
             tf2_geometry_msgs
             tf2_ros
             tf2
+            tf2_web_republisher
             visualization_msgs
             image_transport
             cv_bridge
