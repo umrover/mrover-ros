@@ -50,7 +50,7 @@ export default {
         this.temp_sub = new ROSLIB.Topic({
             ros: this.$ros,
             name: 'science_data/temperatures',
-            messageType: 'mrover/ScienceTemperatures'
+            messageType: 'mrover/ScienceTemperature'
         });
 
         this.temp_sub.subscribe((msg) => {

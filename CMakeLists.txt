@@ -36,7 +36,7 @@ set(MROVER_MESSAGE_FILES
         HeaterData.msg
         MoteusState.msg
         ODriveState.msg
-        ScienceTemperatures.msg
+        ScienceTemperature.msg
         Spectral.msg
         Waypoint.msg
         WaypointType.msg
