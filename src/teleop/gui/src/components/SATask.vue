@@ -83,12 +83,6 @@
         transThres: 0.01
       });
 
-      this.odom_sub.subscribe((msg) => {
-        // Callback for latLng to be set
-        this.odom.latitude_deg = msg.latitude
-        this.odom.longitude_deg = msg.longitude
-      });
-
       // Subscriber for odom to base_link transform
       this.tfClient.subscribe('base_link', (tf) => {
         // Callback for IMU quaternion that describes bearing
@@ -98,6 +92,13 @@
         let euler = qte(quaternion)
         // euler[2] == euler z component
         this.odom.bearing_deg = euler[2] * (180 / Math.PI)
+        console.log(tf)
+      });
+
+      this.odom_sub.subscribe((msg) => {
+        // Callback for latLng to be set
+        this.odom.latitude_deg = msg.latitude
+        this.odom.longitude_deg = msg.longitude
       });
     },
 

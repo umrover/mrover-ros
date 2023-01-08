@@ -1,11 +1,11 @@
 <template>
     <div class="wrap">
       <!-- Map goes here -->
-      <l-map ref="map" class="map" :zoom="19" :center="center" v-on:click="getClickedLatLon($event)">
+      <l-map ref="map" class="map" :zoom="22" :center="center" v-on:click="getClickedLatLon($event)">
         <l-control-scale :imperial="false"/>
          <!-- Tile Layer for map background -->
         <l-tile-layer ref="tileLayer" :url="this.online ? this.onlineUrl : this.offlineUrl" :attribution="attribution" 
-        :options="this.online ? this.onlineTileOptions : this.offlineTileOptions"/>
+            :options="this.online ? this.onlineTileOptions : this.offlineTileOptions"/>
         <l-marker ref="rover" :lat-lng="odomLatLng" :icon="locationIcon"/>
   
         <div v-for="(waypoint, index) in waypointList" :key="index">
@@ -100,6 +100,7 @@
         },
         computed: {
             ...mapGetters('sa', {
+                route: 'route',
                 waypointList: 'waypointList',
                 highlightedWaypoint: "highlightedWaypoint",
             }),
@@ -144,31 +145,45 @@
                 required: true
             }
         },
+
         watch: {
-            odom: function (val) {
-                // Trigger every time rover odom is changed
-                const lat = val.latitude_deg + val.latitude_min / 60
-                const lng = val.longitude_deg + val.longitude_min / 60
-                const angle = val.bearing_deg
-                // Move to rover on first odom message
-                if (!this.findRover) {
-                    this.findRover = true
-                    this.center = L.latLng(lat, lng)
-                }
-                // Update the rover marker
-                this.roverMarker.setRotationAngle(angle)
-                this.roverMarker.setLatLng(L.latLng(lat, lng))
-                // Update the rover path
-                this.odomCount++
-                if (this.odomCount % DRAW_FREQUENCY === 0) {
-                    if (this.odomCount > MAX_ODOM_COUNT * DRAW_FREQUENCY) {
-                    this.odomPath.splice(0, 1)
+            odom: {
+                handler: function (val) {
+                    // Trigger every time rover odom is changed
+            
+                    const lat = val.latitude_deg
+                    const lng = val.longitude_deg
+                    const angle = val.bearing_deg
+            
+                    const latLng = L.latLng(lat, lng)
+            
+                    // Move to rover on first odom message
+                    if (!this.findRover) {
+                        this.findRover = true
+                        this.center = latLng
                     }
-                    this.odomPath.push(L.latLng(lat, lng))
-                }
-                this.odomPath[this.odomPath.length - 1] = L.latLng(lat, lng)
-            }
+                    
+                    // Update the rover marker using bearing angle
+                    this.roverMarker.setRotationAngle(angle)
+            
+                    this.roverMarker.setLatLng(latLng)
+            
+                    // Update the rover path
+                    this.odomCount++
+                    if (this.odomCount % DRAW_FREQUENCY === 0) {
+                        if (this.odomCount > MAX_ODOM_COUNT * DRAW_FREQUENCY) {
+                            this.odomPath.splice(0, 1)
+                        }
+                        this.odomPath.push(latLng)
+                    }
+            
+                    this.odomPath[this.odomPath.length - 1] = latLng
+                },
+                // Deep will watch for changes in children of an object
+                deep: true
+            },
         },
+
         mounted: function () {
             this.$nextTick(() => {
                 this.map = this.$refs.map.mapObject
