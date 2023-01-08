@@ -219,7 +219,7 @@ class ScienceBridge:
 
         length = len(tx_msg)
         assert length <= self._uart_transmit_msg_len, "tx_msg should not be greater than self._uart_transmit_msg_len"
-        list_msg = ["f{tx_msg}"]
+        list_msg = [f"{tx_msg}"]
         missing_characters = self._uart_transmit_msg_len - length
         list_dummy = [","] * missing_characters
         list_total = list_msg + list_dummy
