@@ -23,11 +23,15 @@ class DataManager:
     #Initialize the dictionary with the Rover's first position, rotation, and timestamp
     #When the datacollection starts.
     def __init__(self):
-        self.dict = {"timestamp": 0, "rotation":np.array(np.zeros(4)), "position":np.array([np.zeros(3)]), 
-        "actual_linear_vel":np.array(np.zeros(3)), "actual_angular_vel":np.array(np.zeros(3)),
-        "wheel_names":np.array(["","","","","",""]), "wheel_effort": np.array(np.zeros(6)), 
-        "wheel_vel":np.array(np.zeros(6)), "commanded_linear":np.array(np.zeros(3)),
-        "commanded_angular":np.array(np.zeros(3))}
+        three_zero = np.zeros(3)
+        four_zero = np.zeros(4)
+        six_zero = np.zeros(6)
+        self.dict = {"timestamp": 0, "rotation": [four_zero], "position": [three_zero], 
+        "actual_linear_vel": [three_zero], "actual_angular_vel": [three_zero],
+        "wheel_names": [["","","","","",""]], "wheel_effort": [six_zero], 
+        "wheel_vel": [six_zero], "commanded_linear": [three_zero],
+        "commanded_angular": [three_zero]}
+
         self._df = DataFrame()
         self._cur_row = DataFrame(self.dict)
         rospy.logerr(f"Ran __init__ in data_collection.py")
