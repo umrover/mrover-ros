@@ -31,6 +31,7 @@ set(MROVER_MESSAGE_FILES
         EnableAuton.msg
         GimbalCmd.msg
         GPSWaypoint.msg
+        ImuAndMag.msg
         MoteusState.msg
         ODriveState.msg
         Waypoint.msg
@@ -128,6 +129,7 @@ else ()
             tf2_geometry_msgs
             tf2_ros
             tf2
+            tf2_web_republisher
             visualization_msgs
             image_transport
             cv_bridge
