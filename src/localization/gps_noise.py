@@ -70,7 +70,7 @@ def main():
     motion_truth = get_ground_truth(initial_pos, velocity[:, motion_start_index-1:], direction)
 
     # Calculate the statistical properties of the noise and report them
-    stationary_var = get_variance(stationary_data, np.repeat(initial_pos, stationary_data.shape[1], axis = 1))
+    stationary_var = get_variance(stationary_data, initial_pos)
     motion_var = get_variance(motion_data, motion_truth)
     stationary_std_dev = get_std_dev(stationary_var)
     motion_std_dev = get_std_dev(motion_var)
