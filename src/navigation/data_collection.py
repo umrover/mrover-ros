@@ -43,6 +43,7 @@ class DataManager:
     # We will only call this when the object list is not empty. When the list is empty the initial actual
     # linear and angular velocities will be their default values set to zero.
     def update_tf_vel(self):
+        #Error in this function when transitioning to the WaypointState/Starting to drive
         se3_time = self.collector_context.rover.get_pose_with_time()
         newest_position = se3_time[0].position
         newest_rotation_so3 = se3_time[0].rotation
@@ -50,15 +51,15 @@ class DataManager:
 
         delta_t = (newest_timestamp - self._cur_row["timestamp"])
 
-        delta_theta = newest_rotation_so3.rot_distance_to(SO3(((self._cur_row["rotation"])[0]).copy()))
-        actual_linear_vel = (newest_position - (self._cur_row["position"])[0]) / delta_t
+        delta_theta = newest_rotation_so3.rot_distance_to(SO3(self._cur_row["rotation"][0]))
+        actual_linear_vel = (newest_position - (self._cur_row["position"][0])) / delta_t
         actual_angular_vel = delta_theta / delta_t
 
         self._cur_row["timestamp"] = newest_timestamp
-        self._cur_row["position"] = np.array(newest_position)
-        self._cur_row["rotation"] = np.array(newest_rotation_so3.quaternion)
-        self._cur_row["actual_linear_vel"] = np.array(actual_linear_vel)
-        self._cur_row["actual_angular_vel"] = np.array(actual_angular_vel)
+        self._cur_row["position"] = [newest_position]
+        self._cur_row["rotation"] = [newest_rotation_so3.quaternion]
+        self._cur_row["actual_linear_vel"] = [actual_linear_vel]
+        self._cur_row["actual_angular_vel"] = [actual_angular_vel]
 
     # This function will only be called/invoked when we receive new esw data
     # Callback function for subscriber to JointState
