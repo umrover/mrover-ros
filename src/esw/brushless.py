@@ -98,9 +98,8 @@ class MoteusBridge:
         Changes the values of the arguments of set_position for when it is used in self._send_command.
         :param command: contains arguments that are used in the moteus controller.set_position function
         """
-        self.command_lock.acquire()
-        self._command = command
-        self.command_lock.release()
+        with self.command_lock:
+            self._command = command
 
     async def _send_command(self) -> None:
         """
@@ -109,9 +108,8 @@ class MoteusBridge:
         Otherwise, error state is entered. State must be in armed state.
         """
         assert self.moteus_state.state == MoteusState.ARMED_STATE
-        self.command_lock.acquire()
-        command = self._command
-        self.command_lock.release()
+        with self.command_lock:
+            command = self._command
         try:
             state = await asyncio.wait_for(
                 self.controller.set_position(
@@ -246,12 +244,6 @@ class MotorsManager:
             ),
         )
 
-    def update_time(self) -> None:
-        """
-        Updates the last updated time
-        """
-        self._last_updated_time = t.time()
-
     async def run(self) -> None:
         """
         Constantly updates the bridges.
@@ -296,6 +288,8 @@ class MotorsManager:
         Updates the commands
         :param command_data_list: Has an array of command data that represents the commands for each motor.
         """
+        self._last_updated_time = t.time()
+
         assert len(command_data_list) == len(self._motor_names)
         for i, command_data in enumerate(command_data_list):
             motor_name = self._motor_names[i]
@@ -321,7 +315,10 @@ class ArmManager:
             )
 
         using_pi3_hat = rospy.get_param("brushless/using_pi3_hat")
+        transport = None
         if using_pi3_hat:
+            # TODO - Uncomment once pi3hat is supported
+            pass
             # import moteus_pi3hat
             # transport = moteus_pi3hat.Pi3HatRouter(
             #     servo_bus_map={
@@ -331,9 +328,6 @@ class ArmManager:
             #         4: [14],
             #     },
             # )
-            pass
-        else:
-            transport = None
 
         self._motors_manager = MotorsManager(arm_controller_info_by_name, transport, "arm_status")
         rospy.Subscriber("ra_cmd", JointState, self._process_ra_cmd)
@@ -344,7 +338,6 @@ class ArmManager:
         :param ros_msg: Has information to control the joints controlled by both brushed and brushless motors.
         We only care about the joints controlled by brushless motors.
         """
-        self._motors_manager.update_time()
 
         for i, name in enumerate(ros_msg.name):
             if name in self._arm_names:
@@ -358,7 +351,7 @@ class ArmManager:
                 # but change it just in case.
                 if abs(velocity) > 1:
                     rospy.logerr("Commanded arm velocity is too low or high (should be [-1, 1]")
-                    velocity = 0
+                    velocity = max(-1, min(1, velocity))
                 velocity *= self._max_rps_by_name[name]
                 # self._arm_command_data_list[self._arm_names.index(name)].position = position
                 self._arm_command_data_list[self._arm_names.index(name)].velocity = velocity
@@ -396,7 +389,9 @@ class DriveManager:
             )
 
         using_pi3_hat = rospy.get_param("brushless/using_pi3_hat")
+        transport = None
         if using_pi3_hat:
+            # TODO - Uncomment once pi3hat is supported
             pass
             # import moteus_pi3hat
             # transport = moteus_pi3hat.Pi3HatRouter(
@@ -407,8 +402,6 @@ class DriveManager:
             #         4: [14],
             #     },
             # )
-        else:
-            transport = None
 
         self._motors_manager = MotorsManager(drive_controller_info_by_name, transport, "drive_status")
         rospy.Subscriber("cmd_vel", Twist, self._process_twist_message)
@@ -418,7 +411,6 @@ class DriveManager:
         Processes a Twist message and controls individual motor speeds.
         :param ros_msg: Has linear x and angular z velocity components.
         """
-        self._motors_manager.update_time()
 
         forward = ros_msg.linear.x
         turn = ros_msg.angular.z
