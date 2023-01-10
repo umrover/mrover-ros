@@ -55,7 +55,10 @@ class VideoDevices:
             if self.resolution != args:
                 # If different args, just recreate video source and every output
                 try:
+                    # TODO - Make sure that the close does not break anything
+                    self.video_source.Close()
                     self.video_source = jetson.utils.videoSource(f"/dev/video{self.device}", argv=args)
+                    self.video_source.Open()
                     for other_endpoint in self.output_by_endpoint.values():
                         self.output_by_endpoint[other_endpoint] = jetson.utils.videoOutput(
                             f"rtp://{other_endpoint}", argv=args
@@ -77,6 +80,7 @@ class VideoDevices:
             # If it does not exist already
             try:
                 self.video_source = jetson.utils.videoSource(f"/dev/video{self.device}", argv=args)
+                self.video_source.Open()
                 self.output_by_endpoint[endpoint] = jetson.utils.videoOutput(f"rtp://{endpoint}", argv=args)
                 self.resolution = args
             except Exception:
@@ -190,8 +194,7 @@ class StreamingManager:
         for index, video_device in enumerate(self._video_devices):
             if video_device.is_streaming():
                 try:
-                    # TODO - See if timeout=100 is fine. We have tested with 15,000.
-                    image = video_device.video_source.Capture(timeout=15000)
+                    image = video_device.video_source.Capture(timeout=5000)
                     for output in video_device.output_by_endpoint.values():
                         output.Render(image)
                 except Exception as e:
