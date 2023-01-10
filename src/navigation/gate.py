@@ -1,17 +1,18 @@
 from __future__ import annotations
 from typing import ClassVar, Optional
 from unicodedata import normalize
-from context import Gate
+from .context import Gate
 
 import numpy as np
 
-from context import Context, Environment
+from .context import Context
 from aenum import Enum, NoAlias
-from state import BaseState
+from .state import BaseState
 from trajectory import Trajectory
 from dataclasses import dataclass
-from drive import get_drive_command
+from .drive import get_drive_command
 from util.np_utils import normalized, perpendicular_2d
+from shapely.geometry import Point, LineString
 
 STOP_THRESH = 0.2
 DRIVE_FWD_THRESH = 0.34  # 20 degrees
@@ -40,7 +41,7 @@ class GateTrajectory(Trajectory):
         post_direction = normalized(post2 - post1)
         perpendicular = perpendicular_2d(post_direction)
 
-        # appraoch points are the points that are directly out from the center (a straight line) of
+        # approach points are the points that are directly out from the center (a straight line) of
         # the gate "approach_distance" away
         possible_approach_points = [
             approach_distance * perpendicular + center,
@@ -70,10 +71,53 @@ class GateTrajectory(Trajectory):
         closest_approach_point = possible_approach_points[approach_idx]
         victory_point = possible_approach_points[1 - approach_idx]
 
+        coordinates = GateTrajectory.gateSelectPath(rover_position, closest_prep_point, closest_approach_point, center, victory_point)
+
         # put the list of coordinates together
-        coordinates = np.array([closest_prep_point, closest_approach_point, victory_point])
-        coordinates = np.hstack((coordinates, np.zeros(coordinates.shape[0]).reshape(-1, 1)))
         return GateTrajectory(coordinates)
+
+    def gateSelectPath(rover_position: np.ndarray, pt1, pt2, pt3, pt4):
+        #Get the shapes of both the posts
+        postOneShape, postTwoShape = Gate.getPostGeoShape()
+
+        #Get points for path
+        pt0 = rover_position
+
+        #Get paths
+        pathOne, pathTwo, = GateTrajectory.pathLineString(pt0, pt2, pt3, pt4)
+
+        #Check if the lines intersect
+        #First check if the path1 hits either posts
+        if(GateTrajectory.lineIntersectCheck(pathOne, postOneShape) or GateTrajectory.lineIntersectCheck(pathOne,postTwoShape)):
+            if(GateTrajectory.lineIntersectCheck(pathTwo, postOneShape) or GateTrajectory.lineIntersectCheck(pathTwo,postTwoShape)):
+                coordinates = np.array([pt1, pt2, pt3, pt4])
+                coordinates = np.hstack((coordinates, np.zeros(coordinates.shape[0]).reshape(-1, 1)))
+            else:
+                coordinates = np.array([pt2, pt3, pt4])
+                coordinates = np.hstack((coordinates, np.zeros(coordinates.shape[0]).reshape(-1, 1)))
+        else:
+            coordinates = np.array([pt3, pt4])
+            coordinates = np.hstack((coordinates, np.zeros(coordinates.shape[0]).reshape(-1, 1)))
+        
+        return coordinates           
+
+    def lineIntersectCheck(rover_path, postShape):
+        return (rover_path.intersect(postShape))
+        
+    def pathLineString(rover_pose: np.ndarray, p2: np.ndarray, p3: np.ndarray, p4: np.darray):
+        #Find path1 (only has rover, point 3, point4)
+        path1 = LineString([rover_pose, p3, p4])
+
+        #Find path2 (only has rover, point2, point3, point4)
+        path2 = LineString(rover_pose, p2, p3, p4)
+
+        return (path1,path2)
+
+        
+
+
+        
+
 
 
 class GateTraverseStateTransitions(Enum):

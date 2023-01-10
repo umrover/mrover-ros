@@ -1,0 +1,8 @@
+<launch>
+  <!-- Set necessary params-->
+  <param name="string"  value="mystring" />
+  <!-- Launch a necessary node-->
+   
+  <!-- Execute multiple tests after configuring nodes-->
+  <test test-name="navigation" pkg="mrover" type="test_gate.py" />
+</launch>

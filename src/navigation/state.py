@@ -2,7 +2,7 @@ from abc import ABC
 from typing import List
 
 import smach
-from context import Context
+from .context import Context
 from aenum import Enum, NoAlias
 from geometry_msgs.msg import Twist
 

@@ -10,12 +10,24 @@ from visualization_msgs.msg import Marker
 from typing import ClassVar, Optional
 import numpy as np
 from dataclasses import dataclass
-
+from shapely import Point, LineString
 
 @dataclass
 class Gate:
     post1: np.ndarray
     post2: np.ndarray
+
+    def getPostGeoShape(self):
+        #Declare radius to 0.5 meters
+        RADIUS = 0.5
+
+        #Find circle of both posts 
+        post1_shape = Point(self.post1[0], self.post1[1]).buffer(RADIUS)
+        post2_shape = Point(self.post2[0], self.post[1]).buffer(RADIUS)
+
+        return (post1_shape, post2_shape)
+    
+
 
 
 @dataclass
