@@ -148,9 +148,9 @@ class StreamingManager:
             self._endpoints[7]: (1, 3),
         }
         self._resolution_args = [
-            rospy.get_param("cameras/arguments/144_res"),
-            rospy.get_param("cameras/arguments/360_res"),
-            rospy.get_param("cameras/arguments/720_res"),
+            list(rospy.get_param("cameras/arguments/144_res")),
+            list(rospy.get_param("cameras/arguments/360_res")),
+            list(rospy.get_param("cameras/arguments/720_res")),
         ]
         self._active_devices = 0
         # determined by hardware. this is a constant. do not change.
