@@ -28,8 +28,8 @@
       return {
         camsEnabled: new Array(9).fill(false),
         names: Array.from({length: 9}, (_,i) => "Camera: " + i),
-        cameraIdx: 0,
-        cameraName: "Default",
+        cameraIdx: 1,
+        cameraName: "",
         capacity: 2,
         qualities: new Array(9).fill(1),
         streamOrder: [-1, -1, -1, -1]
@@ -82,6 +82,7 @@
 
       changeQuality({index, value}){
         Vue.set(this.qualities, index, value);
+        this.sendCameras();
       },
 
       swapStream({prev, newest}){
@@ -103,14 +104,6 @@
       getStreamNum(index){
         return this.streamOrder.indexOf(index);
       }
-
-    },
-
-    computed: {
-      checkCapacity(){
-        var numStreaming = this.streamOrder.filter(index => index != -1);
-        return numStreaming.length < this.capacity+1;
-      },
 
     },
 

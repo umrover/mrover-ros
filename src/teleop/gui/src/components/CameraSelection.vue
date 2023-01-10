@@ -46,7 +46,7 @@
     },
 
     watch: {
-      camsEnabled() {
+      camsEnabled: function() {
         for (let i = 0; i < this.camsEnabled.length; i++) {
           (this.camsEnabled[i]) ? this.opacities[i] = 0.55 : this.opacities[i] = 1.0;
         }
