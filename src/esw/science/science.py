@@ -313,7 +313,7 @@ class ScienceBridge:
         arr = tx_msg.split(",")
         if len(arr) < 4:
             return
-        heater_state = [bool(int(arr[0])), bool(int(arr[1])), bool(int(arr[2]))]
+        heater_state = [bool(int(arr[1])), bool(int(arr[2])), bool(int(arr[3]))]
         ros_msg = HeaterData(state=heater_state)
         self._publisher_by_tag[arr[0][3:]].publish(ros_msg)
 
