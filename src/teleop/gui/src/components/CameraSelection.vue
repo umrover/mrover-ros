@@ -2,7 +2,7 @@
     <div class="wrap">
       <div class="buttons" v-for="j in 3">
         <template v-for="i in 3">
-          <button class="cam_buttons" v-bind:style="{opacity: opacities[(i-1) + 3*(j-1)]}" v-on:click="$emit('cam_index', (i-1) + 3*(j-1))" :disabled="maxedOut && !camsEnabled[(i-1) + 3*(j-1)]"> <span>{{names[(i-1) + 3*(j-1)]}}</span> </button>
+          <button class="cam_buttons" :class="{active_cam_button:camsEnabled[(i-1) + 3*(j-1)]}" v-on:click="$emit('cam_index', (i-1) + 3*(j-1))" :disabled="maxedOut && !camsEnabled[(i-1) + 3*(j-1)]"> <span>{{names[(i-1) + 3*(j-1)]}}</span> </button>
           <div class="fixed-spacer"></div>
         </template>
       </div>
@@ -72,6 +72,11 @@
     .fixed-spacer {
       width:10px;
       height:auto;
+    }
+
+    .active_cam_button {
+      background-color: green;
+      color: white;
     }
   
   </style>
