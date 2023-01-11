@@ -362,7 +362,7 @@ class ScienceBridge:
         temperature_values = ScienceTemperature()
 
         for i in range(self._num_science_thermistors):
-            temperature_values.append(float(arr[i + 1]))
+            temperature_values.temperatures[i] = float(arr[i + 1])
 
         self._publisher_by_tag[arr[0][3:]].publish(temperature_values)
 
