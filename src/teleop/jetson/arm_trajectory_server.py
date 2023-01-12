@@ -14,7 +14,7 @@ from trajectory_msgs.msg import JointTrajectory
 from std_msgs.msg import Float64MultiArray
 from sensor_msgs.msg import JointState
 
-conf_joint_names = ["joint_a", "joint_b", "joint_c", "joint_d", "joint_e", "joint_f"]
+conf_joint_names = rospy.get_param("teleop/ra_joints/")
 lock = _thread.allocate_lock()
 joint_states = JointState()
 
@@ -30,17 +30,14 @@ def joint_states_callback(msg: JointState):
 
 class MoveItAction(object):
 
-    _feedback = FollowJointTrajectoryFeedback()
-    _result = FollowJointTrajectoryResult()
-
-    # ---------------------------------------------------------------------------------------
     # Rearranges the point path following the name convention joint_0, ... joint_6
-    # Warning: This function has side effects
-    # ---------------------------------------------------------------------------------------
     def rearrange(self, joint_trajectory: JointTrajectory) -> None:
 
         mapping = [joint_trajectory.joint_names.index(j) for j in conf_joint_names]
 
+        # Return early if already arranged properly
+        if mapping == sorted(mapping):
+            return
         for point in joint_trajectory.points:
 
             temp_positions = []
@@ -66,6 +63,8 @@ class MoveItAction(object):
 
     # Action initialisation
     def __init__(self, name: str) -> None:
+        self._feedback = FollowJointTrajectoryFeedback()
+        self._result = FollowJointTrajectoryResult()
         self.publisher = rospy.Publisher("ra_cmd", JointState, queue_size=100)
         self._action_name = name
         self._as = actionlib.SimpleActionServer(
@@ -90,17 +89,16 @@ class MoveItAction(object):
 
         time_start = rospy.Time.from_sec(time.time())
 
-        # ------------- Send command list
+        # ------------- Set up command queue
 
-        for point in goal.trajectory.points:
-            self.trajectory_point_queue.append(point)
+        self.trajectory_point_queue = deque(goal.trajectory.points)
 
         # ------------- Wait until the termination while providing feedback
 
         last_point = self.trajectory_point_queue[0]
         self.trajectory_point_queue.popleft()
-        #Initialize gazebo Float array
-        gazebo_positions = Float64MultiArray(data = [0.0, 0.0, 0.0, 0.0, 0.0, 0.0])
+        # Initialize gazebo Float array
+        gazebo_positions = Float64MultiArray(data=[0.0, 0.0, 0.0, 0.0, 0.0, 0.0])
         while len(self.trajectory_point_queue) > 0:
             point = self.trajectory_point_queue[0]
             self.trajectory_point_queue.popleft()
@@ -133,7 +131,6 @@ class MoveItAction(object):
         self._result.error_code = 0
         self._as.set_succeeded(self._result)
         # ---------------------------------------
-    
 
 
 if __name__ == "__main__":
