@@ -43,7 +43,7 @@ class Navigation(threading.Thread):
                 # need to be registered for SingleFiducialState as well.
                 transitions=dict(
                     self.get_transitions(SingleFiducialStateTransitions),
-                    **self.get_transitions(WaypointStateTransitions)
+                    **self.get_transitions(WaypointStateTransitions),
                 ),
             )
             self.state_machine.add(

@@ -1,4 +1,3 @@
-
 # 10 or more data objects flagged as stuck, then you are actually stuck
 STUCK_THRESHOLD = 10
 ANGULAR_THRESHOLD = 0.001
@@ -14,7 +13,7 @@ class WatchdogBase:
     # check if 10 or more consecutive objects in the self.stuck list get flagged
     # as stuck and if they do enter the recovery sequence
     # Returns bool
-    '''
+    """
     def is_stuck(self, data_obj: Data) -> bool:
         self.history.append(data_obj)
         if len(self.history) < STUCK_THRESHOLD:
@@ -28,7 +27,7 @@ class WatchdogBase:
         if decision:
             self.stuck_list.append(decision)
         return False
-    '''
+    """
 
     def evaluate_stuck(self):
         pass
@@ -81,5 +80,5 @@ class WatchdogOff(WatchdogBase):
     def __init__(self):
         super().__init__()
 
-    #def is_stuck(self, data_obj: Data):
+    # def is_stuck(self, data_obj: Data):
     #    return False
