@@ -1,87 +1,76 @@
 <template>
-    <div class="wrap">
-        <div>
-            <h3> Moteus States </h3>
-        </div>
-        <table class="tableFormat" style="undefined;table-layout: fixed; width: 745px">
-            <colgroup>
-                <col style="width: 85px">
-                <col style="width: 60px">
-                <col style="width: 75px">
-                <col style="width: 85px">
-                <col style="width: 60px">
-                <col style="width: 75px">
-                <col style="width: 85px">
-                <col style="width: 60px">
-                <col style="width: 75px">
-                <col style="width: 85px">
-            </colgroup>
-    
-        
-        <thead>
-        <tr class="Bold">
-            <th class="tableElement">Name</th>
-            <th  class="tableElement">{{MoteusStateData.name[FrontLeft]}}</th>
-            <th  class="tableElement">{{MoteusStateData.name[FrontRight]}}</th>
-        </tr>
-
-        <tr class="Bold">
-            <th class="tableElement">State</th>
-            <th  class="tableElement">{{MoteusStateData.state[FrontLeft]}}</th>
-            <th  class="tableElement">{{MoteusStateData.state[FrontRight]}}</th>
-        </tr>
-        
-        <tr class="Bold">
-            <th class="tableElement">Error</th>
-            <th  class="tableElement">{{MoteusStateData.error[FrontLeft]}}</th>
-            <th  class="tableElement">{{MoteusStateData.error[FrontRight]}}</th>
-        </tr>
-
-        <tr class="Bold">
-            <th class="tableElement">Name</th>
-            <th  class="tableElement">{{MoteusStateData.name[MiddleLeft]}}</th>
-            <th  class="tableElement">{{MoteusStateData.name[MiddleRight]}}</th>
-        </tr>
-
-        <tr class="Bold">
-            <th class="tableElement">State</th>
-            <th  class="tableElement">{{MoteusStateData.state[MiddleLeft]}}</th>
-            <th  class="tableElement">{{MoteusStateData.state[MiddleRight]}}</th>
-        </tr>
-        
-        <tr class="Bold">
-            <th class="tableElement">Error</th>
-            <th  class="tableElement">{{MoteusStateData.error[MiddleLeft]}}</th>
-            <th  class="tableElement">{{MoteusStateData.error[MiddleRight]}}</th>
-        </tr>
-        <tr class="Bold">
-            <th class="tableElement">Name</th>
-            <th  class="tableElement">{{MoteusStateData.name[BackLeft]}}</th>
-            <th  class="tableElement">{{MoteusStateData.name[BackRight]}}</th>
-        </tr>
-
-        <tr class="Bold">
-            <th class="tableElement">State</th>
-            <th  class="tableElement">{{MoteusStateData.state[BackLeft]}}</th>
-            <th  class="tableElement">{{MoteusStateData.state[BackRight]}}</th>
-        </tr>
-        
-        <tr class="Bold">
-            <th class="tableElement">Error</th>
-            <th  class="tableElement">{{MoteusStateData.error[BackLeft]}}</th>
-            <th  class="tableElement">{{MoteusStateData.error[BackRight]}}</th>
-        </tr>
-
-        
-        
-        
-        
-        </thead>
-        </table>
-       
+<div class="wrap">
+    <div>
+        <h3> Moteus States </h3>
     </div>
+    <table class="tableFormat" style="undefined;table-layout: fixed; width: 400px">
+        <colgroup>
+            <col style="width: 20px">
+            <col style="width: 30px">
+            <col style="width: 30px">
+
+        </colgroup>
+
+        <thead>
+            <tr class="Bold">
+                <th class="tableElement" style="font-weight:bold">Name</th>
+                <th class="tableElement" style="font-weight:bold">{{MoteusStateData.name[FrontLeft]}}</th>
+                <th class="tableElement" style="font-weight:bold">{{MoteusStateData.name[FrontRight]}}</th>
+            </tr>
+
+            <tr class="Bold">
+                <th class="tableElement" style="font-weight:bold">State</th>
+                <th class="tableElement">{{MoteusStateData.state[FrontLeft]}}</th>
+                <th class="tableElement">{{MoteusStateData.state[FrontRight]}}</th>
+            </tr>
+
+            <tr class="Bold">
+                <th class="tableElement" style="font-weight:bold">Error</th>
+                <th class="tableElement">{{MoteusStateData.error[FrontLeft]}}</th>
+                <th class="tableElement">{{MoteusStateData.error[FrontRight]}}</th>
+            </tr>
+
+            <tr class="Bold">
+                <th class="tableElement" style="font-weight:bold">Name</th>
+                <th class="tableElement" style="font-weight:bold">{{MoteusStateData.name[MiddleLeft]}}</th>
+                <th class="tableElement" style="font-weight:bold">{{MoteusStateData.name[MiddleRight]}}</th>
+            </tr>
+
+            <tr class="Bold">
+                <th class="tableElement" style="font-weight:bold">State</th>
+                <th class="tableElement">{{MoteusStateData.state[MiddleLeft]}}</th>
+                <th class="tableElement">{{MoteusStateData.state[MiddleRight]}}</th>
+            </tr>
+
+            <tr class="Bold">
+                <th class="tableElement" style="font-weight:bold">Error</th>
+                <th class="tableElement">{{MoteusStateData.error[MiddleLeft]}}</th>
+                <th class="tableElement">{{MoteusStateData.error[MiddleRight]}}</th>
+            </tr>
+            <tr class="Bold">
+                <th class="tableElement" style="font-weight:bold">Name</th>
+                <th class="tableElement" style="font-weight:bold">{{MoteusStateData.name[BackLeft]}}</th>
+                <th class="tableElement" style="font-weight:bold">{{MoteusStateData.name[BackRight]}}</th>
+            </tr>
+
+            <tr class="Bold">
+                <th class="tableElement" style="font-weight:bold">State</th>
+                <th class="tableElement">{{MoteusStateData.state[BackLeft]}}</th>
+                <th class="tableElement">{{MoteusStateData.state[BackRight]}}</th>
+            </tr>
+
+            <tr class="Bold">
+                <th class="tableElement" style="font-weight:bold">Error</th>
+                <th class="tableElement">{{MoteusStateData.error[BackLeft]}}</th>
+                <th class="tableElement">{{MoteusStateData.error[BackRight]}}</th>
+            </tr>
+
+        </thead>
+    </table>
+
+</div>
 </template>
-    
+
 <style scoped>
 .wrap {
     display: inline-block;
@@ -152,29 +141,25 @@ export default {
         }
     },
     props: {
-    MoteusStateData: {
-      type: Object,
-      required: true
-    },
+        MoteusStateData: {
+            type: Object,
+            required: true
+        },
 
-   
-    watch:  {
-        MoteusStateData: function(NewVal){
-        this.motors = []
-        console.log(NewVal)
-        for (let i = 0; i < 6; i++) {
-                this.motors.push({
-                    name: NewVal.name[i],
-                    state: NewVal.state[i],
-                    error: NewVal.error[i],
-                })
+        watch: {
+            MoteusStateData: function (NewVal) {
+                this.motors = []
+                console.log(NewVal)
+                for (let i = 0; i < 6; i++) {
+                    this.motors.push({
+                        name: NewVal.name[i],
+                        state: NewVal.state[i],
+                        error: NewVal.error[i],
+                    })
+                }
             }
-    }
-    }
-
+        }
 
     }
 }
-
 </script>
-    

@@ -3,7 +3,7 @@
     <DriveControls></DriveControls>
     <ArmControls></ArmControls>
     <GimbalControls></GimbalControls>
-    <JointStateTable v-bind:JointStateData="JointState" v-bind:vertical ="true"></JointStateTable>
+    <JointStateTable v-bind:JointStateData="JointState" v-bind:vertical="true"></JointStateTable>
     <MoteusStateTable v-bind:MoteusStateData="MoteusState"></MoteusStateTable>
 
 </div>
@@ -20,8 +20,8 @@ import MoteusStateTable from './MoteusStateTable.vue'
 export default {
     data() {
         return {
-            JointState:{},
-            MoteusState:{}
+            JointState: {},
+            MoteusState: {}
         }
     },
 
@@ -32,7 +32,7 @@ export default {
         JointStateTable,
         MoteusStateTable
     },
-    
+
     created: function () {
         this.brushless_motors = new ROSLIB.Topic({
             ros: this.$ros,
@@ -47,6 +47,4 @@ export default {
         })
     }
 }
-
-
 </script>
