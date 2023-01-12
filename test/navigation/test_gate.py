@@ -10,6 +10,7 @@ APPROACH_DISTANCE = 2.0
 
 class GateTest(unittest.TestCase):
     def make_path(self):
+        print("Hello")
         post1 = np.array([1,2])
         post2 = np.array([-1,2])
         gate = (post1,post2)
@@ -21,8 +22,10 @@ class GateTest(unittest.TestCase):
         rover = np.array([0,1])
         self.traj = GateTrajectory.spider_gate_trajectory(
                 APPROACH_DISTANCE, gate, rover)
-        self.assertEqual(self.traj.coordinates, ([0,2,0],[0,4,0]))
-
+        checkCoord = np.array([0,2,0],[0,4,0])
+        np.isclose()
+        self.assertTrue(self.traj.coordinates, checkCoord)
+        
         """
         #Test 2 
         The path should contain, the closest approach point, the center, and the victory point
@@ -30,7 +33,8 @@ class GateTest(unittest.TestCase):
         rover = np.array([1,-0.5])
         self.traj = GateTrajectory.spider_gate_trajectory(
                 APPROACH_DISTANCE, gate, rover)
-        rospy.loginfo("Test 2: ")
+        checkCoord = np.array([])
+        self.assertTrue(self.traj.coordinates, )
         
 
         """

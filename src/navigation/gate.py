@@ -8,11 +8,11 @@ import numpy as np
 from .context import Context
 from aenum import Enum, NoAlias
 from .state import BaseState
-from trajectory import Trajectory
+from .trajectory import Trajectory
 from dataclasses import dataclass
 from .drive import get_drive_command
 from util.np_utils import normalized, perpendicular_2d
-from shapely.geometry import Point, LineString
+from shapely.geometry import LineString
 
 STOP_THRESH = 0.2
 DRIVE_FWD_THRESH = 0.34  # 20 degrees
