@@ -3,6 +3,13 @@
     <h3> Arm controls </h3>
     <div class="controls">
       <Checkbox ref="arm-enabled" v-bind:name="'Arm Enabled'" v-on:toggle="updateArmEnabled($event)"/>
+      <Checkbox ref="A" v-bind:name="'A'" v-on:toggle="updateArmEnabled($event)"/>
+      <Checkbox ref="B" v-bind:name="'B'" v-on:toggle="updateArmEnabled($event)"/>
+      <Checkbox ref="C" v-bind:name="'C'" v-on:toggle="updateArmEnabled($event)"/>
+      <Checkbox ref="D" v-bind:name="'D'" v-on:toggle="updateArmEnabled($event)"/>
+      <Checkbox ref="E" v-bind:name="'E'" v-on:toggle="updateArmEnabled($event)"/>
+      <Checkbox ref="F" v-bind:name="'F'" v-on:toggle="updateArmEnabled($event)"/>
+      
     </div>
   </div>
 </template>
@@ -19,7 +26,8 @@ export default {
   data() {
     return {
       arm_enabled: false,
-      joystick_pub: null
+      joystick_pub: null,
+      joints_array: [false, false, false,false,false, false]
     }
   },
 
@@ -70,6 +78,9 @@ export default {
     methods: {
         updateArmEnabled: function (enabled){
             this.arm_enabled = enabled
+        },
+        updateJointsEnabled: function(enabled){
+
         }
     },
 
