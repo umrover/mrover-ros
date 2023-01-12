@@ -6,7 +6,6 @@ from std_msgs.msg import Bool
 import datetime
 from util.SE3 import SE3
 from util.SO3 import SO3
-from threading import Lock
 from pathlib import Path
 import os
 from dataclasses import dataclass
@@ -26,13 +25,14 @@ class DataManager:
         three_zero = np.zeros(3)
         four_zero = np.zeros(4)
         six_zero = np.zeros(6)
+        six_string = np.full((6), "")
         self.dict = {
             "timestamp": 0,
             "rotation": [four_zero],
             "position": [three_zero],
             "actual_linear_vel": [three_zero],
             "actual_angular_vel": [three_zero],
-            "wheel_names": [["", "", "", "", "", ""]],
+            "wheel_names": [six_string],
             "wheel_effort": [six_zero],
             "wheel_vel": [six_zero],
             "commanded_linear": [three_zero],
@@ -73,13 +73,12 @@ class DataManager:
         if not self.collecting:
             return
         self._cur_row = self._cur_row.copy()
-        self._cur_row["wheel_names"] = np.array(esw_data.name[0:5])
-        self._cur_row["wheel_effort"] = np.array(esw_data.effort[0:5])
-        self._cur_row["wheel_vel"] = np.array(esw_data.velocity[0:5])
+        self._cur_row["wheel_names"] = [np.array(esw_data.name[0:5])]
+        self._cur_row["wheel_effort"] = [np.array(esw_data.effort[0:5])]
+        self._cur_row["wheel_vel"] = [np.array(esw_data.velocity[0:5])]
         self.update_tf_vel()
-        # self._df = pd.concat([self._df, DataFrame(self._cur_row)], axis=1)
-        self._df = self._df.append(DataFrame(self._cur_row))
-        # self._df.merge(DataFrame(self._cur_row))
+
+        self._df = pd.concat([self._df, DataFrame(self._cur_row)], axis=1)
 
     # This function will only be called/invoked when there is a commanded velocity
     # Called in drive.py
@@ -87,15 +86,13 @@ class DataManager:
         if not self.collecting:
             return
         self._cur_row = self._cur_row.copy()
-        self._cur_row["commanded_linear"] = np.array(cmd_vel.linear)
-        self._cur_row["commanded_angular"] = np.array(cmd_vel.angular)
+        self._cur_row["commanded_linear"] = [np.array([cmd_vel.linear.x, cmd_vel.linear.y, cmd_vel.linear.z])]
+        self._cur_row["commanded_angular"] = [np.array([cmd_vel.angular.x, cmd_vel.angular.y, cmd_vel.angular.z])]
         self.update_tf_vel()
         rospy.logerr(f"curr row: {self._cur_row}")
         rospy.logerr(f"DF LENGTH: {len(self._df)}")
 
-        # self._df = pd.concat([self._df, DataFrame(self._cur_row)], axis=1)
-        self._df = self._df.append(DataFrame(self._cur_row))
-        # self._df.merge(DataFrame(self._cur_row))
+        self._df = pd.concat([self._df, DataFrame(self._cur_row)], axis=0)
 
     # Receives whether we are collecting data from Teleop GUI via the subscriber
     def set_collecting(self, data):
@@ -121,7 +118,3 @@ class DataManager:
 
     def set_context(self, context_in):
         self.collector_context = context_in
-        # se3_time = self.collector_context.rover.get_pose_with_time()
-        # first_position = se3_time[0].position
-        # first_rotation_so3 = se3_time[0].rotation.quaternion
-        # first_timestamp = se3_time[1].to_sec()
