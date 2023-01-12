@@ -25,7 +25,7 @@ class BaseState(smach.State, ABC):
         add_input_keys = add_input_keys or []
         add_output_keys = add_output_keys or []
         super().__init__(
-            add_outcomes + ["terminated"],
+            add_outcomes + ["terminated", "off"],
             add_input_keys + ["waypoint_index"],
             add_output_keys + ["waypoint_index"],
         )
@@ -41,6 +41,10 @@ class BaseState(smach.State, ABC):
         if self.preempt_requested():
             self.service_preempt()
             return "terminated"
+        if self.context.disable_requested:
+            self.context.disable_requested = False
+            self.context.course = None
+            return "off"
         return self.evaluate(ud)
 
     def evaluate(self, ud: smach.UserData) -> str:
@@ -90,10 +94,10 @@ class OffState(BaseState):
     def evaluate(self, ud):
         # Check if we need to ignore on
         if self.context.course and (not self.context.course.is_complete()):
-            return "ignore"
+            return OffStateTransitions.begin_course.name  # type: ignore
 
         # Stop rover
         cmd_vel = Twist()
         self.context.rover.send_drive_command(cmd_vel)
-        return "idle"
+        return OffStateTransitions.idle.name  # type: ignore
         # We have determined the Rover is off, now ignore Rover on ...

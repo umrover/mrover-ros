@@ -58,7 +58,9 @@ class Navigation(threading.Thread):
             )
 
     def get_transitions(self, transitions_enum):
-        return {transition.name: transition.value for transition in transitions_enum}
+        transition_dict = {transition.name: transition.value for transition in transitions_enum}
+        transition_dict["off"] = "OffState"  # logic for switching to offstate is built into OffState
+        return transition_dict
 
     def run(self):
         self.state_machine.execute()
