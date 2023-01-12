@@ -1,6 +1,7 @@
 <?xml version="1.0"?>
 <robot>
   <gazebo>
+    <!-- differential drive -->
     <plugin name="differential_drive_plugin_6w" filename="libdifferential_drive_plugin_6w.so">
       <legacyMode>false</legacyMode>
       <updateRate>50</updateRate>
@@ -16,6 +17,8 @@
       <commandTopic>/cmd_vel</commandTopic>
       <bodyName>base_link</bodyName>
     </plugin>
+
+    <!-- GPS -->
     <plugin name="gazebo_ros_gps" filename="libhector_gazebo_ros_gps.so">
       <updateRate>100.0</updateRate>
       <bodyName>base_link</bodyName>
@@ -35,6 +38,7 @@
     </plugin>
   </gazebo>
 
+  <!-- IMU -->
   <gazebo reference="imu_link">
     <gravity>false</gravity>
     <sensor name="imu_sensor" type="imu">
@@ -43,7 +47,7 @@
       <visualize>true</visualize>
       <topic>__default_topic__</topic>
       <plugin filename="libgazebo_ros_imu_sensor.so" name="imu_plugin">
-        <topicName>imu/data</topicName>
+        <topicName>imu/imu_only</topicName>
         <bodyName>base_link</bodyName>
         <updateRateHZ>100.0</updateRateHZ>
         <gaussianNoise>0.0</gaussianNoise>
@@ -54,6 +58,20 @@
       </plugin>
       <pose>0 0 0 0 0 0</pose>
     </sensor>
+  </gazebo>
+
+  <!-- magnetometer -->
+  <gazebo>
+    <plugin name="magnetometer_plugin" filename="libhector_gazebo_ros_magnetic.so">
+      <updateRate>100</updateRate>
+      <bodyName>base_link</bodyName>
+      <topicName>imu/mag_only</topicName>
+      <referenceHeading>90.0</referenceHeading>
+      <declination>3.0333</declination>
+      <inclination>60.0</inclination>
+      <driftFrequency>0 0 0</driftFrequency>
+      <gaussianNoise>0 0 0</gaussianNoise>
+    </plugin>
   </gazebo>
 
   <!-- camera -->
