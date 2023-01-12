@@ -37,7 +37,6 @@ differential drive kinematics
 ros
 state machine
 quaternion
-jeston
 basic 2
 lgtm
 devops

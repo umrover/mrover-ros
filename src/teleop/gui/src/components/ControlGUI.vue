@@ -1,6 +1,5 @@
 <template>
 <div>
-    <DriveControls></DriveControls>
     <ArmControls></ArmControls>
     <GimbalControls></GimbalControls>
     <JointStateTable v-bind:JointStateData="JointState" v-bind:vertical="true"></JointStateTable>
