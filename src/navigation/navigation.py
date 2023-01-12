@@ -56,11 +56,7 @@ class Navigation(threading.Thread):
             self.state_machine.add(
                 "SearchState", SearchState(self.context), transitions=self.get_transitions(SearchStateTransitions)
             )
-           
-               
-                     
-                
-                
+
     def get_transitions(self, transitions_enum):
         return {transition.name: transition.value for transition in transitions_enum}
 
@@ -74,6 +70,7 @@ class Navigation(threading.Thread):
         # Wait for smach thread to terminate
         self.join()
         self.context.rover.send_drive_stop()
+
 
 def main():
     rospy.loginfo("===== navigation starting =====")
