@@ -5,7 +5,8 @@
     "dev": "webpack --config webpack.config.dev.js",
     "serve": "webpack serve --config webpack.config.dev.js",
     "lint": "eslint --ext .js,.vue --ignore-path .gitignore --fix src",
-    "format": "prettier .  --write"
+    "format": "prettier .  --write",
+    "lint-check": "eslint --ext .js,.vue --ignore-path .gitignore src"
   },
   "devDependencies": {
     "@webpack-cli/serve": "^1.7.0",
@@ -15,7 +16,7 @@
     "babel-eslint-parser": "7.13.10",
     "copy-webpack-plugin": "^4.5.2",
     "css-loader": "^1.0.0",
-    "eslint": "^8.0.1",
+    "eslint": "8.31.0",
     "eslint-config-prettier": "8.6.0",
     "eslint-plugin-import": "^2.25.2",
     "eslint-plugin-n": "^15.0.0",
