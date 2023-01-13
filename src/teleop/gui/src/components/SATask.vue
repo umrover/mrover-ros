@@ -20,7 +20,7 @@
       <SAWaypointEditor v-bind:odom="odom"/>
     </div>
     <div class="box light-bg cameras">
-      <!-- <Cameras/> -->
+      <Cameras v-bind:primary="primary"/>
     </div>
     <div class="box light-bg drive">
       <DriveControls/>
@@ -50,6 +50,7 @@
   import PDBFuse from "./PDBFuse.vue"
   import DriveVelDataV from "./DriveVelDataV.vue"
   import * as qte from "quaternion-to-euler";
+  import Cameras from "./Cameras.vue"
 
 
   export default {
@@ -61,6 +62,8 @@
           longitude_deg: -83.70781314674628,
           bearing_deg: 0
         },
+
+        primary: true,
 
         // Pubs and Subs
         odom_sub: null,
@@ -109,7 +112,8 @@
       ScoopUV,
       ArmControls,
       PDBFuse,
-      DriveVelDataV
+      DriveVelDataV,
+      Cameras
     }
   }
 
