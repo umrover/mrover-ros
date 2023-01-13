@@ -17,7 +17,7 @@
   export default {
     data() {
       return {
-        selectedQuality: "1",
+        selectedQuality: "0",
         selectedStream: this.stream,
         prevStream: this.stream
       }
