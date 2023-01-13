@@ -61,6 +61,7 @@ class MoteusState:
         41: "ConfigChanged",
         42: "ThetaInvalid",
         43: "PositionInvalid",
+        99: "Moteus Unpowered or Not Found",
     }
     NO_ERROR_NAME = "No Error"
 
@@ -119,14 +120,18 @@ class MoteusBridge:
                 ),
                 timeout=self.MOTEUS_RESPONSE_TIME_INDICATING_DISCONNECTED_S,
             )
+
+            if state is None or not hasattr(state, values) or moteus.Register.FAULT not in state.values:
+                self._check_has_error(99)
+                return
+            else:
+                self._check_has_error(state.values[moteus.Register.FAULT])
+
             self.moteus_data = MoteusData(
                 position=state.values[moteus.Register.POSITION],
                 velocity=state.values[moteus.Register.VELOCITY],
                 torque=state.values[moteus.Register.TORQUE],
             )
-            if state is None:
-                rospy.loginfo(f"state is none for moteus {self.can_id}")
-            self._check_has_error(state.values[moteus.Register.FAULT])
         except asyncio.TimeoutError:
             if self.moteus_state.state != MoteusState.DISCONNECTED_STATE:
                 rospy.logerr(f"CAN ID {self._can_id} disconnected when trying to send command")
@@ -177,10 +182,12 @@ class MoteusBridge:
                 ),
                 timeout=self.MOTEUS_RESPONSE_TIME_INDICATING_DISCONNECTED_S,
             )
-            if state is not None:
+            if state is None or not hasattr(state, values) or moteus.Register.FAULT not in state.values:
+                self._check_has_error(99)
+                return
+            else:
                 self._check_has_error(state.values[moteus.Register.FAULT])
-            if state is None:
-                rospy.loginfo(f"state is none 2 for moteus {self.can_id}")
+
         except asyncio.TimeoutError:
             if self.moteus_state.state != MoteusState.DISCONNECTED_STATE:
                 rospy.logerr(f"CAN ID {self._can_id} disconnected when trying to connect")
@@ -231,7 +238,7 @@ class DriveApp:
             import moteus_pi3hat
             transport = moteus_pi3hat.Pi3HatRouter(
                 servo_bus_map={
-                    1: [1,3]
+                    1: [info["id"] for name, info in drive_info_by_name.items()]
                 }
             )
         else:
@@ -330,32 +337,31 @@ class DriveApp:
         previously_lost_communication = True
         while not rospy.is_shutdown():
             for name, bridge in self.drive_bridge_by_name.items():
-                if name == "FrontLeft" or name == "MiddleLeft":
-                    time_diff_since_updated = t.time() - self._last_updated_time
-                    lost_communication = time_diff_since_updated > DriveApp.BASESTATION_TO_ROVER_NODE_WATCHDOG_TIMEOUT_S
-                    if lost_communication:
-                        if not previously_lost_communication:
-                            rospy.loginfo("Lost communication")
-                            previously_lost_communication = True
-                        bridge.set_command(
-                            CommandData(
-                                position=CommandData.POSITION_FOR_VELOCITY_CONTROL,
-                                velocity=CommandData.ZERO_VELOCITY,
-                                torque=CommandData.DEFAULT_TORQUE,
-                            )
+                time_diff_since_updated = t.time() - self._last_updated_time
+                lost_communication = time_diff_since_updated > DriveApp.BASESTATION_TO_ROVER_NODE_WATCHDOG_TIMEOUT_S
+                if lost_communication:
+                    if not previously_lost_communication:
+                        rospy.loginfo("Lost communication")
+                        previously_lost_communication = True
+                    bridge.set_command(
+                        CommandData(
+                            position=CommandData.POSITION_FOR_VELOCITY_CONTROL,
+                            velocity=CommandData.ZERO_VELOCITY,
+                            torque=CommandData.DEFAULT_TORQUE,
                         )
-                    elif previously_lost_communication:
-                        previously_lost_communication = False
-                        rospy.loginfo("Regained communication")
+                    )
+                elif previously_lost_communication:
+                    previously_lost_communication = False
+                    rospy.loginfo("Regained communication")
 
-                    await bridge.update()
+                await bridge.update()
 
-                    index = DriveApp.DRIVE_NAMES.index(name)
-                    self._drive_status.joint_states.position[index] = bridge.moteus_data.position
-                    self._drive_status.joint_states.velocity[index] = bridge.moteus_data.velocity
-                    self._drive_status.joint_states.effort[index] = bridge.moteus_data.torque
-                    self._drive_status.moteus_states.state[index] = bridge.moteus_state.state
-                    self._drive_status.moteus_states.error[index] = bridge.moteus_state.error_name
+                index = DriveApp.DRIVE_NAMES.index(name)
+                self._drive_status.joint_states.position[index] = bridge.moteus_data.position
+                self._drive_status.joint_states.velocity[index] = bridge.moteus_data.velocity
+                self._drive_status.joint_states.effort[index] = bridge.moteus_data.torque
+                self._drive_status.moteus_states.state[index] = bridge.moteus_state.state
+                self._drive_status.moteus_states.error[index] = bridge.moteus_state.error_name
 
             self._drive_status_publisher.publish(self._drive_status)
         assert False
