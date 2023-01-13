@@ -121,7 +121,7 @@ class MoteusBridge:
                 timeout=self.MOTEUS_RESPONSE_TIME_INDICATING_DISCONNECTED_S,
             )
 
-            if state is None or not hasattr(state, values) or moteus.Register.FAULT not in state.values:
+            if state is None or not hasattr(state, "values") or moteus.Register.FAULT not in state.values:
                 self._check_has_error(99)
                 return
             else:
@@ -145,7 +145,6 @@ class MoteusBridge:
         """
         has_error = fault_response != 0
         if has_error:
-            # rospy.loginfo("has error")
 
             self._change_state(MoteusState.ERROR_STATE)
 
@@ -159,7 +158,6 @@ class MoteusBridge:
                 self.moteus_state.error_name = error_description
 
         else:
-            # rospy.loginfo("no error")
             self._change_state(MoteusState.ARMED_STATE)
 
     async def _connect(self) -> None:
@@ -182,7 +180,7 @@ class MoteusBridge:
                 ),
                 timeout=self.MOTEUS_RESPONSE_TIME_INDICATING_DISCONNECTED_S,
             )
-            if state is None or not hasattr(state, values) or moteus.Register.FAULT not in state.values:
+            if state is None or not hasattr(state, "values") or moteus.Register.FAULT not in state.values:
                 self._check_has_error(99)
                 return
             else:
