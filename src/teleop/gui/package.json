@@ -4,9 +4,10 @@
     "build": "webpack --config webpack.config.dev.js",
     "dev": "webpack --config webpack.config.dev.js",
     "serve": "webpack serve --config webpack.config.dev.js",
-    "lint": "eslint --ext .js,.vue --ignore-path .gitignore --fix src",
+    "lint": "eslint --ext .js,.vue --ignore-path .eslintignore --fix src",
     "format": "prettier .  --write",
-    "lint-check": "eslint --ext .js,.vue --ignore-path .gitignore src"
+    "lint-check": "eslint --ext .js,.vue --ignore-path .eslintignore src",
+    "format-check": "prettier . --check"
   },
   "devDependencies": {
     "@webpack-cli/serve": "^1.7.0",
