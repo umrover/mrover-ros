@@ -146,10 +146,10 @@ export default {
 
   created: function () {
 
-    this.course_pub = new ROSLIB.Topic({
-          ros : this.$ros,
-          name : '/auton/enable_state',
-          messageType : 'mrover/EnableAuton'
+    this.course_pub = new ROSLIB.Service({
+              ros : this.$ros,
+              name : '/enable_auton',
+              serviceType : 'mrover/PublishEnableAuton'
     }),
 
     this.nav_status_sub = new ROSLIB.Topic({
@@ -177,6 +177,7 @@ export default {
 
       let course
 
+      // If Auton Enabled send course
       if(this.autonEnabled){ 
         course = {
           enable: true,
@@ -189,8 +190,8 @@ export default {
             return {
               latitude_degrees: lat,
               longitude_degrees: lon,
-              gate: waypoint.gate,
-              post: waypoint.post,
+              // WaypointType.msg format
+              type: {val: waypoint.gate ? 2 : (waypoint.post ? 1 : 0)},
               id: parseFloat(waypoint.id),
             }
           })
@@ -203,9 +204,11 @@ export default {
         }
       }
 
-      const courseMsg = new ROSLIB.Message(course)
+      const course_request = new ROSLIB.ServiceRequest({
+        enableMsg: course
+      });
       
-      this.course_pub.publish(courseMsg)
+      this.course_pub.callService(course_request, (res) => {console.log(res)})
       this.rover_stuck_pub.publish({data: this.roverStuck})
       
     }, 100));
@@ -283,7 +286,8 @@ export default {
 
     toggleAutonMode: function (val) {
       this.setAutonMode(val)
-      this.autonButtonColor = "yellow"
+      // Change when off state is implemented
+      this.autonButtonColor = val ? "yellow" : "red"
       this.waitingForNav = true;
     },
 
