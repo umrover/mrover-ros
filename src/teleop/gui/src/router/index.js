@@ -6,6 +6,10 @@ import AutonTask from '../components/AutonTask.vue'
 import SATask from '../components/SATask.vue'
 import ISHTask from '../components/ISHTask.vue'
 import ControlGUI from '../components/ControlGUI.vue'
+import ROSDebug from '../components/ROSDebug.vue'
+import ROSSend from '../components/ROSSend.vue'
+import ROSEcho from '../components/ROSEcho.vue'
+import ROSService from '../components/ROSService.vue'
 
 Vue.use(Router)
 
@@ -52,5 +56,25 @@ export default new Router({
       name: 'ControlsGUI',
       component: ControlGUI
     },
+    {
+      path: '/ROSDebug',
+      name: 'ROSDebug',
+      component: ROSDebug
+    },
+    {
+      path: '/ROSSend',
+      name: 'ROSSend',
+      component: ROSSend
+    },
+    {
+      path: '/ROSEcho',
+      name: 'ROSEcho',
+      component: ROSEcho
+    },
+    {
+      path: '/ROSService',
+      name: 'ROSService',
+      component: ROSService
+    }
   ]
 })

@@ -3,16 +3,16 @@
 import signal
 import sys
 import threading
-from gate import GateTraverseState
 
 import rospy
 import smach
 import smach_ros
 from context import Context
-from single_fiducial import SingleFiducialState
-from state import DoneState
-from waypoint import WaypointState
-from search import SearchState
+from gate import GateTraverseState, GateTraverseStateTransitions
+from single_fiducial import SingleFiducialState, SingleFiducialStateTransitions
+from state import DoneState, DoneStateTransitions
+from waypoint import WaypointState, WaypointStateTransitions
+from search import SearchState, SearchStateTransitions
 
 
 class Navigation(threading.Thread):
@@ -30,47 +30,32 @@ class Navigation(threading.Thread):
         self.sis.start()
         with self.state_machine:
             self.state_machine.add(
-                "DoneState",
-                DoneState(self.context),
-                transitions={"waypoint_traverse": "WaypointState", "done": "DoneState"},
+                "DoneState", DoneState(self.context), transitions=self.get_transitions(DoneStateTransitions)
             )
             self.state_machine.add(
-                "WaypointState",
-                WaypointState(self.context),
-                transitions={
-                    "waypoint_traverse": "WaypointState",
-                    "single_fiducial": "SingleFiducialState",
-                    "gate_traverse": "GateTraverseState",
-                    "search": "SearchState",
-                    "done": "DoneState",
-                },
+                "WaypointState", WaypointState(self.context), transitions=self.get_transitions(WaypointStateTransitions)
             )
             self.state_machine.add(
                 "SingleFiducialState",
                 SingleFiducialState(self.context),
-                transitions={
-                    "waypoint_traverse": "WaypointState",
-                    "single_fiducial": "SingleFiducialState",
-                    "search": "SearchState",
-                    "done": "DoneState",
-                    "gate_traverse": "GateTraverseState",
-                },
+                # The lines below are necessary because SingleFiducialState inherits from WaypointState, so WaypointState's transitions
+                # need to be registered for SingleFiducialState as well.
+                transitions=dict(
+                    self.get_transitions(SingleFiducialStateTransitions),
+                    **self.get_transitions(WaypointStateTransitions)
+                ),
             )
             self.state_machine.add(
-                "SearchState",
-                SearchState(self.context),
-                transitions={
-                    "waypoint_traverse": "WaypointState",
-                    "single_fiducial": "SingleFiducialState",
-                    "search": "SearchState",
-                    "gate_traverse": "GateTraverseState",
-                },
+                "SearchState", SearchState(self.context), transitions=self.get_transitions(SearchStateTransitions)
             )
             self.state_machine.add(
                 "GateTraverseState",
                 GateTraverseState(self.context),
-                transitions={"search": "SearchState", "done": "DoneState", "gate_traverse": "GateTraverseState"},
+                transitions=self.get_transitions(GateTraverseStateTransitions),
             )
+
+    def get_transitions(self, transitions_enum):
+        return {transition.name: transition.value for transition in transitions_enum}
 
     def run(self):
         self.state_machine.execute()

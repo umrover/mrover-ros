@@ -15,7 +15,7 @@
       </div>
     </div>
     <div class="box cameras light-bg">
-      <Cameras v-bind:numCams="2" v-bind:mission="'ERD'"/>
+      <Cameras v-bind:primary="primary"/>
     </div>
     <div class="box arm-controls light-bg">
       <ArmControls/>
@@ -73,6 +73,8 @@ export default {
       },
 
       topic_subscriptions : {},
+
+      primary: true,
 
       // Pubs and Subs
       odom_sub: null,

@@ -1,144 +1,148 @@
 <template>
     <div class="wrap">
-        <h3>Cameras</h3>
-        <div class="input">
-            Camera name: <input type='message' v-model ='cameraName'>
-            Camera number: <input type='Number' min="0" max="9" v-model ='cameraIdx'>
-            <button v-on:click="addCameraName()">Change name</button>
-        </div>
-        <div class="cameraselection">
-            <CameraSelection class="cameraspace1" v-bind:camsEnabled="camsEnabled" v-bind:names="names" v-bind:numCams="numCams" v-on:cam_index="setCamIndex($event)"/>
-        </div>
+      <h3>Cameras</h3>
+      <div class="input">
+        Camera name: <input class="rounded" type='message' v-model ='cameraName'>
+        Camera number: <input class="rounded" type='Number' min="0" max="8" v-model ='cameraIdx'>
+        <button class="rounded button" v-on:click="addCameraName()">Change name</button>
+      </div>
+      <div class="cameraselection">
+        <CameraSelection class="cameraspace1" v-bind:camsEnabled="camsEnabled" v-bind:names="names" v-bind:capacity="parseInt(capacity)" v-on:cam_index="setCamIndex($event)"/>
+      </div>
+      <h3>All Cameras</h3>
+      Capacity: <input class="rounded" type='Number' min="2" max="4" v-model ='capacity'>
+      <div class="camerainfo" v-for="i in camsEnabled.length" :key="i">
+        <CameraInfo v-if="camsEnabled[i-1]" v-bind:name="names[i-1]" v-bind:id="i-1" v-on:newQuality="changeQuality($event)" v-on:swapStream="swapStream($event)" v-bind:stream="getStreamNum(i-1)"></CameraInfo>
+      </div>
     </div>
-</template>
+  </template>
   
-<script>
-    import CameraSelection from './CameraSelection.vue'
-    import Checkbox from './Checkbox.vue'
+  <script>
+  import Vue from 'vue'
+  import ROSLIB from 'roslib/src/RosLib'
+  import CameraSelection from '../components/CameraSelection.vue'
+  import CameraInfo from '../components/CameraInfo.vue'
+  
+  export default {
+    data() {
+      return {
+        camsEnabled: new Array(9).fill(false),
+        names: Array.from({length: 9}, (_,i) => "Camera: " + i),
+        cameraIdx: 1,
+        cameraName: "",
+        capacity: 2,
+        qualities: new Array(9).fill(1),
+        streamOrder: [-1, -1, -1, -1]
+      }
+    },
 
-    let interval;
+    props: {
+      numCams: {
+        type: Number,
+        required: true
+      },
+      primary: {
+        type: Boolean,
+        required: true
+      }
 
-    export default {
-        data() {
-            return {
-                camsEnabled: [
-                    false,
-                    false,
-                    false,
-                    false,
-                    false,
-                    false,
-                    false,
-                    false,
-                    false,
-                ],
-                names: [
-                    "Camera 0",
-                    "Camera 1",
-                    "Camera 2",
-                    "Camera 3",
-                    "Camera 4",
-                    "Camera 5",
-                    "Camera 6",
-                    "Camera 7",
-                    "Camera 8"
-                ],
-                
-                cameraIdx: 1,
-                cameraName: ""
-            }
-        },
+    },
 
-        beforeDestroy: function () {
-            window.clearInterval(interval);
-        },
 
-        props: {
-            numCams: {
-                type: Number,
-                required: true
-            },
-            mission: {
-                type: String,
-                required: true
-            }
-        },
-        methods: {
-            setCamIndex: function (index) {
-                this.camsEnabled.splice(index, 1, !this.camsEnabled[index])
-            },
-            addCameraName: function() {
-                this.names.splice(this.cameraIdx, 1, this.cameraName)
-            }
-        },
-        components: {
-            CameraSelection,
-            Checkbox
+    methods: {
+
+      setCamIndex: function (index) { //every time a button is pressed, it changes cam status and adds/removes from stream
+        Vue.set(this.camsEnabled, index, !this.camsEnabled[index]);
+        this.changeStream(index);
+        this.sendCameras();
+      },
+
+      sendCameras: function() { //sends cameras to a service to display on screen
+        var msgs = [];
+        for(var i = 0; i < 4; i++){
+          var camId = this.streamOrder[i];
+          var res = this.qualities[camId];
+          msgs.push(new ROSLIB.Message({device: camId, resolution: res})); //CameraCmd msg
         }
-    }
-    </script>
 
-    <style>
-    .wrap {
-        display: grid;
-        grid-gap: 10px;
-        grid-template-columns: 1fr;
-        grid-template-rows: 60px;
-        grid-template-areas: "header";
-        font-family: sans-serif;
-        height: 100%;
+        var changeCamsService = new ROSLIB.Service({
+              ros : this.$ros,
+              name : 'change_cameras',
+              serviceType : 'ChangeCameras'
+          });
+
+        var request = new ROSLIB.ServiceRequest({primary: this.primary, camera_cmds: msgs});
+        changeCamsService.callService(request, (result) => {});
+
+      },
+
+      addCameraName: function() {
+        Vue.set(this.names, this.cameraIdx, this.cameraName);
+      },
+
+      changeQuality({index, value}){
+        Vue.set(this.qualities, index, value);
+        this.sendCameras();
+      },
+
+      swapStream({prev, newest}){
+        var temp = this.streamOrder[prev];
+        Vue.set(this.streamOrder, prev, this.streamOrder[newest]);
+        Vue.set(this.streamOrder, newest, temp);
+        this.sendCameras();
+      },
+
+      changeStream(index){
+        const found = this.streamOrder.includes(index);
+        if(found){
+          this.streamOrder.splice(this.streamOrder.indexOf(index),1);
+          this.streamOrder.push(-1);
+        }
+        else Vue.set(this.streamOrder, this.streamOrder.indexOf(-1), index);
+      },
+
+      getStreamNum(index){
+        return this.streamOrder.indexOf(index);
+      }
+
+    },
+
+    watch: {
+        capacity: function(newCap, oldCap){
+          if(newCap < oldCap){
+            var numStreaming = this.streamOrder.filter(index => index != -1);
+            var ind = numStreaming.length-1;
+            Vue.set(this.camsEnabled, numStreaming[ind], !this.camsEnabled[numStreaming[ind]]);
+            this.changeStream(numStreaming[ind]);
+          }
+        }
+    },
+  
+    components: {
+        CameraSelection,
+        CameraInfo
+    }
+
+  }
+  </script>
+  
+  <style scoped>
+
+    .rounded {
+      border: 1px solid black;
+      border-radius: 5px;
+    }
+
+    .button {
+      height: 25px;
+    }
+
+    .input > * {
+      margin: 5px 0 5px 0;
     }
 
     .cameraselection {
-        display: grid;
-        grid-template-columns: 1fr 1fr;
-        grid-template-areas: "cameraspace1"
+      margin: 10px;
     }
 
-    .cam_buttons {
-        height:20px;
-        width:100px;
-    }
-
-    .box {
-        border-radius: 5px;
-        padding: 10px;
-        border: 1px solid black;
-    }
-
-    img {
-        border: none;
-        border-radius: 0px;
-    }
-
-    .header {
-        grid-area: header;
-        display: flex;
-        align-items: center;
-    }
-
-    .header h1 {
-        margin-left: 5px;
-    }
-
-    .spacer {
-        flex-grow: 0.8;
-    }
-
-    .comms {
-        display: flex;
-        flex-direction: column;
-        align-items: flex-start;
-    }
-
-    .comms * {
-        margin-top: 2px;
-        margin-bottom: 2px;
-        display: flex;
-    }
-    
-    ul#vitals li {
-        display: inline;
-        padding: 0px 10px 0px 0px;
-    }
-</style>
+  </style>
