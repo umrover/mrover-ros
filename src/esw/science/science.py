@@ -74,13 +74,13 @@ class ScienceBridge:
             "AUTO_SHUTOFF": self._heater_auto_shutoff_handler,
             "DIAG": self._diagnostic_handler,
             "HEATER_DATA": self._heater_state_handler,
-            "SPECTRAL": self._spectral_handler,
             "SCIENCE_TEMP": self._science_thermistor_handler,
+            "SPECTRAL": self._spectral_handler,
         }
         self._publisher_by_tag = {
             "AUTO_SHUTOFF": rospy.Publisher("science/heater_auto_shutoff_state_data", Enable, queue_size=1),
             "DIAG": rospy.Publisher("diagnostic_data", Diagnostic, queue_size=1),
-            "HEATER_CMD": rospy.Publisher("science/heater_state_data", HeaterData, queue_size=1),
+            "HEATER_DATA": rospy.Publisher("science/heater_state_data", HeaterData, queue_size=1),
             "SCIENCE_TEMP": rospy.Publisher("science_data/temperatures", ScienceTemperature, queue_size=1),
             "SPECTRAL": rospy.Publisher("science_data/spectral", Spectral, queue_size=1),
         }
@@ -145,7 +145,7 @@ class ScienceBridge:
             - a boolean that is the requested heater state of that device.
         :returns: A boolean that is the success of sent UART transaction.
         """
-        success = self._heater_transmit(req.device, req.color)
+        success = self._heater_transmit(req.device, req.enable)
         return ChangeHeaterStateResponse(success)
 
     def handle_change_servo_angles(self, req: ChangeServoAngleRequest) -> ChangeServoAngleResponse:
@@ -219,7 +219,7 @@ class ScienceBridge:
 
         length = len(tx_msg)
         assert length <= self._uart_transmit_msg_len, "tx_msg should not be greater than self._uart_transmit_msg_len"
-        list_msg = ["f{tx_msg}"]
+        list_msg = [f"{tx_msg}"]
         missing_characters = self._uart_transmit_msg_len - length
         list_dummy = [","] * missing_characters
         list_total = list_msg + list_dummy
@@ -313,7 +313,7 @@ class ScienceBridge:
         arr = tx_msg.split(",")
         if len(arr) < 4:
             return
-        heater_state = [bool(int(arr[0])), bool(int(arr[1])), bool(int(arr[2]))]
+        heater_state = [bool(int(arr[1])), bool(int(arr[2])), bool(int(arr[3]))]
         ros_msg = HeaterData(state=heater_state)
         self._publisher_by_tag[arr[0][3:]].publish(ros_msg)
 
@@ -362,7 +362,7 @@ class ScienceBridge:
         temperature_values = ScienceTemperature()
 
         for i in range(self._num_science_thermistors):
-            temperature_values.append(float(arr[i + 1]))
+            temperature_values.temperatures[i] = float(arr[i + 1])
 
         self._publisher_by_tag[arr[0][3:]].publish(temperature_values)
 

@@ -129,9 +129,9 @@ science:
     uv_led_end_effector: 1
     white_led: 5
   serial:
-    baud_rate: 38400
+    baud_rate: 9600
     timeout: 0
-    port: "/dev/ttyTHS0"
+    port: "/dev/ttyTHS1"
   # These position are random for now
   # Please configure once we know what positions we want to turn them to
   syringe_servo_positions:

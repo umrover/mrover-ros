@@ -42,7 +42,7 @@ export default {
             });
 
             let request = new ROSLIB.ServiceRequest({
-                id: this.site,
+                id: this.index,
                 angle: this.angles[this.index]
             });
 
@@ -59,7 +59,7 @@ export default {
         for (var i = 0; i < 3; i++) {
             let a = new ROSLIB.Param({
                 ros: this.$ros,
-                name: 'science/syringe_servos_positions/site_' + letter
+                name: 'science/syringe_servo_positions/site_' + letter
             });
 
             a.get((value) => {
