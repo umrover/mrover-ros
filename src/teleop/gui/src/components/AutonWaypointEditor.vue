@@ -85,6 +85,13 @@ import ROSLIB from 'roslib'
 
 let interval;
 
+const WAYPOINT_TYPES =
+{
+  NO_SEARCH: 0,
+  POST: 1,
+  GATE: 2,
+}
+
 export default {
 
   props: {
@@ -208,7 +215,7 @@ export default {
         enableMsg: course
       });
       
-      this.course_pub.callService(course_request, (res) => {console.log(res)})
+      this.course_pub.callService(course_request, (res) => {})
       this.rover_stuck_pub.publish({data: this.roverStuck})
       
     }, 100));
