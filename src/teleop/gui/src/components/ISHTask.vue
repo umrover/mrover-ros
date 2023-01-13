@@ -30,7 +30,7 @@
         <Sudan v-bind:site="site" />
     </div>
     <div class="box light-bg cameras">
-        <!-- <Cameras/> -->
+        <Cameras v-bind:primary="primary"/>
     </div>
     <div class="box light-bg carousel">
         <Carousel />
@@ -56,6 +56,7 @@ import Carousel from './Carousel.vue'
 import Cache from './Cache.vue'
 import Chlorophyll from './Chlorophyll.vue'
 import Amino from './Amino.vue'
+import Cameras from '../components/Cameras.vue';
 
 export default {
     data() {
@@ -65,7 +66,9 @@ export default {
             spectral_data: [0, 0, 0, 0, 0, 0],
 
             //Data Subscribers
-            spectral_sub: null
+            spectral_sub: null,
+
+            primary: false
         }
     },
 
@@ -89,7 +92,8 @@ export default {
         Carousel,
         Cache,
         Chlorophyll,
-        Amino
+        Amino,
+        Cameras
     },
 
     methods: {

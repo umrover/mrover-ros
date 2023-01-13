@@ -33,7 +33,11 @@ set(MROVER_MESSAGE_FILES
         EnableAuton.msg
         GimbalCmd.msg
         GPSWaypoint.msg
+<<<<<<< HEAD
         HeaterData.msg
+=======
+        ImuAndMag.msg
+>>>>>>> d4fa9be2927255a212db3cb9024f528a23484d0c
         MoteusState.msg
         ODriveState.msg
         ScienceTemperature.msg
@@ -137,6 +141,7 @@ else ()
             tf2_geometry_msgs
             tf2_ros
             tf2
+            tf2_web_republisher
             visualization_msgs
             image_transport
             cv_bridge
