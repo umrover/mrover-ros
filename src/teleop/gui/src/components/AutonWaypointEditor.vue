@@ -198,7 +198,8 @@ export default {
               latitude_degrees: lat,
               longitude_degrees: lon,
               // WaypointType.msg format
-              type: {val: waypoint.gate ? 2 : (waypoint.post ? 1 : 0)},
+              type: {val: waypoint.gate ? WAYPOINT_TYPES.GATE :
+              (waypoint.post ? WAYPOINT_TYPES.POST : WAYPOINT_TYPES.NO_SEARCH)},
               id: parseFloat(waypoint.id),
             }
           })
