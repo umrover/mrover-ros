@@ -98,7 +98,7 @@ class MoteusBridge:
         self._command = command
         self.command_lock.release()
 
-    async def _send_command(self) -> None:
+    async def _send_desired_command(self) -> None:
         """
         Calls controller.set_position (which controls the moteus over CAN) with previously the most recent requested
         commands. If the message has not been received within a certain amount of time, disconnected state is entered.
@@ -109,34 +109,43 @@ class MoteusBridge:
         command = self._command
         self.command_lock.release()
         try:
-            state = await asyncio.wait_for(
-                self.controller.set_position(
-                    position=command.position,
-                    velocity=command.velocity,
-                    velocity_limit=CommandData.VELOCITY_LIMIT,
-                    maximum_torque=command.torque,
-                    watchdog_timeout=MoteusBridge.ROVER_NODE_TO_MOTEUS_WATCHDOG_TIMEOUT_S,
-                    query=True,
-                ),
-                timeout=self.MOTEUS_RESPONSE_TIME_INDICATING_DISCONNECTED_S,
-            )
+            await self._send_command(command)
+        except asyncio.TimeoutError:
+            if self.moteus_state.state != MoteusState.DISCONNECTED_STATE:
+                rospy.logerr(f"CAN ID {self._can_id} disconnected when trying to send command")
+            self._change_state(MoteusState.DISCONNECTED_STATE)
 
-            if state is None or not hasattr(state, "values") or moteus.Register.FAULT not in state.values:
-                self._check_has_error(99)
-                return
-            else:
-                self._check_has_error(state.values[moteus.Register.FAULT])
+    async def _send_command(self, command: CommandData) -> None:
+        """
+        Calls controller.set_position (which controls the moteus over CAN) with the requested command.
+        If the message has not been received within a certain amount of time, disconnected state is entered.
+        Otherwise, error state is entered.
+
+        It is expected that this may throw an error if there is a timeout.
+        """
+        state = await asyncio.wait_for(
+            self.controller.set_position(
+                position=command.position,
+                velocity=command.velocity,
+                velocity_limit=CommandData.VELOCITY_LIMIT,
+                maximum_torque=command.torque,
+                watchdog_timeout=MoteusBridge.ROVER_NODE_TO_MOTEUS_WATCHDOG_TIMEOUT_S,
+                query=True,
+            ),
+            timeout=self.MOTEUS_RESPONSE_TIME_INDICATING_DISCONNECTED_S,
+        )
+
+        moteus_not_found = state is None or not hasattr(state, "values") or moteus.Register.FAULT not in state.values
+        if moteus_not_found:
+            self._check_has_error(99)
+        else:
+            self._check_has_error(state.values[moteus.Register.FAULT])
 
             self.moteus_data = MoteusData(
                 position=state.values[moteus.Register.POSITION],
                 velocity=state.values[moteus.Register.VELOCITY],
                 torque=state.values[moteus.Register.TORQUE],
             )
-        except asyncio.TimeoutError:
-            if self.moteus_state.state != MoteusState.DISCONNECTED_STATE:
-                rospy.logerr(f"CAN ID {self._can_id} disconnected when trying to send command")
-            self._change_state(MoteusState.DISCONNECTED_STATE)
-            return
 
     def _check_has_error(self, fault_response: int) -> None:
         """
@@ -166,31 +175,18 @@ class MoteusBridge:
         """
         try:
             assert self.moteus_state.state != MoteusState.ARMED_STATE
-            await asyncio.wait_for(
-                self.controller.set_stop(), timeout=self.MOTEUS_RESPONSE_TIME_INDICATING_DISCONNECTED_S
+
+            command = CommandData(
+                position=math.nan,
+                velocity=CommandData.ZERO_VELOCITY,
+                torque=CommandData.DEFAULT_TORQUE,
             )
-            state = await asyncio.wait_for(
-                self.controller.set_position(
-                    position=math.nan,
-                    velocity=CommandData.ZERO_VELOCITY,
-                    velocity_limit=CommandData.VELOCITY_LIMIT,
-                    maximum_torque=CommandData.MAX_TORQUE,
-                    watchdog_timeout=MoteusBridge.ROVER_NODE_TO_MOTEUS_WATCHDOG_TIMEOUT_S,
-                    query=True,
-                ),
-                timeout=self.MOTEUS_RESPONSE_TIME_INDICATING_DISCONNECTED_S,
-            )
-            if state is None or not hasattr(state, "values") or moteus.Register.FAULT not in state.values:
-                self._check_has_error(99)
-                return
-            else:
-                self._check_has_error(state.values[moteus.Register.FAULT])
+            await self._send_command(command)
 
         except asyncio.TimeoutError:
             if self.moteus_state.state != MoteusState.DISCONNECTED_STATE:
                 rospy.logerr(f"CAN ID {self._can_id} disconnected when trying to connect")
             self._change_state(MoteusState.DISCONNECTED_STATE)
-            return
 
     def _change_state(self, state: str) -> None:
         """
@@ -216,7 +212,7 @@ class MoteusBridge:
         If in disconnected or error state, attempts will be made to return to armed state.
         """
         if self.moteus_state.state == MoteusState.ARMED_STATE:
-            await self._send_command()
+            await self._send_desired_command()
         elif (
             self.moteus_state.state == MoteusState.DISCONNECTED_STATE
             or self.moteus_state.state == MoteusState.ERROR_STATE
