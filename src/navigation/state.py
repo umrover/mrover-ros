@@ -90,14 +90,18 @@ class OffState(BaseState):
             context,
             add_outcomes=[transition.name for transition in OffStateTransitions],  # type: ignore
         )
+        self.stop_count = 0
 
     def evaluate(self, ud):
         # Check if we need to ignore on
         if self.context.course and (not self.context.course.is_complete()):
+            self.stop_count = 0
             return OffStateTransitions.begin_course.name  # type: ignore
 
-        # Stop rover
-        cmd_vel = Twist()
-        self.context.rover.send_drive_command(cmd_vel)
+        # Stop rover 10 times (to increase chance message goes through - only necessary for sim (real rover has watchdog))
+        if self.stop_count < 10:
+            cmd_vel = Twist()
+            self.context.rover.send_drive_command(cmd_vel)
+            self.stop_count += 1
         return OffStateTransitions.idle.name  # type: ignore
         # We have determined the Rover is off, now ignore Rover on ...
