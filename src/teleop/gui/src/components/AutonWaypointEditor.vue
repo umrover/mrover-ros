@@ -85,6 +85,13 @@ import ROSLIB from 'roslib'
 
 let interval;
 
+const WAYPOINT_TYPES =
+{
+  NO_SEARCH: 0,
+  POST: 1,
+  GATE: 2,
+}
+
 export default {
 
   props: {
@@ -191,7 +198,8 @@ export default {
               latitude_degrees: lat,
               longitude_degrees: lon,
               // WaypointType.msg format
-              type: {val: waypoint.gate ? 2 : (waypoint.post ? 1 : 0)},
+              type: {val: waypoint.gate ? WAYPOINT_TYPES.GATE :
+              (waypoint.post ? WAYPOINT_TYPES.POST : WAYPOINT_TYPES.NO_SEARCH)},
               id: parseFloat(waypoint.id),
             }
           })
@@ -208,7 +216,7 @@ export default {
         enableMsg: course
       });
       
-      this.course_pub.callService(course_request, (res) => {console.log(res)})
+      this.course_pub.callService(course_request, (res) => {})
       this.rover_stuck_pub.publish({data: this.roverStuck})
       
     }, 100));
