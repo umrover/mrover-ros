@@ -234,10 +234,9 @@ class DriveApp:
         using_pi3_hat = rospy.get_param("brushless/using_pi3_hat")
         if using_pi3_hat:
             import moteus_pi3hat
+
             transport = moteus_pi3hat.Pi3HatRouter(
-                servo_bus_map={
-                    1: [info["id"] for name, info in drive_info_by_name.items()]
-                }
+                servo_bus_map={1: [info["id"] for name, info in drive_info_by_name.items()]}
             )
         else:
             transport = None
