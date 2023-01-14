@@ -124,10 +124,10 @@ science:
     green: 2
     "off": 3
   device_mosfet_numbers:
-    arm_laser: 1
-    uv_led_carousel: 4
-    uv_led_end_effector: 1
-    white_led: 5
+    arm_laser: 6
+    uv_led_carousel: 1
+    uv_led_end_effector: 6
+    white_led: 2
   serial:
     baud_rate: 9600
     timeout: 0
