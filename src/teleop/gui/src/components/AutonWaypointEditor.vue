@@ -54,10 +54,6 @@
             Waypoints Traveled: {{nav_status.completed_wps}}/{{nav_status.total_wps}}<br>
           </p>
         </div>
-        <!-- TODO: Add back using ros topic data from /joystick -->
-        <!-- <div class="joystick light-bg">
-          <AutonJoystickReading v-bind:AutonDriveControl="AutonDriveControl"/>
-        </div> -->
       </div>
       <div class="box1">
         <h4 class="waypoint-headers">Current Course</h4>
@@ -96,10 +92,6 @@ export default {
 
   props: {
     odom: {
-      type: Object,
-      required: true
-    },
-    AutonDriveControl: {
       type: Object,
       required: true
     },
@@ -294,7 +286,7 @@ export default {
 
     toggleAutonMode: function (val) {
       this.setAutonMode(val)
-      // Change when off state is implemented
+      // This will trigger the yellow "waiting for nav" state of the checkbox only if we are enabling the button
       this.autonButtonColor = val ? "yellow" : "red"
       this.waitingForNav = true;
     },
