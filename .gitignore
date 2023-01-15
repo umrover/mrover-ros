@@ -24,3 +24,6 @@ bags/
 build/
 devel/
 logs/
+
+# CSV Files for Failure Identification
+*.csv

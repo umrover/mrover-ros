@@ -95,4 +95,3 @@ def main():
 
 if __name__ == "__main__":
     main()
-    collector.write_to_csv()
