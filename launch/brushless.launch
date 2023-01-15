@@ -7,6 +7,6 @@
     <rosparam command="load" file="$(find mrover)/config/esw.yaml"/>
 
     <!-- Run the moteus program -->
-    <node name="brushless" pkg="mrover" type="brushless.py" output="screen" launch-prefix="sudo"></node>
+    <node name="brushless" pkg="mrover" type="brushless.py" output="screen"></node>
 
 </launch>
