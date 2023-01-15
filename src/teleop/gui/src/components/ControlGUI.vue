@@ -1,11 +1,9 @@
 <template>
 <div>
-    <DriveControls></DriveControls>
     <ArmControls></ArmControls>
     <GimbalControls></GimbalControls>
     <JointStateTable v-bind:jointStateData="jointState" v-bind:vertical="true"></JointStateTable>
     <MoteusStateTable v-bind:moteusStateData="moteusState"></MoteusStateTable>
-
 </div>
 </template>
 

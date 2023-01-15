@@ -23,19 +23,19 @@
     <!-- node to navigate to a series of waypoints, AR tags, and gates -->
     <node name="nav" pkg="mrover" type="navigation.py"/>
 
-    <!--
-      ============
-      Localization
-      ============
-    -->
-    <rosparam command="load" file="$(find mrover)/config/localization.yaml"/>
+  <!--
+    ============
+    Localization
+    ============
+  -->
+  <rosparam command="load" file="$(find mrover)/config/localization.yaml" />
+  <node name="gps_linearization" pkg="mrover" type="gps_linearization.py" output="screen" />
 
-    <!-- Fuses together GPS position and IMU orientation with an Extended Kalman Filter (EKF) -->
-    <!-- Publishes a resulting tf entry between odom and base_link -->
-    <node pkg="robot_localization" type="ekf_localization_node" name="ekf_odom" clear_params="true">
-        <remap from="imu" to="imu/data"/>
-    </node>
-
-    <!-- Reads the GPS topic and convert it to cartesian based on a reference point-->
-    <node pkg="robot_localization" type="navsat_transform_node" name="navsat_transform" clear_params="true"/>
+  <!-- plot the rover trajectory in rviz as it drives -->
+  <node name="hectory_trajectory_server" output="screen" pkg="hector_trajectory_server" type="hector_trajectory_server" >
+    <param name="target_frame_name" type="string" value="map" />
+    <param name="source_frame_name" type="string" value="base_link" /> 
+    <param name="trajectory_update_rate" type="double" value="4" /> 
+    <param name="trajectory_publish_rate" type="double" value="4" />
+  </node>
 </launch>
