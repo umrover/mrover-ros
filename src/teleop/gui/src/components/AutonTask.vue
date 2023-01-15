@@ -72,6 +72,7 @@ export default {
 
             navBlink: false,
             greenHook: false,
+            ledColor: 'Null',
 
             // Pubs and Subs
             nav_status_sub: null,
@@ -153,25 +154,38 @@ export default {
     watch: {
         // Publish auton LED color to ESW
         nav_state_color: function (color) {
-            let ledMsg = {
-                type: 'AutonLed',
-                color: 'Null'
-            }
             if (color == navBlue) {
-                ledMsg.color = 'Blue'
+                this.ledColor = 'Blue'
                 this.greenHook = false
             } else if (color == navRed) {
-                ledMsg.color = 'Red'
+                this.ledColor = 'Red'
                 this.greenHook = false
             } else if (color == navGreen && !this.greenHook) {
-                ledMsg.color = 'Green'
+                this.ledColor = 'Green'
                 this.greenHook = true //Accounting for the blinking between navGrey and navGreen
             }
-            if (!this.greenHook || ledMsg.color == 'Green') {
-                // TODO: Implement this once ESW has this interface back up
-                // this.publish('/auton_led',ledMsg)
+            if (!this.greenHook || this.ledColor == 'Green') {
+                sendColor()
             }
         },
+    },
+
+    methods: {
+      sendColor() {
+        let serviceClient = new ROSLIB.Service({
+          ros: this.$ros,
+          name: 'change_auton_led_state',
+          serviceType: 'ChangeAutonLEDState'
+        });
+
+        let request = new ROSLIB.ServiceRequest({
+          color: this.ledColor
+        });
+        
+        serviceClient.callService(request, (result) => {
+          // TODO: alert message for incorrect color
+        });
+      }
     },
 
     components: {
