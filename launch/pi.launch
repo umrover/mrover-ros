@@ -1,0 +1,12 @@
+<!--
+	This launch file should be run on the Pi in order to start our drive software.
+ -->
+<launch>
+
+    <!-- params for hardware interfaces including IMU, GPS, odrives, and moteus -->
+    <rosparam command="load" file="$(find mrover)/config/esw.yaml"/>
+
+    <!-- Run the moteus program -->
+    <node name="brushless" pkg="mrover" type="brushless.py" output="screen"></node>
+
+</launch>
