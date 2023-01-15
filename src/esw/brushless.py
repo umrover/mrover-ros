@@ -61,6 +61,7 @@ class MoteusState:
         41: "ConfigChanged",
         42: "ThetaInvalid",
         43: "PositionInvalid",
+        99: "Moteus Unpowered or Not Found",
     }
     NO_ERROR_NAME = "No Error"
 
@@ -101,7 +102,7 @@ class MoteusBridge:
         with self.command_lock:
             self._command = command
 
-    async def _send_command(self) -> None:
+    async def _send_desired_command(self) -> None:
         """
         Calls controller.set_position (which controls the moteus over CAN) with previously the most recent requested
         commands. If the message has not been received within a certain amount of time, disconnected state is entered.
@@ -111,28 +112,43 @@ class MoteusBridge:
         with self.command_lock:
             command = self._command
         try:
-            state = await asyncio.wait_for(
-                self.controller.set_position(
-                    position=command.position,
-                    velocity=command.velocity,
-                    velocity_limit=CommandData.VELOCITY_LIMIT,
-                    maximum_torque=command.torque,
-                    watchdog_timeout=MoteusBridge.ROVER_NODE_TO_MOTEUS_WATCHDOG_TIMEOUT_S,
-                    query=True,
-                ),
-                timeout=MoteusBridge.MOTEUS_RESPONSE_TIME_INDICATING_DISCONNECTED_S,
-            )
+            await self._send_command(command)
+        except asyncio.TimeoutError:
+            if self.moteus_state.state != MoteusState.DISCONNECTED_STATE:
+                rospy.logerr(f"CAN ID {self._can_id} disconnected when trying to send command")
+            self._change_state(MoteusState.DISCONNECTED_STATE)
+
+    async def _send_command(self, command: CommandData) -> None:
+        """
+        Calls controller.set_position (which controls the moteus over CAN) with the requested command.
+        If the message has not been received within a certain amount of time, disconnected state is entered.
+        Otherwise, error state is entered.
+
+        It is expected that this may throw an error if there is a timeout.
+        """
+        state = await asyncio.wait_for(
+            self.controller.set_position(
+                position=command.position,
+                velocity=command.velocity,
+                velocity_limit=CommandData.VELOCITY_LIMIT,
+                maximum_torque=command.torque,
+                watchdog_timeout=MoteusBridge.ROVER_NODE_TO_MOTEUS_WATCHDOG_TIMEOUT_S,
+                query=True,
+            ),
+            timeout=self.MOTEUS_RESPONSE_TIME_INDICATING_DISCONNECTED_S,
+        )
+
+        moteus_not_found = state is None or not hasattr(state, "values") or moteus.Register.FAULT not in state.values
+        if moteus_not_found:
+            self._check_has_error(99)
+        else:
+            self._check_has_error(state.values[moteus.Register.FAULT])
+
             self.moteus_data = MoteusData(
                 position=state.values[moteus.Register.POSITION],
                 velocity=state.values[moteus.Register.VELOCITY],
                 torque=state.values[moteus.Register.TORQUE],
             )
-            self._check_has_error(state.values[moteus.Register.FAULT])
-        except asyncio.TimeoutError:
-            if self.moteus_state.state != MoteusState.DISCONNECTED_STATE:
-                rospy.logerr(f"CAN ID {self._can_id} disconnected when trying to send command")
-            self._change_state(MoteusState.DISCONNECTED_STATE)
-            return
 
     def _check_has_error(self, fault_response: int) -> None:
         """
@@ -162,26 +178,22 @@ class MoteusBridge:
         """
         try:
             assert self.moteus_state.state != MoteusState.ARMED_STATE
+
             await asyncio.wait_for(
                 self.controller.set_stop(), timeout=MoteusBridge.MOTEUS_RESPONSE_TIME_INDICATING_DISCONNECTED_S
             )
-            state = await asyncio.wait_for(
-                self.controller.set_position(
-                    position=CommandData.POSITION_FOR_VELOCITY_CONTROL,
-                    velocity=CommandData.ZERO_VELOCITY,
-                    velocity_limit=CommandData.VELOCITY_LIMIT,
-                    maximum_torque=CommandData.MAX_TORQUE,
-                    watchdog_timeout=MoteusBridge.ROVER_NODE_TO_MOTEUS_WATCHDOG_TIMEOUT_S,
-                    query=True,
-                ),
-                timeout=MoteusBridge.MOTEUS_RESPONSE_TIME_INDICATING_DISCONNECTED_S,
+
+            command = CommandData(
+                position=CommandData.POSITION_FOR_VELOCITY_CONTROL,
+                velocity=CommandData.ZERO_VELOCITY,
+                torque=CommandData.DEFAULT_TORQUE,
             )
-            self._check_has_error(state.values[moteus.Register.FAULT])
+            await self._send_command(command)
+
         except asyncio.TimeoutError:
             if self.moteus_state.state != MoteusState.DISCONNECTED_STATE:
                 rospy.logerr(f"CAN ID {self._can_id} disconnected when trying to connect")
             self._change_state(MoteusState.DISCONNECTED_STATE)
-            return
 
     def _change_state(self, state: str) -> None:
         """
@@ -208,7 +220,7 @@ class MoteusBridge:
         If in disconnected or error state, attempts will be made to return to armed state.
         """
         if self.moteus_state.state == MoteusState.ARMED_STATE:
-            await self._send_command()
+            await self._send_desired_command()
         elif (
             self.moteus_state.state == MoteusState.DISCONNECTED_STATE
             or self.moteus_state.state == MoteusState.ERROR_STATE
@@ -317,17 +329,13 @@ class ArmManager:
         using_pi3_hat = rospy.get_param("brushless/using_pi3_hat")
         transport = None
         if using_pi3_hat:
-            # TODO - Uncomment once pi3hat is supported
-            pass
-            # import moteus_pi3hat
-            # transport = moteus_pi3hat.Pi3HatRouter(
-            #     servo_bus_map={
-            #         1: [11],
-            #         2: [12],
-            #         3: [13],
-            #         4: [14],
-            #     },
-            # )
+            import moteus_pi3hat
+
+            transport = moteus_pi3hat.Pi3HatRouter(
+                servo_bus_map={1: [info["id"] for name, info in arm_controller_info_by_name.items()]}
+            )
+        else:
+            transport = None
 
         self._motors_manager = MotorsManager(arm_controller_info_by_name, transport, "arm_status")
         rospy.Subscriber("ra_cmd", JointState, self._process_ra_cmd)
