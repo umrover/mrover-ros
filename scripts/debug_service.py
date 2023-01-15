@@ -1,6 +1,8 @@
 #!/usr/bin/env python3
-''' Node for testing service requests for services that are still in development
-	Logs the service request to stdout'''
+'''
+	Node for testing service requests for services that are still in development
+	Logs the service request to stdout
+'''
 
 from typing import List, Any
 import rospy
