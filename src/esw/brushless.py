@@ -176,6 +176,10 @@ class MoteusBridge:
         try:
             assert self.moteus_state.state != MoteusState.ARMED_STATE
 
+            await asyncio.wait_for(
+                self.controller.set_stop(), timeout=self.MOTEUS_RESPONSE_TIME_INDICATING_DISCONNECTED_S
+            )
+
             command = CommandData(
                 position=math.nan,
                 velocity=CommandData.ZERO_VELOCITY,
