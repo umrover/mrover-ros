@@ -1,7 +1,7 @@
 <template>
 <div>
     <h3>Raman</h3>
-    <ToggleButton id="uv_carousel" v-bind:currentState="ramanLaserState" labelEnableText="Raman Laser On" labelDisableText="Raman Laser Off" v-on:change="toggleRamanLaser()" />
+    <ToggleButton v-bind:currentState="ramanLaserState" labelEnableText="Raman Laser On" labelDisableText="Raman Laser Off" v-on:change="toggleRamanLaser()" />
 </div>
 </template>
 
