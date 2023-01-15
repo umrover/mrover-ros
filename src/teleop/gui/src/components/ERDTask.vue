@@ -91,9 +91,9 @@ export default {
 
     this.tfClient = new ROSLIB.TFClient({
       ros: this.$ros,
-      fixedFrame: 'odom',
+      fixedFrame: 'map',
       // Thresholds to trigger subscription callback
-      angularThres: 0.01,
+      angularThres: 0.0001,
       transThres: 0.01
     });
 
