@@ -1,25 +1,12 @@
 <!--
-	This launch file should be run on the Jetson in order to start our drive, control, and auton software
-	on the physical rover.
+	This launch file should be run on the Pi in order to start our drive software.
  -->
 <launch>
-    <rosparam command="load" file="$(find mrover)/config/teleop.yaml" />
 
-    <!-- run the teleop gui by starting the rosbridge server and then launching with a bash script -->
-    <!-- <include file="$(find rosbridge_server)/launch/rosbridge_websocket.launch"></include>
-    <node name="gui" pkg="mrover" type="gui_run.sh" cwd="node" /> -->
-
-    <!-- launch rover core nodes -->
-    <include file="$(find mrover)/launch/rover_core.launch"/>
-
-    <!-- params for hardware interfaces including IMU, GPS, and odrives -->
+    <!-- params for hardware interfaces including IMU, GPS, odrives, and moteus -->
     <rosparam command="load" file="$(find mrover)/config/esw.yaml"/>
 
-    <!-- teleop node for receiving commands from the gui -->
-    <rosparam command="load" file="$(find mrover)/config/teleop.yaml"/>
-    <node name="jetson_teleop" pkg="mrover" type="jetson_teleop.py"/>
-
     <!-- Run the moteus program -->
-    <node name="brushless" pkg="mrover" type="brushless.py" output="screen"></node>
+    <node name="brushless" pkg="mrover" type="brushless.py" output="screen" launch-prefix="sudo"></node>
 
 </launch>
