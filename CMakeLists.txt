@@ -51,7 +51,6 @@ set(MROVER_SERVICE_FILES
 set(MROVER_ROS_MESSAGES
         sensor_msgs
         std_msgs
-        sensor_msgs
         )
 
 # dynamic reconfigure

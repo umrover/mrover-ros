@@ -41,7 +41,6 @@ export default {
         this.brushless_motors.subscribe((msg) => {
             this.jointState = msg.joint_states
             this.moteusState = msg.moteus_states
-
         })
     }
 }
