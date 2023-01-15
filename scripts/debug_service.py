@@ -4,7 +4,7 @@
 	Logs the service request to stdout
 '''
 
-from typing import List, Any
+from typing import Any
 import rospy
 from mrover.srv import PublishEnableAuton
 
