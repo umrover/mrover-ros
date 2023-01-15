@@ -48,6 +48,8 @@ namespace gazebo {
 
     constexpr auto VELOCITY_COMMAND_TOPIC = "cmd_vel";
 
+    const int MAX_LOOPS_NO_UPDATE = 100;
+
     enum {
         FRONT_LEFT,
         FRONT_RIGHT,
@@ -189,6 +191,12 @@ namespace gazebo {
 
         getPositionCommand();
 
+        ++mLoopsWithoutUpdate;
+        if (mLoopsWithoutUpdate == MAX_LOOPS_NO_UPDATE) {
+            mForwardVelocity = 0;
+            mPitch = 0;
+        }
+
         //stepTime = World::Instance()->GetPhysicsEngine()->GetStepTime();
         stepTime = mWorld->SimTime() - mPreviousUpdateTime;
         mPreviousUpdateTime = mWorld->SimTime();
@@ -248,7 +256,7 @@ namespace gazebo {
 
     void DiffDrivePlugin6W::commandVelocityCallback(const geometry_msgs::Twist::ConstPtr& twistCommand) {
         std::lock_guard guard(mLock);
-
+        mLoopsWithoutUpdate = 0;
         mForwardVelocity = twistCommand->linear.x;
         mPitch = twistCommand->angular.z;
     }

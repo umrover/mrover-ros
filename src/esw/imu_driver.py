@@ -1,9 +1,9 @@
 #!/usr/bin/env python3
 import rospy
-from sensor_msgs.msg import Imu, MagneticField, Temperature
+from sensor_msgs.msg import Temperature, Imu, MagneticField
 from geometry_msgs.msg import Quaternion, Vector3
 from std_msgs.msg import Header
-from mrover.msg import CalibrationStatus
+from mrover.msg import CalibrationStatus, ImuAndMag
 
 import serial
 from serial import SerialException, SerialTimeoutException
@@ -11,8 +11,8 @@ from serial import SerialException, SerialTimeoutException
 
 def main():
     # publishers for all types of IMU data, queue size is 1 to make sure we don't publish old data
-    imu_pub = rospy.Publisher("imu/data", Imu, queue_size=1)
-    mag_pub = rospy.Publisher("imu/magnetometer", MagneticField, queue_size=1)
+    imu_pub = rospy.Publisher("imu/data", ImuAndMag, queue_size=1)
+
     temp_pub = rospy.Publisher("imu/temp", Temperature, queue_size=1)
     calibration_pub = rospy.Publisher("imu/calibration", CalibrationStatus, queue_size=1)
 
@@ -65,15 +65,18 @@ def main():
 
         # fill in all sensor messages, setting timestamps of each message to right now,
         # and setting the reference frame of all messages to IMU frame
-        imu_msg = Imu(
+        imu_msg = ImuAndMag(
             header=Header(stamp=rospy.Time.now(), frame_id=imu_frame),
-            orientation=Quaternion(*orientation_data),
-            linear_acceleration=Vector3(*accel_data),
-            angular_velocity=Vector3(*gyro_data),
-        )
-
-        mag_msg = MagneticField(
-            header=Header(stamp=rospy.Time.now(), frame_id=imu_frame), magnetic_field=Vector3(*mag_data)
+            imu=Imu(
+                header=Header(stamp=rospy.Time.now(), frame_id=imu_frame),
+                orientation=Quaternion(*orientation_data),
+                linear_acceleration=Vector3(*accel_data),
+                angular_velocity=Vector3(*gyro_data),
+            ),
+            mag=MagneticField(
+                header=Header(stamp=rospy.Time.now(), frame_id=imu_frame),
+                magnetic_field=Vector3(*mag_data),
+            ),
         )
 
         temp_msg = Temperature(header=Header(stamp=rospy.Time.now(), frame_id=imu_frame), temperature=temp_data)
@@ -82,7 +85,6 @@ def main():
 
         # publish each message
         imu_pub.publish(imu_msg)
-        mag_pub.publish(mag_msg)
         temp_pub.publish(temp_msg)
         calibration_pub.publish(calibration_msg)
 
