@@ -1,45 +1,32 @@
-'use strict'
-const CopyWebpackPlugin = require('copy-webpack-plugin')
-const HtmlWebpackPlugin = require('html-webpack-plugin')
-const { VueLoaderPlugin } = require('vue-loader')
+"use strict";
+const CopyWebpackPlugin = require("copy-webpack-plugin");
+const HtmlWebpackPlugin = require("html-webpack-plugin");
+const { VueLoaderPlugin } = require("vue-loader");
 module.exports = {
-  mode: 'development',
-  entry: [
-    './src/app.js'
-  ],
-  "devtool": "source-map",
+  mode: "development",
+  entry: ["./src/app.js"],
+  devtool: "source-map",
   module: {
     rules: [
       {
         test: /\.vue$/,
-        use: 'vue-loader'
+        use: "vue-loader",
       },
       {
         test: /\.css$/,
-        use: [
-          'vue-style-loader',
-          'css-loader'
-        ]
+        use: ["vue-style-loader", "css-loader"],
       },
       {
         test: /\.(gif|svg|jpg|png)$/,
         loader: "file-loader",
-      }
+      },
     ],
   },
-  plugins: [
-    new VueLoaderPlugin(),
-    new CopyWebpackPlugin([
-      { from: 'src' }
-    ])
-  ],
+  plugins: [new VueLoaderPlugin(), new CopyWebpackPlugin([{ from: "src" }])],
   resolve: {
     alias: {
-        'vue$': 'vue/dist/vue.esm.js'
+      vue$: "vue/dist/vue.esm.js",
     },
-    modules: [
-      'deps',
-      'node_modules'
-    ]
-  }
-}
+    modules: ["deps", "node_modules"],
+  },
+};
