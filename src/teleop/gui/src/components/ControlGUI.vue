@@ -3,8 +3,8 @@
     <DriveControls></DriveControls>
     <ArmControls></ArmControls>
     <GimbalControls></GimbalControls>
-    <JointStateTable v-bind:JointStateData="JointState" v-bind:vertical="true"></JointStateTable>
-    <MoteusStateTable v-bind:MoteusStateData="MoteusState"></MoteusStateTable>
+    <JointStateTable v-bind:jointStateData="jointState" v-bind:vertical="true"></JointStateTable>
+    <MoteusStateTable v-bind:moteusStateData="moteusState"></MoteusStateTable>
 
 </div>
 </template>
@@ -20,8 +20,8 @@ import MoteusStateTable from './MoteusStateTable.vue'
 export default {
     data() {
         return {
-            JointState: {},
-            MoteusState: {}
+            jointState: {},
+            moteusState: {}
         }
     },
 
@@ -41,8 +41,8 @@ export default {
         });
 
         this.brushless_motors.subscribe((msg) => {
-            this.JointState = msg.joint_states
-            this.MoteusState = msg.moteus_states
+            this.jointState = msg.joint_states
+            this.moteusState = msg.moteus_states
 
         })
     }
