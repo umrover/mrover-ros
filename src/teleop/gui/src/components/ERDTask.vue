@@ -1,20 +1,14 @@
 <template>
-<div>
+  <div>
     <p>ERD</p>
-</div>
+  </div>
 </template>
 
 <script>
-
 export default {
+  components: {},
   data() {
-    return {
-
-    }
+    return {};
   },
-
-  components:{
-}
-}
+};
 </script>
-
