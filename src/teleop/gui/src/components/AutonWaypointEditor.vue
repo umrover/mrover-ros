@@ -50,11 +50,7 @@
           <Checkbox v-on:toggle="roverStuck=!roverStuck" name="Stuck"></Checkbox>
         </div>
         <div class="stats">
-          <p>
-            Velocity Commands<br>
-            Linear x: {{linear_x}} m/s<br>
-            Angular z: {{angular_z}} rad/s
-          </p>
+          <VelocityCommand/>
         </div>
       </div>
       <div class="box1">
@@ -74,6 +70,7 @@ import AutonModeCheckbox from './AutonModeCheckbox.vue'
 import Checkbox from './Checkbox.vue'
 import draggable from 'vuedraggable'
 import {convertDMS} from '../utils.js';
+import VelocityCommand from './VelocityCommand.vue';
 import WaypointItem from './AutonWaypointItem.vue'
 import {mapMutations, mapGetters} from 'vuex'
 import _ from 'lodash';
@@ -128,14 +125,11 @@ export default {
       autonButtonColor: "red",
       waitingForNav: false,
 
-      linear_x: 0,
-      angular_z: 0,
       roverStuck: false,
 
       //Pubs and Subs
       nav_status_sub: null,
       course_pub: null,
-      cmd_vel_sub: null,
 
       rover_stuck_pub: null
       
@@ -152,18 +146,6 @@ export default {
           ros : this.$ros,
           name : '/auton/enable_state',
           messageType : 'mrover/EnableAuton'
-    }),
-
-    this.cmd_vel_sub = new ROSLIB.Topic({
-          ros : this.$ros,
-          name : 'cmd_vel',
-          messageType : 'geometry_msgs/Twist'
-    }),
-
-    this.cmd_vel_sub.subscribe((msg) => {
-      // Only use linear x and angular z
-      this.linear_x = msg.linear.x
-      this.angular_z = msg.angular.z
     }),
 
     this.nav_status_sub = new ROSLIB.Topic({
@@ -378,6 +360,7 @@ export default {
     WaypointItem,
     AutonModeCheckbox,
     Checkbox,
+    VelocityCommand,
   }
 
 }
@@ -474,7 +457,7 @@ export default {
   }
   
   .stats{
-    margin-top: -10px;
+    margin-top: 10px;
     grid-area: stats;
   }
   
