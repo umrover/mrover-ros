@@ -21,9 +21,9 @@ class CommandData:
 
     def __init__(
         self,
-        position: float=POSITION_FOR_VELOCITY_CONTROL,
-        velocity: float=ZERO_VELOCITY,
-        torque: float=DEFAULT_TORQUE,
+        position: float = POSITION_FOR_VELOCITY_CONTROL,
+        velocity: float = ZERO_VELOCITY,
+        torque: float = DEFAULT_TORQUE,
     ):
         self.position = position
         self.velocity = max(-CommandData.VELOCITY_LIMIT, min(CommandData.VELOCITY_LIMIT, velocity))
@@ -33,9 +33,9 @@ class CommandData:
 class MoteusData:
     def __init__(
         self,
-        position: float=CommandData.POSITION_FOR_VELOCITY_CONTROL,
-        velocity: float=CommandData.ZERO_VELOCITY,
-        torque: float=CommandData.DEFAULT_TORQUE
+        position: float = CommandData.POSITION_FOR_VELOCITY_CONTROL,
+        velocity: float = CommandData.ZERO_VELOCITY,
+        torque: float = CommandData.DEFAULT_TORQUE,
     ):
         self.position = position
         self.velocity = velocity
@@ -173,7 +173,7 @@ class MoteusBridge:
         :param fault_response: the value read in from the fault register of the moteus CAN message.
         Or a custom error, 99.
         """
-        assert not is_fault_response_an_error(fault_response)
+        assert is_fault_response_an_error(fault_response)
 
         self._change_state(MoteusState.ERROR_STATE)
 
@@ -300,7 +300,7 @@ class MotorsManager(ABC):
 
             elif self.is_not_receiving_new_messages:
                 self.is_not_receiving_new_messages = False
-                rospy.loginfo(f"Brushless {self.manager_type()} Watchdog: Received nww messages. Enabling controls.")
+                rospy.loginfo(f"Brushless {self.manager_type()} Watchdog: Received new messages. Enabling controls.")
 
             await bridge.update()
 
@@ -451,8 +451,8 @@ class Application:
 
             transport = moteus_pi3hat.Pi3HatRouter(
                 servo_bus_map={
-                    1: [info["id"] for name, info in arm_controller_info_by_name.items()],
-                    2: [info["id"] for name, info in drive_controller_info_by_name.items()],
+                    1: [info["id"] for name, info in drive_controller_info_by_name.items()],
+                    2: [info["id"] for name, info in arm_controller_info_by_name.items()],
                 }
             )
         else:
@@ -471,7 +471,7 @@ class Application:
         """
         Creates an async function to run both drive and arm tasks
         """
-        while not rospy.is_shutdown:
+        while not rospy.is_shutdown():
             await self._arm_manager.run_once()
             await self._drive_manager.run_once()
 
