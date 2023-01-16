@@ -40,6 +40,7 @@ class MoteusState:
     DISCONNECTED_STATE = "Disconnected"
     ARMED_STATE = "Armed"
     ERROR_STATE = "Error"
+    MOTEUS_UNPOWERED_OR_NOT_FOUND_ERROR = 99  # a custom error for when the moteus is unpowered or not found
 
     ERROR_CODE_DICTIONARY = {
         1: "DmaStreamTransferError",
@@ -61,13 +62,23 @@ class MoteusState:
         41: "ConfigChanged",
         42: "ThetaInvalid",
         43: "PositionInvalid",
-        99: "Moteus Unpowered or Not Found",
+        MOTEUS_UNPOWERED_OR_NOT_FOUND_ERROR: "Moteus Unpowered or Not Found",
     }
+
     NO_ERROR_NAME = "No Error"
 
     def __init__(self, state: str, error_name: str):
         self.state = state
         self.error_name = error_name
+
+
+def is_fault_response_an_error(fault_response: int) -> bool:
+    """
+    Returns True if the fault response is an error
+    :param fault_response: the value read in from the fault register of the moteus CAN message
+    :return: True if the fault response is an error
+    """
+    return fault_response != 0
 
 
 class MoteusBridge:
@@ -109,8 +120,10 @@ class MoteusBridge:
         Otherwise, error state is entered. State must be in armed state.
         """
         assert self.moteus_state.state == MoteusState.ARMED_STATE
+
         with self.command_lock:
             command = self._command
+
         try:
             await self._send_command(command)
         except asyncio.TimeoutError:
@@ -140,9 +153,15 @@ class MoteusBridge:
 
         moteus_not_found = state is None or not hasattr(state, "values") or moteus.Register.FAULT not in state.values
         if moteus_not_found:
-            self._check_has_error(99)
+            self._handle_error(MoteusState.MOTEUS_UNPOWERED_OR_NOT_FOUND_ERROR)
         else:
-            self._check_has_error(state.values[moteus.Register.FAULT])
+
+            is_error = is_fault_response_an_error(state.values[moteus.Register.FAULT])
+
+            if is_error:
+                self._handle_error(state.values[moteus.Register.FAULT])
+            else:
+                self._change_state(MoteusState.ARMED_STATE)
 
             self.moteus_data = MoteusData(
                 position=state.values[moteus.Register.POSITION],
@@ -150,27 +169,24 @@ class MoteusBridge:
                 torque=state.values[moteus.Register.TORQUE],
             )
 
-    def _check_has_error(self, fault_response: int) -> None:
+    def _handle_error(self, fault_response: int) -> None:
         """
-        Checks if the controller has encountered an error. If there is an error, error state is set.
-        :param fault_response: the value read in from the fault register of the moteus CAN message
+        Handles error by changing the state to error state
+        :param fault_response: the value read in from the fault register of the moteus CAN message.
+        Or a custom error, 99.
         """
-        has_error = fault_response != 0
-        if has_error:
+        assert not is_fault_response_an_error(fault_response)
 
-            self._change_state(MoteusState.ERROR_STATE)
+        self._change_state(MoteusState.ERROR_STATE)
 
-            try:
-                error_description = MoteusState.ERROR_CODE_DICTIONARY[fault_response]
-            except KeyError:
-                error_description = MoteusState.NO_ERROR_NAME
+        try:
+            error_description = MoteusState.ERROR_CODE_DICTIONARY[fault_response]
+        except KeyError:
+            error_description = MoteusState.NO_ERROR_NAME
 
-            if self.moteus_state.error_name != error_description:
-                rospy.logerr(f"CAN ID {self._can_id} has encountered an error: {error_description}")
-                self.moteus_state.error_name = error_description
-
-        else:
-            self._change_state(MoteusState.ARMED_STATE)
+        if self.moteus_state.error_name != error_description:
+            rospy.logerr(f"CAN ID {self._can_id} has encountered an error: {error_description}")
+            self.moteus_state.error_name = error_description
 
     async def _connect(self) -> None:
         """
