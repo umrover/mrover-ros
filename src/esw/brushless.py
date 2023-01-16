@@ -256,7 +256,7 @@ class MotorsManager(ABC):
 
         self._last_updated_time = t.time()
 
-        self._motors_status_publisher = rospy.Publisher(self.publish_topic, MotorsStatus, queue_size=1)
+        self._motors_status_publisher = rospy.Publisher(self.publish_topic(), MotorsStatus, queue_size=1)
         self._motors_status = MotorsStatus(
             name=[name for name in self._motor_names],
             joint_states=JointState(
@@ -295,14 +295,14 @@ class MotorsManager(ABC):
             if lost_communication:
                 if not self.is_not_receiving_new_messages:
                     rospy.loginfo(
-                        f"Brushless {self.manager_type} Watchdog: Not receiving new messages. Disabling controls."
+                        f"Brushless {self.manager_type()} Watchdog: Not receiving new messages. Disabling controls."
                     )
                     self.is_not_receiving_new_messages = True
                 bridge.set_command(CommandData())
 
             elif self.is_not_receiving_new_messages:
                 self.is_not_receiving_new_messages = False
-                rospy.loginfo(f"Brushless {self.manager_type} Watchdog: Received new messages. Enabling controls.")
+                rospy.loginfo(f"Brushless {self.manager_type()} Watchdog: Received new messages. Enabling controls.")
 
             await bridge.update()
 
