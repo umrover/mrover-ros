@@ -4,7 +4,7 @@ import time as t
 import asyncio
 import rospy
 import math
-from abc import ABC, abstractmethod, abstractproperty
+from abc import ABC, abstractmethod
 from geometry_msgs.msg import Twist
 from typing import List, Dict
 from sensor_msgs.msg import JointState
@@ -256,7 +256,7 @@ class MotorsManager(ABC):
 
         self._last_updated_time = t.time()
 
-        self._motors_status_publisher = rospy.Publisher(self.publish_topic(), MotorsStatus, queue_size=1)
+        self._motors_status_publisher = rospy.Publisher(self.publish_topic, MotorsStatus, queue_size=1)
         self._motors_status = MotorsStatus(
             name=[name for name in self._motor_names],
             joint_states=JointState(
@@ -273,11 +273,13 @@ class MotorsManager(ABC):
         )
         self.is_not_receiving_new_messages = True
 
-    @abstractproperty
+    @property
+    @abstractmethod
     def manager_type(self) -> str:
         pass
 
-    @abstractproperty
+    @property
+    @abstractmethod
     def publish_topic(self) -> str:
         pass
 
@@ -293,14 +295,14 @@ class MotorsManager(ABC):
             if lost_communication:
                 if not self.is_not_receiving_new_messages:
                     rospy.loginfo(
-                        f"Brushless {self.manager_type()} Watchdog: Not receiving new messages. Disabling controls."
+                        f"Brushless {self.manager_type} Watchdog: Not receiving new messages. Disabling controls."
                     )
                     self.is_not_receiving_new_messages = True
                 bridge.set_command(CommandData())
 
             elif self.is_not_receiving_new_messages:
                 self.is_not_receiving_new_messages = False
-                rospy.loginfo(f"Brushless {self.manager_type()} Watchdog: Received new messages. Enabling controls.")
+                rospy.loginfo(f"Brushless {self.manager_type} Watchdog: Received new messages. Enabling controls.")
 
             await bridge.update()
 
@@ -350,7 +352,7 @@ class ArmManager(MotorsManager):
         """
 
         for i, name in enumerate(ros_msg.name):
-            if name in super()._motor_names:
+            if name in self._motor_names:
                 position, velocity, torque = (
                     ros_msg.position[i],
                     ros_msg.velocity[i],
@@ -364,9 +366,9 @@ class ArmManager(MotorsManager):
                     velocity = max(-1, min(1, velocity))
                 velocity *= min(self._max_rps_by_name[name], CommandData.VELOCITY_LIMIT)
 
-                # super()._command_data[super()._motor_names.index(name)].position = position
-                super()._command_data[super()._motor_names.index(name)].velocity = velocity
-                # super()._command_data[super()._motor_names.index(name)].torque = torque
+                # self._command_data[self._motor_names.index(name)].position = position
+                self._command_data[self._motor_names.index(name)].velocity = velocity
+                # self._command_data[self._motor_names.index(name)].torque = torque
 
         super().update_command_data()
 
