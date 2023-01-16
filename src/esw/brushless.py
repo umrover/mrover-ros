@@ -103,9 +103,8 @@ class MoteusBridge:
         :param command: contains arguments that are used in the moteus controller.set_position function
         :return: none
         """
-        self.command_lock.acquire()
-        self._command = command
-        self.command_lock.release()
+        with self.command_lock:
+            self._command = command
 
     async def _send_desired_command(self) -> None:
         """
@@ -114,9 +113,10 @@ class MoteusBridge:
         Otherwise, error state is entered. State must be in armed state.
         """
         assert self.moteus_state.state == MoteusState.ARMED_STATE
-        self.command_lock.acquire()
-        command = self._command
-        self.command_lock.release()
+
+        with self.command_lock:
+            command = self._command
+
         try:
             await self._send_command(command)
         except asyncio.TimeoutError:
