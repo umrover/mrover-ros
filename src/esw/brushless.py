@@ -296,7 +296,7 @@ class MotorsManager:
                 )
             elif self.is_not_receiving_new_messages:
                 self.is_not_receiving_new_messages = False
-                rospy.loginfo(f"Brushless {self._manager_name} Watchdog: Received nww messages. Enabling controls.")
+                rospy.loginfo(f"Brushless {self._manager_name} Watchdog: Received new messages. Enabling controls.")
 
             await bridge.update()
 
@@ -468,7 +468,8 @@ class Application:
 
             transport = moteus_pi3hat.Pi3HatRouter(
                 servo_bus_map={
-                    1: [1, 2, 3, 4, 5, 6],
+                    1: [info["id"] for name, info in drive_controller_info_by_name.items()],
+                    2: [info["id"] for name, info in arm_controller_info_by_name.items()],
                 }
             )
         else:
