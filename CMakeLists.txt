@@ -34,6 +34,7 @@ set(MROVER_MESSAGE_FILES
         GPSWaypoint.msg
         ImuAndMag.msg
         MoteusState.msg
+        MotorsStatus.msg
         ODriveState.msg
         Waypoint.msg
         WaypointType.msg
