@@ -432,7 +432,7 @@ class DriveManager(MotorsManager):
         ]
 
         for i, new_velocity in enumerate(drive_command_velocities):
-            super()._command_data[i].velocity = new_velocity
+            self._command_data[i].velocity = new_velocity
 
         super().update_command_data()
 
