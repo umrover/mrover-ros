@@ -459,8 +459,8 @@ class Application:
         else:
             transport = None
 
-        self._drive_manager = DriveManager(transport, arm_controller_info_by_name)
-        self._arm_manager = ArmManager(transport, drive_controller_info_by_name)
+        self._arm_manager = ArmManager(transport, arm_controller_info_by_name)
+        self._drive_manager = DriveManager(transport, drive_controller_info_by_name)
 
     def run(self) -> None:
         """
