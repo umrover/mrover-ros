@@ -40,6 +40,7 @@ class MoteusState:
     DISCONNECTED_STATE = "Disconnected"
     ARMED_STATE = "Armed"
     ERROR_STATE = "Error"
+    MOTEUS_UNPOWERED_OR_NOT_FOUND_ERROR = 99  # a custom error for when the moteus is unpowered or not found
 
     ERROR_CODE_DICTIONARY = {
         1: "DmaStreamTransferError",
@@ -61,8 +62,9 @@ class MoteusState:
         41: "ConfigChanged",
         42: "ThetaInvalid",
         43: "PositionInvalid",
-        99: "Moteus Unpowered or Not Found",
+        MOTEUS_UNPOWERED_OR_NOT_FOUND_ERROR: "Moteus Unpowered or Not Found",
     }
+
     NO_ERROR_NAME = "No Error"
 
     def __init__(self, state: str, error_name: str):
@@ -146,7 +148,7 @@ class MoteusBridge:
 
         moteus_not_found = state is None or not hasattr(state, "values") or moteus.Register.FAULT not in state.values
         if moteus_not_found:
-            self._handle_error(99)
+            self._handle_error(MoteusState.MOTEUS_UNPOWERED_OR_NOT_FOUND_ERROR)
         else:
 
             is_error = is_fault_response_an_error(state.values[moteus.Register.FAULT])
