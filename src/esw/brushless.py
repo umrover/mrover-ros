@@ -175,7 +175,7 @@ class MoteusBridge:
         :param fault_response: the value read in from the fault register of the moteus CAN message.
         Or a custom error, 99.
         """
-        assert not is_fault_response_an_error(fault_response)
+        assert is_fault_response_an_error(fault_response)
 
         self._change_state(MoteusState.ERROR_STATE)
 
@@ -468,8 +468,7 @@ class Application:
 
             transport = moteus_pi3hat.Pi3HatRouter(
                 servo_bus_map={
-                    1: [info["id"] for name, info in arm_controller_info_by_name.items()],
-                    2: [info["id"] for name, info in drive_controller_info_by_name.items()],
+                    1: [1, 2, 3, 4, 5, 6],
                 }
             )
         else:
@@ -488,7 +487,7 @@ class Application:
         """
         Creates an async function to run both drive and arm tasks
         """
-        while not rospy.is_shutdown:
+        while not rospy.is_shutdown():
             await self._arm_manager.run_once()
             await self._drive_manager.run_once()
 
