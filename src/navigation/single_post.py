@@ -59,18 +59,14 @@ class SinglePostState(BaseState):
         self.traj: Optional[SinglePostTrajectory] = None
     
     def evalutate(self):
-        post_pos1 = self.context.course.current_waypoint_pose()
-        post_pos2 = self.context.course.next_waypoint_pose()
-        gate = self.context.course.gate_pose()
+        post_pos = self.context.env.current_fid_pos();
+        gate = self.context.env.current_gate();
 
         if gate is not None: #If we have a gate, we are done
             return SinglePostStateTransitions.found_gate.name
-        elif post_pos1 is not None: #Searching for second post
+        elif post_pos is not None: #Searching for second post
             if self.traj is None:
-                self.traj = SinglePostTrajectory.single_post_traj(post_pos1, self.context.rover.get_pose().position)
-        elif post_pos2 is not None: #Searching for first post
-            if self.traj is None:
-                self.traj = SinglePostTrajectory.single_post_traj(post_pos2, self.context.rover.get_pose().position)
+                self.traj = SinglePostTrajectory.single_post_traj(post_pos, self.context.rover.get_pose().position)
         else: 
             return SinglePostStateTransitions.no_fiducial.name
 
