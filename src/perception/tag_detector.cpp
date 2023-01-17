@@ -34,7 +34,7 @@
 #include <boost/algorithm/string/classification.hpp>
 #include <boost/algorithm/string/split.hpp>
 
-void FiducialsNode::configCallback(mrover::DetectorParamsConfig &config, uint32_t level) {
+void FiducialsNode::configCallback(mrover::DetectorParamsConfig& config, uint32_t level) {
     // Don't load initial config, since it will overwrite the rosparam settings
     if (level == 0xFFFFFFFF) {
         return;
@@ -70,13 +70,13 @@ void FiducialsNode::configCallback(mrover::DetectorParamsConfig &config, uint32_
     mDetectorParams->polygonalApproxAccuracyRate = config.polygonalApproxAccuracyRate;
 }
 
-void FiducialsNode::ignoreCallback(std_msgs::String const &msg) {
+void FiducialsNode::ignoreCallback(std_msgs::String const& msg) {
     mIgnoreIds.clear();
     mPnh.setParam("ignore_fiducials", msg.data);
     handleIgnoreString(msg.data);
 }
 
-void FiducialsNode::camInfoCallback(sensor_msgs::CameraInfo::ConstPtr const &msg) {
+void FiducialsNode::camInfoCallback(sensor_msgs::CameraInfo::ConstPtr const& msg) {
     if (mHasCamInfo) {
         return;
     }
@@ -99,12 +99,12 @@ void FiducialsNode::camInfoCallback(sensor_msgs::CameraInfo::ConstPtr const &msg
     }
 }
 
-void FiducialsNode::handleIgnoreString(std::string const &str) {
+void FiducialsNode::handleIgnoreString(std::string const& str) {
     // Ignore fiducials can take comma separated list of individual
     // Tag ids or ranges, eg "1,4,8,9-12,30-40"
     std::vector<std::string> strs;
     boost::split(strs, str, boost::is_any_of(","));
-    for (const std::string &element: strs) {
+    for (const std::string& element: strs) {
         if (element.empty()) {
             continue;
         }
@@ -127,7 +127,7 @@ void FiducialsNode::handleIgnoreString(std::string const &str) {
     }
 }
 
-bool FiducialsNode::enableDetectionsCallback(std_srvs::SetBool::Request &req, std_srvs::SetBool::Response &res) {
+bool FiducialsNode::enableDetectionsCallback(std_srvs::SetBool::Request& req, std_srvs::SetBool::Response& res) {
     mEnableDetections = req.data;
     if (mEnableDetections) {
         res.message = "Enabled aruco detections.";
@@ -172,7 +172,7 @@ FiducialsNode::FiducialsNode() : mNh(), mPnh("~"), mIt(mNh), mTfListener(mTfBuff
                                                     this);
 
     // Lambda handles passing class pointer (implicit first parameter) to configCallback
-    mCallbackType = [this](mrover::DetectorParamsConfig &config, uint32_t level) { configCallback(config, level); };
+    mCallbackType = [this](mrover::DetectorParamsConfig& config, uint32_t level) { configCallback(config, level); };
     mConfigServer.setCallback(mCallbackType);
 
     mPnh.param<double>("adaptiveThreshConstant",
@@ -237,7 +237,7 @@ FiducialsNode::FiducialsNode() : mNh(), mPnh("~"), mIt(mNh), mTfListener(mTfBuff
     ROS_INFO("Aruco detection ready");
 }
 
-int main(int argc, char **argv) {
+int main(int argc, char** argv) {
     ros::init(argc, argv, "aruco_detect");
 
     [[maybe_unused]] auto node = std::make_unique<FiducialsNode>();
@@ -247,7 +247,7 @@ int main(int argc, char **argv) {
     return EXIT_SUCCESS;
 }
 
-void XYZFilter::addReading(SE3 const &fidInOdom) {
+void XYZFilter::addReading(SE3 const& fidInOdom) {
     fidInOdomX.push(fidInOdom.positionVector().x());
     fidInOdomY.push(fidInOdom.positionVector().y());
     fidInOdomZ.push(fidInOdom.positionVector().z());

@@ -98,10 +98,5 @@ class OffState(BaseState):
             self.stop_count = 0
             return OffStateTransitions.begin_course.name  # type: ignore
 
-        # Stop rover 10 times (to increase chance message goes through - only necessary for sim (real rover has watchdog))
-        if self.stop_count < 10:
-            cmd_vel = Twist()
-            self.context.rover.send_drive_command(cmd_vel)
-            self.stop_count += 1
         return OffStateTransitions.idle.name  # type: ignore
         # We have determined the Rover is off, now ignore Rover on ...
