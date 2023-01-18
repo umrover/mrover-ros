@@ -198,6 +198,7 @@ class MoteusBridge:
             )
 
             command = CommandData()
+
             await self._send_command(command)
 
         except asyncio.TimeoutError:
