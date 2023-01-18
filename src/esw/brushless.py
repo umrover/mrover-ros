@@ -170,7 +170,7 @@ class MoteusBridge:
         :param fault_response: the value read in from the fault register of the moteus CAN message.
         Or a custom error, 99.
         """
-        assert not is_fault_response_an_error(fault_response)
+        assert is_fault_response_an_error(fault_response)
 
         self._change_state(MoteusState.ERROR_STATE)
 
