@@ -6,10 +6,6 @@
     <!-- params for hardware interfaces including IMU, GPS, odrives, and moteus -->
     <rosparam command="load" file="$(find mrover)/config/esw.yaml"/>
 
-    <!-- teleop node for receiving commands from the gui -->
-    <rosparam command="load" file="$(find mrover)/config/teleop.yaml"/>
-    <node name="jetson_teleop" pkg="mrover" type="jetson_teleop.py"/>
-
     <!-- Run the moteus program -->
     <node name="brushless" pkg="mrover" type="brushless.py" output="screen"></node>
 
