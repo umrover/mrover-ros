@@ -4,4 +4,5 @@ gps_linearization:
   reference_point_altitude: 224
 
   world_frame: "map"
+  odom_frame: "odom"
   rover_frame: "base_link"

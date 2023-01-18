@@ -17,17 +17,14 @@ class GPSLinearization:
     """
 
     def __init__(self):
-        # subscribe to the topics containing GPS and IMU data,
-        # assigning them our corresponding callback functions
         rospy.Subscriber("gps/fix", NavSatFix, self.gps_callback)
         rospy.Subscriber("imu/data", ImuAndMag, self.imu_callback)
 
-        # TF infrastructure objects to interact with the TF tree
         self.tf_broadcaster = tf2_ros.TransformBroadcaster()
         self.tf_buffer = tf2_ros.Buffer()
         self.tf_listener = tf2_ros.TransformListener()
 
-        # TODO: is this valid init state?
+        # init to zero pose
         self.pose = SE3()
 
         # read required parameters, if they don't exist an error will be thrown
@@ -36,10 +33,9 @@ class GPSLinearization:
         self.ref_alt = rospy.get_param("gps_linearization/reference_point_altitude")
 
         self.world_frame = rospy.get_param("gps_linearization/world_frame")
-        # TODO: account for separate GPS and IMU frames?
         self.odom_frame = rospy.get_param("gps_linearization/odom_frame")
         self.rover_frame = rospy.get_param("gps_linearization/rover_frame")
-    
+
     def publish_pose(self) -> SE3:
         """
         Publishes the pose of the rover in relative to the map frame to the TF tree,
@@ -49,20 +45,23 @@ class GPSLinearization:
         rover_in_map = self.pose
 
         try:
-            # Get the odom to rover transform from the TF tree 
+            # Get the odom to rover transform from the TF tree
             rover_in_odom = SE3.from_tf_tree(self.tf_buffer, self.odom_frame, self.rover_frame)
             odom_to_rover = rover_in_odom.transform_matrix()
             map_to_rover = rover_in_map.transform_matrix()
-            
+
             # Calculate the intermediate transform from the overall transform and odom to rover
             map_to_odom = np.inv(odom_to_rover) @ map_to_rover
             odom_in_map = SE3.from_transform_matrix(map_to_odom)
-            odom_in_map.publish_to_tf_tree(self.tf_broadcaster, parent_frame=self.world_frame, child_frame=self.odom_frame)
+            odom_in_map.publish_to_tf_tree(
+                self.tf_broadcaster, parent_frame=self.world_frame, child_frame=self.odom_frame
+            )
 
         # if odom frame not found, publish directly as map->base_link
         except (tf2_ros.LookupException, tf2_ros.ConnectivityException, tf2_ros.ExtrapolationException):
-            rover_in_map.publish_to_tf_tree(self.tf_broadcaster, parent_frame=self.world_frame, child_frame=self.rover_frame)
-            
+            rover_in_map.publish_to_tf_tree(
+                self.tf_broadcaster, parent_frame=self.world_frame, child_frame=self.rover_frame
+            )
 
     def gps_callback(self, msg: NavSatFix):
         """
@@ -75,6 +74,10 @@ class GPSLinearization:
         cartesian = np.array(
             geodetic2enu(msg.latitude, msg.longitude, msg.altitude, self.ref_lat, self.ref_lon, self.ref_alt, deg=True)
         )
+        if np.any(np.isnan(cartesian)):
+            return
+
+        # ignore Z
         cartesian[2] = 0
         # TODO: locks?
         self.pose = SE3(position=cartesian, rotation=self.pose.rotation)
@@ -88,7 +91,12 @@ class GPSLinearization:
         :param msg: The Imu message containing IMU data that was just received
         """
         # convert ROS msg quaternion to numpy array
-        imu_quat = np.array([msg.orientation.x, msg.orientation.y, msg.orientation.z, msg.orientation.w])
+        imu_quat = np.array(
+            [msg.imu.orientation.x, msg.imu.orientation.y, msg.imu.orientation.z, msg.imu.orientation.w]
+        )
+
+        # normalize to avoid rounding errors
+        imu_quat = imu_quat / np.linalg.norm(imu_quat)
 
         # get a quaternion to rotate about the Z axis by 90 degrees
         offset_quat = quaternion_about_axis(np.pi / 2, np.array([0, 0, 1]))
