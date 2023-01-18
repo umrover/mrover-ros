@@ -44,16 +44,16 @@
       <div class="box datagrid">
         <div class="auton-check">
           <AutonModeCheckbox ref="autonCheckbox" v-bind:name="autonButtonText" v-bind:color="autonButtonColor"  v-on:toggle="toggleAutonMode($event)"/>
+          <Checkbox ref="teleopCheckbox" v-bind:name="'Teleop Controls'" v-on:toggle="toggleTeleopMode($event)"/>
+        </div>
+        <div class="stuck-check">
+          <Checkbox v-on:toggle="roverStuck=!roverStuck" name="Stuck"></Checkbox>
         </div>
         <div class="stats">
           <p>
             Waypoints Traveled: {{nav_status.completed_wps}}/{{nav_status.total_wps}}<br>
           </p>
         </div>
-        <!-- TODO: Add back using ros topic data from /joystick -->
-        <!-- <div class="joystick light-bg">
-          <AutonJoystickReading v-bind:AutonDriveControl="AutonDriveControl"/>
-        </div> -->
       </div>
       <div class="box1">
         <h4 class="waypoint-headers">Current Course</h4>
@@ -81,6 +81,13 @@ import ROSLIB from 'roslib'
 
 let interval;
 
+const WAYPOINT_TYPES =
+{
+  NO_SEARCH: 0,
+  POST: 1,
+  GATE: 2,
+}
+
 export default {
 
   props: {
@@ -88,10 +95,6 @@ export default {
       type: Object,
       required: true
     },
-    AutonDriveControl: {
-      type: Object,
-      required: true
-    }
   },
 
   data () {
@@ -111,6 +114,8 @@ export default {
           s: 0
         }
       },
+      
+      teleopEnabledCheck : false,
 
       nav_status: {
         nav_state_name: "Off",
@@ -124,10 +129,13 @@ export default {
       autonButtonColor: "red",
       waitingForNav: false,
 
+      roverStuck: false,
+
       //Pubs and Subs
       nav_status_sub: null,
-      course_pub: null
-
+      course_pub: null,
+      rover_stuck_pub: null
+      
     }
   },
 
@@ -137,10 +145,10 @@ export default {
 
   created: function () {
 
-    this.course_pub = new ROSLIB.Topic({
-          ros : this.$ros,
-          name : '/auton/enable_state',
-          messageType : 'mrover/EnableAuton'
+    this.course_pub = new ROSLIB.Service({
+              ros : this.$ros,
+              name : '/enable_auton',
+              serviceType : 'mrover/PublishEnableAuton'
     }),
 
     this.nav_status_sub = new ROSLIB.Topic({
@@ -149,6 +157,12 @@ export default {
           messageType : 'smach_msgs/SmachContainerStatus'
     }),
 
+    this.rover_stuck_pub = new ROSLIB.Topic({
+      ros : this.$ros,
+      name : '/rover_stuck',
+      messageType : 'std_msgs/Bool'
+    }),
+    
     this.nav_status_sub.subscribe((msg) => {
       if(msg.active_states[0] != "Off" && !this.autonEnabled){
           return
@@ -162,6 +176,7 @@ export default {
 
       let course
 
+      // If Auton Enabled send course
       if(this.autonEnabled){ 
         course = {
           enable: true,
@@ -174,8 +189,9 @@ export default {
             return {
               latitude_degrees: lat,
               longitude_degrees: lon,
-              gate: waypoint.gate,
-              post: waypoint.post,
+              // WaypointType.msg format
+              type: {val: waypoint.gate ? WAYPOINT_TYPES.GATE :
+              (waypoint.post ? WAYPOINT_TYPES.POST : WAYPOINT_TYPES.NO_SEARCH)},
               id: parseFloat(waypoint.id),
             }
           })
@@ -188,9 +204,13 @@ export default {
         }
       }
 
-      const courseMsg = new ROSLIB.Message(course)
-
-      this.course_pub.publish(courseMsg)
+      const course_request = new ROSLIB.ServiceRequest({
+        enableMsg: course
+      });
+      
+      this.course_pub.callService(course_request, (res) => {})
+      this.rover_stuck_pub.publish({data: this.roverStuck})
+      
     }, 100));
   },
 
@@ -266,8 +286,14 @@ export default {
 
     toggleAutonMode: function (val) {
       this.setAutonMode(val)
-      this.autonButtonColor = "yellow"
+      // This will trigger the yellow "waiting for nav" state of the checkbox only if we are enabling the button
+      this.autonButtonColor = val ? "yellow" : "red"
       this.waitingForNav = true;
+    },
+
+    toggleTeleopMode: function (val){
+      this.teleopEnabledCheck = !this.teleopEnabledCheck
+      this.$emit('toggleTeleop', this.teleopEnabledCheck)
     },
 
   },
@@ -334,8 +360,7 @@ export default {
 
     autonButtonText: function() {
       return (this.autonButtonColor == "yellow") ? "Setting to "+this.autonEnabled : "Autonomy Mode"
-    }
-
+    },
   },
 
   components: {
@@ -404,7 +429,7 @@ export default {
       grid-template-columns: 1fr 1fr;
       grid-template-rows: 1fr 0.25fr;
       grid-template-areas: "auton-check stats"
-                           "teleop-check joystick";
+                           "teleop-check stuck-check";
       font-family: sans-serif;
       min-height: min-content;
   }
@@ -432,15 +457,20 @@ export default {
     align-content: center;
     grid-area: auton-check;
   }
-
+  
   .teleop-check{
     align-content: center;
     grid-area: teleop-check;
   }
-
+  
   .stats{
     margin-top: -10px;
     grid-area: stats;
+  }
+  
+  .stuck-check{
+    align-content: center;
+    grid-area: stuck-check;
   }
   
   .joystick{

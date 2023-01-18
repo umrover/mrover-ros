@@ -33,7 +33,9 @@ def get_drive_command(
 
     # Get vector from rover to target
     target_dir = target_pos - rover_pos
-    print(f"rover direction: {rover_dir}, target direction: {target_dir}, rover position: {rover_pos} , goal: {target_pos}")
+    print(
+        f"rover direction: {rover_dir}, target direction: {target_dir}, rover position: {rover_pos} , goal: {target_pos}"
+    )
 
     target_dist = np.linalg.norm(target_dir)
     if target_dist == 0:
@@ -54,6 +56,8 @@ def get_drive_command(
 
     # we want to drive the angular offset to zero so the error is just 0 - alignment
     error = alignment
-    cmd_vel.angular.z = np.sign(error) if full_turn_override else np.clip(error * TURNING_P, MIN_DRIVING_EFFORT, MAX_DRIVING_EFFORT)
+    cmd_vel.angular.z = (
+        np.sign(error) if full_turn_override else np.clip(error * TURNING_P, MIN_DRIVING_EFFORT, MAX_DRIVING_EFFORT)
+    )
     print(cmd_vel.linear.x, cmd_vel.angular.z)
     return cmd_vel, False

@@ -9,10 +9,16 @@ __pycache__/
 **/.idea/
 cmake-build*/
 
-# GUI Files
-src/teleop/gui/dist/
-src/teleop/gui/node_modules/
+#GUI Files
+/src/teleop/gui/dist/
+/src/teleop/gui/node_modules/
+/src/teleop/gui/src/static/map
+**/keys.json*
 **/yarn.lock*
+**/yarn-error.log*
+
+# Bag Files
+bags/
 
 # Bag Files
 bags/

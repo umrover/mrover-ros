@@ -4,6 +4,7 @@ from typing import ClassVar, Optional
 import numpy as np
 
 from context import Context, Environment
+from aenum import Enum, NoAlias
 from state import BaseState
 from dataclasses import dataclass
 from drive import get_drive_command
@@ -48,6 +49,15 @@ class SearchTrajectory(Trajectory):
         )
 
 
+class SearchStateTransitions(Enum):
+    _settings_ = NoAlias
+
+    no_fiducial = "WaypointState"
+    continue_search = "SearchState"
+    found_fiducial = "SingleFiducialState"
+    found_gate = "GateTraverseState"
+
+
 class SearchState(BaseState):
     def __init__(
         self,
@@ -55,7 +65,7 @@ class SearchState(BaseState):
     ):
         super().__init__(
             context,
-            add_outcomes=["waypoint_traverse", "single_fiducial", "search", "gate_traverse"],
+            add_outcomes=[transition.name for transition in SearchStateTransitions],  # type: ignore
         )
         self.traj: Optional[SearchTrajectory] = None
 
@@ -86,13 +96,14 @@ class SearchState(BaseState):
         if arrived:
             # if we finish the spiral without seeing the fiducial, move on with course
             if self.traj.increment_point():
-                return "waypoint_traverse"
+                return SearchStateTransitions.no_fiducial.name  # type: ignore
 
         self.context.rover.send_drive_command(cmd_vel)
+
         # if we see the fiduicial or gate, go to either fiducial or gate state
         if self.context.env.current_gate() is not None:
-            return "gate_traverse"
+            return SearchStateTransitions.found_gate.name  # type: ignore
         elif self.context.env.current_fid_pos() is not None:
-            return "single_fiducial"
+            return SearchStateTransitions.found_fiducial.name  # type: ignore
 
-        return "search"
+        return SearchStateTransitions.continue_search.name  # type: ignore
