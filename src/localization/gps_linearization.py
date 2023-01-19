@@ -51,7 +51,7 @@ class GPSLinearization:
             map_to_rover = rover_in_map.transform_matrix()
 
             # Calculate the intermediate transform from the overall transform and odom to rover
-            map_to_odom = np.inv(odom_to_rover) @ map_to_rover
+            map_to_odom = map_to_rover @ np.linalg.inv(odom_to_rover)
             odom_in_map = SE3.from_transform_matrix(map_to_odom)
             odom_in_map.publish_to_tf_tree(
                 self.tf_broadcaster, parent_frame=self.world_frame, child_frame=self.odom_frame
