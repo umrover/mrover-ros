@@ -15,6 +15,7 @@ cmake-build*/
 /src/teleop/gui/src/static/map
 **/keys.json*
 **/yarn.lock*
+**/yarn-error.log*
 
 # Bag Files
 bags/

@@ -127,17 +127,17 @@ wheel:
   radius: 0.13
 
 brushless:
-  using_pi3_hat: false
+  using_pi3_hat: true
   drive:
     FrontLeft:
-      id: 0
-    FrontRight:
       id: 1
-    MiddleLeft:
+    FrontRight:
       id: 2
-    MiddleRight:
+    MiddleLeft:
       id: 3
-    BackLeft:
+    MiddleRight:
       id: 4
-    BackRight:
+    BackLeft:
       id: 5
+    BackRight:
+      id: 6
