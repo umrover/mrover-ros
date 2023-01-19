@@ -40,6 +40,7 @@ class MoteusState:
     DISCONNECTED_STATE = "Disconnected"
     ARMED_STATE = "Armed"
     ERROR_STATE = "Error"
+    MOTEUS_UNPOWERED_OR_NOT_FOUND_ERROR = 99  # a custom error for when the moteus is unpowered or not found
 
     ERROR_CODE_DICTIONARY = {
         1: "DmaStreamTransferError",
@@ -61,12 +62,23 @@ class MoteusState:
         41: "ConfigChanged",
         42: "ThetaInvalid",
         43: "PositionInvalid",
+        MOTEUS_UNPOWERED_OR_NOT_FOUND_ERROR: "Moteus Unpowered or Not Found",
     }
+
     NO_ERROR_NAME = "No Error"
 
     def __init__(self, state: str, error_name: str):
         self.state = state
         self.error_name = error_name
+
+
+def is_fault_response_an_error(fault_response: int) -> bool:
+    """
+    Returns True if the fault response is an error
+    :param fault_response: the value read in from the fault register of the moteus CAN message
+    :return: True if the fault response is an error
+    """
+    return fault_response != 0
 
 
 class MoteusBridge:
@@ -93,65 +105,83 @@ class MoteusBridge:
         :param command: contains arguments that are used in the moteus controller.set_position function
         :return: none
         """
-        self.command_lock.acquire()
-        self._command = command
-        self.command_lock.release()
+        with self.command_lock:
+            self._command = command
 
-    async def _send_command(self) -> None:
+    async def _send_desired_command(self) -> None:
         """
         Calls controller.set_position (which controls the moteus over CAN) with previously the most recent requested
         commands. If the message has not been received within a certain amount of time, disconnected state is entered.
         Otherwise, error state is entered. State must be in armed state.
         """
         assert self.moteus_state.state == MoteusState.ARMED_STATE
-        self.command_lock.acquire()
-        command = self._command
-        self.command_lock.release()
+
+        with self.command_lock:
+            command = self._command
+
         try:
-            state = await asyncio.wait_for(
-                self.controller.set_position(
-                    position=command.position,
-                    velocity=command.velocity,
-                    velocity_limit=CommandData.VELOCITY_LIMIT,
-                    maximum_torque=command.torque,
-                    watchdog_timeout=MoteusBridge.ROVER_NODE_TO_MOTEUS_WATCHDOG_TIMEOUT_S,
-                    query=True,
-                ),
-                timeout=self.MOTEUS_RESPONSE_TIME_INDICATING_DISCONNECTED_S,
-            )
+            await self._send_command(command)
+        except asyncio.TimeoutError:
+            if self.moteus_state.state != MoteusState.DISCONNECTED_STATE:
+                rospy.logerr(f"CAN ID {self._can_id} disconnected when trying to send command")
+            self._change_state(MoteusState.DISCONNECTED_STATE)
+
+    async def _send_command(self, command: CommandData) -> None:
+        """
+        Calls controller.set_position (which controls the moteus over CAN) with the requested command.
+        If the message has not been received within a certain amount of time, disconnected state is entered.
+        Otherwise, error state is entered.
+
+        It is expected that this may throw an error if there is a timeout.
+        """
+        state = await asyncio.wait_for(
+            self.controller.set_position(
+                position=command.position,
+                velocity=command.velocity,
+                velocity_limit=CommandData.VELOCITY_LIMIT,
+                maximum_torque=command.torque,
+                watchdog_timeout=MoteusBridge.ROVER_NODE_TO_MOTEUS_WATCHDOG_TIMEOUT_S,
+                query=True,
+            ),
+            timeout=self.MOTEUS_RESPONSE_TIME_INDICATING_DISCONNECTED_S,
+        )
+
+        moteus_not_found = state is None or not hasattr(state, "values") or moteus.Register.FAULT not in state.values
+        if moteus_not_found:
+            self._handle_error(MoteusState.MOTEUS_UNPOWERED_OR_NOT_FOUND_ERROR)
+        else:
+
+            is_error = is_fault_response_an_error(state.values[moteus.Register.FAULT])
+
+            if is_error:
+                self._handle_error(state.values[moteus.Register.FAULT])
+            else:
+                self._change_state(MoteusState.ARMED_STATE)
+
             self.moteus_data = MoteusData(
                 position=state.values[moteus.Register.POSITION],
                 velocity=state.values[moteus.Register.VELOCITY],
                 torque=state.values[moteus.Register.TORQUE],
             )
-            self._check_has_error(state.values[moteus.Register.FAULT])
-        except asyncio.TimeoutError:
-            if self.moteus_state.state != MoteusState.DISCONNECTED_STATE:
-                rospy.logerr(f"CAN ID {self._can_id} disconnected when trying to send command")
-            self._change_state(MoteusState.DISCONNECTED_STATE)
-            return
 
-    def _check_has_error(self, fault_response: int) -> None:
+    def _handle_error(self, fault_response: int) -> None:
         """
-        Checks if the controller has encountered an error. If there is an error, error state is set.
-        :param fault_response: the value read in from the fault register of the moteus CAN message
+        Handles error by changing the state to error state
+        :param fault_response: the value read in from the fault register of the moteus CAN message.
+        Or a custom error, 99.
         """
-        has_error = fault_response != 0
-        if has_error:
+        assert is_fault_response_an_error(fault_response)
 
-            self._change_state(MoteusState.ERROR_STATE)
+        self._change_state(MoteusState.ERROR_STATE)
 
-            try:
-                error_description = MoteusState.ERROR_CODE_DICTIONARY[fault_response]
-            except KeyError:
-                error_description = MoteusState.NO_ERROR_NAME
+        try:
+            error_description = MoteusState.ERROR_CODE_DICTIONARY[fault_response]
+        except KeyError:
+            error_description = MoteusState.NO_ERROR_NAME
 
-            if self.moteus_state.error_name != error_description:
-                rospy.logerr(f"CAN ID {self._can_id} has encountered an error: {error_description}")
-                self.moteus_state.error_name = error_description
-
-        else:
-            self._change_state(MoteusState.ARMED_STATE)
+        if self.moteus_state.error_name != error_description:
+            rospy.logerr(f"CAN ID {self._can_id} has encountered an error: {error_description}")
+            self.moteus_state.error_name = error_description
 
     async def _connect(self) -> None:
         """
@@ -159,26 +189,22 @@ class MoteusBridge:
         """
         try:
             assert self.moteus_state.state != MoteusState.ARMED_STATE
+
             await asyncio.wait_for(
                 self.controller.set_stop(), timeout=self.MOTEUS_RESPONSE_TIME_INDICATING_DISCONNECTED_S
             )
-            state = await asyncio.wait_for(
-                self.controller.set_position(
-                    position=math.nan,
-                    velocity=CommandData.ZERO_VELOCITY,
-                    velocity_limit=CommandData.VELOCITY_LIMIT,
-                    maximum_torque=CommandData.MAX_TORQUE,
-                    watchdog_timeout=MoteusBridge.ROVER_NODE_TO_MOTEUS_WATCHDOG_TIMEOUT_S,
-                    query=True,
-                ),
-                timeout=self.MOTEUS_RESPONSE_TIME_INDICATING_DISCONNECTED_S,
+
+            command = CommandData(
+                position=math.nan,
+                velocity=CommandData.ZERO_VELOCITY,
+                torque=CommandData.DEFAULT_TORQUE,
             )
-            self._check_has_error(state.values[moteus.Register.FAULT])
+            await self._send_command(command)
+
         except asyncio.TimeoutError:
             if self.moteus_state.state != MoteusState.DISCONNECTED_STATE:
                 rospy.logerr(f"CAN ID {self._can_id} disconnected when trying to connect")
             self._change_state(MoteusState.DISCONNECTED_STATE)
-            return
 
     def _change_state(self, state: str) -> None:
         """
@@ -204,7 +230,7 @@ class MoteusBridge:
         If in disconnected or error state, attempts will be made to return to armed state.
         """
         if self.moteus_state.state == MoteusState.ARMED_STATE:
-            await self._send_command()
+            await self._send_desired_command()
         elif (
             self.moteus_state.state == MoteusState.DISCONNECTED_STATE
             or self.moteus_state.state == MoteusState.ERROR_STATE
@@ -221,16 +247,11 @@ class DriveApp:
         self.drive_bridge_by_name = {}
         using_pi3_hat = rospy.get_param("brushless/using_pi3_hat")
         if using_pi3_hat:
-            # import moteus_pi3hat
-            # transport = moteus_pi3hat.Pi3HatRouter(
-            #     servo_bus_map={
-            #         1: [11],
-            #         2: [12],
-            #         3: [13],
-            #         4: [14],
-            #     },
-            # )
-            pass
+            import moteus_pi3hat
+
+            transport = moteus_pi3hat.Pi3HatRouter(
+                servo_bus_map={1: [info["id"] for name, info in drive_info_by_name.items()]}
+            )
         else:
             transport = None
 
