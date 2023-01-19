@@ -72,11 +72,12 @@ export default {
 
             navBlink: false,
             greenHook: false,
-            ledColor: 'Null',
+            ledColor: 'blue',
 
             // Pubs and Subs
             nav_status_sub: null,
             odom_sub: null,
+            auton_led_client: null,
             tfClient: null
 
         }
@@ -103,6 +104,12 @@ export default {
             transThres: 0.01
         });
 
+        this.auton_led_client = new ROSLIB.Service({
+          ros: this.$ros,
+          name: 'change_auton_led_state',
+          serviceType: 'mrover/ChangeAutonLEDState'
+        });
+
         // Subscriber for odom to base_link transform
         this.tfClient.subscribe('base_link', (tf) => {
             // Callback for IMU quaternion that describes bearing
@@ -125,9 +132,17 @@ export default {
             this.odom.longitude_deg = msg.longitude
         });
 
+        // Blink interval for green and off flasing
         setInterval(() => {
             this.navBlink = !this.navBlink
         }, 500)
+
+        // Interval for sending color
+        setInterval(() => {
+            this.sendColor()
+        }, 100)
+
+
     },
 
     computed: {
@@ -155,35 +170,26 @@ export default {
         // Publish auton LED color to ESW
         nav_state_color: function (color) {
             if (color == navBlue) {
-                this.ledColor = 'Blue'
-                this.greenHook = false
+                this.ledColor = 'blue'
             } else if (color == navRed) {
-                this.ledColor = 'Red'
-                this.greenHook = false
-            } else if (color == navGreen && !this.greenHook) {
-                this.ledColor = 'Green'
-                this.greenHook = true //Accounting for the blinking between navGrey and navGreen
-            }
-            if (!this.greenHook || this.ledColor == 'Green') {
-                sendColor()
+                this.ledColor = 'red'
+            } else if (color == navGreen) {
+                this.ledColor = 'green'
+            } else if (color == navGrey) {
+                this.ledColor = 'off'
             }
         },
     },
 
     methods: {
       sendColor() {
-        let serviceClient = new ROSLIB.Service({
-          ros: this.$ros,
-          name: 'change_auton_led_state',
-          serviceType: 'ChangeAutonLEDState'
-        });
 
         let request = new ROSLIB.ServiceRequest({
           color: this.ledColor
         });
         
-        serviceClient.callService(request, (result) => {
-          // TODO: alert message for incorrect color
+        this.auton_led_client.callService(request, (result) => {
+            // Not sure if we need to do anything w/ success bool
         });
       }
     },
