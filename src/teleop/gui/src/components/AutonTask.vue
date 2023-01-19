@@ -137,11 +137,8 @@ export default {
             this.navBlink = !this.navBlink
         }, 500)
 
-        // Interval for sending color
-        setInterval(() => {
-            this.sendColor()
-        }, 100)
-
+        // Initialize color to blue
+        this.sendColor()
 
     },
 
@@ -154,14 +151,13 @@ export default {
         nav_state_color: function () {
             if (!this.autonEnabled) {
                 return navBlue
-            } else if (true) {
-                if (this.nav_status.nav_state_name == "DoneState" && this.navBlink) {
-                    return navGreen
-                } else if (this.nav_status.nav_state_name == "DoneState" && !this.navBlink) {
-                    return navGrey
-                } else {
-                    return navRed
-                }
+            }
+            if (this.nav_status.nav_state_name == "DoneState" && this.navBlink) {
+                return navGreen
+            } else if (this.nav_status.nav_state_name == "DoneState" && !this.navBlink) {
+                return navGrey
+            } else {
+                return navRed
             }
         }
     },
@@ -178,6 +174,7 @@ export default {
             } else if (color == navGrey) {
                 this.ledColor = 'off'
             }
+            this.sendColor()
         },
     },
 
