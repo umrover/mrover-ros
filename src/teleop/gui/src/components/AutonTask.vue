@@ -186,7 +186,12 @@ export default {
         });
         
         this.auton_led_client.callService(request, (result) => {
-            // Not sure if we need to do anything w/ success bool
+            // Wait 1 second then try again if fail
+            if(!(result.success)){
+                setTimeout(() => {
+                    this.sendColor()
+                }, 1000)
+            }
         });
       }
     },
