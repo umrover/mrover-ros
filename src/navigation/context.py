@@ -12,11 +12,14 @@ import numpy as np
 from dataclasses import dataclass
 from mrover.msg import Waypoint, GPSWaypoint, EnableAuton
 import pymap3d
+from std_msgs.msg import Time
 
 
 # read required parameters, if they don't exist an error will be thrown
 REF_LAT = rospy.get_param("gps_linearization/reference_point_latitude")
 REF_LON = rospy.get_param("gps_linearization/reference_point_longitude")
+
+TAG_EXPIRATION_TIME_SECONDS = 60
 
 tf_broadcaster: tf2_ros.StaticTransformBroadcaster = tf2_ros.StaticTransformBroadcaster()
 
@@ -57,10 +60,13 @@ class Environment:
     def get_fid_pos(self, fid_id: int, frame: str = "map") -> Optional[np.ndarray]:
         """
         Retrieves the pose of the given fiducial ID from the TF tree
-        if it exists, otherwise returns None
+        if it exists and is more recent than 60 seconds, otherwise returns None
         """
         try:
-            fid_pose = SE3.from_tf_tree(self.ctx.tf_buffer, parent_frame="map", child_frame=f"fiducial{fid_id}")
+            fid_pose, time = SE3.from_tf_time(self.ctx.tf_buffer, parent_frame="map", child_frame=f"fiducial{fid_id}")
+            now = rospy.Time.now()
+            if now.time.to_sec() - time.time.to_sec() >= TAG_EXPIRATION_TIME_SECONDS:
+                return None
         except (
             tf2_ros.LookupException,
             tf2_ros.ConnectivityException,
