@@ -165,16 +165,19 @@ export default {
     watch: {
         // Publish auton LED color to ESW
         nav_state_color: function (color) {
+            var send = true
             if (color == navBlue) {
                 this.ledColor = 'blue'
             } else if (color == navRed) {
                 this.ledColor = 'red'
-            } else if (color == navGreen) {
+            } else if (color == navGreen || color == navGrey) {
+                // Only send if previous color was not green
+                send = !(this.ledColor == 'green')
                 this.ledColor = 'green'
-            } else if (color == navGrey) {
-                this.ledColor = 'off'
             }
-            this.sendColor()
+            if(send){
+                this.sendColor()
+            }
         },
     },
 
