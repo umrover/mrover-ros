@@ -10,7 +10,7 @@ import smach_ros
 from context import Context
 from gate import GateTraverseState, GateTraverseStateTransitions
 from approach_post import ApproachPostState, ApproachPostStateTransitions
-from state import DoneState, DoneStateTransitions
+from state import DoneState, DoneStateTransitions, OffState, OffStateTransitions
 from waypoint import WaypointState, WaypointStateTransitions
 from search import SearchState, SearchStateTransitions
 from partial_gate import PartialGateState, PartialGateStateTransitions
@@ -30,6 +30,9 @@ class Navigation(threading.Thread):
         self.sis = smach_ros.IntrospectionServer("", self.state_machine, "/SM_ROOT")
         self.sis.start()
         with self.state_machine:
+            self.state_machine.add(
+                "OffState", OffState(self.context), transitions=self.get_transitions(OffStateTransitions)
+            )
             self.state_machine.add(
                 "DoneState", DoneState(self.context), transitions=self.get_transitions(DoneStateTransitions)
             )
@@ -62,7 +65,9 @@ class Navigation(threading.Thread):
 			)
 
     def get_transitions(self, transitions_enum):
-        return {transition.name: transition.value for transition in transitions_enum}
+        transition_dict = {transition.name: transition.value for transition in transitions_enum}
+        transition_dict["off"] = "OffState"  # logic for switching to offstate is built into OffState
+        return transition_dict
 
     def run(self):
         self.state_machine.execute()
