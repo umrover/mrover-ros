@@ -66,7 +66,7 @@ class Environment:
         """
         assert self.ctx.course
         current_waypoint = self.ctx.course.current_waypoint()
-        if current_waypoint is None or not self.ctx.course.look_for_post():
+        if current_waypoint is None:
             return None
 
         return self.get_fid_pos(current_waypoint.fiducial_id)
@@ -77,7 +77,7 @@ class Environment:
         """
         if self.ctx.course:
             current_waypoint = self.ctx.course.current_waypoint()
-            if current_waypoint is None or not self.ctx.course.look_for_gate():
+            if current_waypoint is None:
                 return None
 
             post1 = self.get_fid_pos(current_waypoint.fiducial_id)
