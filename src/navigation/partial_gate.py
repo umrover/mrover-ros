@@ -14,8 +14,8 @@ DRIVE_FWD_THRESH = 0.95
 POST_SEPARATION = 2 #meters
 
 @dataclass
-class SinglePostTrajectory(Trajectory):
-    def single_post_traj(self, post_pos, rover_pos):
+class PartialGateTrajectory(Trajectory):
+    def partial_gate_traj(self, post_pos, rover_pos):
         """
         Generates a trajectory to find second of two posts
         :param post_pos:    position of the post (np.ndarray)
@@ -37,38 +37,38 @@ class SinglePostTrajectory(Trajectory):
         coords = np.vstack((post_pos + left_perp, post_pos + rover_to_post, post_pos + right_perp))
         coords = np.hstack((coords, np.zeros(coords.shape[0]).reshape(-1, 1)))
 
-        return SinglePostTrajectory(coords)
-class SinglePostStateTransitions(Enum):
+        return PartialGateTrajectory(coords)
+class PartialGateStateTransitions(Enum):
     _settings_ = NoAlias
     # State Transitions
     no_fiducial = "SearchState"
-    single_post = "SinglePostState"
+    partial_gate = "PartialGateState"
     found_gate = "GateTraverseState"
     done = "DoneState"
 
 
-class SinglePostState(BaseState):
+class PartialGateState(BaseState):
     def __init__(
         self,
         context: Context,
     ):
         super().__init__(
             context,
-            add_outcomes=[transition.name for transition in SinglePostStateTransitions]
+            add_outcomes=[transition.name for transition in PartialGateStateTransitions]
         )
-        self.traj: Optional[SinglePostTrajectory] = None
+        self.traj: Optional[PartialGateTrajectory] = None
     
     def evalutate(self):
         post_pos = self.context.env.current_fid_pos();
         gate = self.context.env.current_gate();
 
         if gate is not None: #If we have a gate, we are done
-            return SinglePostStateTransitions.found_gate.name
+            return PartialGateStateTransitions.found_gate.name
         elif post_pos is not None: #Searching for second post
             if self.traj is None:
-                self.traj = SinglePostTrajectory.single_post_traj(post_pos, self.context.rover.get_pose().position)
+                self.traj = PartialGateTrajectory.partial_gate_traj(post_pos, self.context.rover.get_pose().position)
         else: 
-            return SinglePostStateTransitions.no_fiducial.name
+            return PartialGateStateTransitions.no_fiducial.name
 
         target_pos = self.traj.get_cur_pt()
         cmd_vel, arrived = get_drive_command(
@@ -82,8 +82,8 @@ class SinglePostState(BaseState):
             if self.traj.increment_point():
                 self.traj = None
                 self.context.course.increment_waypoint()
-                return SinglePostStateTransitions.done.name
+                return PartialGateStateTransitions.done.name
         
         self.context.rover.send_drive_command(cmd_vel)
 
-        return SinglePostStateTransitions.single_post.name
+        return PartialGateStateTransitions.partial_gate.name

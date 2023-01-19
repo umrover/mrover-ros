@@ -54,7 +54,8 @@ class SearchStateTransitions(Enum):
 
     no_fiducial = "WaypointState"
     continue_search = "SearchState"
-    found_fiducial = "SingleFiducialState"
+    found_fiducial_post = "ApproachPostState"
+	found_fiducial_gate = "PartialGateState"
     found_gate = "GateTraverseState"
 
 
