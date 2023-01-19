@@ -11,7 +11,8 @@ from context import Context
 
 STOP_THRESH = 0.2
 DRIVE_FWD_THRESH = 0.95
-POST_SEPARATION = 2 #meters
+POST_SEPARATION = 2  # meters
+
 
 @dataclass
 class PartialGateTrajectory(Trajectory):
@@ -22,22 +23,24 @@ class PartialGateTrajectory(Trajectory):
         :param rover_pos:   position of the rover (np.ndarray). Assumes that the rover is facing the post
         :return:            list of positions for the rover to traverse List(np.ndarray)
         """
-        #The Path will be (assuming the vector <x, y> from rover to post
+        # The Path will be (assuming the vector <x, y> from rover to post
         # Point one: left perpendicular, <-y,x>/mag * Post_separation
         # Point two: opposite end, <x,y>/mag * Post_separation
         # Point three: right perpendicular, <y,-x>/mag * Post_separation
         # Essentially traveling around the circle made by the first post
 
         rover_to_post = post_pos - rover_pos
-        rover_to_post *= POST_SEPARATION / np.linalg.norm(rover_to_post) 
-        #scale vector to have magnitude == POST_SEPARATION
-        
-        left_perp = np.array([-rover_to_post[1], rover_to_post[0]]) #(-y,x)\
-        right_perp = np.array([rover_to_post[1], -rover_to_post[0]]) #(y,-x)
+        rover_to_post *= POST_SEPARATION / np.linalg.norm(rover_to_post)
+        # scale vector to have magnitude == POST_SEPARATION
+
+        left_perp = np.array([-rover_to_post[1], rover_to_post[0]])  # (-y,x)\
+        right_perp = np.array([rover_to_post[1], -rover_to_post[0]])  # (y,-x)
         coords = np.vstack((post_pos + left_perp, post_pos + rover_to_post, post_pos + right_perp))
         coords = np.hstack((coords, np.zeros(coords.shape[0]).reshape(-1, 1)))
 
         return PartialGateTrajectory(coords)
+
+
 class PartialGateStateTransitions(Enum):
     _settings_ = NoAlias
     # State Transitions
@@ -52,22 +55,19 @@ class PartialGateState(BaseState):
         self,
         context: Context,
     ):
-        super().__init__(
-            context,
-            add_outcomes=[transition.name for transition in PartialGateStateTransitions]
-        )
+        super().__init__(context, add_outcomes=[transition.name for transition in PartialGateStateTransitions])
         self.traj: Optional[PartialGateTrajectory] = None
-    
-    def evalutate(self):
-        post_pos = self.context.env.current_fid_pos();
-        gate = self.context.env.current_gate();
 
-        if gate is not None: #If we have a gate, we are done
+    def evalutate(self):
+        post_pos = self.context.env.current_fid_pos()
+        gate = self.context.env.current_gate()
+
+        if gate is not None:  # If we have a gate, we are done
             return PartialGateStateTransitions.found_gate.name
-        elif post_pos is not None: #Searching for second post
+        elif post_pos is not None:  # Searching for second post
             if self.traj is None:
                 self.traj = PartialGateTrajectory.partial_gate_traj(post_pos, self.context.rover.get_pose().position)
-        else: 
+        else:
             return PartialGateStateTransitions.no_fiducial.name
 
         target_pos = self.traj.get_cur_pt()
@@ -83,7 +83,7 @@ class PartialGateState(BaseState):
                 self.traj = None
                 self.context.course.increment_waypoint()
                 return PartialGateStateTransitions.done.name
-        
+
         self.context.rover.send_drive_command(cmd_vel)
 
         return PartialGateStateTransitions.partial_gate.name

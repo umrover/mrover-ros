@@ -45,24 +45,22 @@ class Navigation(threading.Thread):
                 # The lines below are necessary because ApproachPostState inherits from WaypointState, so WaypointState's transitions
                 # need to be registered for ApproachPostState as well.
                 transitions=dict(
-                    self.get_transitions(ApproachPostStateTransitions),
-                    **self.get_transitions(WaypointStateTransitions)
+                    self.get_transitions(ApproachPostStateTransitions), **self.get_transitions(WaypointStateTransitions)
                 ),
             )
             self.state_machine.add(
-                "SearchState", SearchState(self.context), 
-				transitions=self.get_transitions(SearchStateTransitions)
+                "SearchState", SearchState(self.context), transitions=self.get_transitions(SearchStateTransitions)
             )
             self.state_machine.add(
                 "GateTraverseState",
                 GateTraverseState(self.context),
-                transitions=self.get_transitions(GateTraverseStateTransitions)
+                transitions=self.get_transitions(GateTraverseStateTransitions),
             )
             self.state_machine.add(
-				"PartialGateState",
-				PartialGateState(self.context),
-				transitions=self.get_transitions(PartialGateStateTransitions)
-			)
+                "PartialGateState",
+                PartialGateState(self.context),
+                transitions=self.get_transitions(PartialGateStateTransitions),
+            )
 
     def get_transitions(self, transitions_enum):
         transition_dict = {transition.name: transition.value for transition in transitions_enum}
