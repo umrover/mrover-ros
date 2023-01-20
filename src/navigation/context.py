@@ -60,7 +60,7 @@ class Environment:
     def get_fid_pos(self, fid_id: int, frame: str = "map") -> Optional[np.ndarray]:
         """
         Retrieves the pose of the given fiducial ID from the TF tree
-        if it exists and is more recent than 60 seconds, otherwise returns None
+        if it exists and is more recent than TAG_EXPIRATION_TIME_SECONDS, otherwise returns None
         """
         try:
             fid_pose, time = SE3.from_tf_time(self.ctx.tf_buffer, parent_frame="map", child_frame=f"fiducial{fid_id}")
