@@ -3,12 +3,13 @@
     <h3> Arm controls </h3>
     <div class="controls">
       <Checkbox ref="arm-enabled" v-bind:name="'Arm Enabled'" v-on:toggle="updateArmEnabled($event)"/>
-      <Checkbox ref="A" v-bind:name="'A'" v-on:toggle="updateArmEnabled($event)"/>
-      <Checkbox ref="B" v-bind:name="'B'" v-on:toggle="updateArmEnabled($event)"/>
-      <Checkbox ref="C" v-bind:name="'C'" v-on:toggle="updateArmEnabled($event)"/>
-      <Checkbox ref="D" v-bind:name="'D'" v-on:toggle="updateArmEnabled($event)"/>
-      <Checkbox ref="E" v-bind:name="'E'" v-on:toggle="updateArmEnabled($event)"/>
-      <Checkbox ref="F" v-bind:name="'F'" v-on:toggle="updateArmEnabled($event)"/>
+      <p>JointLocking</p>
+      <Checkbox ref="A" v-bind:name="'A'" v-on:toggle="updateJointsEnabled(0, $event)"/>
+      <Checkbox ref="B" v-bind:name="'B'" v-on:toggle="updateJointsEnabled(1, $event)"/>
+      <Checkbox ref="C" v-bind:name="'C'" v-on:toggle="updateJointsEnabled(2, $event)"/>
+      <Checkbox ref="D" v-bind:name="'D'" v-on:toggle="updateJointsEnabled(3, $event)"/>
+      <Checkbox ref="E" v-bind:name="'E'" v-on:toggle="updateJointsEnabled(4, $event)"/>
+      <Checkbox ref="F" v-bind:name="'F'" v-on:toggle="updateJointsEnabled(5, $event)"/>
       
     </div>
   </div>
@@ -27,6 +28,7 @@ export default {
     return {
       arm_enabled: false,
       joystick_pub: null,
+      jointlock_pub: null,
       joints_array: [false, false, false,false,false, false]
     }
   },
@@ -48,6 +50,11 @@ export default {
         ros : this.$ros,
         name : '/xbox/ra_control',
         messageType : 'sensor_msgs/Joy'
+    })
+    this.jointlock_pub = new ROSLIB.Topic({
+        ros : this.$ros,
+        name : '/joint_lock',
+        messageType : 'mrover/JointLock'
     })
     const updateRate = 0.1
     interval = window.setInterval(() => {
@@ -79,14 +86,19 @@ export default {
         updateArmEnabled: function (enabled){
             this.arm_enabled = enabled
         },
-        updateJointsEnabled: function(enabled){
-
+        updateJointsEnabled: function(jointnum, enabled){
+            this.joints_array[jointnum] = enabled
+            const jointData = {
+                  joints: this.joints_array
+              }
+            var jointlockMsg = new ROSLIB.Message(jointData)
+            this.jointlock_pub.publish(jointlockMsg)
         }
     },
 
     components: {
         Checkbox
-    }
+    },
 }
 </script>
 
