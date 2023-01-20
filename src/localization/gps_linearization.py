@@ -36,7 +36,7 @@ class GPSLinearization:
         self.odom_frame = rospy.get_param("gps_linearization/odom_frame")
         self.rover_frame = rospy.get_param("gps_linearization/rover_frame")
 
-    def publish_pose(self) -> SE3:
+    def publish_pose(self):
         """
         Publishes the pose of the rover in relative to the map frame to the TF tree,
         either as a direct map->base_link transform, or if the odom frame is in use,
