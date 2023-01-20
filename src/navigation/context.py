@@ -65,7 +65,7 @@ class Environment:
         try:
             fid_pose, time = SE3.from_tf_time(self.ctx.tf_buffer, parent_frame="map", child_frame=f"fiducial{fid_id}")
             now = rospy.Time.now()
-            if now.time.to_sec() - time.time.to_sec() >= TAG_EXPIRATION_TIME_SECONDS:
+            if now.to_sec() - time.to_sec() >= TAG_EXPIRATION_TIME_SECONDS:
                 return None
         except (
             tf2_ros.LookupException,
