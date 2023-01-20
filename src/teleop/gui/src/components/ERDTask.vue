@@ -15,19 +15,13 @@
       </div>
     </div>
     <div class="box cameras light-bg">
-      <Cameras v-bind:primary="primary"/>
-    </div>
-    <div class="box arm-controls light-bg">
-      <ArmControls/>
+      <Cameras v-bind:primary="primary" v-bind:numCams="0"/>
     </div>
     <div class="box odom light-bg" v-if="type === 'EDM'">
       <OdometryReading v-bind:odom="odom"/>
     </div>
     <div class="box map light-bg" v-if="type === 'EDM'">
       <ERDMap v-bind:odom="odom"/>
-    </div>
-    <div class="box drive light-bg" v-show="false">
-      <DriveControls/>
     </div>
     <div class="box pdb light-bg">
       <PDBFuse/>
@@ -38,6 +32,12 @@
     <div class="box waypoint-editor light-bg" v-if="type === 'EDM'">
       <ERDWaypointEditor/>
     </div>
+    <div class="box arm-controls light-bg">
+      <ArmControls/>
+    </div>
+    <div class="box moteus light-bg">
+      <MoteusStateTable v-bind:moteusStateData="moteusState"/>
+    </div>
   </div>
 </template>
 
@@ -45,20 +45,15 @@
 import { mapGetters } from 'vuex'
 import * as qte from "quaternion-to-euler"
 import ROSLIB from "roslib"
-import ArmControls from './ArmControls.vue'
 import Cameras from './Cameras.vue'
 import ERDMap from './ERDRoverMap.vue'
 import OdometryReading from './OdometryReading.vue'
-import DriveControls from './DriveControls.vue'
 import PDBFuse from './PDBFuse.vue'
 import DriveVelData from './DriveVelDataV.vue'
 import ERDWaypointEditor from './ERDWaypointEditor.vue'
+import MoteusStateTable from './MoteusStateTable.vue'
+import ArmControls from './ArmControls.vue'
 
-const subscriptions =
-[
-  {'topic': '/gps/fix', 'type': 'sensor_msgs/NavSatFix'},
-  {'topic': '/imu/data', 'type': 'sensor_msgs/Imu'}
-]
 
 export default {
   data() {
@@ -72,13 +67,12 @@ export default {
         speed: 0
       },
 
-      topic_subscriptions : {},
-
       primary: true,
 
       // Pubs and Subs
       odom_sub: null,
-      tfClient: null
+      tfClient: null,
+      moteusState: {}
     }
   },
 
@@ -91,7 +85,7 @@ export default {
 
     this.tfClient = new ROSLIB.TFClient({
       ros: this.$ros,
-      fixedFrame: 'odom',
+      fixedFrame: 'map',
       // Thresholds to trigger subscription callback
       angularThres: 0.01,
       transThres: 0.01
@@ -106,6 +100,7 @@ export default {
       let euler = qte(quaternion)
       // euler[2] == euler z component
       this.odom.bearing_deg = euler[2] * (180 / Math.PI)
+      console.log(tf)
     });
 
     this.odom_sub.subscribe((msg) => {
@@ -113,18 +108,29 @@ export default {
       this.odom.latitude_deg = msg.latitude
       this.odom.longitude_deg = msg.longitude
     });
+
+    this.brushless_motors = new ROSLIB.Topic({
+      ros: this.$ros,
+      name: 'drive_status',
+      messageType: 'mrover/MotorsStatus'
+    });
+
+    this.brushless_motors.subscribe((msg) => {
+      this.jointState = msg.joint_states
+      this.moteusState = msg.moteus_states
+    });
   },
 
   components: {
     ERDMap,
-    ArmControls,
     Cameras,
     OdometryReading,
-    DriveControls,
     PDBFuse,
     DriveVelData,
-    ERDWaypointEditor
-  },
+    ERDWaypointEditor,
+    MoteusStateTable,
+    ArmControls
+},
 
   props: {
     type: {
@@ -140,12 +146,13 @@ export default {
     display: grid;
     grid-gap: 10px;
     grid-template-columns: auto auto;
-    grid-template-rows: 60px 250px auto auto auto;
+    grid-template-rows: 60px 250px auto auto auto auto;
     grid-template-areas: "header header"
                          "map waypoint-editor"
                          "map cameras"
                          "odom arm-controls"
-                         "pdb drive-vel-data";
+                         "pdb drive-vel-data"
+                         "pdb moteus";
     font-family: sans-serif;
     height: auto;
   }
@@ -235,20 +242,12 @@ export default {
     grid-area: map;
   }
 
-  .arm-controls {
-    grid-area: arm-controls;
-  }
-
   .cameras {
     grid-area: cameras;
   }
 
   .odom {
     grid-area: odom;
-  }
-
-  .drive {
-    grid-area: drive;
   }
 
   .pdb {
@@ -261,6 +260,14 @@ export default {
 
   .waypoint-editor {
     grid-area: waypoint-editor;
+  }
+
+  .arm-controls{
+    grid-area: arm-controls;
+  }
+
+  .moteus {
+    grid-area: moteus;
   }
 
 </style>

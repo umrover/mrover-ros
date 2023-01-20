@@ -186,7 +186,7 @@ export default {
     padding: 10px;
     border: 1px solid black;
     min-height: min-content;
-    max-height: 32%;
+    /* max-height: 32%; */
     overflow: none;
     margin-bottom: 6px;
 }
