@@ -55,7 +55,7 @@ class PartialGateState(BaseState):
         self,
         context: Context,
     ):
-        super().__init__(context, add_outcomes=[transition.name for transition in PartialGateStateTransitions]) # type: ignore
+        super().__init__(context, add_outcomes=[transition.name for transition in PartialGateStateTransitions])  # type: ignore
         self.traj: Optional[PartialGateTrajectory] = None
 
     def evalutate(self):
@@ -63,12 +63,12 @@ class PartialGateState(BaseState):
         gate = self.context.env.current_gate()
 
         if gate is not None:  # If we have a gate, we are done
-            return PartialGateStateTransitions.found_gate.name # type: ignore
+            return PartialGateStateTransitions.found_gate.name  # type: ignore
         elif post_pos is not None:  # Searching for second post
             if self.traj is None:
                 self.traj = PartialGateTrajectory.partial_gate_traj(post_pos, self.context.rover.get_pose().position)
         else:
-            return PartialGateStateTransitions.no_fiducial.name # type: ignore
+            return PartialGateStateTransitions.no_fiducial.name  # type: ignore
 
         target_pos = self.traj.get_cur_pt()
         cmd_vel, arrived = get_drive_command(
@@ -82,8 +82,8 @@ class PartialGateState(BaseState):
             if self.traj.increment_point():
                 self.traj = None
                 self.context.course.increment_waypoint()
-                return PartialGateStateTransitions.done.name # type: ignore
+                return PartialGateStateTransitions.done.name  # type: ignore
 
         self.context.rover.send_drive_command(cmd_vel)
 
-        return PartialGateStateTransitions.partial_gate.name # type: ignore
+        return PartialGateStateTransitions.partial_gate.name  # type: ignore

@@ -108,5 +108,5 @@ class SearchState(BaseState):
             if self.ctx.course.look_for_post():
                 return SearchStateTransitions.found_fiducial_post.name  # type: ignore
             else:
-                return SearchStateTransitions.found_fiducial_gate.name # type: ignore
+                return SearchStateTransitions.found_fiducial_gate.name  # type: ignore
         return SearchStateTransitions.continue_search.name  # type: ignore
