@@ -84,9 +84,9 @@
       }
     }
   }
-  </script>
+</script>
 
-  <style scoped>
+<style scoped>
     .tables {
       display: flex;
     }
@@ -134,4 +134,4 @@
       text-align: center;
       vertical-align: top
     }
-  </style>
+</style>

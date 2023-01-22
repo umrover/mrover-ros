@@ -1,9 +1,11 @@
 <template>
-    <div>
-      <!-- <div class="controls">
-        <Checkbox ref="teleop-enabled" v-bind:name="'Teleop Drive Enabled'" v-on:toggle="teleopEnabled = $event"/>
-      </div> -->
+  <div class="wrap">
+    <h4> Drive </h4>
+    <div class="controls">
+      <span>Speed Limiter: {{ dampenDisplay }}%</span>
+      <Checkbox class="reverse" ref="reverse" v-bind:name="'Reverse'" v-on:toggle="updateReverse($event)"/>
     </div>
+  </div>
 </template>
 
 <script>
@@ -16,7 +18,8 @@ let interval;
 export default {
   data () {
     return {
-      joystick_pub: null
+      joystick_pub: null,
+      dampenDisplay: 0
     }
   },
   
