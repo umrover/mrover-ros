@@ -28,11 +28,11 @@
             </thead>
 
             <tbody>
-                <tr v-for="(state, i) in jointStateData">
-                    <th class="tableElement">{{state.name[i]}}</th>
-                    <td class="tableElement">{{state.position[i]}} </td>
-                    <td class="tableElement">{{state.velocity[i]}} </td>
-                    <td class="tableElement">{{state.effort[i]}} </td>
+                <tr v-for="(value, key) in jointStateData">
+                    <th class="tableElement">{{ key }}</th>
+                    <td class="tableElement">{{ key }}</td>
+                    <td class="tableElement">{{ key }}</td>
+                    <td class="tableElement">{{ key }}</td>
                 </tr>
             </tbody>
         </table>
@@ -71,7 +71,7 @@
                 </tr>
                 <tr>
                     <th class="tableElement">Effort (Nm)</th>
-                    <td v-for="effot in jointStateData.effort" class="tableElement">{{effort}} </td>
+                    <td v-for="effort in jointStateData.effort" class="tableElement">{{effort}} </td>
                 </tr>
             </thead>
 

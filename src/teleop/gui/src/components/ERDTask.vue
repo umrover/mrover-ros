@@ -27,7 +27,7 @@
       <PDBFuse/>
     </div>
     <div class="box drive-vel-data light-bg">
-      <DriveVelData/>
+      <JointStateTable v-bind:jointStateData="jointState" v-bind:vertical="true"/>
     </div>
     <div class="box waypoint-editor light-bg" v-if="type === 'EDM'">
       <ERDWaypointEditor/>
@@ -49,7 +49,7 @@ import Cameras from './Cameras.vue'
 import ERDMap from './ERDRoverMap.vue'
 import OdometryReading from './OdometryReading.vue'
 import PDBFuse from './PDBFuse.vue'
-import DriveVelData from './DriveVelDataV.vue'
+import JointStateTable from './JointStateTable.vue'
 import ERDWaypointEditor from './ERDWaypointEditor.vue'
 import MoteusStateTable from './MoteusStateTable.vue'
 import ArmControls from './ArmControls.vue'
@@ -72,7 +72,17 @@ export default {
       // Pubs and Subs
       odom_sub: null,
       tfClient: null,
-      moteusState: {}
+
+      // Default object isn't empty, so has to be initialized to ""
+      moteusState: {
+        name: ["", "", "", "", "", ""],
+        error: ["", "", "", "", "", ""],
+        state: ["", "", "", "", "", ""]
+      },
+
+      jointState: {
+
+      }
     }
   },
 
@@ -100,7 +110,6 @@ export default {
       let euler = qte(quaternion)
       // euler[2] == euler z component
       this.odom.bearing_deg = euler[2] * (180 / Math.PI)
-      console.log(tf)
     });
 
     this.odom_sub.subscribe((msg) => {
@@ -126,10 +135,10 @@ export default {
     Cameras,
     OdometryReading,
     PDBFuse,
-    DriveVelData,
     ERDWaypointEditor,
     MoteusStateTable,
-    ArmControls
+    ArmControls,
+    JointStateTable
 },
 
   props: {
