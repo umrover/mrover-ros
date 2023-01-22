@@ -14,7 +14,13 @@
         </div>
     </div>
     <div class="box1 data" v-bind:style="{backgroundColor: nav_state_color}">
+      <div>
         <h2>Nav State: {{this.nav_status.nav_state_name}}</h2>
+      </div>
+      <div>
+        <p style="margin-top:6px;">Joystick Values</p>
+        <JoystickValues/>
+      </div>
     </div>
     <div class="box map light-bg">
         <AutonRoverMap v-bind:odom="odom" />
@@ -39,6 +45,7 @@ import {
     mapGetters
 } from 'vuex';
 import * as qte from "quaternion-to-euler";
+import JoystickValues from "./JoystickValues.vue";
 import Checkbox from "./Checkbox.vue";
 
 const navBlue = "#4695FF"
@@ -203,26 +210,27 @@ export default {
         AutonRoverMap,
         AutonWaypointEditor,
         DriveControls,
-        Checkbox
+        Checkbox,
+        JoystickValues
     }
 }
 </script>
 
 <style scoped>
 .wrapper {
-    display: grid;
-    overflow: hidden;
-    min-height: 98vh;
-    grid-gap: 10px;
-    grid-template-columns: 2fr 1.25fr 0.75fr;
-    grid-template-rows: 50px 2fr 1fr 6vh;
-    grid-template-areas: "header header header"
-        "map waypoints waypoints"
-        "map waypoints waypoints"
-        "data waypoints waypoints";
-    font-family: sans-serif;
-    height: auto;
-    width: auto;
+  display: grid;
+  overflow:hidden;
+  min-height: 98vh;
+  grid-gap: 10px;
+  grid-template-columns: 2fr 1.25fr 0.75fr;
+  grid-template-rows: 50px 2fr 1fr 15vh;
+  grid-template-areas: "header header header" 
+                       "map waypoints waypoints"
+                       "map waypoints waypoints" 
+                       "data waypoints waypoints";
+  font-family: sans-serif;
+  height: auto;
+  width: auto;
 }
 
 .box {
@@ -232,11 +240,14 @@ export default {
 }
 
 .box1 {
-    border-radius: 5px;
-    background-color: LightGrey;
-    padding: 10px;
-    border: 1px solid black;
-    overflow-y: scroll;
+  border-radius: 5px;
+  background-color: LightGrey;
+  padding: 10px;
+  border: 1px solid black;
+  overflow-y: scroll;
+  height: 12 px;
+  display: grid;
+  grid-template-columns: 40% 60%;
 }
 
 .box2 {
