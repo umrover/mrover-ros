@@ -16,6 +16,7 @@ set(MROVER_PACKAGES
         message_generation
         dynamic_reconfigure
         rostest
+        sensor_msgs
         )
 
 # link_directories
@@ -33,12 +34,10 @@ set(MROVER_MESSAGE_FILES
         EnableAuton.msg
         GimbalCmd.msg
         GPSWaypoint.msg
-<<<<<<< HEAD
         HeaterData.msg
-=======
         ImuAndMag.msg
->>>>>>> d4fa9be2927255a212db3cb9024f528a23484d0c
         MoteusState.msg
+        MotorsStatus.msg
         ODriveState.msg
         ScienceTemperature.msg
         Spectral.msg
@@ -145,7 +144,6 @@ else ()
             visualization_msgs
             image_transport
             cv_bridge
-            sensor_msgs
             rosbridge_server
             teleop_twist_joy
             gazebo_ros

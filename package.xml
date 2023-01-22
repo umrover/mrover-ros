@@ -70,6 +70,7 @@
   <!-- Visualization -->
   <depend>rviz</depend>
   <depend>mapviz</depend>
+  <depend>hector_trajectory_server</depend>
 
   <!-- Simulation -->
   <depend>gazebo_ros</depend>

@@ -203,6 +203,7 @@ class Context:
     course: Optional[Course]
     rover: Rover
     env: Environment
+    disable_requested: bool
 
     def __init__(self):
         self.tf_buffer = tf2_ros.Buffer()
@@ -213,10 +214,12 @@ class Context:
         self.course = None
         self.rover = Rover(self)
         self.env = Environment(self)
+        self.disable_requested = False
 
     def recv_enable_auton(self, req: mrover.srv.PublishEnableAutonRequest) -> mrover.srv.PublishEnableAutonResponse:
         enable_msg = req.enableMsg
         if enable_msg.enable:
             self.course = convert_and_get_course(self, enable_msg)
-        # TODO: disable auton on signal here.
+        else:
+            self.disable_requested = True
         return mrover.srv.PublishEnableAutonResponse(True)
