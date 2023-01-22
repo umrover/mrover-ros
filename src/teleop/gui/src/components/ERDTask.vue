@@ -149,10 +149,10 @@ export default {
     grid-template-rows: 60px 250px auto auto auto auto;
     grid-template-areas: "header header"
                          "map waypoint-editor"
-                         "map cameras"
-                         "odom arm-controls"
-                         "pdb drive-vel-data"
-                         "pdb moteus";
+                         "map odom"
+                         "map arm-controls"
+                         "moteus drive-vel-data"
+                         "cameras pdb";
     font-family: sans-serif;
     height: auto;
   }
@@ -161,11 +161,12 @@ export default {
     display: grid;
     grid-gap: 10px;
     grid-template-columns: auto auto;
-    grid-template-rows: 60px 250px auto auto;
+    grid-template-rows: 60px 250px auto auto auto;
     grid-template-areas: "header header"
-                         "cameras cameras"
+                         "cameras moteus"
+                         "cameras moteus"
                          "drive-vel-data pdb"
-                         "arm-controls pdb ";
+                         "arm-controls arm-controls";
     font-family: sans-serif;
     height: auto;
   }
