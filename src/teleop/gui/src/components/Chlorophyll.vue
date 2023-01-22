@@ -4,7 +4,6 @@
     <div>
         <div>
             <ToggleButton id="white_led_toggle" v-bind:currentState="whiteLEDS_active" labelEnableText="White LEDs On" labelDisableText="White LEDs Off" v-on:change="toggle_whiteLEDS()" />
-            <ToggleButton id="uv_end_effector" v-bind:currentState="UV_endEffector" labelEnableText="End Effector UV On" labelDisableText="End Effector UV On" v-on:change="toggleEndEffectorUV()" />
             <ToggleButton id="uv_carousel" v-bind:currentState="UV_carousel" labelEnableText="Carousel UV On" labelDisableText="Carousel UV Off" v-on:change="toggleCarouselUV()" />
         </div>
     </div>
@@ -55,7 +54,6 @@ export default {
     data() {
         return {
             whiteLEDS_active: false,
-            UV_endEffector: false,
             UV_carousel: false
         }
     },
@@ -87,24 +85,6 @@ export default {
                 if (!result) {
                     this.whiteLEDS_active = !this.whiteLEDS_active
                     alert("Toggling white LEDs failed.")
-                }
-            });
-        },
-
-        toggleEndEffectorUV: function () {
-            this.UV_endEffector = !this.UV_endEffector
-            let uvService = new ROSLIB.Service({
-                ros: this.$ros,
-                name: 'change_uv_led_end_effector_state',
-                serviceType: 'mrover/ChangeDeviceState'
-            });
-            let request = new ROSLIB.ServiceRequest({
-                enable: this.UV_endEffector
-            });
-            uvService.callService(request, (result) => {
-                if (!result) {
-                    this.UV_endEffector = !this.UV_endEffector
-                    alert("Toggling End Effector UV failed.")
                 }
             });
         },

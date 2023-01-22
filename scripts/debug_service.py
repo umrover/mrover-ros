@@ -6,11 +6,11 @@
 
 from typing import Any
 import rospy
-from mrover.srv import PublishEnableAuton
+from mrover.srv import ChangeDeviceState
 
 # Change these values for the service name and type definition to test different values
-SERVICE_NAME = "/enable_auton"
-SERVICE_TYPE = PublishEnableAuton
+SERVICE_NAME = "/change_heater_auto_shutoff_state"
+SERVICE_TYPE = ChangeDeviceState
 
 
 def printServiceRequest(service_request: Any):
