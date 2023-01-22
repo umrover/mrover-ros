@@ -56,7 +56,7 @@ class SearchStateTransitions(Enum):
     continue_search = "SearchState"
     found_fiducial = "SingleFiducialState"
     found_gate = "GateTraverseState"
-
+    recovery_state = "RecoveryState"
 
 class SearchState(BaseState):
     def __init__(
@@ -87,7 +87,7 @@ class SearchState(BaseState):
         print(self.traj.cur_pt)
         target_pos = self.traj.get_cur_pt()
         print(target_pos)
-        cmd_vel, arrived = get_drive_command(
+        cmd_vel, arrived, stuck = get_drive_command(
             target_pos,
             self.context.rover.get_pose(),
             STOP_THRESH,
@@ -97,6 +97,10 @@ class SearchState(BaseState):
             # if we finish the spiral without seeing the fiducial, move on with course
             if self.traj.increment_point():
                 return SearchStateTransitions.no_fiducial.name  # type: ignore
+
+        if stuck:
+            self.context.rover.previous_state = SearchStateTransitions.continue_search.name
+            return SearchStateTransitions.recovery_state.name
 
         self.context.rover.send_drive_command(cmd_vel)
 

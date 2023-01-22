@@ -22,7 +22,9 @@ class Gate:
 @dataclass
 class Rover:
     ctx: Context
-    wdg: watchdog.WatchdogBase
+    watchdog: watchdog.WatchdogBase
+    stuck: bool
+    previous_state: str
 
     def get_pose(self) -> SE3:
         return SE3.from_tf_tree(self.ctx.tf_buffer, parent_frame="map", child_frame="base_link")

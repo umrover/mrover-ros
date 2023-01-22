@@ -26,3 +26,7 @@ def angle_to_rotate(v1, v2):
     if sign == 0.0:
         sign = 1
     return smallest_angle * sign
+
+
+def euclidean_distance(v1, v2):
+    return np.linalg.norm(v1-v2)

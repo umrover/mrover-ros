@@ -1,18 +1,23 @@
+from drive import collector
+import pandas as pd
+from util.np_utils import euclidean_distance
+
 # 10 or more data objects flagged as stuck, then you are actually stuck
 STUCK_THRESHOLD = 10
 ANGULAR_THRESHOLD = 0.001
 LINEAR_THRESHOLD = 0.001
 
-
+#Have a variable to keep track of the last row
 class WatchdogBase:
     def __init__(self):
-        self.stuck_list = []
-        self.history = []
         pass
 
     # check if 10 or more consecutive objects in the self.stuck list get flagged
     # as stuck and if they do enter the recovery sequence
     # Returns bool
+    def is_stuck(self) -> bool:
+        return False
+
     """
     def is_stuck(self, data_obj: Data) -> bool:
         self.history.append(data_obj)
@@ -38,9 +43,8 @@ class WatchdogBase:
     def recover(self):
         self.stuck_list.clear()
 
-    def euclidean_distance(self, vector1, vector2):
-        return (sum((element1 - element2) ** 2 for element1, element2 in zip(vector1, vector2))) ** 0.5
 
+    
 
 # Each child class will have a different is_stuck function which evaluate whether the rover is stuck differently
 # Each child class will have its own history of data objects
@@ -53,7 +57,7 @@ class WatchdogSimpleLinear(WatchdogBase):
     # append true to the stuck_list
     def evaluate_stuck(self):
         for data in super().history:
-            if super().euclidean_distance(data.commanded_linear_vel, data.actual_linear_vel) < LINEAR_THRESHOLD:
+            if euclidean_distance(data.commanded_linear_vel, data.actual_linear_vel) < LINEAR_THRESHOLD:
                 super().stuck_list.append(True)
 
 

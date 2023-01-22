@@ -16,11 +16,14 @@ AVERAGE_LEN = 11
 DELTAT_THRESHOLD = 0.001
 
 
+
 @dataclass
 class DataManager:
     _df: DataFrame
     collector_context = ""
     collecting = True
+    row = 0
+
 
     # Initializes the first _cur_row dataframe and call the subscribers
     # Initialize the dictionary with the Rover's first position, rotation, and timestamp

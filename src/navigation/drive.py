@@ -21,7 +21,7 @@ def get_drive_command(
     rover_pose: SE3,
     completion_thresh: float,
     turn_in_place_thresh: float,
-) -> Tuple[Twist, bool]:
+) -> Tuple[Twist, bool, bool]:
     """
     :param target_pos:              Target position to drive to.
     :param rover_pose:              Current rover pose.
@@ -52,7 +52,7 @@ def get_drive_command(
         # getting commanded velocity into the data collection
         rospy.logerr(f"Called make_cmd_vel_obj from drive.py")
         collector.make_cmd_vel_dataframe(Twist())
-        return Twist(), True
+        return Twist(), True, collector.collector_context.rover.watchdog.is_stuck()
 
     cmd_vel = Twist()
     full_turn_override = True
@@ -80,4 +80,4 @@ def get_drive_command(
     rospy.logerr(f"Called make_cmd_vel_obj from drive.py")
     collector.make_cmd_vel_dataframe(cmd_vel)
     print(cmd_vel.linear.x, cmd_vel.angular.z)
-    return cmd_vel, False
+    return cmd_vel, False, collector.collector_context.rover.watchdog.is_stuck()

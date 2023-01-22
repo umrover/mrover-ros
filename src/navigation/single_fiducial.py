@@ -15,6 +15,7 @@ class SingleFiducialStateTransitions(Enum):
     finished_fiducial = "WaypointState"
     continue_fiducial_id = "SingleFiducialState"
     no_fiducial = "SearchState"
+    recovery_state = "RecoveryState"
 
 
 class SingleFiducialState(WaypointState):
@@ -38,10 +39,13 @@ class SingleFiducialState(WaypointState):
             return SingleFiducialStateTransitions.no_fiducial.name  # type: ignore
 
         try:
-            cmd_vel, arrived = get_drive_command(fid_pos, self.context.rover.get_pose(), STOP_THRESH, DRIVE_FWD_THRESH)
+            cmd_vel, arrived, stuck = get_drive_command(fid_pos, self.context.rover.get_pose(), STOP_THRESH, DRIVE_FWD_THRESH)
             if arrived:
                 self.context.course.increment_waypoint()
                 return SingleFiducialStateTransitions.finished_fiducial.name  # type: ignore
+            if stuck:
+                self.context.rover.previous_state = SingleFiducialStateTransitions.continue_fiducial_id.name 
+                return SingleFiducialStateTransitions.recovery_state.name
             self.context.rover.send_drive_command(cmd_vel)
         except (
             tf2_ros.LookupException,
