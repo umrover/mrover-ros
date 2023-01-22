@@ -49,7 +49,9 @@ class Navigation(threading.Thread):
                 ),
             )
             self.state_machine.add(
-                "SearchState", SearchState(self.context), transitions=self.get_transitions(SearchStateTransitions)
+                "SearchState", 
+				SearchState(self.context), 
+				transitions=self.get_transitions(SearchStateTransitions)
             )
             self.state_machine.add(
                 "GateTraverseState",

@@ -35,7 +35,10 @@ class PartialGateTrajectory(Trajectory):
 
         left_perp = np.array([-rover_to_post[1], rover_to_post[0]])  # (-y,x)\
         right_perp = np.array([rover_to_post[1], -rover_to_post[0]])  # (y,-x)
-        coords = np.vstack((post_pos + left_perp, post_pos + rover_to_post, post_pos + right_perp))
+
+		# This is just making our trajectory points into an array that we can read in
+        coords = np.vstack((post_pos + left_perp, post_pos + rover_to_post, post_pos + right_perp)) 
+		#should we add rover position to the end of this path? ^
         coords = np.hstack((coords, np.zeros(coords.shape[0]).reshape(-1, 1)))
 
         return PartialGateTrajectory(coords)
