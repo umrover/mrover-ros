@@ -26,7 +26,7 @@
       <DriveControls/>
     </div>
     <div class="box light-bg scoop">
-      <ScoopUV/>
+      <EndEffectorUV/>
     </div>
     <div class="box light-bg arm">
       <ArmControls/>
@@ -34,8 +34,11 @@
     <div class="box light-bg pdb">
       <PDBFuse/>
     </div>
-    <div class="box light-bg driveVel">
-      <DriveVelDataV/>
+    <div class="box light-bg jointState">
+      <JointStateTable v-bind:jointStateData="jointState" v-bind:vertical="true"></JointStateTable>
+    </div>
+    <div class="box light-bg moteus">
+      <MoteusStateTable v-bind:moteusStateData="moteusState"></MoteusStateTable>
     </div>
   </div>
 </template>
@@ -45,12 +48,13 @@
   import SARoverMap from './SARoverMap.vue';
   import SAWaypointEditor from './SAWaypointEditor.vue'
   import DriveControls from "./DriveControls.vue";
-  import ScoopUV from "./ScoopUV.vue"
+  import EndEffectorUV from "./EndEffectorUV.vue"
   import ArmControls from "./ArmControls.vue"
   import PDBFuse from "./PDBFuse.vue"
-  import DriveVelDataV from "./DriveVelDataV.vue"
   import * as qte from "quaternion-to-euler";
-  import Cameras from "./Cameras.vue"
+  import Cameras from "./Cameras.vue";
+  import MoteusStateTable from './MoteusStateTable.vue';
+  import JointStateTable from './JointStateTable.vue';
 
 
   export default {
@@ -64,6 +68,9 @@
         },
 
         primary: true,
+
+        jointState: {},
+        moteusState: {},
 
         // Pubs and Subs
         odom_sub: null,
@@ -103,17 +110,29 @@
         this.odom.latitude_deg = msg.latitude
         this.odom.longitude_deg = msg.longitude
       });
+
+      this.brushless_motors = new ROSLIB.Topic({
+          ros: this.$ros,
+          name: 'drive_status',
+          messageType: 'mrover/MotorsStatus'
+      });
+
+      this.brushless_motors.subscribe((msg) => {
+          this.jointState = msg.joint_states
+          this.moteusState = msg.moteus_states
+      });
     },
 
     components:{
       SARoverMap,
       SAWaypointEditor,
       DriveControls,
-      ScoopUV,
+      EndEffectorUV,
       ArmControls,
       PDBFuse,
-      DriveVelDataV,
-      Cameras
+      Cameras,
+      JointStateTable,
+      MoteusStateTable
     }
   }
 
@@ -132,8 +151,8 @@
                          "map waypoints waypoints"
                          "cameras cameras drive"
                          "cameras cameras scoop"
-                         "arm arm driveVel"
-                         "pdb pdb driveVel";
+                         "arm moteus jointState"
+                         "pdb moteus jointState";
     font-family: sans-serif;
     height: auto;
     width: auto;
@@ -248,8 +267,12 @@
     grid-area: pdb;
   }
 
-  .driveVel {
-    grid-area: driveVel;
+  .jointState {
+    grid-area: jointState;
+  }
+
+  .moteus {
+    grid-area: moteus;
   }
 
   .Joystick {
