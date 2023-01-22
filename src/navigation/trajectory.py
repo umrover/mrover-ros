@@ -19,7 +19,7 @@ class Trajectory:
         """
         self.cur_pt += 1
         return self.cur_pt >= len(self.coordinates)
-	
+
     def __repr__(self):
         result = "Coordinates:\n"
         for pt in range(len(self.coordinates)):

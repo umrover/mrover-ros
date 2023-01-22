@@ -61,11 +61,13 @@ class Environment:
         """
         try:
             fid_pose = SE3.from_tf_tree(self.ctx.tf_buffer, parent_frame="map", child_frame=f"fiducial{fid_id}")
+            print(fid_pose)
         except (
             tf2_ros.LookupException,
             tf2_ros.ConnectivityException,
             tf2_ros.ExtrapolationException,
         ):
+            print("EXCEPTED")
             return None
         return fid_pose.position
 
@@ -75,6 +77,7 @@ class Environment:
         """
         assert self.ctx.course
         current_waypoint = self.ctx.course.current_waypoint()
+        print("fiducial id:", current_waypoint.fiducial_id)
         if current_waypoint is None:
             return None
 
@@ -84,6 +87,7 @@ class Environment:
         """
         retrieves the position of the gate (if we know where it is, and we are looking for one)
         """
+
         if self.ctx.course:
             current_waypoint = self.ctx.course.current_waypoint()
             if current_waypoint is None:
