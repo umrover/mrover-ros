@@ -58,11 +58,10 @@ import ArmControls from './ArmControls.vue'
 export default {
   data() {
     return {
+      // Default coordinates are at NC 53 Parking Lot
       odom: {
-        latitude_deg: 38,
-        latitude_min: 24.38226,
-        longitude_deg: -110,
-        longitude_min: -47.51724,
+        latitude_deg: 42.294864932393835,
+        longitude_deg: -83.70781314674628,
         bearing_deg: 0,
         speed: 0
       },
@@ -80,9 +79,7 @@ export default {
         state: ["", "", "", "", "", ""]
       },
 
-      jointState: {
-
-      }
+      jointState: {}
     }
   },
 
