@@ -208,7 +208,7 @@ export default {
   }
 
   .spacer {
-    flex-grow: 0.8;
+    flex-grow: 1;
   }
 
   .helpscreen {
