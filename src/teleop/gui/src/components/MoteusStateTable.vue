@@ -132,12 +132,6 @@ export default {
         }
     },
 
-    created() {
-
-        console.log(this.moteusStateData) // I'm text inside the component.
-
-    },
-
     props: {
         moteusStateData: {
             type: Object,
