@@ -92,6 +92,8 @@ export default {
         }
     },
     props: {
+
+        // Table will only render headers if these values are not passed w/ v-bind
         jointStateData: {
             type: Object,
             required: true
