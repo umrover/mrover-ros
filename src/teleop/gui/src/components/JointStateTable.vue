@@ -28,11 +28,11 @@
             </thead>
 
             <tbody>
-                <tr v-for="(value, key) in jointStateData">
-                    <th class="tableElement">{{ key }}</th>
-                    <td class="tableElement">{{ key }}</td>
-                    <td class="tableElement">{{ key }}</td>
-                    <td class="tableElement">{{ key }}</td>
+                <tr v-for="(joint, index) in jointStateData.name" :key="index">
+                    <td class="tableElement">{{ joint }}</td>
+                    <td class="tableElement">{{ jointStateData.position[index] }}</td>
+                    <td class="tableElement">{{ jointStateData.velocity[index] }}</td>
+                    <td class="tableElement">{{ jointStateData.effort[index] }}</td>
                 </tr>
             </tbody>
         </table>
