@@ -32,6 +32,9 @@
     <div class="box waypoint-editor light-bg" v-if="type === 'EDM'">
       <ERDWaypointEditor/>
     </div>
+    <div>
+      <DriveControls></DriveControls>
+    </div>
     <div class="box arm-controls light-bg">
       <ArmControls/>
     </div>
@@ -45,14 +48,16 @@
 import { mapGetters } from 'vuex'
 import * as qte from "quaternion-to-euler"
 import ROSLIB from "roslib"
+
+import ArmControls from './ArmControls.vue'
 import Cameras from './Cameras.vue'
+import DriveControls from './DriveControls.vue'
 import ERDMap from './ERDRoverMap.vue'
+import ERDWaypointEditor from './ERDWaypointEditor.vue'
+import JointStateTable from './JointStateTable.vue'
+import MoteusStateTable from './MoteusStateTable.vue'
 import OdometryReading from './OdometryReading.vue'
 import PDBFuse from './PDBFuse.vue'
-import JointStateTable from './JointStateTable.vue'
-import ERDWaypointEditor from './ERDWaypointEditor.vue'
-import MoteusStateTable from './MoteusStateTable.vue'
-import ArmControls from './ArmControls.vue'
 
 
 export default {
@@ -128,14 +133,15 @@ export default {
   },
 
   components: {
-    ERDMap,
-    Cameras,
-    OdometryReading,
-    PDBFuse,
-    ERDWaypointEditor,
-    MoteusStateTable,
     ArmControls,
-    JointStateTable
+    Cameras,
+    DriveControls,
+    ERDMap,
+    ERDWaypointEditor,
+    JointStateTable,
+    MoteusStateTable,
+    OdometryReading,
+    PDBFuse
 },
 
   props: {
