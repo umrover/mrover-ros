@@ -32,6 +32,7 @@ class GPSLinearization:
         self.ref_lon = rospy.get_param("gps_linearization/reference_point_longitude")
         self.ref_alt = rospy.get_param("gps_linearization/reference_point_altitude")
 
+        self.use_odom = rospy.get_param("gps_linearization/use_odom_frame")
         self.world_frame = rospy.get_param("gps_linearization/world_frame")
         self.odom_frame = rospy.get_param("gps_linearization/odom_frame")
         self.rover_frame = rospy.get_param("gps_linearization/rover_frame")
@@ -44,7 +45,7 @@ class GPSLinearization:
         """
         rover_in_map = self.pose
 
-        try:
+        if self.use_odom:
             # Get the odom to rover transform from the TF tree
             rover_in_odom = SE3.from_tf_tree(self.tf_buffer, self.odom_frame, self.rover_frame)
             odom_to_rover = rover_in_odom.transform_matrix()
@@ -57,9 +58,8 @@ class GPSLinearization:
                 self.tf_broadcaster, parent_frame=self.world_frame, child_frame=self.odom_frame
             )
 
-        # if odom frame not found, publish directly as map->base_link
-        except (tf2_ros.LookupException, tf2_ros.ConnectivityException, tf2_ros.ExtrapolationException):
-            rospy.logwarn("odom frame not found, publishing directly to map")
+        else:
+            # publish directly as map->base_link
             rover_in_map.publish_to_tf_tree(
                 self.tf_broadcaster, parent_frame=self.world_frame, child_frame=self.rover_frame
             )
