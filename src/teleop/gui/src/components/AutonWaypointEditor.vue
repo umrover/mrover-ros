@@ -50,9 +50,7 @@
           <Checkbox v-on:toggle="roverStuck=!roverStuck" name="Stuck"></Checkbox>
         </div>
         <div class="stats">
-          <p>
-            Waypoints Traveled: {{nav_status.completed_wps}}/{{nav_status.total_wps}}<br>
-          </p>
+          <VelocityCommand/>
         </div>
       </div>
       <div class="box1">
@@ -72,6 +70,7 @@ import AutonModeCheckbox from './AutonModeCheckbox.vue'
 import Checkbox from './Checkbox.vue'
 import draggable from 'vuedraggable'
 import {convertDMS} from '../utils.js';
+import VelocityCommand from './VelocityCommand.vue';
 import WaypointItem from './AutonWaypointItem.vue'
 import {mapMutations, mapGetters} from 'vuex'
 import _ from 'lodash';
@@ -134,6 +133,7 @@ export default {
       //Pubs and Subs
       nav_status_sub: null,
       course_pub: null,
+
       rover_stuck_pub: null
       
     }
@@ -368,6 +368,7 @@ export default {
     WaypointItem,
     AutonModeCheckbox,
     Checkbox,
+    VelocityCommand,
   }
 
 }
@@ -425,7 +426,7 @@ export default {
 
   .datagrid {
       display: grid;
-      grid-gap: 2px;
+      grid-gap: 5%;
       grid-template-columns: 1fr 1fr;
       grid-template-rows: 1fr 0.25fr;
       grid-template-areas: "auton-check stats"
@@ -464,18 +465,13 @@ export default {
   }
   
   .stats{
-    margin-top: -10px;
+    margin-top: 10px;
     grid-area: stats;
   }
   
   .stuck-check{
     align-content: center;
     grid-area: stuck-check;
-  }
-  
-  .joystick{
-    margin-top: -20px;
-    grid-area: joystick;
   }
   
   .odom{
