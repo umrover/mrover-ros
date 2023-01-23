@@ -15,7 +15,7 @@ class CommandData:
     DEFAULT_TORQUE = 0.3
     MAX_TORQUE = 0.5
     POSITION_FOR_VELOCITY_CONTROL = math.nan
-    VELOCITY_LIMIT = 5
+    VELOCITY_LIMIT = 50
     ZERO_VELOCITY = 0.0
 
     def __init__(
@@ -250,12 +250,12 @@ class DriveApp:
             import moteus_pi3hat
 
             transport = moteus_pi3hat.Pi3HatRouter(
-                servo_bus_map={1: [info["id"] for name, info in drive_info_by_name.items()]}
+                servo_bus_map={1: [info["id"] for name, info in self.drive_info_by_name.items()]}
             )
         else:
             transport = None
 
-        for name, info in drive_info_by_name.items():
+        for name, info in self.drive_info_by_name.items():
             self.drive_bridge_by_name[name] = MoteusBridge(info["id"], transport)
         rover_width = rospy.get_param("rover/width")
         rover_length = rospy.get_param("rover/length")

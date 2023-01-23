@@ -120,7 +120,7 @@ odrive:
 rover:
   length: 0.86
   width: 0.86
-  max_speed: 0.8
+  max_speed: 1.5
 
 wheel:
   gear_ratio: 50.0
