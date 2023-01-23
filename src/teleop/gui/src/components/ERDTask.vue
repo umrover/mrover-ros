@@ -15,10 +15,7 @@
       </div>
     </div>
     <div class="box cameras light-bg">
-      <Cameras v-bind:primary="primary"/>
-    </div>
-    <div class="box arm-controls light-bg">
-      <ArmControls/>
+      <Cameras v-bind:primary="primary" v-bind:numCams="0"/>
     </div>
     <div class="box odom light-bg" v-if="type === 'EDM'">
       <OdometryReading v-bind:odom="odom"/>
@@ -26,17 +23,23 @@
     <div class="box map light-bg" v-if="type === 'EDM'">
       <ERDMap v-bind:odom="odom"/>
     </div>
-    <div class="box drive light-bg" v-show="false">
-      <DriveControls/>
-    </div>
     <div class="box pdb light-bg">
       <PDBFuse/>
     </div>
     <div class="box drive-vel-data light-bg">
-      <DriveVelData/>
+      <JointStateTable v-bind:jointStateData="jointState" v-bind:vertical="true"/>
     </div>
     <div class="box waypoint-editor light-bg" v-if="type === 'EDM'">
       <ERDWaypointEditor/>
+    </div>
+    <div>
+      <DriveControls></DriveControls>
+    </div>
+    <div class="box arm-controls light-bg">
+      <ArmControls/>
+    </div>
+    <div class="box moteus light-bg">
+      <MoteusStateTable v-bind:moteusStateData="moteusState"/>
     </div>
   </div>
 </template>
@@ -45,40 +48,43 @@
 import { mapGetters } from 'vuex'
 import * as qte from "quaternion-to-euler"
 import ROSLIB from "roslib"
+
 import ArmControls from './ArmControls.vue'
 import Cameras from './Cameras.vue'
-import ERDMap from './ERDRoverMap.vue'
-import OdometryReading from './OdometryReading.vue'
 import DriveControls from './DriveControls.vue'
-import PDBFuse from './PDBFuse.vue'
-import DriveVelData from './DriveVelDataV.vue'
+import ERDMap from './ERDRoverMap.vue'
 import ERDWaypointEditor from './ERDWaypointEditor.vue'
+import JointStateTable from './JointStateTable.vue'
+import MoteusStateTable from './MoteusStateTable.vue'
+import OdometryReading from './OdometryReading.vue'
+import PDBFuse from './PDBFuse.vue'
 
-const subscriptions =
-[
-  {'topic': '/gps/fix', 'type': 'sensor_msgs/NavSatFix'},
-  {'topic': '/imu/data', 'type': 'sensor_msgs/Imu'}
-]
 
 export default {
   data() {
     return {
+      // Default coordinates are at NC 53 Parking Lot
       odom: {
-        latitude_deg: 38,
-        latitude_min: 24.38226,
-        longitude_deg: -110,
-        longitude_min: -47.51724,
+        latitude_deg: 42.294864932393835,
+        longitude_deg: -83.70781314674628,
         bearing_deg: 0,
         speed: 0
       },
-
-      topic_subscriptions : {},
 
       primary: true,
 
       // Pubs and Subs
       odom_sub: null,
-      tfClient: null
+      tfClient: null,
+
+      // Default object isn't empty, so has to be initialized to ""
+      moteusState: {
+        name: ["", "", "", "", "", ""],
+        error: ["", "", "", "", "", ""],
+        state: ["", "", "", "", "", ""]
+      },
+
+      jointState: {}
     }
   },
 
@@ -113,18 +119,30 @@ export default {
       this.odom.latitude_deg = msg.latitude
       this.odom.longitude_deg = msg.longitude
     });
+
+    this.brushless_motors = new ROSLIB.Topic({
+      ros: this.$ros,
+      name: 'drive_status',
+      messageType: 'mrover/MotorsStatus'
+    });
+
+    this.brushless_motors.subscribe((msg) => {
+      this.jointState = msg.joint_states
+      this.moteusState = msg.moteus_states
+    });
   },
 
   components: {
-    ERDMap,
     ArmControls,
     Cameras,
-    OdometryReading,
     DriveControls,
-    PDBFuse,
-    DriveVelData,
-    ERDWaypointEditor
-  },
+    ERDMap,
+    ERDWaypointEditor,
+    JointStateTable,
+    MoteusStateTable,
+    OdometryReading,
+    PDBFuse
+},
 
   props: {
     type: {
@@ -140,12 +158,13 @@ export default {
     display: grid;
     grid-gap: 10px;
     grid-template-columns: auto auto;
-    grid-template-rows: 60px 250px auto auto auto;
+    grid-template-rows: 60px 250px auto auto auto auto;
     grid-template-areas: "header header"
                          "map waypoint-editor"
-                         "map cameras"
-                         "odom arm-controls"
-                         "pdb drive-vel-data";
+                         "map odom"
+                         "map arm-controls"
+                         "moteus drive-vel-data"
+                         "cameras pdb";
     font-family: sans-serif;
     height: auto;
   }
@@ -154,11 +173,12 @@ export default {
     display: grid;
     grid-gap: 10px;
     grid-template-columns: auto auto;
-    grid-template-rows: 60px 250px auto auto;
+    grid-template-rows: 60px 250px auto auto auto;
     grid-template-areas: "header header"
-                         "cameras cameras"
+                         "cameras moteus"
+                         "cameras moteus"
                          "drive-vel-data pdb"
-                         "arm-controls pdb ";
+                         "arm-controls arm-controls";
     font-family: sans-serif;
     height: auto;
   }
@@ -188,7 +208,7 @@ export default {
   }
 
   .spacer {
-    flex-grow: 0.8;
+    flex-grow: 1;
   }
 
   .helpscreen {
@@ -235,20 +255,12 @@ export default {
     grid-area: map;
   }
 
-  .arm-controls {
-    grid-area: arm-controls;
-  }
-
   .cameras {
     grid-area: cameras;
   }
 
   .odom {
     grid-area: odom;
-  }
-
-  .drive {
-    grid-area: drive;
   }
 
   .pdb {
@@ -261,6 +273,14 @@ export default {
 
   .waypoint-editor {
     grid-area: waypoint-editor;
+  }
+
+  .arm-controls{
+    grid-area: arm-controls;
+  }
+
+  .moteus {
+    grid-area: moteus;
   }
 
 </style>

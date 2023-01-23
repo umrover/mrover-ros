@@ -1,4 +1,9 @@
 <template>
+    <!--
+        TODO: Need to retool this and the Vuex stores to work generically for each GUI,
+        Need to change Vuex stores to be used only for certain features instead of having
+        things like odom format and clicked point in every store module.
+    -->
     <div class="odom-wrap">
         <p>Current odometry reading:</p>
         <div>
@@ -22,6 +27,13 @@
     import {convertDMS} from '../utils.js';
     import {mapGetters} from 'vuex';
     export default {
+        data(){
+            return{
+                // Set as constant until we clean up vuex stores
+                odom_format: "D"
+            }
+        },
+
         props: {
             odom: {
             type: Object,
@@ -30,13 +42,10 @@
         },
 
         computed: {
-            ...mapGetters('autonomy', {
-                odom_format: 'odomFormat'
-            }),
             formatted_odom: function() {
                 return {
-                    lat: convertDMS({d: this.odom.latitude_deg, m: this.odom.latitude_min, s: 0}, this.odom_format),
-                    lon: convertDMS({d: this.odom.longitude_deg, m: this.odom.longitude_min, s: 0}, this.odom_format)
+                    lat: convertDMS({d: this.odom.latitude_deg, m: 0, s: 0}, this.odom_format),
+                    lon: convertDMS({d: this.odom.longitude_deg, m: 0, s: 0}, this.odom_format)
                 };
             },
             min_enabled: function() {
