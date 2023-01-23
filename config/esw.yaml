@@ -131,13 +131,19 @@ brushless:
   drive:
     FrontLeft:
       id: 1
+      multiplier: -1
     FrontRight:
       id: 2
+      multiplier: 1
     MiddleLeft:
       id: 3
+      multiplier: -1
     MiddleRight:
       id: 4
+      multiplier: 1
     BackLeft:
       id: 5
+      multiplier: -1
     BackRight:
       id: 6
+      multiplier: 1

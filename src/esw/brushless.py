@@ -243,7 +243,7 @@ class DriveApp:
     DRIVE_NAMES = ["FrontLeft", "FrontRight", "MiddleLeft", "MiddleRight", "BackLeft", "BackRight"]
 
     def __init__(self):
-        drive_info_by_name = rospy.get_param("brushless/drive")
+        self.drive_info_by_name = rospy.get_param("brushless/drive")
         self.drive_bridge_by_name = {}
         using_pi3_hat = rospy.get_param("brushless/using_pi3_hat")
         if using_pi3_hat:
@@ -319,14 +319,24 @@ class DriveApp:
         self._last_updated_time = t.time()
         for name, bridge in self.drive_bridge_by_name.items():
 
-            if name == "FrontLeft" or name == "BackLeft":
-                commanded_velocity = left_rad_outer
+            if name == "FrontLeft" :
+                Front_left_multiplier = self.drive_info_by_name[name]["multiplier"] 
+                commanded_velocity = Front_left_multiplier * left_rad_outer
+            elif name == "BackLeft":
+                Back_left_multiplier = self.drive_info_by_name[name]["multiplier"]
+                commanded_velocity = Back_left_multiplier * left_rad_outer
             elif name == "MiddleLeft":
-                commanded_velocity = left_rad_inner
-            elif name == "FrontRight" or name == "BackRight":
-                commanded_velocity = right_rad_outer
+                Middle_left_multiplier = self.drive_info_by_name[name]["multiplier"]
+                commanded_velocity = Middle_left_multiplier * left_rad_inner
+            elif name == "FrontRight":
+                Front_right_multiplier = self.drive_info_by_name[name]["multiplier"]
+                commanded_velocity = Front_right_multiplier * right_rad_outer
+            elif name == "BackRight":
+                Back_right_multiplier = self.drive_info_by_name[name]["multiplier"]
+                commanded_velocity = Back_right_multiplier * right_rad_outer
             elif name == "MiddleRight":
-                commanded_velocity = right_rad_inner
+                Middle_right_multiplier = self.drive_info_by_name[name]["multiplier"]
+                commanded_velocity = Middle_right_multiplier * right_rad_inner
             else:
                 rospy.logerr(f"Invalid name {name}")
                 continue
