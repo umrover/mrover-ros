@@ -25,5 +25,5 @@ class Trajectory:
         for pt in range(len(self.coordinates)):
             if pt == self.cur_pt:
                 result += "Curr -> "
-            result += "[" + pt + "]: " + self.coordinates[pt] + "\n"
+            result += "[" + str(pt) + "]: " + self.coordinates[pt] + "\n"
         return result

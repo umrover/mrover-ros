@@ -77,7 +77,6 @@ class Environment:
         """
         assert self.ctx.course
         current_waypoint = self.ctx.course.current_waypoint()
-        print("fiducial id:", current_waypoint.fiducial_id)
         if current_waypoint is None:
             return None
 
