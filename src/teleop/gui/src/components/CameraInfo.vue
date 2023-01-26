@@ -2,7 +2,7 @@
     <div class="wrap box">
         <p>{{name}} ID: {{id}}</p>
         Stream: <input class="box" type='Number' min="0" max="3" v-model ='selectedStream'>
-        <button class="box" v-on:click="swapStream()">Change stream</button>
+        <button class="button" v-on:click="swapStream()">Change stream</button>
         <label for="quality">Quality:</label>
         <select class="box" id="quality" v-model="selectedQuality" @change="changeQuality()">
           <option value="0">Low</option>
@@ -62,11 +62,6 @@
   
   <style scoped>
 
-  .box {
-    border-radius: 5px;
-    padding: 10px;
-    border: 1px solid black;
-  }
   .wrap {
     margin: 10px;
     padding: 10px;

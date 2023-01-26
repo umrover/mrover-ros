@@ -1,7 +1,7 @@
 <template>
   <div class="wrap">
     <div class="col-wrap" style="left: 0;">
-      <div class="box">
+      <div class="add-drop box">
         <div class="identification">
           Name: <input v-model="name" size="15">
           ID: <input v-model="id" type="number" max="249" min="-1" step="1">
@@ -24,14 +24,14 @@
         </div>
         <br>
         <div style="display:inline-block">
-          <button v-on:click="addWaypoint(input)">Add Waypoint</button>
-          <button v-on:click="addWaypoint(formatted_odom)">Drop Waypoint</button>
+          <button class="button" v-on:click="addWaypoint(input)">Add Waypoint</button>
+          <button class="button" v-on:click="addWaypoint(formatted_odom)">Drop Waypoint</button>
         </div>
       </div>
       <div class="box1">
         <div class="all-waypoints">
           <h4 class="waypoint-headers">All Waypoints</h4>
-          <button v-on:click="clearWaypoint">Clear Waypoints</button>
+          <button class="button" v-on:click="clearWaypoint">Clear Waypoints</button>
         </div>
         <draggable v-model="storedWaypoints" class="dragArea" draggable=".item'">
           <WaypointItem v-for="waypoint, i in storedWaypoints" :key="i" v-bind:waypoint="waypoint" 
@@ -53,7 +53,7 @@
           <VelocityCommand/>
         </div>
       </div>
-      <div class="box1">
+      <div class="box box1">
         <h4 class="waypoint-headers">Current Course</h4>
         <draggable v-model="route" class="dragArea" draggable=".item'">
           <WaypointItem v-for="waypoint, i in route" :key="i" v-bind:waypoint="waypoint" 
@@ -388,7 +388,6 @@ export default {
     position: absolute;
     margin: 1.5px;
     display: inline-block;
-    /*flex-direction: column; */
     height: 100%;
     width: 49.5%;
   }
@@ -405,10 +404,13 @@ export default {
     display: inline-block;
   }
 
+  .add-drop {
+    height: 15%;
+    background-color: orange;
+  }
+
   .box {
-    border-radius: 5px;
     padding: 10px;
-    border: 1px solid black;
     min-height: min-content;
     max-height: 32%;
     overflow: none;
@@ -416,12 +418,17 @@ export default {
   }
 
   .box1 {
-    border-radius: 5px;
     padding: 0px 5px 0px 5px;
-    border: 1px solid black;
-    overflow: scroll;
-    min-height: min-content;
-    max-height: 63%;
+    overflow: auto;
+    /* min-height: min-content;
+    max-height: 63%; */
+    height: 100%;
+    background-color: yellow;
+  }
+
+  .button {
+    width: auto;
+    height: auto;
   }
 
   .datagrid {
@@ -439,11 +446,11 @@ export default {
     display: inline-flex;
   }
 
-  .all-waypoints button{
+  /* .all-waypoints button{
     margin: 5px;
     width: 115px;
     height: 20px;
-  }
+  } */
 
   .wp-input p {
     display: inline;

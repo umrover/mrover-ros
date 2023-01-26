@@ -1,5 +1,5 @@
 <template>
-  <div class="wrap">
+  <div class="wrapper">
     <!-- Leaflet Map Definition-->
     <l-map ref="map" class="map" :zoom="22" :center="center" v-on:click="getClickedLatLon($event)">
       <l-control-scale :imperial="false"/>
@@ -222,7 +222,7 @@ export default {
   float:right;
 }
 
-.wrap {
+.wrapper {
   align-items: center;
   height: 100%;
   display: grid;

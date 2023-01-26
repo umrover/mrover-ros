@@ -2,15 +2,15 @@
     <div class="wrap">
       <h3>Cameras</h3>
       <div class="input">
-        Camera name: <input class="rounded" type='message' v-model ='cameraName'>
-        Camera number: <input class="rounded" type='Number' min="0" max="8" v-model ='cameraIdx'>
-        <button class="rounded button" v-on:click="addCameraName()">Change name</button>
+        Camera name: <input class="box" type='message' v-model ='cameraName'>
+        Camera number: <input class="box" type='Number' min="0" max="8" v-model ='cameraIdx'>
+        <button class="button" v-on:click="addCameraName()">Change name</button>
       </div>
       <div class="cameraselection">
         <CameraSelection class="cameraspace1" v-bind:camsEnabled="camsEnabled" v-bind:names="names" v-bind:capacity="parseInt(capacity)" v-on:cam_index="setCamIndex($event)"/>
       </div>
       <h3>All Cameras</h3>
-      Capacity: <input class="rounded" type='Number' min="2" max="4" v-model ='capacity'>
+      Capacity: <input class="box" type='Number' min="2" max="4" v-model ='capacity'>
       <div class="camerainfo" v-for="i in camsEnabled.length" :key="i">
         <CameraInfo v-if="camsEnabled[i-1]" v-bind:name="names[i-1]" v-bind:id="i-1" v-on:newQuality="changeQuality($event)" v-on:swapStream="swapStream($event)" v-bind:stream="getStreamNum(i-1)"></CameraInfo>
       </div>
@@ -127,11 +127,6 @@
   </script>
   
   <style scoped>
-
-    .rounded {
-      border: 1px solid black;
-      border-radius: 5px;
-    }
 
     .button {
       height: 25px;

@@ -1,5 +1,5 @@
 <template>
-  <div class="wrap-button">
+  <div class="button wrap-button">
     <button v-bind:class="[this.color]" v-on:click='toggleAndEmit()'>
       <span class='white-text'>{{name}}: <br>{{active ? '\u2611' : '\u2610'}}</span>
     </button>

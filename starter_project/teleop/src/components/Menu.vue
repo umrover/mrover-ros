@@ -1,7 +1,7 @@
 <template>
-  <div class="wrapper">
+  <div class="wrap">
     <div class="box header">
-      <img src="/static/mrover.png" alt="MRover" title="MRover" width="48" height="48" />
+      <img src="/static/new_mrover.png" alt="MRover" title="MRover" width="185" height="53" />
       <h1>Mrover Teleop Training</h1>
       <div class="spacer"></div>
     </div>
@@ -53,7 +53,7 @@ img {
   margin: 5px;
 }
 
-.wrapper {
+.wrap {
   display: grid;
   grid-gap: 10px;
   grid-template-columns: 1fr;

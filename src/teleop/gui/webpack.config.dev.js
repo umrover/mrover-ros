@@ -2,6 +2,7 @@
 const CopyWebpackPlugin = require("copy-webpack-plugin");
 const HtmlWebpackPlugin = require("html-webpack-plugin");
 const { VueLoaderPlugin } = require("vue-loader");
+const webpack = require("webpack");
 module.exports = {
   mode: "development",
   entry: ["./src/app.js"],

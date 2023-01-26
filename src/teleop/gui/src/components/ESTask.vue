@@ -1,6 +1,9 @@
 <template>
 <div>
-    <p>ES</p>
+  <div class="box page_header">
+    <img src="/static/new_mrover.png" alt="MRover" title="MRover" width="185" height="53" />
+    <h1>ES</h1>
+  </div>
 </div>
 </template>
 

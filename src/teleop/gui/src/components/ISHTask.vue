@@ -1,6 +1,9 @@
 <template>
 <div>
-    <p>ISH</p>
+  <div class="box page_header">
+    <img src="/static/new_mrover.png" alt="MRover" title="MRover" width="185" height="53" />
+    <h1>ISH</h1>
+  </div>
     <div class="box camera light-bg">
       <Cameras v-bind:numCams="4" v-bind:primary="false"/>
     </div>

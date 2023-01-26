@@ -1,10 +1,9 @@
 <template>
     <div>
-        <div class="wrapper">
-            <div class="header">
-            <img src="/static/mrover.png" alt="MRover" title="MRover" width="48" height="48" />
+        <div class="wrap">
+            <div class="page_header">
             <h1>ROS Send</h1>
-            <div class="spacer"></div>
+            <img src="/static/new_mrover.png" alt="MRover" title="MRover" width="185" height="53" />
             </div>
             
             <div class="pages">
@@ -39,7 +38,7 @@
                 <p> {{schema}} </p>
                 <p v-if="error">JSON Syntax Error! Cannot send...</p>
 
-                <button class="box" id="send" type="button" v-on:click="sendMessage()">Send</button>
+                <button class="button" id="send" type="button" v-on:click="sendMessage()">Send</button>
             </div>
       </div>
     </div>
@@ -210,28 +209,12 @@
   
   <style scoped>
 
+
     p {
       width: 300px;
         white-space: pre-wrap;
     }
 
-    .box {
-        background-color: white;
-        border-radius: 5px;
-        padding: 10px;
-        border-color: rgba(236, 236, 236, 0.966);
-        box-shadow: 2px 2px 15px rgba(236, 236, 236, 0.966), -2px -2px 15px rgba(236,236,236,0.966);
-    }
-
-    .header {
-        display: flex;
-        align-items: center;
-        box-shadow: 0px 10px 8px -4px rgba(236, 236, 236, 0.966);
-    }
-
-    .header h1 {
-        margin-left: 5px;
-    }
 
     .pages > * {
         margin: 10px;
@@ -240,11 +223,6 @@
     img {
         border: none;
         border-radius: 0px;
-    }
-
-    .wrapper {
-        font-family: "Arial";
-        height: auto;
     }
 
     #textarea {
@@ -258,23 +236,8 @@
         
     }
 
-    #send {
-        width: 100px;
-        height: 50px;
-        background-color: rgb(132, 169, 224);
-        color: rgb(255, 255, 255);
-        font-family: "Arial";
-        font-size: medium;
-        border-radius: 10px;
-        border-color: transparent;
-    }
-
-    #send:hover {
-      background-color: rgb(116, 150, 201);
-    }
-
-    #send:active {
-      background-color: rgb(92, 124, 172);
-    }
+    /* .box {
+      border: none;
+    } */
 
   </style>

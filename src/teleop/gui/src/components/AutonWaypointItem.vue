@@ -1,5 +1,5 @@
 <template>
-  <div class="waypoint-item">
+  <div class="box">
     <div class="identification">
       <p>{{waypoint.name}}, ID: {{waypoint.id}}</p>
     </div>
@@ -73,12 +73,8 @@ export default {
 </script>
 
 <style scoped>
-  .waypoint-item {
-    background-color: rgb(180, 180, 180);
-    border-radius: 5px;
+  .box {
     padding: 1px 10px 10px 10px;
-    border: 1px solid black;
-
     margin: 5px;
   }
   .location {

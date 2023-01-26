@@ -1,10 +1,8 @@
 <template>
-<div class="wrapper">
-    <div class="box header">
-        <img src="/static/mrover.png" alt="MRover" title="MRover" width="48" height="48" />
+<div class="wrap">
+    <div class="page_header">
         <h1>Auton Dashboard</h1>
-        <div class="spacer"></div>
-        <div class="spacer"></div>
+        <img src="/static/new_mrover.png" alt="MRover" title="MRover" width="185" height="53" />
         <div class="help">
             <img src="/static/help.png" alt="Help" title="Help" width="48" height="48" />
         </div>
@@ -13,7 +11,7 @@
             <img src="/static/joystick.png" alt="Joystick" title="Joystick Controls" style="width: auto; height: 70%; display: inline-block" />
         </div>
     </div>
-    <div class="box1 data" v-bind:style="{backgroundColor: nav_state_color}">
+    <div class="box box1" v-bind:style="{backgroundColor: nav_state_color}">
       <div>
         <h2>Nav State: {{this.nav_status.nav_state_name}}</h2>
       </div>
@@ -22,17 +20,16 @@
         <JoystickValues/>
       </div>
     </div>
-    <div class="box map light-bg">
+    <div class="box map">
         <AutonRoverMap v-bind:odom="odom" />
     </div>
-    <div class="box waypoints light-bg">
+    <div class="box waypoints">
       <AutonWaypointEditor v-bind:odom="odom" v-bind:AutonDriveControl="AutonDriveControl" v-on:toggleTeleop="teleopEnabledCheck=$event" />
     </div>
     <!--Enable the drive controls if auton is off-->
     <div class="driveControls" v-if="!this.autonEnabled && this.teleopEnabledCheck" v-show="false">
       <DriveControls/>
     </div>
-
 </div>
 </template>
 
@@ -217,45 +214,27 @@ export default {
 </script>
 
 <style scoped>
-.wrapper {
+.wrap {
   display: grid;
   overflow:hidden;
-  min-height: 98vh;
   grid-gap: 10px;
   grid-template-columns: 2fr 1.25fr 0.75fr;
-  grid-template-rows: 50px 2fr 1fr 15vh;
-  grid-template-areas: "header header header" 
-                       "map waypoints waypoints"
-                       "map waypoints waypoints" 
-                       "data waypoints waypoints";
+  grid-template-rows: auto 2fr 0.25fr;
+  grid-template-areas:  "header header header"
+                        "map waypoints waypoints"
+                        "data waypoints waypoints";
   font-family: sans-serif;
-  height: auto;
+  height: 100%;
   width: auto;
 }
-
-.box {
-    border-radius: 5px;
-    padding: 10px;
-    border: 1px solid black;
+.page_header {
+    grid-area: header;
 }
-
 .box1 {
-  border-radius: 5px;
-  background-color: LightGrey;
-  padding: 10px;
-  border: 1px solid black;
   overflow-y: scroll;
   height: 12 px;
   display: grid;
   grid-template-columns: 40% 60%;
-}
-
-.box2 {
-    display: block;
-}
-
-.light-bg {
-    background-color: LightGrey;
 }
 
 img {
@@ -263,24 +242,11 @@ img {
     border-radius: 0px;
 }
 
-.header {
-    grid-area: header;
-    display: flex;
-    align-items: center;
-}
-
-.header h1 {
-    margin-left: 5px;
-}
-
 h2 {
     padding: 2px;
     margin: 0px;
 }
 
-.spacer {
-    flex-grow: 0.8;
-}
 
 .comms {
     display: flex;

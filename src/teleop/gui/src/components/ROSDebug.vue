@@ -1,9 +1,8 @@
 <template>
-<div class="wrapper">
-    <div class="box header">
-    <img src="/static/mrover.png" alt="MRover" title="MRover" width="48" height="48" />
+<div class="wrap">
+    <div class="page_header">
     <h1>Debug Tools</h1>
-    <div class="spacer"></div>
+    <img src="/static/new_mrover.png" alt="MRover" title="MRover" width="185" height="53" />
     </div>
 
     <div class="pages">
@@ -30,50 +29,24 @@ components: {
 </script>
 
 <style scoped>
-.box {
-border-radius: 5px;
-padding: 10px;
-border: 1px solid black;
-}
-
-.header {
-grid-area: header;
-display: flex;
-align-items: center;
-}
-
-.header h1 {
-margin-left: 5px;
-}
-
-img {
-border: none;
-border-radius: 0px;
-}
 
 .pages {
 grid-area: pages;
-border: black solid 1px;
-border-radius: 5px;
-background-color: lightgray;
 }
 
 .row {
 display: flex;
-border: black solid 1px;
-border-radius: 5px;
-background-color: darkgray;
 margin: 5px;
 }
 
-.wrapper {
-display: grid;
+.wrap {
+/* display: grid;
 grid-gap: 10px;
 grid-template-columns: 1fr;
 grid-template-rows: 60px 1fr;
 grid-template-areas: "header" "pages";
 font-family: sans-serif;
-height: auto;
+height: auto; */
 }
 
 </style>

@@ -1,8 +1,8 @@
 <template>
     <div>
-        <div class="wrapper">
-            <div class="header">
-                <img src="/static/mrover.png" alt="MRover" title="MRover" width="48" height="48" />
+        <div class="wrap">
+            <div class="page_header">
+                <img src="/static/new_mrover.png" alt="MRover" title="MRover" width="185" height="53" />
                 <h1>ROS Echo</h1>
                 <div class="spacer"></div>
             </div>
@@ -128,26 +128,6 @@
       white-space: pre-wrap;
       list-style-position: outside;
     }
-
-    .box {
-        background-color: white;
-        border-radius: 5px;
-        padding: 10px;
-        border-color: rgba(236, 236, 236, 0.966);
-        box-shadow: 2px 2px 15px rgba(236, 236, 236, 0.966), -2px -2px 15px rgba(236,236,236,0.966);
-    }
-
-    .header {
-        grid-area: header;
-        display: flex;
-        align-items: center;
-        box-shadow: 0px 10px 8px -4px rgba(236, 236, 236, 0.966);
-    }
-
-    .header h1 {
-        margin-left: 5px;
-    }
-
     .pages {
         margin: 15px;
     }
@@ -157,7 +137,7 @@
         border-radius: 0px;
     }
 
-    .wrapper {
+    .wrap {
         display: grid;
         grid-gap: 10px;
         grid-template-columns: 1fr;
@@ -189,7 +169,6 @@
 
     .button {
         float: right;
-        text-align: center;
     }
     
     #feed {
@@ -197,7 +176,7 @@
     }
 
     .active {
-        background-color: rgb(132, 169, 224);
+        background-color: var(--primary-blue);
     }
 
     .inactive {

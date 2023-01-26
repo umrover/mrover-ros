@@ -1,13 +1,13 @@
 <template>
-  <div class="wrapper">
-    <div class="box header">
-      <img src="/static/mrover.png" alt="MRover" title="MRover" width="48" height="48" />
+  <div class="wrap">
+    <div class="box page_header">
+      <img src="/static/new_mrover.png" alt="MRover" title="MRover" width="185" height="53" />
       <h1>Menu</h1>
       <div class="spacer"></div>
     </div>
 
-    <div class="pages">
-      <fieldset class="tasks row">
+    <div class="content">
+      <fieldset class="box row">
         <legend>Tasks</legend>
         <MenuButton link="#/ERDTask" name="ERD Mission" />
         <MenuButton link="#/ESTask" name="ES Mission" />
@@ -34,26 +34,6 @@ export default {
 </script>
 
 <style scoped>
-.box {
-  border-radius: 5px;
-  padding: 10px;
-  border: 1px solid black;
-}
-
-.header {
-  grid-area: header;
-  display: flex;
-  align-items: center;
-}
-
-.header h1 {
-  margin-left: 5px;
-}
-
-img {
-  border: none;
-  border-radius: 0px;
-}
 
 .pages {
   grid-area: pages;
@@ -64,13 +44,10 @@ img {
 
 .row {
   display: flex;
-  border: black solid 1px;
-  border-radius: 5px;
-  background-color: darkgray;
   margin: 5px;
 }
 
-.wrapper {
+.wrap {
   display: grid;
   grid-gap: 10px;
   grid-template-columns: 1fr;
@@ -78,6 +55,10 @@ img {
   grid-template-areas: "header" "pages";
   font-family: sans-serif;
   height: auto;
+}
+
+.content {
+  margin: 10px;
 }
 
 </style>
