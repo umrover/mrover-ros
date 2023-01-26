@@ -163,8 +163,8 @@ export default {
                          "map waypoint-editor"
                          "map odom"
                          "map arm-controls"
-                         "moteus drive-vel-data"
-                         "cameras pdb";
+                         "cameras drive-vel-data"
+                         "moteus pdb";
     font-family: sans-serif;
     height: auto;
   }

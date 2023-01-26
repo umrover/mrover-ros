@@ -27,13 +27,6 @@
     import {convertDMS} from '../utils.js';
     import {mapGetters} from 'vuex';
     export default {
-        data(){
-            return{
-                // Set as constant until we clean up vuex stores
-                odom_format: "D"
-            }
-        },
-
         props: {
             odom: {
             type: Object,
@@ -42,6 +35,9 @@
         },
 
         computed: {
+            ...mapGetters('map', {
+                odom_format: 'odomFormat'
+            }),
             formatted_odom: function() {
                 return {
                     lat: convertDMS({d: this.odom.latitude_deg, m: 0, s: 0}, this.odom_format),

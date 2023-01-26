@@ -74,7 +74,10 @@ export default {
     methods: {
         ...mapMutations('erd',{
             setWaypointList: 'setWaypointList',
-            setHighlightedWaypoint: 'setHighlightedWaypoint',
+            setHighlightedWaypoint: 'setHighlightedWaypoint'
+        }),
+        
+        ...mapMutations('map',{
             setOdomFormat: 'setOdomFormat'
         }),
 
@@ -140,9 +143,12 @@ export default {
 
     computed: {
         ...mapGetters('erd', {
-            odom_format: 'odomFormat',
             highlightedWaypoint: 'highlightedWaypoint',
             clickPoint: "clickPoint"
+        }),
+
+        ...mapGetters('map', {
+            odom_format: 'odomFormat'
         }),
 
         min_enabled: function() {
