@@ -1,9 +1,4 @@
 <template>
-    <!--
-        TODO: Need to retool this and the Vuex stores to work generically for each GUI,
-        Need to change Vuex stores to be used only for certain features instead of having
-        things like odom format and clicked point in every store module.
-    -->
     <div class="odom-wrap">
         <p>Current odometry reading:</p>
         <div>
