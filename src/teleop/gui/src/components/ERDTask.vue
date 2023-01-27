@@ -15,7 +15,7 @@
       </div>
     </div>
     <div class="box cameras light-bg">
-      <Cameras v-bind:primary="primary" v-bind:numCams="0"/>
+      <Cameras v-bind:primary="true"/>
     </div>
     <div class="box odom light-bg" v-if="type === 'EDM'">
       <OdometryReading v-bind:odom="odom"/>
@@ -70,8 +70,6 @@ export default {
         bearing_deg: 0,
         speed: 0
       },
-
-      primary: true,
 
       // Pubs and Subs
       odom_sub: null,
