@@ -93,30 +93,6 @@ brushed_motors:
   i2c_device_file: "/dev/i2c-1"
   test: false
 
-odrive:
-  axis:
-    left: 0
-    right: 1
-  config:
-    current_lim: 4
-    watchdog_timeout: 0.1
-  ids:
-    front: "335D36623539"
-    middle: "205535833056"
-    back: "2066377F5753"
-  ratio:
-    direction_left: -1.0
-    direction_right: 1.0
-  ros:
-    publish_rate_hz: 20
-  publish_index:
-    front_left: 0
-    front_right: 1
-    middle_left: 2
-    middle_right: 3
-    back_left: 4
-    back_right: 5
-
 rover:
   length: 0.86
   width: 0.86
@@ -127,17 +103,17 @@ wheel:
   radius: 0.13
 
 brushless:
-  using_pi3_hat: false
+  using_pi3_hat: true
   drive:
     FrontLeft:
-      id: 0
-    FrontRight:
       id: 1
-    MiddleLeft:
+    FrontRight:
       id: 2
-    MiddleRight:
+    MiddleLeft:
       id: 3
-    BackLeft:
+    MiddleRight:
       id: 4
-    BackRight:
+    BackLeft:
       id: 5
+    BackRight:
+      id: 6

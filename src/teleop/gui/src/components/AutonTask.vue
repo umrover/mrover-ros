@@ -14,7 +14,13 @@
         </div>
     </div>
     <div class="box1 data" v-bind:style="{backgroundColor: nav_state_color}">
+      <div>
         <h2>Nav State: {{this.nav_status.nav_state_name}}</h2>
+      </div>
+      <div>
+        <p style="margin-top:6px;">Joystick Values</p>
+        <JoystickValues/>
+      </div>
     </div>
     <div class="box map light-bg">
         <AutonRoverMap v-bind:odom="odom" />
@@ -39,6 +45,7 @@ import {
     mapGetters
 } from 'vuex';
 import * as qte from "quaternion-to-euler";
+import JoystickValues from "./JoystickValues.vue";
 import Checkbox from "./Checkbox.vue";
 
 const navBlue = "#4695FF"
@@ -72,10 +79,12 @@ export default {
 
             navBlink: false,
             greenHook: false,
+            ledColor: 'blue',
 
             // Pubs and Subs
             nav_status_sub: null,
             odom_sub: null,
+            auton_led_client: null,
             tfClient: null
 
         }
@@ -96,10 +105,16 @@ export default {
 
         this.tfClient = new ROSLIB.TFClient({
             ros: this.$ros,
-            fixedFrame: 'odom',
+            fixedFrame: 'map',
             // Thresholds to trigger subscription callback
             angularThres: 0.01,
             transThres: 0.01
+        });
+
+        this.auton_led_client = new ROSLIB.Service({
+          ros: this.$ros,
+          name: 'change_auton_led_state',
+          serviceType: 'mrover/ChangeAutonLEDState'
         });
 
         // Subscriber for odom to base_link transform
@@ -124,9 +139,14 @@ export default {
             this.odom.longitude_deg = msg.longitude
         });
 
+        // Blink interval for green and off flasing
         setInterval(() => {
             this.navBlink = !this.navBlink
         }, 500)
+
+        // Initialize color to blue
+        this.sendColor()
+
     },
 
     computed: {
@@ -138,14 +158,13 @@ export default {
         nav_state_color: function () {
             if (!this.autonEnabled) {
                 return navBlue
-            } else if (true) {
-                if (this.nav_status.nav_state_name == "DoneState" && this.navBlink) {
-                    return navGreen
-                } else if (this.nav_status.nav_state_name == "DoneState" && !this.navBlink) {
-                    return navGrey
-                } else {
-                    return navRed
-                }
+            }
+            if (this.nav_status.nav_state_name == "DoneState" && this.navBlink) {
+                return navGreen
+            } else if (this.nav_status.nav_state_name == "DoneState" && !this.navBlink) {
+                return navGrey
+            } else {
+                return navRed
             }
         }
     },
@@ -153,51 +172,65 @@ export default {
     watch: {
         // Publish auton LED color to ESW
         nav_state_color: function (color) {
-            let ledMsg = {
-                type: 'AutonLed',
-                color: 'Null'
-            }
+            var send = true
             if (color == navBlue) {
-                ledMsg.color = 'Blue'
-                this.greenHook = false
+                this.ledColor = 'blue'
             } else if (color == navRed) {
-                ledMsg.color = 'Red'
-                this.greenHook = false
-            } else if (color == navGreen && !this.greenHook) {
-                ledMsg.color = 'Green'
-                this.greenHook = true //Accounting for the blinking between navGrey and navGreen
+                this.ledColor = 'red'
+            } else if (color == navGreen || color == navGrey) {
+                // Only send if previous color was not green
+                send = !(this.ledColor == 'green')
+                this.ledColor = 'green'
             }
-            if (!this.greenHook || ledMsg.color == 'Green') {
-                // TODO: Implement this once ESW has this interface back up
-                // this.publish('/auton_led',ledMsg)
+            if(send){
+                this.sendColor()
             }
         },
+    },
+
+    methods: {
+      sendColor() {
+
+        let request = new ROSLIB.ServiceRequest({
+          color: this.ledColor
+        });
+        
+        this.auton_led_client.callService(request, (result) => {
+            // Wait 1 second then try again if fail
+            if(!(result.success)){
+                setTimeout(() => {
+                    this.sendColor()
+                }, 1000)
+            }
+        });
+      }
     },
 
     components: {
         AutonRoverMap,
         AutonWaypointEditor,
         DriveControls,
-        Checkbox
+        Checkbox,
+        JoystickValues
     }
 }
 </script>
 
 <style scoped>
 .wrapper {
-    display: grid;
-    overflow: hidden;
-    min-height: 98vh;
-    grid-gap: 10px;
-    grid-template-columns: 2fr 1.25fr 0.75fr;
-    grid-template-rows: 50px 2fr 1fr 6vh;
-    grid-template-areas: "header header header"
-        "map waypoints waypoints"
-        "map waypoints waypoints"
-        "data waypoints waypoints";
-    font-family: sans-serif;
-    height: auto;
-    width: auto;
+  display: grid;
+  overflow:hidden;
+  min-height: 98vh;
+  grid-gap: 10px;
+  grid-template-columns: 2fr 1.25fr 0.75fr;
+  grid-template-rows: 50px 2fr 1fr 15vh;
+  grid-template-areas: "header header header" 
+                       "map waypoints waypoints"
+                       "map waypoints waypoints" 
+                       "data waypoints waypoints";
+  font-family: sans-serif;
+  height: auto;
+  width: auto;
 }
 
 .box {
@@ -207,11 +240,14 @@ export default {
 }
 
 .box1 {
-    border-radius: 5px;
-    background-color: LightGrey;
-    padding: 10px;
-    border: 1px solid black;
-    overflow-y: scroll;
+  border-radius: 5px;
+  background-color: LightGrey;
+  padding: 10px;
+  border: 1px solid black;
+  overflow-y: scroll;
+  height: 12 px;
+  display: grid;
+  grid-template-columns: 40% 60%;
 }
 
 .box2 {

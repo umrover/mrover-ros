@@ -10,7 +10,7 @@ import smach_ros
 from context import Context
 from gate import GateTraverseState, GateTraverseStateTransitions
 from single_fiducial import SingleFiducialState, SingleFiducialStateTransitions
-from state import DoneState, DoneStateTransitions
+from state import DoneState, DoneStateTransitions, OffState, OffStateTransitions
 from waypoint import WaypointState, WaypointStateTransitions
 from search import SearchState, SearchStateTransitions
 
@@ -30,6 +30,9 @@ class Navigation(threading.Thread):
         self.sis.start()
         with self.state_machine:
             self.state_machine.add(
+                "OffState", OffState(self.context), transitions=self.get_transitions(OffStateTransitions)
+            )
+            self.state_machine.add(
                 "DoneState", DoneState(self.context), transitions=self.get_transitions(DoneStateTransitions)
             )
             self.state_machine.add(
@@ -46,16 +49,18 @@ class Navigation(threading.Thread):
                 ),
             )
             self.state_machine.add(
-                "SearchState", SearchState(self.context), transitions=self.get_transitions(SearchStateTransitions)
-            )
-            self.state_machine.add(
                 "GateTraverseState",
                 GateTraverseState(self.context),
                 transitions=self.get_transitions(GateTraverseStateTransitions),
             )
+            self.state_machine.add(
+                "SearchState", SearchState(self.context), transitions=self.get_transitions(SearchStateTransitions)
+            )
 
     def get_transitions(self, transitions_enum):
-        return {transition.name: transition.value for transition in transitions_enum}
+        transition_dict = {transition.name: transition.value for transition in transitions_enum}
+        transition_dict["off"] = "OffState"  # logic for switching to offstate is built into OffState
+        return transition_dict
 
     def run(self):
         self.state_machine.execute()

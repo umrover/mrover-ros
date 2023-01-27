@@ -59,8 +59,6 @@ private:
     int mMinHitCountBeforePublish = 5;
     int mMaxHitCount = 10;
     std::vector<int> mIgnoreIds;
-    int mFilterCount{};
-    double mFilterProportion{};
     cv::Ptr<cv::aruco::DetectorParameters> mDetectorParams;
     cv::Ptr<cv::aruco::Dictionary> mDictionary;
 
