@@ -3,6 +3,7 @@
     <h3> Arm controls </h3>
     <div class="controls">
         <Checkbox ref="arm-enabled" v-bind:name="'Arm Enabled'" v-on:toggle="updateArmEnabled($event)" />
+        <Checkbox ref="servo-enabled" v-bind:name="'Servo'" v-on:toggle="updateServo($event)" />
     </div>
     <h3>Joint Locks</h3>
     <div class="controls">
@@ -30,7 +31,9 @@ export default {
     data() {
         return {
             arm_enabled: false,
+            servo: false,
             joystick_pub: null,
+            joystickservo_pub: null,
             jointlock_pub: null,
             joints_array: [false, false, false, false, false, false]
         }
@@ -50,7 +53,12 @@ export default {
     created: function () {
         this.joystick_pub = new ROSLIB.Topic({
             ros: this.$ros,
-            name: '/xbox/ra_control',
+            name: '/xbox/ra_open_loop',
+            messageType: 'sensor_msgs/Joy'
+        })
+        this.joystickservo_pub = new ROSLIB.Topic({
+            ros: this.$ros,
+            name: '/xbox/ra_servo',
             messageType: 'sensor_msgs/Joy'
         })
         this.jointlock_pub = new ROSLIB.Topic({
@@ -60,9 +68,10 @@ export default {
         })
         const jointData = { //publishes array of all falses when refreshing the page
             joints: this.joints_array
-        }
+          }
         var jointlockMsg = new ROSLIB.Message(jointData)
         this.jointlock_pub.publish(jointlockMsg)
+
         const updateRate = 0.1
         interval = window.setInterval(() => {
             if (this.arm_enabled) {
@@ -80,7 +89,15 @@ export default {
                                 buttons: buttons
                             }
                             var joystickMsg = new ROSLIB.Message(joystickData)
-                            this.joystick_pub.publish(joystickMsg)
+                            if(servo === true)
+                            {
+                              this.joystickservo_pub.publish(joystickMsg)
+                            }
+                            else
+                            {
+                              this.joystick_pub.publish(joystickMsg)
+                            }
+                            
                         }
                     }
                 }
@@ -91,6 +108,9 @@ export default {
     methods: {
         updateArmEnabled: function (enabled) {
             this.arm_enabled = enabled
+        },
+        updateServo: function(enabled) {
+            this.servo = enabled;
         },
         updateJointsEnabled: function (jointnum, enabled) {
             this.joints_array[jointnum] = enabled
