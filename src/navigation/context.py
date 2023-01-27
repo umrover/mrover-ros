@@ -61,7 +61,6 @@ class Environment:
         """
         try:
             fid_pose = SE3.from_tf_tree(self.ctx.tf_buffer, parent_frame="map", child_frame=f"fiducial{fid_id}")
-            print(fid_pose)
         except (
             tf2_ros.LookupException,
             tf2_ros.ConnectivityException,
