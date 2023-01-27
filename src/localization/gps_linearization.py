@@ -80,7 +80,6 @@ class GPSLinearization:
 
         # ignore Z
         cartesian[2] = 0
-        # TODO: locks?
         self.pose = SE3(position=cartesian, rotation=self.pose.rotation)
         self.publish_pose()
 
