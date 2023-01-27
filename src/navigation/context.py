@@ -23,7 +23,7 @@ class Gate:
 
         #Find circle of both posts 
         post1_shape = Point(self.post1[0], self.post1[1]).buffer(RADIUS)
-        post2_shape = Point(self.post2[0], self.post[1]).buffer(RADIUS)
+        post2_shape = Point(self.post2[0], self.post2[1]).buffer(RADIUS)
 
         return (post1_shape, post2_shape)
     

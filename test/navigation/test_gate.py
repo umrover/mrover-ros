@@ -5,19 +5,18 @@ from util.SE3 import SE3
 from navigation.context import Gate
 from navigation.gate import GateTrajectory
 import rospy
-import rostest
+
 
 APPROACH_DISTANCE = 2.0
 
 class GateTest(unittest.TestCase):
-    def make_path(self):
+    def test_make_path(self):
         print("Hello2")
-        post1 = np.array([1,2,0])
-        post2 = np.array([-1,2,0])
-        gate = (post1,post2)
+        post1 = np.array([1,2])
+        post2 = np.array([-1,2])
+        gate = Gate(post1,post2)
         
-        x = 1
-        self.assertTrue(False)
+       
         """
         #Test 1 (Shortest path should be selected)
         The path should contain the center, and the victory point
@@ -54,7 +53,8 @@ class GateTest(unittest.TestCase):
         self.assertTrue(self.traj.coordinates, checkCoord)
 
 if __name__ == "__main__":
+    import rostest
     print('hello')
-    rostest.rosrun("mrover", "test_gate", GateTest)
+    rostest.rosrun("mrover", "Testing Gate", GateTest)
 
 

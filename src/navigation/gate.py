@@ -71,14 +71,15 @@ class GateTrajectory(Trajectory):
         closest_approach_point = possible_approach_points[approach_idx]
         victory_point = possible_approach_points[1 - approach_idx]
 
-        coordinates = GateTrajectory.gateSelectPath(rover_position, closest_prep_point, closest_approach_point, center, victory_point)
+        coordinates = GateTrajectory.gateSelectPath(rover_position, closest_prep_point,
+         closest_approach_point, center, victory_point, gate)
 
         # put the list of coordinates together
         return GateTrajectory(coordinates)
 
-    def gateSelectPath(rover_position: np.ndarray, pt1, pt2, pt3, pt4):
+    def gateSelectPath(rover_position: np.ndarray, pt1, pt2, pt3, pt4, gate: Gate):
         #Get the shapes of both the posts
-        postOneShape, postTwoShape = Gate.getPostGeoShape()
+        postOneShape, postTwoShape = gate.getPostGeoShape()
 
         #Get points for path
         pt0 = rover_position
