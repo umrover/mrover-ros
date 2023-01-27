@@ -5,19 +5,22 @@
                 Name: <input v-model="name" size="15">
             </div>
             <br>
-            <input type="radio" v-model="odom_format_in" value="D" class="checkbox"><font size="2">D</font>
-            <input type="radio" v-model="odom_format_in" value="DM" class="checkbox"><font size="2">DM</font>
-            <input type="radio" v-model="odom_format_in" value="DMS" class="checkbox"><font size="2">DMS</font><br>
+            <input type="radio" v-model="odom_format_in" value="D" class="checkbox">
+            <font size="2">D</font>
+            <input type="radio" v-model="odom_format_in" value="DM" class="checkbox">
+            <font size="2">DM</font>
+            <input type="radio" v-model="odom_format_in" value="DMS" class="checkbox">
+            <font size="2">DMS</font><br>
             <div class="wp-input">
                 <p><input v-model.number="input.lat.d" size="13">º</p>
                 <p v-if="this.min_enabled"><input v-model.number="input.lat.m" size="13">'</p>
-                <p  v-if="this.sec_enabled"><input v-model.number="input.lat.s" size="13">"</p>
+                <p v-if="this.sec_enabled"><input v-model.number="input.lat.s" size="13">"</p>
                 N
             </div>
             <div class="wp-input">
                 <p><input v-model.number="input.lon.d" size="13">º</p>
                 <p v-if="this.min_enabled"><input v-model.number="input.lon.m" size="13">'</p>
-                <p  v-if="this.sec_enabled"><input v-model.number="input.lon.s" size="13">"</p>
+                <p v-if="this.sec_enabled"><input v-model.number="input.lon.s" size="13">"</p>
                 E
             </div>
             <br>
@@ -31,7 +34,8 @@
                 <button v-on:click="clearWaypoint">Clear Waypoints</button>
             </div>
             <draggable v-model="storedWaypoints" class="dragArea" draggable=".item'">
-                <WaypointItem v-for="waypoint, i in storedWaypoints" :key="i" v-bind:waypoint="waypoint" v-bind:index="i" v-on:delete="deleteItem($event)" v-on:find="findWaypoint($event)"/>
+                <WaypointItem v-for="waypoint, i in storedWaypoints" :key="i" v-bind:waypoint="waypoint"
+                    v-bind:index="i" v-on:delete="deleteItem($event)" v-on:find="findWaypoint($event)" />
             </draggable>
         </div>
     </div>
@@ -39,17 +43,17 @@
 
 <script>
 import draggable from 'vuedraggable'
-import {convertDMS} from '../utils.js';
+import { convertDMS } from '../utils.js';
 import WaypointItem from './ERDWaypointItem.vue'
 import Checkbox from './Checkbox.vue'
-import {mapMutations, mapGetters} from 'vuex'
+import { mapMutations, mapGetters } from 'vuex'
 import _ from 'lodash';
 import L from 'leaflet'
 
 
 export default {
 
-    data () {
+    data() {
         return {
             name: "Waypoint",
             odom_format_in: 'DM',
@@ -72,17 +76,17 @@ export default {
 
 
     methods: {
-        ...mapMutations('erd',{
+        ...mapMutations('erd', {
             setWaypointList: 'setWaypointList',
             setHighlightedWaypoint: 'setHighlightedWaypoint'
         }),
-        
-        ...mapMutations('map',{
+
+        ...mapMutations('map', {
             setOdomFormat: 'setOdomFormat'
         }),
 
         deleteItem: function (payload) {
-            if(this.highlightedWaypoint == payload.index){
+            if (this.highlightedWaypoint == payload.index) {
                 this.setHighlightedWaypoint(-1)
             }
             this.storedWaypoints.splice(payload.index, 1)
@@ -91,16 +95,16 @@ export default {
         addWaypoint: function (coord) {
             this.storedWaypoints.push({
                 name: this.name,
-                lat: (coord.lat.d + coord.lat.m/60 + coord.lat.s/3600),
-                lon: (coord.lon.d + coord.lon.m/60 + coord.lon.s/3600)
+                lat: (coord.lat.d + coord.lat.m / 60 + coord.lat.s / 3600).toFixed(5),
+                lon: (coord.lon.d + coord.lon.m / 60 + coord.lon.s / 3600).toFixed(5)
             });
         },
 
         findWaypoint: function (payload) {
-            if(payload.index === this.highlightedWaypoint){
+            if (payload.index === this.highlightedWaypoint) {
                 this.setHighlightedWaypoint(-1)
             }
-            else{
+            else {
                 this.setHighlightedWaypoint(payload.index)
             }
         },
@@ -122,14 +126,9 @@ export default {
             this.setOdomFormat(newOdomFormat);
             this.input.lat = convertDMS(this.input.lat, newOdomFormat);
             this.input.lon = convertDMS(this.input.lon, newOdomFormat);
-            this.storedWaypoints.map((waypoint) => {
-                waypoint.lat = convertDMS(waypoint.lat, newOdomFormat);
-                waypoint.lon = convertDMS(waypoint.lon, newOdomFormat);
-                return waypoint;
-            });
         },
 
-        clickPoint: function (newClickPoint){
+        clickPoint: function (newClickPoint) {
             this.input.lat.d = newClickPoint.lat
             this.input.lon.d = newClickPoint.lon
             this.input.lat.m = 0;
@@ -151,11 +150,11 @@ export default {
             odom_format: 'odomFormat'
         }),
 
-        min_enabled: function() {
+        min_enabled: function () {
             return this.odom_format != 'D';
         },
 
-        sec_enabled: function() {
+        sec_enabled: function () {
             return this.odom_format == 'DMS';
         }
     },
@@ -166,11 +165,10 @@ export default {
         Checkbox
     }
 
-    }
+}
 </script>
 
 <style scoped>
-
 .wrap {
     position: relative;
     display: flex;
@@ -183,7 +181,7 @@ export default {
     height: 100%;
 }
 
-.identification{
+.identification {
     display: inline-block;
 }
 
@@ -206,17 +204,17 @@ export default {
     max-height: 500px;
 }
 
-.all-waypoints{
+.all-waypoints {
     display: inline-flex;
 }
 
-.all-waypoints button{
+.all-waypoints button {
     margin: 5px;
     width: 115px;
     height: 20px;
 }
 
-.joystick{
+.joystick {
     grid-area: joystick;
 }
 
@@ -224,8 +222,7 @@ export default {
     display: inline;
 }
 
-.waypoint-headers{
+.waypoint-headers {
     margin: 5px 0px 0px 5px;
 }
-
 </style>
