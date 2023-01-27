@@ -5,7 +5,7 @@
                          part of the auton system. Should only be used for testing.
  -->
 <launch>
-    <arg name="run_perception" default="true"/>
+    <arg name="run_perception" default="true" />
 
     <!--
       ==========
@@ -29,6 +29,14 @@
     ============
   -->
   <rosparam command="load" file="$(find mrover)/config/localization.yaml" />
+
+  <!-- EKF for odom frame -->
+  <arg name="ekf_start_delay" default="0" />
+  <node pkg="robot_localization" type="ekf_localization_node" name="odom_ekf" clear_params="true" launch-prefix="bash -c 'sleep $(arg ekf_start_delay); $0 $@'" >
+    <rosparam command="load" file="$(find mrover)/config/ekf_template.yaml" />
+  </node>
+
+  <!-- node to linearize GPS from geodetic to ENU cartesian coords -->
   <node name="gps_linearization" pkg="mrover" type="gps_linearization.py" output="screen" />
 
   <!-- plot the rover trajectory in rviz as it drives -->

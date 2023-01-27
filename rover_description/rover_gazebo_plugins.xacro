@@ -51,6 +51,10 @@
         <bodyName>base_link</bodyName>
         <updateRateHZ>100.0</updateRateHZ>
         <gaussianNoise>0.0</gaussianNoise>
+        <accelGaussianNoise>0.0 0.0 0.0</accelGaussianNoise>
+        <accelDrift>0.0 0.0 0.0</accelDrift>
+        <acccelDriftFrequency>0.0 0.0 0.0</acccelDriftFrequency>
+        <accelOffset>0.0 0.0 0.0</accelOffset>
         <xyzOffset>0 0 0</xyzOffset>
         <rpyOffset>0 0 -1.570796</rpyOffset>
         <frameName>base_link</frameName>
