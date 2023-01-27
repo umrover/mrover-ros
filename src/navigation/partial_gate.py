@@ -33,13 +33,15 @@ class PartialGateTrajectory(Trajectory):
         rover_to_post *= POST_SEPARATION / np.linalg.norm(rover_to_post)
         # scale vector to have magnitude == POST_SEPARATION
 
-        left_perp = np.array([-rover_to_post[1], rover_to_post[0]])  # (-y,x)\
-        right_perp = np.array([rover_to_post[1], -rover_to_post[0]])  # (y,-x)
+        left_perp = np.array([-rover_to_post[1], rover_to_post[0], 0])  # (-y,x)\
+        right_perp = np.array([rover_to_post[1], -rover_to_post[0], 0])  # (y,-x)
 
         # This is just making our trajectory points into an array that we can read in
-        coords = np.vstack((post_pos + left_perp, post_pos + rover_to_post, post_pos + right_perp))
+        coords = np.vstack(
+            (post_pos + left_perp, post_pos + rover_to_post, post_pos + right_perp, post_pos - rover_to_post)
+        )
         # should we add rover position to the end of this path? ^
-        coords = np.hstack((coords, np.zeros(coords.shape[0]).reshape(-1, 1)))
+        # coords = np.hstack((coords, np.zeros(coords.shape[0]).reshape(-1, 1)))
 
         return PartialGateTrajectory(coords)
 
@@ -61,8 +63,10 @@ class PartialGateState(BaseState):
         super().__init__(context, add_outcomes=[transition.name for transition in PartialGateStateTransitions])  # type: ignore
         self.traj: Optional[PartialGateTrajectory] = None
 
-    def evalutate(self):
+    def evaluate(self, ud):
         post_pos = self.context.env.current_fid_pos()
+        if post_pos is None:
+            post_pos = self.context.env.next_fid_pos()
         gate = self.context.env.current_gate()
 
         if gate is not None:  # If we have a gate, we are done
@@ -88,5 +92,4 @@ class PartialGateState(BaseState):
                 return PartialGateStateTransitions.done.name  # type: ignore
 
         self.context.rover.send_drive_command(cmd_vel)
-
         return PartialGateStateTransitions.partial_gate.name  # type: ignore

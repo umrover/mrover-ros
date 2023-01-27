@@ -100,7 +100,7 @@ class SearchState(BaseState):
         # if we see the fiduicial or gate, go to either fiducial or gate state
         if self.context.env.current_gate() is not None and self.context.course.look_for_gate():
             return SearchStateTransitions.found_gate.name  # type: ignore
-        elif self.context.env.current_fid_pos() is not None:
+        elif self.context.env.current_fid_pos() is not None or self.context.env.next_fid_pos() is not None:
             if self.context.course.look_for_post():
                 return SearchStateTransitions.found_fiducial_post.name  # type: ignore
             else:
