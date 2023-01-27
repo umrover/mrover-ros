@@ -14,8 +14,6 @@ const state = {
   const getters = {
     waypointList: state => state.waypointList,
     highlightedWaypoint: state => state.highlightedWaypoint,
-    autonEnabled: state => state.autonEnabled,
-    teleopEnabled: state => state.teleopEnabled,
     odomFormat: state => state.odomFormat,
     clickPoint: state => state.clickPoint,
   }
