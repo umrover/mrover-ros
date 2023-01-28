@@ -15,7 +15,7 @@ class CommandData:
     DEFAULT_TORQUE = 0.3
     MAX_TORQUE = 0.5
     POSITION_FOR_VELOCITY_CONTROL = math.nan
-    VELOCITY_LIMIT_REV_S = 30  # TODO - CHANGE EVENTUALLY, BUT DO NOT CHANGE THIS HAPHAZARDLY. DERIVED FROM TESTING.
+    VELOCITY_LIMIT_REV_S = 50  # DO NOT CHANGE THIS HAPHAZARDLY. DERIVED FROM TESTING.
     ZERO_VELOCITY = 0.0
 
     def __init__(
@@ -265,7 +265,7 @@ class DriveApp:
         ratio_motor_to_wheel = rospy.get_param("wheel/gear_ratio")
 
         # To convert m/s to rev/s, multiply by this constant. Divide by circumference, multiply by gear ratio.
-        self.WHEELS_M_S_TO_MOTOR_REV_S = (1 / rospy.get_param("wheel/radius") * 2 * math.pi) * ratio_motor_to_wheel
+        self.WHEELS_M_S_TO_MOTOR_REV_S = (1 / (rospy.get_param("wheel/radius") * 2 * math.pi)) * ratio_motor_to_wheel
 
         _max_speed_m_s = rospy.get_param("rover/max_speed")
         assert _max_speed_m_s > 0, "rover/max_speed config must be greater than 0"
