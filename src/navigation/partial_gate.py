@@ -8,6 +8,7 @@ from trajectory import Trajectory
 from drive import get_drive_command
 from aenum import Enum, NoAlias
 from context import Context
+from util.np_utils import perpendicular_2d
 
 STOP_THRESH = 0.2
 DRIVE_FWD_THRESH = 0.95
@@ -33,7 +34,7 @@ class PartialGateTrajectory(Trajectory):
         rover_to_post *= POST_SEPARATION / np.linalg.norm(rover_to_post)
         # scale vector to have magnitude == POST_SEPARATION
 
-        left_perp = np.array([-rover_to_post[1], rover_to_post[0], 0])  # (-y,x)\
+        left_perp = np.array([-rover_to_post[1], rover_to_post[0], 0])  # (-y,x) 
         right_perp = np.array([rover_to_post[1], -rover_to_post[0], 0])  # (y,-x)
 
         # This is just making our trajectory points into an array that we can read in
@@ -66,7 +67,7 @@ class PartialGateState(BaseState):
     def evaluate(self, ud):
         post_pos = self.context.env.current_fid_pos()
         if post_pos is None:
-            post_pos = self.context.env.next_fid_pos()
+            post_pos = self.context.env.other_gate_fid_pos()
         gate = self.context.env.current_gate()
 
         if gate is not None:  # If we have a gate, we are done

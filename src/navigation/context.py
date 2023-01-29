@@ -80,7 +80,7 @@ class Environment:
 
         return self.get_fid_pos(current_waypoint.fiducial_id)
 
-    def next_fid_pos(self) -> Optional[np.ndarray]:
+    def other_gate_fid_pos(self) -> Optional[np.ndarray]:
         """
         Retrieves the position of the current fiducial (and we are looking for it)
         """
