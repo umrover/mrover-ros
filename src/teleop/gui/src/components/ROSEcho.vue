@@ -9,10 +9,16 @@
 
             <div class="box pages">
 
+                <label for="presets">Presets:</label>
+                <select class="box" v-model="selectedPreset" @change="changePreset()" required> 
+                    <option value="select" selected>Select a preset</option>
+                    <option v-for="option in Object.keys(presets)" v-bind:value="option">{{ option }}</option>
+                </select>
+
                 <label for="topic">Available Topics:</label>
                 <ul id="topic">
                     <li v-for="topic in topics" :key="topic.name">
-                    <input type="checkbox" :id="topic" :value="topic" @change="addType()" v-model="selectedTopics">
+                    <input type="checkbox" :id="topic" :value="topic" v-model="selectedTopics">
                     <label :for="topic">{{ topic.name }}</label>
                     </li>
                 </ul>
@@ -39,6 +45,7 @@
   <script>
   
   import ROSLIB from "roslib"
+  import Vue from "vue"
 
   export default {
     name: 'ROSEcho',
@@ -47,12 +54,14 @@
     },
     data() {
         return {
+            presets: [],
             topics: [],
             selectedTopics : [],
             feed: [],
             cols: [],
             topicsService: null,
-            serviceRequest: null
+            serviceRequest: null,
+            selectedPreset: "select"
         }
     },
     
@@ -68,14 +77,14 @@
                     messageType: result.types[i]
                     }));
                 }
-                this.topics = temp;
+                if(this.topics.length != temp.length) this.topics = temp;
             });
         },
 
         addType : function(){ //method to handle checking/unchecking the topics
             //Add newly added topics to the column display and subscribe
             this.selectedTopics.forEach(prev => {
-                const found = this.cols.find(newTopic => newTopic.name === prev.name);
+                const found = this.cols.find(newTopic => newTopic.name == prev.name);
                 if(!found){
                     prev.subscribe((msg) => {
                         var topicCol = this.cols.find(c => c.name === prev.name);
@@ -85,25 +94,52 @@
                     this.cols.push({name: prev.name, messages: [], muted: false});
                 }
             });
-            
             //Remove topics from column display if unchecked and unsubscribe
-            this.cols.forEach(prev => {
+            this.cols = this.cols.filter((prev) => {
                 const found = this.selectedTopics.find(newTopic => newTopic.name === prev.name);
                 if(!found){
-                    var index = this.cols.findIndex(obj => obj === prev);
-                    this.selectedTopics[index].unsubscribe();
-                    this.cols.splice(index, 1);
+                    var ind = this.topics.findIndex(obj => obj.name === prev.name);
+                    this.topics[ind].unsubscribe();
+                    return false;
                 }
+                return true;
             });
         },
 
         mute: function(c) {
             c.muted = !c.muted;
+        },
+
+        changePreset: function() {  //changes the selected topics to be the presets
+            let presetTopics = this.presets[this.selectedPreset];
+            for(var t in presetTopics) {
+                var result = this.topics.find(obj => obj.name == presetTopics[t]);
+                Vue.set(this.selectedTopics, t, result)
+            }
+            if(presetTopics.length == 0){
+                this.selectedTopics.splice(0, this.selectedTopics.length);
+            }
         }
 
     },
+
+    watch : {
+        selectedTopics : function() {
+            this.addType();
+        }
+    },
   
   created: function () {
+
+    let presetList = new ROSLIB.Param({
+        ros: this.$ros,
+        name: 'teleop/echo_presets'
+    });
+
+    presetList.get((values) =>{
+        Object.assign(this.presets, values);
+    });
+    this.presets["None"] = [];
 
     this.serviceClient = new ROSLIB.Service({
         ros : this.$ros,
@@ -113,7 +149,7 @@
 
     this.serviceRequest = new ROSLIB.ServiceRequest();
 
-    let interval = window.setInterval(() => {
+    window.setInterval(() => {
             this.populateTopics();
     }, 1000);
   },
