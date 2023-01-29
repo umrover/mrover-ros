@@ -19,24 +19,20 @@
             </colgroup>
 
             <thead>
-
-                <tr class="Bold">
+                <tr>
                     <th class="tableElement">Motor</th>
                     <th class="tableElement">Positon (m)</th>
                     <th class="tableElement">Velocity (m/s)</th>
                     <th class="tableElement">Effort (Nm)</th>
-
                 </tr>
             </thead>
 
             <tbody>
-
-                <tr v-for="motor in motors">
-                    <th class="tableElement">{{motor.name}}</th>
-                    <td class="tableElement">{{motor.position}} </td>
-                    <td class="tableElement">{{motor.velocity}} </td>
-                    <td class="tableElement">{{motor.effort}} </td>
-
+                <tr v-for="(joint, index) in jointStateData.name" :key="index">
+                    <td class="tableElement">{{ joint }}</td>
+                    <td class="tableElement">{{ jointStateData.position[index] }}</td>
+                    <td class="tableElement">{{ jointStateData.velocity[index] }}</td>
+                    <td class="tableElement">{{ jointStateData.effort[index] }}</td>
                 </tr>
             </tbody>
         </table>
@@ -61,22 +57,21 @@
             </colgroup>
 
             <thead>
-
-                <tr class="Bold">
+                <tr>
                     <th class="tableElement">Motor</th>
-                    <th v-for="motor in motors" class="tableElement">{{motor.name}}</th>
+                    <th v-for="name in jointStateData.name" class="tableElement">{{name}}</th>
                 </tr>
-                <tr class="Bold">
+                <tr>
                     <th class="tableElement">Position (m)</th>
-                    <td v-for="motor in motors" class="tableElement">{{motor.position}} </td>
+                    <td v-for="position in jointStateData.position" class="tableElement">{{position}} </td>
                 </tr>
-                <tr class="Bold">
+                <tr>
                     <th class="tableElement">Velocity (m/s)</th>
-                    <td v-for="motor in motors" class="tableElement">{{motor.velocity}} </td>
+                    <td v-for="velocity in jointStateData.velocity" class="tableElement">{{velocity}} </td>
                 </tr>
-                <tr class="Bold">
+                <tr>
                     <th class="tableElement">Effort (Nm)</th>
-                    <td v-for="motor in motors" class="tableElement">{{motor.effort}} </td>
+                    <td v-for="effort in jointStateData.effort" class="tableElement">{{effort}} </td>
                 </tr>
             </thead>
 
@@ -97,7 +92,9 @@ export default {
         }
     },
     props: {
-        JointStateData: {
+
+        // Table will only render headers if these values are not passed w/ v-bind
+        jointStateData: {
             type: Object,
             required: true
         },
@@ -105,21 +102,6 @@ export default {
         vertical: {
             type: Boolean,
             required: true
-        }
-    },
-
-    watch: {
-        JointStateData: function (JointStateData) {
-            const length = JointStateData.velocity.length
-            this.motors = []
-            for (let i = 0; i < length; i++) {
-                this.motors.push({
-                    name: JointStateData.name[i],
-                    position: JointStateData.position[i],
-                    velocity: JointStateData.velocity[i],
-                    effort: JointStateData.effort[i]
-                })
-            }
         }
     }
 }
@@ -129,7 +111,6 @@ export default {
 .wrap {
     display: inline-block;
     align-content: center;
-    /* height: 300px; */
 }
 
 .box {
@@ -165,11 +146,6 @@ export default {
     overflow: hidden;
     padding: 10px 5px;
     word-break: normal;
-}
-
-.bold {
-    font-weight: bold;
-    border: 2px solid black;
 }
 
 .tableFormat .tableElement {
