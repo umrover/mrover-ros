@@ -28,11 +28,11 @@
             </thead>
 
             <tbody>
-                <tr v-for="(state, i) in jointStateData">
-                    <th class="tableElement">{{state.name[i]}}</th>
-                    <td class="tableElement">{{state.position[i]}} </td>
-                    <td class="tableElement">{{state.velocity[i]}} </td>
-                    <td class="tableElement">{{state.effort[i]}} </td>
+                <tr v-for="(joint, index) in jointStateData.name" :key="index">
+                    <td class="tableElement">{{ joint }}</td>
+                    <td class="tableElement">{{ jointStateData.position[index] }}</td>
+                    <td class="tableElement">{{ jointStateData.velocity[index] }}</td>
+                    <td class="tableElement">{{ jointStateData.effort[index] }}</td>
                 </tr>
             </tbody>
         </table>
@@ -71,7 +71,7 @@
                 </tr>
                 <tr>
                     <th class="tableElement">Effort (Nm)</th>
-                    <td v-for="effot in jointStateData.effort" class="tableElement">{{effort}} </td>
+                    <td v-for="effort in jointStateData.effort" class="tableElement">{{effort}} </td>
                 </tr>
             </thead>
 
@@ -92,6 +92,8 @@ export default {
         }
     },
     props: {
+
+        // Table will only render headers if these values are not passed w/ v-bind
         jointStateData: {
             type: Object,
             required: true
