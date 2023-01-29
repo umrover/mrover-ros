@@ -102,7 +102,7 @@ class ArmControl:
             effort=[math.nan for i in range(len(self.ra_names))],
         )
 
-    def ra_control_callback(self, msg):
+    def ra_open_loop_callback(self, msg):
         raw_left_trigger = msg.axes[self.xbox_mappings["left_trigger"]]
         left_trigger = raw_left_trigger if raw_left_trigger > 0 else 0
         raw_right_trigger = msg.axes[self.xbox_mappings["right_trigger"]]
@@ -134,7 +134,7 @@ def main():
     drive = Drive()
 
     ros.Subscriber("joystick", Joy, drive.teleop_drive_callback)
-    ros.Subscriber("xbox/ra_control", Joy, arm.ra_control_callback)
+    ros.Subscriber("xbox/ra_open_loop", Joy, arm.ra_open_loop_callback)
 
     ros.spin()
 
