@@ -22,6 +22,9 @@
       </div>
       <div></div>
       <JoystickValues/>
+      <div class="calibration status data" style="background-color:lightgray;">
+        <IMUCalibration/>
+      </div>
     </div>
     <div class="box map light-bg">  
       <AutonRoverMap v-bind:odom="odom"/>
@@ -44,6 +47,7 @@ import DriveControls from "./DriveControls.vue";
 import { mapGetters } from 'vuex';
 import * as qte from "quaternion-to-euler";
 import JoystickValues from "./JoystickValues.vue";
+import IMUCalibration from './IMUCalibration.vue';
 
 const navBlue = "#4695FF"
 const navGreen = "yellowgreen"
@@ -189,7 +193,8 @@ export default {
     AutonRoverMap,
     AutonWaypointEditor,
     DriveControls,
-    JoystickValues
+    JoystickValues,
+    IMUCalibration
 }
 }
 </script>
