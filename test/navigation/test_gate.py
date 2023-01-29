@@ -24,8 +24,8 @@ class GateTest(unittest.TestCase):
         rover = np.array([0,1,0])
         self.traj = GateTrajectory.spider_gate_trajectory(
                 APPROACH_DISTANCE, gate, rover)
-        checkCoord = np.array([0,2,0],[0,4,0])
-        self.assertTrue(self.traj.coordinates, checkCoord)
+        checkCoord = np.array([[0,2,0],[0,4,0]])
+        self.assertTrue(np.allclose(self.traj.coordinates, checkCoord))
         
         """
         #Test 2 
@@ -34,8 +34,8 @@ class GateTest(unittest.TestCase):
         rover = np.array([1,-0.5,0])
         self.traj = GateTrajectory.spider_gate_trajectory(
                 APPROACH_DISTANCE, gate, rover)
-        checkCoord = np.array([0,0,0],[0,2,0],[0,4,0])
-        self.assertTrue(self.traj.coordinates, checkCoord)
+        checkCoord = np.array([[0,0,0],[0,2,0],[0,4,0]])
+        self.assertTrue(np.allclose(self.traj.coordinates, checkCoord))
 
         
 
@@ -50,7 +50,7 @@ class GateTest(unittest.TestCase):
                 APPROACH_DISTANCE, gate, rover)
         rospy.loginfo("Test 3: ")
         checkCoord = np.array([1,-2,0],[0,0,0],[0,2,0],[0,4,0])
-        self.assertTrue(self.traj.coordinates, checkCoord)
+        self.assertTrue(np.allclose(self.traj.coordinates, checkCoord))
 
 if __name__ == "__main__":
     import rostest

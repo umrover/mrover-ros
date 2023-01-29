@@ -74,8 +74,11 @@ class GateTrajectory(Trajectory):
         coordinates = GateTrajectory.gateSelectPath(rover_position, closest_prep_point,
          closest_approach_point, center, victory_point, gate)
 
+        
         # put the list of coordinates together
         return GateTrajectory(coordinates)
+
+
 
     def gateSelectPath(rover_position: np.ndarray, pt1: np.ndarray, pt2: np.ndarray, pt3: np.ndarray,
                        pt4: np.ndarray, gate: Gate):
@@ -83,7 +86,7 @@ class GateTrajectory(Trajectory):
         postOneShape, postTwoShape = gate.getPostGeoShape()
 
         #Get points for path
-        pt0 = rover_position
+        pt0 = np.array([rover_position[0], rover_position[1]])
 
         #Get paths
         pathOne, pathTwo, = GateTrajectory.pathLineString(pt0, pt2, pt3, pt4)
@@ -104,16 +107,18 @@ class GateTrajectory(Trajectory):
         return coordinates           
 
     def lineIntersectCheck(rover_path, postShape):
-        return (rover_path.intersect(postShape))
+        return (rover_path.intersects(postShape))
         
-    def pathLineString(rover_pose: np.ndarray, p2: np.ndarray, p3: np.ndarray, p4: np.darray):
+    def pathLineString(rover_pose: np.ndarray, p2: np.ndarray, p3: np.ndarray, p4: np.ndarray):
         #Find path1 (only has rover, point 3, point4)
-        path1 = LineString([rover_pose, p3, p4])
-
+        path1 = LineString([list(rover_pose), list(p3), list(p4)])
+        assert(path1.length > 0)
         #Find path2 (only has rover, point2, point3, point4)
-        path2 = LineString(rover_pose, p2, p3, p4)
-
+        assert(rover_pose.shape == (2,))
+        path2 = LineString([list(rover_pose), list(p2), list(p3), list(p4)])
+        assert(path2.length > 0)
         return (path1,path2)
+
 
         
 
