@@ -32,7 +32,7 @@
     <div class="box waypoint-editor light-bg" v-if="type === 'EDM'">
       <ERDWaypointEditor/>
     </div>
-    <div>
+    <div class="drive">
       <DriveControls></DriveControls>
     </div>
     <div class="box arm-controls light-bg">
@@ -279,6 +279,10 @@ export default {
 
   .moteus {
     grid-area: moteus;
+  }
+
+  .drive {
+    display: none;
   }
 
 </style>

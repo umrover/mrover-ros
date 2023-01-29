@@ -1,17 +1,12 @@
 <template>
   <div class="wrap">
-    <h4> Drive </h4>
-    <div class="controls">
-      <span>Speed Limiter: {{ dampenDisplay }}%</span>
-      <Checkbox class="reverse" ref="reverse" v-bind:name="'Reverse'" v-on:toggle="updateReverse($event)"/>
-    </div>
+    <!-- This component is for capturing joystick inputs -->
   </div>
 </template>
 
 <script>
 
 import ROSLIB from "roslib"
-import Checkbox from "./Checkbox.vue"
 
 let interval;
 
@@ -59,19 +54,5 @@ export default {
     }, updateRate*1000)
   },
 
-  components:{
-    Checkbox
-  }
-
 }
 </script>
-
-<style scoped>
-.controls {
-  display: flex;
-  align-items:center;
-}
-
-
-
-</style>

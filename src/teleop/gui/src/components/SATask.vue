@@ -14,10 +14,10 @@
       </div>
     </div>
     <div class="box map light-bg">  
-      <SARoverMap v-bind:odom="odom"/>
+      <ERDMap v-bind:odom="odom"/>
     </div>
     <div class="box waypoints light-bg">
-      <SAWaypointEditor v-bind:odom="odom"/>
+      <ERDWaypointEditor/>
     </div>
     <div class="box light-bg cameras">
       <Cameras v-bind:primary="primary"/>
@@ -35,7 +35,7 @@
       <PDBFuse/>
     </div>
     <div class="box light-bg jointState">
-      <JointStateTable v-bind:jointStateData="jointState" v-bind:vertical="true"></JointStateTable>
+      <JointStateTable v-bind:jointStateData="jointState" v-bind:vertical="true"/>
     </div>
     <div class="box light-bg moteus">
       <MoteusStateTable v-bind:moteusStateData="moteusState"/>
@@ -45,8 +45,8 @@
 
 <script>
   import ROSLIB from "roslib"
-  import SARoverMap from './SARoverMap.vue';
-  import SAWaypointEditor from './SAWaypointEditor.vue'
+  import ERDMap from './ERDRoverMap.vue';
+  import ERDWaypointEditor from './ERDWaypointEditor.vue'
   import DriveControls from "./DriveControls.vue";
   import EndEffectorUV from "./EndEffectorUV.vue"
   import ArmControls from "./ArmControls.vue"
@@ -129,8 +129,8 @@
     },
 
     components:{
-      SARoverMap,
-      SAWaypointEditor,
+      ERDMap,
+      ERDWaypointEditor,
       DriveControls,
       EndEffectorUV,
       ArmControls,
@@ -148,19 +148,16 @@
   .wrapper {
     display: grid;
     overflow: hidden;
-    min-height: 98vh;
     grid-gap: 10px;
-    grid-template-columns: 70vh 15vh 40vh auto;
-    grid-template-rows: 60px 70vh 20vh auto auto auto;
+    grid-template-columns: 40vw 5vw 25vw 25vw;
+    grid-template-rows: 60px 70vh auto auto auto;
     grid-template-areas: "header header header header"
                          "map map waypoints waypoints"
-                         "cameras cameras cameras drive"
                          "cameras cameras cameras scoop"
                          "arm moteus moteus jointState"
                          "pdb moteus moteus jointState";
     font-family: sans-serif;
     height: auto;
-    width: auto;
   }
 
   .box {
@@ -168,6 +165,7 @@
     padding: 10px;
     border: 1px solid black;
   }
+
   .box1 {
     border-radius: 5px;
     background-color: LightGrey;
@@ -175,9 +173,11 @@
     border: 1px solid black;
     overflow-y: scroll;
   }
+
   .box2 {
     display: block;
   }
+
   .light-bg {
     background-color: LightGrey;
   }
@@ -185,11 +185,13 @@
     border: none;
     border-radius: 0px;
   }
+
   .header {
     grid-area: header;
     display: flex;
     align-items: center;
   }
+
   .header h1 {
     margin-left: 5px;
   }
@@ -197,9 +199,11 @@
     padding: 2px;
     margin: 0px;
   }
+
   .spacer {
     flex-grow: 0.8;
   }
+
   .comms {
     display: flex;
     flex-direction: column;
@@ -209,6 +213,7 @@
     margin-top: 2px;
     margin-bottom: 2px;
   }
+
   .helpscreen {
     z-index: 1000000000;
     display: block;
@@ -221,6 +226,7 @@
     width: 100%;
     height: 100%;
   }
+
   .helpimages {
     z-index: 1000000001;
     visibility: hidden;
@@ -230,6 +236,7 @@
     width: 90%;
     height: 90%;
   }
+
   .help {
     z-index: 1000000002;
     display: flex;
@@ -237,19 +244,22 @@
     opacity: 0.8;
     cursor: auto;
   }
+
   .help:hover {
     opacity: 1.0;
     cursor: pointer;
   }
+
   .help:hover ~ .helpscreen, .help:hover ~ .helpimages {
     visibility: visible;
   }
+
   .map {
     grid-area: map;
   }
 
   .drive {
-    grid-area: drive;
+    display: none;
   }
 
   .cameras {
