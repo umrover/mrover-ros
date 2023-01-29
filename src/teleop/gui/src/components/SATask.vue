@@ -38,7 +38,7 @@
       <JointStateTable v-bind:jointStateData="jointState" v-bind:vertical="true"></JointStateTable>
     </div>
     <div class="box light-bg moteus">
-      <MoteusStateTable v-bind:moteusStateData="moteusState"></MoteusStateTable>
+      <MoteusStateTable v-bind:moteusStateData="moteusState"/>
     </div>
   </div>
 </template>
@@ -70,7 +70,12 @@
         primary: true,
 
         jointState: {},
-        moteusState: {},
+        // Default object isn't empty, so has to be initialized to ""
+        moteusState: {
+          name: ["", "", "", "", "", ""],
+          error: ["", "", "", "", "", ""],
+          state: ["", "", "", "", "", ""]
+        },
 
         // Pubs and Subs
         odom_sub: null,
@@ -145,14 +150,14 @@
     overflow: hidden;
     min-height: 98vh;
     grid-gap: 10px;
-    grid-template-columns: 85vh 40vh auto;
+    grid-template-columns: 70vh 15vh 40vh auto;
     grid-template-rows: 60px 70vh 20vh auto auto auto;
-    grid-template-areas: "header header header"
-                         "map waypoints waypoints"
-                         "cameras cameras drive"
-                         "cameras cameras scoop"
-                         "arm moteus jointState"
-                         "pdb moteus jointState";
+    grid-template-areas: "header header header header"
+                         "map map waypoints waypoints"
+                         "cameras cameras cameras drive"
+                         "cameras cameras cameras scoop"
+                         "arm moteus moteus jointState"
+                         "pdb moteus moteus jointState";
     font-family: sans-serif;
     height: auto;
     width: auto;
