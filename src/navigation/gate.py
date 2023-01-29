@@ -77,7 +77,8 @@ class GateTrajectory(Trajectory):
         # put the list of coordinates together
         return GateTrajectory(coordinates)
 
-    def gateSelectPath(rover_position: np.ndarray, pt1, pt2, pt3, pt4, gate: Gate):
+    def gateSelectPath(rover_position: np.ndarray, pt1: np.ndarray, pt2: np.ndarray, pt3: np.ndarray,
+                       pt4: np.ndarray, gate: Gate):
         #Get the shapes of both the posts
         postOneShape, postTwoShape = gate.getPostGeoShape()
 

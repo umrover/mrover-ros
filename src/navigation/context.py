@@ -10,9 +10,7 @@ from visualization_msgs.msg import Marker
 from typing import ClassVar, Optional, List, Tuple
 import numpy as np
 from dataclasses import dataclass
-<<<<<<< HEAD
 from shapely.geometry import Point, LineString
-=======
 from mrover.msg import Waypoint, GPSWaypoint, EnableAuton
 import pymap3d
 
@@ -23,7 +21,6 @@ REF_LON = rospy.get_param("gps_linearization/reference_point_longitude")
 
 tf_broadcaster: tf2_ros.StaticTransformBroadcaster = tf2_ros.StaticTransformBroadcaster()
 
->>>>>>> origin/master
 
 @dataclass
 class Gate:
