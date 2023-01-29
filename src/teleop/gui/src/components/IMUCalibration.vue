@@ -20,7 +20,7 @@
         <tbody>
             <tr>
                 <!--<td><span class='led' ,class="{{IMUCalibration[0].color}}"></span></td>-->
-                <td><span v-bind:class='["led",magnetommeter_calibration_color?"green":"red"]'></span></td>
+                <td><span v-bind:class='["led",magnetometer_calibration_color?"green":"red"]'></span></td>
                 <td><span v-bind:class='["led",accelerometer_calibration_color?"green":"red"]'></span></td>
                 <td><span v-bind:class='["led",gyroscope_calibration_color?"green":"red"]'></span></td>
                 <td><span v-bind:class='["led",system_calibration_color?"green":"red"]'></span></td>
@@ -68,7 +68,7 @@ export default {
             this.system_val=msg.system_calibration
             this.gyroscope_calibration_color= (calibration_limit == msg.gyroscope_calibration)
             this.gyroscope_val=msg.gyroscope_calibration
-            this.accelerator_calibration_color= (calibration_limit == msg.accelerometer_calibration)
+            this.accelerometer_calibration_color= (calibration_limit == msg.accelerometer_calibration)
             this.accelerometer_val=msg.accelerometer_calibration
             this.magnetometer_calibration_color= (calibration_limit == msg.magnetometer_calibration)
             this.magnetometer_val=msg.magnetometer_calibration
