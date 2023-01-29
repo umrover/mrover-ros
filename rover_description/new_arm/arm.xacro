@@ -130,7 +130,7 @@
     </link>
     <link name="cTod">
         <xacro:link-visual fileName="c-d-blender.stl" x="0" y="0" z="0" col="green" r="0.43" g="1" b="0"/>
-        <xacro:link-collision-cylinder radius="2" x1="-5" y1="0" z1="-2" x2="-5" y2="0" z2="3" />
+        <xacro:link-collision-cylinder radius="2" x1="-4.5" y1="0.5" z1="-2" x2="-4.5" y2="0.5" z2="3" />
         <!-- <xacro:link-collision-cylinder radius="2" x1="3" y1="0" z1="0" x2="-5" y2="0" z2="0" /> -->
         <xacro:link-inertial x="-1" mass="0.5" ixx="3.2" iyy="3.2" izz="16" />
     </link>
