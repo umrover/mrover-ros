@@ -1,3 +1,4 @@
+#!/usr/bin/env python3
 import rospy
 import serial
 import time
@@ -10,7 +11,7 @@ from mrover.srv import (
 
 ser = serial.Serial
 previous_color = ""
-green_counter_ms = 0
+green_counter_s = 0
 
 
 def handle_change_auton_led_state(req: ChangeAutonLEDStateRequest) -> ChangeAutonLEDStateResponse:
@@ -22,7 +23,7 @@ def handle_change_auton_led_state(req: ChangeAutonLEDStateRequest) -> ChangeAuto
     :returns: A boolean that is the success of sent USB transaction.
     """
 
-    global previous_color, green_counter_ms
+    global previous_color, green_counter_s
 
     color = req.color.lower()
 
@@ -31,7 +32,7 @@ def handle_change_auton_led_state(req: ChangeAutonLEDStateRequest) -> ChangeAuto
         if color == "red":
             ser.write(b"r")
         elif color == "green":
-            green_counter_ms = 0
+            green_counter_s = 0
             ser.write(b"g")
         elif color == "blue":
             ser.write(b"b")
@@ -46,7 +47,7 @@ def handle_change_auton_led_state(req: ChangeAutonLEDStateRequest) -> ChangeAuto
 def main():
     rospy.init_node("science")
 
-    global ser, previous_color, green_counter_ms
+    global ser, previous_color, green_counter_s
 
     # read serial connection info from parameter server
     port = rospy.get_param("auton_led_driver/port")
@@ -57,28 +58,20 @@ def main():
 
     rospy.Service("change_auton_led_state", ChangeAutonLEDState, handle_change_auton_led_state)
 
-    ms_to_wait = 25  # needs to be a factor of 1000
+    seconds_to_wait = 1  # needs to be a factor of 1000
 
     while not rospy.is_shutdown():
-        if previous_color == "red":
-            ser.write(b"r")
-        elif previous_color == "green":
-            ser.write(b"g")
-            if green_counter_ms == 2000:
-                green_counter_ms = 0
+        if previous_color == "green":
+            if green_counter_s == 2:
+                green_counter_s = 0
 
-            if green_counter_ms == 0:
+            if green_counter_s == 0:
                 ser.write(b"g")
-            elif green_counter_ms == 1000:
+            elif green_counter_s == 1:
                 ser.write(b"o")
 
-            time.sleep(ms_to_wait)
-            green_counter_ms += ms_to_wait
-
-        elif previous_color == "blue":
-            ser.write(b"b")
-        else:
-            ser.write(b"o")
+            time.sleep(seconds_to_wait)
+            green_counter_s += seconds_to_wait
 
 
 if __name__ == "__main__":
