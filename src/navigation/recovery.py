@@ -36,5 +36,14 @@ class RecoveryState(BaseState):
     #     )
 
     def evaluate(self, ud) -> str:
-        
+        #get_drive_command() to go backwards
+        #send_drive_command()
+
+        #get_drive_command() to go turn
+        #send_drive_command()
+
+        #get_drive_command() to go backwards
+        #send_drive_command()
+
+        #set stuck to False
         return self.context.rover.previous_state

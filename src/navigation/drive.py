@@ -60,21 +60,27 @@ def get_drive_command(
         # We are pretty aligned so we can drive straight
         error = target_dist
         cmd_vel.linear.x = np.clip(error, 0.0, MAX_DRIVING_EFFORT)
+        if collector.collector_context.rover.stuck and collector.collector_context.rover.move_back:
+            cmd_vel.linear.x *= -1
+            collector.collector_context.rover.move_back = False
         full_turn_override = False
 
     # we want to drive the angular offset to zero so the error is just 0 - alignment
     error = alignment
-    cmd_vel.angular.z = (
-        np.sign(error) if full_turn_override else np.clip(error * TURNING_P, MIN_DRIVING_EFFORT, MAX_DRIVING_EFFORT)
-    )
-    print(cmd_vel.linear.x, cmd_vel.angular.z)
-    full_turn_override = False
+    if collector.collector_context.rover.stuck and not collector.collector_context.rover.move_back:
+         cmd_vel.angular.z = -0.5
+    else:
+        cmd_vel.angular.z = (
+            np.sign(error) if full_turn_override else np.clip(error * TURNING_P, MIN_DRIVING_EFFORT, MAX_DRIVING_EFFORT)
+        )
+    # print(cmd_vel.linear.x, cmd_vel.angular.z)
+    # full_turn_override = False
 
-    # we want to drive the angular offset to zero so the error is just 0 - alignment
-    error = alignment
-    cmd_vel.angular.z = (
-        np.sign(error) if full_turn_override else np.clip(error * TURNING_P, MIN_DRIVING_EFFORT, MAX_DRIVING_EFFORT)
-    )
+    # # we want to drive the angular offset to zero so the error is just 0 - alignment
+    # error = alignment
+    # cmd_vel.angular.z = (
+    #     np.sign(error) if full_turn_override else np.clip(error * TURNING_P, MIN_DRIVING_EFFORT, MAX_DRIVING_EFFORT)
+    # )
 
     # getting commanded velocity into the data collection
     rospy.logerr(f"Called make_cmd_vel_obj from drive.py")
