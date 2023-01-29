@@ -32,6 +32,7 @@ set(MROVER_MESSAGE_FILES
         EnableAuton.msg
         GimbalCmd.msg
         GPSWaypoint.msg
+        ImuAndMag.msg
         JointLock.msg
         MoteusState.msg
         MotorsStatus.msg
