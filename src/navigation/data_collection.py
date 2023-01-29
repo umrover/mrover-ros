@@ -1,8 +1,7 @@
 import numpy as np
 import pandas as pd
 import rospy
-from geometry_msgs.msg import Twist
-from mrover.msg import MotorsStatus
+from sensor_msgs.msg import JointState
 from std_msgs.msg import Bool
 import datetime
 from util.SE3 import SE3
@@ -43,8 +42,7 @@ class DataManager:
         self._df = DataFrame(self.dict)
         self._cur_row = self.dict
         rospy.logerr(f"Ran __init__ in data_collection.py")
-        rospy.Subscriber("/drive_status", MotorsStatus, self.make_esw_dataframe)
-        rospy.Subscriber("/cmd_vel", Twist, self.make_cmd_vel_dataframe)
+        rospy.Subscriber("/drive_vel_data", JointState, self.make_esw_dataframe)
         rospy.Subscriber("/rover_stuck", Bool, self.set_collecting)
 
     # Query the tf tree to get odometry. Calculate the linear and angular velocities with this data
@@ -84,7 +82,7 @@ class DataManager:
 
     # This function will only be called/invoked when there is a commanded velocity
     # Called in drive.py
-    def make_cmd_vel_dataframe(self, cmd_v):
+    def make_cmd_vel_dataframe(self, cmd_vel):
         if not self.collecting:
             return
         self._cur_row = self._cur_row.copy()
