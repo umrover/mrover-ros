@@ -111,7 +111,7 @@
     <link name="chassisToa">
         <xacro:link-visual fileName="chassis-a.stl" x="0" y="0" z="0" col="red" r="1" g="0" b="0"/>
         <xacro:link-collision-cylinder radius="3.75" x1="0" y1="0" z1="-1.25" x2="0" y2="0" z2="-3.75" />
-        <xacro:link-collision-cylinder radius="1.75" x1="-3.6467207" y1="3.6590503" z1="-0.6913988" x2="-3.6467207" y2="3.6590503" z2="-2.6913988" />
+        <xacro:link-collision-cylinder radius="1.75" x1="3.6467207" y1="3.6590503" z1="1" x2="3.6467207" y2="3.6590503" z2="-2.6913988" />
         <!-- calculated based on cylinder1 -->
         <xacro:link-inertial z="-2.5" mass="0.5" ixx="2.3" iyy="2.3" izz="3.5" />
     </link>
@@ -130,26 +130,27 @@
     </link>
     <link name="cTod">
         <xacro:link-visual fileName="c-d-blender.stl" x="0" y="0" z="0" col="green" r="0.43" g="1" b="0"/>
-        <xacro:link-collision-cylinder radius="2" x1="-5" y1="0" z1="-2" x2="-5" y2="0" z2="3" />
+        <xacro:link-collision-cylinder radius="3.75" x1="-4.5" y1="0" z1="-2.5" x2="-4.5" y2="0" z2="3" roll="-0.17"/>
         <!-- <xacro:link-collision-cylinder radius="2" x1="3" y1="0" z1="0" x2="-5" y2="0" z2="0" /> -->
         <xacro:link-inertial x="-1" mass="0.5" ixx="3.2" iyy="3.2" izz="16" />
     </link>
     <link name="dToe">
-        <xacro:link-visual fileName="d-e-blender.stl" x="0" y="0" z="0" col="blue" r="0" g="0" b="1" pitch="0" roll="0"/>
-        <xacro:link-collision-box y="-7.6324" z="4.7693" lx="2.5" ly="20" lz="2.5" roll="-0.558505" />
-        <xacro:link-collision-box x="1" y="-13.75" z="9.5" lx="3" ly="3" lz="6" roll="-0.558505" />
+        <xacro:link-visual fileName="d-e-blender4.stl" x="0" y="0" z="0" col="blue" r="0" g="0" b="1" pitch="0" roll="0"/>
+        <xacro:link-collision-box y="0" z="-7" lx="4" ly="20" lz="4" roll="${(-PI/2.0)+0.05}"/>
+        <xacro:link-collision-cylinder radius="2.5" x1="-3" y1="0" z1="-17" x2="3" y2="0" z2="-17" />
         <xacro:link-inertial y="-7.6324" z="4.7693" roll="-0.558505" mass="0.5" ixx="17" iyy="0.5" izz="17" />
     </link>
     <link name="eTof">
         <xacro:link-visual fileName="e-f-blender2.stl" x="0" y="0" z="0" col="violet" r="0.5" g="0" b="1" roll="0" />
-        <xacro:link-collision-cylinder radius="1" x1="-0.75" y1="0" z1="0" x2="-0.75" y2="0" z2="-6" />
+        <xacro:link-collision-cylinder radius="3" x1="3" y1="1.8" z1="0" x2="-6.5" y2="1.8" z2="0" />
         <xacro:link-inertial z="-3" mass="0.5" ixx="1.6" iyy="1.6" izz="0.25" />
     </link>
     <link name="hand">
         <xacro:link-visual fileName="hand-blender2.stl" x="0" y="0" z="0" col="pink" r="1" g="0" b="1"/>
-        <xacro:link-collision-box z="-2.5" lx="7" ly="2" lz="7" />
-        <xacro:link-collision-box y="-8" lx="3" ly="2" lz="4" />
-        <xacro:link-collision-cylinder radius="0.75" x1="-1.5" y1="0" z1="-0.5" x2="-1.5" y2="-9" z2="-0.5" />
+        <xacro:link-collision-box x="-2.25" y="1" z="0.5" lx="8" ly="3.5" lz="8.5" roll="${PI/2.0}"/>
+        <xacro:link-collision-box z="8.75" y="3.5" x="-1" lx="3.5" ly="3.5" lz="5" roll="${PI/2.0}"/>
+        <xacro:link-collision-cylinder radius="0.75" x1="0" y1="2.3" z1="0" x2="0" y2="2.3" z2="9"/>
+        <xacro:link-collision-box x="-1.6" y="-1.5" z="-2" lx="1" ly="2.5" lz="2.5"/>
         <xacro:link-inertial z="-2.5" mass="0.5" ixx="2.2" iyy="4" izz="2.2" />
     </link>
 
@@ -163,14 +164,14 @@
     <!-- <xacro:joints name="joint_c" parent="bToc" child="cTod" origin_x="-4.59961" origin_y="22.83397" origin_z="0.38119" axis_x="1" lower="-3.01" upper="2.73" /> -->
     <!-- /home/joe/Desktop/mrover_catkin_ws/src/mrover/rover_description/new_arm -->
     <xacro:joints name="joint_a" type="continuous" parent="chassisToa" child="aTob" origin_x="0" origin_y="0" origin_z="0" axis_z="1" lower="-3.14" upper="3.14" />
-    <xacro:joints name="joint_b" parent="aTob" child="bToc" origin_x="0" origin_y="1.33" origin_z="0.99" axis_x="1" lower="-0.48079632679" upper="1.09" />
-    <xacro:joints name="joint_c" parent="bToc" child="cTod" origin_x="0" origin_y="20.11" origin_z="10.75" axis_x="1" lower="-3.01" upper="2.73" />
-    <xacro:joints name="joint_d" parent="cTod" child="dToe" origin_x="-4.4" origin_y="-0.42" origin_z="-2.535" axis_z="1" axis_y="0" lower="-3.14" upper="3.14" roll="-0.15708" pitch="-0.0174533" />
+    <xacro:joints name="joint_b" parent="aTob" child="bToc" origin_x="0" origin_y="1.33" origin_z="0.99" axis_x="1" lower="-1.064651" upper="0" roll="0.593412"/>
+    <xacro:joints name="joint_c" parent="bToc" child="cTod" origin_x="0" origin_y="20.11" origin_z="10.75" axis_x="1" lower="-0.087267" upper="4.886922" roll="-0.436332"/>
+    <xacro:joints name="joint_d" parent="cTod" child="dToe" origin_x="-4.4" origin_y="-0.42" origin_z="-2.535" axis_z="1" axis_y="0" lower="-3.14" upper="3.14" roll="-0.15708" pitch="-0.0174533" yaw="0" />
     <!-- <xacro:joints name="joint_e" parent="dToe" child="eTof" origin_x="-2.30884" origin_y="-14.2085" origin_z="9.01643" axis_x="1" lower="-2.68" upper="2.68" /> -->
     <!-- <xacro:joints name="joint_e" parent="dToe" child="eTof" origin_x="-7.78" origin_y="20.05" origin_z="-10.385" axis_x="1" lower="-2.68" upper="2.68" /> -->
     <!-- pitch="-0.4694936" -->
-    <xacro:joints name="joint_e" parent="dToe" child="eTof" origin_x="0.75" origin_y="2.5" origin_z="-17" axis_y="1" lower="-2.68" upper="2.68" roll="0" pitch="0" yaw="-0.471239"/>
-    <xacro:joints name="joint_f" parent="eTof" child="hand" origin_x="-6.3" origin_y="1.75" origin_z="0" axis_x="1" lower="-3.14" upper="3.14" />
+    <xacro:joints name="joint_e" parent="dToe" child="eTof" origin_x="2.55" origin_y="0.2" origin_z="-17" axis_y="1" lower="-3.59538" upper="0.610865" roll="0" pitch="0" yaw="-1.649336"/>
+    <xacro:joints name="joint_f" parent="eTof" child="hand" origin_x="-6.3" origin_y="1.75" origin_z="0" axis_x="1" lower="-0.523599" upper="6.28" />
     <!-- x 0.16 m y -0.47 m z -0.09 m -->
     <!-- <xacro:transmissions name="joint_a" />
     <xacro:transmissions name="joint_b" />
