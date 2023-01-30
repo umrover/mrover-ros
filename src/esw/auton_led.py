@@ -10,7 +10,6 @@ from mrover.srv import (
 )
 
 ser = serial.Serial
-color = ""
 desired_color = ""
 
 
@@ -35,7 +34,7 @@ def handle_change_auton_led_state(req: ChangeAutonLEDStateRequest) -> ChangeAuto
 def main():
     rospy.init_node("auton_led")
 
-    global ser, color, desired_color
+    global ser, desired_color
 
     # read serial connection info from parameter server
     port = rospy.get_param("auton_led_driver/port")
@@ -46,6 +45,7 @@ def main():
 
     rospy.Service("change_auton_led_state", ChangeAutonLEDState, handle_change_auton_led_state)
 
+    color = ""
     green_counter_s = 0
     seconds_to_wait = 1
 
