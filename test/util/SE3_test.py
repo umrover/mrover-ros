@@ -21,6 +21,7 @@ from util.SO3 import SO3
 
 class TestSE3(unittest.TestCase):
     def test_init(self):
+
         # test default init values
         p1 = SE3()
         self.assertTrue(np.array_equal(p1.position, np.zeros(3)))
@@ -35,6 +36,7 @@ class TestSE3(unittest.TestCase):
         self.assertTrue(np.array_equal(p2.rotation.quaternion, np.array([1, 2, 3, 4])))
 
     def test_pos_distance_to(self):
+
         # distance between 2 "random" points
         p1 = SE3(position=np.array([1, 2, 3]))
         p2 = SE3(position=np.array([-4, 8, -7]))
@@ -64,6 +66,7 @@ class TestSE3(unittest.TestCase):
         self.assertTrue(np.isclose(d2, 0))
 
     def test_is_approx(self):
+
         # test two identical zero SE3s in all directions and combinations
         r1 = SE3()
         r2 = SE3()
@@ -107,7 +110,7 @@ class TestSE3(unittest.TestCase):
         self.assertTrue(r3.rotation.is_approx(r7.rotation))
         self.assertFalse(r3.is_approx(r7))
         self.assertFalse(r7.is_approx(r3))
-
+    
     def test_transform_matrix(self):
         # test that an SE3 from a transform matrix is the same as an SE3
         # from an equivalent quaternion and position
@@ -120,7 +123,7 @@ class TestSE3(unittest.TestCase):
         m[:3, 3] = t
         s1 = SE3.from_transform_matrix(m)
 
-        q = np.array([0, 0, np.sqrt(2) / 2, np.sqrt(2) / 2])
+        q = np.array([0, 0, np.sqrt(2)/2, np.sqrt(2)/2])
         s2 = SE3.from_pos_quat(position=t, quaternion=q)
         self.assertTrue(np.allclose(t, s1.position))
         self.assertTrue(np.allclose(r, s1.rotation.rotation_matrix()))
