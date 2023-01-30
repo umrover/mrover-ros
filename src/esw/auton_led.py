@@ -18,6 +18,8 @@ def handle_change_auton_led_state(req: ChangeAutonLEDStateRequest) -> ChangeAuto
     """Processes a request to change the auton LED array state by issuing
     the command to the Arduino via USB. Returns the success of the
     transaction.
+    Sends 'r' for red, 'g' for green', 'b' for blue, 'o' for off.
+
     :param req: A string that is the color of the requested state of the
         auton LED array. Note that green actually means blinking green.
     :returns: A boolean that is the success of sent USB transaction.
@@ -62,6 +64,10 @@ def main():
 
     while not rospy.is_shutdown():
         if previous_color == "green":
+            # if requested color is green,
+            # then alternate between off and on
+            # every second to make it a blinking LED
+
             if green_counter_s == 2:
                 green_counter_s = 0
 
