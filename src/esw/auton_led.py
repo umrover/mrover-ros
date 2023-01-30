@@ -45,7 +45,7 @@ def handle_change_auton_led_state(req: ChangeAutonLEDStateRequest) -> ChangeAuto
 
 
 def main():
-    rospy.init_node("science")
+    rospy.init_node("auton_led")
 
     global ser, previous_color, green_counter_s
 
@@ -58,7 +58,7 @@ def main():
 
     rospy.Service("change_auton_led_state", ChangeAutonLEDState, handle_change_auton_led_state)
 
-    seconds_to_wait = 1  # needs to be a factor of 1000
+    seconds_to_wait = 1
 
     while not rospy.is_shutdown():
         if previous_color == "green":
