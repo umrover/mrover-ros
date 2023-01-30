@@ -10,7 +10,8 @@ from mrover.srv import (
 )
 
 ser = serial.Serial
-previous_color = ""
+color = ""
+desired_color = ""
 green_counter_s = 0
 
 
@@ -25,23 +26,9 @@ def handle_change_auton_led_state(req: ChangeAutonLEDStateRequest) -> ChangeAuto
     :returns: A boolean that is the success of sent USB transaction.
     """
 
-    global previous_color, green_counter_s
+    global desired_color
 
-    color = req.color.lower()
-
-    if previous_color != color:
-        # send message
-        if color == "red":
-            ser.write(b"r")
-        elif color == "green":
-            green_counter_s = 0
-            ser.write(b"g")
-        elif color == "blue":
-            ser.write(b"b")
-        else:
-            ser.write(b"o")
-
-        previous_color = color
+    desired_color = req.color.lower()
 
     return ChangeAutonLEDStateResponse(True)
 
@@ -49,7 +36,7 @@ def handle_change_auton_led_state(req: ChangeAutonLEDStateRequest) -> ChangeAuto
 def main():
     rospy.init_node("auton_led")
 
-    global ser, previous_color, green_counter_s
+    global ser, color, desired_color, green_counter_s
 
     # read serial connection info from parameter server
     port = rospy.get_param("auton_led_driver/port")
@@ -63,7 +50,22 @@ def main():
     seconds_to_wait = 1
 
     while not rospy.is_shutdown():
-        if previous_color == "green":
+
+        if color != desired_color:
+            # send message
+            if desired_color == "red":
+                ser.write(b"r")
+            elif desired_color == "green":
+                green_counter_s = 0
+                ser.write(b"g")
+            elif desired_color == "blue":
+                ser.write(b"b")
+            else:
+                ser.write(b"o")
+
+            color = desired_color
+
+        if color == "green":
             # if requested color is green,
             # then alternate between off and on
             # every second to make it a blinking LED
