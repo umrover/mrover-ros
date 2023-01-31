@@ -7,7 +7,6 @@ gazebo_arm_controller:
     - joint_c
     - joint_d
     - joint_e
-    - joint_f
   # These PID Tunes suck, good enough for testing in sim though
   gains:
     joint_a:
@@ -31,11 +30,6 @@ gazebo_arm_controller:
       i: 1
       i_clamp: 1
     joint_e:
-      p: 100
-      d: 1
-      i: 1
-      i_clamp: 1
-    joint_f:
       p: 100
       d: 1
       i: 1

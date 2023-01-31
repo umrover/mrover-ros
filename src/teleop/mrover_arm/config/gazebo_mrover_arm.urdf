@@ -8,13 +8,13 @@
     <link name="base_link">
         <inertial>
             <mass value="3.0" />
-            <inertia ixx="24.5" ixy="0.0" ixz="0.0" iyy="24.5" iyz="0.0" izz="24.5" />
+            <inertia ixx="102.5" ixy="0.0" ixz="0.0" iyy="24.5" iyz="0.0" izz="102.5" />
             <origin xyz="0 0 0" rpy="0 0 0" />
         </inertial>
         <visual>
             <origin rpy="0 0 0" xyz="0 0 0" />
             <geometry>
-                <box size="7 7 7" />
+                <box size="7 7 19" />
             </geometry>
             <material name="dark grey">
                 <color rgba="0.1 0.1 0.1 1" />
@@ -23,7 +23,7 @@
         <collision>
             <origin rpy="0 0 0" xyz="0 0 0" />
             <geometry>
-                <box size="7 7 7" />
+                <box size="7 7 19" />
             </geometry>
         </collision>
     </link>
@@ -44,9 +44,9 @@
             </geometry>
         </collision>
         <collision>
-            <origin rpy="0 0 0" xyz="-3.6467207 3.6590503 -1.6913988" />
+            <origin rpy="0 0 0" xyz="3.6467207 3.6590503 -0.8456994" />
             <geometry>
-                <cylinder length="2.0" radius="1.75" />
+                <cylinder length="3.6913988" radius="1.75" />
             </geometry>
         </collision>
         <inertial>
@@ -96,21 +96,21 @@
             </material>
         </visual>
         <collision>
-            <origin rpy="0 0 0" xyz="0 12 0" />
+            <origin rpy="0.48 0 0" xyz="0 9 5" />
             <geometry>
                 <box size="3 24 3" />
             </geometry>
         </collision>
         <collision>
-            <origin rpy="0 1.570796 0" xyz="2.5 23.0 0.0" />
+            <origin rpy="0 1.570796 0" xyz="1.25 20.25 10.75" />
             <geometry>
-                <cylinder length="5.0" radius="1" />
+                <cylinder length="6.5" radius="2" />
             </geometry>
         </collision>
         <collision>
-            <origin rpy="1.270796 0 0" xyz="0.0 8.5 3.75" />
+            <origin rpy="1.8707960000000001 0 0" xyz="0.0 7.5 8.5" />
             <geometry>
-                <cylinder length="17.0" radius="1" />
+                <cylinder length="19.0" radius="1" />
             </geometry>
         </collision>
         <inertial>
@@ -124,16 +124,16 @@
         <visual>
             <origin rpy="0 0 0" xyz="0 0 0" />
             <geometry>
-                <mesh filename="package://mrover/rover_description/arm/c-d-blender.stl" />
+                <mesh filename="package://mrover/rover_description/arm/c-d.stl" />
             </geometry>
             <material name="green">
                 <color rgba="0.43 1 0 1" />
             </material>
         </visual>
         <collision>
-            <origin rpy="0 1.570796 0" xyz="-1.0 0.0 0.0" />
+            <origin rpy="-0.17 0 0" xyz="-4.5 0.0 0.25" />
             <geometry>
-                <cylinder length="8.0" radius="2" />
+                <cylinder length="5.5" radius="3.75" />
             </geometry>
         </collision>
         <inertial>
@@ -147,22 +147,22 @@
         <visual>
             <origin rpy="0 0 0" xyz="0 0 0" />
             <geometry>
-                <mesh filename="package://mrover/rover_description/arm/d-e-blender.stl" />
+                <mesh filename="package://mrover/rover_description/arm/d-e.stl" />
             </geometry>
             <material name="blue">
                 <color rgba="0 0 1 1" />
             </material>
         </visual>
         <collision>
-            <origin rpy="-0.558505 0 0" xyz="0 -7.6324 4.7693" />
+            <origin rpy="-1.520796 0 0" xyz="0 0 -7" />
             <geometry>
-                <box size="2.5 20 2.5" />
+                <box size="4 20 4" />
             </geometry>
         </collision>
         <collision>
-            <origin rpy="-0.558505 0 0" xyz="1 -13.75 9.5" />
+            <origin rpy="0 1.570796 0" xyz="0.0 0.0 -17.0" />
             <geometry>
-                <box size="3 3 6" />
+                <cylinder length="6.0" radius="2.5" />
             </geometry>
         </collision>
         <inertial>
@@ -174,18 +174,18 @@
     </link>
     <link name="eTof">
         <visual>
-            <origin rpy="1.67552 0 0" xyz="0 0 0" />
+            <origin rpy="0 0 0" xyz="0 0 0" />
             <geometry>
-                <mesh filename="package://mrover/rover_description/arm/e-f-blender.stl" />
+                <mesh filename="package://mrover/rover_description/arm/e-f.stl" />
             </geometry>
             <material name="violet">
                 <color rgba="0.5 0 1 1" />
             </material>
         </visual>
         <collision>
-            <origin rpy="0 0 0" xyz="-0.75 0.0 -3.0" />
+            <origin rpy="0 1.570796 0" xyz="-1.75 1.8 0.0" />
             <geometry>
-                <cylinder length="6.0" radius="1" />
+                <cylinder length="9.5" radius="3" />
             </geometry>
         </collision>
         <inertial>
@@ -197,7 +197,7 @@
     </link>
     <link name="hand">
         <visual>
-            <origin rpy="-1.67552 0 3.141592" xyz="0 0 0" />
+            <origin rpy="0 0 0" xyz="0 0 0" />
             <geometry>
                 <mesh filename="package://mrover/rover_description/arm/hand.stl" />
             </geometry>
@@ -206,21 +206,27 @@
             </material>
         </visual>
         <collision>
-            <origin rpy="0 0 0" xyz="0 0 -2.5" />
+            <origin rpy="1.570796 0 0" xyz="-2.25 1 0.5" />
             <geometry>
-                <box size="7 2 7" />
+                <box size="8 3.5 8.5" />
             </geometry>
         </collision>
         <collision>
-            <origin rpy="0 0 0" xyz="0 -8 0" />
+            <origin rpy="1.570796 0 0" xyz="-1 3.5 8.75" />
             <geometry>
-                <box size="3 2 4" />
+                <box size="3.5 3.5 5" />
             </geometry>
         </collision>
         <collision>
-            <origin rpy="1.570796 0 0" xyz="-1.5 -4.5 -0.5" />
+            <origin rpy="0 0 0" xyz="0.0 2.3 4.5" />
             <geometry>
                 <cylinder length="9.0" radius="0.75" />
+            </geometry>
+        </collision>
+        <collision>
+            <origin rpy="0 0 0" xyz="-1.6 -1.5 -2" />
+            <geometry>
+                <box size="1 2.5 2.5" />
             </geometry>
         </collision>
         <inertial>
@@ -234,17 +240,17 @@
     <joint name="virtual_joint" type="fixed">
         <parent link="world" />
         <child link="base_link" />
-        <origin rpy="0 0 0" xyz="0 0 3.5" />
+        <origin rpy="0 0 0" xyz="0 0 9.5" />
     </joint>
     <joint name="base_link_connection" type="fixed">
-        <origin rpy="0 0 0" xyz="0 5 4" />
+        <origin rpy="0 0 0" xyz="0 5 10" />
         <parent link="base_link" />
         <child link="chassisToa" />
         <axis xyz="0 0 0" />
         <!-- effort in N-m, velocity in rad/s -->
         <limit effort="30" lower="0" upper="0" velocity="1" />
         <!-- damping in N-m-s/rad -->
-        <dynamics damping="500.0" />
+        <dynamics damping="1.0" />
     </joint>
     <joint name="joint_a" type="continuous">
         <origin rpy="0 0 0" xyz="0 0 0" />
@@ -254,57 +260,57 @@
         <!-- effort in N-m, velocity in rad/s -->
         <limit effort="30" lower="-3.14" upper="3.14" velocity="1" />
         <!-- damping in N-m-s/rad -->
-        <dynamics damping="500.0" />
+        <dynamics damping="1.0" />
     </joint>
     <joint name="joint_b" type="revolute">
-        <origin rpy="0 0 0" xyz="0 1.41293 1.13303" />
+        <origin rpy="0.593412 0 0" xyz="0 1.33 0.99" />
         <parent link="aTob" />
         <child link="bToc" />
         <axis xyz="1 0 0" />
         <!-- effort in N-m, velocity in rad/s -->
-        <limit effort="30" lower="0.035" upper="1.09" velocity="1" />
+        <limit effort="30" lower="-1.064651" upper="0" velocity="1" />
         <!-- damping in N-m-s/rad -->
-        <dynamics damping="500.0" />
+        <dynamics damping="1.0" />
     </joint>
     <joint name="joint_c" type="revolute">
-        <origin rpy="0 0 0" xyz="-4.59961 22.83397 0.38119" />
+        <origin rpy="-0.436332 0 0" xyz="0 20.11 10.75" />
         <parent link="bToc" />
         <child link="cTod" />
         <axis xyz="1 0 0" />
         <!-- effort in N-m, velocity in rad/s -->
-        <limit effort="30" lower="-3.01" upper="2.73" velocity="1" />
+        <limit effort="30" lower="-0.087267" upper="4.886922" velocity="1" />
         <!-- damping in N-m-s/rad -->
-        <dynamics damping="500.0" />
+        <dynamics damping="1.0" />
     </joint>
     <joint name="joint_d" type="revolute">
-        <origin rpy="0 0 0" xyz="0 -1.4699 0.963976" />
+        <origin rpy="-0.15708 -0.0174533 0" xyz="-4.4 -0.42 -2.535" />
         <parent link="cTod" />
         <child link="dToe" />
-        <axis xyz="0 0.84805 -0.52992" />
-        <!-- effort in N-m, velocity in rad/s -->
-        <limit effort="30" lower="-3.14" upper="3.14" velocity="1" />
-        <!-- damping in N-m-s/rad -->
-        <dynamics damping="500.0" />
-    </joint>
-    <joint name="joint_e" type="revolute">
-        <origin rpy="0 0 0" xyz="-2.30884 -14.2085 9.01643" />
-        <parent link="dToe" />
-        <child link="eTof" />
-        <axis xyz="1 0 0" />
-        <!-- effort in N-m, velocity in rad/s -->
-        <limit effort="30" lower="-2.68" upper="2.68" velocity="1" />
-        <!-- damping in N-m-s/rad -->
-        <dynamics damping="500.0" />
-    </joint>
-    <joint name="joint_f" type="revolute">
-        <origin rpy="0 0 0" xyz="-0.817441 0.678501 -6.45623" />
-        <parent link="eTof" />
-        <child link="hand" />
         <axis xyz="0 0 1" />
         <!-- effort in N-m, velocity in rad/s -->
         <limit effort="30" lower="-3.14" upper="3.14" velocity="1" />
         <!-- damping in N-m-s/rad -->
-        <dynamics damping="500.0" />
+        <dynamics damping="1.0" />
+    </joint>
+    <joint name="joint_e" type="revolute">
+        <origin rpy="0 0 -1.649336" xyz="2.55 0.2 -17" />
+        <parent link="dToe" />
+        <child link="eTof" />
+        <axis xyz="0 1 0" />
+        <!-- effort in N-m, velocity in rad/s -->
+        <limit effort="30" lower="-3.59538" upper="0.610865" velocity="1" />
+        <!-- damping in N-m-s/rad -->
+        <dynamics damping="1.0" />
+    </joint>
+    <joint name="joint_f" type="revolute">
+        <origin rpy="0 0 0" xyz="-6.3 1.75 0" />
+        <parent link="eTof" />
+        <child link="hand" />
+        <axis xyz="1 0 0" />
+        <!-- effort in N-m, velocity in rad/s -->
+        <limit effort="30" lower="-0.523599" upper="6.28" velocity="1" />
+        <!-- damping in N-m-s/rad -->
+        <dynamics damping="1.0" />
     </joint>
     <transmission name="trans_joint_a">
         <type>transmission_interface/SimpleTransmission</type>
@@ -415,3 +421,4 @@
         <plugin filename="libgazebo_ros_control.so" name="gazebo_ros_control" />
     </gazebo>
 </robot>
+

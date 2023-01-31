@@ -1,5 +1,5 @@
 teleop:
-  ra_joints: ["joint_a", "joint_b", "joint_c", "joint_d", "joint_e", "joint_f"]
+  ra_joints: ["joint_a", "joint_b", "joint_c", "joint_d", "joint_e"]
 
   ra_controls:
     joint_a:
