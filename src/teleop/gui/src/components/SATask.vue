@@ -20,9 +20,9 @@
       <ERDWaypointEditor/>
     </div>
     <div class="box light-bg cameras">
-      <Cameras v-bind:primary="primary"/>
+      <Cameras v-bind:primary="true"/>
     </div>
-    <div class="box light-bg drive">
+    <div>
       <DriveControls/>
     </div>
     <div class="box light-bg scoop">
@@ -67,10 +67,8 @@
           bearing_deg: 0
         },
 
-        primary: true,
-
         jointState: {},
-        // Default object isn't empty, so has to be initialized to ""
+        // Moteus state table is set up to look for specific keys in moteusState so it can't be empty
         moteusState: {
           name: ["", "", "", "", "", ""],
           error: ["", "", "", "", "", ""],
@@ -256,10 +254,6 @@
 
   .map {
     grid-area: map;
-  }
-
-  .drive {
-    display: none;
   }
 
   .cameras {

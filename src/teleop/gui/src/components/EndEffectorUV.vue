@@ -5,16 +5,12 @@
       </div>
       
     <div>
-      <ToggleButton id="uv_end_effector" v-bind:currentState="UV_endEffector" labelEnableText="End Effector UV On" labelDisableText="End Effector UV Off" v-on:change="toggleEndEffectorUV()" />
+      <ToggleButton id="uv_end_effector" v-bind:currentState="endEffectorUVActive" labelEnableText="End Effector UV On" labelDisableText="End Effector UV Off" v-on:change="toggleEndEffectorUV()" />
     </div>
     <br>
     <div>
       <ToggleButton id="shutdown" v-bind:currentState="shutdownActive" labelEnableText="UV Auto shutoff On" labelDisableText="UV Auto shutoff Off" v-on:change="switchShutdown()"/>
     </div>
-  
-    <!-- <div>
-      <ToggleButton id="scoop_limit_switch" v-bind:currentState="scoopLimitActive" labelEnableText="Limit Switch On" labelDisableText="Limit Switch Off" v-on:change="toggleLimit()"/>
-    </div> -->
   </div>
 </template>
     
@@ -25,7 +21,7 @@
   export default {
     data () {
       return {
-        UV_endEffector: false,
+        endEffectorUVActive: false,
         shutdownActive: true,
         timeoutID: 0,
         scoopLimitActive: true,
@@ -40,13 +36,13 @@
     },
 
     watch: {
-      UV_endEffector() {
+      endEffectorUVActive() {
         let request = new ROSLIB.ServiceRequest({
-            enable: this.UV_endEffector
+            enable: this.endEffectorUVActive
         });
         this.uvService.callService(request, (result) => {
             if (!result) {
-                this.UV_endEffector = !this.UV_endEffector
+                this.endEffectorUVActive = !this.endEffectorUVActive
                 alert("Toggling End Effector UV failed.")
             }
         });
@@ -59,11 +55,11 @@
       },
 
       toggleEndEffectorUV: function () {
-          this.UV_endEffector = !this.UV_endEffector
-          if (this.UV_endEffector) {
+          this.endEffectorUVActive = !this.endEffectorUVActive
+          if (this.endEffectorUVActive) {
             this.timeoutID = setTimeout(() => {
-              if (this.UV_endEffector && this.shutdownActive) {
-                this.UV_endEffector = false
+              if (this.endEffectorUVActive && this.shutdownActive) {
+                this.endEffectorUVActive = false
               }
             }, 2 * 60000) // 2 minutes 
           }
