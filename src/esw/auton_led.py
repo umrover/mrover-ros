@@ -9,7 +9,6 @@ from mrover.srv import (
     ChangeAutonLEDStateResponse,
 )
 
-ser = serial.Serial
 desired_color = ""
 
 
@@ -34,7 +33,7 @@ def handle_change_auton_led_state(req: ChangeAutonLEDStateRequest) -> ChangeAuto
 def main():
     rospy.init_node("auton_led")
 
-    global ser, desired_color
+    global desired_color
 
     # read serial connection info from parameter server
     port = rospy.get_param("auton_led_driver/port")
@@ -47,7 +46,10 @@ def main():
 
     color = ""
     green_counter_s = 0
-    seconds_to_wait = 1
+
+    green_period_s = 2
+    green_on_s = 1
+    refresh_rate_s = green_on_s / 10  # this should be a factor of green_on_s
 
     while not rospy.is_shutdown():
 
@@ -70,16 +72,16 @@ def main():
             # then alternate between off and on
             # every second to make it a blinking LED
 
-            if green_counter_s == 2:
+            if green_counter_s == green_period_s:
                 green_counter_s = 0
 
             if green_counter_s == 0:
                 ser.write(b"g")
-            elif green_counter_s == 1:
+            elif green_counter_s == green_on_s:
                 ser.write(b"o")
 
-            time.sleep(seconds_to_wait)
-            green_counter_s += seconds_to_wait
+            time.sleep(refresh_rate_s)
+            green_counter_s += refresh_rate_s
 
 
 if __name__ == "__main__":
