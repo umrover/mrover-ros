@@ -1,1 +1,1 @@
-int16[6] data
+int32[6] data
