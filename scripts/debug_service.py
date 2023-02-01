@@ -6,15 +6,17 @@
 
 from typing import Any
 import rospy
-from mrover.srv import ChangeDeviceState
+from mrover.srv import ChangeServoAngle, ChangeServoAngleResponse
 
 # Change these values for the service name and type definition to test different values
-SERVICE_NAME = "/change_heater_auto_shutoff_state"
-SERVICE_TYPE = ChangeDeviceState
+SERVICE_NAME = "/change_servo_angles"
+SERVICE_TYPE = ChangeServoAngle
 
 
 def printServiceRequest(service_request: Any):
     rospy.loginfo(service_request)
+    return ChangeServoAngleResponse(success=True)
+
 
 
 def main():

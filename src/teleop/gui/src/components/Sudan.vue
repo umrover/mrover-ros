@@ -1,7 +1,8 @@
 <template>
 <div>
     <h3>Sudan III Drop</h3>
-    <button id="sudan-button" :disabled="isEnabled[index]" v-on:click="clickButton()">Start Site {{site}} Test</button>
+    <button id="sudan-button" :disabled="isEnabled[index]" v-on:click="pushSyringe()">Start Site {{site}} Test</button>
+    <button id="reset-button" :disabled="!isEnabled[index]" v-on:click="resetSyringeServo()">Reset Site {{site}} Servo</button>
 </div>
 </template>
 
@@ -14,7 +15,8 @@ export default {
         return {
             isEnabled: [false, false, false],
             index: 0, //0: site A, 1: site B, 2: site C
-            angles: []
+            angles: [],
+            servoClient: null
         }
     },
 
@@ -34,19 +36,24 @@ export default {
     },
 
     methods: {
-        clickButton() {
-            let serviceClient = new ROSLIB.Service({
-                ros: this.$ros,
-                name: 'change_servo_angles',
-                serviceType: 'ChangeServoAngle'
-            });
-
+        pushSyringe() {
             let request = new ROSLIB.ServiceRequest({
                 id: this.index,
                 angle: this.angles[this.index]
             });
 
-            serviceClient.callService(request, (result) => {
+            this.serviceClient.callService(request, (result) => {
+                if (!result.success) alert("Changing servo angle at site " + this.site + " was not successful");
+                else Vue.set(this.isEnabled, this.index, !this.isEnabled[this.index]);
+            });
+        },
+        resetSyringeServo() {
+            let request = new ROSLIB.ServiceRequest({
+                id: this.index,
+                angle: 0
+            });
+
+            this.serviceClient.callService(request, (result) => {
                 if (!result.success) alert("Changing servo angle at site " + this.site + " was not successful");
                 else Vue.set(this.isEnabled, this.index, !this.isEnabled[this.index]);
             });
@@ -54,6 +61,12 @@ export default {
     },
 
     created: function () {
+        this.serviceClient = new ROSLIB.Service({
+                ros: this.$ros,
+                name: 'change_servo_angles',
+                serviceType: 'mrover/ChangeServoAngle'
+            });
+
         //get servo angles from yaml file
         let letter = 'A';
         for (var i = 0; i < 3; i++) {
