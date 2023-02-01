@@ -115,9 +115,15 @@ science:
   # These position are random for now
   # TODO - Please configure once we know what positions we want to turn them to
   syringe_servo_positions:
-    site_A: 135
-    site_B: 120
-    site_C: 140
+    site_A:
+      pushed: 135
+      start: 104
+    site_B:
+      pushed: 135
+      start: 103
+    site_C:
+      pushed: 135
+      start: 102
   info:
     num_diag_current: 3
     num_diag_thermistors: 3

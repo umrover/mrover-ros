@@ -1,8 +1,8 @@
 <template>
 <div>
     <h3>Sudan III Drop</h3>
-    <button id="sudan-button" :disabled="isEnabled[index]" v-on:click="pushSyringe()">Start Site {{site}} Test</button>
-    <button id="reset-button" :disabled="!isEnabled[index]" v-on:click="resetSyringeServo()">Reset Site {{site}} Servo</button>
+    <button id="sudan-button" :disabled="!isEnabled[index]" v-on:click="moveServo(angles.pushed[index], false)">Start Site {{site}} Test</button>
+    <button id="reset-button" v-on:click="moveServo(angles.start[index], true)">Reset Site {{site}} Servo</button>
 </div>
 </template>
 
@@ -13,9 +13,12 @@ import Vue from 'vue'
 export default {
     data() {
         return {
-            isEnabled: [false, false, false],
+            isEnabled: [true, true, true],
             index: 0, //0: site A, 1: site B, 2: site C
-            angles: [],
+            angles: {
+                pushed: [],
+                start: []
+            },
             servoClient: null
         }
     },
@@ -36,28 +39,17 @@ export default {
     },
 
     methods: {
-        pushSyringe() {
+        moveServo(angle, enable) {
             let request = new ROSLIB.ServiceRequest({
                 id: this.index,
-                angle: this.angles[this.index]
+                angle: angle
             });
 
             this.serviceClient.callService(request, (result) => {
                 if (!result.success) alert("Changing servo angle at site " + this.site + " was not successful");
-                else Vue.set(this.isEnabled, this.index, !this.isEnabled[this.index]);
+                else Vue.set(this.isEnabled, this.index, enable);
             });
         },
-        resetSyringeServo() {
-            let request = new ROSLIB.ServiceRequest({
-                id: this.index,
-                angle: 0
-            });
-
-            this.serviceClient.callService(request, (result) => {
-                if (!result.success) alert("Changing servo angle at site " + this.site + " was not successful");
-                else Vue.set(this.isEnabled, this.index, !this.isEnabled[this.index]);
-            });
-        }
     },
 
     created: function () {
@@ -70,13 +62,20 @@ export default {
         //get servo angles from yaml file
         let letter = 'A';
         for (var i = 0; i < 3; i++) {
-            let a = new ROSLIB.Param({
+            let push = new ROSLIB.Param({
                 ros: this.$ros,
-                name: 'science/syringe_servo_positions/site_' + letter
+                name: 'science/syringe_servo_positions/site_' + letter + '/pushed'
+            });
+            let start = new ROSLIB.Param({
+                ros: this.$ros,
+                name: 'science/syringe_servo_positions/site_' + letter + '/start'
             });
 
-            a.get((value) => {
-                this.angles.push(value);
+            push.get((value) => {
+                this.angles.pushed.push(value);
+            });
+            start.get((value) => {
+                this.angles.start.push(value);
             });
             letter = String.fromCharCode(letter.charCodeAt(0) + 1);
         }
