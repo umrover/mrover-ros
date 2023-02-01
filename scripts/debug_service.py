@@ -13,15 +13,14 @@ SERVICE_NAME = "/change_servo_angles"
 SERVICE_TYPE = ChangeServoAngle
 
 
-def printServiceRequest(service_request: Any):
+def print_service_request(service_request: Any):
     rospy.loginfo(service_request)
     return ChangeServoAngleResponse(success=True)
 
 
-
 def main():
     rospy.init_node("debug_service")
-    rospy.Service(SERVICE_NAME, SERVICE_TYPE, printServiceRequest)
+    rospy.Service(SERVICE_NAME, SERVICE_TYPE, print_service_request)
     rospy.spin()
 
 
