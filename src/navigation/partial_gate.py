@@ -35,8 +35,8 @@ class PartialGateTrajectory(Trajectory):
         rover_to_post = POST_SEPARATION * np_utils.normalized(rover_to_post)
         # scale vector to have magnitude == POST_SEPARATION
 
-        left_perp = np.array([-rover_to_post[1], rover_to_post[0], 0])  # (-y,x)
-        right_perp = np.array([rover_to_post[1], -rover_to_post[0], 0])  # (y,-x)
+        left_perp = [np_utils.perpendicular_2d(rover_to_post), 0]  # (-y,x)
+        right_perp = -1 * left_perp  # (y,-x)
 
         # This is just making our trajectory points into an array that we can read in
         coords = np.vstack(
