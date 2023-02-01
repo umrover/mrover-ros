@@ -97,31 +97,6 @@ brushed_motors:
   i2c_device_file: "/dev/i2c-1"
   test: false
 
-<<<<<<< HEAD
-odrive:
-  axis:
-    left: 0
-    right: 1
-  config:
-    current_lim: 4
-    watchdog_timeout: 0.1
-  ids:
-    front: "335D36623539"
-    middle: "205535833056"
-    back: "2066377F5753"
-  ratio:
-    direction_left: -1.0
-    direction_right: 1.0
-  ros:
-    publish_rate_hz: 20
-  publish_index:
-    front_left: 0
-    front_right: 1
-    middle_left: 2
-    middle_right: 3
-    back_left: 4
-    back_right: 5
-
 science:
   color_ids:
     red: 0
@@ -138,18 +113,17 @@ science:
     timeout: 0
     port: "/dev/ttyTHS1"
   # These position are random for now
-  # Please configure once we know what positions we want to turn them to
+  # TODO - Please configure once we know what positions we want to turn them to
   syringe_servo_positions:
     site_A: 135
     site_B: 120
     site_C: 140
   info:
+    num_diag_current: 3
+    num_diag_thermistors: 3
+    num_science_thermistors: 3
+    num_spectral: 1
     sleep: 0.01
-    science_thermistors: 3
-    diag_thermistors: 3
-    diag_current: 3
-    spectral: 1
-    sa_data: 4
     uart_transmit_msg_len: 30
 
 rover:

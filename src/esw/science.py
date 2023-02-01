@@ -66,10 +66,10 @@ class ScienceBridge:
     def __init__(self) -> None:
         self._id_by_color = rospy.get_param("science/color_ids")
         self._mosfet_number_by_device_name = rospy.get_param("science/device_mosfet_numbers")
-        self._num_diag_current = rospy.get_param("/science/info/diag_current")
-        self._num_diag_thermistors = rospy.get_param("/science/info/diag_thermistors")
-        self._num_science_thermistors = rospy.get_param("/science/info/science_thermistors")
-        self._num_spectral = rospy.get_param("/science/info/spectral")
+        self._num_diag_current = rospy.get_param("/science/info/num_diag_current")
+        self._num_diag_thermistors = rospy.get_param("/science/info/num_diag_thermistors")
+        self._num_science_thermistors = rospy.get_param("/science/info/num_science_thermistors")
+        self._num_spectral = rospy.get_param("/science/info/num_spectral")
         self._handler_function_by_tag = {
             "AUTO_SHUTOFF": self._heater_auto_shutoff_handler,
             "DIAG": self._diagnostic_handler,
@@ -353,7 +353,7 @@ class ScienceBridge:
         Then publishes to the associated ros channel.
         :param tx_msg: A string that was received from UART that contains data
             of the three carousel temperature sensors.
-            - Format: $SCIENCE_TEMP,<TEMP_0>,<TEMP_1>,<TEMP_2>
+            - Format: $SCIENCE_TEMP,<TEMP_0>,<TEMP_1>,<TEMP_2>,<EXTRA_PADDING>`
         """
         arr = tx_msg.split(",")
         if len(arr) < 4:
