@@ -6,7 +6,7 @@ def normalized(v):
     return v / norm
 
 
-# BUGGY FUNCTION: Should be 
+# BUGGY FUNCTION: Should be
 #       return np.reshape((np.array([-v.flatten()[1], v.flatten()[0]])), orig_shape)
 def perpendicular_2d(v):
     if v.shape != (2,) and v.shape != (1, 2) and v.shape != (2, 1):

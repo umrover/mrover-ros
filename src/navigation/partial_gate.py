@@ -23,15 +23,15 @@ class PartialGateTrajectory(Trajectory):
         :param rover_pos:   position of the rover (np.ndarray). Assumes that the rover is facing the post
         :return:            list of positions for the rover to traverse List(np.ndarray)
         """
-        # If the post is at (a, b) and rover is at (a + x, b + y), 
+        # If the post is at (a, b) and rover is at (a + x, b + y),
         # we'd calculate rover-to-post as c * (-x, -y).Then,
         #   Point 1 (Left Perp): (a + cy, b - cx)
         #   Point 2 (Opposite): (a - cx, b - cy)
         #   Point 3 (Right Perp): (a - cy, b + cx)
         #   Point 4 (Finish): (a + cx, b + cy)
-        # See documentation on the Wiki for visual. 
-        
-        rover_to_post = post_pos - rover_pos; 
+        # See documentation on the Wiki for visual.
+
+        rover_to_post = post_pos - rover_pos
         rover_to_post = POST_SEPARATION * np_utils.normalized(rover_to_post)
         # scale vector to have magnitude == POST_SEPARATION
 
@@ -39,8 +39,9 @@ class PartialGateTrajectory(Trajectory):
         right_perp = np.array([rover_to_post[1], -rover_to_post[0], 0])  # (y,-x)
 
         # This is just making our trajectory points into an array that we can read in
-        coords = np.vstack((post_pos + left_perp, post_pos + rover_to_post, 
-                            post_pos + right_perp, post_pos - rover_to_post))
+        coords = np.vstack(
+            (post_pos + left_perp, post_pos + rover_to_post, post_pos + right_perp, post_pos - rover_to_post)
+        )
 
         return PartialGateTrajectory(coords)
 
