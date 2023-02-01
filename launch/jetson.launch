@@ -6,7 +6,7 @@
     <!-- launch rover core nodes -->
     <include file="$(find mrover)/launch/rover_core.launch"/>
 
-    <!-- params for hardware interfaces including IMU, GPS, and odrives -->
+    <!-- params for hardware interfaces including IMU, GPS, and moteus -->
     <rosparam command="load" file="$(find mrover)/config/esw.yaml"/>
 
 	<!-- IMU and GPS driver nodes -->
@@ -21,9 +21,6 @@
 
     <!-- brushed motors node-->
 	<node name="brushed_motors" pkg="mrover" type="brushed_motors" output="screen"></node>
-
-    <!-- odrive controller node -->
-    <node name="odrive_control" pkg="mrover" type="odrive_control.py" output="screen"/>
 
 	<!-- science board node for Auton, ES, and Science missions. -->
 	<node name="science" pkg="mrover" type="science.py" output="screen"></node>

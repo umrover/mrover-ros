@@ -38,7 +38,6 @@ set(MROVER_MESSAGE_FILES
         ImuAndMag.msg
         MoteusState.msg
         MotorsStatus.msg
-        ODriveState.msg
         ScienceTemperature.msg
         Spectral.msg
         Waypoint.msg

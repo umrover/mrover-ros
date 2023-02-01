@@ -15,7 +15,7 @@ class CommandData:
     DEFAULT_TORQUE = 0.3
     MAX_TORQUE = 0.5
     POSITION_FOR_VELOCITY_CONTROL = math.nan
-    VELOCITY_LIMIT = 5
+    VELOCITY_LIMIT_REV_S = 50  # DO NOT CHANGE THIS HAPHAZARDLY. DERIVED FROM TESTING.
     ZERO_VELOCITY = 0.0
 
     def __init__(
@@ -25,7 +25,7 @@ class CommandData:
         torque: float = DEFAULT_TORQUE,
     ):
         self.position = position
-        self.velocity = max(-CommandData.VELOCITY_LIMIT, min(CommandData.VELOCITY_LIMIT, velocity))
+        self.velocity = max(-CommandData.VELOCITY_LIMIT_REV_S, min(CommandData.VELOCITY_LIMIT_REV_S, velocity))
         self.torque = max(0, min(CommandData.MAX_TORQUE, torque))
 
 
@@ -138,7 +138,7 @@ class MoteusBridge:
             self.controller.set_position(
                 position=command.position,
                 velocity=command.velocity,
-                velocity_limit=CommandData.VELOCITY_LIMIT,
+                velocity_limit=CommandData.VELOCITY_LIMIT_REV_S,
                 maximum_torque=command.torque,
                 watchdog_timeout=MoteusBridge.ROVER_NODE_TO_MOTEUS_WATCHDOG_TIMEOUT_S,
                 query=True,
@@ -243,34 +243,34 @@ class DriveApp:
     DRIVE_NAMES = ["FrontLeft", "FrontRight", "MiddleLeft", "MiddleRight", "BackLeft", "BackRight"]
 
     def __init__(self):
-        drive_info_by_name = rospy.get_param("brushless/drive")
+        self.drive_info_by_name = rospy.get_param("brushless/drive")
         self.drive_bridge_by_name = {}
         using_pi3_hat = rospy.get_param("brushless/using_pi3_hat")
         if using_pi3_hat:
             import moteus_pi3hat
 
             transport = moteus_pi3hat.Pi3HatRouter(
-                servo_bus_map={1: [info["id"] for name, info in drive_info_by_name.items()]}
+                servo_bus_map={1: [info["id"] for name, info in self.drive_info_by_name.items()]}
             )
         else:
             transport = None
 
-        for name, info in drive_info_by_name.items():
+        for name, info in self.drive_info_by_name.items():
             self.drive_bridge_by_name[name] = MoteusBridge(info["id"], transport)
         rover_width = rospy.get_param("rover/width")
         rover_length = rospy.get_param("rover/length")
         self.WHEEL_DISTANCE_INNER = rover_width / 2.0
         self.WHEEL_DISTANCE_OUTER = math.sqrt(((rover_width / 2.0) ** 2) + ((rover_length / 2.0) ** 2))
 
-        _ratio_motor_to_wheel = rospy.get_param("wheel/gear_ratio")
-        self.WHEELS_M_S_TO_MOTOR_RAD_RATIO = (1 / rospy.get_param("wheel/radius")) * rospy.get_param("wheel/gear_ratio")
+        ratio_motor_to_wheel = rospy.get_param("wheel/gear_ratio")
+
+        # To convert m/s to rev/s, multiply by this constant. Divide by circumference, multiply by gear ratio.
+        self.WHEELS_M_S_TO_MOTOR_REV_S = (1 / (rospy.get_param("wheel/radius") * 2 * math.pi)) * ratio_motor_to_wheel
 
         _max_speed_m_s = rospy.get_param("rover/max_speed")
         assert _max_speed_m_s > 0, "rover/max_speed config must be greater than 0"
 
-        max_motor_rad_s = _max_speed_m_s * self.WHEELS_M_S_TO_MOTOR_RAD_RATIO
-        self.MEASURED_MAX_MOTOR_RAD_S = 1 * 2 * math.pi  # Should not be changed. Derived from testing.
-        self._max_motor_speed_rad_s = min(self.MEASURED_MAX_MOTOR_RAD_S, max_motor_rad_s)
+        self._max_motor_speed_rev_s = _max_speed_m_s * self.WHEELS_M_S_TO_MOTOR_REV_S
         self._last_updated_time = t.time()
 
         rospy.Subscriber("cmd_vel", Twist, self._process_twist_message)
@@ -295,38 +295,51 @@ class DriveApp:
         """
         Converts a Twist message to individual motor speeds.
         :param ros_msg: Has linear x and angular z velocity components.
+        Linear velocity is assumed to be in meters per second.
+        Angular velocity is assumed to be in radians per second.
         """
         forward = ros_msg.linear.x
         turn = ros_msg.angular.z
 
+        # Multiply radians per second by the radius and you get arc length because s = r(theta).
         turn_difference_inner = turn * self.WHEEL_DISTANCE_INNER
         turn_difference_outer = turn * self.WHEEL_DISTANCE_OUTER
 
-        left_rad_inner = (forward - turn_difference_inner) * self.WHEELS_M_S_TO_MOTOR_RAD_RATIO
-        right_rad_inner = (forward + turn_difference_inner) * self.WHEELS_M_S_TO_MOTOR_RAD_RATIO
-        left_rad_outer = (forward - turn_difference_outer) * self.WHEELS_M_S_TO_MOTOR_RAD_RATIO
-        right_rad_outer = (forward + turn_difference_outer) * self.WHEELS_M_S_TO_MOTOR_RAD_RATIO
+        left_rev_inner = (forward - turn_difference_inner) * self.WHEELS_M_S_TO_MOTOR_REV_S
+        right_rev_inner = (forward + turn_difference_inner) * self.WHEELS_M_S_TO_MOTOR_REV_S
+        left_rev_outer = (forward - turn_difference_outer) * self.WHEELS_M_S_TO_MOTOR_REV_S
+        right_rev_outer = (forward + turn_difference_outer) * self.WHEELS_M_S_TO_MOTOR_REV_S
 
         # Ignore inner since outer > inner always
-        larger_abs_rad_s = max(abs(left_rad_outer), abs(right_rad_outer))
-        if larger_abs_rad_s > self._max_motor_speed_rad_s:
-            change_ratio = self._max_motor_speed_rad_s / larger_abs_rad_s
-            left_rad_inner *= change_ratio
-            right_rad_inner *= change_ratio
-            left_rad_outer *= change_ratio
-            right_rad_outer *= change_ratio
+        larger_abs_rev_s = max(abs(left_rev_outer), abs(right_rev_outer))
+        if larger_abs_rev_s > self._max_motor_speed_rev_s:
+            change_ratio = self._max_motor_speed_rev_s / larger_abs_rev_s
+            left_rev_inner *= change_ratio
+            right_rev_inner *= change_ratio
+            left_rev_outer *= change_ratio
+            right_rev_outer *= change_ratio
 
         self._last_updated_time = t.time()
         for name, bridge in self.drive_bridge_by_name.items():
 
-            if name == "FrontLeft" or name == "BackLeft":
-                commanded_velocity = left_rad_outer
+            if name == "FrontLeft":
+                front_left_multiplier = self.drive_info_by_name[name]["multiplier"]
+                commanded_velocity_rev_s = front_left_multiplier * left_rev_outer
+            elif name == "BackLeft":
+                back_left_multiplier = self.drive_info_by_name[name]["multiplier"]
+                commanded_velocity_rev_s = back_left_multiplier * left_rev_outer
             elif name == "MiddleLeft":
-                commanded_velocity = left_rad_inner
-            elif name == "FrontRight" or name == "BackRight":
-                commanded_velocity = right_rad_outer
+                middle_left_multiplier = self.drive_info_by_name[name]["multiplier"]
+                commanded_velocity_rev_s = middle_left_multiplier * left_rev_inner
+            elif name == "FrontRight":
+                front_right_multiplier = self.drive_info_by_name[name]["multiplier"]
+                commanded_velocity_rev_s = front_right_multiplier * right_rev_outer
+            elif name == "BackRight":
+                back_right_multiplier = self.drive_info_by_name[name]["multiplier"]
+                commanded_velocity_rev_s = back_right_multiplier * right_rev_outer
             elif name == "MiddleRight":
-                commanded_velocity = right_rad_inner
+                middle_right_multiplier = self.drive_info_by_name[name]["multiplier"]
+                commanded_velocity_rev_s = middle_right_multiplier * right_rev_inner
             else:
                 rospy.logerr(f"Invalid name {name}")
                 continue
@@ -335,7 +348,7 @@ class DriveApp:
                 bridge.set_command(
                     CommandData(
                         position=CommandData.POSITION_FOR_VELOCITY_CONTROL,
-                        velocity=commanded_velocity,
+                        velocity=commanded_velocity_rev_s,
                         torque=CommandData.DEFAULT_TORQUE,
                     )
                 )
