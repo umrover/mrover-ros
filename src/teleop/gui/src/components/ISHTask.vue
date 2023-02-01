@@ -75,7 +75,7 @@ export default {
     created: function () {
         this.spectral_sub = new ROSLIB.Topic({
             ros: this.$ros,
-            name: 'science_data/spectral',
+            name: 'science/spectral',
             messageType: 'mrover/Spectral'
         });
 

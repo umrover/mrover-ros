@@ -81,8 +81,8 @@ class ScienceBridge:
             "AUTO_SHUTOFF": rospy.Publisher("science/heater_auto_shutoff_state_data", Enable, queue_size=1),
             "DIAG": rospy.Publisher("diagnostic_data", Diagnostic, queue_size=1),
             "HEATER_DATA": rospy.Publisher("science/heater_state_data", HeaterData, queue_size=1),
-            "SCIENCE_TEMP": rospy.Publisher("science_data/temperatures", ScienceTemperature, queue_size=1),
-            "SPECTRAL": rospy.Publisher("science_data/spectral", Spectral, queue_size=1),
+            "SCIENCE_TEMP": rospy.Publisher("science/temperatures", ScienceTemperature, queue_size=1),
+            "SPECTRAL": rospy.Publisher("science/spectral", Spectral, queue_size=1),
         }
         self._sleep = rospy.get_param("science/info/sleep")
         self._uart_transmit_msg_len = rospy.get_param("science/info/uart_transmit_msg_len")
