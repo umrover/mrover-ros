@@ -12,48 +12,48 @@
         <thead>
             <tr>
                 <th class="tableElement tableHeader">Name</th>
-                <th class="tableElement tableHeader">{{moteusStateData.name[state.FrontLeft]}}</th>
-                <th class="tableElement tableHeader">{{moteusStateData.name[state.FrontRight]}}</th>
+                <th class="tableElement tableHeader">{{moteusStateData.name[indices.FrontLeft]}}</th>
+                <th class="tableElement tableHeader">{{moteusStateData.name[indices.FrontRight]}}</th>
             </tr>
             <tr>
                 <th class="tableElement tableHeader">State</th>
-                <th class="tableElement">{{moteusStateData.state[state.FrontLeft]}}</th>
-                <th class="tableElement">{{moteusStateData.state[state.FrontRight]}}</th>
+                <th class="tableElement">{{moteusStateData.state[indices.FrontLeft]}}</th>
+                <th class="tableElement">{{moteusStateData.state[indices.FrontRight]}}</th>
             </tr>
             <tr>
                 <th class="tableElement tableHeader">Error</th>
-                <th class="tableElement">{{moteusStateData.error[state.FrontLeft]}}</th>
-                <th class="tableElement">{{moteusStateData.error[state.FrontRight]}}</th>
+                <th class="tableElement">{{moteusStateData.error[indices.FrontLeft]}}</th>
+                <th class="tableElement">{{moteusStateData.error[indices.FrontRight]}}</th>
             </tr>
             <tr>
                 <th class="tableElement tableHeader">Name</th>
-                <th class="tableElement tableHeader">{{moteusStateData.name[state.MiddleLeft]}}</th>
-                <th class="tableElement tableHeader">{{moteusStateData.name[state.MiddleRight]}}</th>
+                <th class="tableElement tableHeader">{{moteusStateData.name[indices.MiddleLeft]}}</th>
+                <th class="tableElement tableHeader">{{moteusStateData.name[indices.MiddleRight]}}</th>
             </tr>
             <tr>
                 <th class="tableElement tableHeader">State</th>
-                <th class="tableElement">{{moteusStateData.state[state.MiddleLeft]}}</th>
-                <th class="tableElement">{{moteusStateData.state[state.MiddleRight]}}</th>
+                <th class="tableElement">{{moteusStateData.state[indices.MiddleLeft]}}</th>
+                <th class="tableElement">{{moteusStateData.state[indices.MiddleRight]}}</th>
             </tr>
             <tr>
                 <th class="tableElement tableHeader">Error</th>
-                <th class="tableElement">{{moteusStateData.error[state.MiddleLeft]}}</th>
-                <th class="tableElement">{{moteusStateData.error[state.MiddleRight]}}</th>
+                <th class="tableElement">{{moteusStateData.error[indices.MiddleLeft]}}</th>
+                <th class="tableElement">{{moteusStateData.error[indices.MiddleRight]}}</th>
             </tr>
             <tr>
                 <th class="tableElement tableHeader">Name</th>
-                <th class="tableElement tableHeader">{{moteusStateData.name[state.BackLeft]}}</th>
-                <th class="tableElement tableHeader">{{moteusStateData.name[state.BackRight]}}</th>
+                <th class="tableElement tableHeader">{{moteusStateData.name[indices.BackLeft]}}</th>
+                <th class="tableElement tableHeader">{{moteusStateData.name[indices.BackRight]}}</th>
             </tr>
             <tr>
                 <th class="tableElement tableHeader">State</th>
-                <th class="tableElement">{{moteusStateData.state[state.BackLeft]}}</th>
-                <th class="tableElement">{{moteusStateData.state[state.BackRight]}}</th>
+                <th class="tableElement">{{moteusStateData.state[indices.BackLeft]}}</th>
+                <th class="tableElement">{{moteusStateData.state[indices.BackRight]}}</th>
             </tr>
             <tr>
                 <th class="tableElement tableHeader">Error</th>
-                <th class="tableElement">{{moteusStateData.error[state.BackLeft]}}</th>
-                <th class="tableElement">{{moteusStateData.error[state.BackRight]}}</th>
+                <th class="tableElement">{{moteusStateData.error[indices.BackLeft]}}</th>
+                <th class="tableElement">{{moteusStateData.error[indices.BackRight]}}</th>
             </tr>
         </thead>
     </table>
@@ -108,7 +108,7 @@
     vertical-align: top
 }
 
-.tableHeader {
+.tableElement.tableHeader {
     font-weight: bold;
 }
 </style>
@@ -126,6 +126,12 @@ const state = {
 }
 
 export default {
+    data() {
+        return {
+            indices: state
+        }
+    },
+
     props: {
         moteusStateData: {
             type: Object,
