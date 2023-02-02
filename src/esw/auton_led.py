@@ -10,6 +10,7 @@ from mrover.srv import (
     ChangeAutonLEDStateResponse,
 )
 
+
 class LedBridge:
     """
     A class that keeps track of the Auton LED color and updates as necessary over serial.
@@ -59,22 +60,22 @@ class LedBridge:
         """
         with self._color_lock:
 
-            # if requested color is green,
-            if self._color == "green":
+            if self._color != "green":
+                return
 
-                # then alternate between off and on
-                # every second to make it a blinking LED
+            # If requested color is green, then alternate between off and on.
+            if self._green_counter_s >= self.GREEN_PERIOD_S:
+                self._green_counter_s = 0
 
-                if self._green_counter_s >= self.GREEN_PERIOD_S:
-                    self._green_counter_s = 0
-
-                if self._green_counter_s == 0:
-                    self._ser.write(b"g")
-                elif self._green_counter_s >= self.GREEN_ON_S:
-                    self._ser.write(b"o")
-
+            if self._green_counter_s == 0:
+                self._ser.write(b"g")
+            elif self._green_counter_s >= self.GREEN_ON_S:
+                self._ser.write(b"o")
 
     def sleep(self):
+        """
+        Sleeps and updates _green_counter_s if necessary.
+        """
         time.sleep(self.SLEEP_AMOUNT)
 
         with self._color_lock:
@@ -83,6 +84,9 @@ class LedBridge:
                 self._green_counter_s += self.SLEEP_AMOUNT
 
     def update(self):
+        """
+        Writes to serial to change LED color.
+        """
         with self._color_lock:
             if self._color == "red":
                 self._ser.write(b"r")
@@ -97,6 +101,7 @@ class LedBridge:
             else:
                 self._ser.write(b"o")
 
+
 def main():
     rospy.init_node("auton_led")
 
@@ -104,17 +109,17 @@ def main():
     port = rospy.get_param("auton_led_driver/port")
     baud = rospy.get_param("auton_led_driver/baud")
 
+    # Construct the bridge.
     led_bridge = LedBridge(port, baud)
 
-    rospy.Service(
-        "change_auton_led_state",
-        ChangeAutonLEDState,
-        led_bridge.handle_change_state
-    )
+    # Configure request handler.
+    rospy.Service("change_auton_led_state", ChangeAutonLEDState, led_bridge.handle_change_state)
 
+    # Sleep indefinitely, flashing if necessary.
     while not rospy.is_shutdown():
         led_bridge.flash_if_green()
         led_bridge.sleep()
+
 
 if __name__ == "__main__":
     main()
