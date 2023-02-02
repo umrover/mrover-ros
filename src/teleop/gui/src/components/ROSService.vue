@@ -17,179 +17,210 @@
                 </option>
                 </select>
 
-                <textarea v-if="args != '' && args != '{}'" class="box" id="textarea" v-model="args"></textarea>
+      <div class="pages box">
+        <div class="requestCells">
+          <label for="'service'">Service:</label>
+          <select
+            id="service"
+            v-model="selectedService"
+            class="box"
+            required
+            @change="switchService()"
+          >
+            <option value="" selected>Select a service</option>
+            <option v-for="option in service_options" :value="option">
+              {{ option }}
+            </option>
+          </select>
 
-                <p> {{schema}} </p>
-                <p v-if="error">JSON Syntax Error! Cannot send...</p>
+          <textarea
+            v-if="args != '' && args != '{}'"
+            id="textarea"
+            v-model="args"
+            class="box"
+          ></textarea>
 
-                <button class="button" id="send" type="button" v-on:click="sendArgs()">Send</button>
+          <p>{{ schema }}</p>
+          <p v-if="error">JSON Syntax Error! Cannot send...</p>
 
-                </div>
+          <button id="send" class="box" type="button" @click="sendArgs()">
+            Send
+          </button>
+        </div>
 
-                <p class="box responseCell">{{response}}</p>
-            </div>
+        <p class="box responseCell">{{ response }}</p>
       </div>
     </div>
-  </template>
-  
-  <script>
-  
-  import ROSLIB from "roslib"
+  </div>
+</template>
 
-  const datatypes = ['bool', 'int8', 'uint8', 'int16', 'uint16', 
-                  'int32', 'uint32', 'int64', 'uint64', 'float32', 
-                  'float64', 'string', 'time', 'duration']
-  
-  
-  export default {
-    name: 'ROSService',
-    mounted() {
-      this.populateServices();
-    },
-    data() {
-        return {
-            service_options: [],
-            selectedService: '',
-            selectedType: '',
-            args: '',
-            schema: '',
-            error: false,
-            response: ''
+<script>
+import ROSLIB from "roslib";
+
+const datatypes = [
+  "bool",
+  "int8",
+  "uint8",
+  "int16",
+  "uint16",
+  "int32",
+  "uint32",
+  "int64",
+  "uint64",
+  "float32",
+  "float64",
+  "string",
+  "time",
+  "duration",
+];
+
+export default {
+  name: "ROSService",
+  data() {
+    return {
+      service_options: [],
+      selectedService: "",
+      selectedType: "",
+      args: "",
+      schema: "",
+      error: false,
+      response: "",
+    };
+  },
+  mounted() {
+    this.populateServices();
+  },
+
+  methods: {
+    populateServices: function () {
+      //populates list of active services for the dropdown menu
+      var topicsClient = new ROSLIB.Service({
+        ros: this.$ros,
+        name: "/rosapi/services",
+        serviceType: "rosapi/Services",
+      });
+
+      var servicesSorted = [];
+      var request = new ROSLIB.ServiceRequest();
+      topicsClient.callService(request, (result) => {
+        servicesSorted = result.services.sort();
+        for (var r of servicesSorted) {
+          this.service_options.push(r);
         }
+      });
     },
-    
 
-    methods: {
-        populateServices: function() { //populates list of active services for the dropdown menu
-          var topicsClient = new ROSLIB.Service({
-              ros : this.$ros,
-              name : '/rosapi/services',
-              serviceType : 'rosapi/Services'
-          });
+    switchService: function () {
+      //any time a service changes, it clears the display and displays the new schema (similar to ROSSend)
+      this.args = "";
+      this.schema = "";
+      this.error = false;
+      var serviceTypeClient = new ROSLIB.Service({
+        ros: this.$ros,
+        name: "/rosapi/service_type",
+        serviceType: "ServiceType",
+      });
 
-          var servicesSorted = [];
-          var request = new ROSLIB.ServiceRequest();
-          topicsClient.callService(request, (result) => {
-              servicesSorted = result.services.sort();
-              for(var r of servicesSorted){
-                this.service_options.push(r);
+      var request = new ROSLIB.ServiceRequest({
+        service: this.selectedService,
+      });
+      serviceTypeClient.callService(request, (result) => {
+        this.selectedType = result.type;
+        getArgs(result.type);
+      });
+
+      const getArgs = (type) => {
+        var serviceClient = new ROSLIB.Service({
+          ros: this.$ros,
+          name: "/rosapi/service_request_details",
+          serviceType: "ServiceRequestDetails",
+        });
+
+        var request1 = new ROSLIB.ServiceRequest({ type: type });
+        serviceClient.callService(request1, (result) => {
+          const displayArgs = (arr) => {
+            for (var i = 0; i < arr.fieldtypes.length; i++) {
+              if (!datatypes.includes(arr.fieldtypes[i])) {
+                this.args += '"' + arr.fieldnames[i] + '": ';
+                if (arr.fieldarraylen[i] != -1) {
+                  this.args += "[ ";
+                }
+                this.args += " {";
+                ctr += 1;
+                displayargs(result.typedefs[ctr]);
+                this.args += "\n}";
+                if (arr.fieldarraylen[i] != -1) {
+                  this.args += ", ]";
+                }
+              } else {
+                this.args += '"' + arr.fieldnames[i] + '": ';
+                if (arr.fieldarraylen[i] != -1) {
+                  this.args += "[]";
+                }
+                if (i != arr.fieldnames.length - 1) {
+                  this.args += ",\n";
+                }
+
+                this.schema +=
+                  "\n" + arr.fieldtypes[i] + "\t" + arr.fieldnames[i];
               }
-          });
-
-        },
-
-        switchService : function(){ //any time a service changes, it clears the display and displays the new schema (similar to ROSSend)
-            this.args = '';
-            this.schema = '';
-            this.error = false;
-            var serviceTypeClient = new ROSLIB.Service({
-              ros : this.$ros,
-              name : '/rosapi/service_type',
-              serviceType : 'ServiceType'
-            });
-
-            var request = new ROSLIB.ServiceRequest({service: this.selectedService});
-            serviceTypeClient.callService(request, (result) => {
-                this.selectedType = result.type;
-                getArgs(result.type)
-            });
-
-            const getArgs = (type) => {
-                var serviceClient = new ROSLIB.Service({
-                ros : this.$ros,
-                name : '/rosapi/service_request_details',
-                serviceType : 'ServiceRequestDetails'
-                });
-
-                var request1 = new ROSLIB.ServiceRequest({type: type});
-                serviceClient.callService(request1, (result) => {
-                    const displayArgs = (arr) => {
-                        for(var i = 0; i < arr.fieldtypes.length; i++){
-                            if(!(datatypes.includes(arr.fieldtypes[i]))){
-
-                                this.args += "\"" + arr.fieldnames[i] + "\": ";
-                                if(arr.fieldarraylen[i] != -1){
-                                this.args += "[ ";
-                                }
-                                this.args += " {";
-                                ctr += 1; 
-                                displayargs(result.typedefs[ctr]);
-                                this.args += "\n}";
-                                if(arr.fieldarraylen[i] != -1){
-                                this.args += ", ]";
-                                }
-                            }
-                            else {
-                            this.args += "\""+ arr.fieldnames[i] + "\": ";
-                            if(arr.fieldarraylen[i] != -1){
-                                this.args += "[]";
-                            }
-                            if(i != arr.fieldnames.length-1) {
-                                this.args += ",\n";
-                            }
-
-                            this.schema += "\n" + arr.fieldtypes[i] + "\t" + arr.fieldnames[i];
-                            }
-
-                        }
-                    }
-                    var ctr = 0;
-                    displayArgs(result.typedefs[0]);
-                });
             }
-
-        },
-
-        sendArgs : function(){ //when button pressed, send service and show response
-          this.error = false;
-          if(this.args[0] != "{") this.args = "{" + this.args + "}";
-          var parsed_args;
-          try {
-            if(this.args == '{}') parsed_args = '';
-            else parsed_args = new ROSLIB.ServiceRequest(JSON.parse(this.args));
-          } catch (e){
-              this.error = true;
-          }
-          
-          if (!this.error){
-            var serviceClient = new ROSLIB.Service({
-                ros : this.$ros,
-                name : this.selectedService,
-                serviceType : this.selectedType
-              });
-  
-              var request = new ROSLIB.ServiceRequest(parsed_args);
-              serviceClient.callService(request, (result) => {
-                  this.response = result;
-              });
-          }
-        }
+          };
+          var ctr = 0;
+          displayArgs(result.typedefs[0]);
+        });
+      };
     },
-  
-  }
-  </script>
-  
-  <style scoped>
 
-    p {
-      width: 300px;
-        white-space: pre-wrap;
-    }
+    sendArgs: function () {
+      //when button pressed, send service and show response
+      this.error = false;
+      if (this.args[0] != "{") this.args = "{" + this.args + "}";
+      var parsed_args;
+      try {
+        if (this.args == "{}") parsed_args = "";
+        else parsed_args = new ROSLIB.ServiceRequest(JSON.parse(this.args));
+      } catch (e) {
+        this.error = true;
+      }
 
-    .pages {
-        display: grid;
-        grid-gap: 10px;
-        grid-template-columns: repeat(2, 1fr);
-        grid-template-rows: 1fr;
-        grid-template-areas:
-        "requestCell responseCell";
-        margin: 10px;
-    }
+      if (!this.error) {
+        var serviceClient = new ROSLIB.Service({
+          ros: this.$ros,
+          name: this.selectedService,
+          serviceType: this.selectedType,
+        });
 
-    img {
-        border: none;
-        border-radius: 0px;
-    }
+        var request = new ROSLIB.ServiceRequest(parsed_args);
+        serviceClient.callService(request, (result) => {
+          this.response = result;
+        });
+      }
+    },
+  },
+};
+</script>
+
+<style scoped>
+p {
+  width: 300px;
+  white-space: pre-wrap;
+}
+
+.box {
+  background-color: white;
+  border-radius: 5px;
+  padding: 10px;
+  border-color: rgba(236, 236, 236, 0.966);
+  box-shadow: 2px 2px 15px rgba(236, 236, 236, 0.966),
+    -2px -2px 15px rgba(236, 236, 236, 0.966);
+}
+
+.header {
+  display: flex;
+  align-items: center;
+  box-shadow: 0px 10px 8px -4px rgba(236, 236, 236, 0.966);
+}
 
     #textarea {
         margin-top: 10px; 
@@ -212,8 +243,20 @@
       width: auto;
     }
 
-    .requestCells {
-      grid-area: requestCell;
-    }
+#send:hover {
+  background-color: rgb(116, 150, 201);
+}
 
-  </style>
+#send:active {
+  background-color: rgb(92, 124, 172);
+}
+
+.responseCell {
+  grid-area: responseCell;
+  width: 100%;
+}
+
+.requestCells {
+  grid-area: requestCell;
+}
+</style>

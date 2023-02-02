@@ -1,6 +1,5 @@
 <template>
-  <div class="wrapper">
-    <!-- Leaflet Map Definition-->
+  <div class="wrap">
     <l-map
       ref="map"
       class="map"
@@ -9,7 +8,6 @@
       @click="getClickedLatLon($event)"
     >
       <l-control-scale :imperial="false" />
-      <!-- Tile Layer for map background -->
       <l-tile-layer
         ref="tileLayer"
         :url="online ? onlineUrl : offlineUrl"
@@ -17,43 +15,27 @@
         :options="online ? onlineTileOptions : offlineTileOptions"
       />
 
-      <!-- Markers for rover location -->
-      <!-- TODO: Figure out if we still want these -->
       <l-marker ref="rover" :lat-lng="odomLatLng" :icon="locationIcon" />
 
-      <!-- Waypoint Icons -->
-      <l-marker
-        v-for="(waypoint, index) in waypointList"
-        :key="index"
-        :lat-lng="waypoint.latLng"
-        :icon="waypointIcon"
-      >
-        <l-tooltip :options="{ permanent: 'true', direction: 'top' }">
-          {{ waypoint.name }}, {{ index }}
-        </l-tooltip>
-      </l-marker>
+      <div v-for="(waypoint, index) in waypointList" :key="index">
+        <div v-if="index === highlightedWaypoint">
+          <l-marker :lat-lng="waypoint.latLng" :icon="highlightedWaypointIcon">
+            <l-tooltip :options="{ permanent: 'true', direction: 'top' }">
+              {{ waypoint.name }}, {{ index }}
+            </l-tooltip>
+          </l-marker>
+        </div>
+        <div v-else>
+          <l-marker :lat-lng="waypoint.latLng" :icon="waypointIcon">
+            <l-tooltip :options="{ permanent: 'true', direction: 'top' }">
+              {{ waypoint.name }}, {{ index }}
+            </l-tooltip>
+          </l-marker>
+        </div>
+      </div>
 
-      <!-- Gate Post Icons -->
-      <l-marker v-if="post1" :lat-lng="post1" :icon="postIcon">
-        <l-tooltip :options="{ permanent: 'true', direction: 'top' }"
-          >Post 1</l-tooltip
-        >
-      </l-marker>
-      <l-marker v-if="post2" :lat-lng="post2" :icon="postIcon">
-        <l-tooltip :options="{ permanent: 'true', direction: 'top' }"
-          >Post 2</l-tooltip
-        >
-      </l-marker>
-
-      <!-- Polylines -->
-      <l-polyline
-        :lat-lngs="polylinePath"
-        :color="'red'"
-        :dash-array="'5, 5'"
-      />
       <l-polyline :lat-lngs="odomPath" :color="'blue'" />
     </l-map>
-    <!-- Controls that go directly under the map -->
     <div class="controls">
       <div class="online">
         <label><input v-model="online" type="checkbox" />Online</label>
@@ -73,11 +55,11 @@ import {
   LControlScale,
 } from "vue2-leaflet";
 import { mapGetters, mapMutations } from "vuex";
-import L from "../leaflet-rotatedmarker";
+import L from "../leaflet-rotatedmarker.js";
+import ROSLIB from "roslib";
 
 const MAX_ODOM_COUNT = 1000;
 const DRAW_FREQUENCY = 10;
-// Options for the tilelayer object on the map
 const onlineUrl = "http://{s}.google.com/vt/lyrs=s&x={x}&y={y}&z={z}";
 const offlineUrl = "/static/map/{z}/{x}/{y}.png";
 const onlineTileOptions = {
@@ -91,7 +73,7 @@ const offlineTileOptions = {
 };
 
 export default {
-  name: "AutonRoverMap",
+  name: "RoverMap",
 
   components: {
     LMap,
@@ -101,53 +83,6 @@ export default {
     LPopup,
     LTooltip,
     LControlScale,
-  },
-
-  created: function () {
-    // Get Icons for Map
-    this.locationIcon = L.icon({
-      iconUrl: "/static/location_marker_icon.png",
-      iconSize: [40, 40],
-      iconAnchor: [20, 20],
-    });
-    this.waypointIcon = L.icon({
-      iconUrl: "/static/map_marker.png",
-      iconSize: [64, 64],
-      iconAnchor: [32, 64],
-      popupAnchor: [0, -32],
-    });
-    this.postIcon = L.icon({
-      iconUrl: "/static/gate_location.png",
-      iconSize: [64, 64],
-      iconAnchor: [32, 64],
-      popupAnchor: [0, -32],
-    });
-  },
-
-  computed: {
-    ...mapGetters("autonomy", {
-      route: "route",
-      waypointList: "waypointList",
-    }),
-
-    // Convert to latLng object for Leaflet to use
-    odomLatLng: function () {
-      return L.latLng(this.odom.latitude_deg, this.odom.longitude_deg);
-    },
-
-    // Concat waypoints on course with rover marker at index 0 for polyline
-    polylinePath: function () {
-      return [this.odomLatLng].concat(
-        this.route.map((waypoint) => waypoint.latLng)
-      );
-    },
-  },
-
-  props: {
-    odom: {
-      type: Object,
-      required: true,
-    },
   },
 
   data() {
@@ -163,16 +98,33 @@ export default {
       offlineTileOptions: offlineTileOptions,
       roverMarker: null,
       waypointIcon: null,
+      highlightedWaypointIcon: null,
       map: null,
       odomCount: 0,
       locationIcon: null,
       odomPath: [],
-
-      post1: null,
-      post2: null,
-
       findRover: false,
     };
+  },
+
+  created: function () {
+    this.locationIcon = L.icon({
+      iconUrl: "/static/location_marker_icon.png",
+      iconSize: [64, 64],
+      iconAnchor: [32, 32],
+    });
+    this.waypointIcon = L.icon({
+      iconUrl: "/static/map_marker.png",
+      iconSize: [64, 64],
+      iconAnchor: [32, 64],
+      popupAnchor: [0, -32],
+    });
+    this.highlightedWaypointIcon = L.icon({
+      iconUrl: "/static/map_marker_highlighted.png",
+      iconSize: [64, 64],
+      iconAnchor: [32, 64],
+      popupAnchor: [0, -32],
+    });
   },
 
   methods: {
@@ -183,12 +135,36 @@ export default {
         lon: e.latlng.lng,
       });
     },
-
-    ...mapMutations("autonomy", {
+    ...mapMutations("erd", {
       setClickPoint: "setClickPoint",
       setWaypointList: "setWaypointList",
       setOdomFormat: "setOdomFormat",
     }),
+  },
+
+  computed: {
+    ...mapGetters("erd", {
+      waypointList: "waypointList",
+      highlightedWaypoint: "highlightedWaypoint",
+    }),
+
+    // Convert to latLng object for Leaflet to use
+    odomLatLng: function () {
+      return L.latLng(this.odom.latitude_deg, this.odom.longitude_deg);
+    },
+
+    polylinePath: function () {
+      return [this.odomLatLng].concat(
+        this.route.map((waypoint) => waypoint.latLng)
+      );
+    },
+  },
+
+  props: {
+    odom: {
+      type: Object,
+      required: true,
+    },
   },
 
   watch: {
@@ -228,8 +204,6 @@ export default {
       deep: true,
     },
   },
-
-  // Pull objects from refs to be able to access data and change w functions
   mounted: function () {
     this.$nextTick(() => {
       this.map = this.$refs.map.mapObject;
@@ -240,55 +214,13 @@ export default {
 </script>
 
 <style scoped>
-.controls label {
-  font-size: 12px;
-}
-
-.controls div {
-  display: inline-block;
-}
-
-.online {
-  float: right;
-}
-
-.wrapper {
-  align-items: center;
-  height: 100%;
-  display: grid;
-  overflow: hidden;
-  min-height: 100%;
-  grid-gap: 3px;
-  grid-template-columns: 1fr;
-  grid-template-rows: 94% 6%;
-  grid-template-areas:
-    "map"
-    "controls";
-}
-.custom-tooltip {
-  display: inline-block;
-  margin: 10px 20px;
-  opacity: 1;
-  position: relative;
-}
-
-.custom-tooltip .tooltip-inner {
-  background: #0088cc;
-}
-
-.custom-tooltip.top .tooltip-arrow {
-  border-top-color: #0088cc;
-}
-
-/* Grid area declarations */
 .map {
   height: 100%;
   width: 100%;
-  grid-area: "map";
 }
-
-.controls {
-  grid-area: "controls";
-  display: inline;
+.wrap {
+  display: flex;
+  align-items: center;
+  height: 100%;
 }
 </style>

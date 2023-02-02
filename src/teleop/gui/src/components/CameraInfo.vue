@@ -14,61 +14,67 @@
   
   <script>
   
-  export default {
-    data() {
-      return {
-        selectedQuality: "0",
-        selectedStream: this.stream,
-        prevStream: this.stream
-      }
+export default {
+  props: {
+    name: {
+      type: String,
+      required: true,
+    },
+    id: {
+      type: Number,
+      required: true,
+    },
+    stream: {
+      type: Number,
+      required: true,
+    },
+  },
+  data() {
+    return {
+      selectedQuality: "0",
+      selectedStream: this.stream,
+      prevStream: this.stream,
+    };
+  },
+
+  watch: {
+    stream: function () {
+      this.prevStream = this.stream;
+      this.selectedStream = this.stream;
+    },
+  },
+
+  methods: {
+    changeQuality: function () {
+      this.$emit("newQuality", {
+        index: this.id,
+        value: parseInt(this.selectedQuality),
+      });
     },
 
-    props: {
-        name: {
-            type: String,
-            required: true
-        },
-        id: {
-            type: Number,
-            required: true
-        },
-        stream: {
-            type: Number,
-            required: true
-        }
+    swapStream() {
+      this.$emit("swapStream", {
+        prev: this.prevStream,
+        newest: this.selectedStream,
+      });
+      this.prevStream = this.selectedStream;
     },
+  },
+};
+</script>
 
+<style scoped>
+.box {
+  border-radius: 5px;
+  padding: 10px;
+  border: 1px solid black;
+}
+.wrap {
+  margin: 10px;
+  padding: 10px;
+}
 
-    methods: {
-      changeQuality: function(){
-        this.$emit('newQuality', {index: this.id, value: parseInt(this.selectedQuality)});
-      },
-
-      swapStream(){
-        this.$emit('swapStream', {prev: this.prevStream, newest: this.selectedStream});
-        this.prevStream = this.selectedStream;
-      }
-    },
-
-    watch: {
-      stream: function(){
-        this.prevStream = this.stream;
-        this.selectedStream = this.stream;
-      }
-    }
-
-  }
-  </script>
-  
-  <style scoped>
-
-  .wrap {
-    margin: 10px;
-    padding: 10px;
-  }
-
-  .wrap > * {
-    margin: 5px 0 5px 0;
-  }
-
-  </style>
+.wrap > * {
+  margin: 5px 0 5px 0;
+}
+</style>

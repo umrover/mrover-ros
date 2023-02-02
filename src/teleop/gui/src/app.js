@@ -8,16 +8,16 @@ import store from './store'
 import 'leaflet/dist/leaflet.css'
 import './assets/style.css';
 
-Vue.config.productionTip = false
+Vue.config.productionTip = false;
 Vue.prototype.$ros = new ROSLIB.Ros({
-  url : 'ws://localhost:9090'
+  url: "ws://localhost:9090",
 });
 
 /* eslint-disable no-new */
 new Vue({
-  el: '#app',
+  el: "#app",
   router,
   store,
   components: { App },
-  template: '<App/>'
-})
+  template: "<App/>",
+});

@@ -6,19 +6,19 @@
 
 <script>
 export default {
-  name: 'MenuButton',
+  name: "MenuButton",
 
   props: {
     link: {
       type: String,
-      required: true
+      required: true,
     },
     name: {
       type: String,
-      required: true
-    }
-  }
-}
+      required: true,
+    },
+  },
+};
 </script>
 
 <style scoped>

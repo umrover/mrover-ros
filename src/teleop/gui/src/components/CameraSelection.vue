@@ -7,74 +7,73 @@
         </template>
       </div>
     </div>
-  </template>
-  
-  <script>
-  
-  export default {
-    data() {
-      return {
-        opacities: new Array(9).fill(1.0)
-      }
-    },
+  </div>
+</template>
 
-    props: {
-      capacity: {
-        type: Number,
-        required: true
-      },
-      camsEnabled: {
-        type: Array,
-        required: true
-      },
-      names: {
-        type: Array,
-        required: true
-      }
+<script>
+export default {
+  props: {
+    capacity: {
+      type: Number,
+      required: true,
     },
-    
-    computed: {
-      maxedOut() {
-        let num_enabled = 0
-        for (let i = 0; i < this.camsEnabled.length; i++) {
-          if(this.camsEnabled[i]) {
-            num_enabled++;
-          }
-        }
-        return num_enabled == this.capacity;
-      }
+    camsEnabled: {
+      type: Array,
+      required: true,
     },
+    names: {
+      type: Array,
+      required: true,
+    },
+  },
+  data() {
+    return {
+      opacities: new Array(9).fill(1.0),
+    };
+  },
 
-    watch: {
-      camsEnabled: function() {
-        for (let i = 0; i < this.camsEnabled.length; i++) {
-          (this.camsEnabled[i]) ? this.opacities[i] = 0.55 : this.opacities[i] = 1.0;
+  computed: {
+    maxedOut() {
+      let num_enabled = 0;
+      for (let i = 0; i < this.camsEnabled.length; i++) {
+        if (this.camsEnabled[i]) {
+          num_enabled++;
         }
       }
-    }
+      return num_enabled == this.capacity;
+    },
+  },
 
-  }
-  </script>
-  
-  <style scoped>
-    .buttons {
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      margin: 10px;
-    }
-    .button {
-      height:25px;
-      width:100px;
-    }
-    .fixed-spacer {
-      width:10px;
-      height:auto;
-    }
+  watch: {
+    camsEnabled: function () {
+      for (let i = 0; i < this.camsEnabled.length; i++) {
+        this.camsEnabled[i]
+          ? (this.opacities[i] = 0.55)
+          : (this.opacities[i] = 1.0);
+      }
+    },
+  },
+};
+</script>
 
-    .active_cam_button {
-      background-color: green;
-      color: white;
-    }
-  
-  </style>
+<style scoped>
+.buttons {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 10px;
+}
+.cam_buttons {
+  height: 25px;
+  width: 100px;
+}
+.fixed-spacer {
+  width: 10px;
+  height: auto;
+}
+
+.active_cam_button {
+  background-color: green;
+  color: white;
+}
+</style>

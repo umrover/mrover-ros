@@ -9,7 +9,7 @@
     <div class="content">
       <fieldset class="box row">
         <legend>Tasks</legend>
-        <MenuButton link="#/ERDTask" name="ERD Mission" />
+        <MenuButton link="#/EDMTask" name="EDM Mission" />
         <MenuButton link="#/ESTask" name="ES Mission" />
         <MenuButton link="#/ISHTask" name="ISH GUI" />
         <MenuButton link="#/SATask" name="Sample Acquisition GUI" />
@@ -22,15 +22,15 @@
 </template>
 
 <script>
-import MenuButton from './MenuButton.vue'
+import MenuButton from "./MenuButton.vue";
 
 export default {
-  name: 'Menu',
+  name: "Menu",
 
   components: {
-    MenuButton
-  }
-}
+    MenuButton,
+  },
+};
 </script>
 
 <style scoped>

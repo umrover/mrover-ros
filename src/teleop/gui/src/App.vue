@@ -1,29 +1,29 @@
 <template>
   <div id="app">
-    <router-view/>
+    <router-view />
   </div>
 </template>
 
 <script>
-import ROSLIB from "roslib"
+import ROSLIB from "roslib";
 
 export default {
-  name: 'App',
+  name: "App",
 
   beforeCreate: function () {
-    this.$ros.on('connection', function() {
-        console.log('Connected to websocket server.');
+    this.$ros.on("connection", function () {
+      console.log("Connected to websocket server.");
     });
 
-    this.$ros.on('error', function(error) {
-        console.log('Error connecting to websocket server: ', error);
+    this.$ros.on("error", function (error) {
+      console.log("Error connecting to websocket server: ", error);
     });
 
-    this.$ros.on('close', function() {
-        console.log('Connection to websocket server closed.');
+    this.$ros.on("close", function () {
+      console.log("Connection to websocket server closed.");
     });
-  }
-}
+  },
+};
 </script>
 
 <style>
@@ -38,5 +38,4 @@ export default {
   --active-blue: rgb(112, 148, 216);
   --shadow-color: rgba(236, 236, 236, 0.966);
 }
-
 </style>

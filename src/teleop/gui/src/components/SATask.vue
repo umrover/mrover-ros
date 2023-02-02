@@ -8,16 +8,10 @@
 </template>
 
 <script>
-
 export default {
+  components: {},
   data() {
-    return {
-
-    }
+    return {};
   },
-
-  components:{
-}
-}
+};
 </script>
-

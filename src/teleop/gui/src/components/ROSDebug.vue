@@ -6,26 +6,26 @@
     </div>
 
     <div class="pages">
-    <fieldset class="tasks row">
+      <fieldset class="tasks row">
         <legend>Tools</legend>
         <MenuButton link="#/ROSSend" name="ROS Send Message" />
         <MenuButton link="#/ROSEcho" name="ROS Echo Message" />
         <MenuButton link="#/ROSService" name="ROS Service" />
-    </fieldset>
+      </fieldset>
     </div>
-</div>
+  </div>
 </template>
 
 <script>
-import MenuButton from './MenuButton.vue'
+import MenuButton from "./MenuButton.vue";
 
 export default {
-name: 'Debug',
+  name: "Debug",
 
-components: {
-    MenuButton
-}
-}
+  components: {
+    MenuButton,
+  },
+};
 </script>
 
 <style scoped>
@@ -48,5 +48,4 @@ grid-template-areas: "header" "pages";
 font-family: sans-serif;
 height: auto; */
 }
-
 </style>
