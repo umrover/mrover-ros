@@ -1,27 +1,24 @@
 // Store for map related data
 // initial state
 const state = {
-    odomFormat: "DM",
-  }
-  
-  // getters
-  const getters = {
-    odomFormat: state => state.odomFormat,
-  }
-  
-  // mutations
-  const mutations = {
-  
-    setOdomFormat (commit, newOdomFormat) {
-      state.odomFormat = newOdomFormat
-    },
-  
-  }
-  
-  export default {
-    namespaced: true,
-    state,
-    getters,
-    mutations
-  }
-  
+  odomFormat: "DM",
+};
+
+// getters
+const getters = {
+  odomFormat: (state) => state.odomFormat,
+};
+
+// mutations
+const mutations = {
+  setOdomFormat(commit, newOdomFormat) {
+    state.odomFormat = newOdomFormat;
+  },
+};
+
+export default {
+  namespaced: true,
+  state,
+  getters,
+  mutations,
+};
