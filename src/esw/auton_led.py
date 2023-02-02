@@ -2,6 +2,7 @@
 import rospy
 import serial
 import time
+import threading
 
 from mrover.srv import (
     ChangeAutonLEDState,
@@ -9,78 +10,111 @@ from mrover.srv import (
     ChangeAutonLEDStateResponse,
 )
 
-desired_color = ""
-
-
-def handle_change_auton_led_state(req: ChangeAutonLEDStateRequest) -> ChangeAutonLEDStateResponse:
-    """Processes a request to change the auton LED array state by changing the desired color.
-    Returns the success of the transaction.
-
-    :param req: A string that is the color of the requested state of the
-        auton LED array. Note that green actually means blinking green.
-    :returns: A boolean that is always True.
+class LedBridge:
+    """
+    A class that keeps track of the Auton LED color and updates as necessary over serial.
     """
 
-    global desired_color
+    GREEN_PERIOD_S = 2
+    GREEN_ON_S = 1
+    SLEEP_AMOUNT = 1
 
-    desired_color = req.color.lower()
+    _color: str
+    _color_lock: threading.Lock
 
-    return ChangeAutonLEDStateResponse(True)
+    _green_counter_s: int
+    _ser: serial.Serial
 
+    def __init__(self, port: str, baud: int):
+        self._color = ""
+        self._color_lock = threading.Lock()
+
+        self._green_counter_s = 0
+
+        # create serial connection with Arduino
+        self._ser = serial.Serial(port=port, baudrate=baud)
+
+        self.update()
+
+    def handle_change_state(self, req: ChangeAutonLEDStateRequest) -> ChangeAutonLEDStateResponse:
+        """
+        Processes a request to change the auton LED array state by changing the desired color.
+        Returns the success of the transaction.
+
+        :param req: A string that is the color of the requested state of the
+            auton LED array. Note that green actually means blinking green.
+        :returns: A boolean that is always True.
+        """
+
+        with self._color_lock:
+            self._color = req.color.lower()
+
+        self.update()
+
+        return ChangeAutonLEDStateResponse(True)
+
+    def flash_if_green(self):
+        """
+        Updates serial and green counter if the requested color is green.
+        """
+        with self._color_lock:
+
+            # if requested color is green,
+            if self._color == "green":
+
+                # then alternate between off and on
+                # every second to make it a blinking LED
+
+                if self._green_counter_s >= self.GREEN_PERIOD_S:
+                    self._green_counter_s = 0
+
+                if self._green_counter_s == 0:
+                    self._ser.write(b"g")
+                elif self._green_counter_s >= self.GREEN_ON_S:
+                    self._ser.write(b"o")
+
+
+    def sleep(self):
+        time.sleep(self.SLEEP_AMOUNT)
+
+        with self._color_lock:
+            # if requested color is green,
+            if self._color == "green":
+                self._green_counter_s += self.SLEEP_AMOUNT
+
+    def update(self):
+        with self._color_lock:
+            if self._color == "red":
+                self._ser.write(b"r")
+
+            elif self._color == "green":
+                self._ser.write(b"g")
+                self._green_counter_s = 0
+
+            elif self._color == "blue":
+                self._ser.write(b"b")
+
+            else:
+                self._ser.write(b"o")
 
 def main():
     rospy.init_node("auton_led")
-
-    global desired_color
 
     # read serial connection info from parameter server
     port = rospy.get_param("auton_led_driver/port")
     baud = rospy.get_param("auton_led_driver/baud")
 
-    # create serial connection with Arduino
-    ser = serial.Serial(port, baud)
+    led_bridge = LedBridge(port, baud)
 
-    rospy.Service("change_auton_led_state", ChangeAutonLEDState, handle_change_auton_led_state)
-
-    color = ""
-    green_counter_s = 0
-
-    green_period_s = 2
-    green_on_s = 1
-    refresh_rate_s = green_on_s
+    rospy.Service(
+        "change_auton_led_state",
+        ChangeAutonLEDState,
+        led_bridge.handle_change_state
+    )
 
     while not rospy.is_shutdown():
-
-        if color != desired_color:
-            # send message
-            if desired_color == "red":
-                ser.write(b"r")
-            elif desired_color == "green":
-                green_counter_s = 0
-                ser.write(b"g")
-            elif desired_color == "blue":
-                ser.write(b"b")
-            else:
-                ser.write(b"o")
-
-            color = desired_color
-
-        if color == "green":
-            # if requested color is green,
-            # then alternate between off and on
-            # every second to make it a blinking LED
-
-            if green_counter_s == green_period_s:
-                green_counter_s = 0
-
-            if green_counter_s == 0:
-                ser.write(b"g")
-            elif green_counter_s == green_on_s:
-                ser.write(b"o")
-
-            time.sleep(refresh_rate_s)
-            green_counter_s += refresh_rate_s
-
+        led_bridge.flash_if_green()
+        led_bridge.sleep()
 
 if __name__ == "__main__":
     main()
