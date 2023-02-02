@@ -1,20 +1,15 @@
 <template>
-<div>
+  <div>
     <p>SA</p>
-</div>
+  </div>
 </template>
 
 <script>
-
 export default {
   data() {
-    return {
-
-    }
+    return {};
   },
 
-  components:{
-}
-}
+  components: {},
+};
 </script>
-

@@ -1,68 +1,68 @@
 <template>
   <div class="wrap-button">
-    <button v-bind:class="[this.color]" v-on:click='toggleAndEmit()'>
-      <span class='white-text'>{{name}}: <br>{{active ? '\u2611' : '\u2610'}}</span>
+    <button v-bind:class="[this.color]" v-on:click="toggleAndEmit()">
+      <span class="white-text"
+        >{{ name }}: <br />{{ active ? "\u2611" : "\u2610" }}</span
+      >
     </button>
   </div>
 </template>
 
 <script>
 export default {
-  data () {
+  data() {
     return {
-      active: false
-    }
+      active: false,
+    };
   },
 
   props: {
     name: {
       type: String,
-      required: true
+      required: true,
     },
     color: {
       type: String,
-      required: true
-    }
+      required: true,
+    },
   },
-
 
   methods: {
     toggle: function () {
-      this.active = !this.active
+      this.active = !this.active;
     },
 
     toggleAndEmit: function () {
-      this.toggle()
-      this.$emit('toggle', this.active)
-    }
-  }
-}
+      this.toggle();
+      this.$emit("toggle", this.active);
+    },
+  },
+};
 </script>
 
 <style scoped>
-  .wrap-button {
-    display: block;
-    height: 100%;
-    width: 100%;
-    align-items: center;
-    padding: 1px;
-  }
+.wrap-button {
+  display: block;
+  height: 100%;
+  width: 100%;
+  align-items: center;
+  padding: 1px;
+}
 
-  .green {
-    background-color: green;
-  }
+.green {
+  background-color: green;
+}
 
-  .red {
-    background-color: red;
-  }
+.red {
+  background-color: red;
+}
 
-  .yellow {
-    background-color: #FFD700;
-  }
+.yellow {
+  background-color: #ffd700;
+}
 
-  .white-text{
-    font-size: large;
-    color: white;
-  }
-
+.white-text {
+  font-size: large;
+  color: white;
+}
 </style>
