@@ -2,13 +2,13 @@
   <div class="wrap box">
     <p>{{ name }} ID: {{ id }}</p>
     Stream:
-    <input class="box" type="Number" min="0" max="3" v-model="selectedStream" />
-    <button class="box" v-on:click="swapStream()">Change stream</button>
+    <input v-model="selectedStream" class="box" type="Number" min="0" max="3" />
+    <button class="box" @click="swapStream()">Change stream</button>
     <label for="quality">Quality:</label>
     <select
-      class="box"
       id="quality"
       v-model="selectedQuality"
+      class="box"
       @change="changeQuality()"
     >
       <option value="0">Low</option>
@@ -20,14 +20,6 @@
 
 <script>
 export default {
-  data() {
-    return {
-      selectedQuality: "0",
-      selectedStream: this.stream,
-      prevStream: this.stream,
-    };
-  },
-
   props: {
     name: {
       type: String,
@@ -40,6 +32,20 @@ export default {
     stream: {
       type: Number,
       required: true,
+    },
+  },
+  data() {
+    return {
+      selectedQuality: "0",
+      selectedStream: this.stream,
+      prevStream: this.stream,
+    };
+  },
+
+  watch: {
+    stream: function () {
+      this.prevStream = this.stream;
+      this.selectedStream = this.stream;
     },
   },
 
@@ -57,13 +63,6 @@ export default {
         newest: this.selectedStream,
       });
       this.prevStream = this.selectedStream;
-    },
-  },
-
-  watch: {
-    stream: function () {
-      this.prevStream = this.stream;
-      this.selectedStream = this.stream;
     },
   },
 };

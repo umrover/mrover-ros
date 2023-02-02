@@ -21,16 +21,10 @@
           <template v-for="(item, i) in pdb_data">
             <tr>
               <td class="tableElement">{{ voltage[i] }}</td>
-              <td
-                class="tableElement"
-                v-bind:style="{ color: item.temp.color }"
-              >
+              <td class="tableElement" :style="{ color: item.temp.color }">
                 {{ item.temp.val.toFixed(2) }}°C
               </td>
-              <td
-                class="tableElement"
-                v-bind:style="{ color: item.current.color }"
-              >
+              <td class="tableElement" :style="{ color: item.current.color }">
                 {{ item.current.val.toFixed(2) }}A
               </td>
             </tr>

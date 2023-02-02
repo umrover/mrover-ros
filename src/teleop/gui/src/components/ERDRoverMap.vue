@@ -5,16 +5,14 @@
       class="map"
       :zoom="22"
       :center="center"
-      v-on:click="getClickedLatLon($event)"
+      @click="getClickedLatLon($event)"
     >
       <l-control-scale :imperial="false" />
       <l-tile-layer
         ref="tileLayer"
-        :url="this.online ? this.onlineUrl : this.offlineUrl"
+        :url="online ? onlineUrl : offlineUrl"
         :attribution="attribution"
-        :options="
-          this.online ? this.onlineTileOptions : this.offlineTileOptions
-        "
+        :options="online ? onlineTileOptions : offlineTileOptions"
       />
 
       <l-marker ref="rover" :lat-lng="odomLatLng" :icon="locationIcon" />
@@ -40,7 +38,7 @@
     </l-map>
     <div class="controls">
       <div class="online">
-        <label><input type="checkbox" v-model="online" />Online</label>
+        <label><input v-model="online" type="checkbox" />Online</label>
       </div>
     </div>
   </div>
@@ -77,6 +75,16 @@ const offlineTileOptions = {
 export default {
   name: "RoverMap",
 
+  components: {
+    LMap,
+    LTileLayer,
+    LMarker,
+    LPolyline,
+    LPopup,
+    LTooltip,
+    LControlScale,
+  },
+
   data() {
     return {
       // Default Center In NC 53 Parking Lot
@@ -97,16 +105,6 @@ export default {
       odomPath: [],
       findRover: false,
     };
-  },
-
-  components: {
-    LMap,
-    LTileLayer,
-    LMarker,
-    LPolyline,
-    LPopup,
-    LTooltip,
-    LControlScale,
   },
 
   created: function () {

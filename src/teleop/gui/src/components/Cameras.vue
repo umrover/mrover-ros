@@ -3,39 +3,39 @@
     <h3>Cameras</h3>
     <div class="input">
       Camera name:
-      <input class="rounded" type="message" v-model="cameraName" /> Camera
+      <input v-model="cameraName" class="rounded" type="message" /> Camera
       number:
       <input
+        v-model="cameraIdx"
         class="rounded"
         type="Number"
         min="0"
         max="8"
-        v-model="cameraIdx"
       />
-      <button class="rounded button" v-on:click="addCameraName()">
+      <button class="rounded button" @click="addCameraName()">
         Change name
       </button>
     </div>
     <div class="cameraselection">
       <CameraSelection
         class="cameraspace1"
-        v-bind:camsEnabled="camsEnabled"
-        v-bind:names="names"
-        v-bind:capacity="parseInt(capacity)"
-        v-on:cam_index="setCamIndex($event)"
+        :cams-enabled="camsEnabled"
+        :names="names"
+        :capacity="parseInt(capacity)"
+        @cam_index="setCamIndex($event)"
       />
     </div>
     <h3>All Cameras</h3>
     Capacity:
-    <input class="rounded" type="Number" min="2" max="4" v-model="capacity" />
-    <div class="camerainfo" v-for="i in camsEnabled.length" :key="i">
+    <input v-model="capacity" class="rounded" type="Number" min="2" max="4" />
+    <div v-for="i in camsEnabled.length" :key="i" class="camerainfo">
       <CameraInfo
         v-if="camsEnabled[i - 1]"
-        v-bind:name="names[i - 1]"
-        v-bind:id="i - 1"
-        v-on:newQuality="changeQuality($event)"
-        v-on:swapStream="swapStream($event)"
-        v-bind:stream="getStreamNum(i - 1)"
+        :id="i - 1"
+        :name="names[i - 1]"
+        :stream="getStreamNum(i - 1)"
+        @newQuality="changeQuality($event)"
+        @swapStream="swapStream($event)"
       ></CameraInfo>
     </div>
   </div>
@@ -48,6 +48,17 @@ import CameraSelection from "../components/CameraSelection.vue";
 import CameraInfo from "../components/CameraInfo.vue";
 
 export default {
+  components: {
+    CameraSelection,
+    CameraInfo,
+  },
+
+  props: {
+    primary: {
+      type: Boolean,
+      required: true,
+    },
+  },
   data() {
     return {
       camsEnabled: new Array(9).fill(false),
@@ -60,10 +71,18 @@ export default {
     };
   },
 
-  props: {
-    primary: {
-      type: Boolean,
-      required: true,
+  watch: {
+    capacity: function (newCap, oldCap) {
+      if (newCap < oldCap) {
+        var numStreaming = this.streamOrder.filter((index) => index != -1);
+        var ind = numStreaming.length - 1;
+        Vue.set(
+          this.camsEnabled,
+          numStreaming[ind],
+          !this.camsEnabled[numStreaming[ind]]
+        );
+        this.changeStream(numStreaming[ind]);
+      }
     },
   },
 
@@ -124,26 +143,6 @@ export default {
     getStreamNum(index) {
       return this.streamOrder.indexOf(index);
     },
-  },
-
-  watch: {
-    capacity: function (newCap, oldCap) {
-      if (newCap < oldCap) {
-        var numStreaming = this.streamOrder.filter((index) => index != -1);
-        var ind = numStreaming.length - 1;
-        Vue.set(
-          this.camsEnabled,
-          numStreaming[ind],
-          !this.camsEnabled[numStreaming[ind]]
-        );
-        this.changeStream(numStreaming[ind]);
-      }
-    },
-  },
-
-  components: {
-    CameraSelection,
-    CameraInfo,
   },
 };
 </script>

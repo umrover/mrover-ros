@@ -6,10 +6,9 @@
 
 <script>
 export default {
+  components: {},
   data() {
     return {};
   },
-
-  components: {},
 };
 </script>

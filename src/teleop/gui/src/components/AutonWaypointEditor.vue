@@ -8,55 +8,53 @@
         </div>
         <br />
         <input
-          type="radio"
           v-model="odom_format_in"
+          type="radio"
           value="D"
           class="checkbox"
         /><font size="2">D</font>
         <input
-          type="radio"
           v-model="odom_format_in"
+          type="radio"
           value="DM"
           class="checkbox"
         /><font size="2">DM</font>
         <input
-          type="radio"
           v-model="odom_format_in"
+          type="radio"
           value="DMS"
           class="checkbox"
         /><font size="2">DMS</font><br />
         <div class="wp-input">
           <p><input v-model.number="input.lat.d" size="13" />º</p>
-          <p v-if="this.min_enabled">
+          <p v-if="min_enabled">
             <input v-model.number="input.lat.m" size="13" />'
           </p>
-          <p v-if="this.sec_enabled">
+          <p v-if="sec_enabled">
             <input v-model.number="input.lat.s" size="13" />"
           </p>
           N
         </div>
         <div class="wp-input">
           <p><input v-model.number="input.lon.d" size="13" />º</p>
-          <p v-if="this.min_enabled">
+          <p v-if="min_enabled">
             <input v-model.number="input.lon.m" size="13" />'
           </p>
-          <p v-if="this.sec_enabled">
+          <p v-if="sec_enabled">
             <input v-model.number="input.lon.s" size="13" />"
           </p>
           E
         </div>
         <br />
         <div style="display: inline-block">
-          <button v-on:click="addWaypoint(input)">Add Waypoint</button>
-          <button v-on:click="addWaypoint(formatted_odom)">
-            Drop Waypoint
-          </button>
+          <button @click="addWaypoint(input)">Add Waypoint</button>
+          <button @click="addWaypoint(formatted_odom)">Drop Waypoint</button>
         </div>
       </div>
       <div class="box1">
         <div class="all-waypoints">
           <h4 class="waypoint-headers">All Waypoints</h4>
-          <button v-on:click="clearWaypoint">Clear Waypoints</button>
+          <button @click="clearWaypoint">Clear Waypoints</button>
         </div>
         <draggable
           v-model="storedWaypoints"
@@ -66,14 +64,14 @@
           <WaypointItem
             v-for="(waypoint, i) in storedWaypoints"
             :key="i"
-            v-bind:waypoint="waypoint"
-            v-bind:list="0"
-            v-bind:index="i"
-            v-on:delete="deleteItem($event)"
-            v-on:toggleGate="toggleGate($event)"
-            v-on:togglePost="togglePost($event)"
-            v-on:add="addItem($event)"
-            v-on:find="findWaypoint($event)"
+            :waypoint="waypoint"
+            :list="0"
+            :index="i"
+            @delete="deleteItem($event)"
+            @toggleGate="toggleGate($event)"
+            @togglePost="togglePost($event)"
+            @add="addItem($event)"
+            @find="findWaypoint($event)"
           />
         </draggable>
       </div>
@@ -83,21 +81,18 @@
         <div class="auton-check">
           <AutonModeCheckbox
             ref="autonCheckbox"
-            v-bind:name="autonButtonText"
-            v-bind:color="autonButtonColor"
-            v-on:toggle="toggleAutonMode($event)"
+            :name="autonButtonText"
+            :color="autonButtonColor"
+            @toggle="toggleAutonMode($event)"
           />
           <Checkbox
             ref="teleopCheckbox"
-            v-bind:name="'Teleop Controls'"
-            v-on:toggle="toggleTeleopMode($event)"
+            :name="'Teleop Controls'"
+            @toggle="toggleTeleopMode($event)"
           />
         </div>
         <div class="stuck-check">
-          <Checkbox
-            v-on:toggle="roverStuck = !roverStuck"
-            name="Stuck"
-          ></Checkbox>
+          <Checkbox name="Stuck" @toggle="roverStuck = !roverStuck"></Checkbox>
         </div>
         <div class="stats">
           <VelocityCommand />
@@ -108,17 +103,17 @@
         <draggable v-model="route" class="dragArea" draggable=".item'">
           <WaypointItem
             v-for="(waypoint, i) in route"
+            :id="id"
             :key="i"
-            v-bind:waypoint="waypoint"
-            v-bind:list="1"
-            v-bind:index="i"
-            v-bind:name="name"
-            v-bind:id="id"
-            v-on:delete="deleteItem($event)"
-            v-on:toggleGate="toggleGate($event)"
-            v-on:togglePost="togglePost($event)"
-            v-on:add="addItem($event)"
-            v-on:find="findWaypoint($event)"
+            :waypoint="waypoint"
+            :list="1"
+            :index="i"
+            :name="name"
+            @delete="deleteItem($event)"
+            @toggleGate="toggleGate($event)"
+            @togglePost="togglePost($event)"
+            @add="addItem($event)"
+            @find="findWaypoint($event)"
           />
         </draggable>
       </div>
@@ -197,7 +192,7 @@ export default {
     };
   },
 
-  beforeDestroy: function () {
+  beforeUnmount: function () {
     window.clearInterval(interval);
   },
 

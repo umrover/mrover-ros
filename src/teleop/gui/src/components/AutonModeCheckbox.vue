@@ -1,6 +1,6 @@
 <template>
   <div class="wrap-button">
-    <button v-bind:class="[this.color]" v-on:click="toggleAndEmit()">
+    <button :class="[color]" @click="toggleAndEmit()">
       <span class="white-text"
         >{{ name }}: <br />{{ active ? "\u2611" : "\u2610" }}</span
       >
@@ -10,12 +10,6 @@
 
 <script>
 export default {
-  data() {
-    return {
-      active: false,
-    };
-  },
-
   props: {
     name: {
       type: String,
@@ -25,6 +19,11 @@ export default {
       type: String,
       required: true,
     },
+  },
+  data() {
+    return {
+      active: false,
+    };
   },
 
   methods: {

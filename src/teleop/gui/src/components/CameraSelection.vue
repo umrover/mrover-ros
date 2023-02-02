@@ -1,12 +1,12 @@
 <template>
   <div class="wrap">
-    <div class="buttons" v-for="j in 3">
+    <div v-for="j in 3" class="buttons">
       <template v-for="i in 3">
         <button
           class="cam_buttons"
           :class="{ active_cam_button: camsEnabled[i - 1 + 3 * (j - 1)] }"
-          v-on:click="$emit('cam_index', i - 1 + 3 * (j - 1))"
           :disabled="maxedOut && !camsEnabled[i - 1 + 3 * (j - 1)]"
+          @click="$emit('cam_index', i - 1 + 3 * (j - 1))"
         >
           <span>{{ names[i - 1 + 3 * (j - 1)] }}</span>
         </button>
@@ -18,12 +18,6 @@
 
 <script>
 export default {
-  data() {
-    return {
-      opacities: new Array(9).fill(1.0),
-    };
-  },
-
   props: {
     capacity: {
       type: Number,
@@ -37,6 +31,11 @@ export default {
       type: Array,
       required: true,
     },
+  },
+  data() {
+    return {
+      opacities: new Array(9).fill(1.0),
+    };
   },
 
   computed: {

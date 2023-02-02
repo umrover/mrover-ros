@@ -17,29 +17,29 @@
         <div class="requestCells">
           <label for="'service'">Service:</label>
           <select
-            class="box"
             id="service"
             v-model="selectedService"
-            @change="switchService()"
+            class="box"
             required
+            @change="switchService()"
           >
             <option value="" selected>Select a service</option>
-            <option v-for="option in service_options" v-bind:value="option">
+            <option v-for="option in service_options" :value="option">
               {{ option }}
             </option>
           </select>
 
           <textarea
             v-if="args != '' && args != '{}'"
-            class="box"
             id="textarea"
             v-model="args"
+            class="box"
           ></textarea>
 
           <p>{{ schema }}</p>
           <p v-if="error">JSON Syntax Error! Cannot send...</p>
 
-          <button class="box" id="send" type="button" v-on:click="sendArgs()">
+          <button id="send" class="box" type="button" @click="sendArgs()">
             Send
           </button>
         </div>
@@ -72,9 +72,6 @@ const datatypes = [
 
 export default {
   name: "ROSService",
-  mounted() {
-    this.populateServices();
-  },
   data() {
     return {
       service_options: [],
@@ -85,6 +82,9 @@ export default {
       error: false,
       response: "",
     };
+  },
+  mounted() {
+    this.populateServices();
   },
 
   methods: {

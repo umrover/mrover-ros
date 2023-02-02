@@ -29,7 +29,7 @@
     <div class="box pdb light-bg">
       <PDBFuse></PDBFuse>
     </div>
-    <div class="box cameras light-bg">
+    <div>
       <Cameras :primary="primary"></Cameras>
       <Checkbox
         ref="Primary"

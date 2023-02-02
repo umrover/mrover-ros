@@ -6,17 +6,15 @@
       class="map"
       :zoom="22"
       :center="center"
-      v-on:click="getClickedLatLon($event)"
+      @click="getClickedLatLon($event)"
     >
       <l-control-scale :imperial="false" />
       <!-- Tile Layer for map background -->
       <l-tile-layer
         ref="tileLayer"
-        :url="this.online ? this.onlineUrl : this.offlineUrl"
+        :url="online ? onlineUrl : offlineUrl"
         :attribution="attribution"
-        :options="
-          this.online ? this.onlineTileOptions : this.offlineTileOptions
-        "
+        :options="online ? onlineTileOptions : offlineTileOptions"
       />
 
       <!-- Markers for rover location -->
@@ -25,10 +23,10 @@
 
       <!-- Waypoint Icons -->
       <l-marker
-        :lat-lng="waypoint.latLng"
-        :icon="waypointIcon"
         v-for="(waypoint, index) in waypointList"
         :key="index"
+        :lat-lng="waypoint.latLng"
+        :icon="waypointIcon"
       >
         <l-tooltip :options="{ permanent: 'true', direction: 'top' }">
           {{ waypoint.name }}, {{ index }}
@@ -36,12 +34,12 @@
       </l-marker>
 
       <!-- Gate Post Icons -->
-      <l-marker :lat-lng="post1" :icon="postIcon" v-if="post1">
+      <l-marker v-if="post1" :lat-lng="post1" :icon="postIcon">
         <l-tooltip :options="{ permanent: 'true', direction: 'top' }"
           >Post 1</l-tooltip
         >
       </l-marker>
-      <l-marker :lat-lng="post2" :icon="postIcon" v-if="post2">
+      <l-marker v-if="post2" :lat-lng="post2" :icon="postIcon">
         <l-tooltip :options="{ permanent: 'true', direction: 'top' }"
           >Post 2</l-tooltip
         >
@@ -58,7 +56,7 @@
     <!-- Controls that go directly under the map -->
     <div class="controls">
       <div class="online">
-        <label><input type="checkbox" v-model="online" />Online</label>
+        <label><input v-model="online" type="checkbox" />Online</label>
       </div>
     </div>
   </div>
@@ -145,6 +143,13 @@ export default {
     },
   },
 
+  props: {
+    odom: {
+      type: Object,
+      required: true,
+    },
+  },
+
   data() {
     return {
       // Default Center In NC 53 Parking Lot
@@ -168,13 +173,6 @@ export default {
 
       findRover: false,
     };
-  },
-
-  props: {
-    odom: {
-      type: Object,
-      required: true,
-    },
   },
 
   methods: {

@@ -13,13 +13,16 @@ import Checkbox from "./Checkbox.vue";
 let interval;
 
 export default {
+  components: {
+    Checkbox,
+  },
   data() {
     return {
       joystick_pub: null,
     };
   },
 
-  beforeDestroy: function () {
+  beforeUnmount: function () {
     window.clearInterval(interval);
   },
 
@@ -51,10 +54,6 @@ export default {
         }
       }
     }, updateRate * 1000);
-  },
-
-  components: {
-    Checkbox,
   },
 };
 </script>

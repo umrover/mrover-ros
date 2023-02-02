@@ -4,8 +4,8 @@
     <div class="controls">
       <Checkbox
         ref="arm-enabled"
-        v-bind:name="'Arm Enabled'"
-        v-on:toggle="updateArmEnabled($event)"
+        :name="'Arm Enabled'"
+        @toggle="updateArmEnabled($event)"
       />
     </div>
   </div>
@@ -19,6 +19,9 @@ import { mapGetters, mapMutations } from "vuex";
 let interval;
 
 export default {
+  components: {
+    Checkbox,
+  },
   data() {
     return {
       arm_enabled: false,
@@ -26,7 +29,7 @@ export default {
     };
   },
 
-  beforeDestroy: function () {
+  beforeUnmount: function () {
     window.clearInterval(interval);
   },
 
@@ -68,10 +71,6 @@ export default {
     updateArmEnabled: function (enabled) {
       this.arm_enabled = enabled;
     },
-  },
-
-  components: {
-    Checkbox,
   },
 };
 </script>

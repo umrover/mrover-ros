@@ -103,11 +103,6 @@
 import ROSLIB from "roslib";
 
 export default {
-  data() {
-    return {
-      motors: [],
-    };
-  },
   props: {
     // Table will only render headers if these values are not passed w/ v-bind
     jointStateData: {
@@ -119,6 +114,11 @@ export default {
       type: Boolean,
       required: true,
     },
+  },
+  data() {
+    return {
+      motors: [],
+    };
   },
 };
 </script>

@@ -38,24 +38,21 @@
       </div>
     </div>
     <div class="box cameras light-bg">
-      <Cameras v-bind:primary="true" />
+      <Cameras :primary="true" />
     </div>
-    <div class="box odom light-bg" v-if="type === 'EDM'">
-      <OdometryReading v-bind:odom="odom" />
+    <div v-if="type === 'EDM'" class="box odom light-bg">
+      <OdometryReading :odom="odom" />
     </div>
-    <div class="box map light-bg" v-if="type === 'EDM'">
-      <ERDMap v-bind:odom="odom" />
+    <div v-if="type === 'EDM'" class="box map light-bg">
+      <ERDMap :odom="odom" />
     </div>
     <div class="box pdb light-bg">
       <PDBFuse />
     </div>
     <div class="box drive-vel-data light-bg">
-      <JointStateTable
-        v-bind:jointStateData="jointState"
-        v-bind:vertical="true"
-      />
+      <JointStateTable :joint-state-data="jointState" :vertical="true" />
     </div>
-    <div class="box waypoint-editor light-bg" v-if="type === 'EDM'">
+    <div v-if="type === 'EDM'" class="box waypoint-editor light-bg">
       <ERDWaypointEditor />
     </div>
     <div>
@@ -65,7 +62,7 @@
       <ArmControls />
     </div>
     <div class="box moteus light-bg">
-      <MoteusStateTable v-bind:moteusStateData="moteusState" />
+      <MoteusStateTable :moteus-state-data="moteusState" />
     </div>
   </div>
 </template>
@@ -86,6 +83,24 @@ import OdometryReading from "./OdometryReading.vue";
 import PDBFuse from "./PDBFuse.vue";
 
 export default {
+  components: {
+    ArmControls,
+    Cameras,
+    DriveControls,
+    ERDMap,
+    ERDWaypointEditor,
+    JointStateTable,
+    MoteusStateTable,
+    OdometryReading,
+    PDBFuse,
+  },
+
+  props: {
+    type: {
+      type: String,
+      required: true,
+    },
+  },
   data() {
     return {
       // Default coordinates are at NC 53 Parking Lot
@@ -153,25 +168,6 @@ export default {
       this.jointState = msg.joint_states;
       this.moteusState = msg.moteus_states;
     });
-  },
-
-  components: {
-    ArmControls,
-    Cameras,
-    DriveControls,
-    ERDMap,
-    ERDWaypointEditor,
-    JointStateTable,
-    MoteusStateTable,
-    OdometryReading,
-    PDBFuse,
-  },
-
-  props: {
-    type: {
-      type: String,
-      required: true,
-    },
   },
 };
 </script>

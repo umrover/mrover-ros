@@ -4,33 +4,30 @@
       <p>{{ waypoint.name }}, ID: {{ waypoint.id }}</p>
     </div>
     <div class="buttons">
-      <button
-        class="red"
-        v-on:click="$emit('add', { list: list, index: index })"
-      >
+      <button class="red" @click="$emit('add', { list: list, index: index })">
         Add
       </button>
       <button
-        v-bind:class="[waypoint.post ? 'green' : 'red']"
-        v-on:click="$emit('togglePost', { list: list, index: index })"
+        :class="[waypoint.post ? 'green' : 'red']"
+        @click="$emit('togglePost', { list: list, index: index })"
       >
         Post
       </button>
       <button
-        v-bind:class="[waypoint.gate ? 'green' : 'red']"
-        v-on:click="$emit('toggleGate', { list: list, index: index })"
+        :class="[waypoint.gate ? 'green' : 'red']"
+        @click="$emit('toggleGate', { list: list, index: index })"
       >
         Gate
       </button>
       <button
         class="red"
-        v-on:click="$emit('delete', { list: list, index: index })"
+        @click="$emit('delete', { list: list, index: index })"
       >
         Delete
       </button>
       <button
-        v-bind:class="[index === highlightedWaypoint ? 'green' : 'red']"
-        v-on:click="$emit('find', { list: list, index: index })"
+        :class="[index === highlightedWaypoint ? 'green' : 'red']"
+        @click="$emit('find', { list: list, index: index })"
       >
         Find
       </button>
@@ -38,12 +35,12 @@
     <div class="location">
       <div>
         <p>{{ output.lat.d }}º</p>
-        <p v-if="this.min_enabled">{{ output.lat.m }}'</p>
-        <p v-if="this.sec_enabled">{{ output.lat.s }}"</p>
+        <p v-if="min_enabled">{{ output.lat.m }}'</p>
+        <p v-if="sec_enabled">{{ output.lat.s }}"</p>
         N <b>&nbsp;|</b>
         <p>{{ output.lon.d }}º</p>
-        <p v-if="this.min_enabled">{{ output.lon.m }}'</p>
-        <p v-if="this.sec_enabled">{{ output.lon.s }}"</p>
+        <p v-if="min_enabled">{{ output.lon.m }}'</p>
+        <p v-if="sec_enabled">{{ output.lon.s }}"</p>
         W
       </div>
     </div>

@@ -2,7 +2,7 @@
   <div>
     <p>ISH</p>
     <div class="box camera light-bg">
-      <Cameras v-bind:numCams="4" v-bind:primary="false" />
+      <Cameras :num-cams="4" :primary="false" />
     </div>
   </div>
 </template>
@@ -11,16 +11,15 @@
 import Cameras from "../components/Cameras.vue";
 
 export default {
+  components: {
+    Cameras,
+  },
   data() {
     return {};
   },
 
   methods: {
     publish: function () {},
-  },
-
-  components: {
-    Cameras,
   },
 };
 </script>

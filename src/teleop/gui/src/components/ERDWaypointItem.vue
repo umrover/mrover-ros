@@ -7,12 +7,10 @@
       <p>{{ waypoint.lat }}ºN, {{ waypoint.lon }}ºE</p>
     </div>
     <div class="buttons">
-      <button class="red" v-on:click="$emit('delete', { index: index })">
-        X
-      </button>
+      <button class="red" @click="$emit('delete', { index: index })">X</button>
       <button
-        v-bind:class="[index === highlightedWaypoint ? 'green' : 'red']"
-        v-on:click="$emit('find', { index: index })"
+        :class="[index === highlightedWaypoint ? 'green' : 'red']"
+        @click="$emit('find', { index: index })"
       >
         Find
       </button>

@@ -15,9 +15,9 @@
 
       <div class="pages">
         <label for="'topic'">Topic:</label>
-        <select class="box" id="topic" v-model="selectedTopic" required>
+        <select id="topic" v-model="selectedTopic" class="box" required>
           <option value="" selected>Select a topic</option>
-          <option v-for="option in topic_options" v-bind:value="option">
+          <option v-for="option in topic_options" :value="option">
             {{ option }}
           </option>
         </select>
@@ -30,38 +30,38 @@
 
         <label for="'package'">Package:</label>
         <select
-          class="box"
           id="package"
           v-model="selectedPackage"
-          @change="switchPackage()"
+          class="box"
           required
+          @change="switchPackage()"
         >
           <option value="" selected>Select a package</option>
-          <option v-for="option in packages" v-bind:value="option">
+          <option v-for="option in packages" :value="option">
             {{ option }}
           </option>
         </select>
 
         <label for="'type'">Type:</label>
         <select
-          class="box"
           id="type"
           v-model="selectedType"
-          @change="switchType()"
+          class="box"
           required
+          @change="switchType()"
         >
           <option value="" selected>Select a message type</option>
-          <option v-for="option in topic_types" v-bind:value="option">
+          <option v-for="option in topic_types" :value="option">
             {{ option }}
           </option>
         </select>
 
-        <textarea class="box" id="textarea" v-model="message"></textarea>
+        <textarea id="textarea" v-model="message" class="box"></textarea>
 
         <p>{{ schema }}</p>
         <p v-if="error">JSON Syntax Error! Cannot send...</p>
 
-        <button class="box" id="send" type="button" v-on:click="sendMessage()">
+        <button id="send" class="box" type="button" @click="sendMessage()">
           Send
         </button>
       </div>
@@ -91,10 +91,6 @@ const datatypes = [
 
 export default {
   name: "ROSSend",
-  mounted() {
-    this.populateTopics();
-    this.populatePackages();
-  },
   data() {
     return {
       topic_options: [],
@@ -108,6 +104,10 @@ export default {
       schema: "",
       error: false,
     };
+  },
+  mounted() {
+    this.populateTopics();
+    this.populatePackages();
   },
 
   methods: {

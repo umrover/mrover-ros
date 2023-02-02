@@ -37,9 +37,9 @@
         />
       </div>
     </div>
-    <div class="box1 data" v-bind:style="{ backgroundColor: nav_state_color }">
+    <div class="box1 data" :style="{ backgroundColor: nav_state_color }">
       <div>
-        <h2>Nav State: {{ this.nav_status.nav_state_name }}</h2>
+        <h2>Nav State: {{ nav_status.nav_state_name }}</h2>
       </div>
       <div>
         <p style="margin-top: 6px">Joystick Values</p>
@@ -47,20 +47,20 @@
       </div>
     </div>
     <div class="box map light-bg">
-      <AutonRoverMap v-bind:odom="odom" />
+      <AutonRoverMap :odom="odom" />
     </div>
     <div class="box waypoints light-bg">
       <AutonWaypointEditor
-        v-bind:odom="odom"
-        v-bind:AutonDriveControl="AutonDriveControl"
-        v-on:toggleTeleop="teleopEnabledCheck = $event"
+        :odom="odom"
+        :auton-drive-control="AutonDriveControl"
+        @toggleTeleop="teleopEnabledCheck = $event"
       />
     </div>
     <!--Enable the drive controls if auton is off-->
     <div
-      class="driveControls"
-      v-if="!this.autonEnabled && this.teleopEnabledCheck"
+      v-if="!autonEnabled && teleopEnabledCheck"
       v-show="false"
+      class="driveControls"
     >
       <DriveControls />
     </div>

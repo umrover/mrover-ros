@@ -99,6 +99,33 @@
   </div>
 </template>
 
+<script>
+import ROSLIB from "roslib";
+
+const state = {
+  FrontLeft: 0,
+  FrontRight: 1,
+  MiddleLeft: 2,
+  MiddleRight: 3,
+  BackLeft: 4,
+  BackRight: 5,
+};
+
+export default {
+  props: {
+    moteusStateData: {
+      type: Object,
+      required: true,
+    },
+  },
+  data() {
+    return {
+      indices: state,
+    };
+  },
+};
+</script>
+
 <style scoped>
 .wrap {
   display: inline-block;
@@ -149,31 +176,3 @@
   font-weight: bold;
 }
 </style>
-
-<script>
-import ROSLIB from "roslib";
-
-const state = {
-  FrontLeft: 0,
-  FrontRight: 1,
-  MiddleLeft: 2,
-  MiddleRight: 3,
-  BackLeft: 4,
-  BackRight: 5,
-};
-
-export default {
-  data() {
-    return {
-      indices: state,
-    };
-  },
-
-  props: {
-    moteusStateData: {
-      type: Object,
-      required: true,
-    },
-  },
-};
-</script>

@@ -18,11 +18,11 @@
         <ul id="topic">
           <li v-for="topic in topics" :key="topic.name">
             <input
-              type="checkbox"
               :id="topic"
+              v-model="selectedTopics"
+              type="checkbox"
               :value="topic"
               @change="addType()"
-              v-model="selectedTopics"
             />
             <label :for="topic">{{ topic.name }}</label>
           </li>
@@ -30,22 +30,22 @@
 
         <table>
           <tr>
-            <td class="box" v-for="c in cols">
+            <td v-for="c in cols" class="box">
               {{ c.name }}
               <button
                 id="mute"
                 class="box button"
                 type="button"
-                v-bind:class="[c.muted ? 'inactive' : 'active']"
-                v-on:click="mute(c)"
+                :class="[c.muted ? 'inactive' : 'active']"
+                @click="mute(c)"
               >
                 Mute
               </button>
             </td>
           </tr>
           <tr>
-            <td class="box" v-for="c in cols">
-              <p id="feed" v-if="!c.muted" v-for="message in c.messages">
+            <td v-for="c in cols" class="box">
+              <p v-for="message in c.messages" v-if="!c.muted" id="feed">
                 {{ message }}
               </p>
             </td>
@@ -61,9 +61,6 @@ import ROSLIB from "roslib";
 
 export default {
   name: "ROSEcho",
-  mounted() {
-    this.populateTopics();
-  },
   data() {
     return {
       topics: [],
@@ -73,6 +70,23 @@ export default {
       topicsService: null,
       serviceRequest: null,
     };
+  },
+  mounted() {
+    this.populateTopics();
+  },
+
+  created: function () {
+    this.serviceClient = new ROSLIB.Service({
+      ros: this.$ros,
+      name: "/rosapi/topics",
+      serviceType: "rosapi/Topics",
+    });
+
+    this.serviceRequest = new ROSLIB.ServiceRequest();
+
+    let interval = window.setInterval(() => {
+      this.populateTopics();
+    }, 1000);
   },
 
   methods: {
@@ -125,20 +139,6 @@ export default {
     mute: function (c) {
       c.muted = !c.muted;
     },
-  },
-
-  created: function () {
-    this.serviceClient = new ROSLIB.Service({
-      ros: this.$ros,
-      name: "/rosapi/topics",
-      serviceType: "rosapi/Topics",
-    });
-
-    this.serviceRequest = new ROSLIB.ServiceRequest();
-
-    let interval = window.setInterval(() => {
-      this.populateTopics();
-    }, 1000);
   },
 };
 </script>

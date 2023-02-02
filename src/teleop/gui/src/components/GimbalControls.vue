@@ -1,8 +1,8 @@
 <template>
   <div class="wrap">
     <div v-show="false" id="key">
-      <input v-on:keydown="keyMonitorDown" />
-      <input v-on:keyup="keyMonitorUp" />
+      <input @keydown="keyMonitorDown" />
+      <input @keyup="keyMonitorUp" />
     </div>
   </div>
 </template>
@@ -39,6 +39,11 @@ export default {
       name: "/gimbal_cmd",
       messageType: "mrover/GimbalCmd",
     });
+  },
+
+  beforeUnmount: function () {
+    document.removeEventListener("keyup", this.keyMonitorUp);
+    document.removeEventListener("keydown", this.keyMonitorDown);
   },
 
   methods: {
@@ -80,11 +85,6 @@ export default {
 
       this.keyboard_pub.publish(keyboardData);
     },
-  },
-
-  beforeDestroy: function () {
-    document.removeEventListener("keyup", this.keyMonitorUp);
-    document.removeEventListener("keydown", this.keyMonitorDown);
   },
 };
 </script>
