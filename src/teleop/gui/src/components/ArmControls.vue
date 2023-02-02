@@ -19,6 +19,9 @@ import { mapGetters, mapMutations } from "vuex";
 let interval;
 
 export default {
+  components: {
+    Checkbox,
+  },
   data() {
     return {
       arm_enabled: false,
@@ -76,9 +79,6 @@ export default {
     },
   },
 
-  components: {
-    Checkbox,
-  },
 };
 </script>
 

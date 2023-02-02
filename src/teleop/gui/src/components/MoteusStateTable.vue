@@ -16,82 +16,82 @@
         <tr>
           <th class="tableElement tableHeader">Name</th>
           <th class="tableElement tableHeader">
-            {{ moteusStateData.name[state.FrontLeft] }}
+            {{ moteusStateData.name[indices.FrontLeft] }}
           </th>
           <th class="tableElement tableHeader">
-            {{ moteusStateData.name[state.FrontRight] }}
+            {{ moteusStateData.name[indices.FrontRight] }}
           </th>
         </tr>
         <tr>
           <th class="tableElement tableHeader">State</th>
           <th class="tableElement">
-            {{ moteusStateData.state[state.FrontLeft] }}
+            {{ moteusStateData.state[indices.FrontLeft] }}
           </th>
           <th class="tableElement">
-            {{ moteusStateData.state[state.FrontRight] }}
+            {{ moteusStateData.state[indices.FrontRight] }}
           </th>
         </tr>
         <tr>
           <th class="tableElement tableHeader">Error</th>
           <th class="tableElement">
-            {{ moteusStateData.error[state.FrontLeft] }}
+            {{ moteusStateData.error[indices.FrontLeft] }}
           </th>
           <th class="tableElement">
-            {{ moteusStateData.error[state.FrontRight] }}
+            {{ moteusStateData.error[indices.FrontRight] }}
           </th>
         </tr>
         <tr>
           <th class="tableElement tableHeader">Name</th>
           <th class="tableElement tableHeader">
-            {{ moteusStateData.name[state.MiddleLeft] }}
+            {{ moteusStateData.name[indices.MiddleLeft] }}
           </th>
           <th class="tableElement tableHeader">
-            {{ moteusStateData.name[state.MiddleRight] }}
+            {{ moteusStateData.name[indices.MiddleRight] }}
           </th>
         </tr>
         <tr>
           <th class="tableElement tableHeader">State</th>
           <th class="tableElement">
-            {{ moteusStateData.state[state.MiddleLeft] }}
+            {{ moteusStateData.state[indices.MiddleLeft] }}
           </th>
           <th class="tableElement">
-            {{ moteusStateData.state[state.MiddleRight] }}
+            {{ moteusStateData.state[indices.MiddleRight] }}
           </th>
         </tr>
         <tr>
           <th class="tableElement tableHeader">Error</th>
           <th class="tableElement">
-            {{ moteusStateData.error[state.MiddleLeft] }}
+            {{ moteusStateData.error[indices.MiddleLeft] }}
           </th>
           <th class="tableElement">
-            {{ moteusStateData.error[state.MiddleRight] }}
+            {{ moteusStateData.error[indices.MiddleRight] }}
           </th>
         </tr>
         <tr>
           <th class="tableElement tableHeader">Name</th>
           <th class="tableElement tableHeader">
-            {{ moteusStateData.name[state.BackLeft] }}
+            {{ moteusStateData.name[indices.BackLeft] }}
           </th>
           <th class="tableElement tableHeader">
-            {{ moteusStateData.name[state.BackRight] }}
+            {{ moteusStateData.name[indices.BackRight] }}
           </th>
         </tr>
         <tr>
           <th class="tableElement tableHeader">State</th>
           <th class="tableElement">
-            {{ moteusStateData.state[state.BackLeft] }}
+            {{ moteusStateData.state[indices.BackLeft] }}
           </th>
           <th class="tableElement">
-            {{ moteusStateData.state[state.BackRight] }}
+            {{ moteusStateData.state[indices.BackRight] }}
           </th>
         </tr>
         <tr>
           <th class="tableElement tableHeader">Error</th>
           <th class="tableElement">
-            {{ moteusStateData.error[state.BackLeft] }}
+            {{ moteusStateData.error[indices.BackLeft] }}
           </th>
           <th class="tableElement">
-            {{ moteusStateData.error[state.BackRight] }}
+            {{ moteusStateData.error[indices.BackRight] }}
           </th>
         </tr>
       </thead>
@@ -117,6 +117,11 @@ export default {
       type: Object,
       required: true,
     },
+  },
+  data() {
+    return {
+      indices: state,
+    };
   },
 };
 </script>
@@ -167,7 +172,7 @@ export default {
   vertical-align: top;
 }
 
-.tableHeader {
+.tableElement.tableHeader {
   font-weight: bold;
 }
 </style>

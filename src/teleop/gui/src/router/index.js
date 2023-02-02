@@ -2,7 +2,6 @@ import Vue from "vue";
 import Router from "vue-router";
 import Menu from "../components/Menu.vue";
 import ERDTask from "../components/ERDTask.vue";
-import ESTask from "../components/ESTask.vue";
 import AutonTask from "../components/AutonTask.vue";
 import SATask from "../components/SATask.vue";
 import ISHTask from "../components/ISHTask.vue";
@@ -22,14 +21,20 @@ export default new Router({
       component: Menu,
     },
     {
-      path: "/ERDTask",
-      name: "ERDTask",
+      path: "/EDMTask",
+      name: "EDMTask",
       component: ERDTask,
+      props: {
+        type: "EDM",
+      },
     },
     {
       path: "/ESTask",
       name: "ESTask",
-      component: ESTask,
+      component: ERDTask,
+      props: {
+        type: "ES",
+      },
     },
     {
       path: "/SATask",

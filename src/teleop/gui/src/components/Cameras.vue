@@ -54,10 +54,6 @@ export default {
   },
 
   props: {
-    numCams: {
-      type: Number,
-      required: true,
-    },
     primary: {
       type: Boolean,
       required: true,
