@@ -46,9 +46,9 @@ class PartialGateTrajectory(Trajectory):
         coords = np.vstack(
             (post_pos + left_perp, post_pos + rover_to_post, post_pos + right_perp, post_pos - rover_to_post)
         )
-        
+
         # adding z coordinates to coords, all 0
-        coords = np.hstack((coords, np.zeros((4,1)))) # 4 because there are 4 points in the path
+        coords = np.hstack((coords, np.zeros((4, 1))))  # 4 because there are 4 points in the path
 
         return PartialGateTrajectory(coords)
 
