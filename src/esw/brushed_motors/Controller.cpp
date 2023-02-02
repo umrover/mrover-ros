@@ -25,6 +25,7 @@ Controller::Controller(
     name = _name;
     deviceAddress = mcuID;
     motorID = _motorID;
+    motorIDRegMask = motorID << 5;
     motorMaxVoltage = _motorMaxVoltage;
     driverVoltage = _driverVoltage;
 
@@ -71,7 +72,7 @@ void Controller::moveOpenLoop(float input) {
         memcpy(buffer, UINT8_POINTER_T(&speed), sizeof(speed));
         int32_t angle;
 
-        I2C::transact(deviceAddress, ((motorID << 7) | OPEN_PLUS_OP) & 0xFF, OPEN_PLUS_WB,
+        I2C::transact(deviceAddress, motorIDRegMask | OPEN_PLUS_OP, OPEN_PLUS_WB,
                       OPEN_PLUS_RB, buffer, UINT8_POINTER_T(&angle));
         currentAngle = (float) ((((float) angle / quadCPR) * 2 * M_PI) - M_PI);
     } catch (IOFailure& e) {
@@ -91,7 +92,7 @@ void Controller::makeLive() {
 
     try {
         // turn on
-        I2C::transact(deviceAddress, ((motorID << 7) | ON_OP) & 0xFF, ON_WB, ON_RB,
+        I2C::transact(deviceAddress, motorIDRegMask | ON_OP, ON_WB, ON_RB,
                       nullptr, nullptr);
 
         uint8_t buffer[32];
@@ -101,13 +102,13 @@ void Controller::makeLive() {
         assert(maxPWM <= 100);
 
         memcpy(buffer, UINT8_POINTER_T(&maxPWM), sizeof(maxPWM));
-        I2C::transact(deviceAddress, ((motorID << 7) | CONFIG_PWM_OP) & 0xFF, CONFIG_PWM_WB,
+        I2C::transact(deviceAddress, motorIDRegMask | CONFIG_PWM_OP, CONFIG_PWM_WB,
                       CONFIG_PWM_RB, buffer, nullptr);
 
         memcpy(buffer, UINT8_POINTER_T(&(kP)), sizeof(kP));
         memcpy(buffer + 4, UINT8_POINTER_T(&(kI)), sizeof(kI));
         memcpy(buffer + 8, UINT8_POINTER_T(&(kD)), sizeof(kD));
-        I2C::transact(deviceAddress, ((motorID << 7) | CONFIG_K_OP) & 0xFF, CONFIG_K_WB,
+        I2C::transact(deviceAddress, motorIDRegMask | CONFIG_K_OP, CONFIG_K_WB,
                       CONFIG_K_RB, buffer, nullptr);
 
         isLive = true;

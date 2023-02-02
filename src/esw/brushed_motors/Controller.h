@@ -12,55 +12,55 @@
 #define OFF_WB 0
 #define OFF_RB 0
 
-#define ON_OP 0x0F
+#define ON_OP 0x01
 #define ON_WB 0
 #define ON_RB 0
 
-#define OPEN_OP 0x10
+#define OPEN_OP 0x02
 #define OPEN_WB 4
 #define OPEN_RB 0
 
-#define OPEN_PLUS_OP 0x1F
+#define OPEN_PLUS_OP 0x03
 #define OPEN_PLUS_WB 4
 #define OPEN_PLUS_RB 4
 
-#define CLOSED_OP 0x20
+#define CLOSED_OP 0x04
 #define CLOSED_WB 8
 #define CLOSED_RB 0
 
-#define CLOSED_PLUS_OP 0x2F
+#define CLOSED_PLUS_OP 0x05
 #define CLOSED_PLUS_WB 8
 #define CLOSED_PLUS_RB 4
 
-#define CONFIG_PWM_OP 0x2F
+#define CONFIG_PWM_OP 0x06
 #define CONFIG_PWM_WB 8
 #define CONFIG_PWM_RB 4
 
-#define CONFIG_K_OP 0x3F
+#define CONFIG_K_OP 0x07
 #define CONFIG_K_WB 12
 #define CONFIG_K_RB 0
 
-#define QUAD_OP 0x40
+#define QUAD_OP 0x08
 #define QUAD_WB 0
 #define QUAD_RB 4
 
-#define ADJUST_OP 0x4F
+#define ADJUST_OP 0x09
 #define ADJUST_WB 4
 #define ADJUST_RB 0
 
-#define ABS_ENC_OP 0x50
+#define ABS_ENC_OP 0x0A
 #define ABS_ENC_WB 0
 #define ABS_ENC_RB 4
 
-#define LIMIT_OP 0x60
+#define LIMIT_OP 0x0B
 #define LIMIT_WB 0
 #define LIMIT_RB 1
 
-#define CALIBRATED_OP 0x6F
+#define CALIBRATED_OP 0x0C
 #define CALIBRATED_WB 0
 #define CALIBRATED_RB 1
 
-#define LIMIT_ON_OP 0x7F
+#define LIMIT_ON_OP 0x0D
 #define LIMIT_ON_WB 1
 #define LIMIT_ON_RB 0
 
@@ -138,6 +138,7 @@ private:
 
     uint8_t deviceAddress;
     uint8_t motorID;
+    uint8_t motorIDRegMask;
     float motorMaxVoltage;
     float driverVoltage;
     std::string name;
