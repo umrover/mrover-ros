@@ -26,9 +26,9 @@ void ControllerMap::init(XmlRpc::XmlRpcValue& root) {
                root[i]["mcu_id"].getType() == XmlRpc::XmlRpcValue::TypeInt);
         auto nucleo = (uint8_t) static_cast<int>(root[i]["mcu_id"]);
 
-        assert(root[i].hasMember("channel") &&
-               root[i]["channel"].getType() == XmlRpc::XmlRpcValue::TypeInt);
-        auto channel = (uint8_t) static_cast<int>(root[i]["channel"]);
+        assert(root[i].hasMember("motor_id") &&
+               root[i]["motor_id"].getType() == XmlRpc::XmlRpcValue::TypeInt);
+        auto channel = (uint8_t) static_cast<int>(root[i]["motor_id"]);
 
         controllersByName[name] =
                 new Controller(name, nucleo, channel, motorMaxVoltage, driverVoltage);
