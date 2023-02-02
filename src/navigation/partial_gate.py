@@ -31,17 +31,24 @@ class PartialGateTrajectory(Trajectory):
         #   Point 4 (Finish): (a + cx, b + cy)
         # See documentation on the Wiki for visual.
 
+        # Converting to 2d arrays
+        post_pos = post_pos[0:2]
+        rover_pos = rover_pos[0:2]
+
         rover_to_post = post_pos - rover_pos
         rover_to_post = POST_SEPARATION * np_utils.normalized(rover_to_post)
         # scale vector to have magnitude == POST_SEPARATION
 
-        left_perp = np.append(np_utils.perpendicular_2d(rover_to_post[0:2]), 0)  # (-y,x)
+        left_perp = np_utils.perpendicular_2d(rover_to_post)  # (-y,x)
         right_perp = -1 * left_perp  # (y,-x)
 
         # This is just making our trajectory points into an array that we can read in
         coords = np.vstack(
             (post_pos + left_perp, post_pos + rover_to_post, post_pos + right_perp, post_pos - rover_to_post)
         )
+        
+        # adding z coordinates to coords, all 0
+        coords = np.hstack((coords, np.zeros((4,1)))) # 4 because there are 4 points in the path
 
         return PartialGateTrajectory(coords)
 
