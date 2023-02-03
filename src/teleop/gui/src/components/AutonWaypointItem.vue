@@ -4,10 +4,7 @@
       <p>{{ waypoint.name }}, ID: {{ waypoint.id }}</p>
     </div>
     <div class="buttons">
-      <button
-        class="red"
-        @click="$emit('add', { list: list, index: index })"
-      >
+      <button class="red" @click="$emit('add', { list: list, index: index })">
         Add
       </button>
       <button

@@ -13,7 +13,6 @@ import Checkbox from "./Checkbox.vue";
 let interval;
 
 export default {
-
   components: {
     Checkbox,
   },

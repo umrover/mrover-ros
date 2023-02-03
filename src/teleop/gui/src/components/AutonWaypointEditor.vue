@@ -48,9 +48,7 @@
         <br />
         <div style="display: inline-block">
           <button @click="addWaypoint(input)">Add Waypoint</button>
-          <button @click="addWaypoint(formatted_odom)">
-            Drop Waypoint
-          </button>
+          <button @click="addWaypoint(formatted_odom)">Drop Waypoint</button>
         </div>
       </div>
       <div class="box1">
@@ -87,18 +85,18 @@
             :color="autonButtonColor"
             @toggle="toggleAutonMode($event)"
           />
+          <Checkbox
+            ref="teleopCheckbox"
+            :name="'Teleop Controls'"
+            @toggle="toggleTeleopMode($event)"
+          />
+        </div>
+        <div class="stuck-check">
+          <Checkbox name="Stuck" @toggle="roverStuck = !roverStuck"></Checkbox>
         </div>
         <div class="stats">
-          <p>
-            Waypoints Traveled: {{ nav_status.completed_wps }}/{{
-              nav_status.total_wps
-            }}<br />
-          </p>
+          <VelocityCommand />
         </div>
-        <!-- TODO: Add back using ros topic data from /joystick -->
-        <!-- <div class="joystick light-bg">
-          <AutonJoystickReading v-bind:AutonDriveControl="AutonDriveControl"/>
-        </div> -->
       </div>
       <div class="box1">
         <h4 class="waypoint-headers">Current Course</h4>
@@ -128,6 +126,7 @@ import AutonModeCheckbox from "./AutonModeCheckbox.vue";
 import Checkbox from "./Checkbox.vue";
 import draggable from "vuedraggable";
 import { convertDMS } from "../utils.js";
+import VelocityCommand from "./VelocityCommand.vue";
 import WaypointItem from "./AutonWaypointItem.vue";
 import { mapMutations, mapGetters } from "vuex";
 import _ from "lodash";
@@ -137,13 +136,15 @@ import ROSLIB from "roslib";
 
 let interval;
 
+const WAYPOINT_TYPES = {
+  NO_SEARCH: 0,
+  POST: 1,
+  GATE: 2,
+};
+
 export default {
   props: {
     odom: {
-      type: Object,
-      required: true,
-    },
-    AutonDriveControl: {
       type: Object,
       required: true,
     },
@@ -167,6 +168,8 @@ export default {
         },
       },
 
+      teleopEnabledCheck: false,
+
       nav_status: {
         nav_state_name: "Off",
         completed_wps: 0,
@@ -179,9 +182,13 @@ export default {
       autonButtonColor: "red",
       waitingForNav: false,
 
+      roverStuck: false,
+
       //Pubs and Subs
       nav_status_sub: null,
       course_pub: null,
+
+      rover_stuck_pub: null,
     };
   },
 
@@ -190,15 +197,20 @@ export default {
   },
 
   created: function () {
-    (this.course_pub = new ROSLIB.Topic({
+    (this.course_pub = new ROSLIB.Service({
       ros: this.$ros,
-      name: "/auton/enable_state",
-      messageType: "mrover/EnableAuton",
+      name: "/enable_auton",
+      serviceType: "mrover/PublishEnableAuton",
     })),
       (this.nav_status_sub = new ROSLIB.Topic({
         ros: this.$ros,
         name: "/smach/container_status",
         messageType: "smach_msgs/SmachContainerStatus",
+      })),
+      (this.rover_stuck_pub = new ROSLIB.Topic({
+        ros: this.$ros,
+        name: "/rover_stuck",
+        messageType: "std_msgs/Bool",
       })),
       this.nav_status_sub.subscribe(
         (msg) => {
@@ -213,6 +225,7 @@ export default {
         (interval = window.setInterval(() => {
           let course;
 
+          // If Auton Enabled send course
           if (this.autonEnabled) {
             course = {
               enable: true,
@@ -225,8 +238,14 @@ export default {
                 return {
                   latitude_degrees: lat,
                   longitude_degrees: lon,
-                  gate: waypoint.gate,
-                  post: waypoint.post,
+                  // WaypointType.msg format
+                  type: {
+                    val: waypoint.gate
+                      ? WAYPOINT_TYPES.GATE
+                      : waypoint.post
+                      ? WAYPOINT_TYPES.POST
+                      : WAYPOINT_TYPES.NO_SEARCH,
+                  },
                   id: parseFloat(waypoint.id),
                 };
               }),
@@ -239,9 +258,12 @@ export default {
             };
           }
 
-          const courseMsg = new ROSLIB.Message(course);
+          const course_request = new ROSLIB.ServiceRequest({
+            enableMsg: course,
+          });
 
-          this.course_pub.publish(courseMsg);
+          this.course_pub.callService(course_request, (res) => {});
+          this.rover_stuck_pub.publish({ data: this.roverStuck });
         }, 100))
       );
   },
@@ -253,6 +275,9 @@ export default {
       setHighlightedWaypoint: "setHighlightedWaypoint",
       setAutonMode: "setAutonMode",
       setTeleopMode: "setTeleopMode",
+    }),
+
+    ...mapMutations("map", {
       setOdomFormat: "setOdomFormat",
     }),
 
@@ -319,8 +344,14 @@ export default {
 
     toggleAutonMode: function (val) {
       this.setAutonMode(val);
-      this.autonButtonColor = "yellow";
+      // This will trigger the yellow "waiting for nav" state of the checkbox only if we are enabling the button
+      this.autonButtonColor = val ? "yellow" : "red";
       this.waitingForNav = true;
+    },
+
+    toggleTeleopMode: function (val) {
+      this.teleopEnabledCheck = !this.teleopEnabledCheck;
+      this.$emit("toggleTeleop", this.teleopEnabledCheck);
     },
   },
 
@@ -365,8 +396,11 @@ export default {
     ...mapGetters("autonomy", {
       autonEnabled: "autonEnabled",
       teleopEnabled: "teleopEnabled",
-      odom_format: "odomFormat",
       clickPoint: "clickPoint",
+    }),
+
+    ...mapGetters("map", {
+      odom_format: "odomFormat",
     }),
 
     formatted_odom: function () {
@@ -402,6 +436,7 @@ export default {
     WaypointItem,
     AutonModeCheckbox,
     Checkbox,
+    VelocityCommand,
   },
 };
 </script>
@@ -457,12 +492,12 @@ export default {
 
 .datagrid {
   display: grid;
-  grid-gap: 2px;
+  grid-gap: 5%;
   grid-template-columns: 1fr 1fr;
   grid-template-rows: 1fr 0.25fr;
   grid-template-areas:
     "auton-check stats"
-    "teleop-check joystick";
+    "teleop-check stuck-check";
   font-family: sans-serif;
   min-height: min-content;
 }
@@ -497,13 +532,13 @@ export default {
 }
 
 .stats {
-  margin-top: -10px;
+  margin-top: 10px;
   grid-area: stats;
 }
 
-.joystick {
-  margin-top: -20px;
-  grid-area: joystick;
+.stuck-check {
+  align-content: center;
+  grid-area: stuck-check;
 }
 
 .odom {

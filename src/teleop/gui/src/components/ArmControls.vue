@@ -19,17 +19,14 @@ import { mapGetters, mapMutations } from "vuex";
 let interval;
 
 export default {
+  components: {
+    Checkbox,
+  },
   data() {
     return {
       arm_enabled: false,
       joystick_pub: null,
     };
-  },
-
-  computed: {
-    ...mapGetters("controls", {
-      controlMode: "controlMode",
-    }),
   },
 
   beforeUnmount: function () {

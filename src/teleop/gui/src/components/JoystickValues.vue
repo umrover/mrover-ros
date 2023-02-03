@@ -30,6 +30,9 @@ export default {
         pan: 0,
         tilt: 0,
       },
+
+      // Pubs and Subs
+      joystick_sub: null,
     };
   },
 

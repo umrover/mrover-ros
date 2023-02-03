@@ -1,3 +1,7 @@
+auton_led_driver:
+  port: "/dev/ttyACM0"
+  baud: 115200
+
 gps_driver:
   port: "/dev/gps"
   baud: 115200
@@ -9,35 +13,117 @@ imu_driver:
   baud: 115200
   frame_id: "imu_link"
 
-odrive:
-  axis:
-    left: 0
-    right: 1
-  config:
-    current_lim: 4
-    watchdog_timeout: 0.1
-  ids:
-    front: "335D36623539"
-    middle: "205535833056"
-    back: "2066377F5753"
-  ratio:
-    direction_left: -1.0
-    direction_right: 1.0
-  ros:
-    publish_rate_hz: 20
-  publish_index:
-    front_left: 0
-    front_right: 1
-    middle_left: 2
-    middle_right: 3
-    back_left: 4
-    back_right: 5
+brushed_motors:
+  controllers:
+    - name: "joint_a"
+      driver_voltage: 36.0
+      motor_max_voltage: 24.0
+      voltage_multiplier: 0.44
+      nucleo: 1
+      channel: 0
+      quad_cpr: -28800.0
+      kP: -0.005
+      kI: -0.0
+      inversion: -1.0
+    - name: "joint_b"
+      driver_voltage: 36.0
+      motor_max_voltage: 12.0
+      nucleo: 1
+      channel: 1
+      quad_cpr: 4096.0
+      kP: -0.1
+      kI: -0.0
+      inversion: 1.0
+    - name: "joint_c"
+      driver_voltage: 36.0
+      motor_max_voltage: 24.0
+      nucleo: 2
+      channel: 0
+      quad_cpr: 136800.0
+      kP: -0.005
+      kI: -0.0
+      inversion: 1.0
+    - name: "joint_d"
+      driver_voltage: 36.0
+      motor_max_voltage: 24.0
+      nucleo: 2
+      channel: 1
+      quad_cpr: 72000.0
+      kP: -0.005
+      kI: -0.0
+      inversion: 1.0
+    - name: "joint_e"
+      driver_voltage: 36.0
+      motor_max_voltage: 24.0
+      nucleo: 3
+      channel: 0
+      quad_cpr: -72000.0
+      kP: -0.005
+      kI: -0.0
+      inversion: 1.0
+    - name: "joint_f"
+      driver_voltage: 36.0
+      motor_max_voltage: 24.0
+      nucleo: 3
+      channel: 1
+      quad_cpr: -2048.0
+      kP: 0.05
+      kI: 0.0
+      inversion: 1.0
+    - name: "finger"
+      driver_voltage: 12.0
+      motor_max_voltage: 12.0
+      nucleo: 3
+      channel: 2
+      inversion: 1.0
+    - name: "gripper"
+      driver_voltage: 12.0
+      motor_max_voltage: 12.0
+      nucleo: 2
+      channel: 2
+      inversion: 1.0
+    - name: "mast_up_down"
+      driver_voltage: 12.0
+      motor_max_voltage: 12.0
+      nucleo: 3
+      channel: 3
+      inversion: -1.0
+    - name: "mast_left_right"
+      driver_voltage: 12.0
+      motor_max_voltage: 12.0
+      nucleo: 2
+      channel: 3
+      inversion: -1.0
+  i2c_device_file: "/dev/i2c-1"
+  test: false
 
 rover:
   length: 0.86
   width: 0.86
-  max_speed: 0.8
+  max_speed: 1.5
 
 wheel:
   gear_ratio: 50.0
   radius: 0.13
+
+brushless:
+  using_pi3_hat: true
+  drive:
+    FrontLeft:
+      id: 3
+      multiplier: -1
+    FrontRight:
+      id: 0
+      multiplier: 1
+    MiddleLeft:
+      id: 4
+      multiplier: -1
+    MiddleRight:
+      id: 1
+      multiplier: 1
+    BackLeft:
+      id: 5
+      multiplier: -1
+    BackRight:
+      id: 2
+      multiplier: 1

@@ -16,6 +16,7 @@ set(MROVER_PACKAGES
         message_generation
         dynamic_reconfigure
         rostest
+        sensor_msgs
         )
 
 # link_directories
@@ -26,23 +27,30 @@ set(MROVER_MESSAGE_FILES
         CalibrationStatus.msg
         Chassis.msg
         Course.msg
+        Diagnostic.msg
+        DriveStatus.msg
         EnableAuton.msg
         GimbalCmd.msg
         GPSWaypoint.msg
-        ODriveState.msg
+        ImuAndMag.msg
+        MoteusState.msg
+        MotorsStatus.msg
         Waypoint.msg
         WaypointType.msg
         )
 
 # service files
 set(MROVER_SERVICE_FILES
+        ChangeAutonLEDState.srv
         FetchMessageFromPackage.srv        
         FetchPackages.srv
+        PublishEnableAuton.srv
         PublishCourse.srv
         )
 
 # generate messages list
 set(MROVER_ROS_MESSAGES
+        sensor_msgs
         std_msgs
         )
 
@@ -123,10 +131,10 @@ else ()
             tf2_geometry_msgs
             tf2_ros
             tf2
+            tf2_web_republisher
             visualization_msgs
             image_transport
             cv_bridge
-            sensor_msgs
             rosbridge_server
             teleop_twist_joy
             gazebo_ros
@@ -187,6 +195,8 @@ else ()
     macro(add_and_link_macro)
         add_cpp_node_macro(aruco_detect "src/perception/*.cpp")
         target_link_libraries(aruco_detect ${OpenCV_LIBS} ${PCL_LIBRARIES})
+
+        add_cpp_node_macro(brushed_motors "src/esw/brushed_motors/*.cpp")
 
         add_library(differential_drive_plugin_6w src/gazebo/differential_drive_6w.cpp)
         add_dependencies(differential_drive_plugin_6w ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})

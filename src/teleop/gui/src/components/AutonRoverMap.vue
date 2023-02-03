@@ -14,9 +14,7 @@
         ref="tileLayer"
         :url="online ? onlineUrl : offlineUrl"
         :attribution="attribution"
-        :options="
-          online ? onlineTileOptions : offlineTileOptions
-        "
+        :options="online ? onlineTileOptions : offlineTileOptions"
       />
 
       <!-- Markers for rover location -->
