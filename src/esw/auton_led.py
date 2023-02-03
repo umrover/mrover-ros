@@ -20,6 +20,8 @@ class LedBridge:
     GREEN_ON_S = 1
     SLEEP_AMOUNT = 1
 
+    SIGNAL_MAP = {"red": b"r", "green": b"g", "blue": b"b", "off": b"o"}
+
     _color: str
     _color_lock: threading.Lock
 
@@ -27,7 +29,7 @@ class LedBridge:
     _ser: serial.Serial
 
     def __init__(self, port: str, baud: int):
-        self._color = ""
+        self._color = "off"
         self._color_lock = threading.Lock()
 
         self._green_counter_s = 0
@@ -50,6 +52,9 @@ class LedBridge:
         with self._color_lock:
             self._color = req.color.lower()
 
+            if self._color not in self.SIGNAL_MAP:
+                self._color = "off"
+
         self.update()
 
         return ChangeAutonLEDStateResponse(True)
@@ -68,9 +73,9 @@ class LedBridge:
                 self._green_counter_s = 0
 
             if self._green_counter_s == 0:
-                self._ser.write(b"g")
+                self._ser.write(self.SIGNAL_MAP["green"])
             elif self._green_counter_s >= self.GREEN_ON_S:
-                self._ser.write(b"o")
+                self._ser.write(self.SIGNAL_MAP["off"])
 
     def sleep(self):
         """
@@ -88,18 +93,8 @@ class LedBridge:
         Writes to serial to change LED color.
         """
         with self._color_lock:
-            if self._color == "red":
-                self._ser.write(b"r")
-
-            elif self._color == "green":
-                self._ser.write(b"g")
-                self._green_counter_s = 0
-
-            elif self._color == "blue":
-                self._ser.write(b"b")
-
-            else:
-                self._ser.write(b"o")
+            assert self._color in self.SIGNAL_MAP
+            self._ser.write(self.SIGNAL_MAP[self._color])
 
 
 def main():
