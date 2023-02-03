@@ -121,7 +121,7 @@ export default {
               let buttons = gamepad.buttons.map((button) => {
                 return button.value;
               });
-              publishJoystickMessage();
+              this.publishJoystickMessage();
             }
           }
         }
