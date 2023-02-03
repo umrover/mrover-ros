@@ -15,7 +15,9 @@
 import ROSLIB from "roslib";
 import Checkbox from "./Checkbox.vue";
 import { mapGetters, mapMutations } from "vuex";
+
 let interval;
+
 export default {
   components: {
     Checkbox,
@@ -26,9 +28,11 @@ export default {
       joystick_pub: null,
     };
   },
+
   beforeUnmount: function () {
     window.clearInterval(interval);
   },
+
   created: function () {
     this.joystick_pub = new ROSLIB.Topic({
       ros: this.$ros,
@@ -49,6 +53,7 @@ export default {
               let buttons = gamepad.buttons.map((button) => {
                 return button.value;
               });
+
               const joystickData = {
                 axes: gamepad.axes,
                 buttons: buttons,
@@ -61,6 +66,7 @@ export default {
       }
     }, updateRate * 1000);
   },
+
   methods: {
     updateArmEnabled: function (enabled) {
       this.arm_enabled = enabled;
