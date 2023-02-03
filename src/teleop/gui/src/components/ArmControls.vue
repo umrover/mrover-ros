@@ -64,6 +64,7 @@ export default {
       joystick_pub: null,
       joystickservo_pub: null,
       jointlock_pub: null,
+      jointstate_pub: null,
       joints_array: [false, false, false, false, false, false]
     };
   },
@@ -94,6 +95,11 @@ export default {
       name: "/joint_lock",
       messageType: "mrover/JointLock"
     });
+    this.jointstate_pub = new ROSLIB.Topic({
+      ros: this.$ros,
+      name: "/joint_reset",
+      messageType: "sensors_msgs/JointState"
+    });
     const jointData = {
       //publishes array of all falses when refreshing the page
       joints: this.joints_array
@@ -115,17 +121,7 @@ export default {
               let buttons = gamepad.buttons.map((button) => {
                 return button.value;
               });
-
-              const joystickData = {
-                axes: gamepad.axes,
-                buttons: buttons
-              };
-              var joystickMsg = new ROSLIB.Message(joystickData);
-              if (this.servo === true) {
-                this.joystickservo_pub.publish(joystickMsg);
-              } else {
-                this.joystick_pub.publish(joystickMsg);
-              }
+              publishJoystickMessage();
             }
           }
         }
@@ -135,7 +131,18 @@ export default {
 
   methods: {
     updateArmEnabled: function (enabled) {
-      this.arm_enabled = enabled;
+        this.arm_enabled = enabled;
+        //ra_command, have all nulls in position. And all zeros in velocity array
+        if(arm_enabled === false){
+            const zeroCommandData = {
+            name: ["joint_a", "joint_b", "joint_c", "joint_d", "joint_e", "joint_f"],
+            position: [math.nan, math.nan, math.nan, math.nan, math.nan, math.nan],
+            velocity: [0, 0, 0, 0, 0, 0],
+            effort: [0.5, 0.5, 0.5, 0.5, 0.5, 0.5],
+            }
+            var zeroCommandMsg = new ROSLIB.Message(zeroCommandData);
+            this.jointstate_pub.publish(zeroCommandMsg);
+        }
     },
     updateServo: function (enabled) {
       this.servo = enabled;
@@ -147,6 +154,18 @@ export default {
       };
       var jointlockMsg = new ROSLIB.Message(jointData);
       this.jointlock_pub.publish(jointlockMsg);
+    },
+    publishJoystickMessage: function(){
+        const joystickData = {
+                axes: gamepad.axes,
+                buttons: buttons
+              };
+              var joystickMsg = new ROSLIB.Message(joystickData);
+              if (this.servo === true) {
+                this.joystickservo_pub.publish(joystickMsg);
+              } else {
+                this.joystick_pub.publish(joystickMsg);
+              }
     }
   },
 
