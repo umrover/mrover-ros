@@ -13,6 +13,7 @@ import rospy
 
 APPROACH_DISTANCE = 2.0
 
+
 class TestDrive(unittest.TestCase):
     def test_drive_straight(self):
         pose = SE3.from_pos_quat([0, 0, 0], quaternion_from_euler(0.0, 0.0, 0.0))
@@ -77,33 +78,29 @@ class TestDrive(unittest.TestCase):
     #     self.assertAlmostEqual(angle_to_rotate(v1, v2), pi)
     def test_make_path(self):
         print("Hello2")
-        post1 = np.array([1,2,0])
-        post2 = np.array([-1,2,0])
-        gate = (post1,post2)
-        
+        post1 = np.array([1, 2, 0])
+        post2 = np.array([-1, 2, 0])
+        gate = (post1, post2)
+
         x = 1
         self.assertTrue(False)
         """
         #Test 1 (Shortest path should be selected)
         The path should contain the center, and the victory point
         """
-        rover = np.array([0,1,0])
-        self.traj = GateTrajectory.spider_gate_trajectory(
-                APPROACH_DISTANCE, gate, rover)
-        checkCoord = np.array([0,2,0],[0,4,0])
+        rover = np.array([0, 1, 0])
+        self.traj = GateTrajectory.spider_gate_trajectory(APPROACH_DISTANCE, gate, rover)
+        checkCoord = np.array([0, 2, 0], [0, 4, 0])
         self.assertTrue(self.traj.coordinates, checkCoord)
-        
+
         """
         #Test 2 
         The path should contain, the closest approach point, the center, and the victory point
         """
-        rover = np.array([1,-0.5,0])
-        self.traj = GateTrajectory.spider_gate_trajectory(
-                APPROACH_DISTANCE, gate, rover)
-        checkCoord = np.array([0,0,0],[0,2,0],[0,4,0])
+        rover = np.array([1, -0.5, 0])
+        self.traj = GateTrajectory.spider_gate_trajectory(APPROACH_DISTANCE, gate, rover)
+        checkCoord = np.array([0, 0, 0], [0, 2, 0], [0, 4, 0])
         self.assertTrue(self.traj.coordinates, checkCoord)
-
-        
 
         """
         #Test 3 
@@ -111,11 +108,10 @@ class TestDrive(unittest.TestCase):
         The path has the closest prep point, closest approach point, the center,
         and the victory point. 
         """
-        rover = np.array([1,-3,0])
-        self.traj = GateTrajectory.spider_gate_trajectory(
-                APPROACH_DISTANCE, gate, rover)
+        rover = np.array([1, -3, 0])
+        self.traj = GateTrajectory.spider_gate_trajectory(APPROACH_DISTANCE, gate, rover)
         rospy.loginfo("Test 3: ")
-        checkCoord = np.array([1,-2,0],[0,0,0],[0,2,0],[0,4,0])
+        checkCoord = np.array([1, -2, 0], [0, 0, 0], [0, 2, 0], [0, 4, 0])
         self.assertTrue(self.traj.coordinates, checkCoord)
 
 
