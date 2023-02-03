@@ -37,8 +37,6 @@ class TopicServices:
     ) -> FetchMessageFromPackageResponse:
         messages = self.get_bash_output(["rosmsg", "package", req.package])
         return FetchMessageFromPackageResponse(messages)
-        
-    def 
 
 
 def main():
