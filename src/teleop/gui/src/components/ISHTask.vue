@@ -1,20 +1,15 @@
 <template>
-<div>
+  <div>
     <p>ISH</p>
-</div>
+  </div>
 </template>
 
 <script>
-
 export default {
+
+  components: {},
   data() {
-    return {
-
-    }
+    return {};
   },
-
-  components:{
-}
-}
+};
 </script>
-
