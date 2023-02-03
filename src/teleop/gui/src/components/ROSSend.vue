@@ -54,7 +54,7 @@
         <p>{{ schema }}</p>
         <p v-if="error">JSON Syntax Error! Cannot send...</p>
 
-        <button id="send" class="box" type="button" @click="sendMessage()">
+        <button class="button" type="button" @click="sendMessage()">
           Send
         </button>
       </div>
@@ -241,45 +241,18 @@ p {
   white-space: pre-wrap;
 }
 
-.box {
-  background-color: white;
-  border-radius: 5px;
-  padding: 10px;
-  border-color: rgba(236, 236, 236, 0.966);
-  box-shadow: 2px 2px 15px rgba(236, 236, 236, 0.966),
-    -2px -2px 15px rgba(236, 236, 236, 0.966);
-}
-
-.header {
-  display: flex;
-  align-items: center;
-  box-shadow: 0px 10px 8px -4px rgba(236, 236, 236, 0.966);
-}
-
-.header h1 {
-  margin-left: 5px;
-}
-
 .pages > * {
   margin: 10px;
 }
 
-    #textarea {
-        display: flex;
-        resize: none;
-        height: 300px;
-        width: 900px;
-        border-radius: 10px;
-        font-family: "Arial";
-        font-size: large;
-        
-    }
-
-    /* .box {
-      border: none;
-    } */
-
-#send:active {
-  background-color: rgb(92, 124, 172);
+#textarea {
+    display: flex;
+    resize: none;
+    height: 300px;
+    width: 900px;
+    border-radius: 10px;
+    font-family: "Arial";
+    font-size: large;
+    
 }
 </style>

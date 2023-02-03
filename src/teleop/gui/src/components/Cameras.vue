@@ -1,4 +1,5 @@
 <template>
+  <div>
     <div class="wrap">
       <h3>Cameras</h3>
       <div class="input">

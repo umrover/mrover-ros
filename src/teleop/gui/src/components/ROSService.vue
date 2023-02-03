@@ -17,22 +17,6 @@
                 </option>
                 </select>
 
-      <div class="pages box">
-        <div class="requestCells">
-          <label for="'service'">Service:</label>
-          <select
-            id="service"
-            v-model="selectedService"
-            class="box"
-            required
-            @change="switchService()"
-          >
-            <option value="" selected>Select a service</option>
-            <option v-for="option in service_options" :value="option">
-              {{ option }}
-            </option>
-          </select>
-
           <textarea
             v-if="args != '' && args != '{}'"
             id="textarea"
