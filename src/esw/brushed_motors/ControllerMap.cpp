@@ -24,14 +24,14 @@ void ControllerMap::init(XmlRpc::XmlRpcValue& root) {
 
         assert(root[i].hasMember("mcu_id") &&
                root[i]["mcu_id"].getType() == XmlRpc::XmlRpcValue::TypeInt);
-        auto nucleo = (uint8_t) static_cast<int>(root[i]["mcu_id"]);
+        auto mcu_id = (uint8_t) static_cast<int>(root[i]["mcu_id"]);
 
         assert(root[i].hasMember("motor_id") &&
                root[i]["motor_id"].getType() == XmlRpc::XmlRpcValue::TypeInt);
-        auto channel = (uint8_t) static_cast<int>(root[i]["motor_id"]);
+        auto motor_id = (uint8_t) static_cast<int>(root[i]["motor_id"]);
 
         controllersByName[name] =
-                new Controller(name, nucleo, channel, motorMaxVoltage, driverVoltage);
+                new Controller(name, mcu_id, motor_id, motorMaxVoltage, driverVoltage);
 
         if (root[i].hasMember("quad_cpr") &&
             root[i]["quad_cpr"].getType() == XmlRpc::XmlRpcValue::TypeDouble) {
@@ -53,6 +53,6 @@ void ControllerMap::init(XmlRpc::XmlRpcValue& root) {
             root[i]["inversion"].getType() == XmlRpc::XmlRpcValue::TypeDouble) {
             controllersByName[name]->inversion = (float) static_cast<double>(root[i]["inversion"]);
         }
-        ROS_INFO("Made virtual Controller %s on Nucleo %i channel %i \n", name.c_str(), nucleo, channel);
+        ROS_INFO("Made virtual Controller %s on MCU ID %i motor ID %i \n", name.c_str(), mcu_id, motor_id);
     }
 }

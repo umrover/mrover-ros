@@ -30,7 +30,7 @@
 
 #define CLOSED_PLUS_OP 0x05
 #define CLOSED_PLUS_WB 8
-#define CLOSED_PLUS_RB 0
+#define CLOSED_PLUS_RB 4
 
 #define CONFIG_PWM_OP 0x06
 #define CONFIG_PWM_WB 2
