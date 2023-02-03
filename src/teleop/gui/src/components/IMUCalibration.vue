@@ -25,7 +25,9 @@
               <span
                 :class="[
                   'led',
-                  (magnetometer_val == calibration_limit_master) ? 'green' : 'red',
+                  magnetometer_val == calibration_limit_master
+                    ? 'green'
+                    : 'red',
                 ]"
               ></span>
             </td>
@@ -33,7 +35,9 @@
               <span
                 :class="[
                   'led',
-                  (accelerometer_val == calibration_limit_master)? 'green' : 'red',
+                  accelerometer_val == calibration_limit_master
+                    ? 'green'
+                    : 'red',
                 ]"
               ></span>
             </td>
@@ -41,7 +45,7 @@
               <span
                 :class="[
                   'led',
-                  (gyroscope_val == calibration_limit_master) ? 'green' : 'red',
+                  gyroscope_val == calibration_limit_master ? 'green' : 'red',
                 ]"
               ></span>
             </td>
@@ -49,7 +53,7 @@
               <span
                 :class="[
                   'led',
-                  (system_val == calibration_limit_master) ? 'green' : 'red',
+                  system_val == calibration_limit_master ? 'green' : 'red',
                 ]"
               ></span>
             </td>
@@ -79,7 +83,7 @@ export default {
       gyroscope_val: 0,
       accelerometer_val: 0,
       magnetometer_val: 0,
-      calibration_limit_master: calibration_limit
+      calibration_limit_master: calibration_limit,
     };
   },
   created: function () {
