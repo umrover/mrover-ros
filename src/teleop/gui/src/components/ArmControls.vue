@@ -97,7 +97,7 @@ export default {
     });
     this.jointstate_pub = new ROSLIB.Topic({
       ros: this.$ros,
-      name: "/joint_reset",
+      name: "/ra_cmd",
       messageType: "sensors_msgs/JointState"
     });
     const jointData = {
