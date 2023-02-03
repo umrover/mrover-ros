@@ -25,7 +25,7 @@
               <span
                 :class="[
                   'led',
-                  magnetometer_calibration_color ? 'green' : 'red',
+                  (magnetometer_val == calibration_limit_master) ? 'green' : 'red',
                 ]"
               ></span>
             </td>
@@ -33,7 +33,7 @@
               <span
                 :class="[
                   'led',
-                  accelerometer_calibration_color ? 'green' : 'red',
+                  (accelerometer_val == calibration_limit_master)? 'green' : 'red',
                 ]"
               ></span>
             </td>
@@ -41,7 +41,7 @@
               <span
                 :class="[
                   'led',
-                  gyroscope_calibration_color ? 'green' : 'red',
+                  (gyroscope_val == calibration_limit_master) ? 'green' : 'red',
                 ]"
               ></span>
             </td>
@@ -49,7 +49,7 @@
               <span
                 :class="[
                   'led',
-                  system_calibration_color ? 'green' : 'red',
+                  (system_val == calibration_limit_master) ? 'green' : 'red',
                 ]"
               ></span>
             </td>
@@ -75,14 +75,11 @@ const calibration_limit = 3;
 export default {
   data() {
     return {
-      system_calibration_color: false,
-      gyroscope_calibration_color: false,
-      accelerometer_calibration_color: false,
-      magnetometer_calibration_color: false,
       system_val: 0,
       gyroscope_val: 0,
       accelerometer_val: 0,
       magnetometer_val: 0,
+      calibration_limit_master: calibration_limit
     };
   },
   created: function () {
@@ -92,18 +89,9 @@ export default {
       messageType: "mrover/CalibrationStatus",
     });
     this.IMUCalibration_sub.subscribe((msg) => {
-      console.log(msg);
-      this.system_calibration_color =
-        calibration_limit == msg.system_calibration;
       this.system_val = msg.system_calibration;
-      this.gyroscope_calibration_color =
-        calibration_limit == msg.gyroscope_calibration;
       this.gyroscope_val = msg.gyroscope_calibration;
-      this.accelerometer_calibration_color =
-        calibration_limit == msg.accelerometer_calibration;
       this.accelerometer_val = msg.accelerometer_calibration;
-      this.magnetometer_calibration_color =
-        calibration_limit == msg.magnetometer_calibration;
       this.magnetometer_val = msg.magnetometer_calibration;
     });
   },
