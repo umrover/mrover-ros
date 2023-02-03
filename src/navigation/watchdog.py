@@ -16,7 +16,7 @@ class WatchdogBase:
     # as stuck and if they do enter the recovery sequence
     # Returns bool
     def is_stuck(self) -> bool:
-        return False
+        return True
 
     """
     def is_stuck(self, data_obj: Data) -> bool:
