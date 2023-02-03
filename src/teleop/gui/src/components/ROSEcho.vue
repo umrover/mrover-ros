@@ -178,6 +178,7 @@ export default {
         var result = this.topics.find((obj) => obj.name == presetTopics[t]);
         Vue.set(this.selectedTopics, t, result);
       }
+      //if "none" selected, then clear the selectedTopics array
       if (presetTopics.length == 0) {
         this.selectedTopics.splice(0, this.selectedTopics.length);
       }
