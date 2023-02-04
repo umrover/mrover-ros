@@ -4,11 +4,10 @@ from context import Context
 from drive import get_drive_command
 from aenum import Enum, NoAlias
 from geometry_msgs.msg import Twist
-from waypoint import DRIVE_FWD_THRESH, WaypointState
+from waypoint import WaypointState
 
 
-STOP_THRESH = rospy.get_param("single_fiducial/stop_thresh", 0.7)
-FIDUCIAL_STOP_THRESHOLD = rospy.get_param("single_fiducial/fiducial_stop_threshold", 1.75)
+
 
 
 class SingleFiducialStateTransitions(Enum):
@@ -20,6 +19,10 @@ class SingleFiducialStateTransitions(Enum):
 
 
 class SingleFiducialState(WaypointState):
+    STOP_THRESH = rospy.get_param("single_fiducial/stop_thresh", 0.7)
+    FIDUCIAL_STOP_THRESHOLD = rospy.get_param("single_fiducial/fiducial_stop_threshold", 1.75)
+    DRIVE_FWD_THRESH = rospy.get_param("waypoint/drive_fwd_thresh", 0.34)  # 20 degrees
+
     def __init__(self, context: Context):
         super().__init__(context, add_outcomes=[transition.name for transition in SingleFiducialStateTransitions])  # type: ignore
 
@@ -40,7 +43,7 @@ class SingleFiducialState(WaypointState):
             return SingleFiducialStateTransitions.no_fiducial.name  # type: ignore
 
         try:
-            cmd_vel, arrived = get_drive_command(fid_pos, self.context.rover.get_pose(), STOP_THRESH, DRIVE_FWD_THRESH)
+            cmd_vel, arrived = get_drive_command(fid_pos, self.context.rover.get_pose(), self.STOP_THRESH, self.DRIVE_FWD_THRESH)
             if arrived:
                 self.context.course.increment_waypoint()
                 return SingleFiducialStateTransitions.finished_fiducial.name  # type: ignore

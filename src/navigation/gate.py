@@ -14,14 +14,12 @@ from dataclasses import dataclass
 from drive import get_drive_command
 from util.np_utils import normalized, perpendicular_2d
 
-STOP_THRESH = rospy.get_param("gate/stop_thresh", 0.2)
-DRIVE_FWD_THRESH = rospy.get_param("gate/drive_fwd_thresh", 0.34)  # 20 degrees
 
-APPROACH_DISTANCE = rospy.get_param("gate/approach_distance", 2.0)
 
 
 @dataclass
 class GateTrajectory(Trajectory):
+    
     @classmethod
     def spider_gate_trajectory(cls, approach_distance: float, gate: Gate, rover_position: np.ndarray) -> GateTrajectory:
         """
@@ -86,6 +84,12 @@ class GateTraverseStateTransitions(Enum):
 
 
 class GateTraverseState(BaseState):
+
+    STOP_THRESH = rospy.get_param("gate/stop_thresh", 0.2)
+    DRIVE_FWD_THRESH = rospy.get_param("gate/drive_fwd_thresh", 0.34)  # 20 degrees
+
+    APPROACH_DISTANCE = rospy.get_param("gate/approach_distance", 2.0)
+
     def __init__(
         self,
         context: Context,
@@ -104,7 +108,7 @@ class GateTraverseState(BaseState):
             return GateTraverseStateTransitions.no_gate.name  # type: ignore
         if self.traj is None:
             self.traj = GateTrajectory.spider_gate_trajectory(
-                APPROACH_DISTANCE, gate, self.context.rover.get_pose().position
+                self.APPROACH_DISTANCE, gate, self.context.rover.get_pose().position
             )
 
         # continue executing this path from wherever it left off
@@ -112,8 +116,8 @@ class GateTraverseState(BaseState):
         cmd_vel, arrived = get_drive_command(
             target_pos,
             self.context.rover.get_pose(),
-            STOP_THRESH,
-            DRIVE_FWD_THRESH,
+            self.STOP_THRESH,
+            self.DRIVE_FWD_THRESH,
         )
         if arrived:
             # if we finish the gate path, we're done

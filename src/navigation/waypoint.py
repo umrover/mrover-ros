@@ -9,9 +9,6 @@ from drive import get_drive_command
 from aenum import Enum, NoAlias
 from state import BaseState
 
-STOP_THRESH = rospy.get_param("waypoint/stop_thresh", 0.5)
-DRIVE_FWD_THRESH = rospy.get_param("waypoint/drive_fwd_thresh", 0.34)  # 20 degrees
-NO_FIDUCIAL = rospy.get_param("waypoint/no_fiducial", -1)
 
 
 class WaypointStateTransitions(Enum):
@@ -25,6 +22,10 @@ class WaypointStateTransitions(Enum):
 
 
 class WaypointState(BaseState):
+    STOP_THRESH = rospy.get_param("waypoint/stop_thresh", 0.5)
+    DRIVE_FWD_THRESH = rospy.get_param("waypoint/drive_fwd_thresh", 0.34)  # 20 degrees
+    NO_FIDUCIAL = rospy.get_param("waypoint/no_fiducial", -1)
+
     def __init__(
         self,
         context: Context,
@@ -71,8 +72,8 @@ class WaypointState(BaseState):
             cmd_vel, arrived = get_drive_command(
                 waypoint_pos,
                 self.context.rover.get_pose(),
-                STOP_THRESH,
-                DRIVE_FWD_THRESH,
+                self.STOP_THRESH,
+                self.DRIVE_FWD_THRESH,
             )
             if arrived:
                 if not self.context.course.look_for_gate() and not self.context.course.look_for_post():

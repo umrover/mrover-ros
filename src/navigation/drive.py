@@ -7,9 +7,7 @@ from geometry_msgs.msg import Twist
 from util.SE3 import SE3
 from util.np_utils import angle_to_rotate
 
-MAX_DRIVING_EFFORT = rospy.get_param("drive/max_driving_effort", 1)
-MIN_DRIVING_EFFORT = rospy.get_param("drive/min_driving_effort", -1)
-TURNING_P = rospy.get_param("drive/turning_p", 10.0)
+
 
 
 def get_drive_command(
@@ -26,6 +24,11 @@ def get_drive_command(
                                     in order to drive forward. When below, turn in place.
     :return:                        Rover drive effort command.
     """
+
+    MAX_DRIVING_EFFORT = rospy.get_param("drive/max_driving_effort", 1)
+    MIN_DRIVING_EFFORT = rospy.get_param("drive/min_driving_effort", -1)
+    TURNING_P = rospy.get_param("drive/turning_p", 10.0)
+    
     if not (0.0 < turn_in_place_thresh < 1.0):
         raise ValueError(f"Argument {turn_in_place_thresh} should be between 0 and 1")
     rover_pos = rover_pose.position
