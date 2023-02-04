@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 
-""" Manages communication to and from the science.
+""" Manages communication to and from the science STM32 MCU.
 The science codebase deals with reading and parsing NMEA like messages
 from the STM32 chip over UART to complete tasks for almost
 every mission. These tasks include operating the science box and getting
@@ -38,8 +38,8 @@ class ScienceBridge:
     """Manages all the information and functions used for dealing with the
     bridge between the science board and the Jetson.
     One ScienceBridge will be made in main.
-    :param _id_by_color: A dictionary that maps the possible colors to an
-        integer for the UART message.
+    :param _id_by_color: A dictionary that maps the possible colors of the auton
+        LED to an integer for the UART message.
     :param _handler_function_by_tag: A dictionay that maps each NMEA tag for a
         UART message to its corresponding callback function that returns a ROS
         struct with the packaged data.
@@ -196,35 +196,15 @@ class ScienceBridge:
         Depending on the NMEA tag of the message, the proper function
         will be called to process the message.
         """
-        tx_msg = self._read_msg()
-        arr = tx_msg.split(",")
+        rx_msg = self._read_msg()
+        arr = rx_msg.split(",")
 
         tag = arr[0][3:]
         if not (tag in self._handler_function_by_tag):
             rospy.sleep(self._sleep)
             return
 
-        # rospy.loginfo(tag)
-        self._handler_function_by_tag[tag](tx_msg)
-
-    def _add_padding(self, tx_msg: str) -> str:
-        """Adds padding to a UART messages until it is a certain length.
-        This certain length is determined by the input in the
-        config/science.yaml file. This is so that the STM32 chip can
-        expect to only receive messages of this particular length.
-        :param tx_msg: The raw string that is to be sent without padding.
-        :returns: The filled string that is to be sent with padding and is of
-            certain length.
-        """
-
-        length = len(tx_msg)
-        assert length <= self._uart_transmit_msg_len, "tx_msg should not be greater than self._uart_transmit_msg_len"
-        list_msg = [f"{tx_msg}"]
-        missing_characters = self._uart_transmit_msg_len - length
-        list_dummy = [","] * missing_characters
-        list_total = list_msg + list_dummy
-        new_msg = "".join(list_total)
-        return new_msg
+        self._handler_function_by_tag[tag](rx_msg)
 
     def _auton_led_transmit(self, color: str) -> bool:
         """Sends a UART message to the STM32 commanding the auton LED array
@@ -263,20 +243,6 @@ class ScienceBridge:
 
         ros_msg = Diagnostic(temperatures=temperature_values, currents=current_values)
         self._publisher_by_tag[arr[0][3:]].publish(ros_msg)
-
-    def _format_mosfet_msg(self, device: int, enable: bool) -> str:
-        """Creates a message that can be sent over UART to command a MOSFET
-        device.
-        :param device: An int that is the MOSFET device that can be changed.
-        :param enable: A boolean that is the requested MOSFET device state.
-            True means that the MOSFET device will connect to ground and
-            activate the device.
-        :returns: The raw string that has the device and enable information.
-            Note that this is not yet ready to be transmitted to the STM32 chip
-            over UART since it is not of the proper length yet.
-        """
-        tx_msg = f"$MOSFET,{device},{int(enable)}"
-        return tx_msg
 
     def _heater_auto_shutoff_handler(self, tx_msg: str) -> None:
         """Processes a UART message that contains data of the auto shut off
@@ -336,14 +302,11 @@ class ScienceBridge:
         :returns: A string that is the received message. Note that this may be
             an empty string if there are no messages.
         """
-        try:
-            self._uart_lock.acquire()
-            msg = self.ser.readline()
-            self._uart_lock.release()
-        except serial.SerialException:
-            if self._uart_lock.locked():
-                self._uart_lock.release()
-            rospy.logerr("Errored in _read_msg")
+        with self._uart_lock:
+            try:
+                msg = self.ser.readline()
+            except serial.SerialException:
+                rospy.logerr("Errored in _read_msg")
         return str(msg)
 
     def _science_thermistor_handler(self, tx_msg: str) -> None:
@@ -374,7 +337,12 @@ class ScienceBridge:
         :returns: A boolean that is the success of sent UART transaction.
         """
         translated_device = self._mosfet_number_by_device_name[device_name]
-        tx_msg = self._format_mosfet_msg(translated_device, enable)
+
+        def format_mosfet_msg(dev_name, en) -> str:
+            msg = f"$MOSFET,{dev_name},{int(en)}"
+            return msg
+
+        tx_msg = format_mosfet_msg(translated_device, enable)
         success = self._send_msg(tx_msg)
         return success
 
@@ -385,21 +353,35 @@ class ScienceBridge:
         :returns: A boolean that is the success of sent UART transaction.
         """
         try:
-            tx_msg = self._add_padding(tx_msg)
-            if len(tx_msg) > self._uart_transmit_msg_len:
-                tx_msg = tx_msg[: self._uart_transmit_msg_len]
-            # rospy.loginfo(tx_msg)
-            self._uart_lock.acquire()
-            self.ser.close()
-            self.ser.open()
-            self.ser.write(bytes(tx_msg, encoding="utf-8"))
-            self._uart_lock.release()
-            return True
+
+            def add_padding(msg: str) -> str:
+                """Adds padding to a UART messages until it is a certain length.
+                This certain length is determined by the input in the
+                config/science.yaml file. This is so that the STM32 chip can
+                expect to only receive messages of this particular length.
+                """
+                length = len(msg)
+                assert (
+                    length <= self._uart_transmit_msg_len
+                ), "tx_msg should not be greater than self._uart_transmit_msg_len"
+                list_msg = [f"{msg}"]
+                missing_characters = self._uart_transmit_msg_len - length
+                list_dummy = [","] * missing_characters
+                list_total = list_msg + list_dummy
+                new_msg = "".join(list_total)
+                return new_msg
+
+            tx_msg = add_padding(tx_msg)
+            with self._uart_lock:
+                self.ser.close()
+                self.ser.open()
+                self.ser.write(bytes(tx_msg, encoding="utf-8"))
         except serial.SerialException as exc:
             if self._uart_lock.locked():
                 self._uart_lock.release()
             rospy.logerr(f"Error in _send_msg: {exc}")
-        return False
+            return False
+        return True
 
     def _servo_transmit(self, id: int, angle: float) -> bool:
         """Sends a UART message to the STM32 chip commanding the angles of the
