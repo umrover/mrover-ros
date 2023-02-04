@@ -63,6 +63,9 @@ class LedBridge:
         with self._color_lock:
             self._color = req.color.lower()
 
+            if self._color == "green":
+                self._green_counter_s = 0
+
             if self._color not in self.SIGNAL_MAP:
                 self._color = "off"
 
