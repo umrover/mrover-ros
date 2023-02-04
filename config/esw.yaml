@@ -128,7 +128,6 @@ brushless:
       BackRight:
         id: 2
         multiplier: 1
-    max_motor_rps: 50.0
   arm:
     controllers:
       joint_a:
