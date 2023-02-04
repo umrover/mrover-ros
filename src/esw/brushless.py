@@ -45,7 +45,9 @@ class MoteusState:
     DISCONNECTED_STATE = "Disconnected"
     ARMED_STATE = "Armed"
     ERROR_STATE = "Error"
-    MOTEUS_UNPOWERED_OR_NOT_FOUND_ERROR = 99  # a custom error for when the moteus is unpowered or not found
+
+    # a custom error for when the moteus is unpowered or not found
+    MOTEUS_UNPOWERED_OR_NOT_FOUND_ERROR = 99
 
     ERROR_CODE_DICTIONARY = {
         1: "DmaStreamTransferError",
@@ -241,36 +243,22 @@ class MoteusBridge:
 class MotorsManager(ABC):
     BASESTATION_TO_ROVER_NODE_WATCHDOG_TIMEOUT_S = 1
 
-    _motor_names: List[str]
     _motor_bridges: Dict[str, MoteusBridge]
     _multipliers: Dict[str, int]
+    _last_updated_time_s: float
+    _motors_status_publisher: rospy.Publisher
+    _lost_communication: bool
 
     def __init__(self, motor_controller_info_by_name: dict, transport):
-        self._motor_names = []
         self._motor_bridges = {}
         self._multipliers = {}
         for name, info in motor_controller_info_by_name.items():
-            self._motor_names.append(name)
             self._motor_bridges[name] = MoteusBridge(info["id"], transport)
             self._multipliers[name] = info["multiplier"]
 
-        self._last_updated_time = t.time()
+        self._last_updated_time_s = t.time()
 
         self._motors_status_publisher = rospy.Publisher(self.publish_topic, MotorsStatus, queue_size=1)
-        self._motors_status = MotorsStatus(
-            name=[name for name in self._motor_names],
-            joint_states=JointState(
-                name=[name for name in self._motor_names],
-                position=[self._motor_bridges[name].moteus_data.position for name in self._motor_names],
-                velocity=[self._motor_bridges[name].moteus_data.velocity for name in self._motor_names],
-                effort=[self._motor_bridges[name].moteus_data.torque for name in self._motor_names],
-            ),
-            moteus_states=MoteusStateMsg(
-                name=[name for name in self._motor_names],
-                state=[self._motor_bridges[name].moteus_state.state for name in self._motor_names],
-                error=[self._motor_bridges[name].moteus_state.error_name for name in self._motor_names],
-            ),
-        )
         self._lost_communication = True
 
     @property
@@ -289,40 +277,52 @@ class MotorsManager(ABC):
         bridge) if communication is still maintained between the basestation
         and the rover node.
         """
-        time_diff_since_updated = t.time() - self._last_updated_time
-        lost_communication = time_diff_since_updated > MotorsManager.BASESTATION_TO_ROVER_NODE_WATCHDOG_TIMEOUT_S
-    
-        for name, bridge in self._motor_bridges.items():
-            if lost_communication:
+        time_diff_since_updated = t.time() - self._last_updated_time_s
+        lost_communication_now = time_diff_since_updated > MotorsManager.BASESTATION_TO_ROVER_NODE_WATCHDOG_TIMEOUT_S
+
+        for bridge in self._motor_bridges.values():
+            if lost_communication_now:
+
+                # If we only just lost communications this iteration.
                 if not self._lost_communication:
                     rospy.loginfo(
                         f"Brushless {self.manager_type} Watchdog: Not receiving new messages. Disabling controls."
                     )
                     self._lost_communication = True
+
+                # Set command to 0 rev/s
                 bridge.set_command(CommandData())
 
+            # If we just regained communications.
             elif self._lost_communication:
                 self._lost_communication = False
                 rospy.loginfo(f"Brushless {self.manager_type} Watchdog: Received new messages. Enabling controls.")
 
             await bridge.update()
 
-            index = self._motor_names.index(name)
+        motors_status = MotorsStatus(
+            name=self._motor_bridges.keys(),
+            joint_states=JointState(
+                name=self._motor_bridges.keys(),
+                position=[bridge.moteus_data.position for bridge in self._motor_bridges.values()],
+                velocity=[bridge.moteus_data.velocity for bridge in self._motor_bridges.values()],
+                effort=[bridge.moteus_data.torque for bridge in self._motor_bridges.values()],
+            ),
+            moteus_states=MoteusStateMsg(
+                name=self._motor_bridges.keys(),
+                state=[bridge.moteus_state.state for bridge in self._motor_bridges.values()],
+                error=[bridge.moteus_state.error_name for bridge in self._motor_bridges.values()],
+            ),
+        )
 
-            self._motors_status.joint_states.position[index] = bridge.moteus_data.position
-            self._motors_status.joint_states.velocity[index] = bridge.moteus_data.velocity
-            self._motors_status.joint_states.effort[index] = bridge.moteus_data.torque
-            self._motors_status.moteus_states.state[index] = bridge.moteus_state.state
-            self._motors_status.moteus_states.error[index] = bridge.moteus_state.error_name
+        self._motors_status_publisher.publish(motors_status)
 
-        self._motors_status_publisher.publish(self._motors_status)
-
-    def update_command_data(self, motor_name: str, command: CommandData) -> None:
+    def update_bridge_velocity(self, motor_name: str, velocity: float) -> None:
         """
         Updates the command of the specified motor bridge.
         """
         if self._motor_bridges[motor_name].moteus_state.state == MoteusState.ARMED_STATE:
-            self._motor_bridges[motor_name].set_command(command)
+            self._motor_bridges[motor_name].set_command(CommandData(velocity=velocity))
 
 
 class ArmManager(MotorsManager):
@@ -351,23 +351,22 @@ class ArmManager(MotorsManager):
         """
 
         for i, name in enumerate(ros_msg.name):
-            if name in self._motor_names:
+            if name in self._motor_bridges:
                 position, velocity, torque = (
                     ros_msg.position[i],
                     ros_msg.velocity[i],
                     ros_msg.effort[i],
                 )
 
-                # We usually assume that the ros_msg sends velocity commands from -1 to 1,
-                # but change it just in case.
+                # Ensure command is reasonable and clamp if necessary.
                 if abs(velocity) > 1:
                     rospy.logerr("Commanded arm velocity is too low or high (should be [-1, 1]")
                     velocity = max(-1, min(1, velocity))
 
                 velocity *= min(self._max_rps_by_name[name], CommandData.VELOCITY_LIMIT)
-                self.update_command_data(name, CommandData(velocity=velocity))
+                self.update_bridge_velocity(name, velocity)
 
-        self._last_updated_time = t.time()
+        self._last_updated_time_s = t.time()
 
 
 class DriveManager(MotorsManager):
@@ -388,7 +387,7 @@ class DriveManager(MotorsManager):
         assert _max_speed_m_s > 0, "rover/max_speed config must be greater than 0"
 
         self._max_motor_speed_rev_s = _max_speed_m_s * self.WHEELS_M_S_TO_MOTOR_REV_S
-        self._last_updated_time = t.time()
+        self._last_updated_time_s = t.time()
 
         rospy.Subscriber("cmd_vel", Twist, self._process_twist_message)
 
@@ -411,16 +410,17 @@ class DriveManager(MotorsManager):
         forward = ros_msg.linear.x
         turn = ros_msg.angular.z
 
-        # Multiply radians per second by the radius and you get arc length because s = r(theta).
+        # Multiply radians per second by the radius and to find arc length (s = r(theta)).
         turn_difference_inner = turn * self.WHEEL_DISTANCE_INNER
         turn_difference_outer = turn * self.WHEEL_DISTANCE_OUTER
 
+        # Scale to get rev / s.
         left_rev_inner = (forward - turn_difference_inner) * self.WHEELS_M_S_TO_MOTOR_REV_S
         right_rev_inner = (forward + turn_difference_inner) * self.WHEELS_M_S_TO_MOTOR_REV_S
         left_rev_outer = (forward - turn_difference_outer) * self.WHEELS_M_S_TO_MOTOR_REV_S
         right_rev_outer = (forward + turn_difference_outer) * self.WHEELS_M_S_TO_MOTOR_REV_S
 
-        # Ignore inner since outer > inner always
+        # If speed to fast, scale to max speed. Ignore inner for comparison since outer > inner, always.
         larger_abs_rev_s = max(abs(left_rev_outer), abs(right_rev_outer))
         if larger_abs_rev_s > self._max_motor_speed_rev_s:
             change_ratio = self._max_motor_speed_rev_s / larger_abs_rev_s
@@ -429,10 +429,6 @@ class DriveManager(MotorsManager):
             left_rev_outer *= change_ratio
             right_rev_outer *= change_ratio
 
-        drive_command_velocities
-
-        # This assumes the convention that the names are in the form FrontLeft, FrontRight,
-        # MiddleLeft, MiddleRight, BackLeft, then BackRight
         drive_command_velocities = {
             "FrontLeft": left_rev_outer,
             "FrontRight": right_rev_outer,
@@ -442,12 +438,12 @@ class DriveManager(MotorsManager):
             "BackRight": right_rev_outer,
         }
 
-        for name, bridge in self._motor_bridges.items():
+        # Update bridges.
+        for name in self._motor_bridges.keys():
             velocity = drive_command_velocities[name] * self._multipliers[name]
-            if bridge.moteus_state.state == MoteusState.ARMED_STATE:
-                bridge.set_command(CommandData(velocity=velocity))
+            self.update_bridge_velocity(name, velocity)
 
-        self._last_updated_time = t.time()
+        self._last_updated_time_s = t.time()
 
 
 class Application:
@@ -476,17 +472,19 @@ class Application:
 
     def run(self) -> None:
         """
-        Allows the function to run an async function
+        Allows the function to run an async function.
         """
         asyncio.run(self.run_tasks())
 
     async def run_tasks(self) -> None:
         """
-        Creates an async function to run both drive and arm tasks
+        Creates an async function to run both drive and arm tasks.
         """
         while not rospy.is_shutdown():
             await self._arm_manager.send_command()
             await self._drive_manager.send_command()
+
+            # TODO: Add sleep.
 
 
 def main():
