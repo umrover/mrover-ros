@@ -14,8 +14,6 @@ from mrover.msg import Waypoint, GPSWaypoint, EnableAuton
 import pymap3d
 
 
-
-
 tf_broadcaster: tf2_ros.StaticTransformBroadcaster = tf2_ros.StaticTransformBroadcaster()
 
 

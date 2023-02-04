@@ -10,7 +10,6 @@ from aenum import Enum, NoAlias
 from state import BaseState
 
 
-
 class WaypointStateTransitions(Enum):
     _settings_ = NoAlias
 

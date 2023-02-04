@@ -15,11 +15,8 @@ from drive import get_drive_command
 from util.np_utils import normalized, perpendicular_2d
 
 
-
-
 @dataclass
 class GateTrajectory(Trajectory):
-    
     @classmethod
     def spider_gate_trajectory(cls, approach_distance: float, gate: Gate, rover_position: np.ndarray) -> GateTrajectory:
         """

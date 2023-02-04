@@ -12,8 +12,6 @@ from drive import get_drive_command
 from trajectory import Trajectory
 
 
-
-
 @dataclass
 class SearchTrajectory(Trajectory):
     # Associated fiducial for this trajectory
