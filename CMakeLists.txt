@@ -34,13 +34,13 @@ set(MROVER_MESSAGE_FILES
         ImuAndMag.msg
         MoteusState.msg
         MotorsStatus.msg
-        ODriveState.msg
         Waypoint.msg
         WaypointType.msg
         )
 
 # service files
 set(MROVER_SERVICE_FILES
+        ChangeAutonLEDState.srv
         FetchMessageFromPackage.srv        
         FetchPackages.srv
         PublishEnableAuton.srv

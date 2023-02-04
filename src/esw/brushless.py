@@ -16,7 +16,7 @@ class CommandData:
     DEFAULT_TORQUE = 0.3
     MAX_TORQUE = 0.5
     POSITION_FOR_VELOCITY_CONTROL = math.nan
-    VELOCITY_LIMIT = 5  # TODO - KEEP FOR NOW. DO NOT CHANGE UNTIL WE ARE FINE WITH CHANGING MAX SPEED
+    VELOCITY_LIMIT_REV_S = 50  # DO NOT CHANGE THIS HAPHAZARDLY. DERIVED FROM TESTING.
     ZERO_VELOCITY = 0.0
 
     def __init__(
@@ -26,7 +26,7 @@ class CommandData:
         torque: float = DEFAULT_TORQUE,
     ):
         self.position = position
-        self.velocity = max(-CommandData.VELOCITY_LIMIT, min(CommandData.VELOCITY_LIMIT, velocity))
+        self.velocity = max(-CommandData.VELOCITY_LIMIT_REV_S, min(CommandData.VELOCITY_LIMIT_REV_S, velocity))
         self.torque = max(0, min(CommandData.MAX_TORQUE, torque))
 
 
@@ -141,7 +141,7 @@ class MoteusBridge:
             self.controller.set_position(
                 position=command.position,
                 velocity=command.velocity,
-                velocity_limit=CommandData.VELOCITY_LIMIT,
+                velocity_limit=CommandData.VELOCITY_LIMIT_REV_S,
                 maximum_torque=command.torque,
                 watchdog_timeout=MoteusBridge.ROVER_NODE_TO_MOTEUS_WATCHDOG_TIMEOUT_S,
                 query=True,
@@ -242,6 +242,7 @@ class MoteusBridge:
 class MotorsManager(ABC):
     BASESTATION_TO_ROVER_NODE_WATCHDOG_TIMEOUT_S = 1
 
+<<<<<<< HEAD
     _motor_names: List[str]
     _motor_bridge_by_name: Dict[str, MoteusBridge]
     _command_data: List[CommandData]
@@ -380,16 +381,43 @@ class DriveManager(MotorsManager):
     def __init__(self, drive_controller_info_by_name, transport):
         super().__init__(drive_controller_info_by_name, transport)
 
+=======
+    def __init__(self):
+        self.drive_info_by_name = rospy.get_param("brushless/drive")
+        self.drive_bridge_by_name = {}
+        using_pi3_hat = rospy.get_param("brushless/using_pi3_hat")
+        if using_pi3_hat:
+            import moteus_pi3hat
+
+            transport = moteus_pi3hat.Pi3HatRouter(
+                servo_bus_map={1: [info["id"] for name, info in self.drive_info_by_name.items()]}
+            )
+        else:
+            transport = None
+
+        for name, info in self.drive_info_by_name.items():
+            self.drive_bridge_by_name[name] = MoteusBridge(info["id"], transport)
+>>>>>>> master
         rover_width = rospy.get_param("rover/width")
         rover_length = rospy.get_param("rover/length")
         self.WHEEL_DISTANCE_INNER = rover_width / 2.0
         self.WHEEL_DISTANCE_OUTER = math.sqrt(((rover_width / 2.0) ** 2) + ((rover_length / 2.0) ** 2))
 
-        _ratio_motor_to_wheel = rospy.get_param("wheel/gear_ratio")
-        self.WHEELS_M_S_TO_MOTOR_RAD_RATIO = (1 / rospy.get_param("wheel/radius")) * rospy.get_param("wheel/gear_ratio")
+        ratio_motor_to_wheel = rospy.get_param("wheel/gear_ratio")
 
+        # To convert m/s to rev/s, multiply by this constant. Divide by circumference, multiply by gear ratio.
+        self.WHEELS_M_S_TO_MOTOR_REV_S = (1 / (rospy.get_param("wheel/radius") * 2 * math.pi)) * ratio_motor_to_wheel
+
+<<<<<<< HEAD
         self.max_motor_rps = rospy.get_param("brushless/drive/max_motor_rps")
         self._max_motor_speed_rad_s = self.max_motor_rps * 2 * math.pi
+=======
+        _max_speed_m_s = rospy.get_param("rover/max_speed")
+        assert _max_speed_m_s > 0, "rover/max_speed config must be greater than 0"
+
+        self._max_motor_speed_rev_s = _max_speed_m_s * self.WHEELS_M_S_TO_MOTOR_REV_S
+        self._last_updated_time = t.time()
+>>>>>>> master
 
         rospy.Subscriber("cmd_vel", Twist, self._process_twist_message)
 
@@ -405,27 +433,30 @@ class DriveManager(MotorsManager):
         """
         Processes a Twist message and controls individual motor speeds.
         :param ros_msg: Has linear x and angular z velocity components.
+        Linear velocity is assumed to be in meters per second.
+        Angular velocity is assumed to be in radians per second.
         """
 
         forward = ros_msg.linear.x
         turn = ros_msg.angular.z
 
+        # Multiply radians per second by the radius and you get arc length because s = r(theta).
         turn_difference_inner = turn * self.WHEEL_DISTANCE_INNER
         turn_difference_outer = turn * self.WHEEL_DISTANCE_OUTER
 
-        left_rad_inner = (forward - turn_difference_inner) * self.WHEELS_M_S_TO_MOTOR_RAD_RATIO
-        right_rad_inner = (forward + turn_difference_inner) * self.WHEELS_M_S_TO_MOTOR_RAD_RATIO
-        left_rad_outer = (forward - turn_difference_outer) * self.WHEELS_M_S_TO_MOTOR_RAD_RATIO
-        right_rad_outer = (forward + turn_difference_outer) * self.WHEELS_M_S_TO_MOTOR_RAD_RATIO
+        left_rev_inner = (forward - turn_difference_inner) * self.WHEELS_M_S_TO_MOTOR_REV_S
+        right_rev_inner = (forward + turn_difference_inner) * self.WHEELS_M_S_TO_MOTOR_REV_S
+        left_rev_outer = (forward - turn_difference_outer) * self.WHEELS_M_S_TO_MOTOR_REV_S
+        right_rev_outer = (forward + turn_difference_outer) * self.WHEELS_M_S_TO_MOTOR_REV_S
 
         # Ignore inner since outer > inner always
-        larger_abs_rad_s = max(abs(left_rad_outer), abs(right_rad_outer))
-        if larger_abs_rad_s > self._max_motor_speed_rad_s:
-            change_ratio = self._max_motor_speed_rad_s / larger_abs_rad_s
-            left_rad_inner *= change_ratio
-            right_rad_inner *= change_ratio
-            left_rad_outer *= change_ratio
-            right_rad_outer *= change_ratio
+        larger_abs_rev_s = max(abs(left_rev_outer), abs(right_rev_outer))
+        if larger_abs_rev_s > self._max_motor_speed_rev_s:
+            change_ratio = self._max_motor_speed_rev_s / larger_abs_rev_s
+            left_rev_inner *= change_ratio
+            right_rev_inner *= change_ratio
+            left_rev_outer *= change_ratio
+            right_rev_outer *= change_ratio
 
         # This assumes the convention that the names are in the form FrontLeft, FrontRight,
         # MiddleLeft, MiddleRight, BackLeft, then BackRight
@@ -438,10 +469,80 @@ class DriveManager(MotorsManager):
             right_rad_outer,
         ]
 
+<<<<<<< HEAD
         for i, new_velocity in enumerate(drive_command_velocities):
             self._command_data[i].velocity = new_velocity
 
         super().update_command_data()
+=======
+            if name == "FrontLeft":
+                front_left_multiplier = self.drive_info_by_name[name]["multiplier"]
+                commanded_velocity_rev_s = front_left_multiplier * left_rev_outer
+            elif name == "BackLeft":
+                back_left_multiplier = self.drive_info_by_name[name]["multiplier"]
+                commanded_velocity_rev_s = back_left_multiplier * left_rev_outer
+            elif name == "MiddleLeft":
+                middle_left_multiplier = self.drive_info_by_name[name]["multiplier"]
+                commanded_velocity_rev_s = middle_left_multiplier * left_rev_inner
+            elif name == "FrontRight":
+                front_right_multiplier = self.drive_info_by_name[name]["multiplier"]
+                commanded_velocity_rev_s = front_right_multiplier * right_rev_outer
+            elif name == "BackRight":
+                back_right_multiplier = self.drive_info_by_name[name]["multiplier"]
+                commanded_velocity_rev_s = back_right_multiplier * right_rev_outer
+            elif name == "MiddleRight":
+                middle_right_multiplier = self.drive_info_by_name[name]["multiplier"]
+                commanded_velocity_rev_s = middle_right_multiplier * right_rev_inner
+            else:
+                rospy.logerr(f"Invalid name {name}")
+                continue
+
+            if bridge.moteus_state.state == MoteusState.ARMED_STATE:
+                bridge.set_command(
+                    CommandData(
+                        position=CommandData.POSITION_FOR_VELOCITY_CONTROL,
+                        velocity=commanded_velocity_rev_s,
+                        torque=CommandData.DEFAULT_TORQUE,
+                    )
+                )
+
+    async def run(self) -> NoReturn:
+        """
+        Runs an infinite loop and only gives commands to the moteus (by updating the bridge) if communication is still
+        maintained between the basestation and the rover node.
+        """
+        previously_lost_communication = True
+        while not rospy.is_shutdown():
+            for name, bridge in self.drive_bridge_by_name.items():
+                time_diff_since_updated = t.time() - self._last_updated_time
+                lost_communication = time_diff_since_updated > DriveApp.BASESTATION_TO_ROVER_NODE_WATCHDOG_TIMEOUT_S
+                if lost_communication:
+                    if not previously_lost_communication:
+                        rospy.loginfo("Lost communication")
+                        previously_lost_communication = True
+                    bridge.set_command(
+                        CommandData(
+                            position=CommandData.POSITION_FOR_VELOCITY_CONTROL,
+                            velocity=CommandData.ZERO_VELOCITY,
+                            torque=CommandData.DEFAULT_TORQUE,
+                        )
+                    )
+                elif previously_lost_communication:
+                    previously_lost_communication = False
+                    rospy.loginfo("Regained communication")
+
+                await bridge.update()
+
+                index = DriveApp.DRIVE_NAMES.index(name)
+                self._drive_status.joint_states.position[index] = bridge.moteus_data.position
+                self._drive_status.joint_states.velocity[index] = bridge.moteus_data.velocity
+                self._drive_status.joint_states.effort[index] = bridge.moteus_data.torque
+                self._drive_status.moteus_states.state[index] = bridge.moteus_state.state
+                self._drive_status.moteus_states.error[index] = bridge.moteus_state.error_name
+
+            self._drive_status_publisher.publish(self._drive_status)
+        assert False
+>>>>>>> master
 
 
 class Application:
