@@ -1,12 +1,12 @@
 #pragma once
 
 #include "ControllerMap.h"          // for ControllerMap
+#include <cmath>                    // for nan
+#include <mrover/GimbalCmd.h>       // for GimbalCmd
 #include <ros/ros.h>                // for ros
 #include <sensor_msgs/JointState.h> // for JointState
-#include <mrover/GimbalCmd.h>       // for GimbalCmd
 #include <unordered_map>            // for unordered_map
 #include <vector>                   // for vector
-#include <cmath>                    // for nan
 
 /*
 ROSHandler.h is responsible for handling incoming and outgoing ROS messages.
