@@ -363,7 +363,7 @@ class ArmManager(MotorsManager):
                     rospy.logerr("Commanded arm velocity is too low or high (should be [-1, 1]")
                     velocity = max(-1, min(1, velocity))
 
-                velocity *= min(self._max_rps_by_name[name], CommandData.VELOCITY_LIMIT)
+                velocity *= min(self._max_rps_by_name[name], CommandData.VELOCITY_LIMIT_REV_S)
                 self.update_bridge_velocity(name, velocity)
 
         self._last_updated_time_s = t.time()
