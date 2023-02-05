@@ -110,19 +110,11 @@
 
     <link name="base_link">
         <xacro:box_inertia m="3.0" w="${base_len}" h="${base_width}" d="${base_height}" />
-        <visual>
-            <origin rpy="0 0 0" xyz="0 0 0" />
-            <geometry>
-                <box size="${base_len} ${base_width} ${base_height}" />
-            </geometry>
-            <material name="dark grey">
-                <color rgba="0.1 0.1 0.1 1" />
-            </material>
-        </visual>
+        <xacro:link-visual fileName="rover.stl" x="0" y="0" z="-9.5" col="red" r="1" g="1" b="1"/>
         <collision>
-            <origin rpy="0 0 0" xyz="0 0 0" />
+            <origin rpy="0 0 0" xyz="0 0 -9.5" />
             <geometry>
-                <box size="${base_len} ${base_width} ${base_height}" />
+                <mesh filename="package://mrover/rover_description/arm/rover.stl" />
             </geometry>
         </collision>
     </link>
@@ -178,7 +170,7 @@
         <origin xyz="0 0 ${base_height/2.0}" rpy="0 0 0" />
     </joint>
 
-    <xacro:joints name="base_link_connection" type="fixed" parent="base_link" child="chassisToa" origin_x="0" origin_y="5" origin_z="10" axis_z="0" lower="0" upper="0" />
+    <xacro:joints name="base_link_connection" type="fixed" parent="base_link" child="chassisToa" origin_x="0" origin_y="15.55" origin_z="11" axis_z="0" lower="0" upper="0" />
     <xacro:joints name="joint_a" type="continuous" parent="chassisToa" child="aTob" origin_x="0" origin_y="0" origin_z="0" axis_z="1" lower="-3.14" upper="3.14" />
     <xacro:joints name="joint_b" parent="aTob" child="bToc" origin_x="0" origin_y="1.33" origin_z="0.99" axis_x="1" lower="-1.064651" upper="0" roll="0.593412"/>
     <xacro:joints name="joint_c" parent="bToc" child="cTod" origin_x="0" origin_y="20.11" origin_z="10.75" axis_x="1" lower="-0.087267" upper="4.886922" roll="-0.436332"/>
