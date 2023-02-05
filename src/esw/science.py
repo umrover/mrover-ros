@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 
 """ Manages communication to and from the science STM32 MCU.
-The science codebase deals with reading and parsing NMEA like messages
+The science codebase deals with reading and parsing NMEA-like messages
 from the STM32 chip over UART to complete tasks for almost
 every mission. These tasks include operating the science box and getting
 relevant data during the Science task, controlling the arm laser during the
@@ -10,9 +10,8 @@ Autonomous Traversal task. It also transmits diagnostic data on temperature
 and current on the 3.3V, 5V, and 12V lines for the PDB.
 """
 import threading
-from typing import Any, Callable, Dict, List
+from typing import Any, Callable, Dict
 
-import numpy as np
 import rospy
 import serial
 
@@ -40,14 +39,18 @@ class ScienceBridge:
     One ScienceBridge will be made in main.
     :param _id_by_color: A dictionary that maps the possible colors of the auton
         LED to an integer for the UART message.
+    :param _mosfet_number_by_device_name: A dictionary that maps each actual
+        device to a MOSFET device number.
+    :param _num_diag_current: The number of diagnostic current sensors.
+    :param _num_diag_thermistors: The number of diagnostic thermistors.
+    :param _num_science_thermistors: The number of thermistors in the ISH box.
+    :param _num_spectral: The number of spectral sensors in the ISH box.
     :param _handler_function_by_tag: A dictionay that maps each NMEA tag for a
         UART message to its corresponding callback function that returns a ROS
         struct with the packaged data.
-    :param _mosfet_number_by_device_name: A dictionary that maps each actual
-        device to a MOSFET device number.
     :param _ros_publisher_by_tag: A dictionary that maps each NMEA tag for a
         UART message to its corresponding ROS Publisher object.
-    :param _sleep: A float representing the sleep duration used for when the
+    :param _sleep_amt: A float representing the sleep duration used for when the
         sleep function is called.
     :param _uart_transmit_msg_len: An integer representing the maximum length
         for a transmitted UART message.
@@ -56,20 +59,27 @@ class ScienceBridge:
     """
 
     _id_by_color: Dict[str, int]
-    _handler_function_by_tag: Dict[str, Callable[[str], Any]]
     _mosfet_number_by_device_name: Dict[str, int]
-    ser: serial.Serial
-    _sleep: float
+    _num_diag_current: int
+    _num_diag_thermistors: int
+    _num_science_thermistors: int
+    _num_spectral: int
+    _handler_function_by_tag: Dict[str, Callable[[str], Any]]
+    _ros_publisher_by_tag: Dict[str, rospy.Publisher]
+    _sleep_amt: float
     _uart_transmit_msg_len: int
     _uart_lock: threading.Lock
+    ser: serial.Serial
 
     def __init__(self) -> None:
         self._id_by_color = rospy.get_param("science/color_ids")
         self._mosfet_number_by_device_name = rospy.get_param("science/device_mosfet_numbers")
+
         self._num_diag_current = rospy.get_param("/science/info/num_diag_current")
         self._num_diag_thermistors = rospy.get_param("/science/info/num_diag_thermistors")
         self._num_science_thermistors = rospy.get_param("/science/info/num_science_thermistors")
         self._num_spectral = rospy.get_param("/science/info/num_spectral")
+
         self._handler_function_by_tag = {
             "AUTO_SHUTOFF": self._heater_auto_shutoff_handler,
             "DIAG": self._diagnostic_handler,
@@ -77,14 +87,15 @@ class ScienceBridge:
             "SCIENCE_TEMP": self._science_thermistor_handler,
             "SPECTRAL": self._spectral_handler,
         }
-        self._publisher_by_tag = {
+        self._ros_publisher_by_tag = {
             "AUTO_SHUTOFF": rospy.Publisher("science/heater_auto_shutoff_state_data", Enable, queue_size=1),
             "DIAG": rospy.Publisher("diagnostic_data", Diagnostic, queue_size=1),
             "HEATER_DATA": rospy.Publisher("science/heater_state_data", HeaterData, queue_size=1),
             "SCIENCE_TEMP": rospy.Publisher("science/temperatures", ScienceTemperature, queue_size=1),
             "SPECTRAL": rospy.Publisher("science/spectral", Spectral, queue_size=1),
         }
-        self._sleep = rospy.get_param("science/info/sleep")
+
+        self._sleep_amt = rospy.get_param("science/info/sleep")
         self._uart_transmit_msg_len = rospy.get_param("science/info/uart_transmit_msg_len")
         self._uart_lock = threading.Lock()
 
@@ -201,7 +212,7 @@ class ScienceBridge:
 
         tag = arr[0][3:]
         if not (tag in self._handler_function_by_tag):
-            rospy.sleep(self._sleep)
+            rospy.sleep(self._sleep_amt)
             return
 
         self._handler_function_by_tag[tag](rx_msg)
@@ -242,7 +253,7 @@ class ScienceBridge:
             current_values.append(arr[self._num_diag_thermistors + i + 1])
 
         ros_msg = Diagnostic(temperatures=temperature_values, currents=current_values)
-        self._publisher_by_tag[arr[0][3:]].publish(ros_msg)
+        self._ros_publisher_by_tag[arr[0][3:]].publish(ros_msg)
 
     def _heater_auto_shutoff_handler(self, tx_msg: str) -> None:
         """Processes a UART message that contains data of the auto shut off
@@ -255,7 +266,7 @@ class ScienceBridge:
         if len(arr) < 2:
             return
         ros_msg = Enable(enable=bool(int(arr[1])))
-        self._publisher_by_tag[arr[0][3:]].publish(ros_msg)
+        self._ros_publisher_by_tag[arr[0][3:]].publish(ros_msg)
 
     def _heater_auto_shutoff_transmit(self, enable: bool) -> bool:
         """Sends a UART message to the STM32 chip commanding the auto shut off
@@ -281,7 +292,7 @@ class ScienceBridge:
             return
         heater_state = [bool(int(arr[1])), bool(int(arr[2])), bool(int(arr[3]))]
         ros_msg = HeaterData(state=heater_state)
-        self._publisher_by_tag[arr[0][3:]].publish(ros_msg)
+        self._ros_publisher_by_tag[arr[0][3:]].publish(ros_msg)
 
     def _heater_transmit(self, device: int, enable: bool) -> bool:
         """Sends a UART message to the STM32 chip commanding the state of a
@@ -327,7 +338,7 @@ class ScienceBridge:
         for i in range(self._num_science_thermistors):
             temperature_values.temperatures[i] = float(arr[i + 1])
 
-        self._publisher_by_tag[arr[0][3:]].publish(temperature_values)
+        self._ros_publisher_by_tag[arr[0][3:]].publish(temperature_values)
 
     def _send_mosfet_msg(self, device_name: str, enable: bool) -> bool:
         """Sends a MOSFET message on the UART transmit line to the STM32 chip.
@@ -336,13 +347,9 @@ class ScienceBridge:
         :param enable: A boolean that is the requested device state.
         :returns: A boolean that is the success of sent UART transaction.
         """
-        translated_device = self._mosfet_number_by_device_name[device_name]
+        device_num = self._mosfet_number_by_device_name[device_name]
+        tx_msg = f"$MOSFET,{device_num},{int(enable)}"
 
-        def format_mosfet_msg(dev_name, en) -> str:
-            msg = f"$MOSFET,{dev_name},{int(en)}"
-            return msg
-
-        tx_msg = format_mosfet_msg(translated_device, enable)
         success = self._send_msg(tx_msg)
         return success
 
@@ -352,35 +359,26 @@ class ScienceBridge:
             line.
         :returns: A boolean that is the success of sent UART transaction.
         """
+        initial_len = len(tx_msg)
+
+        if initial_len > self._uart_transmit_msg_len:
+            rospy.logerr(f"UART message longer than expected.")
+            return False
+
+        # Add padding to the UART message until it is the length expected by the STM32 chip.
+        tx_msg = tx_msg.ljust(__width=self._uart_transmit_msg_len, __fillchar=",")
+
         try:
-
-            def add_padding(msg: str) -> str:
-                """Adds padding to a UART messages until it is a certain length.
-                This certain length is determined by the input in the
-                config/science.yaml file. This is so that the STM32 chip can
-                expect to only receive messages of this particular length.
-                """
-                length = len(msg)
-                assert (
-                    length <= self._uart_transmit_msg_len
-                ), "tx_msg should not be greater than self._uart_transmit_msg_len"
-                list_msg = [f"{msg}"]
-                missing_characters = self._uart_transmit_msg_len - length
-                list_dummy = [","] * missing_characters
-                list_total = list_msg + list_dummy
-                new_msg = "".join(list_total)
-                return new_msg
-
-            tx_msg = add_padding(tx_msg)
+            # Reset connection and send message.
             with self._uart_lock:
                 self.ser.close()
                 self.ser.open()
                 self.ser.write(bytes(tx_msg, encoding="utf-8"))
+
         except serial.SerialException as exc:
-            if self._uart_lock.locked():
-                self._uart_lock.release()
             rospy.logerr(f"Error in _send_msg: {exc}")
             return False
+
         return True
 
     def _servo_transmit(self, id: int, angle: float) -> bool:
@@ -415,7 +413,7 @@ class ScienceBridge:
         spectral_data = Spectral()
         for i in range(6):
             spectral_data.data[i] = int(arr[i + 1])
-        self._publisher_by_tag[arr[0][3:]].publish(spectral_data)
+        self._ros_publisher_by_tag[arr[0][3:]].publish(spectral_data)
 
 
 def main():
