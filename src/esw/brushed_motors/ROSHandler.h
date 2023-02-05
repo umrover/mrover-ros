@@ -1,9 +1,11 @@
 #pragma once
 
 #include "ControllerMap.h"          // for ControllerMap
+#include <array>        
 #include <cmath>                    // for nan
 #include <mrover/Carousel.h>        // for Carousel
 #include <mrover/MastGimbal.h>      // for MastGimbal
+#include <optional>                 // for optional
 #include <ros/console.h>            // for ROS_ERROR
 #include <ros/ros.h>                // for ros
 #include <sensor_msgs/JointState.h> // for JointState
@@ -44,8 +46,12 @@ private:
 
     // REQUIRES: nothing
     // MODIFIES: nothing
-    // EFFECTS: Moves the RA joints in open loop
-    // and publishes angle data right after.
+    // EFFECTS: Moves a controller in open loop.
+    static std::optional<float> moveControllerOpenLoop(const std::string& name, float vel);
+
+    // REQUIRES: nothing
+    // MODIFIES: nothing
+    // EFFECTS: Moves the RA joints in open loop and publishes angle data right after.
     static void moveRA(const sensor_msgs::JointState::ConstPtr& msg);
 
     // REQUIRES: nothing
