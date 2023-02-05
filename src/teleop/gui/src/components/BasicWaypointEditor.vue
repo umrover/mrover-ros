@@ -126,10 +126,16 @@ export default {
         this.setHighlightedWaypoint(payload.index);
       }
     },
-
+    
     clearWaypoint: function () {
       this.storedWaypoints = [];
     },
+  },
+
+  created: function() {
+    // Reset waypoint editors
+    this.setHighlightedWaypoint(-1)
+    this.setWaypointList([])
   },
 
   watch: {
