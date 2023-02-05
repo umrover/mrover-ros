@@ -66,7 +66,7 @@
 <script>
 import draggable from "vuedraggable";
 import { convertDMS } from "../utils.js";
-import WaypointItem from "./ERDWaypointItem.vue";
+import WaypointItem from "./BasicWaypointItem.vue";
 import Checkbox from "./Checkbox.vue";
 import { mapMutations, mapGetters } from "vuex";
 import _ from "lodash";

@@ -47,13 +47,13 @@ export default {
   },
 
   watch: {
-    endEffectorUVActive() {
+    endEffectorUVActive: function(newVal, oldVal) {
       let request = new ROSLIB.ServiceRequest({
-        enable: this.endEffectorUVActive,
+        enable: newVal,
       });
       this.uvService.callService(request, (result) => {
         if (!result) {
-          this.endEffectorUVActive = !this.endEffectorUVActive;
+          this.endEffectorUVActive = oldVal;
           alert("Toggling End Effector UV failed.");
         }
       });

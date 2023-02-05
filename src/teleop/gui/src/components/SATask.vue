@@ -38,10 +38,10 @@
       </div>
     </div>
     <div class="box map light-bg">
-      <ERDMap :odom="odom" />
+      <BasicMap :odom="odom" />
     </div>
     <div class="box waypoints light-bg">
-      <ERDWaypointEditor />
+      <BasicWaypointEditor />
     </div>
     <div class="box light-bg cameras">
       <Cameras :primary="true" />
@@ -69,8 +69,8 @@
 
 <script>
 import ROSLIB from "roslib";
-import ERDMap from "./ERDRoverMap.vue";
-import ERDWaypointEditor from "./ERDWaypointEditor.vue";
+import BasicMap from "./BasicRoverMap.vue";
+import BasicWaypointEditor from "./BasicWaypointEditor.vue";
 import DriveControls from "./DriveControls.vue";
 import EndEffectorUV from "./EndEffectorUV.vue";
 import ArmControls from "./ArmControls.vue";
@@ -82,8 +82,8 @@ import JointStateTable from "./JointStateTable.vue";
 
 export default {
   components: {
-    ERDMap,
-    ERDWaypointEditor,
+    BasicMap,
+    BasicWaypointEditor,
     DriveControls,
     EndEffectorUV,
     ArmControls,
@@ -139,7 +139,6 @@ export default {
       let euler = qte(quaternion);
       // euler[2] == euler z component
       this.odom.bearing_deg = euler[2] * (180 / Math.PI);
-      console.log(tf);
     });
 
     this.odom_sub.subscribe((msg) => {
