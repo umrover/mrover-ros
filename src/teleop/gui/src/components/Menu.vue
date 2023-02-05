@@ -1,7 +1,13 @@
 <template>
   <div class="wrapper">
     <div class="box header">
-      <img src="/static/mrover.png" alt="MRover" title="MRover" width="48" height="48" />
+      <img
+        src="/static/mrover.png"
+        alt="MRover"
+        title="MRover"
+        width="48"
+        height="48"
+      />
       <h1>Menu</h1>
       <div class="spacer"></div>
     </div>
@@ -22,15 +28,15 @@
 </template>
 
 <script>
-import MenuButton from './MenuButton.vue'
+import MenuButton from "./MenuButton.vue";
 
 export default {
-  name: 'Menu',
+  name: "Menu",
 
   components: {
-    MenuButton
-  }
-}
+    MenuButton,
+  },
+};
 </script>
 
 <style scoped>
@@ -79,5 +85,4 @@ img {
   font-family: sans-serif;
   height: auto;
 }
-
 </style>

@@ -44,7 +44,7 @@
     <div class="box light-bg amino">
         <Amino v-bind:site="site" />
     </div>
-</div>
+  </div>
 </template>
 
 <script>
