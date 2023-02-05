@@ -130,21 +130,15 @@ brushless:
         multiplier: 1
   arm:
     controllers:
-      joint_a:
+      joint_c:
+        id: 6
+        max_rps: 50
+        multiplier: 1
+      joint_d:
         id: 7
         max_rps: 50
-      joint_c:
+        multiplier: 1
+      joint_e:
         id: 8
         max_rps: 50
-      joint_d:
-        id: 9
-        max_rps: 50
-      joint_e:
-        id: 10
-        max_rps: 50
-      joint_f:
-        id: 11
-        max_rps: 50
-      gripper:
-        id: 12
-        max_rps: 50
+        multiplier: 1
