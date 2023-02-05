@@ -66,7 +66,7 @@
 <script>
 import draggable from "vuedraggable";
 import { convertDMS } from "../utils.js";
-import WaypointItem from "./ERDWaypointItem.vue";
+import WaypointItem from "./BasicWaypointItem.vue";
 import Checkbox from "./Checkbox.vue";
 import { mapMutations, mapGetters } from "vuex";
 import _ from "lodash";
@@ -159,6 +159,12 @@ export default {
       this.input.lat = convertDMS(this.input.lat, this.odom_format_in);
       this.input.lon = convertDMS(this.input.lon, this.odom_format_in);
     },
+  },
+
+  created: function () {
+    // Reset waypoint editors
+    this.setHighlightedWaypoint(-1);
+    this.setWaypointList([]);
   },
 
   computed: {
