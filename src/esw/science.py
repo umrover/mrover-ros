@@ -366,7 +366,7 @@ class ScienceBridge:
             return False
 
         # Add padding to the UART message until it is the length expected by the STM32 chip.
-        tx_msg = tx_msg.ljust(__width=self._uart_transmit_msg_len, __fillchar=",")
+        tx_msg = tx_msg.ljust(self._uart_transmit_msg_len, ",")
 
         try:
             # Reset connection and send message.
