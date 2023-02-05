@@ -62,7 +62,9 @@ class Drive:
             if self.drive_config["left_right"]["enabled"]
             else 0
         )
-        twist = deadzone(msg.axes[self.joystick_mappings["twist"]] * self.drive_config["twist"]["multiplier"], 0.1)
+        twist = quadratic(
+            deadzone(msg.axes[self.joystick_mappings["twist"]] * self.drive_config["twist"]["multiplier"], 0.1)
+        )
 
         angular = twist + left_right
 
