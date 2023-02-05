@@ -12,7 +12,7 @@ void ROSHandler::init(ros::NodeHandle* rosNode) {
 
     moveRASubscriber = n->subscribe<sensor_msgs::JointState>("ra_cmd", 1, moveRA);
 
-    jointDataRA.name = RANames;
+    jointDataRA.name = std::vector<std::string>(RANames.begin(), RANames.end());
     jointDataRA.position = std::vector<double>(RANames.size(), 0);
     jointDataRA.velocity = std::vector<double>(RANames.size(), std::nan(""));
     jointDataRA.effort = std::vector<double>(RANames.size(), std::nan(""));
@@ -20,11 +20,11 @@ void ROSHandler::init(ros::NodeHandle* rosNode) {
     jointDataPublisherRA = n->advertise<sensor_msgs::JointState>("ra_data", 1);
 
     // Initialize sample acquisition (SA)
-    SANames = {"sa_joint_1", "sa_joint_2", "sa_joint_3", "sa_joint_4"};
+    SANames = {"sa_joint_1", "sa_joint_2", "sa_joint_3", "sa_joint_4", "scoop", "microscope"};
 
     moveSASubscriber = n->subscribe<sensor_msgs::JointState>("sa_cmd", 1, moveSA);
 
-    jointDataSA.name = SANames;
+    jointDataSA.name = std::vector<std::string>(SANames.begin(), SANames.end());
     jointDataSA.position = std::vector<double>(SANames.size(), 0);
     jointDataSA.velocity = std::vector<double>(SANames.size(), std::nan(""));
     jointDataSA.effort = std::vector<double>(SANames.size(), std::nan(""));
@@ -84,13 +84,19 @@ void ROSHandler::moveSA(const sensor_msgs::JointState::ConstPtr& msg) {
 // EFFECTS: Moves the cache in open loop
 void ROSHandler::moveCache(const sensor_msgs::JointState::ConstPtr& msg) {
     auto controller_iter = ControllerMap::controllersByName.find("cache");
-    assert(controller_iter != ControllerMap::controllersByName.end());
+    if (controller_iter != ControllerMap::controllersByName.end()) {
+        auto name = controller_iter->first;
+        auto controller = controller_iter->second;
 
-    auto name = controller_iter->first;
-    auto controller = controller_iter->second;
-
-    if (name == "cache") {
-        controller->moveOpenLoop((float) msg->velocity[0]);
+        if (name == "cache") {
+            controller->moveOpenLoop((float) msg->velocity[0]);
+        }
+        else {
+            ROS_ERROR("Expected name of JointState msg to be cache.");
+        }
+    }
+    else {
+        ROS_ERROR("Controller for cache is not found in ControllerMap and/or config/esw.yaml.");
     }
 }
 
@@ -99,19 +105,26 @@ void ROSHandler::moveCache(const sensor_msgs::JointState::ConstPtr& msg) {
 // EFFECTS: Moves the carousel in either open loop or closed loop depending on the msg
 void ROSHandler::moveCarousel(const mrover::Carousel::ConstPtr& msg) {
     auto controller_iter = ControllerMap::controllersByName.find("carousel");
-    assert(controller_iter != ControllerMap::controllersByName.end());
+    if (controller_iter != ControllerMap::controllersByName.end()) {
+        auto name = controller_iter->first;
+        auto controller = controller_iter->second;
 
-    auto name = controller_iter->first;
-    auto controller = controller_iter->second;
-
-    if (name == "carousel") {
-        if (msg->open_loop) {
-            controller->moveOpenLoop((float) msg->vel);
+        if (name == "carousel") {
+            if (msg->open_loop) {
+                controller->moveOpenLoop((float) msg->vel);
+            }
+            else {
+                ROS_ERROR("Closed loop is currently not supported for %s", name.c_str());
+            }
         }
         else {
-            ROS_ERROR("Closed loop is currently not supported for %s", name.c_str());
+            ROS_ERROR("Expected name of JointState msg to be carousel.");
         }
     }
+    else {
+        ROS_ERROR("Controller for carousel is not found in ControllerMap and/or config/esw.yaml.");
+    }
+
 }
 
 

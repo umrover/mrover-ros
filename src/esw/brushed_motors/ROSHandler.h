@@ -4,6 +4,7 @@
 #include <cmath>                    // for nan
 #include <mrover/Carousel.h>        // for Carousel
 #include <mrover/MastGimbal.h>      // for MastGimbal
+#include <ros/console.h>            // for ROS_ERROR
 #include <ros/ros.h>                // for ros
 #include <sensor_msgs/JointState.h> // for JointState
 #include <unordered_map>            // for unordered_map
@@ -21,13 +22,13 @@ private:
     inline static ros::NodeHandle* n;
 
     // RA
-    inline static std::vector<std::string> RANames;
+    inline static std::array<std::string, 5> RANames;
     inline static ros::Subscriber moveRASubscriber;
     inline static ros::Publisher jointDataPublisherRA;
     inline static sensor_msgs::JointState jointDataRA;
 
     // SA
-    inline static std::vector<std::string> SANames;
+    inline static std::array<std::string, 6> SANames;
     inline static ros::Subscriber moveSASubscriber;
     inline static ros::Publisher jointDataPublisherSA;
     inline static sensor_msgs::JointState jointDataSA;
