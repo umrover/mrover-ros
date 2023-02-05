@@ -43,18 +43,29 @@ void ROSHandler::init(ros::NodeHandle* rosNode) {
 
 // REQUIRES: nothing
 // MODIFIES: nothing
-// EFFECTS: Moves the RA joints in open loop
-// and publishes angle data right after.
+// EFFECTS: Moves a controller in open loop.
+std::optional<float> ROSHandler::moveControllerOpenLoop(const std::string& name, float vel) {
+    auto controller_iter = ControllerMap::controllersByName.find(name);
+
+    if (controller_iter == ControllerMap::controllersByName.end()) {
+        ROS_ERROR("Could not find controller named %s.", name);
+        return std::nullopt;
+    }
+
+    auto controller = controller_iter->second;
+    controller->moveOpenLoop(vel);
+
+    return std::make_optional<controller->getCurrentAngle()>;
+}
+
+// REQUIRES: nothing
+// MODIFIES: nothing
+// EFFECTS: Moves the RA joints in open loop and publishes angle data right after.
+// Note: any invalid controllers will be published with a position of 0.
 void ROSHandler::moveRA(const sensor_msgs::JointState::ConstPtr& msg) {
-
     for (size_t i = 0; i < RANames.size(); ++i) {
-        auto controller_iter = ControllerMap::controllersByName.find(RANames[i]);
-        if(controller_iter != ControllerMap::controllersByName.end()) {
-            auto controller = controller_iter->second;
-
-            controller->moveOpenLoop((float) msg->velocity[i]);
-            jointDataRA.position[i] = controller->getCurrentAngle();
-        }
+        std::optional<float> pos = moveControllerOpenLoop(RANames[i], (float) msg->velocity[i]);
+        jointDataRA.position[i] = pos.value_or(0.0);
     }
 
     jointDataPublisherRA.publish(jointDataRA);
@@ -62,18 +73,11 @@ void ROSHandler::moveRA(const sensor_msgs::JointState::ConstPtr& msg) {
 
 // REQUIRES: nothing
 // MODIFIES: nothing
-// EFFECTS: Moves the SA joints in open loop
-// and publishes angle data right after.
+// EFFECTS: Moves the SA joints in open loop and publishes angle data right after.
 void ROSHandler::moveSA(const sensor_msgs::JointState::ConstPtr& msg) {
-
     for (size_t i = 0; i < SANames.size(); ++i) {
-        auto controller_iter = ControllerMap::controllersByName.find(SANames[i]);
-        if(controller_iter != ControllerMap::controllersByName.end()) {
-            auto controller = controller_iter->second;
-
-            controller->moveOpenLoop((float) msg->velocity[i]);
-            jointDataSA.position[i] = controller->getCurrentAngle();
-        }
+        std::optional<float> pos = moveControllerOpenLoop(SANames[i], (float) msg->velocity[i]);
+        jointDataSA.position[i] = pos.value_or(0.0);
     }
 
     jointDataPublisherSA.publish(jointDataSA);
@@ -81,44 +85,27 @@ void ROSHandler::moveSA(const sensor_msgs::JointState::ConstPtr& msg) {
 
 // REQUIRES: nothing
 // MODIFIES: nothing
-// EFFECTS: Moves the cache in open loop
+// EFFECTS: Moves the cache in open loop.
 void ROSHandler::moveCache(const sensor_msgs::JointState::ConstPtr& msg) {
-    auto controller_iter = ControllerMap::controllersByName.find("cache");
-    assert(controller_iter != ControllerMap::controllersByName.end());
-
-    auto name = controller_iter->first;
-    auto controller = controller_iter->second;
-
-    if (name == "cache") {
-        controller->moveOpenLoop((float) msg->velocity[0]);
-    }
+    moveControllerOpenLoop("cache", msg->velocity[0]);
 }
 
 // REQUIRES: nothing
 // MODIFIES: nothing
-// EFFECTS: Moves the carousel in either open loop or closed loop depending on the msg
+// EFFECTS: Moves the carousel in either open loop or closed loop depending on msg.
 void ROSHandler::moveCarousel(const mrover::Carousel::ConstPtr& msg) {
-    auto controller_iter = ControllerMap::controllersByName.find("carousel");
-    assert(controller_iter != ControllerMap::controllersByName.end());
-
-    auto name = controller_iter->first;
-    auto controller = controller_iter->second;
-
-    if (name == "carousel") {
-        if (msg->open_loop) {
-            controller->moveOpenLoop((float) msg->vel);
-        }
-        else {
-            ROS_ERROR("Closed loop is currently not supported for %s", name.c_str());
-        }
+    if (msg->open_loop) {
+        moveControllerOpenLoop("carousel", msg->vel);
+    }
+    else {
+        ROS_ERROR("Closed loop is currently not supported for %s", name.c_str());
     }
 }
 
-
 // REQUIRES: nothing
 // MODIFIES: nothing
-// EFFECTS: Moves a mast gimbal.
+// EFFECTS: Moves a mast gimbal in open loop.
 void ROSHandler::moveMastGimbal(const mrover::MastGimbal::ConstPtr& msg) {
-    ControllerMap::controllersByName["mast_gimbal_up_down"]->moveOpenLoop((float) msg->up_down);
-    ControllerMap::controllersByName["mast_gimbal_left_right"]->moveOpenLoop((float) msg->left_right);
+    moveControllerOpenLoop("mast_gimbal_up_down", (float) msg->up_down);
+    moveControllerOpenLoop("mast_gimbal_left_right", (float) msg->left_right);
 }
