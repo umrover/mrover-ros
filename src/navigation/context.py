@@ -25,6 +25,7 @@ class Rover:
     watchdog: watchdog.WatchdogBase
     stuck: bool
     previous_state: str
+    move_back: bool
 
     def get_pose(self) -> SE3:
         return SE3.from_tf_tree(self.ctx.tf_buffer, parent_frame="map", child_frame="base_link")
@@ -173,7 +174,7 @@ class Context:
         self.vis_publisher = rospy.Publisher("nav_vis", Marker, queue_size=1)
         self.course_service = rospy.Service("course_service", mrover.srv.PublishCourse, self.recv_course)
         self.course = None
-        self.rover = Rover(self, watchdog.WatchdogOff())
+        self.rover = Rover(self, watchdog.WatchdogOff(), True, "", True)
         # self.rover = Rover(self)
         self.env = Environment(self)
 

@@ -7,6 +7,7 @@ from context import Context, Environment
 from drive import get_drive_command
 from aenum import Enum, NoAlias
 from state import BaseState
+import rospy
 
 STOP_THRESH = 0.5
 DRIVE_FWD_THRESH = 0.34  # 20 degrees
@@ -83,6 +84,8 @@ class WaypointState(BaseState):
                     return WaypointStateTransitions.search_at_waypoint.name  # type: ignore
             
             if stuck:
+                #Removed .name
+                rospy.logerr(f"TYPE: {type(WaypointStateTransitions.continue_waypoint_traverse.name)}\n")
                 self.context.rover.previous_state = WaypointStateTransitions.continue_waypoint_traverse.name
                 return WaypointStateTransitions.recovery_state.name
 

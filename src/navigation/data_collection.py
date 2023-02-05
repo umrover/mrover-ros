@@ -53,7 +53,7 @@ class DataManager:
         # Remove after debugging
         self._df_all = DataFrame(self.dict)
 
-        rospy.logerr(f"Ran __init__ in data_collection.py")
+        # rospy.logerr(f"Ran __init__ in data_collection.py")
         rospy.Subscriber("/drive_vel_data", JointState, self.make_esw_dataframe)
         rospy.Subscriber("/rover_stuck", Bool, self.set_collecting)
 
@@ -141,8 +141,8 @@ class DataManager:
         self._cur_row["commanded_angular"] = [np.array([cmd_vel.angular.x, cmd_vel.angular.y, cmd_vel.angular.z])]
         if self.update_tf_vel():
             # rospy.logerr(f"curr row: {self._cur_row}")
-            rospy.logerr(f"DF ALL LENGTH: {len(self._df_all)}")
-            rospy.logerr(f"DF LENGTH: {len(self._df)}")
+            # rospy.logerr(f"DF ALL LENGTH: {len(self._df_all)}")
+            # rospy.logerr(f"DF LENGTH: {len(self._df)}")
             # Remove after debugging
             self._df_all = pd.concat([self._df_all, DataFrame(self._cur_row)], axis=0)
             if len(self._avg_df) == AVERAGE_LEN:
@@ -174,7 +174,7 @@ class DataManager:
 
         # remove after debugging averaging
         file2 = folder + "/output2_" + time_stamp + ".csv"
-        rospy.logerr(f"Created {file} in data_collection.py")
+        # rospy.logerr(f"Created {file} in data_collection.py")
         self._df.to_csv(file)
 
         # Remove after debugging averaging

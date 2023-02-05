@@ -6,10 +6,10 @@ import rospy
 from geometry_msgs.msg import Twist
 from util.SE3 import SE3
 from data_collection import DataManager
-from util.np_utils import angle_to_rotate
-from util.np_utils import angle_to_rotate
+import util.np_utils as npu
+# from util.np_utils import angle_to_rotate
+# from util.np_utils import angle_to_rotate
 
-rospy.logerr(f"Make DataCollector in drive.py")
 collector = DataManager()
 MAX_DRIVING_EFFORT = 1
 MIN_DRIVING_EFFORT = -1
@@ -46,11 +46,17 @@ def get_drive_command(
     if target_dist == 0:
         target_dist = np.finfo(float).eps
 
-    alignment = angle_to_rotate(rover_dir, target_dir)
+    if collector.collector_context.rover.stuck and collector.collector_context.rover.move_back:
+        rover_dir *= -1
 
+    alignment = npu.angle_to_rotate(rover_dir, target_dir)
+    rospy.logerr(f"Alignment: {alignment}")
+
+    rospy.logerr(f"TARGET DIST {target_dist}")
     if target_dist < completion_thresh:
         # getting commanded velocity into the data collection
-        rospy.logerr(f"Called make_cmd_vel_obj from drive.py")
+        # rospy.logerr(f"Called make_cmd_vel_obj from drive.py")
+        rospy.logerr("WITHIN COMPLETION_THRESH")
         collector.make_cmd_vel_dataframe(Twist())
         return Twist(), True, collector.collector_context.rover.watchdog.is_stuck()
 
@@ -58,17 +64,21 @@ def get_drive_command(
     full_turn_override = True
     if abs(alignment) < turn_in_place_thresh:
         # We are pretty aligned so we can drive straight
+        rospy.logerr(f"ALIGNED")
         error = target_dist
         cmd_vel.linear.x = np.clip(error, 0.0, MAX_DRIVING_EFFORT)
         if collector.collector_context.rover.stuck and collector.collector_context.rover.move_back:
+            rospy.logerr(f"GO BACKWARDS")
             cmd_vel.linear.x *= -1 #Go backwards
         full_turn_override = False
 
     # we want to drive the angular offset to zero so the error is just 0 - alignment
     error = alignment
     if collector.collector_context.rover.stuck and not collector.collector_context.rover.move_back:
+        rospy.logerr(f"Turning in place\n")
         cmd_vel.angular.z = -0.5 #Turn in place by some amount
     else:
+        rospy.logerr(f"Setting angular.z\n")
         cmd_vel.angular.z = (
             np.sign(error) if full_turn_override else np.clip(error * TURNING_P, MIN_DRIVING_EFFORT, MAX_DRIVING_EFFORT)
         )
@@ -82,7 +92,7 @@ def get_drive_command(
     # )
 
     # getting commanded velocity into the data collection
-    rospy.logerr(f"Called make_cmd_vel_obj from drive.py")
+    # rospy.logerr(f"Called make_cmd_vel_obj from drive.py")
     collector.make_cmd_vel_dataframe(cmd_vel)
     print(cmd_vel.linear.x, cmd_vel.angular.z)
     return cmd_vel, False, collector.collector_context.rover.watchdog.is_stuck()

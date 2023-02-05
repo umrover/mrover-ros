@@ -13,6 +13,7 @@ from single_fiducial import SingleFiducialState, SingleFiducialStateTransitions
 from state import DoneState, DoneStateTransitions
 from waypoint import WaypointState, WaypointStateTransitions
 from search import SearchState, SearchStateTransitions
+from recovery import RecoveryState, RecoveryStateTransitions
 from drive import collector
 
 
@@ -53,6 +54,11 @@ class Navigation(threading.Thread):
                 "GateTraverseState",
                 GateTraverseState(self.context),
                 transitions=self.get_transitions(GateTraverseStateTransitions),
+            )
+            self.state_machine.add(
+                "RecoveryState", 
+                RecoveryState(self.context), 
+                transitions=self.get_transitions(RecoveryStateTransitions)
             )
 
     def get_transitions(self, transitions_enum):
