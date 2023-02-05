@@ -2,7 +2,7 @@
 <div>
     <h3>Carousel Data</h3>
     <div class="box1">
-        <Checkbox ref="open-loop" v-bind:name="'Open Loop'" v-on:toggle="openLoop = !openLoop" />
+        <Checkbox ref="open-loop" :name="'Open Loop'" @toggle="openLoop = !openLoop" />
         <div class="controls">
             <div v-if="!openLoop">
                 <label for="position">Rotate carousel to position: </label>
@@ -13,9 +13,9 @@
                 </select>
             </div>
             <div v-else>
-                <button v-on:pointerdown="velocity = -1*velocityScaleDecimal" v-on:pointerup="velocity = 0" v-on:mouseout="velocity = 0">Reverse</button>
-                <button v-on:pointerdown="velocity = velocityScaleDecimal" v-on:pointerup="velocity = 0" v-on:mouseout="velocity = 0">Forward</button>
-                <input type="range" min="0" max="100" id="myRange" v-model="velocityScale">Velocity Scaling: {{velocityScale}}%</input>
+                <button @pointerdown="velocity = -1*velocityScaleDecimal" @pointerup="velocity = 0" @mouseout="velocity = 0">Reverse</button>
+                <button @pointerdown="velocity = velocityScaleDecimal" @pointerup="velocity = 0" @mouseout="velocity = 0">Forward</button>
+                <input id="myRange" v-model="velocityScale" type="range" min="0" max="100">Velocity Scaling: {{velocityScale}}%</input>
             </div>
         </div>
     </div>
@@ -29,6 +29,10 @@ import Checkbox from './Checkbox.vue'
 let interval
 
 export default {
+
+    components: {
+        Checkbox
+    },
     data() {
         return {
             openLoop: false,
@@ -38,15 +42,6 @@ export default {
 
             carousel_pub: null
         }
-    },
-
-    created: function () {
-        this.carousel_pub = new ROSLIB.Topic({
-            ros: this.$ros,
-            name: 'carousel_cmd',
-            messageType: 'mrover/Carousel'
-        });
-        this.carousel_pub.publish(this.messageObject)
     },
 
     computed: {
@@ -70,8 +65,13 @@ export default {
         }
     },
 
-    components: {
-        Checkbox
+    created: function () {
+        this.carousel_pub = new ROSLIB.Topic({
+            ros: this.$ros,
+            name: 'carousel_cmd',
+            messageType: 'mrover/Carousel'
+        });
+        this.carousel_pub.publish(this.messageObject)
     }
 }
 </script>
