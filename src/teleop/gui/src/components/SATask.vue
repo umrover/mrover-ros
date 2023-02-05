@@ -122,6 +122,12 @@ export default {
       messageType: "sensor_msgs/NavSatFix",
     });
 
+    this.odom_sub.subscribe((msg) => {
+      // Callback for latLng to be set
+      this.odom.latitude_deg = msg.latitude;
+      this.odom.longitude_deg = msg.longitude;
+    });
+
     this.tfClient = new ROSLIB.TFClient({
       ros: this.$ros,
       fixedFrame: "odom",
@@ -139,12 +145,6 @@ export default {
       let euler = qte(quaternion);
       // euler[2] == euler z component
       this.odom.bearing_deg = euler[2] * (180 / Math.PI);
-    });
-
-    this.odom_sub.subscribe((msg) => {
-      // Callback for latLng to be set
-      this.odom.latitude_deg = msg.latitude;
-      this.odom.longitude_deg = msg.longitude;
     });
 
     this.brushless_motors = new ROSLIB.Topic({

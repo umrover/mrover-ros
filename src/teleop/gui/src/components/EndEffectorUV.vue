@@ -30,6 +30,9 @@
 import ToggleButton from "./ToggleButton.vue";
 import ROSLIB from "roslib";
 
+// The amount of time to leave the UV on with auto shutdown, in seconds.
+const UV_DURATION_S = 60;
+
 export default {
   components: {
     ToggleButton,
@@ -80,7 +83,7 @@ export default {
           if (this.endEffectorUVActive && this.shutdownActive) {
             this.endEffectorUVActive = false;
           }
-        }, 2 * 60000); // 2 minutes
+        }, UV_DURATION_S * 1000);
       } else {
         clearTimeout(this.timeoutID);
       }
