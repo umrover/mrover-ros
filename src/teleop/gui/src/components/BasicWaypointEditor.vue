@@ -126,16 +126,10 @@ export default {
         this.setHighlightedWaypoint(payload.index);
       }
     },
-    
+
     clearWaypoint: function () {
       this.storedWaypoints = [];
     },
-  },
-
-  created: function() {
-    // Reset waypoint editors
-    this.setHighlightedWaypoint(-1)
-    this.setWaypointList([])
   },
 
   watch: {
@@ -165,6 +159,12 @@ export default {
       this.input.lat = convertDMS(this.input.lat, this.odom_format_in);
       this.input.lon = convertDMS(this.input.lon, this.odom_format_in);
     },
+  },
+
+  created: function () {
+    // Reset waypoint editors
+    this.setHighlightedWaypoint(-1);
+    this.setWaypointList([]);
   },
 
   computed: {

@@ -47,7 +47,7 @@ export default {
   },
 
   watch: {
-    endEffectorUVActive: function(newVal, oldVal) {
+    endEffectorUVActive: function (newVal, oldVal) {
       let request = new ROSLIB.ServiceRequest({
         enable: newVal,
       });
