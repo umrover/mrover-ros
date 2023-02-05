@@ -1,5 +1,6 @@
 from __future__ import annotations
 from pdb import post_mortem
+from drive import Driver
 import rospy
 import tf2_ros
 from geometry_msgs.msg import Twist
@@ -20,12 +21,19 @@ REF_LON = rospy.get_param("gps_linearization/reference_point_longitude")
 
 tf_broadcaster: tf2_ros.StaticTransformBroadcaster = tf2_ros.StaticTransformBroadcaster()
 
-
 @dataclass
 class Gate:
     post1: np.ndarray
     post2: np.ndarray
 
+@dataclass
+class FailureZone:
+    """
+    FailureZones are represented as rectangles
+    vertices should be a np.ndarray of shape (4, 2) representing 
+    2D corners of the failure zone in clockwise order 
+    """
+    vertices: np.ndarray    # shape (4, 2)
 
 @dataclass
 class Rover:
@@ -52,6 +60,7 @@ class Environment:
     """
 
     ctx: Context
+    failure_zones: List[FailureZone] = []
     NO_FIDUCIAL: ClassVar[int] = -1
 
     def get_fid_pos(self, fid_id: int, frame: str = "map") -> Optional[np.ndarray]:
@@ -97,6 +106,19 @@ class Environment:
             return Gate(post1[0:2], post2[0:2])
         else:
             return None
+    
+    def add_failure_zone(self, failure_zone: FailureZone) -> None:
+        assert (failure_zone.vertices.shape == (4, 2) 
+                or failure_zone.vertices.shape == (4, 3))
+        
+        # discard z-coordinate if present
+        if failure_zone.vertices.shape[1] == 3: 
+            failure_zone.vertices = failure_zone.vertices[:, 0:2]
+        
+        # TODO: Add standardization of vertex order 
+        # Sort to order clockwise, starting with highest y-coord
+        self.failure_zones.append(failure_zone)
+        self.ctx.driver.update_map(); 
 
 
 @dataclass
@@ -203,6 +225,7 @@ class Context:
     course: Optional[Course]
     rover: Rover
     env: Environment
+    driver: Driver
     disable_requested: bool
 
     def __init__(self):
@@ -214,6 +237,7 @@ class Context:
         self.course = None
         self.rover = Rover(self)
         self.env = Environment(self)
+        self.driver = Driver(self)
         self.disable_requested = False
 
     def recv_enable_auton(self, req: mrover.srv.PublishEnableAutonRequest) -> mrover.srv.PublishEnableAutonResponse:
