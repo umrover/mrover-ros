@@ -13,6 +13,29 @@ import moteus.multiplex as mp
 import io
 
 
+def make_brake(controller, *, query=False):
+    STOPPED_MODE: int = 15
+
+    result = controller._make_command(query=query)
+
+    data_buf = io.BytesIO()
+    writer = mp.WriteFrame(data_buf)
+    writer.write_int8(mp.WRITE_INT8 | 0x01)
+    writer.write_int8(int(moteus.Register.MODE))
+    writer.write_int8(STOPPED_MODE)
+
+    if query:
+        data_buf.write(controller._query_data)
+
+    result.data = data_buf.getvalue()
+
+    return result
+
+
+async def set_brake(controller, *args, **kwargs):
+    return await controller.execute(make_brake(controller, **kwargs))
+
+
 class CommandData:
     DEFAULT_TORQUE = 0.3
     MAX_TORQUE = 0.5
@@ -36,28 +59,6 @@ class MoteusData:
         self.position = position
         self.velocity = velocity
         self.torque = torque
-
-
-STOPPED_MODE: int = 15
-
-def make_brake(controller, *, query=False):
-    result = controller._make_command(query=query)
-
-    data_buf = io.BytesIO()
-    writer = mp.WriteFrame(data_buf)
-    writer.write_int8(mp.WRITE_INT8 | 0x01)
-    writer.write_int8(int(moteus.Register.MODE))
-    writer.write_int8(STOPPED_MODE)
-
-    if query:
-        data_buf.write(controller._query_data)
-
-    result.data = data_buf.getvalue()
-
-    return result
-
-async def set_brake(controller, *args, **kwargs):
-    return await controller.execute(make_brake(controller, **kwargs))
 
 
 class MoteusState:
@@ -168,7 +169,7 @@ class MoteusBridge:
                     watchdog_timeout=MoteusBridge.ROVER_NODE_TO_MOTEUS_WATCHDOG_TIMEOUT_S,
                     query=True,
                 ),
-                timeout=self.MOTEUS_RESPONSE_TIME_INDICATING_DISCONNECTED_S,    
+                timeout=self.MOTEUS_RESPONSE_TIME_INDICATING_DISCONNECTED_S,
             )
         else:
             # await self.controller.set_stop()
