@@ -9,6 +9,8 @@ from typing import NoReturn
 from sensor_msgs.msg import JointState
 from mrover.msg import DriveStatus, MoteusState as MoteusStateMsg
 import moteus
+import moteus.multiplex as mp
+import io
 
 
 class CommandData:
@@ -34,6 +36,28 @@ class MoteusData:
         self.position = position
         self.velocity = velocity
         self.torque = torque
+
+
+STOPPED_MODE: int = 15
+
+def make_brake(controller, *, query=False):
+    result = controller._make_command(query=query)
+
+    data_buf = io.BytesIO()
+    writer = mp.WriteFrame(data_buf)
+    writer.write_int8(mp.WRITE_INT8 | 0x01)
+    writer.write_int8(int(moteus.Register.MODE))
+    writer.write_int8(STOPPED_MODE)
+
+    if query:
+        data_buf.write(controller._query_data)
+
+    result.data = data_buf.getvalue()
+
+    return result
+
+async def set_brake(controller, *args, **kwargs):
+    return await controller.execute(make_brake(controller, **kwargs))
 
 
 class MoteusState:
@@ -134,17 +158,25 @@ class MoteusBridge:
 
         It is expected that this may throw an error if there is a timeout.
         """
-        state = await asyncio.wait_for(
-            self.controller.set_position(
-                position=command.position,
-                velocity=command.velocity,
-                velocity_limit=CommandData.VELOCITY_LIMIT_REV_S,
-                maximum_torque=command.torque,
-                watchdog_timeout=MoteusBridge.ROVER_NODE_TO_MOTEUS_WATCHDOG_TIMEOUT_S,
-                query=True,
-            ),
-            timeout=self.MOTEUS_RESPONSE_TIME_INDICATING_DISCONNECTED_S,
-        )
+        if abs(command.velocity) > 1e-5:
+            state = await asyncio.wait_for(
+                self.controller.set_position(
+                    position=command.position,
+                    velocity=command.velocity,
+                    velocity_limit=CommandData.VELOCITY_LIMIT_REV_S,
+                    maximum_torque=command.torque,
+                    watchdog_timeout=MoteusBridge.ROVER_NODE_TO_MOTEUS_WATCHDOG_TIMEOUT_S,
+                    query=True,
+                ),
+                timeout=self.MOTEUS_RESPONSE_TIME_INDICATING_DISCONNECTED_S,    
+            )
+        else:
+            # await self.controller.set_stop()
+            await set_brake(self.controller)
+            state = await asyncio.wait_for(
+                self.controller.query(),
+                timeout=self.MOTEUS_RESPONSE_TIME_INDICATING_DISCONNECTED_S,
+            )
 
         moteus_not_found = state is None or not hasattr(state, "values") or moteus.Register.FAULT not in state.values
         if moteus_not_found:
