@@ -86,7 +86,7 @@ void ROSHandler::moveSA(const sensor_msgs::JointState::ConstPtr& msg) {
 // MODIFIES: nothing
 // EFFECTS: Moves the cache in open loop.
 void ROSHandler::moveCache(const sensor_msgs::JointState::ConstPtr& msg) {
-    moveControllerOpenLoop("cache", msg->velocity[0]);
+    moveControllerOpenLoop("cache", (float) msg->velocity[0]);
 }
 
 // REQUIRES: nothing
@@ -94,7 +94,7 @@ void ROSHandler::moveCache(const sensor_msgs::JointState::ConstPtr& msg) {
 // EFFECTS: Moves the carousel in either open loop or closed loop depending on msg.
 void ROSHandler::moveCarousel(const mrover::Carousel::ConstPtr& msg) {
     if (msg->open_loop) {
-        moveControllerOpenLoop("carousel", msg->vel);
+        moveControllerOpenLoop("carousel", (float) msg->vel);
     }
     else {
         ROS_ERROR("Closed loop is currently not supported for carousel commands.");
