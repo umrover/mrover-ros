@@ -1,5 +1,5 @@
 from typing import Optional, List, Tuple, ClassVar
-from context import Context
+from context import Context, FailureZone
 import numpy as np
 
 from geometry_msgs.msg import Twist
@@ -10,15 +10,25 @@ MAX_DRIVING_EFFORT = 1
 MIN_DRIVING_EFFORT = -1
 TURNING_P = 10.0
 
+@dataclass
 class Driver:
     ctx: Context
 
     curr_target_pos: ClassVar[np.ndarray] = None 
     curr_path: ClassVar[np.ndarray] = None
-    visibility_graph: ClassVar[np.ndarray] = None  
+    visibility_graph: ClassVar[np.ndarray] = None          
 
-    def update_map():
-        pass
+    """
+    Function called after a new FailureZone is added to Environment
+    """
+    def update_map(self):
+        # add new edges
+        for idx, fz in enumerate(self.ctx.env.failure_zones[:-1]):
+            
+
+
+        # remove old edges
+
 
     def shortest_path(source, dest):
         pass

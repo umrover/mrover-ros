@@ -35,6 +35,13 @@ class FailureZone:
     """
     vertices: np.ndarray    # shape (4, 2)
 
+    def intersect(self, path_vec: np.ndarray) -> bool:
+        """
+        path_vec: np array of shape (2, 2) with start and end points as (x, y)
+        """
+            
+
+
 @dataclass
 class Rover:
     ctx: Context

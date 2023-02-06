@@ -26,3 +26,78 @@ def angle_to_rotate(v1, v2):
     if sign == 0.0:
         sign = 1
     return smallest_angle * sign
+
+"""
+Checks if two 2-dimensional line segments intersect. 
+
+The line segments are considered to have open endpoints; 
+as such, they are not considered intersecting if they touch 
+only at one of their endpoints. Cases:
+    1) They do not touch at all --> False
+    2) They touch only at endpoints --> False
+    3) They touch at a T --> False 
+    4) They intersect in the middle of both segments --> True
+    5) They are collinear and they overlap --> True
+"""
+def intersect_2d(start1: np.array, 
+                 end1: np.array, 
+                 start2: np.array, 
+                 end2: np.array) -> bool:
+    """
+    Algorithm:
+    
+    We will calculate 4 orientations with orientation_2d:
+        o1 = s1, e1, s2 ; o2 = s1, e1, e2
+        o3 = s2, e2, s1 ; o4 = s2, e2, e1
+
+    If the segments are collinear, then o1, o2, o3, o4 = 0. 
+
+    If the segments intersect in a non-collinear way, o1 and o2 will 
+    have different signs, as will o3 and o4.
+
+    Note that if any of these orientations are 0 (while not all are 0), 
+    the segments intersect only at an endpoint and we return False.  
+    """
+
+    orient1 = orientation_2d(start1, end1, start2)
+    orient2 = orientation_2d(start1, end1, end2)
+    orient3 = orientation_2d(start2, end2, start1)
+    orient4 = orientation_2d(start2, end2, end1)
+
+    if(orient1 == orient2 == 0):  # collinear case
+        # ensure x-coordinates of both points are non-decreasing
+        if(start1[0] > end1[0]):
+            temp = start1
+            start1 = end1
+            end1 = temp
+        if(start2[0] > end2[0]):
+            temp = start2
+            start2 = end2
+            end2 = temp
+
+        x_cross = (start1[0] <= start2[0] < end1[0]) or (start2[0] < start1[0] <= end2[0])
+        y_cross = (start1[1] <= start2[1] < end1[1]) or (start2[1] < start1[1] <= end2[1])
+        return x_cross or y_cross
+
+    return (orient1 * orient2 < 0 and orient3 * orient4 < 0)
+
+"""
+Checks the orientation of three 2-dimensional points a, b, c. 
+Is traversing from a to b to c clockwise, counterclockwise, or collinear?
+
+Returns:
+    0 if a, b, c are collinear
+    > 0 if they are clockwise-oriented
+    < 0 if they are counter-clockwise oriented 
+"""
+def orientation_2d(a: np.array, b: np.array, c: np.array) -> float:
+    """
+    Algorithm: Note that
+                slope(AC) < slope(AB) if ABC is CW
+                slope(AC) > slope(AB) if ABC is CCW
+                slope(AC) = slope(AB) if ABC is collinear
+    """
+    ab = b - a
+    ac = c - a
+    return (ab[1] * ac[0]) - (ac[1] * ab[0])
+
