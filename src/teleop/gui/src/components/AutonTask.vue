@@ -90,6 +90,15 @@ const navRed = "lightcoral";
 const navGrey = "lightgrey";
 
 export default {
+  components: {
+    AutonRoverMap,
+    AutonWaypointEditor,
+    DriveControls,
+    GimbalControls,
+    JoystickValues,
+    IMUCalibration,
+  },
+
   data() {
     return {
       // Default coordinates are at NC 53 Parking Lot
@@ -114,7 +123,7 @@ export default {
 
       navBlink: false,
       greenHook: false,
-      ledColor: "blue",
+      ledColor: "red",
 
       // Pubs and Subs
       nav_status_sub: null,
@@ -122,6 +131,48 @@ export default {
       auton_led_client: null,
       tfClient: null,
     };
+  },
+
+  computed: {
+    ...mapGetters("autonomy", {
+      autonEnabled: "autonEnabled",
+      teleopEnabled: "teleopEnabled",
+    }),
+
+    nav_state_color: function () {
+      if (!this.autonEnabled && this.teleopEnabledCheck) {
+        return navBlue;
+      }
+      if (this.nav_status.nav_state_name == "DoneState" && this.navBlink) {
+        return navGreen;
+      } else if (
+        this.nav_status.nav_state_name == "DoneState" &&
+        !this.navBlink
+      ) {
+        return navGrey;
+      } else {
+        return navRed;
+      }
+    },
+  },
+
+  watch: {
+    // Publish auton LED color to ESW
+    nav_state_color: function (color) {
+      var send = true;
+      if (color == navBlue) {
+        this.ledColor = "blue";
+      } else if (color == navRed) {
+        this.ledColor = "red";
+      } else if (color == navGreen || color == navGrey) {
+        // Only send if previous color was not green
+        send = !(this.ledColor == "green");
+        this.ledColor = "green";
+      }
+      if (send) {
+        this.sendColor();
+      }
+    },
   },
 
   created: function () {
@@ -182,47 +233,7 @@ export default {
     this.sendColor();
   },
 
-  computed: {
-    ...mapGetters("autonomy", {
-      autonEnabled: "autonEnabled",
-      teleopEnabled: "teleopEnabled",
-    }),
 
-    nav_state_color: function () {
-      if (!this.autonEnabled) {
-        return navBlue;
-      }
-      if (this.nav_status.nav_state_name == "DoneState" && this.navBlink) {
-        return navGreen;
-      } else if (
-        this.nav_status.nav_state_name == "DoneState" &&
-        !this.navBlink
-      ) {
-        return navGrey;
-      } else {
-        return navRed;
-      }
-    },
-  },
-
-  watch: {
-    // Publish auton LED color to ESW
-    nav_state_color: function (color) {
-      var send = true;
-      if (color == navBlue) {
-        this.ledColor = "blue";
-      } else if (color == navRed) {
-        this.ledColor = "red";
-      } else if (color == navGreen || color == navGrey) {
-        // Only send if previous color was not green
-        send = !(this.ledColor == "green");
-        this.ledColor = "green";
-      }
-      if (send) {
-        this.sendColor();
-      }
-    },
-  },
 
   methods: {
     sendColor() {
@@ -241,14 +252,6 @@ export default {
     },
   },
 
-  components: {
-    AutonRoverMap,
-    AutonWaypointEditor,
-    DriveControls,
-    GimbalControls,
-    JoystickValues,
-    IMUCalibration,
-  },
 };
 </script>
 
