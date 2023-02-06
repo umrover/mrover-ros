@@ -64,16 +64,20 @@
     <div class="box light-bg moteus">
       <MoteusStateTable :moteus-state-data="moteusState" />
     </div>
+    <div v-show="false">
+      <GimbalControls></GimbalControls>
+    </div>
   </div>
 </template>
 
 <script>
 import ROSLIB from "roslib";
+import ArmControls from "./ArmControls.vue";
 import BasicMap from "./BasicRoverMap.vue";
 import BasicWaypointEditor from "./BasicWaypointEditor.vue";
 import DriveControls from "./DriveControls.vue";
+import GimbalControls from "./GimbalControls";
 import EndEffectorUV from "./EndEffectorUV.vue";
-import ArmControls from "./ArmControls.vue";
 import PDBFuse from "./PDBFuse.vue";
 import * as qte from "quaternion-to-euler";
 import Cameras from "./Cameras.vue";
@@ -82,15 +86,16 @@ import JointStateTable from "./JointStateTable.vue";
 
 export default {
   components: {
+    ArmControls,
     BasicMap,
     BasicWaypointEditor,
+    Cameras,
     DriveControls,
     EndEffectorUV,
-    ArmControls,
-    PDBFuse,
-    Cameras,
+    GimbalControls,
     JointStateTable,
     MoteusStateTable,
+    PDBFuse,
   },
   data() {
     return {

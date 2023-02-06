@@ -64,6 +64,9 @@
     <div class="box moteus light-bg">
       <MoteusStateTable :moteus-state-data="moteusState" />
     </div>
+    <div v-show="false">
+      <GimbalControls></GimbalControls>
+    </div>
   </div>
 </template>
 
@@ -75,6 +78,7 @@ import ROSLIB from "roslib";
 import ArmControls from "./ArmControls.vue";
 import Cameras from "./Cameras.vue";
 import DriveControls from "./DriveControls.vue";
+import GimbalControls from "./GimbalControls";
 import BasicMap from "./BasicRoverMap.vue";
 import BasicWaypointEditor from "./BasicWaypointEditor.vue";
 import JointStateTable from "./JointStateTable.vue";
@@ -89,6 +93,7 @@ export default {
     DriveControls,
     BasicMap,
     BasicWaypointEditor,
+    GimbalControls,
     JointStateTable,
     MoteusStateTable,
     OdometryReading,
