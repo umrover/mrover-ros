@@ -233,8 +233,6 @@ export default {
     this.sendColor();
   },
 
-
-
   methods: {
     sendColor() {
       let request = new ROSLIB.ServiceRequest({
@@ -251,7 +249,6 @@ export default {
       });
     },
   },
-
 };
 </script>
 
