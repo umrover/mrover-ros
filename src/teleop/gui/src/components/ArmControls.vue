@@ -29,7 +29,7 @@ export default {
     };
   },
 
-  beforeUnmount: function () {
+  beforeDestroy: function () {
     window.clearInterval(interval);
   },
 

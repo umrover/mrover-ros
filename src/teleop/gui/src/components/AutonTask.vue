@@ -56,7 +56,6 @@
     <div class="box waypoints light-bg">
       <AutonWaypointEditor
         :odom="odom"
-        :auton-drive-control="AutonDriveControl"
         @toggleTeleop="teleopEnabledCheck = $event"
       />
     </div>
