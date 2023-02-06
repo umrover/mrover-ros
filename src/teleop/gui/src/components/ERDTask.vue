@@ -78,7 +78,7 @@ import ROSLIB from "roslib";
 import ArmControls from "./ArmControls.vue";
 import Cameras from "./Cameras.vue";
 import DriveControls from "./DriveControls.vue";
-import GimbalControls from "./GimbalControls";
+import GimbalControls from "./GimbalControls.vue";
 import BasicMap from "./BasicRoverMap.vue";
 import BasicWaypointEditor from "./BasicWaypointEditor.vue";
 import JointStateTable from "./JointStateTable.vue";

@@ -76,7 +76,7 @@ import ArmControls from "./ArmControls.vue";
 import BasicMap from "./BasicRoverMap.vue";
 import BasicWaypointEditor from "./BasicWaypointEditor.vue";
 import DriveControls from "./DriveControls.vue";
-import GimbalControls from "./GimbalControls";
+import GimbalControls from "./GimbalControls.vue";
 import EndEffectorUV from "./EndEffectorUV.vue";
 import PDBFuse from "./PDBFuse.vue";
 import * as qte from "quaternion-to-euler";
