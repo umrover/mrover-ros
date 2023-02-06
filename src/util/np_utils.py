@@ -74,23 +74,24 @@ def intersect_2d(start1: np.array,
             temp = start2
             start2 = end2
             end2 = temp
+        
+        x_cross = (start1[0] <= start2[0] < end1[0]) or (start2[0] <= start1[0] < end2[0])
+        y_cross = (start1[1] <= start2[1] < end1[1]) or (start2[1] <= start1[1] < end2[1])
+        return x_cross or y_cross # strict overlap in x OR strict overlap in y
 
-        x_cross = (start1[0] <= start2[0] < end1[0]) or (start2[0] < start1[0] <= end2[0])
-        y_cross = (start1[1] <= start2[1] < end1[1]) or (start2[1] < start1[1] <= end2[1])
-        return x_cross or y_cross
+    return (orient1 * orient2 < 0 and orient3 * orient4 < 0) # non-collinear case
 
-    return (orient1 * orient2 < 0 and orient3 * orient4 < 0)
-
-"""
-Checks the orientation of three 2-dimensional points a, b, c. 
-Is traversing from a to b to c clockwise, counterclockwise, or collinear?
-
-Returns:
-    0 if a, b, c are collinear
-    > 0 if they are clockwise-oriented
-    < 0 if they are counter-clockwise oriented 
-"""
 def orientation_2d(a: np.array, b: np.array, c: np.array) -> float:
+    """
+    Checks the orientation of three 2-dimensional points a, b, c. 
+    Is traversing from a to b to c clockwise, counterclockwise, or collinear?
+
+    Returns:
+        - 0 if a, b, c are collinear
+        - > 0 if they are clockwise-oriented
+        - < 0 if they are counter-clockwise oriented 
+    """
+
     """
     Algorithm: Note that
                 slope(AC) < slope(AB) if ABC is CW

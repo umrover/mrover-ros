@@ -24,7 +24,7 @@ class Driver:
     def update_map(self):
         # add new edges
         for idx, fz in enumerate(self.ctx.env.failure_zones[:-1]):
-            
+            pass
 
 
         # remove old edges

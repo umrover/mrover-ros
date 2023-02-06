@@ -13,6 +13,7 @@ import numpy as np
 from dataclasses import dataclass
 from mrover.msg import Waypoint, GPSWaypoint, EnableAuton
 import pymap3d
+from util.np_utils import intersect_2d, orientation_2d
 
 
 # read required parameters, if they don't exist an error will be thrown
@@ -29,18 +30,54 @@ class Gate:
 @dataclass
 class FailureZone:
     """
-    FailureZones are represented as rectangles
-    vertices should be a np.ndarray of shape (4, 2) representing 
-    2D corners of the failure zone in clockwise order 
+    FailureZones are represented as rectangles.
+    self.vertices should be a np.ndarray of shape (4, 2) representing 
+    the 4 2D corners of the failure zone such that v0, v2 are diagonal
     """
     vertices: np.ndarray    # shape (4, 2)
 
-    def intersect(self, path_vec: np.ndarray) -> bool:
+    def intersect(self, path_start: np.array, path_end: np.array) -> bool:
         """
-        path_vec: np array of shape (2, 2) with start and end points as (x, y)
-        """
-            
+        Returns true if the proposed path intersects with this failure zone. 
 
+        Intersection is defined as going through or overlapping with an edge, 
+        not just touching a corner -- see intersection_2d for details
+
+        path_start: (x, y) of start
+        path_end: (x, y) of end
+        """
+        
+        # degenerate paths
+        if(np.all(np.isclose(path_start, path_end))):
+            return False
+        
+        # If the path intersects any of the edges, return True
+        if(intersect_2d(self.vertices[0, :], self.vertices[1, :], path_start, path_end)
+           or intersect_2d(self.vertices[1, :], self.vertices[2, :], path_start, path_end)
+           or intersect_2d(self.vertices[2, :], self.vertices[3, :], path_start, path_end)
+           or intersect_2d(self.vertices[3, :], self.vertices[0, :], path_start, path_end)):
+            return True
+
+        # If the path goes through exactly 2 corners of the zone return True
+        # Necessary as intersect_2d interprets ends of line segments as open 
+        if(intersect_2d(self.vertices[0, :], self.vertices[2, :], path_start, path_end)
+        or intersect_2d(self.vertices[1, :], self.vertices[3, :], path_start, path_end)):
+            return True
+
+        # If the path is fully inside the rectangle return True
+        # If the path is fully inside, then the midpoint of the path will 
+        # necessarily be STRICTLY inside the rectangle
+        # This means that the orientation of all sides with the midpoint will be the same
+        # Note that if the point is outside, at least 2 sides will disagree on the 
+        # orientation
+        
+        midpoint = (path_start + path_end)/2
+        o1 = orientation_2d(self.vertices[0, :], self.vertices[1, :], midpoint)
+        o2 = orientation_2d(self.vertices[1, :], self.vertices[2, :], midpoint)
+        o3 = orientation_2d(self.vertices[2, :], self.vertices[3, :], midpoint)
+        o4 = orientation_2d(self.vertices[3, :], self.vertices[0, :], midpoint)
+
+        return max(o1, o2, o3, o4) * min(o1, o2, o3, o4) > 0 # check all 4 have same sign
 
 @dataclass
 class Rover:
@@ -122,8 +159,29 @@ class Environment:
         if failure_zone.vertices.shape[1] == 3: 
             failure_zone.vertices = failure_zone.vertices[:, 0:2]
         
-        # TODO: Add standardization of vertex order 
-        # Sort to order clockwise, starting with highest y-coord
+        # TODO: maybe we should have just the vertices passed in? 
+        v0 = failure_zone.vertices[0, :]
+        v1 = failure_zone.vertices[1, :]
+        v2 = failure_zone.vertices[2, :]
+        v3 = failure_zone.vertices[3, :]
+
+        # order vertices such that v0, v1, v2, v3 is a non-intersecting order 
+        if intersect2d(v0, v1, v2, v3):
+            temp = v1
+            v1 = v2
+            v2 = temp
+
+        # 2 diagonally-opposed right angles to check if this is a rectangle 
+        assert(np.dot(v1 - v0, v2 - v1) == np.dot(v3 - v0, v3 - v2) == 0)
+
+        # correct to clockwise orientation
+        # TODO: Is this really necessary?
+        # if(orientation_2d(v0, v1, v2) < 0):
+        #     temp = v1
+        #     v1 = v3
+        #     v3 = temp
+
+        failure_zone.vertices = np.vstack((v0, v1, v2, v3))
         self.failure_zones.append(failure_zone)
         self.ctx.driver.update_map(); 
 
