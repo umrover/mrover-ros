@@ -249,6 +249,10 @@ class MoteusBridge:
 
     @staticmethod
     def make_brake(controller, *, query=False):
+        """
+        Temporary fix, taken from https://github.com/mjbots/moteus/blob/335d40ef2b78335be89f27fbb27c94d1a1333b25/lib/python/moteus/moteus.py#L1027
+        The problem is the Python 3.7 moteus library does not have set_brake and that is the version the Pi has.
+        """
         STOPPED_MODE: int = 15
 
         result = controller._make_command(query=query)
