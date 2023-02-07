@@ -150,7 +150,10 @@ class MoteusBridge:
             )
         else:
             # await self.controller.set_stop()
-            await MoteusBridge.set_brake(self.controller)
+            await asyncio.wait_for(
+                MoteusBridge.set_brake(self.controller),
+                timeout=self.MOTEUS_RESPONSE_TIME_INDICATING_DISCONNECTED_S,
+            )
             state = await asyncio.wait_for(
                 self.controller.query(),
                 timeout=self.MOTEUS_RESPONSE_TIME_INDICATING_DISCONNECTED_S,
