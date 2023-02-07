@@ -16,6 +16,20 @@ teleop:
       multiplier: 1
     gripper:
       multiplier: 1
+      
+  sa_controls:
+    joint_a:
+      multiplier: 1
+    joint_b:
+      multiplier: 1
+    joint_c:
+      multiplier: 1
+    joint_d:
+      multiplier: 1
+    scoop:
+      multiplier: 1
+    microscope:
+      multiplier: 1
   
   drive_controls:
     forward_back:
