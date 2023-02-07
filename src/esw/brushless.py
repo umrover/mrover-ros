@@ -136,6 +136,8 @@ class MoteusBridge:
 
         It is expected that this may throw an error if there is a timeout.
         """
+        # Check if our commanded velocity is close to zero
+        # We can't compare floats directly due to representation so use tolerance
         if abs(command.velocity) > 1e-5:
             state = await asyncio.wait_for(
                 self.controller.set_position(
