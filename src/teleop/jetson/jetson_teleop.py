@@ -82,11 +82,6 @@ class Drive:
 
 
 class ArmControl:
-    class ArmType(Enum):
-        UNKNOWN = 0
-        RA = 1
-        SA = 2
-
     def __init__(self):
         self.xbox_mappings = ros.get_param("teleop/xbox_mappings")
         self.ra_config = ros.get_param("teleop/ra_controls")
