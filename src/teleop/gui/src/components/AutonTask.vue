@@ -109,7 +109,7 @@ export default {
       },
 
       nav_status: {
-        nav_state_name: "Off",
+        nav_state_name: "OffState",
         completed_wps: 0,
         total_wps: 0,
       },

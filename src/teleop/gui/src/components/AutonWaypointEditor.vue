@@ -130,7 +130,6 @@ import VelocityCommand from "./VelocityCommand.vue";
 import WaypointItem from "./AutonWaypointItem.vue";
 import { mapMutations, mapGetters } from "vuex";
 import _ from "lodash";
-import fnvPlus from "fnv-plus";
 import L from "leaflet";
 import ROSLIB from "roslib";
 
@@ -143,6 +142,14 @@ const WAYPOINT_TYPES = {
 };
 
 export default {
+  components: {
+    draggable,
+    WaypointItem,
+    AutonModeCheckbox,
+    Checkbox,
+    VelocityCommand,
+  },
+
   props: {
     odom: {
       type: Object,
@@ -191,207 +198,6 @@ export default {
       rover_stuck_pub: null,
     };
   },
-
-  beforeDestroy: function () {
-    window.clearInterval(interval);
-  },
-
-  created: function () {
-    (this.course_pub = new ROSLIB.Service({
-      ros: this.$ros,
-      name: "/enable_auton",
-      serviceType: "mrover/PublishEnableAuton",
-    })),
-      (this.nav_status_sub = new ROSLIB.Topic({
-        ros: this.$ros,
-        name: "/smach/container_status",
-        messageType: "smach_msgs/SmachContainerStatus",
-      })),
-      (this.rover_stuck_pub = new ROSLIB.Topic({
-        ros: this.$ros,
-        name: "/rover_stuck",
-        messageType: "std_msgs/Bool",
-      })),
-      this.nav_status_sub.subscribe(
-        (msg) => {
-          if (msg.active_states[0] != "Off" && !this.autonEnabled) {
-            return;
-          }
-          this.waitingForNav = false;
-          this.autonButtonColor = this.autonEnabled ? "green" : "red";
-        },
-
-        // Interval for publishing Course
-        (interval = window.setInterval(() => {
-          let course;
-
-          // If Auton Enabled send course
-          if (this.autonEnabled) {
-            course = {
-              enable: true,
-              // Map for every waypoint in the current route
-              waypoints: _.map(this.route, (waypoint) => {
-                const lat = waypoint.lat;
-                const lon = waypoint.lon;
-
-                // Return a GPSWaypoint.msg formatted object for each
-                return {
-                  latitude_degrees: lat,
-                  longitude_degrees: lon,
-                  // WaypointType.msg format
-                  type: {
-                    val: waypoint.gate
-                      ? WAYPOINT_TYPES.GATE
-                      : waypoint.post
-                      ? WAYPOINT_TYPES.POST
-                      : WAYPOINT_TYPES.NO_SEARCH,
-                  },
-                  id: parseFloat(waypoint.id),
-                };
-              }),
-            };
-          } else {
-            // Else send false and no array
-            course = {
-              enable: false,
-              waypoints: [],
-            };
-          }
-
-          const course_request = new ROSLIB.ServiceRequest({
-            enableMsg: course,
-          });
-
-          this.course_pub.callService(course_request, (res) => {});
-          this.rover_stuck_pub.publish({ data: this.roverStuck });
-        }, 100))
-      );
-  },
-
-  methods: {
-    ...mapMutations("autonomy", {
-      setRoute: "setRoute",
-      setWaypointList: "setWaypointList",
-      setHighlightedWaypoint: "setHighlightedWaypoint",
-      setAutonMode: "setAutonMode",
-      setTeleopMode: "setTeleopMode",
-    }),
-
-    ...mapMutations("map", {
-      setOdomFormat: "setOdomFormat",
-    }),
-
-    deleteItem: function (payload) {
-      if (this.highlightedWaypoint == payload.index) {
-        this.setHighlightedWaypoint(-1);
-      }
-      if (payload.list === 0) {
-        this.storedWaypoints.splice(payload.index, 1);
-      } else if (payload.list === 1) {
-        this.route.splice(payload.index, 1);
-      }
-    },
-
-    findWaypoint: function (payload) {
-      if (payload.index === this.highlightedWaypoint) {
-        this.setHighlightedWaypoint(-1);
-      } else {
-        this.setHighlightedWaypoint(payload.index);
-      }
-    },
-
-    // Add item from all waypoints div to current waypoints div
-    addItem: function (payload) {
-      if (payload.list === 0) {
-        this.route.push(this.storedWaypoints[payload.index]);
-      } else if (payload.list === 1) {
-        this.storedWaypoints.push(this.route[payload.index]);
-      }
-    },
-
-    toggleGate: function (payload) {
-      if (payload.list === 0) {
-        this.storedWaypoints[payload.index].gate =
-          !this.storedWaypoints[payload.index].gate;
-      } else if (payload.list === 1) {
-        this.route[payload.index].gate = !this.route[payload.index].gate;
-      }
-    },
-
-    togglePost: function (payload) {
-      if (payload.list === 0) {
-        this.storedWaypoints[payload.index].post =
-          !this.storedWaypoints[payload.index].post;
-      } else if (payload.list === 1) {
-        this.route[payload.index].post = !this.route[payload.index].post;
-      }
-    },
-
-    addWaypoint: function (coord) {
-      this.storedWaypoints.push({
-        name: this.name,
-        id: this.id,
-        lat: convertDMS(coord.lat, "D").d,
-        lon: convertDMS(coord.lon, "D").d,
-        gate: false,
-        post: false,
-      });
-    },
-
-    clearWaypoint: function () {
-      this.storedWaypoints = [];
-    },
-
-    toggleAutonMode: function (val) {
-      this.setAutonMode(val);
-      // This will trigger the yellow "waiting for nav" state of the checkbox only if we are enabling the button
-      this.autonButtonColor = val ? "yellow" : "red";
-      this.waitingForNav = true;
-    },
-
-    toggleTeleopMode: function (val) {
-      this.teleopEnabledCheck = !this.teleopEnabledCheck;
-      this.$emit("toggleTeleop", this.teleopEnabledCheck);
-    },
-  },
-
-  watch: {
-    route: function (newRoute) {
-      const waypoints = newRoute.map((waypoint) => {
-        const lat = waypoint.lat;
-        const lon = waypoint.lon;
-        return { latLng: L.latLng(lat, lon), name: waypoint.name };
-      });
-      this.setRoute(waypoints);
-    },
-
-    storedWaypoints: function (newList) {
-      const waypoints = newList.map((waypoint) => {
-        const lat = waypoint.lat;
-        const lon = waypoint.lon;
-        return { latLng: L.latLng(lat, lon), name: waypoint.name };
-      });
-      this.setWaypointList(waypoints);
-    },
-
-    odom_format_in: function (newOdomFormat) {
-      this.setOdomFormat(newOdomFormat);
-      this.input.lat = convertDMS(this.input.lat, newOdomFormat);
-      this.input.lon = convertDMS(this.input.lon, newOdomFormat);
-    },
-
-    clickPoint: function (newClickPoint) {
-      this.input.lat.d = newClickPoint.lat;
-      this.input.lon.d = newClickPoint.lon;
-      this.input.lat.m = 0;
-      this.input.lon.m = 0;
-      this.input.lat.s = 0;
-      this.input.lon.s = 0;
-      this.input.lat = convertDMS(this.input.lat, this.odom_format_in);
-      this.input.lon = convertDMS(this.input.lon, this.odom_format_in);
-    },
-  },
-
   computed: {
     ...mapGetters("autonomy", {
       autonEnabled: "autonEnabled",
@@ -431,12 +237,216 @@ export default {
     },
   },
 
-  components: {
-    draggable,
-    WaypointItem,
-    AutonModeCheckbox,
-    Checkbox,
-    VelocityCommand,
+  watch: {
+    route: function (newRoute) {
+      const waypoints = newRoute.map((waypoint) => {
+        const lat = waypoint.lat;
+        const lon = waypoint.lon;
+        return { latLng: L.latLng(lat, lon), name: waypoint.name };
+      });
+      this.setRoute(waypoints);
+      this.sendEnableAuton();
+    },
+
+    storedWaypoints: function (newList) {
+      const waypoints = newList.map((waypoint) => {
+        const lat = waypoint.lat;
+        const lon = waypoint.lon;
+        return { latLng: L.latLng(lat, lon), name: waypoint.name };
+      });
+      this.setWaypointList(waypoints);
+    },
+
+    odom_format_in: function (newOdomFormat) {
+      this.setOdomFormat(newOdomFormat);
+      this.input.lat = convertDMS(this.input.lat, newOdomFormat);
+      this.input.lon = convertDMS(this.input.lon, newOdomFormat);
+    },
+
+    clickPoint: function (newClickPoint) {
+      this.input.lat.d = newClickPoint.lat;
+      this.input.lon.d = newClickPoint.lon;
+      this.input.lat.m = 0;
+      this.input.lon.m = 0;
+      this.input.lat.s = 0;
+      this.input.lon.s = 0;
+      this.input.lat = convertDMS(this.input.lat, this.odom_format_in);
+      this.input.lon = convertDMS(this.input.lon, this.odom_format_in);
+    },
+  },
+  beforeDestroy: function () {
+    window.clearInterval(interval);
+  },
+
+  created: function () {
+    (this.course_pub = new ROSLIB.Service({
+      ros: this.$ros,
+      name: "/enable_auton",
+      serviceType: "mrover/PublishEnableAuton",
+    })),
+      (this.nav_status_sub = new ROSLIB.Topic({
+        ros: this.$ros,
+        name: "/smach/container_status",
+        messageType: "smach_msgs/SmachContainerStatus",
+      })),
+      (this.rover_stuck_pub = new ROSLIB.Topic({
+        ros: this.$ros,
+        name: "/rover_stuck",
+        messageType: "std_msgs/Bool",
+      })),
+      this.nav_status_sub.subscribe(
+        (msg) => {
+          console.log(msg);
+          if (msg.active_states[0] !== "OffState" && !this.autonEnabled) {
+            return;
+          }
+          this.waitingForNav = false;
+          this.autonButtonColor = this.autonEnabled ? "green" : "red";
+        },
+
+        // Interval for publishing Course
+        (interval = window.setInterval(() => {
+          this.rover_stuck_pub.publish({ data: this.roverStuck });
+        }, 100))
+      );
+  },
+
+  mounted: function () {
+    //Send auton off if GUI is refreshed
+    this.sendEnableAuton();
+  },
+
+  methods: {
+    ...mapMutations("autonomy", {
+      setRoute: "setRoute",
+      setWaypointList: "setWaypointList",
+      setHighlightedWaypoint: "setHighlightedWaypoint",
+      setAutonMode: "setAutonMode",
+      setTeleopMode: "setTeleopMode",
+    }),
+
+    ...mapMutations("map", {
+      setOdomFormat: "setOdomFormat",
+    }),
+
+    sendEnableAuton() {
+      let course;
+
+      // If Auton Enabled send course
+      if (this.autonEnabled) {
+        course = {
+          enable: true,
+          // Map for every waypoint in the current route
+          waypoints: _.map(this.route, (waypoint) => {
+            const lat = waypoint.lat;
+            const lon = waypoint.lon;
+
+            // Return a GPSWaypoint.msg formatted object for each
+            return {
+              latitude_degrees: lat,
+              longitude_degrees: lon,
+              // WaypointType.msg format
+              type: {
+                val: waypoint.gate
+                  ? WAYPOINT_TYPES.GATE
+                  : waypoint.post
+                  ? WAYPOINT_TYPES.POST
+                  : WAYPOINT_TYPES.NO_SEARCH,
+              },
+              id: parseFloat(waypoint.id),
+            };
+          }),
+        };
+      } else {
+        // Else send false and no array
+        course = {
+          enable: false,
+          waypoints: [],
+        };
+      }
+
+      const course_request = new ROSLIB.ServiceRequest({
+        enableMsg: course,
+      });
+
+      this.course_pub.callService(course_request, () => {});
+    },
+
+    deleteItem: function (payload) {
+      if (this.highlightedWaypoint == payload.index) {
+        this.setHighlightedWaypoint(-1);
+      }
+      if (payload.list === 0) {
+        this.storedWaypoints.splice(payload.index, 1);
+      } else if (payload.list === 1) {
+        this.route.splice(payload.index, 1);
+      }
+    },
+
+    findWaypoint: function (payload) {
+      if (payload.index === this.highlightedWaypoint) {
+        this.setHighlightedWaypoint(-1);
+      } else {
+        this.setHighlightedWaypoint(payload.index);
+      }
+    },
+
+    // Add item from all waypoints div to current waypoints div
+    addItem: function (payload) {
+      if (payload.list === 0) {
+        this.route.push(this.storedWaypoints[payload.index]);
+      } else if (payload.list === 1) {
+        this.storedWaypoints.push(this.route[payload.index]);
+      }
+    },
+
+    toggleGate: function (payload) {
+      if (payload.list === 0) {
+        this.storedWaypoints[payload.index].gate =
+          !this.storedWaypoints[payload.index].gate;
+      } else if (payload.list === 1) {
+        this.route[payload.index].gate = !this.route[payload.index].gate;
+      }
+      this.sendEnableAuton();
+    },
+
+    togglePost: function (payload) {
+      if (payload.list === 0) {
+        this.storedWaypoints[payload.index].post =
+          !this.storedWaypoints[payload.index].post;
+      } else if (payload.list === 1) {
+        this.route[payload.index].post = !this.route[payload.index].post;
+      }
+      this.sendEnableAuton();
+    },
+
+    addWaypoint: function (coord) {
+      this.storedWaypoints.push({
+        name: this.name,
+        id: this.id,
+        lat: convertDMS(coord.lat, "D").d,
+        lon: convertDMS(coord.lon, "D").d,
+        gate: false,
+        post: false,
+      });
+    },
+
+    clearWaypoint: function () {
+      this.storedWaypoints = [];
+    },
+
+    toggleAutonMode: function (val) {
+      this.setAutonMode(val);
+      // This will trigger the yellow "waiting for nav" state of the checkbox only if we are enabling the button
+      this.autonButtonColor = val ? "yellow" : "red";
+      this.waitingForNav = true;
+      this.sendEnableAuton();
+    },
+
+    toggleTeleopMode: function () {
+      this.teleopEnabledCheck = !this.teleopEnabledCheck;
+      this.$emit("toggleTeleop", this.teleopEnabledCheck);
+    },
   },
 };
 </script>
