@@ -134,11 +134,8 @@ class ArmControl:
         Velocities are sent in range [-1,1]
         :return: Returns an output velocity value for the given joint using the given axis_name
         """
-        return (
-            quadratic(deadzone(axes_array[self.xbox_mappings[axis_name]], deadzone_threshold))
-            if quad_control
-            else deadzone(axes_array[self.xbox_mappings[axis_name]], deadzone_threshold)
-        )
+        deadzoned_val = deadzone(axes_array[self.xbox_mappings[axis_name]], deadzone_threshold)
+        return quadratic(deadzoned_val) if quad_control else deadzoned_val
 
     def filter_xbox_button(self, button_array: "List[int]", pos_button: str, neg_button: str) -> int:
         """
@@ -160,6 +157,8 @@ class ArmControl:
         """
 
         # Filter for xbox triggers, they are typically [-1,1]
+        # Lose [-1,0] range since when joystick is initially plugged in 
+        # these output 0 instead of -1 when up
         raw_left_trigger = msg.axes[self.xbox_mappings["left_trigger"]]
         left_trigger = raw_left_trigger if raw_left_trigger > 0 else 0
         raw_right_trigger = msg.axes[self.xbox_mappings["right_trigger"]]
