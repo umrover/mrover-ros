@@ -16,6 +16,8 @@ import ROSLIB from "roslib";
 import Checkbox from "./Checkbox.vue";
 
 let interval;
+// In seconds
+const updateRate = 0.1;
 
 export default {
   components: {
@@ -38,7 +40,6 @@ export default {
       name: "/xbox/sa_control",
       messageType: "sensor_msgs/Joy"
     });
-    const updateRate = 0.1;
     interval = window.setInterval(() => {
       if (this.arm_enabled) {
         const gamepads = navigator.getGamepads();

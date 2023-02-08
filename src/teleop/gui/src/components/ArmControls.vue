@@ -14,8 +14,9 @@
 <script>
 import ROSLIB from "roslib";
 import Checkbox from "./Checkbox.vue";
-import { mapGetters, mapMutations } from "vuex";
 
+// In seconds
+const updateRate = 0.1;
 let interval;
 
 export default {
@@ -39,7 +40,6 @@ export default {
       name: "/xbox/ra_control",
       messageType: "sensor_msgs/Joy",
     });
-    const updateRate = 0.1;
     interval = window.setInterval(() => {
       if (this.arm_enabled) {
         const gamepads = navigator.getGamepads();
