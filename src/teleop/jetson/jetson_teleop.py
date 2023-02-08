@@ -7,9 +7,11 @@ import typing
 import rospy as ros
 from sensor_msgs.msg import Joy, JointState
 from geometry_msgs.msg import Twist
+from typing import List
 
 
 DEFAULT_ARM_DEADZONE = 0.15
+
 
 def quadratic(val: float) -> float:
     return copysign(val**2, val)
@@ -118,7 +120,7 @@ class ArmControl:
 
     def filter_xbox_axis(
         self,
-        axes_array: "list[float]",
+        axes_array: "List[float]",
         axis_name: str,
         deadzone_threshold: float = DEFAULT_ARM_DEADZONE,
         quad_control: bool = True,
@@ -138,7 +140,7 @@ class ArmControl:
             else deadzone(axes_array[self.xbox_mappings[axis_name]], deadzone_threshold)
         )
 
-    def filter_xbox_button(self, button_array: "list[int]", pos_button: str, neg_button: str) -> int:
+    def filter_xbox_button(self, button_array: "List[int]", pos_button: str, neg_button: str) -> int:
         """
         Applies various filtering functions to an axis for controlling the arm
         :param button_array: Button array from sensor_msgs/Joy, each value is an int 0 or 1
