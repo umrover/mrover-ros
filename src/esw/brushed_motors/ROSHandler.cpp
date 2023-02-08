@@ -20,7 +20,7 @@ void ROSHandler::init(ros::NodeHandle* rosNode) {
     jointDataPublisherRA = n->advertise<sensor_msgs::JointState>("ra_data", 1);
 
     // Initialize sample acquisition (SA)
-    SANames = {"sa_joint_1", "sa_joint_2", "sa_joint_3", "sa_joint_4", "scoop", "microscope"};
+    SANames = {"sa_joint_1", "sa_joint_2", "sa_joint_3" "scoop", "microscope"};
 
     moveSASubscriber = n->subscribe<sensor_msgs::JointState>("sa_cmd", 1, moveSA);
 
