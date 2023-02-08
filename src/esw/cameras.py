@@ -163,26 +163,25 @@ class StreamingManager:
         :param req: Has information on the requested devices and resolutions for the four streams of a device.
         :return: The processed devices and resolutions for the four streams of the primary and secondary laptops.
         """
+
+        # 1. Sort the vector based on resolutions and also error check if out of bounds device/resolution
+        # 2. Turn off all streams (we turn off first in order to not accidentally create too many devices)
+        # 3. After turning off streams, then you can turn on
+
         #   This function may not be as fast as desired. For example, if previously there was a device
         #   streaming camera 3, but then it does not want 3, but then another stream wants three, then you will
         #   end up turning it off and turning it back on for no reason (could have just swapped streams instead).
         #   A better implementation would prioritize requests that share the same camera as previously.
         #   However, we can expect this program to only change one device at a time, so it is actually fine.
 
-        self._device_lock.acquire()
-        camera_commands = req.camera_cmds
+        with self._device_lock:
+            camera_commands = req.camera_cmds
 
-        # 1. Sort the vector based on resolutions and also error check if out of bounds device/resolution
-        # 2. Turn off all streams (we turn off first in order to not accidentally create too many devices)
-        # 3. After turning off streams, then you can turn on
+            camera_commands = self._sort_camera_commands_by_resolution_and_error_check(camera_commands)
+            self._turn_off_streams_based_on_camera_cmd(camera_commands, req.primary)
+            self._turn_on_streams_based_on_camera_cmd(camera_commands, req.primary)
 
-        camera_commands = self._sort_camera_commands_by_resolution_and_error_check(camera_commands)
-        self._turn_off_streams_based_on_camera_cmd(camera_commands, req.primary)
-        self._turn_on_streams_based_on_camera_cmd(camera_commands, req.primary)
-
-        response = ChangeCamerasResponse(self._services[0], self._services[1])
-
-        self._device_lock.release()
+            response = ChangeCamerasResponse(self._services[0], self._services[1])
 
         return response
 
@@ -190,21 +189,20 @@ class StreamingManager:
         """
         Updates the streams of all devices
         """
-        self._device_lock.acquire()
-        for index, video_device in enumerate(self._video_devices):
-            if video_device.is_streaming():
-                try:
-                    image = video_device.video_source.Capture(timeout=5000)
-                    for output in video_device.output_by_endpoint.values():
-                        output.Render(image)
-                except Exception as e:
-                    rospy.logerr(f"Error encountered: {e}")
-                    # TODO - figure out what the exception is
-                    # TODO - See if this works: Instead of closing, just ignore
-                    rospy.logerr(f"Camera {index} capture failed. Will still try to attempt to stream.")
-                    # rospy.logerr(f"Camera {index} capture failed. Stopping stream(s).")
-                    # self._close_down_all_streams_of_device(index)
-        self._device_lock.release()
+        with self._device_lock:
+            for index, video_device in enumerate(self._video_devices):
+                if video_device.is_streaming():
+                    try:
+                        image = video_device.video_source.Capture(timeout=5000)
+                        for output in video_device.output_by_endpoint.values():
+                            output.Render(image)
+                    except Exception as e:
+                        rospy.logerr(f"Error encountered: {e}")
+                        # TODO - figure out what the exception is
+                        # TODO - See if this works: Instead of closing, just ignore
+                        rospy.logerr(f"Camera {index} capture failed. Will still try to attempt to stream.")
+                        # rospy.logerr(f"Camera {index} capture failed. Stopping stream(s).")
+                        # self._close_down_all_streams_of_device(index)
 
     def _close_down_all_streams_of_device(self, device: int) -> None:
         """
