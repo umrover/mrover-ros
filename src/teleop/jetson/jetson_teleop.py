@@ -1,8 +1,7 @@
 #!/usr/bin/env python3
 # Node for teleop-related callback functions
 
-import math
-from math import copysign
+from math import copysign, nan
 import typing
 import rospy as ros
 from sensor_msgs.msg import Joy, JointState
@@ -106,16 +105,16 @@ class ArmControl:
 
         self.ra_cmd = JointState(
             name=[name for name in RA_NAMES],
-            position=[math.nan for i in range(len(RA_NAMES))],
+            position=[nan for i in range(len(RA_NAMES))],
             velocity=[0.0 for i in range(len(RA_NAMES))],
-            effort=[math.nan for i in range(len(RA_NAMES))],
+            effort=[nan for i in range(len(RA_NAMES))],
         )
 
         self.sa_cmd = JointState(
             name=[name for name in SA_NAMES],
-            position=[math.nan for i in range(len(SA_NAMES))],
+            position=[nan for i in range(len(SA_NAMES))],
             velocity=[0.0 for i in range(len(SA_NAMES))],
-            effort=[math.nan for i in range(len(SA_NAMES))],
+            effort=[nan for i in range(len(SA_NAMES))],
         )
 
     def filter_xbox_axis(
@@ -157,7 +156,7 @@ class ArmControl:
         """
 
         # Filter for xbox triggers, they are typically [-1,1]
-        # Lose [-1,0] range since when joystick is initially plugged in 
+        # Lose [-1,0] range since when joystick is initially plugged in
         # these output 0 instead of -1 when up
         raw_left_trigger = msg.axes[self.xbox_mappings["left_trigger"]]
         left_trigger = raw_left_trigger if raw_left_trigger > 0 else 0
