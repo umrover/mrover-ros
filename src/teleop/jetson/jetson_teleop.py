@@ -192,10 +192,9 @@ class ArmControl:
         right_trigger = raw_right_trigger if raw_right_trigger > 0 else 0
 
         self.sa_cmd.velocity = [
-            self.sa_config["joint_a"]["multiplier"] * self.filter_xbox_axis(msg.axes, "left_js_x", 0.15, True),
-            self.sa_config["joint_b"]["multiplier"] * self.filter_xbox_axis(msg.axes, "left_js_y", 0.15, True),
-            self.sa_config["joint_c"]["multiplier"] * self.filter_xbox_axis(msg.axes, "right_js_y", 0.15, True),
-            self.sa_config["joint_d"]["multiplier"] * self.filter_xbox_axis(msg.axes, "right_js_x", 0.15, True),
+            self.sa_config["sa_joint_1"]["multiplier"] * self.filter_xbox_axis(msg.axes, "left_js_x", 0.15, True),
+            self.sa_config["sa_joint_2"]["multiplier"] * self.filter_xbox_axis(msg.axes, "left_js_y", 0.15, True),
+            self.sa_config["sa_joint_3"]["multiplier"] * self.filter_xbox_axis(msg.axes, "right_js_y", 0.15, True),
             self.sa_config["scoop"]["multiplier"] * (right_trigger - left_trigger),
             self.sa_config["microscope"]["multiplier"]
             * self.filter_xbox_button(msg.buttons, "right_bumper", "left_bumper"),

@@ -18,13 +18,11 @@ teleop:
       multiplier: 1
       
   sa_controls:
-    joint_a:
+    sa_joint_1:
       multiplier: 1
-    joint_b:
+    sa_joint_2:
       multiplier: 1
-    joint_c:
-      multiplier: 1
-    joint_d:
+    sa_joint_3:
       multiplier: 1
     scoop:
       multiplier: 1
