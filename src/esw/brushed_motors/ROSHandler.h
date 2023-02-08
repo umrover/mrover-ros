@@ -30,7 +30,7 @@ private:
     inline static sensor_msgs::JointState jointDataRA;
 
     // SA
-    inline static std::array<std::string, 6> SANames;
+    inline static std::array<std::string, 5> SANames;
     inline static ros::Subscriber moveSASubscriber;
     inline static ros::Publisher jointDataPublisherSA;
     inline static sensor_msgs::JointState jointDataSA;
