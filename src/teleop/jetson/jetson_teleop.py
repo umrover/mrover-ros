@@ -4,12 +4,12 @@
 import math
 from math import copysign
 import typing
-from enum import Enum
 import rospy as ros
 from sensor_msgs.msg import Joy, JointState
 from geometry_msgs.msg import Twist
-from typing import NoReturn
 
+
+DEFAULT_ARM_DEADZONE = 0.15
 
 def quadratic(val: float) -> float:
     return copysign(val**2, val)
@@ -120,7 +120,7 @@ class ArmControl:
         self,
         axes_array: "list[float]",
         axis_name: str,
-        deadzone_threshold: float,
+        deadzone_threshold: float = DEFAULT_ARM_DEADZONE,
         quad_control: bool = True,
     ) -> float:
         """
@@ -138,7 +138,7 @@ class ArmControl:
             else deadzone(axes_array[self.xbox_mappings[axis_name]], deadzone_threshold)
         )
 
-    def filter_xbox_button(self, button_array: "list[int]", pos_button: str, neg_button: str) -> float:
+    def filter_xbox_button(self, button_array: "list[int]", pos_button: str, neg_button: str) -> int:
         """
         Applies various filtering functions to an axis for controlling the arm
         :param button_array: Button array from sensor_msgs/Joy, each value is an int 0 or 1
@@ -148,7 +148,7 @@ class ArmControl:
         """
         return button_array[self.xbox_mappings[pos_button]] - button_array[self.xbox_mappings[neg_button]]
 
-    def ra_control_callback(self, msg: Joy) -> NoReturn:
+    def ra_control_callback(self, msg: Joy) -> None:
         """
         Converts a Joy message with the Xbox inputs
         to a JointState to control the RA Arm in open loop
@@ -164,10 +164,10 @@ class ArmControl:
         right_trigger = raw_right_trigger if raw_right_trigger > 0 else 0
 
         self.ra_cmd.velocity = [
-            self.ra_config["joint_a"]["multiplier"] * self.filter_xbox_axis(msg.axes, "left_js_x", 0.15, True),
-            self.ra_config["joint_b"]["multiplier"] * self.filter_xbox_axis(msg.axes, "left_js_y", 0.15, True),
-            self.ra_config["joint_c"]["multiplier"] * self.filter_xbox_axis(msg.axes, "right_js_y", 0.15, True),
-            self.ra_config["joint_d"]["multiplier"] * self.filter_xbox_axis(msg.axes, "right_js_x", 0.15, True),
+            self.ra_config["joint_a"]["multiplier"] * self.filter_xbox_axis(msg.axes, "left_js_x"),
+            self.ra_config["joint_b"]["multiplier"] * self.filter_xbox_axis(msg.axes, "left_js_y"),
+            self.ra_config["joint_c"]["multiplier"] * self.filter_xbox_axis(msg.axes, "right_js_y"),
+            self.ra_config["joint_d"]["multiplier"] * self.filter_xbox_axis(msg.axes, "right_js_x"),
             self.ra_config["joint_e"]["multiplier"] * (right_trigger - left_trigger),
             self.ra_config["joint_f"]["multiplier"]
             * self.filter_xbox_button(msg.buttons, "right_bumper", "left_bumper"),
@@ -176,10 +176,10 @@ class ArmControl:
         ]
         self.ra_cmd_pub.publish(self.ra_cmd)
 
-    def sa_control_callback(self, msg: Joy) -> NoReturn:
+    def sa_control_callback(self, msg: Joy) -> None:
         """
         Converts a Joy message with the Xbox inputs
-        to a JointState to control the RA Arm in open loop
+        to a JointState to control the SA Arm in open loop
         :param msg: Has axis and buttons array for Xbox controller
         Velocities are sent in range [-1,1]
         :return:
@@ -200,7 +200,7 @@ class ArmControl:
             self.sa_config["microscope"]["multiplier"]
             * self.filter_xbox_button(msg.buttons, "right_bumper", "left_bumper"),
         ]
-        self.sa_cmd_pub.publish(self.ra_cmd)
+        self.sa_cmd_pub.publish(self.sa_cmd)
 
 
 def main():
