@@ -36,7 +36,7 @@ export default {
 
     this.keyboard_pub = new ROSLIB.Topic({
       ros: this.$ros,
-      name: "/mast)gimbal_cmd",
+      name: "/mast_gimbal_cmd",
       messageType: "mrover/MastGimbal",
     });
   },
