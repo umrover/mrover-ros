@@ -52,7 +52,7 @@ std::optional<float> ROSHandler::moveControllerOpenLoop(const std::string& name,
         return std::nullopt;
     }
 
-    Controller& controller = controller_iter->second;
+    Controller* controller = controller_iter->second;
     controller->moveOpenLoop(vel);
 
     return std::make_optional<float>(controller->getCurrentAngle());
