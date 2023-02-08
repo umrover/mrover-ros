@@ -203,7 +203,6 @@ class ScienceBridge:
         :returns: A boolean that is the success of the transaction. Note that
             this could be because an invalid color was sent.
         """
-        # TODO: Add LED functionality similar to master.
         color = color.lower()
         if color not in self._id_by_color.keys():
             rospy.logerr("Invalid auton LED color.")
