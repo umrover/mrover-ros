@@ -119,7 +119,7 @@ brushed_motors:
   test: false
 
 science:
-  color_ids:
+  auton_color_ids:
     red: 0
     blue: 1
     green: 2
