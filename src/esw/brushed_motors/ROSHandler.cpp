@@ -44,7 +44,7 @@ void ROSHandler::init(ros::NodeHandle* rosNode) {
 // REQUIRES: nothing
 // MODIFIES: nothing
 // EFFECTS: Moves a controller in open loop.
-std::optional<float> ROSHandler::moveControllerOpenLoop(const std::string& name, float vel) {
+std::optional<float> ROSHandler::moveControllerOpenLoop(const std::string& name, float velocity) {
     auto controller_iter = ControllerMap::controllersByName.find(name);
 
     if (controller_iter == ControllerMap::controllersByName.end()) {
@@ -53,7 +53,7 @@ std::optional<float> ROSHandler::moveControllerOpenLoop(const std::string& name,
     }
 
     Controller* controller = controller_iter->second;
-    controller->moveOpenLoop(vel);
+    controller->moveOpenLoop(velocity);
 
     return std::make_optional<float>(controller->getCurrentAngle());
 }

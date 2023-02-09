@@ -47,7 +47,7 @@ private:
     // REQUIRES: nothing
     // MODIFIES: nothing
     // EFFECTS: Moves a controller in open loop.
-    static std::optional<float> moveControllerOpenLoop(const std::string& name, float vel);
+    static std::optional<float> moveControllerOpenLoop(const std::string& name, float velocity);
 
     // REQUIRES: nothing
     // MODIFIES: nothing
