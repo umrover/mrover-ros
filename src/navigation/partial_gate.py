@@ -24,6 +24,7 @@ class PartialGateTrajectory(Trajectory):
         :return:            list of positions for the rover to traverse List(np.ndarray)
         """
         # If the post is at (a, b) and rover is at (a + x, b + y),
+		# Where c is the distance between posts (2m)
         # we'd calculate rover-to-post as c * (-x, -y).Then,
         #   Point 1 (Left Perp): (a + cy, b - cx)
         #   Point 2 (Opposite): (a - cx, b - cy)
@@ -32,15 +33,15 @@ class PartialGateTrajectory(Trajectory):
         # See documentation on the Wiki for visual.
 
         # Converting to 2d arrays
-        post_pos = post_pos[0:2]
-        rover_pos = rover_pos[0:2]
+        post_pos = post_pos[:2]
+        rover_pos = rover_pos[:2]
 
         rover_to_post = post_pos - rover_pos
         rover_to_post = POST_SEPARATION * np_utils.normalized(rover_to_post)
         # scale vector to have magnitude == POST_SEPARATION
 
         left_perp = np_utils.perpendicular_2d(rover_to_post)  # (-y,x)
-        right_perp = -1 * left_perp  # (y,-x)
+        right_perp = -left_perp  # (y,-x)
 
         # This is just making our trajectory points into an array that we can read in
         coords = np.vstack(

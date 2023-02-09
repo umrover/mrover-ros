@@ -82,11 +82,11 @@ class Environment:
 
     def other_gate_fid_pos(self) -> Optional[np.ndarray]:
         """
-        Retrieves the position of the current fiducial (and we are looking for it)
+        Retrieves the position of the next fiducial (and we are looking for it) if we are looking for gate
         """
         assert self.ctx.course
         current_waypoint = self.ctx.course.current_waypoint()
-        if current_waypoint is None:
+        if current_waypoint is None or self.ctx.course.look_for_post(): 
             return None
 
         return self.get_fid_pos(current_waypoint.fiducial_id + 1)
@@ -98,7 +98,7 @@ class Environment:
 
         if self.ctx.course:
             current_waypoint = self.ctx.course.current_waypoint()
-            if current_waypoint is None:
+            if current_waypoint is None or self.ctx.course.look_for_post():
                 return None
 
             post1 = self.get_fid_pos(current_waypoint.fiducial_id)
@@ -106,7 +106,7 @@ class Environment:
             if post1 is None or post2 is None:
                 return None
 
-            return Gate(post1[0:2], post2[0:2])
+            return Gate(post1[:2], post2[:2])
         else:
             return None
 
