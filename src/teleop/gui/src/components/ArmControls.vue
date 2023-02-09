@@ -121,7 +121,7 @@ export default {
               let buttons = gamepad.buttons.map((button) => {
                 return button.value;
               });
-              this.publishJoystickMessage();
+              this.publishJoystickMessage(gamepad, buttons);
             }
           }
         }
@@ -155,7 +155,7 @@ export default {
       var jointlockMsg = new ROSLIB.Message(jointData);
       this.jointlock_pub.publish(jointlockMsg);
     },
-    publishJoystickMessage: function(){
+    publishJoystickMessage: function(gamepad, buttons){
         const joystickData = {
                 axes: gamepad.axes,
                 buttons: buttons
