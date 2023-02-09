@@ -44,7 +44,7 @@
       <OdometryReading :odom="odom" />
     </div>
     <div v-if="type === 'EDM'" class="box map light-bg">
-      <ERDMap :odom="odom" />
+      <BasicMap :odom="odom" />
     </div>
     <div class="box pdb light-bg">
       <PDBFuse />
@@ -53,7 +53,7 @@
       <JointStateTable :joint-state-data="jointState" :vertical="true" />
     </div>
     <div v-if="type === 'EDM'" class="box waypoint-editor light-bg">
-      <ERDWaypointEditor />
+      <BasicWaypointEditor />
     </div>
     <div>
       <DriveControls></DriveControls>
@@ -75,8 +75,8 @@ import ROSLIB from "roslib";
 import ArmControls from "./ArmControls.vue";
 import Cameras from "./Cameras.vue";
 import DriveControls from "./DriveControls.vue";
-import ERDMap from "./ERDRoverMap.vue";
-import ERDWaypointEditor from "./ERDWaypointEditor.vue";
+import BasicMap from "./BasicRoverMap.vue";
+import BasicWaypointEditor from "./BasicWaypointEditor.vue";
 import JointStateTable from "./JointStateTable.vue";
 import MoteusStateTable from "./MoteusStateTable.vue";
 import OdometryReading from "./OdometryReading.vue";
@@ -87,8 +87,8 @@ export default {
     ArmControls,
     Cameras,
     DriveControls,
-    ERDMap,
-    ERDWaypointEditor,
+    BasicMap,
+    BasicWaypointEditor,
     JointStateTable,
     MoteusStateTable,
     OdometryReading,

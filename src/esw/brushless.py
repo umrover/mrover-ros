@@ -10,6 +10,8 @@ from typing import List, Dict
 from sensor_msgs.msg import JointState
 from mrover.msg import MoteusState as MoteusStateMsg, MotorsStatus
 import moteus
+import moteus.multiplex as mp
+import io
 
 
 class CommandData:
@@ -138,17 +140,30 @@ class MoteusBridge:
 
         It is expected that this may throw an error if there is a timeout.
         """
-        state = await asyncio.wait_for(
-            self.controller.set_position(
-                position=command.position,
-                velocity=command.velocity,
-                velocity_limit=CommandData.VELOCITY_LIMIT_REV_S,
-                maximum_torque=command.torque,
-                watchdog_timeout=MoteusBridge.ROVER_NODE_TO_MOTEUS_WATCHDOG_TIMEOUT_S,
-                query=True,
-            ),
-            timeout=self.MOTEUS_RESPONSE_TIME_INDICATING_DISCONNECTED_S,
-        )
+        # Check if our commanded velocity is close to zero
+        # We can't compare floats directly due to representation so use tolerance
+        if abs(command.velocity) > 1e-5:
+            state = await asyncio.wait_for(
+                self.controller.set_position(
+                    position=command.position,
+                    velocity=command.velocity,
+                    velocity_limit=CommandData.VELOCITY_LIMIT_REV_S,
+                    maximum_torque=command.torque,
+                    watchdog_timeout=MoteusBridge.ROVER_NODE_TO_MOTEUS_WATCHDOG_TIMEOUT_S,
+                    query=True,
+                ),
+                timeout=self.MOTEUS_RESPONSE_TIME_INDICATING_DISCONNECTED_S,
+            )
+        else:
+            # await self.controller.set_stop()
+            await asyncio.wait_for(
+                MoteusBridge.set_brake(self.controller),
+                timeout=self.MOTEUS_RESPONSE_TIME_INDICATING_DISCONNECTED_S,
+            )
+            state = await asyncio.wait_for(
+                self.controller.query(),
+                timeout=self.MOTEUS_RESPONSE_TIME_INDICATING_DISCONNECTED_S,
+            )
 
         moteus_not_found = state is None or not hasattr(state, "values") or moteus.Register.FAULT not in state.values
         if moteus_not_found:
@@ -238,6 +253,33 @@ class MoteusBridge:
             or self.moteus_state.state == MoteusState.ERROR_STATE
         ):
             await self._connect()
+
+    @staticmethod
+    def make_brake(controller, *, query=False):
+        """
+        Temporary fix, taken from https://github.com/mjbots/moteus/blob/335d40ef2b78335be89f27fbb27c94d1a1333b25/lib/python/moteus/moteus.py#L1027
+        The problem is the Python 3.7 moteus library does not have set_brake and that is the version the Pi has.
+        """
+        STOPPED_MODE: int = 15
+
+        result = controller._make_command(query=query)
+
+        data_buf = io.BytesIO()
+        writer = mp.WriteFrame(data_buf)
+        writer.write_int8(mp.WRITE_INT8 | 0x01)
+        writer.write_int8(int(moteus.Register.MODE))
+        writer.write_int8(STOPPED_MODE)
+
+        if query:
+            data_buf.write(controller._query_data)
+
+        result.data = data_buf.getvalue()
+
+        return result
+
+    @staticmethod
+    async def set_brake(controller, *args, **kwargs):
+        return await controller.execute(MoteusBridge.make_brake(controller, **kwargs))
 
 
 class MotorsManager(ABC):

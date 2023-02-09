@@ -16,16 +16,34 @@ class GPSLinearization:
     orientation into a pose estimate for the rover and publishes it to the TF tree.
     """
 
+    pose: SE3
+
+    # TF infrastructure
+    tf_broadcaster: tf2_ros.TransformBroadcaster
+    tf_buffer: tf2_ros.Buffer
+    tf_listener: tf2_ros.TransformListener
+
+    # reference coordinates
+    ref_lat: float
+    ref_lon: float
+    ref_alt: float
+
+    # frame configuration
+    use_odom: bool
+    world_frame: str
+    odom_frame: str
+    rover_frame: str
+
     def __init__(self):
+        # init to zero pose
+        self.pose = SE3()
+
         rospy.Subscriber("gps/fix", NavSatFix, self.gps_callback)
         rospy.Subscriber("imu/data", ImuAndMag, self.imu_callback)
 
         self.tf_broadcaster = tf2_ros.TransformBroadcaster()
         self.tf_buffer = tf2_ros.Buffer()
         self.tf_listener = tf2_ros.TransformListener(self.tf_buffer)
-
-        # init to zero pose
-        self.pose = SE3()
 
         # read required parameters, if they don't exist an error will be thrown
         self.ref_lat = rospy.get_param("gps_linearization/reference_point_latitude")
