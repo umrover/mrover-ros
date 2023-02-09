@@ -24,7 +24,7 @@ class PartialGateTrajectory(Trajectory):
         :return:            list of positions for the rover to traverse List(np.ndarray)
         """
         # If the post is at (a, b) and rover is at (a + x, b + y),
-		# Where c is the distance between posts (2m)
+        # Where c is the distance between posts (2m)
         # we'd calculate rover-to-post as c * (-x, -y).Then,
         #   Point 1 (Left Perp): (a + cy, b - cx)
         #   Point 2 (Opposite): (a - cx, b - cy)
