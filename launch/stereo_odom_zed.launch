@@ -19,24 +19,12 @@
                         camera_model:=zed
                         base_frame:=base_link_rtabmap"/>
 
-    <!-- Load ZED2i URDF -->
-    <!-- <param name="zed2i_description_rtabmap" command="$(find xacro)/xacro '$(find zed_wrapper)/urdf/zed_descr.urdf.xacro'
-                        camera_name:=zed2i
-                        camera_model:=zed2i
-                        base_frame:=base_link_rtabmap"/> -->
-
     <!-- ZED URDF publisher -->
     <node name="zed_state_publisher" pkg="robot_state_publisher" type="robot_state_publisher" output="screen"
           required="true">
         <remap from="robot_description" to="zed_description_rtabmap"/>
     </node>
-
-    <!-- ZED2i URDF publisher -->
-    <!-- <node name="zed2i_state_publisher" pkg="robot_state_publisher" type="robot_state_publisher" output="screen"
-          required="true">
-        <remap from="robot_description" to="zed2i_description_rtabmap"/>
-    </node> -->
-
+    
     <node name="stereo_odometry" pkg="rtabmap_ros" type="stereo_odometry" output="screen">
         <remap from="/left/image_rect" to="/zed_node/left/image_rect_color"/>
         <remap from="/left/camera_info" to="/zed_node/left/camera_info"/>
