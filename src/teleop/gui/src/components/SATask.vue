@@ -72,7 +72,6 @@
 
 <script>
 import ROSLIB from "roslib";
-import ArmControls from "./ArmControls.vue";
 import BasicMap from "./BasicRoverMap.vue";
 import BasicWaypointEditor from "./BasicWaypointEditor.vue";
 import DriveControls from "./DriveControls.vue";
@@ -87,7 +86,6 @@ import JointStateTable from "./JointStateTable.vue";
 
 export default {
   components: {
-    ArmControls,
     BasicMap,
     BasicWaypointEditor,
     Cameras,
@@ -96,10 +94,8 @@ export default {
     GimbalControls,
     SAArmControls,
     PDBFuse,
-    Cameras,
     JointStateTable,
     MoteusStateTable,
-    PDBFuse,
   },
   data() {
     return {
