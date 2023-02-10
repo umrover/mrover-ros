@@ -296,7 +296,6 @@ export default {
       })),
       this.nav_status_sub.subscribe(
         (msg) => {
-          console.log(msg);
           if (msg.active_states[0] !== "OffState" && !this.autonEnabled) {
             return;
           }
@@ -353,7 +352,7 @@ export default {
                   ? WAYPOINT_TYPES.POST
                   : WAYPOINT_TYPES.NO_SEARCH,
               },
-              id: parseFloat(waypoint.id),
+              id: parseInt(waypoint.id),
             };
           }),
         };
