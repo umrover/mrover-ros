@@ -46,11 +46,13 @@ def get_drive_command(
     if target_dist == 0:
         target_dist = np.finfo(float).eps
 
-    if collector.collector_context.rover.stuck and collector.collector_context.rover.move_back:
+    if collector.collector_context.rover.stuck:
         rover_dir *= -1
 
     alignment = npu.angle_to_rotate(rover_dir, target_dir)
-    rospy.logerr(f"Alignment: {alignment}")
+    
+    if not collector.collector_context.rover.move_back:
+        rospy.logerr(f"Alignment: {alignment}")
 
     rospy.logerr(f"TARGET DIST {target_dist}")
     if target_dist < completion_thresh:
@@ -67,21 +69,17 @@ def get_drive_command(
         rospy.logerr(f"ALIGNED")
         error = target_dist
         cmd_vel.linear.x = np.clip(error, 0.0, MAX_DRIVING_EFFORT)
-        if collector.collector_context.rover.stuck and collector.collector_context.rover.move_back:
+        if collector.collector_context.rover.stuck:
             rospy.logerr(f"GO BACKWARDS")
             cmd_vel.linear.x *= -1 #Go backwards
         full_turn_override = False
 
     # we want to drive the angular offset to zero so the error is just 0 - alignment
     error = alignment
-    if collector.collector_context.rover.stuck and not collector.collector_context.rover.move_back:
-        rospy.logerr(f"Turning in place\n")
-        cmd_vel.angular.z = -0.5 #Turn in place by some amount
-    else:
-        rospy.logerr(f"Setting angular.z\n")
-        cmd_vel.angular.z = (
-            np.sign(error) if full_turn_override else np.clip(error * TURNING_P, MIN_DRIVING_EFFORT, MAX_DRIVING_EFFORT)
-        )
+    rospy.logerr(f"Setting angular.z\n")
+    cmd_vel.angular.z = (
+        np.sign(error) if full_turn_override else np.clip(error * TURNING_P, MIN_DRIVING_EFFORT, MAX_DRIVING_EFFORT)
+    )
     # print(cmd_vel.linear.x, cmd_vel.angular.z)
     # full_turn_override = False
 

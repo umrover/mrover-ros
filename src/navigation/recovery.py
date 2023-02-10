@@ -69,42 +69,32 @@ class RecoveryState(BaseState):
         rospy.logerr(f"Driving Backwards First Time\n")
         #Making waypoint behind the rover to go backwards
         pose = self.context.rover.get_pose()
-
+        arrived = False
         # if first round
-        if not collector.collector_context.rover.move_back:
+        if collector.collector_context.rover.move_back:
+            rospy.logerr("EVALUATE")
             if not self.waypoint_calculated:
                 rospy.logerr(f"POSE{pose}")
-                dir_vector = -5 * pose.rotation.direction_vector()
+                dir_vector = -2 * pose.rotation.direction_vector()
                 self.waypoint_behind = pose.position + dir_vector
                 self.waypoint_calculated = True
             cmd_vel, arrived, stuck = get_drive_command(self.waypoint_behind, pose, STOP_THRESH, DRIVE_FWD_THRESH)
             rospy.logerr(f"Finished Get Drive Command\n")
             self.context.rover.send_drive_command(cmd_vel)
-            collector.collector_context.rover.move_back = True # move to get_drive_command
+
+        if arrived:
+            collector.collector_context.rover.move_back = False # move to second part of turn
+            self.waypoint_calculated = False
 
         # if second round
-        #   
-        
-        # #Turn In place
-        # rospy.logerr(f"Turning in place\n")
-        # pose = self.context.rover.get_pose()
-        # dir_vector = pose.rotation.direction_vector()
-        # waypoint_rotate = pose.position + self.rotate_by_90(dir_vector)
-        # cmd_vel, arrived, stuck = get_drive_command(waypoint_rotate, pose, STOP_THRESH, DRIVE_FWD_THRESH)
-        # self.context.rover.send_drive_command(cmd_vel)
-        # rospy.logerr(f"Finished Get Drive Command\n")
-        # collector.collector_context.rover.move_back = True
-        
-        '''
-        #Drive backward
-        rospy.logerr(f"Driving Backwards Second Time\n")
-        pose = self.context.rover.get_pose()
-        dir_vector = -1 * pose.rotation.direction_vector()
-        waypoint_behind = pose.position + dir_vector
-        cmd_vel, arrived, stuck = get_drive_command(waypoint_behind, pose, STOP_THRESH, DRIVE_FWD_THRESH)
-        rospy.logerr(f"Finished Get Drive Command\n")
-        self.context.rover.send_drive_command(cmd_vel)
-        '''
+        if not collector.collector_context.rover.move_back:
+            if not self.waypoint_calculated:
+                rospy.logerr(f"POSE{pose}")
+                dir_vector = 2 * self.rotate_by_90(pose.rotation.direction_vector())
+                self.waypoint_behind = pose.position + dir_vector
+                self.waypoint_calculated = True
+            cmd_vel, arrived, stuck = get_drive_command(self.waypoint_behind, pose, STOP_THRESH, DRIVE_FWD_THRESH)
+            self.context.rover.send_drive_command(cmd_vel)
 
         #set stuck to False
         rospy.logerr(f"{self.context.rover.previous_state}\n")
