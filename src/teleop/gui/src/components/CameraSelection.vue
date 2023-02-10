@@ -1,16 +1,18 @@
 <template>
     <div class="wrap">
       <div class="buttons" v-for="j in 3">
-        <template v-for="i in 3">
-          <button class="button" :class="{active_cam_button:camsEnabled[(i-1) + 3*(j-1)]}" v-on:click="$emit('cam_index', (i-1) + 3*(j-1))" :disabled="maxedOut && !camsEnabled[(i-1) + 3*(j-1)]"> <span>{{names[(i-1) + 3*(j-1)]}}</span> </button>
+        <div v-for="i in 3">
+          <button class="button" :class="{active_cam_button:camsEnabled[(i-1) + 3*(j-1)]}" v-on:click="$emit('cam_index', (j-1) + 3*(i-1))" :disabled="maxedOut && !camsEnabled[(j-1) + 3*(i-1)]"> <span>{{names[(j-1) + 3*(i-1)]}}</span> </button>
           <div class="fixed-spacer"></div>
-        </template>
+        </div>
       </div>
     </div>
   </div>
 </template>
 
 <script>
+import '../assets/style.css';
+
 export default {
   props: {
     capacity: {
@@ -58,10 +60,11 @@ export default {
 
 <style scoped>
 .buttons {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  margin: 10px;
+  display: block;
+  margin: 5px;
+}
+.button {
+  margin: 5px;
 }
 .cam_buttons {
   height: 25px;
@@ -73,7 +76,6 @@ export default {
 }
 
 .active_cam_button {
-  background-color: green;
-  color: white;
+  background-color: var(--accent);
 }
 </style>

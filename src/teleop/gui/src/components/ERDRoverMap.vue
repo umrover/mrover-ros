@@ -45,6 +45,8 @@
 </template>
 
 <script>
+import '../assets/style.css';
+
 import {
   LMap,
   LTileLayer,

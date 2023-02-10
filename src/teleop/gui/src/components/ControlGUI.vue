@@ -1,6 +1,6 @@
 <template>
 <div>
-    <div class="box page_header">
+    <div class="page_header">
         <img src="/static/new_mrover.png" alt="MRover" title="MRover" width="185" height="53" />
         <h1>Temp Controls</h1>
     </div>
@@ -22,6 +22,7 @@ import ArmControls from "./ArmControls.vue";
 import GimbalControls from "./GimbalControls.vue";
 import JointStateTable from "./JointStateTable.vue";
 import MoteusStateTable from "./MoteusStateTable.vue";
+import '../assets/style.css';
 
 export default {
   components: {

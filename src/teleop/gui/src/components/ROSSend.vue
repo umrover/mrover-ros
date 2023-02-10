@@ -64,6 +64,7 @@
 
 <script>
 import ROSLIB from "roslib";
+import '../assets/style.css';
 
 const datatypes = [
   "bool",

@@ -5,6 +5,8 @@
 </template>
 
 <script>
+import '../assets/style.css';
+
 export default {
   name: "MenuButton",
 

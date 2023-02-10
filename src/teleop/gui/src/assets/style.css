@@ -1,4 +1,17 @@
-
+:root {
+    --primary-blue: rgb(63, 99, 166);
+    --hover-blue: rgb(79, 119, 192);
+    --active-blue: rgb(112, 148, 216);
+    --shadow-color: rgba(236, 236, 236, 0.966);
+    --accent: rgb(210, 74, 39);
+    --red-hover: rgb(187, 65, 35);
+    --red-active: rgb(163, 59, 33);
+    --green: rgb(96, 150, 74);
+    --green-hover: rgb(84, 124, 68);
+    --green-active: rgb(70, 104, 56);
+    --yellow: rgb(255, 215, 0);
+    --disabled: rgb(161, 172, 175);
+  }
 
 body {
     height: 100vh;
@@ -35,12 +48,13 @@ body {
 }
 
 .button {
-    /* background-color: rgb(45, 78, 138); */
     background-color: var(--primary-blue);
     text-align: center;
     color: white;
     width: 75px;
     height: 42px;
+    padding: 5px;
+    min-width: fit-content;
 }
 
 .button:hover {
@@ -49,4 +63,42 @@ body {
 
 .button:active {
     background-color: var(--active-blue);
+}
+
+.green {
+    background-color: var(--green);
+}
+  
+.red {
+    background-color: var(--accent);
+}
+
+.yellow {
+    background-color: var(--yellow);
+}
+
+.blue {
+    background-color: var(--primary-blue);
+    color: white;
+}
+
+.gray {
+    background-color: var(--disabled);
+    color: white;
+}
+
+.green:hover {
+    background-color: var(--green-hover);
+}
+
+.green:active {
+    background-color: var(--green-active);
+}
+
+.red:hover {
+    background-color: var(--red-hover);
+}
+
+.red:active {
+    background-color: var(--red-active);
 }

@@ -1,14 +1,14 @@
 <template>
-  <div class="wrap-button">
-    <button :class="[color]" @click="toggleAndEmit()">
-      <span class="white-text"
-        >{{ name }}: {{ active ? "\u2611" : "\u2610" }}</span
-      >
-    </button>
-  </div>
+  <button class="button" :class="[color]" @click="toggleAndEmit()">
+    <span class="white-text"
+      >{{ name }}: {{ active ? "\u2611" : "\u2610" }}</span
+    >
+  </button>
 </template>
 
 <script>
+import '../assets/style.css';
+
 export default {
   props: {
     name: {
@@ -42,20 +42,6 @@ export default {
 </script>
 
 <style scoped>
-.wrap-button {
-  display: flex;
-  align-items: center;
-  padding: 1px;
-}
-
-.green {
-  background-color: green;
-}
-
-.red {
-  background-color: red;
-}
-
 .white-text {
   color: white;
 }

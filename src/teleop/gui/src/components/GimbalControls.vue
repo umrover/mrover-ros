@@ -9,6 +9,7 @@
 
 <script>
 import ROSLIB from "roslib";
+import '../assets/style.css';
 
 //keycodes
 const W = 87;

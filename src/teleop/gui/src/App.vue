@@ -31,11 +31,4 @@ export default {
   font-family: 'Avenir', Helvetica, Arial, sans-serif;
   height: 100%;
 }
-
-* {
-  --primary-blue: rgb(63, 99, 166);
-  --hover-blue: rgb(79, 119, 192);
-  --active-blue: rgb(112, 148, 216);
-  --shadow-color: rgba(236, 236, 236, 0.966);
-}
 </style>

@@ -1,9 +1,8 @@
 <template>
   <div class="wrap">
-    <div class="box page_header">
+    <div class="page_header">
       <img src="/static/new_mrover.png" alt="MRover" title="MRover" width="185" height="53" />
       <h1>Menu</h1>
-      <div class="spacer"></div>
     </div>
 
     <div class="content">
@@ -22,6 +21,7 @@
 </template>
 
 <script>
+import '../assets/style.css';
 import MenuButton from "./MenuButton.vue";
 
 export default {
@@ -34,27 +34,9 @@ export default {
 </script>
 
 <style scoped>
-
-.pages {
-  grid-area: pages;
-  border: black solid 1px;
-  border-radius: 5px;
-  background-color: lightgray;
-}
-
 .row {
   display: flex;
   margin: 5px;
-}
-
-.wrap {
-  display: grid;
-  grid-gap: 10px;
-  grid-template-columns: 1fr;
-  grid-template-rows: 60px 1fr;
-  grid-template-areas: "header" "pages";
-  font-family: sans-serif;
-  height: auto;
 }
 
 .content {

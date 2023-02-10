@@ -1,21 +1,21 @@
 <template>
     <div>
-        <div class="wrap">
-            <div class="page_header">
-              <img src="/static/new_mrover.png" alt="MRover" title="MRover" width="185" height="53" />
-              <h1>ROS Service</h1>
-              <div class="spacer"></div>
-            </div>
+      <div class="wrap">
+      <div class="page_header">
+        <img src="/static/new_mrover.png" alt="MRover" title="MRover" width="185" height="53" />
+        <h1>ROS Service</h1>
+        <div class="spacer"></div>
+      </div>
             
-            <div class="pages box">
-              <div class="requestCells">
-                <label for="'service'">Service:</label>
-                <select class="box" id="service" v-model="selectedService" @change="switchService()" required> 
-                <option value="" selected>Select a service</option>
-                <option v-for="option in service_options" v-bind:value="option">
-                {{ option }}
-                </option>
-                </select>
+      <div class="pages box">
+        <div class="requestCells">
+            <label for="'service'">Service:</label>
+            <select class="box" id="service" v-model="selectedService" @change="switchService()" required> 
+            <option value="" selected>Select a service</option>
+            <option v-for="option in service_options" v-bind:value="option">
+            {{ option }}
+            </option>
+            </select>
 
           <textarea
             v-if="args != '' && args != '{}'"
@@ -27,7 +27,7 @@
           <p>{{ schema }}</p>
           <p v-if="error">JSON Syntax Error! Cannot send...</p>
 
-          <button id="send" class="box" type="button" @click="sendArgs()">
+          <button class="button" type="button" @click="sendArgs()">
             Send
           </button>
         </div>
@@ -40,6 +40,7 @@
 
 <script>
 import ROSLIB from "roslib";
+import '../assets/style.css';
 
 const datatypes = [
   "bool",
@@ -131,7 +132,7 @@ export default {
                 }
                 this.args += " {";
                 ctr += 1;
-                displayargs(result.typedefs[ctr]);
+                displayArgs(result.typedefs[ctr]);
                 this.args += "\n}";
                 if (arr.fieldarraylen[i] != -1) {
                   this.args += ", ]";
@@ -191,48 +192,35 @@ p {
   white-space: pre-wrap;
 }
 
-.box {
-  background-color: white;
-  border-radius: 5px;
-  padding: 10px;
-  border-color: rgba(236, 236, 236, 0.966);
-  box-shadow: 2px 2px 15px rgba(236, 236, 236, 0.966),
-    -2px -2px 15px rgba(236, 236, 236, 0.966);
+.pages {
+  display: grid;
+  grid-gap: 10px;
+  grid-template-columns: repeat(2, 1fr);
+  grid-template-rows: 1fr;
+  grid-template-areas: "requestCell responseCell";
+  margin: 10px;
+
 }
 
-.header {
-  display: flex;
-  align-items: center;
-  box-shadow: 0px 10px 8px -4px rgba(236, 236, 236, 0.966);
+#textarea {
+  margin-top: 10px; 
+  resize: none;
+  height: auto;
+  width: 75%;
+  border-radius: 10px;
+  font-family: "Arial";
+  font-size: large;
 }
 
-    #textarea {
-        margin-top: 10px; 
-        resize: none;
-        height: auto;
-        width: 75%;
-        border-radius: 10px;
-        font-family: "Arial";
-        font-size: large;
-    }
-
-    #send {
-        width: 100px;
-        height: 50px;
-        font-size: medium;
-    }
-
-    .responseCell {
-      grid-area: responseCell;
-      width: auto;
-    }
-
-#send:hover {
-  background-color: rgb(116, 150, 201);
+#send {
+    width: 100px;
+    height: 50px;
+    font-size: medium;
 }
 
-#send:active {
-  background-color: rgb(92, 124, 172);
+.responseCell {
+  grid-area: responseCell;
+  width: auto;
 }
 
 .responseCell {

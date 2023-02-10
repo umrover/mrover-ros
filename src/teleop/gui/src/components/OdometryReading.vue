@@ -19,6 +19,7 @@
 </template>
 
 <script>
+import '../assets/style.css';
 import { convertDMS } from "../utils.js";
 import { mapGetters } from "vuex";
 export default {

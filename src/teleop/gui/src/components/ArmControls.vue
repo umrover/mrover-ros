@@ -1,7 +1,7 @@
 <template>
   <div class="wrap">
     <h3>Arm controls</h3>
-    <div class="controls">
+    <div>
       <Checkbox
         ref="arm-enabled"
         :name="'Arm Enabled'"
@@ -12,6 +12,7 @@
 </template>
 
 <script>
+import '../assets/style.css';
 import ROSLIB from "roslib";
 import Checkbox from "./Checkbox.vue";
 import { mapGetters, mapMutations } from "vuex";
@@ -76,25 +77,4 @@ export default {
 </script>
 
 <style scoped>
-.wrap {
-  display: inline-block;
-  align-items: center;
-  justify-items: center;
-  width: 100%;
-}
-.controls {
-  display: flex;
-  align-items: center;
-}
-.header {
-  display: flex;
-  align-items: center;
-}
-.joint-b-calibration {
-  display: flex;
-  gap: 10px;
-  width: 250px;
-  font-weight: bold;
-  color: red;
-}
 </style>

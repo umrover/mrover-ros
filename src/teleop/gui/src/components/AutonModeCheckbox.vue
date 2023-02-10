@@ -1,12 +1,12 @@
 <template>
-  <div class="button wrap-button">
-    <button v-bind:class="[this.color]" v-on:click='toggleAndEmit()'>
-      <span class='white-text'>{{name}}: <br>{{active ? '\u2611' : '\u2610'}}</span>
-    </button>
-  </div>
+  <button class="box" v-bind:class="[this.color]" v-on:click='toggleAndEmit()'>
+    <span class='white-text'>{{name}}: <br>{{active ? '\u2611' : '\u2610'}}</span>
+  </button>
 </template>
 
 <script>
+import '../assets/style.css';
+
 export default {
   props: {
     name: {
@@ -38,24 +38,9 @@ export default {
 </script>
 
 <style scoped>
-.wrap-button {
-  display: block;
-  height: 100%;
-  width: 100%;
-  align-items: center;
-  padding: 1px;
-}
 
-.green {
-  background-color: green;
-}
-
-.red {
-  background-color: red;
-}
-
-.yellow {
-  background-color: #ffd700;
+.box {
+  margin: 5px;
 }
 
 .white-text {

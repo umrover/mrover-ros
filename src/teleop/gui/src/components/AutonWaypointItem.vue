@@ -4,28 +4,31 @@
       <p>{{ waypoint.name }}, ID: {{ waypoint.id }}</p>
     </div>
     <div class="buttons">
-      <button class="red" @click="$emit('add', { list: list, index: index })">
+      <button class="button red" @click="$emit('add', { list: list, index: index })">
         Add
       </button>
       <button
+        class="button"
         :class="[waypoint.post ? 'green' : 'red']"
         @click="$emit('togglePost', { list: list, index: index })"
       >
         Post
       </button>
       <button
+        class="button"
         :class="[waypoint.gate ? 'green' : 'red']"
         @click="$emit('toggleGate', { list: list, index: index })"
       >
         Gate
       </button>
       <button
-        class="red"
+        class="button red"
         @click="$emit('delete', { list: list, index: index })"
       >
         Delete
       </button>
       <button
+        class="button"
         :class="[index === highlightedWaypoint ? 'green' : 'red']"
         @click="$emit('find', { list: list, index: index })"
       >
@@ -48,6 +51,7 @@
 </template>
 
 <script>
+import '../assets/style.css';
 import { mapGetters } from "vuex";
 import { convertDMS } from "../utils";
 
@@ -108,24 +112,14 @@ export default {
 
 .buttons {
   grid-area: buttons;
-  align-self: center;
-  justify-self: center;
+  text-align: center;
   display: block;
 }
 
-.red {
-  background-color: red;
-}
-
-.green {
-  background-color: green;
-}
-
-button {
-  width: auto;
+.button {
+  width: 50px;
   height: auto;
-  padding: 7px;
-  font-weight: bold;
+  margin: 2px;
 }
 
 p {

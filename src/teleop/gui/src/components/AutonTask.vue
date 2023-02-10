@@ -11,7 +11,7 @@
             <img src="/static/joystick.png" alt="Joystick" title="Joystick Controls" style="width: auto; height: 70%; display: inline-block" />
         </div>
     </div>
-    <div class="box box1" v-bind:style="{backgroundColor: nav_state_color}">
+    <div class="box box1" :class="[nav_state_color]">
       <div>
         <h2>Nav State: {{ nav_status.nav_state_name }}</h2>
       </div>
@@ -39,6 +39,7 @@
 
 <script>
 import ROSLIB from "roslib";
+import '../assets/style.css';
 import AutonRoverMap from "./AutonRoverMap.vue";
 import AutonWaypointEditor from "./AutonWaypointEditor.vue";
 import DriveControls from "./DriveControls.vue";
@@ -46,11 +47,6 @@ import { mapGetters } from "vuex";
 import * as qte from "quaternion-to-euler";
 import JoystickValues from "./JoystickValues.vue";
 import Checkbox from "./Checkbox.vue";
-
-const navBlue = "#4695FF";
-const navGreen = "yellowgreen";
-const navRed = "lightcoral";
-const navGrey = "lightgrey";
 
 export default {
   data() {
@@ -153,17 +149,17 @@ export default {
 
     nav_state_color: function () {
       if (!this.autonEnabled) {
-        return navBlue;
+        return 'blue';
       }
       if (this.nav_status.nav_state_name == "DoneState" && this.navBlink) {
-        return navGreen;
+        return 'green';
       } else if (
         this.nav_status.nav_state_name == "DoneState" &&
         !this.navBlink
       ) {
-        return navGrey;
+        return 'gray';
       } else {
-        return navRed;
+        return 'red';
       }
     },
   },
@@ -172,11 +168,11 @@ export default {
     // Publish auton LED color to ESW
     nav_state_color: function (color) {
       var send = true;
-      if (color == navBlue) {
+      if (color == 'blue') {
         this.ledColor = "blue";
-      } else if (color == navRed) {
+      } else if (color == 'red') {
         this.ledColor = "red";
-      } else if (color == navGreen || color == navGrey) {
+      } else if (color == 'green' || color == 'gray') {
         // Only send if previous color was not green
         send = !(this.ledColor == "green");
         this.ledColor = "green";
@@ -220,7 +216,7 @@ export default {
   overflow:hidden;
   grid-gap: 10px;
   grid-template-columns: 2fr 1.25fr 0.75fr;
-  grid-template-rows: auto 2fr 0.25fr;
+  grid-template-rows: auto 5fr 1fr;
   grid-template-areas:  "header header header"
                         "map waypoints waypoints"
                         "data waypoints waypoints";
@@ -231,9 +227,10 @@ export default {
 .page_header {
     grid-area: header;
 }
+.box {
+  box-shadow: 2px 2px 6px var(--shadow-color), -2px -2px 6px var(--shadow-color);
+}
 .box1 {
-  overflow-y: scroll;
-  height: 12 px;
   display: grid;
   grid-template-columns: 40% 60%;
 }

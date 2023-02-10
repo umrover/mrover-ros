@@ -17,6 +17,7 @@
 </template>
 
 <script>
+import '../assets/style.css';
 import MenuButton from "./MenuButton.vue";
 
 export default {

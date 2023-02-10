@@ -1,16 +1,9 @@
 <template>
   <div :class="type === 'ES' ? 'wrapper-es' : 'wrapper-edm'">
-    <div class="box header">
-      <img
-        src="/static/mrover.png"
-        alt="MRover"
-        title="MRover"
-        width="48"
-        height="48"
-      />
+    <div class="page_header">
+      <img src="/static/new_mrover.png" alt="MRover" title="MRover" width="185" height="53" />
       <h1 v-if="type === 'ES'">ES GUI Dashboard</h1>
       <h1 v-else>EDM GUI Dashboard</h1>
-      <div class="spacer"></div>
       <div class="help">
         <img
           src="/static/help.png"
@@ -37,37 +30,38 @@
         />
       </div>
     </div>
-    <div class="box cameras light-bg">
+    <div class="box cameras">
       <Cameras :primary="true" />
     </div>
-    <div v-if="type === 'EDM'" class="box odom light-bg">
+    <div v-if="type === 'EDM'" class="box odom">
       <OdometryReading :odom="odom" />
     </div>
-    <div v-if="type === 'EDM'" class="box map light-bg">
+    <div v-if="type === 'EDM'" class="box map">
       <ERDMap :odom="odom" />
     </div>
-    <div class="box pdb light-bg">
+    <div class="box pdb">
       <PDBFuse />
     </div>
-    <div class="box drive-vel-data light-bg">
+    <div class="box drive-vel-data">
       <JointStateTable :joint-state-data="jointState" :vertical="true" />
     </div>
-    <div v-if="type === 'EDM'" class="box waypoint-editor light-bg">
+    <div v-if="type === 'EDM'" class="box waypoint-editor">
       <ERDWaypointEditor />
     </div>
     <div>
       <DriveControls></DriveControls>
     </div>
-    <div class="box arm-controls light-bg">
+    <div class="box arm-controls">
       <ArmControls />
     </div>
-    <div class="box moteus light-bg">
+    <div class="box moteus">
       <MoteusStateTable :moteus-state-data="moteusState" />
     </div>
   </div>
 </template>
 
 <script>
+import '../assets/style.css';
 import { mapGetters } from "vuex";
 import * as qte from "quaternion-to-euler";
 import ROSLIB from "roslib";
@@ -174,10 +168,11 @@ export default {
 
 <style scoped>
 .wrapper-edm {
+  margin: 0 15px 0 15px;
   display: grid;
-  grid-gap: 10px;
+  grid-gap: 15px;
   grid-template-columns: auto auto;
-  grid-template-rows: 60px 250px auto auto auto auto;
+  grid-template-rows: auto 250px auto auto auto auto;
   grid-template-areas:
     "header header"
     "map waypoint-editor"
@@ -190,10 +185,11 @@ export default {
 }
 
 .wrapper-es {
+  margin: 0 15px 0 15px;
   display: grid;
-  grid-gap: 10px;
+  grid-gap: 15px;
   grid-template-columns: auto auto;
-  grid-template-rows: 60px 250px auto auto auto;
+  grid-template-rows: auto 250px auto auto auto;
   grid-template-areas:
     "header header"
     "cameras moteus"
@@ -204,32 +200,14 @@ export default {
   height: auto;
 }
 
-.box {
-  border-radius: 5px;
-  padding: 10px;
-  border: 1px solid black;
-}
-
-.light-bg {
-  background-color: LightGrey;
-}
-
-img {
-  border: none;
-  border-radius: 0px;
-}
-
-.header {
+.page_header {
   grid-area: header;
   display: flex;
   align-items: center;
 }
-.header h1 {
-  margin-left: 5px;
-}
 
-.spacer {
-  flex-grow: 1;
+.box {
+  box-shadow: 2px 2px 8px var(--shadow-color), -2px -2px 8px var(--shadow-color);
 }
 
 .helpscreen {

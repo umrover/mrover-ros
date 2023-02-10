@@ -1,15 +1,14 @@
 <template>
-    <div>
-        <div class="wrap">
-            <div class="page_header">
-                <img src="/static/new_mrover.png" alt="MRover" title="MRover" width="185" height="53" />
-                <h1>ROS Echo</h1>
-                <div class="spacer"></div>
-            </div>
+    <div class="wrap">
+      <div class="page_header">
+          <img src="/static/new_mrover.png" alt="MRover" title="MRover" width="185" height="53" />
+          <h1>ROS Echo</h1>
+          <div class="spacer"></div>
+      </div>
 
       <div class="box pages">
         <label for="topic">Available Topics:</label>
-        <ul id="topic">
+        <ul class="box" id="topic">
           <li v-for="topic in topics" :key="topic.name">
             <input
               :id="topic"
@@ -22,13 +21,14 @@
           </li>
         </ul>
 
+        <div class="table_scroll">
         <table>
           <tr>
             <td v-for="c in cols" class="box">
               {{ c.name }}
               <button
                 id="mute"
-                class="box button"
+                class="button"
                 type="button"
                 :class="[c.muted ? 'inactive' : 'active']"
                 @click="mute(c)"
@@ -45,13 +45,14 @@
             </td>
           </tr>
         </table>
+        </div>
       </div>
-    </div>
   </div>
 </template>
 
 <script>
 import ROSLIB from "roslib";
+import '../assets/style.css';
 
 export default {
   name: "ROSEcho",
@@ -78,7 +79,7 @@ export default {
 
     this.serviceRequest = new ROSLIB.ServiceRequest();
 
-    let interval = window.setInterval(() => {
+    window.setInterval(() => {
       this.populateTopics();
     }, 1000);
   },
@@ -144,49 +145,31 @@ ul {
   list-style-position: outside;
 }
 
-.box {
-  background-color: white;
-  border-radius: 5px;
-  padding: 10px;
-  border-color: rgba(236, 236, 236, 0.966);
-  box-shadow: 2px 2px 15px rgba(236, 236, 236, 0.966),
-    -2px -2px 15px rgba(236, 236, 236, 0.966);
-}
-
-    .wrap {
-        display: grid;
-        grid-gap: 10px;
-        grid-template-columns: 1fr;
-        grid-template-rows: 60px 1fr;
-        grid-template-areas: "header" "pages";
-        font-family: "Arial";
-        height: auto;
-    }
-
-.header h1 {
-  margin-left: 5px;
+.wrap {
+  height: 100%;
 }
 
 .pages {
   margin: 15px;
+  height: 90%;
 }
 
-img {
-  border: none;
-  border-radius: 0px;
+.button {
+  float: right;
 }
 
-    .button {
-        float: right;
-    }
-    
-    #feed {
-        white-space: pre-wrap;
-    }
+#topic {
+  height: 30%;
+  overflow-y: scroll;
+}
 
-    .active {
-        background-color: var(--primary-blue);
-    }
+#feed {
+  white-space: pre-wrap;
+}
+
+.active {
+  background-color: var(--primary-blue);
+}
 
 table {
   width: 100%;
@@ -198,17 +181,9 @@ td {
   text-align: left;
 }
 
-.button {
-  float: right;
-  text-align: center;
-}
-
-#feed {
-  white-space: pre-wrap;
-}
-
-.active {
-  background-color: rgb(132, 169, 224);
+.table_scroll {
+  height: 60%;
+  overflow-y: scroll;
 }
 
 .inactive {

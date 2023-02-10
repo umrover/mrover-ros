@@ -1,10 +1,10 @@
 <template>
   <div class="wrap">
     <div class="col-wrap" style="left: 0;">
-      <div class="add-drop box">
+      <div class="add-drop">
         <div class="identification">
-          Name: <input v-model="name" size="15" /> ID:
-          <input v-model="id" type="number" max="249" min="-1" step="1" />
+          Name: <input class="box" v-model="name" size="15" /> ID:
+          <input class="box" v-model="id" type="number" max="249" min="-1" step="1" />
         </div>
         <br />
         <input
@@ -26,32 +26,31 @@
           class="checkbox"
         /><font size="2">DMS</font><br />
         <div class="wp-input">
-          <p><input v-model.number="input.lat.d" size="13" />º</p>
+          <p><input class="box" v-model.number="input.lat.d" size="13" />º</p>
           <p v-if="min_enabled">
-            <input v-model.number="input.lat.m" size="13" />'
+            <input class="box" v-model.number="input.lat.m" size="13" />'
           </p>
           <p v-if="sec_enabled">
-            <input v-model.number="input.lat.s" size="13" />"
+            <input class="box" v-model.number="input.lat.s" size="13" />"
           </p>
           N
         </div>
         <div class="wp-input">
-          <p><input v-model.number="input.lon.d" size="13" />º</p>
+          <p><input class="box" v-model.number="input.lon.d" size="13" />º</p>
           <p v-if="min_enabled">
-            <input v-model.number="input.lon.m" size="13" />'
+            <input class="box" v-model.number="input.lon.m" size="13" />'
           </p>
           <p v-if="sec_enabled">
-            <input v-model.number="input.lon.s" size="13" />"
+            <input class="box" v-model.number="input.lon.s" size="13" />"
           </p>
           E
         </div>
-        <br>
         <div style="display:inline-block">
           <button class="button" v-on:click="addWaypoint(input)">Add Waypoint</button>
           <button class="button" v-on:click="addWaypoint(formatted_odom)">Drop Waypoint</button>
         </div>
       </div>
-      <div class="box1">
+      <div class="box box1">
         <div class="all-waypoints">
           <h4 class="waypoint-headers">All Waypoints</h4>
           <button class="button" v-on:click="clearWaypoint">Clear Waypoints</button>
@@ -77,7 +76,7 @@
       </div>
     </div>
     <div class="col-wrap" style="left: 50%">
-      <div class="box datagrid">
+      <div class="datagrid">
         <div class="auton-check">
           <AutonModeCheckbox
             ref="autonCheckbox"
@@ -133,6 +132,7 @@ import _ from "lodash";
 import fnvPlus from "fnv-plus";
 import L from "leaflet";
 import ROSLIB from "roslib";
+import '../assets/style.css';
 
 let interval;
 
@@ -454,22 +454,21 @@ export default {
   position: absolute;
   margin: 1.5px;
   display: inline-block;
-  /*flex-direction: column; */
   height: 100%;
   width: 49.5%;
 }
 
-  .col-wrap {
-    position: absolute;
-    margin: 1.5px;
-    display: inline-block;
-    height: 100%;
-    width: 49.5%;
-  }
-  
-  .col-wrap span{
-    margin:-30px 0px 0px 0px;
-  }
+.col-wrap {
+  position: absolute;
+  margin: 1.5px;
+  display: inline-block;
+  height: 100%;
+  width: 49.5%;
+}
+
+.col-wrap span{
+  margin:-30px 0px 0px 0px;
+}
 
 .dragArea {
   height: 100%;
@@ -479,32 +478,26 @@ export default {
   display: inline-block;
 }
 
-  .add-drop {
-    height: 15%;
-    background-color: orange;
-  }
+.add-drop {
+  height: 15%;
+}
 
-  .box {
-    padding: 10px;
-    min-height: min-content;
-    max-height: 32%;
-    overflow: none;
-    margin-bottom: 6px;
-  }
+input {
+  padding: 2px 0px 2px 5px;
+  margin: 2px;
+}
 
-  .box1 {
-    padding: 0px 5px 0px 5px;
-    overflow: auto;
-    /* min-height: min-content;
-    max-height: 63%; */
-    height: 100%;
-    background-color: yellow;
-  }
+.box1 {
+  padding: 0px 5px 0px 5px;
+  overflow-y: scroll;
+  height: 100%;
+}
 
-  .button {
-    width: auto;
-    height: auto;
-  }
+.button {
+  width: auto;
+  height: auto;
+  margin: 5px;
+}
 
 .datagrid {
   display: grid;
@@ -513,7 +506,7 @@ export default {
   grid-template-rows: 1fr 0.25fr;
   grid-template-areas:
     "auton-check stats"
-    "teleop-check stuck-check";
+    "auton-check stuck-check";
   font-family: sans-serif;
   min-height: min-content;
 }
@@ -521,12 +514,6 @@ export default {
 .all-waypoints {
   display: inline-flex;
 }
-
-  /* .all-waypoints button{
-    margin: 5px;
-    width: 115px;
-    height: 20px;
-  } */
 
 .wp-input p {
   display: inline;
@@ -538,13 +525,9 @@ export default {
 
 /* Grid Area Definitions */
 .auton-check {
-  align-content: center;
+  display: block;
+  text-align: center;
   grid-area: auton-check;
-}
-
-.teleop-check {
-  align-content: center;
-  grid-area: teleop-check;
 }
 
 .stats {
@@ -553,7 +536,7 @@ export default {
 }
 
 .stuck-check {
-  align-content: center;
+  text-align: center;
   grid-area: stuck-check;
 }
 

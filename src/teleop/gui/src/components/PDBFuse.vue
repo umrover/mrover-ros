@@ -37,6 +37,7 @@
 
 <script>
 import ROSLIB from "roslib";
+import '../assets/style.css';
 const pdb_temp_limit = 100;
 const pdb_current_limits = [
   //TBD

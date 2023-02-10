@@ -1,7 +1,7 @@
 <template>
   <div class="wrap">
     <div class="box">
-      <div class="identification">Name: <input v-model="name" size="15" /></div>
+      <div class="identification">Name: <input class="box" v-model="name" size="15" /></div>
       <br />
       <input v-model="odom_format_in" type="radio" value="D" class="checkbox" />
       <font size="2">D</font>
@@ -20,34 +20,34 @@
       />
       <font size="2">DMS</font><br />
       <div class="wp-input">
-        <p><input v-model.number="input.lat.d" size="13" />º</p>
+        <p><input class="box" v-model.number="input.lat.d" size="13" />º</p>
         <p v-if="min_enabled">
-          <input v-model.number="input.lat.m" size="13" />'
+          <input class="box" v-model.number="input.lat.m" size="13" />'
         </p>
         <p v-if="sec_enabled">
-          <input v-model.number="input.lat.s" size="13" />"
+          <input class="box" v-model.number="input.lat.s" size="13" />"
         </p>
         N
       </div>
       <div class="wp-input">
-        <p><input v-model.number="input.lon.d" size="13" />º</p>
+        <p><input class="box" v-model.number="input.lon.d" size="13" />º</p>
         <p v-if="min_enabled">
-          <input v-model.number="input.lon.m" size="13" />'
+          <input class="box" v-model.number="input.lon.m" size="13" />'
         </p>
         <p v-if="sec_enabled">
-          <input v-model.number="input.lon.s" size="13" />"
+          <input class="box" v-model.number="input.lon.s" size="13" />"
         </p>
         E
       </div>
       <br />
       <div style="display: inline-block">
-        <button @click="addWaypoint(input)">Add Waypoint</button>
+        <button class="button" @click="addWaypoint(input)">Add Waypoint</button>
       </div>
     </div>
     <div class="box1">
       <div class="all-waypoints">
         <h4 class="waypoint-headers">Waypoints</h4>
-        <button @click="clearWaypoint">Clear Waypoints</button>
+        <button class="button" @click="clearWaypoint">Clear Waypoints</button>
       </div>
       <draggable v-model="storedWaypoints" class="dragArea" draggable=".item'">
         <WaypointItem
@@ -64,6 +64,7 @@
 </template>
 
 <script>
+import '../assets/style.css';
 import draggable from "vuedraggable";
 import { convertDMS } from "../utils.js";
 import WaypointItem from "./ERDWaypointItem.vue";
@@ -206,20 +207,12 @@ export default {
 }
 
 .box {
-  border-radius: 5px;
-  padding: 10px;
-  border: 1px solid black;
-  min-height: min-content;
-  /* max-height: 32%; */
-  overflow: none;
-  margin-bottom: 6px;
+  margin: 2px;
+  padding: 2px;
 }
 
 .box1 {
-  border-radius: 5px;
-  padding: 0px 5px 0px 5px;
-  border: 1px solid black;
-  overflow: scroll;
+  overflow-y: scroll;
   min-height: min-content;
   max-height: 500px;
 }
@@ -232,6 +225,7 @@ export default {
   margin: 5px;
   width: 115px;
   height: 20px;
+  padding: 0;
 }
 
 .joystick {

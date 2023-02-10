@@ -16,6 +16,7 @@
 </template>
 
 <script>
+import '../assets/style.css';
 import ROSLIB from "roslib/src/RosLib";
 
 export default {

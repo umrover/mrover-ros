@@ -1,5 +1,5 @@
 <template>
-  <div class="waypoint-item">
+  <div class="box waypoint-item">
     <div class="name">
       <p>{{ waypoint.name }}</p>
     </div>
@@ -7,9 +7,9 @@
       <p>{{ waypoint.lat }}ºN, {{ waypoint.lon }}ºE</p>
     </div>
     <div class="buttons">
-      <button class="red" @click="$emit('delete', { index: index })">X</button>
+      <button class="button red" @click="$emit('delete', { index: index })">X</button>
       <button
-        :class="[index === highlightedWaypoint ? 'green' : 'red']"
+        class="button" :class="[index === highlightedWaypoint ? 'green' : 'red']"
         @click="$emit('find', { index: index })"
       >
         Find
@@ -19,6 +19,7 @@
 </template>
 
 <script>
+import '../assets/style.css';
 import { mapGetters } from "vuex";
 
 export default {
@@ -47,10 +48,11 @@ export default {
   grid-template-columns: 4fr 1fr;
   grid-template-rows: 1fr 1fr;
   grid-template-areas: "name buttons" "location buttons";
-  background-color: rgb(180, 180, 180);
-  border-radius: 5px;
   padding: 10px;
-  border: 1px solid black;
+  margin: 5px;
+}
+
+.waypoint-item > div {
   margin: 5px;
 }
 
@@ -68,17 +70,10 @@ export default {
   justify-self: center;
 }
 
-.red {
-  background-color: red;
-}
-
-.green {
-  background-color: green;
-}
-
-button {
+.button {
   width: auto;
   height: auto;
+  margin: 2px;
   padding: 7px;
   font-weight: bold;
 }

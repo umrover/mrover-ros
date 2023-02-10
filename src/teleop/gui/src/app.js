@@ -6,7 +6,6 @@ import ROSLIB from "roslib"
 import router from './router'
 import store from './store'
 import 'leaflet/dist/leaflet.css'
-import './assets/style.css';
 
 Vue.config.productionTip = false;
 Vue.prototype.$ros = new ROSLIB.Ros({
