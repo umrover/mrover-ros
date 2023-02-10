@@ -81,13 +81,14 @@ class MoteusState:
         self.error_name = error_name
 
 
-def is_fault_response_an_error(fault_response: int) -> bool:
+def is_fault_response_an_error(mode_response: int) -> bool:
     """
     Returns True if the fault response is an error
     :param fault_response: the value read in from the fault register of the moteus CAN message
     :return: True if the fault response is an error
     """
-    return fault_response != 0
+    # TODO: update comments above
+    return mode_response == 1 or mode_response == 11
 
 
 class MoteusBridge:
@@ -165,15 +166,16 @@ class MoteusBridge:
                 timeout=self.MOTEUS_RESPONSE_TIME_INDICATING_DISCONNECTED_S,
             )
 
-        moteus_not_found = state is None or not hasattr(state, "values") or moteus.Register.FAULT not in state.values
+        moteus_not_found = state is None or not hasattr(state, "values") or moteus.Register.FAULT not in state.values or moteus.Register.MODE not in state.values
+
         if moteus_not_found:
-            self._handle_error(MoteusState.MOTEUS_UNPOWERED_OR_NOT_FOUND_ERROR)
+            self._handle_error(MoteusState.MOTEUS_UNPOWERED_OR_NOT_FOUND_ERROR, 1)
         else:
 
-            is_error = is_fault_response_an_error(state.values[moteus.Register.FAULT])
+            is_error = is_fault_response_an_error(state.values[moteus.Register.MODE])
 
             if is_error:
-                self._handle_error(state.values[moteus.Register.FAULT])
+                self._handle_error(state.values[moteus.Register.FAULT], state.values[moteus.Register.MODE])
             else:
                 self._change_state(MoteusState.ARMED_STATE)
 
@@ -183,20 +185,23 @@ class MoteusBridge:
                 torque=state.values[moteus.Register.TORQUE],
             )
 
-    def _handle_error(self, fault_response: int) -> None:
+    def _handle_error(self, fault_response: int, mode: int) -> None:
         """
         Handles error by changing the state to error state
         :param fault_response: the value read in from the fault register of the moteus CAN message.
         Or a custom error, 99.
         """
-        assert is_fault_response_an_error(fault_response)
+        assert is_fault_response_an_error(mode)
 
         self._change_state(MoteusState.ERROR_STATE)
 
-        try:
-            error_description = MoteusState.ERROR_CODE_DICTIONARY[fault_response]
-        except KeyError:
-            error_description = MoteusState.NO_ERROR_NAME
+        if mode == 11:
+            error_description = "TIMEOUT"
+        else:
+            try:
+                error_description = MoteusState.ERROR_CODE_DICTIONARY[fault_response]
+            except KeyError:
+                error_description = MoteusState.NO_ERROR_NAME
 
         if self.moteus_state.error_name != error_description:
             rospy.logerr(f"CAN ID {self._can_id} has encountered an error: {error_description}")
