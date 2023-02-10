@@ -110,11 +110,11 @@
 
     <link name="base_link">
         <xacro:box_inertia m="3.0" w="${base_len}" h="${base_width}" d="${base_height}" />
-        <xacro:link-visual fileName="rover.stl" x="0" y="0" z="-9.5" col="red" r="1" g="1" b="1"/>
+        <xacro:link-visual fileName="rover_low_poly.stl" x="0" y="0" z="-9.5" col="red" r="1" g="1" b="1"/>
         <collision>
             <origin rpy="0 0 0" xyz="0 0 -9.5" />
             <geometry>
-                <mesh filename="package://mrover/rover_description/arm/rover.stl" />
+                <mesh filename="package://mrover/rover_description/arm/rover_low_poly.stl" />
             </geometry>
         </collision>
     </link>
