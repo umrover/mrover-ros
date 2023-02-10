@@ -275,6 +275,9 @@ export default {
       setHighlightedWaypoint: "setHighlightedWaypoint",
       setAutonMode: "setAutonMode",
       setTeleopMode: "setTeleopMode",
+    }),
+
+    ...mapMutations("map", {
       setOdomFormat: "setOdomFormat",
     }),
 
@@ -393,8 +396,11 @@ export default {
     ...mapGetters("autonomy", {
       autonEnabled: "autonEnabled",
       teleopEnabled: "teleopEnabled",
-      odom_format: "odomFormat",
       clickPoint: "clickPoint",
+    }),
+
+    ...mapGetters("map", {
+      odom_format: "odomFormat",
     }),
 
     formatted_odom: function () {
