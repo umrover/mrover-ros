@@ -53,7 +53,7 @@
       <EndEffectorUV />
     </div>
     <div class="box light-bg arm">
-      <ArmControls />
+      <SAArmControls />
     </div>
     <div class="box light-bg pdb">
       <PDBFuse />
@@ -78,6 +78,7 @@ import BasicWaypointEditor from "./BasicWaypointEditor.vue";
 import DriveControls from "./DriveControls.vue";
 import GimbalControls from "./GimbalControls.vue";
 import EndEffectorUV from "./EndEffectorUV.vue";
+import SAArmControls from "./SAArmControls.vue";
 import PDBFuse from "./PDBFuse.vue";
 import * as qte from "quaternion-to-euler";
 import Cameras from "./Cameras.vue";
@@ -93,6 +94,9 @@ export default {
     DriveControls,
     EndEffectorUV,
     GimbalControls,
+    SAArmControls,
+    PDBFuse,
+    Cameras,
     JointStateTable,
     MoteusStateTable,
     PDBFuse,
