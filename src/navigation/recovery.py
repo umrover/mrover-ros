@@ -15,13 +15,9 @@ DRIVE_FWD_THRESH = 0.34  # 20 degrees
 
 class RecoveryStateTransitions(Enum):
     _settings_ = NoAlias
-    #waypoint
     continue_waypoint_traverse = "WaypointState"
-    #gate
     continue_gate_traverse = "GateTraverseState"
-    #search 
     continue_search = "SearchState"
-    #single fiducial
     continue_fiducial_id = "SingleFiducialState"
     recovery_state = "RecoveryState"
 
@@ -30,33 +26,7 @@ class RecoveryState(BaseState):
         super().__init__(context, add_outcomes=[transition.name for transition in RecoveryStateTransitions])
         self.waypoint_calculated = False
         self.waypoint_behind = np.array([0,0,0])
-    # def __init__(self, context: Context, 
-    #                 add_outcomes: List[str] = None, 
-    #                 add_input_keys: List[str] = None, 
-    #                 add_output_keys: List[str] = None):
-    #     super().__init__(
-    #         context, 
-    #         add_outcomes,
-    #         add_input_keys, 
-    #         add_output_keys
-    #     )
-    #     pass
 
-    # def __init__(
-    #     self,
-    #     context: Context,
-    #     add_outcomes: List[str] = None,
-    #     add_input_keys: List[str] = None,
-    #     add_output_keys: List[str] = None,
-    # ):
-    #     add_outcomes = add_outcomes or []
-    #     add_input_keys = add_input_keys or []
-    #     add_output_keys = add_output_keys or []
-    #     super().__init__(
-    #         add_outcomes + ["terminated"],
-    #         add_input_keys + ["waypoint_index"],
-    #         add_output_keys + ["waypoint_index"],
-    #     )
     def rotate_by_90(self, v):
         x = v[0] * -1.0
         y = v[1]
@@ -85,6 +55,7 @@ class RecoveryState(BaseState):
         if arrived:
             collector.collector_context.rover.move_back = False # move to second part of turn
             self.waypoint_calculated = False
+            arrived = False
 
         # if second round
         if not collector.collector_context.rover.move_back:
@@ -98,4 +69,7 @@ class RecoveryState(BaseState):
 
         #set stuck to False
         rospy.logerr(f"{self.context.rover.previous_state}\n")
-        return self.context.rover.previous_state
+        #return self.context.rover.previous_state
+        if arrived:
+            self.context.rover.stuck = False
+        return RecoveryStateTransitions.continue_waypoint_traverse.name

@@ -16,7 +16,7 @@ class WatchdogBase:
     # as stuck and if they do enter the recovery sequence
     # Returns bool
     def is_stuck(self) -> bool:
-        return True
+        return collector.collector_context.rover.stuck
 
     """
     def is_stuck(self, data_obj: Data) -> bool:
@@ -43,8 +43,6 @@ class WatchdogBase:
     def recover(self):
         self.stuck_list.clear()
 
-
-    
 
 # Each child class will have a different is_stuck function which evaluate whether the rover is stuck differently
 # Each child class will have its own history of data objects

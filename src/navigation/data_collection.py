@@ -21,7 +21,7 @@ DELTAT_THRESHOLD = 0.001
 class DataManager:
     _df: DataFrame
     collector_context = ""
-    collecting = True
+    collecting = False
     row = 0
 
 
@@ -156,6 +156,7 @@ class DataManager:
     # Receives whether we are collecting data from Teleop GUI via the subscriber
     def set_collecting(self, data):
         self.collecting = data
+        self.collector_context.rover.stuck = True
 
     # Outputs the overall dataframe to the csv
     def write_to_csv(self):

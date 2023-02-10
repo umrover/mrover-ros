@@ -174,7 +174,7 @@ class Context:
         self.vis_publisher = rospy.Publisher("nav_vis", Marker, queue_size=1)
         self.course_service = rospy.Service("course_service", mrover.srv.PublishCourse, self.recv_course)
         self.course = None
-        self.rover = Rover(self, watchdog.WatchdogOff(), True, "", True)
+        self.rover = Rover(self, watchdog.WatchdogOff(), False, "", True)
         # self.rover = Rover(self)
         self.env = Environment(self)
 
