@@ -2,12 +2,16 @@
   <div class="wrap">
     <h3>Arm controls</h3>
     <div class="controls">
+      <!-- Make opposite option disappear so that we cannot select both -->
+      <!-- Change to radio buttons in the future -->
       <Checkbox
+        v-show="!servo_enabled"
         ref="arm-enabled"
         :name="'Arm Enabled'"
         @toggle="updateArmEnabled($event)"
       />
       <Checkbox
+        v-show="!arm_enabled"
         ref="servo-enabled"
         :name="'Servo'"
         @toggle="updateServo($event)"
@@ -41,7 +45,7 @@ export default {
   data() {
     return {
       arm_enabled: false,
-      servo: false,
+      servo_enabled: false,
       joystick_pub: null,
       joystickservo_pub: null,
       jointlock_pub: null,
@@ -132,7 +136,7 @@ export default {
       }
     },
     updateServo: function (enabled) {
-      this.servo = enabled;
+      this.servo_enabled = enabled;
     },
     updateJointsEnabled: function (jointnum, enabled) {
       this.joints_array[jointnum] = enabled;
@@ -148,13 +152,13 @@ export default {
         buttons: buttons
       };
       var joystickMsg = new ROSLIB.Message(joystickData);
-      if (this.servo === true) {
+      if (this.servo_enabled) {
         this.joystickservo_pub.publish(joystickMsg);
       } else {
         this.joystick_pub.publish(joystickMsg);
       }
     }
-  },
+  }
 };
 </script>
 
