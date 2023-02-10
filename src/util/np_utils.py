@@ -10,7 +10,7 @@ def perpendicular_2d(v):
     if v.shape != (2,) and v.shape != (1, 2) and v.shape != (2, 1):
         raise Exception("vector must be 2D!!!")
     orig_shape = v.shape
-    return np.reshape((np.array([-v.flatten()[1], -v.flatten()[0]])), orig_shape)
+    return np.reshape((np.array([-v.flatten()[1], v.flatten()[0]])), orig_shape)
 
 
 def angle_to_rotate(v1, v2):

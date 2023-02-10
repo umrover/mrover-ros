@@ -15,36 +15,12 @@
     </div>
     <h3>Joint Locks</h3>
     <div class="controls">
-      <Checkbox
-        ref="A"
-        :name="'A'"
-        @toggle="updateJointsEnabled(0, $event)"
-      />
-      <Checkbox
-        ref="B"
-        :name="'B'"
-        @toggle="updateJointsEnabled(1, $event)"
-      />
-      <Checkbox
-        ref="C"
-        :name="'C'"
-        @toggle="updateJointsEnabled(2, $event)"
-      />
-      <Checkbox
-        ref="D"
-        :name="'D'"
-        @toggle="updateJointsEnabled(3, $event)"
-      />
-      <Checkbox
-        ref="E"
-        :name="'E'"
-        @toggle="updateJointsEnabled(4, $event)"
-      />
-      <Checkbox
-        ref="F"
-        :name="'F'"
-        @toggle="updateJointsEnabled(5, $event)"
-      />
+      <Checkbox ref="A" :name="'A'" @toggle="updateJointsEnabled(0, $event)" />
+      <Checkbox ref="B" :name="'B'" @toggle="updateJointsEnabled(1, $event)" />
+      <Checkbox ref="C" :name="'C'" @toggle="updateJointsEnabled(2, $event)" />
+      <Checkbox ref="D" :name="'D'" @toggle="updateJointsEnabled(3, $event)" />
+      <Checkbox ref="E" :name="'E'" @toggle="updateJointsEnabled(4, $event)" />
+      <Checkbox ref="F" :name="'F'" @toggle="updateJointsEnabled(5, $event)" />
     </div>
   </div>
 </template>
@@ -52,11 +28,16 @@
 <script>
 import ROSLIB from "roslib";
 import Checkbox from "./Checkbox.vue";
-import { mapGetters, mapMutations } from "vuex";
+import { mapGetters } from "vuex";
 
+// In seconds
+const updateRate = 0.1;
 let interval;
 
 export default {
+  components: {
+    Checkbox
+  },
   data() {
     return {
       arm_enabled: false,
@@ -107,7 +88,6 @@ export default {
     var jointlockMsg = new ROSLIB.Message(jointData);
     this.jointlock_pub.publish(jointlockMsg);
 
-    const updateRate = 0.1;
     interval = window.setInterval(() => {
       if (this.arm_enabled) {
         const gamepads = navigator.getGamepads();
@@ -121,7 +101,7 @@ export default {
               let buttons = gamepad.buttons.map((button) => {
                 return button.value;
               });
-              this.publishJoystickMessage(gamepad, buttons);
+              this.publishJoystickMessage(gamepad.axes, buttons);
             }
           }
         }
@@ -131,18 +111,25 @@ export default {
 
   methods: {
     updateArmEnabled: function (enabled) {
-        this.arm_enabled = enabled;
-        //ra_command, have all nulls in position. And all zeros in velocity array
-        if(arm_enabled === false){
-            const zeroCommandData = {
-            name: ["joint_a", "joint_b", "joint_c", "joint_d", "joint_e", "joint_f"],
-            position: [math.nan, math.nan, math.nan, math.nan, math.nan, math.nan],
-            velocity: [0, 0, 0, 0, 0, 0],
-            effort: [0.5, 0.5, 0.5, 0.5, 0.5, 0.5],
-            }
-            var zeroCommandMsg = new ROSLIB.Message(zeroCommandData);
-            this.jointstate_pub.publish(zeroCommandMsg);
-        }
+      this.arm_enabled = enabled;
+      //ra_command, have all nulls in position. And all zeros in velocity array
+      if (this.arm_enabled === false) {
+        const zeroCommandData = {
+          name: [
+            "joint_a",
+            "joint_b",
+            "joint_c",
+            "joint_d",
+            "joint_e",
+            "joint_f"
+          ],
+          position: [null, null, null, null, null, null],
+          velocity: [0, 0, 0, 0, 0, 0],
+          effort: [0.5, 0.5, 0.5, 0.5, 0.5, 0.5]
+        };
+        var zeroCommandMsg = new ROSLIB.Message(zeroCommandData);
+        this.jointstate_pub.publish(zeroCommandMsg);
+      }
     },
     updateServo: function (enabled) {
       this.servo = enabled;
@@ -155,23 +142,19 @@ export default {
       var jointlockMsg = new ROSLIB.Message(jointData);
       this.jointlock_pub.publish(jointlockMsg);
     },
-    publishJoystickMessage: function(gamepad, buttons){
-        const joystickData = {
-                axes: gamepad.axes,
-                buttons: buttons
-              };
-              var joystickMsg = new ROSLIB.Message(joystickData);
-              if (this.servo === true) {
-                this.joystickservo_pub.publish(joystickMsg);
-              } else {
-                this.joystick_pub.publish(joystickMsg);
-              }
+    publishJoystickMessage: function (axes, buttons) {
+      const joystickData = {
+        axes: axes,
+        buttons: buttons
+      };
+      var joystickMsg = new ROSLIB.Message(joystickData);
+      if (this.servo === true) {
+        this.joystickservo_pub.publish(joystickMsg);
+      } else {
+        this.joystick_pub.publish(joystickMsg);
+      }
     }
   },
-
-  components: {
-    Checkbox
-  }
 };
 </script>
 
