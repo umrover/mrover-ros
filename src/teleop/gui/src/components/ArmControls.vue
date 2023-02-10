@@ -4,18 +4,30 @@
     <div class="controls">
       <!-- Make opposite option disappear so that we cannot select both -->
       <!-- Change to radio buttons in the future -->
-      <Checkbox
-        v-show="!servo_enabled"
-        ref="arm-enabled"
-        :name="'Arm Enabled'"
-        @toggle="updateArmEnabled($event)"
-      />
-      <Checkbox
-        v-show="!arm_enabled"
-        ref="servo-enabled"
-        :name="'Servo'"
-        @toggle="updateServo($event)"
-      />
+      <div>
+        <Checkbox
+          ref="arm-enabled"
+          :name="'Arm Enabled'"
+          @toggle="updateArmEnabled($event)"
+        />
+      </div>
+      <br/>
+      <div style="min-width: none;">
+        <Checkbox
+          ref="open-loop-enabled"
+          :disabled="servo_enabled"
+          :name="'Open Loop Enabled'"
+          @toggle="updateOpenLoop($event)"
+        />
+      </div>
+      <div>
+        <Checkbox
+          ref="servo-enabled"
+          :disabled="open_loop_enabled"
+          :name="'Servo'"
+          @toggle="updateServo($event)"
+        />
+      </div>
     </div>
     <h3>Joint Locks</h3>
     <div class="controls">
@@ -45,6 +57,7 @@ export default {
   data() {
     return {
       arm_enabled: false,
+      open_loop_enabled: false,
       servo_enabled: false,
       joystick_pub: null,
       joystickservo_pub: null,
@@ -138,6 +151,9 @@ export default {
     updateServo: function (enabled) {
       this.servo_enabled = enabled;
     },
+    updateOpenLoop: function (enabled) {
+      this.open_loop_enabled = enabled;
+    },
     updateJointsEnabled: function (jointnum, enabled) {
       this.joints_array[jointnum] = enabled;
       const jointData = {
@@ -152,10 +168,12 @@ export default {
         buttons: buttons
       };
       var joystickMsg = new ROSLIB.Message(joystickData);
-      if (this.servo_enabled) {
-        this.joystickservo_pub.publish(joystickMsg);
-      } else {
-        this.joystick_pub.publish(joystickMsg);
+      if(this.arm_enabled){
+        if (this.servo_enabled) {
+          this.joystickservo_pub.publish(joystickMsg);
+        } else {
+          this.joystick_pub.publish(joystickMsg);
+        }
       }
     }
   }
