@@ -36,7 +36,6 @@ set(MROVER_MESSAGE_FILES
         JointLock.msg
         MoteusState.msg
         MotorsStatus.msg
-        ODriveState.msg
         Waypoint.msg
         WaypointType.msg
         )
