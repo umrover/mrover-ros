@@ -22,14 +22,9 @@ export default {
       const time = new Date(Date.now());
       const timeString =
         time.toTimeString().substring(0, 17) + " " + time.toDateString();
-      this.csvFileData = [
-        [timeString, spectral_data[0].toFixed(0)],
-        [timeString, spectral_data[1].toFixed(0)],
-        [timeString, spectral_data[2].toFixed(0)],
-        [timeString, spectral_data[3].toFixed(0)],
-        [timeString, spectral_data[4].toFixed(0)],
-        [timeString, spectral_data[5].toFixed(0)],
-      ];
+      for(let i = 0; i < spectral_data.length; i++){
+        this.csvFileData[i] = [timeString, spectral_data[i].toFixed(0)];
+      }
       //define the heading for each row of the data
       var csv = "Timestamp,Spectral 0,Spectral 1,Spectral 2\n";
       //merge the data with CSV

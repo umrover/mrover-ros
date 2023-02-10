@@ -14,7 +14,7 @@
       </p>
     </div>
     <div class="comms heaterStatus">
-      <CommIndicator
+      <LEDIndicator
         :connected="heaters[siteIndex].enabled"
         :name="'Heater ' + siteIndex + ' Status'"
       />
@@ -29,7 +29,7 @@
       />
     </div>
     <div class="comms shutdownStatus">
-      <CommIndicator
+      <LEDIndicator
         :connected="autoShutdownEnabled"
         :name="'Auto Shutdown Status'"
       />
@@ -40,12 +40,12 @@
 <script>
 import ToggleButton from "./ToggleButton.vue";
 import ROSLIB from "roslib";
-import CommIndicator from "./CommIndicator.vue";
+import LEDIndicator from "./LEDIndicator.vue";
 
 export default {
   components: {
     ToggleButton,
-    CommIndicator,
+    LEDIndicator,
   },
 
   props: {

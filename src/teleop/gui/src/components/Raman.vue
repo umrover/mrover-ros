@@ -28,7 +28,7 @@ export default {
   created: function () {
     this.ramanService = new ROSLIB.Service({
       ros: this.$ros,
-      name: "change_arm_laser_state",
+      name: "change_raman_laser_state",
       serviceType: "mrover/ChangeDeviceState",
     });
   },

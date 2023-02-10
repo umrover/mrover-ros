@@ -13,8 +13,8 @@
       <!-- TODO: Add back comms indicators for ROSBridge Server Connection and Rover Connection -->
       <!-- <div class="comms">
       <ul id="vitals">
-        <li><CommIndicator v-bind:connected="connections.websocket" name="Web Socket" /></li>
-        <li><CommIndicator v-bind:connected="connections.lcm" name="Rover Connection Status" /></li>
+        <li><LEDIndicator v-bind:connected="connections.websocket" name="Web Socket" /></li>
+        <li><LEDIndicator v-bind:connected="connections.lcm" name="Rover Connection Status" /></li>
       </ul>
     </div> -->
       <div class="spacer"></div>
