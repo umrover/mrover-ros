@@ -2,7 +2,7 @@
     <div class="wrap">
       <div class="buttons" v-for="j in 3">
         <div v-for="i in 3">
-          <button class="button" :class="{active_cam_button:camsEnabled[(i-1) + 3*(j-1)]}" v-on:click="$emit('cam_index', (j-1) + 3*(i-1))" :disabled="maxedOut && !camsEnabled[(j-1) + 3*(i-1)]"> <span>{{names[(j-1) + 3*(i-1)]}}</span> </button>
+          <button class="button" :class="{active_cam_button:camsEnabled[(j-1) + 3*(i-1)]}" v-on:click="$emit('cam_index', (j-1) + 3*(i-1))" :disabled="maxedOut && !camsEnabled[(j-1) + 3*(i-1)]"> <span>{{names[(j-1) + 3*(i-1)]}}</span> </button>
           <div class="fixed-spacer"></div>
         </div>
       </div>

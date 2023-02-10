@@ -1,18 +1,16 @@
 <template>
-    <div class="box">
+    <div class="wrapper box">
         <p>{{name}} ID: {{id}}</p>
-        <div class="section">
+        <div>
         Stream: <input class="box" type='Number' min="0" max="3" v-model ='selectedStream'>
         <button class="button" v-on:click="swapStream()">Change stream</button>
         </div>
-        <div class="section">
         <label for="quality">Quality:</label>
         <select class="box" id="quality" v-model="selectedQuality" @change="changeQuality()">
           <option value="0">Low</option>
           <option value="1">Medium</option>
           <option value="2">High</option>
         </select>
-        </div>
     </div>
   </template>
   
@@ -69,16 +67,12 @@ export default {
 </script>
 
 <style scoped>
-.wrap {
+.wrapper {  /* wrap acts weird with flex from parent... */
   margin: 10px;
   padding: 10px;
 }
 
-.section {
-  display: inline-block;
-}
-
-.wrap > * {
+.wrapper > * {
   margin: 5px 0 5px 0;
 }
 

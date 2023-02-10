@@ -172,7 +172,7 @@ export default {
   display: grid;
   grid-gap: 15px;
   grid-template-columns: auto auto;
-  grid-template-rows: auto 250px auto auto auto auto;
+  grid-template-rows: auto 20% 15% 15% 40% 40%;
   grid-template-areas:
     "header header"
     "map waypoint-editor"
@@ -181,7 +181,7 @@ export default {
     "cameras drive-vel-data"
     "moteus pdb";
   font-family: sans-serif;
-  height: auto;
+  height: 100%;
 }
 
 .wrapper-es {
@@ -189,7 +189,7 @@ export default {
   display: grid;
   grid-gap: 15px;
   grid-template-columns: auto auto;
-  grid-template-rows: auto 250px auto auto auto;
+  grid-template-rows: auto 20% 20% 20% 20%;
   grid-template-areas:
     "header header"
     "cameras moteus"
@@ -197,7 +197,7 @@ export default {
     "drive-vel-data pdb"
     "arm-controls arm-controls";
   font-family: sans-serif;
-  height: auto;
+  height: 100%;
 }
 
 .page_header {
@@ -281,5 +281,6 @@ export default {
 
 .moteus {
   grid-area: moteus;
+  min-height: 250px;
 }
 </style>

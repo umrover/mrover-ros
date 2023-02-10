@@ -1,7 +1,6 @@
 <template>
-  <div>
     <div class="wrap">
-      <div class="block">
+      <div class="block box1">
       <h3>Cameras</h3>
       <div class="input">
         Camera name: <input class="box" type='message' v-model ='cameraName'>
@@ -12,7 +11,7 @@
         <CameraSelection v-bind:camsEnabled="camsEnabled" v-bind:names="names" v-bind:capacity="parseInt(capacity)" v-on:cam_index="setCamIndex($event)"/>
       </div>
       </div>
-      <div class="block">
+      <div class="block box2">
       <h3>All Cameras</h3>
       Capacity: <input class="box" type='Number' min="2" max="4" v-model ='capacity'>
       <div class="camerainfo" v-for="i in camsEnabled.length" :key="i">
@@ -20,7 +19,6 @@
       </div>
       </div>
     </div>
-  </div>
 </template>
 
 <script>
@@ -147,8 +145,17 @@ export default {
 
 .block {
   display: block;
+}
+
+.box1 {
   width: fit-content;
   margin: 10px;
+}
+
+.box2 {
+  width:100%;
+  margin: 10px;
+  overflow-y: scroll;
 }
 
 .cameraselection {

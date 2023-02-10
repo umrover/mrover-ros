@@ -40,7 +40,7 @@
         E
       </div>
       <br />
-      <div style="display: inline-block">
+      <div class="center">
         <button class="button" @click="addWaypoint(input)">Add Waypoint</button>
       </div>
     </div>
@@ -215,6 +215,11 @@ export default {
   overflow-y: scroll;
   min-height: min-content;
   max-height: 500px;
+  width: 100%;
+}
+
+.center {
+  text-align: center;
 }
 
 .all-waypoints {
