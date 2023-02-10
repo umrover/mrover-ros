@@ -55,3 +55,12 @@ teleop:
     dampen: 3
     pan: 4
     tilt: 5
+
+  euclidean_error_thresholds: 100
+
+  joint_error_thresholds:
+    joint_a: 100
+    joint_b: 100
+    joint_c: 100
+    joint_d: 100
+    joint_e: 100

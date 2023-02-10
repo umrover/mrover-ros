@@ -4,6 +4,7 @@ import rospy
 import time
 import actionlib
 import _thread
+import numpy as np
 from collections import deque
 
 from control_msgs.msg import FollowJointTrajectoryGoal
@@ -122,8 +123,24 @@ class MoveItAction(object):
                 self._feedback.actual.positions = joint_states.position
                 self._feedback.actual.velocities = joint_states.velocity
                 self._feedback.actual.time_from_start = rospy.Time.from_sec(time.time()) - time_start
+            self._feedback.error.positions = [desired - actual 
+                                              for desired, actual in 
+                                              zip(self._feedback.desired.positions, 
+                                                  self._feedback.actual.positions
+                                              )]
+            self._feedback.error.velocities = [desired - actual 
+                                               for desired, actual in 
+                                               zip(self._feedback.desired.velocities, 
+                                                   self._feedback.actual.velocities
+                                               )]
             self._as.publish_feedback(self._feedback)
             # ---------------------------------------
+            # Abort upon exceeding error threshold
+            if self.error_threshold_exceeded():
+                self._result.error_code = 1
+                self._as.set_succeeded(self._result)
+                return
+
             last_point = point
 
         # ---------------------------------------
@@ -131,6 +148,17 @@ class MoveItAction(object):
         self._result.error_code = 0
         self._as.set_succeeded(self._result)
         # ---------------------------------------
+
+    def error_threshold_exceeded(self) -> bool:
+        return self.euclidean_error() or self.joint_error()
+
+    def euclidean_error(self) -> bool:
+        error_threshold = rospy.get_param("teleop/euclidean_error_threshold")
+        position_errors = np.array(self._feedback.error.positions)
+        return np.linalg.norm(position_errors) > error_threshold
+
+    def joint_error(self) -> bool:
+        pass
 
 
 if __name__ == "__main__":
