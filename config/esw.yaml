@@ -45,7 +45,7 @@ brushed_motors:
       quad_cpr: 4096.0
       kP: -0.1
       kI: -0.0
-      inversion: 1.0
+      inversion: -1.0
     - name: "joint_f"
       driver_voltage: 12.0
       motor_max_voltage: 12.0
@@ -54,7 +54,7 @@ brushed_motors:
       quad_cpr: -2048.0
       kP: 0.05
       kI: 0.0
-      inversion: 1.0
+      inversion: -1.0
     - name: "finger"
       driver_voltage: 12.0
       motor_max_voltage: 12.0

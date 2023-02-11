@@ -74,6 +74,24 @@ class MoteusState:
         MOTEUS_UNPOWERED_OR_NOT_FOUND_ERROR: "Moteus Unpowered or Not Found",
     }
 
+    MODE_CODE_DICTIONARY = {
+        0: "Stopped",
+        1: "Fault",
+        2: "Preparing to Operate",
+        3: "Preparing to Operate",
+        4: "Preparing to Operate",
+        5: "PWM",
+        6: "Voltage",
+        7: "Voltage FOC",
+        8: "Voltage DQ",
+        9: "Current",
+        10: "Position",
+        11: "Timeout",
+        11: "Zero Velocity",
+        11: "Stay Within",
+        11: "Measure Inductance",
+        15: "Brake",
+    }
     NO_ERROR_NAME = "No Error"
 
     def __init__(self, state: str, error_name: str):
@@ -81,14 +99,13 @@ class MoteusState:
         self.error_name = error_name
 
 
-def is_fault_response_an_error(mode_response: int) -> bool:
+def is_mode_indicating_error(mode: int) -> bool:
     """
-    Returns True if the fault response is an error
-    :param fault_response: the value read in from the fault register of the moteus CAN message
-    :return: True if the fault response is an error
+    Returns True if the mode is either in fault or timeout
+    :param mode: the value read in from the mode register of the moteus CAN message
+    :return: True if the mode indicates that there is an error
     """
-    # TODO: update comments above
-    return mode_response == 1 or mode_response == 11
+    return MoteusState.MODE_CODE_DICTIONARY[mode] == "Fault" or MoteusState.MODE_CODE_DICTIONARY[mode] == "Timeout"
 
 
 class MoteusBridge:
@@ -166,13 +183,18 @@ class MoteusBridge:
                 timeout=self.MOTEUS_RESPONSE_TIME_INDICATING_DISCONNECTED_S,
             )
 
-        moteus_not_found = state is None or not hasattr(state, "values") or moteus.Register.FAULT not in state.values or moteus.Register.MODE not in state.values
+        moteus_not_found = (
+            state is None
+            or not hasattr(state, "values")
+            or moteus.Register.FAULT not in state.values
+            or moteus.Register.MODE not in state.values
+        )
 
         if moteus_not_found:
             self._handle_error(MoteusState.MOTEUS_UNPOWERED_OR_NOT_FOUND_ERROR, 1)
         else:
 
-            is_error = is_fault_response_an_error(state.values[moteus.Register.MODE])
+            is_error = is_mode_indicating_error(state.values[moteus.Register.MODE])
 
             if is_error:
                 self._handle_error(state.values[moteus.Register.FAULT], state.values[moteus.Register.MODE])
@@ -191,7 +213,7 @@ class MoteusBridge:
         :param fault_response: the value read in from the fault register of the moteus CAN message.
         Or a custom error, 99.
         """
-        assert is_fault_response_an_error(mode)
+        assert is_mode_indicating_error(mode)
 
         self._change_state(MoteusState.ERROR_STATE)
 
@@ -530,8 +552,6 @@ class Application:
         while not rospy.is_shutdown():
             await self._arm_manager.send_command()
             await self._drive_manager.send_command()
-
-            # TODO: Add sleep.
 
 
 def main():
