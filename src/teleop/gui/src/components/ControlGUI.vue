@@ -23,8 +23,8 @@ export default {
   components: {
     DriveControls,
     ArmControls,
-    MastGimbalControls,
     JointStateTable,
+    MastGimbalControls,
     MoteusStateTable,
   },
   data() {
