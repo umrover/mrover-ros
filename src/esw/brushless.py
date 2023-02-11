@@ -505,7 +505,7 @@ class DriveManager(MotorsManager):
         left_rev_outer = (forward - turn_difference_outer) * self.WHEELS_M_S_TO_MOTOR_REV_S
         right_rev_outer = (forward + turn_difference_outer) * self.WHEELS_M_S_TO_MOTOR_REV_S
 
-        # If speed to fast, scale to max speed. Ignore inner for comparison since outer > inner, always.
+        # If speed too fast, scale to max speed. Ignore inner for comparison since outer > inner, always.
         larger_abs_rev_s = max(abs(left_rev_outer), abs(right_rev_outer))
         if larger_abs_rev_s > self._max_motor_speed_rev_s:
             change_ratio = self._max_motor_speed_rev_s / larger_abs_rev_s
@@ -569,11 +569,6 @@ class Application:
             await self._arm_manager.send_command()
             await self._drive_manager.send_command()
 
-<<<<<<< HEAD
-            # TODO: Add sleep and test.
-
-=======
->>>>>>> refs/remotes/origin/guts/moteus-arm
 
 def main():
     app = Application()
