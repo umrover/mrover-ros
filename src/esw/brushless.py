@@ -44,12 +44,47 @@ class MoteusData:
 
 
 class MoteusState:
+    # TODO: Make MoteusState more object-oriented. Currently it's mostly acting as a namespace.
     DISCONNECTED_STATE = "Disconnected"
     ARMED_STATE = "Armed"
     ERROR_STATE = "Error"
 
     # a custom error for when the moteus is unpowered or not found
     MOTEUS_UNPOWERED_OR_NOT_FOUND_ERROR = 99
+
+    MODE_DICTIONARY = {
+        0: "stopped",
+        1: "fault",
+        2: "preparing to operate",
+        3: "preparing to operate",
+        4: "preparing to operate",
+        5: "PWM mode",
+        6: "voltage mode",
+        7: "voltage FOC",
+        8: "voltage DQ",
+        9: "current",
+        10: "position",
+        11: "timeout",
+        12: "zero velocity",
+        13: "stay within",
+        14: "measure inductance",
+        15: "brake",
+    }
+
+    FAULT_MODE = 1
+    """
+    The mode number when the moteus is in a fault state.
+    """
+
+    TIMEOUT_MODE = 11
+    """
+    The mode number when the moteus has not received a command recently and has timed out.
+    """
+
+    ERROR_MODES_LIST = [FAULT_MODE, TIMEOUT_MODE]
+    """
+    The list of modes that are reset-able errors.
+    """
 
     ERROR_CODE_DICTIONARY = {
         1: "DmaStreamTransferError",
@@ -83,12 +118,11 @@ class MoteusState:
 
 def is_fault_response_an_error(mode_response: int) -> bool:
     """
-    Returns True if the fault response is an error
-    :param fault_response: the value read in from the fault register of the moteus CAN message
+    Returns True if the mode response indicates an error
+    :param mode_response: the value read in from the mode register of the moteus CAN message
     :return: True if the fault response is an error
     """
-    # TODO: update comments above
-    return mode_response == 1 or mode_response == 11
+    return mode_response in MoteusState.ERROR_MODES_LIST
 
 
 class MoteusBridge:
@@ -166,12 +200,16 @@ class MoteusBridge:
                 timeout=self.MOTEUS_RESPONSE_TIME_INDICATING_DISCONNECTED_S,
             )
 
-        moteus_not_found = state is None or not hasattr(state, "values") or moteus.Register.FAULT not in state.values or moteus.Register.MODE not in state.values
+        moteus_not_found = (
+            state is None
+            or not hasattr(state, "values")
+            or moteus.Register.FAULT not in state.values
+            or moteus.Register.MODE not in state.values
+        )
 
         if moteus_not_found:
-            self._handle_error(MoteusState.MOTEUS_UNPOWERED_OR_NOT_FOUND_ERROR, 1)
+            self._handle_error(MoteusState.MOTEUS_UNPOWERED_OR_NOT_FOUND_ERROR, MoteusState.FAULT_MODE)
         else:
-
             is_error = is_fault_response_an_error(state.values[moteus.Register.MODE])
 
             if is_error:
@@ -195,17 +233,17 @@ class MoteusBridge:
 
         self._change_state(MoteusState.ERROR_STATE)
 
-        if mode == 11:
-            error_description = "TIMEOUT"
+        if mode == MoteusState.TIMEOUT_MODE:
+            new_error_name = MoteusState.MODE_DICTIONARY[MoteusState.TIMEOUT_MODE]
         else:
             try:
-                error_description = MoteusState.ERROR_CODE_DICTIONARY[fault_response]
+                new_error_name = MoteusState.ERROR_CODE_DICTIONARY[fault_response]
             except KeyError:
-                error_description = MoteusState.NO_ERROR_NAME
+                new_error_name = MoteusState.NO_ERROR_NAME
 
-        if self.moteus_state.error_name != error_description:
-            rospy.logerr(f"CAN ID {self._can_id} has encountered an error: {error_description}")
-            self.moteus_state.error_name = error_description
+        if self.moteus_state.error_name != new_error_name:
+            rospy.logerr(f"CAN ID {self._can_id} has encountered an error: {new_error_name}")
+            self.moteus_state.error_name = new_error_name
 
     async def _connect(self) -> None:
         """
@@ -531,7 +569,7 @@ class Application:
             await self._arm_manager.send_command()
             await self._drive_manager.send_command()
 
-            # TODO: Add sleep.
+            # TODO: Add sleep and test.
 
 
 def main():
