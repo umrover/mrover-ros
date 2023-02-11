@@ -41,7 +41,7 @@ export default {
     });
   },
 
-  beforeUnmount: function () {
+  beforeDestroy: function () {
     document.removeEventListener("keyup", this.keyMonitorUp);
     document.removeEventListener("keydown", this.keyMonitorDown);
   },
