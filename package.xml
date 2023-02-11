@@ -108,9 +108,6 @@
   <!-- MoveIt -->
   <depend>moveit</depend>
 
-  <!-- Embedded Software -->
-  <depend>python3-odrive-pip</depend>
-
   <!-- Drone -->
   <depend>mavlink</depend>
   <depend>mavros</depend>

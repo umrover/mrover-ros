@@ -1,10 +1,10 @@
 <template>
   <div class="wrap">
-    <h3>Arm controls</h3>
+    <h3>SA Arm controls</h3>
     <div class="controls">
       <Checkbox
         ref="arm-enabled"
-        :name="'Arm Enabled'"
+        :name="'SA Arm Enabled'"
         @toggle="updateArmEnabled($event)"
       />
     </div>
@@ -15,18 +15,18 @@
 import ROSLIB from "roslib";
 import Checkbox from "./Checkbox.vue";
 
+let interval;
 // In seconds
 const updateRate = 0.1;
-let interval;
 
 export default {
   components: {
-    Checkbox,
+    Checkbox
   },
   data() {
     return {
       arm_enabled: false,
-      joystick_pub: null,
+      joystick_pub: null
     };
   },
 
@@ -37,30 +37,28 @@ export default {
   created: function () {
     this.joystick_pub = new ROSLIB.Topic({
       ros: this.$ros,
-      name: "/xbox/ra_control",
-      messageType: "sensor_msgs/Joy",
+      name: "/xbox/sa_control",
+      messageType: "sensor_msgs/Joy"
     });
     interval = window.setInterval(() => {
       if (this.arm_enabled) {
         const gamepads = navigator.getGamepads();
         for (let i = 0; i < 4; i++) {
           const gamepad = gamepads[i];
-          if (gamepad) {
-            if (
-              gamepad.id.includes("Microsoft") ||
-              gamepad.id.includes("Xbox")
-            ) {
-              let buttons = gamepad.buttons.map((button) => {
-                return button.value;
-              });
+          if (
+            (gamepad && gamepad.id.includes("Microsoft")) ||
+            gamepad.id.includes("Xbox")
+          ) {
+            let buttons = gamepad.buttons.map((button) => {
+              return button.value;
+            });
 
-              const joystickData = {
-                axes: gamepad.axes,
-                buttons: buttons,
-              };
-              var joystickMsg = new ROSLIB.Message(joystickData);
-              this.joystick_pub.publish(joystickMsg);
-            }
+            const joystickData = {
+              axes: gamepad.axes,
+              buttons: buttons
+            };
+            var joystickMsg = new ROSLIB.Message(joystickData);
+            this.joystick_pub.publish(joystickMsg);
           }
         }
       }
@@ -70,8 +68,8 @@ export default {
   methods: {
     updateArmEnabled: function (enabled) {
       this.arm_enabled = enabled;
-    },
-  },
+    }
+  }
 };
 </script>
 

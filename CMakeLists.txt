@@ -16,6 +16,7 @@ set(MROVER_PACKAGES
         message_generation
         dynamic_reconfigure
         rostest
+        sensor_msgs
         )
 
 # link_directories
@@ -34,13 +35,13 @@ set(MROVER_MESSAGE_FILES
         ImuAndMag.msg
         MoteusState.msg
         MotorsStatus.msg
-        ODriveState.msg
         Waypoint.msg
         WaypointType.msg
         )
 
 # service files
 set(MROVER_SERVICE_FILES
+        ChangeAutonLEDState.srv
         FetchMessageFromPackage.srv        
         FetchPackages.srv
         PublishEnableAuton.srv
@@ -134,7 +135,6 @@ else ()
             visualization_msgs
             image_transport
             cv_bridge
-            sensor_msgs
             rosbridge_server
             teleop_twist_joy
             gazebo_ros
