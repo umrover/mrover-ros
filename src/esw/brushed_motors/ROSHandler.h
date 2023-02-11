@@ -3,6 +3,7 @@
 #include "ControllerMap.h"          // for ControllerMap
 #include <cmath>                    // for nan
 #include <mrover/GimbalCmd.h>       // for GimbalCmd
+#include <mrover/CalibrateMotors.h> // for CalibrateMotors
 #include <ros/ros.h>                // for ros
 #include <sensor_msgs/JointState.h> // for JointState
 #include <unordered_map>            // for unordered_map
@@ -37,6 +38,11 @@ private:
     // MODIFIES: nothing
     // EFFECTS: Moves a gimbal.
     static void moveGimbal(const mrover::GimbalCmd::ConstPtr& msg);
+
+    // TODO
+    static void processCalibrate(
+        mrover::CalibrateMotors::Request &req,
+        mrover::CalibrateMotors::Response &res);
 
 public:
     // REQUIRES: rosNode is a pointer to the created node.

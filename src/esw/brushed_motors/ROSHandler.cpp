@@ -38,9 +38,11 @@ void ROSHandler::moveOpenLoopRACommand(const sensor_msgs::JointState::ConstPtr& 
 
             controller->moveOpenLoop((float) msg->velocity[i]);
             jointData.position[i] = controller->getCurrentAngle();
+            // TODO - get calibration status
         }
     }
 
+    // TODO - publish calibration status
     jointDataPublisherRA.publish(jointData);
 }
 
@@ -50,4 +52,45 @@ void ROSHandler::moveOpenLoopRACommand(const sensor_msgs::JointState::ConstPtr& 
 void ROSHandler::moveGimbal(const mrover::GimbalCmd::ConstPtr& msg) {
     ControllerMap::controllersByName["mast_up_down"]->moveOpenLoop((float) msg->up_down);
     ControllerMap::controllersByName["mast_left_right"]->moveOpenLoop((float) msg->left_right);
+}
+
+// TODO
+void processCalibrate(
+    mrover::CalibrateMotors::Request &req,
+    mrover::CalibrateMotors::Response &res
+) {
+    // TODO - make sure that req.names.size() == req.calibrate.size()
+
+    for (size_t i = 0; i < req.names.size()) {
+        auto controller_iter = ControllerMap::controllersByName.find(req.names[i]);
+        auto& [name, controller] = *controller_iter;
+
+        // 1. Check if should calibrate.
+
+        bool shouldCalibrate = true;
+
+        if (controller_iter == ControllerMap::controllersByName.end()) {
+            shouldCalibrate = false;
+        }
+        else if (1) {// (controller_iter->isAlreadyCalibrated) { // TODO - CHANGE
+            shouldCalibrate = false;
+        }
+        else if (1) {// (controller_iter->limitSwitchEnabled) { // TODO - CHANGE
+            shouldCalibrate = false;
+        }
+
+        // 2. Carry out calibration and update response
+
+        if(shouldCalibrate) {
+            bool activelyCalibrating; // TODO - make this a real bool
+            float calibrationSpeed; // TODO - DO STUFF -> call moveOpenLoop with numbers from yaml
+            controller->moveOpenLoop(calibrationSpeed);
+            res.actively_calibrating.push_back(true);
+        }
+        else {
+            res.actively_calibrating.push_back(false);    
+        }
+    }
+
+    return true;
 }
