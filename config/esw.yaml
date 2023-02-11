@@ -132,34 +132,34 @@ brushless:
   drive:
     controllers:
       FrontLeft:
-        id: 7
+        id: 3
         multiplier: -1
       FrontRight:
-        id: 8
+        id: 0
         multiplier: 1
       MiddleLeft:
-        id: 9
+        id: 4
         multiplier: -1
       MiddleRight:
-        id: 6
+        id: 1
         multiplier: 1
       BackLeft:
         id: 5
         multiplier: -1
       BackRight:
-        id: 4
+        id: 2
         multiplier: 1
   arm:
     controllers:
       joint_c:
-        id: 2
+        id: 6
         max_rps: 50
         multiplier: 1
       joint_d:
-        id: 1
+        id: 7
         max_rps: 50
         multiplier: 1
       joint_e:
-        id: 3
+        id: 8
         max_rps: 50
         multiplier: 1
