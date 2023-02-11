@@ -116,13 +116,13 @@ class MoteusState:
         self.error_name = error_name
 
 
-def is_fault_response_an_error(mode_response: int) -> bool:
+def is_mode_indicating_error(mode: int) -> bool:
     """
     Returns True if the mode response indicates an error
     :param mode_response: the value read in from the mode register of the moteus CAN message
     :return: True if the fault response is an error
     """
-    return mode_response in MoteusState.ERROR_MODES_LIST
+    return mode in MoteusState.ERROR_MODES_LIST
 
 
 class MoteusBridge:
@@ -210,7 +210,7 @@ class MoteusBridge:
         if moteus_not_found:
             self._handle_error(MoteusState.MOTEUS_UNPOWERED_OR_NOT_FOUND_ERROR, MoteusState.FAULT_MODE)
         else:
-            is_error = is_fault_response_an_error(state.values[moteus.Register.MODE])
+            is_error = is_mode_indicating_error(state.values[moteus.Register.MODE])
 
             if is_error:
                 self._handle_error(state.values[moteus.Register.FAULT], state.values[moteus.Register.MODE])
@@ -229,7 +229,7 @@ class MoteusBridge:
         :param fault_response: the value read in from the fault register of the moteus CAN message.
         Or a custom error, 99.
         """
-        assert is_fault_response_an_error(mode)
+        assert is_mode_indicating_error(mode)
 
         self._change_state(MoteusState.ERROR_STATE)
 
@@ -569,8 +569,11 @@ class Application:
             await self._arm_manager.send_command()
             await self._drive_manager.send_command()
 
+<<<<<<< HEAD
             # TODO: Add sleep and test.
 
+=======
+>>>>>>> refs/remotes/origin/guts/moteus-arm
 
 def main():
     app = Application()
