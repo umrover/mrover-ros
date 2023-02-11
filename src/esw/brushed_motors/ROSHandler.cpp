@@ -21,6 +21,13 @@ void ROSHandler::init(ros::NodeHandle* rosNode) {
     jointData.velocity = std::vector<double>(RANames.size(), std::nan(""));
     jointData.effort = std::vector<double>(RANames.size(), std::nan(""));
 
+    calibrationStatusRA.names = RANames;
+    // Default to no motors calibrated
+    for (auto name : calibrationStatusRA.names) {
+        calibrationStatusRA.calibrated.push_back(false);
+    }
+
+    calibrationStatusPublisherRA = n->advertise<mrover::Calibrated>("ra_is_calibrated", 1);
     jointDataPublisherRA = n->advertise<sensor_msgs::JointState>("ra_data", 1);
 }
 
@@ -33,16 +40,15 @@ void ROSHandler::moveOpenLoopRACommand(const sensor_msgs::JointState::ConstPtr& 
     for (size_t i = 0; i < RANames.size(); ++i) {
         auto controller_iter = ControllerMap::controllersByName.find(RANames[i]);
         if(controller_iter != ControllerMap::controllersByName.end()) {
-            auto name = controller_iter->first;
-            auto controller = controller_iter->second;
+            auto& [name, controller] = *controller_iter;
 
             controller->moveOpenLoop((float) msg->velocity[i]);
             jointData.position[i] = controller->getCurrentAngle();
-            // TODO - get calibration status
+            calibrationStatusRA.calibrated[i] = controller->getCalibrationStatus();
         }
     }
 
-    // TODO - publish calibration status
+    calibrationStatusPublisherRA.publish(calibrationStatusRA);
     jointDataPublisherRA.publish(jointData);
 }
 
@@ -54,39 +60,30 @@ void ROSHandler::moveGimbal(const mrover::GimbalCmd::ConstPtr& msg) {
     ControllerMap::controllersByName["mast_left_right"]->moveOpenLoop((float) msg->left_right);
 }
 
-// TODO
+// REQUIRES: valid req and res objects
+// MODIFIES: res
+// EFFECTS: sends a move/calibration command to the mcu
 void processCalibrate(
     mrover::CalibrateMotors::Request &req,
     mrover::CalibrateMotors::Response &res
 ) {
-    // TODO - make sure that req.names.size() == req.calibrate.size()
+    assert(req.names.size() == req.calibrate.size());
 
     for (size_t i = 0; i < req.names.size(); ++i) {
         auto controller_iter = ControllerMap::controllersByName.find(req.names[i]);
         auto& [name, controller] = *controller_iter;
 
-        // 1. Check if should calibrate.
+        // Determine if calibration is needed
+        bool shouldCalibrate = !(controller_iter == ControllerMap::controllersByName.end()
+                                 || controller->getCalibrationStatus()
+                                 || !controller->getLimitSwitchEnabled());
 
-        bool shouldCalibrate = true;
-
-        if (controller_iter == ControllerMap::controllersByName.end()) {
-            shouldCalibrate = false;
-        }
-        else if (1) {// (controller_iter->isAlreadyCalibrated) { // TODO - CHANGE
-            shouldCalibrate = false;
-        }
-        else if (1) {// (controller_iter->limitSwitchEnabled) { // TODO - CHANGE
-            shouldCalibrate = false;
-        }
-
-        // 2. Carry out calibration and update response
-
+        // Calibrate
         if(shouldCalibrate) {
-            float calibrationSpeed = false; // TODO - DO STUFF -> call moveOpenLoop with numbers from yaml
-            controller->moveOpenLoop(calibrationSpeed);
+            controller->moveOpenLoop(controller->calibrationSpeed);
+            controller->askIsCalibrated();
             res.actively_calibrating.push_back(true);
-        }
-        else {
+        } else {
             res.actively_calibrating.push_back(false);    
         }
     }

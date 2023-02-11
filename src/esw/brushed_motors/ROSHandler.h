@@ -4,6 +4,7 @@
 #include <cmath>                    // for nan
 #include <mrover/GimbalCmd.h>       // for GimbalCmd
 #include <mrover/CalibrateMotors.h> // for CalibrateMotors
+#include <mrover/Calibrated.h>      // for Calibrated
 #include <ros/ros.h>                // for ros
 #include <sensor_msgs/JointState.h> // for JointState
 #include <unordered_map>            // for unordered_map
@@ -25,6 +26,9 @@ private:
     inline static ros::Subscriber openLoopSubscriberRA;
     inline static ros::Subscriber openLoopSubscriberMast;
 
+    inline static ros::Publisher calibrationStatusPublisherRA;
+    inline static mrover::Calibrated calibrationStatusRA;
+
     inline static ros::Publisher jointDataPublisherRA;
     inline static sensor_msgs::JointState jointData;
 
@@ -39,7 +43,9 @@ private:
     // EFFECTS: Moves a gimbal.
     static void moveGimbal(const mrover::GimbalCmd::ConstPtr& msg);
 
-    // TODO
+    // REQUIRES: valid req and res objects
+    // MODIFIES: res
+    // EFFECTS: sends a move/calibration command to the mcu
     static void processCalibrate(
         mrover::CalibrateMotors::Request &req,
         mrover::CalibrateMotors::Response &res);

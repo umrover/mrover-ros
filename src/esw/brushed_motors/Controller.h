@@ -16,9 +16,9 @@
 #define ON_WB 0
 #define ON_RB 0
 
-#define OPEN_OP 0x02
-#define OPEN_WB 4
-#define OPEN_RB 0
+#define OPEN_OP	0x02
+#define OPEN_WB	4
+#define OPEN_RB	0
 
 #define OPEN_PLUS_OP 0x03
 #define OPEN_PLUS_WB 4
@@ -36,13 +36,13 @@
 #define CONFIG_PWM_WB 2
 #define CONFIG_PWM_RB 0
 
-#define CONFIG_K_OP 0x07
+#define CONFIG_K_OP	0x07
 #define CONFIG_K_WB 12
 #define CONFIG_K_RB 0
 
-#define QUAD_OP 0x08
-#define QUAD_WB 0
-#define QUAD_RB 4
+#define QUAD_ENC_OP 0x08
+#define QUAD_ENC_WB	0
+#define QUAD_ENC_RB	4
 
 #define ADJUST_OP 0x09
 #define ADJUST_WB 4
@@ -52,21 +52,31 @@
 #define ABS_ENC_WB 0
 #define ABS_ENC_RB 4
 
-#define LIMIT_OP 0x0B
-#define LIMIT_WB 0
-#define LIMIT_RB 1
+#define LIMIT_OP 0x0B // "legacy"
+#define LIMIT_WB 0 // "legacy"
+#define LIMIT_RB 1 // "legacy"
 
-#define CALIBRATED_OP 0x0C
-#define CALIBRATED_WB 0
-#define CALIBRATED_RB 1
+#define IS_CALIBRATED_OP 0x0C
+#define IS_CALIBRATED_WB 0
+#define IS_CALIBRATED_RB 1
 
-#define LIMIT_ON_OP 0x0D
-#define LIMIT_ON_WB 1
-#define LIMIT_ON_RB 0
+#define LIMIT_ENABLED_OP 0x0D
+#define LIMIT_ENABLED_WB 1
+#define LIMIT_ENABLED_RB 0
+
+#define CONFIG_LIMIT_A_OP 0x0E
+#define CONFIG_LIMIT_A_WB 4
+#define CONFIG_LIMIT_A_RB 0
+
+#define CONFIG_LIMIT_B_OP 0x0F
+#define CONFIG_LIMIT_B_WB 4
+#define CONFIG_LIMIT_B_RB 0
+
+#define LIMIT_POLARITY_OP 0x10
+#define LIMIT_POLARITY_WB 1
+#define LIMIT_POLARITY_RB 0
 
 #define UINT8_POINTER_T reinterpret_cast<uint8_t*>
-
-#define CALIBRATED_BOOL 0xFF
 
 /*
 Virtual Controllers store information about various
@@ -90,6 +100,9 @@ public:
     float kI = 0.0f;
     float kD = 0.0f;
     float inversion = 1.0f;
+    bool limitAEnabled = false;
+    bool limitBEnabled = false;
+    float calibrationSpeed = 0.0f;
 
     // REQUIRES: _name is the name of the motor,
     // mcuID is the mcu id of the controller which dictates the slave address,
@@ -118,6 +131,26 @@ public:
 
     // REQUIRES: nothing
     // MODIFIES: nothing
+    // EFFECTS: Returns true if Controller is calibrated.
+    bool getCalibrationStatus() const;
+
+    // REQUIRES: nothing
+    // MODIFIES: nothing
+    // EFFECTS: Returns true if Controller has a (one or both) limit switch(s) is enabled.
+    bool getLimitSwitchEnabled() const;
+
+    // REQUIRES: nothing
+    // MODIFIES: nothing
+    // EFFECTS: Returns true if Controller has limit switch A enabled.
+    bool getLimitAEnabled() const;
+
+    // REQUIRES: nothing
+    // MODIFIES: nothing
+    // EFFECTS: Returns true if Controller has limit switch B enabled.
+    bool getLimitBEnabled() const;
+
+    // REQUIRES: nothing
+    // MODIFIES: nothing
     // EFFECTS: Returns last saved value of angle.
     // Expect a value between -M_PI and M_PI.
     float getCurrentAngle() const;
@@ -127,6 +160,11 @@ public:
     // EFFECTS: Sends an open loop command scaled to PWM limits
     // based on allowed voltage of the motor. Also updates angle.
     void moveOpenLoop(float input);
+
+    // REQUIRES: nothing
+    // MODIFIES: isCalibrated
+    // EFFECTS: asks the MCU if it is calibrated
+    void askIsCalibrated();
 
 private:
     // REQUIRES: nothing
@@ -146,4 +184,6 @@ private:
     float currentAngle;
 
     bool isLive = false;
+    bool isCalibrated = false;
+
 };

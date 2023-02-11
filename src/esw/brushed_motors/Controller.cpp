@@ -28,7 +28,6 @@ Controller::Controller(
     motorIDRegMask = motorID << 5;
     motorMaxVoltage = _motorMaxVoltage;
     driverVoltage = _driverVoltage;
-
     currentAngle = 0.0f;
 }
 
@@ -45,6 +44,34 @@ float Controller::getCurrentAngle() const {
 // EFFECTS: Returns true if Controller is live.
 bool Controller::isControllerLive() const {
     return isLive;
+}
+
+// REQUIRES: nothing
+// MODIFIES: nothing
+// EFFECTS: Returns true if Controller is calibrated.
+bool Controller::getCalibrationStatus() const {
+    return isCalibrated;
+}
+
+// REQUIRES: nothing
+// MODIFIES: nothing
+// EFFECTS: Returns true if Controller has a (one or both) limit switch(s) is enabled.
+bool Controller::getLimitSwitchEnabled() const {
+    return limitAEnabled || limitBEnabled;
+}
+
+// REQUIRES: nothing
+// MODIFIES: nothing
+// EFFECTS: Returns true if Controller has limit switch A enabled.
+bool Controller::getLimitAEnabled() const {
+    return limitAEnabled;
+}
+
+// REQUIRES: nothing
+// MODIFIES: nothing
+// EFFECTS: Returns true if Controller has limit switch B enabled.
+bool Controller::getLimitBEnabled() const {
+    return limitBEnabled;
 }
 
 // REQUIRES: -1.0 <= input <= 1.0
@@ -77,6 +104,24 @@ void Controller::moveOpenLoop(float input) {
         currentAngle = (float) ((((float) angle / quadCPR) * 2 * M_PI) - M_PI);
     } catch (IOFailure& e) {
         ROS_ERROR("moveOpenLoop failed on %s", name.c_str());
+    }
+}
+
+// REQUIRES: nothing
+// MODIFIES: isCalibrated
+// EFFECTS: asks the MCU if it is calibrated
+void Controller::askIsCalibrated() {
+    try {
+        makeLive();
+
+        uint8_t calibration_status;
+        I2C::transact(deviceAddress, motorIDRegMask | IS_CALIBRATED_OP, IS_CALIBRATED_WB,
+                      IS_CALIBRATED_RB, nullptr, UINT8_POINTER_T(&calibration_status));
+        
+        isCalibrated = calibration_status;
+
+    } catch (IOFailure& e) {
+        ROS_ERROR("askIsCalibrated failed on %s", name.c_str());
     }
 }
 
