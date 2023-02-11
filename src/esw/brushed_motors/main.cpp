@@ -31,7 +31,7 @@ int main(int argc, char* argv[]) {
 
         ROS_INFO("Initialization Done. Looping. \n");
 
-        rospy::spin();
+        ros::spin();
     }
 
     return 0;

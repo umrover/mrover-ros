@@ -61,7 +61,7 @@ void processCalibrate(
 ) {
     // TODO - make sure that req.names.size() == req.calibrate.size()
 
-    for (size_t i = 0; i < req.names.size()) {
+    for (size_t i = 0; i < req.names.size(); ++i) {
         auto controller_iter = ControllerMap::controllersByName.find(req.names[i]);
         auto& [name, controller] = *controller_iter;
 
@@ -82,8 +82,7 @@ void processCalibrate(
         // 2. Carry out calibration and update response
 
         if(shouldCalibrate) {
-            bool activelyCalibrating; // TODO - make this a real bool
-            float calibrationSpeed; // TODO - DO STUFF -> call moveOpenLoop with numbers from yaml
+            float calibrationSpeed = false; // TODO - DO STUFF -> call moveOpenLoop with numbers from yaml
             controller->moveOpenLoop(calibrationSpeed);
             res.actively_calibrating.push_back(true);
         }
@@ -91,6 +90,4 @@ void processCalibrate(
             res.actively_calibrating.push_back(false);    
         }
     }
-
-    return true;
 }
