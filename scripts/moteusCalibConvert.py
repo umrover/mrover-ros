@@ -18,11 +18,16 @@ def main():
     with open(input_filename, "r") as input_file:
         output_file = open(output_filename, "w+")
         
-        line = input_file.readline()
-        while(line != ""):
+        #line = input_file.readline()
+        #while(line != ""):
+        while(1):
+            line = input_file.readline()
+            if(line == "\n" or line == ""):
+                break
+            
             output_file.write("conf set " + line)
             
-            line = input_file.readline()
+            #line = input_file.readline()
             
         input_file.close()
         output_file.close()
