@@ -3,7 +3,7 @@ gps_linearization:
   reference_point_longitude: -83.7
   reference_point_altitude: 224
 
-  use_odom_frame: true
+  use_odom_frame: false
   publish_tf: false
 
   world_frame: "map"

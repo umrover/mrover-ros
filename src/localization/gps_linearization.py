@@ -4,7 +4,7 @@ from util.SE3 import SE3
 from mrover.msg import ImuAndMag
 from sensor_msgs.msg import NavSatFix
 from geometry_msgs.msg import PoseWithCovarianceStamped, PoseWithCovariance, Pose, Point, Quaternion
-from std_msgs import Header
+from std_msgs.msg import Header
 import tf2_ros
 import numpy as np
 from pymap3d.enu import geodetic2enu
@@ -19,6 +19,7 @@ class GPSLinearization:
     """
 
     pose: SE3
+    covariance: np.ndarray
     pose_publisher: rospy.Publisher
     
     # TF infrastructure
@@ -42,6 +43,18 @@ class GPSLinearization:
         # init to zero pose
         self.pose = SE3()
 
+        # read required parameters, if they don't exist an error will be thrown
+        self.ref_lat = rospy.get_param("gps_linearization/reference_point_latitude")
+        self.ref_lon = rospy.get_param("gps_linearization/reference_point_longitude")
+        self.ref_alt = rospy.get_param("gps_linearization/reference_point_altitude")
+
+        self.publish_tf = rospy.get_param("gps_linearization/publish_tf")
+        self.use_odom = rospy.get_param("gps_linearization/use_odom_frame")
+
+        self.world_frame = rospy.get_param("gps_linearization/world_frame")
+        self.odom_frame = rospy.get_param("gps_linearization/odom_frame")
+        self.rover_frame = rospy.get_param("gps_linearization/rover_frame")
+
         rospy.Subscriber("gps/fix", NavSatFix, self.gps_callback)
         rospy.Subscriber("imu/data", ImuAndMag, self.imu_callback)
         self.pose_publisher = rospy.Publisher("gps/pose", PoseWithCovarianceStamped, queue_size=1)
@@ -51,15 +64,6 @@ class GPSLinearization:
             self.tf_buffer = tf2_ros.Buffer()
             self.tf_listener = tf2_ros.TransformListener(self.tf_buffer)
 
-        # read required parameters, if they don't exist an error will be thrown
-        self.ref_lat = rospy.get_param("gps_linearization/reference_point_latitude")
-        self.ref_lon = rospy.get_param("gps_linearization/reference_point_longitude")
-        self.ref_alt = rospy.get_param("gps_linearization/reference_point_altitude")
-
-        self.use_odom = rospy.get_param("gps_linearization/use_odom_frame")
-        self.world_frame = rospy.get_param("gps_linearization/world_frame")
-        self.odom_frame = rospy.get_param("gps_linearization/odom_frame")
-        self.rover_frame = rospy.get_param("gps_linearization/rover_frame")
 
     def publish_pose(self):
         """
@@ -98,11 +102,11 @@ class GPSLinearization:
                     header=Header(stamp=rospy.Time.now(), frame_id=self.world_frame),
                     pose=PoseWithCovariance(
                         pose=Pose(
-                            position=Point(*pose_out.position),
-                            orientation=Quaternion(*pose_out.rotation.quaternion)
+                            position=Point(*rover_in_map.position),
+                            orientation=Quaternion(*rover_in_map.rotation.quaternion)
                         ),
                         # TODO: figure out covariance: either feed forward from GPS or make system for configuring them
-                        covariance=np.diag(np.ones(6)*0.1)
+                        covariance=np.diag(np.ones(6)*0.1).flatten().tolist()
                     )
                 )
                 self.pose_publisher.publish(pose_msg)
@@ -125,6 +129,7 @@ class GPSLinearization:
         # ignore Z
         cartesian[2] = 0
         # TODO: locks?
+        # self.covariance = msg.position_covariance
         self.pose = SE3(position=cartesian, rotation=self.pose.rotation)
         self.publish_pose()
 
