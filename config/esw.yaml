@@ -1,3 +1,7 @@
+auton_led_driver:
+  port: "/dev/ttyACM0"
+  baud: 115200
+
 gps_driver:
   port: "/dev/gps"
   baud: 115200
@@ -96,7 +100,7 @@ brushed_motors:
 rover:
   length: 0.86
   width: 0.86
-  max_speed: 0.8
+  max_speed: 1.5
 
 wheel:
   gear_ratio: 50.0
@@ -106,14 +110,20 @@ brushless:
   using_pi3_hat: true
   drive:
     FrontLeft:
-      id: 1
-    FrontRight:
-      id: 2
-    MiddleLeft:
       id: 3
-    MiddleRight:
+      multiplier: -1
+    FrontRight:
+      id: 0
+      multiplier: 1
+    MiddleLeft:
       id: 4
+      multiplier: -1
+    MiddleRight:
+      id: 1
+      multiplier: 1
     BackLeft:
       id: 5
+      multiplier: -1
     BackRight:
-      id: 6
+      id: 2
+      multiplier: 1

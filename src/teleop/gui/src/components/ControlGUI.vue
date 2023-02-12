@@ -19,8 +19,16 @@
     <GimbalControls></GimbalControls>
     <div class="box drive-vel-data light-bg">
       <JointStateTable
-        :joint-state-data="jointState"
+        :joint-state-data="motorjointState"
         :vertical="true"
+        :header = "'Drive Motors'"
+      ></JointStateTable>
+    </div>
+    <div class="box arm-jointstate light-bg">
+      <JointStateTable
+        :joint-state-data="armjointState"
+        :vertical = "true"
+        :header = "'Arm Motors'"
       ></JointStateTable>
     </div>
     <div class="box moteus light-bg">
@@ -29,7 +37,7 @@
     <div class="box pdb light-bg">
       <PDBFuse></PDBFuse>
     </div>
-    <div>
+    <div class="box cameras light-bg">
       <Cameras :primary="primary"></Cameras>
       <Checkbox
         ref="Primary"
@@ -64,22 +72,42 @@ export default {
   },
   data() {
     return {
-      jointState: {},
-      moteusState: {},
       primary: false,
+
+       // Default object isn't empty, so has to be initialized to ""
+      moteusState: {
+        name: ["", "", "", "", "", ""],
+        error: ["", "", "", "", "", ""],
+        state: ["", "", "", "", "", ""],
+      },
+
+     motorjointState: {},
+
+     armjointState:{}
     };
   },
 
   created: function () {
+    this.arm_JointState = new ROSLIB.Topic({
+      ros: this.$ros,
+      name: "ra_status",
+      messageType: "mrover/MotorsStatus",
+    });
+
     this.brushless_motors = new ROSLIB.Topic({
       ros: this.$ros,
       name: "drive_status",
       messageType: "mrover/MotorsStatus",
     });
 
+
     this.brushless_motors.subscribe((msg) => {
-      this.jointState = msg.joint_states;
+      this.motorjointState = msg.joint_states;
       this.moteusState = msg.moteus_states;
+    });
+
+    this.arm_JointState.subscribe((msg) => {
+      this.armjointState = msg.joint_states;
     });
   },
 
@@ -98,9 +126,10 @@ export default {
   grid-template-rows: 60px 250px auto auto auto auto;
   grid-template-areas:
     "header header"
-    "arm-controls arm-controls"
-    "cameras drive-vel-data"
-    "moteus pdb";
+    "arm-controls pdb"
+    "moteus cameras"
+    "arm-jointstate drive-vel-data";
+    
 
   font-family: sans-serif;
   height: auto;
@@ -129,5 +158,9 @@ export default {
 
 .moteus {
   grid-area: moteus;
+}
+
+.arm-jointstate {
+  grid-area: arm-jointstate;
 }
 </style>

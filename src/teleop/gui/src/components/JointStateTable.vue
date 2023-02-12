@@ -2,7 +2,7 @@
   <div class="wrap">
     <div v-if="vertical">
       <div>
-        <h3>Motor Data</h3>
+        <h3>{{header}}</h3>
       </div>
       <table
         class="tableFormat"
@@ -43,7 +43,7 @@
 
     <div v-else>
       <div>
-        <h3>Motor Data</h3>
+        <h3>{{ header }}</h3>
       </div>
       <table
         class="tableFormat"
@@ -114,6 +114,12 @@ export default {
       type: Boolean,
       required: true,
     },
+
+    header: {
+      type: String,
+      required: false,
+      default: "Motor Data",
+    }
   },
   data() {
     return {
