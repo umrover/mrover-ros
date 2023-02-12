@@ -6,16 +6,14 @@
         <div class="controls">
             <div v-if="!openLoop">
                 <label for="position">Rotate carousel to position: </label>
-                <select v-model="site">
-                    <option>A</option>
-                    <option>B</option>
-                    <option>C</option>
-                </select>
+                <input type="radio" v-model="site" value="A">A
+                <input type="radio" v-model="site" value="B">B
+                <input type="radio" v-model="site" value="C">C
             </div>
             <div v-else>
                 <button @pointerdown="velocity = -1*velocityScaleDecimal" @pointerup="velocity = 0" @mouseout="velocity = 0">Reverse</button>
                 <button @pointerdown="velocity = velocityScaleDecimal" @pointerup="velocity = 0" @mouseout="velocity = 0">Forward</button>
-                <input id="myRange" v-model="velocityScale" type="range" min="0" max="100">Velocity Scaling: {{velocityScale}}%</input>
+                <input id="myRange" v-model="velocityScale" type="range" min="0" max="100">Velocity Scaling: {{velocityScale}}%
             </div>
         </div>
     </div>
