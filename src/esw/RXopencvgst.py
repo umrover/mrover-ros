@@ -3,7 +3,7 @@ import cv2
 from multiprocessing import Process
 
 def receive(port = 5001):
-    cr = 'udpsrc port='+str(port)+' "application/x-rtp, encoding-name=(string)H264, payload=(int)96" ! \
+    cr = 'udpsrc port='+str(port)+' "application/x-rtp, encoding-name=H264, payload=96" ! \
     rtph264depay ! \
     decodebin ! \
     videoconvert ! \
