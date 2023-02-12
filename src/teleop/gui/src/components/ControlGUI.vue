@@ -31,8 +31,16 @@
         :header = "'Arm Motors'"
       ></JointStateTable>
     </div>
-    <div class="box moteus light-bg">
-      <MoteusStateTable :moteus-state-data="moteusState"></MoteusStateTable>
+    <div class="box drive-moteus light-bg">
+      <MoteusStateTable 
+      :moteus-state-data="drivemoteusState" 
+      :motor = "true"
+      :header = "'Drive Moteus'" ></MoteusStateTable>
+    </div>
+    <div class="box arm-moteus light-bg">
+      <MoteusStateTable 
+      :moteus-state-data="armmoteusState"
+      :header = "'Arm Moteus'"></MoteusStateTable>
     </div>
     <div class="box pdb light-bg">
       <PDBFuse></PDBFuse>
@@ -85,7 +93,13 @@ export default {
       primary: false,
 
        // Default object isn't empty, so has to be initialized to ""
-      moteusState: {
+      drivemoteusState: {
+        name: ["", "", "", "", "", ""],
+        error: ["", "", "", "", "", ""],
+        state: ["", "", "", "", "", ""],
+      },
+
+      armmoteusState: {
         name: ["", "", "", "", "", ""],
         error: ["", "", "", "", "", ""],
         state: ["", "", "", "", "", ""],
@@ -127,11 +141,12 @@ export default {
 
     this.brushless_motors.subscribe((msg) => {
       this.motorjointState = msg.joint_states;
-      this.moteusState = msg.moteus_states;
+      this.drivemoteusState = msg.moteus_states;
     });
 
     this.arm_JointState.subscribe((msg) => {
       this.armjointState = msg.joint_states;
+      this.armmoteusState = msg.moteus_states;
     });
 
     this.odom_sub.subscribe((msg) => {
@@ -157,9 +172,10 @@ export default {
   grid-template-areas:
     "header header"
     "arm-controls pdb"
-    "moteus cameras"
+    "drive-moteus cameras"
     "arm-jointstate drive-vel-data"
-    "velocity odometry";
+    "velocity odometry"
+    "arm-moteus arm-moteus";
     
 
   font-family: sans-serif;
@@ -187,8 +203,8 @@ export default {
   grid-area: arm-controls;
 }
 
-.moteus {
-  grid-area: moteus;
+.drive-moteus {
+  grid-area: drive-moteus;
 }
 
 .arm-jointstate {
@@ -201,5 +217,9 @@ export default {
 
 .odometry {
   grid-area: odometry;
+}
+
+.arm-moteus {
+  grid-area: arm-moteus;
 }
 </style>
