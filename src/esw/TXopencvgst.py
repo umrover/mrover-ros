@@ -20,11 +20,12 @@ def send(device = 0, host = '10.0.0.7', port = 5001, bitrate = 4000000, width = 
     videoconvert ! \
     video/x-raw, format=BGRx ! \
     nvvidconv ! \
+    video/x-raw(memory:NVMM), width='+str(width)+', height='+str(height)+' ! \
     nvv4l2h264enc bitrate=' + str(bitrate) + ' ! \
     h264parse ! \
     rtph264pay pt=96 config-interval=1 ! \
     udpsink host=' + str(host) + ' port=' + str(port)
-    out_send = cv2.VideoWriter(vw ,cv2.CAP_GSTREAMER,0, 60, (width,height), True)
+    out_send = cv2.VideoWriter(vw ,cv2.CAP_GSTREAMER,0, 60, (1280,720), True)
 
     if not cap_send.isOpened() or not out_send.isOpened():
         print('VideoCapture or VideoWriter not opened')
@@ -46,8 +47,8 @@ def send(device = 0, host = '10.0.0.7', port = 5001, bitrate = 4000000, width = 
     out_send.release()
 
 if __name__ == '__main__':
-    s1 = Process(target=send, args=(0, '10.0.0.7', 5001, 3000000, 1280, 720, 5))
-    s2 = Process(target=send, args=(2, '10.0.0.7', 5002, 3000000, 1280, 720, 30))
+    s1 = Process(target=send, args=(0, '10.0.0.7', 5001, 8000000, 1280, 720, 30))
+    s2 = Process(target=send, args=(2, '10.0.0.7', 5002, 8000000, 1280, 720, 30))
     s1.start()
     s2.start()
     s1.join()

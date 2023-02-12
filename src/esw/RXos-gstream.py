@@ -4,21 +4,16 @@ import os
 from multiprocessing import Process
 
 def receive(port = 5001, fpsoverlay = False):
+    gst = 'gst-launch-1.0 udpsrc port='+str(port)+' ! \
+        \"application/x-rtp, encoding-name=(string)H264, payload=96\" ! \
+        rtph264depay ! \
+        decodebin ! \
+        videoconvert ! '
     if fpsoverlay:
-        os.system('gst-launch-1.0 udpsrc port='+str(port)+' ! \
-        \"application/x-rtp, encoding-name=(string)H264, payload=96\" ! \
-        rtph264depay ! \
-        decodebin ! \
-        videoconvert ! \
-        fpsdisplaysink text-overlay=1 video-sink=autovideosink -v')
+        gst += 'fpsdisplaysink text-overlay=1 video-sink=autovideosink -v'
     else:
-        os.system('gst-launch-1.0 udpsrc port='+str(port)+' ! \
-        \"application/x-rtp, encoding-name=(string)H264, payload=96\" ! \
-        rtph264depay ! \
-        decodebin ! \
-        videoconvert ! \
-        autovideosink')
-
+        gst += 'autovideosink'
+    os.system(gst)
     
 if __name__ == '__main__':
     r1 = Process(target=receive, args=(5001, True))
