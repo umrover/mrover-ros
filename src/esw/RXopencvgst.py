@@ -28,8 +28,8 @@ def receive(port = 5001):
     #cap_receive.release()
     
 if __name__ == '__main__':
-    r1 = Process(target=receive, args=(5001))
-    r2 = Process(target=receive, args=(5002))
+    r1 = Process(target=receive, args=(5001,))
+    r2 = Process(target=receive, args=(5002,))
     r1.start()
     r2.start()
     r1.join()
