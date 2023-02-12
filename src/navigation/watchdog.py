@@ -1,3 +1,6 @@
+from drive import collector
+import pandas as pd
+
 # 10 or more data objects flagged as stuck, then you are actually stuck
 STUCK_THRESHOLD = 10
 ANGULAR_THRESHOLD = 0.001
@@ -10,7 +13,7 @@ class WatchdogBase:
         self.history = []
         pass
 
-    # check if 10 or more consecutive objects in the self.stuck list get flagged
+    # check if 20 or more consecutive objects (10 seconds) in the self.stuck list get flagged
     # as stuck and if they do enter the recovery sequence
     # Returns bool
     """
@@ -32,15 +35,7 @@ class WatchdogBase:
     def evaluate_stuck(self):
         pass
 
-    def clear_history(self):
-        self.history.clear()
-
-    def recover(self):
-        self.stuck_list.clear()
-
-    def euclidean_distance(self, vector1, vector2):
-        return (sum((element1 - element2) ** 2 for element1, element2 in zip(vector1, vector2))) ** 0.5
-
+ 
 
 # Each child class will have a different is_stuck function which evaluate whether the rover is stuck differently
 # Each child class will have its own history of data objects

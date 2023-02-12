@@ -12,8 +12,9 @@ import math
 from dataclasses import dataclass
 from pandas import DataFrame
 
-AVERAGE_LEN = 11
+AVERAGE_LEN = 101
 DELTAT_THRESHOLD = 0.001
+
 
 
 @dataclass
@@ -21,16 +22,20 @@ class DataManager:
     _df: DataFrame
     collector_context = ""
     collecting = True
+    row = 0
+
 
     # Initializes the first _cur_row dataframe and call the subscribers
     # Initialize the dictionary with the Rover's first position, rotation, and timestamp
     # When the datacollection starts.
     def __init__(self):
+        self.row_counter = 1
         three_zero = np.zeros(3)
         four_zero = np.zeros(4)
         six_zero = np.zeros(6)
         six_string = np.full((6), "")
         self.dict = {
+            "row": [0],
             "timestamp": [0],
             "rotation": [four_zero],
             "position": [three_zero],
@@ -41,6 +46,7 @@ class DataManager:
             "wheel_vel": [six_zero],
             "commanded_linear": [three_zero],
             "commanded_angular": [three_zero],
+            "actual_linear_speed": [0],
         }
 
         self._df = DataFrame(self.dict)
@@ -50,7 +56,7 @@ class DataManager:
         # Remove after debugging
         self._df_all = DataFrame(self.dict)
 
-        rospy.logerr(f"Ran __init__ in data_collection.py")
+        # rospy.logerr(f"Ran __init__ in data_collection.py")
         rospy.Subscriber("/drive_vel_data", JointState, self.make_esw_dataframe)
         rospy.Subscriber("/rover_stuck", Bool, self.set_collecting)
 
@@ -77,6 +83,7 @@ class DataManager:
         self._cur_row["rotation"] = [newest_rotation_so3.quaternion]
         self._cur_row["actual_linear_vel"] = [actual_linear_vel]
         self._cur_row["actual_angular_vel"] = [actual_angular_vel]
+        self._cur_row["actual_linear_speed"] = [np.linalg.norm(actual_linear_vel)]
         return True
 
     # Calculate the average of the previous 10 data frams and store the outcome
@@ -91,7 +98,7 @@ class DataManager:
         self._avg_df.reset_index(inplace=True)
         for k in self.dict.keys():
             if not (k == "wheel_names"):
-                if k == "timestamp" or k == "actual_angular_vel":
+                if k == "timestamp" or k == "actual_angular_vel" or k == "actual_linear_speed" or k == "row":
                     sum = 0.0
                 elif len(self.dict[k][0]) == 3:
                     sum = np.zeros(3)
@@ -105,6 +112,8 @@ class DataManager:
                 temp[k] = [average_result]
         self._avg_df = DataFrame(self.dict)
         # rospy.logerr("AVERAGED")
+        temp["row"] = [self.row_counter]
+        self.row_counter += 1
         return DataFrame(temp)
 
     # This function will only be called/invoked when we receive new esw data
@@ -138,8 +147,8 @@ class DataManager:
         self._cur_row["commanded_angular"] = [np.array([cmd_vel.angular.x, cmd_vel.angular.y, cmd_vel.angular.z])]
         if self.update_tf_vel():
             # rospy.logerr(f"curr row: {self._cur_row}")
-            rospy.logerr(f"DF ALL LENGTH: {len(self._df_all)}")
-            rospy.logerr(f"DF LENGTH: {len(self._df)}")
+            # rospy.logerr(f"DF ALL LENGTH: {len(self._df_all)}")
+            # rospy.logerr(f"DF LENGTH: {len(self._df)}")
             # Remove after debugging
             self._df_all = pd.concat([self._df_all, DataFrame(self._cur_row)], axis=0)
             if len(self._avg_df) == AVERAGE_LEN:
@@ -167,11 +176,11 @@ class DataManager:
         folder = home + "/catkin_ws/src/mrover/failure_data"
         if not os.path.exists(folder):
             os.makedirs(folder)
-        file = folder + "/output_" + time_stamp + ".csv"
+        file = folder + "/output_averaged_" + time_stamp + ".csv"
 
         # remove after debugging averaging
-        file2 = folder + "/output2_" + time_stamp + ".csv"
-        rospy.logerr(f"Created {file} in data_collection.py")
+        file2 = folder + "/output_" + time_stamp + ".csv"
+        # rospy.logerr(f"Created {file} in data_collection.py")
         self._df.to_csv(file)
 
         # Remove after debugging averaging
