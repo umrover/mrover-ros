@@ -46,7 +46,7 @@ def send(device = 0, host = '10.0.0.7', port = 5001, bitrate = 4000000, width = 
     out_send.release()
 
 if __name__ == '__main__':
-    s1 = Process(target=send, args=(0, '10.0.0.7', 5001, 3000000, 1280, 720, 15))
+    s1 = Process(target=send, args=(0, '10.0.0.7', 5001, 3000000, 1280, 720, 30))
     s2 = Process(target=send, args=(2, '10.0.0.7', 5002, 3000000, 1280, 720, 30))
     s1.start()
     s2.start()
