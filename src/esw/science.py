@@ -15,7 +15,8 @@ from typing import Any, Callable, Dict
 import rospy
 import serial
 
-from mrover.msg import Diagnostic, Enable, HeaterData, ScienceTemperature, Spectral
+from mrover.msg import Diagnostic, HeaterData, ScienceTemperature, Spectral
+from std_msgs.msg import Bool
 
 from mrover.srv import (
     ChangeAutonLEDState,
@@ -90,7 +91,7 @@ class ScienceBridge:
             "SPECTRAL": self._spectral_handler,
         }
         self._ros_publisher_by_tag = {
-            "AUTO_SHUTOFF": rospy.Publisher("science/heater_auto_shutoff_state_data", Enable, queue_size=1),
+            "AUTO_SHUTOFF": rospy.Publisher("science/heater_auto_shutoff_state_data", Bool, queue_size=1),
             "DIAG": rospy.Publisher("diagnostic_data", Diagnostic, queue_size=1),
             "HEATER_DATA": rospy.Publisher("science/heater_state_data", HeaterData, queue_size=1),
             "SCIENCE_TEMP": rospy.Publisher("science/temperatures", ScienceTemperature, queue_size=1),
@@ -310,7 +311,6 @@ class ScienceBridge:
 
         tag = arr[0][3:]
         if not (tag in self._handler_function_by_tag):
-            rospy.logerr(f"Received UART message with invalid tag: {tag}")
             rospy.sleep(self._sleep_amt_s)
             return
 
@@ -369,7 +369,7 @@ class ScienceBridge:
             rospy.logerr(f"Only {len(arr)} parameters in auto shutoff handler")
             return
 
-        ros_msg = Enable(enable=bool(int(arr[1])))
+        ros_msg = Bool(bool(int(arr[1])))
         self._ros_publisher_by_tag[arr[0][3:]].publish(ros_msg)
 
     def _heater_state_handler(self, rx_msg: str) -> None:
