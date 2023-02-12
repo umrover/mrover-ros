@@ -32,7 +32,7 @@ void ROSHandler::moveOpenLoopRACommand(const sensor_msgs::JointState::ConstPtr& 
 
     for (size_t i = 0; i < RANames.size(); ++i) {
         auto controller_iter = ControllerMap::controllersByName.find(RANames[i]);
-        if(controller_iter != ControllerMap::controllersByName.end()) {
+        if (controller_iter != ControllerMap::controllersByName.end()) {
             auto name = controller_iter->first;
             auto controller = controller_iter->second;
 
