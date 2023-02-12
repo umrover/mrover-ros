@@ -1,0 +1,6 @@
+
+<launch>
+
+    <!-- node to manage and run the integration test -->
+    <test test-name="teleop_test" pkg="mrover" type="teleop_test.py" />
+</launch>

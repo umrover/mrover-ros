@@ -68,7 +68,7 @@ teleop:
     pan: 4
     tilt: 5
 
-  euclidean_error_thresholds: 100
+  euclidean_error_threshold: 100
 
   joint_error_thresholds:
     joint_a: 100

@@ -29,6 +29,41 @@ def joint_states_callback(msg: JointState):
         joint_states = msg
 
 
+def euclidean_error(threshold: int, feedback: FollowJointTrajectoryFeedback) -> bool:
+    position_errors = np.array(feedback.error.positions)
+    error = np.linalg.norm(position_errors)
+    
+    if error > threshold:
+        error_msg = f"Euclidean error of {error} exceeded threshold of {threshold}"
+        return True, error_msg
+    return False, ""
+
+
+def joint_error(thresholds: list, feedback: FollowJointTrajectoryFeedback) -> bool:
+    position_errors = feedback.error.positions
+    
+    for i in range(len(thresholds)):
+        if position_errors[i] > thresholds[i]:
+            error_msg = f"""
+                Joint {chr(i+65)} exceeded error threshold of {thresholds[i]}
+                Expected: {feedback.desired.positions[i]} rad")
+                Actual: {feedback.actual.positions[i]} rad")
+            """
+            return True, error_msg
+    return False, ""
+
+
+# Return true if arm has exceeded the error thresholds
+def error_threshold_exceeded(feedback: FollowJointTrajectoryFeedback) -> bool:
+    euclidean_error_threshold = rospy.get_param("teleop/euclidean_error_threshold")
+    joint_error_thresholds = list(rospy.get_param("teleop/joint_error_thresholds").values())
+
+    error, error_msg = euclidean_error(euclidean_error_threshold, feedback)
+    if error:
+        return True, error_msg
+    return joint_error(joint_error_thresholds, feedback)
+
+
 class MoveItAction(object):
 
     # Rearranges the point path following the name convention joint_0, ... joint_6
@@ -100,6 +135,7 @@ class MoveItAction(object):
         self.trajectory_point_queue.popleft()
         # Initialize gazebo Float array
         gazebo_positions = Float64MultiArray(data=[0.0, 0.0, 0.0, 0.0, 0.0, 0.0])
+        i = 0
         while len(self.trajectory_point_queue) > 0:
             point = self.trajectory_point_queue[0]
             self.trajectory_point_queue.popleft()
@@ -136,10 +172,15 @@ class MoveItAction(object):
             self._as.publish_feedback(self._feedback)
             # ---------------------------------------
             # Abort upon exceeding error threshold
-            if self.error_threshold_exceeded():
-                self._result.error_code = 1
+            error, error_msg = error_threshold_exceeded(self._feedback)
+            if error or i > 5:
+                self._result.error_code = -4        # PATH_TOLERANCE_VIOLATED
+                self._result.error_string = error_msg
                 self._as.set_succeeded(self._result)
+                self.publisher.publish(joint_states)
                 return
+            
+            i += 1
 
             last_point = point
 
@@ -148,17 +189,6 @@ class MoveItAction(object):
         self._result.error_code = 0
         self._as.set_succeeded(self._result)
         # ---------------------------------------
-
-    def error_threshold_exceeded(self) -> bool:
-        return self.euclidean_error() or self.joint_error()
-
-    def euclidean_error(self) -> bool:
-        error_threshold = rospy.get_param("teleop/euclidean_error_threshold")
-        position_errors = np.array(self._feedback.error.positions)
-        return np.linalg.norm(position_errors) > error_threshold
-
-    def joint_error(self) -> bool:
-        pass
 
 
 if __name__ == "__main__":
