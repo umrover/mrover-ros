@@ -3,6 +3,8 @@ import rospy
 from util.SE3 import SE3
 from mrover.msg import ImuAndMag
 from sensor_msgs.msg import NavSatFix
+from geometry_msgs.msg import PoseWithCovarianceStamped, PoseWithCovariance, Pose, Point, Quaternion
+from std_msgs import Header
 import tf2_ros
 import numpy as np
 from pymap3d.enu import geodetic2enu
@@ -17,7 +19,8 @@ class GPSLinearization:
     """
 
     pose: SE3
-
+    pose_publisher: rospy.Publisher
+    
     # TF infrastructure
     tf_broadcaster: tf2_ros.TransformBroadcaster
     tf_buffer: tf2_ros.Buffer
@@ -28,7 +31,8 @@ class GPSLinearization:
     ref_lon: float
     ref_alt: float
 
-    # frame configuration
+    # frame/publishing configuration
+    publish_tf: bool
     use_odom: bool
     world_frame: str
     odom_frame: str
@@ -40,10 +44,12 @@ class GPSLinearization:
 
         rospy.Subscriber("gps/fix", NavSatFix, self.gps_callback)
         rospy.Subscriber("imu/data", ImuAndMag, self.imu_callback)
+        self.pose_publisher = rospy.Publisher("gps/pose", PoseWithCovarianceStamped, queue_size=1)
 
-        self.tf_broadcaster = tf2_ros.TransformBroadcaster()
-        self.tf_buffer = tf2_ros.Buffer()
-        self.tf_listener = tf2_ros.TransformListener(self.tf_buffer)
+        if self.publish_tf:
+            self.tf_broadcaster = tf2_ros.TransformBroadcaster()
+            self.tf_buffer = tf2_ros.Buffer()
+            self.tf_listener = tf2_ros.TransformListener(self.tf_buffer)
 
         # read required parameters, if they don't exist an error will be thrown
         self.ref_lat = rospy.get_param("gps_linearization/reference_point_latitude")
@@ -57,30 +63,50 @@ class GPSLinearization:
 
     def publish_pose(self):
         """
-        Publishes the pose of the rover in relative to the map frame to the TF tree,
-        either as a direct map->base_link transform, or if the odom frame is in use,
-        indirectly as a map->odom transform.
+        Publishes the pose of the rover relative to the map frame, either to the TF tree or as
+        a PoseWithCovarianceStamped message. The pose will be published either as a direct 
+        map->base_link transform, or an indirect map-odom transform if the odom frame is in use.
+        See the wiki for more details:
+        https://github.com/umrover/mrover-ros/wiki/Localization#guide-to-localization-frames
         """
         rover_in_map = self.pose
 
-        if self.use_odom:
-            # Get the odom to rover transform from the TF tree
-            rover_in_odom = SE3.from_tf_tree(self.tf_buffer, self.odom_frame, self.rover_frame)
-            odom_to_rover = rover_in_odom.transform_matrix()
-            map_to_rover = rover_in_map.transform_matrix()
+        if self.publish_tf:
+            if self.use_odom:
+                # TODO: fix naming conventions of transforms per Ashwins instructions
+                # TODO: add transform notation to wiki
+                # Get the odom to rover transform from the TF tree
+                rover_in_odom = SE3.from_tf_tree(self.tf_buffer, self.odom_frame, self.rover_frame)
+                odom_to_rover = rover_in_odom.transform_matrix()
+                map_to_rover = rover_in_map.transform_matrix()
 
-            # Calculate the intermediate transform from the overall transform and odom to rover
-            map_to_odom = map_to_rover @ np.linalg.inv(odom_to_rover)
-            odom_in_map = SE3.from_transform_matrix(map_to_odom)
-            odom_in_map.publish_to_tf_tree(
-                self.tf_broadcaster, parent_frame=self.world_frame, child_frame=self.odom_frame
+                # Calculate the intermediate transform from the overall transform and odom to rover
+                map_to_odom = map_to_rover @ np.linalg.inv(odom_to_rover)
+                odom_in_map = SE3.from_transform_matrix(map_to_odom)
+                pose_out = odom_in_map
+                child_frame = self.rover_frame
+            else:
+                # publish directly as map->base_link
+                pose_out = rover_in_map
+                child_frame = self.rover_frame
+            
+            pose_out.publish_to_tf_tree(
+                self.tf_broadcaster, parent_frame=self.world_frame, child_frame=child_frame
             )
-
         else:
-            # publish directly as map->base_link
-            rover_in_map.publish_to_tf_tree(
-                self.tf_broadcaster, parent_frame=self.world_frame, child_frame=self.rover_frame
-            )
+                pose_msg = PoseWithCovarianceStamped(
+                    header=Header(stamp=rospy.Time.now(), frame_id=self.world_frame),
+                    pose=PoseWithCovariance(
+                        pose=Pose(
+                            position=Point(*pose_out.position),
+                            orientation=Quaternion(*pose_out.rotation.quaternion)
+                        ),
+                        # TODO: figure out covariance: either feed forward from GPS or make system for configuring them
+                        covariance=np.diag(np.ones(6)*0.1)
+                    )
+                )
+                self.pose_publisher.publish(pose_msg)
+            
 
     def gps_callback(self, msg: NavSatFix):
         """
