@@ -78,51 +78,36 @@ class GateTrajectory(Trajectory):
         return GateTrajectory(coordinates)
 
     def gateSelectPath(
-        rover_position: np.ndarray, pt1: np.ndarray, pt2: np.ndarray, pt3: np.ndarray, pt4: np.ndarray, gate: Gate
+        rover_position: np.ndarray,
+        prep: np.ndarray,
+        approach: np.ndarray,
+        center: np.ndarray,
+        done: np.ndarray,
+        gate: Gate,
     ):
         # Get the shapes of both the posts
         postOneShape, postTwoShape = gate.getPostGeoShape()
 
-        # Get points for path
-        pt0 = np.array([rover_position[0], rover_position[1]])
+        #     # Get points for path
+        rover = np.array([rover_position[0], rover_position[1]])
 
-        # Get paths
-        (
-            pathOne,
-            pathTwo,
-        ) = GateTrajectory.pathLineString(pt0, pt2, pt3, pt4)
-
-        # Check if the lines intersect
-        # First check if the path1 hits either posts
-        if GateTrajectory.lineIntersectCheck(pathOne, postOneShape) or GateTrajectory.lineIntersectCheck(
-            pathOne, postTwoShape
-        ):
-            if GateTrajectory.lineIntersectCheck(pathTwo, postOneShape) or GateTrajectory.lineIntersectCheck(
-                pathTwo, postTwoShape
-            ):
-                coordinates = np.array([pt1, pt2, pt3, pt4])
-                coordinates = np.hstack((coordinates, np.zeros(coordinates.shape[0]).reshape(-1, 1)))
-            else:
-                coordinates = np.array([pt2, pt3, pt4])
-                coordinates = np.hstack((coordinates, np.zeros(coordinates.shape[0]).reshape(-1, 1)))
-        else:
-            coordinates = np.array([pt3, pt4])
-            coordinates = np.hstack((coordinates, np.zeros(coordinates.shape[0]).reshape(-1, 1)))
-
+        allPts = [prep, approach, center, done]
+        start_index = 2
+        path = makeShapelyPath(rover, allPts[start_index:])
+        while path.intersects(postOneShape) or path.intersects(postTwoShape):
+            start_index -= 1
+            if start_index == 0:
+                break
+            path = makeShapelyPath(rover, allPts[start_index:])
+        coordinates = np.array(allPts[start_index:])
+        coordinates = np.hstack((coordinates, np.zeros(coordinates.shape[0]).reshape(-1, 1)))
         return coordinates
 
-    def lineIntersectCheck(rover_path, postShape):
-        return rover_path.intersects(postShape)
 
-    def pathLineString(rover_pose: np.ndarray, p2: np.ndarray, p3: np.ndarray, p4: np.ndarray):
-        # Find path1 (only has rover, point 3, point4)
-        path1 = LineString([list(rover_pose), list(p3), list(p4)])
-        assert path1.length > 0
-        # Find path2 (only has rover, point2, point3, point4)
-        assert rover_pose.shape == (2,)
-        path2 = LineString([list(rover_pose), list(p2), list(p3), list(p4)])
-        assert path2.length > 0
-        return (path1, path2)
+def makeShapelyPath(rover, pathPts):
+    pathList = [list(rover)]
+    pathList += [list(pt) for pt in pathPts]
+    return LineString(pathList)
 
 
 class GateTraverseStateTransitions(Enum):
