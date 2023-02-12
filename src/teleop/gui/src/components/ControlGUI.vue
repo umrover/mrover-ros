@@ -45,6 +45,12 @@
         @toggle="primaryEnabled($event)"
       />
     </div>
+    <div class ="box velocity light-bg">
+      <Velocity></Velocity>
+    </div>
+    <div class = "box odometry light-bg"> 
+      <Odom :odom="odom" ></Odom>
+    </div>
   </div>
 </template>
 
@@ -58,6 +64,8 @@ import MoteusStateTable from "./MoteusStateTable.vue";
 import PDBFuse from "./PDBFuse.vue";
 import Cameras from "./Cameras.vue";
 import Checkbox from "./Checkbox.vue";
+import Odom from "./OdometryReading.vue";
+import Velocity from "./VelocityCommand.vue";
 
 export default {
   components: {
@@ -69,6 +77,8 @@ export default {
     PDBFuse,
     Cameras,
     Checkbox,
+    Odom,
+    Velocity
   },
   data() {
     return {
@@ -83,7 +93,16 @@ export default {
 
      motorjointState: {},
 
-     armjointState:{}
+     armjointState:{},
+
+     odom: {
+        latitude_deg: 42.294864932393835,
+        longitude_deg: -83.70781314674628,
+        bearing_deg: 0,
+        speed: 0,
+      },
+
+      odom_sub:null
     };
   },
 
@@ -100,6 +119,11 @@ export default {
       messageType: "mrover/MotorsStatus",
     });
 
+    this.odom_sub = new ROSLIB.Topic({
+      ros: this.$ros,
+      name: "/gps/fix",
+      messageType: "sensor_msgs/NavSatFix",
+    });
 
     this.brushless_motors.subscribe((msg) => {
       this.motorjointState = msg.joint_states;
@@ -108,6 +132,12 @@ export default {
 
     this.arm_JointState.subscribe((msg) => {
       this.armjointState = msg.joint_states;
+    });
+
+    this.odom_sub.subscribe((msg) => {
+      // Callback for latLng to be set
+      this.odom.latitude_deg = msg.latitude;
+      this.odom.longitude_deg = msg.longitude;
     });
   },
 
@@ -128,7 +158,8 @@ export default {
     "header header"
     "arm-controls pdb"
     "moteus cameras"
-    "arm-jointstate drive-vel-data";
+    "arm-jointstate drive-vel-data"
+    "velocity odometry";
     
 
   font-family: sans-serif;
@@ -162,5 +193,13 @@ export default {
 
 .arm-jointstate {
   grid-area: arm-jointstate;
+}
+
+.velocity {
+  grid-area: velocity;
+}
+
+.odometry {
+  grid-area: odometry;
 }
 </style>
