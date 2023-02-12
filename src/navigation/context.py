@@ -30,7 +30,11 @@ class Gate:
     post1: np.ndarray
     post2: np.ndarray
 
-    def getPostGeoShape(self):
+    def getPostShape(self):
+        """
+        Creates a circular path of RADIUS around each post for checking intersection with our path
+        """
+
         # Declare radius to 0.5 meters
         RADIUS = 0.5
 
@@ -38,7 +42,7 @@ class Gate:
         post1_shape = Point(self.post1[0], self.post1[1]).buffer(RADIUS)
         post2_shape = Point(self.post2[0], self.post2[1]).buffer(RADIUS)
 
-        return (post1_shape, post2_shape)
+        return post1_shape, post2_shape
 
 
 @dataclass

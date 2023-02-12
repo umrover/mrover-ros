@@ -85,8 +85,10 @@ class GateTrajectory(Trajectory):
         done: np.ndarray,
         gate: Gate,
     ):
+        # Returns the path we will use to traverse the gate, using as few approach points as possible
+
         # Get the shapes of both the posts
-        postOneShape, postTwoShape = gate.getPostGeoShape()
+        postOneShape, postTwoShape = gate.getPostShape()
 
         rover = np.array([rover_position[0], rover_position[1]])
 
@@ -99,13 +101,14 @@ class GateTrajectory(Trajectory):
             if start_index == 0:
                 break
             path = makeShapelyPath(rover, allPts[start_index:])
-        
+
         coordinates = np.array(allPts[start_index:])
         coordinates = np.hstack((coordinates, np.zeros(coordinates.shape[0]).reshape(-1, 1)))
         return coordinates
 
 
 def makeShapelyPath(rover, pathPts):
+    # makes a path we can use to check intersection
     pathList = [list(rover)]
     pathList += [list(pt) for pt in pathPts]
     return LineString(pathList)
