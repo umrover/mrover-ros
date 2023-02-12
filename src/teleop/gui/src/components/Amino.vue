@@ -16,7 +16,7 @@
     <div class="comms heaterStatus">
       <LEDIndicator
         :connected="heaters[siteIndex].enabled"
-        :name="'Heater ' + siteIndex + ' Status'"
+        :name="'Heater ' + site + ' Status'"
       />
     </div>
     <div class="box1 shutdown">
@@ -53,10 +53,13 @@ export default {
       type: String,
       required: true,
     },
+    siteIndex: {
+      type: Number,
+      required: true 
+    }
   },
   data() {
     return {
-      siteIndex: 0,
       heaters: [
         {
           enabled: false,
@@ -88,17 +91,6 @@ export default {
     };
   },
 
-  watch: {
-    site(newVal) {
-      if (newVal === "A") {
-        this.siteIndex = 0;
-      } else if (newVal === "B") {
-        this.siteIndex = 1;
-      } else {
-        this.siteIndex = 2;
-      }
-    },
-  },
 
   created: function () {
     this.temp_sub = new ROSLIB.Topic({

@@ -51,7 +51,7 @@
       <Raman />
     </div>
     <div class="box light-bg sudan">
-      <Sudan :site="site" />
+      <Sudan :site="site" :site-index="siteIndex" />
     </div>
     <div class="box light-bg cameras">
       <Cameras :primary="primary" />
@@ -66,7 +66,7 @@
       <Chlorophyll :spectral_data="spectral_data" />
     </div>
     <div class="box light-bg amino">
-      <Amino :site="site" />
+      <Amino :site="site" :site-index="siteIndex" />
     </div>
   </div>
 </template>
@@ -91,39 +91,58 @@ export default {
     Cache,
     Chlorophyll,
     Amino,
-    Cameras,
+    Cameras
   },
   data() {
     return {
       site: "A",
+
+      // Initialize this so that computed property won't be mad
+      siteIndexMapping: { A: 0, B: 1, C: 2 },
 
       spectral_data: [0, 0, 0, 0, 0, 0],
 
       //Data Subscribers
       spectral_sub: null,
 
-      primary: false,
+      primary: false
     };
+  },
+  computed: {
+    siteIndex: function () {
+      // Return the indice for the specified site
+      return this.siteIndexMapping[this.site];
+    }
   },
 
   created: function () {
     this.spectral_sub = new ROSLIB.Topic({
       ros: this.$ros,
       name: "science/spectral",
-      messageType: "mrover/Spectral",
+      messageType: "mrover/Spectral"
     });
 
     this.spectral_sub.subscribe((msg) => {
       // Callback for spectral_sub
       this.spectral_data = msg.data;
     });
+
+    // Get carousel site index mappings
+    let mapping = new ROSLIB.Param({
+      ros: this.$ros,
+      name: "teleop/carousel_site_mappings"
+    });
+
+    mapping.get((param) => {
+      this.siteIndexMapping = param;
+    });
   },
 
   methods: {
     onSiteChange(value) {
       this.site = value;
-    },
-  },
+    }
+  }
 };
 </script>
 

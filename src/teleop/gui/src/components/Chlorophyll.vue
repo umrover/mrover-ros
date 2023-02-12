@@ -28,24 +28,24 @@
         style="undefined;table-layout: fixed; width: 434px"
       >
         <colgroup>
+          <col style="width: 100px" />
           <col style="width: 63px" />
-          <col style="width: 53px" />
-          <col style="width: 53px" />
-          <col style="width: 53px" />
-          <col style="width: 53px" />
-          <col style="width: 53px" />
-          <col style="width: 53px" />
-          <col style="width: 53px" />
+          <col style="width: 63px" />
+          <col style="width: 63px" />
+          <col style="width: 63px" />
+          <col style="width: 63px" />
+          <col style="width: 63px" />
+          <col style="width: 63px" />
         </colgroup>
         <thead>
           <tr>
-            <th class="tableElement"></th>
-            <th class="tableElement">1</th>
-            <th class="tableElement">2</th>
-            <th class="tableElement">3</th>
-            <th class="tableElement">4</th>
-            <th class="tableElement">5</th>
-            <th class="tableElement">6</th>
+            <th class="tableElement">Wavelength</th>
+            <th class="tableElement">610nm</th>
+            <th class="tableElement">680nm</th>
+            <th class="tableElement">730nm</th>
+            <th class="tableElement">760nm</th>
+            <th class="tableElement">810nm</th>
+            <th class="tableElement">860nm</th>
           </tr>
         </thead>
         <tbody>
