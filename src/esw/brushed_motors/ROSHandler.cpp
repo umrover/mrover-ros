@@ -15,6 +15,7 @@ void ROSHandler::init(ros::NodeHandle* rosNode) {
             moveOpenLoopRACommand);
 
     openLoopSubscriberMast = n->subscribe<mrover::GimbalCmd>("gimbal_cmd", 1, moveGimbal);
+    calibrateService = n->advertiseService<mrover::CalibrateMotors::Request, mrover::CalibrateMotors::Response>("calibrate", processMotorCalibrate);
 
     jointData.name = RANames;
     jointData.position = std::vector<double>(RANames.size(), 0);
@@ -63,15 +64,16 @@ void ROSHandler::moveGimbal(const mrover::GimbalCmd::ConstPtr& msg) {
 // REQUIRES: valid req and res objects
 // MODIFIES: res
 // EFFECTS: sends a move/calibration command to the mcu
-void processCalibrate(
-    mrover::CalibrateMotors::Request &req,
-    mrover::CalibrateMotors::Response &res
-) {
+
+bool ROSHandler::processMotorCalibrate(mrover::CalibrateMotors::Request &req, mrover::CalibrateMotors::Response &res) {
     assert(req.names.size() == req.calibrate.size());
 
     for (size_t i = 0; i < req.names.size(); ++i) {
         auto controller_iter = ControllerMap::controllersByName.find(req.names[i]);
         auto& [name, controller] = *controller_iter;
+
+        // Check if already calibrated
+        controller->askIsCalibrated();
 
         // Determine if calibration is needed
         bool shouldCalibrate = !(controller_iter == ControllerMap::controllersByName.end()
@@ -80,11 +82,15 @@ void processCalibrate(
 
         // Calibrate
         if(shouldCalibrate) {
+
             controller->moveOpenLoop(controller->calibrationSpeed);
             controller->askIsCalibrated();
+            
             res.actively_calibrating.push_back(true);
         } else {
             res.actively_calibrating.push_back(false);    
         }
     }
+
+    return true;
 }

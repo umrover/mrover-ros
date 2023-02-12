@@ -23,8 +23,11 @@ private:
 
     // This keeps track of all the open loop subscribers and publishers
     inline static std::vector<std::string> RANames;
+
     inline static ros::Subscriber openLoopSubscriberRA;
     inline static ros::Subscriber openLoopSubscriberMast;
+
+    inline static ros::ServiceServer calibrateService;
 
     inline static ros::Publisher calibrationStatusPublisherRA;
     inline static mrover::Calibrated calibrationStatusRA;
@@ -46,9 +49,7 @@ private:
     // REQUIRES: valid req and res objects
     // MODIFIES: res
     // EFFECTS: sends a move/calibration command to the mcu
-    static void processCalibrate(
-        mrover::CalibrateMotors::Request &req,
-        mrover::CalibrateMotors::Response &res);
+    static bool processMotorCalibrate(mrover::CalibrateMotors::Request &req, mrover::CalibrateMotors::Response &res);
 
 public:
     // REQUIRES: rosNode is a pointer to the created node.
