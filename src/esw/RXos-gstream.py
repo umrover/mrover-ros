@@ -3,7 +3,7 @@ import os
 
 from multiprocessing import Process
 
-def receive(port = 5001 fpsoverlay = False):
+def receive(port = 5001, fpsoverlay = False):
     if fpsoverlay:
         os.system('gst-launch-1.0 udpsrc port='+str(port)+' ! \
         \"application/x-rtp, encoding-name=(string)H264, payload=96\" ! \
