@@ -17,7 +17,7 @@
           ref="open-loop-enabled"
           :disabled="servo_enabled"
           :name="'Open Loop Enabled'"
-          @toggle="updateOpenLoop($event)"
+          @toggle="open_loop_enabled = $event"
         />
       </div>
       <div>
@@ -25,7 +25,8 @@
           ref="servo-enabled"
           :disabled="open_loop_enabled"
           :name="'Servo'"
-          @toggle="updateServo($event)"
+          @toggle="servo_enabled = $event"
+          
         />
       </div>
     </div>
@@ -148,12 +149,8 @@ export default {
         this.jointstate_pub.publish(zeroCommandMsg);
       }
     },
-    updateServo: function (enabled) {
-      this.servo_enabled = enabled;
-    },
-    updateOpenLoop: function (enabled) {
-      this.open_loop_enabled = enabled;
-    },
+    
+    
     updateJointsEnabled: function (jointnum, enabled) {
       this.joints_array[jointnum] = enabled;
       const jointData = {
