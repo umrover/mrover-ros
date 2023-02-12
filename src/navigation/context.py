@@ -13,11 +13,14 @@ from dataclasses import dataclass
 from shapely.geometry import Point, LineString
 from mrover.msg import Waypoint, GPSWaypoint, EnableAuton
 import pymap3d
+from std_msgs.msg import Time
 
 
 # read required parameters, if they don't exist an error will be thrown
 REF_LAT = rospy.get_param("gps_linearization/reference_point_latitude")
 REF_LON = rospy.get_param("gps_linearization/reference_point_longitude")
+
+TAG_EXPIRATION_TIME_SECONDS = 60
 
 tf_broadcaster: tf2_ros.StaticTransformBroadcaster = tf2_ros.StaticTransformBroadcaster()
 
@@ -68,10 +71,13 @@ class Environment:
     def get_fid_pos(self, fid_id: int, frame: str = "map") -> Optional[np.ndarray]:
         """
         Retrieves the pose of the given fiducial ID from the TF tree
-        if it exists, otherwise returns None
+        if it exists and is more recent than TAG_EXPIRATION_TIME_SECONDS, otherwise returns None
         """
         try:
-            fid_pose = SE3.from_tf_tree(self.ctx.tf_buffer, parent_frame="map", child_frame=f"fiducial{fid_id}")
+            fid_pose, time = SE3.from_tf_time(self.ctx.tf_buffer, parent_frame="map", child_frame=f"fiducial{fid_id}")
+            now = rospy.Time.now()
+            if now.to_sec() - time.to_sec() >= TAG_EXPIRATION_TIME_SECONDS:
+                return None
         except (
             tf2_ros.LookupException,
             tf2_ros.ConnectivityException,
@@ -86,15 +92,27 @@ class Environment:
         """
         assert self.ctx.course
         current_waypoint = self.ctx.course.current_waypoint()
-        if current_waypoint is None or not self.ctx.course.look_for_post():
+        if current_waypoint is None:
             return None
 
         return self.get_fid_pos(current_waypoint.fiducial_id)
+
+    def other_gate_fid_pos(self) -> Optional[np.ndarray]:
+        """
+        retrieves the position of the other gate post (which is 1 + current id) if we are looking for a gate
+        """
+        assert self.ctx.course
+        current_waypoint = self.ctx.course.current_waypoint()
+        if self.ctx.course.look_for_gate() and current_waypoint is not None:
+            return self.get_fid_pos(current_waypoint.fiducial_id + 1)
+        else:
+            return None
 
     def current_gate(self) -> Optional[Gate]:
         """
         retrieves the position of the gate (if we know where it is, and we are looking for one)
         """
+
         if self.ctx.course:
             current_waypoint = self.ctx.course.current_waypoint()
             if current_waypoint is None or not self.ctx.course.look_for_gate():
@@ -105,7 +123,7 @@ class Environment:
             if post1 is None or post2 is None:
                 return None
 
-            return Gate(post1[0:2], post2[0:2])
+            return Gate(post1[:2], post2[:2])
         else:
             return None
 
