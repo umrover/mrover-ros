@@ -1,31 +1,18 @@
 #!/usr/bin/env python3
 import os
-'''
-from mrover.msg import CameraCmd
-from typing import List, Dict, Tuple
 
-import threading
+from multiprocessing import Process
 
-import rospy
-from mrover.srv import (
-    ChangeCameras,
-    ChangeCamerasRequest,
-    ChangeCamerasResponse,
-)
+def receive(port = 5001):
+    os.system('gst-launch-1.0 udpsrc port='+str(port)+' ! \"application/x-rtp, encoding-name=(string)H264, payload=96\" ! rtph264depay ! decodebin ! videoconvert ! autovideosink')
 
-import jetson.utils
-'''
+    
+if __name__ == '__main__':
+    r1 = Process(target=receive, args=(5001,))
+    r2 = Process(target=receive, args=(5002,))
+    r1.start()
+    r2.start()
+    r1.join()
+    r2.join()
 
-
-def main():
-    os.system("gst-launch-1.0 udpsrc port=5001 ! \"application/x-rtp, encoding-name=(string)H264, payload=96\" ! rtph264depay ! decodebin ! videoconvert ! autovideosink")
-    # rospy.init_node("cameras")
-    #streaming_manager = StreamingManager()
-    # rospy.Service("change_cameras", ChangeCameras,
-    #              streaming_manager.handle_change_cameras)
-    # while not rospy.is_shutdown():
-    #    streaming_manager.update_all_streams()
-
-
-if __name__ == "__main__":
-    main()
+    cv2.destroyAllWindows()
