@@ -6,11 +6,9 @@
     <div class="box1">
       <div>
         <label for="position">Change site to position:</label>
-        <select id="site" v-model="site" name="site" @change="onChange($event)">
-          <option value="A">Position A</option>
-          <option value="B">Position B</option>
-          <option value="C">Position C</option>
-        </select>
+        <input type="radio" id="site" v-model="site" name="site" value="A" @change="onChange($event)"> A
+        <input type="radio" id="site" v-model="site" name="site" value="B" @change="onChange($event)"> B
+        <input type="radio" id="site" v-model="site" name="site" value="C" @change="onChange($event)"> C
       </div>
     </div>
   </div>
