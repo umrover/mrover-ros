@@ -15,9 +15,9 @@ import io
 
 
 class CommandData:
-    MAX_TORQUE = 0.5
+    MAX_TORQUE = 2.0
     POSITION_FOR_VELOCITY_CONTROL = math.nan
-    VELOCITY_LIMIT_REV_S = 50  # DO NOT CHANGE THIS HAPHAZARDLY. DERIVED FROM TESTING.
+    VELOCITY_LIMIT_REV_S = 80  # DO NOT CHANGE THIS HAPHAZARDLY. DERIVED FROM TESTING.
     ZERO_VELOCITY = 0.0
 
     def __init__(
@@ -386,15 +386,15 @@ class MotorsManager(ABC):
             await bridge.update()
 
         motors_status = MotorsStatus(
-            name=self._motor_bridges.keys(),
+            name=list(self._motor_bridges.keys()),
             joint_states=JointState(
-                name=self._motor_bridges.keys(),
+                name=list(self._motor_bridges.keys()),
                 position=[bridge.moteus_data.position for bridge in self._motor_bridges.values()],
                 velocity=[bridge.moteus_data.velocity for bridge in self._motor_bridges.values()],
                 effort=[bridge.moteus_data.torque for bridge in self._motor_bridges.values()],
             ),
             moteus_states=MoteusStateMsg(
-                name=self._motor_bridges.keys(),
+                name=list(self._motor_bridges.keys()),
                 state=[bridge.moteus_state.state for bridge in self._motor_bridges.values()],
                 error=[bridge.moteus_state.error_name for bridge in self._motor_bridges.values()],
             ),

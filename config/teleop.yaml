@@ -5,7 +5,7 @@ teleop:
     joint_b:
       multiplier: 1
     joint_c:
-      multiplier: 1
+      multiplier: -1
     joint_d:
       multiplier: 1
     joint_e:

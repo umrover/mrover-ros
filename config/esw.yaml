@@ -154,10 +154,10 @@ brushless:
       joint_c:
         id: 6
         max_rps: 50
-        multiplier: 1
+        multiplier: -1
       joint_d:
         id: 7
-        max_rps: 50
+        max_rps: 70
         multiplier: 1
       joint_e:
         id: 8
