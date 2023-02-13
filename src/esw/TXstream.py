@@ -5,11 +5,18 @@ import cv2
 from multiprocessing import Process
 from pynput import keyboard
 
-def stream_manager(stream_process_list, num, cap_setting):
+def stream_manager(stream_process_list, id, cap_setting):
     if cap_setting:
-        print("changing /dev/video" + str(num) + " capture settings to " +str(cap_setting))
+        print("\nChanging /dev/video" + str(id) + " capture settings to " +str(cap_setting))
+        stream_process_list[id].kill()
+        stream_process_list[id] = Process(target=send, args=(
+        id, '10.0.0.7', 5000+id, 1000000, 854, 480, 30, True))
+        stream_process_list[id].start()
+        stream_process_list[id].join()
     else:
-        print('closing /dev/video ' + str(num) + ' stream')
+        print('\nClosing /dev/video' + str(id) + ' stream')
+        stream_process_list[id].kill()
+
 def send(device=0, host='10.0.0.7', port=5001, bitrate=4000000, width=1280, height=720, fps=30, isColored=False):
     # Construct video capture pipeline string
     capstr = 'v4l2src device=/dev/video' + str(device) + ' do-timestamp=true io-mode=2 ! \
@@ -122,11 +129,11 @@ if __name__ == '__main__':
     s[2].start()
     cthread.start()
     print("[Keyboard Control Instructions]\n\
-    Press a number to assume control of dev/video[number]\n\
+    Press a number to control dev/video[number]\n\
     Press L for low cap settings\n\
     Press M for medium cap settings\n\
     Press H for high cap settings\n\
-    Press Q to close stream\n\n")
+    Press Q to close selected stream\n\n")
     # TODO: if print statement shows we might be able to use below space to make a loop to watch for termination of a process
     s[0].join()  # waits for process to complete/terminate
     s[2].join()

@@ -3,6 +3,12 @@ import os
 
 from multiprocessing import Process
 
+def stream_manager(stream_process_list, id):
+    print("\nRestarting receiver listening on port 500" + str(id))
+    stream_process_list[id].kill()
+    stream_process_list[id] = Process(target=receive, args=(5000+id, True))
+    stream_process_list[id].start()
+    stream_process_list[id].join()
 
 def receive(port=5001, fpsoverlay=False):
     gst = 'gst-launch-1.0 udpsrc port='+str(port)+' ! \
@@ -16,11 +22,32 @@ def receive(port=5001, fpsoverlay=False):
         gst += 'autovideosink'
     os.system(gst)
 
+#keyboard keypress event handler
+def on_press(key):
+    global lk
+    if key == keyboard.Key.esc:
+        cl = 1
+        return False  # stop listener
+    try:
+        k = key.char  # single-char keys
+    except:
+        k = key.name  # other keys
+    #print(k)
+    if k in ['0', '1', '2', '3', '4', '5', '6']:
+        stream_manager(r, int(k))
+
 
 if __name__ == '__main__':
-    r1 = Process(target=receive, args=(5000, True))
-    r2 = Process(target=receive, args=(5002, True))
-    r1.start()
-    r2.start()
-    r1.join()
-    r2.join()
+    fol = True
+    r = [0] * 10
+    r[0] = Process(target=receive, args=(5000, fol))
+    r[2] = Process(target=receive, args=(5002, fol))
+    cthread = keyboard.Listener(on_press=on_press, args=(r))
+    r[0].start()
+    r[2].start()
+    cthread.start()
+    print("[Keyboard Control Instructions]\n\
+    Press a number to restart receiver listening on port "+str(5000)+"+[number].\n\n")
+    r[0].join()
+    r[2].join()
+    cthread.join()
