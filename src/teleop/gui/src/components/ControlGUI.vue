@@ -21,26 +21,28 @@
       <JointStateTable
         :joint-state-data="motorjointState"
         :vertical="true"
-        :header = "'Drive Motors'"
+        :header="'Drive Motors'"
       ></JointStateTable>
     </div>
     <div class="box arm-jointstate light-bg">
       <JointStateTable
         :joint-state-data="armjointState"
-        :vertical = "true"
-        :header = "'Arm Motors'"
+        :vertical="true"
+        :header="'Arm Motors'"
       ></JointStateTable>
     </div>
     <div class="box drive-moteus light-bg">
-      <MoteusStateTable 
-      :moteus-state-data="drivemoteusState" 
-      :motor = "true"
-      :header = "'Drive Moteus'" ></MoteusStateTable>
+      <MoteusStateTable
+        :moteus-state-data="drivemoteusState"
+        :motor="true"
+        :header="'Drive Moteus'"
+      ></MoteusStateTable>
     </div>
     <div class="box arm-moteus light-bg">
-      <MoteusStateTable 
-      :moteus-state-data="armmoteusState"
-      :header = "'Arm Moteus'"></MoteusStateTable>
+      <MoteusStateTable
+        :moteus-state-data="armmoteusState"
+        :header="'Arm Moteus'"
+      ></MoteusStateTable>
     </div>
     <div class="box pdb light-bg">
       <PDBFuse></PDBFuse>
@@ -53,11 +55,11 @@
         @toggle="primaryEnabled($event)"
       />
     </div>
-    <div class ="box velocity light-bg">
+    <div class="box velocity light-bg">
       <Velocity></Velocity>
     </div>
-    <div class = "box odometry light-bg"> 
-      <Odom :odom="odom" ></Odom>
+    <div class="box odometry light-bg">
+      <Odom :odom="odom"></Odom>
     </div>
   </div>
 </template>
@@ -92,31 +94,31 @@ export default {
     return {
       primary: false,
 
-       // Default object isn't empty, so has to be initialized to ""
+      // Default object isn't empty, so has to be initialized to ""
       drivemoteusState: {
         name: ["", "", "", "", "", ""],
         error: ["", "", "", "", "", ""],
-        state: ["", "", "", "", "", ""],
+        state: ["", "", "", "", "", ""]
       },
 
       armmoteusState: {
         name: ["", "", "", "", "", ""],
         error: ["", "", "", "", "", ""],
-        state: ["", "", "", "", "", ""],
+        state: ["", "", "", "", "", ""]
       },
 
-     motorjointState: {},
+      motorjointState: {},
 
-     armjointState:{},
+      armjointState: {},
 
-     odom: {
+      odom: {
         latitude_deg: 42.294864932393835,
         longitude_deg: -83.70781314674628,
         bearing_deg: 0,
-        speed: 0,
+        speed: 0
       },
 
-      odom_sub:null
+      odom_sub: null
     };
   },
 
@@ -124,19 +126,19 @@ export default {
     this.arm_JointState = new ROSLIB.Topic({
       ros: this.$ros,
       name: "ra_status",
-      messageType: "mrover/MotorsStatus",
+      messageType: "mrover/MotorsStatus"
     });
 
     this.brushless_motors = new ROSLIB.Topic({
       ros: this.$ros,
       name: "drive_status",
-      messageType: "mrover/MotorsStatus",
+      messageType: "mrover/MotorsStatus"
     });
 
     this.odom_sub = new ROSLIB.Topic({
       ros: this.$ros,
       name: "/gps/fix",
-      messageType: "sensor_msgs/NavSatFix",
+      messageType: "sensor_msgs/NavSatFix"
     });
 
     this.brushless_motors.subscribe((msg) => {
@@ -159,8 +161,8 @@ export default {
   methods: {
     primaryEnabled: function (enabled) {
       this.primary = enabled;
-    },
-  },
+    }
+  }
 };
 </script>
 <style scoped>
@@ -176,7 +178,6 @@ export default {
     "arm-jointstate drive-vel-data"
     "velocity odometry"
     "arm-moteus arm-moteus";
-    
 
   font-family: sans-serif;
   height: auto;

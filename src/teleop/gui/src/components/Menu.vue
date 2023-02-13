@@ -34,8 +34,8 @@ export default {
   name: "Menu",
 
   components: {
-    MenuButton,
-  },
+    MenuButton
+  }
 };
 </script>
 

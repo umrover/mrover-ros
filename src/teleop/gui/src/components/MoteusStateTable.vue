@@ -1,191 +1,190 @@
 <template>
   <div class="wrap">
-    <div v-if = "motor">
-    <div>
-      <h3>{{header}}</h3>
+    <div v-if="motor">
+      <div>
+        <h3>{{ header }}</h3>
+      </div>
+      <table
+        class="tableFormat"
+        style="undefined;table-layout: fixed; width: 400px"
+      >
+        <colgroup>
+          <col style="width: 20px" />
+          <col style="width: 30px" />
+          <col style="width: 30px" />
+        </colgroup>
+        <thead>
+          <tr>
+            <th class="tableElement tableHeader">Name</th>
+            <th class="tableElement tableHeader">
+              {{ moteusStateData.name[indices.FrontLeft] }}
+            </th>
+            <th class="tableElement tableHeader">
+              {{ moteusStateData.name[indices.FrontRight] }}
+            </th>
+          </tr>
+          <tr>
+            <th class="tableElement tableHeader">State</th>
+            <th class="tableElement">
+              {{ moteusStateData.state[indices.FrontLeft] }}
+            </th>
+            <th class="tableElement">
+              {{ moteusStateData.state[indices.FrontRight] }}
+            </th>
+          </tr>
+          <tr>
+            <th class="tableElement tableHeader">Error</th>
+            <th class="tableElement">
+              {{ moteusStateData.error[indices.FrontLeft] }}
+            </th>
+            <th class="tableElement">
+              {{ moteusStateData.error[indices.FrontRight] }}
+            </th>
+          </tr>
+          <tr>
+            <th class="tableElement tableHeader">Name</th>
+            <th class="tableElement tableHeader">
+              {{ moteusStateData.name[indices.MiddleLeft] }}
+            </th>
+            <th class="tableElement tableHeader">
+              {{ moteusStateData.name[indices.MiddleRight] }}
+            </th>
+          </tr>
+          <tr>
+            <th class="tableElement tableHeader">State</th>
+            <th class="tableElement">
+              {{ moteusStateData.state[indices.MiddleLeft] }}
+            </th>
+            <th class="tableElement">
+              {{ moteusStateData.state[indices.MiddleRight] }}
+            </th>
+          </tr>
+          <tr>
+            <th class="tableElement tableHeader">Error</th>
+            <th class="tableElement">
+              {{ moteusStateData.error[indices.MiddleLeft] }}
+            </th>
+            <th class="tableElement">
+              {{ moteusStateData.error[indices.MiddleRight] }}
+            </th>
+          </tr>
+          <tr>
+            <th class="tableElement tableHeader">Name</th>
+            <th class="tableElement tableHeader">
+              {{ moteusStateData.name[indices.BackLeft] }}
+            </th>
+            <th class="tableElement tableHeader">
+              {{ moteusStateData.name[indices.BackRight] }}
+            </th>
+          </tr>
+          <tr>
+            <th class="tableElement tableHeader">State</th>
+            <th class="tableElement">
+              {{ moteusStateData.state[indices.BackLeft] }}
+            </th>
+            <th class="tableElement">
+              {{ moteusStateData.state[indices.BackRight] }}
+            </th>
+          </tr>
+          <tr>
+            <th class="tableElement tableHeader">Error</th>
+            <th class="tableElement">
+              {{ moteusStateData.error[indices.BackLeft] }}
+            </th>
+            <th class="tableElement">
+              {{ moteusStateData.error[indices.BackRight] }}
+            </th>
+          </tr>
+        </thead>
+      </table>
     </div>
-    <table
-      class="tableFormat"
-      style="undefined;table-layout: fixed; width: 400px"
-    >
-      <colgroup>
-        <col style="width: 20px" />
-        <col style="width: 30px" />
-        <col style="width: 30px" />
-      </colgroup>
-      <thead>
-        <tr>
-          <th class="tableElement tableHeader">Name</th>
-          <th class="tableElement tableHeader">
-            {{ moteusStateData.name[indices.FrontLeft] }}
-          </th>
-          <th class="tableElement tableHeader">
-            {{ moteusStateData.name[indices.FrontRight] }}
-          </th>
-        </tr>
-        <tr>
-          <th class="tableElement tableHeader">State</th>
-          <th class="tableElement">
-            {{ moteusStateData.state[indices.FrontLeft] }}
-          </th>
-          <th class="tableElement">
-            {{ moteusStateData.state[indices.FrontRight] }}
-          </th>
-        </tr>
-        <tr>
-          <th class="tableElement tableHeader">Error</th>
-          <th class="tableElement">
-            {{ moteusStateData.error[indices.FrontLeft] }}
-          </th>
-          <th class="tableElement">
-            {{ moteusStateData.error[indices.FrontRight] }}
-          </th>
-        </tr>
-        <tr>
-          <th class="tableElement tableHeader">Name</th>
-          <th class="tableElement tableHeader">
-            {{ moteusStateData.name[indices.MiddleLeft] }}
-          </th>
-          <th class="tableElement tableHeader">
-            {{ moteusStateData.name[indices.MiddleRight] }}
-          </th>
-        </tr>
-        <tr>
-          <th class="tableElement tableHeader">State</th>
-          <th class="tableElement">
-            {{ moteusStateData.state[indices.MiddleLeft] }}
-          </th>
-          <th class="tableElement">
-            {{ moteusStateData.state[indices.MiddleRight] }}
-          </th>
-        </tr>
-        <tr>
-          <th class="tableElement tableHeader">Error</th>
-          <th class="tableElement">
-            {{ moteusStateData.error[indices.MiddleLeft] }}
-          </th>
-          <th class="tableElement">
-            {{ moteusStateData.error[indices.MiddleRight] }}
-          </th>
-        </tr>
-        <tr>
-          <th class="tableElement tableHeader">Name</th>
-          <th class="tableElement tableHeader">
-            {{ moteusStateData.name[indices.BackLeft] }}
-          </th>
-          <th class="tableElement tableHeader">
-            {{ moteusStateData.name[indices.BackRight] }}
-          </th>
-        </tr>
-        <tr>
-          <th class="tableElement tableHeader">State</th>
-          <th class="tableElement">
-            {{ moteusStateData.state[indices.BackLeft] }}
-          </th>
-          <th class="tableElement">
-            {{ moteusStateData.state[indices.BackRight] }}
-          </th>
-        </tr>
-        <tr>
-          <th class="tableElement tableHeader">Error</th>
-          <th class="tableElement">
-            {{ moteusStateData.error[indices.BackLeft] }}
-          </th>
-          <th class="tableElement">
-            {{ moteusStateData.error[indices.BackRight] }}
-          </th>
-        </tr>
-      </thead>
-    </table>
-    </div>
-  
 
-  
     <div v-else>
-    <div>
-      <h3>{{header}}</h3>
+      <div>
+        <h3>{{ header }}</h3>
+      </div>
+      <table
+        class="tableFormat"
+        style="undefined;table-layout: fixed; width: 800px"
+      >
+        <colgroup>
+          <col style="width: 20px" />
+          <col style="width: 30px" />
+          <col style="width: 30px" />
+          <col style="width: 30px" />
+          <col style="width: 30px" />
+          <col style="width: 30px" />
+          <col style="width: 30px" />
+        </colgroup>
+        <thead>
+          <tr>
+            <th class="tableElement tableHeader">Name</th>
+            <th class="tableElement tableHeader">
+              {{ moteusStateData.name[indices.FrontLeft] }}
+            </th>
+            <th class="tableElement tableHeader">
+              {{ moteusStateData.name[indices.FrontRight] }}
+            </th>
+            <th class="tableElement tableHeader">
+              {{ moteusStateData.name[indices.MiddleLeft] }}
+            </th>
+            <th class="tableElement tableHeader">
+              {{ moteusStateData.name[indices.MiddleRight] }}
+            </th>
+            <th class="tableElement tableHeader">
+              {{ moteusStateData.name[indices.BackLeft] }}
+            </th>
+            <th class="tableElement tableHeader">
+              {{ moteusStateData.name[indices.BackRight] }}
+            </th>
+          </tr>
+          <tr>
+            <th class="tableElement tableHeader">State</th>
+            <th class="tableElement">
+              {{ moteusStateData.state[indices.FrontLeft] }}
+            </th>
+            <th class="tableElement">
+              {{ moteusStateData.state[indices.FrontRight] }}
+            </th>
+            <th class="tableElement">
+              {{ moteusStateData.state[indices.MiddleLeft] }}
+            </th>
+            <th class="tableElement">
+              {{ moteusStateData.state[indices.MiddleRight] }}
+            </th>
+            <th class="tableElement">
+              {{ moteusStateData.state[indices.BackLeft] }}
+            </th>
+
+            <th class="tableElement">
+              {{ moteusStateData.state[indices.BackRight] }}
+            </th>
+          </tr>
+          <tr>
+            <th class="tableElement tableHeader">Error</th>
+            <th class="tableElement">
+              {{ moteusStateData.error[indices.FrontLeft] }}
+            </th>
+            <th class="tableElement">
+              {{ moteusStateData.error[indices.FrontRight] }}
+            </th>
+            <th class="tableElement">
+              {{ moteusStateData.error[indices.MiddleLeft] }}
+            </th>
+            <th class="tableElement">
+              {{ moteusStateData.error[indices.MiddleRight] }}
+            </th>
+            <th class="tableElement">
+              {{ moteusStateData.error[indices.BackLeft] }}
+            </th>
+            <th class="tableElement">
+              {{ moteusStateData.error[indices.BackRight] }}
+            </th>
+          </tr>
+        </thead>
+      </table>
     </div>
-    <table
-      class="tableFormat"
-      style="undefined;table-layout: fixed; width: 800px"
-    >
-      <colgroup>
-        <col style="width: 20px" />
-        <col style="width: 30px" />
-        <col style="width: 30px" />
-        <col style="width: 30px" />
-        <col style="width: 30px" />
-        <col style="width: 30px" />
-        <col style="width: 30px" />
-      </colgroup>
-      <thead>
-        <tr>
-          <th class="tableElement tableHeader">Name</th>
-          <th class="tableElement tableHeader">
-            {{ moteusStateData.name[indices.FrontLeft] }}
-          </th>
-          <th class="tableElement tableHeader">
-            {{ moteusStateData.name[indices.FrontRight] }}
-          </th>
-          <th class="tableElement tableHeader">
-            {{ moteusStateData.name[indices.MiddleLeft] }}
-          </th>
-          <th class="tableElement tableHeader">
-            {{ moteusStateData.name[indices.MiddleRight] }}
-          </th>
-          <th class="tableElement tableHeader">
-            {{ moteusStateData.name[indices.BackLeft] }}
-          </th>
-          <th class="tableElement tableHeader">
-            {{ moteusStateData.name[indices.BackRight] }}
-          </th>
-        </tr>
-        <tr>
-          <th class="tableElement tableHeader">State</th>
-          <th class="tableElement">
-            {{ moteusStateData.state[indices.FrontLeft] }}
-          </th>
-          <th class="tableElement">
-            {{ moteusStateData.state[indices.FrontRight] }}
-          </th>
-          <th class="tableElement">
-            {{ moteusStateData.state[indices.MiddleLeft] }}
-          </th>
-          <th class="tableElement">
-            {{ moteusStateData.state[indices.MiddleRight] }}
-          </th>
-          <th class="tableElement">
-            {{ moteusStateData.state[indices.BackLeft] }}
-          <th class="tableElement">
-            {{ moteusStateData.state[indices.BackRight] }}
-          </th>
-        </tr>
-        <tr>
-          <th class="tableElement tableHeader">Error</th>
-          <th class="tableElement">
-            {{ moteusStateData.error[indices.FrontLeft] }}
-          </th>
-          <th class="tableElement">
-            {{ moteusStateData.error[indices.FrontRight] }}
-          </th>
-          <th class="tableElement">
-            {{ moteusStateData.error[indices.MiddleLeft] }}
-          </th>
-          <th class="tableElement">
-            {{ moteusStateData.error[indices.MiddleRight] }}
-          </th>
-          <th class="tableElement">
-            {{ moteusStateData.error[indices.BackLeft] }}
-          </th>
-          <th class="tableElement">
-            {{ moteusStateData.error[indices.BackRight] }}
-          </th>
-        </tr>
-         
-      </thead>
-    </table>
   </div>
-</div>
 </template>
 
 <script>
@@ -197,32 +196,32 @@ const state = {
   MiddleLeft: 2,
   MiddleRight: 3,
   BackLeft: 4,
-  BackRight: 5,
+  BackRight: 5
 };
 
 export default {
   props: {
     moteusStateData: {
       type: Object,
-      required: true,
+      required: true
     },
 
     header: {
       type: String,
       required: false,
-      default: "Motor Data",
+      default: "Motor Data"
     },
 
     motor: {
       type: Boolean,
-      required: true,
-    },
+      required: true
+    }
   },
   data() {
     return {
-      indices: state,
+      indices: state
     };
-  },
+  }
 };
 </script>
 

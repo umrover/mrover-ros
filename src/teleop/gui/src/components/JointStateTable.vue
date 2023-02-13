@@ -2,7 +2,7 @@
   <div class="wrap">
     <div v-if="vertical">
       <div>
-        <h3>{{header}}</h3>
+        <h3>{{ header }}</h3>
       </div>
       <table
         class="tableFormat"
@@ -107,25 +107,25 @@ export default {
     // Table will only render headers if these values are not passed w/ v-bind
     jointStateData: {
       type: Object,
-      required: true,
+      required: true
     },
 
     vertical: {
       type: Boolean,
-      required: true,
+      required: true
     },
 
     header: {
       type: String,
       required: false,
-      default: "Motor Data",
+      default: "Motor Data"
     }
   },
   data() {
     return {
-      motors: [],
+      motors: []
     };
-  },
+  }
 };
 </script>
 
