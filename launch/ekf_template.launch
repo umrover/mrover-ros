@@ -2,10 +2,5 @@
   <node pkg="robot_localization" type="ekf_localization_node" name="odom_ekf" >
     <rosparam command="load" file="$(find robot_localization)/params/ekf_template.yaml" />
 
-    <!--  Placeholder for output topic remapping
-    <remap from="odometry/filtered" to=""/>
-    <remap from="accel/filtered" to=""/>
-    -->
-
   </node>
 </launch>
