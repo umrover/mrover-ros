@@ -11,8 +11,8 @@
           @toggle="updateArmEnabled($event)"
         />
       </div>
-      <br/>
-      <div style="min-width: none;">
+      <br />
+      <div style="min-width: none">
         <Checkbox
           ref="open-loop-enabled"
           :disabled="servo_enabled"
@@ -26,7 +26,6 @@
           :disabled="open_loop_enabled"
           :name="'Servo'"
           @toggle="servo_enabled = $event"
-          
         />
       </div>
     </div>
@@ -45,7 +44,6 @@
 <script>
 import ROSLIB from "roslib";
 import Checkbox from "./Checkbox.vue";
-import { mapGetters } from "vuex";
 
 // In seconds
 const updateRate = 0.1;
@@ -124,27 +122,8 @@ export default {
   methods: {
     updateArmEnabled: function (enabled) {
       this.arm_enabled = enabled;
-      //ra_command, have all nulls in position. And all zeros in velocity array
-      if (this.arm_enabled === false) {
-        const zeroCommandData = {
-          name: [
-            "joint_a",
-            "joint_b",
-            "joint_c",
-            "joint_d",
-            "joint_e",
-            "joint_f"
-          ],
-          position: [null, null, null, null, null, null],
-          velocity: [0, 0, 0, 0, 0, 0],
-          effort: [0.5, 0.5, 0.5, 0.5, 0.5, 0.5]
-        };
-        var zeroCommandMsg = new ROSLIB.Message(zeroCommandData);
-        this.jointstate_pub.publish(zeroCommandMsg);
-      }
     },
-    
-    
+
     updateJointsEnabled: function (jointnum, enabled) {
       this.joints_array[jointnum] = enabled;
       const jointData = {
@@ -159,7 +138,7 @@ export default {
         buttons: buttons
       };
       var joystickMsg = new ROSLIB.Message(joystickData);
-      if(this.arm_enabled){
+      if (this.arm_enabled) {
         if (this.servo_enabled) {
           this.joystickservo_pub.publish(joystickMsg);
         } else {
