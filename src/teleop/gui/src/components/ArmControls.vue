@@ -68,13 +68,7 @@ export default {
     };
   },
 
-  computed: {
-    ...mapGetters("controls", {
-      controlMode: "controlMode"
-    })
-  },
-
-  beforeUnmount: function () {
+  beforeDestroy: function () {
     window.clearInterval(interval);
   },
 

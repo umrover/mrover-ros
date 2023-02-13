@@ -65,3 +65,8 @@ teleop:
     dampen: 3
     pan: 4
     tilt: 5
+
+  echo_presets:
+    blah: ["/tf", "/tf_static", "/rosout"]
+    foo: ["/rosout", "/tf"]
+    bar: ["/tf_static", "/rosout", "/tf"]
