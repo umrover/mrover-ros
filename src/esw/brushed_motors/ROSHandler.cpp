@@ -32,13 +32,13 @@ void ROSHandler::moveOpenLoopRACommand(const sensor_msgs::JointState::ConstPtr& 
 
     for (size_t i = 0; i < RANames.size(); ++i) {
         auto controller_iter = ControllerMap::controllersByName.find(RANames[i]);
-        assert(controller_iter != ControllerMap::controllersByName.end());
+        if (controller_iter != ControllerMap::controllersByName.end()) {
+            auto name = controller_iter->first;
+            auto controller = controller_iter->second;
 
-        auto name = controller_iter->first;
-        auto controller = controller_iter->second;
-
-        controller->moveOpenLoop((float) msg->velocity[i]);
-        jointData.position[i] = controller->getCurrentAngle();
+            controller->moveOpenLoop((float) msg->velocity[i]);
+            jointData.position[i] = controller->getCurrentAngle();
+        }
     }
 
     jointDataPublisherRA.publish(jointData);
