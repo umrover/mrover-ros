@@ -5,14 +5,19 @@ import cv2
 from multiprocessing import Process
 from pynput import keyboard
 
-def stream_manager(stream_process_list, id, cap_setting):
-    if cap_setting:
-        print("\nChanging /dev/video" + str(id) + " capture settings to " +str(cap_setting))
+def stream_manager(stream_process_list, id, cap_set):
+    cap_args = [
+        [800000, 854, 480, 15],
+        [1200000, 1280, 720, 15],
+        [4000000, 1280, 720, 30]
+    ]
+
+    if cap_set:
+        print("\nChanging /dev/video" + str(id) + " capture settings to " +str(cap_set))
         stream_process_list[id].kill()
         stream_process_list[id] = Process(target=send, args=(
-        id, '10.0.0.7', 5000+id, 1000000, 854, 480, 30, True))
+        id, '10.0.0.7', 5000+id, cap_args[cap_set-1][0], cap_args[cap_set-1][1], cap_args[cap_set-1][2], cap_args[cap_set-1][3], True))
         stream_process_list[id].start()
-        stream_process_list[id].join()
     else:
         print('\nClosing /dev/video' + str(id) + ' stream')
         stream_process_list[id].kill()
@@ -121,9 +126,9 @@ def on_press(key):
 if __name__ == '__main__':
     s = [0] * 10
     s[0] = Process(target=send, args=(
-        0, '10.0.0.7', 5000, 3000000, 1280, 720, 30, True))
+        0, '10.0.0.7', 5000, 4000000, 1280, 720, 30, True))
     s[2] = Process(target=send, args=(
-        2, '10.0.0.7', 5002, 3000000, 1280, 720, 30, True))
+        2, '10.0.0.7', 5002, 4000000, 1280, 720, 30, True))
     cthread = keyboard.Listener(on_press=on_press, args=(s))
     s[0].start()
     s[2].start()
@@ -135,7 +140,7 @@ if __name__ == '__main__':
     Press H for high cap settings\n\
     Press Q to close selected stream\n\n")
     # TODO: if print statement shows we might be able to use below space to make a loop to watch for termination of a process
-    for i in range(len(r)):
+    for i in range(len(s)):
         if s[i]:
             s[i].join()
 
