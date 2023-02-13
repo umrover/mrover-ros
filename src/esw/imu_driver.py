@@ -1,9 +1,11 @@
 #!/usr/bin/env python3
+import numpy as np
 import rospy
 from sensor_msgs.msg import Temperature, Imu, MagneticField
 from geometry_msgs.msg import Quaternion, Vector3
 from std_msgs.msg import Header
 from mrover.msg import CalibrationStatus, ImuAndMag
+from tf.transformations import quaternion_about_axis, quaternion_multiply, rotation_matrix
 
 import serial
 from serial import SerialException, SerialTimeoutException
@@ -63,19 +65,25 @@ def main():
             rospy.logerr("incomplete msg")
             continue
 
+        # rotate the quaternion and mag vector by 90 degrees about the Z axis to convert it to ENU frame
+        offset_quat = quaternion_about_axis(np.pi / 2, [0, 0, 1])
+        enu_orientation = quaternion_multiply(offset_quat, orientation_data)
+        R = rotation_matrix(np.pi / 2, [0, 0, 1])
+        enu_mag_vec = R @ np.array(mag_data)
+
         # fill in all sensor messages, setting timestamps of each message to right now,
         # and setting the reference frame of all messages to IMU frame
         imu_msg = ImuAndMag(
             header=Header(stamp=rospy.Time.now(), frame_id=imu_frame),
             imu=Imu(
                 header=Header(stamp=rospy.Time.now(), frame_id=imu_frame),
-                orientation=Quaternion(*orientation_data),
+                orientation=Quaternion(*enu_orientation),
                 linear_acceleration=Vector3(*accel_data),
                 angular_velocity=Vector3(*gyro_data),
             ),
             mag=MagneticField(
                 header=Header(stamp=rospy.Time.now(), frame_id=imu_frame),
-                magnetic_field=Vector3(*mag_data),
+                magnetic_field=Vector3(*enu_mag_vec),
             ),
         )
 

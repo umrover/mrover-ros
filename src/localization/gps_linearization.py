@@ -8,7 +8,8 @@ from std_msgs.msg import Header
 import tf2_ros
 import numpy as np
 from pymap3d.enu import geodetic2enu
-from tf.transformations import quaternion_about_axis, quaternion_multiply
+
+# from tf.transformations import quaternion_about_axis, quaternion_multiply
 
 
 class GPSLinearization:
@@ -152,13 +153,13 @@ class GPSLinearization:
         # normalize to avoid rounding errors
         imu_quat = imu_quat / np.linalg.norm(imu_quat)
 
-        # TODO: move this to within IMU driver, and do the same thing to the gyro and accel and mag
-        # get a quaternion to rotate about the Z axis by 90 degrees
-        offset_quat = quaternion_about_axis(np.pi / 2, np.array([0, 0, 1]))
+        # # TODO: move this to within IMU driver, and do the same thing to the gyro and accel and mag
+        # # get a quaternion to rotate about the Z axis by 90 degrees
+        # offset_quat = quaternion_about_axis(np.pi / 2, np.array([0, 0, 1]))
 
-        # rotate the IMU quaternion by the offset to convert it to the ENU frame
-        enu_quat = quaternion_multiply(offset_quat, imu_quat)
-        self.pose = SE3.from_pos_quat(position=self.pose.position, quaternion=enu_quat)
+        # # rotate the IMU quaternion by the offset to convert it to the ENU frame
+        # enu_quat = quaternion_multiply(offset_quat, imu_quat)
+        self.pose = SE3.from_pos_quat(position=self.pose.position, quaternion=imu_quat)
         self.publish_pose()
 
 

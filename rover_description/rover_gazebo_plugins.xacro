@@ -28,6 +28,7 @@
       <referenceLatitude>42.2</referenceLatitude>
       <referenceLongitude>-83.7</referenceLongitude>
       <referenceHeading>90.0</referenceHeading>
+      <!-- TODO: remove this as a comment -->
       <!-- <referenceHeading>0.0</referenceHeading> -->
       <referenceAltitude>0.0</referenceAltitude>
       <offset>0 0 0</offset>
@@ -56,7 +57,9 @@
         <acccelDriftFrequency>0.0 0.0 0.0</acccelDriftFrequency>
         <accelOffset>0.0 0.0 0.0</accelOffset>
         <xyzOffset>0 0 0</xyzOffset>
-        <rpyOffset>0 0 -1.570796</rpyOffset>
+        <!-- TODO: remove this as a comment -->
+        <!-- <rpyOffset>0 0 -1.570796</rpyOffset> -->
+        <rpyOffset>0 0 0</rpyOffset>
         <frameName>base_link</frameName>
         <initialOrientationAsReference>false</initialOrientationAsReference>
       </plugin>
