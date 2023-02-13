@@ -3,8 +3,13 @@
 import numpy as np
 import cv2
 from multiprocessing import Process
+from pynput import keyboard
 
-
+def stream_manager(stream_process_list, num, cap_setting):
+    if cap_setting:
+        print("changing /dev/video" + str(num) + " capture settings to " +str(cap_setting))
+    else:
+        print('closing /dev/video ' + str(num) + ' stream')
 def send(device=0, host='10.0.0.7', port=5001, bitrate=4000000, width=1280, height=720, fps=30, isColored=False):
     # Construct video capture pipeline string
     capstr = 'v4l2src device=/dev/video' + str(device) + ' do-timestamp=true io-mode=2 ! \
@@ -14,7 +19,7 @@ def send(device=0, host='10.0.0.7', port=5001, bitrate=4000000, width=1280, heig
     video/x-raw,\
     framerate='+str(fps)+'/1 ! \
     nvvidconv ! '
-    if isColored:
+    if isColored: 
         capstr += ' video/x-raw, format=BGRx ! '
     capstr += 'videoconvert ! '
     if isColored:
@@ -28,7 +33,7 @@ def send(device=0, host='10.0.0.7', port=5001, bitrate=4000000, width=1280, heig
     txstr = 'appsrc ! '
     if isColored:
         txstr += ' video/x-raw, format=BGR ! '
-    vw += 'videoconvert ! '
+    txstr += 'videoconvert ! '
     if isColored:
         txstr += ' video/x-raw, format=BGRx ! '
     txstr += 'nvvidconv ! \
@@ -71,30 +76,59 @@ def send(device=0, host='10.0.0.7', port=5001, bitrate=4000000, width=1280, heig
 
         #cv2.imshow('send', frame)
 
-        key = cv2.waitKey(1) & 0xFF
+        #key = cv2.waitKey(1) & 0xFF
+        #print(key)
 
         # TODO: test functionality when two keys pressed at once
-        if key == ord(str(device)):
-            print("in dev/video" + str(device) + "loop")
-        if key == ord("q"):
-            print("q pressed")
-        if key == ord("c"):
-            print("c pressed")
+        
 
     print("stream machine broke")
     cap_send.release()
     out_send.release()
 
+#keyboard keypress event handler
+lk = ''
+def on_press(key):
+    global lk
+    if key == keyboard.Key.esc:
+        cl = 1
+        return False  # stop listener
+    try:
+        k = key.char  # single-char keys
+    except:
+        k = key.name  # other keys
+    #print(k)
+    if k in ['0', '1', '2', '3', '4', '5', '6']:
+        print("Controlling /dev/video"+k)
+    if lk in ['0', '1', '2', '3', '4', '5', '6']:
+        if k in ['q']:
+            stream_manager(s, int(lk), 0)
+        if k in ['l']:
+            stream_manager(s, int(lk), 1)
+        if k in ['m']:
+            stream_manager(s, int(lk), 2)
+        if k in ['h']:
+            stream_manager(s, int(lk), 3)
+    lk = k
 
 if __name__ == '__main__':
-    s1 = Process(target=send, args=(
-        0, '10.0.0.7', 5001, 3000000, 1280, 720, 30, True))
-    s2 = Process(target=send, args=(
+    s = [0] * 10
+    s[0] = Process(target=send, args=(
+        0, '10.0.0.7', 5000, 3000000, 1280, 720, 30, True))
+    s[2] = Process(target=send, args=(
         2, '10.0.0.7', 5002, 3000000, 1280, 720, 30, True))
-    s1.start()
-    s2.start()
-    print("reaches here")
+    cthread = keyboard.Listener(on_press=on_press, args=(s))
+    s[0].start()
+    s[2].start()
+    cthread.start()
+    print("[Keyboard Control Instructions]\n\
+    Press a number to assume control of dev/video[number]\n\
+    Press L for low cap settings\n\
+    Press M for medium cap settings\n\
+    Press H for high cap settings\n\
+    Press Q to close stream\n\n")
     # TODO: if print statement shows we might be able to use below space to make a loop to watch for termination of a process
-    s1.join()  # waits for process to complete/terminate
-    s2.join()
+    s[0].join()  # waits for process to complete/terminate
+    s[2].join()
+    cthread.join()
     cv2.destroyAllWindows()

@@ -18,7 +18,7 @@ def receive(port=5001, fpsoverlay=False):
 
 
 if __name__ == '__main__':
-    r1 = Process(target=receive, args=(5001, True))
+    r1 = Process(target=receive, args=(5000, True))
     r2 = Process(target=receive, args=(5002, True))
     r1.start()
     r2.start()
