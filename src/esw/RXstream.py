@@ -8,7 +8,6 @@ def stream_manager(stream_process_list, id):
     stream_process_list[id].kill()
     stream_process_list[id] = Process(target=receive, args=(5000+id, True))
     stream_process_list[id].start()
-    stream_process_list[id].join()
 
 def receive(port=5001, fpsoverlay=False):
     gst = 'gst-launch-1.0 udpsrc port='+str(port)+' ! \
@@ -48,6 +47,8 @@ if __name__ == '__main__':
     cthread.start()
     print("[Keyboard Control Instructions]\n\
     Press a number to restart receiver listening on port "+str(5000)+"+[number].\n\n")
-    r[0].join()
-    r[2].join()
+    
+    for i in range(len(r)):
+        if r[i]:
+            r[i].join()
     cthread.join()

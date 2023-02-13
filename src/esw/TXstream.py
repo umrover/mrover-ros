@@ -135,7 +135,9 @@ if __name__ == '__main__':
     Press H for high cap settings\n\
     Press Q to close selected stream\n\n")
     # TODO: if print statement shows we might be able to use below space to make a loop to watch for termination of a process
-    s[0].join()  # waits for process to complete/terminate
-    s[2].join()
+    for i in range(len(r)):
+        if s[i]:
+            s[i].join()
+
     cthread.join()
     cv2.destroyAllWindows()
