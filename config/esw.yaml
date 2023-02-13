@@ -30,7 +30,7 @@ brushed_motors:
     - name: "joint_a"
       driver_voltage: 36.0
       motor_max_voltage: 24.0
-      voltage_multiplier: 0.44
+      voltage_multiplier: 0.75
       mcu_id: 1
       motor_id: 0
       quad_cpr: -28800.0
@@ -121,7 +121,7 @@ brushed_motors:
 rover:
   length: 0.86
   width: 0.86
-  max_speed: 1.5
+  max_speed: 2.0
 
 wheel:
   gear_ratio: 50.0
