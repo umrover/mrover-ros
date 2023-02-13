@@ -29,6 +29,14 @@
         />
       </div>
     </div>
+    <div class="controls laser">
+      <ToggleButton
+        :current-state="laser_enabled"
+        label-enable-text="Arm Laser On"
+        label-disable-text="Arm Laser Off"
+        @change="toggleArmLaser()"
+      />
+    </div>
     <h3>Joint Locks</h3>
     <div class="controls">
       <Checkbox ref="A" :name="'A'" @toggle="updateJointsEnabled(0, $event)" />
@@ -44,6 +52,7 @@
 <script>
 import ROSLIB from "roslib";
 import Checkbox from "./Checkbox.vue";
+import ToggleButton from "./ToggleButton.vue";
 
 // In seconds
 const updateRate = 0.1;
@@ -51,18 +60,23 @@ let interval;
 
 export default {
   components: {
-    Checkbox
+    Checkbox,
+    ToggleButton
   },
   data() {
     return {
       arm_enabled: false,
       open_loop_enabled: false,
       servo_enabled: false,
+      laser_enabled: false,
+      joints_array: [false, false, false, false, false, false],
+
+      // Pubs and Subs
       joystick_pub: null,
       joystickservo_pub: null,
       jointlock_pub: null,
       jointstate_pub: null,
-      joints_array: [false, false, false, false, false, false]
+      laser_service: null
     };
   },
 
@@ -90,6 +104,11 @@ export default {
       ros: this.$ros,
       name: "/ra_cmd",
       messageType: "sensors_msgs/JointState"
+    });
+    this.laser_service = new ROSLIB.Service({
+      ros: this.$ros,
+      name: "change_arm_laser_state",
+      serviceType: "mrover/ChangeDeviceState"
     });
     const jointData = {
       //publishes array of all falses when refreshing the page
@@ -122,6 +141,19 @@ export default {
   methods: {
     updateArmEnabled: function (enabled) {
       this.arm_enabled = enabled;
+    },
+
+    toggleArmLaser: function () {
+      this.laser_enabled = !this.laser_enabled;
+      let request = new ROSLIB.ServiceRequest({
+        enable: this.laser_enabled
+      });
+      this.laser_service.callService(request, (result) => {
+        if (!result) {
+          this.laser_enabled = !this.laser_enabled;
+          alert("Toggling Arm Laser failed.");
+        }
+      });
     },
 
     updateJointsEnabled: function (jointnum, enabled) {
@@ -174,5 +206,9 @@ export default {
   width: 250px;
   font-weight: bold;
   color: red;
+}
+
+.laser {
+  padding-top: 10px;
 }
 </style>
