@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 import os
-
 from multiprocessing import Process
+from pynput import keyboard
 
 def stream_manager(stream_process_list, id):
     print("\nRestarting receiver listening on port 500" + str(id))
