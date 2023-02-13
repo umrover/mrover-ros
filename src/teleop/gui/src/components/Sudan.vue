@@ -22,12 +22,12 @@ export default {
   props: {
     site: {
       type: String,
-      required: true
+      required: true,
     },
     siteIndex: {
       type: Number,
-      required: true
-    }
+      required: true,
+    },
   },
   data() {
     return {
@@ -35,18 +35,18 @@ export default {
       angles: {
         A: {
           pushed: null,
-          start: null
+          start: null,
         },
         B: {
           pushed: null,
-          start: null
+          start: null,
         },
         C: {
           pushed: null,
-          start: null
-        }
+          start: null,
+        },
       },
-      servoClient: null
+      servoClient: null,
     };
   },
 
@@ -54,19 +54,19 @@ export default {
     this.serviceClient = new ROSLIB.Service({
       ros: this.$ros,
       name: "change_servo_angles",
-      serviceType: "mrover/ChangeServoAngle"
+      serviceType: "mrover/ChangeServoAngle",
     });
 
     let param = new ROSLIB.Param({
       ros: this.$ros,
-      name: "science/syringe_servo_positions"
+      name: "science/syringe_servo_positions",
     });
     //get servo angles from yaml file
     param.get((angles) => {
       let letter = "A";
       for (var i = 0; i < 3; i++) {
-        this.angles[letter].pushed = (angles["site_" + letter]["pushed"]);
-        this.angles[letter].start = (angles["site_" + letter]["start"]);
+        this.angles[letter].pushed = angles["site_" + letter]["pushed"];
+        this.angles[letter].start = angles["site_" + letter]["start"];
         letter = String.fromCharCode(letter.charCodeAt(0) + 1);
       }
     });
@@ -76,7 +76,7 @@ export default {
     moveServo(angle, enable) {
       let request = new ROSLIB.ServiceRequest({
         id: this.siteIndex,
-        angle: angle
+        angle: angle,
       });
 
       this.serviceClient.callService(request, (result) => {
@@ -86,8 +86,8 @@ export default {
           );
         else Vue.set(this.isEnabled, this.siteIndex, enable);
       });
-    }
-  }
+    },
+  },
 };
 </script>
 

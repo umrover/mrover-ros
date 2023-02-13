@@ -22,7 +22,7 @@ export default {
       const time = new Date(Date.now());
       const timeString =
         time.toTimeString().substring(0, 17) + " " + time.toDateString();
-      for(let i = 0; i < spectral_data.length; i++){
+      for (let i = 0; i < spectral_data.length; i++) {
         this.csvFileData[i] = [timeString, spectral_data[i].toFixed(0)];
       }
       //define the heading for each row of the data

@@ -55,8 +55,8 @@ export default {
     },
     siteIndex: {
       type: Number,
-      required: true 
-    }
+      required: true,
+    },
   },
   data() {
     return {
@@ -90,7 +90,6 @@ export default {
       shutdown_status_sub: null,
     };
   },
-
 
   created: function () {
     this.temp_sub = new ROSLIB.Topic({

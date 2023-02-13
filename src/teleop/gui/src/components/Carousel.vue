@@ -1,88 +1,94 @@
 <template>
-<div>
+  <div>
     <h3>Carousel Data</h3>
     <div class="box1">
-        <Checkbox ref="open-loop" :name="'Open Loop'" @toggle="openLoop = !openLoop" />
-        <div class="controls">
-            <div v-if="!openLoop">
-                <label for="position">Rotate carousel to position: </label>
-                <input type="radio" v-model="site" value="A">A
-                <input type="radio" v-model="site" value="B">B
-                <input type="radio" v-model="site" value="C">C
-            </div>
-            <div v-else>
-                <button @pointerdown="velocity = -1*velocityScaleDecimal" @pointerup="velocity = 0" @mouseout="velocity = 0">Reverse</button>
-                <button @pointerdown="velocity = velocityScaleDecimal" @pointerup="velocity = 0" @mouseout="velocity = 0">Forward</button>
-                <input id="myRange" v-model="velocityScale" type="range" min="0" max="100">Velocity Scaling: {{velocityScale}}%
-            </div>
+      <Checkbox
+        ref="open-loop"
+        :name="'Open Loop'"
+        @toggle="openLoop = !openLoop"
+      />
+      <div class="controls">
+        <div v-if="!openLoop">
+          <label for="position">Rotate carousel to position: </label>
+          <input v-model="site" type="radio" value="A" />A
+          <input v-model="site" type="radio" value="B" />B
+          <input v-model="site" type="radio" value="C" />C
         </div>
+        <div v-else>
+          <!-- Up and down arrows keys -->
+          <p>Control with up and down arrow keys</p>
+          <OpenLoopControl
+            :forwards-key="38"
+            :backwards-key="40"
+            @velocity="velocity = $event"
+          ></OpenLoopControl>
+        </div>
+      </div>
     </div>
-</div>
+  </div>
 </template>
 
 <script>
-import ROSLIB from 'roslib'
-import Checkbox from './Checkbox.vue'
-
-let interval
+import ROSLIB from "roslib";
+import Checkbox from "./Checkbox.vue";
+import OpenLoopControl from "./OpenLoopControl.vue";
 
 export default {
+  components: {
+    Checkbox,
+    OpenLoopControl,
+  },
+  data() {
+    return {
+      openLoop: false,
+      velocity: 0,
+      site: "A",
 
-    components: {
-        Checkbox
-    },
-    data() {
-        return {
-            openLoop: false,
-            velocity: 0,
-            site: "A",
-            velocityScale: 100,
+      carousel_pub: null,
+    };
+  },
 
-            carousel_pub: null
-        }
-    },
-
-    computed: {
-        messageObject: function () {
-            const msg = {
-                open_loop: this.openLoop,
-                vel: this.velocity,
-                site: this.site
-            }
-            return new ROSLIB.Message(msg)
-        },
-
-        velocityScaleDecimal: function () {
-            return this.velocityScale / 100
-        }
+  computed: {
+    messageObject: function () {
+      const msg = {
+        open_loop: this.openLoop,
+        vel: this.velocity,
+        site: this.site,
+      };
+      return new ROSLIB.Message(msg);
     },
 
-    watch: {
-        messageObject: function (msg) {
-            this.carousel_pub.publish(msg)
-        }
+    velocityScaleDecimal: function () {
+      return this.velocityScale / 100;
     },
+  },
 
-    created: function () {
-        this.carousel_pub = new ROSLIB.Topic({
-            ros: this.$ros,
-            name: 'carousel_cmd',
-            messageType: 'mrover/Carousel'
-        });
-        this.carousel_pub.publish(this.messageObject)
-    }
-}
+  watch: {
+    messageObject: function (msg) {
+      this.carousel_pub.publish(msg);
+    },
+  },
+
+  created: function () {
+    this.carousel_pub = new ROSLIB.Topic({
+      ros: this.$ros,
+      name: "carousel_cmd",
+      messageType: "mrover/Carousel",
+    });
+    this.carousel_pub.publish(this.messageObject);
+  },
+};
 </script>
 
 <style scoped>
 .controls {
-    display: inline-block;
-    margin-top: 10px;
+  display: inline-block;
+  margin-top: 10px;
 }
 
 .box1 {
-    text-align: left;
-    vertical-align: top;
-    display: inline-block;
+  text-align: left;
+  vertical-align: top;
+  display: inline-block;
 }
 </style>

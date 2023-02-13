@@ -91,7 +91,7 @@ export default {
     Cache,
     Chlorophyll,
     Amino,
-    Cameras
+    Cameras,
   },
   data() {
     return {
@@ -105,21 +105,21 @@ export default {
       //Data Subscribers
       spectral_sub: null,
 
-      primary: false
+      primary: false,
     };
   },
   computed: {
     siteIndex: function () {
       // Return the indice for the specified site
       return this.siteIndexMapping[this.site];
-    }
+    },
   },
 
   created: function () {
     this.spectral_sub = new ROSLIB.Topic({
       ros: this.$ros,
       name: "science/spectral",
-      messageType: "mrover/Spectral"
+      messageType: "mrover/Spectral",
     });
 
     this.spectral_sub.subscribe((msg) => {
@@ -130,7 +130,7 @@ export default {
     // Get carousel site index mappings
     let mapping = new ROSLIB.Param({
       ros: this.$ros,
-      name: "teleop/carousel_site_mappings"
+      name: "teleop/carousel_site_mappings",
     });
 
     mapping.get((param) => {
@@ -141,8 +141,12 @@ export default {
   methods: {
     onSiteChange(value) {
       this.site = value;
-    }
-  }
+    },
+
+    velocityTest(event) {
+      console.log(event);
+    },
+  },
 };
 </script>
 
