@@ -42,6 +42,8 @@
 // ROS
 #include <geometry_msgs/Twist.h>
 #include <nav_msgs/Odometry.h>
+#include <nav_msgs/Path.h>
+#include <geometry_msgs/PoseStamped.h>
 #include <ros/ros.h>
 #include <tf/transform_broadcaster.h>
 #include <tf/transform_listener.h>
@@ -70,6 +72,7 @@ namespace gazebo {
 
     private:
         void publishOdometry();
+        void publishPath();
 
         void getPositionCommand();
 
@@ -85,16 +88,24 @@ namespace gazebo {
         // Simulation time of the last update
         common::Time mPreviousUpdateTime;
 
+        // Sim time of last time path was updated and published
+        common::Time mPreviousPathUpdateTime;
+        
+        // Sim time between path updates
+        common::Time mPathUpdatePeriod;
+
         bool mEnableMotors{};
         std::array<double, 3> mOdomPose{};
         std::array<double, 3> mOdomVelocity{};
 
         // ROS STUFF
         std::optional<ros::NodeHandle> mNode;
-        ros::Publisher mPublisher;
+        ros::Publisher mOdomPublisher;
+        ros::Publisher mPathPublisher;
         ros::Subscriber mSubscriber;
         std::optional<tf::TransformBroadcaster> mTfBroadcaster{};
         nav_msgs::Odometry mOdometry;
+        nav_msgs::Path mPath;
         std::string mTfPrefix;
 
         std::mutex mLock;

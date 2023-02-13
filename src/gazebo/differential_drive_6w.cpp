@@ -158,7 +158,11 @@ namespace gazebo {
                 [this](geometry_msgs::Twist::ConstPtr const& velocityCommand) { commandVelocityCallback(velocityCommand); },
                 ros::VoidPtr(), &mVelocityCommandQueue);
         mSubscriber = mNode->subscribe(so);
-        mPublisher = mNode->advertise<nav_msgs::Odometry>("ground_truth", 1);
+        mOdomPublisher = mNode->advertise<nav_msgs::Odometry>("ground_truth", 1);
+        mPathPublisher = mNode->advertise<nav_msgs::Path>("ground_truth_path", 1);
+        
+        // update path at 4 Hz
+        mPathUpdatePeriod = common::Time(0, common::Time::SecToNano(0.25));
 
         // Spinner runs in the background until the node dies
         // We want the callback to update as soon as possible so do this instead of callAvailable on the queue
@@ -181,6 +185,7 @@ namespace gazebo {
         mWheelSpeeds = {};
 
         mPreviousUpdateTime = mWorld->SimTime();
+        mPreviousPathUpdateTime = mPreviousUpdateTime;
 
         mForwardVelocity = 0;
         mPitch = 0;
@@ -246,6 +251,11 @@ namespace gazebo {
         }
 
         publishOdometry();
+
+        if (mWorld->SimTime() - mPreviousPathUpdateTime >= mPathUpdatePeriod) {
+            mPreviousPathUpdateTime = mWorld->SimTime();
+            publishPath();
+        }
     }
 
     void DiffDrivePlugin6W::getPositionCommand() {
@@ -306,7 +316,18 @@ namespace gazebo {
         mOdometry.child_frame_id = mRoverFrameName;
         mOdometry.header.stamp = currentTime;
 
-        mPublisher.publish(mOdometry);
+        mOdomPublisher.publish(mOdometry);
+    }
+
+    // Add current odom reading to path and then publish path
+    void DiffDrivePlugin6W::publishPath() {
+        geometry_msgs::PoseStamped pose_msg;
+        pose_msg.header = mOdometry.header;
+        pose_msg.pose = mOdometry.pose.pose;
+        mPath.poses.push_back(pose_msg);
+        mPath.header = mOdometry.header;
+
+        mPathPublisher.publish(mPath);
     }
 
     GZ_REGISTER_MODEL_PLUGIN(DiffDrivePlugin6W)
