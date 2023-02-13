@@ -160,7 +160,7 @@ namespace gazebo {
         mSubscriber = mNode->subscribe(so);
         mOdomPublisher = mNode->advertise<nav_msgs::Odometry>("ground_truth", 1);
         mPathPublisher = mNode->advertise<nav_msgs::Path>("ground_truth_path", 1);
-        
+
         // update path at 4 Hz
         mPathUpdatePeriod = common::Time(0, common::Time::SecToNano(0.25));
 

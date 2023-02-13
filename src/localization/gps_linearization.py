@@ -21,7 +21,7 @@ class GPSLinearization:
     pose: SE3
     covariance: np.ndarray
     pose_publisher: rospy.Publisher
-    
+
     # TF infrastructure
     tf_broadcaster: tf2_ros.TransformBroadcaster
     tf_buffer: tf2_ros.Buffer
@@ -40,8 +40,9 @@ class GPSLinearization:
     rover_frame: str
 
     def __init__(self):
-        # init to zero pose
+        # init to zero pose and covariance
         self.pose = SE3()
+        self.covariance = np.zeros((6, 6))
 
         # read required parameters, if they don't exist an error will be thrown
         self.ref_lat = rospy.get_param("gps_linearization/reference_point_latitude")
@@ -64,11 +65,10 @@ class GPSLinearization:
             self.tf_buffer = tf2_ros.Buffer()
             self.tf_listener = tf2_ros.TransformListener(self.tf_buffer)
 
-
     def publish_pose(self):
         """
         Publishes the pose of the rover relative to the map frame, either to the TF tree or as
-        a PoseWithCovarianceStamped message. The pose will be published either as a direct 
+        a PoseWithCovarianceStamped message. The pose will be published either as a direct
         map->base_link transform, or an indirect map-odom transform if the odom frame is in use.
         See the wiki for more details:
         https://github.com/umrover/mrover-ros/wiki/Localization#guide-to-localization-frames
@@ -93,24 +93,22 @@ class GPSLinearization:
                 # publish directly as map->base_link
                 pose_out = rover_in_map
                 child_frame = self.rover_frame
-            
-            pose_out.publish_to_tf_tree(
-                self.tf_broadcaster, parent_frame=self.world_frame, child_frame=child_frame
-            )
+
+            pose_out.publish_to_tf_tree(self.tf_broadcaster, parent_frame=self.world_frame, child_frame=child_frame)
         else:
-                pose_msg = PoseWithCovarianceStamped(
-                    header=Header(stamp=rospy.Time.now(), frame_id=self.world_frame),
-                    pose=PoseWithCovariance(
-                        pose=Pose(
-                            position=Point(*rover_in_map.position),
-                            orientation=Quaternion(*rover_in_map.rotation.quaternion)
-                        ),
-                        # TODO: figure out covariance: either feed forward from GPS or make system for configuring them
-                        covariance=np.diag(np.ones(6)*0.1).flatten().tolist()
-                    )
-                )
-                self.pose_publisher.publish(pose_msg)
-            
+            pose_msg = PoseWithCovarianceStamped(
+                header=Header(stamp=rospy.Time.now(), frame_id=self.world_frame),
+                pose=PoseWithCovariance(
+                    pose=Pose(
+                        position=Point(*rover_in_map.position),
+                        orientation=Quaternion(*rover_in_map.rotation.quaternion),
+                    ),
+                    # TODO: figure out covariance: either feed forward from GPS or make system for configuring them
+                    # covariance=np.diag(np.ones(6)*0.1).flatten().tolist()
+                    covariance=self.covariance.flatten().tolist(),
+                ),
+            )
+            self.pose_publisher.publish(pose_msg)
 
     def gps_callback(self, msg: NavSatFix):
         """
@@ -129,7 +127,9 @@ class GPSLinearization:
         # ignore Z
         cartesian[2] = 0
         # TODO: locks?
-        # self.covariance = msg.position_covariance
+        pos_covariance = np.array([msg.position_covariance]).reshape(3, 3)
+        self.covariance[:3, :3] = pos_covariance
+
         self.pose = SE3(position=cartesian, rotation=self.pose.rotation)
         self.publish_pose()
 
@@ -140,6 +140,10 @@ class GPSLinearization:
 
         :param msg: The Imu message containing IMU data that was just received
         """
+
+        imu_covariance = np.array([msg.imu.orientation_covariance]).reshape(3, 3)
+        self.covariance[3:, 3:] = imu_covariance
+
         # convert ROS msg quaternion to numpy array
         imu_quat = np.array(
             [msg.imu.orientation.x, msg.imu.orientation.y, msg.imu.orientation.z, msg.imu.orientation.w]
@@ -148,6 +152,7 @@ class GPSLinearization:
         # normalize to avoid rounding errors
         imu_quat = imu_quat / np.linalg.norm(imu_quat)
 
+        # TODO: move this to within IMU driver, and do the same thing to the gyro and accel and mag
         # get a quaternion to rotate about the Z axis by 90 degrees
         offset_quat = quaternion_about_axis(np.pi / 2, np.array([0, 0, 1]))
 

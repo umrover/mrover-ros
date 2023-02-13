@@ -40,10 +40,10 @@
 #include <gazebo/common/Time.hh>
 
 // ROS
+#include <geometry_msgs/PoseStamped.h>
 #include <geometry_msgs/Twist.h>
 #include <nav_msgs/Odometry.h>
 #include <nav_msgs/Path.h>
-#include <geometry_msgs/PoseStamped.h>
 #include <ros/ros.h>
 #include <tf/transform_broadcaster.h>
 #include <tf/transform_listener.h>
@@ -90,7 +90,7 @@ namespace gazebo {
 
         // Sim time of last time path was updated and published
         common::Time mPreviousPathUpdateTime;
-        
+
         // Sim time between path updates
         common::Time mPathUpdatePeriod;
 
