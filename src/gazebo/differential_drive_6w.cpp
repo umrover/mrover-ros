@@ -143,13 +143,22 @@ namespace gazebo {
         mTfPrefix = tf::getPrefixParam(*mNode);
         mTfBroadcaster = tf::TransformBroadcaster();
 
+        if (!mNode->getParam("world_frame", mWorldFrameName)) {
+            ROS_WARN("No world frame provided, defaulting to \"map\"");
+            mWorldFrameName = "map";
+        }
+        if (!mNode->getParam("rover_frame", mRoverFrameName)) {
+            ROS_WARN("No rover frame provided, defaulting to \"base_link\"");
+            mWorldFrameName = "base_link";
+        }
+
         // ROS: Subscribe to the velocity command topic (usually "cmd_vel")
         ros::SubscribeOptions so = ros::SubscribeOptions::create<geometry_msgs::Twist>(
                 mVelocityCommandTopic, 1,
                 [this](geometry_msgs::Twist::ConstPtr const& velocityCommand) { commandVelocityCallback(velocityCommand); },
                 ros::VoidPtr(), &mVelocityCommandQueue);
         mSubscriber = mNode->subscribe(so);
-        mPublisher = mNode->advertise<nav_msgs::Odometry>("odom", 1);
+        mPublisher = mNode->advertise<nav_msgs::Odometry>("ground_truth", 1);
 
         // Spinner runs in the background until the node dies
         // We want the callback to update as soon as possible so do this instead of callAvailable on the queue
@@ -293,8 +302,8 @@ namespace gazebo {
         mOdometry.twist.twist.linear.y = velocity.Y();
         mOdometry.twist.twist.angular.z = angularVelocity.Z();
 
-        mOdometry.header.frame_id = tf::resolve(mTfPrefix, "odom");
-        mOdometry.child_frame_id = "base_link";
+        mOdometry.header.frame_id = tf::resolve(mTfPrefix, mWorldFrameName);
+        mOdometry.child_frame_id = mRoverFrameName;
         mOdometry.header.stamp = currentTime;
 
         mPublisher.publish(mOdometry);

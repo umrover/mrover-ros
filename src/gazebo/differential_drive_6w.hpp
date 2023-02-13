@@ -101,6 +101,8 @@ namespace gazebo {
 
         std::string mNamespace;
         std::string mVelocityCommandTopic;
+        std::string mWorldFrameName;
+        std::string mRoverFrameName;
         std::string mBodyLinkName;
 
         // Custom Callback Queue

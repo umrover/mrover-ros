@@ -51,9 +51,9 @@ class GPSLinearization:
         self.publish_tf = rospy.get_param("gps_linearization/publish_tf")
         self.use_odom = rospy.get_param("gps_linearization/use_odom_frame")
 
-        self.world_frame = rospy.get_param("gps_linearization/world_frame")
-        self.odom_frame = rospy.get_param("gps_linearization/odom_frame")
-        self.rover_frame = rospy.get_param("gps_linearization/rover_frame")
+        self.world_frame = rospy.get_param("world_frame")
+        self.odom_frame = rospy.get_param("odom_frame")
+        self.rover_frame = rospy.get_param("rover_frame")
 
         rospy.Subscriber("gps/fix", NavSatFix, self.gps_callback)
         rospy.Subscriber("imu/data", ImuAndMag, self.imu_callback)

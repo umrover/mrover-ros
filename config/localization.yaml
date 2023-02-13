@@ -1,3 +1,7 @@
+world_frame: "map"
+odom_frame: "odom"
+rover_frame: "base_link"
+
 gps_linearization:
   reference_point_latitude: 42.2
   reference_point_longitude: -83.7
@@ -5,7 +9,3 @@ gps_linearization:
 
   use_odom_frame: false
   publish_tf: false
-
-  world_frame: "map"
-  odom_frame: "odom"
-  rover_frame: "base_link"
