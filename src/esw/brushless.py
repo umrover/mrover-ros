@@ -15,7 +15,7 @@ import io
 
 
 class CommandData:
-    MAX_TORQUE = 0.39
+    MAX_TORQUE = 0.3
     POSITION_FOR_VELOCITY_CONTROL = math.nan
     VELOCITY_LIMIT_REV_S = 80  # DO NOT CHANGE THIS HAPHAZARDLY. DERIVED FROM TESTING.
     ZERO_VELOCITY = 0.0
@@ -183,7 +183,7 @@ class MoteusBridge:
                     position=command.position,
                     velocity=command.velocity,
                     velocity_limit=CommandData.VELOCITY_LIMIT_REV_S,
-                    maximum_torque=command.torque,
+                    maximum_torque=command.torque if (self._can_id != 8 and self._can_id != 7) else 0.13,
                     watchdog_timeout=MoteusBridge.ROVER_NODE_TO_MOTEUS_WATCHDOG_TIMEOUT_S,
                     query=True,
                 ),
