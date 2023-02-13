@@ -157,9 +157,9 @@ brushless:
         multiplier: -1
       joint_d:
         id: 7
-        max_rps: 70
+        max_rps: 80
         multiplier: 1
       joint_e:
         id: 8
-        max_rps: 50
-        multiplier: 1
+        max_rps: 70
+        multiplier: -1
