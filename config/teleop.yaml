@@ -74,3 +74,8 @@ teleop:
     A: 0
     B: 1
     C: 2
+
+  echo_presets:
+    blah: ["/tf", "/tf_static", "/rosout"]
+    foo: ["/rosout", "/tf"]
+    bar: ["/tf_static", "/rosout", "/tf"]
