@@ -6,7 +6,8 @@ from pynput import keyboard
 
 def stream_manager(stream_process_list, id):
     print("\nRestarting receiver listening on port 500" + str(id))
-    stream_process_list[id].kill()
+    if stream_process_list[id]:
+        stream_process_list[id].kill()
     stream_process_list[id] = Process(target=receive, args=(5000+id, True))
     stream_process_list[id].start()
 

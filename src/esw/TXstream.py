@@ -9,15 +9,19 @@ lk = ''
 def stream_manager(stream_process_list, id, cap_set):
     cap_args = [
         #[bps, width, height, fps]
-        [800000, 854, 480, 15],    # low
-        [1800000, 1280, 720, 15],  # medium
-        [4000000, 1280, 720, 30]   # high
+        
+        [173000, 320, 240, 15],   # bottom
+        [691000, 640, 480, 15],   # low
+        [1555000, 960, 720, 15],  # medium
+        [2074000, 1280, 720, 15], # high
+        [4147000, 1280, 720, 30]  # full
     ]
 
     if cap_set:
         print("\nChanging /dev/video" + str(id) +
               " capture settings to " + str(cap_set))
-        stream_process_list[id].kill()
+        if stream_process_list[id]:
+            stream_process_list[id].kill()
         stream_process_list[id] = Process(target=send, args=(
             id, '10.0.0.7', 5000+id, cap_args[cap_set-1][0], cap_args[cap_set-1][1], cap_args[cap_set-1][2], cap_args[cap_set-1][3], True))
         stream_process_list[id].start()
@@ -31,7 +35,7 @@ def send(device=0, host='10.0.0.7', port=5001, bitrate=4000000, width=1280, heig
 
     # Construct video capture pipeline string
     capstr = 'v4l2src device=/dev/video' + str(device) + ' do-timestamp=true io-mode=2 ! \
-    image/jpeg, width=1280, height=720 ! \
+    image/jpeg, width='+str(width)+', height='+str(height)+', framerate='+str(fps)+'/1 ! \
     jpegdec ! \
     videorate ! \
     video/x-raw,\
@@ -106,30 +110,36 @@ def on_press(key):  # keyboard keypress event handler
     if lk in numlist:
         if k in ['q']:
             stream_manager(s, int(lk), 0)
-        if k in ['l']:
+        if k in ['b']:
             stream_manager(s, int(lk), 1)
-        if k in ['m']:
+        if k in ['l']:
             stream_manager(s, int(lk), 2)
-        if k in ['h']:
+        if k in ['m']:
             stream_manager(s, int(lk), 3)
+        if k in ['h']:
+            stream_manager(s, int(lk), 4)
+        if k in ['f']:
+            stream_manager(s, int(lk), 5)
     lk = k
 
 
 if __name__ == '__main__':
     s = [0] * 10
     s[0] = Process(target=send, args=(
-        0, '10.0.0.7', 5000, 4000000, 1280, 720, 30, True))
+        0, '10.0.0.7', 5000, 4147000, 1280, 720, 30, True))
     s[2] = Process(target=send, args=(
-        2, '10.0.0.7', 5002, 4000000, 1280, 720, 30, True))
+        2, '10.0.0.7', 5002, 4147000, 1280, 720, 30, True))
     cthread = keyboard.Listener(on_press=on_press, args=(s))
     s[0].start()
     s[2].start()
     cthread.start()
     print("[KEYBOARD CONTROL INSTRUCTIONS]\n\
     Press a number to control dev/video[number]\n\
+    Press B for worst capture setting\n\
     Press L for low capture settings\n\
     Press M for medium capture settings\n\
     Press H for high capture settings\n\
+    Press F for best capture setting \n\
     Press Q to close selected stream\n\n")
     for i in range(len(s)):
         if s[i]:
