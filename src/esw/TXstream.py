@@ -4,7 +4,7 @@ import numpy as np
 import cv2
 from multiprocessing import Process
 from pynput import keyboard
-
+lk = ''
 
 def stream_manager(stream_process_list, id, cap_set):
     cap_args = [
