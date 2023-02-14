@@ -44,9 +44,9 @@
             </geometry>
         </collision>
         <collision>
-            <origin rpy="0 0 0" xyz="3.6467207 3.6590503 -0.8456994" />
+            <origin rpy="0 0 0" xyz="3.6467207 3.6590503 -1.7206994" />
             <geometry>
-                <cylinder length="3.6913988" radius="1.75" />
+                <cylinder length="1.9413988" radius="1.75" />
             </geometry>
         </collision>
         <inertial>
@@ -98,7 +98,7 @@
         <collision>
             <origin rpy="0.48 0 0" xyz="0 9 5" />
             <geometry>
-                <box size="3 24 3" />
+                <box size="2 20 2" />
             </geometry>
         </collision>
         <collision>

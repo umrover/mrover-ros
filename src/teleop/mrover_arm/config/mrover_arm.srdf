@@ -42,7 +42,6 @@
     <disable_collisions link1="aTob" link2="cTod" reason="Never"/>
     <disable_collisions link1="aTob" link2="chassisToa" reason="Adjacent"/>
     <disable_collisions link1="aTob" link2="dToe" reason="Never"/>
-    <disable_collisions link1="bToc" link2="base_link" reason="Never"/>
     <disable_collisions link1="bToc" link2="dToe" reason="Never"/>
     <disable_collisions link1="bToc" link2="cTod" reason="Adjacent"/>
     <disable_collisions link1="base_link" link2="chassisToa" reason="Adjacent"/>
