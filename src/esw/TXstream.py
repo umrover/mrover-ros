@@ -12,9 +12,9 @@ def stream_manager(stream_process_list, id, cap_set):
         
         [173000, 320, 240, 15],   # bottom
         [691000, 640, 480, 15],   # low
-        [1555000, 960, 720, 15],  # medium
-        [2074000, 1280, 720, 15], # high
-        [4147000, 1280, 720, 30]  # full
+        [2000000, 960, 720, 15],  # medium
+        [3000000, 1280, 720, 15], # high
+        [4200000, 1280, 720, 30]  # full
     ]
 
     if cap_set:
@@ -59,9 +59,6 @@ def send(device=0, host='10.0.0.7', port=5001, bitrate=4000000, width=1280, heig
     if isColored:
         txstr += ' video/x-raw, format=BGRx ! '
     txstr += 'nvvidconv ! \
-    video/x-raw(memory:NVMM), \
-    width='+str(width)+', \
-    height='+str(height)+' ! \
     nvv4l2h264enc \
     bitrate='+str(bitrate)+' ! \
     h264parse ! \
@@ -71,7 +68,7 @@ def send(device=0, host='10.0.0.7', port=5001, bitrate=4000000, width=1280, heig
     # openCV stream transmit pipeline with RTP sink
     fourcc = cv2.VideoWriter_fourcc('H', '2', '6', '4')
     out_send = cv2.VideoWriter(
-        txstr, cv2.CAP_GSTREAMER, fourcc, 60, (1280, 720), isColored)
+        txstr, cv2.CAP_GSTREAMER, fourcc, 60, (width, height), isColored)
 
     # TODO: look into why changing resolution and fps on VideoWriter doesn't seem to work
     # TODO: try different codecs on VideoWriter
@@ -126,9 +123,9 @@ def on_press(key):  # keyboard keypress event handler
 if __name__ == '__main__':
     s = [0] * 10
     s[0] = Process(target=send, args=(
-        0, '10.0.0.7', 5000, 4147000, 1280, 720, 30, True))
+        0, '10.0.0.7', 5000, 4200000, 1280, 720, 30, True))
     s[2] = Process(target=send, args=(
-        2, '10.0.0.7', 5002, 4147000, 1280, 720, 30, True))
+        2, '10.0.0.7', 5002, 4200000, 1280, 720, 30, True))
     cthread = keyboard.Listener(on_press=on_press, args=(s))
     s[0].start()
     s[2].start()
