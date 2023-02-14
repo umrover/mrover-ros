@@ -183,7 +183,7 @@ class MoteusBridge:
                     position=command.position,
                     velocity=command.velocity,
                     velocity_limit=CommandData.VELOCITY_LIMIT_REV_S,
-                    maximum_torque=command.torque if (self._can_id != 8 and self._can_id != 7) else 0.13,
+                    maximum_torque=command.torque,
                     watchdog_timeout=MoteusBridge.ROVER_NODE_TO_MOTEUS_WATCHDOG_TIMEOUT_S,
                     query=True,
                 ),
@@ -402,12 +402,12 @@ class MotorsManager(ABC):
 
         self._motors_status_publisher.publish(motors_status)
 
-    def update_bridge_velocity(self, motor_name: str, velocity: float) -> None:
+    def update_bridge_velocity(self, motor_name: str, velocity: float, torque: float) -> None:
         """
         Updates the command of the specified motor bridge.
         """
         if self._motor_bridges[motor_name].moteus_state.state == MoteusState.ARMED_STATE:
-            self._motor_bridges[motor_name].set_command(CommandData(velocity=velocity))
+            self._motor_bridges[motor_name].set_command(CommandData(velocity=velocity, torque=torque))
 
 
 class ArmManager(MotorsManager):
@@ -415,8 +415,10 @@ class ArmManager(MotorsManager):
         super().__init__(arm_controller_info_by_name, transport)
 
         self._max_rps_by_name = {}
+        self._torque_limit_by_name = {}
         for name, info in arm_controller_info_by_name.items():
             self._max_rps_by_name[name] = info["max_rps"]
+            self._torque_limit_by_name[name] = info["max_torque"]
 
         rospy.Subscriber("ra_cmd", JointState, self._process_ra_cmd)
 
@@ -449,7 +451,7 @@ class ArmManager(MotorsManager):
                     velocity = max(-1, min(1, velocity))
 
                 velocity *= min(self._max_rps_by_name[name], CommandData.VELOCITY_LIMIT_REV_S)
-                self.update_bridge_velocity(name, velocity)
+                self.update_bridge_velocity(name, velocity, self._torque_limit_by_name[name])
 
         self._last_updated_time_s = t.time()
 
@@ -472,6 +474,7 @@ class DriveManager(MotorsManager):
         assert _max_speed_m_s > 0, "rover/max_speed config must be greater than 0"
 
         self._max_motor_speed_rev_s = _max_speed_m_s * self.WHEELS_M_S_TO_MOTOR_REV_S
+        self._max_torque = rospy.get_param("brushless/drive/max_torque")
         self._last_updated_time_s = t.time()
 
         rospy.Subscriber("cmd_vel", Twist, self._process_twist_message)
@@ -526,7 +529,7 @@ class DriveManager(MotorsManager):
         # Update bridges.
         for name in self._motor_bridges.keys():
             velocity = drive_command_velocities[name] * self._multipliers[name]
-            self.update_bridge_velocity(name, velocity)
+            self.update_bridge_velocity(name, velocity, self._max_torque)
 
         self._last_updated_time_s = t.time()
 

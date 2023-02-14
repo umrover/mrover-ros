@@ -130,6 +130,7 @@ wheel:
 brushless:
   using_pi3_hat: true
   drive:
+    max_torque: 0.3
     controllers:
       FrontLeft:
         id: 3
@@ -154,12 +155,15 @@ brushless:
       joint_c:
         id: 6
         max_rps: 50
+        max_torque: 0.3
         multiplier: -1
       joint_d:
         id: 7
         max_rps: 80
+        max_torque: 0.13
         multiplier: 1
       joint_e:
         id: 8
         max_rps: 70
+        max_torque: 0.13
         multiplier: -1
