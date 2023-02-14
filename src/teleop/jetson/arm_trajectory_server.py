@@ -5,6 +5,7 @@ import time
 import actionlib
 import _thread
 from collections import deque
+from typing import Deque
 
 from control_msgs.msg import FollowJointTrajectoryGoal
 from control_msgs.msg import FollowJointTrajectoryResult
@@ -13,6 +14,7 @@ from control_msgs.msg import FollowJointTrajectoryAction
 from trajectory_msgs.msg import JointTrajectory
 from std_msgs.msg import Float64MultiArray
 from sensor_msgs.msg import JointState
+from trajectory_msgs.msg import JointTrajectoryPoint
 
 conf_joint_names = rospy.get_param("teleop/ra_joints/")
 lock = _thread.allocate_lock()
@@ -70,7 +72,7 @@ class MoveItAction(object):
         self._as = actionlib.SimpleActionServer(
             self._action_name, FollowJointTrajectoryAction, execute_cb=self.execute_cb, auto_start=False
         )
-        self.trajectory_point_queue = deque()
+        self.trajectory_point_queue: Deque[JointTrajectoryPoint] = deque()
         self.desired_joint_state = JointState(name=conf_joint_names)
         # Publisher for gazebo position controller
         self.gazebo_pub = rospy.Publisher("gazebo_arm_controller/command", Float64MultiArray, queue_size=100)
