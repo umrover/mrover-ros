@@ -301,6 +301,8 @@ class StreamingManager:
                 self._video_devices[requested_device].create_capture()
                 self._video_devices[requested_device].process_by_endpoint[endpoint] = Process(
                     target=self._video_devices[requested_device].send_capture, args=(endpoint,))
+                self._video_devices[requested_device].process_by_endpoint[endpoint].start(
+                )
                 currently_is_video_source = self._video_devices[requested_device].is_streaming(
                 )
                 self._services[service_index][stream].device = requested_device if currently_is_video_source else -1
