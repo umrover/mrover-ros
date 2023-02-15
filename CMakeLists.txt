@@ -31,10 +31,10 @@ set(MROVER_MESSAGE_FILES
         Diagnostic.msg
         DriveStatus.msg
         EnableAuton.msg
-        GimbalCmd.msg
         GPSWaypoint.msg
         HeaterData.msg
         ImuAndMag.msg
+        MastGimbal.msg
         MoteusState.msg
         MotorsStatus.msg
         ScienceTemperature.msg
