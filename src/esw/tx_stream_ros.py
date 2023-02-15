@@ -4,7 +4,7 @@ from mrover.msg import CameraCmd
 from typing import List, Dict, Tuple
 import cv2
 from multiprocessing import Process
-
+import time
 import rospy
 from mrover.srv import (
     ChangeCameras,
@@ -25,6 +25,7 @@ class VideoDevice:
 
     video_source: cv2.VideoCapture
     process_by_endpoint: Dict[str, Process]
+    alive: bool
 
     def __init__(self, device: int):
         self.resolution = []
@@ -32,6 +33,7 @@ class VideoDevice:
         self.video_source = None
         self.process_by_endpoint = {}
         self.isColored = True
+        self.alive = False
 
     def set_caps(self, args: List) -> None:
         self.bitrate = int(args[0])
@@ -41,7 +43,7 @@ class VideoDevice:
 
     def create_capture(self) -> None:
         """
-        Construct video capture pipeline string and captures video from v4l2 hardware
+        Constructs video capture source-to-sink pipeline string and captures video from v4l2 hardware
         """
         if not self.video_source == None:  # exit if capture has already been created
             return
@@ -61,11 +63,10 @@ class VideoDevice:
 
         self.video_source = cv2.VideoCapture(capstr, cv2.CAP_GSTREAMER)
 
-    def send_capture(self, endpoint: str):
+    def send_capture(self, endpoint: str) -> None:
         """
-        Constructs stream transmit pipeline string and sends video capture to destination
-        :param host: Destination device IP address
-        :param port: The port to send/listen to RTP packets
+        Constructs video stream transmit source-to-sink pipeline string and sends video capture to destination
+        :param endpoint: the endpoint (e.g. 10.0.0.7:5000)
         """
         host = endpoint[0:len(endpoint)-5]
         port = int(endpoint[len(endpoint)-4:len(endpoint)])
@@ -96,7 +97,9 @@ class VideoDevice:
             exit(0)
 
         # Transmit loop
-        while not self.shutdown:
+        while True:
+            # TODO: When camera disconnects, this loop gets stuck. Implement watchdog thread?
+            self.alive = True
             ret, frame = self.video_source.read()
             if not ret:
                 rospy.logerr('empty frame')
@@ -120,6 +123,20 @@ class VideoDevice:
         if len(self.process_by_endpoint) == 0:
             self.video_source = None
 
+    def watchdog(self):
+        # poll the target resource
+        while True:
+            # block for a moment
+            time.sleep(2)
+            # check if camera is disconnected
+            if not self.alive:
+                rospy.logerr('\nWARNING: unable to open video source for /dev/video' +
+                             str(self.device)+'\n')
+                for endpoint in self.process_by_endpoint.keys():
+                    self.remove_endpoint(endpoint)
+            # reset
+            self.alive = False
+
     def is_streaming(self) -> bool:
         """
         Returns if streaming or not
@@ -138,6 +155,7 @@ class StreamingManager:
     _video_devices: List[VideoDevice]
     _active_devices: int
     _max_devices: int
+    _watchdog_list: List
 
     def __init__(self):
         self._max_devices = 4
@@ -152,6 +170,7 @@ class StreamingManager:
         for i in range(rospy.get_param("cameras/max_video_device_id_number")):
             skip_every_other_device = rospy.get_param(
                 "cameras/skip_every_other_device")
+            self._watchdog_list.append(0)
             if skip_every_other_device:
                 self._video_devices.append(VideoDevice(i * 2))
             else:
@@ -217,6 +236,8 @@ class StreamingManager:
             endpoint = list(
                 self._video_devices[device].process_by_endpoint.keys())[0]
             self._video_devices[device].remove_endpoint(endpoint)
+            self._watchdog_list[device].kill()
+            self._watchdog_list[device] = 0
             service, stream = self._service_streams_by_endpoints[endpoint]
             self._services[service][stream].device = -1
         assert self._video_devices[device].video_source is None, "The video source should be None by now"
@@ -251,6 +272,8 @@ class StreamingManager:
                 # this means that there was previously a device, but now we don't want the device to be streamed
                 assert self._video_devices[previous_device].is_streaming()
                 self._video_devices[previous_device].remove_endpoint(endpoint)
+                self._watchdog_list[requested_device].kill()
+                self._watchdog_list[requested_device] = 0
                 self._services[service_index][stream].device = -1
                 currently_is_no_video_source = not self._video_devices[previous_device].is_streaming(
                 )
@@ -302,8 +325,11 @@ class StreamingManager:
                 self._video_devices[requested_device].create_capture()
                 self._video_devices[requested_device].process_by_endpoint[endpoint] = Process(
                     target=self._video_devices[requested_device].send_capture, args=(endpoint,))
+                self._watchdog_list[requested_device] = Process(
+                    target=self._video_devices[requested_device].watchdog)
                 self._video_devices[requested_device].process_by_endpoint[endpoint].start(
                 )
+                self._watchdog_list[requested_device].start()
                 currently_is_video_source = self._video_devices[requested_device].is_streaming(
                 )
                 self._services[service_index][stream].device = requested_device if currently_is_video_source else -1
