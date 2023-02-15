@@ -5,7 +5,6 @@ from typing import List, Dict, Tuple
 import cv2
 from multiprocessing import Process
 import time
-import rospy
 from mrover.srv import (
     ChangeCameras,
     ChangeCamerasRequest,
@@ -74,6 +73,7 @@ class VideoDevice:
         capstr += "appsink"
 
         self.video_source = cv2.VideoCapture(capstr, cv2.CAP_GSTREAMER)
+        #rospy.logerr(capstr)
 
     def send_capture(self, endpoint: str) -> None:
         """
@@ -105,7 +105,8 @@ class VideoDevice:
             + " port="
             + str(port)
         )
-
+        self.alive = True
+        #rospy.logerr(txstr)
         out_send = cv2.VideoWriter(
             txstr,
             cv2.CAP_GSTREAMER,
@@ -115,7 +116,7 @@ class VideoDevice:
             self.isColored,
         )
 
-        rospy.loginfo(
+        '''rospy.logerr(
             "\nTransmitting /dev/video"
             + str(self.device)
             + " to "
@@ -131,20 +132,23 @@ class VideoDevice:
             + ","
             + str(self.height)
             + ") resolution\n"
-        )
+        )'''
+        #rospy.logerr("checking if transmittable")
 
         if not self.video_source.isOpened() or not out_send.isOpened():
-            rospy.logerr("\nWARNING: unable to open video source for /dev/video" + str(self.device) + "\n")
+            #rospy.logerr("\nWARNING: unable to open video source for /dev/video" + str(self.device) + "\n")
             self.remove_endpoint(endpoint)
             exit(0)
-
+        #rospy.logerr("about to transmit")
         # Transmit loop
         while True:
             # TODO: When camera disconnects, this loop gets stuck. Implement watchdog thread?
+            #rospy.logerr("transmitting")
+            #rospy.logerr(self.process_by_endpoint)
             self.alive = True
             ret, frame = self.video_source.read()
             if not ret:
-                rospy.logerr("empty frame")
+                #rospy.logerr("empty frame")
                 break
             out_send.write(frame)
 
@@ -158,14 +162,15 @@ class VideoDevice:
         If endpoint dictionary is empty, it also deletes video source.
         :param endpoint: the endpoint (e.g. 10.0.0.7:5000)
         """
+        #rospy.logerr("removing endpoint "+endpoint)
         assert endpoint in self.process_by_endpoint.keys()
         self.process_by_endpoint[endpoint].kill()
-        self.process_by_endpoint[endpoint].join()
+        #self.process_by_endpoint[endpoint].join()
         del self.process_by_endpoint[endpoint]
         if len(self.process_by_endpoint) == 0:
             self.video_source = None
 
-    def watchdog(self) -> None:
+    '''def watchdog(self) -> None:
         """
         Continuously polls the send_capture() loop to watch for hang (can occur upon camera electrical disconnect).
         Intended to be used in a new process per VideoDevice.
@@ -178,7 +183,7 @@ class VideoDevice:
             time.sleep(2)
             # check if send_capture loop hangs
             if not self.alive:
-                rospy.logerr(
+                #rospy.logerr(
                     "\nWARNING: unable to open video source for /dev/video"
                     + str(self.device)
                     + ". Camera hardware disconnect?\n"
@@ -187,7 +192,7 @@ class VideoDevice:
                 for endpoint in self.process_by_endpoint.keys():
                     self.remove_endpoint(endpoint)
             # reset watchdog service
-            self.alive = False
+            self.alive = False'''
 
     def is_streaming(self) -> bool:
         """
@@ -207,11 +212,11 @@ class StreamingManager:
     _video_devices: List[VideoDevice]
     _active_devices: int
     _max_devices: int
-    _watchdog_list: List
+    #_watchdog_list: List
 
     def __init__(self):
         self._max_devices = 4
-        self._watchdog_list = []
+        #self._watchdog_list = []
         self._video_devices = []
         # determined by hardware. this is a constant. do not change.
 
@@ -219,39 +224,40 @@ class StreamingManager:
             [CameraCmd(-1, 0), CameraCmd(-1, 0), CameraCmd(-1, 0), CameraCmd(-1, 0)],
             [CameraCmd(-1, 0), CameraCmd(-1, 0), CameraCmd(-1, 0), CameraCmd(-1, 0)],
         ]
-        for i in range(rospy.get_param("cameras/max_video_device_id_number")):
-            skip_every_other_device = rospy.get_param("cameras/skip_every_other_device")
-            self._watchdog_list.append(0)
-            if skip_every_other_device:
+        for i in range(10):#rospy.get_param("cameras/max_video_device_id_number")):
+            #skip_every_other_device = True 
+            #rospy.get_param("cameras/skip_every_other_device")
+            #self._watchdog_list.append(0)
+            if True:
                 self._video_devices.append(VideoDevice(i * 2))
             else:
                 self._video_devices.append(VideoDevice(i))
         self._endpoints = [
-            rospy.get_param("cameras/endpoints/primary_0"),
-            rospy.get_param("cameras/endpoints/primary_1"),
-            rospy.get_param("cameras/endpoints/primary_2"),
-            rospy.get_param("cameras/endpoints/primary_3"),
-            rospy.get_param("cameras/endpoints/secondary_0"),
-            rospy.get_param("cameras/endpoints/secondary_1"),
-            rospy.get_param("cameras/endpoints/secondary_2"),
-            rospy.get_param("cameras/endpoints/secondary_3"),
+            #rospy.get_param("cameras/endpoints/primary_0"),
+            #rospy.get_param("cameras/endpoints/primary_1"),
+            #rospy.get_param("cameras/endpoints/primary_2"),
+            #rospy.get_param("cameras/endpoints/primary_3"),
+            #rospy.get_param("cameras/endpoints/secondary_0"),
+            #rospy.get_param("cameras/endpoints/secondary_1"),
+            #rospy.get_param("cameras/endpoints/secondary_2"),
+            #rospy.get_param("cameras/endpoints/secondary_3"),
         ]
         self._service_streams_by_endpoints = {
-            self._endpoints[0]: (0, 0),
-            self._endpoints[1]: (0, 1),
-            self._endpoints[2]: (0, 2),
-            self._endpoints[3]: (0, 3),
-            self._endpoints[4]: (1, 0),
-            self._endpoints[5]: (1, 1),
-            self._endpoints[6]: (1, 2),
-            self._endpoints[7]: (1, 3),
+            #self._endpoints[0]: (0, 0),
+            #self._endpoints[1]: (0, 1),
+            #self._endpoints[2]: (0, 2),
+            #self._endpoints[3]: (0, 3),
+            #self._endpoints[4]: (1, 0),
+            #self._endpoints[5]: (1, 1),
+            #self._endpoints[6]: (1, 2),
+            #self._endpoints[7]: (1, 3),
         }
         self._resolution_args = [
-            list(rospy.get_param("cameras/arguments/worst_res")),
-            list(rospy.get_param("cameras/arguments/low_res")),
-            list(rospy.get_param("cameras/arguments/medium_res")),
-            list(rospy.get_param("cameras/arguments/high_res")),
-            list(rospy.get_param("cameras/arguments/best_res")),
+            #list(#rospy.get_param("cameras/arguments/worst_res")),
+            #list(#rospy.get_param("cameras/arguments/low_res")),
+            #list(#rospy.get_param("cameras/arguments/medium_res")),
+            #list(#rospy.get_param("cameras/arguments/high_res")),
+            #list(#rospy.get_param("cameras/arguments/best_res")),
         ]
         self._active_devices = 0
 
@@ -264,7 +270,6 @@ class StreamingManager:
 
         self._turn_off_streams_based_on_camera_cmd(req.camera_cmds, req.primary)
         self._turn_on_streams_based_on_camera_cmd(req.camera_cmds, req.primary)
-
         response = ChangeCamerasResponse(self._services[0], self._services[1])
 
         return response
@@ -284,8 +289,8 @@ class StreamingManager:
             self._video_devices[device].remove_endpoint(endpoint)
             service, stream = self._service_streams_by_endpoints[endpoint]
             self._services[service][stream].device = -1
-        self._watchdog_list[device].kill()
-        self._watchdog_list[device] = 0
+        #self._watchdog_list[device].kill()
+        #self._watchdog_list[device] = 0
         assert self._video_devices[device].video_source is None, "The video source should be None by now"
         self._active_devices -= 1
 
@@ -320,8 +325,8 @@ class StreamingManager:
                 self._services[service_index][stream].device = -1
                 currently_is_no_video_source = not self._video_devices[previous_device].is_streaming()
                 if currently_is_no_video_source:
-                    self._watchdog_list[previous_device].kill()
-                    self._watchdog_list[previous_device] = 0
+                    #self._watchdog_list[previous_device].kill()
+                    #self._watchdog_list[previous_device] = 0
                     self._active_devices -= 1
 
     def _turn_on_streams_based_on_camera_cmd(
@@ -365,20 +370,33 @@ class StreamingManager:
                 self._video_devices[requested_device].process_by_endpoint[endpoint] = Process(
                     target=self._video_devices[requested_device].send_capture, args=(endpoint,)
                 )
-                self._watchdog_list[requested_device] = Process(target=self._video_devices[requested_device].watchdog)
+                #self._watchdog_list[requested_device] = Process(target=self._video_devices[requested_device].watchdog)
                 self._video_devices[requested_device].process_by_endpoint[endpoint].start()
-                self._watchdog_list[requested_device].start()
+                #self._watchdog_list[requested_device].start()
+                
                 currently_is_video_source = self._video_devices[requested_device].is_streaming()
                 self._services[service_index][stream].device = requested_device if currently_is_video_source else -1
-
+                #rospy.logerr(self._video_devices[requested_device].process_by_endpoint)
                 if previously_no_video_source and currently_is_video_source:
                     self._active_devices += 1
 
 
 def main():
-    rospy.init_node("cameras")
+    #rospy.init_node("cameras")
     streaming_manager = StreamingManager()
-    rospy.Service("change_cameras", ChangeCameras, streaming_manager.handle_change_cameras)
+    #rospy.Service("change_cameras", ChangeCameras, streaming_manager.handle_change_cameras)
+    ##rospy.spin()
+    streaming_manager._video_devices[0].set_caps(['4000000','1280','720','30'])
+    streaming_manager._video_devices[0].create_capture()
+    proc = Process(target=streaming_manager._video_devices[0].send_capture, args=('10.0.0.7:5000',))
+    proc.start()
+
+    while True: #rospy.is_shutdown():
+        time.sleep(1)
+        print(proc)
+        '''for i in range(len(streaming_manager._video_devices)):
+            #rospy.logerr(#rospy.logerr(streaming_manager._video_devices[i].process_by_endpoint))
+        #rospy.logerr('\n\n')'''
 
 
 if __name__ == "__main__":
