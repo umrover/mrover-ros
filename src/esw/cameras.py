@@ -18,16 +18,18 @@ import jetson.utils
 class VideoDevices:
 
     device: int
-    resolution: List[str]
-    video_source: jetson.utils.videoSource
+    resolution_args: List[str]
+
     # Screens video source is displayed on
     output_by_endpoint: Dict[str, jetson.utils.videoOutput]
 
+    video_source: jetson.utils.videoSource
+
     def __init__(self, device: int):
-        self.resolution_args = []
         self.device = device
-        self.video_source = None
+        self.resolution_args = []
         self.output_by_endpoint = {}
+        self.video_source = None
 
     def remove_endpoint(self, endpoint: str) -> None:
         """
@@ -57,7 +59,7 @@ class VideoDevices:
                     self.video_source.Close()
                     self.video_source = jetson.utils.videoSource(f"/dev/video{self.device}", argv=args)
                     self.video_source.Open()
-                    for other_endpoint in self.output_by_endpoint.values():
+                    for other_endpoint in self.output_by_endpoint.keys():
                         self.output_by_endpoint[other_endpoint] = jetson.utils.videoOutput(
                             f"rtp://{other_endpoint}", argv=args
                         )
@@ -68,9 +70,9 @@ class VideoDevices:
                     self.video_source = None
                     self.output_by_endpoint = {}
             else:
-                # If same args and endpoint is already being streamed to, then do nothing
-                if endpoint in self.output_by_endpoint.keys():
-                    return
+                # If same args and endpoint is already being streamed to, then do nothing.
+                # But we already asserted that the endpoint is not being streamed to,
+                # so we don't worry about this case.
 
                 # If same args, just create a new output
                 self.output_by_endpoint[endpoint] = jetson.utils.videoOutput(f"rtp://{endpoint}", argv=args)
@@ -97,8 +99,7 @@ class VideoDevices:
         elif not is_streaming and self.video_source is None:
             return False
         else:
-            rospy.logerr("Should not have entered this state.")
-            assert False
+            assert False, "Should not have entered invalid state in is_streaming()."
 
 
 class StreamingManager:
@@ -124,7 +125,9 @@ class StreamingManager:
     # _video_devices is a list of jetson.utils objects. It can be None.
     _video_devices: List[VideoDevices]
     _active_devices: int
-    _max_devices: int
+
+    # determined by hardware. this is a constant. do not change.
+    MAX_CAMERA_DEVICES: int = 4
 
     def __init__(self):
 
@@ -165,8 +168,6 @@ class StreamingManager:
             list(rospy.get_param("cameras/arguments/720_res")),
         ]
         self._active_devices = 0
-        # determined by hardware. this is a constant. do not change.
-        self._max_devices = 4
         self._device_lock = threading.Lock()
 
     def handle_change_cameras(self, req: ChangeCamerasRequest) -> ChangeCamerasResponse:
@@ -327,7 +328,7 @@ class StreamingManager:
                     continue
 
             if requested_device != -1:
-                if self._active_devices == self._max_devices and previous_device == -1:
+                if self._active_devices == StreamingManager.MAX_CAMERA_DEVICES and previous_device == -1:
                     # can not add more than four devices. just continue.
                     continue
 
