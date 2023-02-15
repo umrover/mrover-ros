@@ -24,7 +24,7 @@ class VideoDevices:
     output_by_endpoint: Dict[str, jetson.utils.videoOutput]
 
     def __init__(self, device: int):
-        self.resolution = []
+        self.resolution_args = []
         self.device = device
         self.video_source = None
         self.output_by_endpoint = {}
@@ -51,7 +51,7 @@ class VideoDevices:
 
         if self.is_streaming():
             # It exists and another stream is using it
-            if self.resolution != args:
+            if self.resolution_args != args:
                 # If different args, just recreate video source and every output
                 try:
                     self.video_source.Close()
@@ -62,7 +62,7 @@ class VideoDevices:
                             f"rtp://{other_endpoint}", argv=args
                         )
                     self.output_by_endpoint[endpoint] = jetson.utils.videoOutput(f"rtp://{endpoint}", argv=args)
-                    self.resolution = args
+                    self.resolution_args = args
                 except Exception:
                     rospy.logerr(f"Failed to create video source for device {self.device}.")
                     self.video_source = None
@@ -80,7 +80,7 @@ class VideoDevices:
                 self.video_source = jetson.utils.videoSource(f"/dev/video{self.device}", argv=args)
                 self.video_source.Open()
                 self.output_by_endpoint[endpoint] = jetson.utils.videoOutput(f"rtp://{endpoint}", argv=args)
-                self.resolution = args
+                self.resolution_args = args
             except Exception:
                 rospy.logerr(f"Failed to create video source for device {self.device}.")
                 self.video_source = None
@@ -102,12 +102,26 @@ class VideoDevices:
 
 
 class StreamingManager:
-
+    # _services is a list of size 2 representing the requested cameras from the primary and secondary laptops.
+    # For each laptop, there is a list of size 4 that represents information on the requested device and its resolution.
     _services: List[List[CameraCmd]]
+
     _device_lock: threading.Lock
+
+    # _resolution_args is a list of sizes that represents the different options for resolutions (0 for low, 2 for high).
+    # For each resolution, there is another list of strings that is passed into the jetson.utils function
+    # that is needed to create that specific resolution.
     _resolution_args: List[List[str]]
+
+    # _endpoints is a list of size 8, where the first four strings represent the endpoints of the primary laptop
+    # and the last four strings represent the endpoints of the secondary laptop.
+    # Endpoints are just a combination of an IP and a port.
     _endpoints: List[str]
+
+    # _service_streams_by_endpoints is a dictionary that maps each endpoint to the device that is being streamed to it.
     _service_streams_by_endpoints: Dict[str, Tuple[int, int]]
+
+    # _video_devices is a list of jetson.utils objects. It can be None.
     _video_devices: List[VideoDevices]
     _active_devices: int
     _max_devices: int
@@ -195,9 +209,7 @@ class StreamingManager:
                         for output in video_device.output_by_endpoint.values():
                             output.Render(image)
                     except Exception as e:
-                        rospy.logerr(f"Error encountered: {type(e)} and {e}")
-                        # TODO - figure out what the exception is
-                        # rospy.logerr(f"Camera {index} capture failed. Will still try to attempt to stream.")
+                        rospy.logerr(f"Error {type(e)} encountered: {e}")
                         rospy.logerr(f"Camera {index} capture failed. Stopping stream(s).")
                         self._close_down_all_streams_of_device(index)
 
