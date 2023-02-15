@@ -23,6 +23,6 @@
 	<node name="brushed_motors" pkg="mrover" type="brushed_motors" output="screen"></node>
 
     <!-- cameras node-->
-	<node name="cameras" pkg="mrover" type="TXstreamros.py" output="screen"></node>
+	<node name="cameras" pkg="mrover" type="tx_stream_ros.py" output="screen"></node>
 
 </launch>
