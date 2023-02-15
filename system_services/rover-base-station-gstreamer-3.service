@@ -2,7 +2,7 @@
 Description=Base Station Gstreamer Service 3
 
 [Service]
-Environment="DISPLAY=:0"
+Environment="DISPLAY=:1"
 Environment="XAUTHORITY=/home/mrover/.Xauthority"
 User=mrover
-ExecStart=/usr/bin/gst-launch-1.0 -v udpsrc port=5003 caps="application/x-rtp, media=(string)video, clock-rate=(int)90000, encoding-name=(string)H264, payload=(int)96" ! rtph264depay ! decodebin ! videoconvert ! autovideosink
+ExecStart=/usr/bin/gst-launch-1.0 udpsrc port=5003 ! "application/x-rtp, encoding-name=(string)H264, payload=96" ! rtph264depay ! decodebin ! videoconvert ! autovideosink
