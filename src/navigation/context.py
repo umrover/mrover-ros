@@ -81,15 +81,27 @@ class Environment:
         """
         assert self.ctx.course
         current_waypoint = self.ctx.course.current_waypoint()
-        if current_waypoint is None or not self.ctx.course.look_for_post():
+        if current_waypoint is None:
             return None
 
         return self.get_fid_pos(current_waypoint.fiducial_id)
+
+    def other_gate_fid_pos(self) -> Optional[np.ndarray]:
+        """
+        retrieves the position of the other gate post (which is 1 + current id) if we are looking for a gate
+        """
+        assert self.ctx.course
+        current_waypoint = self.ctx.course.current_waypoint()
+        if self.ctx.course.look_for_gate() and current_waypoint is not None:
+            return self.get_fid_pos(current_waypoint.fiducial_id + 1)
+        else:
+            return None
 
     def current_gate(self) -> Optional[Gate]:
         """
         retrieves the position of the gate (if we know where it is, and we are looking for one)
         """
+
         if self.ctx.course:
             current_waypoint = self.ctx.course.current_waypoint()
             if current_waypoint is None or not self.ctx.course.look_for_gate():
@@ -100,7 +112,7 @@ class Environment:
             if post1 is None or post2 is None:
                 return None
 
-            return Gate(post1[0:2], post2[0:2])
+            return Gate(post1[:2], post2[:2])
         else:
             return None
 
