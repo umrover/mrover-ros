@@ -51,11 +51,9 @@ class VideoDevices:
 
         if self.is_streaming():
             # It exists and another stream is using it
-            # TODO - make sure that this check does what we want to do (self.resolution != args)
             if self.resolution != args:
                 # If different args, just recreate video source and every output
                 try:
-                    # TODO - Make sure that the close does not break anything
                     self.video_source.Close()
                     self.video_source = jetson.utils.videoSource(f"/dev/video{self.device}", argv=args)
                     self.video_source.Open()
@@ -197,12 +195,11 @@ class StreamingManager:
                         for output in video_device.output_by_endpoint.values():
                             output.Render(image)
                     except Exception as e:
-                        rospy.logerr(f"Error encountered: {e}")
+                        rospy.logerr(f"Error encountered: {type(e)} and {e}")
                         # TODO - figure out what the exception is
-                        # TODO - See if this works: Instead of closing, just ignore
-                        rospy.logerr(f"Camera {index} capture failed. Will still try to attempt to stream.")
-                        # rospy.logerr(f"Camera {index} capture failed. Stopping stream(s).")
-                        # self._close_down_all_streams_of_device(index)
+                        # rospy.logerr(f"Camera {index} capture failed. Will still try to attempt to stream.")
+                        rospy.logerr(f"Camera {index} capture failed. Stopping stream(s).")
+                        self._close_down_all_streams_of_device(index)
 
     def _close_down_all_streams_of_device(self, device: int) -> None:
         """
