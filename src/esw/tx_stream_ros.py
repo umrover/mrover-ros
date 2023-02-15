@@ -43,7 +43,7 @@ class VideoDevice:
 
     def create_capture(self) -> None:
         """
-        Constructs video capture source-to-sink pipeline string and captures video from v4l2 hardware
+        Constructs video capture source-to-sink pipeline string and captures video from v4l2 hardware.
         """
         if not self.video_source == None:  # exit if capture has already been created
             return
@@ -65,7 +65,10 @@ class VideoDevice:
 
     def send_capture(self, endpoint: str) -> None:
         """
-        Constructs video stream transmit source-to-sink pipeline string and sends video capture to destination
+        Constructs video stream transmit source-to-sink pipeline string and sends video capture to destination.
+        Intended to be used in a new process per endpoint.
+        Process start called whenever new endpoint requested
+        Process termination called whenever endpoint no longer requested
         :param endpoint: the endpoint (e.g. 10.0.0.7:5000)
         """
         host = endpoint[0:len(endpoint)-5]
@@ -123,23 +126,30 @@ class VideoDevice:
         if len(self.process_by_endpoint) == 0:
             self.video_source = None
 
-    def watchdog(self):
-        # poll the target resource
-        while True:
+    def watchdog(self) -> None:
+        """
+        Continuously polls the send_capture() loop to watch for hang (can occur upon camera electrical disconnect).
+        Intended to be used in a new process per VideoDevice.
+        Process start called after a send_capture() to a new endpoint begins.
+        Process termination called whenever VideoDevice was is_streaming() previously but no longer is_streaming()
+        Watchdog ignored when self.video_source is None.
+        """
+        while self.video_source is not None:
             # block for a moment
             time.sleep(2)
-            # check if camera is disconnected
+            # check if send_capture loop hangs
             if not self.alive:
                 rospy.logerr('\nWARNING: unable to open video source for /dev/video' +
-                             str(self.device)+'\n')
+                             str(self.device)+'. Camera hardware disconnect?\n')
+                # action: remove all endpoints
                 for endpoint in self.process_by_endpoint.keys():
                     self.remove_endpoint(endpoint)
-            # reset
+            # reset watchdog service
             self.alive = False
 
     def is_streaming(self) -> bool:
         """
-        Returns if streaming or not
+        Returns if streaming or not.
         :return: a bool if streaming
         """
         if len(self.process_by_endpoint) != 0 and self.video_source != None:
@@ -236,10 +246,10 @@ class StreamingManager:
             endpoint = list(
                 self._video_devices[device].process_by_endpoint.keys())[0]
             self._video_devices[device].remove_endpoint(endpoint)
-            self._watchdog_list[device].kill()
-            self._watchdog_list[device] = 0
             service, stream = self._service_streams_by_endpoints[endpoint]
             self._services[service][stream].device = -1
+        self._watchdog_list[device].kill()
+        self._watchdog_list[device] = 0
         assert self._video_devices[device].video_source is None, "The video source should be None by now"
         self._active_devices -= 1
 
@@ -247,9 +257,9 @@ class StreamingManager:
         self, camera_commands: List[CameraCmd], is_req_for_primary_stream: bool
     ) -> None:
         """
-        Turns off streams based on camera cmd
-        :param camera_commands: List of CameraCmd which show request
-        :param is_req_for_primary_stream: A bool representing if this is a request for primary laptop or not
+        Turns off streams based on camera cmd.
+        :param camera_commands: List of CameraCmd showing requested cameras and capture settings.
+        :param is_req_for_primary_stream: A bool representing if this is a request for primary laptop or not.
         """
         service_index = 0 if is_req_for_primary_stream else 1
         endpoints = self._endpoints[0:4] if is_req_for_primary_stream else self._endpoints[4:8]
@@ -272,21 +282,21 @@ class StreamingManager:
                 # this means that there was previously a device, but now we don't want the device to be streamed
                 assert self._video_devices[previous_device].is_streaming()
                 self._video_devices[previous_device].remove_endpoint(endpoint)
-                self._watchdog_list[requested_device].kill()
-                self._watchdog_list[requested_device] = 0
                 self._services[service_index][stream].device = -1
                 currently_is_no_video_source = not self._video_devices[previous_device].is_streaming(
                 )
                 if currently_is_no_video_source:
+                    self._watchdog_list[previous_device].kill()
+                    self._watchdog_list[previous_device] = 0
                     self._active_devices -= 1
 
     def _turn_on_streams_based_on_camera_cmd(
         self, camera_commands: List[CameraCmd], is_req_for_primary_stream: bool
     ) -> None:
         """
-        Turns on streams based on camera cmd
-        :param camera_commands: List of CameraCmd which show request
-        :param is_req_for_primary_stream: A bool representing if this is a request for primary laptop or not
+        Turns on streams based on camera cmd.
+        :param camera_commands: List of CameraCmd which show request.
+        :param is_req_for_primary_stream: A bool representing if this is a request for primary laptop or not.
         """
         service_index = 0 if is_req_for_primary_stream else 1
         endpoints = self._endpoints[0:4] if is_req_for_primary_stream else self._endpoints[4:8]
