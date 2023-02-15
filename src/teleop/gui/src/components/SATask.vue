@@ -65,7 +65,7 @@
       <MoteusStateTable :moteus-state-data="moteusState" />
     </div>
     <div v-show="false">
-      <GimbalControls></GimbalControls>
+      <MastGimbalControls></MastGimbalControls>
     </div>
   </div>
 </template>
@@ -75,7 +75,7 @@ import ROSLIB from "roslib";
 import BasicMap from "./BasicRoverMap.vue";
 import BasicWaypointEditor from "./BasicWaypointEditor.vue";
 import DriveControls from "./DriveControls.vue";
-import GimbalControls from "./GimbalControls.vue";
+import MastGimbalControls from "./MastGimbalControls.vue";
 import EndEffectorUV from "./EndEffectorUV.vue";
 import SAArmControls from "./SAArmControls.vue";
 import PDBFuse from "./PDBFuse.vue";
@@ -91,11 +91,11 @@ export default {
     Cameras,
     DriveControls,
     EndEffectorUV,
-    GimbalControls,
-    SAArmControls,
-    PDBFuse,
     JointStateTable,
+    MastGimbalControls,
     MoteusStateTable,
+    PDBFuse,
+    SAArmControls,
   },
   data() {
     return {
