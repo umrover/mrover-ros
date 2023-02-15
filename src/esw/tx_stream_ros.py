@@ -19,7 +19,7 @@ class VideoDevice:
     device: int
     width: int
     height: int
-    fps: int
+    framerate: int
     bitrate: int
     isColored: bool
 
@@ -37,7 +37,7 @@ class VideoDevice:
         self.bitrate = int(args[0])
         self.width = int(args[1])
         self.height = int(args[2])
-        self.fps = int(args[3])
+        self.framerate = int(args[3])
 
     def create_capture(self) -> None:
         """
@@ -46,11 +46,11 @@ class VideoDevice:
         if not self.video_source == None:  # exit if capture has already been created
             return
         capstr = 'v4l2src device=/dev/video' + str(self.device) + ' do-timestamp=true io-mode=2 ! \
-        image/jpeg, width='+str(self.width)+', height='+str(self.height)+', framerate='+str(self.fps)+'/1 ! \
+        image/jpeg, width='+str(self.width)+', height='+str(self.height)+', framerate='+str(self.framerate)+'/1 ! \
         jpegdec ! \
         videorate ! \
         video/x-raw,\
-        framerate='+str(self.fps)+'/1 ! \
+        framerate='+str(self.framerate)+'/1 ! \
         nvvidconv ! '
         if self.isColored:
             capstr += ' video/x-raw, format=BGRx ! '
@@ -87,7 +87,7 @@ class VideoDevice:
             txstr, cv2.CAP_GSTREAMER, cv2.VideoWriter_fourcc('H', '2', '6', '4'), 60, (self.width, self.height), self.isColored)
 
         rospy.loginfo("\nTransmitting /dev/video"+str(self.device)+" to "+host+":"+str(port)+" with "+str(self.bitrate/1e6) +
-                      " Mbps target, "+str(self.fps)+" fps target, ("+str(self.width)+","+str(self.height)+") resolution\n")
+                      " Mbps target, "+str(self.framerate)+" fps target, ("+str(self.width)+","+str(self.height)+") resolution\n")
 
         if not self.video_source.isOpened() or not out_send.isOpened():
             rospy.logerr('\nWARNING: unable to open video source for /dev/video' +
@@ -115,6 +115,7 @@ class VideoDevice:
         """
         assert endpoint in self.process_by_endpoint.keys()
         self.process_by_endpoint[endpoint].kill()
+        self.process_by_endpoint[endpoint].join()
         del self.process_by_endpoint[endpoint]
         if len(self.process_by_endpoint) == 0:
             self.video_source = None
