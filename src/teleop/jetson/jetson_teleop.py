@@ -101,7 +101,7 @@ class ArmControl:
             "finger",
             "gripper",
         ]
-        SA_NAMES = ["joint_a", "joint_b", "joint_c", "joint_d", "scoop", "microscope"]
+        SA_NAMES = ["sa_joint_1", "sa_joint_2", "sa_joint_3", "scoop", "microscope"]
 
         self.ra_cmd = JointState(
             name=[name for name in RA_NAMES],

@@ -68,7 +68,7 @@
       <DriveControls />
     </div>
     <div v-show="false">
-      <GimbalControls></GimbalControls>
+      <MastGimbalControls></MastGimbalControls>
     </div>
   </div>
 </template>
@@ -78,7 +78,7 @@ import ROSLIB from "roslib";
 import AutonRoverMap from "./AutonRoverMap.vue";
 import AutonWaypointEditor from "./AutonWaypointEditor.vue";
 import DriveControls from "./DriveControls.vue";
-import GimbalControls from "./GimbalControls.vue";
+import MastGimbalControls from "./MastGimbalControls.vue";
 import { mapGetters } from "vuex";
 import * as qte from "quaternion-to-euler";
 import JoystickValues from "./JoystickValues.vue";
@@ -94,9 +94,9 @@ export default {
     AutonRoverMap,
     AutonWaypointEditor,
     DriveControls,
-    GimbalControls,
-    JoystickValues,
     IMUCalibration,
+    JoystickValues,
+    MastGimbalControls,
   },
 
   data() {

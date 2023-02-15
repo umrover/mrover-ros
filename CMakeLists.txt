@@ -26,14 +26,15 @@ set(MROVER_LINK_DIRS "")
 set(MROVER_MESSAGE_FILES
         CalibrationStatus.msg
         CameraCmd.msg
+        Carousel.msg
         Chassis.msg
         Course.msg
         Diagnostic.msg
         DriveStatus.msg
         EnableAuton.msg
-        GimbalCmd.msg
         GPSWaypoint.msg
         ImuAndMag.msg
+        MastGimbal.msg
         MoteusState.msg
         MotorsStatus.msg
         Waypoint.msg
