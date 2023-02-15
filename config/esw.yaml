@@ -120,25 +120,30 @@ brushed_motors:
 cameras:
     arguments:
       worst_res:
-        - "300000"
-        - "256"
-        - "144"
+        - "173000"
+        - "320"
+        - "240"
+        - "15"
       low_res:
-        - "--bitrate=800000"
-        - "--width=480"
-        - "--height=360"
+        - "691000"
+        - "640"
+        - "480"
+        - "15"
       medium_res:
-        - "--bitrate=1800000"
-        - "--width=1280"
-        - "--height=720"
+        - "2000000"
+        - "960"
+        - "720"
+        - "15"
       high_res:
-        - "--bitrate=1800000"
-        - "--width=1280"
-        - "--height=720"
+        - "3000000"
+        - "1280"
+        - "720"
+        - "15"
       best_res:
-        - "--bitrate=1800000"
-        - "--width=1280"
-        - "--height=720"
+        - "4200000"
+        - "1280"
+        - "720"
+        - "30"
     max_video_device_id_number: 10
     endpoints:
       primary_0: "10.0.0.7:5000"
