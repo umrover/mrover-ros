@@ -111,6 +111,7 @@ brushed_motors:
       inversion: 1.0
   i2c_device_file: "/dev/i2c-1"
   test: false
+  
 cameras:
     arguments:
       worst_res:
@@ -138,35 +139,6 @@ cameras:
         - "1280"
         - "720"
         - "30"
-    max_video_device_id_number: 10
-    endpoints:
-      primary_0: "10.0.0.7:5000"
-      primary_1: "10.0.0.7:5001"
-      primary_2: "10.0.0.7:5002"
-      primary_3: "10.0.0.7:5003"
-      secondary_0: "10.0.0.8:5000"
-      secondary_1: "10.0.0.8:5001"
-      secondary_2: "10.0.0.8:5002"
-      secondary_3: "10.0.0.8:5003"
-    skip_every_other_device: true
-
-cameras:
-    arguments:
-      144_res:
-        - "--headless"
-        - "--bitrate=300000"
-        - "--width=256"
-        - "--height=144"
-      360_res:
-        - "--headless"
-        - "--bitrate=800000"
-        - "--width=480"
-        - "--height=360"
-      720_res:
-        - "--headless"
-        - "--bitrate=1800000"
-        - "--width=1280"
-        - "--height=720"
     max_video_device_id_number: 10
     endpoints:
       primary_0: "10.0.0.7:5000"
