@@ -47,19 +47,31 @@ class VideoDevice:
         """
         if not self.video_source == None:  # exit if capture has already been created
             return
-        capstr = 'v4l2src device=/dev/video' + str(self.device) + ' do-timestamp=true io-mode=2 ! \
-        image/jpeg, width='+str(self.width)+', height='+str(self.height)+', framerate='+str(self.framerate)+'/1 ! \
+        capstr = (
+            "v4l2src device=/dev/video"
+            + str(self.device)
+            + " do-timestamp=true io-mode=2 ! \
+        image/jpeg, width="
+            + str(self.width)
+            + ", height="
+            + str(self.height)
+            + ", framerate="
+            + str(self.framerate)
+            + "/1 ! \
         jpegdec ! \
         videorate ! \
         video/x-raw,\
-        framerate='+str(self.framerate)+'/1 ! \
-        nvvidconv ! '
+        framerate="
+            + str(self.framerate)
+            + "/1 ! \
+        nvvidconv ! "
+        )
         if self.isColored:
-            capstr += ' video/x-raw, format=BGRx ! '
-        capstr += 'videoconvert ! '
+            capstr += " video/x-raw, format=BGRx ! "
+        capstr += "videoconvert ! "
         if self.isColored:
-            capstr += ' video/x-raw, format=BGR ! '
-        capstr += 'appsink'
+            capstr += " video/x-raw, format=BGR ! "
+        capstr += "appsink"
 
         self.video_source = cv2.VideoCapture(capstr, cv2.CAP_GSTREAMER)
 
@@ -71,31 +83,58 @@ class VideoDevice:
         Process termination called whenever endpoint no longer requested
         :param endpoint: the endpoint (e.g. 10.0.0.7:5000)
         """
-        host = endpoint[0:len(endpoint)-5]
-        port = int(endpoint[len(endpoint)-4:len(endpoint)])
+        host = endpoint[0 : len(endpoint) - 5]
+        port = int(endpoint[len(endpoint) - 4 : len(endpoint)])
 
-        txstr = 'appsrc ! '
+        txstr = "appsrc ! "
         if self.isColored:
-            txstr += ' video/x-raw, format=BGR ! '
-        txstr += 'videoconvert ! '
+            txstr += " video/x-raw, format=BGR ! "
+        txstr += "videoconvert ! "
         if self.isColored:
-            txstr += ' video/x-raw, format=BGRx ! '
-        txstr += 'nvvidconv ! \
+            txstr += " video/x-raw, format=BGRx ! "
+        txstr += (
+            "nvvidconv ! \
         nvv4l2h264enc \
-        bitrate='+str(self.bitrate)+' ! \
+        bitrate="
+            + str(self.bitrate)
+            + " ! \
         h264parse ! \
         rtph264pay pt=96 config-interval=1 ! \
-        udpsink host='+str(host)+' port='+str(port)
+        udpsink host="
+            + str(host)
+            + " port="
+            + str(port)
+        )
 
         out_send = cv2.VideoWriter(
-            txstr, cv2.CAP_GSTREAMER, cv2.VideoWriter_fourcc('H', '2', '6', '4'), 60, (self.width, self.height), self.isColored)
+            txstr,
+            cv2.CAP_GSTREAMER,
+            cv2.VideoWriter_fourcc("H", "2", "6", "4"),
+            60,
+            (self.width, self.height),
+            self.isColored,
+        )
 
-        rospy.loginfo("\nTransmitting /dev/video"+str(self.device)+" to "+host+":"+str(port)+" with "+str(self.bitrate/1e6) +
-                      " Mbps target, "+str(self.framerate)+" fps target, ("+str(self.width)+","+str(self.height)+") resolution\n")
+        rospy.loginfo(
+            "\nTransmitting /dev/video"
+            + str(self.device)
+            + " to "
+            + host
+            + ":"
+            + str(port)
+            + " with "
+            + str(self.bitrate / 1e6)
+            + " Mbps target, "
+            + str(self.framerate)
+            + " fps target, ("
+            + str(self.width)
+            + ","
+            + str(self.height)
+            + ") resolution\n"
+        )
 
         if not self.video_source.isOpened() or not out_send.isOpened():
-            rospy.logerr('\nWARNING: unable to open video source for /dev/video' +
-                         str(self.device)+'\n')
+            rospy.logerr("\nWARNING: unable to open video source for /dev/video" + str(self.device) + "\n")
             self.remove_endpoint(endpoint)
             exit(0)
 
@@ -105,7 +144,7 @@ class VideoDevice:
             self.alive = True
             ret, frame = self.video_source.read()
             if not ret:
-                rospy.logerr('empty frame')
+                rospy.logerr("empty frame")
                 break
             out_send.write(frame)
 
@@ -139,8 +178,11 @@ class VideoDevice:
             time.sleep(2)
             # check if send_capture loop hangs
             if not self.alive:
-                rospy.logerr('\nWARNING: unable to open video source for /dev/video' +
-                             str(self.device)+'. Camera hardware disconnect?\n')
+                rospy.logerr(
+                    "\nWARNING: unable to open video source for /dev/video"
+                    + str(self.device)
+                    + ". Camera hardware disconnect?\n"
+                )
                 # action: remove all endpoints
                 for endpoint in self.process_by_endpoint.keys():
                     self.remove_endpoint(endpoint)
@@ -172,14 +214,11 @@ class StreamingManager:
         # determined by hardware. this is a constant. do not change.
 
         self._services = [
-            [CameraCmd(-1, 0), CameraCmd(-1, 0),
-             CameraCmd(-1, 0), CameraCmd(-1, 0)],
-            [CameraCmd(-1, 0), CameraCmd(-1, 0),
-             CameraCmd(-1, 0), CameraCmd(-1, 0)],
+            [CameraCmd(-1, 0), CameraCmd(-1, 0), CameraCmd(-1, 0), CameraCmd(-1, 0)],
+            [CameraCmd(-1, 0), CameraCmd(-1, 0), CameraCmd(-1, 0), CameraCmd(-1, 0)],
         ]
         for i in range(rospy.get_param("cameras/max_video_device_id_number")):
-            skip_every_other_device = rospy.get_param(
-                "cameras/skip_every_other_device")
+            skip_every_other_device = rospy.get_param("cameras/skip_every_other_device")
             self._watchdog_list.append(0)
             if skip_every_other_device:
                 self._video_devices.append(VideoDevice(i * 2))
@@ -221,13 +260,10 @@ class StreamingManager:
         :return: The processed devices and resolutions for the four streams of the primary and secondary laptops.
         """
 
-        self._turn_off_streams_based_on_camera_cmd(
-            req.camera_cmds, req.primary)
-        self._turn_on_streams_based_on_camera_cmd(
-            req.camera_cmds, req.primary)
+        self._turn_off_streams_based_on_camera_cmd(req.camera_cmds, req.primary)
+        self._turn_on_streams_based_on_camera_cmd(req.camera_cmds, req.primary)
 
-        response = ChangeCamerasResponse(
-            self._services[0], self._services[1])
+        response = ChangeCamerasResponse(self._services[0], self._services[1])
 
         return response
 
@@ -237,14 +273,12 @@ class StreamingManager:
         Must make sure that the device lock is locked.
         :param device: The integer ID of the device to be closed.
         """
-        previously_was_video_source = self._video_devices[device].is_streaming(
-        )
+        previously_was_video_source = self._video_devices[device].is_streaming()
         assert (
             previously_was_video_source
         ), "_close_down_all_streams_of_device should only be called if a streamed device failed"
         while len(self._video_devices[device].process_by_endpoint.keys()) != 0:
-            endpoint = list(
-                self._video_devices[device].process_by_endpoint.keys())[0]
+            endpoint = list(self._video_devices[device].process_by_endpoint.keys())[0]
             self._video_devices[device].remove_endpoint(endpoint)
             service, stream = self._service_streams_by_endpoints[endpoint]
             self._services[service][stream].device = -1
@@ -273,8 +307,7 @@ class StreamingManager:
             # skip if device is the same, already closed, or a different resolution
             if previous_device == requested_device:
                 if previous_device == -1 or (
-                    requested_device != -
-                        1 and requested_resolution == self._video_devices[requested_device].resolution
+                    requested_device != -1 and requested_resolution == self._video_devices[requested_device].resolution
                 ):
                     continue
 
@@ -283,8 +316,7 @@ class StreamingManager:
                 assert self._video_devices[previous_device].is_streaming()
                 self._video_devices[previous_device].remove_endpoint(endpoint)
                 self._services[service_index][stream].device = -1
-                currently_is_no_video_source = not self._video_devices[previous_device].is_streaming(
-                )
+                currently_is_no_video_source = not self._video_devices[previous_device].is_streaming()
                 if currently_is_no_video_source:
                     self._watchdog_list[previous_device].kill()
                     self._watchdog_list[previous_device] = 0
@@ -310,8 +342,7 @@ class StreamingManager:
             # skip if previous and current requests are -1 or same resolution
             if previous_device == requested_device:
                 if previous_device == -1 or (
-                    requested_device != -
-                        1 and requested_resolution == self._video_devices[requested_device].resolution
+                    requested_device != -1 and requested_resolution == self._video_devices[requested_device].resolution
                 ):
                     continue
 
@@ -322,26 +353,20 @@ class StreamingManager:
 
                 # create a new stream
                 previously_no_video_source = (
-                    previous_device == -
-                    1 and not self._video_devices[requested_device].is_streaming(
-                    )
+                    previous_device == -1 and not self._video_devices[requested_device].is_streaming()
                 )
 
                 if previous_device != -1:
-                    self._video_devices[previous_device].remove_endpoint(
-                        endpoint)
-                self._video_devices[requested_device].set_caps(
-                    self._resolution_args[requested_resolution])
+                    self._video_devices[previous_device].remove_endpoint(endpoint)
+                self._video_devices[requested_device].set_caps(self._resolution_args[requested_resolution])
                 self._video_devices[requested_device].create_capture()
                 self._video_devices[requested_device].process_by_endpoint[endpoint] = Process(
-                    target=self._video_devices[requested_device].send_capture, args=(endpoint,))
-                self._watchdog_list[requested_device] = Process(
-                    target=self._video_devices[requested_device].watchdog)
-                self._video_devices[requested_device].process_by_endpoint[endpoint].start(
+                    target=self._video_devices[requested_device].send_capture, args=(endpoint,)
                 )
+                self._watchdog_list[requested_device] = Process(target=self._video_devices[requested_device].watchdog)
+                self._video_devices[requested_device].process_by_endpoint[endpoint].start()
                 self._watchdog_list[requested_device].start()
-                currently_is_video_source = self._video_devices[requested_device].is_streaming(
-                )
+                currently_is_video_source = self._video_devices[requested_device].is_streaming()
                 self._services[service_index][stream].device = requested_device if currently_is_video_source else -1
 
                 if previously_no_video_source and currently_is_video_source:
@@ -351,8 +376,7 @@ class StreamingManager:
 def main():
     rospy.init_node("cameras")
     streaming_manager = StreamingManager()
-    rospy.Service("change_cameras", ChangeCameras,
-                  streaming_manager.handle_change_cameras)
+    rospy.Service("change_cameras", ChangeCameras, streaming_manager.handle_change_cameras)
 
 
 if __name__ == "__main__":

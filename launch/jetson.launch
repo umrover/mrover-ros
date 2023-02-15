@@ -24,5 +24,4 @@
 
     <!-- cameras node-->
 	<node name="cameras" pkg="mrover" type="tx_stream_ros.py" output="screen"></node>
-
 </launch>
