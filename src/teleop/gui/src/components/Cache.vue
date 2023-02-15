@@ -18,6 +18,11 @@
 import ROSLIB from "roslib";
 import OpenLoopControl from "./OpenLoopControl.vue";
 
+// In seconds
+const updateRate = 0.1;
+
+let interval;
+
 export default {
   components: {
     OpenLoopControl,
@@ -26,9 +31,24 @@ export default {
   data() {
     return {
       velocity: 0,
-
       cache_pub: null,
     };
+  },
+
+  beforeDestroy: function () {
+    window.clearInterval(interval);
+  },
+
+  created: function () {
+    this.cache_pub = new ROSLIB.Topic({
+      ros: this.$ros,
+      name: "cache_cmd",
+      messageType: "sensor_msgs/JointState",
+    });
+
+    interval = window.setInterval(() => {
+      this.cache_pub.publish(this.messageObject);
+    }, updateRate * 1000);
   },
 
   computed: {
@@ -41,20 +61,6 @@ export default {
       };
       return new ROSLIB.Message(msg);
     },
-  },
-
-  watch: {
-    messageObject: function (msg) {
-      this.cache_pub.publish(msg);
-    },
-  },
-  created: function () {
-    this.cache_pub = new ROSLIB.Topic({
-      ros: this.$ros,
-      name: "cache_cmd",
-      messageType: "sensor_msgs/JointState",
-    });
-    this.cache_pub.publish(this.messageObject);
   },
 };
 </script>

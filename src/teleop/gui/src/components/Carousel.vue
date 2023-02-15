@@ -33,6 +33,11 @@ import ROSLIB from "roslib";
 import Checkbox from "./Checkbox.vue";
 import OpenLoopControl from "./OpenLoopControl.vue";
 
+// In seconds
+const updateRate = 0.1;
+
+let interval;
+
 export default {
   components: {
     Checkbox,
@@ -48,6 +53,22 @@ export default {
     };
   },
 
+  beforeDestroy: function () {
+    window.clearInterval(interval);
+  },
+
+  created: function () {
+    this.carousel_pub = new ROSLIB.Topic({
+      ros: this.$ros,
+      name: "carousel_cmd",
+      messageType: "mrover/Carousel",
+    });
+
+    interval = window.setInterval(() => {
+      this.carousel_pub.publish(this.messageObject);
+    }, updateRate * 1000);
+  },
+
   computed: {
     messageObject: function () {
       const msg = {
@@ -61,21 +82,6 @@ export default {
     velocityScaleDecimal: function () {
       return this.velocityScale / 100;
     },
-  },
-
-  watch: {
-    messageObject: function (msg) {
-      this.carousel_pub.publish(msg);
-    },
-  },
-
-  created: function () {
-    this.carousel_pub = new ROSLIB.Topic({
-      ros: this.$ros,
-      name: "carousel_cmd",
-      messageType: "mrover/Carousel",
-    });
-    this.carousel_pub.publish(this.messageObject);
   },
 };
 </script>
