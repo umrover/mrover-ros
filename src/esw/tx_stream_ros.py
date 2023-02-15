@@ -21,9 +21,10 @@ class VideoDevice:
     height: int
     fps: int
     bitrate: int
+    isColored: bool
+
     video_source: cv2.VideoCapture
     process_by_endpoint: Dict[str, Process]
-    isColored: bool
 
     def __init__(self, device: int):
         self.resolution = []
@@ -60,12 +61,14 @@ class VideoDevice:
 
         self.video_source = cv2.VideoCapture(capstr, cv2.CAP_GSTREAMER)
 
-    def send_capture(self, host: str, port: int):
+    def send_capture(self, endpoint: str):
         """
         Constructs stream transmit pipeline string and sends video capture to destination
         :param host: Destination device IP address
         :param port: The port to send/listen to RTP packets
         """
+        host = endpoint[0:len(endpoint)-5]
+        port = int(endpoint[len(endpoint)-4:len(endpoint)])
 
         txstr = 'appsrc ! '
         if self.isColored:
@@ -80,9 +83,8 @@ class VideoDevice:
         rtph264pay pt=96 config-interval=1 ! \
         udpsink host='+str(host)+' port='+str(port)
 
-        fourcc = cv2.VideoWriter_fourcc('H', '2', '6', '4')
         out_send = cv2.VideoWriter(
-            txstr, cv2.CAP_GSTREAMER, fourcc, 60, (self.width, self.height), self.isColored)
+            txstr, cv2.CAP_GSTREAMER, cv2.VideoWriter_fourcc('H', '2', '6', '4'), 60, (self.width, self.height), self.isColored)
 
         rospy.loginfo("\nTransmitting /dev/video"+str(self.device)+" to "+host+":"+str(port)+" with "+str(self.bitrate/1e6) +
                       " Mbps target, "+str(self.fps)+" fps target, ("+str(self.width)+","+str(self.height)+") resolution\n")
@@ -90,6 +92,7 @@ class VideoDevice:
         if not self.video_source.isOpened() or not out_send.isOpened():
             rospy.logerr('\nWARNING: unable to open video source for /dev/video' +
                          str(self.device)+'\n')
+            self.remove_endpoint(endpoint)
             exit(0)
 
         # Transmit loop
@@ -102,6 +105,7 @@ class VideoDevice:
 
         self.video_source.release()
         out_send.release()
+        self.remove_endpoint(endpoint)
 
     def remove_endpoint(self, endpoint: str) -> None:
         """
@@ -120,7 +124,7 @@ class VideoDevice:
         Returns if streaming or not
         :return: a bool if streaming
         """
-        if not len(self.process_by_endpoint):
+        if len(self.process_by_endpoint) != 0 and self.video_source != None:
             return True
         return False
 
@@ -267,8 +271,6 @@ class StreamingManager:
             endpoint = endpoints[stream]
             requested_device = camera_cmd.device
             requested_resolution = camera_cmd.resolution
-            ip = endpoint[0:len(endpoint)-5]
-            port = int(endpoint[len(endpoint)-4:len(endpoint)])
 
             previous_device = self._services[service_index][stream].device
             # skip if previous and current requests are -1 or same resolution
@@ -298,7 +300,7 @@ class StreamingManager:
                     self._resolution_args[requested_resolution])
                 self._video_devices[requested_device].create_capture()
                 self._video_devices[requested_device].process_by_endpoint[endpoint] = Process(
-                    target=self._video_devices[requested_device].send_capture, args=(ip, port))
+                    target=self._video_devices[requested_device].send_capture, args=(endpoint,))
                 currently_is_video_source = self._video_devices[requested_device].is_streaming(
                 )
                 self._services[service_index][stream].device = requested_device if currently_is_video_source else -1
