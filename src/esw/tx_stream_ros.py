@@ -212,6 +212,7 @@ class StreamingManager:
     def __init__(self):
         self._max_devices = 4
         self._watchdog_list = []
+        self._video_devices = []
         # determined by hardware. this is a constant. do not change.
 
         self._services = [
