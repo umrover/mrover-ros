@@ -28,3 +28,6 @@ bags/
 build/
 devel/
 logs/
+
+# Moteus
+moteus-cal*
