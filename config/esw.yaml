@@ -131,14 +131,14 @@ science:
   # TODO - Please configure once we know what positions we want to turn them to
   syringe_servo_positions:  # This is in degrees
     site_A:
-      pushed: 50
-      start: 110
+      pushed: 80
+      start: 100
     site_B:
       pushed: 60
-      start: 100
+      start: 90
     site_C:
-      pushed: 40
-      start: 70
+      pushed: 10
+      start: 50
   info:
     num_diag_current: 3
     num_diag_thermistors: 3
