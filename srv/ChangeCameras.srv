@@ -1,1 +1,3 @@
 CameraCmd camera_cmds
+---
+bool success

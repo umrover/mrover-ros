@@ -1,5 +1,5 @@
-# Uses openCV with gstreamer support to capture video from v4l2 device and transmit over RTP
-# Intended to be used with RXstream.py on a device with ethernet NIC ip 10.0.0.7 and over a properly configured network
+#!/usr/bin/env python3
+
 from mrover.msg import CameraCmd
 import cv2
 from multiprocessing import Process
@@ -16,7 +16,7 @@ from mrover.srv import (
 class StreamManager:
 
     def __init__(self):
-        self.stream_process_list = []
+        self.stream_process_list = [0]*10
         self.cap_args = [
             # [bps, width, height, fps]
             [173000, 320, 240, 15],  # bottom
@@ -26,11 +26,18 @@ class StreamManager:
             [4200000, 1280, 720, 30],  # full
         ]
     def handle_req(self, req):
-        id = req.device
-        cap = req.resolution
+        cmds = req.camera_cmds
+        id = cmds.device
+        print(id)
+        cap = cmds.resolution
+
         if cap:
+            print(self.stream_process_list[id])
             if self.stream_process_list[id]:
+                print("Killing existing")
                 self.stream_process_list[id].kill()
+                self.stream_process_list[id].join()
+                print("Killed existing")
             self.stream_process_list[id] = Process(
                 target=send,
                 args=(
