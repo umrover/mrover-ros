@@ -47,14 +47,13 @@ class VideoDevices:
         Generates 
         :param endpoint: the endpoint (e.g. 10.0.0.7:5000)
         """
-        bitrate = int(args[0])
         width = int(args[1])
         height = int(args[2])
         framerate = int(args[3])
 
         capstr = ("v4l2src device=/dev/video" + str(self.device)+ " do-timestamp=true io-mode=2 ! image/jpeg, width="+ str(width)+ ", height="+ str(height)+ ", framerate="+ str(framerate)+ "/1 ! jpegdec ! videorate ! video/x-raw, framerate="+ str(framerate)+ "/1 ! nvvidconv ! video/x-raw, format=BGRx ! videoconvert ! video/x-raw, format=BGR ! appsink"
         )
-        rospy.loginfo(capstr)
+        #rospy.loginfo(capstr)
         return capstr
 
     def tx_str(self, endpoint, args) -> str:
@@ -63,9 +62,6 @@ class VideoDevices:
         :param endpoint: the endpoint (e.g. 10.0.0.7:5000)
         """
         bitrate = int(args[0])
-        width = int(args[1])
-        height = int(args[2])
-        framerate = int(args[3])
         host = endpoint[0 : len(endpoint) - 5]
         port = int(endpoint[len(endpoint) - 4 : len(endpoint)])
         txstr = ("appsrc ! video/x-raw, format=BGR ! videoconvert !  video/x-raw, format=BGRx ! nvvidconv ! \
@@ -80,7 +76,7 @@ class VideoDevices:
                         + " port="
                         + str(port)
         )
-        rospy.loginfo(txstr)
+        #rospy.loginfo(txstr)
         return txstr
 
     def create_stream(self, endpoint: str, args: List[str]) -> None:
@@ -92,6 +88,7 @@ class VideoDevices:
 
         width = int(args[1])
         height = int(args[2])
+        fps = int(args[3])
         
         assert not (endpoint in self.output_by_endpoint.keys())
 
@@ -105,23 +102,23 @@ class VideoDevices:
                     self.video_source = cv2.VideoCapture(self.cap_str(args), cv2.CAP_GSTREAMER)
 
                     for other_endpoint in self.output_by_endpoint.keys():
-                        rospy.loginfo(other_endpoint)
+                        #rospy.loginfo(other_endpoint)
 
                         self.output_by_endpoint[other_endpoint] = cv2.VideoWriter(
                             self.tx_str(other_endpoint, args),
                             cv2.CAP_GSTREAMER,
                             cv2.VideoWriter_fourcc("H", "2", "6", "4"),
-                            60,
+                            240,
                             (width, height),
                             True,
                         )
-                    rospy.loginfo(endpoint)
+                    #rospy.loginfo(endpoint)
 
                     self.output_by_endpoint[endpoint] = cv2.VideoWriter(
                         self.tx_str(endpoint, args),
                         cv2.CAP_GSTREAMER,
                         cv2.VideoWriter_fourcc("H", "2", "6", "4"),
-                        60,
+                        240,
                         (width, height),
                         True,
                     )
@@ -142,7 +139,7 @@ class VideoDevices:
                     self.tx_str(endpoint, args),
                     cv2.CAP_GSTREAMER,
                     cv2.VideoWriter_fourcc("H", "2", "6", "4"),
-                    60,
+                    240,
                     (width, height),
                     True,
                 )
@@ -155,7 +152,7 @@ class VideoDevices:
                     self.tx_str(endpoint, args),
                     cv2.CAP_GSTREAMER,
                     cv2.VideoWriter_fourcc("H", "2", "6", "4"),
-                    60,
+                    240,
                     (width, height),
                     True,
                 )
