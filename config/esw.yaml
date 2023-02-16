@@ -96,7 +96,7 @@ brushed_motors:
       motor_max_voltage: 12.0
       mcu_id: 1
       motor_id: 1
-      inversion: 1.0
+      inversion: -1.0
     - name: "sa_joint_3"
       driver_voltage: 12.0
       motor_max_voltage: 12.0
@@ -131,14 +131,14 @@ science:
   # TODO - Please configure once we know what positions we want to turn them to
   syringe_servo_positions:  # This is in degrees
     site_A:
-      pushed: 62
-      start: 100
+      pushed: 50
+      start: 110
     site_B:
-      pushed: 62
+      pushed: 60
       start: 100
     site_C:
-      pushed: 62
-      start: 100
+      pushed: 40
+      start: 70
   info:
     num_diag_current: 3
     num_diag_thermistors: 3
