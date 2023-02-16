@@ -285,7 +285,7 @@ class ScienceBridge:
             # Reset connection and send message.
             with self._uart_lock:
                 # TODO: Test removing this. Theoretically we don't need to close and
-                # reopen the connection each time but it might limit bus errors.
+                #   reopen the connection each time but it might limit bus errors.
                 self.ser.close()
                 self.ser.open()
                 self.ser.write(bytes(tx_msg, encoding="utf-8"))

@@ -128,7 +128,6 @@ science:
     timeout: 0
     port: "/dev/ttyTHS0" 
   # These position are random for now
-  # TODO - Please configure once we know what positions we want to turn them to
   syringe_servo_positions:  # This is in degrees
     site_A:
       pushed: 80
