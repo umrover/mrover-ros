@@ -85,8 +85,17 @@ class GateTrajectory(Trajectory):
         done: np.ndarray,
         gate: Gate,
     ):
-        # Returns the path we will use to traverse the gate, using as few approach points as possible
-
+        """
+        Here is a reference for the points mentioned below https://github.com/umrover/mrover-ros/wiki/Navigation#searchtrajectory
+        :param rover_position: position vector of the rover,
+        :param prep: This is the closest prep point given from spider_gate_trajectory,
+        :param approach: This is the closest approach point given from spider_gate_trajectory ,
+        :param center: This is the mid point of the two gate posts,
+        :param done: This is the victory point given from spider_gate_trajectory,
+        :param gate: Gate object representing the gate that the rover will drive through,
+        :return coordinates: This is a np.array which represents the coordinates of the selected path 
+        """
+        
         # Get the shapes of both the posts
         post_one_shape, post_two_shape = gate.get_post_shape()
 
@@ -108,7 +117,12 @@ class GateTrajectory(Trajectory):
 
 
 def make_shapely_path(rover, path_pts):
-    # makes a path we can use to check intersection
+    """
+    :param rover: position vector of the rover
+    :param pathPts: This is a np.array that has the coordinates of the path
+    :return: It returns the shapely object of LineString which put the path points given into 
+    one cohesive line segments. 
+    """
     path_list = np.vstack((rover, path_pts))
     return LineString(path_list)
 
