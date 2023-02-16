@@ -9,7 +9,7 @@ import rospy
 from mrover.srv import ChangeServoAngle, ChangeServoAngleResponse
 
 # Change these values for the service name and type definition to test different values
-SERVICE_NAME = "/change_servo_angles"
+SERVICE_NAME = "/change_servo_angle"
 SERVICE_TYPE = ChangeServoAngle
 
 

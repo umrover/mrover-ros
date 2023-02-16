@@ -158,7 +158,7 @@ class ScienceBridge:
         success = self._heater_transmit(req.device, req.enable)
         return ChangeHeaterStateResponse(success)
 
-    def handle_change_servo_angles(self, req: ChangeServoAngleRequest) -> ChangeServoAngleResponse:
+    def handle_change_servo_angle(self, req: ChangeServoAngleRequest) -> ChangeServoAngleResponse:
         """Process a request to change the angles of three carousel servos by
         issuing the command to the STM32 chip via UART.
         :param req: A ChangeServoAngleRequest object that has an int and
@@ -439,7 +439,7 @@ def main():
     rospy.Service("change_auton_led_state", ChangeAutonLEDState, bridge.handle_change_auton_led_state)
     rospy.Service("change_heater_auto_shutoff_state", ChangeDeviceState, bridge.handle_change_heater_auto_shutoff_state)
     rospy.Service("change_heater_state", ChangeHeaterState, bridge.handle_change_heater_state)
-    rospy.Service("change_servo_angles", ChangeServoAngle, bridge.handle_change_servo_angles)
+    rospy.Service("change_servo_angles", ChangeServoAngle, bridge.handle_change_servo_angle)
     rospy.Service("change_uv_led_carousel_state", ChangeDeviceState, bridge.handle_change_uv_led_carousel_state)
     rospy.Service("change_uv_led_end_effector_state", ChangeDeviceState, bridge.handle_change_uv_led_end_effector_state)
     rospy.Service("change_white_led_state", ChangeDeviceState, bridge.handle_change_white_led_state)

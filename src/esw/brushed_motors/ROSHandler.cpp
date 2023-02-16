@@ -95,11 +95,9 @@ void ROSHandler::moveCache(const sensor_msgs::JointState::ConstPtr& msg) {
 void ROSHandler::moveCarousel(const mrover::Carousel::ConstPtr& msg) {
     if (msg->open_loop) {
         moveControllerOpenLoop("carousel", (float) msg->vel);
-    }
-    else {
+    } else {
         ROS_ERROR("Closed loop is currently not supported for carousel commands.");
     }
-
 }
 
 // REQUIRES: nothing
