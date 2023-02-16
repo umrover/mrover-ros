@@ -33,8 +33,8 @@ class Gate:
     def getPostShape(self):
         """
         Creates a circular path of RADIUS around each post for checking intersection with our path
+        :return: A shapely circle shape
         """
-
         # Declare radius to 0.5 meters
         RADIUS = 0.5
 
