@@ -5,7 +5,7 @@ import ERDTask from "../components/ERDTask.vue";
 import AutonTask from "../components/AutonTask.vue";
 import SATask from "../components/SATask.vue";
 import ISHTask from "../components/ISHTask.vue";
-import ControlGUI from "../components/ControlGUI.vue";
+import ESWDebugGUI from "../components/ESWDebugGUI.vue";
 import ROSDebug from "../components/ROSDebug.vue";
 import ROSSend from "../components/ROSSend.vue";
 import ROSEcho from "../components/ROSEcho.vue";
@@ -52,9 +52,9 @@ export default new Router({
       component: AutonTask,
     },
     {
-      path: "/Control",
-      name: "ControlsGUI",
-      component: ControlGUI,
+      path: "/ESWDebug",
+      name: "ESWDebugGUI",
+      component: ESWDebugGUI,
     },
     {
       path: "/ROSDebug",

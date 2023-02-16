@@ -12,36 +12,32 @@
       <div class="spacer"></div>
       <div class="spacer"></div>
     </div>
-    <DriveControls></DriveControls>
     <div class="box arm-controls light-bg">
       <ArmControls />
     </div>
-    <GimbalControls></GimbalControls>
     <div class="box drive-vel-data light-bg">
       <JointStateTable
-        :joint-state-data="motorjointState"
+        :joint-state-data="motorJointState"
         :vertical="true"
         :header="'Drive Motors'"
       ></JointStateTable>
     </div>
     <div class="box arm-jointstate light-bg">
       <JointStateTable
-        :joint-state-data="armjointState"
+        :joint-state-data="armJointState"
         :vertical="true"
         :header="'Arm Motors'"
       ></JointStateTable>
     </div>
     <div class="box drive-moteus light-bg">
-      <MoteusStateTable
-        :moteus-state-data="drivemoteusState"
-        :motor="true"
-        :header="'Drive Moteus'"
-      ></MoteusStateTable>
+      <DriveMoteusStateTable
+        :moteus-state-data="driveMoteusState"
+      ></DriveMoteusStateTable>
     </div>
     <div class="box arm-moteus light-bg">
       <MoteusStateTable
-        :moteus-state-data="armmoteusState"
-        :header="'Arm Moteus'"
+        :moteus-state-data="armMoteusState"
+        :header="'Arm Moteus State'"
       ></MoteusStateTable>
     </div>
     <div class="box pdb light-bg">
@@ -52,7 +48,7 @@
       <Checkbox
         ref="Primary"
         :name="'Primary Computer?'"
-        @toggle="primaryEnabled($event)"
+        @toggle="primary =$event"
       />
     </div>
     <div class="box velocity light-bg">
@@ -61,6 +57,8 @@
     <div class="box odometry light-bg">
       <Odom :odom="odom"></Odom>
     </div>
+    <DriveControls></DriveControls>
+    <GimbalControls></GimbalControls>
   </div>
 </template>
 
@@ -70,6 +68,7 @@ import DriveControls from "./DriveControls.vue";
 import ArmControls from "./ArmControls.vue";
 import GimbalControls from "./GimbalControls.vue";
 import JointStateTable from "./JointStateTable.vue";
+import DriveMoteusStateTable from "./DriveMoteusStateTable.vue";
 import MoteusStateTable from "./MoteusStateTable.vue";
 import PDBFuse from "./PDBFuse.vue";
 import Cameras from "./Cameras.vue";
@@ -83,6 +82,7 @@ export default {
     ArmControls,
     GimbalControls,
     JointStateTable,
+    DriveMoteusStateTable,
     MoteusStateTable,
     PDBFuse,
     Cameras,
@@ -95,21 +95,21 @@ export default {
       primary: false,
 
       // Default object isn't empty, so has to be initialized to ""
-      drivemoteusState: {
+      driveMoteusState: {
         name: ["", "", "", "", "", ""],
         error: ["", "", "", "", "", ""],
         state: ["", "", "", "", "", ""]
       },
 
-      armmoteusState: {
+      armMoteusState: {
         name: ["", "", "", "", "", ""],
         error: ["", "", "", "", "", ""],
         state: ["", "", "", "", "", ""]
       },
 
-      motorjointState: {},
+      motorJointState: {},
 
-      armjointState: {},
+      armJointState: {},
 
       odom: {
         latitude_deg: 42.294864932393835,
@@ -118,7 +118,11 @@ export default {
         speed: 0
       },
 
-      odom_sub: null
+      odom_sub: null,
+
+      brushless_motors: null,
+
+      arm_JointState: null
     };
   },
 
@@ -142,13 +146,13 @@ export default {
     });
 
     this.brushless_motors.subscribe((msg) => {
-      this.motorjointState = msg.joint_states;
-      this.drivemoteusState = msg.moteus_states;
+      this.motorJointState = msg.joint_states;
+      this.driveMoteusState = msg.moteus_states;
     });
 
     this.arm_JointState.subscribe((msg) => {
-      this.armjointState = msg.joint_states;
-      this.armmoteusState = msg.moteus_states;
+      this.armJointState = msg.joint_states;
+      this.armMoteusState = msg.moteus_states;
     });
 
     this.odom_sub.subscribe((msg) => {
@@ -157,12 +161,6 @@ export default {
       this.odom.longitude_deg = msg.longitude;
     });
   },
-
-  methods: {
-    primaryEnabled: function (enabled) {
-      this.primary = enabled;
-    }
-  }
 };
 </script>
 <style scoped>

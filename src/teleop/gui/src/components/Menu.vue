@@ -20,7 +20,7 @@
         <MenuButton link="#/ISHTask" name="ISH GUI" />
         <MenuButton link="#/SATask" name="Sample Acquisition GUI" />
         <MenuButton link="#/AutonTask" name="Autonomy Mission" />
-        <MenuButton link="#/Control" name="ESW Debug GUI" />
+        <MenuButton link="#/ESWDebug" name="ESW Debug GUI" />
         <MenuButton link="#/ROSDebug" name="ROS Debug Tools" />
       </fieldset>
     </div>
