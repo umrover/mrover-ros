@@ -93,9 +93,9 @@ class GateTrajectory(Trajectory):
         rover = rover_position[:2]
 
         # try paths with successively more points until we have one that won't intersect
-        all_pts = [prep, approach, center, done]
+        all_pts = np.vstack((prep, approach, center, done))
         start_index = 2
-        path = make_shapely_path(rover, all_pts[start_index:])
+        path = make_shapely_path(rover, all_pts[start_index:, :])
         while path.intersects(post_one_shape) or path.intersects(post_two_shape):
             start_index -= 1
             if start_index == 0:
@@ -107,11 +107,10 @@ class GateTrajectory(Trajectory):
         return coordinates
 
 
-def make_shapely_path(rover, pathPts):
+def make_shapely_path(rover, path_pts):
     # makes a path we can use to check intersection
-    pathList = [list(rover)]
-    pathList += [list(pt) for pt in pathPts]
-    return LineString(pathList)
+    path_list = np.vstack((rover, path_pts))
+    return LineString(path_list)
 
 
 class GateTraverseStateTransitions(Enum):
