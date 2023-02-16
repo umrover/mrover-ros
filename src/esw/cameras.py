@@ -15,10 +15,19 @@ from mrover.srv import (
 import jetson.utils
 
 
+class Resolution:
+    option: int
+    arguments: List[str]
+
+    def __init__(self, option: int, arguments: List[str]):
+        self.option = option
+        self.arguments = arguments
+
+
 class VideoDevices:
 
     device: int
-    resolution_args: List[str]
+    resolution: Resolution
 
     # Screens video source is displayed on
     output_by_endpoint: Dict[str, jetson.utils.videoOutput]
@@ -27,7 +36,7 @@ class VideoDevices:
 
     def __init__(self, device: int):
         self.device = device
-        self.resolution_args = []
+        self.resolution = Resolution(0, [])
         self.output_by_endpoint = {}
         self.video_source = None
 
@@ -42,29 +51,33 @@ class VideoDevices:
         if len(self.output_by_endpoint) == 0:
             self.video_source = None
 
-    def create_stream(self, endpoint: str, args: List[str]) -> None:
+    def create_stream(self, endpoint: str, requested_resolution: Resolution) -> None:
         """
         Adds endpoint to video source list and creates video_source if not existing.
         :param endpoint: the endpoint (e.g. 10.0.0.7:5000)
-        :param args: a list of strings that are the arguments
+        :param requested_resolution a Resolution object that contains info on requested resolution
         """
 
         assert not (endpoint in self.output_by_endpoint.keys())
 
         if self.is_streaming():
             # It exists and another stream is using it
-            if self.resolution_args != args:
+            if self.resolution.option != requested_resolution:
                 # If different args, just recreate video source and every output
                 try:
                     self.video_source.Close()
-                    self.video_source = jetson.utils.videoSource(f"/dev/video{self.device}", argv=args)
+                    self.video_source = jetson.utils.videoSource(
+                        f"/dev/video{self.device}", argv=requested_resolution.arguments
+                    )
                     self.video_source.Open()
                     for other_endpoint in self.output_by_endpoint.keys():
                         self.output_by_endpoint[other_endpoint] = jetson.utils.videoOutput(
-                            f"rtp://{other_endpoint}", argv=args
+                            f"rtp://{other_endpoint}", argv=requested_resolution.arguments
                         )
-                    self.output_by_endpoint[endpoint] = jetson.utils.videoOutput(f"rtp://{endpoint}", argv=args)
-                    self.resolution_args = args
+                    self.output_by_endpoint[endpoint] = jetson.utils.videoOutput(
+                        f"rtp://{endpoint}", argv=requested_resolution.arguments
+                    )
+                    self.resolution = requested_resolution
                 except Exception:
                     rospy.logerr(f"Failed to create video source for device {self.device}.")
                     self.video_source = None
@@ -75,14 +88,20 @@ class VideoDevices:
                 # so we don't worry about this case.
 
                 # If same args, just create a new output
-                self.output_by_endpoint[endpoint] = jetson.utils.videoOutput(f"rtp://{endpoint}", argv=args)
+                self.output_by_endpoint[endpoint] = jetson.utils.videoOutput(
+                    f"rtp://{endpoint}", argv=requested_resolution.arguments
+                )
         else:
             # If it does not exist already
             try:
-                self.video_source = jetson.utils.videoSource(f"/dev/video{self.device}", argv=args)
+                self.video_source = jetson.utils.videoSource(
+                    f"/dev/video{self.device}", argv=requested_resolution.arguments
+                )
                 self.video_source.Open()
-                self.output_by_endpoint[endpoint] = jetson.utils.videoOutput(f"rtp://{endpoint}", argv=args)
-                self.resolution_args = args
+                self.output_by_endpoint[endpoint] = jetson.utils.videoOutput(
+                    f"rtp://{endpoint}", argv=requested_resolution.arguments
+                )
+                self.resolution_args = requested_resolution.arguments
             except Exception:
                 rospy.logerr(f"Failed to create video source for device {self.device}.")
                 self.video_source = None
@@ -109,10 +128,11 @@ class StreamingManager:
 
     _device_lock: threading.Lock
 
-    # _resolution_args is a list of sizes that represents the different options for resolutions (0 for low, 2 for high).
-    # For each resolution, there is another list of strings that is passed into the jetson.utils function
-    # that is needed to create that specific resolution.
-    _resolution_args: List[List[str]]
+    # _list_of_resolution_options is a list of sizes that represents the different options for resolutions
+    # (0 for low, 2 for high).
+    # For each resolution, there is a Resolution object that has an option number and a list of strings that is passed
+    # into the jetson.utils function that is needed to create that specific resolution.
+    _list_of_resolution_options: List[Resolution]
 
     # _endpoints is a list of size 8, where the first four strings represent the endpoints of the primary laptop
     # and the last four strings represent the endpoints of the secondary laptop.
@@ -162,10 +182,10 @@ class StreamingManager:
             self._endpoints[6]: (1, 2),
             self._endpoints[7]: (1, 3),
         }
-        self._resolution_args = [
-            list(rospy.get_param("cameras/arguments/144_res")),
-            list(rospy.get_param("cameras/arguments/360_res")),
-            list(rospy.get_param("cameras/arguments/720_res")),
+        self._list_of_resolution_options = [
+            Resolution(0, list(rospy.get_param("cameras/arguments/144_res"))),
+            Resolution(1, list(rospy.get_param("cameras/arguments/360_res"))),
+            Resolution(2, list(rospy.get_param("cameras/arguments/720_res"))),
         ]
         self._active_devices = 0
         self._device_lock = threading.Lock()
@@ -248,7 +268,7 @@ class StreamingManager:
             if camera_cmd.device >= len(self._video_devices):
                 rospy.logerr(f"Request device {camera_cmd.device} invalid. Treating as no device instead.")
                 camera_cmd.device = -1
-            if camera_cmd.resolution >= len(self._resolution_args):
+            if camera_cmd.resolution >= len(self._list_of_resolution_options):
                 rospy.logerr(
                     f"Request resolution {camera_cmd.resolution} invalid. Treating as lowest resolution instead."
                 )
@@ -282,13 +302,14 @@ class StreamingManager:
         for stream, camera_cmd in enumerate(camera_commands):
             endpoint = endpoints[stream]
             requested_device = camera_cmd.device
-            requested_resolution = camera_cmd.resolution
+            requested_resolution_option = camera_cmd.resolution
 
             previous_device = self._services[service_index][stream].device
             # skip if device is the same, already closed, or a different resolution
             if previous_device == requested_device:
                 if previous_device == -1 or (
-                    requested_device != -1 and requested_resolution == self._video_devices[requested_device].resolution
+                    requested_device != -1
+                    and requested_resolution_option == self._video_devices[requested_device].resolution.option
                 ):
                     continue
 
@@ -317,13 +338,14 @@ class StreamingManager:
         for stream, camera_cmd in enumerate(camera_commands):
             endpoint = endpoints[stream]
             requested_device = camera_cmd.device
-            requested_resolution = camera_cmd.resolution
+            requested_resolution_option = camera_cmd.resolution
 
             previous_device = self._services[service_index][stream].device
             # skip if previous and current requests are -1 or same resolution
             if previous_device == requested_device:
                 if previous_device == -1 or (
-                    requested_device != -1 and requested_resolution == self._video_devices[requested_device].resolution
+                    requested_device != -1
+                    and requested_resolution_option == self._video_devices[requested_device].resolution.option
                 ):
                     continue
 
@@ -340,7 +362,7 @@ class StreamingManager:
                 if previous_device != -1:
                     self._video_devices[previous_device].remove_endpoint(endpoint)
                 self._video_devices[requested_device].create_stream(
-                    endpoint, self._resolution_args[requested_resolution]
+                    endpoint, self._list_of_resolution_options[requested_resolution_option]
                 )
                 currently_is_video_source = self._video_devices[requested_device].is_streaming()
                 self._services[service_index][stream].device = requested_device if currently_is_video_source else -1
