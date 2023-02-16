@@ -8,6 +8,7 @@ from std_msgs.msg import Header
 import tf2_ros
 import numpy as np
 from pymap3d.enu import geodetic2enu
+from typing import List
 
 # from tf.transformations import quaternion_about_axis, quaternion_multiply
 
@@ -40,11 +41,11 @@ class GPSLinearization:
     odom_frame: str
     rover_frame: str
 
-    def __init__(self):
-        # init to zero pose and covariance
-        self.pose = SE3()
-        self.covariance = np.zeros((6, 6))
+    # covariance config
+    use_dop_cov: bool
+    config_gps_covariance: List[List[float]]
 
+    def __init__(self):
         # read required parameters, if they don't exist an error will be thrown
         self.ref_lat = rospy.get_param("gps_linearization/reference_point_latitude")
         self.ref_lon = rospy.get_param("gps_linearization/reference_point_longitude")
@@ -56,6 +57,15 @@ class GPSLinearization:
         self.world_frame = rospy.get_param("world_frame")
         self.odom_frame = rospy.get_param("odom_frame")
         self.rover_frame = rospy.get_param("rover_frame")
+
+        self.use_dop_cov = rospy.get_param("global_ekf/use_gps_dop_covariance")
+        self.config_gps_covariance = rospy.get_param("global_ekf/gps_covariance", None)
+
+        # init to zero pose and either zero covariance or configured covariance
+        self.pose = SE3()
+        self.covariance = np.zeros((6, 6))
+        if not self.use_dop_cov:
+            self.covariance[:3, :3] = self.config_gps_covariance
 
         rospy.Subscriber("gps/fix", NavSatFix, self.gps_callback)
         rospy.Subscriber("imu/data", ImuAndMag, self.imu_callback)
@@ -104,8 +114,6 @@ class GPSLinearization:
                         position=Point(*rover_in_map.position),
                         orientation=Quaternion(*rover_in_map.rotation.quaternion),
                     ),
-                    # TODO: figure out covariance: either feed forward from GPS or make system for configuring them
-                    # covariance=np.diag(np.ones(6)*0.1).flatten().tolist()
                     covariance=self.covariance.flatten().tolist(),
                 ),
             )
@@ -128,8 +136,10 @@ class GPSLinearization:
         # ignore Z
         cartesian[2] = 0
         # TODO: locks?
-        pos_covariance = np.array([msg.position_covariance]).reshape(3, 3)
-        self.covariance[:3, :3] = pos_covariance
+        # TODO: this thing where were injecting cov matrices in the linearizer isnt super clean, is it worth forking the gps driver to do it there?
+        if self.use_dop_cov:
+            pos_covariance = np.array([msg.position_covariance]).reshape(3, 3)
+            self.covariance[:3, :3] = pos_covariance
 
         self.pose = SE3(position=cartesian, rotation=self.pose.rotation)
         self.publish_pose()
@@ -152,13 +162,6 @@ class GPSLinearization:
 
         # normalize to avoid rounding errors
         imu_quat = imu_quat / np.linalg.norm(imu_quat)
-
-        # # TODO: move this to within IMU driver, and do the same thing to the gyro and accel and mag
-        # # get a quaternion to rotate about the Z axis by 90 degrees
-        # offset_quat = quaternion_about_axis(np.pi / 2, np.array([0, 0, 1]))
-
-        # # rotate the IMU quaternion by the offset to convert it to the ENU frame
-        # enu_quat = quaternion_multiply(offset_quat, imu_quat)
         self.pose = SE3.from_pos_quat(position=self.pose.position, quaternion=imu_quat)
         self.publish_pose()
 

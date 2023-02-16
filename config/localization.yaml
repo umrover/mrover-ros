@@ -9,3 +9,27 @@ gps_linearization:
 
   use_odom_frame: false
   publish_tf: false
+
+global_ekf:
+  # whether to use the Dilution of Precision (DoP) covariance estimate from the GPS message,
+  # or to replace it with the following configured covariance matrix
+  use_gps_dop_covariance: false
+  gps_covariance: [[0.1, 0, 0],
+                   [0, 0.1, 0],
+                   [0, 0, 0.1]]
+  
+  imu_pose_covariance: [[0.1, 0, 0],
+                        [0, 0.1, 0],
+                        [0, 0, 0.1]]
+
+  imu_accel_covariance: [[0.1, 0, 0],
+                         [0, 0.1, 0],
+                         [0, 0, 0.1]]
+
+  imu_gyro_covariance: [[0.1, 0, 0],
+                        [0, 0.1, 0],
+                        [0, 0, 0.1]]
+
+  imu_mag_covariance: [[0.1, 0, 0],
+                       [0, 0.1, 0],
+                       [0, 0, 0.1]]
