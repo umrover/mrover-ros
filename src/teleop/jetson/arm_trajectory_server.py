@@ -32,7 +32,7 @@ def joint_states_callback(msg: JointState):
 def euclidean_error(threshold: int, feedback: FollowJointTrajectoryFeedback) -> bool:
     position_errors = np.array(feedback.error.positions)
     error = np.linalg.norm(position_errors)
-    
+
     if error > threshold:
         error_msg = f"Euclidean error of {error} exceeded threshold of {threshold}"
         return True, error_msg
@@ -41,7 +41,7 @@ def euclidean_error(threshold: int, feedback: FollowJointTrajectoryFeedback) -> 
 
 def joint_error(thresholds: list, feedback: FollowJointTrajectoryFeedback) -> bool:
     position_errors = feedback.error.positions
-    
+
     for i in range(len(thresholds)):
         if position_errors[i] > thresholds[i]:
             error_msg = f"""
@@ -159,27 +159,25 @@ class MoveItAction(object):
                 self._feedback.actual.positions = joint_states.position
                 self._feedback.actual.velocities = joint_states.velocity
                 self._feedback.actual.time_from_start = rospy.Time.from_sec(time.time()) - time_start
-            self._feedback.error.positions = [desired - actual 
-                                              for desired, actual in 
-                                              zip(self._feedback.desired.positions, 
-                                                  self._feedback.actual.positions
-                                              )]
-            self._feedback.error.velocities = [desired - actual 
-                                               for desired, actual in 
-                                               zip(self._feedback.desired.velocities, 
-                                                   self._feedback.actual.velocities
-                                               )]
+            self._feedback.error.positions = [
+                desired - actual
+                for desired, actual in zip(self._feedback.desired.positions, self._feedback.actual.positions)
+            ]
+            self._feedback.error.velocities = [
+                desired - actual
+                for desired, actual in zip(self._feedback.desired.velocities, self._feedback.actual.velocities)
+            ]
             self._as.publish_feedback(self._feedback)
             # ---------------------------------------
             # Abort upon exceeding error threshold
             error, error_msg = error_threshold_exceeded(self._feedback)
             if error or i > 5:
-                self._result.error_code = -4        # PATH_TOLERANCE_VIOLATED
+                self._result.error_code = -4  # PATH_TOLERANCE_VIOLATED
                 self._result.error_string = error_msg
                 self._as.set_succeeded(self._result)
                 self.publisher.publish(joint_states)
                 return
-            
+
             i += 1
 
             last_point = point
