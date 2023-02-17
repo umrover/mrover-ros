@@ -14,13 +14,13 @@ class ImuPackager:
 
     imu_pub: rospy.Publisher
     curr_mag: Vector3Stamped
+
     orientation_covariance: np.ndarray
     gyro_covariance: np.ndarray
     accel_covariance: np.ndarray
     mag_covariance: np.ndarray
 
     def __init__(self):
-        # TODO: comments
         self.orientation_covariance = np.array(rospy.get_param("global_ekf/imu_orientation_covariance"))
         self.gyro_covariance = np.array(rospy.get_param("global_ekf/imu_gyro_covariance"))
         self.accel_covariance = np.array(rospy.get_param("global_ekf/imu_accel_covariance"))
