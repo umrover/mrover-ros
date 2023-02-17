@@ -97,7 +97,7 @@ std::optional<bool> ROSHandler::getControllerCalibrated(const std::string& name)
     }
 
     Controller* controller = controller_iter->second;
-
+    controller->askIsCalibrated();
     return std::make_optional<bool>(controller->getCalibrationStatus());
 }
 
