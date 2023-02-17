@@ -70,14 +70,14 @@ class GateTrajectory(Trajectory):
         closest_approach_point = possible_approach_points[approach_idx]
         victory_point = possible_approach_points[1 - approach_idx]
 
-        coordinates = GateTrajectory.gateSelectPath(
+        coordinates = GateTrajectory.gate_select_path(
             rover_position, closest_prep_point, closest_approach_point, center, victory_point, gate
         )
 
         # put the list of coordinates together
         return GateTrajectory(coordinates)
 
-    def gateSelectPath(
+    def gate_select_path(
         rover_position: np.ndarray,
         prep: np.ndarray,
         approach: np.ndarray,
@@ -93,9 +93,9 @@ class GateTrajectory(Trajectory):
         :param center: This is the mid point of the two gate posts,
         :param done: This is the victory point given from spider_gate_trajectory,
         :param gate: Gate object representing the gate that the rover will drive through,
-        :return coordinates: This is a np.array which represents the coordinates of the selected path 
+        :return coordinates: This is a np.array which represents the coordinates of the selected path
         """
-        
+
         # Get the shapes of both the posts
         post_one_shape, post_two_shape = gate.get_post_shape()
 
@@ -120,8 +120,8 @@ def make_shapely_path(rover, path_pts):
     """
     :param rover: position vector of the rover
     :param pathPts: This is a np.array that has the coordinates of the path
-    :return: It returns the shapely object of LineString which put the path points given into 
-    one cohesive line segments. 
+    :return: It returns the shapely object of LineString which put the path points given into
+    one cohesive line segments.
     """
     path_list = np.vstack((rover, path_pts))
     return LineString(path_list)

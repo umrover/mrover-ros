@@ -30,7 +30,7 @@ class Gate:
     post1: np.ndarray
     post2: np.ndarray
 
-    def getPostShape(self):
+    def get_post_shape(self):
         """
         Creates a circular path of RADIUS around each post for checking intersection with our path
         :return: A shapely circle shape
