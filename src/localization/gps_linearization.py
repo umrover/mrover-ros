@@ -103,7 +103,7 @@ class GPSLinearization:
                 child_frame = self.rover_frame
 
             pose_out.publish_to_tf_tree(self.tf_broadcaster, self.world_frame, child_frame)
-        
+
         else:
             pose_msg = PoseWithCovarianceStamped(
                 header=Header(stamp=rospy.Time.now(), frame_id=self.world_frame),
@@ -112,8 +112,8 @@ class GPSLinearization:
                         position=Point(*rover_in_map.position),
                         orientation=Quaternion(*rover_in_map.rotation.quaternion),
                     ),
-                    covariance=self.covariance.flatten().tolist()
-                )
+                    covariance=self.covariance.flatten().tolist(),
+                ),
             )
             self.pose_publisher.publish(pose_msg)
 
