@@ -5,7 +5,7 @@
 #include <cmath>         // for M_PI
 #include <limits>        // for numeric limits
 #include <mutex>         // for mutex
-#include <ros/console.h> // for ROS_INFO
+#include <ros/console.h> // for ROS_ERROR
 #include <string.h>      // for string and memcpy
 
 #define OFF_OP 0x00

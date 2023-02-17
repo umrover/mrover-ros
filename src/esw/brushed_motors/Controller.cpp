@@ -80,8 +80,10 @@ bool Controller::getLimitBEnabled() const {
 // based on allowed voltage of the motor. Also updates angle.
 void Controller::moveOpenLoop(float input) {
     try {
-        assert(-1.0f <= input);
-        assert(input <= 1.0f);
+        if (!(-1.0f <= input && input <= 1.0f)) {
+            ROS_ERROR("moveOpenLoop on %s should only take values between -1.0 and 1.0", name.c_str());
+            return;
+        }
 
         makeLive();
 

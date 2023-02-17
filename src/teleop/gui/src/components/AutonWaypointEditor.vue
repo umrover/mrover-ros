@@ -130,7 +130,6 @@ import VelocityCommand from "./VelocityCommand.vue";
 import WaypointItem from "./AutonWaypointItem.vue";
 import { mapMutations, mapGetters } from "vuex";
 import _ from "lodash";
-import fnvPlus from "fnv-plus";
 import L from "leaflet";
 import ROSLIB from "roslib";
 
@@ -139,15 +138,23 @@ let interval;
 const WAYPOINT_TYPES = {
   NO_SEARCH: 0,
   POST: 1,
-  GATE: 2,
+  GATE: 2
 };
 
 export default {
+  components: {
+    draggable,
+    WaypointItem,
+    AutonModeCheckbox,
+    Checkbox,
+    VelocityCommand
+  },
+
   props: {
     odom: {
       type: Object,
-      required: true,
-    },
+      required: true
+    }
   },
 
   data() {
@@ -159,13 +166,13 @@ export default {
         lat: {
           d: 0,
           m: 0,
-          s: 0,
+          s: 0
         },
         lon: {
           d: 0,
           m: 0,
-          s: 0,
-        },
+          s: 0
+        }
       },
 
       teleopEnabledCheck: false,
@@ -173,7 +180,7 @@ export default {
       nav_status: {
         nav_state_name: "Off",
         completed_wps: 0,
-        total_wps: 0,
+        total_wps: 0
       },
 
       storedWaypoints: [],
@@ -188,11 +195,85 @@ export default {
       nav_status_sub: null,
       course_pub: null,
 
-      rover_stuck_pub: null,
+      rover_stuck_pub: null
     };
   },
+  computed: {
+    ...mapGetters("autonomy", {
+      autonEnabled: "autonEnabled",
+      teleopEnabled: "teleopEnabled",
+      clickPoint: "clickPoint"
+    }),
 
-  beforeUnmount: function () {
+    ...mapGetters("map", {
+      odom_format: "odomFormat"
+    }),
+
+    formatted_odom: function () {
+      return {
+        lat: convertDMS(
+          { d: this.odom.latitude_deg, m: 0, s: 0 },
+          this.odom_format
+        ),
+        lon: convertDMS(
+          { d: this.odom.longitude_deg, m: 0, s: 0 },
+          this.odom_format
+        )
+      };
+    },
+
+    min_enabled: function () {
+      return this.odom_format != "D";
+    },
+
+    sec_enabled: function () {
+      return this.odom_format == "DMS";
+    },
+
+    autonButtonText: function () {
+      return this.autonButtonColor == "yellow"
+        ? "Setting to " + this.autonEnabled
+        : "Autonomy Mode";
+    }
+  },
+
+  watch: {
+    route: function (newRoute) {
+      const waypoints = newRoute.map((waypoint) => {
+        const lat = waypoint.lat;
+        const lon = waypoint.lon;
+        return { latLng: L.latLng(lat, lon), name: waypoint.name };
+      });
+      this.setRoute(waypoints);
+    },
+
+    storedWaypoints: function (newList) {
+      const waypoints = newList.map((waypoint) => {
+        const lat = waypoint.lat;
+        const lon = waypoint.lon;
+        return { latLng: L.latLng(lat, lon), name: waypoint.name };
+      });
+      this.setWaypointList(waypoints);
+    },
+
+    odom_format_in: function (newOdomFormat) {
+      this.setOdomFormat(newOdomFormat);
+      this.input.lat = convertDMS(this.input.lat, newOdomFormat);
+      this.input.lon = convertDMS(this.input.lon, newOdomFormat);
+    },
+
+    clickPoint: function (newClickPoint) {
+      this.input.lat.d = newClickPoint.lat;
+      this.input.lon.d = newClickPoint.lon;
+      this.input.lat.m = 0;
+      this.input.lon.m = 0;
+      this.input.lat.s = 0;
+      this.input.lon.s = 0;
+      this.input.lat = convertDMS(this.input.lat, this.odom_format_in);
+      this.input.lon = convertDMS(this.input.lon, this.odom_format_in);
+    }
+  },
+  beforeDestroy: function () {
     window.clearInterval(interval);
   },
 
@@ -200,21 +281,21 @@ export default {
     (this.course_pub = new ROSLIB.Service({
       ros: this.$ros,
       name: "/enable_auton",
-      serviceType: "mrover/PublishEnableAuton",
+      serviceType: "mrover/PublishEnableAuton"
     })),
       (this.nav_status_sub = new ROSLIB.Topic({
         ros: this.$ros,
         name: "/smach/container_status",
-        messageType: "smach_msgs/SmachContainerStatus",
+        messageType: "smach_msgs/SmachContainerStatus"
       })),
       (this.rover_stuck_pub = new ROSLIB.Topic({
         ros: this.$ros,
         name: "/rover_stuck",
-        messageType: "std_msgs/Bool",
+        messageType: "std_msgs/Bool"
       })),
       this.nav_status_sub.subscribe(
         (msg) => {
-          if (msg.active_states[0] != "Off" && !this.autonEnabled) {
+          if (msg.active_states[0] !== "OffState" && !this.autonEnabled) {
             return;
           }
           this.waitingForNav = false;
@@ -223,49 +304,14 @@ export default {
 
         // Interval for publishing Course
         (interval = window.setInterval(() => {
-          let course;
-
-          // If Auton Enabled send course
-          if (this.autonEnabled) {
-            course = {
-              enable: true,
-              // Map for every waypoint in the current route
-              waypoints: _.map(this.route, (waypoint) => {
-                const lat = waypoint.lat;
-                const lon = waypoint.lon;
-
-                // Return a GPSWaypoint.msg formatted object for each
-                return {
-                  latitude_degrees: lat,
-                  longitude_degrees: lon,
-                  // WaypointType.msg format
-                  type: {
-                    val: waypoint.gate
-                      ? WAYPOINT_TYPES.GATE
-                      : waypoint.post
-                      ? WAYPOINT_TYPES.POST
-                      : WAYPOINT_TYPES.NO_SEARCH,
-                  },
-                  id: parseFloat(waypoint.id),
-                };
-              }),
-            };
-          } else {
-            // Else send false and no array
-            course = {
-              enable: false,
-              waypoints: [],
-            };
-          }
-
-          const course_request = new ROSLIB.ServiceRequest({
-            enableMsg: course,
-          });
-
-          this.course_pub.callService(course_request, (res) => {});
           this.rover_stuck_pub.publish({ data: this.roverStuck });
         }, 100))
       );
+  },
+
+  mounted: function () {
+    //Send auton off if GUI is refreshed
+    this.sendEnableAuton();
   },
 
   methods: {
@@ -274,12 +320,55 @@ export default {
       setWaypointList: "setWaypointList",
       setHighlightedWaypoint: "setHighlightedWaypoint",
       setAutonMode: "setAutonMode",
-      setTeleopMode: "setTeleopMode",
+      setTeleopMode: "setTeleopMode"
     }),
 
     ...mapMutations("map", {
-      setOdomFormat: "setOdomFormat",
+      setOdomFormat: "setOdomFormat"
     }),
+
+    sendEnableAuton() {
+      let course;
+
+      // If Auton Enabled send course
+      if (this.autonEnabled) {
+        course = {
+          enable: true,
+          // Map for every waypoint in the current route
+          waypoints: _.map(this.route, (waypoint) => {
+            const lat = waypoint.lat;
+            const lon = waypoint.lon;
+
+            // Return a GPSWaypoint.msg formatted object for each
+            return {
+              latitude_degrees: lat,
+              longitude_degrees: lon,
+              // WaypointType.msg format
+              type: {
+                val: waypoint.gate
+                  ? WAYPOINT_TYPES.GATE
+                  : waypoint.post
+                  ? WAYPOINT_TYPES.POST
+                  : WAYPOINT_TYPES.NO_SEARCH
+              },
+              id: parseInt(waypoint.id)
+            };
+          })
+        };
+      } else {
+        // Else send false and no array
+        course = {
+          enable: false,
+          waypoints: []
+        };
+      }
+
+      const course_request = new ROSLIB.ServiceRequest({
+        enableMsg: course
+      });
+
+      this.course_pub.callService(course_request, () => {});
+    },
 
     deleteItem: function (payload) {
       if (this.highlightedWaypoint == payload.index) {
@@ -334,7 +423,7 @@ export default {
         lat: convertDMS(coord.lat, "D").d,
         lon: convertDMS(coord.lon, "D").d,
         gate: false,
-        post: false,
+        post: false
       });
     },
 
@@ -347,97 +436,14 @@ export default {
       // This will trigger the yellow "waiting for nav" state of the checkbox only if we are enabling the button
       this.autonButtonColor = val ? "yellow" : "red";
       this.waitingForNav = true;
+      this.sendEnableAuton();
     },
 
-    toggleTeleopMode: function (val) {
+    toggleTeleopMode: function () {
       this.teleopEnabledCheck = !this.teleopEnabledCheck;
       this.$emit("toggleTeleop", this.teleopEnabledCheck);
-    },
-  },
-
-  watch: {
-    route: function (newRoute) {
-      const waypoints = newRoute.map((waypoint) => {
-        const lat = waypoint.lat;
-        const lon = waypoint.lon;
-        return { latLng: L.latLng(lat, lon), name: waypoint.name };
-      });
-      this.setRoute(waypoints);
-    },
-
-    storedWaypoints: function (newList) {
-      const waypoints = newList.map((waypoint) => {
-        const lat = waypoint.lat;
-        const lon = waypoint.lon;
-        return { latLng: L.latLng(lat, lon), name: waypoint.name };
-      });
-      this.setWaypointList(waypoints);
-    },
-
-    odom_format_in: function (newOdomFormat) {
-      this.setOdomFormat(newOdomFormat);
-      this.input.lat = convertDMS(this.input.lat, newOdomFormat);
-      this.input.lon = convertDMS(this.input.lon, newOdomFormat);
-    },
-
-    clickPoint: function (newClickPoint) {
-      this.input.lat.d = newClickPoint.lat;
-      this.input.lon.d = newClickPoint.lon;
-      this.input.lat.m = 0;
-      this.input.lon.m = 0;
-      this.input.lat.s = 0;
-      this.input.lon.s = 0;
-      this.input.lat = convertDMS(this.input.lat, this.odom_format_in);
-      this.input.lon = convertDMS(this.input.lon, this.odom_format_in);
-    },
-  },
-
-  computed: {
-    ...mapGetters("autonomy", {
-      autonEnabled: "autonEnabled",
-      teleopEnabled: "teleopEnabled",
-      clickPoint: "clickPoint",
-    }),
-
-    ...mapGetters("map", {
-      odom_format: "odomFormat",
-    }),
-
-    formatted_odom: function () {
-      return {
-        lat: convertDMS(
-          { d: this.odom.latitude_deg, m: 0, s: 0 },
-          this.odom_format
-        ),
-        lon: convertDMS(
-          { d: this.odom.longitude_deg, m: 0, s: 0 },
-          this.odom_format
-        ),
-      };
-    },
-
-    min_enabled: function () {
-      return this.odom_format != "D";
-    },
-
-    sec_enabled: function () {
-      return this.odom_format == "DMS";
-    },
-
-    autonButtonText: function () {
-      return this.autonButtonColor == "yellow"
-        ? "Setting to " + this.autonEnabled
-        : "Autonomy Mode";
-    },
-  },
-
-  components: {
-    draggable,
-    WaypointItem,
-    AutonModeCheckbox,
-    Checkbox,
-    VelocityCommand,
-  },
+    }
+  }
 };
 </script>
 

@@ -36,12 +36,12 @@ export default {
 
     this.keyboard_pub = new ROSLIB.Topic({
       ros: this.$ros,
-      name: "/gimbal_cmd",
-      messageType: "mrover/GimbalCmd",
+      name: "/mast_gimbal_cmd",
+      messageType: "mrover/MastGimbal",
     });
   },
 
-  beforeUnmount: function () {
+  beforeDestroy: function () {
     document.removeEventListener("keyup", this.keyMonitorUp);
     document.removeEventListener("keydown", this.keyMonitorDown);
   },
