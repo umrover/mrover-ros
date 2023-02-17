@@ -8,9 +8,6 @@ from std_msgs.msg import Header
 import tf2_ros
 import numpy as np
 from pymap3d.enu import geodetic2enu
-from typing import List
-
-# from tf.transformations import quaternion_about_axis, quaternion_multiply
 
 
 class GPSLinearization:
@@ -43,7 +40,7 @@ class GPSLinearization:
 
     # covariance config
     use_dop_cov: bool
-    config_gps_covariance: List[List[float]]
+    config_gps_covariance: np.ndarray
 
     def __init__(self):
         # read required parameters, if they don't exist an error will be thrown
@@ -59,7 +56,7 @@ class GPSLinearization:
         self.rover_frame = rospy.get_param("rover_frame")
 
         self.use_dop_cov = rospy.get_param("global_ekf/use_gps_dop_covariance")
-        self.config_gps_covariance = rospy.get_param("global_ekf/gps_covariance", None)
+        self.config_gps_covariance = np.array(rospy.get_param("global_ekf/gps_covariance", None))
 
         # init to zero pose and either zero covariance or configured covariance
         self.pose = SE3()
@@ -105,7 +102,8 @@ class GPSLinearization:
                 pose_out = rover_in_map
                 child_frame = self.rover_frame
 
-            pose_out.publish_to_tf_tree(self.tf_broadcaster, parent_frame=self.world_frame, child_frame=child_frame)
+            pose_out.publish_to_tf_tree(self.tf_broadcaster, self.world_frame, child_frame)
+        
         else:
             pose_msg = PoseWithCovarianceStamped(
                 header=Header(stamp=rospy.Time.now(), frame_id=self.world_frame),
@@ -114,8 +112,8 @@ class GPSLinearization:
                         position=Point(*rover_in_map.position),
                         orientation=Quaternion(*rover_in_map.rotation.quaternion),
                     ),
-                    covariance=self.covariance.flatten().tolist(),
-                ),
+                    covariance=self.covariance.flatten().tolist()
+                )
             )
             self.pose_publisher.publish(pose_msg)
 
@@ -130,6 +128,8 @@ class GPSLinearization:
         cartesian = np.array(
             geodetic2enu(msg.latitude, msg.longitude, msg.altitude, self.ref_lat, self.ref_lon, self.ref_alt, deg=True)
         )
+
+        # if coordinates are NaN (GPS has no fix), don't use the data
         if np.any(np.isnan(cartesian)):
             return
 
