@@ -4,30 +4,9 @@
     <div class="controls">
       <!-- Make opposite option disappear so that we cannot select both -->
       <!-- Change to radio buttons in the future -->
-      <div>
-        <Checkbox
-          ref="arm-enabled"
-          :name="'Arm Enabled'"
-          @toggle="updateArmEnabled($event)"
-        />
-      </div>
-      <br />
-      <div style="min-width: none">
-        <Checkbox
-          ref="open-loop-enabled"
-          :disabled="servo_enabled"
-          :name="'Open Loop Enabled'"
-          @toggle="open_loop_enabled = $event"
-        />
-      </div>
-      <div>
-        <Checkbox
-          ref="servo-enabled"
-          :disabled="open_loop_enabled"
-          :name="'Servo'"
-          @toggle="servo_enabled = $event"
-        />
-      </div>
+      <input type="radio" ref="arm-enabled" v-model="arm_controls" :name="'Arm Enabled'" value="arm_disabled" @change="updateArmEnabled()"> Arm Disabled
+      <input type="radio" ref="open-loop-enabled" v-model="arm_controls" :name="'Open Loop Enabled'" value="open_loop" @change="updateArmEnabled()"> Open Loop
+      <input type="radio" ref="servo-enabled" v-model="arm_controls" :name="'Servo'" value="servo" @change="updateArmEnabled()"> Servo
     </div>
     <h3>Joint Locks</h3>
     <div class="controls">
@@ -55,9 +34,8 @@ export default {
   },
   data() {
     return {
-      arm_enabled: false,
-      open_loop_enabled: false,
-      servo_enabled: false,
+      armcontrols_pub: null,
+      arm_controls: "arm_disabled",
       joystick_pub: null,
       joystickservo_pub: null,
       jointlock_pub: null,
@@ -71,6 +49,12 @@ export default {
   },
 
   created: function () {
+    this.armcontrols_pub = new ROSLIB.Topic({
+      ros: this.$ros,
+      name: "ra/mode",
+      messageType: "std_msgs/String"
+    });
+    this.updateArmEnabled();
     this.joystick_pub = new ROSLIB.Topic({
       ros: this.$ros,
       name: "/xbox/ra_open_loop",
@@ -120,8 +104,12 @@ export default {
   },
 
   methods: {
-    updateArmEnabled: function (enabled) {
-      this.arm_enabled = enabled;
+    updateArmEnabled: function () {
+      const armData = {
+        data: this.arm_controls
+      };
+      var armcontrolsmsg = new ROSLIB.Message(armData);
+      this.armcontrols_pub.publish(armcontrolsmsg);
     },
 
     updateJointsEnabled: function (jointnum, enabled) {
