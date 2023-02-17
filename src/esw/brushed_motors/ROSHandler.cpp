@@ -48,7 +48,6 @@ std::optional<float> ROSHandler::moveControllerOpenLoop(const std::string& name,
     auto controller_iter = ControllerMap::controllersByName.find(name);
 
     if (controller_iter == ControllerMap::controllersByName.end()) {
-        // ROS_ERROR("Could not find controller named %s.", name.c_str());
         return std::nullopt;
     }
 
