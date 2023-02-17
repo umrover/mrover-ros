@@ -146,7 +146,7 @@ class ArmControl:
         """
         return button_array[self.xbox_mappings[pos_button]] - button_array[self.xbox_mappings[neg_button]]
 
-    def ra_control_callback(self, msg: Joy) -> None:
+    def ra_open_loop_callback(self, msg: Joy) -> None:
         """
         Converts a Joy message with the Xbox inputs
         to a JointState to control the RA Arm in open loop
@@ -209,7 +209,7 @@ def main():
     drive = Drive()
 
     ros.Subscriber("joystick", Joy, drive.teleop_drive_callback)
-    ros.Subscriber("xbox/ra_control", Joy, arm.ra_control_callback)
+    ros.Subscriber("xbox/ra_open_loop", Joy, arm.ra_open_loop_callback)
     ros.Subscriber("xbox/sa_control", Joy, arm.sa_control_callback)
 
     ros.spin()
