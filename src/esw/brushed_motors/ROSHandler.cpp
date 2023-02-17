@@ -135,7 +135,8 @@ void ROSHandler::moveCarousel(const mrover::Carousel::ConstPtr& msg) {
         ROS_ERROR("Closed loop is currently not supported for carousel commands.");
     }
     std::optional<bool> calibrated = getControllerCalibrated("carousel");
-    calibrationStatusPublisherRA.publish(calibrationStatusRA);
+    calibrationStatusCarousel.calibrated[0] = calibrated.value_or(false);
+    calibrationStatusPublisherCarousel.publish(calibrationStatusCarousel);
 }
 
 // REQUIRES: nothing
