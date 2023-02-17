@@ -20,8 +20,7 @@ void ROSHandler::init(ros::NodeHandle* rosNode) {
     jointDataRA.effort = std::vector<double>(RANames.size(), std::nan(""));
 
     calibrationStatusRA.names = std::vector<std::string>(RANames.begin(), RANames.end());
-    //    calibrationStatusRA.calibrated = std::vector<bool>(calibrationStatusRA.names.size(), false); // TODO FIGURE THIS OUT
-    calibrationStatusRA.calibrated = {false, false, false, false, false};
+    calibrationStatusRA.calibrated = std::vector<uint8_t>(calibrationStatusRA.names.size(), false);
     calibrationStatusPublisherRA = n->advertise<mrover::Calibrated>("ra_is_calibrated", 1);
     jointDataPublisherRA = n->advertise<sensor_msgs::JointState>("ra_data", 1);
 
@@ -36,8 +35,7 @@ void ROSHandler::init(ros::NodeHandle* rosNode) {
     jointDataSA.effort = std::vector<double>(SANames.size(), std::nan(""));
 
     calibrationStatusSA.names = std::vector<std::string>(SANames.begin(), SANames.end());
-    //    calibrationStatusSA.calibrated = std::vector<bool>(calibrationStatusSA.names.size(), false); // TODO FIGURE THIS OUT
-    calibrationStatusSA.calibrated = {false, false, false, false, false};
+    calibrationStatusSA.calibrated = std::vector<uint8_t>(calibrationStatusSA.names.size(), false);
     calibrationStatusPublisherSA = n->advertise<mrover::Calibrated>("sa_is_calibrated", 1);
     jointDataPublisherSA = n->advertise<sensor_msgs::JointState>("sa_data", 1);
 
