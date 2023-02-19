@@ -249,7 +249,7 @@ class StreamingManager:
             endpoint = list(self._video_devices[device].output_by_endpoint.keys())[0]
             self._video_devices[device].remove_endpoint(endpoint)
             service, stream = self._service_streams_by_endpoints[endpoint]
-            self._services[service][stream].device = -1
+            self._services[service][stream] = CameraCmd(-1, 0)
         assert self._video_devices[device].video_source is None, "The video source should be None by now"
         self._active_devices -= 1
 
@@ -365,7 +365,11 @@ class StreamingManager:
                     endpoint, self._list_of_resolution_options[requested_resolution_option]
                 )
                 currently_is_video_source = self._video_devices[requested_device].is_streaming()
-                self._services[service_index][stream].device = requested_device if currently_is_video_source else -1
+                self._services[service_index][stream].device = (
+                    CameraCmd(requested_device, requested_resolution_option)
+                    if currently_is_video_source
+                    else CameraCmd(-1, 0)
+                )
 
                 if previously_no_video_source and currently_is_video_source:
                     self._active_devices += 1
