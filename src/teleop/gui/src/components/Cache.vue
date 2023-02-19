@@ -8,9 +8,6 @@
       :backwards-key="37"
       @velocity="velocity = $event"
     ></OpenLoopControl>
-
-    <!-- Cache is open loop for now 11/9/22 -->
-    <!-- TODO: Add Indicator for cache being opened or closed once we have closed loop -->
   </div>
 </template>
 
