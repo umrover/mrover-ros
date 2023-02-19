@@ -10,13 +10,6 @@
       />
       <h1>ISH Dashboard</h1>
       <div class="spacer"></div>
-      <!-- TODO: Add back comms indicators for ROSBridge Server Connection and Rover Connection -->
-      <!-- <div class="comms">
-      <ul id="vitals">
-        <li><LEDIndicator v-bind:connected="connections.websocket" name="Web Socket" /></li>
-        <li><LEDIndicator v-bind:connected="connections.lcm" name="Rover Connection Status" /></li>
-      </ul>
-    </div> -->
       <div class="spacer"></div>
       <div class="help">
         <img
