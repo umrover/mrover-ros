@@ -101,7 +101,7 @@ class VideoDevices:
                 self.output_by_endpoint[endpoint] = jetson.utils.videoOutput(
                     f"rtp://{endpoint}", argv=requested_resolution.arguments
                 )
-                self.resolution_args = requested_resolution.arguments
+                self.resolution = requested_resolution
             except Exception:
                 rospy.logerr(f"Failed to create video source for device {self.device}.")
                 self.video_source = None
