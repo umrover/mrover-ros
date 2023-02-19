@@ -30,7 +30,6 @@ set(MROVER_MESSAGE_FILES
         Chassis.msg
         Course.msg
         Diagnostic.msg
-        DriveStatus.msg
         EnableAuton.msg
         GPSWaypoint.msg
         ImuAndMag.msg

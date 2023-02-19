@@ -30,7 +30,7 @@ brushed_motors:
     - name: "joint_a"
       driver_voltage: 36.0
       motor_max_voltage: 24.0
-      voltage_multiplier: 0.44
+      voltage_multiplier: 0.75
       mcu_id: 1
       motor_id: 0
       quad_cpr: -28800.0
@@ -144,7 +144,7 @@ cameras:
 rover:
   length: 0.86
   width: 0.86
-  max_speed: 1.5
+  max_speed: 2.0
 
 wheel:
   gear_ratio: 50.0
@@ -153,21 +153,40 @@ wheel:
 brushless:
   using_pi3_hat: true
   drive:
-    FrontLeft:
-      id: 3
-      multiplier: -1
-    FrontRight:
-      id: 0
-      multiplier: 1
-    MiddleLeft:
-      id: 4
-      multiplier: -1
-    MiddleRight:
-      id: 1
-      multiplier: 1
-    BackLeft:
-      id: 5
-      multiplier: -1
-    BackRight:
-      id: 2
-      multiplier: 1
+    max_torque: 0.3
+    controllers:
+      FrontLeft:
+        id: 3
+        multiplier: -1
+      FrontRight:
+        id: 0
+        multiplier: 1
+      MiddleLeft:
+        id: 4
+        multiplier: -1
+      MiddleRight:
+        id: 1
+        multiplier: 1
+      BackLeft:
+        id: 5
+        multiplier: -1
+      BackRight:
+        id: 2
+        multiplier: 1
+  arm:
+    controllers:
+      joint_c:
+        id: 6
+        max_rps: 50
+        max_torque: 0.3
+        multiplier: -1
+      joint_d:
+        id: 7
+        max_rps: 80
+        max_torque: 0.13
+        multiplier: 1
+      joint_e:
+        id: 8
+        max_rps: 70
+        max_torque: 0.13
+        multiplier: -1
