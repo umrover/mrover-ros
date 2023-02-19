@@ -2,7 +2,7 @@
 
 #include "Controller.h"
 #include <XmlRpcValue.h> // for XmlRpc::XmlRpcValue
-#include <ros/console.h> // for ROS_INFO
+#include <ros/console.h> // for ROS_ERROR
 #include <unordered_map> // for unordered_map
 
 /*

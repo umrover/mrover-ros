@@ -1,6 +1,6 @@
 <template>
   <div class="wrap">
-    <div class="box">
+    <div class="box box1">
       <div class="identification">Name: <input class="box" v-model="name" size="15" /></div>
       <br />
       <input v-model="odom_format_in" type="radio" value="D" class="checkbox" />
@@ -39,12 +39,11 @@
         </p>
         E
       </div>
-      <br />
       <div class="center">
         <button class="button" @click="addWaypoint(input)">Add Waypoint</button>
       </div>
     </div>
-    <div class="box1">
+    <div class="box2">
       <div class="all-waypoints">
         <h4 class="waypoint-headers">Waypoints</h4>
         <button class="button" @click="clearWaypoint">Clear Waypoints</button>
@@ -67,7 +66,7 @@
 import '../assets/style.css';
 import draggable from "vuedraggable";
 import { convertDMS } from "../utils.js";
-import WaypointItem from "./ERDWaypointItem.vue";
+import WaypointItem from "./BasicWaypointItem.vue";
 import Checkbox from "./Checkbox.vue";
 import { mapMutations, mapGetters } from "vuex";
 import _ from "lodash";
@@ -162,6 +161,12 @@ export default {
     },
   },
 
+  created: function () {
+    // Reset waypoint editors
+    this.setHighlightedWaypoint(-1);
+    this.setWaypointList([]);
+  },
+
   computed: {
     ...mapGetters("erd", {
       highlightedWaypoint: "highlightedWaypoint",
@@ -195,11 +200,11 @@ export default {
   display: flex;
   flex-direction: row;
   height: 100%;
-  margin: auto;
+  width: 95%;
 }
 
 .dragArea {
-  height: 100%;
+  height: 95%;
 }
 
 .identification {
@@ -212,10 +217,14 @@ export default {
 }
 
 .box1 {
+  height: 100%;
+  width: 40%;
+}
+
+.box2 {
   overflow-y: scroll;
-  min-height: min-content;
-  max-height: 500px;
-  width: 100%;
+  height: 100%;
+  width: 60%;
 }
 
 .center {
@@ -224,6 +233,7 @@ export default {
 
 .all-waypoints {
   display: inline-flex;
+  height: 5%;
 }
 
 .all-waypoints button {
@@ -232,11 +242,6 @@ export default {
   height: 20px;
   padding: 0;
 }
-
-.joystick {
-  grid-area: joystick;
-}
-
 .wp-input p {
   display: inline;
 }

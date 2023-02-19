@@ -6,7 +6,7 @@
     </div>
     <DriveControls></DriveControls>
     <ArmControls></ArmControls>
-    <GimbalControls></GimbalControls>
+    <MastGimbalControls></MastGimbalControls>
     <JointStateTable
       :joint-state-data="jointState"
       :vertical="true"
@@ -19,7 +19,7 @@
 import ROSLIB from "roslib";
 import DriveControls from "./DriveControls.vue";
 import ArmControls from "./ArmControls.vue";
-import GimbalControls from "./GimbalControls.vue";
+import MastGimbalControls from "./MastGimbalControls.vue";
 import JointStateTable from "./JointStateTable.vue";
 import MoteusStateTable from "./MoteusStateTable.vue";
 import '../assets/style.css';
@@ -28,8 +28,8 @@ export default {
   components: {
     DriveControls,
     ArmControls,
-    GimbalControls,
     JointStateTable,
+    MastGimbalControls,
     MoteusStateTable,
   },
   data() {

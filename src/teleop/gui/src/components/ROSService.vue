@@ -1,39 +1,37 @@
 <template>
-    <div>
-      <div class="wrap">
-      <div class="page_header">
-        <img src="/static/new_mrover.png" alt="MRover" title="MRover" width="185" height="53" />
-        <h1>ROS Service</h1>
-        <div class="spacer"></div>
+  <div class="wrap">
+    <div class="page_header">
+      <img src="/static/new_mrover.png" alt="MRover" title="MRover" width="185" height="53" />
+      <h1>ROS Service</h1>
+      <div class="spacer"></div>
+    </div>
+          
+    <div class="pages box">
+      <div class="requestCells">
+          <label for="'service'">Service:</label>
+          <select class="box" id="service" v-model="selectedService" @change="switchService()" required> 
+          <option value="" selected>Select a service</option>
+          <option v-for="option in service_options" v-bind:value="option">
+          {{ option }}
+          </option>
+          </select>
+
+        <textarea
+          v-if="args != '' && args != '{}'"
+          id="textarea"
+          v-model="args"
+          class="box"
+        ></textarea>
+
+        <p>{{ schema }}</p>
+        <p v-if="error">JSON Syntax Error! Cannot send...</p>
+
+        <button class="button" type="button" @click="sendArgs()">
+          Send
+        </button>
       </div>
-            
-      <div class="pages box">
-        <div class="requestCells">
-            <label for="'service'">Service:</label>
-            <select class="box" id="service" v-model="selectedService" @change="switchService()" required> 
-            <option value="" selected>Select a service</option>
-            <option v-for="option in service_options" v-bind:value="option">
-            {{ option }}
-            </option>
-            </select>
 
-          <textarea
-            v-if="args != '' && args != '{}'"
-            id="textarea"
-            v-model="args"
-            class="box"
-          ></textarea>
-
-          <p>{{ schema }}</p>
-          <p v-if="error">JSON Syntax Error! Cannot send...</p>
-
-          <button class="button" type="button" @click="sendArgs()">
-            Send
-          </button>
-        </div>
-
-        <p class="box responseCell">{{ response }}</p>
-      </div>
+      <p class="box responseCell">{{ response }}</p>
     </div>
   </div>
 </template>
@@ -195,11 +193,11 @@ p {
 .pages {
   display: grid;
   grid-gap: 10px;
-  grid-template-columns: repeat(2, 1fr);
+  grid-template-columns: 1fr 1fr;
   grid-template-rows: 1fr;
   grid-template-areas: "requestCell responseCell";
   margin: 10px;
-
+  height: 90%;
 }
 
 #textarea {
@@ -225,7 +223,8 @@ p {
 
 .responseCell {
   grid-area: responseCell;
-  width: 100%;
+  width: 95%;
+  overflow-y: scroll;
 }
 
 .requestCells {
