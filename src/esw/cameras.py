@@ -365,7 +365,7 @@ class StreamingManager:
                     endpoint, self._list_of_resolution_options[requested_resolution_option]
                 )
                 currently_is_video_source = self._video_devices[requested_device].is_streaming()
-                self._services[service_index][stream].device = (
+                self._services[service_index][stream] = (
                     CameraCmd(requested_device, requested_resolution_option)
                     if currently_is_video_source
                     else CameraCmd(-1, 0)
