@@ -64,6 +64,18 @@
     <div class="box light-bg moteus">
       <MoteusStateTable :moteus-state-data="moteusState" />
     </div>
+    <div class="box light-bg limit">
+      <h3>Limit Switches</h3>
+      <LimitSwitch :state_name="'joint_1_switch'" :name="'Joint 1 Switch'"/>
+      <LimitSwitch :state_name="'joint_2_switch'" :name="'Joint 2 Switch'"/>
+      <LimitSwitch :state_name="'joint_3_switch'" :name="'Joint 3 Switch'"/>
+    </div>
+    <div class="box light-bg calibration">
+      <h3>Calibrations</h3>
+      <CalibrationCheckbox :name="'Joint 1 Calibration'"/>
+      <CalibrationCheckbox :name="'Joint 2 Calibration'"/>
+      <CalibrationCheckbox :name="'Joint 3 Calibration'"/>
+    </div>
     <div v-show="false">
       <MastGimbalControls></MastGimbalControls>
     </div>
@@ -83,6 +95,8 @@ import * as qte from "quaternion-to-euler";
 import Cameras from "./Cameras.vue";
 import MoteusStateTable from "./MoteusStateTable.vue";
 import JointStateTable from "./JointStateTable.vue";
+import LimitSwitch from "./LimitSwitch.vue";
+import CalibrationCheckbox from "./CalibrationCheckbox.vue";
 
 export default {
   components: {
@@ -96,6 +110,8 @@ export default {
     MoteusStateTable,
     PDBFuse,
     SAArmControls,
+    LimitSwitch,
+    CalibrationCheckbox
   },
   data() {
     return {
@@ -172,14 +188,14 @@ export default {
   display: grid;
   overflow: hidden;
   grid-gap: 10px;
-  grid-template-columns: 40vw 5vw 25vw 25vw;
+  grid-template-columns: 30vw 20vw auto auto;
   grid-template-rows: 60px 70vh auto auto auto;
   grid-template-areas:
     "header header header header"
     "map map waypoints waypoints"
     "cameras cameras cameras scoop"
-    "arm moteus moteus jointState"
-    "pdb moteus moteus jointState";
+    "arm limit moteus jointState"
+    "pdb calibration moteus jointState";
   font-family: sans-serif;
   height: auto;
 }
@@ -309,6 +325,14 @@ h2 {
 
 .moteus {
   grid-area: moteus;
+}
+
+.limit {
+  grid-area: limit;
+}
+
+.calibration {
+  grid-area: calibration;
 }
 
 .Joystick {
