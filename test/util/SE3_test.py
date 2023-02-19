@@ -110,20 +110,18 @@ class TestSE3(unittest.TestCase):
         self.assertTrue(r3.rotation.is_approx(r7.rotation))
         self.assertFalse(r3.is_approx(r7))
         self.assertFalse(r7.is_approx(r3))
-    
+
     def test_transform_matrix(self):
         # test that an SE3 from a transform matrix is the same as an SE3
         # from an equivalent quaternion and position
-        r = np.array([[0, -1, 0],
-                      [1, 0, 0],
-                      [0, 0, 1]])
+        r = np.array([[0, -1, 0], [1, 0, 0], [0, 0, 1]])
         t = np.array([1, 2, 3])
         m = np.eye(4)
         m[:3, :3] = r
         m[:3, 3] = t
         s1 = SE3.from_transform_matrix(m)
 
-        q = np.array([0, 0, np.sqrt(2)/2, np.sqrt(2)/2])
+        q = np.array([0, 0, np.sqrt(2) / 2, np.sqrt(2) / 2])
         s2 = SE3.from_pos_quat(position=t, quaternion=q)
         self.assertTrue(np.allclose(t, s1.position))
         self.assertTrue(np.allclose(r, s1.rotation.rotation_matrix()))

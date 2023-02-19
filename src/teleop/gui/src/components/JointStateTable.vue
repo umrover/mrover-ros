@@ -33,9 +33,9 @@
         <tbody>
           <tr v-for="(joint, index) in jointStateData.name" :key="index">
             <td class="tableElement">{{ joint }}</td>
-            <td class="tableElement">{{ jointStateData.position[index] }}</td>
-            <td class="tableElement">{{ jointStateData.velocity[index] }}</td>
-            <td class="tableElement">{{ jointStateData.effort[index] }}</td>
+            <td class="tableElement">{{ jointStateData.position[index].toFixed(3) }}</td>
+            <td class="tableElement">{{ jointStateData.velocity[index].toFixed(3) }}</td>
+            <td class="tableElement">{{ jointStateData.effort[index].toFixed(3) }}</td>
           </tr>
         </tbody>
       </table>
@@ -66,7 +66,7 @@
           <tr>
             <th class="tableElement">Motor</th>
             <th v-for="name in jointStateData.name" class="tableElement">
-              {{ name }}
+              {{ name.toFixed(3) }}
             </th>
           </tr>
           <tr>
@@ -75,7 +75,7 @@
               v-for="position in jointStateData.position"
               class="tableElement"
             >
-              {{ position }}
+              {{ position.toFixed(3) }}
             </td>
           </tr>
           <tr>
@@ -84,13 +84,13 @@
               v-for="velocity in jointStateData.velocity"
               class="tableElement"
             >
-              {{ velocity }}
+              {{ velocity.toFixed(3) }}
             </td>
           </tr>
           <tr>
             <th class="tableElement">Effort (Nm)</th>
             <td v-for="effort in jointStateData.effort" class="tableElement">
-              {{ effort }}
+              {{ effort.toFixed(3) }}
             </td>
           </tr>
         </thead>

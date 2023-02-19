@@ -15,12 +15,24 @@ imu_driver:
 
 brushed_motors:
   controllers:
+    - name: "cache"
+      driver_voltage: 12.0
+      motor_max_voltage: 12.0
+      mcu_id: 2
+      motor_id: 2
+      inversion: 1.0
+    - name: "carousel"
+      driver_voltage: 12.0
+      motor_max_voltage: 12.0
+      mcu_id: 2
+      motor_id: 1
+      inversion: 1.0
     - name: "joint_a"
       driver_voltage: 36.0
       motor_max_voltage: 24.0
-      voltage_multiplier: 0.44
-      nucleo: 1
-      channel: 0
+      voltage_multiplier: 0.75
+      mcu_id: 1
+      motor_id: 0
       quad_cpr: -28800.0
       kP: -0.005
       kI: -0.0
@@ -28,79 +40,82 @@ brushed_motors:
     - name: "joint_b"
       driver_voltage: 36.0
       motor_max_voltage: 12.0
-      nucleo: 1
-      channel: 1
+      mcu_id: 2
+      motor_id: 0
       quad_cpr: 4096.0
       kP: -0.1
       kI: -0.0
-      inversion: 1.0
-    - name: "joint_c"
-      driver_voltage: 36.0
-      motor_max_voltage: 24.0
-      nucleo: 2
-      channel: 0
-      quad_cpr: 136800.0
-      kP: -0.005
-      kI: -0.0
-      inversion: 1.0
-    - name: "joint_d"
-      driver_voltage: 36.0
-      motor_max_voltage: 24.0
-      nucleo: 2
-      channel: 1
-      quad_cpr: 72000.0
-      kP: -0.005
-      kI: -0.0
-      inversion: 1.0
-    - name: "joint_e"
-      driver_voltage: 36.0
-      motor_max_voltage: 24.0
-      nucleo: 3
-      channel: 0
-      quad_cpr: -72000.0
-      kP: -0.005
-      kI: -0.0
-      inversion: 1.0
+      inversion: -1.0
     - name: "joint_f"
-      driver_voltage: 36.0
-      motor_max_voltage: 24.0
-      nucleo: 3
-      channel: 1
+      driver_voltage: 12.0
+      motor_max_voltage: 8.0
+      mcu_id: 1
+      motor_id: 1
       quad_cpr: -2048.0
       kP: 0.05
       kI: 0.0
-      inversion: 1.0
+      inversion: -1.0
     - name: "finger"
       driver_voltage: 12.0
       motor_max_voltage: 12.0
-      nucleo: 3
-      channel: 2
+      mcu_id: 1
+      motor_id: 3
       inversion: 1.0
     - name: "gripper"
       driver_voltage: 12.0
       motor_max_voltage: 12.0
-      nucleo: 2
-      channel: 2
+      mcu_id: 1
+      motor_id: 2
       inversion: 1.0
-    - name: "mast_up_down"
+    - name: "mast_gimbal_up_down"
       driver_voltage: 12.0
       motor_max_voltage: 12.0
-      nucleo: 3
-      channel: 3
+      mcu_id: 2
+      motor_id: 4
       inversion: -1.0
-    - name: "mast_left_right"
+    - name: "mast_gimbal_left_right"
       driver_voltage: 12.0
       motor_max_voltage: 12.0
-      nucleo: 2
-      channel: 3
+      mcu_id: 2
+      motor_id: 3
       inversion: -1.0
+    - name: "microscope"
+      driver_voltage: 12.0
+      motor_max_voltage: 12.0
+      mcu_id: 1
+      motor_id: 4
+      inversion: 1.0
+    - name: "sa_joint_1"
+      driver_voltage: 36.0
+      motor_max_voltage: 12.0
+      mcu_id: 1
+      motor_id: 0
+      inversion: 1.0
+    - name: "sa_joint_2"
+      driver_voltage: 12.0
+      motor_max_voltage: 12.0
+      mcu_id: 1
+      motor_id: 1
+      inversion: 1.0
+    - name: "sa_joint_3"
+      driver_voltage: 12.0
+      motor_max_voltage: 12.0
+      mcu_id: 1
+      motor_id: 2
+      inversion: 1.0
+    - name: "scoop"
+      driver_voltage: 12.0
+      motor_max_voltage: 12.0
+      mcu_id: 1
+      motor_id: 3
+      inversion: 1.0
   i2c_device_file: "/dev/i2c-1"
   test: false
 
 rover:
   length: 0.86
   width: 0.86
-  max_speed: 1.5
+  max_speed: 2.0
 
 wheel:
   gear_ratio: 50.0
@@ -109,21 +124,40 @@ wheel:
 brushless:
   using_pi3_hat: true
   drive:
-    FrontLeft:
-      id: 3
-      multiplier: -1
-    FrontRight:
-      id: 0
-      multiplier: 1
-    MiddleLeft:
-      id: 4
-      multiplier: -1
-    MiddleRight:
-      id: 1
-      multiplier: 1
-    BackLeft:
-      id: 5
-      multiplier: -1
-    BackRight:
-      id: 2
-      multiplier: 1
+    max_torque: 0.3
+    controllers:
+      FrontLeft:
+        id: 3
+        multiplier: -1
+      FrontRight:
+        id: 0
+        multiplier: 1
+      MiddleLeft:
+        id: 4
+        multiplier: -1
+      MiddleRight:
+        id: 1
+        multiplier: 1
+      BackLeft:
+        id: 5
+        multiplier: -1
+      BackRight:
+        id: 2
+        multiplier: 1
+  arm:
+    controllers:
+      joint_c:
+        id: 6
+        max_rps: 50
+        max_torque: 0.3
+        multiplier: -1
+      joint_d:
+        id: 7
+        max_rps: 80
+        max_torque: 0.13
+        multiplier: 1
+      joint_e:
+        id: 8
+        max_rps: 70
+        max_torque: 0.13
+        multiplier: -1

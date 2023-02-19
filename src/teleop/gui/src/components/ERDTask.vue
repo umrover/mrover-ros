@@ -44,16 +44,19 @@
       <OdometryReading :odom="odom" />
     </div>
     <div v-if="type === 'EDM'" class="box map light-bg">
-      <ERDMap :odom="odom" />
+      <BasicMap :odom="odom" />
     </div>
     <div class="box pdb light-bg">
       <PDBFuse />
     </div>
     <div class="box drive-vel-data light-bg">
-      <JointStateTable :joint-state-data="jointState" :vertical="true" />
+      <JointStateTable :joint-state-data="driveJointState" :vertical="true" :header = "'Drive Motors'" />
+    </div>
+    <div class="box armJointState light-bg">
+      <JointStateTable :joint-state-data="armJointState" :vertical="true" :header = "'Arm Motors'" />
     </div>
     <div v-if="type === 'EDM'" class="box waypoint-editor light-bg">
-      <ERDWaypointEditor />
+      <BasicWaypointEditor />
     </div>
     <div>
       <DriveControls></DriveControls>
@@ -61,8 +64,14 @@
     <div class="box arm-controls light-bg">
       <ArmControls />
     </div>
-    <div class="box moteus light-bg">
-      <MoteusStateTable :moteus-state-data="moteusState" />
+    <div class="box driveMoteus light-bg">
+      <DriveMoteusStateTable :moteus-state-data="driveMoteusState"/>
+    </div>
+    <div class="box armMoteus light-bg">
+      <MoteusStateTable :moteus-state-data="armMoteusState" :header="'Arm Moteus State'" />
+    </div>
+    <div v-show="false">
+      <MastGimbalControls></MastGimbalControls>
     </div>
   </div>
 </template>
@@ -75,9 +84,11 @@ import ROSLIB from "roslib";
 import ArmControls from "./ArmControls.vue";
 import Cameras from "./Cameras.vue";
 import DriveControls from "./DriveControls.vue";
-import ERDMap from "./ERDRoverMap.vue";
-import ERDWaypointEditor from "./ERDWaypointEditor.vue";
+import MastGimbalControls from "./MastGimbalControls.vue";
+import BasicMap from "./BasicRoverMap.vue";
+import BasicWaypointEditor from "./BasicWaypointEditor.vue";
 import JointStateTable from "./JointStateTable.vue";
+import DriveMoteusStateTable from "./DriveMoteusStateTable.vue";
 import MoteusStateTable from "./MoteusStateTable.vue";
 import OdometryReading from "./OdometryReading.vue";
 import PDBFuse from "./PDBFuse.vue";
@@ -87,10 +98,12 @@ export default {
     ArmControls,
     Cameras,
     DriveControls,
-    ERDMap,
-    ERDWaypointEditor,
-    JointStateTable,
     MoteusStateTable,
+    BasicMap,
+    BasicWaypointEditor,
+    JointStateTable,
+    MastGimbalControls,
+    DriveMoteusStateTable,
     OdometryReading,
     PDBFuse,
   },
@@ -115,14 +128,25 @@ export default {
       odom_sub: null,
       tfClient: null,
 
+      brushless_motors: null,
+
+      arm_JointState: null,
+
       // Default object isn't empty, so has to be initialized to ""
-      moteusState: {
+      driveMoteusState: {
         name: ["", "", "", "", "", ""],
         error: ["", "", "", "", "", ""],
         state: ["", "", "", "", "", ""],
       },
 
-      jointState: {},
+      armMoteusState: {
+        name: ["", "", "", "", "", ""],
+        error: ["", "", "", "", "", ""],
+        state: ["", "", "", "", "", ""],
+      },
+
+      driveJointState: {},
+      armJointState: {},
     };
   },
 
@@ -164,9 +188,21 @@ export default {
       messageType: "mrover/MotorsStatus",
     });
 
+    this.arm_JointState = new ROSLIB.Topic({
+      ros: this.$ros,
+      name: "ra_status",
+      messageType: "mrover/MotorsStatus"
+    });
+
+
     this.brushless_motors.subscribe((msg) => {
-      this.jointState = msg.joint_states;
-      this.moteusState = msg.moteus_states;
+      this.driveJointState = msg.joint_states;
+      this.driveMoteusState = msg.moteus_states;
+    });
+
+    this.arm_JointState.subscribe((msg) => {
+      this.armJointState = msg.joint_states;
+      this.armMoteusState = msg.moteus_states;
     });
   },
 };
@@ -184,7 +220,8 @@ export default {
     "map odom"
     "map arm-controls"
     "cameras drive-vel-data"
-    "moteus pdb";
+    "driveMoteus pdb"
+    "armMoteus armJointState";
   font-family: sans-serif;
   height: auto;
 }
@@ -196,10 +233,11 @@ export default {
   grid-template-rows: 60px 250px auto auto auto;
   grid-template-areas:
     "header header"
-    "cameras moteus"
-    "cameras moteus"
+    "cameras driveMoteus"
+    "cameras driveMoteus"
     "drive-vel-data pdb"
-    "arm-controls arm-controls";
+    "arm-controls arm-controls"
+    "armMoteus armJointState";
   font-family: sans-serif;
   height: auto;
 }
@@ -293,6 +331,11 @@ img {
   grid-area: drive-vel-data;
 }
 
+.armJointState {
+  grid-area: armJointState
+}
+
+
 .waypoint-editor {
   grid-area: waypoint-editor;
 }
@@ -301,7 +344,11 @@ img {
   grid-area: arm-controls;
 }
 
-.moteus {
-  grid-area: moteus;
+.driveMoteus {
+  grid-area: driveMoteus;
+}
+
+.armMoteus {
+  grid-area: armMoteus;
 }
 </style>

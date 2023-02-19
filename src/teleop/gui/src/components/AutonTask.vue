@@ -43,7 +43,11 @@
       </div>
       <div>
         <p style="margin-top: 6px">Joystick Values</p>
-        <JoystickValues />
+      </div>
+      <div></div>
+      <JoystickValues />
+      <div class="calibration status data" style="background-color: lightgray">
+        <IMUCalibration />
       </div>
     </div>
     <div class="box map light-bg">
@@ -52,7 +56,6 @@
     <div class="box waypoints light-bg">
       <AutonWaypointEditor
         :odom="odom"
-        :auton-drive-control="AutonDriveControl"
         @toggleTeleop="teleopEnabledCheck = $event"
       />
     </div>
@@ -64,6 +67,9 @@
     >
       <DriveControls />
     </div>
+    <div v-show="false">
+      <MastGimbalControls></MastGimbalControls>
+    </div>
   </div>
 </template>
 
@@ -72,10 +78,11 @@ import ROSLIB from "roslib";
 import AutonRoverMap from "./AutonRoverMap.vue";
 import AutonWaypointEditor from "./AutonWaypointEditor.vue";
 import DriveControls from "./DriveControls.vue";
+import MastGimbalControls from "./MastGimbalControls.vue";
 import { mapGetters } from "vuex";
 import * as qte from "quaternion-to-euler";
 import JoystickValues from "./JoystickValues.vue";
-import Checkbox from "./Checkbox.vue";
+import IMUCalibration from "./IMUCalibration.vue";
 
 const navBlue = "#4695FF";
 const navGreen = "yellowgreen";
@@ -83,6 +90,15 @@ const navRed = "lightcoral";
 const navGrey = "lightgrey";
 
 export default {
+  components: {
+    AutonRoverMap,
+    AutonWaypointEditor,
+    DriveControls,
+    IMUCalibration,
+    JoystickValues,
+    MastGimbalControls,
+  },
+
   data() {
     return {
       // Default coordinates are at NC 53 Parking Lot
@@ -93,7 +109,7 @@ export default {
       },
 
       nav_status: {
-        nav_state_name: "Off",
+        nav_state_name: "OffState",
         completed_wps: 0,
         total_wps: 0,
       },
@@ -107,7 +123,7 @@ export default {
 
       navBlink: false,
       greenHook: false,
-      ledColor: "blue",
+      ledColor: "red",
 
       // Pubs and Subs
       nav_status_sub: null,
@@ -115,6 +131,48 @@ export default {
       auton_led_client: null,
       tfClient: null,
     };
+  },
+
+  computed: {
+    ...mapGetters("autonomy", {
+      autonEnabled: "autonEnabled",
+      teleopEnabled: "teleopEnabled",
+    }),
+
+    nav_state_color: function () {
+      if (!this.autonEnabled && this.teleopEnabledCheck) {
+        return navBlue;
+      }
+      if (this.nav_status.nav_state_name == "DoneState" && this.navBlink) {
+        return navGreen;
+      } else if (
+        this.nav_status.nav_state_name == "DoneState" &&
+        !this.navBlink
+      ) {
+        return navGrey;
+      } else {
+        return navRed;
+      }
+    },
+  },
+
+  watch: {
+    // Publish auton LED color to ESW
+    nav_state_color: function (color) {
+      var send = true;
+      if (color == navBlue) {
+        this.ledColor = "blue";
+      } else if (color == navRed) {
+        this.ledColor = "red";
+      } else if (color == navGreen || color == navGrey) {
+        // Only send if previous color was not green
+        send = !(this.ledColor == "green");
+        this.ledColor = "green";
+      }
+      if (send) {
+        this.sendColor();
+      }
+    },
   },
 
   created: function () {
@@ -175,48 +233,6 @@ export default {
     this.sendColor();
   },
 
-  computed: {
-    ...mapGetters("autonomy", {
-      autonEnabled: "autonEnabled",
-      teleopEnabled: "teleopEnabled",
-    }),
-
-    nav_state_color: function () {
-      if (!this.autonEnabled) {
-        return navBlue;
-      }
-      if (this.nav_status.nav_state_name == "DoneState" && this.navBlink) {
-        return navGreen;
-      } else if (
-        this.nav_status.nav_state_name == "DoneState" &&
-        !this.navBlink
-      ) {
-        return navGrey;
-      } else {
-        return navRed;
-      }
-    },
-  },
-
-  watch: {
-    // Publish auton LED color to ESW
-    nav_state_color: function (color) {
-      var send = true;
-      if (color == navBlue) {
-        this.ledColor = "blue";
-      } else if (color == navRed) {
-        this.ledColor = "red";
-      } else if (color == navGreen || color == navGrey) {
-        // Only send if previous color was not green
-        send = !(this.ledColor == "green");
-        this.ledColor = "green";
-      }
-      if (send) {
-        this.sendColor();
-      }
-    },
-  },
-
   methods: {
     sendColor() {
       let request = new ROSLIB.ServiceRequest({
@@ -232,14 +248,6 @@ export default {
         }
       });
     },
-  },
-
-  components: {
-    AutonRoverMap,
-    AutonWaypointEditor,
-    DriveControls,
-    Checkbox,
-    JoystickValues,
   },
 };
 </script>
