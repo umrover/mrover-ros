@@ -25,6 +25,7 @@ set(MROVER_LINK_DIRS "")
 # message files
 set(MROVER_MESSAGE_FILES
         CalibrationStatus.msg
+        CameraCmd.msg
         Carousel.msg
         Chassis.msg
         Course.msg
@@ -42,7 +43,8 @@ set(MROVER_MESSAGE_FILES
 # service files
 set(MROVER_SERVICE_FILES
         ChangeAutonLEDState.srv
-        FetchMessageFromPackage.srv        
+        ChangeCameras.srv
+        FetchMessageFromPackage.srv
         FetchPackages.srv
         PublishEnableAuton.srv
         PublishCourse.srv
