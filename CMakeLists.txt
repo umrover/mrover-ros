@@ -35,6 +35,7 @@ set(MROVER_MESSAGE_FILES
         MastGimbal.msg
         MoteusState.msg
         MotorsStatus.msg
+        NetworkBandwidth.msg
         Waypoint.msg
         WaypointType.msg
         )
