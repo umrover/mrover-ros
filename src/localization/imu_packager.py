@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 import rospy
+import numpy as np
 from geometry_msgs.msg import Vector3Stamped
 from mrover.msg import ImuAndMag
 from sensor_msgs.msg import Imu, MagneticField
@@ -18,6 +19,11 @@ class ImuPackager:
         self.imu_pub = rospy.Publisher("imu/data", ImuAndMag, queue_size=1)
         self.curr_mag = None
 
+    def mag_pose(self, msg: Vector3Stamped):
+        mag2d = np.array([msg.x, msg.y])
+        rotationMatrix = np.array([[msg.x, -1 * msg.y], [msg.y, msg.x]])
+        poseVec = rotationMatrix * mag2d
+
     def imu_callback(self, msg: Imu):
         if self.curr_mag is not None:
             self.imu_pub.publish(
@@ -30,6 +36,7 @@ class ImuPackager:
 
     def mag_callback(self, msg: Vector3Stamped):
         self.curr_mag = msg
+        self.mag_pose(msg)
 
 
 def main():
