@@ -39,7 +39,6 @@ export default {
       let request = new ROSLIB.ServiceRequest({
         enable: this.ramanLaserState,
       });
-      console.log(request);
       this.ramanService.callService(request, (result) => {
         if (!result) {
           this.ramanLaserState = !this.ramanLaserState;

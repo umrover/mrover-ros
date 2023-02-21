@@ -135,10 +135,6 @@ export default {
     onSiteChange(value) {
       this.site = value;
     },
-
-    velocityTest(event) {
-      console.log(event);
-    },
   },
 };
 </script>

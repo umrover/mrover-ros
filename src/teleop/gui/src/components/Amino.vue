@@ -100,7 +100,6 @@ export default {
 
     this.temp_sub.subscribe((msg) => {
       // Callback for temp_sub
-      console.log(msg);
       for (let i = 0; i < 3; i++) {
         this.heaters[i].temp = msg.temperatures[i];
       }
@@ -114,7 +113,6 @@ export default {
 
     this.heater_status_sub.subscribe((msg) => {
       // Callback for heater_status_sub
-      console.log(msg);
       for (let i = 0; i < 3; i++) {
         this.heaters[i].enabled = msg.state[i];
       }
