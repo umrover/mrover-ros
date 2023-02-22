@@ -1,4 +1,4 @@
-string[] names
-bool[] calibrate
+string name  # name of motor
+bool calibrate  # if we need to calibrate respective motor
 ---
-bool[] actively_calibrating
+bool actively_calibrating  # are we actively calibrating motor

@@ -95,6 +95,15 @@ trying to contact the same physical Controller object.)
 
 class Controller {
 public:
+
+    // ENUM for limit polarity
+    // IF FORWARD: A = +, B = -
+    // IF REVERSED: A = -, B = +
+    enum LimitPolarity {
+        FORWARD = true,
+        REVERSED = false
+    };
+
     float quadCPR = std::numeric_limits<float>::infinity();
     float kP = 0.01f;
     float kI = 0.0f;
@@ -103,6 +112,7 @@ public:
     bool limitAEnabled = false;
     bool limitBEnabled = false;
     float calibrationSpeed = 0.0f;
+    bool limitPolarity = FORWARD;
 
     // REQUIRES: _name is the name of the motor,
     // mcuID is the mcu id of the controller which dictates the slave address,
@@ -139,15 +149,10 @@ public:
     // EFFECTS: Returns true if Controller has a (one or both) limit switch(s) is enabled.
     bool getLimitSwitchEnabled() const;
 
-    // REQUIRES: nothing
+    // REQUIRES: LimitPolarity to check
     // MODIFIES: nothing
-    // EFFECTS: Returns true if Controller has limit switch A enabled.
-    bool getLimitAEnabled() const;
-
-    // REQUIRES: nothing
-    // MODIFIES: nothing
-    // EFFECTS: Returns true if Controller has limit switch B enabled.
-    bool getLimitBEnabled() const;
+    // EFFECTS: Returns true if Controller has the FORWARD or REVERSE limit switch enabled.
+    bool getLimitSwitchEnabled(LimitPolarity polarity) const;
 
     // REQUIRES: nothing
     // MODIFIES: nothing

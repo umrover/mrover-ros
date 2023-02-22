@@ -150,29 +150,25 @@ void ROSHandler::moveMastGimbal(const mrover::MastGimbal::ConstPtr& msg) {
 // EFFECTS: sends a move/calibration command to the mcu
 
 bool ROSHandler::processMotorCalibrate(mrover::CalibrateMotors::Request& req, mrover::CalibrateMotors::Response& res) {
-    assert(req.names.size() == req.calibrate.size());
+    auto controller_iter = ControllerMap::controllersByName.find(req.name);
+    auto& [name, controller] = *controller_iter;
 
-    for (size_t i = 0; i < req.names.size(); ++i) {
-        auto controller_iter = ControllerMap::controllersByName.find(req.names[i]);
-        auto& [name, controller] = *controller_iter;
+    // Check if already calibrated
+    controller->askIsCalibrated();
 
-        // Check if already calibrated
-        controller->askIsCalibrated();
+    // Determine if calibration is needed
+    bool shouldCalibrate = !(controller_iter == ControllerMap::controllersByName.end()
+                             || controller->getCalibrationStatus()
+                             || !controller->getLimitSwitchEnabled());
 
-        // Determine if calibration is needed
-        bool shouldCalibrate = !(controller_iter == ControllerMap::controllersByName.end() || controller->getCalibrationStatus() || !controller->getLimitSwitchEnabled());
-
-        // Calibrate
-        if (shouldCalibrate) {
-
-            controller->moveOpenLoop(controller->calibrationSpeed);
-            controller->askIsCalibrated();
-
-            res.actively_calibrating.push_back(true);
-        } else {
-            res.actively_calibrating.push_back(false);
-        }
+    // Calibrate
+    if (shouldCalibrate) {
+        controller->moveOpenLoop(controller->calibrationSpeed);
+        res.actively_calibrating = true;
+    } else {
+        res.actively_calibrating = false;
     }
+
 
     return true;
 }

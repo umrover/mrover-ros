@@ -60,18 +60,17 @@ bool Controller::getLimitSwitchEnabled() const {
     return limitAEnabled || limitBEnabled;
 }
 
-// REQUIRES: nothing
+// REQUIRES: LimitPolarity to check
 // MODIFIES: nothing
-// EFFECTS: Returns true if Controller has limit switch A enabled.
-bool Controller::getLimitAEnabled() const {
-    return limitAEnabled;
-}
-
-// REQUIRES: nothing
-// MODIFIES: nothing
-// EFFECTS: Returns true if Controller has limit switch B enabled.
-bool Controller::getLimitBEnabled() const {
-    return limitBEnabled;
+// EFFECTS: Returns true if Controller has the FORWARD or REVERSE limit switch enabled.
+bool Controller::getLimitSwitchEnabled(LimitPolarity polarity) const {
+    if (polarity) { // FORWARD
+        if (limitPolarity) return limitAEnabled;
+        return limitBEnabled;
+    } else { // REVERSE
+        if (limitPolarity) return limitBEnabled;
+        return limitAEnabled;
+    }
 }
 
 // REQUIRES: -1.0 <= input <= 1.0
@@ -157,6 +156,10 @@ void Controller::makeLive() {
         memcpy(buffer + 8, UINT8_POINTER_T(&(kD)), sizeof(kD));
         I2C::transact(deviceAddress, motorIDRegMask | CONFIG_K_OP, CONFIG_K_WB,
                       CONFIG_K_RB, buffer, nullptr);
+
+        memcpy(buffer, UINT8_POINTER_T(&limitPolarity), sizeof(limitPolarity));
+        I2C::transact(deviceAddress, motorIDRegMask | LIMIT_POLARITY_OP, LIMIT_POLARITY_WB,
+                      LIMIT_POLARITY_RB, buffer, nullptr);
 
         isLive = true;
 
