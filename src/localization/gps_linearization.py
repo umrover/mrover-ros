@@ -7,7 +7,6 @@ import numpy as np
 from pymap3d.enu import geodetic2enu
 from tf.transformations import quaternion_about_axis, quaternion_multiply
 
-
 class GPSLinearization:
     """
     This node subscribes to GPS and IMU data, linearizes the GPS data
