@@ -11,6 +11,7 @@ from typing import ClassVar, Optional
 import numpy as np
 from dataclasses import dataclass
 import watchdog
+from data_collection import DataManager
 
 
 @dataclass
@@ -26,6 +27,10 @@ class Rover:
     stuck: bool
     previous_state: str
     move_back: bool
+    collector: DataManager
+
+    def __init__(self):
+        self.collector = DataManager(self)
 
     def get_pose(self) -> SE3:
         return SE3.from_tf_tree(self.ctx.tf_buffer, parent_frame="map", child_frame="base_link")

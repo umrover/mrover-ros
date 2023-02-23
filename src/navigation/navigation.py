@@ -81,7 +81,7 @@ def main():
     rospy.init_node("navigation")
     context = Context()
     rospy.logerr(f"Set context in navigation.py")
-    collector.set_context(context)
+#    collector.set_context(context)
     navigation = Navigation(context)
 
     # Define custom handler for Ctrl-C that shuts down smach properly
