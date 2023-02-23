@@ -20,34 +20,49 @@ class GPS_Correction:
         self.num_points_threshold = 100
         self.cooling_off_period = 300 # seconds
         self.callback_rate = 10 # Hz
+        self.linear_vel_threshold = 0.1 #TODO: definitely need to be tuned
+        self.angular_vel_threshold = 0.1 #TODO: definitely need to be tuned
 
         self.gps_points = np.empty()
-        self.current_heading = np.empty()
-        self.heading_correction = np.empty()
-        self.last_update_time = 0
+        self.current_vel = np.ndarray((2,3)) # unit linear and angular velocity vectors
         self.driving_straight = False
-        self.time_since_heading_change = 0
+
+        self.last_update_time = 0
+        self.last_heading_time = 0
 
         self.world_frame = rospy.get_param("gps_linearization/world_frame")
         self.rover_frame = rospy.get_param("gps_linearization/rover_frame")
     
-    # TODO: this function will keep track of if we're driving straight, the last update time, the current heading, and the time we've been driving straight
+    def get_heading_change(self, msg: Twist):
+        """
+        Updates the heading if either the linear velocity change or angular velocity magnitude is too large
+        Returns true if the heading has changed, returns false if it has not
+        """
+        new_vel = np.array([msg.linear, msg.angular])
+        new_vel[0] = new_vel[0] / np.linalg.norm(new_vel[0]) # only normalize the linear component
+        if(self.current_vel.empty() or (np.dot(self.current_vel[0], new_vel[0]) > self.linear_vel_threshold) or 
+            (np.linalg.norm(new_vel[0]) > self.angular_vel_threshold)):
+            self.current_vel = new_vel
+            self.driving_straight = False
+        else:
+            self.driving_straight = True
+        return not(self.driving_straight)
+
     def velocity_callback(self, msg: Twist):
-        # if(heading is same):
-        #   No?  if((time_since_heading_change > time_threshold) and (current_time - last_update_time > cooling_off_period)):
-        #   No?      get_heading_correction()
-        #   No?  else {}
-        # if(heading is not same)
-        #     if((rospy.Time.now() - last_update_time > cooling_off_period) and 
-        #       (time_since_heading_change > time_threshold) and (self.gps_points.size > num_points_threshold)):
-        #           self.heading_correction = get_heading_correction()
-        #           last_update_time = rospy.Time.now()
-        #     current_heading = new_heading
-        #     np.delete(gps_points, [:,:])
+        if(not self.get_heading_change(msg)):
+            self.get_new_readings() # Keep collecting points since the heading hasn't changed
+            # TODO: does this work or will this block?
+        else:
+            # TODO: think about when we want to update the heading
+            if((rospy.Time.now() - last_update_time > self.cooling_off_period) and 
+              (self.ast_heading_time > self.time_threshold) and (self.gps_points.size > self.num_points_threshold)):
+                  self.heading_correction = self.get_heading_correction()
+                  last_update_time = rospy.Time.now()
+            np.delete(self.gps_points, [:,:])
     
     # TODO: Think about how to structure this and which functions are checking what, have a flag to
     # TODO: problem here is unless I call get_heading_correction in the middle of this somewhere it will only correct heading at the end of driving straight 
-    def get_new_reading(self):
+    def get_new_readings(self):
         """
         Tries to read gps data at a rate specified by self.callback_rate
         Assumes that the rover is in a valid driving configuration so these points are be valid for heading correction
