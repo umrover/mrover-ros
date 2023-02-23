@@ -1,14 +1,13 @@
-# Servo data and GPS data
-# get tf tree latest map to base link transform, 
-# average imu reading or middle imu reading since if you take the difference when the imu has just changed to a new direction it'll end your life
-# only correct every X minutes, only correct off of N data points and for a certain amount of time
-# 
-
 import numpy as np
 import rospy
 import tf2_ros
 from geometry_msgs import Twist
 from util.SE3 import SE3
+
+# Servo data and GPS data
+# get tf tree latest map to base link transform, 
+# average imu reading or middle imu reading since if you take the difference when the imu has just changed to a new direction it'll end your life
+# only correct every X minutes, only correct off of N data points and for a certain amount of time
 
 class GPS_Correction:
     def __init__(self):
@@ -23,7 +22,7 @@ class GPS_Correction:
         self.linear_vel_threshold = 0.1 #TODO: definitely need to be tuned
         self.angular_vel_threshold = 0.1 #TODO: definitely need to be tuned
 
-        self.gps_points = np.empty()
+        self.gps_points = np.empty([0,3])
         self.current_vel = np.ndarray((2,3)) # unit linear and angular velocity vectors
         self.driving_straight = False
 
@@ -39,28 +38,31 @@ class GPS_Correction:
         Returns true if the heading has changed, returns false if it has not
         """
         new_vel = np.array([msg.linear, msg.angular])
-        new_vel[0] = new_vel[0] / np.linalg.norm(new_vel[0]) # only normalize the linear component
-        if(self.current_vel.empty() or (np.dot(self.current_vel[0], new_vel[0]) > self.linear_vel_threshold) or 
-            (np.linalg.norm(new_vel[0]) > self.angular_vel_threshold)):
+        new_vel[0] = new_vel[0] / np.linalg.norm(new_vel[0])    # only normalize the linear component
+        self.driving_straight = True    # Assume the robot is driving straight
+
+        if(self.current_vel.empty() or (np.dot(self.current_vel[0], new_vel[0]) > self.linear_vel_threshold)):
             self.current_vel = new_vel
-            self.driving_straight = False
+            return True
+        elif(np.linalg.norm(new_vel[0]) > self.angular_vel_threshold):
+            self.current_vel = new_vel
+            self.driving_straight = False   # Only not driving straight if the robot is turning
+            return True
         else:
-            self.driving_straight = True
-        return not(self.driving_straight)
+            return False
 
     def velocity_callback(self, msg: Twist):
         if(not self.get_heading_change(msg)):
-            self.get_new_readings() # Keep collecting points since the heading hasn't changed
             # TODO: does this work or will this block?
+            self.get_new_readings() # Keep collecting points since the heading hasn't changed
         else:
             # TODO: think about when we want to update the heading
             if((rospy.Time.now() - last_update_time > self.cooling_off_period) and 
               (self.ast_heading_time > self.time_threshold) and (self.gps_points.size > self.num_points_threshold)):
                   self.heading_correction = self.get_heading_correction()
                   last_update_time = rospy.Time.now()
-            np.delete(self.gps_points, [:,:])
+            np.delete(self.gps_points, [0,1,2], axis=1)
     
-    # TODO: Think about how to structure this and which functions are checking what, have a flag to
     # TODO: problem here is unless I call get_heading_correction in the middle of this somewhere it will only correct heading at the end of driving straight 
     def get_new_readings(self):
         """
@@ -72,7 +74,7 @@ class GPS_Correction:
             try:
                 # Get linearized transform and append the position in the world frame to our gps_points array
                 transform = SE3.from_tf_tree(self.tf_buffer, self.world_frame, self.rover_frame)
-                self.gps_points.append(transform.position, axis=1) #TODO: axis could be wrong
+                self.gps_points.append(transform.position, axis=0) #TODO: might have to reshape transform.position to (1,3)
             except(tf2_ros.LookupException, tf2_ros.ConnectivityException, tf2_ros.ExtrapolationException):
                 continue
 
@@ -90,3 +92,11 @@ class GPS_Correction:
         IMU_rotation = SE3.from_tf_tree(self.tf_buffer, self.world_frame, self.rover_frame) #TODO: Gives us the last one, we want to look one up from the middle
         correction = np.matmul(np.linalg.inv(IMU_rotation), heading_rotation)
         return correction
+
+def main():
+    rospy.init_node("gps_correction")
+    gps_correction = GPS_Correction()
+    gps_correction.get_new_readings()
+
+if __name__ == "__main__":
+    main()
