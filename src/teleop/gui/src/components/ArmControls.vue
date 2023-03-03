@@ -4,9 +4,33 @@
     <div class="controls">
       <!-- Make opposite option disappear so that we cannot select both -->
       <!-- Change to radio buttons in the future -->
-      <input type="radio" ref="arm-enabled" v-model="arm_controls" :name="'Arm Enabled'" value="arm_disabled" @change="updateArmEnabled()"> Arm Disabled
-      <input type="radio" ref="open-loop-enabled" v-model="arm_controls" :name="'Open Loop Enabled'" value="open_loop" @change="updateArmEnabled()"> Open Loop
-      <input type="radio" ref="servo-enabled" v-model="arm_controls" :name="'Servo'" value="servo" @change="updateArmEnabled()"> Servo
+      <input
+        ref="arm-enabled"
+        v-model="arm_controls"
+        type="radio"
+        :name="'Arm Enabled'"
+        value="arm_disabled"
+        @change="updateArmMode()"
+      />
+      Arm Disabled
+      <input
+        ref="open-loop-enabled"
+        v-model="arm_controls"
+        type="radio"
+        :name="'Open Loop Enabled'"
+        value="open_loop"
+        @change="updateArmMode()"
+      />
+      Open Loop
+      <input
+        ref="servo-enabled"
+        v-model="arm_controls"
+        type="radio"
+        :name="'Servo'"
+        value="servo"
+        @change="updateArmMode()"
+      />
+      Servo
     </div>
     <h3>Joint Locks</h3>
     <div class="controls">
@@ -37,9 +61,7 @@ export default {
       armcontrols_pub: null,
       arm_controls: "arm_disabled",
       joystick_pub: null,
-      joystickservo_pub: null,
       jointlock_pub: null,
-      jointstate_pub: null,
       joints_array: [false, false, false, false, false, false]
     };
   },
@@ -54,26 +76,16 @@ export default {
       name: "ra/mode",
       messageType: "std_msgs/String"
     });
-    this.updateArmEnabled();
+    this.updateArmMode();
     this.joystick_pub = new ROSLIB.Topic({
       ros: this.$ros,
-      name: "/xbox/ra_open_loop",
-      messageType: "sensor_msgs/Joy"
-    });
-    this.joystickservo_pub = new ROSLIB.Topic({
-      ros: this.$ros,
-      name: "/xbox/ra_servo",
+      name: "/xbox/ra_control",
       messageType: "sensor_msgs/Joy"
     });
     this.jointlock_pub = new ROSLIB.Topic({
       ros: this.$ros,
       name: "/joint_lock",
       messageType: "mrover/JointLock"
-    });
-    this.jointstate_pub = new ROSLIB.Topic({
-      ros: this.$ros,
-      name: "/ra_cmd",
-      messageType: "sensors_msgs/JointState"
     });
     const jointData = {
       //publishes array of all falses when refreshing the page
@@ -83,20 +95,15 @@ export default {
     this.jointlock_pub.publish(jointlockMsg);
 
     interval = window.setInterval(() => {
-      if (this.arm_enabled) {
-        const gamepads = navigator.getGamepads();
-        for (let i = 0; i < 4; i++) {
-          const gamepad = gamepads[i];
-          if (gamepad) {
-            if (
-              gamepad.id.includes("Microsoft") ||
-              gamepad.id.includes("Xbox")
-            ) {
-              let buttons = gamepad.buttons.map((button) => {
-                return button.value;
-              });
-              this.publishJoystickMessage(gamepad.axes, buttons);
-            }
+      const gamepads = navigator.getGamepads();
+      for (let i = 0; i < 4; i++) {
+        const gamepad = gamepads[i];
+        if (gamepad) {
+          if (gamepad.id.includes("Microsoft") || gamepad.id.includes("Xbox")) {
+            let buttons = gamepad.buttons.map((button) => {
+              return button.value;
+            });
+            this.publishJoystickMessage(gamepad.axes, buttons);
           }
         }
       }
@@ -104,7 +111,7 @@ export default {
   },
 
   methods: {
-    updateArmEnabled: function () {
+    updateArmMode: function () {
       const armData = {
         data: this.arm_controls
       };
@@ -126,13 +133,7 @@ export default {
         buttons: buttons
       };
       var joystickMsg = new ROSLIB.Message(joystickData);
-      if (this.arm_enabled) {
-        if (this.servo_enabled) {
-          this.joystickservo_pub.publish(joystickMsg);
-        } else {
-          this.joystick_pub.publish(joystickMsg);
-        }
-      }
+      this.joystick_pub.publish(joystickMsg);
     }
   }
 };
