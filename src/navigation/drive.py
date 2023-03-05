@@ -166,6 +166,9 @@ class PathPlanner:
         """
         Given a source_pos and a target pos, generates a shortest path between them
         based on the visibility graph using Dijkstra's algorithm. 
+
+        :param source_pos:  The source position as a shapely 2D Point object
+        :param target_pos:  The destination position as a shapely 2D Point object
         """
         # Remove old source, target from the visibility graph
         if self.source_pos:
