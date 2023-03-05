@@ -27,22 +27,24 @@ def angle_to_rotate(v1, v2):
         sign = 1
     return smallest_angle * sign
 
-"""
-Checks if two 2-dimensional line segments intersect. 
 
-The line segments are considered to have open endpoints; 
-as such, they are not considered intersecting if they touch 
-only at one of their endpoints. Cases:
-    1) They do not touch at all --> False
-    2) They touch only at endpoints --> False
-    3) They touch at a T --> False 
-    4) They intersect in the middle of both segments --> True
-    5) They are collinear and they overlap --> True
-"""
 def intersect_2d(start1: np.array, 
                  end1: np.array, 
                  start2: np.array, 
                  end2: np.array) -> bool:
+    """
+    Checks if two 2-dimensional line segments intersect. 
+
+    The line segments are considered to have open endpoints; 
+    as such, they are not considered intersecting if they touch 
+    only at one of their endpoints. Cases:
+        1) They do not touch at all --> False
+        2) They touch only at endpoints --> False
+        3) They touch at a T --> False 
+        4) They intersect in the middle of both segments --> True
+        5) They are collinear and they overlap --> True
+    """
+    
     """
     Algorithm:
     

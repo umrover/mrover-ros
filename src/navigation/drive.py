@@ -1,9 +1,12 @@
 from typing import Optional, List, Tuple, ClassVar
-from context import Context, FailureZone
+from dataclasses import dataclass
 import numpy as np
+from shapely.geometry import Polygon, LineString, Point
 
 from geometry_msgs.msg import Twist
 from util.SE3 import SE3
+
+from context import Context
 from util.np_utils import angle_to_rotate
 
 MAX_DRIVING_EFFORT = 1
@@ -11,12 +14,48 @@ MIN_DRIVING_EFFORT = -1
 TURNING_P = 10.0
 
 @dataclass
+class FailureZone:
+    """
+    FailureZones are represented as rectangular bounding boxes 
+    aligned with the x and y-axes
+    """
+    vertices: Polygon           
+
+    def get_vertices(self) -> List[Point]:
+        """
+        Return a list of 4 vertices as Point objects that form the 
+        bounding box of this FailureZone 
+
+        Vertices returned in order [lower_left, upper_left, upper_right, lower_right]
+        """
+        (min_x, min_y, max_x, max_y) = self.vertices.bounds
+        lower_left = Point(min_x, min_y)
+        upper_left = Point(min_x, max_y)
+        upper_right = Point(max_x, max_y)
+        lower_right = Point(max_x, min_y)
+        return [lower_left, upper_left, upper_right, lower_right]
+
+    def intersects(self, line: LineString) -> bool:
+        """
+        Returns whether this FailureZone properly intersects the given line. 
+
+        Intersection is defined as passing through or overlapping with an edge
+        of the FailureZone, rather than simply touching a corner. 
+        """
+        return self.vertices.intersects(line) and not self.vertices.touches(line)
+
+
+
+@dataclass
 class Driver:
     ctx: Context
 
     curr_target_pos: ClassVar[np.ndarray] = None 
     curr_path: ClassVar[np.ndarray] = None
-    visibility_graph: ClassVar[np.ndarray] = None          
+    visibility_graph: ClassVar[np.ndarray] = None    
+
+    failure_zones: List[FailureZone] = []
+      
 
     """
     Function called after a new FailureZone is added to Environment
@@ -29,6 +68,8 @@ class Driver:
 
         # remove old edges
 
+    def add_failure_zone(self, failure_zone: FailureZone) -> None:
+        pass
 
     def shortest_path(source, dest):
         pass
