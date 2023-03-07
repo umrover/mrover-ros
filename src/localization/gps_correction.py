@@ -9,19 +9,22 @@ from util.SE3 import SE3
 # average imu reading or middle imu reading since if you take the difference when the imu has just changed to a new direction it'll end your life
 # only correct every X minutes, only correct off of N data points and for a certain amount of time
 
+# xval = 0 -> turning in place
+# x velocity is some proportion of what it should be
+
 class GPS_Correction:
     def __init__(self):
         rospy.Subscriber("cmd_vel", Twist, self.velocity_callback)
         self.tf_buffer = tf2_ros.Buffer()
 
         # Tunable Parameters
-        self.time_threshold = 3             # seconds
-        self.num_points_threshold = 100
+        self.time_threshold = 3             # seconds (tune this with the num_points_threshold)
+        self.num_points_threshold = 30      # TODO: definitely needs to be tuned
         self.cooling_off_period = 300       # seconds
         self.callback_rate = 10             # Hz
         self.linear_vel_threshold = 0.1     # TODO: definitely need to be tuned
         self.angular_vel_threshold = 0.1    # TODO: definitely need to be tuned
-        # TODO: deal with times
+        self.linear_angular_ratio = 10      # TODO: definitely needs to be tuned
 
         self.gps_points = np.empty([0,3])
         self.current_vel = np.zeros((2,3))    # unit linear and angular velocity vectors
@@ -53,10 +56,7 @@ class GPS_Correction:
             return False
 
     def velocity_callback(self, msg: Twist):
-        if(not self.get_heading_change(msg)):
-            # TODO: does this work or will this block?
-            self.get_new_readings() # Keep collecting points since the heading hasn't changed
-        else:
+        if(self.get_heading_change(msg)):
             # TODO: think about when we want to update the heading
             if((rospy.Time.now() - self.last_update_time > self.cooling_off_period) and 
               (self.last_heading_time > self.time_threshold) and (self.gps_points.size > self.num_points_threshold)):
