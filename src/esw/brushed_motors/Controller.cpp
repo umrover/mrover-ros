@@ -39,6 +39,28 @@ float Controller::getCurrentAngle() const {
     return currentAngle;
 }
 
+// REQUIRES: newAngleRan in [-M_PI,M_PI]
+// MODIFIES: currentAngle
+// EFFECTS: forces the angle of the controller to be a certain value
+void Controller::overrideCurrentAngle(float newAngleRad) {
+    currentAngle = newAngleRad;
+    auto ticks = (int32_t) (((newAngleRad) / (2 * M_PI)) * quadCPR); // convert to quad units
+
+    try {
+        makeLive();
+
+        uint8_t buffer[4];
+        memcpy(buffer, UINT8_POINTER_T(&ticks), sizeof(ticks));
+
+        I2C::transact(deviceAddress, motorIDRegMask | ADJUST_OP, ADJUST_WB,
+                      ADJUST_RB, buffer, nullptr);
+
+    } catch (IOFailure& e) {
+        ROS_ERROR("overrideCurrentAngle failed on %s", name.c_str());
+    }
+
+}
+
 // REQUIRES: nothing
 // MODIFIES: nothing
 // EFFECTS: Returns true if Controller is live.
@@ -102,7 +124,7 @@ void Controller::moveOpenLoop(float input) {
 
         I2C::transact(deviceAddress, motorIDRegMask | OPEN_PLUS_OP, OPEN_PLUS_WB,
                       OPEN_PLUS_RB, buffer, UINT8_POINTER_T(&angle));
-        currentAngle = (float) ((((float) angle / quadCPR) * 2 * M_PI) - M_PI);
+        currentAngle = (float) (((float) angle / quadCPR) * 2 * M_PI);
     } catch (IOFailure& e) {
         ROS_ERROR("moveOpenLoop failed on %s", name.c_str());
     }

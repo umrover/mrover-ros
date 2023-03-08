@@ -160,6 +160,11 @@ public:
     // Expect a value between -M_PI and M_PI.
     float getCurrentAngle() const;
 
+    // REQUIRES: nothing
+    // MODIFIES: currentAngle
+    // EFFECTS: forces the angle of the controller to be a certain value
+    void overrideCurrentAngle(float newAngleRad);
+
     // REQUIRES: -1.0 <= input <= 1.0
     // MODIFIES: currentAngle. Also makes controller live if not already.
     // EFFECTS: Sends an open loop command scaled to PWM limits

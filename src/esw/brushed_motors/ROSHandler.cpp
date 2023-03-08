@@ -7,12 +7,14 @@ void ROSHandler::init(ros::NodeHandle* rosNode) {
 
     n = rosNode;
 
+    // Initialize services
+    calibrateService = n->advertiseService<mrover::CalibrateMotors::Request, mrover::CalibrateMotors::Response>("calibrate", processMotorCalibrate);
+    adjustService = n->advertiseService<mrover::AdjustMotors::Request, mrover::AdjustMotors::Response>("adjust", processMotorAdjust);
+
     // Initialize robotic arm (RA)
     RANames = {"joint_a", "joint_b", "joint_f", "finger", "gripper"};
 
     moveRASubscriber = n->subscribe<sensor_msgs::JointState>("ra_cmd", 1, moveRA);
-
-    calibrateService = n->advertiseService<mrover::CalibrateMotors::Request, mrover::CalibrateMotors::Response>("calibrate", processMotorCalibrate);
 
     jointDataRA.name = std::vector<std::string>(RANames.begin(), RANames.end());
     jointDataRA.position = std::vector<double>(RANames.size(), 0);
@@ -147,7 +149,6 @@ void ROSHandler::moveMastGimbal(const mrover::MastGimbal::ConstPtr& msg) {
 // REQUIRES: valid req and res objects
 // MODIFIES: res
 // EFFECTS: sends a move/calibration command to the mcu
-
 bool ROSHandler::processMotorCalibrate(mrover::CalibrateMotors::Request& req, mrover::CalibrateMotors::Response& res) {
     auto controller_iter = ControllerMap::controllersByName.find(req.name);
     auto& [name, controller] = *controller_iter;
@@ -171,3 +172,21 @@ bool ROSHandler::processMotorCalibrate(mrover::CalibrateMotors::Request& req, mr
 
     return true;
 }
+
+// REQUIRES: valid req and res objects
+// MODIFIES: res
+// EFFECTS: hard sets the requested controller angle
+bool ROSHandler::processMotorAdjust(mrover::AdjustMotors::Request& req, mrover::AdjustMotors::Response& res) {
+
+    try {
+        auto controller_iter = ControllerMap::controllersByName.find(req.name);
+        auto& [name, controller] = *controller_iter;
+        controller->overrideCurrentAngle(req.value);
+        res.success = true;
+    } catch(...) {
+        ROS_ERROR("COULD NOT SET MOTOR ANGLE");
+    }
+
+    return res.success;
+}
+

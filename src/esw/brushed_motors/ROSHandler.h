@@ -4,6 +4,7 @@
 #include <array>                    // for array
 #include <cmath>                    // for nan
 #include <mrover/CalibrateMotors.h> // for CalibrateMotors
+#include <mrover/AdjustMotors.h>    // for AdjustMotors
 #include <mrover/Calibrated.h>      // for Calibrated
 #include <mrover/Carousel.h>        // for Carousel
 #include <mrover/MastGimbal.h>      // for MastGimbal
@@ -25,8 +26,9 @@ private:
     // This holds the ROS Node.
     inline static ros::NodeHandle* n;
 
-    // All Calibrate services
+    // Calibrate service
     inline static ros::ServiceServer calibrateService;
+    inline static ros::ServiceServer adjustService;
 
     // RA
     inline static std::array<std::string, 5> RANames;
@@ -95,6 +97,11 @@ private:
     // MODIFIES: res
     // EFFECTS: sends a move/calibration command to the mcu
     static bool processMotorCalibrate(mrover::CalibrateMotors::Request& req, mrover::CalibrateMotors::Response& res);
+
+    // REQUIRES: valid req and res objects
+    // MODIFIES: res
+    // EFFECTS: hard sets the requested controller angle
+    static bool processMotorAdjust(mrover::AdjustMotors::Request& req, mrover::AdjustMotors::Response& res);
 
 public:
     // REQUIRES: rosNode is a pointer to the created node.
