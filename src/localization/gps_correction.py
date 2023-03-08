@@ -4,14 +4,6 @@ import tf2_ros
 from geometry_msgs import Twist
 from util.SE3 import SE3
 
-# Servo data and GPS data
-# get tf tree latest map to base link transform, 
-# average imu reading or middle imu reading since if you take the difference when the imu has just changed to a new direction it'll end your life
-# only correct every X minutes, only correct off of N data points and for a certain amount of time
-
-# xval = 0 -> turning in place
-# x velocity is some proportion of what it should be
-
 # Notes:
 # 1. Calculate and apply the transform as soon as we have a suitable number of points (self.num_points_threshold)
 # 2. Only calculate the transform if we are moving fast enough (self.linear_vel_threshold)
@@ -26,7 +18,7 @@ class GPS_Correction:
 
         self.transform_to_update = SE3()
         self.gps_points = np.empty([0,3])
-        self.current_vel = np.zeros((2,3))    # unit linear and angular velocity vectors
+        self.current_vel = np.zeros((2,3))
         self.driving_straight = False
 
         self.world_frame = rospy.get_param("gps_linearization/world_frame")
@@ -70,9 +62,9 @@ class GPS_Correction:
 
     def velocity_callback(self, msg: Twist):
         if(self.get_heading_change(msg)):
-            if(self.gps_points.size > self.num_points_threshold): # If we have enough points update heading before deleting all points
+            if(self.gps_points.size > self.num_points_threshold):   # If we have enough points update heading before deleting all points
                   self.heading_correction = self.get_heading_correction()
-            np.delete(self.gps_points, [0,1,2], axis=1) # Delete all gps data from previous heading
+            np.delete(self.gps_points, [0,1,2], axis=1)     # Delete all gps data from previous heading
     
     def get_new_readings(self):
         """
@@ -102,8 +94,8 @@ class GPS_Correction:
         Generates the correction matrix to multiply the IMU heading matrix by
         Assumes all conditions are acceptable to calculate the correction (time driving straight, number of datapoints, etc.)
         """
-        heading = np.mean(self.gps_points, axis=0) # Take the mean along the same axis we append the points along
-        heading = heading / np.linalg.norm(heading) # normalize the heading
+        heading = np.mean(self.gps_points, axis=0)      # Take the mean along the same axis we append the points along
+        heading = heading / np.linalg.norm(heading)     # Normalize the heading before using it in the rotation matrix
         heading_rotation = np.array([[heading[0], -heading[1],  0],
                                      [heading[1], heading[0],   0], 
                                      [0,          0,            1]])
@@ -119,3 +111,12 @@ def main():
 
 if __name__ == "__main__":
     main()
+
+# Notes to myself:
+# Servo data and GPS data
+# get tf tree latest map to base link transform, 
+# average imu reading or middle imu reading since if you take the difference when the imu has just changed to a new direction it'll end your life
+# only correct every X minutes, only correct off of N data points and for a certain amount of time
+
+# xval = 0 -> turning in place
+# x velocity is some proportion of what it should be
