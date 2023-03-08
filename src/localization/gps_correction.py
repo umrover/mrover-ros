@@ -19,6 +19,8 @@ from util.SE3 import SE3
 
 class GPS_Correction:
     def __init__(self):
+        self.kill_flag = False      # Kill flag to stop collecting data completely
+
         rospy.Subscriber("cmd_vel", Twist, self.velocity_callback)
         self.tf_buffer = tf2_ros.Buffer()
 
@@ -38,6 +40,9 @@ class GPS_Correction:
         self.linear_vel_threshold = 0.1     # TODO: definitely need to be tuned
         self.angular_vel_threshold = 0.1    # TODO: definitely need to be tuned
         self.linear_angular_ratio = 10      # TODO: definitely needs to be tuned
+
+    def set_kill_flag(self, flag: bool):
+        self.kill_flag = flag
 
     def is_driving_straight(self, new_vel):
         """
@@ -75,7 +80,7 @@ class GPS_Correction:
         Assumes that the rover is in a valid driving configuration so these points are be valid for heading correction
         """
         lookup_rate = rospy.Rate(self.callback_rate)    # X Hz callback rate
-        while(self.driving_straight):
+        while(self.driving_straight and (not self.kill_flag)):
             try:
                 # Get linearized transform and append the position in the world frame to our gps_points array
                 transform = SE3.from_tf_tree(self.tf_buffer, self.world_frame, self.rover_frame)
@@ -109,7 +114,8 @@ class GPS_Correction:
 def main():
     rospy.init_node("gps_correction")
     gps_correction = GPS_Correction()
-    gps_correction.get_new_readings()
+    while(not rospy.is_shutdown): # Continuously get readings until the node is shutdown
+        gps_correction.get_new_readings()
 
 if __name__ == "__main__":
     main()
