@@ -59,7 +59,6 @@ std::optional<float> ROSHandler::moveControllerOpenLoop(const std::string& name,
     auto controller_iter = ControllerMap::controllersByName.find(name);
 
     if (controller_iter == ControllerMap::controllersByName.end()) {
-        ROS_ERROR("Could not find controller named %s.", name.c_str());
         return std::nullopt;
     }
 
@@ -74,8 +73,8 @@ std::optional<float> ROSHandler::moveControllerOpenLoop(const std::string& name,
 // EFFECTS: Moves the RA joints in open loop and publishes angle data right after.
 // Note: any invalid controllers will be published with a position of 0.
 void ROSHandler::moveRA(const sensor_msgs::JointState::ConstPtr& msg) {
-    for (size_t i = 0; i < RANames.size(); ++i) {
-        std::optional<float> pos = moveControllerOpenLoop(RANames[i], (float) msg->velocity[i]);
+    for (size_t i = 0; i < msg->name.size(); ++i) {
+        std::optional<float> pos = moveControllerOpenLoop(msg->name[i], (float) msg->velocity[i]);
         jointDataRA.position[i] = pos.value_or(0.0);
 
         std::optional<bool> calibrated = getControllerCalibrated(RANames[i]);
