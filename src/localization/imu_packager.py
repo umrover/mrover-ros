@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+from math import sqrt
 import rospy
 import numpy as np
 from geometry_msgs.msg import Vector3Stamped
@@ -24,9 +25,11 @@ class ImuPackager:
         self.curr_mag = None
 
     def mag_pose(self, msg: Vector3Stamped):
-        rotationMatrix = np.array([[msg.vector.x, -1 * msg.vector.y, 0, 0], [msg.vector.y, msg.vector.x, 0, 0], [0, 0, 1, 0], [0, 0, 0, 1]])
+        vec_mag = sqrt(msg.vector.x**2 + msg.vector.y**2)
+        norm_vec = np.array([msg.vector.x / vec_mag, msg.vector.y / vec_mag])
+        rospy.loginfo("mag vector" + " " +  str(norm_vec[0]) + " " + str(norm_vec))
+        rotationMatrix = np.array([[norm_vec[1], -1 * norm_vec[0], 0, 0], [norm_vec[0], norm_vec[1], 0, 0], [0, 0, 1, 0], [0, 0, 0, 1]])
         q = quaternion_from_matrix(rotationMatrix)
-        rospy.loginfo(q)
         self.mag_pose_pub.publish(
             PoseWithCovarianceStamped(
                 header=Header(stamp=msg.header.stamp, frame_id="map"),
