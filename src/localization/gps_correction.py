@@ -2,7 +2,9 @@ import numpy as np
 import rospy
 import tf2_ros
 from geometry_msgs import Twist
+from geometry_msgs import Quaternion
 from util.SE3 import SE3
+from util.SO3 import SO3
 
 # Notes:
 # 1. Calculate and apply the transform as soon as we have a suitable number of points (self.num_points_threshold)
@@ -14,6 +16,7 @@ class GPS_Correction:
         self.kill_flag = False      # Kill flag to stop collecting data completely
 
         rospy.Subscriber("cmd_vel", Twist, self.velocity_callback)
+        self.correction_publisher = rospy.Publisher("imu/gps_correction", Quaternion)
         self.tf_buffer = tf2_ros.Buffer()
 
         self.transform_to_update = SE3()
@@ -27,14 +30,11 @@ class GPS_Correction:
         # Tunable Parameters
         self.time_threshold = 3             # seconds (tune this with the num_points_threshold)
         self.callback_rate = 10             # Hz
-        self.num_points_threshold = self.time_threshold * self.callback_rate      # TODO: definitely needs to be tuned
 
+        self.num_points_threshold = self.time_threshold * self.callback_rate      # TODO: definitely needs to be tuned
         self.linear_vel_threshold = 0.1     # TODO: definitely need to be tuned
         self.angular_vel_threshold = 0.1    # TODO: definitely need to be tuned
         self.linear_angular_ratio = 10      # TODO: definitely needs to be tuned
-
-    def set_kill_flag(self, flag: bool):
-        self.kill_flag = flag
 
     def is_driving_straight(self, new_vel):
         """
@@ -99,9 +99,18 @@ class GPS_Correction:
         heading_rotation = np.array([[heading[0], -heading[1],  0],
                                      [heading[1], heading[0],   0], 
                                      [0,          0,            1]])
+        
         IMU_rotation = self.transform_to_update.rotation.rotation_matrix
-        correction = np.matmul(np.linalg.inv(IMU_rotation), heading_rotation)
-        return correction
+        correct_matrix = np.matmul(np.linalg.inv(IMU_rotation), heading_rotation)
+        correction = SO3.from_matrix(correct_matrix)
+
+        self.correction_publisher.publish(correction.quaternion)
+
+    def set_kill_flag(self, flag: bool):
+        self.kill_flag = flag
+
+    def stop_correction(self):
+        self.correction_publisher.publish(np.array([0,0,0,1]))      # Publish the identity quaternion
 
 def main():
     rospy.init_node("gps_correction")

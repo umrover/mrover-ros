@@ -1,7 +1,9 @@
 #!/usr/bin/env python3
 import rospy
 from util.SE3 import SE3
+from util.SO3 import SO3
 from sensor_msgs.msg import NavSatFix, Imu
+from geometry_msgs import Quaternion
 import tf2_ros
 import numpy as np
 from pymap3d.enu import geodetic2enu
@@ -17,11 +19,13 @@ class GPSLinearization:
     def __init__(self):
         rospy.Subscriber("gps/fix", NavSatFix, self.gps_callback)
         rospy.Subscriber("imu/data", Imu, self.imu_callback)
+        rospy.Subscriber("imu/gps_correction", Quaternion, self.correction_callback)
 
         self.tf_broadcaster = tf2_ros.TransformBroadcaster()
 
         # init to zero pose
         self.pose = SE3()
+        self.quat_correction = np.array([0,0,0,1]) # identity quaternion
 
         # read required parameters, if they don't exist an error will be thrown
         self.ref_lat = rospy.get_param("gps_linearization/reference_point_latitude")
@@ -67,9 +71,12 @@ class GPSLinearization:
 
         # rotate the IMU quaternion by the offset to convert it to the ENU frame
         enu_quat = quaternion_multiply(offset_quat, imu_quat)
+        enu_quat = quaternion_multiply(enu_quat, self.quat_correction)
         self.pose = SE3.from_pos_quat(position=self.pose.position, quaternion=enu_quat)
         self.pose.publish_to_tf_tree(self.tf_broadcaster, parent_frame=self.world_frame, child_frame=self.rover_frame)
 
+    def correction_callback(self, msg: Quaternion):
+        self.quat_correction = np.array([msg.x, msg.y, msg.z, msg.w])
 
 def main():
     # start the node and spin to wait for messages to be received
