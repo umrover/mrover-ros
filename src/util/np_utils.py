@@ -1,4 +1,14 @@
 import numpy as np
+import collections
+from geometry_msgs.msg import Vector3, Quaternion
+
+def translation_to_numpy(translation):
+    return np.array([translation.x, translation.y, translation.z])
+
+def rotation_to_numpy(rotation):
+    return np.array([rotation.x, rotation.y, rotation.z, rotation.w])
+
+_to_numpy = {Vector3: translation_to_numpy, Quaternion: rotation_to_numpy}
 
 
 def normalized(v):
@@ -26,3 +36,24 @@ def angle_to_rotate(v1, v2):
     if sign == 0.0:
         sign = 1
     return smallest_angle * sign
+
+
+def numpify(msg):
+    if msg is None:
+        return
+    
+
+    conv = _to_numpy.get(msg.__class__)
+    if not conv and isinstance(msg, collections.Sequence):
+        if not msg:
+            raise ValueError("Cannot determine the type of an empty Collection")
+        conv = _to_numpy.get((msg[0].__class__, True))
+
+
+    if not conv:
+        raise ValueError("Unable to convert message {} - only supports {}".format(
+            msg.__class__.__name__,
+            ', '.join(cls.__name__ + ("[]" if pl else '') for cls, pl in _to_numpy.keys())
+            ))
+
+    return conv(msg)
