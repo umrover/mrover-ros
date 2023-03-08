@@ -64,6 +64,7 @@ world_frame: map
 # default values, and must be specified.
 imu0: imu/imu_only
 pose0: gps/pose
+pose1: mag_pose/data
 
 
 # Each sensor reading updates some or all of the filter's state. These options give you greater control over which
@@ -87,6 +88,12 @@ pose0_config: [true, true, true,
                false, false, false,
                false, false, false]
 
+pose1_config: [false, false, false,
+               false, false, true,
+               false, false, false,
+               false, false, false,
+               false, false, false]
+
 # twist0_config: [false, false, false,
 #               false, false, false,
 #               true, true, true,
@@ -97,6 +104,7 @@ pose0_config: [true, true, true,
 # the size of the subscription queue so that more measurements are fused.
 imu0_queue_size: 2
 pose0_queue_size: 2
+pose1_queue_size: 2
 # twist0_queue_size: 2
 
 # [ADVANCED] Large messages in ROS can exhibit strange behavior when they arrive at a high frequency. This is a result
