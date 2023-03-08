@@ -31,6 +31,6 @@ if __name__ == "__main__":
         rx2 = get_bytes("rx", iface)
 
         tx_speed = (tx2 - tx1) / 1000000.0  # MBps
-        rx_speed = (tx2 - tx1) / 1000000.0  # MBps
+        rx_speed = (rx2 - rx1) / 1000000.0  # MBps
 
         pub.publish(NetworkBandwidth(tx_speed, rx_speed))
