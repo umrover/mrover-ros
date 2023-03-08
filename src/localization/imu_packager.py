@@ -27,7 +27,6 @@ class ImuPackager:
     def mag_pose(self, msg: Vector3Stamped):
         vec_mag = sqrt(msg.vector.x**2 + msg.vector.y**2)
         norm_vec = np.array([msg.vector.x / vec_mag, msg.vector.y / vec_mag])
-        rospy.loginfo("mag vector" + " " +  str(norm_vec[0]) + " " + str(norm_vec))
         rotationMatrix = np.array([[norm_vec[1], -1 * norm_vec[0], 0, 0], [norm_vec[0], norm_vec[1], 0, 0], [0, 0, 1, 0], [0, 0, 0, 1]])
         q = quaternion_from_matrix(rotationMatrix)
         self.mag_pose_pub.publish(
