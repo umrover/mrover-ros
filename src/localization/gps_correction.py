@@ -1,8 +1,7 @@
 import numpy as np
 import rospy
 import tf2_ros
-from geometry_msgs import Twist
-from geometry_msgs import Quaternion
+from geometry_msgs.msg import Twist, Quaternion
 from util.SE3 import SE3
 from util.SO3 import SO3
 

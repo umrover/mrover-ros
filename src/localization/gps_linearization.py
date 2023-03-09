@@ -2,7 +2,7 @@
 import rospy
 from util.SE3 import SE3
 from util.SO3 import SO3
-from geometry_msgs import Quaternion
+from geometry_msgs.msg import Quaternion
 from mrover.msg import ImuAndMag
 from sensor_msgs.msg import NavSatFix
 import tf2_ros
