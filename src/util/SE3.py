@@ -5,7 +5,7 @@ import numpy as np
 import tf2_ros
 import rospy
 
-from .np_utils import translation_to_numpy, rotation_to_numpy
+from .np_utils import numpify
 from geometry_msgs.msg import TransformStamped, Vector3, Quaternion
 from std_msgs.msg import Time
 from typing import Tuple
@@ -71,9 +71,7 @@ class SE3:
         :returns: an SE3 containing the transform from parent_frame to child_frame
         """
         tf_msg = tf_buffer.lookup_transform(parent_frame, child_frame, rospy.Time()).transform
-        result = SE3(
-            position=translation_to_numpy(tf_msg.translation), rotation=SO3(rotation_to_numpy(tf_msg.rotation))
-        )
+        result = SE3(position=numpify(tf_msg.translation), rotation=SO3(numpify(tf_msg.rotation)))
         return result
 
     @classmethod
@@ -84,9 +82,7 @@ class SE3:
         """
         tf_lookup = tf_buffer.lookup_transform(parent_frame, child_frame, rospy.Time())
         tf_msg = tf_lookup.transform
-        result = SE3(
-            position=translation_to_numpy(tf_msg.translation), rotation=SO3(rotation_to_numpy(tf_msg.rotation))
-        )
+        result = SE3(position=numpify(tf_msg.translation), rotation=SO3(numpify(tf_msg.rotation)))
         time_stamp = tf_lookup.header.stamp
         return (result, time_stamp)
 
