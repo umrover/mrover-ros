@@ -34,8 +34,8 @@ class Gate:
 class Rover:
     ctx: Context
 
-    def get_pose(self) -> SE3:
-        return SE3.from_tf_tree(self.ctx.tf_buffer, parent_frame="map", child_frame="base_link")
+    def get_pose(self, frame: str = "map") -> SE3:
+        return SE3.from_tf_tree(self.ctx.tf_buffer, parent_frame=frame, child_frame="base_link")
 
     def send_drive_command(self, twist: Twist):
         self.ctx.vel_cmd_publisher.publish(twist)
@@ -57,7 +57,7 @@ class Environment:
     ctx: Context
     NO_FIDUCIAL: ClassVar[int] = -1
 
-    def get_fid_pos(self, fid_id: int, frame: str = "map") -> Optional[np.ndarray]:
+    def get_fid_pos(self, fid_id: int, frame: str = "odom") -> Optional[np.ndarray]:
         """
         Retrieves the pose of the given fiducial ID from the TF tree
         if it exists and is more recent than TAG_EXPIRATION_TIME_SECONDS, otherwise returns None
