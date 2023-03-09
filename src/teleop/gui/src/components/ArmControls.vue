@@ -45,12 +45,21 @@
     <div>
       <Checkbox ref="Slow Mode" :name="'Slow Mode'" @toggle="updateSlowMode($event)" />
     </div>
+    <div class="controls laser">
+      <ToggleButton
+        :current-state="laser_enabled"
+        label-enable-text="Arm Laser On"
+        label-disable-text="Arm Laser Off"
+        @change="toggleArmLaser()"
+      />
+    </div>
   </div>
 </template>
 
 <script>
 import ROSLIB from "roslib";
 import Checkbox from "./Checkbox.vue";
+import ToggleButton from "./ToggleButton.vue";
 
 // In seconds
 const updateRate = 0.1;
@@ -58,7 +67,8 @@ let interval;
 
 export default {
   components: {
-    Checkbox
+    Checkbox,
+    ToggleButton
   },
   data() {
     return {
@@ -68,7 +78,9 @@ export default {
       jointlock_pub: null,
       joints_array: [false, false, false, false, false, false],
       slow_mode: false,
-      slowmode_pub: null
+      slowmode_pub: null,
+      laser_enabled: false,
+      laser_service: null
     };
   },
 
@@ -88,10 +100,20 @@ export default {
       name: "/xbox/ra_control",
       messageType: "sensor_msgs/Joy"
     });
+    this.laser_service = new ROSLIB.Service({
+      ros: this.$ros,
+      name: "change_arm_laser_state",
+      serviceType: "mrover/ChangeDeviceState"
+    });
     this.jointlock_pub = new ROSLIB.Topic({
       ros: this.$ros,
       name: "/joint_lock",
       messageType: "mrover/JointLock"
+    });
+    this.slowmode_pub = new ROSLIB.Topic({
+      ros: this.$ros,
+      name: "/slow_mode",
+      messageType: "std_msgs/Bool"
     });
     const jointData = {
       //publishes array of all falses when refreshing the page
@@ -134,7 +156,7 @@ export default {
       this.jointlock_pub.publish(jointlockMsg);
     },
 
-    updateSlowModes: function (enabled) {
+    updateSlowMode: function (enabled) {
       this.slow_mode = enabled;
       const slowData = {
         data: this.slow_mode
@@ -149,6 +171,18 @@ export default {
       };
       var joystickMsg = new ROSLIB.Message(joystickData);
       this.joystick_pub.publish(joystickMsg);
+    },
+    toggleArmLaser: function () {
+      this.laser_enabled = !this.laser_enabled;
+      let request = new ROSLIB.ServiceRequest({
+        enable: this.laser_enabled
+      });
+      this.laser_service.callService(request, (result) => {
+        if (!result) {
+          this.laser_enabled = !this.laser_enabled;
+          alert("Toggling Arm Laser failed.");
+        }
+      });
     }
   }
 };
@@ -178,5 +212,9 @@ export default {
   width: 250px;
   font-weight: bold;
   color: red;
+}
+
+.laser {
+  padding-top: 10px;
 }
 </style>
