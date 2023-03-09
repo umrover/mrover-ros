@@ -36,9 +36,13 @@ class Rover:
 
     def get_pose(self, use_odom_frame: bool = False) -> SE3:
         if use_odom_frame and self.ctx.use_odom:
-            return SE3.from_tf_tree(self.ctx.tf_buffer, parent_frame=self.ctx.odom_frame, child_frame=self.ctx.rover_frame)
+            return SE3.from_tf_tree(
+                self.ctx.tf_buffer, parent_frame=self.ctx.odom_frame, child_frame=self.ctx.rover_frame
+            )
         else:
-            return SE3.from_tf_tree(self.ctx.tf_buffer, parent_frame=self.ctx.world_frame, child_frame=self.ctx.rover_frame)
+            return SE3.from_tf_tree(
+                self.ctx.tf_buffer, parent_frame=self.ctx.world_frame, child_frame=self.ctx.rover_frame
+            )
 
     def send_drive_command(self, twist: Twist):
         self.ctx.vel_cmd_publisher.publish(twist)
@@ -246,7 +250,6 @@ class Context:
         self.world_frame = rospy.get_param("gps_linearization/world_frame")
         self.odom_frame = rospy.get_param("gps_linearization/odom_frame")
         self.rover_frame = rospy.get_param("gps_linearization/rover_frame")
-        
 
     def recv_enable_auton(self, req: mrover.srv.PublishEnableAutonRequest) -> mrover.srv.PublishEnableAutonResponse:
         enable_msg = req.enableMsg

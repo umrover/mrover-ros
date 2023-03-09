@@ -81,7 +81,9 @@ class PartialGateState(BaseState):
             return PartialGateStateTransitions.found_gate.name  # type: ignore
         elif post_pos is not None:  # Searching for second post
             if self.traj is None:
-                self.traj = PartialGateTrajectory.partial_gate_traj(post_pos, self.context.rover.get_pose(use_odom_frame=True).position)
+                self.traj = PartialGateTrajectory.partial_gate_traj(
+                    post_pos, self.context.rover.get_pose(use_odom_frame=True).position
+                )
         else:
             return PartialGateStateTransitions.no_fiducial.name  # type: ignore
 
