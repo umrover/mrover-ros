@@ -34,8 +34,11 @@ class Gate:
 class Rover:
     ctx: Context
 
-    def get_pose(self, frame: str = "map") -> SE3:
-        return SE3.from_tf_tree(self.ctx.tf_buffer, parent_frame=frame, child_frame="base_link")
+    def get_pose(self, use_odom_frame: bool = False) -> SE3:
+        if use_odom_frame and self.ctx.use_odom:
+            return SE3.from_tf_tree(self.ctx.tf_buffer, parent_frame=self.ctx.odom_frame, child_frame=self.ctx.rover_frame)
+        else:
+            return SE3.from_tf_tree(self.ctx.tf_buffer, parent_frame=self.ctx.world_frame, child_frame=self.ctx.rover_frame)
 
     def send_drive_command(self, twist: Twist):
         self.ctx.vel_cmd_publisher.publish(twist)
@@ -223,6 +226,12 @@ class Context:
     env: Environment
     disable_requested: bool
 
+    # ROS Params from localization.yaml
+    use_odom: bool
+    world_frame: str
+    odom_frame: str
+    rover_frame: str
+
     def __init__(self):
         self.tf_buffer = tf2_ros.Buffer()
         self.tf_listener = tf2_ros.TransformListener(self.tf_buffer)
@@ -233,6 +242,11 @@ class Context:
         self.rover = Rover(self)
         self.env = Environment(self)
         self.disable_requested = False
+        self.use_odom = rospy.get_param("gps_linearization/use_odom_frame")
+        self.world_frame = rospy.get_param("gps_linearization/world_frame")
+        self.odom_frame = rospy.get_param("gps_linearization/odom_frame")
+        self.rover_frame = rospy.get_param("gps_linearization/rover_frame")
+        
 
     def recv_enable_auton(self, req: mrover.srv.PublishEnableAutonRequest) -> mrover.srv.PublishEnableAutonResponse:
         enable_msg = req.enableMsg
