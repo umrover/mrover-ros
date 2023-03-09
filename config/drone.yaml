@@ -1,0 +1,3 @@
+mavros_tf_publisher:
+  world_frame: "map"
+  drone_frame: "base_link"
