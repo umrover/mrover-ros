@@ -52,7 +52,8 @@ class SearchStateTransitions(Enum):
 
     no_fiducial = "WaypointState"
     continue_search = "SearchState"
-    found_fiducial = "SingleFiducialState"
+    found_fiducial_post = "ApproachPostState"
+    found_fiducial_gate = "PartialGateState"
     found_gate = "GateTraverseState"
 
 
@@ -84,11 +85,7 @@ class SearchState(BaseState):
             )
 
         # continue executing this path from wherever it left off
-        print(self.traj.coordinates)
-        print(self.traj.coordinates[0])
-        print(self.traj.cur_pt)
         target_pos = self.traj.get_cur_pt()
-        print(target_pos)
         cmd_vel, arrived = get_drive_command(
             target_pos,
             self.context.rover.get_pose(),
@@ -105,7 +102,10 @@ class SearchState(BaseState):
         # if we see the fiduicial or gate, go to either fiducial or gate state
         if self.context.env.current_gate() is not None:
             return SearchStateTransitions.found_gate.name  # type: ignore
-        elif self.context.env.current_fid_pos() is not None:
-            return SearchStateTransitions.found_fiducial.name  # type: ignore
-
+        elif self.context.env.current_fid_pos() is not None and self.context.course.look_for_post():
+            return SearchStateTransitions.found_fiducial_post.name  # type: ignore
+        elif (
+            self.context.env.current_fid_pos() is not None or self.context.env.other_gate_fid_pos() is not None
+        ) and self.context.course.look_for_gate():
+            return SearchStateTransitions.found_fiducial_gate.name  # type: ignore
         return SearchStateTransitions.continue_search.name  # type: ignore

@@ -7,21 +7,21 @@ from geometry_msgs.msg import Twist
 from waypoint import WaypointState
 
 
-class SingleFiducialStateTransitions(Enum):
+class ApproachPostStateTransitions(Enum):
     _settings_ = NoAlias
 
     finished_fiducial = "WaypointState"
-    continue_fiducial_id = "SingleFiducialState"
+    continue_fiducial_id = "ApproachPostState"
     no_fiducial = "SearchState"
 
 
-class SingleFiducialState(WaypointState):
+class ApproachPostState(WaypointState):
     STOP_THRESH = rospy.get_param("single_fiducial/stop_thresh", 0.7)
     FIDUCIAL_STOP_THRESHOLD = rospy.get_param("single_fiducial/fiducial_stop_threshold", 1.75)
     DRIVE_FWD_THRESH = rospy.get_param("waypoint/drive_fwd_thresh", 0.34)  # 20 degrees
 
     def __init__(self, context: Context):
-        super().__init__(context, add_outcomes=[transition.name for transition in SingleFiducialStateTransitions])  # type: ignore
+        super().__init__(context, add_outcomes=[transition.name for transition in ApproachPostStateTransitions])  # type: ignore
 
     def evaluate(self, ud) -> str:
         """
@@ -37,7 +37,7 @@ class SingleFiducialState(WaypointState):
             cmd_vel = Twist()
             cmd_vel.linear.x = 0.0
             self.context.rover.send_drive_command(cmd_vel)
-            return SingleFiducialStateTransitions.no_fiducial.name  # type: ignore
+            return ApproachPostStateTransitions.no_fiducial.name  # type: ignore
 
         try:
             cmd_vel, arrived = get_drive_command(
@@ -45,7 +45,7 @@ class SingleFiducialState(WaypointState):
             )
             if arrived:
                 self.context.course.increment_waypoint()
-                return SingleFiducialStateTransitions.finished_fiducial.name  # type: ignore
+                return ApproachPostStateTransitions.finished_fiducial.name  # type: ignore
             self.context.rover.send_drive_command(cmd_vel)
         except (
             tf2_ros.LookupException,
@@ -55,4 +55,4 @@ class SingleFiducialState(WaypointState):
             # TODO: probably go into some waiting state
             pass
 
-        return SingleFiducialStateTransitions.continue_fiducial_id.name  # type: ignore
+        return ApproachPostStateTransitions.continue_fiducial_id.name  # type: ignore
