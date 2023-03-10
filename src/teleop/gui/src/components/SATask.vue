@@ -188,7 +188,7 @@ export default {
   display: grid;
   overflow: hidden;
   grid-gap: 10px;
-  grid-template-columns: 30vw 20vw auto auto;
+  grid-template-columns: 23vw 17vw auto auto auto;
   grid-template-rows: 60px 70vh auto auto auto;
   grid-template-areas:
     "header header header header"

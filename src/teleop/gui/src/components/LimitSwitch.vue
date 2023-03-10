@@ -12,6 +12,7 @@
 
 <script>
     import ToggleButton from "./ToggleButton.vue";
+    import ROSLIB from "roslib/src/RosLib";
 
     export default {
         props: {
