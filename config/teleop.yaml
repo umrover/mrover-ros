@@ -5,7 +5,7 @@ teleop:
     joint_b:
       multiplier: 1
     joint_c:
-      multiplier: 1
+      multiplier: -1
     joint_d:
       multiplier: 1
     joint_e:
@@ -15,6 +15,18 @@ teleop:
     finger:
       multiplier: 1
     gripper:
+      multiplier: 1
+      
+  sa_controls:
+    sa_joint_1:
+      multiplier: 1
+    sa_joint_2:
+      multiplier: 1
+    sa_joint_3:
+      multiplier: 1
+    scoop:
+      multiplier: 1
+    microscope:
       multiplier: 1
   
   drive_controls:
@@ -53,3 +65,8 @@ teleop:
     dampen: 3
     pan: 4
     tilt: 5
+
+  echo_presets:
+    blah: ["/tf", "/tf_static", "/rosout"]
+    foo: ["/rosout", "/tf"]
+    bar: ["/tf_static", "/rosout", "/tf"]

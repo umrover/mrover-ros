@@ -78,14 +78,6 @@ def plotData():
 # Since we assume zero-mean gaussian and gaussian distributions are defined by their mean and variance
 # the only other information we need is the variance
 
-def get_position(gps_data):
-    """
-    gps_data: the recorded gps position (X,Y,Z) at each timestep
-    Assumes that the GPS data is zero-mean gaussian and therefore the ground truth is the mean of gps_data
-    Returns the GPS position as a 3x1 vector
-    """
-    return np.reshape(np.mean(gps_data, axis=1), [3,1])
-
 def get_ground_truth(velocity):
     
     """
