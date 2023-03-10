@@ -22,4 +22,6 @@
     <!-- brushed motors node-->
 	<node name="brushed_motors" pkg="mrover" type="brushed_motors" output="screen"></node>
 
+	<!--  camera nodes -->
+	<node name="cameras" pkg="mrover" type="cameras.py"></node>
 </launch>
