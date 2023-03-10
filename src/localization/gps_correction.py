@@ -1,3 +1,4 @@
+#!/usr/bin/env python3
 import numpy as np
 import rospy
 import tf2_ros
@@ -15,7 +16,7 @@ class GPS_Correction:
         self.kill_flag = False      # Kill flag to stop collecting data completely
 
         rospy.Subscriber("cmd_vel", Twist, self.velocity_callback)
-        self.correction_publisher = rospy.Publisher("imu/gps_correction", Quaternion)
+        self.correction_publisher = rospy.Publisher("imu/gps_correction", Quaternion, queue_size=1)
         self.tf_buffer = tf2_ros.Buffer()
 
         self.transform_to_update = SE3()
@@ -49,12 +50,13 @@ class GPS_Correction:
         Updates the heading if either the linear velocity change or angular velocity magnitude is too large
         Returns true if the heading has changed, returns false if it has not
         """
-        new_vel = np.array([msg.linear, msg.angular])
+        new_vel = np.array([[msg.linear.x, msg.linear.y, msg.linear.z], 
+                            [msg.angular.x, msg.angular.y, msg.angular.z]])
         self.driving_straight = self.is_driving_straight(new_vel)
         self.current_vel = new_vel
 
         # If the robot is driving straight and fast enough, but the heading has changed, return true
-        if(np.dot(self.current_vel[0], self.new_vel[0]) < (1 - self.linear_vel_threshold)):
+        if(np.dot(self.current_vel[0], new_vel[0]) < (1 - self.linear_vel_threshold)):
             return True
 
         return (not self.driving_straight)
@@ -79,7 +81,7 @@ class GPS_Correction:
                 
                 # If it is the middle datapoint, get the transform that we will find the correction from
                 if(self.gps_points.size == (self.num_points_threshold // 2)): 
-                    self.transform_to_update = SE3.from_tf_tree(self.tf_buffer, self.world_frame, self.rover_frame)
+                    self.transform_to_update = SE3.from_tf_tree(self.tf_buffer, parent_frame=self.world_frame, child_frame=self.rover_frame)
             except(tf2_ros.LookupException, tf2_ros.ConnectivityException, tf2_ros.ExtrapolationException):
                 continue
 
@@ -114,7 +116,7 @@ class GPS_Correction:
 def main():
     rospy.init_node("gps_correction")
     gps_correction = GPS_Correction()
-    while(not rospy.is_shutdown): # Continuously get readings until the node is shutdown
+    while not rospy.is_shutdown(): # Continuously get readings until the node is shutdown
         gps_correction.get_new_readings()
 
 if __name__ == "__main__":
