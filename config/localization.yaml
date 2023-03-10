@@ -14,9 +14,9 @@ global_ekf:
   # whether to use the Dilution of Precision (DoP) covariance estimate from the GPS message,
   # or to replace it with the following configured covariance matrix
   use_gps_dop_covariance: false
-  gps_covariance: [[0.1, 0, 0],
-                   [0, 0.1, 0],
-                   [0, 0, 0.1]]
+  gps_covariance: [[2, 0, 0],
+                   [0, 2, 0],
+                   [0, 0, 2]]
   
   imu_orientation_covariance: [[0.1, 0, 0],
                         [0, 0.1, 0],
