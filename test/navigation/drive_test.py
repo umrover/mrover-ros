@@ -77,7 +77,6 @@ class TestDrive(unittest.TestCase):
     #     v1 = np.array([-1, -1, 0])
     #     self.assertAlmostEqual(angle_to_rotate(v1, v2), pi)
     def test_make_path(self):
-        print("Hello2")
         post1 = np.array([1, 2, 0])
         post2 = np.array([-1, 2, 0])
         gate = (post1, post2)
