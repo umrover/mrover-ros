@@ -1,4 +1,5 @@
-from drive import collector
+# from drive import collector
+from data_collection import DataManager
 import pandas as pd
 from util.np_utils import euclidean_distance
 
@@ -16,7 +17,7 @@ class WatchdogBase:
     # as stuck and if they do enter the recovery sequence
     # Returns bool
     def is_stuck(self) -> bool:
-        return collector.collector_context.rover.stuck
+        return DataManager.rover.stuck
 
     """
     def is_stuck(self, data_obj: Data) -> bool:

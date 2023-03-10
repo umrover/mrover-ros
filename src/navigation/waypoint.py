@@ -74,6 +74,7 @@ class WaypointState(BaseState):
                 self.context.rover.get_pose(),
                 STOP_THRESH,
                 DRIVE_FWD_THRESH,
+                self.context.rover
             )
             if arrived:
                 if not self.context.course.look_for_gate() and not self.context.course.look_for_post():

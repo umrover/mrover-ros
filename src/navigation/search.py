@@ -92,6 +92,7 @@ class SearchState(BaseState):
             self.context.rover.get_pose(),
             STOP_THRESH,
             DRIVE_FWD_THRESH,
+            self.context.rover
         )
         if arrived:
             # if we finish the spiral without seeing the fiducial, move on with course

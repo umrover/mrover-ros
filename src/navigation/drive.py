@@ -5,12 +5,12 @@ import rospy
 
 from geometry_msgs.msg import Twist
 from util.SE3 import SE3
-from data_collection import DataManager
+# from data_collection import DataManager
 import util.np_utils as npu
 # from util.np_utils import angle_to_rotate
 # from util.np_utils import angle_to_rotate
 
-collector = DataManager()
+# collector = DataManager()
 MAX_DRIVING_EFFORT = 1
 MIN_DRIVING_EFFORT = -1
 TURNING_P = 10.0
@@ -21,6 +21,7 @@ def get_drive_command(
     rover_pose: SE3,
     completion_thresh: float,
     turn_in_place_thresh: float,
+    rover
 ) -> Tuple[Twist, bool, bool]:
     """
     :param target_pos:              Target position to drive to.
@@ -46,12 +47,12 @@ def get_drive_command(
     if target_dist == 0:
         target_dist = np.finfo(float).eps
 
-    if collector.collector_context.rover.stuck:
+    if rover.stuck:
         rover_dir *= -1
 
     alignment = npu.angle_to_rotate(rover_dir, target_dir)
     
-    if not collector.collector_context.rover.move_back:
+    if not rover.move_back:
         rospy.logerr(f"Alignment: {alignment}")
 
     rospy.logerr(f"TARGET DIST {target_dist}")
@@ -59,8 +60,8 @@ def get_drive_command(
         # getting commanded velocity into the data collection
         # rospy.logerr(f"Called make_cmd_vel_obj from drive.py")
         rospy.logerr("WITHIN COMPLETION_THRESH")
-        collector.make_cmd_vel_dataframe(Twist())
-        return Twist(), True, collector.collector_context.rover.watchdog.is_stuck()
+        rover.collector.make_cmd_vel_dataframe(Twist())
+        return Twist(), True, rover.watchdog.is_stuck()
 
     cmd_vel = Twist()
     full_turn_override = True
@@ -69,7 +70,7 @@ def get_drive_command(
         rospy.logerr(f"ALIGNED")
         error = target_dist
         cmd_vel.linear.x = np.clip(error, 0.0, MAX_DRIVING_EFFORT)
-        if collector.collector_context.rover.stuck:
+        if rover.stuck:
             rospy.logerr(f"GO BACKWARDS")
             cmd_vel.linear.x *= -1 #Go backwards
         full_turn_override = False
@@ -91,6 +92,6 @@ def get_drive_command(
 
     # getting commanded velocity into the data collection
     # rospy.logerr(f"Called make_cmd_vel_obj from drive.py")
-    collector.make_cmd_vel_dataframe(cmd_vel)
+    rover.collector.make_cmd_vel_dataframe(cmd_vel)
     print(cmd_vel.linear.x, cmd_vel.angular.z)
-    return cmd_vel, False, collector.collector_context.rover.watchdog.is_stuck()
+    return cmd_vel, False, rover.watchdog.is_stuck()

@@ -14,7 +14,7 @@ from state import DoneState, DoneStateTransitions
 from waypoint import WaypointState, WaypointStateTransitions
 from search import SearchState, SearchStateTransitions
 from recovery import RecoveryState, RecoveryStateTransitions
-from drive import collector
+# from drive import collector
 
 
 class Navigation(threading.Thread):
@@ -86,7 +86,7 @@ def main():
 
     # Define custom handler for Ctrl-C that shuts down smach properly
     def sigint_handler(_sig, _frame):
-        collector.write_to_csv()
+        context.rover.collector.write_to_csv()
         navigation.stop()
         rospy.signal_shutdown("keyboard interrupt")
         try:

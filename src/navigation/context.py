@@ -29,7 +29,12 @@ class Rover:
     move_back: bool
     collector: DataManager
 
-    def __init__(self):
+    def __init__(self, ctx_in, watchdog_in, stuck_in, prev_in, move_back_in):
+        self.ctx = ctx_in
+        self.watchdog = watchdog_in
+        self.stuck = stuck_in
+        self.previous_state = prev_in
+        self.move_back = move_back_in
         self.collector = DataManager(self)
 
     def get_pose(self) -> SE3:

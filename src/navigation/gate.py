@@ -114,6 +114,7 @@ class GateTraverseState(BaseState):
             self.context.rover.get_pose(),
             STOP_THRESH,
             DRIVE_FWD_THRESH,
+            self.context.rover
         )
         if arrived:
             # if we finish the gate path, we're done

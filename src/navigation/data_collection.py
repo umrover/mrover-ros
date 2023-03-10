@@ -16,7 +16,6 @@ AVERAGE_LEN = 11
 DELTAT_THRESHOLD = 0.001
 
 
-
 @dataclass
 class DataManager:
     _df: DataFrame
@@ -24,10 +23,10 @@ class DataManager:
     collecting = False
     row = 0
 
-
     # Initializes the first _cur_row dataframe and call the subscribers
     # Initialize the dictionary with the Rover's first position, rotation, and timestamp
     # When the datacollection starts.
+    # def __init__(self):
     def __init__(self, rover_in):
         self.rover = rover_in
         three_zero = np.zeros(3)
