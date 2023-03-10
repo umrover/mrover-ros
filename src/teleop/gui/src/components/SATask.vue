@@ -173,7 +173,6 @@ export default {
     "pdb moteus moteus jointState";
   height:100%;
 }
-
 .helpscreen {
   z-index: 1000000000;
   display: block;

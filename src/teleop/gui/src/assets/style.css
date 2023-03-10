@@ -2,7 +2,7 @@
     --primary-blue: rgb(63, 99, 166);
     --hover-blue: rgb(79, 119, 192);
     --active-blue: rgb(112, 148, 216);
-    --shadow-color: rgba(236, 236, 236, 0.966);
+    --shadow-color: rgba(220, 220, 220, 0.61); /*236 236 236 .966*/
     --accent: rgb(210, 74, 39);
     --red-hover: rgb(187, 65, 35);
     --red-active: rgb(163, 59, 33);

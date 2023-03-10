@@ -106,6 +106,7 @@ export default {
   display: flex;
   align-items: center;
   height: 100%;
+  color: black;
 }
 
 .led {
