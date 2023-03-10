@@ -11,9 +11,9 @@
       class="box"
       @change="changeQuality()"
     >
-      <option value="0">Low</option>
-      <option value="1">Medium</option>
-      <option value="2">High</option>
+      <option value="1">Low</option>
+      <option value="2">Medium</option>
+      <option value="3">High</option>
     </select>
   </div>
 </template>
@@ -36,7 +36,7 @@ export default {
   },
   data() {
     return {
-      selectedQuality: "0",
+      selectedQuality: "2",
       selectedStream: this.stream,
       prevStream: this.stream,
     };
