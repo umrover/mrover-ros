@@ -25,7 +25,11 @@ if __name__ == "__main__":
         (
             Waypoint(fiducial_id=0, tf_id="course0", type=WaypointType(val=WaypointType.GATE)),
             # SE3(position=np.array([-844.37, 10351.56, 0])),
+<<<<<<< HEAD
+            SE3(position=np.array([10, 0, 0])),
+=======
             SE3(position=np.array([-2, -2, 0])),
+>>>>>>> origin/gps-noise-epd
         ),
         # (Waypoint(fiducial_id=0, tf_id="course1"), SE3(position=np.array([-3, -3, -1]))),
         # (Waypoint(fiducial_id=0, tf_id="course2"), SE3(position=np.array([-5, -5, 0]))),
