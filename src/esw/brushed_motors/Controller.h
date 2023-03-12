@@ -176,6 +176,11 @@ public:
     // EFFECTS: asks the MCU if it is calibrated
     void askIsCalibrated();
 
+    // REQUIRES: nothing
+    // MODIFIES: nothing
+    // EFFECTS: gets current absolute encoder value of MCU
+    float getAbsoluteEncoderValue();
+
 private:
     // REQUIRES: nothing
     // MODIFIES: isLive

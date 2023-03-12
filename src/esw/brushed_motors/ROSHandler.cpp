@@ -184,6 +184,7 @@ bool ROSHandler::processMotorAdjust(mrover::AdjustMotors::Request& req, mrover::
         auto& [name, controller] = *controller_iter;
         controller->overrideCurrentAngle(req.value);
         res.success = true;
+        res.abs_enc_rad = controller->getAbsoluteEncoderValue();
     } catch(...) {
         ROS_ERROR("COULD NOT SET MOTOR ANGLE");
     }

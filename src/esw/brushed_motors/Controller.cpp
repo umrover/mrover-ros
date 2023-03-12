@@ -51,14 +51,12 @@ void Controller::overrideCurrentAngle(float newAngleRad) {
 
         uint8_t buffer[4];
         memcpy(buffer, UINT8_POINTER_T(&ticks), sizeof(ticks));
-
         I2C::transact(deviceAddress, motorIDRegMask | ADJUST_OP, ADJUST_WB,
                       ADJUST_RB, buffer, nullptr);
 
     } catch (IOFailure& e) {
         ROS_ERROR("overrideCurrentAngle failed on %s", name.c_str());
     }
-
 }
 
 // REQUIRES: nothing
@@ -146,6 +144,26 @@ void Controller::askIsCalibrated() {
     } catch (IOFailure& e) {
         ROS_ERROR("askIsCalibrated failed on %s", name.c_str());
     }
+}
+
+// REQUIRES: nothing
+// MODIFIES: nothing
+// EFFECTS: gets current absolute encoder value of MCU
+float Controller::getAbsoluteEncoderValue() {
+    try {
+        makeLive();
+
+        float abs_enc_radians;
+        I2C::transact(deviceAddress, motorIDRegMask | ABS_ENC_OP, ABS_ENC_WB,
+                      ABS_ENC_RB, nullptr, UINT8_POINTER_T(&abs_enc_radians));
+
+        return abs_enc_radians;
+
+    } catch (IOFailure& e) {
+        ROS_ERROR("getAbsoluteEncoderValue failed on %s", name.c_str());
+    }
+
+    return 0;
 }
 
 // REQUIRES: nothing
