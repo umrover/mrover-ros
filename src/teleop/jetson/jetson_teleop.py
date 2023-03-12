@@ -85,14 +85,13 @@ class Drive:
 
 
 class ArmControl:
-
-    _arm_mode = "arm_disabled"
-    _arm_mode_lock = Lock()
-
     def __init__(self):
         self.xbox_mappings = ros.get_param("teleop/xbox_mappings")
         self.ra_config = ros.get_param("teleop/ra_controls")
         self.sa_config = ros.get_param("teleop/sa_controls")
+
+        self._arm_mode = "arm_disabled"
+        self._arm_mode_lock = Lock()
 
         self.ra_cmd_pub = ros.Publisher("ra_cmd", JointState, queue_size=100)
         self.sa_cmd_pub = ros.Publisher("sa_cmd", JointState, queue_size=100)
