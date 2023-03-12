@@ -35,6 +35,7 @@ set(MROVER_MESSAGE_FILES
         ImuAndMag.msg
         MoteusState.msg
         MotorsStatus.msg
+        NavMetadata.msg
         Waypoint.msg
         WaypointType.msg
         )
