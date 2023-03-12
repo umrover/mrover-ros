@@ -52,14 +52,14 @@ def get_drive_command(
 
     alignment = npu.angle_to_rotate(rover_dir, target_dir)
     
-    if not rover.move_back:
-        rospy.logerr(f"Alignment: {alignment}")
+    # if not rover.move_back:
+    #     rospy.logerr(f"Alignment: {alignment}")
 
-    rospy.logerr(f"TARGET DIST {target_dist}")
+    # rospy.logerr(f"TARGET DIST {target_dist}")
     if target_dist < completion_thresh:
         # getting commanded velocity into the data collection
         # rospy.logerr(f"Called make_cmd_vel_obj from drive.py")
-        rospy.logerr("WITHIN COMPLETION_THRESH")
+        # rospy.logerr("WITHIN COMPLETION_THRESH")
         rover.collector.make_cmd_vel_dataframe(Twist())
         return Twist(), True, rover.watchdog.is_stuck()
 
@@ -67,17 +67,17 @@ def get_drive_command(
     full_turn_override = True
     if abs(alignment) < turn_in_place_thresh:
         # We are pretty aligned so we can drive straight
-        rospy.logerr(f"ALIGNED")
+        # rospy.logerr(f"ALIGNED")
         error = target_dist
         cmd_vel.linear.x = np.clip(error, 0.0, MAX_DRIVING_EFFORT)
         if rover.stuck:
-            rospy.logerr(f"GO BACKWARDS")
+            # rospy.logerr(f"GO BACKWARDS")
             cmd_vel.linear.x *= -1 #Go backwards
         full_turn_override = False
 
     # we want to drive the angular offset to zero so the error is just 0 - alignment
     error = alignment
-    rospy.logerr(f"Setting angular.z\n")
+    # rospy.logerr(f"Setting angular.z\n")
     cmd_vel.angular.z = (
         np.sign(error) if full_turn_override else np.clip(error * TURNING_P, MIN_DRIVING_EFFORT, MAX_DRIVING_EFFORT)
     )

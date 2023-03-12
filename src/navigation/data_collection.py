@@ -20,7 +20,7 @@ DF_THRESHOLD = 10
 class DataManager:
     _df: DataFrame
     # collector_context = ""
-    collecting = False
+    collecting = True
     row = 0
 
     # Initializes the first _cur_row dataframe and call the subscribers
@@ -30,12 +30,14 @@ class DataManager:
     def __init__(self, rover_in):
         self.left_pointer = 0
         self.right_pointer = 0
+        self.row_counter = 1
         self.rover = rover_in
         three_zero = np.zeros(3)
         four_zero = np.zeros(4)
         six_zero = np.zeros(6)
         six_string = np.full((6), "")
         self.dict = {
+            "row": [0],
             "timestamp": [0],
             "rotation": [four_zero],
             "position": [three_zero],
@@ -60,8 +62,10 @@ class DataManager:
         rospy.Subscriber("/rover_stuck", Bool, self.set_collecting)
 
     def update_pointers(self):
-       self.right_pointer = self.row_counter
-       self.left_pointer = self.right_pointer - DF_THRESHOLD
+        rospy.logerr(f"UPDATE POINTERS")
+        self.right_pointer = self.row_counter
+        self.left_pointer = self.right_pointer - DF_THRESHOLD + 1
+        rospy.logerr(f"{self.right_pointer} {self.left_pointer}")
     # Query the tf tree to get odometry. Calculate the linear and angular velocities with this data
     # We will only call this when the object list is not empty. When the list is empty the initial actual
     # linear and angular velocities will be their default values set to zero.
@@ -99,7 +103,7 @@ class DataManager:
         self._avg_df.reset_index(inplace=True)
         for k in self.dict.keys():
             if not (k == "wheel_names"):
-                if k == "timestamp" or k == "actual_angular_vel":
+                if k == "timestamp" or k == "actual_angular_vel" or k == "actual_linear_speed" or k == "row":
                     sum = 0.0
                 elif len(self.dict[k][0]) == 3:
                     sum = np.zeros(3)
@@ -113,6 +117,8 @@ class DataManager:
                 temp[k] = [average_result]
         self._avg_df = DataFrame(self.dict)
         # rospy.logerr("AVERAGED")
+        temp["row"] = [self.row_counter]
+        self.row_counter += 1
         return DataFrame(temp)
 
     # This function will only be called/invoked when we receive new esw data
@@ -161,6 +167,7 @@ class DataManager:
     # Receives whether we are collecting data from Teleop GUI via the subscriber
     def set_collecting(self, data):
         self.collecting = data
+        self.collecting = True
         #self.rover.stuck = True
 
     # Outputs the overall dataframe to the csv
