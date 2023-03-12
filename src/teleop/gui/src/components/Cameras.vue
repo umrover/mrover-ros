@@ -119,8 +119,6 @@ export default {
       var temp = this.streamOrder[prev];
       Vue.set(this.streamOrder, prev, this.streamOrder[newest]);
       Vue.set(this.streamOrder, newest, temp);
-      this.sendCameras(prev);
-      this.sendCameras(newest);
     },
 
     changeStream(index) {
