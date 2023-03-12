@@ -53,10 +53,10 @@
     <div class="box map light-bg">
       <AutonRoverMap :odom="odom" />
     </div>
-    <div v-if="!stuck_status" class="box stuck not-stuck">
+    <div v-if="!stuck_status" class="stuck not-stuck">
       <h1>Rover Not Stuck</h1>
     </div>
-    <div v-else class="box stuck rover-stuck">
+    <div v-else class="stuck rover-stuck">
       <h1>Rover Stuck</h1>
     </div>
     <div class="box waypoints light-bg">
@@ -102,7 +102,7 @@ export default {
     DriveControls,
     IMUCalibration,
     JoystickValues,
-    MastGimbalControls,
+    MastGimbalControls
   },
 
   data() {
@@ -111,18 +111,18 @@ export default {
       odom: {
         latitude_deg: 42.294864932393835,
         longitude_deg: -83.70781314674628,
-        bearing_deg: 0,
+        bearing_deg: 0
       },
 
       nav_status: {
         nav_state_name: "OffState",
         completed_wps: 0,
-        total_wps: 0,
+        total_wps: 0
       },
 
       enableAuton: {
         enable: false,
-        GPSWaypoint: [],
+        GPSWaypoint: []
       },
 
       teleopEnabledCheck: true,
@@ -131,20 +131,20 @@ export default {
       greenHook: false,
       ledColor: "red",
 
-      stuck_status: true,
+      stuck_status: false,
 
       // Pubs and Subs
       nav_status_sub: null,
       odom_sub: null,
       auton_led_client: null,
-      tfClient: null,
+      tfClient: null
     };
   },
 
   computed: {
     ...mapGetters("autonomy", {
       autonEnabled: "autonEnabled",
-      teleopEnabled: "teleopEnabled",
+      teleopEnabled: "teleopEnabled"
     }),
 
     nav_state_color: function () {
@@ -161,7 +161,7 @@ export default {
       } else {
         return navRed;
       }
-    },
+    }
   },
 
   watch: {
@@ -180,20 +180,20 @@ export default {
       if (send) {
         this.sendColor();
       }
-    },
+    }
   },
 
   created: function () {
     this.nav_status_sub = new ROSLIB.Topic({
       ros: this.$ros,
       name: "/smach/container_status",
-      messageType: "smach_msgs/SmachContainerStatus",
+      messageType: "smach_msgs/SmachContainerStatus"
     });
 
     this.odom_sub = new ROSLIB.Topic({
       ros: this.$ros,
       name: "/gps/fix",
-      messageType: "sensor_msgs/NavSatFix",
+      messageType: "sensor_msgs/NavSatFix"
     });
 
     this.tfClient = new ROSLIB.TFClient({
@@ -201,13 +201,13 @@ export default {
       fixedFrame: "map",
       // Thresholds to trigger subscription callback
       angularThres: 0.01,
-      transThres: 0.01,
+      transThres: 0.01
     });
 
     this.auton_led_client = new ROSLIB.Service({
       ros: this.$ros,
       name: "change_auton_led_state",
-      serviceType: "mrover/ChangeAutonLEDState",
+      serviceType: "mrover/ChangeAutonLEDState"
     });
 
     // Subscriber for odom to base_link transform
@@ -244,7 +244,7 @@ export default {
   methods: {
     sendColor() {
       let request = new ROSLIB.ServiceRequest({
-        color: this.ledColor,
+        color: this.ledColor
       });
 
       this.auton_led_client.callService(request, (result) => {
@@ -255,8 +255,8 @@ export default {
           }, 1000);
         }
       });
-    },
-  },
+    }
+  }
 };
 </script>
 
@@ -273,7 +273,7 @@ export default {
     "map waypoints waypoints"
     "map waypoints waypoints"
     "data stuck stuck";
-  
+
   font-family: sans-serif;
   height: auto;
   width: auto;
@@ -302,21 +302,24 @@ export default {
 
 .rover-stuck {
   border-radius: 5px;
+  line-height: 70px;
+  border: 1px solid black;
   background-color: lightcoral;
   font-size: 60px;
-  color: white;
   text-align: center;
+  
 }
 
 .not-stuck {
   border-radius: 5px;
+  line-height: 70px;
+  border: 1px solid black;
   background-color: yellowgreen;
   font-size: 60px;
-  color: white;
   text-align: center;
+  
+
 }
-
-
 
 .light-bg {
   background-color: LightGrey;
