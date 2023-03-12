@@ -49,6 +49,9 @@
         @change="toggleArmLaser()"
       />
     </div>
+    <div>
+      <CalibrationCheckbox :name="'Joint B Calibration'" :joint_name="'joint_b'" :calibrate_topic="'ra_is_calibrated'"/>
+    </div>
   </div>
 </template>
 
@@ -56,6 +59,7 @@
 import ROSLIB from "roslib";
 import Checkbox from "./Checkbox.vue";
 import ToggleButton from "./ToggleButton.vue";
+import CalibrationCheckbox from "./CalibrationCheckbox.vue"
 
 // In seconds
 const updateRate = 0.1;
@@ -64,7 +68,8 @@ let interval;
 export default {
   components: {
     Checkbox,
-    ToggleButton
+    ToggleButton,
+    CalibrationCheckbox,
   },
   data() {
     return {
