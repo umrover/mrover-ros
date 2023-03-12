@@ -117,7 +117,7 @@
     </sensor>
   </gazebo>
 
-  <gazebo reference="left_camera_frame">
+  <!-- <gazebo reference="left_camera_frame">
     <sensor type="multicamera" name="stereo_camera">
       <update_rate>30.0</update_rate>
       <camera name="left">
@@ -171,9 +171,8 @@
         <distortionT2>0.0</distortionT2>
       </plugin>
     </sensor>
-  </gazebo>
+  </gazebo> -->
 
-  <!--
   <gazebo reference="left_camera_link">
     <sensor name="left_camera_link_camera" type="camera">
       <update_rate>20</update_rate>
@@ -191,12 +190,12 @@
       </camera>
       <plugin name="left_camera_controller" filename="libgazebo_ros_camera.so">
         <alwaysOn>true</alwaysOn>
-        <updateRate>0.0</updateRate>
+        <updateRate>20</updateRate>
         <cameraName>left</cameraName>
         <imageTopicName>image_rect</imageTopicName>
         <cameraInfoTopicName>camera_info</cameraInfoTopicName>
         <frameName>base_link</frameName>
-        <hackBaseline>0.07</hackBaseline>
+        <hackBaseline>0.02</hackBaseline>
         <distortionK1>0.0</distortionK1>
         <distortionK2>0.0</distortionK2>
         <distortionK3>0.0</distortionK3>
@@ -223,7 +222,7 @@
       </camera>
       <plugin name="right_camera_controller" filename="libgazebo_ros_camera.so">
         <alwaysOn>true</alwaysOn>
-        <updateRate>0.0</updateRate>
+        <updateRate>20</updateRate>
         <cameraName>right</cameraName>
         <imageTopicName>image_rect</imageTopicName>
         <cameraInfoTopicName>camera_info</cameraInfoTopicName>
@@ -237,7 +236,7 @@
       </plugin>
     </sensor>
   </gazebo>
-
+<!-- 
   <gazebo>
     <sensor name="stereo_camera" type="camera">
       <plugin name="stereo_controller" filename="libros_stereo_camera.so">
