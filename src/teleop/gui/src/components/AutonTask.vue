@@ -53,6 +53,12 @@
     <div class="box map light-bg">
       <AutonRoverMap :odom="odom" />
     </div>
+    <div v-if="!stuck_status" class="box stuck not-stuck">
+      <h1>Rover Not Stuck</h1>
+    </div>
+    <div v-else class="box stuck rover-stuck">
+      <h1>Rover Stuck</h1>
+    </div>
     <div class="box waypoints light-bg">
       <AutonWaypointEditor
         :odom="odom"
@@ -119,11 +125,13 @@ export default {
         GPSWaypoint: [],
       },
 
-      teleopEnabledCheck: false,
+      teleopEnabledCheck: true,
 
       navBlink: false,
       greenHook: false,
       ledColor: "red",
+
+      stuck_status: true,
 
       // Pubs and Subs
       nav_status_sub: null,
@@ -264,7 +272,8 @@ export default {
     "header header header"
     "map waypoints waypoints"
     "map waypoints waypoints"
-    "data waypoints waypoints";
+    "data stuck stuck";
+  
   font-family: sans-serif;
   height: auto;
   width: auto;
@@ -290,6 +299,24 @@ export default {
 .box2 {
   display: block;
 }
+
+.rover-stuck {
+  border-radius: 5px;
+  background-color: lightcoral;
+  font-size: 60px;
+  color: white;
+  text-align: center;
+}
+
+.not-stuck {
+  border-radius: 5px;
+  background-color: yellowgreen;
+  font-size: 60px;
+  color: white;
+  text-align: center;
+}
+
+
 
 .light-bg {
   background-color: LightGrey;
@@ -378,5 +405,9 @@ h2 {
 
 .waypoints {
   grid-area: waypoints;
+}
+
+.stuck {
+  grid-area: stuck;
 }
 </style>
