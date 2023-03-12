@@ -1,3 +1,5 @@
+# You will need to restart basestation.launch for
+# Any changes to take effect
 teleop:
   ra_controls:
     joint_a:
@@ -65,6 +67,13 @@ teleop:
     dampen: 3
     pan: 4
     tilt: 5
+
+  # Mappings from site name to index in which values will be sent
+  # for each site, mostly for heaters and which syringe servos we want to use
+  carousel_site_mappings:
+    A: 0
+    B: 1
+    C: 2
 
   echo_presets:
     blah: ["/tf", "/tf_static", "/rosout"]

@@ -33,10 +33,13 @@ set(MROVER_MESSAGE_FILES
         Diagnostic.msg
         EnableAuton.msg
         GPSWaypoint.msg
+        HeaterData.msg
         ImuAndMag.msg
         MastGimbal.msg
         MoteusState.msg
         MotorsStatus.msg
+        ScienceTemperature.msg
+        Spectral.msg
         Waypoint.msg
         WaypointType.msg
         )
@@ -47,6 +50,10 @@ set(MROVER_SERVICE_FILES
         CalibrateMotors.srv
         ChangeAutonLEDState.srv
         ChangeCameras.srv
+        ChangeDeviceState.srv
+        ChangeHeaterState.srv
+        ChangeServoAngle.srv
+        FetchMessageFromPackage.srv
         FetchMessageFromPackage.srv
         FetchPackages.srv
         PublishEnableAuton.srv
