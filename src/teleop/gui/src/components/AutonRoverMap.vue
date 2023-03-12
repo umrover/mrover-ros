@@ -115,9 +115,96 @@ export default {
     LPolyline,
     LPopup,
     LTooltip,
-    LControlScale
+    LControlScale,
   },
+  props: {
+    odom: {
+      type: Object,
+      required: true
+    }
+  },  
+  data() {
+    return {
+      // Default Center In NC 53 Parking Lot
+      center: L.latLng(42.294864932393835, -83.70781314674628),
+      attribution:
+        '&copy; <a href="http://osm.org/copyright">OpenStreetMap</a> contributors',
+      online: true,
+      onlineUrl: onlineUrl,
+      offlineUrl: offlineUrl,
+      onlineTileOptions: onlineTileOptions,
+      offlineTileOptions: offlineTileOptions,
+      roverMarker: null,
+      waypointIcon: null,
+      projectedPointIcon: null,
+      map: null,
+      odomCount: 0,
+      locationIcon: null,
+      odomPath: [],
 
+      projectedPoints: [],
+
+      post1: null,
+      post2: null,
+
+      findRover: false
+    };
+  },
+  computed: {
+    ...mapGetters("autonomy", {
+      route: "route",
+      waypointList: "waypointList"
+    }),
+
+    // Convert to latLng object for Leaflet to use
+    odomLatLng: function () {
+      return L.latLng(this.odom.latitude_deg, this.odom.longitude_deg);
+    },
+
+    // Concat waypoints on course with rover marker at index 0 for polyline
+    polylinePath: function () {
+      return [this.odomLatLng].concat(
+        this.route.map((waypoint) => waypoint.latLng)
+      );
+    }
+  },
+  watch: {
+    odom: {
+      handler: function (val) {
+        // Trigger every time rover odom is changed
+
+        const lat = val.latitude_deg;
+        const lng = val.longitude_deg;
+        const angle = val.bearing_deg;
+
+        const latLng = L.latLng(lat, lng);
+
+        // Move to rover on first odom message
+        if (!this.findRover) {
+          this.findRover = true;
+          this.center = latLng;
+        }
+
+        // Update the rover marker using bearing angle
+        this.roverMarker.setRotationAngle(angle);
+
+        this.roverMarker.setLatLng(latLng);
+
+        // Update the rover path
+        this.odomCount++;
+        if (this.odomCount % DRAW_FREQUENCY === 0) {
+          if (this.odomCount > MAX_ODOM_COUNT * DRAW_FREQUENCY) {
+            this.odomPath.splice(0, 1);
+          }
+          this.odomPath.push(latLng);
+        }
+
+        this.odomPath[this.odomPath.length - 1] = latLng;
+      },
+      // Deep will watch for changes in children of an object
+      deep: true
+    }
+  },
   created: function () {
     // Get Icons for Map
     this.locationIcon = L.icon({
@@ -162,8 +249,6 @@ export default {
       this.projectedPoints = newProjectedList.map((projected_point) => {
         return {
           latLng: L.latLng(
-            //42.295,
-            //-83.7076
             projected_point.latitude_degrees,
             projected_point.longitude_degrees
           )
@@ -182,59 +267,12 @@ export default {
       );
     });
   },
-
-  computed: {
-    ...mapGetters("autonomy", {
-      route: "route",
-      waypointList: "waypointList"
-    }),
-
-    // Convert to latLng object for Leaflet to use
-    odomLatLng: function () {
-      return L.latLng(this.odom.latitude_deg, this.odom.longitude_deg);
-    },
-
-    // Concat waypoints on course with rover marker at index 0 for polyline
-    polylinePath: function () {
-      return [this.odomLatLng].concat(
-        this.route.map((waypoint) => waypoint.latLng)
-      );
-    }
-  },
-
-  props: {
-    odom: {
-      type: Object,
-      required: true
-    }
-  },
-
-  data() {
-    return {
-      // Default Center In NC 53 Parking Lot
-      center: L.latLng(42.294864932393835, -83.70781314674628),
-      attribution:
-        '&copy; <a href="http://osm.org/copyright">OpenStreetMap</a> contributors',
-      online: true,
-      onlineUrl: onlineUrl,
-      offlineUrl: offlineUrl,
-      onlineTileOptions: onlineTileOptions,
-      offlineTileOptions: offlineTileOptions,
-      roverMarker: null,
-      waypointIcon: null,
-      projectedPointIcon: null,
-      map: null,
-      odomCount: 0,
-      locationIcon: null,
-      odomPath: [],
-
-      projectedPoints: [],
-
-      post1: null,
-      post2: null,
-
-      findRover: false
-    };
+  // Pull objects from refs to be able to access data and change w functions
+  mounted: function () {
+    this.$nextTick(() => {
+      this.map = this.$refs.map.mapObject;
+      this.roverMarker = this.$refs.rover.mapObject;
+    });
   },
 
   methods: {
@@ -253,51 +291,6 @@ export default {
     })
   },
 
-  watch: {
-    odom: {
-      handler: function (val) {
-        // Trigger every time rover odom is changed
-
-        const lat = val.latitude_deg;
-        const lng = val.longitude_deg;
-        const angle = val.bearing_deg;
-
-        const latLng = L.latLng(lat, lng);
-
-        // Move to rover on first odom message
-        if (!this.findRover) {
-          this.findRover = true;
-          this.center = latLng;
-        }
-
-        // Update the rover marker using bearing angle
-        this.roverMarker.setRotationAngle(angle);
-
-        this.roverMarker.setLatLng(latLng);
-
-        // Update the rover path
-        this.odomCount++;
-        if (this.odomCount % DRAW_FREQUENCY === 0) {
-          if (this.odomCount > MAX_ODOM_COUNT * DRAW_FREQUENCY) {
-            this.odomPath.splice(0, 1);
-          }
-          this.odomPath.push(latLng);
-        }
-
-        this.odomPath[this.odomPath.length - 1] = latLng;
-      },
-      // Deep will watch for changes in children of an object
-      deep: true
-    }
-  },
-
-  // Pull objects from refs to be able to access data and change w functions
-  mounted: function () {
-    this.$nextTick(() => {
-      this.map = this.$refs.map.mapObject;
-      this.roverMarker = this.$refs.rover.mapObject;
-    });
-  }
 };
 </script>
 
