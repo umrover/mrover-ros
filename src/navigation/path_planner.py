@@ -23,13 +23,22 @@ class PathPlanner:
             if the target_pos has not changed. The path can then be accessed normally, 
             using get_intermediate_target() and complete_intermediate_target()
     """
-    failure_zones: ClassVar[List[FailureZone]] = []
-    visibility_graph: ClassVar[Graph] = Graph(undirected=True)  
+    failure_zones: List[FailureZone]
+    visibility_graph: Graph
 
-    source_pos: ClassVar[Point] = None  
-    target_pos: ClassVar[Point] = None 
-    path: ClassVar[List[Point]] = None
-    target_vertex_idx: ClassVar[int] = 0
+    source_pos: Point
+    target_pos: Point
+    path: List[Point]
+    target_vertex_idx: int
+
+    def __init__(self):
+        self.failure_zones: List[FailureZone] = []
+        self.visibility_graph: Graph = Graph(undirected=True)  
+
+        self.source_pos: Point = None  
+        self.target_pos: Point = None 
+        self.path: List[Point] = None
+        self.target_vertex_idx: int = 0
 
 
     def get_intermediate_target(self, source_pos: Point, target_pos: Point) -> Point:
@@ -56,6 +65,9 @@ class PathPlanner:
         if (not self.path) or (not target_pos == self.target_pos):
             self.generate_path(source_pos, target_pos)
         
+        if(self.target_vertex_idx == len(self.path)):
+            return None
+
         return self.path[self.target_vertex_idx]
 
 
@@ -97,7 +109,9 @@ class PathPlanner:
                 if failure_zone.intersects(edge):
                     deleted_edges.append((u, v))
         
+        print(deleted_edges)
         for (u, v) in deleted_edges:
+            print((u, v))
             self.visibility_graph.remove_edge(u, v)
 
         # Step 3: Add corners of this failure zone to graph
@@ -167,7 +181,7 @@ class PathPlanner:
         # Iterate through all vertices; if edge doesn't intersect any FZ, add to graph
         for vertex in self.visibility_graph:
             if(vertex != new_vertex):
-                edge = LineString(vertex, new_vertex)
+                edge = LineString([vertex, new_vertex])
                 if self.__is_edge_safe(edge):
                     self.visibility_graph.add_edge(vertex, new_vertex, edge)
                 

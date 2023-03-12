@@ -17,14 +17,14 @@ TURNING_P = 10.0
 
 @dataclass
 class Driver:
-    ctx: ClassVar[Context]
-    planner: ClassVar[PathPlanner] = PathPlanner()
+    ctx: Context
+    planner: PathPlanner = PathPlanner()
     
-    def add_failure_zone(self, failure_zone: Polygon) -> None:
+    def add_failure_zone(self, failure_zone: FailureZone) -> None:
         """
         Add a newly-detected failure zone to the PathPlanner. 
         """
-        self.planner.add_failure_zone(FailureZone(failure_zone))
+        self.planner.add_failure_zone(failure_zone)
 
     def get_drive_command(
         self,

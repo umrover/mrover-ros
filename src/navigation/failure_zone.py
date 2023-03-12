@@ -8,8 +8,15 @@ class FailureZone:
     """
     FailureZones are represented as rectangular bounding boxes 
     aligned with the x and y-axes. 
+
+    FailureZones can be initialized by passing in a Shapely Polygon 
+    object. This will be normalized to a rectangular, x-y aligned bounding box.
+
+    FailureZones should typically be intialized such that the Polygon is 
+    larger than it strictly needs to be; the rover will pass through the vertices
+    and edges of the failure zone while planning a path if it is in the way. 
     """
-    vertices: ClassVar[Polygon]           
+    vertices: Polygon      
 
     def get_vertices(self) -> List[Point]:
         """

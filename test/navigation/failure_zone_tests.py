@@ -1,6 +1,6 @@
 import numpy as np
 from shapely.geometry import Polygon, LineString, Point
-from navigation.drive import FailureZone
+from navigation.failure_zone import FailureZone
 
 def check_failure_zone(fz, start, end, res):
     start = np.array(start)
