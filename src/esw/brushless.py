@@ -44,7 +44,6 @@ class MoteusData:
 
 
 class MoteusState:
-    # TODO: Make MoteusState more object-oriented. Currently it's mostly acting as a namespace.
     DISCONNECTED_STATE = "Disconnected"
     ARMED_STATE = "Armed"
     ERROR_STATE = "Error"

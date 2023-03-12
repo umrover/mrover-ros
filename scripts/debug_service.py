@@ -13,13 +13,14 @@ SERVICE_NAME = "/calibrate"
 SERVICE_TYPE = CalibrateMotors
 
 
-def printServiceRequest(service_request: Any):
+def print_service_request(service_request: Any):
     rospy.loginfo(service_request)
+    return ChangeServoAngleResponse(success=True)
 
 
 def main():
     rospy.init_node("debug_service")
-    rospy.Service(SERVICE_NAME, SERVICE_TYPE, printServiceRequest)
+    rospy.Service(SERVICE_NAME, SERVICE_TYPE, print_service_request)
     rospy.spin()
 
 
