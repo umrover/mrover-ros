@@ -94,9 +94,6 @@ export default {
       var res = this.qualities[index];
       var msg = new ROSLIB.Message({ device: index, resolution: res }); //CameraCmd msg
 
-      console.log(index);
-      console.log(this.qualities);
-
       var changeCamsService = new ROSLIB.Service({
         ros: this.$ros,
         name: "change_cameras",
