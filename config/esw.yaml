@@ -96,7 +96,7 @@ brushed_motors:
       motor_max_voltage: 12.0
       mcu_id: 1
       motor_id: 1
-      inversion: 1.0
+      inversion: -1.0
     - name: "sa_joint_3"
       driver_voltage: 12.0
       motor_max_voltage: 12.0
@@ -111,6 +111,40 @@ brushed_motors:
       inversion: 1.0
   i2c_device_file: "/dev/i2c-1"
   test: false
+
+science:
+  auton_color_ids:
+    red: 0
+    blue: 1
+    green: 2
+    "off": 3
+  device_mosfet_numbers:
+    arm_laser: 6
+    uv_led_carousel: 1
+    uv_led_end_effector: 6
+    white_led: 2
+  serial:
+    baud_rate: 9600
+    timeout: 0
+    port: "/dev/ttyTHS0" 
+  # These position are random for now
+  syringe_servo_positions:  # This is in degrees
+    site_A:
+      pushed: 80
+      start: 100
+    site_B:
+      pushed: 60
+      start: 90
+    site_C:
+      pushed: 10
+      start: 50
+  info:
+    num_diag_current: 3
+    num_diag_thermistors: 3
+    num_science_thermistors: 3
+    num_spectral: 1
+    sleep: 0.01
+    uart_transmit_msg_len: 30
 
 cameras:
     arguments:

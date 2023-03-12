@@ -1,7 +1,7 @@
 #pragma once
 
 #include "ControllerMap.h"          // for ControllerMap
-#include <array>        
+#include <array>                    // for array
 #include <cmath>                    // for nan
 #include <mrover/Carousel.h>        // for Carousel
 #include <mrover/MastGimbal.h>      // for MastGimbal
