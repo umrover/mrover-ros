@@ -11,7 +11,7 @@
       <h1>Auton Dashboard</h1>
       <div class="spacer"></div>
       <div class="spacer"></div>
-      <CommReadout></CommReadout>
+      <CommReadout class="comm"></CommReadout>
       <div class="help">
         <img
           src="/static/help.png"
@@ -381,5 +381,10 @@ h2 {
 
 .waypoints {
   grid-area: waypoints;
+}
+
+.comm {
+  position: absolute;
+  left: 50%;
 }
 </style>
