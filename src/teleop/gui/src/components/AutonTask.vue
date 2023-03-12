@@ -11,6 +11,7 @@
       <h1>Auton Dashboard</h1>
       <div class="spacer"></div>
       <div class="spacer"></div>
+      <CommReadout></CommReadout>
       <div class="help">
         <img
           src="/static/help.png"
@@ -83,6 +84,7 @@ import { mapGetters } from "vuex";
 import * as qte from "quaternion-to-euler";
 import JoystickValues from "./JoystickValues.vue";
 import IMUCalibration from "./IMUCalibration.vue";
+import CommReadout from "./CommReadout.vue";
 
 const navBlue = "#4695FF";
 const navGreen = "yellowgreen";
@@ -97,6 +99,7 @@ export default {
     IMUCalibration,
     JoystickValues,
     MastGimbalControls,
+    CommReadout
   },
 
   data() {

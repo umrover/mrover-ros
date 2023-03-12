@@ -37,6 +37,7 @@ set(MROVER_MESSAGE_FILES
         MastGimbal.msg
         MoteusState.msg
         MotorsStatus.msg
+        NetworkBandwidth.msg
         ScienceTemperature.msg
         Spectral.msg
         Waypoint.msg
