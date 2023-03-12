@@ -202,8 +202,8 @@ else ()
     # define an add and link macro
     # Put items here to build
     macro(add_and_link_macro)
-        add_cpp_node_macro(aruco_detect "src/perception/*.cpp")
-        target_link_libraries(aruco_detect ${OpenCV_LIBS} ${PCL_LIBRARIES})
+        add_cpp_node_macro(tag_detector "src/perception/*.cpp")
+        target_link_libraries(tag_detector ${OpenCV_LIBS} ${PCL_LIBRARIES})
 
         add_cpp_node_macro(brushed_motors "src/esw/brushed_motors/*.cpp")
 

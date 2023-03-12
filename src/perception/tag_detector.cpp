@@ -36,9 +36,7 @@
 
 void FiducialsNode::configCallback(mrover::DetectorParamsConfig& config, uint32_t level) {
     // Don't load initial config, since it will overwrite the rosparam settings
-    if (level == 0xFFFFFFFF) {
-        return;
-    }
+    if (level == 0xFFFFFFFF) return;
 
     mDetectorParams->adaptiveThreshConstant = config.adaptiveThreshConstant;
     mDetectorParams->adaptiveThreshWinSizeMin = config.adaptiveThreshWinSizeMin;
@@ -74,29 +72,6 @@ void FiducialsNode::ignoreCallback(std_msgs::String const& msg) {
     mIgnoreIds.clear();
     mPnh.setParam("ignore_fiducials", msg.data);
     handleIgnoreString(msg.data);
-}
-
-void FiducialsNode::camInfoCallback(sensor_msgs::CameraInfo::ConstPtr const& msg) {
-    if (mHasCamInfo) {
-        return;
-    }
-
-    if (msg->K != boost::array<double, 9>({0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0})) {
-        for (int i = 0; i < 3; i++) {
-            for (int j = 0; j < 3; j++) {
-                mCamMat.at<double>(i, j) = msg->K[i * 3 + j];
-            }
-        }
-
-        for (int i = 0; i < 5; i++) {
-            mDistCoeffs.at<double>(0, i) = msg->D[i];
-        }
-
-        mHasCamInfo = true;
-        mFrameId = msg->header.frame_id;
-    } else {
-        ROS_WARN("%s", "CameraInfo message has invalid intrinsics, K matrix all zeros");
-    }
 }
 
 void FiducialsNode::handleIgnoreString(std::string const& str) {
@@ -142,15 +117,14 @@ bool FiducialsNode::enableDetectionsCallback(std_srvs::SetBool::Request& req, st
 }
 
 FiducialsNode::FiducialsNode() : mNh(), mPnh("~"), mIt(mNh), mTfListener(mTfBuffer) {
-    // Camera intrinsics
-    mCamMat = cv::Mat::zeros(3, 3, CV_64F);
-    // distortion coefficients
-    mDistCoeffs = cv::Mat::zeros(1, 5, CV_64F);
-
     mDetectorParams = new cv::aruco::DetectorParameters();
     auto defaultDetectorParams = cv::aruco::DetectorParameters::create();
 
     int dicNo;
+    mPnh.param<bool>("use_odom", mUseOdom, false);
+    mPnh.param<std::string>("odom_frame_id", mOdomFrameId, "odom");
+    mPnh.param<std::string>("map_frame_id", mMapFrameId, "map");
+    mPnh.param<std::string>("base_link_frame_id", mBaseLinkFrameId, "base_link");
     mPnh.param<bool>("publish_images", mPublishImages, true);
     mPnh.param<int>("dictionary", dicNo, 0);
     mPnh.param<bool>("publish_fiducial_tf", mPublishFiducialTf, true);
@@ -166,10 +140,8 @@ FiducialsNode::FiducialsNode() : mNh(), mPnh("~"), mIt(mNh), mTfListener(mTfBuff
 
     mImgSub = mIt.subscribe("camera/color/image_raw", 1, &FiducialsNode::imageCallback, this);
     mPcSub = mNh.subscribe("camera/depth/points", 1, &FiducialsNode::pointCloudCallback, this);
-    mCamInfoSub = mNh.subscribe("camera/color/camera_info", 1, &FiducialsNode::camInfoCallback, this);
     mIgnoreSub = mNh.subscribe("ignore_fiducials", 1, &FiducialsNode::ignoreCallback, this);
-    mServiceEnableDetections = mNh.advertiseService("enable_detections", &FiducialsNode::enableDetectionsCallback,
-                                                    this);
+    mServiceEnableDetections = mNh.advertiseService("enable_detections", &FiducialsNode::enableDetectionsCallback, this);
 
     // Lambda handles passing class pointer (implicit first parameter) to configCallback
     mCallbackType = [this](mrover::DetectorParamsConfig& config, uint32_t level) { configCallback(config, level); };
@@ -245,27 +217,4 @@ int main(int argc, char** argv) {
     ros::spin();
 
     return EXIT_SUCCESS;
-}
-
-void XYZFilter::addReading(SE3 const& fidInOdom) {
-    fidInOdomX.push(fidInOdom.positionVector().x());
-    fidInOdomY.push(fidInOdom.positionVector().y());
-    fidInOdomZ.push(fidInOdom.positionVector().z());
-}
-
-void XYZFilter::setFilterParams(size_t count, double proportion) {
-    fidInOdomX.setFilterCount(count);
-    fidInOdomX.setProportion(static_cast<float>(proportion));
-    fidInOdomY.setFilterCount(count);
-    fidInOdomY.setProportion(static_cast<float>(proportion));
-    fidInOdomZ.setFilterCount(count);
-    fidInOdomZ.setProportion(static_cast<float>(proportion));
-}
-
-bool XYZFilter::ready() const {
-    return fidInOdomX.ready();
-}
-
-SE3 XYZFilter::getFidInOdom() const {
-    return {{fidInOdomX.get(), fidInOdomY.get(), fidInOdomZ.get()}, Eigen::Quaterniond::Identity()};
 }

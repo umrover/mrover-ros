@@ -32,8 +32,8 @@ void FiducialsNode::imageCallback(sensor_msgs::ImageConstPtr const& msg) {
 
             if (tag.tagInCam) {
                 // Publish tag to immediate
-                std::string immediateFrameName = "immediateFiducial" + std::to_string(tag.id);
-                SE3::pushToTfTree(mTfBroadcaster, immediateFrameName, ROVER_FRAME, tag.tagInCam.value());
+                std::string immediateFrameId = "immediateFiducial" + std::to_string(tag.id);
+                SE3::pushToTfTree(mTfBroadcaster, immediateFrameId, mBaseLinkFrameId, tag.tagInCam.value());
             }
         }
 
@@ -57,10 +57,11 @@ void FiducialsNode::imageCallback(sensor_msgs::ImageConstPtr const& msg) {
             if (tag.hitCount >= mMinHitCountBeforePublish) {
                 if (tag.tagInCam) {
                     try {
-                        std::string immediateFrameName = "immediateFiducial" + std::to_string(tag.id);
+                        std::string immediateFrameId = "immediateFiducial" + std::to_string(tag.id);
                         // Publish tag to odom
-                        SE3 tagInOdom = SE3::fromTfTree(mTfBuffer, ODOM_FRAME, immediateFrameName);
-                        SE3::pushToTfTree(mTfBroadcaster, "fiducial" + std::to_string(id), ODOM_FRAME, tagInOdom);
+                        std::string const& frameId = mUseOdom ? mOdomFrameId : mMapFrameId;
+                        SE3 tagInOdom = SE3::fromTfTree(mTfBuffer, frameId, immediateFrameId);
+                        SE3::pushToTfTree(mTfBroadcaster, "fiducial" + std::to_string(id), frameId, tagInOdom);
                     } catch (tf2::ExtrapolationException const&) {
                         ROS_WARN("Old data for immediate tag");
                     } catch (tf2::LookupException const&) {

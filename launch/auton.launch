@@ -13,7 +13,7 @@
       ==========
     -->
     <!-- node to detect AR tags and publish them to the TF tree -->
-    <node if="$(arg run_perception)" name="aruco_detect" pkg="mrover" type="aruco_detect"/>
+    <node if="$(arg run_perception)" name="tag_detector" pkg="mrover" type="tag_detector"/>
 
     <!--
       ===========
