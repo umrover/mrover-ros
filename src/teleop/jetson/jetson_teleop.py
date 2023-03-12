@@ -86,8 +86,8 @@ class Drive:
 
 class ArmControl:
 
-    __arm_mode = "arm_disabled"
-    __arm_mode_lock = Lock()
+    _arm_mode = "arm_disabled"
+    _arm_mode_lock = Lock()
 
     def __init__(self):
         self.xbox_mappings = ros.get_param("teleop/xbox_mappings")
@@ -131,8 +131,8 @@ class ArmControl:
         will be one of {"arm_disabled","open_loop","servo}
         :return:
         """
-        with self.__arm_mode_lock:
-            self.__arm_mode = msg.data
+        with self._arm_mode_lock:
+            self._arm_mode = msg.data
 
     def filter_xbox_axis(
         self,
@@ -165,14 +165,14 @@ class ArmControl:
 
     def ra_control_callback(self, msg: Joy) -> None:
         """
-        Chooses which RA control function to use based on __arm_mode string
+        Chooses which RA control function to use based on _arm_mode string
         :param msg: Has axis and buttons array for Xbox controller
         Velocities are sent in range [-1,1]
         :return:
         """
-        if self.__arm_mode == "open_loop":
+        if self._arm_mode == "open_loop":
             self.ra_open_loop_control(msg)
-        elif self.__arm_mode == "servo":
+        elif self._arm_mode == "servo":
             self.ra_servo_control(msg)
 
     def ra_open_loop_control(self, msg: Joy) -> None:
