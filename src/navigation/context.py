@@ -10,7 +10,7 @@ from visualization_msgs.msg import Marker
 from typing import ClassVar, Optional
 import numpy as np
 from dataclasses import dataclass
-import watchdog
+from watchdog import WatchDog
 from data_collection import DataManager
 
 
@@ -23,19 +23,19 @@ class Gate:
 @dataclass
 class Rover:
     ctx: Context
-    watchdog: watchdog.WatchdogBase
+    watchdog: WatchDog
     stuck: bool
     previous_state: str
     move_back: bool
     collector: DataManager
 
-    def __init__(self, ctx_in, watchdog_in, stuck_in, prev_in, move_back_in):
+    def __init__(self, ctx_in, stuck_in, prev_in, move_back_in):
         self.ctx = ctx_in
-        self.watchdog = watchdog_in
         self.stuck = stuck_in
         self.previous_state = prev_in
         self.move_back = move_back_in
         self.collector = DataManager(self)
+        self.watchdog = WatchDog(self.collector)
 
     def get_pose(self) -> SE3:
         return SE3.from_tf_tree(self.ctx.tf_buffer, parent_frame="map", child_frame="base_link")
@@ -184,7 +184,7 @@ class Context:
         self.vis_publisher = rospy.Publisher("nav_vis", Marker, queue_size=1)
         self.course_service = rospy.Service("course_service", mrover.srv.PublishCourse, self.recv_course)
         self.course = None
-        self.rover = Rover(self, watchdog.WatchdogOff(), False, "", True)
+        self.rover = Rover(self, False, "", True)
         # self.rover = Rover(self)
         self.env = Environment(self)
 

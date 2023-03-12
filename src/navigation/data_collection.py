@@ -14,7 +14,7 @@ from pandas import DataFrame
 
 AVERAGE_LEN = 11
 DELTAT_THRESHOLD = 0.001
-
+DF_THRESHOLD = 10
 
 @dataclass
 class DataManager:
@@ -28,6 +28,8 @@ class DataManager:
     # When the datacollection starts.
     # def __init__(self):
     def __init__(self, rover_in):
+        self.left_pointer = 0
+        self.right_pointer = 0
         self.rover = rover_in
         three_zero = np.zeros(3)
         four_zero = np.zeros(4)
@@ -57,6 +59,9 @@ class DataManager:
         rospy.Subscriber("/drive_vel_data", JointState, self.make_esw_dataframe)
         rospy.Subscriber("/rover_stuck", Bool, self.set_collecting)
 
+    def update_pointers(self):
+       self.right_pointer = self.row_counter
+       self.left_pointer = self.right_pointer - DF_THRESHOLD
     # Query the tf tree to get odometry. Calculate the linear and angular velocities with this data
     # We will only call this when the object list is not empty. When the list is empty the initial actual
     # linear and angular velocities will be their default values set to zero.
@@ -156,7 +161,7 @@ class DataManager:
     # Receives whether we are collecting data from Teleop GUI via the subscriber
     def set_collecting(self, data):
         self.collecting = data
-        self.rover.stuck = True
+        #self.rover.stuck = True
 
     # Outputs the overall dataframe to the csv
     def write_to_csv(self):

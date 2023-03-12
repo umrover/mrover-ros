@@ -1,6 +1,6 @@
 import smach
 from typing import List
-from context import Context, Rover, Environment
+from context import Context
 from aenum import Enum, NoAlias
 from state import BaseState
 from drive import get_drive_command
@@ -41,7 +41,7 @@ class RecoveryState(BaseState):
         pose = self.context.rover.get_pose()
         arrived = False
         # if first round
-        if Rover.move_back:
+        if self.context.rover.move_back:
             rospy.logerr("EVALUATE")
             if not self.waypoint_calculated:
                 rospy.logerr(f"POSE{pose}")
@@ -53,18 +53,18 @@ class RecoveryState(BaseState):
             self.context.rover.send_drive_command(cmd_vel)
 
         if arrived:
-            Rover.move_back = False # move to second part of turn
+            self.context.rover.move_back = False # move to second part of turn
             self.waypoint_calculated = False
             arrived = False
 
         # if second round
-        if not Rover.move_back:
+        if not self.context.rover.move_back:
             if not self.waypoint_calculated:
                 rospy.logerr(f"POSE{pose}")
                 dir_vector = 2 * self.rotate_by_90(pose.rotation.direction_vector())
                 self.waypoint_behind = pose.position + dir_vector
                 self.waypoint_calculated = True
-            cmd_vel, arrived, stuck = get_drive_command(self.waypoint_behind, pose, STOP_THRESH, DRIVE_FWD_THRESH)
+            cmd_vel, arrived, stuck = get_drive_command(self.waypoint_behind, pose, STOP_THRESH, DRIVE_FWD_THRESH, self.context.rover)
             self.context.rover.send_drive_command(cmd_vel)
 
         #set stuck to False
