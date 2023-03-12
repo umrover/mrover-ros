@@ -58,13 +58,50 @@ def main():
     expected = [src, Point(1, 1), Point(3, 2), Point(4, 2), target]
     check_path_planner(planner2, src, target, expected)
 
-    # TEST 6: 
+    # TEST 6: Add failure zone that conflicts with previous edges and plan new path
     fz4 = FailureZone(Polygon([[3, -2], [4, -2], [4, -0.25], [3, -0.25]]))
     planner2.add_failure_zone(fz4)
-    expected = [src, Point(1, 1), Point(2, 1), Point(3, 0), Point(5, -0.5), 
-                Point(7, -0.5), target]
+    src = Point(0, 0)
+    target = Point(8, 0)
+    expected = [src, Point(1, -1), Point(2, -1), Point(3, -0.25), Point(4, -0.25), 
+                Point(5, -0.5), Point(7, -0.5), target]
     check_path_planner(planner2, src, target, expected)
 
+    # TEST 7: Add failure zone that overlaps existing failure zone
+    fz5 = FailureZone(Polygon([[3, -1], [4, -1], [4, 1], [3, 1]]))
+    planner2.add_failure_zone(fz5)
+    src = Point(8, 0)
+    target = Point(0, 0)
+    expected = [src, Point(4, -2),  Point(3, -2), Point(1, -1), target]
+    check_path_planner(planner2, src, target, expected)
+
+    # TEST 8: src in FZ
+    src = Point(1.5, 0)
+    target = Point(8, 0)
+    expected = [src, target]
+    check_path_planner(planner2, src, target, expected)
+
+    # TEST 9: target in FZ
+    src = Point(0, 0)
+    target = Point(1.5, 0)
+    expected = [src, target]
+    check_path_planner(planner2, src, target, expected)
+
+    # TEST 10: target blocked off by FZ
+    fz6 = FailureZone(Polygon([[2, 0.5], [3, 0.5], [3, 1], [2, 1]]))
+    fz7 = FailureZone(Polygon([[2, -0.5], [3, -0.5], [3, -1.5], [2, -1.5]]))
+    planner2.add_failure_zone(fz6)
+    planner2.add_failure_zone(fz7)
+    src = Point(1.5, 0)
+    target = Point(0, 0)
+    expected = [src, target]
+    check_path_planner(planner2, src, target, expected)
+
+    # TEST 11: src blocked off by FZ 
+    src = Point(0, 0)
+    target = Point(1.5, 0)
+    expected = [src, target]
+    check_path_planner(planner2, src, target, expected)
 
     print("All path_planner tests passed!")
 

@@ -12,9 +12,9 @@ class FailureZone:
     FailureZones can be initialized by passing in a Shapely Polygon 
     object. This will be normalized to a rectangular, x-y aligned bounding box.
 
-    FailureZones should typically be intialized such that the Polygon is 
-    larger than it strictly needs to be; the rover will pass through the vertices
-    and edges of the failure zone while planning a path if it is in the way. 
+    NOTE: FailureZones should typically be intialized such that the Polygon is 
+    larger than it strictly needs to be; the rover WILL pass through the vertices
+    and edges of the failure zone while planning a path if the zone is in the way. 
     """
     vertices: Polygon      
 

@@ -3,6 +3,19 @@ from dijkstar import Graph, find_path, NoPathError  # https://pypi.org/project/D
 from shapely.geometry import LineString, Point
 from failure_zone import FailureZone
 
+"""
+Overload < operator for point objects
+"""
+def point_less(self: Point, other: Point):
+    if self.x < other.x :
+        return True
+    elif self.x > other.x :
+        return False
+    else:
+        return self.y < other.y
+
+Point.__lt__ = point_less
+
 class PathPlanner:
     """
     Implements failure zone avoidance algorithm. A PathPlanner can be used to keep 
@@ -106,12 +119,11 @@ class PathPlanner:
 
         for u, neighbors in graph.items():
             for v, edge in neighbors.items():
-                if failure_zone.intersects(edge):
-                    deleted_edges.append((u, v))
+                if u < v: # avoid duplicate edges being deleted
+                    if failure_zone.intersects(edge):
+                        deleted_edges.append((u, v))
         
-        print(deleted_edges)
         for (u, v) in deleted_edges:
-            print((u, v))
             self.visibility_graph.remove_edge(u, v)
 
         # Step 3: Add corners of this failure zone to graph
@@ -203,4 +215,4 @@ class PathPlanner:
             if fz.intersects(edge):
                 return False
         
-        return True
+        return True 
