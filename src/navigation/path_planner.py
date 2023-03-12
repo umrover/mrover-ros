@@ -7,14 +7,14 @@ class PathPlanner:
     """
     Implements failure zone avoidance algorithm. 
     """
-    failure_zones: List[FailureZone] = []
+    failure_zones: ClassVar[List[FailureZone]] = []
 
     visibility_graph: ClassVar[Graph] = Graph(undirected=True)  
     source_pos: ClassVar[Point] = None  
     target_pos: ClassVar[Point] = None 
 
     path: ClassVar[List[Point]] = None
-    target_vertex_idx: int = 0
+    target_vertex_idx: ClassVar[int] = 0
 
     def get_intermediate_target(self, source_pos: Point, target_pos: Point) -> Point:
         """
@@ -29,11 +29,10 @@ class PathPlanner:
        :param source_pos:   Point object representing source position
        :param target_pos:   Point object representing target position
         """
-        if self.path and target_pos == self.target_pos:
-            return self.path[self.target_vertex_idx]
-        else:
+        if (not self.path) or (not target_pos == self.target_pos):
             self.generate_path(source_pos, target_pos)
-
+        
+        return self.path[self.target_vertex_idx]
 
     def complete_intermediate_target(self) -> None:
         """
@@ -88,12 +87,12 @@ class PathPlanner:
         for (u, v) in deleted_edges:
             self.visibility_graph.remove_edge(u, v)
 
-        # Step 3: Add corners to graph
+        # Step 3: Add corners of this failure zone to graph
         vertices = failure_zone.get_vertices()
         for vertex in vertices:
             self.add_vertex(vertex)
 
-        # Step 4: Reset path, target, etc. to None
+        # Step 4: Reset path, target, etc.
         self.path = None
         self.target_vertex_idx = 0
 
@@ -144,7 +143,8 @@ class PathPlanner:
                             source_pos, 
                             target_pos, 
                             cost_func = lambda u, v, e, prev_e : e.length).nodes
-        except NoPathError: # how do we handle this case?
-            print("No path found.")
+        except NoPathError: 
+        # if no clear path found, just construct a straight-line to the target
+            self.path = [source_pos, target_pos] 
 
         self.target_vertex_idx = 0

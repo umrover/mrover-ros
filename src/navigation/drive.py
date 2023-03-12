@@ -22,7 +22,7 @@ class Driver:
     
     def add_failure_zone(self, failure_zone: Polygon) -> None:
         """
-        Add a newly-detected failure zone to the planner. 
+        Add a newly-detected failure zone to the PathPlanner. 
         """
         self.planner.add_failure_zone(FailureZone(failure_zone))
 
@@ -35,7 +35,7 @@ class Driver:
     ) -> Tuple[Twist, bool]:
         """
         Gets the drive command for the rover currently at rover_pose and intending to
-        reach target_pos while avoiding failure zones. 
+        reach target_pos while avoiding failure zones (if possible).  
 
         :param target_pos:              Target position to drive to.
         :param rover_pose:              Current rover pose.
@@ -51,9 +51,9 @@ class Driver:
         cmd_vel, reached = self.get_intermediate_target_drive_command(target_pos,
                                                                       rover_pose, completion_thresh, turn_in_place_thresh)
         # if intermediate target already reached, then mark intermediate target
-        # as complete and get command to next intermediate target (unless path complete)
+        # as complete and get command to next intermediate target
         while(reached and not self.planner.is_path_complete()):
-            self.planner.complete_intermediate_target()
+            self.planner.complete_intermediate_target() # mark target as completed
             cmd_vel, reached = self.get_intermediate_target_drive_command(target_pos,
                                                                     rover_pose, completion_thresh, turn_in_place_thresh)
         return cmd_vel, reached
@@ -66,7 +66,7 @@ class Driver:
             turn_in_place_thresh: float
     ) -> Tuple[Twist, bool]:
         """
-        Given a final target_pos and the current rover_pose, uses the planner to return a drive command to an intermediate target that is on the way to the ultimate goal point.
+        Given a final target_pos and the current rover_pose, uses the planner to return a drive command to the current intermediate target that is on the way to the ultimate goal point. The planner avoids failure zones. 
 
         :param target_pos:              Target position to drive to.
         :param rover_pose:              Current rover pose.
