@@ -24,6 +24,7 @@
           ></OpenLoopControl>
         </div>
       </div>
+      <CalibrationCheckbox :name="'Carousel Calibration'" :joint_name="'carousel'" :calibrate_topic="'carousel_is_calibrated'"/>
     </div>
   </div>
 </template>
@@ -32,6 +33,7 @@
 import ROSLIB from "roslib";
 import Checkbox from "./Checkbox.vue";
 import OpenLoopControl from "./OpenLoopControl.vue";
+import CalibrationCheckbox from "./CalibrationCheckbox.vue";
 
 // In seconds
 const updateRate = 0.1;
@@ -42,6 +44,7 @@ export default {
   components: {
     Checkbox,
     OpenLoopControl,
+    CalibrationCheckbox
   },
   data() {
     return {

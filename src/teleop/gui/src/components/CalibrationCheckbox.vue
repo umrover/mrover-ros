@@ -5,20 +5,20 @@
         @toggle="toggleCalibration">
         </Checkbox>
         <span class="led">
-            <CommIndicator :connected="calibrated" :name="name"/>
+            <LEDIndicator :connected="calibrated" :name="name" :show_name="false"/>
         </span>
     </div>
 </template>
 
 <script>
 import Checkbox from "./Checkbox.vue";
-import CommIndicator from "./CommIndicator.vue";
+import LEDIndicator from "./LEDIndicator.vue";
 import ROSLIB from "roslib/src/RosLib";
 
 export default {
     components: {
         Checkbox,
-        CommIndicator
+        LEDIndicator
     },
 
     props: {

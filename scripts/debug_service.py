@@ -15,7 +15,6 @@ SERVICE_TYPE = CalibrateMotors
 
 def print_service_request(service_request: Any):
     rospy.loginfo(service_request)
-    return ChangeServoAngleResponse(success=True)
 
 
 def main():
