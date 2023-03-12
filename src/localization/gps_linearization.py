@@ -10,6 +10,7 @@ import numpy as np
 from pymap3d.enu import geodetic2enu
 from tf.transformations import quaternion_about_axis, quaternion_multiply
 
+
 class GPSLinearization:
     """
     This node subscribes to GPS and IMU data, linearizes the GPS data
@@ -38,7 +39,7 @@ class GPSLinearization:
     def __init__(self):
         # init to zero pose
         self.pose = SE3()
-        self.quat_correction = np.array([0,0,0,1]) # identity quaternion
+        self.quat_correction = np.array([0, 0, 0, 1])  # identity quaternion
 
         rospy.Subscriber("gps/fix", NavSatFix, self.gps_callback)
         rospy.Subscriber("imu/data", ImuAndMag, self.imu_callback)
@@ -132,11 +133,13 @@ class GPSLinearization:
     def correction_callback(self, msg: Quaternion):
         self.quat_correction = np.array([msg.x, msg.y, msg.z, msg.w])
 
+
 def main():
     # start the node and spin to wait for messages to be received
     rospy.init_node("gps_linearization")
     GPSLinearization()
     rospy.spin()
+
 
 if __name__ == "__main__":
     main()
