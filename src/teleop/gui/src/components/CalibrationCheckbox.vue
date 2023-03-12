@@ -4,37 +4,45 @@
         :name="name"        
         @toggle="toggleCalibration">
         </Checkbox>
-        <span
-            :class="[
-              'led',
-              enabled ? 'green' : 'red',
-            ]"
-        ></span>
+        <span class="led">
+            <CommIndicator :connected="calibrated" :name="name"/>
+        </span>
     </div>
 </template>
 
 <script>
 import Checkbox from "./Checkbox.vue";
+import CommIndicator from "./CommIndicator.vue";
 import ROSLIB from "roslib/src/RosLib";
 
 export default {
+    components: {
+        Checkbox,
+        CommIndicator
+    },
+
     props: {
         name: {
             type: String,
             required: true
-        }
+        },
+        joint_name: {
+            type: String,
+            required: true
+        },
+        calibrate_topic: {
+            type: String,
+            required: true
+        }  
     },
 
     data() {
         return {
-            enabled: false,
+            toggleEnabled: false,
+            calibrated: false,
             calibrate_service: null,
             calibrate_sub: null
         }
-    },
-    
-    components: {
-        Checkbox
     },
     
     created: function () {
@@ -46,7 +54,7 @@ export default {
 
         this.calibrate_sub = new ROSLIB.Topic({
             ros: this.$ros,
-            name: "ra_is_calibrated",
+            name: this.calibrate_topic,
             messageType: "mrover/Calibrated"
         });
 
@@ -55,32 +63,26 @@ export default {
                 console.log(msg.names)
                 var index = 0;
                 for (var i = 0; i < msg.names.length; ++i) {
-                    if ((msg.names[i] == "sa_joint_1" && 
-                        this.name == "Joint 1 Calibration") ||
-                        (msg.names[i] == "sa_joint_2" && 
-                        this.name == "Joint 2 Calibration") ||
-                        (msg.names[i] == "sa_joint_3" && 
-                        this.name == "Joint 3 Calibration") 
-                        ) {
+                    if (msg.names[i] == this.joint_name) {
                         index = i;
                     }
                 }
 
-                this.enabled = msg.calibrated[index];
+                this.calibrated = msg.calibrated[index];
             }
         );
     },
 
     methods: {
         toggleCalibration: function () {
-            this.enabled = !this.enabled;
+            this.toggleEnabled = !this.toggleEnabled;
             let request = new ROSLIB.ServiceRequest({
                 name: this.name,
-                calibrate: this.enabled
+                calibrate: this.toggleEnabled
             });
             this.calibrate_service.callService(request, (result) => {
                 if (!result) {
-                    this.enabled = !this.enabled;
+                    this.toggleEnabled = !this.toggleEnabled;
                     alert("Toggling Calibration failed.");
                 }
             });
@@ -99,16 +101,6 @@ export default {
     .led {
         margin-left: 5%;
         margin-top: 1%;
-        width: 16px;
-        height: 16px;
-        border-radius: 8px;
-        border: 1px solid;
         display: block;
-    }
-    .green {
-        background-color: lightgreen;
-    }
-    .red {
-        background-color: red;
     }
 </style>

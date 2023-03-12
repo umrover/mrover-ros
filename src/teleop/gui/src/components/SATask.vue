@@ -72,9 +72,9 @@
     </div>
     <div class="box light-bg calibration">
       <h3>Calibrations</h3>
-      <CalibrationCheckbox :name="'Joint 1 Calibration'"/>
-      <CalibrationCheckbox :name="'Joint 2 Calibration'"/>
-      <CalibrationCheckbox :name="'Joint 3 Calibration'"/>
+      <CalibrationCheckbox :name="'Joint 1 Calibration'" :joint_name="'sa_joint_1'" :calibrate_topic="'sa_is_calibrated'"/>
+      <CalibrationCheckbox :name="'Joint 2 Calibration'" :joint_name="'sa_joint_2'" :calibrate_topic="'sa_is_calibrated'"/>
+      <CalibrationCheckbox :name="'Joint 3 Calibration'" :joint_name="'sa_joint_3'" :calibrate_topic="'sa_is_calibrated'"/>
     </div>
     <div v-show="false">
       <MastGimbalControls></MastGimbalControls>
