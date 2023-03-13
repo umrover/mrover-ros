@@ -38,6 +38,7 @@ set(MROVER_MESSAGE_FILES
         MotorsStatus.msg
         Waypoint.msg
         WaypointType.msg
+        GPSPointList.msg
         )
 
 # service files
