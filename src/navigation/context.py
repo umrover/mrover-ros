@@ -226,6 +226,7 @@ class Context:
     vel_cmd_publisher: rospy.Publisher
     search_point_publisher: rospy.Publisher
     gate_point_publisher: rospy.Publisher
+    gate_path_publisher: rospy.Publisher
     vis_publisher: rospy.Publisher
     course_listener: rospy.Subscriber
 
@@ -240,7 +241,8 @@ class Context:
         self.tf_listener = tf2_ros.TransformListener(self.tf_buffer)
         self.vel_cmd_publisher = rospy.Publisher("cmd_vel", Twist, queue_size=1)
         self.vis_publisher = rospy.Publisher("nav_vis", Marker, queue_size=1)
-        self.search_point_publisher = rospy.Publisher("projected_points", GPSPointList, queue_size=1)
+        self.search_point_publisher = rospy.Publisher("search_path", GPSPointList, queue_size=1)
+        self.gate_path_publisher = rospy.Publisher("gate_path", GPSPointList, queue_size=1)
         self.gate_point_publisher = rospy.Publisher("estimated_gate_location", GPSPointList, queue_size=1)
         self.enable_auton_service = rospy.Service("enable_auton", mrover.srv.PublishEnableAuton, self.recv_enable_auton)
         self.course = None
