@@ -10,6 +10,7 @@ from state import BaseState
 from dataclasses import dataclass
 from drive import get_drive_command
 from trajectory import Trajectory
+from util.ros_utils import set_rosparam
 
 
 @dataclass
@@ -58,9 +59,8 @@ class SearchStateTransitions(Enum):
 
 
 class SearchState(BaseState):
-
-    STOP_THRESH = rospy.get_param("search/stop_thresh", 0.2)
-    DRIVE_FWD_THRESH = rospy.get_param("search/drive_fwd_thresh", 0.34)  # 20 degrees
+    STOP_THRESH = set_rosparam("search/stop_thresh", 0.2)
+    DRIVE_FWD_THRESH = set_rosparam("search/drive_fwd_thresh", 0.34)  # 20 degrees
 
     def __init__(
         self,

@@ -21,3 +21,10 @@ def send_debug_arrow(self, rot):
     marker.color.a = 1.0
     marker.points = [Point(0, 0, 0), Point(2, 0, 0)]
     self.context.vis_publisher.publish(marker)
+
+
+def set_rosparam(variable_name, default_value):
+    try:
+        return rospy.get_param(variable_name, default_value)
+    except Exception:
+        return default_value

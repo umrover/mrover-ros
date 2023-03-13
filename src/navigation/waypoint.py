@@ -8,6 +8,7 @@ from context import Context, Environment
 from drive import get_drive_command
 from aenum import Enum, NoAlias
 from state import BaseState
+from util.ros_utils import set_rosparam
 
 
 class WaypointStateTransitions(Enum):
@@ -21,9 +22,9 @@ class WaypointStateTransitions(Enum):
 
 
 class WaypointState(BaseState):
-    STOP_THRESH = rospy.get_param("waypoint/stop_thresh", 0.5)
-    DRIVE_FWD_THRESH = rospy.get_param("waypoint/drive_fwd_thresh", 0.34)  # 20 degrees
-    NO_FIDUCIAL = rospy.get_param("waypoint/no_fiducial", -1)
+    STOP_THRESH = set_rosparam("waypoint/stop_thresh", 0.5)
+    DRIVE_FWD_THRESH = set_rosparam("waypoint/drive_fwd_thresh", 0.34)  # 20 degrees
+    NO_FIDUCIAL = set_rosparam("waypoint/no_fiducial", -1)
 
     def __init__(
         self,
