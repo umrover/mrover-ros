@@ -21,12 +21,12 @@ const updateRate = 0.1;
 
 export default {
   components: {
-    Checkbox
+    Checkbox,
   },
   data() {
     return {
       arm_enabled: false,
-      joystick_pub: null
+      joystick_pub: null,
     };
   },
 
@@ -38,7 +38,7 @@ export default {
     this.joystick_pub = new ROSLIB.Topic({
       ros: this.$ros,
       name: "/xbox/sa_control",
-      messageType: "sensor_msgs/Joy"
+      messageType: "sensor_msgs/Joy",
     });
     interval = window.setInterval(() => {
       if (this.arm_enabled) {
@@ -55,7 +55,7 @@ export default {
 
             const joystickData = {
               axes: gamepad.axes,
-              buttons: buttons
+              buttons: buttons,
             };
             var joystickMsg = new ROSLIB.Message(joystickData);
             this.joystick_pub.publish(joystickMsg);
@@ -68,8 +68,8 @@ export default {
   methods: {
     updateArmEnabled: function (enabled) {
       this.arm_enabled = enabled;
-    }
-  }
+    },
+  },
 };
 </script>
 
