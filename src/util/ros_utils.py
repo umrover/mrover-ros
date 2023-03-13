@@ -23,8 +23,9 @@ def send_debug_arrow(self, rot):
     self.context.vis_publisher.publish(marker)
 
 
-def set_rosparam(variable_name, default_value):
+def get_rosparam(variable_name, default_value):
     try:
         return rospy.get_param(variable_name, default_value)
-    except Exception:
+    except Exception as e:
+        rospy.logerr(f"get_rosparam error: {e}")
         return default_value

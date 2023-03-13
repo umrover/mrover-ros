@@ -13,7 +13,7 @@ from trajectory import Trajectory
 from dataclasses import dataclass
 from drive import get_drive_command
 from util.np_utils import normalized, perpendicular_2d
-from util.ros_utils import set_rosparam
+from util.ros_utils import get_rosparam
 
 
 @dataclass
@@ -82,10 +82,10 @@ class GateTraverseStateTransitions(Enum):
 
 
 class GateTraverseState(BaseState):
-    STOP_THRESH = set_rosparam("gate/stop_thresh", 0.2)
-    DRIVE_FWD_THRESH = set_rosparam("gate/drive_fwd_thresh", 0.34)  # 20 degrees
+    STOP_THRESH = get_rosparam("gate/stop_thresh", 0.2)
+    DRIVE_FWD_THRESH = get_rosparam("gate/drive_fwd_thresh", 0.34)  # 20 degrees
 
-    APPROACH_DISTANCE = set_rosparam("gate/approach_distance", 2.0)
+    APPROACH_DISTANCE = get_rosparam("gate/approach_distance", 2.0)
 
     def __init__(
         self,

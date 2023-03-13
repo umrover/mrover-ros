@@ -6,7 +6,7 @@ import rospy
 from geometry_msgs.msg import Twist
 from util.SE3 import SE3
 from util.np_utils import angle_to_rotate
-from util.ros_utils import set_rosparam
+from util.ros_utils import get_rosparam
 
 
 def get_drive_command(
@@ -24,9 +24,9 @@ def get_drive_command(
     :return:                        Rover drive effort command.
     """
 
-    MAX_DRIVING_EFFORT = set_rosparam("drive/max_driving_effort", 1)
-    MIN_DRIVING_EFFORT = set_rosparam("drive/min_driving_effort", -1)
-    TURNING_P = set_rosparam("drive/turning_p", 10.0)
+    MAX_DRIVING_EFFORT = get_rosparam("drive/max_driving_effort", 1)
+    MIN_DRIVING_EFFORT = get_rosparam("drive/min_driving_effort", -1)
+    TURNING_P = get_rosparam("drive/turning_p", 10.0)
 
     if not (0.0 < turn_in_place_thresh < 1.0):
         raise ValueError(f"Argument {turn_in_place_thresh} should be between 0 and 1")
