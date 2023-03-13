@@ -11,7 +11,47 @@ from util.course_publish_helpers import convert_waypoint_to_gps, publish_waypoin
 from util.SE3 import SE3
 
 
+SQUARE_PATH = [
+    (
+        Waypoint(fiducial_id=0, tf_id="course0", type=WaypointType(val=WaypointType.NO_SEARCH)),
+        SE3(position=np.array([3, 3, 0])),
+    ),
+    (
+        Waypoint(fiducial_id=1, tf_id="course1", type=WaypointType(val=WaypointType.NO_SEARCH)),
+        SE3(position=np.array([0, 6, 0])),
+    ),
+    (
+        Waypoint(fiducial_id=2, tf_id="course2", type=WaypointType(val=WaypointType.NO_SEARCH)),
+        SE3(position=np.array([-3, 3, 0])),
+    ),
+    (
+        Waypoint(fiducial_id=3, tf_id="course3", type=WaypointType(val=WaypointType.NO_SEARCH)),
+        SE3(position=np.array([0, 0, 0])),
+    ),
+]
+ANGLE_PATH = [
+    (
+        Waypoint(fiducial_id=0, tf_id="course0", type=WaypointType(val=WaypointType.NO_SEARCH)),
+        SE3(position=np.array([6, 0, 0])),
+    ),
+    (
+        Waypoint(fiducial_id=3, tf_id="course3", type=WaypointType(val=WaypointType.NO_SEARCH)),
+        SE3(position=np.array([10, 9, 0])),
+    ),
+]
+LINE_PATH = [
+    (
+        Waypoint(fiducial_id=0, tf_id="course0", type=WaypointType(val=WaypointType.NO_SEARCH)),
+        SE3(position=np.array([6, 0, 0])),
+    ),
+]
+
 class EKF_Test:
+    """
+    Test script which drives the rover along a specified path, collects pose estimation
+    data from the EKF, GPS/IMU, and simulator ground truth while driving, and plots the data
+    once the path is finished.
+    """
     def __init__(self):
         self.raw_data = []
         self.ekf_data = []
@@ -32,6 +72,7 @@ class EKF_Test:
         msgs = [raw_pose_msg, ekf_odom_msg, truth_odom_msg]
         datas = [self.raw_data, self.ekf_data, self.gt_data]
 
+        # add datapoint to each corresponding data list
         self.timestamps.append(raw_pose_msg.header.stamp.to_sec())
         for msg, data in zip(msgs, datas):
             pos = msg.pose.pose.position
@@ -43,35 +84,8 @@ class EKF_Test:
         self.nav_state = status_msg.active_states[0]
 
     def execute_path(self):
-        square_path = [
-            (
-                Waypoint(fiducial_id=0, tf_id="course0", type=WaypointType(val=WaypointType.NO_SEARCH)),
-                SE3(position=np.array([3, 3, 0])),
-            ),
-            (
-                Waypoint(fiducial_id=1, tf_id="course1", type=WaypointType(val=WaypointType.NO_SEARCH)),
-                SE3(position=np.array([0, 6, 0])),
-            ),
-            (
-                Waypoint(fiducial_id=2, tf_id="course2", type=WaypointType(val=WaypointType.NO_SEARCH)),
-                SE3(position=np.array([-3, 3, 0])),
-            ),
-            (
-                Waypoint(fiducial_id=3, tf_id="course3", type=WaypointType(val=WaypointType.NO_SEARCH)),
-                SE3(position=np.array([0, 0, 0])),
-            ),
-        ]
-        line_path = [
-            (
-                Waypoint(fiducial_id=0, tf_id="course0", type=WaypointType(val=WaypointType.NO_SEARCH)),
-                SE3(position=np.array([6, 0, 0])),
-            ),
-            (
-                Waypoint(fiducial_id=3, tf_id="course3", type=WaypointType(val=WaypointType.NO_SEARCH)),
-                SE3(position=np.array([10, 9, 0])),
-            ),
-        ]
-        publish_waypoints([convert_waypoint_to_gps(waypoint) for waypoint in line_path])
+        path = ANGLE_PATH
+        publish_waypoints([convert_waypoint_to_gps(waypoint) for waypoint in path])
 
         # wait until we reach the waypoint
         while self.nav_state != "DoneState":
