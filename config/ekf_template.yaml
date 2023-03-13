@@ -17,13 +17,13 @@ world_frame: map
 # world_frame: map
 
 # IMU accel and gyro
-imu0: imu/imu_only
+# imu0: imu/imu_only
 
 # linearized GPS and IMU fused orientation
 pose0: gps/pose
 
 # magnetometer yaw estimate
-pose1: imu/mag_pose
+# pose1: imu/mag_pose
 
 # which state variables to update with each sensor measurement
 # [x, y, z,
@@ -33,11 +33,11 @@ pose1: imu/mag_pose
 #  ax, ay, az]
 
 # turn off accel x so cmd vel is used for prediction
-imu0_config: [false, false, false,
-              false, false, false,
-              false, false, false,
-              true, true, true,
-              false, true, true]
+# imu0_config: [false, false, false,
+#               false, false, false,
+#               false, false, false,
+#               true, true, true,
+#               false, true, true]
 
 pose0_config: [true, true, true,
                true, true, true,
@@ -45,13 +45,13 @@ pose0_config: [true, true, true,
                false, false, false,
                false, false, false]
 
-pose1_config: [false, false, false,
-               false, false, true,
-               false, false, false,
-               false, false, false,
-               false, false, false]
+# pose1_config: [false, false, false,
+#                false, false, true,
+#                false, false, false,
+#                false, false, false,
+#                false, false, false]
 
-imu0_remove_gravitational_acceleration: true
+# imu0_remove_gravitational_acceleration: true
 
 # [ADVANCED] If your data is subject to outliers, use these threshold settings, expressed as Mahalanobis distances, to
 # control how far away from the current vehicle state a sensor measurement is permitted to be. Each defaults to
