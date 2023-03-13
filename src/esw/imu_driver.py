@@ -7,6 +7,7 @@ from std_msgs.msg import Header
 from mrover.msg import CalibrationStatus, ImuAndMag
 from tf.transformations import quaternion_about_axis, quaternion_multiply, rotation_matrix, quaternion_from_matrix
 from typing import Tuple
+from copy import deepcopy
 
 import serial
 from serial import SerialException, SerialTimeoutException
@@ -57,18 +58,22 @@ def publish_mag_pose(pub: rospy.Publisher, msg: Vector3Stamped, covariance: np.n
     )
 
 
-def inject_covariances(imu_msg: Imu, orientation_cov: np.ndarray, gyro_cov: np.ndarray, accel_cov: np.ndarray):
+def inject_covariances(imu_msg: Imu, orientation_cov: np.ndarray, gyro_cov: np.ndarray, accel_cov: np.ndarray) -> Imu:
     """
-    Inserts the given covariance matrices into the given IMU message, modifying it in place.
+    Inserts the given covariance matrices into the given IMU message.
 
     :param imu_msg: the IMU message to add covariances to
     :param orientation_cov: 3x3 orientation covariance matrix [roll, pitch, yaw]
     :param gyro_cov: 3x3 gyroscope (angular vel) covariance matrix [roll, pitch, yaw]
     :param accel_cov: 3x3 accelerometer (linear accel) covariance matrix [x, y, z]
+
+    :returns: An IMU message copied from imu_msg, with the given covariance matrices inserted.
     """
-    imu_msg.orientation_covariance = orientation_cov.flatten().tolist()
-    imu_msg.angular_velocity_covariance = gyro_cov.flatten().tolist()
-    imu_msg.linear_acceleration_covariance = accel_cov.flatten().tolist()
+    new_msg = deepcopy(imu_msg)
+    new_msg.orientation_covariance = orientation_cov.flatten().tolist()
+    new_msg.angular_velocity_covariance = gyro_cov.flatten().tolist()
+    new_msg.linear_acceleration_covariance = accel_cov.flatten().tolist()
+    return new_msg
 
 
 def main():
@@ -155,7 +160,7 @@ def main():
                 angular_velocity=Vector3(*gyro_data),
             ),
         )
-        inject_covariances(imu_msg, orientation_covariance, gyro_covariance, accel_covariance)
+        imu_msg = inject_covariances(imu_msg, orientation_covariance, gyro_covariance, accel_covariance)
 
         imu_msg = ImuAndMag(
             header=header,

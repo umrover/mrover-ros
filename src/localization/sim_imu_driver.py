@@ -8,7 +8,7 @@ import message_filters
 from esw.imu_driver import get_covariances, inject_covariances, publish_mag_pose
 
 
-class ImuPackager:
+class SimIMUDriver:
     """
     This node is for use in sim - it merges the /imu/imu_only & /imu/mag_only messages
     published by gazebo & publish to /imu/data, to replicate the behavior of imu_driver.py
@@ -42,7 +42,7 @@ class ImuPackager:
         self.mag_pose_pub = rospy.Publisher("imu/mag_pose", PoseWithCovarianceStamped, queue_size=1)
 
     def imu_callback(self, imu_msg: Imu, mag_msg: Vector3Stamped):
-        inject_covariances(imu_msg, self.orientation_covariance, self.gyro_covariance, self.accel_covariance)
+        imu_msg = inject_covariances(imu_msg, self.orientation_covariance, self.gyro_covariance, self.accel_covariance)
         self.imu_pub.publish(
             ImuAndMag(
                 header=imu_msg.header,
@@ -58,7 +58,7 @@ class ImuPackager:
 
 def main():
     rospy.init_node("imu_packager")
-    ImuPackager()
+    SimIMUDriver()
     rospy.spin()
 
 
