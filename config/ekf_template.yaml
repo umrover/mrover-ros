@@ -64,7 +64,7 @@ world_frame: map
 # default values, and must be specified.
 imu0: imu/imu_only
 pose0: gps/pose
-pose1: mag_pose/data
+pose1: imu/mag_pose
 
 
 # Each sensor reading updates some or all of the filter's state. These options give you greater control over which

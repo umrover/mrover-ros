@@ -2,23 +2,59 @@
 import numpy as np
 import rospy
 from sensor_msgs.msg import Temperature, Imu, MagneticField
-from geometry_msgs.msg import Quaternion, Vector3, PoseWithCovarianceStamped, PoseWithCovariance, Pose, Point
+from geometry_msgs.msg import Quaternion, Vector3, PoseWithCovarianceStamped, PoseWithCovariance, Vector3Stamped, Pose
 from std_msgs.msg import Header
 from mrover.msg import CalibrationStatus, ImuAndMag
-from tf.transformations import quaternion_about_axis, quaternion_multiply, rotation_matrix
+from tf.transformations import quaternion_about_axis, quaternion_multiply, rotation_matrix, quaternion_from_matrix
+from typing import Tuple
 
 import serial
 from serial import SerialException, SerialTimeoutException
 
 
-def mag_to_pose(mag_vector: np.ndarray, mag_covariance: np.ndarray) -> PoseWithCovariance:
-    mag_quat = ...
-    mag_pose = PoseWithCovariance(
-        pose=Pose(orientation=Quaternion(mag_quat)),
-        covariance=mag_covariance
+# TODO: docstring
+def get_covariances() -> Tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray]:
+    orientation = np.array(rospy.get_param("global_ekf/imu_orientation_covariance"))
+    gyro = np.array(rospy.get_param("global_ekf/imu_gyro_covariance"))
+    accel = np.array(rospy.get_param("global_ekf/imu_accel_covariance"))
+    mag_pose = np.array(rospy.get_param("global_ekf/imu_mag_pose_covariance"))
+    return (orientation, gyro, accel, mag_pose)
+
+
+# TODO: docstring
+def publish_mag_pose(pub: rospy.Publisher, msg: Vector3Stamped, covariance: np.ndarray, frame: str):
+
+    # get unit magnetic field vector in the XY plane
+    mag_vec = np.array([msg.vector.x, msg.vector.y])
+    mag_vec = mag_vec / np.linalg.norm(mag_vec)
+
+    # convert it to a rotation about the Z axis
+    rotationMatrix = np.array(
+        [[mag_vec[1], -1 * mag_vec[0], 0, 0], [mag_vec[0], mag_vec[1], 0, 0], [0, 0, 1, 0], [0, 0, 0, 1]]
     )
-    
+    q = quaternion_from_matrix(rotationMatrix)
+
+    # publish as a pose with the configured mag covariance matrix for rotation
+    pub.publish(
+        PoseWithCovarianceStamped(
+            header=Header(stamp=msg.header.stamp, frame_id=frame),
+            pose=PoseWithCovariance(pose=Pose(orientation=Quaternion(*q)), covariance=covariance.flatten().tolist()),
+        )
+    )
+
+
+# TODO: docstring
+def inject_covariances(imu_msg: Imu, orientation_cov: np.ndarray, gyro_cov: np.ndarray, accel_cov: np.ndarray):
+    imu_msg.orientation_covariance = orientation_cov.flatten().tolist()
+    imu_msg.angular_velocity_covariance = gyro_cov.flatten().tolist()
+    imu_msg.linear_acceleration_covariance = accel_cov.flatten().tolist()
+
+
+# TODO: add docstring
 def main():
+    orientation_covariance, gyro_covariance, accel_covariance, mag_pose_covariance = get_covariances()
+    world_frame = rospy.get_param("world_frame")
+
     # publishers for all types of IMU data, queue size is 1 to make sure we don't publish old data
     imu_pub = rospy.Publisher("imu/data", ImuAndMag, queue_size=1)
     temp_pub = rospy.Publisher("imu/temp", Temperature, queue_size=1)
@@ -81,30 +117,37 @@ def main():
         # fill in all sensor messages, setting timestamps of each message to right now,
         # and setting the reference frame of all messages to IMU frame
         header = Header(stamp=rospy.Time.now(), frame_id=imu_frame)
-
-        imu_msg = ImuAndMag(
-            header=header,
-            imu=Imu(
+        mag_msg = (
+            MagneticField(
+                header=header,
+                magnetic_field=Vector3(*enu_mag_vec),
+            ),
+        )
+        imu_msg = (
+            Imu(
                 header=header,
                 orientation=Quaternion(*enu_orientation),
                 linear_acceleration=Vector3(*accel_data),
                 angular_velocity=Vector3(*gyro_data),
             ),
-            mag=MagneticField(
-                header=header,
-                magnetic_field=Vector3(*enu_mag_vec),
-            ),
+        )
+        inject_covariances(imu_msg, orientation_covariance, gyro_covariance, accel_covariance)
+
+        imu_msg = ImuAndMag(
+            header=header,
+            imu=imu_msg,
+            mag=mag_msg,
         )
 
         temp_msg = Temperature(header=header, temperature=temp_data)
 
         calibration_msg = CalibrationStatus(header, *cal_data)
 
-
         # publish each message
         imu_pub.publish(imu_msg)
         temp_pub.publish(temp_msg)
         calibration_pub.publish(calibration_msg)
+        publish_mag_pose(mag_pose_pub, mag_msg, mag_pose_covariance, world_frame)
 
 
 if __name__ == "__main__":
