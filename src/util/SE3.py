@@ -5,7 +5,7 @@ import numpy as np
 import tf2_ros
 import rospy
 
-from ros_numpy import numpify
+from .np_utils import numpify
 from geometry_msgs.msg import TransformStamped, Vector3, Quaternion
 from std_msgs.msg import Time
 from typing import Tuple

@@ -34,6 +34,7 @@ export default {
       required: true,
     },
   },
+  emits: ["change"],
   computed: {
     checkedValue: {
       get() {
