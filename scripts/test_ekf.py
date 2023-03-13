@@ -16,21 +16,23 @@ class EKF_Test:
         self.raw_data = []
         self.ekf_data = []
         self.gt_data = []
+        self.timestamps = []
         self.nav_state = ""
 
         # subscribe to both odometry topics and synchronize them
         raw_sub = message_filters.Subscriber("gps/pose", PoseWithCovarianceStamped)
-        ekf_sub = message_filters.Subscriber("odometry/filtered", Odometry)
+        ekf_sub = message_filters.Subscriber("global_ekf/odometry", Odometry)
         truth_sub = message_filters.Subscriber("ground_truth", Odometry)
         rospy.Subscriber("smach/container_status", SmachContainerStatus, self.nav_status_callback)
 
         ts = message_filters.TimeSynchronizer([raw_sub, ekf_sub, truth_sub], 10)
         ts.registerCallback(self.odoms_callback)
 
-    def odoms_callback(self, raw_pose_msg, ekf_odom_msg, truth_odom_msg):
+    def odoms_callback(self, raw_pose_msg: PoseWithCovarianceStamped, ekf_odom_msg: Odometry, truth_odom_msg: Odometry):
         msgs = [raw_pose_msg, ekf_odom_msg, truth_odom_msg]
         datas = [self.raw_data, self.ekf_data, self.gt_data]
 
+        self.timestamps.append(raw_pose_msg.header.stamp.to_sec())
         for msg, data in zip(msgs, datas):
             pos = msg.pose.pose.position
             q = msg.pose.pose.orientation
@@ -74,11 +76,11 @@ class EKF_Test:
         self.plot_data()
 
     def plot_data(self):
+        times = np.vstack(self.timestamps)
+        times -= times[0]
         raw_arr = np.vstack(self.raw_data)
         ekf_arr = np.vstack(self.ekf_data)
         gt_arr = np.vstack(self.gt_data)
-        # TODO: do properly with timestamps
-        times = np.arange(ekf_arr.shape[0])
         raw_pos_err = np.linalg.norm(gt_arr[:, :3] - raw_arr[:, :3], axis=1)
         pos_err = np.linalg.norm(gt_arr[:, :3] - ekf_arr[:, :3], axis=1)
 
@@ -100,7 +102,7 @@ class EKF_Test:
         axs[0, 1].plot(times, pos_err, "tab:green", label=f"EKF, RMSE = {pos_rmse:.3f}")
         # axs[0, 1].plot(times, raw_pos_err, "tab:red", label=f"Raw GPS, RMSE = {raw_pos_rmse:.3f}")
         # axs[1].plot(times, ang_err, "b-", label="angle error")
-        axs[0, 1].set_xlabel("time (no unit)")
+        axs[0, 1].set_xlabel("time (s)")
         axs[0, 1].set_ylabel("error (meters)")
         axs[0, 1].set_title("Position Error")
         axs[0, 1].legend()
@@ -108,7 +110,7 @@ class EKF_Test:
         axs[1, 0].plot(times, ekf_arr[:, 0], "tab:green", label="EKF")
         # axs[1, 0].plot(times, raw_arr[:, 0], "tab:red", label="Raw GPS")
         axs[1, 0].plot(times, gt_arr[:, 0], "tab:blue", label="Ground Truth")
-        axs[1, 0].set_xlabel("time (no unit)")
+        axs[1, 0].set_xlabel("time (s)")
         axs[1, 0].set_ylabel("x position")
         axs[1, 0].set_title("X Position vs Time")
         axs[1, 0].legend()

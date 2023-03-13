@@ -86,7 +86,6 @@ class GPSLinearization:
         if self.publish_tf:
             if self.use_odom:
                 # TODO: fix naming conventions of transforms per Ashwins instructions
-                # TODO: add transform notation to wiki
                 # Get the odom to rover transform from the TF tree
                 rover_in_odom = SE3.from_tf_tree(self.tf_buffer, self.odom_frame, self.rover_frame)
                 odom_to_rover = rover_in_odom.transform_matrix()
@@ -135,8 +134,6 @@ class GPSLinearization:
 
         # ignore Z
         cartesian[2] = 0
-        # TODO: locks?
-        # TODO: this thing where were injecting cov matrices in the linearizer isnt super clean, is it worth forking the gps driver to do it there?
         if self.use_dop_cov:
             pos_covariance = np.array([msg.position_covariance]).reshape(3, 3)
             self.covariance[:3, :3] = pos_covariance

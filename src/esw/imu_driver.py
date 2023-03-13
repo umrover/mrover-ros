@@ -12,8 +12,13 @@ import serial
 from serial import SerialException, SerialTimeoutException
 
 
-# TODO: docstring
 def get_covariances() -> Tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray]:
+    """
+    Get the IMU covariances for orientation, gyroscope, accelerometer, and magnetometer pose
+    from rosparam.
+    
+    :returns: a tuple containing the orientation, gyro, accel, and mag pose covariance matrices in order
+    """
     orientation = np.array(rospy.get_param("global_ekf/imu_orientation_covariance"))
     gyro = np.array(rospy.get_param("global_ekf/imu_gyro_covariance"))
     accel = np.array(rospy.get_param("global_ekf/imu_accel_covariance"))
@@ -21,8 +26,17 @@ def get_covariances() -> Tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray]:
     return (orientation, gyro, accel, mag_pose)
 
 
-# TODO: docstring
 def publish_mag_pose(pub: rospy.Publisher, msg: Vector3Stamped, covariance: np.ndarray, frame: str):
+    """
+    Estimates the rover's yaw angle from the magnetometer measurement and publishes it
+    as a PoseWithCovarianceStamped for use in the EKF.
+    
+    :param pub: PoseWithCovarianceStamped publisher used to publish the message
+    :param msg: magnetic field message used to estimate the yaw angle
+    :param covariance: 6x6 covariance matrix for the estimated pose,
+                       each row/col is [x, y, z, roll, pitch, yaw]
+    :param frame: the frame in which to publish the estimated pose
+    """
 
     # get unit magnetic field vector in the XY plane
     mag_vec = np.array([msg.vector.x, msg.vector.y])
@@ -43,15 +57,25 @@ def publish_mag_pose(pub: rospy.Publisher, msg: Vector3Stamped, covariance: np.n
     )
 
 
-# TODO: docstring
 def inject_covariances(imu_msg: Imu, orientation_cov: np.ndarray, gyro_cov: np.ndarray, accel_cov: np.ndarray):
+    """
+    Inserts the given covariance matrices into the given IMU message, modifying it in place.
+    
+    :param imu_msg: the IMU message to add covariances to
+    :param orientation_cov: 3x3 orientation covariance matrix [roll, pitch, yaw]
+    :param gyro_cov: 3x3 gyroscope (angular vel) covariance matrix [roll, pitch, yaw]
+    :param accel_cov: 3x3 accelerometer (linear accel) covariance matrix [x, y, z]
+    """
     imu_msg.orientation_covariance = orientation_cov.flatten().tolist()
     imu_msg.angular_velocity_covariance = gyro_cov.flatten().tolist()
     imu_msg.linear_acceleration_covariance = accel_cov.flatten().tolist()
 
 
-# TODO: add docstring
 def main():
+    """
+    This program reads in IMU data over serial, converts it to the ENU frame,
+    and adds necessary metadata used for filtering.
+    """
     orientation_covariance, gyro_covariance, accel_covariance, mag_pose_covariance = get_covariances()
     world_frame = rospy.get_param("world_frame")
 
