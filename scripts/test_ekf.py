@@ -71,6 +71,13 @@ class EKF_Test:
         ts.registerCallback(self.odoms_callback)
 
     def odoms_callback(self, raw_pose_msg: PoseWithCovarianceStamped, ekf_odom_msg: Odometry, truth_odom_msg: Odometry):
+        """
+        Receives all three synchronized pose estimates and records their data.
+
+        :param raw_pose_msg: message containing pose from raw GPS position and IMU orientation
+        :parm ekf_odom_msg: message containing filtered pose output from EKF
+        :param truth_odom_msg: message containing ground truth pose from sim
+        """
         msgs = [raw_pose_msg, ekf_odom_msg, truth_odom_msg]
         datas = [self.raw_data, self.ekf_data, self.gt_data]
 
@@ -82,10 +89,19 @@ class EKF_Test:
             point = np.array([pos.x, pos.y, pos.z, q.x, q.y, q.z, q.w])
             data.append(point)
 
-    def nav_status_callback(self, status_msg):
+    def nav_status_callback(self, status_msg: SmachContainerStatus):
+        """
+        Recieves and updates nav status
+        
+        :param status_msg: nav status message
+        """
         self.nav_state = status_msg.active_states[0]
 
     def execute_path(self):
+        """
+        Publish a sequence of waypoints for the rover to drive, wait until it has finished driving to them,
+        then plot the collected data.
+        """
         path = ANGLE_PATH
         publish_waypoints([convert_waypoint_to_gps(waypoint) for waypoint in path])
 
@@ -96,6 +112,9 @@ class EKF_Test:
         self.plot_data()
 
     def plot_data(self):
+        """
+        Plot collected pose data
+        """
         times = np.vstack(self.timestamps)
         times -= times[0]
         raw_arr = np.vstack(self.raw_data)
