@@ -46,12 +46,14 @@ LINE_PATH = [
     ),
 ]
 
+
 class EKF_Test:
     """
     Test script which drives the rover along a specified path, collects pose estimation
     data from the EKF, GPS/IMU, and simulator ground truth while driving, and plots the data
     once the path is finished.
     """
+
     def __init__(self):
         self.raw_data = []
         self.ekf_data = []
