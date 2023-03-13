@@ -30,10 +30,11 @@
   -->
   <rosparam command="load" file="$(find mrover)/config/localization.yaml" />
 
-  <!-- EKF for odom frame -->
+  <!-- global EKF -->
   <arg name="ekf_start_delay" default="0" />
-  <node pkg="robot_localization" type="ekf_localization_node" name="odom_ekf" clear_params="true" launch-prefix="bash -c 'sleep $(arg ekf_start_delay); $0 $@'" >
+  <node pkg="robot_localization" type="ekf_localization_node" name="global_ekf" clear_params="true" launch-prefix="bash -c 'sleep $(arg ekf_start_delay); $0 $@'" >
     <rosparam command="load" file="$(find mrover)/config/ekf_template.yaml" />
+    <remap from="odometry/filtered" to="global_ekf/odometry" />
   </node>
 
   <!-- node to linearize GPS from geodetic to ENU cartesian coords -->
