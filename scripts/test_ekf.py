@@ -92,7 +92,7 @@ class EKF_Test:
     def nav_status_callback(self, status_msg: SmachContainerStatus):
         """
         Recieves and updates nav status
-        
+
         :param status_msg: nav status message
         """
         self.nav_state = status_msg.active_states[0]
