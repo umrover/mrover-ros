@@ -3,7 +3,7 @@
 import rospy
 import time
 import actionlib
-import _thread
+from threading import Lock
 from collections import deque
 from typing import Deque
 
@@ -17,7 +17,7 @@ from sensor_msgs.msg import JointState
 from trajectory_msgs.msg import JointTrajectoryPoint
 
 conf_joint_names = rospy.get_param("teleop/ra_joints/")
-lock = _thread.allocate_lock()
+lock = Lock()
 joint_states = JointState()
 
 
@@ -47,14 +47,12 @@ class MoveItAction(object):
             temp_accelerations = []
             temp_effort = []
 
+            # Motion Plan will publish 5 (every joint besides f)
+            # postions velocities and accelerations for each point of the plan
             for i in range(len(point.positions)):
                 temp_positions.append(point.positions[mapping[i]])
-            for i in range(len(point.velocities)):
                 temp_velocities.append(point.velocities[mapping[i]])
-            for i in range(len(point.accelerations)):
                 temp_accelerations.append(point.accelerations[mapping[i]])
-            for i in range(len(point.effort)):
-                temp_effort.append(point.effort[mapping[i]])
 
             point.positions = temp_positions
             point.velocities = temp_velocities
