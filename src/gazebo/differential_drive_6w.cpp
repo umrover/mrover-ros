@@ -162,7 +162,7 @@ namespace gazebo {
         mPathPublisher = mNode->advertise<nav_msgs::Path>("ground_truth_path", 1);
 
         // update path at 4 Hz
-        mPathUpdatePeriod = common::Time(0, common::Time::SecToNano(0.25));
+        mPathUpdatePeriod = common::Time(0, static_cast<int32_t>(common::Time::SecToNano(0.25)));
 
         // Spinner runs in the background until the node dies
         // We want the callback to update as soon as possible so do this instead of callAvailable on the queue
