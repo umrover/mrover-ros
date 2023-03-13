@@ -64,7 +64,11 @@ class EKF_Test:
         line_path = [
             (
                 Waypoint(fiducial_id=0, tf_id="course0", type=WaypointType(val=WaypointType.NO_SEARCH)),
-                SE3(position=np.array([3, 0, 0])),
+                SE3(position=np.array([6, 0, 0])),
+            ),
+            (
+                Waypoint(fiducial_id=3, tf_id="course3", type=WaypointType(val=WaypointType.NO_SEARCH)),
+                SE3(position=np.array([10, 9, 0])),
             ),
         ]
         publish_waypoints([convert_waypoint_to_gps(waypoint) for waypoint in line_path])
@@ -91,7 +95,7 @@ class EKF_Test:
         # print(ang_err.shape)
 
         fig, axs = plt.subplots(2, 2)
-        # axs[0, 0].plot(raw_arr[:, 0], raw_arr[:, 1], "tab:red", label="Raw GPS")
+        axs[0, 0].plot(raw_arr[:, 0], raw_arr[:, 1], "tab:red", label="Raw GPS")
         axs[0, 0].plot(ekf_arr[:, 0], ekf_arr[:, 1], "tab:green", label="EKF")
         axs[0, 0].plot(gt_arr[:, 0], gt_arr[:, 1], "tab:blue", label="Ground Truth")
         axs[0, 0].set_xlabel("x (meters)")
@@ -100,7 +104,7 @@ class EKF_Test:
         axs[0, 0].legend()
 
         axs[0, 1].plot(times, pos_err, "tab:green", label=f"EKF, RMSE = {pos_rmse:.3f}")
-        # axs[0, 1].plot(times, raw_pos_err, "tab:red", label=f"Raw GPS, RMSE = {raw_pos_rmse:.3f}")
+        axs[0, 1].plot(times, raw_pos_err, "tab:red", label=f"Raw GPS, RMSE = {raw_pos_rmse:.3f}")
         # axs[1].plot(times, ang_err, "b-", label="angle error")
         axs[0, 1].set_xlabel("time (s)")
         axs[0, 1].set_ylabel("error (meters)")
@@ -108,18 +112,18 @@ class EKF_Test:
         axs[0, 1].legend()
 
         axs[1, 0].plot(times, ekf_arr[:, 0], "tab:green", label="EKF")
-        # axs[1, 0].plot(times, raw_arr[:, 0], "tab:red", label="Raw GPS")
+        axs[1, 0].plot(times, raw_arr[:, 0], "tab:red", label="Raw GPS")
         axs[1, 0].plot(times, gt_arr[:, 0], "tab:blue", label="Ground Truth")
         axs[1, 0].set_xlabel("time (s)")
-        axs[1, 0].set_ylabel("x position")
+        axs[1, 0].set_ylabel("x position (meters)")
         axs[1, 0].set_title("X Position vs Time")
         axs[1, 0].legend()
 
         axs[1, 1].plot(times, ekf_arr[:, 1], "tab:green", label="EKF")
-        # axs[1, 1].plot(times, raw_arr[:, 1], "tab:red", label="Raw GPS")
+        axs[1, 1].plot(times, raw_arr[:, 1], "tab:red", label="Raw GPS")
         axs[1, 1].plot(times, gt_arr[:, 1], "tab:blue", label="Ground Truth")
-        axs[1, 1].set_xlabel("time (no unit)")
-        axs[1, 1].set_ylabel("y position")
+        axs[1, 1].set_xlabel("time (s)")
+        axs[1, 1].set_ylabel("y position (meters)")
         axs[1, 1].set_title("Y Position vs Time")
         axs[1, 1].legend()
 
