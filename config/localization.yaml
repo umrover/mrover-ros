@@ -1,13 +1,12 @@
 world_frame: "map"
 odom_frame: "odom"
 rover_frame: "base_link"
+use_odom_frame: false
 
 gps_linearization:
   reference_point_latitude: 42.2
   reference_point_longitude: -83.7
   reference_point_altitude: 224
-
-  use_odom_frame: false
   publish_tf: false
 
 global_ekf:
@@ -19,8 +18,8 @@ global_ekf:
                    [0, 0, 2]]
   
   imu_orientation_covariance: [[0.1, 0, 0],
-                        [0, 0.1, 0],
-                        [0, 0, 0.1]]
+                               [0, 0.1, 0],
+                               [0, 0, 0.1]]
 
   imu_accel_covariance: [[0.1, 0, 0],
                          [0, 0.1, 0],
@@ -30,6 +29,9 @@ global_ekf:
                         [0, 0.1, 0],
                         [0, 0, 0.1]]
 
-  imu_mag_covariance: [[0.1, 0, 0],
-                       [0, 0.1, 0],
-                       [0, 0, 0.1]]
+  imu_mag_pose_covariance: [[0, 0, 0, 0, 0, 0],
+                            [0, 0, 0, 0, 0, 0],
+                            [0, 0, 0, 0, 0, 0],
+                            [0, 0, 0, 0, 0, 0],
+                            [0, 0, 0, 0, 0, 0],
+                            [0, 0, 0, 0, 0, 0.1]]

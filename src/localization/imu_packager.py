@@ -7,6 +7,7 @@ from sensor_msgs.msg import Imu, MagneticField
 from tf.transformations import quaternion_from_matrix
 from geometry_msgs.msg import PoseWithCovarianceStamped, PoseWithCovariance, Pose, Quaternion
 from std_msgs.msg import Header
+import message_filters
 
 
 class ImuPackager:
@@ -16,7 +17,7 @@ class ImuPackager:
     """
 
     imu_pub: rospy.Publisher
-    curr_mag: Vector3Stamped
+    mag_pose_pub: rospy.Publisher
 
     orientation_covariance: np.ndarray
     gyro_covariance: np.ndarray
@@ -27,49 +28,54 @@ class ImuPackager:
         self.orientation_covariance = np.array(rospy.get_param("global_ekf/imu_orientation_covariance"))
         self.gyro_covariance = np.array(rospy.get_param("global_ekf/imu_gyro_covariance"))
         self.accel_covariance = np.array(rospy.get_param("global_ekf/imu_accel_covariance"))
-        self.mag_covariance = np.array(rospy.get_param("global_ekf/imu_mag_covariance"))
+        self.mag_pose_covariance = np.array(rospy.get_param("global_ekf/imu_mag_pose_covariance"))
 
-        rospy.Subscriber("imu/imu_only", Imu, self.imu_callback)
-        rospy.Subscriber("imu/mag_only", Vector3Stamped, self.mag_callback)
+        imu_sub = message_filters.Subscriber("imu/imu_only", Imu)
+        mag_sub = message_filters.Subscriber("imu/mag_only", Vector3Stamped)
+        ts = message_filters.ApproximateTimeSynchronizer([imu_sub, mag_sub], 10, 0.5)
+        ts.registerCallback(self.imu_callback)
 
         self.imu_pub = rospy.Publisher("imu/data", ImuAndMag, queue_size=1)
         self.mag_pose_pub = rospy.Publisher("mag_pose/data", PoseWithCovarianceStamped, queue_size=1)
-        self.curr_mag = None
 
-    def mag_pose(self, msg: Vector3Stamped):
-        vec_mag = np.array([msg.vector.x, msg.vector.y])
-        norm_vec = vec_mag / np.linalg.norm(vec_mag)
-        rotationMatrix = np.array([[norm_vec[1], -1 * norm_vec[0], 0, 0], [norm_vec[0], norm_vec[1], 0, 0], [0, 0, 1, 0], [0, 0, 0, 1]])
+    def publish_mag_pose(self, msg: Vector3Stamped):
+
+        # get unit magnetic field vector in the XY plane
+        mag_vec = np.array([msg.vector.x, msg.vector.y])
+        mag_vec = mag_vec / np.linalg.norm(mag_vec)
+
+        # convert it to a rotation about the Z axis
+        rotationMatrix = np.array(
+            [[mag_vec[1], -1 * mag_vec[0], 0, 0], [mag_vec[0], mag_vec[1], 0, 0], [0, 0, 1, 0], [0, 0, 0, 1]]
+        )
         q = quaternion_from_matrix(rotationMatrix)
+
+        # publish as a pose with the configured mag covariance matrix for rotation
         self.mag_pose_pub.publish(
             PoseWithCovarianceStamped(
                 header=Header(stamp=msg.header.stamp, frame_id="map"),
-                pose=PoseWithCovariance(pose=Pose(orientation=Quaternion(x=q[0], y=q[1], z=q[2], w=q[3])))
+                pose=PoseWithCovariance(
+                    pose=Pose(orientation=Quaternion(*q)), covariance=self.mag_pose_covariance.flatten().tolist()
+                ),
             )
         )
 
-    def imu_callback(self, msg: Imu):
-        msg.orientation_covariance = self.orientation_covariance.flatten().tolist()
-        msg.angular_velocity_covariance = self.gyro_covariance.flatten().tolist()
-        msg.linear_acceleration_covariance = self.accel_covariance.flatten().tolist()
+    def imu_callback(self, imu_msg: Imu, mag_msg: Vector3Stamped):
+        imu_msg.orientation_covariance = self.orientation_covariance.flatten().tolist()
+        imu_msg.angular_velocity_covariance = self.gyro_covariance.flatten().tolist()
+        imu_msg.linear_acceleration_covariance = self.accel_covariance.flatten().tolist()
 
-        if self.curr_mag is not None:
-            self.imu_pub.publish(
-                ImuAndMag(
-                    header=msg.header,
-                    imu=msg,
-                    mag=MagneticField(
-                        header=self.curr_mag.header,
-                        magnetic_field=self.curr_mag.vector,
-                        magnetic_field_covariance=self.mag_covariance.flatten().tolist(),
-                    ),
-                )
+        self.imu_pub.publish(
+            ImuAndMag(
+                header=imu_msg.header,
+                imu=imu_msg,
+                mag=MagneticField(
+                    header=mag_msg.header,
+                    magnetic_field=mag_msg.vector,
+                ),
             )
-
-    def mag_callback(self, msg: Vector3Stamped):
-        # this should return a quaternion
-        self.curr_mag = msg
-        self.mag_pose(msg)
+        )
+        self.publish_mag_pose(mag_msg)
 
 
 def main():

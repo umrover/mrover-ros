@@ -49,7 +49,7 @@ class GPSLinearization:
         self.ref_alt = rospy.get_param("gps_linearization/reference_point_altitude")
 
         self.publish_tf = rospy.get_param("gps_linearization/publish_tf")
-        self.use_odom = rospy.get_param("gps_linearization/use_odom_frame")
+        self.use_odom = rospy.get_param("use_odom_frame")
 
         self.world_frame = rospy.get_param("world_frame")
         self.odom_frame = rospy.get_param("odom_frame")
