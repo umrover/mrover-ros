@@ -1,0 +1,1 @@
+bool[3] state

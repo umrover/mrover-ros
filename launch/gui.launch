@@ -1,8 +1,0 @@
-<launch>
-  <param name="robot_description" command="xacro $(find mrover)/rover_description/rover.xacro" />
-  <rosparam command="load" file="$(find mrover)/config/teleop.yaml" />
-  
-  <include file="$(find rosbridge_server)/launch/rosbridge_websocket.launch"></include>
-  <!--Node for running the gui with bash script-->
-  <node name="gui" pkg="mrover" type="gui_run.sh" cwd="node"/>
-</launch>

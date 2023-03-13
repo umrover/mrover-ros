@@ -3,6 +3,7 @@ from typing import List
 
 import smach
 from context import Context
+from aenum import Enum, NoAlias
 from geometry_msgs.msg import Twist
 
 
@@ -24,7 +25,7 @@ class BaseState(smach.State, ABC):
         add_input_keys = add_input_keys or []
         add_output_keys = add_output_keys or []
         super().__init__(
-            add_outcomes + ["terminated"],
+            add_outcomes + ["terminated", "off"],
             add_input_keys + ["waypoint_index"],
             add_output_keys + ["waypoint_index"],
         )
@@ -40,6 +41,10 @@ class BaseState(smach.State, ABC):
         if self.preempt_requested():
             self.service_preempt()
             return "terminated"
+        if self.context.disable_requested:
+            self.context.disable_requested = False
+            self.context.course = None
+            return "off"
         return self.evaluate(ud)
 
     def evaluate(self, ud: smach.UserData) -> str:
@@ -47,19 +52,51 @@ class BaseState(smach.State, ABC):
         pass
 
 
+class DoneStateTransitions(Enum):
+    _settings_ = NoAlias
+
+    idle = "DoneState"
+    begin_course = "WaypointState"
+
+
 class DoneState(BaseState):
     def __init__(self, context: Context):
         super().__init__(
             context,
-            add_outcomes=["done", "waypoint_traverse"],
+            add_outcomes=[transition.name for transition in DoneStateTransitions],  # type: ignore
         )
 
     def evaluate(self, ud):
         # Check if we have a course to traverse
         if self.context.course and (not self.context.course.is_complete()):
-            return "waypoint_traverse"
+            return DoneStateTransitions.begin_course.name  # type: ignore
 
         # Stop rover
         cmd_vel = Twist()
         self.context.rover.send_drive_command(cmd_vel)
-        return "done"
+        return DoneStateTransitions.idle.name  # type: ignore
+
+
+class OffStateTransitions(Enum):
+    _settings_ = NoAlias
+
+    idle = "OffState"
+    begin_course = "WaypointState"
+
+
+class OffState(BaseState):
+    def __init__(self, context: Context):
+        super().__init__(
+            context,
+            add_outcomes=[transition.name for transition in OffStateTransitions],  # type: ignore
+        )
+        self.stop_count = 0
+
+    def evaluate(self, ud):
+        # Check if we need to ignore on
+        if self.context.course and (not self.context.course.is_complete()):
+            self.stop_count = 0
+            return OffStateTransitions.begin_course.name  # type: ignore
+
+        return OffStateTransitions.idle.name  # type: ignore
+        # We have determined the Rover is off, now ignore Rover on ...

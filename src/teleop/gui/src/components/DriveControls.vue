@@ -1,21 +1,20 @@
 <template>
-    <div>
-        <h4>Drive Controls</h4>
-    </div>
+  <div class="drive">
+    <!-- This component is for capturing joystick inputs -->
+  </div>
 </template>
 
 <script>
-
-import ROSLIB from "roslib"
+import ROSLIB from "roslib";
 
 let interval;
 
 export default {
-  data () {
+  data() {
     return {
-    }
+      joystick_pub: null,
+    };
   },
-
 
   beforeDestroy: function () {
     window.clearInterval(interval);
@@ -23,40 +22,36 @@ export default {
 
   created: function () {
     const updateRate = 0.05;
+    this.joystick_pub = new ROSLIB.Topic({
+      ros: this.$ros,
+      name: "/joystick",
+      messageType: "sensor_msgs/Joy",
+    });
     interval = window.setInterval(() => {
-        const gamepads = navigator.getGamepads()
-        for (let i = 0; i < 4; i++) {
-          const gamepad = gamepads[i]
-          if (gamepad) {
-            if (gamepad.id.includes('Logitech')) {
-            
-              let buttons = gamepad.buttons.map((button) =>{
-                return button.value
-              })
+      const gamepads = navigator.getGamepads();
+      for (let i = 0; i < 4; i++) {
+        const gamepad = gamepads[i];
+        if (gamepad && gamepad.id.includes("Logitech")) {
+          let buttons = gamepad.buttons.map((button) => {
+            return button.value;
+          });
 
-              let axes=gamepad.axes
+          const joystickData = {
+            axes: gamepad.axes,
+            buttons: buttons,
+          };
 
-              const joystickData = {
-                axes: axes,
-                buttons: buttons
-              }
-              
-              var joystickTopic = new ROSLIB.Topic({
-                ros : this.$ros,
-                name : '/joystick',
-                messageType : 'sensor_msgs/Joy'
-              })
-              var joystickMsg = new ROSLIB.Message(joystickData)
-              joystickTopic.publish(joystickMsg)
-            }
-          }
+          var joystickMsg = new ROSLIB.Message(joystickData);
+          this.joystick_pub.publish(joystickMsg);
         }
-    }, updateRate*1000)
+      }
+    }, updateRate * 1000);
   },
-
-}
+};
 </script>
 
 <style scoped>
-
+.drive {
+  display: none;
+}
 </style>

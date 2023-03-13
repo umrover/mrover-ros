@@ -1,14 +1,13 @@
+# You will need to restart basestation.launch for
+# Any changes to take effect
 teleop:
-  constants:
-    track_radius: 10.0 # Distance between left and right wheels in meters
-    wheel_radius: 0.5 # Radius of the rover wheels in meters
   ra_controls:
     joint_a:
       multiplier: 1
     joint_b:
       multiplier: 1
     joint_c:
-      multiplier: 1
+      multiplier: -1
     joint_d:
       multiplier: 1
     joint_e:
@@ -17,22 +16,39 @@ teleop:
       multiplier: 1
     finger:
       multiplier: 1
-    grip:
+    gripper:
       multiplier: 1
+      
+  sa_controls:
+    sa_joint_1:
+      multiplier: 1
+    sa_joint_2:
+      multiplier: 1
+    sa_joint_3:
+      multiplier: 1
+    scoop:
+      multiplier: 1
+    microscope:
+      multiplier: 1
+  
   drive_controls:
     forward_back:
       multiplier: 1
     left_right:
-      multiplier: -1
+      # Can be disabled here since left_right axis sucks
+      enabled: false
+      multiplier: 1
     twist:
-      multiplier: -1
+      multiplier: 0.7
+    
+
   xbox_mappings:
     left_js_x: 0
     left_js_y: 1
-    left_trigger: 6
-    right_trigger: 7
-    right_js_x: 2
-    right_js_y: 3
+    left_trigger: 2
+    right_trigger: 5
+    right_js_x: 3
+    right_js_y: 4
     right_bumper: 5
     left_bumper: 4
     d_pad_up: 12
@@ -43,6 +59,7 @@ teleop:
     b: 1
     x: 2
     y: 3
+  
   joystick_mappings:
     left_right: 0
     forward_back: 1
@@ -50,3 +67,15 @@ teleop:
     dampen: 3
     pan: 4
     tilt: 5
+
+  # Mappings from site name to index in which values will be sent
+  # for each site, mostly for heaters and which syringe servos we want to use
+  carousel_site_mappings:
+    A: 0
+    B: 1
+    C: 2
+
+  echo_presets:
+    blah: ["/tf", "/tf_static", "/rosout"]
+    foo: ["/rosout", "/tf"]
+    bar: ["/tf_static", "/rosout", "/tf"]
