@@ -424,12 +424,14 @@ class ArmManager(MotorsManager):
 
         self._max_rps_by_name = {}
         self._torque_limit_by_name = {}
+        self._gear_ratio_by_name = {}
         self._min_position_by_name = {}
         self._max_position_by_name = {}
         self._offset_position_by_name = {}
         for name, info in arm_controller_info_by_name.items():
             self._max_rps_by_name[name] = info["max_rps"]
             self._torque_limit_by_name[name] = info["max_torque"]
+            self._gear_ratio_by_name[name] = info["gear_ratio_rad"]
             self._min_position_by_name[name] = info["min_position_rad"]
             self._max_position_by_name[name] = info["max_position_rad"]
             self._offset_position_by_name[name] = info["offset_position_rad"]
@@ -465,6 +467,7 @@ class ArmManager(MotorsManager):
 
                 velocity *= min(self._max_rps_by_name[name], CommandData.VELOCITY_LIMIT_REV_S)
                 velocity /= self._max_rps_by_name[name]
+                velocity /= self._gear_ratio_by_name[name]
 
                 if position == math.nan:
                     # Ensure command is reasonable and clamp if necessary.
