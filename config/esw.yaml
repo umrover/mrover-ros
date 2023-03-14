@@ -215,21 +215,24 @@ brushless:
         max_torque: 0.3
         multiplier: -1
         gear_ratio: 484
-        min_position: -0.5
-        max_position: 0.5
+        min_position_rad: -0.087267
+        max_position_rad: 4.886922
+        offset_position_rad: 0.0
       joint_d:
         id: 7
         max_rps: 80
         max_torque: 0.13
         multiplier: 1
         gear_ratio: 484
-        min_position: -0.5
-        max_position: 0.5
+        min_position_rad: -3.14
+        max_position_rad: 3.14
+        offset_position_rad: 0.0
       joint_e:
         id: 8
         max_rps: 70
         max_torque: 0.13
         multiplier: -1
         gear_ratio: 484
-        min_position: -0.5
-        max_position: 0.5
+        min_position_rad: -3.59538
+        max_position_rad: 0.610865
+        offset_position_rad: 0.0

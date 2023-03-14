@@ -413,7 +413,9 @@ class MotorsManager(ABC):
         Updates the command of the specified motor bridge for position commands.
         """
         if self._motor_bridges[motor_name].moteus_state.state == MoteusState.ARMED_STATE:
-            self._motor_bridges[motor_name].set_command(CommandData(position=position, velocity=velocity, torque=torque))
+            self._motor_bridges[motor_name].set_command(
+                CommandData(position=position, velocity=velocity, torque=torque)
+            )
 
 
 class ArmManager(MotorsManager):
@@ -425,12 +427,14 @@ class ArmManager(MotorsManager):
         self._gear_ratio_by_name = {}
         self._min_position_by_name = {}
         self._max_position_by_name = {}
+        self._offset_position_by_name = {}
         for name, info in arm_controller_info_by_name.items():
             self._max_rps_by_name[name] = info["max_rps"]
             self._torque_limit_by_name[name] = info["max_torque"]
-            self._gear_ratio_by_name[name] = info["gear_ratio"]
-            self._min_position_by_name[name] = info["min_position"]
-            self._max_position_by_name[name] = info["max_position"]
+            self._gear_ratio_by_name[name] = info["gear_ratio_rad"]
+            self._min_position_by_name[name] = info["min_position_rad"]
+            self._max_position_by_name[name] = info["max_position_rad"]
+            self._offset_position_by_name[name] = info["offset_position_rad"]
 
         rospy.Subscriber("ra_cmd", JointState, self._process_ra_cmd)
 
@@ -468,11 +472,16 @@ class ArmManager(MotorsManager):
                     # Ensure command is reasonable and clamp if necessary.
                     self.update_bridge_velocity(name, velocity, self._torque_limit_by_name[name])
                 else:
+
+                    position -= self._offset_position_by_name[name]
+
                     if position < self._min_position_by_name[name] or position > self._max_position_by_name[name]:
                         position = max(self._min_position_by_name[name], min(self._max_position_by_name[name]))
                         rospy.logerr(f"Commanded arm position is out of bounds. Changing to {[position]}.")
 
-                    self.update_bridge_position(name, position, velocity, self._torque_limit_by_name)
+                    position /= 2 * math.pi
+
+                    self.update_bridge_position(name, position, velocity, self._torque_limit_by_name[name])
 
         self._last_updated_time_s = t.time()
 
