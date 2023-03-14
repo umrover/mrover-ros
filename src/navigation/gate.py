@@ -125,5 +125,8 @@ class GateTraverseState(BaseState):
         self.context.gate_path_publisher.publish(
             GPSPointList([convert_cartesian_to_gps(pt) for pt in self.traj.coordinates])
         )
+        self.context.gate_point_publisher.publish(
+            GPSPointList([convert_cartesian_to_gps(p) for p in [gate.post1, gate.post2]])
+        )
         self.context.rover.send_drive_command(cmd_vel)
         return GateTraverseStateTransitions.continue_gate_traverse.name  # type: ignore

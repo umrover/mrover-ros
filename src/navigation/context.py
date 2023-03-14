@@ -111,7 +111,6 @@ class Environment:
             post2 = self.get_fid_pos(current_waypoint.fiducial_id + 1)
             if post1 is None or post2 is None:
                 return None
-            self.ctx.gate_point_publisher.publish(GPSPointList([convert_cartesian_to_gps(p) for p in [post1, post2]]))
             return Gate(post1[:2], post2[:2])
         else:
             return None
@@ -210,7 +209,7 @@ def convert_cartesian_to_gps(coordinate: np.ndarray) -> GPSWaypoint:
     Converts a coordinate to a GPSWaypoint (used for sending data back to basestation)
     """
     lat, lon, _ = pymap3d.enu2geodetic(
-        e=coordinate[0], n=coordinate[1], u=coordinate[2], lat0=REF_LAT, lon0=REF_LON, h0=0.0, deg=True
+        e=coordinate[0], n=coordinate[1], u=0.0, lat0=REF_LAT, lon0=REF_LON, h0=0.0, deg=True
     )
     return GPSWaypoint(lat, lon, WaypointType(val=WaypointType.NO_SEARCH), 0)
 
