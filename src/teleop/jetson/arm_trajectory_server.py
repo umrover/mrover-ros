@@ -5,7 +5,7 @@ import time
 import actionlib
 from threading import Lock
 from collections import deque
-from typing import Deque
+from typing import Deque, List
 
 from control_msgs.msg import FollowJointTrajectoryGoal
 from control_msgs.msg import FollowJointTrajectoryResult
@@ -42,10 +42,10 @@ class MoveItAction(object):
             return
         for point in joint_trajectory.points:
 
-            temp_positions = []
-            temp_velocities = []
-            temp_accelerations = []
-            temp_effort = []
+            temp_positions: List[float] = []
+            temp_velocities: List[float] = []
+            temp_accelerations: List[float] = []
+            temp_effort: List[float] = []
 
             # Motion Plan will publish 5 (every joint besides f)
             # postions velocities and accelerations for each point of the plan
