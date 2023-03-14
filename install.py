@@ -36,7 +36,7 @@ DRONE_ROS_APT_DEPS += [
     "libfuse2",
 ]
 
-MROVER_ROS_GIT_URL = "https://github.com/umrover/mrover-ros.git"
+MROVER_ROS_GIT_URL = "git@github.com:umrover/mrover-ros.git"
 PX4_GIT_URL = "https://github.com/px4/px4-autopilot"
 WIKI_URL = "https://github.com/umrover/mrover-ros/wiki"
 GROUND_CONTROL_URL = "https://d176tv9ibo4jno.cloudfront.net/latest/QGroundControl.AppImage"
