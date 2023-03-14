@@ -207,6 +207,9 @@ def convert_cartesian_to_gps(coordinate: np.ndarray) -> GPSWaypoint:
     """
     Converts a coordinate to a GPSWaypoint (used for sending data back to basestation)
     """
+    # read required parameters, if they don't exist an error will be thrown
+    REF_LAT = rospy.get_param("gps_linearization/reference_point_latitude")
+    REF_LON = rospy.get_param("gps_linearization/reference_point_longitude")
     lat, lon, _ = pymap3d.enu2geodetic(
         e=coordinate[0], n=coordinate[1], u=0.0, lat0=REF_LAT, lon0=REF_LON, h0=0.0, deg=True
     )
