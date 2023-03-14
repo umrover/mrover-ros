@@ -128,24 +128,22 @@ def main():
         # fill in all sensor messages, setting timestamps of each message to right now,
         # and setting the reference frame of all messages to IMU frame
         header = Header(stamp=rospy.Time.now(), frame_id=imu_frame)
-        mag_msg = (
-            MagneticField(
-                header=header,
-                magnetic_field=Vector3(*enu_mag_vec),
-            )
+        mag_msg = MagneticField(
+            header=header,
+            magnetic_field=Vector3(*enu_mag_vec),
         )
         imu_msg = ImuAndMag(
             header=header,
-            imu= Imu(
+            imu=Imu(
                 header=header,
                 orientation=Quaternion(*enu_orientation),
                 linear_acceleration=Vector3(*accel_data),
                 angular_velocity=Vector3(*gyro_data),
                 orientation_covariance=orientation_covariance.flatten().tolist(),
                 angular_velocity_covariance=gyro_covariance.flatten.tolist(),
-                linear_acceleration_covariance=accel_covariance.flatten().tolist()
+                linear_acceleration_covariance=accel_covariance.flatten().tolist(),
             ),
-            mag=mag_msg
+            mag=mag_msg,
         )
 
         temp_msg = Temperature(header=header, temperature=temp_data)
