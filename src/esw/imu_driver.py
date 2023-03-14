@@ -58,24 +58,6 @@ def publish_mag_pose(pub: rospy.Publisher, msg: Vector3Stamped, covariance: np.n
     )
 
 
-def inject_covariances(imu_msg: Imu, orientation_cov: np.ndarray, gyro_cov: np.ndarray, accel_cov: np.ndarray) -> Imu:
-    """
-    Inserts the given covariance matrices into the given IMU message.
-
-    :param imu_msg: the IMU message to add covariances to
-    :param orientation_cov: 3x3 orientation covariance matrix [roll, pitch, yaw]
-    :param gyro_cov: 3x3 gyroscope (angular vel) covariance matrix [roll, pitch, yaw]
-    :param accel_cov: 3x3 accelerometer (linear accel) covariance matrix [x, y, z]
-
-    :returns: An IMU message copied from imu_msg, with the given covariance matrices inserted.
-    """
-    new_msg = deepcopy(imu_msg)
-    new_msg.orientation_covariance = orientation_cov.flatten().tolist()
-    new_msg.angular_velocity_covariance = gyro_cov.flatten().tolist()
-    new_msg.linear_acceleration_covariance = accel_cov.flatten().tolist()
-    return new_msg
-
-
 def main():
     """
     This program reads in IMU data over serial, converts it to the ENU frame,
@@ -150,22 +132,20 @@ def main():
             MagneticField(
                 header=header,
                 magnetic_field=Vector3(*enu_mag_vec),
-            ),
+            )
         )
-        imu_msg = (
-            Imu(
+        imu_msg = ImuAndMag(
+            header=header,
+            imu= Imu(
                 header=header,
                 orientation=Quaternion(*enu_orientation),
                 linear_acceleration=Vector3(*accel_data),
                 angular_velocity=Vector3(*gyro_data),
+                orientation_covariance=orientation_covariance.flatten().tolist(),
+                angular_velocity_covariance=gyro_covariance.flatten.tolist(),
+                linear_acceleration_covariance=accel_covariance.flatten().tolist()
             ),
-        )
-        imu_msg = inject_covariances(imu_msg, orientation_covariance, gyro_covariance, accel_covariance)
-
-        imu_msg = ImuAndMag(
-            header=header,
-            imu=imu_msg,
-            mag=mag_msg,
+            mag=mag_msg
         )
 
         temp_msg = Temperature(header=header, temperature=temp_data)

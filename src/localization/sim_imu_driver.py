@@ -5,7 +5,7 @@ from mrover.msg import ImuAndMag
 from sensor_msgs.msg import Imu, MagneticField
 from geometry_msgs.msg import PoseWithCovarianceStamped, Vector3Stamped
 import message_filters
-from esw.imu_driver import get_covariances, inject_covariances, publish_mag_pose
+from esw.imu_driver import get_covariances, publish_mag_pose
 
 
 class SimIMUDriver:
@@ -42,7 +42,9 @@ class SimIMUDriver:
         self.mag_pose_pub = rospy.Publisher("imu/mag_pose", PoseWithCovarianceStamped, queue_size=1)
 
     def imu_callback(self, imu_msg: Imu, mag_msg: Vector3Stamped):
-        imu_msg = inject_covariances(imu_msg, self.orientation_covariance, self.gyro_covariance, self.accel_covariance)
+        imu_msg.orientation_covariance = self.orientation_covariance.flatten().tolist()
+        imu_msg.angular_velocity_covariance = self.gyro_covariance.flatten().tolist()
+        imu_msg.linear_acceleration_covariance = self.accel_covariance.flatten().tolist()
         self.imu_pub.publish(
             ImuAndMag(
                 header=imu_msg.header,
