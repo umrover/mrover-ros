@@ -2,6 +2,7 @@ from __future__ import annotations
 from typing import ClassVar, Optional
 
 import numpy as np
+import rospy
 
 from context import Context, Environment
 from aenum import Enum, NoAlias
@@ -9,9 +10,7 @@ from state import BaseState
 from dataclasses import dataclass
 from drive import get_drive_command
 from trajectory import Trajectory
-
-STOP_THRESH = 0.2
-DRIVE_FWD_THRESH = 0.34  # 20 degrees
+from util.ros_utils import get_rosparam
 
 
 @dataclass
@@ -60,6 +59,9 @@ class SearchStateTransitions(Enum):
 
 
 class SearchState(BaseState):
+    STOP_THRESH = get_rosparam("search/stop_thresh", 0.2)
+    DRIVE_FWD_THRESH = get_rosparam("search/drive_fwd_thresh", 0.34)  # 20 degrees
+
     def __init__(
         self,
         context: Context,
@@ -87,8 +89,8 @@ class SearchState(BaseState):
         cmd_vel, arrived = get_drive_command(
             target_pos,
             self.context.rover.get_pose(),
-            STOP_THRESH,
-            DRIVE_FWD_THRESH,
+            self.STOP_THRESH,
+            self.DRIVE_FWD_THRESH,
         )
         if arrived:
             # if we finish the spiral without seeing the fiducial, move on with course
