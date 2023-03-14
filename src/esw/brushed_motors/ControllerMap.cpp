@@ -53,6 +53,23 @@ void ControllerMap::init(XmlRpc::XmlRpcValue& root) {
             root[i]["inversion"].getType() == XmlRpc::XmlRpcValue::TypeDouble) {
             controllersByName[name]->inversion = (float) static_cast<double>(root[i]["inversion"]);
         }
+        if (root[i].hasMember("limit_a") &&
+            root[i]["limit_a"].getType() == XmlRpc::XmlRpcValue::TypeBoolean) {
+            controllersByName[name]->limitAEnabled = static_cast<bool>(root[i]["limit_a"]);
+        }
+        if (root[i].hasMember("limit_b") &&
+            root[i]["limit_b"].getType() == XmlRpc::XmlRpcValue::TypeBoolean) {
+            controllersByName[name]->limitBEnabled = static_cast<bool>(root[i]["limit_b"]);
+        }
+        if (root[i].hasMember("limit_polarity") &&
+            root[i]["limit_polarity"].getType() == XmlRpc::XmlRpcValue::TypeBoolean) {
+            if (static_cast<bool>(root[i]["limit_polarity"])) controllersByName[name]->limitPolarity = Controller::FORWARD;
+            else controllersByName[name]->limitPolarity = Controller::REVERSED;
+        }
+        if (root[i].hasMember("calibration_vel") &&
+            root[i]["calibration_vel"].getType() == XmlRpc::XmlRpcValue::TypeDouble) {
+            controllersByName[name]->calibrationVel = (float) static_cast<double>(root[i]["calibration_vel"]);
+        }
         if (root[i].hasMember("closed_loop_rad_min") &&
             root[i]["closed_loop_rad_min"].getType() == XmlRpc::XmlRpcValue::TypeDouble) {
             controllersByName[name]->closedLoopRadMin = (float) static_cast<double>(root[i]["closed_loop_rad_min"]);

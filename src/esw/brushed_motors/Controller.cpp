@@ -28,7 +28,6 @@ Controller::Controller(
     motorIDRegMask = motorID << 5;
     motorMaxVoltage = _motorMaxVoltage;
     driverVoltage = _driverVoltage;
-
     currentAngle = 0.0f;
 }
 
@@ -40,11 +39,57 @@ float Controller::getCurrentAngle() const {
     return currentAngle;
 }
 
+// REQUIRES: newAngleRad to be in radians
+// MODIFIES: currentAngle
+// EFFECTS: forces the angle of the controller to be a certain value
+void Controller::overrideCurrentAngle(float newAngleRad) {
+    int32_t ticks = (int32_t) (((newAngleRad) / (2 * M_PI)) * quadCPR); // convert to quad units
+
+    try {
+        makeLive();
+
+        uint8_t buffer[4];
+        memcpy(buffer, UINT8_POINTER_T(&ticks), sizeof(ticks));
+        I2C::transact(deviceAddress, motorIDRegMask | ADJUST_OP, ADJUST_WB,
+                      ADJUST_RB, buffer, nullptr);
+
+    } catch (IOFailure& e) {
+        ROS_ERROR("overrideCurrentAngle failed on %s", name.c_str());
+    }
+}
+
 // REQUIRES: nothing
 // MODIFIES: nothing
 // EFFECTS: Returns true if Controller is live.
 bool Controller::isControllerLive() const {
     return isLive;
+}
+
+// REQUIRES: nothing
+// MODIFIES: nothing
+// EFFECTS: Returns true if Controller is calibrated.
+bool Controller::getCalibrationStatus() const {
+    return isCalibrated;
+}
+
+// REQUIRES: nothing
+// MODIFIES: nothing
+// EFFECTS: Returns true if Controller has a (one or both) limit switch(s) is enabled.
+bool Controller::getLimitSwitchEnabled() const {
+    return limitAEnabled || limitBEnabled;
+}
+
+// REQUIRES: limit_polarity_request to check
+// MODIFIES: nothing
+// EFFECTS: Returns true if Controller has the FORWARD or REVERSE limit switch enabled.
+bool Controller::getLimitSwitchEnabled(limit_polarity limit_polarity_request) const {
+    if (limit_polarity_request == FORWARD) { // FORWARD limit polarity
+        if (limitPolarity) return limitAEnabled;
+        return limitBEnabled;
+    } else { // REVERSE
+        if (limitPolarity) return limitBEnabled;
+        return limitAEnabled;
+    }
 }
 
 // REQUIRES: -1.0 <= input <= 1.0
@@ -76,7 +121,7 @@ void Controller::moveOpenLoop(float input) {
 
         I2C::transact(deviceAddress, motorIDRegMask | OPEN_PLUS_OP, OPEN_PLUS_WB,
                       OPEN_PLUS_RB, buffer, UINT8_POINTER_T(&angle));
-        currentAngle = (float) ((((float) angle / quadCPR) * 2 * M_PI) - M_PI);
+        currentAngle = (float) (((float) angle / quadCPR) * 2 * M_PI);
     } catch (IOFailure& e) {
         ROS_ERROR("moveOpenLoop failed on %s", name.c_str());
     }
@@ -117,6 +162,44 @@ void Controller::moveClosedLoop(float position) {
 }
 
 // REQUIRES: nothing
+// MODIFIES: isCalibrated
+// EFFECTS: asks the MCU if it is calibrated
+void Controller::askIsCalibrated() {
+    try {
+        makeLive();
+
+        uint8_t calibration_status;
+        I2C::transact(deviceAddress, motorIDRegMask | IS_CALIBRATED_OP, IS_CALIBRATED_WB,
+                      IS_CALIBRATED_RB, nullptr, UINT8_POINTER_T(&calibration_status));
+        
+        isCalibrated = calibration_status;
+
+    } catch (IOFailure& e) {
+        ROS_ERROR("askIsCalibrated failed on %s", name.c_str());
+    }
+}
+
+// REQUIRES: nothing
+// MODIFIES: nothing
+// EFFECTS: gets current absolute encoder value of MCU
+float Controller::getAbsoluteEncoderValue() {
+    try {
+        makeLive();
+
+        float abs_enc_radians;
+        I2C::transact(deviceAddress, motorIDRegMask | ABS_ENC_OP, ABS_ENC_WB,
+                      ABS_ENC_RB, nullptr, UINT8_POINTER_T(&abs_enc_radians));
+
+        return abs_enc_radians;
+
+    } catch (IOFailure& e) {
+        ROS_ERROR("getAbsoluteEncoderValue failed on %s", name.c_str());
+    }
+
+    return 0;
+}
+
+// REQUIRES: nothing
 // MODIFIES: isLive
 // EFFECTS: If not already live,
 // configures the physical controller.
@@ -146,6 +229,18 @@ void Controller::makeLive() {
         memcpy(buffer + 8, UINT8_POINTER_T(&(kD)), sizeof(kD));
         I2C::transact(deviceAddress, motorIDRegMask | CONFIG_K_OP, CONFIG_K_WB,
                       CONFIG_K_RB, buffer, nullptr);
+
+        memcpy(buffer, UINT8_POINTER_T(&limitPolarity), sizeof(limitPolarity));
+        I2C::transact(deviceAddress, motorIDRegMask | LIMIT_POLARITY_OP, LIMIT_POLARITY_WB,
+                      LIMIT_POLARITY_RB, buffer, nullptr);
+
+        memcpy(buffer, UINT8_POINTER_T(&limitAEnabled), sizeof(limitAEnabled));
+        I2C::transact(deviceAddress, motorIDRegMask | CONFIG_LIMIT_A_OP, CONFIG_LIMIT_A_WB,
+                      CONFIG_LIMIT_A_RB, buffer, nullptr);
+
+        memcpy(buffer, UINT8_POINTER_T(&limitBEnabled), sizeof(limitBEnabled));
+        I2C::transact(deviceAddress, motorIDRegMask | CONFIG_LIMIT_B_OP, CONFIG_LIMIT_B_WB,
+                      CONFIG_LIMIT_B_RB, buffer, nullptr);
 
         isLive = true;
 

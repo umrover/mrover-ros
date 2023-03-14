@@ -3,6 +3,9 @@
 #include "ControllerMap.h"          // for ControllerMap
 #include <array>                    // for array
 #include <cmath>                    // for nan
+#include <mrover/CalibrateMotors.h> // for CalibrateMotors
+#include <mrover/AdjustMotors.h>    // for AdjustMotors
+#include <mrover/Calibrated.h>      // for Calibrated
 #include <mrover/Carousel.h>        // for Carousel
 #include <mrover/MastGimbal.h>      // for MastGimbal
 #include <optional>                 // for optional
@@ -23,23 +26,33 @@ private:
     // This holds the ROS Node.
     inline static ros::NodeHandle* n;
 
+    // Calibrate service
+    inline static ros::ServiceServer calibrateService;
+    inline static ros::ServiceServer adjustService;
+
     // RA
     inline static std::array<std::string, 5> RANames;
     inline static ros::Subscriber moveRASubscriber;
     inline static ros::Publisher jointDataPublisherRA;
     inline static sensor_msgs::JointState jointDataRA;
+    inline static ros::Publisher calibrationStatusPublisherRA;
+    inline static mrover::Calibrated calibrationStatusRA;
 
     // SA
     inline static std::array<std::string, 5> SANames;
     inline static ros::Subscriber moveSASubscriber;
     inline static ros::Publisher jointDataPublisherSA;
     inline static sensor_msgs::JointState jointDataSA;
+    inline static ros::Publisher calibrationStatusPublisherSA;
+    inline static mrover::Calibrated calibrationStatusSA;
 
     // Cache
     inline static ros::Subscriber moveCacheSubscriber;
 
     // Carousel
     inline static ros::Subscriber moveCarouselSubscriber;
+    inline static ros::Publisher calibrationStatusPublisherCarousel;
+    inline static mrover::Calibrated calibrationStatusCarousel;
 
     // Mast
     inline static ros::Subscriber moveMastGimbalSubscriber;
@@ -53,6 +66,11 @@ private:
     // MODIFIES: nothing
     // EFFECTS: Moves a controller in closed loop.
     static std::optional<float> moveControllerClosedLoop(const std::string& name, float position);
+
+    // REQUIRES: nothing
+    // MODIFIES: nothing
+    // EFFECTS: Determine if a controller is calibrated
+    static std::optional<bool> getControllerCalibrated(const std::string& name);\
 
     // REQUIRES: nothing
     // MODIFIES: nothing
@@ -79,6 +97,16 @@ private:
     // MODIFIES: nothing
     // EFFECTS: Moves a mast gimbal.
     static void moveMastGimbal(const mrover::MastGimbal::ConstPtr& msg);
+
+    // REQUIRES: valid req and res objects
+    // MODIFIES: res
+    // EFFECTS: sends a move/calibration command to the mcu
+    static bool processMotorCalibrate(mrover::CalibrateMotors::Request& req, mrover::CalibrateMotors::Response& res);
+
+    // REQUIRES: valid req and res objects
+    // MODIFIES: res
+    // EFFECTS: hard sets the requested controller angle
+    static bool processMotorAdjust(mrover::AdjustMotors::Request& req, mrover::AdjustMotors::Response& res);
 
 public:
     // REQUIRES: rosNode is a pointer to the created node.
