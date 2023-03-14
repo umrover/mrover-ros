@@ -37,6 +37,9 @@ brushed_motors:
       kP: -0.005
       kI: -0.0
       inversion: -1.0
+      closed_loop_rad_min: -3.14
+      closed_loop_rad_max: 3.14
+      allow_closed_loop: true
     - name: "joint_b"
       driver_voltage: 36.0
       motor_max_voltage: 12.0
@@ -46,6 +49,9 @@ brushed_motors:
       kP: -0.1
       kI: -0.0
       inversion: -1.0
+      closed_loop_rad_min: -1.064651
+      closed_loop_rad_max: 0.0
+      allow_closed_loop: true
     - name: "joint_f"
       driver_voltage: 12.0
       motor_max_voltage: 8.0

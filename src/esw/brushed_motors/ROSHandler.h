@@ -51,6 +51,11 @@ private:
 
     // REQUIRES: nothing
     // MODIFIES: nothing
+    // EFFECTS: Moves a controller in closed loop.
+    static std::optional<float> moveControllerClosedLoop(const std::string& name, float position);
+
+    // REQUIRES: nothing
+    // MODIFIES: nothing
     // EFFECTS: Moves the RA joints in open loop and publishes angle data right after.
     static void moveRA(const sensor_msgs::JointState::ConstPtr& msg);
 

@@ -59,6 +59,22 @@ std::optional<float> ROSHandler::moveControllerOpenLoop(const std::string& name,
 
 // REQUIRES: nothing
 // MODIFIES: nothing
+// EFFECTS: Moves a controller in closed loop.
+std::optional<float> ROSHandler::moveControllerClosedLoop(const std::string& name, float position) {
+    auto controller_iter = ControllerMap::controllersByName.find(name);
+
+    if (controller_iter == ControllerMap::controllersByName.end()) {
+        return std::nullopt;
+    }
+
+    Controller* controller = controller_iter->second;
+    controller->moveClosedLoop(position);
+
+    return std::make_optional<float>(controller->getCurrentAngle());
+}
+
+// REQUIRES: nothing
+// MODIFIES: nothing
 // EFFECTS: Moves the RA joints in open loop and publishes angle data right after.
 // Note: any invalid controllers will be published with a position of 0.
 void ROSHandler::moveRA(const sensor_msgs::JointState::ConstPtr& msg) {
@@ -68,7 +84,7 @@ void ROSHandler::moveRA(const sensor_msgs::JointState::ConstPtr& msg) {
             pos = moveControllerOpenLoop(msg->name[i], (float) msg->velocity[i]);
         }
         else {
-            ROS_ERROR("Closed loop is currently not supported for RA commands.");
+            pos = moveControllerClosedLoop(msg->name[i], (float) msg->position[i]);
         }
         jointDataRA.position[i] = pos.value_or(0.0);
     }
@@ -86,7 +102,7 @@ void ROSHandler::moveSA(const sensor_msgs::JointState::ConstPtr& msg) {
             pos = moveControllerOpenLoop(SANames[i], (float) msg->velocity[i]);
         }
         else {
-            ROS_ERROR("Closed loop is currently not supported for SA commands.");
+            pos = moveControllerClosedLoop(msg->name[i], (float) msg->position[i]);
         }
         jointDataSA.position[i] = pos.value_or(0.0);
     }

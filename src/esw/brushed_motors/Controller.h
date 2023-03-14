@@ -90,6 +90,9 @@ public:
     float kI = 0.0f;
     float kD = 0.0f;
     float inversion = 1.0f;
+    float closedLoopRadMin = -M_PI;
+    float closedLoopRadMax = M_PI;
+    bool allowClosedLoop = false;
 
     // REQUIRES: _name is the name of the motor,
     // mcuID is the mcu id of the controller which dictates the slave address,
@@ -127,6 +130,11 @@ public:
     // EFFECTS: Sends an open loop command scaled to PWM limits
     // based on allowed voltage of the motor. Also updates angle.
     void moveOpenLoop(float input);
+
+    // REQUIRES: position in radians
+    // MODIFIES: currentAngle. Also makes controller live if not already.
+    // EFFECTS: Sends a closed loop command and updates angle.
+    void moveClosedLoop(float position);
 
 private:
     // REQUIRES: nothing

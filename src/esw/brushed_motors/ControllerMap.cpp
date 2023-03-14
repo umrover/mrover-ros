@@ -53,6 +53,18 @@ void ControllerMap::init(XmlRpc::XmlRpcValue& root) {
             root[i]["inversion"].getType() == XmlRpc::XmlRpcValue::TypeDouble) {
             controllersByName[name]->inversion = (float) static_cast<double>(root[i]["inversion"]);
         }
+        if (root[i].hasMember("closed_loop_rad_min") &&
+            root[i]["closed_loop_rad_min"].getType() == XmlRpc::XmlRpcValue::TypeDouble) {
+            controllersByName[name]->closedLoopRadMin = (float) static_cast<double>(root[i]["closed_loop_rad_min"]);
+        }
+        if (root[i].hasMember("closed_loop_rad_max") &&
+            root[i]["closed_loop_rad_max"].getType() == XmlRpc::XmlRpcValue::TypeDouble) {
+            controllersByName[name]->closedLoopRadMax = (float) static_cast<double>(root[i]["closed_loop_rad_max"]);
+        }
+        if (root[i].hasMember("allow_closed_loop") &&
+            root[i]["allow_closed_loop"].getType() == XmlRpc::XmlRpcValue::TypeBoolean) {
+            controllersByName[name]->allowClosedLoop = static_cast<bool>(root[i]["allow_closed_loop"]);
+        }
         ROS_INFO("Made virtual Controller %s on MCU ID %i motor ID %i \n", name.c_str(), mcu_id, motor_id);
     }
 }

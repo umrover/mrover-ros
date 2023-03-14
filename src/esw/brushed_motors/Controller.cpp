@@ -82,6 +82,40 @@ void Controller::moveOpenLoop(float input) {
     }
 }
 
+// REQUIRES: position in radians
+// MODIFIES: currentAngle. Also makes controller live if not already.
+// EFFECTS: Sends a closed loop command and updates angle.
+void Controller::moveClosedLoop(float position) {
+    try {
+        if (!allowClosedLoop) {
+            ROS_ERROR("moveClosedLoop on %s is not allowed", name.c_str());
+            return;
+        }
+
+        if (!(closedLoopRadMin <= position && position <= closedLoopRadMax)) {
+            ROS_ERROR("moveClosedLoop on %s should only take values between %f and %f", name.c_str(), closedLoopRadMin, closedLoopRadMax);
+            return;
+        }
+
+        makeLive();
+
+        float feed_forward = 0;
+        uint8_t buffer[8];
+        memcpy(buffer, UINT8_POINTER_T(&feed_forward), sizeof(feed_forward));
+        int32_t closed_set_point = static_cast<int32_t>((position / (2.0 * M_PI)) * quadCPR);
+        memcpy(buffer + 4, UINT8_POINTER_T(&closed_set_point), sizeof(closed_set_point));
+
+        int32_t angle;
+
+        I2C::transact(deviceAddress, motorIDRegMask | CLOSED_PLUS_OP, CLOSED_PLUS_WB,
+                      CLOSED_PLUS_RB, buffer, UINT8_POINTER_T(&angle));
+
+        currentAngle = (float) (((float) angle / quadCPR) * 2 * M_PI);
+    } catch (IOFailure& e) {
+        ROS_ERROR("moveOpenLoop failed on %s", name.c_str());
+    }
+}
+
 // REQUIRES: nothing
 // MODIFIES: isLive
 // EFFECTS: If not already live,
