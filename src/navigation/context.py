@@ -196,6 +196,9 @@ def convert(waypoint: GPSWaypoint) -> Waypoint:
     """
     Converts a GPSWaypoint into a "Waypoint" used for publishing to the CourseService.
     """
+    # read required parameters, if they don't exist an error will be thrown
+    REF_LAT = rospy.get_param("gps_linearization/reference_point_latitude")
+    REF_LON = rospy.get_param("gps_linearization/reference_point_longitude")
 
     # Create odom position based on GPS latitude and longitude
     odom = np.array(
