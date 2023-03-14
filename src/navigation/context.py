@@ -13,17 +13,14 @@ from dataclasses import dataclass
 from mrover.msg import Waypoint, GPSWaypoint, EnableAuton
 import pymap3d
 from std_msgs.msg import Time
-import yaml
-
-   
 
 
 # read required parameters, if they don't exist an error will be thrown
 REF_LAT = rospy.get_param("gps_linearization/reference_point_latitude")
 REF_LON = rospy.get_param("gps_linearization/reference_point_longitude")
 
-MAP = rospy.get_param("gps_linearization/world_frame")
-BASE_LINK = rospy.get_param("gps_linearization/rover_frame")
+WORLD_FRAME = rospy.get_param("gps_linearization/world_frame")
+ROVER_FRAME = rospy.get_param("gps_linearization/rover_frame")
 
 TAG_EXPIRATION_TIME_SECONDS = 60
 
@@ -41,7 +38,7 @@ class Rover:
     ctx: Context
 
     def get_pose(self) -> SE3:
-        return SE3.from_tf_tree(self.ctx.tf_buffer, parent_frame= MAP, child_frame= BASE_LINK)
+        return SE3.from_tf_tree(self.ctx.tf_buffer, parent_frame=WORLD_FRAME, child_frame=ROVER_FRAME)
 
     def send_drive_command(self, twist: Twist):
         self.ctx.vel_cmd_publisher.publish(twist)
@@ -50,7 +47,7 @@ class Rover:
         self.send_drive_command(Twist())
 
     def get_pose_with_time(self):
-        return SE3.from_tf_time(self.ctx.tf_buffer, parent_frame= MAP, child_frame= BASE_LINK)
+        return SE3.from_tf_time(self.ctx.tf_buffer, parent_frame=WORLD_FRAME, child_frame=ROVER_FRAME)
 
 
 @dataclass
@@ -63,13 +60,15 @@ class Environment:
     ctx: Context
     NO_FIDUCIAL: ClassVar[int] = -1
 
-    def get_fid_pos(self, fid_id: int, frame: str = MAP) -> Optional[np.ndarray]:
+    def get_fid_pos(self, fid_id: int, frame: str = WORLD_FRAME) -> Optional[np.ndarray]:
         """
         Retrieves the pose of the given fiducial ID from the TF tree
         if it exists and is more recent than TAG_EXPIRATION_TIME_SECONDS, otherwise returns None
         """
         try:
-            fid_pose, time = SE3.from_tf_time(self.ctx.tf_buffer, parent_frame=MAP, child_frame=f"fiducial{fid_id}")
+            fid_pose, time = SE3.from_tf_time(
+                self.ctx.tf_buffer, parent_frame=WORLD_FRAME, child_frame=f"fiducial{fid_id}"
+            )
             now = rospy.Time.now()
             if now.to_sec() - time.to_sec() >= TAG_EXPIRATION_TIME_SECONDS:
                 return None
@@ -138,7 +137,7 @@ class Course:
         Gets the pose of the waypoint with the given index
         """
         waypoint_frame = self.course_data.waypoints[wp_idx].tf_id
-        return SE3.from_tf_tree(self.ctx.tf_buffer, parent_frame= MAP, child_frame=waypoint_frame)
+        return SE3.from_tf_tree(self.ctx.tf_buffer, parent_frame=WORLD_FRAME, child_frame=waypoint_frame)
 
     def current_waypoint_pose(self):
         """
@@ -187,7 +186,7 @@ def setup_course(ctx: Context, waypoints: List[Tuple[Waypoint, SE3]]) -> Course:
     all_waypoint_info = []
     for waypoint_info, pose in waypoints:
         all_waypoint_info.append(waypoint_info)
-        pose.publish_to_tf_tree(tf_broadcaster, MAP, waypoint_info.tf_id)
+        pose.publish_to_tf_tree(tf_broadcaster, WORLD_FRAME, waypoint_info.tf_id)
     # make the course out of just the pure waypoint objects which is the 0th elt in the tuple
     return Course(ctx=ctx, course_data=mrover.msg.Course([waypoint[0] for waypoint in waypoints]))
 
