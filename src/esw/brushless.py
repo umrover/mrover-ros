@@ -466,7 +466,6 @@ class ArmManager(MotorsManager):
                     rospy.logerr(f"Commanded arm velocity should be [-1, 1]). Changing to {velocity}.")
 
                 velocity *= min(self._max_rps_by_name[name], CommandData.VELOCITY_LIMIT_REV_S)
-                velocity /= self._max_rps_by_name[name]
                 velocity /= self._gear_ratio_by_name[name]
 
                 if position == math.nan:
