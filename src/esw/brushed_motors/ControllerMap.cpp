@@ -63,12 +63,12 @@ void ControllerMap::init(XmlRpc::XmlRpcValue& root) {
         }
         if (root[i].hasMember("limit_polarity") &&
             root[i]["limit_polarity"].getType() == XmlRpc::XmlRpcValue::TypeBoolean) {
-            if (static_cast<bool>(root[i]["limit_polarity"])) controllersByName[name]->limitPolarity = Controller::LimitPolarity::FORWARD;
-            else controllersByName[name]->limitPolarity = Controller::LimitPolarity::REVERSED;
+            if (static_cast<bool>(root[i]["limit_polarity"])) controllersByName[name]->limitPolarity = Controller::FORWARD;
+            else controllersByName[name]->limitPolarity = Controller::REVERSED;
         }
-        if (root[i].hasMember("calibration_speed") &&
-            root[i]["calibration_speed"].getType() == XmlRpc::XmlRpcValue::TypeDouble) {
-            controllersByName[name]->calibrationSpeed = (float) static_cast<double>(root[i]["calibration_speed"]);
+        if (root[i].hasMember("calibration_vel") &&
+            root[i]["calibration_vel"].getType() == XmlRpc::XmlRpcValue::TypeDouble) {
+            controllersByName[name]->calibrationVel = (float) static_cast<double>(root[i]["calibration_vel"]);
         }
         ROS_INFO("Made virtual Controller %s on MCU ID %i motor ID %i \n", name.c_str(), mcu_id, motor_id);
     }

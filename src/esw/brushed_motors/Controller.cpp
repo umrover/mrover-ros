@@ -39,12 +39,11 @@ float Controller::getCurrentAngle() const {
     return currentAngle;
 }
 
-// REQUIRES: newAngleRan in [-M_PI,M_PI]
+// REQUIRES: newAngleRad to be in radians
 // MODIFIES: currentAngle
 // EFFECTS: forces the angle of the controller to be a certain value
 void Controller::overrideCurrentAngle(float newAngleRad) {
-    currentAngle = newAngleRad;
-    auto ticks = (int32_t) (((newAngleRad) / (2 * M_PI)) * quadCPR); // convert to quad units
+    int32_t ticks = (int32_t) (((newAngleRad) / (2 * M_PI)) * quadCPR); // convert to quad units
 
     try {
         makeLive();
@@ -80,11 +79,11 @@ bool Controller::getLimitSwitchEnabled() const {
     return limitAEnabled || limitBEnabled;
 }
 
-// REQUIRES: LimitPolarity to check
+// REQUIRES: limit_polarity_request to check
 // MODIFIES: nothing
 // EFFECTS: Returns true if Controller has the FORWARD or REVERSE limit switch enabled.
-bool Controller::getLimitSwitchEnabled(LimitPolarity polarity) const {
-    if (polarity) { // FORWARD
+bool Controller::getLimitSwitchEnabled(limit_polarity limit_polarity_request) const {
+    if (limit_polarity_request == FORWARD) { // FORWARD limit polarity
         if (limitPolarity) return limitAEnabled;
         return limitBEnabled;
     } else { // REVERSE
@@ -200,6 +199,14 @@ void Controller::makeLive() {
         memcpy(buffer, UINT8_POINTER_T(&limitPolarity), sizeof(limitPolarity));
         I2C::transact(deviceAddress, motorIDRegMask | LIMIT_POLARITY_OP, LIMIT_POLARITY_WB,
                       LIMIT_POLARITY_RB, buffer, nullptr);
+
+        memcpy(buffer, UINT8_POINTER_T(&limitAEnabled), sizeof(limitAEnabled));
+        I2C::transact(deviceAddress, motorIDRegMask | CONFIG_LIMIT_A_OP, CONFIG_LIMIT_A_WB,
+                      CONFIG_LIMIT_A_RB, buffer, nullptr);
+
+        memcpy(buffer, UINT8_POINTER_T(&limitBEnabled), sizeof(limitBEnabled));
+        I2C::transact(deviceAddress, motorIDRegMask | CONFIG_LIMIT_B_OP, CONFIG_LIMIT_B_WB,
+                      CONFIG_LIMIT_B_RB, buffer, nullptr);
 
         isLive = true;
 

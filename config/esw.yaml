@@ -24,7 +24,7 @@ brushed_motors:
       limit_a: true
       limit_b: false
       limit_polarity: true
-      calibration_speed: 0.25
+      calibration_vel: 0.25
     - name: "carousel"
       driver_voltage: 12.0
       motor_max_voltage: 12.0
@@ -34,7 +34,7 @@ brushed_motors:
       limit_a: true
       limit_b: false
       limit_polarity: true
-      calibration_speed: 0.25
+      calibration_vel: 0.25
     - name: "joint_a"
       driver_voltage: 36.0
       motor_max_voltage: 24.0
@@ -48,7 +48,7 @@ brushed_motors:
       limit_a: false
       limit_b: false
       limit_polarity: true
-      calibration_speed: 0.25
+      calibration_vel: 0.25
     - name: "joint_b"
       driver_voltage: 36.0
       motor_max_voltage: 12.0
@@ -61,7 +61,7 @@ brushed_motors:
       limit_a: true
       limit_b: false
       limit_polarity: true
-      calibration_speed: 0.25
+      calibration_vel: 0.25
     - name: "joint_f"
       driver_voltage: 12.0
       motor_max_voltage: 8.0
@@ -74,7 +74,7 @@ brushed_motors:
       limit_a: false
       limit_b: false
       limit_polarity: true
-      calibration_speed: 0.25
+      calibration_vel: 0.25
     - name: "finger"
       driver_voltage: 12.0
       motor_max_voltage: 12.0
@@ -84,7 +84,7 @@ brushed_motors:
       limit_a: true
       limit_b: true
       limit_polarity: true
-      calibration_speed: 0.25
+      calibration_vel: 0.25
     - name: "gripper"
       driver_voltage: 12.0
       motor_max_voltage: 12.0
@@ -94,7 +94,7 @@ brushed_motors:
       limit_a: false
       limit_b: false
       limit_polarity: true
-      calibration_speed: 0.25
+      calibration_vel: 0.25
     - name: "mast_gimbal_up_down"
       driver_voltage: 12.0
       motor_max_voltage: 12.0
@@ -104,7 +104,7 @@ brushed_motors:
       limit_a: false
       limit_b: false
       limit_polarity: true
-      calibration_speed: 0
+      calibration_vel: 0
     - name: "mast_gimbal_left_right"
       driver_voltage: 12.0
       motor_max_voltage: 12.0
@@ -114,7 +114,7 @@ brushed_motors:
       limit_a: false
       limit_b: false
       limit_polarity: true
-      calibration_speed: 0
+      calibration_vel: 0
     - name: "microscope"
       driver_voltage: 12.0
       motor_max_voltage: 12.0
@@ -124,7 +124,7 @@ brushed_motors:
       limit_a: true
       limit_b: true
       limit_polarity: true
-      calibration_speed: 0.25
+      calibration_vel: 0.25
     - name: "sa_joint_1"
       driver_voltage: 36.0
       motor_max_voltage: 12.0
@@ -134,7 +134,7 @@ brushed_motors:
       limit_a: true
       limit_b: false
       limit_polarity: true
-      calibration_speed: 0.25
+      calibration_vel: 0.25
     - name: "sa_joint_2"
       driver_voltage: 12.0
       motor_max_voltage: 12.0
@@ -144,7 +144,7 @@ brushed_motors:
       limit_a: true
       limit_b: false
       limit_polarity: true
-      calibration_speed: 0.25
+      calibration_vel: 0.25
     - name: "sa_joint_3"
       driver_voltage: 12.0
       motor_max_voltage: 12.0
@@ -154,7 +154,7 @@ brushed_motors:
       limit_a: true
       limit_b: false
       limit_polarity: true
-      calibration_speed: 0.25
+      calibration_vel: 0.25
     - name: "scoop"
       driver_voltage: 12.0
       motor_max_voltage: 12.0
@@ -164,7 +164,7 @@ brushed_motors:
       limit_a: true
       limit_b: true
       limit_polarity: true
-      calibration_speed: 0.25
+      calibration_vel: 0.25
   i2c_device_file: "/dev/i2c-1"
   test: false
 

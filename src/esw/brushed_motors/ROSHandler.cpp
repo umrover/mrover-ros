@@ -164,7 +164,7 @@ bool ROSHandler::processMotorCalibrate(mrover::CalibrateMotors::Request& req, mr
 
     // Calibrate
     if (shouldCalibrate) {
-        controller->moveOpenLoop(controller->calibrationSpeed);
+        controller->moveOpenLoop(controller->calibrationVel);
         res.actively_calibrating = true;
     } else {
         res.actively_calibrating = false;

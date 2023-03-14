@@ -99,7 +99,7 @@ public:
     // ENUM for limit polarity
     // IF FORWARD: A = +, B = -
     // IF REVERSED: A = -, B = +
-    enum LimitPolarity {
+    enum limit_polarity {
         FORWARD = true,
         REVERSED = false
     };
@@ -111,7 +111,7 @@ public:
     float inversion = 1.0f;
     bool limitAEnabled = false;
     bool limitBEnabled = false;
-    float calibrationSpeed = 0.0f;
+    float calibrationVel = 0.0f;
     bool limitPolarity = FORWARD;
 
     // REQUIRES: _name is the name of the motor,
@@ -149,10 +149,10 @@ public:
     // EFFECTS: Returns true if Controller has a (one or both) limit switch(s) is enabled.
     bool getLimitSwitchEnabled() const;
 
-    // REQUIRES: LimitPolarity to check
+    // REQUIRES: limit_polarity_request to check
     // MODIFIES: nothing
     // EFFECTS: Returns true if Controller has the FORWARD or REVERSE limit switch enabled.
-    bool getLimitSwitchEnabled(LimitPolarity polarity) const;
+    bool getLimitSwitchEnabled(limit_polarity limit_polarity_request) const;
 
     // REQUIRES: nothing
     // MODIFIES: nothing
