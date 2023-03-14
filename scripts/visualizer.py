@@ -99,7 +99,6 @@ class GUI(QWidget):  # type: ignore
 
     def update(self):
         with self.state_machine.mutex:
-
             if self.graph is None or self.state_machine.needs_redraw:
                 self.graph = graphviz.Digraph(comment="State Machine Diagram", format="svg")
                 for state_name in self.state_machine.states.keys():
