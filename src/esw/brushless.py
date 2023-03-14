@@ -444,13 +444,16 @@ class ArmManager(MotorsManager):
                     ros_msg.effort[i],
                 )
 
-                # Ensure command is reasonable and clamp if necessary.
-                if abs(velocity) > 1:
-                    rospy.logerr("Commanded arm velocity is too low or high (should be [-1, 1]")
-                    velocity = max(-1, min(1, velocity))
+                if position == math.nan:
+                    # Ensure command is reasonable and clamp if necessary.
+                    if abs(velocity) > 1:
+                        velocity = max(-1, min(1, velocity))
+                        rospy.logerr(f"Commanded arm velocity should be [-1, 1]). Changing to {velocity}.")
 
-                velocity *= min(self._max_rps_by_name[name], CommandData.VELOCITY_LIMIT_REV_S)
-                self.update_bridge_velocity(name, velocity, self._torque_limit_by_name[name])
+                    velocity *= min(self._max_rps_by_name[name], CommandData.VELOCITY_LIMIT_REV_S)
+                    self.update_bridge_velocity(name, velocity, self._torque_limit_by_name[name])
+                else:
+                    rospy.logerr(f"Position control is currently not supported")
 
         self._last_updated_time_s = t.time()
 
