@@ -54,6 +54,11 @@ private:
     inline static ros::Publisher calibrationStatusPublisherCarousel;
     inline static mrover::Calibrated calibrationStatusCarousel;
 
+    inline static float carousel_site_a_angle = 0;
+    inline static float carousel_site_b_angle = M_PI * 2.0 / 3.0;
+    inline static float carousel_site_c_angle = M_PI * 4.0 / 3.0;
+
+
     // Mast
     inline static ros::Subscriber moveMastGimbalSubscriber;
 
@@ -70,7 +75,7 @@ private:
     // REQUIRES: nothing
     // MODIFIES: nothing
     // EFFECTS: Determine if a controller is calibrated
-    static std::optional<bool> getControllerCalibrated(const std::string& name);\
+    static std::optional<bool> getControllerCalibrated(const std::string& name);
 
     // REQUIRES: nothing
     // MODIFIES: nothing

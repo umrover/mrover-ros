@@ -173,6 +173,10 @@ brushed_motors:
       calibration_vel: 0.25
   i2c_device_file: "/dev/i2c-1"
   test: false
+  carousel_site_angles:
+    A: 0
+    B: 2.09439510239
+    C: 4.18879020479
 
 science:
   auton_color_ids:

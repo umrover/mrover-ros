@@ -142,6 +142,11 @@ void Controller::moveClosedLoop(float position) {
             return;
         }
 
+        if (!isCalibrated) {
+            ROS_ERROR("moveClosedLoop on %s is not allowed when not calibrated", name.c_str());
+            return;
+        }
+
         makeLive();
 
         float feed_forward = 0;

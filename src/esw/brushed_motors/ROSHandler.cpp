@@ -52,6 +52,19 @@ void ROSHandler::init(ros::NodeHandle* rosNode) {
 
     // Initialize mast gimbal
     moveMastGimbalSubscriber = n->subscribe<mrover::MastGimbal>("mast_gimbal_cmd", 1, moveMastGimbal);
+
+    // Initialize Carousel Site Angles
+    XmlRpc::XmlRpcValue carouselSiteAngles;
+    n->getParam("brushed_motors/carousel_site_angles", carouselSiteAngles);
+    assert(carouselSiteAngles.hasMember("A") &&
+       carouselSiteAngles["A"].getType() == XmlRpc::XmlRpcValue::TypeDouble);
+    carousel_site_a_angle = (float) static_cast<double>(carouselSiteAngles["A"]);
+    assert(carouselSiteAngles.hasMember("B") &&
+       carouselSiteAngles["B"].getType() == XmlRpc::XmlRpcValue::TypeDouble);
+    carousel_site_b_angle = (float) static_cast<double>(carouselSiteAngles["B"]);
+        assert(carouselSiteAngles.hasMember("B") &&
+       carouselSiteAngles["B"].getType() == XmlRpc::XmlRpcValue::TypeDouble);
+    carousel_site_c_angle = (float) static_cast<double>(carouselSiteAngles["B"]);
 }
 
 // REQUIRES: nothing
@@ -159,7 +172,18 @@ void ROSHandler::moveCarousel(const mrover::Carousel::ConstPtr& msg) {
     if (msg->open_loop) {
         moveControllerOpenLoop("carousel", (float) msg->vel);
     } else {
-        ROS_ERROR("Closed loop is currently not supported for carousel commands.");
+        if (msg->site == "A") {
+            moveControllerClosedLoop("carousel", carousel_site_a_angle);
+        }
+        else if (msg->site == "B") {
+            moveControllerClosedLoop("carousel", carousel_site_b_angle);
+        }
+        else if (msg->site == "C") {
+            moveControllerClosedLoop("carousel", carousel_site_c_angle);
+        }
+        else {
+            ROS_ERROR("The requested carousel site is not A, B, or C.");
+        }
     }
 
     std::optional<bool> calibrated = getControllerCalibrated("carousel");
@@ -198,7 +222,6 @@ bool ROSHandler::processMotorCalibrate(mrover::CalibrateMotors::Request& req, mr
         res.actively_calibrating = false;
     }
 
-
     return true;
 }
 
@@ -207,16 +230,12 @@ bool ROSHandler::processMotorCalibrate(mrover::CalibrateMotors::Request& req, mr
 // EFFECTS: hard sets the requested controller angle
 bool ROSHandler::processMotorAdjust(mrover::AdjustMotors::Request& req, mrover::AdjustMotors::Response& res) {
 
-    try {
-        auto controller_iter = ControllerMap::controllersByName.find(req.name);
-        auto& [name, controller] = *controller_iter;
-        controller->overrideCurrentAngle(req.value);
-        res.success = true;
-        res.abs_enc_rad = controller->getAbsoluteEncoderValue();
-    } catch(...) {
-        ROS_ERROR("COULD NOT SET MOTOR ANGLE");
-    }
+    auto controller_iter = ControllerMap::controllersByName.find(req.name);
+    auto& [name, controller] = *controller_iter;
+    controller->overrideCurrentAngle(req.value);
+    res.success = true;
+    res.abs_enc_rad = controller->getAbsoluteEncoderValue();
 
-    return res.success;
+    return true;
 }
 
