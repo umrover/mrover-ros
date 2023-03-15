@@ -8,30 +8,3 @@ gps_linearization:
   reference_point_longitude: -83.7
   reference_point_altitude: 224
   publish_tf: false
-
-global_ekf:
-  # whether to use the Dilution of Precision (DoP) covariance estimate from the GPS message,
-  # or to replace it with the following configured covariance matrix
-  use_gps_dop_covariance: false
-  gps_covariance: [[2, 0, 0],
-                   [0, 2, 0],
-                   [0, 0, 2]]
-  
-  imu_orientation_covariance: [[0.1, 0, 0],
-                               [0, 0.1, 0],
-                               [0, 0, 0.1]]
-
-  imu_accel_covariance: [[0.1, 0, 0],
-                         [0, 0.1, 0],
-                         [0, 0, 0.1]]
-
-  imu_gyro_covariance: [[0.1, 0, 0],
-                        [0, 0.1, 0],
-                        [0, 0, 0.1]]
-
-  imu_mag_pose_covariance: [[0, 0, 0, 0, 0, 0],
-                            [0, 0, 0, 0, 0, 0],
-                            [0, 0, 0, 0, 0, 0],
-                            [0, 0, 0, 0, 0, 0],
-                            [0, 0, 0, 0, 0, 0],
-                            [0, 0, 0, 0, 0, 0.1]]

@@ -13,6 +13,7 @@
 
     <!-- launch auton -->
     <include file="$(find mrover)/launch/auton.launch" >
+        <arg name="sim" value="true" />
         <arg name="ekf_start_delay" value="10.0" />
     </include>
 </launch>
