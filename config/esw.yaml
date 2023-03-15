@@ -214,7 +214,6 @@ brushless:
         bus: 2
         multiplier: 1
   arm:
-    bus: 2
     controllers:
       joint_c:
         id: 6
