@@ -35,6 +35,7 @@ set(MROVER_MESSAGE_FILES
         HeaterData.msg
         ImuAndMag.msg
         MastGimbal.msg
+        JointLock.msg
         MoteusState.msg
         MotorsStatus.msg
         ScienceTemperature.msg
@@ -61,6 +62,7 @@ set(MROVER_SERVICE_FILES
 set(MROVER_ROS_MESSAGES
         sensor_msgs
         std_msgs
+        sensor_msgs
         )
 
 # dynamic reconfigure

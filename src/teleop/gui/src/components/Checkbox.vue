@@ -1,10 +1,19 @@
 <template>
-  <div class="wrap-button">
-    <button :class="[color]" @click="toggleAndEmit()">
-      <span class="white-text"
-        >{{ name }}: {{ active ? "\u2611" : "\u2610" }}</span
-      >
-    </button>
+  <div>
+    <div v-if="!disabled" class="wrap-button">
+      <button :class="[color]" @click="toggleAndEmit()">
+        <span class="white-text"
+          >{{ name }}: {{ active ? "\u2611" : "\u2610" }}</span
+        >
+      </button>
+    </div>
+    <div v-else class="wrap-button button-disabled">
+      <button :class="[color]">
+        <span class="white-text"
+          >{{ name }}: {{ active ? "\u2611" : "\u2610" }}</span
+        >
+      </button>
+    </div>
   </div>
 </template>
 
@@ -13,19 +22,24 @@ export default {
   props: {
     name: {
       type: String,
-      required: true,
+      required: true
     },
+    disabled: {
+      type: Boolean,
+      default: false,
+      required: false
+    }
   },
   data() {
     return {
-      active: false,
+      active: false
     };
   },
 
   computed: {
     color: function () {
       return this.active ? "green" : "red";
-    },
+    }
   },
 
   methods: {
@@ -36,8 +50,8 @@ export default {
     toggleAndEmit: function () {
       this.toggle();
       this.$emit("toggle", this.active);
-    },
-  },
+    }
+  }
 };
 </script>
 
@@ -46,6 +60,10 @@ export default {
   display: flex;
   align-items: center;
   padding: 1px;
+}
+
+.button-disabled {
+  opacity: 0.5;
 }
 
 .green {
