@@ -1,11 +1,12 @@
 <launch>
     <arg name="run_perception" default="true"/>
+    <arg name="run_visual_odom" default="false"/>
 
     <!-- ZED wrapper node -->
     <node if="$(arg run_perception)"
           name="zed_node" pkg="zed_wrapper" type="zed_wrapper_node" output="screen" required="true">
         <rosparam file="$(find mrover)/config/zed/common.yaml" command="load"/>
-        <rosparam file="$(find mrover)/config/zed/zed2i.yaml" command="load"/>
+        <rosparam file="$(find mrover)/config/zed/zed.yaml" command="load"/>
 
         <remap to="/camera/color/image_raw" from="/zed_node/rgb/image_rect_color"/>
         <remap to="/camera/depth/points" from="/zed_node/point_cloud/cloud_registered"/>
@@ -17,14 +18,32 @@
           args="0 0 0 0 0 0 base_link zed_mount_link 100"/>
 
     <!-- Load ZED URDF -->
-    <param name="zed2i_description" command="$(find xacro)/xacro '$(find zed_wrapper)/urdf/zed_descr.urdf.xacro'
-                        camera_name:=zed2i
-                        camera_model:=zed2i
+    <param name="zed_description" command="$(find xacro)/xacro '$(find zed_wrapper)/urdf/zed_descr.urdf.xacro'
+                        camera_name:=zed
+                        camera_model:=zed
                         base_frame:=base_link"/>
 
     <!-- ZED URDF publisher -->
-    <node name="zed2i_state_publisher" pkg="robot_state_publisher" type="robot_state_publisher" output="screen"
+    <node name="zed_state_publisher" pkg="robot_state_publisher" type="robot_state_publisher" output="screen"
           required="true">
-        <remap from="robot_description" to="zed2i_description"/>
+        <remap from="robot_description" to="zed_description"/>
+    </node>
+
+    <!-- rtabmap visual odometry -->
+    <node if="$(arg run_visual_odom)" name="stereo_odometry" pkg="rtabmap_ros" type="stereo_odometry" output="screen">
+      <remap from="/left/image_rect" to="/zed_node/left/image_rect_color"/>
+      <remap from="/left/camera_info" to="/zed_node/left/camera_info"/>
+      <!-- swapped to gray to fit the documentation's description of "mono" -->
+      <remap from="/right/image_rect" to="/zed_node/right/image_rect_color"/>
+      <remap from="/right/camera_info" to="/zed_node/right/camera_info"/>
+
+      <param name="Vis/InlierDistance" type="string" value="0.1"/>
+      <param name="Vis/MinInliers" type="string" value="20"/>
+      <param name="GFTT/MinDistance" type="string" value="7"/>
+
+      <param name="frame_id" type="string" value="base_link" />
+      <param name="odom_frame_id" type="string" value="odom" />
+
+      <param name="publish_tf" type="bool" value="true" />
     </node>
 </launch>
