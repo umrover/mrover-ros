@@ -135,7 +135,7 @@ FiducialsNode::FiducialsNode() : mNh(), mPnh("~"), mIt(mNh), mTfListener(mTfBuff
     mPnh.param<std::string>("ignore_fiducials", str, "");
     handleIgnoreString(str);
 
-    mImgPub = mIt.advertise("fiducial_images", 1);
+    mImgPub = mIt.advertise("tag_detection", 1);
     mDictionary = cv::aruco::getPredefinedDictionary(dicNo);
 
     mImgSub = mIt.subscribe("camera/color/image_raw", 1, &FiducialsNode::imageCallback, this);
