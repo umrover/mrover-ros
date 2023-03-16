@@ -2,6 +2,9 @@
 
 #include "filter.hpp"
 
+constexpr size_t IMAGE_WIDTH_WARN_SIZE = 640;
+constexpr size_t IMAGE_HEIGHT_WARN_SIZE = 480;
+
 /**
  * Detect tags from raw image using OpenCV and calculate their screen space centers.
  * Tag pose information relative to the camera in 3D space is filled in when we receive point cloud data.
@@ -14,7 +17,7 @@ void FiducialsNode::imageCallback(sensor_msgs::ImageConstPtr const& msg) {
     bool isInSim = false;
     mNh.getParam("use_sim_time", isInSim);
 
-    if (!isInSim && (msg->width <= 640 || msg->height <= 480)) {
+    if (!isInSim && (msg->width <= IMAGE_WIDTH_WARN_SIZE || msg->height <= IMAGE_HEIGHT_WARN_SIZE)) {
         ROS_WARN("Input image is below 640x480 resolution. Tag detection may be poor");
     }
 
