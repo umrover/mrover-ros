@@ -54,10 +54,10 @@
       <AutonRoverMap :odom="odom" />
     </div>
     <div v-if="!stuck_status" class="stuck not-stuck">
-      <h1>Rover Not Stuck</h1>
+      <h1>Nominal Conditions</h1>
     </div>
     <div v-else class="stuck rover-stuck">
-      <h1>Rover Stuck</h1>
+      <h1>Obstruction Detected</h1>
     </div>
     <div class="box waypoints light-bg">
       <AutonWaypointEditor
@@ -307,7 +307,6 @@ export default {
   background-color: lightcoral;
   font-size: 60px;
   text-align: center;
-  
 }
 
 .not-stuck {
@@ -317,8 +316,6 @@ export default {
   background-color: yellowgreen;
   font-size: 60px;
   text-align: center;
-  
-
 }
 
 .light-bg {
