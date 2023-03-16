@@ -108,7 +108,7 @@ def main():
         # partition data into different sensors, converting calibration data from float to int
         # if the indices of data don't exist, then skip this message
         try:
-            orientation_data = data[:4]
+            imu_orientation_data = data[:4]
             accel_data = data[4:7]
             gyro_data = data[7:10]
             mag_data = data[10:13]
@@ -119,9 +119,11 @@ def main():
             rospy.logerr("incomplete msg")
             continue
 
-        # rotate the quaternion and mag vector by 90 degrees about the Z axis to convert it to ENU frame
-        offset_quat = quaternion_about_axis(np.pi / 2, [0, 0, 1])
-        enu_orientation = quaternion_multiply(offset_quat, orientation_data)
+        # rotate the imu orientation by 90 degrees about the Z axis to convert it to ENU frame
+        enu_offset_quat = quaternion_about_axis(np.pi / 2, [0, 0, 1])
+        enu_imu_orientation = quaternion_multiply(enu_offset_quat, imu_orientation_data)
+
+        # similarly rotate the magnetometer vector into the ENU frame
         R = rotation_matrix(np.pi / 2, [0, 0, 1])
         enu_mag_vec = R @ np.array(mag_data)
 
@@ -136,7 +138,7 @@ def main():
             header=header,
             imu=Imu(
                 header=header,
-                orientation=Quaternion(*enu_orientation),
+                orientation=Quaternion(*enu_imu_orientation),
                 linear_acceleration=Vector3(*accel_data),
                 angular_velocity=Vector3(*gyro_data),
                 orientation_covariance=orientation_covariance.flatten().tolist(),
