@@ -150,31 +150,6 @@ def send(device=0, host="10.0.0.7", port=5001, bitrate=4000000, width=1280, heig
     cap_send.release()
     out_send.release()
 
-'''
-def on_press(key):  # keyboard keypress event handler
-    global lk
-    try:
-        k = key.char  # single-char keys
-    except:
-        k = key.name  # other keys
-    numlist = [str(n) for n in list(range(10))]
-    if k in numlist:
-        print("Controlling /dev/video" + k)
-    if lk in numlist:
-        if k in ["q"]:
-            stream_manager(s, int(lk), 0)
-        if k in ["b"]:
-            stream_manager(s, int(lk), 1)
-        if k in ["l"]:
-            stream_manager(s, int(lk), 2)
-        if k in ["m"]:
-            stream_manager(s, int(lk), 3)
-        if k in ["h"]:
-            stream_manager(s, int(lk), 4)
-        if k in ["f"]:
-            stream_manager(s, int(lk), 5)
-    lk = k
-'''
 
 if __name__ == "__main__":
     '''
