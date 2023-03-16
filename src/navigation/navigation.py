@@ -9,11 +9,15 @@ import smach
 import smach_ros
 from context import Context
 from gate import GateTraverseState, GateTraverseStateTransitions
-from single_fiducial import SingleFiducialState, SingleFiducialStateTransitions
-from state import DoneState, DoneStateTransitions
+from approach_post import ApproachPostState, ApproachPostStateTransitions
+from state import DoneState, DoneStateTransitions, OffState, OffStateTransitions
 from waypoint import WaypointState, WaypointStateTransitions
 from search import SearchState, SearchStateTransitions
+<<<<<<< HEAD
 from drive import collector
+=======
+from partial_gate import PartialGateState, PartialGateStateTransitions
+>>>>>>> master
 
 
 class Navigation(threading.Thread):
@@ -31,19 +35,26 @@ class Navigation(threading.Thread):
         self.sis.start()
         with self.state_machine:
             self.state_machine.add(
+                "OffState", OffState(self.context), transitions=self.get_transitions(OffStateTransitions)
+            )
+            self.state_machine.add(
                 "DoneState", DoneState(self.context), transitions=self.get_transitions(DoneStateTransitions)
             )
             self.state_machine.add(
                 "WaypointState", WaypointState(self.context), transitions=self.get_transitions(WaypointStateTransitions)
             )
             self.state_machine.add(
-                "SingleFiducialState",
-                SingleFiducialState(self.context),
-                # The lines below are necessary because SingleFiducialState inherits from WaypointState, so WaypointState's transitions
-                # need to be registered for SingleFiducialState as well.
+                "ApproachPostState",
+                ApproachPostState(self.context),
+                # The lines below are necessary because ApproachPostState inherits from WaypointState, so WaypointState's transitions
+                # need to be registered for ApproachPostState as well.
                 transitions=dict(
+<<<<<<< HEAD
                     self.get_transitions(SingleFiducialStateTransitions),
                     **self.get_transitions(WaypointStateTransitions),
+=======
+                    self.get_transitions(ApproachPostStateTransitions), **self.get_transitions(WaypointStateTransitions)
+>>>>>>> master
                 ),
             )
             self.state_machine.add(
@@ -54,9 +65,16 @@ class Navigation(threading.Thread):
                 GateTraverseState(self.context),
                 transitions=self.get_transitions(GateTraverseStateTransitions),
             )
+            self.state_machine.add(
+                "PartialGateState",
+                PartialGateState(self.context),
+                transitions=self.get_transitions(PartialGateStateTransitions),
+            )
 
     def get_transitions(self, transitions_enum):
-        return {transition.name: transition.value for transition in transitions_enum}
+        transition_dict = {transition.name: transition.value for transition in transitions_enum}
+        transition_dict["off"] = "OffState"  # logic for switching to offstate is built into OffState
+        return transition_dict
 
     def run(self):
         self.state_machine.execute()

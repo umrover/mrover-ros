@@ -2,6 +2,7 @@ from __future__ import annotations
 from typing import ClassVar, Optional
 
 import numpy as np
+import rospy
 
 from context import Context, Environment
 from aenum import Enum, NoAlias
@@ -9,9 +10,7 @@ from state import BaseState
 from dataclasses import dataclass
 from drive import get_drive_command
 from trajectory import Trajectory
-
-STOP_THRESH = 0.2
-DRIVE_FWD_THRESH = 0.34  # 20 degrees
+from util.ros_utils import get_rosparam
 
 
 @dataclass
@@ -54,11 +53,15 @@ class SearchStateTransitions(Enum):
 
     no_fiducial = "WaypointState"
     continue_search = "SearchState"
-    found_fiducial = "SingleFiducialState"
+    found_fiducial_post = "ApproachPostState"
+    found_fiducial_gate = "PartialGateState"
     found_gate = "GateTraverseState"
 
 
 class SearchState(BaseState):
+    STOP_THRESH = get_rosparam("search/stop_thresh", 0.2)
+    DRIVE_FWD_THRESH = get_rosparam("search/drive_fwd_thresh", 0.34)  # 20 degrees
+
     def __init__(
         self,
         context: Context,
@@ -82,16 +85,12 @@ class SearchState(BaseState):
             )
 
         # continue executing this path from wherever it left off
-        print(self.traj.coordinates)
-        print(self.traj.coordinates[0])
-        print(self.traj.cur_pt)
         target_pos = self.traj.get_cur_pt()
-        print(target_pos)
         cmd_vel, arrived = get_drive_command(
             target_pos,
             self.context.rover.get_pose(),
-            STOP_THRESH,
-            DRIVE_FWD_THRESH,
+            self.STOP_THRESH,
+            self.DRIVE_FWD_THRESH,
         )
         if arrived:
             # if we finish the spiral without seeing the fiducial, move on with course
@@ -103,7 +102,10 @@ class SearchState(BaseState):
         # if we see the fiduicial or gate, go to either fiducial or gate state
         if self.context.env.current_gate() is not None:
             return SearchStateTransitions.found_gate.name  # type: ignore
-        elif self.context.env.current_fid_pos() is not None:
-            return SearchStateTransitions.found_fiducial.name  # type: ignore
-
+        elif self.context.env.current_fid_pos() is not None and self.context.course.look_for_post():
+            return SearchStateTransitions.found_fiducial_post.name  # type: ignore
+        elif (
+            self.context.env.current_fid_pos() is not None or self.context.env.other_gate_fid_pos() is not None
+        ) and self.context.course.look_for_gate():
+            return SearchStateTransitions.found_fiducial_gate.name  # type: ignore
         return SearchStateTransitions.continue_search.name  # type: ignore
