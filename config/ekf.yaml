@@ -1,8 +1,10 @@
 # EKF parameters to be used on the real rover
 # TODO: update with correctly tuned values
 global_ekf:
-  # whether to use the Dilution of Precision (DoP) covariance estimate from the GPS message,
-  # or to replace it with the following configured covariance matrix
+  # The GPS driver will estimate covariance using Dilution of Precision (DoP)
+  # and publish that covariance matrix in the GPS message.
+  # This option controls whether to use that DoP covariance matrix, or to 
+  # replace it with the configured gps_covariane matrix below
   use_gps_dop_covariance: false
   gps_covariance: [[2, 0, 0],
                    [0, 2, 0],

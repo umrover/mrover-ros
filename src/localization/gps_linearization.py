@@ -85,7 +85,6 @@ class GPSLinearization:
 
         if self.publish_tf:
             if self.use_odom:
-                # TODO: fix naming conventions of transforms per Ashwins instructions
                 # Get the odom to rover transform from the TF tree
                 rover_in_odom = SE3.from_tf_tree(self.tf_buffer, self.odom_frame, self.rover_frame)
                 rover_to_odom = rover_in_odom.transform_matrix()
