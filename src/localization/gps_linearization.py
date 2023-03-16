@@ -94,7 +94,7 @@ class GPSLinearization:
                 odom_to_map = rover_to_map @ np.linalg.inv(rover_to_odom)
                 odom_in_map = SE3.from_transform_matrix(odom_to_map)
                 pose_out = odom_in_map
-                child_frame = self.rover_frame
+                child_frame = self.odom_frame
             else:
                 # publish directly as map->base_link
                 pose_out = rover_in_map
