@@ -105,11 +105,11 @@ void FiducialsNode::handleIgnoreString(std::string const& str) {
 bool FiducialsNode::enableDetectionsCallback(std_srvs::SetBool::Request& req, std_srvs::SetBool::Response& res) {
     mEnableDetections = req.data;
     if (mEnableDetections) {
-        res.message = "Enabled aruco detections.";
-        ROS_INFO("Enabled aruco detections.");
+        res.message = "Enabled tag detections.";
+        ROS_INFO("Enabled tag detections.");
     } else {
-        res.message = "Disabled aruco detections.";
-        ROS_INFO("Disabled aruco detections.");
+        res.message = "Disabled tag detections.";
+        ROS_INFO("Disabled tag detections.");
     }
 
     res.success = true;
@@ -119,14 +119,15 @@ bool FiducialsNode::enableDetectionsCallback(std_srvs::SetBool::Request& req, st
 FiducialsNode::FiducialsNode() : mNh(), mPnh("~"), mIt(mNh), mTfListener(mTfBuffer) {
     mDetectorParams = new cv::aruco::DetectorParameters();
     auto defaultDetectorParams = cv::aruco::DetectorParameters::create();
+    int dictionaryNumber;
 
-    int dicNo;
-    mPnh.param<bool>("use_odom", mUseOdom, false);
-    mPnh.param<std::string>("odom_frame_id", mOdomFrameId, "odom");
-    mPnh.param<std::string>("map_frame_id", mMapFrameId, "map");
-    mPnh.param<std::string>("base_link_frame_id", mBaseLinkFrameId, "base_link");
+    mNh.param<bool>("use_odom", mUseOdom, false);
+    mNh.param<std::string>("odom_frame", mOdomFrameId, "odom");
+    mNh.param<std::string>("map_frame", mMapFrameId, "map");
+    mNh.param<std::string>("rover_frame", mBaseLinkFrameId, "base_link");
+
     mPnh.param<bool>("publish_images", mPublishImages, true);
-    mPnh.param<int>("dictionary", dicNo, 0);
+    mPnh.param<int>("dictionary", dictionaryNumber, 0);
     mPnh.param<bool>("publish_fiducial_tf", mPublishFiducialTf, true);
     mPnh.param<bool>("verbose", mIsVerbose, false);
 
@@ -136,7 +137,7 @@ FiducialsNode::FiducialsNode() : mNh(), mPnh("~"), mIt(mNh), mTfListener(mTfBuff
     handleIgnoreString(str);
 
     mImgPub = mIt.advertise("tag_detection", 1);
-    mDictionary = cv::aruco::getPredefinedDictionary(dicNo);
+    mDictionary = cv::aruco::getPredefinedDictionary(dictionaryNumber);
 
     mImgSub = mIt.subscribe("camera/color/image_raw", 1, &FiducialsNode::imageCallback, this);
     mPcSub = mNh.subscribe("camera/depth/points", 1, &FiducialsNode::pointCloudCallback, this);
@@ -206,11 +207,11 @@ FiducialsNode::FiducialsNode() : mNh(), mPnh("~"), mIt(mNh), mTfListener(mTfBuff
                        mDetectorParams->polygonalApproxAccuracyRate,
                        defaultDetectorParams->polygonalApproxAccuracyRate);
 
-    ROS_INFO("Aruco detection ready");
+    ROS_INFO("Tag detection ready");
 }
 
 int main(int argc, char** argv) {
-    ros::init(argc, argv, "aruco_detect");
+    ros::init(argc, argv, "tag_detector");
 
     [[maybe_unused]] auto node = std::make_unique<FiducialsNode>();
 

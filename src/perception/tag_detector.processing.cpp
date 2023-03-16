@@ -11,6 +11,13 @@
 void FiducialsNode::imageCallback(sensor_msgs::ImageConstPtr const& msg) {
     if (!mEnableDetections) return;
 
+    bool isInSim = false;
+    mNh.getParam("use_sim_time", isInSim);
+
+    if (!isInSim && (msg->width <= 640 || msg->height <= 480)) {
+        ROS_WARN("Input image is below 640x480 resolution. Tag detection may be poor");
+    }
+
     ROS_DEBUG("Got image %d", msg->header.seq);
 
     try {
