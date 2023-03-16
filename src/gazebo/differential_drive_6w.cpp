@@ -149,7 +149,7 @@ namespace gazebo {
         }
         if (!mNode->getParam("rover_frame", mRoverFrameName)) {
             ROS_WARN("No rover frame provided, defaulting to \"base_link\"");
-            mWorldFrameName = "base_link";
+            mRoverFrameName = "base_link";
         }
 
         // ROS: Subscribe to the velocity command topic (usually "cmd_vel")
