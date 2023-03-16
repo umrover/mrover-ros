@@ -1,16 +1,14 @@
 from typing import List
 
 import numpy as np
+import rospy
 
 import tf2_ros
 from context import Context, Environment
 from drive import get_drive_command
 from aenum import Enum, NoAlias
 from state import BaseState
-
-STOP_THRESH = 0.5
-DRIVE_FWD_THRESH = 0.34  # 20 degrees
-NO_FIDUCIAL = -1
+from util.ros_utils import get_rosparam
 
 
 class WaypointStateTransitions(Enum):
@@ -24,6 +22,10 @@ class WaypointStateTransitions(Enum):
 
 
 class WaypointState(BaseState):
+    STOP_THRESH = get_rosparam("waypoint/stop_thresh", 0.5)
+    DRIVE_FWD_THRESH = get_rosparam("waypoint/drive_fwd_thresh", 0.34)  # 20 degrees
+    NO_FIDUCIAL = get_rosparam("waypoint/no_fiducial", -1)
+
     def __init__(
         self,
         context: Context,
@@ -70,8 +72,8 @@ class WaypointState(BaseState):
             cmd_vel, arrived = get_drive_command(
                 waypoint_pos,
                 self.context.rover.get_pose(),
-                STOP_THRESH,
-                DRIVE_FWD_THRESH,
+                self.STOP_THRESH,
+                self.DRIVE_FWD_THRESH,
             )
             if arrived:
                 if not self.context.course.look_for_gate() and not self.context.course.look_for_post():
