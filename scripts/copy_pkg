@@ -1,0 +1,28 @@
+#!/bin/bash
+# copy_pkg
+
+# Stop on errors
+# See https://vaneyckt.io/posts/safer_bash_scripts_with_set_euxo_pipefail/
+set -Eeuo pipefail
+set -x
+
+usage() {
+  echo "Usage: $0 (mrover_arm_in|?|?|?)"
+}
+
+if [ $# -ne 1 ]; then
+  usage
+  exit 1
+fi
+
+# Parse argument.  $1 is the first argument
+case $1 in
+  "mrover_arm_in")
+    if [ -f var/insta485.sqlite3 ]; then
+      echo "Error: pkg mrover_arm ****** exists"
+      exit 1
+    fi
+    cp
+    ;;
+
+esac
