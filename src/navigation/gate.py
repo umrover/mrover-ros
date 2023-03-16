@@ -12,6 +12,7 @@ from trajectory import Trajectory
 from dataclasses import dataclass
 from drive import get_drive_command
 from util.np_utils import normalized, perpendicular_2d
+from util.ros_utils import get_rosparam
 from shapely.geometry import LineString
 
 STOP_THRESH = 0.2

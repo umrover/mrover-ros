@@ -6,7 +6,8 @@ from util.SE3 import SE3
 from util.SO3 import SO3
 from math import pi
 from util.np_utils import angle_to_rotate
-#from navigation.gate import GateTrajectory
+
+# from navigation.gate import GateTrajectory
 from tf.transformations import quaternion_from_euler
 import rospy
 
@@ -93,7 +94,7 @@ class TestDrive(unittest.TestCase):
     #     self.assertTrue(self.traj.coordinates, checkCoord)
 
     #     """
-    #     #Test 2 
+    #     #Test 2
     #     The path should contain, the closest approach point, the center, and the victory point
     #     """
     #     rover = np.array([1, -0.5, 0])
@@ -102,10 +103,10 @@ class TestDrive(unittest.TestCase):
     #     self.assertTrue(self.traj.coordinates, checkCoord)
 
     #     """
-    #     #Test 3 
+    #     #Test 3
     #     The path should contain all the points. This should be the longest path.
     #     The path has the closest prep point, closest approach point, the center,
-    #     and the victory point. 
+    #     and the victory point.
     #     """
     #     rover = np.array([1, -3, 0])
     #     self.traj = GateTrajectory.spider_gate_trajectory(APPROACH_DISTANCE, gate, rover)
