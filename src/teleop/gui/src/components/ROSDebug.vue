@@ -10,6 +10,7 @@
       />
       <h1>Debug Tools</h1>
       <div class="spacer"></div>
+      <CommReadout class="comm"></CommReadout>
     </div>
 
     <div class="pages">
@@ -25,12 +26,14 @@
 
 <script>
 import MenuButton from "./MenuButton.vue";
+import CommReadout from "./CommReadout.vue";
 
 export default {
   name: "Debug",
 
   components: {
     MenuButton,
+    CommReadout
   },
 };
 </script>

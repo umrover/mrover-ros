@@ -11,6 +11,7 @@
         />
         <h1>ROS Echo</h1>
         <div class="spacer"></div>
+        <CommReadout class="comm"></CommReadout>
       </div>
 
       <div class="box pages">
@@ -71,9 +72,14 @@
 <script>
 import ROSLIB from "roslib";
 import Vue from "vue";
+import CommReadout from "./CommReadout.vue";
 
 export default {
   name: "ROSEcho",
+  components : {
+    CommReadout
+  },
+
   data() {
     return {
       presets: [],

@@ -1,5 +1,6 @@
 <template>
   <div>
+    <CommReadout class="comm"></CommReadout>
     <DriveControls></DriveControls>
     <ArmControls></ArmControls>
     <MastGimbalControls></MastGimbalControls>
@@ -18,6 +19,7 @@ import ArmControls from "./ArmControls.vue";
 import MastGimbalControls from "./MastGimbalControls.vue";
 import JointStateTable from "./JointStateTable.vue";
 import MoteusStateTable from "./MoteusStateTable.vue";
+import CommReadout from "./CommReadout.vue";
 
 export default {
   components: {
@@ -26,6 +28,7 @@ export default {
     JointStateTable,
     MastGimbalControls,
     MoteusStateTable,
+    CommReadout
   },
   data() {
     return {

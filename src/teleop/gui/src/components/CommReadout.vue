@@ -1,6 +1,6 @@
 <template>
     <div class="wrap">
-      <span>TX: {{tx}} RX: {{rx}}</span>
+      <span>TX: {{ parseFloat(tx).toFixed(2) }} RX: {{ parseFloat(rx).toFixed(2) }}</span>
     </div>
   </template>
   
@@ -11,8 +11,8 @@ import ROSLIB from 'roslib/src/RosLib';
     data() {
         return {
             comm_sub: null,
-            tx: "0.00",
-            rx: "0.00"
+            tx: 0.0,
+            rx: 0.0
         };
     },
 
@@ -24,8 +24,8 @@ import ROSLIB from 'roslib/src/RosLib';
         });
 
         this.comm_sub.subscribe((msg) => {
-            this.tx = msg.tx.toFixed(2);  //prints out to 2 decimals
-            this.rx = msg.rx.toFixed(2);
+            this.tx = msg.tx;
+            this.rx = msg.rx;
         });
     }
   }
