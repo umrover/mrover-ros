@@ -110,7 +110,7 @@ export default {
       name: "/joint_lock",
       messageType: "mrover/JointLock"
     });
-    this.slowmode_pub = new ROSLIB.Topic({
+    this.slow_mode_pub = new ROSLIB.Topic({
       ros: this.$ros,
       name: "/slow_mode",
       messageType: "std_msgs/Bool"
@@ -161,8 +161,8 @@ export default {
       const slowData = {
         data: this.slow_mode
       };
-      var slowmodeMsg = new ROSLIB.Message(slowData);
-      this.slowmode_pub.publish(slowmodeMsg);
+      var slowModeMsg = new ROSLIB.Message(slowData);
+      this.slow_mode_pub.publish(slowModeMsg);
     },
     publishJoystickMessage: function (axes, buttons) {
       const joystickData = {

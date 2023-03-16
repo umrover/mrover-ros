@@ -7,7 +7,7 @@ teleop:
       slow_mode_multiplier: 0.5
     joint_b:
       multiplier: 1
-      slow_mode_multiplier: 0.5
+      slow_mode_multiplier: 1
     joint_c:
       multiplier: -1
       slow_mode_multiplier: -0.5
@@ -25,7 +25,7 @@ teleop:
       slow_mode_multiplier: 0.5
     gripper:
       multiplier: 1
-      slow_mode_multiplier: 0.5
+      slow_mode_multiplier: 1
       
   sa_controls:
     sa_joint_1:
