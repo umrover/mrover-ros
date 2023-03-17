@@ -7,4 +7,3 @@ gps_linearization:
   reference_point_latitude: 42.2
   reference_point_longitude: -83.7
   reference_point_altitude: 224
-  publish_tf: false
