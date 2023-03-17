@@ -50,7 +50,7 @@ global_ekf:
   # imu0: imu/imu_only
 
   # linearized GPS and IMU fused orientation
-  pose0: gps/pose
+  pose0: linearized_pose
 
   # magnetometer yaw estimate
   # pose1: imu/mag_pose

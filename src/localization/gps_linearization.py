@@ -60,7 +60,7 @@ class GPSLinearization:
         if np.any(np.isnan([msg.latitude, msg.longitude, msg.altitude])):
             return
 
-        if self.use_dop_covariance:
+        if not self.use_dop_covariance:
             msg.position_covariance = self.config_gps_covariance
 
         self.last_gps_msg = msg
