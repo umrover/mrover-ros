@@ -32,7 +32,7 @@ class GPSLinearization:
 
     # covariance config
     use_dop_covariance: bool
-    config_gps_covariance: np.ndarray
+    config_gps_covariance: List
 
     def __init__(self):
         # read required parameters, if they don't exist an error will be thrown
@@ -50,16 +50,44 @@ class GPSLinearization:
         rospy.Subscriber("imu/data", ImuAndMag, self.imu_callback)
         self.pose_publisher = rospy.Publisher("linearized_pose", PoseWithCovarianceStamped, queue_size=1)
 
+    def gps_callback(self, msg: NavSatFix):
+        """
+        Callback function that receives GPS messages, assigns their covariance matrix,
+        and then publishes the linearized pose.
+
+        :param msg: The NavSatFix message containing GPS data that was just received
+        """
+        if np.any(np.isnan([msg.latitude, msg.longitude, msg.altitude])):
+            return
+
+        if self.use_dop_covariance:
+            msg.position_covariance = self.config_gps_covariance
+
+        self.last_gps_msg = msg
+
+        if self.last_imu_msg is not None:
+            self.publish_pose()
+
+    def imu_callback(self, msg: ImuAndMag):
+        """
+        Callback function that receives IMU messages and publishes the linearized pose.
+
+        :param msg: The Imu message containing IMU data that was just received
+        """
+        self.last_imu_msg = msg
+
+        if self.last_gps_msg is not None:
+            self.publish_pose()
 
     @staticmethod
-    def get_linearized_pose_in_map(gps_msg: NavSatFix, imu_msg: ImuAndMag, ref_coord: np.ndarray) -> Tuple[SE3, np.ndarray]:
+    def get_linearized_pose_in_map(
+        gps_msg: NavSatFix, imu_msg: ImuAndMag, ref_coord: np.ndarray
+    ) -> Tuple[SE3, np.ndarray]:
         """
         TODO
         """
         # linearize GPS coordinates into cartesian
-        cartesian = np.array(
-            geodetic2enu(gps_msg.latitude, gps_msg.longitude, gps_msg.altitude, *ref_coord, deg=True)
-        )
+        cartesian = np.array(geodetic2enu(gps_msg.latitude, gps_msg.longitude, gps_msg.altitude, *ref_coord, deg=True))
 
         # ignore Z
         cartesian[2] = 0
@@ -75,7 +103,6 @@ class GPSLinearization:
         covariance[3:, 3:] = np.array([imu_msg.imu.orientation_covariance]).reshape(3, 3)
 
         return pose, covariance
-
 
     def publish_pose(self):
         """
@@ -96,37 +123,6 @@ class GPSLinearization:
             ),
         )
         self.pose_publisher.publish(pose_msg)
-
-
-    def gps_callback(self, msg: NavSatFix):
-        """
-        Callback function that receives GPS messages, assigns their covariance matrix,
-        and then publishes the linearized pose.
-
-        :param msg: The NavSatFix message containing GPS data that was just received
-        """
-        if np.any(np.isnan([msg.latitude, msg.longitude, msg.altitude])):
-            return
-
-        if self.use_dop_covariance:
-            msg.position_covariance = self.config_gps_covariance
-        
-        self.last_gps_msg = msg
-
-        if self.last_imu_msg is not None:
-            self.publish_pose()
-
-
-    def imu_callback(self, msg: ImuAndMag):
-        """
-        Callback function that receives IMU messages and publishes the linearized pose.
-
-        :param msg: The Imu message containing IMU data that was just received
-        """
-        self.last_imu_msg = msg
-        
-        if self.last_gps_msg is not None:
-            self.publish_pose()
 
 
 def main():

@@ -7,6 +7,8 @@
 <launch>
     <arg name="run_perception" default="true" />
     <arg name="sim" default="false" />
+    <arg name="use_ekf" default="true" />
+    <arg name="ekf_start_delay" default="0" />
 
     <!--
       ==========
@@ -34,10 +36,13 @@
   <rosparam unless="$(arg sim)" command="load" file="$(find mrover)/config/ekf.yaml" />
 
   <!-- global EKF -->
-  <arg name="ekf_start_delay" default="0" />
-  <node pkg="robot_localization" type="ekf_localization_node" name="global_ekf" clear_params="true" launch-prefix="bash -c 'sleep $(arg ekf_start_delay); $0 $@'" >
+  <node if="$(arg use_ekf)" pkg="robot_localization" type="ekf_localization_node" name="global_ekf"
+        clear_params="true" launch-prefix="bash -c 'sleep $(arg ekf_start_delay); $0 $@'" >
     <remap from="odometry/filtered" to="global_ekf/odometry" />
   </node>
+
+  <!-- passthrough filter to replace EKF in datapath -->
+  <node unless="$(arg use_ekf)" pkg="mrover" type="passthrough_filter.py" name="passthrough_filter" />
 
   <!-- node to linearize GPS from geodetic to ENU cartesian coords -->
   <node name="gps_linearization" pkg="mrover" type="gps_linearization.py" output="screen" />
