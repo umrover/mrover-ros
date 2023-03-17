@@ -35,7 +35,6 @@ class WatchdogBase:
     def evaluate_stuck(self):
         pass
 
- 
 
 # Each child class will have a different is_stuck function which evaluate whether the rover is stuck differently
 # Each child class will have its own history of data objects

@@ -8,16 +8,10 @@ from util.SE3 import SE3
 from data_collection import DataManager
 from util.np_utils import angle_to_rotate
 from util.np_utils import angle_to_rotate
-<<<<<<< HEAD
 
 rospy.logerr(f"Make DataCollector in drive.py")
 collector = DataManager()
-MAX_DRIVING_EFFORT = 1
-MIN_DRIVING_EFFORT = -1
-TURNING_P = 10.0
-=======
 from util.ros_utils import get_rosparam
->>>>>>> master
 
 
 def get_drive_command(

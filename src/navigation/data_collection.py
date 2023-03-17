@@ -2,6 +2,7 @@ import numpy as np
 import pandas as pd
 import rospy
 from sensor_msgs.msg import JointState
+from mrover.msg import MotorsStatus
 from std_msgs.msg import Bool
 import datetime
 from util.SE3 import SE3
@@ -16,14 +17,12 @@ AVERAGE_LEN = 101
 DELTAT_THRESHOLD = 0.001
 
 
-
 @dataclass
 class DataManager:
     _df: DataFrame
     collector_context = ""
     collecting = True
     row = 0
-
 
     # Initializes the first _cur_row dataframe and call the subscribers
     # Initialize the dictionary with the Rover's first position, rotation, and timestamp
@@ -54,10 +53,10 @@ class DataManager:
         self._avg_df = DataFrame(self.dict)
 
         # Remove after debugging
-        self._df_all = DataFrame(self.dict)
+        # self._df_all = DataFrame(self.dict)
 
         # rospy.logerr(f"Ran __init__ in data_collection.py")
-        rospy.Subscriber("/drive_vel_data", JointState, self.make_esw_dataframe)
+        rospy.Subscriber("/drive_status", MotorsStatus, self.make_esw_dataframe)
         rospy.Subscriber("/rover_stuck", Bool, self.set_collecting)
 
     # Query the tf tree to get odometry. Calculate the linear and angular velocities with this data
@@ -121,13 +120,13 @@ class DataManager:
     def make_esw_dataframe(self, esw_data):
         if not self.collecting:
             return
-
         self._cur_row = self._cur_row.copy()
         self._cur_row["wheel_names"] = [np.array(esw_data.name[0:5])]
-        self._cur_row["wheel_effort"] = [np.array(esw_data.effort[0:5])]
-        self._cur_row["wheel_vel"] = [np.array(esw_data.velocity[0:5])]
+        self._cur_row["wheel_effort"] = [np.array(esw_data.joint_states.effort[0:5])]
+        self._cur_row["wheel_vel"] = [np.array(esw_data.join_states.velocity[0:5])]
+
         if self.update_tf_vel():
-            self._df = pd.concat([self._df_all, DataFrame(self._cur_row)], axis=0)
+            # self._df = pd.concat([self._df_all, DataFrame(self._cur_row)], axis=0)
             if len(self._avg_df) == AVERAGE_LEN:
                 # average
                 self._df = pd.concat([self._df, self.average()], axis=0)
@@ -150,7 +149,7 @@ class DataManager:
             # rospy.logerr(f"DF ALL LENGTH: {len(self._df_all)}")
             # rospy.logerr(f"DF LENGTH: {len(self._df)}")
             # Remove after debugging
-            self._df_all = pd.concat([self._df_all, DataFrame(self._cur_row)], axis=0)
+            # self._df_all = pd.concat([self._df_all, DataFrame(self._cur_row)], axis=0)
             if len(self._avg_df) == AVERAGE_LEN:
                 # average
                 self._df = pd.concat([self._df, self.average()], axis=0)
@@ -184,7 +183,7 @@ class DataManager:
         self._df.to_csv(file)
 
         # Remove after debugging averaging
-        self._df_all.to_csv(file2)
+        # self._df_all.to_csv(file2)
 
     def set_context(self, context_in):
         self.collector_context = context_in

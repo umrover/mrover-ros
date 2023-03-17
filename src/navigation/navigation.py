@@ -13,11 +13,8 @@ from approach_post import ApproachPostState, ApproachPostStateTransitions
 from state import DoneState, DoneStateTransitions, OffState, OffStateTransitions
 from waypoint import WaypointState, WaypointStateTransitions
 from search import SearchState, SearchStateTransitions
-<<<<<<< HEAD
 from drive import collector
-=======
 from partial_gate import PartialGateState, PartialGateStateTransitions
->>>>>>> master
 
 
 class Navigation(threading.Thread):
@@ -49,12 +46,7 @@ class Navigation(threading.Thread):
                 # The lines below are necessary because ApproachPostState inherits from WaypointState, so WaypointState's transitions
                 # need to be registered for ApproachPostState as well.
                 transitions=dict(
-<<<<<<< HEAD
-                    self.get_transitions(SingleFiducialStateTransitions),
-                    **self.get_transitions(WaypointStateTransitions),
-=======
                     self.get_transitions(ApproachPostStateTransitions), **self.get_transitions(WaypointStateTransitions)
->>>>>>> master
                 ),
             )
             self.state_machine.add(
