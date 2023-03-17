@@ -190,23 +190,23 @@ brushless:
     max_torque: 0.3
     controllers:
       FrontLeft:
-        id: 3
+        id: 5
         bus: 1
         multiplier: -1
       FrontRight:
-        id: 0
+        id: 4
         bus: 2
         multiplier: 1
       MiddleLeft:
-        id: 4
+        id: 1
         bus: 1
         multiplier: -1
       MiddleRight:
-        id: 1
+        id: 3
         bus: 2
         multiplier: 1
       BackLeft:
-        id: 5
+        id: 0
         bus: 1
         multiplier: -1
       BackRight:
