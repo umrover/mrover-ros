@@ -6,6 +6,10 @@
 set -Eeuo pipefail
 set -x
 
+if [ ${PWD##*/} != "mrover" ]; then
+  echo "Error: script should be run only from the mrover pkg"
+fi
+
 usage() {
   echo "Usage: $0 (mrover_arm_in|?|?|?)"
 }
@@ -18,11 +22,39 @@ fi
 # Parse argument.  $1 is the first argument
 case $1 in
   "mrover_arm_in")
-    if [ -f var/insta485.sqlite3 ]; then
-      echo "Error: pkg mrover_arm ****** exists"
+    if [ ! -d ../mrover_arm ]; then
+      echo "Error: mrover_arm package doesn't exist in catkin_ws/src/"
       exit 1
     fi
-    cp
+    
+    cp -r ../mrover_arm src/teleop/mrover_arm
+    ;;
+
+  "mrover_arm_out")
+    if [ ! -d src/teleop/mrover_arm ]; then
+      echo "Error: mrover_arm directory doesn't exist in src/teleop/"
+      exit 1
+    fi
+
+    cp -r src/teleop/mrover_arm ../mrover_arm
+    ;;
+  
+  "sa_arm_in")
+    if [ ! -d ../mrover_sa_arm ]; then
+      echo "Error: mrover_sa_arm package doesn't exist in catkin_ws/src/"
+      exit 1
+    fi
+    
+    cp -r ../mrover_sa_arm src/teleop/mrover_sa_arm
+    ;;
+  
+  "sa_arm_out")
+    if [ ! -d ../mrover_sa_arm ]; then
+      echo "Error: mrover_sa_arm directory doesn't exist in src/teleop/"
+      exit 1
+    fi
+    
+    cp -r src/teleop/mrover_sa_arm ../mrover_sa_arm
     ;;
 
 esac
