@@ -53,18 +53,37 @@ void ControllerMap::init(XmlRpc::XmlRpcValue& root) {
             root[i]["inversion"].getType() == XmlRpc::XmlRpcValue::TypeDouble) {
             controllersByName[name]->inversion = (float) static_cast<double>(root[i]["inversion"]);
         }
-        if (root[i].hasMember("limit_a") &&
-            root[i]["limit_a"].getType() == XmlRpc::XmlRpcValue::TypeBoolean) {
-            controllersByName[name]->limitAEnabled = static_cast<bool>(root[i]["limit_a"]);
+        if (root[i].hasMember("enable_limit_a") &&
+            root[i]["enable_limit_a"].getType() == XmlRpc::XmlRpcValue::TypeBoolean) {
+            controllersByName[name]->limitAEnabled = static_cast<bool>(root[i]["enable_limit_a"]);
         }
-        if (root[i].hasMember("limit_b") &&
-            root[i]["limit_b"].getType() == XmlRpc::XmlRpcValue::TypeBoolean) {
-            controllersByName[name]->limitBEnabled = static_cast<bool>(root[i]["limit_b"]);
+        if (root[i].hasMember("enable_limit_b") &&
+            root[i]["enable_limit_b"].getType() == XmlRpc::XmlRpcValue::TypeBoolean) {
+            controllersByName[name]->limitBEnabled = static_cast<bool>(root[i]["enable_limit_b"]);
         }
-        if (root[i].hasMember("limit_polarity") &&
-            root[i]["limit_polarity"].getType() == XmlRpc::XmlRpcValue::TypeBoolean) {
-            if (static_cast<bool>(root[i]["limit_polarity"])) controllersByName[name]->limitPolarity = Controller::FORWARD;
-            else controllersByName[name]->limitPolarity = Controller::REVERSED;
+        if (root[i].hasMember("active_limit_a") &&
+            root[i]["active_limit_a"].getType() == XmlRpc::XmlRpcValue::TypeBoolean) {
+            controllersByName[name]->limitAIsActiveHigh = static_cast<bool>(root[i]["active_limit_a"]);
+        }
+        if (root[i].hasMember("active_limit_b") &&
+            root[i]["active_limit_b"].getType() == XmlRpc::XmlRpcValue::TypeBoolean) {
+            controllersByName[name]->limitBIsActiveHigh = static_cast<bool>(root[i]["active_limit_b"]);
+        }
+        if (root[i].hasMember("enable_limit_b") &&
+            root[i]["enable_limit_b"].getType() == XmlRpc::XmlRpcValue::TypeBoolean) {
+            controllersByName[name]->limitBEnabled = static_cast<bool>(root[i]["enable_limit_b"]);
+        }
+        if (root[i].hasMember("counts_limit_a") &&
+            root[i]["counts_limit_a"].getType() == XmlRpc::XmlRpcValue::TypeInt) {
+            controllersByName[name]->limitAAdjustedCounts = static_cast<int>(root[i]["counts_limit_a"]);
+        }
+        if (root[i].hasMember("counts_limit_b") &&
+            root[i]["counts_limit_b"].getType() == XmlRpc::XmlRpcValue::TypeInt) {
+            controllersByName[name]->limitBAdjustedCounts = static_cast<int>(root[i]["counts_limit_b"]);
+        }
+        if (root[i].hasMember("limit_a_is_fwd") &&
+            root[i]["limit_a_is_fwd"].getType() == XmlRpc::XmlRpcValue::TypeBoolean) {
+            controllersByName[name]->limitAIsFwd = static_cast<bool>(root[i]["limit_a_is_fwd"]);
         }
         if (root[i].hasMember("calibration_vel") &&
             root[i]["calibration_vel"].getType() == XmlRpc::XmlRpcValue::TypeDouble) {

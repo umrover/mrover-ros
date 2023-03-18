@@ -72,26 +72,6 @@ bool Controller::getCalibrationStatus() const {
     return isCalibrated;
 }
 
-// REQUIRES: nothing
-// MODIFIES: nothing
-// EFFECTS: Returns true if Controller has a (one or both) limit switch(s) is enabled.
-bool Controller::getLimitSwitchEnabled() const {
-    return limitAEnabled || limitBEnabled;
-}
-
-// REQUIRES: limit_polarity_request to check
-// MODIFIES: nothing
-// EFFECTS: Returns true if Controller has the FORWARD or REVERSE limit switch enabled.
-bool Controller::getLimitSwitchEnabled(limit_polarity limit_polarity_request) const {
-    if (limit_polarity_request == FORWARD) { // FORWARD limit polarity
-        if (limitPolarity) return limitAEnabled;
-        return limitBEnabled;
-    } else { // REVERSE
-        if (limitPolarity) return limitBEnabled;
-        return limitAEnabled;
-    }
-}
-
 // REQUIRES: -1.0 <= input <= 1.0
 // MODIFIES: currentAngle. Also makes controller live if not already.
 // EFFECTS: Sends an open loop command scaled to PWM limits
@@ -166,6 +146,13 @@ float Controller::getAbsoluteEncoderValue() {
 }
 
 // REQUIRES: nothing
+// MODIFIES: nothing
+// EFFECTS: Returns true if Controller has a (one or both) limit switch(s) is enabled.
+bool Controller::getLimitSwitchEnabled() const {
+    return limitAEnabled || limitBEnabled;
+}
+
+// REQUIRES: nothing
 // MODIFIES: isLive
 // EFFECTS: If not already live,
 // configures the physical controller.
@@ -196,17 +183,35 @@ void Controller::makeLive() {
         I2C::transact(deviceAddress, motorIDRegMask | CONFIG_K_OP, CONFIG_K_WB,
                       CONFIG_K_RB, buffer, nullptr);
 
-        memcpy(buffer, UINT8_POINTER_T(&limitPolarity), sizeof(limitPolarity));
-        I2C::transact(deviceAddress, motorIDRegMask | LIMIT_POLARITY_OP, LIMIT_POLARITY_WB,
-                      LIMIT_POLARITY_RB, buffer, nullptr);
-
         memcpy(buffer, UINT8_POINTER_T(&limitAEnabled), sizeof(limitAEnabled));
-        I2C::transact(deviceAddress, motorIDRegMask | CONFIG_LIMIT_A_OP, CONFIG_LIMIT_A_WB,
-                      CONFIG_LIMIT_A_RB, buffer, nullptr);
+        I2C::transact(deviceAddress, motorIDRegMask | ENABLE_LIMIT_A_OP, ENABLE_LIMIT_A_WB,
+                      ENABLE_LIMIT_A_RB, buffer, nullptr);
 
         memcpy(buffer, UINT8_POINTER_T(&limitBEnabled), sizeof(limitBEnabled));
-        I2C::transact(deviceAddress, motorIDRegMask | CONFIG_LIMIT_B_OP, CONFIG_LIMIT_B_WB,
-                      CONFIG_LIMIT_B_RB, buffer, nullptr);
+        I2C::transact(deviceAddress, motorIDRegMask | ENABLE_LIMIT_B_OP, ENABLE_LIMIT_B_WB,
+                      ENABLE_LIMIT_B_RB, buffer, nullptr);
+
+        memcpy(buffer, UINT8_POINTER_T(&limitAIsActiveHigh), sizeof(limitAIsActiveHigh));
+        I2C::transact(deviceAddress, motorIDRegMask | ACTIVE_LIMIT_A_OP, ACTIVE_LIMIT_A_WB,
+                      ACTIVE_LIMIT_A_RB, buffer, nullptr);
+
+        memcpy(buffer, UINT8_POINTER_T(&limitBIsActiveHigh), sizeof(limitBIsActiveHigh));
+        I2C::transact(deviceAddress, motorIDRegMask | ACTIVE_LIMIT_B_OP, ACTIVE_LIMIT_B_WB,
+                      ACTIVE_LIMIT_B_RB, buffer, nullptr);
+
+        memcpy(buffer, UINT8_POINTER_T(&limitAAdjustedCounts), sizeof(limitAAdjustedCounts));
+        I2C::transact(deviceAddress, motorIDRegMask | COUNTS_LIMIT_A_OP, COUNTS_LIMIT_A_WB,
+                      COUNTS_LIMIT_A_RB, buffer, nullptr);
+
+        memcpy(buffer, UINT8_POINTER_T(&limitBAdjustedCounts), sizeof(limitBAdjustedCounts));
+        I2C::transact(deviceAddress, motorIDRegMask | COUNTS_LIMIT_B_OP, COUNTS_LIMIT_B_WB,
+                      COUNTS_LIMIT_B_RB, buffer, nullptr);
+
+
+        memcpy(buffer, UINT8_POINTER_T(&limitAIsFwd), sizeof(limitAIsFwd));
+        I2C::transact(deviceAddress, motorIDRegMask | LIMIT_A_IS_FWD_OP, LIMIT_A_IS_FWD_WB,
+                      LIMIT_A_IS_FWD_RB, buffer, nullptr);
+
 
         isLive = true;
 

@@ -52,29 +52,45 @@
 #define ABS_ENC_WB 0
 #define ABS_ENC_RB 4
 
-#define LIMIT_OP 0x0B // "legacy"
-#define LIMIT_WB 0 // "legacy"
-#define LIMIT_RB 1 // "legacy"
-
-#define IS_CALIBRATED_OP 0x0C
+#define IS_CALIBRATED_OP 0x0B
 #define IS_CALIBRATED_WB 0
 #define IS_CALIBRATED_RB 1
 
-#define LIMIT_ENABLED_OP 0x0D
-#define LIMIT_ENABLED_WB 1
-#define LIMIT_ENABLED_RB 0
+#define ENABLE_LIMIT_A_OP 0x0C
+#define ENABLE_LIMIT_A_WB 1
+#define ENABLE_LIMIT_A_RB 0
 
-#define CONFIG_LIMIT_A_OP 0x0E
-#define CONFIG_LIMIT_A_WB 4
-#define CONFIG_LIMIT_A_RB 0
+#define ENABLE_LIMIT_B_OP 0x0D
+#define ENABLE_LIMIT_B_WB 1
+#define ENABLE_LIMIT_B_RB 0
 
-#define CONFIG_LIMIT_B_OP 0x0F
-#define CONFIG_LIMIT_B_WB 4
-#define CONFIG_LIMIT_B_RB 0
+#define ACTIVE_LIMIT_A_OP 0x0E
+#define ACTIVE_LIMIT_A_WB 1
+#define ACTIVE_LIMIT_A_RB 0
 
-#define LIMIT_POLARITY_OP 0x10
-#define LIMIT_POLARITY_WB 1
-#define LIMIT_POLARITY_RB 0
+#define ACTIVE_LIMIT_B_OP 0x0F
+#define ACTIVE_LIMIT_B_WB 1
+#define ACTIVE_LIMIT_B_RB 0
+
+#define COUNTS_LIMIT_A_OP 0x10
+#define COUNTS_LIMIT_A_WB 4
+#define COUNTS_LIMIT_A_RB 0
+
+#define COUNTS_LIMIT_B_OP 0x11
+#define COUNTS_LIMIT_B_WB 4
+#define COUNTS_LIMIT_B_RB 0
+
+#define LIMIT_A_OP 0x12
+#define LIMIT_A_WB 0
+#define LIMIT_A_RB 1
+
+#define LIMIT_B_OP 0x13
+#define LIMIT_B_WB 0
+#define LIMIT_B_RB 1
+
+#define LIMIT_A_IS_FWD_OP 0x14
+#define LIMIT_A_IS_FWD_WB 1
+#define LIMIT_A_IS_FWD_RB 0
 
 #define UINT8_POINTER_T reinterpret_cast<uint8_t*>
 
@@ -96,14 +112,6 @@ trying to contact the same physical Controller object.)
 class Controller {
 public:
 
-    // ENUM for limit polarity
-    // IF FORWARD: A = +, B = -
-    // IF REVERSED: A = -, B = +
-    enum limit_polarity {
-        FORWARD = true,
-        REVERSED = false
-    };
-
     float quadCPR = std::numeric_limits<float>::infinity();
     float kP = 0.01f;
     float kI = 0.0f;
@@ -112,7 +120,11 @@ public:
     bool limitAEnabled = false;
     bool limitBEnabled = false;
     float calibrationVel = 0.0f;
-    bool limitPolarity = FORWARD;
+    bool limitAIsActiveHigh = false;
+    bool limitBIsActiveHigh = false;
+    bool limitAIsFwd = true;
+    float limitAAdjustedCounts = 0.0f;
+    float limitBAdjustedCounts = 0.0f;
 
     // REQUIRES: _name is the name of the motor,
     // mcuID is the mcu id of the controller which dictates the slave address,
@@ -146,16 +158,6 @@ public:
 
     // REQUIRES: nothing
     // MODIFIES: nothing
-    // EFFECTS: Returns true if Controller has a (one or both) limit switch(s) is enabled.
-    bool getLimitSwitchEnabled() const;
-
-    // REQUIRES: limit_polarity_request to check
-    // MODIFIES: nothing
-    // EFFECTS: Returns true if Controller has the FORWARD or REVERSE limit switch enabled.
-    bool getLimitSwitchEnabled(limit_polarity limit_polarity_request) const;
-
-    // REQUIRES: nothing
-    // MODIFIES: nothing
     // EFFECTS: Returns last saved value of angle.
     // Expect a value between -M_PI and M_PI.
     float getCurrentAngle() const;
@@ -180,6 +182,11 @@ public:
     // MODIFIES: nothing
     // EFFECTS: gets current absolute encoder value of MCU
     float getAbsoluteEncoderValue();
+
+    // REQUIRES: nothing
+    // MODIFIES: nothing
+    // EFFECTS: Returns true if Controller has a (one or both) limit switch(s) is enabled.
+    bool getLimitSwitchEnabled() const;
 
 private:
     // REQUIRES: nothing
