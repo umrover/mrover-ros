@@ -79,7 +79,7 @@ void ROSHandler::moveRA(const sensor_msgs::JointState::ConstPtr& msg) {
         std::optional<float> pos = moveControllerOpenLoop(msg->name[i], (float) msg->velocity[i]);
         jointDataRA.position[i] = pos.value_or(0.0);
 
-        std::optional<bool> calibrated = getControllerCalibrated(RANames[i]);
+        std::optional<bool> calibrated = getControllerCalibrated(msg->name[i]);
         calibrationStatusRA.calibrated[i] = calibrated.value_or(false);
     }
     calibrationStatusPublisherRA.publish(calibrationStatusRA);
