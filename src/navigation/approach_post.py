@@ -1,12 +1,11 @@
 import tf2_ros
+import rospy
 from context import Context
 from drive import get_drive_command
 from aenum import Enum, NoAlias
 from geometry_msgs.msg import Twist
-from waypoint import DRIVE_FWD_THRESH, WaypointState
-
-STOP_THRESH = 0.7
-FIDUCIAL_STOP_THRESHOLD = 1.75
+from waypoint import WaypointState
+from util.ros_utils import get_rosparam
 
 
 class ApproachPostStateTransitions(Enum):
@@ -18,6 +17,10 @@ class ApproachPostStateTransitions(Enum):
 
 
 class ApproachPostState(WaypointState):
+    STOP_THRESH = get_rosparam("single_fiducial/stop_thresh", 0.7)
+    FIDUCIAL_STOP_THRESHOLD = get_rosparam("single_fiducial/fiducial_stop_threshold", 1.75)
+    DRIVE_FWD_THRESH = get_rosparam("waypoint/drive_fwd_thresh", 0.34)  # 20 degrees
+
     def __init__(self, context: Context):
         super().__init__(context, add_outcomes=[transition.name for transition in ApproachPostStateTransitions])  # type: ignore
 
@@ -39,7 +42,7 @@ class ApproachPostState(WaypointState):
 
         try:
             cmd_vel, arrived = get_drive_command(
-                fid_pos, self.context.rover.get_pose(use_odom_frame=True), STOP_THRESH, DRIVE_FWD_THRESH
+                fid_pos, self.context.rover.get_pose(use_odom_frame=True), self.STOP_THRESH, self.DRIVE_FWD_THRESH
             )
             if arrived:
                 self.context.course.increment_waypoint()

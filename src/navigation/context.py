@@ -15,10 +15,6 @@ import pymap3d
 from std_msgs.msg import Time
 
 
-# read required parameters, if they don't exist an error will be thrown
-REF_LAT = rospy.get_param("gps_linearization/reference_point_latitude")
-REF_LON = rospy.get_param("gps_linearization/reference_point_longitude")
-
 TAG_EXPIRATION_TIME_SECONDS = 60
 
 tf_broadcaster: tf2_ros.StaticTransformBroadcaster = tf2_ros.StaticTransformBroadcaster()
@@ -197,6 +193,9 @@ def convert(waypoint: GPSWaypoint) -> Waypoint:
     """
     Converts a GPSWaypoint into a "Waypoint" used for publishing to the CourseService.
     """
+    # read required parameters, if they don't exist an error will be thrown
+    REF_LAT = rospy.get_param("gps_linearization/reference_point_latitude")
+    REF_LON = rospy.get_param("gps_linearization/reference_point_longitude")
 
     # Create odom position based on GPS latitude and longitude
     odom = np.array(
