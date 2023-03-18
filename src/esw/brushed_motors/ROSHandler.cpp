@@ -18,8 +18,8 @@ void ROSHandler::init(ros::NodeHandle* rosNode) {
 
     jointDataRA.name = std::vector<std::string>(RANames.begin(), RANames.end());
     jointDataRA.position = std::vector<double>(RANames.size(), 0);
-    jointDataRA.velocity = std::vector<double>(RANames.size(), std::nan(""));
-    jointDataRA.effort = std::vector<double>(RANames.size(), std::nan(""));
+    jointDataRA.velocity = std::vector<double>(RANames.size(), 0);
+    jointDataRA.effort = std::vector<double>(RANames.size(), 0);
 
     calibrationStatusRA.names = std::vector<std::string>(RANames.begin(), RANames.end());
     calibrationStatusRA.calibrated = std::vector<uint8_t>(calibrationStatusRA.names.size(), false);
@@ -33,8 +33,8 @@ void ROSHandler::init(ros::NodeHandle* rosNode) {
 
     jointDataSA.name = std::vector<std::string>(SANames.begin(), SANames.end());
     jointDataSA.position = std::vector<double>(SANames.size(), 0);
-    jointDataSA.velocity = std::vector<double>(SANames.size(), std::nan(""));
-    jointDataSA.effort = std::vector<double>(SANames.size(), std::nan(""));
+    jointDataSA.velocity = std::vector<double>(SANames.size(), 0);
+    jointDataSA.effort = std::vector<double>(SANames.size(), 0);
 
     calibrationStatusSA.names = std::vector<std::string>(SANames.begin(), SANames.end());
     calibrationStatusSA.calibrated = std::vector<uint8_t>(calibrationStatusSA.names.size(), false);
