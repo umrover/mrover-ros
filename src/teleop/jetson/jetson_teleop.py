@@ -179,7 +179,7 @@ class ArmControl:
     def ra_open_loop_control(self, msg: Joy) -> None:
         """
         Converts a Joy message with the Xbox inputs
-        to a JointState to control the RA Arm in open loop
+        to a JointState toc control the RA Arm in open loop
         :param msg: Has axis and buttons array for Xbox controller
         Velocities are sent in range [-1,1]
         :return:
