@@ -15,7 +15,7 @@ class GPSLinearization:
     """
     This node subscribes to GPS and IMU data, linearizes the GPS data
     into ENU coordinates, then combines the linearized GPS position and the IMU
-    orientation into a pose estimate for the rover and publishes it to the TF tree.
+    orientation into a pose estimate for the rover and publishes it.
     """
 
     last_gps_msg: Optional[NavSatFix]
@@ -27,7 +27,6 @@ class GPSLinearization:
     ref_lon: float
     ref_alt: float
 
-    # TODO: do we need this?
     world_frame: str
 
     # covariance config
@@ -80,11 +79,19 @@ class GPSLinearization:
             self.publish_pose()
 
     @staticmethod
-    def get_linearized_pose_in_map(
+    def get_linearized_pose_in_world(
         gps_msg: NavSatFix, imu_msg: ImuAndMag, ref_coord: np.ndarray
     ) -> Tuple[SE3, np.ndarray]:
         """
-        TODO
+        Linearizes the GPS geodetic coordinates into ENU cartesian coordinates,
+        then combines them with the IMU orientation into a pose estimate relative
+        to the world frame, with corresponding covariance matrix.
+        
+        :param gps_msg: Message containing the rover's GPS coordinates and their corresponding
+                        covariance matrix.
+        :param imu_msg: Message containing the rover's orientation from IMU, with
+                        corresponding covariance matrix.
+        :param
         """
         # linearize GPS coordinates into cartesian
         cartesian = np.array(geodetic2enu(gps_msg.latitude, gps_msg.longitude, gps_msg.altitude, *ref_coord, deg=True))
@@ -110,7 +117,7 @@ class GPSLinearization:
         as a PoseWithCovarianceStamped message.
         """
         ref_coord = np.array([self.ref_lat, self.ref_lon, self.ref_alt])
-        linearized_pose, covariance = self.get_linearized_pose_in_map(self.last_gps_msg, self.last_imu_msg, ref_coord)
+        linearized_pose, covariance = self.get_linearized_pose_in_world(self.last_gps_msg, self.last_imu_msg, ref_coord)
 
         pose_msg = PoseWithCovarianceStamped(
             header=Header(stamp=rospy.Time.now(), frame_id=self.world_frame),
