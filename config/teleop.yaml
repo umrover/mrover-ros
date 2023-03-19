@@ -10,7 +10,7 @@ teleop:
       slow_mode_multiplier: 1
     joint_c:
       multiplier: -1
-      slow_mode_multiplier: -0.5
+      slow_mode_multiplier: 0.5
     joint_d:
       multiplier: 1
       slow_mode_multiplier: 0.5
