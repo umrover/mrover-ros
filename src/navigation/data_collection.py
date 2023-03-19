@@ -20,14 +20,15 @@ DELTAT_THRESHOLD = 0.001
 @dataclass
 class DataManager:
     _df: DataFrame
-    collector_context = ""
+    # collector_context = ""
     collecting = True
     row = 0
 
     # Initializes the first _cur_row dataframe and call the subscribers
     # Initialize the dictionary with the Rover's first position, rotation, and timestamp
     # When the datacollection starts.
-    def __init__(self):
+    def __init__(self, rover_in):
+        self.rover = rover_in
         self.row_counter = 1
         three_zero = np.zeros(3)
         four_zero = np.zeros(4)
@@ -63,7 +64,7 @@ class DataManager:
     # We will only call this when the object list is not empty. When the list is empty the initial actual
     # linear and angular velocities will be their default values set to zero.
     def update_tf_vel(self) -> bool:
-        se3_time = self.collector_context.rover.get_pose_with_time()
+        se3_time = self.rover.get_pose_with_time()
         newest_position = se3_time[0].position
         newest_rotation_so3 = se3_time[0].rotation
         newest_timestamp = se3_time[1].to_sec()
@@ -185,5 +186,5 @@ class DataManager:
         # Remove after debugging averaging
         # self._df_all.to_csv(file2)
 
-    def set_context(self, context_in):
-        self.collector_context = context_in
+    # def set_context(self, context_in):
+    #     self.collector_context = context_in

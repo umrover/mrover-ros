@@ -9,16 +9,13 @@ from data_collection import DataManager
 from util.np_utils import angle_to_rotate
 from util.np_utils import angle_to_rotate
 
-rospy.logerr(f"Make DataCollector in drive.py")
-collector = DataManager()
+# rospy.logerr(f"Make DataCollector in drive.py")
+# collector = DataManager()
 from util.ros_utils import get_rosparam
 
 
 def get_drive_command(
-    target_pos: np.ndarray,
-    rover_pose: SE3,
-    completion_thresh: float,
-    turn_in_place_thresh: float,
+    target_pos: np.ndarray, rover_pose: SE3, completion_thresh: float, turn_in_place_thresh: float, rover
 ) -> Tuple[Twist, bool]:
     """
     :param target_pos:              Target position to drive to.
@@ -54,7 +51,7 @@ def get_drive_command(
     if target_dist < completion_thresh:
         # getting commanded velocity into the data collection
         rospy.logerr(f"Called make_cmd_vel_obj from drive.py")
-        collector.make_cmd_vel_dataframe(Twist())
+        rover.collector.make_cmd_vel_dataframe(Twist())
         return Twist(), True
 
     cmd_vel = Twist()
@@ -80,7 +77,7 @@ def get_drive_command(
     )
     # getting commanded velocity into the data collection
     rospy.logerr(f"Called make_cmd_vel_obj from drive.py")
-    collector.make_cmd_vel_dataframe(cmd_vel)
+    rover.collector.make_cmd_vel_dataframe(cmd_vel)
 
     print(cmd_vel.linear.x, cmd_vel.angular.z)
     return cmd_vel, False
