@@ -24,7 +24,7 @@ class getdata:
 
     def savedata(self):
         final_gps = np.hstack(self.gps_data)
-        final_vel  = np.hstack(self.velocity_data)
+        final_vel = np.hstack(self.velocity_data)
         np.save(GPSFILENAME, final_gps)
         np.save(VELFILENAME, final_vel)
 
@@ -53,8 +53,8 @@ def plotData():
     gps_data = np.load(GPSFILENAME, allow_pickle=True)
     velocity = np.load(VELFILENAME, allow_pickle=True)
 
-    gps_data = gps_data[:,20:]
-    velocity = velocity[:,20:]
+    gps_data = gps_data[:, 20:]
+    velocity = velocity[:, 20:]
 
     fig, ax = plt.subplots()
     ax.plot(gps_data[0, :], gps_data[1, :])
@@ -95,7 +95,7 @@ def get_ground_truth(velocity, timestamps) -> np.ndarray:
     ground_truth = np.empty((3, timestamps.shape[1]), dtype=float)  # pre-allocate for runtime
 
     for i in range(timestamps.shape[1]):
-        ground_truth[:,i] = velocity * timestamps[1,i]
+        ground_truth[:, i] = velocity * timestamps[1, i]
 
     return ground_truth
 
@@ -109,8 +109,8 @@ def get_variance(gps_data, ground_truth, velocity) -> np.ndarray:
     # Var = Sum([X - u_x]^2 / (n - 1)
     # n-1 since we use a sample population
 
-    plt.plot(velocity[1,:], gps_data[0,:], label = "gps data")
-    plt.plot(velocity[1,:], ground_truth[0,:], label = "ground truth")
+    plt.plot(velocity[1, :], gps_data[0, :], label="gps data")
+    plt.plot(velocity[1, :], ground_truth[0, :], label="ground truth")
     plt.legend()
     plt.show()
 
@@ -124,31 +124,34 @@ def get_std_dev(variance) -> np.ndarray:
 
 def calcdata():
 
-    time_taken = 8 #time by hand?, can change
+    time_taken = 8  # time by hand?, can change
 
     gps_data = np.load(GPSFILENAME)  # 2D array where each column is (x,y,z)
     velocity = np.load(VELFILENAME)  # 2D array where 1st row is a velocity value, 2nd row is a timestamp
 
-    #get rid of random noise at start
-    gps_data = gps_data[:,20:]
-    velocity = velocity[:,20:]
+    # get rid of random noise at start
+    gps_data = gps_data[:, 20:]
+    velocity = velocity[:, 20:]
 
-    #normalize data based on start position
-    for i in range(gps_data[1].size-1):
-        gps_data[:,i+1] = gps_data[:,i+1] - gps_data[:,0]
+    # normalize data based on start position
+    for i in range(gps_data[1].size - 1):
+        gps_data[:, i + 1] = gps_data[:, i + 1] - gps_data[:, 0]
 
-    gps_data[:,0] = [0,0,0]
+    gps_data[:, 0] = [0, 0, 0]
 
-    #calculate time taken by rover
-    time_taken = velocity[1,-1] - velocity[1,0]
+    # calculate time taken by rover
+    time_taken = velocity[1, -1] - velocity[1, 0]
 
-    #calculate distance driven by using first and last gps data points
-    end_pos = gps_data[:,-1]
-    start_pos = gps_data[:,0]
+    # calculate distance driven by using first and last gps data points
+    end_pos = gps_data[:, -1]
+    start_pos = gps_data[:, 0]
     dist_driven = end_pos - start_pos
 
-    #assuming constant velocity, calculates velocity
+    # assuming constant velocity, calculates velocity
     calcvelocity = dist_driven / time_taken
+
+    # uncomment if stationary test
+    # calcvelocity = calcvelocity * 0
 
     # will need to trim gps_data in order to obtain motion data
     motion_data = gps_data
@@ -168,7 +171,7 @@ def calcdata():
 
 if __name__ == "__main__":
     rospy.init_node("gps_noise")
-    #data()
+    # data()
     calcdata()
-    #plotData()
+    # plotData()
     rospy.spin()
