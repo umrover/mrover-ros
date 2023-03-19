@@ -221,7 +221,7 @@ Visualization Manager:
           Value: false
         - Class: rviz/Image
           Enabled: true
-          Image Topic: /fiducial_images
+          Image Topic: /tag_detection
           Max Value: 1
           Median window: 5
           Min Value: 0
