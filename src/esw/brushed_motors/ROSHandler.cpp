@@ -24,7 +24,7 @@ void ROSHandler::init(ros::NodeHandle* rosNode) {
     calibrationStatusRA.names = std::vector<std::string>(RANames.begin(), RANames.end());
     calibrationStatusRA.calibrated = std::vector<uint8_t>(calibrationStatusRA.names.size(), false);
     calibrationStatusPublisherRA = n->advertise<mrover::Calibrated>("ra_is_calibrated", 1);
-    jointDataPublisherRA = n->advertise<sensor_msgs::JointState>("ra_data", 1);
+    jointDataPublisherRA = n->advertise<sensor_msgs::JointState>("brushed_ra_data", 1);
 
     // Initialize sample acquisition (SA)
     SANames = {"sa_joint_1", "sa_joint_2", "sa_joint_3", "scoop", "microscope"};
