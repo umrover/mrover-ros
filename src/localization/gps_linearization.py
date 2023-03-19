@@ -86,7 +86,7 @@ class GPSLinearization:
         Linearizes the GPS geodetic coordinates into ENU cartesian coordinates,
         then combines them with the IMU orientation into a pose estimate relative
         to the world frame, with corresponding covariance matrix.
-        
+
         :param gps_msg: Message containing the rover's GPS coordinates and their corresponding
                         covariance matrix.
         :param imu_msg: Message containing the rover's orientation from IMU, with
