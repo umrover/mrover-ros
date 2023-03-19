@@ -109,10 +109,10 @@ def get_variance(gps_data, ground_truth, velocity) -> np.ndarray:
     # Var = Sum([X - u_x]^2 / (n - 1)
     # n-1 since we use a sample population
 
-    plt.plot(velocity[1, :], gps_data[0, :], label="gps data")
-    plt.plot(velocity[1, :], ground_truth[0, :], label="ground truth")
-    plt.legend()
-    plt.show()
+    #plt.plot(velocity[1, :], gps_data[0, :], label="gps data")
+    #plt.plot(velocity[1, :], ground_truth[0, :], label="ground truth")
+    #plt.legend()
+    #plt.show()
 
     return np.sum(np.power(gps_data - ground_truth, [[2], [2], [2]]), axis=1) / (ground_truth.shape[1] - 1)
 
@@ -133,11 +133,17 @@ def calcdata():
     gps_data = gps_data[:, 20:]
     velocity = velocity[:, 20:]
 
-    # normalize data based on start position
+    # normalize gps data based on start position
     for i in range(gps_data[1].size - 1):
         gps_data[:, i + 1] = gps_data[:, i + 1] - gps_data[:, 0]
 
     gps_data[:, 0] = [0, 0, 0]
+
+    # normalize velocity data based on start time
+    for i in range(velocity[1].size - 1):
+        velocity[:, i + 1] = velocity[:, i + 1] - velocity[:, 0]
+
+    velocity[:, 0] = [0, 0]
 
     # calculate time taken by rover
     time_taken = velocity[1, -1] - velocity[1, 0]
@@ -151,7 +157,7 @@ def calcdata():
     calcvelocity = dist_driven / time_taken
 
     # uncomment if stationary test
-    # calcvelocity = calcvelocity * 0
+    #calcvelocity = calcvelocity * 0
 
     # will need to trim gps_data in order to obtain motion data
     motion_data = gps_data
