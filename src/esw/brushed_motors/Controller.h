@@ -123,8 +123,8 @@ public:
     bool limitAIsActiveHigh = false;
     bool limitBIsActiveHigh = false;
     bool limitAIsFwd = true;
-    float limitAAdjustedCounts = 0.0f;
-    float limitBAdjustedCounts = 0.0f;
+    int32_t limitAAdjustedCounts = 0;
+    int32_t limitBAdjustedCounts = 0;
 
     // REQUIRES: _name is the name of the motor,
     // mcuID is the mcu id of the controller which dictates the slave address,
