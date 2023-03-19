@@ -190,7 +190,7 @@ bool ROSHandler::processMotorAdjust(mrover::AdjustMotors::Request& req, mrover::
     auto controller_iter = ControllerMap::controllersByName.find(req.name);
 
     if (controller_iter == ControllerMap::controllersByName.end()) {
-        ROS_ERROR("Could not find controller named %s.", name.c_str());
+        ROS_ERROR("Could not find controller named %s.", req.name.c_str());
         res.success = false;
         return false;
     }
@@ -211,7 +211,7 @@ bool ROSHandler::processMotorEnableLimitSwitches(mrover::EnableDevice::Request& 
     auto controller_iter = ControllerMap::controllersByName.find(req.name);
 
     if (controller_iter == ControllerMap::controllersByName.end()) {
-        ROS_ERROR("Could not find controller named %s.", name.c_str());
+        ROS_ERROR("Could not find controller named %s.", req.name.c_str());
         res.success = false;
         return false;
     }

@@ -134,6 +134,7 @@ void Controller::enableLimitSwitches(bool enable) {
 
         bool enableLimitA = limitAEnabled && enable;
 
+        uint8_t buffer[1];
         memcpy(buffer, UINT8_POINTER_T(&enableLimitA), sizeof(enableLimitA));
         I2C::transact(deviceAddress, motorIDRegMask | ENABLE_LIMIT_A_OP, ENABLE_LIMIT_A_WB,
                       ENABLE_LIMIT_A_RB, buffer, nullptr);
