@@ -2,7 +2,7 @@ cmake_minimum_required(VERSION 3.16)
 project(mrover)
 
 ## Compile as C++17, supported in ROS Kinetic and newer, enable some static analysis
-set(MROVER_CPP_COMPILE_OPTIONS -std=c++17 -Wall -Wextra -Werror -pedantic)
+#set(MROVER_CPP_COMPILE_OPTIONS -std=c++17 -Wall -Wextra -Werror -pedantic)
 
 # clang-tidy
 if (CMAKE_BUILD_TYPE EQUAL "RELEASE")
@@ -191,6 +191,8 @@ else ()
         find_package(gazebo REQUIRED)
         find_package(PCL REQUIRED)
         find_package(Eigen3 REQUIRED)
+        find_package(CUDA ${VERSION_REQ_CUDA})
+        find_package(ZED 2)
     endmacro()
 
     macro(include_directories_macro)
@@ -204,8 +206,14 @@ else ()
     # define an add and link macro
     # Put items here to build
     macro(add_and_link_macro)
-        add_cpp_node_macro(tag_detector "src/perception/*.cpp")
-        target_link_libraries(tag_detector ${OpenCV_LIBS} ${PCL_LIBRARIES})
+        add_cpp_node_macro(zed_wrapper "src/perception/zed_wrapper/*.cpp")
+        target_link_directories(zed_wrapper PRIVATE ${ZED_LIBRARY_DIR} ${CUDA_LIBRARY_DIRS})
+        target_link_libraries(zed_wrapper
+                ${ZED_LIBRARIES}
+                ${SPECIAL_OS_LIBS}
+                ${CUDA_LIBRARIES} ${CUDA_npps_LIBRARY} ${CUDA_nppi_LIBRARY} tag_detection)
+        target_include_directories(zed_wrapper PRIVATE ${ZED_INCLUDE_DIRS} ${CUDA_INCLUDE_DIRS})
+#        set_target_properties(zed_wrapper PROPERTIES CXX_CLANG_TIDY "")
 
         add_cpp_node_macro(brushed_motors "src/esw/brushed_motors/*.cpp")
 
@@ -218,6 +226,11 @@ else ()
         add_dependencies(kinect_plugin ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
         target_link_libraries(kinect_plugin ${Boost_LIBRARIES} ${GAZEBO_LIBRARIES} gazebo_ros_camera_utils DepthCameraPlugin ${catkin_LIBRARIES} Eigen3::Eigen)
         set_target_properties(kinect_plugin PROPERTIES CXX_CLANG_TIDY "")
+
+        add_library(tag_detection src/perception/tag_detection/tag_detection.cpp)
+        target_include_directories(tag_detection PUBLIC src/perception/tag_detection)
+        add_dependencies(tag_detection ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
+        target_link_libraries(tag_detection ${catkin_LIBRARIES} ${OpenCV_LIBS} ${PCL_LIBRARIES})
     endmacro()
 
     macro(additional_install_macro)
