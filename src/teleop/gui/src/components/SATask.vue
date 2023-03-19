@@ -69,6 +69,7 @@
       <LimitSwitch :state_name="'joint_1_switch'" :name="'Joint 1 Switch'"/>
       <LimitSwitch :state_name="'joint_2_switch'" :name="'Joint 2 Switch'"/>
       <LimitSwitch :state_name="'joint_3_switch'" :name="'Joint 3 Switch'"/>
+      <LimitSwitch :state_name="'scoop'" :name="'Scoop Switch'"/>
     </div>
     <div class="box light-bg calibration">
       <h3>Calibrations</h3>

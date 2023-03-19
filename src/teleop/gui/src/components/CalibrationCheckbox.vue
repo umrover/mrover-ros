@@ -15,6 +15,8 @@ import Checkbox from "./Checkbox.vue";
 import LEDIndicator from "./LEDIndicator.vue";
 import ROSLIB from "roslib/src/RosLib";
 
+let interval;
+
 export default {
     components: {
         Checkbox,
@@ -44,6 +46,10 @@ export default {
             calibrate_sub: null
         }
     },
+
+    beforeDestroy: function () {
+        window.clearInterval(interval)
+    },
     
     created: function () {
         this.calibrate_service = new ROSLIB.Service({
@@ -71,11 +77,19 @@ export default {
                 this.calibrated = msg.calibrated[index];
             }
         );
+
+        interval = window.setInterval(() => {
+            if (!this.calibrated && this.toggleEnabled) {
+                this.publishCalibrationMessage();
+            }
+        }, 200);
     },
 
     methods: {
         toggleCalibration: function () {
             this.toggleEnabled = !this.toggleEnabled;
+        },
+        publishCalibrationMessage: function () {
             let request = new ROSLIB.ServiceRequest({
                 name: this.name,
                 calibrate: this.toggleEnabled
@@ -83,7 +97,7 @@ export default {
             this.calibrate_service.callService(request, (result) => {
                 if (!result) {
                     this.toggleEnabled = !this.toggleEnabled;
-                    alert("Toggling Calibration failed.");
+                    alert("ESW cannot calibrate this motor");
                 }
             });
         }

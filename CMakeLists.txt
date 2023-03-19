@@ -53,6 +53,7 @@ set(MROVER_SERVICE_FILES
         ChangeDeviceState.srv
         ChangeHeaterState.srv
         ChangeServoAngle.srv
+        EnableDevice.srv
         FetchMessageFromPackage.srv
         FetchMessageFromPackage.srv
         FetchPackages.srv
