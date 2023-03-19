@@ -12,3 +12,4 @@ pymap3d==2.9.1
 PyQt5==5.14.1
 pyserial==3.5
 pandas==1.5.2
+Shapely==2.0.1

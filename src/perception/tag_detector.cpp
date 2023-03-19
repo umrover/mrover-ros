@@ -36,9 +36,7 @@
 
 void FiducialsNode::configCallback(mrover::DetectorParamsConfig& config, uint32_t level) {
     // Don't load initial config, since it will overwrite the rosparam settings
-    if (level == 0xFFFFFFFF) {
-        return;
-    }
+    if (level == 0xFFFFFFFF) return;
 
     mDetectorParams->adaptiveThreshConstant = config.adaptiveThreshConstant;
     mDetectorParams->adaptiveThreshWinSizeMin = config.adaptiveThreshWinSizeMin;
@@ -76,29 +74,6 @@ void FiducialsNode::ignoreCallback(std_msgs::String const& msg) {
     handleIgnoreString(msg.data);
 }
 
-void FiducialsNode::camInfoCallback(sensor_msgs::CameraInfo::ConstPtr const& msg) {
-    if (mHasCamInfo) {
-        return;
-    }
-
-    if (msg->K != boost::array<double, 9>({0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0})) {
-        for (int i = 0; i < 3; i++) {
-            for (int j = 0; j < 3; j++) {
-                mCamMat.at<double>(i, j) = msg->K[i * 3 + j];
-            }
-        }
-
-        for (int i = 0; i < 5; i++) {
-            mDistCoeffs.at<double>(0, i) = msg->D[i];
-        }
-
-        mHasCamInfo = true;
-        mFrameId = msg->header.frame_id;
-    } else {
-        ROS_WARN("%s", "CameraInfo message has invalid intrinsics, K matrix all zeros");
-    }
-}
-
 void FiducialsNode::handleIgnoreString(std::string const& str) {
     // Ignore fiducials can take comma separated list of individual
     // Tag ids or ranges, eg "1,4,8,9-12,30-40"
@@ -130,11 +105,11 @@ void FiducialsNode::handleIgnoreString(std::string const& str) {
 bool FiducialsNode::enableDetectionsCallback(std_srvs::SetBool::Request& req, std_srvs::SetBool::Response& res) {
     mEnableDetections = req.data;
     if (mEnableDetections) {
-        res.message = "Enabled aruco detections.";
-        ROS_INFO("Enabled aruco detections.");
+        res.message = "Enabled tag detections.";
+        ROS_INFO("Enabled tag detections.");
     } else {
-        res.message = "Disabled aruco detections.";
-        ROS_INFO("Disabled aruco detections.");
+        res.message = "Disabled tag detections.";
+        ROS_INFO("Disabled tag detections.");
     }
 
     res.success = true;
@@ -142,17 +117,17 @@ bool FiducialsNode::enableDetectionsCallback(std_srvs::SetBool::Request& req, st
 }
 
 FiducialsNode::FiducialsNode() : mNh(), mPnh("~"), mIt(mNh), mTfListener(mTfBuffer) {
-    // Camera intrinsics
-    mCamMat = cv::Mat::zeros(3, 3, CV_64F);
-    // distortion coefficients
-    mDistCoeffs = cv::Mat::zeros(1, 5, CV_64F);
-
     mDetectorParams = new cv::aruco::DetectorParameters();
     auto defaultDetectorParams = cv::aruco::DetectorParameters::create();
+    int dictionaryNumber;
 
-    int dicNo;
+    mNh.param<bool>("use_odom_frame", mUseOdom, false);
+    mNh.param<std::string>("odom_frame", mOdomFrameId, "odom");
+    mNh.param<std::string>("map_frame", mMapFrameId, "map");
+    mNh.param<std::string>("rover_frame", mBaseLinkFrameId, "base_link");
+
     mPnh.param<bool>("publish_images", mPublishImages, true);
-    mPnh.param<int>("dictionary", dicNo, 0);
+    mPnh.param<int>("dictionary", dictionaryNumber, 0);
     mPnh.param<bool>("publish_fiducial_tf", mPublishFiducialTf, true);
     mPnh.param<bool>("verbose", mIsVerbose, false);
 
@@ -161,15 +136,13 @@ FiducialsNode::FiducialsNode() : mNh(), mPnh("~"), mIt(mNh), mTfListener(mTfBuff
     mPnh.param<std::string>("ignore_fiducials", str, "");
     handleIgnoreString(str);
 
-    mImgPub = mIt.advertise("fiducial_images", 1);
-    mDictionary = cv::aruco::getPredefinedDictionary(dicNo);
+    mImgPub = mIt.advertise("tag_detection", 1);
+    mDictionary = cv::aruco::getPredefinedDictionary(dictionaryNumber);
 
     mImgSub = mIt.subscribe("camera/color/image_raw", 1, &FiducialsNode::imageCallback, this);
     mPcSub = mNh.subscribe("camera/depth/points", 1, &FiducialsNode::pointCloudCallback, this);
-    mCamInfoSub = mNh.subscribe("camera/color/camera_info", 1, &FiducialsNode::camInfoCallback, this);
     mIgnoreSub = mNh.subscribe("ignore_fiducials", 1, &FiducialsNode::ignoreCallback, this);
-    mServiceEnableDetections = mNh.advertiseService("enable_detections", &FiducialsNode::enableDetectionsCallback,
-                                                    this);
+    mServiceEnableDetections = mNh.advertiseService("enable_detections", &FiducialsNode::enableDetectionsCallback, this);
 
     // Lambda handles passing class pointer (implicit first parameter) to configCallback
     mCallbackType = [this](mrover::DetectorParamsConfig& config, uint32_t level) { configCallback(config, level); };
@@ -234,38 +207,15 @@ FiducialsNode::FiducialsNode() : mNh(), mPnh("~"), mIt(mNh), mTfListener(mTfBuff
                        mDetectorParams->polygonalApproxAccuracyRate,
                        defaultDetectorParams->polygonalApproxAccuracyRate);
 
-    ROS_INFO("Aruco detection ready");
+    ROS_INFO("Tag detection ready");
 }
 
 int main(int argc, char** argv) {
-    ros::init(argc, argv, "aruco_detect");
+    ros::init(argc, argv, "tag_detector");
 
     [[maybe_unused]] auto node = std::make_unique<FiducialsNode>();
 
     ros::spin();
 
     return EXIT_SUCCESS;
-}
-
-void XYZFilter::addReading(SE3 const& fidInOdom) {
-    fidInOdomX.push(fidInOdom.positionVector().x());
-    fidInOdomY.push(fidInOdom.positionVector().y());
-    fidInOdomZ.push(fidInOdom.positionVector().z());
-}
-
-void XYZFilter::setFilterParams(size_t count, double proportion) {
-    fidInOdomX.setFilterCount(count);
-    fidInOdomX.setProportion(static_cast<float>(proportion));
-    fidInOdomY.setFilterCount(count);
-    fidInOdomY.setProportion(static_cast<float>(proportion));
-    fidInOdomZ.setFilterCount(count);
-    fidInOdomZ.setProportion(static_cast<float>(proportion));
-}
-
-bool XYZFilter::ready() const {
-    return fidInOdomX.ready();
-}
-
-SE3 XYZFilter::getFidInOdom() const {
-    return {{fidInOdomX.get(), fidInOdomY.get(), fidInOdomZ.get()}, Eigen::Quaterniond::Identity()};
 }
