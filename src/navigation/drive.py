@@ -58,7 +58,7 @@ def get_drive_command(
     if target_dist < completion_thresh:
         # getting commanded velocity into the data collection
         rospy.logerr(f"Called make_cmd_vel_obj from drive.py")
-        if not collector == None:
+        if collector:
             collector.make_cmd_vel_dataframe(Twist())
         return Twist(), True
 
@@ -85,7 +85,7 @@ def get_drive_command(
     )
     # getting commanded velocity into the data collection
     rospy.logerr(f"Called make_cmd_vel_obj from drive.py")
-    if not collector == None:
+    if collector:
         collector.make_cmd_vel_dataframe(cmd_vel)
 
     print(cmd_vel.linear.x, cmd_vel.angular.z)
