@@ -6,28 +6,28 @@ from geometry_msgs.msg import Quaternion, Vector3, PoseWithCovarianceStamped, Po
 from std_msgs.msg import Header
 from mrover.msg import CalibrationStatus, ImuAndMag
 from tf.transformations import quaternion_about_axis, quaternion_multiply, rotation_matrix, quaternion_from_matrix
-from typing import Tuple
+from typing import Tuple, List
 from copy import deepcopy
 
 import serial
 from serial import SerialException, SerialTimeoutException
 
 
-def get_covariances() -> Tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray]:
+def get_covariances() -> Tuple[List, List, List, List]:
     """
     Get the IMU covariances for orientation, gyroscope, accelerometer, and magnetometer pose
     from rosparam.
 
     :returns: a tuple containing the orientation, gyro, accel, and mag pose covariance matrices in order
     """
-    orientation = np.array(rospy.get_param("global_ekf/imu_orientation_covariance"))
-    gyro = np.array(rospy.get_param("global_ekf/imu_gyro_covariance"))
-    accel = np.array(rospy.get_param("global_ekf/imu_accel_covariance"))
-    mag_pose = np.array(rospy.get_param("global_ekf/imu_mag_pose_covariance"))
+    orientation = np.array(rospy.get_param("global_ekf/imu_orientation_covariance")).flatten().tolist()
+    gyro = np.array(rospy.get_param("global_ekf/imu_gyro_covariance")).flatten().tolist()
+    accel = np.array(rospy.get_param("global_ekf/imu_accel_covariance")).flatten().tolist()
+    mag_pose = np.array(rospy.get_param("global_ekf/imu_mag_pose_covariance")).flatten().tolist()
     return (orientation, gyro, accel, mag_pose)
 
 
-def publish_mag_pose(pub: rospy.Publisher, msg: Vector3Stamped, covariance: np.ndarray, frame: str):
+def publish_mag_pose(pub: rospy.Publisher, msg: Vector3Stamped, covariance: List, frame: str):
     """
     Estimates the rover's yaw angle from the magnetometer measurement and publishes it
     as a PoseWithCovarianceStamped for use in the EKF.
@@ -53,7 +53,7 @@ def publish_mag_pose(pub: rospy.Publisher, msg: Vector3Stamped, covariance: np.n
     pub.publish(
         PoseWithCovarianceStamped(
             header=Header(stamp=msg.header.stamp, frame_id=frame),
-            pose=PoseWithCovariance(pose=Pose(orientation=Quaternion(*q)), covariance=covariance.flatten().tolist()),
+            pose=PoseWithCovariance(pose=Pose(orientation=Quaternion(*q)), covariance=covariance),
         )
     )
 
@@ -141,9 +141,9 @@ def main():
                 orientation=Quaternion(*enu_imu_orientation),
                 linear_acceleration=Vector3(*accel_data),
                 angular_velocity=Vector3(*gyro_data),
-                orientation_covariance=orientation_covariance.flatten().tolist(),
-                angular_velocity_covariance=gyro_covariance.flatten.tolist(),
-                linear_acceleration_covariance=accel_covariance.flatten().tolist(),
+                orientation_covariance=orientation_covariance,
+                angular_velocity_covariance=gyro_covariance,
+                linear_acceleration_covariance=accel_covariance,
             ),
             mag=mag_msg,
         )
