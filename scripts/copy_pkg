@@ -6,7 +6,7 @@
 set -Eeuo pipefail
 
 usage() {
-    echo "Usage: $0 (mrover_arm_in|mrover_arm_in|sa_arm_in|sa_arm_out)"
+    echo "Usage: $0 (mrover_arm_in|mrover_arm_out|sa_arm_in|sa_arm_out)"
 }
 
 if [ $# -ne 1 ]; then
@@ -14,10 +14,8 @@ if [ $# -ne 1 ]; then
     exit 1
 fi
 
+rospack find mrover > /dev/null
 declare mrover_pkg=`rospack find mrover`
-if [ $? != 0 ]; then
-    exit 1
-fi
 
 # Parse argument.  $1 is the first argument
 case $1 in
