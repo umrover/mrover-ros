@@ -180,6 +180,11 @@ public:
 
     // REQUIRES: nothing
     // MODIFIES: nothing
+    // EFFECTS: enables or disables limit switches
+    void enableLimitSwitches(bool enable);
+
+    // REQUIRES: nothing
+    // MODIFIES: nothing
     // EFFECTS: gets current absolute encoder value of MCU
     float getAbsoluteEncoderValue();
 
@@ -187,6 +192,8 @@ public:
     // MODIFIES: nothing
     // EFFECTS: Returns true if Controller has a (one or both) limit switch(s) is enabled.
     bool getLimitSwitchEnabled() const;
+
+
 
 private:
     // REQUIRES: nothing

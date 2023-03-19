@@ -10,6 +10,7 @@ void ROSHandler::init(ros::NodeHandle* rosNode) {
     // Initialize services
     calibrateService = n->advertiseService<mrover::CalibrateMotors::Request, mrover::CalibrateMotors::Response>("calibrate", processMotorCalibrate);
     adjustService = n->advertiseService<mrover::AdjustMotors::Request, mrover::AdjustMotors::Response>("adjust", processMotorAdjust);
+    enableLimitSwitchService = n->advertiseService<mrover::EnableDevice::Request, mrover::EnableDevice::Response>("enable_limit_switch", processMotorEnableLimitSwitches);
 
     // Initialize robotic arm (RA)
     RANames = {"joint_a", "joint_b", "joint_f", "finger", "gripper"};
@@ -178,7 +179,6 @@ bool ROSHandler::processMotorCalibrate(mrover::CalibrateMotors::Request& req, mr
         res.actively_calibrating = false;
     }
 
-
     return true;
 }
 
@@ -187,16 +187,38 @@ bool ROSHandler::processMotorCalibrate(mrover::CalibrateMotors::Request& req, mr
 // EFFECTS: hard sets the requested controller angle
 bool ROSHandler::processMotorAdjust(mrover::AdjustMotors::Request& req, mrover::AdjustMotors::Response& res) {
 
-    try {
-        auto controller_iter = ControllerMap::controllersByName.find(req.name);
-        auto& [name, controller] = *controller_iter;
-        controller->overrideCurrentAngle(req.value);
-        res.success = true;
-        res.abs_enc_rad = controller->getAbsoluteEncoderValue();
-    } catch(...) {
-        ROS_ERROR("COULD NOT SET MOTOR ANGLE");
+    auto controller_iter = ControllerMap::controllersByName.find(req.name);
+
+    if (controller_iter == ControllerMap::controllersByName.end()) {
+        ROS_ERROR("Could not find controller named %s.", name.c_str());
+        res.success = false;
+        return false;
     }
 
-    return res.success;
+    auto& [name, controller] = *controller_iter;
+    controller->overrideCurrentAngle(req.value);
+    res.success = true;
+    res.abs_enc_rad = controller->getAbsoluteEncoderValue();
+
+    return true;
 }
 
+// REQUIRES: valid req and res objects
+// MODIFIES: res
+// EFFECTS: disables or enables limit switches
+bool ROSHandler::processMotorEnableLimitSwitches(mrover::EnableDevice::Request& req, mrover::EnableDevice::Response& res) {
+
+    auto controller_iter = ControllerMap::controllersByName.find(req.name);
+
+    if (controller_iter == ControllerMap::controllersByName.end()) {
+        ROS_ERROR("Could not find controller named %s.", name.c_str());
+        res.success = false;
+        return false;
+    }
+
+    auto& [name, controller] = *controller_iter;
+    controller->enableLimitSwitches(req.enable);
+    res.success = true;
+
+    return true;
+}

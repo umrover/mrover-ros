@@ -127,6 +127,32 @@ void Controller::askIsCalibrated() {
 
 // REQUIRES: nothing
 // MODIFIES: nothing
+// EFFECTS: enables or disables limit switches
+void Controller::enableLimitSwitches(bool enable) {
+    try {
+        makeLive();
+
+        bool enableLimitA = limitAEnabled && enable;
+
+        memcpy(buffer, UINT8_POINTER_T(&enableLimitA), sizeof(enableLimitA));
+        I2C::transact(deviceAddress, motorIDRegMask | ENABLE_LIMIT_A_OP, ENABLE_LIMIT_A_WB,
+                      ENABLE_LIMIT_A_RB, buffer, nullptr);
+
+        bool enableLimitB = limitBEnabled && enable;
+
+        memcpy(buffer, UINT8_POINTER_T(&enableLimitB), sizeof(enableLimitB));
+        I2C::transact(deviceAddress, motorIDRegMask | ENABLE_LIMIT_B_OP, ENABLE_LIMIT_B_WB,
+                      ENABLE_LIMIT_B_RB, buffer, nullptr);
+        
+
+    } catch (IOFailure& e) {
+        ROS_ERROR("enableLimitSwitches failed on %s", name.c_str());
+    }
+}
+
+
+// REQUIRES: nothing
+// MODIFIES: nothing
 // EFFECTS: gets current absolute encoder value of MCU
 float Controller::getAbsoluteEncoderValue() {
     try {

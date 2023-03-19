@@ -5,6 +5,7 @@
 #include <cmath>                    // for nan
 #include <mrover/CalibrateMotors.h> // for CalibrateMotors
 #include <mrover/AdjustMotors.h>    // for AdjustMotors
+#include <mrover/EnableDevice.h>    // for EnableDevice
 #include <mrover/Calibrated.h>      // for Calibrated
 #include <mrover/Carousel.h>        // for Carousel
 #include <mrover/MastGimbal.h>      // for MastGimbal
@@ -29,6 +30,7 @@ private:
     // Calibrate service
     inline static ros::ServiceServer calibrateService;
     inline static ros::ServiceServer adjustService;
+    inline static ros::ServiceServer enableLimitSwitchService;
 
     // RA
     inline static std::array<std::string, 5> RANames;
@@ -102,6 +104,11 @@ private:
     // MODIFIES: res
     // EFFECTS: hard sets the requested controller angle
     static bool processMotorAdjust(mrover::AdjustMotors::Request& req, mrover::AdjustMotors::Response& res);
+
+    // REQUIRES: valid req and res objects
+    // MODIFIES: res
+    // EFFECTS: disables or enables limit switches
+    static bool processMotorEnableLimitSwitches(mrover::EnableDevice::Request& req, mrover::EnableDevice::Response& res);
 
 public:
     // REQUIRES: rosNode is a pointer to the created node.
