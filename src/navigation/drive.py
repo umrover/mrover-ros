@@ -1,11 +1,14 @@
-from typing import Tuple
+from __future__ import annotations
+from typing import Tuple, Optional, TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from data_collection import DataManager
 
 import numpy as np
 import rospy
 
 from geometry_msgs.msg import Twist
 from util.SE3 import SE3
-from data_collection import DataManager
 from util.np_utils import angle_to_rotate
 from util.np_utils import angle_to_rotate
 
@@ -15,7 +18,11 @@ from util.ros_utils import get_rosparam
 
 
 def get_drive_command(
-    target_pos: np.ndarray, rover_pose: SE3, completion_thresh: float, turn_in_place_thresh: float, rover
+    target_pos: np.ndarray,
+    rover_pose: SE3,
+    completion_thresh: float,
+    turn_in_place_thresh: float,
+    collector: Optional[DataManager] = None,
 ) -> Tuple[Twist, bool]:
     """
     :param target_pos:              Target position to drive to.
@@ -51,7 +58,8 @@ def get_drive_command(
     if target_dist < completion_thresh:
         # getting commanded velocity into the data collection
         rospy.logerr(f"Called make_cmd_vel_obj from drive.py")
-        rover.collector.make_cmd_vel_dataframe(Twist())
+        if not collector == None:
+            collector.make_cmd_vel_dataframe(Twist())
         return Twist(), True
 
     cmd_vel = Twist()
@@ -77,7 +85,8 @@ def get_drive_command(
     )
     # getting commanded velocity into the data collection
     rospy.logerr(f"Called make_cmd_vel_obj from drive.py")
-    rover.collector.make_cmd_vel_dataframe(cmd_vel)
+    if not collector == None:
+        collector.make_cmd_vel_dataframe(cmd_vel)
 
     print(cmd_vel.linear.x, cmd_vel.angular.z)
     return cmd_vel, False

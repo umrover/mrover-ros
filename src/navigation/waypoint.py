@@ -70,7 +70,11 @@ class WaypointState(BaseState):
         try:
             waypoint_pos = self.context.course.current_waypoint_pose().position
             cmd_vel, arrived = get_drive_command(
-                waypoint_pos, self.context.rover.get_pose(), self.STOP_THRESH, self.DRIVE_FWD_THRESH, self.context.rover
+                waypoint_pos,
+                self.context.rover.get_pose(),
+                self.STOP_THRESH,
+                self.DRIVE_FWD_THRESH,
+                self.context.rover.collector,
             )
             if arrived:
                 if not self.context.course.look_for_gate() and not self.context.course.look_for_post():
