@@ -2,6 +2,7 @@ cmake_minimum_required(VERSION 3.16)
 project(mrover)
 
 ## Compile as C++17, supported in ROS Kinetic and newer, enable some static analysis
+set(MROVER_CPP_COMPILE_OPTIONS -std=c++17)
 #set(MROVER_CPP_COMPILE_OPTIONS -std=c++17 -Wall -Wextra -Werror -pedantic)
 
 # clang-tidy
@@ -213,7 +214,7 @@ else ()
                 ${SPECIAL_OS_LIBS}
                 ${CUDA_LIBRARIES} ${CUDA_npps_LIBRARY} ${CUDA_nppi_LIBRARY} tag_detection)
         target_include_directories(zed_wrapper PRIVATE ${ZED_INCLUDE_DIRS} ${CUDA_INCLUDE_DIRS})
-#        set_target_properties(zed_wrapper PROPERTIES CXX_CLANG_TIDY "")
+        #        set_target_properties(zed_wrapper PROPERTIES CXX_CLANG_TIDY "")
 
         add_cpp_node_macro(brushed_motors "src/esw/brushed_motors/*.cpp")
 
@@ -227,10 +228,15 @@ else ()
         target_link_libraries(kinect_plugin ${Boost_LIBRARIES} ${GAZEBO_LIBRARIES} gazebo_ros_camera_utils DepthCameraPlugin ${catkin_LIBRARIES} Eigen3::Eigen)
         set_target_properties(kinect_plugin PROPERTIES CXX_CLANG_TIDY "")
 
+        add_library(se3 src/se3/se3.cpp src/se3/se3_conversion.cpp)
+        target_include_directories(se3 PUBLIC src/se3)
+        add_dependencies(se3 ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
+        target_link_libraries(se3 ${catkin_LIBRARIES})
+
         add_library(tag_detection src/perception/tag_detection/tag_detection.cpp)
         target_include_directories(tag_detection PUBLIC src/perception/tag_detection)
         add_dependencies(tag_detection ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
-        target_link_libraries(tag_detection ${catkin_LIBRARIES} ${OpenCV_LIBS} ${PCL_LIBRARIES})
+        target_link_libraries(tag_detection ${catkin_LIBRARIES} ${OpenCV_LIBS} ${PCL_LIBRARIES} se3)
     endmacro()
 
     macro(additional_install_macro)

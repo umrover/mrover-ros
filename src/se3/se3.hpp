@@ -12,14 +12,17 @@
 
 #include <Eigen/Dense>
 
+using R3 = Eigen::Vector3d;
+using SO3 = Eigen::Quaterniond;
+
 class SE3 {
 private:
     static SE3 fromTf(geometry_msgs::Transform const& transform);
 
     static SE3 fromPose(geometry_msgs::Pose const& pose);
 
-    Eigen::Vector3d position;
-    Eigen::Quaterniond rotation;
+    R3 position;
+    SO3 rotation;
 
     [[nodiscard]] geometry_msgs::Pose toPose() const;
 
@@ -36,15 +39,15 @@ public:
 
     SE3() = default;
 
-    SE3(Eigen::Vector3d position, Eigen::Quaterniond const& rotation);
+    explicit SE3(R3 position, SO3 const& rotation = SO3::Identity());
 
     [[nodiscard]] SE3 applyLeft(SE3 const& transform);
 
     [[nodiscard]] SE3 applyRight(SE3 const& transform);
 
-    [[nodiscard]] Eigen::Vector3d const& positionVector() const;
+    [[nodiscard]] R3 const& positionVector() const;
 
-    [[nodiscard]] Eigen::Quaterniond const& rotationQuaternion() const;
+    [[nodiscard]] SO3 const& rotationQuaternion() const;
 
     [[nodiscard]] Eigen::Matrix4d rotationMatrix() const;
 
