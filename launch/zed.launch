@@ -44,9 +44,13 @@
         <remap from="/right/image_rect" to="/zed_nodelet/right/image_rect_color"/>
         <remap from="/right/camera_info" to="/zed_nodelet/right/camera_info"/>
 
-        <param name="Vis/InlierDistance" type="string" value="0.1"/>
-        <param name="Vis/MinInliers" type="string" value="20"/>
-        <param name="GFTT/MinDistance" type="string" value="7"/>
+        <param name="GFTT/MinDistance" type="string" value="10"/>
+        <param name="OdomF2M/MaxSize" type="string" value="500"/> 
+        <param name="Vis/MaxFeatures" type="string" value="300"/>
+        <!-- Correspondences: 0=Features Matching, 1=Optical Flow -->
+        <param name="Vis/CorType" value="0"/>
+        <!-- 0=Frame-to-Map (F2M) 1=Frame-to-Frame (F2F) -->
+        <param name="Odom/Strategy" value="0"/>
 
         <param name="frame_id" type="string" value="base_link"/>
         <param name="odom_frame_id" type="string" value="odom"/>
