@@ -1,6 +1,7 @@
 #include "tag_detector.hpp"
 
 #include "filter.hpp"
+#include <cmath>
 
 constexpr size_t IMAGE_WIDTH_WARN_SIZE = 640;
 constexpr size_t IMAGE_HEIGHT_WARN_SIZE = 480;
@@ -112,10 +113,18 @@ void TagDetectorNode::imageCallback(sensor_msgs::ImageConstPtr const& msg) {
  * @param v     Y Pixel Position
  */
 std::optional<SE3> getFidInCamFromPixel(PointCloudPtr const& cloudPtr, size_t u, size_t v) {
+    if (u >= cloudPtr->width || v >= cloudPtr->height) {
+        ROS_WARN("Tag center out of bounds");
+        return std::nullopt;
+    }
+    
     pcl::PointXYZRGBNormal const& point = cloudPtr->at(static_cast<int>(u), static_cast<int>(v));
-    return (std::isfinite(point.x) && std::isfinite(point.y) && std::isfinite(point.z))
-                   ? std::optional<SE3>(SE3({point.x, point.y, point.z}, Eigen::Quaterniond::Identity()))
-                   : std::nullopt;
+    if (!std::isfinite(point.x) || !std::isfinite(point.y) || !std::isfinite(point.z)) {
+        ROS_WARN("Tag center point not finite");
+        return std::nullopt;
+    }
+
+    return SE3{R3{point.x, point.y, point.z}};
 }
 
 /**
@@ -125,7 +134,14 @@ std::optional<SE3> getFidInCamFromPixel(PointCloudPtr const& cloudPtr, size_t u,
  * @param msg   Point cloud message
  */
 void TagDetectorNode::pointCloudCallback(sensor_msgs::PointCloud2ConstPtr const& msg) {
+    if (!mEnableDetections) return;
+
     pcl::fromROSMsg(*msg, *mCloudPtr);
+    if (mCloudPtr->empty()) {
+        ROS_WARN("Empty point cloud received");
+        return;
+    }
+
     for (auto& [id, tag]: mTags) {
         size_t u = std::lround(tag.imageCenter.x);
         size_t v = std::lround(tag.imageCenter.y);

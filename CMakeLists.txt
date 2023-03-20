@@ -10,6 +10,8 @@ if (CMAKE_BUILD_TYPE EQUAL "RELEASE")
     set(CMAKE_CXX_CLANG_TIDY clang-tidy-12)
 endif ()
 
+set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
+
 # find_package
 set(MROVER_PACKAGES
         rospy

@@ -59,7 +59,7 @@ void SE3::pushToTfTree(tf2_ros::TransformBroadcaster& broadcaster, std::string c
  *
  * @return
  */
-Eigen::Vector3d const& SE3::positionVector() const {
+R3 const& SE3::positionVector() const {
     return position;
 }
 
@@ -67,7 +67,7 @@ Eigen::Vector3d const& SE3::positionVector() const {
  *
  * @return
  */
-Eigen::Quaterniond const& SE3::rotationQuaternion() const {
+SO3 const& SE3::rotationQuaternion() const {
     return rotation;
 }
 
