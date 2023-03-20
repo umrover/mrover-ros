@@ -13,7 +13,20 @@
 #include <Eigen/Dense>
 
 using R3 = Eigen::Vector3d;
-using SO3 = Eigen::Quaterniond;
+
+class SO3 {
+private:
+    Eigen::Quaterniond mQuaternion;
+
+public:
+    friend class SE3;
+
+    SO3() = default;
+
+    explicit SO3(Eigen::Quaterniond const& quaternion);
+
+    [[nodiscard]] static SO3 Identity();
+};
 
 class SE3 {
 private:
@@ -21,8 +34,8 @@ private:
 
     static SE3 fromPose(geometry_msgs::Pose const& pose);
 
-    R3 position;
-    SO3 rotation;
+    R3 mPosition;
+    SO3 mRotation;
 
     [[nodiscard]] geometry_msgs::Pose toPose() const;
 
@@ -39,7 +52,7 @@ public:
 
     SE3() = default;
 
-    explicit SE3(R3 position, SO3 const& rotation = SO3::Identity());
+    explicit SE3(R3 position, SO3 rotation = SO3{Eigen::Quaterniond::Identity()});
 
     [[nodiscard]] SE3 applyLeft(SE3 const& transform);
 
@@ -47,9 +60,7 @@ public:
 
     [[nodiscard]] R3 const& positionVector() const;
 
-    [[nodiscard]] SO3 const& rotationQuaternion() const;
-
-    [[nodiscard]] Eigen::Matrix4d rotationMatrix() const;
+    [[nodiscard]] SO3 const& rotation() const;
 
     [[nodiscard]] double distanceTo(SE3 const& other);
 };

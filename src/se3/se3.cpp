@@ -1,4 +1,4 @@
-#include "se3.hpp"
+#include "lie.hpp"
 
 #include <utility>
 
@@ -7,7 +7,7 @@
  * @param position
  * @param rotation
  */
-SE3::SE3(Eigen::Vector3d position, Eigen::Quaterniond const& rotation) : position(std::move(position)), rotation(rotation) {
+SE3::SE3(Eigen::Vector3d position, SO3 rotation) : mPosition(std::move(position)), mRotation(rotation.mQuaternion.normalized()) {
 }
 
 /**
@@ -16,10 +16,9 @@ SE3::SE3(Eigen::Vector3d position, Eigen::Quaterniond const& rotation) : positio
  * @return
  */
 SE3 SE3::applyLeft(SE3 const& transform) {
-    auto affine = Eigen::Affine3d::Identity();
-    affine.translate(transform.position);
-    affine.rotate(transform.rotation);
-    return SE3{affine * position, transform.rotation * rotation};
+    (void) this;
+    (void) transform;
+    throw std::logic_error("Not implemented yet!");
 }
 
 /**
@@ -27,8 +26,9 @@ SE3 SE3::applyLeft(SE3 const& transform) {
  * @param transform
  * @return
  */
-SE3 SE3::applyRight([[maybe_unused]] SE3 const& transform) {
+SE3 SE3::applyRight(SE3 const& transform) {
     (void) this;
+    (void) transform;
     throw std::logic_error("Not implemented yet!");
 }
 
@@ -60,25 +60,15 @@ void SE3::pushToTfTree(tf2_ros::TransformBroadcaster& broadcaster, std::string c
  * @return
  */
 R3 const& SE3::positionVector() const {
-    return position;
+    return mPosition;
 }
 
 /**
  *
  * @return
  */
-SO3 const& SE3::rotationQuaternion() const {
-    return rotation;
-}
-
-/**
- *
- * @return
- */
-Eigen::Matrix4d SE3::rotationMatrix() const {
-    auto affine = Eigen::Affine3d::Identity();
-    affine.rotate(rotation);
-    return affine.matrix();
+SO3 const& SE3::rotation() const {
+    return mRotation;
 }
 
 /**
@@ -87,5 +77,5 @@ Eigen::Matrix4d SE3::rotationMatrix() const {
  * @return
  */
 double SE3::distanceTo(SE3 const& other) {
-    return (position - other.position).squaredNorm();
+    return (mPosition - other.mPosition).squaredNorm();
 }

@@ -229,7 +229,7 @@ else ()
         target_link_libraries(kinect_plugin ${Boost_LIBRARIES} ${GAZEBO_LIBRARIES} gazebo_ros_camera_utils DepthCameraPlugin ${catkin_LIBRARIES} Eigen3::Eigen)
         set_target_properties(kinect_plugin PROPERTIES CXX_CLANG_TIDY "")
 
-        add_library(se3 src/se3/se3.cpp src/se3/se3_conversion.cpp)
+        add_library(se3 src/se3/se3.cpp src/se3/so3.cpp src/se3/se3_conversion.cpp)
         target_include_directories(se3 PUBLIC src/se3)
         add_dependencies(se3 ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
         target_link_libraries(se3 ${catkin_LIBRARIES})
