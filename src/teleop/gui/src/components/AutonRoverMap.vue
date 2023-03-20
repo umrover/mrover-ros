@@ -35,17 +35,29 @@
         </l-tooltip>
       </l-marker>
 
-      <!-- Projected Icons -->
+      <!-- Search Path Icons -->
       <l-marker
-        v-for="(projected_point, index) in projectedPoints"
+        v-for="(search_path_point, index) in searchPathPoints"
         :key="index"
-        :lat-lng="projected_point.latLng"
-        :icon="projectedPointIcon"
+        :lat-lng="search_path_point.latLng"
+        :icon="searchPathIcon"
       >
-        <l-tooltip :options="{ permanent: 'true', direction: 'top' }">Projected {{
+        <l-tooltip :options="{ permanent: 'true', direction: 'top' }">Search Path {{
           index
         }}</l-tooltip>
       </l-marker>
+
+      <!-- Gate Path Icons-->
+      <l-marker
+        v-for="(gate_path_point, index) in gatePathPoints"
+        :key="index"
+        :lat-lng="gate_path_point.latLng"
+        :icon="gatePathIcon"
+      >
+        <l-tooltip :options="{ permanent: 'true', direction: 'top' }">Gate Path {{
+        index
+        }}</l-tooltip>
+    </l-marker> 
 
       <!-- Gate Post Icons -->
       <l-marker v-if="post1" :lat-lng="post1" :icon="postIcon">
@@ -136,13 +148,16 @@ export default {
       offlineTileOptions: offlineTileOptions,
       roverMarker: null,
       waypointIcon: null,
-      projectedPointIcon: null,
+      searchPathIcon: null,
+      gatePathIcon: null,
+
       map: null,
       odomCount: 0,
       locationIcon: null,
       odomPath: [],
 
-      projectedPoints: [],
+      searchPathPoints: [],
+      gatePathPoints: [],
 
       post1: null,
       post2: null,
@@ -218,13 +233,20 @@ export default {
       iconAnchor: [32, 64],
       popupAnchor: [0, -32]
     });
-    this.projectedPointIcon =
+    this.searchPathIcon =
       L.icon({
         iconUrl: "/static/map_marker_projected.png",
         iconSize: [64, 64],
         iconAnchor: [32, 64],
         popupAnchor: [0, -32]
       });
+    this.gatePathIcon =
+    L.icon({
+      iconUrl: "/static/map_marker_highlighted.png",
+      iconSize: [64, 64],
+      iconAnchor: [32, 64],
+      popupAnchor: [0, -32]
+    });
     this.postIcon = L.icon({
       iconUrl: "/static/gate_location.png",
       iconSize: [64, 64],
@@ -232,38 +254,56 @@ export default {
       popupAnchor: [0, -32]
     });
 
-    this.projected_topic = new ROSLIB.Topic({
+    this.search_path_topic = new ROSLIB.Topic({
       ros: this.$ros,
-      name: "/projected_points",
-      messageType: "mrover/NavMetadata"
+      name: "/search_path",
+      messageType: "mrover/GPSPointList"
     });
 
-    this.gate_topic = new ROSLIB.Topic({
+    this.gate_path_topic = new ROSLIB.Topic({
+      ros: this.$ros,
+      name: "/gate_path",
+      messageType: "mrover/GPSPointList"
+    }); 
+
+    this.estimated_gate_topic = new ROSLIB.Topic({
       ros: this.$ros,
       name: "/estimated_gate_location",
-      messageType: "mrover/NavMetadata"
+      messageType: "mrover/GPSPointList"
     });
 
-    this.projected_topic.subscribe((msg) => {
-      let newProjectedList = msg.points;
-      this.projectedPoints = newProjectedList.map((projected_point) => {
+    this.search_path_topic.subscribe((msg) => {
+      let newSearchPath = msg.point;
+      this.searchPathPoints = newSearchPath.map((search_path_point) => {
         return {
           latLng: L.latLng(
-            projected_point.latitude_degrees,
-            projected_point.longitude_degrees
+            search_path_point.latitude_degrees,
+            search_path_point.longitude_degrees
           )
         };
       });
     });
 
-    this.gate_topic.subscribe((msg) => {
+    this.gate_path_topic.subscribe((msg) => {
+      let newGatePath = msg.point;
+      this.gatePathPoints = newGatePath.map((gate_path_point) => {
+        return {
+          latLng: L.latLng(
+            gate_path_point.latitude_degrees,
+            gate_path_point.longitude_degrees
+          )
+        };
+      });
+    });
+
+    this.estimated_gate_topic.subscribe((msg) => {
       this.post1 = L.latLng(
-        msg.points[0].latitude_degrees,
-        msg.points[0].longitude_degrees
+        msg.point[0].latitude_degrees,
+        msg.point[0].longitude_degrees
       );
       this.post2 = L.latLng(
-        msg.points[1].latitude_degrees,
-        msg.points[1].longitude_degrees
+        msg.point[1].latitude_degrees,
+        msg.point[1].longitude_degrees
       );
     });
   },
