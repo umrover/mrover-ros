@@ -32,6 +32,7 @@ set(MROVER_MESSAGE_FILES
         Diagnostic.msg
         EnableAuton.msg
         GPSWaypoint.msg
+        GPSPointList.msg
         HeaterData.msg
         ImuAndMag.msg
         MastGimbal.msg
