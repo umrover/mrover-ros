@@ -207,14 +207,13 @@ else ()
     # define an add and link macro
     # Put items here to build
     macro(add_and_link_macro)
-        add_cpp_node_macro(zed_wrapper "src/perception/zed_wrapper/*.cpp")
-        target_link_directories(zed_wrapper PRIVATE ${ZED_LIBRARY_DIR} ${CUDA_LIBRARY_DIRS})
-        target_link_libraries(zed_wrapper
-                ${ZED_LIBRARIES}
-                ${SPECIAL_OS_LIBS}
-                ${CUDA_LIBRARIES} ${CUDA_npps_LIBRARY} ${CUDA_nppi_LIBRARY} tag_detection)
-        target_include_directories(zed_wrapper PRIVATE ${ZED_INCLUDE_DIRS} ${CUDA_INCLUDE_DIRS})
-        #        set_target_properties(zed_wrapper PROPERTIES CXX_CLANG_TIDY "")
+        add_library(tag_detector_nodelet
+                src/perception/tag_detector/tag_detector.cpp
+                src/perception/tag_detector/tag_detector.processing.cpp
+                src/perception/tag_detector/tag_detector.nodelet.cpp)
+        add_dependencies(tag_detector_nodelet ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
+        target_link_libraries(tag_detector_nodelet ${catkin_LIBRARIES} ${OpenCV_LIBRARIES} ${PCL_LIBRARIES} se3)
+        target_compile_options(tag_detector_nodelet PRIVATE ${MROVER_CPP_COMPILE_OPTIONS})
 
         add_cpp_node_macro(brushed_motors "src/esw/brushed_motors/*.cpp")
 
@@ -232,11 +231,6 @@ else ()
         target_include_directories(se3 PUBLIC src/se3)
         add_dependencies(se3 ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
         target_link_libraries(se3 ${catkin_LIBRARIES})
-
-        add_library(tag_detection src/perception/tag_detection/tag_detection.cpp)
-        target_include_directories(tag_detection PUBLIC src/perception/tag_detection)
-        add_dependencies(tag_detection ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
-        target_link_libraries(tag_detection ${catkin_LIBRARIES} ${OpenCV_LIBS} ${PCL_LIBRARIES} se3)
     endmacro()
 
     macro(additional_install_macro)
@@ -250,6 +244,12 @@ else ()
                 ARCHIVE DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
                 LIBRARY DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
                 RUNTIME DESTINATION ${CATKIN_GLOBAL_BIN_DESTINATION}
+                )
+
+        install(TARGETS tag_detector_nodelet
+                ARCHIVE DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
+                LIBRARY DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
+                RUNTIME DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
                 )
     endmacro()
 

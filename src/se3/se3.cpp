@@ -19,7 +19,7 @@ SE3 SE3::applyLeft(SE3 const& transform) {
     auto affine = Eigen::Affine3d::Identity();
     affine.translate(transform.position);
     affine.rotate(transform.rotation);
-    return {affine * position, transform.rotation * rotation};
+    return SE3{affine * position, transform.rotation * rotation};
 }
 
 /**

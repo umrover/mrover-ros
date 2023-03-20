@@ -11,7 +11,7 @@ constexpr size_t IMAGE_HEIGHT_WARN_SIZE = 480;
  *
  * @param msg
  */
-void FiducialsNode::imageCallback(sensor_msgs::ImageConstPtr const& msg) {
+void TagDetectorNode::imageCallback(sensor_msgs::ImageConstPtr const& msg) {
     if (!mEnableDetections) return;
 
     bool isInSim = false;
@@ -124,7 +124,7 @@ std::optional<SE3> getFidInCamFromPixel(PointCloudPtr const& cloudPtr, size_t u,
  *
  * @param msg   Point cloud message
  */
-void FiducialsNode::pointCloudCallback(sensor_msgs::PointCloud2ConstPtr const& msg) {
+void TagDetectorNode::pointCloudCallback(sensor_msgs::PointCloud2ConstPtr const& msg) {
     pcl::fromROSMsg(*msg, *mCloudPtr);
     for (auto& [id, tag]: mTags) {
         size_t u = std::lround(tag.imageCenter.x);

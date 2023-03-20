@@ -1,16 +1,24 @@
 <launch>
     <arg name="run_perception" default="true"/>
-    <arg name="run_visual_odom" default="false"/>
+    <arg name="run_visual_odom" default="true"/>
 
-    <!-- ZED wrapper node -->
+    <!-- Nodelet Manager -->
+    <node pkg="nodelet" type="nodelet" name="zed_nodelet_manager" args="manager" output="screen"/>
+
     <node if="$(arg run_perception)"
-          name="zed_node" pkg="zed_wrapper" type="zed_wrapper_node" output="screen" required="true">
+          pkg="nodelet" type="nodelet" name="zed_nodelet"
+          args="load zed_nodelets/ZEDWrapperNodelet zed_nodelet_manager" output="screen">
         <rosparam file="$(find mrover)/config/zed/common.yaml" command="load"/>
         <rosparam file="$(find mrover)/config/zed/zed.yaml" command="load"/>
 
-        <remap to="/camera/color/image_raw" from="/zed_node/rgb/image_rect_color"/>
-        <remap to="/camera/depth/points" from="/zed_node/point_cloud/cloud_registered"/>
-        <remap to="/camera/color/camera_info" from="/zed_node/rgb/camera_info"/>
+        <remap to="/camera/color/image_raw" from="/zed_nodelet/rgb/image_rect_color"/>
+        <remap to="/camera/depth/points" from="/zed_nodelet/point_cloud/cloud_registered"/>
+        <remap to="/camera/color/camera_info" from="/zed_nodelet/rgb/camera_info"/>
+    </node>
+
+    <!-- Tag detector as nodelet -->
+    <node pkg="nodelet" type="nodelet" name="tag_detector"
+          args="load mrover/TagDetectorNodelet zed_nodelet_manager" output="screen">
     </node>
 
     <!-- Static TF publisher for ZED mount-->
@@ -31,18 +39,18 @@
 
     <!-- rtabmap visual odometry -->
     <node if="$(arg run_visual_odom)" name="stereo_odometry" pkg="rtabmap_ros" type="stereo_odometry" output="screen">
-      <remap from="/left/image_rect" to="/zed_node/left/image_rect_color"/>
-      <remap from="/left/camera_info" to="/zed_node/left/camera_info"/>
-      <remap from="/right/image_rect" to="/zed_node/right/image_rect_color"/>
-      <remap from="/right/camera_info" to="/zed_node/right/camera_info"/>
+        <remap from="/left/image_rect" to="/zed_nodelet/left/image_rect_color"/>
+        <remap from="/left/camera_info" to="/zed_nodelet/left/camera_info"/>
+        <remap from="/right/image_rect" to="/zed_nodelet/right/image_rect_color"/>
+        <remap from="/right/camera_info" to="/zed_nodelet/right/camera_info"/>
 
-      <param name="Vis/InlierDistance" type="string" value="0.1"/>
-      <param name="Vis/MinInliers" type="string" value="20"/>
-      <param name="GFTT/MinDistance" type="string" value="7"/>
+        <param name="Vis/InlierDistance" type="string" value="0.1"/>
+        <param name="Vis/MinInliers" type="string" value="20"/>
+        <param name="GFTT/MinDistance" type="string" value="7"/>
 
-      <param name="frame_id" type="string" value="base_link" />
-      <param name="odom_frame_id" type="string" value="odom" />
+        <param name="frame_id" type="string" value="base_link"/>
+        <param name="odom_frame_id" type="string" value="odom"/>
 
-      <param name="publish_tf" type="bool" value="true" />
+        <param name="publish_tf" type="bool" value="true"/>
     </node>
 </launch>

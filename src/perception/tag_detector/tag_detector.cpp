@@ -34,9 +34,9 @@
 #include <boost/algorithm/string/classification.hpp>
 #include <boost/algorithm/string/split.hpp>
 
-void FiducialsNode::configCallback(mrover::DetectorParamsConfig& config, uint32_t level) {
+void TagDetectorNode::configCallback(mrover::DetectorParamsConfig& config, uint32_t level) {
     // Don't load initial config, since it will overwrite the rosparam settings
-    if (level == 0xFFFFFFFF) return;
+    if (level == std::numeric_limits<uint32_t>::max()) return;
 
     mDetectorParams->adaptiveThreshConstant = config.adaptiveThreshConstant;
     mDetectorParams->adaptiveThreshWinSizeMin = config.adaptiveThreshWinSizeMin;
@@ -68,13 +68,13 @@ void FiducialsNode::configCallback(mrover::DetectorParamsConfig& config, uint32_
     mDetectorParams->polygonalApproxAccuracyRate = config.polygonalApproxAccuracyRate;
 }
 
-void FiducialsNode::ignoreCallback(std_msgs::String const& msg) {
+void TagDetectorNode::ignoreCallback(std_msgs::String const& msg) {
     mIgnoreIds.clear();
     mPnh.setParam("ignore_fiducials", msg.data);
     handleIgnoreString(msg.data);
 }
 
-void FiducialsNode::handleIgnoreString(std::string const& str) {
+void TagDetectorNode::handleIgnoreString(std::string const& str) {
     // Ignore fiducials can take comma separated list of individual
     // Tag ids or ranges, eg "1,4,8,9-12,30-40"
     std::vector<std::string> strs;
@@ -102,7 +102,7 @@ void FiducialsNode::handleIgnoreString(std::string const& str) {
     }
 }
 
-bool FiducialsNode::enableDetectionsCallback(std_srvs::SetBool::Request& req, std_srvs::SetBool::Response& res) {
+bool TagDetectorNode::enableDetectionsCallback(std_srvs::SetBool::Request& req, std_srvs::SetBool::Response& res) {
     mEnableDetections = req.data;
     if (mEnableDetections) {
         res.message = "Enabled tag detections.";
@@ -116,7 +116,7 @@ bool FiducialsNode::enableDetectionsCallback(std_srvs::SetBool::Request& req, st
     return true;
 }
 
-FiducialsNode::FiducialsNode() : mNh(), mPnh("~"), mIt(mNh), mTfListener(mTfBuffer) {
+TagDetectorNode::TagDetectorNode(ros::NodeHandle const& nh, ros::NodeHandle const& pnh) : mNh{nh}, mPnh{pnh}, mIt{mNh}, mTfListener{mTfBuffer} {
     mDetectorParams = new cv::aruco::DetectorParameters();
     auto defaultDetectorParams = cv::aruco::DetectorParameters::create();
     int dictionaryNumber;
@@ -139,10 +139,10 @@ FiducialsNode::FiducialsNode() : mNh(), mPnh("~"), mIt(mNh), mTfListener(mTfBuff
     mImgPub = mIt.advertise("tag_detection", 1);
     mDictionary = cv::aruco::getPredefinedDictionary(dictionaryNumber);
 
-    mImgSub = mIt.subscribe("camera/color/image_raw", 1, &FiducialsNode::imageCallback, this);
-    mPcSub = mNh.subscribe("camera/depth/points", 1, &FiducialsNode::pointCloudCallback, this);
-    mIgnoreSub = mNh.subscribe("ignore_fiducials", 1, &FiducialsNode::ignoreCallback, this);
-    mServiceEnableDetections = mNh.advertiseService("enable_detections", &FiducialsNode::enableDetectionsCallback, this);
+    mImgSub = mIt.subscribe("camera/color/image_raw", 1, &TagDetectorNode::imageCallback, this);
+    mPcSub = mNh.subscribe("camera/depth/points", 1, &TagDetectorNode::pointCloudCallback, this);
+    mIgnoreSub = mNh.subscribe("ignore_fiducials", 1, &TagDetectorNode::ignoreCallback, this);
+    mServiceEnableDetections = mNh.advertiseService("enable_detections", &TagDetectorNode::enableDetectionsCallback, this);
 
     // Lambda handles passing class pointer (implicit first parameter) to configCallback
     mCallbackType = [this](mrover::DetectorParamsConfig& config, uint32_t level) { configCallback(config, level); };
@@ -210,10 +210,13 @@ FiducialsNode::FiducialsNode() : mNh(), mPnh("~"), mIt(mNh), mTfListener(mTfBuff
     ROS_INFO("Tag detection ready");
 }
 
+TagDetectorNode::TagDetectorNode() : TagDetectorNode(ros::NodeHandle{}, ros::NodeHandle{"~"}) {
+}
+
 int main(int argc, char** argv) {
     ros::init(argc, argv, "tag_detector");
 
-    [[maybe_unused]] auto node = std::make_unique<FiducialsNode>();
+    [[maybe_unused]] auto node = std::make_unique<TagDetectorNode>();
 
     ros::spin();
 

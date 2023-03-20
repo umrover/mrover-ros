@@ -1,5 +1,3 @@
-// THIS IS LIKE ANY OTHER ROS NODE
-
 #include <ros/init.h>
 #include <sl/Camera.hpp>
 

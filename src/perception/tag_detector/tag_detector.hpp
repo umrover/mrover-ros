@@ -19,8 +19,7 @@
 
 #include <mrover/DetectorParamsConfig.h>
 
-#include "filter.hpp"
-#include "se3.hpp"
+#include <se3.hpp>
 
 using PointCloud = pcl::PointCloud<pcl::PointXYZRGBNormal>;
 using PointCloudPtr = std::shared_ptr<PointCloud>;
@@ -32,7 +31,7 @@ struct Tag {
     std::optional<SE3> tagInCam;
 };
 
-class FiducialsNode {
+class TagDetectorNode {
 private:
     ros::NodeHandle mNh;
     ros::NodeHandle mPnh;
@@ -83,5 +82,7 @@ private:
     bool enableDetectionsCallback(std_srvs::SetBool::Request& req, std_srvs::SetBool::Response& res);
 
 public:
-    FiducialsNode();
+    TagDetectorNode();
+
+    TagDetectorNode(ros::NodeHandle const& nh, ros::NodeHandle const& pnh);
 };
