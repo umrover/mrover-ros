@@ -6,12 +6,19 @@ set(MROVER_CPP_COMPILE_OPTIONS -std=c++17 -Wall -Wextra -Werror -pedantic)
 
 # clang-tidy
 if (CMAKE_BUILD_TYPE EQUAL "RELEASE")
+    # Staitc analysis
     set(CMAKE_CXX_CLANG_TIDY clang-tidy-12)
+    # Enable link time optimization
+    set(CMAKE_INTERPROCEDURAL_OPTIMIZATION TRUE)
+    # Enable emitting optimized assembly for the current CPU
+    # Fine since none of the binaries are transferred to other machines
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -march=native")
 endif ()
 
+# Generate compile_commands.json for clangd
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
-# find_package
+# ROS packages list
 set(MROVER_PACKAGES
         rospy
         std_msgs
@@ -21,10 +28,7 @@ set(MROVER_PACKAGES
         sensor_msgs
         )
 
-# link_directories
-set(MROVER_LINK_DIRS "")
-
-# message files
+# Message files
 set(MROVER_MESSAGE_FILES
         CalibrationStatus.msg
         CameraCmd.msg
@@ -46,7 +50,7 @@ set(MROVER_MESSAGE_FILES
         WaypointType.msg
         )
 
-# service files
+# Service files
 set(MROVER_SERVICE_FILES
         ChangeAutonLEDState.srv
         ChangeCameras.srv
@@ -60,35 +64,62 @@ set(MROVER_SERVICE_FILES
         PublishCourse.srv
         )
 
-# generate messages list
+# Generate messages list
 set(MROVER_ROS_MESSAGES
         sensor_msgs
         std_msgs
         sensor_msgs
         )
 
-# dynamic reconfigure
+# Dynamic reconfigure parameter file list
 set(MROVER_PARAMETERS
         config/DetectorParams.cfg
         )
 
-# catkin_package
+# catkin packages list
 set(MROVER_CATKIN_PACKAGES
         roscpp rospy std_msgs message_runtime
         )
 
-macro(add_cpp_node_macro name sources)
-    file(GLOB_RECURSE CPP_NODE_SOURCES ${sources})
-    add_executable(${name} ${CPP_NODE_SOURCES})
-    add_dependencies(${name} ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
-    target_link_libraries(${name} ${catkin_LIBRARIES})
-    target_compile_options(${name} PRIVATE ${MROVER_CPP_COMPILE_OPTIONS})
+macro(rosify_target_macro target)
+    target_link_libraries(${target} ${catkin_LIBRARIES})
+    target_include_directories(${target} PRIVATE ${catkin_INCLUDE_DIRS})
+    add_dependencies(${target} ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
 
-    install(TARGETS ${name}
+    target_compile_options(${target} PRIVATE ${MROVER_CPP_COMPILE_OPTIONS})
+
+    install(TARGETS ${target}
             ARCHIVE DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
             LIBRARY DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
             RUNTIME DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
             )
+endmacro()
+
+macro(add_cpp_library_macro name sources includes)
+    file(GLOB_RECURSE CPP_LIB_SOURCES ${sources})
+    add_library(${name} ${CPP_LIB_SOURCES})
+    target_include_directories(${name} PUBLIC ${includes})
+    rosify_target_macro(${name})
+endmacro()
+
+macro(add_cpp_node_macro name sources)
+    file(GLOB_RECURSE CPP_NODE_SOURCES ${sources})
+    add_executable(${name} ${CPP_NODE_SOURCES})
+    rosify_target_macro(${name})
+endmacro()
+
+macro(add_cpp_nodelet_macro name sources includes)
+    # A nodelet runs inside another process so it is a library
+    add_cpp_library_macro(${name} ${sources} ${includes})
+endmacro()
+
+macro(add_gazebo_plugin_macro name sources includes)
+    add_cpp_library_macro(${name} ${sources} ${includes})
+
+    # TODO: find a proper variable name that points to /opt/ros/noetic/lib
+    target_link_directories(${name} PRIVATE ${GAZEBO_LIBRARY_DIRS} /opt/ros/noetic/lib)
+    target_link_libraries(${name} ${GAZEBO_LIBRARIES} ${Boost_LIBRARIES})
+    target_include_directories(${name} PRIVATE ${GAZEBO_INCLUDE_DIRS} ${Boost_INCLUDE_DIRS})
 endmacro()
 
 # launch install macro
@@ -173,11 +204,6 @@ else ()
             moveit_simple_controller_manager
             )
 
-    # append link directories
-    list(APPEND MROVER_LINK_DIRS
-            ${GAZEBO_LIBRARY_DIRS}
-            )
-
     # append subdirectories
     list(APPEND CMAKE_SUBDIRS
             starter_project/teleop
@@ -189,69 +215,29 @@ else ()
 
     # These packages need to be found individually
     macro(add_packages_macro)
-        find_package(OpenCV REQUIRED)
+        find_package(OpenCV REQUIRED COMPONENTS core aruco)
         find_package(gazebo REQUIRED)
-        find_package(PCL REQUIRED)
+        find_package(PCL REQUIRED COMPONENTS common io features)
         find_package(Eigen3 REQUIRED)
         find_package(CUDA ${VERSION_REQ_CUDA})
         find_package(ZED 2)
     endmacro()
 
-    macro(include_directories_macro)
-        include_directories(
-                ${catkin_INCLUDE_DIRS}
-                ${GAZEBO_INCLUDE_DIRS}
-                ${OpenCV_INCLUDE_DIRS}
-        )
-    endmacro()
-
     # define an add and link macro
     # Put items here to build
     macro(add_and_link_macro)
-        add_library(tag_detector_nodelet
-                src/perception/tag_detector/tag_detector.cpp
-                src/perception/tag_detector/tag_detector.processing.cpp
-                src/perception/tag_detector/tag_detector.nodelet.cpp)
-        add_dependencies(tag_detector_nodelet ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
-        target_link_libraries(tag_detector_nodelet ${catkin_LIBRARIES} ${OpenCV_LIBRARIES} ${PCL_LIBRARIES} se3)
-        target_compile_options(tag_detector_nodelet PRIVATE ${MROVER_CPP_COMPILE_OPTIONS})
+        add_cpp_nodelet_macro(tag_detector_nodelet "src/perception/tag_detector/*.cpp" "src/perception/tag_detector")
+        target_link_libraries(tag_detector_nodelet ${OpenCV_LIBRARIES} ${PCL_LIBRARIES} lie)
 
         add_cpp_node_macro(brushed_motors "src/esw/brushed_motors/*.cpp")
 
-        add_library(differential_drive_plugin_6w src/gazebo/differential_drive_6w.cpp)
-        add_dependencies(differential_drive_plugin_6w ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
-        target_link_libraries(differential_drive_plugin_6w ${Boost_LIBRARIES} ${GAZEBO_LIBRARIES} ${catkin_LIBRARIES})
-        target_compile_options(differential_drive_plugin_6w PRIVATE ${MROVER_CPP_COMPILE_OPTIONS})
+        add_gazebo_plugin_macro(differential_drive_plugin_6w "src/gazebo/differential_drive_6w.cpp" "src")
 
-        add_library(kinect_plugin src/gazebo/gazebo_ros_openni_kinect.cpp)
-        add_dependencies(kinect_plugin ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
-        target_link_libraries(kinect_plugin ${Boost_LIBRARIES} ${GAZEBO_LIBRARIES} gazebo_ros_camera_utils DepthCameraPlugin ${catkin_LIBRARIES} Eigen3::Eigen)
+        add_gazebo_plugin_macro(kinect_plugin "src/gazebo/gazebo_ros_openni_kinect.cpp" "src/gazebo")
+        target_link_libraries(kinect_plugin gazebo_ros_camera_utils DepthCameraPlugin Eigen3::Eigen)
         set_target_properties(kinect_plugin PROPERTIES CXX_CLANG_TIDY "")
 
-        add_library(se3 src/se3/se3.cpp src/se3/so3.cpp src/se3/se3_conversion.cpp)
-        target_include_directories(se3 PUBLIC src/se3)
-        add_dependencies(se3 ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
-        target_link_libraries(se3 ${catkin_LIBRARIES})
-    endmacro()
-
-    macro(additional_install_macro)
-        install(TARGETS differential_drive_plugin_6w
-                ARCHIVE DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
-                LIBRARY DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
-                RUNTIME DESTINATION ${CATKIN_GLOBAL_BIN_DESTINATION}
-                )
-
-        install(TARGETS kinect_plugin
-                ARCHIVE DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
-                LIBRARY DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
-                RUNTIME DESTINATION ${CATKIN_GLOBAL_BIN_DESTINATION}
-                )
-
-        install(TARGETS tag_detector_nodelet
-                ARCHIVE DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
-                LIBRARY DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
-                RUNTIME DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
-                )
+        add_cpp_library_macro(lie "src/util/lie/*.cpp" "src/util/lie")
     endmacro()
 
     # Set policy
@@ -316,17 +302,6 @@ catkin_package(
         ${MROVER_CATKIN_PACKAGES}
 )
 
-
-# 8. Libraries/Executables to build (add_executable)
-# These only exist after find_packages
-link_directories(
-        ${GAZEBO_LIBRARY_DIRS}
-        /opt/ros/noetic/lib/
-)
-
-if (COMMAND include_directories_macro)
-    include_directories_macro()
-endif ()
 
 if (COMMAND add_and_link_macro)
     add_and_link_macro()
