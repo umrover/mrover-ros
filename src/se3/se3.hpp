@@ -24,6 +24,8 @@ public:
     SO3() = default;
 
     explicit SO3(Eigen::Quaterniond const& quaternion);
+
+    [[nodiscard]] Eigen::Matrix4d matrix() const;
 };
 
 class SE3 {
@@ -50,13 +52,11 @@ public:
 
     SE3() = default;
 
-    explicit SE3(R3 position, SO3 const& rotation = SO3{});
+    explicit SE3(R3 position, SO3 rotation = SO3{});
 
-    [[nodiscard]] SE3 applyLeft(SE3 const& transform);
+    [[nodiscard]] Eigen::Matrix4d matrix() const;
 
-    [[nodiscard]] SE3 applyRight(SE3 const& transform);
-
-    [[nodiscard]] R3 const& positionVector() const;
+    [[nodiscard]] R3 const& position() const;
 
     [[nodiscard]] SO3 const& rotation() const;
 
