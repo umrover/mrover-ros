@@ -19,7 +19,7 @@
 
 #include <mrover/DetectorParamsConfig.h>
 
-#include <lie.hpp>
+#include <se3.hpp>
 
 using PointCloud = pcl::PointCloud<pcl::PointXYZRGBNormal>;
 using PointCloudPtr = std::shared_ptr<PointCloud>;

@@ -1,4 +1,4 @@
-#include "lie.hpp"
+#include "se3.hpp"
 
 SE3 SE3::fromTf(geometry_msgs::Transform const& transform) {
     SE3 se3;

@@ -1,4 +1,4 @@
-#include "lie.hpp"
+#include "se3.hpp"
 
 #include <utility>
 
@@ -7,7 +7,7 @@
  * @param position
  * @param rotation
  */
-SE3::SE3(Eigen::Vector3d position, SO3 rotation) : mPosition(std::move(position)), mRotation(rotation.mQuaternion.normalized()) {
+SE3::SE3(Eigen::Vector3d position, SO3 const& rotation) : mPosition(std::move(position)), mRotation(rotation) {
 }
 
 /**

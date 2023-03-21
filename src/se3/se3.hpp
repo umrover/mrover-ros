@@ -16,7 +16,7 @@ using R3 = Eigen::Vector3d;
 
 class SO3 {
 private:
-    Eigen::Quaterniond mQuaternion;
+    Eigen::Quaterniond mQuaternion = Eigen::Quaterniond::Identity();
 
 public:
     friend class SE3;
@@ -24,8 +24,6 @@ public:
     SO3() = default;
 
     explicit SO3(Eigen::Quaterniond const& quaternion);
-
-    [[nodiscard]] static SO3 Identity();
 };
 
 class SE3 {
@@ -52,7 +50,7 @@ public:
 
     SE3() = default;
 
-    explicit SE3(R3 position, SO3 rotation = SO3{Eigen::Quaterniond::Identity()});
+    explicit SE3(R3 position, SO3 const& rotation = SO3{});
 
     [[nodiscard]] SE3 applyLeft(SE3 const& transform);
 
