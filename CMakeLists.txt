@@ -233,13 +233,13 @@ else ()
 
         add_cpp_node_macro(brushed_motors "src/esw/brushed_motors/*.cpp")
 
+        add_cpp_library_macro(lie "src/util/lie/*.cpp" "src/util/lie")
+
         add_gazebo_plugin_macro(differential_drive_plugin_6w "src/gazebo/differential_drive_6w.cpp" "src")
 
         add_gazebo_plugin_macro(kinect_plugin "src/gazebo/gazebo_ros_openni_kinect.cpp" "src/gazebo")
         target_link_libraries(kinect_plugin gazebo_ros_camera_utils DepthCameraPlugin Eigen3::Eigen)
         set_target_properties(kinect_plugin PROPERTIES CXX_CLANG_TIDY "")
-
-        add_cpp_library_macro(lie "src/util/lie/*.cpp" "src/util/lie")
     endmacro()
 
     # Set policy
