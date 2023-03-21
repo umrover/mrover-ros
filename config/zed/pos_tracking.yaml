@@ -1,16 +1,2 @@
 pos_tracking:
     pos_tracking_enabled:       true                           # True to enable positional tracking from start
-    publish_tf:                 true                           # publish `visual_odom -> base_link` TF
-    publish_map_tf:             false                           # publish `map -> visual_odom` TF
-    map_frame:                  'map'                           # main frame
-    odometry_frame:             'odom'                          # odometry frame
-    area_memory_db_path:        'zed_area_memory.area'          # file loaded when the node starts to restore the "known visual features" map.
-    save_area_memory_db_on_exit: false                          # save the "known visual features" map when the node is correctly closed to the path indicated by `area_memory_db_path`
-    area_memory:                false                           # Enable to detect loop closure
-    floor_alignment:            false                           # Enable to automatically calculate camera/floor offset
-    initial_base_pose:          [0.0,0.0,0.0, 0.0,0.0,0.0]      # Initial position of the `base_frame` -> [X, Y, Z, R, P, Y]
-    init_odom_with_first_valid_pose: true                       # Enable to initialize the odometry with the first valid pose
-    path_pub_rate:              60.0                             # Camera trajectory publishing frequency
-    path_max_count:             -1                              # use '-1' for unlimited path size
-    two_d_mode:                 false                           # Force navigation on a plane. If true the Z value will be fixed to "fixed_z_value", roll and pitch to zero
-    fixed_z_value:              0.00                            # Value to be used for Z coordinate if `two_d_mode` is true
