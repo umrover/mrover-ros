@@ -9,7 +9,9 @@ import numpy as np
 
 class PassthroughFilter:
     """
-    TODO
+    This class takes the place of the EKF when we want to use raw GPS and IMU
+    pose data. It takes in a transform from the world frame to the rover frame
+    and manages the map->odom->baselink transform structure.
     """
 
     # TF infrastructure
@@ -37,10 +39,9 @@ class PassthroughFilter:
 
     def pose_callback(self, msg: PoseWithCovarianceStamped):
         """
-        TODO
-        Publishes the pose of the rover relative to the map frame, either to the TF tree or as
-        a PoseWithCovarianceStamped message. The pose will be published either as a direct
-        map->base_link transform, or an indirect map-odom transform if the odom frame is in use.
+        Publishes the pose of the rover relative to the map frame to the TF tree.
+        The pose will be published either as a direct map->base_link transform, 
+        or as an indirect map-odom transform if the odom frame is in use.
         See the wiki for more details:
         https://github.com/umrover/mrover-ros/wiki/Localization#guide-to-localization-frames
         """

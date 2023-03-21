@@ -91,7 +91,10 @@ class GPSLinearization:
                         covariance matrix.
         :param imu_msg: Message containing the rover's orientation from IMU, with
                         corresponding covariance matrix.
-        :param
+        :param ref_coord: numpy array containing the geodetic coordinate which will be the origin
+                          of the tangent plane, [latitude, longitude, altitude]
+        :returns: The pose consisting of linearized GPS and IMU orientation, and the corresponding
+                  covariance matrix as a 6x6 numpy array where each row is [x, y, z, roll, pitch, yaw]
         """
         # linearize GPS coordinates into cartesian
         cartesian = np.array(geodetic2enu(gps_msg.latitude, gps_msg.longitude, gps_msg.altitude, *ref_coord, deg=True))
