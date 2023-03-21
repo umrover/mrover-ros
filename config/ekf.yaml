@@ -6,9 +6,9 @@ global_ekf:
   # This option controls whether to use that DoP covariance matrix, or to 
   # replace it with the configured gps_covariane matrix below
   use_gps_dop_covariance: false
-  gps_covariance: [[2, 0, 0],
-                   [0, 2, 0],
-                   [0, 0, 2]]
+  gps_covariance: [[1, 0, 0],
+                   [0, 1, 0],
+                   [0, 0, 1]]
   
   imu_orientation_covariance: [[0.1, 0, 0],
                                [0, 0.1, 0],
