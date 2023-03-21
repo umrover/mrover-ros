@@ -40,7 +40,7 @@ class PassthroughFilter:
     def pose_callback(self, msg: PoseWithCovarianceStamped):
         """
         Publishes the pose of the rover relative to the map frame to the TF tree.
-        The pose will be published either as a direct map->base_link transform, 
+        The pose will be published either as a direct map->base_link transform,
         or as an indirect map-odom transform if the odom frame is in use.
         See the wiki for more details:
         https://github.com/umrover/mrover-ros/wiki/Localization#guide-to-localization-frames
