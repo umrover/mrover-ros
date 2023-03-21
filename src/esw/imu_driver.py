@@ -124,8 +124,10 @@ def main():
         enu_imu_orientation = quaternion_multiply(enu_offset_quat, imu_orientation_data)
 
         # similarly rotate the magnetometer vector into the ENU frame
-        R = rotation_matrix(np.pi / 2, [0, 0, 1])
-        enu_mag_vec = R @ np.array(mag_data)
+        # TODO: fix
+        # R = rotation_matrix(np.pi / 2, [0, 0, 1])
+        # enu_mag_vec = R @ np.array(mag_data)
+        enu_mag_vec = mag_data
 
         # fill in all sensor messages, setting timestamps of each message to right now,
         # and setting the reference frame of all messages to IMU frame
@@ -156,7 +158,8 @@ def main():
         imu_pub.publish(imu_msg)
         temp_pub.publish(temp_msg)
         calibration_pub.publish(calibration_msg)
-        publish_mag_pose(mag_pose_pub, mag_msg, mag_pose_covariance, world_frame)
+        # TODO: fix
+        # publish_mag_pose(mag_pose_pub, mag_msg, mag_pose_covariance, world_frame)
 
 
 if __name__ == "__main__":
