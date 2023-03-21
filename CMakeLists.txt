@@ -6,8 +6,10 @@ set(MROVER_CPP_COMPILE_OPTIONS -std=c++17 -Wall -Wextra -Werror -pedantic)
 
 # clang-tidy
 if (CMAKE_BUILD_TYPE EQUAL "RELEASE")
-    # Staitc analysis
-    set(CMAKE_CXX_CLANG_TIDY clang-tidy-12)
+    if (${DEVICE} NOT MATCHES "jetson")
+        # Staitc analysis
+        set(CMAKE_CXX_CLANG_TIDY clang-tidy-12)
+    endif ()
     # Enable link time optimization
     set(CMAKE_INTERPROCEDURAL_OPTIMIZATION TRUE)
     # Enable emitting optimized assembly for the current CPU
