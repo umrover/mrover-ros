@@ -6,9 +6,9 @@ global_ekf:
   # This option controls whether to use that DoP covariance matrix, or to 
   # replace it with the configured gps_covariane matrix below
   use_gps_dop_covariance: false
-  gps_covariance: [[2, 0, 0],
-                   [0, 2, 0],
-                   [0, 0, 2]]
+  gps_covariance: [[0.1, 0, 0],
+                   [0, 0.1, 0],
+                   [0, 0, 0.1]]
   
   imu_orientation_covariance: [[0.1, 0, 0],
                                [0, 0.1, 0],
@@ -101,12 +101,12 @@ global_ekf:
   deceleration_limits: [1.3, 0.0, 0.0, 0.0, 0.0, 4.5]
 
   # x, y, z, roll, pitch, yaw, vx, vy, vz, vroll, vpitch, vyaw, ax, ay, az
-  process_noise_covariance: [0.05, 0,    0,    0,    0,    0,    0,     0,     0,    0,    0,    0,    0,    0,    0,
-                            0,    0.05, 0,    0,    0,    0,    0,     0,     0,    0,    0,    0,    0,    0,    0,
-                            0,    0,    0.06, 0,    0,    0,    0,     0,     0,    0,    0,    0,    0,    0,    0,
-                            0,    0,    0,    0.03, 0,    0,    0,     0,     0,    0,    0,    0,    0,    0,    0,
-                            0,    0,    0,    0,    0.03, 0,    0,     0,     0,    0,    0,    0,    0,    0,    0,
-                            0,    0,    0,    0,    0,    0.06, 0,     0,     0,    0,    0,    0,    0,    0,    0,
+  process_noise_covariance: [0.1, 0,    0,    0,    0,    0,    0,     0,     0,    0,    0,    0,    0,    0,    0,
+                            0,    0.1, 0,    0,    0,    0,    0,     0,     0,    0,    0,    0,    0,    0,    0,
+                            0,    0,    0.1, 0,    0,    0,    0,     0,     0,    0,    0,    0,    0,    0,    0,
+                            0,    0,    0,    0.1, 0,    0,    0,     0,     0,    0,    0,    0,    0,    0,    0,
+                            0,    0,    0,    0,    0.1, 0,    0,     0,     0,    0,    0,    0,    0,    0,    0,
+                            0,    0,    0,    0,    0,    0.1, 0,     0,     0,    0,    0,    0,    0,    0,    0,
                             0,    0,    0,    0,    0,    0,    0.025, 0,     0,    0,    0,    0,    0,    0,    0,
                             0,    0,    0,    0,    0,    0,    0,     0.025, 0,    0,    0,    0,    0,    0,    0,
                             0,    0,    0,    0,    0,    0,    0,     0,     0.04, 0,    0,    0,    0,    0,    0,
