@@ -27,7 +27,7 @@ def get_covariances() -> Tuple[List, List, List, List]:
     return (orientation, gyro, accel, mag_pose)
 
 
-def publish_mag_pose(pub: rospy.Publisher, msg: Vector3Stamped, covariance: List, frame: str):
+def publish_mag_pose(pub: rospy.Publisher, msg: MagneticField, covariance: List, frame: str):
     """
     Estimates the rover's yaw angle from the magnetometer measurement and publishes it
     as a PoseWithCovarianceStamped for use in the EKF.
@@ -40,8 +40,14 @@ def publish_mag_pose(pub: rospy.Publisher, msg: Vector3Stamped, covariance: List
     """
 
     # get unit magnetic field vector in the XY plane
-    mag_vec = np.array([msg.vector.x, msg.vector.y])
-    mag_vec = mag_vec / np.linalg.norm(mag_vec)
+    mag_vec = np.array([msg.magnetic_field.x, msg.magnetic_field.y])
+    norm = np.linalg.norm(mag_vec)
+
+    # don't do anything if vector has zero norm
+    if np.isclose(norm, 0):
+        rospy.logwarn("Magnetometer vector is zero norm")
+        return
+    mag_vec = mag_vec / norm
 
     # convert it to a rotation about the Z axis
     rotationMatrix = np.array(
@@ -124,10 +130,9 @@ def main():
         enu_imu_orientation = quaternion_multiply(enu_offset_quat, imu_orientation_data)
 
         # similarly rotate the magnetometer vector into the ENU frame
-        # TODO: fix
-        # R = rotation_matrix(np.pi / 2, [0, 0, 1])
-        # enu_mag_vec = R @ np.array(mag_data)
-        enu_mag_vec = mag_data
+        R = rotation_matrix(np.pi / 2, [0, 0, 1])
+        h_mag_vec = np.append(mag_data, 1)
+        enu_mag_vec = (R @ h_mag_vec)[:-1]
 
         # fill in all sensor messages, setting timestamps of each message to right now,
         # and setting the reference frame of all messages to IMU frame
@@ -158,8 +163,7 @@ def main():
         imu_pub.publish(imu_msg)
         temp_pub.publish(temp_msg)
         calibration_pub.publish(calibration_msg)
-        # TODO: fix
-        # publish_mag_pose(mag_pose_pub, mag_msg, mag_pose_covariance, world_frame)
+        publish_mag_pose(mag_pose_pub, mag_msg, mag_pose_covariance, world_frame)
 
 
 if __name__ == "__main__":
