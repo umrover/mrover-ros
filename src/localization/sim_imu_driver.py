@@ -42,19 +42,15 @@ class SimIMUDriver:
         self.imu_pub = rospy.Publisher("imu/data", ImuAndMag, queue_size=1)
         self.mag_pose_pub = rospy.Publisher("imu/mag_pose", PoseWithCovarianceStamped, queue_size=1)
 
-    def imu_callback(self, imu_msg: Imu, mag_msg: Vector3Stamped):
+    def imu_callback(self, imu_msg: Imu, mag_vector_msg: Vector3Stamped):
         imu_msg.orientation_covariance = self.orientation_covariance
         imu_msg.angular_velocity_covariance = self.gyro_covariance
         imu_msg.linear_acceleration_covariance = self.accel_covariance
+
+        mag_msg = MagneticField(header=mag_vector_msg.header, magnetic_field=mag_vector_msg.vector)
+
         self.imu_pub.publish(
-            ImuAndMag(
-                header=imu_msg.header,
-                imu=imu_msg,
-                mag=MagneticField(
-                    header=mag_msg.header,
-                    magnetic_field=mag_msg.vector,
-                ),
-            )
+            ImuAndMag(header=imu_msg.header, imu=imu_msg, mag=mag_msg),
         )
         publish_mag_pose(self.mag_pose_pub, mag_msg, self.mag_pose_covariance, self.world_frame)
 

@@ -48,7 +48,18 @@ class PassthroughFilter:
         rover_in_map = SE3.from_pos_quat(numpify(msg.pose.pose.position), numpify(msg.pose.pose.orientation))
         if self.use_odom:
             # Get the odom to rover transform from the TF tree
-            rover_in_odom = SE3.from_tf_tree(self.tf_buffer, self.odom_frame, self.rover_frame)
+            try:
+                rover_in_odom = SE3.from_tf_tree(self.tf_buffer, self.odom_frame, self.rover_frame)
+
+            # don't do anything if you can't find that transform
+            except (
+                tf2_ros.LookupException,
+                tf2_ros.ConnectivityException,
+                tf2_ros.ExtrapolationException,
+            ):
+                rospy.logerr(f"Could not find transform from {self.odom_frame} frame to {self.rover_frame} frame")
+                return
+
             rover_to_odom = rover_in_odom.transform_matrix()
             rover_to_map = rover_in_map.transform_matrix()
 

@@ -25,8 +25,8 @@
       <frameId>base_link</frameId>
       <topicName>gps/fix</topicName>
       <velocityTopicName>gps/fix_velocity</velocityTopicName>
-      <referenceLatitude>42.2</referenceLatitude>
-      <referenceLongitude>-83.7</referenceLongitude>
+      <referenceLatitude>42.293195</referenceLatitude>
+      <referenceLongitude>-83.7096706</referenceLongitude>
       <referenceHeading>90.0</referenceHeading>
       <referenceAltitude>0.0</referenceAltitude>
       <offset>0 0 0</offset>
