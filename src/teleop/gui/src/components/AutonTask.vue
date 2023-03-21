@@ -96,7 +96,7 @@ export default {
     DriveControls,
     IMUCalibration,
     JoystickValues,
-    MastGimbalControls,
+    MastGimbalControls
   },
 
   data() {
@@ -105,18 +105,18 @@ export default {
       odom: {
         latitude_deg: 42.294864932393835,
         longitude_deg: -83.70781314674628,
-        bearing_deg: 0,
+        bearing_deg: 0
       },
 
       nav_status: {
         nav_state_name: "OffState",
         completed_wps: 0,
-        total_wps: 0,
+        total_wps: 0
       },
 
       enableAuton: {
         enable: false,
-        GPSWaypoint: [],
+        GPSWaypoint: []
       },
 
       teleopEnabledCheck: false,
@@ -129,14 +129,14 @@ export default {
       nav_status_sub: null,
       odom_sub: null,
       auton_led_client: null,
-      tfClient: null,
+      tfClient: null
     };
   },
 
   computed: {
     ...mapGetters("autonomy", {
       autonEnabled: "autonEnabled",
-      teleopEnabled: "teleopEnabled",
+      teleopEnabled: "teleopEnabled"
     }),
 
     nav_state_color: function () {
@@ -153,7 +153,7 @@ export default {
       } else {
         return navRed;
       }
-    },
+    }
   },
 
   watch: {
@@ -172,20 +172,20 @@ export default {
       if (send) {
         this.sendColor();
       }
-    },
+    }
   },
 
   created: function () {
     this.nav_status_sub = new ROSLIB.Topic({
       ros: this.$ros,
       name: "/smach/container_status",
-      messageType: "smach_msgs/SmachContainerStatus",
+      messageType: "smach_msgs/SmachContainerStatus"
     });
 
     this.odom_sub = new ROSLIB.Topic({
       ros: this.$ros,
       name: "/gps/fix",
-      messageType: "sensor_msgs/NavSatFix",
+      messageType: "sensor_msgs/NavSatFix"
     });
 
     this.tfClient = new ROSLIB.TFClient({
@@ -193,24 +193,20 @@ export default {
       fixedFrame: "map",
       // Thresholds to trigger subscription callback
       angularThres: 0.01,
-      transThres: 0.01,
+      transThres: 0.01
     });
 
     this.auton_led_client = new ROSLIB.Service({
       ros: this.$ros,
       name: "change_auton_led_state",
-      serviceType: "mrover/ChangeAutonLEDState",
+      serviceType: "mrover/ChangeAutonLEDState"
     });
 
     // Subscriber for odom to base_link transform
     this.tfClient.subscribe("base_link", (tf) => {
       // Callback for IMU quaternion that describes bearing
       let quaternion = tf.rotation;
-      quaternion = [quaternion.w, quaternion.x, quaternion.y, quaternion.z];
-      //Quaternion to euler angles
-      let euler = qte(quaternion);
-      // euler[2] == euler z component
-      this.odom.bearing_deg = euler[2] * (180 / Math.PI);
+      this.odom.bearing_deg = this.quaternionToDisplayAngle(quaternion);
     });
 
     this.nav_status_sub.subscribe((msg) => {
@@ -234,9 +230,17 @@ export default {
   },
 
   methods: {
+    quaternionToDisplayAngle(quaternion) {
+      quaternion = [quaternion.w, quaternion.x, quaternion.y, quaternion.z];
+      //Quaternion to euler angles
+      let euler = qte(quaternion);
+      // euler[2] == euler z component
+      return (Math.PI / 2.0 - euler[2]) * (180 / Math.PI);
+    },
+
     sendColor() {
       let request = new ROSLIB.ServiceRequest({
-        color: this.ledColor,
+        color: this.ledColor
       });
 
       this.auton_led_client.callService(request, (result) => {
@@ -247,8 +251,8 @@ export default {
           }, 1000);
         }
       });
-    },
-  },
+    }
+  }
 };
 </script>
 
