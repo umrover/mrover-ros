@@ -8,3 +8,7 @@ Eigen::Matrix4d SO3::matrix() const {
     affine.rotate(mQuaternion);
     return affine.matrix();
 }
+
+Eigen::Quaterniond SO3::quaternion() const {
+    return mQuaternion;
+}

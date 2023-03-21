@@ -26,6 +26,8 @@ public:
     explicit SO3(Eigen::Quaterniond const& quaternion);
 
     [[nodiscard]] Eigen::Matrix4d matrix() const;
+
+    [[nodiscard]] Eigen::Quaterniond quaternion() const;
 };
 
 class SE3 {
