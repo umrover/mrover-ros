@@ -7,7 +7,8 @@ from nav_msgs.msg import Odometry
 from mrover.msg import Waypoint, WaypointType
 from smach_msgs.msg import SmachContainerStatus
 import message_filters
-# from util.course_publish_helpers import convert_waypoint_to_gps, publish_waypoints
+from util.course_publish_helpers import convert_waypoint_to_gps, publish_waypoints
+from tf.transformations import euler_from_quaternion
 from util.SE3 import SE3
 
 
@@ -42,8 +43,16 @@ ANGLE_PATH = [
 LINE_PATH = [
     (
         Waypoint(fiducial_id=0, tf_id="course0", type=WaypointType(val=WaypointType.NO_SEARCH)),
-        SE3(position=np.array([6, 0, 0])),
+        SE3(position=np.array([7, 3.7, 0])),
     ),
+    # (
+    #     Waypoint(fiducial_id=0, tf_id="course1", type=WaypointType(val=WaypointType.NO_SEARCH)),
+    #     SE3(position=np.array([-3.2, 1.4, 0])),
+    # ),
+    # (
+    #     Waypoint(fiducial_id=0, tf_id="course0", type=WaypointType(val=WaypointType.NO_SEARCH)),
+    #     SE3(position=np.array([-1, 5, 0])),
+    # ),
 ]
 
 
@@ -77,7 +86,7 @@ class EKF_Test:
         :parm ekf_odom_msg: message containing filtered pose output from EKF
         :param truth_odom_msg: message containing ground truth pose from sim
         """
-        print("odom")
+        # print("odom")
         msgs = [raw_pose_msg, ekf_odom_msg]
         datas = [self.raw_data, self.ekf_data]
 
@@ -95,7 +104,7 @@ class EKF_Test:
 
         :param status_msg: nav status message
         """
-        print("test")
+        # print("test")
         self.nav_state = status_msg.active_states[0]
 
     def execute_path(self):
@@ -103,11 +112,11 @@ class EKF_Test:
         Publish a sequence of waypoints for the rover to drive, wait until it has finished driving to them,
         then plot the collected data.
         """
-        path = ANGLE_PATH
-        # publish_waypoints([convert_waypoint_to_gps(waypoint) for waypoint in path])
+        path = LINE_PATH
+        publish_waypoints([convert_waypoint_to_gps(waypoint) for waypoint in path])
 
         # wait until we reach the waypoint
-        while self.nav_state != "DoneState":
+        while not rospy.is_shutdown() and self.nav_state != "DoneState":
             rospy.sleep(0.1)
 
         self.plot_data()
@@ -116,22 +125,37 @@ class EKF_Test:
         """
         Plot collected pose data
         """
-        print(self.timestamps)
+        # print(self.timestamps)
         times = np.vstack(self.timestamps)
         times -= times[0]
         raw_arr = np.vstack(self.raw_data)
         ekf_arr = np.vstack(self.ekf_data)
         # gt_arr = np.vstack(self.gt_data)
         # raw_pos_err = np.linalg.norm(gt_arr[:, :3] - raw_arr[:, :3], axis=1)
-        # pos_err = np.linalg.norm(gt_arr[:, :3] - ekf_arr[:, :3], axis=1)
+        pos_err = np.linalg.norm(raw_arr[:, :3] - ekf_arr[:, :3], axis=1)
 
         # raw_pos_rmse = np.sqrt(np.sum(raw_pos_err**2) / raw_pos_err.shape[0])
-        # pos_rmse = np.sqrt(np.sum(pos_err**2) / pos_err.shape[0])
+        pos_rmse = np.sqrt(np.sum(pos_err**2) / pos_err.shape[0])
         # print(pos_err.shape)
-        # ang_err = np.linalg.norm(gt_arr[:, 3:] - ekf_arr[:, 3:], axis=1)
+        raw_q = raw_arr[:, 3:]
+        ekf_q = ekf_arr[:, 3:]
+
+        raw_yaw = []
+        ekf_yaw = []
+        for q in raw_q:
+            _, _, yaw = euler_from_quaternion(q)
+            raw_yaw.append(yaw)
+        for q in ekf_q:
+            _, _, yaw = euler_from_quaternion(q)
+            ekf_yaw.append(yaw)
+        raw_yaw = np.vstack(raw_yaw)
+        ekf_yaw = np.vstack(ekf_yaw)
+        yaw_err = np.linalg.norm(raw_yaw - ekf_yaw, axis=1)
+        yaw_rmse = np.sqrt(np.sum(yaw_err**2) / yaw_err.shape[0])
+
         # print(ang_err.shape)
 
-        fig, axs = plt.subplots(2, 2)
+        fig, axs = plt.subplots(2, 3)
         axs[0, 0].plot(raw_arr[:, 0], raw_arr[:, 1], "tab:red", label="Raw GPS")
         axs[0, 0].plot(ekf_arr[:, 0], ekf_arr[:, 1], "tab:green", label="EKF")
         # axs[0, 0].plot(gt_arr[:, 0], gt_arr[:, 1], "tab:blue", label="Ground Truth")
@@ -140,13 +164,19 @@ class EKF_Test:
         axs[0, 0].set_title("Rover Path")
         axs[0, 0].legend()
 
-        # axs[0, 1].plot(times, pos_err, "tab:green", label=f"EKF, RMSE = {pos_rmse:.3f}")
+        axs[0, 1].plot(times, pos_err, "tab:green", label=f"error between EKF and raw GPS, RMSE = {pos_rmse:.3f}")
         # axs[0, 1].plot(times, raw_pos_err, "tab:red", label=f"Raw GPS, RMSE = {raw_pos_rmse:.3f}")
         # axs[1].plot(times, ang_err, "b-", label="angle error")
         axs[0, 1].set_xlabel("time (s)")
         axs[0, 1].set_ylabel("error (meters)")
         axs[0, 1].set_title("Position Error")
         axs[0, 1].legend()
+
+        axs[0, 2].plot(times, yaw_err, "tab:green", label=f"yaw error between EKF and raw IMU, RMSE = {yaw_rmse:.3f}")
+        axs[0, 2].set_xlabel("time (s)")
+        axs[0, 2].set_ylabel("yaw error (radians)")
+        axs[0, 2].set_title("Yaw Error vs Time")
+        axs[0, 2].legend()
 
         axs[1, 0].plot(times, ekf_arr[:, 0], "tab:green", label="EKF")
         axs[1, 0].plot(times, raw_arr[:, 0], "tab:red", label="Raw GPS")
@@ -163,6 +193,13 @@ class EKF_Test:
         axs[1, 1].set_ylabel("y position (meters)")
         axs[1, 1].set_title("Y Position vs Time")
         axs[1, 1].legend()
+
+        axs[1, 2].plot(times, ekf_yaw, "tab:green", label="EKF")
+        axs[1, 2].plot(times, raw_yaw, "tab:red", label="Raw IMU")
+        axs[1, 2].set_xlabel("time (s)")
+        axs[1, 2].set_ylabel("yaw (radians)")
+        axs[1, 2].set_title("Yaw vs Time")
+        axs[1, 2].legend()
 
         plt.show()
 
