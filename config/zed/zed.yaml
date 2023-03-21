@@ -1,7 +1,3 @@
-# params/zed_yaml
-# Parameters for Stereolabs ZED camera
----
-
 general:
   camera_model:               'zed'
   camera_name:                'zed'

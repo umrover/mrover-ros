@@ -1,7 +1,3 @@
-# params/common.yaml
-# Common parameters to Stereolabs ZED and ZED mini cameras
----
-
 # Dynamic parameters cannot have a namespace
 brightness:                 4                                   # Dynamic
 contrast:                   4                                   # Dynamic
@@ -17,7 +13,7 @@ whitebalance_temperature:   42                                  # Dynamic - work
 depth_confidence:           30                                  # Dynamic
 depth_texture_conf:         100                                 # Dynamic
 pub_frame_rate:             60.0                                # Dynamic - frequency of publishing of video and depth data
-point_cloud_freq:           60.0                                # Dynamic - frequency of the pointcloud publishing (equal or less to `grab_frame_rate` value)
+point_cloud_freq:           30.0                                # Dynamic - frequency of the pointcloud publishing (equal or less to `grab_frame_rate` value)
 
 general:
     camera_name:                zed                             # A name for the camera (can be different from camera model and node name and can be overwritten by the launch file)
@@ -39,7 +35,7 @@ video:
 depth:
     quality:                    2                               # '0': NONE, '1': PERFORMANCE, '2': QUALITY, '3': ULTRA, '4': NEURAL
     sensing_mode:               0                               # '0': STANDARD, '1': FILL (not use FILL for robotic applications)
-    depth_stabilization:        1                               # `0`: disabled, `1`: enabled
+    depth_stabilization:        0                               # `0`: disabled, `1`: enabled
     openni_depth_mode:          false                           # 'false': 32bit float meters, 'true': 16bit uchar millimeters
     depth_downsample_factor:    0.5                             # Resample factor for depth data matrices [0.01,1.0] The SDK works with native data sizes, but publishes rescaled matrices (depth map, point cloud, ...)
 
@@ -48,17 +44,32 @@ pos_tracking:
     publish_tf:                 false                           # publish `visual_odom -> base_link` TF
     publish_map_tf:             false                           # publish `map -> visual_odom` TF
     map_frame:                  'map'                           # main frame
-    odometry_frame:             'odom'                   # odometry frame
+    odometry_frame:             'odom'                          # odometry frame
     area_memory_db_path:        'zed_area_memory.area'          # file loaded when the node starts to restore the "known visual features" map.
     save_area_memory_db_on_exit: false                          # save the "known visual features" map when the node is correctly closed to the path indicated by `area_memory_db_path`
     area_memory:                true                            # Enable to detect loop closure
     floor_alignment:            false                           # Enable to automatically calculate camera/floor offset
     initial_base_pose:          [0.0,0.0,0.0, 0.0,0.0,0.0]      # Initial position of the `base_frame` -> [X, Y, Z, R, P, Y]
     init_odom_with_first_valid_pose: true                       # Enable to initialize the odometry with the first valid pose
-    path_pub_rate:              2.0                             # Camera trajectory publishing frequency
+    path_pub_rate:              60.0                             # Camera trajectory publishing frequency
     path_max_count:             -1                              # use '-1' for unlimited path size
     two_d_mode:                 false                           # Force navigation on a plane. If true the Z value will be fixed to "fixed_z_value", roll and pitch to zero
     fixed_z_value:              0.00                            # Value to be used for Z coordinate if `two_d_mode` is true
+
+object_detection:
+    od_enabled:                 false                           # True to enable Object Detection [not available for ZED]
+    model:                      0                               # '0': MULTI_CLASS_BOX - '1': MULTI_CLASS_BOX_ACCURATE - '2': HUMAN_BODY_FAST - '3': HUMAN_BODY_ACCURATE - '4': MULTI_CLASS_BOX_MEDIUM - '5': HUMAN_BODY_MEDIUM - '6': PERSON_HEAD_BOX
+    confidence_threshold:       50                              # Minimum value of the detection confidence of an object [0,100]
+    max_range:                  15.                             # Maximum detection range
+    object_tracking_enabled:    true                            # Enable/disable the tracking of the detected objects
+    body_fitting:               false                           # Enable/disable body fitting for 'HUMAN_BODY_X' models
+    mc_people:                  true                            # Enable/disable the detection of persons for 'MULTI_CLASS_BOX_X' models
+    mc_vehicle:                 true                            # Enable/disable the detection of vehicles for 'MULTI_CLASS_BOX_X' models
+    mc_bag:                     true                            # Enable/disable the detection of bags for 'MULTI_CLASS_BOX_X' models
+    mc_animal:                  true                            # Enable/disable the detection of animals for 'MULTI_CLASS_BOX_X' models
+    mc_electronics:             true                            # Enable/disable the detection of electronic devices for 'MULTI_CLASS_BOX_X' models
+    mc_fruit_vegetable:         true                            # Enable/disable the detection of fruits and vegetables for 'MULTI_CLASS_BOX_X' models
+    mc_sport:                   true                            # Enable/disable the detection of sport-related objects for 'MULTI_CLASS_BOX_X' models
 
 mapping:
     mapping_enabled:            false                           # True to enable mapping and fused point cloud publication

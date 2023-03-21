@@ -1,14 +1,14 @@
 <launch>
-    <arg name="run_perception" default="true"/>
+    <arg name="run_tag_detector" default="true"/>
     <arg name="run_visual_odom" default="true"/>
 
     <!-- Nodelet Manager -->
     <node pkg="nodelet" type="nodelet" name="zed_nodelet_manager" args="manager" output="screen"/>
 
-    <node if="$(arg run_perception)"
+    <node if="$(arg run_tag_detector)"
           pkg="nodelet" type="nodelet" name="zed_nodelet"
           args="load zed_nodelets/ZEDWrapperNodelet zed_nodelet_manager" output="screen">
-        <rosparam file="$(find mrover)/config/zed/common.yaml" command="load"/>
+        <rosparam file="$(find mrover)/config/zed/base.yaml" command="load"/>
         <rosparam file="$(find mrover)/config/zed/zed.yaml" command="load"/>
 
         <remap to="/camera/color/image_raw" from="/zed_nodelet/rgb/image_rect_color"/>
@@ -45,7 +45,7 @@
         <remap from="/right/camera_info" to="/zed_nodelet/right/camera_info"/>
 
         <param name="GFTT/MinDistance" type="string" value="10"/>
-        <param name="OdomF2M/MaxSize" type="string" value="500"/> 
+        <param name="OdomF2M/MaxSize" type="string" value="500"/>
         <param name="Vis/MaxFeatures" type="string" value="300"/>
         <!-- Correspondences: 0=Features Matching, 1=Optical Flow -->
         <param name="Vis/CorType" value="0"/>
