@@ -1,20 +1,15 @@
 <?xml version="1.0"?>
 <package format="2">
     <name>mrover</name>
-    <version>0.0.0</version>
-    <description>The mrover package</description>
+    <version>1.0.0</version>
+    <description>MRover ROS Package</description>
 
-    <!-- One maintainer tag required, multiple allowed, one person per tag -->
-    <!-- Example:  -->
-    <!-- <maintainer email="jane.doe@example.com">Jane Doe</maintainer> -->
-    <maintainer email="ashwin@todo.todo">ashwin</maintainer>
-
+    <maintainer email="rover-software-23@umich.edu">MRover</maintainer>
 
     <!-- One license tag required, multiple allowed, one license per tag -->
     <!-- Commonly used license strings: -->
     <!--   BSD, MIT, Boost Software License, GPLv2, GPLv3, LGPLv2.1, LGPLv3 -->
     <license>MIT</license>
-
 
     <!-- Url tags are optional, but multiple are allowed, one per tag -->
     <!-- Optional attribute type can be: website, bugtracker, or repository -->
@@ -55,13 +50,13 @@
     <build_depend>rospy</build_depend>
     <build_depend>std_msgs</build_depend>
     <build_depend>nodelet</build_depend>
-    <exec_depend>nodelet</exec_depend>
     <build_export_depend>roscpp</build_export_depend>
     <build_export_depend>rospy</build_export_depend>
     <build_export_depend>std_msgs</build_export_depend>
     <exec_depend>roscpp</exec_depend>
     <exec_depend>rospy</exec_depend>
     <exec_depend>std_msgs</exec_depend>
+    <exec_depend>nodelet</exec_depend>
     <exec_depend>xacro</exec_depend>
     <exec_depend>joint_state_publisher</exec_depend>
     <exec_depend>robot_state_publisher</exec_depend>
@@ -71,7 +66,6 @@
 
     <!-- Visualization -->
     <depend>rviz</depend>
-    <depend>mapviz</depend>
     <depend>hector_trajectory_server</depend>
 
     <!-- Simulation -->
@@ -86,7 +80,6 @@
     <depend>tf2_geometry_msgs</depend>
     <depend>tf2_ros</depend>
     <depend>tf2</depend>
-    <depend>visualization_msgs</depend>
     <depend>image_transport</depend>
     <depend>sensor_msgs</depend>
     <depend>cv_bridge</depend>
@@ -94,7 +87,6 @@
     <depend>dynamic_reconfigure</depend>
     <depend>python3-cairosvg</depend>
     <depend>python3-joblib</depend>
-    <depend>camera_info_manager</depend>
     <depend>rtabmap_ros</depend>
 
     <!-- Localization -->
