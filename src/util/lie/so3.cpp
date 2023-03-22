@@ -2,6 +2,7 @@
 #include <stdexcept>
 
 SO3::SO3(Eigen::Quaterniond const& quaternion) : mQuaternion(quaternion) {
+    // TODO: numerical error can happen, implement normalization: https://stackoverflow.com/questions/11667783/quaternion-and-normalization
     if (std::fabs(mQuaternion.norm() - 1.0) > std::numeric_limits<double>::epsilon()) {
         throw std::invalid_argument("Quaternion is not normalized");
     }
