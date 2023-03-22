@@ -121,7 +121,7 @@ TagDetectorNode::TagDetectorNode(ros::NodeHandle const& nh, ros::NodeHandle cons
     auto defaultDetectorParams = cv::aruco::DetectorParameters::create();
     int dictionaryNumber;
 
-    mNh.param<bool>("gps_linearization/use_odom_frame", mUseOdom, false);
+    mNh.param<bool>("use_odom_frame", mUseOdom, false);
     mNh.param<std::string>("odom_frame", mOdomFrameId, "odom");
     mNh.param<std::string>("map_frame", mMapFrameId, "map");
     mNh.param<std::string>("rover_frame", mBaseLinkFrameId, "base_link");
