@@ -23,7 +23,7 @@ public:
 
     SO3() = default;
 
-    explicit SO3(Eigen::Quaterniond const& quaternion);
+    SO3(Eigen::Quaterniond const& quaternion);
 
     [[nodiscard]] Eigen::Matrix4d matrix() const;
 
@@ -54,7 +54,7 @@ public:
 
     SE3() = default;
 
-    explicit SE3(R3 position, SO3 rotation = SO3{});
+    SE3(R3 position, SO3 rotation = SO3{});
 
     [[nodiscard]] Eigen::Matrix4d matrix() const;
 

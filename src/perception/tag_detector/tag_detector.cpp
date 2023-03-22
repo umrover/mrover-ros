@@ -139,8 +139,8 @@ TagDetectorNode::TagDetectorNode(ros::NodeHandle const& nh, ros::NodeHandle cons
     mImgPub = mIt.advertise("tag_detection", 1);
     mDictionary = cv::aruco::getPredefinedDictionary(dictionaryNumber);
 
-    mImgSub = mIt.subscribe("camera/color/image_raw", 1, &TagDetectorNode::imageCallback, this);
-    mPcSub = mNh.subscribe("camera/depth/points", 1, &TagDetectorNode::pointCloudCallback, this);
+    mImgSub = mIt.subscribe("camera/left/image", 1, &TagDetectorNode::imageCallback, this);
+    mPcSub = mNh.subscribe("camera/left/points", 1, &TagDetectorNode::pointCloudCallback, this);
     mIgnoreSub = mNh.subscribe("ignore_fiducials", 1, &TagDetectorNode::ignoreCallback, this);
     mServiceEnableDetections = mNh.advertiseService("enable_detections", &TagDetectorNode::enableDetectionsCallback, this);
 

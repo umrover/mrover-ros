@@ -7,10 +7,10 @@ namespace mrover {
     public:
         TagDetectorNodelet() = default;
 
-        ~TagDetectorNodelet() = default;
+        ~TagDetectorNodelet() override = default;
 
     private:
-        virtual void onInit() {
+        void onInit() override {
             dtl = boost::make_shared<TagDetectorNode>(getNodeHandle(), getPrivateNodeHandle());
         }
 

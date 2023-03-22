@@ -1,24 +1,21 @@
 <launch>
-    <arg name="run_tag_detector" default="true"/>
-    <arg name="run_visual_odom" default="true"/>
+    <!-- 'zed' (ZED 1) or 'zed2i' (ZED 2i) -->
+    <arg name="zed_model" default="zed2i"/>
+    <!-- Use ZED's built-in visual odometry (called positional tracking), otherwise use rtabmap stereo odometry -->
+    <arg name="use_builtin_visodom" default="true"/>
 
-    <!-- Nodelet Manager -->
-    <node pkg="nodelet" type="nodelet" name="zed_nodelet_manager" args="manager" output="screen"/>
-
-    <node if="$(arg run_tag_detector)"
-          pkg="nodelet" type="nodelet" name="zed_nodelet"
-          args="load zed_nodelets/ZEDWrapperNodelet zed_nodelet_manager" output="screen">
+    <!-- ZED Wrapper Nodelet -->
+    <node pkg="nodelet" type="nodelet" name="zed_nodelet" respawn="true"
+          args="load zed_nodelets/ZEDWrapperNodelet perception_nodelet_manager" output="screen">
         <rosparam file="$(find mrover)/config/zed/base.yaml" command="load"/>
-        <rosparam file="$(find mrover)/config/zed/zed.yaml" command="load"/>
+        <rosparam file="$(find mrover)/config/zed/$(arg zed_model).yaml" command="load"/>
+        <rosparam if="$(arg use_builtin_visodom)" file="$(find mrover)/config/zed/builtin_positional_tracking.yaml" command="load"/>
 
-        <remap to="/camera/color/image_raw" from="/zed_nodelet/rgb/image_rect_color"/>
-        <remap to="/camera/depth/points" from="/zed_nodelet/point_cloud/cloud_registered"/>
-        <remap to="/camera/color/camera_info" from="/zed_nodelet/rgb/camera_info"/>
-    </node>
-
-    <!-- Tag detector as nodelet -->
-    <node pkg="nodelet" type="nodelet" name="tag_detector"
-          args="load mrover/TagDetectorNodelet zed_nodelet_manager" output="screen">
+        <remap to="/camera/left/image" from="/zed_nodelet/left/image_rect_color"/>
+        <remap to="/camera/right/image" from="/zed_nodelet/right/image_rect_color"/>
+        <remap to="/camera/left/camera_info" from="/zed_nodelet/left/camera_info"/>
+        <remap to="/camera/right/camera_info" from="/zed_nodelet/right/camera_info"/>
+        <remap to="/camera/left/points" from="/zed_nodelet/point_cloud/cloud_registered"/>
     </node>
 
     <!-- Static TF publisher for ZED mount-->
@@ -27,9 +24,8 @@
 
     <!-- Load ZED URDF -->
     <param name="zed_description" command="$(find xacro)/xacro '$(find zed_wrapper)/urdf/zed_descr.urdf.xacro'
-                        camera_name:=zed
-                        camera_model:=zed
-                        base_frame:=base_link"/>
+        camera_name:=$(arg zed_model)
+        camera_model:=$(arg zed_model)"/>
 
     <!-- ZED URDF publisher -->
     <node name="zed_state_publisher" pkg="robot_state_publisher" type="robot_state_publisher" output="screen"
@@ -38,11 +34,12 @@
     </node>
 
     <!-- rtabmap visual odometry -->
-    <node if="$(arg run_visual_odom)" name="stereo_odometry" pkg="rtabmap_ros" type="stereo_odometry" output="screen">
-        <remap from="/left/image_rect" to="/zed_nodelet/left/image_rect_color"/>
-        <remap from="/left/camera_info" to="/zed_nodelet/left/camera_info"/>
-        <remap from="/right/image_rect" to="/zed_nodelet/right/image_rect_color"/>
-        <remap from="/right/camera_info" to="/zed_nodelet/right/camera_info"/>
+    <node unless="$(arg use_builtin_visodom)"
+          name="stereo_odometry" pkg="rtabmap_ros" type="stereo_odometry" respawn="true" output="screen">
+        <remap from="/left/image_rect" to="/camera/left/image"/>
+        <remap from="/left/camera_info" to="/camera/left/camera_info"/>
+        <remap from="/right/image_rect" to="/camera/right/image"/>
+        <remap from="/right/camera_info" to="/camera/right/camera_info"/>
 
         <param name="GFTT/MinDistance" type="string" value="10"/>
         <param name="OdomF2M/MaxSize" type="string" value="500"/>

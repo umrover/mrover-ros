@@ -117,14 +117,14 @@ std::optional<SE3> getFidInCamFromPixel(PointCloudPtr const& cloudPtr, size_t u,
         ROS_WARN("Tag center out of bounds");
         return std::nullopt;
     }
-    
+
     pcl::PointXYZRGBNormal const& point = cloudPtr->at(static_cast<int>(u), static_cast<int>(v));
     if (!std::isfinite(point.x) || !std::isfinite(point.y) || !std::isfinite(point.z)) {
         ROS_WARN("Tag center point not finite: [%f %f %f]", point.x, point.y, point.z);
         return std::nullopt;
     }
 
-    return SE3{R3{point.x, point.y, point.z}};
+    return {R3{point.x, point.y, point.z}};
 }
 
 /**

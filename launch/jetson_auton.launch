@@ -1,10 +1,5 @@
 <launch>
-    <arg name="zed2i" value="false"/>
-
     <include file="$(find mrover)/launch/jetson.launch"/>
-    
-    <include if="$(arg zed2i)" file="$(find mrover)/launch/zed2i.launch"/>
-    <include unless="$(arg zed2i)" file="$(find mrover)/launch/zed.launch"/>
-
+    <include file="$(find mrover)/launch/zed.launch"/>
     <include file="$(find mrover)/launch/auton.launch"/>
 </launch>

@@ -5,15 +5,20 @@
                          part of the auton system. Should only be used for testing.
  -->
 <launch>
-    <arg name="run_perception" default="true"/>
+    <arg name="run_tag_detector" default="true"/>
 
     <!--
       ==========
       Perception
       ==========
     -->
-    <!-- node to detect AR tags and publish them to the TF tree -->
-    <node if="$(arg run_perception)" name="tag_detector" pkg="mrover" type="tag_detector"/>
+    <node pkg="nodelet" type="nodelet" name="perception_nodelet_manager" respawn="true"
+          args="manager" output="screen"/>
+    <!-- nodelet to detect AR tags and publish them to the TF tree -->
+    <node if="$(arg run_tag_detector)"
+          pkg="nodelet" type="nodelet" name="tag_detector" respawn="true"
+          args="load mrover/TagDetectorNodelet perception_nodelet_manager" output="screen">
+    </node>
 
     <!--
       ===========
@@ -22,7 +27,7 @@
     -->
     <!-- node to navigate to a series of waypoints, AR tags, and gates -->
     <rosparam command="load" file="$(find mrover)/config/navigation.yaml" />
-    <node name="nav" pkg="mrover" type="navigation.py"/>
+    <node name="nav" pkg="mrover" type="navigation.py" output="screen"/>
 
   <!--
     ============
@@ -33,7 +38,7 @@
   <node name="gps_linearization" pkg="mrover" type="gps_linearization.py" output="screen" />
 
   <!-- plot the rover trajectory in rviz as it drives -->
-  <node name="hectory_trajectory_server" output="screen" pkg="hector_trajectory_server" type="hector_trajectory_server" >
+  <node name="hector_trajectory_server" output="screen" pkg="hector_trajectory_server" type="hector_trajectory_server" >
     <param name="target_frame_name" type="string" value="map" />
     <param name="source_frame_name" type="string" value="base_link" /> 
     <param name="trajectory_update_rate" type="double" value="4" /> 
