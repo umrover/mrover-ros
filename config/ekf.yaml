@@ -1,5 +1,4 @@
 # EKF parameters to be used on the real rover
-# TODO: update with correctly tuned values
 global_ekf:
   # The GPS driver will estimate covariance using Dilution of Precision (DoP)
   # and publish that covariance matrix in the GPS message.
