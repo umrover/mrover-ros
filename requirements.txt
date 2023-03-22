@@ -8,7 +8,8 @@ jsonschema==4.16.0
 kconfiglib==14.1.0
 moteus==0.3.48
 mypy==0.971
-odrive==0.6.3
 pymap3d==2.9.1
 PyQt5==5.14.1
 pyserial==3.5
+Shapely==2.0.1
+pandas==1.5.2

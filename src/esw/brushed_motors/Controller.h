@@ -5,23 +5,65 @@
 #include <cmath>         // for M_PI
 #include <limits>        // for numeric limits
 #include <mutex>         // for mutex
-#include <ros/console.h> // for ROS_INFO
+#include <ros/console.h> // for ROS_ERROR
 #include <string.h>      // for string and memcpy
 
-#define OFF 0x00, 0, 0
-#define ON 0x0F, 0, 0
-#define OPEN 0x10, 4, 0
-#define OPEN_PLUS 0x1F, 4, 4
-#define CLOSED 0x20, 8, 0
-#define CLOSED_PLUS 0x2F, 8, 4
-#define CONFIG_PWM 0x30, 2, 0
-#define CONFIG_K 0x3F, 12, 0
-#define QUAD 0x40, 0, 4
-#define ADJUST 0x4F, 4, 0
-#define ABS_ENC 0x50, 0, 4
-#define LIMIT 0x60, 0, 1
-#define CALIBRATED 0x6F, 0, 1
-#define LIMIT_ON 0x7F, 1, 0
+#define OFF_OP 0x00
+#define OFF_WB 0
+#define OFF_RB 0
+
+#define ON_OP 0x01
+#define ON_WB 0
+#define ON_RB 0
+
+#define OPEN_OP 0x02
+#define OPEN_WB 4
+#define OPEN_RB 0
+
+#define OPEN_PLUS_OP 0x03
+#define OPEN_PLUS_WB 4
+#define OPEN_PLUS_RB 4
+
+#define CLOSED_OP 0x04
+#define CLOSED_WB 8
+#define CLOSED_RB 0
+
+#define CLOSED_PLUS_OP 0x05
+#define CLOSED_PLUS_WB 8
+#define CLOSED_PLUS_RB 4
+
+#define CONFIG_PWM_OP 0x06
+#define CONFIG_PWM_WB 2
+#define CONFIG_PWM_RB 0
+
+#define CONFIG_K_OP 0x07
+#define CONFIG_K_WB 12
+#define CONFIG_K_RB 0
+
+#define QUAD_OP 0x08
+#define QUAD_WB 0
+#define QUAD_RB 4
+
+#define ADJUST_OP 0x09
+#define ADJUST_WB 4
+#define ADJUST_RB 0
+
+#define ABS_ENC_OP 0x0A
+#define ABS_ENC_WB 0
+#define ABS_ENC_RB 4
+
+#define LIMIT_OP 0x0B
+#define LIMIT_WB 0
+#define LIMIT_RB 1
+
+#define CALIBRATED_OP 0x0C
+#define CALIBRATED_WB 0
+#define CALIBRATED_RB 1
+
+#define LIMIT_ON_OP 0x0D
+#define LIMIT_ON_WB 1
+#define LIMIT_ON_RB 0
+
 #define UINT8_POINTER_T reinterpret_cast<uint8_t*>
 
 #define CALIBRATED_BOOL 0xFF
@@ -50,7 +92,8 @@ public:
     float inversion = 1.0f;
 
     // REQUIRES: _name is the name of the motor,
-    // i2cAddress is the slave address of the physical controller,
+    // mcuID is the mcu id of the controller which dictates the slave address,
+    // _motorID is the motor id of the motor that is to be controlled,
     // motorMaxVoltage is the max allowed voltage of the motor,
     // and driverVoltage is the input voltage of the driver.
     // 0 < motorMaxVoltage <= driverVoltage <= 36.
@@ -63,7 +106,8 @@ public:
     // physical controller (the STM32).
     Controller(
             std::string& _name,
-            uint8_t i2cAddress,
+            uint8_t mcuID,
+            uint8_t _motorID,
             float _motorMaxVoltage,
             float _driverVoltage);
 
@@ -93,6 +137,8 @@ private:
     void makeLive();
 
     uint8_t deviceAddress;
+    uint8_t motorID;
+    uint8_t motorIDRegMask;
     float motorMaxVoltage;
     float driverVoltage;
     std::string name;

@@ -5,7 +5,7 @@ import numpy as np
 import tf2_ros
 import rospy
 
-from ros_numpy import numpify
+from .np_utils import numpify
 from geometry_msgs.msg import TransformStamped, Vector3, Quaternion
 from std_msgs.msg import Time
 from typing import Tuple
@@ -30,6 +30,17 @@ class SE3:
 
     position: np.ndarray = field(default_factory=lambda: np.zeros(3))
     rotation: SO3 = SO3()
+
+    @classmethod
+    def from_transform_matrix(cls, m: np.ndarray):
+        """
+        Initialize an SE3 object using a homogenous transform matrix.
+
+        :param m: 4x4 homogenous transform matrix
+        """
+        position = m[:3, 3]
+        rotation = SO3.from_matrix(m[:3, :3])
+        return SE3(position, rotation)
 
     @classmethod
     def from_pos_quat(cls, position: np.ndarray, quaternion: np.ndarray):
@@ -120,3 +131,14 @@ class SE3:
         :returns: True if the two SE3s are approximately equal, False otherwise
         """
         return np.allclose(self.position, p.position, atol=tolerance) and self.rotation.is_approx(p.rotation, tolerance)
+
+    def transform_matrix(self) -> np.ndarray:
+        """
+        Get the homogenous transform matrix representing this SE3.
+
+        :returns: 4x4 numpy array containing homogenous transform matrix
+        """
+        m = np.identity(4)
+        m[:3, :3] = self.rotation.rotation_matrix()
+        m[:3, 3] = self.position
+        return m

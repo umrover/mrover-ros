@@ -1,35 +1,50 @@
 <template>
-<div>
-    <ArmControls></ArmControls>
+  <div>
     <DriveControls></DriveControls>
-    <DriveVelDataH></DriveVelDataH>
-    <DriveVelDataV></DriveVelDataV>
-    <GimbalControls></GimbalControls>
-    <PDBFuse></PDBFuse>
-
-</div>
+    <ArmControls></ArmControls>
+    <MastGimbalControls></MastGimbalControls>
+    <JointStateTable
+      :joint-state-data="jointState"
+      :vertical="true"
+    ></JointStateTable>
+    <MoteusStateTable :moteus-state-data="moteusState"></MoteusStateTable>
+  </div>
 </template>
 
 <script>
-import ArmControls from './ArmControls.vue';
-import DriveControls from './DriveControls.vue';
-import GimbalControls from './GimbalControls.vue';
-import DriveVelDataH from './DriveVelDataH.vue';
-import DriveVelDataV from './DriveVelDataV.vue';
-import PDBFuse from './PDBFuse.vue';
+import ROSLIB from "roslib";
+import DriveControls from "./DriveControls.vue";
+import ArmControls from "./ArmControls.vue";
+import MastGimbalControls from "./MastGimbalControls.vue";
+import JointStateTable from "./JointStateTable.vue";
+import MoteusStateTable from "./MoteusStateTable.vue";
 
 export default {
-    data() {
-        return {}
-    },
+  components: {
+    DriveControls,
+    ArmControls,
+    JointStateTable,
+    MastGimbalControls,
+    MoteusStateTable,
+  },
+  data() {
+    return {
+      jointState: {},
+      moteusState: {},
+    };
+  },
 
-    components: {
-        ArmControls,
-        DriveControls,
-        DriveVelDataV,
-        DriveVelDataH,
-        GimbalControls,
-        PDBFuse,
-    }
-}
+  created: function () {
+    this.brushless_motors = new ROSLIB.Topic({
+      ros: this.$ros,
+      name: "drive_status",
+      messageType: "mrover/MotorsStatus",
+    });
+
+    this.brushless_motors.subscribe((msg) => {
+      this.jointState = msg.joint_states;
+      this.moteusState = msg.moteus_states;
+    });
+  },
+};
 </script>

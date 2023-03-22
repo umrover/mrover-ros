@@ -12,18 +12,18 @@
             <origin xyz="0 0 0" rpy="0 0 0" />
         </inertial>
         <visual>
-            <origin rpy="0 0 0" xyz="0 0 0" />
+            <origin rpy="0 0 0" xyz="0 0 -9.5" />
             <geometry>
-                <box size="7 7 19" />
+                <mesh filename="package://mrover/rover_description/arm/rover.stl" />
             </geometry>
-            <material name="dark grey">
-                <color rgba="0.1 0.1 0.1 1" />
+            <material name="red">
+                <color rgba="1 1 1 1" />
             </material>
         </visual>
         <collision>
-            <origin rpy="0 0 0" xyz="0 0 0" />
+            <origin rpy="0 0 0" xyz="0 0 -9.5" />
             <geometry>
-                <box size="7 7 19" />
+                <mesh filename="package://mrover/rover_description/arm/rover.stl" />
             </geometry>
         </collision>
     </link>
@@ -44,9 +44,9 @@
             </geometry>
         </collision>
         <collision>
-            <origin rpy="0 0 0" xyz="3.6467207 3.6590503 -0.8456994" />
+            <origin rpy="0 0 0" xyz="3.6467207 3.6590503 -1.7206994" />
             <geometry>
-                <cylinder length="3.6913988" radius="1.75" />
+                <cylinder length="1.9413988" radius="1.75" />
             </geometry>
         </collision>
         <inertial>
@@ -98,7 +98,7 @@
         <collision>
             <origin rpy="0.48 0 0" xyz="0 9 5" />
             <geometry>
-                <box size="3 24 3" />
+                <box size="2 20 2" />
             </geometry>
         </collision>
         <collision>
@@ -243,7 +243,7 @@
         <origin rpy="0 0 0" xyz="0 0 9.5" />
     </joint>
     <joint name="base_link_connection" type="fixed">
-        <origin rpy="0 0 0" xyz="0 5 10" />
+        <origin rpy="0 0 0" xyz="0 15.55 11" />
         <parent link="base_link" />
         <child link="chassisToa" />
         <axis xyz="0 0 0" />
@@ -421,4 +421,3 @@
         <plugin filename="libgazebo_ros_control.so" name="gazebo_ros_control" />
     </gazebo>
 </robot>
-
