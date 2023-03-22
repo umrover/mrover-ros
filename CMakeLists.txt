@@ -74,7 +74,7 @@ set(MROVER_CATKIN_PACKAGES
 
 macro(rosify_target_macro target)
     target_link_libraries(${target} PRIVATE ${catkin_LIBRARIES})
-    target_include_directories(${target} PRIVATE ${catkin_INCLUDE_DIRS})
+    target_include_directories(${target} SYSTEM PRIVATE ${catkin_INCLUDE_DIRS})
     add_dependencies(${target} ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
 
     target_compile_options(${target} PRIVATE ${MROVER_CPP_COMPILE_OPTIONS})
@@ -110,7 +110,7 @@ macro(add_gazebo_plugin_macro name sources includes)
     # TODO: find a proper variable name that points to /opt/ros/noetic/lib
     target_link_directories(${name} PRIVATE ${GAZEBO_LIBRARY_DIRS} /opt/ros/noetic/lib)
     target_link_libraries(${name} PRIVATE ${GAZEBO_LIBRARIES} ${Boost_LIBRARIES})
-    target_include_directories(${name} PRIVATE ${GAZEBO_INCLUDE_DIRS} ${Boost_INCLUDE_DIRS})
+    target_include_directories(${name} SYSTEM PRIVATE ${GAZEBO_INCLUDE_DIRS} ${Boost_INCLUDE_DIRS})
 endmacro()
 
 # launch install macro
@@ -234,7 +234,7 @@ else ()
 
         if (ZED_FOUND)
             add_cpp_node_macro(zed_node "src/perception/zed_wrapper/*.cpp")
-            target_include_directories(zed_node PRIVATE ${ZED_INCLUDE_DIRS})
+            target_include_directories(zed_node SYSTEM PRIVATE ${ZED_INCLUDE_DIRS} ${CUDA_INCLUDE_DIRS})
             target_link_libraries(zed_node PRIVATE ${ZED_LIBRARIES} ${OpenCV_LIBRARIES} ${PCL_LIBRARIES} lie)
         endif ()
     endmacro()
