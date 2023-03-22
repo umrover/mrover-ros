@@ -32,3 +32,8 @@ SO3 const& SE3::rotation() const {
 double SE3::distanceTo(SE3 const& other) {
     return (mPosition - other.mPosition).squaredNorm();
 }
+
+SE3 SE3::operator*(SE3 const& other) const {
+    return {mPosition + mRotation.mQuaternion * other.mPosition,
+            {mRotation.mQuaternion * other.mRotation.mQuaternion}};
+}

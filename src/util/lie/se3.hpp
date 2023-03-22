@@ -56,6 +56,8 @@ public:
 
     SE3(R3 position, SO3 rotation = SO3{});
 
+    SE3 operator*(SE3 const& other) const;
+
     [[nodiscard]] Eigen::Matrix4d matrix() const;
 
     [[nodiscard]] R3 const& position() const;

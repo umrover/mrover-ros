@@ -233,7 +233,7 @@ else ()
         set_target_properties(kinect_plugin PROPERTIES CXX_CLANG_TIDY "")
 
         if (ZED_FOUND)
-            add_cpp_node_macro(zed_node "src/perception/zed_wrapper/*.cpp")
+            add_cpp_node_macro(zed_node "src/perception/zed_wrapper/*.cpp", "src/perception/zed_wrapper")
             target_include_directories(zed_node SYSTEM PRIVATE ${ZED_INCLUDE_DIRS} ${CUDA_INCLUDE_DIRS})
             target_link_libraries(zed_node PRIVATE ${ZED_LIBRARIES} ${OpenCV_LIBRARIES} ${PCL_LIBRARIES} lie)
         endif ()
