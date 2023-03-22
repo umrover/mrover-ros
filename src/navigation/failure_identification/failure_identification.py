@@ -11,7 +11,10 @@ from watchdog import WatchDog
 import numpy as np
 
 class FailureIdentifier:
-    
+    """
+    Used to identify if the rover is stuck. Owns a data frame that is updated with the latest data from the rover
+    and then used to determine if the rover is stuck
+    """
     stuck_publisher: rospy.Publisher
     _df: DataFrame
     watchdog: WatchDog
@@ -35,6 +38,16 @@ class FailureIdentifier:
         self._df = pd.DataFrame(columns=["time", "stuck"] + position_variables + rotation_variables + velocity_variables + wheel_effort_variables + wheel_velocity_variables + command_variables)
 
     def update(self, nav_status: SmachContainerStatus, cmd_vel : Twist, drive_status : MotorsStatus, odometry : Odometry):
+        """
+        Updates the current row of the data frame with the latest data from the rover
+        then appends the row to the data frame
+        @param nav_status: the current state of the rover, used to determine if the rover is already recovering
+        @param cmd_vel: the current command velocity of the rover
+        @param drive_status: the current status of the rovers motors, has velocity and effort data
+        @param odometry: the current odometry of the rover, has position and velocity data
+
+        publishes a message to the /nav_stuck topic indicating if the rover is stuck
+        """
         cur_row = {}
         cur_row["time"] = rospy.Time.now()
 
@@ -74,8 +87,8 @@ class FailureIdentifier:
 def main():
     rospy.loginfo("===== failure identification starting =====")
     rospy.init_node("failure_id")
-    # collector.set_context(context)
-
+    FailureIdentifier()
+    rospy.spin()
 
 if __name__ == "__main__":
     main()
