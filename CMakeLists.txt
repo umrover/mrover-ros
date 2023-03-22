@@ -210,7 +210,10 @@ else ()
         find_package(gazebo REQUIRED)
         find_package(PCL REQUIRED COMPONENTS common io features)
         find_package(Eigen3 REQUIRED)
-        find_package(ZED 2 REQUIRED)
+        find_package(ZED 2)
+        if (ZED_FOUND)
+            enable_language(CUDA)
+        endif ()
     endmacro()
 
     # define an add and link macro
