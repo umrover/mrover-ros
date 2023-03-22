@@ -1,0 +1,23 @@
+<launch>
+    <arg name="run_tag_detector" default="true"/>
+    <arg name="run_rviz" default="true"/>
+    <arg name="run_dynamic_reconfigure" default="true"/>
+
+    <group if="$(arg run_rviz)">
+        <arg name="rvizconfig" default="$(find mrover)/config/rviz/basestation.rviz"/>
+        <node name="rviz" pkg="rviz" type="rviz" args="-d $(arg rvizconfig)" required="true"/>
+    </group>
+
+    <node if="$(arg run_dynamic_reconfigure)"
+          name="rqt_reconfigure" pkg="rqt_reconfigure" type="rqt_reconfigure"/>
+
+    <node pkg="nodelet" type="nodelet" name="perception_nodelet_manager" respawn="true"
+          args="manager" output="screen"/>
+
+    <include file="$(find mrover)/launch/zed.launch"/>
+
+    <node if="$(arg run_tag_detector)"
+          pkg="nodelet" type="nodelet" name="tag_detector" respawn="true"
+          args="load mrover/TagDetectorNodelet perception_nodelet_manager" output="screen">
+    </node>
+</launch>

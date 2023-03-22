@@ -227,14 +227,6 @@ else ()
         target_link_libraries(kinect_plugin PRIVATE gazebo_ros_camera_utils DepthCameraPlugin Eigen3::Eigen)
         set_target_properties(kinect_plugin PROPERTIES CXX_CLANG_TIDY "")
     endmacro()
-
-    # Set policy
-    if (POLICY CMP0054)
-        cmake_policy(SET CMP0054 NEW)
-    endif ()
-
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${GAZEBO_CXX_FLAGS}")
-
 endif ()
 
 
