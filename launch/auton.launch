@@ -1,9 +1,4 @@
-<!-- 
-  This launch file launches all of the nodes necessary for autonomous navigation.
-    
-    :arg run_perception: true/false value deciding whether or not to run perception as
-                         part of the auton system. Should only be used for testing.
- -->
+<!-- This launch file launches all nodes necessary for autonomous navigation. -->
 <launch>
     <arg name="run_tag_detector" default="true"/>
     <arg name="sim" default="false"/>
