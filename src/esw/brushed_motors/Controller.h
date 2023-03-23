@@ -117,8 +117,8 @@ public:
     float kI = 0.0f;
     float kD = 0.0f;
     float inversion = 1.0f;
-    bool limitAEnabled = false;
-    bool limitBEnabled = false;
+    bool limitAPresent = false;
+    bool limitBPresent = false;
     float calibrationVel = 0.0f;
     bool limitAIsActiveHigh = false;
     bool limitBIsActiveHigh = false;

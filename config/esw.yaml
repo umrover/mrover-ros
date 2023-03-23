@@ -21,8 +21,8 @@ brushed_motors:
       mcu_id: 2
       motor_id: 2
       inversion: 1.0
-      enable_limit_a: true
-      enable_limit_b: false
+      limit_a_present: true
+      limit_b_present: false
       counts_limit_a: 0
       limit_a_is_fwd: true
       calibration_vel: 0.25
@@ -32,8 +32,8 @@ brushed_motors:
       mcu_id: 2
       motor_id: 1
       inversion: 1.0
-      enable_limit_a: true
-      enable_limit_b: false
+      limit_a_present: true
+      limit_b_present: false
       counts_limit_a: 0
       limit_a_is_fwd: true
       calibration_vel: 0.25
@@ -47,8 +47,8 @@ brushed_motors:
       kP: -0.005
       kI: -0.0
       inversion: -1.0
-      enable_limit_a: false
-      enable_limit_b: false
+      limit_a_present: false
+      limit_b_present: false
       limit_a_is_fwd: true
       calibration_vel: 0.25
     - name: "joint_b"
@@ -60,8 +60,8 @@ brushed_motors:
       kP: -0.1
       kI: -0.0
       inversion: -1.0
-      enable_limit_a: true
-      enable_limit_b: false
+      limit_a_present: true
+      limit_b_present: false
       counts_limit_a: 0
       limit_a_is_fwd: true
       calibration_vel: 0.25
@@ -74,8 +74,8 @@ brushed_motors:
       kP: 0.05
       kI: 0.0
       inversion: -1.0
-      enable_limit_a: false
-      enable_limit_b: false
+      limit_a_present: false
+      limit_b_present: false
       limit_a_is_fwd: true
       calibration_vel: 0.25
     - name: "finger"
@@ -84,8 +84,8 @@ brushed_motors:
       mcu_id: 1
       motor_id: 3
       inversion: 1.0
-      enable_limit_a: true
-      enable_limit_b: true
+      limit_a_present: true
+      limit_b_present: true
       counts_limit_a: 0
       counts_limit_b: 0
       limit_a_is_fwd: true
@@ -96,8 +96,8 @@ brushed_motors:
       mcu_id: 1
       motor_id: 2
       inversion: 1.0
-      enable_limit_a: false
-      enable_limit_b: false
+      limit_a_present: false
+      limit_b_present: false
       limit_a_is_fwd: true
       calibration_vel: 0.25
     - name: "mast_gimbal_up_down"
@@ -106,8 +106,8 @@ brushed_motors:
       mcu_id: 2
       motor_id: 4
       inversion: -1.0
-      enable_limit_a: false
-      enable_limit_b: false
+      limit_a_present: false
+      limit_b_present: false
       limit_a_is_fwd: true
       calibration_vel: 0
     - name: "mast_gimbal_left_right"
@@ -116,8 +116,8 @@ brushed_motors:
       mcu_id: 2
       motor_id: 3
       inversion: -1.0
-      enable_limit_a: false
-      enable_limit_b: false
+      limit_a_present: false
+      limit_b_present: false
       limit_a_is_fwd: true
       calibration_vel: 0
     - name: "microscope"
@@ -126,8 +126,8 @@ brushed_motors:
       mcu_id: 1
       motor_id: 4
       inversion: 1.0
-      enable_limit_a: true
-      enable_limit_b: true
+      limit_a_present: true
+      limit_b_present: true
       counts_limit_a: 0
       counts_limit_b: 0
       limit_a_is_fwd: true
@@ -138,8 +138,8 @@ brushed_motors:
       mcu_id: 1
       motor_id: 0
       inversion: 1.0
-      enable_limit_a: true
-      enable_limit_b: false
+      limit_a_present: true
+      limit_b_present: false
       counts_limit_a: 0
       limit_a_is_fwd: true
       calibration_vel: 0.25
@@ -149,8 +149,8 @@ brushed_motors:
       mcu_id: 1
       motor_id: 1
       inversion: -1.0
-      enable_limit_a: true
-      enable_limit_b: false
+      limit_a_present: true
+      limit_b_present: false
       counts_limit_a: 0
       limit_a_is_fwd: true
       calibration_vel: 0.25
@@ -160,8 +160,8 @@ brushed_motors:
       mcu_id: 1
       motor_id: 2
       inversion: 1.0
-      enable_limit_a: true
-      enable_limit_b: false
+      limit_a_present: true
+      limit_b_present: false
       counts_limit_a: 0
       limit_a_is_fwd: true
       calibration_vel: 0.25
@@ -171,8 +171,8 @@ brushed_motors:
       mcu_id: 1
       motor_id: 3
       inversion: 1.0
-      enable_limit_a: true
-      enable_limit_b: true
+      limit_a_present: true
+      limit_b_present: true
       counts_limit_a: 0
       counts_limit_b: 0
       limit_a_is_fwd: true

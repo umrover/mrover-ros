@@ -53,13 +53,13 @@ void ControllerMap::init(XmlRpc::XmlRpcValue& root) {
             root[i]["inversion"].getType() == XmlRpc::XmlRpcValue::TypeDouble) {
             controllersByName[name]->inversion = (float) static_cast<double>(root[i]["inversion"]);
         }
-        if (root[i].hasMember("enable_limit_a") &&
-            root[i]["enable_limit_a"].getType() == XmlRpc::XmlRpcValue::TypeBoolean) {
-            controllersByName[name]->limitAEnabled = static_cast<bool>(root[i]["enable_limit_a"]);
+        if (root[i].hasMember("limit_a_present") &&
+            root[i]["limit_a_present"].getType() == XmlRpc::XmlRpcValue::TypeBoolean) {
+            controllersByName[name]->limitAPresent = static_cast<bool>(root[i]["limit_a_present"]);
         }
-        if (root[i].hasMember("enable_limit_b") &&
-            root[i]["enable_limit_b"].getType() == XmlRpc::XmlRpcValue::TypeBoolean) {
-            controllersByName[name]->limitBEnabled = static_cast<bool>(root[i]["enable_limit_b"]);
+        if (root[i].hasMember("limit_b_present") &&
+            root[i]["limit_b_present"].getType() == XmlRpc::XmlRpcValue::TypeBoolean) {
+            controllersByName[name]->limitBPresent = static_cast<bool>(root[i]["limit_b_present"]);
         }
         if (root[i].hasMember("active_limit_a") &&
             root[i]["active_limit_a"].getType() == XmlRpc::XmlRpcValue::TypeBoolean) {
@@ -68,10 +68,6 @@ void ControllerMap::init(XmlRpc::XmlRpcValue& root) {
         if (root[i].hasMember("active_limit_b") &&
             root[i]["active_limit_b"].getType() == XmlRpc::XmlRpcValue::TypeBoolean) {
             controllersByName[name]->limitBIsActiveHigh = static_cast<bool>(root[i]["active_limit_b"]);
-        }
-        if (root[i].hasMember("enable_limit_b") &&
-            root[i]["enable_limit_b"].getType() == XmlRpc::XmlRpcValue::TypeBoolean) {
-            controllersByName[name]->limitBEnabled = static_cast<bool>(root[i]["enable_limit_b"]);
         }
         if (root[i].hasMember("counts_limit_a") &&
             root[i]["counts_limit_a"].getType() == XmlRpc::XmlRpcValue::TypeInt) {

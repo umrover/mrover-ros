@@ -125,14 +125,14 @@ void Controller::enableLimitSwitches(bool enable) {
     try {
         makeLive();
 
-        bool enableLimitA = limitAEnabled && enable;
+        bool enableLimitA = limitAPresent && enable;
 
         uint8_t buffer[1];
         memcpy(buffer, UINT8_POINTER_T(&enableLimitA), sizeof(enableLimitA));
         I2C::transact(deviceAddress, motorIDRegMask | ENABLE_LIMIT_A_OP, ENABLE_LIMIT_A_WB,
                       ENABLE_LIMIT_A_RB, buffer, nullptr);
 
-        bool enableLimitB = limitBEnabled && enable;
+        bool enableLimitB = limitBPresent && enable;
 
         memcpy(buffer, UINT8_POINTER_T(&enableLimitB), sizeof(enableLimitB));
         I2C::transact(deviceAddress, motorIDRegMask | ENABLE_LIMIT_B_OP, ENABLE_LIMIT_B_WB,
@@ -169,7 +169,7 @@ float Controller::getAbsoluteEncoderValue() {
 // MODIFIES: nothing
 // EFFECTS: Returns true if Controller has a (one or both) limit switch(s) is enabled.
 bool Controller::getLimitSwitchEnabled() const {
-    return limitAEnabled || limitBEnabled;
+    return limitAPresent || limitBPresent;
 }
 
 // REQUIRES: nothing
@@ -203,11 +203,11 @@ void Controller::makeLive() {
         I2C::transact(deviceAddress, motorIDRegMask | CONFIG_K_OP, CONFIG_K_WB,
                       CONFIG_K_RB, buffer, nullptr);
 
-        memcpy(buffer, UINT8_POINTER_T(&limitAEnabled), sizeof(limitAEnabled));
+        memcpy(buffer, UINT8_POINTER_T(&limitAPresent), sizeof(limitAPresent));
         I2C::transact(deviceAddress, motorIDRegMask | ENABLE_LIMIT_A_OP, ENABLE_LIMIT_A_WB,
                       ENABLE_LIMIT_A_RB, buffer, nullptr);
 
-        memcpy(buffer, UINT8_POINTER_T(&limitBEnabled), sizeof(limitBEnabled));
+        memcpy(buffer, UINT8_POINTER_T(&limitBPresent), sizeof(limitBPresent));
         I2C::transact(deviceAddress, motorIDRegMask | ENABLE_LIMIT_B_OP, ENABLE_LIMIT_B_WB,
                       ENABLE_LIMIT_B_RB, buffer, nullptr);
 
