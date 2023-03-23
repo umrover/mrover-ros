@@ -14,9 +14,11 @@ MAX_DRIVING_EFFORT = 1
 MIN_DRIVING_EFFORT = -1
 TURNING_P = 10.0
 
-@dataclass
 class Driver:
-    planner: PathPlanner = PathPlanner()
+    planner: PathPlanner
+
+    def __init__(self) -> None:
+        self.planner = PathPlanner()
     
     def add_failure_zone(self, failure_zone: FailureZone) -> None:
         """
@@ -78,9 +80,9 @@ class Driver:
         """
         source_point = Point(rover_pose.position[0:2])  
         target_point = Point(target_pos[0:2])
-
+        print(type(self.planner))
         curr_target = self.planner.get_intermediate_target(source_point, target_point)
-        curr_target_pos = np.ndarray([curr_target.x, curr_target.y, 0])
+        curr_target_pos = np.array([curr_target.x, curr_target.y, 0])
         return self.get_clear_path_drive_command(curr_target_pos, 
                                                  rover_pose, completion_thresh, turn_in_place_thresh)
         

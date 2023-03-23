@@ -212,7 +212,7 @@ class Context:
         self.course = None
         self.rover = Rover(self)
         self.env = Environment(self)
-        self.driver = Driver(self)
+        self.driver = Driver()
         self.disable_requested = False
 
     def recv_enable_auton(self, req: mrover.srv.PublishEnableAutonRequest) -> mrover.srv.PublishEnableAutonResponse:
