@@ -61,8 +61,6 @@ TagDetectorNode::TagDetectorNode(ros::NodeHandle const& nh, ros::NodeHandle cons
     mPnh.param<bool>("publish_images", mPublishImages, true);
     mPnh.param<int>("dictionary", dictionaryNumber, 0);
 
-    std::string str;
-
     mImgPub = mIt.advertise("tag_detection", 1);
     mDictionary = cv::aruco::getPredefinedDictionary(dictionaryNumber);
 

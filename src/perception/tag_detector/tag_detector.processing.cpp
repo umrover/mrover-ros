@@ -1,10 +1,14 @@
 #include "tag_detector.hpp"
 
+#include <chrono>
 #include <cmath>
 #include <numeric>
 
 constexpr size_t IMAGE_WIDTH_WARN_SIZE = 640;
 constexpr size_t IMAGE_HEIGHT_WARN_SIZE = 480;
+
+using namespace std::chrono_literals;
+using hr_clock = std::chrono::high_resolution_clock;
 
 struct Point {
     float x, y, z;
@@ -44,6 +48,8 @@ std::optional<SE3> getFidInCamFromPixel(sensor_msgs::PointCloud2ConstPtr const& 
 void TagDetectorNode::pointCloudCallback(sensor_msgs::PointCloud2ConstPtr const& msg) {
     if (!mEnableDetections) return;
 
+    hr_clock::time_point update_start = hr_clock::now();
+
     ROS_DEBUG("Got point cloud %d", msg->header.seq);
 
     if (static_cast<int>(msg->height) != mImg.rows || static_cast<int>(msg->width) != mImg.cols) {
@@ -56,10 +62,14 @@ void TagDetectorNode::pointCloudCallback(sensor_msgs::PointCloud2ConstPtr const&
         mImg.at<cv::Vec3b>(static_cast<int>(i)) = {point->r, point->g, point->b};
     }
 
+    hr_clock::duration convert_time = hr_clock::now() - update_start;
+
     // Detect the tag vertices in screen space and their respective ids
     // {mCorners, mIds} are the outputs from OpenCV
     cv::aruco::detectMarkers(mImg, mDictionary, mCorners, mIds, mDetectorParams);
     ROS_DEBUG("OpenCV detect size: %zu", mIds.size());
+
+    hr_clock::duration detect_time = hr_clock::now() - update_start - convert_time;
 
     // Update ID, image center, and increment hit count for all detected tags
     for (size_t i = 0; i < mIds.size(); ++i) {
@@ -67,7 +77,7 @@ void TagDetectorNode::pointCloudCallback(sensor_msgs::PointCloud2ConstPtr const&
         Tag& tag = mTags[id];
         tag.hitCount = std::clamp(tag.hitCount + 1, 0, mMaxHitCount);
         tag.id = id;
-        tag.imageCenter = std::accumulate(mCorners[i].begin(), mCorners[i].end(), cv::Point2f{}) / 4.0f;
+        tag.imageCenter = std::accumulate(mCorners[i].begin(), mCorners[i].end(), cv::Point2f{}) / static_cast<float>(mCorners[i].size());
         tag.tagInCam = getFidInCamFromPixel(msg, std::lround(tag.imageCenter.x), std::lround(tag.imageCenter.y));
 
         if (tag.tagInCam) {
@@ -132,6 +142,16 @@ void TagDetectorNode::pointCloudCallback(sensor_msgs::PointCloud2ConstPtr const&
     if (!mPrevDetectedCount.has_value() || detectedCount != mPrevDetectedCount.value()) {
         mPrevDetectedCount = detectedCount;
         ROS_INFO("Detected %zu markers", detectedCount);
+    }
+
+    hr_clock::duration publish_time = hr_clock::now() - update_start - convert_time - detect_time;
+    hr_clock::duration update_duration = hr_clock::now() - update_start;
+
+    if (mSeqNum % 60 == 0) {
+        ROS_INFO_STREAM("Total: " << std::chrono::duration_cast<std::chrono::milliseconds>(update_duration).count() << "ms");
+        ROS_INFO_STREAM("\tConvert: " << std::chrono::duration_cast<std::chrono::milliseconds>(convert_time).count() << "ms");
+        ROS_INFO_STREAM("\tOpenCV detect: " << std::chrono::duration_cast<std::chrono::milliseconds>(detect_time).count() << "ms");
+        ROS_INFO_STREAM("\tPublish: " << std::chrono::duration_cast<std::chrono::milliseconds>(publish_time).count() << "ms");
     }
 
     mSeqNum++;

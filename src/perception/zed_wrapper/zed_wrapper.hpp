@@ -9,6 +9,8 @@
 #include <tf2_ros/transform_broadcaster.h>
 #include <tf2_ros/transform_listener.h>
 
+#include <tag_detector.hpp>
+    
 class ZedNode {
 private:
     ros::NodeHandle mNh, mPnh;
@@ -24,12 +26,15 @@ private:
     sensor_msgs::Image mLeftImgMsg;
     sensor_msgs::PointCloud2 mPointCloudMsg;
 
-    sl::Resolution mImageResolution{1280, 720};
+//    sl::Resolution mImageResolution{1280, 720};
+    sl::Resolution mImageResolution{640, 480};
     sl::Mat mImageMat;
     sl::Mat mPointCloudXYZMat;
     sl::Mat mPointCloudNormalMat;
 
     std::thread mUpdateThread;
+
+    std::unique_ptr<TagDetectorNode> mTagDetectorNode;
 
 public:
     ZedNode(ros::NodeHandle const& nh = {}, ros::NodeHandle const& pnh = {"~"});

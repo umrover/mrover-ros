@@ -60,14 +60,14 @@ private:
     dynamic_reconfigure::Server<mrover::DetectorParamsConfig> mConfigServer;
     dynamic_reconfigure::Server<mrover::DetectorParamsConfig>::CallbackType mCallbackType;
 
+public:
+    TagDetectorNode();
+
+    TagDetectorNode(ros::NodeHandle const& nh, ros::NodeHandle const& pnh);
+
     void pointCloudCallback(sensor_msgs::PointCloud2ConstPtr const& msg);
 
     void configCallback(mrover::DetectorParamsConfig& config, uint32_t level);
 
     bool enableDetectionsCallback(std_srvs::SetBool::Request& req, std_srvs::SetBool::Response& res);
-
-public:
-    TagDetectorNode();
-
-    TagDetectorNode(ros::NodeHandle const& nh, ros::NodeHandle const& pnh);
 };

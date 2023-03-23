@@ -41,17 +41,19 @@ ZedNode::ZedNode(ros::NodeHandle const& nh, ros::NodeHandle const& pnh)
     mZed.enablePositionalTracking(positionalTrackingParameters);
 
     mUpdateThread = std::thread(&ZedNode::update, this);
+
+    //    mTagDetectorNode = std::make_unique<TagDetectorNode>(mNh, mPnh);
 }
 
 void ZedNode::update() {
     while (ros::ok() && mZed.isOpened()) {
+        hr_clock::time_point update_start = hr_clock::now();
+
         sl::RuntimeParameters runtimeParameters;
         runtimeParameters.confidence_threshold = 80;
         runtimeParameters.texture_confidence_threshold = 80;
 
         if (mZed.grab(runtimeParameters) == sl::ERROR_CODE::SUCCESS) {
-            hr_clock::time_point update_start = hr_clock::now();
-
             mZed.retrieveImage(mImageMat, sl::VIEW::LEFT, sl::MEM::CPU, mImageResolution);
             mZed.retrieveMeasure(mPointCloudXYZMat, sl::MEASURE::XYZ, sl::MEM::CPU, mImageResolution);
             hr_clock::duration grab_time = hr_clock::now() - update_start;
@@ -98,8 +100,13 @@ void ZedNode::update() {
             //                pointPtr[i].b = imagePtr[i].b;
             //            }
             hr_clock::duration to_msg_time = hr_clock::now() - update_start - grab_time;
-
-            mPcPub.publish(mPointCloudMsg);
+            if (mTagDetectorNode) {
+                sensor_msgs::PointCloud2ConstPtr ptr;
+                ptr.reset(&mPointCloudMsg, [](auto*) {});
+                mTagDetectorNode->pointCloudCallback(ptr);
+            } else {
+                mPcPub.publish(mPointCloudMsg);
+            }
             hr_clock::duration publish_time = hr_clock::now() - update_start - grab_time - to_msg_time;
 
             if (mLeftImgPub.getNumSubscribers()) {
