@@ -248,10 +248,10 @@ class Context:
         self.rover = Rover(self)
         self.env = Environment(self)
         self.disable_requested = False
-        self.use_odom = rospy.get_param("gps_linearization/use_odom_frame")
-        self.world_frame = rospy.get_param("gps_linearization/world_frame")
-        self.odom_frame = rospy.get_param("gps_linearization/odom_frame")
-        self.rover_frame = rospy.get_param("gps_linearization/rover_frame")
+        self.use_odom = rospy.get_param("use_odom_frame")
+        self.world_frame = rospy.get_param("world_frame")
+        self.odom_frame = rospy.get_param("odom_frame")
+        self.rover_frame = rospy.get_param("rover_frame")
 
     def recv_enable_auton(self, req: mrover.srv.PublishEnableAutonRequest) -> mrover.srv.PublishEnableAutonResponse:
         enable_msg = req.enableMsg
