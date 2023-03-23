@@ -70,6 +70,7 @@ export default {
     return {
       motors: []
     };
+   
   }
 };
 </script>

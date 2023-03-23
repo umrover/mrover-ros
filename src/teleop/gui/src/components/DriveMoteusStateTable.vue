@@ -15,10 +15,8 @@
         </colgroup>
         <thead>
           <tr>
-            <th class="tableElement tableHeader">Motor</th>
-            <th class="tableElement tableHeader">
-              {{ moteusStateData.name[indices.FrontLeft] }}
-            </th>
+            
+              {{testing(moteusStateData.name[indices.FrontRight]) }}
             <th class="tableElement tableHeader">
               {{ moteusStateData.name[indices.FrontRight] }}
             </th>
@@ -102,6 +100,7 @@
 </template>
 
 <script>
+import { h } from 'vue';
 import ROSLIB from "roslib";
 
 const state = {
@@ -117,14 +116,19 @@ export default {
   props: {
     moteusStateData: {
       type: Object,
-      required: true
+      required: true,
     },
   },
   data() {
     return {
       indices: state
     };
-  }
+  },
+  methods: {
+    testing:(element)=>{
+      h('th', {class:"tableElement tableHeader"}, "Motor", {class: "tableElement tableHeader"}, element)
+    }
+},
 };
 </script>
 
