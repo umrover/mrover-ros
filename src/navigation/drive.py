@@ -79,7 +79,6 @@ class Driver:
         """
         source_point = Point(rover_pose.position[0:2])
         target_point = Point(target_pos[0:2])
-        print(type(self.planner))
         curr_target = self.planner.get_intermediate_target(source_point, target_point)
         curr_target_pos = np.array([curr_target.x, curr_target.y, 0])
         return self.get_clear_path_drive_command(curr_target_pos, rover_pose, completion_thresh, turn_in_place_thresh)
