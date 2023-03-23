@@ -40,11 +40,6 @@
       <Checkbox ref="D" :name="'D'" @toggle="updateJointsEnabled(3, $event)" />
       <Checkbox ref="E" :name="'E'" @toggle="updateJointsEnabled(4, $event)" />
       <Checkbox ref="F" :name="'F'" @toggle="updateJointsEnabled(5, $event)" />
-    </div>
-    <h3>Slow Mode</h3>
-    <div>
-      <Checkbox ref="Slow Mode" :name="'Slow Mode'" @toggle="updateSlowMode($event)" />
-    </div>
     <div class="controls laser">
       <ToggleButton
         :current-state="laser_enabled"
@@ -77,8 +72,6 @@ export default {
       joystick_pub: null,
       jointlock_pub: null,
       joints_array: [false, false, false, false, false, false],
-      slow_mode: false,
-      slowmode_pub: null,
       laser_enabled: false,
       laser_service: null
     };
@@ -110,11 +103,7 @@ export default {
       name: "/joint_lock",
       messageType: "mrover/JointLock"
     });
-    this.slowmode_pub = new ROSLIB.Topic({
-      ros: this.$ros,
-      name: "/slow_mode",
-      messageType: "std_msgs/Bool"
-    });
+    
     const jointData = {
       //publishes array of all falses when refreshing the page
       joints: this.joints_array
@@ -156,14 +145,7 @@ export default {
       this.jointlock_pub.publish(jointlockMsg);
     },
 
-    updateSlowMode: function (enabled) {
-      this.slow_mode = enabled;
-      const slowData = {
-        data: this.slow_mode
-      };
-      var slowmodeMsg = new ROSLIB.Message(slowData);
-      this.slowmode_pub.publish(slowmodeMsg);
-    },
+    
     publishJoystickMessage: function (axes, buttons) {
       const joystickData = {
         axes: axes,
