@@ -1,3 +1,7 @@
+<!-- 
+  This launch file is for viewing the arm URDF and moving it around 
+with the MoveIt motion planning panel in rviz
+-->
 <launch>
   <arg name="model" default="$(find mrover)/rover_description/arm/arm.urdf" />
   <arg name="gui" default="false" />
