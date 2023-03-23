@@ -115,6 +115,8 @@ namespace gazebo {
 
         // Pointer to the update event connection
         event::ConnectionPtr mUpdateConnection;
+
+        int mLoopsWithoutUpdate{};
     };
 
 } // namespace gazebo

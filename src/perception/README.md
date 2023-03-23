@@ -2,5 +2,5 @@
 
 ### Code Layout
 
-- [aruco_detect.cpp](./aruco_detect.cpp) Mainly ROS node setup (topics, parameters, etc.)
-- [aruco_processing.cpp](./aruco_detect.cpp) Processes inputs (camera feed and pointcloud) to estimate locations of the ArUco fiducials
+- [tag_detector.cpp](./tag_detector.cpp) Mainly ROS node setup (topics, parameters, etc.)
+- [tag_detector.processing.cpp](./tag_detector.processing.cpp) Processes inputs (camera feed and pointcloud) to estimate locations of the ArUco fiducials

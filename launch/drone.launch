@@ -1,5 +1,9 @@
 <?xml version="1.0"?>
 <launch>
+  <rosparam file="$(find mrover)/config/drone.yaml" command="load"/>
+
+  <node name="tf_pose_publisher" pkg="mrover" type="mavros_tf_publisher.py" output="screen" />
+
   <!-- MAVROS posix SITL environment launch script -->
   <!-- launches MAVROS, PX4 SITL, Gazebo environment, and spawns vehicle -->
   <!-- vehicle pose -->
@@ -13,7 +17,7 @@
   <arg name="est" default="ekf2"/>
   <arg name="vehicle" default="iris"/>
   <arg name="world" default="$(find mavlink_sitl_gazebo)/worlds/empty.world"/>
-  <arg name="sdf" default="$(find mavlink_sitl_gazebo)/models/$(arg vehicle)/$(arg vehicle).sdf"/>
+  <arg name="sdf" default="$(find mavlink_sitl_gazebo)/models/iris_depth_camera/iris_depth_camera.sdf"/>
 
   <!-- gazebo configs -->
   <arg name="gui" default="true"/>

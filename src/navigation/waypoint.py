@@ -1,16 +1,14 @@
 from typing import List
 
 import numpy as np
+import rospy
 
 import tf2_ros
 from context import Context, Environment
 from drive import get_drive_command
 from aenum import Enum, NoAlias
 from state import BaseState
-
-STOP_THRESH = 0.5
-DRIVE_FWD_THRESH = 0.34  # 20 degrees
-NO_FIDUCIAL = -1
+from util.ros_utils import get_rosparam
 
 
 class WaypointStateTransitions(Enum):
@@ -19,11 +17,15 @@ class WaypointStateTransitions(Enum):
     continue_waypoint_traverse = "WaypointState"
     search_at_waypoint = "SearchState"
     no_waypoint = "DoneState"
-    find_single_fiducial = "SingleFiducialState"
+    find_approach_post = "ApproachPostState"
     go_to_gate = "GateTraverseState"
 
 
 class WaypointState(BaseState):
+    STOP_THRESH = get_rosparam("waypoint/stop_thresh", 0.5)
+    DRIVE_FWD_THRESH = get_rosparam("waypoint/drive_fwd_thresh", 0.34)  # 20 degrees
+    NO_FIDUCIAL = get_rosparam("waypoint/no_fiducial", -1)
+
     def __init__(
         self,
         context: Context,
@@ -62,7 +64,7 @@ class WaypointState(BaseState):
                 return WaypointStateTransitions.go_to_gate.name  # type: ignore
         if self.context.course.look_for_post():
             if self.context.env.current_fid_pos() is not None:
-                return WaypointStateTransitions.find_single_fiducial.name  # type: ignore
+                return WaypointStateTransitions.find_approach_post.name  # type: ignore
 
         # Attempt to find the waypoint in the TF tree and drive to it
         try:
@@ -70,8 +72,8 @@ class WaypointState(BaseState):
             cmd_vel, arrived = get_drive_command(
                 waypoint_pos,
                 self.context.rover.get_pose(),
-                STOP_THRESH,
-                DRIVE_FWD_THRESH,
+                self.STOP_THRESH,
+                self.DRIVE_FWD_THRESH,
             )
             if arrived:
                 if not self.context.course.look_for_gate() and not self.context.course.look_for_post():
