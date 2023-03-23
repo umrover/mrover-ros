@@ -1,6 +1,8 @@
 #include "zed_wrapper.hpp"
 
+#include <algorithm>
 #include <chrono>
+#include <execution>
 
 #include <ros/init.h>
 #include <sensor_msgs/image_encodings.h>
@@ -63,7 +65,7 @@ void ZedNode::update() {
             mPointCloudMsg.header.seq = mUpdateTick;
             mPointCloudMsg.header.stamp = ros::Time::now();
             mPointCloudMsg.is_bigendian = __BYTE_ORDER__ == __ORDER_BIG_ENDIAN__;
-            mPointCloudMsg.is_dense = true;
+            mPointCloudMsg.is_dense = false;
             mPointCloudMsg.height = mImageResolution.height;
             mPointCloudMsg.width = mImageResolution.width;
             sensor_msgs::PointCloud2Modifier modifier{mPointCloudMsg};
@@ -78,14 +80,23 @@ void ZedNode::update() {
                     "normal_z", 1, sensor_msgs::PointField::FLOAT32,
                     "curvature", 1, sensor_msgs::PointField::FLOAT32);
             auto* pointPtr = reinterpret_cast<Point*>(mPointCloudMsg.data.data());
-            for (size_t i = 0; i < mImageResolution.area(); ++i) {
-                pointPtr[i].x = pointCloudPtr[i].x;
-                pointPtr[i].y = pointCloudPtr[i].y;
-                pointPtr[i].z = pointCloudPtr[i].z;
-                pointPtr[i].r = imagePtr[i].r;
-                pointPtr[i].g = imagePtr[i].g;
-                pointPtr[i].b = imagePtr[i].b;
-            }
+            std::for_each(std::execution::par, pointPtr, pointPtr + mImageResolution.area(), [&](Point& point) mutable {
+                size_t i = &point - pointPtr;
+                point.x = pointCloudPtr[i].x;
+                point.y = pointCloudPtr[i].y;
+                point.z = pointCloudPtr[i].z;
+                point.r = imagePtr[i].r;
+                point.g = imagePtr[i].g;
+                point.b = imagePtr[i].b;
+            });
+            //            for (size_t i = 0; i < mImageResolution.area(); ++i) {
+            //                pointPtr[i].x = pointCloudPtr[i].x;
+            //                pointPtr[i].y = pointCloudPtr[i].y;
+            //                pointPtr[i].z = pointCloudPtr[i].z;
+            //                pointPtr[i].r = imagePtr[i].r;
+            //                pointPtr[i].g = imagePtr[i].g;
+            //                pointPtr[i].b = imagePtr[i].b;
+            //            }
             hr_clock::duration to_msg_time = hr_clock::now() - update_start - grab_time;
 
             mPcPub.publish(mPointCloudMsg);
