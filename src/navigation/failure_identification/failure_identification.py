@@ -27,7 +27,8 @@ class FailureIdentifier:
         cmd_vel_sub = message_filters.Subscriber("cmd_vel", Twist)
         drive_status_sub = message_filters.Subscriber("drive_status", MotorsStatus)
         odometry_sub = message_filters.Subscriber("global_ekf/odometry", Odometry)
-        ts = message_filters.ApproximateTimeSynchronizer([nav_status_sub, cmd_vel_sub, drive_status_sub, odometry_sub], 10, 0.5)
+        stuck_button_sub = message_filters.Subscriber("/rover_stuck", Bool)
+        ts = message_filters.ApproximateTimeSynchronizer([nav_status_sub, cmd_vel_sub, drive_status_sub, odometry_sub, stuck_button_sub], 10, 0.5)
         ts.registerCallback(self.update)
 
         self.stuck_publisher = rospy.Publisher("/nav_stuck", Bool, queue_size=1)
@@ -53,7 +54,7 @@ class FailureIdentifier:
         rospy.loginfo("===== failure data written to csv =====")
         
 
-    def update(self, nav_status: SmachContainerStatus, cmd_vel : Twist, drive_status : MotorsStatus, odometry : Odometry):
+    def update(self, nav_status: SmachContainerStatus, cmd_vel : Twist, drive_status : MotorsStatus, odometry : Odometry, stuck_button : Bool):
         """
         Updates the current row of the data frame with the latest data from the rover
         then appends the row to the data frame
@@ -77,6 +78,12 @@ class FailureIdentifier:
         self.actively_collecting = True
         cur_row = {}
         cur_row["time"] = rospy.Time.now()
+
+        #if the stuck button is pressed, the rover is stuck (as indicated by the GUI)
+        if stuck_button.data:
+            cur_row["stuck"] = 1
+        else:
+            cur_row["stuck"] = 0
 
         #get the command velocity from the cmd_vel message
         cur_row["cmd_vel_x"] = cmd_vel.linear.x
