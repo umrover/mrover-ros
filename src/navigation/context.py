@@ -60,7 +60,7 @@ class Environment:
     ctx: Context
     NO_FIDUCIAL: ClassVar[int] = -1
 
-    def get_fid_pos(self, fid_id: int, in_odom_frame: bool) -> Optional[np.ndarray]:
+    def get_fid_pos(self, fid_id: int, in_odom_frame: bool = True) -> Optional[np.ndarray]:
         """
         Retrieves the pose of the given fiducial ID from the TF tree
         if it exists and is more recent than TAG_EXPIRATION_TIME_SECONDS, otherwise returns None
