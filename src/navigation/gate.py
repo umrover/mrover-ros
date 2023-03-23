@@ -10,7 +10,6 @@ from aenum import Enum, NoAlias
 from state import BaseState
 from trajectory import Trajectory
 from dataclasses import dataclass
-from drive import get_drive_command
 from util.np_utils import normalized, perpendicular_2d
 
 STOP_THRESH = 0.2

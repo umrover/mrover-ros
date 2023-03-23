@@ -1,6 +1,5 @@
 import tf2_ros
 from context import Context
-from drive import get_drive_command
 from aenum import Enum, NoAlias
 from geometry_msgs.msg import Twist
 from waypoint import DRIVE_FWD_THRESH, WaypointState

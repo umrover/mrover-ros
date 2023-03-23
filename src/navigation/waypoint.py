@@ -4,7 +4,6 @@ import numpy as np
 
 import tf2_ros
 from context import Context, Environment
-from drive import get_drive_command
 from aenum import Enum, NoAlias
 from state import BaseState
 
