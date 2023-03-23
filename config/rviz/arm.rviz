@@ -4,9 +4,8 @@ Panels:
     Name: Displays
     Property Tree Widget:
       Expanded:
-        - /Global Options1
-        - /Status1
-        - /RobotModel1
+        - /Grid1
+        - /MotionPlanning1
         - /MotionPlanning1/Scene Geometry1
         - /MotionPlanning1/Scene Robot1
       Splitter Ratio: 0.5
@@ -51,25 +50,9 @@ Visualization Manager:
         Y: 0
         Z: 0
       Plane: XY
-      Plane Cell Count: 10
-      Reference Frame: <Fixed Frame>
+      Plane Cell Count: 100
+      Reference Frame: world
       Value: true
-    - Alpha: 1
-      Class: rviz/RobotModel
-      Collision Enabled: false
-      Enabled: false
-      Links:
-        All Links Enabled: true
-        Expand Joint Details: false
-        Expand Link Details: false
-        Expand Tree: false
-        Link Tree Style: Links in Alphabetic Order
-      Name: RobotModel
-      Robot Description: robot_description
-      TF Prefix: ""
-      Update Interval: 0
-      Value: false
-      Visual Enabled: true
     - Acceleration_Scaling_Factor: 0.1
       Class: moveit_rviz_plugin/MotionPlanning
       Enabled: true
@@ -101,32 +84,37 @@ Visualization Manager:
           Expand Link Details: false
           Expand Tree: false
           Link Tree Style: Links in Alphabetic Order
-          a-b:
+          aTob:
             Alpha: 1
             Show Axes: false
             Show Trail: false
             Value: true
-          b-c:
+          bToc:
             Alpha: 1
             Show Axes: false
             Show Trail: false
             Value: true
-          c-d:
+          base_link:
             Alpha: 1
             Show Axes: false
             Show Trail: false
             Value: true
-          chassis-a:
+          cTod:
             Alpha: 1
             Show Axes: false
             Show Trail: false
             Value: true
-          d-e:
+          chassisToa:
             Alpha: 1
             Show Axes: false
             Show Trail: false
             Value: true
-          e-f:
+          dToe:
+            Alpha: 1
+            Show Axes: false
+            Show Trail: false
+            Value: true
+          eTof:
             Alpha: 1
             Show Axes: false
             Show Trail: false
@@ -136,6 +124,10 @@ Visualization Manager:
             Show Axes: false
             Show Trail: false
             Value: true
+          world:
+            Alpha: 1
+            Show Axes: false
+            Show Trail: false
         Loop Animation: false
         Robot Alpha: 0.5
         Robot Color: 150; 50; 150
@@ -182,32 +174,37 @@ Visualization Manager:
           Expand Link Details: false
           Expand Tree: false
           Link Tree Style: Links in Alphabetic Order
-          a-b:
+          aTob:
             Alpha: 1
             Show Axes: false
             Show Trail: false
             Value: true
-          b-c:
+          bToc:
             Alpha: 1
             Show Axes: false
             Show Trail: false
             Value: true
-          c-d:
+          base_link:
             Alpha: 1
             Show Axes: false
             Show Trail: false
             Value: true
-          chassis-a:
+          cTod:
             Alpha: 1
             Show Axes: false
             Show Trail: false
             Value: true
-          d-e:
+          chassisToa:
             Alpha: 1
             Show Axes: false
             Show Trail: false
             Value: true
-          e-f:
+          dToe:
+            Alpha: 1
+            Show Axes: false
+            Show Trail: false
+            Value: true
+          eTof:
             Alpha: 1
             Show Axes: false
             Show Trail: false
@@ -217,8 +214,12 @@ Visualization Manager:
             Show Axes: false
             Show Trail: false
             Value: true
-        Robot Alpha: 1
-        Show Robot Collision: false
+          world:
+            Alpha: 1
+            Show Axes: false
+            Show Trail: false
+        Robot Alpha: 0.5
+        Show Robot Collision: true
         Show Robot Visual: false
       Value: true
       Velocity_Scaling_Factor: 0.1
@@ -226,7 +227,7 @@ Visualization Manager:
   Global Options:
     Background Color: 48; 48; 48
     Default Light: true
-    Fixed Frame: chassis-a
+    Fixed Frame: chassisToa
     Frame Rate: 30
   Name: root
   Tools:
@@ -250,7 +251,7 @@ Visualization Manager:
   Views:
     Current:
       Class: rviz/Orbit
-      Distance: 57.92843246459961
+      Distance: 103.44278717041016
       Enable Stereo Rendering:
         Stereo Eye Separation: 0.05999999865889549
         Stereo Focal Distance: 1
@@ -258,17 +259,17 @@ Visualization Manager:
         Value: false
       Field of View: 0.7853981852531433
       Focal Point:
-        X: 3.6289501190185547
-        Y: 5.561694622039795
-        Z: -1.5717841386795044
+        X: -1.1320419311523438
+        Y: 0.6890945434570312
+        Z: -1.7296075820922852
       Focal Shape Fixed Size: true
       Focal Shape Size: 0.05000000074505806
       Invert Z Axis: false
       Name: Current View
       Near Clip Distance: 0.009999999776482582
-      Pitch: 0.40479719638824463
+      Pitch: 0.13748864829540253
       Target Frame: <Fixed Frame>
-      Yaw: 2.3436620235443115
+      Yaw: 2.7814881801605225
     Saved: ~
 Window Geometry:
   Displays:
