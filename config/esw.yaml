@@ -49,8 +49,6 @@ brushed_motors:
       inversion: -1.0
       limit_a_present: false
       limit_b_present: false
-      limit_a_is_fwd: true
-      calibration_vel: 0.25
     - name: "joint_b"
       driver_voltage: 36.0
       motor_max_voltage: 12.0
@@ -76,8 +74,6 @@ brushed_motors:
       inversion: -1.0
       limit_a_present: false
       limit_b_present: false
-      limit_a_is_fwd: true
-      calibration_vel: 0.25
     - name: "finger"
       driver_voltage: 12.0
       motor_max_voltage: 12.0
@@ -98,8 +94,6 @@ brushed_motors:
       inversion: 1.0
       limit_a_present: false
       limit_b_present: false
-      limit_a_is_fwd: true
-      calibration_vel: 0.25
     - name: "mast_gimbal_up_down"
       driver_voltage: 12.0
       motor_max_voltage: 12.0
@@ -108,8 +102,6 @@ brushed_motors:
       inversion: -1.0
       limit_a_present: false
       limit_b_present: false
-      limit_a_is_fwd: true
-      calibration_vel: 0
     - name: "mast_gimbal_left_right"
       driver_voltage: 12.0
       motor_max_voltage: 12.0
@@ -118,8 +110,6 @@ brushed_motors:
       inversion: -1.0
       limit_a_present: false
       limit_b_present: false
-      limit_a_is_fwd: true
-      calibration_vel: 0
     - name: "microscope"
       driver_voltage: 12.0
       motor_max_voltage: 12.0
