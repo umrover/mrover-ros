@@ -20,7 +20,8 @@ private:
     ros::Publisher mPcPub;
     image_transport::Publisher mLeftImgPub;
 
-    sensor_msgs::Image leftImgMsg;
+    size_t mUpdateTick = 0;
+    sensor_msgs::Image mLeftImgMsg;
     sensor_msgs::PointCloud2 mPointCloudMsg;
 
     sl::Resolution mImageResolution{1280, 720};

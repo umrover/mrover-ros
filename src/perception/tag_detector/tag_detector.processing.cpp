@@ -73,45 +73,45 @@ void TagDetectorNode::pointCloudCallback(sensor_msgs::PointCloud2ConstPtr const&
         if (tag.tagInCam) {
             // Publish tag to immediate
             std::string immediateFrameId = "immediateFiducial" + std::to_string(tag.id);
-            SE3::pushToTfTree(mTfBroadcaster, immediateFrameId, mBaseLinkFrameId, tag.tagInCam.value());
+            SE3::pushToTfTree(mTfBroadcaster, immediateFrameId, mCameraFrameId, tag.tagInCam.value());
         }
     }
 
     // Handle tags that were not seen this update
     // Decrement their hit count and remove if they hit zero
-    //    auto it = mTags.begin();
-    //    while (it != mTags.end()) {
-    //        auto& [id, tag] = *it;
-    //        if (std::find(mIds.begin(), mIds.end(), id) == mIds.end()) {
-    //            tag.hitCount--;
-    //            if (tag.hitCount <= 0) {
-    //                it = mTags.erase(it);
-    //                continue;
-    //            }
-    //        }
-    //        ++it;
-    //    }
+    auto it = mTags.begin();
+    while (it != mTags.end()) {
+        auto& [id, tag] = *it;
+        if (std::find(mIds.begin(), mIds.end(), id) == mIds.end()) {
+            tag.hitCount--;
+            if (tag.hitCount <= 0) {
+                it = mTags.erase(it);
+                continue;
+            }
+        }
+        ++it;
+    }
 
-    //    // Publish all tags to the tf tree that have been seen enough times
-    //    for (auto const& [id, tag]: mTags) {
-    //        if (tag.hitCount >= mMinHitCountBeforePublish) {
-    //            if (tag.tagInCam) {
-    //                try {
-    //                    std::string immediateFrameId = "immediateFiducial" + std::to_string(tag.id);
-    //                    // Publish tag to odom
-    //                    std::string const& parentFrameId = mUseOdom ? mOdomFrameId : mMapFrameId;
-    //                    SE3 tagInParent = SE3::fromTfTree(mTfBuffer, parentFrameId, immediateFrameId);
-    //                    SE3::pushToTfTree(mTfBroadcaster, "fiducial" + std::to_string(id), parentFrameId, tagInParent);
-    //                } catch (tf2::ExtrapolationException const&) {
-    //                    ROS_WARN("Old data for immediate tag");
-    //                } catch (tf2::LookupException const&) {
-    //                    ROS_WARN("Expected transform for immediate tag");
-    //                }
-    //            } else {
-    //                ROS_DEBUG("Had tag detection but no corresponding point cloud information");
-    //            }
-    //        }
-    //    }
+    // Publish all tags to the tf tree that have been seen enough times
+    for (auto const& [id, tag]: mTags) {
+        if (tag.hitCount >= mMinHitCountBeforePublish) {
+            if (tag.tagInCam) {
+                try {
+                    std::string immediateFrameId = "immediateFiducial" + std::to_string(tag.id);
+                    // Publish tag to odom
+                    std::string const& parentFrameId = mUseOdom ? mOdomFrameId : mMapFrameId;
+                    SE3 tagInParent = SE3::fromTfTree(mTfBuffer, parentFrameId, immediateFrameId);
+                    SE3::pushToTfTree(mTfBroadcaster, "fiducial" + std::to_string(id), parentFrameId, tagInParent);
+                } catch (tf2::ExtrapolationException const&) {
+                    ROS_WARN("Old data for immediate tag");
+                } catch (tf2::LookupException const&) {
+                    ROS_WARN("Expected transform for immediate tag");
+                }
+            } else {
+                ROS_DEBUG("Had tag detection but no corresponding point cloud information");
+            }
+        }
+    }
 
     if (mPublishImages && mImgPub.getNumSubscribers()) {
         cv::aruco::drawDetectedMarkers(mImg, mCorners, mIds);

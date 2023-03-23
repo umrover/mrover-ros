@@ -1,10 +1,15 @@
 #include "zed_wrapper.hpp"
 
+#include <chrono>
+
 #include <ros/init.h>
 #include <sensor_msgs/image_encodings.h>
 #include <sensor_msgs/point_cloud2_iterator.h>
 
 #include <se3.hpp>
+
+using namespace std::chrono_literals;
+using hr_clock = std::chrono::high_resolution_clock;
 
 struct Point {
     float x, y, z;
@@ -43,8 +48,11 @@ void ZedNode::update() {
         runtimeParameters.texture_confidence_threshold = 80;
 
         if (mZed.grab(runtimeParameters) == sl::ERROR_CODE::SUCCESS) {
+            hr_clock::time_point update_start = hr_clock::now();
+
             mZed.retrieveImage(mImageMat, sl::VIEW::LEFT, sl::MEM::CPU, mImageResolution);
             mZed.retrieveMeasure(mPointCloudXYZMat, sl::MEASURE::XYZ, sl::MEM::CPU, mImageResolution);
+            hr_clock::duration grab_time = hr_clock::now() - update_start;
             //            mZed.retrieveMeasure(mPointCloudNormalMat, sl::MEASURE::NORMALS, sl::MEM::CPU, mImageResolution);
 
             auto imagePtr = mImageMat.getPtr<sl::uchar4>();
@@ -52,6 +60,7 @@ void ZedNode::update() {
             //            auto* pointCloudNormalPtr = mPointCloudNormalMat.getPtr<sl::float4>();
 
             mPointCloudMsg.header.frame_id = "zed2i_left_camera_frame";
+            mPointCloudMsg.header.seq = mUpdateTick;
             mPointCloudMsg.header.stamp = ros::Time::now();
             mPointCloudMsg.is_bigendian = __BYTE_ORDER__ == __ORDER_BIG_ENDIAN__;
             mPointCloudMsg.is_dense = true;
@@ -77,21 +86,25 @@ void ZedNode::update() {
                 pointPtr[i].g = imagePtr[i].g;
                 pointPtr[i].b = imagePtr[i].b;
             }
+            hr_clock::duration to_msg_time = hr_clock::now() - update_start - grab_time;
+
             mPcPub.publish(mPointCloudMsg);
+            hr_clock::duration publish_time = hr_clock::now() - update_start - grab_time - to_msg_time;
 
             if (mLeftImgPub.getNumSubscribers()) {
-                leftImgMsg.header.frame_id = "zed2i_left_camera_frame";
-                leftImgMsg.header.stamp = ros::Time::now();
-                leftImgMsg.height = mImageMat.getHeight();
-                leftImgMsg.width = mImageMat.getWidth();
-                leftImgMsg.encoding = sensor_msgs::image_encodings::BGRA8;
-                leftImgMsg.step = mImageMat.getStepBytes();
-                leftImgMsg.is_bigendian = __BYTE_ORDER__ == __ORDER_BIG_ENDIAN__;
+                mLeftImgMsg.header.frame_id = "zed2i_left_camera_frame";
+                mLeftImgMsg.header.seq = mUpdateTick;
+                mLeftImgMsg.header.stamp = ros::Time::now();
+                mLeftImgMsg.height = mImageMat.getHeight();
+                mLeftImgMsg.width = mImageMat.getWidth();
+                mLeftImgMsg.encoding = sensor_msgs::image_encodings::BGRA8;
+                mLeftImgMsg.step = mImageMat.getStepBytes();
+                mLeftImgMsg.is_bigendian = __BYTE_ORDER__ == __ORDER_BIG_ENDIAN__;
                 auto* data = mImageMat.getPtr<sl::uchar1>();
-                size_t size = leftImgMsg.step * leftImgMsg.height;
-                leftImgMsg.data.resize(size);
-                std::memcpy(leftImgMsg.data.data(), data, size);
-                mLeftImgPub.publish(leftImgMsg);
+                size_t size = mLeftImgMsg.step * mLeftImgMsg.height;
+                mLeftImgMsg.data.resize(size);
+                std::memcpy(mLeftImgMsg.data.data(), data, size);
+                mLeftImgPub.publish(mLeftImgMsg);
             }
 
             sl::Pose pose;
@@ -108,6 +121,17 @@ void ZedNode::update() {
                 SE3::pushToTfTree(mTfBroadcaster, "base_link", "odom", baseLinkInOdom);
             } catch (tf2::TransformException& e) {
                 ROS_WARN_STREAM("Failed to get transform: " << e.what());
+            }
+
+            mUpdateTick++;
+
+            hr_clock::duration update_duration = hr_clock::now() - update_start;
+
+            if (mUpdateTick % 60 == 0) {
+                ROS_INFO_STREAM("Total: " << std::chrono::duration_cast<std::chrono::milliseconds>(update_duration).count() << "ms");
+                ROS_INFO_STREAM("\tGrab: " << std::chrono::duration_cast<std::chrono::milliseconds>(grab_time).count() << "ms");
+                ROS_INFO_STREAM("\tTo msg: " << std::chrono::duration_cast<std::chrono::milliseconds>(to_msg_time).count() << "ms");
+                ROS_INFO_STREAM("\tPublish: " << std::chrono::duration_cast<std::chrono::milliseconds>(publish_time).count() << "ms");
             }
         } else {
             throw std::runtime_error("ZED failed to grab");

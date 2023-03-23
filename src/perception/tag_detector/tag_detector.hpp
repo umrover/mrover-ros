@@ -41,7 +41,7 @@ private:
     tf2_ros::TransformBroadcaster mTfBroadcaster;
 
     bool mUseOdom = false;
-    std::string mOdomFrameId, mMapFrameId, mBaseLinkFrameId;
+    std::string mOdomFrameId, mMapFrameId, mCameraFrameId;
     bool mPublishImages = false; // If set, we publish the images with the fiducials drawn on top
     bool mEnableDetections = true;
     int mMinHitCountBeforePublish = 5;

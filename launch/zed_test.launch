@@ -20,4 +20,7 @@
           pkg="nodelet" type="nodelet" name="tag_detector" respawn="true"
           args="load mrover/TagDetectorNodelet perception_nodelet_manager" output="screen">
     </node>
+
+    <node pkg="tf" type="static_transform_publisher" name="map_odom_publisher"
+          args="1 0 0 0 0 0 map odom 100" />
 </launch>

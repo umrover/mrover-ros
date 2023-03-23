@@ -56,7 +56,7 @@ TagDetectorNode::TagDetectorNode(ros::NodeHandle const& nh, ros::NodeHandle cons
     mNh.param<bool>("use_odom_frame", mUseOdom, false);
     mNh.param<std::string>("odom_frame", mOdomFrameId, "odom");
     mNh.param<std::string>("map_frame", mMapFrameId, "map");
-    mNh.param<std::string>("rover_frame", mBaseLinkFrameId, "base_link");
+    mNh.param<std::string>("rover_frame", mCameraFrameId, "zed2i_left_camera_frame");
 
     mPnh.param<bool>("publish_images", mPublishImages, true);
     mPnh.param<int>("dictionary", dictionaryNumber, 0);
