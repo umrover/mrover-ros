@@ -36,13 +36,13 @@
 #define CONFIG_PWM_WB 2
 #define CONFIG_PWM_RB 0
 
-#define CONFIG_K_OP	0x07
+#define CONFIG_K_OP 0x07
 #define CONFIG_K_WB 12
 #define CONFIG_K_RB 0
 
 #define QUAD_ENC_OP 0x08
-#define QUAD_ENC_WB	0
-#define QUAD_ENC_RB	4
+#define QUAD_ENC_WB 0
+#define QUAD_ENC_RB 4
 
 #define ADJUST_OP 0x09
 #define ADJUST_WB 4
