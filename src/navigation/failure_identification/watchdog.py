@@ -12,8 +12,8 @@ LINEAR_THRESHOLD = 0.001
 class WatchDog:
     def __init__(self, collector_in):
         self.collector = collector_in
-    
-    def is_stuck(self, dataframe : DataFrame):
+
+    def is_stuck(self, dataframe: DataFrame):
         return False
 
     # def check_angular_stuck(self):

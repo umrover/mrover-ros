@@ -46,7 +46,6 @@ class ApproachPostState(WaypointState):
                 self.context.rover.get_pose(),
                 self.STOP_THRESH,
                 self.DRIVE_FWD_THRESH,
-                self.context.rover.collector,
             )
             if arrived:
                 self.context.course.increment_waypoint()

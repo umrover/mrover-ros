@@ -86,9 +86,7 @@ class PartialGateState(BaseState):
             return PartialGateStateTransitions.no_fiducial.name  # type: ignore
 
         target_pos = self.traj.get_cur_pt()
-        cmd_vel, arrived = get_drive_command(
-            target_pos, self.context.rover.get_pose(), STOP_THRESH, DRIVE_FWD_THRESH, self.context.rover.collector
-        )
+        cmd_vel, arrived = get_drive_command(target_pos, self.context.rover.get_pose(), STOP_THRESH, DRIVE_FWD_THRESH)
         if arrived:
             # if we finish the gate path, we're done (or continue search) CHECK THIS***
             if self.traj.increment_point():

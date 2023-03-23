@@ -14,7 +14,6 @@ from state import DoneState, DoneStateTransitions, OffState, OffStateTransitions
 from waypoint import WaypointState, WaypointStateTransitions
 from search import SearchState, SearchStateTransitions
 
-# from drive import collector
 from partial_gate import PartialGateState, PartialGateStateTransitions
 
 
@@ -85,12 +84,10 @@ def main():
     rospy.loginfo("===== navigation starting =====")
     rospy.init_node("navigation")
     context = Context()
-    # collector.set_context(context)
     navigation = Navigation(context)
 
     # Define custom handler for Ctrl-C that shuts down smach properly
     def sigint_handler(_sig, _frame):
-        context.rover.collector.write_to_csv()
         navigation.stop()
         rospy.signal_shutdown("keyboard interrupt")
         try:

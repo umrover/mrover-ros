@@ -1,8 +1,6 @@
 from __future__ import annotations
-from typing import Tuple, Optional, TYPE_CHECKING
+from typing import Tuple
 
-if TYPE_CHECKING:
-    from data_collection import DataManager
 
 import numpy as np
 import rospy
@@ -11,9 +9,6 @@ from geometry_msgs.msg import Twist
 from util.SE3 import SE3
 from util.np_utils import angle_to_rotate
 from util.np_utils import angle_to_rotate
-
-# rospy.logerr(f"Make DataCollector in drive.py")
-# collector = DataManager()
 from util.ros_utils import get_rosparam
 
 
@@ -22,7 +17,6 @@ def get_drive_command(
     rover_pose: SE3,
     completion_thresh: float,
     turn_in_place_thresh: float,
-    collector: Optional[DataManager] = None,
 ) -> Tuple[Twist, bool]:
     """
     :param target_pos:              Target position to drive to.
@@ -56,10 +50,6 @@ def get_drive_command(
     alignment = angle_to_rotate(rover_dir, target_dir)
 
     if target_dist < completion_thresh:
-        # getting commanded velocity into the data collection
-        rospy.logerr(f"Called make_cmd_vel_obj from drive.py")
-        if collector:
-            collector.make_cmd_vel_dataframe(Twist())
         return Twist(), True
 
     cmd_vel = Twist()

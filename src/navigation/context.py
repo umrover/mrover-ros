@@ -10,11 +10,9 @@ from visualization_msgs.msg import Marker
 from typing import ClassVar, Optional, List, Tuple
 import numpy as np
 from dataclasses import dataclass
-from watchdog import WatchDog
 from mrover.msg import Waypoint, GPSWaypoint, EnableAuton
 import pymap3d
 from std_msgs.msg import Time
-from data_collection import DataManager
 
 
 TAG_EXPIRATION_TIME_SECONDS = 60
@@ -31,19 +29,6 @@ class Gate:
 @dataclass
 class Rover:
     ctx: Context
-    watchdog: WatchDog
-    stuck: bool
-    previous_state: str
-    move_back: bool
-    collector: DataManager
-
-    def __init__(self, ctx_in, stuck_in, prev_in, move_back_in):
-        self.ctx = ctx_in
-        self.stuck = stuck_in
-        self.previous_state = prev_in
-        self.move_back = move_back_in
-        self.collector = DataManager(self)
-        self.watchdog = WatchDog(self.collector)
 
     def get_pose(self) -> SE3:
         return SE3.from_tf_tree(self.ctx.tf_buffer, parent_frame="map", child_frame="base_link")
@@ -244,8 +229,7 @@ class Context:
         self.vis_publisher = rospy.Publisher("nav_vis", Marker, queue_size=1)
         self.enable_auton_service = rospy.Service("enable_auton", mrover.srv.PublishEnableAuton, self.recv_enable_auton)
         self.course = None
-        # self.rover = Rover(self, WatchDog.WatchdogOff())
-        self.rover = Rover(self, False, "", True)
+        self.rover = Rover(self)
         self.env = Environment(self)
         self.disable_requested = False
 
