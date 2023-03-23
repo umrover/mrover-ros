@@ -4,7 +4,7 @@
     <arg name="run_dynamic_reconfigure" default="true"/>
 
     <group if="$(arg run_rviz)">
-        <arg name="rvizconfig" default="$(find mrover)/config/rviz/basestation.rviz"/>
+        <arg name="rvizconfig" default="$(find mrover)/config/rviz/zed_test.rviz"/>
         <node name="rviz" pkg="rviz" type="rviz" args="-d $(arg rvizconfig)" required="true"/>
     </group>
 

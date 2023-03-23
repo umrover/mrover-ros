@@ -1,38 +1,4 @@
-/*
- * Copyright (c) 2017-20, Ubiquity Robotics Inc., Austin Hendrix
- * All rights reserved.
- *
- * Redistribution and use in source and binary forms, with or without
- * modification, are permitted provided that the following conditions are met:
- *
- * 1. Redistributions of source code must retain the above copyright notice,
- *    this list of conditions and the following disclaimer.
- * 2. Redistributions in binary form must reproduce the above copyright notice,
- *    this list of conditions and the following disclaimer in the documentation
- *    and/or other materials provided with the distribution.
- *
- * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
- * AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
- * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
- * ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS BE
- * LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
- * CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
- * SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
- * INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
- * CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
- * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
- * POSSIBILITY OF SUCH DAMAGE.
- *
- * The views and conclusions contained in the software and documentation are
- * those of the authors and should not be interpreted as representing official
- * policies, either expressed or implied, of the FreeBSD Project.
- *
- */
-
 #include "tag_detector.hpp"
-
-#include <boost/algorithm/string/classification.hpp>
-#include <boost/algorithm/string/split.hpp>
 
 void TagDetectorNode::configCallback(mrover::DetectorParamsConfig& config, uint32_t level) {
     // Don't load initial config, since it will overwrite the rosparam settings
@@ -68,40 +34,6 @@ void TagDetectorNode::configCallback(mrover::DetectorParamsConfig& config, uint3
     mDetectorParams->polygonalApproxAccuracyRate = config.polygonalApproxAccuracyRate;
 }
 
-void TagDetectorNode::ignoreCallback(std_msgs::String const& msg) {
-    mIgnoreIds.clear();
-    mPnh.setParam("ignore_fiducials", msg.data);
-    handleIgnoreString(msg.data);
-}
-
-void TagDetectorNode::handleIgnoreString(std::string const& str) {
-    // Ignore fiducials can take comma separated list of individual
-    // Tag ids or ranges, eg "1,4,8,9-12,30-40"
-    std::vector<std::string> strs;
-    boost::split(strs, str, boost::is_any_of(","));
-    for (const std::string& element: strs) {
-        if (element.empty()) {
-            continue;
-        }
-        std::vector<std::string> range;
-        boost::split(range, element, boost::is_any_of("-"));
-        if (range.size() == 2) {
-            int start = std::stoi(range[0]);
-            int end = std::stoi(range[1]);
-            ROS_INFO("Ignoring fiducial id range %d to %d", start, end);
-            for (int j = start; j <= end; j++) {
-                mIgnoreIds.push_back(j);
-            }
-        } else if (range.size() == 1) {
-            int fid = std::stoi(range[0]);
-            ROS_INFO("Ignoring fiducial id %d", fid);
-            mIgnoreIds.push_back(fid);
-        } else {
-            ROS_ERROR("Malformed ignore_fiducials: %s", element.c_str());
-        }
-    }
-}
-
 bool TagDetectorNode::enableDetectionsCallback(std_srvs::SetBool::Request& req, std_srvs::SetBool::Response& res) {
     mEnableDetections = req.data;
     if (mEnableDetections) {
@@ -128,20 +60,13 @@ TagDetectorNode::TagDetectorNode(ros::NodeHandle const& nh, ros::NodeHandle cons
 
     mPnh.param<bool>("publish_images", mPublishImages, true);
     mPnh.param<int>("dictionary", dictionaryNumber, 0);
-    mPnh.param<bool>("publish_fiducial_tf", mPublishFiducialTf, true);
-    mPnh.param<bool>("verbose", mIsVerbose, false);
 
     std::string str;
-
-    mPnh.param<std::string>("ignore_fiducials", str, "");
-    handleIgnoreString(str);
 
     mImgPub = mIt.advertise("tag_detection", 1);
     mDictionary = cv::aruco::getPredefinedDictionary(dictionaryNumber);
 
-    mImgSub = mIt.subscribe("camera/left/image", 1, &TagDetectorNode::imageCallback, this);
     mPcSub = mNh.subscribe("camera/left/points", 1, &TagDetectorNode::pointCloudCallback, this);
-    mIgnoreSub = mNh.subscribe("ignore_fiducials", 1, &TagDetectorNode::ignoreCallback, this);
     mServiceEnableDetections = mNh.advertiseService("enable_detections", &TagDetectorNode::enableDetectionsCallback, this);
 
     // Lambda handles passing class pointer (implicit first parameter) to configCallback

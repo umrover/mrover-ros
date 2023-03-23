@@ -5,17 +5,22 @@
     <arg name="use_builtin_visodom" default="true"/>
 
     <!-- ZED Wrapper Nodelet -->
-    <node pkg="nodelet" type="nodelet" name="zed_nodelet" respawn="true"
-          args="load zed_nodelets/ZEDWrapperNodelet perception_nodelet_manager" output="screen">
-        <rosparam file="$(find mrover)/config/zed/base.yaml" command="load"/>
-        <rosparam file="$(find mrover)/config/zed/$(arg zed_model).yaml" command="load"/>
-        <rosparam if="$(arg use_builtin_visodom)" file="$(find mrover)/config/zed/builtin_positional_tracking.yaml" command="load"/>
+    <!--    <node pkg="nodelet" type="nodelet" name="zed_nodelet" respawn="true"-->
+    <!--          args="load zed_nodelets/ZEDWrapperNodelet perception_nodelet_manager" output="screen">-->
+    <!--        <rosparam file="$(find mrover)/config/zed/base.yaml" command="load"/>-->
+    <!--        <rosparam file="$(find mrover)/config/zed/$(arg zed_model).yaml" command="load"/>-->
+    <!--        <rosparam if="$(arg use_builtin_visodom)" file="$(find mrover)/config/zed/builtin_positional_tracking.yaml"-->
+    <!--                  command="load"/>-->
 
-        <remap to="/camera/left/image" from="/zed_nodelet/left/image_rect_color"/>
-        <remap to="/camera/right/image" from="/zed_nodelet/right/image_rect_color"/>
-        <remap to="/camera/left/camera_info" from="/zed_nodelet/left/camera_info"/>
-        <remap to="/camera/right/camera_info" from="/zed_nodelet/right/camera_info"/>
-        <remap to="/camera/left/points" from="/zed_nodelet/point_cloud/cloud_registered"/>
+    <!--        <remap to="/camera/left/image" from="/zed_nodelet/left/image_rect_color"/>-->
+    <!--        <remap to="/camera/right/image" from="/zed_nodelet/right/image_rect_color"/>-->
+    <!--        <remap to="/camera/left/camera_info" from="/zed_nodelet/left/camera_info"/>-->
+    <!--        <remap to="/camera/right/camera_info" from="/zed_nodelet/right/camera_info"/>-->
+    <!--        <remap to="/camera/left/points" from="/zed_nodelet/point_cloud/cloud_registered"/>-->
+    <!--    </node>-->
+
+    <node pkg="nodelet" type="nodelet" name="zed_nodelet" respawn="true"
+          args="load mrover/ZedNodelet perception_nodelet_manager" output="screen">
     </node>
 
     <!-- Static TF publisher for ZED mount-->
