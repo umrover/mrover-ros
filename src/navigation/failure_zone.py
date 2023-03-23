@@ -1,27 +1,28 @@
-
 from typing import List, ClassVar
 from dataclasses import dataclass
 from shapely.geometry import Polygon, LineString, Point
 
+
 @dataclass
 class FailureZone:
     """
-    FailureZones are represented as rectangular bounding boxes 
-    aligned with the x and y-axes. 
+    FailureZones are represented as rectangular bounding boxes
+    aligned with the x and y-axes.
 
-    FailureZones can be initialized by passing in a Shapely Polygon 
+    FailureZones can be initialized by passing in a Shapely Polygon
     object. This will be normalized to a rectangular, x-y aligned bounding box.
 
-    NOTE: FailureZones should typically be intialized such that the Polygon is 
+    NOTE: FailureZones should typically be intialized such that the Polygon is
     larger than it strictly needs to be; the rover WILL pass through the vertices
-    and edges of the failure zone while planning a path if the zone is in the way. 
+    and edges of the failure zone while planning a path if the zone is in the way.
     """
-    vertices: Polygon      
+
+    vertices: Polygon
 
     def get_vertices(self) -> List[Point]:
         """
-        Return a list of 4 vertices as Point objects that form the 
-        bounding box of this FailureZone 
+        Return a list of 4 vertices as Point objects that form the
+        bounding box of this FailureZone
 
         Vertices returned in order [lower_left, upper_left, upper_right, lower_right]
         """
@@ -34,9 +35,9 @@ class FailureZone:
 
     def intersects(self, line: LineString) -> bool:
         """
-        Returns whether this FailureZone properly intersects the given line. 
+        Returns whether this FailureZone properly intersects the given line.
 
         Intersection is defined as passing through or overlapping with an edge
-        of the FailureZone, rather than simply touching a corner. 
+        of the FailureZone, rather than simply touching a corner.
         """
         return self.vertices.intersects(line) and not self.vertices.touches(line)

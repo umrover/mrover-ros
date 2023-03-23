@@ -28,23 +28,20 @@ def angle_to_rotate(v1, v2):
     return smallest_angle * sign
 
 
-def intersect_2d(start1: np.array, 
-                 end1: np.array, 
-                 start2: np.array, 
-                 end2: np.array) -> bool:
+def intersect_2d(start1: np.array, end1: np.array, start2: np.array, end2: np.array) -> bool:
     """
-    Checks if two 2-dimensional line segments intersect. 
+    Checks if two 2-dimensional line segments intersect.
 
-    The line segments are considered to have open endpoints; 
-    as such, they are not considered intersecting if they touch 
+    The line segments are considered to have open endpoints;
+    as such, they are not considered intersecting if they touch
     only at one of their endpoints. Cases:
         1) They do not touch at all --> False
         2) They touch only at endpoints --> False
-        3) They touch at a T --> False 
+        3) They touch at a T --> False
         4) They intersect in the middle of both segments --> True
         5) They are collinear and they overlap --> True
     """
-    
+
     """
     Algorithm:
     
@@ -66,32 +63,33 @@ def intersect_2d(start1: np.array,
     orient3 = orientation_2d(start2, end2, start1)
     orient4 = orientation_2d(start2, end2, end1)
 
-    if(orient1 == orient2 == 0):  # collinear case
+    if orient1 == orient2 == 0:  # collinear case
         # ensure x-coordinates of both points are non-decreasing
-        if(start1[0] > end1[0]):
+        if start1[0] > end1[0]:
             temp = start1
             start1 = end1
             end1 = temp
-        if(start2[0] > end2[0]):
+        if start2[0] > end2[0]:
             temp = start2
             start2 = end2
             end2 = temp
-        
+
         x_cross = (start1[0] <= start2[0] < end1[0]) or (start2[0] <= start1[0] < end2[0])
         y_cross = (start1[1] <= start2[1] < end1[1]) or (start2[1] <= start1[1] < end2[1])
-        return x_cross or y_cross # strict overlap in x OR strict overlap in y
+        return x_cross or y_cross  # strict overlap in x OR strict overlap in y
 
-    return (orient1 * orient2 < 0 and orient3 * orient4 < 0) # non-collinear case
+    return orient1 * orient2 < 0 and orient3 * orient4 < 0  # non-collinear case
+
 
 def orientation_2d(a: np.array, b: np.array, c: np.array) -> float:
     """
-    Checks the orientation of three 2-dimensional points a, b, c. 
+    Checks the orientation of three 2-dimensional points a, b, c.
     Is traversing from a to b to c clockwise, counterclockwise, or collinear?
 
     Returns:
         - 0 if a, b, c are collinear
         - > 0 if they are clockwise-oriented
-        - < 0 if they are counter-clockwise oriented 
+        - < 0 if they are counter-clockwise oriented
     """
 
     """
@@ -103,4 +101,3 @@ def orientation_2d(a: np.array, b: np.array, c: np.array) -> float:
     ab = b - a
     ac = c - a
     return (ab[1] * ac[0]) - (ac[1] * ab[0])
-

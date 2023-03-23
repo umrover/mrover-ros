@@ -2,20 +2,21 @@ from shapely.geometry import LineString, Point, Polygon
 from path_planner import PathPlanner
 from failure_zone import FailureZone
 
+
 def check_path_planner(planner: PathPlanner, source, target, expected_targets):
-    returned_targets = [] 
+    returned_targets = []
 
     planner.get_intermediate_target(source, target)
     while not planner.is_path_complete():
         returned_targets.append(planner.get_intermediate_target(source, target))
         planner.complete_intermediate_target()
-    
-    print(returned_targets)
-    assert(returned_targets == expected_targets)
 
-    
+    print(returned_targets)
+    assert returned_targets == expected_targets
+
+
 def main():
-    # Test 1: No failure zones 
+    # Test 1: No failure zones
     planner1 = PathPlanner()
     src = Point(0, 0)
     target = Point(-5, 10)
@@ -63,8 +64,16 @@ def main():
     planner2.add_failure_zone(fz4)
     src = Point(0, 0)
     target = Point(8, 0)
-    expected = [src, Point(1, -1), Point(2, -1), Point(3, -0.25), Point(4, -0.25), 
-                Point(5, -0.5), Point(7, -0.5), target]
+    expected = [
+        src,
+        Point(1, -1),
+        Point(2, -1),
+        Point(3, -0.25),
+        Point(4, -0.25),
+        Point(5, -0.5),
+        Point(7, -0.5),
+        target,
+    ]
     check_path_planner(planner2, src, target, expected)
 
     # TEST 7: Add failure zone that overlaps existing failure zone
@@ -72,7 +81,7 @@ def main():
     planner2.add_failure_zone(fz5)
     src = Point(8, 0)
     target = Point(0, 0)
-    expected = [src, Point(4, -2),  Point(3, -2), Point(1, -1), target]
+    expected = [src, Point(4, -2), Point(3, -2), Point(1, -1), target]
     check_path_planner(planner2, src, target, expected)
 
     # TEST 8: src in FZ
@@ -97,13 +106,14 @@ def main():
     expected = [src, target]
     check_path_planner(planner2, src, target, expected)
 
-    # TEST 11: src blocked off by FZ 
+    # TEST 11: src blocked off by FZ
     src = Point(0, 0)
     target = Point(1.5, 0)
     expected = [src, target]
     check_path_planner(planner2, src, target, expected)
 
     print("All path_planner tests passed!")
+
 
 if __name__ == "__main__":
     main()
