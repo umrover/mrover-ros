@@ -65,13 +65,6 @@ bool Controller::isControllerLive() const {
     return isLive;
 }
 
-// REQUIRES: nothing
-// MODIFIES: nothing
-// EFFECTS: Returns true if Controller is calibrated.
-bool Controller::getCalibrationStatus() const {
-    return isCalibrated;
-}
-
 // REQUIRES: -1.0 <= input <= 1.0
 // MODIFIES: currentAngle. Also makes controller live if not already.
 // EFFECTS: Sends an open loop command scaled to PWM limits

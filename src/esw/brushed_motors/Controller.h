@@ -125,6 +125,7 @@ public:
     bool limitAIsFwd = true;
     int32_t limitAAdjustedCounts = 0;
     int32_t limitBAdjustedCounts = 0;
+    bool isCalibrated = false;
 
     // REQUIRES: _name is the name of the motor,
     // mcuID is the mcu id of the controller which dictates the slave address,
@@ -150,11 +151,6 @@ public:
     // MODIFIES: nothing
     // EFFECTS: Returns true if Controller is live.
     bool isControllerLive() const;
-
-    // REQUIRES: nothing
-    // MODIFIES: nothing
-    // EFFECTS: Returns true if Controller is calibrated.
-    bool getCalibrationStatus() const;
 
     // REQUIRES: nothing
     // MODIFIES: nothing
@@ -213,6 +209,5 @@ private:
     float currentAngle;
 
     bool isLive = false;
-    bool isCalibrated = false;
 
 };
