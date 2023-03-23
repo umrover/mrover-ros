@@ -43,7 +43,7 @@ float Controller::getCurrentAngle() const {
 // MODIFIES: currentAngle
 // EFFECTS: forces the angle of the controller to be a certain value
 void Controller::overrideCurrentAngle(float newAngleRad) {
-    int32_t ticks = (int32_t) (((newAngleRad) / (2 * M_PI)) * quadCPR); // convert to quad units
+    auto ticks = (int32_t) (((newAngleRad) / (2 * M_PI)) * quadCPR); // convert to quad units
 
     try {
         makeLive();
