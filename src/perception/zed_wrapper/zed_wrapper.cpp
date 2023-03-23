@@ -108,19 +108,23 @@ void ZedNode::update() {
             }
 
             sl::Pose pose;
-            mZed.getPosition(pose);
-            sl::Translation const& translation = pose.getTranslation();
-            sl::Orientation const& orientation = pose.getOrientation();
-            ROS_DEBUG_STREAM("Position: " << translation.x << ", " << translation.y << ", " << translation.z);
-            ROS_DEBUG_STREAM("Orientation: " << orientation.w << ", " << orientation.x << ", " << orientation.y << ", " << orientation.z);
-            Eigen::Quaterniond q{orientation.w, orientation.x, orientation.y, orientation.z};
-            try {
-                SE3 leftCameraInOdom{{translation.x, translation.y, translation.z}, q.normalized()};
-                SE3 leftCameraInBaseLink = SE3::fromTfTree(mTfBuffer, "base_link", "zed2i_left_camera_frame");
-                SE3 baseLinkInOdom = leftCameraInBaseLink * leftCameraInOdom;
-                SE3::pushToTfTree(mTfBroadcaster, "base_link", "odom", baseLinkInOdom);
-            } catch (tf2::TransformException& e) {
-                ROS_WARN_STREAM("Failed to get transform: " << e.what());
+            sl::POSITIONAL_TRACKING_STATE status = mZed.getPosition(pose);
+            if (status == sl::POSITIONAL_TRACKING_STATE::OK) {
+                sl::Translation const& translation = pose.getTranslation();
+                sl::Orientation const& orientation = pose.getOrientation();
+                ROS_DEBUG_STREAM("Position: " << translation.x << ", " << translation.y << ", " << translation.z);
+                ROS_DEBUG_STREAM("Orientation: " << orientation.w << ", " << orientation.x << ", " << orientation.y << ", " << orientation.z);
+                Eigen::Quaterniond q{orientation.w, orientation.x, orientation.y, orientation.z};
+                try {
+                    SE3 leftCameraInOdom{{translation.x, translation.y, translation.z}, q.normalized()};
+                    SE3 leftCameraInBaseLink = SE3::fromTfTree(mTfBuffer, "base_link", "zed2i_left_camera_frame");
+                    SE3 baseLinkInOdom = leftCameraInBaseLink * leftCameraInOdom;
+                    SE3::pushToTfTree(mTfBroadcaster, "base_link", "odom", baseLinkInOdom);
+                } catch (tf2::TransformException& e) {
+                    ROS_WARN_STREAM("Failed to get transform: " << e.what());
+                }
+            } else {
+                ROS_WARN_STREAM("Positional tracking failed: " << status);
             }
 
             mUpdateTick++;
