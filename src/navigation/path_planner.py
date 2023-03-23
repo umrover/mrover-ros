@@ -79,7 +79,7 @@ class PathPlanner:
             self.generate_path(source_pos, target_pos)
         
         if(self.target_vertex_idx == len(self.path)):
-            return None
+            return self.path[-1]
 
         return self.path[self.target_vertex_idx]
 
