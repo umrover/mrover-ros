@@ -28,7 +28,7 @@ ZedNode::ZedNode(ros::NodeHandle const& nh, ros::NodeHandle const& pnh)
     initParameters.depth_mode = sl::DEPTH_MODE::QUALITY;
     initParameters.coordinate_units = sl::UNIT::METER;
     initParameters.sdk_verbose = true;
-    initParameters.camera_fps = 60;
+    initParameters.camera_fps = 50;
     initParameters.coordinate_system = sl::COORDINATE_SYSTEM::RIGHT_HANDED_Z_UP_X_FWD;
 
     if (mZed.open(initParameters) != sl::ERROR_CODE::SUCCESS) {
