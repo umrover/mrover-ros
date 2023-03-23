@@ -109,12 +109,12 @@ def get_variance(gps_data, ground_truth, velocity) -> np.ndarray:
     # Var = Sum([X - u_x]^2 / (n - 1)
     # n-1 since we use a sample population
 
-    #plt.plot(velocity[1, :], gps_data[0, :], label="gps data")
-    #plt.plot(velocity[1, :], ground_truth[0, :], label="ground truth")
-    #plt.legend()
-    #plt.show()
+    # plt.plot(velocity[1, :], gps_data[0, :], label="gps data")
+    # plt.plot(velocity[1, :], ground_truth[0, :], label="ground truth")
+    # plt.legend()
+    # plt.show()
 
-    return np.sum(np.power(gps_data - ground_truth, [[2], [2], [2]]), axis=1) / (ground_truth.shape[1] - 1)
+    return np.sum((gps_data - ground_truth) ** 2 / (ground_truth.shape[1] - 1))
 
 
 def get_std_dev(variance) -> np.ndarray:
@@ -157,7 +157,7 @@ def calcdata():
     calcvelocity = dist_driven / time_taken
 
     # uncomment if stationary test
-    #calcvelocity = calcvelocity * 0
+    # calcvelocity = calcvelocity * 0
 
     # will need to trim gps_data in order to obtain motion data
     motion_data = gps_data
