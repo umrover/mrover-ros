@@ -5,7 +5,7 @@ from math import copysign, nan
 import typing
 from threading import Lock
 import rospy as ros
-from std_msgs.msg import String, Bool
+from std_msgs.msg import String
 from sensor_msgs.msg import Joy, JointState
 from geometry_msgs.msg import Twist
 from typing import List
@@ -85,10 +85,6 @@ class Drive:
 
 
 class ArmControl:
-
-    __arm_mode = "arm_disabled"
-    __arm_mode_lock = Lock()
-
     def __init__(self):
         self.xbox_mappings = ros.get_param("teleop/xbox_mappings")
         self.ra_config = ros.get_param("teleop/ra_controls")
@@ -99,8 +95,6 @@ class ArmControl:
 
         self.ra_cmd_pub = ros.Publisher("ra_cmd", JointState, queue_size=100)
         self.sa_cmd_pub = ros.Publisher("sa_cmd", JointState, queue_size=100)
-        
-        self.ra_slow_mode = False
 
         RA_NAMES = [
             "joint_a",
@@ -195,30 +189,18 @@ class ArmControl:
         left_trigger = raw_left_trigger if raw_left_trigger > 0 else 0
         raw_right_trigger = msg.axes[self.xbox_mappings["right_trigger"]]
         right_trigger = raw_right_trigger if raw_right_trigger > 0 else 0
-        if self.ra_slow_mode == False:
-            self.ra_cmd.velocity = [
-                self.ra_config["joint_a"]["multiplier"] * self.filter_xbox_axis(msg.axes, "left_js_x"),
-                self.ra_config["joint_b"]["multiplier"] * self.filter_xbox_axis(msg.axes, "left_js_y"),
-                self.ra_config["joint_c"]["multiplier"] * self.filter_xbox_axis(msg.axes, "right_js_y"),
-                self.ra_config["joint_d"]["multiplier"] * self.filter_xbox_axis(msg.axes, "right_js_x"),
-                self.ra_config["joint_e"]["multiplier"] * (right_trigger - left_trigger),
-                self.ra_config["joint_f"]["multiplier"]
-                * self.filter_xbox_button(msg.buttons, "right_bumper", "left_bumper"),
-                self.ra_config["finger"]["multiplier"] * self.filter_xbox_button(msg.buttons, "y", "a"),
-                self.ra_config["gripper"]["multiplier"] * self.filter_xbox_button(msg.buttons, "b", "x"),
-            ]
-        else:
-             self.ra_cmd.velocity = [
-                self.ra_config["joint_a"]["slow_mode_multiplier"] * self.filter_xbox_axis(msg.axes, "left_js_x"),
-                self.ra_config["joint_b"]["slow_mode_multiplier"] * self.filter_xbox_axis(msg.axes, "left_js_y"),
-                self.ra_config["joint_c"]["slow_mode_multiplier"] * self.filter_xbox_axis(msg.axes, "right_js_y"),
-                self.ra_config["joint_d"]["slow_mode_multiplier"] * self.filter_xbox_axis(msg.axes, "right_js_x"),
-                self.ra_config["joint_e"]["slow_mode_multiplier"] * (right_trigger - left_trigger),
-                self.ra_config["joint_f"]["slow_mode_multiplier"]
-                * self.filter_xbox_button(msg.buttons, "right_bumper", "left_bumper"),
-                self.ra_config["finger"]["slow_mode_multiplier"] * self.filter_xbox_button(msg.buttons, "y", "a"),
-                self.ra_config["gripper"]["slow_mode_multiplier"] * self.filter_xbox_button(msg.buttons, "b", "x"),
-            ]
+
+        self.ra_cmd.velocity = [
+            self.ra_config["joint_a"]["multiplier"] * self.filter_xbox_axis(msg.axes, "left_js_x"),
+            self.ra_config["joint_b"]["multiplier"] * self.filter_xbox_axis(msg.axes, "left_js_y"),
+            self.ra_config["joint_c"]["multiplier"] * self.filter_xbox_axis(msg.axes, "right_js_y"),
+            self.ra_config["joint_d"]["multiplier"] * self.filter_xbox_axis(msg.axes, "right_js_x"),
+            self.ra_config["joint_e"]["multiplier"] * (right_trigger - left_trigger),
+            self.ra_config["joint_f"]["multiplier"]
+            * self.filter_xbox_button(msg.buttons, "right_bumper", "left_bumper"),
+            self.ra_config["finger"]["multiplier"] * self.filter_xbox_button(msg.buttons, "y", "a"),
+            self.ra_config["gripper"]["multiplier"] * self.filter_xbox_button(msg.buttons, "b", "x"),
+        ]
         self.ra_cmd_pub.publish(self.ra_cmd)
 
     def ra_servo_control(self, msg: Joy) -> None:
@@ -268,7 +250,6 @@ def main():
     ros.Subscriber("xbox/ra_control", Joy, arm.ra_control_callback)
     ros.Subscriber("ra/mode", String, arm.ra_mode_callback)
     ros.Subscriber("xbox/sa_control", Joy, arm.sa_control_callback)
-    ros.Subscriber("slow_mode", Bool, arm.slow_mode_callback)
 
     ros.spin()
 
