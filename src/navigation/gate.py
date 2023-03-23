@@ -105,14 +105,14 @@ class GateTraverseState(BaseState):
             return GateTraverseStateTransitions.no_gate.name  # type: ignore
         if self.traj is None:
             self.traj = GateTrajectory.spider_gate_trajectory(
-                self.APPROACH_DISTANCE, gate, self.context.rover.get_pose(use_odom_frame=True).position
+                self.APPROACH_DISTANCE, gate, self.context.rover.get_pose(in_odom_frame=True).position
             )
 
         # continue executing this path from wherever it left off
         target_pos = self.traj.get_cur_pt()
         cmd_vel, arrived = get_drive_command(
             target_pos,
-            self.context.rover.get_pose(use_odom_frame=True),
+            self.context.rover.get_pose(in_odom_frame=True),
             self.STOP_THRESH,
             self.DRIVE_FWD_THRESH,
         )

@@ -42,7 +42,7 @@ class ApproachPostState(WaypointState):
 
         try:
             cmd_vel, arrived = get_drive_command(
-                fid_pos, self.context.rover.get_pose(use_odom_frame=True), self.STOP_THRESH, self.DRIVE_FWD_THRESH
+                fid_pos, self.context.rover.get_pose(in_odom_frame=True), self.STOP_THRESH, self.DRIVE_FWD_THRESH
             )
             if arrived:
                 self.context.course.increment_waypoint()

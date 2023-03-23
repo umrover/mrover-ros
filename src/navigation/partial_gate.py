@@ -82,7 +82,7 @@ class PartialGateState(BaseState):
         elif post_pos is not None:  # Searching for second post
             if self.traj is None:
                 self.traj = PartialGateTrajectory.partial_gate_traj(
-                    post_pos, self.context.rover.get_pose(use_odom_frame=True).position
+                    post_pos, self.context.rover.get_pose(in_odom_frame=True).position
                 )
         else:
             return PartialGateStateTransitions.no_fiducial.name  # type: ignore
@@ -90,7 +90,7 @@ class PartialGateState(BaseState):
         target_pos = self.traj.get_cur_pt()
         cmd_vel, arrived = get_drive_command(
             target_pos,
-            self.context.rover.get_pose(use_odom_frame=True),
+            self.context.rover.get_pose(in_odom_frame=True),
             STOP_THRESH,
             DRIVE_FWD_THRESH,
         )
