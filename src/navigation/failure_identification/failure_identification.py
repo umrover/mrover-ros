@@ -2,7 +2,8 @@
 import rospy
 import message_filters
 from mrover.msg import MotorsStatus 
-from geometry_msgs.msg import Twist, Odometry
+from geometry_msgs.msg import Twist
+from nav_msgs.msg import Odometry
 from smach_msgs.msg import SmachContainerStatus
 from std_msgs.msg import Bool
 import pandas as pd
@@ -21,14 +22,17 @@ class FailureIdentifier:
     _df: DataFrame
     watchdog: WatchDog
     actively_collecting: bool
+    cur_cmd: Twist
+    cur_stuck: bool
 
     def __init__(self):
-        nav_status_sub = message_filters.Subscriber("nav_status", SmachContainerStatus)
-        cmd_vel_sub = message_filters.Subscriber("cmd_vel", Twist)
+        nav_status_sub = message_filters.Subscriber("smach/container_status", SmachContainerStatus)
+        cmd_vel_sub = rospy.Subscriber("cmd_vel", Twist, self.cmd_vel_update)
         drive_status_sub = message_filters.Subscriber("drive_status", MotorsStatus)
         odometry_sub = message_filters.Subscriber("global_ekf/odometry", Odometry)
-        stuck_button_sub = message_filters.Subscriber("/rover_stuck", Bool)
-        ts = message_filters.ApproximateTimeSynchronizer([nav_status_sub, cmd_vel_sub, drive_status_sub, odometry_sub, stuck_button_sub], 10, 0.5)
+        stuck_button_sub = rospy.Subscriber("/rover_stuck", Bool, self.stuck_button_update)
+        
+        ts = message_filters.ApproximateTimeSynchronizer([nav_status_sub, drive_status_sub, odometry_sub], 10, 1.0, allow_headerless=True)
         ts.registerCallback(self.update)
 
         self.stuck_publisher = rospy.Publisher("/nav_stuck", Bool, queue_size=1)
@@ -40,7 +44,12 @@ class FailureIdentifier:
         command_variables = ["cmd_vel_x", "cmd_vel_twist"]
         self.data_collecting_mode = True
         self.actively_collecting = False
-        self._df = pd.DataFrame(columns=["time", "stuck"] + position_variables + rotation_variables + velocity_variables + wheel_effort_variables + wheel_velocity_variables + command_variables)
+        self.cur_cmd = Twist()
+        self.cur_stuck = False
+        cols = ["time", "stuck"] + position_variables + rotation_variables + velocity_variables + wheel_effort_variables + wheel_velocity_variables + command_variables
+        print(cols)
+        self._df = pd.DataFrame(columns=cols)
+        self.watchdog = WatchDog(self)
     
     def write_to_csv(self):
         """
@@ -52,14 +61,18 @@ class FailureIdentifier:
         path = os.path.join(path, file_name)
         self._df.to_csv(f"failure_data_{rospy.Time.now()}.csv")
         rospy.loginfo("===== failure data written to csv =====")
-        
+    
+    def stuck_button_update(self, stuck_button : Bool):
+        self.cur_stuck = stuck_button.data
+    
+    def cmd_vel_update(self, cmd_vel: Twist):
+        self.cur_cmd = cmd_vel
 
-    def update(self, nav_status: SmachContainerStatus, cmd_vel : Twist, drive_status : MotorsStatus, odometry : Odometry, stuck_button : Bool):
+    def update(self, nav_status: SmachContainerStatus, drive_status : MotorsStatus, odometry : Odometry):
         """
         Updates the current row of the data frame with the latest data from the rover
         then appends the row to the data frame
         @param nav_status: the current state of the rover, used to determine if the rover is already recovering
-        @param cmd_vel: the current command velocity of the rover
         @param drive_status: the current status of the rovers motors, has velocity and effort data
         @param odometry: the current odometry of the rover, has position and velocity data
 
@@ -67,27 +80,30 @@ class FailureIdentifier:
         """
 
         #if the state is 'done' or 'off', write the data frame to a csv file if we were collecting
-        if nav_status.active_states[0] == "done" or nav_status.active_states[0] == "off":
+        if nav_status.active_states[0] == "DoneState" or nav_status.active_states[0] == "OffState":
             if self.actively_collecting and self.data_collecting_mode:
+                #print("writing to file")
+                rospy.loginfo("writing to file")
                 self.write_to_csv()
                 self.actively_collecting = False
             #return to not collect any data
             return
         
         #create a new row for the data frame
+        #print("collecting")
         self.actively_collecting = True
         cur_row = {}
         cur_row["time"] = rospy.Time.now()
 
         #if the stuck button is pressed, the rover is stuck (as indicated by the GUI)
-        if stuck_button.data:
+        if self.cur_stuck:
             cur_row["stuck"] = 1
         else:
             cur_row["stuck"] = 0
 
         #get the command velocity from the cmd_vel message
-        cur_row["cmd_vel_x"] = cmd_vel.linear.x
-        cur_row["cmd_vel_twist"] = cmd_vel.angular.z
+        cur_row["cmd_vel_x"] = self.cur_cmd.linear.x
+        cur_row["cmd_vel_twist"] = self.cur_cmd.angular.z
 
         #get the x, y, z position of the rover from odometry message
         cur_row["x"] = odometry.pose.pose.position.x
@@ -111,7 +127,7 @@ class FailureIdentifier:
             cur_row[f"wheel_{wheel_num}_velocity"] = drive_status.joint_states.velocity[wheel_num]
 
         #update the data frame with the cur row
-        self._df = self._df.append(cur_row, ignore_index=True)
+        self._df = pd.concat([self._df, DataFrame([cur_row])])
        
         #publish the watchdog status if the nav state is not recovery
         if nav_status.active_states[0] != "recovery":

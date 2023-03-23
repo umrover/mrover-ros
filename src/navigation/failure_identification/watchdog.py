@@ -13,7 +13,7 @@ class WatchDog:
     def __init__(self, collector_in):
         self.collector = collector_in
     
-    def is_stuck(dataframe : DataFrame):
+    def is_stuck(self, dataframe : DataFrame):
         return False
 
     # def check_angular_stuck(self):
