@@ -40,6 +40,7 @@
       <Checkbox ref="D" :name="'D'" @toggle="updateJointsEnabled(3, $event)" />
       <Checkbox ref="E" :name="'E'" @toggle="updateJointsEnabled(4, $event)" />
       <Checkbox ref="F" :name="'F'" @toggle="updateJointsEnabled(5, $event)" />
+    </div>
     <div class="controls laser">
       <ToggleButton
         :current-state="laser_enabled"
