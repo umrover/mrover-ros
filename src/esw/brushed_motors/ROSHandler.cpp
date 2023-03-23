@@ -161,15 +161,20 @@ void ROSHandler::moveMastGimbal(const mrover::MastGimbal::ConstPtr& msg) {
 // EFFECTS: sends a move/calibration command to the mcu
 bool ROSHandler::processMotorCalibrate(mrover::CalibrateMotors::Request& req, mrover::CalibrateMotors::Response& res) {
     auto controller_iter = ControllerMap::controllersByName.find(req.name);
+
+    if (controller_iter == ControllerMap::controllersByName.end()) {
+        ROS_ERROR("Could not find controller named %s.", req.name.c_str());
+        res.actively_calibrating = false;
+        return false;
+    }
+
     auto& [name, controller] = *controller_iter;
 
     // Check if already calibrated
     controller->askIsCalibrated();
 
     // Determine if calibration is needed
-    bool shouldCalibrate = !(controller_iter == ControllerMap::controllersByName.end()
-                             || controller->getCalibrationStatus()
-                             || !controller->getLimitSwitchEnabled());
+    bool shouldCalibrate = !(controller->getCalibrationStatus() || !controller->getLimitSwitchEnabled());
 
     // Calibrate
     if (shouldCalibrate) {
