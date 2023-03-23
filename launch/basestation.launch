@@ -2,8 +2,9 @@
     This launch file should be run on the basestation in order to interface with and control the rover.
  -->
 <launch>
-    <!-- TODO: is this necessary? this is already being loaded on the jetson -->
     <rosparam command="load" file="$(find mrover)/config/teleop.yaml" />
+
+    <rosparam command="load" file="$(find mrover)/config/esw.yaml" />
 
     <!-- run the teleop gui by starting the rosbridge server and then launching with a bash script -->
     <include file="$(find rosbridge_server)/launch/rosbridge_websocket.launch"></include>

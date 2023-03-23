@@ -15,6 +15,10 @@ cmake-build*/
 /src/teleop/gui/src/static/map
 **/keys.json*
 **/yarn.lock*
+**/yarn-error.log*
+
+# Bag Files
+bags/
 
 # Bag Files
 bags/
@@ -25,5 +29,5 @@ build/
 devel/
 logs/
 
-# CSV Files for Failure Identification
-*.csv
+# Moteus
+moteus-cal*

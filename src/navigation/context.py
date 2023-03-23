@@ -7,11 +7,17 @@ import mrover.msg
 import mrover.srv
 from util.SE3 import SE3
 from visualization_msgs.msg import Marker
-from typing import ClassVar, Optional
+from typing import ClassVar, Optional, List, Tuple
 import numpy as np
 from dataclasses import dataclass
-from watchdog import WatchDog
-from data_collection import DataManager
+from mrover.msg import Waypoint, GPSWaypoint, EnableAuton
+import pymap3d
+from std_msgs.msg import Time
+
+
+TAG_EXPIRATION_TIME_SECONDS = 60
+
+tf_broadcaster: tf2_ros.StaticTransformBroadcaster = tf2_ros.StaticTransformBroadcaster()
 
 
 @dataclass
@@ -23,19 +29,6 @@ class Gate:
 @dataclass
 class Rover:
     ctx: Context
-    watchdog: WatchDog
-    stuck: bool
-    previous_state: str
-    move_back: bool
-    collector: DataManager
-
-    def __init__(self, ctx_in, stuck_in, prev_in, move_back_in):
-        self.ctx = ctx_in
-        self.stuck = stuck_in
-        self.previous_state = prev_in
-        self.move_back = move_back_in
-        self.collector = DataManager(self)
-        self.watchdog = WatchDog(self.collector)
 
     def get_pose(self) -> SE3:
         return SE3.from_tf_tree(self.ctx.tf_buffer, parent_frame="map", child_frame="base_link")
@@ -63,10 +56,13 @@ class Environment:
     def get_fid_pos(self, fid_id: int, frame: str = "map") -> Optional[np.ndarray]:
         """
         Retrieves the pose of the given fiducial ID from the TF tree
-        if it exists, otherwise returns None
+        if it exists and is more recent than TAG_EXPIRATION_TIME_SECONDS, otherwise returns None
         """
         try:
-            fid_pose = SE3.from_tf_tree(self.ctx.tf_buffer, parent_frame="map", child_frame=f"fiducial{fid_id}")
+            fid_pose, time = SE3.from_tf_time(self.ctx.tf_buffer, parent_frame="map", child_frame=f"fiducial{fid_id}")
+            now = rospy.Time.now()
+            if now.to_sec() - time.to_sec() >= TAG_EXPIRATION_TIME_SECONDS:
+                return None
         except (
             tf2_ros.LookupException,
             tf2_ros.ConnectivityException,
@@ -81,15 +77,27 @@ class Environment:
         """
         assert self.ctx.course
         current_waypoint = self.ctx.course.current_waypoint()
-        if current_waypoint is None or not self.ctx.course.look_for_post():
+        if current_waypoint is None:
             return None
 
         return self.get_fid_pos(current_waypoint.fiducial_id)
+
+    def other_gate_fid_pos(self) -> Optional[np.ndarray]:
+        """
+        retrieves the position of the other gate post (which is 1 + current id) if we are looking for a gate
+        """
+        assert self.ctx.course
+        current_waypoint = self.ctx.course.current_waypoint()
+        if self.ctx.course.look_for_gate() and current_waypoint is not None:
+            return self.get_fid_pos(current_waypoint.fiducial_id + 1)
+        else:
+            return None
 
     def current_gate(self) -> Optional[Gate]:
         """
         retrieves the position of the gate (if we know where it is, and we are looking for one)
         """
+
         if self.ctx.course:
             current_waypoint = self.ctx.course.current_waypoint()
             if current_waypoint is None or not self.ctx.course.look_for_gate():
@@ -100,7 +108,7 @@ class Environment:
             if post1 is None or post2 is None:
                 return None
 
-            return Gate(post1[0:2], post2[0:2])
+            return Gate(post1[:2], post2[:2])
         else:
             return None
 
@@ -165,6 +173,42 @@ class Course:
         return self.waypoint_index == len(self.course_data.waypoints)
 
 
+def setup_course(ctx: Context, waypoints: List[Tuple[Waypoint, SE3]]) -> Course:
+    all_waypoint_info = []
+    for waypoint_info, pose in waypoints:
+        all_waypoint_info.append(waypoint_info)
+        pose.publish_to_tf_tree(tf_broadcaster, "map", waypoint_info.tf_id)
+    # make the course out of just the pure waypoint objects which is the 0th elt in the tuple
+    return Course(ctx=ctx, course_data=mrover.msg.Course([waypoint[0] for waypoint in waypoints]))
+
+
+def convert(waypoint: GPSWaypoint) -> Waypoint:
+    """
+    Converts a GPSWaypoint into a "Waypoint" used for publishing to the CourseService.
+    """
+    # read required parameters, if they don't exist an error will be thrown
+    REF_LAT = rospy.get_param("gps_linearization/reference_point_latitude")
+    REF_LON = rospy.get_param("gps_linearization/reference_point_longitude")
+
+    # Create odom position based on GPS latitude and longitude
+    odom = np.array(
+        pymap3d.geodetic2enu(
+            waypoint.latitude_degrees, waypoint.longitude_degrees, 0.0, REF_LAT, REF_LON, 0.0, deg=True
+        )
+    )
+    # zero the z-coordinate of the odom because even though the altitudes are set to zero,
+    # two points on a sphere are not going to have the same z coordinate
+    # navigation algorithmns currently require all coordinates to have zero as the z coordinate
+    odom[2] = 0
+
+    return Waypoint(fiducial_id=waypoint.id, tf_id=f"course{waypoint.id}", type=waypoint.type), SE3(position=odom)
+
+
+def convert_and_get_course(ctx: Context, data: EnableAuton) -> Course:
+    waypoints = [convert(waypoint) for waypoint in data.waypoints]
+    return setup_course(ctx, waypoints)
+
+
 class Context:
     tf_buffer: tf2_ros.Buffer
     tf_listener: tf2_ros.TransformListener
@@ -176,18 +220,23 @@ class Context:
     course: Optional[Course]
     rover: Rover
     env: Environment
+    disable_requested: bool
 
     def __init__(self):
         self.tf_buffer = tf2_ros.Buffer()
         self.tf_listener = tf2_ros.TransformListener(self.tf_buffer)
         self.vel_cmd_publisher = rospy.Publisher("cmd_vel", Twist, queue_size=1)
         self.vis_publisher = rospy.Publisher("nav_vis", Marker, queue_size=1)
-        self.course_service = rospy.Service("course_service", mrover.srv.PublishCourse, self.recv_course)
+        self.enable_auton_service = rospy.Service("enable_auton", mrover.srv.PublishEnableAuton, self.recv_enable_auton)
         self.course = None
-        self.rover = Rover(self, False, "", True)
-        # self.rover = Rover(self)
+        self.rover = Rover(self)
         self.env = Environment(self)
+        self.disable_requested = False
 
-    def recv_course(self, req: mrover.srv.PublishCourseRequest) -> mrover.srv.PublishCourseResponse:
-        self.course = Course(self, req.course)
-        return mrover.srv.PublishCourseResponse(True)
+    def recv_enable_auton(self, req: mrover.srv.PublishEnableAutonRequest) -> mrover.srv.PublishEnableAutonResponse:
+        enable_msg = req.enableMsg
+        if enable_msg.enable:
+            self.course = convert_and_get_course(self, enable_msg)
+        else:
+            self.disable_requested = True
+        return mrover.srv.PublishEnableAutonResponse(True)
