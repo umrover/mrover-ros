@@ -9,6 +9,8 @@ import pandas as pd
 from pandas import DataFrame 
 from watchdog import WatchDog
 import numpy as np
+import os
+from pathlib import Path
 
 class FailureIdentifier:
     """
@@ -18,6 +20,7 @@ class FailureIdentifier:
     stuck_publisher: rospy.Publisher
     _df: DataFrame
     watchdog: WatchDog
+    actively_collecting: bool
 
     def __init__(self):
         nav_status_sub = message_filters.Subscriber("nav_status", SmachContainerStatus)
@@ -31,11 +34,24 @@ class FailureIdentifier:
         position_variables = ["x", "y", "z"]
         rotation_variables = [f'rot_{comp}' for comp in ['x', 'y', 'z', 'w']]
         velocity_variables = ["linear_velocity", "angular_velocity"]
-        self.wheel_effort_variables = [f"wheel_{wheel_num}_effort" for wheel_num in range(6)]
-        self.wheel_velocity_variables = [f"wheel_{wheel_num}_velocity" for wheel_num in range(6)]
+        wheel_effort_variables = [f"wheel_{wheel_num}_effort" for wheel_num in range(6)]
+        wheel_velocity_variables = [f"wheel_{wheel_num}_velocity" for wheel_num in range(6)]
         command_variables = ["cmd_vel_x", "cmd_vel_twist"]
         self.data_collecting_mode = True
+        self.actively_collecting = False
         self._df = pd.DataFrame(columns=["time", "stuck"] + position_variables + rotation_variables + velocity_variables + wheel_effort_variables + wheel_velocity_variables + command_variables)
+    
+    def write_to_csv(self):
+        """
+        Writes the data frame to a csv file marked with timestamp
+        """
+        home = str(Path.home())
+        path = os.path.join(home, "catkin_ws/src/mrover-workspace/src/navigation/failure_data")
+        file_name = f"failure_data_{rospy.Time.now()}.csv"
+        path = os.path.join(path, file_name)
+        self._df.to_csv(f"failure_data_{rospy.Time.now()}.csv")
+        rospy.loginfo("===== failure data written to csv =====")
+        
 
     def update(self, nav_status: SmachContainerStatus, cmd_vel : Twist, drive_status : MotorsStatus, odometry : Odometry):
         """
@@ -48,6 +64,17 @@ class FailureIdentifier:
 
         publishes a message to the /nav_stuck topic indicating if the rover is stuck
         """
+
+        #if the state is 'done' or 'off', write the data frame to a csv file if we were collecting
+        if nav_status.active_states[0] == "done" or nav_status.active_states[0] == "off":
+            if self.actively_collecting and self.data_collecting_mode:
+                self.write_to_csv()
+                self.actively_collecting = False
+            #return to not collect any data
+            return
+        
+        #create a new row for the data frame
+        self.actively_collecting = True
         cur_row = {}
         cur_row["time"] = rospy.Time.now()
 
@@ -78,6 +105,7 @@ class FailureIdentifier:
 
         #update the data frame with the cur row
         self._df = self._df.append(cur_row, ignore_index=True)
+       
         #publish the watchdog status if the nav state is not recovery
         if nav_status.active_states[0] != "recovery":
             self.stuck_publisher.publish(Bool(self.watchdog.is_stuck(self._df)))
