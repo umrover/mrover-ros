@@ -3,9 +3,10 @@
 import rospy
 import time
 import actionlib
-import _thread
 import numpy as np
+from threading import Lock
 from collections import deque
+from typing import Deque, List
 
 from control_msgs.msg import FollowJointTrajectoryGoal
 from control_msgs.msg import FollowJointTrajectoryResult
@@ -14,9 +15,10 @@ from control_msgs.msg import FollowJointTrajectoryAction
 from trajectory_msgs.msg import JointTrajectory
 from std_msgs.msg import Float64MultiArray
 from sensor_msgs.msg import JointState
+from trajectory_msgs.msg import JointTrajectoryPoint
 
 conf_joint_names = rospy.get_param("teleop/ra_joints/")
-lock = _thread.allocate_lock()
+lock = Lock()
 joint_states = JointState()
 
 
@@ -76,19 +78,17 @@ class MoveItAction(object):
             return
         for point in joint_trajectory.points:
 
-            temp_positions = []
-            temp_velocities = []
-            temp_accelerations = []
-            temp_effort = []
+            temp_positions: List[float] = []
+            temp_velocities: List[float] = []
+            temp_accelerations: List[float] = []
+            temp_effort: List[float] = []
 
+            # Motion Plan will publish 5 (every joint besides f)
+            # postions velocities and accelerations for each point of the plan
             for i in range(len(point.positions)):
                 temp_positions.append(point.positions[mapping[i]])
-            for i in range(len(point.velocities)):
                 temp_velocities.append(point.velocities[mapping[i]])
-            for i in range(len(point.accelerations)):
                 temp_accelerations.append(point.accelerations[mapping[i]])
-            for i in range(len(point.effort)):
-                temp_effort.append(point.effort[mapping[i]])
 
             point.positions = temp_positions
             point.velocities = temp_velocities
@@ -106,7 +106,7 @@ class MoveItAction(object):
         self._as = actionlib.SimpleActionServer(
             self._action_name, FollowJointTrajectoryAction, execute_cb=self.execute_cb, auto_start=False
         )
-        self.trajectory_point_queue = deque()
+        self.trajectory_point_queue: Deque[JointTrajectoryPoint] = deque()
         self.desired_joint_state = JointState(name=conf_joint_names)
         # Publisher for gazebo position controller
         self.gazebo_pub = rospy.Publisher("gazebo_arm_controller/command", Float64MultiArray, queue_size=100)
@@ -135,7 +135,6 @@ class MoveItAction(object):
         self.trajectory_point_queue.popleft()
         # Initialize gazebo Float array
         gazebo_positions = Float64MultiArray(data=[0.0, 0.0, 0.0, 0.0, 0.0, 0.0])
-        i = 0
         while len(self.trajectory_point_queue) > 0:
             point = self.trajectory_point_queue[0]
             self.trajectory_point_queue.popleft()
@@ -171,14 +170,12 @@ class MoveItAction(object):
             # ---------------------------------------
             # Abort upon exceeding error threshold
             error, error_msg = error_threshold_exceeded(self._feedback)
-            if error or i > 5:
+            if error:
                 self._result.error_code = -4  # PATH_TOLERANCE_VIOLATED
                 self._result.error_string = error_msg
                 self._as.set_succeeded(self._result)
                 self.publisher.publish(joint_states)
                 return
-
-            i += 1
 
             last_point = point
 
