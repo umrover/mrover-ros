@@ -192,19 +192,17 @@ class ArmControl:
         raw_right_trigger = msg.axes[self.xbox_mappings["right_trigger"]]
         right_trigger = raw_right_trigger if raw_right_trigger > 0 else 0
         self.ra_cmd.velocity = [
-            self.ra_config["joint_a"]["multiplier"] * self.filter_xbox_axis(msg.axes, "left_js_x"),
-            self.ra_config["joint_b"]["multiplier"] * self.filter_xbox_axis(msg.axes, "left_js_y"),
-            self.ra_config["joint_c"]["multiplier"] * self.filter_xbox_axis(msg.axes, "right_js_y"),
-            self.ra_config["joint_d"]["multiplier"] * self.filter_xbox_axis(msg.axes, "right_js_x"),
-            self.ra_config["joint_e"]["multiplier"] * (right_trigger - left_trigger),
-            self.ra_config["joint_f"]["multiplier"]
+            self.ra_config["joint_a"]["slow_mode_multiplier" if self.ra_slow_mode else "multiplier"] * self.filter_xbox_axis(msg.axes, "left_js_x"),
+            self.ra_config["joint_b"]["slow_mode_multiplier" if self.ra_slow_mode else "multiplier"] * self.filter_xbox_axis(msg.axes, "left_js_y"),
+            self.ra_config["joint_c"]["slow_mode_multiplier" if self.ra_slow_mode else "multiplier"] * self.filter_xbox_axis(msg.axes, "right_js_y"),
+            self.ra_config["joint_d"]["slow_mode_multiplier" if self.ra_slow_mode else "multiplier"] * self.filter_xbox_axis(msg.axes, "right_js_x"),
+            self.ra_config["joint_e"]["slow_mode_multiplier" if self.ra_slow_mode else "multiplier"] * (right_trigger - left_trigger),
+            self.ra_config["joint_f"]["slow_mode_multiplier" if self.ra_slow_mode else "multiplier"]
             * self.filter_xbox_button(msg.buttons, "right_bumper", "left_bumper"),
-            self.ra_config["finger"]["multiplier"] * self.filter_xbox_button(msg.buttons, "y", "a"),
-            self.ra_config["gripper"]["multiplier"] * self.filter_xbox_button(msg.buttons, "b", "x"),
+            self.ra_config["finger"]["slow_mode_multiplier" if self.ra_slow_mode else "multiplier"] * self.filter_xbox_button(msg.buttons, "y", "a"),
+            self.ra_config["gripper"]["slow_mode_multiplier" if self.ra_slow_mode else "multiplier"] * self.filter_xbox_button(msg.buttons, "b", "x"),
         ]
-        if self.ra_slow_mode == True:
-            for i, (key, value) in enumerate(self.ra_config.items()):
-                self.ra_cmd.velocity[i] *= self.ra_config[key]["slow_mode_multiplier"]
+        
                 
             
         self.ra_cmd_pub.publish(self.ra_cmd)
