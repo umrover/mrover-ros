@@ -38,7 +38,7 @@ class SingleFiducialState(WaypointState):
             return SingleFiducialStateTransitions.no_fiducial.name  # type: ignore
 
         try:
-            cmd_vel, arrived = get_drive_command(fid_pos, self.context.rover.get_pose(), STOP_THRESH, DRIVE_FWD_THRESH)
+            cmd_vel, arrived = self.context.driver.get_drive_command(fid_pos, self.context.rover.get_pose(), STOP_THRESH, DRIVE_FWD_THRESH)
             if arrived:
                 self.context.course.increment_waypoint()
                 return SingleFiducialStateTransitions.finished_fiducial.name  # type: ignore

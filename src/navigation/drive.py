@@ -6,7 +6,6 @@ from shapely.geometry import Polygon, Point
 from geometry_msgs.msg import Twist
 from util.SE3 import SE3
 
-from context import Context
 from util.np_utils import angle_to_rotate
 from failure_zone import FailureZone
 from path_planner import PathPlanner
@@ -17,7 +16,6 @@ TURNING_P = 10.0
 
 @dataclass
 class Driver:
-    ctx: Context
     planner: PathPlanner = PathPlanner()
     
     def add_failure_zone(self, failure_zone: FailureZone) -> None:

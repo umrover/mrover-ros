@@ -7,7 +7,6 @@ from context import Context, Environment
 from aenum import Enum, NoAlias
 from state import BaseState
 from dataclasses import dataclass
-from drive import get_drive_command
 from trajectory import Trajectory
 
 STOP_THRESH = 0.2
@@ -87,7 +86,7 @@ class SearchState(BaseState):
         print(self.traj.cur_pt)
         target_pos = self.traj.get_cur_pt()
         print(target_pos)
-        cmd_vel, arrived = get_drive_command(
+        cmd_vel, arrived = self.context.driver.get_drive_command(
             target_pos,
             self.context.rover.get_pose(),
             STOP_THRESH,

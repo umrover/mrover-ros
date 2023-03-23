@@ -108,7 +108,7 @@ class GateTraverseState(BaseState):
 
         # continue executing this path from wherever it left off
         target_pos = self.traj.get_cur_pt()
-        cmd_vel, arrived = get_drive_command(
+        cmd_vel, arrived = self.context.driver.get_drive_command(
             target_pos,
             self.context.rover.get_pose(),
             STOP_THRESH,
