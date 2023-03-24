@@ -45,12 +45,76 @@ ZedNode::ZedNode(ros::NodeHandle const& nh, ros::NodeHandle const& pnh)
     sl::PositionalTrackingParameters positionalTrackingParameters;
     mZed.enablePositionalTracking(positionalTrackingParameters);
 
-    mUpdateThread = std::thread(&ZedNode::update, this);
+    mGrabThread = std::thread(&ZedNode::grabUpdate, this);
+    mTagThread = std::thread(&ZedNode::tagUpdate, this);
 
     //    mTagDetectorNode = std::make_unique<TagDetectorNode>(mNh, mPnh);
 }
 
-void ZedNode::update() {
+void ZedNode::tagUpdate() {
+    while (ros::ok() && mTagDetectorNode) {
+        std::unique_lock lock{mSwapPcMutex};
+        mGrabDone.wait(lock, [this] { return mIsGrabDone; });
+
+        mTagDetectorNode->pointCloudCallback(mTagPointCloud);
+    }
+}
+
+void fillPointCloudMessage(sl::Mat& xyz, sl::Mat& bgr, sensor_msgs::PointCloud2Ptr const& msg, size_t tick) {
+    if (xyz.getWidth() != bgr.getWidth() || xyz.getHeight() != bgr.getHeight()) {
+        throw std::invalid_argument("XYZ and RGB images must be the same size");
+    }
+
+    auto imagePtr = bgr.getPtr<sl::uchar4>();
+    auto* pointCloudPtr = xyz.getPtr<sl::float4>();
+    //            auto* pointCloudNormalPtr = mPointCloudNormalMat.getPtr<sl::float4>();
+    msg->header.frame_id = "zed2i_left_camera_frame";
+    msg->header.seq = tick;
+    msg->header.stamp = ros::Time::now();
+    msg->is_bigendian = __BYTE_ORDER__ == __ORDER_BIG_ENDIAN__;
+    msg->is_dense = false;
+    msg->height = xyz.getHeight();
+    msg->width = xyz.getWidth();
+    sensor_msgs::PointCloud2Modifier modifier{*msg};
+    modifier.setPointCloud2Fields(
+            8,
+            "x", 1, sensor_msgs::PointField::FLOAT32,
+            "y", 1, sensor_msgs::PointField::FLOAT32,
+            "z", 1, sensor_msgs::PointField::FLOAT32,
+            "rgb", 1, sensor_msgs::PointField::FLOAT32,
+            "normal_x", 1, sensor_msgs::PointField::FLOAT32,
+            "normal_y", 1, sensor_msgs::PointField::FLOAT32,
+            "normal_z", 1, sensor_msgs::PointField::FLOAT32,
+            "curvature", 1, sensor_msgs::PointField::FLOAT32);
+    auto* pointPtr = reinterpret_cast<Point*>(msg->data.data());
+    size_t size = msg->width * msg->height;
+    std::for_each(std::execution::par_unseq, pointPtr, pointPtr + size, [&](Point& point) {
+        size_t i = &point - pointPtr;
+        point.x = pointCloudPtr[i].x;
+        point.y = pointCloudPtr[i].y;
+        point.z = pointCloudPtr[i].z;
+        point.r = imagePtr[i].r;
+        point.g = imagePtr[i].g;
+        point.b = imagePtr[i].b;
+    });
+}
+
+void fillImageMessage(sl::Mat& bgr, sensor_msgs::Image& msg, size_t tick) {
+    msg.header.frame_id = "zed2i_left_camera_frame";
+    msg.header.seq = tick;
+    msg.header.stamp = ros::Time::now();
+    msg.height = bgr.getHeight();
+    msg.width = bgr.getWidth();
+    msg.encoding = sensor_msgs::image_encodings::BGRA8;
+    msg.step = bgr.getStepBytes();
+    msg.is_bigendian = __BYTE_ORDER__ == __ORDER_BIG_ENDIAN__;
+    auto* bgrPtr = bgr.getPtr<sl::uchar1>();
+    size_t size = msg.step * msg.height;
+    msg.data.resize(size);
+    std::memcpy(msg.data.data(), bgrPtr, size);
+}
+
+void ZedNode::grabUpdate() {
     while (ros::ok() && mZed.isOpened()) {
         hr_clock::time_point update_start = hr_clock::now();
 
@@ -61,66 +125,25 @@ void ZedNode::update() {
         sl::Resolution processResolution(mImageWidth, mImageHeight);
 
         if (mZed.grab(runtimeParameters) == sl::ERROR_CODE::SUCCESS) {
-            mZed.retrieveImage(mImageMat, sl::VIEW::LEFT, sl::MEM::CPU, processResolution);
+            mZed.retrieveImage(mLeftImageMat, sl::VIEW::LEFT, sl::MEM::CPU, processResolution);
             mZed.retrieveMeasure(mPointCloudXYZMat, sl::MEASURE::XYZ, sl::MEM::CPU, processResolution);
             //            mZed.retrieveMeasure(mPointCloudNormalMat, sl::MEASURE::NORMALS, sl::MEM::CPU, mImageResolution);
             hr_clock::duration grab_time = hr_clock::now() - update_start;
 
-            auto imagePtr = mImageMat.getPtr<sl::uchar4>();
-            auto* pointCloudPtr = mPointCloudXYZMat.getPtr<sl::float4>();
-            //            auto* pointCloudNormalPtr = mPointCloudNormalMat.getPtr<sl::float4>();
-            mPointCloudMsg.header.frame_id = "zed2i_left_camera_frame";
-            mPointCloudMsg.header.seq = mUpdateTick;
-            mPointCloudMsg.header.stamp = ros::Time::now();
-            mPointCloudMsg.is_bigendian = __BYTE_ORDER__ == __ORDER_BIG_ENDIAN__;
-            mPointCloudMsg.is_dense = false;
-            mPointCloudMsg.height = processResolution.height;
-            mPointCloudMsg.width = processResolution.width;
-            sensor_msgs::PointCloud2Modifier modifier{mPointCloudMsg};
-            modifier.setPointCloud2Fields(
-                    8,
-                    "x", 1, sensor_msgs::PointField::FLOAT32,
-                    "y", 1, sensor_msgs::PointField::FLOAT32,
-                    "z", 1, sensor_msgs::PointField::FLOAT32,
-                    "rgb", 1, sensor_msgs::PointField::FLOAT32,
-                    "normal_x", 1, sensor_msgs::PointField::FLOAT32,
-                    "normal_y", 1, sensor_msgs::PointField::FLOAT32,
-                    "normal_z", 1, sensor_msgs::PointField::FLOAT32,
-                    "curvature", 1, sensor_msgs::PointField::FLOAT32);
-            auto* pointPtr = reinterpret_cast<Point*>(mPointCloudMsg.data.data());
-            std::for_each(std::execution::par_unseq, pointPtr, pointPtr + processResolution.area(), [&](Point& point) {
-                size_t i = &point - pointPtr;
-                point.x = pointCloudPtr[i].x;
-                point.y = pointCloudPtr[i].y;
-                point.z = pointCloudPtr[i].z;
-                point.r = imagePtr[i].r;
-                point.g = imagePtr[i].g;
-                point.b = imagePtr[i].b;
-            });
+            fillPointCloudMessage(mPointCloudXYZMat, mLeftImageMat, mGrabPointCloud, mUpdateTick);
+            if (mSwapPcMutex.try_lock()) {
+                std::swap(mTagPointCloud, mGrabPointCloud);
+                mIsGrabDone = true;
+                mSwapPcMutex.unlock();
+                mGrabDone.notify_one();
+            }
             hr_clock::duration to_msg_time = hr_clock::now() - update_start - grab_time;
 
-            if (mTagDetectorNode) {
-                sensor_msgs::PointCloud2ConstPtr ptr;
-                ptr.reset(&mPointCloudMsg, [](auto*) {});
-                mTagDetectorNode->pointCloudCallback(ptr);
-            } else {
-                mPcPub.publish(mPointCloudMsg);
-            }
+            if (mPcPub.getNumSubscribers()) mPcPub.publish(mGrabPointCloud);
             hr_clock::duration publish_time = hr_clock::now() - update_start - grab_time - to_msg_time;
 
             if (mLeftImgPub.getNumSubscribers()) {
-                mLeftImgMsg.header.frame_id = "zed2i_left_camera_frame";
-                mLeftImgMsg.header.seq = mUpdateTick;
-                mLeftImgMsg.header.stamp = ros::Time::now();
-                mLeftImgMsg.height = mImageMat.getHeight();
-                mLeftImgMsg.width = mImageMat.getWidth();
-                mLeftImgMsg.encoding = sensor_msgs::image_encodings::BGRA8;
-                mLeftImgMsg.step = mImageMat.getStepBytes();
-                mLeftImgMsg.is_bigendian = __BYTE_ORDER__ == __ORDER_BIG_ENDIAN__;
-                auto* data = mImageMat.getPtr<sl::uchar1>();
-                size_t size = mLeftImgMsg.step * mLeftImgMsg.height;
-                mLeftImgMsg.data.resize(size);
-                std::memcpy(mLeftImgMsg.data.data(), data, size);
+                fillImageMessage(mLeftImageMat, mLeftImgMsg, mUpdateTick);
                 mLeftImgPub.publish(mLeftImgMsg);
             }
 
@@ -131,9 +154,9 @@ void ZedNode::update() {
                 sl::Orientation const& orientation = pose.getOrientation();
                 ROS_DEBUG_STREAM("Position: " << translation.x << ", " << translation.y << ", " << translation.z);
                 ROS_DEBUG_STREAM("Orientation: " << orientation.w << ", " << orientation.x << ", " << orientation.y << ", " << orientation.z);
-                Eigen::Quaterniond q{orientation.w, orientation.x, orientation.y, orientation.z};
                 try {
-                    SE3 leftCameraInOdom{{translation.x, translation.y, translation.z}, q.normalized()};
+                    SE3 leftCameraInOdom{{translation.x, translation.y, translation.z},
+                                         Eigen::Quaterniond{orientation.w, orientation.x, orientation.y, orientation.z}.normalized()};
                     SE3 leftCameraInBaseLink = SE3::fromTfTree(mTfBuffer, "base_link", "zed2i_left_camera_frame");
                     SE3 baseLinkInOdom = leftCameraInBaseLink * leftCameraInOdom;
                     SE3::pushToTfTree(mTfBroadcaster, "base_link", "odom", baseLinkInOdom);
@@ -151,6 +174,7 @@ void ZedNode::update() {
                 ROS_INFO_STREAM("\tTo msg: " << std::chrono::duration_cast<std::chrono::milliseconds>(to_msg_time).count() << "ms");
                 ROS_INFO_STREAM("\tPublish: " << std::chrono::duration_cast<std::chrono::milliseconds>(publish_time).count() << "ms");
             }
+
             mUpdateTick++;
         } else {
             throw std::runtime_error("ZED failed to grab");
@@ -160,7 +184,8 @@ void ZedNode::update() {
 
 ZedNode::~ZedNode() {
     mZed.close();
-    mUpdateThread.join();
+    mTagThread.join();
+    mGrabThread.join();
 }
 
 int main(int argc, char** argv) {
