@@ -114,14 +114,8 @@ class GateTraverseState(BaseState):
         cmd_vel, arrived, stuck = get_drive_command(
             target_pos,
             self.context.rover.get_pose(),
-<<<<<<< HEAD
-            STOP_THRESH,
-            DRIVE_FWD_THRESH,
-            self.context.rover
-=======
             self.STOP_THRESH,
             self.DRIVE_FWD_THRESH,
->>>>>>> failure_identification
         )
         if arrived:
             # if we finish the gate path, we're done

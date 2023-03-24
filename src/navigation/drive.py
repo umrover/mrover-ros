@@ -7,21 +7,9 @@ import rospy
 
 from geometry_msgs.msg import Twist
 from util.SE3 import SE3
-<<<<<<< HEAD
-# from data_collection import DataManager
-import util.np_utils as npu
-# from util.np_utils import angle_to_rotate
-# from util.np_utils import angle_to_rotate
-
-# collector = DataManager()
-MAX_DRIVING_EFFORT = 1
-MIN_DRIVING_EFFORT = -1
-TURNING_P = 10.0
-=======
 from util.np_utils import angle_to_rotate
 from util.np_utils import angle_to_rotate
 from util.ros_utils import get_rosparam
->>>>>>> failure_identification
 
 
 def get_drive_command(
@@ -29,7 +17,6 @@ def get_drive_command(
     rover_pose: SE3,
     completion_thresh: float,
     turn_in_place_thresh: float,
-    rover
 ) -> Tuple[Twist, bool, bool]:
     """
     :param target_pos:              Target position to drive to.
@@ -70,15 +57,7 @@ def get_drive_command(
 
     # rospy.logerr(f"TARGET DIST {target_dist}")
     if target_dist < completion_thresh:
-<<<<<<< HEAD
-        # getting commanded velocity into the data collection
-        # rospy.logerr(f"Called make_cmd_vel_obj from drive.py")
-        # rospy.logerr("WITHIN COMPLETION_THRESH")
-        rover.collector.make_cmd_vel_dataframe(Twist())
-        return Twist(), True, rover.watchdog.is_stuck()
-=======
         return Twist(), True
->>>>>>> failure_identification
 
     cmd_vel = Twist()
     full_turn_override = True
@@ -107,11 +86,5 @@ def get_drive_command(
     #     np.sign(error) if full_turn_override else np.clip(error * TURNING_P, MIN_DRIVING_EFFORT, MAX_DRIVING_EFFORT)
     # )
 
-<<<<<<< HEAD
-    # getting commanded velocity into the data collection
-    # rospy.logerr(f"Called make_cmd_vel_obj from drive.py")
-    rover.collector.make_cmd_vel_dataframe(cmd_vel)
-=======
->>>>>>> failure_identification
     print(cmd_vel.linear.x, cmd_vel.angular.z)
     return cmd_vel, False, rover.watchdog.is_stuck()

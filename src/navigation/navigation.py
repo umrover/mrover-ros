@@ -13,13 +13,8 @@ from approach_post import ApproachPostState, ApproachPostStateTransitions
 from state import DoneState, DoneStateTransitions, OffState, OffStateTransitions
 from waypoint import WaypointState, WaypointStateTransitions
 from search import SearchState, SearchStateTransitions
-<<<<<<< HEAD
 from recovery import RecoveryState, RecoveryStateTransitions
-# from drive import collector
-=======
-
 from partial_gate import PartialGateState, PartialGateStateTransitions
->>>>>>> failure_identification
 
 
 class Navigation(threading.Thread):
@@ -63,15 +58,14 @@ class Navigation(threading.Thread):
                 transitions=self.get_transitions(GateTraverseStateTransitions),
             )
             self.state_machine.add(
-<<<<<<< HEAD
                 "RecoveryState", 
                 RecoveryState(self.context), 
                 transitions=self.get_transitions(RecoveryStateTransitions)
-=======
+            )
+            self.state_machine.add(
                 "PartialGateState",
                 PartialGateState(self.context),
                 transitions=self.get_transitions(PartialGateStateTransitions),
->>>>>>> failure_identification
             )
 
     def get_transitions(self, transitions_enum):
@@ -95,19 +89,10 @@ def main():
     rospy.loginfo("===== navigation starting =====")
     rospy.init_node("navigation")
     context = Context()
-<<<<<<< HEAD
-    rospy.logerr(f"Set context in navigation.py")
-#    collector.set_context(context)
-=======
->>>>>>> failure_identification
     navigation = Navigation(context)
 
     # Define custom handler for Ctrl-C that shuts down smach properly
     def sigint_handler(_sig, _frame):
-<<<<<<< HEAD
-        context.rover.collector.write_to_csv()
-=======
->>>>>>> failure_identification
         navigation.stop()
         rospy.signal_shutdown("keyboard interrupt")
         try:
