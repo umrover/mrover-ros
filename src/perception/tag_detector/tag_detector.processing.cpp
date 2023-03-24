@@ -6,9 +6,6 @@
 #include <execution>
 #include <numeric>
 
-constexpr size_t IMAGE_WIDTH_WARN_SIZE = 640;
-constexpr size_t IMAGE_HEIGHT_WARN_SIZE = 480;
-
 using namespace std::chrono_literals;
 using hr_clock = std::chrono::high_resolution_clock;
 
@@ -48,9 +45,9 @@ std::optional<SE3> getFidInCamFromPixel(sensor_msgs::PointCloud2ConstPtr const& 
  * @param msg   Point cloud message
  */
 void TagDetectorNode::pointCloudCallback(sensor_msgs::PointCloud2ConstPtr const& msg) {
-    if (!mEnableDetections) return;
-
     hr_clock::time_point update_start = hr_clock::now();
+
+    if (!mEnableDetections) return;
 
     ROS_DEBUG("Got point cloud %d", msg->header.seq);
 
@@ -61,20 +58,18 @@ void TagDetectorNode::pointCloudCallback(sensor_msgs::PointCloud2ConstPtr const&
 
     auto* pixelPtr = reinterpret_cast<cv::Vec3b*>(mImg.data);
     auto* pointPtr = reinterpret_cast<Point const*>(msg->data.data());
-    std::for_each(std::execution::par, pixelPtr, pixelPtr + mImg.total(), [&](cv::Vec3b& pixel) {
+    std::for_each(std::execution::par_unseq, pixelPtr, pixelPtr + mImg.total(), [&](cv::Vec3b& pixel) {
         size_t i = &pixel - pixelPtr;
         pixel[0] = pointPtr[i].r;
         pixel[1] = pointPtr[i].g;
         pixel[2] = pointPtr[i].b;
     });
-
     hr_clock::duration convert_time = hr_clock::now() - update_start;
 
     // Detect the tag vertices in screen space and their respective ids
     // {mCorners, mIds} are the outputs from OpenCV
     cv::aruco::detectMarkers(mImg, mDictionary, mCorners, mIds, mDetectorParams);
     ROS_DEBUG("OpenCV detect size: %zu", mIds.size());
-
     hr_clock::duration detect_time = hr_clock::now() - update_start - convert_time;
 
     // Update ID, image center, and increment hit count for all detected tags
@@ -151,10 +146,11 @@ void TagDetectorNode::pointCloudCallback(sensor_msgs::PointCloud2ConstPtr const&
     }
 
     hr_clock::duration publish_time = hr_clock::now() - update_start - convert_time - detect_time;
+
     hr_clock::duration update_duration = hr_clock::now() - update_start;
 
     if (mSeqNum % 60 == 0) {
-        ROS_INFO_STREAM("Total: " << std::chrono::duration_cast<std::chrono::milliseconds>(update_duration).count() << "ms");
+        ROS_INFO_STREAM("Tag Total: " << std::chrono::duration_cast<std::chrono::milliseconds>(update_duration).count() << "ms");
         ROS_INFO_STREAM("\tConvert: " << std::chrono::duration_cast<std::chrono::milliseconds>(convert_time).count() << "ms");
         ROS_INFO_STREAM("\tOpenCV detect: " << std::chrono::duration_cast<std::chrono::milliseconds>(detect_time).count() << "ms");
         ROS_INFO_STREAM("\tPublish: " << std::chrono::duration_cast<std::chrono::milliseconds>(publish_time).count() << "ms");
