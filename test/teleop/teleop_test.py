@@ -15,8 +15,8 @@ class TestMotionPlan(unittest.TestCase):
         feedback.actual.positions = [4, 4, 6, 7, 2]
         feedback.error.positions = [2, 2, 2, 2, 2]
 
-        self.assertFalse(euclidean_error(threshold=4.5, feedback=feedback)[0])
-        self.assertTrue(euclidean_error(threshold=4.4, feedback=feedback)[0])
+        self.assertFalse(euclidean_error(threshold=4.5, feedback=feedback))
+        self.assertTrue(euclidean_error(threshold=4.4, feedback=feedback))
 
     def test_joint_error_handling(self):
         feedback = FollowJointTrajectoryFeedback()
@@ -25,9 +25,9 @@ class TestMotionPlan(unittest.TestCase):
         feedback.error.positions = [2, 1, 0, 0, 1]
         error_thresholds = [2, 2, 0, 1, 0]
 
-        self.assertTrue(joint_error(error_thresholds, feedback)[0])
+        self.assertTrue(joint_error(error_thresholds, feedback))
         error_thresholds[4] = 1
-        self.assertFalse(joint_error(error_thresholds, feedback)[0])
+        self.assertFalse(joint_error(error_thresholds, feedback))
 
 
 if __name__ == "__main__":

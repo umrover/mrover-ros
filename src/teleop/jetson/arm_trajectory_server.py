@@ -31,38 +31,44 @@ def joint_states_callback(msg: JointState):
         joint_states = msg
 
 
-def euclidean_error(threshold: int, feedback: FollowJointTrajectoryFeedback) -> Tuple[bool, str]:
+def euclidean_error(threshold: int, feedback: FollowJointTrajectoryFeedback) -> str:
+    """
+    Computes the norm of the measured position errors and compares it against the given threshold.
+    Returns an error message if the threshold is exceeded, and an empty string if it is not.
+    """
     position_errors = np.array(feedback.error.positions)
     error = np.linalg.norm(position_errors)
 
     if error > threshold:
-        error_msg = f"Euclidean error of {error} exceeded threshold of {threshold}"
-        return True, error_msg
-    return False, ""
+        return f"Euclidean error of {error} exceeded threshold of {threshold}"
+    return ""
 
 
-def joint_error(thresholds: list, feedback: FollowJointTrajectoryFeedback) -> Tuple[bool, str]:
+def joint_error(thresholds: list, feedback: FollowJointTrajectoryFeedback) -> str:
+    """
+    Compares the position errors of each joint against the given list of thresholds.
+    Returns an error message if a joint's threshold is exceeded, and an empty string if no threshold is exceeded.
+    """
     position_errors = feedback.error.positions
 
     for i in range(len(thresholds)):
         if position_errors[i] > thresholds[i]:
-            error_msg = f"""
+            return f"""
                 Joint {chr(i+65)} exceeded error threshold of {thresholds[i]}
                 Expected: {feedback.desired.positions[i]} rad")
                 Actual: {feedback.actual.positions[i]} rad")
             """
-            return True, error_msg
-    return False, ""
+    return ""
 
 
-# Return true if arm has exceeded the error thresholds
-def error_threshold_exceeded(feedback: FollowJointTrajectoryFeedback) -> Tuple[bool, str]:
+# Return an error message if arm has exceeded the error thresholds and an empty string otherwise
+def error_threshold_exceeded(feedback: FollowJointTrajectoryFeedback) -> str:
     euclidean_error_threshold = rospy.get_param("teleop/euclidean_error_threshold")
-    joint_error_thresholds = list(rospy.get_param("teleop/joint_error_thresholds").values())
+    joint_error_thresholds = [x for _, x in sorted(rospy.get_param("teleop/joint_error_thresholds").items())]
 
-    error, error_msg = euclidean_error(euclidean_error_threshold, feedback)
+    error = euclidean_error(euclidean_error_threshold, feedback)
     if error:
-        return True, error_msg
+        return error
     return joint_error(joint_error_thresholds, feedback)
 
 
@@ -169,10 +175,10 @@ class MoveItAction(object):
             self._as.publish_feedback(self._feedback)
             # ---------------------------------------
             # Abort upon exceeding error threshold
-            error, error_msg = error_threshold_exceeded(self._feedback)
+            error = error_threshold_exceeded(self._feedback)
             if error:
                 self._result.error_code = -4  # PATH_TOLERANCE_VIOLATED
-                self._result.error_string = error_msg
+                self._result.error_string = error
                 self._as.set_succeeded(self._result)
                 self.publisher.publish(joint_states)
                 return
