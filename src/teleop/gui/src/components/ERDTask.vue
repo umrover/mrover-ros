@@ -175,9 +175,9 @@ export default {
 .wrapper-edm {
   margin: 0 15px 0 15px;
   display: grid;
-  grid-gap: 15px;
+  gap: 15px;
   grid-template-columns: auto auto;
-  grid-template-rows: auto 20% 15% 15% 40% 40%;
+  grid-template-rows: auto 20% 10% 20% 40% 40%;
   grid-template-areas:
     "header header"
     "map waypoint-editor"
@@ -192,7 +192,7 @@ export default {
 .wrapper-es {
   margin: 0 15px 0 15px;
   display: grid;
-  grid-gap: 15px;
+  gap: 15px;
   grid-template-columns: auto auto;
   grid-template-rows: auto 20% 20% 20% 20%;
   grid-template-areas:

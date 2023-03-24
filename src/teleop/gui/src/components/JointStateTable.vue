@@ -33,9 +33,15 @@
         <tbody>
           <tr v-for="(joint, index) in jointStateData.name" :key="index">
             <td class="tableElement">{{ joint }}</td>
-            <td class="tableElement">{{ jointStateData.position[index].toFixed(3) }}</td>
-            <td class="tableElement">{{ jointStateData.velocity[index].toFixed(3) }}</td>
-            <td class="tableElement">{{ jointStateData.effort[index].toFixed(3) }}</td>
+            <td class="tableElement">
+              {{ jointStateData.position[index].toFixed(3) }}
+            </td>
+            <td class="tableElement">
+              {{ jointStateData.velocity[index].toFixed(3) }}
+            </td>
+            <td class="tableElement">
+              {{ jointStateData.effort[index].toFixed(3) }}
+            </td>
           </tr>
         </tbody>
       </table>
