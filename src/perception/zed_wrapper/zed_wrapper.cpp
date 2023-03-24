@@ -5,10 +5,13 @@
 #include <execution>
 
 #include <ros/init.h>
+#include <sensor_msgs/Imu.h>
 #include <sensor_msgs/image_encodings.h>
 #include <sensor_msgs/point_cloud2_iterator.h>
 
 #include <se3.hpp>
+
+constexpr float DEG2RAD = M_PI / 180.0f;
 
 using namespace std::chrono_literals;
 using hr_clock = std::chrono::high_resolution_clock;
@@ -24,8 +27,9 @@ namespace mrover {
 
     ZedNode::ZedNode(ros::NodeHandle const& nh, ros::NodeHandle const& pnh)
         : mNh{nh}, mPnh{pnh}, mTfListener{mTfBuffer}, mIt{mNh},
-          mPcPub{mNh.advertise<sensor_msgs::PointCloud2>("/camera/left/points", 1)},
-          mLeftImgPub{mIt.advertise("/camera/left/image", 1)} {
+          mPcPub{mNh.advertise<sensor_msgs::PointCloud2>("camera/left/points", 1)},
+          mImuPub{mNh.advertise<sensor_msgs::Imu>("imu", 1)},
+          mLeftImgPub{mIt.advertise("camera/left/image", 1)} {
 
         try {
             int resolution{};
@@ -43,9 +47,6 @@ namespace mrover {
             if (mGrabTargetFps < 0) {
                 throw std::invalid_argument("Invalid grab target framerate");
             }
-
-            mTagPointCloud = boost::make_shared<sensor_msgs::PointCloud2>();
-            mGrabPointCloud = boost::make_shared<sensor_msgs::PointCloud2>();
 
             sl::InitParameters initParameters;
             if (!svoFile.empty()) {
@@ -224,6 +225,37 @@ namespace mrover {
                     ROS_INFO_STREAM("\tGrab: " << std::chrono::duration_cast<std::chrono::milliseconds>(grab_time).count() << "ms");
                     ROS_INFO_STREAM("\tTo msg: " << std::chrono::duration_cast<std::chrono::milliseconds>(to_msg_time).count() << "ms");
                     ROS_INFO_STREAM("\tPublish: " << std::chrono::duration_cast<std::chrono::milliseconds>(publish_time).count() << "ms");
+                }
+
+                if (mImuPub.getNumSubscribers()) {
+                    sl::SensorsData sensorData;
+                    mZed.getSensorsData(sensorData, sl::TIME_REFERENCE::CURRENT);
+
+                    sensor_msgs::Imu imuMsg;
+                    imuMsg.header.stamp = ros::Time::now();
+                    imuMsg.header.seq = mUpdateTick;
+                    imuMsg.header.frame_id = "zed2i_imu_frame";
+                    imuMsg.orientation.x = sensorData.imu.pose.getOrientation().x;
+                    imuMsg.orientation.y = sensorData.imu.pose.getOrientation().y;
+                    imuMsg.orientation.z = sensorData.imu.pose.getOrientation().z;
+                    imuMsg.orientation.w = sensorData.imu.pose.getOrientation().w;
+                    for (size_t i = 0; i < 3; ++i)
+                        for (size_t j = 0; j < 3; ++j)
+                            imuMsg.orientation_covariance[i * 3 + j] = sensorData.imu.pose_covariance(i, j) * DEG2RAD * DEG2RAD;
+                    imuMsg.angular_velocity.x = sensorData.imu.angular_velocity.x * DEG2RAD;
+                    imuMsg.angular_velocity.y = sensorData.imu.angular_velocity.y * DEG2RAD;
+                    imuMsg.angular_velocity.z = sensorData.imu.angular_velocity.z * DEG2RAD;
+                    for (size_t i = 0; i < 3; ++i)
+                        for (size_t j = 0; j < 3; ++j)
+                            imuMsg.angular_velocity_covariance[i * 3 + j] = sensorData.imu.angular_velocity_covariance(i, j) * DEG2RAD * DEG2RAD;
+                    imuMsg.linear_acceleration.x = sensorData.imu.linear_acceleration.x;
+                    imuMsg.linear_acceleration.y = sensorData.imu.linear_acceleration.y;
+                    imuMsg.linear_acceleration.z = sensorData.imu.linear_acceleration.z;
+                    for (size_t i = 0; i < 3; ++i)
+                        for (size_t j = 0; j < 3; ++j)
+                            imuMsg.linear_acceleration_covariance[i * 3 + j] = sensorData.imu.linear_acceleration_covariance(i, j);
+
+                    mImuPub.publish(imuMsg);
                 }
 
                 mUpdateTick++;

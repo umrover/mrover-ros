@@ -24,12 +24,12 @@ namespace mrover {
         tf2_ros::TransformListener mTfListener;
         tf2_ros::TransformBroadcaster mTfBroadcaster;
         image_transport::ImageTransport mIt;
-        ros::Publisher mPcPub;
+        ros::Publisher mPcPub, mImuPub;
         image_transport::Publisher mLeftImgPub;
 
         sensor_msgs::Image mLeftImgMsg;
-        sensor_msgs::PointCloud2Ptr mGrabPointCloud;
-        sensor_msgs::PointCloud2Ptr mTagPointCloud;
+        sensor_msgs::PointCloud2Ptr mGrabPointCloud = boost::make_shared<sensor_msgs::PointCloud2>();
+        sensor_msgs::PointCloud2Ptr mTagPointCloud = boost::make_shared<sensor_msgs::PointCloud2>();
 
         int mGrabTargetFps{};
         int mImageWidth{};
