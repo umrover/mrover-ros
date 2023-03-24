@@ -1,8 +1,9 @@
 <template>
   <div>
-    Velocity Commands<br />
-    Linear x: {{ linear_x }} m/s<br />
-    Angular z: {{ angular_z }} rad/s
+    <!--Velocity Commands<br />-->
+    Velocity Command<br />
+    Lin: {{ linear_x.toFixed(3) }} m/s<br />
+    Ang: {{ angular_z.toFixed(3) }} rad/s
   </div>
 </template>
 
