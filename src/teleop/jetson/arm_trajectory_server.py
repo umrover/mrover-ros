@@ -6,7 +6,7 @@ import actionlib
 import numpy as np
 from threading import Lock
 from collections import deque
-from typing import Deque, List
+from typing import Deque, List, Tuple
 
 from control_msgs.msg import FollowJointTrajectoryGoal
 from control_msgs.msg import FollowJointTrajectoryResult
@@ -31,7 +31,7 @@ def joint_states_callback(msg: JointState):
         joint_states = msg
 
 
-def euclidean_error(threshold: int, feedback: FollowJointTrajectoryFeedback) -> bool:
+def euclidean_error(threshold: int, feedback: FollowJointTrajectoryFeedback) -> Tuple[bool, str]:
     position_errors = np.array(feedback.error.positions)
     error = np.linalg.norm(position_errors)
 
@@ -41,7 +41,7 @@ def euclidean_error(threshold: int, feedback: FollowJointTrajectoryFeedback) -> 
     return False, ""
 
 
-def joint_error(thresholds: list, feedback: FollowJointTrajectoryFeedback) -> bool:
+def joint_error(thresholds: list, feedback: FollowJointTrajectoryFeedback) -> Tuple[bool, str]:
     position_errors = feedback.error.positions
 
     for i in range(len(thresholds)):
@@ -56,7 +56,7 @@ def joint_error(thresholds: list, feedback: FollowJointTrajectoryFeedback) -> bo
 
 
 # Return true if arm has exceeded the error thresholds
-def error_threshold_exceeded(feedback: FollowJointTrajectoryFeedback) -> bool:
+def error_threshold_exceeded(feedback: FollowJointTrajectoryFeedback) -> Tuple[bool, str]:
     euclidean_error_threshold = rospy.get_param("teleop/euclidean_error_threshold")
     joint_error_thresholds = list(rospy.get_param("teleop/joint_error_thresholds").values())
 
