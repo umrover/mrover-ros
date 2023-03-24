@@ -39,7 +39,7 @@ namespace mrover {
             mPnh.param("image_height", mImageHeight, 720);
             mPnh.param("optimize_tag_detection", mDirectTagDetection, true);
             std::string svoFile{};
-            mPnh.param("svo_file", svoFile, std::string{"/home/quintin/Downloads/HD720_SN39722580_15-52-03.svo"});
+            mPnh.param("svo_file", svoFile, {});
 
             if (mImageWidth < 0 || mImageHeight < 0 || mImageHeight * 16 / 9 != mImageWidth) {
                 throw std::invalid_argument("Invalid image dimensions");
@@ -74,7 +74,7 @@ namespace mrover {
             //                mTagDetectorNode = tagDetectorLoader.createInstance("mrover::TagDetectorNodelet");
             //            }
         } catch (std::exception const& e) {
-            ROS_FATAL_STREAM("Exception while starting: " << e.what());
+            ROS_FATAL("Exception while starting: %s", e.what());
             ros::shutdown();
         }
     }
@@ -138,7 +138,9 @@ namespace mrover {
             if (!mDirectTagDetection) return;
 
             ROS_INFO("Starting tag thread");
-            mTagDetectorNode = boost::make_shared<TagDetectorNode>(mNh, mPnh);
+            mTagDetectorNode = boost::make_shared<TagDetectorNode>(mNh, mPnh, true);
+
+            std::this_thread::sleep_for(500ms);
 
             // TODO: figure out why removing this causes a segfault
             cv::aruco::getPredefinedDictionary(cv::aruco::DICT_4X4_50);
@@ -147,20 +149,21 @@ namespace mrover {
                 std::unique_lock lock{mSwapPcMutex};
                 mGrabDone.wait(lock, [this] { return mIsGrabDone; });
 
-                // TODO: fix
                 mTagDetectorNode->pointCloudCallback(mTagPointCloud);
             }
             ROS_INFO("Tag thread finished");
+
         } catch (std::exception const& e) {
-            ROS_FATAL_STREAM("Exception while running tag thread: " << e.what());
+            ROS_FATAL("Exception while running tag thread: %s", e.what());
             ros::shutdown();
+            std::exit(EXIT_FAILURE);
         }
     }
 
     void ZedNode::grabUpdate() {
         try {
             ROS_INFO("Starting grab thread");
-            while (ros::ok() && mZed.isOpened()) {
+            while (ros::ok()) {
                 hr_clock::time_point update_start = hr_clock::now();
 
                 sl::RuntimeParameters runtimeParameters;
@@ -182,15 +185,17 @@ namespace mrover {
                 fillPointCloudMessage(mPointCloudXYZMat, mLeftImageMat, mGrabPointCloud, mUpdateTick);
                 hr_clock::duration to_msg_time = hr_clock::now() - update_start - grab_time;
 
-                if (mDirectTagDetection) {
-                    if (mSwapPcMutex.try_lock()) {
-                        mTagPointCloud.swap(mGrabPointCloud);
-                        mIsGrabDone = true;
-                        mSwapPcMutex.unlock();
-                        mGrabDone.notify_one();
+                if (mPcPub.getNumSubscribers()) {
+                    mPcPub.publish(mGrabPointCloud);
+                    if (mDirectTagDetection) {
+                        ROS_WARN("Publishing defeats the purpose of direct tag detection");
                     }
-                } else {
-                    if (mPcPub.getNumSubscribers()) mPcPub.publish(mGrabPointCloud);
+                }
+                if (mDirectTagDetection && mSwapPcMutex.try_lock()) {
+                    mTagPointCloud.swap(mGrabPointCloud);
+                    mIsGrabDone = true;
+                    mSwapPcMutex.unlock();
+                    mGrabDone.notify_one();
                 }
                 hr_clock::duration publish_time = hr_clock::now() - update_start - grab_time - to_msg_time;
 
@@ -239,20 +244,20 @@ namespace mrover {
                     imuMsg.orientation.y = sensorData.imu.pose.getOrientation().y;
                     imuMsg.orientation.z = sensorData.imu.pose.getOrientation().z;
                     imuMsg.orientation.w = sensorData.imu.pose.getOrientation().w;
-                    for (size_t i = 0; i < 3; ++i)
-                        for (size_t j = 0; j < 3; ++j)
+                    for (int i = 0; i < 3; ++i)
+                        for (int j = 0; j < 3; ++j)
                             imuMsg.orientation_covariance[i * 3 + j] = sensorData.imu.pose_covariance(i, j) * DEG2RAD * DEG2RAD;
                     imuMsg.angular_velocity.x = sensorData.imu.angular_velocity.x * DEG2RAD;
                     imuMsg.angular_velocity.y = sensorData.imu.angular_velocity.y * DEG2RAD;
                     imuMsg.angular_velocity.z = sensorData.imu.angular_velocity.z * DEG2RAD;
-                    for (size_t i = 0; i < 3; ++i)
-                        for (size_t j = 0; j < 3; ++j)
+                    for (int i = 0; i < 3; ++i)
+                        for (int j = 0; j < 3; ++j)
                             imuMsg.angular_velocity_covariance[i * 3 + j] = sensorData.imu.angular_velocity_covariance(i, j) * DEG2RAD * DEG2RAD;
                     imuMsg.linear_acceleration.x = sensorData.imu.linear_acceleration.x;
                     imuMsg.linear_acceleration.y = sensorData.imu.linear_acceleration.y;
                     imuMsg.linear_acceleration.z = sensorData.imu.linear_acceleration.z;
-                    for (size_t i = 0; i < 3; ++i)
-                        for (size_t j = 0; j < 3; ++j)
+                    for (int i = 0; i < 3; ++i)
+                        for (int j = 0; j < 3; ++j)
                             imuMsg.linear_acceleration_covariance[i * 3 + j] = sensorData.imu.linear_acceleration_covariance(i, j);
 
                     mImuPub.publish(imuMsg);
@@ -260,16 +265,20 @@ namespace mrover {
 
                 mUpdateTick++;
             }
+
+            mZed.close();
             ROS_INFO("Grab thread finished");
+
         } catch (std::exception const& e) {
-            ROS_FATAL_STREAM("Exception while running grab thread: " << e.what());
+            ROS_FATAL("Exception while running grab thread: %s", e.what());
+            mZed.close();
             ros::shutdown();
+            std::exit(EXIT_FAILURE);
         }
     }
 
     ZedNode::~ZedNode() {
         ROS_INFO("ZED node shutting down");
-        mZed.close();
         mTagThread.join();
         mGrabThread.join();
     }

@@ -12,7 +12,7 @@
           name="rqt_reconfigure" pkg="rqt_reconfigure" type="rqt_reconfigure"/>
 
     <node pkg="nodelet" type="nodelet" name="perception_nodelet_manager" respawn="true"
-          args="manager" output="screen"/>
+          args="manager" output="screen" />
 
     <include file="$(find mrover)/launch/zed.launch"/>
 

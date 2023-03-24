@@ -64,7 +64,7 @@ namespace mrover {
         dynamic_reconfigure::Server<mrover::DetectorParamsConfig>::CallbackType mCallbackType;
 
     public:
-        TagDetectorNode(ros::NodeHandle const& nh = {}, ros::NodeHandle const& pnh = {"~"});
+        TagDetectorNode(ros::NodeHandle const& nh = {}, ros::NodeHandle const& pnh = {"~"}, bool headless = false);
 
         void pointCloudCallback(sensor_msgs::PointCloud2ConstPtr const& msg);
 
@@ -78,8 +78,6 @@ namespace mrover {
         TagDetectorNodelet() = default;
 
         ~TagDetectorNodelet() override = default;
-
-        TagDetectorNode* operator->();
 
     private:
         void onInit() override;

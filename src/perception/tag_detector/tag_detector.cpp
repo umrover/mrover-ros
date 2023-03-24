@@ -50,7 +50,8 @@ namespace mrover {
         return true;
     }
 
-    TagDetectorNode::TagDetectorNode(ros::NodeHandle const& nh, ros::NodeHandle const& pnh) : mNh{nh}, mPnh{pnh}, mIt{mNh}, mTfListener{mTfBuffer} {
+    TagDetectorNode::TagDetectorNode(ros::NodeHandle const& nh, ros::NodeHandle const& pnh, bool headless)
+        : mNh{nh}, mPnh{pnh}, mIt{mNh}, mTfListener{mTfBuffer} {
         mDetectorParams = new cv::aruco::DetectorParameters();
         auto defaultDetectorParams = cv::aruco::DetectorParameters::create();
         int dictionaryNumber;
@@ -67,7 +68,7 @@ namespace mrover {
         mImgPub = mIt.advertise("tag_detection", 1);
         mDictionary = cv::aruco::getPredefinedDictionary(dictionaryNumber);
 
-        mPcSub = mNh.subscribe("camera/left/points", 1, &TagDetectorNode::pointCloudCallback, this);
+        if (!headless) mPcSub = mNh.subscribe("camera/left/points", 1, &TagDetectorNode::pointCloudCallback, this);
         mServiceEnableDetections = mNh.advertiseService("enable_detections", &TagDetectorNode::enableDetectionsCallback, this);
 
         // Lambda handles passing class pointer (implicit first parameter) to configCallback
@@ -138,10 +139,6 @@ namespace mrover {
 
     void TagDetectorNodelet::onInit() {
         dtl = boost::make_shared<TagDetectorNode>(getMTNodeHandle(), getMTPrivateNodeHandle());
-    }
-
-    TagDetectorNode* TagDetectorNodelet::operator->() {
-        return dtl.get();
     }
 
 } // namespace mrover
