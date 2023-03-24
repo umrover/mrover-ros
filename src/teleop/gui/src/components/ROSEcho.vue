@@ -1,39 +1,45 @@
 <template>
-    <div class="wrap">
-      <div class="page_header">
-          <img src="/static/new_mrover.png" alt="MRover" title="MRover" width="185" height="53" />
-          <h1>ROS Echo</h1>
-          <div class="spacer"></div>
-      </div>
+  <div class="wrap">
+    <div class="page_header">
+      <img
+        src="/static/new_mrover.png"
+        alt="MRover"
+        title="MRover"
+        width="185"
+        height="53"
+      />
+      <h1>ROS Echo</h1>
+      <div class="spacer"></div>
+    </div>
 
-      <div class="box pages">
-        <label for="presets">Presets:</label>
-        <select
-          v-model="selectedPreset"
-          class="box"
-          required
-          @change="changePreset()"
-        >
-          <option value="select" selected>Select a preset</option>
-          <option v-for="option in Object.keys(presets)" :value="option">
-            {{ option }}
-          </option>
-        </select>
+    <div class="box pages">
+      <label for="presets">Presets:</label>
+      <select
+        v-model="selectedPreset"
+        class="box"
+        required
+        @change="changePreset()"
+      >
+        <option value="select" selected>Select a preset</option>
+        <option v-for="option in Object.keys(presets)" :value="option">
+          {{ option }}
+        </option>
+      </select>
 
-        <label for="topic">Available Topics:</label>
-        <ul class="box" id="topic">
-          <li v-for="topic in topics" :key="topic.name">
-            <input
-              :id="topic"
-              v-model="selectedTopics"
-              type="checkbox"
-              :value="topic"
-            />
-            <label :for="topic">{{ topic.name }}</label>
-          </li>
-        </ul>
+      <label for="topic">Available Topics:</label>
+      <ul id="topic" class="box">
+        <li v-for="topic in topics" :key="topic.name">
+          <input
+            :id="topic"
+            v-model="selectedTopics"
+            type="checkbox"
+            :value="topic"
+          />
+          <label :for="topic">{{ topic.name }}</label>
+        </li>
+      </ul>
 
-        <div class="table_scroll">
+      <div class="table_scroll">
         <table>
           <tr>
             <td v-for="c in cols" class="box">
@@ -57,14 +63,14 @@
             </td>
           </tr>
         </table>
-        </div>
       </div>
+    </div>
   </div>
 </template>
 
 <script>
 import ROSLIB from "roslib";
-import '../assets/style.css';
+import "../assets/style.css";
 import Vue from "vue";
 
 export default {

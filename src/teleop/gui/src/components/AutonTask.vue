@@ -1,15 +1,39 @@
 <template>
-<div class="wrap">
+  <div class="wrap">
     <div class="page_header">
-        <h1>Auton Dashboard</h1>
-        <img src="/static/new_mrover.png" alt="MRover" title="MRover" width="185" height="53" />
-        <div class="help">
-            <img src="/static/help.png" alt="Help" title="Help" width="48" height="48" />
-        </div>
-        <div class="helpscreen"></div>
-        <div class="helpimages" style="display: flex; align-items: center; justify-content: space-evenly">
-            <img src="/static/joystick.png" alt="Joystick" title="Joystick Controls" style="width: auto; height: 70%; display: inline-block" />
-        </div>
+      <h1>Auton Dashboard</h1>
+      <img
+        src="/static/new_mrover.png"
+        alt="MRover"
+        title="MRover"
+        width="185"
+        height="53"
+      />
+      <div class="help">
+        <img
+          src="/static/help.png"
+          alt="Help"
+          title="Help"
+          width="48"
+          height="48"
+        />
+      </div>
+      <div class="helpscreen"></div>
+      <div
+        class="helpimages"
+        style="
+          display: flex;
+          align-items: center;
+          justify-content: space-evenly;
+        "
+      >
+        <img
+          src="/static/joystick.png"
+          alt="Joystick"
+          title="Joystick Controls"
+          style="width: auto; height: 70%; display: inline-block"
+        />
+      </div>
     </div>
     <div class="box box1" :class="[nav_state_color]">
       <div>
@@ -25,7 +49,7 @@
       </div>
     </div>
     <div class="box map">
-        <AutonRoverMap v-bind:odom="odom" />
+      <AutonRoverMap :odom="odom" />
     </div>
     <div class="box waypoints">
       <AutonWaypointEditor
@@ -49,7 +73,7 @@
 
 <script>
 import ROSLIB from "roslib";
-import '../assets/style.css';
+import "../assets/style.css";
 import AutonRoverMap from "./AutonRoverMap.vue";
 import AutonWaypointEditor from "./AutonWaypointEditor.vue";
 import DriveControls from "./DriveControls.vue";
@@ -230,13 +254,14 @@ export default {
 <style scoped>
 .wrap {
   display: grid;
-  overflow:hidden;
+  overflow: hidden;
   grid-gap: 10px;
   grid-template-columns: 2fr 1.25fr 0.75fr;
   grid-template-rows: auto 5fr 1fr;
-  grid-template-areas:  "header header header"
-                        "map waypoints waypoints"
-                        "data waypoints waypoints";
+  grid-template-areas:
+    "header header header"
+    "map waypoints waypoints"
+    "data waypoints waypoints";
   font-family: sans-serif;
   height: 100%;
   width: auto;
@@ -311,6 +336,6 @@ h2 {
 }
 
 .page_header {
-    grid-area: header;
+  grid-area: header;
 }
 </style>

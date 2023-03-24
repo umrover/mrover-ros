@@ -1,17 +1,23 @@
 <template>
-    <div class="wrap">
-      <div class="buttons" v-for="j in 3">
-        <div v-for="i in 3">
-          <button class="button" :class="{active_cam_button:camsEnabled[(j-1) + 3*(i-1)]}" v-on:click="$emit('cam_index', (j-1) + 3*(i-1))" :disabled="maxedOut && !camsEnabled[(j-1) + 3*(i-1)]"> <span>{{names[(j-1) + 3*(i-1)]}}</span> </button>
-          <div class="fixed-spacer"></div>
-        </div>
+  <div class="wrap">
+    <div v-for="j in 3" class="buttons">
+      <div v-for="i in 3">
+        <button
+          class="button"
+          :class="{ active_cam_button: camsEnabled[j - 1 + 3 * (i - 1)] }"
+          :disabled="maxedOut && !camsEnabled[j - 1 + 3 * (i - 1)]"
+          @click="$emit('cam_index', j - 1 + 3 * (i - 1))"
+        >
+          <span>{{ names[j - 1 + 3 * (i - 1)] }}</span>
+        </button>
+        <div class="fixed-spacer"></div>
       </div>
     </div>
   </div>
 </template>
 
 <script>
-import '../assets/style.css';
+import "../assets/style.css";
 
 export default {
   props: {

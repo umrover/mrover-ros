@@ -2,14 +2,18 @@
   <div>
     <h3>Sudan III Drop</h3>
     <button
-      class="button"
       id="sudan-button"
+      class="button"
       :disabled="!isEnabled[siteIndex]"
       @click="moveServo(angles[site].pushed, false)"
     >
       Start Site {{ site }} Test
     </button>
-    <button class="button" id="reset-button" @click="moveServo(angles[site].start, true)">
+    <button
+      id="reset-button"
+      class="button"
+      @click="moveServo(angles[site].start, true)"
+    >
       Reset Site {{ site }} Servo
     </button>
   </div>

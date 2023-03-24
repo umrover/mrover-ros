@@ -1,7 +1,13 @@
 <template>
   <div class="wrapper">
     <div class="page_header">
-      <img src="/static/new_mrover.png" alt="MRover" title="MRover" width="185" height="53" />
+      <img
+        src="/static/new_mrover.png"
+        alt="MRover"
+        title="MRover"
+        width="185"
+        height="53"
+      />
       <h1>SA Dashboard</h1>
       <div class="help">
         <img
@@ -171,7 +177,7 @@ export default {
     "cameras cameras scoop arm"
     "pdb moteus moteus jointState"
     "pdb moteus moteus jointState";
-  height:100%;
+  height: 100%;
 }
 .helpscreen {
   z-index: 1000000000;

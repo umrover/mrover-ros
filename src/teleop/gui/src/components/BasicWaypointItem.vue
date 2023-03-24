@@ -7,9 +7,12 @@
       <p>{{ waypoint.lat }}ºN, {{ waypoint.lon }}ºE</p>
     </div>
     <div class="buttons">
-      <button class="button red" @click="$emit('delete', { index: index })">X</button>
+      <button class="button red" @click="$emit('delete', { index: index })">
+        X
+      </button>
       <button
-        class="button" :class="[index === highlightedWaypoint ? 'green' : 'red']"
+        class="button"
+        :class="[index === highlightedWaypoint ? 'green' : 'red']"
         @click="$emit('find', { index: index })"
       >
         Find
@@ -19,7 +22,7 @@
 </template>
 
 <script>
-import '../assets/style.css';
+import "../assets/style.css";
 import { mapGetters } from "vuex";
 
 export default {

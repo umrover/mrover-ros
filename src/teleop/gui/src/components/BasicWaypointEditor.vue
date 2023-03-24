@@ -1,7 +1,9 @@
 <template>
   <div class="wrap">
     <div class="box box1">
-      <div class="identification">Name: <input class="box" v-model="name" size="15" /></div>
+      <div class="identification">
+        Name: <input v-model="name" class="box" size="15" />
+      </div>
       <br />
       <input v-model="odom_format_in" type="radio" value="D" class="checkbox" />
       <font size="2">D</font>
@@ -20,22 +22,22 @@
       />
       <font size="2">DMS</font><br />
       <div class="wp-input">
-        <p><input class="box" v-model.number="input.lat.d" size="13" />º</p>
+        <p><input v-model.number="input.lat.d" class="box" size="13" />º</p>
         <p v-if="min_enabled">
-          <input class="box" v-model.number="input.lat.m" size="13" />'
+          <input v-model.number="input.lat.m" class="box" size="13" />'
         </p>
         <p v-if="sec_enabled">
-          <input class="box" v-model.number="input.lat.s" size="13" />"
+          <input v-model.number="input.lat.s" class="box" size="13" />"
         </p>
         N
       </div>
       <div class="wp-input">
-        <p><input class="box" v-model.number="input.lon.d" size="13" />º</p>
+        <p><input v-model.number="input.lon.d" class="box" size="13" />º</p>
         <p v-if="min_enabled">
-          <input class="box" v-model.number="input.lon.m" size="13" />'
+          <input v-model.number="input.lon.m" class="box" size="13" />'
         </p>
         <p v-if="sec_enabled">
-          <input class="box" v-model.number="input.lon.s" size="13" />"
+          <input v-model.number="input.lon.s" class="box" size="13" />"
         </p>
         E
       </div>
@@ -63,7 +65,7 @@
 </template>
 
 <script>
-import '../assets/style.css';
+import "../assets/style.css";
 import draggable from "vuedraggable";
 import { convertDMS } from "../utils.js";
 import WaypointItem from "./BasicWaypointItem.vue";

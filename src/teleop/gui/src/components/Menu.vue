@@ -1,7 +1,13 @@
 <template>
   <div class="wrap">
     <div class="page_header">
-      <img src="/static/new_mrover.png" alt="MRover" title="MRover" width="185" height="53" />
+      <img
+        src="/static/new_mrover.png"
+        alt="MRover"
+        title="MRover"
+        width="185"
+        height="53"
+      />
       <h1>Menu</h1>
     </div>
 
@@ -21,7 +27,7 @@
 </template>
 
 <script>
-import '../assets/style.css';
+import "../assets/style.css";
 import MenuButton from "./MenuButton.vue";
 
 export default {
@@ -42,5 +48,4 @@ export default {
 .content {
   margin: 10px;
 }
-
 </style>

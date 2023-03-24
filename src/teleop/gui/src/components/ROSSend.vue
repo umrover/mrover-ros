@@ -1,19 +1,25 @@
 <template>
-    <div>
-        <div class="wrap">
-            <div class="page_header">
-            <h1>ROS Send</h1>
-            <img src="/static/new_mrover.png" alt="MRover" title="MRover" width="185" height="53" />
-            </div>
-            
-            <div class="pages">
-                <label for="'topic'">Topic:</label>
-                <select class="box" id="topic" v-model="selectedTopic" required> 
-                <option value="" selected>Select a topic</option>
-                <option v-for="option in topic_options" v-bind:value="option">
-                {{ option }}
-                </option>
-                </select>
+  <div>
+    <div class="wrap">
+      <div class="page_header">
+        <h1>ROS Send</h1>
+        <img
+          src="/static/new_mrover.png"
+          alt="MRover"
+          title="MRover"
+          width="185"
+          height="53"
+        />
+      </div>
+
+      <div class="pages">
+        <label for="'topic'">Topic:</label>
+        <select id="topic" v-model="selectedTopic" class="box" required>
+          <option value="" selected>Select a topic</option>
+          <option v-for="option in topic_options" :value="option">
+            {{ option }}
+          </option>
+        </select>
 
         <input
           v-if="selectedTopic == 'Custom topic'"
@@ -64,7 +70,7 @@
 
 <script>
 import ROSLIB from "roslib";
-import '../assets/style.css';
+import "../assets/style.css";
 
 const datatypes = [
   "bool",
@@ -247,13 +253,12 @@ p {
 }
 
 #textarea {
-    display: flex;
-    resize: none;
-    height: 300px;
-    width: 900px;
-    border-radius: 10px;
-    font-family: "Arial";
-    font-size: large;
-    
+  display: flex;
+  resize: none;
+  height: 300px;
+  width: 900px;
+  border-radius: 10px;
+  font-family: "Arial";
+  font-size: large;
 }
 </style>

@@ -1,11 +1,13 @@
 <template>
-  <button class="box" v-bind:class="[this.color]" v-on:click='toggleAndEmit()'>
-    <span class='white-text'>{{name}}: <br>{{active ? '\u2611' : '\u2610'}}</span>
+  <button class="box" :class="[color]" @click="toggleAndEmit()">
+    <span class="white-text"
+      >{{ name }}: <br />{{ active ? "\u2611" : "\u2610" }}</span
+    >
   </button>
 </template>
 
 <script>
-import '../assets/style.css';
+import "../assets/style.css";
 
 export default {
   props: {
@@ -38,7 +40,6 @@ export default {
 </script>
 
 <style scoped>
-
 .box {
   margin: 5px;
 }

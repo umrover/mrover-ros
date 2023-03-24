@@ -1,20 +1,32 @@
 <template>
   <div class="wrap">
     <div class="page_header">
-      <img src="/static/new_mrover.png" alt="MRover" title="MRover" width="185" height="53" />
+      <img
+        src="/static/new_mrover.png"
+        alt="MRover"
+        title="MRover"
+        width="185"
+        height="53"
+      />
       <h1>ROS Service</h1>
       <div class="spacer"></div>
     </div>
-          
+
     <div class="pages box">
       <div class="requestCells">
-          <label for="'service'">Service:</label>
-          <select class="box" id="service" v-model="selectedService" @change="switchService()" required> 
+        <label for="'service'">Service:</label>
+        <select
+          id="service"
+          v-model="selectedService"
+          class="box"
+          required
+          @change="switchService()"
+        >
           <option value="" selected>Select a service</option>
-          <option v-for="option in service_options" v-bind:value="option">
-          {{ option }}
+          <option v-for="option in service_options" :value="option">
+            {{ option }}
           </option>
-          </select>
+        </select>
 
         <textarea
           v-if="args != '' && args != '{}'"
@@ -26,9 +38,7 @@
         <p>{{ schema }}</p>
         <p v-if="error">JSON Syntax Error! Cannot send...</p>
 
-        <button class="button" type="button" @click="sendArgs()">
-          Send
-        </button>
+        <button class="button" type="button" @click="sendArgs()">Send</button>
       </div>
 
       <p class="box responseCell">{{ response }}</p>
@@ -38,7 +48,7 @@
 
 <script>
 import ROSLIB from "roslib";
-import '../assets/style.css';
+import "../assets/style.css";
 
 const datatypes = [
   "bool",
@@ -201,7 +211,7 @@ p {
 }
 
 #textarea {
-  margin-top: 10px; 
+  margin-top: 10px;
   resize: none;
   height: auto;
   width: 75%;
@@ -211,9 +221,9 @@ p {
 }
 
 #send {
-    width: 100px;
-    height: 50px;
-    font-size: medium;
+  width: 100px;
+  height: 50px;
+  font-size: medium;
 }
 
 .responseCell {
