@@ -125,7 +125,6 @@ public:
     bool limitAIsFwd = true;
     int32_t limitAAdjustedCounts = 0;
     int32_t limitBAdjustedCounts = 0;
-    bool isCalibrated = false;
 
     // REQUIRES: _name is the name of the motor,
     // mcuID is the mcu id of the controller which dictates the slave address,
@@ -170,9 +169,9 @@ public:
     void moveOpenLoop(float input);
 
     // REQUIRES: nothing
-    // MODIFIES: isCalibrated
-    // EFFECTS: asks the MCU if it is calibrated
-    void askIsCalibrated();
+    // MODIFIES: nothing
+    // EFFECTS: returns if the MCU is calibrated
+    bool isCalibrated();
 
     // REQUIRES: nothing
     // MODIFIES: nothing

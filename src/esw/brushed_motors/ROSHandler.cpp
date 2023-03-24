@@ -107,8 +107,7 @@ std::optional<bool> ROSHandler::getControllerCalibrated(const std::string& name)
     }
 
     Controller* controller = controller_iter->second;
-    controller->askIsCalibrated();
-    return std::make_optional<bool>(controller->isCalibrated);
+    return std::make_optional<bool>(controller->isCalibrated());
 }
 
 // REQUIRES: nothing
@@ -170,11 +169,8 @@ bool ROSHandler::processMotorCalibrate(mrover::CalibrateMotors::Request& req, mr
 
     auto& [name, controller] = *controller_iter;
 
-    // Check if already calibrated
-    controller->askIsCalibrated();
-
     // Determine if calibration is needed
-    bool shouldCalibrate = !controller->isCalibrated && controller->getLimitSwitchEnabled();
+    bool shouldCalibrate = !controller->isCalibrated() && controller->getLimitSwitchEnabled();
 
     // Calibrate
     if (shouldCalibrate) {

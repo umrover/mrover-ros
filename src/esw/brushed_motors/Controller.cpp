@@ -101,21 +101,22 @@ void Controller::moveOpenLoop(float input) {
 }
 
 // REQUIRES: nothing
-// MODIFIES: isCalibrated
-// EFFECTS: asks the MCU if it is calibrated
-void Controller::askIsCalibrated() {
+// MODIFIES: nothing
+// EFFECTS: returns if the MCU is calibrated
+bool Controller::isCalibrated() {
+    uint8_t calibration_status;
+
     try {
         makeLive();
 
-        uint8_t calibration_status;
         I2C::transact(deviceAddress, motorIDRegMask | IS_CALIBRATED_OP, IS_CALIBRATED_WB,
                       IS_CALIBRATED_RB, nullptr, UINT8_POINTER_T(&calibration_status));
-        
-        isCalibrated = calibration_status;
 
     } catch (IOFailure& e) {
-        ROS_ERROR("askIsCalibrated failed on %s", name.c_str());
+        ROS_ERROR("isCalibrated failed on %s", name.c_str());
     }
+
+    return calibration_status;
 }
 
 // REQUIRES: nothing
