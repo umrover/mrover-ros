@@ -206,7 +206,7 @@ else ()
 
     # These packages need to be found individually
     macro(add_packages_macro)
-        find_package(OpenCV REQUIRED COMPONENTS core aruco)
+        find_package(OpenCV REQUIRED COMPONENTS core aruco cudaimgproc)
         find_package(gazebo REQUIRED)
         find_package(PCL REQUIRED common io features)
         find_package(Eigen3 REQUIRED)
@@ -220,7 +220,7 @@ else ()
     # Put items here to build
     macro(add_and_link_macro)
         add_cpp_nodelet_macro(tag_detector_nodelet "src/perception/tag_detector/*.cpp" "src/perception/tag_detector")
-        target_link_libraries(tag_detector_nodelet PRIVATE ${OpenCV_LIBRARIES} ${PCL_LIBRARIES} lie)
+        target_link_libraries(tag_detector_nodelet PRIVATE ${OpenCV_LIBRARIES} lie)
 
         add_cpp_node_macro(brushed_motors "src/esw/brushed_motors/*.cpp")
 
@@ -235,7 +235,7 @@ else ()
         if (ZED_FOUND)
             add_cpp_nodelet_macro(zed_nodelet "src/perception/zed_wrapper/*.cpp", "src/perception/zed_wrapper")
             target_include_directories(zed_nodelet SYSTEM PRIVATE ${ZED_INCLUDE_DIRS} ${CUDA_INCLUDE_DIRS})
-            target_link_libraries(zed_nodelet PRIVATE ${ZED_LIBRARIES} ${OpenCV_LIBRARIES} ${PCL_LIBRARIES} lie tag_detector_nodelet)
+            target_link_libraries(zed_nodelet PRIVATE ${ZED_LIBRARIES} ${OpenCV_LIBRARIES} lie tag_detector_nodelet)
         endif ()
     endmacro()
 endif ()

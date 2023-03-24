@@ -11,12 +11,13 @@
       ==========
     -->
     <node pkg="nodelet" type="nodelet" name="perception_nodelet_manager" respawn="true"
-          args="manager" output="screen"/>
+          args="manager" output="screen">
+        <param name="num_worker_threads" value="6"/>
+    </node>
     <!-- nodelet to detect AR tags and publish them to the TF tree -->
     <node if="$(arg run_tag_detector)"
           pkg="nodelet" type="nodelet" name="tag_detector" respawn="true"
-          args="load mrover/TagDetectorNodelet perception_nodelet_manager" output="screen">
-    </node>
+          args="load mrover/TagDetectorNodelet perception_nodelet_manager" output="screen"/>
 
     <!--
       ===========

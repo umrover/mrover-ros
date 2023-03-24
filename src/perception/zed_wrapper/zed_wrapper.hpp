@@ -6,6 +6,7 @@
 
 #include <image_transport/image_transport.h>
 #include <image_transport/publisher.h>
+#include <nodelet/nodelet.h>
 #include <ros/node_handle.h>
 #include <sensor_msgs/PointCloud2.h>
 #include <tf2_ros/transform_broadcaster.h>
@@ -13,47 +14,63 @@
 
 #include <tag_detector.hpp>
 
-class ZedNode {
-private:
-    ros::NodeHandle mNh, mPnh;
+namespace mrover {
 
-    tf2_ros::Buffer mTfBuffer;
-    tf2_ros::TransformListener mTfListener;
-    tf2_ros::TransformBroadcaster mTfBroadcaster;
-    image_transport::ImageTransport mIt;
-    ros::Publisher mPcPub;
-    image_transport::Publisher mLeftImgPub;
+    class ZedNode {
+    private:
+        ros::NodeHandle mNh, mPnh;
 
-    sensor_msgs::Image mLeftImgMsg;
-    sensor_msgs::PointCloud2Ptr mGrabPointCloud;
-    sensor_msgs::PointCloud2Ptr mTagPointCloud;
+        tf2_ros::Buffer mTfBuffer;
+        tf2_ros::TransformListener mTfListener;
+        tf2_ros::TransformBroadcaster mTfBroadcaster;
+        image_transport::ImageTransport mIt;
+        ros::Publisher mPcPub;
+        image_transport::Publisher mLeftImgPub;
 
-    int mResolution{};
-    int mGrabTargetFps{};
-    int mImageWidth{};
-    int mImageHeight{};
+        sensor_msgs::Image mLeftImgMsg;
+        sensor_msgs::PointCloud2Ptr mGrabPointCloud;
+        sensor_msgs::PointCloud2Ptr mTagPointCloud;
 
-    sl::Camera mZed;
-    sl::Mat mLeftImageMat;
-    sl::Mat mPointCloudXYZMat;
-    sl::Mat mPointCloudNormalMat;
+        int mGrabTargetFps{};
+        int mImageWidth{};
+        int mImageHeight{};
+        bool mDirectTagDetection{};
 
-    std::thread mTagThread;
-    std::thread mGrabThread;
-    bool mIsGrabDone = false;
-    std::condition_variable mGrabDone;
-    std::mutex mSwapPcMutex;
+        sl::Camera mZed;
+        sl::Mat mLeftImageMat;
+        sl::Mat mPointCloudXYZMat;
+        sl::Mat mPointCloudNormalMat;
 
-    std::unique_ptr<TagDetectorNode> mTagDetectorNode;
+        std::thread mTagThread;
+        std::thread mGrabThread;
+        bool mIsGrabDone = false;
+        std::condition_variable mGrabDone;
+        std::mutex mSwapPcMutex;
 
-    size_t mUpdateTick = 0;
+        boost::shared_ptr<TagDetectorNode> mTagDetectorNode;
 
-public:
-    ZedNode(ros::NodeHandle const& nh = {}, ros::NodeHandle const& pnh = {"~"});
+        size_t mUpdateTick = 0;
 
-    ~ZedNode();
+    public:
+        ZedNode(ros::NodeHandle const& nh = {}, ros::NodeHandle const& pnh = {"~"});
 
-    void grabUpdate();
+        ~ZedNode();
 
-    void tagUpdate();
-};
+        void grabUpdate();
+
+        void tagUpdate();
+    };
+
+    class ZedNodelet : public nodelet::Nodelet {
+    public:
+        ZedNodelet() = default;
+
+        ~ZedNodelet() override = default;
+
+    private:
+        void onInit() override;
+
+        boost::shared_ptr<ZedNode> dtl;
+    };
+
+} // namespace mrover

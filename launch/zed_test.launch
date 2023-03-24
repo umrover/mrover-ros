@@ -1,5 +1,5 @@
 <launch>
-    <arg name="run_tag_detector" default="true"/>
+    <arg name="run_tag_detector" default="false"/>
     <arg name="run_rviz" default="true"/>
     <arg name="run_dynamic_reconfigure" default="true"/>
 
@@ -22,5 +22,5 @@
     </node>
 
     <node pkg="tf" type="static_transform_publisher" name="map_odom_publisher"
-          args="1 0 0 0 0 0 map odom 100" />
+          args="1 0 0 0 0 0 map odom 100"/>
 </launch>
