@@ -6,7 +6,7 @@ import actionlib
 import numpy as np
 from threading import Lock
 from collections import deque
-from typing import Deque, List, Tuple
+from typing import Deque, List
 
 from control_msgs.msg import FollowJointTrajectoryGoal
 from control_msgs.msg import FollowJointTrajectoryResult
