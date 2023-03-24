@@ -215,6 +215,7 @@ TagDetectorNode::TagDetectorNode() : TagDetectorNode(ros::NodeHandle{}, ros::Nod
 
 int main(int argc, char** argv) {
     ros::init(argc, argv, "tag_detector");
+    cv::namedWindow("test", cv::WINDOW_AUTOSIZE);
 
     [[maybe_unused]] auto node = std::make_unique<TagDetectorNode>();
 

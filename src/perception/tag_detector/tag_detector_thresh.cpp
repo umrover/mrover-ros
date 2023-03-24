@@ -15,10 +15,10 @@ constexpr size_t IMAGE_HEIGHT_WARN_SIZE = 480;
   *
   */
 cv::aruco::DetectorParameters::DetectorParameters()
-    : adaptiveThreshWinSizeMin(3),
+    : adaptiveThreshWinSizeMin(10),
       adaptiveThreshWinSizeMax(23),
       adaptiveThreshWinSizeStep(10),
-      adaptiveThreshConstant(7),
+      adaptiveThreshConstant(50),
       minMarkerPerimeterRate(0.03),
       maxMarkerPerimeterRate(4.),
       polygonalApproxAccuracyRate(0.03),
@@ -100,11 +100,8 @@ void detectInitialCandidates(cv::Mat &grey, const cv::Ptr<cv::aruco::DetectorPar
             // threshold
             cv::Mat thresh;
             threshold(grey, thresh, currScale, params->adaptiveThreshConstant);
-            
-            //display thresh test
-            cv::namedWindow("test", cv::WINDOW_AUTOSIZE);
             cv::imshow("test", thresh);
-            cv::waitKey(0);
+            cv::waitKey(1);
         }
     });
 }
@@ -156,6 +153,7 @@ void TagDetectorNode::imageCallback(sensor_msgs::ImageConstPtr const& msg) {
         convertToGrey(imagePtr->image, grey);
 
         detectCandidates(grey, mDetectorParams);
+        //display thresh test
         cv::aruco::detectMarkers(imagePtr->image, mDictionary, mCorners, mIds, mDetectorParams);
 
 

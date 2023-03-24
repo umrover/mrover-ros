@@ -12,99 +12,100 @@ constexpr size_t IMAGE_HEIGHT_WARN_SIZE = 480;
  *
  * @param msg
  */
-void TagDetectorNode::imageCallback(sensor_msgs::ImageConstPtr const& msg) {
-    if (!mEnableDetections) return;
+// void TagDetectorNode::imageCallback(sensor_msgs::ImageConstPtr const& msg) {
+    
+//     if (!mEnableDetections) return;
 
-    bool isInSim = false;
-    mNh.getParam("use_sim_time", isInSim);
+//     bool isInSim = false;
+//     mNh.getParam("use_sim_time", isInSim);
 
-    if (!isInSim && (msg->width <= IMAGE_WIDTH_WARN_SIZE || msg->height <= IMAGE_HEIGHT_WARN_SIZE)) {
-        ROS_WARN("Input image is below 640x480 resolution. Tag detection may be poor");
-    }
+//     if (!isInSim && (msg->width <= IMAGE_WIDTH_WARN_SIZE || msg->height <= IMAGE_HEIGHT_WARN_SIZE)) {
+//         ROS_WARN("Input image is below 640x480 resolution. Tag detection may be poor");
+//     }
 
-    ROS_DEBUG("Got image %d", msg->header.seq);
+//     ROS_DEBUG("Got image %d", msg->header.seq);
 
-    try {
-        cv_bridge::CvImagePtr imagePtr = cv_bridge::toCvCopy(msg, sensor_msgs::image_encodings::BGR8);
+//     try {
+//         cv_bridge::CvImagePtr imagePtr = cv_bridge::toCvCopy(msg, sensor_msgs::image_encodings::BGR8);
 
-        // Detect the tag vertices in screen space and their respective ids
-        // {mCorners, mIds} are the outputs from OpenCV
-        cv::aruco::detectMarkers(imagePtr->image, mDictionary, mCorners, mIds, mDetectorParams);
+//         // Detect the tag vertices in screen space and their respective ids
+//         // {mCorners, mIds} are the outputs from OpenCV
+//         cv::aruco::detectMarkers(imagePtr->image, mDictionary, mCorners, mIds, mDetectorParams);
 
-        ROS_DEBUG("OpenCV detect size: %zu", mIds.size());
+//         ROS_DEBUG("OpenCV detect size: %zu", mIds.size());
 
-        // Update ID, image center, and increment hit count for all detected tags
-        for (size_t i = 0; i < mIds.size(); ++i) {
-            int id = mIds[i];
-            Tag& tag = mTags[id];
-            tag.hitCount = std::clamp(tag.hitCount + 1, 0, mMaxHitCount);
-            tag.id = id;
-            tag.imageCenter = std::accumulate(mCorners[i].begin(), mCorners[i].end(), cv::Point2f{}) / 4.0f;
+//         // Update ID, image center, and increment hit count for all detected tags
+//         for (size_t i = 0; i < mIds.size(); ++i) {
+//             int id = mIds[i];
+//             Tag& tag = mTags[id];
+//             tag.hitCount = std::clamp(tag.hitCount + 1, 0, mMaxHitCount);
+//             tag.id = id;
+//             tag.imageCenter = std::accumulate(mCorners[i].begin(), mCorners[i].end(), cv::Point2f{}) / 4.0f;
 
-            if (tag.tagInCam) {
-                // Publish tag to immediate
-                std::string immediateFrameId = "immediateFiducial" + std::to_string(tag.id);
-                SE3::pushToTfTree(mTfBroadcaster, immediateFrameId, mBaseLinkFrameId, tag.tagInCam.value());
-            }
-        }
+//             if (tag.tagInCam) {
+//                 // Publish tag to immediate
+//                 std::string immediateFrameId = "immediateFiducial" + std::to_string(tag.id);
+//                 SE3::pushToTfTree(mTfBroadcaster, immediateFrameId, mBaseLinkFrameId, tag.tagInCam.value());
+//             }
+//         }
 
-        // Handle tags that were not seen this update
-        // Decrement their hit count and remove if they hit zero
-        auto it = mTags.begin();
-        while (it != mTags.end()) {
-            auto& [id, tag] = *it;
-            if (std::find(mIds.begin(), mIds.end(), id) == mIds.end()) {
-                tag.hitCount--;
-                if (tag.hitCount <= 0) {
-                    it = mTags.erase(it);
-                }
-            } else {
-                ++it;
-            }
-        }
+//         // Handle tags that were not seen this update
+//         // Decrement their hit count and remove if they hit zero
+//         auto it = mTags.begin();
+//         while (it != mTags.end()) {
+//             auto& [id, tag] = *it;
+//             if (std::find(mIds.begin(), mIds.end(), id) == mIds.end()) {
+//                 tag.hitCount--;
+//                 if (tag.hitCount <= 0) {
+//                     it = mTags.erase(it);
+//                 }
+//             } else {
+//                 ++it;
+//             }
+//         }
 
-        // Publish all tags to the tf tree that have been seen enough times
-        for (auto const& [id, tag]: mTags) {
-            if (tag.hitCount >= mMinHitCountBeforePublish) {
-                if (tag.tagInCam) {
-                    try {
-                        std::string immediateFrameId = "immediateFiducial" + std::to_string(tag.id);
-                        // Publish tag to odom
-                        std::string const& frameId = mUseOdom ? mOdomFrameId : mMapFrameId;
-                        SE3 tagInOdom = SE3::fromTfTree(mTfBuffer, frameId, immediateFrameId);
-                        SE3::pushToTfTree(mTfBroadcaster, "fiducial" + std::to_string(id), frameId, tagInOdom);
-                    } catch (tf2::ExtrapolationException const&) {
-                        ROS_WARN("Old data for immediate tag");
-                    } catch (tf2::LookupException const&) {
-                        ROS_WARN("Expected transform for immediate tag");
-                    }
-                } else {
-                    ROS_DEBUG("Had tag detection but no corresponding point cloud information");
-                }
-            }
-        }
+//         // Publish all tags to the tf tree that have been seen enough times
+//         for (auto const& [id, tag]: mTags) {
+//             if (tag.hitCount >= mMinHitCountBeforePublish) {
+//                 if (tag.tagInCam) {
+//                     try {
+//                         std::string immediateFrameId = "immediateFiducial" + std::to_string(tag.id);
+//                         // Publish tag to odom
+//                         std::string const& frameId = mUseOdom ? mOdomFrameId : mMapFrameId;
+//                         SE3 tagInOdom = SE3::fromTfTree(mTfBuffer, frameId, immediateFrameId);
+//                         SE3::pushToTfTree(mTfBroadcaster, "fiducial" + std::to_string(id), frameId, tagInOdom);
+//                     } catch (tf2::ExtrapolationException const&) {
+//                         ROS_WARN("Old data for immediate tag");
+//                     } catch (tf2::LookupException const&) {
+//                         ROS_WARN("Expected transform for immediate tag");
+//                     }
+//                 } else {
+//                     ROS_DEBUG("Had tag detection but no corresponding point cloud information");
+//                 }
+//             }
+//         }
 
-        size_t detectedCount = mIds.size();
-        if (!mPrevDetectedCount.has_value() || detectedCount != mPrevDetectedCount.value()) {
-            mPrevDetectedCount = detectedCount;
-            ROS_DEBUG("Detected %zu markers", detectedCount);
-        }
+//         size_t detectedCount = mIds.size();
+//         if (!mPrevDetectedCount.has_value() || detectedCount != mPrevDetectedCount.value()) {
+//             mPrevDetectedCount = detectedCount;
+//             ROS_DEBUG("Detected %zu markers", detectedCount);
+//         }
 
-        if (!mTags.empty()) {
-            cv::aruco::drawDetectedMarkers(imagePtr->image, mCorners, mIds);
-        }
+//         if (!mTags.empty()) {
+//             cv::aruco::drawDetectedMarkers(imagePtr->image, mCorners, mIds);
+//         }
 
-        if (mPublishImages) {
-            mImgPub.publish(imagePtr->toImageMsg());
-        }
+//         if (mPublishImages) {
+//             mImgPub.publish(imagePtr->toImageMsg());
+//         }
 
-        mSeqNum++;
-    } catch (cv_bridge::Exception const& e) {
-        ROS_ERROR("cv_bridge exception: %s", e.what());
-    } catch (cv::Exception const& e) {
-        ROS_ERROR("cv exception: %s", e.what());
-    }
-}
+//         mSeqNum++;
+//     } catch (cv_bridge::Exception const& e) {
+//         ROS_ERROR("cv_bridge exception: %s", e.what());
+//     } catch (cv::Exception const& e) {
+//         ROS_ERROR("cv exception: %s", e.what());
+//     }
+// }
 
 /**
  * @brief       Retrieve the pose of the tag in camera space
