@@ -61,9 +61,7 @@ private:
     dynamic_reconfigure::Server<mrover::DetectorParamsConfig>::CallbackType mCallbackType;
 
 public:
-    TagDetectorNode();
-
-    TagDetectorNode(ros::NodeHandle const& nh, ros::NodeHandle const& pnh);
+    TagDetectorNode(ros::NodeHandle const& nh = {}, ros::NodeHandle const& pnh = {"~"});
 
     void pointCloudCallback(sensor_msgs::PointCloud2ConstPtr const& msg);
 

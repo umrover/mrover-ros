@@ -35,7 +35,7 @@ std::optional<SE3> getFidInCamFromPixel(sensor_msgs::PointCloud2ConstPtr const& 
         return std::nullopt;
     }
 
-    return {R3{point.x, point.y, point.z}};
+    return std::make_optional<SE3>(R3{point.x, point.y, point.z}, SO3{});
 }
 
 /**

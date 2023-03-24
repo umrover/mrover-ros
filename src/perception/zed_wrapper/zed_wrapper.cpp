@@ -25,12 +25,17 @@ ZedNode::ZedNode(ros::NodeHandle const& nh, ros::NodeHandle const& pnh)
       mPcPub{mNh.advertise<sensor_msgs::PointCloud2>("/camera/left/points", 1)},
       mLeftImgPub{mIt.advertise("/camera/left/image", 1)} {
 
+    mNh.param("grab_resolution", mResolution, static_cast<std::underlying_type_t<sl::RESOLUTION>>(sl::RESOLUTION::HD720));
+    mNh.param("grab_target_fps", mGrabTargetFps, 50);
+    mNh.param("image_width", mImageWidth, 1280);
+    mNh.param("image_height", mImageHeight, 720);
+
     sl::InitParameters initParameters;
-    initParameters.camera_resolution = sl::RESOLUTION::HD720;
+    initParameters.camera_resolution = static_cast<sl::RESOLUTION>(mResolution);
     initParameters.depth_mode = sl::DEPTH_MODE::QUALITY;
     initParameters.coordinate_units = sl::UNIT::METER;
     initParameters.sdk_verbose = true;
-    initParameters.camera_fps = 50;
+    initParameters.camera_fps = mGrabTargetFps;
     initParameters.coordinate_system = sl::COORDINATE_SYSTEM::RIGHT_HANDED_Z_UP_X_FWD;
 
     if (mZed.open(initParameters) != sl::ERROR_CODE::SUCCESS) {
@@ -53,9 +58,11 @@ void ZedNode::update() {
         runtimeParameters.confidence_threshold = 80;
         runtimeParameters.texture_confidence_threshold = 80;
 
+        sl::Resolution processResolution(mImageWidth, mImageHeight);
+
         if (mZed.grab(runtimeParameters) == sl::ERROR_CODE::SUCCESS) {
-            mZed.retrieveImage(mImageMat, sl::VIEW::LEFT, sl::MEM::CPU, mImageResolution);
-            mZed.retrieveMeasure(mPointCloudXYZMat, sl::MEASURE::XYZ, sl::MEM::CPU, mImageResolution);
+            mZed.retrieveImage(mImageMat, sl::VIEW::LEFT, sl::MEM::CPU, processResolution);
+            mZed.retrieveMeasure(mPointCloudXYZMat, sl::MEASURE::XYZ, sl::MEM::CPU, processResolution);
             //            mZed.retrieveMeasure(mPointCloudNormalMat, sl::MEASURE::NORMALS, sl::MEM::CPU, mImageResolution);
             hr_clock::duration grab_time = hr_clock::now() - update_start;
 
@@ -67,8 +74,8 @@ void ZedNode::update() {
             mPointCloudMsg.header.stamp = ros::Time::now();
             mPointCloudMsg.is_bigendian = __BYTE_ORDER__ == __ORDER_BIG_ENDIAN__;
             mPointCloudMsg.is_dense = false;
-            mPointCloudMsg.height = mImageResolution.height;
-            mPointCloudMsg.width = mImageResolution.width;
+            mPointCloudMsg.height = processResolution.height;
+            mPointCloudMsg.width = processResolution.width;
             sensor_msgs::PointCloud2Modifier modifier{mPointCloudMsg};
             modifier.setPointCloud2Fields(
                     8,
@@ -81,7 +88,7 @@ void ZedNode::update() {
                     "normal_z", 1, sensor_msgs::PointField::FLOAT32,
                     "curvature", 1, sensor_msgs::PointField::FLOAT32);
             auto* pointPtr = reinterpret_cast<Point*>(mPointCloudMsg.data.data());
-            std::for_each(std::execution::par_unseq, pointPtr, pointPtr + mImageResolution.area(), [&](Point& point) {
+            std::for_each(std::execution::par_unseq, pointPtr, pointPtr + processResolution.area(), [&](Point& point) {
                 size_t i = &point - pointPtr;
                 point.x = pointCloudPtr[i].x;
                 point.y = pointCloudPtr[i].y;

@@ -1,50 +1,36 @@
 #include "se3.hpp"
 
 SE3 SE3::fromTf(geometry_msgs::Transform const& transform) {
-    SE3 se3;
-    se3.mPosition.x() = transform.translation.x;
-    se3.mPosition.y() = transform.translation.y;
-    se3.mPosition.z() = transform.translation.z;
-    se3.mRotation.mQuaternion.x() = transform.rotation.x;
-    se3.mRotation.mQuaternion.y() = transform.rotation.y;
-    se3.mRotation.mQuaternion.z() = transform.rotation.z;
-    se3.mRotation.mQuaternion.w() = transform.rotation.w;
-    return se3;
+    return {{transform.translation.x, transform.translation.y, transform.translation.z},
+            {Eigen::Quaterniond{transform.rotation.w, transform.rotation.x, transform.rotation.y, transform.rotation.z}}};
 }
 
 SE3 SE3::fromPose(geometry_msgs::Pose const& pose) {
-    SE3 se3;
-    se3.mPosition.x() = pose.position.x;
-    se3.mPosition.y() = pose.position.y;
-    se3.mPosition.z() = pose.position.z;
-    se3.mRotation.mQuaternion.x() = pose.orientation.x;
-    se3.mRotation.mQuaternion.y() = pose.orientation.y;
-    se3.mRotation.mQuaternion.z() = pose.orientation.z;
-    se3.mRotation.mQuaternion.w() = pose.orientation.w;
-    return se3;
+    return {{pose.position.x, pose.position.y, pose.position.z},
+            {Eigen::Quaterniond{pose.orientation.w, pose.orientation.x, pose.orientation.y, pose.orientation.z}}};
 }
 
 geometry_msgs::Pose SE3::toPose() const {
     geometry_msgs::Pose pose;
-    pose.position.x = mPosition.x();
-    pose.position.y = mPosition.y();
-    pose.position.z = mPosition.z();
-    pose.orientation.x = mRotation.mQuaternion.x();
-    pose.orientation.y = mRotation.mQuaternion.y();
-    pose.orientation.z = mRotation.mQuaternion.z();
-    pose.orientation.w = mRotation.mQuaternion.w();
+    pose.position.x = position().x();
+    pose.position.y = position().y();
+    pose.position.z = position().z();
+    pose.orientation.x = rotation().quaternion().x();
+    pose.orientation.y = rotation().quaternion().y();
+    pose.orientation.z = rotation().quaternion().z();
+    pose.orientation.w = rotation().quaternion().w();
     return pose;
 }
 
 geometry_msgs::Transform SE3::toTransform() const {
     geometry_msgs::Transform transform;
-    transform.translation.x = mPosition.x();
-    transform.translation.y = mPosition.y();
-    transform.translation.z = mPosition.z();
-    transform.rotation.x = mRotation.mQuaternion.x();
-    transform.rotation.y = mRotation.mQuaternion.y();
-    transform.rotation.z = mRotation.mQuaternion.z();
-    transform.rotation.w = mRotation.mQuaternion.w();
+    transform.translation.x = position().x();
+    transform.translation.y = position().y();
+    transform.translation.z = position().z();
+    transform.rotation.x = rotation().quaternion().x();
+    transform.rotation.y = rotation().quaternion().y();
+    transform.rotation.z = rotation().quaternion().z();
+    transform.rotation.w = rotation().quaternion().w();
     return transform;
 }
 

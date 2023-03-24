@@ -133,9 +133,6 @@ TagDetectorNode::TagDetectorNode(ros::NodeHandle const& nh, ros::NodeHandle cons
     ROS_INFO("Tag detection ready");
 }
 
-TagDetectorNode::TagDetectorNode() : TagDetectorNode(ros::NodeHandle{}, ros::NodeHandle{"~"}) {
-}
-
 int main(int argc, char** argv) {
     ros::init(argc, argv, "tag_detector");
 
