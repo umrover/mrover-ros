@@ -1,7 +1,9 @@
 #include "tag_detector.hpp"
 
+#include <algorithm>
 #include <chrono>
 #include <cmath>
+#include <execution>
 #include <numeric>
 
 constexpr size_t IMAGE_WIDTH_WARN_SIZE = 640;
@@ -57,10 +59,14 @@ void TagDetectorNode::pointCloudCallback(sensor_msgs::PointCloud2ConstPtr const&
         mImg = cv::Mat{static_cast<int>(msg->height), static_cast<int>(msg->width), CV_8UC3, cv::Scalar{0, 0, 0}};
     }
 
-    for (size_t i = 0; i < msg->height * msg->width; ++i) {
-        Point const* point = reinterpret_cast<Point const*>(msg->data.data()) + i;
-        mImg.at<cv::Vec3b>(static_cast<int>(i)) = {point->r, point->g, point->b};
-    }
+    auto* pixelPtr = reinterpret_cast<cv::Vec3b*>(mImg.data);
+    auto* pointPtr = reinterpret_cast<Point const*>(msg->data.data());
+    std::for_each(std::execution::par, pixelPtr, pixelPtr + mImg.total(), [&](cv::Vec3b& pixel) {
+        size_t i = &pixel - pixelPtr;
+        pixel[0] = pointPtr[i].r;
+        pixel[1] = pointPtr[i].g;
+        pixel[2] = pointPtr[i].b;
+    });
 
     hr_clock::duration convert_time = hr_clock::now() - update_start;
 

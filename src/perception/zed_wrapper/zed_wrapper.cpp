@@ -82,7 +82,7 @@ void ZedNode::update() {
                     "normal_z", 1, sensor_msgs::PointField::FLOAT32,
                     "curvature", 1, sensor_msgs::PointField::FLOAT32);
             auto* pointPtr = reinterpret_cast<Point*>(mPointCloudMsg.data.data());
-            std::for_each(std::execution::par, pointPtr, pointPtr + mImageResolution.area(), [&](Point& point) mutable {
+            std::for_each(std::execution::par, pointPtr, pointPtr + mImageResolution.area(), [&](Point& point) {
                 size_t i = &point - pointPtr;
                 point.x = pointCloudPtr[i].x;
                 point.y = pointCloudPtr[i].y;
