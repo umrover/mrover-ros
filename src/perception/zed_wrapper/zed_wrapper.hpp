@@ -35,6 +35,8 @@ namespace mrover {
         int mGrabTargetFps{};
         int mImageWidth{};
         int mImageHeight{};
+        int mDepthConfidence{};
+        int mTextureConfidence{};
         bool mDirectTagDetection{};
 
         sl::Camera mZed;

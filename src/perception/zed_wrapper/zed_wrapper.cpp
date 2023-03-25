@@ -23,14 +23,19 @@ namespace mrover {
 
             int resolution{};
             mPnh.param("grab_resolution", resolution, static_cast<std::underlying_type_t<sl::RESOLUTION>>(sl::RESOLUTION::HD720));
+            int depthMode{};
+            mPnh.param("depth_mode", depthMode, static_cast<std::underlying_type_t<sl::RESOLUTION>>(sl::DEPTH_MODE::PERFORMANCE));
             mPnh.param("grab_target_fps", mGrabTargetFps, 50);
             mPnh.param("image_width", mImageWidth, 1280);
             mPnh.param("image_height", mImageHeight, 720);
+            mPnh.param("depth_confidence", mDepthConfidence, 70);
+            mPnh.param("texture_confidence", mTextureConfidence, 70);
             mPnh.param("direct_tag_detection", mDirectTagDetection, false);
             std::string svoFile{};
             mPnh.param("svo_file", svoFile, {});
 
-            if (mImageWidth < 0 || mImageHeight < 0 || mImageHeight * 16 / 9 != mImageWidth) {
+
+            if (mImageWidth < 0 || mImageHeight < 0) {
                 throw std::invalid_argument("Invalid image dimensions");
             }
             if (mGrabTargetFps < 0) {
@@ -42,7 +47,7 @@ namespace mrover {
                 initParameters.input.setFromSVOFile(svoFile.c_str());
             }
             initParameters.camera_resolution = static_cast<sl::RESOLUTION>(resolution);
-            initParameters.depth_mode = sl::DEPTH_MODE::QUALITY;
+            initParameters.depth_mode = static_cast<sl::DEPTH_MODE>(depthMode);
             initParameters.coordinate_units = sl::UNIT::METER;
             initParameters.sdk_verbose = true; // Log useful information
             initParameters.camera_fps = mGrabTargetFps;
@@ -105,9 +110,8 @@ namespace mrover {
                 hr_clock::time_point update_start = hr_clock::now();
 
                 sl::RuntimeParameters runtimeParameters;
-                // Values [0, 100] to cutoff readings into point cloud, "worse" values are near 100
-                runtimeParameters.confidence_threshold = 80;
-                runtimeParameters.texture_confidence_threshold = 80;
+                runtimeParameters.confidence_threshold = mDepthConfidence;
+                runtimeParameters.texture_confidence_threshold = mTextureConfidence;
 
                 sl::Resolution processResolution(mImageWidth, mImageHeight);
 
@@ -208,9 +212,7 @@ int main(int argc, char** argv) {
 
     // Start the ZED Nodelet
     nodelet::Loader nodelet;
-    nodelet::M_string remap(ros::names::getRemappings());
-    nodelet::V_string nargv;
-    nodelet.load(ros::this_node::getName(), "mrover/ZedNodelet", remap, nargv);
+    nodelet.load(ros::this_node::getName(), "mrover/ZedNodelet", ros::names::getRemappings(), {});
 
     ros::spin();
 

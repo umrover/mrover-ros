@@ -76,12 +76,6 @@ namespace mrover {
         });
         hr_clock::duration convert_time = hr_clock::now() - update_start;
 
-        cv::Mat img = cv::Mat{720, 1280, CV_8UC3, cv::Scalar{0, 0, 0}};
-        auto dict = cv::aruco::getPredefinedDictionary(cv::aruco::DICT_5X5_50);
-        auto corners = std::vector<std::vector<cv::Point2f>>{};
-        auto ids = std::vector<int>{};
-        cv::aruco::detectMarkers(img, dict, corners, ids);
-
         // Detect the tag vertices in screen space and their respective ids
         // {mCorners, mIds} are the outputs from OpenCV
         cv::aruco::detectMarkers(mImg, mDictionary, mCorners, mIds, mDetectorParams);

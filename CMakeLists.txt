@@ -206,7 +206,7 @@ else ()
 
     # These packages need to be found individually
     macro(add_packages_macro)
-        find_package(OpenCV REQUIRED COMPONENTS core aruco cudaimgproc)
+        find_package(OpenCV REQUIRED COMPONENTS core aruco)
         find_package(gazebo REQUIRED)
         find_package(PCL REQUIRED common io features)
         find_package(Eigen3 REQUIRED)
