@@ -27,16 +27,16 @@ namespace mrover {
      * @param u     X Pixel Position
      * @param v     Y Pixel Position
      */
-    std::optional<SE3> getFidInCamFromPixel(sensor_msgs::PointCloud2ConstPtr const& cloudPtr, size_t u, size_t v) {
+    std::optional<SE3> TagDetectorNodelet::getFidInCamFromPixel(sensor_msgs::PointCloud2ConstPtr const& cloudPtr, size_t u, size_t v) {
         if (u >= cloudPtr->width || v >= cloudPtr->height) {
-            ROS_WARN("Tag center out of bounds: [%zu %zu]", u, v);
+            NODELET_WARN("Tag center out of bounds: [%zu %zu]", u, v);
             return std::nullopt;
         }
 
         Point point = reinterpret_cast<Point const*>(cloudPtr->data.data())[u + v * cloudPtr->width];
 
         if (!std::isfinite(point.x) || !std::isfinite(point.y) || !std::isfinite(point.z)) {
-            ROS_WARN("Tag center point not finite: [%f %f %f]", point.x, point.y, point.z);
+            NODELET_WARN("Tag center point not finite: [%f %f %f]", point.x, point.y, point.z);
             return std::nullopt;
         }
 
@@ -54,15 +54,15 @@ namespace mrover {
 
         if (!mEnableDetections) return;
 
-        ROS_DEBUG("Got point cloud %d", msg->header.seq);
+        NODELET_DEBUG("Got point cloud %d", msg->header.seq);
 
         if (msg->height == 0 || msg->width == 0) {
-            ROS_WARN("Point cloud has zero size");
+            NODELET_WARN("Point cloud has zero size");
             return;
         }
 
         if (static_cast<int>(msg->height) != mImg.rows || static_cast<int>(msg->width) != mImg.cols) {
-            ROS_INFO("Image size changed from [%d %d] to [%u %u]", mImg.cols, mImg.rows, msg->width, msg->height);
+            NODELET_INFO("Image size changed from [%d %d] to [%u %u]", mImg.cols, mImg.rows, msg->width, msg->height);
             mImg = cv::Mat{static_cast<int>(msg->height), static_cast<int>(msg->width), CV_8UC3, cv::Scalar{0, 0, 0}};
         }
 
@@ -85,7 +85,7 @@ namespace mrover {
         // Detect the tag vertices in screen space and their respective ids
         // {mCorners, mIds} are the outputs from OpenCV
         cv::aruco::detectMarkers(mImg, mDictionary, mCorners, mIds, mDetectorParams);
-        ROS_DEBUG("OpenCV detect size: %zu", mIds.size());
+        NODELET_DEBUG("OpenCV detect size: %zu", mIds.size());
         hr_clock::duration detect_time = hr_clock::now() - update_start - convert_time;
 
         // Update ID, image center, and increment hit count for all detected tags
@@ -130,12 +130,12 @@ namespace mrover {
                         SE3 tagInParent = SE3::fromTfTree(mTfBuffer, parentFrameId, immediateFrameId);
                         SE3::pushToTfTree(mTfBroadcaster, "fiducial" + std::to_string(id), parentFrameId, tagInParent);
                     } catch (tf2::ExtrapolationException const&) {
-                        ROS_WARN("Old data for immediate tag");
+                        NODELET_WARN("Old data for immediate tag");
                     } catch (tf2::LookupException const&) {
-                        ROS_WARN("Expected transform for immediate tag");
+                        NODELET_WARN("Expected transform for immediate tag");
                     }
                 } else {
-                    ROS_DEBUG("Had tag detection but no corresponding point cloud information");
+                    NODELET_DEBUG("Had tag detection but no corresponding point cloud information");
                 }
             }
         }
@@ -159,7 +159,7 @@ namespace mrover {
         size_t detectedCount = mIds.size();
         if (!mPrevDetectedCount.has_value() || detectedCount != mPrevDetectedCount.value()) {
             mPrevDetectedCount = detectedCount;
-            ROS_INFO("Detected %zu markers", detectedCount);
+            NODELET_INFO("Detected %zu markers", detectedCount);
         }
 
         hr_clock::duration publish_time = hr_clock::now() - update_start - convert_time - detect_time;
@@ -167,10 +167,10 @@ namespace mrover {
         hr_clock::duration update_duration = hr_clock::now() - update_start;
 
         if (mSeqNum % 60 == 0) {
-            ROS_INFO_STREAM("[" << std::hash<std::thread::id>{}(std::this_thread::get_id()) << "] Tag Total: " << std::chrono::duration_cast<std::chrono::milliseconds>(update_duration).count() << "ms");
-            ROS_INFO_STREAM("\tConvert: " << std::chrono::duration_cast<std::chrono::milliseconds>(convert_time).count() << "ms");
-            ROS_INFO_STREAM("\tOpenCV detect: " << std::chrono::duration_cast<std::chrono::milliseconds>(detect_time).count() << "ms");
-            ROS_INFO_STREAM("\tPublish: " << std::chrono::duration_cast<std::chrono::milliseconds>(publish_time).count() << "ms");
+            NODELET_INFO_STREAM("[" << std::hash<std::thread::id>{}(std::this_thread::get_id()) << "] Tag Total: " << std::chrono::duration_cast<std::chrono::milliseconds>(update_duration).count() << "ms");
+            NODELET_INFO_STREAM("\tConvert: " << std::chrono::duration_cast<std::chrono::milliseconds>(convert_time).count() << "ms");
+            NODELET_INFO_STREAM("\tOpenCV detect: " << std::chrono::duration_cast<std::chrono::milliseconds>(detect_time).count() << "ms");
+            NODELET_INFO_STREAM("\tPublish: " << std::chrono::duration_cast<std::chrono::milliseconds>(publish_time).count() << "ms");
         }
 
         mSeqNum++;

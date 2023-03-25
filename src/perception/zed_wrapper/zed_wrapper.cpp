@@ -58,12 +58,12 @@ namespace mrover {
             mGrabThread = std::thread(&ZedNodelet::grabUpdate, this);
             mTagThread = std::thread(&ZedNodelet::tagUpdate, this);
             //            if (optimizeTagDetection) {
-            //                ROS_INFO("Loading tag detector nodelet");
+            //                NODELET_INFO("Loading tag detector nodelet");
             //                pluginlib::ClassLoader<TagDetectorNodelet> tagDetectorLoader{"mrover", "nodelet::Nodelet"};
             //                mTagDetectorNode = tagDetectorLoader.createInstance("mrover::TagDetectorNodelet");
             //            }
         } catch (std::exception const& e) {
-            ROS_FATAL("Exception while starting: %s", e.what());
+            NODELET_FATAL("Exception while starting: %s", e.what());
             ros::shutdown();
         }
     }
@@ -72,7 +72,7 @@ namespace mrover {
         try {
             if (!mDirectTagDetection) return;
 
-            ROS_INFO("Starting tag thread");
+            NODELET_INFO("Starting tag thread");
 
             // TODO: ugly, this prevents OpenCV fast alloc from crashing
             std::this_thread::sleep_for(100ms);
@@ -89,10 +89,10 @@ namespace mrover {
 
                 mTagDetectorNode->pointCloudCallback(mTagPointCloud);
             }
-            ROS_INFO("Tag thread finished");
+            NODELET_INFO("Tag thread finished");
 
         } catch (std::exception const& e) {
-            ROS_FATAL("Exception while running tag thread: %s", e.what());
+            NODELET_FATAL("Exception while running tag thread: %s", e.what());
             ros::shutdown();
             std::exit(EXIT_FAILURE);
         }
@@ -100,7 +100,7 @@ namespace mrover {
 
     void ZedNodelet::grabUpdate() {
         try {
-            ROS_INFO("Starting grab thread");
+            NODELET_INFO("Starting grab thread");
             while (ros::ok()) {
                 hr_clock::time_point update_start = hr_clock::now();
 
@@ -126,7 +126,7 @@ namespace mrover {
                 if (mPcPub.getNumSubscribers()) {
                     mPcPub.publish(mGrabPointCloud);
                     if (mDirectTagDetection) {
-                        ROS_WARN("Publishing defeats the purpose of direct tag detection");
+                        NODELET_WARN("Publishing defeats the purpose of direct tag detection");
                     }
                 }
                 if (mDirectTagDetection && mSwapPcMutex.try_lock()) {
@@ -147,8 +147,8 @@ namespace mrover {
                 if (status == sl::POSITIONAL_TRACKING_STATE::OK) {
                     sl::Translation const& translation = pose.getTranslation();
                     sl::Orientation const& orientation = pose.getOrientation();
-                    ROS_DEBUG_STREAM("Position: " << translation.x << ", " << translation.y << ", " << translation.z);
-                    ROS_DEBUG_STREAM("Orientation: " << orientation.w << ", " << orientation.x << ", " << orientation.y << ", " << orientation.z);
+                    NODELET_DEBUG_STREAM("Position: " << translation.x << ", " << translation.y << ", " << translation.z);
+                    NODELET_DEBUG_STREAM("Orientation: " << orientation.w << ", " << orientation.x << ", " << orientation.y << ", " << orientation.z);
                     try {
                         SE3 leftCameraInOdom{{translation.x, translation.y, translation.z},
                                              Eigen::Quaterniond{orientation.w, orientation.x, orientation.y, orientation.z}.normalized()};
@@ -156,18 +156,18 @@ namespace mrover {
                         SE3 baseLinkInOdom = leftCameraInBaseLink * leftCameraInOdom;
                         SE3::pushToTfTree(mTfBroadcaster, "base_link", "odom", baseLinkInOdom);
                     } catch (tf2::TransformException& e) {
-                        ROS_WARN_STREAM("Failed to get transform: " << e.what());
+                        NODELET_WARN_STREAM("Failed to get transform: " << e.what());
                     }
                 } else {
-                    ROS_WARN_STREAM("Positional tracking failed: " << status);
+                    NODELET_WARN_STREAM("Positional tracking failed: " << status);
                 }
 
                 hr_clock::duration update_duration = hr_clock::now() - update_start;
                 if (mUpdateTick % 60 == 0) {
-                    ROS_INFO_STREAM("[" << std::hash<std::thread::id>{}(std::this_thread::get_id()) << "] ZED Total: " << std::chrono::duration_cast<std::chrono::milliseconds>(update_duration).count() << "ms");
-                    ROS_INFO_STREAM("\tGrab: " << std::chrono::duration_cast<std::chrono::milliseconds>(grab_time).count() << "ms");
-                    ROS_INFO_STREAM("\tTo msg: " << std::chrono::duration_cast<std::chrono::milliseconds>(to_msg_time).count() << "ms");
-                    ROS_INFO_STREAM("\tPublish: " << std::chrono::duration_cast<std::chrono::milliseconds>(publish_time).count() << "ms");
+                    NODELET_INFO_STREAM("[" << std::hash<std::thread::id>{}(std::this_thread::get_id()) << "] ZED Total: " << std::chrono::duration_cast<std::chrono::milliseconds>(update_duration).count() << "ms");
+                    NODELET_INFO_STREAM("\tGrab: " << std::chrono::duration_cast<std::chrono::milliseconds>(grab_time).count() << "ms");
+                    NODELET_INFO_STREAM("\tTo msg: " << std::chrono::duration_cast<std::chrono::milliseconds>(to_msg_time).count() << "ms");
+                    NODELET_INFO_STREAM("\tPublish: " << std::chrono::duration_cast<std::chrono::milliseconds>(publish_time).count() << "ms");
                 }
 
                 if (mImuPub.getNumSubscribers()) {
@@ -183,10 +183,10 @@ namespace mrover {
             }
 
             mZed.close();
-            ROS_INFO("Grab thread finished");
+            NODELET_INFO("Grab thread finished");
 
         } catch (std::exception const& e) {
-            ROS_FATAL("Exception while running grab thread: %s", e.what());
+            NODELET_FATAL("Exception while running grab thread: %s", e.what());
             mZed.close();
             ros::shutdown();
             std::exit(EXIT_FAILURE);
@@ -194,7 +194,7 @@ namespace mrover {
     }
 
     ZedNodelet::~ZedNodelet() {
-        ROS_INFO("ZED node shutting down");
+        NODELET_INFO("ZED node shutting down");
         mTagThread.join();
         mGrabThread.join();
     }

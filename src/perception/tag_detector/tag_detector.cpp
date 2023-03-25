@@ -97,7 +97,7 @@ namespace mrover {
                            mDetectorParams->polygonalApproxAccuracyRate,
                            defaultDetectorParams->polygonalApproxAccuracyRate);
 
-        ROS_INFO("Tag detection ready");
+        NODELET_INFO("Tag detection ready");
     }
 
     void TagDetectorNodelet::configCallback(mrover::DetectorParamsConfig& config, uint32_t level) {
@@ -138,10 +138,10 @@ namespace mrover {
         mEnableDetections = req.data;
         if (mEnableDetections) {
             res.message = "Enabled tag detections.";
-            ROS_INFO("Enabled tag detections.");
+            NODELET_INFO("Enabled tag detections.");
         } else {
             res.message = "Disabled tag detections.";
-            ROS_INFO("Disabled tag detections.");
+            NODELET_INFO("Disabled tag detections.");
         }
 
         res.success = true;
