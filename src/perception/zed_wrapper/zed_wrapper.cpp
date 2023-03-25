@@ -44,9 +44,9 @@ namespace mrover {
             initParameters.camera_resolution = static_cast<sl::RESOLUTION>(resolution);
             initParameters.depth_mode = sl::DEPTH_MODE::QUALITY;
             initParameters.coordinate_units = sl::UNIT::METER;
-            initParameters.sdk_verbose = true;
+            initParameters.sdk_verbose = true; // Log useful information
             initParameters.camera_fps = mGrabTargetFps;
-            initParameters.coordinate_system = sl::COORDINATE_SYSTEM::RIGHT_HANDED_Z_UP_X_FWD;
+            initParameters.coordinate_system = sl::COORDINATE_SYSTEM::RIGHT_HANDED_Z_UP_X_FWD; // Match ROS
 
             if (mZed.open(initParameters) != sl::ERROR_CODE::SUCCESS) {
                 throw std::runtime_error("ZED failed to open");
@@ -57,17 +57,17 @@ namespace mrover {
 
             mGrabThread = std::thread(&ZedNodelet::grabUpdate, this);
             mTagThread = std::thread(&ZedNodelet::tagUpdate, this);
-            //            if (optimizeTagDetection) {
-            //                NODELET_INFO("Loading tag detector nodelet");
-            //                pluginlib::ClassLoader<TagDetectorNodelet> tagDetectorLoader{"mrover", "nodelet::Nodelet"};
-            //                mTagDetectorNode = tagDetectorLoader.createInstance("mrover::TagDetectorNodelet");
-            //            }
+
         } catch (std::exception const& e) {
             NODELET_FATAL("Exception while starting: %s", e.what());
             ros::shutdown();
         }
     }
 
+    /**
+     * Only relevant if direct tag detection is true.
+     * This handles loading a tag detection nodelet and passing it point clouds from the grab thread.
+     */
     void ZedNodelet::tagUpdate() {
         try {
             if (!mDirectTagDetection) return;
@@ -84,8 +84,8 @@ namespace mrover {
             cv::aruco::getPredefinedDictionary(cv::aruco::DICT_4X4_50);
 
             while (ros::ok()) {
-                std::unique_lock lock{mSwapPcMutex};
-                mGrabDone.wait(lock, [this] { return mIsGrabDone; });
+                std::unique_lock lock{mPcSwapMutex};
+                mGrabDone.wait(lock, [this] { return mIsPcSwapReady; });
 
                 mTagDetectorNode->pointCloudCallback(mTagPointCloud);
             }
@@ -105,6 +105,7 @@ namespace mrover {
                 hr_clock::time_point update_start = hr_clock::now();
 
                 sl::RuntimeParameters runtimeParameters;
+                // Values [0, 100] to cutoff readings into point cloud, "worse" values are near 100
                 runtimeParameters.confidence_threshold = 80;
                 runtimeParameters.texture_confidence_threshold = 80;
 
@@ -119,7 +120,7 @@ namespace mrover {
                 //            mZed.retrieveMeasure(mPointCloudNormalMat, sl::MEASURE::NORMALS, sl::MEM::CPU, mImageResolution);
                 hr_clock::duration grab_time = hr_clock::now() - update_start;
 
-                mIsGrabDone = false;
+                mIsPcSwapReady = false;
                 fillPointCloudMessage(mPointCloudXYZMat, mLeftImageMat, mGrabPointCloud, mUpdateTick);
                 hr_clock::duration to_msg_time = hr_clock::now() - update_start - grab_time;
 
@@ -129,10 +130,11 @@ namespace mrover {
                         NODELET_WARN("Publishing defeats the purpose of direct tag detection");
                     }
                 }
-                if (mDirectTagDetection && mSwapPcMutex.try_lock()) {
+                // If the tag detection thread is currently processing a point cloud, skip instead of blocking
+                if (mDirectTagDetection && mPcSwapMutex.try_lock()) {
                     mTagPointCloud.swap(mGrabPointCloud);
-                    mIsGrabDone = true;
-                    mSwapPcMutex.unlock();
+                    mIsPcSwapReady = true;
+                    mPcSwapMutex.unlock();
                     mGrabDone.notify_one();
                 }
                 hr_clock::duration publish_time = hr_clock::now() - update_start - grab_time - to_msg_time;
@@ -162,14 +164,6 @@ namespace mrover {
                     NODELET_WARN_STREAM("Positional tracking failed: " << status);
                 }
 
-                hr_clock::duration update_duration = hr_clock::now() - update_start;
-                if (mUpdateTick % 60 == 0) {
-                    NODELET_INFO_STREAM("[" << std::hash<std::thread::id>{}(std::this_thread::get_id()) << "] ZED Total: " << std::chrono::duration_cast<std::chrono::milliseconds>(update_duration).count() << "ms");
-                    NODELET_INFO_STREAM("\tGrab: " << std::chrono::duration_cast<std::chrono::milliseconds>(grab_time).count() << "ms");
-                    NODELET_INFO_STREAM("\tTo msg: " << std::chrono::duration_cast<std::chrono::milliseconds>(to_msg_time).count() << "ms");
-                    NODELET_INFO_STREAM("\tPublish: " << std::chrono::duration_cast<std::chrono::milliseconds>(publish_time).count() << "ms");
-                }
-
                 if (mImuPub.getNumSubscribers()) {
                     sl::SensorsData sensorData;
                     mZed.getSensorsData(sensorData, sl::TIME_REFERENCE::CURRENT);
@@ -177,6 +171,14 @@ namespace mrover {
                     sensor_msgs::Imu imuMsg;
                     fillImuMessage(sensorData.imu, imuMsg, mUpdateTick);
                     mImuPub.publish(imuMsg);
+                }
+
+                hr_clock::duration update_duration = hr_clock::now() - update_start;
+                if (mUpdateTick % 60 == 0) {
+                    NODELET_INFO_STREAM("[" << std::hash<std::thread::id>{}(std::this_thread::get_id()) << "] ZED Total: " << std::chrono::duration_cast<std::chrono::milliseconds>(update_duration).count() << "ms");
+                    NODELET_INFO_STREAM("\tGrab: " << std::chrono::duration_cast<std::chrono::milliseconds>(grab_time).count() << "ms");
+                    NODELET_INFO_STREAM("\tTo msg: " << std::chrono::duration_cast<std::chrono::milliseconds>(to_msg_time).count() << "ms");
+                    NODELET_INFO_STREAM("\tPublish: " << std::chrono::duration_cast<std::chrono::milliseconds>(publish_time).count() << "ms");
                 }
 
                 mUpdateTick++;

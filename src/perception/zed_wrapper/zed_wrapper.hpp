@@ -44,9 +44,9 @@ namespace mrover {
 
         std::thread mTagThread;
         std::thread mGrabThread;
-        bool mIsGrabDone = false;
+        bool mIsPcSwapReady = false;
         std::condition_variable mGrabDone;
-        std::mutex mSwapPcMutex;
+        std::mutex mPcSwapMutex;
 
         boost::shared_ptr<TagDetectorNodelet> mTagDetectorNode;
 
