@@ -1,57 +1,16 @@
 #include "tag_detector.hpp"
 
+#include <limits>
+#include <string>
+#include <type_traits>
+
+#include <nodelet/loader.h>
+
 namespace mrover {
 
-    void TagDetectorNode::configCallback(mrover::DetectorParamsConfig& config, uint32_t level) {
-        // Don't load initial config, since it will overwrite the rosparam settings
-        if (level == std::numeric_limits<uint32_t>::max()) return;
-
-        mDetectorParams->adaptiveThreshConstant = config.adaptiveThreshConstant;
-        mDetectorParams->adaptiveThreshWinSizeMin = config.adaptiveThreshWinSizeMin;
-        mDetectorParams->adaptiveThreshWinSizeMax = config.adaptiveThreshWinSizeMax;
-        mDetectorParams->adaptiveThreshWinSizeStep = config.adaptiveThreshWinSizeStep;
-        mDetectorParams->cornerRefinementMaxIterations = config.cornerRefinementMaxIterations;
-        mDetectorParams->cornerRefinementMinAccuracy = config.cornerRefinementMinAccuracy;
-        mDetectorParams->cornerRefinementWinSize = config.cornerRefinementWinSize;
-        if (config.doCornerRefinement) {
-            if (config.cornerRefinementSubpix) {
-                mDetectorParams->cornerRefinementMethod = cv::aruco::CORNER_REFINE_SUBPIX;
-            } else {
-                mDetectorParams->cornerRefinementMethod = cv::aruco::CORNER_REFINE_CONTOUR;
-            }
-        } else {
-            mDetectorParams->cornerRefinementMethod = cv::aruco::CORNER_REFINE_NONE;
-        }
-        mDetectorParams->errorCorrectionRate = config.errorCorrectionRate;
-        mDetectorParams->minCornerDistanceRate = config.minCornerDistanceRate;
-        mDetectorParams->markerBorderBits = config.markerBorderBits;
-        mDetectorParams->maxErroneousBitsInBorderRate = config.maxErroneousBitsInBorderRate;
-        mDetectorParams->minDistanceToBorder = config.minDistanceToBorder;
-        mDetectorParams->minMarkerDistanceRate = config.minMarkerDistanceRate;
-        mDetectorParams->minMarkerPerimeterRate = config.minMarkerPerimeterRate;
-        mDetectorParams->maxMarkerPerimeterRate = config.maxMarkerPerimeterRate;
-        mDetectorParams->minOtsuStdDev = config.minOtsuStdDev;
-        mDetectorParams->perspectiveRemoveIgnoredMarginPerCell = config.perspectiveRemoveIgnoredMarginPerCell;
-        mDetectorParams->perspectiveRemovePixelPerCell = config.perspectiveRemovePixelPerCell;
-        mDetectorParams->polygonalApproxAccuracyRate = config.polygonalApproxAccuracyRate;
-    }
-
-    bool TagDetectorNode::enableDetectionsCallback(std_srvs::SetBool::Request& req, std_srvs::SetBool::Response& res) {
-        mEnableDetections = req.data;
-        if (mEnableDetections) {
-            res.message = "Enabled tag detections.";
-            ROS_INFO("Enabled tag detections.");
-        } else {
-            res.message = "Disabled tag detections.";
-            ROS_INFO("Disabled tag detections.");
-        }
-
-        res.success = true;
-        return true;
-    }
-
-    TagDetectorNode::TagDetectorNode(ros::NodeHandle const& nh, ros::NodeHandle const& pnh, bool headless)
-        : mNh{nh}, mPnh{pnh}, mIt{mNh}, mTfListener{mTfBuffer} {
+    void TagDetectorNodelet::onInit() {
+        mNh = getMTNodeHandle();
+        mPnh = getMTPrivateNodeHandle();
         mDetectorParams = new cv::aruco::DetectorParameters();
         auto defaultDetectorParams = cv::aruco::DetectorParameters::create();
         int dictionaryNumber;
@@ -65,11 +24,15 @@ namespace mrover {
         using DictEnumType = std::underlying_type_t<cv::aruco::PREDEFINED_DICTIONARY_NAME>;
         mPnh.param<int>("dictionary", dictionaryNumber, static_cast<DictEnumType>(cv::aruco::DICT_4X4_50));
 
-        mImgPub = mIt.advertise("tag_detection", 1);
+        image_transport::ImageTransport it{mNh};
+        mImgPub = it.advertise("tag_detection", 1);
         mDictionary = cv::aruco::getPredefinedDictionary(dictionaryNumber);
 
-        if (!headless) mPcSub = mNh.subscribe("camera/left/points", 1, &TagDetectorNode::pointCloudCallback, this);
-        mServiceEnableDetections = mNh.advertiseService("enable_detections", &TagDetectorNode::enableDetectionsCallback, this);
+        bool directTagDetection = false;
+        mNh.param<bool>("zed_nodelet/direct_tag_detection", directTagDetection, false);
+
+        if (!directTagDetection) mPcSub = mNh.subscribe("camera/left/points", 1, &TagDetectorNodelet::pointCloudCallback, this);
+        mServiceEnableDetections = mNh.advertiseService("enable_detections", &TagDetectorNodelet::enableDetectionsCallback, this);
 
         // Lambda handles passing class pointer (implicit first parameter) to configCallback
         mCallbackType = [this](mrover::DetectorParamsConfig& config, uint32_t level) { configCallback(config, level); };
@@ -137,8 +100,52 @@ namespace mrover {
         ROS_INFO("Tag detection ready");
     }
 
-    void TagDetectorNodelet::onInit() {
-        dtl = boost::make_shared<TagDetectorNode>(getMTNodeHandle(), getMTPrivateNodeHandle());
+    void TagDetectorNodelet::configCallback(mrover::DetectorParamsConfig& config, uint32_t level) {
+        // Don't load initial config, since it will overwrite the rosparam settings
+        if (level == std::numeric_limits<uint32_t>::max()) return;
+
+        mDetectorParams->adaptiveThreshConstant = config.adaptiveThreshConstant;
+        mDetectorParams->adaptiveThreshWinSizeMin = config.adaptiveThreshWinSizeMin;
+        mDetectorParams->adaptiveThreshWinSizeMax = config.adaptiveThreshWinSizeMax;
+        mDetectorParams->adaptiveThreshWinSizeStep = config.adaptiveThreshWinSizeStep;
+        mDetectorParams->cornerRefinementMaxIterations = config.cornerRefinementMaxIterations;
+        mDetectorParams->cornerRefinementMinAccuracy = config.cornerRefinementMinAccuracy;
+        mDetectorParams->cornerRefinementWinSize = config.cornerRefinementWinSize;
+        if (config.doCornerRefinement) {
+            if (config.cornerRefinementSubpix) {
+                mDetectorParams->cornerRefinementMethod = cv::aruco::CORNER_REFINE_SUBPIX;
+            } else {
+                mDetectorParams->cornerRefinementMethod = cv::aruco::CORNER_REFINE_CONTOUR;
+            }
+        } else {
+            mDetectorParams->cornerRefinementMethod = cv::aruco::CORNER_REFINE_NONE;
+        }
+        mDetectorParams->errorCorrectionRate = config.errorCorrectionRate;
+        mDetectorParams->minCornerDistanceRate = config.minCornerDistanceRate;
+        mDetectorParams->markerBorderBits = config.markerBorderBits;
+        mDetectorParams->maxErroneousBitsInBorderRate = config.maxErroneousBitsInBorderRate;
+        mDetectorParams->minDistanceToBorder = config.minDistanceToBorder;
+        mDetectorParams->minMarkerDistanceRate = config.minMarkerDistanceRate;
+        mDetectorParams->minMarkerPerimeterRate = config.minMarkerPerimeterRate;
+        mDetectorParams->maxMarkerPerimeterRate = config.maxMarkerPerimeterRate;
+        mDetectorParams->minOtsuStdDev = config.minOtsuStdDev;
+        mDetectorParams->perspectiveRemoveIgnoredMarginPerCell = config.perspectiveRemoveIgnoredMarginPerCell;
+        mDetectorParams->perspectiveRemovePixelPerCell = config.perspectiveRemovePixelPerCell;
+        mDetectorParams->polygonalApproxAccuracyRate = config.polygonalApproxAccuracyRate;
+    }
+
+    bool TagDetectorNodelet::enableDetectionsCallback(std_srvs::SetBool::Request& req, std_srvs::SetBool::Response& res) {
+        mEnableDetections = req.data;
+        if (mEnableDetections) {
+            res.message = "Enabled tag detections.";
+            ROS_INFO("Enabled tag detections.");
+        } else {
+            res.message = "Disabled tag detections.";
+            ROS_INFO("Disabled tag detections.");
+        }
+
+        res.success = true;
+        return true;
     }
 
 } // namespace mrover
@@ -146,7 +153,11 @@ namespace mrover {
 int main(int argc, char** argv) {
     ros::init(argc, argv, "tag_detector");
 
-    [[maybe_unused]] auto node = std::make_unique<mrover::TagDetectorNode>();
+    // Start the ZED Nodelet
+    nodelet::Loader nodelet;
+    nodelet::M_string remap(ros::names::getRemappings());
+    nodelet::V_string nargv;
+    nodelet.load(ros::this_node::getName(), "mrover/TagDetectorNodelet", remap, nargv);
 
     ros::spin();
 

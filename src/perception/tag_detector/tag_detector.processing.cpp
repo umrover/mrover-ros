@@ -7,6 +7,8 @@
 #include <numeric>
 #include <thread>
 
+#include <sensor_msgs/image_encodings.h>
+
 using namespace std::chrono_literals;
 using hr_clock = std::chrono::high_resolution_clock;
 
@@ -47,7 +49,7 @@ namespace mrover {
      *
      * @param msg   Point cloud message
      */
-    void TagDetectorNode::pointCloudCallback(sensor_msgs::PointCloud2ConstPtr const& msg) {
+    void TagDetectorNodelet::pointCloudCallback(sensor_msgs::PointCloud2ConstPtr const& msg) {
         hr_clock::time_point update_start = hr_clock::now();
 
         if (!mEnableDetections) return;

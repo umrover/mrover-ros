@@ -6,12 +6,9 @@
 #include <opencv2/core/mat.hpp>
 
 #include <dynamic_reconfigure/server.h>
-#include <geometry_msgs/PoseStamped.h>
 #include <image_transport/image_transport.h>
 #include <nodelet/nodelet.h>
-#include <sensor_msgs/image_encodings.h>
-#include <sensor_msgs/point_cloud2_iterator.h>
-#include <std_msgs/String.h>
+#include <sensor_msgs/PointCloud2.h>
 #include <std_srvs/SetBool.h>
 #include <tf2_ros/transform_broadcaster.h>
 #include <tf2_ros/transform_listener.h>
@@ -29,7 +26,7 @@ namespace mrover {
         std::optional<SE3> tagInCam;
     };
 
-    class TagDetectorNode {
+    class TagDetectorNodelet : public nodelet::Nodelet {
     private:
         ros::NodeHandle mNh, mPnh;
 
@@ -38,9 +35,8 @@ namespace mrover {
 
         ros::Subscriber mPcSub;
         image_transport::Subscriber mImgSub;
-        image_transport::ImageTransport mIt;
         tf2_ros::Buffer mTfBuffer;
-        tf2_ros::TransformListener mTfListener;
+        tf2_ros::TransformListener mTfListener{mTfBuffer};
         tf2_ros::TransformBroadcaster mTfBroadcaster;
 
         bool mUseOdom = false;
@@ -63,26 +59,18 @@ namespace mrover {
         dynamic_reconfigure::Server<mrover::DetectorParamsConfig> mConfigServer;
         dynamic_reconfigure::Server<mrover::DetectorParamsConfig>::CallbackType mCallbackType;
 
+        void onInit() override;
+
     public:
-        TagDetectorNode(ros::NodeHandle const& nh = {}, ros::NodeHandle const& pnh = {"~"}, bool headless = false);
+        TagDetectorNodelet() = default;
+
+        ~TagDetectorNodelet() override = default;
 
         void pointCloudCallback(sensor_msgs::PointCloud2ConstPtr const& msg);
 
         void configCallback(mrover::DetectorParamsConfig& config, uint32_t level);
 
         bool enableDetectionsCallback(std_srvs::SetBool::Request& req, std_srvs::SetBool::Response& res);
-    };
-
-    class TagDetectorNodelet : public nodelet::Nodelet {
-    public:
-        TagDetectorNodelet() = default;
-
-        ~TagDetectorNodelet() override = default;
-
-    private:
-        void onInit() override;
-
-        boost::shared_ptr<TagDetectorNode> dtl;
     };
 
 } // namespace mrover

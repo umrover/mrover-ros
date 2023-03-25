@@ -3,6 +3,7 @@
     <arg name="zed_model" default="zed2i"/>
     <!-- Use ZED's built-in visual odometry (called positional tracking), otherwise use rtabmap stereo odometry -->
     <arg name="use_builtin_visodom" default="true"/>
+    <arg name="direct_tag_detection" default="false"/>
 
     <!-- ZED Wrapper Nodelet -->
     <!--    <node pkg="nodelet" type="nodelet" name="zed_nodelet" respawn="true"-->
@@ -19,8 +20,10 @@
     <!--        <remap to="/camera/left/points" from="/zed_nodelet/point_cloud/cloud_registered"/>-->
     <!--    </node>-->
 
+    <rosparam command="load" file="$(find mrover)/config/perception.yaml"/>
     <node pkg="nodelet" type="nodelet" name="zed_nodelet" respawn="true"
           args="load mrover/ZedNodelet perception_nodelet_manager" output="screen">
+        <param name="direct_tag_detection" value="$(arg direct_tag_detection)"/>
     </node>
 
     <!-- Static TF publisher for ZED mount-->
