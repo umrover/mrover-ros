@@ -63,24 +63,27 @@ class GPSLinearization:
         """
         rover_in_map = self.pose
 
-        if self.use_odom:
-            # Get the odom to rover transform from the TF tree
-            rover_in_odom = SE3.from_tf_tree(self.tf_buffer, self.odom_frame, self.rover_frame)
-            odom_to_rover = rover_in_odom.transform_matrix()
-            map_to_rover = rover_in_map.transform_matrix()
+        try:
+            if self.use_odom:
+                # Get the odom to rover transform from the TF tree
+                rover_in_odom = SE3.from_tf_tree(self.tf_buffer, self.odom_frame, self.rover_frame)
+                odom_to_rover = rover_in_odom.transform_matrix()
+                map_to_rover = rover_in_map.transform_matrix()
 
-            # Calculate the intermediate transform from the overall transform and odom to rover
-            map_to_odom = map_to_rover @ np.linalg.inv(odom_to_rover)
-            odom_in_map = SE3.from_transform_matrix(map_to_odom)
-            odom_in_map.publish_to_tf_tree(
-                self.tf_broadcaster, parent_frame=self.world_frame, child_frame=self.odom_frame
-            )
+                # Calculate the intermediate transform from the overall transform and odom to rover
+                map_to_odom = map_to_rover @ np.linalg.inv(odom_to_rover)
+                odom_in_map = SE3.from_transform_matrix(map_to_odom)
+                odom_in_map.publish_to_tf_tree(
+                    self.tf_broadcaster, parent_frame=self.world_frame, child_frame=self.odom_frame
+                )
 
-        else:
-            # publish directly as map->base_link
-            rover_in_map.publish_to_tf_tree(
-                self.tf_broadcaster, parent_frame=self.world_frame, child_frame=self.rover_frame
-            )
+            else:
+                # publish directly as map->base_link
+                rover_in_map.publish_to_tf_tree(
+                    self.tf_broadcaster, parent_frame=self.world_frame, child_frame=self.rover_frame
+                )
+        except:
+            pass
 
     def gps_callback(self, msg: NavSatFix):
         """

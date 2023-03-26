@@ -76,6 +76,7 @@
   <depend>gazebo_ros</depend>
   <depend>hector_gazebo</depend>
   <depend>teleop_twist_keyboard</depend>
+  <depend>rviz_imu_plugin</depend>
 
   <!-- Perception -->
   <depend>compressed_depth_image_transport</depend>

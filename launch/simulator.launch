@@ -7,6 +7,7 @@
 <launch>
     <arg name="gui" default="true" />
     <arg name="gazebo_config_path" default="$(find mrover)/config/gazebo" />
+    <arg name="world_name" default="world.world" />
 
     <include file="$(find gazebo_ros)/launch/empty_world.launch">
         <env name="GAZEBO_MODEL_PATH" value="$(arg gazebo_config_path)/env_description" />
