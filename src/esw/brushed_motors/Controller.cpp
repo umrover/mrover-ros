@@ -41,7 +41,7 @@ float Controller::getCurrentAngle() const {
 
 // REQUIRES: newAngleRad to be in radians
 // MODIFIES: currentAngle
-// EFFECTS: forces the angle of the controller to be a certain value
+// EFFECTS: I2C bus, forces the angle of the controller to be a certain value
 void Controller::overrideCurrentAngle(float newAngleRad) {
     auto ticks = (int32_t) (((newAngleRad) / (2 * M_PI)) * quadCPR); // convert to quad units
 
@@ -67,7 +67,7 @@ bool Controller::isControllerLive() const {
 
 // REQUIRES: -1.0 <= input <= 1.0
 // MODIFIES: currentAngle. Also makes controller live if not already.
-// EFFECTS: Sends an open loop command scaled to PWM limits
+// EFFECTS: I2C bus, Sends an open loop command scaled to PWM limits
 // based on allowed voltage of the motor. Also updates angle.
 void Controller::moveOpenLoop(float input) {
     try {
@@ -102,15 +102,18 @@ void Controller::moveOpenLoop(float input) {
 
 // REQUIRES: nothing
 // MODIFIES: nothing
-// EFFECTS: returns if the MCU is calibrated
+// EFFECTS: I2C bus, returns if the MCU is calibrated
 bool Controller::isCalibrated() {
     uint8_t calibration_status;
 
     try {
         makeLive();
+        if (isControllerCalibrated) return true;
 
         I2C::transact(deviceAddress, motorIDRegMask | IS_CALIBRATED_OP, IS_CALIBRATED_WB,
                       IS_CALIBRATED_RB, nullptr, UINT8_POINTER_T(&calibration_status));
+
+        isControllerCalibrated = calibration_status;
 
     } catch (IOFailure& e) {
         ROS_ERROR("isCalibrated failed on %s", name.c_str());
@@ -121,21 +124,21 @@ bool Controller::isCalibrated() {
 
 // REQUIRES: nothing
 // MODIFIES: nothing
-// EFFECTS: enables or disables limit switches
+// EFFECTS: I2C bus, enables or disables limit switches
 void Controller::enableLimitSwitches(bool enable) {
     try {
         makeLive();
 
-        bool enableLimitA = limitAPresent && enable;
+        limitAEnable = limitAPresent && enable;
 
         uint8_t buffer[1];
-        memcpy(buffer, UINT8_POINTER_T(&enableLimitA), sizeof(enableLimitA));
+        memcpy(buffer, UINT8_POINTER_T(&limitAEnable), sizeof(limitAEnable));
         I2C::transact(deviceAddress, motorIDRegMask | ENABLE_LIMIT_A_OP, ENABLE_LIMIT_A_WB,
                       ENABLE_LIMIT_A_RB, buffer, nullptr);
 
-        bool enableLimitB = limitBPresent && enable;
+        limitBEnable = limitBPresent && enable;
 
-        memcpy(buffer, UINT8_POINTER_T(&enableLimitB), sizeof(enableLimitB));
+        memcpy(buffer, UINT8_POINTER_T(&limitBEnable), sizeof(limitBEnable));
         I2C::transact(deviceAddress, motorIDRegMask | ENABLE_LIMIT_B_OP, ENABLE_LIMIT_B_WB,
                       ENABLE_LIMIT_B_RB, buffer, nullptr);
         
@@ -148,7 +151,7 @@ void Controller::enableLimitSwitches(bool enable) {
 
 // REQUIRES: nothing
 // MODIFIES: nothing
-// EFFECTS: gets current absolute encoder value of MCU
+// EFFECTS: I2C bus, gets current absolute encoder value of MCU
 float Controller::getAbsoluteEncoderValue() {
     try {
         makeLive();
@@ -170,12 +173,12 @@ float Controller::getAbsoluteEncoderValue() {
 // MODIFIES: nothing
 // EFFECTS: Returns true if Controller has a (one or both) limit switch(s) is enabled.
 bool Controller::getLimitSwitchEnabled() const {
-    return limitAPresent || limitBPresent;
+    return limitAEnable || limitBEnable;
 }
 
 // REQUIRES: nothing
 // MODIFIES: isLive
-// EFFECTS: If not already live,
+// EFFECTS: I2C bus, If not already live,
 // configures the physical controller.
 // Then makes live.
 void Controller::makeLive() {

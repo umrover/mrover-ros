@@ -119,6 +119,8 @@ public:
     float inversion = 1.0f;
     bool limitAPresent = false;
     bool limitBPresent = false;
+    bool limitAEnable = false;
+    bool limitBEnable = false;
     float calibrationVel = 0.0f;
     bool limitAIsActiveHigh = false;
     bool limitBIsActiveHigh = false;
@@ -157,30 +159,30 @@ public:
     // Expect a value between -M_PI and M_PI.
     float getCurrentAngle() const;
 
-    // REQUIRES: nothing
+    // REQUIRES: newAngleRad to be in radians
     // MODIFIES: currentAngle
-    // EFFECTS: forces the angle of the controller to be a certain value
+    // EFFECTS: I2C bus, forces the angle of the controller to be a certain value
     void overrideCurrentAngle(float newAngleRad);
 
     // REQUIRES: -1.0 <= input <= 1.0
     // MODIFIES: currentAngle. Also makes controller live if not already.
-    // EFFECTS: Sends an open loop command scaled to PWM limits
+    // EFFECTS: I2C bus, Sends an open loop command scaled to PWM limits
     // based on allowed voltage of the motor. Also updates angle.
     void moveOpenLoop(float input);
 
     // REQUIRES: nothing
     // MODIFIES: nothing
-    // EFFECTS: returns if the MCU is calibrated
+    // EFFECTS: I2C bus, returns if the MCU is calibrated
     bool isCalibrated();
 
     // REQUIRES: nothing
     // MODIFIES: nothing
-    // EFFECTS: enables or disables limit switches
+    // EFFECTS: I2C bus, enables or disables limit switches
     void enableLimitSwitches(bool enable);
 
     // REQUIRES: nothing
     // MODIFIES: nothing
-    // EFFECTS: gets current absolute encoder value of MCU
+    // EFFECTS: I2C bus, gets current absolute encoder value of MCU
     float getAbsoluteEncoderValue();
 
     // REQUIRES: nothing
@@ -193,7 +195,7 @@ public:
 private:
     // REQUIRES: nothing
     // MODIFIES: isLive
-    // EFFECTS: If not already live,
+    // EFFECTS: I2C bus, If not already live,
     // configures the physical controller.
     // Then makes live.
     void makeLive();
@@ -208,5 +210,6 @@ private:
     float currentAngle;
 
     bool isLive = false;
+    bool isControllerCalibrated = false;
 
 };

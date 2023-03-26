@@ -56,10 +56,12 @@ void ControllerMap::init(XmlRpc::XmlRpcValue& root) {
         if (root[i].hasMember("limit_a_present") &&
             root[i]["limit_a_present"].getType() == XmlRpc::XmlRpcValue::TypeBoolean) {
             controllersByName[name]->limitAPresent = static_cast<bool>(root[i]["limit_a_present"]);
+            controllersByName[name]->limitAEnable = static_cast<bool>(root[i]["limit_a_present"]);
         }
         if (root[i].hasMember("limit_b_present") &&
             root[i]["limit_b_present"].getType() == XmlRpc::XmlRpcValue::TypeBoolean) {
             controllersByName[name]->limitBPresent = static_cast<bool>(root[i]["limit_b_present"]);
+            controllersByName[name]->limitBEnable = static_cast<bool>(root[i]["limit_b_present"]);
         }
         if (root[i].hasMember("active_limit_a") &&
             root[i]["active_limit_a"].getType() == XmlRpc::XmlRpcValue::TypeBoolean) {
