@@ -11,8 +11,8 @@ zed_nodelet:
   # [3] ULTRA       Computation mode favoring edges and sharpness. Requires more GPU memory and computation power.
   # [4] NEURAL      End to End Neural disparity estimation, requires AI module.
   depth_mode: 4
-  image_width: 1280
-  image_height: 720
+  image_width: 640
+  image_height: 480
   # Threshold to reject depth values based on their confidence.
   # Each depth pixel has a corresponding confidence. The confidence range is [1,100].
   # By default, the confidence threshold is set at 100, meaning that no depth pixel will be rejected.

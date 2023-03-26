@@ -8,7 +8,6 @@
 #include <se3.hpp>
 
 using namespace std::chrono_literals;
-using hr_clock = std::chrono::high_resolution_clock;
 
 namespace mrover {
 
@@ -26,16 +25,17 @@ namespace mrover {
             int depthMode{};
             mPnh.param("depth_mode", depthMode, static_cast<std::underlying_type_t<sl::RESOLUTION>>(sl::DEPTH_MODE::PERFORMANCE));
             mPnh.param("grab_target_fps", mGrabTargetFps, 50);
-            mPnh.param("image_width", mImageWidth, 1280);
-            mPnh.param("image_height", mImageHeight, 720);
+            int imageWidth{};
+            int imageHeight{};
+            mPnh.param("image_width", imageWidth, 1280);
+            mPnh.param("image_height", imageHeight, 720);
             mPnh.param("depth_confidence", mDepthConfidence, 70);
-            mPnh.param("texture_confidence", mTextureConfidence, 70);
+            mPnh.param("texture_confidence", mTextureConfidence, 100);
             mPnh.param("direct_tag_detection", mDirectTagDetection, false);
             std::string svoFile{};
             mPnh.param("svo_file", svoFile, {});
 
-
-            if (mImageWidth < 0 || mImageHeight < 0) {
+            if (imageWidth < 0 || imageHeight < 0) {
                 throw std::invalid_argument("Invalid image dimensions");
             }
             if (mGrabTargetFps < 0) {
@@ -61,7 +61,7 @@ namespace mrover {
             mZed.enablePositionalTracking(positionalTrackingParameters);
 
             mGrabThread = std::thread(&ZedNodelet::grabUpdate, this);
-            mTagThread = std::thread(&ZedNodelet::tagUpdate, this);
+            mPcThread = std::thread(&ZedNodelet::pointCloudUpdate, this);
 
         } catch (std::exception const& e) {
             NODELET_FATAL("Exception while starting: %s", e.what());
@@ -73,26 +73,61 @@ namespace mrover {
      * Only relevant if direct tag detection is true.
      * This handles loading a tag detection nodelet and passing it point clouds from the grab thread.
      */
-    void ZedNodelet::tagUpdate() {
+    void ZedNodelet::pointCloudUpdate() {
         try {
-            if (!mDirectTagDetection) return;
+            NODELET_INFO("Starting point cloud thread");
 
-            NODELET_INFO("Starting tag thread");
+            if (mDirectTagDetection) {
+                // TODO: ugly, this prevents OpenCV fast alloc from crashing
+                std::this_thread::sleep_for(100ms);
 
-            // TODO: ugly, this prevents OpenCV fast alloc from crashing
-            std::this_thread::sleep_for(100ms);
+                mTagDetectorNode = boost::make_shared<TagDetectorNodelet>();
+                mTagDetectorNode->init("tag_detector", getRemappingArgs(), getMyArgv());
 
-            mTagDetectorNode = boost::make_shared<TagDetectorNodelet>();
-            mTagDetectorNode->init("tag_detector", getRemappingArgs(), getMyArgv());
-
-            // TODO: figure out why removing this causes a segfault
-            cv::aruco::getPredefinedDictionary(cv::aruco::DICT_4X4_50);
+                // TODO: figure out why removing this causes a segfault
+                cv::aruco::getPredefinedDictionary(cv::aruco::DICT_4X4_50);
+            }
 
             while (ros::ok()) {
-                std::unique_lock lock{mPcSwapMutex};
-                mGrabDone.wait(lock, [this] { return mIsPcSwapReady; });
+                mPcThreadProfiler.reset();
 
-                mTagDetectorNode->pointCloudCallback(mTagPointCloud);
+                {
+                    std::unique_lock lock{mGrabMutex};
+                    mGrabDone.wait(lock);
+                }
+                mPcThreadProfiler.addEpoch("Wait");
+
+                if (mZed.retrieveImage(mLeftImageMat, sl::VIEW::LEFT, sl::MEM::CPU, mImageResolution) != sl::ERROR_CODE::SUCCESS)
+                    throw std::runtime_error("ZED failed to retrieve left image");
+                if (mZed.retrieveImage(mRightImageMat, sl::VIEW::RIGHT, sl::MEM::CPU, mImageResolution) != sl::ERROR_CODE::SUCCESS)
+                    throw std::runtime_error("ZED failed to retrieve right image");
+                if (mZed.retrieveMeasure(mPointCloudXYZMat, sl::MEASURE::XYZ, sl::MEM::CPU, mImageResolution) != sl::ERROR_CODE::SUCCESS)
+                    throw std::runtime_error("ZED failed to retrieve point cloud");
+                mPcThreadProfiler.addEpoch("Retrieve");
+
+                fillPointCloudMessage(mPointCloudXYZMat, mLeftImageMat, mPointCloud, mUpdateTick);
+                mPcThreadProfiler.addEpoch("Fill Message");
+
+                if (mDirectTagDetection)
+                    mTagDetectorNode->pointCloudCallback(mPointCloud);
+                mPcThreadProfiler.addEpoch("Direct Tag Detection");
+
+                if (mPcPub.getNumSubscribers()) {
+                    mPcPub.publish(mPointCloud);
+                    if (mDirectTagDetection)
+                        NODELET_WARN("Publishing defeats the purpose of direct tag detection");
+                }
+                mPcThreadProfiler.addEpoch("Point cloud publish");
+
+                if (mLeftImgPub.getNumSubscribers()) {
+                    fillImageMessage(mLeftImageMat, mLeftImgMsg, mUpdateTick);
+                    mLeftImgPub.publish(mLeftImgMsg);
+                }
+                if (mRightImgPub.getNumSubscribers()) {
+                    fillImageMessage(mRightImageMat, mRightImgMsg, mUpdateTick);
+                    mRightImgPub.publish(mRightImgMsg);
+                }
+                mPcThreadProfiler.addEpoch("Image publish");
             }
             NODELET_INFO("Tag thread finished");
 
@@ -107,45 +142,19 @@ namespace mrover {
         try {
             NODELET_INFO("Starting grab thread");
             while (ros::ok()) {
-                hr_clock::time_point update_start = hr_clock::now();
+                mGrabThreadProfiler.reset();
 
                 sl::RuntimeParameters runtimeParameters;
                 runtimeParameters.confidence_threshold = mDepthConfidence;
                 runtimeParameters.texture_confidence_threshold = mTextureConfidence;
 
-                sl::Resolution processResolution(mImageWidth, mImageHeight);
-
                 if (mZed.grab(runtimeParameters) != sl::ERROR_CODE::SUCCESS)
                     throw std::runtime_error("ZED failed to grab");
-                if (mZed.retrieveImage(mLeftImageMat, sl::VIEW::LEFT, sl::MEM::CPU, processResolution) != sl::ERROR_CODE::SUCCESS)
-                    throw std::runtime_error("ZED failed to retrieve image");
-                if (mZed.retrieveMeasure(mPointCloudXYZMat, sl::MEASURE::XYZ, sl::MEM::CPU, processResolution) != sl::ERROR_CODE::SUCCESS)
-                    throw std::runtime_error("ZED failed to retrieve point cloud");
-                //            mZed.retrieveMeasure(mPointCloudNormalMat, sl::MEASURE::NORMALS, sl::MEM::CPU, mImageResolution);
-                hr_clock::duration grab_time = hr_clock::now() - update_start;
+                mGrabThreadProfiler.addEpoch("Grab");
 
-                mIsPcSwapReady = false;
-                fillPointCloudMessage(mPointCloudXYZMat, mLeftImageMat, mGrabPointCloud, mUpdateTick);
-                hr_clock::duration to_msg_time = hr_clock::now() - update_start - grab_time;
-
-                if (mPcPub.getNumSubscribers()) {
-                    mPcPub.publish(mGrabPointCloud);
-                    if (mDirectTagDetection) {
-                        NODELET_WARN("Publishing defeats the purpose of direct tag detection");
-                    }
-                }
-                // If the tag detection thread is currently processing a point cloud, skip instead of blocking
-                if (mDirectTagDetection && mPcSwapMutex.try_lock()) {
-                    mTagPointCloud.swap(mGrabPointCloud);
-                    mIsPcSwapReady = true;
-                    mPcSwapMutex.unlock();
-                    mGrabDone.notify_one();
-                }
-                hr_clock::duration publish_time = hr_clock::now() - update_start - grab_time - to_msg_time;
-
-                if (mLeftImgPub.getNumSubscribers()) {
-                    fillImageMessage(mLeftImageMat, mLeftImgMsg, mUpdateTick);
-                    mLeftImgPub.publish(mLeftImgMsg);
+                {
+                    std::unique_lock lock{mGrabMutex};
+                    mGrabDone.notify_all();
                 }
 
                 sl::Pose pose;
@@ -167,6 +176,7 @@ namespace mrover {
                 } else {
                     NODELET_WARN_STREAM("Positional tracking failed: " << status);
                 }
+                mGrabThreadProfiler.addEpoch("Positional tracking");
 
                 if (mImuPub.getNumSubscribers()) {
                     sl::SensorsData sensorData;
@@ -176,14 +186,7 @@ namespace mrover {
                     fillImuMessage(sensorData.imu, imuMsg, mUpdateTick);
                     mImuPub.publish(imuMsg);
                 }
-
-                hr_clock::duration update_duration = hr_clock::now() - update_start;
-                if (mUpdateTick % 60 == 0) {
-                    NODELET_INFO_STREAM("[" << std::hash<std::thread::id>{}(std::this_thread::get_id()) << "] ZED Total: " << std::chrono::duration_cast<std::chrono::milliseconds>(update_duration).count() << "ms");
-                    NODELET_INFO_STREAM("\tGrab: " << std::chrono::duration_cast<std::chrono::milliseconds>(grab_time).count() << "ms");
-                    NODELET_INFO_STREAM("\tTo msg: " << std::chrono::duration_cast<std::chrono::milliseconds>(to_msg_time).count() << "ms");
-                    NODELET_INFO_STREAM("\tPublish: " << std::chrono::duration_cast<std::chrono::milliseconds>(publish_time).count() << "ms");
-                }
+                mGrabThreadProfiler.addEpoch("Sensor data");
 
                 mUpdateTick++;
             }
@@ -201,7 +204,7 @@ namespace mrover {
 
     ZedNodelet::~ZedNodelet() {
         NODELET_INFO("ZED node shutting down");
-        mTagThread.join();
+        mPcThread.join();
         mGrabThread.join();
     }
 

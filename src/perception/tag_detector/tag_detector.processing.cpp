@@ -27,7 +27,7 @@ namespace mrover {
      * @param u     X Pixel Position
      * @param v     Y Pixel Position
      */
-    std::optional<SE3> TagDetectorNodelet::getFidInCamFromPixel(sensor_msgs::PointCloud2ConstPtr const& cloudPtr, size_t u, size_t v) {
+    std::optional<SE3> TagDetectorNodelet::getFidInCamFromPixel(sensor_msgs::PointCloud2ConstPtr const& cloudPtr, size_t u, size_t v) { 
         if (u >= cloudPtr->width || v >= cloudPtr->height) {
             NODELET_WARN("Tag center out of bounds: [%zu %zu]", u, v);
             return std::nullopt;
@@ -84,33 +84,33 @@ namespace mrover {
 
         // Update ID, image center, and increment hit count for all detected tags
         for (size_t i = 0; i < mIds.size(); ++i) {
-            int id = mIds[i];
-            Tag& tag = mTags[id];
-            tag.hitCount = std::clamp(tag.hitCount + 1, 0, mMaxHitCount);
-            tag.id = id;
-            tag.imageCenter = std::accumulate(mCorners[i].begin(), mCorners[i].end(), cv::Point2f{}) / static_cast<float>(mCorners[i].size());
-            tag.tagInCam = getFidInCamFromPixel(msg, std::lround(tag.imageCenter.x), std::lround(tag.imageCenter.y));
+          int id = mIds[i];
+          Tag& tag = mTags[id];
+          tag.hitCount = std::clamp(tag.hitCount + 1, 0, mMaxHitCount);
+          tag.id = id;
+          tag.imageCenter = std::accumulate(mCorners[i].begin(), mCorners[i].end(), cv::Point2f{}) / static_cast<float>(mCorners[i].size());
+          tag.tagInCam = getFidInCamFromPixel(msg, std::lround(tag.imageCenter.x), std::lround(tag.imageCenter.y));
 
-            if (tag.tagInCam) {
-                // Publish tag to immediate
-                std::string immediateFrameId = "immediateFiducial" + std::to_string(tag.id);
-                SE3::pushToTfTree(mTfBroadcaster, immediateFrameId, mCameraFrameId, tag.tagInCam.value());
-            }
+          if (tag.tagInCam) {
+            // Publish tag to immediate
+            std::string immediateFrameId = "immediateFiducial" + std::to_string(tag.id);
+            SE3::pushToTfTree(mTfBroadcaster, immediateFrameId, mCameraFrameId, tag.tagInCam.value());
+          }
         }
 
         // Handle tags that were not seen this update
         // Decrement their hit count and remove if they hit zero
         auto it = mTags.begin();
         while (it != mTags.end()) {
-            auto& [id, tag] = *it;
-            if (std::find(mIds.begin(), mIds.end(), id) == mIds.end()) {
-                tag.hitCount--;
-                if (tag.hitCount <= 0) {
-                    it = mTags.erase(it);
-                    continue;
-                }
+          auto& [id, tag] = *it;
+          if (std::find(mIds.begin(), mIds.end(), id) == mIds.end()) {
+            tag.hitCount--;
+            if (tag.hitCount <= 0) {
+              it = mTags.erase(it);
+              continue;
             }
-            ++it;
+          }
+          ++it;
         }
 
         // Publish all tags to the tf tree that have been seen enough times

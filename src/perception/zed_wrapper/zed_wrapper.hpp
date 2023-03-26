@@ -16,6 +16,8 @@
 
 #include <tag_detector.hpp>
 
+#include "time_profiler.hpp"
+
 namespace mrover {
 
     class ZedNodelet : public nodelet::Nodelet {
@@ -26,31 +28,32 @@ namespace mrover {
         tf2_ros::TransformListener mTfListener{mTfBuffer};
         tf2_ros::TransformBroadcaster mTfBroadcaster;
         ros::Publisher mPcPub, mImuPub;
-        image_transport::Publisher mLeftImgPub;
+        image_transport::Publisher mLeftImgPub, mRightImgPub;
 
-        sensor_msgs::Image mLeftImgMsg;
-        sensor_msgs::PointCloud2Ptr mGrabPointCloud = boost::make_shared<sensor_msgs::PointCloud2>();
-        sensor_msgs::PointCloud2Ptr mTagPointCloud = boost::make_shared<sensor_msgs::PointCloud2>();
+        sensor_msgs::Image mLeftImgMsg, mRightImgMsg;
+        sensor_msgs::PointCloud2Ptr mPointCloud = boost::make_shared<sensor_msgs::PointCloud2>();
 
+        sl::Resolution mImageResolution;
         int mGrabTargetFps{};
-        int mImageWidth{};
-        int mImageHeight{};
         int mDepthConfidence{};
         int mTextureConfidence{};
         bool mDirectTagDetection{};
 
         sl::Camera mZed;
         sl::Mat mLeftImageMat;
+        sl::Mat mRightImageMat;
         sl::Mat mPointCloudXYZMat;
         sl::Mat mPointCloudNormalMat;
 
-        std::thread mTagThread;
+        std::thread mPcThread;
         std::thread mGrabThread;
-        bool mIsPcSwapReady = false;
+        std::mutex mGrabMutex;
         std::condition_variable mGrabDone;
-        std::mutex mPcSwapMutex;
 
         boost::shared_ptr<TagDetectorNodelet> mTagDetectorNode;
+
+        TimeProfiler mPcThreadProfiler;
+        TimeProfiler mGrabThreadProfiler;
 
         size_t mUpdateTick = 0;
 
@@ -63,7 +66,7 @@ namespace mrover {
 
         void grabUpdate();
 
-        void tagUpdate();
+        void pointCloudUpdate();
     };
 
     void fillPointCloudMessage(sl::Mat& xyz, sl::Mat& bgr, sensor_msgs::PointCloud2Ptr const& msg, size_t tick);
