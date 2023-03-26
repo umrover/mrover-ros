@@ -209,13 +209,6 @@ class ArmControl:
             if self.ra_config[name]["invert"]:
                 self.ra_cmd.velocity[i] *= -1
 
-        
-        
-            
-        
-        
-                
-            
         self.ra_cmd_pub.publish(self.ra_cmd)
 
     def ra_servo_control(self, msg: Joy) -> None:
