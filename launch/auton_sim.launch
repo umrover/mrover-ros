@@ -3,7 +3,7 @@
  -->
 <launch>
     <arg name="rvizconfig" default="$(find mrover)/config/rviz/auton_sim.rviz" />
-    <arg name="world_name" default="world.world" />
+    <arg name="world_name" default="world" />
 
     <node name="rviz" pkg="rviz" type="rviz" args="-d $(arg rvizconfig)" required="true" />
 
@@ -11,7 +11,7 @@
     <include file="$(find mrover)/launch/rover_core.launch" />
 
     <!-- launch the simulator -->
-    <include file="$(find mrover)/launch/simulator.launch">
+    <include file="$(find mrover)/launch/simulator.launch" >
         <arg name="world_name" value="$(arg world_name)" />
     </include>
 
