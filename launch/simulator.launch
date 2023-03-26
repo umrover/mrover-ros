@@ -26,7 +26,7 @@
     </include>
 
     <!-- merge imu & mag msgs from gazebo into one -->
-    <node name="imu_packager" pkg="mrover" type="imu_packager.py" />
+    <node name="imu_packager" pkg="mrover" type="sim_imu_driver.py" />
 
     <!-- spawn the rover model in gazebo, requires robot_description rosparam to be set -->
     <node name="spawn_model" pkg="gazebo_ros" type="spawn_model" output="screen" 
