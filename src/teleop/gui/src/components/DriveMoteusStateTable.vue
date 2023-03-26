@@ -14,14 +14,24 @@
           <col style="width: 30px" />
         </colgroup>
         <thead>
-          <tr>
-            
-              {{testing(moteusStateData.name[indices.FrontRight]) }}
-            <th class="tableElement tableHeader">
-              {{ moteusStateData.name[indices.FrontRight] }}
-            </th>
+          <tr v-for="(joint, index) in moteusStateData.name" :key="index">
+            <td class="tableElement tableHeader">
+              {{ moteusStateData.name[index] }}
+            </td>
+            <td class="tableElement tableHeader">
+              {{ moteusStateData.name[index] }}
+            </td>
           </tr>
           <tr>
+            <th class="tableElement tableHeader">Motor</th>
+            <th class="tableElement tableHeader">
+              {{ moteusStateData.name[indices.FrontLeft] }}
+            </th>
+            <th class="tableElement tableHeader">
+              {{ moteusStateData.name[indices.
+              FrontRight] }}
+            </th>
+          </tr>
             <th class="tableElement tableHeader">State</th>
             <th class="tableElement">
               {{ moteusStateData.state[indices.FrontLeft] }}
@@ -100,7 +110,7 @@
 </template>
 
 <script>
-import { h } from 'vue';
+import DriveMoteusStuff from "./DriveMoteusStuff.vue";
 import ROSLIB from "roslib";
 
 const state = {
@@ -112,7 +122,13 @@ const state = {
   BackRight: 5
 };
 
+
+
 export default {
+  components: {
+    DriveMoteusStuff
+  },
+
   props: {
     moteusStateData: {
       type: Object,
@@ -124,11 +140,6 @@ export default {
       indices: state
     };
   },
-  methods: {
-    testing:(element)=>{
-      h('th', {class:"tableElement tableHeader"}, "Motor", {class: "tableElement tableHeader"}, element)
-    }
-},
 };
 </script>
 
