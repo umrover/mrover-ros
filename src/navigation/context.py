@@ -12,8 +12,7 @@ import numpy as np
 from dataclasses import dataclass
 from mrover.msg import Waypoint, GPSWaypoint, EnableAuton
 import pymap3d
-from std_msgs.msg import Time
-
+from std_msgs.msg import Time, Bool
 
 TAG_EXPIRATION_TIME_SECONDS = 60
 
@@ -29,6 +28,8 @@ class Gate:
 @dataclass
 class Rover:
     ctx: Context
+    stuck: bool
+    previous_state: str
 
     def get_pose(self) -> SE3:
         return SE3.from_tf_tree(self.ctx.tf_buffer, parent_frame="map", child_frame="base_link")
@@ -215,6 +216,7 @@ class Context:
     vel_cmd_publisher: rospy.Publisher
     vis_publisher: rospy.Publisher
     course_listener: rospy.Subscriber
+    stuck_listener: rospy.Subscriber
 
     # Use these as the primary interfaces in states
     course: Optional[Course]
@@ -227,9 +229,10 @@ class Context:
         self.tf_listener = tf2_ros.TransformListener(self.tf_buffer)
         self.vel_cmd_publisher = rospy.Publisher("cmd_vel", Twist, queue_size=1)
         self.vis_publisher = rospy.Publisher("nav_vis", Marker, queue_size=1)
+        self.stuck_listener = rospy.Subscriber("/nav_stuck", Bool, self.stuck_callback)
         self.enable_auton_service = rospy.Service("enable_auton", mrover.srv.PublishEnableAuton, self.recv_enable_auton)
         self.course = None
-        self.rover = Rover(self)
+        self.rover = Rover(self, False, "")
         self.env = Environment(self)
         self.disable_requested = False
 
@@ -240,3 +243,7 @@ class Context:
         else:
             self.disable_requested = True
         return mrover.srv.PublishEnableAutonResponse(True)
+
+    def stuck_callback(self, msg: Bool):
+        self.rover.stuck = msg.data
+        rospy.logerr(f"{self.rover.stuck}")

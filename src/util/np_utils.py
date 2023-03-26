@@ -43,10 +43,6 @@ def angle_to_rotate(v1, v2):
     return smallest_angle * sign
 
 
-<<<<<<< HEAD
-def euclidean_distance(v1, v2):
-    return np.linalg.norm(v1-v2)
-=======
 def numpify(msg: Union[Vector3, Quaternion, Point]) -> np.ndarray:
     if msg.__class__ == Vector3:
         return _translation_to_numpy(msg)
@@ -56,4 +52,3 @@ def numpify(msg: Union[Vector3, Quaternion, Point]) -> np.ndarray:
         return _point_to_numpy(msg)
     else:
         raise Exception("type of msg must be either Vector3 or Quaternion!!!")
->>>>>>> failure_identification

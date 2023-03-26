@@ -111,7 +111,7 @@ class GateTraverseState(BaseState):
 
         # continue executing this path from wherever it left off
         target_pos = self.traj.get_cur_pt()
-        cmd_vel, arrived, stuck = get_drive_command(
+        cmd_vel, arrived = get_drive_command(
             target_pos,
             self.context.rover.get_pose(),
             self.STOP_THRESH,
@@ -124,7 +124,7 @@ class GateTraverseState(BaseState):
                 self.context.course.increment_waypoint()
                 return GateTraverseStateTransitions.finished_gate.name  # type: ignore
 
-        if stuck:
+        if self.context.rover.stuck:
             self.context.rover.previous_state = GateTraverseStateTransitions.continue_gate_traverse.name
             return GateTraverseStateTransitions.recovery_state.name
 

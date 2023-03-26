@@ -61,6 +61,7 @@ class PartialGateStateTransitions(Enum):
     partial_gate = "PartialGateState"
     found_gate = "GateTraverseState"
     done = "DoneState"
+    recovery_state = "RecoveryState"
 
 
 class PartialGateState(BaseState):
@@ -93,6 +94,10 @@ class PartialGateState(BaseState):
                 self.traj = None
                 self.context.course.increment_waypoint()
                 return PartialGateStateTransitions.done.name  # type: ignore
+            
+        if self.context.rover.stuck:
+            self.context.rover.previous_state = PartialGateStateTransitions.partial_gate.name
+            return PartialGateStateTransitions.recovery_state.name
 
         self.context.rover.send_drive_command(cmd_vel)
         return PartialGateStateTransitions.partial_gate.name  # type: ignore

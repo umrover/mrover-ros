@@ -97,7 +97,7 @@ class SearchState(BaseState):
             if self.traj.increment_point():
                 return SearchStateTransitions.no_fiducial.name  # type: ignore
 
-        if stuck:
+        if self.context.rover.stuck:
             self.context.rover.previous_state = SearchStateTransitions.continue_search.name
             return SearchStateTransitions.recovery_state.name
 

@@ -14,7 +14,7 @@ class WatchDog:
         self.collector = collector_in
 
     def is_stuck(self, dataframe: DataFrame):
-        return False
+        return True
 
     # def check_angular_stuck(self):
     #     counter = 0
