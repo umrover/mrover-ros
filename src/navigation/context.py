@@ -42,7 +42,7 @@ class Rover:
     def send_drive_stop(self):
         self.send_drive_command(Twist())
 
-    def get_pose_with_time(self):
+    def get_pose_with_time(self) -> Tuple[SE3, Time]:
         return SE3.from_tf_time(self.ctx.tf_buffer, parent_frame="map", child_frame="base_link")
 
 
@@ -132,7 +132,7 @@ class Course:
         waypoint_frame = self.course_data.waypoints[wp_idx].tf_id
         return SE3.from_tf_tree(self.ctx.tf_buffer, parent_frame="map", child_frame=waypoint_frame)
 
-    def current_waypoint_pose(self):
+    def current_waypoint_pose(self) -> SE3:
         """
         Gets the pose of the current waypoint
         """
@@ -171,7 +171,7 @@ class Course:
         else:
             return False
 
-    def is_complete(self):
+    def is_complete(self) -> bool:
         return self.waypoint_index == len(self.course_data.waypoints)
 
 
