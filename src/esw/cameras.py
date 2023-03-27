@@ -12,38 +12,43 @@ from mrover.srv import (
 )
 
 
-#def stream_manager(self.stream_process_list, id, cap):
 class StreamManager:
 
     def __init__(self):
-        self.stream_process_list = [0]*10
+        self.stream_process_list = \
+            [[0 for _ in range(rospy.get_param("cameras/max_video_device_id_number"))] for __ in range(2)]
+        self.ips = [rospy.get_param("cameras/ips/primary"), rospy.get_param("cameras/ips/secondary")]
         self.cap_args = [
             # [bps, width, height, fps]
-            [173000, 320, 240, 15],  # bottom
-            [691000, 640, 480, 15],  # low
-            [2000000, 960, 720, 15],  # medium
-            [3000000, 1280, 720, 15],  # high
-            [4200000, 1280, 720, 30],  # full
+            list(rospy.get_param("cameras/arguments/worst_res")),
+            list(rospy.get_param("cameras/arguments/low_res")),
+            list(rospy.get_param("cameras/arguments/medium_res")),
+            list(rospy.get_param("cameras/arguments/high_res")),
+            list(rospy.get_param("cameras/arguments/best_res")),
         ]
+        self.skip_every_other_device = rospy.get_param("cameras/skip_every_other_device")
+
     def handle_req(self, req):
         cmds = req.camera_cmds
-        id = cmds.device
-        print(id)
+        laptop_idx = 0 if req.primary else 1
+        device_id = cmds.device
+        print(device_id)
         cap = cmds.resolution
 
         if cap:
-            print(self.stream_process_list[id])
-            if self.stream_process_list[id]:
+            print(self.stream_process_list[laptop_idx][device_id])
+            if self.stream_process_list[laptop_idx][device_id]:
                 print("Killing existing")
-                self.stream_process_list[id].kill()
-                self.stream_process_list[id].join()
+                self.stream_process_list[laptop_idx][device_id].kill()
+                self.stream_process_list[laptop_idx][device_id] = 0
+                self.stream_process_list[laptop_idx][device_id].join()
                 print("Killed existing")
-            self.stream_process_list[id] = Process(
+            self.stream_process_list[laptop_idx][device_id] = Process(
                 target=send,
                 args=(
-                    id,
-                    "10.0.0.7",
-                    5000 + id,
+                    device_id * 2 if self.skip_every_other_device else device_id,
+                    self.ips[laptop_idx],
+                    5000 + device_id,
                     self.cap_args[cap - 1][0],
                     self.cap_args[cap - 1][1],
                     self.cap_args[cap - 1][2],
@@ -51,17 +56,18 @@ class StreamManager:
                     True,
                 ),
             )
-            self.stream_process_list[id].start()
+            self.stream_process_list[laptop_idx][device_id].start()
         else:
-            print("\nClosing /dev/video" + str(id) + " stream")
-            self.stream_process_list[id].kill()
+            print("\nClosing /dev/video" + str(device_id) + " stream")
+            self.stream_process_list[laptop_idx][device_id].kill()
+            self.stream_process_list[laptop_idx][device_id] = 0
 
 
-def send(device=0, host="10.0.0.7", port=5001, bitrate=4000000, width=1280, height=720, fps=30, isColored=False):
+def send(device=0, host="10.0.0.7", port=5000, bitrate=4000000, width=1280, height=720, fps=30, is_colored=False):
     # TODO: Look into bitrate "automatic" calculation
 
     # Construct video capture pipeline string
-    capstr = (
+    cap_str = (
         "v4l2src device=/dev/video"
         + str(device)
         + " do-timestamp=true io-mode=2 ! \
@@ -80,22 +86,22 @@ def send(device=0, host="10.0.0.7", port=5001, bitrate=4000000, width=1280, heig
         + "/1 ! \
     nvvidconv ! "
     )
-    if isColored:
-        capstr += " video/x-raw, format=BGRx ! "
-    capstr += "videoconvert ! "
-    if isColored:
-        capstr += " video/x-raw, format=BGR ! "
-    capstr += "appsink"
+    if is_colored:
+        cap_str += " video/x-raw, format=BGRx ! "
+    cap_str += "videoconvert ! "
+    if is_colored:
+        cap_str += " video/x-raw, format=BGR ! "
+    cap_str += "appsink"
 
     # openCV video capture from v4l2 device
-    cap_send = cv2.VideoCapture(capstr, cv2.CAP_GSTREAMER)
+    cap_send = cv2.VideoCapture(cap_str, cv2.CAP_GSTREAMER)
 
     # Construct stream transmit pipeline string
     txstr = "appsrc ! "
-    if isColored:
+    if is_colored:
         txstr += " video/x-raw, format=BGR ! "
     txstr += "videoconvert ! "
-    if isColored:
+    if is_colored:
         txstr += " video/x-raw, format=BGRx ! "
     txstr += (
         "nvvidconv ! \
@@ -113,7 +119,7 @@ def send(device=0, host="10.0.0.7", port=5001, bitrate=4000000, width=1280, heig
 
     # openCV stream transmit pipeline with RTP sink
     fourcc = cv2.VideoWriter_fourcc("H", "2", "6", "4")
-    out_send = cv2.VideoWriter(txstr, cv2.CAP_GSTREAMER, fourcc, 60, (width, height), isColored)
+    out_send = cv2.VideoWriter(txstr, cv2.CAP_GSTREAMER, fourcc, 60, (width, height), is_colored)
 
     print(
         "\nTransmitting /dev/video"
@@ -152,15 +158,7 @@ def send(device=0, host="10.0.0.7", port=5001, bitrate=4000000, width=1280, heig
 
 
 if __name__ == "__main__":
-    '''
-    s = [0] * 10
-    s[0] = Process(target=send, args=(0, "10.0.0.7", 5000, 4200000, 1280, 720, 30, True))
-    s[2] = Process(target=send, args=(2, "10.0.0.7", 5002, 4200000, 1280, 720, 30, True))
-    cthread = keyboard.Listener(on_press=on_press, args=(s))
-    s[0].start()
-    s[2].start()
-    '''
-    stream_manager = StreamManager()
     rospy.init_node("cameras")
+    stream_manager = StreamManager()
     rospy.Service("change_cameras", ChangeCameras, stream_manager.handle_req)
     rospy.spin()
