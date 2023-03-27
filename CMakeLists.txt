@@ -58,6 +58,7 @@ set(MROVER_SERVICE_FILES
         FetchPackages.srv
         PublishEnableAuton.srv
         PublishCourse.srv
+        ResetCameras.srv
         )
 
 # generate messages list

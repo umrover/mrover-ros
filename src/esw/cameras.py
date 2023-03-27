@@ -3,22 +3,27 @@
 from mrover.msg import CameraCmd
 import cv2
 from multiprocessing import Process
+from typing import List, Union, Any
 
 import rospy
+
 from mrover.srv import (
     ChangeCameras,
     ChangeCamerasRequest,
     ChangeCamerasResponse,
+    ResetCameras,
+    ResetCamerasRequest,
+    ResetCamerasResponse,
 )
 
 
 class StreamManager:
-
     def __init__(self):
-        self.stream_process_list = \
-            [[0 for _ in range(rospy.get_param("cameras/max_video_device_id_number"))] for __ in range(2)]
+        self.stream_process_list: List[List[Union[Process, Any]]] = [
+            [None for _ in range(rospy.get_param("cameras/max_video_device_id_number"))] for __ in range(2)
+        ]
 
-        self.streamed_devices_by_port_by_laptop_idx = [[-1, -1, -1, -1], [-1, -1, -1, -1]]
+        self.streamed_devices_by_port_by_laptop_idx = [[CameraCmd(-1, -1) for _ in range(4)] for __ in range(2)]
 
         primary_ip = rospy.get_param("cameras/ips/primary")
         secondary_ip = rospy.get_param("cameras/ips/secondary")
@@ -36,30 +41,44 @@ class StreamManager:
 
     def get_num_devices_streaming(self) -> int:
         num_streaming_devices = 0
-        for device in self.streamed_devices_by_port_by_laptop_idx:
-            if device != -1:
-                num_streaming_devices += 1
+        for i in range(2):
+            for device in self.streamed_devices_by_port_by_laptop_idx[i]:
+                if device.device != -1:
+                    num_streaming_devices += 1
         return num_streaming_devices
 
     def get_available_stream(self, primary: bool) -> int:
         idx = 0 if primary else 1
         available_stream = 0
         for i in range(4):
-            if self.streamed_devices_by_port_by_laptop_idx[idx][available_stream] == -1:
+            if self.streamed_devices_by_port_by_laptop_idx[idx][available_stream].device == -1:
                 return available_stream
             else:
                 available_stream += 1
+        rospy.logerr("CODE SHOULD NEVER REACH HERE")
+        return -1  # SHOULD NEVER REACH THIS NUMBER
 
     def stop_device_id_stream(self, laptop_idx: int, device_id: int) -> None:
-        self.stream_process_list[laptop_idx][device_id].kill()
-        self.stream_process_list[laptop_idx][device_id].join()
-        self.stream_process_list[laptop_idx][device_id] = 0
+        if self.stream_process_list[laptop_idx][device_id] is not None:
+            self.stream_process_list[laptop_idx][device_id].kill()
+            self.stream_process_list[laptop_idx][device_id].join()
+            self.stream_process_list[laptop_idx][device_id] = None
         for i in range(2):
             for j in range(len(self.streamed_devices_by_port_by_laptop_idx[i])):
-                if self.streamed_devices_by_port_by_laptop_idx[i][j] == device_id:
-                    self.streamed_devices_by_port_by_laptop_idx[i][j] = -1
+                if self.streamed_devices_by_port_by_laptop_idx[i][j].device == device_id:
+                    self.streamed_devices_by_port_by_laptop_idx[i][j] = CameraCmd(-1, -1)
 
-    def handle_req(self, req: ChangeCamerasRequest):
+    def reset_cameras(self, req: ResetCamerasRequest) -> ResetCamerasResponse:
+        laptop_idx = 0 if req.primary else 1
+        for device in self.streamed_devices_by_port_by_laptop_idx[laptop_idx]:
+            if device.device != -1:
+                self.stop_device_id_stream(laptop_idx, device.device)
+
+        return ResetCamerasResponse(
+            self.streamed_devices_by_port_by_laptop_idx[0], self.streamed_devices_by_port_by_laptop_idx[1]
+        )
+
+    def handle_req(self, req: ChangeCamerasRequest) -> ChangeCamerasResponse:
         cmds = req.camera_cmds
         laptop_idx = 0 if req.primary else 1
         device_id = cmds.device
@@ -68,13 +87,17 @@ class StreamManager:
 
         if cap:
             print(self.stream_process_list[laptop_idx][device_id])
-            if self.stream_process_list[laptop_idx][device_id]:
+            if self.stream_process_list[laptop_idx][device_id] is not None:
                 print("Killing existing")
                 self.stop_device_id_stream(laptop_idx, device_id)
                 print("Killed existing")
             else:
                 if self.get_num_devices_streaming() == 4:
-                    return ChangeCamerasResponse(success=False)
+                    return ChangeCamerasResponse(
+                        False,
+                        self.streamed_devices_by_port_by_laptop_idx[0],
+                        self.streamed_devices_by_port_by_laptop_idx[1],
+                    )
 
             available_port = self.get_available_stream(req.primary)
             self.stream_process_list[laptop_idx][device_id] = Process(
@@ -90,14 +113,18 @@ class StreamManager:
                     True,
                 ),
             )
-            self.streamed_devices_by_port_by_laptop_idx[laptop_idx][available_port] = device_id
+            self.streamed_devices_by_port_by_laptop_idx[laptop_idx][available_port] = CameraCmd(
+                device_id, cmds.resolution
+            )
             self.stream_process_list[laptop_idx][device_id].start()
 
         else:
-            if self.stream_process_list[laptop_idx][device_id]:
+            if self.stream_process_list[laptop_idx][device_id] is not None:
                 print("\nClosing /dev/video" + str(device_id) + " stream")
                 self.stop_device_id_stream(laptop_idx, device_id)
-        return ChangeCamerasResponse(success=True)
+        return ChangeCamerasResponse(
+            True, self.streamed_devices_by_port_by_laptop_idx[0], self.streamed_devices_by_port_by_laptop_idx[1]
+        )
 
 
 def send(device=0, host="10.0.0.7", port=5000, bitrate=4000000, width=1280, height=720, fps=30, is_colored=False):
@@ -198,4 +225,5 @@ if __name__ == "__main__":
     rospy.init_node("cameras")
     stream_manager = StreamManager()
     rospy.Service("change_cameras", ChangeCameras, stream_manager.handle_req)
+    rospy.Service("reset_cameras", ResetCameras, stream_manager.reset_cameras)
     rospy.spin()
