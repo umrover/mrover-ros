@@ -2,6 +2,9 @@
 
 #include "filter.hpp"
 
+constexpr size_t IMAGE_WIDTH_WARN_SIZE = 640;
+constexpr size_t IMAGE_HEIGHT_WARN_SIZE = 480;
+
 /**
  * Detect tags from raw image using OpenCV and calculate their screen space centers.
  * Tag pose information relative to the camera in 3D space is filled in when we receive point cloud data.
@@ -10,6 +13,13 @@
  */
 void FiducialsNode::imageCallback(sensor_msgs::ImageConstPtr const& msg) {
     if (!mEnableDetections) return;
+
+    bool isInSim = false;
+    mNh.getParam("use_sim_time", isInSim);
+
+    if (!isInSim && (msg->width <= IMAGE_WIDTH_WARN_SIZE || msg->height <= IMAGE_HEIGHT_WARN_SIZE)) {
+        ROS_WARN("Input image is below 640x480 resolution. Tag detection may be poor");
+    }
 
     ROS_DEBUG("Got image %d", msg->header.seq);
 
@@ -32,8 +42,8 @@ void FiducialsNode::imageCallback(sensor_msgs::ImageConstPtr const& msg) {
 
             if (tag.tagInCam) {
                 // Publish tag to immediate
-                std::string immediateFrameName = "immediateFiducial" + std::to_string(tag.id);
-                SE3::pushToTfTree(mTfBroadcaster, immediateFrameName, ROVER_FRAME, tag.tagInCam.value());
+                std::string immediateFrameId = "immediateFiducial" + std::to_string(tag.id);
+                SE3::pushToTfTree(mTfBroadcaster, immediateFrameId, mBaseLinkFrameId, tag.tagInCam.value());
             }
         }
 
@@ -57,10 +67,11 @@ void FiducialsNode::imageCallback(sensor_msgs::ImageConstPtr const& msg) {
             if (tag.hitCount >= mMinHitCountBeforePublish) {
                 if (tag.tagInCam) {
                     try {
-                        std::string immediateFrameName = "immediateFiducial" + std::to_string(tag.id);
+                        std::string immediateFrameId = "immediateFiducial" + std::to_string(tag.id);
                         // Publish tag to odom
-                        SE3 tagInOdom = SE3::fromTfTree(mTfBuffer, ODOM_FRAME, immediateFrameName);
-                        SE3::pushToTfTree(mTfBroadcaster, "fiducial" + std::to_string(id), ODOM_FRAME, tagInOdom);
+                        std::string const& frameId = mUseOdom ? mOdomFrameId : mMapFrameId;
+                        SE3 tagInOdom = SE3::fromTfTree(mTfBuffer, frameId, immediateFrameId);
+                        SE3::pushToTfTree(mTfBroadcaster, "fiducial" + std::to_string(id), frameId, tagInOdom);
                     } catch (tf2::ExtrapolationException const&) {
                         ROS_WARN("Old data for immediate tag");
                     } catch (tf2::LookupException const&) {
