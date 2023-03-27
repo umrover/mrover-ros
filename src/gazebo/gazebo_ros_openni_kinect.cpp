@@ -298,7 +298,15 @@ namespace gazebo {
             uint32_t rows_arg, uint32_t cols_arg,
             uint32_t step_arg, void* data_arg) {
         sensor_msgs::PointCloud2Modifier pcd_modifier(point_cloud_msg);
-        pcd_modifier.setPointCloud2FieldsByString(2, "xyz", "rgb");
+        pcd_modifier.setPointCloud2Fields(8,
+                                          "x", 1, sensor_msgs::PointField::FLOAT32,
+                                          "y", 1, sensor_msgs::PointField::FLOAT32,
+                                          "z", 1, sensor_msgs::PointField::FLOAT32,
+                                          "rgb", 1, sensor_msgs::PointField::FLOAT32,
+                                          "normal_x", 1, sensor_msgs::PointField::FLOAT32,
+                                          "normal_y", 1, sensor_msgs::PointField::FLOAT32,
+                                          "normal_z", 1, sensor_msgs::PointField::FLOAT32,
+                                          "curvature", 1, sensor_msgs::PointField::FLOAT32);
         // convert to flat array shape, we need to reconvert later
         pcd_modifier.resize(rows_arg * cols_arg);
         point_cloud_msg.is_dense = true;

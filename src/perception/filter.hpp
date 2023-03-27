@@ -91,20 +91,3 @@ public:
         return std::accumulate(begin, end, T{}) / (end - begin);
     }
 };
-
-/**
- * @brief Combined filter for XYZ coordinates. Type is always double.
- */
-struct XYZFilter {
-    MeanMedianFilter<double> fidInOdomX;
-    MeanMedianFilter<double> fidInOdomY;
-    MeanMedianFilter<double> fidInOdomZ;
-
-    void setFilterParams(size_t count, double proportion);
-
-    void addReading(SE3 const& fidInOdom);
-
-    bool ready() const;
-
-    [[nodiscard]] SE3 getFidInOdom() const;
-};

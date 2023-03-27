@@ -3,7 +3,9 @@
 
 from math import copysign, nan
 import typing
+from threading import Lock
 import rospy as ros
+from std_msgs.msg import String
 from sensor_msgs.msg import Joy, JointState
 from geometry_msgs.msg import Twist
 from typing import List
@@ -88,6 +90,9 @@ class ArmControl:
         self.ra_config = ros.get_param("teleop/ra_controls")
         self.sa_config = ros.get_param("teleop/sa_controls")
 
+        self._arm_mode = "arm_disabled"
+        self._arm_mode_lock = Lock()
+
         self.ra_cmd_pub = ros.Publisher("ra_cmd", JointState, queue_size=100)
         self.sa_cmd_pub = ros.Publisher("sa_cmd", JointState, queue_size=100)
 
@@ -116,6 +121,17 @@ class ArmControl:
             velocity=[0.0 for i in range(len(SA_NAMES))],
             effort=[nan for i in range(len(SA_NAMES))],
         )
+
+    # Callback function executed after the publication of the current robot position
+    def ra_mode_callback(self, msg: String) -> None:
+        """
+        Callback for arm control mode
+        :param msg: String sent from GUI for which arm control mode to use
+        will be one of {"arm_disabled","open_loop","servo}
+        :return:
+        """
+        with self._arm_mode_lock:
+            self._arm_mode = msg.data
 
     def filter_xbox_axis(
         self,
@@ -148,13 +164,24 @@ class ArmControl:
 
     def ra_control_callback(self, msg: Joy) -> None:
         """
+        Chooses which RA control function to use based on _arm_mode string
+        :param msg: Has axis and buttons array for Xbox controller
+        Velocities are sent in range [-1,1]
+        :return:
+        """
+        if self._arm_mode == "open_loop":
+            self.ra_open_loop_control(msg)
+        elif self._arm_mode == "servo":
+            self.ra_servo_control(msg)
+
+    def ra_open_loop_control(self, msg: Joy) -> None:
+        """
         Converts a Joy message with the Xbox inputs
         to a JointState to control the RA Arm in open loop
         :param msg: Has axis and buttons array for Xbox controller
         Velocities are sent in range [-1,1]
         :return:
         """
-
         # Filter for xbox triggers, they are typically [-1,1]
         # Lose [-1,0] range since when joystick is initially plugged in
         # these output 0 instead of -1 when up
@@ -175,6 +202,17 @@ class ArmControl:
             self.ra_config["gripper"]["multiplier"] * self.filter_xbox_button(msg.buttons, "b", "x"),
         ]
         self.ra_cmd_pub.publish(self.ra_cmd)
+
+    def ra_servo_control(self, msg: Joy) -> None:
+        """
+        Converts a Joy message with the Xbox inputs
+        to a JointState to control the RA Arm with Moveit servo control
+        :param msg: Has axis and buttons array for Xbox controller
+        Velocities are sent in range [-1,1]
+        :return:
+        """
+        # TODO: Write this function if/when we get moveit_servo working
+        return
 
     def sa_control_callback(self, msg: Joy) -> None:
         """
@@ -210,6 +248,7 @@ def main():
 
     ros.Subscriber("joystick", Joy, drive.teleop_drive_callback)
     ros.Subscriber("xbox/ra_control", Joy, arm.ra_control_callback)
+    ros.Subscriber("ra/mode", String, arm.ra_mode_callback)
     ros.Subscriber("xbox/sa_control", Joy, arm.sa_control_callback)
 
     ros.spin()

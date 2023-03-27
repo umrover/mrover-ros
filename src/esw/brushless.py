@@ -44,7 +44,6 @@ class MoteusData:
 
 
 class MoteusState:
-    # TODO: Make MoteusState more object-oriented. Currently it's mostly acting as a namespace.
     DISCONNECTED_STATE = "Disconnected"
     ARMED_STATE = "Armed"
     ERROR_STATE = "Error"
@@ -548,8 +547,9 @@ class Application:
 
             transport = moteus_pi3hat.Pi3HatRouter(
                 servo_bus_map={
-                    1: [info["id"] for info in drive_controller_info_by_name.values()],
-                    2: [info["id"] for info in arm_controller_info_by_name.values()],
+                    1: [info["id"] for info in drive_controller_info_by_name.values() if info["bus"] == 1],
+                    2: [info["id"] for info in arm_controller_info_by_name.values() if info["bus"] == 2],
+                    3: [info["id"] for info in arm_controller_info_by_name.values() if info["bus"] == 3],
                 }
             )
         else:
