@@ -44,6 +44,7 @@ set(MROVER_MESSAGE_FILES
         Spectral.msg
         Waypoint.msg
         WaypointType.msg
+        GPSPointList.msg
         )
 
 # service files
