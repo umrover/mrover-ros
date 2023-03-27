@@ -12,22 +12,31 @@ from mrover.srv import (
     ChangeCamerasResponse,
 )
 
-import cv2
+import jetson.utils
+
+
+class Resolution:
+    option: int
+    arguments: List[str]
+
+    def __init__(self, option: int, arguments: List[str]):
+        self.option = option
+        self.arguments = arguments
 
 
 class VideoDevices:
 
     device: int
-    resolution_args: List[str]
+    resolution: Resolution
 
     # Screens video source is displayed on
-    output_by_endpoint: Dict[str, cv2.VideoWriter]
+    output_by_endpoint: Dict[str, jetson.utils.videoOutput]
 
-    video_source: cv2.VideoCapture
+    video_source: jetson.utils.videoSource
 
     def __init__(self, device: int):
         self.device = device
-        self.resolution_args = []
+        self.resolution = Resolution(0, [])
         self.output_by_endpoint = {}
         self.video_source = None
 
@@ -42,87 +51,33 @@ class VideoDevices:
         if len(self.output_by_endpoint) == 0:
             self.video_source = None
 
-    def cap_str(self, args) -> str:
-        """
-        Generates 
-        :param endpoint: the endpoint (e.g. 10.0.0.7:5000)
-        """
-        width = int(args[1])
-        height = int(args[2])
-        framerate = int(args[3])
-
-        capstr = ("v4l2src device=/dev/video" + str(self.device)+ " do-timestamp=true io-mode=2 ! image/jpeg, width="+ str(width)+ ", height="+ str(height)+ ", framerate="+ str(framerate)+ "/1 ! jpegdec ! videorate ! video/x-raw, framerate="+ str(framerate)+ "/1 ! nvvidconv ! video/x-raw, format=BGRx ! videoconvert ! video/x-raw, format=BGR ! appsink"
-        )
-        #rospy.loginfo(capstr)
-        return capstr
-
-    def tx_str(self, endpoint, args) -> str:
-        """
-        Generates the
-        :param endpoint: the endpoint (e.g. 10.0.0.7:5000)
-        """
-        bitrate = int(args[0])
-        host = endpoint[0 : len(endpoint) - 5]
-        port = int(endpoint[len(endpoint) - 4 : len(endpoint)])
-        txstr = ("appsrc ! video/x-raw, format=BGR ! videoconvert !  video/x-raw, format=BGRx ! nvvidconv ! \
-                    nvv4l2h264enc \
-                    bitrate="
-                        + str(bitrate)
-                        + " ! \
-                    h264parse ! \
-                    rtph264pay pt=96 config-interval=1 ! \
-                    udpsink host="
-                        + str(host)
-                        + " port="
-                        + str(port)
-        )
-        #rospy.loginfo(txstr)
-        return txstr
-
-    def create_stream(self, endpoint: str, args: List[str]) -> None:
+    def create_stream(self, endpoint: str, requested_resolution: Resolution) -> None:
         """
         Adds endpoint to video source list and creates video_source if not existing.
         :param endpoint: the endpoint (e.g. 10.0.0.7:5000)
-        :param args: a list of strings that are the arguments
+        :param requested_resolution a Resolution object that contains info on requested resolution
         """
 
-        width = int(args[1])
-        height = int(args[2])
-        fps = int(args[3])
-        
         assert not (endpoint in self.output_by_endpoint.keys())
 
         if self.is_streaming():
             # It exists and another stream is using it
-            if self.resolution_args != args:
+            if self.resolution.option != requested_resolution:
                 # If different args, just recreate video source and every output
                 try:
-
-
-                    self.video_source = cv2.VideoCapture(self.cap_str(args), cv2.CAP_GSTREAMER)
-
-                    for other_endpoint in self.output_by_endpoint.keys():
-                        #rospy.loginfo(other_endpoint)
-
-                        self.output_by_endpoint[other_endpoint] = cv2.VideoWriter(
-                            self.tx_str(other_endpoint, args),
-                            cv2.CAP_GSTREAMER,
-                            cv2.VideoWriter_fourcc("H", "2", "6", "4"),
-                            240,
-                            (width, height),
-                            True,
-                        )
-                    #rospy.loginfo(endpoint)
-
-                    self.output_by_endpoint[endpoint] = cv2.VideoWriter(
-                        self.tx_str(endpoint, args),
-                        cv2.CAP_GSTREAMER,
-                        cv2.VideoWriter_fourcc("H", "2", "6", "4"),
-                        240,
-                        (width, height),
-                        True,
+                    self.video_source.Close()
+                    self.video_source = jetson.utils.videoSource(
+                        f"/dev/video{self.device}", argv=requested_resolution.arguments
                     )
-                    self.resolution_args = args
+                    self.video_source.Open()
+                    for other_endpoint in self.output_by_endpoint.keys():
+                        self.output_by_endpoint[other_endpoint] = jetson.utils.videoOutput(
+                            f"rtp://{other_endpoint}", argv=requested_resolution.arguments
+                        )
+                    self.output_by_endpoint[endpoint] = jetson.utils.videoOutput(
+                        f"rtp://{endpoint}", argv=requested_resolution.arguments
+                    )
+                    self.resolution = requested_resolution
                 except Exception:
                     rospy.logerr(f"Failed to create video source for device {self.device}.")
                     self.video_source = None
@@ -133,30 +88,20 @@ class VideoDevices:
                 # so we don't worry about this case.
 
                 # If same args, just create a new output
-                #rospy.loginfo(f"host: {host} port: {port}")
-
-                self.output_by_endpoint[endpoint] = cv2.VideoWriter(
-                    self.tx_str(endpoint, args),
-                    cv2.CAP_GSTREAMER,
-                    cv2.VideoWriter_fourcc("H", "2", "6", "4"),
-                    240,
-                    (width, height),
-                    True,
+                self.output_by_endpoint[endpoint] = jetson.utils.videoOutput(
+                    f"rtp://{endpoint}", argv=requested_resolution.arguments
                 )
         else:
             # If it does not exist already
             try:
-                self.video_source = cv2.VideoCapture(self.cap_str(args), cv2.CAP_GSTREAMER)
-
-                self.output_by_endpoint[endpoint] = cv2.VideoWriter(
-                    self.tx_str(endpoint, args),
-                    cv2.CAP_GSTREAMER,
-                    cv2.VideoWriter_fourcc("H", "2", "6", "4"),
-                    240,
-                    (width, height),
-                    True,
+                self.video_source = jetson.utils.videoSource(
+                    f"/dev/video{self.device}", argv=requested_resolution.arguments
                 )
-                self.resolution_args = args
+                self.video_source.Open()
+                self.output_by_endpoint[endpoint] = jetson.utils.videoOutput(
+                    f"rtp://{endpoint}", argv=requested_resolution.arguments
+                )
+                self.resolution = requested_resolution
             except Exception:
                 rospy.logerr(f"Failed to create video source for device {self.device}.")
                 self.video_source = None
@@ -183,10 +128,11 @@ class StreamingManager:
 
     _device_lock: threading.Lock
 
-    # _resolution_args is a list of sizes that represents the different options for resolutions (0 for low, 2 for high).
-    # For each resolution, there is another list of strings that is passed into the cv2 function
-    # that is needed to create that specific resolution.
-    _resolution_args: List[List[str]]
+    # _list_of_resolution_options is a list of sizes that represents the different options for resolutions
+    # (0 for low, 2 for high).
+    # For each resolution, there is a Resolution object that has an option number and a list of strings that is passed
+    # into the jetson.utils function that is needed to create that specific resolution.
+    _list_of_resolution_options: List[Resolution]
 
     # _endpoints is a list of size 8, where the first four strings represent the endpoints of the primary laptop
     # and the last four strings represent the endpoints of the secondary laptop.
@@ -196,7 +142,7 @@ class StreamingManager:
     # _service_streams_by_endpoints is a dictionary that maps each endpoint to the device that is being streamed to it.
     _service_streams_by_endpoints: Dict[str, Tuple[int, int]]
 
-    # _video_devices is a list of VideoDevices objects. It can be None.
+    # _video_devices is a list of jetson.utils objects. It can be None.
     _video_devices: List[VideoDevices]
     _active_devices: int
 
@@ -236,12 +182,10 @@ class StreamingManager:
             self._endpoints[6]: (1, 2),
             self._endpoints[7]: (1, 3),
         }
-        self._resolution_args = [
-            list(rospy.get_param("cameras/arguments/worst_res")),
-            list(rospy.get_param("cameras/arguments/low_res")),
-            list(rospy.get_param("cameras/arguments/medium_res")),
-            list(rospy.get_param("cameras/arguments/high_res")),
-            list(rospy.get_param("cameras/arguments/best_res")),
+        self._list_of_resolution_options = [
+            Resolution(0, list(rospy.get_param("cameras/arguments/144_res"))),
+            Resolution(1, list(rospy.get_param("cameras/arguments/360_res"))),
+            Resolution(2, list(rospy.get_param("cameras/arguments/720_res"))),
         ]
         self._active_devices = 0
         self._device_lock = threading.Lock()
@@ -282,9 +226,9 @@ class StreamingManager:
             for index, video_device in enumerate(self._video_devices):
                 if video_device.is_streaming():
                     try:
-                        ret, frame = video_device.video_source.read()
+                        image = video_device.video_source.Capture(timeout=5000)
                         for output in video_device.output_by_endpoint.values():
-                            output.write(frame)
+                            output.Render(image)
                     except Exception as e:
                         rospy.logerr(f"Error {type(e)} encountered: {e}")
                         rospy.logerr(f"Camera {index} capture failed. Stopping stream(s).")
@@ -305,7 +249,7 @@ class StreamingManager:
             endpoint = list(self._video_devices[device].output_by_endpoint.keys())[0]
             self._video_devices[device].remove_endpoint(endpoint)
             service, stream = self._service_streams_by_endpoints[endpoint]
-            self._services[service][stream].device = -1
+            self._services[service][stream] = CameraCmd(-1, 0)
         assert self._video_devices[device].video_source is None, "The video source should be None by now"
         self._active_devices -= 1
 
@@ -324,7 +268,7 @@ class StreamingManager:
             if camera_cmd.device >= len(self._video_devices):
                 rospy.logerr(f"Request device {camera_cmd.device} invalid. Treating as no device instead.")
                 camera_cmd.device = -1
-            if camera_cmd.resolution >= len(self._resolution_args):
+            if camera_cmd.resolution >= len(self._list_of_resolution_options):
                 rospy.logerr(
                     f"Request resolution {camera_cmd.resolution} invalid. Treating as lowest resolution instead."
                 )
@@ -358,13 +302,14 @@ class StreamingManager:
         for stream, camera_cmd in enumerate(camera_commands):
             endpoint = endpoints[stream]
             requested_device = camera_cmd.device
-            requested_resolution = camera_cmd.resolution
+            requested_resolution_option = camera_cmd.resolution
 
             previous_device = self._services[service_index][stream].device
             # skip if device is the same, already closed, or a different resolution
             if previous_device == requested_device:
                 if previous_device == -1 or (
-                    requested_device != -1 and self._resolution_args[requested_resolution] == self._video_devices[requested_device].resolution_args
+                    requested_device != -1
+                    and requested_resolution_option == self._video_devices[requested_device].resolution.option
                 ):
                     continue
 
@@ -393,13 +338,14 @@ class StreamingManager:
         for stream, camera_cmd in enumerate(camera_commands):
             endpoint = endpoints[stream]
             requested_device = camera_cmd.device
-            requested_resolution = camera_cmd.resolution
+            requested_resolution_option = camera_cmd.resolution
 
             previous_device = self._services[service_index][stream].device
             # skip if previous and current requests are -1 or same resolution
             if previous_device == requested_device:
                 if previous_device == -1 or (
-                    requested_device != -1 and self._resolution_args[requested_resolution] == self._video_devices[requested_device].resolution_args
+                    requested_device != -1
+                    and requested_resolution_option == self._video_devices[requested_device].resolution.option
                 ):
                     continue
 
@@ -416,10 +362,14 @@ class StreamingManager:
                 if previous_device != -1:
                     self._video_devices[previous_device].remove_endpoint(endpoint)
                 self._video_devices[requested_device].create_stream(
-                    endpoint, self._resolution_args[requested_resolution]
+                    endpoint, self._list_of_resolution_options[requested_resolution_option]
                 )
                 currently_is_video_source = self._video_devices[requested_device].is_streaming()
-                self._services[service_index][stream].device = requested_device if currently_is_video_source else -1
+                self._services[service_index][stream] = (
+                    CameraCmd(requested_device, requested_resolution_option)
+                    if currently_is_video_source
+                    else CameraCmd(-1, 0)
+                )
 
                 if previously_no_video_source and currently_is_video_source:
                     self._active_devices += 1
