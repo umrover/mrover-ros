@@ -98,6 +98,7 @@ import MoteusStateTable from "./MoteusStateTable.vue";
 import JointStateTable from "./JointStateTable.vue";
 import LimitSwitch from "./LimitSwitch.vue";
 import CalibrationCheckbox from "./CalibrationCheckbox.vue";
+import { quaternionToDisplayAngle } from "../utils.js";
 
 export default {
   components: {
@@ -161,12 +162,7 @@ export default {
     // Subscriber for odom to base_link transform
     this.tfClient.subscribe("base_link", (tf) => {
       // Callback for IMU quaternion that describes bearing
-      let quaternion = tf.rotation;
-      quaternion = [quaternion.w, quaternion.x, quaternion.y, quaternion.z];
-      //Quaternion to euler angles
-      let euler = qte(quaternion);
-      // euler[2] == euler z component
-      this.odom.bearing_deg = euler[2] * (180 / Math.PI);
+      this.odom.bearing_deg = quaternionToDisplayAngle(tf.rotation);
     });
 
     this.brushless_motors = new ROSLIB.Topic({

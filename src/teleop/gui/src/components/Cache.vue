@@ -32,6 +32,18 @@ export default {
     };
   },
 
+  computed: {
+    messageObject: function () {
+      const msg = {
+        name: ["cache"],
+        position: [],
+        velocity: [this.velocity],
+        effort: [],
+      };
+      return new ROSLIB.Message(msg);
+    },
+  },
+
   beforeDestroy: function () {
     window.clearInterval(interval);
   },
@@ -46,18 +58,6 @@ export default {
     interval = window.setInterval(() => {
       this.cache_pub.publish(this.messageObject);
     }, updateRate * 1000);
-  },
-
-  computed: {
-    messageObject: function () {
-      const msg = {
-        name: ["cache"],
-        position: [],
-        velocity: [this.velocity],
-        effort: [],
-      };
-      return new ROSLIB.Message(msg);
-    },
   },
 };
 </script>
