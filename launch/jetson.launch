@@ -26,5 +26,5 @@
 	<node name="science" pkg="mrover" type="science.py" output="screen"></node>
 
 	<!-- camera node -->
-	<node name="cameras" pkg="mrover" type="cameras.py" output="screen"></node>
+	<node name="cameras" pkg="mrover" type="cameras.py"></node>
 </launch>

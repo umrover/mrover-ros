@@ -18,12 +18,21 @@ from mrover.srv import (
 
 
 class StreamManager:
+
+    NUM_DIFFERENT_IPS = 2
+    MAX_NUM_POSSIBLE_CAMERAS = 4
+
     def __init__(self):
+
         self.stream_process_list: List[List[Union[Process, Any]]] = [
-            [None for _ in range(rospy.get_param("cameras/max_video_device_id_number"))] for __ in range(2)
+            [None for _ in range(rospy.get_param("cameras/max_video_device_id_number"))]
+            for __ in range(StreamManager.NUM_DIFFERENT_IPS)
         ]
 
-        self.streamed_devices_by_port_by_laptop_idx = [[CameraCmd(-1, -1) for _ in range(4)] for __ in range(2)]
+        self.streamed_devices_by_port_by_laptop_idx = [
+            [CameraCmd(-1, -1) for _ in range(StreamManager.MAX_NUM_POSSIBLE_CAMERAS)]
+            for __ in range(StreamManager.NUM_DIFFERENT_IPS)
+        ]
 
         primary_ip = rospy.get_param("cameras/ips/primary")
         secondary_ip = rospy.get_param("cameras/ips/secondary")
@@ -41,7 +50,7 @@ class StreamManager:
 
     def get_num_devices_streaming(self) -> int:
         num_streaming_devices = 0
-        for i in range(2):
+        for i in range(StreamManager.NUM_DIFFERENT_IPS):
             for device in self.streamed_devices_by_port_by_laptop_idx[i]:
                 if device.device != -1:
                     num_streaming_devices += 1
@@ -50,20 +59,20 @@ class StreamManager:
     def get_available_stream(self, primary: bool) -> int:
         idx = 0 if primary else 1
         available_stream = 0
-        for i in range(4):
+        for i in range(StreamManager.MAX_NUM_POSSIBLE_CAMERAS):
             if self.streamed_devices_by_port_by_laptop_idx[idx][available_stream].device == -1:
                 return available_stream
             else:
                 available_stream += 1
         rospy.logerr("CODE SHOULD NEVER REACH HERE")
-        return -1  # SHOULD NEVER REACH THIS NUMBER
+        return -1
 
     def stop_device_id_stream(self, laptop_idx: int, device_id: int) -> None:
         if self.stream_process_list[laptop_idx][device_id] is not None:
             self.stream_process_list[laptop_idx][device_id].kill()
             self.stream_process_list[laptop_idx][device_id].join()
             self.stream_process_list[laptop_idx][device_id] = None
-        for i in range(2):
+        for i in range(StreamManager.NUM_DIFFERENT_IPS):
             for j in range(len(self.streamed_devices_by_port_by_laptop_idx[i])):
                 if self.streamed_devices_by_port_by_laptop_idx[i][j].device == device_id:
                     self.streamed_devices_by_port_by_laptop_idx[i][j] = CameraCmd(-1, -1)
@@ -82,15 +91,11 @@ class StreamManager:
         cmds = req.camera_cmds
         laptop_idx = 0 if req.primary else 1
         device_id = cmds.device
-        print(device_id)
         cap = cmds.resolution
 
         if cap:
-            print(self.stream_process_list[laptop_idx][device_id])
             if self.stream_process_list[laptop_idx][device_id] is not None:
-                print("Killing existing")
                 self.stop_device_id_stream(laptop_idx, device_id)
-                print("Killed existing")
             else:
                 if self.get_num_devices_streaming() == 4:
                     return ChangeCamerasResponse(
@@ -120,7 +125,6 @@ class StreamManager:
 
         else:
             if self.stream_process_list[laptop_idx][device_id] is not None:
-                print("\nClosing /dev/video" + str(device_id) + " stream")
                 self.stop_device_id_stream(laptop_idx, device_id)
         return ChangeCamerasResponse(
             True, self.streamed_devices_by_port_by_laptop_idx[0], self.streamed_devices_by_port_by_laptop_idx[1]
@@ -185,7 +189,7 @@ def send(device=0, host="10.0.0.7", port=5000, bitrate=4000000, width=1280, heig
     fourcc = cv2.VideoWriter_fourcc("H", "2", "6", "4")
     out_send = cv2.VideoWriter(txstr, cv2.CAP_GSTREAMER, fourcc, 60, (int(width), int(height)), is_colored)
 
-    print(
+    rospy.loginfo(
         "\nTransmitting /dev/video"
         + str(device)
         + " to "
@@ -204,7 +208,7 @@ def send(device=0, host="10.0.0.7", port=5000, bitrate=4000000, width=1280, heig
     )
 
     if not cap_send.isOpened() or not out_send.isOpened():
-        print("\nWARNING: unable to open video source for /dev/video" + str(device) + "\n")
+        rospy.logerr("\nWARNING: unable to open video source for /dev/video" + str(device) + "\n")
         exit(0)
 
     # Transmit loop
@@ -212,11 +216,10 @@ def send(device=0, host="10.0.0.7", port=5000, bitrate=4000000, width=1280, heig
 
         ret, frame = cap_send.read()
         if not ret:
-            print("empty frame")
+            rospy.logerr("Empty frame")
             break
         out_send.write(frame)
 
-    print("stream machine broke")
     cap_send.release()
     out_send.release()
 
