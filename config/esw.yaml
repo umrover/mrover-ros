@@ -144,7 +144,7 @@ cameras:
     ips:
       primary: "10.0.0.7"
       secondary: "10.0.0.8"
-    skip_every_other_device: true
+    skip_every_other_device: false
 
 science:
   auton_color_ids:

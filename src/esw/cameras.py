@@ -20,7 +20,10 @@ class StreamManager:
 
         self.streamed_devices_by_port_by_laptop_idx = [[-1, -1, -1, -1], [-1, -1, -1, -1]]
 
-        self.ips = [rospy.get_param("cameras/ips/primary"), rospy.get_param("cameras/ips/secondary")]
+        primary_ip = rospy.get_param("cameras/ips/primary")
+        secondary_ip = rospy.get_param("cameras/ips/secondary")
+
+        self.ips = [primary_ip, secondary_ip]
         self.cap_args = [
             # [bps, width, height, fps]
             list(rospy.get_param("cameras/arguments/worst_res")),
@@ -52,7 +55,7 @@ class StreamManager:
         self.stream_process_list[laptop_idx][device_id].join()
         self.stream_process_list[laptop_idx][device_id] = 0
         for i in range(2):
-            for j in len(self.streamed_devices_by_port_by_laptop_idx[i]):
+            for j in range(len(self.streamed_devices_by_port_by_laptop_idx[i])):
                 if self.streamed_devices_by_port_by_laptop_idx[i][j] == device_id:
                     self.streamed_devices_by_port_by_laptop_idx[i][j] = -1
 
@@ -73,7 +76,7 @@ class StreamManager:
                 if self.get_num_devices_streaming() == 4:
                     return ChangeCamerasResponse(success=False)
 
-            available_port = self.get_available_stream(req.primary),
+            available_port = self.get_available_stream(req.primary)
             self.stream_process_list[laptop_idx][device_id] = Process(
                 target=send,
                 args=(
@@ -153,7 +156,7 @@ def send(device=0, host="10.0.0.7", port=5000, bitrate=4000000, width=1280, heig
 
     # openCV stream transmit pipeline with RTP sink
     fourcc = cv2.VideoWriter_fourcc("H", "2", "6", "4")
-    out_send = cv2.VideoWriter(txstr, cv2.CAP_GSTREAMER, fourcc, 60, (width, height), is_colored)
+    out_send = cv2.VideoWriter(txstr, cv2.CAP_GSTREAMER, fourcc, 60, (int(width), int(height)), is_colored)
 
     print(
         "\nTransmitting /dev/video"
@@ -163,7 +166,7 @@ def send(device=0, host="10.0.0.7", port=5000, bitrate=4000000, width=1280, heig
         + ":"
         + str(port)
         + " with "
-        + str(bitrate / 1e6)
+        + str(float(bitrate) / 1e6)
         + " Mbps target, "
         + str(fps)
         + " fps target, ("
