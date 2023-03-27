@@ -6,11 +6,11 @@
 
 from typing import Any
 import rospy
-from mrover.srv import CalibrateMotors
+from mrover.srv import EnableDevice
 
 # Change these values for the service name and type definition to test different values
-SERVICE_NAME = "/calibrate"
-SERVICE_TYPE = CalibrateMotors
+SERVICE_NAME = "enable_limit_switches"
+SERVICE_TYPE = EnableDevice
 
 
 def print_service_request(service_request: Any):

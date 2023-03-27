@@ -19,6 +19,10 @@
             name: {
                 type: String,
                 required: true
+            },
+            state_name: {
+                type: String,
+                required: true
             }
         },
 
@@ -35,8 +39,8 @@
         created: function () {
             this.limit_service = new ROSLIB.Service({
                 ros: this.$ros,
-                name: this.$props.state_name,
-                serviceType: "mrover/ChangeDeviceState"
+                name: "enable_limit_switches",
+                serviceType: "mrover/EnableDevice"
             });
         },
 
@@ -44,6 +48,7 @@
             toggleLimitSwitch: function () {
                 this.limit_enabled = !this.limit_enabled;
                 let request = new ROSLIB.ServiceRequest({
+                    name: this.$props.state_name,
                     enable: this.limit_enabled
                 });
                 this.limit_service.callService(request, (result) => {
