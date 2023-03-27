@@ -26,7 +26,7 @@ int main(int argc, char **argv) {
             ROS_INFO("Conducting tests on %s \n", name.c_str());
             Test::testOpenLoop(controller);
             bool isCalibrated = Test::testCalibrated(controller);
-            ROS_INFO("Calibration status on %s is %c\n", name.c_str(), isCalibrated);
+            ROS_INFO("Calibration status on %s is %d\n", name.c_str(), isCalibrated);
         }
     } else {
         ROSHandler::init(&nh);

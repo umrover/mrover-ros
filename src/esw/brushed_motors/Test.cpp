@@ -20,6 +20,5 @@ void Test::testOpenLoop(Controller* controller) {
 
 // Test to see if calibrated
 bool Test::testCalibrated(Controller* controller) {
-    controller->askIsCalibrated();
-    return controller->getCalibrationStatus();
+    return controller->isCalibrated();
 }

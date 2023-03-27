@@ -427,7 +427,7 @@ class ArmManager(MotorsManager):
 
     @property
     def publish_topic(self) -> str:
-        return "arm_status"
+        return "brushless_ra_data"
 
     def _process_ra_cmd(self, ros_msg: JointState) -> None:
         """

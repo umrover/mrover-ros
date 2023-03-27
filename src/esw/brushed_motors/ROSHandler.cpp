@@ -10,6 +10,7 @@ void ROSHandler::init(ros::NodeHandle* rosNode) {
     // Initialize services
     calibrateService = n->advertiseService<mrover::CalibrateMotors::Request, mrover::CalibrateMotors::Response>("calibrate", processMotorCalibrate);
     adjustService = n->advertiseService<mrover::AdjustMotors::Request, mrover::AdjustMotors::Response>("adjust", processMotorAdjust);
+    enableLimitSwitchService = n->advertiseService<mrover::EnableDevice::Request, mrover::EnableDevice::Response>("enable_limit_switch", processMotorEnableLimitSwitches);
 
     // Initialize robotic arm (RA)
     RANames = {"joint_a", "joint_b", "joint_f", "finger", "gripper"};
@@ -18,13 +19,13 @@ void ROSHandler::init(ros::NodeHandle* rosNode) {
 
     jointDataRA.name = std::vector<std::string>(RANames.begin(), RANames.end());
     jointDataRA.position = std::vector<double>(RANames.size(), 0);
-    jointDataRA.velocity = std::vector<double>(RANames.size(), std::nan(""));
-    jointDataRA.effort = std::vector<double>(RANames.size(), std::nan(""));
+    jointDataRA.velocity = std::vector<double>(RANames.size(), 0);
+    jointDataRA.effort = std::vector<double>(RANames.size(), 0);
 
     calibrationStatusRA.names = std::vector<std::string>(RANames.begin(), RANames.end());
     calibrationStatusRA.calibrated = std::vector<uint8_t>(calibrationStatusRA.names.size(), false);
     calibrationStatusPublisherRA = n->advertise<mrover::Calibrated>("ra_is_calibrated", 1);
-    jointDataPublisherRA = n->advertise<sensor_msgs::JointState>("ra_data", 1);
+    jointDataPublisherRA = n->advertise<sensor_msgs::JointState>("brushed_ra_data", 1);
 
     // Initialize sample acquisition (SA)
     SANames = {"sa_joint_1", "sa_joint_2", "sa_joint_3", "scoop", "microscope"};
@@ -33,8 +34,8 @@ void ROSHandler::init(ros::NodeHandle* rosNode) {
 
     jointDataSA.name = std::vector<std::string>(SANames.begin(), SANames.end());
     jointDataSA.position = std::vector<double>(SANames.size(), 0);
-    jointDataSA.velocity = std::vector<double>(SANames.size(), std::nan(""));
-    jointDataSA.effort = std::vector<double>(SANames.size(), std::nan(""));
+    jointDataSA.velocity = std::vector<double>(SANames.size(), 0);
+    jointDataSA.effort = std::vector<double>(SANames.size(), 0);
 
     calibrationStatusSA.names = std::vector<std::string>(SANames.begin(), SANames.end());
     calibrationStatusSA.calibrated = std::vector<uint8_t>(calibrationStatusSA.names.size(), false);
@@ -104,7 +105,13 @@ std::optional<float> ROSHandler::moveControllerClosedLoop(const std::string& nam
 // EFFECTS: Moves the RA joints in open loop and publishes angle data right after.
 // Note: any invalid controllers will be published with a position of 0.
 void ROSHandler::moveRA(const sensor_msgs::JointState::ConstPtr& msg) {
+    int mappedIndex = 0;
     for (size_t i = 0; i < msg->name.size(); ++i) {
+        if ((i == 2) || (i == 3) || (i == 4)) {
+            // We expect msg->name to be joints a, b, c, d, e, f, finger, and gripper.
+            // Skip if msg->name[i] is joints c, d, or e. So skip if i == 2, 3, or 4.
+            continue;
+        }
         std::optional<float> pos = std::nullopt;
         if (isnan(msg->position[i])) {
             pos = moveControllerOpenLoop(msg->name[i], (float) msg->velocity[i]);
@@ -112,10 +119,16 @@ void ROSHandler::moveRA(const sensor_msgs::JointState::ConstPtr& msg) {
         else {
             pos = moveControllerClosedLoop(msg->name[i], (float) msg->position[i]);
         }
-        jointDataRA.position[i] = pos.value_or(0.0);
 
-        std::optional<bool> calibrated = getControllerCalibrated(RANames[i]);
-        calibrationStatusRA.calibrated[i] = calibrated.value_or(false);
+        jointDataRA.position[i] = pos.value_or(0.0);
+        std::optional<float> pos = moveControllerOpenLoop(msg->name[i], (float) msg->velocity[i]);
+
+        jointDataRA.position[mappedIndex] = pos.value_or(0.0);
+
+
+        std::optional<bool> calibrated = getControllerCalibrated(msg->name[i]);
+        calibrationStatusRA.calibrated[mappedIndex] = calibrated.value_or(false);
+        ++mappedIndex;
     }
     calibrationStatusPublisherRA.publish(calibrationStatusRA);
     jointDataPublisherRA.publish(jointDataRA);
@@ -133,8 +146,7 @@ std::optional<bool> ROSHandler::getControllerCalibrated(const std::string& name)
     }
 
     Controller* controller = controller_iter->second;
-    controller->askIsCalibrated();
-    return std::make_optional<bool>(controller->getCalibrationStatus());
+    return std::make_optional<bool>(controller->isCalibrated());
 }
 
 // REQUIRES: nothing
@@ -204,15 +216,17 @@ void ROSHandler::moveMastGimbal(const mrover::MastGimbal::ConstPtr& msg) {
 // EFFECTS: sends a move/calibration command to the mcu
 bool ROSHandler::processMotorCalibrate(mrover::CalibrateMotors::Request& req, mrover::CalibrateMotors::Response& res) {
     auto controller_iter = ControllerMap::controllersByName.find(req.name);
+
+    if (controller_iter == ControllerMap::controllersByName.end()) {
+        ROS_ERROR("Could not find controller named %s.", req.name.c_str());
+        res.actively_calibrating = false;
+        return false;
+    }
+
     auto& [name, controller] = *controller_iter;
 
-    // Check if already calibrated
-    controller->askIsCalibrated();
-
     // Determine if calibration is needed
-    bool shouldCalibrate = !(controller_iter == ControllerMap::controllersByName.end()
-                             || controller->getCalibrationStatus()
-                             || !controller->getLimitSwitchEnabled());
+    bool shouldCalibrate = !controller->isCalibrated() && controller->getLimitSwitchEnabled();
 
     // Calibrate
     if (shouldCalibrate) {
@@ -231,6 +245,13 @@ bool ROSHandler::processMotorCalibrate(mrover::CalibrateMotors::Request& req, mr
 bool ROSHandler::processMotorAdjust(mrover::AdjustMotors::Request& req, mrover::AdjustMotors::Response& res) {
 
     auto controller_iter = ControllerMap::controllersByName.find(req.name);
+
+    if (controller_iter == ControllerMap::controllersByName.end()) {
+        ROS_ERROR("Could not find controller named %s.", req.name.c_str());
+        res.success = false;
+        return false;
+    }
+
     auto& [name, controller] = *controller_iter;
     controller->overrideCurrentAngle(req.value);
     res.success = true;
@@ -239,3 +260,22 @@ bool ROSHandler::processMotorAdjust(mrover::AdjustMotors::Request& req, mrover::
     return true;
 }
 
+// REQUIRES: valid req and res objects
+// MODIFIES: res
+// EFFECTS: disables or enables limit switches
+bool ROSHandler::processMotorEnableLimitSwitches(mrover::EnableDevice::Request& req, mrover::EnableDevice::Response& res) {
+
+    auto controller_iter = ControllerMap::controllersByName.find(req.name);
+
+    if (controller_iter == ControllerMap::controllersByName.end()) {
+        ROS_ERROR("Could not find controller named %s.", req.name.c_str());
+        res.success = false;
+        return false;
+    }
+
+    auto& [name, controller] = *controller_iter;
+    controller->enableLimitSwitches(req.enable);
+    res.success = true;
+
+    return true;
+}
