@@ -1,8 +1,8 @@
 <template>
   <div class="wrap">
     <span :class="['led', color]"></span>
-    <div v-if="show_name">
-      <span class="name">{{ name }}</span>
+    <div>
+      <span class="name" v-if="show_name">{{ name }}</span>
     </div>
   </div>
 </template>

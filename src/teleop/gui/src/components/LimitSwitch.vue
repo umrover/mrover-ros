@@ -20,7 +20,7 @@
                 type: String,
                 required: true
             },
-            state_name: {
+            switch_name: {
                 type: String,
                 required: true
             }
@@ -48,7 +48,7 @@
             toggleLimitSwitch: function () {
                 this.limit_enabled = !this.limit_enabled;
                 let request = new ROSLIB.ServiceRequest({
-                    name: this.$props.state_name,
+                    name: this.$props.switch_name,
                     enable: this.limit_enabled
                 });
                 this.limit_service.callService(request, (result) => {

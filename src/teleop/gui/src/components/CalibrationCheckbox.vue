@@ -66,15 +66,13 @@ export default {
 
         this.calibrate_sub.subscribe(
             (msg) => {
-                console.log(msg.names)
-                var index = 0;
                 for (var i = 0; i < msg.names.length; ++i) {
                     if (msg.names[i] == this.joint_name) {
-                        index = i;
+                        this.calibrated = msg.calibrated[i];
+                        break;
                     }
                 }
 
-                this.calibrated = msg.calibrated[index];
             }
         );
 
@@ -96,7 +94,7 @@ export default {
             });
             this.calibrate_service.callService(request, (result) => {
                 if (!result) {
-                    this.toggleEnabled = !this.toggleEnabled;
+                    this.toggleEnabled = false;
                     alert("ESW cannot calibrate this motor");
                 }
             });

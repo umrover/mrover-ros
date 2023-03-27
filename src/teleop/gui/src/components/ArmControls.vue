@@ -50,7 +50,7 @@
       />
     </div>
     <div>
-      <CalibrationCheckbox :name="'Joint B Calibration'" :joint_name="'joint_b'" :calibrate_topic="'ra_is_calibrated'"/>
+      <CalibrationCheckbox name="Joint B Calibration" joint_name="joint_b" calibrate_topic="ra_is_calibrated"/>
     </div>
   </div>
 </template>
