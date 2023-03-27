@@ -5,12 +5,8 @@
 #include <cmath>
 #include <execution>
 #include <numeric>
-#include <thread>
 
 #include <sensor_msgs/image_encodings.h>
-
-using namespace std::chrono_literals;
-using hr_clock = std::chrono::high_resolution_clock;
 
 namespace mrover {
 
@@ -50,7 +46,7 @@ namespace mrover {
      * @param msg   Point cloud message
      */
     void TagDetectorNodelet::pointCloudCallback(sensor_msgs::PointCloud2ConstPtr const& msg) {
-        hr_clock::time_point update_start = hr_clock::now();
+        mProfiler.reset();
 
         if (!mEnableDetections) return;
 
@@ -74,13 +70,13 @@ namespace mrover {
             pixel[1] = pointPtr[i].g;
             pixel[2] = pointPtr[i].b;
         });
-        hr_clock::duration convert_time = hr_clock::now() - update_start;
+        mProfiler.addEpoch("Convert");
 
         // Detect the tag vertices in screen space and their respective ids
         // {mCorners, mIds} are the outputs from OpenCV
         cv::aruco::detectMarkers(mImg, mDictionary, mCorners, mIds, mDetectorParams);
         NODELET_DEBUG("OpenCV detect size: %zu", mIds.size());
-        hr_clock::duration detect_time = hr_clock::now() - update_start - convert_time;
+        mProfiler.addEpoch("OpenCV Detect");
 
         // Update ID, image center, and increment hit count for all detected tags
         for (size_t i = 0; i < mIds.size(); ++i) {
@@ -146,7 +142,7 @@ namespace mrover {
             mImgMsg.is_bigendian = __BYTE_ORDER__ == __ORDER_BIG_ENDIAN__;
             size_t size = mImgMsg.step * mImgMsg.height;
             mImgMsg.data.resize(size);
-            std::memcpy(mImgMsg.data.data(), mImg.data, size);
+            std::copy(std::execution::par_unseq, mImg.data, mImg.data + size, mImgMsg.data.begin());
             mImgPub.publish(mImgMsg);
         }
 
@@ -156,16 +152,7 @@ namespace mrover {
             NODELET_INFO("Detected %zu markers", detectedCount);
         }
 
-        hr_clock::duration publish_time = hr_clock::now() - update_start - convert_time - detect_time;
-
-        hr_clock::duration update_duration = hr_clock::now() - update_start;
-
-        if (mSeqNum % 60 == 0) {
-            NODELET_INFO_STREAM("[" << std::hash<std::thread::id>{}(std::this_thread::get_id()) << "] Tag Total: " << std::chrono::duration_cast<std::chrono::milliseconds>(update_duration).count() << "ms");
-            NODELET_INFO_STREAM("\tConvert: " << std::chrono::duration_cast<std::chrono::milliseconds>(convert_time).count() << "ms");
-            NODELET_INFO_STREAM("\tOpenCV detect: " << std::chrono::duration_cast<std::chrono::milliseconds>(detect_time).count() << "ms");
-            NODELET_INFO_STREAM("\tPublish: " << std::chrono::duration_cast<std::chrono::milliseconds>(publish_time).count() << "ms");
-        }
+        mProfiler.addEpoch("Publish");
 
         mSeqNum++;
     }

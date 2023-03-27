@@ -17,6 +17,8 @@
 
 #include <se3.hpp>
 
+#include "time_profiler.hpp"
+
 namespace mrover {
 
     struct Tag {
@@ -58,6 +60,8 @@ namespace mrover {
         std::unordered_map<int, Tag> mTags;
         dynamic_reconfigure::Server<mrover::DetectorParamsConfig> mConfigServer;
         dynamic_reconfigure::Server<mrover::DetectorParamsConfig>::CallbackType mCallbackType;
+
+        TimeProfiler mProfiler;
 
         void onInit() override;
 

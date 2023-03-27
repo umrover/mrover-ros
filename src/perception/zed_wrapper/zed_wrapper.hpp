@@ -9,6 +9,7 @@
 #include <image_transport/publisher.h>
 #include <nodelet/nodelet.h>
 #include <ros/node_handle.h>
+#include <sensor_msgs/CameraInfo.h>
 #include <sensor_msgs/Imu.h>
 #include <sensor_msgs/PointCloud2.h>
 #include <tf2_ros/transform_broadcaster.h>
@@ -27,17 +28,21 @@ namespace mrover {
         tf2_ros::Buffer mTfBuffer;
         tf2_ros::TransformListener mTfListener{mTfBuffer};
         tf2_ros::TransformBroadcaster mTfBroadcaster;
-        ros::Publisher mPcPub, mImuPub;
+        ros::Publisher mPcPub, mImuPub, mLeftCamInfoPub, mRightCamInfoPub;
         image_transport::Publisher mLeftImgPub, mRightImgPub;
 
-        sensor_msgs::Image mLeftImgMsg, mRightImgMsg;
+        sensor_msgs::ImagePtr mLeftImgMsg = boost::make_shared<sensor_msgs::Image>();
+        sensor_msgs::ImagePtr mRightImgMsg = boost::make_shared<sensor_msgs::Image>();
         sensor_msgs::PointCloud2Ptr mPointCloud = boost::make_shared<sensor_msgs::PointCloud2>();
+        sensor_msgs::CameraInfoPtr mLeftCamInfoMsg = boost::make_shared<sensor_msgs::CameraInfo>();
+        sensor_msgs::CameraInfoPtr mRightCamInfoMsg = boost::make_shared<sensor_msgs::CameraInfo>();
 
         sl::Resolution mImageResolution;
         int mGrabTargetFps{};
         int mDepthConfidence{};
         int mTextureConfidence{};
         bool mDirectTagDetection{};
+        bool mUseBuiltinPosTracking{};
 
         sl::Camera mZed;
         sl::Mat mLeftImageMat;
@@ -55,7 +60,8 @@ namespace mrover {
         TimeProfiler mPcThreadProfiler;
         TimeProfiler mGrabThreadProfiler;
 
-        size_t mUpdateTick = 0;
+        size_t mGrabUpdateTick = 0;
+        size_t mPointCloudUpdateTick = 0;
 
         void onInit() override;
 
@@ -69,10 +75,15 @@ namespace mrover {
         void pointCloudUpdate();
     };
 
-    void fillPointCloudMessage(sl::Mat& xyz, sl::Mat& bgr, sensor_msgs::PointCloud2Ptr const& msg, size_t tick);
+    ros::Time slTime2Ros(sl::Timestamp t);
 
-    void fillImageMessage(sl::Mat& bgr, sensor_msgs::Image& msg, size_t tick);
+    void fillPointCloudMessage(sl::Mat& xyz, sl::Mat& bgr, sensor_msgs::PointCloud2Ptr const& msg);
 
-    void fillImuMessage(sl::SensorsData::IMUData& imuData, sensor_msgs::Imu& msg, size_t tick);
+    void fillCameraInfoMessages(sl::CalibrationParameters& calibration, sl::Resolution const& resolution,
+                                sensor_msgs::CameraInfoPtr const& leftInfoMsg, sensor_msgs::CameraInfoPtr const& rightInfoMsg);
+
+    void fillImageMessage(sl::Mat& bgr, sensor_msgs::ImagePtr const& msg);
+
+    void fillImuMessage(sl::SensorsData::IMUData& imuData, sensor_msgs::Imu& msg);
 
 } // namespace mrover

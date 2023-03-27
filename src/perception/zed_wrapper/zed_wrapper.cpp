@@ -17,8 +17,11 @@ namespace mrover {
             mPnh = getMTPrivateNodeHandle();
             mPcPub = mNh.advertise<sensor_msgs::PointCloud2>("camera/left/points", 1);
             mImuPub = mNh.advertise<sensor_msgs::Imu>("imu", 1);
+            mLeftCamInfoPub = mNh.advertise<sensor_msgs::CameraInfo>("camera/left/camera_info", 1);
+            mRightCamInfoPub = mNh.advertise<sensor_msgs::CameraInfo>("camera/right/camera_info", 1);
             image_transport::ImageTransport it{mNh};
             mLeftImgPub = it.advertise("camera/left/image", 1);
+            mRightImgPub = it.advertise("camera/right/image", 1);
 
             int resolution{};
             mPnh.param("grab_resolution", resolution, static_cast<std::underlying_type_t<sl::RESOLUTION>>(sl::RESOLUTION::HD720));
@@ -34,6 +37,7 @@ namespace mrover {
             mPnh.param("direct_tag_detection", mDirectTagDetection, false);
             std::string svoFile{};
             mPnh.param("svo_file", svoFile, {});
+            mPnh.param("ues_builtin_visual_odom", mUseBuiltinPosTracking, false);
 
             if (imageWidth < 0 || imageHeight < 0) {
                 throw std::invalid_argument("Invalid image dimensions");
@@ -95,6 +99,7 @@ namespace mrover {
                     std::unique_lock lock{mGrabMutex};
                     mGrabDone.wait(lock);
                 }
+                ros::Time grabTime{slTime2Ros(mZed.getTimestamp(sl::TIME_REFERENCE::IMAGE))};
                 mPcThreadProfiler.addEpoch("Wait");
 
                 if (mZed.retrieveImage(mLeftImageMat, sl::VIEW::LEFT, sl::MEM::CPU, mImageResolution) != sl::ERROR_CODE::SUCCESS)
@@ -105,7 +110,10 @@ namespace mrover {
                     throw std::runtime_error("ZED failed to retrieve point cloud");
                 mPcThreadProfiler.addEpoch("Retrieve");
 
-                fillPointCloudMessage(mPointCloudXYZMat, mLeftImageMat, mPointCloud, mUpdateTick);
+                fillPointCloudMessage(mPointCloudXYZMat, mLeftImageMat, mPointCloud);
+                mPointCloud->header.seq = mPointCloudUpdateTick;
+                mPointCloud->header.stamp = grabTime;
+                mPointCloud->header.frame_id = "zed2i_left_camera_frame";
                 mPcThreadProfiler.addEpoch("Fill Message");
 
                 if (mDirectTagDetection)
@@ -120,14 +128,35 @@ namespace mrover {
                 mPcThreadProfiler.addEpoch("Point cloud publish");
 
                 if (mLeftImgPub.getNumSubscribers()) {
-                    fillImageMessage(mLeftImageMat, mLeftImgMsg, mUpdateTick);
+                    fillImageMessage(mLeftImageMat, mLeftImgMsg);
+                    mLeftImgMsg->header.frame_id = "zed2i_left_camera_frame";
+                    mLeftImgMsg->header.stamp = grabTime;
+                    mLeftImgMsg->header.seq = mPointCloudUpdateTick;
                     mLeftImgPub.publish(mLeftImgMsg);
                 }
                 if (mRightImgPub.getNumSubscribers()) {
-                    fillImageMessage(mRightImageMat, mRightImgMsg, mUpdateTick);
+                    fillImageMessage(mRightImageMat, mRightImgMsg);
+                    mRightImgMsg->header.frame_id = "zed2i_right_camera_frame";
+                    mRightImgMsg->header.stamp = grabTime;
+                    mRightImgMsg->header.seq = mPointCloudUpdateTick;
                     mRightImgPub.publish(mRightImgMsg);
                 }
-                mPcThreadProfiler.addEpoch("Image publish");
+                if (mLeftCamInfoPub.getNumSubscribers() || mRightCamInfoPub.getNumSubscribers()) {
+                    sl::CalibrationParameters calibration = mZed.getCameraInformation(mImageResolution).camera_configuration.calibration_parameters;
+                    fillCameraInfoMessages(calibration, mImageResolution, mLeftCamInfoMsg, mRightCamInfoMsg);
+                    mLeftCamInfoMsg->header.frame_id = "zed2i_left_camera_frame";
+                    mLeftCamInfoMsg->header.stamp = grabTime;
+                    mLeftCamInfoMsg->header.seq = mPointCloudUpdateTick;
+                    mRightCamInfoMsg->header.frame_id = "zed2i_right_camera_frame";
+                    mRightCamInfoMsg->header.stamp = grabTime;
+                    mRightCamInfoMsg->header.seq = mPointCloudUpdateTick;
+                    mLeftCamInfoPub.publish(mLeftCamInfoMsg);
+                    mRightCamInfoPub.publish(mRightCamInfoMsg);
+                }
+
+                mPcThreadProfiler.addEpoch("Image + camera info publish");
+
+                mPointCloudUpdateTick++;
             }
             NODELET_INFO("Tag thread finished");
 
@@ -157,38 +186,41 @@ namespace mrover {
                     mGrabDone.notify_all();
                 }
 
-                sl::Pose pose;
-                sl::POSITIONAL_TRACKING_STATE status = mZed.getPosition(pose);
-                if (status == sl::POSITIONAL_TRACKING_STATE::OK) {
-                    sl::Translation const& translation = pose.getTranslation();
-                    sl::Orientation const& orientation = pose.getOrientation();
-                    NODELET_DEBUG_STREAM("Position: " << translation.x << ", " << translation.y << ", " << translation.z);
-                    NODELET_DEBUG_STREAM("Orientation: " << orientation.w << ", " << orientation.x << ", " << orientation.y << ", " << orientation.z);
-                    try {
-                        SE3 leftCameraInOdom{{translation.x, translation.y, translation.z},
-                                             Eigen::Quaterniond{orientation.w, orientation.x, orientation.y, orientation.z}.normalized()};
-                        SE3 leftCameraInBaseLink = SE3::fromTfTree(mTfBuffer, "base_link", "zed2i_left_camera_frame");
-                        SE3 baseLinkInOdom = leftCameraInBaseLink * leftCameraInOdom;
-                        SE3::pushToTfTree(mTfBroadcaster, "base_link", "odom", baseLinkInOdom);
-                    } catch (tf2::TransformException& e) {
-                        NODELET_WARN_STREAM("Failed to get transform: " << e.what());
+                if (mUseBuiltinPosTracking) {
+                    sl::Pose pose;
+                    sl::POSITIONAL_TRACKING_STATE status = mZed.getPosition(pose);
+                    if (status == sl::POSITIONAL_TRACKING_STATE::OK) {
+                        sl::Translation const& translation = pose.getTranslation();
+                        sl::Orientation const& orientation = pose.getOrientation();
+                        try {
+                            SE3 leftCameraInOdom{{translation.x, translation.y, translation.z},
+                                                 Eigen::Quaterniond{orientation.w, orientation.x, orientation.y, orientation.z}.normalized()};
+                            SE3 leftCameraInBaseLink = SE3::fromTfTree(mTfBuffer, "base_link", "zed2i_left_camera_frame");
+                            SE3 baseLinkInOdom = leftCameraInBaseLink * leftCameraInOdom;
+                            SE3::pushToTfTree(mTfBroadcaster, "base_link", "odom", baseLinkInOdom);
+                        } catch (tf2::TransformException& e) {
+                            NODELET_WARN_STREAM("Failed to get transform: " << e.what());
+                        }
+                    } else {
+                        NODELET_WARN_STREAM("Positional tracking failed: " << status);
                     }
-                } else {
-                    NODELET_WARN_STREAM("Positional tracking failed: " << status);
+                    mGrabThreadProfiler.addEpoch("Positional tracking");
                 }
-                mGrabThreadProfiler.addEpoch("Positional tracking");
 
                 if (mImuPub.getNumSubscribers()) {
                     sl::SensorsData sensorData;
                     mZed.getSensorsData(sensorData, sl::TIME_REFERENCE::CURRENT);
 
                     sensor_msgs::Imu imuMsg;
-                    fillImuMessage(sensorData.imu, imuMsg, mUpdateTick);
+                    fillImuMessage(sensorData.imu, imuMsg);
+                    imuMsg.header.frame_id = "zed2i_imu_frame";
+                    imuMsg.header.stamp = ros::Time::now();
+                    imuMsg.header.seq = mGrabUpdateTick;
                     mImuPub.publish(imuMsg);
                 }
                 mGrabThreadProfiler.addEpoch("Sensor data");
 
-                mUpdateTick++;
+                mGrabUpdateTick++;
             }
 
             mZed.close();
