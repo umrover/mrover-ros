@@ -3,5 +3,4 @@
 
     <!-- node to manage and run the integration test -->
     <test test-name="drive_test" pkg="mrover" type="drive_test.py" />
-	<!--test test-name="gate_test" pkg="mrover" type="gate_test.py" -->
 </launch>
