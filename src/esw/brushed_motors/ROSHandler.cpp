@@ -174,26 +174,7 @@ bool ROSHandler::processMotorCalibrate(mrover::CalibrateMotors::Request& req, mr
 
     // Determine if calibration is needed
     bool isCalibrated = controller->isCalibrated();
-
-
-    auto ra_iter = std::find(RANames.begin(), RANames.end(), req.name);
-    if (ra_iter != RANames.end()) {
-        std::size_t ra_idx = std::distance(RANames.begin(), ra_iter);
-        calibrationStatusRA.calibrated[ra_idx] = isCalibrated;
-        calibrationStatusPublisherRA.publish(calibrationStatusRA);
-    }
-    else if (req.name == carousel_name) {
-        calibrationStatusCarousel.calibrated[0] = isCalibrated;
-        calibrationStatusPublisherCarousel.publish(calibrationStatusCarousel);
-    }
-    else {
-        auto sa_iter = std::find(SANames.begin(), SANames.end(), req.name);
-        if (sa_iter != SANames.end()) {
-            std::size_t sa_idx = std::distance(SANames.begin(), sa_iter);
-            calibrationStatusSA.calibrated[sa_idx] = isCalibrated;
-            calibrationStatusPublisherSA.publish(calibrationStatusSA);
-        }
-    }
+    publish_calibration_data_using_name(req.name, isCalibrated);
 
     bool shouldCalibrate = !isCalibrated && controller->getLimitSwitchEnabled();
 
@@ -223,6 +204,8 @@ bool ROSHandler::processMotorAdjust(mrover::AdjustMotors::Request& req, mrover::
 
     auto& [name, controller] = *controller_iter;
     controller->overrideCurrentAngle(req.value);
+    publish_calibration_data_using_name(req.name, controller->isCalibrated());
+
     res.success = true;
     res.abs_enc_rad = controller->getAbsoluteEncoderValue();
 
@@ -246,6 +229,8 @@ bool ROSHandler::processMotorAdjustUsingAbsEnc(mrover::AdjustMotors::Request& re
     float abs_enc_value = controller->getAbsoluteEncoderValue();
     float new_value = req.value - abs_enc_value;
     controller->overrideCurrentAngle(new_value);
+    publish_calibration_data_using_name(req.name, controller->isCalibrated());
+
     res.success = true;
     res.abs_enc_rad = abs_enc_value;
 
@@ -270,4 +255,28 @@ bool ROSHandler::processMotorEnableLimitSwitches(mrover::EnableDevice::Request& 
     res.success = true;
 
     return true;
+}
+
+// REQUIRES: name is the name of a controller and isCalibrated is whether it is calibrated
+// MODIFIES: static variables
+// EFFECTS: Publishes calibration status to the proper topic depending on the name
+void ROSHandler::publish_calibration_data_using_name(const std::string& name, bool isCalibrated) {
+    auto ra_iter = std::find(RANames.begin(), RANames.end(), name);
+    if (ra_iter != RANames.end()) {
+        std::size_t ra_idx = std::distance(RANames.begin(), ra_iter);
+        calibrationStatusRA.calibrated[ra_idx] = isCalibrated;
+        calibrationStatusPublisherRA.publish(calibrationStatusRA);
+    }
+    else if (carousel_name == name) {
+        calibrationStatusCarousel.calibrated[0] = isCalibrated;
+        calibrationStatusPublisherCarousel.publish(calibrationStatusCarousel);
+    }
+    else {
+        auto sa_iter = std::find(SANames.begin(), SANames.end(), name);
+        if (sa_iter != SANames.end()) {
+            std::size_t sa_idx = std::distance(SANames.begin(), sa_iter);
+            calibrationStatusSA.calibrated[sa_idx] = isCalibrated;
+            calibrationStatusPublisherSA.publish(calibrationStatusSA);
+        }
+    }
 }

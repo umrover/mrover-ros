@@ -123,4 +123,9 @@ public:
     // MODIFIES: static variables
     // EFFECTS: Initializes all subscribers and publishers.
     static void init(ros::NodeHandle* rosNode);
+
+    // REQUIRES: name is the name of a controller and isCalibrated is whether it is calibrated
+    // MODIFIES: static variables
+    // EFFECTS: Publishes calibration status to the proper topic depending on the name
+    static void publish_calibration_data_using_name(const std::string& name, bool isCalibrated);
 };
