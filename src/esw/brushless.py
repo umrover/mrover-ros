@@ -535,7 +535,7 @@ class DriveManager(MotorsManager):
 
 class Application:
     def __init__(self):
-        rospy.init_node(f"brushless")
+        rospy.init_node("brushless")
 
         arm_controller_info_by_name = rospy.get_param("brushless/arm/controllers")
         drive_controller_info_by_name = rospy.get_param("brushless/drive/controllers")
