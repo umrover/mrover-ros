@@ -10,6 +10,7 @@ void ROSHandler::init(ros::NodeHandle* rosNode) {
     // Initialize services
     calibrateService = n->advertiseService<mrover::CalibrateMotors::Request, mrover::CalibrateMotors::Response>("calibrate", processMotorCalibrate);
     adjustService = n->advertiseService<mrover::AdjustMotors::Request, mrover::AdjustMotors::Response>("adjust", processMotorAdjust);
+    adjustUsingAbsEncService = n->advertiseService<mrover::AdjustMotors::Request, mrover::AdjustMotors::Response>("adjust_using_abs_enc", processMotorAdjustUsingAbsEnc);
     enableLimitSwitchService = n->advertiseService<mrover::EnableDevice::Request, mrover::EnableDevice::Response>("enable_limit_switch", processMotorEnableLimitSwitches);
 
     // Initialize robotic arm (RA)
@@ -224,6 +225,29 @@ bool ROSHandler::processMotorAdjust(mrover::AdjustMotors::Request& req, mrover::
     controller->overrideCurrentAngle(req.value);
     res.success = true;
     res.abs_enc_rad = controller->getAbsoluteEncoderValue();
+
+    return true;
+}
+
+// REQUIRES: valid req and res objects
+// MODIFIES: res
+// EFFECTS: takes the current absolute encoder value, applies an offset, and hard sets the new angle
+bool ROSHandler::processMotorAdjustUsingAbsEnc(mrover::AdjustMotors::Request& req, mrover::AdjustMotors::Response& res) {
+
+    auto controller_iter = ControllerMap::controllersByName.find(req.name);
+
+    if (controller_iter == ControllerMap::controllersByName.end()) {
+        ROS_ERROR("Could not find controller named %s.", req.name.c_str());
+        res.success = false;
+        return false;
+    }
+
+    auto& [name, controller] = *controller_iter;
+    float abs_enc_value = controller->getAbsoluteEncoderValue();
+    float new_value = req.value - abs_enc_value;
+    controller->overrideCurrentAngle(new_value);
+    res.success = true;
+    res.abs_enc_rad = abs_enc_value;
 
     return true;
 }

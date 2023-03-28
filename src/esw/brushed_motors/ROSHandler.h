@@ -31,6 +31,7 @@ private:
     // Calibrate service
     inline static ros::ServiceServer calibrateService;
     inline static ros::ServiceServer adjustService;
+    inline static ros::ServiceServer adjustUsingAbsEncService;
     inline static ros::ServiceServer enableLimitSwitchService;
 
     // RA
@@ -106,6 +107,11 @@ private:
     // MODIFIES: res
     // EFFECTS: hard sets the requested controller angle
     static bool processMotorAdjust(mrover::AdjustMotors::Request& req, mrover::AdjustMotors::Response& res);
+
+    // REQUIRES: valid req and res objects
+    // MODIFIES: res
+    // EFFECTS: takes the current absolute encoder value, applies an offset, and hard sets the new angle
+    static bool processMotorAdjustUsingAbsEnc(mrover::AdjustMotors::Request& req, mrover::AdjustMotors::Response& res);
 
     // REQUIRES: valid req and res objects
     // MODIFIES: res
