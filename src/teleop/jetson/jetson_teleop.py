@@ -112,24 +112,24 @@ class ArmControl:
 
         self.ra_cmd = JointState(
             name=[name for name in RA_NAMES],
-            position=[nan for _ in range(len(RA_NAMES))],
-            velocity=[0.0 for _ in range(len(RA_NAMES))],
-            effort=[nan for _ in range(len(RA_NAMES))],
+            position=[nan for _ in RA_NAMES],
+            velocity=[0.0 for _ in RA_NAMES],
+            effort=[nan for _ in RA_NAMES],
         )
 
         self.sa_cmd = JointState(
             name=[name for name in SA_NAMES],
-            position=[nan for _ in range(len(SA_NAMES))],
-            velocity=[0.0 for _ in range(len(SA_NAMES))],
-            effort=[nan for _ in range(len(SA_NAMES))],
+            position=[nan for _ in SA_NAMES],
+            velocity=[0.0 for _ in SA_NAMES],
+            effort=[nan for _ in SA_NAMES],
         )
 
         self._joint_state_lock = Lock()
         self.current_ra_joint_states = JointState(
             name=[name for name in RA_NAMES],
-            position=[nan for _ in range(len(RA_NAMES))],
-            velocity=[0.0 for _ in range(len(RA_NAMES))],
-            effort=[nan for _ in range(len(RA_NAMES))],
+            position=[nan for _ in RA_NAMES],
+            velocity=[0.0 for _ in RA_NAMES],
+            effort=[nan for _ in RA_NAMES],
         )
 
     # Callback function executed after the publication of the current robot position
@@ -174,7 +174,8 @@ class ArmControl:
         Publishes the current joint states to the /joint_states topic
         :return:
         """
-        self.joint_state_pub.publish(self.current_ra_joint_states)
+        with self._joint_state_lock:
+            self.joint_state_pub.publish(self.current_ra_joint_states)
 
     def filter_xbox_axis(
         self,
