@@ -74,8 +74,8 @@ const datatypes = [
 
 export default {
   name: "ROSService",
-  components : {
-    CommReadout
+  components: {
+    CommReadout,
   },
 
   data() {

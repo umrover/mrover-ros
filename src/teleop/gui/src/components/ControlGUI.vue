@@ -28,7 +28,7 @@ export default {
     JointStateTable,
     MastGimbalControls,
     MoteusStateTable,
-    CommReadout
+    CommReadout,
   },
   data() {
     return {

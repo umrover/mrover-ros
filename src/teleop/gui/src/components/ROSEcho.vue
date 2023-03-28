@@ -76,8 +76,8 @@ import CommReadout from "./CommReadout.vue";
 
 export default {
   name: "ROSEcho",
-  components : {
-    CommReadout
+  components: {
+    CommReadout,
   },
 
   data() {

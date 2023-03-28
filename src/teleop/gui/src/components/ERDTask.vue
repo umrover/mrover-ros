@@ -99,7 +99,7 @@ export default {
     MoteusStateTable,
     OdometryReading,
     PDBFuse,
-    CommReadout
+    CommReadout,
   },
 
   props: {

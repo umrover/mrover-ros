@@ -87,7 +87,7 @@ export default {
     Chlorophyll,
     Amino,
     Cameras,
-    CommReadout
+    CommReadout,
   },
   data() {
     return {

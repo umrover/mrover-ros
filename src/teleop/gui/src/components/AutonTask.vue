@@ -99,7 +99,7 @@ export default {
     IMUCalibration,
     JoystickValues,
     MastGimbalControls,
-    CommReadout
+    CommReadout,
   },
 
   data() {

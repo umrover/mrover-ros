@@ -99,7 +99,7 @@ export default {
     MoteusStateTable,
     PDBFuse,
     SAArmControls,
-    CommReadout
+    CommReadout,
   },
   data() {
     return {

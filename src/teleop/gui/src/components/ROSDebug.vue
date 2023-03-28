@@ -33,7 +33,7 @@ export default {
 
   components: {
     MenuButton,
-    CommReadout
+    CommReadout,
   },
 };
 </script>
