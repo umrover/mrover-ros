@@ -11,7 +11,7 @@ from typing import ClassVar, Optional, List, Tuple
 import numpy as np
 from dataclasses import dataclass
 from shapely.geometry import Point, LineString
-from mrover.msg import Waypoint, GPSWaypoint, EnableAuton
+from mrover.msg import Waypoint, GPSWaypoint, EnableAuton, WaypointType, GPSPointList
 import pymap3d
 from std_msgs.msg import Time
 
