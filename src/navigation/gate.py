@@ -4,19 +4,17 @@ from unicodedata import normalize
 from context import Gate
 
 import numpy as np
+import rospy
 
-from context import Context, Environment
+from context import Context, Environment, convert_cartesian_to_gps
 from aenum import Enum, NoAlias
 from state import BaseState
 from trajectory import Trajectory
 from dataclasses import dataclass
 from drive import get_drive_command
 from util.np_utils import normalized, perpendicular_2d
-
-STOP_THRESH = 0.2
-DRIVE_FWD_THRESH = 0.34  # 20 degrees
-
-APPROACH_DISTANCE = 2.0
+from util.ros_utils import get_rosparam
+from mrover.msg import GPSPointList
 
 
 @dataclass
@@ -85,6 +83,11 @@ class GateTraverseStateTransitions(Enum):
 
 
 class GateTraverseState(BaseState):
+    STOP_THRESH = get_rosparam("gate/stop_thresh", 0.2)
+    DRIVE_FWD_THRESH = get_rosparam("gate/drive_fwd_thresh", 0.34)  # 20 degrees
+
+    APPROACH_DISTANCE = get_rosparam("gate/approach_distance", 2.0)
+
     def __init__(
         self,
         context: Context,
@@ -103,7 +106,7 @@ class GateTraverseState(BaseState):
             return GateTraverseStateTransitions.no_gate.name  # type: ignore
         if self.traj is None:
             self.traj = GateTrajectory.spider_gate_trajectory(
-                APPROACH_DISTANCE, gate, self.context.rover.get_pose().position
+                self.APPROACH_DISTANCE, gate, self.context.rover.get_pose().position
             )
 
         # continue executing this path from wherever it left off
@@ -111,8 +114,8 @@ class GateTraverseState(BaseState):
         cmd_vel, arrived = get_drive_command(
             target_pos,
             self.context.rover.get_pose(),
-            STOP_THRESH,
-            DRIVE_FWD_THRESH,
+            self.STOP_THRESH,
+            self.DRIVE_FWD_THRESH,
         )
         if arrived:
             # if we finish the gate path, we're done
@@ -121,5 +124,11 @@ class GateTraverseState(BaseState):
                 self.context.course.increment_waypoint()
                 return GateTraverseStateTransitions.finished_gate.name  # type: ignore
 
+        self.context.gate_path_publisher.publish(
+            GPSPointList([convert_cartesian_to_gps(pt) for pt in self.traj.coordinates])
+        )
+        self.context.gate_point_publisher.publish(
+            GPSPointList([convert_cartesian_to_gps(p) for p in [gate.post1, gate.post2]])
+        )
         self.context.rover.send_drive_command(cmd_vel)
         return GateTraverseStateTransitions.continue_gate_traverse.name  # type: ignore
