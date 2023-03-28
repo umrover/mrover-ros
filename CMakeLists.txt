@@ -40,6 +40,7 @@ set(MROVER_MESSAGE_FILES
         MoteusState.msg
         MotorsStatus.msg
         NavMetadata.msg
+        NetworkBandwidth.msg
         ScienceTemperature.msg
         Spectral.msg
         Waypoint.msg
