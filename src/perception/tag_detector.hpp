@@ -22,9 +22,6 @@
 #include "filter.hpp"
 #include "se3.hpp"
 
-constexpr char const* ODOM_FRAME = "map";
-constexpr char const* ROVER_FRAME = "base_link";
-
 using PointCloud = pcl::PointCloud<pcl::PointXYZRGBNormal>;
 using PointCloudPtr = std::shared_ptr<PointCloud>;
 
@@ -43,7 +40,6 @@ private:
     image_transport::Publisher mImgPub;
     ros::ServiceServer mServiceEnableDetections;
 
-    ros::Subscriber mCamInfoSub;
     ros::Subscriber mIgnoreSub;
     ros::Subscriber mPcSub;
     image_transport::Subscriber mImgSub;
@@ -52,22 +48,21 @@ private:
     tf2_ros::TransformListener mTfListener;
     tf2_ros::TransformBroadcaster mTfBroadcaster;
 
+    bool mUseOdom = false;
+    std::string mOdomFrameId, mMapFrameId, mBaseLinkFrameId;
     bool mPublishImages = false; // If set, we publish the images with the fiducials drawn on top
     bool mEnableDetections = true;
     bool mIsVerbose = false;
     bool mPublishFiducialTf = false;
     int mMinHitCountBeforePublish = 5;
     int mMaxHitCount = 10;
+
     std::vector<int> mIgnoreIds;
     cv::Ptr<cv::aruco::DetectorParameters> mDetectorParams;
     cv::Ptr<cv::aruco::Dictionary> mDictionary;
 
     PointCloudPtr mCloudPtr = std::make_shared<PointCloud>();
     uint32_t mSeqNum{};
-    bool mHasCamInfo = false;
-    cv::Mat mCamMat;
-    cv::Mat mDistCoeffs;
-    std::string mFrameId;
     std::optional<size_t> mPrevDetectedCount; // Log spam prevention
     std::vector<std::vector<cv::Point2f>> mCorners;
     std::vector<int> mIds;
@@ -82,8 +77,6 @@ private:
     void imageCallback(sensor_msgs::ImageConstPtr const& msg);
 
     void pointCloudCallback(sensor_msgs::PointCloud2ConstPtr const& msg);
-
-    void camInfoCallback(sensor_msgs::CameraInfo::ConstPtr const& msg);
 
     void configCallback(mrover::DetectorParamsConfig& config, uint32_t level);
 

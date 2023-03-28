@@ -92,7 +92,11 @@
           />
         </div>
         <div class="stuck-check">
-          <Checkbox name="Stuck" @toggle="roverStuck = !roverStuck"></Checkbox>
+          <Checkbox
+            class="stuck-checkbox"
+            name="Stuck"
+            @toggle="roverStuck = !roverStuck"
+          ></Checkbox>
         </div>
         <div class="stats">
           <VelocityCommand />
@@ -545,6 +549,10 @@ export default {
 .stuck-check {
   align-content: center;
   grid-area: stuck-check;
+  padding-inline: 20px;
+}
+.stuck-check .stuck-checkbox {
+  transform: scale(1.5);
 }
 
 .odom {

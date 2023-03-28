@@ -18,6 +18,9 @@ from std_msgs.msg import Time
 
 TAG_EXPIRATION_TIME_SECONDS = 60
 
+REF_LAT = rospy.get_param("gps_linearization/reference_point_latitude")
+REF_LON = rospy.get_param("gps_linearization/reference_point_longitude")
+
 tf_broadcaster: tf2_ros.StaticTransformBroadcaster = tf2_ros.StaticTransformBroadcaster()
 
 
@@ -54,7 +57,7 @@ class Rover:
     def send_drive_stop(self):
         self.send_drive_command(Twist())
 
-    def get_pose_with_time(self):
+    def get_pose_with_time(self) -> Tuple[SE3, Time]:
         return SE3.from_tf_time(self.ctx.tf_buffer, parent_frame="map", child_frame="base_link")
 
 
@@ -122,7 +125,6 @@ class Environment:
             post2 = self.get_fid_pos(current_waypoint.fiducial_id + 1)
             if post1 is None or post2 is None:
                 return None
-
             return Gate(post1[:2], post2[:2])
         else:
             return None
@@ -145,7 +147,7 @@ class Course:
         waypoint_frame = self.course_data.waypoints[wp_idx].tf_id
         return SE3.from_tf_tree(self.ctx.tf_buffer, parent_frame="map", child_frame=waypoint_frame)
 
-    def current_waypoint_pose(self):
+    def current_waypoint_pose(self) -> SE3:
         """
         Gets the pose of the current waypoint
         """
@@ -184,7 +186,7 @@ class Course:
         else:
             return False
 
-    def is_complete(self):
+    def is_complete(self) -> bool:
         return self.waypoint_index == len(self.course_data.waypoints)
 
 
@@ -197,14 +199,10 @@ def setup_course(ctx: Context, waypoints: List[Tuple[Waypoint, SE3]]) -> Course:
     return Course(ctx=ctx, course_data=mrover.msg.Course([waypoint[0] for waypoint in waypoints]))
 
 
-def convert(waypoint: GPSWaypoint) -> Waypoint:
+def convert_gps_to_cartesian(waypoint: GPSWaypoint) -> Waypoint:
     """
     Converts a GPSWaypoint into a "Waypoint" used for publishing to the CourseService.
     """
-    # read required parameters, if they don't exist an error will be thrown
-    REF_LAT = rospy.get_param("gps_linearization/reference_point_latitude")
-    REF_LON = rospy.get_param("gps_linearization/reference_point_longitude")
-
     # Create odom position based on GPS latitude and longitude
     odom = np.array(
         pymap3d.geodetic2enu(
@@ -219,8 +217,18 @@ def convert(waypoint: GPSWaypoint) -> Waypoint:
     return Waypoint(fiducial_id=waypoint.id, tf_id=f"course{waypoint.id}", type=waypoint.type), SE3(position=odom)
 
 
+def convert_cartesian_to_gps(coordinate: np.ndarray) -> GPSWaypoint:
+    """
+    Converts a coordinate to a GPSWaypoint (used for sending data back to basestation)
+    """
+    lat, lon, _ = pymap3d.enu2geodetic(
+        e=coordinate[0], n=coordinate[1], u=0.0, lat0=REF_LAT, lon0=REF_LON, h0=0.0, deg=True
+    )
+    return GPSWaypoint(lat, lon, WaypointType(val=WaypointType.NO_SEARCH), 0)
+
+
 def convert_and_get_course(ctx: Context, data: EnableAuton) -> Course:
-    waypoints = [convert(waypoint) for waypoint in data.waypoints]
+    waypoints = [convert_gps_to_cartesian(waypoint) for waypoint in data.waypoints]
     return setup_course(ctx, waypoints)
 
 
@@ -228,6 +236,9 @@ class Context:
     tf_buffer: tf2_ros.Buffer
     tf_listener: tf2_ros.TransformListener
     vel_cmd_publisher: rospy.Publisher
+    search_point_publisher: rospy.Publisher
+    gate_point_publisher: rospy.Publisher
+    gate_path_publisher: rospy.Publisher
     vis_publisher: rospy.Publisher
     course_listener: rospy.Subscriber
 
@@ -242,6 +253,9 @@ class Context:
         self.tf_listener = tf2_ros.TransformListener(self.tf_buffer)
         self.vel_cmd_publisher = rospy.Publisher("cmd_vel", Twist, queue_size=1)
         self.vis_publisher = rospy.Publisher("nav_vis", Marker, queue_size=1)
+        self.search_point_publisher = rospy.Publisher("search_path", GPSPointList, queue_size=1)
+        self.gate_path_publisher = rospy.Publisher("gate_path", GPSPointList, queue_size=1)
+        self.gate_point_publisher = rospy.Publisher("estimated_gate_location", GPSPointList, queue_size=1)
         self.enable_auton_service = rospy.Service("enable_auton", mrover.srv.PublishEnableAuton, self.recv_enable_auton)
         self.course = None
         self.rover = Rover(self)
