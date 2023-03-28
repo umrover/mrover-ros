@@ -2,6 +2,7 @@
 
 #include "ControllerMap.h"          // for ControllerMap
 #include <array>                    // for array
+#include <algorithm>                // for distance
 #include <cmath>                    // for nan
 #include <mrover/CalibrateMotors.h> // for CalibrateMotors
 #include <mrover/AdjustMotors.h>    // for AdjustMotors
@@ -52,6 +53,7 @@ private:
     inline static ros::Subscriber moveCacheSubscriber;
 
     // Carousel
+    inline static std::string carousel_name;
     inline static ros::Subscriber moveCarouselSubscriber;
     inline static ros::Publisher calibrationStatusPublisherCarousel;
     inline static mrover::Calibrated calibrationStatusCarousel;

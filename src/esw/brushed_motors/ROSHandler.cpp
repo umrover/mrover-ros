@@ -46,7 +46,8 @@ void ROSHandler::init(ros::NodeHandle* rosNode) {
     moveCacheSubscriber = n->subscribe<sensor_msgs::JointState>("cache_cmd", 1, moveCache);
 
     // Initialize carousel
-    calibrationStatusCarousel.names = {"carousel"};
+    carousel_name = "carousel";
+    calibrationStatusCarousel.names = {carousel_name};
     calibrationStatusCarousel.calibrated = {false};
     calibrationStatusPublisherCarousel = n->advertise<mrover::Calibrated>("carousel_is_calibrated", 1);
     moveCarouselSubscriber = n->subscribe<mrover::Carousel>("carousel_cmd", 1, moveCarousel);
@@ -171,7 +172,29 @@ bool ROSHandler::processMotorCalibrate(mrover::CalibrateMotors::Request& req, mr
     auto& [name, controller] = *controller_iter;
 
     // Determine if calibration is needed
-    bool shouldCalibrate = !controller->isCalibrated() && controller->getLimitSwitchEnabled();
+    bool isCalibrated = controller->isCalibrated();
+
+
+    auto ra_iter = std::find(RANames.begin(), RANames.end(), req.name);
+    if (ra_iter != RANames.end()) {
+        std::size_t ra_idx = std::distance(RANames.begin(), ra_iter);
+        calibrationStatusRA.calibrated[ra_idx] = isCalibrated;
+        calibrationStatusPublisherRA.publish(calibrationStatusRA);
+    }
+    else if (req.name == carousel_name) {
+        calibrationStatusCarousel.calibrated[0] = isCalibrated;
+        calibrationStatusPublisherCarousel.publish(calibrationStatusCarousel);
+    }
+    else {
+        auto sa_iter = std::find(SANames.begin(), SANames.end(), req.name);
+        if (sa_iter != SANames.end()) {
+            std::size_t sa_idx = std::distance(SANames.begin(), sa_iter);
+            calibrationStatusSA.calibrated[sa_idx] = isCalibrated;
+            calibrationStatusPublisherSA.publish(calibrationStatusSA);
+        }
+    }
+
+    bool shouldCalibrate = !isCalibrated && controller->getLimitSwitchEnabled();
 
     // Calibrate
     if (shouldCalibrate) {
