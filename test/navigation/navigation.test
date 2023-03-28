@@ -1,9 +1,0 @@
-<launch>
-  <!-- Set necessary params-->
-  <param name="string"  value="mystring" />
-  <rosparam command="load" file="$(find mrover)/config/localization.yaml" />
-  <!-- Launch a necessary node-->
-   
-  <!-- Execute multiple tests after configuring nodes-->
-  <test test-name="navigation" pkg="mrover" type="test_gate.py" />
-</launch>
