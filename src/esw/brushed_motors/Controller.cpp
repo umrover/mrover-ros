@@ -117,6 +117,7 @@ bool Controller::isCalibrated() {
 
     } catch (IOFailure& e) {
         ROS_ERROR("isCalibrated failed on %s", name.c_str());
+        return false;
     }
 
     return calibration_status;
@@ -132,16 +133,19 @@ void Controller::enableLimitSwitches(bool enable) {
         limitAEnable = limitAPresent && enable;
 
         uint8_t buffer[1];
-        memcpy(buffer, UINT8_POINTER_T(&limitAEnable), sizeof(limitAEnable));
-        I2C::transact(deviceAddress, motorIDRegMask | ENABLE_LIMIT_A_OP, ENABLE_LIMIT_A_WB,
-                      ENABLE_LIMIT_A_RB, buffer, nullptr);
+        if (!limitAPresent) {
+            memcpy(buffer, UINT8_POINTER_T(&limitAEnable), sizeof(limitAEnable));
+            I2C::transact(deviceAddress, motorIDRegMask | ENABLE_LIMIT_A_OP, ENABLE_LIMIT_A_WB,
+                          ENABLE_LIMIT_A_RB, buffer, nullptr);
+        }
 
         limitBEnable = limitBPresent && enable;
 
-        memcpy(buffer, UINT8_POINTER_T(&limitBEnable), sizeof(limitBEnable));
-        I2C::transact(deviceAddress, motorIDRegMask | ENABLE_LIMIT_B_OP, ENABLE_LIMIT_B_WB,
-                      ENABLE_LIMIT_B_RB, buffer, nullptr);
-        
+        if (!limitBPresent) {
+            memcpy(buffer, UINT8_POINTER_T(&limitBEnable), sizeof(limitBEnable));
+            I2C::transact(deviceAddress, motorIDRegMask | ENABLE_LIMIT_B_OP, ENABLE_LIMIT_B_WB,
+                          ENABLE_LIMIT_B_RB, buffer, nullptr);
+        }
 
     } catch (IOFailure& e) {
         ROS_ERROR("enableLimitSwitches failed on %s", name.c_str());
