@@ -5,7 +5,6 @@ import rospy
 import cv2
 from multiprocessing import Process
 from typing import Dict, List, Optional
-from dataclasses import dataclass
 from threading import Lock
 
 from mrover.msg import CameraCmd
@@ -22,7 +21,7 @@ from mrover.srv import (
 PRIMARY_IP: str = rospy.get_param("cameras/ips/primary")
 SECONDARY_IP: str = rospy.get_param("cameras/ips/secondary")
 
-CAPTURE_ARGS: List[Dict[str, str]] = rospy.get_param("cameras/arguments")
+CAPTURE_ARGS: List[Dict[str, int]] = rospy.get_param("cameras/arguments")
 
 DEVICES_DOUBLED: bool = rospy.get_param("cameras/deviced_doubled")
 
