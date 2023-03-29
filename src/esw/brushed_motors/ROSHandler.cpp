@@ -96,7 +96,7 @@ std::optional<float> ROSHandler::moveControllerClosedLoop(const std::string& nam
 // Note: any invalid controllers will be published with a position of 0.
 void ROSHandler::moveRA(const sensor_msgs::JointState::ConstPtr& msg) {
     int mappedIndex = 0;
-    bool useClosedLoop = !msg->position.empty();
+    bool useClosedLoop = false; //!msg->position.empty();
     for (size_t i = 0; i < msg->name.size(); ++i) {
         if ((i == 2) || (i == 3) || (i == 4)) {
             // We expect msg->name to be joints a, b, c, d, e, f, finger, and gripper.
