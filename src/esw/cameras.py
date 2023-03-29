@@ -1,11 +1,14 @@
 #!/usr/bin/env python3
 
-from mrover.msg import CameraCmd
+import rospy
+
 import cv2
 from multiprocessing import Process
-from typing import List, Union, Any
+from typing import Dict, List, Optional
+from dataclasses import dataclass
+from threading import Lock
 
-import rospy
+from mrover.msg import CameraCmd
 
 from mrover.srv import (
     ChangeCameras,
@@ -16,119 +19,175 @@ from mrover.srv import (
     ResetCamerasResponse,
 )
 
+PRIMARY_IP: str = rospy.get_param("cameras/ips/primary")
+SECONDARY_IP: str = rospy.get_param("cameras/ips/secondary")
+
+CAPTURE_ARGS: List[Dict[str, str]] = rospy.get_param("cameras/arguments")
+
+DEVICES_DOUBLED: bool = rospy.get_param("cameras/deviced_doubled")
+
+class Stream:
+    """
+    An object encapsulating a stream from a camera to an IP endpoint. On initialization, a process
+    is spun up to handle the actual streaming. When no more references to self exist, the
+    finalizer (defined in __del__()) clean up the process and command.
+    """
+
+    _process: Process
+    """
+    The process sending the stream.
+    """
+
+    _cmd: CameraCmd
+    """
+    A reference to the CameraCmd sent by an IP endpoint.
+    """
+
+    primary: bool
+    """
+    Whether the stream is being sent to the primary IP endpoint.
+    """
+
+    def __init__(self, req: ChangeCamerasRequest, cmd:CameraCmd):
+        self._cmd.device = req.camera_cmd.device
+        self._cmd.resolution = req.camera_cmd.resolution
+
+        self.primary = req.primary
+
+        args = CAPTURE_ARGS[self._cmd.resolution]
+
+        self._process = Process(
+            target=send,
+            args=(
+                self._cmd.device * 2 if DEVICES_DOUBLED else self._cmd.device,
+                PRIMARY_IP if self.primary else SECONDARY_IP,
+                5000 + self._cmd.device,
+                args['bps'],
+                args['width'],
+                args['height'],
+                args['fps'],
+                True
+            )
+        )
+
+        self._process.start()
+
+    def __del__(self) -> None:
+        """
+        Finalizer for stream. Kill the associated process and reset the cmd.
+        """
+        self._process.kill()
+        self._process.join()
+
+        self._cmd.device = -1
+        self._cmd.resolution = -1
+
 
 class StreamManager:
 
-    NUM_DIFFERENT_IPS = 2
-    MAX_NUM_POSSIBLE_CAMERAS = 4
+    MAX_STREAMS: int = rospy.get_param("cameras/max_streams")
+    """
+    The maximum number of streams that can be simultaneously sustained.
+    """
+
+    MAX_DEVICE_ID: int = rospy.get_param("cameras/max_device_id")
+    """
+    The maximum ID of a camera device.
+    """
+
+    _stream_by_device: List[Optional[Stream]]
+    """
+    A Stream object for each possible device connected over USB. Object is None if device is not
+    being streamed. References to contained objects should be avoided, since Stream objects rely
+    on Python's reference counting to call their finalizers.
+    """
+
+    _primary_cmds: List[CameraCmd]
+    """
+    The commands requested by the primary IP endpoint. The list should always remain populated
+    with live objects, and references can be passed to Stream objects to modify the data within.
+    """
+
+    _secondary_cmds: List[CameraCmd]
+    """
+    The commands requested by the secondary IP endpoint.
+    """
 
     def __init__(self):
+        self._lock = Lock()
 
-        self.stream_process_list: List[List[Union[Process, Any]]] = [
-            [None for _ in range(rospy.get_param("cameras/max_video_device_id_number"))]
-            for __ in range(StreamManager.NUM_DIFFERENT_IPS)
+        self._stream_by_device = [
+            None for _ in range(self.MAX_DEVICE_ID)
+        ]
+ 
+        self._primary_cmds = [
+            [CameraCmd(-1, -1) for _ in range(StreamManager.MAX_STREAMS)]
+        ]
+        self._seconday_cmds = [
+            [CameraCmd(-1, -1) for _ in range(StreamManager.MAX_STREAMS)]
         ]
 
-        self.streamed_devices_by_port_by_laptop_idx = [
-            [CameraCmd(-1, -1) for _ in range(StreamManager.MAX_NUM_POSSIBLE_CAMERAS)]
-            for __ in range(StreamManager.NUM_DIFFERENT_IPS)
-        ]
+    def reset_streams(self, req: ResetCamerasRequest) -> ResetCamerasResponse:
+        """
+        Destroy all streams for a particular IP endpoint.
+        :param req: Request message from the GUI.
+        :return: A corresponding response.
+        """
+        with self._lock:
+            for i in range(len(self._stream_by_device)):
+                # If a stream exists and is to the intended IP endpoint...
+                if (
+                    self._stream_by_device[i] and
+                    self._stream_by_device[i].primary == req.primary
+                ):
+                    # Reset the stream object, thus calling the finalizer and killing the process.
+                    self._stream_by_device[i] = None
 
-        primary_ip = rospy.get_param("cameras/ips/primary")
-        secondary_ip = rospy.get_param("cameras/ips/secondary")
+            return ResetCamerasResponse(self._primary_cmds, self._secondary_cmds)
 
-        self.ips = [primary_ip, secondary_ip]
-        self.cap_args = [
-            # [bps, width, height, fps]
-            list(rospy.get_param("cameras/arguments/worst_res")),
-            list(rospy.get_param("cameras/arguments/low_res")),
-            list(rospy.get_param("cameras/arguments/medium_res")),
-            list(rospy.get_param("cameras/arguments/high_res")),
-            list(rospy.get_param("cameras/arguments/best_res")),
-        ]
-        self.skip_every_other_device = rospy.get_param("cameras/skip_every_other_device")
+    def _get_open_cmd_slot(self, primary: bool) -> CameraCmd:
+        cmds = self._primary_cmds if primary else self._secondary_cmds
 
-    def get_num_devices_streaming(self) -> int:
-        num_streaming_devices = 0
-        for i in range(StreamManager.NUM_DIFFERENT_IPS):
-            for device in self.streamed_devices_by_port_by_laptop_idx[i]:
-                if device.device != -1:
-                    num_streaming_devices += 1
-        return num_streaming_devices
-
-    def get_available_stream(self, primary: bool) -> int:
-        idx = 0 if primary else 1
-        available_stream = 0
-        for i in range(StreamManager.MAX_NUM_POSSIBLE_CAMERAS):
-            if self.streamed_devices_by_port_by_laptop_idx[idx][available_stream].device == -1:
-                return available_stream
-            else:
-                available_stream += 1
-        rospy.logerr("CODE SHOULD NEVER REACH HERE")
-        return -1
-
-    def stop_device_id_stream(self, laptop_idx: int, device_id: int) -> None:
-        if self.stream_process_list[laptop_idx][device_id] is not None:
-            self.stream_process_list[laptop_idx][device_id].kill()
-            self.stream_process_list[laptop_idx][device_id].join()
-            self.stream_process_list[laptop_idx][device_id] = None
-        for i in range(StreamManager.NUM_DIFFERENT_IPS):
-            for j in range(len(self.streamed_devices_by_port_by_laptop_idx[i])):
-                if self.streamed_devices_by_port_by_laptop_idx[i][j].device == device_id:
-                    self.streamed_devices_by_port_by_laptop_idx[i][j] = CameraCmd(-1, -1)
-
-    def reset_cameras(self, req: ResetCamerasRequest) -> ResetCamerasResponse:
-        laptop_idx = 0 if req.primary else 1
-        for device in self.streamed_devices_by_port_by_laptop_idx[laptop_idx]:
-            if device.device != -1:
-                self.stop_device_id_stream(laptop_idx, device.device)
-
-        return ResetCamerasResponse(
-            self.streamed_devices_by_port_by_laptop_idx[0], self.streamed_devices_by_port_by_laptop_idx[1]
-        )
+        for cmd in cmds:
+            if cmd.device == -1:
+                return cmd
+            
+        assert False, "Could not find CameraCmd slot"
+    
+    def _get_change_response(self, success: bool) -> ChangeCamerasResponse:
+        return ChangeCamerasResponse(success, self._primary_cmds, self._secondary_cmds)
 
     def handle_req(self, req: ChangeCamerasRequest) -> ChangeCamerasResponse:
-        cmds = req.camera_cmds
-        laptop_idx = 0 if req.primary else 1
-        device_id = cmds.device
-        cap = cmds.resolution
+        """
+        Handle a basic cameras request by starting, editing, or deleting a stream.
+        :param req: Request message from the GUI.
+        :return: A corresponding response.
+        """
+        device_id = req.camera_cmd.device
 
-        if cap:
-            if self.stream_process_list[laptop_idx][device_id] is not None:
-                self.stop_device_id_stream(laptop_idx, device_id)
-            else:
-                if self.get_num_devices_streaming() == 4:
-                    return ChangeCamerasResponse(
-                        False,
-                        self.streamed_devices_by_port_by_laptop_idx[0],
-                        self.streamed_devices_by_port_by_laptop_idx[1],
-                    )
+        if not (0 <= device_id < self.MAX_DEVICE_ID):
+            rospy.logerr(f"Received invalid camera device ID {device_id}")
+            return self._get_change_response(False)
 
-            available_port = self.get_available_stream(req.primary)
-            self.stream_process_list[laptop_idx][device_id] = Process(
-                target=send,
-                args=(
-                    device_id * 2 if self.skip_every_other_device else device_id,
-                    self.ips[laptop_idx],
-                    5000 + available_port,
-                    self.cap_args[cap - 1][0],
-                    self.cap_args[cap - 1][1],
-                    self.cap_args[cap - 1][2],
-                    self.cap_args[cap - 1][3],
-                    True,
-                ),
-            )
-            self.streamed_devices_by_port_by_laptop_idx[laptop_idx][available_port] = CameraCmd(
-                device_id, cmds.resolution
-            )
-            self.stream_process_list[laptop_idx][device_id].start()
+        with self._lock:
+            # Reset the stream object if it exists. If it was running, this finalizes the stream
+            # object, which in turn kills the process and resets the command.
+            self._stream_by_device[device_id] = None
 
-        else:
-            if self.stream_process_list[laptop_idx][device_id] is not None:
-                self.stop_device_id_stream(laptop_idx, device_id)
-        return ChangeCamerasResponse(
-            True, self.streamed_devices_by_port_by_laptop_idx[0], self.streamed_devices_by_port_by_laptop_idx[1]
-        )
+            # If a stream is being requested...
+            # (resolution == -1 means a request to cancel stream)
+            if 0 <= req.camera_cmd.resolution < len(self.CAPTURE_ARGS):
+
+                # If we cannot handle any more streams, return False.
+                num_streams = len([stream for stream in self._stream_by_device if stream])
+                if (num_streams == self.MAX_STREAMS):
+                    return self._get_change_response(False)
+
+                # Get a reference to an available slot and give to a new stream.
+                cmd_obj = self._get_open_cmd_slot(req.primary)
+                self._stream_by_device[device_id] = Stream(req, cmd_obj)
+
+            return self._get_change_response(True)
 
 
 def send(device=0, host="10.0.0.7", port=5000, bitrate=4000000, width=1280, height=720, fps=30, is_colored=False):
@@ -224,9 +283,14 @@ def send(device=0, host="10.0.0.7", port=5000, bitrate=4000000, width=1280, heig
     out_send.release()
 
 
-if __name__ == "__main__":
+def main():
     rospy.init_node("cameras")
+
     stream_manager = StreamManager()
     rospy.Service("change_cameras", ChangeCameras, stream_manager.handle_req)
-    rospy.Service("reset_cameras", ResetCameras, stream_manager.reset_cameras)
+    rospy.Service("reset_cameras", ResetCameras, stream_manager.reset_streams)
+
     rospy.spin()
+
+if __name__ == "__main__":
+    main()
