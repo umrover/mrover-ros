@@ -100,7 +100,7 @@ void Controller::moveOpenLoop(float input) {
     }
 }
 
-// REQUIRES: //TODO: 
+// REQUIRES: valid angle
 // MODIFIES: currentAngle. Also makes controller live if not already.
 // EFFECTS: I2C bus, Sends an close loop command scaled to PWM limits
 // based on allowed voltage of the motor. Also updates angle.
@@ -108,7 +108,7 @@ void Controller::moveClosedLoop(float targetAngle) {
     try {
         makeLive();
 
-        int32_t targetPosition = (quadCPR * targetAngle) / (2 * M_PI);
+        auto targetPosition = (int32_t) ((quadCPR * targetAngle) / (2 * M_PI));
 
         uint8_t buffer[4];
         memcpy(buffer, UINT8_POINTER_T(&targetPosition), sizeof(targetPosition));
