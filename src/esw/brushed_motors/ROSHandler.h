@@ -2,6 +2,7 @@
 
 #include "ControllerMap.h"          // for ControllerMap
 #include <array>                    // for array
+#include <algorithm>                // for distance
 #include <cmath>                    // for nan
 #include <mrover/CalibrateMotors.h> // for CalibrateMotors
 #include <mrover/AdjustMotors.h>    // for AdjustMotors
@@ -30,6 +31,7 @@ private:
     // Calibrate service
     inline static ros::ServiceServer calibrateService;
     inline static ros::ServiceServer adjustService;
+    inline static ros::ServiceServer adjustUsingAbsEncService;
     inline static ros::ServiceServer enableLimitSwitchService;
 
     // RA
@@ -52,6 +54,7 @@ private:
     inline static ros::Subscriber moveCacheSubscriber;
 
     // Carousel
+    inline static std::string carousel_name;
     inline static ros::Subscriber moveCarouselSubscriber;
     inline static ros::Publisher calibrationStatusPublisherCarousel;
     inline static mrover::Calibrated calibrationStatusCarousel;
@@ -107,6 +110,11 @@ private:
 
     // REQUIRES: valid req and res objects
     // MODIFIES: res
+    // EFFECTS: takes the current absolute encoder value, applies an offset, and hard sets the new angle
+    static bool processMotorAdjustUsingAbsEnc(mrover::AdjustMotors::Request& req, mrover::AdjustMotors::Response& res);
+
+    // REQUIRES: valid req and res objects
+    // MODIFIES: res
     // EFFECTS: disables or enables limit switches
     static bool processMotorEnableLimitSwitches(mrover::EnableDevice::Request& req, mrover::EnableDevice::Response& res);
 
@@ -115,4 +123,9 @@ public:
     // MODIFIES: static variables
     // EFFECTS: Initializes all subscribers and publishers.
     static void init(ros::NodeHandle* rosNode);
+
+    // REQUIRES: name is the name of a controller and isCalibrated is whether it is calibrated
+    // MODIFIES: static variables
+    // EFFECTS: Publishes calibration status to the proper topic depending on the name
+    static void publish_calibration_data_using_name(const std::string& name, bool isCalibrated);
 };
