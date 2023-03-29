@@ -75,17 +75,41 @@ std::optional<float> ROSHandler::moveControllerOpenLoop(const std::string& name,
 
 // REQUIRES: nothing
 // MODIFIES: nothing
+// EFFECTS: Moves a controller in closed loop.
+std::optional<float> ROSHandler::moveControllerClosedLoop(const std::string& name, float targetAngle) {
+    auto controller_iter = ControllerMap::controllersByName.find(name);
+
+    if (controller_iter == ControllerMap::controllersByName.end()) {
+        return std::nullopt;
+    }
+
+    // TODO: actually write this code idk
+    Controller* controller = controller_iter->second;
+    controller->moveClosedLoop(targetAngle);
+
+    return std::make_optional<float>(controller->getCurrentAngle());
+}
+
+// REQUIRES: nothing
+// MODIFIES: nothing
 // EFFECTS: Moves the RA joints in open loop and publishes angle data right after.
 // Note: any invalid controllers will be published with a position of 0.
 void ROSHandler::moveRA(const sensor_msgs::JointState::ConstPtr& msg) {
     int mappedIndex = 0;
+    bool useClosedLoop = !msg->position.empty();
     for (size_t i = 0; i < msg->name.size(); ++i) {
         if ((i == 2) || (i == 3) || (i == 4)) {
             // We expect msg->name to be joints a, b, c, d, e, f, finger, and gripper.
             // Skip if msg->name[i] is joints c, d, or e. So skip if i == 2, 3, or 4.
             continue;
         }
-        std::optional<float> pos = moveControllerOpenLoop(msg->name[i], (float) msg->velocity[i]);
+        std::optional<float> pos;
+        if (useClosedLoop) {
+            pos = moveControllerClosedLoop(msg->name[i], (float) msg->position[i]);
+        } 
+        else { 
+            pos = moveControllerOpenLoop(msg->name[i], (float) msg->velocity[i]);
+        }
 
         jointDataRA.position[mappedIndex] = pos.value_or(0.0);
 
