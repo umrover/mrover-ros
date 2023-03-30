@@ -13,6 +13,7 @@ from path_planner import PathPlanner
 MAX_DRIVING_EFFORT = 1
 MIN_DRIVING_EFFORT = -1
 TURNING_P = 10.0
+ROVER_WIDTH = 1  # meters
 
 
 class Driver:
@@ -26,6 +27,23 @@ class Driver:
         Add a newly-detected failure zone to the PathPlanner.
         """
         self.planner.add_failure_zone(failure_zone)
+    
+    def add_post_as_failure_zone(self, post_pos: np.ndarray) -> None:
+        """
+        Add a newly-detected post as a failure zone to the PathPlanner.
+        """
+        fid_x = post_pos[0]
+        fid_y = post_pos[1]
+
+        pad = ROVER_WIDTH / 2 + 0.1
+
+        v1 = [fid_x - pad, fid_y - pad]
+        v2 = [fid_x - pad, fid_y + pad]
+        v3 = [fid_x + pad, fid_y + pad]
+        v4 = [fid_x + pad, fid_y - pad]
+
+        post_fz = FailureZone(Polygon([v1, v2, v3, v4]))
+        self.add_failure_zone(post_fz) 
 
     def get_drive_command(
         self,

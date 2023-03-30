@@ -13,7 +13,6 @@ from failure_zone import FailureZone
 
 STOP_THRESH = 0.2
 DRIVE_FWD_THRESH = 0.34  # 20 degrees
-ROVER_WIDTH = 1.0
 
 @dataclass
 class SearchTrajectory(Trajectory):
@@ -105,17 +104,6 @@ class SearchState(BaseState):
         if self.context.env.current_gate() is not None:
             return SearchStateTransitions.found_gate.name  # type: ignore
         elif self.context.env.current_fid_pos() is not None:
-            fid_x = self.context.env.current_fid_pos()[0]
-            fid_y = self.context.env.current_fid_pos()[1]
-            pad = ROVER_WIDTH/2 + 0.1
-            
-            v1 = [fid_x - pad, fid_y - pad]
-            v2 = [fid_x - pad, fid_y + pad]
-            v3 = [fid_x + pad, fid_y + pad]
-            v4 = [fid_x + pad, fid_y - pad]
-            post_fz = FailureZone(Polygon([v1, v2, v3, v4]))
-            self.context.driver.add_failure_zone(post_fz) 
-
             return SearchStateTransitions.found_fiducial.name  # type: ignore
 
         return SearchStateTransitions.continue_search.name  # type: ignore
