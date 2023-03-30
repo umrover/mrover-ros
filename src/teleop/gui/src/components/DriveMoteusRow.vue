@@ -1,51 +1,51 @@
 <template>
-        <div>
-          <table
-          class="tableFormat"
-          style="undefined;table-layout: fixed; width: 400px"
-          >
-            <colgroup>
-            <col style="width: 20px" />
-            <col style="width: 30px" />
-            <col style="width: 30px" />
-            </colgroup>
-            
-              <th class="tableElement tableHeader"  >{{ header }}</th>
-             
-                <th class="tableElement"  >
-                    {{leftmotor}}
-                </th >
-                <th class="tableElement "  >
-                    {{ rightmotor}}
-                </th>
-           
-            
-            </table>
-        </div>
+  <div>
+    <table
+      class="tableFormat"
+      style="undefined;table-layout: fixed; width: 400px"
+    >
+      <colgroup>
+        <col style="width: 20px" />
+        <col style="width: 30px" />
+        <col style="width: 30px" />
+      </colgroup>
 
+      <th class="tableElement tableHeader">{{ header }}</th>
+
+      <th v-if="header === 'Motor'" class="tableElement tableHeader">
+        {{ leftmotor }}
+      </th>
+      <th v-else class="tableElement">
+        {{ leftmotor }}
+      </th>
+      <th v-if="header === 'Motor'" class="tableElement tableHeader">
+        {{ rightmotor }}
+      </th>
+      <th v-else class="tableElement">
+        {{ rightmotor }}
+      </th>
+    </table>
+  </div>
 </template>
 
-<script>    
+<script>
 export default {
   props: {
     header: {
       type: String,
-      required: true,
+      required: true
     },
 
     leftmotor: {
       type: String,
-      required: true,
+      required: true
     },
 
     rightmotor: {
       type: String,
-      required: true,
-    },
-
-   
-    
-  },
+      required: true
+    }
+  }
 };
 </script>
 
@@ -99,6 +99,5 @@ export default {
 .tableElement.tableHeader {
   font-weight: bold;
   width: 20px;
-
 }
 </style>
