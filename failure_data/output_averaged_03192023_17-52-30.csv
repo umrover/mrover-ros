@@ -1,2 +1,0 @@
-,row,timestamp,rotation,position,actual_linear_vel,actual_angular_vel,wheel_names,wheel_effort,wheel_vel,commanded_linear,commanded_angular,actual_linear_speed
-0,0,0,[0. 0. 0. 0.],[0. 0. 0.],[0. 0. 0.],[0. 0. 0.],['' '' '' '' '' ''],[0. 0. 0. 0. 0. 0.],[0. 0. 0. 0. 0. 0.],[0. 0. 0.],[0. 0. 0.],0

@@ -13,6 +13,8 @@ import numpy as np
 import os
 from pathlib import Path
 
+# DF_THRESHOLD = 10
+
 
 class FailureIdentifier:
     """
@@ -30,12 +32,13 @@ class FailureIdentifier:
     def __init__(self):
         nav_status_sub = message_filters.Subscriber("smach/container_status", SmachContainerStatus)
         cmd_vel_sub = rospy.Subscriber("cmd_vel", Twist, self.cmd_vel_update)
-        drive_status_sub = message_filters.Subscriber("drive_status", MotorsStatus)
+        #drive_status_sub = message_filters.Subscriber("drive_status", MotorsStatus)
         odometry_sub = message_filters.Subscriber("global_ekf/odometry", Odometry)
         stuck_button_sub = rospy.Subscriber("/rover_stuck", Bool, self.stuck_button_update)
 
         ts = message_filters.ApproximateTimeSynchronizer(
-            [nav_status_sub, drive_status_sub, odometry_sub], 10, 1.0, allow_headerless=True
+            # [nav_status_sub, drive_status_sub, odometry_sub], 10, 1.0, allow_headerless=True
+            [nav_status_sub, odometry_sub], 10, 1.0, allow_headerless=True
         )
         ts.registerCallback(self.update)
 
@@ -43,8 +46,8 @@ class FailureIdentifier:
         position_variables = ["x", "y", "z"]
         rotation_variables = [f"rot_{comp}" for comp in ["x", "y", "z", "w"]]
         velocity_variables = ["linear_velocity", "angular_velocity"]
-        wheel_effort_variables = [f"wheel_{wheel_num}_effort" for wheel_num in range(6)]
-        wheel_velocity_variables = [f"wheel_{wheel_num}_velocity" for wheel_num in range(6)]
+        # wheel_effort_variables = [f"wheel_{wheel_num}_effort" for wheel_num in range(6)]
+        # wheel_velocity_variables = [f"wheel_{wheel_num}_velocity" for wheel_num in range(6)]
         command_variables = ["cmd_vel_x", "cmd_vel_twist"]
         self.data_collecting_mode = True
         self.actively_collecting = False
@@ -55,13 +58,17 @@ class FailureIdentifier:
             + position_variables
             + rotation_variables
             + velocity_variables
-            + wheel_effort_variables
-            + wheel_velocity_variables
+            # + wheel_effort_variables
+            # + wheel_velocity_variables
             + command_variables
         )
         print(cols)
         self._df = pd.DataFrame(columns=cols)
+        self.left_pointer = 0
+        self.right_pointer = 0
+        self.row_counter = 0
         self.watchdog = WatchDog(self)
+
 
     def write_to_csv(self):
         """
@@ -81,7 +88,8 @@ class FailureIdentifier:
     def cmd_vel_update(self, cmd_vel: Twist):
         self.cur_cmd = cmd_vel
 
-    def update(self, nav_status: SmachContainerStatus, drive_status: MotorsStatus, odometry: Odometry):
+    # def update(self, nav_status: SmachContainerStatus, drive_status: MotorsStatus, odometry: Odometry):
+    def update(self, nav_status: SmachContainerStatus,  odometry: Odometry):
         """
         Updates the current row of the data frame with the latest data from the rover
         then appends the row to the data frame
@@ -106,6 +114,7 @@ class FailureIdentifier:
         # print("collecting")
         self.actively_collecting = True
         cur_row = {}
+        cur_row["row"] = self.row_counter
         cur_row["time"] = rospy.Time.now()
 
         # if the stuck button is pressed, the rover is stuck (as indicated by the GUI)
@@ -137,12 +146,13 @@ class FailureIdentifier:
         cur_row["angular_velocity"] = odometry.twist.twist.angular.z
 
         # get the wheel effort and velocity from the drive status message
-        for wheel_num in range(6):
-            cur_row[f"wheel_{wheel_num}_effort"] = drive_status.joint_states.effort[wheel_num]
-            cur_row[f"wheel_{wheel_num}_velocity"] = drive_status.joint_states.velocity[wheel_num]
+        # for wheel_num in range(6):
+        #     cur_row[f"wheel_{wheel_num}_effort"] = drive_status.joint_states.effort[wheel_num]
+        #     cur_row[f"wheel_{wheel_num}_velocity"] = drive_status.joint_states.velocity[wheel_num]
 
         # update the data frame with the cur row
         self._df = pd.concat([self._df, DataFrame([cur_row])])
+        self.row_counter += 1
 
         # publish the watchdog status if the nav state is not recovery
         if nav_status.active_states[0] != "recovery":
