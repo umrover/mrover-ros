@@ -31,7 +31,7 @@ def joint_states_callback(msg: JointState):
         joint_states = msg
 
 
-def euclidean_error(threshold: int, feedback: FollowJointTrajectoryFeedback) -> str:
+def euclidean_error(threshold: float, feedback: FollowJointTrajectoryFeedback) -> str:
     """
     Computes the norm of the measured position errors and compares it against the given threshold.
     Returns an error message if the threshold is exceeded, and an empty string if it is not.
@@ -44,7 +44,7 @@ def euclidean_error(threshold: int, feedback: FollowJointTrajectoryFeedback) -> 
     return ""
 
 
-def joint_error(thresholds: list, feedback: FollowJointTrajectoryFeedback) -> str:
+def joint_error(thresholds: List[float], feedback: FollowJointTrajectoryFeedback) -> str:
     """
     Compares the position errors of each joint against the given list of thresholds.
     Returns an error message if a joint's threshold is exceeded, and an empty string if no threshold is exceeded.
@@ -164,14 +164,10 @@ class MoveItAction(object):
                 self._feedback.actual.positions = joint_states.position
                 self._feedback.actual.velocities = joint_states.velocity
                 self._feedback.actual.time_from_start = rospy.Time.from_sec(time.time()) - time_start
-            self._feedback.error.positions = [
-                desired - actual
-                for desired, actual in zip(self._feedback.desired.positions, self._feedback.actual.positions)
-            ]
-            self._feedback.error.velocities = [
-                desired - actual
-                for desired, actual in zip(self._feedback.desired.velocities, self._feedback.actual.velocities)
-            ]
+            self._feedback.error.positions = np.subtract(self._feedback.desired.positions,
+                                                         self._feedback.actual.positions).tolist()
+            self._feedback.error.velocities = np.subtract(self._feedback.desired.velocities,
+                                                         self._feedback.actual.velocities).tolist()
             self._as.publish_feedback(self._feedback)
             # ---------------------------------------
             # Abort upon exceeding error threshold
