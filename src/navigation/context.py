@@ -20,10 +20,12 @@ REF_LON = rospy.get_param("gps_linearization/reference_point_longitude")
 
 tf_broadcaster: tf2_ros.StaticTransformBroadcaster = tf2_ros.StaticTransformBroadcaster()
 
+
 @dataclass
 class Gate:
     post1: np.ndarray
     post2: np.ndarray
+
 
 @dataclass
 class Rover:
@@ -95,6 +97,7 @@ class Environment:
             return Gate(post1[0:2], post2[0:2])
         else:
             return None
+
 
 @dataclass
 class Course:
