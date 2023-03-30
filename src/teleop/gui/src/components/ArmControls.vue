@@ -43,7 +43,11 @@
     </div>
     <h3>Slow Mode</h3>
     <div>
-      <Checkbox ref="Slow Mode" :name="'Slow Mode'" @toggle="updateSlowMode($event)" />
+      <Checkbox
+        ref="Slow Mode"
+        :name="'Slow Mode'"
+        @toggle="updateSlowMode($event)"
+      />
     </div>
     <div class="controls laser">
       <ToggleButton
@@ -112,7 +116,7 @@ export default {
     });
     this.slow_mode_pub = new ROSLIB.Topic({
       ros: this.$ros,
-      name: "/slow_mode",
+      name: "/ra_slow_mode",
       messageType: "std_msgs/Bool"
     });
     const jointData = {

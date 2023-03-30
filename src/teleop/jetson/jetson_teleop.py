@@ -95,10 +95,10 @@ class ArmControl:
 
         self.ra_cmd_pub = ros.Publisher("ra_cmd", JointState, queue_size=100)
         self.sa_cmd_pub = ros.Publisher("sa_cmd", JointState, queue_size=100)
-        
+
         self.ra_slow_mode = False
 
-        RA_NAMES = [
+        self.RA_NAMES = [
             "joint_a",
             "joint_b",
             "joint_c",
@@ -108,20 +108,20 @@ class ArmControl:
             "finger",
             "gripper",
         ]
-        SA_NAMES = ["sa_joint_1", "sa_joint_2", "sa_joint_3", "scoop", "microscope"]
+        self.SA_NAMES = ["sa_joint_1", "sa_joint_2", "sa_joint_3", "scoop", "microscope"]
 
         self.ra_cmd = JointState(
-            name=[name for name in RA_NAMES],
-            position=[nan for i in range(len(RA_NAMES))],
-            velocity=[0.0 for i in range(len(RA_NAMES))],
-            effort=[nan for i in range(len(RA_NAMES))],
+            name=[name for name in self.RA_NAMES],
+            position=[nan for i in range(len(self.RA_NAMES))],
+            velocity=[0.0 for i in range(len(self.RA_NAMES))],
+            effort=[nan for i in range(len(self.RA_NAMES))],
         )
 
         self.sa_cmd = JointState(
-            name=[name for name in SA_NAMES],
-            position=[nan for i in range(len(SA_NAMES))],
-            velocity=[0.0 for i in range(len(SA_NAMES))],
-            effort=[nan for i in range(len(SA_NAMES))],
+            name=[name for name in self.SA_NAMES],
+            position=[nan for i in range(len(self.SA_NAMES))],
+            velocity=[0.0 for i in range(len(self.SA_NAMES))],
+            effort=[nan for i in range(len(self.SA_NAMES))],
         )
 
     # Callback function executed after the publication of the current robot position
@@ -134,6 +134,14 @@ class ArmControl:
         """
         with self._arm_mode_lock:
             self._arm_mode = msg.data
+
+    def slow_mode_callback(self, msg: Bool) -> None:
+        """
+        Callback for slow mode
+        :param msg: Bool sent from GUI for whether or not to use slow mode
+        :return:
+        """
+        self.ra_slow_mode = msg.data
 
     def filter_xbox_axis(
         self,
@@ -202,7 +210,7 @@ class ArmControl:
             self.ra_config["finger"]["multiplier"] * self.filter_xbox_button(msg.buttons, "y", "a"),
             self.ra_config["gripper"]["multiplier"] * self.filter_xbox_button(msg.buttons, "b", "x"),
         ]
-        
+
         for i, name in enumerate(self.RA_NAMES):
             if self.ra_slow_mode:
                 self.ra_cmd.velocity[i] *= self.ra_config[name]["slow_mode_multiplier"]
@@ -258,7 +266,7 @@ def main():
     ros.Subscriber("xbox/ra_control", Joy, arm.ra_control_callback)
     ros.Subscriber("ra/mode", String, arm.ra_mode_callback)
     ros.Subscriber("xbox/sa_control", Joy, arm.sa_control_callback)
-    ros.Subscriber("slow_mode", Bool, arm.slow_mode_callback)
+    ros.Subscriber("ra_slow_mode", Bool, arm.slow_mode_callback)
 
     ros.spin()
 
