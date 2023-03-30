@@ -174,8 +174,34 @@ class PathPlanner:
                             target_pos, 
                             cost_func = lambda u, v, e, prev_e : e.length).nodes
         except NoPathError: 
-        # if no clear path found, just construct a straight-line to the target
-            self.path = [source_pos, target_pos] 
+            source_in_fz = False
+            target_in_fz = False
+
+            source_fz = None
+
+            for fz in self.failure_zones:
+                if fz.intersects(source_pos):
+                    source_in_fz = True
+                    source_fz = fz
+                if fz.intersects(target_pos):
+                    target_in_fz = True
+            
+            if (source_in_fz and not target_in_fz):
+                # if the source is in a failure zone, get out of the failure zone
+                # as fast as possible, and then plan the path to the target
+                closest_vertex = source_fz.get_closest_vertex(source_pos)
+                try:
+                    path = find_path(self.visibility_graph, 
+                                    closest_vertex, 
+                                    target_pos, 
+                                    cost_func = lambda u, v, e, prev_e : e.length).nodes
+                except NoPathError:
+                    self.path = [source_pos, target_pos]
+                
+                self.path = [source_pos] + path
+            else:
+                # if no clear path found, just construct a straight-line to the target
+                self.path = [source_pos, target_pos]
 
         self.target_vertex_idx = 0
     
