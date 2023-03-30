@@ -1,14 +1,26 @@
 <template>
-   
-      
         <div>
-            <th class="tableElement tableHeader"  >{{ header }}</th>
-            <th class="tableElement "  >
-                {{ leftmotor }}
-            </th >
-            <th class="tableElement "  >
-                {{ rightmotor }}
-            </th>
+          <table
+          class="tableFormat"
+          style="undefined;table-layout: fixed; width: 400px"
+          >
+            <colgroup>
+            <col style="width: 20px" />
+            <col style="width: 30px" />
+            <col style="width: 30px" />
+            </colgroup>
+            
+              <th class="tableElement tableHeader"  >{{ header }}</th>
+             
+                <th class="tableElement"  >
+                    {{leftmotor}}
+                </th >
+                <th class="tableElement "  >
+                    {{ rightmotor}}
+                </th>
+           
+            
+            </table>
         </div>
 
 </template>
@@ -29,7 +41,9 @@ export default {
     rightmotor: {
       type: String,
       required: true,
-    }
+    },
+
+   
     
   },
 };

@@ -14,95 +14,78 @@
           <col style="width: 30px" />
         </colgroup>
         <thead>
-          <tr v-for="(joint, index) in moteusStateData.name" :key="index">
-            <td class="tableElement tableHeader">
-              {{ moteusStateData.name[index] }}
-            </td>
-            <td class="tableElement tableHeader">
-              {{ moteusStateData.name[index] }}
-            </td>
-          </tr>
-          <tr>
-            <th class="tableElement tableHeader">Motor</th>
-            <th class="tableElement tableHeader">
-              {{ moteusStateData.name[indices.FrontLeft] }}
-            </th>
-            <th class="tableElement tableHeader">
-              {{ moteusStateData.name[indices.
-              FrontRight] }}
-            </th>
-          </tr>
-            <th class="tableElement tableHeader">State</th>
-            <th class="tableElement">
-              {{ moteusStateData.state[indices.FrontLeft] }}
-            </th>
-            <th class="tableElement">
-              {{ moteusStateData.state[indices.FrontRight] }}
-            </th>
-          </tr>
-          <tr>
-            <th class="tableElement tableHeader">Error</th>
-            <th class="tableElement">
-              {{ moteusStateData.error[indices.FrontLeft] }}
-            </th>
-            <th class="tableElement">
-              {{ moteusStateData.error[indices.FrontRight] }}
-            </th>
-          </tr>
-          <tr>
-            <th class="tableElement tableHeader">Motor</th>
-            <th class="tableElement tableHeader">
-              {{ moteusStateData.name[indices.MiddleLeft] }}
-            </th>
-            <th class="tableElement tableHeader">
-              {{ moteusStateData.name[indices.MiddleRight] }}
-            </th>
-          </tr>
-          <tr>
-            <th class="tableElement tableHeader">State</th>
-            <th class="tableElement">
-              {{ moteusStateData.state[indices.MiddleLeft] }}
-            </th>
-            <th class="tableElement">
-              {{ moteusStateData.state[indices.MiddleRight] }}
-            </th>
-          </tr>
-          <tr>
-            <th class="tableElement tableHeader">Error</th>
-            <th class="tableElement">
-              {{ moteusStateData.error[indices.MiddleLeft] }}
-            </th>
-            <th class="tableElement">
-              {{ moteusStateData.error[indices.MiddleRight] }}
-            </th>
-          </tr>
-          <tr>
-            <th class="tableElement tableHeader">Motor</th>
-            <th class="tableElement tableHeader">
-              {{ moteusStateData.name[indices.BackLeft] }}
-            </th>
-            <th class="tableElement tableHeader">
-              {{ moteusStateData.name[indices.BackRight] }}
-            </th>
-          </tr>
-          <tr>
-            <th class="tableElement tableHeader">State</th>
-            <th class="tableElement">
-              {{ moteusStateData.state[indices.BackLeft] }}
-            </th>
-            <th class="tableElement">
-              {{ moteusStateData.state[indices.BackRight] }}
-            </th>
-          </tr>
-          <tr>
-            <th class="tableElement tableHeader">Error</th>
-            <th class="tableElement">
-              {{ moteusStateData.error[indices.BackLeft] }}
-            </th>
-            <th class="tableElement">
-              {{ moteusStateData.error[indices.BackRight] }}
-            </th>
-          </tr>
+        <div class="tableElement tableHeader">
+          <DriveMoteusStuff 
+          :header = "'Motor'"
+          :leftmotor = "moteusStateData.name[indices.FrontLeft] "
+          :rightmotor = "moteusStateData.name[indices.FrontRight] "
+          >
+         </DriveMoteusStuff>
+        </div>
+        <div>
+          <DriveMoteusStuff 
+          :header = "'State'"
+          :leftmotor = "moteusStateData.state[indices.FrontLeft]"
+          :rightmotor = "moteusStateData.state[indices.FrontRight]"
+          >
+         </DriveMoteusStuff>
+        </div> 
+        <div>
+          <DriveMoteusStuff 
+          :header = "'Error'"
+          :leftmotor = "moteusStateData.error[indices.FrontLeft]"
+          :rightmotor = "moteusStateData.error[indices.FrontRight]"
+          >
+         </DriveMoteusStuff>
+        </div> 
+        <div>
+          <DriveMoteusStuff 
+          :header = "'Motor'"
+          :leftmotor = "moteusStateData.name[indices.MiddleLeft]"
+          :rightmotor = "moteusStateData.name[indices.MiddleRight]"
+          >
+         </DriveMoteusStuff>
+        </div> 
+        <div>
+          <DriveMoteusStuff 
+          :header = "'State'"
+          :leftmotor = "moteusStateData.state[indices.MiddleLeft]"
+          :rightmotor = "moteusStateData.state[indices.MiddleRight]"
+          >
+         </DriveMoteusStuff>
+        </div> 
+        <div>
+          <DriveMoteusStuff 
+          :header = "'Error'"
+          :leftmotor = "moteusStateData.error[indices.BackLeft]"
+          :rightmotor = "moteusStateData.error[indices.BackRight]"
+          >
+         </DriveMoteusStuff>
+        </div> 
+        <div class = "tableElement tableHeader">
+          <DriveMoteusStuff
+          :header = "'Motor'"
+          :leftmotor = "moteusStateData.name[indices.BackLeft]"
+          :rightmotor = "moteusStateData.name[indices.BackRight]"
+          >
+         </DriveMoteusStuff>
+         <div>
+          <DriveMoteusStuff 
+          :header = "'State'"
+          :leftmotor = "moteusStateData.state[indices.BackLeft]"
+          :rightmotor = "moteusStateData.state[indices.BackRight]"
+          >
+         </DriveMoteusStuff>
+        </div> 
+        <div>
+          <DriveMoteusStuff 
+          :header = "'Error'"
+          :leftmotor = "moteusStateData.error[indices.BackLeft]"
+          :rightmotor = "moteusStateData.error[indices.BackRight]"
+          >
+         </DriveMoteusStuff>
+        </div> 
+        </div> 
         </thead>
       </table>
     </div>
@@ -110,7 +93,7 @@
 </template>
 
 <script>
-import DriveMoteusStuff from "./DriveMoteusStuff.vue";
+import DriveMoteusStuff from "./DriveMoteusRow.vue";
 import ROSLIB from "roslib";
 
 const state = {
