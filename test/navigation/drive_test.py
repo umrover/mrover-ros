@@ -77,7 +77,6 @@ class TestDrive(unittest.TestCase):
 
         v1 = np.array([-1, -1, 0])
         self.assertAlmostEqual(angle_to_rotate(v1, v2), pi)
-  
 
 
 if __name__ == "__main__":

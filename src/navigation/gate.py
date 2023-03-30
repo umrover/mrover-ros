@@ -23,7 +23,6 @@ DRIVE_FWD_THRESH = 0.34  # 20 degrees
 APPROACH_DISTANCE = 2.0
 
 
-
 @dataclass
 class GateTrajectory(Trajectory):
     @classmethod
