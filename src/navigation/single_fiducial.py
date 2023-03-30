@@ -42,8 +42,7 @@ class SingleFiducialState(WaypointState):
             )
             if arrived:
                 self.context.course.increment_waypoint()
-                curr_fid_pos = self.context.env.current_fid_pos()
-                self.context.driver.add_post_as_failure_zone(curr_fid_pos)
+                self.context.driver.add_post_as_failure_zone(fid_pos)
                 return SingleFiducialStateTransitions.finished_fiducial.name  # type: ignore
             self.context.rover.send_drive_command(cmd_vel)
         except (
