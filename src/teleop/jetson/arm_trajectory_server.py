@@ -164,10 +164,12 @@ class MoveItAction(object):
                 self._feedback.actual.positions = joint_states.position
                 self._feedback.actual.velocities = joint_states.velocity
                 self._feedback.actual.time_from_start = rospy.Time.from_sec(time.time()) - time_start
-            self._feedback.error.positions = np.subtract(self._feedback.desired.positions,
-                                                         self._feedback.actual.positions).tolist()
-            self._feedback.error.velocities = np.subtract(self._feedback.desired.velocities,
-                                                         self._feedback.actual.velocities).tolist()
+            self._feedback.error.positions = np.subtract(
+                self._feedback.desired.positions, self._feedback.actual.positions
+            ).tolist()
+            self._feedback.error.velocities = np.subtract(
+                self._feedback.desired.velocities, self._feedback.actual.velocities
+            ).tolist()
             self._as.publish_feedback(self._feedback)
             # ---------------------------------------
             # Abort upon exceeding error threshold
