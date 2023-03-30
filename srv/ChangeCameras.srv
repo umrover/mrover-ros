@@ -1,5 +1,5 @@
 bool primary # true if requesting streams for primary laptop
-CameraCmd camera_cmds
+CameraCmd camera_cmd
 ---
 bool success
 CameraCmd[4] primary_cameras
