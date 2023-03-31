@@ -21,6 +21,6 @@ jobs:
       - name: Build
         run: . /opt/ros/noetic/setup.sh && catkin build -DCMAKE_BUILD_TYPE=Release -DCMAKE_CXX_CLANG_TIDY=clang-tidy-12
       - name: Ensure Python requirements
-        run: pip3 install -r $GITHUB_WORKSPACE/src/requirements.txt
+        run: pip3 install --no-cache-dir -r $GITHUB_WORKSPACE/src/requirements.txt
       - name: Test
         run: . /opt/ros/noetic/setup.sh && . $GITHUB_WORKSPACE/devel/setup.sh && catkin test -j1

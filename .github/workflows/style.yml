@@ -16,6 +16,6 @@ jobs:
     steps:
       - uses: actions/checkout@v3
       - name: Ensure Python requirements
-        run: pip3 install -r $GITHUB_WORKSPACE/src/requirements.txt
+        run: pip3 install --no-cache-dir -r $GITHUB_WORKSPACE/requirements.txt
       - name: Style check C++/Python
         run: $GITHUB_WORKSPACE/style.sh
