@@ -25,7 +25,6 @@ class Resolution:
 
 
 class VideoDevices:
-
     device: int
     resolution: Resolution
 
@@ -150,7 +149,6 @@ class StreamingManager:
     MAX_CAMERA_DEVICES: int = 4
 
     def __init__(self):
-
         self._services = [
             [CameraCmd(-1, 0), CameraCmd(-1, 0), CameraCmd(-1, 0), CameraCmd(-1, 0)],
             [CameraCmd(-1, 0), CameraCmd(-1, 0), CameraCmd(-1, 0), CameraCmd(-1, 0)],

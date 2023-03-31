@@ -1,5 +1,5 @@
 from abc import ABC
-from typing import List
+from typing import List, Optional
 
 import smach
 from context import Context
@@ -17,9 +17,9 @@ class BaseState(smach.State, ABC):
     def __init__(
         self,
         context: Context,
-        add_outcomes: List[str] = None,
-        add_input_keys: List[str] = None,
-        add_output_keys: List[str] = None,
+        add_outcomes: Optional[List[str]] = None,
+        add_input_keys: Optional[List[str]] = None,
+        add_output_keys: Optional[List[str]] = None,
     ):
         add_outcomes = add_outcomes or []
         add_input_keys = add_input_keys or []
@@ -49,7 +49,7 @@ class BaseState(smach.State, ABC):
 
     def evaluate(self, ud: smach.UserData) -> str:
         """Override me instead of execute!"""
-        pass
+        raise NotImplementedError
 
 
 class DoneStateTransitions(Enum):

@@ -1,4 +1,4 @@
-from typing import List
+from typing import List, Optional
 
 import numpy as np
 import rospy
@@ -29,9 +29,9 @@ class WaypointState(BaseState):
     def __init__(
         self,
         context: Context,
-        add_outcomes: List[str] = None,
-        add_input_keys: List[str] = None,
-        add_output_keys: List[str] = None,
+        add_outcomes: Optional[List[str]] = None,
+        add_input_keys: Optional[List[str]] = None,
+        add_output_keys: Optional[List[str]] = None,
     ):
         add_outcomes = add_outcomes or []
         add_input_keys = add_input_keys or []

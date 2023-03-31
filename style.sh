@@ -24,7 +24,7 @@ if [ ! -x "$black_executable_path" ]; then
 fi
 
 # Style check Python with black
-if ! black --version | grep -q 'black, 22.8.0'; then
+if ! black --version | grep -q 'black, 23.3.0'; then
   echo -e "${RED}[Error] Wrong black version${NC}"
   exit 1
 fi
@@ -37,7 +37,7 @@ if [ ! -x "$mypy_executable_path" ]; then
   exit 1
 fi
 
-if ! mypy --version | grep -q 'mypy 0.971'; then
+if ! mypy --version | grep -q 'mypy 1.1.1'; then
   echo -e "${RED}[Error] Wrong mypy version${NC}"
   exit 1
 fi

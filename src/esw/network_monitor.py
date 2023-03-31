@@ -14,7 +14,6 @@ def get_bytes(t: str, interface: str) -> int:
 
 
 if __name__ == "__main__":
-
     rospy.init_node("network_monitor")
 
     iface = rospy.get_param("network_iface")

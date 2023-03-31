@@ -1,16 +1,13 @@
-aenum==3.1.11
-black==22.8.0
-boto3 == 1.24.86
-dijkstar==2.6.0
-future==0.18.2
+aenum==3.1.12
+black==23.3.0
+boto3 == 1.26.103
+Dijkstar==2.6.0
+future==0.18.3
 graphviz==0.20.1
-jinja2==3.1.2
-jsonschema==4.16.0
-kconfiglib==14.1.0
-moteus==0.3.48
-mypy==0.971
-pymap3d==2.9.1
-PyQt5==5.14.1
+moteus==0.3.53
+mypy==1.1.1
+pymap3d==3.0.1
+PyQt5==5.15.9
 pyserial==3.5
-Shapely==2.0.1
-pandas==1.5.2
+shapely==2.0.1
+pandas==1.5.3

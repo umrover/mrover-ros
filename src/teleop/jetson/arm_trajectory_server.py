@@ -31,17 +31,14 @@ def joint_states_callback(msg: JointState):
 
 
 class MoveItAction(object):
-
     # Rearranges the point path following the name convention joint_0, ... joint_6
     def rearrange(self, joint_trajectory: JointTrajectory) -> None:
-
         mapping = [joint_trajectory.joint_names.index(j) for j in conf_joint_names]
 
         # Return early if already arranged properly
         if mapping == sorted(mapping):
             return
         for point in joint_trajectory.points:
-
             temp_positions: List[float] = []
             temp_velocities: List[float] = []
             temp_accelerations: List[float] = []
@@ -78,7 +75,6 @@ class MoveItAction(object):
 
     # Action callback
     def execute_cb(self, goal: FollowJointTrajectoryGoal) -> None:
-
         rospy.loginfo("Executing FollowJointTrajectory Action")
         # It is required to rearrange the arrays because MoveIt doesn't guarantee order preservation
         self.rearrange(goal.trajectory)
