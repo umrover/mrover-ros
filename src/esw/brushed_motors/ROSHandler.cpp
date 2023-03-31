@@ -83,7 +83,7 @@ std::optional<float> ROSHandler::moveControllerClosedLoop(const std::string& nam
         return std::nullopt;
     }
 
-    // TODO: actually write this code idk
+    // TODO: complete impl
     Controller* controller = controller_iter->second;
     controller->moveClosedLoop(targetAngle);
 
@@ -191,7 +191,7 @@ bool ROSHandler::processMotorCalibrate(mrover::CalibrateMotors::Request& req, mr
     if (controller_iter == ControllerMap::controllersByName.end()) {
         ROS_ERROR("Could not find controller named %s.", req.name.c_str());
         res.actively_calibrating = false;
-        return false;
+        return true;
     }
 
     auto& [name, controller] = *controller_iter;
@@ -223,7 +223,7 @@ bool ROSHandler::processMotorAdjust(mrover::AdjustMotors::Request& req, mrover::
     if (controller_iter == ControllerMap::controllersByName.end()) {
         ROS_ERROR("Could not find controller named %s.", req.name.c_str());
         res.success = false;
-        return false;
+        return true;
     }
 
     auto& [name, controller] = *controller_iter;
@@ -246,7 +246,7 @@ bool ROSHandler::processMotorAdjustUsingAbsEnc(mrover::AdjustMotors::Request& re
     if (controller_iter == ControllerMap::controllersByName.end()) {
         ROS_ERROR("Could not find controller named %s.", req.name.c_str());
         res.success = false;
-        return false;
+        return true;
     }
 
     auto& [name, controller] = *controller_iter;
@@ -271,7 +271,7 @@ bool ROSHandler::processMotorEnableLimitSwitches(mrover::EnableDevice::Request& 
     if (controller_iter == ControllerMap::controllersByName.end()) {
         ROS_ERROR("Could not find controller named %s.", req.name.c_str());
         res.success = false;
-        return false;
+        return true;
     }
 
     auto& [name, controller] = *controller_iter;
