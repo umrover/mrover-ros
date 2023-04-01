@@ -23,7 +23,7 @@ SECONDARY_IP: str = rospy.get_param("cameras/ips/secondary")
 
 CAPTURE_ARGS: List[Dict[str, int]] = rospy.get_param("cameras/arguments")
 
-DEVICES_DOUBLED: bool = rospy.get_param("cameras/deviced_doubled")
+DEVICES_DOUBLED: bool = rospy.get_param("cameras/devices_doubled")
 
 
 class Stream:
@@ -49,6 +49,7 @@ class Stream:
     """
 
     def __init__(self, req: ChangeCamerasRequest, cmd: CameraCmd):
+        self._cmd = cmd
         self._cmd.device = req.camera_cmd.device
         self._cmd.resolution = req.camera_cmd.resolution
 
@@ -118,7 +119,7 @@ class StreamManager:
 
         self._stream_by_device = [None for _ in range(self.MAX_DEVICE_ID)]
         self._primary_cmds = [CameraCmd(-1, -1) for _ in range(StreamManager.MAX_STREAMS)]
-        self._seconday_cmds = [CameraCmd(-1, -1) for _ in range(StreamManager.MAX_STREAMS)]
+        self._secondary_cmds = [CameraCmd(-1, -1) for _ in range(StreamManager.MAX_STREAMS)]
 
     def reset_streams(self, req: ResetCamerasRequest) -> ResetCamerasResponse:
         """
