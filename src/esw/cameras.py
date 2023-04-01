@@ -4,7 +4,7 @@ import rospy
 
 import cv2
 from multiprocessing import Process
-from typing import Dict, List, Optional
+from typing import Dict, List, Any
 from threading import Lock
 
 from mrover.msg import CameraCmd
@@ -24,6 +24,7 @@ SECONDARY_IP: str = rospy.get_param("cameras/ips/secondary")
 CAPTURE_ARGS: List[Dict[str, int]] = rospy.get_param("cameras/arguments")
 
 DEVICES_DOUBLED: bool = rospy.get_param("cameras/deviced_doubled")
+
 
 class Stream:
     """
@@ -47,7 +48,7 @@ class Stream:
     Whether the stream is being sent to the primary IP endpoint.
     """
 
-    def __init__(self, req: ChangeCamerasRequest, cmd:CameraCmd):
+    def __init__(self, req: ChangeCamerasRequest, cmd: CameraCmd):
         self._cmd.device = req.camera_cmd.device
         self._cmd.resolution = req.camera_cmd.resolution
 
@@ -61,12 +62,12 @@ class Stream:
                 self._cmd.device * 2 if DEVICES_DOUBLED else self._cmd.device,
                 PRIMARY_IP if self.primary else SECONDARY_IP,
                 5000 + self._cmd.device,
-                args['bps'],
-                args['width'],
-                args['height'],
-                args['fps'],
-                True
-            )
+                args["bps"],
+                args["width"],
+                args["height"],
+                args["fps"],
+                True,
+            ),
         )
 
         self._process.start()
@@ -94,7 +95,7 @@ class StreamManager:
     The maximum ID of a camera device.
     """
 
-    _stream_by_device: List[Optional[Stream]]
+    _stream_by_device: List[Any]
     """
     A Stream object for each possible device connected over USB. Object is None if device is not
     being streamed. References to contained objects should be avoided, since Stream objects rely
@@ -115,16 +116,9 @@ class StreamManager:
     def __init__(self):
         self._lock = Lock()
 
-        self._stream_by_device = [
-            None for _ in range(self.MAX_DEVICE_ID)
-        ]
- 
-        self._primary_cmds = [
-            [CameraCmd(-1, -1) for _ in range(StreamManager.MAX_STREAMS)]
-        ]
-        self._seconday_cmds = [
-            [CameraCmd(-1, -1) for _ in range(StreamManager.MAX_STREAMS)]
-        ]
+        self._stream_by_device = [None for _ in range(self.MAX_DEVICE_ID)]
+        self._primary_cmds = [CameraCmd(-1, -1) for _ in range(StreamManager.MAX_STREAMS)]
+        self._seconday_cmds = [CameraCmd(-1, -1) for _ in range(StreamManager.MAX_STREAMS)]
 
     def reset_streams(self, req: ResetCamerasRequest) -> ResetCamerasResponse:
         """
@@ -135,10 +129,7 @@ class StreamManager:
         with self._lock:
             for i in range(len(self._stream_by_device)):
                 # If a stream exists and is to the intended IP endpoint...
-                if (
-                    self._stream_by_device[i] and
-                    self._stream_by_device[i].primary == req.primary
-                ):
+                if self._stream_by_device[i] is not None and self._stream_by_device[i].primary == req.primary:
                     # Reset the stream object, thus calling the finalizer and killing the process.
                     self._stream_by_device[i] = None
 
@@ -150,9 +141,9 @@ class StreamManager:
         for cmd in cmds:
             if cmd.device == -1:
                 return cmd
-            
+
         assert False, "Could not find CameraCmd slot"
-    
+
     def _get_change_response(self, success: bool) -> ChangeCamerasResponse:
         return ChangeCamerasResponse(success, self._primary_cmds, self._secondary_cmds)
 
@@ -175,11 +166,11 @@ class StreamManager:
 
             # If a stream is being requested...
             # (resolution == -1 means a request to cancel stream)
-            if 0 <= req.camera_cmd.resolution < len(self.CAPTURE_ARGS):
+            if 0 <= req.camera_cmd.resolution < len(CAPTURE_ARGS):
 
                 # If we cannot handle any more streams, return False.
                 num_streams = len([stream for stream in self._stream_by_device if stream])
-                if (num_streams == self.MAX_STREAMS):
+                if num_streams == self.MAX_STREAMS:
                     return self._get_change_response(False)
 
                 # Get a reference to an available slot and give to a new stream.
@@ -290,6 +281,7 @@ def main():
     rospy.Service("reset_cameras", ResetCameras, stream_manager.reset_streams)
 
     rospy.spin()
+
 
 if __name__ == "__main__":
     main()
