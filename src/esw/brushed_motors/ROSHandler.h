@@ -69,11 +69,6 @@ private:
 
     // REQUIRES: nothing
     // MODIFIES: nothing
-    // EFFECTS: Moves a controller in closed loop.
-    static std::optional<float> moveControllerClosedLoop(const std::string& name, float targetAngle);
-
-    // REQUIRES: nothing
-    // MODIFIES: nothing
     // EFFECTS: Determine if a controller is calibrated
     static std::optional<bool> getControllerCalibrated(const std::string& name);
 

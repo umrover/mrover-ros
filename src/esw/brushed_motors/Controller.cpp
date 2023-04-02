@@ -100,28 +100,6 @@ void Controller::moveOpenLoop(float input) {
     }
 }
 
-// REQUIRES: valid angle
-// MODIFIES: currentAngle. Also makes controller live if not already.
-// EFFECTS: I2C bus, Sends an close loop command scaled to PWM limits
-// based on allowed voltage of the motor. Also updates angle.
-void Controller::moveClosedLoop(float targetAngle) {
-    try {
-        makeLive();
-
-        auto targetPosition = (int32_t) ((quadCPR * targetAngle) / (2 * M_PI));
-
-        uint8_t buffer[4];
-        memcpy(buffer, UINT8_POINTER_T(&targetPosition), sizeof(targetPosition));
-        int32_t angle;
-
-        I2C::transact(deviceAddress, motorIDRegMask | CLOSED_PLUS_OP, CLOSED_PLUS_WB,
-                      CLOSED_PLUS_RB, buffer, UINT8_POINTER_T(&angle));
-        currentAngle = (float) (((float) angle / quadCPR) * 2 * M_PI);
-    } catch (IOFailure& e) {
-        ROS_ERROR("moveClosedLoop failed on %s", name.c_str());
-    }
-}
-
 // REQUIRES: nothing
 // MODIFIES: nothing
 // EFFECTS: I2C bus, returns if the MCU is calibrated

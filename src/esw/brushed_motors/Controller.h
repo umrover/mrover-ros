@@ -170,12 +170,6 @@ public:
     // based on allowed voltage of the motor. Also updates angle.
     void moveOpenLoop(float input);
 
-    // REQUIRES: valid angle
-    // MODIFIES: currentAngle. Also makes controller live if not already.
-    // EFFECTS: I2C bus, Sends an close loop command scaled to PWM limits
-    // based on allowed voltage of the motor. Also updates angle.
-    void moveClosedLoop(float targetAngle);
-
     // REQUIRES: nothing
     // MODIFIES: nothing
     // EFFECTS: I2C bus, returns if the MCU is calibrated
