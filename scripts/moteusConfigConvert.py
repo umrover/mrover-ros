@@ -22,13 +22,12 @@ def main():
 
     with open(input_filename, "r") as input_file:
         with open(output_filename, "w+") as output_file:
-
             print("Enter target moteus ID:")
             target_id = int(input())
             if target_id < 0 or target_id > 8:
                 print(f"Target ID out of range: 0 <= {target_id} <= 8 \nWrite cancelled.")
                 return
-    
+
             print("Default configuration is aux2 pin0 as hall pin.")
             print("Would you like to configure aux2 pin1 as a hall pin instead? (y/N)")
             aux2_config = input().lower()
@@ -43,13 +42,13 @@ def main():
                 pin0pull = 1
                 pin1mode = 0
                 pin1pull = 0
-            
+
             params = {
                 "id.id ": target_id,
                 "aux2.pins.0.mode ": pin0mode,
                 "aux2.pins.0.pull ": pin0pull,
                 "aux2.pins.1.mode ": pin1mode,
-                "aux2.pins.1.pull ": pin1pull
+                "aux2.pins.1.pull ": pin1pull,
             }
 
             while 1:
