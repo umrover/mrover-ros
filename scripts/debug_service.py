@@ -6,11 +6,11 @@
 
 from typing import Any
 import rospy
-from mrover.srv import PublishEnableAuton
+from mrover.srv import ChangeCameras
 
 # Change these values for the service name and type definition to test different values
-SERVICE_NAME = "/enable_auton"
-SERVICE_TYPE = PublishEnableAuton
+SERVICE_NAME = "/change_cameras"
+SERVICE_TYPE = ChangeCameras
 
 
 def printServiceRequest(service_request: Any):

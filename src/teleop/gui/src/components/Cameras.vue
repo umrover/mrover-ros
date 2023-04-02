@@ -66,7 +66,7 @@ export default {
       cameraIdx: 1,
       cameraName: "",
       capacity: 2,
-      qualities: new Array(9).fill(0),
+      qualities: new Array(9).fill(-1),
       streamOrder: [-1, -1, -1, -1],
     };
   },
@@ -79,6 +79,18 @@ export default {
         this.setCamIndex(numStreaming[ind]);
       }
     },
+  },
+
+  created: function() {
+    var resetService = new ROSLIB.Service({
+      ros: this.$ros,
+      name: "reset_cameras",
+      serviceType: "ResetCameras"
+    });
+    var request = new ROSLIB.ServiceRequest({
+      primary: this.primary,
+    });
+    resetService.callService(request, (result) => {});
   },
 
   methods: {
@@ -101,7 +113,8 @@ export default {
       });
 
       var request = new ROSLIB.ServiceRequest({
-        camera_cmds: msg,
+        primary: this.primary,
+        camera_cmd: msg,
       });
       changeCamsService.callService(request, (result) => {});
     },
@@ -126,7 +139,7 @@ export default {
       if (found) {
         this.streamOrder.splice(this.streamOrder.indexOf(index), 1);
         this.streamOrder.push(-1);
-        this.qualities[index] = 0;  //close the stream when sending it to comms
+        this.qualities[index] = -1;  //close the stream when sending it to comms
       } else Vue.set(this.streamOrder, this.streamOrder.indexOf(-1), index);
       this.sendCameras(index);
     },
