@@ -178,6 +178,7 @@ class ArmControl:
         """
         with self._joint_state_lock:
             self.joint_state_pub.publish(self.current_ra_joint_states)
+
     def slow_mode_callback(self, msg: Bool) -> None:
         """
         Callback for slow mode
