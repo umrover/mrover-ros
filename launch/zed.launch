@@ -2,7 +2,6 @@
     <arg name="run_perception" default="true"/>
     <arg name="run_visual_odom" default="false"/>
 
-    <arg name="rvizconfig" default="$(find mrover)/config/rviz/auton_sim.rviz" />
     <node name="rviz" pkg="rviz" type="rviz" args="-d $(arg rvizconfig)" required="true" />
 
     <!-- ZED wrapper node -->
