@@ -143,13 +143,26 @@ namespace gazebo {
         mTfPrefix = tf::getPrefixParam(*mNode);
         mTfBroadcaster = tf::TransformBroadcaster();
 
+        if (!mNode->getParam("world_frame", mWorldFrameName)) {
+            ROS_WARN("No world frame provided, defaulting to \"map\"");
+            mWorldFrameName = "map";
+        }
+        if (!mNode->getParam("rover_frame", mRoverFrameName)) {
+            ROS_WARN("No rover frame provided, defaulting to \"base_link\"");
+            mRoverFrameName = "base_link";
+        }
+
         // ROS: Subscribe to the velocity command topic (usually "cmd_vel")
         ros::SubscribeOptions so = ros::SubscribeOptions::create<geometry_msgs::Twist>(
                 mVelocityCommandTopic, 1,
                 [this](geometry_msgs::Twist::ConstPtr const& velocityCommand) { commandVelocityCallback(velocityCommand); },
                 ros::VoidPtr(), &mVelocityCommandQueue);
         mSubscriber = mNode->subscribe(so);
-        mPublisher = mNode->advertise<nav_msgs::Odometry>("odom", 1);
+        mOdomPublisher = mNode->advertise<nav_msgs::Odometry>("ground_truth", 1);
+        mPathPublisher = mNode->advertise<nav_msgs::Path>("ground_truth_path", 1);
+
+        // update path at 4 Hz
+        mPathUpdatePeriod = common::Time(0, static_cast<int32_t>(common::Time::SecToNano(0.25)));
 
         // Spinner runs in the background until the node dies
         // We want the callback to update as soon as possible so do this instead of callAvailable on the queue
@@ -172,6 +185,7 @@ namespace gazebo {
         mWheelSpeeds = {};
 
         mPreviousUpdateTime = mWorld->SimTime();
+        mPreviousPathUpdateTime = mPreviousUpdateTime;
 
         mForwardVelocity = 0;
         mPitch = 0;
@@ -237,6 +251,11 @@ namespace gazebo {
         }
 
         publishOdometry();
+
+        if (mWorld->SimTime() - mPreviousPathUpdateTime >= mPathUpdatePeriod) {
+            mPreviousPathUpdateTime = mWorld->SimTime();
+            publishPath();
+        }
     }
 
     void DiffDrivePlugin6W::getPositionCommand() {
@@ -293,11 +312,22 @@ namespace gazebo {
         mOdometry.twist.twist.linear.y = velocity.Y();
         mOdometry.twist.twist.angular.z = angularVelocity.Z();
 
-        mOdometry.header.frame_id = tf::resolve(mTfPrefix, "odom");
-        mOdometry.child_frame_id = "base_link";
+        mOdometry.header.frame_id = tf::resolve(mTfPrefix, mWorldFrameName);
+        mOdometry.child_frame_id = mRoverFrameName;
         mOdometry.header.stamp = currentTime;
 
-        mPublisher.publish(mOdometry);
+        mOdomPublisher.publish(mOdometry);
+    }
+
+    // Add current odom reading to path and then publish path
+    void DiffDrivePlugin6W::publishPath() {
+        geometry_msgs::PoseStamped pose_msg;
+        pose_msg.header = mOdometry.header;
+        pose_msg.pose = mOdometry.pose.pose;
+        mPath.poses.push_back(pose_msg);
+        mPath.header = mOdometry.header;
+
+        mPathPublisher.publish(mPath);
     }
 
     GZ_REGISTER_MODEL_PLUGIN(DiffDrivePlugin6W)
