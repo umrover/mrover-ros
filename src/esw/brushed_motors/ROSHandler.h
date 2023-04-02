@@ -1,14 +1,13 @@
 #pragma once
-
 #include "ControllerMap.h"          // for ControllerMap
-#include <array>                    // for array
 #include <algorithm>                // for distance
+#include <array>                    // for array
 #include <cmath>                    // for nan
-#include <mrover/CalibrateMotors.h> // for CalibrateMotors
 #include <mrover/AdjustMotors.h>    // for AdjustMotors
-#include <mrover/EnableDevice.h>    // for EnableDevice
+#include <mrover/CalibrateMotors.h> // for CalibrateMotors
 #include <mrover/Calibrated.h>      // for Calibrated
 #include <mrover/Carousel.h>        // for Carousel
+#include <mrover/EnableDevice.h>    // for EnableDevice
 #include <mrover/MastGimbal.h>      // for MastGimbal
 #include <optional>                 // for optional
 #include <ros/console.h>            // for ROS_ERROR

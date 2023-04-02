@@ -265,12 +265,10 @@ void ROSHandler::publish_calibration_data_using_name(const std::string& name, bo
         std::size_t ra_idx = std::distance(RANames.begin(), ra_iter);
         calibrationStatusRA.calibrated[ra_idx] = isCalibrated;
         calibrationStatusPublisherRA.publish(calibrationStatusRA);
-    }
-    else if (carousel_name == name) {
+    } else if (carousel_name == name) {
         calibrationStatusCarousel.calibrated[0] = isCalibrated;
         calibrationStatusPublisherCarousel.publish(calibrationStatusCarousel);
-    }
-    else {
+    } else {
         auto sa_iter = std::find(SANames.begin(), SANames.end(), name);
         if (sa_iter != SANames.end()) {
             std::size_t sa_idx = std::distance(SANames.begin(), sa_iter);

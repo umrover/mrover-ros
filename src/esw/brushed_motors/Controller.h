@@ -16,9 +16,9 @@
 #define ON_WB 0
 #define ON_RB 0
 
-#define OPEN_OP	0x02
-#define OPEN_WB	4
-#define OPEN_RB	0
+#define OPEN_OP 0x02
+#define OPEN_WB 4
+#define OPEN_RB 0
 
 #define OPEN_PLUS_OP 0x03
 #define OPEN_PLUS_WB 4
@@ -111,7 +111,6 @@ trying to contact the same physical Controller object.)
 
 class Controller {
 public:
-
     float quadCPR = std::numeric_limits<float>::infinity();
     float kP = 0.01f;
     float kI = 0.0f;
@@ -191,7 +190,6 @@ public:
     bool getLimitSwitchEnabled() const;
 
 
-
 private:
     // REQUIRES: nothing
     // MODIFIES: isLive
@@ -217,5 +215,4 @@ private:
 
     bool isLive = false;
     bool isControllerCalibrated = false;
-
 };

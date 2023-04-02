@@ -4,7 +4,7 @@
 #include "Test.h"          // for mainTest
 #include <ros/ros.h>       // for ros and ROS_INFO
 
-int main(int argc, char **argv) {
+int main(int argc, char** argv) {
 
     ros::init(argc, argv, "brushed_motors");
     ros::NodeHandle nh;
