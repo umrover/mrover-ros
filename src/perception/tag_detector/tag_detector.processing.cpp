@@ -6,8 +6,11 @@
 #include <execution>
 #include <numeric>
 #include <thread>
+#include <limits>
 
 #include <sensor_msgs/image_encodings.h>
+
+#define PADDING 20
 
 using namespace std::chrono_literals;
 using hr_clock = std::chrono::high_resolution_clock;
@@ -89,7 +92,45 @@ namespace mrover {
           tag.hitCount = std::clamp(tag.hitCount + 1, 0, mMaxHitCount);
           tag.id = id;
           tag.imageCenter = std::accumulate(mCorners[i].begin(), mCorners[i].end(), cv::Point2f{}) / static_cast<float>(mCorners[i].size());
-          tag.tagInCam = getFidInCamFromPixel(msg, std::lround(tag.imageCenter.x), std::lround(tag.imageCenter.y));
+
+          // find extremes of detected tag for checking later
+          float leftmost = std::numeric_limits<float>::max();
+          float rightmost = 0.0;
+          float uppermost = std::numeric_limits<float>::max();
+          float lowermost = 0.0;
+
+          for (size_t j = 0; j < mCorners[i].size(); ++j) {
+            if (mCorners[i][j].x < leftmost) leftmost = mCorners[i][j].x;
+            if (mCorners[i][j].x > rightmost) rightmost = mCorners[i][j].x;
+            if (mCorners[i][j].y > lowermost) lowermost = mCorners[i][j].y;
+            if (mCorners[i][j].y < uppermost) uppermost = mCorners[i][j].y;
+          }
+
+          R3 acc;
+          acc.setZero();
+
+          int numValid = 0;
+          
+          for (int x = lround(tag.imageCenter.x) - PADDING; x < lround(tag.imageCenter.x) + PADDING; ++x) {
+            if (x > leftmost && x < rightmost) {
+                for (int y = lround(tag.imageCenter.y) - PADDING; y < lround(tag.imageCenter.y) + PADDING; ++y) {
+                    if (y > uppermost && y < lowermost) {
+                        std::optional<SE3> inCam = getFidInCamFromPixel(msg, x, y);
+                        if (inCam) {
+                            acc += inCam.value().position();
+                            ++numValid;
+                        }
+                    }
+                }
+            }
+          }
+
+          if (numValid == 0) {
+            acc /= numValid;
+            tag.tagInCam = std::make_optional<SE3>(acc, SO3{});
+          } else {
+            tag.tagInCam = std::nullopt; // no points were able to be mapped
+          }
 
           if (tag.tagInCam) {
             // Publish tag to immediate
