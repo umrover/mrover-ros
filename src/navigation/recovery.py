@@ -43,22 +43,22 @@ class RecoveryState(BaseState):
 
     
     def evaluate(self, ud) -> str:
-        rospy.logerr(f"Executing J-Turn\n")
-        rospy.logerr(f"Driving Backwards First Time\n")
+        # rospy.logerr(f"Executing J-Turn\n")
+        # rospy.logerr(f"Driving Backwards First Time\n")
 
         #Making waypoint behind the rover to go backwards
         pose = self.context.rover.get_pose()
         # if first round
         if self.move_back:
-            rospy.logerr("EVALUATE")
+            # rospy.logerr("EVALUATE")
             if not self.waypoint_calculated:
-                rospy.logerr(f"POSE{pose}")
+                # rospy.logerr(f"POSE{pose}")
                 dir_vector = -2 * pose.rotation.direction_vector()
                 self.waypoint_behind = pose.position + dir_vector
                 self.waypoint_calculated = True
 
             cmd_vel, self.arrived = get_j_turn_command(self.waypoint_behind, pose, STOP_THRESH, DRIVE_FWD_THRESH)
-            rospy.logerr(f"Finished Get Drive Command\n")
+            # rospy.logerr(f"Finished Get Drive Command\n")
             self.context.rover.send_drive_command(cmd_vel)
 
         if self.arrived:
@@ -69,7 +69,7 @@ class RecoveryState(BaseState):
         # if second round
         if not self.move_back:
             if not self.waypoint_calculated:
-                rospy.logerr(f"POSE{pose}")
+                # rospy.logerr(f"POSE{pose}")
                 dir_vector = 2 * self.rotate_by_90(pose.rotation.direction_vector())
                 self.waypoint_behind = pose.position + dir_vector
                 self.waypoint_calculated = True
@@ -78,7 +78,7 @@ class RecoveryState(BaseState):
             self.context.rover.send_drive_command(cmd_vel)
 
         #set stuck to False
-        rospy.logerr(f"{self.context.rover.previous_state}\n")
+        # rospy.logerr(f"{self.context.rover.previous_state}\n")
         # return self.context.rover.previous_state
         if self.arrived:
             self.context.rover.stuck = False # change to subscriber

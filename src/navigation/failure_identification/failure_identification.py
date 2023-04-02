@@ -12,8 +12,7 @@ from watchdog import WatchDog
 import numpy as np
 import os
 from pathlib import Path
-
-# DF_THRESHOLD = 10
+# import datetime
 
 
 class FailureIdentifier:
@@ -77,10 +76,29 @@ class FailureIdentifier:
         home = str(Path.home())
         # path = os.path.join(home, "catkin_ws/src/mrover-workspace/src/navigation/failure_data")
         path = os.path.join(home, "catkin_ws/src/mrover/src/failure_data")
+
+        # now = datetime.datetime.now()
+        # day = now.strftime("%m%d%Y")
+        # hour = now.strftime("%H-%M-%S")
+        # time_stamp = day + "_" + hour
+
         file_name = f"failure_data_{rospy.Time.now()}.csv"
+        # file_name = f"failure_data_{time_stamp}.csv"
         path = os.path.join(path, file_name)
         self._df.to_csv(f"failure_data_{rospy.Time.now()}.csv")
+
+        # now = datetime.datetime.now()
+        # day = now.strftime("%m%d%Y")
+        # hour = now.strftime("%H-%M-%S")
+        # time_stamp = day + "_" + hour
+        # home = str(Path.home())
+        # folder = home + "/catkin_ws/src/mrover/failure_data"
+        # if not os.path.exists(folder):
+        #     os.makedirs(folder)
+        # file = folder + "/output_averaged_" + time_stamp + ".csv"
+
         rospy.loginfo("===== failure data written to csv =====")
+
 
     def stuck_button_update(self, stuck_button: Bool):
         self.cur_stuck = stuck_button.data
