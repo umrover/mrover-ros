@@ -63,7 +63,7 @@ namespace mrover {
                 throw std::runtime_error("ZED failed to open");
             }
 
-            if (mUseOdom) {
+            if (mUseOdom && mUseBuiltinPosTracking) {
                 sl::PositionalTrackingParameters positionalTrackingParameters;
                 mZed.enablePositionalTracking(positionalTrackingParameters);
             }
@@ -108,9 +108,10 @@ namespace mrover {
 
                 if (mZed.retrieveImage(mLeftImageMat, sl::VIEW::LEFT, sl::MEM::CPU, mImageResolution) != sl::ERROR_CODE::SUCCESS)
                     throw std::runtime_error("ZED failed to retrieve left image");
-                if (mZed.retrieveImage(mRightImageMat, sl::VIEW::RIGHT, sl::MEM::CPU, mImageResolution) != sl::ERROR_CODE::SUCCESS)
-                    throw std::runtime_error("ZED failed to retrieve right image");
-                if (mRightImgPub.getNumSubscribers() && mZed.retrieveMeasure(mPointCloudXYZMat, sl::MEASURE::XYZ, sl::MEM::CPU, mImageResolution) != sl::ERROR_CODE::SUCCESS)
+                if (mRightImgPub.getNumSubscribers())
+                    if (mZed.retrieveImage(mRightImageMat, sl::VIEW::RIGHT, sl::MEM::CPU, mImageResolution) != sl::ERROR_CODE::SUCCESS)
+                        throw std::runtime_error("ZED failed to retrieve right image");
+                if (mZed.retrieveMeasure(mPointCloudXYZMat, sl::MEASURE::XYZ, sl::MEM::CPU, mImageResolution) != sl::ERROR_CODE::SUCCESS)
                     throw std::runtime_error("ZED failed to retrieve point cloud");
                 mPcThreadProfiler.addEpoch("Retrieve");
 
