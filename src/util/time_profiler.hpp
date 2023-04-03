@@ -26,17 +26,17 @@ public:
     TimeProfiler(size_t printTick = 60) : mPrintTick{printTick}, mLastEpochTime{hr_clock::now()} {}
 
     void reset() {
-        if (mTick % mPrintTick == 0) return;
-
-        hr_clock::duration total{};
-        for (auto& [_, epoch]: mEpochDurations) {
-            total += std::accumulate(epoch.durationSamples.begin(), epoch.durationSamples.end(), hr_clock::duration{}) / epoch.durationSamples.size();
-        }
-        ROS_INFO_STREAM("[" << std::hash<std::thread::id>{}(std::this_thread::get_id()) << "] Total: " << std::chrono::duration_cast<std::chrono::milliseconds>(total).count() << "ms");
-        for (auto& [name, epoch]: mEpochDurations) {
-            hr_clock::duration epochAverageDuration = std::accumulate(epoch.durationSamples.begin(), epoch.durationSamples.end(), hr_clock::duration{}) / epoch.durationSamples.size();
-            ROS_INFO_STREAM("\t" + name + ": " << std::chrono::duration_cast<std::chrono::milliseconds>(epochAverageDuration).count() << "ms");
-            epoch.durationSamples.clear();
+        if (mTick % mPrintTick == 0) {
+            hr_clock::duration total{};
+            for (auto& [_, epoch]: mEpochDurations) {
+                total += std::accumulate(epoch.durationSamples.begin(), epoch.durationSamples.end(), hr_clock::duration{}) / epoch.durationSamples.size();
+            }
+            ROS_INFO_STREAM("[" << std::hash<std::thread::id>{}(std::this_thread::get_id()) << "] Total: " << std::chrono::duration_cast<std::chrono::milliseconds>(total).count() << "ms");
+            for (auto& [name, epoch]: mEpochDurations) {
+                hr_clock::duration epochAverageDuration = std::accumulate(epoch.durationSamples.begin(), epoch.durationSamples.end(), hr_clock::duration{}) / epoch.durationSamples.size();
+                ROS_INFO_STREAM("\t" + name + ": " << std::chrono::duration_cast<std::chrono::milliseconds>(epochAverageDuration).count() << "ms");
+                epoch.durationSamples.clear();
+            }
         }
 
         mTick++;

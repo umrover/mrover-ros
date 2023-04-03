@@ -79,5 +79,5 @@ public:
 
     [[nodiscard]] SO3 rotation() const;
 
-    [[nodiscard]] double distanceTo(SE3 const& other);
+    [[nodiscard]] double distanceTo(SE3 const& other) const;
 };

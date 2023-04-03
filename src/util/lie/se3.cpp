@@ -26,7 +26,7 @@ SO3 SE3::rotation() const {
     return mTransform.rotation();
 }
 
-double SE3::distanceTo(SE3 const& other) {
+double SE3::distanceTo(SE3 const& other) const {
     return (position() - other.position()).norm();
 }
 
