@@ -4,12 +4,13 @@ from typing import ClassVar, Optional
 import numpy as np
 import rospy
 
-from context import Context, Environment
+from context import Context, Environment, convert_cartesian_to_gps
 from aenum import Enum, NoAlias
 from state import BaseState
 from dataclasses import dataclass
 from drive import get_drive_command
 from trajectory import Trajectory
+from mrover.msg import GPSPointList
 from util.ros_utils import get_rosparam
 
 
@@ -97,6 +98,9 @@ class SearchState(BaseState):
             if self.traj.increment_point():
                 return SearchStateTransitions.no_fiducial.name  # type: ignore
 
+        self.context.search_point_publisher.publish(
+            GPSPointList([convert_cartesian_to_gps(pt) for pt in self.traj.coordinates])
+        )
         self.context.rover.send_drive_command(cmd_vel)
 
         # if we see the fiduicial or gate, go to either fiducial or gate state

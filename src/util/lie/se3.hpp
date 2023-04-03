@@ -14,30 +14,43 @@
 
 using R3 = Eigen::Vector3d;
 
+/**
+ * @brief A 3D rotation.
+ */
 class SO3 {
 private:
-    Eigen::Quaterniond mQuaternion = Eigen::Quaterniond::Identity();
+    using AngleAxis = Eigen::AngleAxis<double>;
+
+    AngleAxis mAngleAxis = AngleAxis::Identity();
 
 public:
     friend class SE3;
 
-    SO3() = default;
+    template<typename... Args>
+    SO3(Args&&... args) : mAngleAxis{std::forward<Args>(args)...} {
+    }
 
-    explicit SO3(Eigen::Quaterniond const& quaternion);
+    [[nodiscard]] SO3 operator*(SO3 const& other) const;
 
     [[nodiscard]] Eigen::Matrix4d matrix() const;
 
     [[nodiscard]] Eigen::Quaterniond quaternion() const;
 };
 
+/**
+ * @brief A 3D rigid transformation (direct isometry).
+ *
+ * In simpler terms: a 3D rotation followed by a 3D translation.
+ */
 class SE3 {
 private:
+    using Transform = Eigen::Transform<double, 3, Eigen::Isometry>;
+
     static SE3 fromTf(geometry_msgs::Transform const& transform);
 
     static SE3 fromPose(geometry_msgs::Pose const& pose);
 
-    R3 mPosition;
-    SO3 mRotation;
+    Transform mTransform = Transform::Identity();
 
     [[nodiscard]] geometry_msgs::Pose toPose() const;
 
@@ -52,15 +65,19 @@ public:
 
     static void pushToTfTree(tf2_ros::TransformBroadcaster& broadcaster, std::string const& childFrameId, std::string const& parentFrameId, SE3 const& tf);
 
-    SE3() = default;
+    SE3(R3 const& position, SO3 const& rotation = {});
 
-    explicit SE3(R3 position, SO3 rotation = SO3{});
+    template<typename... Args, typename = std::enable_if_t<std::is_constructible_v<Transform, Args...>>>
+    SE3(Args&&... args) : mTransform{std::forward<Args>(args)...} {
+    }
+
+    [[nodiscard]] SE3 operator*(SE3 const& other) const;
 
     [[nodiscard]] Eigen::Matrix4d matrix() const;
 
-    [[nodiscard]] R3 const& position() const;
+    [[nodiscard]] R3 position() const;
 
-    [[nodiscard]] SO3 const& rotation() const;
+    [[nodiscard]] SO3 rotation() const;
 
-    [[nodiscard]] double distanceTo(SE3 const& other);
+    [[nodiscard]] double distanceTo(SE3 const& other) const;
 };

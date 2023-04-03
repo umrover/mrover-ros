@@ -2,12 +2,18 @@
 #include <string>
 #include <unordered_map>
 
-#include <cv_bridge/cv_bridge.h>
-#include <dynamic_reconfigure/server.h>
-#include <image_transport/image_transport.h>
 #include <opencv2/aruco.hpp>
 #include <opencv2/core/mat.hpp>
-#include <pcl_ros/point_cloud.h>
+#include <opencv2/imgproc.hpp>
+
+#include <opencv2/core/types.hpp>
+#include <opencv2/highgui/highgui.hpp>
+
+#include <dynamic_reconfigure/server.h>
+#include <image_transport/image_transport.h>
+#include <nodelet/nodelet.h>
+#include <sensor_msgs/PointCloud2.h>
+#include <std_srvs/SetBool.h>
 #include <tf2_ros/transform_broadcaster.h>
 #include <tf2_ros/transform_listener.h>
 
@@ -25,68 +31,71 @@
 
 #include <se3.hpp>
 
-using PointCloud = pcl::PointCloud<pcl::PointXYZRGBNormal>;
-using PointCloudPtr = std::shared_ptr<PointCloud>;
+#include "time_profiler.hpp"
 
-struct Tag {
-    int id = -1;
-    int hitCount = 0;
-    cv::Point2f imageCenter{};
-    std::optional<SE3> tagInCam;
-};
+namespace mrover {
 
-class TagDetectorNode {
-private:
-    ros::NodeHandle mNh;
-    ros::NodeHandle mPnh;
+    struct Tag {
+        int id = -1;
+        int hitCount = 0;
+        cv::Point2f imageCenter{};
+        std::optional<SE3> tagInCam;
+    };
 
-    image_transport::Publisher mImgPub;
-    ros::ServiceServer mServiceEnableDetections;
+    class TagDetectorNodelet : public nodelet::Nodelet {
+    private:
+        ros::NodeHandle mNh, mPnh;
 
-    ros::Subscriber mIgnoreSub;
-    ros::Subscriber mPcSub;
-    image_transport::Subscriber mImgSub;
-    image_transport::ImageTransport mIt;
-    tf2_ros::Buffer mTfBuffer;
-    tf2_ros::TransformListener mTfListener;
-    tf2_ros::TransformBroadcaster mTfBroadcaster;
+        image_transport::Publisher mImgPub;
+        image_transport::Publisher mThreshPub;
+        ros::ServiceServer mServiceEnableDetections;
 
-    bool mUseOdom = false;
-    std::string mOdomFrameId, mMapFrameId, mBaseLinkFrameId;
-    bool mPublishImages = false; // If set, we publish the images with the fiducials drawn on top
-    bool mEnableDetections = true;
-    bool mIsVerbose = false;
-    bool mPublishFiducialTf = false;
-    int mMinHitCountBeforePublish = 5;
-    int mMaxHitCount = 10;
+        ros::Subscriber mPcSub;
+        image_transport::Subscriber mImgSub;
+        tf2_ros::Buffer mTfBuffer;
+        tf2_ros::TransformListener mTfListener{mTfBuffer};
+        tf2_ros::TransformBroadcaster mTfBroadcaster;
 
-    std::vector<int> mIgnoreIds;
-    cv::Ptr<cv::aruco::DetectorParameters> mDetectorParams;
-    cv::Ptr<cv::aruco::Dictionary> mDictionary;
+        bool mUseOdom = false;
+        std::string mOdomFrameId, mMapFrameId, mCameraFrameId;
+        bool mPublishImages = false; // If set, we publish the images with the fiducials drawn on top
+        bool mEnableDetections = true;
+        int mMinHitCountBeforePublish = 5;
+        int mMaxHitCount = 5;
 
-    PointCloudPtr mCloudPtr = std::make_shared<PointCloud>();
-    uint32_t mSeqNum{};
-    std::optional<size_t> mPrevDetectedCount; // Log spam prevention
-    std::vector<std::vector<cv::Point2f>> mCorners;
-    std::vector<int> mIds;
-    std::unordered_map<int, Tag> mTags;
-    dynamic_reconfigure::Server<mrover::DetectorParamsConfig> mConfigServer;
-    dynamic_reconfigure::Server<mrover::DetectorParamsConfig>::CallbackType mCallbackType;
+        cv::Ptr<cv::aruco::DetectorParameters> mDetectorParams;
+        cv::Ptr<cv::aruco::Dictionary> mDictionary;
 
-    void handleIgnoreString(std::string const& str);
+        cv::Mat mImg;
+        cv::Mat mGrayscale;
+        sensor_msgs::Image mImgMsg;
+        sensor_msgs::Image mThreshMsg;
+        uint32_t mSeqNum{};
+        std::optional<size_t> mPrevDetectedCount; // Log spam prevention
+        std::vector<std::vector<cv::Point2f>> mCorners;
+        std::vector<int> mIds;
+        std::unordered_map<int, Tag> mTags;
+        dynamic_reconfigure::Server<mrover::DetectorParamsConfig> mConfigServer;
+        dynamic_reconfigure::Server<mrover::DetectorParamsConfig>::CallbackType mCallbackType;
 
-    void ignoreCallback(std_msgs::String const& msg);
+        TimeProfiler mProfiler;
 
-    void imageCallback(sensor_msgs::ImageConstPtr const& msg);
+        void onInit() override;
+                
+        void publish_thresh(cv::Mat const& mImg);
 
-    void pointCloudCallback(sensor_msgs::PointCloud2ConstPtr const& msg);
+        std::optional<SE3> getTagInCamFromPixel(sensor_msgs::PointCloud2ConstPtr const& cloudPtr, size_t u, size_t v);
 
-    void configCallback(mrover::DetectorParamsConfig& config, uint32_t level);
+    public:
+        TagDetectorNodelet() = default;
 
-    bool enableDetectionsCallback(std_srvs::SetBool::Request& req, std_srvs::SetBool::Response& res);
+        ~TagDetectorNodelet() override = default;
 
-public:
-    TagDetectorNode();
+        void pointCloudCallback(sensor_msgs::PointCloud2ConstPtr const& msg);
 
-    TagDetectorNode(ros::NodeHandle const& nh, ros::NodeHandle const& pnh);
-};
+        void configCallback(mrover::DetectorParamsConfig& config, uint32_t level);
+
+        bool enableDetectionsCallback(std_srvs::SetBool::Request& req, std_srvs::SetBool::Response& res);
+    };
+
+} // namespace mrover
