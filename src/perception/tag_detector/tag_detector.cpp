@@ -26,6 +26,7 @@ namespace mrover {
 
         image_transport::ImageTransport it{mNh};
         mImgPub = it.advertise("tag_detection", 1);
+        mThreshPub = it.advertise("thresh_images", 1);
         mDictionary = cv::aruco::getPredefinedDictionary(dictionaryNumber);
 
         bool directTagDetection = false;

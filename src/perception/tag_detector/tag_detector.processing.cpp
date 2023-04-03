@@ -67,6 +67,9 @@ namespace mrover {
         });
         mProfiler.addEpoch("Convert");
 
+        // Call thresholding
+        publish_thresh(mImg);
+
         // Detect the tag vertices in screen space and their respective ids
         // {mCorners, mIds} are the outputs from OpenCV
         cv::aruco::detectMarkers(mImg, mDictionary, mCorners, mIds, mDetectorParams);

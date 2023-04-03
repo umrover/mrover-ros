@@ -4,6 +4,10 @@
 
 #include <opencv2/aruco.hpp>
 #include <opencv2/core/mat.hpp>
+#include <opencv2/imgproc.hpp>
+
+#include <opencv2/core/types.hpp>
+#include <opencv2/highgui/highgui.hpp>
 
 #include <dynamic_reconfigure/server.h>
 #include <image_transport/image_transport.h>
@@ -33,6 +37,7 @@ namespace mrover {
         ros::NodeHandle mNh, mPnh;
 
         image_transport::Publisher mImgPub;
+        image_transport::Publisher mThreshPub;
         ros::ServiceServer mServiceEnableDetections;
 
         ros::Subscriber mPcSub;
@@ -52,7 +57,9 @@ namespace mrover {
         cv::Ptr<cv::aruco::Dictionary> mDictionary;
 
         cv::Mat mImg;
+        cv::Mat mGrayscale;
         sensor_msgs::Image mImgMsg;
+        sensor_msgs::Image mThreshMsg;
         uint32_t mSeqNum{};
         std::optional<size_t> mPrevDetectedCount; // Log spam prevention
         std::vector<std::vector<cv::Point2f>> mCorners;
@@ -64,6 +71,8 @@ namespace mrover {
         TimeProfiler mProfiler;
 
         void onInit() override;
+                
+        void publish_thresh(cv::Mat const& mImg);
 
         std::optional<SE3> getTagInCamFromPixel(sensor_msgs::PointCloud2ConstPtr const& cloudPtr, size_t u, size_t v);
 
