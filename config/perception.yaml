@@ -10,7 +10,7 @@ zed_nodelet:
   # [2] QUALITY     Computation mode designed for challenging areas with untextured surfaces.
   # [3] ULTRA       Computation mode favoring edges and sharpness. Requires more GPU memory and computation power.
   # [4] NEURAL      End to End Neural disparity estimation, requires AI module.
-  depth_mode: 2
+  depth_mode: 1
   image_width: 1280
   image_height: 720
   # Threshold to reject depth values based on their confidence.
@@ -25,6 +25,7 @@ zed_nodelet:
   # Decreasing this value will remove depth data from image areas which are uniform.
   # Pixels with a value close to 100 are not to be trusted. Accurate depth pixels tends to be closer to lower values.
   texture_confidence: 100
+  ues_builtin_visual_odom: true
 
 tag_detector:
   doCornerRefinement: true
