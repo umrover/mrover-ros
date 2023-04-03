@@ -65,7 +65,7 @@ namespace mrover {
 
         void onInit() override;
 
-        std::optional<SE3> getFidInCamFromPixel(sensor_msgs::PointCloud2ConstPtr const& cloudPtr, size_t u, size_t v);
+        std::optional<SE3> getTagInCamFromPixel(sensor_msgs::PointCloud2ConstPtr const& cloudPtr, size_t u, size_t v);
 
     public:
         TagDetectorNodelet() = default;

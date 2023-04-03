@@ -23,7 +23,7 @@ namespace mrover {
      * @param u     X Pixel Position
      * @param v     Y Pixel Position
      */
-    std::optional<SE3> TagDetectorNodelet::getFidInCamFromPixel(sensor_msgs::PointCloud2ConstPtr const& cloudPtr, size_t u, size_t v) {
+    std::optional<SE3> TagDetectorNodelet::getTagInCamFromPixel(sensor_msgs::PointCloud2ConstPtr const& cloudPtr, size_t u, size_t v) {
         if (u >= cloudPtr->width || v >= cloudPtr->height) {
             NODELET_WARN("Tag center out of bounds: [%zu %zu]", u, v);
             return std::nullopt;
@@ -85,7 +85,7 @@ namespace mrover {
             tag.hitCount = std::clamp(tag.hitCount + 1, 0, mMaxHitCount);
             tag.id = id;
             tag.imageCenter = std::accumulate(mCorners[i].begin(), mCorners[i].end(), cv::Point2f{}) / static_cast<float>(mCorners[i].size());
-            tag.tagInCam = getFidInCamFromPixel(msg, std::lround(tag.imageCenter.x), std::lround(tag.imageCenter.y));
+            tag.tagInCam = getTagInCamFromPixel(msg, std::lround(tag.imageCenter.x), std::lround(tag.imageCenter.y));
 
             if (tag.tagInCam) {
                 // Publish tag to immediate

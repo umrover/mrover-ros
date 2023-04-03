@@ -59,7 +59,7 @@ public:
 
     SE3(R3 const& position, SO3 const& rotation = {});
 
-    template<typename... Args, typename = decltype(Transform(std::declval<Args>()...))>
+    template<typename... Args, typename = std::enable_if_t<std::is_constructible_v<Transform, Args...>>>
     SE3(Args&&... args) : mTransform{std::forward<Args>(args)...} {
     }
 

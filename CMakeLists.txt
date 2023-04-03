@@ -72,9 +72,9 @@ set(MROVER_CATKIN_PACKAGES
         roscpp rospy std_msgs message_runtime
         )
 
-macro(rosify_target_macro target)
+macro(rosify_cpp_target_macro target)
     target_link_libraries(${target} PRIVATE ${catkin_LIBRARIES})
-    target_include_directories(${target} SYSTEM PRIVATE ${catkin_INCLUDE_DIRS})
+    target_include_directories(${target} SYSTEM PRIVATE ${catkin_INCLUDE_DIRS} "src/util")
     add_dependencies(${target} ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
 
     target_compile_options(${target} PRIVATE ${MROVER_CPP_COMPILE_OPTIONS})
@@ -90,13 +90,13 @@ macro(add_cpp_library_macro name sources includes)
     file(GLOB_RECURSE CPP_LIB_SOURCES ${sources})
     add_library(${name} ${CPP_LIB_SOURCES})
     target_include_directories(${name} PUBLIC ${includes})
-    rosify_target_macro(${name})
+    rosify_cpp_target_macro(${name})
 endmacro()
 
 macro(add_cpp_node_macro name sources)
     file(GLOB_RECURSE CPP_NODE_SOURCES ${sources})
     add_executable(${name} ${CPP_NODE_SOURCES})
-    rosify_target_macro(${name})
+    rosify_cpp_target_macro(${name})
 endmacro()
 
 macro(add_cpp_nodelet_macro name sources includes)
@@ -233,7 +233,7 @@ else ()
         set_target_properties(kinect_plugin PROPERTIES CXX_CLANG_TIDY "")
 
         if (ZED_FOUND)
-            add_cpp_nodelet_macro(zed_nodelet "src/perception/zed_wrapper/*.cpp", "src/perception/zed_wrapper")
+            add_cpp_nodelet_macro(zed_nodelet "src/perception/zed_wrapper/*.cpp" , "src/perception/zed_wrapper")
             target_include_directories(zed_nodelet SYSTEM PRIVATE ${ZED_INCLUDE_DIRS} ${CUDA_INCLUDE_DIRS})
             target_link_libraries(zed_nodelet PRIVATE ${ZED_LIBRARIES} ${OpenCV_LIBRARIES} lie tag_detector_nodelet)
         endif ()
