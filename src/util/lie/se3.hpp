@@ -14,6 +14,9 @@
 
 using R3 = Eigen::Vector3d;
 
+/**
+ * @brief A 3D rotation.
+ */
 class SO3 {
 private:
     using AngleAxis = Eigen::AngleAxis<double>;
@@ -34,6 +37,11 @@ public:
     [[nodiscard]] Eigen::Quaterniond quaternion() const;
 };
 
+/**
+ * @brief A 3D rigid transformation (direct isometry).
+ *
+ * In simpler terms: a 3D rotation followed by a 3D translation.
+ */
 class SE3 {
 private:
     using Transform = Eigen::Transform<double, 3, Eigen::Isometry>;

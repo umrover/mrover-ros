@@ -10,16 +10,11 @@
 #include <sensor_msgs/image_encodings.h>
 #include <sensor_msgs/point_cloud2_iterator.h>
 
+#include "../point_cloud.hpp"
+
 constexpr float DEG2RAD = M_PI / 180.0f;
 
 namespace mrover {
-
-    struct Point {
-        float x, y, z;
-        uint8_t r, g, b, a;
-        float normal_x, normal_y, normal_z;
-        float curvature;
-    } __attribute__((packed));
 
     ros::Time slTime2Ros(sl::Timestamp t) {
         auto sec = static_cast<uint32_t>(t.getNanoseconds() / 1000000000);

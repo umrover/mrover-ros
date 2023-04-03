@@ -8,14 +8,9 @@
 
 #include <sensor_msgs/image_encodings.h>
 
-namespace mrover {
+#include "../point_cloud.hpp"
 
-    struct Point {
-        float x, y, z;
-        uint8_t r, g, b, a;
-        float normal_x, normal_y, normal_z;
-        float curvature;
-    } __attribute__((packed));
+namespace mrover {
 
     /**
      * @brief       Retrieve the pose of the tag in camera space
