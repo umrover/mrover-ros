@@ -6,7 +6,7 @@ from context import Gate
 import numpy as np
 import rospy
 
-from context import Context, Environment
+from context import Context, Environment, convert_cartesian_to_gps
 from aenum import Enum, NoAlias
 from state import BaseState
 from trajectory import Trajectory
@@ -14,6 +14,7 @@ from dataclasses import dataclass
 from drive import get_drive_command
 from util.np_utils import normalized, perpendicular_2d
 from util.ros_utils import get_rosparam
+from mrover.msg import GPSPointList
 
 
 @dataclass
@@ -123,5 +124,11 @@ class GateTraverseState(BaseState):
                 self.context.course.increment_waypoint()
                 return GateTraverseStateTransitions.finished_gate.name  # type: ignore
 
+        self.context.gate_path_publisher.publish(
+            GPSPointList([convert_cartesian_to_gps(pt) for pt in self.traj.coordinates])
+        )
+        self.context.gate_point_publisher.publish(
+            GPSPointList([convert_cartesian_to_gps(p) for p in [gate.post1, gate.post2]])
+        )
         self.context.rover.send_drive_command(cmd_vel)
         return GateTraverseStateTransitions.continue_gate_traverse.name  # type: ignore

@@ -11,6 +11,7 @@
       <h1>Auton Dashboard</h1>
       <div class="spacer"></div>
       <div class="spacer"></div>
+      <CommReadout class="comm"></CommReadout>
       <div class="help">
         <img
           src="/static/help.png"
@@ -80,9 +81,10 @@ import AutonWaypointEditor from "./AutonWaypointEditor.vue";
 import DriveControls from "./DriveControls.vue";
 import MastGimbalControls from "./MastGimbalControls.vue";
 import { mapGetters } from "vuex";
-import * as qte from "quaternion-to-euler";
 import JoystickValues from "./JoystickValues.vue";
 import IMUCalibration from "./IMUCalibration.vue";
+import CommReadout from "./CommReadout.vue";
+import { quaternionToDisplayAngle } from "../utils.js";
 
 const navBlue = "#4695FF";
 const navGreen = "yellowgreen";
@@ -97,6 +99,7 @@ export default {
     IMUCalibration,
     JoystickValues,
     MastGimbalControls,
+    CommReadout,
   },
 
   data() {
@@ -205,12 +208,7 @@ export default {
     // Subscriber for odom to base_link transform
     this.tfClient.subscribe("base_link", (tf) => {
       // Callback for IMU quaternion that describes bearing
-      let quaternion = tf.rotation;
-      quaternion = [quaternion.w, quaternion.x, quaternion.y, quaternion.z];
-      //Quaternion to euler angles
-      let euler = qte(quaternion);
-      // euler[2] == euler z component
-      this.odom.bearing_deg = euler[2] * (180 / Math.PI);
+      this.odom.bearing_deg = quaternionToDisplayAngle(tf.rotation);
     });
 
     this.nav_status_sub.subscribe((msg) => {
@@ -378,5 +376,10 @@ h2 {
 
 .waypoints {
   grid-area: waypoints;
+}
+
+.comm {
+  position: absolute;
+  left: 50%;
 }
 </style>

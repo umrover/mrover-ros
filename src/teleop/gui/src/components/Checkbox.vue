@@ -22,24 +22,24 @@ export default {
   props: {
     name: {
       type: String,
-      required: true
+      required: true,
     },
     disabled: {
       type: Boolean,
       default: false,
-      required: false
-    }
+      required: false,
+    },
   },
   data() {
     return {
-      active: false
+      active: false,
     };
   },
 
   computed: {
     color: function () {
       return this.active ? "green" : "red";
-    }
+    },
   },
 
   methods: {
@@ -50,8 +50,8 @@ export default {
     toggleAndEmit: function () {
       this.toggle();
       this.$emit("toggle", this.active);
-    }
-  }
+    },
+  },
 };
 </script>
 
