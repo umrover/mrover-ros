@@ -11,6 +11,7 @@
       <h1 v-if="type === 'ES'">ES GUI Dashboard</h1>
       <h1 v-else>EDM GUI Dashboard</h1>
       <div class="spacer"></div>
+      <CommReadout class="comm"></CommReadout>
       <div class="help">
         <img
           src="/static/help.png"
@@ -83,6 +84,7 @@ import JointStateTable from "./JointStateTable.vue";
 import MoteusStateTable from "./MoteusStateTable.vue";
 import OdometryReading from "./OdometryReading.vue";
 import PDBFuse from "./PDBFuse.vue";
+import CommReadout from "./CommReadout.vue";
 import { quaternionToDisplayAngle } from "../utils.js";
 
 export default {
@@ -97,6 +99,7 @@ export default {
     MoteusStateTable,
     OdometryReading,
     PDBFuse,
+    CommReadout,
   },
 
   props: {

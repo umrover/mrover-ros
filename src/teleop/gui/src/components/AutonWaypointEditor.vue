@@ -91,8 +91,12 @@
             @toggle="toggleTeleopMode($event)"
           />
         </div>
-        <div class="stuck-check" >
-          <Checkbox class ="stuck-checkbox" name="Stuck" @toggle="roverStuck = !roverStuck"></Checkbox>
+        <div class="stuck-check">
+          <Checkbox
+            class="stuck-checkbox"
+            name="Stuck"
+            @toggle="roverStuck = !roverStuck"
+          ></Checkbox>
         </div>
         <div class="stats">
           <VelocityCommand />
@@ -545,7 +549,7 @@ export default {
 .stuck-check {
   align-content: center;
   grid-area: stuck-check;
-  padding-inline: 20px
+  padding-inline: 20px;
 }
 .stuck-check .stuck-checkbox {
   transform: scale(1.5);
