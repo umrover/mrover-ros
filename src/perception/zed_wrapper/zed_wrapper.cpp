@@ -23,6 +23,8 @@ namespace mrover {
             mLeftImgPub = it.advertise("camera/left/image", 1);
             mRightImgPub = it.advertise("camera/right/image", 1);
 
+            mNh.param<bool>("use_odom_frame", mUseOdom, false);
+
             int resolution{};
             mPnh.param("grab_resolution", resolution, static_cast<std::underlying_type_t<sl::RESOLUTION>>(sl::RESOLUTION::HD720));
             int depthMode{};
@@ -61,8 +63,10 @@ namespace mrover {
                 throw std::runtime_error("ZED failed to open");
             }
 
-            sl::PositionalTrackingParameters positionalTrackingParameters;
-            mZed.enablePositionalTracking(positionalTrackingParameters);
+            if (mUseOdom) {
+                sl::PositionalTrackingParameters positionalTrackingParameters;
+                mZed.enablePositionalTracking(positionalTrackingParameters);
+            }
 
             mGrabThread = std::thread(&ZedNodelet::grabUpdate, this);
             mPcThread = std::thread(&ZedNodelet::pointCloudUpdate, this);
@@ -106,7 +110,7 @@ namespace mrover {
                     throw std::runtime_error("ZED failed to retrieve left image");
                 if (mZed.retrieveImage(mRightImageMat, sl::VIEW::RIGHT, sl::MEM::CPU, mImageResolution) != sl::ERROR_CODE::SUCCESS)
                     throw std::runtime_error("ZED failed to retrieve right image");
-                if (mZed.retrieveMeasure(mPointCloudXYZMat, sl::MEASURE::XYZ, sl::MEM::CPU, mImageResolution) != sl::ERROR_CODE::SUCCESS)
+                if (mRightImgPub.getNumSubscribers() && mZed.retrieveMeasure(mPointCloudXYZMat, sl::MEASURE::XYZ, sl::MEM::CPU, mImageResolution) != sl::ERROR_CODE::SUCCESS)
                     throw std::runtime_error("ZED failed to retrieve point cloud");
                 mPcThreadProfiler.addEpoch("Retrieve");
 
@@ -186,7 +190,7 @@ namespace mrover {
                     mGrabDone.notify_all();
                 }
 
-                if (mUseBuiltinPosTracking) {
+                if (mUseOdom && mUseBuiltinPosTracking) {
                     sl::Pose pose;
                     sl::POSITIONAL_TRACKING_STATE status = mZed.getPosition(pose);
                     if (status == sl::POSITIONAL_TRACKING_STATE::OK) {

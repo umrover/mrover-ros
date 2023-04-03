@@ -41,6 +41,7 @@ namespace mrover {
         int mGrabTargetFps{};
         int mDepthConfidence{};
         int mTextureConfidence{};
+        bool mUseOdom{};
         bool mDirectTagDetection{};
         bool mUseBuiltinPosTracking{};
 
