@@ -70,3 +70,10 @@ teleop:
     blah: ["/tf", "/tf_static", "/rosout"]
     foo: ["/rosout", "/tf"]
     bar: ["/tf_static", "/rosout", "/tf"]
+
+  camera_list: [
+    "a",
+    "b",
+    "c",
+    "d"
+  ]

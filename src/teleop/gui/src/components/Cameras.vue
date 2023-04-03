@@ -28,6 +28,55 @@
     <h3>All Cameras</h3>
     Capacity:
     <input v-model="capacity" class="rounded" type="Number" min="2" max="4" />
+    <button v-if="allDisabled()" class="rounded button" @click="setup()">
+      Setup
+    </button>
+
+    <div v-if="showModal" @close="showModal = false">
+      <transition name="modal-fade">
+        <div class="modal-backdrop">
+          <div class="modal"
+            role="dialog"
+          >
+            <header
+              class="modal-header"
+              id="modalTitle"
+            >
+              <button
+                type="button"
+                class="btn-close"
+                @click="showModal = false"
+              >
+                x
+              </button>
+            </header>
+
+            <section
+              class="modal-body"
+              id="modalDescription"
+            >
+              <slot name="body">
+                Which camera is this?
+                <button>Not a Camera</button>
+                <button v-for="name in cameraNames" :key="name">{{name}}</button>
+              </slot>
+            </section>
+
+            <footer class="modal-footer">
+              <button
+                type="button"
+                class="btn-green"
+                @click="showModal = false"
+              >
+                Close me!
+              </button>
+            </footer>
+          </div>
+        </div>
+      </transition>
+    </div>
+
+
     <div v-for="i in camsEnabled.length" :key="i" class="camerainfo">
       <CameraInfo
         v-if="camsEnabled[i - 1]"
@@ -68,6 +117,8 @@ export default {
       capacity: 2,
       qualities: new Array(9).fill(-1),
       streamOrder: [-1, -1, -1, -1],
+      showModal: false,
+      cameraNames: []
     };
   },
 
@@ -91,6 +142,14 @@ export default {
       primary: this.primary,
     });
     resetService.callService(request, (result) => {});
+
+    var names = new ROSLIB.Param({
+      ros: this.$ros,
+      name: "teleop/camera_list"
+    });
+    names.get((val) => {
+      this.cameraNames = val;
+    });
   },
 
   methods: {
@@ -147,6 +206,19 @@ export default {
     getStreamNum(index) {
       return this.streamOrder.indexOf(index);
     },
+
+    allDisabled(){
+      var off = true;
+      for(var c in this.camsEnabled){
+        if(this.camsEnabled[c]) off = false;
+      }
+      return off;
+    },
+
+    setup(){
+      this.showModal = true;
+
+    },
   },
 };
 </script>
@@ -168,4 +240,79 @@ export default {
 .cameraselection {
   margin: 10px;
 }
+
+
+.modal-backdrop {
+    position: fixed;
+    top: 0;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    background-color: rgba(0, 0, 0, 0.3);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+  }
+
+  .modal {
+    background: #FFFFFF;
+    box-shadow: 2px 2px 20px 1px;
+    overflow-x: auto;
+    display: flex;
+    flex-direction: column;
+  }
+
+  .modal-header,
+  .modal-footer {
+    padding: 15px;
+    display: flex;
+  }
+
+  .modal-header {
+    position: relative;
+    border-bottom: 1px solid #eeeeee;
+    color: #4AAE9B;
+    justify-content: space-between;
+  }
+
+  .modal-footer {
+    border-top: 1px solid #eeeeee;
+    flex-direction: column;
+  }
+
+  .modal-body {
+    position: relative;
+    padding: 20px 10px;
+  }
+
+  .btn-close {
+    position: absolute;
+    top: 0;
+    right: 0;
+    border: none;
+    font-size: 20px;
+    padding: 10px;
+    cursor: pointer;
+    font-weight: bold;
+    color: #4AAE9B;
+    background: transparent;
+  }
+
+  .btn-green {
+    color: white;
+    background: #4AAE9B;
+    border: 1px solid #4AAE9B;
+    border-radius: 2px;
+  }
+
+  .modal-fade-enter,
+  .modal-fade-leave-to {
+    opacity: 0;
+  }
+
+  .modal-fade-enter-active,
+  .modal-fade-leave-active {
+    transition: opacity .5s ease;
+  }
+
 </style>
