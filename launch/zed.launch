@@ -2,8 +2,6 @@
     <arg name="run_perception" default="true"/>
     <arg name="run_visual_odom" default="false"/>
 
-    <node name="rviz" pkg="rviz" type="rviz" args="-d $(arg rvizconfig)" required="true" />
-
     <!-- ZED wrapper node -->
     <node if="$(arg run_perception)"
           name="zed_node" pkg="zed_wrapper" type="zed_wrapper_node" output="screen" required="true">
