@@ -28,6 +28,7 @@ namespace mrover {
             mPnh = getMTPrivateNodeHandle();
             mPcPub = mNh.advertise<sensor_msgs::PointCloud2>("camera/left/points", 1);
             mImuPub = mNh.advertise<sensor_msgs::Imu>("imu", 1);
+            mMagPub = mNh.advertise<sensor_msgs::MagneticField>("mag", 1);
             mLeftCamInfoPub = mNh.advertise<sensor_msgs::CameraInfo>("camera/left/camera_info", 1);
             mRightCamInfoPub = mNh.advertise<sensor_msgs::CameraInfo>("camera/right/camera_info", 1);
             image_transport::ImageTransport it{mNh};
@@ -73,6 +74,7 @@ namespace mrover {
             if (mZed.open(initParameters) != sl::ERROR_CODE::SUCCESS) {
                 throw std::runtime_error("ZED failed to open");
             }
+            mZedInfo = mZed.getCameraInformation();
 
             if (mUseOdom && mUseBuiltinPosTracking) {
                 sl::PositionalTrackingParameters positionalTrackingParameters;
@@ -158,7 +160,7 @@ namespace mrover {
                     mRightImgPub.publish(mRightImgMsg);
                 }
                 if (mLeftCamInfoPub.getNumSubscribers() || mRightCamInfoPub.getNumSubscribers()) {
-                    sl::CalibrationParameters calibration = mZed.getCameraInformation(mImageResolution).camera_configuration.calibration_parameters;
+                    sl::CalibrationParameters calibration = mZedInfo.camera_configuration.calibration_parameters;
                     fillCameraInfoMessages(calibration, mImageResolution, mLeftCamInfoMsg, mRightCamInfoMsg);
                     mLeftCamInfoMsg->header.frame_id = "zed2i_left_camera_frame";
                     mLeftCamInfoMsg->header.stamp = grabTime;
@@ -222,17 +224,23 @@ namespace mrover {
                     }
                     mGrabThreadProfiler.measureEvent("Positional tracking");
                 }
-
-                if (mImuPub.getNumSubscribers()) {
+                if (mZedInfo.camera_model == sl::MODEL::ZED2i && mImuPub.getNumSubscribers()) {
                     sl::SensorsData sensorData;
                     mZed.getSensorsData(sensorData, sl::TIME_REFERENCE::CURRENT);
 
                     sensor_msgs::Imu imuMsg;
                     fillImuMessage(sensorData.imu, imuMsg);
-                    imuMsg.header.frame_id = "zed2i_imu_frame";
+                    imuMsg.header.frame_id = "zed2i_mag_frame";
                     imuMsg.header.stamp = ros::Time::now();
                     imuMsg.header.seq = mGrabUpdateTick;
                     mImuPub.publish(imuMsg);
+
+                    sensor_msgs::MagneticField magMsg;
+                    fillMagMessage(sensorData.magnetometer, magMsg);
+                    magMsg.header.frame_id = "zed2i_mag_frame";
+                    magMsg.header.stamp = ros::Time::now();
+                    magMsg.header.seq = mGrabUpdateTick;
+                    mMagPub.publish(magMsg);
                 }
                 mGrabThreadProfiler.measureEvent("Sensor data");
 

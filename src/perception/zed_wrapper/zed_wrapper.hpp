@@ -11,6 +11,7 @@
 #include <ros/node_handle.h>
 #include <sensor_msgs/CameraInfo.h>
 #include <sensor_msgs/Imu.h>
+#include <sensor_msgs/MagneticField.h>
 #include <sensor_msgs/PointCloud2.h>
 #include <tf2_ros/transform_broadcaster.h>
 #include <tf2_ros/transform_listener.h>
@@ -28,7 +29,7 @@ namespace mrover {
         tf2_ros::Buffer mTfBuffer;
         tf2_ros::TransformListener mTfListener{mTfBuffer};
         tf2_ros::TransformBroadcaster mTfBroadcaster;
-        ros::Publisher mPcPub, mImuPub, mLeftCamInfoPub, mRightCamInfoPub;
+        ros::Publisher mPcPub, mImuPub, mMagPub, mLeftCamInfoPub, mRightCamInfoPub;
         image_transport::Publisher mLeftImgPub, mRightImgPub;
 
         sensor_msgs::ImagePtr mLeftImgMsg = boost::make_shared<sensor_msgs::Image>();
@@ -46,6 +47,7 @@ namespace mrover {
         bool mUseBuiltinPosTracking{};
 
         sl::Camera mZed;
+        sl::CameraInformation mZedInfo;
         sl::Mat mLeftImageMat;
         sl::Mat mRightImageMat;
         sl::Mat mPointCloudXYZMat;
@@ -86,5 +88,7 @@ namespace mrover {
     void fillImageMessage(sl::Mat& bgr, sensor_msgs::ImagePtr const& msg);
 
     void fillImuMessage(sl::SensorsData::IMUData& imuData, sensor_msgs::Imu& msg);
+
+    void fillMagMessage(sl::SensorsData::MagnetometerData& magData, sensor_msgs::MagneticField& msg);
 
 } // namespace mrover
