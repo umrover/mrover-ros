@@ -11,6 +11,17 @@ using namespace std::chrono_literals;
 
 namespace mrover {
 
+    template<typename TEnum>
+    [[nodiscard]] TEnum stringToZedEnum(std::string_view string) {
+        using int_t = std::underlying_type_t<TEnum>;
+        for (int_t i = 0; i < static_cast<int_t>(TEnum::LAST); ++i) {
+            if (sl::String{string.data()} == sl::toString(static_cast<TEnum>(i))) {
+                return static_cast<TEnum>(i);
+            }
+        }
+        throw std::invalid_argument("Invalid enum string");
+    }
+
     void ZedNodelet::onInit() {
         try {
             mNh = getMTNodeHandle();
@@ -25,10 +36,10 @@ namespace mrover {
 
             mNh.param<bool>("use_odom_frame", mUseOdom, false);
 
-            int resolution{};
-            mPnh.param("grab_resolution", resolution, static_cast<std::underlying_type_t<sl::RESOLUTION>>(sl::RESOLUTION::HD720));
-            int depthMode{};
-            mPnh.param("depth_mode", depthMode, static_cast<std::underlying_type_t<sl::RESOLUTION>>(sl::DEPTH_MODE::PERFORMANCE));
+            std::string grabResolutionString;
+            mPnh.param("grab_resolution", grabResolutionString, std::string{sl::toString(sl::RESOLUTION::HD720)});
+            std::string depthModeString{};
+            mPnh.param("depth_mode", depthModeString, std::string{sl::toString(sl::DEPTH_MODE::PERFORMANCE)});
             mPnh.param("grab_target_fps", mGrabTargetFps, 50);
             int imageWidth{};
             int imageHeight{};
@@ -52,8 +63,8 @@ namespace mrover {
             if (!svoFile.empty()) {
                 initParameters.input.setFromSVOFile(svoFile.c_str());
             }
-            initParameters.camera_resolution = static_cast<sl::RESOLUTION>(resolution);
-            initParameters.depth_mode = static_cast<sl::DEPTH_MODE>(depthMode);
+            initParameters.camera_resolution = stringToZedEnum<sl::RESOLUTION>(grabResolutionString);
+            initParameters.depth_mode = stringToZedEnum<sl::DEPTH_MODE>(depthModeString);
             initParameters.coordinate_units = sl::UNIT::METER;
             initParameters.sdk_verbose = true; // Log useful information
             initParameters.camera_fps = mGrabTargetFps;
