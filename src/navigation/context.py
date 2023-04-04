@@ -62,7 +62,8 @@ class Environment:
 
     def get_fid_pos(self, fid_id: int, in_odom_frame: bool = True) -> Optional[np.ndarray]:
         """
-        Retrieves the pose of the given fiducial ID from the TF tree
+        Retrieves the pose of the given fiducial ID from the TF tree in the odom frame 
+        if in_odom_frame is True otherwise in the world frame
         if it exists and is more recent than TAG_EXPIRATION_TIME_SECONDS, otherwise returns None
         """
         try:
