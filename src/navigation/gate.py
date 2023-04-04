@@ -17,10 +17,10 @@ from util.ros_utils import get_rosparam
 from shapely.geometry import LineString
 from mrover.msg import GPSPointList
 
-STOP_THRESH = 0.2
-DRIVE_FWD_THRESH = 0.34  # 20 degrees
+STOP_THRESH = get_rosparam("gate/stop_thresh", 0.2)
+DRIVE_FWD_THRESH = get_rosparam("gate/drive_fwd_thresh", 0.34)  # 20 degrees
 
-APPROACH_DISTANCE = 2.0
+APPROACH_DISTANCE = get_rosparam("gate/approach_distance", 2.0)
 
 
 @dataclass
@@ -111,16 +111,16 @@ class GateTrajectory(Trajectory):
         path = make_shapely_path(rover, all_pts[-num_pts_included:, :])
         while path.intersects(post_one_shape) or path.intersects(post_two_shape):
             num_pts_included += 1
-            if num_pts_included == 4:
+            if num_pts_included == all_pts.shape[0]:
                 break
             path = make_shapely_path(rover, all_pts[-num_pts_included:])
 
-        coordinates = np.array(all_pts[-num_pts_included:])
+        coordinates = all_pts[-num_pts_included:]
         coordinates = np.hstack((coordinates, np.zeros(coordinates.shape[0]).reshape(-1, 1)))
         return coordinates
 
 
-def make_shapely_path(rover, path_pts):
+def make_shapely_path(rover, path_pts) -> LineString:
     """
     :param rover: position vector of the rover
     :param pathPts: This is a np.array that has the coordinates of the path

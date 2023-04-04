@@ -32,7 +32,7 @@ class Gate:
     def get_post_shapes(self) -> tuple[Point, Point]:
         """
         Creates a circular path of RADIUS around each post for checking intersection with our path
-        :return: A shapely circle shape
+        :return: tuple of the two shapely Point objects representing the posts
         """
         # Declare radius to 0.5 meters
         RADIUS = 0.5

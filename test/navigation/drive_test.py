@@ -7,8 +7,6 @@ from util.SO3 import SO3
 from math import pi
 from util.np_utils import angle_to_rotate
 
-# from navigation.gate import GateTrajectory
-from tf.transformations import quaternion_from_euler
 import rospy
 
 
