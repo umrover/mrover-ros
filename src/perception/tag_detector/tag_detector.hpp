@@ -5,9 +5,7 @@
 #include <opencv2/aruco.hpp>
 #include <opencv2/core/mat.hpp>
 #include <opencv2/imgproc.hpp>
-
 #include <opencv2/core/types.hpp>
-#include <opencv2/highgui/highgui.hpp>
 
 #include <dynamic_reconfigure/server.h>
 #include <image_transport/image_transport.h>
@@ -16,10 +14,6 @@
 #include <std_srvs/SetBool.h>
 #include <tf2_ros/transform_broadcaster.h>
 #include <tf2_ros/transform_listener.h>
-
-#include <opencv2/core/mat.hpp>
-#include <opencv2/core/types.hpp>
-#include <opencv2/highgui/highgui.hpp>
 
 #include <geometry_msgs/PoseStamped.h>
 #include <sensor_msgs/image_encodings.h>
@@ -82,7 +76,7 @@ namespace mrover {
 
         void onInit() override;
                 
-        void publish_thresh(cv::Mat const& mImg);
+        void publishThresholdedImage();
 
         std::optional<SE3> getTagInCamFromPixel(sensor_msgs::PointCloud2ConstPtr const& cloudPtr, size_t u, size_t v);
 

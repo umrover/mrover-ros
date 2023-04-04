@@ -64,26 +64,24 @@ namespace mrover {
      *
      * @param msg
      */
-    void TagDetectorNodelet::publish_thresh(cv::Mat const& mImg) {
+    void TagDetectorNodelet::publishThresholdedImage() {
         /// 1. CONVERT TO GRAY
         convertToGrey(mImg, mGrayscale);
 
         /// 2. DETECT FIRST SET OF CANDIDATES
         runAdaptiveThresh(mGrayscale, mDetectorParams);
 
-        if (mThreshPub.getNumSubscribers()) {
-            mThreshMsg.header.seq = mSeqNum;
-            mThreshMsg.header.stamp = ros::Time::now();
-            mThreshMsg.header.frame_id = "zed2i_left_camera_frame";
-            mThreshMsg.height = mGrayscale.rows;
-            mThreshMsg.width = mGrayscale.cols;
-            mThreshMsg.encoding = sensor_msgs::image_encodings::MONO8;
-            mThreshMsg.step = mGrayscale.step;
-            mThreshMsg.is_bigendian = __BYTE_ORDER__ == __ORDER_BIG_ENDIAN__;
-            size_t size = mThreshMsg.step * mThreshMsg.height;
-            mThreshMsg.data.resize(size);
-            std::copy(std::execution::par_unseq, mGrayscale.data, mGrayscale.data + size, mThreshMsg.data.begin());
-            mThreshPub.publish(mThreshMsg);
-        }
+        mThreshMsg.header.seq = mSeqNum;
+        mThreshMsg.header.stamp = ros::Time::now();
+        mThreshMsg.header.frame_id = "zed2i_left_camera_frame";
+        mThreshMsg.height = mGrayscale.rows;
+        mThreshMsg.width = mGrayscale.cols;
+        mThreshMsg.encoding = sensor_msgs::image_encodings::MONO8;
+        mThreshMsg.step = mGrayscale.step;
+        mThreshMsg.is_bigendian = __BYTE_ORDER__ == __ORDER_BIG_ENDIAN__;
+        size_t size = mThreshMsg.step * mThreshMsg.height;
+        mThreshMsg.data.resize(size);
+        std::copy(std::execution::par_unseq, mGrayscale.data, mGrayscale.data + size, mThreshMsg.data.begin());
+        mThreshPub.publish(mThreshMsg);
     }
 }

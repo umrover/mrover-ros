@@ -26,7 +26,7 @@ namespace mrover {
 
         image_transport::ImageTransport it{mNh};
         mImgPub = it.advertise("tag_detection", 1);
-        mThreshPub = it.advertise("thresh_images", 1);
+        mThreshPub = it.advertise("tag_detection_threshold", 1);
         mDictionary = cv::aruco::getPredefinedDictionary(dictionaryNumber);
 
         bool directTagDetection = false;
@@ -153,7 +153,6 @@ namespace mrover {
 
 int main(int argc, char** argv) {
     ros::init(argc, argv, "tag_detector");
-    cv::namedWindow("test", cv::WINDOW_AUTOSIZE);
 
     // Start the ZED Nodelet
     nodelet::Loader nodelet;

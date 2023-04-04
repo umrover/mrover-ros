@@ -68,7 +68,10 @@ namespace mrover {
         mProfiler.addEpoch("Convert");
 
         // Call thresholding
-        publish_thresh(mImg);
+        if (mThreshPub.getNumSubscribers()) {
+            publishThresholdedImage();
+        }
+        
 
         // Detect the tag vertices in screen space and their respective ids
         // {mCorners, mIds} are the outputs from OpenCV
