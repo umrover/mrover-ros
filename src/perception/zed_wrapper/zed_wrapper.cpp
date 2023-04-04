@@ -108,14 +108,14 @@ namespace mrover {
             }
 
             while (ros::ok()) {
-                mPcThreadProfiler.reset();
+                mPcThreadProfiler.finishLoop();
 
                 {
                     std::unique_lock lock{mGrabMutex};
                     mGrabDone.wait(lock);
                 }
                 ros::Time grabTime{slTime2Ros(mZed.getTimestamp(sl::TIME_REFERENCE::IMAGE))};
-                mPcThreadProfiler.addEpoch("Wait");
+                mPcThreadProfiler.measureEvent("Wait");
 
                 if (mZed.retrieveImage(mLeftImageMat, sl::VIEW::LEFT, sl::MEM::CPU, mImageResolution) != sl::ERROR_CODE::SUCCESS)
                     throw std::runtime_error("ZED failed to retrieve left image");
@@ -124,24 +124,24 @@ namespace mrover {
                         throw std::runtime_error("ZED failed to retrieve right image");
                 if (mZed.retrieveMeasure(mPointCloudXYZMat, sl::MEASURE::XYZ, sl::MEM::CPU, mImageResolution) != sl::ERROR_CODE::SUCCESS)
                     throw std::runtime_error("ZED failed to retrieve point cloud");
-                mPcThreadProfiler.addEpoch("Retrieve");
+                mPcThreadProfiler.measureEvent("Retrieve");
 
                 fillPointCloudMessage(mPointCloudXYZMat, mLeftImageMat, mPointCloud);
                 mPointCloud->header.seq = mPointCloudUpdateTick;
                 mPointCloud->header.stamp = grabTime;
                 mPointCloud->header.frame_id = "zed2i_left_camera_frame";
-                mPcThreadProfiler.addEpoch("Fill Message");
+                mPcThreadProfiler.measureEvent("Fill Message");
 
                 if (mDirectTagDetection)
                     mTagDetectorNode->pointCloudCallback(mPointCloud);
-                mPcThreadProfiler.addEpoch("Direct Tag Detection");
+                mPcThreadProfiler.measureEvent("Direct Tag Detection");
 
                 if (mPcPub.getNumSubscribers()) {
                     mPcPub.publish(mPointCloud);
                     if (mDirectTagDetection)
                         NODELET_WARN("Publishing defeats the purpose of direct tag detection");
                 }
-                mPcThreadProfiler.addEpoch("Point cloud publish");
+                mPcThreadProfiler.measureEvent("Point cloud publish");
 
                 if (mLeftImgPub.getNumSubscribers()) {
                     fillImageMessage(mLeftImageMat, mLeftImgMsg);
@@ -170,7 +170,7 @@ namespace mrover {
                     mRightCamInfoPub.publish(mRightCamInfoMsg);
                 }
 
-                mPcThreadProfiler.addEpoch("Image + camera info publish");
+                mPcThreadProfiler.measureEvent("Image + camera info publish");
 
                 mPointCloudUpdateTick++;
             }
@@ -187,7 +187,7 @@ namespace mrover {
         try {
             NODELET_INFO("Starting grab thread");
             while (ros::ok()) {
-                mGrabThreadProfiler.reset();
+                mGrabThreadProfiler.finishLoop();
 
                 sl::RuntimeParameters runtimeParameters;
                 runtimeParameters.confidence_threshold = mDepthConfidence;
@@ -195,7 +195,7 @@ namespace mrover {
 
                 if (mZed.grab(runtimeParameters) != sl::ERROR_CODE::SUCCESS)
                     throw std::runtime_error("ZED failed to grab");
-                mGrabThreadProfiler.addEpoch("Grab");
+                mGrabThreadProfiler.measureEvent("Grab");
 
                 {
                     std::unique_lock lock{mGrabMutex};
@@ -220,7 +220,7 @@ namespace mrover {
                     } else {
                         NODELET_WARN_STREAM("Positional tracking failed: " << status);
                     }
-                    mGrabThreadProfiler.addEpoch("Positional tracking");
+                    mGrabThreadProfiler.measureEvent("Positional tracking");
                 }
 
                 if (mImuPub.getNumSubscribers()) {
@@ -234,7 +234,7 @@ namespace mrover {
                     imuMsg.header.seq = mGrabUpdateTick;
                     mImuPub.publish(imuMsg);
                 }
-                mGrabThreadProfiler.addEpoch("Sensor data");
+                mGrabThreadProfiler.measureEvent("Sensor data");
 
                 mGrabUpdateTick++;
             }

@@ -17,7 +17,7 @@
 
 #include <tag_detector.hpp>
 
-#include "time_profiler.hpp"
+#include "loop_profiler.hpp"
 
 namespace mrover {
 
@@ -58,8 +58,8 @@ namespace mrover {
 
         boost::shared_ptr<TagDetectorNodelet> mTagDetectorNode;
 
-        TimeProfiler mPcThreadProfiler;
-        TimeProfiler mGrabThreadProfiler;
+        LoopProfiler mPcThreadProfiler;
+        LoopProfiler mGrabThreadProfiler;
 
         size_t mGrabUpdateTick = 0;
         size_t mPointCloudUpdateTick = 0;

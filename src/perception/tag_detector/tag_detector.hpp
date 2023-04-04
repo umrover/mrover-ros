@@ -17,7 +17,7 @@
 
 #include <se3.hpp>
 
-#include "time_profiler.hpp"
+#include "loop_profiler.hpp"
 
 namespace mrover {
 
@@ -61,7 +61,7 @@ namespace mrover {
         dynamic_reconfigure::Server<mrover::DetectorParamsConfig> mConfigServer;
         dynamic_reconfigure::Server<mrover::DetectorParamsConfig>::CallbackType mCallbackType;
 
-        TimeProfiler mProfiler;
+        LoopProfiler mProfiler;
 
         void onInit() override;
 
