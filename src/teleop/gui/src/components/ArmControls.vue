@@ -131,7 +131,9 @@ export default {
       for (let i = 0; i < 4; i++) {
         const gamepad = gamepads[i];
         if (gamepad) {
-          if (gamepad.id.includes("Microsoft") || gamepad.id.includes("Xbox")) {
+          // Microsoft and Xbox for old Xbox 360 controllers
+          // X-Box for new PowerA Xbox One controllers
+          if (gamepad.id.includes("Microsoft") || gamepad.id.includes("Xbox") || gamepad.id.includes("X-Box")) {
             let buttons = gamepad.buttons.map((button) => {
               return button.value;
             });
