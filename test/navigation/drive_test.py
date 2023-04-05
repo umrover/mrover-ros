@@ -6,7 +6,12 @@ from util.SE3 import SE3
 from util.SO3 import SO3
 from math import pi
 from util.np_utils import angle_to_rotate
+
 from tf.transformations import quaternion_from_euler
+import rospy
+
+
+APPROACH_DISTANCE = 2.0
 
 
 class TestDrive(unittest.TestCase):
