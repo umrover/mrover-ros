@@ -11,6 +11,7 @@
       <h1>Auton Dashboard</h1>
       <div class="spacer"></div>
       <div class="spacer"></div>
+      <CommReadout class="comm"></CommReadout>
       <div class="help">
         <img
           src="/static/help.png"
@@ -82,6 +83,7 @@ import MastGimbalControls from "./MastGimbalControls.vue";
 import { mapGetters } from "vuex";
 import JoystickValues from "./JoystickValues.vue";
 import IMUCalibration from "./IMUCalibration.vue";
+import CommReadout from "./CommReadout.vue";
 import { quaternionToDisplayAngle } from "../utils.js";
 
 const navBlue = "#4695FF";
@@ -97,6 +99,7 @@ export default {
     IMUCalibration,
     JoystickValues,
     MastGimbalControls,
+    CommReadout,
   },
 
   data() {
@@ -373,5 +376,10 @@ h2 {
 
 .waypoints {
   grid-area: waypoints;
+}
+
+.comm {
+  position: absolute;
+  left: 50%;
 }
 </style>

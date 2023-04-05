@@ -11,6 +11,7 @@
       <h1>SA Dashboard</h1>
       <div class="spacer"></div>
       <div class="spacer"></div>
+      <CommReadout class="comm"></CommReadout>
       <div class="help">
         <img
           src="/static/help.png"
@@ -83,6 +84,7 @@ import * as qte from "quaternion-to-euler";
 import Cameras from "./Cameras.vue";
 import MoteusStateTable from "./MoteusStateTable.vue";
 import JointStateTable from "./JointStateTable.vue";
+import CommReadout from "./CommReadout.vue";
 import { quaternionToDisplayAngle } from "../utils.js";
 
 export default {
@@ -97,6 +99,7 @@ export default {
     MoteusStateTable,
     PDBFuse,
     SAArmControls,
+    CommReadout,
   },
   data() {
     return {

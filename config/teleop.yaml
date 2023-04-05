@@ -6,20 +6,36 @@ teleop:
   ra_controls:
     joint_a:
       multiplier: 1
+      slow_mode_multiplier: 0.5
+      invert: False
     joint_b:
       multiplier: 1
+      slow_mode_multiplier: 1
+      invert: False
     joint_c:
-      multiplier: -1
+      multiplier: 1
+      slow_mode_multiplier: 0.5
+      invert: True
     joint_d:
       multiplier: 1
+      slow_mode_multiplier: 0.5
+      invert: False
     joint_e:
       multiplier: 1
+      slow_mode_multiplier: 0.5
+      invert: False
     joint_f:
       multiplier: 1
+      slow_mode_multiplier: 0.5
+      invert: False
     finger:
       multiplier: 1
+      slow_mode_multiplier: 0.5
+      invert: False
     gripper:
       multiplier: 1
+      slow_mode_multiplier: 1
+      invert: False
       
   sa_controls:
     sa_joint_1:
