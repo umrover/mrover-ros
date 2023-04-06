@@ -4,13 +4,13 @@
 #include <chrono>
 #include <cmath>
 #include <execution>
+#include <limits>
 #include <numeric>
 #include <thread>
-#include <limits>
 
 #include <sensor_msgs/image_encodings.h>
 
-#define PADDING 20
+constexpr int PADDING = 20;
 
 using namespace std::chrono_literals;
 using hr_clock = std::chrono::high_resolution_clock;
@@ -30,7 +30,7 @@ namespace mrover {
      * @param u     X Pixel Position
      * @param v     Y Pixel Position
      */
-    std::optional<SE3> TagDetectorNodelet::getFidInCamFromPixel(sensor_msgs::PointCloud2ConstPtr const& cloudPtr, size_t u, size_t v) { 
+    std::optional<SE3> TagDetectorNodelet::getFidInCamFromPixel(sensor_msgs::PointCloud2ConstPtr const& cloudPtr, size_t u, size_t v) {
         if (u >= cloudPtr->width || v >= cloudPtr->height) {
             NODELET_WARN("Tag center out of bounds: [%zu %zu]", u, v);
             return std::nullopt;
@@ -87,71 +87,77 @@ namespace mrover {
 
         // Update ID, image center, and increment hit count for all detected tags
         for (size_t i = 0; i < mIds.size(); ++i) {
-          int id = mIds[i];
-          Tag& tag = mTags[id];
-          tag.hitCount = std::clamp(tag.hitCount + 1, 0, mMaxHitCount);
-          tag.id = id;
-          tag.imageCenter = std::accumulate(mCorners[i].begin(), mCorners[i].end(), cv::Point2f{}) / static_cast<float>(mCorners[i].size());
+            int id = mIds[i];
+            Tag& tag = mTags[id];
+            tag.hitCount = std::clamp(tag.hitCount + 1, 0, mMaxHitCount);
+            tag.id = id;
+            tag.imageCenter = std::accumulate(mCorners[i].begin(), mCorners[i].end(), cv::Point2f{}) / static_cast<float>(mCorners[i].size());
 
-          // find extremes of detected tag for checking later
-          float leftmost = std::numeric_limits<float>::max();
-          float rightmost = 0.0;
-          float uppermost = std::numeric_limits<float>::max();
-          float lowermost = 0.0;
+            // find extremes of detected tag for checking later
+            auto xBounds = std::minmax_element(mCorners[i].begin(), mCorners[i].end(),
+                                               [](const cv::Point2f& a, const cv::Point2f& b) -> bool {
+                                                   return a.x < b.x;
+                                               });
 
-          for (size_t j = 0; j < mCorners[i].size(); ++j) {
-            if (mCorners[i][j].x < leftmost) leftmost = mCorners[i][j].x;
-            if (mCorners[i][j].x > rightmost) rightmost = mCorners[i][j].x;
-            if (mCorners[i][j].y > lowermost) lowermost = mCorners[i][j].y;
-            if (mCorners[i][j].y < uppermost) uppermost = mCorners[i][j].y;
-          }
+            int leftmost = (*xBounds.first).x;
+            int rightmost = (*xBounds.second).x;
 
-          R3 acc;
-          acc.setZero();
+            auto yBounds = std::minmax_element(mCorners[i].begin(), mCorners[i].end(),
+                                               [](const cv::Point2f& a, const cv::Point2f& b) -> bool {
+                                                   return a.x < b.x;
+                                               });
 
-          int numValid = 0;
-          
-          for (int x = lround(tag.imageCenter.x) - PADDING; x < lround(tag.imageCenter.x) + PADDING; ++x) {
-            if (x > leftmost && x < rightmost) {
-                for (int y = lround(tag.imageCenter.y) - PADDING; y < lround(tag.imageCenter.y) + PADDING; ++y) {
-                    if (y > uppermost && y < lowermost) {
-                        std::optional<SE3> inCam = getFidInCamFromPixel(msg, x, y);
-                        if (inCam) {
-                            acc += inCam.value().position();
-                            ++numValid;
+            int uppermost = (*yBounds.first).y;
+            int lowermost = (*xBounds.second).y; // top is y=0
+
+            std::vector<SE3> validFidsInCam;
+
+            for (int x = lround(tag.imageCenter.x) - PADDING; x < lround(tag.imageCenter.x) + PADDING; ++x) {
+                if (x > leftmost && x < rightmost) {
+                    for (int y = lround(tag.imageCenter.y) - PADDING; y < lround(tag.imageCenter.y) + PADDING; ++y) {
+                        if (y > uppermost && y < lowermost) {
+                            std::optional<SE3> inCam = getFidInCamFromPixel(msg, x, y);
+                            if (inCam) {
+                                validFidsInCam.push_back(inCam.value());
+                            }
                         }
                     }
                 }
             }
-          }
 
-          if (numValid == 0) {
-            acc /= numValid;
-            tag.tagInCam = std::make_optional<SE3>(acc, SO3{});
-          } else {
-            tag.tagInCam = std::nullopt; // no points were able to be mapped
-          }
+            if (validFidsInCam.size() > 0) {
+                // find median
+                size_t median_n = validFidsInCam.size() / 2;
+                std::nth_element(validFidsInCam.begin(), validFidsInCam.begin() + median_n, validFidsInCam.end(),
+                                 [](const SE3& a, const SE3& b) -> bool {
+                                     return a.position().norm() < b.position().norm();
+                                 });
 
-          if (tag.tagInCam) {
-            // Publish tag to immediate
-            std::string immediateFrameId = "immediateFiducial" + std::to_string(tag.id);
-            SE3::pushToTfTree(mTfBroadcaster, immediateFrameId, mCameraFrameId, tag.tagInCam.value());
-          }
+                tag.tagInCam = std::make_optional<SE3>(validFidsInCam[median_n]);
+            } else {
+                tag.tagInCam = std::nullopt; // no points were able to be mapped
+            }
+
+            if (tag.tagInCam) {
+                // Publish tag to immediate
+                std::string immediateFrameId = "immediateFiducial" + std::to_string(tag.id);
+                SE3::pushToTfTree(mTfBroadcaster, immediateFrameId, mCameraFrameId, tag.tagInCam.value());
+            }
         }
 
         // Handle tags that were not seen this update
         // Decrement their hit count and remove if they hit zero
         auto it = mTags.begin();
         while (it != mTags.end()) {
-          auto& [id, tag] = *it;
-          if (std::find(mIds.begin(), mIds.end(), id) == mIds.end()) {
-            tag.hitCount--;
-            if (tag.hitCount <= 0) {
-              it = mTags.erase(it);
-              continue;
+            auto& [id, tag] = *it;
+            if (std::find(mIds.begin(), mIds.end(), id) == mIds.end()) {
+                tag.hitCount--;
+                if (tag.hitCount <= 0) {
+                    it = mTags.erase(it);
+                    continue;
+                }
             }
-          }
-          ++it;
+            ++it;
         }
 
         // Publish all tags to the tf tree that have been seen enough times
