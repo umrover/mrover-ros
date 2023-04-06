@@ -108,7 +108,7 @@ namespace mrover {
                                                });
 
             int uppermost = (*yBounds.first).y;
-            int lowermost = (*xBounds.second).y; // top is y=0
+            int lowermost = (*yBounds.second).y; // top is y=0
 
             std::vector<SE3> validFidsInCam;
 
