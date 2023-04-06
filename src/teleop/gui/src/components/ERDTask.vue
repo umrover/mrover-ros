@@ -85,7 +85,7 @@ import MoteusStateTable from "./MoteusStateTable.vue";
 import OdometryReading from "./OdometryReading.vue";
 import PDBFuse from "./PDBFuse.vue";
 import CommReadout from "./CommReadout.vue";
-import { quaternionToDisplayAngle } from "../utils.js";
+import { quaternionToMapAngle } from "../utils.js";
 
 export default {
   components: {
@@ -150,7 +150,7 @@ export default {
 
     // Subscriber for odom to base_link transform
     this.tfClient.subscribe("base_link", (tf) => {
-      this.odom.bearing_deg = quaternionToDisplayAngle(tf.rotation);
+      this.odom.bearing_deg = quaternionToMapAngle(tf.rotation);
     });
 
     this.odom_sub.subscribe((msg) => {

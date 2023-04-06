@@ -85,7 +85,7 @@ import Cameras from "./Cameras.vue";
 import MoteusStateTable from "./MoteusStateTable.vue";
 import JointStateTable from "./JointStateTable.vue";
 import CommReadout from "./CommReadout.vue";
-import { quaternionToDisplayAngle } from "../utils.js";
+import { quaternionToMapAngle } from "../utils.js";
 
 export default {
   components: {
@@ -148,7 +148,7 @@ export default {
     // Subscriber for odom to base_link transform
     this.tfClient.subscribe("base_link", (tf) => {
       // Callback for IMU quaternion that describes bearing
-      this.odom.bearing_deg = quaternionToDisplayAngle(tf.rotation);
+      this.odom.bearing_deg = quaternionToMapAngle(tf.rotation);
     });
 
     this.brushless_motors = new ROSLIB.Topic({
