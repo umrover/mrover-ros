@@ -1,8 +1,8 @@
 #include "zed_wrapper.hpp"
 
 #include <algorithm>
+#include <cassert>
 #include <execution>
-#include <stdexcept>
 
 #include <sensor_msgs/CameraInfo.h>
 #include <sensor_msgs/distortion_models.h>
@@ -15,23 +15,24 @@
 #include "../point_cloud.hpp"
 
 constexpr float DEG2RAD = M_PI / 180.0f;
+constexpr uint64_t NS_PER_S = 1000000000;
 
 namespace mrover {
 
     ros::Time slTime2Ros(sl::Timestamp t) {
-        auto sec = static_cast<uint32_t>(t.getNanoseconds() / 1000000000);
-        auto nsec = static_cast<uint32_t>(t.getNanoseconds() % 1000000000);
-        return {sec, nsec};
+        return {static_cast<uint32_t>(t.getNanoseconds() / NS_PER_S),
+                static_cast<uint32_t>(t.getNanoseconds() % NS_PER_S)};
     }
 
-    void fillPointCloudMessage(sl::Mat& xyz, sl::Mat& bgr, sensor_msgs::PointCloud2Ptr const& msg) {
-        if (xyz.getWidth() != bgr.getWidth() || xyz.getHeight() != bgr.getHeight()) {
-            throw std::invalid_argument("XYZ and RGB images must be the same size");
-        }
+    void fillPointCloudMessage(sl::Mat& xyz, sl::Mat& bgra, sensor_msgs::PointCloud2Ptr const& msg) {
+        assert(bgra.getWidth() >= xyz.getWidth());
+        assert(bgra.getHeight() >= xyz.getHeight());
+        assert(bgra.getChannels() == 4);
+        assert(xyz.getChannels() == 3);
+        assert(msg);
 
-        auto imagePtr = bgr.getPtr<sl::uchar4>();
-        auto* pointCloudPtr = xyz.getPtr<sl::float4>();
-        //            auto* pointCloudNormalPtr = mPointCloudNormalMat.getPtr<sl::float4>();
+        auto bgraPtr = bgra.getPtr<sl::uchar4>();
+        auto* xyzPtr = xyz.getPtr<sl::float4>();
         msg->is_bigendian = __BYTE_ORDER__ == __ORDER_BIG_ENDIAN__;
         msg->is_dense = false;
         msg->height = xyz.getHeight();
@@ -49,24 +50,28 @@ namespace mrover {
                 "curvature", 1, sensor_msgs::PointField::FLOAT32);
         auto* pointPtr = reinterpret_cast<Point*>(msg->data.data());
         size_t size = msg->width * msg->height;
+        size_t xyzDivisor = bgra.getWidth() / xyz.getWidth();
         std::for_each(std::execution::par_unseq, pointPtr, pointPtr + size, [&](Point& point) {
-            size_t i = &point - pointPtr;
-            point.x = pointCloudPtr[i].x;
-            point.y = pointCloudPtr[i].y;
-            point.z = pointCloudPtr[i].z;
-            point.r = imagePtr[i].r;
-            point.g = imagePtr[i].g;
-            point.b = imagePtr[i].b;
+            size_t i = &point - pointPtr; // flat index
+            point.x = xyzPtr[i / xyzDivisor].x;
+            point.y = xyzPtr[i / xyzDivisor].y;
+            point.z = xyzPtr[i / xyzDivisor].z;
+            point.r = bgraPtr[i].b; // bgra -> rgb for PCL
+            point.g = bgraPtr[i].g;
+            point.b = bgraPtr[i].r;
         });
     }
 
-    void fillImageMessage(sl::Mat& bgr, sensor_msgs::ImagePtr const& msg) {
-        msg->height = bgr.getHeight();
-        msg->width = bgr.getWidth();
+    void fillImageMessage(sl::Mat& bgra, sensor_msgs::ImagePtr const& msg) {
+        assert(bgra.getChannels() == 4);
+        assert(msg);
+
+        msg->height = bgra.getHeight();
+        msg->width = bgra.getWidth();
         msg->encoding = sensor_msgs::image_encodings::BGRA8;
-        msg->step = bgr.getStepBytes();
+        msg->step = bgra.getStepBytes();
         msg->is_bigendian = __BYTE_ORDER__ == __ORDER_BIG_ENDIAN__;
-        auto* bgrPtr = bgr.getPtr<sl::uchar1>();
+        auto* bgrPtr = bgra.getPtr<sl::uchar1>();
         size_t size = msg->step * msg->height;
         msg->data.resize(size);
         std::copy(std::execution::par_unseq, bgrPtr, bgrPtr + size, msg->data.begin());
@@ -112,6 +117,9 @@ namespace mrover {
 
     void fillCameraInfoMessages(sl::CalibrationParameters& calibration, const sl::Resolution& resolution,
                                 sensor_msgs::CameraInfoPtr const& leftInfoMsg, sensor_msgs::CameraInfoPtr const& rightInfoMsg) {
+        assert(leftInfoMsg);
+        assert(rightInfoMsg);
+
         leftInfoMsg->width = resolution.width;
         leftInfoMsg->height = resolution.height;
         rightInfoMsg->width = resolution.width;

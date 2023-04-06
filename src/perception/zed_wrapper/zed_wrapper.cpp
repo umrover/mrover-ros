@@ -60,6 +60,13 @@ namespace mrover {
                 throw std::invalid_argument("Invalid grab target framerate");
             }
 
+            mImageResolution = sl::Resolution(imageWidth, imageHeight);
+            mPointResolution = sl::Resolution(imageWidth / 2, imageHeight / 2);
+
+            NODELET_INFO("Resolution: %s image: %zux%zu points: %zux%zu",
+                         grabResolutionString.c_str(), mImageResolution.width, mImageResolution.height, mPointResolution.width, mPointResolution.height);
+            NODELET_INFO("Use builtin visual odometry: %s", mUseOdom && mUseBuiltinPosTracking ? "true" : "false");
+
             sl::InitParameters initParameters;
             if (!svoFile.empty()) {
                 initParameters.input.setFromSVOFile(svoFile.c_str());
@@ -82,7 +89,7 @@ namespace mrover {
             }
 
             mGrabThread = std::thread(&ZedNodelet::grabUpdate, this);
-            mPcThread = std::thread(&ZedNodelet::pointCloudUpdate, this);
+            mProcessThread = std::thread(&ZedNodelet::pointCloudUpdate, this);
 
         } catch (std::exception const& e) {
             NODELET_FATAL("Exception while starting: %s", e.what());
@@ -110,69 +117,62 @@ namespace mrover {
             }
 
             while (ros::ok()) {
-                mPcThreadProfiler.finishLoop();
+                mProcessThreadProfiler.beginLoop();
 
                 {
-                    std::unique_lock lock{mGrabMutex};
-                    mGrabDone.wait(lock);
+                    std::unique_lock lock{mSwapMutex};
+                    mSwapCv.wait(lock, [this] { return mIsSwapReady; });
+                    mIsSwapReady = false;
+                    mProcessThreadProfiler.measureEvent("Wait");
+
+                    fillPointCloudMessage(mProcessMeasures.leftPoints, mProcessMeasures.leftImage, mPointCloud);
+                    mPointCloud->header.seq = mPointCloudUpdateTick;
+                    mPointCloud->header.stamp = mProcessMeasures.time;
+                    mPointCloud->header.frame_id = "zed2i_left_camera_frame";
+                    mProcessThreadProfiler.measureEvent("Fill Message");
+
+                    if (mLeftImgPub.getNumSubscribers()) {
+                        fillImageMessage(mProcessMeasures.leftImage, mLeftImgMsg);
+                        mLeftImgMsg->header.frame_id = "zed2i_left_camera_frame";
+                        mLeftImgMsg->header.stamp = mProcessMeasures.time;
+                        mLeftImgMsg->header.seq = mPointCloudUpdateTick;
+                        mLeftImgPub.publish(mLeftImgMsg);
+                    }
+                    if (mRightImgPub.getNumSubscribers()) {
+                        fillImageMessage(mProcessMeasures.rightImage, mRightImgMsg);
+                        mRightImgMsg->header.frame_id = "zed2i_right_camera_frame";
+                        mRightImgMsg->header.stamp = mProcessMeasures.time;
+                        mRightImgMsg->header.seq = mPointCloudUpdateTick;
+                        mRightImgPub.publish(mRightImgMsg);
+                    }
+                    mProcessThreadProfiler.measureEvent("Publish Message");
                 }
-                ros::Time grabTime{slTime2Ros(mZed.getTimestamp(sl::TIME_REFERENCE::IMAGE))};
-                mPcThreadProfiler.measureEvent("Wait");
 
-                if (mZed.retrieveImage(mLeftImageMat, sl::VIEW::LEFT, sl::MEM::CPU, mImageResolution) != sl::ERROR_CODE::SUCCESS)
-                    throw std::runtime_error("ZED failed to retrieve left image");
-                if (mRightImgPub.getNumSubscribers())
-                    if (mZed.retrieveImage(mRightImageMat, sl::VIEW::RIGHT, sl::MEM::CPU, mImageResolution) != sl::ERROR_CODE::SUCCESS)
-                        throw std::runtime_error("ZED failed to retrieve right image");
-                if (mZed.retrieveMeasure(mPointCloudXYZMat, sl::MEASURE::XYZ, sl::MEM::CPU, mImageResolution) != sl::ERROR_CODE::SUCCESS)
-                    throw std::runtime_error("ZED failed to retrieve point cloud");
-                mPcThreadProfiler.measureEvent("Retrieve");
-
-                fillPointCloudMessage(mPointCloudXYZMat, mLeftImageMat, mPointCloud);
-                mPointCloud->header.seq = mPointCloudUpdateTick;
-                mPointCloud->header.stamp = grabTime;
-                mPointCloud->header.frame_id = "zed2i_left_camera_frame";
-                mPcThreadProfiler.measureEvent("Fill Message");
-
-                if (mDirectTagDetection)
+                if (mDirectTagDetection) {
                     mTagDetectorNode->pointCloudCallback(mPointCloud);
-                mPcThreadProfiler.measureEvent("Direct Tag Detection");
+                    mProcessThreadProfiler.measureEvent("Direct Tag Detection");
+                }
 
                 if (mPcPub.getNumSubscribers()) {
                     mPcPub.publish(mPointCloud);
                     if (mDirectTagDetection)
                         NODELET_WARN("Publishing defeats the purpose of direct tag detection");
+                    mProcessThreadProfiler.measureEvent("Point cloud publish");
                 }
-                mPcThreadProfiler.measureEvent("Point cloud publish");
 
-                if (mLeftImgPub.getNumSubscribers()) {
-                    fillImageMessage(mLeftImageMat, mLeftImgMsg);
-                    mLeftImgMsg->header.frame_id = "zed2i_left_camera_frame";
-                    mLeftImgMsg->header.stamp = grabTime;
-                    mLeftImgMsg->header.seq = mPointCloudUpdateTick;
-                    mLeftImgPub.publish(mLeftImgMsg);
-                }
-                if (mRightImgPub.getNumSubscribers()) {
-                    fillImageMessage(mRightImageMat, mRightImgMsg);
-                    mRightImgMsg->header.frame_id = "zed2i_right_camera_frame";
-                    mRightImgMsg->header.stamp = grabTime;
-                    mRightImgMsg->header.seq = mPointCloudUpdateTick;
-                    mRightImgPub.publish(mRightImgMsg);
-                }
                 if (mLeftCamInfoPub.getNumSubscribers() || mRightCamInfoPub.getNumSubscribers()) {
                     sl::CalibrationParameters calibration = mZedInfo.camera_configuration.calibration_parameters;
                     fillCameraInfoMessages(calibration, mImageResolution, mLeftCamInfoMsg, mRightCamInfoMsg);
                     mLeftCamInfoMsg->header.frame_id = "zed2i_left_camera_frame";
-                    mLeftCamInfoMsg->header.stamp = grabTime;
+                    mLeftCamInfoMsg->header.stamp = ros::Time::now();
                     mLeftCamInfoMsg->header.seq = mPointCloudUpdateTick;
                     mRightCamInfoMsg->header.frame_id = "zed2i_right_camera_frame";
-                    mRightCamInfoMsg->header.stamp = grabTime;
+                    mRightCamInfoMsg->header.stamp = ros::Time::now();
                     mRightCamInfoMsg->header.seq = mPointCloudUpdateTick;
                     mLeftCamInfoPub.publish(mLeftCamInfoMsg);
                     mRightCamInfoPub.publish(mRightCamInfoMsg);
+                    mProcessThreadProfiler.measureEvent("Image + camera info publish");
                 }
-
-                mPcThreadProfiler.measureEvent("Image + camera info publish");
 
                 mPointCloudUpdateTick++;
             }
@@ -189,7 +189,7 @@ namespace mrover {
         try {
             NODELET_INFO("Starting grab thread");
             while (ros::ok()) {
-                mGrabThreadProfiler.finishLoop();
+                mGrabThreadProfiler.beginLoop();
 
                 sl::RuntimeParameters runtimeParameters;
                 runtimeParameters.confidence_threshold = mDepthConfidence;
@@ -199,11 +199,29 @@ namespace mrover {
                     throw std::runtime_error("ZED failed to grab");
                 mGrabThreadProfiler.measureEvent("Grab");
 
-                {
-                    std::unique_lock lock{mGrabMutex};
-                    mGrabDone.notify_all();
-                }
+                // Retrieval has to happen on the same thread as grab so that the image and point cloud are synced
+                if (mRightImgPub.getNumSubscribers())
+                    if (mZed.retrieveImage(mGrabMeasures.rightImage, sl::VIEW::RIGHT, sl::MEM::CPU, mImageResolution) != sl::ERROR_CODE::SUCCESS)
+                        throw std::runtime_error("ZED failed to retrieve right image");
+                // Left are only used for processing
+                if (mZed.retrieveImage(mGrabMeasures.leftImage, sl::VIEW::LEFT, sl::MEM::CPU, mImageResolution) != sl::ERROR_CODE::SUCCESS)
+                    throw std::runtime_error("ZED failed to retrieve left image");
+                if (mZed.retrieveMeasure(mGrabMeasures.leftPoints, sl::MEASURE::XYZ, sl::MEM::CPU, mPointResolution) != sl::ERROR_CODE::SUCCESS)
+                    throw std::runtime_error("ZED failed to retrieve point cloud");
+                mGrabMeasures.time = slTime2Ros(mZed.getTimestamp(sl::TIME_REFERENCE::IMAGE));
+                mGrabThreadProfiler.measureEvent("Retrieve");
 
+                // If the processing thread is busy skip
+                // We want this thread to run as fast as possible for grab and positional tracking
+                if (mSwapMutex.try_lock()) {
+                    std::swap(mGrabMeasures, mProcessMeasures);
+                    mIsSwapReady = true;
+                    mSwapMutex.unlock();
+                    mSwapCv.notify_one();
+                }
+                mGrabThreadProfiler.measureEvent("Try swap");
+
+                // Positional tracking module publishing
                 if (mUseOdom && mUseBuiltinPosTracking) {
                     sl::Pose pose;
                     sl::POSITIONAL_TRACKING_STATE status = mZed.getPosition(pose);
@@ -224,6 +242,8 @@ namespace mrover {
                     }
                     mGrabThreadProfiler.measureEvent("Positional tracking");
                 }
+
+                // Publish IMU and magnetometer data
                 if (mZedInfo.camera_model == sl::MODEL::ZED2i && mImuPub.getNumSubscribers()) {
                     sl::SensorsData sensorData;
                     mZed.getSensorsData(sensorData, sl::TIME_REFERENCE::CURRENT);
@@ -241,8 +261,8 @@ namespace mrover {
                     magMsg.header.stamp = ros::Time::now();
                     magMsg.header.seq = mGrabUpdateTick;
                     mMagPub.publish(magMsg);
+                    mGrabThreadProfiler.measureEvent("Sensor data");
                 }
-                mGrabThreadProfiler.measureEvent("Sensor data");
 
                 mGrabUpdateTick++;
             }
@@ -260,7 +280,7 @@ namespace mrover {
 
     ZedNodelet::~ZedNodelet() {
         NODELET_INFO("ZED node shutting down");
-        mPcThread.join();
+        mProcessThread.join();
         mGrabThread.join();
     }
 
@@ -278,5 +298,7 @@ int main(int argc, char** argv) {
     return EXIT_SUCCESS;
 }
 
+#ifdef MROVER_IS_NODELET
 #include <pluginlib/class_list_macros.h>
 PLUGINLIB_EXPORT_CLASS(mrover::ZedNodelet, nodelet::Nodelet)
+#endif

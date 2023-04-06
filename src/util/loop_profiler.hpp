@@ -26,9 +26,9 @@ public:
     LoopProfiler(size_t printTick = 60) : mPrintTick{printTick}, mLastEpochTime{hr_clock::now()} {}
 
     /**
-     * @brief Call this at the end of each loop iteration.
+     * @brief Call this at the beginning of each loop iteration.
      */
-    void finishLoop() {
+    void beginLoop() {
         if (mTick % mPrintTick == 0) {
             hr_clock::duration averageLoopDuration{};
             for (auto& [_, durations]: mEventReadings) {

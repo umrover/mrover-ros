@@ -17,7 +17,7 @@
         name="rqt_reconfigure" pkg="rqt_reconfigure" type="rqt_reconfigure"/>
 
   <node pkg="nodelet" type="nodelet" name="perception_nodelet_manager" respawn="true"
-        args="manager" output="screen"/>
+        args="manager" output="screen" launch-prefix="gdb -ex run --args"/>
 
   <include file="$(find mrover)/launch/zed.launch">
     <arg name="direct_tag_detection" value="$(arg direct_tag_detection)"/>

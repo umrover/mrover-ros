@@ -1,6 +1,7 @@
 #include "tag_detector.hpp"
 
 #include <algorithm>
+#include <cassert>
 #include <chrono>
 #include <cmath>
 #include <execution>
@@ -19,6 +20,8 @@ namespace mrover {
      * @param v     Y Pixel Position
      */
     std::optional<SE3> TagDetectorNodelet::getTagInCamFromPixel(sensor_msgs::PointCloud2ConstPtr const& cloudPtr, size_t u, size_t v) {
+        assert(cloudPtr);
+
         if (u >= cloudPtr->width || v >= cloudPtr->height) {
             NODELET_WARN("Tag center out of bounds: [%zu %zu]", u, v);
             return std::nullopt;
@@ -41,16 +44,15 @@ namespace mrover {
      * @param msg   Point cloud message
      */
     void TagDetectorNodelet::pointCloudCallback(sensor_msgs::PointCloud2ConstPtr const& msg) {
-        mProfiler.finishLoop();
+        assert(msg);
+        assert(msg->height > 0);
+        assert(msg->width > 0);
 
         if (!mEnableDetections) return;
 
-        NODELET_DEBUG("Got point cloud %d", msg->header.seq);
+        mProfiler.beginLoop();
 
-        if (msg->height == 0 || msg->width == 0) {
-            NODELET_WARN("Point cloud has zero size");
-            return;
-        }
+        NODELET_DEBUG("Got point cloud %d", msg->header.seq);
 
         if (static_cast<int>(msg->height) != mImg.rows || static_cast<int>(msg->width) != mImg.cols) {
             NODELET_INFO("Image size changed from [%d %d] to [%u %u]", mImg.cols, mImg.rows, msg->width, msg->height);
