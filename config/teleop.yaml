@@ -86,14 +86,15 @@ teleop:
     pan: 4
     tilt: 5
 
-  euclidean_error_threshold: 100
+  # Thresholds in radians
+  euclidean_error_threshold: 3.14
 
   joint_error_thresholds:
-    joint_a: 100
-    joint_b: 100
-    joint_c: 100
-    joint_d: 100
-    joint_e: 100
+    joint_a: 1.57
+    joint_b: 1.57
+    joint_c: 1.57
+    joint_d: 1.57
+    joint_e: 1.57
 
   # Mappings from site name to index in which values will be sent
   # for each site, mostly for heaters and which syringe servos we want to use
