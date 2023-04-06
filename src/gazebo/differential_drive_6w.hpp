@@ -54,6 +54,9 @@
 
 #include <gazebo/common/UpdateInfo.hh>
 
+#include <mrover/MotorsStatus.h>
+#include <sensor_msgs/JointState.h>
+
 namespace gazebo {
 
     class DiffDrivePlugin6W : public ModelPlugin {
@@ -72,6 +75,7 @@ namespace gazebo {
 
     private:
         void publishOdometry();
+        void publishJointData();
         void publishPath();
 
         void getPositionCommand();
@@ -79,13 +83,16 @@ namespace gazebo {
         physics::LinkPtr mBodyLink;
         physics::WorldPtr mWorld;
         std::array<physics::JointPtr, 6> mJoints;
+        mrover::MotorsStatus mMotorStatus{};
+        //publisher for joint state message
+        ros::Publisher mJointStatePublisher;
 
         double mWheelSeparation{};
         double mWheelDiameter{};
         double mTorque{};
         std::array<double, 2> mWheelSpeeds{};
 
-        // Simulation time of the last update
+        // SimulationmJointStateP time of the last update
         common::Time mPreviousUpdateTime;
 
         // Sim time of last time path was updated and published

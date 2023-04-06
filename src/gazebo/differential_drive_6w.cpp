@@ -32,6 +32,7 @@
  */
 
 #include "differential_drive_6w.hpp"
+#include "mrover/MotorsStatus.h"
 
 #include <algorithm>
 
@@ -164,6 +165,15 @@ namespace gazebo {
         // update path at 4 Hz
         mPathUpdatePeriod = common::Time(0, static_cast<int32_t>(common::Time::SecToNano(0.25)));
 
+        mMotorStatus.joint_states.name.resize(6);
+        mMotorStatus.joint_states.position.resize(mJoints.size());
+        mMotorStatus.joint_states.velocity.resize(mJoints.size());
+        mMotorStatus.joint_states.effort.resize(mJoints.size());
+        mMotorStatus.joint_states.name = {"j0", "j1", "j2", "j3", "j4", "j5"};
+
+        //set up joint state publisher to publish on /joint_states topic
+        mJointStatePublisher = mNode->advertise<mrover::MotorsStatus>("drive_status", 1);
+
         // Spinner runs in the background until the node dies
         // We want the callback to update as soon as possible so do this instead of callAvailable on the queue
         // Note that this means we have to make it thread safe, which is done via a mutex
@@ -251,6 +261,7 @@ namespace gazebo {
         }
 
         publishOdometry();
+        publishJointData();
 
         if (mWorld->SimTime() - mPreviousPathUpdateTime >= mPathUpdatePeriod) {
             mPreviousPathUpdateTime = mWorld->SimTime();
@@ -317,6 +328,21 @@ namespace gazebo {
         mOdometry.header.stamp = currentTime;
 
         mOdomPublisher.publish(mOdometry);
+    }
+
+    void DiffDrivePlugin6W::publishJointData() {
+        //fill JointState message representing joint positions and velocities and efforts
+        for (unsigned int i = 0; i < mJoints.size(); i++) {
+            mMotorStatus.joint_states.position[i] = mJoints[i]->Position(0);
+            mMotorStatus.joint_states.velocity[i] = mJoints[i]->GetVelocity(0);
+            //torque is not available in gazebo, so we use velocity as a proxy (there are functions to get torque but they all return zero)
+            //this is probably due to the way the joints are modeled in gazebo
+            mMotorStatus.joint_states.effort[i] = mJoints[i]->GetVelocity(0) / 5.0;
+        }
+        //publish joint state message
+        mMotorStatus.joint_states.header.stamp = ros::Time::now();
+        mMotorStatus.joint_states.header.frame_id = tf::resolve(mTfPrefix, mWorldFrameName);
+        mJointStatePublisher.publish(mMotorStatus);
     }
 
     // Add current odom reading to path and then publish path
