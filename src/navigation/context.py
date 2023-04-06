@@ -10,6 +10,7 @@ from visualization_msgs.msg import Marker
 from typing import ClassVar, Optional, List, Tuple
 import numpy as np
 from dataclasses import dataclass
+from shapely.geometry import Point, LineString
 from mrover.msg import Waypoint, GPSWaypoint, EnableAuton, WaypointType, GPSPointList
 import pymap3d
 from std_msgs.msg import Time
@@ -27,6 +28,20 @@ tf_broadcaster: tf2_ros.StaticTransformBroadcaster = tf2_ros.StaticTransformBroa
 class Gate:
     post1: np.ndarray
     post2: np.ndarray
+
+    def get_post_shapes(self) -> tuple[Point, Point]:
+        """
+        Creates a circular path of RADIUS around each post for checking intersection with our path
+        :return: tuple of the two shapely Point objects representing the posts
+        """
+        # Declare radius to 0.5 meters
+        RADIUS = 0.5
+
+        # Find circle of both posts
+        post1_shape = Point(self.post1[:2]).buffer(RADIUS)
+        post2_shape = Point(self.post2[:2]).buffer(RADIUS)
+
+        return post1_shape, post2_shape
 
 
 @dataclass
