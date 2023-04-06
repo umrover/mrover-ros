@@ -7,6 +7,7 @@ import numpy as np
 from threading import Lock
 from collections import deque
 from typing import Deque, List
+from util.ros_utils import get_rosparam
 
 from control_msgs.msg import FollowJointTrajectoryGoal
 from control_msgs.msg import FollowJointTrajectoryResult
@@ -17,7 +18,7 @@ from std_msgs.msg import Float64MultiArray
 from sensor_msgs.msg import JointState
 from trajectory_msgs.msg import JointTrajectoryPoint
 
-conf_joint_names = rospy.get_param("teleop/ra_joints/")
+conf_joint_names = get_rosparam("teleop/ra_joints/", ["joint_a, joint_b, joint_c, joint_d, joint_e"])
 lock = Lock()
 joint_states = JointState()
 
@@ -63,8 +64,8 @@ def joint_error(thresholds: List[float], feedback: FollowJointTrajectoryFeedback
 
 # Return an error message if arm has exceeded the error thresholds and an empty string otherwise
 def error_threshold_exceeded(feedback: FollowJointTrajectoryFeedback) -> str:
-    euclidean_error_threshold = rospy.get_param("teleop/euclidean_error_threshold")
-    joint_error_thresholds = [x for _, x in sorted(rospy.get_param("teleop/joint_error_thresholds").items())]
+    euclidean_error_threshold = get_rosparam("teleop/euclidean_error_threshold", 3.14)
+    joint_error_thresholds = [x for _, x in sorted(get_rosparam("teleop/joint_error_thresholds", 1.57).items())]
 
     error = euclidean_error(euclidean_error_threshold, feedback)
     if error:
