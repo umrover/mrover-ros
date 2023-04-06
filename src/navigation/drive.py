@@ -30,7 +30,9 @@ class Driver:
     
     def add_post_as_failure_zone(self, post_pos: np.ndarray) -> None:
         """
-        Add a newly-detected post as a failure zone to the PathPlanner.
+        Add a post as a failure zone to the PathPlanner. This is used to avoid
+        crashing into the post when driving to the next post or returning. This 
+        should only be done when the rover is done driving to the post. 
         """
         fid_x = post_pos[0]
         fid_y = post_pos[1]

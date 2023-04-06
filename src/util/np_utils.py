@@ -1,5 +1,5 @@
 import numpy as np
-
+from enum import Enum
 
 def normalized(v):
     norm = np.linalg.norm(v)
@@ -80,6 +80,7 @@ def intersect_2d(start1: np.array, end1: np.array, start2: np.array, end2: np.ar
 
     return orient1 * orient2 < 0 and orient3 * orient4 < 0  # non-collinear case
 
+Orientation = Enum('Orientation', ['collinear', 'clockwise', 'counterclockwise'])
 
 def orientation_2d(a: np.array, b: np.array, c: np.array) -> float:
     """
@@ -100,4 +101,11 @@ def orientation_2d(a: np.array, b: np.array, c: np.array) -> float:
     """
     ab = b - a
     ac = c - a
-    return (ab[1] * ac[0]) - (ac[1] * ab[0])
+    diff = (ab[1] * ac[0]) - (ac[1] * ab[0])
+    
+    if diff == 0:
+        return Orientation.collinear
+    elif diff > 0: 
+        return Orientation.clockwise
+    else:   # diff < 0
+        return Orientation.counterclockwise
