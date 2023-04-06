@@ -47,6 +47,12 @@ class PathPlanner:
 
     source_pos: Point
     target_pos: Point
+
+    # these are necessary to ensure that the source and target
+    # are not deleted from the graph if they are vertices of a failure zone
+    keep_source_in_graph: bool  
+    keep_target_in_graph: bool   
+
     path: List[Point]
     cur_path_idx: int
 
@@ -56,6 +62,9 @@ class PathPlanner:
 
         self.source_pos: Point = None
         self.target_pos: Point = None
+        self.keep_source_in_graph = False
+        self.keep_target_in_graph = False
+
         self.path: List[Point] = None
         self.cur_path_idx: int = 0
 
@@ -155,9 +164,9 @@ class PathPlanner:
         # If old source, target are the same, they would not have been added
         # to the graph in the first place.
         if self.source_pos != self.target_pos:
-            if self.source_pos:
+            if self.source_pos and not self.keep_source_in_graph:
                 self.visibility_graph.remove_node(self.source_pos)
-            if self.target_pos:
+            if self.target_pos and not self.keep_target_in_graph:
                 self.visibility_graph.remove_node(self.target_pos)
 
         # if source_pos = target_pos, don't bother generating a path
@@ -170,9 +179,16 @@ class PathPlanner:
 
         # Add new source, target to visibility graph
         self.source_pos = source_pos
-        self.__add_vertex(source_pos)
+        self.keep_source_in_graph = True
+        if (source_pos not in self.visibility_graph):
+            self.__add_vertex(source_pos)
+            self.keep_source_in_graph = False
+
         self.target_pos = target_pos
-        self.__add_vertex(target_pos)
+        self.keep_target_in_graph = True
+        if (target_pos not in self.visibility_graph):
+            self.__add_vertex(target_pos)
+            self.keep_target_in_graph = False
 
         try:
             self.path = find_path(self.visibility_graph, 
@@ -218,6 +234,9 @@ class PathPlanner:
 
         :param new_vertex:  shapely Point object representing the vertex to be added
         """
+        if (new_vertex in self.visibility_graph):
+            return
+        
         # Add vertex to graph
         self.visibility_graph.add_node(new_vertex)
 
