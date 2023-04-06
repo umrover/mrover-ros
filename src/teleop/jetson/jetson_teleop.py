@@ -5,9 +5,10 @@ from math import copysign, nan
 import typing
 from threading import Lock
 import rospy as ros
-from std_msgs.msg import String
+from std_msgs.msg import String, Bool
 from sensor_msgs.msg import Joy, JointState
 from geometry_msgs.msg import Twist
+from mrover.msg import MotorsStatus
 from typing import List
 
 
@@ -95,8 +96,11 @@ class ArmControl:
 
         self.ra_cmd_pub = ros.Publisher("ra_cmd", JointState, queue_size=100)
         self.sa_cmd_pub = ros.Publisher("sa_cmd", JointState, queue_size=100)
+        self.joint_state_pub = ros.Publisher("joint_states", JointState, queue_size=100)
 
-        RA_NAMES = [
+        self.ra_slow_mode = False
+
+        self.RA_NAMES = [
             "joint_a",
             "joint_b",
             "joint_c",
@@ -106,20 +110,28 @@ class ArmControl:
             "finger",
             "gripper",
         ]
-        SA_NAMES = ["sa_joint_1", "sa_joint_2", "sa_joint_3", "scoop", "microscope"]
+        self.SA_NAMES = ["sa_joint_1", "sa_joint_2", "sa_joint_3", "scoop", "microscope"]
 
         self.ra_cmd = JointState(
-            name=[name for name in RA_NAMES],
-            position=[nan for i in range(len(RA_NAMES))],
-            velocity=[0.0 for i in range(len(RA_NAMES))],
-            effort=[nan for i in range(len(RA_NAMES))],
+            name=[name for name in self.RA_NAMES],
+            position=[nan for _ in self.RA_NAMES],
+            velocity=[0.0 for _ in self.RA_NAMES],
+            effort=[nan for _ in self.RA_NAMES],
         )
 
         self.sa_cmd = JointState(
-            name=[name for name in SA_NAMES],
-            position=[nan for i in range(len(SA_NAMES))],
-            velocity=[0.0 for i in range(len(SA_NAMES))],
-            effort=[nan for i in range(len(SA_NAMES))],
+            name=[name for name in self.SA_NAMES],
+            position=[nan for _ in self.SA_NAMES],
+            velocity=[0.0 for _ in self.SA_NAMES],
+            effort=[nan for _ in self.SA_NAMES],
+        )
+
+        self._joint_state_lock = Lock()
+        self.current_ra_joint_states = JointState(
+            name=[name for name in self.RA_NAMES],
+            position=[nan for _ in self.RA_NAMES],
+            velocity=[0.0 for _ in self.RA_NAMES],
+            effort=[nan for _ in self.RA_NAMES],
         )
 
     # Callback function executed after the publication of the current robot position
@@ -132,6 +144,48 @@ class ArmControl:
         """
         with self._arm_mode_lock:
             self._arm_mode = msg.data
+
+    def brushless_encoder_callback(self, msg: MotorsStatus) -> None:
+        """
+        Callback for brushless encoder values
+        :param msg: MotorsStatus message representing the current status of the brushless motors
+        :return:
+        """
+        with self._joint_state_lock:
+            for i, name in enumerate(msg.name):
+                index_of_joint = self.current_ra_joint_states.name.index(name)
+                self.current_ra_joint_states.position[index_of_joint] = msg.joint_states.position[i]
+                self.current_ra_joint_states.velocity[index_of_joint] = msg.joint_states.velocity[i]
+                self.current_ra_joint_states.effort[index_of_joint] = msg.joint_states.effort[i]
+
+    def brushed_encoder_callback(self, msg: JointState) -> None:
+        """
+        Callback for brushed encoder values
+        :param msg: JointState message representing the current joint states of the brushed motors
+        :return:
+        """
+        with self._joint_state_lock:
+            for i, name in enumerate(msg.name):
+                index_of_joint = self.current_ra_joint_states.name.index(name)
+                self.current_ra_joint_states.position[index_of_joint] = msg.position[i]
+                self.current_ra_joint_states.velocity[index_of_joint] = msg.velocity[i]
+                self.current_ra_joint_states.effort[index_of_joint] = msg.effort[i]
+
+    def publish_joint_states(self) -> None:
+        """
+        Publishes the current joint states to the /joint_states topic
+        :return:
+        """
+        with self._joint_state_lock:
+            self.joint_state_pub.publish(self.current_ra_joint_states)
+
+    def slow_mode_callback(self, msg: Bool) -> None:
+        """
+        Callback for slow mode
+        :param msg: Bool sent from GUI for whether or not to use slow mode
+        :return:
+        """
+        self.ra_slow_mode = msg.data
 
     def filter_xbox_axis(
         self,
@@ -189,7 +243,6 @@ class ArmControl:
         left_trigger = raw_left_trigger if raw_left_trigger > 0 else 0
         raw_right_trigger = msg.axes[self.xbox_mappings["right_trigger"]]
         right_trigger = raw_right_trigger if raw_right_trigger > 0 else 0
-
         self.ra_cmd.velocity = [
             self.ra_config["joint_a"]["multiplier"] * self.filter_xbox_axis(msg.axes, "left_js_x"),
             self.ra_config["joint_b"]["multiplier"] * self.filter_xbox_axis(msg.axes, "left_js_y"),
@@ -201,6 +254,13 @@ class ArmControl:
             self.ra_config["finger"]["multiplier"] * self.filter_xbox_button(msg.buttons, "y", "a"),
             self.ra_config["gripper"]["multiplier"] * self.filter_xbox_button(msg.buttons, "b", "x"),
         ]
+
+        for i, name in enumerate(self.RA_NAMES):
+            if self.ra_slow_mode:
+                self.ra_cmd.velocity[i] *= self.ra_config[name]["slow_mode_multiplier"]
+            if self.ra_config[name]["invert"]:
+                self.ra_cmd.velocity[i] *= -1
+
         self.ra_cmd_pub.publish(self.ra_cmd)
 
     def ra_servo_control(self, msg: Joy) -> None:
@@ -249,7 +309,15 @@ def main():
     ros.Subscriber("joystick", Joy, drive.teleop_drive_callback)
     ros.Subscriber("xbox/ra_control", Joy, arm.ra_control_callback)
     ros.Subscriber("ra/mode", String, arm.ra_mode_callback)
+    ros.Subscriber("ra_slow_mode", Bool, arm.slow_mode_callback)
     ros.Subscriber("xbox/sa_control", Joy, arm.sa_control_callback)
+    ros.Subscriber("brushless_ra_data", MotorsStatus, arm.brushless_encoder_callback)
+    ros.Subscriber("brushed_ra_data", JointState, arm.brushed_encoder_callback)
+
+    # Publish joint states for Moveit at 10Hz
+    while not ros.is_shutdown():
+        arm.publish_joint_states()
+        ros.sleep(0.1)
 
     ros.spin()
 

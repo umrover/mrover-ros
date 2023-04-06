@@ -41,6 +41,14 @@
       <Checkbox ref="E" :name="'E'" @toggle="updateJointsEnabled(4, $event)" />
       <Checkbox ref="F" :name="'F'" @toggle="updateJointsEnabled(5, $event)" />
     </div>
+    <h3>Slow Mode</h3>
+    <div>
+      <Checkbox
+        ref="Slow Mode"
+        :name="'Slow Mode'"
+        @toggle="updateSlowMode($event)"
+      />
+    </div>
     <div class="controls laser">
       <ToggleButton
         :current-state="laser_enabled"
@@ -64,7 +72,7 @@ let interval;
 export default {
   components: {
     Checkbox,
-    ToggleButton
+    ToggleButton,
   },
   data() {
     return {
@@ -73,8 +81,10 @@ export default {
       joystick_pub: null,
       jointlock_pub: null,
       joints_array: [false, false, false, false, false, false],
+      slow_mode: false,
+      slowmode_pub: null,
       laser_enabled: false,
-      laser_service: null
+      laser_service: null,
     };
   },
 
@@ -86,27 +96,32 @@ export default {
     this.armcontrols_pub = new ROSLIB.Topic({
       ros: this.$ros,
       name: "ra/mode",
-      messageType: "std_msgs/String"
+      messageType: "std_msgs/String",
     });
     this.updateArmMode();
     this.joystick_pub = new ROSLIB.Topic({
       ros: this.$ros,
       name: "/xbox/ra_control",
-      messageType: "sensor_msgs/Joy"
+      messageType: "sensor_msgs/Joy",
     });
     this.laser_service = new ROSLIB.Service({
       ros: this.$ros,
       name: "change_arm_laser_state",
-      serviceType: "mrover/ChangeDeviceState"
+      serviceType: "mrover/ChangeDeviceState",
     });
     this.jointlock_pub = new ROSLIB.Topic({
       ros: this.$ros,
       name: "/joint_lock",
-      messageType: "mrover/JointLock"
+      messageType: "mrover/JointLock",
+    });
+    this.slow_mode_pub = new ROSLIB.Topic({
+      ros: this.$ros,
+      name: "/ra_slow_mode",
+      messageType: "std_msgs/Bool"
     });
     const jointData = {
       //publishes array of all falses when refreshing the page
-      joints: this.joints_array
+      joints: this.joints_array,
     };
     var jointlockMsg = new ROSLIB.Message(jointData);
     this.jointlock_pub.publish(jointlockMsg);
@@ -116,7 +131,9 @@ export default {
       for (let i = 0; i < 4; i++) {
         const gamepad = gamepads[i];
         if (gamepad) {
-          if (gamepad.id.includes("Microsoft") || gamepad.id.includes("Xbox")) {
+          // Microsoft and Xbox for old Xbox 360 controllers
+          // X-Box for new PowerA Xbox One controllers
+          if (gamepad.id.includes("Microsoft") || gamepad.id.includes("Xbox") || gamepad.id.includes("X-Box")) {
             let buttons = gamepad.buttons.map((button) => {
               return button.value;
             });
@@ -130,7 +147,7 @@ export default {
   methods: {
     updateArmMode: function () {
       const armData = {
-        data: this.arm_controls
+        data: this.arm_controls,
       };
       var armcontrolsmsg = new ROSLIB.Message(armData);
       this.armcontrols_pub.publish(armcontrolsmsg);
@@ -139,15 +156,24 @@ export default {
     updateJointsEnabled: function (jointnum, enabled) {
       this.joints_array[jointnum] = enabled;
       const jointData = {
-        joints: this.joints_array
+        joints: this.joints_array,
       };
       var jointlockMsg = new ROSLIB.Message(jointData);
       this.jointlock_pub.publish(jointlockMsg);
     },
+
+    updateSlowMode: function (enabled) {
+      this.slow_mode = enabled;
+      const slowData = {
+        data: this.slow_mode
+      };
+      var slowModeMsg = new ROSLIB.Message(slowData);
+      this.slow_mode_pub.publish(slowModeMsg);
+    },
     publishJoystickMessage: function (axes, buttons) {
       const joystickData = {
         axes: axes,
-        buttons: buttons
+        buttons: buttons,
       };
       var joystickMsg = new ROSLIB.Message(joystickData);
       this.joystick_pub.publish(joystickMsg);
@@ -155,7 +181,7 @@ export default {
     toggleArmLaser: function () {
       this.laser_enabled = !this.laser_enabled;
       let request = new ROSLIB.ServiceRequest({
-        enable: this.laser_enabled
+        enable: this.laser_enabled,
       });
       this.laser_service.callService(request, (result) => {
         if (!result) {
@@ -163,8 +189,8 @@ export default {
           alert("Toggling Arm Laser failed.");
         }
       });
-    }
-  }
+    },
+  },
 };
 </script>
 
