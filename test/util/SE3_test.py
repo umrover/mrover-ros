@@ -110,7 +110,7 @@ class TestSE3(unittest.TestCase):
         self.assertTrue(r3.rotation.is_approx(r7.rotation))
         self.assertFalse(r3.is_approx(r7))
         self.assertFalse(r7.is_approx(r3))
-
+    
     def test_transform_matrix(self):
         # test that an SE3 from a transform matrix is the same as an SE3
         # from an equivalent quaternion and position

@@ -5,9 +5,11 @@ from failure_zone import FailureZone
 
 """
 Overload < operator for point objects
+
+This is done so that points can have a total ordering, which is required 
+to ensure that undirected edges follow a consistent format (which is necessary
+to avoid duplicate edges in the visibility graph). 
 """
-
-
 def point_less(self: Point, other: Point):
     if self.x < other.x:
         return True
@@ -15,7 +17,6 @@ def point_less(self: Point, other: Point):
         return False
     else:
         return self.y < other.y
-
 
 Point.__lt__ = point_less
 
@@ -47,7 +48,7 @@ class PathPlanner:
     source_pos: Point
     target_pos: Point
     path: List[Point]
-    target_vertex_idx: int
+    cur_path_idx: int
 
     def __init__(self):
         self.failure_zones: List[FailureZone] = []
@@ -56,7 +57,7 @@ class PathPlanner:
         self.source_pos: Point = None
         self.target_pos: Point = None
         self.path: List[Point] = None
-        self.target_vertex_idx: int = 0
+        self.cur_path_idx: int = 0
 
     def get_intermediate_target(self, source_pos: Point, target_pos: Point) -> Point:
         """
@@ -79,13 +80,15 @@ class PathPlanner:
 
         :return:             A Point object representing the intermediate target
         """
-        if (not self.path) or (not target_pos == self.target_pos):
-            self.generate_path(source_pos, target_pos)
+        if (not self.path) or (target_pos != self.target_pos):
+            # generate new path if one doesn't exist or target_pos has changed
+            self.generate_path(source_pos, target_pos) 
 
-        if self.target_vertex_idx == len(self.path):
+        if self.cur_path_idx == len(self.path): 
+            # path complete, just return last target
             return self.path[-1]
 
-        return self.path[self.target_vertex_idx]
+        return self.path[self.cur_path_idx]
 
     def complete_intermediate_target(self) -> None:
         """
@@ -93,8 +96,8 @@ class PathPlanner:
         """
         assert self.path
 
-        if self.target_vertex_idx < len(self.path):
-            self.target_vertex_idx += 1
+        if self.cur_path_idx < len(self.path):
+            self.cur_path_idx += 1
 
     def is_path_complete(self) -> bool:
         """
@@ -103,7 +106,7 @@ class PathPlanner:
 
         :return: bool
         """
-        return (self.path != None) and (self.target_vertex_idx == len(self.path))
+        return (self.path != None) and (self.cur_path_idx == len(self.path))
 
     def add_failure_zone(self, failure_zone: FailureZone) -> None:
         """
@@ -115,10 +118,13 @@ class PathPlanner:
         self.failure_zones.append(failure_zone)
 
         # Step 2: remove all edges from current graph that cross this zone
-        graph = self.visibility_graph.get_data()
+
+        # dict of vertex --> neighbors, where each neighbors 
+        # object is a dict of vertex --> edge 
+        graph = self.visibility_graph.get_data()   
         deleted_edges = []
 
-        for u, neighbors in graph.items():
+        for u, neighbors in graph.items():  # (vertex, [(vertex, edge)])
             for v, edge in neighbors.items():
                 if u < v:  # avoid duplicate edges being deleted
                     if failure_zone.intersects(edge):
@@ -134,7 +140,7 @@ class PathPlanner:
 
         # Step 4: Reset path, target, etc.
         self.path = None
-        self.target_vertex_idx = 0
+        self.cur_path_idx = 0
 
     def generate_path(self, source_pos: Point, target_pos: Point) -> None:
         """
@@ -159,7 +165,7 @@ class PathPlanner:
             self.source_pos = source_pos
             self.target_pos = target_pos
             self.path = [source_pos]
-            self.target_vertex_idx = 0
+            self.cur_path_idx = 0
             return
 
         # Add new source, target to visibility graph
@@ -203,7 +209,7 @@ class PathPlanner:
                 # if no clear path found, just construct a straight-line to the target
                 self.path = [source_pos, target_pos]
 
-        self.target_vertex_idx = 0
+        self.cur_path_idx = 0
 
     def __add_vertex(self, new_vertex: Point) -> None:
         """
@@ -223,7 +229,7 @@ class PathPlanner:
                     self.visibility_graph.add_edge(vertex, new_vertex, edge)
 
         self.path = None
-        self.target_vertex_idx = 0
+        self.cur_path_idx = 0
 
     def __is_edge_safe(self, edge: LineString) -> bool:
         """

@@ -17,7 +17,7 @@ class FailureZone:
     and edges of the failure zone while planning a path if the zone is in the way.
     """
 
-    vertices: Polygon
+    shape: Polygon
 
     def get_vertices(self) -> List[Point]:
         """
@@ -26,7 +26,7 @@ class FailureZone:
 
         Vertices returned in order [lower_left, upper_left, upper_right, lower_right]
         """
-        (min_x, min_y, max_x, max_y) = self.vertices.bounds
+        (min_x, min_y, max_x, max_y) = self.shape.bounds
         lower_left = Point(min_x, min_y)
         upper_left = Point(min_x, max_y)
         upper_right = Point(max_x, max_y)
@@ -40,20 +40,11 @@ class FailureZone:
         Intersection is defined as passing through or overlapping with an edge
         of the FailureZone, rather than simply touching a corner.
         """
-        return self.vertices.intersects(line) and not self.vertices.touches(line)
+        return self.shape.intersects(line) and not self.shape.touches(line)
     
     def get_closest_vertex(self, point: Point) -> Point:
         """
         Returns the vertex of this FailureZone that is closest to the given point. 
         """
-        closest_vertex = None
-        min_distance = float('inf')
-
         vertices = self.get_vertices()
-        for vertex in vertices:
-            distance = point.distance(vertex)
-            if distance < min_distance:
-                closest_vertex = vertex
-                min_distance = distance
-
-        return closest_vertex
+        return min(vertices, key = lambda vertex: point.distance(vertex))
