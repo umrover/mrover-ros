@@ -63,9 +63,9 @@ namespace mrover {
         auto* pointPtr = reinterpret_cast<Point const*>(msg->data.data());
         std::for_each(std::execution::par_unseq, pixelPtr, pixelPtr + mImg.total(), [&](cv::Vec3b& pixel) {
             size_t i = &pixel - pixelPtr;
-            pixel[0] = pointPtr[i].r;
+            pixel[0] = pointPtr[i].b;
             pixel[1] = pointPtr[i].g;
-            pixel[2] = pointPtr[i].b;
+            pixel[2] = pointPtr[i].r;
         });
         mProfiler.measureEvent("Convert");
 

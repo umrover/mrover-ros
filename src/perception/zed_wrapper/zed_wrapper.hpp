@@ -35,8 +35,8 @@ namespace mrover {
             Measures(Measures&) = delete;
             Measures& operator=(Measures&) = delete;
 
-            Measures(Measures&&) = default;
-            Measures& operator=(Measures&&) = default;
+            Measures(Measures&&) noexcept;
+            Measures& operator=(Measures&&) noexcept;
         };
 
         ros::NodeHandle mNh, mPnh;

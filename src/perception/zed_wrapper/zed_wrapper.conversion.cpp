@@ -35,8 +35,8 @@ namespace mrover {
         auto* xyzPtr = xyz.getPtr<sl::float4>();
         msg->is_bigendian = __BYTE_ORDER__ == __ORDER_BIG_ENDIAN__;
         msg->is_dense = false;
-        msg->height = xyz.getHeight();
-        msg->width = xyz.getWidth();
+        msg->height = bgra.getHeight();
+        msg->width = bgra.getWidth();
         sensor_msgs::PointCloud2Modifier modifier{*msg};
         modifier.setPointCloud2Fields(
                 8,
@@ -50,12 +50,13 @@ namespace mrover {
                 "curvature", 1, sensor_msgs::PointField::FLOAT32);
         auto* pointPtr = reinterpret_cast<Point*>(msg->data.data());
         size_t size = msg->width * msg->height;
-        size_t xyzDivisor = bgra.getWidth() / xyz.getWidth();
-        std::for_each(std::execution::par_unseq, pointPtr, pointPtr + size, [&](Point& point) {
+        std::for_each(std::execution::par_unseq, pointPtr, pointPtr + size, [&, bgraWidth = static_cast<int>(bgra.getWidth()), xyzWidth = static_cast<int>(xyz.getWidth())](Point& point) {
             size_t i = &point - pointPtr; // flat index
-            point.x = xyzPtr[i / xyzDivisor].x;
-            point.y = xyzPtr[i / xyzDivisor].y;
-            point.z = xyzPtr[i / xyzDivisor].z;
+            div_t l = std::div(static_cast<int>(i), bgraWidth);
+            size_t j = (l.quot / 2) * xyzWidth + (l.rem / 2); // flat index in xyz
+            point.x = xyzPtr[j].x;
+            point.y = xyzPtr[j].y;
+            point.z = xyzPtr[j].z;
             point.r = bgraPtr[i].b; // bgra -> rgb for PCL
             point.g = bgraPtr[i].g;
             point.b = bgraPtr[i].r;

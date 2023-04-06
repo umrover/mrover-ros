@@ -284,6 +284,17 @@ namespace mrover {
         mGrabThread.join();
     }
 
+    ZedNodelet::Measures::Measures(ZedNodelet::Measures&& other) noexcept {
+        *this = std::move(other);
+    }
+
+    ZedNodelet::Measures& ZedNodelet::Measures::operator=(ZedNodelet::Measures&& other) noexcept {
+        sl::Mat::swap(other.leftImage, leftImage);
+        sl::Mat::swap(other.rightImage, rightImage);
+        sl::Mat::swap(other.leftPoints, leftPoints);
+        std::swap(time, other.time);
+        return *this;
+    }
 } // namespace mrover
 
 int main(int argc, char** argv) {
