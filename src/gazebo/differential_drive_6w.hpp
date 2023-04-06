@@ -92,7 +92,7 @@ namespace gazebo {
         double mTorque{};
         std::array<double, 2> mWheelSpeeds{};
 
-        // SimulationmJointStateP time of the last update
+        // SimulationmJointState time of the last update
         common::Time mPreviousUpdateTime;
 
         // Sim time of last time path was updated and published
