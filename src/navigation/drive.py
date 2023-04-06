@@ -2,6 +2,7 @@ from typing import List, Tuple, ClassVar
 from dataclasses import dataclass
 import numpy as np
 from shapely.geometry import Polygon, Point
+import rospy
 
 from geometry_msgs.msg import Twist
 from util.SE3 import SE3
@@ -14,7 +15,6 @@ MAX_DRIVING_EFFORT = 1
 MIN_DRIVING_EFFORT = -1
 TURNING_P = 10.0
 ROVER_WIDTH = 1  # meters
-
 
 class Driver:
     planner: PathPlanner

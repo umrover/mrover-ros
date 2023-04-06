@@ -30,7 +30,7 @@ brushed_motors:
     - name: "joint_a"
       driver_voltage: 36.0
       motor_max_voltage: 24.0
-      voltage_multiplier: 0.44
+      voltage_multiplier: 0.75
       mcu_id: 1
       motor_id: 0
       quad_cpr: -28800.0
@@ -45,16 +45,16 @@ brushed_motors:
       quad_cpr: 4096.0
       kP: -0.1
       kI: -0.0
-      inversion: 1.0
+      inversion: -1.0
     - name: "joint_f"
       driver_voltage: 12.0
-      motor_max_voltage: 12.0
+      motor_max_voltage: 8.0
       mcu_id: 1
       motor_id: 1
       quad_cpr: -2048.0
       kP: 0.05
       kI: 0.0
-      inversion: 1.0
+      inversion: -1.0
     - name: "finger"
       driver_voltage: 12.0
       motor_max_voltage: 12.0
@@ -67,13 +67,13 @@ brushed_motors:
       mcu_id: 1
       motor_id: 2
       inversion: 1.0
-    - name: "mast_up_down"
+    - name: "mast_gimbal_up_down"
       driver_voltage: 12.0
       motor_max_voltage: 12.0
       mcu_id: 2
       motor_id: 4
       inversion: -1.0
-    - name: "mast_left_right"
+    - name: "mast_gimbal_left_right"
       driver_voltage: 12.0
       motor_max_voltage: 12.0
       mcu_id: 2
@@ -96,18 +96,12 @@ brushed_motors:
       motor_max_voltage: 12.0
       mcu_id: 1
       motor_id: 1
-      inversion: 1.0
+      inversion: -1.0
     - name: "sa_joint_3"
       driver_voltage: 12.0
       motor_max_voltage: 12.0
       mcu_id: 1
       motor_id: 2
-      inversion: 1.0
-    - name: "sa_joint_4"
-      driver_voltage: 36.0
-      motor_max_voltage: 12.0
-      mcu_id: 2
-      motor_id: 0
       inversion: 1.0
     - name: "scoop"
       driver_voltage: 12.0
@@ -118,10 +112,73 @@ brushed_motors:
   i2c_device_file: "/dev/i2c-1"
   test: false
 
+science:
+  auton_color_ids:
+    red: 0
+    blue: 1
+    green: 2
+    "off": 3
+  device_mosfet_numbers:
+    arm_laser: 6
+    uv_led_carousel: 1
+    uv_led_end_effector: 6
+    white_led: 2
+  serial:
+    baud_rate: 9600
+    timeout: 0
+    port: "/dev/ttyTHS0" 
+  # These position are random for now
+  syringe_servo_positions:  # This is in degrees
+    site_A:
+      pushed: 80
+      start: 100
+    site_B:
+      pushed: 60
+      start: 90
+    site_C:
+      pushed: 10
+      start: 50
+  info:
+    num_diag_current: 3
+    num_diag_thermistors: 3
+    num_science_thermistors: 3
+    num_spectral: 1
+    sleep: 0.01
+    uart_transmit_msg_len: 30
+
+cameras:
+    arguments:
+      144_res:
+        - "--headless"
+        - "--bitrate=300000"
+        - "--width=256"
+        - "--height=144"
+      360_res:
+        - "--headless"
+        - "--bitrate=800000"
+        - "--width=480"
+        - "--height=360"
+      720_res:
+        - "--headless"
+        - "--bitrate=1800000"
+        - "--width=1280"
+        - "--height=720"
+    max_video_device_id_number: 10
+    endpoints:
+      primary_0: "10.0.0.7:5000"
+      primary_1: "10.0.0.7:5001"
+      primary_2: "10.0.0.7:5002"
+      primary_3: "10.0.0.7:5003"
+      secondary_0: "10.0.0.8:5000"
+      secondary_1: "10.0.0.8:5001"
+      secondary_2: "10.0.0.8:5002"
+      secondary_3: "10.0.0.8:5003"
+    skip_every_other_device: true
+
 rover:
   length: 0.86
   width: 0.86
-  max_speed: 1.5
+  max_speed: 2.0
 
 wheel:
   gear_ratio: 50.0
@@ -130,21 +187,49 @@ wheel:
 brushless:
   using_pi3_hat: true
   drive:
-    FrontLeft:
-      id: 3
-      multiplier: -1
-    FrontRight:
-      id: 0
-      multiplier: 1
-    MiddleLeft:
-      id: 4
-      multiplier: -1
-    MiddleRight:
-      id: 1
-      multiplier: 1
-    BackLeft:
-      id: 5
-      multiplier: -1
-    BackRight:
-      id: 2
-      multiplier: 1
+    max_torque: 0.3
+    controllers:
+      FrontLeft:
+        id: 5
+        bus: 1
+        multiplier: -1
+      FrontRight:
+        id: 4
+        bus: 2
+        multiplier: 1
+      MiddleLeft:
+        id: 1
+        bus: 1
+        multiplier: -1
+      MiddleRight:
+        id: 3
+        bus: 2
+        multiplier: 1
+      BackLeft:
+        id: 0
+        bus: 1
+        multiplier: -1
+      BackRight:
+        id: 2
+        bus: 2
+        multiplier: 1
+  arm:
+    controllers:
+      joint_c:
+        id: 6
+        bus: 3
+        max_rps: 50
+        max_torque: 0.3
+        multiplier: -1
+      joint_d:
+        id: 7
+        bus: 3
+        max_rps: 80
+        max_torque: 0.13
+        multiplier: 1
+      joint_e:
+        id: 8
+        bus: 3
+        max_rps: 70
+        max_torque: 0.13
+        multiplier: -1

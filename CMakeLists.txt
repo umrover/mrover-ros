@@ -25,16 +25,23 @@ set(MROVER_LINK_DIRS "")
 # message files
 set(MROVER_MESSAGE_FILES
         CalibrationStatus.msg
+        CameraCmd.msg
+        Carousel.msg
         Chassis.msg
         Course.msg
         Diagnostic.msg
-        DriveStatus.msg
         EnableAuton.msg
-        GimbalCmd.msg
         GPSWaypoint.msg
+        GPSPointList.msg
+        HeaterData.msg
         ImuAndMag.msg
+        MastGimbal.msg
+        JointLock.msg
         MoteusState.msg
         MotorsStatus.msg
+        NavMetadata.msg
+        ScienceTemperature.msg
+        Spectral.msg
         Waypoint.msg
         WaypointType.msg
         )
@@ -42,7 +49,12 @@ set(MROVER_MESSAGE_FILES
 # service files
 set(MROVER_SERVICE_FILES
         ChangeAutonLEDState.srv
-        FetchMessageFromPackage.srv        
+        ChangeCameras.srv
+        ChangeDeviceState.srv
+        ChangeHeaterState.srv
+        ChangeServoAngle.srv
+        FetchMessageFromPackage.srv
+        FetchMessageFromPackage.srv
         FetchPackages.srv
         PublishEnableAuton.srv
         PublishCourse.srv
@@ -52,6 +64,7 @@ set(MROVER_SERVICE_FILES
 set(MROVER_ROS_MESSAGES
         sensor_msgs
         std_msgs
+        sensor_msgs
         )
 
 # dynamic reconfigure
@@ -193,8 +206,8 @@ else ()
     # define an add and link macro
     # Put items here to build
     macro(add_and_link_macro)
-        add_cpp_node_macro(aruco_detect "src/perception/*.cpp")
-        target_link_libraries(aruco_detect ${OpenCV_LIBS} ${PCL_LIBRARIES})
+        add_cpp_node_macro(tag_detector "src/perception/*.cpp")
+        target_link_libraries(tag_detector ${OpenCV_LIBS} ${PCL_LIBRARIES})
 
         add_cpp_node_macro(brushed_motors "src/esw/brushed_motors/*.cpp")
 
