@@ -22,9 +22,6 @@ REF_LON = rospy.get_param("gps_linearization/reference_point_longitude")
 
 TAG_EXPIRATION_TIME_SECONDS = 60
 
-REF_LAT = rospy.get_param("gps_linearization/reference_point_latitude")
-REF_LON = rospy.get_param("gps_linearization/reference_point_longitude")
-
 tf_broadcaster: tf2_ros.StaticTransformBroadcaster = tf2_ros.StaticTransformBroadcaster()
 
 @dataclass
