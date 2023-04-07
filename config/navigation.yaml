@@ -1,9 +1,9 @@
-test_recovery_state: false
+test_recovery_state: true
 
 drive:
   max_driving_effort: 1
   min_driving_effort: -1
-  turning_p: 10.0
+  turning_p: 0.1
 
 gate:
   stop_thresh: 0.2

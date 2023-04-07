@@ -88,6 +88,8 @@ def get_j_turn_command(
     MIN_DRIVING_EFFORT = get_rosparam("drive/min_driving_effort", -1)
     TURNING_P = get_rosparam("drive/turning_p", 10.0)
 
+    target_pos[2] = 0
+
     if not (0.0 < turn_in_place_thresh < 1.0):
         raise ValueError(f"Argument {turn_in_place_thresh} should be between 0 and 1")
     rover_pos = rover_pose.position
@@ -96,9 +98,7 @@ def get_j_turn_command(
 
     # Get vector from rover to target
     target_dir = target_pos - rover_pos
-    print(
-        f"rover direction: {rover_dir}, target direction: {target_dir}, rover position: {rover_pos} , goal: {target_pos}"
-    )
+    
 
     target_dist = np.linalg.norm(target_dir)
     if target_dist == 0:
@@ -126,5 +126,7 @@ def get_j_turn_command(
         np.sign(error) if full_turn_override else np.clip(error * TURNING_P, MIN_DRIVING_EFFORT, MAX_DRIVING_EFFORT)
     )
 
-    print(cmd_vel.linear.x, cmd_vel.angular.z)
+    print(
+        f"rover direction: {rover_dir}, target direction: {target_dir} angle: {alignment} turn: {cmd_vel.angular.z}"
+    )
     return cmd_vel, False
