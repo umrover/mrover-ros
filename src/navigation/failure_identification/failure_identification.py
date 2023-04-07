@@ -12,8 +12,9 @@ from watchdog import WatchDog
 import numpy as np
 import os
 from pathlib import Path
-# import datetime
+from util.ros_utils import get_rosparam
 
+DATAFRAME_MAX_SIZE = 50
 
 class FailureIdentifier:
     """
@@ -27,6 +28,7 @@ class FailureIdentifier:
     actively_collecting: bool
     cur_cmd: Twist
     cur_stuck: bool
+    path_name: str
 
     def __init__(self):
         nav_status_sub = message_filters.Subscriber("smach/container_status", SmachContainerStatus)
@@ -49,10 +51,10 @@ class FailureIdentifier:
         # wheel_velocity_variables = [f"wheel_{wheel_num}_velocity" for wheel_num in range(6)]
         command_variables = ["cmd_vel_x", "cmd_vel_twist"]
         self.data_collecting_mode = True
-        self.actively_collecting = False
+        self.actively_collecting = True
         self.cur_cmd = Twist()
         self.cur_stuck = False
-        cols = (
+        self.cols = (
             ["time", "stuck"]
             + position_variables
             + rotation_variables
@@ -61,22 +63,23 @@ class FailureIdentifier:
             # + wheel_velocity_variables
             + command_variables
         )
-        print(cols)
-        self._df = pd.DataFrame(columns=cols)
+        print(self.cols)
+        self._df = pd.DataFrame(columns=self.cols)
         self.left_pointer = 0
         self.right_pointer = 0
         self.row_counter = 0
         self.watchdog = WatchDog(self)
+        self.path_name = None
 
 
     def write_to_csv(self):
         """
         Writes the data frame to a csv file marked with timestamp
         """
-        home = str(Path.home())
+        home = Path.home()
         # path = os.path.join(home, "catkin_ws/src/mrover-workspace/src/navigation/failure_data")
-        path = os.path.join(home, "catkin_ws/src/mrover/src/failure_data")
-
+        path = home/"catkin_ws/src/mrover/src/failure_data"
+        path.mkdir(exist_ok = True)
         # now = datetime.datetime.now()
         # day = now.strftime("%m%d%Y")
         # hour = now.strftime("%H-%M-%S")
@@ -84,8 +87,9 @@ class FailureIdentifier:
 
         file_name = f"failure_data_{rospy.Time.now()}.csv"
         # file_name = f"failure_data_{time_stamp}.csv"
-        path = os.path.join(path, file_name)
-        self._df.to_csv(f"failure_data_{rospy.Time.now()}.csv")
+        path = path/file_name
+        self.path_name = path
+        self._df.to_csv(path)
 
         # now = datetime.datetime.now()
         # day = now.strftime("%m%d%Y")
@@ -118,12 +122,17 @@ class FailureIdentifier:
         publishes a message to the /nav_stuck topic indicating if the rover is stuck
         """
 
+        TEST_RECOVERY_STATE = get_rosparam("test_recovery_state",False)
+
         # if the state is 'done' or 'off', write the data frame to a csv file if we were collecting
         if nav_status.active_states[0] == "DoneState" or nav_status.active_states[0] == "OffState":
             if self.actively_collecting and self.data_collecting_mode:
                 # print("writing to file")
                 rospy.loginfo("writing to file")
-                self.write_to_csv()
+                if(self.path_name is None):
+                    self.write_to_csv()
+                else:
+                    self._df.to_csv(self.path_name, mode='a', header=False)
                 self.actively_collecting = False
             # return to not collect any data
             return
@@ -172,8 +181,25 @@ class FailureIdentifier:
         self._df = pd.concat([self._df, DataFrame([cur_row])])
         self.row_counter += 1
 
+        if len(self._df) == DATAFRAME_MAX_SIZE:
+            rospy.logerr(f"LEN {len(self._df)}")
+            # append to csv if csv exists else write to csv
+            rospy.loginfo("writing to file")
+            if(self.path_name is None):
+                self.write_to_csv()
+            else:
+                self._df.to_csv(self.path_name, mode='a', header=False)
+            # empty
+            self._df = pd.DataFrame(columns=self.cols)
+
+            # set row counter to 0
+            self.row_counter = 0
+        
+
         # publish the watchdog status if the nav state is not recovery
-        if nav_status.active_states[0] != "recovery":
+        if(TEST_RECOVERY_STATE):
+            self.stuck_publisher.publish(Bool(self.cur_stuck))
+        elif nav_status.active_states[0] != "recovery":
             self.stuck_publisher.publish(Bool(self.watchdog.is_stuck(self._df)))
 
 

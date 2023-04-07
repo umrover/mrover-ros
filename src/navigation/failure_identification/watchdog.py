@@ -9,6 +9,4 @@ class WatchDog:
 
 
     def is_stuck(self, dataframe: DataFrame):
-        return False
-
-    
+        return True
