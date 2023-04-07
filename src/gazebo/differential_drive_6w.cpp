@@ -165,7 +165,7 @@ namespace gazebo {
         // update path at 4 Hz
         mPathUpdatePeriod = common::Time(0, static_cast<int32_t>(common::Time::SecToNano(0.25)));
 
-        mMotorStatus.joint_states.name.resize(6);
+        mMotorStatus.joint_states.name.resize(mJoints.size());
         mMotorStatus.joint_states.position.resize(mJoints.size());
         mMotorStatus.joint_states.velocity.resize(mJoints.size());
         mMotorStatus.joint_states.effort.resize(mJoints.size());
