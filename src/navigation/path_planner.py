@@ -15,6 +15,8 @@ This is done so that points can have a total ordering, which is required
 to ensure that undirected edges follow a consistent format (which is necessary
 to avoid duplicate edges in the visibility graph). 
 """
+
+
 def point_less(self: Point, other: Point):
     if self.x < other.x:
         return True
@@ -22,6 +24,7 @@ def point_less(self: Point, other: Point):
         return False
     else:
         return self.y < other.y
+
 
 Point.__lt__ = point_less
 
@@ -55,8 +58,8 @@ class PathPlanner:
 
     # these are necessary to ensure that the source and target
     # are not deleted from the graph if they are vertices of a failure zone
-    keep_source_in_graph: bool  
-    keep_target_in_graph: bool   
+    keep_source_in_graph: bool
+    keep_target_in_graph: bool
 
     path: List[Point]
     cur_path_idx: int
@@ -96,9 +99,9 @@ class PathPlanner:
         """
         if (not self.path) or (target_pos != self.target_pos):
             # generate new path if one doesn't exist or target_pos has changed
-            self.generate_path(source_pos, target_pos) 
+            self.generate_path(source_pos, target_pos)
 
-        if self.cur_path_idx == len(self.path): 
+        if self.cur_path_idx == len(self.path):
             # path complete, just return last target
             return self.path[-1]
 
@@ -133,9 +136,9 @@ class PathPlanner:
 
         # Step 2: remove all edges from current graph that cross this zone
 
-        # dict of vertex --> neighbors, where each neighbors 
-        # object is a dict of vertex --> edge 
-        graph = self.visibility_graph.get_data()   
+        # dict of vertex --> neighbors, where each neighbors
+        # object is a dict of vertex --> edge
+        graph = self.visibility_graph.get_data()
         deleted_edges = []
 
         for u, neighbors in graph.items():  # (vertex, [(vertex, edge)])
@@ -185,22 +188,21 @@ class PathPlanner:
         # Add new source, target to visibility graph
         self.source_pos = source_pos
         self.keep_source_in_graph = True
-        if (source_pos not in self.visibility_graph):
+        if source_pos not in self.visibility_graph:
             self.__add_vertex(source_pos)
             self.keep_source_in_graph = False
 
         self.target_pos = target_pos
         self.keep_target_in_graph = True
-        if (target_pos not in self.visibility_graph):
+        if target_pos not in self.visibility_graph:
             self.__add_vertex(target_pos)
             self.keep_target_in_graph = False
 
         try:
-            self.path = find_path(self.visibility_graph, 
-                            source_pos, 
-                            target_pos, 
-                            cost_func = lambda u, v, e, prev_e : e.length).nodes
-        except NoPathError: 
+            self.path = find_path(
+                self.visibility_graph, source_pos, target_pos, cost_func=lambda u, v, e, prev_e: e.length
+            ).nodes
+        except NoPathError:
             source_in_fz = False
             target_in_fz = False
 
@@ -212,19 +214,18 @@ class PathPlanner:
                     source_fz = fz
                 if fz.intersects(target_pos):
                     target_in_fz = True
-            
-            if (source_in_fz and not target_in_fz):
+
+            if source_in_fz and not target_in_fz:
                 # if the source is in a failure zone, get out of the failure zone
                 # as fast as possible, and then plan the path to the target
                 closest_vertex = source_fz.get_closest_vertex(source_pos)
                 try:
-                    path = find_path(self.visibility_graph, 
-                                    closest_vertex, 
-                                    target_pos, 
-                                    cost_func = lambda u, v, e, prev_e : e.length).nodes
+                    path = find_path(
+                        self.visibility_graph, closest_vertex, target_pos, cost_func=lambda u, v, e, prev_e: e.length
+                    ).nodes
                 except NoPathError:
                     self.path = [source_pos, target_pos]
-                
+
                 self.path = [source_pos] + path
             else:
                 # if no clear path found, just construct a straight-line to the target
@@ -246,9 +247,9 @@ class PathPlanner:
 
         :param new_vertex:  shapely Point object representing the vertex to be added
         """
-        if (new_vertex in self.visibility_graph):
+        if new_vertex in self.visibility_graph:
             return
-        
+
         # Add vertex to graph
         self.visibility_graph.add_node(new_vertex)
 

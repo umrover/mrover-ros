@@ -96,7 +96,9 @@ def intersect_2d(start1: np.array, end1: np.array, start2: np.array, end2: np.ar
 
     return orient1 * orient2 < 0 and orient3 * orient4 < 0  # non-collinear case
 
-Orientation = Enum('Orientation', ['collinear', 'clockwise', 'counterclockwise'])
+
+Orientation = Enum("Orientation", ["collinear", "clockwise", "counterclockwise"])
+
 
 def orientation_2d(a: np.array, b: np.array, c: np.array) -> float:
     """
@@ -118,13 +120,14 @@ def orientation_2d(a: np.array, b: np.array, c: np.array) -> float:
     ab = b - a
     ac = c - a
     diff = (ab[1] * ac[0]) - (ac[1] * ab[0])
-    
+
     if diff == 0:
         return Orientation.collinear
-    elif diff > 0: 
+    elif diff > 0:
         return Orientation.clockwise
-    else:   # diff < 0
+    else:  # diff < 0
         return Orientation.counterclockwise
+
 
 def numpify(msg: Union[Vector3, Quaternion, Point]) -> np.ndarray:
     if msg.__class__ == Vector3:

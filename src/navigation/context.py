@@ -24,6 +24,7 @@ TAG_EXPIRATION_TIME_SECONDS = 60
 
 tf_broadcaster: tf2_ros.StaticTransformBroadcaster = tf2_ros.StaticTransformBroadcaster()
 
+
 @dataclass
 class Gate:
     post1: np.ndarray
@@ -240,7 +241,7 @@ class Context:
     gate_point_publisher: rospy.Publisher
     gate_path_publisher: rospy.Publisher
     vis_publisher: rospy.Publisher
-    drive_path_publisher: rospy.Publisher # publishes failure-zone avoiding path
+    drive_path_publisher: rospy.Publisher  # publishes failure-zone avoiding path
     course_listener: rospy.Subscriber
 
     # Use these as the primary interfaces in states

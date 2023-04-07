@@ -17,6 +17,7 @@ from util.ros_utils import get_rosparam
 STOP_THRESH = 0.2
 DRIVE_FWD_THRESH = 0.34  # 20 degrees
 
+
 @dataclass
 class SearchTrajectory(Trajectory):
     # Associated fiducial for this trajectory

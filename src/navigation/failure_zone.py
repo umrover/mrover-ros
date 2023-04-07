@@ -41,10 +41,10 @@ class FailureZone:
         of the FailureZone, rather than simply touching a corner.
         """
         return self.shape.intersects(line) and not self.shape.touches(line)
-    
+
     def get_closest_vertex(self, point: Point) -> Point:
         """
-        Returns the vertex of this FailureZone that is closest to the given point. 
+        Returns the vertex of this FailureZone that is closest to the given point.
         """
         vertices = self.get_vertices()
-        return min(vertices, key = lambda vertex: point.distance(vertex))
+        return min(vertices, key=lambda vertex: point.distance(vertex))
