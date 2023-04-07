@@ -11,6 +11,14 @@ using namespace std::chrono_literals;
 
 namespace mrover {
 
+    /**
+     * Allows us to store enums as strings in the config file.
+     * This avoids problems when ZED updates their enum integer values.
+     *
+     * @tparam TEnum    ZED enum type
+     * @param string    String to convert to enum
+     * @return          Enum value
+     */
     template<typename TEnum>
     [[nodiscard]] TEnum stringToZedEnum(std::string_view string) {
         using int_t = std::underlying_type_t<TEnum>;
@@ -22,6 +30,9 @@ namespace mrover {
         throw std::invalid_argument("Invalid enum string");
     }
 
+    /**
+     * @brief Load config, open the ZED, and start our threads
+     */
     void ZedNodelet::onInit() {
         try {
             mNh = getMTNodeHandle();
@@ -68,7 +79,9 @@ namespace mrover {
             NODELET_INFO("Use builtin visual odometry: %s", mUseOdom && mUseBuiltinPosTracking ? "true" : "false");
 
             sl::InitParameters initParameters;
-            if (!svoFile.empty()) {
+            if (svoFile.empty()) {
+                initParameters.input.setFromCameraID(-1, sl::BUS_TYPE::USB);
+            } else {
                 initParameters.input.setFromSVOFile(svoFile.c_str());
             }
             initParameters.camera_resolution = stringToZedEnum<sl::RESOLUTION>(grabResolutionString);
@@ -98,8 +111,10 @@ namespace mrover {
     }
 
     /**
-     * Only relevant if direct tag detection is true.
-     * This handles loading a tag detection nodelet and passing it point clouds from the grab thread.
+     * @brief Processes grabbed data from ZED.
+     *
+     * Takes in the GPU pointers to the image and the point cloud.
+     * It fuses these into a point cloud 2 message which is published.
      */
     void ZedNodelet::pointCloudUpdate() {
         try {
@@ -119,13 +134,14 @@ namespace mrover {
             while (ros::ok()) {
                 mProcessThreadProfiler.beginLoop();
 
+                // Swap critical section
                 {
                     std::unique_lock lock{mSwapMutex};
                     mSwapCv.wait(lock, [this] { return mIsSwapReady.load(); });
                     mIsSwapReady = false;
                     mProcessThreadProfiler.measureEvent("Wait");
 
-                    fillPointCloudMessage(mProcessMeasures.leftPoints, mProcessMeasures.leftImage, &mPointCloudGpu, mPointCloud);
+                    fillPointCloudMessage(mProcessMeasures.leftPoints, mProcessMeasures.leftImage, mPointCloudGpu, mPointCloud);
                     mPointCloud->header.seq = mPointCloudUpdateTick;
                     mPointCloud->header.stamp = mProcessMeasures.time;
                     mPointCloud->header.frame_id = "zed2i_left_camera_frame";
@@ -185,6 +201,14 @@ namespace mrover {
         }
     }
 
+    /**
+     * @brief Grabs measures from the ZED.
+     *
+     * This update loop needs to happen as fast as possible.
+     * grab() on the ZED updates positional tracking (visual odometry) which works best at high update rates.
+     * As such we retrieve the image and point cloud on the GPU to send to the other thread for processing.
+     * This only happens if the other thread is ready to avoid blocking, hence the try lock.
+     */
     void ZedNodelet::grabUpdate() {
         try {
             NODELET_INFO("Starting grab thread");

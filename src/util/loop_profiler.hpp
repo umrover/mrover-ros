@@ -13,35 +13,36 @@
  */
 class LoopProfiler {
 private:
-    using hr_clock = std::chrono::high_resolution_clock;
-    using EventReadings = std::vector<hr_clock::duration>;
+    using Clock = std::chrono::high_resolution_clock;
+    using EventReadings = std::vector<Clock::duration>;
+    using Readout = std::chrono::milliseconds;
 
     size_t mPrintTick;
     std::unordered_map<std::string, EventReadings> mEventReadings;
 
-    hr_clock::time_point mLastEpochTime;
+    Clock::time_point mLastEpochTime;
     size_t mTick = 0; // loop iteration counter
 
 public:
-    LoopProfiler(size_t printTick = 60) : mPrintTick{printTick}, mLastEpochTime{hr_clock::now()} {}
+    LoopProfiler(size_t printTick = 60) : mPrintTick{printTick}, mLastEpochTime{Clock::now()} {}
 
     /**
      * @brief Call this at the beginning of each loop iteration.
      */
     void beginLoop() {
         if (mTick % mPrintTick == 0) {
-            hr_clock::duration averageLoopDuration{};
+            Clock::duration averageLoopDuration{};
             for (auto& [_, durations]: mEventReadings) {
-                averageLoopDuration += std::accumulate(durations.begin(), durations.end(), hr_clock::duration{}) / durations.size();
+                averageLoopDuration += std::accumulate(durations.begin(), durations.end(), Clock::duration{}) / durations.size();
             }
             // Print update time for the entire loop
             size_t threadId = std::hash<std::thread::id>{}(std::this_thread::get_id());
-            auto averageLoopMs = std::chrono::duration_cast<std::chrono::milliseconds>(averageLoopDuration);
+            auto averageLoopMs = std::chrono::duration_cast<Readout>(averageLoopDuration);
             ROS_INFO_STREAM("[" << threadId << "] Total: " << averageLoopMs.count() << "ms");
             // Print update times for each loop event
             for (auto& [name, durations]: mEventReadings) {
-                hr_clock::duration averageEventDuration = std::accumulate(durations.begin(), durations.end(), hr_clock::duration{}) / durations.size();
-                auto averageEventMs = std::chrono::duration_cast<std::chrono::milliseconds>(averageEventDuration);
+                Clock::duration averageEventDuration = std::accumulate(durations.begin(), durations.end(), Clock::duration{}) / durations.size();
+                auto averageEventMs = std::chrono::duration_cast<Readout>(averageEventDuration);
                 ROS_INFO_STREAM("\t" + name + ": " << averageEventMs.count() << "ms");
                 durations.clear();
             }
@@ -58,8 +59,8 @@ public:
      * @param name
      */
     void measureEvent(std::string const& name) {
-        hr_clock::time_point now = hr_clock::now();
-        hr_clock::duration duration = now - mLastEpochTime;
+        Clock::time_point now = Clock::now();
+        Clock::duration duration = now - mLastEpochTime;
         mEventReadings[name].push_back(duration);
         mLastEpochTime = now;
     }

@@ -5,6 +5,7 @@
 #include <thread>
 
 #include <sl/Camera.hpp>
+#include <thrust/device_vector.h>
 
 #include <image_transport/publisher.h>
 #include <nodelet/nodelet.h>
@@ -22,6 +23,8 @@
 #include "loop_profiler.hpp"
 
 namespace mrover {
+
+    using PointCloudGpu = thrust::device_vector<Point>;
 
     class ZedNodelet : public nodelet::Nodelet {
     private:
@@ -50,7 +53,7 @@ namespace mrover {
 
         sensor_msgs::ImagePtr mLeftImgMsg = boost::make_shared<sensor_msgs::Image>();
         sensor_msgs::ImagePtr mRightImgMsg = boost::make_shared<sensor_msgs::Image>();
-        Point* mPointCloudGpu = nullptr;
+        PointCloudGpu mPointCloudGpu;
         sensor_msgs::PointCloud2Ptr mPointCloud = boost::make_shared<sensor_msgs::PointCloud2>();
         sensor_msgs::CameraInfoPtr mLeftCamInfoMsg = boost::make_shared<sensor_msgs::CameraInfo>();
         sensor_msgs::CameraInfoPtr mRightCamInfoMsg = boost::make_shared<sensor_msgs::CameraInfo>();
@@ -92,7 +95,7 @@ namespace mrover {
 
     ros::Time slTime2Ros(sl::Timestamp t);
 
-    void fillPointCloudMessage(sl::Mat& xyz, sl::Mat& bgra, Point** pc, sensor_msgs::PointCloud2Ptr const& msg);
+    void fillPointCloudMessage(sl::Mat& xyz, sl::Mat& bgra, PointCloudGpu& pcGpu, sensor_msgs::PointCloud2Ptr const& msg);
 
     void fillCameraInfoMessages(sl::CalibrationParameters& calibration, sl::Resolution const& resolution,
                                 sensor_msgs::CameraInfoPtr const& leftInfoMsg, sensor_msgs::CameraInfoPtr const& rightInfoMsg);

@@ -1,8 +1,10 @@
 #include "zed_wrapper.hpp"
 
-#include <algorithm>
 #include <cassert>
-#include <execution>
+
+#include <thrust/execution_policy.h>
+#include <thrust/iterator/zip_iterator.h>
+#include <thrust/transform.h>
 
 #include <sensor_msgs/CameraInfo.h>
 #include <sensor_msgs/distortion_models.h>
@@ -22,28 +24,15 @@ namespace mrover {
                 static_cast<uint32_t>(t.getNanoseconds() % NS_PER_S)};
     }
 
-    __global__ void fillPointCloudMessageKernel(sl::float4* xyz, sl::uchar4* bgra, Point* pointCloud, size_t height, size_t width) {
-        size_t i = blockIdx.x * blockDim.x + threadIdx.x;
-        if (i >= height * width) return;
-
-        pointCloud[i].x = xyz[i].x;
-        pointCloud[i].y = xyz[i].y;
-        pointCloud[i].z = xyz[i].z;
-        pointCloud[i].b = bgra[i].r;
-        pointCloud[i].g = bgra[i].g;
-        pointCloud[i].r = bgra[i].b;
-        pointCloud[i].a = bgra[i].a;
-    }
-
-    void fillPointCloudMessage(sl::Mat& xyz, sl::Mat& bgra, Point** pc, sensor_msgs::PointCloud2Ptr const& msg) {
+    void fillPointCloudMessage(sl::Mat& xyz, sl::Mat& bgra, PointCloudGpu& pcGpu, sensor_msgs::PointCloud2Ptr const& msg) {
         assert(bgra.getWidth() >= xyz.getWidth());
         assert(bgra.getHeight() >= xyz.getHeight());
         assert(bgra.getChannels() == 4);
         assert(xyz.getChannels() == 3);
         assert(msg);
 
-        auto bgraPtr = bgra.getPtr<sl::uchar4>(sl::MEM::GPU);
-        auto* xyzPtr = xyz.getPtr<sl::float4>(sl::MEM::GPU);
+        auto bgraGpuPtr = bgra.getPtr<sl::uchar4>(sl::MEM::GPU);
+        auto* xyzGpuPtr = xyz.getPtr<sl::float4>(sl::MEM::GPU);
         msg->is_bigendian = __BYTE_ORDER__ == __ORDER_BIG_ENDIAN__;
         msg->is_dense = false;
         msg->height = bgra.getHeight();
@@ -60,16 +49,22 @@ namespace mrover {
                 "normal_z", 1, sensor_msgs::PointField::FLOAT32,
                 "curvature", 1, sensor_msgs::PointField::FLOAT32);
         size_t size = msg->width * msg->height;
-        if (*pc == nullptr) {
-            if (cudaMalloc(pc, size * sizeof(Point)) != cudaSuccess || *pc == nullptr) {
-                throw std::runtime_error("Failed to allocate host memory for point cloud");
-            }
-        }
+        pcGpu.resize(size);
 
-        dim3 block(512);
-        dim3 grid(std::ceil(static_cast<float>(size) / 512.0f));
-        fillPointCloudMessageKernel<<<grid, block>>>(xyzPtr, bgraPtr, *pc, msg->height, msg->width);
-        cudaMemcpy(msg->data.data(), *pc, size * sizeof(Point), cudaMemcpyDeviceToHost);
+        Point* pcGpuPtr = pcGpu.data().get();
+        auto it = thrust::make_zip_iterator(thrust::make_tuple(xyzGpuPtr, bgraGpuPtr));
+        thrust::transform(thrust::device, it, it + static_cast<std::ptrdiff_t>(size),
+                          pcGpuPtr,
+                          [] __device__(thrust::tuple<sl::float4, sl::uchar4> const& t) -> Point {
+                              sl::float4 const& xyz = thrust::get<0>(t);
+                              sl::uchar4 const& bgra = thrust::get<1>(t);
+                              return {xyz.x, xyz.y, xyz.z,
+                                      bgra.r, bgra.g, bgra.b, bgra.a,
+                                      0.0f, 0.0f, 0.0f,
+                                      0.0f};
+                          });
+
+        cudaMemcpy(msg->data.data(), pcGpuPtr, size * sizeof(Point), cudaMemcpyDeviceToHost);
     }
 
     void fillImageMessage(sl::Mat& bgra, sensor_msgs::ImagePtr const& msg) {
@@ -81,10 +76,10 @@ namespace mrover {
         msg->encoding = sensor_msgs::image_encodings::BGRA8;
         msg->step = bgra.getStepBytes();
         msg->is_bigendian = __BYTE_ORDER__ == __ORDER_BIG_ENDIAN__;
-        auto* bgrPtr = bgra.getPtr<sl::uchar1>(sl::MEM::GPU);
+        auto* bgrGpuPtr = bgra.getPtr<sl::uchar1>(sl::MEM::GPU);
         size_t size = msg->step * msg->height;
         msg->data.resize(size);
-        cudaMemcpy(msg->data.data(), bgrPtr, size, cudaMemcpyDeviceToHost);
+        cudaMemcpy(msg->data.data(), bgrGpuPtr, size, cudaMemcpyDeviceToHost);
     }
 
     void fillImuMessage(sl::SensorsData::IMUData& imuData, sensor_msgs::Imu& msg) {
