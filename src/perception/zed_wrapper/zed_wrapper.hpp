@@ -5,6 +5,7 @@
 #include <thread>
 
 #include <sl/Camera.hpp>
+#include <thrust/device_vector.h>
 
 #include <image_transport/publisher.h>
 #include <nodelet/nodelet.h>
@@ -16,14 +17,30 @@
 #include <tf2_ros/transform_broadcaster.h>
 #include <tf2_ros/transform_listener.h>
 
-#include <tag_detector.hpp>
-
+#include "../point_cloud.hpp"
 #include "loop_profiler.hpp"
 
 namespace mrover {
 
+    using PointCloudGpu = thrust::device_vector<Point>;
+
     class ZedNodelet : public nodelet::Nodelet {
     private:
+        struct Measures {
+            ros::Time time;
+            sl::Mat leftImage;
+            sl::Mat rightImage;
+            sl::Mat leftPoints;
+
+            Measures() = default;
+
+            Measures(Measures&) = delete;
+            Measures& operator=(Measures&) = delete;
+
+            Measures(Measures&&) noexcept;
+            Measures& operator=(Measures&&) noexcept;
+        };
+
         ros::NodeHandle mNh, mPnh;
 
         tf2_ros::Buffer mTfBuffer;
@@ -34,37 +51,30 @@ namespace mrover {
 
         sensor_msgs::ImagePtr mLeftImgMsg = boost::make_shared<sensor_msgs::Image>();
         sensor_msgs::ImagePtr mRightImgMsg = boost::make_shared<sensor_msgs::Image>();
+        PointCloudGpu mPointCloudGpu;
         sensor_msgs::PointCloud2Ptr mPointCloud = boost::make_shared<sensor_msgs::PointCloud2>();
         sensor_msgs::CameraInfoPtr mLeftCamInfoMsg = boost::make_shared<sensor_msgs::CameraInfo>();
         sensor_msgs::CameraInfoPtr mRightCamInfoMsg = boost::make_shared<sensor_msgs::CameraInfo>();
 
-        sl::Resolution mImageResolution;
+        sl::Resolution mImageResolution, mPointResolution;
         int mGrabTargetFps{};
         int mDepthConfidence{};
         int mTextureConfidence{};
         bool mUseOdom{};
-        bool mDirectTagDetection{};
         bool mUseBuiltinPosTracking{};
 
         sl::Camera mZed;
         sl::CameraInformation mZedInfo;
-        sl::Mat mLeftImageMat;
-        sl::Mat mRightImageMat;
-        sl::Mat mPointCloudXYZMat;
-        sl::Mat mPointCloudNormalMat;
+        Measures mGrabMeasures, mProcessMeasures;
 
-        std::thread mPcThread;
-        std::thread mGrabThread;
-        std::mutex mGrabMutex;
-        std::condition_variable mGrabDone;
+        std::thread mProcessThread, mGrabThread;
+        std::mutex mSwapMutex;
+        std::condition_variable mSwapCv;
+        std::atomic_bool mIsSwapReady = false;
 
-        boost::shared_ptr<TagDetectorNodelet> mTagDetectorNode;
+        LoopProfiler mProcessThreadProfiler, mGrabThreadProfiler;
 
-        LoopProfiler mPcThreadProfiler;
-        LoopProfiler mGrabThreadProfiler;
-
-        size_t mGrabUpdateTick = 0;
-        size_t mPointCloudUpdateTick = 0;
+        size_t mGrabUpdateTick = 0, mPointCloudUpdateTick = 0;
 
         void onInit() override;
 
@@ -80,12 +90,12 @@ namespace mrover {
 
     ros::Time slTime2Ros(sl::Timestamp t);
 
-    void fillPointCloudMessage(sl::Mat& xyz, sl::Mat& bgr, sensor_msgs::PointCloud2Ptr const& msg);
+    void fillPointCloudMessage(sl::Mat& xyz, sl::Mat& bgra, PointCloudGpu& pcGpu, sensor_msgs::PointCloud2Ptr const& msg);
 
     void fillCameraInfoMessages(sl::CalibrationParameters& calibration, sl::Resolution const& resolution,
                                 sensor_msgs::CameraInfoPtr const& leftInfoMsg, sensor_msgs::CameraInfoPtr const& rightInfoMsg);
 
-    void fillImageMessage(sl::Mat& bgr, sensor_msgs::ImagePtr const& msg);
+    void fillImageMessage(sl::Mat& bgra, sensor_msgs::ImagePtr const& msg);
 
     void fillImuMessage(sl::SensorsData::IMUData& imuData, sensor_msgs::Imu& msg);
 

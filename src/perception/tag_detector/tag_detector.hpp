@@ -43,12 +43,12 @@ namespace mrover {
         tf2_ros::TransformListener mTfListener{mTfBuffer};
         tf2_ros::TransformBroadcaster mTfBroadcaster;
 
-        bool mUseOdom = false;
-        std::string mOdomFrameId, mMapFrameId, mCameraFrameId;
-        bool mPublishImages = false; // If set, we publish the images with the fiducials drawn on top
         bool mEnableDetections = true;
-        int mMinHitCountBeforePublish = 5;
-        int mMaxHitCount = 5;
+        bool mUseOdom{};
+        std::string mOdomFrameId, mMapFrameId, mCameraFrameId;
+        bool mPublishImages{}; // If set, we publish the images with the tags drawn on top
+        int mMinHitCountBeforePublish{};
+        int mMaxHitCount{};
 
         cv::Ptr<cv::aruco::DetectorParameters> mDetectorParams;
         cv::Ptr<cv::aruco::Dictionary> mDictionary;

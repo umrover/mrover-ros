@@ -1,8 +1,10 @@
 #include "zed_wrapper.hpp"
 
-#include <algorithm>
-#include <execution>
-#include <stdexcept>
+#include <cassert>
+
+#include <thrust/execution_policy.h>
+#include <thrust/iterator/zip_iterator.h>
+#include <thrust/transform.h>
 
 #include <sensor_msgs/CameraInfo.h>
 #include <sensor_msgs/distortion_models.h>
@@ -10,32 +12,29 @@
 #include <sensor_msgs/point_cloud2_iterator.h>
 #include <sl/Camera.hpp>
 
-#include <se3.hpp>
-
-#include "../point_cloud.hpp"
-
 constexpr float DEG2RAD = M_PI / 180.0f;
+constexpr uint64_t NS_PER_S = 1000000000;
 
 namespace mrover {
 
     ros::Time slTime2Ros(sl::Timestamp t) {
-        auto sec = static_cast<uint32_t>(t.getNanoseconds() / 1000000000);
-        auto nsec = static_cast<uint32_t>(t.getNanoseconds() % 1000000000);
-        return {sec, nsec};
+        return {static_cast<uint32_t>(t.getNanoseconds() / NS_PER_S),
+                static_cast<uint32_t>(t.getNanoseconds() % NS_PER_S)};
     }
 
-    void fillPointCloudMessage(sl::Mat& xyz, sl::Mat& bgr, sensor_msgs::PointCloud2Ptr const& msg) {
-        if (xyz.getWidth() != bgr.getWidth() || xyz.getHeight() != bgr.getHeight()) {
-            throw std::invalid_argument("XYZ and RGB images must be the same size");
-        }
+    void fillPointCloudMessage(sl::Mat& xyz, sl::Mat& bgra, PointCloudGpu& pcGpu, sensor_msgs::PointCloud2Ptr const& msg) {
+        assert(bgra.getWidth() >= xyz.getWidth());
+        assert(bgra.getHeight() >= xyz.getHeight());
+        assert(bgra.getChannels() == 4);
+        assert(xyz.getChannels() == 3);
+        assert(msg);
 
-        auto imagePtr = bgr.getPtr<sl::uchar4>();
-        auto* pointCloudPtr = xyz.getPtr<sl::float4>();
-        //            auto* pointCloudNormalPtr = mPointCloudNormalMat.getPtr<sl::float4>();
+        auto bgraGpuPtr = bgra.getPtr<sl::uchar4>(sl::MEM::GPU);
+        auto* xyzGpuPtr = xyz.getPtr<sl::float4>(sl::MEM::GPU);
         msg->is_bigendian = __BYTE_ORDER__ == __ORDER_BIG_ENDIAN__;
         msg->is_dense = false;
-        msg->height = xyz.getHeight();
-        msg->width = xyz.getWidth();
+        msg->height = bgra.getHeight();
+        msg->width = bgra.getWidth();
         sensor_msgs::PointCloud2Modifier modifier{*msg};
         modifier.setPointCloud2Fields(
                 8,
@@ -47,29 +46,38 @@ namespace mrover {
                 "normal_y", 1, sensor_msgs::PointField::FLOAT32,
                 "normal_z", 1, sensor_msgs::PointField::FLOAT32,
                 "curvature", 1, sensor_msgs::PointField::FLOAT32);
-        auto* pointPtr = reinterpret_cast<Point*>(msg->data.data());
         size_t size = msg->width * msg->height;
-        std::for_each(std::execution::par_unseq, pointPtr, pointPtr + size, [&](Point& point) {
-            size_t i = &point - pointPtr;
-            point.x = pointCloudPtr[i].x;
-            point.y = pointCloudPtr[i].y;
-            point.z = pointCloudPtr[i].z;
-            point.r = imagePtr[i].r;
-            point.g = imagePtr[i].g;
-            point.b = imagePtr[i].b;
-        });
+
+        pcGpu.resize(size);
+        Point* pcGpuPtr = pcGpu.data().get();
+        auto it = thrust::make_zip_iterator(thrust::make_tuple(xyzGpuPtr, bgraGpuPtr));
+        thrust::transform(thrust::device, it, it + static_cast<std::ptrdiff_t>(size),
+                          pcGpuPtr,
+                          [] __device__(thrust::tuple<sl::float4, sl::uchar4> const& t) -> Point {
+                              sl::float4 const& xyz = thrust::get<0>(t);
+                              sl::uchar4 const& bgra = thrust::get<1>(t);
+                              return {xyz.x, xyz.y, xyz.z,
+                                      bgra.r, bgra.g, bgra.b, bgra.a,
+                                      0.0f, 0.0f, 0.0f,
+                                      0.0f};
+                          });
+
+        cudaMemcpy(msg->data.data(), pcGpuPtr, size * sizeof(Point), cudaMemcpyDeviceToHost);
     }
 
-    void fillImageMessage(sl::Mat& bgr, sensor_msgs::ImagePtr const& msg) {
-        msg->height = bgr.getHeight();
-        msg->width = bgr.getWidth();
+    void fillImageMessage(sl::Mat& bgra, sensor_msgs::ImagePtr const& msg) {
+        assert(bgra.getChannels() == 4);
+        assert(msg);
+
+        msg->height = bgra.getHeight();
+        msg->width = bgra.getWidth();
         msg->encoding = sensor_msgs::image_encodings::BGRA8;
-        msg->step = bgr.getStepBytes();
+        msg->step = bgra.getStepBytes();
         msg->is_bigendian = __BYTE_ORDER__ == __ORDER_BIG_ENDIAN__;
-        auto* bgrPtr = bgr.getPtr<sl::uchar1>();
+        auto* bgrGpuPtr = bgra.getPtr<sl::uchar1>(sl::MEM::GPU);
         size_t size = msg->step * msg->height;
         msg->data.resize(size);
-        std::copy(std::execution::par_unseq, bgrPtr, bgrPtr + size, msg->data.begin());
+        cudaMemcpy(msg->data.data(), bgrGpuPtr, size, cudaMemcpyDeviceToHost);
     }
 
     void fillImuMessage(sl::SensorsData::IMUData& imuData, sensor_msgs::Imu& msg) {
@@ -96,13 +104,9 @@ namespace mrover {
     }
 
     void fillMagMessage(sl::SensorsData::MagnetometerData& magData, sensor_msgs::MagneticField& msg) {
-        R3 field{magData.magnetic_field_calibrated.x, magData.magnetic_field_calibrated.y, magData.magnetic_field_calibrated.z};
-        SO3 rotation{M_PI_2, R3::UnitZ()};
-        R3 rotatedField = rotation * field;
-
-        msg.magnetic_field.x = rotatedField.x();
-        msg.magnetic_field.y = rotatedField.y();
-        msg.magnetic_field.z = rotatedField.z();
+        msg.magnetic_field.x = magData.magnetic_field_calibrated.x;
+        msg.magnetic_field.y = magData.magnetic_field_calibrated.y;
+        msg.magnetic_field.z = magData.magnetic_field_calibrated.z;
 
         msg.magnetic_field_covariance.fill(0.0f);
         msg.magnetic_field_covariance[0] = 0.039e-6;
@@ -112,6 +116,9 @@ namespace mrover {
 
     void fillCameraInfoMessages(sl::CalibrationParameters& calibration, const sl::Resolution& resolution,
                                 sensor_msgs::CameraInfoPtr const& leftInfoMsg, sensor_msgs::CameraInfoPtr const& rightInfoMsg) {
+        assert(leftInfoMsg);
+        assert(rightInfoMsg);
+
         leftInfoMsg->width = resolution.width;
         leftInfoMsg->height = resolution.height;
         rightInfoMsg->width = resolution.width;
