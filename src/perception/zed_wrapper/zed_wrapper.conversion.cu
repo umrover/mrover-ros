@@ -12,8 +12,6 @@
 
 #include <se3.hpp>
 
-#include "../point_cloud.hpp"
-
 constexpr float DEG2RAD = M_PI / 180.0f;
 constexpr uint64_t NS_PER_S = 1000000000;
 
@@ -24,15 +22,28 @@ namespace mrover {
                 static_cast<uint32_t>(t.getNanoseconds() % NS_PER_S)};
     }
 
-    void fillPointCloudMessage(sl::Mat& xyz, sl::Mat& bgra, sensor_msgs::PointCloud2Ptr const& msg) {
+    __global__ void fillPointCloudMessageKernel(sl::float4* xyz, sl::uchar4* bgra, Point* pointCloud, size_t height, size_t width) {
+        size_t i = blockIdx.x * blockDim.x + threadIdx.x;
+        if (i >= height * width) return;
+
+        pointCloud[i].x = xyz[i].x;
+        pointCloud[i].y = xyz[i].y;
+        pointCloud[i].z = xyz[i].z;
+        pointCloud[i].b = bgra[i].r;
+        pointCloud[i].g = bgra[i].g;
+        pointCloud[i].r = bgra[i].b;
+        pointCloud[i].a = bgra[i].a;
+    }
+
+    void fillPointCloudMessage(sl::Mat& xyz, sl::Mat& bgra, Point** pc, sensor_msgs::PointCloud2Ptr const& msg) {
         assert(bgra.getWidth() >= xyz.getWidth());
         assert(bgra.getHeight() >= xyz.getHeight());
         assert(bgra.getChannels() == 4);
         assert(xyz.getChannels() == 3);
         assert(msg);
 
-        auto bgraPtr = bgra.getPtr<sl::uchar4>();
-        auto* xyzPtr = xyz.getPtr<sl::float4>();
+        auto bgraPtr = bgra.getPtr<sl::uchar4>(sl::MEM::GPU);
+        auto* xyzPtr = xyz.getPtr<sl::float4>(sl::MEM::GPU);
         msg->is_bigendian = __BYTE_ORDER__ == __ORDER_BIG_ENDIAN__;
         msg->is_dense = false;
         msg->height = bgra.getHeight();
@@ -48,19 +59,17 @@ namespace mrover {
                 "normal_y", 1, sensor_msgs::PointField::FLOAT32,
                 "normal_z", 1, sensor_msgs::PointField::FLOAT32,
                 "curvature", 1, sensor_msgs::PointField::FLOAT32);
-        auto* pointPtr = reinterpret_cast<Point*>(msg->data.data());
         size_t size = msg->width * msg->height;
-        std::for_each(std::execution::par_unseq, pointPtr, pointPtr + size, [&, bgraWidth = static_cast<int>(bgra.getWidth()), xyzWidth = static_cast<int>(xyz.getWidth())](Point& point) {
-            size_t i = &point - pointPtr; // flat index
-            div_t l = std::div(static_cast<int>(i), bgraWidth);
-            size_t j = (l.quot / 2) * xyzWidth + (l.rem / 2); // flat index in xyz
-            point.x = xyzPtr[j].x;
-            point.y = xyzPtr[j].y;
-            point.z = xyzPtr[j].z;
-            point.r = bgraPtr[i].b; // bgra -> rgb for PCL
-            point.g = bgraPtr[i].g;
-            point.b = bgraPtr[i].r;
-        });
+        if (*pc == nullptr) {
+            if (cudaMalloc(pc, size * sizeof(Point)) != cudaSuccess || *pc == nullptr) {
+                throw std::runtime_error("Failed to allocate host memory for point cloud");
+            }
+        }
+
+        dim3 block(512);
+        dim3 grid(std::ceil(static_cast<float>(size) / 512.0f));
+        fillPointCloudMessageKernel<<<grid, block>>>(xyzPtr, bgraPtr, *pc, msg->height, msg->width);
+        cudaMemcpy(msg->data.data(), *pc, size * sizeof(Point), cudaMemcpyDeviceToHost);
     }
 
     void fillImageMessage(sl::Mat& bgra, sensor_msgs::ImagePtr const& msg) {
@@ -72,10 +81,10 @@ namespace mrover {
         msg->encoding = sensor_msgs::image_encodings::BGRA8;
         msg->step = bgra.getStepBytes();
         msg->is_bigendian = __BYTE_ORDER__ == __ORDER_BIG_ENDIAN__;
-        auto* bgrPtr = bgra.getPtr<sl::uchar1>();
+        auto* bgrPtr = bgra.getPtr<sl::uchar1>(sl::MEM::GPU);
         size_t size = msg->step * msg->height;
         msg->data.resize(size);
-        std::copy(std::execution::par_unseq, bgrPtr, bgrPtr + size, msg->data.begin());
+        cudaMemcpy(msg->data.data(), bgrPtr, size, cudaMemcpyDeviceToHost);
     }
 
     void fillImuMessage(sl::SensorsData::IMUData& imuData, sensor_msgs::Imu& msg) {

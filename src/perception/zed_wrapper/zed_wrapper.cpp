@@ -61,7 +61,7 @@ namespace mrover {
             }
 
             mImageResolution = sl::Resolution(imageWidth, imageHeight);
-            mPointResolution = sl::Resolution(imageWidth / 2, imageHeight / 2);
+            mPointResolution = sl::Resolution(imageWidth, imageHeight);
 
             NODELET_INFO("Resolution: %s image: %zux%zu points: %zux%zu",
                          grabResolutionString.c_str(), mImageResolution.width, mImageResolution.height, mPointResolution.width, mPointResolution.height);
@@ -121,11 +121,11 @@ namespace mrover {
 
                 {
                     std::unique_lock lock{mSwapMutex};
-                    mSwapCv.wait(lock, [this] { return mIsSwapReady; });
+                    mSwapCv.wait(lock, [this] { return mIsSwapReady.load(); });
                     mIsSwapReady = false;
                     mProcessThreadProfiler.measureEvent("Wait");
 
-                    fillPointCloudMessage(mProcessMeasures.leftPoints, mProcessMeasures.leftImage, mPointCloud);
+                    fillPointCloudMessage(mProcessMeasures.leftPoints, mProcessMeasures.leftImage, &mPointCloudGpu, mPointCloud);
                     mPointCloud->header.seq = mPointCloudUpdateTick;
                     mPointCloud->header.stamp = mProcessMeasures.time;
                     mPointCloud->header.frame_id = "zed2i_left_camera_frame";
@@ -201,12 +201,12 @@ namespace mrover {
 
                 // Retrieval has to happen on the same thread as grab so that the image and point cloud are synced
                 if (mRightImgPub.getNumSubscribers())
-                    if (mZed.retrieveImage(mGrabMeasures.rightImage, sl::VIEW::RIGHT, sl::MEM::CPU, mImageResolution) != sl::ERROR_CODE::SUCCESS)
+                    if (mZed.retrieveImage(mGrabMeasures.rightImage, sl::VIEW::RIGHT, sl::MEM::GPU, mImageResolution) != sl::ERROR_CODE::SUCCESS)
                         throw std::runtime_error("ZED failed to retrieve right image");
                 // Left are only used for processing
-                if (mZed.retrieveImage(mGrabMeasures.leftImage, sl::VIEW::LEFT, sl::MEM::CPU, mImageResolution) != sl::ERROR_CODE::SUCCESS)
+                if (mZed.retrieveImage(mGrabMeasures.leftImage, sl::VIEW::LEFT, sl::MEM::GPU, mImageResolution) != sl::ERROR_CODE::SUCCESS)
                     throw std::runtime_error("ZED failed to retrieve left image");
-                if (mZed.retrieveMeasure(mGrabMeasures.leftPoints, sl::MEASURE::XYZ, sl::MEM::CPU, mPointResolution) != sl::ERROR_CODE::SUCCESS)
+                if (mZed.retrieveMeasure(mGrabMeasures.leftPoints, sl::MEASURE::XYZ, sl::MEM::GPU, mPointResolution) != sl::ERROR_CODE::SUCCESS)
                     throw std::runtime_error("ZED failed to retrieve point cloud");
                 mGrabMeasures.time = slTime2Ros(mZed.getTimestamp(sl::TIME_REFERENCE::IMAGE));
                 mGrabThreadProfiler.measureEvent("Retrieve");

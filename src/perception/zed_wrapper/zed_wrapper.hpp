@@ -18,6 +18,7 @@
 
 #include <tag_detector.hpp>
 
+#include "../point_cloud.hpp"
 #include "loop_profiler.hpp"
 
 namespace mrover {
@@ -49,6 +50,7 @@ namespace mrover {
 
         sensor_msgs::ImagePtr mLeftImgMsg = boost::make_shared<sensor_msgs::Image>();
         sensor_msgs::ImagePtr mRightImgMsg = boost::make_shared<sensor_msgs::Image>();
+        Point* mPointCloudGpu = nullptr;
         sensor_msgs::PointCloud2Ptr mPointCloud = boost::make_shared<sensor_msgs::PointCloud2>();
         sensor_msgs::CameraInfoPtr mLeftCamInfoMsg = boost::make_shared<sensor_msgs::CameraInfo>();
         sensor_msgs::CameraInfoPtr mRightCamInfoMsg = boost::make_shared<sensor_msgs::CameraInfo>();
@@ -68,7 +70,7 @@ namespace mrover {
         std::thread mProcessThread, mGrabThread;
         std::mutex mSwapMutex;
         std::condition_variable mSwapCv;
-        bool mIsSwapReady = false;
+        std::atomic_bool mIsSwapReady = false;
 
         boost::shared_ptr<TagDetectorNodelet> mTagDetectorNode;
 
@@ -90,7 +92,7 @@ namespace mrover {
 
     ros::Time slTime2Ros(sl::Timestamp t);
 
-    void fillPointCloudMessage(sl::Mat& xyz, sl::Mat& bgra, sensor_msgs::PointCloud2Ptr const& msg);
+    void fillPointCloudMessage(sl::Mat& xyz, sl::Mat& bgra, Point** pc, sensor_msgs::PointCloud2Ptr const& msg);
 
     void fillCameraInfoMessages(sl::CalibrationParameters& calibration, sl::Resolution const& resolution,
                                 sensor_msgs::CameraInfoPtr const& leftInfoMsg, sensor_msgs::CameraInfoPtr const& rightInfoMsg);
