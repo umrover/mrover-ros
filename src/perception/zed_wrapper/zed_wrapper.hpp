@@ -17,8 +17,6 @@
 #include <tf2_ros/transform_broadcaster.h>
 #include <tf2_ros/transform_listener.h>
 
-#include <tag_detector.hpp>
-
 #include "../point_cloud.hpp"
 #include "loop_profiler.hpp"
 
@@ -63,7 +61,6 @@ namespace mrover {
         int mDepthConfidence{};
         int mTextureConfidence{};
         bool mUseOdom{};
-        bool mDirectTagDetection{};
         bool mUseBuiltinPosTracking{};
 
         sl::Camera mZed;
@@ -74,8 +71,6 @@ namespace mrover {
         std::mutex mSwapMutex;
         std::condition_variable mSwapCv;
         std::atomic_bool mIsSwapReady = false;
-
-        boost::shared_ptr<TagDetectorNodelet> mTagDetectorNode;
 
         LoopProfiler mProcessThreadProfiler, mGrabThreadProfiler;
 

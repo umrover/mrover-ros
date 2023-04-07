@@ -4,6 +4,7 @@
 
 #include <nodelet/loader.h>
 #include <ros/init.h>
+#include <image_transport/image_transport.h>
 
 #include <se3.hpp>
 
@@ -59,7 +60,6 @@ namespace mrover {
             mPnh.param("image_height", imageHeight, 720);
             mPnh.param("depth_confidence", mDepthConfidence, 70);
             mPnh.param("texture_confidence", mTextureConfidence, 100);
-            mPnh.param("direct_tag_detection", mDirectTagDetection, false);
             std::string svoFile{};
             mPnh.param("svo_file", svoFile, {});
             mPnh.param("ues_builtin_visual_odom", mUseBuiltinPosTracking, false);
@@ -120,17 +120,6 @@ namespace mrover {
         try {
             NODELET_INFO("Starting point cloud thread");
 
-            if (mDirectTagDetection) {
-                // TODO: ugly, this prevents OpenCV fast alloc from crashing
-                std::this_thread::sleep_for(100ms);
-
-                mTagDetectorNode = boost::make_shared<TagDetectorNodelet>();
-                mTagDetectorNode->init("tag_detector", getRemappingArgs(), getMyArgv());
-
-                // TODO: figure out why removing this causes a segfault
-                cv::aruco::getPredefinedDictionary(cv::aruco::DICT_4X4_50);
-            }
-
             while (ros::ok()) {
                 mProcessThreadProfiler.beginLoop();
 
@@ -164,15 +153,8 @@ namespace mrover {
                     mProcessThreadProfiler.measureEvent("Publish Message");
                 }
 
-                if (mDirectTagDetection) {
-                    mTagDetectorNode->pointCloudCallback(mPointCloud);
-                    mProcessThreadProfiler.measureEvent("Direct Tag Detection");
-                }
-
                 if (mPcPub.getNumSubscribers()) {
                     mPcPub.publish(mPointCloud);
-                    if (mDirectTagDetection)
-                        NODELET_WARN("Publishing defeats the purpose of direct tag detection");
                     mProcessThreadProfiler.measureEvent("Point cloud publish");
                 }
 

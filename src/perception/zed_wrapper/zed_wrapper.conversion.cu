@@ -12,8 +12,6 @@
 #include <sensor_msgs/point_cloud2_iterator.h>
 #include <sl/Camera.hpp>
 
-#include <se3.hpp>
-
 constexpr float DEG2RAD = M_PI / 180.0f;
 constexpr uint64_t NS_PER_S = 1000000000;
 
@@ -106,13 +104,9 @@ namespace mrover {
     }
 
     void fillMagMessage(sl::SensorsData::MagnetometerData& magData, sensor_msgs::MagneticField& msg) {
-        R3 field{magData.magnetic_field_calibrated.x, magData.magnetic_field_calibrated.y, magData.magnetic_field_calibrated.z};
-        SO3 rotation{M_PI_2, R3::UnitZ()};
-        R3 rotatedField = rotation * field;
-
-        msg.magnetic_field.x = rotatedField.x();
-        msg.magnetic_field.y = rotatedField.y();
-        msg.magnetic_field.z = rotatedField.z();
+        msg.magnetic_field.x = magData.magnetic_field_calibrated.x;
+        msg.magnetic_field.y = magData.magnetic_field_calibrated.y;
+        msg.magnetic_field.z = magData.magnetic_field_calibrated.z;
 
         msg.magnetic_field_covariance.fill(0.0f);
         msg.magnetic_field_covariance[0] = 0.039e-6;
