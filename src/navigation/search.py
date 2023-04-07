@@ -98,16 +98,13 @@ class SearchState(BaseState):
             if self.traj.increment_point():
                 return SearchStateTransitions.no_fiducial.name  # type: ignore
 
-<<<<<<< HEAD
         if self.context.rover.stuck:
             self.context.rover.previous_state = SearchStateTransitions.continue_search.name
             return SearchStateTransitions.recovery_state.name
 
-=======
         self.context.search_point_publisher.publish(
             GPSPointList([convert_cartesian_to_gps(pt) for pt in self.traj.coordinates])
         )
->>>>>>> master
         self.context.rover.send_drive_command(cmd_vel)
 
         # if we see the fiduicial or gate, go to either fiducial or gate state
