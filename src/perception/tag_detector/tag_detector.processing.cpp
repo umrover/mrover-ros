@@ -114,20 +114,16 @@ namespace mrover {
         // Publish all tags to the tf tree that have been seen enough times
         for (auto const& [id, tag]: mTags) {
             if (tag.hitCount >= mMinHitCountBeforePublish) {
-                if (tag.tagInCam) {
-                    try {
-                        std::string immediateFrameId = "immediateFiducial" + std::to_string(tag.id);
-                        // Publish tag to odom
-                        std::string const& parentFrameId = mUseOdom ? mOdomFrameId : mMapFrameId;
-                        SE3 tagInParent = SE3::fromTfTree(mTfBuffer, parentFrameId, immediateFrameId);
-                        SE3::pushToTfTree(mTfBroadcaster, "fiducial" + std::to_string(id), parentFrameId, tagInParent);
-                    } catch (tf2::ExtrapolationException const&) {
-                        NODELET_WARN("Old data for immediate tag");
-                    } catch (tf2::LookupException const&) {
-                        NODELET_WARN("Expected transform for immediate tag");
-                    }
-                } else {
-                    NODELET_DEBUG("Had tag detection but no corresponding point cloud information");
+                try {
+                    std::string immediateFrameId = "immediateFiducial" + std::to_string(tag.id);
+                    // Publish tag to odom
+                    std::string const& parentFrameId = mUseOdom ? mOdomFrameId : mMapFrameId;
+                    SE3 tagInParent = SE3::fromTfTree(mTfBuffer, parentFrameId, immediateFrameId);
+                    SE3::pushToTfTree(mTfBroadcaster, "fiducial" + std::to_string(id), parentFrameId, tagInParent);
+                } catch (tf2::ExtrapolationException const&) {
+                    NODELET_WARN("Old data for immediate tag");
+                } catch (tf2::LookupException const&) {
+                    NODELET_WARN("Expected transform for immediate tag");
                 }
             }
         }
