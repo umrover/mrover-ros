@@ -1,12 +1,12 @@
 from __future__ import annotations
 from typing import ClassVar, Optional
 from unicodedata import normalize
-from context import Gate
+from context import Gate, Context
 
 import numpy as np
 import rospy
 
-from context import Context, Environment
+from context import Context, Environment, convert_cartesian_to_gps
 from aenum import Enum, NoAlias
 from state import BaseState
 from trajectory import Trajectory
@@ -14,6 +14,13 @@ from dataclasses import dataclass
 from drive import get_drive_command
 from util.np_utils import normalized, perpendicular_2d
 from util.ros_utils import get_rosparam
+from shapely.geometry import LineString
+from mrover.msg import GPSPointList
+
+STOP_THRESH = get_rosparam("gate/stop_thresh", 0.2)
+DRIVE_FWD_THRESH = get_rosparam("gate/drive_fwd_thresh", 0.34)  # 20 degrees
+
+APPROACH_DISTANCE = get_rosparam("gate/approach_distance", 2.0)
 
 
 @dataclass
@@ -25,7 +32,7 @@ class GateTrajectory(Trajectory):
         :param approach_distance: distance to the point straight out from the gate that the rover will drive to
         :param gate:    Gate object representing the gate that the rover will drive through
         :param rover_position: position vector of the rover
-        :return:            GateTrajectory object containing the coordinates the rover will need to traverse
+        :return: GateTrajectory object containing the coordinates the rover will need to traverse
         """
 
         # first we get the positions of the two posts
@@ -37,7 +44,7 @@ class GateTrajectory(Trajectory):
         post_direction = normalized(post2 - post1)
         perpendicular = perpendicular_2d(post_direction)
 
-        # appraoch points are the points that are directly out from the center (a straight line) of
+        # approach points are the points that are directly out from the center (a straight line) of
         # the gate "approach_distance" away
         possible_approach_points = [
             approach_distance * perpendicular + center,
@@ -67,10 +74,61 @@ class GateTrajectory(Trajectory):
         closest_approach_point = possible_approach_points[approach_idx]
         victory_point = possible_approach_points[1 - approach_idx]
 
+        coordinates = GateTrajectory.select_gate_path(
+            rover_position, closest_prep_point, closest_approach_point, center, victory_point, gate
+        )
+
         # put the list of coordinates together
-        coordinates = np.array([closest_prep_point, closest_approach_point, victory_point])
-        coordinates = np.hstack((coordinates, np.zeros(coordinates.shape[0]).reshape(-1, 1)))
         return GateTrajectory(coordinates)
+
+    def select_gate_path(
+        rover_position: np.ndarray,
+        prep: np.ndarray,
+        approach: np.ndarray,
+        center: np.ndarray,
+        done: np.ndarray,
+        gate: Gate,
+    ) -> np.ndarray:
+        """
+        Here is a reference for the points mentioned below https://github.com/umrover/mrover-ros/wiki/Navigation#searchtrajectory
+        :param rover_position: position vector of the rover,
+        :param prep: This is the closest prep point given from spider_gate_trajectory,
+        :param approach: This is the closest approach point given from spider_gate_trajectory ,
+        :param center: This is the mid point of the two gate posts,
+        :param done: This is the victory point given from spider_gate_trajectory,
+        :param gate: Gate object representing the gate that the rover will drive through,
+        :returns: This is a np.array which represents the coordinates of the selected path
+        """
+
+        # Get the shapes of both the posts
+        post_one_shape, post_two_shape = gate.get_post_shapes()
+
+        rover = rover_position[:2]
+
+        # try paths with successively more points until we have one that won't intersect
+        all_pts = np.vstack((prep, approach, center, done))
+        num_pts_included = 2
+        path = make_shapely_path(rover, all_pts[-num_pts_included:, :])
+        while path.intersects(post_one_shape) or path.intersects(post_two_shape):
+            num_pts_included += 1
+            if num_pts_included == all_pts.shape[0]:
+                break
+            path = make_shapely_path(rover, all_pts[-num_pts_included:])
+
+        coordinates = all_pts[-num_pts_included:]
+        coordinates = np.hstack((coordinates, np.zeros(coordinates.shape[0]).reshape(-1, 1)))
+        return coordinates
+
+
+def make_shapely_path(rover, path_pts) -> LineString:
+    """
+    :param rover: position vector of the rover
+    :param pathPts: This is a np.array that has the coordinates of the path
+    :returns: It returns the shapely object of LineString which put the path points given into
+    one cohesive line segments.
+    """
+    path_list = np.vstack((rover, path_pts))
+    return LineString(path_list)
 
 
 class GateTraverseStateTransitions(Enum):
@@ -106,14 +164,14 @@ class GateTraverseState(BaseState):
             return GateTraverseStateTransitions.no_gate.name  # type: ignore
         if self.traj is None:
             self.traj = GateTrajectory.spider_gate_trajectory(
-                self.APPROACH_DISTANCE, gate, self.context.rover.get_pose().position
+                self.APPROACH_DISTANCE, gate, self.context.rover.get_pose(in_odom_frame=True).position
             )
 
         # continue executing this path from wherever it left off
         target_pos = self.traj.get_cur_pt()
         cmd_vel, arrived = get_drive_command(
             target_pos,
-            self.context.rover.get_pose(),
+            self.context.rover.get_pose(in_odom_frame=True),
             self.STOP_THRESH,
             self.DRIVE_FWD_THRESH,
         )
@@ -123,10 +181,16 @@ class GateTraverseState(BaseState):
                 self.traj = None
                 self.context.course.increment_waypoint()
                 return GateTraverseStateTransitions.finished_gate.name  # type: ignore
-
+        
         if self.context.rover.stuck:
             self.context.rover.previous_state = GateTraverseStateTransitions.continue_gate_traverse.name
             return GateTraverseStateTransitions.recovery_state.name
 
+        self.context.gate_path_publisher.publish(
+            GPSPointList([convert_cartesian_to_gps(pt) for pt in self.traj.coordinates])
+        )
+        self.context.gate_point_publisher.publish(
+            GPSPointList([convert_cartesian_to_gps(p) for p in [gate.post1, gate.post2]])
+        )
         self.context.rover.send_drive_command(cmd_vel)
         return GateTraverseStateTransitions.continue_gate_traverse.name  # type: ignore
