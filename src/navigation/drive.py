@@ -2,6 +2,7 @@ from typing import List, Tuple, ClassVar
 from dataclasses import dataclass
 import numpy as np
 from shapely.geometry import Polygon, Point
+import rospy
 
 from geometry_msgs.msg import Twist
 from util.SE3 import SE3
@@ -14,7 +15,6 @@ MAX_DRIVING_EFFORT = 1
 MIN_DRIVING_EFFORT = -1
 TURNING_P = 10.0
 ROVER_WIDTH = 1  # meters
-
 
 class Driver:
     planner: PathPlanner
@@ -30,7 +30,9 @@ class Driver:
     
     def add_post_as_failure_zone(self, post_pos: np.ndarray) -> None:
         """
-        Add a newly-detected post as a failure zone to the PathPlanner.
+        Add a post as a failure zone to the PathPlanner. This is used to avoid
+        crashing into the post when driving to the next post or returning. This 
+        should only be done when the rover is done driving to the post. 
         """
         fid_x = post_pos[0]
         fid_y = post_pos[1]
@@ -45,6 +47,13 @@ class Driver:
         post_fz = FailureZone(Polygon([v1, v2, v3, v4]))
         self.add_failure_zone(post_fz) 
 
+    def clear_all_failure_zones(self) -> None:
+        """
+        Clear all failure zones by resetting the PathPlanner.
+        This will be hooked up to a button in the GUI. 
+        """
+        self.planner = PathPlanner()
+    
     def get_drive_command(
         self,
         target_pos: np.ndarray,

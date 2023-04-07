@@ -11,6 +11,7 @@
       <h1>Auton Dashboard</h1>
       <div class="spacer"></div>
       <div class="spacer"></div>
+      <CommReadout class="comm"></CommReadout>
       <div class="help">
         <img
           src="/static/help.png"
@@ -56,7 +57,6 @@
     <div class="box waypoints light-bg">
       <AutonWaypointEditor
         :odom="odom"
-        :auton-drive-control="AutonDriveControl"
         @toggleTeleop="teleopEnabledCheck = $event"
       />
     </div>
@@ -68,6 +68,9 @@
     >
       <DriveControls />
     </div>
+    <div v-show="false">
+      <MastGimbalControls></MastGimbalControls>
+    </div>
   </div>
 </template>
 
@@ -76,10 +79,12 @@ import ROSLIB from "roslib";
 import AutonRoverMap from "./AutonRoverMap.vue";
 import AutonWaypointEditor from "./AutonWaypointEditor.vue";
 import DriveControls from "./DriveControls.vue";
+import MastGimbalControls from "./MastGimbalControls.vue";
 import { mapGetters } from "vuex";
-import * as qte from "quaternion-to-euler";
 import JoystickValues from "./JoystickValues.vue";
 import IMUCalibration from "./IMUCalibration.vue";
+import CommReadout from "./CommReadout.vue";
+import { quaternionToDisplayAngle } from "../utils.js";
 
 const navBlue = "#4695FF";
 const navGreen = "yellowgreen";
@@ -87,6 +92,16 @@ const navRed = "lightcoral";
 const navGrey = "lightgrey";
 
 export default {
+  components: {
+    AutonRoverMap,
+    AutonWaypointEditor,
+    DriveControls,
+    IMUCalibration,
+    JoystickValues,
+    MastGimbalControls,
+    CommReadout,
+  },
+
   data() {
     return {
       // Default coordinates are at NC 53 Parking Lot
@@ -97,7 +112,7 @@ export default {
       },
 
       nav_status: {
-        nav_state_name: "Off",
+        nav_state_name: "OffState",
         completed_wps: 0,
         total_wps: 0,
       },
@@ -111,7 +126,7 @@ export default {
 
       navBlink: false,
       greenHook: false,
-      ledColor: "blue",
+      ledColor: "red",
 
       // Pubs and Subs
       nav_status_sub: null,
@@ -121,64 +136,6 @@ export default {
     };
   },
 
-  created: function () {
-    this.nav_status_sub = new ROSLIB.Topic({
-      ros: this.$ros,
-      name: "/smach/container_status",
-      messageType: "smach_msgs/SmachContainerStatus",
-    });
-
-    this.odom_sub = new ROSLIB.Topic({
-      ros: this.$ros,
-      name: "/gps/fix",
-      messageType: "sensor_msgs/NavSatFix",
-    });
-
-    this.tfClient = new ROSLIB.TFClient({
-      ros: this.$ros,
-      fixedFrame: "map",
-      // Thresholds to trigger subscription callback
-      angularThres: 0.01,
-      transThres: 0.01,
-    });
-
-    this.auton_led_client = new ROSLIB.Service({
-      ros: this.$ros,
-      name: "change_auton_led_state",
-      serviceType: "mrover/ChangeAutonLEDState",
-    });
-
-    // Subscriber for odom to base_link transform
-    this.tfClient.subscribe("base_link", (tf) => {
-      // Callback for IMU quaternion that describes bearing
-      let quaternion = tf.rotation;
-      quaternion = [quaternion.w, quaternion.x, quaternion.y, quaternion.z];
-      //Quaternion to euler angles
-      let euler = qte(quaternion);
-      // euler[2] == euler z component
-      this.odom.bearing_deg = euler[2] * (180 / Math.PI);
-    });
-
-    this.nav_status_sub.subscribe((msg) => {
-      // Callback for nav_status
-      this.nav_status.nav_state_name = msg.active_states[0];
-    });
-
-    this.odom_sub.subscribe((msg) => {
-      // Callback for latLng to be set
-      this.odom.latitude_deg = msg.latitude;
-      this.odom.longitude_deg = msg.longitude;
-    });
-
-    // Blink interval for green and off flasing
-    setInterval(() => {
-      this.navBlink = !this.navBlink;
-    }, 500);
-
-    // Initialize color to blue
-    this.sendColor();
-  },
-
   computed: {
     ...mapGetters("autonomy", {
       autonEnabled: "autonEnabled",
@@ -186,7 +143,7 @@ export default {
     }),
 
     nav_state_color: function () {
-      if (!this.autonEnabled) {
+      if (!this.autonEnabled && this.teleopEnabledCheck) {
         return navBlue;
       }
       if (this.nav_status.nav_state_name == "DoneState" && this.navBlink) {
@@ -221,6 +178,59 @@ export default {
     },
   },
 
+  created: function () {
+    this.nav_status_sub = new ROSLIB.Topic({
+      ros: this.$ros,
+      name: "/smach/container_status",
+      messageType: "smach_msgs/SmachContainerStatus",
+    });
+
+    this.odom_sub = new ROSLIB.Topic({
+      ros: this.$ros,
+      name: "/gps/fix",
+      messageType: "sensor_msgs/NavSatFix",
+    });
+
+    this.tfClient = new ROSLIB.TFClient({
+      ros: this.$ros,
+      fixedFrame: "map",
+      // Thresholds to trigger subscription callback
+      angularThres: 0.01,
+      transThres: 0.01,
+    });
+
+    this.auton_led_client = new ROSLIB.Service({
+      ros: this.$ros,
+      name: "change_auton_led_state",
+      serviceType: "mrover/ChangeAutonLEDState",
+    });
+
+    // Subscriber for odom to base_link transform
+    this.tfClient.subscribe("base_link", (tf) => {
+      // Callback for IMU quaternion that describes bearing
+      this.odom.bearing_deg = quaternionToDisplayAngle(tf.rotation);
+    });
+
+    this.nav_status_sub.subscribe((msg) => {
+      // Callback for nav_status
+      this.nav_status.nav_state_name = msg.active_states[0];
+    });
+
+    this.odom_sub.subscribe((msg) => {
+      // Callback for latLng to be set
+      this.odom.latitude_deg = msg.latitude;
+      this.odom.longitude_deg = msg.longitude;
+    });
+
+    // Blink interval for green and off flasing
+    setInterval(() => {
+      this.navBlink = !this.navBlink;
+    }, 500);
+
+    // Initialize color to blue
+    this.sendColor();
+  },
+
   methods: {
     sendColor() {
       let request = new ROSLIB.ServiceRequest({
@@ -236,14 +246,6 @@ export default {
         }
       });
     },
-  },
-
-  components: {
-    AutonRoverMap,
-    AutonWaypointEditor,
-    DriveControls,
-    JoystickValues,
-    IMUCalibration,
   },
 };
 </script>
@@ -374,5 +376,10 @@ h2 {
 
 .waypoints {
   grid-area: waypoints;
+}
+
+.comm {
+  position: absolute;
+  left: 50%;
 }
 </style>

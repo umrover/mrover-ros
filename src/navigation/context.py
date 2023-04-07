@@ -11,20 +11,37 @@ from visualization_msgs.msg import Marker
 from typing import ClassVar, Optional, List, Tuple
 import numpy as np
 from dataclasses import dataclass
-from mrover.msg import Waypoint, GPSWaypoint, EnableAuton
+from shapely.geometry import Point, LineString
+from mrover.msg import Waypoint, GPSWaypoint, EnableAuton, WaypointType, GPSPointList
 import pymap3d
+from std_msgs.msg import Time
 
 # read required parameters, if they don't exist an error will be thrown
 REF_LAT = rospy.get_param("gps_linearization/reference_point_latitude")
 REF_LON = rospy.get_param("gps_linearization/reference_point_longitude")
 
-tf_broadcaster: tf2_ros.StaticTransformBroadcaster = tf2_ros.StaticTransformBroadcaster()
+TAG_EXPIRATION_TIME_SECONDS = 60
 
+tf_broadcaster: tf2_ros.StaticTransformBroadcaster = tf2_ros.StaticTransformBroadcaster()
 
 @dataclass
 class Gate:
     post1: np.ndarray
     post2: np.ndarray
+
+    def get_post_shapes(self) -> tuple[Point, Point]:
+        """
+        Creates a circular path of RADIUS around each post for checking intersection with our path
+        :return: tuple of the two shapely Point objects representing the posts
+        """
+        # Declare radius to 0.5 meters
+        RADIUS = 0.5
+
+        # Find circle of both posts
+        post1_shape = Point(self.post1[:2]).buffer(RADIUS)
+        post2_shape = Point(self.post2[:2]).buffer(RADIUS)
+
+        return post1_shape, post2_shape
 
 
 @dataclass
@@ -40,7 +57,7 @@ class Rover:
     def send_drive_stop(self):
         self.send_drive_command(Twist())
 
-    def get_pose_with_time(self):
+    def get_pose_with_time(self) -> Tuple[SE3, Time]:
         return SE3.from_tf_time(self.ctx.tf_buffer, parent_frame="map", child_frame="base_link")
 
 
@@ -57,10 +74,13 @@ class Environment:
     def get_fid_pos(self, fid_id: int, frame: str = "map") -> Optional[np.ndarray]:
         """
         Retrieves the pose of the given fiducial ID from the TF tree
-        if it exists, otherwise returns None
+        if it exists and is more recent than TAG_EXPIRATION_TIME_SECONDS, otherwise returns None
         """
         try:
-            fid_pose = SE3.from_tf_tree(self.ctx.tf_buffer, parent_frame="map", child_frame=f"fiducial{fid_id}")
+            fid_pose, time = SE3.from_tf_time(self.ctx.tf_buffer, parent_frame="map", child_frame=f"fiducial{fid_id}")
+            now = rospy.Time.now()
+            if now.to_sec() - time.to_sec() >= TAG_EXPIRATION_TIME_SECONDS:
+                return None
         except (
             tf2_ros.LookupException,
             tf2_ros.ConnectivityException,
@@ -75,15 +95,27 @@ class Environment:
         """
         assert self.ctx.course
         current_waypoint = self.ctx.course.current_waypoint()
-        if current_waypoint is None or not self.ctx.course.look_for_post():
+        if current_waypoint is None:
             return None
 
         return self.get_fid_pos(current_waypoint.fiducial_id)
+
+    def other_gate_fid_pos(self) -> Optional[np.ndarray]:
+        """
+        retrieves the position of the other gate post (which is 1 + current id) if we are looking for a gate
+        """
+        assert self.ctx.course
+        current_waypoint = self.ctx.course.current_waypoint()
+        if self.ctx.course.look_for_gate() and current_waypoint is not None:
+            return self.get_fid_pos(current_waypoint.fiducial_id + 1)
+        else:
+            return None
 
     def current_gate(self) -> Optional[Gate]:
         """
         retrieves the position of the gate (if we know where it is, and we are looking for one)
         """
+
         if self.ctx.course:
             current_waypoint = self.ctx.course.current_waypoint()
             if current_waypoint is None or not self.ctx.course.look_for_gate():
@@ -93,8 +125,7 @@ class Environment:
             post2 = self.get_fid_pos(current_waypoint.fiducial_id + 1)
             if post1 is None or post2 is None:
                 return None
-
-            return Gate(post1[0:2], post2[0:2])
+            return Gate(post1[:2], post2[:2])
         else:
             return None
 
@@ -116,7 +147,7 @@ class Course:
         waypoint_frame = self.course_data.waypoints[wp_idx].tf_id
         return SE3.from_tf_tree(self.ctx.tf_buffer, parent_frame="map", child_frame=waypoint_frame)
 
-    def current_waypoint_pose(self):
+    def current_waypoint_pose(self) -> SE3:
         """
         Gets the pose of the current waypoint
         """
@@ -155,7 +186,7 @@ class Course:
         else:
             return False
 
-    def is_complete(self):
+    def is_complete(self) -> bool:
         return self.waypoint_index == len(self.course_data.waypoints)
 
 
@@ -168,11 +199,10 @@ def setup_course(ctx: Context, waypoints: List[Tuple[Waypoint, SE3]]) -> Course:
     return Course(ctx=ctx, course_data=mrover.msg.Course([waypoint[0] for waypoint in waypoints]))
 
 
-def convert(waypoint: GPSWaypoint) -> Waypoint:
+def convert_gps_to_cartesian(waypoint: GPSWaypoint) -> Waypoint:
     """
     Converts a GPSWaypoint into a "Waypoint" used for publishing to the CourseService.
     """
-
     # Create odom position based on GPS latitude and longitude
     odom = np.array(
         pymap3d.geodetic2enu(
@@ -187,8 +217,18 @@ def convert(waypoint: GPSWaypoint) -> Waypoint:
     return Waypoint(fiducial_id=waypoint.id, tf_id=f"course{waypoint.id}", type=waypoint.type), SE3(position=odom)
 
 
+def convert_cartesian_to_gps(coordinate: np.ndarray) -> GPSWaypoint:
+    """
+    Converts a coordinate to a GPSWaypoint (used for sending data back to basestation)
+    """
+    lat, lon, _ = pymap3d.enu2geodetic(
+        e=coordinate[0], n=coordinate[1], u=0.0, lat0=REF_LAT, lon0=REF_LON, h0=0.0, deg=True
+    )
+    return GPSWaypoint(lat, lon, WaypointType(val=WaypointType.NO_SEARCH), 0)
+
+
 def convert_and_get_course(ctx: Context, data: EnableAuton) -> Course:
-    waypoints = [convert(waypoint) for waypoint in data.waypoints]
+    waypoints = [convert_gps_to_cartesian(waypoint) for waypoint in data.waypoints]
     return setup_course(ctx, waypoints)
 
 
@@ -196,7 +236,11 @@ class Context:
     tf_buffer: tf2_ros.Buffer
     tf_listener: tf2_ros.TransformListener
     vel_cmd_publisher: rospy.Publisher
+    search_point_publisher: rospy.Publisher
+    gate_point_publisher: rospy.Publisher
+    gate_path_publisher: rospy.Publisher
     vis_publisher: rospy.Publisher
+    drive_path_publisher: rospy.Publisher # publishes failure-zone avoiding path
     course_listener: rospy.Subscriber
 
     # Use these as the primary interfaces in states
@@ -211,6 +255,10 @@ class Context:
         self.tf_listener = tf2_ros.TransformListener(self.tf_buffer)
         self.vel_cmd_publisher = rospy.Publisher("cmd_vel", Twist, queue_size=1)
         self.vis_publisher = rospy.Publisher("nav_vis", Marker, queue_size=1)
+        self.search_point_publisher = rospy.Publisher("search_path", GPSPointList, queue_size=1)
+        self.gate_path_publisher = rospy.Publisher("gate_path", GPSPointList, queue_size=1)
+        self.gate_point_publisher = rospy.Publisher("estimated_gate_location", GPSPointList, queue_size=1)
+        self.path_publisher = rospy.Publisher("drive_path", GPSPointList, queue_size=1)
         self.enable_auton_service = rospy.Service("enable_auton", mrover.srv.PublishEnableAuton, self.recv_enable_auton)
         self.course = None
         self.rover = Rover(self)

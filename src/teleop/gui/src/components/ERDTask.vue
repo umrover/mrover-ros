@@ -11,6 +11,7 @@
       <h1 v-if="type === 'ES'">ES GUI Dashboard</h1>
       <h1 v-else>EDM GUI Dashboard</h1>
       <div class="spacer"></div>
+      <CommReadout class="comm"></CommReadout>
       <div class="help">
         <img
           src="/static/help.png"
@@ -44,7 +45,7 @@
       <OdometryReading :odom="odom" />
     </div>
     <div v-if="type === 'EDM'" class="box map light-bg">
-      <ERDMap :odom="odom" />
+      <BasicMap :odom="odom" />
     </div>
     <div class="box pdb light-bg">
       <PDBFuse />
@@ -53,7 +54,7 @@
       <JointStateTable :joint-state-data="jointState" :vertical="true" />
     </div>
     <div v-if="type === 'EDM'" class="box waypoint-editor light-bg">
-      <ERDWaypointEditor />
+      <BasicWaypointEditor />
     </div>
     <div>
       <DriveControls></DriveControls>
@@ -64,35 +65,41 @@
     <div class="box moteus light-bg">
       <MoteusStateTable :moteus-state-data="moteusState" />
     </div>
+    <div v-show="false">
+      <MastGimbalControls></MastGimbalControls>
+    </div>
   </div>
 </template>
 
 <script>
-import { mapGetters } from "vuex";
-import * as qte from "quaternion-to-euler";
 import ROSLIB from "roslib";
 
 import ArmControls from "./ArmControls.vue";
 import Cameras from "./Cameras.vue";
 import DriveControls from "./DriveControls.vue";
-import ERDMap from "./ERDRoverMap.vue";
-import ERDWaypointEditor from "./ERDWaypointEditor.vue";
+import MastGimbalControls from "./MastGimbalControls.vue";
+import BasicMap from "./BasicRoverMap.vue";
+import BasicWaypointEditor from "./BasicWaypointEditor.vue";
 import JointStateTable from "./JointStateTable.vue";
 import MoteusStateTable from "./MoteusStateTable.vue";
 import OdometryReading from "./OdometryReading.vue";
 import PDBFuse from "./PDBFuse.vue";
+import CommReadout from "./CommReadout.vue";
+import { quaternionToDisplayAngle } from "../utils.js";
 
 export default {
   components: {
     ArmControls,
     Cameras,
     DriveControls,
-    ERDMap,
-    ERDWaypointEditor,
+    BasicMap,
+    BasicWaypointEditor,
     JointStateTable,
+    MastGimbalControls,
     MoteusStateTable,
     OdometryReading,
     PDBFuse,
+    CommReadout,
   },
 
   props: {
@@ -143,13 +150,7 @@ export default {
 
     // Subscriber for odom to base_link transform
     this.tfClient.subscribe("base_link", (tf) => {
-      // Callback for IMU quaternion that describes bearing
-      let quaternion = tf.rotation;
-      quaternion = [quaternion.w, quaternion.x, quaternion.y, quaternion.z];
-      //Quaternion to euler angles
-      let euler = qte(quaternion);
-      // euler[2] == euler z component
-      this.odom.bearing_deg = euler[2] * (180 / Math.PI);
+      this.odom.bearing_deg = quaternionToDisplayAngle(tf.rotation);
     });
 
     this.odom_sub.subscribe((msg) => {

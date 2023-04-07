@@ -5,7 +5,7 @@
 #include <fcntl.h>         // for open and O_RDWR
 #include <linux/i2c-dev.h> // for I2C_SLAVE
 #include <mutex>           // for std::mutex
-#include <ros/console.h>   // for ROS_INFO
+#include <ros/console.h>   // for ROS_ERROR
 #include <stdint.h>        // for uint
 #include <string.h>        // for string and memcpy
 #include <sys/ioctl.h>     // for ioctl

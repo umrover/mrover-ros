@@ -32,5 +32,3 @@ if __name__ == "__main__":
     ]
 
     publish_waypoints([convert_waypoint_to_gps(waypoint) for waypoint in waypoints])
-
-    rospy.spin()
