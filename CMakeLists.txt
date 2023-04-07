@@ -2,7 +2,8 @@ cmake_minimum_required(VERSION 3.16)
 project(mrover VERSION 1.0.0 LANGUAGES CXX)
 
 ## Compile as C++17, supported in ROS Kinetic and newer, enable some static analysis
-set(MROVER_CPP_COMPILE_OPTIONS -std=c++17 -Wall -Wextra -Werror -pedantic)
+set(CMAKE_CXX_STANDARD 17)
+set(MROVER_CPP_COMPILE_OPTIONS -Wall -Wextra -Werror -pedantic)
 
 # Generate compile_commands.json for clangd
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
@@ -79,7 +80,7 @@ macro(rosify_cpp_target_macro target)
     target_include_directories(${target} SYSTEM PRIVATE ${catkin_INCLUDE_DIRS} "src/util")
     add_dependencies(${target} ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
 
-    target_compile_options(${target} PRIVATE ${MROVER_CPP_COMPILE_OPTIONS})
+    target_compile_options(${target} PRIVATE $<$<COMPILE_LANGUAGE:CXX>:${MROVER_CPP_COMPILE_OPTIONS}>)
 
     install(TARGETS ${target}
             ARCHIVE DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
@@ -210,10 +211,15 @@ else ()
     macro(add_packages_macro)
         find_package(OpenCV REQUIRED COMPONENTS core aruco)
         find_package(gazebo REQUIRED)
-        find_package(PCL REQUIRED common io features)
         find_package(Eigen3 REQUIRED)
         find_package(ZED 2)
         if (ZED_FOUND)
+            set(CMAKE_CUDA_SEPARABLE_COMPILATION ON)
+            set(CMAKE_CUDA_STANDARD 17)
+            set(CMAKE_CUDA_STANDARD_REQUIRED ON)
+            # Jetson Xavier NX is Volta 7.2 architecture
+            # Perception Laptop (A4000, Quadro version of RTX 3080) is Ampere 8.6 architecture
+            set(CMAKE_CUDA_ARCHITECTURES 72 86)
             enable_language(CUDA)
         endif ()
     endmacro()
@@ -235,9 +241,16 @@ else ()
         set_target_properties(kinect_plugin PROPERTIES CXX_CLANG_TIDY "")
 
         if (ZED_FOUND)
-            add_cpp_nodelet_macro(zed_nodelet "src/perception/zed_wrapper/*.cpp" , "src/perception/zed_wrapper")
+            #            add_cpp_node_macro(zed_node "src/perception/zed_wrapper/*.c*")
+            #            target_link_options(zed_node PRIVATE "LINKER:--copy-dt-needed-entries")
+            #            target_include_directories(zed_node SYSTEM PRIVATE ${ZED_INCLUDE_DIRS} ${CUDA_INCLUDE_DIRS})
+            #            target_link_libraries(zed_node PRIVATE ${ZED_LIBRARIES} ${OpenCV_LIBRARIES} ${SPECIAL_OS_LIBS} lie tag_detector_nodelet)
+
+            add_cpp_nodelet_macro(zed_nodelet "src/perception/zed_wrapper/*.c*" , "src/perception/zed_wrapper")
             target_include_directories(zed_nodelet SYSTEM PRIVATE ${ZED_INCLUDE_DIRS} ${CUDA_INCLUDE_DIRS})
-            target_link_libraries(zed_nodelet PRIVATE ${ZED_LIBRARIES} ${OpenCV_LIBRARIES} lie tag_detector_nodelet)
+            target_link_libraries(zed_nodelet PRIVATE ${ZED_LIBRARIES} ${OpenCV_LIBRARIES} ${SPECIAL_OS_LIBS} lie tag_detector_nodelet)
+            target_compile_definitions(zed_nodelet PRIVATE MROVER_IS_NODELET)
+            target_compile_options(zed_nodelet PRIVATE $<$<COMPILE_LANGUAGE:CUDA>:--expt-extended-lambda>)
         endif ()
     endmacro()
 endif ()

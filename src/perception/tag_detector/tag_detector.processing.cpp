@@ -1,6 +1,7 @@
 #include "tag_detector.hpp"
 
 #include <algorithm>
+#include <cassert>
 #include <chrono>
 #include <cmath>
 #include <execution>
@@ -19,6 +20,8 @@ namespace mrover {
      * @param v     Y Pixel Position
      */
     std::optional<SE3> TagDetectorNodelet::getTagInCamFromPixel(sensor_msgs::PointCloud2ConstPtr const& cloudPtr, size_t u, size_t v) {
+        assert(cloudPtr);
+
         if (u >= cloudPtr->width || v >= cloudPtr->height) {
             NODELET_WARN("Tag center out of bounds: [%zu %zu]", u, v);
             return std::nullopt;
@@ -41,29 +44,29 @@ namespace mrover {
      * @param msg   Point cloud message
      */
     void TagDetectorNodelet::pointCloudCallback(sensor_msgs::PointCloud2ConstPtr const& msg) {
-        mProfiler.finishLoop();
+        assert(msg);
+        assert(msg->height > 0);
+        assert(msg->width > 0);
 
         if (!mEnableDetections) return;
 
+        mProfiler.beginLoop();
+
         NODELET_DEBUG("Got point cloud %d", msg->header.seq);
 
-        if (msg->height == 0 || msg->width == 0) {
-            NODELET_WARN("Point cloud has zero size");
-            return;
-        }
-
+        // OpenCV needs a dense BGR image |BGR|...| but out point cloud is |BGRAXYZ...|...|
+        // So we need to copy the data into the correct format
         if (static_cast<int>(msg->height) != mImg.rows || static_cast<int>(msg->width) != mImg.cols) {
             NODELET_INFO("Image size changed from [%d %d] to [%u %u]", mImg.cols, mImg.rows, msg->width, msg->height);
             mImg = cv::Mat{static_cast<int>(msg->height), static_cast<int>(msg->width), CV_8UC3, cv::Scalar{0, 0, 0}};
         }
-
         auto* pixelPtr = reinterpret_cast<cv::Vec3b*>(mImg.data);
         auto* pointPtr = reinterpret_cast<Point const*>(msg->data.data());
         std::for_each(std::execution::par_unseq, pixelPtr, pixelPtr + mImg.total(), [&](cv::Vec3b& pixel) {
             size_t i = &pixel - pixelPtr;
-            pixel[0] = pointPtr[i].r;
+            pixel[0] = pointPtr[i].b;
             pixel[1] = pointPtr[i].g;
-            pixel[2] = pointPtr[i].b;
+            pixel[2] = pointPtr[i].r;
         });
         mProfiler.measureEvent("Convert");
 
