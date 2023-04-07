@@ -240,6 +240,7 @@ class Context:
     gate_point_publisher: rospy.Publisher
     gate_path_publisher: rospy.Publisher
     vis_publisher: rospy.Publisher
+    drive_path_publisher: rospy.Publisher # publishes failure-zone avoiding path
     course_listener: rospy.Subscriber
 
     # Use these as the primary interfaces in states
@@ -257,6 +258,7 @@ class Context:
         self.search_point_publisher = rospy.Publisher("search_path", GPSPointList, queue_size=1)
         self.gate_path_publisher = rospy.Publisher("gate_path", GPSPointList, queue_size=1)
         self.gate_point_publisher = rospy.Publisher("estimated_gate_location", GPSPointList, queue_size=1)
+        self.path_publisher = rospy.Publisher("drive_path", GPSPointList, queue_size=1)
         self.enable_auton_service = rospy.Service("enable_auton", mrover.srv.PublishEnableAuton, self.recv_enable_auton)
         self.course = None
         self.rover = Rover(self)

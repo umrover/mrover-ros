@@ -47,6 +47,13 @@ class Driver:
         post_fz = FailureZone(Polygon([v1, v2, v3, v4]))
         self.add_failure_zone(post_fz) 
 
+    def clear_all_failure_zones(self) -> None:
+        """
+        Clear all failure zones by resetting the PathPlanner.
+        This will be hooked up to a button in the GUI. 
+        """
+        self.planner = PathPlanner()
+    
     def get_drive_command(
         self,
         target_pos: np.ndarray,

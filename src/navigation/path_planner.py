@@ -3,6 +3,11 @@ from dijkstar import Graph, find_path, NoPathError  # https://pypi.org/project/D
 from shapely.geometry import LineString, Point, Polygon
 from failure_zone import FailureZone
 
+from context import convert_cartesian_to_gps
+from mrover.msg import GPSPointList
+
+import numpy as np
+
 """
 Overload < operator for point objects
 
@@ -226,6 +231,13 @@ class PathPlanner:
                 self.path = [source_pos, target_pos]
 
         self.cur_path_idx = 0
+
+        # publish to drive_path topic
+        gps_point_list = []
+        for pt in self.path:
+            gps_point_list.append(convert_cartesian_to_gps(np.array([pt.x, pt.y])))
+
+        self.context.drive_path_publisher.publish(GPSPointList(gps_point_list))
 
     def __add_vertex(self, new_vertex: Point) -> None:
         """
