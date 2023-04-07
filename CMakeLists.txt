@@ -158,20 +158,6 @@ if (${DEVICE} MATCHES "raspi4")
         add_cpp_node_macro(brushed_motors "src/esw/brushed_motors/*.cpp")
     endmacro()
 
-    macro(additional_install_macro)
-        install(TARGETS differential_drive_plugin_6w
-                ARCHIVE DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
-                LIBRARY DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
-                RUNTIME DESTINATION ${CATKIN_GLOBAL_BIN_DESTINATION}
-                )
-
-        install(TARGETS kinect_plugin
-                ARCHIVE DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
-                LIBRARY DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
-                RUNTIME DESTINATION ${CATKIN_GLOBAL_BIN_DESTINATION}
-                )
-    endmacro()
-
 else ()
     # -=-=-=-=-
     # Lists
