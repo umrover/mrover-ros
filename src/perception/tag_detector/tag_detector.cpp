@@ -24,9 +24,8 @@ namespace mrover {
         using DictEnumType = std::underlying_type_t<cv::aruco::PREDEFINED_DICTIONARY_NAME>;
         mPnh.param<int>("dictionary", dictionaryNumber, static_cast<DictEnumType>(cv::aruco::DICT_4X4_50));
 
-        image_transport::ImageTransport it{mNh};
-        mImgPub = it.advertise("tag_detection", 1);
-        mThreshPub = it.advertise("tag_detection_threshold", 1);
+        mIt.emplace(mNh);
+        mImgPub = mIt->advertise("tag_detection", 1);
         mDictionary = cv::aruco::getPredefinedDictionary(dictionaryNumber);
 
         bool directTagDetection = false;

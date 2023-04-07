@@ -4,8 +4,6 @@
 
 #include <opencv2/aruco.hpp>
 #include <opencv2/core/mat.hpp>
-#include <opencv2/imgproc.hpp>
-#include <opencv2/core/types.hpp>
 
 #include <dynamic_reconfigure/server.h>
 #include <image_transport/image_transport.h>
@@ -14,12 +12,6 @@
 #include <std_srvs/SetBool.h>
 #include <tf2_ros/transform_broadcaster.h>
 #include <tf2_ros/transform_listener.h>
-
-#include <geometry_msgs/PoseStamped.h>
-#include <sensor_msgs/image_encodings.h>
-#include <sensor_msgs/point_cloud2_iterator.h>
-#include <std_msgs/String.h>
-#include <std_srvs/SetBool.h>
 
 #include <mrover/DetectorParamsConfig.h>
 
@@ -40,8 +32,9 @@ namespace mrover {
     private:
         ros::NodeHandle mNh, mPnh;
 
+        std::optional<image_transport::ImageTransport> mIt;
         image_transport::Publisher mImgPub;
-        image_transport::Publisher mThreshPub;
+        std::unordered_map<int, image_transport::Publisher> mThreshPubs;
         ros::ServiceServer mServiceEnableDetections;
 
         ros::Subscriber mPcSub;
@@ -61,7 +54,7 @@ namespace mrover {
         cv::Ptr<cv::aruco::Dictionary> mDictionary;
 
         cv::Mat mImg;
-        cv::Mat mGrayscale;
+        cv::Mat mGrayImg;
         sensor_msgs::Image mImgMsg;
         sensor_msgs::Image mThreshMsg;
         uint32_t mSeqNum{};
@@ -75,7 +68,7 @@ namespace mrover {
         LoopProfiler mProfiler;
 
         void onInit() override;
-                
+
         void publishThresholdedImage();
 
         std::optional<SE3> getTagInCamFromPixel(sensor_msgs::PointCloud2ConstPtr const& cloudPtr, size_t u, size_t v);
