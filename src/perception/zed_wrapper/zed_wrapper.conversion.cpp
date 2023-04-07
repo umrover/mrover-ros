@@ -2,13 +2,15 @@
 
 #include <algorithm>
 #include <execution>
-#include <sensor_msgs/CameraInfo.h>
-#include <sensor_msgs/distortion_models.h>
-#include <sl/Camera.hpp>
 #include <stdexcept>
 
+#include <sensor_msgs/CameraInfo.h>
+#include <sensor_msgs/distortion_models.h>
 #include <sensor_msgs/image_encodings.h>
 #include <sensor_msgs/point_cloud2_iterator.h>
+#include <sl/Camera.hpp>
+
+#include <se3.hpp>
 
 #include "../point_cloud.hpp"
 
@@ -91,6 +93,21 @@ namespace mrover {
         for (int i = 0; i < 3; ++i)
             for (int j = 0; j < 3; ++j)
                 msg.linear_acceleration_covariance[i * 3 + j] = imuData.linear_acceleration_covariance(i, j);
+    }
+
+    void fillMagMessage(sl::SensorsData::MagnetometerData& magData, sensor_msgs::MagneticField& msg) {
+        R3 field{magData.magnetic_field_calibrated.x, magData.magnetic_field_calibrated.y, magData.magnetic_field_calibrated.z};
+        SO3 rotation{M_PI_2, R3::UnitZ()};
+        R3 rotatedField = rotation * field;
+
+        msg.magnetic_field.x = rotatedField.x();
+        msg.magnetic_field.y = rotatedField.y();
+        msg.magnetic_field.z = rotatedField.z();
+
+        msg.magnetic_field_covariance.fill(0.0f);
+        msg.magnetic_field_covariance[0] = 0.039e-6;
+        msg.magnetic_field_covariance[4] = 0.037e-6;
+        msg.magnetic_field_covariance[8] = 0.047e-6;
     }
 
     void fillCameraInfoMessages(sl::CalibrationParameters& calibration, const sl::Resolution& resolution,

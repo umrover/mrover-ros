@@ -41,7 +41,7 @@ namespace mrover {
      * @param msg   Point cloud message
      */
     void TagDetectorNodelet::pointCloudCallback(sensor_msgs::PointCloud2ConstPtr const& msg) {
-        mProfiler.reset();
+        mProfiler.finishLoop();
 
         if (!mEnableDetections) return;
 
@@ -65,7 +65,7 @@ namespace mrover {
             pixel[1] = pointPtr[i].g;
             pixel[2] = pointPtr[i].b;
         });
-        mProfiler.addEpoch("Convert");
+        mProfiler.measureEvent("Convert");
 
         // Call thresholding
         if (mThreshPub.getNumSubscribers()) {
@@ -77,7 +77,7 @@ namespace mrover {
         // {mCorners, mIds} are the outputs from OpenCV
         cv::aruco::detectMarkers(mImg, mDictionary, mCorners, mIds, mDetectorParams);
         NODELET_DEBUG("OpenCV detect size: %zu", mIds.size());
-        mProfiler.addEpoch("OpenCV Detect");
+        mProfiler.measureEvent("OpenCV Detect");
 
         // Update ID, image center, and increment hit count for all detected tags
         for (size_t i = 0; i < mIds.size(); ++i) {
@@ -153,7 +153,7 @@ namespace mrover {
             NODELET_INFO("Detected %zu markers", detectedCount);
         }
 
-        mProfiler.addEpoch("Publish");
+        mProfiler.measureEvent("Publish");
 
         mSeqNum++;
     }

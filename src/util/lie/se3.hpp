@@ -26,11 +26,13 @@ private:
 public:
     friend class SE3;
 
-    template<typename... Args>
+    template<typename... Args, typename = std::enable_if_t<std::is_constructible_v<AngleAxis, Args...>>>
     SO3(Args&&... args) : mAngleAxis{std::forward<Args>(args)...} {
     }
 
     [[nodiscard]] SO3 operator*(SO3 const& other) const;
+
+    [[nodiscard]] R3 operator*(R3 const& other) const;
 
     [[nodiscard]] Eigen::Matrix4d matrix() const;
 
