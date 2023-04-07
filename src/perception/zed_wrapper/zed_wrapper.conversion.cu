@@ -49,8 +49,8 @@ namespace mrover {
                 "normal_z", 1, sensor_msgs::PointField::FLOAT32,
                 "curvature", 1, sensor_msgs::PointField::FLOAT32);
         size_t size = msg->width * msg->height;
-        pcGpu.resize(size);
 
+        pcGpu.resize(size);
         Point* pcGpuPtr = pcGpu.data().get();
         auto it = thrust::make_zip_iterator(thrust::make_tuple(xyzGpuPtr, bgraGpuPtr));
         thrust::transform(thrust::device, it, it + static_cast<std::ptrdiff_t>(size),

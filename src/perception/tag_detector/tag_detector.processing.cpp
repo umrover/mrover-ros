@@ -54,11 +54,12 @@ namespace mrover {
 
         NODELET_DEBUG("Got point cloud %d", msg->header.seq);
 
+        // OpenCV needs a dense BGR image |BGR|...| but out point cloud is |BGRAXYZ...|...|
+        // So we need to copy the data into the correct format
         if (static_cast<int>(msg->height) != mImg.rows || static_cast<int>(msg->width) != mImg.cols) {
             NODELET_INFO("Image size changed from [%d %d] to [%u %u]", mImg.cols, mImg.rows, msg->width, msg->height);
             mImg = cv::Mat{static_cast<int>(msg->height), static_cast<int>(msg->width), CV_8UC3, cv::Scalar{0, 0, 0}};
         }
-
         auto* pixelPtr = reinterpret_cast<cv::Vec3b*>(mImg.data);
         auto* pointPtr = reinterpret_cast<Point const*>(msg->data.data());
         std::for_each(std::execution::par_unseq, pixelPtr, pixelPtr + mImg.total(), [&](cv::Vec3b& pixel) {
