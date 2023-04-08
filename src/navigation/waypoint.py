@@ -19,7 +19,7 @@ class WaypointStateTransitions(Enum):
     no_waypoint = "DoneState"
     find_approach_post = "ApproachPostState"
     go_to_gate = "GateTraverseState"
-    parital_gate = "PartialGateState"
+    partial_gate = "PartialGateState"
 
 
 class WaypointState(BaseState):
