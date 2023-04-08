@@ -5,7 +5,8 @@ import numpy as np
 from shapely import Polygon
 import rospy
 
-from context import Context, Environment, convert_cartesian_to_gps
+from context import Context, Environment
+from util.gps_utils import convert_cartesian_to_gps
 from aenum import Enum, NoAlias
 from state import BaseState
 from dataclasses import dataclass

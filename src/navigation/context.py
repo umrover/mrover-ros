@@ -13,12 +13,10 @@ import numpy as np
 from dataclasses import dataclass
 from shapely.geometry import Point, LineString
 from mrover.msg import Waypoint, GPSWaypoint, EnableAuton, WaypointType, GPSPointList
-import pymap3d
 from std_msgs.msg import Time
+from util.gps_utils import convert_gps_to_cartesian
 
 # read required parameters, if they don't exist an error will be thrown
-REF_LAT = rospy.get_param("gps_linearization/reference_point_latitude")
-REF_LON = rospy.get_param("gps_linearization/reference_point_longitude")
 
 TAG_EXPIRATION_TIME_SECONDS = 60
 
@@ -198,34 +196,6 @@ def setup_course(ctx: Context, waypoints: List[Tuple[Waypoint, SE3]]) -> Course:
         pose.publish_to_tf_tree(tf_broadcaster, "map", waypoint_info.tf_id)
     # make the course out of just the pure waypoint objects which is the 0th elt in the tuple
     return Course(ctx=ctx, course_data=mrover.msg.Course([waypoint[0] for waypoint in waypoints]))
-
-
-def convert_gps_to_cartesian(waypoint: GPSWaypoint) -> Waypoint:
-    """
-    Converts a GPSWaypoint into a "Waypoint" used for publishing to the CourseService.
-    """
-    # Create odom position based on GPS latitude and longitude
-    odom = np.array(
-        pymap3d.geodetic2enu(
-            waypoint.latitude_degrees, waypoint.longitude_degrees, 0.0, REF_LAT, REF_LON, 0.0, deg=True
-        )
-    )
-    # zero the z-coordinate of the odom because even though the altitudes are set to zero,
-    # two points on a sphere are not going to have the same z coordinate
-    # navigation algorithmns currently require all coordinates to have zero as the z coordinate
-    odom[2] = 0
-
-    return Waypoint(fiducial_id=waypoint.id, tf_id=f"course{waypoint.id}", type=waypoint.type), SE3(position=odom)
-
-
-def convert_cartesian_to_gps(coordinate: np.ndarray) -> GPSWaypoint:
-    """
-    Converts a coordinate to a GPSWaypoint (used for sending data back to basestation)
-    """
-    lat, lon, _ = pymap3d.enu2geodetic(
-        e=coordinate[0], n=coordinate[1], u=0.0, lat0=REF_LAT, lon0=REF_LON, h0=0.0, deg=True
-    )
-    return GPSWaypoint(lat, lon, WaypointType(val=WaypointType.NO_SEARCH), 0)
 
 
 def convert_and_get_course(ctx: Context, data: EnableAuton) -> Course:

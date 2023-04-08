@@ -6,7 +6,8 @@ from context import Gate, Context
 import numpy as np
 import rospy
 
-from context import Context, Environment, convert_cartesian_to_gps
+from context import Context, Environment
+from util.gps_utils import convert_cartesian_to_gps
 from aenum import Enum, NoAlias
 from state import BaseState
 from trajectory import Trajectory

@@ -3,7 +3,7 @@ from dijkstar import Graph, find_path, NoPathError  # https://pypi.org/project/D
 from shapely.geometry import LineString, Point, Polygon
 from failure_zone import FailureZone
 
-from context import convert_cartesian_to_gps
+from util.gps_utils import convert_cartesian_to_gps
 from mrover.msg import GPSPointList
 
 import numpy as np
