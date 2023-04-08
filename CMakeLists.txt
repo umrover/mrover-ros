@@ -2,7 +2,7 @@ cmake_minimum_required(VERSION 3.16)
 project(mrover)
 
 ## Compile as C++17, supported in ROS Kinetic and newer, enable some static analysis
-set(MROVER_CPP_COMPILE_OPTIONS -std=c++17)
+set(MROVER_CPP_COMPILE_OPTIONS -std=c++17 -Wall -Wextra -Werror -pedantic)
 
 # clang-tidy
 if (CMAKE_BUILD_TYPE EQUAL "RELEASE")

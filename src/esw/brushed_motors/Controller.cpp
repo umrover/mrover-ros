@@ -70,7 +70,6 @@ bool Controller::isControllerLive() const {
 // EFFECTS: I2C bus, Sends an open loop command scaled to PWM limits
 // based on allowed voltage of the motor. Also updates angle.
 void Controller::moveOpenLoop(float input) {
-    ROS_ERROR("got inside moveopenloop [%d]", name.c_str());
     try {
         if (!(-1.0f <= input && input <= 1.0f)) {
             ROS_ERROR("moveOpenLoop on %s should only take values between -1.0 and 1.0", name.c_str());
