@@ -124,7 +124,10 @@ namespace mrover {
             while (ros::ok()) {
                 mProcessThreadProfiler.beginLoop();
 
+                // TODO: probably bad that this allocation, best case optimized by tcache
+                // Needed because publish directly shares the pointer to other nodelets running in this process
                 auto pointCloudMsg = boost::make_shared<sensor_msgs::PointCloud2>();
+
                 // Swap critical section
                 {
                     std::unique_lock lock{mSwapMutex};
@@ -217,8 +220,7 @@ namespace mrover {
                 if (mZed.retrieveMeasure(mGrabMeasures.leftPoints, sl::MEASURE::XYZ, sl::MEM::GPU, mPointResolution) != sl::ERROR_CODE::SUCCESS)
                     throw std::runtime_error("ZED failed to retrieve point cloud");
 
-                if (mGrabMeasures.leftImage.timestamp != mGrabMeasures.leftPoints.timestamp)
-                    throw std::runtime_error("Timestamp mismatch");
+                assert(mGrabMeasures.leftImage.timestamp == mGrabMeasures.leftPoints.timestamp);
 
                 mGrabMeasures.time = slTime2Ros(mZed.getTimestamp(sl::TIME_REFERENCE::IMAGE));
                 mGrabThreadProfiler.measureEvent("Retrieve");

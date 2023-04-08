@@ -10,8 +10,6 @@
 #include <geometry_msgs/TransformStamped.h>
 #include <tf2_geometry_msgs/tf2_geometry_msgs.h>
 
-#define EIGEN_NO_CUDA
-#undef __CUDACC__
 #include <Eigen/Geometry>
 
 using R3 = Eigen::Vector3d;

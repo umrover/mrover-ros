@@ -89,7 +89,7 @@ namespace mrover {
 
     ros::Time slTime2Ros(sl::Timestamp t);
 
-    void fillPointCloudMessage(sl::Mat& xyz, sl::Mat& bgra, PointCloudGpu& pcGpu, sensor_msgs::PointCloud2Ptr const& msg);
+    void fillPointCloudMessage(sl::Mat& xyzGpu, sl::Mat& bgraGpu, PointCloudGpu& pcGpu, sensor_msgs::PointCloud2Ptr const& msg);
 
     void fillCameraInfoMessages(sl::CalibrationParameters& calibration, sl::Resolution const& resolution,
                                 sensor_msgs::CameraInfoPtr const& leftInfoMsg, sensor_msgs::CameraInfoPtr const& rightInfoMsg);
