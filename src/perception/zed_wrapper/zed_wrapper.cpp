@@ -135,6 +135,7 @@ namespace mrover {
                 // Swap critical section
                 {
                     std::unique_lock lock{mSwapMutex};
+                    // Waiting on the condition variable will drop the lock and reacquire it when the condition is met
                     mSwapCv.wait(lock, [this] { return mIsSwapReady.load(); });
                     mIsSwapReady = false;
                     mProcessThreadProfiler.measureEvent("Wait");
@@ -218,7 +219,7 @@ namespace mrover {
                 if (mRightImgPub.getNumSubscribers())
                     if (mZed.retrieveImage(mGrabMeasures.rightImage, sl::VIEW::RIGHT, sl::MEM::GPU, mImageResolution) != sl::ERROR_CODE::SUCCESS)
                         throw std::runtime_error("ZED failed to retrieve right image");
-                // Left are only used for processing
+                // Only left set is used for processing
                 if (mZed.retrieveImage(mGrabMeasures.leftImage, sl::VIEW::LEFT, sl::MEM::GPU, mImageResolution) != sl::ERROR_CODE::SUCCESS)
                     throw std::runtime_error("ZED failed to retrieve left image");
                 if (mZed.retrieveMeasure(mGrabMeasures.leftPoints, sl::MEASURE::XYZ, sl::MEM::GPU, mPointResolution) != sl::ERROR_CODE::SUCCESS)

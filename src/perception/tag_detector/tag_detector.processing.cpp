@@ -2,7 +2,6 @@
 
 #include <algorithm>
 #include <cassert>
-#include <chrono>
 #include <cmath>
 #include <execution>
 #include <numeric>
@@ -145,10 +144,8 @@ namespace mrover {
         }
 
         size_t detectedCount = mIds.size();
-        if (!mPrevDetectedCount.has_value() || detectedCount != mPrevDetectedCount.value()) {
-            mPrevDetectedCount = detectedCount;
-            NODELET_INFO("Detected %zu markers", detectedCount);
-        }
+        NODELET_INFO_COND(!mPrevDetectedCount.has_value() || detectedCount != mPrevDetectedCount.value(), "Detected %zu markers", detectedCount);
+        mPrevDetectedCount = detectedCount;
 
         mProfiler.measureEvent("Publish");
 

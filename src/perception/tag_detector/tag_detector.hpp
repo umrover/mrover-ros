@@ -65,7 +65,7 @@ namespace mrover {
         dynamic_reconfigure::Server<mrover::DetectorParamsConfig> mConfigServer;
         dynamic_reconfigure::Server<mrover::DetectorParamsConfig>::CallbackType mCallbackType;
 
-        LoopProfiler mProfiler;
+        LoopProfiler mProfiler{"Tag Detector"};
 
         void onInit() override;
 

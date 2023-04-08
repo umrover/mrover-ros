@@ -71,7 +71,7 @@ namespace mrover {
         std::condition_variable mSwapCv;
         std::atomic_bool mIsSwapReady = false;
 
-        LoopProfiler mProcessThreadProfiler, mGrabThreadProfiler;
+        LoopProfiler mProcessThreadProfiler{"Zed Wrapper Process"}, mGrabThreadProfiler{"Zed Wrapper Grab"};
 
         size_t mGrabUpdateTick = 0, mPointCloudUpdateTick = 0;
 
