@@ -21,7 +21,7 @@ namespace mrover {
         pcGpuPtr[i].a = bgraGpuPtr[i].a;
     }
 
-    void fillPointCloudMessage(sl::Mat& xyzGpu, sl::Mat& bgraGpu, PointCloudGpu& pcGpu, sensor_msgs::PointCloud2Ptr const& msg) {
+    void fillPointCloudMessageFromGpu(sl::Mat& xyzGpu, sl::Mat& bgraGpu, PointCloudGpu& pcGpu, sensor_msgs::PointCloud2Ptr const& msg) {
         assert(bgraGpu.getWidth() >= xyzGpu.getWidth());
         assert(bgraGpu.getHeight() >= xyzGpu.getHeight());
         assert(bgraGpu.getChannels() == 4);

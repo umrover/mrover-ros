@@ -102,6 +102,10 @@ namespace mrover {
                 mZed.enablePositionalTracking(positionalTrackingParameters);
             }
 
+            cudaDeviceProp prop{};
+            cudaGetDeviceProperties(&prop, 0);
+            ROS_INFO("Max threads per multi processor: %d", prop.maxThreadsPerMultiProcessor);
+
             mGrabThread = std::thread(&ZedNodelet::grabUpdate, this);
             mProcessThread = std::thread(&ZedNodelet::pointCloudUpdate, this);
 
@@ -135,7 +139,7 @@ namespace mrover {
                     mIsSwapReady = false;
                     mProcessThreadProfiler.measureEvent("Wait");
 
-                    fillPointCloudMessage(mProcessMeasures.leftPoints, mProcessMeasures.leftImage, mPointCloudGpu, pointCloudMsg);
+                    fillPointCloudMessageFromGpu(mProcessMeasures.leftPoints, mProcessMeasures.leftImage, mPointCloudGpu, pointCloudMsg);
                     pointCloudMsg->header.seq = mPointCloudUpdateTick;
                     pointCloudMsg->header.stamp = mProcessMeasures.time;
                     pointCloudMsg->header.frame_id = "zed2i_left_camera_frame";
