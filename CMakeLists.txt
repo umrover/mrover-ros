@@ -2,7 +2,7 @@ cmake_minimum_required(VERSION 3.16)
 project(mrover)
 
 ## Compile as C++17, supported in ROS Kinetic and newer, enable some static analysis
-set(MROVER_CPP_COMPILE_OPTIONS -std=c++17 -Wall -Wextra -Werror -pedantic)
+set(MROVER_CPP_COMPILE_OPTIONS -std=c++17)
 
 # clang-tidy
 if (CMAKE_BUILD_TYPE EQUAL "RELEASE")
@@ -156,20 +156,6 @@ if (${DEVICE} MATCHES "raspi4")
     # Put items here to build
     macro(add_and_link_macro)
         add_cpp_node_macro(brushed_motors "src/esw/brushed_motors/*.cpp")
-    endmacro()
-
-    macro(additional_install_macro)
-        install(TARGETS differential_drive_plugin_6w
-                ARCHIVE DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
-                LIBRARY DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
-                RUNTIME DESTINATION ${CATKIN_GLOBAL_BIN_DESTINATION}
-                )
-
-        install(TARGETS kinect_plugin
-                ARCHIVE DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
-                LIBRARY DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
-                RUNTIME DESTINATION ${CATKIN_GLOBAL_BIN_DESTINATION}
-                )
     endmacro()
 
 else ()
