@@ -6,9 +6,6 @@
     <!-- params for hardware interfaces including IMU, GPS, and moteus -->
     <rosparam command="load" file="$(find mrover)/config/esw.yaml"/>
 
-    <rosparam command="load" file="$(find mrover)/config/teleop.yaml"/>
-    <node name="jetson_teleop" pkg="mrover" type="jetson_teleop.py"/>
-
     <!-- brushed motors node-->
     <node name="brushed_motors" pkg="mrover" type="brushed_motors" output="screen"></node>
 
