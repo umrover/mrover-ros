@@ -2,7 +2,7 @@ cmake_minimum_required(VERSION 3.16)
 project(mrover)
 
 ## Compile as C++17, supported in ROS Kinetic and newer, enable some static analysis
-set(MROVER_CPP_COMPILE_OPTIONS -std=c++17 -Wall -Wextra -Werror -pedantic)
+set(MROVER_CPP_COMPILE_OPTIONS -std=c++17)
 
 # clang-tidy
 if (CMAKE_BUILD_TYPE EQUAL "RELEASE")
@@ -157,6 +157,10 @@ if (${DEVICE} MATCHES "raspi4")
     macro(add_and_link_macro)
         add_cpp_node_macro(brushed_motors "src/esw/brushed_motors/*.cpp")
     endmacro()
+<<<<<<< HEAD
+=======
+
+>>>>>>> dbb8482e52f8b44055b215acdba74a01cbdf595b
 else ()
     # -=-=-=-=-
     # Lists
