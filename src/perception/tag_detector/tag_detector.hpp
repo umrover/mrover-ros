@@ -32,7 +32,9 @@ namespace mrover {
     private:
         ros::NodeHandle mNh, mPnh;
 
+        std::optional<image_transport::ImageTransport> mIt;
         image_transport::Publisher mImgPub;
+        std::unordered_map<int, image_transport::Publisher> mThreshPubs;
         ros::ServiceServer mServiceEnableDetections;
 
         ros::Subscriber mPcSub;
@@ -52,7 +54,9 @@ namespace mrover {
         cv::Ptr<cv::aruco::Dictionary> mDictionary;
 
         cv::Mat mImg;
+        cv::Mat mGrayImg;
         sensor_msgs::Image mImgMsg;
+        sensor_msgs::Image mThreshMsg;
         uint32_t mSeqNum{};
         std::optional<size_t> mPrevDetectedCount; // Log spam prevention
         std::vector<std::vector<cv::Point2f>> mCorners;
@@ -64,6 +68,8 @@ namespace mrover {
         LoopProfiler mProfiler;
 
         void onInit() override;
+
+        void publishThresholdedImage();
 
         std::optional<SE3> getTagInCamFromPixel(sensor_msgs::PointCloud2ConstPtr const& cloudPtr, size_t u, size_t v);
 

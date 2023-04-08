@@ -26,8 +26,8 @@ namespace mrover {
         mPnh.param<int>("min_hit_count_before_publish", mMinHitCountBeforePublish, 5);
         mPnh.param<int>("max_hit_count", mMaxHitCount, 5);
 
-        image_transport::ImageTransport it{mNh};
-        mImgPub = it.advertise("tag_detection", 1);
+        mIt.emplace(mNh);
+        mImgPub = mIt->advertise("tag_detection", 1);
         mDictionary = cv::aruco::getPredefinedDictionary(dictionaryNumber);
 
         bool directTagDetection = false;
