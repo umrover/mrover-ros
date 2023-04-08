@@ -12,7 +12,8 @@ endif ()
 # find_package
 set(MROVER_PACKAGES
         rospy
-        std_msgs
+        roscpp
+	std_msgs
         message_generation
         dynamic_reconfigure
         rostest
@@ -138,9 +139,6 @@ if (${DEVICE} MATCHES "raspi4")
 
     # Add any raspi4 specific packages here
     # list(APPEND _PACKAGES )
-    list(APPEND MROVER_PACKAGES
-            roscpp
-            )
 
     # -=-=-=-=-
     # Macros
@@ -164,7 +162,6 @@ else ()
 
     # Add any laptop specific packages here
     list(APPEND MROVER_PACKAGES
-            roscpp
             tf2_geometry_msgs
             tf2_ros
             tf2
