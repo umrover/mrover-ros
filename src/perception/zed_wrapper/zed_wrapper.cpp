@@ -2,9 +2,9 @@
 
 #include <chrono>
 
+#include <image_transport/image_transport.h>
 #include <nodelet/loader.h>
 #include <ros/init.h>
-#include <image_transport/image_transport.h>
 
 #include <se3.hpp>
 
@@ -124,6 +124,7 @@ namespace mrover {
             while (ros::ok()) {
                 mProcessThreadProfiler.beginLoop();
 
+                auto pointCloudMsg = boost::make_shared<sensor_msgs::PointCloud2>();
                 // Swap critical section
                 {
                     std::unique_lock lock{mSwapMutex};
@@ -131,10 +132,10 @@ namespace mrover {
                     mIsSwapReady = false;
                     mProcessThreadProfiler.measureEvent("Wait");
 
-                    fillPointCloudMessage(mProcessMeasures.leftPoints, mProcessMeasures.leftImage, mPointCloudGpu, mPointCloud);
-                    mPointCloud->header.seq = mPointCloudUpdateTick;
-                    mPointCloud->header.stamp = mProcessMeasures.time;
-                    mPointCloud->header.frame_id = "zed2i_left_camera_frame";
+                    fillPointCloudMessage(mProcessMeasures.leftPoints, mProcessMeasures.leftImage, mPointCloudGpu, pointCloudMsg);
+                    pointCloudMsg->header.seq = mPointCloudUpdateTick;
+                    pointCloudMsg->header.stamp = mProcessMeasures.time;
+                    pointCloudMsg->header.frame_id = "zed2i_left_camera_frame";
                     mProcessThreadProfiler.measureEvent("Fill Message");
 
                     if (mLeftImgPub.getNumSubscribers()) {
@@ -155,9 +156,7 @@ namespace mrover {
                 }
 
                 if (mPcPub.getNumSubscribers()) {
-                    auto copy = boost::make_shared<sensor_msgs::PointCloud2>();
-                    *copy = *mPointCloud;
-                    mPcPub.publish(copy);
+                    mPcPub.publish(pointCloudMsg);
                     mProcessThreadProfiler.measureEvent("Point cloud publish");
                 }
 

@@ -52,7 +52,6 @@ namespace mrover {
         sensor_msgs::ImagePtr mLeftImgMsg = boost::make_shared<sensor_msgs::Image>();
         sensor_msgs::ImagePtr mRightImgMsg = boost::make_shared<sensor_msgs::Image>();
         PointCloudGpu mPointCloudGpu;
-        sensor_msgs::PointCloud2Ptr mPointCloud = boost::make_shared<sensor_msgs::PointCloud2>();
         sensor_msgs::CameraInfoPtr mLeftCamInfoMsg = boost::make_shared<sensor_msgs::CameraInfo>();
         sensor_msgs::CameraInfoPtr mRightCamInfoMsg = boost::make_shared<sensor_msgs::CameraInfo>();
 
