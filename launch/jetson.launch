@@ -19,9 +19,6 @@
     <rosparam command="load" file="$(find mrover)/config/teleop.yaml"/>
     <node name="jetson_teleop" pkg="mrover" type="jetson_teleop.py"/>
 
-    <!-- brushed motors node-->
-	<node name="brushed_motors" pkg="mrover" type="brushed_motors" output="screen"></node>
-
 	<!-- science board node for Auton, ES, and Science missions. -->
 	<node name="science" pkg="mrover" type="science.py" output="screen"></node>
 
