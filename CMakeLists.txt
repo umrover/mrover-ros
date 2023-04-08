@@ -157,10 +157,6 @@ if (${DEVICE} MATCHES "raspi4")
     macro(add_and_link_macro)
         add_cpp_node_macro(brushed_motors "src/esw/brushed_motors/*.cpp")
     endmacro()
-<<<<<<< HEAD
-=======
-
->>>>>>> dbb8482e52f8b44055b215acdba74a01cbdf595b
 else ()
     # -=-=-=-=-
     # Lists
