@@ -83,7 +83,7 @@ namespace mrover {
         for (size_t i = 0; i < mIds.size(); ++i) {
             int id = mIds[i];
             Tag& tag = mTags[id];
-            tag.hitCount = std::clamp(tag.hitCount + 1, 0, mMaxHitCount);
+            tag.hitCount = std::clamp(tag.hitCount + mTagIncrementWeight, 0.0, mMaxHitCount);
             tag.id = id;
             tag.imageCenter = std::accumulate(mCorners[i].begin(), mCorners[i].end(), cv::Point2f{}) / static_cast<float>(mCorners[i].size());
             tag.tagInCam = getTagInCamFromPixel(msg, std::lround(tag.imageCenter.x), std::lround(tag.imageCenter.y));

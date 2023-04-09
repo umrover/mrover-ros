@@ -47,8 +47,9 @@ namespace mrover {
         bool mUseOdom{};
         std::string mOdomFrameId, mMapFrameId, mCameraFrameId;
         bool mPublishImages{}; // If set, we publish the images with the tags drawn on top
-        int mMinHitCountBeforePublish{};
-        int mMaxHitCount{};
+        double mMinHitCountBeforePublish{};
+        double mMaxHitCount{};
+        double mTagIncrementWeight{};
 
         cv::Ptr<cv::aruco::DetectorParameters> mDetectorParams;
         cv::Ptr<cv::aruco::Dictionary> mDictionary;

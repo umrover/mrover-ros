@@ -23,8 +23,9 @@ namespace mrover {
         mPnh.param<bool>("publish_images", mPublishImages, true);
         using DictEnumType = std::underlying_type_t<cv::aruco::PREDEFINED_DICTIONARY_NAME>;
         mPnh.param<int>("dictionary", dictionaryNumber, static_cast<DictEnumType>(cv::aruco::DICT_4X4_50));
-        mPnh.param<int>("min_hit_count_before_publish", mMinHitCountBeforePublish, 5);
-        mPnh.param<int>("max_hit_count", mMaxHitCount, 5);
+        mPnh.param<double>("min_hit_count_before_publish", mMinHitCountBeforePublish, 5);
+        mPnh.param<double>("max_hit_count", mMaxHitCount, 5);
+        mPnh.param<double>("tag_increment_weight", mTagIncrementWeight, 2);
 
         mIt.emplace(mNh);
         mImgPub = mIt->advertise("tag_detection", 1);
@@ -99,7 +100,7 @@ namespace mrover {
                            mDetectorParams->polygonalApproxAccuracyRate,
                            defaultDetectorParams->polygonalApproxAccuracyRate);
 
-        NODELET_INFO("Tag detection ready, use odom frame: %s, min hit count: %d, max hit count: %d", mUseOdom ? "true" : "false", mMinHitCountBeforePublish, mMaxHitCount);
+        NODELET_INFO("Tag detection ready, use odom frame: %s, min hit count: %f, max hit count: %f, hit increment weight: %f", mUseOdom ? "true" : "false", mMinHitCountBeforePublish, mMaxHitCount, mTagIncrementWeight);
     }
 
     void TagDetectorNodelet::configCallback(mrover::DetectorParamsConfig& config, uint32_t level) {
