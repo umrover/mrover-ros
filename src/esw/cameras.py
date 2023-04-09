@@ -182,8 +182,6 @@ class StreamManager:
 
 
 def send(device=0, host="10.0.0.7", port=5000, bitrate=4000000, width=1280, height=720, fps=30, is_colored=False):
-    # TODO: Look into bitrate "automatic" calculation
-
     # Construct video capture pipeline string
     cap_str = (
         "v4l2src device=/dev/video"
