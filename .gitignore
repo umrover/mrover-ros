@@ -31,3 +31,6 @@ logs/
 
 # Moteus
 moteus-cal*
+
+# CSV
+*.csv

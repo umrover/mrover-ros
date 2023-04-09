@@ -3,16 +3,18 @@ from typing import List
 from context import Context
 from aenum import Enum, NoAlias
 from state import BaseState
-from drive import get_j_turn_command
+from drive import get_drive_command
 from geometry_msgs.msg import Twist
 import rospy
 import numpy as np
 from typing import Optional
 from util.np_utils import perpendicular_2d
+from util.ros_utils import get_rosparam
 
 
 STOP_THRESH = 0.2
 DRIVE_FWD_THRESH = 0.34  # 20 degrees
+REVERSE_DRIVE_SCALE = get_rosparam("drive/reverse_drive_scale", 1)
 
 
 class RecoveryStateTransitions(Enum):
@@ -26,24 +28,25 @@ class RecoveryStateTransitions(Enum):
 
 
 class JTurnAction(Enum):
-    moving_back = 0
-    j_turning = 1
-    
+    moving_back: Enum = 0
+    j_turning: Enum = 1
+
 
 class RecoveryState(BaseState):
     # waypoint_calculated: bool
-    waypoint_behind: Optional[np.array]
+    waypoint_behind: Optional[np.ndarray]
     current_action: JTurnAction
     arrived: bool
 
     def __init__(self, context: Context):
-        super().__init__(context, add_outcomes=[transition.name for transition in RecoveryStateTransitions])
+        super().__init__(context, add_outcomes=[transition.name for transition in RecoveryStateTransitions]) # type: ignore
         self.waypoint_calculated = False
         self.waypoint_behind = None
         self.current_action = JTurnAction.moving_back
         self.arrived = False
-    
+
     def evaluate(self, ud) -> str:
+
         # rospy.logerr(f"Executing J-Turn\n")
         # rospy.logerr(f"Driving Backwards First Time\n")
 
@@ -58,12 +61,12 @@ class RecoveryState(BaseState):
                 self.waypoint_behind = pose.position + dir_vector
                 # self.waypoint_calculated = True
 
-            cmd_vel, self.arrived = get_j_turn_command(self.waypoint_behind, pose, STOP_THRESH, DRIVE_FWD_THRESH)
+            cmd_vel, self.arrived = get_drive_command(self.waypoint_behind, pose, STOP_THRESH, DRIVE_FWD_THRESH, -1)
             # rospy.logerr(f"Finished Get Drive Command\n")
             self.context.rover.send_drive_command(cmd_vel)
 
         if self.arrived:
-            self.current_action = JTurnAction.j_turning # move to second part of turn
+            self.current_action = JTurnAction.j_turning  # move to second part of turn
             # self.waypoint_calculated = False
             self.arrived = False
             self.waypoint_behind = None
@@ -73,23 +76,23 @@ class RecoveryState(BaseState):
             if self.waypoint_behind is None:
                 # rospy.logerr(f"POSE{pose}")
                 dir_vector = pose.rotation.direction_vector()
-                dir_vector_rot = 2 * perpendicular_2d(dir_vector[:2])
+                dir_vector_rot = REVERSE_DRIVE_SCALE * perpendicular_2d(dir_vector[:2])
                 dir_vector = np.append(dir_vector_rot, dir_vector[2])
                 self.waypoint_behind = pose.position + dir_vector
                 # self.waypoint_calculated = True
-            
-            cmd_vel, self.arrived = get_j_turn_command(self.waypoint_behind, pose, STOP_THRESH, DRIVE_FWD_THRESH)
+
+            cmd_vel, self.arrived = get_drive_command(self.waypoint_behind, pose, STOP_THRESH, DRIVE_FWD_THRESH, -1)
             self.context.rover.send_drive_command(cmd_vel)
 
-        #set stuck to False
+        # set stuck to False
         # rospy.logerr(f"{self.context.rover.previous_state}\n")
         # return self.context.rover.previous_state
         if self.arrived:
-            self.context.rover.stuck = False # change to subscriber
+            self.context.rover.stuck = False  # change to subscriber
             # self.waypoint_calculated = False
             self.waypoint_behind = None
             self.current_action = JTurnAction.moving_back
             self.arrived = False
             return self.context.rover.previous_state
-        
-        return RecoveryStateTransitions.continue_recovery.name
+
+        return RecoveryStateTransitions.continue_recovery.name # type: ignore

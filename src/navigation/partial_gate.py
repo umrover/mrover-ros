@@ -101,7 +101,7 @@ class PartialGateState(BaseState):
                 self.traj = None
                 self.context.course.increment_waypoint()
                 return PartialGateStateTransitions.done.name  # type: ignore
-            
+
         if self.context.rover.stuck:
             self.context.rover.previous_state = PartialGateStateTransitions.partial_gate.name
             return PartialGateStateTransitions.recovery_state.name

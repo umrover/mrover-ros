@@ -58,9 +58,7 @@ class Navigation(threading.Thread):
                 transitions=self.get_transitions(GateTraverseStateTransitions),
             )
             self.state_machine.add(
-                "RecoveryState", 
-                RecoveryState(self.context), 
-                transitions=self.get_transitions(RecoveryStateTransitions)
+                "RecoveryState", RecoveryState(self.context), transitions=self.get_transitions(RecoveryStateTransitions)
             )
             self.state_machine.add(
                 "PartialGateState",

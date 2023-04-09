@@ -181,7 +181,7 @@ class GateTraverseState(BaseState):
                 self.traj = None
                 self.context.course.increment_waypoint()
                 return GateTraverseStateTransitions.finished_gate.name  # type: ignore
-        
+
         if self.context.rover.stuck:
             self.context.rover.previous_state = GateTraverseStateTransitions.continue_gate_traverse.name
             return GateTraverseStateTransitions.recovery_state.name

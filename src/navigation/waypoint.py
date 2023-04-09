@@ -83,12 +83,12 @@ class WaypointState(BaseState):
                 else:
                     # We finished a waypoint associated with a fiducial id, but we have not seen it yet.
                     return WaypointStateTransitions.search_at_waypoint.name  # type: ignore
-            
+
             if self.context.rover.stuck:
-                #Removed .name
-                #rospy.logerr(f"TYPE: {type(WaypointStateTransitions.continue_waypoint_traverse.name)}\n")
-                self.context.rover.previous_state = WaypointStateTransitions.continue_waypoint_traverse.name
-                return WaypointStateTransitions.recovery_state.name
+                # Removed .name
+                # rospy.logerr(f"TYPE: {type(WaypointStateTransitions.continue_waypoint_traverse.name)}\n")
+                self.context.rover.previous_state = WaypointStateTransitions.continue_waypoint_traverse.name # type: ignore
+                return WaypointStateTransitions.recovery_state.name # type: ignore
 
             self.context.rover.send_drive_command(cmd_vel)
 

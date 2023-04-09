@@ -59,6 +59,7 @@ class SearchStateTransitions(Enum):
     found_gate = "GateTraverseState"
     recovery_state = "RecoveryState"
 
+
 class SearchState(BaseState):
     STOP_THRESH = get_rosparam("search/stop_thresh", 0.2)
     DRIVE_FWD_THRESH = get_rosparam("search/drive_fwd_thresh", 0.34)  # 20 degrees
