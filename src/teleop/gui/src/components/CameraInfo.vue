@@ -11,7 +11,7 @@
       class="box"
       @change="changeQuality()"
     >
-    <option v-for="i in numQuality" :key="i" :value="i-1">{{i-1}}</option>
+    <option v-for="i in numQuality">{{i-1}}</option>
     </select>
   </div>
 </template>
