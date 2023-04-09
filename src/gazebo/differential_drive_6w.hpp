@@ -40,8 +40,10 @@
 #include <gazebo/common/Time.hh>
 
 // ROS
+#include <geometry_msgs/PoseStamped.h>
 #include <geometry_msgs/Twist.h>
 #include <nav_msgs/Odometry.h>
+#include <nav_msgs/Path.h>
 #include <ros/ros.h>
 #include <tf/transform_broadcaster.h>
 #include <tf/transform_listener.h>
@@ -51,6 +53,9 @@
 #include <ros/callback_queue.h>
 
 #include <gazebo/common/UpdateInfo.hh>
+
+#include <mrover/MotorsStatus.h>
+#include <sensor_msgs/JointState.h>
 
 namespace gazebo {
 
@@ -70,12 +75,17 @@ namespace gazebo {
 
     private:
         void publishOdometry();
+        void publishJointData();
+        void publishPath();
 
         void getPositionCommand();
 
         physics::LinkPtr mBodyLink;
         physics::WorldPtr mWorld;
         std::array<physics::JointPtr, 6> mJoints;
+        mrover::MotorsStatus mMotorStatus{};
+        //publisher for joint state message
+        ros::Publisher mJointStatePublisher;
 
         double mWheelSeparation{};
         double mWheelDiameter{};
@@ -85,22 +95,32 @@ namespace gazebo {
         // Simulation time of the last update
         common::Time mPreviousUpdateTime;
 
+        // Sim time of last time path was updated and published
+        common::Time mPreviousPathUpdateTime;
+
+        // Sim time between path updates
+        common::Time mPathUpdatePeriod;
+
         bool mEnableMotors{};
         std::array<double, 3> mOdomPose{};
         std::array<double, 3> mOdomVelocity{};
 
         // ROS STUFF
         std::optional<ros::NodeHandle> mNode;
-        ros::Publisher mPublisher;
+        ros::Publisher mOdomPublisher;
+        ros::Publisher mPathPublisher;
         ros::Subscriber mSubscriber;
         std::optional<tf::TransformBroadcaster> mTfBroadcaster{};
         nav_msgs::Odometry mOdometry;
+        nav_msgs::Path mPath;
         std::string mTfPrefix;
 
         std::mutex mLock;
 
         std::string mNamespace;
         std::string mVelocityCommandTopic;
+        std::string mWorldFrameName;
+        std::string mRoverFrameName;
         std::string mBodyLinkName;
 
         // Custom Callback Queue
