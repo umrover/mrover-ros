@@ -6,6 +6,7 @@
 #include <execution>
 #include <numeric>
 
+#include <opencv2/imgproc.hpp>
 #include <sensor_msgs/image_encodings.h>
 
 #include "../point_cloud.hpp"
@@ -129,7 +130,12 @@ namespace mrover {
         }
 
         if (mPublishImages && mImgPub.getNumSubscribers()) {
+
             cv::aruco::drawDetectedMarkers(mImg, mImmediateCorners, mImmediateIds);
+            for (auto& [id, tag] : mTags) {
+                cv::Scalar color(255,0,0);
+                cv::putText(mImg, std::to_string(tag.hitCount), tag.imageCenter, cv::FONT_HERSHEY_COMPLEX, 2, color, 3);
+            }
             mImgMsg.header.seq = mSeqNum;
             mImgMsg.header.stamp = ros::Time::now();
             mImgMsg.header.frame_id = "zed2i_left_camera_frame";
