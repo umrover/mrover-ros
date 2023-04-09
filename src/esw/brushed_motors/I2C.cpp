@@ -35,9 +35,7 @@ void I2C::transact(
     assert((bool) writeNum == (bool) writeBuf);
     // writeBuf must be nullptr if and only if writeNum is 0.
     assert((bool) readNum == (bool) readNum);
-    assert(0 <= writeNum);
     assert(writeNum <= 31);
-    assert(0 <= readNum);
     assert(readNum <= 32);
 
     std::unique_lock<std::mutex>
@@ -57,12 +55,10 @@ void I2C::transact(
     ioctl(file, I2C_SLAVE, addr);
 
     // Write bytes and confirm that all bytes were written.
-    if (writeNum) {
-        int bitsWritten = (int) write(file, buffer, writeNum + 1);
-        if (bitsWritten != writeNum + 1) {
-            ROS_ERROR("Write error %d, wrote %i bits", errno, bitsWritten);
-            throw IOFailure();
-        }
+    int bitsWritten = (int) write(file, buffer, writeNum + 1);
+    if (bitsWritten != writeNum + 1) {
+        ROS_ERROR("Write error %d, wrote %i bits", errno, bitsWritten);
+        throw IOFailure();
     }
     // Read bytes and confirm that all bytes were read.
     if (readNum) {

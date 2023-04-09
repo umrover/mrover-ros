@@ -1,21 +1,41 @@
+# You will need to restart basestation.launch for
+# Any changes to take effect
 teleop:
+  ra_joints: ["joint_a", "joint_b", "joint_c", "joint_d", "joint_e"]
+
   ra_controls:
     joint_a:
       multiplier: 1
+      slow_mode_multiplier: 0.5
+      invert: False
     joint_b:
       multiplier: 1
+      slow_mode_multiplier: 1
+      invert: False
     joint_c:
       multiplier: 1
+      slow_mode_multiplier: 0.5
+      invert: True
     joint_d:
       multiplier: 1
+      slow_mode_multiplier: 0.5
+      invert: False
     joint_e:
       multiplier: 1
+      slow_mode_multiplier: 0.5
+      invert: False
     joint_f:
       multiplier: 1
+      slow_mode_multiplier: 0.5
+      invert: False
     finger:
       multiplier: 1
+      slow_mode_multiplier: 0.5
+      invert: False
     gripper:
       multiplier: 1
+      slow_mode_multiplier: 1
+      invert: False
       
   sa_controls:
     sa_joint_1:
@@ -65,3 +85,15 @@ teleop:
     dampen: 3
     pan: 4
     tilt: 5
+
+  # Mappings from site name to index in which values will be sent
+  # for each site, mostly for heaters and which syringe servos we want to use
+  carousel_site_mappings:
+    A: 0
+    B: 1
+    C: 2
+
+  echo_presets:
+    blah: ["/tf", "/tf_static", "/rosout"]
+    foo: ["/rosout", "/tf"]
+    bar: ["/tf_static", "/rosout", "/tf"]

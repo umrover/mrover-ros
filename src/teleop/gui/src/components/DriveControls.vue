@@ -16,7 +16,7 @@ export default {
     };
   },
 
-  beforeUnmount: function () {
+  beforeDestroy: function () {
     window.clearInterval(interval);
   },
 
@@ -31,7 +31,7 @@ export default {
       const gamepads = navigator.getGamepads();
       for (let i = 0; i < 4; i++) {
         const gamepad = gamepads[i];
-        if (gamepad && gamepad.id.includes("Logitech")) {
+        if (gamepad && (gamepad.id.includes("Logitech") || gamepad.id.includes("Thrustmaster"))) {
           let buttons = gamepad.buttons.map((button) => {
             return button.value;
           });

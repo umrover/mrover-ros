@@ -5,7 +5,7 @@
 #include <cmath>         // for M_PI
 #include <limits>        // for numeric limits
 #include <mutex>         // for mutex
-#include <ros/console.h> // for ROS_INFO
+#include <ros/console.h> // for ROS_ERROR
 #include <string.h>      // for string and memcpy
 
 #define OFF_OP 0x00
@@ -40,9 +40,9 @@
 #define CONFIG_K_WB 12
 #define CONFIG_K_RB 0
 
-#define QUAD_OP 0x08
-#define QUAD_WB 0
-#define QUAD_RB 4
+#define QUAD_ENC_OP 0x08
+#define QUAD_ENC_WB 0
+#define QUAD_ENC_RB 4
 
 #define ADJUST_OP 0x09
 #define ADJUST_WB 4
@@ -52,21 +52,47 @@
 #define ABS_ENC_WB 0
 #define ABS_ENC_RB 4
 
-#define LIMIT_OP 0x0B
-#define LIMIT_WB 0
-#define LIMIT_RB 1
+#define IS_CALIBRATED_OP 0x0B
+#define IS_CALIBRATED_WB 0
+#define IS_CALIBRATED_RB 1
 
-#define CALIBRATED_OP 0x0C
-#define CALIBRATED_WB 0
-#define CALIBRATED_RB 1
+#define ENABLE_LIMIT_A_OP 0x0C
+#define ENABLE_LIMIT_A_WB 1
+#define ENABLE_LIMIT_A_RB 0
 
-#define LIMIT_ON_OP 0x0D
-#define LIMIT_ON_WB 1
-#define LIMIT_ON_RB 0
+#define ENABLE_LIMIT_B_OP 0x0D
+#define ENABLE_LIMIT_B_WB 1
+#define ENABLE_LIMIT_B_RB 0
+
+#define ACTIVE_LIMIT_A_OP 0x0E
+#define ACTIVE_LIMIT_A_WB 1
+#define ACTIVE_LIMIT_A_RB 0
+
+#define ACTIVE_LIMIT_B_OP 0x0F
+#define ACTIVE_LIMIT_B_WB 1
+#define ACTIVE_LIMIT_B_RB 0
+
+#define COUNTS_LIMIT_A_OP 0x10
+#define COUNTS_LIMIT_A_WB 4
+#define COUNTS_LIMIT_A_RB 0
+
+#define COUNTS_LIMIT_B_OP 0x11
+#define COUNTS_LIMIT_B_WB 4
+#define COUNTS_LIMIT_B_RB 0
+
+#define LIMIT_A_OP 0x12
+#define LIMIT_A_WB 0
+#define LIMIT_A_RB 1
+
+#define LIMIT_B_OP 0x13
+#define LIMIT_B_WB 0
+#define LIMIT_B_RB 1
+
+#define LIMIT_A_IS_FWD_OP 0x14
+#define LIMIT_A_IS_FWD_WB 1
+#define LIMIT_A_IS_FWD_RB 0
 
 #define UINT8_POINTER_T reinterpret_cast<uint8_t*>
-
-#define CALIBRATED_BOOL 0xFF
 
 /*
 Virtual Controllers store information about various
@@ -90,6 +116,16 @@ public:
     float kI = 0.0f;
     float kD = 0.0f;
     float inversion = 1.0f;
+    bool limitAPresent = false;
+    bool limitBPresent = false;
+    bool limitAEnable = false;
+    bool limitBEnable = false;
+    float calibrationVel = 0.0f;
+    bool limitAIsActiveHigh = false;
+    bool limitBIsActiveHigh = false;
+    bool limitAIsFwd = true;
+    int32_t limitAAdjustedCounts = 0;
+    int32_t limitBAdjustedCounts = 0;
 
     // REQUIRES: _name is the name of the motor,
     // mcuID is the mcu id of the controller which dictates the slave address,
@@ -122,19 +158,51 @@ public:
     // Expect a value between -M_PI and M_PI.
     float getCurrentAngle() const;
 
+    // REQUIRES: newAngleRad to be in radians
+    // MODIFIES: currentAngle
+    // EFFECTS: I2C bus, forces the angle of the controller to be a certain value
+    void overrideCurrentAngle(float newAngleRad);
+
     // REQUIRES: -1.0 <= input <= 1.0
     // MODIFIES: currentAngle. Also makes controller live if not already.
-    // EFFECTS: Sends an open loop command scaled to PWM limits
+    // EFFECTS: I2C bus, Sends an open loop command scaled to PWM limits
     // based on allowed voltage of the motor. Also updates angle.
     void moveOpenLoop(float input);
+
+    // REQUIRES: nothing
+    // MODIFIES: nothing
+    // EFFECTS: I2C bus, returns if the MCU is calibrated
+    bool isCalibrated();
+
+    // REQUIRES: nothing
+    // MODIFIES: nothing
+    // EFFECTS: I2C bus, enables or disables limit switches
+    void enableLimitSwitches(bool enable);
+
+    // REQUIRES: nothing
+    // MODIFIES: nothing
+    // EFFECTS: I2C bus, gets current absolute encoder value of MCU
+    float getAbsoluteEncoderValue();
+
+    // REQUIRES: nothing
+    // MODIFIES: nothing
+    // EFFECTS: Returns true if Controller has a (one or both) limit switch(s) is enabled.
+    bool getLimitSwitchEnabled() const;
+
 
 private:
     // REQUIRES: nothing
     // MODIFIES: isLive
-    // EFFECTS: If not already live,
+    // EFFECTS: I2C bus, If not already live,
     // configures the physical controller.
     // Then makes live.
     void makeLive();
+
+    // REQUIRES: buffer is valid
+    // MODIFIES: limitEnable
+    // EFFECTS: I2C bus, enables limit switch if it is present
+    void enableLimitSwitch(bool limitPresent, bool enable, bool& limitEnable,
+                           uint8_t operation, uint8_t write_bytes, uint8_t read_bytes);
 
     uint8_t deviceAddress;
     uint8_t motorID;
@@ -146,4 +214,5 @@ private:
     float currentAngle;
 
     bool isLive = false;
+    bool isControllerCalibrated = false;
 };

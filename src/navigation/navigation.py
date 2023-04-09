@@ -9,10 +9,11 @@ import smach
 import smach_ros
 from context import Context
 from gate import GateTraverseState, GateTraverseStateTransitions
-from single_fiducial import SingleFiducialState, SingleFiducialStateTransitions
+from approach_post import ApproachPostState, ApproachPostStateTransitions
 from state import DoneState, DoneStateTransitions, OffState, OffStateTransitions
 from waypoint import WaypointState, WaypointStateTransitions
 from search import SearchState, SearchStateTransitions
+from partial_gate import PartialGateState, PartialGateStateTransitions
 
 
 class Navigation(threading.Thread):
@@ -39,14 +40,16 @@ class Navigation(threading.Thread):
                 "WaypointState", WaypointState(self.context), transitions=self.get_transitions(WaypointStateTransitions)
             )
             self.state_machine.add(
-                "SingleFiducialState",
-                SingleFiducialState(self.context),
-                # The lines below are necessary because SingleFiducialState inherits from WaypointState, so WaypointState's transitions
-                # need to be registered for SingleFiducialState as well.
+                "ApproachPostState",
+                ApproachPostState(self.context),
+                # The lines below are necessary because ApproachPostState inherits from WaypointState, so WaypointState's transitions
+                # need to be registered for ApproachPostState as well.
                 transitions=dict(
-                    self.get_transitions(SingleFiducialStateTransitions),
-                    **self.get_transitions(WaypointStateTransitions)
+                    self.get_transitions(ApproachPostStateTransitions), **self.get_transitions(WaypointStateTransitions)
                 ),
+            )
+            self.state_machine.add(
+                "SearchState", SearchState(self.context), transitions=self.get_transitions(SearchStateTransitions)
             )
             self.state_machine.add(
                 "GateTraverseState",
@@ -54,7 +57,9 @@ class Navigation(threading.Thread):
                 transitions=self.get_transitions(GateTraverseStateTransitions),
             )
             self.state_machine.add(
-                "SearchState", SearchState(self.context), transitions=self.get_transitions(SearchStateTransitions)
+                "PartialGateState",
+                PartialGateState(self.context),
+                transitions=self.get_transitions(PartialGateStateTransitions),
             )
 
     def get_transitions(self, transitions_enum):

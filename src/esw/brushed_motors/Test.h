@@ -12,6 +12,8 @@ public:
     // Test function movement types, with focus on open loop
     static void testOpenLoop(Controller* controller);
 
+    static bool testCalibrated(Controller* controller);
+
 private:
     // Helper sleep function
     static void sleepHelper(int ms);

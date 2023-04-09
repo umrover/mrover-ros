@@ -11,6 +11,7 @@
       <h1>SA Dashboard</h1>
       <div class="spacer"></div>
       <div class="spacer"></div>
+      <CommReadout class="comm"></CommReadout>
       <div class="help">
         <img
           src="/static/help.png"
@@ -64,6 +65,9 @@
     <div class="box light-bg moteus">
       <MoteusStateTable :moteus-state-data="moteusState" />
     </div>
+    <div v-show="false">
+      <MastGimbalControls></MastGimbalControls>
+    </div>
   </div>
 </template>
 
@@ -72,6 +76,7 @@ import ROSLIB from "roslib";
 import BasicMap from "./BasicRoverMap.vue";
 import BasicWaypointEditor from "./BasicWaypointEditor.vue";
 import DriveControls from "./DriveControls.vue";
+import MastGimbalControls from "./MastGimbalControls.vue";
 import EndEffectorUV from "./EndEffectorUV.vue";
 import SAArmControls from "./SAArmControls.vue";
 import PDBFuse from "./PDBFuse.vue";
@@ -79,18 +84,22 @@ import * as qte from "quaternion-to-euler";
 import Cameras from "./Cameras.vue";
 import MoteusStateTable from "./MoteusStateTable.vue";
 import JointStateTable from "./JointStateTable.vue";
+import CommReadout from "./CommReadout.vue";
+import { quaternionToDisplayAngle } from "../utils.js";
 
 export default {
   components: {
     BasicMap,
     BasicWaypointEditor,
+    Cameras,
     DriveControls,
     EndEffectorUV,
-    SAArmControls,
-    PDBFuse,
-    Cameras,
     JointStateTable,
+    MastGimbalControls,
     MoteusStateTable,
+    PDBFuse,
+    SAArmControls,
+    CommReadout,
   },
   data() {
     return {
@@ -139,12 +148,7 @@ export default {
     // Subscriber for odom to base_link transform
     this.tfClient.subscribe("base_link", (tf) => {
       // Callback for IMU quaternion that describes bearing
-      let quaternion = tf.rotation;
-      quaternion = [quaternion.w, quaternion.x, quaternion.y, quaternion.z];
-      //Quaternion to euler angles
-      let euler = qte(quaternion);
-      // euler[2] == euler z component
-      this.odom.bearing_deg = euler[2] * (180 / Math.PI);
+      this.odom.bearing_deg = quaternionToDisplayAngle(tf.rotation);
     });
 
     this.brushless_motors = new ROSLIB.Topic({

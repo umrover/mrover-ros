@@ -12,7 +12,8 @@ endif ()
 # find_package
 set(MROVER_PACKAGES
         rospy
-        std_msgs
+        roscpp
+	std_msgs
         message_generation
         dynamic_reconfigure
         rostest
@@ -24,25 +25,43 @@ set(MROVER_LINK_DIRS "")
 
 # message files
 set(MROVER_MESSAGE_FILES
+        Calibrated.msg
         CalibrationStatus.msg
+        CameraCmd.msg
+        Carousel.msg
         Chassis.msg
         Course.msg
         Diagnostic.msg
-        DriveStatus.msg
         EnableAuton.msg
-        GimbalCmd.msg
         GPSWaypoint.msg
+        GPSPointList.msg
+        HeaterData.msg
         ImuAndMag.msg
+        MastGimbal.msg
+        JointLock.msg
         MoteusState.msg
         MotorsStatus.msg
+        NavMetadata.msg
+        NetworkBandwidth.msg
+        ScienceTemperature.msg
+        Spectral.msg
         Waypoint.msg
         WaypointType.msg
+        GPSPointList.msg
         )
 
 # service files
 set(MROVER_SERVICE_FILES
+        AdjustMotors.srv
+        CalibrateMotors.srv
         ChangeAutonLEDState.srv
-        FetchMessageFromPackage.srv        
+        ChangeCameras.srv
+        ChangeDeviceState.srv
+        ChangeHeaterState.srv
+        ChangeServoAngle.srv
+        EnableDevice.srv
+        FetchMessageFromPackage.srv
+        FetchMessageFromPackage.srv
         FetchPackages.srv
         PublishEnableAuton.srv
         PublishCourse.srv
@@ -52,6 +71,7 @@ set(MROVER_SERVICE_FILES
 set(MROVER_ROS_MESSAGES
         sensor_msgs
         std_msgs
+        sensor_msgs
         )
 
 # dynamic reconfigure
@@ -120,6 +140,21 @@ if (${DEVICE} MATCHES "raspi4")
     # Add any raspi4 specific packages here
     # list(APPEND _PACKAGES )
 
+    # -=-=-=-=-
+    # Macros
+    # -=-=-=-=-
+
+    macro(include_directories_macro)
+        include_directories(
+                ${catkin_INCLUDE_DIRS}
+        )
+    endmacro()
+
+    # define an add and link macro
+    # Put items here to build
+    macro(add_and_link_macro)
+        add_cpp_node_macro(brushed_motors "src/esw/brushed_motors/*.cpp")
+    endmacro()
 else ()
     # -=-=-=-=-
     # Lists
@@ -127,7 +162,6 @@ else ()
 
     # Add any laptop specific packages here
     list(APPEND MROVER_PACKAGES
-            roscpp
             tf2_geometry_msgs
             tf2_ros
             tf2
@@ -193,8 +227,8 @@ else ()
     # define an add and link macro
     # Put items here to build
     macro(add_and_link_macro)
-        add_cpp_node_macro(aruco_detect "src/perception/*.cpp")
-        target_link_libraries(aruco_detect ${OpenCV_LIBS} ${PCL_LIBRARIES})
+        add_cpp_node_macro(tag_detector "src/perception/*.cpp")
+        target_link_libraries(tag_detector ${OpenCV_LIBS} ${PCL_LIBRARIES})
 
         add_cpp_node_macro(brushed_motors "src/esw/brushed_motors/*.cpp")
 
