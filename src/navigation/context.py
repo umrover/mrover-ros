@@ -48,8 +48,15 @@ class Gate:
 class Rover:
     ctx: Context
 
-    def get_pose(self) -> SE3:
-        return SE3.from_tf_tree(self.ctx.tf_buffer, parent_frame="map", child_frame="base_link")
+    def get_pose(self, in_odom_frame: bool = False) -> SE3:
+        if in_odom_frame and self.ctx.use_odom:
+            return SE3.from_tf_tree(
+                self.ctx.tf_buffer, parent_frame=self.ctx.odom_frame, child_frame=self.ctx.rover_frame
+            )
+        else:
+            return SE3.from_tf_tree(
+                self.ctx.tf_buffer, parent_frame=self.ctx.world_frame, child_frame=self.ctx.rover_frame
+            )
 
     def send_drive_command(self, twist: Twist):
         self.ctx.vel_cmd_publisher.publish(twist)
@@ -71,13 +78,17 @@ class Environment:
     ctx: Context
     NO_FIDUCIAL: ClassVar[int] = -1
 
-    def get_fid_pos(self, fid_id: int, frame: str = "map") -> Optional[np.ndarray]:
+    def get_fid_pos(self, fid_id: int, in_odom_frame: bool = True) -> Optional[np.ndarray]:
         """
-        Retrieves the pose of the given fiducial ID from the TF tree
+        Retrieves the pose of the given fiducial ID from the TF tree in the odom frame
+        if in_odom_frame is True otherwise in the world frame
         if it exists and is more recent than TAG_EXPIRATION_TIME_SECONDS, otherwise returns None
         """
         try:
-            fid_pose, time = SE3.from_tf_time(self.ctx.tf_buffer, parent_frame="map", child_frame=f"fiducial{fid_id}")
+            parent_frame = self.ctx.odom_frame if in_odom_frame else self.ctx.world_frame
+            fid_pose, time = SE3.from_tf_time(
+                self.ctx.tf_buffer, parent_frame=parent_frame, child_frame=f"fiducial{fid_id}"
+            )
             now = rospy.Time.now()
             if now.to_sec() - time.to_sec() >= TAG_EXPIRATION_TIME_SECONDS:
                 return None
@@ -98,7 +109,7 @@ class Environment:
         if current_waypoint is None:
             return None
 
-        return self.get_fid_pos(current_waypoint.fiducial_id)
+        return self.get_fid_pos(current_waypoint.fiducial_id, self.ctx.use_odom)
 
     def other_gate_fid_pos(self) -> Optional[np.ndarray]:
         """
@@ -107,7 +118,7 @@ class Environment:
         assert self.ctx.course
         current_waypoint = self.ctx.course.current_waypoint()
         if self.ctx.course.look_for_gate() and current_waypoint is not None:
-            return self.get_fid_pos(current_waypoint.fiducial_id + 1)
+            return self.get_fid_pos(current_waypoint.fiducial_id + 1, self.ctx.use_odom)
         else:
             return None
 
@@ -121,8 +132,8 @@ class Environment:
             if current_waypoint is None or not self.ctx.course.look_for_gate():
                 return None
 
-            post1 = self.get_fid_pos(current_waypoint.fiducial_id)
-            post2 = self.get_fid_pos(current_waypoint.fiducial_id + 1)
+            post1 = self.get_fid_pos(current_waypoint.fiducial_id, self.ctx.use_odom)
+            post2 = self.get_fid_pos(current_waypoint.fiducial_id + 1, self.ctx.use_odom)
             if post1 is None or post2 is None:
                 return None
             return Gate(post1[:2], post2[:2])
@@ -248,6 +259,12 @@ class Context:
     env: Environment
     disable_requested: bool
 
+    # ROS Params from localization.yaml
+    use_odom: bool
+    world_frame: str
+    odom_frame: str
+    rover_frame: str
+
     def __init__(self):
         self.tf_buffer = tf2_ros.Buffer()
         self.tf_listener = tf2_ros.TransformListener(self.tf_buffer)
@@ -261,6 +278,10 @@ class Context:
         self.rover = Rover(self)
         self.env = Environment(self)
         self.disable_requested = False
+        self.use_odom = rospy.get_param("use_odom_frame")
+        self.world_frame = rospy.get_param("world_frame")
+        self.odom_frame = rospy.get_param("odom_frame")
+        self.rover_frame = rospy.get_param("rover_frame")
 
     def recv_enable_auton(self, req: mrover.srv.PublishEnableAutonRequest) -> mrover.srv.PublishEnableAutonResponse:
         enable_msg = req.enableMsg
