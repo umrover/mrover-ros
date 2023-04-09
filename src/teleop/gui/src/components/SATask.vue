@@ -11,6 +11,7 @@
       <h1>SA Dashboard</h1>
       <div class="spacer"></div>
       <div class="spacer"></div>
+      <CommReadout class="comm"></CommReadout>
       <div class="help">
         <img
           src="/static/help.png"
@@ -98,6 +99,7 @@ import MoteusStateTable from "./MoteusStateTable.vue";
 import JointStateTable from "./JointStateTable.vue";
 import LimitSwitch from "./LimitSwitch.vue";
 import CalibrationCheckbox from "./CalibrationCheckbox.vue";
+import CommReadout from "./CommReadout.vue";
 import { quaternionToDisplayAngle } from "../utils.js";
 
 export default {
@@ -113,7 +115,8 @@ export default {
     PDBFuse,
     SAArmControls,
     LimitSwitch,
-    CalibrationCheckbox
+    CalibrationCheckbox,
+    CommReadout,
   },
   data() {
     return {

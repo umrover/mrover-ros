@@ -41,6 +41,14 @@
       <Checkbox ref="E" :name="'E'" @toggle="updateJointsEnabled(4, $event)" />
       <Checkbox ref="F" :name="'F'" @toggle="updateJointsEnabled(5, $event)" />
     </div>
+    <h3>Slow Mode</h3>
+    <div>
+      <Checkbox
+        ref="Slow Mode"
+        :name="'Slow Mode'"
+        @toggle="updateSlowMode($event)"
+      />
+    </div>
     <div class="controls laser">
       <ToggleButton
         :current-state="laser_enabled"
@@ -78,6 +86,8 @@ export default {
       joystick_pub: null,
       jointlock_pub: null,
       joints_array: [false, false, false, false, false, false],
+      slow_mode: false,
+      slowmode_pub: null,
       laser_enabled: false,
       laser_service: null,
     };
@@ -109,6 +119,11 @@ export default {
       name: "/joint_lock",
       messageType: "mrover/JointLock",
     });
+    this.slow_mode_pub = new ROSLIB.Topic({
+      ros: this.$ros,
+      name: "/ra_slow_mode",
+      messageType: "std_msgs/Bool"
+    });
     const jointData = {
       //publishes array of all falses when refreshing the page
       joints: this.joints_array,
@@ -121,7 +136,9 @@ export default {
       for (let i = 0; i < 4; i++) {
         const gamepad = gamepads[i];
         if (gamepad) {
-          if (gamepad.id.includes("Microsoft") || gamepad.id.includes("Xbox")) {
+          // Microsoft and Xbox for old Xbox 360 controllers
+          // X-Box for new PowerA Xbox One controllers
+          if (gamepad.id.includes("Microsoft") || gamepad.id.includes("Xbox") || gamepad.id.includes("X-Box")) {
             let buttons = gamepad.buttons.map((button) => {
               return button.value;
             });
@@ -148,6 +165,15 @@ export default {
       };
       var jointlockMsg = new ROSLIB.Message(jointData);
       this.jointlock_pub.publish(jointlockMsg);
+    },
+
+    updateSlowMode: function (enabled) {
+      this.slow_mode = enabled;
+      const slowData = {
+        data: this.slow_mode
+      };
+      var slowModeMsg = new ROSLIB.Message(slowData);
+      this.slow_mode_pub.publish(slowModeMsg);
     },
     publishJoystickMessage: function (axes, buttons) {
       const joystickData = {

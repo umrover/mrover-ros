@@ -31,7 +31,7 @@ class GPSLinearization:
 
     # covariance config
     use_dop_covariance: bool
-    config_gps_covariance: List
+    config_gps_covariance: np.ndarray
 
     def __init__(self):
         # read required parameters, if they don't exist an error will be thrown

@@ -8,7 +8,9 @@
       <p>twist: {{ joystick_values.twist.toFixed(3) }}</p>
     </div>
     <div>
-      <p style="margin-top: 0px">dampen: {{ joystick_values.dampen.toFixed(3) }}</p>
+      <p style="margin-top: 0px">
+        dampen: {{ joystick_values.dampen.toFixed(3) }}
+      </p>
       <p>pan: {{ joystick_values.pan.toFixed(3) }}</p>
       <p>tilt: {{ joystick_values.tilt.toFixed(3) }}</p>
     </div>
