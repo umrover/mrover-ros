@@ -50,6 +50,10 @@
       <div class="calibration status data" style="background-color: lightgray">
         <IMUCalibration />
       </div>
+      <div></div>
+      <div>
+        <FlightAttitudeIndicator></FlightAttitudeIndicator>
+      </div>
     </div>
     <div class="box map light-bg">
       <AutonRoverMap :odom="odom" />
@@ -85,7 +89,7 @@ import JoystickValues from "./JoystickValues.vue";
 import IMUCalibration from "./IMUCalibration.vue";
 import CommReadout from "./CommReadout.vue";
 import { quaternionToMapAngle } from "../utils.js";
-
+import FlightAttitudeIndicator from "./FlightAttitudeIndicator.vue";
 const navBlue = "#4695FF";
 const navGreen = "yellowgreen";
 const navRed = "lightcoral";
@@ -100,6 +104,7 @@ export default {
     JoystickValues,
     MastGimbalControls,
     CommReadout,
+    FlightAttitudeIndicator
   },
 
   data() {

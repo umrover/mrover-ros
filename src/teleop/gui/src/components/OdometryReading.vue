@@ -15,23 +15,29 @@
       <br />
       <p>Bearing: {{ odom.bearing_deg.toFixed(2) }}º</p>
     </div>
+    <div>
+      <FlightAttitudeIndicator></FlightAttitudeIndicator>
+    </div>
   </div>
 </template>
 
 <script>
 import { convertDMS } from "../utils.js";
 import { mapGetters } from "vuex";
+import FlightAttitudeIndicator from "./FlightAttitudeIndicator.vue";
 export default {
+  components: {
+    FlightAttitudeIndicator
+  },
   props: {
     odom: {
       type: Object,
-      required: true,
-    },
+      required: true
+    }
   },
-
   computed: {
     ...mapGetters("map", {
-      odom_format: "odomFormat",
+      odom_format: "odomFormat"
     }),
     formatted_odom: function () {
       return {
@@ -42,7 +48,7 @@ export default {
         lon: convertDMS(
           { d: this.odom.longitude_deg, m: 0, s: 0 },
           this.odom_format
-        ),
+        )
       };
     },
     min_enabled: function () {
@@ -50,8 +56,9 @@ export default {
     },
     sec_enabled: function () {
       return this.odom_format == "DMS";
-    },
+    }
   },
+  
 };
 </script>
 
