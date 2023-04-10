@@ -34,7 +34,6 @@ class ApproachPostState(WaypointState):
         fid_pos = self.context.env.current_fid_pos()
         if fid_pos is None:
             # We have arrived at the waypoint where the fiducial should be but we have not seen it yet
-            # TODO: add more advanced logic than just driving forward
             cmd_vel = Twist()
             cmd_vel.linear.x = 0.0
             self.context.rover.send_drive_command(cmd_vel)
@@ -42,7 +41,8 @@ class ApproachPostState(WaypointState):
 
         try:
             cmd_vel, arrived = get_drive_command(
-                fid_pos, self.context.rover.get_pose(in_odom_frame=True), self.STOP_THRESH, self.DRIVE_FWD_THRESH
+                fid_pos, self.context.rover.get_pose(in_odom_frame=True), self.STOP_THRESH, self.DRIVE_FWD_THRESH,
+                use_odom = self.context.use_odom
             )
             if arrived:
                 self.context.course.increment_waypoint()

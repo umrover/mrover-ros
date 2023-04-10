@@ -79,7 +79,7 @@ class SearchState(BaseState):
         waypoint = self.context.course.current_waypoint()
         if self.traj is None or self.traj.fid_id != waypoint.fiducial_id:
             self.traj = SearchTrajectory.spiral_traj(
-                self.context.rover.get_pose().position[0:2],
+                self.context.rover.get_pose(in_odom_frame=True).position[0:2],
                 5,
                 2,
                 waypoint.fiducial_id,
@@ -89,9 +89,10 @@ class SearchState(BaseState):
         target_pos = self.traj.get_cur_pt()
         cmd_vel, arrived = get_drive_command(
             target_pos,
-            self.context.rover.get_pose(),
+            self.context.rover.get_pose(in_odom_frame=True),
             self.STOP_THRESH,
             self.DRIVE_FWD_THRESH,
+            use_odom = self.context.use_odom
         )
         if arrived:
             # if we finish the spiral without seeing the fiducial, move on with course

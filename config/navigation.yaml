@@ -1,7 +1,12 @@
 drive:
-  max_driving_effort: 1
-  min_driving_effort: -1
-  turning_p: 10.0
+  map:
+    max_driving_effort: 1
+    min_driving_effort: -1
+    turning_p: 10.0
+  odom:
+    max_driving_effort: 1
+    min_driving_effort: -1
+    turning_p: 10.0
 
 gate:
   stop_thresh: 0.2

@@ -14,20 +14,22 @@ def get_drive_command(
     rover_pose: SE3,
     completion_thresh: float,
     turn_in_place_thresh: float,
+    in_odom: bool = False
 ) -> Tuple[Twist, bool]:
     """
     :param target_pos:              Target position to drive to.
     :param rover_pose:              Current rover pose.
     :param completion_thresh:       If the distance to the target is less than this stop.
-    :param turn_in_place_thresh     Minimum cosine of the angle in between the target and current heading
+    :param turn_in_place_thresh:    Minimum cosine of the angle in between the target and current heading
                                     in order to drive forward. When below, turn in place.
+    :param in_odom:                 If true, the target position is in the odom frame (CHECK THAT IT IS ALSO ENABLED IN CONTEXT FIRST), otherwise it is in the map frame.
     :return:                        Rover drive effort command.
     """
-
-    MAX_DRIVING_EFFORT = get_rosparam("drive/max_driving_effort", 1)
-    MIN_DRIVING_EFFORT = get_rosparam("drive/min_driving_effort", -1)
-    TURNING_P = get_rosparam("drive/turning_p", 10.0)
-
+    sub_dir = "odom" if in_odom else "map"
+    MAX_DRIVING_EFFORT = get_rosparam("drive/" + sub_dir + "/max_driving_effort", 1)
+    MIN_DRIVING_EFFORT = get_rosparam("drive/" + sub_dir + "/min_driving_effort", -1)
+    TURNING_P = get_rosparam("drive/" + sub_dir "/turning_p", 10.0)
+   
     if not (0.0 < turn_in_place_thresh < 1.0):
         raise ValueError(f"Argument {turn_in_place_thresh} should be between 0 and 1")
     rover_pos = rover_pose.position
