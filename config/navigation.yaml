@@ -4,7 +4,7 @@ drive:
   max_driving_effort: 1
   min_driving_effort: -1
   turning_p: 10
-  reverse_drive_scale: 1
+  recovery_distance: 1
 
 gate:
   stop_thresh: 0.2

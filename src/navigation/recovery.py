@@ -14,7 +14,7 @@ from util.ros_utils import get_rosparam
 
 STOP_THRESH = 0.2
 DRIVE_FWD_THRESH = 0.34  # 20 degrees
-REVERSE_DRIVE_SCALE = get_rosparam("drive/reverse_drive_scale", 1)
+RECOVERY_DISTANCE = get_rosparam("drive/recovery_distance", 1)
 
 
 class RecoveryStateTransitions(Enum):
@@ -50,7 +50,7 @@ class RecoveryState(BaseState):
         # if first round
         if self.current_action == JTurnAction.moving_back:
             if self.waypoint_behind is None:
-                dir_vector = -2 * pose.rotation.direction_vector()
+                dir_vector = -1 * RECOVERY_DISTANCE * pose.rotation.direction_vector()
                 self.waypoint_behind = pose.position + dir_vector
 
             cmd_vel, self.arrived = get_drive_command(self.waypoint_behind, pose, STOP_THRESH, DRIVE_FWD_THRESH, -1)
@@ -66,7 +66,7 @@ class RecoveryState(BaseState):
         if self.current_action == JTurnAction.j_turning:
             if self.waypoint_behind is None:
                 dir_vector = pose.rotation.direction_vector()
-                dir_vector_rot = REVERSE_DRIVE_SCALE * perpendicular_2d(dir_vector[:2])
+                dir_vector_rot = RECOVERY_DISTANCE * perpendicular_2d(dir_vector[:2])
                 dir_vector = np.append(dir_vector_rot, dir_vector[2])
                 self.waypoint_behind = pose.position + dir_vector
 
