@@ -34,7 +34,7 @@ def joint_states_callback(msg: JointState):
 
 def euclidean_error(threshold: float, feedback: FollowJointTrajectoryFeedback) -> str:
     """
-    Computes the norm of the measured position errors and compares it against the given threshold.
+    Computes the norm of the measured joint position errors and compares it against the given threshold.
     Returns an error message if the threshold is exceeded, and an empty string if it is not.
     """
     position_errors = np.array(feedback.error.positions)

@@ -87,6 +87,7 @@ teleop:
     tilt: 5
 
   # Thresholds in radians
+  # Euclidean error is the norm of all the joint position errors
   euclidean_error_threshold: 3.14
 
   joint_error_thresholds:
