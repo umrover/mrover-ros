@@ -12,26 +12,25 @@ import Checkbox from "./Checkbox.vue";
 import LEDIndicator from "./LEDIndicator.vue";
 import ROSLIB from "roslib/src/RosLib";
 
-
 export default {
   components: {
     Checkbox,
-    LEDIndicator
+    LEDIndicator,
   },
 
   props: {
     name: {
       type: String,
-      required: true
+      required: true,
     },
     joint_name: {
       type: String,
-      required: true
+      required: true,
     },
     calibrate_topic: {
       type: String,
-      required: true
-    }
+      required: true,
+    },
   },
 
   data() {
@@ -40,7 +39,7 @@ export default {
       calibrated: false,
       calibrate_service: null,
       calibrate_sub: null,
-      interval: null
+      interval: null,
     };
   },
 
@@ -50,7 +49,7 @@ export default {
       if (!val) {
         this.publishCalibrationMessage();
       }
-    }
+    },
   },
 
   beforeDestroy: function () {
@@ -63,13 +62,13 @@ export default {
     this.calibrate_service = new ROSLIB.Service({
       ros: this.$ros,
       name: "calibrate",
-      serviceType: "mrover/CalibrateMotors"
+      serviceType: "mrover/CalibrateMotors",
     });
 
     this.calibrate_sub = new ROSLIB.Topic({
       ros: this.$ros,
       name: this.calibrate_topic,
-      messageType: "mrover/Calibrated"
+      messageType: "mrover/Calibrated",
     });
 
     this.calibrate_sub.subscribe((msg) => {
@@ -95,7 +94,7 @@ export default {
     publishCalibrationMessage: function () {
       let request = new ROSLIB.ServiceRequest({
         name: this.joint_name,
-        calibrate: this.toggleEnabled
+        calibrate: this.toggleEnabled,
       });
       this.calibrate_service.callService(request, (result) => {
         if (!result) {
@@ -103,8 +102,8 @@ export default {
           alert("ESW cannot calibrate this motor");
         }
       });
-    }
-  }
+    },
+  },
 };
 </script>
 

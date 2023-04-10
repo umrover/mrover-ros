@@ -68,18 +68,36 @@
     <div class="box light-bg limit">
       <h3>Limit Switches</h3>
       <LimitSwitch :switch_name="'sa_joint_1'" :name="'Joint 1 Switch'" />
-      <LimitSwitch :switch_name="'sa_joint_2'" :name="'Joint 2 Switch'"/>
-      <LimitSwitch :switch_name="'sa_joint_3'" :name="'Joint 3 Switch'"/>
-      <LimitSwitch :switch_name="'scoop'" :name="'Scoop Switch'"/>
+      <LimitSwitch :switch_name="'sa_joint_2'" :name="'Joint 2 Switch'" />
+      <LimitSwitch :switch_name="'sa_joint_3'" :name="'Joint 3 Switch'" />
+      <LimitSwitch :switch_name="'scoop'" :name="'Scoop Switch'" />
     </div>
     <div class="box light-bg calibration">
       <h3>Calibrations</h3>
       <div class="calibration-checkboxes">
-        <CalibrationCheckbox :name="'Joint 1 Calibration'" :joint_name="'sa_joint_1'" :calibrate_topic="'sa_is_calibrated'"/>
-        <CalibrationCheckbox :name="'Joint 2 Calibration'" :joint_name="'sa_joint_2'" :calibrate_topic="'sa_is_calibrated'"/>
-        <CalibrationCheckbox :name="'Joint 3 Calibration'" :joint_name="'sa_joint_3'" :calibrate_topic="'sa_is_calibrated'"/>
+        <CalibrationCheckbox
+          :name="'Joint 1 Calibration'"
+          :joint_name="'sa_joint_1'"
+          :calibrate_topic="'sa_is_calibrated'"
+        />
+        <CalibrationCheckbox
+          :name="'Joint 2 Calibration'"
+          :joint_name="'sa_joint_2'"
+          :calibrate_topic="'sa_is_calibrated'"
+        />
+        <CalibrationCheckbox
+          :name="'Joint 3 Calibration'"
+          :joint_name="'sa_joint_3'"
+          :calibrate_topic="'sa_is_calibrated'"
+        />
       </div>
-      <MotorAdjust :options="[{name: 'sa_joint_1', option: 'Joint 1'}, {name: 'sa_joint_2', option: 'Joint 2'}, {name: 'sa_joint_3', option: 'Joint 3'}]"/>
+      <MotorAdjust
+        :options="[
+          { name: 'sa_joint_1', option: 'Joint 1' },
+          { name: 'sa_joint_2', option: 'Joint 2' },
+          { name: 'sa_joint_3', option: 'Joint 3' },
+        ]"
+      />
     </div>
     <div v-show="false">
       <MastGimbalControls></MastGimbalControls>
