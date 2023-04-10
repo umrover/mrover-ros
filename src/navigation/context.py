@@ -296,4 +296,3 @@ class Context:
 
     def stuck_callback(self, msg: Bool):
         self.rover.stuck = msg.data
-        # rospy.logerr(f"{self.rover.stuck}")
