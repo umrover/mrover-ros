@@ -28,7 +28,7 @@ def get_drive_command(
     sub_dir = "odom" if in_odom else "map"
     MAX_DRIVING_EFFORT = get_rosparam("drive/" + sub_dir + "/max_driving_effort", 1)
     MIN_DRIVING_EFFORT = get_rosparam("drive/" + sub_dir + "/min_driving_effort", -1)
-    TURNING_P = get_rosparam("drive/" + sub_dir "/turning_p", 10.0)
+    TURNING_P = get_rosparam("drive/" + sub_dir + "/turning_p", 10.0)
    
     if not (0.0 < turn_in_place_thresh < 1.0):
         raise ValueError(f"Argument {turn_in_place_thresh} should be between 0 and 1")
