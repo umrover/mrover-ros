@@ -183,8 +183,8 @@ class GateTraverseState(BaseState):
                 return GateTraverseStateTransitions.finished_gate.name  # type: ignore
 
         if self.context.rover.stuck:
-            self.context.rover.previous_state = GateTraverseStateTransitions.continue_gate_traverse.name
-            return GateTraverseStateTransitions.recovery_state.name
+            self.context.rover.previous_state = GateTraverseStateTransitions.continue_gate_traverse.name  # type: ignore
+            return GateTraverseStateTransitions.recovery_state.name  # type: ignore
 
         self.context.gate_path_publisher.publish(
             GPSPointList([convert_cartesian_to_gps(pt) for pt in self.traj.coordinates])

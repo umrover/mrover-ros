@@ -100,8 +100,8 @@ class SearchState(BaseState):
                 return SearchStateTransitions.no_fiducial.name  # type: ignore
 
         if self.context.rover.stuck:
-            self.context.rover.previous_state = SearchStateTransitions.continue_search.name
-            return SearchStateTransitions.recovery_state.name
+            self.context.rover.previous_state = SearchStateTransitions.continue_search.name  # type: ignore
+            return SearchStateTransitions.recovery_state.name  # type: ignore
 
         self.context.search_point_publisher.publish(
             GPSPointList([convert_cartesian_to_gps(pt) for pt in self.traj.coordinates])

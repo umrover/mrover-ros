@@ -29,7 +29,7 @@ class FailureIdentifier:
     actively_collecting: bool
     cur_cmd: Twist
     cur_stuck: bool
-    path_name: str
+    path_name: Path
 
     def __init__(self):
         nav_status_sub = message_filters.Subscriber("smach/container_status", SmachContainerStatus)
@@ -69,7 +69,7 @@ class FailureIdentifier:
         self.right_pointer = 0
         self.row_counter = 0
         self.watchdog = WatchDog(self)
-        self.path_name = None
+        self.path_name = None  # type: ignore
 
     def write_to_csv(self):
         """
@@ -150,7 +150,7 @@ class FailureIdentifier:
         linear_velocity_norm = np.linalg.norm(
             np.array([odometry.twist.twist.linear.x, odometry.twist.twist.linear.y, odometry.twist.twist.linear.z])
         )
-        cur_row["linear_velocity"] = linear_velocity_norm
+        cur_row["linear_velocity"] = linear_velocity_norm  # type: ignore
         cur_row["angular_velocity"] = odometry.twist.twist.angular.z
 
         # get the wheel effort and velocity from the drive status message

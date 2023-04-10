@@ -103,8 +103,8 @@ class PartialGateState(BaseState):
                 return PartialGateStateTransitions.done.name  # type: ignore
 
         if self.context.rover.stuck:
-            self.context.rover.previous_state = PartialGateStateTransitions.partial_gate.name
-            return PartialGateStateTransitions.recovery_state.name
+            self.context.rover.previous_state = PartialGateStateTransitions.partial_gate.name  # type: ignore
+            return PartialGateStateTransitions.recovery_state.name  # type: ignore
 
         self.context.rover.send_drive_command(cmd_vel)
         return PartialGateStateTransitions.partial_gate.name  # type: ignore
