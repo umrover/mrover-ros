@@ -1,12 +1,11 @@
-- name: Switch Wired Connection
+- name: Radio Wired Connection
   community.general.nmcli:
-    conn_name: SwitchWiredConnection
+    conn_name: RadioWiredConnection
     type: ethernet
     ifname: eth0
     state: present
     autoconnect: yes
-    ip4: 10.0.0.2/24
-    gw4: 10.0.0.7/24
+    ip4: 10.0.0.7/24
     dns4:
       - 1.1.1.1
       - 1.0.0.1

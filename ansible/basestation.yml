@@ -1,6 +1,9 @@
 ---
 - hosts: all
+  become: True
   vars:
     ubuntu_release: focal
   roles:
-    - dev
+    # - dev
+    - basestation_networks
+

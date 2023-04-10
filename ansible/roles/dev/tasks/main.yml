@@ -27,5 +27,10 @@
       - neovim
       - sudo
       - git
+      - cmake
       - python3-pip
       - python3-catkin-tools
+      - clang-16
+      - clangd-16
+      - lld-16
+      - lldb-16
