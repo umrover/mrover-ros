@@ -45,15 +45,15 @@
     <div class="controls-flex">
       <h4>Misc. Controls</h4>
       <Checkbox
-      ref="Slow Mode"
-      :name="'Slow Mode'"
-      @toggle="updateSlowMode($event)"
+        ref="Slow Mode"
+        :name="'Slow Mode'"
+        @toggle="updateSlowMode($event)"
       />
       <ToggleButton
-      :current-state="laser_enabled"
-      label-enable-text="Arm Laser On"
-      label-disable-text="Arm Laser Off"
-      @change="toggleArmLaser()"
+        :current-state="laser_enabled"
+        label-enable-text="Arm Laser On"
+        label-disable-text="Arm Laser Off"
+        @change="toggleArmLaser()"
       />
     </div>
     <div class="controls-flex">
@@ -63,7 +63,15 @@
         joint_name="joint_b"
         calibrate_topic="ra_is_calibrated"
       />
-      <JointAdjust />
+      <JointAdjust
+        :options="[
+          { name: 'joint_a', option: 'Joint A' },
+          { name: 'joint_b', option: 'Joint B' },
+          { name: 'joint_c', option: 'Joint C' },
+          { name: 'joint_d', option: 'Joint D' },
+          { name: 'joint_e', option: 'Joint E' }
+        ]"
+      />
     </div>
   </div>
 </template>
@@ -73,7 +81,7 @@ import ROSLIB from "roslib";
 import Checkbox from "./Checkbox.vue";
 import ToggleButton from "./ToggleButton.vue";
 import CalibrationCheckbox from "./CalibrationCheckbox.vue";
-import JointAdjust from "./JointAdjust.vue";
+import JointAdjust from "./MotorAdjust.vue";
 
 // In seconds
 const updateRate = 0.1;
@@ -242,7 +250,6 @@ export default {
   width: calc(100% - 10px);
   background-color: rgb(180, 180, 180);
 }
-
 
 .header {
   display: flex;

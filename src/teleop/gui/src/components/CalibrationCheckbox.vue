@@ -110,13 +110,13 @@ export default {
 
 <style>
 .calibration-wrapper {
-  padding: 2%;
+  padding: 1% 0 1% 0;
   display: flex;
   flex-direction: row;
 }
+
 .led {
   margin-left: 5%;
-  margin-top: 1%;
   display: block;
 }
 </style>
