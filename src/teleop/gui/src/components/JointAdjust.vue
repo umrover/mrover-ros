@@ -53,8 +53,10 @@ export default {
       });
       if (this.selectedJoint != "") {
         this.serviceClient.callService(request, (result) => {
-          console.log(result);
-        });
+			if(!result.success){
+				alert("Adjustment failed");
+			}
+		});
       }
     },
 
