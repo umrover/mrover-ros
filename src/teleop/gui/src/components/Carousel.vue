@@ -15,6 +15,7 @@
           <input v-model="site" type="radio" value="C" />C
           <CalibrationCheckbox :name="'Carousel Calibration'" :joint_name="'carousel'" :calibrate_topic="'carousel_is_calibrated'"/>
           <MotorAdjust :options="[{ name: 'carousel', option: 'Carousel' }]"/>
+          <LimitSwitch :switch_name="'carousel'" :name="'Carousel Limit Switch'" />
         </div>
         <div v-else>
           <!-- Up and down arrows keys -->
@@ -36,6 +37,7 @@ import Checkbox from "./Checkbox.vue";
 import OpenLoopControl from "./OpenLoopControl.vue";
 import CalibrationCheckbox from "./CalibrationCheckbox.vue";
 import MotorAdjust from "./MotorAdjust.vue";
+import LimitSwitch from "./LimitSwitch.vue";
 
 // In seconds
 const updateRate = 0.1;
@@ -48,6 +50,7 @@ export default {
     OpenLoopControl,
     CalibrationCheckbox,
     MotorAdjust,
+    LimitSwitch,
   },
   data() {
     return {

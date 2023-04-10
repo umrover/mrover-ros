@@ -55,6 +55,10 @@
         label-disable-text="Arm Laser Off"
         @change="toggleArmLaser()"
       />
+      <div class="limit-switch">
+        <h4>Joint B Limit Switch</h4>
+        <LimitSwitch :switch_name="'joint_b'" :name="'Joint B Switch'" />
+      </div>
     </div>
     <div class="controls-flex">
       <h4>Calibration</h4>
@@ -82,6 +86,7 @@ import Checkbox from "./Checkbox.vue";
 import ToggleButton from "./ToggleButton.vue";
 import CalibrationCheckbox from "./CalibrationCheckbox.vue";
 import JointAdjust from "./MotorAdjust.vue";
+import LimitSwitch from "./LimitSwitch.vue";
 
 // In seconds
 const updateRate = 0.1;
@@ -92,7 +97,8 @@ export default {
     CalibrationCheckbox,
     Checkbox,
     JointAdjust,
-    ToggleButton
+    ToggleButton,
+    LimitSwitch
   },
   data() {
     return {
@@ -227,7 +233,7 @@ export default {
   width: 100%;
 }
 
-.wrap h2 {
+.wrap h2 h4 {
   margin: 0;
   padding: 0;
   font-size: 1.5em;
@@ -249,6 +255,16 @@ export default {
   margin-top: 5px;
   width: calc(100% - 10px);
   background-color: rgb(180, 180, 180);
+}
+
+.limit-switch{
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  margin-top: -20px;
+}
+.limit-switch h4 {
+  margin-bottom: 5px;
 }
 
 .header {

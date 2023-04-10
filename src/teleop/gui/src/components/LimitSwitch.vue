@@ -42,6 +42,18 @@
                 name: "enable_limit_switches",
                 serviceType: "mrover/EnableDevice"
             });
+            // Set the initial state of the limit switch to be enabled
+            let request = new ROSLIB.ServiceRequest({
+                    name: this.$props.switch_name,
+                    enable: true
+                });
+                this.limit_service.callService(request, (result) => {
+                    if (!result) {
+                        this.limit_enabled = false;
+                        alert("Toggling Limit Switch failed.");
+                    }
+                });
+
         },
 
         methods: {
