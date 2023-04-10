@@ -94,7 +94,7 @@ export default {
     },
     publishCalibrationMessage: function () {
       let request = new ROSLIB.ServiceRequest({
-        name: this.name,
+        name: this.joint_name,
         calibrate: this.toggleEnabled
       });
       this.calibrate_service.callService(request, (result) => {
