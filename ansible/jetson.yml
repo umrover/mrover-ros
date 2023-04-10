@@ -1,0 +1,10 @@
+---
+- hosts: all
+  become: True
+  vars:
+    ubuntu_release: focal
+  roles:
+    - jetson_dev
+    - jetson_networks
+    - jetson_services
+

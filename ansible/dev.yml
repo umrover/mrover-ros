@@ -1,0 +1,6 @@
+---
+- hosts: all
+  vars:
+    ubuntu_release: focal
+  roles:
+    - base_dev

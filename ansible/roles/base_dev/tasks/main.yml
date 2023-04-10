@@ -1,0 +1,31 @@
+- name: Add Git PPA
+  apt_repository:
+    repo: ppa:git-core/ppa
+
+- name: Add CMake Key
+  apt_key:
+    url: https://apt.kitware.com/keys/kitware-archive-latest.asc
+
+- name: Add CMake APT
+  apt_repository:
+    repo: deb [signed-by=/usr/share/keyrings/kitware-archive-keyring.gpg] https://apt.kitware.com/ubuntu/ {{ ubuntu_release }} main
+    filename: kitware
+
+- name: Add LLVM Key
+  apt_key:
+    url: https://apt.llvm.org/llvm-snapshot.gpg.key
+
+- name: Add LLVM APT
+  apt_repository:
+    repo: deb http://apt.llvm.org/{{ ubuntu_release }}/ llvm-toolchain-{{ ubuntu_release }}-16 main
+    filename: llvm
+
+- name: Install APT packages
+  apt: 
+    name:
+      - zsh
+      - neovim
+      - sudo
+      - git
+      - python3-pip
+      - python3-catkin-tools
