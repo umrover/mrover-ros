@@ -67,10 +67,10 @@
     </div>
     <div class="box light-bg limit">
       <h3>Limit Switches</h3>
-      <LimitSwitch :state_name="'joint_1_switch'" :name="'Joint 1 Switch'"/>
-      <LimitSwitch :state_name="'joint_2_switch'" :name="'Joint 2 Switch'"/>
-      <LimitSwitch :state_name="'joint_3_switch'" :name="'Joint 3 Switch'"/>
-      <LimitSwitch :state_name="'scoop'" :name="'Scoop Switch'"/>
+      <LimitSwitch :switch_name="'joint_1_switch'" :name="'Joint 1 Switch'" />
+      <LimitSwitch :switch_name="'joint_2_switch'" :name="'Joint 2 Switch'"/>
+      <LimitSwitch :switch_name="'joint_3_switch'" :name="'Joint 3 Switch'"/>
+      <LimitSwitch :switch_name="'scoop'" :name="'Scoop Switch'"/>
     </div>
     <div class="box light-bg calibration">
       <h3>Calibrations</h3>
