@@ -67,9 +67,9 @@
     </div>
     <div class="box light-bg limit">
       <h3>Limit Switches</h3>
-      <LimitSwitch :switch_name="'joint_1_switch'" :name="'Joint 1 Switch'" />
-      <LimitSwitch :switch_name="'joint_2_switch'" :name="'Joint 2 Switch'"/>
-      <LimitSwitch :switch_name="'joint_3_switch'" :name="'Joint 3 Switch'"/>
+      <LimitSwitch :switch_name="'sa_joint_1'" :name="'Joint 1 Switch'" />
+      <LimitSwitch :switch_name="'sa_joint_2'" :name="'Joint 2 Switch'"/>
+      <LimitSwitch :switch_name="'sa_joint_3'" :name="'Joint 3 Switch'"/>
       <LimitSwitch :switch_name="'scoop'" :name="'Scoop Switch'"/>
     </div>
     <div class="box light-bg calibration">
