@@ -40,10 +40,6 @@ class FailureIdentifier:
 
         ts = message_filters.ApproximateTimeSynchronizer(
             [nav_status_sub, drive_status_sub, odometry_sub], 10, 1.0, allow_headerless=True
-            # [nav_status_sub, odometry_sub],
-            # 10,
-            # 1.0,
-            # allow_headerless=True,
         )
         ts.registerCallback(self.update)
 
@@ -124,7 +120,6 @@ class FailureIdentifier:
             return
 
         # create a new row for the data frame
-        # print("collecting")
         self.actively_collecting = True
         cur_row = {}
         cur_row["row"] = self.row_counter
@@ -168,7 +163,6 @@ class FailureIdentifier:
         self.row_counter += 1
 
         if len(self._df) == DATAFRAME_MAX_SIZE:
-            # rospy.logerr(f"LEN {len(self._df)}")
             # append to csv if csv exists else write to csv
             rospy.loginfo("writing to file")
             if self.path_name is None:
@@ -182,7 +176,6 @@ class FailureIdentifier:
             self.row_counter = 0
 
         # publish the watchdog status if the nav state is not recovery
-        # rospy.logerr(f"RECOVERY STATE {TEST_RECOVERY_STATE}")
         if TEST_RECOVERY_STATE:
             self.stuck_publisher.publish(Bool(self.cur_stuck))
         elif nav_status.active_states[0] != "recovery":

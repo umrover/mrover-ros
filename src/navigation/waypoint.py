@@ -90,8 +90,8 @@ class WaypointState(BaseState):
             if self.context.rover.stuck:
                 # Removed .name
                 # rospy.logerr(f"TYPE: {type(WaypointStateTransitions.continue_waypoint_traverse.name)}\n")
-                self.context.rover.previous_state = WaypointStateTransitions.continue_waypoint_traverse.name # type: ignore
-                return WaypointStateTransitions.recovery_state.name # type: ignore
+                self.context.rover.previous_state = WaypointStateTransitions.continue_waypoint_traverse.name  # type: ignore
+                return WaypointStateTransitions.recovery_state.name  # type: ignore
 
             self.context.rover.send_drive_command(cmd_vel)
 
