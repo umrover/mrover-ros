@@ -49,20 +49,24 @@ export default {
     publishAdjustmentMessage() {
       const request = new ROSLIB.ServiceRequest({
         name: this.selectedJoint,
-        value: this.clamp(parseFloat(this.adjustmentAngle), -2 * Math.PI, 2 * Math.PI)
+        value: this.clamp(
+          parseFloat(this.adjustmentAngle),
+          -2 * Math.PI,
+          2 * Math.PI
+        )
       });
       if (this.selectedJoint != "") {
         this.serviceClient.callService(request, (result) => {
-			if(!result.success){
-				alert("Adjustment failed");
-			}
-		});
+          if (!result.success) {
+            alert("Adjustment failed");
+          }
+        });
       }
     },
 
-	clamp(value, min, max) {
-	  return Math.min(Math.max(value, min), max);
-	}
+    clamp(value, min, max) {
+      return Math.min(Math.max(value, min), max);
+    }
   }
 };
 </script>
