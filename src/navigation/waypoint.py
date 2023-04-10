@@ -20,6 +20,7 @@ class WaypointStateTransitions(Enum):
     find_approach_post = "ApproachPostState"
     go_to_gate = "GateTraverseState"
     recovery_state = "RecoveryState"
+    partial_gate = "PartialGateState"
 
 
 class WaypointState(BaseState):
@@ -63,6 +64,8 @@ class WaypointState(BaseState):
         if self.context.course.look_for_gate():
             if self.context.env.current_gate() is not None:
                 return WaypointStateTransitions.go_to_gate.name  # type: ignore
+            if self.context.env.current_fid_pos() is not None or self.context.env.other_gate_fid_pos() is not None:
+                return WaypointStateTransitions.partial_gate.name  # type: ignore
         if self.context.course.look_for_post():
             if self.context.env.current_fid_pos() is not None:
                 return WaypointStateTransitions.find_approach_post.name  # type: ignore

@@ -427,7 +427,7 @@ class ArmManager(MotorsManager):
 
     @property
     def publish_topic(self) -> str:
-        return "arm_status"
+        return "brushless_ra_data"
 
     def _process_ra_cmd(self, ros_msg: JointState) -> None:
         """
@@ -548,7 +548,7 @@ class Application:
             transport = moteus_pi3hat.Pi3HatRouter(
                 servo_bus_map={
                     1: [info["id"] for info in drive_controller_info_by_name.values() if info["bus"] == 1],
-                    2: [info["id"] for info in arm_controller_info_by_name.values() if info["bus"] == 2],
+                    2: [info["id"] for info in drive_controller_info_by_name.values() if info["bus"] == 2],
                     3: [info["id"] for info in arm_controller_info_by_name.values() if info["bus"] == 3],
                 }
             )

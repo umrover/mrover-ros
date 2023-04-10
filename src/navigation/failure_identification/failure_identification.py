@@ -34,16 +34,16 @@ class FailureIdentifier:
     def __init__(self):
         nav_status_sub = message_filters.Subscriber("smach/container_status", SmachContainerStatus)
         cmd_vel_sub = rospy.Subscriber("cmd_vel", Twist, self.cmd_vel_update)
-        # drive_status_sub = message_filters.Subscriber("drive_status", MotorsStatus)
+        drive_status_sub = message_filters.Subscriber("drive_status", MotorsStatus)
         odometry_sub = message_filters.Subscriber("global_ekf/odometry", Odometry)
         stuck_button_sub = rospy.Subscriber("/rover_stuck", Bool, self.stuck_button_update)
 
         ts = message_filters.ApproximateTimeSynchronizer(
-            # [nav_status_sub, drive_status_sub, odometry_sub], 10, 1.0, allow_headerless=True
-            [nav_status_sub, odometry_sub],
-            10,
-            1.0,
-            allow_headerless=True,
+            [nav_status_sub, drive_status_sub, odometry_sub], 10, 1.0, allow_headerless=True
+            # [nav_status_sub, odometry_sub],
+            # 10,
+            # 1.0,
+            # allow_headerless=True,
         )
         ts.registerCallback(self.update)
 
@@ -51,8 +51,8 @@ class FailureIdentifier:
         position_variables = ["x", "y", "z"]
         rotation_variables = [f"rot_{comp}" for comp in ["x", "y", "z", "w"]]
         velocity_variables = ["linear_velocity", "angular_velocity"]
-        # wheel_effort_variables = [f"wheel_{wheel_num}_effort" for wheel_num in range(6)]
-        # wheel_velocity_variables = [f"wheel_{wheel_num}_velocity" for wheel_num in range(6)]
+        wheel_effort_variables = [f"wheel_{wheel_num}_effort" for wheel_num in range(6)]
+        wheel_velocity_variables = [f"wheel_{wheel_num}_velocity" for wheel_num in range(6)]
         command_variables = ["cmd_vel_x", "cmd_vel_twist"]
         self.data_collecting_mode = True
         self.actively_collecting = True
@@ -63,8 +63,8 @@ class FailureIdentifier:
             + position_variables
             + rotation_variables
             + velocity_variables
-            # + wheel_effort_variables
-            # + wheel_velocity_variables
+            + wheel_effort_variables
+            + wheel_velocity_variables
             + command_variables
         )
         print(self.cols)
@@ -80,29 +80,14 @@ class FailureIdentifier:
         Writes the data frame to a csv file marked with timestamp
         """
         home = Path.home()
-        # path = os.path.join(home, "catkin_ws/src/mrover-workspace/src/navigation/failure_data")
         path = home / "catkin_ws/src/mrover/src/failure_data"
         path.mkdir(exist_ok=True)
-        # now = datetime.datetime.now()
-        # day = now.strftime("%m%d%Y")
-        # hour = now.strftime("%H-%M-%S")
-        # time_stamp = day + "_" + hour
 
         file_name = f"failure_data_{rospy.Time.now()}.csv"
-        # file_name = f"failure_data_{time_stamp}.csv"
+
         path = path / file_name
         self.path_name = path
         self._df.to_csv(path)
-
-        # now = datetime.datetime.now()
-        # day = now.strftime("%m%d%Y")
-        # hour = now.strftime("%H-%M-%S")
-        # time_stamp = day + "_" + hour
-        # home = str(Path.home())
-        # folder = home + "/catkin_ws/src/mrover/failure_data"
-        # if not os.path.exists(folder):
-        #     os.makedirs(folder)
-        # file = folder + "/output_averaged_" + time_stamp + ".csv"
 
         rospy.loginfo("===== failure data written to csv =====")
 
@@ -112,8 +97,7 @@ class FailureIdentifier:
     def cmd_vel_update(self, cmd_vel: Twist):
         self.cur_cmd = cmd_vel
 
-    # def update(self, nav_status: SmachContainerStatus, drive_status: MotorsStatus, odometry: Odometry):
-    def update(self, nav_status: SmachContainerStatus, odometry: Odometry):
+    def update(self, nav_status: SmachContainerStatus, drive_status: MotorsStatus, odometry: Odometry):
         """
         Updates the current row of the data frame with the latest data from the rover
         then appends the row to the data frame
@@ -175,9 +159,9 @@ class FailureIdentifier:
         cur_row["angular_velocity"] = odometry.twist.twist.angular.z
 
         # get the wheel effort and velocity from the drive status message
-        # for wheel_num in range(6):
-        #     cur_row[f"wheel_{wheel_num}_effort"] = drive_status.joint_states.effort[wheel_num]
-        #     cur_row[f"wheel_{wheel_num}_velocity"] = drive_status.joint_states.velocity[wheel_num]
+        for wheel_num in range(6):
+            cur_row[f"wheel_{wheel_num}_effort"] = drive_status.joint_states.effort[wheel_num]
+            cur_row[f"wheel_{wheel_num}_velocity"] = drive_status.joint_states.velocity[wheel_num]
 
         # update the data frame with the cur row
         self._df = pd.concat([self._df, DataFrame([cur_row])])

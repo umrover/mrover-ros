@@ -21,12 +21,22 @@ brushed_motors:
       mcu_id: 2
       motor_id: 2
       inversion: 1.0
+      limit_a_present: true
+      limit_b_present: false
+      counts_limit_a: 0
+      limit_a_is_fwd: true
+      calibration_vel: 0.25
     - name: "carousel"
       driver_voltage: 12.0
       motor_max_voltage: 12.0
       mcu_id: 2
       motor_id: 1
       inversion: 1.0
+      limit_a_present: true
+      limit_b_present: false
+      counts_limit_a: 0
+      limit_a_is_fwd: true
+      calibration_vel: 0.25
     - name: "joint_a"
       driver_voltage: 36.0
       motor_max_voltage: 24.0
@@ -37,6 +47,8 @@ brushed_motors:
       kP: -0.005
       kI: -0.0
       inversion: -1.0
+      limit_a_present: false
+      limit_b_present: false
     - name: "joint_b"
       driver_voltage: 36.0
       motor_max_voltage: 12.0
@@ -46,6 +58,11 @@ brushed_motors:
       kP: -0.1
       kI: -0.0
       inversion: -1.0
+      limit_a_present: true
+      limit_b_present: false
+      counts_limit_a: 0
+      limit_a_is_fwd: true
+      calibration_vel: 0.25
     - name: "joint_f"
       driver_voltage: 12.0
       motor_max_voltage: 8.0
@@ -55,60 +72,101 @@ brushed_motors:
       kP: 0.05
       kI: 0.0
       inversion: -1.0
+      limit_a_present: false
+      limit_b_present: false
     - name: "finger"
       driver_voltage: 12.0
       motor_max_voltage: 12.0
       mcu_id: 1
       motor_id: 3
       inversion: 1.0
+      limit_a_present: true
+      limit_b_present: true
+      counts_limit_a: 0
+      counts_limit_b: 0
+      limit_a_is_fwd: true
+      calibration_vel: 0.25
     - name: "gripper"
       driver_voltage: 12.0
       motor_max_voltage: 12.0
       mcu_id: 1
       motor_id: 2
       inversion: 1.0
+      limit_a_present: false
+      limit_b_present: false
     - name: "mast_gimbal_up_down"
       driver_voltage: 12.0
       motor_max_voltage: 12.0
       mcu_id: 2
       motor_id: 4
       inversion: -1.0
+      limit_a_present: false
+      limit_b_present: false
     - name: "mast_gimbal_left_right"
       driver_voltage: 12.0
       motor_max_voltage: 12.0
       mcu_id: 2
       motor_id: 3
       inversion: -1.0
+      limit_a_present: false
+      limit_b_present: false
     - name: "microscope"
       driver_voltage: 12.0
       motor_max_voltage: 12.0
       mcu_id: 1
       motor_id: 4
       inversion: 1.0
+      limit_a_present: true
+      limit_b_present: true
+      counts_limit_a: 0
+      counts_limit_b: 0
+      limit_a_is_fwd: true
+      calibration_vel: 0.25
     - name: "sa_joint_1"
       driver_voltage: 36.0
       motor_max_voltage: 12.0
       mcu_id: 1
       motor_id: 0
       inversion: 1.0
+      limit_a_present: true
+      limit_b_present: false
+      counts_limit_a: 0
+      limit_a_is_fwd: true
+      calibration_vel: 0.25
     - name: "sa_joint_2"
       driver_voltage: 12.0
       motor_max_voltage: 12.0
       mcu_id: 1
       motor_id: 1
       inversion: -1.0
+      limit_a_present: true
+      limit_b_present: false
+      counts_limit_a: 0
+      limit_a_is_fwd: true
+      calibration_vel: 0.25
     - name: "sa_joint_3"
       driver_voltage: 12.0
       motor_max_voltage: 12.0
       mcu_id: 1
       motor_id: 2
       inversion: 1.0
+      limit_a_present: true
+      limit_b_present: false
+      counts_limit_a: 0
+      limit_a_is_fwd: true
+      calibration_vel: 0.25
     - name: "scoop"
       driver_voltage: 12.0
       motor_max_voltage: 12.0
       mcu_id: 1
       motor_id: 3
       inversion: 1.0
+      limit_a_present: true
+      limit_b_present: true
+      counts_limit_a: 0
+      counts_limit_b: 0
+      limit_a_is_fwd: true
+      calibration_vel: 0.25
   i2c_device_file: "/dev/i2c-1"
   test: false
 
@@ -190,11 +248,11 @@ brushless:
     max_torque: 0.3
     controllers:
       FrontLeft:
-        id: 5
+        id: 2
         bus: 1
         multiplier: -1
       FrontRight:
-        id: 4
+        id: 3
         bus: 2
         multiplier: 1
       MiddleLeft:
@@ -202,7 +260,7 @@ brushless:
         bus: 1
         multiplier: -1
       MiddleRight:
-        id: 3
+        id: 4
         bus: 2
         multiplier: 1
       BackLeft:
@@ -210,9 +268,9 @@ brushless:
         bus: 1
         multiplier: -1
       BackRight:
-        id: 2
+        id: 5
         bus: 2
-        multiplier: 1
+        multiplier: -1
   arm:
     controllers:
       joint_c:

@@ -12,7 +12,8 @@ endif ()
 # find_package
 set(MROVER_PACKAGES
         rospy
-        std_msgs
+        roscpp
+	std_msgs
         message_generation
         dynamic_reconfigure
         rostest
@@ -24,6 +25,7 @@ set(MROVER_LINK_DIRS "")
 
 # message files
 set(MROVER_MESSAGE_FILES
+        Calibrated.msg
         CalibrationStatus.msg
         CameraCmd.msg
         Carousel.msg
@@ -50,11 +52,14 @@ set(MROVER_MESSAGE_FILES
 
 # service files
 set(MROVER_SERVICE_FILES
+        AdjustMotors.srv
+        CalibrateMotors.srv
         ChangeAutonLEDState.srv
         ChangeCameras.srv
         ChangeDeviceState.srv
         ChangeHeaterState.srv
         ChangeServoAngle.srv
+        EnableDevice.srv
         FetchMessageFromPackage.srv
         FetchMessageFromPackage.srv
         FetchPackages.srv
@@ -135,6 +140,21 @@ if (${DEVICE} MATCHES "raspi4")
     # Add any raspi4 specific packages here
     # list(APPEND _PACKAGES )
 
+    # -=-=-=-=-
+    # Macros
+    # -=-=-=-=-
+
+    macro(include_directories_macro)
+        include_directories(
+                ${catkin_INCLUDE_DIRS}
+        )
+    endmacro()
+
+    # define an add and link macro
+    # Put items here to build
+    macro(add_and_link_macro)
+        add_cpp_node_macro(brushed_motors "src/esw/brushed_motors/*.cpp")
+    endmacro()
 else ()
     # -=-=-=-=-
     # Lists
@@ -142,7 +162,6 @@ else ()
 
     # Add any laptop specific packages here
     list(APPEND MROVER_PACKAGES
-            roscpp
             tf2_geometry_msgs
             tf2_ros
             tf2

@@ -3,7 +3,7 @@ test_recovery_state: False
 drive:
   max_driving_effort: 1
   min_driving_effort: -1
-  turning_p: 0.1
+  turning_p: 10
   reverse_drive_scale: 1
 
 gate:

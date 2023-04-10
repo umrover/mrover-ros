@@ -8,4 +8,4 @@ class WatchDog:
         self.collector = collector_in
 
     def is_stuck(self, dataframe: DataFrame):
-        return True
+        return False
