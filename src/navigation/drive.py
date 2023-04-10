@@ -14,7 +14,7 @@ def get_drive_command(
     rover_pose: SE3,
     completion_thresh: float,
     turn_in_place_thresh: float,
-    in_odom: bool = False
+    in_odom: bool = False,
 ) -> Tuple[Twist, bool]:
     """
     :param target_pos:              Target position to drive to.
@@ -29,7 +29,7 @@ def get_drive_command(
     MAX_DRIVING_EFFORT = get_rosparam("drive/" + sub_dir + "/max_driving_effort", 1)
     MIN_DRIVING_EFFORT = get_rosparam("drive/" + sub_dir + "/min_driving_effort", -1)
     TURNING_P = get_rosparam("drive/" + sub_dir + "/turning_p", 10.0)
-   
+
     if not (0.0 < turn_in_place_thresh < 1.0):
         raise ValueError(f"Argument {turn_in_place_thresh} should be between 0 and 1")
     rover_pos = rover_pose.position
