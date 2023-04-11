@@ -8,15 +8,16 @@ from util.SE3 import SE3
 from util.np_utils import angle_to_rotate
 from util.ros_utils import get_rosparam
 
-ODOM_CONSTANTS = get_rosparam("drive/odom", {})
-MAP_CONSTANTS = get_rosparam("drive/map", {})
+default_constants = {"max_driving_effort": 1.0, "min_driving_effort": -1.0, "turning_p": 10.0}
+ODOM_CONSTANTS = get_rosparam("drive/odom", default_constants)
+MAP_CONSTANTS = get_rosparam("drive/map", default_constants)
 
 def get_drive_command(
     target_pos: np.ndarray,
     rover_pose: SE3,
     completion_thresh: float,
     turn_in_place_thresh: float,
-    in_odom: bool = False
+    in_odom: bool = False,
 ) -> Tuple[Twist, bool]:
     """
     :param target_pos:              Target position to drive to.

@@ -92,7 +92,7 @@ class SearchState(BaseState):
             self.context.rover.get_pose(in_odom_frame=True),
             self.STOP_THRESH,
             self.DRIVE_FWD_THRESH,
-            use_odom = self.context.use_odom
+            use_odom=self.context.use_odom,
         )
         if arrived:
             # if we finish the spiral without seeing the fiducial, move on with course
