@@ -292,4 +292,4 @@ brushless:
         max_torque: 0.13
         multiplier: -1
 
-network_iface: "enp44s0"
+network_iface: "enp0s31f6"
