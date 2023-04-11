@@ -8,6 +8,8 @@ from util.SE3 import SE3
 from util.np_utils import angle_to_rotate
 from util.ros_utils import get_rosparam
 
+ODOM_CONSTANTS = get_rosparam("drive/odom", {})
+MAP_CONSTANTS = get_rosparam("drive/map", {})
 
 def get_drive_command(
     target_pos: np.ndarray,
@@ -25,10 +27,10 @@ def get_drive_command(
     :param in_odom:                 If true, the target position is in the odom frame (CHECK THAT IT IS ALSO ENABLED IN CONTEXT FIRST), otherwise it is in the map frame.
     :return:                        Rover drive effort command.
     """
-    sub_dir = "odom" if in_odom else "map"
-    MAX_DRIVING_EFFORT = get_rosparam("drive/" + sub_dir + "/max_driving_effort", 1)
-    MIN_DRIVING_EFFORT = get_rosparam("drive/" + sub_dir + "/min_driving_effort", -1)
-    TURNING_P = get_rosparam("drive/" + sub_dir + "/turning_p", 10.0)
+    constants = ODOM_CONSTANTS if in_odom else MAP_CONSTANTS
+    MAX_DRIVING_EFFORT = constants["max_driving_effort"]
+    MIN_DRIVING_EFFORT = constants["min_driving_effort"]
+    TURNING_P = constants["turning_p"]
    
     if not (0.0 < turn_in_place_thresh < 1.0):
         raise ValueError(f"Argument {turn_in_place_thresh} should be between 0 and 1")
