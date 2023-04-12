@@ -93,7 +93,7 @@ class PartialGateState(BaseState):
             self.context.rover.get_pose(in_odom_frame=True),
             STOP_THRESH,
             DRIVE_FWD_THRESH,
-            use_odom=self.context.use_odom,
+            in_odom=self.context.use_odom,
         )
         if arrived:
             # if we finish the gate path, we're done (or continue search) CHECK THIS***

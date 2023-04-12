@@ -12,6 +12,7 @@ default_constants = {"max_driving_effort": 1.0, "min_driving_effort": -1.0, "tur
 ODOM_CONSTANTS = get_rosparam("drive/odom", default_constants)
 MAP_CONSTANTS = get_rosparam("drive/map", default_constants)
 
+
 def get_drive_command(
     target_pos: np.ndarray,
     rover_pose: SE3,
@@ -32,7 +33,7 @@ def get_drive_command(
     MAX_DRIVING_EFFORT = constants["max_driving_effort"]
     MIN_DRIVING_EFFORT = constants["min_driving_effort"]
     TURNING_P = constants["turning_p"]
-   
+
     if not (0.0 < turn_in_place_thresh < 1.0):
         raise ValueError(f"Argument {turn_in_place_thresh} should be between 0 and 1")
     rover_pos = rover_pose.position

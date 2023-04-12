@@ -45,7 +45,7 @@ class ApproachPostState(WaypointState):
                 self.context.rover.get_pose(in_odom_frame=True),
                 self.STOP_THRESH,
                 self.DRIVE_FWD_THRESH,
-                use_odom=self.context.use_odom,
+                in_odom=self.context.use_odom,
             )
             if arrived:
                 self.context.course.increment_waypoint()
