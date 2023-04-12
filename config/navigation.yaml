@@ -1,11 +1,11 @@
 drive:
   map:
-    max_driving_effort: 1
-    min_driving_effort: -1
+    max_driving_effort: 1.0
+    min_driving_effort: -1.0
     turning_p: 10.0
   odom:
-    max_driving_effort: 1
-    min_driving_effort: -1
+    max_driving_effort: 1.0
+    min_driving_effort: -1.0
     turning_p: 10.0
 
 gate:
