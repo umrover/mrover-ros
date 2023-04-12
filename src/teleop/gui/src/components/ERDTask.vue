@@ -194,13 +194,12 @@ export default {
   display: grid;
   grid-gap: 10px;
   grid-template-columns: auto auto;
-  grid-template-rows: 60px 250px auto auto auto;
+  grid-template-rows: 60px auto auto auto;
   grid-template-areas:
     "header header"
-    "cameras moteus"
-    "cameras moteus"
-    "drive-vel-data pdb"
-    "arm-controls arm-controls";
+    "cameras arm-controls"
+    "drive-vel-data moteus"
+    "pdb pdb"; 
   font-family: sans-serif;
   height: auto;
 }

@@ -39,7 +39,7 @@ export default {
       selectedQuality: "2",
       selectedStream: this.stream,
       prevStream: this.stream,
-      numQuality: 0
+      numQuality: 5
     };
   },
 

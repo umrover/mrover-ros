@@ -231,6 +231,7 @@ export default {
   align-items: center;
   justify-items: center;
   width: 100%;
+  height: auto;
 }
 
 .wrap h2 h4 {
