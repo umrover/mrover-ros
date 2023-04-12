@@ -72,8 +72,18 @@ teleop:
     bar: ["/tf_static", "/rosout", "/tf"]
 
   camera_list: [
-    "a",
-    "b",
-    "c",
-    "d"
+    "Cam1",
+    "Cam2",
+    "Cam3",
+    "Cam4",
+    "Cam5",
+    "Cam6"
   ]
+
+  camera_presets: 
+    - name: "Sample Deposit Config"
+      cams: ["Cam1", "Cam3", "Cam5"]
+    - name: "Some Other Config"
+      cams: ["Cam1", "Cam2"]
+    - name: "Another Config"
+      cams: ["Cam4", "Cam5", "Cam3", "Cam6"]

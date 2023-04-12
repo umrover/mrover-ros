@@ -1,7 +1,7 @@
 <template>
   <div class="wrap">
     <h3>Cameras</h3>
-    <div class="input">
+    <div v-if="!bindingsExist" class="input">
       Camera name:
       <input v-model="cameraName" class="rounded" type="message" /> Camera
       number:
@@ -19,8 +19,7 @@
     <div class="cameraselection">
       <CameraSelection
         class="cameraspace1"
-        :cams-enabled="camsEnabled"
-        :names="names"
+        :cams="cameras"
         :capacity="parseInt(capacity)"
         @cam_index="setCamIndex($event)"
       />
@@ -28,11 +27,22 @@
     <h3>All Cameras</h3>
     Capacity:
     <input v-model="capacity" class="rounded" type="Number" min="2" max="4" />
-    <button v-if="allDisabled()" class="rounded button" @click="setup()">
+    <button :disabled="!allDisabled()" class="rounded button" @click="showModal = true">
       Setup
     </button>
+    <button class="rounded button" @click="resetBindings()">
+      Reset
+    </button>
 
-    <div v-if="showModal" @close="showModal = false">
+    <label for="preset">Presets:</label>
+        <select id="preset" v-model="selectedPreset" class="box" required @change="changePreset()">
+          <option value="" selected>Select a preset</option>
+          <option v-for="option in presets" :value="option">
+            {{ option.name }}
+          </option>
+        </select>
+
+    <div v-if="showModal || deviceID > 8" @close="closeModal()">
       <transition name="modal-fade">
         <div class="modal-backdrop">
           <div class="modal"
@@ -45,7 +55,7 @@
               <button
                 type="button"
                 class="btn-close"
-                @click="showModal = false"
+                @click="closeModal()"
               >
                 x
               </button>
@@ -56,9 +66,10 @@
               id="modalDescription"
             >
               <slot name="body">
-                Which camera is this?
-                <button>Not a Camera</button>
-                <button v-for="name in cameraNames" :key="name">{{name}}</button>
+                <p>Which camera is this?</p>
+                <p>Device ID: {{ deviceID }}</p>
+                <button @click="assignID('NotACamera')">Not a Camera</button>
+                <button v-for="name in cameraNames" :key="name" @click="assignID(name)">{{name}}</button>
               </slot>
             </section>
 
@@ -66,7 +77,7 @@
               <button
                 type="button"
                 class="btn-green"
-                @click="showModal = false"
+                @click="closeModal()"
               >
                 Close me!
               </button>
@@ -77,12 +88,12 @@
     </div>
 
 
-    <div v-for="i in camsEnabled.length" :key="i" class="camerainfo">
+    <div v-for="(c, idx) in cameras" :key="idx" class="camerainfo">
       <CameraInfo
-        v-if="camsEnabled[i - 1]"
-        :id="i - 1"
-        :name="names[i - 1]"
-        :stream="getStreamNum(i - 1)"
+        v-if="c.enabled"
+        :id="c.index"
+        :name="c.name"
+        :stream="getStreamNum(c.index)"
         @newQuality="changeQuality($event)"
         @swapStream="swapStream($event)"
       ></CameraInfo>
@@ -110,15 +121,21 @@ export default {
   },
   data() {
     return {
-      camsEnabled: new Array(9).fill(false),
-      names: Array.from({ length: 9 }, (_, i) => "Camera: " + i),
+      cameras: [],
       cameraIdx: 1,
       cameraName: "",
       capacity: 2,
-      qualities: new Array(9).fill(-1),
       streamOrder: [-1, -1, -1, -1],
+      //below are variables for bindings
+      bindings: null,
       showModal: false,
-      cameraNames: []
+      cameraNames: [],
+      deviceID: 0,
+      nameIDMap: new Object(),
+      bindingsExist: false,
+      //variables for presets
+      selectedPreset: "",
+      presets: []
     };
   },
 
@@ -143,26 +160,45 @@ export default {
     });
     resetService.callService(request, (result) => {});
 
+    this.initCams();
+
     var names = new ROSLIB.Param({
       ros: this.$ros,
       name: "teleop/camera_list"
     });
-    names.get((val) => {
-      this.cameraNames = val;
+    names.get((val) => this.cameraNames = val);
+
+    this.bindings = new ROSLIB.Param({
+      ros: this.$ros,
+      name: "teleop/camera_bindings"
+    });
+    this.addBindings();
+
+    var p = new ROSLIB.Param({
+      ros: this.$ros,
+      name: "teleop/camera_presets"
+    });
+    p.get((values) => {
+      var cams = values.map((v) => v.cams);
+      var names = values.map((v) => v.name);
+      for(var i = 0; i < cams.length; i++){
+        this.presets.push({name: names[i], cams: cams[i]});
+      }
     });
   },
 
   methods: {
-    setCamIndex: function (index) {
+    setCamIndex(index) {
       //every time a button is pressed, it changes cam status and adds/removes from stream
-      Vue.set(this.camsEnabled, index, !this.camsEnabled[index]);
-      if(this.camsEnabled[index]) this.qualities[index] = 2;  //if enabling camera, turn on medium quality
+      var cam = this.cameras.find((cam) => cam.index == index);
+      cam.enabled = !cam.enabled;
+      if(cam.enabled) cam.quality = 2; //if enabling camera, turn on medium quality
       this.changeStream(index);
     },
 
-    sendCameras: function (index) {
+    sendCameras(index) {
       //sends cameras to a service to display on screen
-      var res = this.qualities[index];
+      var res = this.cameras.find((cam) => cam.index == index).quality;
       var msg = new ROSLIB.Message({ device: index, resolution: res }); //CameraCmd msg
 
       var changeCamsService = new ROSLIB.Service({
@@ -178,12 +214,12 @@ export default {
       changeCamsService.callService(request, (result) => {});
     },
 
-    addCameraName: function () {
-      Vue.set(this.names, this.cameraIdx, this.cameraName);
+    addCameraName() {
+      this.cameras.find((cam) => cam.index == this.cameraIdx).name = this.cameraName;
     },
 
     changeQuality({ index, value }) {
-      Vue.set(this.qualities, index, value);
+      this.cameras.find((cam) => cam.index == index).quality = value;
       this.sendCameras(index);
     },
 
@@ -196,29 +232,109 @@ export default {
     changeStream(index) {
       const found = this.streamOrder.includes(index);
       if (found) {
-        this.streamOrder.splice(this.streamOrder.indexOf(index), 1);
-        this.streamOrder.push(-1);
-        this.qualities[index] = -1;  //close the stream when sending it to comms
-      } else Vue.set(this.streamOrder, this.streamOrder.indexOf(-1), index);
+        this.removeStream(index);
+      } else this.addStream(index);
+      console.log(this.streamOrder)
       this.sendCameras(index);
+    },
+
+    addStream(index) {
+      Vue.set(this.streamOrder, this.streamOrder.indexOf(-1), index);
+    },
+
+    removeStream(index) {
+      this.streamOrder.splice(this.streamOrder.indexOf(index), 1);
+      this.streamOrder.push(-1);
+      this.cameras.find((cam) => cam.index == index).quality = -1;  //close the stream when sending it to comms
     },
 
     getStreamNum(index) {
       return this.streamOrder.indexOf(index);
     },
 
+    initCams() {
+      this.cameras = [];
+      for(var i = 0; i < 9; i++){
+        this.cameras.push(
+          {
+            name: "Camera " + i,
+            enabled: false,
+            quality: -1,
+            index: i
+          }
+        );
+      }
+    },
+
     allDisabled(){
       var off = true;
-      for(var c in this.camsEnabled){
-        if(this.camsEnabled[c]) off = false;
-      }
+      this.cameras.forEach(c => {
+        if(c.enabled) off = false;
+      });
       return off;
     },
 
-    setup(){
-      this.showModal = true;
-
+    assignID(name){
+      if(name != "NotACamera") this.nameIDMap[name] = this.deviceID;
+      this.deviceID += 2;
+      if(this.deviceID == 9) this.closeModal(); //iterated through evens and odds, so close
+      else if(this.deviceID > 8) this.deviceID = 1;
     },
+
+    addBindings() {
+      this.bindings.get((dict) => {
+        if(dict) {
+          this.bindingsExist = true;
+          if(Object.keys(dict).length > 4) this.capacity = 4;
+          else this.capacity = Object.keys(dict).length;
+          for(var key in dict){
+            this.cameras.find((cam) => cam.index == dict[key]).name = key;
+            this.setCamIndex(dict[key]);
+          }
+          this.removeUnused();
+        }
+      });
+    },
+
+    resetBindings() {
+      //remove all the cameras from the stream
+      this.cameras.forEach((cam) => this.removeStream(cam.index));
+      console.log(this.streamOrder)
+      //erase all the bindings
+      this.bindings.set(new Object());
+      this.bindingsExist = false;
+      //reinit cams to default settings
+      this.initCams();
+      this.selectedPreset = "";
+    },
+
+    removeUnused() {
+      var used = this.cameras.filter(cam => cam.enabled);
+      this.cameras = used;
+    },
+
+    closeModal() {
+      this.showModal = false;
+      this.deviceID = 0;
+      this.bindings.set(this.nameIDMap);
+      this.nameIDMap = new Object();
+      this.addBindings();
+    },
+
+    changePreset() {
+      if(this.selectedPreset){
+        this.streamOrder = [-1, -1, -1, -1];  //reset the stream
+        const preset = this.presets.find((name) => this.selectedPreset == name);
+        this.cameras.forEach((cam) => {
+          const found = preset.cams.includes(cam.name);
+          if(found) {
+            cam.enabled = true;
+            this.changeStream(cam.index);
+          }
+          else cam.enabled = false;
+        });
+      }
+    }
   },
 };
 </script>
