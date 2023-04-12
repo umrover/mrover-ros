@@ -112,6 +112,7 @@ macro(add_tests_macro)
 
     # Python unit tests
     catkin_add_nosetests(test/navigation/drive_test.py)
+    catkin_add_nosetests(test/teleop/teleop_test.py)
     catkin_add_nosetests(test/util/SE3_test.py)
     catkin_add_nosetests(test/util/SO3_test.py)
 
