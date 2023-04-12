@@ -1,6 +1,6 @@
 <template>
   <div>
-    <h3>Sudan III Drop</h3>
+    <h3>Emulsion Testing</h3>
     <button
       id="sudan-button"
       :disabled="!isEnabled[siteIndex]"
