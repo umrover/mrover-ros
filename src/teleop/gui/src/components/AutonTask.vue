@@ -47,12 +47,8 @@
       </div>
       <div></div>
       <JoystickValues />
-      <div class="calibration status data" style="background-color: lightgray">
-        <IMUCalibration />
-      </div>
-      <div></div>
       <div>
-        <FlightAttitudeIndicator></FlightAttitudeIndicator>
+        <OdometryReading :odom="odom"></OdometryReading>
       </div>
     </div>
     <div class="box map light-bg">
@@ -90,6 +86,7 @@ import IMUCalibration from "./IMUCalibration.vue";
 import CommReadout from "./CommReadout.vue";
 import { quaternionToMapAngle } from "../utils.js";
 import FlightAttitudeIndicator from "./FlightAttitudeIndicator.vue";
+import OdometryReading from "./OdometryReading.vue";
 const navBlue = "#4695FF";
 const navGreen = "yellowgreen";
 const navRed = "lightcoral";
@@ -104,7 +101,8 @@ export default {
     JoystickValues,
     MastGimbalControls,
     CommReadout,
-    FlightAttitudeIndicator
+    FlightAttitudeIndicator,
+    OdometryReading
   },
 
   data() {
