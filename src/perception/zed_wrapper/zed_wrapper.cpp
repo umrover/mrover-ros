@@ -63,6 +63,7 @@ namespace mrover {
             std::string svoFile{};
             mPnh.param("svo_file", svoFile, {});
             mPnh.param("ues_builtin_visual_odom", mUseBuiltinPosTracking, false);
+            mPnh.param("use_area_memory", mUseAreaMemory, true);
 
             if (imageWidth < 0 || imageHeight < 0) {
                 throw std::invalid_argument("Invalid image dimensions");
@@ -99,6 +100,7 @@ namespace mrover {
 
             if (mUseOdom && mUseBuiltinPosTracking) {
                 sl::PositionalTrackingParameters positionalTrackingParameters;
+                positionalTrackingParameters.enable_area_memory = mUseAreaMemory;
                 mZed.enablePositionalTracking(positionalTrackingParameters);
             }
 

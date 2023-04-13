@@ -61,6 +61,7 @@ namespace mrover {
         int mTextureConfidence{};
         bool mUseOdom{};
         bool mUseBuiltinPosTracking{};
+        bool mUseAreaMemory{};
 
         sl::Camera mZed;
         sl::CameraInformation mZedInfo;
