@@ -181,16 +181,6 @@ export default {
         this.route.map((waypoint) => waypoint.latLng)
       );
     },
-    //delete waypoints
-    flush: function() {
-      return{
-        searchPathPoints: [],
-        gatePathPoints: [],
-
-        post1: null,
-        post2: null,
-      }
-    },
   },
   watch: {
     odom: {
