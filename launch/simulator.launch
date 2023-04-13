@@ -7,10 +7,11 @@
 <launch>
     <arg name="gui" default="true" />
     <arg name="gazebo_config_path" default="$(find mrover)/config/gazebo" />
+    <arg name="world_name" default="world" />
 
     <include file="$(find gazebo_ros)/launch/empty_world.launch">
         <env name="GAZEBO_MODEL_PATH" value="$(arg gazebo_config_path)/env_description" />
-        <arg name="world_name" value="$(arg gazebo_config_path)/env_description/world.world" />
+        <arg name="world_name" value="$(arg gazebo_config_path)/env_description/$(arg world_name).world" />
         <arg name="paused" value="false" />
         <arg name="use_sim_time" value="true" />
         <arg name="gui" value="$(arg gui)" />
