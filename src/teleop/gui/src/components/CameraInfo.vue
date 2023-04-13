@@ -13,6 +13,9 @@
     >
     <option v-for="i in numQuality">{{i-1}}</option>
     </select>
+    <button class="rounded button" @click="screenshot(id)">
+        Screenshot
+      </button>
   </div>
 </template>
 
@@ -39,7 +42,8 @@ export default {
       selectedQuality: "2",
       selectedStream: this.stream,
       prevStream: this.stream,
-      numQuality: 0
+      numQuality: 0,
+      screenshot_pub: null
     };
   },
 
@@ -58,6 +62,11 @@ export default {
     arg.get((arr) => {
       this.numQuality = arr.length;
     });
+    this.screenshot_pub = new ROSLIB.Topic({
+      ros: this.$ros,
+      name: "screenshot",
+      messageType: "std_msgs/UInt64",
+    });
   },
 
   methods: {
@@ -75,6 +84,11 @@ export default {
       });
       this.prevStream = this.selectedStream;
     },
+
+    screenshot:function(id){
+      var screenshotmsg = new ROSLIB.Message({"data" :id});
+      this.screenshot_pub.publish(screenshotmsg);
+    }
   },
 };
 </script>
@@ -92,5 +106,13 @@ export default {
 
 .wrap > * {
   margin: 5px 0 5px 0;
+}
+.rounded {
+  border: 1px solid black;
+  border-radius: 5px;
+}
+
+.button {
+  height: 25px;
 }
 </style>
