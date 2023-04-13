@@ -1,7 +1,9 @@
 <template>
   <div class="wrap">
     <span :class="['led', color]"></span>
-    <span class="name">{{ name }}</span>
+    <div>
+      <span class="name" v-if="show_name">{{ name }}</span>
+    </div>
   </div>
 </template>
 
@@ -16,6 +18,10 @@ export default {
       type: String,
       required: true,
     },
+    show_name: {
+      type: Boolean,
+      required: true,
+    }
   },
   computed: {
     color: function () {
