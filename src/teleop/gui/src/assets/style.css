@@ -2,7 +2,7 @@
     --primary-blue: rgb(63, 99, 166);
     --hover-blue: rgb(79, 119, 192);
     --active-blue: rgb(112, 148, 216);
-    --shadow-color: rgba(220, 220, 220, 0.61); /*236 236 236 .966*/
+    --shadow-color: rgba(220, 220, 220, 0.61);
     --accent: rgb(210, 74, 39);
     --red-hover: rgb(187, 65, 35);
     --red-active: rgb(163, 59, 33);
@@ -24,12 +24,14 @@ body {
     overflow-y: scroll;
 }
 
+/* A general wrapper class for components */
 .wrap {
     font-family: "Arial";
     width: 100%;
     height: 100%;
 }
 
+/* A class used to format the header */
 .page_header {
     display: flex;
     justify-content: center;
@@ -38,6 +40,7 @@ body {
     box-shadow: 0px 10px 8px -4px var(--shadow-color);
 }
 
+/* A class to format the component title in the header */
 .page_header h1 {
     position: absolute;
     vertical-align: center;
@@ -45,6 +48,8 @@ body {
     margin-left: 25px;
 }
 
+/* Use the box class any time you want a rounded box section 
+    i.e. components like Cameras inside ERD Task  */
 .box, .button {
     background-color: white;
     border: none;
@@ -53,6 +58,7 @@ body {
     box-shadow: 2px 2px 15px var(--shadow-color), -2px -2px 15px var(--shadow-color);
 }
 
+/* A class to use for any button you create */
 .button {
     background-color: var(--primary-blue);
     text-align: center;
@@ -70,6 +76,8 @@ body {
 .button:active {
     background-color: var(--active-blue);
 }
+
+/* Typical colors used throughout the components */
 
 .green {
     background-color: var(--green);

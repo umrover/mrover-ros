@@ -1,7 +1,7 @@
 <template>
   <div class="wrapper">
     <div class="page_header">
-      <img src="/static/new_mrover.png" alt="MRover" title="MRover" width="185" height="53" />
+      <img src="/static/mrover_logo.png" alt="MRover" title="MRover" width="185" height="53" />
       <h1>ISH Dashboard</h1>
       <div class="help">
         <img

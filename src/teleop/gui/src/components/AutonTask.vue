@@ -2,7 +2,7 @@
 <div class="wrap">
     <div class="page_header">
         <h1>Auton Dashboard</h1>
-        <img src="/static/new_mrover.png" alt="MRover" title="MRover" width="185" height="53" />
+        <img src="/static/mrover_logo.png" alt="MRover" title="MRover" width="185" height="53" />
         <div class="help">
             <img src="/static/help.png" alt="Help" title="Help" width="48" height="48" />
         </div>

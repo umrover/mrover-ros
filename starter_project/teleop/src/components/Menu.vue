@@ -1,7 +1,7 @@
 <template>
   <div class="wrap">
     <div class="box header">
-      <img src="/static/new_mrover.png" alt="MRover" title="MRover" width="185" height="53" />
+      <img src="/static/mrover_logo.png" alt="MRover" title="MRover" width="185" height="53" />
       <h1>Mrover Teleop Training</h1>
       <div class="spacer"></div>
     </div>

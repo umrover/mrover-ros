@@ -1,6 +1,9 @@
 <template>
-  <div class="menu-btn">
-    <a :href="link">{{ name }}</a>
+  <div class="spacer">
+    <a :href="link">
+      <img :src="require(`../assets/${name}.svg`).default"/>
+      <p>{{ name }}</p>
+    </a>
   </div>
 </template>
 
@@ -19,27 +22,19 @@ export default {
       type: String,
       required: true,
     },
-  },
+  }
+
 };
 </script>
 
 <style scoped>
-.menu-btn {
-  font-size: 3em;
-  border: black solid 1px;
-  border-radius: 5px;
-  margin: 0px 5px;
-  padding: 0px 5px;
-  transition: 0.25s;
-  background-color: silver;
+
+.spacer {
+  margin: 10px;
 }
 
-.menu-btn:hover {
-  background-color: gray;
-}
-
-.menu-btn a {
+a {
   text-decoration: none;
-  color: black;
+  color: var(--primary-blue);
 }
 </style>

@@ -3,7 +3,7 @@
         <div class="wrap">
             <div class="page_header">
             <h1>ROS Send</h1>
-            <img src="/static/new_mrover.png" alt="MRover" title="MRover" width="185" height="53" />
+            <img src="/static/mrover_logo.png" alt="MRover" title="MRover" width="185" height="53" />
             </div>
             
             <div class="pages">
