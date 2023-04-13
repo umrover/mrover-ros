@@ -1,9 +1,13 @@
 #pragma once
-
 #include "ControllerMap.h"          // for ControllerMap
+#include <algorithm>                // for distance
 #include <array>                    // for array
 #include <cmath>                    // for nan
+#include <mrover/AdjustMotors.h>    // for AdjustMotors
+#include <mrover/CalibrateMotors.h> // for CalibrateMotors
+#include <mrover/Calibrated.h>      // for Calibrated
 #include <mrover/Carousel.h>        // for Carousel
+#include <mrover/EnableDevice.h>    // for EnableDevice
 #include <mrover/MastGimbal.h>      // for MastGimbal
 #include <optional>                 // for optional
 #include <ros/console.h>            // for ROS_ERROR
@@ -23,23 +27,36 @@ private:
     // This holds the ROS Node.
     inline static ros::NodeHandle* n;
 
+    // Calibrate service
+    inline static ros::ServiceServer calibrateService;
+    inline static ros::ServiceServer adjustService;
+    inline static ros::ServiceServer adjustUsingAbsEncService;
+    inline static ros::ServiceServer enableLimitSwitchService;
+
     // RA
     inline static std::array<std::string, 5> RANames;
     inline static ros::Subscriber moveRASubscriber;
     inline static ros::Publisher jointDataPublisherRA;
     inline static sensor_msgs::JointState jointDataRA;
+    inline static ros::Publisher calibrationStatusPublisherRA;
+    inline static mrover::Calibrated calibrationStatusRA;
 
     // SA
     inline static std::array<std::string, 5> SANames;
     inline static ros::Subscriber moveSASubscriber;
     inline static ros::Publisher jointDataPublisherSA;
     inline static sensor_msgs::JointState jointDataSA;
+    inline static ros::Publisher calibrationStatusPublisherSA;
+    inline static mrover::Calibrated calibrationStatusSA;
 
     // Cache
     inline static ros::Subscriber moveCacheSubscriber;
 
     // Carousel
+    inline static std::string carousel_name;
     inline static ros::Subscriber moveCarouselSubscriber;
+    inline static ros::Publisher calibrationStatusPublisherCarousel;
+    inline static mrover::Calibrated calibrationStatusCarousel;
 
     // Mast
     inline static ros::Subscriber moveMastGimbalSubscriber;
@@ -48,6 +65,11 @@ private:
     // MODIFIES: nothing
     // EFFECTS: Moves a controller in open loop.
     static std::optional<float> moveControllerOpenLoop(const std::string& name, float velocity);
+
+    // REQUIRES: nothing
+    // MODIFIES: nothing
+    // EFFECTS: Determine if a controller is calibrated
+    static std::optional<bool> getControllerCalibrated(const std::string& name);
 
     // REQUIRES: nothing
     // MODIFIES: nothing
@@ -75,9 +97,34 @@ private:
     // EFFECTS: Moves a mast gimbal.
     static void moveMastGimbal(const mrover::MastGimbal::ConstPtr& msg);
 
+    // REQUIRES: valid req and res objects
+    // MODIFIES: res
+    // EFFECTS: sends a move/calibration command to the mcu
+    static bool processMotorCalibrate(mrover::CalibrateMotors::Request& req, mrover::CalibrateMotors::Response& res);
+
+    // REQUIRES: valid req and res objects
+    // MODIFIES: res
+    // EFFECTS: hard sets the requested controller angle
+    static bool processMotorAdjust(mrover::AdjustMotors::Request& req, mrover::AdjustMotors::Response& res);
+
+    // REQUIRES: valid req and res objects
+    // MODIFIES: res
+    // EFFECTS: takes the current absolute encoder value, applies an offset, and hard sets the new angle
+    static bool processMotorAdjustUsingAbsEnc(mrover::AdjustMotors::Request& req, mrover::AdjustMotors::Response& res);
+
+    // REQUIRES: valid req and res objects
+    // MODIFIES: res
+    // EFFECTS: disables or enables limit switches
+    static bool processMotorEnableLimitSwitches(mrover::EnableDevice::Request& req, mrover::EnableDevice::Response& res);
+
 public:
     // REQUIRES: rosNode is a pointer to the created node.
     // MODIFIES: static variables
     // EFFECTS: Initializes all subscribers and publishers.
     static void init(ros::NodeHandle* rosNode);
+
+    // REQUIRES: name is the name of a controller and isCalibrated is whether it is calibrated
+    // MODIFIES: static variables
+    // EFFECTS: Publishes calibration status to the proper topic depending on the name
+    static void publish_calibration_data_using_name(const std::string& name, bool isCalibrated);
 };

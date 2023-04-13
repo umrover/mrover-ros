@@ -28,7 +28,6 @@ Controller::Controller(
     motorIDRegMask = motorID << 5;
     motorMaxVoltage = _motorMaxVoltage;
     driverVoltage = _driverVoltage;
-
     currentAngle = 0.0f;
 }
 
@@ -40,6 +39,25 @@ float Controller::getCurrentAngle() const {
     return currentAngle;
 }
 
+// REQUIRES: newAngleRad to be in radians
+// MODIFIES: currentAngle
+// EFFECTS: I2C bus, forces the angle of the controller to be a certain value
+void Controller::overrideCurrentAngle(float newAngleRad) {
+    auto ticks = (int32_t) (((newAngleRad) / (2 * M_PI)) * quadCPR); // convert to quad units
+
+    try {
+        makeLive();
+
+        uint8_t buffer[4];
+        memcpy(buffer, UINT8_POINTER_T(&ticks), sizeof(ticks));
+        I2C::transact(deviceAddress, motorIDRegMask | ADJUST_OP, ADJUST_WB,
+                      ADJUST_RB, buffer, nullptr);
+
+    } catch (IOFailure& e) {
+        ROS_ERROR("overrideCurrentAngle failed on %s", name.c_str());
+    }
+}
+
 // REQUIRES: nothing
 // MODIFIES: nothing
 // EFFECTS: Returns true if Controller is live.
@@ -49,7 +67,7 @@ bool Controller::isControllerLive() const {
 
 // REQUIRES: -1.0 <= input <= 1.0
 // MODIFIES: currentAngle. Also makes controller live if not already.
-// EFFECTS: Sends an open loop command scaled to PWM limits
+// EFFECTS: I2C bus, Sends an open loop command scaled to PWM limits
 // based on allowed voltage of the motor. Also updates angle.
 void Controller::moveOpenLoop(float input) {
     try {
@@ -76,15 +94,108 @@ void Controller::moveOpenLoop(float input) {
 
         I2C::transact(deviceAddress, motorIDRegMask | OPEN_PLUS_OP, OPEN_PLUS_WB,
                       OPEN_PLUS_RB, buffer, UINT8_POINTER_T(&angle));
-        currentAngle = (float) ((((float) angle / quadCPR) * 2 * M_PI) - M_PI);
+        currentAngle = (float) (((float) angle / quadCPR) * 2 * M_PI);
     } catch (IOFailure& e) {
         ROS_ERROR("moveOpenLoop failed on %s", name.c_str());
     }
 }
 
 // REQUIRES: nothing
+// MODIFIES: nothing
+// EFFECTS: I2C bus, returns if the MCU is calibrated
+bool Controller::isCalibrated() {
+    uint8_t calibration_status;
+
+    try {
+        makeLive();
+        if (isControllerCalibrated) return true;
+
+        I2C::transact(deviceAddress, motorIDRegMask | IS_CALIBRATED_OP, IS_CALIBRATED_WB,
+                      IS_CALIBRATED_RB, nullptr, UINT8_POINTER_T(&calibration_status));
+
+        isControllerCalibrated = calibration_status;
+
+    } catch (IOFailure& e) {
+        ROS_ERROR("isCalibrated failed on %s", name.c_str());
+        return false;
+    }
+
+    return calibration_status;
+}
+
+// REQUIRES: nothing
+// MODIFIES: nothing
+// EFFECTS: I2C bus, enables or disables limit switches
+void Controller::enableLimitSwitches(bool enable) {
+    try {
+        makeLive();
+
+        enableLimitSwitch(limitAPresent, enable, limitAEnable,
+                          ENABLE_LIMIT_A_OP, ENABLE_LIMIT_A_WB, ENABLE_LIMIT_A_RB);
+        enableLimitSwitch(limitBPresent, enable, limitBEnable,
+                          ENABLE_LIMIT_B_OP, ENABLE_LIMIT_B_WB, ENABLE_LIMIT_B_RB);
+
+    } catch (IOFailure& e) {
+        ROS_ERROR("enableLimitSwitches failed on %s", name.c_str());
+    }
+}
+
+// REQUIRES: buffer is valid
+// MODIFIES: limitEnable
+// EFFECTS: I2C bus, enables limit switch if it is present
+void Controller::enableLimitSwitch(bool limitPresent, bool enable, bool& limitEnable,
+                                   uint8_t operation, uint8_t write_bytes, uint8_t read_bytes) {
+
+    uint8_t buffer[1];
+
+    limitEnable = limitPresent && enable;
+
+    if (limitPresent) {
+
+        try {
+            memcpy(buffer, UINT8_POINTER_T(&limitEnable), sizeof(limitEnable));
+            I2C::transact(deviceAddress, motorIDRegMask | operation, write_bytes,
+                          read_bytes, buffer, nullptr);
+        } catch (IOFailure& e) {
+            ROS_ERROR("enableLimitSwitch failed on %s", name.c_str());
+        }
+
+    } else {
+        ROS_INFO("CANNOT ENABLE LIMIT THAT IS NOT PRESENT");
+    }
+}
+
+
+// REQUIRES: nothing
+// MODIFIES: nothing
+// EFFECTS: I2C bus, gets current absolute encoder value of MCU
+float Controller::getAbsoluteEncoderValue() {
+    try {
+        makeLive();
+
+        float abs_enc_radians;
+        I2C::transact(deviceAddress, motorIDRegMask | ABS_ENC_OP, ABS_ENC_WB,
+                      ABS_ENC_RB, nullptr, UINT8_POINTER_T(&abs_enc_radians));
+
+        return abs_enc_radians;
+
+    } catch (IOFailure& e) {
+        ROS_ERROR("getAbsoluteEncoderValue failed on %s", name.c_str());
+    }
+
+    return 0;
+}
+
+// REQUIRES: nothing
+// MODIFIES: nothing
+// EFFECTS: Returns true if Controller has a (one or both) limit switch(s) is enabled.
+bool Controller::getLimitSwitchEnabled() const {
+    return limitAEnable || limitBEnable;
+}
+
+// REQUIRES: nothing
 // MODIFIES: isLive
-// EFFECTS: If not already live,
+// EFFECTS: I2C bus, If not already live,
 // configures the physical controller.
 // Then makes live.
 void Controller::makeLive() {
@@ -99,8 +210,9 @@ void Controller::makeLive() {
 
         uint8_t buffer[32];
 
-        auto maxPWM = (uint16_t) (100.0 * motorMaxVoltage / driverVoltage);
-        assert(0 <= maxPWM);
+        assert(motorMaxVoltage >= 0);
+	assert(driverVoltage >= 0);
+	auto maxPWM = (uint16_t) (100.0 * motorMaxVoltage / driverVoltage);
         assert(maxPWM <= 100);
 
         memcpy(buffer, UINT8_POINTER_T(&maxPWM), sizeof(maxPWM));
@@ -112,6 +224,36 @@ void Controller::makeLive() {
         memcpy(buffer + 8, UINT8_POINTER_T(&(kD)), sizeof(kD));
         I2C::transact(deviceAddress, motorIDRegMask | CONFIG_K_OP, CONFIG_K_WB,
                       CONFIG_K_RB, buffer, nullptr);
+
+        memcpy(buffer, UINT8_POINTER_T(&limitAPresent), sizeof(limitAPresent));
+        I2C::transact(deviceAddress, motorIDRegMask | ENABLE_LIMIT_A_OP, ENABLE_LIMIT_A_WB,
+                      ENABLE_LIMIT_A_RB, buffer, nullptr);
+
+        memcpy(buffer, UINT8_POINTER_T(&limitBPresent), sizeof(limitBPresent));
+        I2C::transact(deviceAddress, motorIDRegMask | ENABLE_LIMIT_B_OP, ENABLE_LIMIT_B_WB,
+                      ENABLE_LIMIT_B_RB, buffer, nullptr);
+
+        memcpy(buffer, UINT8_POINTER_T(&limitAIsActiveHigh), sizeof(limitAIsActiveHigh));
+        I2C::transact(deviceAddress, motorIDRegMask | ACTIVE_LIMIT_A_OP, ACTIVE_LIMIT_A_WB,
+                      ACTIVE_LIMIT_A_RB, buffer, nullptr);
+
+        memcpy(buffer, UINT8_POINTER_T(&limitBIsActiveHigh), sizeof(limitBIsActiveHigh));
+        I2C::transact(deviceAddress, motorIDRegMask | ACTIVE_LIMIT_B_OP, ACTIVE_LIMIT_B_WB,
+                      ACTIVE_LIMIT_B_RB, buffer, nullptr);
+
+        memcpy(buffer, UINT8_POINTER_T(&limitAAdjustedCounts), sizeof(limitAAdjustedCounts));
+        I2C::transact(deviceAddress, motorIDRegMask | COUNTS_LIMIT_A_OP, COUNTS_LIMIT_A_WB,
+                      COUNTS_LIMIT_A_RB, buffer, nullptr);
+
+        memcpy(buffer, UINT8_POINTER_T(&limitBAdjustedCounts), sizeof(limitBAdjustedCounts));
+        I2C::transact(deviceAddress, motorIDRegMask | COUNTS_LIMIT_B_OP, COUNTS_LIMIT_B_WB,
+                      COUNTS_LIMIT_B_RB, buffer, nullptr);
+
+
+        memcpy(buffer, UINT8_POINTER_T(&limitAIsFwd), sizeof(limitAIsFwd));
+        I2C::transact(deviceAddress, motorIDRegMask | LIMIT_A_IS_FWD_OP, LIMIT_A_IS_FWD_WB,
+                      LIMIT_A_IS_FWD_RB, buffer, nullptr);
+
 
         isLive = true;
 
