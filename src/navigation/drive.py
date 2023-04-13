@@ -38,7 +38,6 @@ def get_drive_command(
     rover_pos = rover_pose.position
     rover_dir = rover_pose.rotation.direction_vector()
     rover_dir[2] = 0
-    
 
     # Get vector from rover to target
     target_dir = target_pos - rover_pos
