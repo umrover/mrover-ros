@@ -167,6 +167,7 @@ export default {
     ...mapGetters("autonomy", {
       route: "route",
       waypointList: "waypointList",
+      autonEnabled:"autonEnabled",
     }),
 
     // Convert to latLng object for Leaflet to use
@@ -180,12 +181,21 @@ export default {
         this.route.map((waypoint) => waypoint.latLng)
       );
     },
+    //delete waypoints
+    flush: function() {
+      return{
+        searchPathPoints: [],
+        gatePathPoints: [],
+
+        post1: null,
+        post2: null,
+      }
+    },
   },
   watch: {
     odom: {
       handler: function (val) {
         // Trigger every time rover odom is changed
-
         const lat = val.latitude_deg;
         const lng = val.longitude_deg;
         const angle = val.bearing_deg;
@@ -217,6 +227,17 @@ export default {
       // Deep will watch for changes in children of an object
       deep: true,
     },
+    autonEnabled:{
+      handler:function(){
+        if(this.autonEnabled){
+        this.searchPathPoints= [];
+        this.gatePathPoints= [];
+
+        this.post1= null;
+        this.post2= null;
+        }
+      }
+    }
   },
   created: function () {
     // Get Icons for Map
