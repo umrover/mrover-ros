@@ -16,7 +16,7 @@ def get_drive_command(
     rover_pose: SE3,
     completion_thresh: float,
     turn_in_place_thresh: float,
-    drive_direction: int = 1,
+    drive_back: bool = False,
 ) -> Tuple[Twist, bool]:
     """
     :param target_pos:              Target position to drive to.
@@ -38,6 +38,7 @@ def get_drive_command(
     rover_pos = rover_pose.position
     rover_dir = rover_pose.rotation.direction_vector()
     rover_dir[2] = 0
+    
 
     # Get vector from rover to target
     target_dir = target_pos - rover_pos
@@ -49,7 +50,8 @@ def get_drive_command(
     if target_dist == 0:
         target_dist = np.finfo(float).eps
 
-    rover_dir *= drive_direction
+    if drive_back:
+        rover_dir *= -1
 
     alignment = angle_to_rotate(rover_dir, target_dir)
     if target_dist < completion_thresh:
@@ -60,7 +62,8 @@ def get_drive_command(
     if abs(alignment) < turn_in_place_thresh:
         error = target_dist
         cmd_vel.linear.x = np.clip(error, 0.0, MAX_DRIVING_EFFORT)
-        cmd_vel.linear.x *= drive_direction
+        if drive_back:
+            cmd_vel.linear.x *= -1
         full_turn_override = False
 
     # we want to drive the angular offset to zero so the error is just 0 - alignment

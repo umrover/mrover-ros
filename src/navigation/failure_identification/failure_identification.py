@@ -31,6 +31,7 @@ class FailureIdentifier:
     cur_stuck: bool
     path_name: Path
     data_collecting_mode: bool
+    cols: list
 
     def __init__(self):
         nav_status_sub = message_filters.Subscriber("smach/container_status", SmachContainerStatus)
@@ -66,7 +67,7 @@ class FailureIdentifier:
         )
         print(self.cols)
         self._df = pd.DataFrame(columns=self.cols)
-        self.watchdog = WatchDog(self)
+        self.watchdog = WatchDog()
         self.path_name = None  # type: ignore
 
     def write_to_csv(self):

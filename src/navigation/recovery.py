@@ -53,8 +53,7 @@ class RecoveryState(BaseState):
                 dir_vector = -1 * RECOVERY_DISTANCE * pose.rotation.direction_vector()
                 self.waypoint_behind = pose.position + dir_vector
 
-            cmd_vel, self.arrived = get_drive_command(self.waypoint_behind, pose, STOP_THRESH, DRIVE_FWD_THRESH, -1)
-
+            cmd_vel, self.arrived = get_drive_command(self.waypoint_behind, pose, STOP_THRESH, DRIVE_FWD_THRESH, True)
             self.context.rover.send_drive_command(cmd_vel)
 
         if self.arrived:
@@ -70,7 +69,7 @@ class RecoveryState(BaseState):
                 dir_vector = np.append(dir_vector_rot, dir_vector[2])
                 self.waypoint_behind = pose.position + dir_vector
 
-            cmd_vel, self.arrived = get_drive_command(self.waypoint_behind, pose, STOP_THRESH, DRIVE_FWD_THRESH, -1)
+            cmd_vel, self.arrived = get_drive_command(self.waypoint_behind, pose, STOP_THRESH, DRIVE_FWD_THRESH, True)
             self.context.rover.send_drive_command(cmd_vel)
 
         # set stuck to False
