@@ -246,8 +246,9 @@ export default {
 
 .help {
   z-index: 1000000002;
-  display: flex;
-  float: right;
+  position: absolute;
+  right: 1%;
+  top: 1%;
   opacity: 0.8;
   cursor: auto;
 }
