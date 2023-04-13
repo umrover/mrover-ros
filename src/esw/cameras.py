@@ -1,386 +1,285 @@
 #!/usr/bin/env python3
 
-from mrover.msg import CameraCmd
-from typing import List, Dict, Tuple
-
-import threading
-
 import rospy
+
+import cv2
+from multiprocessing import Process
+from typing import Dict, List, Any
+from threading import Lock
+
+from mrover.msg import CameraCmd
+
 from mrover.srv import (
     ChangeCameras,
     ChangeCamerasRequest,
     ChangeCamerasResponse,
+    ResetCameras,
+    ResetCamerasRequest,
+    ResetCamerasResponse,
 )
 
-import jetson.utils
+PRIMARY_IP: str = rospy.get_param("cameras/ips/primary")
+SECONDARY_IP: str = rospy.get_param("cameras/ips/secondary")
+
+CAPTURE_ARGS: List[Dict[str, int]] = rospy.get_param("cameras/arguments")
+
+DEVICES_DOUBLED: bool = rospy.get_param("cameras/devices_doubled")
 
 
-class Resolution:
-    option: int
-    arguments: List[str]
+class Stream:
+    """
+    An object encapsulating a stream from a camera to an IP endpoint. On initialization, a process
+    is spun up to handle the actual streaming. When no more references to self exist, the
+    finalizer (defined in __del__()) clean up the process and command.
+    """
 
-    def __init__(self, option: int, arguments: List[str]):
-        self.option = option
-        self.arguments = arguments
+    _process: Process
+    """
+    The process sending the stream.
+    """
 
+    _cmd: CameraCmd
+    """
+    A reference to the CameraCmd sent by an IP endpoint.
+    """
 
-class VideoDevices:
+    primary: bool
+    """
+    Whether the stream is being sent to the primary IP endpoint.
+    """
 
-    device: int
-    resolution: Resolution
+    def __init__(self, req: ChangeCamerasRequest, cmd: CameraCmd):
+        self._cmd = cmd
+        self._cmd.device = req.camera_cmd.device
+        self._cmd.resolution = req.camera_cmd.resolution
 
-    # Screens video source is displayed on
-    output_by_endpoint: Dict[str, jetson.utils.videoOutput]
+        self.primary = req.primary
 
-    video_source: jetson.utils.videoSource
+        args = CAPTURE_ARGS[self._cmd.resolution]
 
-    def __init__(self, device: int):
-        self.device = device
-        self.resolution = Resolution(0, [])
-        self.output_by_endpoint = {}
-        self.video_source = None
+        self._process = Process(
+            target=send,
+            args=(
+                self._cmd.device * 2 if DEVICES_DOUBLED else self._cmd.device,
+                PRIMARY_IP if self.primary else SECONDARY_IP,
+                5000 + self._cmd.device,
+                args["bps"],
+                args["width"],
+                args["height"],
+                args["fps"],
+                True,
+            ),
+        )
 
-    def remove_endpoint(self, endpoint: str) -> None:
+        self._process.start()
+
+    def __del__(self) -> None:
         """
-        Removes screen endpoint from video source list.
-        If endpoint dictionary is empty, it also deletes video source.
-        :param endpoint: the endpoint (e.g. 10.0.0.7:5000)
+        Finalizer for stream. Kill the associated process and reset the cmd.
         """
-        assert endpoint in self.output_by_endpoint.keys()
-        del self.output_by_endpoint[endpoint]
-        if len(self.output_by_endpoint) == 0:
-            self.video_source = None
+        self._process.kill()
+        self._process.join()
 
-    def create_stream(self, endpoint: str, requested_resolution: Resolution) -> None:
-        """
-        Adds endpoint to video source list and creates video_source if not existing.
-        :param endpoint: the endpoint (e.g. 10.0.0.7:5000)
-        :param requested_resolution a Resolution object that contains info on requested resolution
-        """
-
-        assert not (endpoint in self.output_by_endpoint.keys())
-
-        if self.is_streaming():
-            # It exists and another stream is using it
-            if self.resolution.option != requested_resolution:
-                # If different args, just recreate video source and every output
-                try:
-                    self.video_source.Close()
-                    self.video_source = jetson.utils.videoSource(
-                        f"/dev/video{self.device}", argv=requested_resolution.arguments
-                    )
-                    self.video_source.Open()
-                    for other_endpoint in self.output_by_endpoint.keys():
-                        self.output_by_endpoint[other_endpoint] = jetson.utils.videoOutput(
-                            f"rtp://{other_endpoint}", argv=requested_resolution.arguments
-                        )
-                    self.output_by_endpoint[endpoint] = jetson.utils.videoOutput(
-                        f"rtp://{endpoint}", argv=requested_resolution.arguments
-                    )
-                    self.resolution = requested_resolution
-                except Exception:
-                    rospy.logerr(f"Failed to create video source for device {self.device}.")
-                    self.video_source = None
-                    self.output_by_endpoint = {}
-            else:
-                # If same args and endpoint is already being streamed to, then do nothing.
-                # But we already asserted that the endpoint is not being streamed to,
-                # so we don't worry about this case.
-
-                # If same args, just create a new output
-                self.output_by_endpoint[endpoint] = jetson.utils.videoOutput(
-                    f"rtp://{endpoint}", argv=requested_resolution.arguments
-                )
-        else:
-            # If it does not exist already
-            try:
-                self.video_source = jetson.utils.videoSource(
-                    f"/dev/video{self.device}", argv=requested_resolution.arguments
-                )
-                self.video_source.Open()
-                self.output_by_endpoint[endpoint] = jetson.utils.videoOutput(
-                    f"rtp://{endpoint}", argv=requested_resolution.arguments
-                )
-                self.resolution = requested_resolution
-            except Exception:
-                rospy.logerr(f"Failed to create video source for device {self.device}.")
-                self.video_source = None
-                self.output_by_endpoint = {}
-
-    def is_streaming(self) -> bool:
-        """
-        Returns if streaming or not
-        :return: a bool if streaming
-        """
-        is_streaming = len(self.output_by_endpoint) != 0
-        if is_streaming and self.video_source is not None:
-            return True
-        elif not is_streaming and self.video_source is None:
-            return False
-        else:
-            assert False, "Should not have entered invalid state in is_streaming()."
+        self._cmd.device = -1
+        self._cmd.resolution = -1
 
 
-class StreamingManager:
-    # _services is a list of size 2 representing the requested cameras from the primary and secondary laptops.
-    # For each laptop, there is a list of size 4 that represents information on the requested device and its resolution.
-    _services: List[List[CameraCmd]]
+class StreamManager:
 
-    _device_lock: threading.Lock
+    MAX_STREAMS: int = rospy.get_param("cameras/max_streams")
+    """
+    The maximum number of streams that can be simultaneously sustained.
+    """
 
-    # _list_of_resolution_options is a list of sizes that represents the different options for resolutions
-    # (0 for low, 2 for high).
-    # For each resolution, there is a Resolution object that has an option number and a list of strings that is passed
-    # into the jetson.utils function that is needed to create that specific resolution.
-    _list_of_resolution_options: List[Resolution]
+    MAX_DEVICE_ID: int = rospy.get_param("cameras/max_device_id")
+    """
+    The maximum ID of a camera device.
+    """
 
-    # _endpoints is a list of size 8, where the first four strings represent the endpoints of the primary laptop
-    # and the last four strings represent the endpoints of the secondary laptop.
-    # Endpoints are just a combination of an IP and a port.
-    _endpoints: List[str]
+    _stream_by_device: List[Any]
+    """
+    A Stream object for each possible device connected over USB. Object is None if device is not
+    being streamed. References to contained objects should be avoided, since Stream objects rely
+    on Python's reference counting to call their finalizers.
+    """
 
-    # _service_streams_by_endpoints is a dictionary that maps each endpoint to the device that is being streamed to it.
-    _service_streams_by_endpoints: Dict[str, Tuple[int, int]]
+    _primary_cmds: List[CameraCmd]
+    """
+    The commands requested by the primary IP endpoint. The list should always remain populated
+    with live objects, and references can be passed to Stream objects to modify the data within.
+    """
 
-    # _video_devices is a list of jetson.utils objects. It can be None.
-    _video_devices: List[VideoDevices]
-    _active_devices: int
-
-    # determined by hardware. this is a constant. do not change.
-    MAX_CAMERA_DEVICES: int = 4
+    _secondary_cmds: List[CameraCmd]
+    """
+    The commands requested by the secondary IP endpoint.
+    """
 
     def __init__(self):
+        self._lock = Lock()
 
-        self._services = [
-            [CameraCmd(-1, 0), CameraCmd(-1, 0), CameraCmd(-1, 0), CameraCmd(-1, 0)],
-            [CameraCmd(-1, 0), CameraCmd(-1, 0), CameraCmd(-1, 0), CameraCmd(-1, 0)],
-        ]
-        self._video_devices = []
-        for i in range(rospy.get_param("cameras/max_video_device_id_number")):
-            skip_every_other_device = rospy.get_param("cameras/skip_every_other_device")
-            if skip_every_other_device:
-                self._video_devices.append(VideoDevices(i * 2))
-            else:
-                self._video_devices.append(VideoDevices(i))
-        self._endpoints = [
-            rospy.get_param("cameras/endpoints/primary_0"),
-            rospy.get_param("cameras/endpoints/primary_1"),
-            rospy.get_param("cameras/endpoints/primary_2"),
-            rospy.get_param("cameras/endpoints/primary_3"),
-            rospy.get_param("cameras/endpoints/secondary_0"),
-            rospy.get_param("cameras/endpoints/secondary_1"),
-            rospy.get_param("cameras/endpoints/secondary_2"),
-            rospy.get_param("cameras/endpoints/secondary_3"),
-        ]
-        self._service_streams_by_endpoints = {
-            self._endpoints[0]: (0, 0),
-            self._endpoints[1]: (0, 1),
-            self._endpoints[2]: (0, 2),
-            self._endpoints[3]: (0, 3),
-            self._endpoints[4]: (1, 0),
-            self._endpoints[5]: (1, 1),
-            self._endpoints[6]: (1, 2),
-            self._endpoints[7]: (1, 3),
-        }
-        self._list_of_resolution_options = [
-            Resolution(0, list(rospy.get_param("cameras/arguments/144_res"))),
-            Resolution(1, list(rospy.get_param("cameras/arguments/360_res"))),
-            Resolution(2, list(rospy.get_param("cameras/arguments/720_res"))),
-        ]
-        self._active_devices = 0
-        self._device_lock = threading.Lock()
+        self._stream_by_device = [None for _ in range(self.MAX_DEVICE_ID)]
+        self._primary_cmds = [CameraCmd(-1, -1) for _ in range(StreamManager.MAX_STREAMS)]
+        self._secondary_cmds = [CameraCmd(-1, -1) for _ in range(StreamManager.MAX_STREAMS)]
 
-    def handle_change_cameras(self, req: ChangeCamerasRequest) -> ChangeCamerasResponse:
+    def reset_streams(self, req: ResetCamerasRequest) -> ResetCamerasResponse:
         """
-        The callback function for changing cameras.
-        :param req: Has information on the requested devices and resolutions for the four streams of a device.
-        :return: The processed devices and resolutions for the four streams of the primary and secondary laptops.
+        Destroy all streams for a particular IP endpoint.
+        :param req: Request message from the GUI.
+        :return: A corresponding response.
         """
+        with self._lock:
+            for i in range(len(self._stream_by_device)):
+                # If a stream exists and is to the intended IP endpoint...
+                if self._stream_by_device[i] is not None and self._stream_by_device[i].primary == req.primary:
+                    # Reset the stream object, thus calling the finalizer and killing the process.
+                    self._stream_by_device[i] = None
 
-        # 1. Sort the vector based on resolutions and also error check if out of bounds device/resolution
-        # 2. Turn off all streams (we turn off first in order to not accidentally create too many devices)
-        # 3. After turning off streams, then you can turn on
+            return ResetCamerasResponse(self._primary_cmds, self._secondary_cmds)
 
-        #   This function may not be as fast as desired. For example, if previously there was a device
-        #   streaming camera 3, but then it does not want 3, but then another stream wants three, then you will
-        #   end up turning it off and turning it back on for no reason (could have just swapped streams instead).
-        #   A better implementation would prioritize requests that share the same camera as previously.
-        #   However, we can expect this program to only change one device at a time, so it is actually fine.
+    def _get_open_cmd_slot(self, primary: bool) -> CameraCmd:
+        cmds = self._primary_cmds if primary else self._secondary_cmds
 
-        with self._device_lock:
-            camera_commands = req.camera_cmds
+        for cmd in cmds:
+            if cmd.device == -1:
+                return cmd
 
-            camera_commands = self._sort_camera_commands_by_resolution_and_error_check(camera_commands)
-            self._turn_off_streams_based_on_camera_cmd(camera_commands, req.primary)
-            self._turn_on_streams_based_on_camera_cmd(camera_commands, req.primary)
+        assert False, "Could not find CameraCmd slot"
 
-            response = ChangeCamerasResponse(self._services[0], self._services[1])
+    def _get_change_response(self, success: bool) -> ChangeCamerasResponse:
+        return ChangeCamerasResponse(success, self._primary_cmds, self._secondary_cmds)
 
-        return response
-
-    def update_all_streams(self) -> None:
+    def handle_req(self, req: ChangeCamerasRequest) -> ChangeCamerasResponse:
         """
-        Updates the streams of all devices
+        Handle a basic cameras request by starting, editing, or deleting a stream.
+        :param req: Request message from the GUI.
+        :return: A corresponding response.
         """
-        with self._device_lock:
-            for index, video_device in enumerate(self._video_devices):
-                if video_device.is_streaming():
-                    try:
-                        image = video_device.video_source.Capture(timeout=5000)
-                        for output in video_device.output_by_endpoint.values():
-                            output.Render(image)
-                    except Exception as e:
-                        rospy.logerr(f"Error {type(e)} encountered: {e}")
-                        rospy.logerr(f"Camera {index} capture failed. Stopping stream(s).")
-                        self._close_down_all_streams_of_device(index)
+        device_id = req.camera_cmd.device
 
-    def _close_down_all_streams_of_device(self, device: int) -> None:
-        """
-        Closes down a video device. Usually called if a device crashes while streaming.
-        Must make sure that the device lock is locked.
-        :param device: The integer ID of the device to be closed.
-        """
-        assert self._device_lock.locked(), "self._device_lock must be locked first."
-        previously_was_video_source = self._video_devices[device].is_streaming()
-        assert (
-            previously_was_video_source
-        ), "_close_down_all_streams_of_device should only be called if a streamed device failed"
-        while len(self._video_devices[device].output_by_endpoint.keys()) != 0:
-            endpoint = list(self._video_devices[device].output_by_endpoint.keys())[0]
-            self._video_devices[device].remove_endpoint(endpoint)
-            service, stream = self._service_streams_by_endpoints[endpoint]
-            self._services[service][stream] = CameraCmd(-1, 0)
-        assert self._video_devices[device].video_source is None, "The video source should be None by now"
-        self._active_devices -= 1
+        if not (0 <= device_id < self.MAX_DEVICE_ID):
+            rospy.logerr(f"Received invalid camera device ID {device_id}")
+            return self._get_change_response(False)
 
-    def _sort_camera_commands_by_resolution_and_error_check(self, camera_commands: List[CameraCmd]) -> CameraCmd:
-        """
-        Sorts a list of camera commands by resolution. Also checks for invalid requested devices and resolutions
-        :param camera_commands: The list of camera commands to be sorted
-        :return: The sorted list of camera commands
-        """
-        # If two or more requests ask for same video source in different resolution,
-        # all requests' resolution get set to the one with the lowest resolution. nlogn + n, but n ~ 4
+        with self._lock:
+            # Reset the stream object if it exists. If it was running, this finalizes the stream
+            # object, which in turn kills the process and resets the command.
+            self._stream_by_device[device_id] = None
 
-        assert self._device_lock.locked(), "self._device_lock must be locked first."
+            # If a stream is being requested...
+            # (resolution == -1 means a request to cancel stream)
+            if 0 <= req.camera_cmd.resolution < len(CAPTURE_ARGS):
 
-        for stream, camera_cmd in enumerate(camera_commands):
-            if camera_cmd.device >= len(self._video_devices):
-                rospy.logerr(f"Request device {camera_cmd.device} invalid. Treating as no device instead.")
-                camera_cmd.device = -1
-            if camera_cmd.resolution >= len(self._list_of_resolution_options):
-                rospy.logerr(
-                    f"Request resolution {camera_cmd.resolution} invalid. Treating as lowest resolution instead."
-                )
-                camera_cmd.resolution = 0
+                # If we cannot handle any more streams, return False.
+                num_streams = len([stream for stream in self._stream_by_device if stream])
+                if num_streams == self.MAX_STREAMS:
+                    return self._get_change_response(False)
 
-        requests: List[Tuple[int, int, int]] = [
-            (camera_cmd.device, camera_cmd.resolution, stream) for stream, camera_cmd in enumerate(camera_commands)
-        ]
+                # Get a reference to an available slot and give to a new stream.
+                cmd_obj = self._get_open_cmd_slot(req.primary)
+                self._stream_by_device[device_id] = Stream(req, cmd_obj)
 
-        requests = sorted(requests, key=lambda x: (x[0], x[1]))
-        for i in range(1, len(requests)):
-            if requests[i][0] == requests[i - 1][0] and requests[i][0] != -1:
-                camera_commands[requests[i][2]].resolution = camera_commands[requests[i - 1][2]].resolution
+            return self._get_change_response(True)
 
-        return camera_commands
 
-    def _turn_off_streams_based_on_camera_cmd(
-        self, camera_commands: List[CameraCmd], is_req_for_primary_stream: bool
-    ) -> None:
-        """
-        Turns off streams based on camera cmd
-        :param camera_commands: List of CameraCmd which show request
-        :param is_req_for_primary_stream: A bool representing if this is a request for primary laptop or not
-        """
+def send(device=0, host="10.0.0.7", port=5000, bitrate=4000000, width=1280, height=720, fps=30, is_colored=False):
+    # Construct video capture pipeline string
+    cap_str = (
+        "v4l2src device=/dev/video"
+        + str(device)
+        + " do-timestamp=true io-mode=2 ! \
+    image/jpeg, width="
+        + str(width)
+        + ", height="
+        + str(height)
+        + ", framerate="
+        + str(fps)
+        + "/1 ! \
+    jpegdec ! \
+    videorate ! \
+    video/x-raw,\
+    framerate="
+        + str(fps)
+        + "/1 ! \
+    nvvidconv ! "
+    )
+    if is_colored:
+        cap_str += " video/x-raw, format=BGRx ! "
+    cap_str += "videoconvert ! "
+    if is_colored:
+        cap_str += " video/x-raw, format=BGR ! "
+    cap_str += "appsink"
 
-        service_index = 0 if is_req_for_primary_stream else 1
-        endpoints = self._endpoints[0:4] if is_req_for_primary_stream else self._endpoints[4:8]
+    # openCV video capture from v4l2 device
+    cap_send = cv2.VideoCapture(cap_str, cv2.CAP_GSTREAMER)
 
-        assert self._device_lock.locked(), "self._device_lock must be locked first."
+    # Construct stream transmit pipeline string
+    txstr = "appsrc ! "
+    if is_colored:
+        txstr += " video/x-raw, format=BGR ! "
+    txstr += "videoconvert ! "
+    if is_colored:
+        txstr += " video/x-raw, format=BGRx ! "
+    txstr += (
+        "nvvidconv ! \
+    nvv4l2h264enc \
+    bitrate="
+        + str(bitrate)
+        + " ! \
+    h264parse ! \
+    rtph264pay pt=96 config-interval=1 ! \
+    udpsink host="
+        + str(host)
+        + " port="
+        + str(port)
+    )
 
-        for stream, camera_cmd in enumerate(camera_commands):
-            endpoint = endpoints[stream]
-            requested_device = camera_cmd.device
-            requested_resolution_option = camera_cmd.resolution
+    # openCV stream transmit pipeline with RTP sink
+    fourcc = cv2.VideoWriter_fourcc("H", "2", "6", "4")
+    out_send = cv2.VideoWriter(txstr, cv2.CAP_GSTREAMER, fourcc, 60, (int(width), int(height)), is_colored)
 
-            previous_device = self._services[service_index][stream].device
-            # skip if device is the same, already closed, or a different resolution
-            if previous_device == requested_device:
-                if previous_device == -1 or (
-                    requested_device != -1
-                    and requested_resolution_option == self._video_devices[requested_device].resolution.option
-                ):
-                    continue
+    rospy.loginfo(
+        "\nTransmitting /dev/video"
+        + str(device)
+        + " to "
+        + host
+        + ":"
+        + str(port)
+        + " with "
+        + str(float(bitrate) / 1e6)
+        + " Mbps target, "
+        + str(fps)
+        + " fps target, ("
+        + str(width)
+        + ","
+        + str(height)
+        + ") resolution\n"
+    )
 
-            if requested_device == -1:
-                # this means that there was previously a device, but now we don't want the device to be streamed
-                assert self._video_devices[previous_device].is_streaming()
-                self._video_devices[previous_device].remove_endpoint(endpoint)
-                self._services[service_index][stream].device = -1
-                currently_is_no_video_source = not self._video_devices[previous_device].is_streaming()
-                if currently_is_no_video_source:
-                    self._active_devices -= 1
+    if not cap_send.isOpened() or not out_send.isOpened():
+        rospy.logerr("\nWARNING: unable to open video source for /dev/video" + str(device) + "\n")
+        exit(0)
 
-    def _turn_on_streams_based_on_camera_cmd(
-        self, camera_commands: List[CameraCmd], is_req_for_primary_stream: bool
-    ) -> None:
-        """
-        Turns on streams based on camera cmd
-        :param camera_commands: List of CameraCmd which show request
-        :param is_req_for_primary_stream: A bool representing if this is a request for primary laptop or not
-        """
-        service_index = 0 if is_req_for_primary_stream else 1
-        endpoints = self._endpoints[0:4] if is_req_for_primary_stream else self._endpoints[4:8]
+    # Transmit loop
+    while True:
 
-        assert self._device_lock.locked(), "self._device_lock must be locked first."
+        ret, frame = cap_send.read()
+        if not ret:
+            rospy.logerr("Empty frame")
+            break
+        out_send.write(frame)
 
-        for stream, camera_cmd in enumerate(camera_commands):
-            endpoint = endpoints[stream]
-            requested_device = camera_cmd.device
-            requested_resolution_option = camera_cmd.resolution
-
-            previous_device = self._services[service_index][stream].device
-            # skip if previous and current requests are -1 or same resolution
-            if previous_device == requested_device:
-                if previous_device == -1 or (
-                    requested_device != -1
-                    and requested_resolution_option == self._video_devices[requested_device].resolution.option
-                ):
-                    continue
-
-            if requested_device != -1:
-                if self._active_devices == StreamingManager.MAX_CAMERA_DEVICES and previous_device == -1:
-                    # can not add more than four devices. just continue.
-                    continue
-
-                # create a new stream
-                previously_no_video_source = (
-                    previous_device == -1 and not self._video_devices[requested_device].is_streaming()
-                )
-
-                if previous_device != -1:
-                    self._video_devices[previous_device].remove_endpoint(endpoint)
-                self._video_devices[requested_device].create_stream(
-                    endpoint, self._list_of_resolution_options[requested_resolution_option]
-                )
-                currently_is_video_source = self._video_devices[requested_device].is_streaming()
-                self._services[service_index][stream] = (
-                    CameraCmd(requested_device, requested_resolution_option)
-                    if currently_is_video_source
-                    else CameraCmd(-1, 0)
-                )
-
-                if previously_no_video_source and currently_is_video_source:
-                    self._active_devices += 1
+    cap_send.release()
+    out_send.release()
 
 
 def main():
     rospy.init_node("cameras")
-    streaming_manager = StreamingManager()
-    rospy.Service("change_cameras", ChangeCameras, streaming_manager.handle_change_cameras)
-    while not rospy.is_shutdown():
-        streaming_manager.update_all_streams()
+
+    stream_manager = StreamManager()
+    rospy.Service("change_cameras", ChangeCameras, stream_manager.handle_req)
+    rospy.Service("reset_cameras", ResetCameras, stream_manager.reset_streams)
+
+    rospy.spin()
 
 
 if __name__ == "__main__":

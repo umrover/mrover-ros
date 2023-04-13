@@ -1,0 +1,4 @@
+bool primary
+---
+CameraCmd[4] primary_cameras
+CameraCmd[4] secondary_cameras

@@ -65,6 +65,40 @@
     <div class="box light-bg moteus">
       <MoteusStateTable :moteus-state-data="moteusState" />
     </div>
+    <div class="box light-bg limit">
+      <h3>Limit Switches</h3>
+      <LimitSwitch :switch_name="'sa_joint_1'" :name="'Joint 1 Switch'" />
+      <LimitSwitch :switch_name="'sa_joint_2'" :name="'Joint 2 Switch'" />
+      <LimitSwitch :switch_name="'sa_joint_3'" :name="'Joint 3 Switch'" />
+      <LimitSwitch :switch_name="'scoop'" :name="'Scoop Switch'" />
+    </div>
+    <div class="box light-bg calibration">
+      <h3>Calibrations</h3>
+      <div class="calibration-checkboxes">
+        <CalibrationCheckbox
+          :name="'Joint 1 Calibration'"
+          :joint_name="'sa_joint_1'"
+          :calibrate_topic="'sa_is_calibrated'"
+        />
+        <CalibrationCheckbox
+          :name="'Joint 2 Calibration'"
+          :joint_name="'sa_joint_2'"
+          :calibrate_topic="'sa_is_calibrated'"
+        />
+        <CalibrationCheckbox
+          :name="'Joint 3 Calibration'"
+          :joint_name="'sa_joint_3'"
+          :calibrate_topic="'sa_is_calibrated'"
+        />
+      </div>
+      <MotorAdjust
+        :options="[
+          { name: 'sa_joint_1', option: 'Joint 1' },
+          { name: 'sa_joint_2', option: 'Joint 2' },
+          { name: 'sa_joint_3', option: 'Joint 3' },
+        ]"
+      />
+    </div>
     <div v-show="false">
       <MastGimbalControls></MastGimbalControls>
     </div>
@@ -80,11 +114,13 @@ import MastGimbalControls from "./MastGimbalControls.vue";
 import EndEffectorUV from "./EndEffectorUV.vue";
 import SAArmControls from "./SAArmControls.vue";
 import PDBFuse from "./PDBFuse.vue";
-import * as qte from "quaternion-to-euler";
 import Cameras from "./Cameras.vue";
 import MoteusStateTable from "./MoteusStateTable.vue";
 import JointStateTable from "./JointStateTable.vue";
+import LimitSwitch from "./LimitSwitch.vue";
+import CalibrationCheckbox from "./CalibrationCheckbox.vue";
 import CommReadout from "./CommReadout.vue";
+import MotorAdjust from "./MotorAdjust.vue";
 import { quaternionToDisplayAngle } from "../utils.js";
 
 export default {
@@ -99,7 +135,10 @@ export default {
     MoteusStateTable,
     PDBFuse,
     SAArmControls,
+    LimitSwitch,
+    CalibrationCheckbox,
     CommReadout,
+    MotorAdjust,
   },
   data() {
     return {
@@ -171,14 +210,14 @@ export default {
   display: grid;
   overflow: hidden;
   grid-gap: 10px;
-  grid-template-columns: 40vw 5vw 25vw 25vw;
+  grid-template-columns: 23vw 20vw auto auto auto;
   grid-template-rows: 60px 70vh auto auto auto;
   grid-template-areas:
     "header header header header"
     "map map waypoints waypoints"
     "cameras cameras cameras scoop"
-    "arm moteus moteus jointState"
-    "pdb moteus moteus jointState";
+    "arm limit moteus jointState"
+    "pdb calibration moteus jointState";
   font-family: sans-serif;
   height: auto;
 }
@@ -308,6 +347,20 @@ h2 {
 
 .moteus {
   grid-area: moteus;
+}
+
+.limit {
+  grid-area: limit;
+}
+
+.calibration {
+  grid-area: calibration;
+  display: flex;
+  flex-direction: column;
+}
+
+.calibration-checkboxes {
+  margin: -4% 0 1% 0;
 }
 
 .Joystick {

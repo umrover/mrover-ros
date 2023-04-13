@@ -4,11 +4,12 @@
  -->
 <launch>
     <!-- launch rover core nodes -->
-    <include file="$(find mrover)/launch/rover_core.launch" />
+    <include file="$(find mrover)/launch/rover_core.launch"/>
 
     <!-- launch the simulator with no GUI -->
     <include file="$(find mrover)/launch/simulator.launch">
-        <arg name="gui" value="false" />
+        <arg name="gui" value="false"/>
+        <arg name="world_name" value="world_flat"/>
     </include>
 
     <include file="$(find mrover)/launch/auton.launch">
@@ -17,5 +18,5 @@
     </include>
 
     <!-- node to manage and run the integration test -->
-    <test test-name="integration" pkg="mrover" type="integration.py" />
+    <test test-name="integration" pkg="mrover" type="integration.py"/>
 </launch>
