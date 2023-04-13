@@ -47,7 +47,7 @@ namespace mrover {
             mLeftImgPub = it.advertise("camera/left/image", 1);
             mRightImgPub = it.advertise("camera/right/image", 1);
 
-            mNh.param<bool>("use_odom_frame", mUseOdom, false);
+            mNh.param<bool>("use_odom_frame", mUseOdom, true);
 
             std::string grabResolutionString;
             mPnh.param("grab_resolution", grabResolutionString, std::string{sl::toString(sl::RESOLUTION::HD720)});
