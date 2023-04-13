@@ -4,6 +4,9 @@
 
 namespace mrover {
 
+    /**
+     * @brief Defines one element in the point cloud
+     */
     struct Point {
         float x, y, z;
         uint8_t b, g, r, a;

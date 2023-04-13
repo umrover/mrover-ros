@@ -1,3 +1,7 @@
+/*
+ * Most functions in here are copied from: https://github.com/stereolabs/zed-ros-wrapper/blob/master/zed_nodelets/src/zed_nodelet/src/zed_wrapper_nodelet.cpp
+ */
+
 #include "zed_wrapper.hpp"
 
 #include <cassert>

@@ -62,7 +62,7 @@ namespace mrover {
             mPnh.param("texture_confidence", mTextureConfidence, 100);
             std::string svoFile{};
             mPnh.param("svo_file", svoFile, {});
-            mPnh.param("ues_builtin_visual_odom", mUseBuiltinPosTracking, false);
+            mPnh.param("use_builtin_visual_odom", mUseBuiltinPosTracking, false);
             mPnh.param("use_area_memory", mUseAreaMemory, true);
             mPnh.param("use_pose_smoothing", mUsePoseSmoothing, true);
 
@@ -111,7 +111,7 @@ namespace mrover {
             ROS_INFO("Max threads per multi processor: %d", prop.maxThreadsPerMultiProcessor);
 
             mGrabThread = std::thread(&ZedNodelet::grabUpdate, this);
-            mProcessThread = std::thread(&ZedNodelet::pointCloudUpdate, this);
+            mPointCloudThread = std::thread(&ZedNodelet::pointCloudUpdate, this);
 
         } catch (std::exception const& e) {
             NODELET_FATAL("Exception while starting: %s", e.what());
@@ -130,7 +130,7 @@ namespace mrover {
             NODELET_INFO("Starting point cloud thread");
 
             while (ros::ok()) {
-                mProcessThreadProfiler.beginLoop();
+                mPcThreadProfiler.beginLoop();
 
                 // TODO: probably bad that this allocation, best case optimized by tcache
                 // Needed because publish directly shares the pointer to other nodelets running in this process
@@ -142,48 +142,48 @@ namespace mrover {
                     // Waiting on the condition variable will drop the lock and reacquire it when the condition is met
                     mSwapCv.wait(lock, [this] { return mIsSwapReady.load(); });
                     mIsSwapReady = false;
-                    mProcessThreadProfiler.measureEvent("Wait");
+                    mPcThreadProfiler.measureEvent("Wait");
 
-                    fillPointCloudMessageFromGpu(mProcessMeasures.leftPoints, mProcessMeasures.leftImage, mPointCloudGpu, pointCloudMsg);
+                    fillPointCloudMessageFromGpu(mPcMeasures.leftPoints, mPcMeasures.leftImage, mPointCloudGpu, pointCloudMsg);
                     pointCloudMsg->header.seq = mPointCloudUpdateTick;
-                    pointCloudMsg->header.stamp = mProcessMeasures.time;
+                    pointCloudMsg->header.stamp = mPcMeasures.time;
                     pointCloudMsg->header.frame_id = "zed2i_left_camera_optical_frame";
-                    mProcessThreadProfiler.measureEvent("Fill Message");
+                    mPcThreadProfiler.measureEvent("Fill Message");
 
                     if (mLeftImgPub.getNumSubscribers()) {
-                        fillImageMessage(mProcessMeasures.leftImage, mLeftImgMsg);
+                        fillImageMessage(mPcMeasures.leftImage, mLeftImgMsg);
                         mLeftImgMsg->header.frame_id = "zed2i_left_camera_optical_frame";
-                        mLeftImgMsg->header.stamp = mProcessMeasures.time;
+                        mLeftImgMsg->header.stamp = mPcMeasures.time;
                         mLeftImgMsg->header.seq = mPointCloudUpdateTick;
                         mLeftImgPub.publish(mLeftImgMsg);
                     }
                     if (mRightImgPub.getNumSubscribers()) {
-                        fillImageMessage(mProcessMeasures.rightImage, mRightImgMsg);
+                        fillImageMessage(mPcMeasures.rightImage, mRightImgMsg);
                         mRightImgMsg->header.frame_id = "zed2i_right_camera_optical_frame";
-                        mRightImgMsg->header.stamp = mProcessMeasures.time;
+                        mRightImgMsg->header.stamp = mPcMeasures.time;
                         mRightImgMsg->header.seq = mPointCloudUpdateTick;
                         mRightImgPub.publish(mRightImgMsg);
                     }
-                    mProcessThreadProfiler.measureEvent("Publish Message");
+                    mPcThreadProfiler.measureEvent("Publish Message");
                 }
 
                 if (mPcPub.getNumSubscribers()) {
                     mPcPub.publish(pointCloudMsg);
-                    mProcessThreadProfiler.measureEvent("Point cloud publish");
+                    mPcThreadProfiler.measureEvent("Point cloud publish");
                 }
 
                 if (mLeftCamInfoPub.getNumSubscribers() || mRightCamInfoPub.getNumSubscribers()) {
                     sl::CalibrationParameters calibration = mZedInfo.camera_configuration.calibration_parameters;
                     fillCameraInfoMessages(calibration, mImageResolution, mLeftCamInfoMsg, mRightCamInfoMsg);
                     mLeftCamInfoMsg->header.frame_id = "zed2i_left_camera_optical_frame";
-                    mLeftCamInfoMsg->header.stamp = mProcessMeasures.time;
+                    mLeftCamInfoMsg->header.stamp = mPcMeasures.time;
                     mLeftCamInfoMsg->header.seq = mPointCloudUpdateTick;
                     mRightCamInfoMsg->header.frame_id = "zed2i_right_camera_optical_frame";
-                    mRightCamInfoMsg->header.stamp = mProcessMeasures.time;
+                    mRightCamInfoMsg->header.stamp = mPcMeasures.time;
                     mRightCamInfoMsg->header.seq = mPointCloudUpdateTick;
                     mLeftCamInfoPub.publish(mLeftCamInfoMsg);
                     mRightCamInfoPub.publish(mRightCamInfoMsg);
-                    mProcessThreadProfiler.measureEvent("Image + camera info publish");
+                    mPcThreadProfiler.measureEvent("Image + camera info publish");
                 }
 
                 mPointCloudUpdateTick++;
@@ -237,7 +237,7 @@ namespace mrover {
                 // If the processing thread is busy skip
                 // We want this thread to run as fast as possible for grab and positional tracking
                 if (mSwapMutex.try_lock()) {
-                    std::swap(mGrabMeasures, mProcessMeasures);
+                    std::swap(mGrabMeasures, mPcMeasures);
                     mIsSwapReady = true;
                     mSwapMutex.unlock();
                     mSwapCv.notify_one();
@@ -303,7 +303,7 @@ namespace mrover {
 
     ZedNodelet::~ZedNodelet() {
         NODELET_INFO("ZED node shutting down");
-        mProcessThread.join();
+        mPointCloudThread.join();
         mGrabThread.join();
     }
 

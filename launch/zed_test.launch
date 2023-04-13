@@ -4,7 +4,7 @@
 
   <arg name="run_tag_detector" default="true"/>
   <arg name="direct_tag_detection" default="false"/>
-  <arg name="ues_builtin_visual_odom" default="true"/>
+  <arg name="use_builtin_visual_odom" default="true"/>
 
   <group if="$(arg run_rviz)">
     <arg name="rvizconfig" default="$(find mrover)/config/rviz/zed_test.rviz"/>
@@ -21,7 +21,7 @@
 
   <include file="$(find mrover)/launch/zed.launch">
     <arg name="direct_tag_detection" value="$(arg direct_tag_detection)"/>
-    <arg name="ues_builtin_visual_odom" value="$(arg ues_builtin_visual_odom)"/>
+    <arg name="use_builtin_visual_odom" value="$(arg use_builtin_visual_odom)"/>
   </include>
 
   <group if="$(arg run_tag_detector)">

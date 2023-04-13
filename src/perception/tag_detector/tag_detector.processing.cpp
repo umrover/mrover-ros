@@ -8,7 +8,7 @@
 
 #include <sensor_msgs/image_encodings.h>
 
-#include "../point_cloud.hpp"
+#include "../point.hpp"
 
 namespace mrover {
 

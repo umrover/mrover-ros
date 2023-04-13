@@ -2,14 +2,14 @@
   <!-- 'zed' (ZED 1) or 'zed2i' (ZED 2i) -->
   <arg name="zed_model" default="zed2i"/>
   <!-- Use ZED's built-in visual odometry (called positional tracking), otherwise use rtabmap stereo odometry -->
-  <arg name="ues_builtin_visual_odom" default="true"/>
+  <arg name="use_builtin_visual_odom" default="true"/>
   <arg name="direct_tag_detection" default="false"/>
 
   <rosparam command="load" file="$(find mrover)/config/perception.yaml"/>
   <node pkg="nodelet" type="nodelet" name="zed_nodelet" respawn="true"
         args="load mrover/ZedNodelet perception_nodelet_manager" output="screen">
     <param name="direct_tag_detection" value="$(arg direct_tag_detection)"/>
-    <param name="ues_builtin_visual_odom" value="$(arg ues_builtin_visual_odom)"/>
+    <param name="use_builtin_visual_odom" value="$(arg use_builtin_visual_odom)"/>
   </node>
 
   <!-- Static TF publisher for ZED mount-->
@@ -28,7 +28,7 @@
   </node>
 
   <!-- rtabmap visual odometry -->
-  <node unless="$(arg ues_builtin_visual_odom)"
+  <node unless="$(arg use_builtin_visual_odom)"
         name="stereo_odometry" pkg="rtabmap_ros" type="stereo_odometry" respawn="true" output="screen">
     <remap from="/left/image_rect" to="/camera/left/image"/>
     <remap from="/left/camera_info" to="/camera/left/camera_info"/>

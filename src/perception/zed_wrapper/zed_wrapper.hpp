@@ -17,7 +17,7 @@
 #include <tf2_ros/transform_broadcaster.h>
 #include <tf2_ros/transform_listener.h>
 
-#include "../point_cloud.hpp"
+#include "../point.hpp"
 #include "loop_profiler.hpp"
 
 namespace mrover {
@@ -66,14 +66,14 @@ namespace mrover {
 
         sl::Camera mZed;
         sl::CameraInformation mZedInfo;
-        Measures mGrabMeasures, mProcessMeasures;
+        Measures mGrabMeasures, mPcMeasures;
 
-        std::thread mProcessThread, mGrabThread;
+        std::thread mPointCloudThread, mGrabThread;
         std::mutex mSwapMutex;
         std::condition_variable mSwapCv;
         std::atomic_bool mIsSwapReady = false;
 
-        LoopProfiler mProcessThreadProfiler{"Zed Wrapper Process"}, mGrabThreadProfiler{"Zed Wrapper Grab"};
+        LoopProfiler mPcThreadProfiler{"Zed Wrapper Point Cloud"}, mGrabThreadProfiler{"Zed Wrapper Grab"};
 
         size_t mGrabUpdateTick = 0, mPointCloudUpdateTick = 0;
 
