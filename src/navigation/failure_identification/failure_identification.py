@@ -65,9 +65,6 @@ class FailureIdentifier:
         )
         print(self.cols)
         self._df = pd.DataFrame(columns=self.cols)
-        self.left_pointer = 0
-        self.right_pointer = 0
-        self.row_counter = 0
         self.watchdog = WatchDog(self)
         self.path_name = None  # type: ignore
 
@@ -76,7 +73,7 @@ class FailureIdentifier:
         Writes the data frame to a csv file marked with timestamp
         """
         home = Path.home()
-        path = home / "catkin_ws/src/mrover/src/failure_data"
+        path = home / "catkin_ws/src/mrover/failure_data"
         path.mkdir(exist_ok=True)
 
         file_name = f"failure_data_{rospy.Time.now()}.csv"
@@ -122,7 +119,6 @@ class FailureIdentifier:
         # create a new row for the data frame
         self.actively_collecting = True
         cur_row = {}
-        cur_row["row"] = self.row_counter
         cur_row["time"] = rospy.Time.now()
 
         # if the stuck button is pressed, the rover is stuck (as indicated by the GUI)
@@ -160,20 +156,17 @@ class FailureIdentifier:
 
         # update the data frame with the cur row
         self._df = pd.concat([self._df, DataFrame([cur_row])])
-        self.row_counter += 1
 
         if len(self._df) == DATAFRAME_MAX_SIZE:
-            # append to csv if csv exists else write to csv
-            rospy.loginfo("writing to file")
-            if self.path_name is None:
-                self.write_to_csv()
-            else:
-                self._df.to_csv(self.path_name, mode="a", header=False)
+            if self.actively_collecting and self.data_collecting_mode:
+                # append to csv if csv exists else write to csv
+                rospy.loginfo("writing to file")
+                if self.path_name is None:
+                    self.write_to_csv()
+                else:
+                    self._df.to_csv(self.path_name, mode="a", header=False)
             # empty
             self._df = pd.DataFrame(columns=self.cols)
-
-            # set row counter to 0
-            self.row_counter = 0
 
         # publish the watchdog status if the nav state is not recovery
         if TEST_RECOVERY_STATE:

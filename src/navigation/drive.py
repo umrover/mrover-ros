@@ -24,6 +24,8 @@ def get_drive_command(
     :param completion_thresh:       If the distance to the target is less than this stop.
     :param turn_in_place_thresh     Minimum cosine of the angle in between the target and current heading
                                     in order to drive forward. When below, turn in place.
+    :param drive_direction          Direction the rover will move. This will be positive if moving forward 
+                                    and negative if moving backward.
     :return:                        Rover drive effort command.
     """
 
