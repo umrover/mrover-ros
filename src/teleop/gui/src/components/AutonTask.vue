@@ -50,6 +50,10 @@
       <div class="calibration status data" style="background-color: lightgray">
         <IMUCalibration />
       </div>
+      <div></div>
+      <div>
+        <FlightAttitudeIndicator></FlightAttitudeIndicator>
+      </div>
     </div>
     <div class="box map light-bg">
       <AutonRoverMap :odom="odom" />
@@ -84,8 +88,8 @@ import { mapGetters } from "vuex";
 import JoystickValues from "./JoystickValues.vue";
 import IMUCalibration from "./IMUCalibration.vue";
 import CommReadout from "./CommReadout.vue";
-import { quaternionToDisplayAngle } from "../utils.js";
-
+import { quaternionToMapAngle } from "../utils.js";
+import FlightAttitudeIndicator from "./FlightAttitudeIndicator.vue";
 const navBlue = "#4695FF";
 const navGreen = "yellowgreen";
 const navRed = "lightcoral";
@@ -100,6 +104,7 @@ export default {
     JoystickValues,
     MastGimbalControls,
     CommReadout,
+    FlightAttitudeIndicator
   },
 
   data() {
@@ -208,7 +213,7 @@ export default {
     // Subscriber for odom to base_link transform
     this.tfClient.subscribe("base_link", (tf) => {
       // Callback for IMU quaternion that describes bearing
-      this.odom.bearing_deg = quaternionToDisplayAngle(tf.rotation);
+      this.odom.bearing_deg = quaternionToMapAngle(tf.rotation);
     });
 
     this.nav_status_sub.subscribe((msg) => {

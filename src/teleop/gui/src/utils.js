@@ -27,7 +27,7 @@ const convertDMS = function (coord_in, odom_format) {
   return coord_out;
 };
 
-const quaternionToDisplayAngle = function (quaternion) {
+const quaternionToMapAngle = function (quaternion) {
   /*
     Convert a quaternion into euler display angles
   */
@@ -37,4 +37,4 @@ const quaternionToDisplayAngle = function (quaternion) {
   return (Math.PI / 2.0 - euler[2]) * (180 / Math.PI);
 };
 
-export { convertDMS, quaternionToDisplayAngle };
+export { convertDMS, quaternionToMapAngle };
