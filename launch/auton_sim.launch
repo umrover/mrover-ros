@@ -4,6 +4,7 @@
 <launch>
     <arg name="rvizconfig" default="$(find mrover)/config/rviz/auton_sim.rviz"/>
     <arg name="world_name" default="world"/>
+    <arg name="use_odom" default="true"/>
 
     <node name="rviz" pkg="rviz" type="rviz" args="-d $(arg rvizconfig)" required="true"/>
 
@@ -15,11 +16,23 @@
         <arg name="world_name" value="$(arg world_name)"/>
     </include>
 
+    <!-- visual odometry node to provide localization in odom frame -->
+    <node if="$(arg use_odom)" name="stereo_odometry" pkg="rtabmap_ros" type="stereo_odometry"
+          output="screen" launch-prefix="bash -c 'sleep 10; $0 $@'">
+        <remap from="odom" to="/odometry"/>
+        <param name="frame_id" type="string" value="base_link"/>
+        <param name="odom_frame_id" type="string" value="odom"/>
+        <param name="approx_sync" type="string" value="false"/>
+
+        <param name="Vis/InlierDistance" type="string" value="0.1"/>
+        <param name="Vis/MinInliers" type="string" value="20"/>
+        <param name="GFTT/MinDistance" type="string" value="7"/>
+    </node>
+
     <!-- launch auton -->
     <include file="$(find mrover)/launch/auton.launch">
         <arg name="sim" value="true"/>
         <arg name="use_ekf" value="true"/>
-        <arg name="use_odom" value="false"/>
         <arg name="ekf_start_delay" value="10.0"/>
     </include>
 </launch>

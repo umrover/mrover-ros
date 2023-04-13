@@ -5,11 +5,10 @@
                          part of the auton system. Should only be used for testing.
  -->
 <launch>
-    <arg name="run_perception" default="true" />
-    <arg name="sim" default="false" />
-    <arg name="use_ekf" default="true" />
-    <arg name="use_odom" default="false" />
-    <arg name="ekf_start_delay" default="0" />
+    <arg name="run_perception" default="true"/>
+    <arg name="sim" default="false"/>
+    <arg name="use_ekf" default="true"/>
+    <arg name="ekf_start_delay" default="0"/>
 
     <!--
       ==========
@@ -19,52 +18,41 @@
     <!-- node to detect AR tags and publish them to the TF tree -->
     <node if="$(arg run_perception)" name="tag_detector" pkg="mrover" type="tag_detector"/>
 
-    <!-- visual odometry node to provide localization in odom frame -->
-    <node if="$(arg use_odom)" name="stereo_odometry" pkg="rtabmap_ros" type="stereo_odometry"
-          output="screen" launch-prefix="bash -c 'sleep 10; $0 $@'">
-        <remap from="odom" to="/odometry"/>
-        <param name="frame_id" type="string" value="base_link"/>
-        <param name="odom_frame_id" type="string" value="odom"/>
-
-        <param name="Vis/InlierDistance" type="string" value="0.1"/>
-        <param name="Vis/MinInliers" type="string" value="20"/>
-        <param name="GFTT/MinDistance" type="string" value="7"/>
-    </node>
     <!--
       ===========
       Navigation
       ===========
     -->
     <!-- node to navigate to a series of waypoints, AR tags, and gates -->
-    <rosparam command="load" file="$(find mrover)/config/navigation.yaml" />
+    <rosparam command="load" file="$(find mrover)/config/navigation.yaml"/>
     <node name="nav" pkg="mrover" type="navigation.py"/>
 
-  <!--
-    ============
-    Localization
-    ============
-  -->
-  <rosparam command="load" file="$(find mrover)/config/localization.yaml" />
-  <rosparam if="$(arg sim)" command="load" file="$(find mrover)/config/sim_ekf.yaml" />
-  <rosparam unless="$(arg sim)" command="load" file="$(find mrover)/config/ekf.yaml" />
+    <!--
+      ============
+      Localization
+      ============
+    -->
+    <rosparam command="load" file="$(find mrover)/config/localization.yaml"/>
+    <rosparam if="$(arg sim)" command="load" file="$(find mrover)/config/sim_ekf.yaml"/>
+    <rosparam unless="$(arg sim)" command="load" file="$(find mrover)/config/ekf.yaml"/>
 
-  <!-- global EKF -->
-  <node if="$(arg use_ekf)" pkg="robot_localization" type="ekf_localization_node" name="global_ekf"
-        clear_params="true" launch-prefix="bash -c 'sleep $(arg ekf_start_delay); $0 $@'" >
-    <remap from="odometry/filtered" to="global_ekf/odometry" />
-  </node>
+    <!-- global EKF -->
+    <node if="$(arg use_ekf)" pkg="robot_localization" type="ekf_localization_node" name="global_ekf"
+          clear_params="true" launch-prefix="bash -c 'sleep $(arg ekf_start_delay); $0 $@'">
+        <remap from="odometry/filtered" to="global_ekf/odometry"/>
+    </node>
 
-  <!-- passthrough filter to replace EKF in datapath -->
-  <node unless="$(arg use_ekf)" pkg="mrover" type="passthrough_filter.py" name="passthrough_filter" />
+    <!-- passthrough filter to replace EKF in datapath -->
+    <node unless="$(arg use_ekf)" pkg="mrover" type="passthrough_filter.py" name="passthrough_filter"/>
 
-  <!-- node to linearize GPS from geodetic to ENU cartesian coords -->
-  <node name="gps_linearization" pkg="mrover" type="gps_linearization.py" output="screen" />
+    <!-- node to linearize GPS from geodetic to ENU cartesian coords -->
+    <node name="gps_linearization" pkg="mrover" type="gps_linearization.py" output="screen"/>
 
-  <!-- plot the rover trajectory in rviz as it drives -->
-  <node name="hectory_trajectory_server" output="screen" pkg="hector_trajectory_server" type="hector_trajectory_server" >
-    <param name="target_frame_name" type="string" value="map" />
-    <param name="source_frame_name" type="string" value="base_link" /> 
-    <param name="trajectory_update_rate" type="double" value="4" /> 
-    <param name="trajectory_publish_rate" type="double" value="4" />
-  </node>
+    <!-- plot the rover trajectory in rviz as it drives -->
+    <node name="hectory_trajectory_server" output="screen" pkg="hector_trajectory_server" type="hector_trajectory_server">
+        <param name="target_frame_name" type="string" value="map"/>
+        <param name="source_frame_name" type="string" value="base_link"/>
+        <param name="trajectory_update_rate" type="double" value="4"/>
+        <param name="trajectory_publish_rate" type="double" value="4"/>
+    </node>
 </launch>
