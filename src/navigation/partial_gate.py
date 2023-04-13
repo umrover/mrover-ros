@@ -93,7 +93,7 @@ class PartialGateState(BaseState):
             STOP_THRESH,
             DRIVE_FWD_THRESH,
         )
-        
+
         if arrived:
             # if we finish the gate path, we're done (or continue search) CHECK THIS***
             if self.traj.increment_point():
