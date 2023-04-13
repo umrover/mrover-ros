@@ -1,22 +1,34 @@
 <template>
-    <div class="wrapper box">
-        <p>{{name}} ID: {{id}}</p>
-        <div>
-        Stream: <input class="box" type='Number' min="0" max="3" v-model ='selectedStream'>
-        <button class="button" v-on:click="swapStream()">Change stream</button>
-        </div>
-        <label for="quality">Quality:</label>
-        <select class="box" id="quality" v-model="selectedQuality" @change="changeQuality()">
-          <option value="0">Low</option>
-          <option value="1">Medium</option>
-          <option value="2">High</option>
-        </select>
+  <div class="wrapper box">
+    <p>{{ name }} ID: {{ id }}</p>
+    <div>
+      Stream:
+      <input
+        v-model="selectedStream"
+        class="box"
+        type="Number"
+        min="0"
+        max="3"
+      />
+      <button class="button" @click="swapStream()">Change stream</button>
     </div>
-  </template>
-  
-  <script>
-  import '../assets/style.css';
-  
+    <label for="quality">Quality:</label>
+    <select
+      id="quality"
+      v-model="selectedQuality"
+      class="box"
+      @change="changeQuality()"
+    >
+      <option value="0">Low</option>
+      <option value="1">Medium</option>
+      <option value="2">High</option>
+    </select>
+  </div>
+</template>
+
+<script>
+import "../assets/style.css";
+
 export default {
   props: {
     name: {
@@ -67,7 +79,8 @@ export default {
 </script>
 
 <style scoped>
-.wrapper {  /* wrap acts weird with flex from parent... */
+.wrapper {
+  /* wrap acts weird with flex from parent... */
   margin: 10px;
   padding: 10px;
 }

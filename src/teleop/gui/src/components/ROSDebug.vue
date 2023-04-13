@@ -1,8 +1,14 @@
 <template>
-<div class="wrap">
+  <div class="wrap">
     <div class="page_header">
-    <h1>Debug Tools</h1>
-    <img src="/static/mrover_logo.png" alt="MRover" title="MRover" width="185" height="53" />
+      <h1>Debug Tools</h1>
+      <img
+        src="/static/mrover_logo.png"
+        alt="MRover"
+        title="MRover"
+        width="185"
+        height="53"
+      />
     </div>
       <fieldset class="box row">
         <legend>Tasks</legend>
@@ -14,7 +20,7 @@
 </template>
 
 <script>
-import '../assets/style.css';
+import "../assets/style.css";
 import MenuButton from "./MenuButton.vue";
 
 export default {

@@ -53,6 +53,21 @@ export default {
     };
   },
 
+  computed: {
+    messageObject: function () {
+      const msg = {
+        open_loop: this.openLoop,
+        vel: this.velocity,
+        site: this.site,
+      };
+      return new ROSLIB.Message(msg);
+    },
+
+    velocityScaleDecimal: function () {
+      return this.velocityScale / 100;
+    },
+  },
+
   beforeDestroy: function () {
     window.clearInterval(interval);
   },
@@ -67,21 +82,6 @@ export default {
     interval = window.setInterval(() => {
       this.carousel_pub.publish(this.messageObject);
     }, updateRate * 1000);
-  },
-
-  computed: {
-    messageObject: function () {
-      const msg = {
-        open_loop: this.openLoop,
-        vel: this.velocity,
-        site: this.site,
-      };
-      return new ROSLIB.Message(msg);
-    },
-
-    velocityScaleDecimal: function () {
-      return this.velocityScale / 100;
-    },
   },
 };
 </script>

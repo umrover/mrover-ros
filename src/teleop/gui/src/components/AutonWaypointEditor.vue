@@ -1,10 +1,17 @@
 <template>
   <div class="wrap">
-    <div class="col-wrap" style="left: 0;">
+    <div class="col-wrap" style="left: 0">
       <div class="add-drop">
         <div class="identification">
-          Name: <input class="box" v-model="name" size="15" /> ID:
-          <input class="box" v-model="id" type="number" max="249" min="-1" step="1" />
+          Name: <input v-model="name" class="box" size="15" /> ID:
+          <input
+            v-model="id"
+            class="box"
+            type="number"
+            max="249"
+            min="-1"
+            step="1"
+          />
         </div>
         <br />
         <input
@@ -26,34 +33,38 @@
           class="checkbox"
         /><font size="2">DMS</font><br />
         <div class="wp-input">
-          <p><input class="box" v-model.number="input.lat.d" size="13" />º</p>
+          <p><input v-model.number="input.lat.d" class="box" size="13" />º</p>
           <p v-if="min_enabled">
-            <input class="box" v-model.number="input.lat.m" size="13" />'
+            <input v-model.number="input.lat.m" class="box" size="13" />'
           </p>
           <p v-if="sec_enabled">
-            <input class="box" v-model.number="input.lat.s" size="13" />"
+            <input v-model.number="input.lat.s" class="box" size="13" />"
           </p>
           N
         </div>
         <div class="wp-input">
-          <p><input class="box" v-model.number="input.lon.d" size="13" />º</p>
+          <p><input v-model.number="input.lon.d" class="box" size="13" />º</p>
           <p v-if="min_enabled">
-            <input class="box" v-model.number="input.lon.m" size="13" />'
+            <input v-model.number="input.lon.m" class="box" size="13" />'
           </p>
           <p v-if="sec_enabled">
-            <input class="box" v-model.number="input.lon.s" size="13" />"
+            <input v-model.number="input.lon.s" class="box" size="13" />"
           </p>
           E
         </div>
-        <div style="display:inline-block">
-          <button class="button" v-on:click="addWaypoint(input)">Add Waypoint</button>
-          <button class="button" v-on:click="addWaypoint(formatted_odom)">Drop Waypoint</button>
+        <div style="display: inline-block">
+          <button class="button" @click="addWaypoint(input)">
+            Add Waypoint
+          </button>
+          <button class="button" @click="addWaypoint(formatted_odom)">
+            Drop Waypoint
+          </button>
         </div>
       </div>
       <div class="box box1">
         <div class="all-waypoints">
           <h4 class="waypoint-headers">All Waypoints</h4>
-          <button class="button" v-on:click="clearWaypoint">Clear Waypoints</button>
+          <button class="button" @click="clearWaypoint">Clear Waypoints</button>
         </div>
         <draggable
           v-model="storedWaypoints"
@@ -131,7 +142,7 @@ import { mapMutations, mapGetters } from "vuex";
 import _ from "lodash";
 import L from "leaflet";
 import ROSLIB from "roslib";
-import '../assets/style.css';
+import "../assets/style.css";
 
 let interval;
 
@@ -463,8 +474,8 @@ export default {
   width: 49.5%;
 }
 
-.col-wrap span{
-  margin:-30px 0px 0px 0px;
+.col-wrap span {
+  margin: -30px 0px 0px 0px;
 }
 
 .dragArea {

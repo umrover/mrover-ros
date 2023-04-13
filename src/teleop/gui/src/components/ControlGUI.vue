@@ -1,8 +1,14 @@
 <template>
-<div>
+  <div>
     <div class="page_header">
-        <img src="/static/mrover_logo.png" alt="MRover" title="MRover" width="185" height="53" />
-        <h1>Temp Controls</h1>
+      <img
+        src="/static/mrover_logo.png"
+        alt="MRover"
+        title="MRover"
+        width="185"
+        height="53"
+      />
+      <h1>Temp Controls</h1>
     </div>
     <DriveControls></DriveControls>
     <ArmControls></ArmControls>
@@ -22,7 +28,7 @@ import ArmControls from "./ArmControls.vue";
 import MastGimbalControls from "./MastGimbalControls.vue";
 import JointStateTable from "./JointStateTable.vue";
 import MoteusStateTable from "./MoteusStateTable.vue";
-import '../assets/style.css';
+import "../assets/style.css";
 
 export default {
   components: {

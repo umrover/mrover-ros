@@ -1,6 +1,8 @@
 <template>
   <div>
-    <button class="button" @click="download_csv_file(spectral_data)">Generate Report</button>
+    <button class="button" @click="download_csv_file(spectral_data)">
+      Generate Report
+    </button>
   </div>
 </template>
 

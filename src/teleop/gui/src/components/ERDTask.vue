@@ -1,7 +1,13 @@
 <template>
   <div :class="type === 'ES' ? 'wrapper-es' : 'wrapper-edm'">
     <div class="page_header">
-      <img src="/static/mrover_logo.png" alt="MRover" title="MRover" width="185" height="53" />
+      <img
+        src="/static/mrover_logo.png"
+        alt="MRover"
+        title="MRover"
+        width="185"
+        height="53"
+      />
       <h1 v-if="type === 'ES'">ES GUI Dashboard</h1>
       <h1 v-else>EDM GUI Dashboard</h1>
       <div class="help">
@@ -64,7 +70,7 @@
 </template>
 
 <script>
-import '../assets/style.css';
+import "../assets/style.css";
 import { mapGetters } from "vuex";
 import * as qte from "quaternion-to-euler";
 import ROSLIB from "roslib";

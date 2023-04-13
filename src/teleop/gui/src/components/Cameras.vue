@@ -1,24 +1,38 @@
 <template>
-    <div class="wrap">
-      <div class="block box1">
+  <div class="wrap">
+    <div class="block box1">
       <h3>Cameras</h3>
       <div class="input">
-        Camera name: <input class="box" type='message' v-model ='cameraName'>
-        <br>Camera number: <input class="box" type='Number' min="0" max="8" v-model ='cameraIdx'>
-        <button class="button" v-on:click="addCameraName()">Change name</button>
+        Camera name: <input v-model="cameraName" class="box" type="message" />
+        <br />Camera number:
+        <input v-model="cameraIdx" class="box" type="Number" min="0" max="8" />
+        <button class="button" @click="addCameraName()">Change name</button>
       </div>
       <div class="cameraselection">
-        <CameraSelection v-bind:camsEnabled="camsEnabled" v-bind:names="names" v-bind:capacity="parseInt(capacity)" v-on:cam_index="setCamIndex($event)"/>
-      </div>
-      </div>
-      <div class="block box2">
-      <h3>All Cameras</h3>
-      Capacity: <input class="box" type='Number' min="2" max="4" v-model ='capacity'>
-      <div class="camerainfo" v-for="i in camsEnabled.length" :key="i">
-        <CameraInfo v-if="camsEnabled[i-1]" v-bind:name="names[i-1]" v-bind:id="i-1" v-on:newQuality="changeQuality($event)" v-on:swapStream="swapStream($event)" v-bind:stream="getStreamNum(i-1)"></CameraInfo>
-      </div>
+        <CameraSelection
+          :cams-enabled="camsEnabled"
+          :names="names"
+          :capacity="parseInt(capacity)"
+          @cam_index="setCamIndex($event)"
+        />
       </div>
     </div>
+    <div class="block box2">
+      <h3>All Cameras</h3>
+      Capacity:
+      <input v-model="capacity" class="box" type="Number" min="2" max="4" />
+      <div v-for="i in camsEnabled.length" :key="i" class="camerainfo">
+        <CameraInfo
+          v-if="camsEnabled[i - 1]"
+          :id="i - 1"
+          :name="names[i - 1]"
+          :stream="getStreamNum(i - 1)"
+          @newQuality="changeQuality($event)"
+          @swapStream="swapStream($event)"
+        ></CameraInfo>
+      </div>
+    </div>
+  </div>
 </template>
 
 <script>
@@ -26,7 +40,7 @@ import Vue from "vue";
 import ROSLIB from "roslib/src/RosLib";
 import CameraSelection from "../components/CameraSelection.vue";
 import CameraInfo from "../components/CameraInfo.vue";
-import '../assets/style.css';
+import "../assets/style.css";
 
 export default {
   components: {
@@ -129,7 +143,6 @@ export default {
 </script>
 
 <style scoped>
-
 .wrap {
   width: 100%;
   display: flex;
@@ -153,7 +166,7 @@ export default {
 }
 
 .box2 {
-  width:100%;
+  width: 100%;
   margin: 10px;
   overflow-y: scroll;
 }

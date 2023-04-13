@@ -4,7 +4,10 @@
       <p>{{ waypoint.name }}, ID: {{ waypoint.id }}</p>
     </div>
     <div class="buttons">
-      <button class="button red" @click="$emit('add', { list: list, index: index })">
+      <button
+        class="button red"
+        @click="$emit('add', { list: list, index: index })"
+      >
         Add
       </button>
       <button
@@ -51,7 +54,7 @@
 </template>
 
 <script>
-import '../assets/style.css';
+import "../assets/style.css";
 import { mapGetters } from "vuex";
 import { convertDMS } from "../utils";
 
@@ -98,13 +101,13 @@ export default {
 </script>
 
 <style scoped>
-  .box {
-    padding: 1px 10px 10px 10px;
-    margin: 5px;
-  }
-  .location {
-    grid-area: location;
-  }
+.box {
+  padding: 1px 10px 10px 10px;
+  margin: 5px;
+}
+.location {
+  grid-area: location;
+}
 
 .location p {
   display: inline;
