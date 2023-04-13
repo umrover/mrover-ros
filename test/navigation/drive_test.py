@@ -4,6 +4,7 @@ import numpy as np
 from util.SE3 import SE3
 from util.SO3 import SO3
 from math import pi
+from navigation.drive import Driver
 from util.np_utils import angle_to_rotate
 
 from tf.transformations import quaternion_from_euler
@@ -14,10 +15,13 @@ APPROACH_DISTANCE = 2.0
 
 
 class TestDrive(unittest.TestCase):
+    def __init__(self):
+        self.driver = Driver()
+
     def test_drive_straight(self):
         pose = SE3.from_pos_quat([0, 0, 0], quaternion_from_euler(0.0, 0.0, 0.0))
         goal_pos = np.array([10.0, 0.0, 0.0])
-        cmd, done = get_drive_command(goal_pos, pose, 2.0, 0.01)
+        cmd, done = self.driver.get_drive_command(goal_pos, pose, 2.0, 0.01)
         print(cmd)
         print(done)
         self.assertEqual(cmd.angular.z, 0.0)
@@ -27,7 +31,7 @@ class TestDrive(unittest.TestCase):
         # rover is facing along the y axis
         pose = SE3.from_pos_quat([0, 0, 0], quaternion_from_euler(0.0, 0.0, pi / 2))
         goal_pos = np.array([10.0, 0.0, 0.0])
-        cmd, done = get_drive_command(goal_pos, pose, 2.0, 0.01)
+        cmd, done = self.driver.get_drive_command(goal_pos, pose, 2.0, 0.01)
         print(cmd)
         print(done)
         self.assertLess(cmd.angular.z, 0.0)
@@ -38,7 +42,7 @@ class TestDrive(unittest.TestCase):
         # rover is facing along the y axis
         pose = SE3.from_pos_quat([0, 0, 0], quaternion_from_euler(0.0, 0.0, -pi / 2))
         goal_pos = np.array([10.0, 0.0, 0.0])
-        cmd, done = get_drive_command(goal_pos, pose, 2.0, 0.01)
+        cmd, done = self.driver.get_drive_command(goal_pos, pose, 2.0, 0.01)
         print(cmd)
         print(done)
         self.assertGreater(cmd.angular.z, 0.0)
@@ -49,7 +53,7 @@ class TestDrive(unittest.TestCase):
         # rover is facing along the y axis
         pose = SE3.from_pos_quat([0, 0, 0], quaternion_from_euler(0.0, 0.0, pi / 4))
         goal_pos = np.array([10.0, 10.0, 0.0])
-        cmd, done = get_drive_command(goal_pos, pose, 2.0, 0.01)
+        cmd, done = self.driver.get_drive_command(goal_pos, pose, 2.0, 0.01)
         print(cmd)
         print(done)
         self.assertLess(abs(cmd.angular.z), 0.001)
@@ -59,7 +63,7 @@ class TestDrive(unittest.TestCase):
         # rover is facing along the y axis
         pose = SE3.from_pos_quat([0, 0, 0], quaternion_from_euler(0.0, 0.0, pi / 4))
         goal_pos = np.array([10.0, 10.0, 0.0])
-        cmd, done = get_drive_command(goal_pos, pose, 2.0, 0.01)
+        cmd, done = self.driver.get_drive_command(goal_pos, pose, 2.0, 0.01)
         print(cmd)
         print(done)
         self.assertLess(abs(cmd.angular.z), 0.001)
