@@ -1,10 +1,10 @@
-test_recovery_state: False
+test_recovery_state: True
 
 drive:
   max_driving_effort: 1
   min_driving_effort: -1
   turning_p: 10
-  recovery_distance: 1
+  recovery_distance: 1 #distance the rover moves back in each leg of j-turn
 
 gate:
   stop_thresh: 0.2

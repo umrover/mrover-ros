@@ -30,6 +30,7 @@ class FailureIdentifier:
     cur_cmd: Twist
     cur_stuck: bool
     path_name: Path
+    data_collecting_mode: bool
 
     def __init__(self):
         nav_status_sub = message_filters.Subscriber("smach/container_status", SmachContainerStatus)
