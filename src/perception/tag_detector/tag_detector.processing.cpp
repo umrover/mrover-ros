@@ -133,9 +133,9 @@ namespace mrover {
         if (mPublishImages && mImgPub.getNumSubscribers()) {
 
             cv::aruco::drawDetectedMarkers(mImg, mImmediateCorners, mImmediateIds);
-            for (auto& [id, tag] : mTags) {
-                cv::Scalar color(255,0,0);
-                cv::Point pt(1200,100);
+            for (auto& [id, tag]: mTags) {
+                cv::Scalar color(255, 0, 0);
+                cv::Point pt(1200, 100);
                 cv::putText(mImg, std::to_string(tag.hitCount), pt, cv::FONT_HERSHEY_COMPLEX, 2, color, 3);
             }
             mImgMsg.header.seq = mSeqNum;
@@ -150,11 +150,6 @@ namespace mrover {
             mImgMsg.data.resize(size);
             std::copy(std::execution::par_unseq, mImg.data, mImg.data + size, mImgMsg.data.begin());
             mImgPub.publish(mImgMsg);
-            
-            if (!mVideoWriter) {
-                mVideoWriter.emplace("appsrc ! videoconvert ! video/x-raw,format=YUY2,width=640,height=480,framerate=30/1 ! jpegenc ! rtpjpegpay ! udpsink host=127.0.0.1 port=5000",cv::CAP_GSTREAMER,0,30,cv::Size(640,480),true);
-                mVideoWriter->write(mImg);
-            }
         }
 
         size_t detectedCount = mImmediateIds.size();
