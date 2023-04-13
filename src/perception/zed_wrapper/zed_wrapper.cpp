@@ -147,19 +147,19 @@ namespace mrover {
                     fillPointCloudMessageFromGpu(mProcessMeasures.leftPoints, mProcessMeasures.leftImage, mPointCloudGpu, pointCloudMsg);
                     pointCloudMsg->header.seq = mPointCloudUpdateTick;
                     pointCloudMsg->header.stamp = mProcessMeasures.time;
-                    pointCloudMsg->header.frame_id = "zed2i_left_camera_frame";
+                    pointCloudMsg->header.frame_id = "zed2i_left_camera_optical_frame";
                     mProcessThreadProfiler.measureEvent("Fill Message");
 
                     if (mLeftImgPub.getNumSubscribers()) {
                         fillImageMessage(mProcessMeasures.leftImage, mLeftImgMsg);
-                        mLeftImgMsg->header.frame_id = "zed2i_left_camera_frame";
+                        mLeftImgMsg->header.frame_id = "zed2i_left_camera_optical_frame";
                         mLeftImgMsg->header.stamp = mProcessMeasures.time;
                         mLeftImgMsg->header.seq = mPointCloudUpdateTick;
                         mLeftImgPub.publish(mLeftImgMsg);
                     }
                     if (mRightImgPub.getNumSubscribers()) {
                         fillImageMessage(mProcessMeasures.rightImage, mRightImgMsg);
-                        mRightImgMsg->header.frame_id = "zed2i_right_camera_frame";
+                        mRightImgMsg->header.frame_id = "zed2i_right_camera_optical_frame";
                         mRightImgMsg->header.stamp = mProcessMeasures.time;
                         mRightImgMsg->header.seq = mPointCloudUpdateTick;
                         mRightImgPub.publish(mRightImgMsg);
@@ -175,11 +175,11 @@ namespace mrover {
                 if (mLeftCamInfoPub.getNumSubscribers() || mRightCamInfoPub.getNumSubscribers()) {
                     sl::CalibrationParameters calibration = mZedInfo.camera_configuration.calibration_parameters;
                     fillCameraInfoMessages(calibration, mImageResolution, mLeftCamInfoMsg, mRightCamInfoMsg);
-                    mLeftCamInfoMsg->header.frame_id = "zed2i_left_camera_frame";
-                    mLeftCamInfoMsg->header.stamp = ros::Time::now();
+                    mLeftCamInfoMsg->header.frame_id = "zed2i_left_camera_optical_frame";
+                    mLeftCamInfoMsg->header.stamp = mProcessMeasures.time;
                     mLeftCamInfoMsg->header.seq = mPointCloudUpdateTick;
-                    mRightCamInfoMsg->header.frame_id = "zed2i_right_camera_frame";
-                    mRightCamInfoMsg->header.stamp = ros::Time::now();
+                    mRightCamInfoMsg->header.frame_id = "zed2i_right_camera_optical_frame";
+                    mRightCamInfoMsg->header.stamp = mProcessMeasures.time;
                     mRightCamInfoMsg->header.seq = mPointCloudUpdateTick;
                     mLeftCamInfoPub.publish(mLeftCamInfoMsg);
                     mRightCamInfoPub.publish(mRightCamInfoMsg);

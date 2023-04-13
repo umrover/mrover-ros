@@ -78,8 +78,18 @@ namespace mrover {
         rightInfoMsg->height = resolution.height;
         leftInfoMsg->distortion_model = sensor_msgs::distortion_models::PLUMB_BOB;
         rightInfoMsg->distortion_model = sensor_msgs::distortion_models::PLUMB_BOB;
-        leftInfoMsg->D.assign(calibration.left_cam.disto, calibration.left_cam.disto + 5);
-        rightInfoMsg->D.assign(calibration.right_cam.disto, calibration.right_cam.disto + 5);
+        leftInfoMsg->D.resize(5);
+        rightInfoMsg->D.resize(5);
+        leftInfoMsg->D[0] = calibration.left_cam.disto[0];
+        leftInfoMsg->D[1] = calibration.left_cam.disto[1];
+        leftInfoMsg->D[2] = calibration.left_cam.disto[4];
+        leftInfoMsg->D[3] = calibration.left_cam.disto[2];
+        leftInfoMsg->D[4] = calibration.left_cam.disto[3];
+        rightInfoMsg->D[0] = calibration.right_cam.disto[0];
+        rightInfoMsg->D[1] = calibration.right_cam.disto[1];
+        rightInfoMsg->D[2] = calibration.right_cam.disto[4];
+        rightInfoMsg->D[3] = calibration.right_cam.disto[2];
+        rightInfoMsg->D[4] = calibration.right_cam.disto[3];
         leftInfoMsg->K.fill(0.0);
         rightInfoMsg->K.fill(0.0);
         leftInfoMsg->K[0] = calibration.left_cam.fx;
@@ -94,8 +104,10 @@ namespace mrover {
         rightInfoMsg->K[8] = 1;
         leftInfoMsg->R.fill(0.0);
         rightInfoMsg->R.fill(0.0);
-        for (size_t i = 0; i < 3; ++i) leftInfoMsg->R[i * 3 + i] = 1.0;
-        for (size_t i = 0; i < 3; ++i) rightInfoMsg->R[i * 3 + i] = 1.0;
+        for (size_t i = 0; i < 3; ++i) {
+            leftInfoMsg->R[i * 3 + i] = 1.0;
+            rightInfoMsg->R[i * 3 + i] = 1.0;
+        }
         leftInfoMsg->P.fill(0.0);
         rightInfoMsg->P.fill(0.0);
         leftInfoMsg->P[0] = calibration.left_cam.fx;
