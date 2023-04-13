@@ -1,6 +1,5 @@
 <template>
   <div>
-    <div><h3>Flight Attitude Indicator</h3></div>
     <Attitude :size="200" :pitch="pitch" :roll="roll"></Attitude>
   </div>
 </template>

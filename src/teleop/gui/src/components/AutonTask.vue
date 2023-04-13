@@ -43,7 +43,7 @@
         <h2>Nav State: {{ nav_status.nav_state_name }}</h2>
       </div>
       <div>
-        <p style="margin-top: 6px">Joystick Values</p>
+        <p style="margin-top: 2px">Joystick Values</p>
       </div>
       <div></div>
       <JoystickValues />
@@ -285,7 +285,7 @@ export default {
   overflow-y: scroll;
   height: 12 px;
   display: grid;
-  grid-template-columns: 40% 60%;
+  grid-template-columns: 50% 50%;
 }
 
 .box2 {
