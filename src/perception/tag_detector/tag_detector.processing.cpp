@@ -9,15 +9,11 @@
 
 #include <sensor_msgs/image_encodings.h>
 
-<<<<<<< HEAD constexpr int PADDING = 20;
-
-using namespace std::chrono_literals;
-using hr_clock = std::chrono::high_resolution_clock;
-=======
 #include "../point_cloud.hpp"
->>>>>>> origin/percep-zed-wrapper
 
-        namespace mrover {
+constexpr int PADDING = 20;
+
+namespace mrover {
 
     /**
      * @brief       Retrieve the pose of the tag in camera space
@@ -25,13 +21,9 @@ using hr_clock = std::chrono::high_resolution_clock;
      * @param u     X Pixel Position
      * @param v     Y Pixel Position
      */
-<<<<<<< HEAD
-    std::optional<SE3> TagDetectorNodelet::getFidInCamFromPixel(sensor_msgs::PointCloud2ConstPtr const& cloudPtr, size_t u, size_t v) {
-=======
     std::optional<SE3> TagDetectorNodelet::getTagInCamFromPixel(sensor_msgs::PointCloud2ConstPtr const& cloudPtr, size_t u, size_t v) {
         assert(cloudPtr);
 
->>>>>>> origin/percep-zed-wrapper
         if (u >= cloudPtr->width || v >= cloudPtr->height) {
             NODELET_WARN("Tag center out of bounds: [%zu %zu]", u, v);
             return std::nullopt;
@@ -99,48 +91,52 @@ using hr_clock = std::chrono::high_resolution_clock;
             tag.imageCenter = std::accumulate(mCorners[i].begin(), mCorners[i].end(), cv::Point2f{}) / static_cast<float>(mCorners[i].size());
 
             // find extremes of detected tag for checking later
-            auto xBounds = std::minmax_element(mCorners[i].begin(), mCorners[i].end(),
-                                               [](const cv::Point2f& a, const cv::Point2f& b) -> bool {
-                                                   return a.x < b.x;
-                                               });
+            auto [leftIt, rightIt] = std::minmax_element(mCorners[i].begin(), mCorners[i].end(),
+                                                         [](cv::Point2f const& a, cv::Point2f const& b) -> bool {
+                                                             return a.x < b.x;
+                                                         });
 
-            int leftmost = (*xBounds.first).x;
-            int rightmost = (*xBounds.second).x;
 
+            auto left = static_cast<size_t>(leftIt->x);
+            auto right = static_cast<size_t>(rightIt->x);
+
+            // TODO: fix x->y and also use structured binding
             auto yBounds = std::minmax_element(mCorners[i].begin(), mCorners[i].end(),
-                                               [](const cv::Point2f& a, const cv::Point2f& b) -> bool {
+                                               [](cv::Point2f const& a, cv::Point2f const& b) -> bool {
                                                    return a.x < b.x;
                                                });
 
             int uppermost = (*yBounds.first).y;
             int lowermost = (*yBounds.second).y; // top is y=0
 
-            std::vector<SE3> validFidsInCam;
+            // TODO: make instance variable to avoid allocations
+            std::vector<SE3> validTagsInCam;
 
-            for (int x = lround(tag.imageCenter.x) - PADDING; x < lround(tag.imageCenter.x) + PADDING; ++x) {
-                if (x > leftmost && x < rightmost) {
-                    for (int y = lround(tag.imageCenter.y) - PADDING; y < lround(tag.imageCenter.y) + PADDING; ++y) {
+            // TODO: do all operations with size_t type
+            // TODO: pre-calculate tag.imageCenter.x and tag.imageCenter.y as size_t types, note you will have to cast to size_t from lround
+            for (size_t x = std::lround(tag.imageCenter.x) - PADDING; x < std::lround(tag.imageCenter.x) + PADDING; ++x) {
+                if (x > left && x < right) {
+                    for (size_t y = std::lround(tag.imageCenter.y) - PADDING; y < std::lround(tag.imageCenter.y) + PADDING; ++y) {
                         if (y > uppermost && y < lowermost) {
-                            std::optional<SE3> inCam = getFidInCamFromPixel(msg, x, y);
+                            std::optional<SE3> inCam = getTagInCamFromPixel(msg, x, y);
                             if (inCam) {
-                                validFidsInCam.push_back(inCam.value());
+                                validTagsInCam.push_back(inCam.value());
                             }
                         }
                     }
                 }
             }
 
-            if (validFidsInCam.size() > 0) {
+            if (validTagsInCam.empty()) {
+                tag.tagInCam = std::nullopt; // no points were able to be mapped
+            } else {
                 // find median
-                size_t median_n = validFidsInCam.size() / 2;
-                std::nth_element(validFidsInCam.begin(), validFidsInCam.begin() + median_n, validFidsInCam.end(),
+                size_t medianIndex = validTagsInCam.size() / 2;
+                std::nth_element(validTagsInCam.begin(), validTagsInCam.begin() + static_cast<ssize_t>(medianIndex), validTagsInCam.end(),
                                  [](const SE3& a, const SE3& b) -> bool {
                                      return a.position().norm() < b.position().norm();
                                  });
-
-                tag.tagInCam = std::make_optional<SE3>(validFidsInCam[median_n]);
-            } else {
-                tag.tagInCam = std::nullopt; // no points were able to be mapped
+                tag.tagInCam = validTagsInCam[medianIndex];
             }
 
             if (tag.tagInCam) {
