@@ -11,6 +11,7 @@
       <h1>ISH Dashboard</h1>
       <div class="spacer"></div>
       <div class="spacer"></div>
+      <CommReadout class="comm"></CommReadout>
       <div class="help">
         <img
           src="/static/help.png"
@@ -74,6 +75,7 @@ import Cache from "./Cache.vue";
 import Chlorophyll from "./Chlorophyll.vue";
 import Amino from "./Amino.vue";
 import Cameras from "../components/Cameras.vue";
+import CommReadout from "./CommReadout.vue";
 
 export default {
   components: {
@@ -85,6 +87,7 @@ export default {
     Chlorophyll,
     Amino,
     Cameras,
+    CommReadout,
   },
   data() {
     return {

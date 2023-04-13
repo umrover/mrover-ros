@@ -1,65 +1,51 @@
 <launch>
-    <!-- 'zed' (ZED 1) or 'zed2i' (ZED 2i) -->
-    <arg name="zed_model" default="zed2i"/>
-    <!-- Use ZED's built-in visual odometry (called positional tracking), otherwise use rtabmap stereo odometry -->
-    <arg name="use_builtin_visodom" default="true"/>
-    <arg name="direct_tag_detection" default="false"/>
+  <!-- 'zed' (ZED 1) or 'zed2i' (ZED 2i) -->
+  <arg name="zed_model" default="zed2i"/>
+  <!-- Use ZED's built-in visual odometry (called positional tracking), otherwise use rtabmap stereo odometry -->
+  <arg name="ues_builtin_visual_odom" default="true"/>
+  <arg name="direct_tag_detection" default="false"/>
 
-    <!-- ZED Wrapper Nodelet -->
-    <!--    <node pkg="nodelet" type="nodelet" name="zed_nodelet" respawn="true"-->
-    <!--          args="load zed_nodelets/ZEDWrapperNodelet perception_nodelet_manager" output="screen">-->
-    <!--        <rosparam file="$(find mrover)/config/zed/base.yaml" command="load"/>-->
-    <!--        <rosparam file="$(find mrover)/config/zed/$(arg zed_model).yaml" command="load"/>-->
-    <!--        <rosparam if="$(arg use_builtin_visodom)" file="$(find mrover)/config/zed/builtin_positional_tracking.yaml"-->
-    <!--                  command="load"/>-->
+  <rosparam command="load" file="$(find mrover)/config/perception.yaml"/>
+  <node pkg="nodelet" type="nodelet" name="zed_nodelet" respawn="true"
+        args="load mrover/ZedNodelet perception_nodelet_manager" output="screen">
+    <param name="direct_tag_detection" value="$(arg direct_tag_detection)"/>
+    <param name="ues_builtin_visual_odom" value="$(arg ues_builtin_visual_odom)"/>
+  </node>
 
-    <!--        <remap to="/camera/left/image" from="/zed_nodelet/left/image_rect_color"/>-->
-    <!--        <remap to="/camera/right/image" from="/zed_nodelet/right/image_rect_color"/>-->
-    <!--        <remap to="/camera/left/camera_info" from="/zed_nodelet/left/camera_info"/>-->
-    <!--        <remap to="/camera/right/camera_info" from="/zed_nodelet/right/camera_info"/>-->
-    <!--        <remap to="/camera/left/points" from="/zed_nodelet/point_cloud/cloud_registered"/>-->
-    <!--    </node>-->
+  <!-- Static TF publisher for ZED mount-->
+  <node pkg="tf" type="static_transform_publisher" name="zed_mount_link_publisher"
+        args="0 0 0 0 0 0 base_link zed_mount_link 100"/>
 
-    <rosparam command="load" file="$(find mrover)/config/perception.yaml"/>
-    <node pkg="nodelet" type="nodelet" name="zed_nodelet" respawn="true"
-          args="load mrover/ZedNodelet perception_nodelet_manager" output="screen">
-        <param name="direct_tag_detection" value="$(arg direct_tag_detection)"/>
-    </node>
-
-    <!-- Static TF publisher for ZED mount-->
-    <node pkg="tf" type="static_transform_publisher" name="zed_mount_link_publisher"
-          args="0 0 0 0 0 0 base_link zed_mount_link 100"/>
-
-    <!-- Load ZED URDF -->
-    <param name="zed_description" command="$(find xacro)/xacro '$(find zed_wrapper)/urdf/zed_descr.urdf.xacro'
+  <!-- Load ZED URDF -->
+  <param name="zed_description" command="$(find xacro)/xacro '$(find mrover)/rover_description/zed/zed_descr.urdf.xacro'
         camera_name:=$(arg zed_model)
         camera_model:=$(arg zed_model)"/>
 
-    <!-- ZED URDF publisher -->
-    <node name="zed_state_publisher" pkg="robot_state_publisher" type="robot_state_publisher" output="screen"
-          required="true">
-        <remap from="robot_description" to="zed_description"/>
-    </node>
+  <!-- ZED URDF publisher -->
+  <node name="zed_state_publisher" pkg="robot_state_publisher" type="robot_state_publisher" output="screen"
+        required="true">
+    <remap from="robot_description" to="zed_description"/>
+  </node>
 
-    <!-- rtabmap visual odometry -->
-    <node unless="$(arg use_builtin_visodom)"
-          name="stereo_odometry" pkg="rtabmap_ros" type="stereo_odometry" respawn="true" output="screen">
-        <remap from="/left/image_rect" to="/camera/left/image"/>
-        <remap from="/left/camera_info" to="/camera/left/camera_info"/>
-        <remap from="/right/image_rect" to="/camera/right/image"/>
-        <remap from="/right/camera_info" to="/camera/right/camera_info"/>
+  <!-- rtabmap visual odometry -->
+  <node unless="$(arg ues_builtin_visual_odom)"
+        name="stereo_odometry" pkg="rtabmap_ros" type="stereo_odometry" respawn="true" output="screen">
+    <remap from="/left/image_rect" to="/camera/left/image"/>
+    <remap from="/left/camera_info" to="/camera/left/camera_info"/>
+    <remap from="/right/image_rect" to="/camera/right/image"/>
+    <remap from="/right/camera_info" to="/camera/right/camera_info"/>
 
-        <param name="GFTT/MinDistance" type="string" value="10"/>
-        <param name="OdomF2M/MaxSize" type="string" value="500"/>
-        <param name="Vis/MaxFeatures" type="string" value="300"/>
-        <!-- Correspondences: 0=Features Matching, 1=Optical Flow -->
-        <param name="Vis/CorType" value="0"/>
-        <!-- 0=Frame-to-Map (F2M) 1=Frame-to-Frame (F2F) -->
-        <param name="Odom/Strategy" value="0"/>
+    <param name="GFTT/MinDistance" type="string" value="10"/>
+    <param name="OdomF2M/MaxSize" type="string" value="500"/>
+    <param name="Vis/MaxFeatures" type="string" value="300"/>
+    <!-- Correspondences: 0=Features Matching, 1=Optical Flow -->
+    <param name="Vis/CorType" value="0"/>
+    <!-- 0=Frame-to-Map (F2M) 1=Frame-to-Frame (F2F) -->
+    <param name="Odom/Strategy" value="0"/>
 
-        <param name="frame_id" type="string" value="base_link"/>
-        <param name="odom_frame_id" type="string" value="odom"/>
+    <param name="frame_id" type="string" value="base_link"/>
+    <param name="odom_frame_id" type="string" value="odom"/>
 
-        <param name="publish_tf" type="bool" value="true"/>
-    </node>
+    <param name="publish_tf" type="bool" value="true"/>
+  </node>
 </launch>

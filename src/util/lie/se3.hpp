@@ -10,10 +10,13 @@
 #include <geometry_msgs/TransformStamped.h>
 #include <tf2_geometry_msgs/tf2_geometry_msgs.h>
 
-#include <Eigen/Dense>
+#include <Eigen/Geometry>
 
 using R3 = Eigen::Vector3d;
 
+/**
+ * @brief A 3D rotation.
+ */
 class SO3 {
 private:
     using AngleAxis = Eigen::AngleAxis<double>;
@@ -23,17 +26,24 @@ private:
 public:
     friend class SE3;
 
-    template<typename... Args>
+    template<typename... Args, typename = std::enable_if_t<std::is_constructible_v<AngleAxis, Args...>>>
     SO3(Args&&... args) : mAngleAxis{std::forward<Args>(args)...} {
     }
 
     [[nodiscard]] SO3 operator*(SO3 const& other) const;
+
+    [[nodiscard]] R3 operator*(R3 const& other) const;
 
     [[nodiscard]] Eigen::Matrix4d matrix() const;
 
     [[nodiscard]] Eigen::Quaterniond quaternion() const;
 };
 
+/**
+ * @brief A 3D rigid transformation (direct isometry).
+ *
+ * In simpler terms: a 3D rotation followed by a 3D translation.
+ */
 class SE3 {
 private:
     using Transform = Eigen::Transform<double, 3, Eigen::Isometry>;
@@ -59,7 +69,7 @@ public:
 
     SE3(R3 const& position, SO3 const& rotation = {});
 
-    template<typename... Args, typename = decltype(Transform(std::declval<Args>()...))>
+    template<typename... Args, typename = std::enable_if_t<std::is_constructible_v<Transform, Args...>>>
     SE3(Args&&... args) : mTransform{std::forward<Args>(args)...} {
     }
 
@@ -71,5 +81,5 @@ public:
 
     [[nodiscard]] SO3 rotation() const;
 
-    [[nodiscard]] double distanceTo(SE3 const& other);
+    [[nodiscard]] double distanceTo(SE3 const& other) const;
 };

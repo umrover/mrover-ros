@@ -1,28 +1,23 @@
 #include "tag_detector.hpp"
 
 #include <algorithm>
-#include <chrono>
+#include <cassert>
 #include <cmath>
 #include <execution>
 #include <limits>
 #include <numeric>
-#include <thread>
 
 #include <sensor_msgs/image_encodings.h>
 
-constexpr int PADDING = 20;
+<<<<<<< HEAD constexpr int PADDING = 20;
 
 using namespace std::chrono_literals;
 using hr_clock = std::chrono::high_resolution_clock;
+=======
+#include "../point_cloud.hpp"
+>>>>>>> origin/percep-zed-wrapper
 
-namespace mrover {
-
-    struct Point {
-        float x, y, z;
-        uint8_t r, g, b, a;
-        float normal_x, normal_y, normal_z;
-        float curvature;
-    } __attribute__((packed));
+        namespace mrover {
 
     /**
      * @brief       Retrieve the pose of the tag in camera space
@@ -30,7 +25,13 @@ namespace mrover {
      * @param u     X Pixel Position
      * @param v     Y Pixel Position
      */
+<<<<<<< HEAD
     std::optional<SE3> TagDetectorNodelet::getFidInCamFromPixel(sensor_msgs::PointCloud2ConstPtr const& cloudPtr, size_t u, size_t v) {
+=======
+    std::optional<SE3> TagDetectorNodelet::getTagInCamFromPixel(sensor_msgs::PointCloud2ConstPtr const& cloudPtr, size_t u, size_t v) {
+        assert(cloudPtr);
+
+>>>>>>> origin/percep-zed-wrapper
         if (u >= cloudPtr->width || v >= cloudPtr->height) {
             NODELET_WARN("Tag center out of bounds: [%zu %zu]", u, v);
             return std::nullopt;
@@ -53,37 +54,41 @@ namespace mrover {
      * @param msg   Point cloud message
      */
     void TagDetectorNodelet::pointCloudCallback(sensor_msgs::PointCloud2ConstPtr const& msg) {
-        hr_clock::time_point update_start = hr_clock::now();
+        assert(msg);
+        assert(msg->height > 0);
+        assert(msg->width > 0);
 
         if (!mEnableDetections) return;
 
+        mProfiler.beginLoop();
+
         NODELET_DEBUG("Got point cloud %d", msg->header.seq);
 
-        if (msg->height == 0 || msg->width == 0) {
-            NODELET_WARN("Point cloud has zero size");
-            return;
-        }
-
+        // OpenCV needs a dense BGR image |BGR|...| but out point cloud is |BGRAXYZ...|...|
+        // So we need to copy the data into the correct format
         if (static_cast<int>(msg->height) != mImg.rows || static_cast<int>(msg->width) != mImg.cols) {
             NODELET_INFO("Image size changed from [%d %d] to [%u %u]", mImg.cols, mImg.rows, msg->width, msg->height);
             mImg = cv::Mat{static_cast<int>(msg->height), static_cast<int>(msg->width), CV_8UC3, cv::Scalar{0, 0, 0}};
         }
-
         auto* pixelPtr = reinterpret_cast<cv::Vec3b*>(mImg.data);
         auto* pointPtr = reinterpret_cast<Point const*>(msg->data.data());
         std::for_each(std::execution::par_unseq, pixelPtr, pixelPtr + mImg.total(), [&](cv::Vec3b& pixel) {
             size_t i = &pixel - pixelPtr;
-            pixel[0] = pointPtr[i].r;
+            pixel[0] = pointPtr[i].b;
             pixel[1] = pointPtr[i].g;
-            pixel[2] = pointPtr[i].b;
+            pixel[2] = pointPtr[i].r;
         });
-        hr_clock::duration convert_time = hr_clock::now() - update_start;
+        mProfiler.measureEvent("Convert");
+
+        // Call thresholding
+        publishThresholdedImage();
+        mProfiler.measureEvent("Threshold");
 
         // Detect the tag vertices in screen space and their respective ids
         // {mCorners, mIds} are the outputs from OpenCV
         cv::aruco::detectMarkers(mImg, mDictionary, mCorners, mIds, mDetectorParams);
         NODELET_DEBUG("OpenCV detect size: %zu", mIds.size());
-        hr_clock::duration detect_time = hr_clock::now() - update_start - convert_time;
+        mProfiler.measureEvent("OpenCV Detect");
 
         // Update ID, image center, and increment hit count for all detected tags
         for (size_t i = 0; i < mIds.size(); ++i) {
@@ -163,20 +168,16 @@ namespace mrover {
         // Publish all tags to the tf tree that have been seen enough times
         for (auto const& [id, tag]: mTags) {
             if (tag.hitCount >= mMinHitCountBeforePublish) {
-                if (tag.tagInCam) {
-                    try {
-                        std::string immediateFrameId = "immediateFiducial" + std::to_string(tag.id);
-                        // Publish tag to odom
-                        std::string const& parentFrameId = mUseOdom ? mOdomFrameId : mMapFrameId;
-                        SE3 tagInParent = SE3::fromTfTree(mTfBuffer, parentFrameId, immediateFrameId);
-                        SE3::pushToTfTree(mTfBroadcaster, "fiducial" + std::to_string(id), parentFrameId, tagInParent);
-                    } catch (tf2::ExtrapolationException const&) {
-                        NODELET_WARN("Old data for immediate tag");
-                    } catch (tf2::LookupException const&) {
-                        NODELET_WARN("Expected transform for immediate tag");
-                    }
-                } else {
-                    NODELET_DEBUG("Had tag detection but no corresponding point cloud information");
+                try {
+                    std::string immediateFrameId = "immediateFiducial" + std::to_string(tag.id);
+                    // Publish tag to odom
+                    std::string const& parentFrameId = mUseOdom ? mOdomFrameId : mMapFrameId;
+                    SE3 tagInParent = SE3::fromTfTree(mTfBuffer, parentFrameId, immediateFrameId);
+                    SE3::pushToTfTree(mTfBroadcaster, "fiducial" + std::to_string(id), parentFrameId, tagInParent);
+                } catch (tf2::ExtrapolationException const&) {
+                    NODELET_WARN("Old data for immediate tag");
+                } catch (tf2::LookupException const&) {
+                    NODELET_WARN("Expected transform for immediate tag");
                 }
             }
         }
@@ -193,26 +194,15 @@ namespace mrover {
             mImgMsg.is_bigendian = __BYTE_ORDER__ == __ORDER_BIG_ENDIAN__;
             size_t size = mImgMsg.step * mImgMsg.height;
             mImgMsg.data.resize(size);
-            std::memcpy(mImgMsg.data.data(), mImg.data, size);
+            std::copy(std::execution::par_unseq, mImg.data, mImg.data + size, mImgMsg.data.begin());
             mImgPub.publish(mImgMsg);
         }
 
         size_t detectedCount = mIds.size();
-        if (!mPrevDetectedCount.has_value() || detectedCount != mPrevDetectedCount.value()) {
-            mPrevDetectedCount = detectedCount;
-            NODELET_INFO("Detected %zu markers", detectedCount);
-        }
+        NODELET_INFO_COND(!mPrevDetectedCount.has_value() || detectedCount != mPrevDetectedCount.value(), "Detected %zu markers", detectedCount);
+        mPrevDetectedCount = detectedCount;
 
-        hr_clock::duration publish_time = hr_clock::now() - update_start - convert_time - detect_time;
-
-        hr_clock::duration update_duration = hr_clock::now() - update_start;
-
-        if (mSeqNum % 60 == 0) {
-            NODELET_INFO_STREAM("[" << std::hash<std::thread::id>{}(std::this_thread::get_id()) << "] Tag Total: " << std::chrono::duration_cast<std::chrono::milliseconds>(update_duration).count() << "ms");
-            NODELET_INFO_STREAM("\tConvert: " << std::chrono::duration_cast<std::chrono::milliseconds>(convert_time).count() << "ms");
-            NODELET_INFO_STREAM("\tOpenCV detect: " << std::chrono::duration_cast<std::chrono::milliseconds>(detect_time).count() << "ms");
-            NODELET_INFO_STREAM("\tPublish: " << std::chrono::duration_cast<std::chrono::milliseconds>(publish_time).count() << "ms");
-        }
+        mProfiler.measureEvent("Publish");
 
         mSeqNum++;
     }

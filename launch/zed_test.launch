@@ -1,31 +1,36 @@
 <launch>
-    <arg name="run_rviz" default="true"/>
-    <arg name="run_dynamic_reconfigure" default="true"/>
-    <arg name="run_tag_detector" default="true"/>
-    <arg name="direct_tag_detection" default="false"/>
+  <arg name="run_rviz" default="true"/>
+  <arg name="run_dynamic_reconfigure" default="true"/>
 
-    <group if="$(arg run_rviz)">
-        <arg name="rvizconfig" default="$(find mrover)/config/rviz/zed_test.rviz"/>
-        <node name="rviz" pkg="rviz" type="rviz" args="-d $(arg rvizconfig)" required="true"/>
-    </group>
+  <arg name="run_tag_detector" default="true"/>
+  <arg name="direct_tag_detection" default="false"/>
+  <arg name="ues_builtin_visual_odom" default="true"/>
 
-    <node if="$(arg run_dynamic_reconfigure)"
-          name="rqt_reconfigure" pkg="rqt_reconfigure" type="rqt_reconfigure"/>
+  <group if="$(arg run_rviz)">
+    <arg name="rvizconfig" default="$(find mrover)/config/rviz/zed_test.rviz"/>
+    <node name="rviz" pkg="rviz" type="rviz" args="-d $(arg rvizconfig)"/>
+  </group>
 
-    <node pkg="nodelet" type="nodelet" name="perception_nodelet_manager" respawn="true"
-          args="manager" output="screen"/>
+  <node name="rqt_tf_tree" pkg="rqt_tf_tree" type="rqt_tf_tree" output="screen"/>
 
-    <include file="$(find mrover)/launch/zed.launch">
-        <arg name="direct_tag_detection" value="$(arg direct_tag_detection)"/>
-    </include>
+  <node if="$(arg run_dynamic_reconfigure)"
+        name="rqt_reconfigure" pkg="rqt_reconfigure" type="rqt_reconfigure"/>
 
-    <group if="$(arg run_tag_detector)">
-        <node unless="$(arg direct_tag_detection)"
-              pkg="nodelet" type="nodelet" name="tag_detector" respawn="true"
-              args="load mrover/TagDetectorNodelet perception_nodelet_manager" output="screen">
-        </node>
-    </group>
+  <node pkg="nodelet" type="nodelet" name="perception_nodelet_manager" respawn="true"
+        args="manager" output="screen"/>
 
-    <node pkg="tf" type="static_transform_publisher" name="map_odom_publisher"
-          args="1 0 0 0 0 0 map odom 100"/>
+  <include file="$(find mrover)/launch/zed.launch">
+    <arg name="direct_tag_detection" value="$(arg direct_tag_detection)"/>
+    <arg name="ues_builtin_visual_odom" value="$(arg ues_builtin_visual_odom)"/>
+  </include>
+
+  <group if="$(arg run_tag_detector)">
+    <node unless="$(arg direct_tag_detection)"
+          pkg="nodelet" type="nodelet" name="tag_detector" respawn="true"
+          args="load mrover/TagDetectorNodelet perception_nodelet_manager" output="screen">
+    </node>
+  </group>
+
+  <node pkg="tf" type="static_transform_publisher" name="map_odom_publisher"
+        args="1 0 0 0 0 0 map odom 100"/>
 </launch>
