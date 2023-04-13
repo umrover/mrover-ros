@@ -1,4 +1,4 @@
-test_recovery_state: True
+test_recovery_state: False
 
 drive:
   max_driving_effort: 1

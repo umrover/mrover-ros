@@ -14,7 +14,7 @@ import os
 from pathlib import Path
 from util.ros_utils import get_rosparam
 
-DATAFRAME_MAX_SIZE = 50
+DATAFRAME_MAX_SIZE = 200
 
 
 class FailureIdentifier:
@@ -32,6 +32,9 @@ class FailureIdentifier:
     path_name: Path
     data_collecting_mode: bool
     cols: list
+    left_pointer: int
+    right_pointer: int
+    row_counter: int
 
     def __init__(self):
         nav_status_sub = message_filters.Subscriber("smach/container_status", SmachContainerStatus)
@@ -67,7 +70,10 @@ class FailureIdentifier:
         )
         print(self.cols)
         self._df = pd.DataFrame(columns=self.cols)
-        self.watchdog = WatchDog()
+        self.left_pointer = 0
+        self.right_pointer = 0
+        self.row_counter = 0
+        self.watchdog = WatchDog(self)
         self.path_name = None  # type: ignore
 
     def write_to_csv(self):
@@ -121,6 +127,7 @@ class FailureIdentifier:
         # create a new row for the data frame
         self.actively_collecting = True
         cur_row = {}
+        cur_row["row"] = self.row_counter
         cur_row["time"] = rospy.Time.now()
 
         # if the stuck button is pressed, the rover is stuck (as indicated by the GUI)
@@ -158,6 +165,7 @@ class FailureIdentifier:
 
         # update the data frame with the cur row
         self._df = pd.concat([self._df, DataFrame([cur_row])])
+        self.row_counter += 1
 
         if len(self._df) == DATAFRAME_MAX_SIZE:
             if self.actively_collecting and self.data_collecting_mode:
@@ -169,6 +177,9 @@ class FailureIdentifier:
                     self._df.to_csv(self.path_name, mode="a", header=False)
             # empty
             self._df = pd.DataFrame(columns=self.cols)
+
+            # set row counter to 0
+            self.row_counter = 0
 
         # publish the watchdog status if the nav state is not recovery
         if TEST_RECOVERY_STATE:
