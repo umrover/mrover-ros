@@ -1,7 +1,6 @@
 #!/usr/bin/env python3
 import unittest
 import numpy as np
-from navigation.drive import get_drive_command
 from util.SE3 import SE3
 from util.SO3 import SO3
 from math import pi

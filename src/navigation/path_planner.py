@@ -75,6 +75,7 @@ class PathPlanner:
 
         self.path: List[Point] = None
         self.cur_path_idx: int = 0
+        self.add_failure_zone(FailureZone(Polygon([(0, -1), (0, 1), (1, 1), (1, -1)])))
 
     def get_intermediate_target(self, source_pos: Point, target_pos: Point) -> Point:
         """
@@ -238,7 +239,7 @@ class PathPlanner:
         for pt in self.path:
             gps_point_list.append(convert_cartesian_to_gps(np.array([pt.x, pt.y])))
 
-        self.context.drive_path_publisher.publish(GPSPointList(gps_point_list))
+        #self.context.drive_path_publisher.publish(GPSPointList(gps_point_list))
 
     def __add_vertex(self, new_vertex: Point) -> None:
         """
