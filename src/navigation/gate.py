@@ -40,6 +40,7 @@ class GatePath:
     gate: Gate
     prep_idx: int
     approach_idx: int
+    victory_idx: int
     prep_pts: np.ndarray
     approach_pts: np.ndarray
     center: np.ndarray
@@ -50,9 +51,9 @@ class GatePath:
         self.rover_pos = rover_pos[:2]
         self.gate = gate
         self.__update_pts()
-        self.prep_idx = np.argmin(np.linalg.norm(self.prep_pts - self.rover_pos, axis=1))
-        self.approach_idx = np.argmin(np.linalg.norm(self.approach_pts - self.rover_pos, axis=1))
-        self.victory_idx = np.argmax(np.linalg.norm(self.approach_pts - self.rover_pos, axis=1))
+        self.prep_idx = int(np.argmin(np.linalg.norm(self.prep_pts - self.rover_pos, axis=1)))
+        self.approach_idx = int(np.argmin(np.linalg.norm(self.approach_pts - self.rover_pos, axis=1)))
+        self.victory_idx = int(np.argmax(np.linalg.norm(self.approach_pts - self.rover_pos, axis=1)))
         self.update(rover_pos, gate)
 
     def __update_center(self) -> None:
@@ -235,7 +236,7 @@ class GateTraverseState(BaseState):
         if target_pos is None:
             self.traj = None
             self.context.course.increment_waypoint()
-            return GateTraverseStateTransitions.finished_gate.name
+            return GateTraverseStateTransitions.finished_gate.name  # type: ignore
 
         cmd_vel, _ = get_drive_command(
             target_pos,
