@@ -234,7 +234,6 @@ export default {
       if (found) {
         this.removeStream(index);
       } else this.addStream(index);
-      console.log(this.streamOrder)
       this.sendCameras(index);
     },
 
@@ -283,15 +282,22 @@ export default {
 
     addBindings() {
       this.bindings.get((dict) => {
+        console.log(dict);
         if(dict) {
+          var indices = Object.values(dict);
+          var names = Object.keys(dict);
           this.bindingsExist = true;
-          if(Object.keys(dict).length > 4) this.capacity = 4;
-          else this.capacity = Object.keys(dict).length;
-          for(var key in dict){
-            this.cameras.find((cam) => cam.index == dict[key]).name = key;
-            this.setCamIndex(dict[key]);
+          if(names.length > 4) this.capacity = 4;
+          else this.capacity = names.length;
+          var i = this.cameras.length-1;
+          while(i >= 0){
+            var ind = indices.indexOf(this.cameras[i].index);
+            if(ind != -1) { //assign the name of the camera to index if found, else remove camera
+              this.cameras[i].name = names[ind];
+            }
+            else this.cameras.splice(i, 1);
+            --i;
           }
-          this.removeUnused();
         }
       });
     },
@@ -299,7 +305,6 @@ export default {
     resetBindings() {
       //remove all the cameras from the stream
       this.cameras.forEach((cam) => this.removeStream(cam.index));
-      console.log(this.streamOrder)
       //erase all the bindings
       this.bindings.set(new Object());
       this.bindingsExist = false;
@@ -309,8 +314,7 @@ export default {
     },
 
     removeUnused() {
-      var used = this.cameras.filter(cam => cam.enabled);
-      this.cameras = used;
+      this.cameras = this.cameras.filter(cam => cam.enabled);
     },
 
     closeModal() {
@@ -323,7 +327,7 @@ export default {
 
     changePreset() {
       if(this.selectedPreset){
-        this.streamOrder = [-1, -1, -1, -1];  //reset the stream
+        this.cameras.forEach((cam) => this.removeStream(cam.index));
         const preset = this.presets.find((name) => this.selectedPreset == name);
         this.cameras.forEach((cam) => {
           const found = preset.cams.includes(cam.name);

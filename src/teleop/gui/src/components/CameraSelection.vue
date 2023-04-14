@@ -57,8 +57,6 @@ export default {
           ? (this.opacities[c.index] = 0.55)
           : (this.opacities[c.index] = 1.0);
       });
-      console.log(this.indices);
-      console.log(this.cams);
     }
   },
 
