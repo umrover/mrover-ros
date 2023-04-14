@@ -6,7 +6,7 @@ drive:
   odom:
     max_driving_effort: 1.0
     min_driving_effort: -1.0
-    turning_p: 10.0
+    turning_p: 5.0
 
 gate:
   stop_thresh: 0.2

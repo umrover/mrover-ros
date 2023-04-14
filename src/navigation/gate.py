@@ -24,111 +24,169 @@ APPROACH_DISTANCE = get_rosparam("gate/approach_distance", 2.0)
 
 
 @dataclass
-class GateTrajectory(Trajectory):
-    @classmethod
-    def spider_gate_trajectory(cls, approach_distance: float, gate: Gate, rover_position: np.ndarray) -> GateTrajectory:
-        """
-        Generates the "Spider" path through the gate, see https://github.com/umrover/mrover-ros/wiki/Navigation#searchtrajectory
-        :param approach_distance: distance to the point straight out from the gate that the rover will drive to
-        :param gate:    Gate object representing the gate that the rover will drive through
-        :param rover_position: position vector of the rover
-        :return: GateTrajectory object containing the coordinates the rover will need to traverse
-        """
+class GatePath:
+    """
+    Represents a path through a gate. The reason this is not subclassing Trajectory is because it needs to dynamically
+    update the path every time we have a new gate estimate. Trajectory subclasses are meant to be immutable and regenerating
+    them leads to problems with reseting the cur_pt variable. This class maintains minimal state (direction through the gate)
+    through keeping track of what approach and prep points it should use and also keeps track of whether we've passed through
+    gate or not.
+    The Client can update the values of the actual points in the trajectory upon calling the update() method
+    Use this class by first constructing the object GatePath(rover_pos, gate) and then calling update every time you have a new
+    gate estimate. Call get_cur_pt() to get the current path that you should be following (which will be None if we are done)
+    """
 
-        # first we get the positions of the two posts
-        post1 = gate.post1
-        post2 = gate.post2
+    rover_pos: np.ndarray
+    gate: Gate
+    prep_idx: int
+    approach_idx: int
+    prep_pts: np.ndarray
+    approach_pts: np.ndarray
+    center: np.ndarray
+    passed_center: bool = False
+    center_idx: int = 2
 
-        center = (post1 + post2) / 2
+    def __init__(self, rover_pos: np.ndarray, gate: Gate):
+        self.rover_pos = rover_pos[:2]
+        self.gate = gate
+        self.__update_pts()
+        self.prep_idx = np.argmin(np.linalg.norm(self.prep_pts - self.rover_pos, axis=1))
+        self.approach_idx = np.argmin(np.linalg.norm(self.approach_pts - self.rover_pos, axis=1))
+        self.victory_idx = np.argmax(np.linalg.norm(self.approach_pts - self.rover_pos, axis=1))
+        self.update(rover_pos, gate)
+
+    def __update_center(self) -> None:
+        self.center = (self.gate.post1 + self.gate.post2) / 2
+
+    def __update_approach_pts(self) -> None:
+        """
+        Updates the approach points based on the current gate estimate
+        """
+        post1 = self.gate.post1
+        post2 = self.gate.post2
+
         # the direction of the post is just the normalized vector from post1 to post2
         post_direction = normalized(post2 - post1)
         perpendicular = perpendicular_2d(post_direction)
 
         # approach points are the points that are directly out from the center (a straight line) of
         # the gate "approach_distance" away
-        possible_approach_points = [
-            approach_distance * perpendicular + center,
-            -approach_distance * perpendicular + center,
-        ]
-
-        # prep points are points that are direclty out in either direction from the posts
-        # the idea here is that if we go to the closest prep point then an approach point,
-        # we will never collide with the post
-        possible_preparation_points = np.array(
+        self.approach_pts = np.array(
             [
-                (2 * approach_distance * perpendicular) + post1,
-                (2 * approach_distance * perpendicular) + post2,
-                (-2 * approach_distance * perpendicular) + post1,
-                (-2 * approach_distance * perpendicular) + post2,
+                APPROACH_DISTANCE * perpendicular + self.center,
+                -APPROACH_DISTANCE * perpendicular + self.center,
             ]
         )
 
-        # get closest prepration point
-        prep_distance_to_rover = np.linalg.norm(possible_preparation_points - rover_position[0:2], axis=1)
-        prep_idx = np.argmin(prep_distance_to_rover)
-        closest_prep_point = possible_preparation_points[prep_idx]
+    def __update_prep_pts(self) -> None:
+        """
+        Updates the prep points based on the current gate estimate
+        """
+        post1 = self.gate.post1
+        post2 = self.gate.post2
 
-        # get closest approach point (to selected prep point), set other one to victory point
-        approach_dist_to_prep = np.linalg.norm(possible_approach_points - closest_prep_point, axis=1)
-        approach_idx = np.argmin(approach_dist_to_prep)
-        closest_approach_point = possible_approach_points[approach_idx]
-        victory_point = possible_approach_points[1 - approach_idx]
+        # the direction of the post is just the normalized vector from post1 to post2
+        post_direction = normalized(post2 - post1)
+        perpendicular = perpendicular_2d(post_direction)
 
-        coordinates = GateTrajectory.select_gate_path(
-            rover_position, closest_prep_point, closest_approach_point, center, victory_point, gate
+        # prep points are the points that are perpendicular to the center of the gate
+        # "approach_distance" away
+        # prep points are points that are directly out in either direction from the posts
+        # the idea here is that if we go to the closest prep point then an approach point,
+        # we will never collide with the post
+        self.prep_pts = np.array(
+            [
+                (2 * APPROACH_DISTANCE * perpendicular) + post1,
+                (2 * APPROACH_DISTANCE * perpendicular) + post2,
+                (-2 * APPROACH_DISTANCE * perpendicular) + post1,
+                (-2 * APPROACH_DISTANCE * perpendicular) + post2,
+            ]
         )
 
-        # put the list of coordinates together
-        return GateTrajectory(coordinates)
-
-    def select_gate_path(
-        rover_position: np.ndarray,
-        prep: np.ndarray,
-        approach: np.ndarray,
-        center: np.ndarray,
-        done: np.ndarray,
-        gate: Gate,
-    ) -> np.ndarray:
+    def __update_pts(self) -> None:
         """
-        Here is a reference for the points mentioned below https://github.com/umrover/mrover-ros/wiki/Navigation#searchtrajectory
-        :param rover_position: position vector of the rover,
-        :param prep: This is the closest prep point given from spider_gate_trajectory,
-        :param approach: This is the closest approach point given from spider_gate_trajectory ,
-        :param center: This is the mid point of the two gate posts,
-        :param done: This is the victory point given from spider_gate_trajectory,
-        :param gate: Gate object representing the gate that the rover will drive through,
-        :returns: This is a np.array which represents the coordinates of the selected path
+        Updates the prep points, approach points, and center of the gate
+        """
+        self.__update_center()
+        self.__update_approach_pts()
+        self.__update_prep_pts()
+
+    def __get_full_path(self) -> np.ndarray:
+        """
+        :returns: np.array which represents the coordinates of the path.
+        """
+        return np.array(
+            [
+                self.prep_pts[self.prep_idx],
+                self.approach_pts[self.approach_idx],
+                self.center,
+                self.approach_pts[self.victory_idx],
+            ]
+        )
+
+    def __optimize_path(self) -> int:
+        """
+        Here is a reference for the points mentioned below:
+         https://github.com/umrover/mrover-ros/wiki/Navigation#searchtrajectory
+        :returns: an integer representing the farthest along point on the path that we can
+          drive to without intersecting the gate (while still driving through it)
         """
 
         # Get the shapes of both the posts
-        post_one_shape, post_two_shape = gate.get_post_shapes()
+        post_one_shape, post_two_shape = self.gate.get_post_shapes()
 
-        rover = rover_position[:2]
+        rover = self.rover_pos[:2]
 
         # try paths with successively more points until we have one that won't intersect
-        all_pts = np.vstack((prep, approach, center, done))
-        num_pts_included = 2
-        path = make_shapely_path(rover, all_pts[-num_pts_included:, :])
+        all_pts = self.__get_full_path()
+        num_pts_included = (
+            1 if self.passed_center else 2
+        )  # if we've already passed the center, we should not include it, otherwise we must to ensure we pass through the middle of the gate
+        path = self.__make_shapely_path(rover, all_pts[-num_pts_included:, :])
         while path.intersects(post_one_shape) or path.intersects(post_two_shape):
             num_pts_included += 1
             if num_pts_included == all_pts.shape[0]:
                 break
-            path = make_shapely_path(rover, all_pts[-num_pts_included:])
+            path = self.__make_shapely_path(rover, all_pts[-num_pts_included:])
 
-        coordinates = all_pts[-num_pts_included:]
-        coordinates = np.hstack((coordinates, np.zeros(coordinates.shape[0]).reshape(-1, 1)))
-        return coordinates
+        return all_pts.shape[0] - num_pts_included
 
+    def __make_shapely_path(self, rover, path_pts) -> LineString:
+        """
+        :param rover: position vector of the rover
+        :param pathPts: This is a np.array that has the coordinates of the path
+        :returns: Returns a Shapeley (geometry library) object of LineString which put the path points given into
+        one cohesive line segments.
+        """
+        path_list = np.vstack((rover, path_pts))
+        return LineString(path_list)
 
-def make_shapely_path(rover, path_pts) -> LineString:
-    """
-    :param rover: position vector of the rover
-    :param pathPts: This is a np.array that has the coordinates of the path
-    :returns: It returns the shapely object of LineString which put the path points given into
-    one cohesive line segments.
-    """
-    path_list = np.vstack((rover, path_pts))
-    return LineString(path_list)
+    def update(self, rover_pos: np.ndarray, gate: Gate) -> None:
+        """
+        Updates the calculated prep, approach, and center points based on the current gate estimate
+        """
+        self.rover_pos = rover_pos[:2]
+        self.gate = gate
+        self.__update_pts()
+
+    def get_cur_pt(self) -> Optional[np.ndarray]:
+        """
+        Generates the full gate path (in the same direction as first initalized) based on latest point estimates
+        then returns the next point on the path we should drive to.
+        """
+        full_path = self.__get_full_path()
+        path_idx = self.__optimize_path()
+
+        pt = full_path[path_idx]
+        if np.linalg.norm(pt - self.rover_pos) < STOP_THRESH:
+            if path_idx == self.center_idx:
+                self.passed_center = True
+            path_idx += 1
+            if path_idx >= len(full_path):
+                return None
+            pt = full_path[path_idx]
+
+        return np.append(pt, 0.0)
 
 
 class GateTraverseStateTransitions(Enum):
@@ -153,7 +211,8 @@ class GateTraverseState(BaseState):
             context,
             add_outcomes=[transition.name for transition in GateTraverseStateTransitions],  # type: ignore
         )
-        self.traj: Optional[GateTrajectory] = None
+        self.traj: Optional[GatePath] = None
+        self.pts_from_end: Optional[int] = None
 
     def evaluate(self, ud):
         # Check if a path has been generated and its associated with the same
@@ -161,30 +220,34 @@ class GateTraverseState(BaseState):
         gate = self.context.env.current_gate()
         if gate is None:
             return GateTraverseStateTransitions.no_gate.name  # type: ignore
+
+        rover_position = self.context.rover.get_pose(in_odom_frame=True).position
         if self.traj is None:
-            self.traj = GateTrajectory.spider_gate_trajectory(
-                self.APPROACH_DISTANCE, gate, self.context.rover.get_pose(in_odom_frame=True).position
-            )
+            self.traj = GatePath(rover_position, gate)
+        else:
+            self.traj.update(rover_position, gate)
+
+        if self.traj is None:
+            return GateTraverseState.finished_gate.name  # type: ignore
 
         # continue executing this path from wherever it left off
         target_pos = self.traj.get_cur_pt()
-        cmd_vel, arrived = get_drive_command(
+        if target_pos is None:
+            self.traj = None
+            self.context.course.increment_waypoint()
+            return GateTraverseStateTransitions.finished_gate.name
+
+        cmd_vel, _ = get_drive_command(
             target_pos,
             self.context.rover.get_pose(in_odom_frame=True),
             self.STOP_THRESH,
             self.DRIVE_FWD_THRESH,
             in_odom=self.context.use_odom,
         )
-        if arrived:
-            # if we finish the gate path, we're done
-            if self.traj.increment_point():
-                self.traj = None
-                self.context.course.increment_waypoint()
-                return GateTraverseStateTransitions.finished_gate.name  # type: ignore
 
-        self.context.gate_path_publisher.publish(
-            GPSPointList([convert_cartesian_to_gps(pt) for pt in self.traj.coordinates])
-        )
+        # self.context.gate_path_publisher.publish(
+        #    GPSPointList([convert_cartesian_to_gps(pt) for pt in self.traj.coordinates])
+        # )
         self.context.gate_point_publisher.publish(
             GPSPointList([convert_cartesian_to_gps(p) for p in [gate.post1, gate.post2]])
         )
