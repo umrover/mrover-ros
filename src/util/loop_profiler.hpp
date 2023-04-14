@@ -15,7 +15,7 @@ class LoopProfiler {
 private:
     using Clock = std::chrono::high_resolution_clock;
     using EventReadings = std::vector<Clock::duration>;
-    using Readout = std::chrono::milliseconds;
+    using DisplayUnits = std::chrono::milliseconds;
 
     std::string mName;
     size_t mPrintTick;
@@ -25,7 +25,7 @@ private:
     size_t mTick = 0; // Loop iteration counter
 
 public:
-    LoopProfiler(std::string_view name, size_t printTick = 60) : mName{name}, mPrintTick{printTick} {}
+    LoopProfiler(std::string_view name, size_t printTick = 120) : mName{name}, mPrintTick{printTick} {}
 
     /**
      * @brief Call this at the beginning of each loop iteration.
@@ -38,15 +38,15 @@ public:
             }
             // Print update time for the entire loop
             size_t threadId = std::hash<std::thread::id>{}(std::this_thread::get_id());
-            auto averageLoopMs = std::chrono::duration_cast<Readout>(averageLoopDuration);
-            int hz = averageLoopMs.count() ? Readout::period::den / averageLoopMs.count() : -1;
+            auto averageLoopMs = std::chrono::duration_cast<DisplayUnits>(averageLoopDuration);
+            int hz = averageLoopMs.count() ? DisplayUnits::period::den / averageLoopMs.count() : -1;
             ROS_INFO_STREAM("[" << mName << "] [" << threadId << "] Total: "
                                 << averageLoopMs.count() << "ms"
                                 << " (" << hz << " Hz)");
             // Print update times for each loop event
             for (auto& [name, durations]: mEventReadings) {
                 Clock::duration averageEventDuration = std::accumulate(durations.begin(), durations.end(), Clock::duration{}) / durations.size();
-                auto averageEventMs = std::chrono::duration_cast<Readout>(averageEventDuration);
+                auto averageEventMs = std::chrono::duration_cast<DisplayUnits>(averageEventDuration);
                 ROS_INFO_STREAM("\t" << name << ": " << averageEventMs.count() << "ms");
                 durations.clear();
             }

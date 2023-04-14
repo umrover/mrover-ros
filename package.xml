@@ -2,7 +2,7 @@
 <package format="2">
     <name>mrover</name>
     <version>1.0.0</version>
-    <description>MRover ROS Package</description>
+    <description>The MRover Package</description>
 
     <maintainer email="rover-software-23@umich.edu">MRover</maintainer>
 
@@ -68,11 +68,6 @@
     <depend>rviz</depend>
     <depend>hector_trajectory_server</depend>
 
-    <!-- Simulation -->
-    <depend>gazebo_ros</depend>
-    <depend>hector_gazebo</depend>
-    <depend>teleop_twist_keyboard</depend>
-
     <!-- Perception -->
     <depend>compressed_depth_image_transport</depend>
     <depend>compressed_image_transport</depend>
@@ -82,7 +77,6 @@
     <depend>tf2</depend>
     <depend>image_transport</depend>
     <depend>sensor_msgs</depend>
-    <depend>cv_bridge</depend>
     <depend>pcl_ros</depend>
     <depend>dynamic_reconfigure</depend>
     <depend>python3-cairosvg</depend>
@@ -90,6 +84,7 @@
     <depend>rtabmap_ros</depend>
 
     <!-- Localization -->
+    <depend>rviz_imu_plugin</depend>
     <depend>robot_localization</depend>
     <depend>nmea_navsat_driver</depend>
 
@@ -98,6 +93,11 @@
 
     <!-- Teleop -->
     <depend>teleop_twist_joy</depend>
+
+    <!-- Simulation -->
+    <depend>gazebo_ros</depend>
+    <depend>hector_gazebo</depend>
+    <depend>teleop_twist_keyboard</depend>
 
     <!-- MoveIt -->
     <depend>moveit</depend>

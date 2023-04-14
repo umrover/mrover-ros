@@ -11,9 +11,7 @@
       ==========
     -->
     <node pkg="nodelet" type="nodelet" name="perception_nodelet_manager" respawn="true"
-          args="manager" output="screen">
-        <param name="num_worker_threads" value="6"/>
-    </node>
+          args="manager" output="screen"/>
     <!-- nodelet to detect AR tags and publish them to the TF tree -->
     <node if="$(arg run_tag_detector)"
           pkg="nodelet" type="nodelet" name="tag_detector" respawn="true"

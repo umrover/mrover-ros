@@ -9,8 +9,9 @@
 #include <opencv2/imgproc.hpp>
 #include <opencv2/videoio.hpp>
 #include <sensor_msgs/image_encodings.h>
+#include <tf/exceptions.h>
 
-#include "../point_cloud.hpp"
+#include "../point.hpp"
 
 namespace mrover {
 
@@ -126,6 +127,8 @@ namespace mrover {
                     NODELET_WARN("Old data for immediate tag");
                 } catch (tf2::LookupException const&) {
                     NODELET_WARN("Expected transform for immediate tag");
+                } catch (tf::ConnectivityException const&) {
+                    NODELET_WARN("Expected connection to odom frame. Is visual odometry running?");
                 }
             }
         }

@@ -32,10 +32,7 @@ namespace mrover {
         mImgPub = mIt->advertise("tag_detection", 1);
         mDictionary = cv::aruco::getPredefinedDictionary(dictionaryNumber);
 
-        bool directTagDetection = false;
-        mNh.param<bool>("zed_nodelet/direct_tag_detection", directTagDetection, false);
-
-        if (!directTagDetection) mPcSub = mNh.subscribe("camera/left/points", 1, &TagDetectorNodelet::pointCloudCallback, this);
+        mPcSub = mNh.subscribe("camera/left/points", 1, &TagDetectorNodelet::pointCloudCallback, this);
         mServiceEnableDetections = mNh.advertiseService("enable_detections", &TagDetectorNodelet::enableDetectionsCallback, this);
 
         // Lambda handles passing class pointer (implicit first parameter) to configCallback

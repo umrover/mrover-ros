@@ -17,7 +17,7 @@
 #include <tf2_ros/transform_broadcaster.h>
 #include <tf2_ros/transform_listener.h>
 
-#include "../point_cloud.hpp"
+#include "../point.hpp"
 #include "loop_profiler.hpp"
 
 namespace mrover {
@@ -49,29 +49,28 @@ namespace mrover {
         ros::Publisher mPcPub, mImuPub, mMagPub, mLeftCamInfoPub, mRightCamInfoPub;
         image_transport::Publisher mLeftImgPub, mRightImgPub;
 
-        sensor_msgs::ImagePtr mLeftImgMsg = boost::make_shared<sensor_msgs::Image>();
-        sensor_msgs::ImagePtr mRightImgMsg = boost::make_shared<sensor_msgs::Image>();
         PointCloudGpu mPointCloudGpu;
-        sensor_msgs::CameraInfoPtr mLeftCamInfoMsg = boost::make_shared<sensor_msgs::CameraInfo>();
-        sensor_msgs::CameraInfoPtr mRightCamInfoMsg = boost::make_shared<sensor_msgs::CameraInfo>();
 
         sl::Resolution mImageResolution, mPointResolution;
+        sl::String mSvoPath;
         int mGrabTargetFps{};
         int mDepthConfidence{};
         int mTextureConfidence{};
-        bool mUseOdom{};
         bool mUseBuiltinPosTracking{};
+        bool mUseAreaMemory{};
+        bool mUsePoseSmoothing{};
+        bool mUseLoopProfiler{};
 
         sl::Camera mZed;
         sl::CameraInformation mZedInfo;
-        Measures mGrabMeasures, mProcessMeasures;
+        Measures mGrabMeasures, mPcMeasures;
 
-        std::thread mProcessThread, mGrabThread;
+        std::thread mPointCloudThread, mGrabThread;
         std::mutex mSwapMutex;
         std::condition_variable mSwapCv;
         std::atomic_bool mIsSwapReady = false;
 
-        LoopProfiler mProcessThreadProfiler{"Zed Wrapper Process"}, mGrabThreadProfiler{"Zed Wrapper Grab"};
+        LoopProfiler mPcThreadProfiler{"Zed Wrapper Point Cloud"}, mGrabThreadProfiler{"Zed Wrapper Grab"};
 
         size_t mGrabUpdateTick = 0, mPointCloudUpdateTick = 0;
 
@@ -99,5 +98,7 @@ namespace mrover {
     void fillImuMessage(sl::SensorsData::IMUData& imuData, sensor_msgs::Imu& msg);
 
     void fillMagMessage(sl::SensorsData::MagnetometerData& magData, sensor_msgs::MagneticField& msg);
+
+    void checkCudaError(cudaError_t error);
 
 } // namespace mrover
