@@ -5,8 +5,6 @@
 
 #include <sl/Camera.hpp>
 
-#include <sensor_msgs/point_cloud2_iterator.h>
-
 namespace mrover {
 
     constexpr size_t BLOCK_SIZE = 512;
@@ -37,23 +35,21 @@ namespace mrover {
         msg->is_dense = false;
         msg->height = bgraGpu.getHeight();
         msg->width = bgraGpu.getWidth();
-        sensor_msgs::PointCloud2Modifier modifier{*msg};
-        modifier.setPointCloud2Fields(
-                8,
-                "x", 1, sensor_msgs::PointField::FLOAT32,
-                "y", 1, sensor_msgs::PointField::FLOAT32,
-                "z", 1, sensor_msgs::PointField::FLOAT32,
-                "rgb", 1, sensor_msgs::PointField::FLOAT32,
-                "normal_x", 1, sensor_msgs::PointField::FLOAT32,
-                "normal_y", 1, sensor_msgs::PointField::FLOAT32,
-                "normal_z", 1, sensor_msgs::PointField::FLOAT32,
-                "curvature", 1, sensor_msgs::PointField::FLOAT32);
+        fillPointCloudMessageHeader(msg);
         size_t size = msg->width * msg->height;
 
         pcGpu.resize(size);
         Point* pcGpuPtr = pcGpu.data().get();
         fillPointCloudMessageKernel<<<std::ceil(static_cast<float>(size) / BLOCK_SIZE), BLOCK_SIZE>>>(xyzGpuPtr, bgraGpuPtr, pcGpuPtr, size);
-        cudaMemcpy(msg->data.data(), pcGpuPtr, size * sizeof(Point), cudaMemcpyDeviceToHost);
+        checkCudaError(cudaPeekAtLastError());
+        checkCudaError(cudaMemcpy(msg->data.data(), pcGpuPtr, size * sizeof(Point), cudaMemcpyDeviceToHost));
+    }
+
+    void checkCudaError(cudaError_t err) {
+        if (err == cudaSuccess) return;
+
+        ROS_ERROR_STREAM("CUDA error: " << cudaGetErrorString(err));
+        throw std::runtime_error("CUDA error");
     }
 
 } // namespace mrover

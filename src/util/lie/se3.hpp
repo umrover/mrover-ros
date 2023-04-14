@@ -26,6 +26,7 @@ private:
 public:
     friend class SE3;
 
+    // enable_if_t ensures if we add other explicit constructors this one fails quickly
     template<typename... Args, typename = std::enable_if_t<std::is_constructible_v<AngleAxis, Args...>>>
     SO3(Args&&... args) : mAngleAxis{std::forward<Args>(args)...} {
     }

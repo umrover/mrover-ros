@@ -34,7 +34,7 @@ namespace mrover {
         auto* bgrGpuPtr = bgra.getPtr<sl::uchar1>(sl::MEM::GPU);
         size_t size = msg->step * msg->height;
         msg->data.resize(size);
-        cudaMemcpy(msg->data.data(), bgrGpuPtr, size, cudaMemcpyDeviceToHost);
+        checkCudaError(cudaMemcpy(msg->data.data(), bgrGpuPtr, size, cudaMemcpyDeviceToHost));
     }
 
     void fillImuMessage(sl::SensorsData::IMUData& imuData, sensor_msgs::Imu& msg) {

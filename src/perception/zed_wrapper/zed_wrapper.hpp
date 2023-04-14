@@ -49,20 +49,17 @@ namespace mrover {
         ros::Publisher mPcPub, mImuPub, mMagPub, mLeftCamInfoPub, mRightCamInfoPub;
         image_transport::Publisher mLeftImgPub, mRightImgPub;
 
-        sensor_msgs::ImagePtr mLeftImgMsg = boost::make_shared<sensor_msgs::Image>();
-        sensor_msgs::ImagePtr mRightImgMsg = boost::make_shared<sensor_msgs::Image>();
         PointCloudGpu mPointCloudGpu;
-        sensor_msgs::CameraInfoPtr mLeftCamInfoMsg = boost::make_shared<sensor_msgs::CameraInfo>();
-        sensor_msgs::CameraInfoPtr mRightCamInfoMsg = boost::make_shared<sensor_msgs::CameraInfo>();
 
         sl::Resolution mImageResolution, mPointResolution;
+        sl::String mSvoPath;
         int mGrabTargetFps{};
         int mDepthConfidence{};
         int mTextureConfidence{};
-        bool mUseOdom{};
         bool mUseBuiltinPosTracking{};
         bool mUseAreaMemory{};
         bool mUsePoseSmoothing{};
+        bool mUseLoopProfiler{};
 
         sl::Camera mZed;
         sl::CameraInformation mZedInfo;
@@ -101,5 +98,7 @@ namespace mrover {
     void fillImuMessage(sl::SensorsData::IMUData& imuData, sensor_msgs::Imu& msg);
 
     void fillMagMessage(sl::SensorsData::MagnetometerData& magData, sensor_msgs::MagneticField& msg);
+
+    void checkCudaError(cudaError_t error);
 
 } // namespace mrover

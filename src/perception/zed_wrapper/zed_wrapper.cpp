@@ -36,6 +36,8 @@ namespace mrover {
      */
     void ZedNodelet::onInit() {
         try {
+            // See: http://wiki.ros.org/roscpp/Overview/NodeHandles for public vs. private node handle
+            // MT means multithreaded
             mNh = getMTNodeHandle();
             mPnh = getMTPrivateNodeHandle();
             mPcPub = mNh.advertise<sensor_msgs::PointCloud2>("camera/left/points", 1);
@@ -46,8 +48,6 @@ namespace mrover {
             image_transport::ImageTransport it{mNh};
             mLeftImgPub = it.advertise("camera/left/image", 1);
             mRightImgPub = it.advertise("camera/right/image", 1);
-
-            mNh.param<bool>("use_odom_frame", mUseOdom, false);
 
             std::string grabResolutionString;
             mPnh.param("grab_resolution", grabResolutionString, std::string{sl::toString(sl::RESOLUTION::HD720)});
@@ -62,9 +62,11 @@ namespace mrover {
             mPnh.param("texture_confidence", mTextureConfidence, 100);
             std::string svoFile{};
             mPnh.param("svo_file", svoFile, {});
+            mSvoPath = svoFile.c_str();
             mPnh.param("use_builtin_visual_odom", mUseBuiltinPosTracking, false);
             mPnh.param("use_area_memory", mUseAreaMemory, true);
             mPnh.param("use_pose_smoothing", mUsePoseSmoothing, true);
+            mPnh.param("use_loop_profiler", mUseLoopProfiler, true);
 
             if (imageWidth < 0 || imageHeight < 0) {
                 throw std::invalid_argument("Invalid image dimensions");
@@ -78,13 +80,13 @@ namespace mrover {
 
             NODELET_INFO("Resolution: %s image: %zux%zu points: %zux%zu",
                          grabResolutionString.c_str(), mImageResolution.width, mImageResolution.height, mPointResolution.width, mPointResolution.height);
-            NODELET_INFO("Use builtin visual odometry: %s", mUseOdom && mUseBuiltinPosTracking ? "true" : "false");
+            NODELET_INFO("Use builtin visual odometry: %s", mUseBuiltinPosTracking ? "true" : "false");
 
             sl::InitParameters initParameters;
-            if (svoFile.empty()) {
-                initParameters.input.setFromCameraID(-1, sl::BUS_TYPE::USB);
+            if (mSvoPath) {
+                initParameters.input.setFromSVOFile(mSvoPath);
             } else {
-                initParameters.input.setFromSVOFile(svoFile.c_str());
+                initParameters.input.setFromCameraID(-1, sl::BUS_TYPE::USB);
             }
             initParameters.depth_stabilization = false;
             initParameters.camera_resolution = stringToZedEnum<sl::RESOLUTION>(grabResolutionString);
@@ -99,7 +101,7 @@ namespace mrover {
             }
             mZedInfo = mZed.getCameraInformation();
 
-            if (mUseOdom && mUseBuiltinPosTracking) {
+            if (mUseBuiltinPosTracking) {
                 sl::PositionalTrackingParameters positionalTrackingParameters;
                 positionalTrackingParameters.enable_pose_smoothing = mUsePoseSmoothing;
                 positionalTrackingParameters.enable_area_memory = mUseAreaMemory;
@@ -108,7 +110,8 @@ namespace mrover {
 
             cudaDeviceProp prop{};
             cudaGetDeviceProperties(&prop, 0);
-            ROS_INFO("Max threads per multi processor: %d", prop.maxThreadsPerMultiProcessor);
+            ROS_INFO("MP count: %d, Max threads/MP: %d, Max blocks/MP: %d, max threads/block: %d",
+                     prop.multiProcessorCount, prop.maxThreadsPerMultiProcessor, prop.maxBlocksPerMultiProcessor, prop.maxThreadsPerBlock);
 
             mGrabThread = std::thread(&ZedNodelet::grabUpdate, this);
             mPointCloudThread = std::thread(&ZedNodelet::pointCloudUpdate, this);
@@ -151,18 +154,20 @@ namespace mrover {
                     mPcThreadProfiler.measureEvent("Fill Message");
 
                     if (mLeftImgPub.getNumSubscribers()) {
-                        fillImageMessage(mPcMeasures.leftImage, mLeftImgMsg);
-                        mLeftImgMsg->header.frame_id = "zed2i_left_camera_optical_frame";
-                        mLeftImgMsg->header.stamp = mPcMeasures.time;
-                        mLeftImgMsg->header.seq = mPointCloudUpdateTick;
-                        mLeftImgPub.publish(mLeftImgMsg);
+                        auto leftImgMsg = boost::make_shared<sensor_msgs::Image>();
+                        fillImageMessage(mPcMeasures.leftImage, leftImgMsg);
+                        leftImgMsg->header.frame_id = "zed2i_left_camera_optical_frame";
+                        leftImgMsg->header.stamp = mPcMeasures.time;
+                        leftImgMsg->header.seq = mPointCloudUpdateTick;
+                        mLeftImgPub.publish(leftImgMsg);
                     }
                     if (mRightImgPub.getNumSubscribers()) {
-                        fillImageMessage(mPcMeasures.rightImage, mRightImgMsg);
-                        mRightImgMsg->header.frame_id = "zed2i_right_camera_optical_frame";
-                        mRightImgMsg->header.stamp = mPcMeasures.time;
-                        mRightImgMsg->header.seq = mPointCloudUpdateTick;
-                        mRightImgPub.publish(mRightImgMsg);
+                        auto rightImgMsg = boost::make_shared<sensor_msgs::Image>();
+                        fillImageMessage(mPcMeasures.rightImage, rightImgMsg);
+                        rightImgMsg->header.frame_id = "zed2i_right_camera_optical_frame";
+                        rightImgMsg->header.stamp = mPcMeasures.time;
+                        rightImgMsg->header.seq = mPointCloudUpdateTick;
+                        mRightImgPub.publish(rightImgMsg);
                     }
                     mPcThreadProfiler.measureEvent("Publish Message");
                 }
@@ -174,15 +179,17 @@ namespace mrover {
 
                 if (mLeftCamInfoPub.getNumSubscribers() || mRightCamInfoPub.getNumSubscribers()) {
                     sl::CalibrationParameters calibration = mZedInfo.camera_configuration.calibration_parameters;
-                    fillCameraInfoMessages(calibration, mImageResolution, mLeftCamInfoMsg, mRightCamInfoMsg);
-                    mLeftCamInfoMsg->header.frame_id = "zed2i_left_camera_optical_frame";
-                    mLeftCamInfoMsg->header.stamp = mPcMeasures.time;
-                    mLeftCamInfoMsg->header.seq = mPointCloudUpdateTick;
-                    mRightCamInfoMsg->header.frame_id = "zed2i_right_camera_optical_frame";
-                    mRightCamInfoMsg->header.stamp = mPcMeasures.time;
-                    mRightCamInfoMsg->header.seq = mPointCloudUpdateTick;
-                    mLeftCamInfoPub.publish(mLeftCamInfoMsg);
-                    mRightCamInfoPub.publish(mRightCamInfoMsg);
+                    auto leftCamInfoMsg = boost::make_shared<sensor_msgs::CameraInfo>();
+                    auto rightCamInfoMsg = boost::make_shared<sensor_msgs::CameraInfo>();
+                    fillCameraInfoMessages(calibration, mImageResolution, leftCamInfoMsg, rightCamInfoMsg);
+                    leftCamInfoMsg->header.frame_id = "zed2i_left_camera_optical_frame";
+                    leftCamInfoMsg->header.stamp = mPcMeasures.time;
+                    leftCamInfoMsg->header.seq = mPointCloudUpdateTick;
+                    rightCamInfoMsg->header.frame_id = "zed2i_right_camera_optical_frame";
+                    rightCamInfoMsg->header.stamp = mPcMeasures.time;
+                    rightCamInfoMsg->header.seq = mPointCloudUpdateTick;
+                    mLeftCamInfoPub.publish(leftCamInfoMsg);
+                    mRightCamInfoPub.publish(rightCamInfoMsg);
                     mPcThreadProfiler.measureEvent("Image + camera info publish");
                 }
 
@@ -231,7 +238,8 @@ namespace mrover {
 
                 assert(mGrabMeasures.leftImage.timestamp == mGrabMeasures.leftPoints.timestamp);
 
-                mGrabMeasures.time = slTime2Ros(mZed.getTimestamp(sl::TIME_REFERENCE::IMAGE));
+
+                mGrabMeasures.time = mSvoPath ? ros::Time::now() : slTime2Ros(mZed.getTimestamp(sl::TIME_REFERENCE::IMAGE));
                 mGrabThreadProfiler.measureEvent("Retrieve");
 
                 // If the processing thread is busy skip
@@ -245,7 +253,7 @@ namespace mrover {
                 mGrabThreadProfiler.measureEvent("Try swap");
 
                 // Positional tracking module publishing
-                if (mUseOdom && mUseBuiltinPosTracking) {
+                if (mUseBuiltinPosTracking) {
                     sl::Pose pose;
                     sl::POSITIONAL_TRACKING_STATE status = mZed.getPosition(pose);
                     if (status == sl::POSITIONAL_TRACKING_STATE::OK) {

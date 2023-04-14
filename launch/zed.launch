@@ -1,51 +1,51 @@
 <launch>
-  <!-- 'zed' (ZED 1) or 'zed2i' (ZED 2i) -->
-  <arg name="zed_model" default="zed2i"/>
-  <!-- Use ZED's built-in visual odometry (called positional tracking), otherwise use rtabmap stereo odometry -->
-  <arg name="use_builtin_visual_odom" default="true"/>
-  <arg name="direct_tag_detection" default="false"/>
+    <!-- 'zed' (ZED 1) or 'zed2i' (ZED 2i) -->
+    <arg name="zed_model" default="zed2i"/>
 
-  <rosparam command="load" file="$(find mrover)/config/perception.yaml"/>
-  <node pkg="nodelet" type="nodelet" name="zed_nodelet" respawn="true"
-        args="load mrover/ZedNodelet perception_nodelet_manager" output="screen">
-    <param name="direct_tag_detection" value="$(arg direct_tag_detection)"/>
-    <param name="use_builtin_visual_odom" value="$(arg use_builtin_visual_odom)"/>
-  </node>
+    <!-- Visual Odometry (VO) options, do NOT enable both! -->
+    <!-- Use ZED's built-in VO (called positional tracking) -->
+    <arg name="use_rtabmap_stereo_odom" default="false"/>
+    <!-- Use rtabmap's stereo VO -->
+    <arg name="use_builtin_visual_odom" default="false"/>
 
-  <!-- Static TF publisher for ZED mount-->
-  <node pkg="tf" type="static_transform_publisher" name="zed_mount_link_publisher"
-        args="0 0 0 0 0 0 base_link zed_mount_link 100"/>
+    <rosparam command="load" file="$(find mrover)/config/perception.yaml"/>
+    <node pkg="nodelet" type="nodelet" name="zed_nodelet" respawn="true"
+          args="load mrover/ZedNodelet perception_nodelet_manager" output="screen">
+        <param name="use_builtin_visual_odom" value="$(arg use_builtin_visual_odom)"/>
+    </node>
 
-  <!-- Load ZED URDF -->
-  <param name="zed_description" command="$(find xacro)/xacro '$(find mrover)/rover_description/zed/zed_descr.urdf.xacro'
+    <!-- Static TF publisher for ZED mount-->
+    <node pkg="tf" type="static_transform_publisher" name="zed_mount_link_publisher"
+          args="0 0 0 0 0 0 base_link zed_mount_link 100"/>
+
+    <!-- Load ZED URDF -->
+    <param name="zed_description" command="$(find xacro)/xacro '$(find mrover)/rover_description/zed/zed_descr.urdf.xacro'
         camera_name:=$(arg zed_model)
         camera_model:=$(arg zed_model)"/>
 
-  <!-- ZED URDF publisher -->
-  <node name="zed_state_publisher" pkg="robot_state_publisher" type="robot_state_publisher" output="screen"
-        required="true">
-    <remap from="robot_description" to="zed_description"/>
-  </node>
+    <!-- ZED URDF publisher -->
+    <node name="zed_state_publisher" pkg="robot_state_publisher" type="robot_state_publisher" output="screen"
+          required="true">
+        <remap from="robot_description" to="zed_description"/>
+    </node>
 
-  <!-- rtabmap visual odometry -->
-  <node unless="$(arg use_builtin_visual_odom)"
-        name="stereo_odometry" pkg="rtabmap_ros" type="stereo_odometry" respawn="true" output="screen">
-    <remap from="/left/image_rect" to="/camera/left/image"/>
-    <remap from="/left/camera_info" to="/camera/left/camera_info"/>
-    <remap from="/right/image_rect" to="/camera/right/image"/>
-    <remap from="/right/camera_info" to="/camera/right/camera_info"/>
+    <!-- rtabmap visual odometry -->
+    <node if="$(arg use_rtabmap_stereo_odom)"
+          pkg="nodelet" type="nodelet" name="rtabmap_stereo_odometry" respawn="true"
+          args="load rtabmap_ros/stereo_odometry perception_nodelet_manager" output="screen">
+        <remap from="/left/image_rect" to="/camera/left/image"/>
+        <remap from="/left/camera_info" to="/camera/left/camera_info"/>
+        <remap from="/right/image_rect" to="/camera/right/image"/>
+        <remap from="/right/camera_info" to="/camera/right/camera_info"/>
 
-    <param name="GFTT/MinDistance" type="string" value="10"/>
-    <param name="OdomF2M/MaxSize" type="string" value="500"/>
-    <param name="Vis/MaxFeatures" type="string" value="300"/>
-    <!-- Correspondences: 0=Features Matching, 1=Optical Flow -->
-    <param name="Vis/CorType" value="0"/>
-    <!-- 0=Frame-to-Map (F2M) 1=Frame-to-Frame (F2F) -->
-    <param name="Odom/Strategy" value="0"/>
+        <param name="GFTT/MinDistance" type="string" value="10"/>
+        <param name="OdomF2M/MaxSize" type="string" value="500"/>
+        <param name="Vis/MaxFeatures" type="string" value="400"/>
+        <!-- Correspondences: 0=Features Matching, 1=Optical Flow -->
+        <param name="Vis/CorType" value="0"/>
+        <!-- 0=Frame-to-Map (F2M) 1=Frame-to-Frame (F2F) -->
+        <param name="Odom/Strategy" value="0"/>
 
-    <param name="frame_id" type="string" value="base_link"/>
-    <param name="odom_frame_id" type="string" value="odom"/>
-
-    <param name="publish_tf" type="bool" value="true"/>
-  </node>
+        <param name="publish_tf" type="bool" value="true"/>
+    </node>
 </launch>
