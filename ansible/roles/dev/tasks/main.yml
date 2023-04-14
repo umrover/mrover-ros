@@ -5,6 +5,7 @@
 - name: Add CMake Key
   apt_key:
     url: https://apt.kitware.com/keys/kitware-archive-latest.asc
+    keyring: /usr/share/keyrings/kitware-archive-keyring.gpg
 
 - name: Add CMake APT
   apt_repository:
@@ -20,17 +21,28 @@
     repo: deb http://apt.llvm.org/{{ ubuntu_release }}/ llvm-toolchain-{{ ubuntu_release }}-16 main
     filename: llvm
 
-- name: Install APT packages
-  apt: 
+- name: Install APT Packages
+  apt:
+    update_cache: true
+    state: latest
     name:
       - zsh
       - neovim
       - sudo
       - git
       - cmake
+      - ccache
+      - tmux
       - python3-pip
       - python3-catkin-tools
       - clang-16
       - clangd-16
       - lld-16
       - lldb-16
+
+- name: Install Catkin Profiles
+  synchronize:
+    src: files/profiles
+    dest: "{{ catkin_workspace }}/.catkin_tools"
+    recursive: true
+  
