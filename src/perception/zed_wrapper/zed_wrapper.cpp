@@ -67,6 +67,7 @@ namespace mrover {
             mPnh.param("use_area_memory", mUseAreaMemory, true);
             mPnh.param("use_pose_smoothing", mUsePoseSmoothing, true);
             mPnh.param("use_loop_profiler", mUseLoopProfiler, true);
+            mPnh.param("depth_maximum_distance", mDepthMaximumDistance, 12.0f);
 
             if (imageWidth < 0 || imageHeight < 0) {
                 throw std::invalid_argument("Invalid image dimensions");
@@ -95,6 +96,7 @@ namespace mrover {
             initParameters.sdk_verbose = true; // Log useful information
             initParameters.camera_fps = mGrabTargetFps;
             initParameters.coordinate_system = sl::COORDINATE_SYSTEM::RIGHT_HANDED_Z_UP_X_FWD; // Match ROS
+            initParameters.depth_maximum_distance = mDepthMaximumDistance;
 
             if (mZed.open(initParameters) != sl::ERROR_CODE::SUCCESS) {
                 throw std::runtime_error("ZED failed to open");

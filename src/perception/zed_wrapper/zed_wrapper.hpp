@@ -60,6 +60,7 @@ namespace mrover {
         bool mUseAreaMemory{};
         bool mUsePoseSmoothing{};
         bool mUseLoopProfiler{};
+        float mDepthMaximumDistance{};
 
         sl::Camera mZed;
         sl::CameraInformation mZedInfo;
