@@ -61,7 +61,7 @@ export default {
       cameraIdx: 1,
       cameraName: "",
       capacity: 2,
-      qualities: new Array(9).fill(1),
+      qualities: new Array(9).fill(-1),
       streamOrder: [-1, -1, -1, -1],
     };
   },
@@ -71,32 +71,35 @@ export default {
       if (newCap < oldCap) {
         var numStreaming = this.streamOrder.filter((index) => index != -1);
         var ind = numStreaming.length - 1;
-        Vue.set(
-          this.camsEnabled,
-          numStreaming[ind],
-          !this.camsEnabled[numStreaming[ind]]
-        );
-        this.changeStream(numStreaming[ind]);
+        this.setCamIndex(numStreaming[ind]);
       }
     },
+  },
+
+  created: function() {
+    var resetService = new ROSLIB.Service({
+      ros: this.$ros,
+      name: "reset_cameras",
+      serviceType: "ResetCameras"
+    });
+    var request = new ROSLIB.ServiceRequest({
+      primary: this.primary,
+    });
+    resetService.callService(request, (result) => {});
   },
 
   methods: {
     setCamIndex: function (index) {
       //every time a button is pressed, it changes cam status and adds/removes from stream
       Vue.set(this.camsEnabled, index, !this.camsEnabled[index]);
+      if(this.camsEnabled[index]) this.qualities[index] = 2;  //if enabling camera, turn on medium quality
       this.changeStream(index);
-      this.sendCameras();
     },
 
-    sendCameras: function () {
+    sendCameras: function (index) {
       //sends cameras to a service to display on screen
-      var msgs = [];
-      for (var i = 0; i < 4; i++) {
-        var camId = this.streamOrder[i];
-        var res = this.qualities[camId];
-        msgs.push(new ROSLIB.Message({ device: camId, resolution: res })); //CameraCmd msg
-      }
+      var res = this.qualities[index];
+      var msg = new ROSLIB.Message({ device: index, resolution: res }); //CameraCmd msg
 
       var changeCamsService = new ROSLIB.Service({
         ros: this.$ros,
@@ -106,7 +109,7 @@ export default {
 
       var request = new ROSLIB.ServiceRequest({
         primary: this.primary,
-        camera_cmds: msgs,
+        camera_cmd: msg,
       });
       changeCamsService.callService(request, (result) => {});
     },
@@ -117,14 +120,13 @@ export default {
 
     changeQuality({ index, value }) {
       Vue.set(this.qualities, index, value);
-      this.sendCameras();
+      this.sendCameras(index);
     },
 
     swapStream({ prev, newest }) {
       var temp = this.streamOrder[prev];
       Vue.set(this.streamOrder, prev, this.streamOrder[newest]);
       Vue.set(this.streamOrder, newest, temp);
-      this.sendCameras();
     },
 
     changeStream(index) {
@@ -132,7 +134,9 @@ export default {
       if (found) {
         this.streamOrder.splice(this.streamOrder.indexOf(index), 1);
         this.streamOrder.push(-1);
+        this.qualities[index] = -1;  //close the stream when sending it to comms
       } else Vue.set(this.streamOrder, this.streamOrder.indexOf(-1), index);
+      this.sendCameras(index);
     },
 
     getStreamNum(index) {
@@ -161,12 +165,12 @@ export default {
 }
 
 .box1 {
-  width: fit-content;
+  width: 50%;
   margin: 10px;
 }
 
 .box2 {
-  width: 100%;
+  width: 50%;
   margin: 10px;
   overflow-y: scroll;
 }

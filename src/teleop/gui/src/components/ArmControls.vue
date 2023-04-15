@@ -1,7 +1,8 @@
 <template>
   <div class="wrap">
-    <h3>Arm controls</h3>
-    <div class="controls">
+    <h2>Arm Controls</h2>
+    <div class="box">
+      <h4>Arm mode</h4>
       <!-- Make opposite option disappear so that we cannot select both -->
       <!-- Change to radio buttons in the future -->
       <input
@@ -32,8 +33,8 @@
       />
       Servo
     </div>
-    <h3>Joint Locks</h3>
-    <div class="controls">
+    <div class="box">
+      <h4>Joint Locks</h4>
       <Checkbox ref="A" :name="'A'" @toggle="updateJointsEnabled(0, $event)" />
       <Checkbox ref="B" :name="'B'" @toggle="updateJointsEnabled(1, $event)" />
       <Checkbox ref="C" :name="'C'" @toggle="updateJointsEnabled(2, $event)" />
@@ -41,12 +42,40 @@
       <Checkbox ref="E" :name="'E'" @toggle="updateJointsEnabled(4, $event)" />
       <Checkbox ref="F" :name="'F'" @toggle="updateJointsEnabled(5, $event)" />
     </div>
-    <div class="controls laser">
+    <div class="box">
+      <h4>Misc. Controls</h4>
+      <Checkbox
+        ref="Slow Mode"
+        :name="'Slow Mode'"
+        @toggle="updateSlowMode($event)"
+      />
       <ToggleButton
         :current-state="laser_enabled"
+        :btn-size="18"
         label-enable-text="Arm Laser On"
         label-disable-text="Arm Laser Off"
         @change="toggleArmLaser()"
+      />
+      <div class="limit-switch">
+        <h4>Joint B Limit Switch</h4>
+        <LimitSwitch :switch_name="'joint_b'" :name="'Joint B Switch'" />
+      </div>
+    </div>
+    <div class="box">
+      <h4>Calibration</h4>
+      <CalibrationCheckbox
+        name="Joint B Calibration"
+        joint_name="joint_b"
+        calibrate_topic="ra_is_calibrated"
+      />
+      <JointAdjust
+        :options="[
+          { name: 'joint_a', option: 'Joint A' },
+          { name: 'joint_b', option: 'Joint B' },
+          { name: 'joint_c', option: 'Joint C' },
+          { name: 'joint_d', option: 'Joint D' },
+          { name: 'joint_e', option: 'Joint E' },
+        ]"
       />
     </div>
   </div>
@@ -57,6 +86,9 @@ import "../assets/style.css";
 import ROSLIB from "roslib";
 import Checkbox from "./Checkbox.vue";
 import ToggleButton from "./ToggleButton.vue";
+import CalibrationCheckbox from "./CalibrationCheckbox.vue";
+import JointAdjust from "./MotorAdjust.vue";
+import LimitSwitch from "./LimitSwitch.vue";
 
 // In seconds
 const updateRate = 0.1;
@@ -64,8 +96,11 @@ let interval;
 
 export default {
   components: {
+    CalibrationCheckbox,
     Checkbox,
+    JointAdjust,
     ToggleButton,
+    LimitSwitch,
   },
   data() {
     return {
@@ -74,6 +109,8 @@ export default {
       joystick_pub: null,
       jointlock_pub: null,
       joints_array: [false, false, false, false, false, false],
+      slow_mode: false,
+      slowmode_pub: null,
       laser_enabled: false,
       laser_service: null,
     };
@@ -105,6 +142,11 @@ export default {
       name: "/joint_lock",
       messageType: "mrover/JointLock",
     });
+    this.slow_mode_pub = new ROSLIB.Topic({
+      ros: this.$ros,
+      name: "/ra_slow_mode",
+      messageType: "std_msgs/Bool",
+    });
     const jointData = {
       //publishes array of all falses when refreshing the page
       joints: this.joints_array,
@@ -117,7 +159,13 @@ export default {
       for (let i = 0; i < 4; i++) {
         const gamepad = gamepads[i];
         if (gamepad) {
-          if (gamepad.id.includes("Microsoft") || gamepad.id.includes("Xbox")) {
+          // Microsoft and Xbox for old Xbox 360 controllers
+          // X-Box for new PowerA Xbox One controllers
+          if (
+            gamepad.id.includes("Microsoft") ||
+            gamepad.id.includes("Xbox") ||
+            gamepad.id.includes("X-Box")
+          ) {
             let buttons = gamepad.buttons.map((button) => {
               return button.value;
             });
@@ -145,6 +193,15 @@ export default {
       var jointlockMsg = new ROSLIB.Message(jointData);
       this.jointlock_pub.publish(jointlockMsg);
     },
+
+    updateSlowMode: function (enabled) {
+      this.slow_mode = enabled;
+      const slowData = {
+        data: this.slow_mode,
+      };
+      var slowModeMsg = new ROSLIB.Message(slowData);
+      this.slow_mode_pub.publish(slowModeMsg);
+    },
     publishJoystickMessage: function (axes, buttons) {
       const joystickData = {
         axes: axes,
@@ -171,35 +228,41 @@ export default {
 
 <style scoped>
 .wrap {
-  display: inline-block;
+  display: flex;
+  flex-direction: column;
   align-items: center;
   justify-items: center;
   width: 100%;
 }
 
-.controls {
-  display: flex;
-  align-items: center;
-}
-
-.controls > * {
-  margin: 0 5px 0 5px;
-}
-
-.header {
-  display: flex;
-  align-items: center;
-}
-
-.joint-b-calibration {
-  display: flex;
-  gap: 10px;
-  width: 250px;
+.wrap h2 h4 {
+  margin: 0;
+  padding: 0;
+  font-size: 1.5em;
   font-weight: bold;
-  color: red;
+  text-align: center;
+  width: 100%;
+  padding-top: 5px;
+  padding-bottom: 5px;
 }
 
-.laser {
-  padding-top: 10px;
+.box {
+  display: flex;
+  align-items: center;
+  width: 100%;
+  column-gap: 10px;
+  margin-bottom: 5px;
+  margin-top: 5px;
 }
+
+.limit-switch {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  margin-top: -20px;
+}
+.limit-switch h4 {
+  margin-bottom: 5px;
+}
+
 </style>

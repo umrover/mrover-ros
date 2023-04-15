@@ -1,5 +1,6 @@
 <template>
   <label
+    :style="cssProps"
     :for="id + '_button'"
     :class="{ active: currentState }"
     class="toggle__button"
@@ -15,6 +16,7 @@
 </template>
 
 <script>
+import "../assets/style.css";
 export default {
   props: {
     labelEnableText: {
@@ -33,6 +35,10 @@ export default {
       type: Boolean,
       required: true,
     },
+    btnSize: {
+      type: Number,
+      default: 12
+    }
   },
   emits: ["change"],
   computed: {
@@ -44,6 +50,12 @@ export default {
         this.$emit("change", newValue);
       },
     },
+
+    cssProps() {
+      return {
+        '--size': this.btnSize+"px"
+      }
+    }
   },
 };
 </script>
@@ -62,13 +74,14 @@ export default {
 }
 .toggle__button .toggle__switch {
   display: inline-block;
-  height: 12px;
-  border-radius: 6px;
-  width: 40px;
+  height: var(--size);
+  border-radius: calc(var(--size)/2);
+  width: calc(var(--size)*3.33);
   background: #bfcbd9;
   box-shadow: inset 0 0 1px #bfcbd9;
   position: relative;
   margin-left: 10px;
+  vertical-align: center;
   transition: all 0.25s;
 }
 .toggle__button .toggle__switch::after,
@@ -76,8 +89,8 @@ export default {
   content: "";
   position: absolute;
   display: block;
-  height: 18px;
-  width: 18px;
+  height: calc(var(--size)*1.5);
+  width: calc(var(--size)*1.5);
   border-radius: 50%;
   left: 0;
   top: -3px;
@@ -94,16 +107,16 @@ export default {
   opacity: 0;
 }
 .active .toggle__switch {
-  background: #ffea9b;
-  box-shadow: inset 0 0 1px #ffea9b;
+  background: var(--active-blue);
+  box-shadow: inset 0 0 1px var(--active-blue);
 }
 .active .toggle__switch::after,
 .active .toggle__switch::before {
-  transform: translateX(40px - 18px);
+  transform: translateX(calc(var(--size)*3.33) - calc(var(--size)*1.5));
 }
 .active .toggle__switch::after {
-  left: 23px;
-  background: #ffcb05;
-  box-shadow: 0 0 1px #ffcb05;
+  left: calc(calc(var(--size)*3.33) - calc(var(--size)*1.5));
+  background: var(--primary-blue);
+  box-shadow: 0 0 1px var(--primary-blue);
 }
 </style>

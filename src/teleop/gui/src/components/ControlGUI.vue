@@ -1,15 +1,6 @@
 <template>
   <div>
-    <div class="page_header">
-      <img
-        src="/static/mrover_logo.png"
-        alt="MRover"
-        title="MRover"
-        width="185"
-        height="53"
-      />
-      <h1>Temp Controls</h1>
-    </div>
+    <CommReadout class="comm"></CommReadout>
     <DriveControls></DriveControls>
     <ArmControls></ArmControls>
     <MastGimbalControls></MastGimbalControls>
@@ -22,13 +13,14 @@
 </template>
 
 <script>
+import "../assets/style.css";
 import ROSLIB from "roslib";
 import DriveControls from "./DriveControls.vue";
 import ArmControls from "./ArmControls.vue";
 import MastGimbalControls from "./MastGimbalControls.vue";
 import JointStateTable from "./JointStateTable.vue";
 import MoteusStateTable from "./MoteusStateTable.vue";
-import "../assets/style.css";
+import CommReadout from "./CommReadout.vue";
 
 export default {
   components: {
@@ -37,6 +29,7 @@ export default {
     JointStateTable,
     MastGimbalControls,
     MoteusStateTable,
+    CommReadout,
   },
   data() {
     return {

@@ -8,7 +8,7 @@
           alt="MRover"
           title="MRover"
           width="185"
-          height="53"
+          height="36"
         />
       </div>
 

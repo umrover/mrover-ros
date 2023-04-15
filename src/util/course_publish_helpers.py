@@ -22,5 +22,5 @@ def publish_waypoints(waypoints):
 
 def convert_waypoint_to_gps(waypoint_pose_pair: Tuple[Waypoint, SE3]) -> GPSWaypoint:
     waypoint, pose = waypoint_pose_pair
-    lat, lon, _ = pymap3d.enu2geodetic(pose.position[0], pose.position[1], pose.position[1], REF_LAT, REF_LON, 0.0)
+    lat, lon, _ = pymap3d.enu2geodetic(pose.position[0], pose.position[1], pose.position[2], REF_LAT, REF_LON, 0.0)
     return GPSWaypoint(lat, lon, waypoint.type, waypoint.fiducial_id)

@@ -35,7 +35,7 @@ body {
 .page_header {
   display: flex;
   justify-content: center;
-  align-items: flex-end;
+  align-items: center;
   height: 75px;
   box-shadow: 0px 10px 8px -4px var(--shadow-color);
 }
@@ -46,6 +46,11 @@ body {
   vertical-align: center;
   left: 0px;
   margin-left: 25px;
+}
+
+.comm {
+  position: absolute;
+  left: 85%;
 }
 
 /* Use the box class any time you want a rounded box section 
@@ -63,10 +68,10 @@ body {
   background-color: var(--primary-blue);
   text-align: center;
   color: white;
-  width: 75px;
-  height: 42px;
-  padding: 5px;
-  min-width: fit-content;
+  padding: 10px;
+  min-width: min-content;
+  min-height: min-content;
+  
 }
 
 .button:hover {
@@ -82,8 +87,14 @@ body {
 .green {
   background-color: var(--green);
 }
+.green-no-hover {
+  background-color: var(--green);
+}
 
 .red {
+  background-color: var(--accent);
+}
+.red-no-hover {
   background-color: var(--accent);
 }
 

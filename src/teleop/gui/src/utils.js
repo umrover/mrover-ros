@@ -1,4 +1,5 @@
 // Function to convert coordinates between different odom formats
+import * as qte from "quaternion-to-euler";
 const convertDMS = function (coord_in, odom_format) {
   const DEG_DECIMALS = 8;
   const MIN_DECIMALS = 6;
@@ -26,4 +27,14 @@ const convertDMS = function (coord_in, odom_format) {
   return coord_out;
 };
 
-export { convertDMS };
+const quaternionToDisplayAngle = function (quaternion) {
+  /*
+    Convert a quaternion into euler display angles
+  */
+  quaternion = [quaternion.w, quaternion.x, quaternion.y, quaternion.z];
+  let euler = qte(quaternion);
+  // euler[2] == euler z component
+  return (Math.PI / 2.0 - euler[2]) * (180 / Math.PI);
+};
+
+export { convertDMS, quaternionToDisplayAngle };

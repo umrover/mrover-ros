@@ -61,10 +61,10 @@
         </tbody>
         <tbody>
           <tr>
-            <td class="tableElement">{{ magnetometer_val }}</td>
-            <td class="tableElement">{{ accelerometer_val }}</td>
-            <td class="tableElement">{{ gyroscope_val }}</td>
-            <td class="tableElement">{{ system_val }}</td>
+            <td class="tableElement">{{ magnetometer_val.toFixed(3) }}</td>
+            <td class="tableElement">{{ accelerometer_val.toFixed(3) }}</td>
+            <td class="tableElement">{{ gyroscope_val.toFixed(3) }}</td>
+            <td class="tableElement">{{ system_val.toFixed(3) }}</td>
           </tr>
         </tbody>
       </table>

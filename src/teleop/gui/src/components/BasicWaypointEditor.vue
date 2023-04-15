@@ -207,6 +207,7 @@ export default {
 
 .dragArea {
   height: 95%;
+  margin: 10px;
 }
 
 .identification {
@@ -220,17 +221,18 @@ export default {
 
 .box1 {
   height: 100%;
-  width: 40%;
+  width: 50%;
 }
 
 .box2 {
   overflow-y: scroll;
   height: 100%;
-  width: 60%;
+  width: 50%;
 }
 
 .center {
   text-align: center;
+  margin: 10px;
 }
 
 .all-waypoints {

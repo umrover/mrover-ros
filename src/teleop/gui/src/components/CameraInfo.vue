@@ -19,15 +19,14 @@
       class="box"
       @change="changeQuality()"
     >
-      <option value="0">Low</option>
-      <option value="1">Medium</option>
-      <option value="2">High</option>
+    <option v-for="i in numQuality">{{i-1}}</option>
     </select>
   </div>
 </template>
 
 <script>
 import "../assets/style.css";
+import ROSLIB from 'roslib/src/RosLib';
 
 export default {
   props: {
@@ -46,9 +45,10 @@ export default {
   },
   data() {
     return {
-      selectedQuality: "0",
+      selectedQuality: "2",
       selectedStream: this.stream,
       prevStream: this.stream,
+      numQuality: 0
     };
   },
 
@@ -57,6 +57,16 @@ export default {
       this.prevStream = this.stream;
       this.selectedStream = this.stream;
     },
+  },
+
+  created: function() {
+    var arg = new ROSLIB.Param({
+      ros: this.$ros,
+      name: "cameras/arguments"
+    });
+    arg.get((arr) => {
+      this.numQuality = arr.length;
+    });
   },
 
   methods: {

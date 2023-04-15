@@ -21,12 +21,22 @@ brushed_motors:
       mcu_id: 2
       motor_id: 2
       inversion: 1.0
+      limit_a_present: true
+      limit_b_present: false
+      counts_limit_a: 0
+      limit_a_is_fwd: true
+      calibration_vel: 0.25
     - name: "carousel"
       driver_voltage: 12.0
       motor_max_voltage: 12.0
       mcu_id: 2
       motor_id: 1
       inversion: 1.0
+      limit_a_present: true
+      limit_b_present: false
+      counts_limit_a: 0
+      limit_a_is_fwd: true
+      calibration_vel: 0.25
     - name: "joint_a"
       driver_voltage: 36.0
       motor_max_voltage: 24.0
@@ -37,6 +47,8 @@ brushed_motors:
       kP: -0.005
       kI: -0.0
       inversion: -1.0
+      limit_a_present: false
+      limit_b_present: false
     - name: "joint_b"
       driver_voltage: 36.0
       motor_max_voltage: 12.0
@@ -46,6 +58,11 @@ brushed_motors:
       kP: -0.1
       kI: -0.0
       inversion: -1.0
+      limit_a_present: true
+      limit_b_present: false
+      counts_limit_a: 0
+      limit_a_is_fwd: true
+      calibration_vel: 0.25
     - name: "joint_f"
       driver_voltage: 12.0
       motor_max_voltage: 8.0
@@ -55,62 +72,137 @@ brushed_motors:
       kP: 0.05
       kI: 0.0
       inversion: -1.0
+      limit_a_present: false
+      limit_b_present: false
     - name: "finger"
       driver_voltage: 12.0
       motor_max_voltage: 12.0
       mcu_id: 1
       motor_id: 3
       inversion: 1.0
+      limit_a_present: true
+      limit_b_present: true
+      counts_limit_a: 0
+      counts_limit_b: 0
+      limit_a_is_fwd: true
+      calibration_vel: 0.25
     - name: "gripper"
       driver_voltage: 12.0
       motor_max_voltage: 12.0
       mcu_id: 1
       motor_id: 2
       inversion: 1.0
+      limit_a_present: false
+      limit_b_present: false
     - name: "mast_gimbal_up_down"
       driver_voltage: 12.0
       motor_max_voltage: 12.0
       mcu_id: 2
       motor_id: 4
       inversion: -1.0
+      limit_a_present: false
+      limit_b_present: false
     - name: "mast_gimbal_left_right"
       driver_voltage: 12.0
       motor_max_voltage: 12.0
       mcu_id: 2
       motor_id: 3
       inversion: -1.0
+      limit_a_present: false
+      limit_b_present: false
     - name: "microscope"
       driver_voltage: 12.0
       motor_max_voltage: 12.0
       mcu_id: 1
       motor_id: 4
       inversion: 1.0
+      limit_a_present: true
+      limit_b_present: true
+      counts_limit_a: 0
+      counts_limit_b: 0
+      limit_a_is_fwd: true
+      calibration_vel: 0.25
     - name: "sa_joint_1"
       driver_voltage: 36.0
       motor_max_voltage: 12.0
       mcu_id: 1
       motor_id: 0
       inversion: 1.0
+      limit_a_present: true
+      limit_b_present: false
+      counts_limit_a: 0
+      limit_a_is_fwd: true
+      calibration_vel: 0.25
     - name: "sa_joint_2"
       driver_voltage: 12.0
       motor_max_voltage: 12.0
       mcu_id: 1
       motor_id: 1
       inversion: -1.0
+      limit_a_present: true
+      limit_b_present: false
+      counts_limit_a: 0
+      limit_a_is_fwd: true
+      calibration_vel: 0.25
     - name: "sa_joint_3"
       driver_voltage: 12.0
       motor_max_voltage: 12.0
       mcu_id: 1
       motor_id: 2
       inversion: 1.0
+      limit_a_present: true
+      limit_b_present: false
+      counts_limit_a: 0
+      limit_a_is_fwd: true
+      calibration_vel: 0.25
     - name: "scoop"
       driver_voltage: 12.0
       motor_max_voltage: 12.0
       mcu_id: 1
       motor_id: 3
       inversion: 1.0
+      limit_a_present: true
+      limit_b_present: true
+      counts_limit_a: 0
+      counts_limit_b: 0
+      limit_a_is_fwd: true
+      calibration_vel: 0.25
   i2c_device_file: "/dev/i2c-1"
   test: false
+  
+cameras:
+  arguments:
+    - bps: 173000
+      width: 320
+      height: 240
+      fps: 15
+    - bps: 691000
+      width: 640
+      height: 480
+      fps: 15
+    - bps: 2000000
+      width: 960
+      height: 720
+      fps: 15
+    - bps: 3000000
+      width: 1280
+      height: 720
+      fps: 15
+    - bps: 4200000
+      width: 1280
+      height: 720
+      fps: 30
+
+  # Number of devices corresponds to number of cmds in
+  #   - ChangeCameras.srv
+  #   - ResetCameras.srv
+  max_streams: 4
+  max_device_id: 10
+  ips:
+    primary: "10.0.0.7"
+    secondary: "10.0.0.8"
+  # Jetsons for some reason give two IDs (ie. 0 and 1) for each USB camera.
+  devices_doubled: true
 
 science:
   auton_color_ids:
@@ -146,35 +238,6 @@ science:
     sleep: 0.01
     uart_transmit_msg_len: 30
 
-cameras:
-    arguments:
-      144_res:
-        - "--headless"
-        - "--bitrate=300000"
-        - "--width=256"
-        - "--height=144"
-      360_res:
-        - "--headless"
-        - "--bitrate=800000"
-        - "--width=480"
-        - "--height=360"
-      720_res:
-        - "--headless"
-        - "--bitrate=1800000"
-        - "--width=1280"
-        - "--height=720"
-    max_video_device_id_number: 10
-    endpoints:
-      primary_0: "10.0.0.7:5000"
-      primary_1: "10.0.0.7:5001"
-      primary_2: "10.0.0.7:5002"
-      primary_3: "10.0.0.7:5003"
-      secondary_0: "10.0.0.8:5000"
-      secondary_1: "10.0.0.8:5001"
-      secondary_2: "10.0.0.8:5002"
-      secondary_3: "10.0.0.8:5003"
-    skip_every_other_device: true
-
 rover:
   length: 0.86
   width: 0.86
@@ -190,11 +253,11 @@ brushless:
     max_torque: 0.3
     controllers:
       FrontLeft:
-        id: 5
+        id: 2
         bus: 1
         multiplier: -1
       FrontRight:
-        id: 4
+        id: 3
         bus: 2
         multiplier: 1
       MiddleLeft:
@@ -202,7 +265,7 @@ brushless:
         bus: 1
         multiplier: -1
       MiddleRight:
-        id: 3
+        id: 4
         bus: 2
         multiplier: 1
       BackLeft:
@@ -210,9 +273,9 @@ brushless:
         bus: 1
         multiplier: -1
       BackRight:
-        id: 2
+        id: 5
         bus: 2
-        multiplier: 1
+        multiplier: -1
   arm:
     controllers:
       joint_c:
@@ -233,3 +296,5 @@ brushless:
         max_rps: 70
         max_torque: 0.13
         multiplier: -1
+
+network_iface: "enp44s0"

@@ -48,7 +48,7 @@ export default {
 <style scoped>
 .waypoint-item {
   display: grid;
-  grid-template-columns: 4fr 1fr;
+  grid-template-columns: 2fr 1fr;
   grid-template-rows: 1fr 1fr;
   grid-template-areas: "name buttons" "location buttons";
   padding: 10px;

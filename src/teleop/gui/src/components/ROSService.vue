@@ -6,10 +6,11 @@
         alt="MRover"
         title="MRover"
         width="185"
-        height="53"
+        height="36"
       />
       <h1>ROS Service</h1>
       <div class="spacer"></div>
+      <CommReadout class="comm"></CommReadout>
     </div>
 
     <div class="pages box">
@@ -49,6 +50,7 @@
 <script>
 import ROSLIB from "roslib";
 import "../assets/style.css";
+import CommReadout from "./CommReadout.vue";
 
 const datatypes = [
   "bool",
@@ -69,6 +71,10 @@ const datatypes = [
 
 export default {
   name: "ROSService",
+  components: {
+    CommReadout,
+  },
+
   data() {
     return {
       service_options: [],

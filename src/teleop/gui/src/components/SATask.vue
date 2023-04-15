@@ -6,9 +6,10 @@
         alt="MRover"
         title="MRover"
         width="185"
-        height="53"
+        height="36"
       />
       <h1>SA Dashboard</h1>
+      <CommReadout class="comm"></CommReadout>
       <div class="help">
         <img
           src="/static/help.png"
@@ -62,6 +63,40 @@
     <div class="box moteus">
       <MoteusStateTable :moteus-state-data="moteusState" />
     </div>
+    <div class="box limit">
+      <h3>Limit Switches</h3>
+      <LimitSwitch :switch_name="'sa_joint_1'" :name="'Joint 1 Switch'" />
+      <LimitSwitch :switch_name="'sa_joint_2'" :name="'Joint 2 Switch'" />
+      <LimitSwitch :switch_name="'sa_joint_3'" :name="'Joint 3 Switch'" />
+      <LimitSwitch :switch_name="'scoop'" :name="'Scoop Switch'" />
+    </div>
+    <div class="box calibration">
+      <h3>Calibrations</h3>
+      <div class="calibration-checkboxes">
+        <CalibrationCheckbox
+          :name="'Joint 1 Calibration'"
+          :joint_name="'sa_joint_1'"
+          :calibrate_topic="'sa_is_calibrated'"
+        />
+        <CalibrationCheckbox
+          :name="'Joint 2 Calibration'"
+          :joint_name="'sa_joint_2'"
+          :calibrate_topic="'sa_is_calibrated'"
+        />
+        <CalibrationCheckbox
+          :name="'Joint 3 Calibration'"
+          :joint_name="'sa_joint_3'"
+          :calibrate_topic="'sa_is_calibrated'"
+        />
+      </div>
+      <MotorAdjust
+        :options="[
+          { name: 'sa_joint_1', option: 'Joint 1' },
+          { name: 'sa_joint_2', option: 'Joint 2' },
+          { name: 'sa_joint_3', option: 'Joint 3' },
+        ]"
+      />
+    </div>
     <div v-show="false">
       <MastGimbalControls></MastGimbalControls>
     </div>
@@ -77,10 +112,14 @@ import MastGimbalControls from "./MastGimbalControls.vue";
 import EndEffectorUV from "./EndEffectorUV.vue";
 import SAArmControls from "./SAArmControls.vue";
 import PDBFuse from "./PDBFuse.vue";
-import * as qte from "quaternion-to-euler";
 import Cameras from "./Cameras.vue";
 import MoteusStateTable from "./MoteusStateTable.vue";
 import JointStateTable from "./JointStateTable.vue";
+import LimitSwitch from "./LimitSwitch.vue";
+import CalibrationCheckbox from "./CalibrationCheckbox.vue";
+import CommReadout from "./CommReadout.vue";
+import MotorAdjust from "./MotorAdjust.vue";
+import { quaternionToDisplayAngle } from "../utils.js";
 
 export default {
   components: {
@@ -94,6 +133,10 @@ export default {
     MoteusStateTable,
     PDBFuse,
     SAArmControls,
+    LimitSwitch,
+    CalibrationCheckbox,
+    CommReadout,
+    MotorAdjust,
   },
   data() {
     return {
@@ -142,12 +185,7 @@ export default {
     // Subscriber for odom to base_link transform
     this.tfClient.subscribe("base_link", (tf) => {
       // Callback for IMU quaternion that describes bearing
-      let quaternion = tf.rotation;
-      quaternion = [quaternion.w, quaternion.x, quaternion.y, quaternion.z];
-      //Quaternion to euler angles
-      let euler = qte(quaternion);
-      // euler[2] == euler z component
-      this.odom.bearing_deg = euler[2] * (180 / Math.PI);
+      this.odom.bearing_deg = quaternionToDisplayAngle(tf.rotation);
     });
 
     this.brushless_motors = new ROSLIB.Topic({
@@ -169,14 +207,15 @@ export default {
 .wrapper {
   display: grid;
   grid-gap: 10px;
-  grid-template-columns: 40% 10% 25% 25%;
-  grid-template-rows: auto 50% 40% 20% 20%;
+  grid-template-columns: 30% 20% 25% 25%;
+  grid-template-rows: auto 50% 40% 12% 12% 25%;
   grid-template-areas:
     "header header header header"
     "map map waypoints waypoints"
-    "cameras cameras scoop arm"
-    "pdb moteus moteus jointState"
-    "pdb moteus moteus jointState";
+    "cameras cameras cameras limit"
+    "arm pdb moteus jointState"
+    "scoop pdb moteus jointState"
+    "calibration calibration moteus jointState";
   height: 100%;
 }
 .helpscreen {
@@ -255,5 +294,42 @@ export default {
 
 .moteus {
   grid-area: moteus;
+}
+
+.limit {
+  grid-area: limit;
+}
+
+.calibration {
+  grid-area: calibration;
+  display: flex;
+  flex-direction: column;
+}
+
+.calibration-checkboxes {
+  display: flex;
+  margin: 1%;
+}
+
+.Joystick {
+  font-size: 1em;
+  height: 41%;
+  width: 93%;
+  display: inline-block;
+}
+.raw-sensors {
+  font-size: 1em;
+}
+
+.controls {
+  font-size: 1em;
+  height: 40.5%;
+  display: block;
+}
+
+ul#vitals li {
+  display: inline;
+  float: left;
+  padding: 0px 10px 0px 0px;
 }
 </style>

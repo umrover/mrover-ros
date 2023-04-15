@@ -1,20 +1,14 @@
 <template>
-  <div>
-    <div v-if="!disabled">
-      <button class="button" :class="[color]" @click="toggleAndEmit()">
-        <span class="white-text"
-          >{{ name }}: {{ active ? "\u2611" : "\u2610" }}</span
-        >
-      </button>
-    </div>
-    <div v-else>
-      <button class="button button-disabled" :class="[color]">
-        <span class="white-text"
-          >{{ name }}: {{ active ? "\u2611" : "\u2610" }}</span
-        >
-      </button>
-    </div>
-  </div>
+  <button v-if="!disabled" class="button" :class="[color]" @click="toggleAndEmit()">
+    <span class="white-text"
+      >{{ name }}: {{ active ? "\u2611" : "\u2610" }}</span
+    >
+  </button>
+  <button v-else class="button button-disabled" :class="[color]">
+    <span class="white-text"
+      >{{ name }}: {{ active ? "\u2611" : "\u2610" }}</span
+    >
+  </button>
 </template>
 
 <script>

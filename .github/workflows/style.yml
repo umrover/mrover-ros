@@ -16,4 +16,4 @@ jobs:
     steps:
       - uses: actions/checkout@v3
       - name: Style check C++/Python
-        run: ./style.sh
+        run: $GITHUB_WORKSPACE/style.sh

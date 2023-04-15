@@ -6,10 +6,11 @@
         alt="MRover"
         title="MRover"
         width="185"
-        height="53"
+        height="36"
       />
       <h1 v-if="type === 'ES'">ES GUI Dashboard</h1>
       <h1 v-else>EDM GUI Dashboard</h1>
+      <CommReadout class="comm"></CommReadout>
       <div class="help">
         <img
           src="/static/help.png"
@@ -85,6 +86,8 @@ import JointStateTable from "./JointStateTable.vue";
 import MoteusStateTable from "./MoteusStateTable.vue";
 import OdometryReading from "./OdometryReading.vue";
 import PDBFuse from "./PDBFuse.vue";
+import CommReadout from "./CommReadout.vue";
+import { quaternionToDisplayAngle } from "../utils.js";
 
 export default {
   components: {
@@ -98,6 +101,7 @@ export default {
     MoteusStateTable,
     OdometryReading,
     PDBFuse,
+    CommReadout,
   },
 
   props: {
@@ -148,13 +152,7 @@ export default {
 
     // Subscriber for odom to base_link transform
     this.tfClient.subscribe("base_link", (tf) => {
-      // Callback for IMU quaternion that describes bearing
-      let quaternion = tf.rotation;
-      quaternion = [quaternion.w, quaternion.x, quaternion.y, quaternion.z];
-      //Quaternion to euler angles
-      let euler = qte(quaternion);
-      // euler[2] == euler z component
-      this.odom.bearing_deg = euler[2] * (180 / Math.PI);
+      this.odom.bearing_deg = quaternionToDisplayAngle(tf.rotation);
     });
 
     this.odom_sub.subscribe((msg) => {
@@ -183,7 +181,7 @@ export default {
   display: grid;
   gap: 15px;
   grid-template-columns: auto auto;
-  grid-template-rows: auto 20% 10% 20% 40% 40%;
+  grid-template-rows: auto 20% 10% 45% 40% 40%;
   grid-template-areas:
     "header header"
     "map waypoint-editor"
@@ -209,12 +207,6 @@ export default {
     "arm-controls arm-controls";
   font-family: sans-serif;
   height: 100%;
-}
-
-.page_header {
-  grid-area: header;
-  display: flex;
-  align-items: center;
 }
 
 .box {
@@ -294,5 +286,9 @@ export default {
 .moteus {
   grid-area: moteus;
   min-height: 250px;
+}
+
+.page_header {
+  grid-area: header;
 }
 </style>

@@ -102,7 +102,11 @@
           />
         </div>
         <div class="stuck-check">
-          <Checkbox name="Stuck" @toggle="roverStuck = !roverStuck"></Checkbox>
+          <Checkbox
+            class="stuck-checkbox"
+            name="Stuck"
+            @toggle="roverStuck = !roverStuck"
+          ></Checkbox>
         </div>
         <div class="stats">
           <VelocityCommand />
@@ -487,7 +491,7 @@ export default {
 }
 
 .add-drop {
-  height: 15%;
+  min-height: min-content;
 }
 
 input {
@@ -498,7 +502,7 @@ input {
 .box1 {
   padding: 0px 5px 0px 5px;
   overflow-y: scroll;
-  height: 85%;
+  height: 80%;
 }
 
 .button {
@@ -511,7 +515,7 @@ input {
   display: grid;
   grid-gap: 5%;
   grid-template-columns: 1fr 1fr;
-  grid-template-rows: 1fr 0.25fr;
+  grid-template-rows: 1fr 1fr;
   grid-template-areas:
     "auton-check stats"
     "auton-check stuck-check";
@@ -546,6 +550,10 @@ input {
 .stuck-check {
   text-align: center;
   grid-area: stuck-check;
+  padding-inline: 20px;
+}
+.stuck-check .stuck-checkbox {
+  transform: scale(1.5);
 }
 
 .odom {

@@ -7,8 +7,9 @@
         alt="MRover"
         title="MRover"
         width="185"
-        height="53"
+        height="36"
       />
+      <CommReadout class="comm"></CommReadout>
     </div>
       <fieldset class="box row">
         <legend>Tasks</legend>
@@ -22,12 +23,14 @@
 <script>
 import "../assets/style.css";
 import MenuButton from "./MenuButton.vue";
+import CommReadout from "./CommReadout.vue";
 
 export default {
   name: "Debug",
 
   components: {
     MenuButton,
+    CommReadout,
   },
 };
 </script>

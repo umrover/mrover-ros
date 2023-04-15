@@ -6,9 +6,10 @@
         alt="MRover"
         title="MRover"
         width="185"
-        height="53"
+        height="36"
       />
       <h1>ROS Echo</h1>
+      <CommReadout class="comm"></CommReadout>
     </div>
 
     <div class="box pages">
@@ -71,9 +72,14 @@
 import ROSLIB from "roslib";
 import "../assets/style.css";
 import Vue from "vue";
+import CommReadout from "./CommReadout.vue";
 
 export default {
   name: "ROSEcho",
+  components: {
+    CommReadout,
+  },
+
   data() {
     return {
       presets: [],

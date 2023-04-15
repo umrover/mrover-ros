@@ -7,8 +7,9 @@
         alt="MRover"
         title="MRover"
         width="185"
-        height="53"
+        height="36"
       />
+      <CommReadout class="comm"></CommReadout>
       <div class="help">
         <img
           src="/static/help.png"
@@ -79,13 +80,14 @@ import AutonWaypointEditor from "./AutonWaypointEditor.vue";
 import DriveControls from "./DriveControls.vue";
 import MastGimbalControls from "./MastGimbalControls.vue";
 import { mapGetters } from "vuex";
-import * as qte from "quaternion-to-euler";
 import JoystickValues from "./JoystickValues.vue";
 import IMUCalibration from "./IMUCalibration.vue";
+import CommReadout from "./CommReadout.vue";
+import { quaternionToDisplayAngle } from "../utils.js";
 
 const navBlue = "blue";
 const navGreen = "green";
-const navRed = "red";
+const navRed = "red-no-hover";
 const navGrey = "gray";
 
 export default {
@@ -96,6 +98,7 @@ export default {
     IMUCalibration,
     JoystickValues,
     MastGimbalControls,
+    CommReadout,
   },
 
   data() {
@@ -204,12 +207,7 @@ export default {
     // Subscriber for odom to base_link transform
     this.tfClient.subscribe("base_link", (tf) => {
       // Callback for IMU quaternion that describes bearing
-      let quaternion = tf.rotation;
-      quaternion = [quaternion.w, quaternion.x, quaternion.y, quaternion.z];
-      //Quaternion to euler angles
-      let euler = qte(quaternion);
-      // euler[2] == euler z component
-      this.odom.bearing_deg = euler[2] * (180 / Math.PI);
+      this.odom.bearing_deg = quaternionToDisplayAngle(tf.rotation);
     });
 
     this.nav_status_sub.subscribe((msg) => {
@@ -256,15 +254,15 @@ export default {
   display: grid;
   overflow: hidden;
   grid-gap: 10px;
-  grid-template-columns: 2fr 1.25fr 0.75fr;
-  grid-template-rows: auto 5fr 1fr;
+  grid-template-columns: 60% 40%;
+  grid-template-rows: auto 5fr;
   grid-template-areas:
-    "header header header"
-    "map waypoints waypoints"
-    "data waypoints waypoints";
+    "header header"
+    "map waypoints"
+    "data waypoints";
   font-family: sans-serif;
   height: 100%;
-  width: auto;
+  width: 100%;
 }
 
 .box {
@@ -339,4 +337,5 @@ h2 {
 .page_header {
   grid-area: header;
 }
+
 </style>

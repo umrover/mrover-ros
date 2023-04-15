@@ -1,8 +1,9 @@
 <template>
   <div class="wrap">
-    <div v-for="j in 3" class="buttons">
-      <div v-for="i in 3">
+    <div v-for="j in 3" :key="j" class="buttons">
         <button
+          v-for="i in 3"
+          :key="i"
           class="button"
           :class="{ active_cam_button: camsEnabled[j - 1 + 3 * (i - 1)] }"
           :disabled="maxedOut && !camsEnabled[j - 1 + 3 * (i - 1)]"
@@ -10,8 +11,6 @@
         >
           <span>{{ names[j - 1 + 3 * (i - 1)] }}</span>
         </button>
-        <div class="fixed-spacer"></div>
-      </div>
     </div>
   </div>
 </template>
@@ -71,14 +70,7 @@ export default {
 }
 .button {
   margin: 5px;
-}
-.cam_buttons {
-  height: 25px;
-  width: 100px;
-}
-.fixed-spacer {
-  width: 10px;
-  height: auto;
+  width: 100%;
 }
 
 .active_cam_button {

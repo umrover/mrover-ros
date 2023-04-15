@@ -17,3 +17,8 @@ void Test::testOpenLoop(Controller* controller) {
         }
     }
 }
+
+// Test to see if calibrated
+bool Test::testCalibrated(Controller* controller) {
+    return controller->isCalibrated();
+}
