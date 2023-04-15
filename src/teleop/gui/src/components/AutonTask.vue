@@ -40,7 +40,7 @@
           />
         </div>
       </div>
-      <div class="box1 data" :style="{ backgroundColor: nav_state_color }">
+      <!-- <div class="box1 data" :style="{ backgroundColor: nav_state_color }">
         <div>
           <h2>Nav State: {{ nav_status.nav_state_name }}</h2>
         </div>
@@ -53,11 +53,25 @@
           <IMUCalibration />
         </div>
       </div>
-      <div class="box map light-bg">
-        <AutonRoverMap :odom="odom" />
+    </div> -->
+    <div class="box1 data" :style="{ backgroundColor: nav_state_color }">
+      <div>
+        <h2>Nav State: {{ nav_status.nav_state_name }}</h2>
       </div>
-      <div class="box waypoints light-bg">
-        <AutonWaypointEditor
+      <div>
+        <p style="margin-top: 2px">Joystick Values</p>
+      </div>
+      <div></div>
+      <JoystickValues />
+      <div>
+        <OdometryReading :odom="odom"></OdometryReading>
+      </div>
+    </div>
+    <div class="box map light-bg">
+      <AutonRoverMap :odom="odom" />
+    </div>
+    <div class="box waypoints light-bg">
+      <AutonWaypointEditor
         :odom="odom"
         @toggleTeleop="teleopEnabledCheck = $event"
         />
@@ -93,6 +107,9 @@ import CommReadout from "./CommReadout.vue";
 import { quaternionToDisplayAngle } from "../utils.js";
 import Cameras from "./Cameras.vue";
 
+import { quaternionToMapAngle } from "../utils.js";
+import FlightAttitudeIndicator from "./FlightAttitudeIndicator.vue";
+import OdometryReading from "./OdometryReading.vue";
 const navBlue = "#4695FF";
 const navGreen = "yellowgreen";
 const navRed = "lightcoral";
@@ -107,7 +124,8 @@ export default {
     JoystickValues,
     MastGimbalControls,
     CommReadout,
-    Cameras
+    Cameras,
+    OdometryReading
   },
 
   data() {
@@ -216,7 +234,7 @@ export default {
     // Subscriber for odom to base_link transform
     this.tfClient.subscribe("base_link", (tf) => {
       // Callback for IMU quaternion that describes bearing
-      this.odom.bearing_deg = quaternionToDisplayAngle(tf.rotation);
+      this.odom.bearing_deg = quaternionToMapAngle(tf.rotation);
     });
 
     this.nav_status_sub.subscribe((msg) => {
@@ -265,7 +283,7 @@ export default {
   min-height: 98vh;
   grid-gap: 10px;
   grid-template-columns: 2fr 1.25fr 0.75fr;
-  grid-template-rows: 50px 2fr 1fr 15vh;
+  grid-template-rows: 50px 2fr 1fr 20vh;
   grid-template-areas:
     "header header header"
     "map waypoints waypoints"
@@ -290,7 +308,7 @@ export default {
   overflow-y: scroll;
   height: 12 px;
   display: grid;
-  grid-template-columns: 40% 60%;
+  grid-template-columns: 50% 50%;
 }
 
 .box2 {

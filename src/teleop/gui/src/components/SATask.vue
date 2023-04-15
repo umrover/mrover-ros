@@ -102,6 +102,9 @@
     <div v-show="false">
       <MastGimbalControls></MastGimbalControls>
     </div>
+    <div class="box light-bg odom">
+      <OdometryReading :odom="odom"></OdometryReading>
+    </div>
   </div>
 </template>
 
@@ -121,7 +124,8 @@ import LimitSwitch from "./LimitSwitch.vue";
 import CalibrationCheckbox from "./CalibrationCheckbox.vue";
 import CommReadout from "./CommReadout.vue";
 import MotorAdjust from "./MotorAdjust.vue";
-import { quaternionToDisplayAngle } from "../utils.js";
+import { quaternionToMapAngle } from "../utils.js";
+import OdometryReading from "./OdometryReading.vue";
 
 export default {
   components: {
@@ -139,6 +143,7 @@ export default {
     CalibrationCheckbox,
     CommReadout,
     MotorAdjust,
+    OdometryReading
   },
   data() {
     return {
@@ -146,7 +151,7 @@ export default {
       odom: {
         latitude_deg: 42.294864932393835,
         longitude_deg: -83.70781314674628,
-        bearing_deg: 0,
+        bearing_deg: 0
       },
 
       jointState: {},
@@ -154,12 +159,12 @@ export default {
       moteusState: {
         name: ["", "", "", "", "", ""],
         error: ["", "", "", "", "", ""],
-        state: ["", "", "", "", "", ""],
+        state: ["", "", "", "", "", ""]
       },
 
       // Pubs and Subs
       odom_sub: null,
-      tfClient: null,
+      tfClient: null
     };
   },
 
@@ -167,7 +172,7 @@ export default {
     this.odom_sub = new ROSLIB.Topic({
       ros: this.$ros,
       name: "/gps/fix",
-      messageType: "sensor_msgs/NavSatFix",
+      messageType: "sensor_msgs/NavSatFix"
     });
 
     this.odom_sub.subscribe((msg) => {
@@ -181,26 +186,26 @@ export default {
       fixedFrame: "odom",
       // Thresholds to trigger subscription callback
       angularThres: 0.01,
-      transThres: 0.01,
+      transThres: 0.01
     });
 
     // Subscriber for odom to base_link transform
     this.tfClient.subscribe("base_link", (tf) => {
       // Callback for IMU quaternion that describes bearing
-      this.odom.bearing_deg = quaternionToDisplayAngle(tf.rotation);
+      this.odom.bearing_deg = quaternionToMapAngle(tf.rotation);
     });
 
     this.brushless_motors = new ROSLIB.Topic({
       ros: this.$ros,
       name: "drive_status",
-      messageType: "mrover/MotorsStatus",
+      messageType: "mrover/MotorsStatus"
     });
 
     this.brushless_motors.subscribe((msg) => {
       this.jointState = msg.joint_states;
       this.moteusState = msg.moteus_states;
     });
-  },
+  }
 };
 </script>
 
@@ -211,13 +216,14 @@ export default {
   overflow: hidden;
   grid-gap: 10px;
   grid-template-columns: 23vw 20vw auto auto auto;
-  grid-template-rows: 60px 70vh auto auto auto;
+  grid-template-rows: 60px 70vh auto auto auto 300px;
   grid-template-areas:
     "header header header header"
     "map map waypoints waypoints"
     "cameras cameras cameras scoop"
     "arm limit moteus jointState"
-    "pdb calibration moteus jointState";
+    "pdb calibration moteus jointState"
+    "odom odom odom odom";
   font-family: sans-serif;
   height: auto;
 }
@@ -351,6 +357,10 @@ h2 {
 
 .limit {
   grid-area: limit;
+}
+
+.odom {
+  grid-area: odom;
 }
 
 .calibration {

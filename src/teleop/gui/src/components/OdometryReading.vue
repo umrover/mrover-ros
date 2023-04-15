@@ -1,6 +1,6 @@
 <template>
   <div class="odom-wrap">
-    <div>
+    <div class="odom">
 
       <p>Current odometry reading:</p>
       <div>
@@ -18,8 +18,11 @@
         <p>Bearing: {{ odom.bearing_deg.toFixed(2) }}º</p>
       </div>
     </div>
-    <div class="calibration">
+    <div class="calibration imu">
       <IMUCalibration></IMUCalibration>
+    </div>
+    <div class = "flightindicator">
+      <FlightAttitudeIndicator></FlightAttitudeIndicator>
     </div>
   </div>
 </template>
@@ -28,21 +31,23 @@
 import { convertDMS } from "../utils.js";
 import { mapGetters } from "vuex";
 import IMUCalibration from "./IMUCalibration.vue";
+import FlightAttitudeIndicator from "./FlightAttitudeIndicator.vue";
 export default {
+  components: {
+    FlightAttitudeIndicator,
+    IMUCalibration,
+  },
   props: {
     odom: {
       type: Object,
-      required: true,
-    },
+      required: true
+    }
   },
 
-  components: {
-    IMUCalibration,
-  },
 
   computed: {
     ...mapGetters("map", {
-      odom_format: "odomFormat",
+      odom_format: "odomFormat"
     }),
     formatted_odom: function () {
       return {
@@ -53,7 +58,7 @@ export default {
         lon: convertDMS(
           { d: this.odom.longitude_deg, m: 0, s: 0 },
           this.odom_format
-        ),
+        )
       };
     },
     min_enabled: function () {
@@ -61,8 +66,9 @@ export default {
     },
     sec_enabled: function () {
       return this.odom_format == "DMS";
-    },
+    }
   },
+  
 };
 </script>
 
@@ -73,9 +79,17 @@ export default {
   padding-right: 0px;
   border: none;
   margin-top: 0.5rem;
-  display: flex;
+  display: grid;
+  grid-gap: 10px;
+  grid-template-columns: 300px 2fr 1.25fr 0.75fr;
+  grid-template-rows: 140px 2fr 1fr 15vh;
   flex-direction: row;
   gap: 10px;
+  grid-template-areas:
+    "odom flightIndicator"
+    "imu flightIndicator";
+  height: auto;
+  width: auto;
 }
 .odom-wrap p {
   display: inline;
@@ -88,4 +102,18 @@ export default {
   margin-top: 5px;
   background-color: rgb(180, 180, 180);
 }
+
+.odom {
+  grid-area: odom;
+}
+
+.flightIndicator{
+  grid-area: flightIndicator;
+}
+
+.imu{
+  grid-area: imu;
+}
+
+
 </style>
