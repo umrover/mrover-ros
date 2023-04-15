@@ -7,9 +7,14 @@
 
 namespace mrover {
 
-    constexpr size_t BLOCK_SIZE = 512;
+    // Optimal for the Jetson Xavier NX - this is max threads per block and each block has a max of 2048 threads
+    constexpr uint BLOCK_SIZE = 1024;
 
+    /**
+     * @brief Runs on the GPU, interleaving the XYZ and BGRA buffers into a single buffer of #Point structs.
+     */
     __global__ void fillPointCloudMessageKernel(sl::float4* xyzGpuPtr, sl::uchar4* bgraGpuPtr, Point* pcGpuPtr, size_t size) {
+        // This function is invoked once per element at index #i in the point cloud
         size_t i = blockIdx.x * blockDim.x + threadIdx.x;
         if (i >= size) return;
 
@@ -22,6 +27,14 @@ namespace mrover {
         pcGpuPtr[i].a = bgraGpuPtr[i].a;
     }
 
+    /**
+     * Fills a PointCloud2 message residing on the CPU from two GPU buffers (one for XYZ and one for BGRA).
+     *
+     * @param xyzGpu    XYZ buffer on the GPU
+     * @param bgraGpu   BGRA buffer on the GPU
+     * @param pcGpu     Point cloud buffer on the GPU (@see Point)
+     * @param msg       Point cloud message with buffer on the CPU
+     */
     void fillPointCloudMessageFromGpu(sl::Mat& xyzGpu, sl::Mat& bgraGpu, PointCloudGpu& pcGpu, sensor_msgs::PointCloud2Ptr const& msg) {
         assert(bgraGpu.getWidth() >= xyzGpu.getWidth());
         assert(bgraGpu.getHeight() >= xyzGpu.getHeight());
@@ -32,7 +45,7 @@ namespace mrover {
         auto* bgraGpuPtr = bgraGpu.getPtr<sl::uchar4>(sl::MEM::GPU);
         auto* xyzGpuPtr = xyzGpu.getPtr<sl::float4>(sl::MEM::GPU);
         msg->is_bigendian = __BYTE_ORDER__ == __ORDER_BIG_ENDIAN__;
-        msg->is_dense = false;
+        msg->is_dense = false;  
         msg->height = bgraGpu.getHeight();
         msg->width = bgraGpu.getWidth();
         fillPointCloudMessageHeader(msg);
@@ -40,7 +53,9 @@ namespace mrover {
 
         pcGpu.resize(size);
         Point* pcGpuPtr = pcGpu.data().get();
-        fillPointCloudMessageKernel<<<std::ceil(static_cast<float>(size) / BLOCK_SIZE), BLOCK_SIZE>>>(xyzGpuPtr, bgraGpuPtr, pcGpuPtr, size);
+        dim3 threadsPerBlock{BLOCK_SIZE};
+        dim3 numBlocks{static_cast<uint>(std::ceil(static_cast<float>(size) / BLOCK_SIZE))};
+        fillPointCloudMessageKernel<<<numBlocks, threadsPerBlock>>>(xyzGpuPtr, bgraGpuPtr, pcGpuPtr, size);
         checkCudaError(cudaPeekAtLastError());
         checkCudaError(cudaMemcpy(msg->data.data(), pcGpuPtr, size * sizeof(Point), cudaMemcpyDeviceToHost));
     }
