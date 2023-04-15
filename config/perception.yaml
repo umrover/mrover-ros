@@ -25,8 +25,8 @@ zed_nodelet:
   # Decreasing this value will remove depth data from image areas which are uniform.
   # Pixels with a value close to 100 are not to be trusted. Accurate depth pixels tends to be closer to lower values.
   texture_confidence: 100
-  use_builtin_visual_odom: true
+  use_area_memory: false
 
 tag_detector:
-  min_hit_count_before_publish: 5
-  max_hit_count: 5
+  min_hit_count_before_publish: 3
+  max_hit_count: 3
