@@ -183,8 +183,8 @@ export default {
     "header header"
     "map waypoint-editor"
     "map odom"
-    "map arm-controls"
-    "cameras drive-vel-data"
+    "map cameras"
+    "arm-controls drive-vel-data"
     "moteus pdb";
   font-family: sans-serif;
   height: auto;

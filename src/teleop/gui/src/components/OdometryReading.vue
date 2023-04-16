@@ -82,7 +82,7 @@ export default {
   display: grid;
   grid-gap: 10px;
   grid-template-columns: 300px 2fr 1.25fr 0.75fr;
-  grid-template-rows: 140px 2fr 1fr 15vh;
+  grid-template-rows: 140px 2fr;
   flex-direction: row;
   gap: 10px;
   grid-template-areas:
