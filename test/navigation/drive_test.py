@@ -13,7 +13,6 @@ import rospy
 
 APPROACH_DISTANCE = 2.0
 
-
 class TestDrive(unittest.TestCase):
     def test_drive_straight(self):
         pose = SE3.from_pos_quat([0, 0, 0], quaternion_from_euler(0.0, 0.0, 0.0))

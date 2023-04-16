@@ -11,7 +11,7 @@ from aenum import Enum, NoAlias
 from state import BaseState
 from trajectory import Trajectory
 from dataclasses import dataclass
-from drive import get_drive_command
+from drive import Driver
 from util.np_utils import normalized, perpendicular_2d
 from util.ros_utils import get_rosparam
 from shapely.geometry import LineString
@@ -238,7 +238,7 @@ class GateTraverseState(BaseState):
             self.context.course.increment_waypoint()
             return GateTraverseStateTransitions.finished_gate.name  # type: ignore
 
-        cmd_vel, _ = get_drive_command(
+        cmd_vel, _ = self.context.rover.driver.get_drive_command(
             target_pos,
             self.context.rover.get_pose(in_odom_frame=True),
             self.STOP_THRESH,

@@ -1,7 +1,6 @@
 import tf2_ros
 import rospy
 from context import Context
-from drive import get_drive_command
 from aenum import Enum, NoAlias
 from geometry_msgs.msg import Twist
 from waypoint import WaypointState
@@ -40,7 +39,7 @@ class ApproachPostState(WaypointState):
             return ApproachPostStateTransitions.no_fiducial.name  # type: ignore
 
         try:
-            cmd_vel, arrived = get_drive_command(
+            cmd_vel, arrived = self.context.rover.driver.get_drive_command(
                 fid_pos,
                 self.context.rover.get_pose(in_odom_frame=True),
                 self.STOP_THRESH,

@@ -14,6 +14,7 @@ from shapely.geometry import Point, LineString
 from mrover.msg import Waypoint, GPSWaypoint, EnableAuton, WaypointType, GPSPointList
 import pymap3d
 from std_msgs.msg import Time
+from drive import Driver
 
 
 TAG_EXPIRATION_TIME_SECONDS = 60
@@ -47,6 +48,7 @@ class Gate:
 @dataclass
 class Rover:
     ctx: Context
+    driver: Driver
 
     def get_pose(self, in_odom_frame: bool = False) -> SE3:
         if in_odom_frame and self.ctx.use_odom:

@@ -8,7 +8,6 @@ from context import Context, Environment, convert_cartesian_to_gps
 from aenum import Enum, NoAlias
 from state import BaseState
 from dataclasses import dataclass
-from drive import get_drive_command
 from trajectory import Trajectory
 from mrover.msg import GPSPointList
 from util.ros_utils import get_rosparam
@@ -79,7 +78,7 @@ class SearchState(BaseState):
         waypoint = self.context.course.current_waypoint()
         if self.traj is None or self.traj.fid_id != waypoint.fiducial_id:
             self.traj = SearchTrajectory.spiral_traj(
-                self.context.rover.get_pose(in_odom_frame=True).position[0:2],
+                self.context.rover.get_pose().position[0:2],
                 5,
                 2,
                 waypoint.fiducial_id,
@@ -87,12 +86,11 @@ class SearchState(BaseState):
 
         # continue executing this path from wherever it left off
         target_pos = self.traj.get_cur_pt()
-        cmd_vel, arrived = get_drive_command(
+        cmd_vel, arrived = self.context.rover.driver.get_drive_command(
             target_pos,
-            self.context.rover.get_pose(in_odom_frame=True),
+            self.context.rover.get_pose(),
             self.STOP_THRESH,
-            self.DRIVE_FWD_THRESH,
-            in_odom=self.context.use_odom,
+            self.DRIVE_FWD_THRESH
         )
         if arrived:
             # if we finish the spiral without seeing the fiducial, move on with course

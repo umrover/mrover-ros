@@ -5,7 +5,6 @@ from util import np_utils
 from typing import Optional
 from state import BaseState
 from trajectory import Trajectory
-from drive import get_drive_command
 from aenum import Enum, NoAlias
 from context import Context
 
@@ -88,7 +87,7 @@ class PartialGateState(BaseState):
             return PartialGateStateTransitions.no_fiducial.name  # type: ignore
 
         target_pos = self.traj.get_cur_pt()
-        cmd_vel, arrived = get_drive_command(
+        cmd_vel, arrived = self.context.rover.driver.get_drive_command(
             target_pos,
             self.context.rover.get_pose(in_odom_frame=True),
             STOP_THRESH,
