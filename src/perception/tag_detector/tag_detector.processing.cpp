@@ -9,6 +9,7 @@
 #include <opencv2/imgproc.hpp>
 #include <opencv2/videoio.hpp>
 #include <sensor_msgs/image_encodings.h>
+#include <string>
 #include <tf/exceptions.h>
 
 #include "../point.hpp"
@@ -136,10 +137,18 @@ namespace mrover {
         if (mPublishImages && mImgPub.getNumSubscribers()) {
 
             cv::aruco::drawDetectedMarkers(mImg, mImmediateCorners, mImmediateIds);
-            for (auto& [id, tag]: mTags) {
-                cv::Scalar color(255, 0, 0);
-                cv::Point pt(1200, 100);
-                cv::putText(mImg, std::to_string(tag.hitCount), pt, cv::FONT_HERSHEY_COMPLEX, 2, color, 3);
+            // Max number of tags the hit counter can display = 10;
+            if (!mTags.empty()) {
+                int tagCount = 1;
+                int tagBoxWidth = int(mImg.cols / (mTags.size() * 2));
+                for (auto& [id, tag]: mTags) {
+                    cv::Scalar color(255, 0, 0);
+                    cv::Point pt(tagBoxWidth * tagCount, mImg.rows / 10);
+                    std::string text = "id" + std::to_string(id) + ":" + std::to_string((tag.hitCount));
+                    cv::putText(mImg, text, pt, cv::FONT_HERSHEY_COMPLEX, (mImg.cols / 800), color, (mImg.cols / 300));
+                    
+                    ++tagCount;
+                }
             }
             mImgMsg.header.seq = mSeqNum;
             mImgMsg.header.stamp = ros::Time::now();
