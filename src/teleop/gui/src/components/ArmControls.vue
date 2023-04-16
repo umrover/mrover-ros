@@ -132,8 +132,8 @@ export default {
     });
     this.laser_service = new ROSLIB.Service({
       ros: this.$ros,
-      name: "change_arm_laser_state",
-      serviceType: "mrover/ChangeDeviceState",
+      name: "enable_mosfet_device",
+      serviceType: "mrover/EnableDevice",
     });
     this.jointlock_pub = new ROSLIB.Topic({
       ros: this.$ros,
@@ -211,6 +211,7 @@ export default {
     toggleArmLaser: function () {
       this.laser_enabled = !this.laser_enabled;
       let request = new ROSLIB.ServiceRequest({
+        name: "arm_laser",
         enable: this.laser_enabled,
       });
       this.laser_service.callService(request, (result) => {

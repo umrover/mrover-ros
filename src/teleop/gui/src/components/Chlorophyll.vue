@@ -91,10 +91,11 @@ export default {
       this.whiteLEDS_active = !this.whiteLEDS_active;
       let whiteLedService = new ROSLIB.Service({
         ros: this.$ros,
-        name: "change_white_led_state",
-        serviceType: "mrover/ChangeDeviceState",
+        name: "enable_mosfet_device",
+        serviceType: "mrover/EnableDevice",
       });
       let request = new ROSLIB.ServiceRequest({
+        name: "white_led",
         enable: this.whiteLEDS_active,
       });
       whiteLedService.callService(request, (result) => {
@@ -109,10 +110,11 @@ export default {
       this.UV_carousel = !this.UV_carousel;
       let uvService = new ROSLIB.Service({
         ros: this.$ros,
-        name: "change_uv_led_carousel_state",
-        serviceType: "mrover/ChangeDeviceState",
+        name: "change_mosfet_device",
+        serviceType: "mrover/EnableDevice",
       });
       let request = new ROSLIB.ServiceRequest({
+        name: "uv_led_carousel",
         enable: this.UV_carousel,
       });
       uvService.callService(request, (result) => {

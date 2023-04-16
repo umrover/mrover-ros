@@ -10,7 +10,7 @@ Autonomous Traversal task. It also transmits diagnostic data on temperature
 and current on the 3.3V, 5V, and 12V lines for the PDB.
 """
 import threading
-from typing import Any, Callable, Dict
+from typing import Any, Callable, Dict, List
 
 import rospy
 import serial
@@ -22,15 +22,18 @@ from mrover.srv import (
     ChangeAutonLEDState,
     ChangeAutonLEDStateRequest,
     ChangeAutonLEDStateResponse,
-    ChangeDeviceState,
-    ChangeDeviceStateRequest,
-    ChangeDeviceStateResponse,
+    ChangeHeaterAutoShutoffState,
+    ChangeHeaterAutoShutoffStateRequest,
+    ChangeHeaterAutoShutoffStateResponse,
     ChangeHeaterState,
     ChangeHeaterStateRequest,
     ChangeHeaterStateResponse,
     ChangeServoAngle,
     ChangeServoAngleRequest,
     ChangeServoAngleResponse,
+    EnableDevice,
+    EnableDeviceRequest,
+    EnableDeviceResponse,
 )
 
 
@@ -38,6 +41,8 @@ class ScienceBridge:
     """Manages all the information and functions used for dealing with the
     bridge between the science board and the Jetson.
     One ScienceBridge will be made in main.
+    :param _allowed_mosfet_names: A list of allowed mosfet names for the "enable
+        mosfet" device service
     :param _id_by_color: A dictionary that maps the possible colors of the auton
         LED to an integer for the UART message.
     :param _mosfet_number_by_device_name: A dictionary that maps each actual
@@ -61,6 +66,7 @@ class ScienceBridge:
 
     NUM_SPECTRAL_CHANNELS = 6
 
+    _allowed_mosfet_names: List[str]
     _id_by_color: Dict[str, int]
     _mosfet_number_by_device_name: Dict[str, int]
     _num_diag_current: int
@@ -77,6 +83,8 @@ class ScienceBridge:
     def __init__(self) -> None:
         self._id_by_color = rospy.get_param("science/auton_color_ids")
         self._mosfet_number_by_device_name = rospy.get_param("science/device_mosfet_numbers")
+        self._allowed_mosfet_names = ["arm_laser", "uv_led_carousel",
+                                      "uv_led_end_effector", "white_led", "raman_laser"]
 
         self._num_diag_current = rospy.get_param("/science/info/num_diag_current")
         self._num_diag_thermistors = rospy.get_param("/science/info/num_diag_thermistors")
@@ -118,14 +126,18 @@ class ScienceBridge:
         """
         self.ser.close()
 
-    def handle_change_arm_laser_state(self, req: ChangeDeviceStateRequest) -> ChangeDeviceStateResponse:
-        """Process a request to change the laser state of the arm by issuing
+    def handle_enable_mosfet_device(self, req: EnableDeviceRequest) -> EnableDeviceResponse:
+        """Process a request to change the laser state of a device by issuing
         the command to the STM32 chip via UART.
         :param req: A boolean that is the requested arm laser state.
         :returns: A boolean that is the success of sent UART transaction.
         """
-        success = self._send_mosfet_msg("arm_laser", req.enable)
-        return ChangeDeviceStateResponse(success)
+
+        if req.name in self._allowed_mosfet_names:
+            success = self._send_mosfet_msg(req.name, req.enable)
+            return EnableDeviceResponse(success)
+
+        return EnableDeviceResponse(False)
 
     def handle_change_auton_led_state(self, req: ChangeAutonLEDStateRequest) -> ChangeAutonLEDStateResponse:
         """Process a request to change the auton LED array state by issuing
@@ -137,16 +149,16 @@ class ScienceBridge:
         success = self._auton_led_transmit(req.color.lower())
         return ChangeAutonLEDStateResponse(success)
 
-    def handle_change_heater_auto_shutoff_state(self, req: ChangeDeviceStateRequest) -> ChangeDeviceStateResponse:
+    def handle_change_heater_auto_shutoff_state(self, req: ChangeHeaterAutoShutoffStateRequest) -> ChangeHeaterAutoShutoffStateResponse:
         """Process a request to change the auto shut off state of the
         carousel heaters by issuing the command to the STM32 chip via UART.
-        :param req: A boolean that is the requested auto shut off state of the
+        :param req: A ChangeHeaterAutoShutoffStateRequest object that has
+            a boolean that is the requested auto shut off state of the
             carousel heaters.
         :returns: A boolean that is the success of sent UART transaction.
         """
-        success = self._heater_auto_shutoff_transmit(req.enable)
-        return ChangeDeviceStateResponse(success)
-
+        success = self._heater_auto_shutoff_transmit(req.device, req.enable)
+        return ChangeHeaterStateResponse(success)
     def handle_change_heater_state(self, req: ChangeHeaterStateRequest) -> ChangeHeaterStateResponse:
         """Process a request to change the carousel heater state by issuing
         the command to the STM32 chip via UART.
@@ -167,33 +179,6 @@ class ScienceBridge:
         """
         success = self._servo_transmit(req.id, req.angle)
         return ChangeServoAngleResponse(success)
-
-    def handle_change_uv_led_carousel_state(self, req: ChangeDeviceStateRequest) -> ChangeDeviceStateResponse:
-        """Process a request to change the carousel UV LED by
-        issuing the command to the STM32 chip via UART.
-        :param req: A boolean that is the requested UV LED state.
-        :returns: A boolean that is the success of sent UART transaction.
-        """
-        success = self._send_mosfet_msg("uv_led_carousel", req.enable)
-        return ChangeDeviceStateResponse(success)
-
-    def handle_change_uv_led_end_effector_state(self, req: ChangeDeviceStateRequest) -> ChangeDeviceStateResponse:
-        """Process a request to change the UV LED on the end effector by
-        issuing the command to the STM32 chip via UART.
-        :param req: A boolean that is the requested UV LED state.
-        :returns: A boolean that is the success of sent UART transaction.
-        """
-        success = self._send_mosfet_msg("uv_led_end_effector", req.enable)
-        return ChangeDeviceStateResponse(success)
-
-    def handle_change_white_led_state(self, req: ChangeDeviceStateRequest) -> ChangeDeviceStateResponse:
-        """Process a request to change the carousel white LED by
-        issuing the command to the STM32 chip via UART.
-        :param: req: A boolean that is the requested white LED state.
-        :returns: A boolean that is the success of sent UART transaction.
-        """
-        success = self._send_mosfet_msg("white_led", req.enable)
-        return ChangeDeviceStateResponse(success)
 
     def _auton_led_transmit(self, color: str) -> bool:
         """Send a UART message to the STM32 commanding the auton LED array
@@ -431,14 +416,11 @@ class ScienceBridge:
 def main():
     rospy.init_node("science")
     bridge = ScienceBridge()
-    rospy.Service("change_arm_laser_state", ChangeDeviceState, bridge.handle_change_arm_laser_state)
+    rospy.Service("enable_mosfet_device", EnableDevice, bridge.handle_enable_mosfet_device)
     rospy.Service("change_auton_led_state", ChangeAutonLEDState, bridge.handle_change_auton_led_state)
-    rospy.Service("change_heater_auto_shutoff_state", ChangeDeviceState, bridge.handle_change_heater_auto_shutoff_state)
     rospy.Service("change_heater_state", ChangeHeaterState, bridge.handle_change_heater_state)
+    rospy.Service("change_heater_auto_shutoff_state", ChangeHeaterAutoShutoffState, bridge.handle_change_heater_auto_shutoff_state)
     rospy.Service("change_servo_angles", ChangeServoAngle, bridge.handle_change_servo_angle)
-    rospy.Service("change_uv_led_carousel_state", ChangeDeviceState, bridge.handle_change_uv_led_carousel_state)
-    rospy.Service("change_uv_led_end_effector_state", ChangeDeviceState, bridge.handle_change_uv_led_end_effector_state)
-    rospy.Service("change_white_led_state", ChangeDeviceState, bridge.handle_change_white_led_state)
 
     while not rospy.is_shutdown():
         # receive() sleeps when no message is received.
