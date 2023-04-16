@@ -77,7 +77,6 @@
     <depend>tf2</depend>
     <depend>image_transport</depend>
     <depend>sensor_msgs</depend>
-    <depend>pcl_ros</depend>
     <depend>dynamic_reconfigure</depend>
     <depend>python3-cairosvg</depend>
     <depend>python3-joblib</depend>

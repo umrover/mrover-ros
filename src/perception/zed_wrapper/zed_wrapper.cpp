@@ -67,6 +67,7 @@ namespace mrover {
             mPnh.param("use_area_memory", mUseAreaMemory, true);
             mPnh.param("use_pose_smoothing", mUsePoseSmoothing, true);
             mPnh.param("use_loop_profiler", mUseLoopProfiler, true);
+            mPnh.param("use_depth_stabilization", mUseDepthStabilization, false);
             mPnh.param("depth_maximum_distance", mDepthMaximumDistance, 12.0f);
 
             if (imageWidth < 0 || imageHeight < 0) {
@@ -89,7 +90,7 @@ namespace mrover {
             } else {
                 initParameters.input.setFromCameraID(-1, sl::BUS_TYPE::USB);
             }
-            initParameters.depth_stabilization = false;
+            initParameters.depth_stabilization = mUseDepthStabilization;
             initParameters.camera_resolution = stringToZedEnum<sl::RESOLUTION>(grabResolutionString);
             initParameters.depth_mode = stringToZedEnum<sl::DEPTH_MODE>(depthModeString);
             initParameters.coordinate_units = sl::UNIT::METER;
