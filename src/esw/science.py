@@ -83,8 +83,7 @@ class ScienceBridge:
     def __init__(self) -> None:
         self._id_by_color = rospy.get_param("science/auton_color_ids")
         self._mosfet_number_by_device_name = rospy.get_param("science/device_mosfet_numbers")
-        self._allowed_mosfet_names = ["arm_laser", "uv_led_carousel",
-                                      "uv_led_end_effector", "white_led", "raman_laser"]
+        self._allowed_mosfet_names = ["arm_laser", "uv_led_carousel", "uv_led_end_effector", "white_led", "raman_laser"]
 
         self._num_diag_current = rospy.get_param("/science/info/num_diag_current")
         self._num_diag_thermistors = rospy.get_param("/science/info/num_diag_thermistors")
@@ -149,7 +148,9 @@ class ScienceBridge:
         success = self._auton_led_transmit(req.color.lower())
         return ChangeAutonLEDStateResponse(success)
 
-    def handle_change_heater_auto_shutoff_state(self, req: ChangeHeaterAutoShutoffStateRequest) -> ChangeHeaterAutoShutoffStateResponse:
+    def handle_change_heater_auto_shutoff_state(
+        self, req: ChangeHeaterAutoShutoffStateRequest
+    ) -> ChangeHeaterAutoShutoffStateResponse:
         """Process a request to change the auto shut off state of the
         carousel heaters by issuing the command to the STM32 chip via UART.
         :param req: A ChangeHeaterAutoShutoffStateRequest object that has
@@ -159,6 +160,7 @@ class ScienceBridge:
         """
         success = self._heater_auto_shutoff_transmit(req.device, req.enable)
         return ChangeHeaterStateResponse(success)
+
     def handle_change_heater_state(self, req: ChangeHeaterStateRequest) -> ChangeHeaterStateResponse:
         """Process a request to change the carousel heater state by issuing
         the command to the STM32 chip via UART.
@@ -419,7 +421,9 @@ def main():
     rospy.Service("enable_mosfet_device", EnableDevice, bridge.handle_enable_mosfet_device)
     rospy.Service("change_auton_led_state", ChangeAutonLEDState, bridge.handle_change_auton_led_state)
     rospy.Service("change_heater_state", ChangeHeaterState, bridge.handle_change_heater_state)
-    rospy.Service("change_heater_auto_shutoff_state", ChangeHeaterAutoShutoffState, bridge.handle_change_heater_auto_shutoff_state)
+    rospy.Service(
+        "change_heater_auto_shutoff_state", ChangeHeaterAutoShutoffState, bridge.handle_change_heater_auto_shutoff_state
+    )
     rospy.Service("change_servo_angles", ChangeServoAngle, bridge.handle_change_servo_angle)
 
     while not rospy.is_shutdown():
