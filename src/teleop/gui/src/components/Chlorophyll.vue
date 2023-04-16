@@ -110,7 +110,7 @@ export default {
       this.UV_carousel = !this.UV_carousel;
       let uvService = new ROSLIB.Service({
         ros: this.$ros,
-        name: "change_mosfet_device",
+        name: "enable_mosfet_device",
         serviceType: "mrover/EnableDevice",
       });
       let request = new ROSLIB.ServiceRequest({
