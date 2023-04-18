@@ -14,7 +14,7 @@ import os
 from pathlib import Path
 from util.ros_utils import get_rosparam
 
-DATAFRAME_MAX_SIZE = 200
+DATAFRAME_MAX_SIZE = get_rosparam("failure_identification/dataframe_max_size", 50)
 
 
 class FailureIdentifier:
@@ -80,17 +80,23 @@ class FailureIdentifier:
         """
         Writes the data frame to a csv file marked with timestamp
         """
-        home = Path.home()
-        path = home / "catkin_ws/src/mrover/failure_data"
-        path.mkdir(exist_ok=True)
+        if self.actively_collecting and self.data_collecting_mode:
+            # append to csv if csv exists else write to csv
+            rospy.loginfo("writing to file")
+            if self.path_name is None:
+                home = Path.home()
+                path = home / "catkin_ws/src/mrover/failure_data"
+                path.mkdir(exist_ok=True)
 
-        file_name = f"failure_data_{rospy.Time.now()}.csv"
+                file_name = f"failure_data_{rospy.Time.now()}.csv"
 
-        path = path / file_name
-        self.path_name = path
-        self._df.to_csv(path)
+                path = path / file_name
+                self.path_name = path
+                self._df.to_csv(path)
 
-        rospy.loginfo("===== failure data written to csv =====")
+                rospy.loginfo("===== failure data written to csv =====")
+            else:
+                self._df.to_csv(self.path_name, mode="a", header=False)
 
     def stuck_button_update(self, stuck_button: Bool):
         self.cur_stuck = stuck_button.data
@@ -109,17 +115,12 @@ class FailureIdentifier:
         publishes a message to the /nav_stuck topic indicating if the rover is stuck
         """
 
-        TEST_RECOVERY_STATE = get_rosparam("test_recovery_state", False)
+        TEST_RECOVERY_STATE = get_rosparam("failure_identification/test_recovery_state", False)
 
         # if the state is 'done' or 'off', write the data frame to a csv file if we were collecting
         if nav_status.active_states[0] == "DoneState" or nav_status.active_states[0] == "OffState":
+            self.write_to_csv()
             if self.actively_collecting and self.data_collecting_mode:
-                # print("writing to file")
-                rospy.loginfo("writing to file")
-                if self.path_name is None:
-                    self.write_to_csv()
-                else:
-                    self._df.to_csv(self.path_name, mode="a", header=False)
                 self.actively_collecting = False
             # return to not collect any data
             return
@@ -168,14 +169,8 @@ class FailureIdentifier:
         self.row_counter += 1
 
         if len(self._df) == DATAFRAME_MAX_SIZE:
-            if self.actively_collecting and self.data_collecting_mode:
-                # append to csv if csv exists else write to csv
-                rospy.loginfo("writing to file")
-                if self.path_name is None:
-                    self.write_to_csv()
-                else:
-                    self._df.to_csv(self.path_name, mode="a", header=False)
-            # empty
+            self.write_to_csv()
+            # empty dataframe
             self._df = pd.DataFrame(columns=self.cols)
 
             # set row counter to 0
