@@ -45,8 +45,11 @@ class RecoveryState(BaseState):
     def evaluate(self, ud) -> str:
         # Making waypoint behind the rover to go backwards
         pose = self.context.rover.get_pose()
-        # if first round
+        # if first round, set a waypoint directly behind the rover and command it to
+        # drive backwards toward it until it arrives at that point.
         if self.current_action == JTurnAction.moving_back:
+            # Only set waypoint_behind once so that it doesn't get overwritten and moved
+            # further back every iteration
             if self.waypoint_behind is None:
                 dir_vector = -1 * RECOVERY_DISTANCE * pose.rotation.direction_vector()
                 self.waypoint_behind = pose.position + dir_vector
@@ -58,12 +61,13 @@ class RecoveryState(BaseState):
                 self.current_action = JTurnAction.j_turning  # move to second part of turn
                 self.waypoint_behind = None
 
-        # if second round
+        # if second round, set a waypoint off to the side of the rover and command it to
+        # turn and drive backwards towards it until it arrives at that point. So it will begin
+        # by turning then it will drive backwards.
         if self.current_action == JTurnAction.j_turning:
             if self.waypoint_behind is None:
                 dir_vector = pose.rotation.direction_vector()
-                dir_vector_rot = RECOVERY_DISTANCE * perpendicular_2d(dir_vector[:2])
-                dir_vector = np.append(dir_vector_rot, dir_vector[2])
+                dir_vector[:2] = RECOVERY_DISTANCE * perpendicular_2d(dir_vector[:2])
                 self.waypoint_behind = pose.position + dir_vector
 
             cmd_vel, arrived_turn = get_drive_command(self.waypoint_behind, pose, STOP_THRESH, DRIVE_FWD_THRESH, True)
