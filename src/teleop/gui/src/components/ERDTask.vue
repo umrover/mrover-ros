@@ -198,10 +198,9 @@ export default {
   display: grid;
   gap: 15px;
   grid-template-columns: auto auto;
-  grid-template-rows: auto 20% 20% 20% 20%;
+  grid-template-rows: auto 40% 20% 20%;
   grid-template-areas:
     "header header"
-    "cameras moteus"
     "cameras moteus"
     "drive-vel-data pdb"
     "arm-controls arm-controls";
@@ -285,7 +284,6 @@ export default {
 
 .moteus {
   grid-area: moteus;
-  min-height: 250px;
 }
 
 .page_header {

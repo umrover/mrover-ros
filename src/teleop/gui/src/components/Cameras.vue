@@ -1,6 +1,6 @@
 <template>
   <div class="wrap">
-    <div class="block box1">
+    <div class="box1">
       <h3>Cameras</h3>
       <div class="input">
         Camera name: <input v-model="cameraName" class="box" type="message" />
@@ -17,7 +17,7 @@
         />
       </div>
     </div>
-    <div class="block box2">
+    <div class="box2">
       <h3>All Cameras</h3>
       Capacity:
       <input v-model="capacity" class="box" type="Number" min="2" max="4" />
@@ -158,10 +158,6 @@ export default {
 
 .button {
   margin: 2px;
-}
-
-.block {
-  display: block;
 }
 
 .box1 {
