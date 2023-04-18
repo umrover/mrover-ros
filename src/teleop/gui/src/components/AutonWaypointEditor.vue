@@ -49,6 +49,7 @@
         <div style="display: inline-block">
           <button @click="addWaypoint(input)">Add Waypoint</button>
           <button @click="addWaypoint(formatted_odom)">Drop Waypoint</button>
+          <button @click="showModal=true">Competition Waypoint Setup</button>
         </div>
       </div>
       <div class="box1">
@@ -122,6 +123,56 @@
         </draggable>
       </div>
     </div>
+
+    <div v-if="showModal" @close="showModal=false">
+      <transition name="modal-fade">
+        <div class="modal-backdrop">
+          <div class="modal"
+            role="dialog"
+          >
+            <header
+              class="modal-header"
+              id="modalTitle"
+            >
+              <button
+                type="button"
+                class="btn-close"
+                @click="showModal=false"
+              >
+                x
+              </button>
+            </header>
+
+            <section
+              class="modal-body"
+              id="modalDescription"
+            >
+              <slot name="body">
+                <h4>Enter your waypoints:</h4>
+                <div>
+                  <h5>Waypoint 1</h5>
+                  <label for="lat">Latitude</label>
+                  <input id="lat" v-model="waypointInput" />
+                  <label for="lon">Longitude</label>
+                  <input id="lon" v-model="waypointInput" />
+                </div>
+              </slot>
+            </section>
+
+            <footer class="modal-footer">
+              <button
+                type="button"
+                class="btn-green"
+                @click="showModal=false"
+              >
+                Submit
+              </button>
+            </footer>
+          </div>
+        </div>
+      </transition>
+    </div>
+
   </div>
 </template>
 
@@ -192,6 +243,7 @@ export default {
 
       autonButtonColor: "red",
       waitingForNav: false,
+      showModal: false,
 
       roverStuck: false,
 
@@ -558,4 +610,82 @@ export default {
 .odom {
   grid-area: odom;
 }
+
+/* Modal Classes */
+.modal-backdrop {
+    position: fixed;
+    top: 0;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    background-color: rgba(0, 0, 0, 0.3);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 100000;
+  }
+
+  .modal {
+    background: #FFFFFF;
+    box-shadow: 2px 2px 20px 1px;
+    overflow-x: auto;
+    display: flex;
+    flex-direction: column;
+    z-index: 10000;
+  }
+
+  .modal-header,
+  .modal-footer {
+    padding: 15px;
+    display: flex;
+  }
+
+  .modal-header {
+    position: relative;
+    border-bottom: 1px solid #eeeeee;
+    color: #4AAE9B;
+    justify-content: space-between;
+  }
+
+  .modal-footer {
+    border-top: 1px solid #eeeeee;
+    flex-direction: column;
+  }
+
+  .modal-body {
+    display: flex;
+    flex-direction: column;
+    position: relative;
+    padding: 20px 10px;
+  }
+
+  .btn-close {
+    position: absolute;
+    top: 0;
+    right: 0;
+    border: none;
+    font-size: 20px;
+    padding: 10px;
+    cursor: pointer;
+    font-weight: bold;
+    color: #4AAE9B;
+    background: transparent;
+  }
+
+  .btn-green {
+    color: white;
+    background: #4AAE9B;
+    border: 1px solid #4AAE9B;
+    border-radius: 2px;
+  }
+
+  .modal-fade-enter,
+  .modal-fade-leave-to {
+    opacity: 0;
+  }
+
+  .modal-fade-enter-active,
+  .modal-fade-leave-active {
+    transition: opacity .5s ease;
+  }
 </style>
