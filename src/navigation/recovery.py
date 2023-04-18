@@ -12,9 +12,9 @@ from util.np_utils import perpendicular_2d
 from util.ros_utils import get_rosparam
 
 
-STOP_THRESH = 0.2
-DRIVE_FWD_THRESH = 0.34  # 20 degrees
-RECOVERY_DISTANCE = get_rosparam("drive/recovery_distance", 1)
+STOP_THRESH = get_rosparam("recovery/stop_thresh", 0.2)
+DRIVE_FWD_THRESH = get_rosparam("recovery/drive_fwd_thresh", 0.34)  # 20 degrees
+RECOVERY_DISTANCE = get_rosparam("recovery/recovery_distance", 1.0)
 
 
 class RecoveryStateTransitions(Enum):

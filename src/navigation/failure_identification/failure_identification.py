@@ -14,7 +14,7 @@ import os
 from pathlib import Path
 from util.ros_utils import get_rosparam
 
-DATAFRAME_MAX_SIZE = 50
+DATAFRAME_MAX_SIZE = get_rosparam("failure_identification/dataframe_max_size", 50)
 
 
 class FailureIdentifier:
@@ -109,7 +109,7 @@ class FailureIdentifier:
         publishes a message to the /nav_stuck topic indicating if the rover is stuck
         """
 
-        TEST_RECOVERY_STATE = get_rosparam("test_recovery_state", False)
+        TEST_RECOVERY_STATE = get_rosparam("failure_identification/test_recovery_state", False)
 
         # if the state is 'done' or 'off', write the data frame to a csv file if we were collecting
         if nav_status.active_states[0] == "DoneState" or nav_status.active_states[0] == "OffState":
