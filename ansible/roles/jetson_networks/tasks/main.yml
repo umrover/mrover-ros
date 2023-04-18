@@ -2,8 +2,8 @@
   community.general.nmcli:
     conn_name: SwitchWiredConnection
     type: ethernet
-    ifname: eth0
-    state: present
+    ifname: ens160
+    state: absent
     autoconnect: yes
     ip4: 10.0.0.2/24
     gw4: 10.0.0.7/24

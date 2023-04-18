@@ -1,0 +1,18 @@
+- name: Add Mesa PPA
+  apt_repository:
+    repo: ppa:kisak/kisak-mesa
+
+- name: Add Mainline Kernel PPA
+  apt_repository:
+    repo: ppa:cappelikan/ppa
+
+- name: Install APT Packages
+  apt:
+    update_cache: true
+    state: latest
+    name:
+      - mainline
+
+- name: Upgrade APT Packages
+  apt:
+    upgrade: yes
