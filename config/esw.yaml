@@ -207,8 +207,8 @@ cameras:
 science:
   auton_color_ids:
     red: 0
-    blue: 1
-    green: 2
+    green: 1
+    blue: 2
     "off": 3
   device_mosfet_numbers:
     arm_laser: 6
