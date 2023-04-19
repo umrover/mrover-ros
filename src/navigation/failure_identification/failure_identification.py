@@ -130,7 +130,8 @@ class FailureIdentifier:
         self.actively_collecting = True
         cur_row = {}
         cur_row["row"] = self.row_counter
-        cur_row["time"] = rospy.Time.now()
+        time = rospy.Time.now()
+        cur_row["time"] = time.secs + (time.nsecs / 1e9)
 
         # if the stuck button is pressed, the rover is stuck (as indicated by the GUI)
         if self.cur_stuck:
@@ -155,7 +156,7 @@ class FailureIdentifier:
         
         if len(self._df) > 1:
             prev_row = self._df.tail(1).iloc[0]
-            delta_t = (cur_row["time"] - prev_row["time"]).nsecs / 1e9
+            delta_t = cur_row["time"] - prev_row["time"]
             cur_rotation = SO3(np.array([cur_row["rot_x"], cur_row["rot_y"], cur_row["rot_z"], cur_row["rot_w"]]))
             prev_rotation = SO3(np.array([prev_row["rot_x"], prev_row["rot_y"], prev_row["rot_z"], prev_row["rot_w"]]))
             yaw_velocity = prev_rotation.rot_distance_to(cur_rotation) / delta_t
