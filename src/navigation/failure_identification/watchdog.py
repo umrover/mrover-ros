@@ -21,7 +21,7 @@ class WatchDog:
         counter = 0
         self.collector.left_pointer = self.collector.right_pointer - DF_THRESHOLD
         while self.collector.left_pointer < self.collector.right_pointer:
-            actual = (dataframe.loc[dataframe["row"] == self.collector.left_pointer]["angular_velocity"]).iloc[0]
+            actual = (dataframe.loc[dataframe["row"] == self.collector.left_pointer]["calculated_angular_velocity"]).iloc[0]
             commanded = (dataframe.loc[dataframe["row"] == self.collector.left_pointer]["cmd_vel_twist"]).iloc[0]
             if actual < ANGULAR_THRESHOLD and commanded > 0:
                 counter += 1
@@ -32,7 +32,7 @@ class WatchDog:
         counter = 0
         self.collector.left_pointer = self.collector.right_pointer - DF_THRESHOLD
         while self.collector.left_pointer < self.collector.right_pointer:
-            actual = (dataframe.loc[dataframe["row"] == self.collector.left_pointer]["linear_velocity"]).iloc[0]
+            actual = (dataframe.loc[dataframe["row"] == self.collector.left_pointer]["calculated_linear_velocity"]).iloc[0]
             commanded = (dataframe.loc[dataframe["row"] == self.collector.left_pointer]["cmd_vel_x"]).iloc[0]
             if actual < LINEAR_THRESHOLD and commanded > 0:
                 counter += 1

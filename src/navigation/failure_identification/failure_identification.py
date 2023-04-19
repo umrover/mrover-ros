@@ -13,6 +13,7 @@ import numpy as np
 import os
 from pathlib import Path
 from util.ros_utils import get_rosparam
+from util.SO3 import SO3
 
 DATAFRAME_MAX_SIZE = get_rosparam("failure_identification/dataframe_max_size", 50)
 
@@ -51,7 +52,7 @@ class FailureIdentifier:
         self.stuck_publisher = rospy.Publisher("/nav_stuck", Bool, queue_size=1)
         position_variables = ["x", "y", "z"]
         rotation_variables = [f"rot_{comp}" for comp in ["x", "y", "z", "w"]]
-        velocity_variables = ["linear_velocity", "angular_velocity"]
+        velocity_variables = ["linear_velocity", "angular_velocity", "calculated_linear_velocity", "calculated_angular_velocity"]
         wheel_effort_variables = [f"wheel_{wheel_num}_effort" for wheel_num in range(6)]
         wheel_velocity_variables = [f"wheel_{wheel_num}_velocity" for wheel_num in range(6)]
         command_variables = ["cmd_vel_x", "cmd_vel_twist"]
@@ -151,11 +152,29 @@ class FailureIdentifier:
         cur_row["rot_y"] = odometry.pose.pose.orientation.y
         cur_row["rot_z"] = odometry.pose.pose.orientation.z
         cur_row["rot_w"] = odometry.pose.pose.orientation.w
+        
+        if len(self._df) > 1:
+            prev_row = self._df.tail(1).iloc[0]
+            delta_t = (cur_row["time"] - prev_row["time"]).nsecs / 1e9
+            cur_rotation = SO3(np.array([cur_row["rot_x"], cur_row["rot_y"], cur_row["rot_z"], cur_row["rot_w"]]))
+            prev_rotation = SO3(np.array([prev_row["rot_x"], prev_row["rot_y"], prev_row["rot_z"], prev_row["rot_w"]]))
+            yaw_velocity = prev_rotation.rot_distance_to(cur_rotation) / delta_t
+
+            cur_linear = np.array([cur_row["x"], cur_row["y"], cur_row["z"]])
+            prev_linear = np.array([prev_row["x"], prev_row["y"], prev_row["z"]])
+            linear_velocity = np.linalg.norm((cur_linear - prev_linear) / delta_t)
+
+            cur_row["calculated_angular_velocity"] = yaw_velocity
+            cur_row["calculated_linear_velocity"] = linear_velocity
+        else:
+            cur_row["calculated_angular_velocity"] = 0.0
+            cur_row["calculated_linear_velocity"] = 0.0
 
         # get the linear and angular velocity of the rover from odometry message
         linear_velocity_norm = np.linalg.norm(
             np.array([odometry.twist.twist.linear.x, odometry.twist.twist.linear.y, odometry.twist.twist.linear.z])
         )
+
         cur_row["linear_velocity"] = linear_velocity_norm  # type: ignore
         cur_row["angular_velocity"] = odometry.twist.twist.angular.z
 

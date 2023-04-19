@@ -40,10 +40,12 @@ class BaseState(smach.State, ABC):
         """
         if self.preempt_requested():
             self.service_preempt()
+            self.context.rover.stuck = False
             return "terminated"
         if self.context.disable_requested:
             self.context.disable_requested = False
             self.context.course = None
+            self.context.rover.stuck = False
             return "off"
         return self.evaluate(ud)
 

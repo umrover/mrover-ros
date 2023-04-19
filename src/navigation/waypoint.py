@@ -55,6 +55,7 @@ class WaypointState(BaseState):
         :param ud:  State machine user data
         :return:    Next state
         """
+        print("in waypoint")
         current_waypoint = self.context.course.current_waypoint()
         if current_waypoint is None:
             return WaypointStateTransitions.no_waypoint.name  # type: ignore
