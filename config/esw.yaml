@@ -212,6 +212,7 @@ science:
     "off": 3
   device_mosfet_numbers:
     arm_laser: 6
+    raman_laser: 0
     uv_led_carousel: 1
     uv_led_end_effector: 6
     white_led: 2
