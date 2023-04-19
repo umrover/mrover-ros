@@ -13,7 +13,13 @@ from dataclasses import dataclass
 from shapely.geometry import Point, LineString
 from mrover.msg import Waypoint, GPSWaypoint, EnableAuton, WaypointType, GPSPointList
 import pymap3d
+<<<<<<< HEAD
 from std_msgs.msg import Time, Bool
+=======
+from std_msgs.msg import Time
+from drive import Driver
+
+>>>>>>> different-odom-constants
 
 TAG_EXPIRATION_TIME_SECONDS = 60
 
@@ -33,8 +39,8 @@ class Gate:
         Creates a circular path of RADIUS around each post for checking intersection with our path
         :return: tuple of the two shapely Point objects representing the posts
         """
-        # Declare radius to 0.5 meters
-        RADIUS = 0.5
+        # Declare radius to 0.7 meters
+        RADIUS = 0.7
 
         # Find circle of both posts
         post1_shape = Point(self.post1[:2]).buffer(RADIUS)
@@ -48,6 +54,7 @@ class Rover:
     ctx: Context
     stuck: bool
     previous_state: str
+    driver: Driver = Driver()
 
     def get_pose(self, in_odom_frame: bool = False) -> SE3:
         if in_odom_frame and self.ctx.use_odom:
