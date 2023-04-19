@@ -9,19 +9,22 @@
     <!-- params for hardware interfaces including IMU, GPS, and moteus -->
     <rosparam command="load" file="$(find mrover)/config/esw.yaml"/>
 
-	<!-- IMU and GPS driver nodes -->
-	<node name="imu_driver" pkg="mrover" type="imu_driver.py" output="screen" />
-	<node name="gps_driver" pkg="nmea_navsat_driver" type="nmea_serial_driver">
-        <remap from="fix" to="gps/fix" />
+    <!-- IMU and GPS driver nodes -->
+    <node name="imu_driver" pkg="mrover" type="imu_driver.py" output="screen"/>
+    <node name="gps_driver" pkg="nmea_navsat_driver" type="nmea_serial_driver">
+        <remap from="fix" to="gps/fix"/>
     </node>
 
     <!-- teleop node for receiving commands from the gui -->
     <rosparam command="load" file="$(find mrover)/config/teleop.yaml"/>
     <node name="jetson_teleop" pkg="mrover" type="jetson_teleop.py"/>
 
-	<!-- science board node for Auton, ES, and Science missions. -->
-	<node name="science" pkg="mrover" type="science.py" output="screen"></node>
+    <!-- brushed motors node-->
+    <node name="brushed_motors" pkg="mrover" type="brushed_motors" output="screen"/>
 
-	<!-- camera node -->
-	<node name="cameras" pkg="mrover" type="cameras.py"></node>
+    <!-- science board node for Auton, ES, and Science missions. -->
+    <node name="science" pkg="mrover" type="science.py" output="screen"/>
+
+    <!-- camera node -->
+    <node name="cameras" pkg="mrover" type="cameras.py"/>
 </launch>

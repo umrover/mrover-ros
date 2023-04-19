@@ -450,6 +450,7 @@ class ArmManager(MotorsManager):
                     velocity = max(-1, min(1, velocity))
 
                 velocity *= min(self._max_rps_by_name[name], CommandData.VELOCITY_LIMIT_REV_S)
+                velocity *= self._multipliers[name]
                 self.update_bridge_velocity(name, velocity, self._torque_limit_by_name[name])
 
         self._last_updated_time_s = t.time()
