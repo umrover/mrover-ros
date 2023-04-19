@@ -198,10 +198,10 @@ private:
     // Then makes live.
     void makeLive();
 
-    // REQUIRES: buffer is valid
+    // REQUIRES: buffer is valid and limit switch is present
     // MODIFIES: limitEnable
     // EFFECTS: I2C bus, enables limit switch if it is present
-    void enableLimitSwitch(bool limitPresent, bool enable, bool& limitEnable,
+    void enableLimitSwitch(bool enable, bool& limitEnable,
                            uint8_t operation, uint8_t write_bytes, uint8_t read_bytes);
 
     uint8_t deviceAddress;

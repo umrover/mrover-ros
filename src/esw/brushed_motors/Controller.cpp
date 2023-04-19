@@ -130,10 +130,14 @@ void Controller::enableLimitSwitches(bool enable) {
     try {
         makeLive();
 
-        enableLimitSwitch(limitAPresent, enable, limitAEnable,
-                          ENABLE_LIMIT_A_OP, ENABLE_LIMIT_A_WB, ENABLE_LIMIT_A_RB);
-        enableLimitSwitch(limitBPresent, enable, limitBEnable,
+        if (limitAPresent) {
+            enableLimitSwitch(enable, limitAEnable,
+                                ENABLE_LIMIT_A_OP, ENABLE_LIMIT_A_WB, ENABLE_LIMIT_A_RB);
+        }
+        if (limitBPresent) {
+            enableLimitSwitch(enable, limitBEnable,
                           ENABLE_LIMIT_B_OP, ENABLE_LIMIT_B_WB, ENABLE_LIMIT_B_RB);
+        }
 
     } catch (IOFailure& e) {
         ROS_ERROR("enableLimitSwitches failed on %s", name.c_str());
@@ -143,26 +147,22 @@ void Controller::enableLimitSwitches(bool enable) {
 // REQUIRES: buffer is valid
 // MODIFIES: limitEnable
 // EFFECTS: I2C bus, enables limit switch if it is present
-void Controller::enableLimitSwitch(bool limitPresent, bool enable, bool& limitEnable,
+void Controller::enableLimitSwitch(bool enable, bool& limitEnable,
                                    uint8_t operation, uint8_t write_bytes, uint8_t read_bytes) {
 
     uint8_t buffer[1];
 
-    limitEnable = limitPresent && enable;
+    limitEnable = enable;
 
-    if (limitPresent) {
-
-        try {
-            memcpy(buffer, UINT8_POINTER_T(&limitEnable), sizeof(limitEnable));
-            I2C::transact(deviceAddress, motorIDRegMask | operation, write_bytes,
-                          read_bytes, buffer, nullptr);
-        } catch (IOFailure& e) {
-            ROS_ERROR("enableLimitSwitch failed on %s", name.c_str());
-        }
-
-    } else {
-        ROS_INFO("CANNOT ENABLE LIMIT THAT IS NOT PRESENT");
+    try {
+        memcpy(buffer, UINT8_POINTER_T(&limitEnable), sizeof(limitEnable));
+        I2C::transact(deviceAddress, motorIDRegMask | operation, write_bytes,
+                      read_bytes, buffer, nullptr);
+    } catch (IOFailure& e) {
+        ROS_ERROR("enableLimitSwitch failed on %s", name.c_str());
     }
+
+
 }
 
 
