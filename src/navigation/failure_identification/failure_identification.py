@@ -14,7 +14,7 @@ import os
 from pathlib import Path
 from util.ros_utils import get_rosparam
 
-DATAFRAME_MAX_SIZE = get_rosparam("failure_identification/dataframe_max_size", 50)
+DATAFRAME_MAX_SIZE = get_rosparam("failure_identification/dataframe_max_size", 200)
 
 
 class FailureIdentifier:
