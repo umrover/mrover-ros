@@ -132,11 +132,11 @@ void Controller::enableLimitSwitches(bool enable) {
 
         if (limitAPresent) {
             enableLimitSwitch(enable, limitAEnable,
-                                ENABLE_LIMIT_A_OP, ENABLE_LIMIT_A_WB, ENABLE_LIMIT_A_RB);
+                                motorIDRegMask | ENABLE_LIMIT_A_OP, ENABLE_LIMIT_A_WB, ENABLE_LIMIT_A_RB);
         }
         if (limitBPresent) {
             enableLimitSwitch(enable, limitBEnable,
-                          ENABLE_LIMIT_B_OP, ENABLE_LIMIT_B_WB, ENABLE_LIMIT_B_RB);
+                          motorIDRegMask | ENABLE_LIMIT_B_OP, ENABLE_LIMIT_B_WB, ENABLE_LIMIT_B_RB);
         }
 
     } catch (IOFailure& e) {

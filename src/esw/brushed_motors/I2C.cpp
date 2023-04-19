@@ -2,7 +2,7 @@
 
 // REQUIRES: device_file is the i2c device file
 // e.g. /dev/i2c-0, /dev/i2c-1, etc.
-// MODIFIES: nothingSo when the
+// MODIFIES: nothing
 // EFFECTS: Opens the I2C bus.
 void I2C::init(std::string& device_file) {
     file = open(device_file.c_str(), O_RDWR);
