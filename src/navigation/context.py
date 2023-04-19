@@ -13,13 +13,9 @@ from dataclasses import dataclass
 from shapely.geometry import Point, LineString
 from mrover.msg import Waypoint, GPSWaypoint, EnableAuton, WaypointType, GPSPointList
 import pymap3d
-<<<<<<< HEAD
 from std_msgs.msg import Time, Bool
-=======
-from std_msgs.msg import Time
 from drive import Driver
 
->>>>>>> different-odom-constants
 
 TAG_EXPIRATION_TIME_SECONDS = 60
 
