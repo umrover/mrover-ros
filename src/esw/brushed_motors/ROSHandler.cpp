@@ -11,7 +11,7 @@ void ROSHandler::init(ros::NodeHandle* rosNode) {
     calibrateService = n->advertiseService<mrover::CalibrateMotors::Request, mrover::CalibrateMotors::Response>("calibrate", processMotorCalibrate);
     adjustService = n->advertiseService<mrover::AdjustMotors::Request, mrover::AdjustMotors::Response>("adjust", processMotorAdjust);
     adjustUsingAbsEncService = n->advertiseService<mrover::AdjustMotors::Request, mrover::AdjustMotors::Response>("adjust_using_abs_enc", processMotorAdjustUsingAbsEnc);
-    enableLimitSwitchService = n->advertiseService<mrover::EnableDevice::Request, mrover::EnableDevice::Response>("enable_limit_switch", processMotorEnableLimitSwitches);
+    enableLimitSwitchService = n->advertiseService<mrover::EnableDevice::Request, mrover::EnableDevice::Response>("enable_limit_switches", processMotorEnableLimitSwitches);
 
     // Initialize robotic arm (RA)
     RANames = {"joint_a", "joint_b", "joint_f", "finger", "gripper"};
