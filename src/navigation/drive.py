@@ -1,4 +1,6 @@
+from __future__ import annotations
 from typing import Tuple
+
 
 import numpy as np
 import rospy
@@ -14,18 +16,21 @@ def get_drive_command(
     rover_pose: SE3,
     completion_thresh: float,
     turn_in_place_thresh: float,
+    drive_back: bool = False,
 ) -> Tuple[Twist, bool]:
     """
     :param target_pos:              Target position to drive to.
     :param rover_pose:              Current rover pose.
     :param completion_thresh:       If the distance to the target is less than this stop.
-    :param turn_in_place_thresh     Minimum cosine of the angle in between the target and current heading
+    :param turn_in_place_thresh:    Minimum cosine of the angle in between the target and current heading
                                     in order to drive forward. When below, turn in place.
-    :return:                        Rover drive effort command.
+    :param drive_back:              True if the rover needs to move backward.
+    :return:                        Rover drive effort command and a bool indicating whether or not
+                                    the rover arrived at the target position.
     """
 
-    MAX_DRIVING_EFFORT = get_rosparam("drive/max_driving_effort", 1)
-    MIN_DRIVING_EFFORT = get_rosparam("drive/min_driving_effort", -1)
+    MAX_DRIVING_EFFORT = get_rosparam("drive/max_driving_effort", 1.0)
+    MIN_DRIVING_EFFORT = get_rosparam("drive/min_driving_effort", -1.0)
     TURNING_P = get_rosparam("drive/turning_p", 10.0)
 
     if not (0.0 < turn_in_place_thresh < 1.0):
@@ -44,23 +49,28 @@ def get_drive_command(
     if target_dist == 0:
         target_dist = np.finfo(float).eps
 
-    alignment = angle_to_rotate(rover_dir, target_dir)
+    if drive_back:
+        rover_dir *= -1
 
+    alignment = angle_to_rotate(rover_dir, target_dir)
     if target_dist < completion_thresh:
         return Twist(), True
 
     cmd_vel = Twist()
     full_turn_override = True
     if abs(alignment) < turn_in_place_thresh:
-        # We are pretty aligned so we can drive straight
         error = target_dist
         cmd_vel.linear.x = np.clip(error, 0.0, MAX_DRIVING_EFFORT)
+        if drive_back:
+            cmd_vel.linear.x *= -1
         full_turn_override = False
 
     # we want to drive the angular offset to zero so the error is just 0 - alignment
     error = alignment
+
     cmd_vel.angular.z = (
         np.sign(error) if full_turn_override else np.clip(error * TURNING_P, MIN_DRIVING_EFFORT, MAX_DRIVING_EFFORT)
     )
+
     print(cmd_vel.linear.x, cmd_vel.angular.z)
     return cmd_vel, False
