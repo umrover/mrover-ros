@@ -130,44 +130,30 @@ void Controller::enableLimitSwitches(bool enable) {
     makeLive();
 
     if (limitAPresent) {
-        enableLimitSwitch(
-            enable,
-            limitAEnable,
-            motorIDRegMask | ENABLE_LIMIT_A_OP,
-            ENABLE_LIMIT_A_WB,
-            ENABLE_LIMIT_A_RB
-        );
+        enableLimitSwitch(enable, limitAEnable, motorIDRegMask | ENABLE_LIMIT_A_OP);
     }
     if (limitBPresent) {
-        enableLimitSwitch(
-            enable,
-            limitBEnable,
-            motorIDRegMask | ENABLE_LIMIT_B_OP,
-            ENABLE_LIMIT_B_WB,
-            ENABLE_LIMIT_B_RB
-        );
+        enableLimitSwitch(enable, limitBEnable, motorIDRegMask | ENABLE_LIMIT_B_OP);
     }
 }
 
 // REQUIRES: buffer is valid
 // MODIFIES: limitEnable
 // EFFECTS: I2C bus, enables limit switch if it is present
-void Controller::enableLimitSwitch(bool enable, bool& limitEnable,
-                                   uint8_t operation, uint8_t write_bytes, uint8_t read_bytes) {
-    uint8_t buffer[1];
+void Controller::enableLimitSwitch(bool enable, bool& limitEnable, uint8_t operation) {
+    uint8_t buffer[ENABLE_LIMIT_WB];
 
     try {
         memcpy(buffer, UINT8_POINTER_T(&limitEnable), sizeof(limitEnable));
-        I2C::transact(deviceAddress, motorIDRegMask | operation, write_bytes,
-                      read_bytes, buffer, nullptr);
+        I2C::transact(deviceAddress, motorIDRegMask | operation, ENABLE_LIMIT_WB,
+                      ENABLE_LIMIT_RB, buffer, nullptr);
 
+        // Only set limitEnable if transaction was successful.
         limitEnable = enable;
     }
     catch (IOFailure& e) {
         ROS_ERROR("enableLimitSwitch failed on %s", name.c_str());
     }
-
-
 }
 
 
