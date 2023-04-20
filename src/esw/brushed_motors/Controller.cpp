@@ -186,15 +186,19 @@ bool Controller::getLimitSwitchEnabled() const {
 
 // REQUIRES: nothing
 // MODIFIES: nothing
-// EFFECTS: turns on the controller. Can be used as a way to tick the watchdog for a particular mcu.
+// EFFECTS: I2C bus, and turns on the controller. Can be used as a way to tick the watchdog for a particular mcu.
 void Controller::turnOn() const {
+    try {
     I2C::transact(deviceAddress, motorIDRegMask | ON_OP, ON_WB, ON_RB,
                   nullptr, nullptr);
+    } catch (IOFailure& e) {
+        ROS_ERROR("turnOn failed on %s", name.c_str());
+    }
 }
 
 // REQUIRES: nothing
 // MODIFIES: isLive
-// EFFECTS: I2C bus, If not already live,
+// EFFECTS: I2C bus, if not already live,
 // configures the physical controller.
 // Then makes live.
 void Controller::makeLive() {

@@ -179,7 +179,7 @@ public:
 
     // REQUIRES: nothing
     // MODIFIES: nothing
-    // EFFECTS: turns on the controller. Can be used as a way to tick the watchdog for a particular mcu.
+    // EFFECTS: I2C bus, and turns on the controller. Can be used as a way to tick the watchdog for a particular mcu.
     void turnOn() const;
 
 
