@@ -15,7 +15,7 @@ from pathlib import Path
 from util.ros_utils import get_rosparam
 from util.SO3 import SO3
 
-DATAFRAME_MAX_SIZE = get_rosparam("failure_identification/dataframe_max_size", 50)
+DATAFRAME_MAX_SIZE = get_rosparam("failure_identification/dataframe_max_size", 200)
 
 
 class FailureIdentifier:
@@ -33,8 +33,6 @@ class FailureIdentifier:
     path_name: Path
     data_collecting_mode: bool
     cols: list
-    left_pointer: int
-    right_pointer: int
     row_counter: int
 
     def __init__(self):
@@ -71,8 +69,6 @@ class FailureIdentifier:
         )
         print(self.cols)
         self._df = pd.DataFrame(columns=self.cols)
-        self.left_pointer = 0
-        self.right_pointer = 0
         self.row_counter = 0
         self.watchdog = WatchDog(self)
         self.path_name = None  # type: ignore

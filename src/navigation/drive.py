@@ -70,9 +70,7 @@ class Driver:
         angle_error = angle_to_rotate(rover_dir, target_dir)
 
         output = Twist(), False
-        print(f"drive state: {self._driver_state}")
         if self._driver_state == self.DriveMode.STOPPED:
-            print("stopped")
             if self._is_complete(target_pos, rover_pose, completion_thresh):
                 output = Twist(), True
             else:
@@ -80,7 +78,6 @@ class Driver:
                 output = Twist(), False
 
         elif self._driver_state == self.DriveMode.TURN_IN_PLACE:
-            print("turn in place")
             if self._is_complete(target_pos, rover_pose, completion_thresh):
                 self._driver_state = self.DriveMode.STOPPED
                 output = Twist(), True
@@ -98,7 +95,6 @@ class Driver:
             output = cmd_vel, False
 
         elif self._driver_state == self.DriveMode.DRIVE_FORWARD:
-            print("drive forward")
             if self._is_complete(target_pos, rover_pose, completion_thresh):
                 self._driver_state = self.DriveMode.STOPPED
                 output = Twist(), True
