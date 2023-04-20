@@ -48,9 +48,15 @@ class Gate:
 @dataclass
 class Rover:
     ctx: Context
+<<<<<<< HEAD
     stuck: bool
     previous_state: str
     driver: Driver = Driver()
+=======
+    driver: Driver = Driver()
+    stuck: bool
+    previous_state: str
+>>>>>>> different-odom-constants
 
     def get_pose(self, in_odom_frame: bool = False) -> SE3:
         if in_odom_frame and self.ctx.use_odom:

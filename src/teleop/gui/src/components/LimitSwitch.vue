@@ -38,7 +38,7 @@ export default {
   created: function () {
     this.limit_service = new ROSLIB.Service({
       ros: this.$ros,
-      name: "enable_limit_switches",
+      name: "enable_limit_switch",
       serviceType: "mrover/EnableDevice",
     });
     // Set the initial state of the limit switch to be enabled
