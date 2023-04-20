@@ -44,4 +44,4 @@ if __name__ == "__main__":
             pub.publish(NetworkBandwidth(tx_speed, rx_speed))
 
     else:
-        rospy.logerr(f'Node {rospy.get_name()} cannot locate valid network interface.')
+        rospy.logerr(f"Node {rospy.get_name()} cannot locate valid network interface.")
