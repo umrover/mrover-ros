@@ -118,7 +118,7 @@ class Driver:
             output = cmd_vel, False
 
         if drive_back:
-            cmd_vel.linear.x *= -1
+            output[0].linear.x *= -1
         
         self._last_angular_error = angle_error
         return output
