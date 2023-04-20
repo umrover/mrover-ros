@@ -185,6 +185,14 @@ bool Controller::getLimitSwitchEnabled() const {
 }
 
 // REQUIRES: nothing
+// MODIFIES: nothing
+// EFFECTS: turns on the controller. Can be used as a way to tick the watchdog for a particular mcu.
+void Controller::turnOn() const {
+    I2C::transact(deviceAddress, motorIDRegMask | ON_OP, ON_WB, ON_RB,
+                  nullptr, nullptr);
+}
+
+// REQUIRES: nothing
 // MODIFIES: isLive
 // EFFECTS: I2C bus, If not already live,
 // configures the physical controller.
@@ -217,28 +225,28 @@ void Controller::makeLive() {
                       CONFIG_K_RB, buffer, nullptr);
 
         memcpy(buffer, UINT8_POINTER_T(&limitAPresent), sizeof(limitAPresent));
-        I2C::transact(deviceAddress, motorIDRegMask | ENABLE_LIMIT_A_OP, ENABLE_LIMIT_A_WB,
-                      ENABLE_LIMIT_A_RB, buffer, nullptr);
+        I2C::transact(deviceAddress, motorIDRegMask | ENABLE_LIMIT_A_OP, ENABLE_LIMIT_WB,
+                      ENABLE_LIMIT_RB, buffer, nullptr);
 
         memcpy(buffer, UINT8_POINTER_T(&limitBPresent), sizeof(limitBPresent));
-        I2C::transact(deviceAddress, motorIDRegMask | ENABLE_LIMIT_B_OP, ENABLE_LIMIT_B_WB,
-                      ENABLE_LIMIT_B_RB, buffer, nullptr);
+        I2C::transact(deviceAddress, motorIDRegMask | ENABLE_LIMIT_B_OP, ENABLE_LIMIT_WB,
+                      ENABLE_LIMIT_RB, buffer, nullptr);
 
         memcpy(buffer, UINT8_POINTER_T(&limitAIsActiveHigh), sizeof(limitAIsActiveHigh));
-        I2C::transact(deviceAddress, motorIDRegMask | ACTIVE_LIMIT_A_OP, ACTIVE_LIMIT_A_WB,
-                      ACTIVE_LIMIT_A_RB, buffer, nullptr);
+        I2C::transact(deviceAddress, motorIDRegMask | ACTIVE_LIMIT_A_OP, ACTIVE_LIMIT_WB,
+                      ACTIVE_LIMIT_RB, buffer, nullptr);
 
         memcpy(buffer, UINT8_POINTER_T(&limitBIsActiveHigh), sizeof(limitBIsActiveHigh));
-        I2C::transact(deviceAddress, motorIDRegMask | ACTIVE_LIMIT_B_OP, ACTIVE_LIMIT_B_WB,
-                      ACTIVE_LIMIT_B_RB, buffer, nullptr);
+        I2C::transact(deviceAddress, motorIDRegMask | ACTIVE_LIMIT_B_OP, ACTIVE_LIMIT_WB,
+                      ACTIVE_LIMIT_RB, buffer, nullptr);
 
         memcpy(buffer, UINT8_POINTER_T(&limitAAdjustedCounts), sizeof(limitAAdjustedCounts));
-        I2C::transact(deviceAddress, motorIDRegMask | COUNTS_LIMIT_A_OP, COUNTS_LIMIT_A_WB,
-                      COUNTS_LIMIT_A_RB, buffer, nullptr);
+        I2C::transact(deviceAddress, motorIDRegMask | COUNTS_LIMIT_A_OP, COUNTS_LIMIT_WB,
+                      COUNTS_LIMIT_RB, buffer, nullptr);
 
         memcpy(buffer, UINT8_POINTER_T(&limitBAdjustedCounts), sizeof(limitBAdjustedCounts));
-        I2C::transact(deviceAddress, motorIDRegMask | COUNTS_LIMIT_B_OP, COUNTS_LIMIT_B_WB,
-                      COUNTS_LIMIT_B_RB, buffer, nullptr);
+        I2C::transact(deviceAddress, motorIDRegMask | COUNTS_LIMIT_B_OP, COUNTS_LIMIT_WB,
+                      COUNTS_LIMIT_RB, buffer, nullptr);
 
 
         memcpy(buffer, UINT8_POINTER_T(&limitAIsFwd), sizeof(limitAIsFwd));

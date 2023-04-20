@@ -78,6 +78,7 @@ std::optional<float> ROSHandler::moveControllerOpenLoop(const std::string& name,
 // EFFECTS: Moves the RA joints in open loop and publishes angle data right after.
 // Note: any invalid controllers will be published with a position of 0.
 void ROSHandler::moveRA(const sensor_msgs::JointState::ConstPtr& msg) {
+    tickAllMCUs();
     int mappedIndex = 0;
     for (size_t i = 0; i < msg->name.size(); ++i) {
         if ((i == 2) || (i == 3) || (i == 4)) {
@@ -101,6 +102,7 @@ void ROSHandler::moveRA(const sensor_msgs::JointState::ConstPtr& msg) {
 // MODIFIES: nothing
 // EFFECTS: Determine if a controller is calibrated
 std::optional<bool> ROSHandler::getControllerCalibrated(const std::string& name) {
+    tickAllMCUs();
     auto controller_iter = ControllerMap::controllersByName.find(name);
 
     if (controller_iter == ControllerMap::controllersByName.end()) {
@@ -116,6 +118,7 @@ std::optional<bool> ROSHandler::getControllerCalibrated(const std::string& name)
 // MODIFIES: nothing
 // EFFECTS: Moves the SA joints in open loop and publishes angle data right after.
 void ROSHandler::moveSA(const sensor_msgs::JointState::ConstPtr& msg) {
+    tickAllMCUs();
     for (size_t i = 0; i < SANames.size(); ++i) {
         std::optional<float> pos = moveControllerOpenLoop(SANames[i], (float) msg->velocity[i]);
         jointDataSA.position[i] = pos.value_or(0.0);
@@ -131,6 +134,7 @@ void ROSHandler::moveSA(const sensor_msgs::JointState::ConstPtr& msg) {
 // MODIFIES: nothing
 // EFFECTS: Moves the cache in open loop.
 void ROSHandler::moveCache(const sensor_msgs::JointState::ConstPtr& msg) {
+    tickAllMCUs();
     moveControllerOpenLoop("cache", (float) msg->velocity[0]);
 }
 
@@ -138,6 +142,7 @@ void ROSHandler::moveCache(const sensor_msgs::JointState::ConstPtr& msg) {
 // MODIFIES: nothing
 // EFFECTS: Moves the carousel in either open loop or closed loop depending on msg.
 void ROSHandler::moveCarousel(const mrover::Carousel::ConstPtr& msg) {
+    tickAllMCUs();
     if (msg->open_loop) {
         moveControllerOpenLoop("carousel", (float) msg->vel);
     } else {
@@ -153,6 +158,7 @@ void ROSHandler::moveCarousel(const mrover::Carousel::ConstPtr& msg) {
 // MODIFIES: nothing
 // EFFECTS: Moves a mast gimbal in open loop.
 void ROSHandler::moveMastGimbal(const mrover::MastGimbal::ConstPtr& msg) {
+    tickAllMCUs();
     moveControllerOpenLoop("mast_gimbal_up_down", (float) msg->up_down);
     moveControllerOpenLoop("mast_gimbal_left_right", (float) msg->left_right);
 }
@@ -161,6 +167,7 @@ void ROSHandler::moveMastGimbal(const mrover::MastGimbal::ConstPtr& msg) {
 // MODIFIES: res
 // EFFECTS: sends a move/calibration command to the mcu
 bool ROSHandler::processMotorCalibrate(mrover::CalibrateMotors::Request& req, mrover::CalibrateMotors::Response& res) {
+    tickAllMCUs();
     auto controller_iter = ControllerMap::controllersByName.find(req.name);
 
     if (controller_iter == ControllerMap::controllersByName.end()) {
@@ -173,7 +180,7 @@ bool ROSHandler::processMotorCalibrate(mrover::CalibrateMotors::Request& req, mr
 
     // Determine if calibration is needed
     bool isCalibrated = controller->isCalibrated();
-    publish_calibration_data_using_name(req.name, isCalibrated);
+    publishCalibrationDataUsingName(req.name, isCalibrated);
 
     bool shouldCalibrate = !isCalibrated && controller->getLimitSwitchEnabled();
 
@@ -192,7 +199,7 @@ bool ROSHandler::processMotorCalibrate(mrover::CalibrateMotors::Request& req, mr
 // MODIFIES: res
 // EFFECTS: hard sets the requested controller angle
 bool ROSHandler::processMotorAdjust(mrover::AdjustMotors::Request& req, mrover::AdjustMotors::Response& res) {
-
+    tickAllMCUs();
     auto controller_iter = ControllerMap::controllersByName.find(req.name);
 
     if (controller_iter == ControllerMap::controllersByName.end()) {
@@ -203,7 +210,7 @@ bool ROSHandler::processMotorAdjust(mrover::AdjustMotors::Request& req, mrover::
 
     auto& [name, controller] = *controller_iter;
     controller->overrideCurrentAngle(req.value);
-    publish_calibration_data_using_name(req.name, controller->isCalibrated());
+    publishCalibrationDataUsingName(req.name, controller->isCalibrated());
 
     res.success = true;
     res.abs_enc_rad = controller->getAbsoluteEncoderValue();
@@ -215,7 +222,7 @@ bool ROSHandler::processMotorAdjust(mrover::AdjustMotors::Request& req, mrover::
 // MODIFIES: res
 // EFFECTS: takes the current absolute encoder value, applies an offset, and hard sets the new angle
 bool ROSHandler::processMotorAdjustUsingAbsEnc(mrover::AdjustMotors::Request& req, mrover::AdjustMotors::Response& res) {
-
+    tickAllMCUs();
     auto controller_iter = ControllerMap::controllersByName.find(req.name);
 
     if (controller_iter == ControllerMap::controllersByName.end()) {
@@ -228,7 +235,7 @@ bool ROSHandler::processMotorAdjustUsingAbsEnc(mrover::AdjustMotors::Request& re
     float abs_enc_value = controller->getAbsoluteEncoderValue();
     float new_value = req.value - abs_enc_value;
     controller->overrideCurrentAngle(new_value);
-    publish_calibration_data_using_name(req.name, controller->isCalibrated());
+    publishCalibrationDataUsingName(req.name, controller->isCalibrated());
 
     res.success = true;
     res.abs_enc_rad = abs_enc_value;
@@ -240,7 +247,7 @@ bool ROSHandler::processMotorAdjustUsingAbsEnc(mrover::AdjustMotors::Request& re
 // MODIFIES: res
 // EFFECTS: disables or enables limit switches
 bool ROSHandler::processMotorEnableLimitSwitches(mrover::EnableDevice::Request& req, mrover::EnableDevice::Response& res) {
-
+    tickAllMCUs();
     auto controller_iter = ControllerMap::controllersByName.find(req.name);
 
     if (controller_iter == ControllerMap::controllersByName.end()) {
@@ -256,10 +263,37 @@ bool ROSHandler::processMotorEnableLimitSwitches(mrover::EnableDevice::Request& 
     return true;
 }
 
+// REQUIRES: mcu_id is a valid mcu_id
+// MODIFIES: nothing
+// EFFECTS: resets the tick of a watchdog for a particular mcu using the On function
+void ROSHandler::tickMCU(int mcu_id) {
+    std::string dummy_mcu_string = "dummy_mcu_" + std::to_string(mcu_id);
+    auto controller_iter = ControllerMap::controllersByName.find(dummy_mcu_string);
+
+    if (controller_iter == ControllerMap::controllersByName.end()) {
+        ROS_ERROR("Could not find controller named %s.", dummy_mcu_string.c_str());
+    }
+
+    auto& [_, dummy_mcu_controller] = *controller_iter;
+
+    // The turn on function does nothing but keep the controller alive.
+    // This can be used as a way to keep the MCU from resetting due to its watchdog timer.
+    dummy_mcu_controller->turnOn();
+}
+
+// REQUIRES: mcu_id is a valid mcu_id
+// MODIFIES: nothing
+// EFFECTS: resets the tick of a watchdog for all MCUs
+void ROSHandler::tickAllMCUs() {
+    tickMCU(1);
+    tickMCU(2);
+}
+
 // REQUIRES: name is the name of a controller and isCalibrated is whether it is calibrated
 // MODIFIES: static variables
 // EFFECTS: Publishes calibration status to the proper topic depending on the name
-void ROSHandler::publish_calibration_data_using_name(const std::string& name, bool isCalibrated) {
+void ROSHandler::publishCalibrationDataUsingName(const std::string& name, bool isCalibrated) {
+    tickAllMCUs();
     auto ra_iter = std::find(RANames.begin(), RANames.end(), name);
     if (ra_iter != RANames.end()) {
         std::size_t ra_idx = std::distance(RANames.begin(), ra_iter);
