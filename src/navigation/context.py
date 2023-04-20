@@ -13,9 +13,9 @@ from dataclasses import dataclass
 from shapely.geometry import Point, LineString
 from mrover.msg import Waypoint, GPSWaypoint, EnableAuton, WaypointType, GPSPointList
 import pymap3d
-from std_msgs.msg import Time
 from drive import Driver
 
+from std_msgs.msg import Time, Bool
 
 TAG_EXPIRATION_TIME_SECONDS = 60
 
@@ -49,6 +49,8 @@ class Gate:
 class Rover:
     ctx: Context
     driver: Driver = Driver()
+    stuck: bool
+    previous_state: str
 
     def get_pose(self, in_odom_frame: bool = False) -> SE3:
         if in_odom_frame and self.ctx.use_odom:
@@ -254,6 +256,7 @@ class Context:
     gate_path_publisher: rospy.Publisher
     vis_publisher: rospy.Publisher
     course_listener: rospy.Subscriber
+    stuck_listener: rospy.Subscriber
 
     # Use these as the primary interfaces in states
     course: Optional[Course]
@@ -276,8 +279,9 @@ class Context:
         self.gate_path_publisher = rospy.Publisher("gate_path", GPSPointList, queue_size=1)
         self.gate_point_publisher = rospy.Publisher("estimated_gate_location", GPSPointList, queue_size=1)
         self.enable_auton_service = rospy.Service("enable_auton", mrover.srv.PublishEnableAuton, self.recv_enable_auton)
+        self.stuck_listener = rospy.Subscriber("nav_stuck", Bool, self.stuck_callback)
         self.course = None
-        self.rover = Rover(self)
+        self.rover = Rover(self, False, "")
         self.env = Environment(self)
         self.disable_requested = False
         self.use_odom = rospy.get_param("use_odom_frame")
@@ -292,3 +296,6 @@ class Context:
         else:
             self.disable_requested = True
         return mrover.srv.PublishEnableAutonResponse(True)
+
+    def stuck_callback(self, msg: Bool):
+        self.rover.stuck = msg.data

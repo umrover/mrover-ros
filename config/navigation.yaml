@@ -31,3 +31,12 @@ waypoint:
   stop_thresh: 0.5
   drive_fwd_thresh: 0.34
   no_fiducial: -1
+
+recovery:
+  stop_thresh: 0.2
+  drive_fwd_thresh: 0.34
+  recovery_distance: 1.0 # distance the rover moves back in each leg of j-turn
+
+failure_identification:
+  dataframe_max_size: 50
+  test_recovery_state: True

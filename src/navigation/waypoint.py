@@ -18,6 +18,8 @@ class WaypointStateTransitions(Enum):
     no_waypoint = "DoneState"
     find_approach_post = "ApproachPostState"
     go_to_gate = "GateTraverseState"
+    recovery_state = "RecoveryState"
+    partial_gate = "PartialGateState"
 
 
 class WaypointState(BaseState):
@@ -61,6 +63,8 @@ class WaypointState(BaseState):
         if self.context.course.look_for_gate():
             if self.context.env.current_gate() is not None:
                 return WaypointStateTransitions.go_to_gate.name  # type: ignore
+            if self.context.env.current_fid_pos() is not None or self.context.env.other_gate_fid_pos() is not None:
+                return WaypointStateTransitions.partial_gate.name  # type: ignore
         if self.context.course.look_for_post():
             if self.context.env.current_fid_pos() is not None:
                 return WaypointStateTransitions.find_approach_post.name  # type: ignore
@@ -81,6 +85,12 @@ class WaypointState(BaseState):
                 else:
                     # We finished a waypoint associated with a fiducial id, but we have not seen it yet.
                     return WaypointStateTransitions.search_at_waypoint.name  # type: ignore
+
+            if self.context.rover.stuck:
+                # Removed .name
+                self.context.rover.previous_state = WaypointStateTransitions.continue_waypoint_traverse.name  # type: ignore
+                return WaypointStateTransitions.recovery_state.name  # type: ignore
+
             self.context.rover.send_drive_command(cmd_vel)
 
         except (

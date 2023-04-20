@@ -13,6 +13,7 @@ class ApproachPostStateTransitions(Enum):
     finished_fiducial = "WaypointState"
     continue_fiducial_id = "ApproachPostState"
     no_fiducial = "SearchState"
+    recovery_state = "RecoveryState"
 
 
 class ApproachPostState(WaypointState):

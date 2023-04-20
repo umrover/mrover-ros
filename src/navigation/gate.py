@@ -196,6 +196,7 @@ class GateTraverseStateTransitions(Enum):
     no_gate = "SearchState"
     finished_gate = "DoneState"
     continue_gate_traverse = "GateTraverseState"
+    recovery_state = "RecoveryState"
 
 
 class GateTraverseState(BaseState):
@@ -246,8 +247,12 @@ class GateTraverseState(BaseState):
             in_odom=self.context.use_odom,
         )
 
+        if self.context.rover.stuck:
+            self.context.rover.previous_state = GateTraverseStateTransitions.continue_gate_traverse.name  # type: ignore
+            return GateTraverseStateTransitions.recovery_state.name  # type: ignore
+
         # self.context.gate_path_publisher.publish(
-        #    GPSPointList([convert_cartesian_to_gps(pt) for pt in self.traj.coordinates])
+        #     GPSPointList([convert_cartesian_to_gps(pt) for pt in self.traj.coordinates])
         # )
         self.context.gate_point_publisher.publish(
             GPSPointList([convert_cartesian_to_gps(p) for p in [gate.post1, gate.post2]])
