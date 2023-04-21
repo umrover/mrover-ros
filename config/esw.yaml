@@ -1,7 +1,3 @@
-auton_led_driver:
-  port: "/dev/ttyACM0"
-  baud: 115200
-
 gps_driver:
   port: "/dev/gps"
   baud: 115200
