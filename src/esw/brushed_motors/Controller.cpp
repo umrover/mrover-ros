@@ -127,8 +127,6 @@ bool Controller::isCalibrated() {
 // MODIFIES: nothing
 // EFFECTS: I2C bus, enables or disables limit switches
 void Controller::enableLimitSwitches(bool enable) {
-    makeLive();
-
     if (limitAPresent) {
         enableLimitSwitch(enable, limitAEnable, motorIDRegMask | ENABLE_LIMIT_A_OP);
     }
@@ -144,6 +142,8 @@ void Controller::enableLimitSwitch(bool enable, bool& limitEnable, uint8_t opera
     uint8_t buffer[ENABLE_LIMIT_WB];
 
     try {
+        makeLive();
+
         memcpy(buffer, UINT8_POINTER_T(&limitEnable), sizeof(limitEnable));
         I2C::transact(deviceAddress, motorIDRegMask | operation, ENABLE_LIMIT_WB,
                       ENABLE_LIMIT_RB, buffer, nullptr);
