@@ -424,7 +424,7 @@ def main():
     rospy.Service(
         "change_heater_auto_shutoff_state", ChangeHeaterAutoShutoffState, bridge.handle_change_heater_auto_shutoff_state
     )
-    rospy.Service("change_servo_angles", ChangeServoAngle, bridge.handle_change_servo_angle)
+    rospy.Service("change_servo_angle", ChangeServoAngle, bridge.handle_change_servo_angle)
 
     while not rospy.is_shutdown():
         # receive() sleeps when no message is received.
