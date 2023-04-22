@@ -223,13 +223,13 @@ science:
   # These position are random for now
   syringe_servo_positions:  # This is in degrees
     site_A:
-      pushed: 80
+      pushed: 70
       start: 100
     site_B:
-      pushed: 60
+      pushed: 70
       start: 90
     site_C:
-      pushed: 10
+      pushed: 30
       start: 50
   info:
     num_diag_current: 3
