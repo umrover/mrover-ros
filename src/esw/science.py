@@ -214,6 +214,12 @@ class ScienceBridge:
         success = self._send_msg(msg)
         return success
 
+    def _feed_uart_watchdog(self)-> bool:
+        """Sends a message to the UART lines to feed the watchdog"""
+        msg = "$WOOF"
+        success = self._send_msg(msg)
+        return success
+
     def _heater_auto_shutoff_transmit(self, enable: bool) -> bool:
         """Send a UART message to the STM32 chip commanding the auto shut off
         state of the carousel heaters.
@@ -439,6 +445,7 @@ def main():
     rospy.Service("change_uv_led_carousel_state", ChangeDeviceState, bridge.handle_change_uv_led_carousel_state)
     rospy.Service("change_uv_led_end_effector_state", ChangeDeviceState, bridge.handle_change_uv_led_end_effector_state)
     rospy.Service("change_white_led_state", ChangeDeviceState, bridge.handle_change_white_led_state)
+    rospy.Timer(rospy.Duration(400.0/1000.0), bridge._feed_uart_watchdog)
 
     while not rospy.is_shutdown():
         # receive() sleeps when no message is received.
