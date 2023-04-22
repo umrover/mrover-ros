@@ -19,6 +19,7 @@ brushed_motors:
       inversion: 1.0
       limit_a_present: true
       limit_b_present: false
+      active_limit_a: false
       counts_limit_a: 0
       limit_a_is_fwd: true
       calibration_vel: 0.25
@@ -30,6 +31,7 @@ brushed_motors:
       inversion: 1.0
       limit_a_present: true
       limit_b_present: false
+      active_limit_a: true
       counts_limit_a: 0
       limit_a_is_fwd: true
       calibration_vel: 0.25
@@ -56,6 +58,7 @@ brushed_motors:
       inversion: -1.0
       limit_a_present: true
       limit_b_present: false
+      active_limit_a: false
       counts_limit_a: 0
       limit_a_is_fwd: true
       calibration_vel: 0.25
@@ -78,6 +81,8 @@ brushed_motors:
       inversion: 1.0
       limit_a_present: true
       limit_b_present: true
+      active_limit_a: false
+      active_limit_b: false
       counts_limit_a: 0
       counts_limit_b: 0
       limit_a_is_fwd: true
@@ -114,6 +119,8 @@ brushed_motors:
       inversion: 1.0
       limit_a_present: true
       limit_b_present: true
+      active_limit_a: false
+      active_limit_b: false
       counts_limit_a: 0
       counts_limit_b: 0
       limit_a_is_fwd: false
@@ -126,6 +133,7 @@ brushed_motors:
       inversion: 1.0
       limit_a_present: true
       limit_b_present: false
+      active_limit_a: false
       counts_limit_a: 0
       limit_a_is_fwd: true
       calibration_vel: 0.25
@@ -137,6 +145,7 @@ brushed_motors:
       inversion: -1.0
       limit_a_present: true
       limit_b_present: false
+      active_limit_a: false
       counts_limit_a: 0
       limit_a_is_fwd: false
       calibration_vel: 0.25
@@ -148,6 +157,7 @@ brushed_motors:
       inversion: -1.0
       limit_a_present: true
       limit_b_present: false
+      active_limit_a: false
       counts_limit_a: 0
       limit_a_is_fwd: true
       calibration_vel: 0.25
@@ -159,6 +169,8 @@ brushed_motors:
       inversion: 1.0
       limit_a_present: true
       limit_b_present: true
+      active_limit_a: false
+      active_limit_b: false
       counts_limit_a: 0
       counts_limit_b: 0
       limit_a_is_fwd: false
