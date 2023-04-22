@@ -9,7 +9,7 @@ teleop:
       slow_mode_multiplier: 0.5
       invert: False
     joint_b:
-      multiplier: 1
+      multiplier: -1
       slow_mode_multiplier: 1
       invert: False
     joint_c:
@@ -41,9 +41,9 @@ teleop:
     sa_joint_1:
       multiplier: 1
     sa_joint_2:
-      multiplier: 1
+      multiplier: -1
     sa_joint_3:
-      multiplier: 1
+      multiplier: -1
     scoop:
       multiplier: 1
     microscope:

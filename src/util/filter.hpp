@@ -5,8 +5,6 @@
 #include <numeric>
 #include <vector>
 
-#include "se3.hpp"
-
 /***
  * A filter that combines multiple readings into one.
  * A user defined proportion acts as a median filter that gets rids of outliers,

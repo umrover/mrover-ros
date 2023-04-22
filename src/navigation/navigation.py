@@ -13,6 +13,7 @@ from approach_post import ApproachPostState, ApproachPostStateTransitions
 from state import DoneState, DoneStateTransitions, OffState, OffStateTransitions
 from waypoint import WaypointState, WaypointStateTransitions
 from search import SearchState, SearchStateTransitions
+from recovery import RecoveryState, RecoveryStateTransitions
 from partial_gate import PartialGateState, PartialGateStateTransitions
 
 
@@ -55,6 +56,9 @@ class Navigation(threading.Thread):
                 "GateTraverseState",
                 GateTraverseState(self.context),
                 transitions=self.get_transitions(GateTraverseStateTransitions),
+            )
+            self.state_machine.add(
+                "RecoveryState", RecoveryState(self.context), transitions=self.get_transitions(RecoveryStateTransitions)
             )
             self.state_machine.add(
                 "PartialGateState",

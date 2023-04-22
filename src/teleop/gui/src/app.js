@@ -9,7 +9,7 @@ import "leaflet/dist/leaflet.css";
 
 Vue.config.productionTip = false;
 Vue.prototype.$ros = new ROSLIB.Ros({
-  url: "ws://localhost:9090",
+  url: "ws://10.0.0.7:9090",
 });
 
 /* eslint-disable no-new */

@@ -57,36 +57,24 @@
 #define IS_CALIBRATED_RB 1
 
 #define ENABLE_LIMIT_A_OP 0x0C
-#define ENABLE_LIMIT_A_WB 1
-#define ENABLE_LIMIT_A_RB 0
-
 #define ENABLE_LIMIT_B_OP 0x0D
-#define ENABLE_LIMIT_B_WB 1
-#define ENABLE_LIMIT_B_RB 0
+#define ENABLE_LIMIT_WB 1
+#define ENABLE_LIMIT_RB 0
 
 #define ACTIVE_LIMIT_A_OP 0x0E
-#define ACTIVE_LIMIT_A_WB 1
-#define ACTIVE_LIMIT_A_RB 0
-
 #define ACTIVE_LIMIT_B_OP 0x0F
-#define ACTIVE_LIMIT_B_WB 1
-#define ACTIVE_LIMIT_B_RB 0
+#define ACTIVE_LIMIT_WB 1
+#define ACTIVE_LIMIT_RB 0
 
 #define COUNTS_LIMIT_A_OP 0x10
-#define COUNTS_LIMIT_A_WB 4
-#define COUNTS_LIMIT_A_RB 0
-
 #define COUNTS_LIMIT_B_OP 0x11
-#define COUNTS_LIMIT_B_WB 4
-#define COUNTS_LIMIT_B_RB 0
+#define COUNTS_LIMIT_WB 4
+#define COUNTS_LIMIT_RB 0
 
 #define LIMIT_A_OP 0x12
-#define LIMIT_A_WB 0
-#define LIMIT_A_RB 1
-
 #define LIMIT_B_OP 0x13
-#define LIMIT_B_WB 0
-#define LIMIT_B_RB 1
+#define LIMIT_WB 0
+#define LIMIT_RB 1
 
 #define LIMIT_A_IS_FWD_OP 0x14
 #define LIMIT_A_IS_FWD_WB 1
@@ -189,6 +177,11 @@ public:
     // EFFECTS: Returns true if Controller has a (one or both) limit switch(s) is enabled.
     bool getLimitSwitchEnabled() const;
 
+    // REQUIRES: nothing
+    // MODIFIES: nothing
+    // EFFECTS: I2C bus, and turns on the controller. Can be used as a way to tick the watchdog for a particular mcu.
+    void turnOn() const;
+
 
 private:
     // REQUIRES: nothing
@@ -198,11 +191,10 @@ private:
     // Then makes live.
     void makeLive();
 
-    // REQUIRES: buffer is valid
+    // REQUIRES: buffer is valid and limit switch is present
     // MODIFIES: limitEnable
     // EFFECTS: I2C bus, enables limit switch if it is present
-    void enableLimitSwitch(bool limitPresent, bool enable, bool& limitEnable,
-                           uint8_t operation, uint8_t write_bytes, uint8_t read_bytes);
+    void enableLimitSwitch(bool enable, bool& limitEnable, uint8_t operation);
 
     uint8_t deviceAddress;
     uint8_t motorID;
