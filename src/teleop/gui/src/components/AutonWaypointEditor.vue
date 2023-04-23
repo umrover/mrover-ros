@@ -49,7 +49,7 @@
         <div style="display: inline-block">
           <button @click="addWaypoint(input)">Add Waypoint</button>
           <button @click="addWaypoint(formatted_odom)">Drop Waypoint</button>
-          <button @click="openModal()">Competition Waypoint Entry</button>
+          <button @click="openModal">Competition Waypoint Entry</button>
         </div>
       </div>
       <div class="box1">
@@ -162,104 +162,72 @@
                     class="checkbox"
                   /><font size="2">DMS</font><br />
                 </div>
-                <div v-for="(header, index) in compModalHeaders" :key="header">
-                  <h5>{{ header }} {{ index }}</h5>
-                  <label for="lat">Latitude</label>
+                <div
+                  v-for="(header, index) in compModalHeaders"
+                  :key="header"
+                  class="comp-modal-inputs"
+                >
+                  <h5>{{ header }}</h5>
                   <input
                     id="lat_deg"
+                    v-model.number="compModalLatDeg[index]"
                     type="number"
                     value="0"
                     min="-90"
                     max="90"
-                    @change="
-                      updateModalCoordinate(
-                        index,
-                        'lat',
-                        'd',
-                        $event.target.valueAsNumber
-                      )
-                    "
                   />
+                  <label>º</label>
                   <input
                     v-if="min_enabled"
                     id="lat_min"
+                    v-model.number="compModalLatMin[index]"
                     type="number"
                     value="0"
                     min="0"
                     max="60"
-                    @change="
-                      updateModalCoordinate(
-                        index,
-                        'lat',
-                        'm',
-                        $event.target.valueAsNumber
-                      )
-                    "
                   />
+                  <label v-if="min_enabled">'</label>
                   <input
                     v-if="sec_enabled"
                     id="lat_sec"
+                    v-model.number="compModalLatSec[index]"
                     type="number"
                     value="0"
                     min="0"
                     max="3600"
-                    @change="
-                      updateModalCoordinate(
-                        index,
-                        'lat',
-                        's',
-                        $event.target.valueAsNumber
-                      )
-                    "
                   />
-                  <label for="lon">Longitude</label>
+                  <label v-if="sec_enabled">"</label>
+                  <label>N &nbsp; &nbsp;</label>
                   <input
                     id="lon_deg"
+                    v-model.number="compModalLonDeg[index]"
                     type="number"
                     value="0"
                     min="-180"
                     max="180"
-                    @change="
-                      updateModalCoordinate(
-                        index,
-                        'lon',
-                        'd',
-                        $event.target.valueAsNumber
-                      )
-                    "
                   />
+                  <label>º</label>
                   <input
                     v-if="min_enabled"
                     id="lon_min"
+                    v-model.number="compModalLonMin[index]"
                     type="number"
                     value="0"
                     min="0"
                     max="60"
-                    @change="
-                      updateModalCoordinate(
-                        index,
-                        'lon',
-                        'm',
-                        $event.target.valueAsNumber
-                      )
-                    "
                   />
+                  <label v-if="min_enabled">'</label>
                   <input
                     v-if="sec_enabled"
                     id="lon_sec"
+                    v-model.number="compModalLonSec[index]"
                     type="number"
                     value="0"
                     min="0"
                     max="3600"
-                    @change="
-                      updateModalCoordinate(
-                        index,
-                        'lon',
-                        's',
-                        $event.target.valueAsNumber
-                      )
-                    "
                   />
+                  <label v-if="sec_enabled">"</label>
+                  <label>E</label>
                 </div>
               </slot>
             </section>
@@ -291,7 +259,6 @@ import { mapMutations, mapGetters } from "vuex";
 import _ from "lodash";
 import L from "leaflet";
 import ROSLIB from "roslib";
-import Vue from "vue";
 
 let interval;
 
@@ -346,7 +313,12 @@ export default {
         "Gate Post 1",
         "Gate Post 2"
       ],
-      compModalCoordinates: [],
+      compModalLatDeg: Array(8).fill(0),
+      compModalLatMin: Array(8).fill(0),
+      compModalLatSec: Array(8).fill(0),
+      compModalLonDeg: Array(8).fill(0),
+      compModalLonMin: Array(8).fill(0),
+      compModalLonSec: Array(8).fill(0),
 
       teleopEnabledCheck: false,
 
@@ -384,16 +356,14 @@ export default {
 
     comp_modal_able_to_submit: function () {
       // Ensure that all inputs in modal are valid before submitting
-      return this.compModalCoordinates.every((val) => {
-        return (
-          Number.isFinite(val.lat.d) &&
-          Number.isFinite(val.lat.m) &&
-          Number.isFinite(val.lat.s) &&
-          Number.isFinite(val.lon.d) &&
-          Number.isFinite(val.lon.m) &&
-          Number.isFinite(val.lon.s)
-        );
-      });
+      return (
+        this.compModalLatDeg.every((val) => Number.isFinite(val)) &&
+        this.compModalLatMin.every((val) => Number.isFinite(val)) &&
+        this.compModalLatSec.every((val) => Number.isFinite(val)) &&
+        this.compModalLonDeg.every((val) => Number.isFinite(val)) &&
+        this.compModalLonMin.every((val) => Number.isFinite(val)) &&
+        this.compModalLonSec.every((val) => Number.isFinite(val))
+      );
     },
 
     formatted_odom: function () {
@@ -447,20 +417,6 @@ export default {
       this.setOdomFormat(newOdomFormat);
       this.input.lat = convertDMS(this.input.lat, newOdomFormat);
       this.input.lon = convertDMS(this.input.lon, newOdomFormat);
-      // Set all values in comp modal to 0 if not in new format
-      if (newOdomFormat == "D") {
-        this.compModalCoordinates.forEach((val) => {
-          val.lat.m = 0;
-          val.lat.s = 0;
-          val.lon.m = 0;
-          val.lon.s = 0;
-        });
-      } else if (newOdomFormat == "DM") {
-        this.compModalCoordinates.forEach((val) => {
-          val.lat.s = 0;
-          val.lon.s = 0;
-        });
-      }
     },
 
     clickPoint: function (newClickPoint) {
@@ -474,8 +430,11 @@ export default {
       this.input.lon = convertDMS(this.input.lon, this.odom_format_in);
     }
   },
+
   beforeDestroy: function () {
     window.clearInterval(interval);
+    this.autonEnabled = false;
+    this.sendEnableAuton();
   },
 
   created: function () {
@@ -496,14 +455,6 @@ export default {
       })),
       // Make sure local odom format matches vuex odom format
       (this.odom_format_in = this.odom_format);
-      let newArray = this.compModalCoordinates;
-      for(let i = 0; i < 8; ++i){
-       newArray.splice(0, 0, {
-          lat: { d: 0, m: 0, s: 0 },
-          lon: { d: 0, m: 0, s: 0 }
-        });
-      }
-      Vue.set(this, 'compModalCoordinates', newArray)
 
     this.nav_status_sub.subscribe(
       (msg) => {
@@ -539,7 +490,6 @@ export default {
       setOdomFormat: "setOdomFormat"
     }),
 
-    
     sendEnableAuton() {
       let course;
 
@@ -575,56 +525,74 @@ export default {
           waypoints: []
         };
       }
-      
+
       const course_request = new ROSLIB.ServiceRequest({
         enableMsg: course
       });
-      
+
       this.course_pub.callService(course_request, () => {});
     },
-    
-    openModal() {
-      this.showModal = true;
-      // Reset modal coordinates
-      const newArray = Array(8).fill({
-        lat: { d: 0, m: 0, s: 0 },
-        lon: { d: 0, m: 0, s: 0 }
-      })
-      Vue.set(this, "compModalCoordinates", newArray);
-    },
 
-    updateModalCoordinate(index, lat_lon, dms, value) {
-      Vue.set(this.compModalCoordinates[index][lat_lon], dms, value);
+    openModal: function () {
+      this.showModal = true;
+      // Reset compModal Arrays
+      this.compModalLatDeg = Array(8).fill(0);
+      this.compModalLatMin = Array(8).fill(0);
+      this.compModalLatSec = Array(8).fill(0);
+      this.compModalLonDeg = Array(8).fill(0);
+      this.compModalLonMin = Array(8).fill(0);
+      this.compModalLonSec = Array(8).fill(0);
     },
 
     submitModal: function () {
       this.showModal = false;
-      for (let i = 0; i < 3; i++) {
+      // Create lat/lon objects from comp modal arrays
+      const coordinates = this.compModalLatDeg.map((deg, i) => {
+        return {
+          lat: {
+            d: deg,
+            m: this.compModalLatMin[i],
+            s: this.compModalLatSec[i]
+          },
+          lon: {
+            d: this.compModalLonDeg[i],
+            m: this.compModalLonMin[i],
+            s: this.compModalLonSec[i]
+          }
+        };
+      });
+
+      // Add Waypoints
+      for (let i = 0; i < 3; ++i) {
         this.storedWaypoints.push({
-          name: this.name,
+          name: "Waypoint " + (i + 1),
           id: this.id,
-          lat: convertDMS(this.compModalCoordinates[i].lat, "D").d,
-          lon: convertDMS(this.compModalCoordinates[i].lon, "D").d,
+          lat: convertDMS(coordinates[i].lat, "D").d,
+          lon: convertDMS(coordinates[i].lon, "D").d,
           gate: false,
           post: false
         });
       }
-      for (let i = 3; i < 6; i++) {
+
+      // Add AR Tag Posts
+      for (let i = 3; i < 6; ++i) {
         this.storedWaypoints.push({
-          name: this.name,
+          name: "AR Tag Post " + (i - 2),
           id: this.id,
-          lat: convertDMS(this.compModalCoordinates[i].lat, "D").d,
-          lon: convertDMS(this.compModalCoordinates[i].lon, "D").d,
+          lat: convertDMS(coordinates[i].lat, "D").d,
+          lon: convertDMS(coordinates[i].lon, "D").d,
           gate: false,
           post: true
         });
       }
-      for (let i = 6; i < 8; i++) {
+
+      // Add AR Tag Gate Posts
+      for (let i = 6; i < 8; ++i) {
         this.storedWaypoints.push({
-          name: this.name,
+          name: "AR Tag Gate Post " + (i - 5),
           id: this.id,
-          lat: convertDMS(this.compModalCoordinates[i].lat, "D").d,
-          lon: convertDMS(this.compModalCoordinates[i].lon, "D").d,
+          lat: convertDMS(coordinates[i].lat, "D").d,
+          lon: convertDMS(coordinates[i].lon, "D").d,
           gate: true,
           post: false
         });
@@ -678,6 +646,7 @@ export default {
     },
 
     addWaypoint: function (coord) {
+      console.log(coord);
       this.storedWaypoints.push({
         name: this.name,
         id: this.id,
@@ -899,5 +868,9 @@ export default {
   flex-direction: row;
   justify-content: center;
   align-items: center;
+}
+
+.comp-modal-inputs input {
+  width: 150px;
 }
 </style>

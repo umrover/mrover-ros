@@ -124,10 +124,6 @@ export default {
         total_wps: 0,
       },
 
-      enableAuton: {
-        enable: false,
-        GPSWaypoint: [],
-      },
 
       teleopEnabledCheck: false,
 
