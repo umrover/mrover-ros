@@ -165,6 +165,9 @@ export default {
     // Reset waypoint editors
     this.setHighlightedWaypoint(-1);
     this.setWaypointList([]);
+
+    // Set odometer format
+    this.odom_format_in = this.odom_format;
   },
 
   computed: {

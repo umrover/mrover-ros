@@ -70,8 +70,11 @@ export default {
   },
 
   computed: {
-    ...mapGetters("autonomy", {
+    ...mapGetters("map", {
       odom_format: "odomFormat",
+    }),
+
+    ...mapGetters("autonomy", {
       highlightedWaypoint: "highlightedWaypoint",
     }),
 

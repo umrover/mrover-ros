@@ -297,6 +297,10 @@ export default {
         name: "/rover_stuck",
         messageType: "std_msgs/Bool",
       })),
+
+      // Make sure local odom format matches vuex odom format
+      this.odom_format_in = this.odom_format
+
       this.nav_status_sub.subscribe(
         (msg) => {
           if (msg.active_states[0] !== "OffState" && !this.autonEnabled) {
