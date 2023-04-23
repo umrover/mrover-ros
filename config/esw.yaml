@@ -116,6 +116,7 @@ brushed_motors:
       motor_max_voltage: 12.0
       mcu_id: 1
       motor_id: 4
+      quad_cpr: 10884.0
       inversion: 1.0
       limit_a_present: true
       limit_b_present: true
@@ -130,6 +131,7 @@ brushed_motors:
       motor_max_voltage: 12.0
       mcu_id: 1
       motor_id: 0
+      quad_cpr: 10884.0
       inversion: 1.0
       limit_a_present: true
       limit_b_present: false
@@ -142,6 +144,7 @@ brushed_motors:
       motor_max_voltage: 12.0
       mcu_id: 1
       motor_id: 1
+      quad_cpr: 8400.0
       inversion: -1.0
       limit_a_present: true
       limit_b_present: false
@@ -154,6 +157,7 @@ brushed_motors:
       motor_max_voltage: 12.0
       mcu_id: 1
       motor_id: 2
+      quad_cpr: 10884.0
       inversion: -1.0
       limit_a_present: true
       limit_b_present: false
