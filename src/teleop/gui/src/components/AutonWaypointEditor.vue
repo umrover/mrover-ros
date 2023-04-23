@@ -646,7 +646,6 @@ export default {
     },
 
     addWaypoint: function (coord) {
-      console.log(coord);
       this.storedWaypoints.push({
         name: this.name,
         id: this.id,
