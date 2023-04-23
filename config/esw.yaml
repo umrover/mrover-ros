@@ -241,7 +241,7 @@ science:
       pushed: 60
       start: 90
     site_C:
-      pushed: 20
+      pushed: 0
       start: 50
   info:
     num_diag_current: 3
