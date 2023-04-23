@@ -238,10 +238,10 @@ science:
       pushed: 70
       start: 100
     site_B:
-      pushed: 70
+      pushed: 60
       start: 90
     site_C:
-      pushed: 30
+      pushed: 20
       start: 50
   info:
     num_diag_current: 3
