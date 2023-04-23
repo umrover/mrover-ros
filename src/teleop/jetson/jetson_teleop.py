@@ -297,6 +297,12 @@ class ArmControl:
             self.sa_config["microscope"]["multiplier"]
             * self.filter_xbox_button(msg.buttons, "right_bumper", "left_bumper"),
         ]
+
+        slow_mode_activated = msg.buttons[self.xbox_mappings["a"]] or msg.buttons[self.xbox_mappings["b"]]
+        if slow_mode_activated:
+            for i, name in enumerate(self.SA_NAMES):
+                self.sa_cmd.velocity[i] *= self.sa_config[name]["slow_mode_multiplier"]
+
         self.sa_cmd_pub.publish(self.sa_cmd)
 
 
