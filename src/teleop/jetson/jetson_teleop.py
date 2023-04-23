@@ -301,7 +301,9 @@ class ArmControl:
         slow_mode_activated = msg.buttons[self.xbox_mappings["a"]] or msg.buttons[self.xbox_mappings["b"]]
         if slow_mode_activated:
             for i, name in enumerate(self.SA_NAMES):
-                self.sa_cmd.velocity[i] *= self.sa_config[name]["slow_mode_multiplier"]
+                # When going up (vel > 0) with SA joint 2, we DON'T want slow mode.
+                if not (name == "sa_joint_2" and self.sa_cmd.velocity[i] > 0):
+                    self.sa_cmd.velocity[i] *= self.sa_config[name]["slow_mode_multiplier"]
 
         self.sa_cmd_pub.publish(self.sa_cmd)
 
