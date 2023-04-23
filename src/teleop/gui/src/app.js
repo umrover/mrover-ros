@@ -12,6 +12,9 @@ Vue.prototype.$ros = new ROSLIB.Ros({
   url: "ws://10.0.0.7:9090",
 });
 
+// For whether we are on basestation or not
+Vue.prototype.$competitionMode = false;
+
 /* eslint-disable no-new */
 new Vue({
   el: "#app",
