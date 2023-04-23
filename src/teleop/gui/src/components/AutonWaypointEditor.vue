@@ -49,6 +49,7 @@
         <div style="display: inline-block">
           <button @click="addWaypoint(input)">Add Waypoint</button>
           <button @click="addWaypoint(formatted_odom)">Drop Waypoint</button>
+          <button @click="openModal()">Competition Waypoint Entry</button>
         </div>
       </div>
       <div class="box1">
@@ -122,6 +123,160 @@
         </draggable>
       </div>
     </div>
+
+    <div v-if="showModal" @close="showModal = false">
+      <transition name="modal-fade">
+        <div class="modal-backdrop">
+          <div class="modal" role="dialog">
+            <header id="modalTitle" class="modal-header">
+              <h4>Enter your waypoints:</h4>
+              <button
+                type="button"
+                class="btn-close"
+                @click="showModal = false"
+              >
+                x
+              </button>
+            </header>
+
+            <section id="modalDescription" class="modal-body">
+              <slot name="body">
+                <div class="modal-odom-format">
+                  <h5>Waypoint format:</h5>
+                  <input
+                    v-model="odom_format_in"
+                    type="radio"
+                    value="D"
+                    class="checkbox"
+                  /><font size="2">D</font>
+                  <input
+                    v-model="odom_format_in"
+                    type="radio"
+                    value="DM"
+                    class="checkbox"
+                  /><font size="2">DM</font>
+                  <input
+                    v-model="odom_format_in"
+                    type="radio"
+                    value="DMS"
+                    class="checkbox"
+                  /><font size="2">DMS</font><br />
+                </div>
+                <div v-for="(header, index) in compModalHeaders" :key="header">
+                  <h5>{{ header }} {{ index }}</h5>
+                  <label for="lat">Latitude</label>
+                  <input
+                    id="lat_deg"
+                    type="number"
+                    value="0"
+                    min="-90"
+                    max="90"
+                    @change="
+                      updateModalCoordinate(
+                        index,
+                        'lat',
+                        'd',
+                        $event.target.valueAsNumber
+                      )
+                    "
+                  />
+                  <input
+                    v-if="min_enabled"
+                    id="lat_min"
+                    type="number"
+                    value="0"
+                    min="0"
+                    max="60"
+                    @change="
+                      updateModalCoordinate(
+                        index,
+                        'lat',
+                        'm',
+                        $event.target.valueAsNumber
+                      )
+                    "
+                  />
+                  <input
+                    v-if="sec_enabled"
+                    id="lat_sec"
+                    type="number"
+                    value="0"
+                    min="0"
+                    max="3600"
+                    @change="
+                      updateModalCoordinate(
+                        index,
+                        'lat',
+                        's',
+                        $event.target.valueAsNumber
+                      )
+                    "
+                  />
+                  <label for="lon">Longitude</label>
+                  <input
+                    id="lon_deg"
+                    type="number"
+                    value="0"
+                    min="-180"
+                    max="180"
+                    @change="
+                      updateModalCoordinate(
+                        index,
+                        'lon',
+                        'd',
+                        $event.target.valueAsNumber
+                      )
+                    "
+                  />
+                  <input
+                    v-if="min_enabled"
+                    id="lon_min"
+                    type="number"
+                    value="0"
+                    min="0"
+                    max="60"
+                    @change="
+                      updateModalCoordinate(
+                        index,
+                        'lon',
+                        'm',
+                        $event.target.valueAsNumber
+                      )
+                    "
+                  />
+                  <input
+                    v-if="sec_enabled"
+                    id="lon_sec"
+                    type="number"
+                    value="0"
+                    min="0"
+                    max="3600"
+                    @change="
+                      updateModalCoordinate(
+                        index,
+                        'lon',
+                        's',
+                        $event.target.valueAsNumber
+                      )
+                    "
+                  />
+                </div>
+              </slot>
+            </section>
+
+            <footer class="modal-footer">
+              <button
+                type="button"
+                :disabled="!comp_modal_able_to_submit"
+                @click="submitModal()"
+              >
+                Submit
+              </button>
+            </footer>
+          </div>
+        </div>
+      </transition>
+    </div>
   </div>
 </template>
 
@@ -136,13 +291,14 @@ import { mapMutations, mapGetters } from "vuex";
 import _ from "lodash";
 import L from "leaflet";
 import ROSLIB from "roslib";
+import Vue from "vue";
 
 let interval;
 
 const WAYPOINT_TYPES = {
   NO_SEARCH: 0,
   POST: 1,
-  GATE: 2,
+  GATE: 2
 };
 
 export default {
@@ -151,14 +307,14 @@ export default {
     WaypointItem,
     AutonModeCheckbox,
     Checkbox,
-    VelocityCommand,
+    VelocityCommand
   },
 
   props: {
     odom: {
       type: Object,
-      required: true,
-    },
+      required: true
+    }
   },
 
   data() {
@@ -170,21 +326,34 @@ export default {
         lat: {
           d: 0,
           m: 0,
-          s: 0,
+          s: 0
         },
         lon: {
           d: 0,
           m: 0,
-          s: 0,
-        },
+          s: 0
+        }
       },
+
+      showModal: false,
+      compModalHeaders: [
+        "Waypoint 1",
+        "Waypoint 2",
+        "Waypoint 3",
+        "Post 1",
+        "Post 2",
+        "Post 3",
+        "Gate Post 1",
+        "Gate Post 2"
+      ],
+      compModalCoordinates: [],
 
       teleopEnabledCheck: false,
 
       nav_status: {
         nav_state_name: "Off",
         completed_wps: 0,
-        total_wps: 0,
+        total_wps: 0
       },
 
       storedWaypoints: [],
@@ -199,19 +368,33 @@ export default {
       nav_status_sub: null,
       course_pub: null,
 
-      rover_stuck_pub: null,
+      rover_stuck_pub: null
     };
   },
   computed: {
     ...mapGetters("autonomy", {
       autonEnabled: "autonEnabled",
       teleopEnabled: "teleopEnabled",
-      clickPoint: "clickPoint",
+      clickPoint: "clickPoint"
     }),
 
     ...mapGetters("map", {
-      odom_format: "odomFormat",
+      odom_format: "odomFormat"
     }),
+
+    comp_modal_able_to_submit: function () {
+      // Ensure that all inputs in modal are valid before submitting
+      return this.compModalCoordinates.every((val) => {
+        return (
+          Number.isFinite(val.lat.d) &&
+          Number.isFinite(val.lat.m) &&
+          Number.isFinite(val.lat.s) &&
+          Number.isFinite(val.lon.d) &&
+          Number.isFinite(val.lon.m) &&
+          Number.isFinite(val.lon.s)
+        );
+      });
+    },
 
     formatted_odom: function () {
       return {
@@ -222,7 +405,7 @@ export default {
         lon: convertDMS(
           { d: this.odom.longitude_deg, m: 0, s: 0 },
           this.odom_format
-        ),
+        )
       };
     },
 
@@ -238,7 +421,7 @@ export default {
       return this.autonButtonColor == "yellow"
         ? "Setting to " + this.autonEnabled
         : "Autonomy Mode";
-    },
+    }
   },
 
   watch: {
@@ -264,6 +447,20 @@ export default {
       this.setOdomFormat(newOdomFormat);
       this.input.lat = convertDMS(this.input.lat, newOdomFormat);
       this.input.lon = convertDMS(this.input.lon, newOdomFormat);
+      // Set all values in comp modal to 0 if not in new format
+      if (newOdomFormat == "D") {
+        this.compModalCoordinates.forEach((val) => {
+          val.lat.m = 0;
+          val.lat.s = 0;
+          val.lon.m = 0;
+          val.lon.s = 0;
+        });
+      } else if (newOdomFormat == "DM") {
+        this.compModalCoordinates.forEach((val) => {
+          val.lat.s = 0;
+          val.lon.s = 0;
+        });
+      }
     },
 
     clickPoint: function (newClickPoint) {
@@ -275,7 +472,7 @@ export default {
       this.input.lon.s = 0;
       this.input.lat = convertDMS(this.input.lat, this.odom_format_in);
       this.input.lon = convertDMS(this.input.lon, this.odom_format_in);
-    },
+    }
   },
   beforeDestroy: function () {
     window.clearInterval(interval);
@@ -285,36 +482,43 @@ export default {
     (this.course_pub = new ROSLIB.Service({
       ros: this.$ros,
       name: "/enable_auton",
-      serviceType: "mrover/PublishEnableAuton",
+      serviceType: "mrover/PublishEnableAuton"
     })),
       (this.nav_status_sub = new ROSLIB.Topic({
         ros: this.$ros,
         name: "/smach/container_status",
-        messageType: "smach_msgs/SmachContainerStatus",
+        messageType: "smach_msgs/SmachContainerStatus"
       })),
       (this.rover_stuck_pub = new ROSLIB.Topic({
         ros: this.$ros,
         name: "/rover_stuck",
-        messageType: "std_msgs/Bool",
+        messageType: "std_msgs/Bool"
       })),
-
       // Make sure local odom format matches vuex odom format
-      this.odom_format_in = this.odom_format
+      (this.odom_format_in = this.odom_format);
+      let newArray = this.compModalCoordinates;
+      for(let i = 0; i < 8; ++i){
+       newArray.splice(0, 0, {
+          lat: { d: 0, m: 0, s: 0 },
+          lon: { d: 0, m: 0, s: 0 }
+        });
+      }
+      Vue.set(this, 'compModalCoordinates', newArray)
 
-      this.nav_status_sub.subscribe(
-        (msg) => {
-          if (msg.active_states[0] !== "OffState" && !this.autonEnabled) {
-            return;
-          }
-          this.waitingForNav = false;
-          this.autonButtonColor = this.autonEnabled ? "green" : "red";
-        },
+    this.nav_status_sub.subscribe(
+      (msg) => {
+        if (msg.active_states[0] !== "OffState" && !this.autonEnabled) {
+          return;
+        }
+        this.waitingForNav = false;
+        this.autonButtonColor = this.autonEnabled ? "green" : "red";
+      },
 
-        // Interval for publishing Course
-        (interval = window.setInterval(() => {
-          this.rover_stuck_pub.publish({ data: this.roverStuck });
-        }, 100))
-      );
+      // Interval for publishing Course
+      (interval = window.setInterval(() => {
+        this.rover_stuck_pub.publish({ data: this.roverStuck });
+      }, 100))
+    );
   },
 
   mounted: function () {
@@ -328,13 +532,14 @@ export default {
       setWaypointList: "setWaypointList",
       setHighlightedWaypoint: "setHighlightedWaypoint",
       setAutonMode: "setAutonMode",
-      setTeleopMode: "setTeleopMode",
+      setTeleopMode: "setTeleopMode"
     }),
 
     ...mapMutations("map", {
-      setOdomFormat: "setOdomFormat",
+      setOdomFormat: "setOdomFormat"
     }),
 
+    
     sendEnableAuton() {
       let course;
 
@@ -357,25 +562,73 @@ export default {
                   ? WAYPOINT_TYPES.GATE
                   : waypoint.post
                   ? WAYPOINT_TYPES.POST
-                  : WAYPOINT_TYPES.NO_SEARCH,
+                  : WAYPOINT_TYPES.NO_SEARCH
               },
-              id: parseInt(waypoint.id),
+              id: parseInt(waypoint.id)
             };
-          }),
+          })
         };
       } else {
         // Else send false and no array
         course = {
           enable: false,
-          waypoints: [],
+          waypoints: []
         };
       }
-
+      
       const course_request = new ROSLIB.ServiceRequest({
-        enableMsg: course,
+        enableMsg: course
       });
-
+      
       this.course_pub.callService(course_request, () => {});
+    },
+    
+    openModal() {
+      this.showModal = true;
+      // Reset modal coordinates
+      const newArray = Array(8).fill({
+        lat: { d: 0, m: 0, s: 0 },
+        lon: { d: 0, m: 0, s: 0 }
+      })
+      Vue.set(this, "compModalCoordinates", newArray);
+    },
+
+    updateModalCoordinate(index, lat_lon, dms, value) {
+      Vue.set(this.compModalCoordinates[index][lat_lon], dms, value);
+    },
+
+    submitModal: function () {
+      this.showModal = false;
+      for (let i = 0; i < 3; i++) {
+        this.storedWaypoints.push({
+          name: this.name,
+          id: this.id,
+          lat: convertDMS(this.compModalCoordinates[i].lat, "D").d,
+          lon: convertDMS(this.compModalCoordinates[i].lon, "D").d,
+          gate: false,
+          post: false
+        });
+      }
+      for (let i = 3; i < 6; i++) {
+        this.storedWaypoints.push({
+          name: this.name,
+          id: this.id,
+          lat: convertDMS(this.compModalCoordinates[i].lat, "D").d,
+          lon: convertDMS(this.compModalCoordinates[i].lon, "D").d,
+          gate: false,
+          post: true
+        });
+      }
+      for (let i = 6; i < 8; i++) {
+        this.storedWaypoints.push({
+          name: this.name,
+          id: this.id,
+          lat: convertDMS(this.compModalCoordinates[i].lat, "D").d,
+          lon: convertDMS(this.compModalCoordinates[i].lon, "D").d,
+          gate: true,
+          post: false
+        });
+      }
     },
 
     deleteItem: function (payload) {
@@ -431,7 +684,7 @@ export default {
         lat: convertDMS(coord.lat, "D").d,
         lon: convertDMS(coord.lon, "D").d,
         gate: false,
-        post: false,
+        post: false
       });
     },
 
@@ -450,8 +703,8 @@ export default {
     toggleTeleopMode: function () {
       this.teleopEnabledCheck = !this.teleopEnabledCheck;
       this.$emit("toggleTeleop", this.teleopEnabledCheck);
-    },
-  },
+    }
+  }
 };
 </script>
 
@@ -561,5 +814,90 @@ export default {
 
 .odom {
   grid-area: odom;
+}
+
+/* Modal Classes */
+/* TODO: Make Modal a Component or set up a package for modals */
+.modal-backdrop {
+  position: fixed;
+  top: 0;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  background-color: rgba(0, 0, 0, 0.3);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 100000;
+}
+
+.modal {
+  background: #ffffff;
+  box-shadow: 2px 2px 20px 1px;
+  overflow-x: auto;
+  display: flex;
+  flex-direction: column;
+  z-index: 10000;
+}
+
+.modal-header,
+.modal-footer {
+  padding: 5px;
+  display: flex;
+}
+
+.modal-header {
+  position: relative;
+  border-bottom: 1px solid #eeeeee;
+  justify-content: space-between;
+}
+
+.modal-footer {
+  border-top: 1px solid #eeeeee;
+  flex-direction: column;
+}
+
+.modal-body {
+  display: flex;
+  flex-direction: column;
+  position: relative;
+  padding: 20px 10px;
+}
+
+.btn-close {
+  position: absolute;
+  top: 0;
+  right: 0;
+  border: none;
+  font-size: 20px;
+  padding: 10px;
+  cursor: pointer;
+  font-weight: bold;
+  color: #4aae9b;
+  background: transparent;
+}
+
+.btn-green {
+  color: white;
+  background: #4aae9b;
+  border: 1px solid #4aae9b;
+  border-radius: 2px;
+}
+
+.modal-fade-enter,
+.modal-fade-leave-to {
+  opacity: 0;
+}
+
+.modal-fade-enter-active,
+.modal-fade-leave-active {
+  transition: opacity 0.5s ease;
+}
+
+.modal-odom-format {
+  display: flex;
+  flex-direction: row;
+  justify-content: center;
+  align-items: center;
 }
 </style>
