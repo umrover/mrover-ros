@@ -1,7 +1,5 @@
 import numpy as np
 from typing import Union, Optional
-import matplotlib.pyplot as plt
-
 
 class SinglePoleLowPass:
 
@@ -22,14 +20,3 @@ class SinglePoleLowPass:
         else:
             self.y = self.alpha * x + (1 - self.alpha) * self.y
         return self.y
-
-
-if __name__ == "__main__":
-    # Simple test case
-    t = np.linspace(0, 3 * np.pi)
-    x = np.sin(t) + 0.3 * np.random.rand(len(t))
-    f = SinglePoleLowPass(0.5, t[1])
-    y = [f.update(v) for v in x]
-    plt.plot(t, x)
-    plt.plot(t, y)
-    plt.show()
