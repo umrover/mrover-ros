@@ -214,8 +214,8 @@ void Controller::makeLive() {
         uint8_t buffer[32];
 
         assert(motorMaxVoltage >= 0);
-	assert(driverVoltage >= 0);
-	auto maxPWM = (uint16_t) (100.0 * motorMaxVoltage / driverVoltage);
+        assert(driverVoltage >= 0);
+        auto maxPWM = (uint16_t) (100.0 * motorMaxVoltage / driverVoltage);
         assert(maxPWM <= 100);
 
         memcpy(buffer, UINT8_POINTER_T(&maxPWM), sizeof(maxPWM));
