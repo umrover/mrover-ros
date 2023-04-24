@@ -110,4 +110,9 @@ class Driver:
             output = cmd_vel, False
 
         self._last_angular_error = angle_error
+        # if we are reporting that we are finished, reset the all internal state
+        if output[1]:
+            self._last_angular_error = None
+            self._driver_state = self.DriveMode.STOPPED
+
         return output
