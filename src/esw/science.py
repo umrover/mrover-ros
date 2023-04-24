@@ -125,8 +125,14 @@ class ScienceBridge:
         """
         self.ser.close()
 
+    def feed_uart_watchdog(self) -> bool:
+        """Sends a message to the UART lines to feed the watchdog"""
+        msg = "$WATCHDOG"
+        success = self._send_msg(msg)
+        return success
+
     def handle_enable_mosfet_device(self, req: EnableDeviceRequest) -> EnableDeviceResponse:
-        """Process a request to change the laser state of a device by issuing
+        """Process a request to change the state of a MOSFET device by issuing
         the command to the STM32 chip via UART.
         :param req: A boolean that is the requested arm laser state.
         :returns: A boolean that is the success of sent UART transaction.
@@ -425,6 +431,7 @@ def main():
         "change_heater_auto_shutoff_state", ChangeHeaterAutoShutoffState, bridge.handle_change_heater_auto_shutoff_state
     )
     rospy.Service("change_servo_angle", ChangeServoAngle, bridge.handle_change_servo_angle)
+    rospy.Timer(rospy.Duration(400.0 / 1000.0), bridge.feed_uart_watchdog)
 
     while not rospy.is_shutdown():
         # receive() sleeps when no message is received.
