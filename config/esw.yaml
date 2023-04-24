@@ -100,7 +100,7 @@ brushed_motors:
       motor_max_voltage: 12.0
       mcu_id: 2
       motor_id: 4
-      inversion: -1.0
+      inversion: 1.0
       limit_a_present: false
       limit_b_present: false
     - name: "mast_gimbal_left_right"
