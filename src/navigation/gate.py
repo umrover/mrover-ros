@@ -137,6 +137,7 @@ class GateTraverseStateTransitions(Enum):
     no_gate = "SearchState"
     finished_gate = "DoneState"
     continue_gate_traverse = "GateTraverseState"
+    recovery_state = "RecoveryState"
 
 
 class GateTraverseState(BaseState):
@@ -180,6 +181,10 @@ class GateTraverseState(BaseState):
                 self.traj = None
                 self.context.course.increment_waypoint()
                 return GateTraverseStateTransitions.finished_gate.name  # type: ignore
+
+        if self.context.rover.stuck:
+            self.context.rover.previous_state = GateTraverseStateTransitions.continue_gate_traverse.name  # type: ignore
+            return GateTraverseStateTransitions.recovery_state.name  # type: ignore
 
         self.context.gate_path_publisher.publish(
             GPSPointList([convert_cartesian_to_gps(pt) for pt in self.traj.coordinates])

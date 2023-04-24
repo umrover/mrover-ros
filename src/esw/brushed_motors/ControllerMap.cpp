@@ -89,4 +89,11 @@ void ControllerMap::init(XmlRpc::XmlRpcValue& root) {
         }
         ROS_INFO("Made virtual Controller %s on MCU ID %i motor ID %i \n", name.c_str(), mcu_id, motor_id);
     }
+
+    std::vector<int> mcu_ids = {1, 2};
+    for (auto mcu_id : mcu_ids) {
+        std::string dummy_name = "dummy_mcu_" + std::to_string(mcu_id);
+        controllersByName[dummy_name] =
+            new Controller(dummy_name, mcu_id, 0, 1, 12);
+    }
 }

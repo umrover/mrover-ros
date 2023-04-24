@@ -17,6 +17,7 @@
       <LEDIndicator
         :connected="heaters[siteIndex].enabled"
         :name="'Heater ' + site + ' Status'"
+        :show_name="true"
       />
     </div>
     <div class="box1 shutdown">
@@ -32,6 +33,7 @@
       <LEDIndicator
         :connected="autoShutdownEnabled"
         :name="'Auto Shutdown Status'"
+        :show_name="true"
       />
     </div>
   </div>

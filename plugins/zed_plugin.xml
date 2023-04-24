@@ -1,0 +1,6 @@
+<library path="lib/libzed_nodelet">
+    <class name="mrover/ZedNodelet"
+           type="mrover::ZedNodelet"
+           base_class_type="nodelet::Nodelet">
+    </class>
+</library>
