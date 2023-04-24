@@ -118,6 +118,12 @@ class ScienceBridge:
         """
         self.ser.close()
 
+    def feed_uart_watchdog(self) -> bool:
+        """Sends a message to the UART lines to feed the watchdog"""
+        msg = "$WATCHDOG"
+        success = self._send_msg(msg)
+        return success
+
     def handle_change_arm_laser_state(self, req: ChangeDeviceStateRequest) -> ChangeDeviceStateResponse:
         """Process a request to change the laser state of the arm by issuing
         the command to the STM32 chip via UART.
@@ -211,12 +217,6 @@ class ScienceBridge:
 
         requested_state = self._id_by_color[color]
         msg = f"$LED,{requested_state}"
-        success = self._send_msg(msg)
-        return success
-
-    def _feed_uart_watchdog(self)-> bool:
-        """Sends a message to the UART lines to feed the watchdog"""
-        msg = "$WOOF"
         success = self._send_msg(msg)
         return success
 
@@ -445,7 +445,7 @@ def main():
     rospy.Service("change_uv_led_carousel_state", ChangeDeviceState, bridge.handle_change_uv_led_carousel_state)
     rospy.Service("change_uv_led_end_effector_state", ChangeDeviceState, bridge.handle_change_uv_led_end_effector_state)
     rospy.Service("change_white_led_state", ChangeDeviceState, bridge.handle_change_white_led_state)
-    rospy.Timer(rospy.Duration(400.0/1000.0), bridge._feed_uart_watchdog)
+    rospy.Timer(rospy.Duration(400.0 / 1000.0), bridge.feed_uart_watchdog)
 
     while not rospy.is_shutdown():
         # receive() sleeps when no message is received.
