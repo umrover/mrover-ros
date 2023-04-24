@@ -16,7 +16,7 @@ def get_bytes(t: str, interface: str) -> int:
 
 
 def get_iface(default: str) -> Optional[str]:
-    eth_addrs = [addr for addr in os.listdir("/sys/class/net/") if addr[:1] == "e"]
+    eth_addrs = [addr for addr in os.listdir("/sys/class/net/") if addr.startswith("e")]
 
     eth_iface = None
     if len(eth_addrs) == 1:
