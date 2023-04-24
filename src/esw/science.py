@@ -125,7 +125,7 @@ class ScienceBridge:
         """
         self.ser.close()
 
-    def feed_uart_watchdog(self) -> bool:
+    def feed_uart_watchdog(self, event=None) -> bool:
         """Sends a message to the UART lines to feed the watchdog"""
         msg = "$WATCHDOG"
         success = self._send_msg(msg)
