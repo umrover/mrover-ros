@@ -93,6 +93,8 @@ class ArmControl:
 
         self._arm_mode = "arm_disabled"
         self._arm_mode_lock = Lock()
+        self._sa_arm_mode = "arm_disabled"
+        self._sa_arm_mode_lock = Lock()
 
         self.ra_cmd_pub = ros.Publisher("ra_cmd", JointState, queue_size=100)
         self.sa_cmd_pub = ros.Publisher("sa_cmd", JointState, queue_size=100)
@@ -144,6 +146,18 @@ class ArmControl:
         """
         with self._arm_mode_lock:
             self._arm_mode = msg.data
+            if self._arm_mode == "arm_disabled":
+                self.send_ra_stop()
+
+    def send_ra_stop(self) -> None:
+        """
+        Sends a stop command to the RA
+        :return:
+        """
+        self.ra_cmd.position = [nan for _ in self.RA_NAMES]
+        self.ra_cmd.velocity = [0.0 for _ in self.RA_NAMES]
+        self.ra_cmd.effort = [nan for _ in self.RA_NAMES]
+        self.ra_cmd_pub.publish(self.ra_cmd)
 
     def brushless_encoder_callback(self, msg: MotorsStatus) -> None:
         """
@@ -273,6 +287,17 @@ class ArmControl:
         """
         # TODO: Write this function if/when we get moveit_servo working
         return
+    
+    def sa_mode_callback(self, msg: String) -> None:
+        """
+        Callback for the arm mode topic
+        :param msg: String representing the SA Arm Mode, {"open_loop", "sa_disabled"}
+        :return:
+        """
+        with self._sa_arm_mode_lock:
+            self._sa_arm_mode = msg.data
+            if self._sa_arm_mode == "sa_disabled":
+                self.send_sa_stop()
 
     def sa_control_callback(self, msg: Joy) -> None:
         """
@@ -282,21 +307,32 @@ class ArmControl:
         Velocities are sent in range [-1,1]
         :return:
         """
+        with self._sa_arm_mode_lock:
+            if self._sa_arm_mode == "open_loop":
+                # Filter for xbox triggers, they are typically [-1,1]
+                raw_left_trigger = msg.axes[self.xbox_mappings["left_trigger"]]
+                left_trigger = raw_left_trigger if raw_left_trigger > 0 else 0
+                raw_right_trigger = msg.axes[self.xbox_mappings["right_trigger"]]
+                right_trigger = raw_right_trigger if raw_right_trigger > 0 else 0
 
-        # Filter for xbox triggers, they are typically [-1,1]
-        raw_left_trigger = msg.axes[self.xbox_mappings["left_trigger"]]
-        left_trigger = raw_left_trigger if raw_left_trigger > 0 else 0
-        raw_right_trigger = msg.axes[self.xbox_mappings["right_trigger"]]
-        right_trigger = raw_right_trigger if raw_right_trigger > 0 else 0
+                self.sa_cmd.velocity = [
+                    self.sa_config["sa_joint_1"]["multiplier"] * self.filter_xbox_axis(msg.axes, "left_js_x", 0.15, True),
+                    self.sa_config["sa_joint_2"]["multiplier"] * self.filter_xbox_axis(msg.axes, "left_js_y", 0.15, True),
+                    self.sa_config["sa_joint_3"]["multiplier"] * self.filter_xbox_axis(msg.axes, "right_js_y", 0.15, True),
+                    self.sa_config["scoop"]["multiplier"] * (right_trigger - left_trigger),
+                    self.sa_config["microscope"]["multiplier"]
+                    * self.filter_xbox_button(msg.buttons, "right_bumper", "left_bumper"),
+                ]
+                self.sa_cmd_pub.publish(self.sa_cmd)
 
-        self.sa_cmd.velocity = [
-            self.sa_config["sa_joint_1"]["multiplier"] * self.filter_xbox_axis(msg.axes, "left_js_x", 0.15, True),
-            self.sa_config["sa_joint_2"]["multiplier"] * self.filter_xbox_axis(msg.axes, "left_js_y", 0.15, True),
-            self.sa_config["sa_joint_3"]["multiplier"] * self.filter_xbox_axis(msg.axes, "right_js_y", 0.15, True),
-            self.sa_config["scoop"]["multiplier"] * (right_trigger - left_trigger),
-            self.sa_config["microscope"]["multiplier"]
-            * self.filter_xbox_button(msg.buttons, "right_bumper", "left_bumper"),
-        ]
+    def send_sa_stop(self) -> None:
+        """
+        Send a stop command to the SA arm
+        :return:
+        """
+        self.sa_cmd.position=[nan for _ in self.SA_NAMES],
+        self.sa_cmd.velocity=[0.0 for _ in self.SA_NAMES],
+        self.sa_cmd.effort=[nan for _ in self.SA_NAMES],
         self.sa_cmd_pub.publish(self.sa_cmd)
 
 
@@ -310,6 +346,7 @@ def main():
     ros.Subscriber("xbox/ra_control", Joy, arm.ra_control_callback)
     ros.Subscriber("ra/mode", String, arm.ra_mode_callback)
     ros.Subscriber("ra_slow_mode", Bool, arm.slow_mode_callback)
+    ros.Subscriber("sa/mode", String, arm.sa_mode_callback)
     ros.Subscriber("xbox/sa_control", Joy, arm.sa_control_callback)
     ros.Subscriber("brushless_ra_data", MotorsStatus, arm.brushless_encoder_callback)
     ros.Subscriber("brushed_ra_data", JointState, arm.brushed_encoder_callback)

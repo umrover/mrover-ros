@@ -40,27 +40,30 @@ export default {
       name: "/xbox/sa_control",
       messageType: "sensor_msgs/Joy"
     });
+    this.sa_mode_pub = new ROSLIB.Topic({
+      ros: this.$ros,
+      name: "sa/mode",
+      messageType: "std_msgs/String"
+    });
     interval = window.setInterval(() => {
-      if (this.arm_enabled) {
-        const gamepads = navigator.getGamepads();
-        for (let i = 0; i < 4; i++) {
-          const gamepad = gamepads[i];
-          if (
-            (gamepad && gamepad.id.includes("Microsoft")) ||
-            gamepad.id.includes("Xbox") ||
-            gamepad.id.includes("X-Box")
-          ) {
-            let buttons = gamepad.buttons.map((button) => {
-              return button.value;
-            });
+      const gamepads = navigator.getGamepads();
+      for (let i = 0; i < 4; i++) {
+        const gamepad = gamepads[i];
+        if (
+          (gamepad && gamepad.id.includes("Microsoft")) ||
+          gamepad.id.includes("Xbox") ||
+          gamepad.id.includes("X-Box")
+        ) {
+          let buttons = gamepad.buttons.map((button) => {
+            return button.value;
+          });
 
-            const joystickData = {
-              axes: gamepad.axes,
-              buttons: buttons
-            };
-            var joystickMsg = new ROSLIB.Message(joystickData);
-            this.joystick_pub.publish(joystickMsg);
-          }
+          const joystickData = {
+            axes: gamepad.axes,
+            buttons: buttons
+          };
+          var joystickMsg = new ROSLIB.Message(joystickData);
+          this.joystick_pub.publish(joystickMsg);
         }
       }
     }, updateRate * 1000);
@@ -69,6 +72,11 @@ export default {
   methods: {
     updateArmEnabled: function (enabled) {
       this.arm_enabled = enabled;
+      if (enabled) {
+        this.sa_mode_pub.publish(new ROSLIB.Message({ data: "open_loop" }));
+      } else {
+        this.sa_mode_pub.publish(new ROSLIB.Message({ data: "sa_disabled" }));
+      }
     }
   }
 };
