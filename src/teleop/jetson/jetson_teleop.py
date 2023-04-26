@@ -85,6 +85,7 @@ class Drive:
         self.twist_pub.publish(twist_msg)
 
 
+# TODO: This class has alot of duplicate logic for RA and SA, should be refactored
 class ArmControl:
     def __init__(self):
         self.xbox_mappings = ros.get_param("teleop/xbox_mappings")
@@ -151,7 +152,7 @@ class ArmControl:
 
     def send_ra_stop(self) -> None:
         """
-        Sends a stop command to the RA
+        Sends a stop command to the Robotic Arm
         :return:
         """
         self.ra_cmd.position = [nan for _ in self.RA_NAMES]
@@ -287,7 +288,7 @@ class ArmControl:
         """
         # TODO: Write this function if/when we get moveit_servo working
         return
-    
+
     def sa_mode_callback(self, msg: String) -> None:
         """
         Callback for the arm mode topic
@@ -316,9 +317,12 @@ class ArmControl:
                 right_trigger = raw_right_trigger if raw_right_trigger > 0 else 0
 
                 self.sa_cmd.velocity = [
-                    self.sa_config["sa_joint_1"]["multiplier"] * self.filter_xbox_axis(msg.axes, "left_js_x", 0.15, True),
-                    self.sa_config["sa_joint_2"]["multiplier"] * self.filter_xbox_axis(msg.axes, "left_js_y", 0.15, True),
-                    self.sa_config["sa_joint_3"]["multiplier"] * self.filter_xbox_axis(msg.axes, "right_js_y", 0.15, True),
+                    self.sa_config["sa_joint_1"]["multiplier"]
+                    * self.filter_xbox_axis(msg.axes, "left_js_x", 0.15, True),
+                    self.sa_config["sa_joint_2"]["multiplier"]
+                    * self.filter_xbox_axis(msg.axes, "left_js_y", 0.15, True),
+                    self.sa_config["sa_joint_3"]["multiplier"]
+                    * self.filter_xbox_axis(msg.axes, "right_js_y", 0.15, True),
                     self.sa_config["scoop"]["multiplier"] * (right_trigger - left_trigger),
                     self.sa_config["microscope"]["multiplier"]
                     * self.filter_xbox_button(msg.buttons, "right_bumper", "left_bumper"),
@@ -330,9 +334,9 @@ class ArmControl:
         Send a stop command to the SA arm
         :return:
         """
-        self.sa_cmd.position=[nan for _ in self.SA_NAMES],
-        self.sa_cmd.velocity=[0.0 for _ in self.SA_NAMES],
-        self.sa_cmd.effort=[nan for _ in self.SA_NAMES],
+        self.sa_cmd.position = [nan for _ in self.SA_NAMES]
+        self.sa_cmd.velocity = [0.0 for _ in self.SA_NAMES]
+        self.sa_cmd.effort = [nan for _ in self.SA_NAMES]
         self.sa_cmd_pub.publish(self.sa_cmd)
 
 
@@ -353,7 +357,7 @@ def main():
 
     # Publish joint states for Moveit at 10Hz
     while not ros.is_shutdown():
-        arm.publish_joint_states()
+        # arm.publish_joint_states()
         ros.sleep(0.1)
 
     ros.spin()
