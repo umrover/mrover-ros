@@ -21,7 +21,7 @@ ODOM_CONSTANTS = get_rosparam("drive/odom", default_constants)
 MAP_CONSTANTS = get_rosparam("drive/map", default_constants)
 
 
-class Driver:
+class DriveController:
     _last_angular_error: Optional[float] = None
 
     class DriveMode(Enum):
@@ -32,20 +32,44 @@ class Driver:
     _driver_state: DriveMode = DriveMode.STOPPED
 
     def _is_complete(self, target_pos: np.ndarray, rover_pose: SE3, completion_thresh: float) -> bool:
+        """
+        Returns whether the rover is at the target position.
+        :param target_pos: The target position to drive to.
+        :param rover_pose: The current pose of the rover.
+        :param completion_thresh: The distance threshold to consider the rover at the target position.
+        :return: Whether the rover is at the target position.
+        """
         rover_pos = rover_pose.position
         target_dir = target_pos - rover_pos
         target_dist = np.linalg.norm(target_dir)
         return bool(target_dist < completion_thresh)
 
+    def reset(self) -> None:
+        """
+        Resets the drive controller.
+        """
+        self._driver_state = self.DriveMode.STOPPED
+        self._last_angular_error = None
+
     def get_drive_command(
-        self: Driver,
+        self: DriveController,
         target_pos: np.ndarray,
         rover_pose: SE3,
         completion_thresh: float,
         turn_in_place_thresh: float,
         in_odom: bool = False,
     ) -> Tuple[Twist, bool]:
+        """
+        Returns a drive command to get the rover to the target position.
+        :param target_pos: The target position to drive to.
+        :param rover_pose: The current pose of the rover.
+        :param completion_thresh: The distance threshold to consider the rover at the target position.
+        :param turn_in_place_thresh: The angle threshold to consider the rover facing the target position and ready to drive forward towards it.
+        :param in_odom: Whether to use odom constants or map constants.
+        :return: A tuple of the drive command and a boolean indicating whether the rover is at the target position.
+        """
 
+        # get the correct constants based on whether we are driving in the odom or map frame
         constants = ODOM_CONSTANTS if in_odom else MAP_CONSTANTS
         MAX_DRIVING_EFFORT = constants["max_driving_effort"]
         MIN_DRIVING_EFFORT = constants["min_driving_effort"]
@@ -54,47 +78,57 @@ class Driver:
         TURNING_P = constants["turning_p"]
         DRIVING_P = constants["driving_p"]
 
+        # get the direction vector of the rover and the target position, zero the Z components of both since our controller only assumes motion and control over the Rover in the XY plane
         rover_dir = rover_pose.rotation.direction_vector()
         rover_dir[2] = 0
         rover_pos = rover_pose.position
         rover_pos[2] = 0
-
         target_pos[2] = 0
         target_dir = target_pos - rover_pos
 
+        # if we are at the target position, reset the controller and return a zero command
+        if self._is_complete(target_pos, rover_pose, completion_thresh):
+            self.reset()
+            return Twist(), True
+
         angle_error = angle_to_rotate(rover_dir, target_dir)
 
-        output = Twist(), False
+        output = (Twist(), False)
 
         if self._driver_state == self.DriveMode.STOPPED:
-            if self._is_complete(target_pos, rover_pose, completion_thresh):
-                output = Twist(), True
-            else:
-                self._driver_state = self.DriveMode.TURN_IN_PLACE
-                output = Twist(), False
+            # if the drive mode is STOP (we know we aren't at the target) so we must start moving towards it
+            # just switch to the TURN_IN_PLACE state for now under the assumption that we need to turn to face the target
+            # return a zero command and False to indicate we aren't at the target (and are also not in the correct state to figure out how to get there)
+            self._driver_state = self.DriveMode.TURN_IN_PLACE
+            output = (Twist(), False)
 
         elif self._driver_state == self.DriveMode.TURN_IN_PLACE:
-            if self._is_complete(target_pos, rover_pose, completion_thresh):
-                self._driver_state = self.DriveMode.STOPPED
-                output = Twist(), True
+            # if we are in the TURN_IN_PLACE state, we need to turn to face the target
 
+            # if we are within the turn threshold to face the target, we can start driving straight towards it
             if abs(angle_error) < turn_in_place_thresh:
                 self._driver_state = self.DriveMode.DRIVE_FORWARD
-                output = Twist(), False
+                output = (Twist(), False)
 
-            if self._last_angular_error is not None and np.sign(self._last_angular_error) != np.sign(angle_error):
+            # IVT (Intermediate Value Theorem) check. If the sign of the angular error has changed, this means we've crossed through 0 erorr
+            # in order to prevent osciallation, we 'give up' and just switch to the drive forward state
+            elif self._last_angular_error is not None and np.sign(self._last_angular_error) != np.sign(angle_error):
                 self._driver_state = self.DriveMode.DRIVE_FORWARD
-                output = Twist(), False
+                output = (Twist(), False)
 
-            cmd_vel = Twist()
-            cmd_vel.angular.z = np.clip(angle_error * TURNING_P, MIN_TURNING_EFFORT, MAX_TURNING_EFFORT)
-            output = cmd_vel, False
+            # if neither of those things are true, we need to turn in place towards our target heading, so set the z component of the output Twist message
+            else:
+                cmd_vel = Twist()
+                cmd_vel.angular.z = np.clip(angle_error * TURNING_P, MIN_TURNING_EFFORT, MAX_TURNING_EFFORT)
+                output = (cmd_vel, False)
 
         elif self._driver_state == self.DriveMode.DRIVE_FORWARD:
-            if self._is_complete(target_pos, rover_pose, completion_thresh):
-                self._driver_state = self.DriveMode.STOPPED
-                output = Twist(), True
-
+            # if we are driving straight towards the target and our last angular error was inside the threshold
+            # but our current error was outside the threshold, this means that we have crossed from an acceptable
+            # turning error to an unacceptable turning error and we must switch back into the TURN_IN_PLACE state
+            # the reason we don't just check if the current error is outside is because it would undermine the IVT
+            # check in the TURN_IN_PLACE state and cause oscillation, checking it this way makes it so that we only
+            # switch back into the TURN_IN_PLACE state on the "rising edge" of the turn error
             last_angular_was_inside = (
                 self._last_angular_error is not None and abs(self._last_angular_error) < turn_in_place_thresh
             )
@@ -102,17 +136,13 @@ class Driver:
             if cur_angular_is_outside and last_angular_was_inside:
                 self._driver_state = self.DriveMode.TURN_IN_PLACE
                 output = Twist(), False
-
-            cmd_vel = Twist()
-            distance_error = np.linalg.norm(target_dir)
-            cmd_vel.linear.x = np.clip(distance_error * DRIVING_P, MIN_DRIVING_EFFORT, MAX_DRIVING_EFFORT)
-            cmd_vel.angular.z = np.clip(angle_error * TURNING_P, MIN_TURNING_EFFORT, MAX_TURNING_EFFORT)
-            output = cmd_vel, False
+            # otherwise we compute a drive command with both a linear and angular component in the Twist message
+            else:
+                cmd_vel = Twist()
+                distance_error = np.linalg.norm(target_dir)
+                cmd_vel.linear.x = np.clip(distance_error * DRIVING_P, MIN_DRIVING_EFFORT, MAX_DRIVING_EFFORT)
+                cmd_vel.angular.z = np.clip(angle_error * TURNING_P, MIN_TURNING_EFFORT, MAX_TURNING_EFFORT)
+                output = cmd_vel, False
 
         self._last_angular_error = angle_error
-        # if we are reporting that we are finished, reset the all internal state
-        if output[1]:
-            self._last_angular_error = None
-            self._driver_state = self.DriveMode.STOPPED
-
         return output

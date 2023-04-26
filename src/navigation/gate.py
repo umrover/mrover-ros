@@ -11,7 +11,7 @@ from aenum import Enum, NoAlias
 from state import BaseState
 from trajectory import Trajectory
 from dataclasses import dataclass
-from drive import Driver
+from drive import DriveController
 from util.np_utils import normalized, perpendicular_2d
 from util.ros_utils import get_rosparam
 from shapely.geometry import LineString
