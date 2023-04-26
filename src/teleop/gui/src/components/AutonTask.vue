@@ -48,7 +48,10 @@
         </div>
         <div></div>
         <JoystickValues />
-        <div class="calibration status data" style="background-color: lightgray">
+        <div
+          class="calibration status data"
+          style="background-color: lightgray"
+        >
           <IMUCalibration />
         </div>
       </div>
@@ -71,6 +74,12 @@
       </div>
       <div v-show="false">
         <MastGimbalControls></MastGimbalControls>
+      </div>
+      <div v-if="!stuck_status" class="stuck not-stuck">
+        <h1>Nominal Conditions</h1>
+      </div>
+      <div v-else class="stuck rover-stuck">
+        <h1>Obstruction Detected</h1>
       </div>
     </div>
     <div class="box1" style="margin-top: 10px">
@@ -115,34 +124,36 @@ export default {
       odom: {
         latitude_deg: 42.294864932393835,
         longitude_deg: -83.70781314674628,
-        bearing_deg: 0,
+        bearing_deg: 0
       },
 
       nav_status: {
         nav_state_name: "OffState",
         completed_wps: 0,
-        total_wps: 0,
+        total_wps: 0
       },
 
-
-      teleopEnabledCheck: false,
+      teleopEnabledCheck: true,
 
       navBlink: false,
       greenHook: false,
       ledColor: "red",
 
+      stuck_status: false,
+
       // Pubs and Subs
       nav_status_sub: null,
       odom_sub: null,
+      stuck_sub: null,
       auton_led_client: null,
-      tfClient: null,
+      tfClient: null
     };
   },
 
   computed: {
     ...mapGetters("autonomy", {
       autonEnabled: "autonEnabled",
-      teleopEnabled: "teleopEnabled",
+      teleopEnabled: "teleopEnabled"
     }),
 
     nav_state_color: function () {
@@ -159,7 +170,7 @@ export default {
       } else {
         return navRed;
       }
-    },
+    }
   },
 
   watch: {
@@ -178,20 +189,26 @@ export default {
       if (send) {
         this.sendColor();
       }
-    },
+    }
   },
 
   created: function () {
     this.nav_status_sub = new ROSLIB.Topic({
       ros: this.$ros,
       name: "/smach/container_status",
-      messageType: "smach_msgs/SmachContainerStatus",
+      messageType: "smach_msgs/SmachContainerStatus"
     });
 
     this.odom_sub = new ROSLIB.Topic({
       ros: this.$ros,
       name: "/gps/fix",
-      messageType: "sensor_msgs/NavSatFix",
+      messageType: "sensor_msgs/NavSatFix"
+    });
+
+    this.stuck_sub = new ROSLIB.Topic({
+      ros: this.$ros,
+      name: "/stuck_status",
+      messageType: "std_msgs/Bool"
     });
 
     this.tfClient = new ROSLIB.TFClient({
@@ -199,13 +216,13 @@ export default {
       fixedFrame: "map",
       // Thresholds to trigger subscription callback
       angularThres: 0.01,
-      transThres: 0.01,
+      transThres: 0.01
     });
 
     this.auton_led_client = new ROSLIB.Service({
       ros: this.$ros,
       name: "change_auton_led_state",
-      serviceType: "mrover/ChangeAutonLEDState",
+      serviceType: "mrover/ChangeAutonLEDState"
     });
 
     // Subscriber for odom to base_link transform
@@ -225,6 +242,11 @@ export default {
       this.odom.longitude_deg = msg.longitude;
     });
 
+    this.stuck_sub.subscribe((msg) => {
+      // Callback for stuck status
+      this.stuck_status = msg.data;
+    });
+
     // Blink interval for green and off flasing
     setInterval(() => {
       this.navBlink = !this.navBlink;
@@ -237,7 +259,7 @@ export default {
   methods: {
     sendColor() {
       let request = new ROSLIB.ServiceRequest({
-        color: this.ledColor,
+        color: this.ledColor
       });
 
       this.auton_led_client.callService(request, (result) => {
@@ -248,8 +270,8 @@ export default {
           }, 1000);
         }
       });
-    },
-  },
+    }
+  }
 };
 </script>
 
@@ -265,7 +287,8 @@ export default {
     "header header header"
     "map waypoints waypoints"
     "map waypoints waypoints"
-    "data waypoints waypoints";
+    "data stuck stuck";
+
   font-family: sans-serif;
   height: auto;
   width: auto;
@@ -290,6 +313,28 @@ export default {
 
 .box2 {
   display: block;
+}
+
+.stuck {
+  grid-area: stuck;
+  border-radius: 5px;
+  line-height: 70px;
+  border: 1px solid black;
+  font-size: 40px;
+  text-align: center;
+  justify-content: center;
+}
+
+.stuck h1 {
+  margin-top: 30px;
+}
+
+.rover-stuck {
+  background-color: lightcoral;
+}
+
+.not-stuck {
+  background-color: yellowgreen;
 }
 
 .light-bg {
