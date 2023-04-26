@@ -304,14 +304,14 @@ export default {
 
       showModal: false,
       compModalHeaders: [
+        "Start",
         "Waypoint 1",
         "Waypoint 2",
         "Waypoint 3",
         "Post 1",
         "Post 2",
         "Post 3",
-        "Gate Post 1",
-        "Gate Post 2"
+        "Gate"
       ],
       compModalLatDeg: Array(8).fill(0),
       compModalLatMin: Array(8).fill(0),
@@ -562,11 +562,25 @@ export default {
         };
       });
 
+      // Always start the ids at 1 after the max id in currently in the array
+      let start_id =
+        this.storedWaypoints.length > 0
+          ? Math.max(...this.storedWaypoints.map((waypoint) => waypoint.id)) + 1
+          : 0;
+
+      this.storedWaypoints.push({
+        name: "Start",
+        id: start_id,
+        lat: convertDMS(coordinates[0].lat, "D").d,
+        lon: convertDMS(coordinates[0].lon, "D").d,
+        gate: false,
+        post: false
+      });
       // Add Waypoints
-      for (let i = 0; i < 3; ++i) {
+      for (let i = 1; i < 4; ++i) {
         this.storedWaypoints.push({
-          name: "Waypoint " + (i + 1),
-          id: this.id,
+          name: "Waypoint " + i,
+          id: start_id + i,
           lat: convertDMS(coordinates[i].lat, "D").d,
           lon: convertDMS(coordinates[i].lon, "D").d,
           gate: false,
@@ -575,10 +589,10 @@ export default {
       }
 
       // Add AR Tag Posts
-      for (let i = 3; i < 6; ++i) {
+      for (let i = 4; i < 7; ++i) {
         this.storedWaypoints.push({
-          name: "AR Tag Post " + (i - 2),
-          id: this.id,
+          name: "AR Tag Post " + (i - 3),
+          id: start_id + i,
           lat: convertDMS(coordinates[i].lat, "D").d,
           lon: convertDMS(coordinates[i].lon, "D").d,
           gate: false,
@@ -586,17 +600,15 @@ export default {
         });
       }
 
-      // Add AR Tag Gate Posts
-      for (let i = 6; i < 8; ++i) {
-        this.storedWaypoints.push({
-          name: "AR Tag Gate Post " + (i - 5),
-          id: this.id,
-          lat: convertDMS(coordinates[i].lat, "D").d,
-          lon: convertDMS(coordinates[i].lon, "D").d,
-          gate: true,
-          post: false
-        });
-      }
+      // Add Gate Location
+      this.storedWaypoints.push({
+        name: "Gate",
+        id: start_id + 7,
+        lat: convertDMS(coordinates[7].lat, "D").d,
+        lon: convertDMS(coordinates[7].lon, "D").d,
+        gate: true,
+        post: false
+      });
     },
 
     deleteItem: function (payload) {
