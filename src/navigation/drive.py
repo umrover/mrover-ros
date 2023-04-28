@@ -60,7 +60,7 @@ class Driver:
 
         if drive_back:
             rover_dir *= -1
-        
+
         rover_pos = rover_pose.position
         rover_pos[2] = 0
 
@@ -115,6 +115,6 @@ class Driver:
 
         if drive_back:
             output[0].linear.x *= -1
-        
+
         self._last_angular_error = angle_error
         return output
