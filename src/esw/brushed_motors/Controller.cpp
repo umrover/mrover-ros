@@ -150,8 +150,7 @@ void Controller::enableLimitSwitch(bool enable, bool& limitEnable, uint8_t opera
 
         // Only set limitEnable if transaction was successful.
         limitEnable = enable;
-    }
-    catch (IOFailure& e) {
+    } catch (IOFailure& e) {
         ROS_ERROR("enableLimitSwitch failed on %s", name.c_str());
     }
 }
@@ -189,8 +188,8 @@ bool Controller::getLimitSwitchEnabled() const {
 // EFFECTS: I2C bus, and turns on the controller. Can be used as a way to tick the watchdog for a particular mcu.
 void Controller::turnOn() const {
     try {
-    I2C::transact(deviceAddress, motorIDRegMask | ON_OP, ON_WB, ON_RB,
-                  nullptr, nullptr);
+        I2C::transact(deviceAddress, motorIDRegMask | ON_OP, ON_WB, ON_RB,
+                      nullptr, nullptr);
     } catch (IOFailure& e) {
         ROS_ERROR("turnOn failed on %s", name.c_str());
     }
