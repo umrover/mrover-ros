@@ -26,11 +26,13 @@ export default {
   data() {
     return {
       arm_enabled: false,
-      joystick_pub: null
+      joystick_pub: null,
+      sa_mode_service: null
     };
   },
 
   beforeDestroy: function () {
+    this.updateArmEnabled(false);
     window.clearInterval(interval);
   },
 
@@ -45,6 +47,7 @@ export default {
       name: "change_sa_mode",
       serviceType: "mrover/ChangeArmMode"
     });
+    this.updateArmEnabled(false);
     interval = window.setInterval(() => {
       const gamepads = navigator.getGamepads();
       for (let i = 0; i < 4; i++) {
@@ -73,7 +76,7 @@ export default {
     updateArmEnabled: function (enabled) {
       this.arm_enabled = enabled;
       if (enabled) {
-        this.sa_mode_pub.callService(
+        this.sa_mode_service.callService(
           new ROSLIB.ServiceRequest({ mode: "sa_enabled" }),
           (result) => {
             if (!result.success) {
@@ -82,7 +85,7 @@ export default {
           }
         );
       } else {
-        this.sa_mode_pub.callService(
+        this.sa_mode_service.callService(
           new ROSLIB.ServiceRequest({ mode: "sa_disabled" }),
           (result) => {
             if (!result.success) {

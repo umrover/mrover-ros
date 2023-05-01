@@ -73,7 +73,7 @@
           { name: 'joint_b', option: 'Joint B' },
           { name: 'joint_c', option: 'Joint C' },
           { name: 'joint_d', option: 'Joint D' },
-          { name: 'joint_e', option: 'Joint E' },
+          { name: 'joint_e', option: 'Joint E' }
         ]"
       />
     </div>
@@ -98,56 +98,59 @@ export default {
     Checkbox,
     JointAdjust,
     ToggleButton,
-    LimitSwitch,
+    LimitSwitch
   },
   data() {
     return {
-      armcontrols_pub: null,
       arm_controls: "arm_disabled",
-      joystick_pub: null,
-      jointlock_pub: null,
       joints_array: [false, false, false, false, false, false],
       slow_mode: false,
-      slowmode_pub: null,
       laser_enabled: false,
+
+      ra_mode_service: null,
+      jointlock_pub: null,
+      joystick_pub: null,
       laser_service: null,
+      slowmode_pub: null
     };
   },
 
   beforeDestroy: function () {
+    this.arm_controls = "arm_disabled";
+    this.updateArmMode();
     window.clearInterval(interval);
   },
 
   created: function () {
-    this.updateArmMode();
     this.joystick_pub = new ROSLIB.Topic({
       ros: this.$ros,
       name: "/xbox/ra_control",
-      messageType: "sensor_msgs/Joy",
+      messageType: "sensor_msgs/Joy"
     });
     this.laser_service = new ROSLIB.Service({
       ros: this.$ros,
       name: "change_arm_laser_state",
-      serviceType: "mrover/ChangeDeviceState",
+      serviceType: "mrover/ChangeDeviceState"
     });
     this.ra_mode_service = new ROSLIB.Service({
       ros: this.$ros,
       name: "change_ra_mode",
-      serviceType: "mrover/ChangeArmMode",
+      serviceType: "mrover/ChangeArmMode"
     });
     this.jointlock_pub = new ROSLIB.Topic({
       ros: this.$ros,
       name: "/joint_lock",
-      messageType: "mrover/JointLock",
+      messageType: "mrover/JointLock"
     });
     this.slow_mode_pub = new ROSLIB.Topic({
       ros: this.$ros,
       name: "/ra_slow_mode",
-      messageType: "std_msgs/Bool",
+      messageType: "std_msgs/Bool"
     });
+    this.updateArmMode();
     const jointData = {
       //publishes array of all falses when refreshing the page
-      joints: this.joints_array,
+      joints: this.joints_array
     };
     var jointlockMsg = new ROSLIB.Message(jointData);
     this.jointlock_pub.publish(jointlockMsg);
@@ -176,8 +179,9 @@ export default {
 
   methods: {
     updateArmMode: function () {
+      console.log("Updating arm mode");
       const armData = {
-        mode: this.arm_controls,
+        mode: this.arm_controls
       };
       var armcontrolsmsg = new ROSLIB.ServiceRequest(armData);
       this.ra_mode_service.callService(armcontrolsmsg, (response) => {
@@ -185,13 +189,12 @@ export default {
           alert("Failed to change arm mode");
         }
       });
-      this.armcontrols_pub.publish(armcontrolsmsg);
     },
 
     updateJointsEnabled: function (jointnum, enabled) {
       this.joints_array[jointnum] = enabled;
       const jointData = {
-        joints: this.joints_array,
+        joints: this.joints_array
       };
       var jointlockMsg = new ROSLIB.Message(jointData);
       this.jointlock_pub.publish(jointlockMsg);
@@ -200,7 +203,7 @@ export default {
     updateSlowMode: function (enabled) {
       this.slow_mode = enabled;
       const slowData = {
-        data: this.slow_mode,
+        data: this.slow_mode
       };
       var slowModeMsg = new ROSLIB.Message(slowData);
       this.slow_mode_pub.publish(slowModeMsg);
@@ -208,7 +211,7 @@ export default {
     publishJoystickMessage: function (axes, buttons) {
       const joystickData = {
         axes: axes,
-        buttons: buttons,
+        buttons: buttons
       };
       var joystickMsg = new ROSLIB.Message(joystickData);
       this.joystick_pub.publish(joystickMsg);
@@ -216,7 +219,7 @@ export default {
     toggleArmLaser: function () {
       this.laser_enabled = !this.laser_enabled;
       let request = new ROSLIB.ServiceRequest({
-        enable: this.laser_enabled,
+        enable: this.laser_enabled
       });
       this.laser_service.callService(request, (result) => {
         if (!result) {
@@ -224,8 +227,8 @@ export default {
           alert("Toggling Arm Laser failed.");
         }
       });
-    },
-  },
+    }
+  }
 };
 </script>
 
