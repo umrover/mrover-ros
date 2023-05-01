@@ -456,20 +456,18 @@ export default {
       // Make sure local odom format matches vuex odom format
       (this.odom_format_in = this.odom_format);
 
-    this.nav_status_sub.subscribe(
-      (msg) => {
-        if (msg.active_states[0] !== "OffState" && !this.autonEnabled) {
-          return;
-        }
-        this.waitingForNav = false;
-        this.autonButtonColor = this.autonEnabled ? "green" : "red";
-      },
+    this.nav_status_sub.subscribe((msg) => {
+      if (msg.active_states[0] !== "OffState" && !this.autonEnabled) {
+        return;
+      }
+      this.waitingForNav = false;
+      this.autonButtonColor = this.autonEnabled ? "green" : "red";
+    });
 
-      // Interval for publishing Course
-      (interval = window.setInterval(() => {
-        this.rover_stuck_pub.publish({ data: this.roverStuck });
-      }, 100))
-    );
+    // Interval for publishing stuck status for training data
+    interval = window.setInterval(() => {
+      this.rover_stuck_pub.publish({ data: this.roverStuck });
+    }, 100);
   },
 
   mounted: function () {
