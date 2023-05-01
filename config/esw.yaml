@@ -293,8 +293,8 @@ brushless:
       joint_c:
         id: 6
         bus: 3
-        max_rps: 50
-        max_torque: 0.3
+        max_rps: 80
+        max_torque: 0.7
         multiplier: -1
       joint_d:
         id: 7
