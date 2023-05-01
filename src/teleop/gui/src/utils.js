@@ -42,11 +42,11 @@ const disableAutonLED = function (ros) {
   let auton_led_client = new ROSLIB.Service({
     ros: ros,
     name: "change_auton_led_state",
-    serviceType: "mrover/ChangeAutonLEDState"
+    serviceType: "mrover/ChangeAutonLEDState",
   });
-  
+
   let request = new ROSLIB.ServiceRequest({
-    color: "off"
+    color: "off",
   });
 
   auton_led_client.callService(request, (result) => {
@@ -55,10 +55,9 @@ const disableAutonLED = function (ros) {
       alert("Failed to disable auton LED. Retrying in 1 second.");
       setTimeout(() => {
         disableAutonLED(ros);
-      }
-      , 1000);
+      }, 1000);
     }
   });
-}
+};
 
 export { convertDMS, quaternionToDisplayAngle, disableAutonLED };

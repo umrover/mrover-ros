@@ -46,12 +46,12 @@ export default {
   name: "MainMenu",
   components: {
     MenuButton,
-    ToggleButton
+    ToggleButton,
   },
 
   data() {
     return {
-      competitionMode: true
+      competitionMode: true,
     };
   },
 
@@ -59,14 +59,14 @@ export default {
     competitionMode: function (val) {
       if (val) {
         Vue.prototype.$ros = new ROSLIB.Ros({
-          url: "ws://10.0.0.7:9090"
+          url: "ws://10.0.0.7:9090",
         });
       } else {
         Vue.prototype.$ros = new ROSLIB.Ros({
-          url: "ws://localhost:9090"
+          url: "ws://localhost:9090",
         });
       }
-    }
+    },
   },
 
   created: function () {
@@ -78,8 +78,8 @@ export default {
     toggleCompetitionMode() {
       this.competitionMode = !this.competitionMode;
       Vue.prototype.$competitionMode = this.competitionMode;
-    }
-  }
+    },
+  },
 };
 </script>
 

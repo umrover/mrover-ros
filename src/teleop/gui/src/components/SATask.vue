@@ -95,7 +95,7 @@
         :options="[
           { name: 'sa_joint_1', option: 'Joint 1' },
           { name: 'sa_joint_2', option: 'Joint 2' },
-          { name: 'sa_joint_3', option: 'Joint 3' }
+          { name: 'sa_joint_3', option: 'Joint 3' },
         ]"
       />
     </div>
@@ -139,7 +139,7 @@ export default {
     LimitSwitch,
     CalibrationCheckbox,
     CommReadout,
-    MotorAdjust
+    MotorAdjust,
   },
   data() {
     return {
@@ -147,7 +147,7 @@ export default {
       odom: {
         latitude_deg: 42.294864932393835,
         longitude_deg: -83.70781314674628,
-        bearing_deg: 0
+        bearing_deg: 0,
       },
 
       jointState: {},
@@ -155,12 +155,12 @@ export default {
       moteusState: {
         name: ["", "", "", "", "", ""],
         error: ["", "", "", "", "", ""],
-        state: ["", "", "", "", "", ""]
+        state: ["", "", "", "", "", ""],
       },
 
       // Pubs and Subs
       odom_sub: null,
-      tfClient: null
+      tfClient: null,
     };
   },
 
@@ -170,7 +170,7 @@ export default {
     this.odom_sub = new ROSLIB.Topic({
       ros: this.$ros,
       name: "/gps/fix",
-      messageType: "sensor_msgs/NavSatFix"
+      messageType: "sensor_msgs/NavSatFix",
     });
 
     this.odom_sub.subscribe((msg) => {
@@ -184,7 +184,7 @@ export default {
       fixedFrame: "odom",
       // Thresholds to trigger subscription callback
       angularThres: 0.01,
-      transThres: 0.01
+      transThres: 0.01,
     });
 
     // Subscriber for odom to base_link transform
@@ -196,14 +196,14 @@ export default {
     this.brushless_motors = new ROSLIB.Topic({
       ros: this.$ros,
       name: "drive_status",
-      messageType: "mrover/MotorsStatus"
+      messageType: "mrover/MotorsStatus",
     });
 
     this.brushless_motors.subscribe((msg) => {
       this.jointState = msg.joint_states;
       this.moteusState = msg.moteus_states;
     });
-  }
+  },
 };
 </script>
 
