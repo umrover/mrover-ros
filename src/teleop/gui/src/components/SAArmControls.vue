@@ -40,10 +40,10 @@ export default {
       name: "/xbox/sa_control",
       messageType: "sensor_msgs/Joy"
     });
-    this.sa_mode_pub = new ROSLIB.Topic({
+    this.sa_mode_service = new ROSLIB.Service({
       ros: this.$ros,
-      name: "sa/mode",
-      messageType: "std_msgs/String"
+      name: "change_sa_mode",
+      serviceType: "mrover/ChangeArmMode"
     });
     interval = window.setInterval(() => {
       const gamepads = navigator.getGamepads();
@@ -73,9 +73,23 @@ export default {
     updateArmEnabled: function (enabled) {
       this.arm_enabled = enabled;
       if (enabled) {
-        this.sa_mode_pub.publish(new ROSLIB.Message({ data: "open_loop" }));
+        this.sa_mode_pub.callService(
+          new ROSLIB.ServiceRequest({ mode: "sa_enabled" }),
+          (result) => {
+            if (!result.success) {
+              alert("Failed to enable SA arm");
+            }
+          }
+        );
       } else {
-        this.sa_mode_pub.publish(new ROSLIB.Message({ data: "sa_disabled" }));
+        this.sa_mode_pub.callService(
+          new ROSLIB.ServiceRequest({ mode: "sa_disabled" }),
+          (result) => {
+            if (!result.success) {
+              alert("Failed to disable SA arm");
+            }
+          }
+        );
       }
     }
   }

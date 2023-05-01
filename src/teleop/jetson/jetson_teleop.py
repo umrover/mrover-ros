@@ -352,9 +352,7 @@ def main():
 
     ros.Subscriber("joystick", Joy, drive.teleop_drive_callback)
     ros.Subscriber("xbox/ra_control", Joy, arm.ra_control_callback)
-    ros.Subscriber("ra/mode", String, arm.ra_mode_callback)
     ros.Subscriber("ra_slow_mode", Bool, arm.slow_mode_callback)
-    ros.Subscriber("sa/mode", String, arm.sa_mode_callback)
     ros.Subscriber("xbox/sa_control", Joy, arm.sa_control_callback)
     ros.Subscriber("brushless_ra_data", MotorsStatus, arm.brushless_encoder_callback)
     ros.Subscriber("brushed_ra_data", JointState, arm.brushed_encoder_callback)

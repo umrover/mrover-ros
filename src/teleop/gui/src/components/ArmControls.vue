@@ -119,11 +119,6 @@ export default {
   },
 
   created: function () {
-    this.armcontrols_pub = new ROSLIB.Topic({
-      ros: this.$ros,
-      name: "ra/mode",
-      messageType: "std_msgs/String",
-    });
     this.updateArmMode();
     this.joystick_pub = new ROSLIB.Topic({
       ros: this.$ros,
@@ -134,6 +129,11 @@ export default {
       ros: this.$ros,
       name: "change_arm_laser_state",
       serviceType: "mrover/ChangeDeviceState",
+    });
+    this.ra_mode_service = new ROSLIB.Service({
+      ros: this.$ros,
+      name: "change_ra_mode",
+      serviceType: "mrover/ChangeArmMode",
     });
     this.jointlock_pub = new ROSLIB.Topic({
       ros: this.$ros,
@@ -177,9 +177,14 @@ export default {
   methods: {
     updateArmMode: function () {
       const armData = {
-        data: this.arm_controls,
+        mode: this.arm_controls,
       };
-      var armcontrolsmsg = new ROSLIB.Message(armData);
+      var armcontrolsmsg = new ROSLIB.ServiceRequest(armData);
+      this.ra_mode_service.callService(armcontrolsmsg, (response) => {
+        if (!response.success) {
+          alert("Failed to change arm mode");
+        }
+      });
       this.armcontrols_pub.publish(armcontrolsmsg);
     },
 
