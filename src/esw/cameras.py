@@ -139,8 +139,6 @@ class StreamManager:
         self._primary_cmds = [CameraCmd(-1, -1) for _ in range(StreamManager.MAX_STREAMS)]
         self._secondary_cmds = [CameraCmd(-1, -1) for _ in range(StreamManager.MAX_STREAMS)]
 
-        self._device_arr = generate_dev_list()
-
     def reset_streams(self, req: ResetCamerasRequest) -> ResetCamerasResponse:
         """
         Destroy all streams for a particular IP endpoint.
@@ -175,13 +173,15 @@ class StreamManager:
         :return: A corresponding response.
         """
 
-        if req.camera_cmd.device >= len(self._device_arr):
-            return
-        else:
-            device_id = self._device_arr[req.camera_cmd.device]
+        device_arr = generate_dev_list()
+        try:
+            device_id = device_arr[req.camera_cmd.device]
+        except KeyError:
+            rospy.logerr(f"Received invalid camera device ID {device_id}")
+            return self._get_change_response(False)
 
         if not (0 <= device_id < self.MAX_DEVICE_ID):
-            rospy.logerr(f"Received invalid camera device ID {device_id}")
+            rospy.logerr(f"Camera device ID {device_id} is not supported, max is {self.MAX_DEVICE_ID}")
             return self._get_change_response(False)
 
         with self._lock:
