@@ -120,7 +120,7 @@ class StreamManager:
         self._stream_by_device = [None for _ in range(self.MAX_DEVICE_ID)]
         self._primary_cmds = [CameraCmd(-1, -1) for _ in range(StreamManager.MAX_STREAMS)]
         self._secondary_cmds = [CameraCmd(-1, -1) for _ in range(StreamManager.MAX_STREAMS)]
-        
+
         self._device_arr = generate_dev_list()
 
     def reset_streams(self, req: ResetCamerasRequest) -> ResetCamerasResponse:
@@ -156,7 +156,7 @@ class StreamManager:
         :param req: Request message from the GUI.
         :return: A corresponding response.
         """
-        
+
         if req.camera_cmd.device >= len(self._device_arr):
             return
         else:
