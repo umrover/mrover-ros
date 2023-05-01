@@ -7,6 +7,8 @@ from multiprocessing import Process
 from typing import Dict, List, Any
 from threading import Lock
 
+from mrover.scripts.extract_cameras import *
+
 from mrover.msg import CameraCmd
 
 from mrover.srv import (
@@ -22,8 +24,6 @@ PRIMARY_IP: str = rospy.get_param("cameras/ips/primary")
 SECONDARY_IP: str = rospy.get_param("cameras/ips/secondary")
 
 CAPTURE_ARGS: List[Dict[str, int]] = rospy.get_param("cameras/arguments")
-
-DEVICES_DOUBLED: bool = rospy.get_param("cameras/devices_doubled")
 
 
 class Stream:
@@ -60,7 +60,7 @@ class Stream:
         self._process = Process(
             target=send,
             args=(
-                self._cmd.device * 2 if DEVICES_DOUBLED else self._cmd.device,
+                self._cmd.device,
                 PRIMARY_IP if self.primary else SECONDARY_IP,
                 5000 + self._cmd.device,
                 args["bps"],
@@ -120,6 +120,8 @@ class StreamManager:
         self._stream_by_device = [None for _ in range(self.MAX_DEVICE_ID)]
         self._primary_cmds = [CameraCmd(-1, -1) for _ in range(StreamManager.MAX_STREAMS)]
         self._secondary_cmds = [CameraCmd(-1, -1) for _ in range(StreamManager.MAX_STREAMS)]
+        
+        self._device_arr = generate_dev_list()
 
     def reset_streams(self, req: ResetCamerasRequest) -> ResetCamerasResponse:
         """
@@ -154,7 +156,11 @@ class StreamManager:
         :param req: Request message from the GUI.
         :return: A corresponding response.
         """
-        device_id = req.camera_cmd.device
+        
+        if req.camera_cmd.device >= len(self._device_arr):
+            return
+        else:
+            device_id = self._device_arr[req.camera_cmd.device]
 
         if not (0 <= device_id < self.MAX_DEVICE_ID):
             rospy.logerr(f"Received invalid camera device ID {device_id}")
