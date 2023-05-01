@@ -40,6 +40,7 @@ import MenuButton from "./MenuButton.vue";
 import ToggleButton from "./ToggleButton.vue";
 import Vue from "vue";
 import ROSLIB from "roslib";
+import { disableAutonLED } from "../utils.js";
 
 export default {
   name: "MainMenu",
@@ -69,6 +70,7 @@ export default {
   },
 
   created: function () {
+    disableAutonLED(this.$ros);
     this.competitionMode = Vue.prototype.$competitionMode;
   },
 

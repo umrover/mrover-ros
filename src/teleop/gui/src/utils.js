@@ -1,5 +1,6 @@
 // Function to convert coordinates between different odom formats
 import * as qte from "quaternion-to-euler";
+import ROSLIB from "roslib";
 const convertDMS = function (coord_in, odom_format) {
   const DEG_DECIMALS = 8;
   const MIN_DECIMALS = 6;
@@ -37,4 +38,27 @@ const quaternionToDisplayAngle = function (quaternion) {
   return (Math.PI / 2.0 - euler[2]) * (180 / Math.PI);
 };
 
-export { convertDMS, quaternionToDisplayAngle };
+const disableAutonLED = function (ros) {
+  let auton_led_client = new ROSLIB.Service({
+    ros: ros,
+    name: "change_auton_led_state",
+    serviceType: "mrover/ChangeAutonLEDState"
+  });
+  
+  let request = new ROSLIB.ServiceRequest({
+    color: "off"
+  });
+
+  auton_led_client.callService(request, (result) => {
+    // Wait 1 second then try again if fail
+    if (!result.success) {
+      alert("Failed to disable auton LED. Retrying in 1 second.");
+      setTimeout(() => {
+        disableAutonLED(ros);
+      }
+      , 1000);
+    }
+  });
+}
+
+export { convertDMS, quaternionToDisplayAngle, disableAutonLED };
