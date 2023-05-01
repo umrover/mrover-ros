@@ -9,6 +9,7 @@ from std_msgs.msg import String, Bool
 from sensor_msgs.msg import Joy, JointState
 from geometry_msgs.msg import Twist
 from mrover.msg import MotorsStatus
+from mrover.srv import ChangeArmMode, ChangeArmModeRequest, ChangeArmModeResponse
 from typing import List
 
 
@@ -137,18 +138,18 @@ class ArmControl:
             effort=[nan for _ in self.RA_NAMES],
         )
 
-    # Callback function executed after the publication of the current robot position
-    def ra_mode_callback(self, msg: String) -> None:
+    # Service handler for RA arm control mode
+    def ra_mode_service(self, req: ChangeArmModeRequest) -> ChangeArmModeResponse:
         """
-        Callback for arm control mode
-        :param msg: String sent from GUI for which arm control mode to use
-        will be one of {"arm_disabled","open_loop","servo}
-        :return:
+        Service handler for arm control mode
+        :param req: ChangeArmMode service request
+        :return: ChangeArmMode service response
         """
         with self._arm_mode_lock:
-            self._arm_mode = msg.data
+            self._arm_mode = req.mode
             if self._arm_mode == "arm_disabled":
                 self.send_ra_stop()
+        return ChangeArmModeResponse(success=True)
 
     def send_ra_stop(self) -> None:
         """
@@ -289,16 +290,19 @@ class ArmControl:
         # TODO: Write this function if/when we get moveit_servo working
         return
 
-    def sa_mode_callback(self, msg: String) -> None:
+    # Service handler for sa_mode
+    # Service handler for RA arm control mode
+    def sa_mode_service(self, req: ChangeArmModeRequest) -> ChangeArmModeResponse:
         """
-        Callback for the arm mode topic
-        :param msg: String representing the SA Arm Mode, {"open_loop", "sa_disabled"}
-        :return:
+        Service handler for arm control mode
+        :param req: ChangeArmMode service request
+        :return: ChangeArmMode service response
         """
         with self._sa_arm_mode_lock:
-            self._sa_arm_mode = msg.data
+            self._sa_arm_mode = req.mode
             if self._sa_arm_mode == "sa_disabled":
                 self.send_sa_stop()
+        return ChangeArmModeResponse(success=True)
 
     def sa_control_callback(self, msg: Joy) -> None:
         """
@@ -354,6 +358,10 @@ def main():
     ros.Subscriber("xbox/sa_control", Joy, arm.sa_control_callback)
     ros.Subscriber("brushless_ra_data", MotorsStatus, arm.brushless_encoder_callback)
     ros.Subscriber("brushed_ra_data", JointState, arm.brushed_encoder_callback)
+
+    # Arm Mode Services
+    ros.Service("change_ra_mode", ChangeArmMode, arm.ra_mode_service)
+    ros.Service("change_sa_mode", ChangeArmMode, arm.sa_mode_service)
 
     # Publish joint states for Moveit at 10Hz
     while not ros.is_shutdown():
