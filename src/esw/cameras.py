@@ -9,8 +9,6 @@ from multiprocessing import Process
 from typing import Dict, List, Any
 from threading import Lock
 
-from mrover.scripts.extract_cameras import *
-
 from mrover.msg import CameraCmd
 
 from mrover.srv import (
