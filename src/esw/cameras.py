@@ -26,7 +26,13 @@ SECONDARY_IP: str = rospy.get_param("cameras/ips/secondary")
 CAPTURE_ARGS: List[Dict[str, int]] = rospy.get_param("cameras/arguments")
 
 
-def generate_dev_list():
+def generate_dev_list() -> List[int]:
+    """
+    Handle a basic cameras request by starting, editing, or deleting a stream.
+    :return: An array of numbers in ascending order representing
+    valid Video Capture devices X where X is /dev/videoX.
+    """
+
     # Runs bash script line: `find /dev -iname 'video*' -printf "%f\n"`
     dev_list = subprocess.run(["find", "/dev", "-iname", "video*", "-printf", "%f\n"], capture_output=True, text=True)
     ret_dev_list = list()
@@ -40,7 +46,9 @@ def generate_dev_list():
         )
         # Checks if video* file has [0], [1], etc. to see if it is an actual video capture source
         if re.search(r"\[[0-9]\]", cmd_output.stdout):
-            ret_dev_list.append(dev_num)
+            ret_dev_list.append(int(dev_num))
+    # Sort since by default, it is in descending order instead of ascending order
+    ret_dev_list.sort()
     return ret_dev_list
 
 
