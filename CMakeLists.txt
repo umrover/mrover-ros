@@ -34,6 +34,7 @@ set(MROVER_MESSAGE_FILES
         GPSPointList.msg
         HeaterData.msg
         ImuAndMag.msg
+        LimitSwitchData.msg
         MastGimbal.msg
         JointLock.msg
         MoteusState.msg
