@@ -137,4 +137,9 @@ public:
     // MODIFIES: static variables
     // EFFECTS: Publishes calibration status to the proper topic depending on the name
     static void publishCalibrationDataUsingName(const std::string& name, bool isCalibrated);
+
+    // REQUIRES: nothing
+    // MODIFIES: nothing
+    // EFFECTS: used as a watchdog for the MCUs
+    static void timerCallback(const ros::TimerEvent &event);
 };
