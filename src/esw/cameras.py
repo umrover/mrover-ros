@@ -77,12 +77,18 @@ class Stream:
     Whether the stream is being sent to the primary IP endpoint.
     """
 
-    def __init__(self, req: ChangeCamerasRequest, cmd: CameraCmd):
+    port: int
+    """
+    The port that the stream is streaming to.
+    """
+
+    def __init__(self, req: ChangeCamerasRequest, cmd: CameraCmd, _port: int):
         self._cmd = cmd
         self._cmd.device = req.camera_cmd.device
         self._cmd.resolution = req.camera_cmd.resolution
 
         self.primary = req.primary
+        self.port = _port
 
         args = CAPTURE_ARGS[self._cmd.resolution]
 
@@ -91,7 +97,7 @@ class Stream:
             args=(
                 self._cmd.device,
                 PRIMARY_IP if self.primary else SECONDARY_IP,
-                5000 + self._cmd.device,
+                5000 + self.port,
                 args["bps"],
                 args["width"],
                 args["height"],
@@ -209,13 +215,24 @@ class StreamManager:
             if 0 <= req.camera_cmd.resolution < len(CAPTURE_ARGS):
 
                 # If we cannot handle any more streams, return False.
-                num_streams = len([stream for stream in self._stream_by_device if stream])
-                if num_streams == self.MAX_STREAMS:
+                available_port_arr = [True, True, True, True]
+                for stream in self._stream_by_device:
+                    if stream:
+                        available_port_arr[stream.port] = False
+
+                available_port = -1
+                for i, port_is_available in enumerate(available_port_arr):
+                    if port_is_available:
+                        available_port = i
+                        break
+
+                if available_port == -1:
+                    # Technically, we don't need a double check
                     return self._get_change_response(False)
 
                 # Get a reference to an available slot and give to a new stream.
                 cmd_obj = self._get_open_cmd_slot(req.primary)
-                self._stream_by_device[device_id] = Stream(req, cmd_obj)
+                self._stream_by_device[device_id] = Stream(req, cmd_obj, available_port)
 
             return self._get_change_response(True)
 
