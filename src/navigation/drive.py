@@ -45,8 +45,6 @@ class DriveController:
         linear_error: float,
         completion_thresh: float,
         turn_in_place_thresh: float,
-        drive_back: bool = False,
-
     ) -> Tuple[Twist, bool]:
         """
         Gets the state machine `output for a given angular and linear error.
@@ -68,24 +66,11 @@ class DriveController:
         TURNING_P = constants["turning_p"]
         DRIVING_P = constants["driving_p"]
 
-        rover_dir = rover_pose.rotation.direction_vector()
-        rover_dir[2] = 0
-
-        if drive_back:
-            rover_dir *= -1
-
-        rover_pos = rover_pose.position
-        rover_pos[2] = 0
-
-        target_pos[2] = 0
-        target_dir = target_pos - rover_pos
-        linear_error = float(np.linalg.norm(target_dir))
-        angle_error = angle_to_rotate(rover_dir, target_dir)
         # if we are at the target position, reset the controller and return a zero command
         if abs(linear_error) < completion_thresh:
             self.reset()
-            return Twist(), True
-        
+            return (Twist(), True)
+
         if self._driver_state == self.DriveMode.STOPPED:
             # if the drive mode is STOP (we know we aren't at the target) so we must start moving towards it
             # just switch to the TURN_IN_PLACE state for now under the assumption that we need to turn to face the target
@@ -125,13 +110,13 @@ class DriveController:
             cur_angular_is_outside = abs(angular_error) >= turn_in_place_thresh
             if cur_angular_is_outside and last_angular_was_inside:
                 self._driver_state = self.DriveMode.TURN_IN_PLACE
-                return Twist(), False
+                return (Twist(), False)
             # otherwise we compute a drive command with both a linear and angular component in the Twist message
             else:
                 cmd_vel = Twist()
                 cmd_vel.linear.x = np.clip(linear_error * DRIVING_P, MIN_DRIVING_EFFORT, MAX_DRIVING_EFFORT)
                 cmd_vel.angular.z = np.clip(angular_error * TURNING_P, MIN_TURNING_EFFORT, MAX_TURNING_EFFORT)
-                return cmd_vel, False
+                return (cmd_vel, False)
         else:
             raise ValueError(f"Invalid drive state {self._driver_state}")
 
@@ -142,6 +127,7 @@ class DriveController:
         completion_thresh: float,
         turn_in_place_thresh: float,
         in_odom: bool = False,
+        drive_back: bool = False,
     ) -> Tuple[Twist, bool]:
         """
         Returns a drive command to get the rover to the target position, calls the state machine to do so and updates the last angular error in the process
@@ -157,6 +143,10 @@ class DriveController:
         # get the direction vector of the rover and the target position, zero the Z components of both since our controller only assumes motion and control over the Rover in the XY plane
         rover_dir = rover_pose.rotation.direction_vector()
         rover_dir[2] = 0
+
+        if drive_back:
+            rover_dir *= -1
+
         rover_pos = rover_pose.position
         rover_pos[2] = 0
         target_pos[2] = 0

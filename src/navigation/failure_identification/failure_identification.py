@@ -150,16 +150,6 @@ class FailureIdentifier:
         cur_row["rot_z"] = odometry.pose.pose.orientation.z
         cur_row["rot_w"] = odometry.pose.pose.orientation.w
 
-        prev_row = self._df.tail(1).iloc[0]
-        delta_t = cur_row["time"] - prev_row["time"]
-        cur_rotation = SO3(np.array([cur_row["rot_x"], cur_row["rot_y"], cur_row["rot_z"], cur_row["rot_w"]]))
-        prev_rotation = SO3(np.array([prev_row["rot_x"], prev_row["rot_y"], prev_row["rot_z"], prev_row["rot_w"]]))
-        yaw_velocity = prev_rotation.rot_distance_to(cur_rotation) / delta_t
-
-        cur_linear = np.array([cur_row["x"], cur_row["y"], cur_row["z"]])
-        prev_linear = np.array([prev_row["x"], prev_row["y"], prev_row["z"]])
-        linear_velocity = np.linalg.norm((cur_linear - prev_linear) / delta_t)
-
         # get the linear and angular velocity of the rover from odometry message
         linear_velocity_norm = np.linalg.norm(
             np.array([odometry.twist.twist.linear.x, odometry.twist.twist.linear.y, odometry.twist.twist.linear.z])
