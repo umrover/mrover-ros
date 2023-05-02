@@ -298,13 +298,13 @@ brushless:
         id: 7
         bus: 3
         max_rps: 80
-        max_torque: 0.13
+        max_torque: 0.3
         multiplier: -1
       joint_e:
         id: 8
         bus: 3
-        max_rps: 70
-        max_torque: 0.13
+        max_rps: 80
+        max_torque: 0.3
         multiplier: -1
 
 default_network_iface: "enp0s31f6"
