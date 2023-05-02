@@ -282,7 +282,6 @@ export default {
 
     addBindings() {
       this.bindings.get((dict) => {
-        console.log(dict);
         if(dict) {
           var indices = Object.values(dict);
           var names = Object.keys(dict);
