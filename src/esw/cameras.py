@@ -28,17 +28,20 @@ CAPTURE_ARGS: List[Dict[str, int]] = rospy.get_param("cameras/arguments")
 
 def generate_dev_list() -> List[int]:
     """
-    Handle a basic cameras request by starting, editing, or deleting a stream.
+    Generates a integer list of valid devices X found in /dev/video*, not including those that are MetaData devices.
+    It will only get devices X that are VideoCapture devices (can be used for streaming).
     :return: An array of numbers in ascending order representing
     valid Video Capture devices X where X is /dev/videoX.
     """
 
     # Runs bash script line: `find /dev -iname 'video*' -printf "%f\n"`
-    dev_list = subprocess.run(["find", "/dev", "-iname", "video*", "-printf", "%f\n"], capture_output=True, text=True)
-    ret_dev_list = list()
+    dev_cmd_output = subprocess.run(
+        ["find", "/dev", "-iname", "video*", "-printf", "%f\n"], capture_output=True, text=True
+    )
+    dev_num_list = list()
 
     # Look through /dev for files with "video*"
-    for dev in dev_list.stdout.splitlines():
+    for dev in dev_cmd_output.stdout.splitlines():
         dev_num = re.sub(r"video", "", dev.strip())
         # Runs bash script line: 'v4l2-ctl --list-formats --device /dev/$dev'
         cmd_output = subprocess.run(
@@ -46,10 +49,10 @@ def generate_dev_list() -> List[int]:
         )
         # Checks if video* file has [0], [1], etc. to see if it is an actual video capture source
         if re.search(r"\[[0-9]\]", cmd_output.stdout):
-            ret_dev_list.append(int(dev_num))
+            dev_num_list.append(int(dev_num))
     # Sort since by default, it is in descending order instead of ascending order
-    ret_dev_list.sort()
-    return ret_dev_list
+    dev_num_list.sort()
+    return dev_num_list
 
 
 class Stream:
