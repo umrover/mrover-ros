@@ -19,6 +19,7 @@ brushed_motors:
       inversion: 1.0
       limit_a_present: true
       limit_b_present: false
+      active_limit_a: false
       counts_limit_a: 0
       limit_a_is_fwd: true
       calibration_vel: 0.25
@@ -30,6 +31,7 @@ brushed_motors:
       inversion: 1.0
       limit_a_present: true
       limit_b_present: false
+      active_limit_a: true
       counts_limit_a: 0
       limit_a_is_fwd: true
       calibration_vel: 0.25
@@ -56,6 +58,7 @@ brushed_motors:
       inversion: -1.0
       limit_a_present: true
       limit_b_present: false
+      active_limit_a: false
       counts_limit_a: 0
       limit_a_is_fwd: true
       calibration_vel: 0.25
@@ -78,6 +81,8 @@ brushed_motors:
       inversion: 1.0
       limit_a_present: true
       limit_b_present: true
+      active_limit_a: false
+      active_limit_b: false
       counts_limit_a: 0
       counts_limit_b: 0
       limit_a_is_fwd: true
@@ -95,7 +100,7 @@ brushed_motors:
       motor_max_voltage: 12.0
       mcu_id: 2
       motor_id: 4
-      inversion: -1.0
+      inversion: 1.0
       limit_a_present: false
       limit_b_present: false
     - name: "mast_gimbal_left_right"
@@ -114,6 +119,8 @@ brushed_motors:
       inversion: 1.0
       limit_a_present: true
       limit_b_present: true
+      active_limit_a: false
+      active_limit_b: false
       counts_limit_a: 0
       counts_limit_b: 0
       limit_a_is_fwd: false
@@ -123,9 +130,11 @@ brushed_motors:
       motor_max_voltage: 12.0
       mcu_id: 1
       motor_id: 0
+      quad_cpr: -32653.0
       inversion: 1.0
       limit_a_present: true
       limit_b_present: false
+      active_limit_a: false
       counts_limit_a: 0
       limit_a_is_fwd: true
       calibration_vel: 0.25
@@ -134,9 +143,11 @@ brushed_motors:
       motor_max_voltage: 12.0
       mcu_id: 1
       motor_id: 1
+      quad_cpr: -75600.0
       inversion: -1.0
       limit_a_present: true
       limit_b_present: false
+      active_limit_a: false
       counts_limit_a: 0
       limit_a_is_fwd: false
       calibration_vel: 0.25
@@ -145,9 +156,11 @@ brushed_motors:
       motor_max_voltage: 12.0
       mcu_id: 1
       motor_id: 2
+      quad_cpr: 97960.0
       inversion: -1.0
       limit_a_present: true
       limit_b_present: false
+      active_limit_a: false
       counts_limit_a: 0
       limit_a_is_fwd: true
       calibration_vel: 0.25
@@ -159,6 +172,8 @@ brushed_motors:
       inversion: 1.0
       limit_a_present: true
       limit_b_present: true
+      active_limit_a: false
+      active_limit_b: false
       counts_limit_a: 0
       counts_limit_b: 0
       limit_a_is_fwd: false
@@ -206,6 +221,7 @@ science:
     "off": 3
   device_mosfet_numbers:
     arm_laser: 6
+    raman_laser: 0
     uv_led_carousel: 1
     uv_led_end_effector: 6
     white_led: 2
@@ -216,13 +232,13 @@ science:
   # These position are random for now
   syringe_servo_positions:  # This is in degrees
     site_A:
-      pushed: 80
+      pushed: 70
       start: 100
     site_B:
       pushed: 60
       start: 90
     site_C:
-      pushed: 10
+      pushed: 0
       start: 50
   info:
     num_diag_current: 3
@@ -261,7 +277,7 @@ brushless:
       MiddleRight:
         id: 4
         bus: 2
-        multiplier: 1
+        multiplier: -1
       BackLeft:
         id: 0
         bus: 1
@@ -269,7 +285,7 @@ brushless:
       BackRight:
         id: 5
         bus: 2
-        multiplier: -1
+        multiplier: 1
   arm:
     controllers:
       joint_c:
