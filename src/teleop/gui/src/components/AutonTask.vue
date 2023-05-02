@@ -1,75 +1,89 @@
 <template>
-  <div class="wrapper">
-    <div class="box header">
-      <img
-        src="/static/mrover.png"
-        alt="MRover"
-        title="MRover"
-        width="48"
-        height="48"
-      />
-      <h1>Auton Dashboard</h1>
-      <div class="spacer"></div>
-      <div class="spacer"></div>
-      <CommReadout class="comm"></CommReadout>
-      <div class="help">
+  <div>
+    <div class="wrapper">
+      <div class="box header">
         <img
-          src="/static/help.png"
-          alt="Help"
-          title="Help"
+          src="/static/mrover.png"
+          alt="MRover"
+          title="MRover"
           width="48"
           height="48"
         />
+        <h1>Auton Dashboard</h1>
+        <div class="spacer"></div>
+        <div class="spacer"></div>
+        <CommReadout class="comm"></CommReadout>
+        <div class="help">
+          <img
+            src="/static/help.png"
+            alt="Help"
+            title="Help"
+            width="48"
+            height="48"
+          />
+        </div>
+        <div class="helpscreen"></div>
+        <div
+          class="helpimages"
+          style="
+            display: flex;
+            align-items: center;
+            justify-content: space-evenly;
+          "
+        >
+          <img
+            src="/static/joystick.png"
+            alt="Joystick"
+            title="Joystick Controls"
+            style="width: auto; height: 70%; display: inline-block"
+          />
+        </div>
       </div>
-      <div class="helpscreen"></div>
-      <div
-        class="helpimages"
-        style="
-          display: flex;
-          align-items: center;
-          justify-content: space-evenly;
-        "
-      >
-        <img
-          src="/static/joystick.png"
-          alt="Joystick"
-          title="Joystick Controls"
-          style="width: auto; height: 70%; display: inline-block"
+      <div class="box1 data" :style="{ backgroundColor: nav_state_color }">
+        <div>
+          <h2>Nav State: {{ nav_status.nav_state_name }}</h2>
+        </div>
+        <div>
+          <p style="margin-top: 6px">Joystick Values</p>
+        </div>
+        <div></div>
+        <JoystickValues />
+        <div
+          class="calibration status data"
+          style="background-color: lightgray"
+        >
+          <IMUCalibration />
+        </div>
+      </div>
+      <div class="box map light-bg">
+        <AutonRoverMap :odom="odom" />
+      </div>
+      <div class="box waypoints light-bg">
+        <AutonWaypointEditor
+          :odom="odom"
+          @toggleTeleop="teleopEnabledCheck = $event"
         />
       </div>
-    </div>
-    <div class="box1 data" :style="{ backgroundColor: nav_state_color }">
-      <div>
-        <h2>Nav State: {{ nav_status.nav_state_name }}</h2>
+      <!--Enable the drive controls if auton is off-->
+      <div
+        v-if="!autonEnabled && teleopEnabledCheck"
+        v-show="false"
+        class="driveControls"
+      >
+        <DriveControls />
       </div>
-      <div>
-        <p style="margin-top: 6px">Joystick Values</p>
+      <div v-show="false">
+        <MastGimbalControls></MastGimbalControls>
       </div>
-      <div></div>
-      <JoystickValues />
-      <div class="calibration status data" style="background-color: lightgray">
-        <IMUCalibration />
+      <div v-if="!stuck_status" class="stuck not-stuck">
+        <h1>Nominal Conditions</h1>
+      </div>
+      <div v-else class="stuck rover-stuck">
+        <h1>Obstruction Detected</h1>
       </div>
     </div>
-    <div class="box map light-bg">
-      <AutonRoverMap :odom="odom" />
-    </div>
-    <div class="box waypoints light-bg">
-      <AutonWaypointEditor
-        :odom="odom"
-        @toggleTeleop="teleopEnabledCheck = $event"
-      />
-    </div>
-    <!--Enable the drive controls if auton is off-->
-    <div
-      v-if="!autonEnabled && teleopEnabledCheck"
-      v-show="false"
-      class="driveControls"
-    >
-      <DriveControls />
-    </div>
-    <div v-show="false">
-      <MastGimbalControls></MastGimbalControls>
+    <div class="box1" style="margin-top: 10px">
+      <Cameras :primary="true" />
     </div>
   </div>
 </template>
@@ -85,6 +99,7 @@ import JoystickValues from "./JoystickValues.vue";
 import IMUCalibration from "./IMUCalibration.vue";
 import CommReadout from "./CommReadout.vue";
 import { quaternionToDisplayAngle } from "../utils.js";
+import Cameras from "./Cameras.vue";
 
 const navBlue = "#4695FF";
 const navGreen = "yellowgreen";
@@ -100,6 +115,7 @@ export default {
     JoystickValues,
     MastGimbalControls,
     CommReadout,
+    Cameras,
   },
 
   data() {
@@ -117,20 +133,18 @@ export default {
         total_wps: 0,
       },
 
-      enableAuton: {
-        enable: false,
-        GPSWaypoint: [],
-      },
-
-      teleopEnabledCheck: false,
+      teleopEnabledCheck: true,
 
       navBlink: false,
       greenHook: false,
       ledColor: "red",
 
+      stuck_status: false,
+
       // Pubs and Subs
       nav_status_sub: null,
       odom_sub: null,
+      stuck_sub: null,
       auton_led_client: null,
       tfClient: null,
     };
@@ -191,6 +205,12 @@ export default {
       messageType: "sensor_msgs/NavSatFix",
     });
 
+    this.stuck_sub = new ROSLIB.Topic({
+      ros: this.$ros,
+      name: "/stuck_status",
+      messageType: "std_msgs/Bool",
+    });
+
     this.tfClient = new ROSLIB.TFClient({
       ros: this.$ros,
       fixedFrame: "map",
@@ -220,6 +240,11 @@ export default {
       // Callback for latLng to be set
       this.odom.latitude_deg = msg.latitude;
       this.odom.longitude_deg = msg.longitude;
+    });
+
+    this.stuck_sub.subscribe((msg) => {
+      // Callback for stuck status
+      this.stuck_status = msg.data;
     });
 
     // Blink interval for green and off flasing
@@ -262,7 +287,8 @@ export default {
     "header header header"
     "map waypoints waypoints"
     "map waypoints waypoints"
-    "data waypoints waypoints";
+    "data stuck stuck";
+
   font-family: sans-serif;
   height: auto;
   width: auto;
@@ -287,6 +313,28 @@ export default {
 
 .box2 {
   display: block;
+}
+
+.stuck {
+  grid-area: stuck;
+  border-radius: 5px;
+  line-height: 70px;
+  border: 1px solid black;
+  font-size: 40px;
+  text-align: center;
+  justify-content: center;
+}
+
+.stuck h1 {
+  margin-top: 30px;
+}
+
+.rover-stuck {
+  background-color: lightcoral;
+}
+
+.not-stuck {
+  background-color: yellowgreen;
 }
 
 .light-bg {

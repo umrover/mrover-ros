@@ -208,12 +208,10 @@ cameras:
   #   - ChangeCameras.srv
   #   - ResetCameras.srv
   max_streams: 4
-  max_device_id: 10
+  max_device_id: 20
   ips:
     primary: "10.0.0.7"
     secondary: "10.0.0.8"
-  # Jetsons for some reason give two IDs (ie. 0 and 1) for each USB camera.
-  devices_doubled: true
 
 science:
   auton_color_ids:

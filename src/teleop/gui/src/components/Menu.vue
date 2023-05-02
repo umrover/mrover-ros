@@ -40,17 +40,18 @@ import MenuButton from "./MenuButton.vue";
 import ToggleButton from "./ToggleButton.vue";
 import Vue from "vue";
 import ROSLIB from "roslib";
+import { disableAutonLED } from "../utils.js";
 
 export default {
   name: "MainMenu",
   components: {
     MenuButton,
-    ToggleButton
+    ToggleButton,
   },
 
   data() {
     return {
-      competitionMode: true
+      competitionMode: true,
     };
   },
 
@@ -58,17 +59,18 @@ export default {
     competitionMode: function (val) {
       if (val) {
         Vue.prototype.$ros = new ROSLIB.Ros({
-          url: "ws://10.0.0.7:9090"
+          url: "ws://10.0.0.7:9090",
         });
       } else {
         Vue.prototype.$ros = new ROSLIB.Ros({
-          url: "ws://localhost:9090"
+          url: "ws://localhost:9090",
         });
       }
-    }
+    },
   },
 
   created: function () {
+    disableAutonLED(this.$ros);
     this.competitionMode = Vue.prototype.$competitionMode;
   },
 
@@ -76,8 +78,8 @@ export default {
     toggleCompetitionMode() {
       this.competitionMode = !this.competitionMode;
       Vue.prototype.$competitionMode = this.competitionMode;
-    }
-  }
+    },
+  },
 };
 </script>
 

@@ -342,8 +342,8 @@ void ROSHandler::publishCalibrationDataUsingName(const std::string& name, bool i
 // REQUIRES: nothing
 // MODIFIES: nothing
 // EFFECTS: used as a watchdog for the MCUs
-void ROSHandler::timerCallback(const ros::TimerEvent &event) {
-    (void) (event);  // this dummy line is used to pass clang
+void ROSHandler::timerCallback(const ros::TimerEvent& event) {
+    (void) (event); // this dummy line is used to pass clang
 
     tickAllMCUs();
 }
