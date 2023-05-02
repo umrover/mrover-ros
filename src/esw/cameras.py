@@ -193,7 +193,7 @@ class StreamManager:
         device_arr = generate_dev_list()
         try:
             device_id = device_arr[req.camera_cmd.device]
-        except KeyError:
+        except IndexError:
             rospy.logerr(f"Received invalid camera device ID {device_id}")
             return self._get_change_response(False)
 
