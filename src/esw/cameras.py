@@ -28,7 +28,7 @@ CAPTURE_ARGS: List[Dict[str, int]] = rospy.get_param("cameras/arguments")
 
 def generate_dev_list() -> List[int]:
     """
-    Generates a integer list of valid devices X found in /dev/video*, not including those that are MetaData devices.
+    Generates an integer list of valid devices X found in /dev/video*, not including those that are MetaData devices.
     It will only get devices X that are VideoCapture devices (can be used for streaming).
     :return: An array of numbers in ascending order representing
     valid Video Capture devices X where X is /dev/videoX.
@@ -194,6 +194,10 @@ class StreamManager:
         if not (0 <= device_id < self.MAX_DEVICE_ID):
             rospy.logerr(f"Camera device ID {device_id} is not supported, max is {self.MAX_DEVICE_ID}")
             return self._get_change_response(False)
+
+        # The client's device is passed into the actual device array, so then we get device_id
+        # Then we just update the request to use the actually mapped device_id
+        req.camera_cmd.device = device_id
 
         with self._lock:
             # Reset the stream object if it exists. If it was running, this finalizes the stream
