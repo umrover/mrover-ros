@@ -205,7 +205,7 @@ mrover::LimitSwitchData Controller::getLimitSwitchData() {
 
         // 0th (least significant) bit is a boolean (bit) that tells if the motor has been calibrated or not.
         // 1st bit is a boolean (bit) that is the state of limit switch a.
-        // 2nd bit is a boolean (bit) that is the state of limit switch a.
+        // 2nd bit is a boolean (bit) that is the state of limit switch b.
         // A lock is unnecessary since the data does not need to be updated in sync.
         limit_switch_data.calibrated = limit_switch_data_raw & 0x1;
         limit_switch_data.limit_a_pressed = (limit_switch_data_raw >> 1) & 0x1;
