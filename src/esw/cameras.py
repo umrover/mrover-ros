@@ -82,13 +82,13 @@ class Stream:
     The port that the stream is streaming to.
     """
 
-    def __init__(self, req: ChangeCamerasRequest, cmd: CameraCmd, _port: int):
+    def __init__(self, req: ChangeCamerasRequest, cmd: CameraCmd, port: int):
         self._cmd = cmd
         self._cmd.device = req.camera_cmd.device
         self._cmd.resolution = req.camera_cmd.resolution
 
         self.primary = req.primary
-        self.port = _port
+        self.port = port
 
         args = CAPTURE_ARGS[self._cmd.resolution]
 
