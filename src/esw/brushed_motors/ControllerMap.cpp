@@ -91,9 +91,9 @@ void ControllerMap::init(XmlRpc::XmlRpcValue& root) {
     }
 
     std::vector<int> mcu_ids = {1, 2};
-    for (auto mcu_id : mcu_ids) {
+    for (auto mcu_id: mcu_ids) {
         std::string dummy_name = "dummy_mcu_" + std::to_string(mcu_id);
         controllersByName[dummy_name] =
-            new Controller(dummy_name, mcu_id, 0, 1, 12);
+                new Controller(dummy_name, mcu_id, 0, 1, 12);
     }
 }

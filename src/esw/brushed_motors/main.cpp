@@ -33,6 +33,8 @@ int main(int argc, char** argv) {
 
         ROS_INFO("Initialization Done. \nLooping. \n");
 
+        // Refresh every 0.3 seconds. 0.3s is arbitrary, but as long as it is less than 443ms (watchdog of STM32 MCU).
+        ros::Timer timer = nh.createTimer(ros::Duration(0.3), ROSHandler::timerCallback);
         ros::spin();
     }
 
