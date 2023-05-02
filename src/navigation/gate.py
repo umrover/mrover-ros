@@ -172,21 +172,27 @@ class GatePath:
 
     def get_cur_pt(self) -> Optional[np.ndarray]:
         """
-        Generates the full gate path (in the same direction as first initalized) based on latest point estimates
-        then returns the next point on the path we should drive to.
+        :returns: The point on the path that the rover should drive to next, or None if the rover has completed the path
         """
+        # first get the full path with all the key points.
         full_path = self.__get_full_path()
+        # find the index of the farthest along point on the path that we can drive to without intersecting the gate
+        # this 'optimizes' our path so that we don't have unnecessary segments (and also reduces path length)
         path_idx = self.__optimize_path()
 
         pt = full_path[path_idx]
+        # if we are close enough to the point, move on to the next one
         if np.linalg.norm(pt - self.rover_pos) < STOP_THRESH:
+            # if the current point was the center point, note that we have passed the center
+            # this is necessary for the optimize path function to know that we have already gone through the gate
             if path_idx == self.center_idx:
                 self.passed_center = True
             path_idx += 1
+            # if we have reached the end of the path, return None
             if path_idx >= len(full_path):
                 return None
             pt = full_path[path_idx]
-
+        # append a 0.0 to the end so the point is in R^3
         return np.append(pt, 0.0)
 
 

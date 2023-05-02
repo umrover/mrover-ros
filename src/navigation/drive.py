@@ -69,7 +69,7 @@ class DriveController:
         # if we are at the target position, reset the controller and return a zero command
         if abs(linear_error) < completion_thresh:
             self.reset()
-            return Twist(), True
+            return (Twist(), True)
 
         if self._driver_state == self.DriveMode.STOPPED:
             # if the drive mode is STOP (we know we aren't at the target) so we must start moving towards it
@@ -110,13 +110,13 @@ class DriveController:
             cur_angular_is_outside = abs(angular_error) >= turn_in_place_thresh
             if cur_angular_is_outside and last_angular_was_inside:
                 self._driver_state = self.DriveMode.TURN_IN_PLACE
-                return Twist(), False
+                return (Twist(), False)
             # otherwise we compute a drive command with both a linear and angular component in the Twist message
             else:
                 cmd_vel = Twist()
                 cmd_vel.linear.x = np.clip(linear_error * DRIVING_P, MIN_DRIVING_EFFORT, MAX_DRIVING_EFFORT)
                 cmd_vel.angular.z = np.clip(angular_error * TURNING_P, MIN_TURNING_EFFORT, MAX_TURNING_EFFORT)
-                return cmd_vel, False
+                return (cmd_vel, False)
         else:
             raise ValueError(f"Invalid drive state {self._driver_state}")
 
