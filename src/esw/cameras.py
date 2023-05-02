@@ -194,7 +194,7 @@ class StreamManager:
         try:
             device_id = device_arr[req.camera_cmd.device]
         except IndexError:
-            rospy.logerr(f"Received invalid camera device ID {device_id}")
+            rospy.logerr(f"Received invalid camera device ID {req.camera_cmd.device}")
             return self._get_change_response(False)
 
         if not (0 <= device_id < self.MAX_DEVICE_ID):
