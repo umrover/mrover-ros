@@ -31,6 +31,7 @@ Controller::Controller(
     currentAngle = 0.0f;
 }
 
+
 // REQUIRES: nothing
 // MODIFIES: nothing
 // EFFECTS: Returns last saved value of angle.
@@ -61,9 +62,9 @@ void Controller::overrideCurrentAngle(float newAngleRad) {
 // REQUIRES: nothing
 // MODIFIES: nothing
 // EFFECTS: Returns true if Controller is live.
-bool Controller::isControllerLive() const {
-    return isLive;
-}
+// bool Controller::isControllerLive() const {
+//     return isLive;
+// }
 
 // REQUIRES: -1.0 <= input <= 1.0
 // MODIFIES: currentAngle. Also makes controller live if not already.
@@ -202,9 +203,34 @@ void Controller::turnOn() const {
 // configures the physical controller.
 // Then makes live.
 void Controller::makeLive() {
-    if (isLive) {
+    // if (isLive) {
+    //     return;
+    // }
+
+    // uint8_t key = (deviceAddress << 3) | motorID;
+
+    // auto it = liveMap.find(key);
+    // if (it != liveMap.end()) {
+    //     it->second.liveMutex.lock();
+    // } else { // never tried to make this nucleo and motorID live before
+    //     std::mutex liveMutex;
+    //     LiveState state = {false, name, liveMutex};
+    //     liveMap[key] = state;
+    //     state.liveMutex.lock();
+    // }
+
+    // // already live and configured to correct motor
+    // if (it->second.isLive && it->second.jointName == name) {
+    //     it->second.liveMutex.unlock();
+    //     return;
+    // }
+
+    if (isLive.jointName == name) {
         return;
     }
+
+    isLive.liveMutex.lock();
+
 
     try {
         // turn on
@@ -257,7 +283,15 @@ void Controller::makeLive() {
         I2C::transact(deviceAddress, motorIDRegMask | LIMIT_A_IS_FWD_OP, LIMIT_A_IS_FWD_WB,
                       LIMIT_A_IS_FWD_RB, buffer, nullptr);
 
-        isLive = true;
+        
+        // update liveMap
+        // auto it = liveMap.find(key);
+        // it->second.isLive = true;
+        // it->second.jointName = name;
+        // it->second.liveMutex.unlock();
+
+        isLive.jointName = name;
+        isLive.liveMutex.unlock();
 
     } catch (IOFailure& e) {
         ROS_ERROR("makeLive failed on %s", name.c_str());

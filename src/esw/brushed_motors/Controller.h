@@ -96,6 +96,10 @@ sent. This is to prevent multiple virtual Controller objects from
 trying to contact the same physical Controller object.)
 */
 
+struct LiveState {
+    std::string jointName;
+    inline static std::mutex liveMutex;
+};
 
 class Controller {
 public:
@@ -205,6 +209,15 @@ private:
 
     float currentAngle;
 
-    bool isLive = false;
+    // bool isLive = false;
+    
+    // key is deviceAddress and motorID (eg. if deviceAddress = 2(0b10) and motorID = 1(0b1), then key = 17(0b10001) )
+    static std::unordered_map<uint8_t, LiveState> liveMap;
+
+    LiveState isLive;
+
     bool isControllerCalibrated = false;
+
+
 };
+
