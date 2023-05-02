@@ -266,26 +266,32 @@ brushless:
         id: 2
         bus: 1
         multiplier: -1
+        gear_ratio: 50
       FrontRight:
         id: 3
         bus: 2
         multiplier: 1
+        gear_ratio: 50
       MiddleLeft:
         id: 1
         bus: 1
         multiplier: -1
+        gear_ratio: 50
       MiddleRight:
         id: 4
         bus: 2
         multiplier: -1
+        gear_ratio: 50
       BackLeft:
         id: 0
         bus: 1
         multiplier: -1
+        gear_ratio: 50
       BackRight:
         id: 5
         bus: 2
         multiplier: 1
+        gear_ratio: 50
   arm:
     controllers:
       joint_c:
@@ -294,17 +300,20 @@ brushless:
         max_rps: 80
         max_torque: 0.7
         multiplier: -1
+        gear_ratio: 484
       joint_d:
         id: 7
         bus: 3
         max_rps: 80
         max_torque: 0.3
         multiplier: -1
+        gear_ratio: 484
       joint_e:
         id: 8
         bus: 3
         max_rps: 80
         max_torque: 0.3
         multiplier: -1
+        gear_ratio: 484
 
 default_network_iface: "enp0s31f6"
