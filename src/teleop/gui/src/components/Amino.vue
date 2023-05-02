@@ -44,22 +44,25 @@ import ToggleButton from "./ToggleButton.vue";
 import ROSLIB from "roslib";
 import LEDIndicator from "./LEDIndicator.vue";
 
+let interval;
+
 export default {
   components: {
     ToggleButton,
-    LEDIndicator,
+    LEDIndicator
   },
 
   props: {
     site: {
       type: String,
-      required: true,
+      required: true
     },
     siteIndex: {
       type: Number,
-      required: true,
-    },
+      required: true
+    }
   },
+
   data() {
     return {
       heaters: [
@@ -67,20 +70,20 @@ export default {
           enabled: false,
           intended: false,
           temp: 0,
-          color: "grey",
+          color: "grey"
         },
         {
           enabled: false,
           intended: false,
           temp: 0,
-          color: "grey",
+          color: "grey"
         },
         {
           enabled: false,
           intended: false,
           temp: 0,
-          color: "grey",
-        },
+          color: "grey"
+        }
       ],
 
       autoShutdownEnabled: true,
@@ -89,15 +92,19 @@ export default {
       // Pubs and subs
       temp_sub: null,
       heater_status_sub: null,
-      shutdown_status_sub: null,
+      shutdown_status_sub: null
     };
+  },
+
+  beforeDestroy: function () {
+    window.clearInterval(interval);
   },
 
   created: function () {
     this.temp_sub = new ROSLIB.Topic({
       ros: this.$ros,
       name: "science/temperatures",
-      messageType: "mrover/ScienceTemperature",
+      messageType: "mrover/ScienceTemperature"
     });
 
     this.temp_sub.subscribe((msg) => {
@@ -110,7 +117,7 @@ export default {
     this.heater_status_sub = new ROSLIB.Topic({
       ros: this.$ros,
       name: "science/heater_state_data",
-      messageType: "mrover/HeaterData",
+      messageType: "mrover/HeaterData"
     });
 
     this.heater_status_sub.subscribe((msg) => {
@@ -123,31 +130,48 @@ export default {
     this.shutdown_status_sub = new ROSLIB.Topic({
       ros: this.$ros,
       name: "science/heater_auto_shutoff_state_data",
-      messageType: "std_msgs/Bool",
+      messageType: "std_msgs/Bool"
     });
 
     this.shutdown_status_sub.subscribe((msg) => {
       this.autoShutdownEnabled = msg.data;
+    });
+
+    // Get interval param
+    let param = new ROSLIB.Param({
+      ros: this.$ros,
+      name: "science/heater_service_request_interval"
+    });
+
+    let interval_ms = 1000;
+
+    param.get((value) => {
+      interval_ms = value;
+      // Send heater service request on interval
+      interval = setInterval(() => {
+        let heaterServ = new ROSLIB.Service({
+          ros: this.$ros,
+          name: "change_heater_state",
+          serviceType: "mrover/ChangeHeaterState"
+        });
+        for (let i = 0; i < 3; i++) {
+          let request = new ROSLIB.ServiceRequest({
+            device: i,
+            enable: this.heaters[i].intended
+          });
+          heaterServ.callService(request, (result) => {
+            if (!result) {
+              alert(`Toggling heater ${i} failed.`);
+            }
+          });
+        }
+      }, interval_ms);
     });
   },
 
   methods: {
     toggleHeater: function (id) {
       this.heaters[id].intended = !this.heaters[id].intended;
-      let toggleHeaterServ = new ROSLIB.Service({
-        ros: this.$ros,
-        name: "change_heater_state",
-        serviceType: "mrover/ChangeHeaterState",
-      });
-      let request = new ROSLIB.ServiceRequest({
-        device: id,
-        enable: this.heaters[id].intended,
-      });
-      toggleHeaterServ.callService(request, (result) => {
-        if (!result) {
-          alert(`Toggling heater ${id} failed.`);
-        }
-      });
     },
 
     sendAutoShutdownCmd: function (enabled) {
@@ -155,18 +179,18 @@ export default {
       let autoShutdownServ = new ROSLIB.Service({
         ros: this.$ros,
         name: "change_heater_auto_shutoff_state",
-        serviceType: "mrover/ChangeDeviceState",
+        serviceType: "mrover/ChangeDeviceState"
       });
       let request = new ROSLIB.ServiceRequest({
-        enable: this.autoShutdownIntended,
+        enable: this.autoShutdownIntended
       });
       autoShutdownServ.callService(request, (result) => {
         if (!result) {
           alert(`Toggling autoshutdown failed.`);
         }
       });
-    },
-  },
+    }
+  }
 };
 </script>
 
