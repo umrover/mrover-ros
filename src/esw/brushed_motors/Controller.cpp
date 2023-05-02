@@ -198,39 +198,36 @@ void Controller::turnOn() const {
 }
 
 // REQUIRES: nothing
-// MODIFIES: isLive
+// MODIFIES: liveMap
 // EFFECTS: I2C bus, if not already live,
 // configures the physical controller.
 // Then makes live.
+
+std::unordered_map<uint8_t, LiveState> Controller::liveMap;
+
 void Controller::makeLive() {
     // if (isLive) {
     //     return;
     // }
 
-    // uint8_t key = (deviceAddress << 3) | motorID;
+    uint8_t key = (deviceAddress << 3) | motorID;
 
-    // auto it = liveMap.find(key);
-    // if (it != liveMap.end()) {
-    //     it->second.liveMutex.lock();
-    // } else { // never tried to make this nucleo and motorID live before
-    //     std::mutex liveMutex;
-    //     LiveState state = {false, name, liveMutex};
-    //     liveMap[key] = state;
-    //     state.liveMutex.lock();
-    // }
-
-    // // already live and configured to correct motor
-    // if (it->second.isLive && it->second.jointName == name) {
-    //     it->second.liveMutex.unlock();
-    //     return;
-    // }
-
-    if (isLive.jointName == name) {
-        return;
+    // if key is absent, no motor with that key has been made live
+    auto it = liveMap.find(key);
+    if (it != liveMap.end()) {
+        it->second.liveMutex.lock();
+    } else {
+        LiveState state;
+        state.jointName = name;
+        liveMap[key] = state;
+        state.liveMutex.lock();
     }
 
-    isLive.liveMutex.lock();
-
+    // already live and configured to correct motor
+    if (it->second.jointName == name) {
+        it->second.liveMutex.unlock();
+        return;
+    }
 
     try {
         // turn on
@@ -285,13 +282,9 @@ void Controller::makeLive() {
 
         
         // update liveMap
-        // auto it = liveMap.find(key);
-        // it->second.isLive = true;
-        // it->second.jointName = name;
-        // it->second.liveMutex.unlock();
-
-        isLive.jointName = name;
-        isLive.liveMutex.unlock();
+        auto it = liveMap.find(key);
+        it->second.jointName = name;
+        it->second.liveMutex.unlock();
 
     } catch (IOFailure& e) {
         ROS_ERROR("makeLive failed on %s", name.c_str());
