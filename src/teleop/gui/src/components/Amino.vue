@@ -92,7 +92,9 @@ export default {
       // Pubs and subs
       temp_sub: null,
       heater_status_sub: null,
-      shutdown_status_sub: null
+      shutdown_status_sub: null,
+
+      heater_service: null,
     };
   },
 
@@ -137,33 +139,26 @@ export default {
       this.autoShutdownEnabled = msg.data;
     });
 
+    this.heater_service = new ROSLIB.Service({
+      ros: this.$ros,
+      name: "change_heater_state",
+      serviceType: "mrover/ChangeHeaterState"
+    });
+
     // Get interval param
     let param = new ROSLIB.Param({
       ros: this.$ros,
       name: "science/heater_service_request_interval"
     });
 
-    let interval_ms = 1000;
-
     param.get((value) => {
-      interval_ms = value;
-      // Send heater service request on interval
+      let interval_ms = value;
+      // Send heater service request on interval for any activated heaters.
       interval = setInterval(() => {
-        let heaterServ = new ROSLIB.Service({
-          ros: this.$ros,
-          name: "change_heater_state",
-          serviceType: "mrover/ChangeHeaterState"
-        });
         for (let i = 0; i < 3; i++) {
-          let request = new ROSLIB.ServiceRequest({
-            device: i,
-            enable: this.heaters[i].intended
-          });
-          heaterServ.callService(request, (result) => {
-            if (!result) {
-              alert(`Toggling heater ${i} failed.`);
-            }
-          });
+          if (this.heaters[i].intended) {
+            this.sendHeaterRequest(i);
+          }
         }
       }, interval_ms);
     });
@@ -172,6 +167,20 @@ export default {
   methods: {
     toggleHeater: function (id) {
       this.heaters[id].intended = !this.heaters[id].intended;
+      this.sendHeaterRequest(id);
+    },
+
+    sendHeaterRequest: function (id) {
+      let request = new ROSLIB.ServiceRequest({
+        device: id,
+        enable: this.heaters[id].intended
+      });
+
+      this.heater_service.callService(request, (result) => {
+        if (!result) {
+          alert(`Toggling heater ${i} failed.`);
+        }
+      });
     },
 
     sendAutoShutdownCmd: function (enabled) {

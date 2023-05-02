@@ -212,7 +212,7 @@ science:
     uv_led_end_effector: 6
     white_led: 2
   # How fast the GUI should send heater service requests in ms
-  heater_service_request_interval: 200
+  heater_service_request_interval: 1000
   serial:
     baud_rate: 9600
     timeout: 0
