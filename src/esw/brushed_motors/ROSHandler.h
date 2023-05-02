@@ -141,5 +141,5 @@ public:
     // REQUIRES: nothing
     // MODIFIES: nothing
     // EFFECTS: used as a watchdog for the MCUs
-    static void timerCallback(const ros::TimerEvent &event);
+    static void timerCallback(const ros::TimerEvent& event);
 };
