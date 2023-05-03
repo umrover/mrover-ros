@@ -198,6 +198,13 @@ void Controller::turnOn() const {
 }
 
 // REQUIRES: nothing
+// MODIFIES: nothing
+// EFFECTS: Returns a combined ID for both the deviceAddress and motorID
+uint8_t Controller::combineDeviceMotorID() const {
+    return (deviceAddress << 3) | motorID;
+}
+
+// REQUIRES: nothing
 // MODIFIES: liveMap
 // EFFECTS: I2C bus, if not already live,
 // configures the physical controller.
@@ -210,22 +217,26 @@ void Controller::makeLive() {
     //     return;
     // }
 
-    uint8_t key = (deviceAddress << 3) | motorID;
+    uint8_t key = combineDeviceMotorID();
 
     // if key is absent, no motor with that key has been made live
     auto it = liveMap.find(key);
     if (it != liveMap.end()) {
-        it->second.liveMutex.lock();
+        std::unique_lock<std::mutex>
+            lck(it->second.liveMutex);
+        // it->second.liveMutex.lock();
     } else {
         LiveState state;
         state.jointName = name;
-        liveMap[key] = state;
-        state.liveMutex.lock();
+        liveMap.emplace(key, state);
+        // liveMap[key] = state; // doesn't work anymore because mutex isn't inline static
+        std::unique_lock<std::mutex>
+            lck(state.liveMutex);
+        // state.liveMutex.lock();
     }
 
     // already live and configured to correct motor
     if (it->second.jointName == name) {
-        it->second.liveMutex.unlock();
         return;
     }
 
@@ -284,7 +295,6 @@ void Controller::makeLive() {
         // update liveMap
         auto it = liveMap.find(key);
         it->second.jointName = name;
-        it->second.liveMutex.unlock();
 
     } catch (IOFailure& e) {
         ROS_ERROR("makeLive failed on %s", name.c_str());

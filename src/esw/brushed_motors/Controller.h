@@ -186,6 +186,11 @@ public:
     // EFFECTS: I2C bus, and turns on the controller. Can be used as a way to tick the watchdog for a particular mcu.
     void turnOn() const;
 
+    // REQUIRES: nothing
+    // MODIFIES: nothing
+    // EFFECTS: Returns a combined ID for both the deviceAddress and motorID
+    uint8_t combineDeviceMotorID() const;
+
 
 private:
     // REQUIRES: nothing
