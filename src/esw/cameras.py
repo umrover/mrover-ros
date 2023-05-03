@@ -317,9 +317,9 @@ def send(device=0, host="10.0.0.7", port=5000, bitrate=4000000, quality=0, fps=3
         fps = 15
 
     cap_str = f"v4l2src device=/dev/video{device} do-timestamp=true io-mode=2 ! "
-    cap_str += f"videorate ! video/x-raw, width={width}, height={height}, framerate={fps}/1 ! nvvidconv ! "
-    # cap_str += f"videorate ! video/x-raw ! nvvidconv ! "
-    cap_str += "videoconvert ! appsink"
+    cap_str += f"videorate ! video/x-raw, framerate={fps}/1 ! nvvidconv ! "
+    cap_str += "videoconvert ! "
+    cap_str += "appsink"
 
     # openCV video capture from v4l2 device
     cap_send = cv2.VideoCapture(cap_str, cv2.CAP_GSTREAMER)
@@ -345,11 +345,11 @@ def send(device=0, host="10.0.0.7", port=5000, bitrate=4000000, quality=0, fps=3
         + str(port)
     )
 
-    # width = cap_send.get(cv2.CAP_PROP_FRAME_WIDTH)
-    # height = cap_send.get(cv2.CAP_PROP_FRAME_HEIGHT)
+    width = cap_send.get(cv2.CAP_PROP_FRAME_WIDTH)
+    height = cap_send.get(cv2.CAP_PROP_FRAME_HEIGHT)
 
-    # cap_send.set(cv2.CAP_PROP_FRAME_WIDTH, width)
-    # cap_send.set(cv2.CAP_PROP_FRAME_HEIGHT, height)
+    cap_send.set(cv2.CAP_PROP_FRAME_WIDTH, width)
+    cap_send.set(cv2.CAP_PROP_FRAME_HEIGHT, height)
     cap_send.set(cv2.CAP_PROP_FPS, fps)
 
     rospy.logerr(f"width is {width} and height is {height} and fps is {fps}")
