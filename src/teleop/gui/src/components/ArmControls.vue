@@ -23,7 +23,8 @@
         @change="updateArmMode()"
       />
       Open Loop
-      <input
+      <!-- Commented until servoing works :( -->
+      <!-- <input
         ref="servo-enabled"
         v-model="arm_controls"
         type="radio"
@@ -31,9 +32,10 @@
         value="servo"
         @change="updateArmMode()"
       />
-      Servo
+      Servo -->
     </div>
-    <div class="controls-flex">
+    <!-- Commented until joint locking is implemented -->
+    <!-- <div class="controls-flex">
       <h4>Joint Locks</h4>
       <Checkbox ref="A" :name="'A'" @toggle="updateJointsEnabled(0, $event)" />
       <Checkbox ref="B" :name="'B'" @toggle="updateJointsEnabled(1, $event)" />
@@ -41,7 +43,7 @@
       <Checkbox ref="D" :name="'D'" @toggle="updateJointsEnabled(3, $event)" />
       <Checkbox ref="E" :name="'E'" @toggle="updateJointsEnabled(4, $event)" />
       <Checkbox ref="F" :name="'F'" @toggle="updateJointsEnabled(5, $event)" />
-    </div>
+    </div> -->
     <div class="controls-flex">
       <h4>Misc. Controls</h4>
       <Checkbox
