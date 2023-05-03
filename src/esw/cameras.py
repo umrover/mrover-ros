@@ -274,12 +274,14 @@ def send(device=0, host="10.0.0.7", port=5000, bitrate=4000000, quality=0, fps=3
     width = cap_send.get(cv2.CAP_PROP_FRAME_WIDTH)
     height = cap_send.get(cv2.CAP_PROP_FRAME_HEIGHT)
 
+    video_writer_fps = 60
     if width == 3264 and height == 2448:
         # These are the settings for the rock camera.
         # Only support one quality since camera does not work with lower fps and looks horrible at other resolutions
         width = 3264
         height = 2448
         fps = 15
+        video_writer_fps = 2
     elif width == 640 and height == 480:
         # These are the settings for the microscope camera.
         if quality == 0:
@@ -331,7 +333,9 @@ def send(device=0, host="10.0.0.7", port=5000, bitrate=4000000, quality=0, fps=3
 
     # openCV stream transmit pipeline with RTP sink
     fourcc = cv2.VideoWriter_fourcc("H", "2", "6", "4")
-    out_send = cv2.VideoWriter(txstr, cv2.CAP_GSTREAMER, fourcc, 60, (int(width), int(height)), is_colored)
+    out_send = cv2.VideoWriter(
+        txstr, cv2.CAP_GSTREAMER, fourcc, video_writer_fps, (int(width), int(height)), is_colored
+    )
 
     rospy.loginfo(
         "\nTransmitting /dev/video"
