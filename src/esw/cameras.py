@@ -237,38 +237,29 @@ class StreamManager:
 
 def send(device=0, host="10.0.0.7", port=5000, bitrate=4000000, quality=1.0, is_colored=False):
     # Construct video capture pipeline string
-    # cap_str = (
-    #     "v4l2src device=/dev/video"
-    #     + str(device)
-    #     + " do-timestamp=true io-mode=2 ! \
-    # image/jpeg, width="
-    #     + str(width)
-    #     + ", height="
-    #     + str(height)
-    #     + ", framerate="
-    #     + str(fps)
-    #     + "/1 ! \
-    # jpegdec ! \
-    # videorate ! \
-    # video/x-raw,\
-    # framerate="
-    #     + str(fps)
-    #     + "/1 ! \
-    # nvvidconv ! "
-    # )
-    # if is_colored:
-    #     cap_str += " video/x-raw, format=BGRx ! "
-    # cap_str += "videoconvert ! "
-    # if is_colored:
-    #     cap_str += " video/x-raw, format=BGR ! "
-    # cap_str += "appsink"
+    cap_str = (
+        "v4l2src device=/dev/video"
+        + str(device)
+        + " do-timestamp=true io-mode=2 ! \
+    image/jpeg ! \
+    jpegdec ! \
+    videorate ! \
+    video/x-raw ! \
+    nvvidconv ! "
+    )
+    if is_colored:
+        cap_str += " video/x-raw, format=BGRx ! "
+    cap_str += "videoconvert ! "
+    if is_colored:
+        cap_str += " video/x-raw, format=BGR ! "
+    cap_str += "appsink"
 
     # openCV video capture from v4l2 device
-    # cap_send = cv2.VideoCapture(cap_str, cv2.CAP_GSTREAMER)
+    cap_send = cv2.VideoCapture(cap_str, cv2.CAP_GSTREAMER)
 
-    cap_send = cv2.VideoCapture(
-        f"v4l2src device=/dev/video{device} ! video/x-raw,format=BGR ! videoconvert ! appsink", cv2.CAP_GSTREAMER
-    )
+    # cap_send = cv2.VideoCapture(
+    #     f"v4l2src device=/dev/video{device} ! video/x-raw,format=BGR ! videoconvert ! appsink", cv2.CAP_GSTREAMER
+    # )
 
     # Construct stream transmit pipeline string
     txstr = "appsrc ! "
@@ -291,8 +282,10 @@ def send(device=0, host="10.0.0.7", port=5000, bitrate=4000000, quality=1.0, is_
         + str(port)
     )
 
-    width = int(cap_send.get(cv2.CAP_PROP_FRAME_WIDTH))
-    height = int(cap_send.get(cv2.CAP_PROP_FRAME_HEIGHT))
+    width = cap_send.get(cv2.CAP_PROP_FRAME_WIDTH)
+    height = cap_send.get(cv2.CAP_PROP_FRAME_HEIGHT)
+    rospy.logerr(width)
+    rospy.logerr(height)
 
     # openCV stream transmit pipeline with RTP sink
     fourcc = cv2.VideoWriter_fourcc("H", "2", "6", "4")
