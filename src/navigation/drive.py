@@ -85,7 +85,7 @@ class DriveController:
                 self._driver_state = self.DriveMode.DRIVE_FORWARD
                 return (Twist(), False)
 
-            # IVT (Intermediate Value Theorem) check. If the sign of the angular error has changed, this means we've crossed through 0 erorr
+            # IVT (Intermediate Value Theorem) check. If the sign of the angular error has changed, this means we've crossed through 0 error
             # in order to prevent osciallation, we 'give up' and just switch to the drive forward state
             elif self._last_angular_error is not None and np.sign(self._last_angular_error) != np.sign(angular_error):
                 self._driver_state = self.DriveMode.DRIVE_FORWARD

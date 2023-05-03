@@ -18,6 +18,7 @@ gate:
   stop_thresh: 0.2
   drive_fwd_thresh: 0.34
   approach_distance: 2.0
+  post_radius: 0.7
 
 search:
   stop_thresh: 0.2

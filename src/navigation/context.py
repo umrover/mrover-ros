@@ -15,6 +15,7 @@ from mrover.msg import Waypoint, GPSWaypoint, EnableAuton, WaypointType, GPSPoin
 import pymap3d
 from std_msgs.msg import Time, Bool
 from drive import DriveController
+from util.ros_utils import get_rosparam
 
 
 TAG_EXPIRATION_TIME_SECONDS = 60
@@ -23,6 +24,8 @@ REF_LAT = rospy.get_param("gps_linearization/reference_point_latitude")
 REF_LON = rospy.get_param("gps_linearization/reference_point_longitude")
 
 tf_broadcaster: tf2_ros.StaticTransformBroadcaster = tf2_ros.StaticTransformBroadcaster()
+
+POST_RADIUS = get_rosparam("gate/post_radius", 0.7)
 
 
 @dataclass
@@ -35,12 +38,10 @@ class Gate:
         Creates a circular path of RADIUS around each post for checking intersection with our path
         :return: tuple of the two shapely Point objects representing the posts
         """
-        # Declare radius to 0.7 meters
-        RADIUS = 0.7
 
         # Find circle of both posts
-        post1_shape = Point(self.post1[:2]).buffer(RADIUS)
-        post2_shape = Point(self.post2[:2]).buffer(RADIUS)
+        post1_shape = Point(self.post1[:2]).buffer(POST_RADIUS)
+        post2_shape = Point(self.post2[:2]).buffer(POST_RADIUS)
 
         return post1_shape, post2_shape
 
