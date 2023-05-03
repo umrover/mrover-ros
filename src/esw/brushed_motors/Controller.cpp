@@ -22,6 +22,7 @@ Controller::Controller(
     assert(0.0f < _motorMaxVoltage);
     assert(_motorMaxVoltage <= _driverVoltage);
     assert(_driverVoltage <= 36.0f);
+    assert((motorID & 0b111) == motorID);
     name = _name;
     deviceAddress = mcuID;
     motorID = _motorID;
@@ -200,6 +201,7 @@ void Controller::turnOn() const {
 // REQUIRES: nothing
 // MODIFIES: nothing
 // EFFECTS: Returns a combined ID for both the deviceAddress and motorID
+// MotorID can only be max 3 bits (0-5), and device address is max 2 bits (1 or 2)
 uint8_t Controller::combineDeviceMotorID() const {
     return (deviceAddress << 3) | motorID;
 }
@@ -221,22 +223,18 @@ void Controller::makeLive() {
 
     // if key is absent, no motor with that key has been made live
     auto it = liveMap.find(key);
-    if (it != liveMap.end()) {
-        std::unique_lock<std::mutex>
-            lck(it->second.liveMutex);
-        // it->second.liveMutex.lock();
-    } else {
+    if (it == liveMap.end()) {
         LiveState state;
         state.jointName = name;
         liveMap.emplace(key, state);
-        // liveMap[key] = state; // doesn't work anymore because mutex isn't inline static
-        std::unique_lock<std::mutex>
-            lck(state.liveMutex);
-        // state.liveMutex.lock();
+        it = liveMap.find(key);
     }
 
+    std::unique_lock<std::mutex>
+        lck(it->second.liveMutex);
+
     // already live and configured to correct motor
-    if (it->second.jointName == name) {
+    if (it->second.jointName == name && it->second.isLive) {
         return;
     }
 
@@ -295,6 +293,7 @@ void Controller::makeLive() {
         // update liveMap
         auto it = liveMap.find(key);
         it->second.jointName = name;
+        it->second.isLive = true;
 
     } catch (IOFailure& e) {
         ROS_ERROR("makeLive failed on %s", name.c_str());

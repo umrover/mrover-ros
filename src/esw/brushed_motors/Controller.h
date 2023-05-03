@@ -97,6 +97,7 @@ trying to contact the same physical Controller object.)
 */
 
 struct LiveState {
+    bool isLive{false}; 
     std::string jointName;
     inline static std::mutex liveMutex;
 };
@@ -189,12 +190,13 @@ public:
     // REQUIRES: nothing
     // MODIFIES: nothing
     // EFFECTS: Returns a combined ID for both the deviceAddress and motorID
+    // MotorID can only be max 3 bits (0-5), and device address is max 2 bits (1 or 2)
     uint8_t combineDeviceMotorID() const;
 
 
 private:
     // REQUIRES: nothing
-    // MODIFIES: isLive
+    // MODIFIES: liveMap
     // EFFECTS: I2C bus, If not already live,
     // configures the physical controller.
     // Then makes live.
