@@ -343,11 +343,13 @@ def send(device=0, host="10.0.0.7", port=5000, bitrate=4000000, quality=0, fps=3
             height = 720
             fps = 30
 
+    cap_send.set(cv2.CAP_PROP_FPS, fps)
+
     rospy.logerr(f"width is {width} and height is {height} and fps is {fps}")
 
     # openCV stream transmit pipeline with RTP sink
     fourcc = cv2.VideoWriter_fourcc("H", "2", "6", "4")
-    out_send = cv2.VideoWriter(txstr, cv2.CAP_GSTREAMER, fourcc, fps, (int(width), int(height)), is_colored)
+    out_send = cv2.VideoWriter(txstr, cv2.CAP_GSTREAMER, fourcc, 60, (int(width), int(height)), is_colored, fps=fps)
 
     rospy.loginfo(
         "\nTransmitting /dev/video"
