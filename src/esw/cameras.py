@@ -257,7 +257,7 @@ def send(device=0, host="10.0.0.7", port=5000, bitrate=4000000, quality=0, fps=3
     vendor_id = get_vendor_id(f"/dev/video{device}")
 
     rospy.logerr(vendor_id)
-    rock_camera_vendor_id = 0
+    rock_camera_vendor_id = "0c45"
     if vendor_id == rock_camera_vendor_id:
         fps = 2
 
