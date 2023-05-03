@@ -28,8 +28,8 @@ export default {
   created: function () {
     this.ramanService = new ROSLIB.Service({
       ros: this.$ros,
-      name: "change_raman_laser_state",
-      serviceType: "mrover/ChangeDeviceState",
+      name: "enable_mosfet_device",
+      serviceType: "mrover/EnableDevice",
     });
   },
 
@@ -37,6 +37,7 @@ export default {
     toggleRamanLaser: function () {
       this.ramanLaserState = !this.ramanLaserState;
       let request = new ROSLIB.ServiceRequest({
+        name: "raman_laser",
         enable: this.ramanLaserState,
       });
       this.ramanService.callService(request, (result) => {

@@ -39,26 +39,12 @@
           />
         </div>
       </div>
-      <!-- <div class="box1 data" :style="{ backgroundColor: nav_state_color }">
-        <div>
-          <h2>Nav State: {{ nav_status.nav_state_name }}</h2>
-        </div>
-        <div>
-          <p style="margin-top: 6px">Joystick Values</p>
-        </div>
-        <div></div>
-        <JoystickValues />
-        <div class="calibration status data" style="background-color: lightgray">
-          <IMUCalibration />
-        </div>
-      </div>
-    </div> -->
       <div class="box1 data" :style="{ backgroundColor: nav_state_color }">
         <div>
           <h2>Nav State: {{ nav_status.nav_state_name }}</h2>
         </div>
         <div>
-          <p style="margin-top: 2px">Joystick Values</p>
+          <p style="margin-top: 6px">Joystick Values</p>
         </div>
         <div></div>
         <JoystickValues />
@@ -86,6 +72,12 @@
       <div v-show="false">
         <MastGimbalControls></MastGimbalControls>
       </div>
+      <div v-if="!stuck_status" class="stuck not-stuck">
+        <h1>Nominal Conditions</h1>
+      </div>
+      <div v-else class="stuck rover-stuck">
+        <h1>Obstruction Detected</h1>
+      </div>
     </div>
     <div class="box1" style="margin-top: 10px">
       <Cameras :primary="true" />
@@ -101,13 +93,10 @@ import DriveControls from "./DriveControls.vue";
 import MastGimbalControls from "./MastGimbalControls.vue";
 import { mapGetters } from "vuex";
 import JoystickValues from "./JoystickValues.vue";
-import IMUCalibration from "./IMUCalibration.vue";
 import CommReadout from "./CommReadout.vue";
-import { quaternionToDisplayAngle } from "../utils.js";
 import Cameras from "./Cameras.vue";
 
 import { quaternionToMapAngle } from "../utils.js";
-import FlightAttitudeIndicator from "./FlightAttitudeIndicator.vue";
 import OdometryReading from "./OdometryReading.vue";
 const navBlue = "#4695FF";
 const navGreen = "yellowgreen";
@@ -119,7 +108,6 @@ export default {
     AutonRoverMap,
     AutonWaypointEditor,
     DriveControls,
-    IMUCalibration,
     JoystickValues,
     MastGimbalControls,
     CommReadout,
@@ -153,9 +141,12 @@ export default {
       greenHook: false,
       ledColor: "red",
 
+      stuck_status: false,
+
       // Pubs and Subs
       nav_status_sub: null,
       odom_sub: null,
+      stuck_sub: null,
       auton_led_client: null,
       tfClient: null
     };
@@ -216,6 +207,12 @@ export default {
       messageType: "sensor_msgs/NavSatFix"
     });
 
+    this.stuck_sub = new ROSLIB.Topic({
+      ros: this.$ros,
+      name: "/stuck_status",
+      messageType: "std_msgs/Bool"
+    });
+
     this.tfClient = new ROSLIB.TFClient({
       ros: this.$ros,
       fixedFrame: "map",
@@ -247,6 +244,11 @@ export default {
       this.odom.longitude_deg = msg.longitude;
     });
 
+    this.stuck_sub.subscribe((msg) => {
+      // Callback for stuck status
+      this.stuck_status = msg.data;
+    });
+
     // Blink interval for green and off flasing
     setInterval(() => {
       this.navBlink = !this.navBlink;
@@ -260,7 +262,7 @@ export default {
     this.ledColor = "off";
     this.sendColor();
   },
-  
+
   methods: {
     sendColor() {
       let request = new ROSLIB.ServiceRequest({
@@ -292,7 +294,8 @@ export default {
     "header header header"
     "map waypoints waypoints"
     "map waypoints waypoints"
-    "data waypoints waypoints";
+    "data stuck stuck";
+
   font-family: sans-serif;
   height: auto;
   width: auto;
@@ -317,6 +320,28 @@ export default {
 
 .box2 {
   display: block;
+}
+
+.stuck {
+  grid-area: stuck;
+  border-radius: 5px;
+  line-height: 70px;
+  border: 1px solid black;
+  font-size: 40px;
+  text-align: center;
+  justify-content: center;
+}
+
+.stuck h1 {
+  margin-top: 30px;
+}
+
+.rover-stuck {
+  background-color: lightcoral;
+}
+
+.not-stuck {
+  background-color: yellowgreen;
 }
 
 .light-bg {

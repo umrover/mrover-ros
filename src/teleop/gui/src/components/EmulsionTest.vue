@@ -54,7 +54,7 @@ export default {
   created: function () {
     this.serviceClient = new ROSLIB.Service({
       ros: this.$ros,
-      name: "change_servo_angles",
+      name: "change_servo_angle",
       serviceType: "mrover/ChangeServoAngle",
     });
 

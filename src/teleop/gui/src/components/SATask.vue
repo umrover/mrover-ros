@@ -120,8 +120,8 @@ import LimitSwitch from "./LimitSwitch.vue";
 import CalibrationCheckbox from "./CalibrationCheckbox.vue";
 import CommReadout from "./CommReadout.vue";
 import MotorAdjust from "./MotorAdjust.vue";
-import { quaternionToMapAngle } from "../utils.js";
 import OdometryReading from "./OdometryReading.vue";
+import { disableAutonLED, quaternionToMapAngle } from "../utils.js";
 
 export default {
   components: {
@@ -164,6 +164,8 @@ export default {
   },
 
   created: function () {
+    disableAutonLED(this.$ros);
+
     this.odom_sub = new ROSLIB.Topic({
       ros: this.$ros,
       name: "/gps/fix",
