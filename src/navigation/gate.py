@@ -6,7 +6,7 @@ from context import Gate, Context
 import numpy as np
 import rospy
 
-from context import Context, Environment, convert_cartesian_to_gps
+from context import Context, Environment, Rover, convert_cartesian_to_gps
 from aenum import Enum, NoAlias
 from state import BaseState
 from trajectory import Trajectory
@@ -152,11 +152,11 @@ class GatePath:
 
         return all_pts.shape[0] - num_pts_included
 
-    def __make_shapely_path(self, rover, path_pts) -> LineString:
+    def __make_shapely_path(self, rover: Rover, path_pts: np.ndarray) -> LineString:
         """
         :param rover: position vector of the rover
         :param pathPts: This is a np.array that has the coordinates of the path
-        :returns: Returns a Shapeley (geometry library) object of LineString which put the path points given into
+        :returns: Returns a Shapeley (geometry limake_shabrary) object of LineString which put the path points given into
         one cohesive line segments.
         """
         path_list = np.vstack((rover, path_pts))
