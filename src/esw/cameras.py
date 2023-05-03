@@ -55,6 +55,18 @@ def generate_dev_list() -> List[int]:
     return dev_num_list
 
 
+def get_serial_id(video_device: int):
+    """
+    Get the serial id of a video device
+    :param video_device: the number of the video device
+    :return: The serial id of video device
+    """
+    # Execute the v4l2-ctl command to get the serial number of the device
+    output = subprocess.check_output(['v4l2-ctl', '-d', video_device, '-C', 'serial_number'])
+    serial_id = output.decode('utf-8').split(':')[1].strip()
+    return serial_id
+
+
 class Stream:
     """
     An object encapsulating a stream from a camera to an IP endpoint. On initialization, a process
@@ -238,6 +250,13 @@ class StreamManager:
 
 def send(device=0, host="10.0.0.7", port=5000, bitrate=4000000, quality=0, fps=30, is_colored=False):
     # Construct video capture pipeline string
+    serial_id = get_serial_id(device)
+
+    rospy.logerr(serial_id)
+    rock_camera_serial_id = 0
+    if serial_id == rock_camera_serial_id:
+        fps = 2
+
     cap_str = f"v4l2src device=/dev/video{device} do-timestamp=true io-mode=2 ! "
     cap_str += f"video/x-raw, format=YUY2 ! videorate ! video/x-raw, framerate={fps}/1 ! nvvidconv ! "
     if is_colored:
