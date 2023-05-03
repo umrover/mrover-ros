@@ -6,11 +6,11 @@
 
 from typing import Any
 import rospy
-from mrover.srv import EnableDevice
+from mrover.srv import ChangeArmMode
 
 # Change these values for the service name and type definition to test different values
-SERVICE_NAME = "enable_limit_switches"
-SERVICE_TYPE = EnableDevice
+SERVICE_NAME = "change_sa_mode"
+SERVICE_TYPE = ChangeArmMode
 
 
 def print_service_request(service_request: Any):

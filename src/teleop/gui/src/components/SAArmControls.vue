@@ -2,37 +2,50 @@
   <div class="wrap">
     <h3>SA Arm controls</h3>
     <div class="controls">
-      <Checkbox
-        ref="arm-enabled"
-        :name="'SA Arm Enabled'"
-        @toggle="updateArmEnabled($event)"
+      <input
+        ref="arm-disabled"
+        v-model="arm_mode"
+        type="radio"
+        :name="'SA Arm Disabled'"
+        value="sa_disabled"
       />
+      SA Disabled
+      <input
+        ref="open-loop-enabled"
+        v-model="arm_mode"
+        type="radio"
+        :name="'Open Loop Enabled'"
+        value="open_loop"
+      />
+      Open Loop
     </div>
   </div>
 </template>
 
 <script>
 import ROSLIB from "roslib";
-import Checkbox from "./Checkbox.vue";
 
 let interval;
 // In seconds
 const updateRate = 0.1;
 
 export default {
-  components: {
-    Checkbox
-  },
   data() {
     return {
-      arm_enabled: false,
+      arm_mode: "sa_disabled",
       joystick_pub: null,
       sa_mode_service: null
     };
   },
 
+  watch: {
+    arm_mode: function (newMode, oldMode) {
+      this.updateArmMode(newMode, oldMode);
+    }
+  },
+
   beforeDestroy: function () {
-    this.updateArmEnabled(false);
+    this.updateArmMode("sa_disabled", this.arm_mode);
     window.clearInterval(interval);
   },
 
@@ -47,53 +60,44 @@ export default {
       name: "change_sa_mode",
       serviceType: "mrover/ChangeArmMode"
     });
-    this.updateArmEnabled(false);
+    this.updateArmMode("sa_disabled", this.arm_mode);
     interval = window.setInterval(() => {
       const gamepads = navigator.getGamepads();
       for (let i = 0; i < 4; i++) {
         const gamepad = gamepads[i];
-        if (
-          (gamepad && gamepad.id.includes("Microsoft")) ||
-          gamepad.id.includes("Xbox") ||
-          gamepad.id.includes("X-Box")
-        ) {
-          let buttons = gamepad.buttons.map((button) => {
-            return button.value;
-          });
+        if (gamepad) {
+          if (
+            gamepad.id.includes("Microsoft") ||
+            gamepad.id.includes("Xbox") ||
+            gamepad.id.includes("X-Box")
+          ) {
+            let buttons = gamepad.buttons.map((button) => {
+              return button.value;
+            });
 
-          const joystickData = {
-            axes: gamepad.axes,
-            buttons: buttons
-          };
-          var joystickMsg = new ROSLIB.Message(joystickData);
-          this.joystick_pub.publish(joystickMsg);
+            const joystickData = {
+              axes: gamepad.axes,
+              buttons: buttons
+            };
+            var joystickMsg = new ROSLIB.Message(joystickData);
+            this.joystick_pub.publish(joystickMsg);
+          }
         }
       }
     }, updateRate * 1000);
   },
 
   methods: {
-    updateArmEnabled: function (enabled) {
-      this.arm_enabled = enabled;
-      if (enabled) {
-        this.sa_mode_service.callService(
-          new ROSLIB.ServiceRequest({ mode: "sa_enabled" }),
-          (result) => {
-            if (!result.success) {
-              alert("Failed to enable SA arm");
-            }
+    updateArmMode: function (newMode, oldMode) {
+      this.sa_mode_service.callService(
+        new ROSLIB.ServiceRequest({ mode: newMode }),
+        (result) => {
+          if (!result.success) {
+            alert("Failed to enable SA arm");
+            this.arm_mode = oldMode;
           }
-        );
-      } else {
-        this.sa_mode_service.callService(
-          new ROSLIB.ServiceRequest({ mode: "sa_disabled" }),
-          (result) => {
-            if (!result.success) {
-              alert("Failed to disable SA arm");
-            }
-          }
-        );
-      }
+        }
+      );
     }
   }
 };

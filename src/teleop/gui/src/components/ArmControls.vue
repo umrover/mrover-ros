@@ -7,29 +7,26 @@
       <!-- Change to radio buttons in the future -->
       <input
         ref="arm-enabled"
-        v-model="arm_controls"
+        v-model="arm_mode"
         type="radio"
         :name="'Arm Enabled'"
         value="arm_disabled"
-        @change="updateArmMode()"
       />
       Arm Disabled
       <input
         ref="open-loop-enabled"
-        v-model="arm_controls"
+        v-model="arm_mode"
         type="radio"
         :name="'Open Loop Enabled'"
         value="open_loop"
-        @change="updateArmMode()"
       />
       Open Loop
       <input
         ref="servo-enabled"
-        v-model="arm_controls"
+        v-model="arm_mode"
         type="radio"
         :name="'Servo'"
         value="servo"
-        @change="updateArmMode()"
       />
       Servo
     </div>
@@ -102,7 +99,7 @@ export default {
   },
   data() {
     return {
-      arm_controls: "arm_disabled",
+      arm_mode: "arm_disabled",
       joints_array: [false, false, false, false, false, false],
       slow_mode: false,
       laser_enabled: false,
@@ -115,9 +112,14 @@ export default {
     };
   },
 
+  watch: {
+    arm_mode: function (newMode, oldMode) {
+      this.updateArmMode(newMode, oldMode);
+    }
+  },
+
   beforeDestroy: function () {
-    this.arm_controls = "arm_disabled";
-    this.updateArmMode();
+    this.updateArmMode("arm_disabled", this.arm_mode);
     window.clearInterval(interval);
   },
 
@@ -147,7 +149,7 @@ export default {
       name: "/ra_slow_mode",
       messageType: "std_msgs/Bool"
     });
-    this.updateArmMode();
+    this.updateArmMode("arm_disabled", this.arm_mode);
     const jointData = {
       //publishes array of all falses when refreshing the page
       joints: this.joints_array
@@ -178,14 +180,14 @@ export default {
   },
 
   methods: {
-    updateArmMode: function () {
-      console.log("Updating arm mode");
+    updateArmMode: function (newMode, oldMode) {
       const armData = {
-        mode: this.arm_controls
+        mode: newMode
       };
       var armcontrolsmsg = new ROSLIB.ServiceRequest(armData);
       this.ra_mode_service.callService(armcontrolsmsg, (response) => {
         if (!response.success) {
+          this.arm_mode = oldMode;
           alert("Failed to change arm mode");
         }
       });

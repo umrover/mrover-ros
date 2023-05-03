@@ -15,6 +15,9 @@ from typing import List
 
 DEFAULT_ARM_DEADZONE = 0.15
 
+# Whether or not to publish /joint_states feedback for RA MoveIt/Rviz
+PUBLISH_JOINT_STATES = False
+
 
 def quadratic(val: float) -> float:
     return copysign(val**2, val)
@@ -142,7 +145,7 @@ class ArmControl:
     def ra_mode_service(self, req: ChangeArmModeRequest) -> ChangeArmModeResponse:
         """
         Service handler for arm control mode
-        :param req: ChangeArmMode service request
+        :param req: ChangeArmMode service request name in {arm_disabled, open_loop, servo}
         :return: ChangeArmMode service response
         """
         with self._arm_mode_lock:
@@ -290,12 +293,10 @@ class ArmControl:
         # TODO: Write this function if/when we get moveit_servo working
         return
 
-    # Service handler for sa_mode
-    # Service handler for RA arm control mode
     def sa_mode_service(self, req: ChangeArmModeRequest) -> ChangeArmModeResponse:
         """
         Service handler for arm control mode
-        :param req: ChangeArmMode service request
+        :param req: ChangeArmMode service request mode in {"sa_disabled", "sa_enabled"}
         :return: ChangeArmMode service response
         """
         with self._sa_arm_mode_lock:
@@ -362,9 +363,10 @@ def main():
     ros.Service("change_sa_mode", ChangeArmMode, arm.sa_mode_service)
 
     # Publish joint states for Moveit at 10Hz
-    while not ros.is_shutdown():
-        # arm.publish_joint_states()
-        ros.sleep(0.1)
+    if PUBLISH_JOINT_STATES:
+        while not ros.is_shutdown():
+            arm.publish_joint_states()
+            ros.sleep(0.1)
 
     ros.spin()
 
