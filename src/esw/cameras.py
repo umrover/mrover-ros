@@ -99,6 +99,7 @@ class Stream:
                 PRIMARY_IP if self.primary else SECONDARY_IP,
                 5000 + self.port,
                 args["bps"],
+                args["quality"],
                 args["fps"],
                 True,
             ),
@@ -235,7 +236,7 @@ class StreamManager:
             return self._get_change_response(True)
 
 
-def send(device=0, host="10.0.0.7", port=5000, bitrate=4000000, fps=30, is_colored=False):
+def send(device=0, host="10.0.0.7", port=5000, bitrate=4000000, quality=0, fps=30, is_colored=False):
     # Construct video capture pipeline string
     cap_str = f"v4l2src device=/dev/video{device} do-timestamp=true io-mode=2 ! "
     cap_str += f"video/x-raw, format=YUY2 ! videorate ! video/x-raw, framerate={fps}/1 ! nvvidconv ! "
@@ -272,12 +273,81 @@ def send(device=0, host="10.0.0.7", port=5000, bitrate=4000000, fps=30, is_color
 
     width = cap_send.get(cv2.CAP_PROP_FRAME_WIDTH)
     height = cap_send.get(cv2.CAP_PROP_FRAME_HEIGHT)
-    rospy.logerr(width)
-    rospy.logerr(height)
+
+    if width == 3264 and height == 2448:
+        # These are the settings for the rock camera.
+        # Quality 0 is for decent fps for poor quality.
+        # Everything else is at 2 fps with increasing quality.
+        if quality == 0:
+            width = 640
+            height = 480
+            fps = 10
+        elif quality == 1:
+            width = 1280
+            height = 720
+            fps = 2
+        elif quality == 2:
+            width = 1600
+            height = 1200
+            fps = 2
+        elif quality == 3:
+            width = 1920
+            height = 1080
+            fps = 2
+        else:
+            width = 3264
+            height = 2448
+            fps = 2
+    elif width == 640 and height == 480:
+        # These are the settings for the microscope camera.
+        if quality == 0:
+            width = 160
+            height = 120
+            fps = 15
+        elif quality == 1:
+            width = 176
+            height = 144
+            fps = 15
+        elif quality == 2:
+            width = 320
+            height = 244
+            fps = 15
+        elif quality == 3:
+            width = 352
+            height = 288
+            fps = 15
+        else:
+            width = 740
+            height = 480
+            fps = 25
+    elif width == 1280 and height == 720:
+        # These are the settings for the standard USB cameras
+        if quality == 0:
+            width = 320
+            height = 240
+            fps = 15
+        elif quality == 1:
+            width = 640
+            height = 480
+            fps = 15
+        elif quality == 2:
+            width = 960
+            height = 720
+            fps = 15
+        elif quality == 3:
+            width = 1280
+            height = 720
+            fps = 15
+        else:
+            width = 1280
+            height = 720
+            fps = 30
+
+    rospy.logerr(f"width is {width} and height is {height} and fps is {fps}")
 
     # openCV stream transmit pipeline with RTP sink
     fourcc = cv2.VideoWriter_fourcc("H", "2", "6", "4")
-    out_send = cv2.VideoWriter(txstr, cv2.CAP_GSTREAMER, fourcc, 60, (int(width), int(height)), is_colored)
+    out_send = cv2.VideoWriter(txstr, cv2.CAP_GSTREAMER, fourcc, fps, (int(width), int(height)), is_colored)
 
     rospy.loginfo(
         "\nTransmitting /dev/video"
