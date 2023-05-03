@@ -50,9 +50,6 @@
     <div>
       <DriveControls />
     </div>
-    <div class="box light-bg scoop">
-      <EndEffectorUV />
-    </div>
     <div class="box light-bg arm">
       <SAArmControls />
     </div>
@@ -114,7 +111,6 @@ import BasicMap from "./BasicRoverMap.vue";
 import BasicWaypointEditor from "./BasicWaypointEditor.vue";
 import DriveControls from "./DriveControls.vue";
 import MastGimbalControls from "./MastGimbalControls.vue";
-import EndEffectorUV from "./EndEffectorUV.vue";
 import SAArmControls from "./SAArmControls.vue";
 import PDBFuse from "./PDBFuse.vue";
 import Cameras from "./Cameras.vue";
@@ -133,7 +129,6 @@ export default {
     BasicWaypointEditor,
     Cameras,
     DriveControls,
-    EndEffectorUV,
     JointStateTable,
     MastGimbalControls,
     MoteusStateTable,
@@ -220,7 +215,7 @@ export default {
   grid-template-areas:
     "header header header header"
     "map map waypoints waypoints"
-    "cameras cameras cameras scoop"
+    "cameras cameras cameras cameras"
     "arm limit moteus jointState"
     "pdb calibration moteus jointState"
     "odom odom odom odom";
@@ -333,10 +328,6 @@ h2 {
 
 .waypoints {
   grid-area: waypoints;
-}
-
-.scoop {
-  grid-area: scoop;
 }
 
 .arm {
