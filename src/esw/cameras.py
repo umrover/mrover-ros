@@ -298,8 +298,6 @@ def send(device=0, host="10.0.0.7", port=5000, bitrate=4000000, quality=1.0, is_
     fourcc = cv2.VideoWriter_fourcc("H", "2", "6", "4")
     out_send = cv2.VideoWriter(txstr, cv2.CAP_GSTREAMER, fourcc, 60, (int(width), int(height)), is_colored)
 
-    out_send.set(cv2.CAP_PROP_QUALITY, quality)  # Set the video quality (0-1)
-
     rospy.loginfo(
         "\nTransmitting /dev/video"
         + str(device)
@@ -309,9 +307,7 @@ def send(device=0, host="10.0.0.7", port=5000, bitrate=4000000, quality=1.0, is_
         + str(port)
         + " with "
         + str(float(bitrate) / 1e6)
-        + " Mbps target, "
-        + str(fps)
-        + " fps target, ("
+        + " Mbps target, ("
         + str(width)
         + ","
         + str(height)
