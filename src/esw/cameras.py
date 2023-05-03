@@ -348,6 +348,10 @@ def send(device=0, host="10.0.0.7", port=5000, bitrate=4000000, quality=0, fps=3
 
     cap_send.set(cv2.CAP_PROP_FPS, fps)
 
+    # disable auto-exposure since the rock camera makes it flicker all the time
+    cap_send.set(cv2.CAP_PROP_AUTO_EXPOSURE, 0)
+    cap_send.set(cv2.CAP_PROP_EXPOSURE, -7.0)
+
     rospy.logerr(f"width is {width} and height is {height} and fps is {fps}")
 
     # openCV stream transmit pipeline with RTP sink
