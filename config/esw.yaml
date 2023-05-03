@@ -55,7 +55,7 @@ brushed_motors:
       quad_cpr: 4096.0
       kP: -0.1
       kI: -0.0
-      inversion: -1.0
+      inversion: 1.0
       limit_a_present: true
       limit_b_present: false
       active_limit_a: false
@@ -70,7 +70,7 @@ brushed_motors:
       quad_cpr: -2048.0
       kP: 0.05
       kI: 0.0
-      inversion: -1.0
+      inversion: 1.0
       limit_a_present: false
       limit_b_present: false
     - name: "finger"
@@ -78,7 +78,7 @@ brushed_motors:
       motor_max_voltage: 12.0
       mcu_id: 1
       motor_id: 3
-      inversion: 1.0
+      inversion: -1.0
       limit_a_present: true
       limit_b_present: true
       active_limit_a: false
@@ -225,6 +225,8 @@ science:
     uv_led_carousel: 1
     uv_led_end_effector: 6
     white_led: 2
+  # How fast the GUI should send heater service requests in ms
+  heater_service_request_interval: 1000
   serial:
     baud_rate: 9600
     timeout: 0
@@ -298,13 +300,13 @@ brushless:
         id: 7
         bus: 3
         max_rps: 80
-        max_torque: 0.13
-        multiplier: 1
+        max_torque: 0.3
+        multiplier: -1
       joint_e:
         id: 8
         bus: 3
-        max_rps: 70
-        max_torque: 0.13
+        max_rps: 80
+        max_torque: 0.3
         multiplier: -1
 
 default_network_iface: "enp0s31f6"
