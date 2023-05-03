@@ -55,15 +55,15 @@ def generate_dev_list() -> List[int]:
     return dev_num_list
 
 
-def get_serial_id(video_device: int):
+def get_serial_id(video_device: str):
     """
     Get the serial id of a video device
-    :param video_device: the number of the video device
+    :param video_device: the video device name (e.g. /dev/video0)
     :return: The serial id of video device
     """
     # Execute the v4l2-ctl command to get the serial number of the device
     # TODO - test out of bounds stuff
-    output = subprocess.check_output(['v4l2-ctl', '-d', str(video_device), '-C', 'serial_number'])
+    output = subprocess.check_output(['v4l2-ctl', '-d', video_device, '-C', 'serial_number'])
     serial_id = output.decode('utf-8').split(':')[1].strip()
     return serial_id
 
@@ -251,7 +251,7 @@ class StreamManager:
 
 def send(device=0, host="10.0.0.7", port=5000, bitrate=4000000, quality=0, fps=30, is_colored=False):
     # Construct video capture pipeline string
-    serial_id = get_serial_id(device)
+    serial_id = get_serial_id(f"/dev/video{device}")
 
     rospy.logerr(serial_id)
     rock_camera_serial_id = 0
