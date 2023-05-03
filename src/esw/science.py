@@ -75,6 +75,7 @@ class ScienceBridge:
     _num_spectral: int
     _handler_function_by_tag: Dict[str, Callable[[str], Any]]
     _ros_publisher_by_tag: Dict[str, rospy.Publisher]
+    _servo_id_by_site_id: List[int]
     _sleep_amt_s: float
     _uart_transmit_msg_len: int
     _uart_lock: threading.Lock
@@ -90,12 +91,6 @@ class ScienceBridge:
         self._num_science_thermistors = rospy.get_param("/science/info/num_science_thermistors")
         self._num_spectral = rospy.get_param("/science/info/num_spectral")
 
-        self._servo_id_by_site_id = {
-            0: rospy.get_param("/science/syringe_servo_positions/site_A/servo_id"),
-            1: rospy.get_param("/science/syringe_servo_positions/site_B/servo_id"),
-            2: rospy.get_param("/science/syringe_servo_positions/site_C/servo_id"),
-        }
-
         self._handler_function_by_tag = {
             "AUTO_SHUTOFF": self._heater_auto_shutoff_handler,
             "DIAG": self._diagnostic_handler,
@@ -110,6 +105,12 @@ class ScienceBridge:
             "SCIENCE_TEMP": rospy.Publisher("science/temperatures", ScienceTemperature, queue_size=1),
             "SPECTRAL": rospy.Publisher("science/spectral", Spectral, queue_size=1),
         }
+
+        self._servo_id_by_site_id = [
+            rospy.get_param("/science/syringe_servo_positions/site_A/servo_id"),
+            rospy.get_param("/science/syringe_servo_positions/site_B/servo_id"),
+            rospy.get_param("/science/syringe_servo_positions/site_C/servo_id"),
+        ]
 
         self._sleep_amt_s = rospy.get_param("science/info/sleep")
         self._uart_transmit_msg_len = rospy.get_param("science/info/uart_transmit_msg_len")
