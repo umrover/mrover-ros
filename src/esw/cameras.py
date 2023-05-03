@@ -238,7 +238,7 @@ class StreamManager:
 def send(device=0, host="10.0.0.7", port=5000, bitrate=4000000, fps=30, is_colored=False):
     # Construct video capture pipeline string
     cap_str = f"v4l2src device=/dev/video{device} do-timestamp=true io-mode=2 ! "
-    cap_str += f"image/jpeg ! jpegdec ! videorate ! video/x-raw, framerate={fps}/1 ! nvvidconv ! "
+    cap_str += f"video/x-raw, format=YUY2 ! videorate ! video/x-raw, framerate={fps}/1 ! nvvidconv ! "
     if is_colored:
         cap_str += " video/x-raw, format=BGRx ! "
     cap_str += "videoconvert ! "
