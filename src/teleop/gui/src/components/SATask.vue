@@ -122,6 +122,7 @@ import CalibrationCheckbox from "./CalibrationCheckbox.vue";
 import CommReadout from "./CommReadout.vue";
 import MotorAdjust from "./MotorAdjust.vue";
 import { quaternionToDisplayAngle } from "../utils.js";
+import { disableAutonLED } from "../utils.js";
 
 export default {
   components: {
@@ -164,6 +165,8 @@ export default {
   },
 
   created: function () {
+    disableAutonLED(this.$ros);
+
     this.odom_sub = new ROSLIB.Topic({
       ros: this.$ros,
       name: "/gps/fix",

@@ -152,8 +152,7 @@ void Controller::enableLimitSwitch(bool enable, bool& limitEnable, uint8_t opera
 
         // Only set limitEnable if transaction was successful.
         limitEnable = enable;
-    }
-    catch (IOFailure& e) {
+    } catch (IOFailure& e) {
         ROS_ERROR("enableLimitSwitch failed on %s", name.c_str());
     }
 }
@@ -191,8 +190,8 @@ bool Controller::getLimitSwitchEnabled() const {
 // EFFECTS: I2C bus, and turns on the controller. Can be used as a way to tick the watchdog for a particular mcu.
 void Controller::turnOn() const {
     try {
-    I2C::transact(deviceAddress, motorIDRegMask | ON_OP, ON_WB, ON_RB,
-                  nullptr, nullptr);
+        I2C::transact(deviceAddress, motorIDRegMask | ON_OP, ON_WB, ON_RB,
+                      nullptr, nullptr);
     } catch (IOFailure& e) {
         ROS_ERROR("turnOn failed on %s", name.c_str());
     }
@@ -260,14 +259,6 @@ void Controller::makeLive() {
         I2C::transact(deviceAddress, motorIDRegMask | CONFIG_K_OP, CONFIG_K_WB,
                       CONFIG_K_RB, buffer, nullptr);
 
-        memcpy(buffer, UINT8_POINTER_T(&limitAPresent), sizeof(limitAPresent));
-        I2C::transact(deviceAddress, motorIDRegMask | ENABLE_LIMIT_A_OP, ENABLE_LIMIT_WB,
-                      ENABLE_LIMIT_RB, buffer, nullptr);
-
-        memcpy(buffer, UINT8_POINTER_T(&limitBPresent), sizeof(limitBPresent));
-        I2C::transact(deviceAddress, motorIDRegMask | ENABLE_LIMIT_B_OP, ENABLE_LIMIT_WB,
-                      ENABLE_LIMIT_RB, buffer, nullptr);
-
         memcpy(buffer, UINT8_POINTER_T(&limitAIsActiveHigh), sizeof(limitAIsActiveHigh));
         I2C::transact(deviceAddress, motorIDRegMask | ACTIVE_LIMIT_A_OP, ACTIVE_LIMIT_WB,
                       ACTIVE_LIMIT_RB, buffer, nullptr);
@@ -284,12 +275,18 @@ void Controller::makeLive() {
         I2C::transact(deviceAddress, motorIDRegMask | COUNTS_LIMIT_B_OP, COUNTS_LIMIT_WB,
                       COUNTS_LIMIT_RB, buffer, nullptr);
 
-
         memcpy(buffer, UINT8_POINTER_T(&limitAIsFwd), sizeof(limitAIsFwd));
         I2C::transact(deviceAddress, motorIDRegMask | LIMIT_A_IS_FWD_OP, LIMIT_A_IS_FWD_WB,
                       LIMIT_A_IS_FWD_RB, buffer, nullptr);
 
-        
+        memcpy(buffer, UINT8_POINTER_T(&limitAPresent), sizeof(limitAPresent));
+        I2C::transact(deviceAddress, motorIDRegMask | ENABLE_LIMIT_A_OP, ENABLE_LIMIT_WB,
+                      ENABLE_LIMIT_RB, buffer, nullptr);
+
+        memcpy(buffer, UINT8_POINTER_T(&limitBPresent), sizeof(limitBPresent));
+        I2C::transact(deviceAddress, motorIDRegMask | ENABLE_LIMIT_B_OP, ENABLE_LIMIT_WB,
+                      ENABLE_LIMIT_RB, buffer, nullptr);
+
         // update liveMap
         auto it = liveMap.find(key);
         it->second.jointName = name;
