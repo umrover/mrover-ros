@@ -194,12 +194,12 @@ class ScienceBridge:
         # req.id is 0, 1, or 2, representing sites A, B, or C.
         # ESW still needs to map that to the actual servo 0, 1, or 2.
         try:
-            actual_id = self._servo_id_by_site_id[req.id]
+            servo_id = self._servo_id_by_site_id[req.id]  # req.id is the Site ID
         except IndexError:
-            rospy.logerr(f"Servo Angle ID {req.id} is invalid.")
+            rospy.logerr(f"Site ID {req.id} for changing servo angle is invalid.")
             return ChangeServoAngleResponse(False)
 
-        success = self._servo_transmit(actual_id, req.angle)
+        success = self._servo_transmit(servo_id, req.angle)
         return ChangeServoAngleResponse(success)
 
     def _auton_led_transmit(self, color: str) -> bool:
@@ -207,7 +207,7 @@ class ScienceBridge:
         state.
         :param color: A string that is the color of the requested state of
             the auton LED array. Note that green actually means blinking green.
-            The string should be lower case.
+            The string should be lowercase.
         :returns: A boolean that is the success of the transaction. Note that
             this could be because an invalid color was sent.
         """
@@ -249,7 +249,7 @@ class ScienceBridge:
     def _servo_transmit(self, id: int, angle: float) -> bool:
         """Send a UART message to the STM32 chip commanding the angles of the
         carousel servos.
-        :param angles: Three floats in an array that represent the angles of
+        :param angle: Three floats in an array that represent the angles of
             the servos. Note that this angle is what the servo interprets as
             the angle, and it may differ from servo to servo. Also note that
             the range of angles may vary (the safe range is between about 0
