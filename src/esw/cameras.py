@@ -325,6 +325,8 @@ def send(device=0, host="10.0.0.7", port=5000, bitrate=4000000, quality=0, fps=3
             height = 720
             fps = 30
 
+    cap_send.set(cv2.CAP_PROP_FRAME_WIDTH, width)
+    cap_send.set(cv2.CAP_PROP_FRAME_HEIGHT, height)
     cap_send.set(cv2.CAP_PROP_FPS, fps)
 
     rospy.logerr(f"width is {width} and height is {height} and fps is {fps}")
