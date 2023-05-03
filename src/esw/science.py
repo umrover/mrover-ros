@@ -90,6 +90,12 @@ class ScienceBridge:
         self._num_science_thermistors = rospy.get_param("/science/info/num_science_thermistors")
         self._num_spectral = rospy.get_param("/science/info/num_spectral")
 
+        self._servo_id_by_site_id = {
+            0: rospy.get_param("/science/syringe_servo_positions/site_A/servo_id"),
+            1: rospy.get_param("/science/syringe_servo_positions/site_B/servo_id"),
+            2: rospy.get_param("/science/syringe_servo_positions/site_C/servo_id"),
+        }
+
         self._handler_function_by_tag = {
             "AUTO_SHUTOFF": self._heater_auto_shutoff_handler,
             "DIAG": self._diagnostic_handler,
@@ -185,7 +191,15 @@ class ScienceBridge:
             a float representing the id and the angle respectively.
         :returns: A boolean that is the success of sent UART transaction.
         """
-        success = self._servo_transmit(req.id, req.angle)
+        # req.id is 0, 1, or 2, representing sites A, B, or C.
+        # ESW still needs to map that to the actual servo 0, 1, or 2.
+        try:
+            actual_id = self._servo_id_by_site_id[req.id]
+        except IndexError:
+            rospy.logerr(f"Servo Angle ID {req.id} is invalid.")
+            return ChangeServoAngleResponse(False)
+
+        success = self._servo_transmit(actual_id, req.angle)
         return ChangeServoAngleResponse(success)
 
     def _auton_led_transmit(self, color: str) -> bool:
