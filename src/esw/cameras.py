@@ -55,16 +55,20 @@ def generate_dev_list() -> List[int]:
     return dev_num_list
 
 
-def get_card_type(video_device: str) -> str:
+def get_vendor_id(video_device: str) -> str:
     """
-    Get the card type of video device
+    Get the vendor id of video device
     :param video_device: the video device name (e.g. /dev/video0)
-    :return: The card type of the device
+    :return: The vendor id of the device
     """
     # Execute the v4l2-ctl command to get the serial number of the device
-    output = subprocess.check_output(['v4l2-ctl', '-d', video_device, '-C', 'card'])
-    card_type = output.decode('utf-8').split(':')[1].strip()
-    return card_type
+    output = subprocess.check_output(['udevadm', 'info', '--query=all', video_device])
+    vendor_id = None
+    for line in output.decode().splitlines():
+        if 'VENDOR_ID' in line:
+            vendor_id = line.split('=')[1].strip()
+            break
+    return vendor_id
 
 
 class Stream:
@@ -250,11 +254,11 @@ class StreamManager:
 
 def send(device=0, host="10.0.0.7", port=5000, bitrate=4000000, quality=0, fps=30, is_colored=False):
     # Construct video capture pipeline string
-    card_type = get_card_type(f"/dev/video{device}")
+    vendor_id = get_vendor_id(f"/dev/video{device}")
 
-    rospy.logerr(card_type)
-    rock_camera_card_type = 0
-    if card_type == rock_camera_card_type:
+    rospy.logerr(vendor_id)
+    rock_camera_vendor_id = 0
+    if vendor_id == rock_camera_vendor_id:
         fps = 2
 
     cap_str = f"v4l2src device=/dev/video{device} do-timestamp=true io-mode=2 ! "
