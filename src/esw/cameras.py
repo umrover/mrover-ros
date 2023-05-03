@@ -63,7 +63,7 @@ def get_serial_id(video_device: str):
     """
     # Execute the v4l2-ctl command to get the serial number of the device
     # TODO - test out of bounds stuff
-    output = subprocess.check_output(['v4l2-ctl', '-d', video_device, '-C', 'serial_number'])
+    output = subprocess.check_output(['v4l2-ctl', '-d', video_device, '-C', 'device_serial'])
     serial_id = output.decode('utf-8').split(':')[1].strip()
     return serial_id
 
