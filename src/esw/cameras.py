@@ -258,16 +258,67 @@ def send(device=0, host="10.0.0.7", port=5000, bitrate=4000000, quality=0, fps=3
 
     rospy.logerr(vendor_id)
     rock_camera_vendor_id = "0c45"
+    regular_camera_vendor_id = "32e4"
+    microscope_camera_vendor_id = "a16f"
     if vendor_id == rock_camera_vendor_id:
-        fps = 2
+        # These are the settings for the rock camera.
+        # Only support one quality since camera does not work with lower fps and looks horrible at other resolutions
+        width = 3264
+        height = 2448
+        fps = 15
+    elif vendor_id == microscope_camera_vendor_id:
+        # These are the settings for the microscope camera.
+        if quality == 0:
+            width = 160
+            height = 120
+            fps = 15
+        elif quality == 1:
+            width = 176
+            height = 144
+            fps = 15
+        elif quality == 2:
+            width = 320
+            height = 244
+            fps = 15
+        elif quality == 3:
+            width = 352
+            height = 288
+            fps = 15
+        else:
+            width = 740
+            height = 480
+            fps = 25
+    elif regular_camera_vendor_id:
+        # These are the settings for the standard USB cameras
+        if quality == 0:
+            width = 320
+            height = 240
+            fps = 15
+        elif quality == 1:
+            width = 640
+            height = 480
+            fps = 15
+        elif quality == 2:
+            width = 960
+            height = 720
+            fps = 15
+        elif quality == 3:
+            width = 1280
+            height = 720
+            fps = 15
+        else:
+            width = 1280
+            height = 720
+            fps = 30
+    else:
+        # Hopefully you never run into this
+        width = 320
+        height = 240
+        fps = 15
 
     cap_str = f"v4l2src device=/dev/video{device} do-timestamp=true io-mode=2 ! "
-    cap_str += f"video/x-raw, format=YUY2 ! videorate ! video/x-raw, framerate={fps}/1 ! nvvidconv ! "
-    if is_colored:
-        cap_str += " video/x-raw, format=BGRx ! "
+    cap_str += f"videorate ! video/x-raw, framerate={fps}/1 ! nvvidconv ! "
     cap_str += "videoconvert ! "
-    if is_colored:
-        cap_str += " video/x-raw, format=BGR ! "
     cap_str += "appsink"
 
     # openCV video capture from v4l2 device
@@ -296,57 +347,6 @@ def send(device=0, host="10.0.0.7", port=5000, bitrate=4000000, quality=0, fps=3
 
     width = cap_send.get(cv2.CAP_PROP_FRAME_WIDTH)
     height = cap_send.get(cv2.CAP_PROP_FRAME_HEIGHT)
-
-    if width == 3264 and height == 2448:
-        # These are the settings for the rock camera.
-        # Only support one quality since camera does not work with lower fps and looks horrible at other resolutions
-        width = 3264
-        height = 2448
-        fps = 15
-    elif width == 640 and height == 480:
-        # These are the settings for the microscope camera.
-        if quality == 0:
-            width = 160
-            height = 120
-            fps = 15
-        elif quality == 1:
-            width = 176
-            height = 144
-            fps = 15
-        elif quality == 2:
-            width = 320
-            height = 244
-            fps = 15
-        elif quality == 3:
-            width = 352
-            height = 288
-            fps = 15
-        else:
-            width = 740
-            height = 480
-            fps = 25
-    elif width == 1280 and height == 720:
-        # These are the settings for the standard USB cameras
-        if quality == 0:
-            width = 320
-            height = 240
-            fps = 15
-        elif quality == 1:
-            width = 640
-            height = 480
-            fps = 15
-        elif quality == 2:
-            width = 960
-            height = 720
-            fps = 15
-        elif quality == 3:
-            width = 1280
-            height = 720
-            fps = 15
-        else:
-            width = 1280
-            height = 720
-            fps = 30
 
     cap_send.set(cv2.CAP_PROP_FRAME_WIDTH, width)
     cap_send.set(cv2.CAP_PROP_FRAME_HEIGHT, height)
