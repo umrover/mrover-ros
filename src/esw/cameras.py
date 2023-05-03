@@ -99,7 +99,7 @@ class Stream:
                 PRIMARY_IP if self.primary else SECONDARY_IP,
                 5000 + self.port,
                 args["bps"],
-                args["quality"],
+                args["fps"],
                 True,
             ),
         )
@@ -235,18 +235,10 @@ class StreamManager:
             return self._get_change_response(True)
 
 
-def send(device=0, host="10.0.0.7", port=5000, bitrate=4000000, quality=1.0, is_colored=False):
+def send(device=0, host="10.0.0.7", port=5000, bitrate=4000000, fps=30, is_colored=False):
     # Construct video capture pipeline string
-    cap_str = (
-        "v4l2src device=/dev/video"
-        + str(device)
-        + " do-timestamp=true io-mode=2 ! \
-    image/jpeg ! \
-    jpegdec ! \
-    videorate ! \
-    video/x-raw ! \
-    nvvidconv ! "
-    )
+    cap_str = f"v4l2src device=/dev/video{device} do-timestamp=true io-mode=2 ! "
+    cap_str += f"image/jpeg ! jpegdec ! videorate ! video/x-raw, framerate={fps}/1 ! nvvidconv ! "
     if is_colored:
         cap_str += " video/x-raw, format=BGRx ! "
     cap_str += "videoconvert ! "
@@ -256,10 +248,6 @@ def send(device=0, host="10.0.0.7", port=5000, bitrate=4000000, quality=1.0, is_
 
     # openCV video capture from v4l2 device
     cap_send = cv2.VideoCapture(cap_str, cv2.CAP_GSTREAMER)
-
-    # cap_send = cv2.VideoCapture(
-    #     f"v4l2src device=/dev/video{device} ! video/x-raw,format=BGR ! videoconvert ! appsink", cv2.CAP_GSTREAMER
-    # )
 
     # Construct stream transmit pipeline string
     txstr = "appsrc ! "

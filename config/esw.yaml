@@ -184,15 +184,15 @@ brushed_motors:
 cameras:
   arguments:
     - bps: 173000
-      quality: 0.2
+      fps: 15
     - bps: 691000
-      quality: 0.4
+      fps: 15
     - bps: 2000000
-      quality: 0.6
+      fps: 15
     - bps: 3000000
-      quality: 0.8
+      fps: 15
     - bps: 4200000
-      quality: 1.0
+      fps: 30
 
   # Number of devices corresponds to number of cmds in
   #   - ChangeCameras.srv
