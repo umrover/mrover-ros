@@ -193,7 +193,7 @@ cameras:
     regular:
       vendor_id: "32e4"
       vendor: "HD_USB_Camera"
-      quality:
+      quality_options:
         - width: 320
           height: 240
           fps: 15
@@ -212,7 +212,7 @@ cameras:
     microscope:
       vendor_id: "a16f"
       vendor: "GenesysLogic_Technology_Co.__Ltd."
-      quality:
+      quality_options:
         - width: 160
           height: 120
           fps: 15
@@ -250,7 +250,7 @@ cameras:
     rock_4k:
       vendor_id: "0c45"
       vendor: "Arducam_Technology_Co.__Ltd."
-      quality:
+      quality_options:
         - width: 3264
           height: 2448
           fps: 15

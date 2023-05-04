@@ -8,7 +8,6 @@ import cv2
 from multiprocessing import Process
 from typing import Dict, List, Any
 from threading import Lock
-from enum import Enum
 
 from mrover.msg import CameraCmd
 
@@ -26,7 +25,15 @@ SECONDARY_IP: str = rospy.get_param("cameras/ips/secondary")
 
 CAPTURE_ARGS: List[Dict[str, int]] = rospy.get_param("cameras/arguments")
 
-CAMERA_TYPE_INFO_BY_NAME: Dict[str, Any] = rospy.get_param("cameras/camera_type_info")
+
+class CameraTypeInfo:
+    def __init__(self, vendor_id: str, vendor: str, quality_options: List[Dict[str, int]]):
+        self.vendor_id: str = vendor_id
+        self.vendor: str = vendor
+        self.quality_options: List[Dict[str, int]] = quality_options
+
+
+CAMERA_TYPE_INFO_BY_NAME: Dict[str, CameraTypeInfo] = {}  # initialized in main()
 
 
 def generate_dev_list() -> List[int]:
@@ -86,7 +93,7 @@ def get_camera_type(video_device: str) -> str:
     vendor = get_camera_info(f"/dev/video{video_device}", "VENDOR")
 
     for name in CAMERA_TYPE_INFO_BY_NAME:
-        if vendor_id == CAMERA_TYPE_INFO_BY_NAME[name][vendor_id] and vendor == CAMERA_TYPE_INFO_BY_NAME[name][vendor]:
+        if vendor_id == CAMERA_TYPE_INFO_BY_NAME[name].vendor_id and vendor == CAMERA_TYPE_INFO_BY_NAME[name].vendor:
             return name
 
     return ""
@@ -295,16 +302,16 @@ def send(
 
     # All resolutions are determined using the following: v4l2-ctl -d /dev/video0 --list-formats-ext
     try:
-        best_option = len(CAMERA_TYPE_INFO_BY_NAME[camera_type]["quality_options"]) - 1
+        best_option = len(CAMERA_TYPE_INFO_BY_NAME[camera_type].quality_options) - 1
 
         if quality > best_option:
             quality = best_option
         elif quality < 0:
             quality = 0
 
-        width = CAMERA_TYPE_INFO_BY_NAME[camera_type]["quality_options"][quality]["width"]
-        height = CAMERA_TYPE_INFO_BY_NAME[camera_type]["quality_options"][quality]["height"]
-        fps = CAMERA_TYPE_INFO_BY_NAME[camera_type]["quality_options"][quality]["fps"]
+        width = CAMERA_TYPE_INFO_BY_NAME[camera_type].quality_options[quality]["width"]
+        height = CAMERA_TYPE_INFO_BY_NAME[camera_type].quality_options[quality]["height"]
+        fps = CAMERA_TYPE_INFO_BY_NAME[camera_type].quality_options[quality]["fps"]
     except KeyError:
         rospy.logerr(f"Unsupported camera type {camera_type}")
         assert False
@@ -384,7 +391,16 @@ def send(
 
 
 def main():
+    global CAMERA_TYPE_INFO_BY_NAME
     rospy.init_node("cameras")
+
+    raw_camera_type_info_by_name = rospy.get_param("cameras/camera_type_info")
+    for name in raw_camera_type_info_by_name:
+        info = raw_camera_type_info_by_name[name]
+        quality_options = [
+            {"width": q["width"], "height": q["height"], "fps": q["fps"]} for q in info["quality_options"]
+        ]
+        CAMERA_TYPE_INFO_BY_NAME[name] = CameraTypeInfo(info["vendor_id"], info["vendor"], quality_options)
 
     stream_manager = StreamManager()
     rospy.Service("change_cameras", ChangeCameras, stream_manager.handle_req)
