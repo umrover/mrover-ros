@@ -46,6 +46,7 @@ class GatePath:
     center: np.ndarray
     passed_center: bool = False
     center_idx: int = 2
+    path_index: int = 0
 
     def __init__(self, rover_pos: np.ndarray, gate: Gate):
         self.rover_pos = rover_pos[:2]
@@ -55,6 +56,7 @@ class GatePath:
         self.approach_idx = int(np.argmin(np.linalg.norm(self.approach_pts - self.rover_pos, axis=1)))
         self.victory_idx = int(np.argmax(np.linalg.norm(self.approach_pts - self.rover_pos, axis=1)))
         self.update(rover_pos, gate)
+        self.path_index = self.__optimize_path()
 
     def __update_center(self) -> None:
         self.center = (self.gate.post1 + self.gate.post2) / 2
@@ -141,8 +143,8 @@ class GatePath:
         # try paths with successively more points until we have one that won't intersect
         all_pts = self.__get_full_path()
         num_pts_included = (
-            1 if self.passed_center else 2
-        )  # if we've already passed the center, we should not include it, otherwise we must to ensure we pass through the middle of the gate
+            2  # require that we include the victory point and the center point in the path to ensure traversal
+        )
         path = self.__make_shapely_path(rover, all_pts[-num_pts_included:, :])
         while path.intersects(post_one_shape) or path.intersects(post_two_shape):
             num_pts_included += 1
@@ -176,22 +178,15 @@ class GatePath:
         """
         # first get the full path with all the key points.
         full_path = self.__get_full_path()
-        # find the index of the farthest along point on the path that we can drive to without intersecting the gate
-        # this 'optimizes' our path so that we don't have unnecessary segments (and also reduces path length)
-        path_idx = self.__optimize_path()
 
-        pt = full_path[path_idx]
+        pt = full_path[self.path_index]
         # if we are close enough to the point, move on to the next one
         if np.linalg.norm(pt - self.rover_pos) < STOP_THRESH:
-            # if the current point was the center point, note that we have passed the center
-            # this is necessary for the optimize path function to know that we have already gone through the gate
-            if path_idx == self.center_idx:
-                self.passed_center = True
-            path_idx += 1
+            self.path_index += 1
             # if we have reached the end of the path, return None
-            if path_idx >= len(full_path):
+            if self.path_index >= len(full_path):
                 return None
-            pt = full_path[path_idx]
+            pt = full_path[self.path_index]
         # append a 0.0 to the end so the point is in R^3
         return np.append(pt, 0.0)
 
