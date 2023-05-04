@@ -26,13 +26,7 @@ SECONDARY_IP: str = rospy.get_param("cameras/ips/secondary")
 
 CAPTURE_ARGS: List[Dict[str, int]] = rospy.get_param("cameras/arguments")
 
-
-class CameraType(Enum):
-    UNKNOWN = 0
-    REGULAR = 1
-    MICROSCOPE = 2
-    RES_1080 = 3
-    ROCK_4K = 4
+CAMERA_TYPE_INFO_BY_NAME: Dict[str, Any] = rospy.get_param("cameras/camera_type_info")
 
 
 def generate_dev_list() -> List[int]:
@@ -81,38 +75,21 @@ def get_camera_info(video_device: str, info_type: str) -> str:
     return info
 
 
-def get_camera_type(video_device: str) -> CameraType:
+def get_camera_type(video_device: str) -> str:
     """
     Get the camera type of video device
     :param video_device: the video device name (e.g. /dev/video0)
-    :return: The camera type
+    :return: The name of the camera type
     """
 
     vendor_id = get_camera_info(f"/dev/video{video_device}", "VENDOR_ID")
     vendor = get_camera_info(f"/dev/video{video_device}", "VENDOR")
 
-    # This info is obtained by running the following: udevadm info --query=all /dev/video2
+    for name in CAMERA_TYPE_INFO_BY_NAME:
+        if vendor_id == CAMERA_TYPE_INFO_BY_NAME[name][vendor_id] and vendor == CAMERA_TYPE_INFO_BY_NAME[name][vendor]:
+            return name
 
-    regular_camera_vendor_id = "32e4"
-    microscope_camera_vendor_id = "a16f"
-    res_1080_camera_vendor_id = "0c45"
-    rock_4k_camera_vendor_id = "0x45"
-
-    regular_camera_vendor = "HD_USB_Camera"
-    microscope_camera_vendor = "GenesysLogic_Technology_Co.__Ltd."
-    res_1080_camera_vendor = "Sonix_Technology_Co.__Ltd."
-    rock_4k_camera_vendor = "Arducam_Technology_Co.__Ltd."
-
-    if vendor_id == regular_camera_vendor_id and vendor == regular_camera_vendor:
-        return CameraType.REGULAR
-    if vendor_id == microscope_camera_vendor_id and vendor == microscope_camera_vendor:
-        return CameraType.MICROSCOPE
-    if vendor_id == res_1080_camera_vendor_id and vendor == res_1080_camera_vendor:
-        return CameraType.RES_1080
-    if vendor_id == rock_4k_camera_vendor_id and vendor == rock_4k_camera_vendor:
-        return CameraType.ROCK_4K
-
-    return CameraType.UNKNOWN
+    return ""
 
 
 class Stream:
@@ -142,7 +119,7 @@ class Stream:
     The port that the stream is streaming to.
     """
 
-    def __init__(self, req: ChangeCamerasRequest, cmd: CameraCmd, port: int, camera_type: CameraType):
+    def __init__(self, req: ChangeCamerasRequest, cmd: CameraCmd, port: int, camera_type: str):
         self._cmd = cmd
         self._cmd.device = req.camera_cmd.device
         self._cmd.resolution = req.camera_cmd.resolution
@@ -294,7 +271,7 @@ class StreamManager:
 
                 camera_type = get_camera_type(f"/dev/video{device_id}")
 
-                if camera_type == CameraType.UNKNOWN:
+                if camera_type == "":
                     rospy.logerr(
                         f"Camera type of device ID {req.camera_cmd.device} (/dev/video{device_id}) is unsupported"
                     )
@@ -312,87 +289,25 @@ def send(
     bitrate: int = 4000000,
     is_colored: bool = False,
     quality: int = 0,
-    camera_type: CameraType = CameraType.UNKNOWN,
+    camera_type: str = "",
 ):
     # Construct video capture pipeline string
 
     # All resolutions are determined using the following: v4l2-ctl -d /dev/video0 --list-formats-ext
-    if camera_type == CameraType.REGULAR:
-        # These are the settings for the standard USB cameras
-        if quality == 0:
-            width = 320
-            height = 240
-            fps = 15
-        elif quality == 1:
-            width = 640
-            height = 480
-            fps = 15
-        elif quality == 2:
-            width = 960
-            height = 720
-            fps = 15
-        elif quality == 3:
-            width = 1280
-            height = 720
-            fps = 15
-        else:
-            width = 1280
-            height = 720
-            fps = 30
-    elif camera_type == CameraType.ROCK_4K:
-        # These are the settings for the rock camera.
-        # Only support one quality since camera does not work with lower fps and looks horrible at other resolutions
-        width = 3264
-        height = 2448
-        fps = 15
-    elif camera_type == CameraType.MICROSCOPE:
-        # These are the settings for the microscope camera.
-        if quality == 0:
-            width = 160
-            height = 120
-            fps = 15
-        elif quality == 1:
-            width = 176
-            height = 144
-            fps = 15
-        elif quality == 2:
-            width = 320
-            height = 244
-            fps = 15
-        elif quality == 3:
-            width = 352
-            height = 288
-            fps = 15
-        else:
-            width = 740
-            height = 480
-            fps = 25
-    elif camera_type == CameraType.RES_1080:
-        if quality == 0:
-            width = 320
-            height = 240
-            fps = 15
-        elif quality == 1:
-            width = 640
-            height = 480
-            fps = 15
-        elif quality == 2:
-            width = 960
-            height = 720
-            fps = 15
-        elif quality == 3:
-            width = 1280
-            height = 720
-            fps = 15
-        else:
-            width = 1920
-            height = 1080
-            fps = 15
-    else:
-        # This is for all supported cameras
-        width = 320
-        height = 240
-        fps = 15
+    try:
+        best_option = len(CAMERA_TYPE_INFO_BY_NAME[camera_type]["quality_options"]) - 1
+
+        if quality > best_option:
+            quality = best_option
+        elif quality < 0:
+            quality = 0
+
+        width = CAMERA_TYPE_INFO_BY_NAME[camera_type]["quality_options"][quality]["width"]
+        height = CAMERA_TYPE_INFO_BY_NAME[camera_type]["quality_options"][quality]["height"]
+        fps = CAMERA_TYPE_INFO_BY_NAME[camera_type]["quality_options"][quality]["fps"]
+    except KeyError:
+        rospy.logerr(f"Unsupported camera type {camera_type}")
+        assert False
 
     cap_str = f"v4l2src device=/dev/video{device} do-timestamp=true io-mode=2 ! "
     cap_str += f"videorate ! video/x-raw, framerate={fps}/1 ! nvvidconv ! "
@@ -461,7 +376,7 @@ def send(
             rospy.logerr("Empty frame")
             break
         out_send.write(frame)
-        if camera_type == CameraType.ROCK_4K:
+        if camera_type == "rock_4k":
             break
 
     cap_send.release()

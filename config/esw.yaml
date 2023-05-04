@@ -188,6 +188,72 @@ cameras:
     - bps: 2000000
     - bps: 3000000
     - bps: 4200000
+  camera_type_info:
+    # Info is obtained by running `udevadm info --query=all /dev/video0`
+    regular:
+      vendor_id: "32e4"
+      vendor: "HD_USB_Camera"
+      quality:
+        - width: 320
+          height: 240
+          fps: 15
+        - width: 640
+          height: 480
+          fps: 15
+        - width: 960
+          height: 720
+          fps: 15
+        - width: 1280
+          height: 720
+          fps: 15
+        - width: 1280
+          height: 720
+          fps: 30
+    microscope:
+      vendor_id: "a16f"
+      vendor: "GenesysLogic_Technology_Co.__Ltd."
+      quality:
+        - width: 160
+          height: 120
+          fps: 15
+        - width: 176
+          height: 144
+          fps: 15
+        - width: 320
+          height: 244
+          fps: 15
+        - width: 352
+          height: 288
+          fps: 15
+        - width: 740
+          height: 480
+          fps: 25
+    res_1080:
+      vendor_id: "0c45"
+      vendor: "Sonix_Technology_Co.__Ltd."
+      quality_options:
+        - width: 320
+          height: 240
+          fps: 15
+        - width: 640
+          height: 480
+          fps: 15
+        - width: 960
+          height: 480
+          fps: 15
+        - width: 1280
+          height: 720
+          fps: 15
+        - width: 1920
+          height: 1080
+          fps: 15
+    rock_4k:
+      vendor_id: "0c45"
+      vendor: "Arducam_Technology_Co.__Ltd."
+      quality:
+        - width: 3264
+          height: 2448
+          fps: 15
 
   # Number of devices corresponds to number of cmds in
   #   - ChangeCameras.srv
