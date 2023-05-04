@@ -8,6 +8,7 @@ import cv2
 from multiprocessing import Process
 from typing import Dict, List, Any
 from threading import Lock
+from enum import Enum
 
 from mrover.msg import CameraCmd
 
@@ -24,6 +25,14 @@ PRIMARY_IP: str = rospy.get_param("cameras/ips/primary")
 SECONDARY_IP: str = rospy.get_param("cameras/ips/secondary")
 
 CAPTURE_ARGS: List[Dict[str, int]] = rospy.get_param("cameras/arguments")
+
+
+class CameraType(Enum):
+    UNKNOWN = 0
+    REGULAR = 1
+    MICROSCOPE = 2
+    RES_1080 = 3
+    ROCK_4K = 4
 
 
 def generate_dev_list() -> List[int]:
@@ -62,13 +71,38 @@ def get_vendor_id(video_device: str) -> str:
     :return: The vendor id of the device
     """
     # Execute the v4l2-ctl command to get the serial number of the device
-    output = subprocess.check_output(['udevadm', 'info', '--query=all', video_device])
-    vendor_id = None
+    output = subprocess.check_output(["udevadm", "info", "--query=all", video_device])
+    vendor_id = ""
     for line in output.decode().splitlines():
-        if 'VENDOR_ID' in line:
-            vendor_id = line.split('=')[1].strip()
+        if "VENDOR_ID" in line:
+            vendor_id = line.split("=")[1].strip()
             break
     return vendor_id
+
+
+def get_camera_type(video_device: str) -> CameraType:
+    """
+    Get the camera type of video device
+    :param video_device: the video device name (e.g. /dev/video0)
+    :return: The camera type
+    """
+
+    vendor_id = get_vendor_id(f"/dev/video{video_device}")
+
+    rospy.logerr(vendor_id)
+    regular_camera_vendor_id = "32e4"
+    microscope_camera_vendor_id = "a16f"
+    res_1080_camera_vendor_id = "0c45"
+
+    if vendor_id == regular_camera_vendor_id:
+        return CameraType.REGULAR
+    if vendor_id == microscope_camera_vendor_id:
+        return CameraType.MICROSCOPE
+    if vendor_id == res_1080_camera_vendor_id:
+        return CameraType.RES_1080
+        # return CameraType.ROCK_4K  # This shares the same camera vendor id
+
+    return CameraType.UNKNOWN
 
 
 class Stream:
@@ -98,7 +132,7 @@ class Stream:
     The port that the stream is streaming to.
     """
 
-    def __init__(self, req: ChangeCamerasRequest, cmd: CameraCmd, port: int):
+    def __init__(self, req: ChangeCamerasRequest, cmd: CameraCmd, port: int, camera_type: CameraType):
         self._cmd = cmd
         self._cmd.device = req.camera_cmd.device
         self._cmd.resolution = req.camera_cmd.resolution
@@ -115,9 +149,9 @@ class Stream:
                 PRIMARY_IP if self.primary else SECONDARY_IP,
                 5000 + self.port,
                 args["bps"],
-                args["quality"],
-                args["fps"],
                 True,
+                req.camera_cmd.resolution,
+                camera_type,
             ),
         )
 
@@ -247,52 +281,33 @@ class StreamManager:
 
                 # Get a reference to an available slot and give to a new stream.
                 cmd_obj = self._get_open_cmd_slot(req.primary)
-                self._stream_by_device[device_id] = Stream(req, cmd_obj, available_port)
+
+                camera_type = get_camera_type(f"/dev/video{device_id}")
+
+                if camera_type == CameraType.UNKNOWN:
+                    rospy.logerr(
+                        f"Camera type of device ID {req.camera_cmd.device} (/dev/video{device_id}) is unsupported"
+                    )
+                    return self._get_change_response(False)
+
+                self._stream_by_device[device_id] = Stream(req, cmd_obj, available_port, camera_type)
 
             return self._get_change_response(True)
 
 
-def send(device=0, host="10.0.0.7", port=5000, bitrate=4000000, quality=0, fps=30, is_colored=False):
+def send(
+    device: int = 0,
+    host: str = "10.0.0.7",
+    port: int = 5000,
+    bitrate: int = 4000000,
+    is_colored: bool = False,
+    quality: int = 0,
+    camera_type: CameraType = CameraType.UNKNOWN,
+):
     # Construct video capture pipeline string
-    vendor_id = get_vendor_id(f"/dev/video{device}")
 
-
-    rospy.logerr(vendor_id)
-    rock_camera_vendor_id = ""  # "0c45"
-    regular_camera_vendor_id = "32e4"
-    microscope_camera_vendor_id = "a16f"
-    photo_camera_vendor_id = "0c45"
     # All resolutions are determined using the following: v4l2-ctl -d /dev/video0 --list-formats-ext
-    if vendor_id == rock_camera_vendor_id:
-        # These are the settings for the rock camera.
-        # Only support one quality since camera does not work with lower fps and looks horrible at other resolutions
-        width = 3264
-        height = 2448
-        fps = 15
-        bitrate = 6000000
-    elif vendor_id == microscope_camera_vendor_id:
-        # These are the settings for the microscope camera.
-        if quality == 0:
-            width = 160
-            height = 120
-            fps = 15
-        elif quality == 1:
-            width = 176
-            height = 144
-            fps = 15
-        elif quality == 2:
-            width = 320
-            height = 244
-            fps = 15
-        elif quality == 3:
-            width = 352
-            height = 288
-            fps = 15
-        else:
-            width = 740
-            height = 480
-            fps = 25
-    elif regular_camera_vendor_id:
+    if camera_type == CameraType.REGULAR:
         # These are the settings for the standard USB cameras
         if quality == 0:
             width = 320
@@ -314,7 +329,35 @@ def send(device=0, host="10.0.0.7", port=5000, bitrate=4000000, quality=0, fps=3
             width = 1280
             height = 720
             fps = 30
-    elif vendor_id == photo_camera_vendor_id:
+    elif camera_type == CameraType.ROCK_4K:
+        # These are the settings for the rock camera.
+        # Only support one quality since camera does not work with lower fps and looks horrible at other resolutions
+        width = 3264
+        height = 2448
+        fps = 15
+    elif camera_type == CameraType.MICROSCOPE:
+        # These are the settings for the microscope camera.
+        if quality == 0:
+            width = 160
+            height = 120
+            fps = 15
+        elif quality == 1:
+            width = 176
+            height = 144
+            fps = 15
+        elif quality == 2:
+            width = 320
+            height = 244
+            fps = 15
+        elif quality == 3:
+            width = 352
+            height = 288
+            fps = 15
+        else:
+            width = 740
+            height = 480
+            fps = 25
+    elif camera_type == CameraType.RES_1080:
         if quality == 0:
             width = 320
             height = 240
@@ -336,7 +379,7 @@ def send(device=0, host="10.0.0.7", port=5000, bitrate=4000000, quality=0, fps=3
             height = 1080
             fps = 15
     else:
-        # Hopefully you never run into this
+        # This is for all supported cameras
         width = 320
         height = 240
         fps = 15
@@ -370,9 +413,6 @@ def send(device=0, host="10.0.0.7", port=5000, bitrate=4000000, quality=0, fps=3
         + str(port)
     )
 
-    width = cap_send.get(cv2.CAP_PROP_FRAME_WIDTH)
-    height = cap_send.get(cv2.CAP_PROP_FRAME_HEIGHT)
-
     cap_send.set(cv2.CAP_PROP_FRAME_WIDTH, width)
     cap_send.set(cv2.CAP_PROP_FRAME_HEIGHT, height)
     cap_send.set(cv2.CAP_PROP_FPS, fps)
@@ -381,9 +421,7 @@ def send(device=0, host="10.0.0.7", port=5000, bitrate=4000000, quality=0, fps=3
 
     # openCV stream transmit pipeline with RTP sink
     fourcc = cv2.VideoWriter_fourcc("H", "2", "6", "4")
-    out_send = cv2.VideoWriter(
-        txstr, cv2.CAP_GSTREAMER, fourcc, 60, (int(width), int(height)), is_colored
-    )
+    out_send = cv2.VideoWriter(txstr, cv2.CAP_GSTREAMER, fourcc, 60, (int(width), int(height)), is_colored)
 
     rospy.loginfo(
         "\nTransmitting /dev/video"
@@ -413,7 +451,7 @@ def send(device=0, host="10.0.0.7", port=5000, bitrate=4000000, quality=0, fps=3
             rospy.logerr("Empty frame")
             break
         out_send.write(frame)
-        if vendor_id == rock_camera_vendor_id:
+        if camera_type == CameraType.ROCK_4K:
             break
 
     cap_send.release()
