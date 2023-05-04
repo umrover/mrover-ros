@@ -52,6 +52,7 @@ class Rover:
     stuck: bool
     previous_state: str
     driver: DriveController = DriveController()
+    arrived_at_post: bool = False
 
     def get_pose(self, in_odom_frame: bool = False) -> SE3:
         if in_odom_frame and self.ctx.use_odom:
