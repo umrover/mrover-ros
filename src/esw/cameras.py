@@ -27,10 +27,17 @@ CAPTURE_ARGS: List[Dict[str, int]] = rospy.get_param("cameras/arguments")
 
 
 class CameraTypeInfo:
-    def __init__(self, vendor_id: str, vendor: str, quality_options: List[Dict[str, int]]):
+
+    class QualityOption:
+        def __init__(self, width: int, height: int, fps: int):
+            self.width: int = width
+            self.height: int = height
+            self.fps: int = fps
+
+    def __init__(self, vendor_id: str, vendor: str, quality_options: List[QualityOption]):
         self.vendor_id: str = vendor_id
         self.vendor: str = vendor
-        self.quality_options: List[Dict[str, int]] = quality_options
+        self.quality_options: List[CameraTypeInfo.QualityOption] = quality_options
 
 
 CAMERA_TYPE_INFO_BY_NAME: Dict[str, CameraTypeInfo] = {}  # initialized in main()
@@ -309,9 +316,9 @@ def send(
         elif quality < 0:
             quality = 0
 
-        width = CAMERA_TYPE_INFO_BY_NAME[camera_type].quality_options[quality]["width"]
-        height = CAMERA_TYPE_INFO_BY_NAME[camera_type].quality_options[quality]["height"]
-        fps = CAMERA_TYPE_INFO_BY_NAME[camera_type].quality_options[quality]["fps"]
+        width = CAMERA_TYPE_INFO_BY_NAME[camera_type].quality_options[quality].width
+        height = CAMERA_TYPE_INFO_BY_NAME[camera_type].quality_options[quality].height
+        fps = CAMERA_TYPE_INFO_BY_NAME[camera_type].quality_options[quality].fps
     except KeyError:
         rospy.logerr(f"Unsupported camera type {camera_type}")
         assert False
@@ -398,7 +405,7 @@ def main():
     for name in raw_camera_type_info_by_name:
         info = raw_camera_type_info_by_name[name]
         quality_options = [
-            {"width": q["width"], "height": q["height"], "fps": q["fps"]} for q in info["quality_options"]
+            CameraTypeInfo.QualityOption(q["width"], q["height"], q["fps"]) for q in info["quality_options"]
         ]
         CAMERA_TYPE_INFO_BY_NAME[name] = CameraTypeInfo(info["vendor_id"], info["vendor"], quality_options)
 
