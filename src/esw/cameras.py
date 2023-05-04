@@ -64,20 +64,21 @@ def generate_dev_list() -> List[int]:
     return dev_num_list
 
 
-def get_vendor_id(video_device: str) -> str:
+def get_camera_info(video_device: str, info_type: str) -> str:
     """
-    Get the vendor id of video device
+    Get the detail of video device
     :param video_device: the video device name (e.g. /dev/video0)
-    :return: The vendor id of the device
+    :param info_type: the detail (e.g. VENDOR_ID or VENDOR)
+    :return: The detail of the device
     """
     # Execute the v4l2-ctl command to get the serial number of the device
     output = subprocess.check_output(["udevadm", "info", "--query=all", video_device])
-    vendor_id = ""
+    info = ""
     for line in output.decode().splitlines():
-        if "VENDOR_ID" in line:
-            vendor_id = line.split("=")[1].strip()
+        if info_type in line:
+            info = line.split("=")[1].strip()
             break
-    return vendor_id
+    return info
 
 
 def get_camera_type(video_device: str) -> CameraType:
@@ -87,20 +88,29 @@ def get_camera_type(video_device: str) -> CameraType:
     :return: The camera type
     """
 
-    vendor_id = get_vendor_id(f"/dev/video{video_device}")
+    vendor_id = get_camera_info(f"/dev/video{video_device}", "VENDOR_ID")
+    vendor = get_camera_info(f"/dev/video{video_device}", "VENDOR")
 
-    rospy.logerr(vendor_id)
+    # This info is obtained by running the following: udevadm info --query=all /dev/video2
+
     regular_camera_vendor_id = "32e4"
     microscope_camera_vendor_id = "a16f"
     res_1080_camera_vendor_id = "0c45"
+    rock_4k_camera_vendor_id = "0x45"
 
-    if vendor_id == regular_camera_vendor_id:
+    regular_camera_vendor = "HD_USB_Camera"
+    microscope_camera_vendor = "GenesysLogic_Technology_Co.__Ltd."
+    res_1080_camera_vendor = "Sonix_Technology_Co.__Ltd."
+    rock_4k_camera_vendor = "Arducam_Technology_Co.__Ltd."
+
+    if vendor_id == regular_camera_vendor_id and vendor == regular_camera_vendor:
         return CameraType.REGULAR
-    if vendor_id == microscope_camera_vendor_id:
+    if vendor_id == microscope_camera_vendor_id and vendor == microscope_camera_vendor:
         return CameraType.MICROSCOPE
-    if vendor_id == res_1080_camera_vendor_id:
+    if vendor_id == res_1080_camera_vendor_id and vendor == res_1080_camera_vendor:
         return CameraType.RES_1080
-        # return CameraType.ROCK_4K  # This shares the same camera vendor id
+    if vendor_id == rock_4k_camera_vendor_id and vendor == rock_4k_camera_vendor:
+        return CameraType.ROCK_4K
 
     return CameraType.UNKNOWN
 
