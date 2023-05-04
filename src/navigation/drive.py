@@ -23,6 +23,7 @@ MAP_CONSTANTS = get_rosparam("drive/map", default_constants)
 
 class DriveController:
     _last_angular_error: Optional[float] = None
+    _last_target: Optional[np.ndarray] = None
 
     class DriveMode(Enum):
         TURN_IN_PLACE = 1
@@ -152,6 +153,10 @@ class DriveController:
         target_pos[2] = 0
         target_dir = target_pos - rover_pos
 
+        # if the target is farther than completion distance away from the last one, reset the controller
+        if self._last_target is not None and np.linalg.norm(target_pos - self._last_target) > completion_thresh:
+            self.reset()
+
         # compute errors
         linear_error = float(np.linalg.norm(target_dir))
         angular_error = angle_to_rotate(rover_dir, target_dir)
@@ -164,4 +169,5 @@ class DriveController:
             output[0].linear.x *= -1
 
         self._last_angular_error = angular_error
+        self._last_target = target_pos
         return output
