@@ -256,16 +256,20 @@ def send(device=0, host="10.0.0.7", port=5000, bitrate=4000000, quality=0, fps=3
     # Construct video capture pipeline string
     vendor_id = get_vendor_id(f"/dev/video{device}")
 
+
     rospy.logerr(vendor_id)
-    rock_camera_vendor_id = "0c45"
+    rock_camera_vendor_id = ""  # "0c45"
     regular_camera_vendor_id = "32e4"
     microscope_camera_vendor_id = "a16f"
+    photo_camera_vendor_id = "0c45"
+    # All resolutions are determined using the following: v4l2-ctl -d /dev/video0 --list-formats-ext
     if vendor_id == rock_camera_vendor_id:
         # These are the settings for the rock camera.
         # Only support one quality since camera does not work with lower fps and looks horrible at other resolutions
         width = 3264
         height = 2448
         fps = 15
+        bitrate = 6000000
     elif vendor_id == microscope_camera_vendor_id:
         # These are the settings for the microscope camera.
         if quality == 0:
@@ -310,6 +314,27 @@ def send(device=0, host="10.0.0.7", port=5000, bitrate=4000000, quality=0, fps=3
             width = 1280
             height = 720
             fps = 30
+    elif vendor_id == photo_camera_vendor_id:
+        if quality == 0:
+            width = 320
+            height = 240
+            fps = 15
+        elif quality == 1:
+            width = 640
+            height = 480
+            fps = 15
+        elif quality == 2:
+            width = 960
+            height = 720
+            fps = 15
+        elif quality == 3:
+            width = 1280
+            height = 720
+            fps = 15
+        else:
+            width = 1920
+            height = 1080
+            fps = 15
     else:
         # Hopefully you never run into this
         width = 320
@@ -388,6 +413,8 @@ def send(device=0, host="10.0.0.7", port=5000, bitrate=4000000, quality=0, fps=3
             rospy.logerr("Empty frame")
             break
         out_send.write(frame)
+        if vendor_id == rock_camera_vendor_id:
+            break
 
     cap_send.release()
     out_send.release()
