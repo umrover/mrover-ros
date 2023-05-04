@@ -232,19 +232,20 @@ science:
     timeout: 0
     port: "/dev/ttyTHS0" 
   # These position are random for now
-  syringe_servo_positions:  # This is in degrees
-    site_A:
+  servo_id_by_site:  # This is in degrees
+    A: 2
+    B: 1
+    C: 0
+  servo_positions:
+    servo_0:
       pushed: 70
       start: 100
-      servo_id: 2
-    site_B:
+    servo_1:
       pushed: 60
       start: 90
-      servo_id: 1
-    site_C:
+    servo_2:
       pushed: 0
       start: 50
-      servo_id: 0
   info:
     num_diag_current: 3
     num_diag_thermistors: 3

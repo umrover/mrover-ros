@@ -75,7 +75,6 @@ class ScienceBridge:
     _num_spectral: int
     _handler_function_by_tag: Dict[str, Callable[[str], Any]]
     _ros_publisher_by_tag: Dict[str, rospy.Publisher]
-    _servo_id_by_site_id: List[int]
     _sleep_amt_s: float
     _uart_transmit_msg_len: int
     _uart_lock: threading.Lock
@@ -105,12 +104,6 @@ class ScienceBridge:
             "SCIENCE_TEMP": rospy.Publisher("science/temperatures", ScienceTemperature, queue_size=1),
             "SPECTRAL": rospy.Publisher("science/spectral", Spectral, queue_size=1),
         }
-
-        self._servo_id_by_site_id = [
-            rospy.get_param("/science/syringe_servo_positions/site_A/servo_id"),
-            rospy.get_param("/science/syringe_servo_positions/site_B/servo_id"),
-            rospy.get_param("/science/syringe_servo_positions/site_C/servo_id"),
-        ]
 
         self._sleep_amt_s = rospy.get_param("science/info/sleep")
         self._uart_transmit_msg_len = rospy.get_param("science/info/uart_transmit_msg_len")
@@ -192,15 +185,12 @@ class ScienceBridge:
             a float representing the id and the angle respectively.
         :returns: A boolean that is the success of sent UART transaction.
         """
-        # req.id is 0, 1, or 2, representing sites A, B, or C.
-        # ESW still needs to map that to the actual servo 0, 1, or 2.
-        try:
-            servo_id = self._servo_id_by_site_id[req.id]  # req.id is the Site ID
-        except IndexError:
-            rospy.logerr(f"Site ID {req.id} for changing servo angle is invalid.")
+        if not 0 <= req.id < 3:
+            # 0 <= req.id < 3 must be true since only 0, 1, and 2 are accepted.
+            rospy.logerr(f"Site {req.id} for changing servo angle is invalid.")
             return ChangeServoAngleResponse(False)
 
-        success = self._servo_transmit(servo_id, req.angle)
+        success = self._servo_transmit(req.id, req.angle)
         return ChangeServoAngleResponse(success)
 
     def _auton_led_transmit(self, color: str) -> bool:
@@ -247,9 +237,10 @@ class ScienceBridge:
         success = self._send_msg(tx_msg)
         return success
 
-    def _servo_transmit(self, id: int, angle: float) -> bool:
+    def _servo_transmit(self, servo_id: int, angle: float) -> bool:
         """Send a UART message to the STM32 chip commanding the angles of the
         carousel servos.
+        :param servo_id: A servo id. Should be 0, 1, or 2.
         :param angle: Three floats in an array that represent the angles of
             the servos. Note that this angle is what the servo interprets as
             the angle, and it may differ from servo to servo. Also note that
@@ -257,7 +248,7 @@ class ScienceBridge:
             and 150).
         :returns: A boolean that is the success of the transaction.
         """
-        tx_msg = f"$SERVO,{id},{angle}"
+        tx_msg = f"$SERVO,{servo_id},{angle}"
         success = self._send_msg(tx_msg)
         return success
 
