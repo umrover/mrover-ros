@@ -23,15 +23,14 @@ from mrover.srv import (
 PRIMARY_IP: str = rospy.get_param("cameras/ips/primary")
 SECONDARY_IP: str = rospy.get_param("cameras/ips/secondary")
 
-CAPTURE_ARGS: List[Dict[str, int]] = rospy.get_param("cameras/arguments")
-
 
 class CameraTypeInfo:
     class QualityOption:
-        def __init__(self, width: int, height: int, fps: int):
+        def __init__(self, width: int, height: int, fps: int, bps: int):
             self.width: int = width
             self.height: int = height
             self.fps: int = fps
+            self.bps: int = bps
 
     def __init__(self, vendor_id: str, vendor: str, quality_options: List[QualityOption]):
         self.vendor_id: str = vendor_id
@@ -140,15 +139,12 @@ class Stream:
         self.primary = req.primary
         self.port = port
 
-        args = CAPTURE_ARGS[self._cmd.resolution]
-
         self._process = Process(
             target=send,
             args=(
                 self._cmd.device,
                 PRIMARY_IP if self.primary else SECONDARY_IP,
                 5000 + self.port,
-                args["bps"],
                 req.camera_cmd.resolution,
                 camera_type,
             ),
@@ -260,7 +256,7 @@ class StreamManager:
 
             # If a stream is being requested...
             # (resolution == -1 means a request to cancel stream)
-            if 0 <= req.camera_cmd.resolution < len(CAPTURE_ARGS):
+            if req.camera_cmd.resolution > 0:
 
                 # If we cannot handle any more streams, return False.
                 available_port_arr = [True, True, True, True]
@@ -298,7 +294,6 @@ def send(
     device: int = 0,
     host: str = "10.0.0.7",
     port: int = 5000,
-    bitrate: int = 4000000,
     quality: int = 0,
     camera_type: str = "",
 ):
@@ -316,6 +311,7 @@ def send(
         width = CAMERA_TYPE_INFO_BY_NAME[camera_type].quality_options[quality].width
         height = CAMERA_TYPE_INFO_BY_NAME[camera_type].quality_options[quality].height
         fps = CAMERA_TYPE_INFO_BY_NAME[camera_type].quality_options[quality].fps
+        bitrate = CAMERA_TYPE_INFO_BY_NAME[camera_type].quality_options[quality].bps
     except KeyError:
         rospy.logerr(f"Unsupported camera type {camera_type}")
         assert False
@@ -393,7 +389,7 @@ def main():
     for name in raw_camera_type_info_by_name:
         info = raw_camera_type_info_by_name[name]
         quality_options = [
-            CameraTypeInfo.QualityOption(q["width"], q["height"], q["fps"]) for q in info["quality_options"]
+            CameraTypeInfo.QualityOption(q["width"], q["height"], q["fps"], q["bps"]) for q in info["quality_options"]
         ]
         CAMERA_TYPE_INFO_BY_NAME[name] = CameraTypeInfo(info["vendor_id"], info["vendor"], quality_options)
 
