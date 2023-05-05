@@ -264,7 +264,7 @@ cameras:
           height: 2448
           fps: 15
           bps: 8000000
-
+  max_num_resolutions: 5
   # Number of devices corresponds to number of cmds in
   #   - ChangeCameras.srv
   #   - ResetCameras.srv
