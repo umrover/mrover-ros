@@ -183,7 +183,9 @@ brushed_motors:
   
 cameras:
   camera_type_info:
-    # Info is obtained by running `udevadm info --query=all /dev/video0`
+    # width and height is obtained by running `udevadm info --query=all /dev/video0`
+    # An important thing to know is that actual bps is much less than bps in config.
+    # However, we need to keep bps in config higher otherwise there is too much compression
     regular:
       vendor_id: "32e4"
       vendor: "HD_USB_Camera"
