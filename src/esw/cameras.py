@@ -279,7 +279,6 @@ class StreamManager:
                     if port_is_available:
                         available_port = i
                         break
-                
 
                 if available_port == -1:
                     # Technically, we don't need a double check
