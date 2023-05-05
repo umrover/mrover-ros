@@ -152,6 +152,14 @@ class Stream:
 
         self._process.start()
 
+    def is_still_running(self) -> bool:
+        """
+        Returns whether the stream (and process) is still running.
+        :return: Whether stream is running.
+        """
+        poll = self._process.poll()
+        return poll is None
+
     def __del__(self) -> None:
         """
         Finalizer for stream. Kill the associated process and reset the cmd.
@@ -262,9 +270,7 @@ class StreamManager:
                 available_port_arr = [True, True, True, True]
                 for i, stream in enumerate(self._stream_by_device):
                     if stream is not None:
-                        poll = stream.poll()
-                        if poll is None:
-                            # This means that it has NOT terminated (still running)
+                        if stream.is_still_running():
                             available_port_arr[stream.port] = False
                         else:
                             self._stream_by_device[i] = None
