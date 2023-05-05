@@ -13,6 +13,9 @@ from dataclasses import dataclass
 from shapely.geometry import Point, LineString
 from mrover.msg import Waypoint, GPSWaypoint, EnableAuton, WaypointType, GPSPointList
 import pymap3d
+from drive import DriveController
+from util.ros_utils import get_rosparam
+
 from std_msgs.msg import Time, Bool
 
 TAG_EXPIRATION_TIME_SECONDS = 60
@@ -21,6 +24,8 @@ REF_LAT = rospy.get_param("gps_linearization/reference_point_latitude")
 REF_LON = rospy.get_param("gps_linearization/reference_point_longitude")
 
 tf_broadcaster: tf2_ros.StaticTransformBroadcaster = tf2_ros.StaticTransformBroadcaster()
+
+POST_RADIUS = get_rosparam("gate/post_radius", 0.7)
 
 
 @dataclass
@@ -33,12 +38,10 @@ class Gate:
         Creates a circular path of RADIUS around each post for checking intersection with our path
         :return: tuple of the two shapely Point objects representing the posts
         """
-        # Declare radius to 0.5 meters
-        RADIUS = 0.5
 
         # Find circle of both posts
-        post1_shape = Point(self.post1[:2]).buffer(RADIUS)
-        post2_shape = Point(self.post2[:2]).buffer(RADIUS)
+        post1_shape = Point(self.post1[:2]).buffer(POST_RADIUS)
+        post2_shape = Point(self.post2[:2]).buffer(POST_RADIUS)
 
         return post1_shape, post2_shape
 
@@ -48,6 +51,7 @@ class Rover:
     ctx: Context
     stuck: bool
     previous_state: str
+    driver: DriveController = DriveController()
 
     def get_pose(self, in_odom_frame: bool = False) -> SE3:
         if in_odom_frame and self.ctx.use_odom:
