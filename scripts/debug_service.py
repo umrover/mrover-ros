@@ -9,7 +9,7 @@ import rospy
 from mrover.srv import EnableDevice
 
 # Change these values for the service name and type definition to test different values
-SERVICE_NAME = "enable_limit_switch"
+SERVICE_NAME = "enable_limit_switches"
 SERVICE_TYPE = EnableDevice
 
 

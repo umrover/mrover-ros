@@ -117,6 +117,16 @@ private:
     // EFFECTS: disables or enables limit switches
     static bool processMotorEnableLimitSwitches(mrover::EnableDevice::Request& req, mrover::EnableDevice::Response& res);
 
+    // REQUIRES: mcu_id is a valid mcu_id
+    // MODIFIES: nothing
+    // EFFECTS: resets the tick of a watchdog for a particular mcu using the On function
+    static void tickMCU(int mcu_id);
+
+    // REQUIRES: mcu_id is a valid mcu_id
+    // MODIFIES: nothing
+    // EFFECTS: resets the tick of a watchdog for all MCUs
+    static void tickAllMCUs();
+
 public:
     // REQUIRES: rosNode is a pointer to the created node.
     // MODIFIES: static variables
@@ -126,5 +136,10 @@ public:
     // REQUIRES: name is the name of a controller and isCalibrated is whether it is calibrated
     // MODIFIES: static variables
     // EFFECTS: Publishes calibration status to the proper topic depending on the name
-    static void publish_calibration_data_using_name(const std::string& name, bool isCalibrated);
+    static void publishCalibrationDataUsingName(const std::string& name, bool isCalibrated);
+
+    // REQUIRES: nothing
+    // MODIFIES: nothing
+    // EFFECTS: used as a watchdog for the MCUs
+    static void timerCallback(const ros::TimerEvent& event);
 };

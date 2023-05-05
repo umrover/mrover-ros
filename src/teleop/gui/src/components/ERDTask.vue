@@ -85,7 +85,7 @@ import MoteusStateTable from "./MoteusStateTable.vue";
 import OdometryReading from "./OdometryReading.vue";
 import PDBFuse from "./PDBFuse.vue";
 import CommReadout from "./CommReadout.vue";
-import { quaternionToDisplayAngle } from "../utils.js";
+import { quaternionToDisplayAngle, disableAutonLED } from "../utils.js";
 
 export default {
   components: {
@@ -134,6 +134,7 @@ export default {
   },
 
   created: function () {
+    disableAutonLED(this.$ros);
     this.odom_sub = new ROSLIB.Topic({
       ros: this.$ros,
       name: "/gps/fix",
