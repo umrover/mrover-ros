@@ -95,8 +95,8 @@ def get_camera_type(video_device: str) -> str:
     :return: The name of the camera type
     """
 
-    vendor_id = get_camera_info(f"/dev/video{video_device}", "VENDOR_ID")
-    vendor = get_camera_info(f"/dev/video{video_device}", "VENDOR")
+    vendor_id = get_camera_info(video_device, "VENDOR_ID")
+    vendor = get_camera_info(video_device, "VENDOR")
 
     for name in CAMERA_TYPE_INFO_BY_NAME:
         if vendor_id == CAMERA_TYPE_INFO_BY_NAME[name].vendor_id and vendor == CAMERA_TYPE_INFO_BY_NAME[name].vendor:
