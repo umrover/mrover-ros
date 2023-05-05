@@ -157,8 +157,7 @@ class Stream:
         Returns whether the stream (and process) is still running.
         :return: Whether stream is running.
         """
-        poll = self._process.poll()
-        return poll is None
+        return self._process.is_alive()
 
     def __del__(self) -> None:
         """
