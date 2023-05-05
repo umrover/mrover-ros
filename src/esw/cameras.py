@@ -331,8 +331,13 @@ def send(
     txstr += f"nvv4l2h264enc bitrate={bitrate} ! h264parse ! rtph264pay pt=96 config-interval=1 ! "
     txstr += f"udpsink host={host} port={port}"
 
-    cap_send.set(cv2.CAP_PROP_FRAME_WIDTH, width)
-    cap_send.set(cv2.CAP_PROP_FRAME_HEIGHT, height)
+    # We need to set with proper width instead of desired width, otherwise it's very slow when capturing images
+    # We can just capture the images at the proper width and convert them later.
+    prop_width = cap_send.get(cv2.CAP_PROP_FRAME_WIDTH)
+    prop_height = cap_send.get(cv2.CAP_PROP_FRAME_HEIGHT)
+
+    cap_send.set(cv2.CAP_PROP_FRAME_WIDTH, prop_width)
+    cap_send.set(cv2.CAP_PROP_FRAME_HEIGHT, prop_height)
     cap_send.set(cv2.CAP_PROP_FPS, fps)
 
     rospy.logerr(f"width is {width} and height is {height} and fps is {fps}")
@@ -368,7 +373,11 @@ def send(
         if not ret:
             rospy.logerr("Empty frame")
             break
-        out_send.write(frame)
+        # Need to convert it from prop_width and prop_height to desired width and height
+        converted_frame = cv2.resize(frame, (width, height), fx=0, fy=0, interpolation=cv2.INTER_CUBIC)
+        out_send.write(converted_frame)
+
+        # For the rock camera at 4k resolution, we only want one frame otherwise it's REALLY slow
         if camera_type == "rock_4k":
             break
 
