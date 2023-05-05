@@ -261,14 +261,13 @@ class StreamManager:
                 # If we cannot handle any more streams, return False.
                 available_port_arr = [True, True, True, True]
                 for i, stream in enumerate(self._stream_by_device):
-                    if stream:
-                        available_port_arr[stream.port] = False
-                    else:
+                    if stream is not None:
                         poll = stream.poll()
-                        if poll is not None:
-                            # This means that it has terminated
-                            self._stream_by_device[i] = None
+                        if poll is None:
+                            # This means that it has NOT terminated (still running)
                             available_port_arr[stream.port] = False
+                        else:
+                            self._stream_by_device[i] = None
 
                 available_port = -1
                 for i, port_is_available in enumerate(available_port_arr):
