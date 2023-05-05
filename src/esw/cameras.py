@@ -27,7 +27,6 @@ CAPTURE_ARGS: List[Dict[str, int]] = rospy.get_param("cameras/arguments")
 
 
 class CameraTypeInfo:
-
     class QualityOption:
         def __init__(self, width: int, height: int, fps: int):
             self.width: int = width
