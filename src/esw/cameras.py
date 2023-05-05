@@ -279,6 +279,7 @@ class StreamManager:
                     if port_is_available:
                         available_port = i
                         break
+                
 
                 if available_port == -1:
                     # Technically, we don't need a double check
@@ -346,8 +347,6 @@ def send(
     cap_send.set(cv2.CAP_PROP_FRAME_HEIGHT, prop_height)
     cap_send.set(cv2.CAP_PROP_FPS, fps)
 
-    rospy.logerr(f"width is {width} and height is {height} and fps is {fps}")
-
     # openCV stream transmit pipeline with RTP sink
     fourcc = cv2.VideoWriter_fourcc("H", "2", "6", "4")
     out_send = cv2.VideoWriter(txstr, cv2.CAP_GSTREAMER, fourcc, 60, (int(width), int(height)), True)
@@ -369,7 +368,7 @@ def send(
     )
 
     if not cap_send.isOpened() or not out_send.isOpened():
-        rospy.logerr("\nWARNING: unable to open video source for /dev/video" + str(device) + "\n")
+        rospy.logerr(f"WARNING: unable to open video source for /dev/video{device}")
         exit(0)
 
     # Transmit loop
