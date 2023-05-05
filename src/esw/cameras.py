@@ -149,7 +149,6 @@ class Stream:
                 PRIMARY_IP if self.primary else SECONDARY_IP,
                 5000 + self.port,
                 args["bps"],
-                True,
                 req.camera_cmd.resolution,
                 camera_type,
             ),
@@ -300,7 +299,6 @@ def send(
     host: str = "10.0.0.7",
     port: int = 5000,
     bitrate: int = 4000000,
-    is_colored: bool = False,
     quality: int = 0,
     camera_type: str = "",
 ):
@@ -323,33 +321,15 @@ def send(
         assert False
 
     cap_str = f"v4l2src device=/dev/video{device} do-timestamp=true io-mode=2 ! "
-    cap_str += f"videorate ! video/x-raw, framerate={fps}/1 ! nvvidconv ! "
-    cap_str += "videoconvert ! "
-    cap_str += "appsink"
+    cap_str += f"videorate ! video/x-raw, framerate={fps}/1 ! nvvidconv ! videoconvert ! appsink"
 
     # openCV video capture from v4l2 device
     cap_send = cv2.VideoCapture(cap_str, cv2.CAP_GSTREAMER)
 
     # Construct stream transmit pipeline string
-    txstr = "appsrc ! "
-    if is_colored:
-        txstr += " video/x-raw, format=BGR ! "
-    txstr += "videoconvert ! "
-    if is_colored:
-        txstr += " video/x-raw, format=BGRx ! "
-    txstr += (
-        "nvvidconv ! \
-    nvv4l2h264enc \
-    bitrate="
-        + str(bitrate)
-        + " ! \
-    h264parse ! \
-    rtph264pay pt=96 config-interval=1 ! \
-    udpsink host="
-        + str(host)
-        + " port="
-        + str(port)
-    )
+    txstr = "appsrc !  video/x-raw, format=BGR ! videoconvert ! video/x-raw, format=BGRx ! nvvidconv ! "
+    txstr += f"nvv4l2h264enc bitrate={bitrate} ! h264parse ! rtph264pay pt=96 config-interval=1 ! "
+    txstr += f"udpsink host={host} port={port}"
 
     cap_send.set(cv2.CAP_PROP_FRAME_WIDTH, width)
     cap_send.set(cv2.CAP_PROP_FRAME_HEIGHT, height)
@@ -359,7 +339,7 @@ def send(
 
     # openCV stream transmit pipeline with RTP sink
     fourcc = cv2.VideoWriter_fourcc("H", "2", "6", "4")
-    out_send = cv2.VideoWriter(txstr, cv2.CAP_GSTREAMER, fourcc, 60, (int(width), int(height)), is_colored)
+    out_send = cv2.VideoWriter(txstr, cv2.CAP_GSTREAMER, fourcc, 60, (int(width), int(height)), True)
 
     rospy.loginfo(
         "\nTransmitting /dev/video"
