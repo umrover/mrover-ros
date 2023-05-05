@@ -44,6 +44,7 @@ class BaseState(smach.State, ABC):
         if self.context.disable_requested:
             self.context.disable_requested = False
             self.context.course = None
+            self.context.rover.driver.reset()
             return "off"
         return self.evaluate(ud)
 
