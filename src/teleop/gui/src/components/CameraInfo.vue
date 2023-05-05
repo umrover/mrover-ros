@@ -51,11 +51,13 @@ export default {
   },
 
   created: function() {
-    let arg = new ROSLIB.Param({
+    var arg = new ROSLIB.Param({
       ros: this.$ros,
       name: "cameras/max_num_resolutions"
     });
-    this.numQuality = arg;
+    arg.get((value) => {
+      this.numQuality = value;
+    });
   },
 
   methods: {
