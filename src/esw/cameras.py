@@ -256,7 +256,7 @@ class StreamManager:
 
             # If a stream is being requested...
             # (resolution == -1 means a request to cancel stream)
-            if req.camera_cmd.resolution > 0:
+            if req.camera_cmd.resolution >= 0:
 
                 # If we cannot handle any more streams, return False.
                 available_port_arr = [True, True, True, True]
