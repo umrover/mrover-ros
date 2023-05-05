@@ -85,7 +85,7 @@ import MoteusStateTable from "./MoteusStateTable.vue";
 import OdometryReading from "./OdometryReading.vue";
 import PDBFuse from "./PDBFuse.vue";
 import CommReadout from "./CommReadout.vue";
-import { quaternionToDisplayAngle, disableAutonLED } from "../utils.js";
+import { quaternionToMapAngle, disableAutonLED } from "../utils.js";
 
 export default {
   components: {
