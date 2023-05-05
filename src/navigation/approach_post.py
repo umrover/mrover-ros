@@ -5,6 +5,7 @@ from aenum import Enum, NoAlias
 from geometry_msgs.msg import Twist
 from waypoint import WaypointState
 from util.ros_utils import get_rosparam
+from state import BaseState
 
 
 class ApproachPostStateTransitions(Enum):
@@ -16,13 +17,14 @@ class ApproachPostStateTransitions(Enum):
     recovery_state = "RecoveryState"
 
 
-class ApproachPostState(WaypointState):
+class ApproachPostState(BaseState):
     STOP_THRESH = get_rosparam("single_fiducial/stop_thresh", 0.7)
     FIDUCIAL_STOP_THRESHOLD = get_rosparam("single_fiducial/fiducial_stop_threshold", 1.75)
     DRIVE_FWD_THRESH = get_rosparam("waypoint/drive_fwd_thresh", 0.34)  # 20 degrees
 
     def __init__(self, context: Context):
-        super().__init__(context, add_outcomes=[transition.name for transition in ApproachPostStateTransitions])  # type: ignore
+        own_transitions = [ApproachPostStateTransitions.continue_fiducial_id.name]  # type: ignore
+        super().__init__(context, own_transitions, add_outcomes=[transition.name for transition in ApproachPostStateTransitions])  # type: ignore
 
     def evaluate(self, ud) -> str:
         """
