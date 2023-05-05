@@ -52,6 +52,7 @@ export default {
   watch: {
     endEffectorUVActive: function (newVal, oldVal) {
       let request = new ROSLIB.ServiceRequest({
+        name: "uv_led_end_effector",
         enable: newVal,
       });
       this.uvService.callService(request, (result) => {
@@ -66,8 +67,8 @@ export default {
   created: function () {
     this.uvService = new ROSLIB.Service({
       ros: this.$ros,
-      name: "change_uv_led_end_effector_state",
-      serviceType: "mrover/ChangeDeviceState",
+      name: "enable_mosfet_device",
+      serviceType: "mrover/EnableDevice",
     });
   },
 

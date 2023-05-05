@@ -9,28 +9,28 @@ teleop:
       slow_mode_multiplier: 0.5
       invert: False
     joint_b:
-      multiplier: 1
+      multiplier: -1
       slow_mode_multiplier: 1
       invert: False
     joint_c:
       multiplier: 1
-      slow_mode_multiplier: 0.5
+      slow_mode_multiplier: 1
       invert: True
     joint_d:
       multiplier: 1
-      slow_mode_multiplier: 0.5
+      slow_mode_multiplier: 1
       invert: False
     joint_e:
       multiplier: 1
-      slow_mode_multiplier: 0.5
+      slow_mode_multiplier: 1
       invert: False
     joint_f:
       multiplier: 1
-      slow_mode_multiplier: 0.5
+      slow_mode_multiplier: 1
       invert: False
     finger:
       multiplier: 1
-      slow_mode_multiplier: 0.5
+      slow_mode_multiplier: 1
       invert: False
     gripper:
       multiplier: 1
@@ -40,14 +40,19 @@ teleop:
   sa_controls:
     sa_joint_1:
       multiplier: 1
+      slow_mode_multiplier: 0.5
     sa_joint_2:
-      multiplier: 1
+      multiplier: -1
+      slow_mode_multiplier: 0.5
     sa_joint_3:
-      multiplier: 1
+      multiplier: -1
+      slow_mode_multiplier: 0.5
     scoop:
       multiplier: 1
+      slow_mode_multiplier: 0.5
     microscope:
       multiplier: 1
+      slow_mode_multiplier: 0.5
   
   drive_controls:
     forward_back:

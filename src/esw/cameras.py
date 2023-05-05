@@ -2,6 +2,8 @@
 
 import rospy
 
+import subprocess  # Run new processes
+import re  # regex
 import cv2
 from multiprocessing import Process
 from typing import Dict, List, Any
@@ -23,7 +25,34 @@ SECONDARY_IP: str = rospy.get_param("cameras/ips/secondary")
 
 CAPTURE_ARGS: List[Dict[str, int]] = rospy.get_param("cameras/arguments")
 
-DEVICES_DOUBLED: bool = rospy.get_param("cameras/devices_doubled")
+
+def generate_dev_list() -> List[int]:
+    """
+    Generates an integer list of valid devices X found in /dev/video*, not including those that are MetaData devices.
+    It will only get devices X that are VideoCapture devices (can be used for streaming).
+    :return: An array of numbers in ascending order representing
+    valid Video Capture devices X where X is /dev/videoX.
+    """
+
+    # Runs bash script line: `find /dev -iname 'video*' -printf "%f\n"`
+    dev_cmd_output = subprocess.run(
+        ["find", "/dev", "-iname", "video*", "-printf", "%f\n"], capture_output=True, text=True
+    )
+    dev_num_list = list()
+
+    # Look through /dev for files with "video*"
+    for dev in dev_cmd_output.stdout.splitlines():
+        dev_num = re.sub(r"video", "", dev.strip())
+        # Runs bash script line: 'v4l2-ctl --list-formats --device /dev/$dev'
+        cmd_output = subprocess.run(
+            ["v4l2-ctl", "--list-formats", "--device", f"/dev/{dev.strip()}"], capture_output=True, text=True
+        )
+        # Checks if video* file has [0], [1], etc. to see if it is an actual video capture source
+        if re.search(r"\[[0-9]\]", cmd_output.stdout):
+            dev_num_list.append(int(dev_num))
+    # Sort since by default, it is in descending order instead of ascending order
+    dev_num_list.sort()
+    return dev_num_list
 
 
 class Stream:
@@ -48,21 +77,27 @@ class Stream:
     Whether the stream is being sent to the primary IP endpoint.
     """
 
-    def __init__(self, req: ChangeCamerasRequest, cmd: CameraCmd):
+    port: int
+    """
+    The port that the stream is streaming to.
+    """
+
+    def __init__(self, req: ChangeCamerasRequest, cmd: CameraCmd, port: int):
         self._cmd = cmd
         self._cmd.device = req.camera_cmd.device
         self._cmd.resolution = req.camera_cmd.resolution
 
         self.primary = req.primary
+        self.port = port
 
         args = CAPTURE_ARGS[self._cmd.resolution]
 
         self._process = Process(
             target=send,
             args=(
-                self._cmd.device * 2 if DEVICES_DOUBLED else self._cmd.device,
+                self._cmd.device,
                 PRIMARY_IP if self.primary else SECONDARY_IP,
-                5000 + self._cmd.device,
+                5000 + self.port,
                 args["bps"],
                 args["width"],
                 args["height"],
@@ -154,11 +189,21 @@ class StreamManager:
         :param req: Request message from the GUI.
         :return: A corresponding response.
         """
-        device_id = req.camera_cmd.device
+
+        device_arr = generate_dev_list()
+        try:
+            device_id = device_arr[req.camera_cmd.device]
+        except IndexError:
+            rospy.logerr(f"Received invalid camera device ID {req.camera_cmd.device}")
+            return self._get_change_response(False)
 
         if not (0 <= device_id < self.MAX_DEVICE_ID):
-            rospy.logerr(f"Received invalid camera device ID {device_id}")
+            rospy.logerr(f"Camera device ID {device_id} is not supported, max is {self.MAX_DEVICE_ID}")
             return self._get_change_response(False)
+
+        # The client's device is passed into the actual device array, so then we get device_id
+        # Then we just update the request to use the actually mapped device_id
+        req.camera_cmd.device = device_id
 
         with self._lock:
             # Reset the stream object if it exists. If it was running, this finalizes the stream
@@ -170,13 +215,24 @@ class StreamManager:
             if 0 <= req.camera_cmd.resolution < len(CAPTURE_ARGS):
 
                 # If we cannot handle any more streams, return False.
-                num_streams = len([stream for stream in self._stream_by_device if stream])
-                if num_streams == self.MAX_STREAMS:
+                available_port_arr = [True, True, True, True]
+                for stream in self._stream_by_device:
+                    if stream:
+                        available_port_arr[stream.port] = False
+
+                available_port = -1
+                for i, port_is_available in enumerate(available_port_arr):
+                    if port_is_available:
+                        available_port = i
+                        break
+
+                if available_port == -1:
+                    # Technically, we don't need a double check
                     return self._get_change_response(False)
 
                 # Get a reference to an available slot and give to a new stream.
                 cmd_obj = self._get_open_cmd_slot(req.primary)
-                self._stream_by_device[device_id] = Stream(req, cmd_obj)
+                self._stream_by_device[device_id] = Stream(req, cmd_obj, available_port)
 
             return self._get_change_response(True)
 
