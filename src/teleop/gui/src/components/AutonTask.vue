@@ -48,11 +48,8 @@
         </div>
         <div></div>
         <JoystickValues />
-        <div
-          class="calibration status data"
-          style="background-color: lightgray"
-        >
-          <IMUCalibration />
+        <div>
+          <OdometryReading :odom="odom"></OdometryReading>
         </div>
       </div>
       <div class="box map light-bg">
@@ -96,11 +93,11 @@ import DriveControls from "./DriveControls.vue";
 import MastGimbalControls from "./MastGimbalControls.vue";
 import { mapGetters } from "vuex";
 import JoystickValues from "./JoystickValues.vue";
-import IMUCalibration from "./IMUCalibration.vue";
 import CommReadout from "./CommReadout.vue";
-import { quaternionToDisplayAngle } from "../utils.js";
 import Cameras from "./Cameras.vue";
 
+import { quaternionToMapAngle } from "../utils.js";
+import OdometryReading from "./OdometryReading.vue";
 const navBlue = "#4695FF";
 const navGreen = "yellowgreen";
 const navRed = "lightcoral";
@@ -111,11 +108,11 @@ export default {
     AutonRoverMap,
     AutonWaypointEditor,
     DriveControls,
-    IMUCalibration,
     JoystickValues,
     MastGimbalControls,
     CommReadout,
     Cameras,
+    OdometryReading
   },
 
   data() {
@@ -124,16 +121,21 @@ export default {
       odom: {
         latitude_deg: 42.294864932393835,
         longitude_deg: -83.70781314674628,
-        bearing_deg: 0,
+        bearing_deg: 0
       },
 
       nav_status: {
         nav_state_name: "OffState",
         completed_wps: 0,
-        total_wps: 0,
+        total_wps: 0
       },
 
-      teleopEnabledCheck: true,
+      enableAuton: {
+        enable: false,
+        GPSWaypoint: []
+      },
+
+      teleopEnabledCheck: false,
 
       navBlink: false,
       greenHook: false,
@@ -146,14 +148,14 @@ export default {
       odom_sub: null,
       stuck_sub: null,
       auton_led_client: null,
-      tfClient: null,
+      tfClient: null
     };
   },
 
   computed: {
     ...mapGetters("autonomy", {
       autonEnabled: "autonEnabled",
-      teleopEnabled: "teleopEnabled",
+      teleopEnabled: "teleopEnabled"
     }),
 
     nav_state_color: function () {
@@ -170,7 +172,7 @@ export default {
       } else {
         return navRed;
       }
-    },
+    }
   },
 
   watch: {
@@ -189,46 +191,46 @@ export default {
       if (send) {
         this.sendColor();
       }
-    },
+    }
   },
 
   created: function () {
     this.nav_status_sub = new ROSLIB.Topic({
       ros: this.$ros,
       name: "/smach/container_status",
-      messageType: "smach_msgs/SmachContainerStatus",
+      messageType: "smach_msgs/SmachContainerStatus"
     });
 
     this.odom_sub = new ROSLIB.Topic({
       ros: this.$ros,
       name: "/gps/fix",
-      messageType: "sensor_msgs/NavSatFix",
+      messageType: "sensor_msgs/NavSatFix"
     });
 
     this.stuck_sub = new ROSLIB.Topic({
       ros: this.$ros,
       name: "/stuck_status",
-      messageType: "std_msgs/Bool",
+      messageType: "std_msgs/Bool"
     });
 
     this.tfClient = new ROSLIB.TFClient({
       ros: this.$ros,
       fixedFrame: "map",
       // Thresholds to trigger subscription callback
-      angularThres: 0.01,
-      transThres: 0.01,
+      angularThres: 0.0001,
+      transThres: 0.01
     });
 
     this.auton_led_client = new ROSLIB.Service({
       ros: this.$ros,
       name: "change_auton_led_state",
-      serviceType: "mrover/ChangeAutonLEDState",
+      serviceType: "mrover/ChangeAutonLEDState"
     });
 
     // Subscriber for odom to base_link transform
     this.tfClient.subscribe("base_link", (tf) => {
       // Callback for IMU quaternion that describes bearing
-      this.odom.bearing_deg = quaternionToDisplayAngle(tf.rotation);
+      this.odom.bearing_deg = quaternionToMapAngle(tf.rotation);
     });
 
     this.nav_status_sub.subscribe((msg) => {
@@ -256,10 +258,15 @@ export default {
     this.sendColor();
   },
 
+  beforeDestroy: function () {
+    this.ledColor = "off";
+    this.sendColor();
+  },
+
   methods: {
     sendColor() {
       let request = new ROSLIB.ServiceRequest({
-        color: this.ledColor,
+        color: this.ledColor
       });
 
       this.auton_led_client.callService(request, (result) => {
@@ -270,8 +277,8 @@ export default {
           }, 1000);
         }
       });
-    },
-  },
+    }
+  }
 };
 </script>
 
@@ -282,7 +289,7 @@ export default {
   min-height: 98vh;
   grid-gap: 10px;
   grid-template-columns: 2fr 1.25fr 0.75fr;
-  grid-template-rows: 50px 2fr 1fr 15vh;
+  grid-template-rows: 50px 2fr 1fr 20vh;
   grid-template-areas:
     "header header header"
     "map waypoints waypoints"
@@ -308,7 +315,7 @@ export default {
   overflow-y: scroll;
   height: 12 px;
   display: grid;
-  grid-template-columns: 40% 60%;
+  grid-template-columns: 50% 50%;
 }
 
 .box2 {
