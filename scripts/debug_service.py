@@ -6,11 +6,11 @@
 
 from typing import Any
 import rospy
-from mrover.srv import EnableDevice
+from mrover.srv import ChangeAutonLEDState
 
 # Change these values for the service name and type definition to test different values
-SERVICE_NAME = "enable_limit_switches"
-SERVICE_TYPE = EnableDevice
+SERVICE_NAME = "change_auton_led_state"
+SERVICE_TYPE = ChangeAutonLEDState
 
 
 def print_service_request(service_request: Any):
