@@ -148,7 +148,7 @@
     <visual>
       <origin xyz="0 0 0" rpy="0 0 0"/>
       <geometry>
-        <mesh filename="package://mrover/rover_description/meshes/ZED2i.dae" scale="1 1 1"/>
+        <mesh filename="package://mrover/rover_description/meshes/zed2i.dae" scale="1 1 1"/>
       </geometry>
     </visual>
 
