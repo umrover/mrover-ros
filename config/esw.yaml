@@ -217,21 +217,21 @@ cameras:
       quality_options:
         - width: 160
           height: 120
-          fps: 15
+          fps: 25
           bps: 173000
         - width: 176
           height: 144
-          fps: 15
+          fps: 25
           bps: 691000
         - width: 320
-          height: 244
-          fps: 15
+          height: 240
+          fps: 25
           bps: 2000000
         - width: 352
           height: 288
-          fps: 15
+          fps: 25
           bps: 3000000
-        - width: 740
+        - width: 640
           height: 480
           fps: 25
           bps: 4200000
@@ -263,10 +263,26 @@ cameras:
       vendor_id: "0c45"
       vendor: "Arducam_Technology_Co.__Ltd."
       quality_options:
+        - width: 640
+          height: 480
+          fps: 10
+          bps: 173000
+        - width: 1280
+          height: 720
+          fps: 10
+          bps: 691000
+        - width: 1600
+          height: 1200
+          fps: 10
+          bps: 2000000
+        - width: 1920
+          height: 1080
+          fps: 10
+          bps: 3000000
         - width: 3264
           height: 2448
-          fps: 15
-          bps: 8000000
+          fps: 2
+          bps: 9000000
   max_num_resolutions: 5
   # Number of devices corresponds to number of cmds in
   #   - ChangeCameras.srv
