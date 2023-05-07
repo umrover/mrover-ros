@@ -51,6 +51,7 @@ set(MROVER_MESSAGE_FILES
 set(MROVER_SERVICE_FILES
         AdjustMotors.srv
         CalibrateMotors.srv
+        ChangeArmMode.srv
         ChangeAutonLEDState.srv
         ChangeCameras.srv
         ChangeHeaterAutoShutoffState.srv
