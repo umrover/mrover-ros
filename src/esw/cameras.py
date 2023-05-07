@@ -32,9 +32,10 @@ class CameraTypeInfo:
             self.fps: int = fps
             self.bps: int = bps
 
-    def __init__(self, vendor_id: str, vendor: str, quality_options: List[QualityOption]):
+    def __init__(self, vendor_id: str, vendor: str, use_jpeg: bool, quality_options: List[QualityOption]):
         self.vendor_id: str = vendor_id
         self.vendor: str = vendor
+        self.use_jpeg: bool = use_jpeg
         self.quality_options: List[CameraTypeInfo.QualityOption] = quality_options
 
 
@@ -321,12 +322,18 @@ def send(
         height = CAMERA_TYPE_INFO_BY_NAME[camera_type].quality_options[quality].height
         fps = CAMERA_TYPE_INFO_BY_NAME[camera_type].quality_options[quality].fps
         bitrate = CAMERA_TYPE_INFO_BY_NAME[camera_type].quality_options[quality].bps
+        use_jpeg = CAMERA_TYPE_INFO_BY_NAME[camera_type].use_jpeg
     except KeyError:
         rospy.logerr(f"Unsupported camera type {camera_type}")
         assert False
 
-    cap_str = f"v4l2src device=/dev/video{device} do-timestamp=true io-mode=2 ! "
-    cap_str += f"videorate ! video/x-raw, width={width}, height={height}, framerate={fps}/1 ! videoconvert ! appsink"
+    if use_jpeg:
+        cap_str = f"v4l2src device=/dev/video{device} do-timestamp=true io-mode=2 ! "
+        cap_str += f"image/jpeg, width={width}, height={height}, framerate={fps}/1 ! jpegdec ! videorate ! video/x-raw, framerate={fps}/1 ! nvvidconv ! "
+        cap_str += f"video/x-raw, format=BGRx ! videoconvert ! video/x-raw, format=BGR ! appsink"
+    else:
+        cap_str = f"v4l2src device=/dev/video{device} do-timestamp=true io-mode=2 ! "
+        cap_str += f"videorate ! video/x-raw, width={width}, height={height}, framerate={fps}/1 ! videoconvert ! appsink"
 
     # openCV video capture from v4l2 device
     cap_send = cv2.VideoCapture(cap_str, cv2.CAP_GSTREAMER)
@@ -390,7 +397,7 @@ def main():
         quality_options = [
             CameraTypeInfo.QualityOption(q["width"], q["height"], q["fps"], q["bps"]) for q in info["quality_options"]
         ]
-        CAMERA_TYPE_INFO_BY_NAME[name] = CameraTypeInfo(info["vendor_id"], info["vendor"], quality_options)
+        CAMERA_TYPE_INFO_BY_NAME[name] = CameraTypeInfo(info["vendor_id"], info["vendor"], info["use_jpeg"], quality_options)
 
     stream_manager = StreamManager()
     rospy.Service("change_cameras", ChangeCameras, stream_manager.handle_req)

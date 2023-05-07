@@ -190,30 +190,32 @@ cameras:
     regular:
       vendor_id: "32e4"
       vendor: "HD_USB_Camera"
+      use_jpeg: true
       quality_options:
         - width: 320
           height: 240
           fps: 15
           bps: 173000
+        - width: 320
+          height: 240
+          fps: 30
+          bps: 691000
         - width: 640
           height: 480
-          fps: 15
-          bps: 691000
-        - width: 800
-          height: 600
           fps: 15
           bps: 2000000
         - width: 960
           height: 720
-          fps: 10
+          fps: 30
           bps: 3000000
         - width: 1280
           height: 720
-          fps: 10
+          fps: 15
           bps: 4200000
     microscope:
       vendor_id: "a16f"
       vendor: "GenesysLogic_Technology_Co.__Ltd."
+      use_jpeg: false
       quality_options:
         - width: 160
           height: 120
@@ -238,6 +240,7 @@ cameras:
     res_1080:
       vendor_id: "0c45"
       vendor: "Sonix_Technology_Co.__Ltd."
+      use_jpeg: false
       quality_options:
         - width: 320
           height: 240
@@ -262,6 +265,7 @@ cameras:
     rock_4k:
       vendor_id: "0c45"
       vendor: "Arducam_Technology_Co.__Ltd."
+      use_jpeg: false
       quality_options:
         - width: 640
           height: 480
