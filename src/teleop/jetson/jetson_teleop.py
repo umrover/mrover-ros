@@ -332,7 +332,14 @@ class ArmControl:
                     self.sa_config["microscope"]["multiplier"]
                     * self.filter_xbox_button(msg.buttons, "right_bumper", "left_bumper"),
                 ]
-                self.sa_cmd_pub.publish(self.sa_cmd)
+
+                slow_mode_activated = msg.buttons[self.xbox_mappings["a"]] or msg.buttons[self.xbox_mappings["b"]]
+                if slow_mode_activated:
+                    for i, name in enumerate(self.SA_NAMES):
+                        # When going up (vel > 0) with SA joint 2, we DON'T want slow mode.
+                        if not (name == "sa_joint_2" and self.sa_cmd.velocity[i] > 0):
+                            self.sa_cmd.velocity[i] *= self.sa_config[name]["slow_mode_multiplier"]
+                        self.sa_cmd_pub.publish(self.sa_cmd)
 
     def send_sa_stop(self) -> None:
         """

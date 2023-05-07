@@ -69,13 +69,14 @@
 import ROSLIB from "roslib";
 import SelectSite from "./SelectSite.vue";
 import Raman from "./Raman.vue";
-import Sudan from "./Sudan.vue";
+import Sudan from "./EmulsionTest.vue";
 import Carousel from "./Carousel.vue";
 import Cache from "./Cache.vue";
 import Chlorophyll from "./Chlorophyll.vue";
 import Amino from "./Amino.vue";
 import Cameras from "../components/Cameras.vue";
 import CommReadout from "./CommReadout.vue";
+import { disableAutonLED } from "../utils.js";
 
 export default {
   components: {
@@ -112,6 +113,7 @@ export default {
   },
 
   created: function () {
+    disableAutonLED(this.$ros);
     this.spectral_sub = new ROSLIB.Topic({
       ros: this.$ros,
       name: "science/spectral",

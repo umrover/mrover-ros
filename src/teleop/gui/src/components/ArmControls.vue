@@ -21,16 +21,18 @@
         value="open_loop"
       />
       Open Loop
-      <input
+      <!-- Commented until servoing works :( -->
+      <!-- <input
         ref="servo-enabled"
         v-model="arm_mode"
         type="radio"
         :name="'Servo'"
         value="servo"
       />
-      Servo
+      Servo -->
     </div>
-    <div class="controls-flex">
+    <!-- Commented until joint locking is implemented -->
+    <!-- <div class="controls-flex">
       <h4>Joint Locks</h4>
       <Checkbox ref="A" :name="'A'" @toggle="updateJointsEnabled(0, $event)" />
       <Checkbox ref="B" :name="'B'" @toggle="updateJointsEnabled(1, $event)" />
@@ -38,7 +40,7 @@
       <Checkbox ref="D" :name="'D'" @toggle="updateJointsEnabled(3, $event)" />
       <Checkbox ref="E" :name="'E'" @toggle="updateJointsEnabled(4, $event)" />
       <Checkbox ref="F" :name="'F'" @toggle="updateJointsEnabled(5, $event)" />
-    </div>
+    </div> -->
     <div class="controls-flex">
       <h4>Misc. Controls</h4>
       <Checkbox
@@ -131,8 +133,8 @@ export default {
     });
     this.laser_service = new ROSLIB.Service({
       ros: this.$ros,
-      name: "change_arm_laser_state",
-      serviceType: "mrover/ChangeDeviceState"
+      name: "enable_mosfet_device",
+      serviceType: "mrover/EnableDevice",
     });
     this.ra_mode_service = new ROSLIB.Service({
       ros: this.$ros,
@@ -221,7 +223,8 @@ export default {
     toggleArmLaser: function () {
       this.laser_enabled = !this.laser_enabled;
       let request = new ROSLIB.ServiceRequest({
-        enable: this.laser_enabled
+        name: "arm_laser",
+        enable: this.laser_enabled,
       });
       this.laser_service.callService(request, (result) => {
         if (!result) {
@@ -241,6 +244,7 @@ export default {
   align-items: center;
   justify-items: center;
   width: 100%;
+  height: auto;
 }
 
 .wrap h2 h4 {

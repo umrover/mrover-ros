@@ -1,14 +1,15 @@
 <template>
   <div>
-    <h3>Sudan III Drop</h3>
+    <h3>Emulsion Testing</h3>
     <button
+    class="button"
       id="sudan-button"
       :disabled="!isEnabled[siteIndex]"
       @click="moveServo(angles[site].pushed, false)"
     >
       Start Site {{ site }} Test
     </button>
-    <button id="reset-button" @click="moveServo(angles[site].start, true)">
+    <button class="button" id="reset-button" @click="moveServo(angles[site].start, true)">
       Reset Site {{ site }} Servo
     </button>
   </div>
@@ -53,7 +54,7 @@ export default {
   created: function () {
     this.serviceClient = new ROSLIB.Service({
       ros: this.$ros,
-      name: "change_servo_angles",
+      name: "change_servo_angle",
       serviceType: "mrover/ChangeServoAngle",
     });
 
@@ -91,4 +92,16 @@ export default {
 };
 </script>
 
-<style scoped></style>
+<style scoped>
+.button {
+  height: 30px;
+  width: 150px;
+  border: 1px solid black;
+  border-radius: 5px;
+  cursor: pointer;
+}
+
+.button:hover{
+  background-color: rgb(210, 210, 210);
+}
+</style>

@@ -15,6 +15,8 @@ from waypoint import WaypointState, WaypointStateTransitions
 from search import SearchState, SearchStateTransitions
 from recovery import RecoveryState, RecoveryStateTransitions
 from partial_gate import PartialGateState, PartialGateStateTransitions
+from smach.log import set_loggers
+from smach.log import loginfo, logwarn, logerr
 
 
 class Navigation(threading.Thread):
@@ -24,6 +26,7 @@ class Navigation(threading.Thread):
 
     def __init__(self, context: Context):
         super().__init__()
+        set_loggers(info=lambda _: None, warn=loginfo, error=loginfo, debug=loginfo)
         self.name = "NavigationThread"
         self.state_machine = smach.StateMachine(outcomes=["terminated"])
         self.state_machine.userdata.waypoint_index = 0
