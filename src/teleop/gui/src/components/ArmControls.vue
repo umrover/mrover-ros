@@ -7,30 +7,27 @@
       <!-- Change to radio buttons in the future -->
       <input
         ref="arm-enabled"
-        v-model="arm_controls"
+        v-model="arm_mode"
         type="radio"
         :name="'Arm Enabled'"
         value="arm_disabled"
-        @change="updateArmMode()"
       />
       Arm Disabled
       <input
         ref="open-loop-enabled"
-        v-model="arm_controls"
+        v-model="arm_mode"
         type="radio"
         :name="'Open Loop Enabled'"
         value="open_loop"
-        @change="updateArmMode()"
       />
       Open Loop
       <!-- Commented until servoing works :( -->
       <!-- <input
         ref="servo-enabled"
-        v-model="arm_controls"
+        v-model="arm_mode"
         type="radio"
         :name="'Servo'"
         value="servo"
-        @change="updateArmMode()"
       />
       Servo -->
     </div>
@@ -75,7 +72,7 @@
           { name: 'joint_b', option: 'Joint B' },
           { name: 'joint_c', option: 'Joint C' },
           { name: 'joint_d', option: 'Joint D' },
-          { name: 'joint_e', option: 'Joint E' },
+          { name: 'joint_e', option: 'Joint E' }
         ]"
       />
     </div>
@@ -100,56 +97,64 @@ export default {
     Checkbox,
     JointAdjust,
     ToggleButton,
-    LimitSwitch,
+    LimitSwitch
   },
   data() {
     return {
-      armcontrols_pub: null,
-      arm_controls: "arm_disabled",
-      joystick_pub: null,
-      jointlock_pub: null,
+      arm_mode: "arm_disabled",
       joints_array: [false, false, false, false, false, false],
       slow_mode: false,
-      slowmode_pub: null,
       laser_enabled: false,
+
+      ra_mode_service: null,
+      jointlock_pub: null,
+      joystick_pub: null,
       laser_service: null,
+      slowmode_pub: null
     };
   },
 
+  watch: {
+    arm_mode: function (newMode, oldMode) {
+      this.updateArmMode(newMode, oldMode);
+    }
+  },
+
   beforeDestroy: function () {
+    this.updateArmMode("arm_disabled", this.arm_mode);
     window.clearInterval(interval);
   },
 
   created: function () {
-    this.armcontrols_pub = new ROSLIB.Topic({
-      ros: this.$ros,
-      name: "ra/mode",
-      messageType: "std_msgs/String",
-    });
-    this.updateArmMode();
     this.joystick_pub = new ROSLIB.Topic({
       ros: this.$ros,
       name: "/xbox/ra_control",
-      messageType: "sensor_msgs/Joy",
+      messageType: "sensor_msgs/Joy"
     });
     this.laser_service = new ROSLIB.Service({
       ros: this.$ros,
       name: "enable_mosfet_device",
       serviceType: "mrover/EnableDevice",
     });
+    this.ra_mode_service = new ROSLIB.Service({
+      ros: this.$ros,
+      name: "change_ra_mode",
+      serviceType: "mrover/ChangeArmMode"
+    });
     this.jointlock_pub = new ROSLIB.Topic({
       ros: this.$ros,
       name: "/joint_lock",
-      messageType: "mrover/JointLock",
+      messageType: "mrover/JointLock"
     });
     this.slow_mode_pub = new ROSLIB.Topic({
       ros: this.$ros,
       name: "/ra_slow_mode",
-      messageType: "std_msgs/Bool",
+      messageType: "std_msgs/Bool"
     });
+    this.updateArmMode("arm_disabled", this.arm_mode);
     const jointData = {
       //publishes array of all falses when refreshing the page
-      joints: this.joints_array,
+      joints: this.joints_array
     };
     var jointlockMsg = new ROSLIB.Message(jointData);
     this.jointlock_pub.publish(jointlockMsg);
@@ -177,18 +182,23 @@ export default {
   },
 
   methods: {
-    updateArmMode: function () {
+    updateArmMode: function (newMode, oldMode) {
       const armData = {
-        data: this.arm_controls,
+        mode: newMode
       };
-      var armcontrolsmsg = new ROSLIB.Message(armData);
-      this.armcontrols_pub.publish(armcontrolsmsg);
+      var armcontrolsmsg = new ROSLIB.ServiceRequest(armData);
+      this.ra_mode_service.callService(armcontrolsmsg, (response) => {
+        if (!response.success) {
+          this.arm_mode = oldMode;
+          alert("Failed to change arm mode");
+        }
+      });
     },
 
     updateJointsEnabled: function (jointnum, enabled) {
       this.joints_array[jointnum] = enabled;
       const jointData = {
-        joints: this.joints_array,
+        joints: this.joints_array
       };
       var jointlockMsg = new ROSLIB.Message(jointData);
       this.jointlock_pub.publish(jointlockMsg);
@@ -197,7 +207,7 @@ export default {
     updateSlowMode: function (enabled) {
       this.slow_mode = enabled;
       const slowData = {
-        data: this.slow_mode,
+        data: this.slow_mode
       };
       var slowModeMsg = new ROSLIB.Message(slowData);
       this.slow_mode_pub.publish(slowModeMsg);
@@ -205,7 +215,7 @@ export default {
     publishJoystickMessage: function (axes, buttons) {
       const joystickData = {
         axes: axes,
-        buttons: buttons,
+        buttons: buttons
       };
       var joystickMsg = new ROSLIB.Message(joystickData);
       this.joystick_pub.publish(joystickMsg);
@@ -222,8 +232,8 @@ export default {
           alert("Toggling Arm Laser failed.");
         }
       });
-    },
-  },
+    }
+  }
 };
 </script>
 
