@@ -29,6 +29,10 @@ Controller::Controller(
     motorMaxVoltage = _motorMaxVoltage;
     driverVoltage = _driverVoltage;
     currentAngle = 0.0f;
+    limit_switch_data.name = _name;
+    limit_switch_data.calibrated = false;
+    limit_switch_data.limit_a_pressed = false;
+    limit_switch_data.limit_b_pressed = false;
 }
 
 // REQUIRES: nothing
@@ -117,7 +121,7 @@ bool Controller::isCalibrated() {
 
     } catch (IOFailure& e) {
         ROS_ERROR("isCalibrated failed on %s", name.c_str());
-        return false;
+        return isControllerCalibrated;
     }
 
     return calibration_status;
@@ -163,17 +167,19 @@ float Controller::getAbsoluteEncoderValue() {
     try {
         makeLive();
 
-        float abs_enc_radians;
-        I2C::transact(deviceAddress, motorIDRegMask | ABS_ENC_OP, ABS_ENC_WB,
-                      ABS_ENC_RB, nullptr, UINT8_POINTER_T(&abs_enc_radians));
+        float abs_enc_radians_raw;
 
-        return abs_enc_radians;
+        I2C::transact(deviceAddress, motorIDRegMask | ABS_ENC_OP, ABS_ENC_WB,
+                      ABS_ENC_RB, nullptr, UINT8_POINTER_T(&abs_enc_radians_raw));
+
+        abs_enc_radians = abs_enc_radians_raw;
 
     } catch (IOFailure& e) {
         ROS_ERROR("getAbsoluteEncoderValue failed on %s", name.c_str());
+        return abs_enc_radians;
     }
 
-    return 0;
+    return abs_enc_radians;
 }
 
 // REQUIRES: nothing
@@ -181,6 +187,37 @@ float Controller::getAbsoluteEncoderValue() {
 // EFFECTS: Returns true if Controller has a (one or both) limit switch(s) is enabled.
 bool Controller::getLimitSwitchEnabled() const {
     return limitAEnable || limitBEnable;
+}
+
+// REQUIRES: nothing
+// MODIFIES: nothing
+// EFFECTS: I2C bus, and returns limit data (calibrated, limit a/b pressed).
+mrover::LimitSwitchData Controller::getLimitSwitchData() {
+
+    uint8_t limit_switch_data_raw;
+
+    try {
+        makeLive();
+
+        I2C::transact(deviceAddress, motorIDRegMask | LIMIT_DATA_OP, LIMIT_DATA_WB,
+                      LIMIT_DATA_RB, nullptr, UINT8_POINTER_T(&limit_switch_data_raw));
+
+        // 0th (least significant) bit is a boolean (bit) that tells if the motor has been calibrated or not.
+        // 1st bit is a boolean (bit) that is the state of limit switch a.
+        // 2nd bit is a boolean (bit) that is the state of limit switch b.
+        // A lock is unnecessary since the data does not need to be updated in sync.
+        limit_switch_data.calibrated = limit_switch_data_raw & 0x1;
+        limit_switch_data.limit_a_pressed = (limit_switch_data_raw >> 1) & 0x1;
+        limit_switch_data.limit_b_pressed = (limit_switch_data_raw >> 2) & 0x1;
+
+        isControllerCalibrated = limit_switch_data.calibrated;
+
+    } catch (IOFailure& e) {
+        ROS_ERROR("getLimitSwitchData failed on %s", name.c_str());
+        return limit_switch_data;
+    }
+
+    return limit_switch_data;
 }
 
 // REQUIRES: nothing
