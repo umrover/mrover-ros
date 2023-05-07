@@ -8,12 +8,20 @@
       :backwards-key="37"
       @velocity="velocity = $event"
     ></OpenLoopControl>
+    <div class="limit-switch">
+      <LEDIndicator
+        :connected="limit_switch_pressed"
+        :name="'Cache Limit Switch'"
+        :show_name="true"
+      />
+    </div>
   </div>
 </template>
 
 <script>
 import ROSLIB from "roslib";
 import OpenLoopControl from "./OpenLoopControl.vue";
+import LEDIndicator from "./LEDIndicator.vue";
 
 // In seconds
 const updateRate = 0.1;
@@ -23,12 +31,16 @@ let interval;
 export default {
   components: {
     OpenLoopControl,
+    LEDIndicator
   },
 
   data() {
     return {
+      limit_switch_pressed: false,
       velocity: 0,
+
       cache_pub: null,
+      limit_switch_sub: null
     };
   },
 
@@ -38,10 +50,10 @@ export default {
         name: ["cache"],
         position: [],
         velocity: [this.velocity],
-        effort: [],
+        effort: []
       };
       return new ROSLIB.Message(msg);
-    },
+    }
   },
 
   beforeDestroy: function () {
@@ -52,13 +64,23 @@ export default {
     this.cache_pub = new ROSLIB.Topic({
       ros: this.$ros,
       name: "cache_cmd",
-      messageType: "sensor_msgs/JointState",
+      messageType: "sensor_msgs/JointState"
+    });
+
+    this.limit_switch_sub = new ROSLIB.Topic({
+      ros: this.$ros,
+      name: "cache_limit_switch_data",
+      messageType: "mrover/LimitSwitchData"
+    });
+
+    this.limit_switch_sub.subscribe((msg) => {
+      this.limit_switch_pressed = msg.limit_a_pressed;
     });
 
     interval = window.setInterval(() => {
       this.cache_pub.publish(this.messageObject);
     }, updateRate * 1000);
-  },
+  }
 };
 </script>
 
@@ -75,5 +97,10 @@ export default {
   margin-top: 5%;
   display: flex;
   flex-direction: row;
+}
+
+.limit-switch {
+  margin-top: 10px;
+  margin-left: -36px;
 }
 </style>
