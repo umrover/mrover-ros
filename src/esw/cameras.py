@@ -333,7 +333,9 @@ def send(
         cap_str += f"video/x-raw, format=BGRx ! videoconvert ! video/x-raw, format=BGR ! appsink"
     else:
         cap_str = f"v4l2src device=/dev/video{device} do-timestamp=true io-mode=2 ! "
-        cap_str += f"videorate ! video/x-raw, width={width}, height={height}, framerate={fps}/1 ! videoconvert ! appsink"
+        cap_str += (
+            f"videorate ! video/x-raw, width={width}, height={height}, framerate={fps}/1 ! videoconvert ! appsink"
+        )
 
     # openCV video capture from v4l2 device
     cap_send = cv2.VideoCapture(cap_str, cv2.CAP_GSTREAMER)
@@ -397,7 +399,9 @@ def main():
         quality_options = [
             CameraTypeInfo.QualityOption(q["width"], q["height"], q["fps"], q["bps"]) for q in info["quality_options"]
         ]
-        CAMERA_TYPE_INFO_BY_NAME[name] = CameraTypeInfo(info["vendor_id"], info["vendor"], info["use_jpeg"], quality_options)
+        CAMERA_TYPE_INFO_BY_NAME[name] = CameraTypeInfo(
+            info["vendor_id"], info["vendor"], info["use_jpeg"], quality_options
+        )
 
     stream_manager = StreamManager()
     rospy.Service("change_cameras", ChangeCameras, stream_manager.handle_req)
