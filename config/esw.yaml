@@ -183,7 +183,8 @@ brushed_motors:
   
 cameras:
   camera_type_info:
-    # width and height is obtained by running `udevadm info --query=all /dev/video0`
+    # vendor_id and vendor is obtained by running `udevadm info --query=all /dev/video0`
+    # width and height are obtained by running `v4l2-ctl -d /dev/video0 --list-formats-ext`
     # An important thing to know is that actual bps is much less than bps in config.
     # However, we need to keep bps in config higher otherwise there is too much compression
     regular:
@@ -198,17 +199,17 @@ cameras:
           height: 480
           fps: 15
           bps: 691000
-        - width: 960
-          height: 720
+        - width: 800
+          height: 600
           fps: 15
           bps: 2000000
-        - width: 1280
+        - width: 960
           height: 720
-          fps: 15
+          fps: 10
           bps: 3000000
         - width: 1280
           height: 720
-          fps: 30
+          fps: 10
           bps: 4200000
     microscope:
       vendor_id: "a16f"
@@ -240,23 +241,23 @@ cameras:
       quality_options:
         - width: 320
           height: 240
-          fps: 15
+          fps: 30
           bps: 173000
-        - width: 640
-          height: 480
-          fps: 15
+        - width: 800
+          height: 600
+          fps: 20
           bps: 691000
         - width: 960
-          height: 480
+          height: 720
           fps: 15
           bps: 2000000
         - width: 1280
           height: 720
-          fps: 15
+          fps: 10
           bps: 3000000
         - width: 1920
           height: 1080
-          fps: 15
+          fps: 5
           bps: 4200000
     rock_4k:
       vendor_id: "0c45"

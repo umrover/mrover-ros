@@ -309,7 +309,6 @@ def send(
 ):
     # Construct video capture pipeline string
 
-    # All resolutions are determined using the following: v4l2-ctl -d /dev/video0 --list-formats-ext
     try:
         best_option = len(CAMERA_TYPE_INFO_BY_NAME[camera_type].quality_options) - 1
 
@@ -327,24 +326,18 @@ def send(
         assert False
 
     cap_str = f"v4l2src device=/dev/video{device} do-timestamp=true io-mode=2 ! "
-    cap_str += f"videorate ! video/x-raw, framerate={fps}/1 ! nvvidconv ! videoconvert ! appsink"
+    cap_str += f"videorate ! video/x-raw, width={width}, height={height}, framerate={fps}/1 ! videoconvert ! appsink"
 
     # openCV video capture from v4l2 device
     cap_send = cv2.VideoCapture(cap_str, cv2.CAP_GSTREAMER)
 
     # Construct stream transmit pipeline string
-    txstr = "appsrc !  video/x-raw, format=BGR ! videoconvert ! video/x-raw, format=BGRx ! nvvidconv ! "
+    txstr = "appsrc ! video/x-raw, format=BGR ! videoconvert ! video/x-raw, format=BGRx ! nvvidconv ! "
     txstr += f"nvv4l2h264enc bitrate={bitrate} ! h264parse ! rtph264pay pt=96 config-interval=1 ! "
     txstr += f"udpsink host={host} port={port}"
 
     # We need to set with proper width instead of desired width, otherwise it's very slow when capturing images
     # We can just capture the images at the proper width and convert them later.
-    prop_width = cap_send.get(cv2.CAP_PROP_FRAME_WIDTH)
-    prop_height = cap_send.get(cv2.CAP_PROP_FRAME_HEIGHT)
-
-    cap_send.set(cv2.CAP_PROP_FRAME_WIDTH, prop_width)
-    cap_send.set(cv2.CAP_PROP_FRAME_HEIGHT, prop_height)
-    cap_send.set(cv2.CAP_PROP_FPS, fps)
 
     # openCV stream transmit pipeline with RTP sink
     fourcc = cv2.VideoWriter_fourcc("H", "2", "6", "4")
@@ -377,9 +370,7 @@ def send(
         if not ret:
             rospy.logerr("Empty frame")
             break
-        # Need to convert it from prop_width and prop_height to desired width and height
-        converted_frame = cv2.resize(frame, (width, height), fx=0, fy=0, interpolation=cv2.INTER_CUBIC)
-        out_send.write(converted_frame)
+        out_send.write(frame)
 
         # For the rock camera at 4k resolution, we only want one frame otherwise it's REALLY slow
         if camera_type == "rock_4k":
