@@ -381,10 +381,6 @@ def send(
             break
         out_send.write(frame)
 
-        # For the rock camera at 4k resolution, we only want one frame otherwise it's REALLY slow
-        # if camera_type == "rock_4k":
-        #     break
-
     cap_send.release()
     out_send.release()
 
