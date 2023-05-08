@@ -33,7 +33,7 @@ export default {
   data() {
     return {
       isEnabled: [true, true, true],
-      servo_id_by_site: {
+      servoIDsBySite: {
         A: 0,
         B: 1,
         C: 2,
@@ -63,7 +63,7 @@ export default {
       serviceType: "mrover/ChangeServoAngle",
     });
 
-    let servo_id_by_site = new ROSLIB.Param({
+    let servo_id_by_site_config = new ROSLIB.Param({
       ros: this.$ros,
       name: "science/servo_id_by_site",
     });
@@ -74,31 +74,30 @@ export default {
     });
 
     //get servo angles from yaml file
-    servo_id_by_site.get((servoIDsBySite) => {
-      for (let site in servoIDsBySite) {
-        let servoNum = servoIDsBySite[site];
-
-        this.servo_id_by_site[site] = servoNum;
-
-        // Get the pushed and start values for the servo from the YAML file
-        servo_positions.get((servoPositions) => {
-            let pushedVal = servoPositions[`servo_${servoNum}`].pushed;
-            let startVal = servoPositions[`servo_${servoNum}`].start;
-
-            // Add the servo data to the object
-            this.angles[site] = {
-                pushed: pushedVal,
-                start: startVal
-            };
-        });
-      }
+    servo_id_by_site_config.get((servoIDsBySite) => {
+      this.servoIDsBySite = servoIDsBySite;
     });
+
+    for (let site in this.servoIDsBySite) {
+      // Get the pushed and start values for the servo from the YAML file
+      servo_positions.get((servoPositions) => {
+          let pushedVal = servoPositions[this.servoIDsBySite[site]].pushed;
+          let startVal = servoPositions[this.servoIDsBySite[site]].start;
+
+          // Add the servo data to the object
+          this.angles[site] = {
+              pushed: pushedVal,
+              start: startVal
+          };
+      });
+    }
+
   },
 
   methods: {
     moveServo(angle, enable) {
       let request = new ROSLIB.ServiceRequest({
-        id: this.servo_id_by_site[this.site],
+        id: this.servoIDsBySite[this.site],
         angle: angle,
       });
 

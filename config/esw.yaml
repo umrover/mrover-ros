@@ -237,14 +237,11 @@ science:
     B: 1
     C: 0
   servo_positions:
-    servo_0:
-      pushed: 70
+    - pushed: 70
       start: 100
-    servo_1:
-      pushed: 60
+    - pushed: 60
       start: 90
-    servo_2:
-      pushed: 0
+    - pushed: 0
       start: 50
   info:
     num_diag_current: 3
