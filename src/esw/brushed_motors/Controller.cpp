@@ -215,9 +215,8 @@ std::unordered_map<uint8_t, std::string> Controller::liveMap;
 std::mutex Controller::liveMapLock;
 
 void Controller::makeLive() {
-    // if (isLive) {
-    //     return;
-    // }
+    std::unique_lock<std::mutex>
+        lock(liveMapLock);
 
     uint8_t key = combineDeviceMotorID();
 
@@ -225,13 +224,8 @@ void Controller::makeLive() {
     auto it = liveMap.find(key);
     if (it == liveMap.end()) {
         // Map entry starts with an empty string until that joint is live
-        std::string jointName;
-        liveMap.emplace(key, jointName);
-        it = liveMap.find(key);
+        it = liveMap.emplace(key, "").first;
     }
-
-    std::unique_lock<std::mutex>
-        lock(liveMapLock);
 
     // already live and configured to correct motor
     if (it->second == name) {
@@ -289,7 +283,6 @@ void Controller::makeLive() {
                       ENABLE_LIMIT_RB, buffer, nullptr);
 
         // update liveMap
-        auto it = liveMap.find(key);
         it->second = name;
 
     } catch (IOFailure& e) {

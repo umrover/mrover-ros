@@ -120,11 +120,6 @@ public:
     int32_t limitAAdjustedCounts = 0;
     int32_t limitBAdjustedCounts = 0;
 
-    // struct LiveState {
-    //     bool isLive{false}; 
-    //     std::string jointName;
-    //     std::mutex liveMutex;
-    // };
 
     // REQUIRES: _name is the name of the motor,
     // mcuID is the mcu id of the controller which dictates the slave address,
@@ -221,11 +216,8 @@ private:
     std::string name;
 
     float currentAngle;
-
-    // bool isLive = false;
     
     // key is deviceAddress and motorID (eg. if deviceAddress = 2(0b10) and motorID = 1(0b1), then key = 17(0b10001) )
-    // static std::unordered_map<uint8_t, Controller::LiveState> liveMap;
     static std::unordered_map<uint8_t, std::string> liveMap;
     static std::mutex liveMapLock;
 
