@@ -3,7 +3,7 @@
     <h3>Emulsion Testing</h3>
     <button
     class="button"
-      id="sudan-button"
+      id="emulsion-button"
       :disabled="!isEnabled[siteIndex]"
       @click="moveServo(angles[site].pushed, false)"
     >
@@ -33,6 +33,11 @@ export default {
   data() {
     return {
       isEnabled: [true, true, true],
+      servoIDsBySite: {
+        A: 0,
+        B: 1,
+        C: 2,
+      },
       angles: {
         A: {
           pushed: null,
@@ -58,25 +63,41 @@ export default {
       serviceType: "mrover/ChangeServoAngle",
     });
 
-    let param = new ROSLIB.Param({
+    let servo_id_by_site_config = new ROSLIB.Param({
       ros: this.$ros,
-      name: "science/syringe_servo_positions",
+      name: "science/servo_id_by_site",
     });
+
+    let servo_positions = new ROSLIB.Param({
+      ros: this.$ros,
+      name: "science/servo_positions",
+    });
+
     //get servo angles from yaml file
-    param.get((angles) => {
-      let letter = "A";
-      for (var i = 0; i < 3; i++) {
-        this.angles[letter].pushed = angles["site_" + letter]["pushed"];
-        this.angles[letter].start = angles["site_" + letter]["start"];
-        letter = String.fromCharCode(letter.charCodeAt(0) + 1);
-      }
+    servo_id_by_site_config.get((servoIDsBySite) => {
+      this.servoIDsBySite = servoIDsBySite;
     });
+
+    for (let site in this.servoIDsBySite) {
+      // Get the pushed and start values for the servo from the YAML file
+      servo_positions.get((servoPositions) => {
+          let pushedVal = servoPositions[this.servoIDsBySite[site]].pushed;
+          let startVal = servoPositions[this.servoIDsBySite[site]].start;
+
+          // Add the servo data to the object
+          this.angles[site] = {
+              pushed: pushedVal,
+              start: startVal
+          };
+      });
+    }
+
   },
 
   methods: {
     moveServo(angle, enable) {
       let request = new ROSLIB.ServiceRequest({
-        id: this.siteIndex,
+        id: this.servoIDsBySite[this.site],
         angle: angle,
       });
 

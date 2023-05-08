@@ -6,15 +6,16 @@
 
 from typing import Any
 import rospy
-from mrover.srv import ChangeAutonLEDState
+from mrover.srv import ChangeServoAngle
 
 # Change these values for the service name and type definition to test different values
-SERVICE_NAME = "change_auton_led_state"
-SERVICE_TYPE = ChangeAutonLEDState
+SERVICE_NAME = "change_servo_angle"
+SERVICE_TYPE = ChangeServoAngle
 
 
 def print_service_request(service_request: Any):
     rospy.loginfo(service_request)
+    return True
 
 
 def main():
