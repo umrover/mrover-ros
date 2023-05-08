@@ -196,9 +196,9 @@ cameras:
           height: 240
           fps: 15
           bps: 173000
-        - width: 320
-          height: 240
-          fps: 30
+        - width: 352
+          height: 288
+          fps: 15
           bps: 691000
         - width: 640
           height: 480
@@ -206,7 +206,7 @@ cameras:
           bps: 2000000
         - width: 960
           height: 720
-          fps: 30
+          fps: 15
           bps: 3000000
         - width: 1280
           height: 720
@@ -240,7 +240,7 @@ cameras:
     res_1080:
       vendor_id: "0c45"
       vendor: "Sonix_Technology_Co.__Ltd."
-      use_jpeg: false
+      use_jpeg: true
       quality_options:
         - width: 320
           height: 240
@@ -248,44 +248,44 @@ cameras:
           bps: 173000
         - width: 800
           height: 600
-          fps: 20
+          fps: 30
           bps: 691000
         - width: 960
           height: 720
-          fps: 15
+          fps: 30
           bps: 2000000
         - width: 1280
           height: 720
-          fps: 10
+          fps: 30
           bps: 3000000
         - width: 1920
           height: 1080
-          fps: 5
+          fps: 30
           bps: 4200000
     rock_4k:
       vendor_id: "0c45"
       vendor: "Arducam_Technology_Co.__Ltd."
-      use_jpeg: false
+      use_jpeg: true
       quality_options:
         - width: 640
           height: 480
-          fps: 10
+          fps: 30
           bps: 173000
         - width: 1280
           height: 720
-          fps: 10
-          bps: 691000
+          fps: 30
+          bps: 6000000
         - width: 1600
           height: 1200
-          fps: 10
-          bps: 2000000
+          fps: 30
+          bps: 7000000
         - width: 1920
           height: 1080
-          fps: 10
-          bps: 3000000
+          fps: 30
+          bps: 8000000
         - width: 3264
           height: 2448
-          fps: 2
+          fps: 15
           bps: 9000000
   max_num_resolutions: 5
   # Number of devices corresponds to number of cmds in
