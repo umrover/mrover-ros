@@ -8,8 +8,8 @@
 
     <!-- launch the simulator with no GUI -->
     <include file="$(find mrover)/launch/simulator.launch">
-        <arg name="gui" value="false"/>
-        <arg name="world_name" value="world_flat"/>
+        <arg name="gui" value="true"/>
+        <arg name="world_name" value="world_generated"/>
     </include>
 
     <include file="$(find mrover)/launch/auton.launch">
@@ -18,5 +18,5 @@
     </include>
 
     <!-- node to manage and run the integration test -->
-    <test test-name="integration" pkg="mrover" type="integration.py"/>
+    <test test-name="integration" pkg="mrover" type="integration.py" time-limit="180.0"/>
 </launch>
