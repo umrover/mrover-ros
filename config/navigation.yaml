@@ -27,6 +27,7 @@ search:
 single_fiducial:
   stop_thresh: 0.7
   fiducial_stop_threshold: 1.75
+  post_avoidance_multiplier: 4.0
 
 waypoint:
   stop_thresh: 0.5

@@ -11,8 +11,8 @@ from util.np_utils import perpendicular_2d
 from shapely.geometry import Point, LineString
 from util.SE3 import SE3
 
-POST_RADIUS = (
-    get_rosparam("gate/post_radius", 0.7) * 4
+POST_RADIUS = get_rosparam("gate/post_radius", 0.7) * get_rosparam(
+    "single_fiducial/post_avoidance_multiplier", 4.0
 )  # add a big buffer to the post radius, 4 is somewhat arbitrary but it doesn't really matter
 BACKUP_DISTANCE = get_rosparam("recovery/recovery_distance", 1.0)
 STOP_THRESH = 0.2
