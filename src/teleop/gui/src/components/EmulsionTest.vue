@@ -3,7 +3,7 @@
     <h3>Emulsion Testing</h3>
     <button
     class="button"
-      id="sudan-button"
+      id="emulsion-button"
       :disabled="!isEnabled[siteIndex]"
       @click="moveServo(angles[site].pushed, false)"
     >
