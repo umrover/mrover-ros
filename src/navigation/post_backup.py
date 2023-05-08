@@ -6,15 +6,18 @@ from state import BaseState
 from trajectory import Trajectory
 from aenum import Enum, NoAlias
 from context import Context
-from utils.ros_utils import get_rosparam
-from utils.np_utils import perpendicular_2d
+from util.ros_utils import get_rosparam
+from util.np_utils import perpendicular_2d
 from shapely.geometry import Point, LineString
 from util.SE3 import SE3
 
-POST_RADIUS = get_rosparam("gate/post_radius", default=0.7) * 4 # add a big buffer to the post radius, 4 is somewhat arbitrary but it doesn't really matter
+POST_RADIUS = (
+    get_rosparam("gate/post_radius", 0.7) * 4
+)  # add a big buffer to the post radius, 4 is somewhat arbitrary but it doesn't really matter
 BACKUP_DISTANCE = get_rosparam("recovery/recovery_distance", 1.0)
 STOP_THRESH = 0.2
 DRIVE_FWD_THRESH = 0.95
+
 
 @dataclass
 class AvoidPostTrajectory(Trajectory):
@@ -31,28 +34,28 @@ class AvoidPostTrajectory(Trajectory):
         rover_direction = rover_direction[:2]
         waypoint_pos = waypoint_pos[:2]
 
-        #normalize rover_direction
+        # normalize rover_direction
         rover_direction = rover_direction / np.linalg.norm(rover_direction)
 
-        #create a Shapeley point of raidus POST_RADIUS around the post
+        # create a Shapeley point of raidus POST_RADIUS around the post
         post_circle = Point(post_pos[0], post_pos[1]).buffer(POST_RADIUS)
-        
-        #generate a point BACKUP_DISTANCE behind the rover
+
+        # generate a point BACKUP_DISTANCE behind the rover
         backup_point = rover_pos - BACKUP_DISTANCE * rover_direction
 
-        #generate a line from the backup point to the waypoint
+        # generate a line from the backup point to the waypoint
         path = LineString([backup_point, waypoint_pos])
-        coords = np.array()
-        #check if the path intersects the post circle
+        coords: np.ndarray = np.array([])
+        # check if the path intersects the post circle
         if path.intersects(post_circle):
-            #get a vector perpendicular to rover direction
+            # get a vector perpendicular to rover direction
             left_perp = perpendicular_2d(rover_direction)  # (-y,x)
             avoidance_point = post_pos + POST_RADIUS * left_perp
             coords = np.array([backup_point, avoidance_point, waypoint_pos])
         else:
             coords = np.array([backup_point, waypoint_pos])
 
-        #add a z coordinate of 0 to all the coords
+        # add a z coordinate of 0 to all the coords
         coords = np.hstack((coords, np.zeros((coords.shape[0], 1))))
         return AvoidPostTrajectory(coords)
 
@@ -62,7 +65,7 @@ class PostBackupTransitions(Enum):
     # State Transitions
     finished_traj = "WaypointState"
     recovery_state = "RecoveryState"
-    continue_post_backup = "PostBackup"
+    continue_post_backup = "PostBackupState"
 
 
 class PostBackupState(BaseState):
@@ -84,7 +87,7 @@ class PostBackupState(BaseState):
 
         target_pos = self.traj.get_cur_pt()
 
-        #we drive backwards to the first point in this trajectory
+        # we drive backwards to the first point in this trajectory
         point_index = self.traj.cur_pt
         drive_backwards = point_index == 0
 

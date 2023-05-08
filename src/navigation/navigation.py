@@ -10,11 +10,12 @@ import smach_ros
 from context import Context
 from gate import GateTraverseState, GateTraverseStateTransitions
 from approach_post import ApproachPostState, ApproachPostStateTransitions
-from state import DoneState, DoneStateTransitions, OffState, OffStateTransitions
+from navigation.state import DoneState, DoneStateTransitions, OffState, OffStateTransitions
 from waypoint import WaypointState, WaypointStateTransitions
 from search import SearchState, SearchStateTransitions
 from recovery import RecoveryState, RecoveryStateTransitions
 from partial_gate import PartialGateState, PartialGateStateTransitions
+from post_backup import PostBackupState, PostBackupTransitions
 from smach.log import set_loggers
 from smach.log import loginfo, logwarn, logerr
 
@@ -46,11 +47,7 @@ class Navigation(threading.Thread):
             self.state_machine.add(
                 "ApproachPostState",
                 ApproachPostState(self.context),
-                # The lines below are necessary because ApproachPostState inherits from WaypointState, so WaypointState's transitions
-                # need to be registered for ApproachPostState as well.
-                transitions=dict(
-                    self.get_transitions(ApproachPostStateTransitions), **self.get_transitions(WaypointStateTransitions)
-                ),
+                transitions=self.get_transitions(ApproachPostStateTransitions),
             )
             self.state_machine.add(
                 "SearchState", SearchState(self.context), transitions=self.get_transitions(SearchStateTransitions)
@@ -67,6 +64,11 @@ class Navigation(threading.Thread):
                 "PartialGateState",
                 PartialGateState(self.context),
                 transitions=self.get_transitions(PartialGateStateTransitions),
+            )
+            self.state_machine.add(
+                "PostBackupState",
+                PostBackupState(self.context),
+                transitions=self.get_transitions(PostBackupTransitions),
             )
 
     def get_transitions(self, transitions_enum):
