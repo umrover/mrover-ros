@@ -267,22 +267,28 @@ cameras:
       vendor: "Arducam_Technology_Co.__Ltd."
       use_jpeg: true
       quality_options:
+        # Only have some resolutions since there are only a few
+        # with the same aspect ratio. When changing aspect ratios,
+        # there are sometimes issues with decoding jpeg images.
+        # We also reuse some resolutions so that we the default
+        # resolution (option 2) is not maximum quality (which
+        # has some delay of ~2 seconds).
         - width: 640
           height: 480
           fps: 30
           bps: 173000
-        - width: 1280
-          height: 720
+        - width: 640
+          height: 480
           fps: 30
-          bps: 6000000
+          bps: 173000
         - width: 1600
           height: 1200
           fps: 30
           bps: 7000000
-        - width: 1920
-          height: 1080
+        - width: 1600
+          height: 1200
           fps: 30
-          bps: 8000000
+          bps: 7000000
         - width: 3264
           height: 2448
           fps: 15
