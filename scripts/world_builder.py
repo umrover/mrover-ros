@@ -2,6 +2,7 @@ import xml.etree.ElementTree as ET
 import numpy as np
 from dataclasses import dataclass
 
+
 def parse_world(file_path: str) -> ET.ElementTree:
     """
     Parses the world file in file_path and returns it as an xml object
@@ -9,17 +10,20 @@ def parse_world(file_path: str) -> ET.ElementTree:
     with open(file_path) as f:
         return ET.parse(f)
 
+
 def add_model(world: ET.ElementTree, model: ET.Element) -> None:
     """
     Adds a model to the world within the world element
     """
     world.getroot()[0].append(model)
 
+
 @dataclass
 class PostModel:
     tag_id: int
     position: np.ndarray
     yaw: float
+
 
 def generate_post_model_xml(post: PostModel) -> ET.Element:
     """
@@ -68,11 +72,13 @@ def generate_post_model_xml(post: PostModel) -> ET.Element:
     """
     return ET.fromstring(xml_str)
 
+
 def write_world(world: ET.ElementTree, file_path: str) -> None:
     """
     Writes the world to the file path
     """
     world.write(file_path)
+
 
 def add_post(world: ET.ElementTree, post: PostModel) -> None:
     """
@@ -80,6 +86,7 @@ def add_post(world: ET.ElementTree, post: PostModel) -> None:
     """
     post_xml = generate_post_model_xml(post)
     add_model(world, post_xml)
+
 
 def main():
     world = parse_world("config/gazebo/env_description/world_empty.world")
@@ -92,6 +99,7 @@ def main():
     for post in posts:
         add_post(world, post)
     write_world(world, "config/gazebo/env_description/world_generated.world")
+
 
 if __name__ == "__main__":
     main()
