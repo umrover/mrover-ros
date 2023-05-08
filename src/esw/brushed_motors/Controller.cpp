@@ -211,7 +211,8 @@ uint8_t Controller::combineDeviceMotorID() const {
 // configures the physical controller.
 // Then makes live.
 
-std::unordered_map<uint8_t, LiveState> Controller::liveMap;
+std::unordered_map<uint8_t, std::string> Controller::liveMap;
+std::mutex Controller::liveMapLock;
 
 void Controller::makeLive() {
     // if (isLive) {
@@ -223,17 +224,17 @@ void Controller::makeLive() {
     // if key is absent, no motor with that key has been made live
     auto it = liveMap.find(key);
     if (it == liveMap.end()) {
-        LiveState state;
-        state.jointName = name;
-        liveMap.emplace(key, state);
+        // Map entry starts with an empty string until that joint is live
+        std::string jointName;
+        liveMap.emplace(key, jointName);
         it = liveMap.find(key);
     }
 
     std::unique_lock<std::mutex>
-        lck(it->second.liveMutex);
+        lock(liveMapLock);
 
     // already live and configured to correct motor
-    if (it->second.jointName == name && it->second.isLive) {
+    if (it->second == name) {
         return;
     }
 
@@ -289,8 +290,7 @@ void Controller::makeLive() {
 
         // update liveMap
         auto it = liveMap.find(key);
-        it->second.jointName = name;
-        it->second.isLive = true;
+        it->second = name;
 
     } catch (IOFailure& e) {
         ROS_ERROR("makeLive failed on %s", name.c_str());
