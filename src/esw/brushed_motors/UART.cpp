@@ -12,8 +12,8 @@ void UART::init(std::string& device_file) {
     }
 
     // termios struct is used to configure the UART port
-    struct termios tty;
-    tcgetattr(serial_port, &tty);
+    struct termios tty{};
+    tcgetattr(file, &tty);
     cfsetospeed(&tty, B9600);
     cfsetispeed(&tty, B9600);
     tty.c_cflag &= ~PARENB;
@@ -22,7 +22,7 @@ void UART::init(std::string& device_file) {
     tty.c_cflag |= CS8;
     tty.c_cc[VMIN] = 1;
     tty.c_cc[VTIME] = 5;
-    tcsetattr(serial_port, TCSANOW, &tty);
+    tcsetattr(file, TCSANOW, &tty);
 }
 
 // REQUIRES: addr is the address of the slave,
