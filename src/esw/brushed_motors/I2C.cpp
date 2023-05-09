@@ -33,8 +33,8 @@ void I2C::transact(
 
     // writeBuf must be nullptr if and only if writeNum is 0.
     assert((bool) writeNum == (bool) writeBuf);
-    // writeBuf must be nullptr if and only if writeNum is 0.
-    assert((bool) readNum == (bool) readNum);
+    // readBuf must be nullptr if and only if readNum is 0.
+    assert((bool) readNum == (bool) readBuf);
     assert(writeNum <= 31);
     assert(readNum <= 32);
 

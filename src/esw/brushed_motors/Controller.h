@@ -162,6 +162,12 @@ public:
     // based on allowed voltage of the motor. Also updates angle.
     void moveOpenLoop(float input);
 
+    // REQUIRES: -1.0 <= input <= 1.0
+    // MODIFIES: currentAngle. Also makes controller live if not already.
+    // EFFECTS: UART bus, Sends an open loop command scaled to PWM limits
+    // based on allowed voltage of the motor. Also updates angle.
+    void moveOpenLoopViaUART(float input);
+
     // REQUIRES: nothing
     // MODIFIES: nothing
     // EFFECTS: I2C bus, returns if the MCU is calibrated
@@ -200,6 +206,13 @@ private:
     // configures the physical controller.
     // Then makes live.
     void makeLive();
+
+    // REQUIRES: nothing
+    // MODIFIES: isLive
+    // EFFECTS: UART bus, If not already live,
+    // configures the physical controller.
+    // Then makes live.
+    void makeLiveViaUART();
 
     // REQUIRES: buffer is valid and limit switch is present
     // MODIFIES: limitEnable

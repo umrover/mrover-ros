@@ -1,3 +1,4 @@
+#include "UART.h"          // for UART
 #include "ControllerMap.h" // for ControllerMap
 #include "I2C.h"           // for I2C
 #include "ROSHandler.h"    // for ROSHandler
@@ -20,6 +21,10 @@ int main(int argc, char** argv) {
     std::string i2cDeviceFile;
     nh.getParam("brushed_motors/i2c_device_file", i2cDeviceFile);
     I2C::init(i2cDeviceFile);
+
+    std::string uartDeviceFile;
+    nh.getParam("brushed_motors/uart_device_file", uartDeviceFile);
+    UART::init(uartDeviceFile);
 
     if (isTest) {
         for (auto& [name, controller]: ControllerMap::controllersByName) {

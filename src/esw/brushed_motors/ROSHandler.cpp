@@ -73,9 +73,18 @@ std::optional<float> ROSHandler::moveControllerOpenLoop(const std::string& name,
     }
 
     Controller* controller = controller_iter->second;
-    controller->moveOpenLoop(velocity);
 
-    return std::make_optional<float>(controller->getCurrentAngle());
+    std::optional<float> return_value;
+
+    if (USE_UART_AND_SEND_ONLY) {
+        controller->moveOpenLoopViaUART(velocity);
+    }
+    else {
+        controller->moveOpenLoop(velocity);
+        return_value = std::make_optional<float>(controller->getCurrentAngle());
+    }
+
+    return return_value;
 }
 
 // REQUIRES: nothing
@@ -118,7 +127,13 @@ std::optional<bool> ROSHandler::getControllerCalibrated(const std::string& name)
     }
 
     Controller* controller = controller_iter->second;
-    return std::make_optional<bool>(controller->isCalibrated());
+
+    std::optional<bool> return_value;
+    if (!USE_UART_AND_SEND_ONLY) {
+        return_value = std::make_optional<bool>(controller->isCalibrated());
+    }
+
+    return return_value;
 }
 
 // REQUIRES: nothing

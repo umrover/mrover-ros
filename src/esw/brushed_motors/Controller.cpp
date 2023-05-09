@@ -104,6 +104,43 @@ void Controller::moveOpenLoop(float input) {
     }
 }
 
+// REQUIRES: -1.0 <= input <= 1.0
+// MODIFIES: currentAngle. Also makes controller live if not already.
+// EFFECTS: UART bus, Sends an open loop command scaled to PWM limits
+// based on allowed voltage of the motor. Also updates angle.
+void Controller::moveOpenLoopViaUART(float input) {
+    try {
+        if (!(-1.0f <= input && input <= 1.0f)) {
+            ROS_ERROR("moveOpenLoopViaUART on %s should only take values between -1.0 and 1.0", name.c_str());
+            return;
+        }
+
+        makeLiveViaUART();
+
+        float speed = input * inversion;
+
+        // When closing the gripper,
+        // We only want to apply 10 Volts
+        if (name == "HAND_GRIP") {
+            float handGripClosingVoltage = 10.0f;
+            float handGripClosingPercent = handGripClosingVoltage / motorMaxVoltage;
+            speed = speed > handGripClosingPercent ? handGripClosingPercent : speed;
+        }
+
+        // TODO - use open only instead
+        // TODO - need to implement usart part
+
+        uint8_t buffer[4];
+        memcpy(buffer, UINT8_POINTER_T(&speed), sizeof(speed));
+        int32_t angle;
+
+        UART::transact(deviceAddress, motorIDRegMask | OPEN_OP, OPEN_WB,
+                      buffer;
+    } catch (IOFailure& e) {
+        ROS_ERROR("moveOpenLoop failed on %s", name.c_str());
+    }
+}
+
 // REQUIRES: nothing
 // MODIFIES: nothing
 // EFFECTS: I2C bus, returns if the MCU is calibrated
@@ -238,6 +275,74 @@ void Controller::turnOn() const {
 // configures the physical controller.
 // Then makes live.
 void Controller::makeLive() {
+    if (isLive) {
+        return;
+    }
+
+    try {
+        // turn on
+        I2C::transact(deviceAddress, motorIDRegMask | ON_OP, ON_WB, ON_RB,
+                      nullptr, nullptr);
+
+        uint8_t buffer[32];
+
+        assert(motorMaxVoltage >= 0);
+        assert(driverVoltage >= 0);
+        auto maxPWM = (uint16_t) (100.0 * motorMaxVoltage / driverVoltage);
+        assert(maxPWM <= 100);
+
+        memcpy(buffer, UINT8_POINTER_T(&maxPWM), sizeof(maxPWM));
+        I2C::transact(deviceAddress, motorIDRegMask | CONFIG_PWM_OP, CONFIG_PWM_WB,
+                      CONFIG_PWM_RB, buffer, nullptr);
+
+        memcpy(buffer, UINT8_POINTER_T(&(kP)), sizeof(kP));
+        memcpy(buffer + 4, UINT8_POINTER_T(&(kI)), sizeof(kI));
+        memcpy(buffer + 8, UINT8_POINTER_T(&(kD)), sizeof(kD));
+        I2C::transact(deviceAddress, motorIDRegMask | CONFIG_K_OP, CONFIG_K_WB,
+                      CONFIG_K_RB, buffer, nullptr);
+
+        memcpy(buffer, UINT8_POINTER_T(&limitAIsActiveHigh), sizeof(limitAIsActiveHigh));
+        I2C::transact(deviceAddress, motorIDRegMask | ACTIVE_LIMIT_A_OP, ACTIVE_LIMIT_WB,
+                      ACTIVE_LIMIT_RB, buffer, nullptr);
+
+        memcpy(buffer, UINT8_POINTER_T(&limitBIsActiveHigh), sizeof(limitBIsActiveHigh));
+        I2C::transact(deviceAddress, motorIDRegMask | ACTIVE_LIMIT_B_OP, ACTIVE_LIMIT_WB,
+                      ACTIVE_LIMIT_RB, buffer, nullptr);
+
+        memcpy(buffer, UINT8_POINTER_T(&limitAAdjustedCounts), sizeof(limitAAdjustedCounts));
+        I2C::transact(deviceAddress, motorIDRegMask | COUNTS_LIMIT_A_OP, COUNTS_LIMIT_WB,
+                      COUNTS_LIMIT_RB, buffer, nullptr);
+
+        memcpy(buffer, UINT8_POINTER_T(&limitBAdjustedCounts), sizeof(limitBAdjustedCounts));
+        I2C::transact(deviceAddress, motorIDRegMask | COUNTS_LIMIT_B_OP, COUNTS_LIMIT_WB,
+                      COUNTS_LIMIT_RB, buffer, nullptr);
+
+        memcpy(buffer, UINT8_POINTER_T(&limitAIsFwd), sizeof(limitAIsFwd));
+        I2C::transact(deviceAddress, motorIDRegMask | LIMIT_A_IS_FWD_OP, LIMIT_A_IS_FWD_WB,
+                      LIMIT_A_IS_FWD_RB, buffer, nullptr);
+
+        memcpy(buffer, UINT8_POINTER_T(&limitAPresent), sizeof(limitAPresent));
+        I2C::transact(deviceAddress, motorIDRegMask | ENABLE_LIMIT_A_OP, ENABLE_LIMIT_WB,
+                      ENABLE_LIMIT_RB, buffer, nullptr);
+
+        memcpy(buffer, UINT8_POINTER_T(&limitBPresent), sizeof(limitBPresent));
+        I2C::transact(deviceAddress, motorIDRegMask | ENABLE_LIMIT_B_OP, ENABLE_LIMIT_WB,
+                      ENABLE_LIMIT_RB, buffer, nullptr);
+
+        isLive = true;
+
+    } catch (IOFailure& e) {
+        ROS_ERROR("makeLive failed on %s", name.c_str());
+        throw IOFailure();
+    }
+}
+
+// REQUIRES: nothing
+// MODIFIES: isLive
+// EFFECTS: UART bus, if not already live,
+// configures the physical controller.
+// Then makes live.
+void Controller::makeLiveViaUART() {
     if (isLive) {
         return;
     }
