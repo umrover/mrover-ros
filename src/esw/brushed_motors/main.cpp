@@ -18,13 +18,20 @@ int main(int argc, char** argv) {
 
     ControllerMap::init(controllersRoot);
 
-    std::string i2cDeviceFile;
-    nh.getParam("brushed_motors/i2c_device_file", i2cDeviceFile);
-    I2C::init(i2cDeviceFile);
+    bool use_uart_and_send_only;  // as opposed to i2c
+    nh.getParam("brushed_motors/use_uart_and_send_only", use_uart_and_send_only);
 
-    std::string uartDeviceFile;
-    nh.getParam("brushed_motors/uart_device_file", uartDeviceFile);
-    UART::init(uartDeviceFile);
+    if (use_uart_and_send_only) {
+        std::string uartDeviceFile;
+        nh.getParam("brushed_motors/uart_device_file", uartDeviceFile);
+        UART::init(uartDeviceFile);
+    }
+    else {
+        std::string i2cDeviceFile;
+        nh.getParam("brushed_motors/i2c_device_file", i2cDeviceFile);
+        I2C::init(i2cDeviceFile);
+    }
+
 
     if (isTest) {
         for (auto& [name, controller]: ControllerMap::controllersByName) {
@@ -34,7 +41,7 @@ int main(int argc, char** argv) {
             ROS_INFO("Calibration status on %s is %d\n", name.c_str(), isCalibrated);
         }
     } else {
-        ROSHandler::init(&nh);
+        ROSHandler::init(&nh, use_uart_and_send_only);
 
         ROS_INFO("Initialization Done. \nLooping. \n");
 

@@ -3,9 +3,11 @@
 // REQUIRES: rosNode is a pointer to the created node.
 // MODIFIES: static variables
 // EFFECTS: Initializes all subscribers and publishers.
-void ROSHandler::init(ros::NodeHandle* rosNode) {
+void ROSHandler::init(ros::NodeHandle* rosNode, bool _use_uart_and_send_only) {
 
     n = rosNode;
+
+    use_uart_and_send_only = _use_uart_and_send_only;
 
     // Initialize services
     calibrateService = n->advertiseService<mrover::CalibrateMotors::Request, mrover::CalibrateMotors::Response>("calibrate", processMotorCalibrate);

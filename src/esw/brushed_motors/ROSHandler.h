@@ -30,6 +30,8 @@ private:
     // This holds the ROS Node.
     inline static ros::NodeHandle* n;
 
+    inline static bool use_uart_and_send_only;
+
     // Calibrate service
     inline static ros::ServiceServer calibrateService;
     inline static ros::ServiceServer adjustService;
@@ -141,7 +143,7 @@ public:
     // REQUIRES: rosNode is a pointer to the created node.
     // MODIFIES: static variables
     // EFFECTS: Initializes all subscribers and publishers.
-    static void init(ros::NodeHandle* rosNode);
+    static void init(ros::NodeHandle* rosNode, bool _use_uart_and_send_only);
 
     // REQUIRES: name is the name of a controller and isCalibrated is whether it is calibrated
     // MODIFIES: static variables

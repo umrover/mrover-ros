@@ -180,6 +180,7 @@ brushed_motors:
       calibration_vel: 0.25
   i2c_device_file: "/dev/i2c-1"
   uart_device_file: "/dev/ttyACM0"
+  use_uart_and_send_only: true
   test: false
   
 cameras:
