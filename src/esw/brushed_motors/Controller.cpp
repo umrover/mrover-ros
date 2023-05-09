@@ -357,8 +357,8 @@ void Controller::makeLiveViaUART() {
 
     try {
         // turn on
-        I2C::transact(deviceAddress, motorIDRegMask | ON_OP, ON_WB, ON_RB,
-                      nullptr, nullptr);
+        UART::transact(deviceAddress, motorIDRegMask | ON_OP, ON_WB,
+                      nullptr);
 
         uint8_t buffer[32];
 
