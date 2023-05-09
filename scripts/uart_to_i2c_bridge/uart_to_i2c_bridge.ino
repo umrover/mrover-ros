@@ -1,6 +1,8 @@
 #define MAX_UART_MESSAGE_LENGTH 36
 #define I2C_WRITE_TIMEOUT_MS 500
 
+#include "Wire.h"
+
 void setup() {
   Serial.begin(9600); // Initialize the serial port with baud rate 9600
   Wire.begin(); // Initialize I2C communication
@@ -79,6 +81,10 @@ void read_uart_message() {
     if (byte_read == 'E') {
       // End of message, parse it and reset message_length
       parse_uart_message(uart_message, message_length);
+      for (int i = 0; i < message_length; ++i) {
+        Serial.print(uart_message[i]);
+      }
+      Serial.println("");
       message_length = 0;
     }
   }
