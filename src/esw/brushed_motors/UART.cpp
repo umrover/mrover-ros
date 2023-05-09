@@ -12,7 +12,7 @@ void UART::init(std::string& device_file) {
     }
 
     // termios struct is used to configure the UART port
-    struct termios tty{};
+    struct termios tty {};
     tcgetattr(file, &tty);
     cfsetospeed(&tty, B9600);
     cfsetispeed(&tty, B9600);
@@ -73,5 +73,4 @@ void UART::transact(
         ROS_ERROR("Write error %d, wrote %i bytes", errno, bytesWritten);
         throw IOFailure();
     }
-
 }

@@ -1,14 +1,14 @@
 #pragma once
 
-#include "I2C.h"         // for I2C and IOFailure
-#include "UART.h"        // for UART
-#include <assert.h>      // for assert
-#include <cmath>         // for M_PI
-#include <limits>        // for numeric limits
-#include <mutex>         // for mutex
-#include <ros/console.h> // for ROS_ERROR
+#include "I2C.h"                    // for I2C and IOFailure
+#include "UART.h"                   // for UART
+#include <assert.h>                 // for assert
+#include <cmath>                    // for M_PI
+#include <limits>                   // for numeric limits
 #include <mrover/LimitSwitchData.h> // for LimitSwitchData
-#include <string.h>      // for string and memcpy
+#include <mutex>                    // for mutex
+#include <ros/console.h>            // for ROS_ERROR
+#include <string.h>                 // for string and memcpy
 
 #define OFF_OP 0x00
 #define OFF_WB 0

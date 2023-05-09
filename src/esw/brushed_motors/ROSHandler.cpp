@@ -80,8 +80,7 @@ std::optional<float> ROSHandler::moveControllerOpenLoop(const std::string& name,
 
     if (use_uart_and_send_only) {
         controller->moveOpenLoopViaUART(velocity);
-    }
-    else {
+    } else {
         controller->moveOpenLoop(velocity);
         return_value = std::make_optional<float>(controller->getCurrentAngle());
     }
@@ -113,8 +112,10 @@ void ROSHandler::moveRA(const sensor_msgs::JointState::ConstPtr& msg) {
         }
         ++mappedIndex;
     }
-    calibrationStatusPublisherRA.publish(calibrationStatusRA);
-    jointDataPublisherRA.publish(jointDataRA);
+    if (!use_uart_and_send_only) {
+        calibrationStatusPublisherRA.publish(calibrationStatusRA);
+        jointDataPublisherRA.publish(jointDataRA);
+    }
 }
 
 // REQUIRES: nothing
@@ -169,8 +170,10 @@ void ROSHandler::moveSA(const sensor_msgs::JointState::ConstPtr& msg) {
             calibrationStatusSA.calibrated[i] = calibrated.value();
         }
     }
-    calibrationStatusPublisherSA.publish(calibrationStatusSA);
-    jointDataPublisherSA.publish(jointDataSA);
+    if (!use_uart_and_send_only) {
+        calibrationStatusPublisherSA.publish(calibrationStatusSA);
+        jointDataPublisherSA.publish(jointDataSA);
+    }
 }
 
 // REQUIRES: nothing
@@ -179,12 +182,14 @@ void ROSHandler::moveSA(const sensor_msgs::JointState::ConstPtr& msg) {
 void ROSHandler::moveCache(const sensor_msgs::JointState::ConstPtr& msg) {
     moveControllerOpenLoop("cache", (float) msg->velocity[0]);
 
-    std::optional<mrover::LimitSwitchData> limit_switch_data = getControllerLimitSwitchData("cache");
-    if (limit_switch_data.has_value()) {
-        cacheLimitSwitchData = limit_switch_data.value();
-    }
+    if (!use_uart_and_send_only) {
+        std::optional<mrover::LimitSwitchData> limit_switch_data = getControllerLimitSwitchData("cache");
+        if (limit_switch_data.has_value()) {
+            cacheLimitSwitchData = limit_switch_data.value();
+        }
 
-    cacheLimitSwitchDataPublisher.publish(cacheLimitSwitchData);
+        cacheLimitSwitchDataPublisher.publish(cacheLimitSwitchData);
+    }
 }
 
 // REQUIRES: nothing
@@ -197,11 +202,13 @@ void ROSHandler::moveCarousel(const mrover::Carousel::ConstPtr& msg) {
         ROS_ERROR("Closed loop is currently not supported for carousel commands.");
     }
 
-    std::optional<bool> calibrated = getControllerCalibrated("carousel");
-    if (calibrated.has_value()) {
-        calibrationStatusCarousel.calibrated[0] = calibrated.value();
+    if (!use_uart_and_send_only) {
+        std::optional<bool> calibrated = getControllerCalibrated("carousel");
+        if (calibrated.has_value()) {
+            calibrationStatusCarousel.calibrated[0] = calibrated.value();
+        }
+        calibrationStatusPublisherCarousel.publish(calibrationStatusCarousel);
     }
-    calibrationStatusPublisherCarousel.publish(calibrationStatusCarousel);
 }
 
 // REQUIRES: nothing
@@ -325,8 +332,7 @@ void ROSHandler::tickMCU(int mcu_id) {
     // This can be used as a way to keep the MCU from resetting due to its watchdog timer.
     if (use_uart_and_send_only) {
         dummy_mcu_controller->turnOnViaUART();
-    }
-    else {
+    } else {
         dummy_mcu_controller->turnOn();
     }
 }
