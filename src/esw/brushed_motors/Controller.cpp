@@ -360,47 +360,47 @@ void Controller::makeLiveViaUART() {
         assert(maxPWM <= 100);
 
         memcpy(buffer, UINT8_POINTER_T(&maxPWM), sizeof(maxPWM));
-        I2C::transact(deviceAddress, motorIDRegMask | CONFIG_PWM_OP, CONFIG_PWM_WB,
-                      CONFIG_PWM_RB, buffer, nullptr);
+        UART::transact(deviceAddress, motorIDRegMask | CONFIG_PWM_OP, CONFIG_PWM_WB,
+                      buffer);
 
         memcpy(buffer, UINT8_POINTER_T(&(kP)), sizeof(kP));
         memcpy(buffer + 4, UINT8_POINTER_T(&(kI)), sizeof(kI));
         memcpy(buffer + 8, UINT8_POINTER_T(&(kD)), sizeof(kD));
-        I2C::transact(deviceAddress, motorIDRegMask | CONFIG_K_OP, CONFIG_K_WB,
-                      CONFIG_K_RB, buffer, nullptr);
+        UART::transact(deviceAddress, motorIDRegMask | CONFIG_K_OP, CONFIG_K_WB,
+                      buffer);
 
         memcpy(buffer, UINT8_POINTER_T(&limitAIsActiveHigh), sizeof(limitAIsActiveHigh));
-        I2C::transact(deviceAddress, motorIDRegMask | ACTIVE_LIMIT_A_OP, ACTIVE_LIMIT_WB,
-                      ACTIVE_LIMIT_RB, buffer, nullptr);
+        UART::transact(deviceAddress, motorIDRegMask | ACTIVE_LIMIT_A_OP, ACTIVE_LIMIT_WB,
+                      buffer);
 
         memcpy(buffer, UINT8_POINTER_T(&limitBIsActiveHigh), sizeof(limitBIsActiveHigh));
-        I2C::transact(deviceAddress, motorIDRegMask | ACTIVE_LIMIT_B_OP, ACTIVE_LIMIT_WB,
-                      ACTIVE_LIMIT_RB, buffer, nullptr);
+        UART::transact(deviceAddress, motorIDRegMask | ACTIVE_LIMIT_B_OP, ACTIVE_LIMIT_WB,
+                      buffer);
 
         memcpy(buffer, UINT8_POINTER_T(&limitAAdjustedCounts), sizeof(limitAAdjustedCounts));
-        I2C::transact(deviceAddress, motorIDRegMask | COUNTS_LIMIT_A_OP, COUNTS_LIMIT_WB,
-                      COUNTS_LIMIT_RB, buffer, nullptr);
+        UART::transact(deviceAddress, motorIDRegMask | COUNTS_LIMIT_A_OP, COUNTS_LIMIT_WB,
+                      buffer);
 
         memcpy(buffer, UINT8_POINTER_T(&limitBAdjustedCounts), sizeof(limitBAdjustedCounts));
-        I2C::transact(deviceAddress, motorIDRegMask | COUNTS_LIMIT_B_OP, COUNTS_LIMIT_WB,
-                      COUNTS_LIMIT_RB, buffer, nullptr);
+        UART::transact(deviceAddress, motorIDRegMask | COUNTS_LIMIT_B_OP, COUNTS_LIMIT_WB,
+                      buffer);
 
         memcpy(buffer, UINT8_POINTER_T(&limitAIsFwd), sizeof(limitAIsFwd));
-        I2C::transact(deviceAddress, motorIDRegMask | LIMIT_A_IS_FWD_OP, LIMIT_A_IS_FWD_WB,
-                      LIMIT_A_IS_FWD_RB, buffer, nullptr);
+        UART::transact(deviceAddress, motorIDRegMask | LIMIT_A_IS_FWD_OP, LIMIT_A_IS_FWD_WB,
+                      buffer);
 
         memcpy(buffer, UINT8_POINTER_T(&limitAPresent), sizeof(limitAPresent));
-        I2C::transact(deviceAddress, motorIDRegMask | ENABLE_LIMIT_A_OP, ENABLE_LIMIT_WB,
-                      ENABLE_LIMIT_RB, buffer, nullptr);
+        UART::transact(deviceAddress, motorIDRegMask | ENABLE_LIMIT_A_OP, ENABLE_LIMIT_WB,
+                      buffer);
 
         memcpy(buffer, UINT8_POINTER_T(&limitBPresent), sizeof(limitBPresent));
-        I2C::transact(deviceAddress, motorIDRegMask | ENABLE_LIMIT_B_OP, ENABLE_LIMIT_WB,
-                      ENABLE_LIMIT_RB, buffer, nullptr);
+        UART::transact(deviceAddress, motorIDRegMask | ENABLE_LIMIT_B_OP, ENABLE_LIMIT_WB,
+                      buffer);
 
         isLive = true;
 
     } catch (IOFailure& e) {
-        ROS_ERROR("makeLive failed on %s", name.c_str());
+        ROS_ERROR("makeLiveViaUART failed on %s", name.c_str());
         throw IOFailure();
     }
 }
