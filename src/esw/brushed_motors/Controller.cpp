@@ -110,7 +110,7 @@ void Controller::moveOpenLoop(float input) {
 // based on allowed voltage of the motor. Also updates angle.
 void Controller::moveOpenLoopViaUART(float input) {
     try {
-        if (!(-1.0f < input && input < 1.0f)) {
+        if (!(-1.0f <= input && input <= 1.0f)) {
             ROS_ERROR("moveOpenLoopViaUART on %s should only take values between -1.0 and 1.0", name.c_str());
             return;
         }
