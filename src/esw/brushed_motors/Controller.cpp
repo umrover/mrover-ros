@@ -127,15 +127,11 @@ void Controller::moveOpenLoopViaUART(float input) {
             speed = speed > handGripClosingPercent ? handGripClosingPercent : speed;
         }
 
-        // TODO - use open only instead
-        // TODO - need to implement usart part
-
         uint8_t buffer[4];
         memcpy(buffer, UINT8_POINTER_T(&speed), sizeof(speed));
-        int32_t angle;
 
         UART::transact(deviceAddress, motorIDRegMask | OPEN_OP, OPEN_WB,
-                      buffer;
+                      buffer);
     } catch (IOFailure& e) {
         ROS_ERROR("moveOpenLoop failed on %s", name.c_str());
     }

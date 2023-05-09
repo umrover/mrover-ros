@@ -1,6 +1,7 @@
 #pragma once
 
 #include "I2C.h"         // for I2C and IOFailure
+#include "UART.h"        // for UART
 #include <assert.h>      // for assert
 #include <cmath>         // for M_PI
 #include <limits>        // for numeric limits
