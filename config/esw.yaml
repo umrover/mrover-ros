@@ -181,7 +181,7 @@ brushed_motors:
   i2c_device_file: "/dev/i2c-1"
   uart_device_file: "/dev/ttyACM0"
   use_uart_and_send_only: true
-  test: true
+  test: false
   
 cameras:
   arguments:
