@@ -34,11 +34,19 @@ int main(int argc, char** argv) {
 
 
     if (isTest) {
-        for (auto& [name, controller]: ControllerMap::controllersByName) {
-            ROS_INFO("Conducting tests on %s \n", name.c_str());
-            Test::testOpenLoop(controller);
-            bool isCalibrated = Test::testCalibrated(controller);
-            ROS_INFO("Calibration status on %s is %d\n", name.c_str(), isCalibrated);
+        if (use_uart_and_send_only) {
+            for (auto& [name, controller]: ControllerMap::controllersByName) {
+                ROS_INFO("Conducting tests on %s \n", name.c_str());
+                Test::testOpenLoopViaUART(controller);
+            }
+        }
+        else {
+            for (auto& [name, controller]: ControllerMap::controllersByName) {
+                ROS_INFO("Conducting tests on %s \n", name.c_str());
+                Test::testOpenLoop(controller);
+                bool isCalibrated = Test::testCalibrated(controller);
+                ROS_INFO("Calibration status on %s is %d\n", name.c_str(), isCalibrated);
+            }
         }
     } else {
         ROSHandler::init(&nh, use_uart_and_send_only);
