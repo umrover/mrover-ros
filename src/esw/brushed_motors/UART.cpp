@@ -67,6 +67,7 @@ void UART::transact(
     buffer[4 + writeNum] = 'E';
 
     int bytesWritten = (int) write(file, buffer, uart_data_bytes_sending);
+    tcflush(file, TCIOFLUSH);
 
     if (bytesWritten != uart_data_bytes_sending) {
         ROS_ERROR("Write error %d, wrote %i bytes", errno, bytesWritten);
