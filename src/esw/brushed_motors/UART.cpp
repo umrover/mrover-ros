@@ -66,10 +66,10 @@ void UART::transact(
     memcpy(buffer + 4, writeBuf, writeNum);
     buffer[4 + writeNum] = 'E';
 
-    int bitsWritten = (int) write(file, buffer, sizeof(uart_data_bytes_sending));
+    int bytesWritten = (int) write(file, buffer, uart_data_bytes_sending);
 
-    if (bitsWritten != uart_data_bytes_sending) {
-        ROS_ERROR("Write error %d, wrote %i bits", errno, bitsWritten);
+    if (bytesWritten != uart_data_bytes_sending) {
+        ROS_ERROR("Write error %d, wrote %i bytes", errno, bytesWritten);
         throw IOFailure();
     }
 

@@ -5,6 +5,8 @@
 
 #define I2C_WRITE_TIMEOUT_MS 500
 
+#include "Wire.h"
+
 void setup() {
   Serial.begin(9600); // Initialize the serial port with baud rate 9600
   while (!Serial) { }

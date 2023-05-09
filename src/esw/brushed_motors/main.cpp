@@ -32,7 +32,6 @@ int main(int argc, char** argv) {
         I2C::init(i2cDeviceFile);
     }
 
-
     if (isTest) {
         if (use_uart_and_send_only) {
             for (auto& [name, controller]: ControllerMap::controllersByName) {
