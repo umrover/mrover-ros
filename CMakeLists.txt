@@ -34,6 +34,7 @@ set(MROVER_MESSAGE_FILES
         GPSPointList.msg
         HeaterData.msg
         ImuAndMag.msg
+        LimitSwitchData.msg
         MastGimbal.msg
         JointLock.msg
         MoteusState.msg
@@ -51,6 +52,7 @@ set(MROVER_MESSAGE_FILES
 set(MROVER_SERVICE_FILES
         AdjustMotors.srv
         CalibrateMotors.srv
+        ChangeArmMode.srv
         ChangeAutonLEDState.srv
         ChangeCameras.srv
         ChangeHeaterAutoShutoffState.srv

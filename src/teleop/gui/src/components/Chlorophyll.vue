@@ -50,7 +50,7 @@
         </thead>
         <tbody>
           <tr>
-            <td class="tableElement">Spec 0</td>
+            <td class="tableElement">Spec</td>
             <td v-for="i in 6" :key="i" class="tableElement">
               {{ spectral_data[i - 1].toFixed(0) }}
             </td>

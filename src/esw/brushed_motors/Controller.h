@@ -6,6 +6,7 @@
 #include <limits>        // for numeric limits
 #include <mutex>         // for mutex
 #include <ros/console.h> // for ROS_ERROR
+#include <mrover/LimitSwitchData.h> // for LimitSwitchData
 #include <string.h>      // for string and memcpy
 
 #define OFF_OP 0x00
@@ -79,6 +80,10 @@
 #define LIMIT_A_IS_FWD_OP 0x14
 #define LIMIT_A_IS_FWD_WB 1
 #define LIMIT_A_IS_FWD_RB 0
+
+#define LIMIT_DATA_OP 0x15
+#define LIMIT_DATA_WB 0
+#define LIMIT_DATA_RB 1
 
 #define UINT8_POINTER_T reinterpret_cast<uint8_t*>
 
@@ -185,6 +190,11 @@ public:
 
     // REQUIRES: nothing
     // MODIFIES: nothing
+    // EFFECTS: I2C bus, and returns limit data (calibrated, limit a/b pressed).
+    mrover::LimitSwitchData getLimitSwitchData();
+
+    // REQUIRES: nothing
+    // MODIFIES: nothing
     // EFFECTS: I2C bus, and turns on the controller. Can be used as a way to tick the watchdog for a particular mcu.
     void turnOn() const;
 
@@ -222,7 +232,8 @@ private:
     static std::mutex liveMapLock;
 
     bool isControllerCalibrated = false;
-
-
+  
+    float abs_enc_radians = 0;
+    mrover::LimitSwitchData limit_switch_data;
 };
 

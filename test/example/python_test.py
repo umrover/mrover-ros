@@ -14,7 +14,7 @@ import unittest
 import numpy as np
 
 # make use of imports relative to the package
-from navigation.drive import get_drive_command
+from navigation.drive import DriveController
 from util.SE3 import SE3
 
 

@@ -45,6 +45,11 @@ void ROSHandler::init(ros::NodeHandle* rosNode) {
 
     // Initialize cache
     moveCacheSubscriber = n->subscribe<sensor_msgs::JointState>("cache_cmd", 1, moveCache);
+    cacheLimitSwitchDataPublisher = n->advertise<mrover::LimitSwitchData>("cache_limit_switch_data", 1);
+    cacheLimitSwitchData.name = "cache";
+    cacheLimitSwitchData.calibrated = false;
+    cacheLimitSwitchData.limit_a_pressed = false;
+    cacheLimitSwitchData.limit_b_pressed = false;
 
     // Initialize carousel
     carousel_name = "carousel";
@@ -87,10 +92,14 @@ void ROSHandler::moveRA(const sensor_msgs::JointState::ConstPtr& msg) {
         }
         std::optional<float> pos = moveControllerOpenLoop(msg->name[i], (float) msg->velocity[i]);
 
-        jointDataRA.position[mappedIndex] = pos.value_or(0.0);
+        if (pos.has_value()) {
+            jointDataRA.position[mappedIndex] = pos.value();
+        }
 
         std::optional<bool> calibrated = getControllerCalibrated(msg->name[i]);
-        calibrationStatusRA.calibrated[mappedIndex] = calibrated.value_or(false);
+        if (calibrated.has_value()) {
+            calibrationStatusRA.calibrated[mappedIndex] = calibrated.value();
+        }
         ++mappedIndex;
     }
     calibrationStatusPublisherRA.publish(calibrationStatusRA);
@@ -114,14 +123,34 @@ std::optional<bool> ROSHandler::getControllerCalibrated(const std::string& name)
 
 // REQUIRES: nothing
 // MODIFIES: nothing
+// EFFECTS: Get limit switch data (calibrated and limit switch a/b pressed)
+std::optional<mrover::LimitSwitchData> ROSHandler::getControllerLimitSwitchData(const std::string& name) {
+    auto controller_iter = ControllerMap::controllersByName.find(name);
+
+    if (controller_iter == ControllerMap::controllersByName.end()) {
+        ROS_ERROR("Could not find controller named %s.", name.c_str());
+        return std::nullopt;
+    }
+
+    Controller* controller = controller_iter->second;
+    return std::make_optional<mrover::LimitSwitchData>(controller->getLimitSwitchData());
+}
+
+// REQUIRES: nothing
+// MODIFIES: nothing
 // EFFECTS: Moves the SA joints in open loop and publishes angle data right after.
 void ROSHandler::moveSA(const sensor_msgs::JointState::ConstPtr& msg) {
     for (size_t i = 0; i < SANames.size(); ++i) {
         std::optional<float> pos = moveControllerOpenLoop(SANames[i], (float) msg->velocity[i]);
-        jointDataSA.position[i] = pos.value_or(0.0);
+        if (pos.has_value()) {
+            jointDataSA.position[i] = pos.value();
+        }
 
         std::optional<bool> calibrated = getControllerCalibrated(SANames[i]);
-        calibrationStatusSA.calibrated[i] = calibrated.value_or(false);
+
+        if (calibrated.has_value()) {
+            calibrationStatusSA.calibrated[i] = calibrated.value();
+        }
     }
     calibrationStatusPublisherSA.publish(calibrationStatusSA);
     jointDataPublisherSA.publish(jointDataSA);
@@ -132,6 +161,13 @@ void ROSHandler::moveSA(const sensor_msgs::JointState::ConstPtr& msg) {
 // EFFECTS: Moves the cache in open loop.
 void ROSHandler::moveCache(const sensor_msgs::JointState::ConstPtr& msg) {
     moveControllerOpenLoop("cache", (float) msg->velocity[0]);
+
+    std::optional<mrover::LimitSwitchData> limit_switch_data = getControllerLimitSwitchData("cache");
+    if (limit_switch_data.has_value()) {
+        cacheLimitSwitchData = limit_switch_data.value();
+    }
+
+    cacheLimitSwitchDataPublisher.publish(cacheLimitSwitchData);
 }
 
 // REQUIRES: nothing
@@ -145,7 +181,9 @@ void ROSHandler::moveCarousel(const mrover::Carousel::ConstPtr& msg) {
     }
 
     std::optional<bool> calibrated = getControllerCalibrated("carousel");
-    calibrationStatusCarousel.calibrated[0] = calibrated.value_or(false);
+    if (calibrated.has_value()) {
+        calibrationStatusCarousel.calibrated[0] = calibrated.value();
+    }
     calibrationStatusPublisherCarousel.publish(calibrationStatusCarousel);
 }
 

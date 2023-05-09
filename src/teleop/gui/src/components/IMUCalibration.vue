@@ -25,9 +25,7 @@
               <span
                 :class="[
                   'led',
-                  magnetometer_val == calibration_limit_master
-                    ? 'green'
-                    : 'red',
+                  magnetometer_val == calibration_limit_master ? 'green' : 'red'
                 ]"
               ></span>
             </td>
@@ -37,7 +35,7 @@
                   'led',
                   accelerometer_val == calibration_limit_master
                     ? 'green'
-                    : 'red',
+                    : 'red'
                 ]"
               ></span>
             </td>
@@ -45,7 +43,7 @@
               <span
                 :class="[
                   'led',
-                  gyroscope_val == calibration_limit_master ? 'green' : 'red',
+                  gyroscope_val == calibration_limit_master ? 'green' : 'red'
                 ]"
               ></span>
             </td>
@@ -53,20 +51,19 @@
               <span
                 :class="[
                   'led',
-                  system_val == calibration_limit_master ? 'green' : 'red',
+                  system_val == calibration_limit_master ? 'green' : 'red'
                 ]"
               ></span>
             </td>
           </tr>
-        </tbody>
-        <tbody>
           <tr>
-            <td class="tableElement">{{ magnetometer_val.toFixed(3) }}</td>
-            <td class="tableElement">{{ accelerometer_val.toFixed(3) }}</td>
-            <td class="tableElement">{{ gyroscope_val.toFixed(3) }}</td>
-            <td class="tableElement">{{ system_val.toFixed(3) }}</td>
+            <td class="numbers">{{ magnetometer_val }}</td>
+            <td class="numbers">{{ accelerometer_val }}</td>
+            <td class="numbers">{{ gyroscope_val }}</td>
+            <td class="numbers">{{ system_val }}</td>
           </tr>
         </tbody>
+        <tbody></tbody>
       </table>
     </div>
   </div>
@@ -83,14 +80,14 @@ export default {
       gyroscope_val: 0,
       accelerometer_val: 0,
       magnetometer_val: 0,
-      calibration_limit_master: calibration_limit,
+      calibration_limit_master: calibration_limit
     };
   },
   created: function () {
     this.IMUCalibration_sub = new ROSLIB.Topic({
       ros: this.$ros,
       name: "imu/calibration",
-      messageType: "mrover/CalibrationStatus",
+      messageType: "mrover/CalibrationStatus"
     });
     this.IMUCalibration_sub.subscribe((msg) => {
       this.system_val = msg.system_calibration;
@@ -98,7 +95,7 @@ export default {
       this.accelerometer_val = msg.accelerometer_calibration;
       this.magnetometer_val = msg.magnetometer_calibration;
     });
-  },
+  }
 };
 </script>
 <style scoped>
@@ -119,5 +116,8 @@ export default {
 }
 .red {
   background-color: red;
+}
+.numbers {
+  padding-left: 10px;
 }
 </style>

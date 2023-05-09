@@ -185,6 +185,11 @@ class ScienceBridge:
             a float representing the id and the angle respectively.
         :returns: A boolean that is the success of sent UART transaction.
         """
+        if not 0 <= req.id < 3:
+            # 0 <= req.id < 3 must be true since only 0, 1, and 2 are accepted.
+            rospy.logerr(f"Site {req.id} for changing servo angle is invalid.")
+            return ChangeServoAngleResponse(False)
+
         success = self._servo_transmit(req.id, req.angle)
         return ChangeServoAngleResponse(success)
 
@@ -193,7 +198,7 @@ class ScienceBridge:
         state.
         :param color: A string that is the color of the requested state of
             the auton LED array. Note that green actually means blinking green.
-            The string should be lower case.
+            The string should be lowercase.
         :returns: A boolean that is the success of the transaction. Note that
             this could be because an invalid color was sent.
         """
@@ -232,17 +237,18 @@ class ScienceBridge:
         success = self._send_msg(tx_msg)
         return success
 
-    def _servo_transmit(self, id: int, angle: float) -> bool:
+    def _servo_transmit(self, servo_id: int, angle: float) -> bool:
         """Send a UART message to the STM32 chip commanding the angles of the
         carousel servos.
-        :param angles: Three floats in an array that represent the angles of
+        :param servo_id: A servo id. Should be 0, 1, or 2.
+        :param angle: Three floats in an array that represent the angles of
             the servos. Note that this angle is what the servo interprets as
             the angle, and it may differ from servo to servo. Also note that
             the range of angles may vary (the safe range is between about 0
             and 150).
         :returns: A boolean that is the success of the transaction.
         """
-        tx_msg = f"$SERVO,{id},{angle}"
+        tx_msg = f"$SERVO,{servo_id},{angle}"
         success = self._send_msg(tx_msg)
         return success
 
