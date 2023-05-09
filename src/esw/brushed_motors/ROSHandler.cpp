@@ -78,7 +78,7 @@ std::optional<float> ROSHandler::moveControllerOpenLoop(const std::string& name,
 
     std::optional<float> return_value;
 
-    if (USE_UART_AND_SEND_ONLY) {
+    if (use_uart_and_send_only) {
         controller->moveOpenLoopViaUART(velocity);
     }
     else {
@@ -131,7 +131,7 @@ std::optional<bool> ROSHandler::getControllerCalibrated(const std::string& name)
     Controller* controller = controller_iter->second;
 
     std::optional<bool> return_value;
-    if (!USE_UART_AND_SEND_ONLY) {
+    if (!use_uart_and_send_only) {
         return_value = std::make_optional<bool>(controller->isCalibrated());
     }
 
@@ -323,7 +323,12 @@ void ROSHandler::tickMCU(int mcu_id) {
 
     // The turn on function does nothing but keep the controller alive.
     // This can be used as a way to keep the MCU from resetting due to its watchdog timer.
-    dummy_mcu_controller->turnOn();
+    if (use_uart_and_send_only) {
+        dummy_mcu_controller->turnOnViaUART();
+    }
+    else {
+        dummy_mcu_controller->turnOn();
+    }
 }
 
 // REQUIRES: mcu_id is a valid mcu_id

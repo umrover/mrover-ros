@@ -266,6 +266,18 @@ void Controller::turnOn() const {
 }
 
 // REQUIRES: nothing
+// MODIFIES: nothing
+// EFFECTS: UART bus, and turns on the controller. Can be used as a way to tick the watchdog for a particular mcu.
+void Controller::turnOnViaUART() const {
+    try {
+        UART::transact(deviceAddress, motorIDRegMask | ON_OP, ON_WB,
+                      nullptr);
+    } catch (IOFailure& e) {
+        ROS_ERROR("turnOnViaUART failed on %s", name.c_str());
+    }
+}
+
+// REQUIRES: nothing
 // MODIFIES: isLive
 // EFFECTS: I2C bus, if not already live,
 // configures the physical controller.

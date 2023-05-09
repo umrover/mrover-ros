@@ -17,8 +17,6 @@
 #include <unordered_map>                // for unordered_map
 #include <vector>                       // for vector
 
-#define USE_UART_AND_SEND_ONLY true
-
 /*
 ROSHandler.h is responsible for handling incoming and outgoing ROS messages.
 Incoming ROS messages will trigger functions which call the functions

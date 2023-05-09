@@ -199,6 +199,11 @@ public:
     // EFFECTS: I2C bus, and turns on the controller. Can be used as a way to tick the watchdog for a particular mcu.
     void turnOn() const;
 
+    // REQUIRES: nothing
+    // MODIFIES: nothing
+    // EFFECTS: UART bus, and turns on the controller. Can be used as a way to tick the watchdog for a particular mcu.
+    void turnOnViaUART() const;
+
 
 private:
     // REQUIRES: nothing

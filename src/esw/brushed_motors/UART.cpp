@@ -6,10 +6,10 @@
 // EFFECTS: Opens the UART bus.
 void UART::init(std::string& device_file) {
     file = open(device_file.c_str(), O_RDWR);
-    if (file == -1) {
-        ROS_ERROR("Failed to open UART bus\n");
-        throw IOFailure();
-    }
+//    if (file == -1) {
+//        ROS_ERROR("Failed to open UART bus\n");
+//        throw IOFailure();
+//    }
 
     // termios struct is used to configure the UART port
     struct termios tty{};
