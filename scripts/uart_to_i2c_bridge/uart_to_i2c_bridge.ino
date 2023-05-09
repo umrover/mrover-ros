@@ -36,7 +36,7 @@ void send_i2c(uint8_t addr, uint8_t write_num, uint8_t* write_buf) {
 void read_uart_message() {
 
   // One byte for command, then data.
-  uint8_t[MAX_DATA_LENGTH + 1] data_buf;
+  uint8_t data_buf[MAX_DATA_LENGTH + 1];
 
   if (Serial.available() >= MIN_UART_MESSAGE_LENGTH) {
     uint8_t first_byte = Serial.read();
@@ -67,7 +67,7 @@ void read_uart_message() {
     }
 
     // End of message, parse it and reset message_length
-    send_i2c(addr, write_num + 1, data_buf)
+    send_i2c(addr, write_num + 1, data_buf);
   }
 }
 
