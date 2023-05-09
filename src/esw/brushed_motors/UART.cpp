@@ -55,7 +55,8 @@ void UART::transact(
     // Copy command and write data into the buffer.
     uint8_t buffer[36];
 
-    // S[ADDR][CMD][WRITE_NUM][WRITE_BUF][E] is 5 + WRITE_NUM
+    // "S[ADDR][CMD][WRITE_NUM][WRITE_BUF]E" is 5 + WRITE_NUM
+    // Everything except the write buffer is 1 byte.
     int uart_data_bytes_sending = 5 + writeNum;
 
     buffer[0] = 'S';

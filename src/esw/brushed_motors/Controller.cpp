@@ -110,7 +110,7 @@ void Controller::moveOpenLoop(float input) {
 // based on allowed voltage of the motor. Also updates angle.
 void Controller::moveOpenLoopViaUART(float input) {
     try {
-        if (!(-1.0f <= input && input <= 1.0f)) {
+        if (!(-1.0f < input && input < 1.0f)) {
             ROS_ERROR("moveOpenLoopViaUART on %s should only take values between -1.0 and 1.0", name.c_str());
             return;
         }
@@ -130,10 +130,10 @@ void Controller::moveOpenLoopViaUART(float input) {
         uint8_t buffer[4];
         memcpy(buffer, UINT8_POINTER_T(&speed), sizeof(speed));
 
-        UART::transact(deviceAddress, motorIDRegMask | OPEN_OP, OPEN_WB,
-                      buffer);
-    } catch (IOFailure& e) {
-        ROS_ERROR("moveOpenLoop failed on %s", name.c_str());
+        UART::transact(deviceAddress, motorIDRegMask | OPEN_OP, OPEN_WB, buffer);
+    }
+    catch (IOFailure& e) {
+        ROS_ERROR("UART moveOpenLoop failed on %s", name.c_str());
     }
 }
 
@@ -356,40 +356,49 @@ void Controller::makeLiveViaUART() {
         assert(maxPWM <= 100);
 
         memcpy(buffer, UINT8_POINTER_T(&maxPWM), sizeof(maxPWM));
+        static_assert(sizeof(maxPWM) == CONFIG_PWM_WB);
         UART::transact(deviceAddress, motorIDRegMask | CONFIG_PWM_OP, CONFIG_PWM_WB,
                       buffer);
 
         memcpy(buffer, UINT8_POINTER_T(&(kP)), sizeof(kP));
-        memcpy(buffer + 4, UINT8_POINTER_T(&(kI)), sizeof(kI));
-        memcpy(buffer + 8, UINT8_POINTER_T(&(kD)), sizeof(kD));
+        memcpy(buffer + sizeof(kP), UINT8_POINTER_T(&(kI)), sizeof(kI));
+        memcpy(buffer + sizeof(kP) + sizeof(kI), UINT8_POINTER_T(&(kD)), sizeof(kD));
+        static_assert(sizeof(kP) + sizeof(kI) + sizeof(kD) == CONFIG_K_WB);
         UART::transact(deviceAddress, motorIDRegMask | CONFIG_K_OP, CONFIG_K_WB,
                       buffer);
 
         memcpy(buffer, UINT8_POINTER_T(&limitAIsActiveHigh), sizeof(limitAIsActiveHigh));
+        static_assert(sizeof(limitAIsActiveHigh) == ACTIVE_LIMIT_WB);
         UART::transact(deviceAddress, motorIDRegMask | ACTIVE_LIMIT_A_OP, ACTIVE_LIMIT_WB,
                       buffer);
 
         memcpy(buffer, UINT8_POINTER_T(&limitBIsActiveHigh), sizeof(limitBIsActiveHigh));
+        static_assert(sizeof(limitBIsActiveHigh) == ACTIVE_LIMIT_WB);
         UART::transact(deviceAddress, motorIDRegMask | ACTIVE_LIMIT_B_OP, ACTIVE_LIMIT_WB,
                       buffer);
 
         memcpy(buffer, UINT8_POINTER_T(&limitAAdjustedCounts), sizeof(limitAAdjustedCounts));
+        static_assert(sizeof(limitAAdjustedCounts) == COUNTS_LIMIT_WB);
         UART::transact(deviceAddress, motorIDRegMask | COUNTS_LIMIT_A_OP, COUNTS_LIMIT_WB,
                       buffer);
 
         memcpy(buffer, UINT8_POINTER_T(&limitBAdjustedCounts), sizeof(limitBAdjustedCounts));
+        static_assert(sizeof(limitBAdjustedCounts) == COUNTS_LIMIT_WB);
         UART::transact(deviceAddress, motorIDRegMask | COUNTS_LIMIT_B_OP, COUNTS_LIMIT_WB,
                       buffer);
 
         memcpy(buffer, UINT8_POINTER_T(&limitAIsFwd), sizeof(limitAIsFwd));
+        static_assert(sizeof(limitAIsFwd) == LIMIT_A_IS_FWD_WB);
         UART::transact(deviceAddress, motorIDRegMask | LIMIT_A_IS_FWD_OP, LIMIT_A_IS_FWD_WB,
                       buffer);
 
         memcpy(buffer, UINT8_POINTER_T(&limitAPresent), sizeof(limitAPresent));
+        static_assert(sizeof(limitAPresent) == ENABLE_LIMIT_WB);
         UART::transact(deviceAddress, motorIDRegMask | ENABLE_LIMIT_A_OP, ENABLE_LIMIT_WB,
                       buffer);
 
         memcpy(buffer, UINT8_POINTER_T(&limitBPresent), sizeof(limitBPresent));
+        static_assert(sizeof(limitBPresent) == ENABLE_LIMIT_WB);
         UART::transact(deviceAddress, motorIDRegMask | ENABLE_LIMIT_B_OP, ENABLE_LIMIT_WB,
                       buffer);
 
