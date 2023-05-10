@@ -23,7 +23,7 @@ def reset_mcu(req: EnableDeviceRequest) -> EnableDeviceResponse:
         sleep(5)
         GPIO.output(MOSFET_GATE_PIN,GPIO.HIGH)
 
-    return True
+    return EnableDeviceResponse(True)
 
 def main():
     rospy.init_node("mcu_reset")
