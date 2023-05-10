@@ -20,7 +20,7 @@ GPIO.setup(MOSFET_GATE_PIN, GPIO.OUT, initial=GPIO.HIGH)  # TODO: make sure the 
 def reset_mcu(req: EnableDeviceRequest) -> EnableDeviceResponse:
     if (req.enable):
         GPIO.output(MOSFET_GATE_PIN,GPIO.LOW)
-        sleep(5)
+        sleep(0.5)
         GPIO.output(MOSFET_GATE_PIN,GPIO.HIGH)
 
     return EnableDeviceResponse(True)
