@@ -1,21 +1,21 @@
 #pragma once
-#include "ControllerMap.h"              // for ControllerMap
-#include <algorithm>                    // for distance
-#include <array>                        // for array
-#include <cmath>                        // for nan
-#include <mrover/AdjustMotors.h>        // for AdjustMotors
-#include <mrover/CalibrateMotors.h>     // for CalibrateMotors
-#include <mrover/Calibrated.h>          // for Calibrated
-#include <mrover/Carousel.h>            // for Carousel
-#include <mrover/EnableDevice.h>        // for EnableDevice
-#include <mrover/LimitSwitchData.h>     // for LimitSwitchData
-#include <mrover/MastGimbal.h>          // for MastGimbal
-#include <optional>                     // for optional
-#include <ros/console.h>                // for ROS_ERROR
-#include <ros/ros.h>                    // for ros
-#include <sensor_msgs/JointState.h>     // for JointState
-#include <unordered_map>                // for unordered_map
-#include <vector>                       // for vector
+#include "ControllerMap.h"          // for ControllerMap
+#include <algorithm>                // for distance
+#include <array>                    // for array
+#include <cmath>                    // for nan
+#include <mrover/AdjustMotors.h>    // for AdjustMotors
+#include <mrover/CalibrateMotors.h> // for CalibrateMotors
+#include <mrover/Calibrated.h>      // for Calibrated
+#include <mrover/Carousel.h>        // for Carousel
+#include <mrover/EnableDevice.h>    // for EnableDevice
+#include <mrover/LimitSwitchData.h> // for LimitSwitchData
+#include <mrover/MastGimbal.h>      // for MastGimbal
+#include <optional>                 // for optional
+#include <ros/console.h>            // for ROS_ERROR
+#include <ros/ros.h>                // for ros
+#include <sensor_msgs/JointState.h> // for JointState
+#include <unordered_map>            // for unordered_map
+#include <vector>                   // for vector
 
 /*
 ROSHandler.h is responsible for handling incoming and outgoing ROS messages.
@@ -27,6 +27,8 @@ class ROSHandler {
 private:
     // This holds the ROS Node.
     inline static ros::NodeHandle* n;
+
+    inline static bool use_uart_and_send_only;
 
     // Calibrate service
     inline static ros::ServiceServer calibrateService;
@@ -139,7 +141,7 @@ public:
     // REQUIRES: rosNode is a pointer to the created node.
     // MODIFIES: static variables
     // EFFECTS: Initializes all subscribers and publishers.
-    static void init(ros::NodeHandle* rosNode);
+    static void init(ros::NodeHandle* rosNode, bool _use_uart_and_send_only);
 
     // REQUIRES: name is the name of a controller and isCalibrated is whether it is calibrated
     // MODIFIES: static variables
