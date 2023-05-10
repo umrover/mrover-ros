@@ -132,7 +132,7 @@ void Controller::moveOpenLoopViaUART(float input) {
 
         UART::transact(deviceAddress, motorIDRegMask | OPEN_OP, OPEN_WB, buffer);
     } catch (IOFailure& e) {
-        ROS_ERROR("UART moveOpenLoop failed on %s", name.c_str());
+        ROS_ERROR("moveOpenLoopViaUART failed on %s", name.c_str());
     }
 }
 
@@ -183,6 +183,25 @@ void Controller::enableLimitSwitch(bool enable, bool& limitEnable, uint8_t opera
         memcpy(buffer, UINT8_POINTER_T(&limitEnable), sizeof(limitEnable));
         I2C::transact(deviceAddress, motorIDRegMask | operation, ENABLE_LIMIT_WB,
                       ENABLE_LIMIT_RB, buffer, nullptr);
+
+        // Only set limitEnable if transaction was successful.
+        limitEnable = enable;
+    } catch (IOFailure& e) {
+        ROS_ERROR("enableLimitSwitch failed on %s", name.c_str());
+    }
+}
+
+// REQUIRES: buffer is valid
+// MODIFIES: limitEnable
+// EFFECTS: I2C bus, enables limit switch if it is present
+void Controller::enableLimitSwitchViaUART(bool enable, bool& limitEnable, uint8_t operation) {
+    uint8_t buffer[ENABLE_LIMIT_WB];
+
+    try {
+        makeLiveViaUART();
+
+        memcpy(buffer, UINT8_POINTER_T(&limitEnable), sizeof(limitEnable));
+        UART::transact(deviceAddress, motorIDRegMask | operation, ENABLE_LIMIT_WB, buffer);
 
         // Only set limitEnable if transaction was successful.
         limitEnable = enable;
