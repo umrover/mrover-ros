@@ -1,14 +1,11 @@
 <template>
   <div class="wrap">
     <div>
-      <h3>Science MCU Reset</h3>
-    </div>
-    <div>
       <ToggleButton
         id="mcu_reset"
         :current-state="reset"
-        label-enable-text="Being Reset..."
-        label-disable-text="Science MCU Active"
+        label-enable-text="MCU resetting..."
+        label-disable-text="MCU active"
         @change="toggle()"
       />
     </div>
@@ -71,6 +68,9 @@ export default {
           if (!result.success) {
             alert("Resetting the Science MCU failed.");
           }
+          else {
+            alert("Success! Please reset the Pi node once the MCU is back online!!");
+          }
 
           clearTimeout(this.timeoutID);
         });
@@ -86,7 +86,8 @@ export default {
 
 <style scoped>
 .wrap {
-  display: inline-block;
-  align-content: center;
+  display: flex;
+  align-items: center;
+  height: 100%;
 }
 </style>
