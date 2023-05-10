@@ -86,7 +86,7 @@ class ScienceBridge:
     _handler_function_by_tag: Dict[str, Callable[[str], Any]]
     _ros_publisher_by_tag: Dict[str, rospy.Publisher]
     _sleep_amt_s: float
-    _time_since_last_received_msg: t.time
+    _time_since_last_received_msg: float
     _uart_transmit_msg_len: int
     _uart_lock: threading.Lock
     ser: serial.Serial
