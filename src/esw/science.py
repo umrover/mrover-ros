@@ -14,6 +14,7 @@ from typing import Any, Callable, Dict, List
 
 import rospy
 import serial
+import time as t
 
 from mrover.msg import Diagnostic, HeaterData, ScienceTemperature, Spectral
 from std_msgs.msg import Bool
@@ -41,10 +42,15 @@ class ScienceBridge:
     """Manages all the information and functions used for dealing with the
     bridge between the science board and the Jetson.
     One ScienceBridge will be made in main.
+    :param _active_publisher: A publisher that publishes whether the
+        science MCU is active or not (based on whether any messages were heard)
     :param _allowed_mosfet_names: A list of allowed mosfet names for the "enable
         mosfet" device service
     :param _id_by_color: A dictionary that maps the possible colors of the auton
         LED to an integer for the UART message.
+    :param _mcu_active_timeout_s: This represents the maximum amount of time
+        in seconds without receiving a UART message until the MCU is called
+        not active.
     :param _mosfet_number_by_device_name: A dictionary that maps each actual
         device to a MOSFET device number.
     :param _num_diag_current: The number of diagnostic current sensors.
@@ -58,6 +64,8 @@ class ScienceBridge:
         UART message to its corresponding ROS Publisher object.
     :param _sleep_amt_s: A float representing the sleep duration used for when the
         sleep function is called, in seconds.
+    :param _time_since_last_received_msg: The time since last received a
+        UART message.
     :param _uart_transmit_msg_len: An integer representing the maximum length
         for a transmitted UART message.
     :param _uart_lock: A lock used to prevent clashing over the UART transmit
@@ -66,8 +74,10 @@ class ScienceBridge:
 
     NUM_SPECTRAL_CHANNELS = 6
 
+    _active_publisher: rospy.Publisher
     _allowed_mosfet_names: List[str]
     _id_by_color: Dict[str, int]
+    _mcu_active_timeout_s: int
     _mosfet_number_by_device_name: Dict[str, int]
     _num_diag_current: int
     _num_diag_thermistors: int
@@ -76,12 +86,17 @@ class ScienceBridge:
     _handler_function_by_tag: Dict[str, Callable[[str], Any]]
     _ros_publisher_by_tag: Dict[str, rospy.Publisher]
     _sleep_amt_s: float
+    _time_since_last_received_msg: t.time
     _uart_transmit_msg_len: int
     _uart_lock: threading.Lock
     ser: serial.Serial
 
     def __init__(self) -> None:
+
+        self._active_publisher = rospy.Publisher("science_mcu_active", Bool, queue_size=1)
+
         self._id_by_color = rospy.get_param("science/auton_color_ids")
+        self._mcu_active_timeout_s = rospy.get_param("science/mcu_active_timeout_s")
         self._mosfet_number_by_device_name = rospy.get_param("science/device_mosfet_numbers")
         self._allowed_mosfet_names = ["arm_laser", "uv_led_carousel", "uv_led_end_effector", "white_led", "raman_laser"]
 
@@ -106,6 +121,9 @@ class ScienceBridge:
         }
 
         self._sleep_amt_s = rospy.get_param("science/info/sleep")
+
+        self._time_since_last_received_msg = t.time()
+
         self._uart_transmit_msg_len = rospy.get_param("science/info/uart_transmit_msg_len")
         self._uart_lock = threading.Lock()
 
@@ -302,12 +320,17 @@ class ScienceBridge:
             rospy.sleep(self._sleep_amt_s)
             return
 
+        ros_msg = Bool(bool(t.time() - self._time_since_last_received_msg < self._mcu_active_timeout_s))
+        self._active_publisher.publish(ros_msg)
+
         arr = rx_msg.split(",")
 
         tag = arr[0][3:]
         if not (tag in self._handler_function_by_tag):
             rospy.sleep(self._sleep_amt_s)
             return
+
+        self._time_since_last_received_msg = t.time()
 
         self._handler_function_by_tag[tag](rx_msg)
 
