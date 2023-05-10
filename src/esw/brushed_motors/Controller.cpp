@@ -67,13 +67,6 @@ void Controller::overrideCurrentAngle(float newAngleRad) {
     }
 }
 
-// REQUIRES: nothing
-// MODIFIES: nothing
-// EFFECTS: Returns true if Controller is live.
-// bool Controller::isControllerLive() const {
-//     return isLive;
-// }
-
 // REQUIRES: -1.0 <= input <= 1.0
 // MODIFIES: currentAngle. Also makes controller live if not already.
 // EFFECTS: I2C bus, Sends an open loop command scaled to PWM limits
