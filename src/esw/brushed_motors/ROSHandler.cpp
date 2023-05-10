@@ -223,6 +223,11 @@ void ROSHandler::moveMastGimbal(const mrover::MastGimbal::ConstPtr& msg) {
 // MODIFIES: res
 // EFFECTS: sends a move/calibration command to the mcu
 bool ROSHandler::processMotorCalibrate(mrover::CalibrateMotors::Request& req, mrover::CalibrateMotors::Response& res) {
+
+    if (use_uart_and_send_only) {
+        ROS_ERROR("Can't support processMotorCalibrate on %s.)", req.name.c_str());
+    }
+
     auto controller_iter = ControllerMap::controllersByName.find(req.name);
 
     if (controller_iter == ControllerMap::controllersByName.end()) {
@@ -254,6 +259,10 @@ bool ROSHandler::processMotorCalibrate(mrover::CalibrateMotors::Request& req, mr
 // MODIFIES: res
 // EFFECTS: hard sets the requested controller angle
 bool ROSHandler::processMotorAdjust(mrover::AdjustMotors::Request& req, mrover::AdjustMotors::Response& res) {
+    if (use_uart_and_send_only) {
+        ROS_ERROR("Can't support processMotorAdjust on %s.)", req.name.c_str());
+    }
+
     auto controller_iter = ControllerMap::controllersByName.find(req.name);
 
     if (controller_iter == ControllerMap::controllersByName.end()) {
@@ -276,6 +285,10 @@ bool ROSHandler::processMotorAdjust(mrover::AdjustMotors::Request& req, mrover::
 // MODIFIES: res
 // EFFECTS: takes the current absolute encoder value, applies an offset, and hard sets the new angle
 bool ROSHandler::processMotorAdjustUsingAbsEnc(mrover::AdjustMotors::Request& req, mrover::AdjustMotors::Response& res) {
+    if (use_uart_and_send_only) {
+        ROS_ERROR("Can't support processMotorAdjustUsingAbsEnc on %s.)", req.name.c_str());
+    }
+
     auto controller_iter = ControllerMap::controllersByName.find(req.name);
 
     if (controller_iter == ControllerMap::controllersByName.end()) {
@@ -300,6 +313,10 @@ bool ROSHandler::processMotorAdjustUsingAbsEnc(mrover::AdjustMotors::Request& re
 // MODIFIES: res
 // EFFECTS: disables or enables limit switches
 bool ROSHandler::processMotorEnableLimitSwitches(mrover::EnableDevice::Request& req, mrover::EnableDevice::Response& res) {
+    if (use_uart_and_send_only) {
+        ROS_ERROR("Can't support processMotorEnableLimitSwitches on %s.)", req.name.c_str());
+    }
+
     auto controller_iter = ControllerMap::controllersByName.find(req.name);
 
     if (controller_iter == ControllerMap::controllersByName.end()) {
