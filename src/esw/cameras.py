@@ -23,7 +23,23 @@ from mrover.srv import (
 PRIMARY_IP: str = rospy.get_param("cameras/ips/primary")
 SECONDARY_IP: str = rospy.get_param("cameras/ips/secondary")
 
-CAPTURE_ARGS: List[Dict[str, int]] = rospy.get_param("cameras/arguments")
+
+class CameraTypeInfo:
+    class QualityOption:
+        def __init__(self, width: int, height: int, fps: int, bps: int):
+            self.width: int = width
+            self.height: int = height
+            self.fps: int = fps
+            self.bps: int = bps
+
+    def __init__(self, vendor_id: str, vendor: str, use_jpeg: bool, quality_options: List[QualityOption]):
+        self.vendor_id: str = vendor_id
+        self.vendor: str = vendor
+        self.use_jpeg: bool = use_jpeg
+        self.quality_options: List[CameraTypeInfo.QualityOption] = quality_options
+
+
+CAMERA_TYPE_INFO_BY_NAME: Dict[str, CameraTypeInfo] = {}  # initialized in main()
 
 
 def generate_dev_list() -> List[int]:
@@ -55,6 +71,40 @@ def generate_dev_list() -> List[int]:
     return dev_num_list
 
 
+def get_camera_info(video_device: str, info_type: str) -> str:
+    """
+    Get the detail of video device
+    :param video_device: the video device name (e.g. /dev/video0)
+    :param info_type: the detail (e.g. VENDOR_ID or VENDOR)
+    :return: The detail of the device
+    """
+    # Execute the v4l2-ctl command to get the serial number of the device
+    output = subprocess.check_output(["udevadm", "info", "--query=all", video_device])
+    info = ""
+    for line in output.decode().splitlines():
+        if info_type in line:
+            info = line.split("=")[1].strip()
+            break
+    return info
+
+
+def get_camera_type(video_device: str) -> str:
+    """
+    Get the camera type of video device
+    :param video_device: the video device name (e.g. /dev/video0)
+    :return: The name of the camera type
+    """
+
+    vendor_id = get_camera_info(video_device, "VENDOR_ID")
+    vendor = get_camera_info(video_device, "VENDOR")
+
+    for name in CAMERA_TYPE_INFO_BY_NAME:
+        if vendor_id == CAMERA_TYPE_INFO_BY_NAME[name].vendor_id and vendor == CAMERA_TYPE_INFO_BY_NAME[name].vendor:
+            return name
+
+    return ""
+
+
 class Stream:
     """
     An object encapsulating a stream from a camera to an IP endpoint. On initialization, a process
@@ -82,7 +132,7 @@ class Stream:
     The port that the stream is streaming to.
     """
 
-    def __init__(self, req: ChangeCamerasRequest, cmd: CameraCmd, port: int):
+    def __init__(self, req: ChangeCamerasRequest, cmd: CameraCmd, port: int, camera_type: str):
         self._cmd = cmd
         self._cmd.device = req.camera_cmd.device
         self._cmd.resolution = req.camera_cmd.resolution
@@ -90,23 +140,25 @@ class Stream:
         self.primary = req.primary
         self.port = port
 
-        args = CAPTURE_ARGS[self._cmd.resolution]
-
         self._process = Process(
             target=send,
             args=(
                 self._cmd.device,
                 PRIMARY_IP if self.primary else SECONDARY_IP,
                 5000 + self.port,
-                args["bps"],
-                args["width"],
-                args["height"],
-                args["fps"],
-                True,
+                req.camera_cmd.resolution,
+                camera_type,
             ),
         )
 
         self._process.start()
+
+    def is_still_running(self) -> bool:
+        """
+        Returns whether the stream (and process) is still running.
+        :return: Whether stream is running.
+        """
+        return self._process.is_alive()
 
     def __del__(self) -> None:
         """
@@ -212,13 +264,16 @@ class StreamManager:
 
             # If a stream is being requested...
             # (resolution == -1 means a request to cancel stream)
-            if 0 <= req.camera_cmd.resolution < len(CAPTURE_ARGS):
+            if req.camera_cmd.resolution >= 0:
 
                 # If we cannot handle any more streams, return False.
                 available_port_arr = [True, True, True, True]
-                for stream in self._stream_by_device:
-                    if stream:
-                        available_port_arr[stream.port] = False
+                for i, stream in enumerate(self._stream_by_device):
+                    if stream is not None:
+                        if stream.is_still_running():
+                            available_port_arr[stream.port] = False
+                        else:
+                            self._stream_by_device[i] = None
 
                 available_port = -1
                 for i, port_is_available in enumerate(available_port_arr):
@@ -232,66 +287,70 @@ class StreamManager:
 
                 # Get a reference to an available slot and give to a new stream.
                 cmd_obj = self._get_open_cmd_slot(req.primary)
-                self._stream_by_device[device_id] = Stream(req, cmd_obj, available_port)
+
+                camera_type = get_camera_type(f"/dev/video{device_id}")
+
+                if camera_type == "":
+                    rospy.logerr(
+                        f"Camera type of device ID {req.camera_cmd.device} (/dev/video{device_id}) is unsupported"
+                    )
+                    return self._get_change_response(False)
+
+                self._stream_by_device[device_id] = Stream(req, cmd_obj, available_port, camera_type)
 
             return self._get_change_response(True)
 
 
-def send(device=0, host="10.0.0.7", port=5000, bitrate=4000000, width=1280, height=720, fps=30, is_colored=False):
+def send(
+    device: int = 0,
+    host: str = "10.0.0.7",
+    port: int = 5000,
+    quality: int = 0,
+    camera_type: str = "",
+):
     # Construct video capture pipeline string
-    cap_str = (
-        "v4l2src device=/dev/video"
-        + str(device)
-        + " do-timestamp=true io-mode=2 ! \
-    image/jpeg, width="
-        + str(width)
-        + ", height="
-        + str(height)
-        + ", framerate="
-        + str(fps)
-        + "/1 ! \
-    jpegdec ! \
-    videorate ! \
-    video/x-raw,\
-    framerate="
-        + str(fps)
-        + "/1 ! \
-    nvvidconv ! "
-    )
-    if is_colored:
-        cap_str += " video/x-raw, format=BGRx ! "
-    cap_str += "videoconvert ! "
-    if is_colored:
-        cap_str += " video/x-raw, format=BGR ! "
-    cap_str += "appsink"
+
+    try:
+        best_option = len(CAMERA_TYPE_INFO_BY_NAME[camera_type].quality_options) - 1
+
+        if quality > best_option:
+            quality = best_option
+        elif quality < 0:
+            quality = 0
+
+        width = CAMERA_TYPE_INFO_BY_NAME[camera_type].quality_options[quality].width
+        height = CAMERA_TYPE_INFO_BY_NAME[camera_type].quality_options[quality].height
+        fps = CAMERA_TYPE_INFO_BY_NAME[camera_type].quality_options[quality].fps
+        bitrate = CAMERA_TYPE_INFO_BY_NAME[camera_type].quality_options[quality].bps
+        use_jpeg = CAMERA_TYPE_INFO_BY_NAME[camera_type].use_jpeg
+    except KeyError:
+        rospy.logerr(f"Unsupported camera type {camera_type}")
+        assert False
+
+    if use_jpeg:
+        cap_str = f"v4l2src device=/dev/video{device} do-timestamp=true io-mode=2 ! "
+        cap_str += f"image/jpeg, width={width}, height={height}, framerate={fps}/1 ! jpegdec ! videorate ! video/x-raw, framerate={fps}/1 ! nvvidconv ! "
+        cap_str += f"video/x-raw, format=BGRx ! videoconvert ! video/x-raw, format=BGR ! appsink"
+    else:
+        cap_str = f"v4l2src device=/dev/video{device} do-timestamp=true io-mode=2 ! "
+        cap_str += (
+            f"videorate ! video/x-raw, width={width}, height={height}, framerate={fps}/1 ! videoconvert ! appsink"
+        )
 
     # openCV video capture from v4l2 device
     cap_send = cv2.VideoCapture(cap_str, cv2.CAP_GSTREAMER)
 
     # Construct stream transmit pipeline string
-    txstr = "appsrc ! "
-    if is_colored:
-        txstr += " video/x-raw, format=BGR ! "
-    txstr += "videoconvert ! "
-    if is_colored:
-        txstr += " video/x-raw, format=BGRx ! "
-    txstr += (
-        "nvvidconv ! \
-    nvv4l2h264enc \
-    bitrate="
-        + str(bitrate)
-        + " ! \
-    h264parse ! \
-    rtph264pay pt=96 config-interval=1 ! \
-    udpsink host="
-        + str(host)
-        + " port="
-        + str(port)
-    )
+    txstr = "appsrc ! video/x-raw, format=BGR ! videoconvert ! video/x-raw, format=BGRx ! nvvidconv ! "
+    txstr += f"nvv4l2h264enc bitrate={bitrate} ! h264parse ! rtph264pay pt=96 config-interval=1 ! "
+    txstr += f"udpsink host={host} port={port}"
+
+    # We need to set with proper width instead of desired width, otherwise it's very slow when capturing images
+    # We can just capture the images at the proper width and convert them later.
 
     # openCV stream transmit pipeline with RTP sink
     fourcc = cv2.VideoWriter_fourcc("H", "2", "6", "4")
-    out_send = cv2.VideoWriter(txstr, cv2.CAP_GSTREAMER, fourcc, 60, (int(width), int(height)), is_colored)
+    out_send = cv2.VideoWriter(txstr, cv2.CAP_GSTREAMER, fourcc, 60, (int(width), int(height)), True)
 
     rospy.loginfo(
         "\nTransmitting /dev/video"
@@ -302,9 +361,7 @@ def send(device=0, host="10.0.0.7", port=5000, bitrate=4000000, width=1280, heig
         + str(port)
         + " with "
         + str(float(bitrate) / 1e6)
-        + " Mbps target, "
-        + str(fps)
-        + " fps target, ("
+        + " Mbps target, ("
         + str(width)
         + ","
         + str(height)
@@ -312,7 +369,7 @@ def send(device=0, host="10.0.0.7", port=5000, bitrate=4000000, width=1280, heig
     )
 
     if not cap_send.isOpened() or not out_send.isOpened():
-        rospy.logerr("\nWARNING: unable to open video source for /dev/video" + str(device) + "\n")
+        rospy.logerr(f"WARNING: unable to open video source for /dev/video{device}")
         exit(0)
 
     # Transmit loop
@@ -329,7 +386,18 @@ def send(device=0, host="10.0.0.7", port=5000, bitrate=4000000, width=1280, heig
 
 
 def main():
+    global CAMERA_TYPE_INFO_BY_NAME
     rospy.init_node("cameras")
+
+    raw_camera_type_info_by_name = rospy.get_param("cameras/camera_type_info")
+    for name in raw_camera_type_info_by_name:
+        info = raw_camera_type_info_by_name[name]
+        quality_options = [
+            CameraTypeInfo.QualityOption(q["width"], q["height"], q["fps"], q["bps"]) for q in info["quality_options"]
+        ]
+        CAMERA_TYPE_INFO_BY_NAME[name] = CameraTypeInfo(
+            info["vendor_id"], info["vendor"], info["use_jpeg"], quality_options
+        )
 
     stream_manager = StreamManager()
     rospy.Service("change_cameras", ChangeCameras, stream_manager.handle_req)

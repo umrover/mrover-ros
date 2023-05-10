@@ -20,7 +20,7 @@ void Test::testOpenLoop(Controller* controller) {
 
 // Test function movement types, with focus on open loop
 void Test::testOpenLoopViaUART(Controller* controller) {
-    std::vector<float> openLoopSpeeds = {-1.0f, 0.0f, 1.0f, 0.0f};
+    std::vector<float> openLoopSpeeds = {-0.9f, 0.0f, 0.9f, 0.0f};
     const int timePerAction = 500;
 
     for (auto speed: openLoopSpeeds) {

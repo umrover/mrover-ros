@@ -6,13 +6,13 @@
 // EFFECTS: Opens the UART bus.
 void UART::init(std::string& device_file) {
     file = open(device_file.c_str(), O_RDWR);
-//    if (file == -1) {
-//        ROS_ERROR("Failed to open UART bus\n");
-//        throw IOFailure();
-//    }
+    if (file == -1) {
+        ROS_ERROR("Failed to open UART bus\n");
+        throw IOFailure();
+    }
 
     // termios struct is used to configure the UART port
-    struct termios tty{};
+    struct termios tty {};
     tcgetattr(file, &tty);
     cfsetospeed(&tty, B9600);
     cfsetispeed(&tty, B9600);
@@ -66,11 +66,11 @@ void UART::transact(
     memcpy(buffer + 4, writeBuf, writeNum);
     buffer[4 + writeNum] = 'E';
 
-    int bitsWritten = (int) write(file, buffer, sizeof(uart_data_bytes_sending));
+    int bytesWritten = (int) write(file, buffer, uart_data_bytes_sending);
+    tcflush(file, TCIOFLUSH);
 
-    if (bitsWritten != uart_data_bytes_sending) {
-        ROS_ERROR("Write error %d, wrote %i bits", errno, bitsWritten);
+    if (bytesWritten != uart_data_bytes_sending) {
+        ROS_ERROR("Write error %d, wrote %i bytes", errno, bytesWritten);
         throw IOFailure();
     }
-
 }
