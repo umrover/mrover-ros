@@ -159,7 +159,7 @@ std::optional<mrover::LimitSwitchData> ROSHandler::getControllerLimitSwitchData(
 void ROSHandler::moveSA(const sensor_msgs::JointState::ConstPtr& msg) {
     for (size_t i = 0; i < SANames.size(); ++i) {
         std::optional<float> pos = moveControllerOpenLoop(SANames[i], (float) msg->velocity[i]);
-        
+
         if (!use_uart_and_send_only) {
             if (pos.has_value()) {
                 jointDataSA.position[i] = pos.value();
@@ -336,8 +336,7 @@ bool ROSHandler::processMotorEnableLimitSwitches(mrover::EnableDevice::Request& 
     if (use_uart_and_send_only) {
         controller->enableLimitSwitchesViaUART(req.enable);
         res.success = true;
-    }
-    else {
+    } else {
         controller->enableLimitSwitches(req.enable);
         res.success = true;
     }

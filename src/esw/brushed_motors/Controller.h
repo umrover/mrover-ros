@@ -181,6 +181,11 @@ public:
 
     // REQUIRES: nothing
     // MODIFIES: nothing
+    // EFFECTS: UART bus, enables or disables limit switches
+    void enableLimitSwitchesViaUART(bool enable);
+
+    // REQUIRES: nothing
+    // MODIFIES: nothing
     // EFFECTS: I2C bus, gets current absolute encoder value of MCU
     float getAbsoluteEncoderValue();
 
@@ -224,6 +229,11 @@ private:
     // MODIFIES: limitEnable
     // EFFECTS: I2C bus, enables limit switch if it is present
     void enableLimitSwitch(bool enable, bool& limitEnable, uint8_t operation);
+
+    // REQUIRES: buffer is valid and limit switch is present
+    // MODIFIES: limitEnable
+    // EFFECTS: UART bus, enables limit switch if it is present
+    void enableLimitSwitchViaUART(bool enable, bool& limitEnable, uint8_t operation);
 
     uint8_t deviceAddress;
     uint8_t motorID;

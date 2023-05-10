@@ -171,6 +171,18 @@ void Controller::enableLimitSwitches(bool enable) {
     }
 }
 
+// REQUIRES: nothing
+// MODIFIES: nothing
+// EFFECTS: UART bus, enables or disables limit switches
+void Controller::enableLimitSwitchesViaUART(bool enable) {
+    if (limitAPresent) {
+        enableLimitSwitchViaUART(enable, limitAEnable, motorIDRegMask | ENABLE_LIMIT_A_OP);
+    }
+    if (limitBPresent) {
+        enableLimitSwitchViaUART(enable, limitBEnable, motorIDRegMask | ENABLE_LIMIT_B_OP);
+    }
+}
+
 // REQUIRES: buffer is valid
 // MODIFIES: limitEnable
 // EFFECTS: I2C bus, enables limit switch if it is present
@@ -193,7 +205,7 @@ void Controller::enableLimitSwitch(bool enable, bool& limitEnable, uint8_t opera
 
 // REQUIRES: buffer is valid
 // MODIFIES: limitEnable
-// EFFECTS: I2C bus, enables limit switch if it is present
+// EFFECTS: UART bus, enables limit switch if it is present
 void Controller::enableLimitSwitchViaUART(bool enable, bool& limitEnable, uint8_t operation) {
     uint8_t buffer[ENABLE_LIMIT_WB];
 
