@@ -1,13 +1,13 @@
 #pragma once
 
-#include <fcntl.h>         // for open and O_RDWR
-#include <termios.h>       // for termios
-#include <unistd.h>        // for read/write
-#include "I2C.h"           // for IOFailure
-#include <mutex>           // for std::mutex
-#include <ros/console.h>   // for ROS_ERROR
-#include <stdint.h>        // for uintundefined reference
-#include <string.h>        // for string and memcpy
+#include "I2C.h"         // for IOFailure
+#include <fcntl.h>       // for open and O_RDWR
+#include <mutex>         // for std::mutex
+#include <ros/console.h> // for ROS_ERROR
+#include <stdint.h>      // for uint8_t
+#include <string.h>      // for string and memcpy
+#include <termios.h>     // for termios
+#include <unistd.h>      // for read/write
 
 
 // Used to abstract UART and hardware related functions

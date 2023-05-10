@@ -1,14 +1,14 @@
 #pragma once
 
-#include "I2C.h"         // for I2C and IOFailure
-#include "UART.h"        // for UART
-#include <assert.h>      // for assert
-#include <cmath>         // for M_PI
-#include <limits>        // for numeric limits
-#include <mutex>         // for mutex
-#include <ros/console.h> // for ROS_ERROR
+#include "I2C.h"                    // for I2C and IOFailure
+#include "UART.h"                   // for UART
+#include <assert.h>                 // for assert
+#include <cmath>                    // for M_PI
+#include <limits>                   // for numeric limits
 #include <mrover/LimitSwitchData.h> // for LimitSwitchData
-#include <string.h>      // for string and memcpy
+#include <mutex>                    // for mutex
+#include <ros/console.h>            // for ROS_ERROR
+#include <string.h>                 // for string and memcpy
 
 #define OFF_OP 0x00
 #define OFF_WB 0
@@ -181,6 +181,11 @@ public:
 
     // REQUIRES: nothing
     // MODIFIES: nothing
+    // EFFECTS: UART bus, enables or disables limit switches
+    void enableLimitSwitchesViaUART(bool enable);
+
+    // REQUIRES: nothing
+    // MODIFIES: nothing
     // EFFECTS: I2C bus, gets current absolute encoder value of MCU
     float getAbsoluteEncoderValue();
 
@@ -224,6 +229,11 @@ private:
     // MODIFIES: limitEnable
     // EFFECTS: I2C bus, enables limit switch if it is present
     void enableLimitSwitch(bool enable, bool& limitEnable, uint8_t operation);
+
+    // REQUIRES: buffer is valid and limit switch is present
+    // MODIFIES: limitEnable
+    // EFFECTS: UART bus, enables limit switch if it is present
+    void enableLimitSwitchViaUART(bool enable, bool& limitEnable, uint8_t operation);
 
     uint8_t deviceAddress;
     uint8_t motorID;

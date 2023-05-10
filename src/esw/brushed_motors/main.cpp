@@ -3,6 +3,7 @@
 #include "I2C.h"           // for I2C
 #include "ROSHandler.h"    // for ROSHandler
 #include "Test.h"          // for mainTest
+#include "UART.h"          // for UART
 #include <ros/ros.h>       // for ros and ROS_INFO
 
 int main(int argc, char** argv) {
@@ -18,15 +19,14 @@ int main(int argc, char** argv) {
 
     ControllerMap::init(controllersRoot);
 
-    bool use_uart_and_send_only;  // as opposed to i2c
+    bool use_uart_and_send_only; // as opposed to i2c
     nh.getParam("brushed_motors/use_uart_and_send_only", use_uart_and_send_only);
 
     if (use_uart_and_send_only) {
         std::string uartDeviceFile;
         nh.getParam("brushed_motors/uart_device_file", uartDeviceFile);
         UART::init(uartDeviceFile);
-    }
-    else {
+    } else {
         std::string i2cDeviceFile;
         nh.getParam("brushed_motors/i2c_device_file", i2cDeviceFile);
         I2C::init(i2cDeviceFile);
@@ -38,8 +38,7 @@ int main(int argc, char** argv) {
                 ROS_INFO("Conducting tests on %s \n", name.c_str());
                 Test::testOpenLoopViaUART(controller);
             }
-        }
-        else {
+        } else {
             for (auto& [name, controller]: ControllerMap::controllersByName) {
                 ROS_INFO("Conducting tests on %s \n", name.c_str());
                 Test::testOpenLoop(controller);
