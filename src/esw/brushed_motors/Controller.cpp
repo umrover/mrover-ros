@@ -404,7 +404,7 @@ void Controller::makeLive() {
 }
 
 // REQUIRES: nothing
-// MODIFIES: isLive
+// MODIFIES: liveMap
 // EFFECTS: UART bus, if not already live,
 // configures the physical controller.
 // Then makes live.

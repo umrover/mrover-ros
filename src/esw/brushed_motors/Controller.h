@@ -232,7 +232,7 @@ private:
     void makeLive();
 
     // REQUIRES: nothing
-    // MODIFIES: isLive
+    // MODIFIES: liveMap
     // EFFECTS: UART bus, If not already live,
     // configures the physical controller.
     // Then makes live.
