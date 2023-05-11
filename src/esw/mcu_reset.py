@@ -14,7 +14,7 @@ MOSFET_GATE_PIN = 32  # the pin used as the gate driver is GPIO 4
 reset_mcu_autonomously = True
 time_since_last_reset_mcu = t.time()
 mcu_is_active = True
-MCU_RESET_PERIOD_S = rospy.get_param("science/mcu_reset_period_s")
+MCU_RESET_PERIOD_S = rospy.get_param("science/info/mcu_reset_period_s")
 
 
 def reset_board() -> None:
