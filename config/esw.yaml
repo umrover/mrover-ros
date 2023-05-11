@@ -336,6 +336,7 @@ science:
     - pushed: 0
       start: 50
   info:
+    mcu_active_timeout_s: 10
     num_diag_current: 3
     num_diag_thermistors: 3
     num_science_thermistors: 3
