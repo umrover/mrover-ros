@@ -13,6 +13,7 @@ from mrover.srv import (
 
 MOSFET_GATE_PIN = 32  # the pin used as the gate driver is GPIO 4
 
+
 def reset_mcu(req: EnableDeviceRequest) -> EnableDeviceResponse:
     if req.enable:
         GPIO.output(MOSFET_GATE_PIN, GPIO.LOW)
