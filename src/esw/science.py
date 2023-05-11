@@ -149,6 +149,12 @@ class ScienceBridge:
         success = self._send_msg(msg)
         return success
 
+    def publish_mcu_active(self, event=None) -> bool:
+        """Publish whether or not mcu is active"""
+        ros_msg = Bool(bool(t.time() - self._time_since_last_received_msg < self._mcu_active_timeout_s))
+        self._active_publisher.publish(ros_msg)
+        return True
+
     def handle_enable_mosfet_device(self, req: EnableDeviceRequest) -> EnableDeviceResponse:
         """Process a request to change the state of a MOSFET device by issuing
         the command to the STM32 chip via UART.
@@ -320,9 +326,6 @@ class ScienceBridge:
             rospy.sleep(self._sleep_amt_s)
             return
 
-        ros_msg = Bool(bool(t.time() - self._time_since_last_received_msg < self._mcu_active_timeout_s))
-        self._active_publisher.publish(ros_msg)
-
         arr = rx_msg.split(",")
 
         tag = arr[0][3:]
@@ -461,6 +464,7 @@ def main():
     )
     rospy.Service("change_servo_angle", ChangeServoAngle, bridge.handle_change_servo_angle)
     rospy.Timer(rospy.Duration(400.0 / 1000.0), bridge.feed_uart_watchdog)
+    rospy.Timer(rospy.Duration(1.0), bridge.publish_mcu_active)
 
     while not rospy.is_shutdown():
         # receive() sleeps when no message is received.
