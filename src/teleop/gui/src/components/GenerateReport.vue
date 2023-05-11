@@ -46,7 +46,7 @@ export default {
 
 <style scoped>
 button {
-  width: 17vh;
-  height: 7vh;
+  width: auto;
+  height: 30px;
 }
 </style>

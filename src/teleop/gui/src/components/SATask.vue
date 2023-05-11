@@ -210,17 +210,15 @@ export default {
 <style scoped>
 .wrapper {
   display: grid;
-  overflow: hidden;
   grid-gap: 10px;
-  grid-template-columns: 23vw 20vw auto auto auto;
-  grid-template-rows: 60px 70vh auto auto auto 300px;
+  grid-template-columns: auto auto auto;
+  grid-template-rows: 60px 50vh auto auto auto;
   grid-template-areas:
-    "header header header header"
-    "map map waypoints waypoints"
-    "cameras cameras cameras cameras"
-    "arm limit moteus jointState"
-    "pdb calibration moteus jointState"
-    "odom odom odom odom";
+    "header header header"
+    "map map waypoints"
+    "odom cameras cameras"
+    "arm limit calibration"
+    "pdb moteus jointState";
   font-family: sans-serif;
   height: auto;
 }

@@ -148,19 +148,17 @@ export default {
 .wrapper {
   display: grid;
   grid-gap: 10px;
-  grid-template-columns: 85vh auto auto;
+  grid-template-columns: auto auto;
   grid-template-rows: 60px auto auto auto auto auto auto auto auto auto;
   grid-template-areas:
-    "header header header"
-    "cameras cameras siteSelect"
-    "cameras cameras raman"
-    "cameras cameras sudan"
-    "carousel chlorophyll chlorophyll"
-    "carousel chlorophyll chlorophyll"
-    "cache chlorophyll chlorophyll"
-    "cache chlorophyll chlorophyll"
-    "cache amino amino"
-    "cache amino amino";
+    "header header"
+    "cameras siteSelect"
+    "cameras raman"
+    "cameras sudan"
+    "cameras chlorophyll"
+    "carousel chlorophyll"
+    "carousel amino"
+    "cache amino";
   font-family: sans-serif;
   height: auto;
 }

@@ -101,6 +101,5 @@ export default {
 
 .limit-switch {
   margin-top: 10px;
-  margin-left: -36px;
 }
 </style>
