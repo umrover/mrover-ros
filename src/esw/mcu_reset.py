@@ -3,6 +3,8 @@
 import RPi.GPIO as GPIO
 import time as t
 
+from std_msgs.msg import Bool
+
 import rospy
 
 from mrover.srv import (
@@ -56,6 +58,11 @@ def check_mcu_disconnected(self, event=None) -> bool:
     return True
 
 
+def update_science_mcu_active(self, status: Bool) -> None:
+    global mcu_is_active
+    mcu_is_active = status.data
+
+
 def main():
     GPIO.setmode(GPIO.BCM)
     GPIO.setup(MOSFET_GATE_PIN, GPIO.OUT, initial=GPIO.HIGH)
@@ -64,6 +71,7 @@ def main():
     rospy.Service("mcu_board_reset", EnableDevice, handle_mcu_board_reset)
     rospy.Service("reset_mcu_autonomously", EnableDevice, handle_reset_mcu_autonomously)
     rospy.Timer(rospy.Duration(1.0), check_mcu_disconnected)
+    rospy.Subscriber("science_mcu_active", Bool, update_science_mcu_active)
     rospy.spin()
 
 
