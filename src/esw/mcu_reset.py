@@ -11,11 +11,7 @@ from mrover.srv import (
     EnableDeviceResponse,
 )
 
-MOSFET_GATE_PIN = 4  # the pin used as the gate driver is GPIO 4
-
-GPIO.setmode(GPIO.BCM)
-GPIO.setup(MOSFET_GATE_PIN, GPIO.OUT, initial=GPIO.HIGH)  # TODO: make sure the initial value is correct
-
+MOSFET_GATE_PIN = 32  # the pin used as the gate driver is GPIO 4
 
 def reset_mcu(req: EnableDeviceRequest) -> EnableDeviceResponse:
     if req.enable:
@@ -27,6 +23,9 @@ def reset_mcu(req: EnableDeviceRequest) -> EnableDeviceResponse:
 
 
 def main():
+    GPIO.setmode(GPIO.BCM)
+    GPIO.setup(MOSFET_GATE_PIN, GPIO.OUT, initial=GPIO.HIGH)
+
     rospy.init_node("mcu_reset")
     rospy.Service("mcu_board_reset", EnableDevice, reset_mcu)
 
