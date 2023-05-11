@@ -18,9 +18,11 @@ MCU_RESET_PERIOD_S = rospy.get_param("science/info/mcu_reset_period_s")
 
 
 def reset_board() -> None:
+    rospy.logerr("Resetting the entire MCU Board.")
     GPIO.output(MOSFET_GATE_PIN, GPIO.LOW)
     t.sleep(0.5)
     GPIO.output(MOSFET_GATE_PIN, GPIO.HIGH)
+    rospy.logerr("Finished resetting the entire MCU Board.")
 
 
 def handle_mcu_board_reset(req: EnableDeviceRequest) -> EnableDeviceResponse:
