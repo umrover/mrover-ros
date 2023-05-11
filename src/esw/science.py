@@ -96,7 +96,7 @@ class ScienceBridge:
         self._active_publisher = rospy.Publisher("science_mcu_active", Bool, queue_size=1)
 
         self._id_by_color = rospy.get_param("science/auton_color_ids")
-        self._mcu_active_timeout_s = rospy.get_param("science/mcu_active_timeout_s")
+        self._mcu_active_timeout_s = rospy.get_param("science/info/mcu_active_timeout_s")
         self._mosfet_number_by_device_name = rospy.get_param("science/device_mosfet_numbers")
         self._allowed_mosfet_names = ["arm_laser", "uv_led_carousel", "uv_led_end_effector", "white_led", "raman_laser"]
 
