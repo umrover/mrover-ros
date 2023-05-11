@@ -2,10 +2,11 @@
   <div>
     <h3>Carousel Data</h3>
     <div class="box1">
-      <Checkbox
-        ref="open-loop"
-        :name="'Open Loop'"
-        @toggle="openLoop = !openLoop"
+      <ToggleButton
+        :current-state="openLoop"
+        label-enable-text="Open Loop"
+        label-disable-text="Close Loop"
+        @change="openLoop = !openLoop"
       />
       <div class="controls">
         <div v-if="!openLoop">
@@ -40,7 +41,7 @@
 
 <script>
 import ROSLIB from "roslib";
-import Checkbox from "./Checkbox.vue";
+import ToggleButton from "./ToggleButton.vue";
 import OpenLoopControl from "./OpenLoopControl.vue";
 import CalibrationCheckbox from "./CalibrationCheckbox.vue";
 import MotorAdjust from "./MotorAdjust.vue";
@@ -61,7 +62,7 @@ export default {
   },
   data() {
     return {
-      openLoop: false,
+      openLoop: true,
       velocity: 0,
       site: "A",
 
