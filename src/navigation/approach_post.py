@@ -1,7 +1,6 @@
 import tf2_ros
 import rospy
 from context import Context
-from drive import get_drive_command
 from aenum import Enum, NoAlias
 from geometry_msgs.msg import Twist
 from waypoint import WaypointState
@@ -14,6 +13,7 @@ class ApproachPostStateTransitions(Enum):
     finished_fiducial = "WaypointState"
     continue_fiducial_id = "ApproachPostState"
     no_fiducial = "SearchState"
+    recovery_state = "RecoveryState"
 
 
 class ApproachPostState(WaypointState):
@@ -34,15 +34,18 @@ class ApproachPostState(WaypointState):
         fid_pos = self.context.env.current_fid_pos()
         if fid_pos is None:
             # We have arrived at the waypoint where the fiducial should be but we have not seen it yet
-            # TODO: add more advanced logic than just driving forward
             cmd_vel = Twist()
             cmd_vel.linear.x = 0.0
             self.context.rover.send_drive_command(cmd_vel)
             return ApproachPostStateTransitions.no_fiducial.name  # type: ignore
 
         try:
-            cmd_vel, arrived = get_drive_command(
-                fid_pos, self.context.rover.get_pose(in_odom_frame=True), self.STOP_THRESH, self.DRIVE_FWD_THRESH
+            cmd_vel, arrived = self.context.rover.driver.get_drive_command(
+                fid_pos,
+                self.context.rover.get_pose(in_odom_frame=True),
+                self.STOP_THRESH,
+                self.DRIVE_FWD_THRESH,
+                in_odom=self.context.use_odom,
             )
             if arrived:
                 self.context.course.increment_waypoint()

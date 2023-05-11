@@ -10,6 +10,14 @@
       />
       <h1>Menu</h1>
       <div class="spacer"></div>
+      <div class="mode-toggle">
+        <ToggleButton
+          :label-enable-text="'Competition Mode On'"
+          :label-disable-text="'Competition Mode Off'"
+          :current-state="competitionMode"
+          @change="toggleCompetitionMode()"
+        ></ToggleButton>
+      </div>
     </div>
 
     <div class="pages">
@@ -29,12 +37,48 @@
 
 <script>
 import MenuButton from "./MenuButton.vue";
+import ToggleButton from "./ToggleButton.vue";
+import Vue from "vue";
+import ROSLIB from "roslib";
+import { disableAutonLED } from "../utils.js";
 
 export default {
-  name: "Menu",
-
+  name: "MainMenu",
   components: {
     MenuButton,
+    ToggleButton,
+  },
+
+  data() {
+    return {
+      competitionMode: true,
+    };
+  },
+
+  watch: {
+    competitionMode: function (val) {
+      if (val) {
+        Vue.prototype.$ros = new ROSLIB.Ros({
+          url: "ws://10.0.0.7:9090",
+        });
+      } else {
+        Vue.prototype.$ros = new ROSLIB.Ros({
+          url: "ws://localhost:9090",
+        });
+      }
+    },
+  },
+
+  created: function () {
+    disableAutonLED(this.$ros);
+    this.competitionMode = Vue.prototype.$competitionMode;
+  },
+
+  methods: {
+    toggleCompetitionMode() {
+      this.competitionMode = !this.competitionMode;
+      Vue.prototype.$competitionMode = this.competitionMode;
+    },
   },
 };
 </script>
@@ -84,5 +128,9 @@ img {
   grid-template-areas: "header" "pages";
   font-family: sans-serif;
   height: auto;
+}
+
+.mode-toggle {
+  margin-left: auto;
 }
 </style>

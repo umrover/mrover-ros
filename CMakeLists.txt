@@ -1,15 +1,15 @@
 cmake_minimum_required(VERSION 3.16)
-project(mrover)
+project(mrover VERSION 1.0.0 LANGUAGES CXX)
 
 ## Compile as C++17, supported in ROS Kinetic and newer, enable some static analysis
-set(MROVER_CPP_COMPILE_OPTIONS -std=c++17 -Wall -Wextra -Werror -pedantic)
+set(CMAKE_CXX_STANDARD 17)
+set(CMAKE_CXX_STANDARD_REQUIRED ON)
+set(MROVER_CPP_COMPILE_OPTIONS -Wall -Wextra -Werror -pedantic)
 
-# clang-tidy
-if (CMAKE_BUILD_TYPE EQUAL "RELEASE")
-    set(CMAKE_CXX_CLANG_TIDY clang-tidy-12)
-endif ()
+# Generate compile_commands.json for clangd
+set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
-# find_package
+# ROS packages list
 set(MROVER_PACKAGES
         rospy
         roscpp
@@ -20,10 +20,7 @@ set(MROVER_PACKAGES
         sensor_msgs
         )
 
-# link_directories
-set(MROVER_LINK_DIRS "")
-
-# message files
+# Message files
 set(MROVER_MESSAGE_FILES
         Calibrated.msg
         CalibrationStatus.msg
@@ -37,6 +34,7 @@ set(MROVER_MESSAGE_FILES
         GPSPointList.msg
         HeaterData.msg
         ImuAndMag.msg
+        LimitSwitchData.msg
         MastGimbal.msg
         JointLock.msg
         MoteusState.msg
@@ -50,13 +48,14 @@ set(MROVER_MESSAGE_FILES
         GPSPointList.msg
         )
 
-# service files
+# Service files
 set(MROVER_SERVICE_FILES
         AdjustMotors.srv
         CalibrateMotors.srv
+        ChangeArmMode.srv
         ChangeAutonLEDState.srv
         ChangeCameras.srv
-        ChangeDeviceState.srv
+        ChangeHeaterAutoShutoffState.srv
         ChangeHeaterState.srv
         ChangeServoAngle.srv
         EnableDevice.srv
@@ -68,35 +67,62 @@ set(MROVER_SERVICE_FILES
         ResetCameras.srv
         )
 
-# generate messages list
+# Generate messages list
 set(MROVER_ROS_MESSAGES
         sensor_msgs
         std_msgs
         sensor_msgs
         )
 
-# dynamic reconfigure
+# Dynamic reconfigure parameter file list
 set(MROVER_PARAMETERS
         config/DetectorParams.cfg
         )
 
-# catkin_package
+# catkin packages list
 set(MROVER_CATKIN_PACKAGES
         roscpp rospy std_msgs message_runtime
         )
 
-macro(add_cpp_node_macro name sources)
-    file(GLOB_RECURSE CPP_NODE_SOURCES ${sources})
-    add_executable(${name} ${CPP_NODE_SOURCES})
-    add_dependencies(${name} ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
-    target_link_libraries(${name} ${catkin_LIBRARIES})
-    target_compile_options(${name} PRIVATE ${MROVER_CPP_COMPILE_OPTIONS})
+macro(rosify_cpp_target_macro target)
+    target_link_libraries(${target} PRIVATE ${catkin_LIBRARIES})
+    target_include_directories(${target} SYSTEM PRIVATE ${catkin_INCLUDE_DIRS} "src/util")
+    add_dependencies(${target} ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
 
-    install(TARGETS ${name}
+    target_compile_options(${target} PRIVATE $<$<COMPILE_LANGUAGE:CXX>:${MROVER_CPP_COMPILE_OPTIONS}>)
+
+    install(TARGETS ${target}
             ARCHIVE DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
             LIBRARY DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
             RUNTIME DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
             )
+endmacro()
+
+macro(add_cpp_library_macro name sources includes)
+    file(GLOB_RECURSE CPP_LIB_SOURCES ${sources})
+    add_library(${name} ${CPP_LIB_SOURCES})
+    target_include_directories(${name} PUBLIC ${includes})
+    rosify_cpp_target_macro(${name})
+endmacro()
+
+macro(add_cpp_node_macro name sources)
+    file(GLOB_RECURSE CPP_NODE_SOURCES ${sources})
+    add_executable(${name} ${CPP_NODE_SOURCES})
+    rosify_cpp_target_macro(${name})
+endmacro()
+
+macro(add_cpp_nodelet_macro name sources includes)
+    # A nodelet runs inside another process so it is a library
+    add_cpp_library_macro(${name} ${sources} ${includes})
+endmacro()
+
+macro(add_gazebo_plugin_macro name sources includes)
+    add_cpp_library_macro(${name} ${sources} ${includes})
+
+    # TODO: find a proper variable name that points to /opt/ros/noetic/lib
+    target_link_directories(${name} PRIVATE ${GAZEBO_LIBRARY_DIRS} /opt/ros/noetic/lib)
+    target_link_libraries(${name} PRIVATE ${GAZEBO_LIBRARIES} ${Boost_LIBRARIES})
+    target_include_directories(${name} SYSTEM PRIVATE ${GAZEBO_INCLUDE_DIRS} ${Boost_INCLUDE_DIRS})
 endmacro()
 
 # launch install macro
@@ -155,7 +181,7 @@ if (${DEVICE} MATCHES "raspi4")
     # define an add and link macro
     # Put items here to build
     macro(add_and_link_macro)
-        add_cpp_node_macro(brushed_motors "src/esw/brushed_motors/*.cpp")
+        add_cpp_node_macro(brushed_motors "src/esw/brushed_motors/*")
     endmacro()
 else ()
     # -=-=-=-=-
@@ -196,11 +222,6 @@ else ()
             moveit_simple_controller_manager
             )
 
-    # append link directories
-    list(APPEND MROVER_LINK_DIRS
-            ${GAZEBO_LIBRARY_DIRS}
-            )
-
     # append subdirectories
     list(APPEND CMAKE_SUBDIRS
             starter_project/teleop
@@ -212,60 +233,50 @@ else ()
 
     # These packages need to be found individually
     macro(add_packages_macro)
-        find_package(OpenCV REQUIRED)
+        find_package(OpenCV REQUIRED COMPONENTS core aruco)
         find_package(gazebo REQUIRED)
-        find_package(PCL REQUIRED)
         find_package(Eigen3 REQUIRED)
-    endmacro()
-
-    macro(include_directories_macro)
-        include_directories(
-                ${catkin_INCLUDE_DIRS}
-                ${GAZEBO_INCLUDE_DIRS}
-                ${OpenCV_INCLUDE_DIRS}
-        )
+        find_package(ZED 2)
+        if (ZED_FOUND)
+            set(CMAKE_CUDA_SEPARABLE_COMPILATION ON)
+            set(CMAKE_CUDA_STANDARD 17)
+            set(CMAKE_CUDA_STANDARD_REQUIRED ON)
+            # Jetson Xavier NX is Volta 7.2 architecture
+            # Perception Laptop (A4000, Quadro version of RTX 3080) is Ampere 8.6 architecture
+            set(CMAKE_CUDA_ARCHITECTURES 72 86)
+            enable_language(CUDA)
+        endif ()
     endmacro()
 
     # define an add and link macro
     # Put items here to build
     macro(add_and_link_macro)
-        add_cpp_node_macro(tag_detector "src/perception/*.cpp")
-        target_link_libraries(tag_detector ${OpenCV_LIBS} ${PCL_LIBRARIES})
+        add_cpp_nodelet_macro(tag_detector_nodelet "src/perception/tag_detector/*.cpp" "src/perception/tag_detector")
+        target_link_libraries(tag_detector_nodelet PRIVATE ${OpenCV_LIBRARIES} lie)
 
-        add_cpp_node_macro(brushed_motors "src/esw/brushed_motors/*.cpp")
+        add_cpp_node_macro(brushed_motors "src/esw/brushed_motors/*")
 
-        add_library(differential_drive_plugin_6w src/gazebo/differential_drive_6w.cpp)
-        add_dependencies(differential_drive_plugin_6w ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
-        target_link_libraries(differential_drive_plugin_6w ${Boost_LIBRARIES} ${GAZEBO_LIBRARIES} ${catkin_LIBRARIES})
-        target_compile_options(differential_drive_plugin_6w PRIVATE ${MROVER_CPP_COMPILE_OPTIONS})
+        add_cpp_library_macro(lie "src/util/lie/*.cpp" "src/util/lie")
 
-        add_library(kinect_plugin src/gazebo/gazebo_ros_openni_kinect.cpp)
-        add_dependencies(kinect_plugin ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
-        target_link_libraries(kinect_plugin ${Boost_LIBRARIES} ${GAZEBO_LIBRARIES} gazebo_ros_camera_utils DepthCameraPlugin ${catkin_LIBRARIES} Eigen3::Eigen)
+        add_gazebo_plugin_macro(differential_drive_plugin_6w "src/gazebo/differential_drive_6w.cpp" "src")
+
+        add_gazebo_plugin_macro(kinect_plugin "src/gazebo/gazebo_ros_openni_kinect.cpp" "src/gazebo")
+        target_link_libraries(kinect_plugin PRIVATE gazebo_ros_camera_utils DepthCameraPlugin Eigen3::Eigen)
         set_target_properties(kinect_plugin PROPERTIES CXX_CLANG_TIDY "")
+
+        if (ZED_FOUND)
+            #            add_cpp_node_macro(zed_node "src/perception/zed_wrapper/*.c*")
+            #            target_link_options(zed_node PRIVATE "LINKER:--copy-dt-needed-entries")
+            #            target_include_directories(zed_node SYSTEM PRIVATE ${ZED_INCLUDE_DIRS} ${CUDA_INCLUDE_DIRS})
+            #            target_link_libraries(zed_node PRIVATE ${ZED_LIBRARIES} ${OpenCV_LIBRARIES} ${SPECIAL_OS_LIBS} lie tag_detector_nodelet)
+
+            add_cpp_nodelet_macro(zed_nodelet "src/perception/zed_wrapper/*.c*" , "src/perception/zed_wrapper")
+            target_include_directories(zed_nodelet SYSTEM PRIVATE ${ZED_INCLUDE_DIRS} ${CUDA_INCLUDE_DIRS})
+            target_link_libraries(zed_nodelet PRIVATE ${ZED_LIBRARIES} ${OpenCV_LIBRARIES} ${SPECIAL_OS_LIBS} lie)
+            target_compile_definitions(zed_nodelet PRIVATE MROVER_IS_NODELET)
+            target_compile_options(zed_nodelet PRIVATE $<$<COMPILE_LANGUAGE:CUDA>:--expt-extended-lambda>)
+        endif ()
     endmacro()
-
-    macro(additional_install_macro)
-        install(TARGETS differential_drive_plugin_6w
-                ARCHIVE DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
-                LIBRARY DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
-                RUNTIME DESTINATION ${CATKIN_GLOBAL_BIN_DESTINATION}
-                )
-
-        install(TARGETS kinect_plugin
-                ARCHIVE DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
-                LIBRARY DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
-                RUNTIME DESTINATION ${CATKIN_GLOBAL_BIN_DESTINATION}
-                )
-    endmacro()
-
-    # Set policy
-    if (POLICY CMP0054)
-        cmake_policy(SET CMP0054 NEW)
-    endif ()
-
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${GAZEBO_CXX_FLAGS}")
-
 endif ()
 
 
@@ -321,17 +332,6 @@ catkin_package(
         ${MROVER_CATKIN_PACKAGES}
 )
 
-
-# 8. Libraries/Executables to build (add_executable)
-# These only exist after find_packages
-link_directories(
-        ${GAZEBO_LIBRARY_DIRS}
-        /opt/ros/noetic/lib/
-)
-
-if (COMMAND include_directories_macro)
-    include_directories_macro()
-endif ()
 
 if (COMMAND add_and_link_macro)
     add_and_link_macro()

@@ -5,7 +5,6 @@ import rospy
 
 import tf2_ros
 from context import Context, Environment
-from drive import get_drive_command
 from aenum import Enum, NoAlias
 from state import BaseState
 from util.ros_utils import get_rosparam
@@ -19,6 +18,7 @@ class WaypointStateTransitions(Enum):
     no_waypoint = "DoneState"
     find_approach_post = "ApproachPostState"
     go_to_gate = "GateTraverseState"
+    recovery_state = "RecoveryState"
     partial_gate = "PartialGateState"
 
 
@@ -72,7 +72,7 @@ class WaypointState(BaseState):
         # Attempt to find the waypoint in the TF tree and drive to it
         try:
             waypoint_pos = self.context.course.current_waypoint_pose().position
-            cmd_vel, arrived = get_drive_command(
+            cmd_vel, arrived = self.context.rover.driver.get_drive_command(
                 waypoint_pos,
                 self.context.rover.get_pose(),
                 self.STOP_THRESH,
@@ -85,6 +85,12 @@ class WaypointState(BaseState):
                 else:
                     # We finished a waypoint associated with a fiducial id, but we have not seen it yet.
                     return WaypointStateTransitions.search_at_waypoint.name  # type: ignore
+
+            if self.context.rover.stuck:
+                # Removed .name
+                self.context.rover.previous_state = WaypointStateTransitions.continue_waypoint_traverse.name  # type: ignore
+                return WaypointStateTransitions.recovery_state.name  # type: ignore
+
             self.context.rover.send_drive_command(cmd_vel)
 
         except (

@@ -85,7 +85,7 @@ import MoteusStateTable from "./MoteusStateTable.vue";
 import OdometryReading from "./OdometryReading.vue";
 import PDBFuse from "./PDBFuse.vue";
 import CommReadout from "./CommReadout.vue";
-import { quaternionToDisplayAngle } from "../utils.js";
+import { quaternionToMapAngle, disableAutonLED } from "../utils.js";
 
 export default {
   components: {
@@ -134,6 +134,7 @@ export default {
   },
 
   created: function () {
+    disableAutonLED(this.$ros);
     this.odom_sub = new ROSLIB.Topic({
       ros: this.$ros,
       name: "/gps/fix",
@@ -150,7 +151,7 @@ export default {
 
     // Subscriber for odom to base_link transform
     this.tfClient.subscribe("base_link", (tf) => {
-      this.odom.bearing_deg = quaternionToDisplayAngle(tf.rotation);
+      this.odom.bearing_deg = quaternionToMapAngle(tf.rotation);
     });
 
     this.odom_sub.subscribe((msg) => {
@@ -178,13 +179,13 @@ export default {
   display: grid;
   grid-gap: 10px;
   grid-template-columns: auto auto;
-  grid-template-rows: 60px 250px auto auto auto auto;
+  grid-template-rows: 60px 200px 300px auto auto auto;
   grid-template-areas:
     "header header"
     "map waypoint-editor"
     "map odom"
-    "map arm-controls"
-    "cameras drive-vel-data"
+    "map cameras"
+    "arm-controls drive-vel-data"
     "moteus pdb";
   font-family: sans-serif;
   height: auto;
@@ -194,13 +195,12 @@ export default {
   display: grid;
   grid-gap: 10px;
   grid-template-columns: auto auto;
-  grid-template-rows: 60px 250px auto auto auto;
+  grid-template-rows: 60px auto auto auto;
   grid-template-areas:
     "header header"
-    "cameras moteus"
-    "cameras moteus"
-    "drive-vel-data pdb"
-    "arm-controls arm-controls";
+    "cameras arm-controls"
+    "drive-vel-data moteus"
+    "pdb pdb"; 
   font-family: sans-serif;
   height: auto;
 }

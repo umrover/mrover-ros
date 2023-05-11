@@ -25,12 +25,13 @@
       >
         Delete
       </button>
-      <button
+      <!-- TODO: Fix Find Button -->
+      <!-- <button
         :class="[index === highlightedWaypoint ? 'green' : 'red']"
         @click="$emit('find', { list: list, index: index })"
       >
         Find
-      </button>
+      </button> -->
     </div>
     <div class="location">
       <div>
@@ -70,8 +71,11 @@ export default {
   },
 
   computed: {
-    ...mapGetters("autonomy", {
+    ...mapGetters("map", {
       odom_format: "odomFormat",
+    }),
+
+    ...mapGetters("autonomy", {
       highlightedWaypoint: "highlightedWaypoint",
     }),
 
