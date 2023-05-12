@@ -71,7 +71,7 @@ class ScienceBridge:
     :param _uart_lock: A lock used to prevent clashing over the UART transmit
         line.
     :param _last_mcu_active: The last note for whether the mcu was active or not.
-    :param _auton_led_color: The last received color from the mcu.
+    :param _auton_led_color: The last received auton led color requested.
     """
 
     NUM_SPECTRAL_CHANNELS = 6
@@ -156,13 +156,18 @@ class ScienceBridge:
         return success
 
     def publish_mcu_active(self, event=None) -> bool:
-        """Publish whether or not mcu is active"""
+        """Publish whether the mcu is active or not"""
         mcu_active = bool(t.time() - self._time_since_last_received_msg < self._mcu_active_timeout_s)
-        if mcu_active and not self._last_mcu_active:
-            self._send_auton_led_uart_message()
         self._last_mcu_active = mcu_active
         ros_msg = Bool(mcu_active)
         self._active_publisher.publish(ros_msg)
+        return True
+
+    def send_auton_led_cmd_to_mcu(self, event=None) -> bool:
+        """Send the current auton led color to the MCU.
+        This is called repeatedly in case the MCU missed a message or reset.
+        """
+        self._send_auton_led_uart_message()
         return True
 
     def handle_enable_mosfet_device(self, req: EnableDeviceRequest) -> EnableDeviceResponse:
@@ -483,6 +488,7 @@ def main():
     rospy.Service("change_servo_angle", ChangeServoAngle, bridge.handle_change_servo_angle)
     rospy.Timer(rospy.Duration(400.0 / 1000.0), bridge.feed_uart_watchdog)
     rospy.Timer(rospy.Duration(1.0), bridge.publish_mcu_active)
+    rospy.Timer(rospy.Duration(1.0), bridge.send_auton_led_cmd_to_mcu)
 
     while not rospy.is_shutdown():
         # receive() sleeps when no message is received.
