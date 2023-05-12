@@ -49,6 +49,7 @@
         @toggle="updateSlowMode($event)"
       />
       <ToggleButton
+        id="arm_laser"
         :current-state="laser_enabled"
         label-enable-text="Arm Laser On"
         label-disable-text="Arm Laser Off"

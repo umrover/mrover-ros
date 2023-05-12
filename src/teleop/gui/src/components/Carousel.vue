@@ -3,6 +3,7 @@
     <h3>Carousel Data</h3>
     <div class="box1">
       <ToggleButton
+        id="carousel_open_loop"
         :current-state="openLoop"
         label-enable-text="Open Loop"
         label-disable-text="Close Loop"

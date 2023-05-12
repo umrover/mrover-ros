@@ -2,6 +2,7 @@
   <div>
     <h3>Raman</h3>
     <ToggleButton
+      id="raman_laser"
       :current-state="ramanLaserState"
       label-enable-text="Raman Laser On"
       label-disable-text="Raman Laser Off"
