@@ -203,9 +203,7 @@ class ScienceBridge:
         success = self._send_auton_led_uart_message()
         return ChangeAutonLEDStateResponse(success)
 
-    def handle_change_heater_auto_shutoff_state(
-        self, req: SetBoolRequest
-    ) -> SetBoolResponse:
+    def handle_change_heater_auto_shutoff_state(self, req: SetBoolRequest) -> SetBoolResponse:
         """Process a request to change the auto shut off state of the
         carousel heaters by issuing the command to the STM32 chip via UART.
         :param req: A SetBoolRequest object that has
@@ -474,9 +472,7 @@ def main():
     rospy.Service("enable_mosfet_device", EnableDevice, bridge.handle_enable_mosfet_device)
     rospy.Service("change_auton_led_state", ChangeAutonLEDState, bridge.handle_change_auton_led_state)
     rospy.Service("change_heater_state", ChangeHeaterState, bridge.handle_change_heater_state)
-    rospy.Service(
-        "change_heater_auto_shutoff_state", SetBool, bridge.handle_change_heater_auto_shutoff_state
-    )
+    rospy.Service("change_heater_auto_shutoff_state", SetBool, bridge.handle_change_heater_auto_shutoff_state)
     rospy.Service("change_servo_angle", ChangeServoAngle, bridge.handle_change_servo_angle)
     rospy.Timer(rospy.Duration(400.0 / 1000.0), bridge.feed_uart_watchdog)
     rospy.Timer(rospy.Duration(1.0), bridge.publish_mcu_active)
