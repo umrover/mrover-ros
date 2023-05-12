@@ -44,8 +44,8 @@
     <div class="box light-bg raman">
       <Raman />
     </div>
-    <div class="box light-bg sudan">
-      <Sudan :site="site" :site-index="siteIndex" />
+    <div class="box light-bg emulsion">
+      <Emulsion :site="site" :site-index="siteIndex" />
     </div>
     <div class="box light-bg cameras">
       <Cameras :primary="primary" />
@@ -69,7 +69,7 @@
 import ROSLIB from "roslib";
 import SelectSite from "./SelectSite.vue";
 import Raman from "./Raman.vue";
-import Sudan from "./EmulsionTest.vue";
+import Emulsion from "./EmulsionTest.vue";
 import Carousel from "./Carousel.vue";
 import Cache from "./Cache.vue";
 import Chlorophyll from "./Chlorophyll.vue";
@@ -82,7 +82,7 @@ export default {
   components: {
     SelectSite,
     Raman,
-    Sudan,
+    Emulsion,
     Carousel,
     Cache,
     Chlorophyll,
@@ -154,7 +154,7 @@ export default {
     "header header"
     "cameras siteSelect"
     "cameras raman"
-    "cameras sudan"
+    "cameras emulsion"
     "cameras chlorophyll"
     "carousel chlorophyll"
     "carousel amino"
@@ -245,8 +245,8 @@ img {
   grid-area: raman;
 }
 
-.sudan {
-  grid-area: sudan;
+.emulsion {
+  grid-area: emulsion;
 }
 
 .carousel {

@@ -6,7 +6,7 @@
         :current-state="openLoop"
         label-enable-text="Open Loop"
         label-disable-text="Close Loop"
-        @change="openLoop = !openLoop"
+        @change="toggleOpenLoop"
       />
       <div class="controls">
         <div v-if="!openLoop">
@@ -31,8 +31,9 @@
           <OpenLoopControl
             :forwards-key="88"
             :backwards-key="90"
+            :scale-default="50"
             @velocity="velocity = $event"
-          ></OpenLoopControl>
+          />
         </div>
       </div>
     </div>
@@ -54,11 +55,11 @@ let interval;
 
 export default {
   components: {
-    Checkbox,
     OpenLoopControl,
     CalibrationCheckbox,
     MotorAdjust,
     LimitSwitch,
+    ToggleButton,
   },
   data() {
     return {
@@ -99,6 +100,12 @@ export default {
     interval = window.setInterval(() => {
       this.carousel_pub.publish(this.messageObject);
     }, updateRate * 1000);
+  },
+
+  methods: {
+    toggleOpenLoop: function () {
+      this.openLoop = !this.openLoop;
+    }
   },
 };
 </script>

@@ -5,7 +5,7 @@
       :current-state="ramanLaserState"
       label-enable-text="Raman Laser On"
       label-disable-text="Raman Laser Off"
-      @change="toggleRamanLaser()"
+      @change="toggleRamanLaser"
     />
   </div>
 </template>

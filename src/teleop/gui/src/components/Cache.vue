@@ -1,11 +1,10 @@
 <template>
   <div>
     <h3>Cache Controls</h3>
-    <!-- Left and right arrows keys -->
-    <p>Control with left and right arrows keys</p>
+    <p>Close cache with 'n' and open with 'm'.</p>
     <OpenLoopControl
-      :forwards-key="39"
-      :backwards-key="37"
+      :forwards-key="77"
+      :backwards-key="78"
       @velocity="velocity = $event"
     ></OpenLoopControl>
     <div class="limit-switch">
