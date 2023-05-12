@@ -319,8 +319,7 @@ uint8_t Controller::combineDeviceMotorID() const {
 // EFFECTS: Resets the live map. Should be only be used if needing to reset state
 // (e.g. MCU board had reset its state and needs to be reconfigured and made live)
 void Controller::resetLiveMap() {
-    std::unique_lock<std::mutex>
-            lock(liveMapLock);
+    std::unique_lock<std::mutex> lock(liveMapLock);
     liveMap.clear();
 }
 
@@ -330,8 +329,7 @@ void Controller::resetLiveMap() {
 // configures the physical controller.
 // Then makes live.
 void Controller::makeLive() {
-    std::unique_lock<std::mutex>
-            lock(liveMapLock);
+    std::unique_lock<std::mutex> lock(liveMapLock);
 
     uint8_t key = combineDeviceMotorID();
 
@@ -412,8 +410,7 @@ void Controller::makeLive() {
 // configures the physical controller.
 // Then makes live.
 void Controller::makeLiveViaUART() {
-    std::unique_lock<std::mutex>
-            lock(liveMapLock);
+    std::unique_lock<std::mutex> lock(liveMapLock);
 
     uint8_t key = combineDeviceMotorID();
 
