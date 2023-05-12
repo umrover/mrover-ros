@@ -348,7 +348,10 @@ class ScienceBridge:
 
         self._time_since_last_received_msg = t.time()
 
-        self._handler_function_by_tag[tag](rx_msg)
+        try:
+            self._handler_function_by_tag[tag](rx_msg)
+        except ValueError as e:
+            rospy.logerr(f"Received invalid message. Exception: {e}")
 
     def _read_msg(self) -> str:
         """Read a message on the UART receive line from the STM32 chip.
@@ -402,7 +405,6 @@ class ScienceBridge:
         if len(arr) < 2:
             rospy.logerr(f"Only {len(arr)} parameters in auto shutoff handler")
             return
-
         ros_msg = Bool(bool(int(arr[1])))
         self._ros_publisher_by_tag[arr[0][3:]].publish(ros_msg)
 
