@@ -2,7 +2,7 @@
 Description=MRover Jetson Raman Spectroscope
 
 [Service]
-ExecStart=sudo /usr/bin/socat pty,link=/dev/ttyACM0,waitslave tcp:10.0.0.2:8888
+ExecStart=sudo /usr/bin/socat pty,link=/dev/ttyACM0,waitslave tcp:10.0.0.2:8888 && sudo chmod 666 /dev/ttyACM0
 Restart=always
 
 [Install]
