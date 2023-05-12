@@ -70,6 +70,8 @@ class ScienceBridge:
         for a transmitted UART message.
     :param _uart_lock: A lock used to prevent clashing over the UART transmit
         line.
+    :param _last_mcu_active: The last note for whether the mcu was active or not.
+    :param _auton_led_color: The last received color from the mcu.
     """
 
     NUM_SPECTRAL_CHANNELS = 6
@@ -90,6 +92,8 @@ class ScienceBridge:
     _uart_transmit_msg_len: int
     _uart_lock: threading.Lock
     ser: serial.Serial
+    _last_mcu_active: Bool
+    _auton_led_color: str
 
     def __init__(self) -> None:
 
@@ -136,6 +140,8 @@ class ScienceBridge:
             bytesize=serial.EIGHTBITS,
             timeout=rospy.get_param("science/serial/timeout"),
         )
+        self._last_mcu_active = True
+        self._auton_led_color = "off"
 
     def __del__(self) -> None:
         """
@@ -151,7 +157,11 @@ class ScienceBridge:
 
     def publish_mcu_active(self, event=None) -> bool:
         """Publish whether or not mcu is active"""
-        ros_msg = Bool(bool(t.time() - self._time_since_last_received_msg < self._mcu_active_timeout_s))
+        mcu_active = bool(t.time() - self._time_since_last_received_msg < self._mcu_active_timeout_s)
+        if mcu_active and not self._last_mcu_active:
+            self._send_auton_led_uart_message()
+        self._last_mcu_active = mcu_active
+        ros_msg = Bool(mcu_active)
         self._active_publisher.publish(ros_msg)
         return True
 
@@ -217,6 +227,15 @@ class ScienceBridge:
         success = self._servo_transmit(req.id, req.angle)
         return ChangeServoAngleResponse(success)
 
+    def _send_auton_led_uart_message(self) -> Bool:
+        """Look at the current color and send the message over UART
+        :returns: A boolean that is the success of the transaction."""
+        requested_state = self._id_by_color[self._auton_led_color]
+        msg = f"$LED,{requested_state}"
+        success = self._send_msg(msg)
+
+        return success
+
     def _auton_led_transmit(self, color: str) -> bool:
         """Send a UART message to the STM32 commanding the auton LED array
         state.
@@ -231,10 +250,9 @@ class ScienceBridge:
             rospy.logerr("Invalid auton LED color.")
             return False
 
-        requested_state = self._id_by_color[color]
-        msg = f"$LED,{requested_state}"
-        success = self._send_msg(msg)
-        return success
+        self._auton_led_color = color
+
+        return self._send_auton_led_uart_message()
 
     def _heater_auto_shutoff_transmit(self, enable: bool) -> bool:
         """Send a UART message to the STM32 chip commanding the auto shut off

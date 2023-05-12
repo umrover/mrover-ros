@@ -24,7 +24,7 @@ MCU_RESET_PERIOD_S = rospy.get_param("science/info/mcu_reset_period_s")
 
 def reset_board() -> None:
     global time_since_last_reset_mcu, mcu_is_active
-    
+
     rospy.logerr("Resetting the entire MCU Board.")
     GPIO.output(MOSFET_GATE_PIN, GPIO.LOW)
     t.sleep(TIME_TO_RESET_S)
@@ -32,7 +32,7 @@ def reset_board() -> None:
     rospy.logerr("Please restart the brushed_motors node!")
 
     time_since_last_reset_mcu = t.time()
- 
+
     # Set mcu_is_active to true even though it might not actually be true.
     # This is because we want to reset the variable in case the science node stops publishing data.
     mcu_is_active = True
@@ -55,12 +55,8 @@ def check_mcu_disconnected(self, event=None) -> bool:
     """This should check if the MCU is disconnected.
     If it is disconnected AND if the MCU board has not been
     reset in the past 10 seconds, then reset it."""
- 
-    if (
-        reset_mcu_autonomously and
-        not mcu_is_active and
-        t.time() - time_since_last_reset_mcu >= MCU_RESET_PERIOD_S
-    ):
+
+    if reset_mcu_autonomously and not mcu_is_active and t.time() - time_since_last_reset_mcu >= MCU_RESET_PERIOD_S:
         reset_board()
 
     return True
