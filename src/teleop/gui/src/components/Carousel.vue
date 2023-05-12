@@ -1,16 +1,25 @@
 <template>
   <div>
-    <h3>Carousel Data</h3>
+    <h3>Carousel Controls</h3>
     <div class="box1">
       <ToggleButton
         id="carousel_open_loop"
         :current-state="openLoop"
         label-enable-text="Open Loop"
-        label-disable-text="Close Loop"
+        label-disable-text="Disabled"
         @change="toggleOpenLoop"
       />
       <div class="controls">
-        <div v-if="!openLoop">
+        <div v-if="openLoop">
+          <p>Control with X (Forward) and Z (Backwards)</p>
+          <OpenLoopControl
+            :forwards-key="88"
+            :backwards-key="90"
+            :scale-default="50"
+            @velocity="velocity = $event"
+          />
+        </div>
+        <!-- <div v-else>
           <label for="position">Rotate carousel to position: </label>
           <input v-model="site" type="radio" value="A" />A
           <input v-model="site" type="radio" value="B" />B
@@ -25,17 +34,7 @@
             :switch_name="'carousel'"
             :name="'Carousel Limit Switch'"
           />
-        </div>
-        <div v-else>
-          <!-- Up and down arrows keys -->
-          <p>Control with X (Forward) and Z (Backwards)</p>
-          <OpenLoopControl
-            :forwards-key="88"
-            :backwards-key="90"
-            :scale-default="50"
-            @velocity="velocity = $event"
-          />
-        </div>
+        </div> -->
       </div>
     </div>
   </div>
@@ -64,7 +63,7 @@ export default {
   },
   data() {
     return {
-      openLoop: true,
+      openLoop: false,
       velocity: 0,
       site: "A",
 
@@ -74,12 +73,22 @@ export default {
 
   computed: {
     messageObject: function () {
-      const msg = {
-        open_loop: this.openLoop,
-        vel: this.velocity,
-        site: this.site,
-      };
-      return new ROSLIB.Message(msg);
+      if (this.openLoop) {
+        const msg = {
+          open_loop: true,
+          vel: this.velocity,
+          site: this.site,
+        };
+        return new ROSLIB.Message(msg);
+      }
+      else {
+        const msg = {
+          open_loop: true,
+          vel: 0,
+          site: this.site,
+        };
+        return new ROSLIB.Message(msg);
+      }
     },
 
     velocityScaleDecimal: function () {
@@ -88,6 +97,9 @@ export default {
   },
 
   beforeDestroy: function () {
+    this.openLoop = false;
+    this.carousel_pub.publish(this.messageObject);
+
     window.clearInterval(interval);
   },
 
