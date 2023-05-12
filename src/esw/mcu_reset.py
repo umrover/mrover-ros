@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 
 import RPi.GPIO as GPIO
-import time as t
+from time import time, sleep
 
 from std_msgs.msg import Bool
 
@@ -14,57 +14,92 @@ from mrover.srv import (
 )
 
 MOSFET_GATE_PIN = 4  # the pin used as the gate driver is GPIO 3
+"""
+The GPIO pin used to reset the MCU board.
+"""
+
 TIME_TO_RESET_S = 1.0
+"""
+The amount of time in seconds to hold the reset pin.
+"""
 
-reset_mcu_autonomously = True
-time_since_last_reset_mcu = t.time()
-mcu_is_active = True
 MCU_RESET_PERIOD_S = rospy.get_param("science/info/mcu_reset_period_s")
+"""
+The minimum amount of time between automatic resets in seconds.
+"""
 
 
-def reset_board() -> None:
-    global time_since_last_reset_mcu, mcu_is_active
+class ResetManager:
+    mcu_is_active: bool
+    """
+    Whether the MCU is active, based on data from the science.py node.
+    """
 
-    rospy.logerr("Resetting the entire MCU Board.")
-    GPIO.output(MOSFET_GATE_PIN, GPIO.LOW)
-    t.sleep(TIME_TO_RESET_S)
-    GPIO.output(MOSFET_GATE_PIN, GPIO.HIGH)
-    rospy.logerr("Please restart the brushed_motors node!")
+    reset_mcu_autonomously: bool
+    """
+    Whether the MCU should be reset automatically, based on commands from teleop.
+    """
 
-    time_since_last_reset_mcu = t.time()
+    time_of_last_reset_mcu: float
+    """
+    The time that the MCU was last reset by this node.
+    """
 
-    # Set mcu_is_active to true even though it might not actually be true.
-    # This is because we want to reset the variable in case the science node stops publishing data.
-    mcu_is_active = True
+    def __init__(self):
+        self.mcu_is_active = True
+        self.reset_mcu_autonomously = True
 
+        self.time_of_last_reset = time()
 
-def handle_mcu_board_reset(req: EnableDeviceRequest) -> EnableDeviceResponse:
-    if req.enable:
-        reset_board()
+    def update_mcu_active(self, status: Bool) -> None:
+        """
+        Handle a message from the science node of whether the MCU is still active.
+        """
+        self.mcu_is_active = status.data
 
-    return EnableDeviceResponse(True)
+    def reset_board(self) -> None:
+        """
+        Toggle GPIO pins to reset the MCU board, updating the necessary state.
+        """
 
+        rospy.logerr("Resetting the entire MCU Board.")
 
-def handle_reset_mcu_autonomously(req: EnableDeviceRequest) -> EnableDeviceResponse:
-    global reset_mcu_autonomously
-    reset_mcu_autonomously = req.enable
-    return EnableDeviceResponse(True)
+        GPIO.output(MOSFET_GATE_PIN, GPIO.LOW)
+        sleep(TIME_TO_RESET_S)
+        GPIO.output(MOSFET_GATE_PIN, GPIO.HIGH)
 
+        self.time_of_last_reset = time()
 
-def check_mcu_disconnected(self, event=None) -> bool:
-    """This should check if the MCU is disconnected.
-    If it is disconnected AND if the MCU board has not been
-    reset in the past 10 seconds, then reset it."""
+        # Set mcu_is_active to true even though it might not actually be true.
+        # This is because we want to reset the variable in case the science node stops publishing data.
+        self.mcu_is_active = True
 
-    if reset_mcu_autonomously and not mcu_is_active and t.time() - time_since_last_reset_mcu >= MCU_RESET_PERIOD_S:
-        reset_board()
+    def handle_mcu_board_reset(self, req: EnableDeviceRequest) -> EnableDeviceResponse:
+        """
+        Handle a direct request to reset MCU board, which should only set enable to true.
+        """
+        if req.enable:
+            self.reset_board()
+            return EnableDeviceResponse(True)
 
-    return True
+        return EnableDeviceResponse(False)
 
+    def handle_reset_mcu_autonomously(self, req: EnableDeviceRequest) -> EnableDeviceResponse:
+        """
+        Handle a request to change whether the automatically reset the MCU.
+        """
+        self.reset_mcu_autonomously = req.enable
+        return EnableDeviceResponse(True)
 
-def update_science_mcu_active(status: Bool) -> None:
-    global mcu_is_active
-    mcu_is_active = status.data
+    def check_mcu_disconnected(self, event=None) -> None:
+        """This should check if the MCU is disconnected.
+        If it is disconnected AND if the MCU board has not been
+        reset in the past 10 seconds, then reset it."""
+
+        time_since_last_reset = time() - self.time_of_last_reset
+
+        if self.reset_mcu_autonomously and not self.mcu_is_active and time_since_last_reset >= MCU_RESET_PERIOD_S:
+            self.reset_board()
 
 
 def main():
@@ -72,10 +107,16 @@ def main():
     GPIO.setup(MOSFET_GATE_PIN, GPIO.OUT, initial=GPIO.HIGH)
 
     rospy.init_node("mcu_reset")
-    rospy.Service("mcu_board_reset", EnableDevice, handle_mcu_board_reset)
-    rospy.Service("reset_mcu_autonomously", EnableDevice, handle_reset_mcu_autonomously)
-    rospy.Timer(rospy.Duration(1.0), check_mcu_disconnected)
-    rospy.Subscriber("science_mcu_active", Bool, update_science_mcu_active)
+
+    manager = ResetManager()
+
+    rospy.Subscriber("science_mcu_active", Bool, manager.update_mcu_active)
+    rospy.Service("mcu_board_reset", EnableDevice, manager.handle_mcu_board_reset)
+    rospy.Service("reset_mcu_autonomously", EnableDevice, manager.handle_reset_mcu_autonomously)
+
+    # Check MCU for potential resets once per second.
+    rospy.Timer(rospy.Duration(1.0), manager.check_mcu_disconnected)
+
     rospy.spin()
 
 
