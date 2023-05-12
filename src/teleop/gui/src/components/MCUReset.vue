@@ -1,18 +1,29 @@
 <template>
   <div class="wrap">
-    <div>
-      <ToggleButton
-        id="mcu_reset"
-        :current-state="reset"
-        label-enable-text="MCU resetting..."
-        label-disable-text="MCU active"
-        @change="toggle()"
-      />
-    </div>
+    <LEDIndicator
+      :connected="mcuActive"
+      :name="'MCU'"
+      :show_name="false"
+    />
+    <ToggleButton
+      id="mcu_reset"
+      :current-state="reset"
+      label-enable-text=" MCU resetting..."
+      label-disable-text=" MCU reset"
+      @change="toggleReset()"
+    />
+    <ToggleButton
+      id="mcu_auton_reset"
+      :current-state="autonReset"
+      label-enable-text=" auton reset enabled"
+      label-disable-text=" auton reset disabledt"
+      @change="toggleAutonReset()"
+    />
   </div>
 </template>
 
 <script>
+import LEDIndicator from "./LEDIndicator.vue";
 import ToggleButton from "./ToggleButton.vue";
 import ROSLIB from "roslib";
 
@@ -20,29 +31,51 @@ const RESET_TIMEOUT_S = 8;
 
 export default {
   components: {
+    LEDIndicator,
     ToggleButton
   },
 
   data() {
     return {
+      mcuActive: false,
+      activeSub: null,
+
       reset: false,
       timeoutID: 0,
 
-      // Service Client
+      // Service Clients
       resetService: null,
+
+      autonReset: true,
+      autonResetService: null,
     };
   },
 
   created: function () {
+    this.activeSub = new ROSLIB.Topic({
+      ros: this.$ros,
+      name: "science_mcu_active",
+      messageType: "std_msgs/Bool"
+    });
+    this.activeSub.subscribe((msg) => {
+      this.mcuActive = msg.data;
+    })
+
     this.resetService = new ROSLIB.Service({
       ros: this.$ros,
       name: "mcu_board_reset",
       serviceType: "mrover/EnableDevice",
     });
+
+    this.autonResetService = new ROSLIB.Service({
+      ros: this.$ros,
+      name: "reset_mcu_autonomously",
+      serviceType: "mrover/EnableDevice",
+    });
   },
 
   methods: {
-    toggle: function () {
+    toggleReset: function () {
       if (!this.reset) {
         let confirmed = confirm("Are you sure you want to reset the Science MCU?\nIt will be inactive for ~30 seconds.");
 
@@ -53,7 +86,7 @@ export default {
         this.reset = true;
 
         let request = new ROSLIB.ServiceRequest({
-          name: "mcu_board_reset",
+          name: "",
           enable: true,
         });
 
@@ -75,6 +108,13 @@ export default {
           clearTimeout(this.timeoutID);
         });
       }
+    },
+
+
+    toggleAutonReset: function () {
+      this.autonResetService.callService(request, (result) => {
+        this.autonReset = !this.autonReset;
+      });
     }
   }
 
