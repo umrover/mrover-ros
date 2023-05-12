@@ -3,9 +3,11 @@
 // REQUIRES: rosNode is a pointer to the created node.
 // MODIFIES: static variables
 // EFFECTS: Initializes all subscribers and publishers.
-void ROSHandler::init(ros::NodeHandle* rosNode) {
+void ROSHandler::init(ros::NodeHandle* rosNode, bool _use_uart_and_send_only) {
 
     n = rosNode;
+
+    use_uart_and_send_only = _use_uart_and_send_only;
 
     // Initialize services
     calibrateService = n->advertiseService<mrover::CalibrateMotors::Request, mrover::CalibrateMotors::Response>("calibrate", processMotorCalibrate);
@@ -45,6 +47,11 @@ void ROSHandler::init(ros::NodeHandle* rosNode) {
 
     // Initialize cache
     moveCacheSubscriber = n->subscribe<sensor_msgs::JointState>("cache_cmd", 1, moveCache);
+    cacheLimitSwitchDataPublisher = n->advertise<mrover::LimitSwitchData>("cache_limit_switch_data", 1);
+    cacheLimitSwitchData.name = "cache";
+    cacheLimitSwitchData.calibrated = false;
+    cacheLimitSwitchData.limit_a_pressed = false;
+    cacheLimitSwitchData.limit_b_pressed = false;
 
     // Initialize carousel
     carousel_name = "carousel";
@@ -68,9 +75,14 @@ std::optional<float> ROSHandler::moveControllerOpenLoop(const std::string& name,
     }
 
     Controller* controller = controller_iter->second;
-    controller->moveOpenLoop(velocity);
 
-    return std::make_optional<float>(controller->getCurrentAngle());
+    if (use_uart_and_send_only) {
+        controller->moveOpenLoopViaUART(velocity);
+        return std::nullopt;
+    } else {
+        controller->moveOpenLoop(velocity);
+        return std::make_optional<float>(controller->getCurrentAngle());
+    }
 }
 
 // REQUIRES: nothing
@@ -87,20 +99,31 @@ void ROSHandler::moveRA(const sensor_msgs::JointState::ConstPtr& msg) {
         }
         std::optional<float> pos = moveControllerOpenLoop(msg->name[i], (float) msg->velocity[i]);
 
-        jointDataRA.position[mappedIndex] = pos.value_or(0.0);
+        if (!use_uart_and_send_only) {
+            if (pos.has_value()) {
+                jointDataRA.position[mappedIndex] = pos.value();
+            }
 
-        std::optional<bool> calibrated = getControllerCalibrated(msg->name[i]);
-        calibrationStatusRA.calibrated[mappedIndex] = calibrated.value_or(false);
-        ++mappedIndex;
+            std::optional<bool> calibrated = getControllerCalibrated(msg->name[i]);
+            if (calibrated.has_value()) {
+                calibrationStatusRA.calibrated[mappedIndex] = calibrated.value();
+            }
+
+            ++mappedIndex;
+        }
     }
-    calibrationStatusPublisherRA.publish(calibrationStatusRA);
-    jointDataPublisherRA.publish(jointDataRA);
+    if (!use_uart_and_send_only) {
+        calibrationStatusPublisherRA.publish(calibrationStatusRA);
+        jointDataPublisherRA.publish(jointDataRA);
+    }
 }
 
-// REQUIRES: nothing
+// REQUIRES: data is able to be received from the MCU (!use_uart_and_send_only)
 // MODIFIES: nothing
 // EFFECTS: Determine if a controller is calibrated
 std::optional<bool> ROSHandler::getControllerCalibrated(const std::string& name) {
+    assert(!use_uart_and_send_only);
+
     auto controller_iter = ControllerMap::controllersByName.find(name);
 
     if (controller_iter == ControllerMap::controllersByName.end()) {
@@ -109,7 +132,25 @@ std::optional<bool> ROSHandler::getControllerCalibrated(const std::string& name)
     }
 
     Controller* controller = controller_iter->second;
+
     return std::make_optional<bool>(controller->isCalibrated());
+}
+
+// REQUIRES: data is able to be received from the MCU (!use_uart_and_send_only)
+// MODIFIES: nothing
+// EFFECTS: Get limit switch data (calibrated and limit switch a/b pressed)
+std::optional<mrover::LimitSwitchData> ROSHandler::getControllerLimitSwitchData(const std::string& name) {
+    assert(!use_uart_and_send_only);
+
+    auto controller_iter = ControllerMap::controllersByName.find(name);
+
+    if (controller_iter == ControllerMap::controllersByName.end()) {
+        ROS_ERROR("Could not find controller named %s.", name.c_str());
+        return std::nullopt;
+    }
+
+    Controller* controller = controller_iter->second;
+    return std::make_optional<mrover::LimitSwitchData>(controller->getLimitSwitchData());
 }
 
 // REQUIRES: nothing
@@ -118,13 +159,23 @@ std::optional<bool> ROSHandler::getControllerCalibrated(const std::string& name)
 void ROSHandler::moveSA(const sensor_msgs::JointState::ConstPtr& msg) {
     for (size_t i = 0; i < SANames.size(); ++i) {
         std::optional<float> pos = moveControllerOpenLoop(SANames[i], (float) msg->velocity[i]);
-        jointDataSA.position[i] = pos.value_or(0.0);
 
-        std::optional<bool> calibrated = getControllerCalibrated(SANames[i]);
-        calibrationStatusSA.calibrated[i] = calibrated.value_or(false);
+        if (!use_uart_and_send_only) {
+            if (pos.has_value()) {
+                jointDataSA.position[i] = pos.value();
+            }
+
+            std::optional<bool> calibrated = getControllerCalibrated(SANames[i]);
+
+            if (calibrated.has_value()) {
+                calibrationStatusSA.calibrated[i] = calibrated.value();
+            }
+        }
     }
-    calibrationStatusPublisherSA.publish(calibrationStatusSA);
-    jointDataPublisherSA.publish(jointDataSA);
+    if (!use_uart_and_send_only) {
+        calibrationStatusPublisherSA.publish(calibrationStatusSA);
+        jointDataPublisherSA.publish(jointDataSA);
+    }
 }
 
 // REQUIRES: nothing
@@ -132,6 +183,15 @@ void ROSHandler::moveSA(const sensor_msgs::JointState::ConstPtr& msg) {
 // EFFECTS: Moves the cache in open loop.
 void ROSHandler::moveCache(const sensor_msgs::JointState::ConstPtr& msg) {
     moveControllerOpenLoop("cache", (float) msg->velocity[0]);
+
+    if (!use_uart_and_send_only) {
+        std::optional<mrover::LimitSwitchData> limit_switch_data = getControllerLimitSwitchData("cache");
+        if (limit_switch_data.has_value()) {
+            cacheLimitSwitchData = limit_switch_data.value();
+        }
+
+        cacheLimitSwitchDataPublisher.publish(cacheLimitSwitchData);
+    }
 }
 
 // REQUIRES: nothing
@@ -142,11 +202,16 @@ void ROSHandler::moveCarousel(const mrover::Carousel::ConstPtr& msg) {
         moveControllerOpenLoop("carousel", (float) msg->vel);
     } else {
         ROS_ERROR("Closed loop is currently not supported for carousel commands.");
+        return;
     }
 
-    std::optional<bool> calibrated = getControllerCalibrated("carousel");
-    calibrationStatusCarousel.calibrated[0] = calibrated.value_or(false);
-    calibrationStatusPublisherCarousel.publish(calibrationStatusCarousel);
+    if (!use_uart_and_send_only) {
+        std::optional<bool> calibrated = getControllerCalibrated("carousel");
+        if (calibrated.has_value()) {
+            calibrationStatusCarousel.calibrated[0] = calibrated.value();
+        }
+        calibrationStatusPublisherCarousel.publish(calibrationStatusCarousel);
+    }
 }
 
 // REQUIRES: nothing
@@ -160,7 +225,15 @@ void ROSHandler::moveMastGimbal(const mrover::MastGimbal::ConstPtr& msg) {
 // REQUIRES: valid req and res objects
 // MODIFIES: res
 // EFFECTS: sends a move/calibration command to the mcu
-bool ROSHandler::processMotorCalibrate(mrover::CalibrateMotors::Request& req, mrover::CalibrateMotors::Response& res) {
+bool ROSHandler::processMotorCalibrate(
+        mrover::CalibrateMotors::Request& req,
+        mrover::CalibrateMotors::Response& res) {
+    if (use_uart_and_send_only) {
+        ROS_ERROR("Can't support processMotorCalibrate on %s due to UART.", req.name.c_str());
+        res.actively_calibrating = false;
+        return true;
+    }
+
     auto controller_iter = ControllerMap::controllersByName.find(req.name);
 
     if (controller_iter == ControllerMap::controllersByName.end()) {
@@ -192,6 +265,12 @@ bool ROSHandler::processMotorCalibrate(mrover::CalibrateMotors::Request& req, mr
 // MODIFIES: res
 // EFFECTS: hard sets the requested controller angle
 bool ROSHandler::processMotorAdjust(mrover::AdjustMotors::Request& req, mrover::AdjustMotors::Response& res) {
+    if (use_uart_and_send_only) {
+        ROS_ERROR("Can't support processMotorAdjust on %s due to UART.", req.name.c_str());
+        res.success = false;
+        return true;
+    }
+
     auto controller_iter = ControllerMap::controllersByName.find(req.name);
 
     if (controller_iter == ControllerMap::controllersByName.end()) {
@@ -214,6 +293,12 @@ bool ROSHandler::processMotorAdjust(mrover::AdjustMotors::Request& req, mrover::
 // MODIFIES: res
 // EFFECTS: takes the current absolute encoder value, applies an offset, and hard sets the new angle
 bool ROSHandler::processMotorAdjustUsingAbsEnc(mrover::AdjustMotors::Request& req, mrover::AdjustMotors::Response& res) {
+    if (use_uart_and_send_only) {
+        ROS_ERROR("Can't support processMotorAdjustUsingAbsEnc on %s due to UART.", req.name.c_str());
+        res.success = false;
+        return true;
+    }
+
     auto controller_iter = ControllerMap::controllersByName.find(req.name);
 
     if (controller_iter == ControllerMap::controllersByName.end()) {
@@ -247,8 +332,14 @@ bool ROSHandler::processMotorEnableLimitSwitches(mrover::EnableDevice::Request& 
     }
 
     auto& [name, controller] = *controller_iter;
-    controller->enableLimitSwitches(req.enable);
-    res.success = true;
+
+    if (use_uart_and_send_only) {
+        controller->enableLimitSwitchesViaUART(req.enable);
+        res.success = true;
+    } else {
+        controller->enableLimitSwitches(req.enable);
+        res.success = true;
+    }
 
     return true;
 }
@@ -268,7 +359,11 @@ void ROSHandler::tickMCU(int mcu_id) {
 
     // The turn on function does nothing but keep the controller alive.
     // This can be used as a way to keep the MCU from resetting due to its watchdog timer.
-    dummy_mcu_controller->turnOn();
+    if (use_uart_and_send_only) {
+        dummy_mcu_controller->turnOnViaUART();
+    } else {
+        dummy_mcu_controller->turnOn();
+    }
 }
 
 // REQUIRES: mcu_id is a valid mcu_id

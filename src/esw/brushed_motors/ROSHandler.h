@@ -8,6 +8,7 @@
 #include <mrover/Calibrated.h>      // for Calibrated
 #include <mrover/Carousel.h>        // for Carousel
 #include <mrover/EnableDevice.h>    // for EnableDevice
+#include <mrover/LimitSwitchData.h> // for LimitSwitchData
 #include <mrover/MastGimbal.h>      // for MastGimbal
 #include <optional>                 // for optional
 #include <ros/console.h>            // for ROS_ERROR
@@ -26,6 +27,8 @@ class ROSHandler {
 private:
     // This holds the ROS Node.
     inline static ros::NodeHandle* n;
+
+    inline static bool use_uart_and_send_only;
 
     // Calibrate service
     inline static ros::ServiceServer calibrateService;
@@ -51,6 +54,8 @@ private:
 
     // Cache
     inline static ros::Subscriber moveCacheSubscriber;
+    inline static ros::Publisher cacheLimitSwitchDataPublisher;
+    inline static mrover::LimitSwitchData cacheLimitSwitchData;
 
     // Carousel
     inline static std::string carousel_name;
@@ -70,6 +75,11 @@ private:
     // MODIFIES: nothing
     // EFFECTS: Determine if a controller is calibrated
     static std::optional<bool> getControllerCalibrated(const std::string& name);
+
+    // REQUIRES: nothing
+    // MODIFIES: nothing
+    // EFFECTS: Get limit switch data (calibrated and limit switch a/b pressed)
+    static std::optional<mrover::LimitSwitchData> getControllerLimitSwitchData(const std::string& name);
 
     // REQUIRES: nothing
     // MODIFIES: nothing
@@ -131,7 +141,7 @@ public:
     // REQUIRES: rosNode is a pointer to the created node.
     // MODIFIES: static variables
     // EFFECTS: Initializes all subscribers and publishers.
-    static void init(ros::NodeHandle* rosNode);
+    static void init(ros::NodeHandle* rosNode, bool _use_uart_and_send_only);
 
     // REQUIRES: name is the name of a controller and isCalibrated is whether it is calibrated
     // MODIFIES: static variables

@@ -34,6 +34,7 @@ set(MROVER_MESSAGE_FILES
         GPSPointList.msg
         HeaterData.msg
         ImuAndMag.msg
+        LimitSwitchData.msg
         MastGimbal.msg
         JointLock.msg
         MoteusState.msg
@@ -51,6 +52,7 @@ set(MROVER_MESSAGE_FILES
 set(MROVER_SERVICE_FILES
         AdjustMotors.srv
         CalibrateMotors.srv
+        ChangeArmMode.srv
         ChangeAutonLEDState.srv
         ChangeCameras.srv
         ChangeHeaterAutoShutoffState.srv
@@ -179,7 +181,7 @@ if (${DEVICE} MATCHES "raspi4")
     # define an add and link macro
     # Put items here to build
     macro(add_and_link_macro)
-        add_cpp_node_macro(brushed_motors "src/esw/brushed_motors/*.cpp")
+        add_cpp_node_macro(brushed_motors "src/esw/brushed_motors/*")
     endmacro()
 else ()
     # -=-=-=-=-
@@ -252,7 +254,7 @@ else ()
         add_cpp_nodelet_macro(tag_detector_nodelet "src/perception/tag_detector/*.cpp" "src/perception/tag_detector")
         target_link_libraries(tag_detector_nodelet PRIVATE ${OpenCV_LIBRARIES} lie)
 
-        add_cpp_node_macro(brushed_motors "src/esw/brushed_motors/*.cpp")
+        add_cpp_node_macro(brushed_motors "src/esw/brushed_motors/*")
 
         add_cpp_library_macro(lie "src/util/lie/*.cpp" "src/util/lie")
 
