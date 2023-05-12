@@ -163,12 +163,11 @@ class ScienceBridge:
         self._active_publisher.publish(ros_msg)
         return True
 
-    def send_auton_led_cmd_to_mcu(self, event=None) -> bool:
+    def send_auton_led_cmd_to_mcu(self, event=None) -> None:
         """Send the current auton led color to the MCU.
         This is called repeatedly in case the MCU missed a message or reset.
         """
         self._send_auton_led_uart_message()
-        return True
 
     def handle_enable_mosfet_device(self, req: EnableDeviceRequest) -> EnableDeviceResponse:
         """Process a request to change the state of a MOSFET device by issuing
@@ -190,7 +189,15 @@ class ScienceBridge:
             auton LED array. Note that green actually means blinking green.
         :returns: A boolean that is the success of sent UART transaction.
         """
-        success = self._auton_led_transmit(req.color.lower())
+        color = req.color.lower()
+
+        if color not in self._id_by_color.keys():
+            rospy.logerr("Invalid auton LED color.")
+            return ChangeAutonLEDStateResponse(False)
+
+        self._auton_led_color = color
+
+        success = self._send_auton_led_uart_message()
         return ChangeAutonLEDStateResponse(success)
 
     def handle_change_heater_auto_shutoff_state(
@@ -232,7 +239,7 @@ class ScienceBridge:
         success = self._servo_transmit(req.id, req.angle)
         return ChangeServoAngleResponse(success)
 
-    def _send_auton_led_uart_message(self) -> Bool:
+    def _send_auton_led_uart_message(self) -> bool:
         """Look at the current color and send the message over UART
         :returns: A boolean that is the success of the transaction."""
         requested_state = self._id_by_color[self._auton_led_color]
@@ -240,24 +247,6 @@ class ScienceBridge:
         success = self._send_msg(msg)
 
         return success
-
-    def _auton_led_transmit(self, color: str) -> bool:
-        """Send a UART message to the STM32 commanding the auton LED array
-        state.
-        :param color: A string that is the color of the requested state of
-            the auton LED array. Note that green actually means blinking green.
-            The string should be lowercase.
-        :returns: A boolean that is the success of the transaction. Note that
-            this could be because an invalid color was sent.
-        """
-        color = color.lower()
-        if color not in self._id_by_color.keys():
-            rospy.logerr("Invalid auton LED color.")
-            return False
-
-        self._auton_led_color = color
-
-        return self._send_auton_led_uart_message()
 
     def _heater_auto_shutoff_transmit(self, enable: bool) -> bool:
         """Send a UART message to the STM32 chip commanding the auto shut off

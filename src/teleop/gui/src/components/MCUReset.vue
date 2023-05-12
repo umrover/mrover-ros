@@ -1,22 +1,25 @@
 <template>
   <div class="wrap">
-    <LEDIndicator
-      :connected="mcuActive"
-      :name="'MCU'"
-      :show_name="false"
-    />
     <ToggleButton
       id="mcu_reset"
       :current-state="reset"
-      label-enable-text=" MCU resetting..."
-      label-disable-text=" MCU reset"
+      label-enable-text=" resetting..."
+      label-disable-text=" reset"
       @change="toggleReset()"
     />
+    <div class="status">
+      <LEDIndicator
+        :connected="mcuActive"
+        :name="'MCU'"
+        :show_name="false"
+      />
+      <h3 class="header">MCU</h3>
+    </div>
     <ToggleButton
       id="mcu_auton_reset"
       :current-state="autonReset"
       label-enable-text=" auton reset enabled"
-      label-disable-text=" auton reset disabledt"
+      label-disable-text=" auton reset disabled"
       @change="toggleAutonReset()"
     />
   </div>
@@ -27,7 +30,7 @@ import LEDIndicator from "./LEDIndicator.vue";
 import ToggleButton from "./ToggleButton.vue";
 import ROSLIB from "roslib";
 
-const RESET_TIMEOUT_S = 8;
+const RESET_TIMEOUT_S = 5;
 
 export default {
   components: {
@@ -41,7 +44,7 @@ export default {
       activeSub: null,
 
       reset: false,
-      timeoutID: 0,
+      resetTimeoutID: 0,
 
       // Service Clients
       resetService: null,
@@ -77,7 +80,7 @@ export default {
   methods: {
     toggleReset: function () {
       if (!this.reset) {
-        let confirmed = confirm("Are you sure you want to reset the Science MCU?\nIt will be inactive for ~30 seconds.");
+        let confirmed = confirm("Are you sure you want to reset the Science MCU?");
 
         if (!confirmed) {
           return;
@@ -90,7 +93,7 @@ export default {
           enable: true,
         });
 
-        this.timeoutID = setTimeout(() => {
+        this.resetTimeoutID = setTimeout(() => {
           alert("Attempt to reset Science MCU timed out.");
           this.reset = false;
         }, RESET_TIMEOUT_S * 1000);
@@ -98,36 +101,51 @@ export default {
         this.resetService.callService(request, (result) => {
           this.reset = false;
 
+          clearTimeout(this.resetTimeoutID);
+
           if (!result.success) {
             alert("Resetting the Science MCU failed.");
           }
           else {
-            alert("Success! Please reset the Pi node once the MCU is back online!!");
+            alert("Success!");
           }
-
-          clearTimeout(this.timeoutID);
         });
       }
     },
 
-
     toggleAutonReset: function () {
+      let request = new ROSLIB.ServiceRequest({
+        name: "",
+        enable: !this.autonReset,
+      });
+
       this.autonResetService.callService(request, (result) => {
-        this.autonReset = !this.autonReset;
+        if (result.success) {
+          this.autonReset = !this.autonReset;
+        }
       });
     }
   }
-
-
-
 };
-
 </script>
 
 <style scoped>
+
 .wrap {
   display: flex;
   align-items: center;
   height: 100%;
 }
+
+.header {
+  margin-left: 4px;
+}
+
+.status {
+  display: flex;
+  align-items: center;
+  height: 100%;
+  margin: 15px;
+}
+
 </style>
