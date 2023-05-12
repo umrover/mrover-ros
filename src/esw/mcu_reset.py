@@ -8,7 +8,7 @@ from std_msgs.msg import Bool
 import rospy
 from std_srvs.srv import SetBool, SetBoolRequest, SetBoolResponse, Trigger, TriggerRequest, TriggerResponse
 
-MOSFET_GATE_PIN = 4  # the pin used as the gate driver is GPIO 3
+MOSFET_GATE_PIN = 12  # the pin used as the gate driver is GPIO 12
 """
 The GPIO pin used to reset the MCU board.
 """
