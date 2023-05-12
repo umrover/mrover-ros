@@ -6,16 +6,16 @@ Logs the service request to stdout
 
 from typing import Any
 import rospy
-from std_srvs.srv import SetBool, SetBoolResponse
+from std_srvs.srv import Trigger, TriggerResponse
 
 # Change these values for the service name and type definition to test different values
-SERVICE_NAME = "reset_mcu_autonomously"
-SERVICE_TYPE = SetBool
+SERVICE_NAME = "mcu_board_reset"
+SERVICE_TYPE = Trigger
 
 
 def print_service_request(service_request: Any):
     rospy.loginfo(service_request)
-    return SetBoolResponse(success=True, message="")
+    return TriggerResponse(success=True, message="")
 
 
 def main():

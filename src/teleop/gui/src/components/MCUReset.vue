@@ -67,7 +67,7 @@ export default {
     this.resetService = new ROSLIB.Service({
       ros: this.$ros,
       name: "mcu_board_reset",
-      serviceType: "std_srvs/SetBool",
+      serviceType: "std_srvs/Trigger",
     });
 
     this.autonResetService = new ROSLIB.Service({
@@ -88,9 +88,7 @@ export default {
 
         this.reset = true;
 
-        let request = new ROSLIB.ServiceRequest({
-          data: true,
-        });
+        let request = new ROSLIB.ServiceRequest({});
 
         this.resetTimeoutID = setTimeout(() => {
           alert("Attempt to reset Science MCU timed out.");

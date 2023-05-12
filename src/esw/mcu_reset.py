@@ -6,7 +6,7 @@ from time import time, sleep
 from std_msgs.msg import Bool
 
 import rospy
-from std_srvs.srv import SetBool, SetBoolRequest, SetBoolResponse
+from std_srvs.srv import SetBool, SetBoolRequest, SetBoolResponse, Trigger, TriggerRequest, TriggerResponse
 
 MOSFET_GATE_PIN = 4  # the pin used as the gate driver is GPIO 3
 """
@@ -69,15 +69,12 @@ class ResetManager:
         # This is because we want to reset the variable in case the science node stops publishing data.
         self.mcu_is_active = True
 
-    def handle_mcu_board_reset(self, req: SetBoolRequest) -> SetBoolResponse:
+    def handle_mcu_board_reset(self, req: TriggerRequest) -> TriggerResponse:
         """
         Handle a direct request to reset MCU board, which should only set enable to true.
         """
-        if req.data:
-            self.reset_board()
-            return SetBoolResponse(success=True, message="")
-
-        return SetBoolResponse(success=False, message="")
+        self.reset_board()
+        return SetBoolResponse(success=True, message="")
 
     def handle_reset_mcu_autonomously(self, req: SetBoolRequest) -> SetBoolResponse:
         """
@@ -106,7 +103,7 @@ def main():
     manager = ResetManager()
 
     rospy.Subscriber("science_mcu_active", Bool, manager.update_mcu_active)
-    rospy.Service("mcu_board_reset", SetBool, manager.handle_mcu_board_reset)
+    rospy.Service("mcu_board_reset", Trigger, manager.handle_mcu_board_reset)
     rospy.Service("reset_mcu_autonomously", SetBool, manager.handle_reset_mcu_autonomously)
 
     # Check MCU for potential resets once per second.
