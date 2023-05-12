@@ -25,10 +25,7 @@ Controller::Controller(
     assert(0.0f < _motorMaxVoltage);
     assert(_motorMaxVoltage <= _driverVoltage);
     assert(_driverVoltage <= 36.0f);
-    if ((motorID & 0b111) != motorID) {
-        ROS_ERROR("motorID %i for name %s is not valid!", motorID, name.c_str());
-    }
-    assert((motorID & 0b111) == motorID);
+    assert((_motorID & 0b111) == _motorID);
     name = _name;
     deviceAddress = mcuID;
     motorID = _motorID;
