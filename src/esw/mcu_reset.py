@@ -13,7 +13,7 @@ from mrover.srv import (
     EnableDeviceResponse,
 )
 
-MOSFET_GATE_PIN = 32  # the pin used as the gate driver is GPIO 4
+MOSFET_GATE_PIN = 2  # the pin used as the gate driver is GPIO 2
 
 reset_mcu_autonomously = True
 time_since_last_reset_mcu = t.time()
@@ -48,7 +48,7 @@ def check_mcu_disconnected(self, event=None) -> bool:
     reset in the past 10 seconds, then reset it."""
     global time_since_last_reset_mcu, mcu_is_active
 
-    if not mcu_is_active and time_since_last_reset_mcu - t.time() < MCU_RESET_PERIOD_S:
+    if not mcu_is_active and t.time() - time_since_last_reset_mcu >= MCU_RESET_PERIOD_S:
         reset_board()
         time_since_last_reset_mcu = t.time()
 
@@ -58,7 +58,7 @@ def check_mcu_disconnected(self, event=None) -> bool:
     return True
 
 
-def update_science_mcu_active(self, status: Bool) -> None:
+def update_science_mcu_active(status: Bool) -> None:
     global mcu_is_active
     mcu_is_active = status.data
 
