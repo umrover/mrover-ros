@@ -67,13 +67,13 @@ export default {
     this.resetService = new ROSLIB.Service({
       ros: this.$ros,
       name: "mcu_board_reset",
-      serviceType: "mrover/EnableDevice",
+      serviceType: "std_srvs/SetBool",
     });
 
     this.autonResetService = new ROSLIB.Service({
       ros: this.$ros,
       name: "reset_mcu_autonomously",
-      serviceType: "mrover/EnableDevice",
+      serviceType: "std_srvs/SetBool",
     });
   },
 
@@ -89,8 +89,7 @@ export default {
         this.reset = true;
 
         let request = new ROSLIB.ServiceRequest({
-          name: "",
-          enable: true,
+          data: true,
         });
 
         this.resetTimeoutID = setTimeout(() => {
@@ -115,9 +114,9 @@ export default {
 
     toggleAutonReset: function () {
       let request = new ROSLIB.ServiceRequest({
-        name: "",
-        enable: !this.autonReset,
+        data: !this.autonReset,
       });
+
 
       this.autonResetService.callService(request, (result) => {
         if (result.success) {

@@ -6,12 +6,7 @@ from time import time, sleep
 from std_msgs.msg import Bool
 
 import rospy
-
-from mrover.srv import (
-    EnableDevice,
-    EnableDeviceRequest,
-    EnableDeviceResponse,
-)
+from std_srvs.srv import SetBool, SetBoolRequest, SetBoolResponse
 
 MOSFET_GATE_PIN = 4  # the pin used as the gate driver is GPIO 3
 """
@@ -74,22 +69,22 @@ class ResetManager:
         # This is because we want to reset the variable in case the science node stops publishing data.
         self.mcu_is_active = True
 
-    def handle_mcu_board_reset(self, req: EnableDeviceRequest) -> EnableDeviceResponse:
+    def handle_mcu_board_reset(self, req: SetBoolRequest) -> SetBoolResponse:
         """
         Handle a direct request to reset MCU board, which should only set enable to true.
         """
-        if req.enable:
+        if req.data:
             self.reset_board()
-            return EnableDeviceResponse(True)
+            return SetBoolResponse(success=True, message="")
 
-        return EnableDeviceResponse(False)
+        return SetBoolResponse(success=False, message="")
 
-    def handle_reset_mcu_autonomously(self, req: EnableDeviceRequest) -> EnableDeviceResponse:
+    def handle_reset_mcu_autonomously(self, req: SetBoolRequest) -> SetBoolResponse:
         """
         Handle a request to change whether the automatically reset the MCU.
         """
-        self.reset_mcu_autonomously = req.enable
-        return EnableDeviceResponse(True)
+        self.reset_mcu_autonomously = req.data
+        return SetBoolResponse(success=True, message="")
 
     def check_mcu_disconnected(self, event=None) -> None:
         """This should check if the MCU is disconnected.
@@ -111,8 +106,8 @@ def main():
     manager = ResetManager()
 
     rospy.Subscriber("science_mcu_active", Bool, manager.update_mcu_active)
-    rospy.Service("mcu_board_reset", EnableDevice, manager.handle_mcu_board_reset)
-    rospy.Service("reset_mcu_autonomously", EnableDevice, manager.handle_reset_mcu_autonomously)
+    rospy.Service("mcu_board_reset", SetBool, manager.handle_mcu_board_reset)
+    rospy.Service("reset_mcu_autonomously", SetBool, manager.handle_reset_mcu_autonomously)
 
     # Check MCU for potential resets once per second.
     rospy.Timer(rospy.Duration(1.0), manager.check_mcu_disconnected)
