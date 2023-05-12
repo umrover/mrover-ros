@@ -315,6 +315,16 @@ uint8_t Controller::combineDeviceMotorID() const {
 }
 
 // REQUIRES: nothing
+// MODIFIES: liveMap
+// EFFECTS: Resets the live map. Should be only be used if needing to reset state
+// (e.g. MCU board had reset its state and needs to be reconfigured and made live)
+void Controller::resetLiveMap() {
+    std::unique_lock<std::mutex>
+            lock(liveMapLock);
+    liveMap.clear();
+}
+
+// REQUIRES: nothing
 // MODIFIES: isLive
 // EFFECTS: I2C bus, if not already live,
 // configures the physical controller.
