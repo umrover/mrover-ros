@@ -217,6 +217,12 @@ public:
     // MotorID can only be max 3 bits (0-5), and device address is max 2 bits (1 or 2)
     uint8_t combineDeviceMotorID() const;
 
+    // REQUIRES: nothing
+    // MODIFIES: liveMap
+    // EFFECTS: Resets the live map. Should be only be used if needing to reset state
+    // (e.g. MCU board had reset its state and needs to be reconfigured and made live)
+    static void resetLiveMap();
+
 
 private:
     // REQUIRES: nothing

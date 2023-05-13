@@ -11,6 +11,8 @@
       <h1 v-if="type === 'ES'">ES GUI Dashboard</h1>
       <h1 v-else>EDM GUI Dashboard</h1>
       <div class="spacer"></div>
+      <MCUReset class="mcu_reset"></MCUReset>
+      <div class="spacer"></div>
       <CommReadout class="comm"></CommReadout>
       <div class="help">
         <img
@@ -85,6 +87,7 @@ import MoteusStateTable from "./MoteusStateTable.vue";
 import OdometryReading from "./OdometryReading.vue";
 import PDBFuse from "./PDBFuse.vue";
 import CommReadout from "./CommReadout.vue";
+import MCUReset from "./MCUReset.vue"
 import { quaternionToMapAngle, disableAutonLED } from "../utils.js";
 
 export default {
@@ -100,6 +103,7 @@ export default {
     OdometryReading,
     PDBFuse,
     CommReadout,
+    MCUReset,
   },
 
   props: {

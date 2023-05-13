@@ -14,6 +14,7 @@
 #include <ros/console.h>            // for ROS_ERROR
 #include <ros/ros.h>                // for ros
 #include <sensor_msgs/JointState.h> // for JointState
+#include <std_msgs/Bool.h>          // for Bool
 #include <unordered_map>            // for unordered_map
 #include <vector>                   // for vector
 
@@ -29,6 +30,14 @@ private:
     inline static ros::NodeHandle* n;
 
     inline static bool use_uart_and_send_only;
+
+    // General MCU Active bool and subscriber (for resetting live map)
+    // This listens to whether the science MCU is active.
+    // If it was previously not active, and now it is active,
+    // then it likely means that the MCU board is reset
+    // and thus, the liveMap is reset.
+    inline static bool prev_mcu_active;
+    inline static ros::Subscriber MCUActiveSubscriber;
 
     // Calibrate service
     inline static ros::ServiceServer calibrateService;
@@ -136,6 +145,11 @@ private:
     // MODIFIES: nothing
     // EFFECTS: resets the tick of a watchdog for all MCUs
     static void tickAllMCUs();
+
+    // REQUIRES: nothing
+    // MODIFIES: nothing
+    // EFFECTS: resets the liveMap if changing from not active to active
+    static void processMCUActive(const std_msgs::Bool::ConstPtr& msg);
 
 public:
     // REQUIRES: rosNode is a pointer to the created node.

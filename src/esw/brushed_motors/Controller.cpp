@@ -25,7 +25,7 @@ Controller::Controller(
     assert(0.0f < _motorMaxVoltage);
     assert(_motorMaxVoltage <= _driverVoltage);
     assert(_driverVoltage <= 36.0f);
-    assert((motorID & 0b111) == motorID);
+    assert((_motorID & 0b111) == _motorID);
     name = _name;
     deviceAddress = mcuID;
     motorID = _motorID;
@@ -315,13 +315,21 @@ uint8_t Controller::combineDeviceMotorID() const {
 }
 
 // REQUIRES: nothing
+// MODIFIES: liveMap
+// EFFECTS: Resets the live map. Should be only be used if needing to reset state
+// (e.g. MCU board had reset its state and needs to be reconfigured and made live)
+void Controller::resetLiveMap() {
+    std::unique_lock<std::mutex> lock(liveMapLock);
+    liveMap.clear();
+}
+
+// REQUIRES: nothing
 // MODIFIES: isLive
 // EFFECTS: I2C bus, if not already live,
 // configures the physical controller.
 // Then makes live.
 void Controller::makeLive() {
-    std::unique_lock<std::mutex>
-            lock(liveMapLock);
+    std::unique_lock<std::mutex> lock(liveMapLock);
 
     uint8_t key = combineDeviceMotorID();
 
@@ -402,8 +410,7 @@ void Controller::makeLive() {
 // configures the physical controller.
 // Then makes live.
 void Controller::makeLiveViaUART() {
-    std::unique_lock<std::mutex>
-            lock(liveMapLock);
+    std::unique_lock<std::mutex> lock(liveMapLock);
 
     uint8_t key = combineDeviceMotorID();
 

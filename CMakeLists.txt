@@ -13,7 +13,7 @@ set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 set(MROVER_PACKAGES
         rospy
         roscpp
-	std_msgs
+        std_msgs
         message_generation
         dynamic_reconfigure
         rostest
@@ -55,7 +55,6 @@ set(MROVER_SERVICE_FILES
         ChangeArmMode.srv
         ChangeAutonLEDState.srv
         ChangeCameras.srv
-        ChangeHeaterAutoShutoffState.srv
         ChangeHeaterState.srv
         ChangeServoAngle.srv
         EnableDevice.srv

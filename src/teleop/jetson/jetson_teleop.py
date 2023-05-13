@@ -198,14 +198,6 @@ class ArmControl:
         with self._joint_state_lock:
             self.joint_state_pub.publish(self.current_ra_joint_states)
 
-    def slow_mode_callback(self, msg: Bool) -> None:
-        """
-        Callback for slow mode
-        :param msg: Bool sent from GUI for whether or not to use slow mode
-        :return:
-        """
-        self.ra_slow_mode = msg.data
-
     def filter_xbox_axis(
         self,
         axes_array: "List[float]",
@@ -255,6 +247,13 @@ class ArmControl:
         Velocities are sent in range [-1,1]
         :return:
         """
+
+        d_pad_x = msg.axes[self.xbox_mappings["d_pad_x"]]
+        if d_pad_x > 0.5:
+            self.ra_slow_mode = True
+        elif d_pad_x < -0.5:
+            self.ra_slow_mode = False
+
         # Filter for xbox triggers, they are typically [-1,1]
         # Lose [-1,0] range since when joystick is initially plugged in
         # these output 0 instead of -1 when up
@@ -361,7 +360,6 @@ def main():
 
     ros.Subscriber("joystick", Joy, drive.teleop_drive_callback)
     ros.Subscriber("xbox/ra_control", Joy, arm.ra_control_callback)
-    ros.Subscriber("ra_slow_mode", Bool, arm.slow_mode_callback)
     ros.Subscriber("xbox/sa_control", Joy, arm.sa_control_callback)
     ros.Subscriber("brushless_ra_data", MotorsStatus, arm.brushless_encoder_callback)
     ros.Subscriber("brushed_ra_data", JointState, arm.brushed_encoder_callback)

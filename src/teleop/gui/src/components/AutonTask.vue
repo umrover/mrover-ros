@@ -11,6 +11,7 @@
         />
         <h1>Auton Dashboard</h1>
         <div class="spacer"></div>
+        <MCUReset class="mcu_reset"></MCUReset>
         <div class="spacer"></div>
         <CommReadout class="comm"></CommReadout>
         <div class="help">
@@ -95,6 +96,7 @@ import { mapGetters } from "vuex";
 import JoystickValues from "./JoystickValues.vue";
 import CommReadout from "./CommReadout.vue";
 import Cameras from "./Cameras.vue";
+import MCUReset from "./MCUReset.vue"
 
 import { quaternionToMapAngle } from "../utils.js";
 import OdometryReading from "./OdometryReading.vue";
@@ -112,6 +114,7 @@ export default {
     MastGimbalControls,
     CommReadout,
     Cameras,
+    MCUReset,
     OdometryReading
   },
 
