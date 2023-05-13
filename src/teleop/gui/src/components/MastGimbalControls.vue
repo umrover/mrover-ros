@@ -10,11 +10,15 @@
 <script>
 import ROSLIB from "roslib";
 
-//keycodes
+// Keycodes
 const W = 87;
 const A = 65;
 const S = 83;
 const D = 68;
+
+// Motor power levels
+const ROTATION_PWR = 1.0;
+const UP_DOWN_PWR = 0.6;
 
 export default {
   data() {
@@ -50,13 +54,13 @@ export default {
     // when a key is being pressed down, sets input for that key as 1
     keyMonitorDown: function (event) {
       if (event.keyCode == W) {
-        this.inputData.w_key = 1;
+        this.inputData.w_key = UP_DOWN_PWR;
       } else if (event.keyCode == A) {
-        this.inputData.a_key = 1;
+        this.inputData.a_key = ROTATION_PWR;
       } else if (event.keyCode == S) {
-        this.inputData.s_key = 1;
+        this.inputData.s_key = UP_DOWN_PWR;
       } else if (event.keyCode == D) {
-        this.inputData.d_key = 1;
+        this.inputData.d_key = ROTATION_PWR;
       }
 
       this.publish();
