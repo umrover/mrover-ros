@@ -1,5 +1,8 @@
 #include "Controller.h"
 
+std::unordered_map<uint8_t, std::string> Controller::liveMap;
+std::mutex Controller::liveMapLock;
+
 // REQUIRES: _name is the name of the motor,
 // mcu_id is the mcu id of the controller which dictates the slave address,
 // motor_id is the motor id of the motor that is to be controlled,
@@ -22,6 +25,7 @@ Controller::Controller(
     assert(0.0f < _motorMaxVoltage);
     assert(_motorMaxVoltage <= _driverVoltage);
     assert(_driverVoltage <= 36.0f);
+    assert((_motorID & 0b111) == _motorID);
     name = _name;
     deviceAddress = mcuID;
     motorID = _motorID;
@@ -34,6 +38,7 @@ Controller::Controller(
     limit_switch_data.limit_a_pressed = false;
     limit_switch_data.limit_b_pressed = false;
 }
+
 
 // REQUIRES: nothing
 // MODIFIES: nothing
@@ -60,13 +65,6 @@ void Controller::overrideCurrentAngle(float newAngleRad) {
     } catch (IOFailure& e) {
         ROS_ERROR("overrideCurrentAngle failed on %s", name.c_str());
     }
-}
-
-// REQUIRES: nothing
-// MODIFIES: nothing
-// EFFECTS: Returns true if Controller is live.
-bool Controller::isControllerLive() const {
-    return isLive;
 }
 
 // REQUIRES: -1.0 <= input <= 1.0
@@ -296,8 +294,9 @@ void Controller::turnOn() const {
 }
 
 // REQUIRES: nothing
-// MODIFIES: nothing
-// EFFECTS: UART bus, and turns on the controller. Can be used as a way to tick the watchdog for a particular mcu.
+// MODIFIES: liveMap
+// EFFECTS: UART bus, and turns on the controller.
+// Can be used as a way to tick the watchdog for a particular mcu.
 void Controller::turnOnViaUART() const {
     try {
         UART::transact(deviceAddress, motorIDRegMask | ON_OP, ON_WB,
@@ -308,12 +307,41 @@ void Controller::turnOnViaUART() const {
 }
 
 // REQUIRES: nothing
+// MODIFIES: nothing
+// EFFECTS: Returns a combined ID for both the deviceAddress and motorID
+// MotorID can only be max 3 bits (0-5), and device address is max 2 bits (1 or 2)
+uint8_t Controller::combineDeviceMotorID() const {
+    return (deviceAddress << 3) | motorID;
+}
+
+// REQUIRES: nothing
+// MODIFIES: liveMap
+// EFFECTS: Resets the live map. Should be only be used if needing to reset state
+// (e.g. MCU board had reset its state and needs to be reconfigured and made live)
+void Controller::resetLiveMap() {
+    std::unique_lock<std::mutex> lock(liveMapLock);
+    liveMap.clear();
+}
+
+// REQUIRES: nothing
 // MODIFIES: isLive
 // EFFECTS: I2C bus, if not already live,
 // configures the physical controller.
 // Then makes live.
 void Controller::makeLive() {
-    if (isLive) {
+    std::unique_lock<std::mutex> lock(liveMapLock);
+
+    uint8_t key = combineDeviceMotorID();
+
+    // if key is absent, no motor with that key has been made live
+    auto it = liveMap.find(key);
+    if (it == liveMap.end()) {
+        // Map entry starts with an empty string until that joint is live
+        it = liveMap.emplace(key, "").first;
+    }
+
+    // already live and configured to correct motor
+    if (it->second == name) {
         return;
     }
 
@@ -367,7 +395,8 @@ void Controller::makeLive() {
         I2C::transact(deviceAddress, motorIDRegMask | ENABLE_LIMIT_B_OP, ENABLE_LIMIT_WB,
                       ENABLE_LIMIT_RB, buffer, nullptr);
 
-        isLive = true;
+        // update liveMap
+        it->second = name;
 
     } catch (IOFailure& e) {
         ROS_ERROR("makeLive failed on %s", name.c_str());
@@ -376,12 +405,24 @@ void Controller::makeLive() {
 }
 
 // REQUIRES: nothing
-// MODIFIES: isLive
+// MODIFIES: liveMap
 // EFFECTS: UART bus, if not already live,
 // configures the physical controller.
 // Then makes live.
 void Controller::makeLiveViaUART() {
-    if (isLive) {
+    std::unique_lock<std::mutex> lock(liveMapLock);
+
+    uint8_t key = combineDeviceMotorID();
+
+    // if key is absent, no motor with that key has been made live
+    auto it = liveMap.find(key);
+    if (it == liveMap.end()) {
+        // Map entry starts with an empty string until that joint is live
+        it = liveMap.emplace(key, "").first;
+    }
+
+    // already live and configured to correct motor
+    if (it->second == name) {
         return;
     }
 
@@ -444,7 +485,8 @@ void Controller::makeLiveViaUART() {
         UART::transact(deviceAddress, motorIDRegMask | ENABLE_LIMIT_B_OP, ENABLE_LIMIT_WB,
                        buffer);
 
-        isLive = true;
+        // update liveMap
+        it->second = name;
 
     } catch (IOFailure& e) {
         ROS_ERROR("makeLiveViaUART failed on %s", name.c_str());
