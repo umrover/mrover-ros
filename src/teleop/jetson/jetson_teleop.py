@@ -198,14 +198,6 @@ class ArmControl:
         with self._joint_state_lock:
             self.joint_state_pub.publish(self.current_ra_joint_states)
 
-    def slow_mode_callback(self, msg: Bool) -> None:
-        """
-        Callback for slow mode
-        :param msg: Bool sent from GUI for whether or not to use slow mode
-        :return:
-        """
-        self.ra_slow_mode = msg.data
-
     def filter_xbox_axis(
         self,
         axes_array: "List[float]",
@@ -368,7 +360,6 @@ def main():
 
     ros.Subscriber("joystick", Joy, drive.teleop_drive_callback)
     ros.Subscriber("xbox/ra_control", Joy, arm.ra_control_callback)
-    # ros.Subscriber("ra_slow_mode", Bool, arm.slow_mode_callback)
     ros.Subscriber("xbox/sa_control", Joy, arm.sa_control_callback)
     ros.Subscriber("brushless_ra_data", MotorsStatus, arm.brushless_encoder_callback)
     ros.Subscriber("brushed_ra_data", JointState, arm.brushed_encoder_callback)

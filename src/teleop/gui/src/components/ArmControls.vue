@@ -43,11 +43,6 @@
     </div> -->
     <div class="controls-flex">
       <h4>Misc. Controls</h4>
-      <Checkbox
-        ref="Slow Mode"
-        :name="'Slow Mode'"
-        @toggle="updateSlowMode($event)"
-      />
       <ToggleButton
         :current-state="laser_enabled"
         label-enable-text="Arm Laser On"
@@ -81,7 +76,6 @@
 
 <script>
 import ROSLIB from "roslib";
-import Checkbox from "./Checkbox.vue";
 import ToggleButton from "./ToggleButton.vue";
 import CalibrationCheckbox from "./CalibrationCheckbox.vue";
 import JointAdjust from "./MotorAdjust.vue";
@@ -94,7 +88,6 @@ let interval;
 export default {
   components: {
     CalibrationCheckbox,
-    Checkbox,
     JointAdjust,
     ToggleButton,
     LimitSwitch
@@ -103,14 +96,12 @@ export default {
     return {
       arm_mode: "arm_disabled",
       joints_array: [false, false, false, false, false, false],
-      slow_mode: false,
       laser_enabled: false,
 
       ra_mode_service: null,
       jointlock_pub: null,
       joystick_pub: null,
       laser_service: null,
-      slowmode_pub: null
     };
   },
 
@@ -145,11 +136,6 @@ export default {
       ros: this.$ros,
       name: "/joint_lock",
       messageType: "mrover/JointLock"
-    });
-    this.slow_mode_pub = new ROSLIB.Topic({
-      ros: this.$ros,
-      name: "/ra_slow_mode",
-      messageType: "std_msgs/Bool"
     });
     this.updateArmMode("arm_disabled", this.arm_mode);
     const jointData = {
@@ -204,14 +190,6 @@ export default {
       this.jointlock_pub.publish(jointlockMsg);
     },
 
-    updateSlowMode: function (enabled) {
-      this.slow_mode = enabled;
-      const slowData = {
-        data: this.slow_mode
-      };
-      var slowModeMsg = new ROSLIB.Message(slowData);
-      this.slow_mode_pub.publish(slowModeMsg);
-    },
     publishJoystickMessage: function (axes, buttons) {
       const joystickData = {
         axes: axes,
