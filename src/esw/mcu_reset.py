@@ -74,7 +74,7 @@ class ResetManager:
         Handle a direct request to reset MCU board, which should only set enable to true.
         """
         self.reset_board()
-        return SetBoolResponse(success=True, message="")
+        return TriggerResponse(success=True, message="")
 
     def handle_reset_mcu_autonomously(self, req: SetBoolRequest) -> SetBoolResponse:
         """
