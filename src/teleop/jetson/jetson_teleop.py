@@ -9,10 +9,14 @@ from std_msgs.msg import String, Bool
 from sensor_msgs.msg import Joy, JointState
 from geometry_msgs.msg import Twist
 from mrover.msg import MotorsStatus
+from mrover.srv import ChangeArmMode, ChangeArmModeRequest, ChangeArmModeResponse
 from typing import List
 
 
 DEFAULT_ARM_DEADZONE = 0.15
+
+# Whether or not to publish /joint_states feedback for RA MoveIt/Rviz
+PUBLISH_JOINT_STATES = False
 
 
 def quadratic(val: float) -> float:
@@ -85,6 +89,7 @@ class Drive:
         self.twist_pub.publish(twist_msg)
 
 
+# TODO: This class has alot of duplicate logic for RA and SA, should be refactored
 class ArmControl:
     def __init__(self):
         self.xbox_mappings = ros.get_param("teleop/xbox_mappings")
@@ -93,6 +98,8 @@ class ArmControl:
 
         self._arm_mode = "arm_disabled"
         self._arm_mode_lock = Lock()
+        self._sa_arm_mode = "arm_disabled"
+        self._sa_arm_mode_lock = Lock()
 
         self.ra_cmd_pub = ros.Publisher("ra_cmd", JointState, queue_size=100)
         self.sa_cmd_pub = ros.Publisher("sa_cmd", JointState, queue_size=100)
@@ -134,16 +141,28 @@ class ArmControl:
             effort=[nan for _ in self.RA_NAMES],
         )
 
-    # Callback function executed after the publication of the current robot position
-    def ra_mode_callback(self, msg: String) -> None:
+    # Service handler for RA arm control mode
+    def ra_mode_service(self, req: ChangeArmModeRequest) -> ChangeArmModeResponse:
         """
-        Callback for arm control mode
-        :param msg: String sent from GUI for which arm control mode to use
-        will be one of {"arm_disabled","open_loop","servo}
-        :return:
+        Service handler for arm control mode
+        :param req: ChangeArmMode service request name in {arm_disabled, open_loop, servo}
+        :return: ChangeArmMode service response
         """
         with self._arm_mode_lock:
-            self._arm_mode = msg.data
+            self._arm_mode = req.mode
+            if self._arm_mode == "arm_disabled":
+                self.send_ra_stop()
+        return ChangeArmModeResponse(success=True)
+
+    def send_ra_stop(self) -> None:
+        """
+        Sends a stop command to the Robotic Arm
+        :return:
+        """
+        self.ra_cmd.position = [nan for _ in self.RA_NAMES]
+        self.ra_cmd.velocity = [0.0 for _ in self.RA_NAMES]
+        self.ra_cmd.effort = [nan for _ in self.RA_NAMES]
+        self.ra_cmd_pub.publish(self.ra_cmd)
 
     def brushless_encoder_callback(self, msg: MotorsStatus) -> None:
         """
@@ -274,6 +293,18 @@ class ArmControl:
         # TODO: Write this function if/when we get moveit_servo working
         return
 
+    def sa_mode_service(self, req: ChangeArmModeRequest) -> ChangeArmModeResponse:
+        """
+        Service handler for arm control mode
+        :param req: ChangeArmMode service request mode in {"sa_disabled", "sa_enabled"}
+        :return: ChangeArmMode service response
+        """
+        with self._sa_arm_mode_lock:
+            self._sa_arm_mode = req.mode
+            if self._sa_arm_mode == "sa_disabled":
+                self.send_sa_stop()
+        return ChangeArmModeResponse(success=True)
+
     def sa_control_callback(self, msg: Joy) -> None:
         """
         Converts a Joy message with the Xbox inputs
@@ -282,21 +313,43 @@ class ArmControl:
         Velocities are sent in range [-1,1]
         :return:
         """
+        with self._sa_arm_mode_lock:
+            if self._sa_arm_mode == "open_loop":
+                # Filter for xbox triggers, they are typically [-1,1]
+                raw_left_trigger = msg.axes[self.xbox_mappings["left_trigger"]]
+                left_trigger = raw_left_trigger if raw_left_trigger > 0 else 0
+                raw_right_trigger = msg.axes[self.xbox_mappings["right_trigger"]]
+                right_trigger = raw_right_trigger if raw_right_trigger > 0 else 0
 
-        # Filter for xbox triggers, they are typically [-1,1]
-        raw_left_trigger = msg.axes[self.xbox_mappings["left_trigger"]]
-        left_trigger = raw_left_trigger if raw_left_trigger > 0 else 0
-        raw_right_trigger = msg.axes[self.xbox_mappings["right_trigger"]]
-        right_trigger = raw_right_trigger if raw_right_trigger > 0 else 0
+                self.sa_cmd.velocity = [
+                    self.sa_config["sa_joint_1"]["multiplier"]
+                    * self.filter_xbox_axis(msg.axes, "left_js_x", 0.15, True),
+                    self.sa_config["sa_joint_2"]["multiplier"]
+                    * self.filter_xbox_axis(msg.axes, "left_js_y", 0.15, True),
+                    self.sa_config["sa_joint_3"]["multiplier"]
+                    * self.filter_xbox_axis(msg.axes, "right_js_y", 0.15, True),
+                    self.sa_config["scoop"]["multiplier"] * (right_trigger - left_trigger),
+                    self.sa_config["microscope"]["multiplier"]
+                    * self.filter_xbox_button(msg.buttons, "right_bumper", "left_bumper"),
+                ]
 
-        self.sa_cmd.velocity = [
-            self.sa_config["sa_joint_1"]["multiplier"] * self.filter_xbox_axis(msg.axes, "left_js_x", 0.15, True),
-            self.sa_config["sa_joint_2"]["multiplier"] * self.filter_xbox_axis(msg.axes, "left_js_y", 0.15, True),
-            self.sa_config["sa_joint_3"]["multiplier"] * self.filter_xbox_axis(msg.axes, "right_js_y", 0.15, True),
-            self.sa_config["scoop"]["multiplier"] * (right_trigger - left_trigger),
-            self.sa_config["microscope"]["multiplier"]
-            * self.filter_xbox_button(msg.buttons, "right_bumper", "left_bumper"),
-        ]
+                slow_mode_activated = msg.buttons[self.xbox_mappings["a"]] or msg.buttons[self.xbox_mappings["b"]]
+                if slow_mode_activated:
+                    for i, name in enumerate(self.SA_NAMES):
+                        # When going up (vel > 0) with SA joint 2, we DON'T want slow mode.
+                        if not (name == "sa_joint_2" and self.sa_cmd.velocity[i] > 0):
+                            self.sa_cmd.velocity[i] *= self.sa_config[name]["slow_mode_multiplier"]
+
+                self.sa_cmd_pub.publish(self.sa_cmd)
+
+    def send_sa_stop(self) -> None:
+        """
+        Send a stop command to the SA arm
+        :return:
+        """
+        self.sa_cmd.position = [nan for _ in self.SA_NAMES]
+        self.sa_cmd.velocity = [0.0 for _ in self.SA_NAMES]
+        self.sa_cmd.effort = [nan for _ in self.SA_NAMES]
         self.sa_cmd_pub.publish(self.sa_cmd)
 
 
@@ -308,16 +361,20 @@ def main():
 
     ros.Subscriber("joystick", Joy, drive.teleop_drive_callback)
     ros.Subscriber("xbox/ra_control", Joy, arm.ra_control_callback)
-    ros.Subscriber("ra/mode", String, arm.ra_mode_callback)
     ros.Subscriber("ra_slow_mode", Bool, arm.slow_mode_callback)
     ros.Subscriber("xbox/sa_control", Joy, arm.sa_control_callback)
     ros.Subscriber("brushless_ra_data", MotorsStatus, arm.brushless_encoder_callback)
     ros.Subscriber("brushed_ra_data", JointState, arm.brushed_encoder_callback)
 
+    # Arm Mode Services
+    ros.Service("change_ra_mode", ChangeArmMode, arm.ra_mode_service)
+    ros.Service("change_sa_mode", ChangeArmMode, arm.sa_mode_service)
+
     # Publish joint states for Moveit at 10Hz
-    while not ros.is_shutdown():
-        arm.publish_joint_states()
-        ros.sleep(0.1)
+    if PUBLISH_JOINT_STATES:
+        while not ros.is_shutdown():
+            arm.publish_joint_states()
+            ros.sleep(0.1)
 
     ros.spin()
 

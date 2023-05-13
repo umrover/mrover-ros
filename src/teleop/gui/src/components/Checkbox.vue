@@ -1,5 +1,5 @@
 <template>
-  <div>
+  <div class="wrap">
     <div v-if="!disabled" class="wrap-button">
       <button :class="[color]" @click="toggleAndEmit()">
         <span class="white-text"
@@ -56,10 +56,18 @@ export default {
 </script>
 
 <style scoped>
+.wrap {
+  display: flex;
+}
+
 .wrap-button {
   display: flex;
   align-items: center;
   padding: 1px;
+}
+
+.wrap-button button{
+  cursor: pointer;
 }
 
 .button-disabled {
@@ -70,8 +78,16 @@ export default {
   background-color: green;
 }
 
+.green:hover{
+  background-color: #00ff008e;
+}
+
 .red {
   background-color: red;
+}
+
+.red:hover{
+  background-color: #ff000073;
 }
 
 .white-text {

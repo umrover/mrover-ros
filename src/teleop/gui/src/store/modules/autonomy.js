@@ -4,7 +4,7 @@ const state = {
   waypointList: [],
   highlightedWaypoint: -1,
   autonEnabled: false,
-  teleopEnabled: true,
+  teleopEnabled: false,
   odomFormat: "DM",
   clickPoint: {
     lat: 0,

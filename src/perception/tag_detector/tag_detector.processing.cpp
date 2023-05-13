@@ -1,18 +1,17 @@
 #include "tag_detector.hpp"
 
+#include "../point.hpp"
+
+#include <sensor_msgs/image_encodings.h>
+#include <tf/exceptions.h>
+
+#include <opencv2/imgproc.hpp>
+
 #include <algorithm>
 #include <cassert>
 #include <cmath>
 #include <execution>
 #include <numeric>
-
-#include <opencv2/imgproc.hpp>
-#include <opencv2/videoio.hpp>
-#include <sensor_msgs/image_encodings.h>
-#include <string>
-#include <tf/exceptions.h>
-
-#include "../point.hpp"
 
 namespace mrover {
 
@@ -139,14 +138,15 @@ namespace mrover {
             cv::aruco::drawDetectedMarkers(mImg, mImmediateCorners, mImmediateIds);
             // Max number of tags the hit counter can display = 10;
             if (!mTags.empty()) {
+                // TODO: remove some magic numbers in this block
                 int tagCount = 1;
-                int tagBoxWidth = int(mImg.cols / (mTags.size() * 2));
+                auto tagBoxWidth = static_cast<int>(mImg.cols / (mTags.size() * 2));
                 for (auto& [id, tag]: mTags) {
-                    cv::Scalar color(255, 0, 0);
-                    cv::Point pt(tagBoxWidth * tagCount, mImg.rows / 10);
+                    cv::Scalar color{255, 0, 0};
+                    cv::Point pt{tagBoxWidth * tagCount, mImg.rows / 10};
                     std::string text = "id" + std::to_string(id) + ":" + std::to_string((tag.hitCount));
                     cv::putText(mImg, text, pt, cv::FONT_HERSHEY_COMPLEX, (mImg.cols / 800), color, (mImg.cols / 300));
-                    
+
                     ++tagCount;
                 }
             }

@@ -39,7 +39,7 @@ export default {
       selectedQuality: "2",
       selectedStream: this.stream,
       prevStream: this.stream,
-      numQuality: 0
+      numQuality: 5
     };
   },
 
@@ -53,10 +53,10 @@ export default {
   created: function() {
     var arg = new ROSLIB.Param({
       ros: this.$ros,
-      name: "cameras/arguments"
+      name: "cameras/max_num_resolutions"
     });
-    arg.get((arr) => {
-      this.numQuality = arr.length;
+    arg.get((value) => {
+      this.numQuality = value;
     });
   },
 

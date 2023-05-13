@@ -26,10 +26,10 @@
         </div>
         <div v-else>
           <!-- Up and down arrows keys -->
-          <p>Control with up and down arrow keys</p>
+          <p>Control with X (Forward) and Z (Backwards)</p>
           <OpenLoopControl
-            :forwards-key="38"
-            :backwards-key="40"
+            :forwards-key="88"
+            :backwards-key="90"
             @velocity="velocity = $event"
           ></OpenLoopControl>
         </div>

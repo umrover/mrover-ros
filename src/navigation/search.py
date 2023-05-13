@@ -8,7 +8,6 @@ from context import Context, Environment, convert_cartesian_to_gps
 from aenum import Enum, NoAlias
 from state import BaseState
 from dataclasses import dataclass
-from drive import get_drive_command
 from trajectory import Trajectory
 from mrover.msg import GPSPointList
 from util.ros_utils import get_rosparam
@@ -57,6 +56,7 @@ class SearchStateTransitions(Enum):
     found_fiducial_post = "ApproachPostState"
     found_fiducial_gate = "PartialGateState"
     found_gate = "GateTraverseState"
+    recovery_state = "RecoveryState"
 
 
 class SearchState(BaseState):
@@ -87,16 +87,17 @@ class SearchState(BaseState):
 
         # continue executing this path from wherever it left off
         target_pos = self.traj.get_cur_pt()
-        cmd_vel, arrived = get_drive_command(
-            target_pos,
-            self.context.rover.get_pose(),
-            self.STOP_THRESH,
-            self.DRIVE_FWD_THRESH,
+        cmd_vel, arrived = self.context.rover.driver.get_drive_command(
+            target_pos, self.context.rover.get_pose(), self.STOP_THRESH, self.DRIVE_FWD_THRESH
         )
         if arrived:
             # if we finish the spiral without seeing the fiducial, move on with course
             if self.traj.increment_point():
                 return SearchStateTransitions.no_fiducial.name  # type: ignore
+
+        if self.context.rover.stuck:
+            self.context.rover.previous_state = SearchStateTransitions.continue_search.name  # type: ignore
+            return SearchStateTransitions.recovery_state.name  # type: ignore
 
         self.context.search_point_publisher.publish(
             GPSPointList([convert_cartesian_to_gps(pt) for pt in self.traj.coordinates])
