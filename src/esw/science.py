@@ -211,7 +211,7 @@ class ScienceBridge:
             carousel heaters.
         :returns: A boolean that is the success of sent UART transaction.
         """
-        success = self._heater_auto_shutoff_transmit(req.enable)
+        success = self._heater_auto_shutoff_transmit(req.data)
         return SetBoolResponse(success=success, message="")
 
     def handle_change_heater_state(self, req: ChangeHeaterStateRequest) -> ChangeHeaterStateResponse:
