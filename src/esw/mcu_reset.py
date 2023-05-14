@@ -42,7 +42,7 @@ class ResetManager:
 
     def __init__(self):
         self.mcu_is_active = True
-        self.reset_mcu_autonomously = True
+        self.reset_mcu_autonomously = False
 
         self.time_of_last_reset = time()
 
