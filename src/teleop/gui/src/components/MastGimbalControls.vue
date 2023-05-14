@@ -10,7 +10,7 @@
 <script>
 import ROSLIB from "roslib";
 
-const UPDATE_RATE_S = 0.125;
+const UPDATE_RATE_S = 0.2;
 let interval;
 
 export default {
@@ -100,16 +100,16 @@ export default {
 
     // when a key is released, sets input for that key as 0
     keyMonitorUp: function (event) {
-      if (event.key == "w" || event.key == "W") {
+      if (event.key.toLowerCase() == "w") {
         this.inputData.w_key = 0;
       }
-      else if (event.key == "a" || event.key == "A") {
+      else if (event.key.toLowerCase() == "a") {
         this.inputData.a_key = 0;
       }
-      else if (event.key == "s" || event.key == "S") {
+      else if (event.key.toLowerCase() == "s") {
         this.inputData.s_key = 0;
       }
-      else if (event.key == "d" || event.key == "D") {
+      else if (event.key.toLowerCase() == "d") {
         this.inputData.d_key = 0;
       }
 
@@ -117,12 +117,27 @@ export default {
     },
 
     publish: function () {
-      const keyboardData = {
-        left_right: this.inputData.d_key - this.inputData.a_key,
-        up_down: this.inputData.w_key - this.inputData.s_key,
-      };
+      let keyboardData;
+
+      if (this.textSelected()) {
+        keyboardData = {
+          left_right: 0,
+          up_down: 0,
+        };
+      }
+      else {
+        keyboardData = {
+          left_right: this.inputData.d_key - this.inputData.a_key,
+          up_down: this.inputData.w_key - this.inputData.s_key,
+        };
+      }
 
       this.keyboard_pub.publish(keyboardData);
+    },
+
+    textSelected: function () {
+      let active = document.activeElement;
+      return active.tagName.toLowerCase() == "input" && active.type == "text";
     },
   },
 };
