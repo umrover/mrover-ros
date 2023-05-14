@@ -18,7 +18,7 @@ const D = 68;
 
 // Motor power levels
 const ROTATION_PWR = 1.0;
-const UP_DOWN_PWR = 0.6;
+const UP_DOWN_PWR = 0.7;
 
 export default {
   data() {

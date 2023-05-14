@@ -13,7 +13,7 @@ MOSFET_GATE_PIN = 12  # the pin used as the gate driver is GPIO 12
 The GPIO pin used to reset the MCU board.
 """
 
-TIME_TO_RESET_S = 1.0
+TIME_TO_RESET_S = 3.0
 """
 The amount of time in seconds to hold the reset pin.
 """
@@ -59,11 +59,11 @@ class ResetManager:
 
         rospy.logerr("Resetting the entire MCU Board.")
 
+        self.time_of_last_reset = time()
+
         GPIO.output(MOSFET_GATE_PIN, GPIO.LOW)
         sleep(TIME_TO_RESET_S)
         GPIO.output(MOSFET_GATE_PIN, GPIO.HIGH)
-
-        self.time_of_last_reset = time()
 
         # Set mcu_is_active to true even though it might not actually be true.
         # This is because we want to reset the variable in case the science node stops publishing data.
