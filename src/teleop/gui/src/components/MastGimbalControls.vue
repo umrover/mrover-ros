@@ -10,19 +10,15 @@
 <script>
 import ROSLIB from "roslib";
 
-// Keycodes
-const W = 87;
-const A = 65;
-const S = 83;
-const D = 68;
-
-// Motor power levels
-const ROTATION_PWR = 1.0;
-const UP_DOWN_PWR = 0.7;
+const UPDATE_RATE_S = 0.125;
+let interval;
 
 export default {
   data() {
     return {
+      rotation_pwr: 0,
+      up_down_pwr: 0,
+
       keyboard_pub: null,
 
       inputData: {
@@ -34,7 +30,22 @@ export default {
     };
   },
 
+  beforeDestroy: function () {
+    window.clearInterval(interval);
+  },
+
   created: function () {
+    // get power levels for gimbal controls.
+    let config = new ROSLIB.Param({
+      ros: this.$ros,
+      name: "teleop/mast_gimbal_power",
+    });
+    config.get((value) => {
+      this.rotation_pwr = value.rotation_pwr;
+      this.up_down_pwr = value.up_down_pwr;
+    });
+
+    // Add key listeners.
     document.addEventListener("keyup", this.keyMonitorUp);
     document.addEventListener("keydown", this.keyMonitorDown);
 
@@ -43,6 +54,11 @@ export default {
       name: "/mast_gimbal_cmd",
       messageType: "mrover/MastGimbal",
     });
+
+    // Publish periodically in case a topic message is missed.
+    interval = window.setInterval(() => {
+      this.publish();
+    }, UPDATE_RATE_S * 1000);
   },
 
   beforeDestroy: function () {
@@ -51,16 +67,32 @@ export default {
   },
 
   methods: {
-    // when a key is being pressed down, sets input for that key as 1
+    // When a key is being pressed down, set the power level.
+    // Ignore keys that are already pressed to avoid spamming when holding values.
     keyMonitorDown: function (event) {
-      if (event.keyCode == W) {
-        this.inputData.w_key = UP_DOWN_PWR;
-      } else if (event.keyCode == A) {
-        this.inputData.a_key = ROTATION_PWR;
-      } else if (event.keyCode == S) {
-        this.inputData.s_key = UP_DOWN_PWR;
-      } else if (event.keyCode == D) {
-        this.inputData.d_key = ROTATION_PWR;
+      if (event.key == "w" || event.key == "W") {
+        if (this.inputData.w_key > 0) {
+          return;
+        }
+        this.inputData.w_key = this.up_down_pwr;
+      }
+      else if (event.key == "a" || event.key == "A") {
+        if (this.inputData.a_key > 0) {
+          return;
+        }
+        this.inputData.a_key = this.rotation_pwr;
+      }
+      else if (event.key == "s" || event.key == "S") {
+        if (this.inputData.s_key > 0) {
+          return;
+        }
+        this.inputData.s_key = this.up_down_pwr;
+      }
+      else if (event.key == "d" || event.key == "D") {
+        if (this.inputData.d_key > 0) {
+          return;
+        }
+        this.inputData.d_key = this.rotation_pwr;
       }
 
       this.publish();
@@ -68,13 +100,16 @@ export default {
 
     // when a key is released, sets input for that key as 0
     keyMonitorUp: function (event) {
-      if (event.keyCode == W) {
+      if (event.key == "w" || event.key == "W") {
         this.inputData.w_key = 0;
-      } else if (event.keyCode == A) {
+      }
+      else if (event.key == "a" || event.key == "A") {
         this.inputData.a_key = 0;
-      } else if (event.keyCode == S) {
+      }
+      else if (event.key == "s" || event.key == "S") {
         this.inputData.s_key = 0;
-      } else if (event.keyCode == D) {
+      }
+      else if (event.key == "d" || event.key == "D") {
         this.inputData.d_key = 0;
       }
 

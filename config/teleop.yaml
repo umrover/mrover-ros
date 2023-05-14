@@ -89,6 +89,10 @@ teleop:
     pan: 4
     tilt: 5
 
+  mast_gimbal_power:
+    rotation_pwr: 1.0
+    up_down_pwr: 0.6
+
   # Thresholds in radians
   # Euclidean error is the norm of all the joint position errors
   euclidean_error_threshold: 3.14
