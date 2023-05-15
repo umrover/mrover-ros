@@ -14,7 +14,7 @@ from dataclasses import dataclass
 from drive import DriveController
 from util.np_utils import normalized, perpendicular_2d
 from util.ros_utils import get_rosparam
-from shapely.geometry import LineString
+from shapely.geometry import LineString, Polygon, Point
 from mrover.msg import GPSPointList
 
 STOP_THRESH = get_rosparam("gate/stop_thresh", 0.2)
@@ -153,6 +153,22 @@ class GatePath:
             path = self.__make_shapely_path(rover, all_pts[-num_pts_included:])
 
         return all_pts.shape[0] - num_pts_included
+
+    def __get_paint(self) -> Polygon:
+        """ "
+        Generates the 'paint' as a shapely polygon. The 'paint' is the region that the rover is allowed to optimize its path within
+        """
+        rectangle_mode = False
+        if rectangle_mode:
+            return Polygon(self.prep_pts)
+
+    def __should_optimize(self) -> bool:
+        """
+        :returns: True if the rover should optimize its path, False otherwise.
+        the rover should optimize its path if its position is within the paint
+        """
+        paint = self.__get_paint()
+        return paint.contains(Point(self.rover_pos))
 
     def __make_shapely_path(self, rover: Rover, path_pts: np.ndarray) -> LineString:
         """
