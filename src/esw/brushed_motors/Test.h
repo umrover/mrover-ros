@@ -12,6 +12,8 @@ public:
     // Test function movement types, with focus on open loop
     static void testOpenLoop(Controller* controller);
 
+    static void testOpenLoopViaUART(Controller* controller);
+
     static bool testCalibrated(Controller* controller);
 
 private:

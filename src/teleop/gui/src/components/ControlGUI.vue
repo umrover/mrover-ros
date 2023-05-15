@@ -9,6 +9,7 @@
       :vertical="true"
     ></JointStateTable>
     <MoteusStateTable :moteus-state-data="moteusState"></MoteusStateTable>
+    <FlightAttitudeIndicator></FlightAttitudeIndicator>
   </div>
 </template>
 
@@ -20,6 +21,7 @@ import MastGimbalControls from "./MastGimbalControls.vue";
 import JointStateTable from "./JointStateTable.vue";
 import MoteusStateTable from "./MoteusStateTable.vue";
 import CommReadout from "./CommReadout.vue";
+import FlightAttitudeIndicator from "./FlightAttitudeIndicator.vue";
 
 export default {
   components: {
@@ -29,6 +31,7 @@ export default {
     MastGimbalControls,
     MoteusStateTable,
     CommReadout,
+    FlightAttitudeIndicator
   },
   data() {
     return {

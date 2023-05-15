@@ -10,6 +10,7 @@
       />
       <h1>ISH Dashboard</h1>
       <div class="spacer"></div>
+      <MCUReset class="mcu_reset"></MCUReset>
       <div class="spacer"></div>
       <CommReadout class="comm"></CommReadout>
       <div class="help">
@@ -69,13 +70,14 @@
 import ROSLIB from "roslib";
 import SelectSite from "./SelectSite.vue";
 import Raman from "./Raman.vue";
-import Sudan from "./Sudan.vue";
+import Sudan from "./EmulsionTest.vue";
 import Carousel from "./Carousel.vue";
 import Cache from "./Cache.vue";
 import Chlorophyll from "./Chlorophyll.vue";
 import Amino from "./Amino.vue";
 import Cameras from "../components/Cameras.vue";
 import CommReadout from "./CommReadout.vue";
+import MCUReset from "./MCUReset.vue"
 import { disableAutonLED } from "../utils.js";
 
 export default {
@@ -89,6 +91,7 @@ export default {
     Amino,
     Cameras,
     CommReadout,
+    MCUReset,
   },
   data() {
     return {
