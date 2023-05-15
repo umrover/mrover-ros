@@ -102,6 +102,11 @@ sent. This is to prevent multiple virtual Controller objects from
 trying to contact the same physical Controller object.)
 */
 
+// struct LiveState {
+//     bool isLive{false};
+//     std::string jointName;
+//     inline static std::mutex liveMutex;
+// };
 
 class Controller {
 public:
@@ -120,6 +125,7 @@ public:
     bool limitAIsFwd = true;
     int32_t limitAAdjustedCounts = 0;
     int32_t limitBAdjustedCounts = 0;
+
 
     // REQUIRES: _name is the name of the motor,
     // mcuID is the mcu id of the controller which dictates the slave address,
@@ -140,11 +146,6 @@ public:
             uint8_t _motorID,
             float _motorMaxVoltage,
             float _driverVoltage);
-
-    // REQUIRES: nothing
-    // MODIFIES: nothing
-    // EFFECTS: Returns true if Controller is live.
-    bool isControllerLive() const;
 
     // REQUIRES: nothing
     // MODIFIES: nothing
@@ -205,21 +206,34 @@ public:
     void turnOn() const;
 
     // REQUIRES: nothing
-    // MODIFIES: nothing
-    // EFFECTS: UART bus, and turns on the controller. Can be used as a way to tick the watchdog for a particular mcu.
+    // MODIFIES: liveMap
+    // EFFECTS: UART bus, and turns on the controller.
+    // Can be used as a way to tick the watchdog for a particular mcu.
     void turnOnViaUART() const;
+
+    // REQUIRES: nothing
+    // MODIFIES: nothing
+    // EFFECTS: Returns a combined ID for both the deviceAddress and motorID
+    // MotorID can only be max 3 bits (0-5), and device address is max 2 bits (1 or 2)
+    uint8_t combineDeviceMotorID() const;
+
+    // REQUIRES: nothing
+    // MODIFIES: liveMap
+    // EFFECTS: Resets the live map. Should be only be used if needing to reset state
+    // (e.g. MCU board had reset its state and needs to be reconfigured and made live)
+    static void resetLiveMap();
 
 
 private:
     // REQUIRES: nothing
-    // MODIFIES: isLive
+    // MODIFIES: liveMap
     // EFFECTS: I2C bus, If not already live,
     // configures the physical controller.
     // Then makes live.
     void makeLive();
 
     // REQUIRES: nothing
-    // MODIFIES: isLive
+    // MODIFIES: liveMap
     // EFFECTS: UART bus, If not already live,
     // configures the physical controller.
     // Then makes live.
@@ -244,8 +258,12 @@ private:
 
     float currentAngle;
 
-    bool isLive = false;
+    // key is deviceAddress and motorID (eg. if deviceAddress = 2(0b10) and motorID = 1(0b1), then key = 17(0b10001) )
+    static std::unordered_map<uint8_t, std::string> liveMap;
+    static std::mutex liveMapLock;
+
     bool isControllerCalibrated = false;
+
     float abs_enc_radians = 0;
     mrover::LimitSwitchData limit_switch_data;
 };

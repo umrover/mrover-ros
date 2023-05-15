@@ -9,6 +9,9 @@ void ROSHandler::init(ros::NodeHandle* rosNode, bool _use_uart_and_send_only) {
 
     use_uart_and_send_only = _use_uart_and_send_only;
 
+    prev_mcu_active = false;
+    MCUActiveSubscriber = n->subscribe<std_msgs::Bool>("science_mcu_active", 1, processMCUActive);
+
     // Initialize services
     calibrateService = n->advertiseService<mrover::CalibrateMotors::Request, mrover::CalibrateMotors::Response>("calibrate", processMotorCalibrate);
     adjustService = n->advertiseService<mrover::AdjustMotors::Request, mrover::AdjustMotors::Response>("adjust", processMotorAdjust);
@@ -372,6 +375,17 @@ void ROSHandler::tickMCU(int mcu_id) {
 void ROSHandler::tickAllMCUs() {
     tickMCU(1);
     tickMCU(2);
+}
+
+// REQUIRES: nothing
+// MODIFIES: nothing
+// EFFECTS: resets the liveMap if changing from not active to active
+void ROSHandler::processMCUActive(const std_msgs::Bool::ConstPtr& msg) {
+    bool now_active = msg->data;
+    if (now_active && !prev_mcu_active) {
+        Controller::resetLiveMap();
+    }
+    prev_mcu_active = now_active;
 }
 
 // REQUIRES: name is the name of a controller and isCalibrated is whether it is calibrated

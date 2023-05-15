@@ -10,6 +10,7 @@
       />
       <h1>SA Dashboard</h1>
       <div class="spacer"></div>
+      <MCUReset class="mcu_reset"></MCUReset>
       <div class="spacer"></div>
       <CommReadout class="comm"></CommReadout>
       <div class="help">
@@ -119,6 +120,7 @@ import JointStateTable from "./JointStateTable.vue";
 import LimitSwitch from "./LimitSwitch.vue";
 import CalibrationCheckbox from "./CalibrationCheckbox.vue";
 import CommReadout from "./CommReadout.vue";
+import MCUReset from "./MCUReset.vue";
 import MotorAdjust from "./MotorAdjust.vue";
 import OdometryReading from "./OdometryReading.vue";
 import { disableAutonLED, quaternionToMapAngle } from "../utils.js";
@@ -137,6 +139,7 @@ export default {
     LimitSwitch,
     CalibrationCheckbox,
     CommReadout,
+    MCUReset,
     MotorAdjust,
     OdometryReading
   },

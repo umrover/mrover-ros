@@ -188,10 +188,10 @@ export default {
       let autoShutdownServ = new ROSLIB.Service({
         ros: this.$ros,
         name: "change_heater_auto_shutoff_state",
-        serviceType: "mrover/ChangeHeaterAutoShutoffState",
+        serviceType: "std_srvs/SetBool",
       });
       let request = new ROSLIB.ServiceRequest({
-        enable: this.autoShutdownIntended
+        data: this.autoShutdownIntended
       });
       autoShutdownServ.callService(request, (result) => {
         if (!result) {

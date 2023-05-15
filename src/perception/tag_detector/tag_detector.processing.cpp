@@ -1,15 +1,17 @@
 #include "tag_detector.hpp"
 
+#include "../point.hpp"
+
+#include <sensor_msgs/image_encodings.h>
+#include <tf/exceptions.h>
+
+#include <opencv2/imgproc.hpp>
+
 #include <algorithm>
 #include <cassert>
 #include <cmath>
 #include <execution>
 #include <numeric>
-
-#include <sensor_msgs/image_encodings.h>
-#include <tf/exceptions.h>
-
-#include "../point.hpp"
 
 namespace mrover {
 
@@ -75,18 +77,18 @@ namespace mrover {
         mProfiler.measureEvent("Threshold");
 
         // Detect the tag vertices in screen space and their respective ids
-        // {mCorners, mIds} are the outputs from OpenCV
-        cv::aruco::detectMarkers(mImg, mDictionary, mCorners, mIds, mDetectorParams);
-        NODELET_DEBUG("OpenCV detect size: %zu", mIds.size());
+        // {mImmediateCorneres, mImmediateIds} are the outputs from OpenCV
+        cv::aruco::detectMarkers(mImg, mDictionary, mImmediateCorners, mImmediateIds, mDetectorParams);
+        NODELET_DEBUG("OpenCV detect size: %zu", mImmediateIds.size());
         mProfiler.measureEvent("OpenCV Detect");
 
         // Update ID, image center, and increment hit count for all detected tags
-        for (size_t i = 0; i < mIds.size(); ++i) {
-            int id = mIds[i];
+        for (size_t i = 0; i < mImmediateIds.size(); ++i) {
+            int id = mImmediateIds[i];
             Tag& tag = mTags[id];
-            tag.hitCount = std::clamp(tag.hitCount + 1, 0, mMaxHitCount);
+            tag.hitCount = std::clamp(tag.hitCount + mTagIncrementWeight, 0, mMaxHitCount);
             tag.id = id;
-            tag.imageCenter = std::accumulate(mCorners[i].begin(), mCorners[i].end(), cv::Point2f{}) / static_cast<float>(mCorners[i].size());
+            tag.imageCenter = std::accumulate(mImmediateCorners[i].begin(), mImmediateCorners[i].end(), cv::Point2f{}) / static_cast<float>(mImmediateCorners[i].size());
             tag.tagInCam = getTagInCamFromPixel(msg, std::lround(tag.imageCenter.x), std::lround(tag.imageCenter.y));
 
             if (tag.tagInCam) {
@@ -101,8 +103,9 @@ namespace mrover {
         auto it = mTags.begin();
         while (it != mTags.end()) {
             auto& [id, tag] = *it;
-            if (std::find(mIds.begin(), mIds.end(), id) == mIds.end()) {
-                tag.hitCount--;
+            if (std::find(mImmediateIds.begin(), mImmediateIds.end(), id) == mImmediateIds.end()) {
+                tag.hitCount -= mTagDecrementWeight;
+                tag.tagInCam = std::nullopt;
                 if (tag.hitCount <= 0) {
                     it = mTags.erase(it);
                     continue;
@@ -113,7 +116,7 @@ namespace mrover {
 
         // Publish all tags to the tf tree that have been seen enough times
         for (auto const& [id, tag]: mTags) {
-            if (tag.hitCount >= mMinHitCountBeforePublish) {
+            if (tag.hitCount >= mMinHitCountBeforePublish && tag.tagInCam) {
                 try {
                     std::string immediateFrameId = "immediateFiducial" + std::to_string(tag.id);
                     // Publish tag to odom
@@ -131,7 +134,22 @@ namespace mrover {
         }
 
         if (mPublishImages && mImgPub.getNumSubscribers()) {
-            cv::aruco::drawDetectedMarkers(mImg, mCorners, mIds);
+
+            cv::aruco::drawDetectedMarkers(mImg, mImmediateCorners, mImmediateIds);
+            // Max number of tags the hit counter can display = 10;
+            if (!mTags.empty()) {
+                // TODO: remove some magic numbers in this block
+                int tagCount = 1;
+                auto tagBoxWidth = static_cast<int>(mImg.cols / (mTags.size() * 2));
+                for (auto& [id, tag]: mTags) {
+                    cv::Scalar color{255, 0, 0};
+                    cv::Point pt{tagBoxWidth * tagCount, mImg.rows / 10};
+                    std::string text = "id" + std::to_string(id) + ":" + std::to_string((tag.hitCount));
+                    cv::putText(mImg, text, pt, cv::FONT_HERSHEY_COMPLEX, mImg.cols / 800.0, color, mImg.cols / 300);
+
+                    ++tagCount;
+                }
+            }
             mImgMsg.header.seq = mSeqNum;
             mImgMsg.header.stamp = ros::Time::now();
             mImgMsg.header.frame_id = "zed2i_left_camera_frame";
@@ -146,7 +164,7 @@ namespace mrover {
             mImgPub.publish(mImgMsg);
         }
 
-        size_t detectedCount = mIds.size();
+        size_t detectedCount = mImmediateIds.size();
         NODELET_INFO_COND(!mPrevDetectedCount.has_value() || detectedCount != mPrevDetectedCount.value(), "Detected %zu markers", detectedCount);
         mPrevDetectedCount = detectedCount;
 

@@ -336,6 +336,8 @@ science:
     - pushed: 0
       start: 50
   info:
+    mcu_active_timeout_s: 4
+    mcu_reset_period_s: 20
     num_diag_current: 3
     num_diag_thermistors: 3
     num_science_thermistors: 3
@@ -400,6 +402,6 @@ brushless:
         bus: 3
         max_rps: 80
         max_torque: 0.3
-        multiplier: -1
+        multiplier: 1
 
 default_network_iface: "enp0s31f6"
