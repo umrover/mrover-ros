@@ -32,7 +32,10 @@
     <!-- rtabmap visual odometry -->
     <node if="$(arg use_rtabmap_stereo_odom)"
           pkg="nodelet" type="nodelet" name="rtabmap_stereo_odometry" respawn="true"
-          args="load rtabmap_ros/stereo_odometry perception_nodelet_manager" output="screen">
+          args="load rtabmap_odom/stereo_odometry perception_nodelet_manager" output="screen">
+        <param name="frame_id" type="string" value="base_link"/>
+        <param name="odom_frame_id" type="string" value="odom"/>
+  
         <remap from="/left/image_rect" to="/camera/left/image"/>
         <remap from="/left/camera_info" to="/camera/left/camera_info"/>
         <remap from="/right/image_rect" to="/camera/right/image"/>

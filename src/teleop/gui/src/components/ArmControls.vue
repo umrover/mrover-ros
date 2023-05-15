@@ -7,33 +7,32 @@
       <!-- Change to radio buttons in the future -->
       <input
         ref="arm-enabled"
-        v-model="arm_controls"
+        v-model="arm_mode"
         type="radio"
         :name="'Arm Enabled'"
         value="arm_disabled"
-        @change="updateArmMode()"
       />
       Arm Disabled
       <input
         ref="open-loop-enabled"
-        v-model="arm_controls"
+        v-model="arm_mode"
         type="radio"
         :name="'Open Loop Enabled'"
         value="open_loop"
-        @change="updateArmMode()"
       />
       Open Loop
-      <input
+      <!-- Commented until servoing works :( -->
+      <!-- <input
         ref="servo-enabled"
-        v-model="arm_controls"
+        v-model="arm_mode"
         type="radio"
         :name="'Servo'"
         value="servo"
-        @change="updateArmMode()"
       />
-      Servo
+      Servo -->
     </div>
-    <div class="controls-flex">
+    <!-- Commented until joint locking is implemented -->
+    <!-- <div class="controls-flex">
       <h4>Joint Locks</h4>
       <Checkbox ref="A" :name="'A'" @toggle="updateJointsEnabled(0, $event)" />
       <Checkbox ref="B" :name="'B'" @toggle="updateJointsEnabled(1, $event)" />
@@ -41,14 +40,9 @@
       <Checkbox ref="D" :name="'D'" @toggle="updateJointsEnabled(3, $event)" />
       <Checkbox ref="E" :name="'E'" @toggle="updateJointsEnabled(4, $event)" />
       <Checkbox ref="F" :name="'F'" @toggle="updateJointsEnabled(5, $event)" />
-    </div>
+    </div> -->
     <div class="controls-flex">
       <h4>Misc. Controls</h4>
-      <Checkbox
-        ref="Slow Mode"
-        :name="'Slow Mode'"
-        @toggle="updateSlowMode($event)"
-      />
       <ToggleButton
         :current-state="laser_enabled"
         label-enable-text="Arm Laser On"
@@ -73,7 +67,7 @@
           { name: 'joint_b', option: 'Joint B' },
           { name: 'joint_c', option: 'Joint C' },
           { name: 'joint_d', option: 'Joint D' },
-          { name: 'joint_e', option: 'Joint E' },
+          { name: 'joint_e', option: 'Joint E' }
         ]"
       />
     </div>
@@ -82,7 +76,6 @@
 
 <script>
 import ROSLIB from "roslib";
-import Checkbox from "./Checkbox.vue";
 import ToggleButton from "./ToggleButton.vue";
 import CalibrationCheckbox from "./CalibrationCheckbox.vue";
 import JointAdjust from "./MotorAdjust.vue";
@@ -95,59 +88,59 @@ let interval;
 export default {
   components: {
     CalibrationCheckbox,
-    Checkbox,
     JointAdjust,
     ToggleButton,
-    LimitSwitch,
+    LimitSwitch
   },
   data() {
     return {
-      armcontrols_pub: null,
-      arm_controls: "arm_disabled",
-      joystick_pub: null,
-      jointlock_pub: null,
+      arm_mode: "arm_disabled",
       joints_array: [false, false, false, false, false, false],
-      slow_mode: false,
-      slowmode_pub: null,
       laser_enabled: false,
+
+      ra_mode_service: null,
+      jointlock_pub: null,
+      joystick_pub: null,
       laser_service: null,
     };
   },
 
+  watch: {
+    arm_mode: function (newMode, oldMode) {
+      this.updateArmMode(newMode, oldMode);
+    }
+  },
+
   beforeDestroy: function () {
+    this.updateArmMode("arm_disabled", this.arm_mode);
     window.clearInterval(interval);
   },
 
   created: function () {
-    this.armcontrols_pub = new ROSLIB.Topic({
-      ros: this.$ros,
-      name: "ra/mode",
-      messageType: "std_msgs/String",
-    });
-    this.updateArmMode();
     this.joystick_pub = new ROSLIB.Topic({
       ros: this.$ros,
       name: "/xbox/ra_control",
-      messageType: "sensor_msgs/Joy",
+      messageType: "sensor_msgs/Joy"
     });
     this.laser_service = new ROSLIB.Service({
       ros: this.$ros,
       name: "enable_mosfet_device",
       serviceType: "mrover/EnableDevice",
     });
+    this.ra_mode_service = new ROSLIB.Service({
+      ros: this.$ros,
+      name: "change_ra_mode",
+      serviceType: "mrover/ChangeArmMode"
+    });
     this.jointlock_pub = new ROSLIB.Topic({
       ros: this.$ros,
       name: "/joint_lock",
-      messageType: "mrover/JointLock",
+      messageType: "mrover/JointLock"
     });
-    this.slow_mode_pub = new ROSLIB.Topic({
-      ros: this.$ros,
-      name: "/ra_slow_mode",
-      messageType: "std_msgs/Bool",
-    });
+    this.updateArmMode("arm_disabled", this.arm_mode);
     const jointData = {
       //publishes array of all falses when refreshing the page
-      joints: this.joints_array,
+      joints: this.joints_array
     };
     var jointlockMsg = new ROSLIB.Message(jointData);
     this.jointlock_pub.publish(jointlockMsg);
@@ -175,35 +168,32 @@ export default {
   },
 
   methods: {
-    updateArmMode: function () {
+    updateArmMode: function (newMode, oldMode) {
       const armData = {
-        data: this.arm_controls,
+        mode: newMode
       };
-      var armcontrolsmsg = new ROSLIB.Message(armData);
-      this.armcontrols_pub.publish(armcontrolsmsg);
+      var armcontrolsmsg = new ROSLIB.ServiceRequest(armData);
+      this.ra_mode_service.callService(armcontrolsmsg, (response) => {
+        if (!response.success) {
+          this.arm_mode = oldMode;
+          alert("Failed to change arm mode");
+        }
+      });
     },
 
     updateJointsEnabled: function (jointnum, enabled) {
       this.joints_array[jointnum] = enabled;
       const jointData = {
-        joints: this.joints_array,
+        joints: this.joints_array
       };
       var jointlockMsg = new ROSLIB.Message(jointData);
       this.jointlock_pub.publish(jointlockMsg);
     },
 
-    updateSlowMode: function (enabled) {
-      this.slow_mode = enabled;
-      const slowData = {
-        data: this.slow_mode,
-      };
-      var slowModeMsg = new ROSLIB.Message(slowData);
-      this.slow_mode_pub.publish(slowModeMsg);
-    },
     publishJoystickMessage: function (axes, buttons) {
       const joystickData = {
         axes: axes,
-        buttons: buttons,
+        buttons: buttons
       };
       var joystickMsg = new ROSLIB.Message(joystickData);
       this.joystick_pub.publish(joystickMsg);
@@ -220,8 +210,8 @@ export default {
           alert("Toggling Arm Laser failed.");
         }
       });
-    },
-  },
+    }
+  }
 };
 </script>
 
@@ -232,6 +222,7 @@ export default {
   align-items: center;
   justify-items: center;
   width: 100%;
+  height: auto;
 }
 
 .wrap h2 h4 {

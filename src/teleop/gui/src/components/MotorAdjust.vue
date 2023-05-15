@@ -136,5 +136,10 @@ export default {
   width: 75px;
   border: 1px solid black;
   border-radius: 5px;
+  cursor: pointer;
+}
+
+.submit-button:hover {
+  background-color: rgb(210, 210, 210);
 }
 </style>

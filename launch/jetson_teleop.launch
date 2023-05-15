@@ -1,0 +1,17 @@
+<launch>
+    
+    <include file="$(find mrover)/launch/jetson.launch"/>
+    <!--
+      ============
+      Localization
+      ============
+    -->
+    <rosparam command="load" file="$(find mrover)/config/localization.yaml"/>
+    <rosparam command="load" file="$(find mrover)/config/ekf.yaml"/>
+
+    <!-- passthrough filter to replace EKF in datapath -->
+    <node pkg="mrover" type="passthrough_filter.py" name="passthrough_filter"/>
+
+    <!-- node to linearize GPS from geodetic to ENU cartesian coords -->
+    <node name="gps_linearization" pkg="mrover" type="gps_linearization.py" output="screen"/>
+</launch>

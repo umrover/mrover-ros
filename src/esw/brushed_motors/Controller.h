@@ -1,12 +1,14 @@
 #pragma once
 
-#include "I2C.h"         // for I2C and IOFailure
-#include <assert.h>      // for assert
-#include <cmath>         // for M_PI
-#include <limits>        // for numeric limits
-#include <mutex>         // for mutex
-#include <ros/console.h> // for ROS_ERROR
-#include <string.h>      // for string and memcpy
+#include "I2C.h"                    // for I2C and IOFailure
+#include "UART.h"                   // for UART
+#include <assert.h>                 // for assert
+#include <cmath>                    // for M_PI
+#include <limits>                   // for numeric limits
+#include <mrover/LimitSwitchData.h> // for LimitSwitchData
+#include <mutex>                    // for mutex
+#include <ros/console.h>            // for ROS_ERROR
+#include <string.h>                 // for string and memcpy
 
 #define OFF_OP 0x00
 #define OFF_WB 0
@@ -80,6 +82,10 @@
 #define LIMIT_A_IS_FWD_WB 1
 #define LIMIT_A_IS_FWD_RB 0
 
+#define LIMIT_DATA_OP 0x15
+#define LIMIT_DATA_WB 0
+#define LIMIT_DATA_RB 1
+
 #define UINT8_POINTER_T reinterpret_cast<uint8_t*>
 
 /*
@@ -96,6 +102,11 @@ sent. This is to prevent multiple virtual Controller objects from
 trying to contact the same physical Controller object.)
 */
 
+// struct LiveState {
+//     bool isLive{false};
+//     std::string jointName;
+//     inline static std::mutex liveMutex;
+// };
 
 class Controller {
 public:
@@ -114,6 +125,7 @@ public:
     bool limitAIsFwd = true;
     int32_t limitAAdjustedCounts = 0;
     int32_t limitBAdjustedCounts = 0;
+
 
     // REQUIRES: _name is the name of the motor,
     // mcuID is the mcu id of the controller which dictates the slave address,
@@ -137,11 +149,6 @@ public:
 
     // REQUIRES: nothing
     // MODIFIES: nothing
-    // EFFECTS: Returns true if Controller is live.
-    bool isControllerLive() const;
-
-    // REQUIRES: nothing
-    // MODIFIES: nothing
     // EFFECTS: Returns last saved value of angle.
     // Expect a value between -M_PI and M_PI.
     float getCurrentAngle() const;
@@ -157,6 +164,12 @@ public:
     // based on allowed voltage of the motor. Also updates angle.
     void moveOpenLoop(float input);
 
+    // REQUIRES: -1.0 <= input <= 1.0
+    // MODIFIES: currentAngle. Also makes controller live if not already.
+    // EFFECTS: UART bus, Sends an open loop command scaled to PWM limits
+    // based on allowed voltage of the motor. Also updates angle.
+    void moveOpenLoopViaUART(float input);
+
     // REQUIRES: nothing
     // MODIFIES: nothing
     // EFFECTS: I2C bus, returns if the MCU is calibrated
@@ -166,6 +179,11 @@ public:
     // MODIFIES: nothing
     // EFFECTS: I2C bus, enables or disables limit switches
     void enableLimitSwitches(bool enable);
+
+    // REQUIRES: nothing
+    // MODIFIES: nothing
+    // EFFECTS: UART bus, enables or disables limit switches
+    void enableLimitSwitchesViaUART(bool enable);
 
     // REQUIRES: nothing
     // MODIFIES: nothing
@@ -179,22 +197,57 @@ public:
 
     // REQUIRES: nothing
     // MODIFIES: nothing
+    // EFFECTS: I2C bus, and returns limit data (calibrated, limit a/b pressed).
+    mrover::LimitSwitchData getLimitSwitchData();
+
+    // REQUIRES: nothing
+    // MODIFIES: nothing
     // EFFECTS: I2C bus, and turns on the controller. Can be used as a way to tick the watchdog for a particular mcu.
     void turnOn() const;
+
+    // REQUIRES: nothing
+    // MODIFIES: liveMap
+    // EFFECTS: UART bus, and turns on the controller.
+    // Can be used as a way to tick the watchdog for a particular mcu.
+    void turnOnViaUART() const;
+
+    // REQUIRES: nothing
+    // MODIFIES: nothing
+    // EFFECTS: Returns a combined ID for both the deviceAddress and motorID
+    // MotorID can only be max 3 bits (0-5), and device address is max 2 bits (1 or 2)
+    uint8_t combineDeviceMotorID() const;
+
+    // REQUIRES: nothing
+    // MODIFIES: liveMap
+    // EFFECTS: Resets the live map. Should be only be used if needing to reset state
+    // (e.g. MCU board had reset its state and needs to be reconfigured and made live)
+    static void resetLiveMap();
 
 
 private:
     // REQUIRES: nothing
-    // MODIFIES: isLive
+    // MODIFIES: liveMap
     // EFFECTS: I2C bus, If not already live,
     // configures the physical controller.
     // Then makes live.
     void makeLive();
 
+    // REQUIRES: nothing
+    // MODIFIES: liveMap
+    // EFFECTS: UART bus, If not already live,
+    // configures the physical controller.
+    // Then makes live.
+    void makeLiveViaUART();
+
     // REQUIRES: buffer is valid and limit switch is present
     // MODIFIES: limitEnable
     // EFFECTS: I2C bus, enables limit switch if it is present
     void enableLimitSwitch(bool enable, bool& limitEnable, uint8_t operation);
+
+    // REQUIRES: buffer is valid and limit switch is present
+    // MODIFIES: limitEnable
+    // EFFECTS: UART bus, enables limit switch if it is present
+    void enableLimitSwitchViaUART(bool enable, bool& limitEnable, uint8_t operation);
 
     uint8_t deviceAddress;
     uint8_t motorID;
@@ -205,6 +258,12 @@ private:
 
     float currentAngle;
 
-    bool isLive = false;
+    // key is deviceAddress and motorID (eg. if deviceAddress = 2(0b10) and motorID = 1(0b1), then key = 17(0b10001) )
+    static std::unordered_map<uint8_t, std::string> liveMap;
+    static std::mutex liveMapLock;
+
     bool isControllerCalibrated = false;
+
+    float abs_enc_radians = 0;
+    mrover::LimitSwitchData limit_switch_data;
 };

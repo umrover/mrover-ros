@@ -49,6 +49,8 @@ namespace mrover {
         bool mPublishImages{}; // If set, we publish the images with the tags drawn on top
         int mMinHitCountBeforePublish{};
         int mMaxHitCount{};
+        int mTagIncrementWeight{};
+        int mTagDecrementWeight{};
 
         cv::Ptr<cv::aruco::DetectorParameters> mDetectorParams;
         cv::Ptr<cv::aruco::Dictionary> mDictionary;
@@ -59,8 +61,8 @@ namespace mrover {
         sensor_msgs::Image mThreshMsg;
         uint32_t mSeqNum{};
         std::optional<size_t> mPrevDetectedCount; // Log spam prevention
-        std::vector<std::vector<cv::Point2f>> mCorners;
-        std::vector<int> mIds;
+        std::vector<std::vector<cv::Point2f>> mImmediateCorners;
+        std::vector<int> mImmediateIds;
         std::unordered_map<int, Tag> mTags;
         dynamic_reconfigure::Server<mrover::DetectorParamsConfig> mConfigServer;
         dynamic_reconfigure::Server<mrover::DetectorParamsConfig>::CallbackType mCallbackType;
