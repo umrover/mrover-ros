@@ -13,7 +13,7 @@ from util.SE3 import SE3
 import tf2_ros
 import rospy
 
-POST_RADIUS = get_rosparam("gate/post_radius", 0.7)  * get_rosparam("single_fiducial/post_avoidance_multiplier", 1.42)
+POST_RADIUS = get_rosparam("gate/post_radius", 0.7) * get_rosparam("single_fiducial/post_avoidance_multiplier", 1.42)
 BACKUP_DISTANCE = get_rosparam("recovery/recovery_distance", 2.0)
 STOP_THRESH = 0.2
 DRIVE_FWD_THRESH = 0.95
@@ -25,7 +25,7 @@ class AvoidPostTrajectory(Trajectory):
         """
         Generates a trajectory that avoids a post until the rover has a clear path to the waypoint
         """
-        
+
         rover_pos = rover_pose.position
         rover_direction = rover_pose.rotation.direction_vector()
         print(rover_pos, post_pos, waypoint_pos)
@@ -94,7 +94,7 @@ class PostBackupState(BaseState):
                 if self.context.env.last_post_location is None:
                     rospy.logerr("PostBackupState: last_post_location is None")
                     return PostBackupTransitions.finished_traj.name  # type: ignore
-                
+
                 self.traj = AvoidPostTrajectory.avoid_post_trajectory(
                     self.context.rover.get_pose(),
                     self.context.env.last_post_location,
@@ -133,6 +133,4 @@ class PostBackupState(BaseState):
             tf2_ros.ConnectivityException,
             tf2_ros.ExtrapolationException,
         ):
-            return PostBackupTransitions.continue_post_backup.name # type: ignore
-
-
+            return PostBackupTransitions.continue_post_backup.name  # type: ignore

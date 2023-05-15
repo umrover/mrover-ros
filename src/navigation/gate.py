@@ -134,7 +134,8 @@ class GatePath:
         :returns: an integer representing the farthest along point on the path that we can
           drive to without intersecting the gate (while still driving through it)
         """
-
+        if not self.__should_optimize():
+            return 0
         # Get the shapes of both the posts
         post_one_shape, post_two_shape = self.gate.get_post_shapes()
 
@@ -158,9 +159,7 @@ class GatePath:
         """ "
         Generates the 'paint' as a shapely polygon. The 'paint' is the region that the rover is allowed to optimize its path within
         """
-        rectangle_mode = False
-        if rectangle_mode:
-            return Polygon(self.prep_pts)
+        return Polygon(self.prep_pts)
 
     def __should_optimize(self) -> bool:
         """
