@@ -10,7 +10,7 @@
 <script>
 import ROSLIB from "roslib";
 
-const UPDATE_RATE_S = 0.2;
+const UPDATE_RATE_S = 1;
 let interval;
 
 export default {
@@ -25,20 +25,22 @@ export default {
         w_key: 0,
         a_key: 0,
         s_key: 0,
-        d_key: 0,
-      },
+        d_key: 0
+      }
     };
   },
 
   beforeDestroy: function () {
     window.clearInterval(interval);
+    document.removeEventListener("keyup", this.keyMonitorUp);
+    document.removeEventListener("keydown", this.keyMonitorDown);
   },
 
   created: function () {
     // get power levels for gimbal controls.
     let config = new ROSLIB.Param({
       ros: this.$ros,
-      name: "teleop/mast_gimbal_power",
+      name: "teleop/mast_gimbal_power"
     });
     config.get((value) => {
       this.rotation_pwr = value.rotation_pwr;
@@ -52,18 +54,13 @@ export default {
     this.keyboard_pub = new ROSLIB.Topic({
       ros: this.$ros,
       name: "/mast_gimbal_cmd",
-      messageType: "mrover/MastGimbal",
+      messageType: "mrover/MastGimbal"
     });
 
     // Publish periodically in case a topic message is missed.
     interval = window.setInterval(() => {
       this.publish();
     }, UPDATE_RATE_S * 1000);
-  },
-
-  beforeDestroy: function () {
-    document.removeEventListener("keyup", this.keyMonitorUp);
-    document.removeEventListener("keydown", this.keyMonitorDown);
   },
 
   methods: {
@@ -75,20 +72,17 @@ export default {
           return;
         }
         this.inputData.w_key = this.up_down_pwr;
-      }
-      else if (event.key == "a" || event.key == "A") {
+      } else if (event.key == "a" || event.key == "A") {
         if (this.inputData.a_key > 0) {
           return;
         }
         this.inputData.a_key = this.rotation_pwr;
-      }
-      else if (event.key == "s" || event.key == "S") {
+      } else if (event.key == "s" || event.key == "S") {
         if (this.inputData.s_key > 0) {
           return;
         }
         this.inputData.s_key = this.up_down_pwr;
-      }
-      else if (event.key == "d" || event.key == "D") {
+      } else if (event.key == "d" || event.key == "D") {
         if (this.inputData.d_key > 0) {
           return;
         }
@@ -102,14 +96,11 @@ export default {
     keyMonitorUp: function (event) {
       if (event.key.toLowerCase() == "w") {
         this.inputData.w_key = 0;
-      }
-      else if (event.key.toLowerCase() == "a") {
+      } else if (event.key.toLowerCase() == "a") {
         this.inputData.a_key = 0;
-      }
-      else if (event.key.toLowerCase() == "s") {
+      } else if (event.key.toLowerCase() == "s") {
         this.inputData.s_key = 0;
-      }
-      else if (event.key.toLowerCase() == "d") {
+      } else if (event.key.toLowerCase() == "d") {
         this.inputData.d_key = 0;
       }
 
@@ -122,13 +113,12 @@ export default {
       if (this.textSelected()) {
         keyboardData = {
           left_right: 0,
-          up_down: 0,
+          up_down: 0
         };
-      }
-      else {
+      } else {
         keyboardData = {
           left_right: this.inputData.d_key - this.inputData.a_key,
-          up_down: this.inputData.w_key - this.inputData.s_key,
+          up_down: this.inputData.w_key - this.inputData.s_key
         };
       }
 
@@ -138,8 +128,8 @@ export default {
     textSelected: function () {
       let active = document.activeElement;
       return active.tagName.toLowerCase() == "input" && active.type == "text";
-    },
-  },
+    }
+  }
 };
 </script>
 
