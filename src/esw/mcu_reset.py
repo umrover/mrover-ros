@@ -44,7 +44,7 @@ class ResetManager:
         self.mcu_is_active = True
         self.reset_mcu_autonomously = False
 
-        self.time_of_last_reset = time()
+        self.time_of_last_reset = time() - MCU_RESET_PERIOD_S
 
     def update_mcu_active(self, status: Bool) -> None:
         """
