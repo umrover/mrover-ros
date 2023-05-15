@@ -13,10 +13,10 @@ from util.SE3 import SE3
 import tf2_ros
 import rospy
 
-POST_RADIUS = get_rosparam("gate/post_radius", 0.7)  * get_rosparam("single_fiducial/post_avoidance_multiplier", 1.42)
+POST_RADIUS = get_rosparam("gate/post_radius", 0.7) * get_rosparam("single_fiducial/post_avoidance_multiplier", 1.42)
 BACKUP_DISTANCE = get_rosparam("recovery/recovery_distance", 2.0)
-STOP_THRESH = 0.2
-DRIVE_FWD_THRESH = 0.95
+STOP_THRESH = get_rosparam("search/stop_thresh", 0.2)
+DRIVE_FWD_THRESH = get_rosparam("search/drive_fwd_thresh", 0.34)
 
 
 @dataclass
@@ -24,8 +24,24 @@ class AvoidPostTrajectory(Trajectory):
     def avoid_post_trajectory(rover_pose: SE3, post_pos: np.ndarray, waypoint_pos: np.ndarray) -> AvoidPostTrajectory:
         """
         Generates a trajectory that avoids a post until the rover has a clear path to the waypoint
+        :param rover_pose:      The current pose of the rover
+        :param post_pos:        The position of the post
+        :param waypoint_pos:    The position of the waypoint
+        :return:                A trajectory that avoids the post, including the first point as a backup point that the rover MUST drive backwards towards
+
+        Summary on how trajectory works:
+        we first generate a backup point that is directly behind
+        the rover some BACKUP_DISTANCE behind it. Then we see if
+        we can drive directly to the waypoint without intersecting
+        a circle of size POST_RADIUS ( < BACKUP_DISTANCE)
+        if we can then the trajectory is just the backup point.
+        If we cannot then we generate an avoidance point BACKUP_DISTANCE away
+        from the post at a 90 degree angle from the rover relative to the post
+        either to the left or the right depending on which is closer to the waypoint.
+        Then the trajectory is backup_point, avoidance_point where we drive backwards to
+        the backup_point and forwards to the avoidance_point.
         """
-        
+
         rover_pos = rover_pose.position
         rover_direction = rover_pose.rotation.direction_vector()
         print(rover_pos, post_pos, waypoint_pos)
@@ -47,7 +63,6 @@ class AvoidPostTrajectory(Trajectory):
 
         # generate a line from the backup point to the waypoint
         path = LineString([backup_point, waypoint_pos])
-        coords: np.ndarray = np.array([])
         # check if the path intersects the post circle
         if path.intersects(post_circle):
             # get a vector perpendicular to vector from rover to post
@@ -94,7 +109,7 @@ class PostBackupState(BaseState):
                 if self.context.env.last_post_location is None:
                     rospy.logerr("PostBackupState: last_post_location is None")
                     return PostBackupTransitions.finished_traj.name  # type: ignore
-                
+
                 self.traj = AvoidPostTrajectory.avoid_post_trajectory(
                     self.context.rover.get_pose(),
                     self.context.env.last_post_location,
@@ -133,6 +148,4 @@ class PostBackupState(BaseState):
             tf2_ros.ConnectivityException,
             tf2_ros.ExtrapolationException,
         ):
-            return PostBackupTransitions.continue_post_backup.name # type: ignore
-
-
+            return PostBackupTransitions.continue_post_backup.name  # type: ignore
