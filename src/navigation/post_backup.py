@@ -10,6 +10,7 @@ from util.ros_utils import get_rosparam
 from util.np_utils import perpendicular_2d
 from shapely.geometry import Point, LineString
 from util.SE3 import SE3
+import rospy
 
 POST_RADIUS = get_rosparam("gate/post_radius", 0.7) * get_rosparam(
     "single_fiducial/post_avoidance_multiplier", 4.0
@@ -48,8 +49,10 @@ class AvoidPostTrajectory(Trajectory):
         coords: np.ndarray = np.array([])
         # check if the path intersects the post circle
         if path.intersects(post_circle):
-            # get a vector perpendicular to rover direction
-            left_perp = perpendicular_2d(rover_direction)  # (-y,x)
+            # get a vector perpendicular to vector from rover to post
+            rover_to_post = post_pos - rover_pos
+            rover_to_post = rover_to_post / np.linalg.norm(rover_to_post)
+            left_perp = perpendicular_2d(rover_to_post)  # (-y,x)
             avoidance_point = post_pos + POST_RADIUS * left_perp
             coords = np.array([backup_point, avoidance_point, waypoint_pos])
         else:
@@ -78,9 +81,13 @@ class PostBackupState(BaseState):
 
     def evaluate(self, ud):
         if self.traj is None:
+            if self.context.env.last_post_location is None:
+                rospy.logerr("PostBackupState: last_post_location is None")
+                return PostBackupTransitions.finished_traj.name  # type: ignore
+
             self.traj = AvoidPostTrajectory.avoid_post_trajectory(
                 self.context.rover.get_pose(in_odom_frame=self.context.use_odom),
-                self.context.env.current_fid_pos(),
+                self.context.env.last_post_location,
                 self.context.course.current_waypoint_pose().position,
             )
             self.traj.cur_pt = 0

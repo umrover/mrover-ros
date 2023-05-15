@@ -61,8 +61,8 @@ class WaypointState(BaseState):
             return WaypointStateTransitions.no_waypoint.name  # type: ignore
 
         # if we are at a post currently (from a previous leg), backup to avoid collision
-        if self.context.rover.arrived_at_post:
-            self.context.rover.arrived_at_post = False
+        if self.context.env.arrived_at_post:
+            self.context.env.arrived_at_post = False
             return WaypointStateTransitions.backup_from_post.name  # type: ignore
 
         # Go into either gate or search if we see them early (and are looking)

@@ -55,7 +55,6 @@ class Rover:
     stuck: bool
     previous_state: str
     driver: DriveController = DriveController()
-    arrived_at_post: bool = False
 
     def get_pose(self, in_odom_frame: bool = False) -> SE3:
         if in_odom_frame and self.ctx.use_odom:
@@ -86,6 +85,8 @@ class Environment:
 
     ctx: Context
     NO_FIDUCIAL: ClassVar[int] = -1
+    arrived_at_post: bool = False
+    last_post_location: Optional[np.ndarray] = None
 
     def get_fid_pos(self, fid_id: int, in_odom_frame: bool = True) -> Optional[np.ndarray]:
         """

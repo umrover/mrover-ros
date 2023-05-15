@@ -49,7 +49,8 @@ class ApproachPostState(BaseState):
             )
             if arrived:
                 self.context.course.increment_waypoint()
-                self.context.rover.arrived_at_post = True
+                self.context.env.arrived_at_post = True
+                self.context.env.last_post_location = fid_pos
                 return ApproachPostStateTransitions.finished_fiducial.name  # type: ignore
             self.context.rover.send_drive_command(cmd_vel)
         except (
