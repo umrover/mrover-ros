@@ -104,7 +104,7 @@ class LedBridge:
                 self._ser.write(self.SIGNAL_MAP["green"])
 
             # If we just passed the threshold of GREEN_ON_S, turn off.
-            elif prev_counter < self.GREEN_ON_S and self._green_counter_s >= self.GREEN_ON_S:
+            elif prev_counter < self.GREEN_ON_S <= self._green_counter_s:
                 self._ser.write(self.SIGNAL_MAP["off"])
 
 

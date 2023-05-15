@@ -185,24 +185,6 @@ class ScienceBridge:
 
         return EnableDeviceResponse(False)
 
-    def handle_change_auton_led_state(self, req: ChangeAutonLEDStateRequest) -> ChangeAutonLEDStateResponse:
-        """Process a request to change the auton LED array state by issuing
-        the command to the STM32 chip via UART.
-        :param req: A string that is the color of the requested state of the
-            auton LED array. Note that green actually means blinking green.
-        :returns: A boolean that is the success of sent UART transaction.
-        """
-        color = req.color.lower()
-
-        if color not in self._id_by_color.keys():
-            rospy.logerr("Invalid auton LED color.")
-            return ChangeAutonLEDStateResponse(False)
-
-        self._auton_led_color = color
-
-        success = self._send_auton_led_uart_message()
-        return ChangeAutonLEDStateResponse(success)
-
     def handle_change_heater_auto_shutoff_state(self, req: SetBoolRequest) -> SetBoolResponse:
         """Process a request to change the auto shut off state of the
         carousel heaters by issuing the command to the STM32 chip via UART.
@@ -472,7 +454,6 @@ def main():
     rospy.init_node("science")
     bridge = ScienceBridge()
     rospy.Service("enable_mosfet_device", EnableDevice, bridge.handle_enable_mosfet_device)
-    rospy.Service("change_auton_led_state", ChangeAutonLEDState, bridge.handle_change_auton_led_state)
     rospy.Service("change_heater_state", ChangeHeaterState, bridge.handle_change_heater_state)
     rospy.Service("change_heater_auto_shutoff_state", SetBool, bridge.handle_change_heater_auto_shutoff_state)
     rospy.Service("change_servo_angle", ChangeServoAngle, bridge.handle_change_servo_angle)
