@@ -137,6 +137,7 @@ class DriveController:
         :param completion_thresh: The distance threshold to consider the rover at the target position.
         :param turn_in_place_thresh: The angle threshold to consider the rover facing the target position and ready to drive forward towards it.
         :param in_odom: Whether to use odom constants or map constants.
+        :param drive_back: True if rover should drive backwards, false otherwise.
         :return: A tuple of the drive command and a boolean indicating whether the rover is at the target position.
         :modifies: self._last_angular_error
         """

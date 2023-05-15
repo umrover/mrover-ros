@@ -44,7 +44,6 @@ failure_identification:
 
 
 watchdog:
-  #if we count stuck_threshold instances of being stuck, publish stuck
   window_size: 100 #size of window we are looking at for being stuck
   angular_threshold: 0.1 
   linear_threshold: 0.55

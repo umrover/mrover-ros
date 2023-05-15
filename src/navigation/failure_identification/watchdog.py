@@ -73,7 +73,7 @@ class WatchDog:
         linear_velocity = delta_pos / delta_time
         linear_velocity = np.linalg.norm(linear_velocity)
         print(linear_velocity, LINEAR_THRESHOLD)
-        return abs(linear_velocity) < LINEAR_THRESHOLD
+        return linear_velocity < LINEAR_THRESHOLD
 
     def is_stuck(self, dataframe: DataFrame) -> bool:
         if len(dataframe) > WINDOW_SIZE:
@@ -89,7 +89,7 @@ class WatchDog:
             delta_pos = end_pos - start_pos
             # use SO3 distance to find the delta rotation
             delta_rot = start_rot.rot_distance_to(end_rot)
-            # check if the robot is stuck
+            # check if the rover is stuck
             if self.check_angular_stuck(delta_time, delta_rot, dataframe_sliced) or self.check_linear_stuck(
                 delta_time, delta_pos, dataframe_sliced
             ):
