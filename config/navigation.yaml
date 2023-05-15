@@ -1,9 +1,9 @@
 drive:
   map:
-    max_driving_effort: 1.0
-    min_driving_effort: -1.0
-    max_turning_effort: 1.0
-    min_turning_effort: -1.0
+    max_driving_effort: 0.7
+    min_driving_effort: -0.7
+    max_turning_effort: 0.7
+    min_turning_effort: -0.7
     turning_p: 10.0
     driving_p: 20.0
   odom:
@@ -27,7 +27,7 @@ search:
 single_fiducial:
   stop_thresh: 0.7
   fiducial_stop_threshold: 1.75
-  post_avoidance_multiplier: 4.0
+  post_avoidance_multiplier: 1.42
 
 waypoint:
   stop_thresh: 0.5

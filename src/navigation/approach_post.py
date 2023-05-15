@@ -48,9 +48,10 @@ class ApproachPostState(BaseState):
                 in_odom=self.context.use_odom,
             )
             if arrived:
-                self.context.course.increment_waypoint()
                 self.context.env.arrived_at_post = True
-                self.context.env.last_post_location = fid_pos
+                self.context.env.last_post_location = self.context.env.current_fid_pos(odom_override = False)
+                print(f"set last post location to {self.context.env.last_post_location}.")
+                self.context.course.increment_waypoint()
                 return ApproachPostStateTransitions.finished_fiducial.name  # type: ignore
             self.context.rover.send_drive_command(cmd_vel)
         except (
