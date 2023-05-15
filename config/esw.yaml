@@ -1,3 +1,7 @@
+auton_led_driver:
+  port: "/dev/auton_led"
+  baud: 115200
+
 gps_driver:
   port: "/dev/gps"
   baud: 115200
@@ -179,7 +183,7 @@ brushed_motors:
       limit_a_is_fwd: false
       calibration_vel: 0.25
   i2c_device_file: "/dev/i2c-1"
-  uart_device_file: "/dev/ttyACM0"
+  uart_device_file: "/dev/uart_i2c_bridge"
   use_uart_and_send_only: true
   test: false
   
