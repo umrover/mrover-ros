@@ -1,6 +1,6 @@
-int red_led = 9;
-int green_led = 10;
-int blue_led = 11;
+int red_led = 10;
+int green_led = 11;
+int blue_led = 12;
 
 void led_control(char led_ID) {
     if (led_ID == 'r') {

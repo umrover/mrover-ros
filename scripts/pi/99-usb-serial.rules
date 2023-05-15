@@ -1,3 +1,0 @@
-SUBSYSTEM=="tty", ATTRS{idVendor}=="2341", ATTRS{idProduct}=="0058", SYMLINK+="auton_led"
-SUBSYSTEM=="tty", ATTRS{idVendor}=="2341", ATTRS{idProduct}=="0043", SYMLINK+="uart_i2c_bridge"
-

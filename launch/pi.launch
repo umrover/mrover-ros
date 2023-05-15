@@ -15,7 +15,4 @@
     <!-- Run the mcu_reset program -->
     <node name="mcu_reset" pkg="mrover" type="mcu_reset.py" output="screen"></node>
 
-    <!-- Run the auton led program -->
-    <node name="auton_led" pkg="mrover" type="auton_led.py" output="screen"></node>
-
 </launch>
