@@ -13,7 +13,7 @@
         <div class="spacer"></div>
         <MCUReset class="mcu_reset"></MCUReset>
         <div class="spacer"></div>
-        <CommReadout class="comm"></CommReadout>
+        <CommReadout class="comms"></CommReadout>
         <div class="help">
           <img
             src="/static/help.png"
@@ -376,14 +376,7 @@ h2 {
 }
 
 .comms {
-  display: flex;
-  flex-direction: column;
-  align-items: flex-start;
-}
-
-.comms * {
-  margin-top: 2px;
-  margin-bottom: 2px;
+  margin-right: 5px;
 }
 
 .helpscreen {
@@ -448,8 +441,4 @@ h2 {
   grid-area: data;
 }
 
-.comm {
-  position: absolute;
-  left: 50%;
-}
 </style>

@@ -12,7 +12,7 @@
       <div class="spacer"></div>
       <MCUReset class="mcu_reset"></MCUReset>
       <div class="spacer"></div>
-      <CommReadout class="comm"></CommReadout>
+      <CommReadout class="comms"></CommReadout>
       <div class="help">
         <img
           src="/static/help.png"
@@ -173,6 +173,10 @@ img {
 
 .spacer {
   flex-grow: 0.8;
+}
+
+.comms {
+  margin-right: 5px;
 }
 
 .helpscreen {
