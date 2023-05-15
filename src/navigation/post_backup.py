@@ -10,12 +10,11 @@ from util.ros_utils import get_rosparam
 from util.np_utils import perpendicular_2d
 from shapely.geometry import Point, LineString
 from util.SE3 import SE3
+import tf2_ros
 import rospy
 
-POST_RADIUS = get_rosparam("gate/post_radius", 0.7) * get_rosparam(
-    "single_fiducial/post_avoidance_multiplier", 4.0
-)  # add a big buffer to the post radius, 4 is somewhat arbitrary but it doesn't really matter
-BACKUP_DISTANCE = get_rosparam("recovery/recovery_distance", 1.0)
+POST_RADIUS = get_rosparam("gate/post_radius", 0.7)  * get_rosparam("single_fiducial/post_avoidance_multiplier", 1.42)
+BACKUP_DISTANCE = get_rosparam("recovery/recovery_distance", 2.0)
 STOP_THRESH = 0.2
 DRIVE_FWD_THRESH = 0.95
 
@@ -26,8 +25,10 @@ class AvoidPostTrajectory(Trajectory):
         """
         Generates a trajectory that avoids a post until the rover has a clear path to the waypoint
         """
+        
         rover_pos = rover_pose.position
         rover_direction = rover_pose.rotation.direction_vector()
+        print(rover_pos, post_pos, waypoint_pos)
 
         # Converting to 2d arrays
         post_pos = post_pos[:2]
@@ -50,16 +51,24 @@ class AvoidPostTrajectory(Trajectory):
         # check if the path intersects the post circle
         if path.intersects(post_circle):
             # get a vector perpendicular to vector from rover to post
-            rover_to_post = post_pos - rover_pos
+            rover_to_post = post_pos - backup_point
             rover_to_post = rover_to_post / np.linalg.norm(rover_to_post)
             left_perp = perpendicular_2d(rover_to_post)  # (-y,x)
-            avoidance_point = post_pos + POST_RADIUS * left_perp
-            coords = np.array([backup_point, avoidance_point, waypoint_pos])
+            right_perp = -left_perp
+            avoidance_point_left = post_pos + BACKUP_DISTANCE * left_perp
+            avoidance_point_right = post_pos + BACKUP_DISTANCE * right_perp
+            left_dist = np.linalg.norm(avoidance_point_left - waypoint_pos)
+            right_dist = np.linalg.norm(avoidance_point_right - waypoint_pos)
+            if left_dist < right_dist:
+                coords = np.array([backup_point, avoidance_point_left])
+            else:
+                coords = np.array([backup_point, avoidance_point_right])
         else:
-            coords = np.array([backup_point, waypoint_pos])
+            coords = np.array([backup_point])
 
         # add a z coordinate of 0 to all the coords
         coords = np.hstack((coords, np.zeros((coords.shape[0], 1))))
+        print(coords)
         return AvoidPostTrajectory(coords)
 
 
@@ -80,41 +89,50 @@ class PostBackupState(BaseState):
         self.traj: Optional[AvoidPostTrajectory] = None
 
     def evaluate(self, ud):
-        if self.traj is None:
-            if self.context.env.last_post_location is None:
-                rospy.logerr("PostBackupState: last_post_location is None")
-                return PostBackupTransitions.finished_traj.name  # type: ignore
+        try:
+            if self.traj is None:
+                if self.context.env.last_post_location is None:
+                    rospy.logerr("PostBackupState: last_post_location is None")
+                    return PostBackupTransitions.finished_traj.name  # type: ignore
+                
+                self.traj = AvoidPostTrajectory.avoid_post_trajectory(
+                    self.context.rover.get_pose(),
+                    self.context.env.last_post_location,
+                    self.context.course.current_waypoint_pose().position,
+                )
+                self.traj.cur_pt = 0
 
-            self.traj = AvoidPostTrajectory.avoid_post_trajectory(
-                self.context.rover.get_pose(in_odom_frame=self.context.use_odom),
-                self.context.env.last_post_location,
-                self.context.course.current_waypoint_pose().position,
+            target_pos = self.traj.get_cur_pt()
+
+            # we drive backwards to the first point in this trajectory
+            point_index = self.traj.cur_pt
+            drive_backwards = point_index == 0
+
+            cmd_vel, arrived = self.context.rover.driver.get_drive_command(
+                target_pos,
+                self.context.rover.get_pose(),
+                STOP_THRESH,
+                DRIVE_FWD_THRESH,
+                drive_back=drive_backwards,
             )
-            self.traj.cur_pt = 0
+            if arrived:
+                print(f"ARRIVED AT POINT {point_index}")
+                if self.traj.increment_point():
+                    self.traj = None
+                    return PostBackupTransitions.finished_traj.name  # type: ignore
 
-        target_pos = self.traj.get_cur_pt()
-
-        # we drive backwards to the first point in this trajectory
-        point_index = self.traj.cur_pt
-        drive_backwards = point_index == 0
-
-        cmd_vel, arrived = self.context.rover.driver.get_drive_command(
-            target_pos,
-            self.context.rover.get_pose(in_odom_frame=True),
-            STOP_THRESH,
-            DRIVE_FWD_THRESH,
-            in_odom=self.context.use_odom,
-            drive_back=drive_backwards,
-        )
-        if arrived:
-            if self.traj.increment_point():
+            if self.context.rover.stuck:
+                self.context.rover.previous_state = PartialGateStateTransitions.partial_gate.name  # type: ignore
                 self.traj = None
-                return PostBackupTransitions.finished_traj.name  # type: ignore
+                return PostBackupTransitions.recovery_state.name  # type: ignore
 
-        if self.context.rover.stuck:
-            self.context.rover.previous_state = PartialGateStateTransitions.partial_gate.name  # type: ignore
-            self.traj = None
-            return PartialGateStateTransitions.recovery_state.name  # type: ignore
+            self.context.rover.send_drive_command(cmd_vel)
+            return PostBackupTransitions.continue_post_backup.name  # type: ignore
+        except (
+            tf2_ros.LookupException,
+            tf2_ros.ConnectivityException,
+            tf2_ros.ExtrapolationException,
+        ):
+            return PostBackupTransitions.continue_post_backup.name # type: ignore
 
-        self.context.rover.send_drive_command(cmd_vel)
-        return PartialGateStateTransitions.continue_post_backup.name  # type: ignore
+
