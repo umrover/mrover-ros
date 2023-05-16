@@ -1,7 +1,6 @@
 #!/usr/bin/env python3
 import rospy
 import serial
-import time
 import threading
 
 from mrover.srv import (
