@@ -64,12 +64,18 @@ class PartialGateStateTransitions(Enum):
 
 
 class PartialGateState(BaseState):
+
+    traj: Optional[PartialGateTrajectory] = None
+
     def __init__(
         self,
         context: Context,
     ):
-        super().__init__(context, add_outcomes=[transition.name for transition in PartialGateStateTransitions])  # type: ignore
-        self.traj: Optional[PartialGateTrajectory] = None
+        own_transitions = [PartialGateStateTransitions.partial_gate.name]  # type: ignore
+        super().__init__(context, own_transitions, add_outcomes=[transition.name for transition in PartialGateStateTransitions])  # type: ignore
+
+    def reset(self) -> None:
+        self.traj = None
 
     def evaluate(self, ud):
         post_pos = self.context.env.current_fid_pos()
@@ -98,7 +104,6 @@ class PartialGateState(BaseState):
         if arrived:
             # if we finish the gate path, we're done (or continue search) CHECK THIS***
             if self.traj.increment_point():
-                self.traj = None
                 self.context.course.increment_waypoint()
                 return PartialGateStateTransitions.done.name  # type: ignore
 
