@@ -4,9 +4,8 @@
 The science codebase deals with reading and parsing NMEA-like messages
 from the STM32 chip over UART to complete tasks for almost
 every mission. These tasks include operating the science box and getting
-relevant data during the Science task, controlling the arm laser during the
-Equipment Servicing task, and controlling the LED array used during the
-Autonomous Traversal task. It also transmits diagnostic data on temperature
+relevant data during the Science task, as well as controlling the arm laser during the
+Equipment Servicing task. It also transmits diagnostic data on temperature
 and current on the 3.3V, 5V, and 12V lines for the PDB.
 """
 import threading
@@ -20,9 +19,6 @@ from mrover.msg import Diagnostic, HeaterData, ScienceTemperature, Spectral
 from std_msgs.msg import Bool
 
 from mrover.srv import (
-    ChangeAutonLEDState,
-    ChangeAutonLEDStateRequest,
-    ChangeAutonLEDStateResponse,
     ChangeHeaterState,
     ChangeHeaterStateRequest,
     ChangeHeaterStateResponse,
