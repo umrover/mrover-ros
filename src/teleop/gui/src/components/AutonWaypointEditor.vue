@@ -88,6 +88,7 @@
           />
           <Checkbox
             ref="teleopCheckbox"
+            class="teleop-checkbox"
             :name="'Teleop Controls'"
             @toggle="toggleTeleopMode($event)"
           />
@@ -741,10 +742,10 @@ export default {
   grid-template-columns: 1fr 1fr;
   grid-template-rows: 1fr 0.25fr;
   grid-template-areas:
-    "auton-check stats"
-    "teleop-check stuck-check";
+  "auton-check stats"
+  "teleop-check stuck-check";
   font-family: sans-serif;
-  min-height: min-content;
+  min-height: 16.3vh;
 }
 
 .all-waypoints {
@@ -771,9 +772,9 @@ export default {
   grid-area: auton-check;
 }
 
-.teleop-check {
-  align-content: center;
+.teleop-checkbox {
   grid-area: teleop-check;
+  margin-top: -40px;
 }
 
 .stats {

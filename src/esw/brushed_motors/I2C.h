@@ -20,7 +20,7 @@ struct IOFailure : public std::exception {};
 class I2C {
 private:
     // file stores the i2c device file (e.g. /dev/i2c-0, /dev/i2c-1)
-    // transact_m ensures that only one i2c transaction happens at a time
+    // transactLock ensures that only one i2c transaction happens at a time
     inline static int file = -1;
     inline static std::mutex transactLock;
 

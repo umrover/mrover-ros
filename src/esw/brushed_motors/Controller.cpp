@@ -1,5 +1,8 @@
 #include "Controller.h"
 
+std::unordered_map<uint8_t, std::string> Controller::liveMap;
+std::mutex Controller::liveMapLock;
+
 // REQUIRES: _name is the name of the motor,
 // mcu_id is the mcu id of the controller which dictates the slave address,
 // motor_id is the motor id of the motor that is to be controlled,
@@ -22,6 +25,7 @@ Controller::Controller(
     assert(0.0f < _motorMaxVoltage);
     assert(_motorMaxVoltage <= _driverVoltage);
     assert(_driverVoltage <= 36.0f);
+    assert((_motorID & 0b111) == _motorID);
     name = _name;
     deviceAddress = mcuID;
     motorID = _motorID;
@@ -29,7 +33,12 @@ Controller::Controller(
     motorMaxVoltage = _motorMaxVoltage;
     driverVoltage = _driverVoltage;
     currentAngle = 0.0f;
+    limit_switch_data.name = _name;
+    limit_switch_data.calibrated = false;
+    limit_switch_data.limit_a_pressed = false;
+    limit_switch_data.limit_b_pressed = false;
 }
+
 
 // REQUIRES: nothing
 // MODIFIES: nothing
@@ -56,13 +65,6 @@ void Controller::overrideCurrentAngle(float newAngleRad) {
     } catch (IOFailure& e) {
         ROS_ERROR("overrideCurrentAngle failed on %s", name.c_str());
     }
-}
-
-// REQUIRES: nothing
-// MODIFIES: nothing
-// EFFECTS: Returns true if Controller is live.
-bool Controller::isControllerLive() const {
-    return isLive;
 }
 
 // REQUIRES: -1.0 <= input <= 1.0
@@ -100,6 +102,38 @@ void Controller::moveOpenLoop(float input) {
     }
 }
 
+// REQUIRES: -1.0 <= input <= 1.0
+// MODIFIES: currentAngle. Also makes controller live if not already.
+// EFFECTS: UART bus, Sends an open loop command scaled to PWM limits
+// based on allowed voltage of the motor. Also updates angle.
+void Controller::moveOpenLoopViaUART(float input) {
+    try {
+        if (!(-1.0f <= input && input <= 1.0f)) {
+            ROS_ERROR("moveOpenLoopViaUART on %s should only take values between -1.0 and 1.0", name.c_str());
+            return;
+        }
+
+        makeLiveViaUART();
+
+        float speed = input * inversion;
+
+        // When closing the gripper,
+        // We only want to apply 10 Volts
+        if (name == "HAND_GRIP") {
+            float handGripClosingVoltage = 10.0f;
+            float handGripClosingPercent = handGripClosingVoltage / motorMaxVoltage;
+            speed = speed > handGripClosingPercent ? handGripClosingPercent : speed;
+        }
+
+        uint8_t buffer[4];
+        memcpy(buffer, UINT8_POINTER_T(&speed), sizeof(speed));
+
+        UART::transact(deviceAddress, motorIDRegMask | OPEN_OP, OPEN_WB, buffer);
+    } catch (IOFailure& e) {
+        ROS_ERROR("moveOpenLoopViaUART failed on %s", name.c_str());
+    }
+}
+
 // REQUIRES: nothing
 // MODIFIES: nothing
 // EFFECTS: I2C bus, returns if the MCU is calibrated
@@ -117,7 +151,7 @@ bool Controller::isCalibrated() {
 
     } catch (IOFailure& e) {
         ROS_ERROR("isCalibrated failed on %s", name.c_str());
-        return false;
+        return isControllerCalibrated;
     }
 
     return calibration_status;
@@ -132,6 +166,18 @@ void Controller::enableLimitSwitches(bool enable) {
     }
     if (limitBPresent) {
         enableLimitSwitch(enable, limitBEnable, motorIDRegMask | ENABLE_LIMIT_B_OP);
+    }
+}
+
+// REQUIRES: nothing
+// MODIFIES: nothing
+// EFFECTS: UART bus, enables or disables limit switches
+void Controller::enableLimitSwitchesViaUART(bool enable) {
+    if (limitAPresent) {
+        enableLimitSwitchViaUART(enable, limitAEnable, motorIDRegMask | ENABLE_LIMIT_A_OP);
+    }
+    if (limitBPresent) {
+        enableLimitSwitchViaUART(enable, limitBEnable, motorIDRegMask | ENABLE_LIMIT_B_OP);
     }
 }
 
@@ -155,6 +201,25 @@ void Controller::enableLimitSwitch(bool enable, bool& limitEnable, uint8_t opera
     }
 }
 
+// REQUIRES: buffer is valid
+// MODIFIES: limitEnable
+// EFFECTS: UART bus, enables limit switch if it is present
+void Controller::enableLimitSwitchViaUART(bool enable, bool& limitEnable, uint8_t operation) {
+    uint8_t buffer[ENABLE_LIMIT_WB];
+
+    try {
+        makeLiveViaUART();
+
+        memcpy(buffer, UINT8_POINTER_T(&limitEnable), sizeof(limitEnable));
+        UART::transact(deviceAddress, motorIDRegMask | operation, ENABLE_LIMIT_WB, buffer);
+
+        // Only set limitEnable if transaction was successful.
+        limitEnable = enable;
+    } catch (IOFailure& e) {
+        ROS_ERROR("enableLimitSwitch failed on %s", name.c_str());
+    }
+}
+
 
 // REQUIRES: nothing
 // MODIFIES: nothing
@@ -163,17 +228,19 @@ float Controller::getAbsoluteEncoderValue() {
     try {
         makeLive();
 
-        float abs_enc_radians;
-        I2C::transact(deviceAddress, motorIDRegMask | ABS_ENC_OP, ABS_ENC_WB,
-                      ABS_ENC_RB, nullptr, UINT8_POINTER_T(&abs_enc_radians));
+        float abs_enc_radians_raw;
 
-        return abs_enc_radians;
+        I2C::transact(deviceAddress, motorIDRegMask | ABS_ENC_OP, ABS_ENC_WB,
+                      ABS_ENC_RB, nullptr, UINT8_POINTER_T(&abs_enc_radians_raw));
+
+        abs_enc_radians = abs_enc_radians_raw;
 
     } catch (IOFailure& e) {
         ROS_ERROR("getAbsoluteEncoderValue failed on %s", name.c_str());
+        return abs_enc_radians;
     }
 
-    return 0;
+    return abs_enc_radians;
 }
 
 // REQUIRES: nothing
@@ -181,6 +248,37 @@ float Controller::getAbsoluteEncoderValue() {
 // EFFECTS: Returns true if Controller has a (one or both) limit switch(s) is enabled.
 bool Controller::getLimitSwitchEnabled() const {
     return limitAEnable || limitBEnable;
+}
+
+// REQUIRES: nothing
+// MODIFIES: nothing
+// EFFECTS: I2C bus, and returns limit data (calibrated, limit a/b pressed).
+mrover::LimitSwitchData Controller::getLimitSwitchData() {
+
+    uint8_t limit_switch_data_raw;
+
+    try {
+        makeLive();
+
+        I2C::transact(deviceAddress, motorIDRegMask | LIMIT_DATA_OP, LIMIT_DATA_WB,
+                      LIMIT_DATA_RB, nullptr, UINT8_POINTER_T(&limit_switch_data_raw));
+
+        // 0th (least significant) bit is a boolean (bit) that tells if the motor has been calibrated or not.
+        // 1st bit is a boolean (bit) that is the state of limit switch a.
+        // 2nd bit is a boolean (bit) that is the state of limit switch b.
+        // A lock is unnecessary since the data does not need to be updated in sync.
+        limit_switch_data.calibrated = limit_switch_data_raw & 0x1;
+        limit_switch_data.limit_a_pressed = (limit_switch_data_raw >> 1) & 0x1;
+        limit_switch_data.limit_b_pressed = (limit_switch_data_raw >> 2) & 0x1;
+
+        isControllerCalibrated = limit_switch_data.calibrated;
+
+    } catch (IOFailure& e) {
+        ROS_ERROR("getLimitSwitchData failed on %s", name.c_str());
+        return limit_switch_data;
+    }
+
+    return limit_switch_data;
 }
 
 // REQUIRES: nothing
@@ -196,12 +294,54 @@ void Controller::turnOn() const {
 }
 
 // REQUIRES: nothing
+// MODIFIES: liveMap
+// EFFECTS: UART bus, and turns on the controller.
+// Can be used as a way to tick the watchdog for a particular mcu.
+void Controller::turnOnViaUART() const {
+    try {
+        UART::transact(deviceAddress, motorIDRegMask | ON_OP, ON_WB,
+                       nullptr);
+    } catch (IOFailure& e) {
+        ROS_ERROR("turnOnViaUART failed on %s", name.c_str());
+    }
+}
+
+// REQUIRES: nothing
+// MODIFIES: nothing
+// EFFECTS: Returns a combined ID for both the deviceAddress and motorID
+// MotorID can only be max 3 bits (0-5), and device address is max 2 bits (1 or 2)
+uint8_t Controller::combineDeviceMotorID() const {
+    return (deviceAddress << 3) | motorID;
+}
+
+// REQUIRES: nothing
+// MODIFIES: liveMap
+// EFFECTS: Resets the live map. Should be only be used if needing to reset state
+// (e.g. MCU board had reset its state and needs to be reconfigured and made live)
+void Controller::resetLiveMap() {
+    std::unique_lock<std::mutex> lock(liveMapLock);
+    liveMap.clear();
+}
+
+// REQUIRES: nothing
 // MODIFIES: isLive
 // EFFECTS: I2C bus, if not already live,
 // configures the physical controller.
 // Then makes live.
 void Controller::makeLive() {
-    if (isLive) {
+    std::unique_lock<std::mutex> lock(liveMapLock);
+
+    uint8_t key = combineDeviceMotorID();
+
+    // if key is absent, no motor with that key has been made live
+    auto it = liveMap.find(key);
+    if (it == liveMap.end()) {
+        // Map entry starts with an empty string until that joint is live
+        it = liveMap.emplace(key, "").first;
+    }
+
+    // already live and configured to correct motor
+    if (it->second == name) {
         return;
     }
 
@@ -255,10 +395,101 @@ void Controller::makeLive() {
         I2C::transact(deviceAddress, motorIDRegMask | ENABLE_LIMIT_B_OP, ENABLE_LIMIT_WB,
                       ENABLE_LIMIT_RB, buffer, nullptr);
 
-        isLive = true;
+        // update liveMap
+        it->second = name;
 
     } catch (IOFailure& e) {
         ROS_ERROR("makeLive failed on %s", name.c_str());
+        throw IOFailure();
+    }
+}
+
+// REQUIRES: nothing
+// MODIFIES: liveMap
+// EFFECTS: UART bus, if not already live,
+// configures the physical controller.
+// Then makes live.
+void Controller::makeLiveViaUART() {
+    std::unique_lock<std::mutex> lock(liveMapLock);
+
+    uint8_t key = combineDeviceMotorID();
+
+    // if key is absent, no motor with that key has been made live
+    auto it = liveMap.find(key);
+    if (it == liveMap.end()) {
+        // Map entry starts with an empty string until that joint is live
+        it = liveMap.emplace(key, "").first;
+    }
+
+    // already live and configured to correct motor
+    if (it->second == name) {
+        return;
+    }
+
+    try {
+        // turn on
+        UART::transact(deviceAddress, motorIDRegMask | ON_OP, ON_WB,
+                       nullptr);
+
+        uint8_t buffer[32];
+
+        assert(motorMaxVoltage >= 0);
+        assert(driverVoltage >= 0);
+        auto maxPWM = (uint16_t) (100.0 * motorMaxVoltage / driverVoltage);
+        assert(maxPWM <= 100);
+
+        memcpy(buffer, UINT8_POINTER_T(&maxPWM), sizeof(maxPWM));
+        static_assert(sizeof(maxPWM) == CONFIG_PWM_WB);
+        UART::transact(deviceAddress, motorIDRegMask | CONFIG_PWM_OP, CONFIG_PWM_WB,
+                       buffer);
+
+        memcpy(buffer, UINT8_POINTER_T(&(kP)), sizeof(kP));
+        memcpy(buffer + sizeof(kP), UINT8_POINTER_T(&(kI)), sizeof(kI));
+        memcpy(buffer + sizeof(kP) + sizeof(kI), UINT8_POINTER_T(&(kD)), sizeof(kD));
+        static_assert(sizeof(kP) + sizeof(kI) + sizeof(kD) == CONFIG_K_WB);
+        UART::transact(deviceAddress, motorIDRegMask | CONFIG_K_OP, CONFIG_K_WB,
+                       buffer);
+
+        memcpy(buffer, UINT8_POINTER_T(&limitAIsActiveHigh), sizeof(limitAIsActiveHigh));
+        static_assert(sizeof(limitAIsActiveHigh) == ACTIVE_LIMIT_WB);
+        UART::transact(deviceAddress, motorIDRegMask | ACTIVE_LIMIT_A_OP, ACTIVE_LIMIT_WB,
+                       buffer);
+
+        memcpy(buffer, UINT8_POINTER_T(&limitBIsActiveHigh), sizeof(limitBIsActiveHigh));
+        static_assert(sizeof(limitBIsActiveHigh) == ACTIVE_LIMIT_WB);
+        UART::transact(deviceAddress, motorIDRegMask | ACTIVE_LIMIT_B_OP, ACTIVE_LIMIT_WB,
+                       buffer);
+
+        memcpy(buffer, UINT8_POINTER_T(&limitAAdjustedCounts), sizeof(limitAAdjustedCounts));
+        static_assert(sizeof(limitAAdjustedCounts) == COUNTS_LIMIT_WB);
+        UART::transact(deviceAddress, motorIDRegMask | COUNTS_LIMIT_A_OP, COUNTS_LIMIT_WB,
+                       buffer);
+
+        memcpy(buffer, UINT8_POINTER_T(&limitBAdjustedCounts), sizeof(limitBAdjustedCounts));
+        static_assert(sizeof(limitBAdjustedCounts) == COUNTS_LIMIT_WB);
+        UART::transact(deviceAddress, motorIDRegMask | COUNTS_LIMIT_B_OP, COUNTS_LIMIT_WB,
+                       buffer);
+
+        memcpy(buffer, UINT8_POINTER_T(&limitAIsFwd), sizeof(limitAIsFwd));
+        static_assert(sizeof(limitAIsFwd) == LIMIT_A_IS_FWD_WB);
+        UART::transact(deviceAddress, motorIDRegMask | LIMIT_A_IS_FWD_OP, LIMIT_A_IS_FWD_WB,
+                       buffer);
+
+        memcpy(buffer, UINT8_POINTER_T(&limitAPresent), sizeof(limitAPresent));
+        static_assert(sizeof(limitAPresent) == ENABLE_LIMIT_WB);
+        UART::transact(deviceAddress, motorIDRegMask | ENABLE_LIMIT_A_OP, ENABLE_LIMIT_WB,
+                       buffer);
+
+        memcpy(buffer, UINT8_POINTER_T(&limitBPresent), sizeof(limitBPresent));
+        static_assert(sizeof(limitBPresent) == ENABLE_LIMIT_WB);
+        UART::transact(deviceAddress, motorIDRegMask | ENABLE_LIMIT_B_OP, ENABLE_LIMIT_WB,
+                       buffer);
+
+        // update liveMap
+        it->second = name;
+
+    } catch (IOFailure& e) {
+        ROS_ERROR("makeLiveViaUART failed on %s", name.c_str());
         throw IOFailure();
     }
 }

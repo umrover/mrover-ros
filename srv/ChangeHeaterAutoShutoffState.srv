@@ -1,3 +1,0 @@
-bool enable  # if we need to enable the device
----
-bool success  # if there is success
