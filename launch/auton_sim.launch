@@ -4,7 +4,7 @@
 <launch>
     <arg name="rvizconfig" default="$(find mrover)/config/rviz/auton_sim.rviz"/>
     <arg name="world_name" default="world"/>
-    <arg name="use_odom" default="true"/>
+    <arg name="use_odom" default="false"/>
 
     <node name="rviz" pkg="rviz" type="rviz" args="-d $(arg rvizconfig)" required="true"/>
 
@@ -48,5 +48,6 @@
         <arg name="sim" value="true"/>
         <arg name="use_ekf" value="true"/>
         <arg name="ekf_start_delay" value="10.0"/>
+        <arg name="use_odom_frame" value="$(arg use_odom)"/>
     </include>
 </launch>
