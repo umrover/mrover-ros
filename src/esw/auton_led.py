@@ -60,14 +60,11 @@ class LedBridge:
             auton LED array. Note that green actually means blinking green.
         :returns: A response object that is always True to indicate success.
         """
+        if req.color.lower() not in self.SIGNAL_MAP:
+            return ChangeAutonLEDStateResponse(False)
+
         with self._color_lock:
             self._color = req.color.lower()
-
-            if self._color == "green":
-                self._green_counter_s = 0
-
-            if self._color not in self.SIGNAL_MAP:
-                self._color = "off"
 
         self.update()
 
@@ -81,11 +78,10 @@ class LedBridge:
             assert self._color in self.SIGNAL_MAP
             self._ser.write(self.SIGNAL_MAP[self._color])
 
-    def flash_if_green(self):
+    def flash_if_green(self, event=None):
         """
-        Sleeps and flashes green as necessary.
+        Flash green if necessary. Function is expected to be called every self.SLEEP_AMOUNT seconds.
         """
-        time.sleep(self.SLEEP_AMOUNT)
 
         # Upon waking up, flash green if necessary
         with self._color_lock:
@@ -122,8 +118,9 @@ def main():
     rospy.Service("change_auton_led_state", ChangeAutonLEDState, led_bridge.handle_change_state)
 
     # Sleep indefinitely, flashing if necessary.
-    while not rospy.is_shutdown():
-        led_bridge.flash_if_green()
+    rospy.Timer(rospy.Duration(led_bridge.SLEEP_AMOUNT), led_bridge.flash_if_green)
+
+    rospy.spin()
 
 
 if __name__ == "__main__":
