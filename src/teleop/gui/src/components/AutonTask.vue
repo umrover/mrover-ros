@@ -13,7 +13,7 @@
         <div class="spacer"></div>
         <MCUReset class="mcu_reset"></MCUReset>
         <div class="spacer"></div>
-        <CommReadout class="comm"></CommReadout>
+        <CommReadout class="comms"></CommReadout>
         <div class="help">
           <img
             src="/static/help.png"
@@ -73,14 +73,16 @@
       <div v-show="false">
         <MastGimbalControls></MastGimbalControls>
       </div>
-      <div v-if="!stuck_status" class="stuck not-stuck">
-        <h1>Nominal Conditions</h1>
-      </div>
-      <div v-else class="stuck rover-stuck">
-        <h1>Obstruction Detected</h1>
+      <div class="conditions">
+        <div v-if="!stuck_status" class="stuck not-stuck">
+          <h4>Nominal Conditions</h4>
+        </div>
+        <div v-else class="stuck rover-stuck">
+          <h4>Obstruction Detected</h4>
+        </div>
       </div>
     </div>
-    <div class="box1" style="margin-top: 10px">
+    <div class="box1 cameras" style="margin-top: 10px">
       <Cameras :primary="true" />
     </div>
   </div>
@@ -288,16 +290,14 @@ export default {
 <style scoped>
 .wrapper {
   display: grid;
-  overflow: hidden;
-  min-height: 98vh;
   grid-gap: 10px;
-  grid-template-columns: 2fr 1.25fr 0.75fr;
-  grid-template-rows: 50px 2fr 1fr 20vh;
+  grid-template-columns: 60vw auto;
+  grid-template-rows: 60px 50vh auto auto;
   grid-template-areas:
-    "header header header"
-    "map waypoints waypoints"
-    "map waypoints waypoints"
-    "data stuck stuck";
+    "header header"
+    "map waypoints"
+    "data waypoints"
+    "data conditions";
 
   font-family: sans-serif;
   height: auto;
@@ -328,9 +328,9 @@ export default {
 .stuck {
   grid-area: stuck;
   border-radius: 5px;
-  line-height: 70px;
+  line-height: 40px;
   border: 1px solid black;
-  font-size: 40px;
+  font-size: 20px;
   text-align: center;
   justify-content: center;
 }
@@ -376,14 +376,7 @@ h2 {
 }
 
 .comms {
-  display: flex;
-  flex-direction: column;
-  align-items: flex-start;
-}
-
-.comms * {
-  margin-top: 2px;
-  margin-bottom: 2px;
+  margin-right: 5px;
 }
 
 .helpscreen {
@@ -436,8 +429,16 @@ h2 {
   grid-area: waypoints;
 }
 
-.comm {
-  position: absolute;
-  left: 50%;
+.conditions {
+  grid-area: conditions;
 }
+
+.cameras {
+  grid-area: cameras;
+}
+
+.data {
+  grid-area: data;
+}
+
 </style>

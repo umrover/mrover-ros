@@ -46,11 +46,7 @@ class Navigation(threading.Thread):
             self.state_machine.add(
                 "ApproachPostState",
                 ApproachPostState(self.context),
-                # The lines below are necessary because ApproachPostState inherits from WaypointState, so WaypointState's transitions
-                # need to be registered for ApproachPostState as well.
-                transitions=dict(
-                    self.get_transitions(ApproachPostStateTransitions), **self.get_transitions(WaypointStateTransitions)
-                ),
+                transitions=self.get_transitions(ApproachPostStateTransitions),
             )
             self.state_machine.add(
                 "SearchState", SearchState(self.context), transitions=self.get_transitions(SearchStateTransitions)
