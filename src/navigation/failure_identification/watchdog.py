@@ -11,7 +11,6 @@ LINEAR_THRESHOLD = get_rosparam("watchdog/linear_threshold", 0.55)
 
 
 class WatchDog:
-
     def get_start_end_positions(self, dataframe: DataFrame) -> Tuple[np.ndarray, np.ndarray]:
         start_x, start_y, start_z = dataframe["x"].iloc[0], dataframe["y"].iloc[0], dataframe["z"].iloc[0]
         start_pos = np.array([start_x, start_y, start_z])
