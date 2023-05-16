@@ -68,7 +68,7 @@ class FailureIdentifier:
         )
         print(self.cols)
         self._df = pd.DataFrame(columns=self.cols)
-        self.watchdog = WatchDog(self)
+        self.watchdog = WatchDog()
         self.path_name = None  # type: ignore
 
     def write_to_csv(self):
