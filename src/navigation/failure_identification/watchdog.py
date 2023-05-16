@@ -11,59 +11,57 @@ LINEAR_THRESHOLD = get_rosparam("watchdog/linear_threshold", 0.55)
 
 
 class WatchDog:
-    def __init__(self, collector_in):
-        self.collector = collector_in
-
     def get_start_end_positions(self, dataframe: DataFrame) -> Tuple[np.ndarray, np.ndarray]:
-        # get the average of the first 25% of the dataframes x, y, z position from the inputted dataframe
-        cutoff = int(len(dataframe) * 0.25)
-        start = dataframe.loc[dataframe["row"] <= cutoff]
-        end = dataframe.loc[dataframe["row"] >= len(dataframe) - cutoff]
-        start_x = np.mean(start["x"])
-        start_y = np.mean(start["y"])
-        start_z = np.mean(start["z"])
+        start_x, start_y, start_z = dataframe["x"].iloc[0], dataframe["y"].iloc[0], dataframe["z"].iloc[0]
         start_pos = np.array([start_x, start_y, start_z])
-        end_x = np.mean(end["x"])
-        end_y = np.mean(end["y"])
-        end_z = np.mean(end["z"])
+        end_x, end_y, end_z = dataframe["x"].iloc[-1], dataframe["y"].iloc[-1], dataframe["z"].iloc[-1]
         end_pos = np.array([end_x, end_y, end_z])
         return start_pos, end_pos
 
     def get_start_end_rotations(self, dataframe: DataFrame) -> Tuple[SO3, SO3]:
-        # get the average of the first 25% of the dataframes rotation from the inputted dataframe
-        cutoff = int(len(dataframe) * 0.25)
-        start = dataframe.loc[dataframe["row"] <= cutoff]
-        end = dataframe.loc[dataframe["row"] >= len(dataframe) - cutoff]
         start_rot = np.array(
-            [np.mean(start["rot_x"]), np.mean(start["rot_y"]), np.mean(start["rot_z"]), np.mean(start["rot_w"])]
+            [
+                dataframe["rot_x"].iloc[0],
+                dataframe["rot_y"].iloc[0],
+                dataframe["rot_z"].iloc[0],
+                dataframe["rot_w"].iloc[0],
+            ]
         )
-        end_rot = np.array([np.mean(end["rot_x"]), np.mean(end["rot_y"]), np.mean(end["rot_z"]), np.mean(end["rot_w"])])
+        end_rot = np.array(
+            [
+                dataframe["rot_x"].iloc[-1],
+                dataframe["rot_y"].iloc[-1],
+                dataframe["rot_z"].iloc[-1],
+                dataframe["rot_w"].iloc[-1],
+            ]
+        )
         return SO3(start_rot), SO3(end_rot)
 
     def get_start_end_time(self, dataframe: DataFrame) -> Tuple[float, float]:
-        # get the average of the first 25% of the dataframes time from the inputted dataframe
-        cutoff = int(len(dataframe) * 0.25)
-        start = dataframe.loc[dataframe["row"] <= cutoff]
-        end = dataframe.loc[dataframe["row"] >= len(dataframe) - cutoff]
-        start_time = np.mean(start["time"])
-        end_time = np.mean(end["time"])
+        start_time = dataframe["time"].iloc[0]
+        end_time = dataframe["time"].iloc[-1]
         return start_time, end_time
 
     def check_angular_stuck(self, delta_time, delta_rot, dataframe) -> bool:
         # check to make sure all cmd_vel_twist values are the same sign and cmd_vel_x values are 0
-        turn_are_all_same_sign = dataframe["cmd_vel_twist"].apply(np.sign).eq(dataframe["cmd_vel_twist"].iloc[0]).all()
+        turn_are_all_same_sign = (
+            dataframe["cmd_vel_twist"].apply(np.sign).eq(np.sign(dataframe["cmd_vel_twist"].iloc[0])).all()
+        )
         linear_are_all_zero = dataframe["cmd_vel_x"].eq(0).all()
+        print(f"turn all same sign: f{turn_are_all_same_sign}, linear_are_all_zero: f{linear_are_all_zero}")
         if not turn_are_all_same_sign or not linear_are_all_zero:
+            print("not turning")
             return False
         # check if the angular velocity is less than the threshold for the entire dataframe
         angular_velocity = delta_rot / delta_time
+        print(f"angular velocity: {angular_velocity}, thresh: {ANGULAR_THRESHOLD}")
         return abs(angular_velocity) < ANGULAR_THRESHOLD
 
     def check_linear_stuck(self, delta_time, delta_pos, dataframe) -> bool:
-        print(dataframe["cmd_vel_x"])
-        print(len(dataframe["cmd_vel_x"]))
         # check to make sure all cmd_vel_x values are the same sign and cmd_vel_twist values are 0
-        linear_are_all_same_sign = dataframe["cmd_vel_x"].apply(np.sign).eq(dataframe["cmd_vel_x"].iloc[0]).all()
+        linear_are_all_same_sign = (
+            dataframe["cmd_vel_x"].apply(np.sign).eq(np.sign(dataframe["cmd_vel_x"].iloc[0])).all()
+        )
         linear_are_all_non_zero = dataframe["cmd_vel_x"].ne(0).all()
         print(linear_are_all_same_sign, linear_are_all_non_zero)
         if not linear_are_all_same_sign or not linear_are_all_non_zero:
@@ -73,7 +71,7 @@ class WatchDog:
         linear_velocity = delta_pos / delta_time
         linear_velocity = np.linalg.norm(linear_velocity)
         print(linear_velocity, LINEAR_THRESHOLD)
-        return abs(linear_velocity) < LINEAR_THRESHOLD
+        return linear_velocity < LINEAR_THRESHOLD
 
     def is_stuck(self, dataframe: DataFrame) -> bool:
         if len(dataframe) > WINDOW_SIZE:
@@ -89,7 +87,7 @@ class WatchDog:
             delta_pos = end_pos - start_pos
             # use SO3 distance to find the delta rotation
             delta_rot = start_rot.rot_distance_to(end_rot)
-            # check if the robot is stuck
+            # check if the rover is stuck
             if self.check_angular_stuck(delta_time, delta_rot, dataframe_sliced) or self.check_linear_stuck(
                 delta_time, delta_pos, dataframe_sliced
             ):
