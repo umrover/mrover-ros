@@ -67,22 +67,22 @@ export default {
     // When a key is being pressed down, set the power level.
     // Ignore keys that are already pressed to avoid spamming when holding values.
     keyMonitorDown: function (event) {
-      if (event.key == "w" || event.key == "W") {
+      if (event.key.toLowerCase() == "w") {
         if (this.inputData.w_key > 0) {
           return;
         }
         this.inputData.w_key = this.up_down_pwr;
-      } else if (event.key == "a" || event.key == "A") {
+      } else if (event.key.toLowerCase() == "a") {
         if (this.inputData.a_key > 0) {
           return;
         }
         this.inputData.a_key = this.rotation_pwr;
-      } else if (event.key == "s" || event.key == "S") {
+      } else if (event.key.toLowerCase() == "s") {
         if (this.inputData.s_key > 0) {
           return;
         }
         this.inputData.s_key = this.up_down_pwr;
-      } else if (event.key == "d" || event.key == "D") {
+      } else if (event.key.toLowerCase() == "d") {
         if (this.inputData.d_key > 0) {
           return;
         }
