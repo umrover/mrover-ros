@@ -84,7 +84,7 @@ class DoneState(BaseState):
     def __init__(self, context: Context):
         super().__init__(
             context,
-            ["idle"],
+            [DoneStateTransitions.idle.name],
             add_outcomes=[transition.name for transition in DoneStateTransitions],  # type: ignore
         )
 
@@ -110,7 +110,7 @@ class OffState(BaseState):
     def __init__(self, context: Context):
         super().__init__(
             context,
-            ["idle"],
+            [OffStateTransitions.idle.name],
             add_outcomes=[transition.name for transition in OffStateTransitions],  # type: ignore
         )
         self.stop_count = 0
