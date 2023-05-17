@@ -156,7 +156,7 @@ class GatePath:
         return all_pts.shape[0] - num_pts_included
 
     def __get_paint(self) -> Polygon:
-        """ "
+        """
         Generates the 'paint' as a shapely polygon. The 'paint' is the region that the rover is allowed to optimize its path within
         """
         return Polygon(self.prep_pts)
