@@ -33,7 +33,6 @@ class FailureIdentifier:
     path_name: Path
     data_collecting_mode: bool
     cols: list
-    row_counter: int
 
     def __init__(self):
         nav_status_sub = message_filters.Subscriber("smach/container_status", SmachContainerStatus)
@@ -69,8 +68,7 @@ class FailureIdentifier:
         )
         print(self.cols)
         self._df = pd.DataFrame(columns=self.cols)
-        self.row_counter = 0
-        self.watchdog = WatchDog(self)
+        self.watchdog = WatchDog()
         self.path_name = None  # type: ignore
 
     def write_to_csv(self):
@@ -125,7 +123,6 @@ class FailureIdentifier:
         # create a new row for the data frame
         self.actively_collecting = True
         cur_row = {}
-        cur_row["row"] = self.row_counter
         time = rospy.Time.now()
         cur_row["time"] = time.secs + (time.nsecs / 1e9)
 
@@ -165,15 +162,11 @@ class FailureIdentifier:
 
         # update the data frame with the cur row
         self._df = pd.concat([self._df, DataFrame([cur_row])])
-        self.row_counter += 1
 
         if len(self._df) == DATAFRAME_MAX_SIZE:
             self.write_to_csv()
             # empty dataframe
             self._df = pd.DataFrame(columns=self.cols)
-
-            # set row counter to 0
-            self.row_counter = 0
 
         # publish the watchdog status if the nav state is not recovery
         if TEST_RECOVERY_STATE:
