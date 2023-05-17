@@ -48,8 +48,12 @@ class WatchDog:
             dataframe["cmd_vel_twist"].apply(np.sign).eq(np.sign(dataframe["cmd_vel_twist"].iloc[0])).all()
         )
         linear_are_all_zero = dataframe["cmd_vel_x"].eq(0).all()
-        print(f"turn all same sign: f{turn_are_all_same_sign}, linear_are_all_zero: f{linear_are_all_zero}")
+        angular_are_non_zero = dataframe["cmd_vel_twist"].ne(0).all()
+        print(f"turn all same sign: f{turn_are_all_same_sign}, linear_are_all_zero: f{linear_are_all_zero}, angular are non zero: f{angular_are_non_zero}")
         if not turn_are_all_same_sign or not linear_are_all_zero:
+            print("not turning")
+            return False
+        if not angular_are_non_zero:
             print("not turning")
             return False
         # check if the angular velocity is less than the threshold for the entire dataframe
