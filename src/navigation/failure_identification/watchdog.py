@@ -67,7 +67,7 @@ class WatchDog:
         if not linear_are_all_same_sign or not linear_are_all_non_zero:
             print("not driving straight")
             return False
-        # check if the linear velocity is less than the threshold for the entire dataframe
+        # check if the average linear velocity is less than the threshold for the entire dataframe
         linear_velocity = delta_pos / delta_time
         linear_velocity = np.linalg.norm(linear_velocity)
         print(linear_velocity, LINEAR_THRESHOLD)
