@@ -49,7 +49,9 @@ class WatchDog:
         )
         linear_are_all_zero = dataframe["cmd_vel_x"].eq(0).all()
         angular_are_non_zero = dataframe["cmd_vel_twist"].ne(0).all()
-        print(f"turn all same sign: f{turn_are_all_same_sign}, linear_are_all_zero: f{linear_are_all_zero}, angular are non zero: f{angular_are_non_zero}")
+        print(
+            f"turn all same sign: f{turn_are_all_same_sign}, linear_are_all_zero: f{linear_are_all_zero}, angular are non zero: f{angular_are_non_zero}"
+        )
         if not turn_are_all_same_sign or not linear_are_all_zero:
             print("not turning")
             return False
