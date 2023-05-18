@@ -20,11 +20,6 @@ def normalized(v):
     norm = np.linalg.norm(v)
     return v / norm
 
-def gen_polygon_coordinates(num_sides: int, radius: float = 1) -> np.ndarray:
-    """Generate the coordinates of a regular polygon with n sides and radius r"""
-    return np.array(list([np.cos(2*np.pi/num_sides*i)*radius, np.sin(2*np.pi/num_sides*i)*radius] for i in range(num_sides)))
-
-
 def perpendicular_2d(v):
     if v.shape != (2,) and v.shape != (1, 2) and v.shape != (2, 1):
         raise Exception("vector must be 2D!!!")
