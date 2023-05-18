@@ -4,9 +4,6 @@
     <arg name="sim" default="false"/>
     <arg name="use_ekf" default="true"/>
     <arg name="ekf_start_delay" default="0"/>
-    <arg name="use_odom_frame" default="true"/>
-
-    
 
     <!--
       ==========
@@ -58,17 +55,4 @@
         <param name="trajectory_update_rate" type="double" value="4"/>
         <param name="trajectory_publish_rate" type="double" value="4"/>
     </node>
-
-    <!--
-      Set rosparams required for odom frame if its true, else set them correclty to not use odom frame
-    -->
-    <param if="$(arg use_odom_frame)" name="use_odom_frame" value="true"/>
-    <param unless="$(arg use_odom_frame)" name="use_odom_frame" value="false"/>
-    <param if="$(arg use_odom_frame)" name="odom_frame" value="odom"/>
-    <param unless="$(arg use_odom_frame)" name="odom_frame" value="map"/>
-    <param if="$(arg use_odom_frame)" name="map_frame" value="map"/>
-    <param unless="$(arg use_odom_frame)" name="map_frame" value="none"/>
-    <param name="base_link_frame" value="base_link"/>
-    <param name="world_frame" value="map"/>
- 
 </launch>
