@@ -39,5 +39,11 @@ recovery:
   recovery_distance: 1.0 # distance the rover moves back in each leg of j-turn
 
 failure_identification:
-  dataframe_max_size: 50
-  test_recovery_state: True
+  dataframe_max_size: 200
+  test_recovery_state: False
+
+
+watchdog:
+  window_size: 100 #size of window we are looking at for being stuck
+  angular_threshold: 0.1 
+  linear_threshold: 0.55

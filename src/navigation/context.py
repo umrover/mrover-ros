@@ -17,6 +17,9 @@ from drive import DriveController
 from util.ros_utils import get_rosparam
 
 from std_msgs.msg import Time, Bool
+from drive import DriveController
+from util.ros_utils import get_rosparam
+
 
 TAG_EXPIRATION_TIME_SECONDS = 60
 

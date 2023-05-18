@@ -13,8 +13,9 @@ import numpy as np
 import os
 from pathlib import Path
 from util.ros_utils import get_rosparam
+from util.SO3 import SO3
 
-DATAFRAME_MAX_SIZE = get_rosparam("failure_identification/dataframe_max_size", 50)
+DATAFRAME_MAX_SIZE = get_rosparam("failure_identification/dataframe_max_size", 200)
 
 
 class FailureIdentifier:
@@ -122,7 +123,8 @@ class FailureIdentifier:
         # create a new row for the data frame
         self.actively_collecting = True
         cur_row = {}
-        cur_row["time"] = rospy.Time.now()
+        time = rospy.Time.now()
+        cur_row["time"] = time.secs + (time.nsecs / 1e9)
 
         # if the stuck button is pressed, the rover is stuck (as indicated by the GUI)
         if self.cur_stuck:
@@ -149,6 +151,7 @@ class FailureIdentifier:
         linear_velocity_norm = np.linalg.norm(
             np.array([odometry.twist.twist.linear.x, odometry.twist.twist.linear.y, odometry.twist.twist.linear.z])
         )
+
         cur_row["linear_velocity"] = linear_velocity_norm  # type: ignore
         cur_row["angular_velocity"] = odometry.twist.twist.angular.z
 
