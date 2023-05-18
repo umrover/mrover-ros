@@ -37,10 +37,17 @@ class RecoveryState(BaseState):
     current_action: JTurnAction
 
     def __init__(self, context: Context):
-        super().__init__(context, add_outcomes=[transition.name for transition in RecoveryStateTransitions])  # type: ignore
+        own_transitions = [RecoveryStateTransitions.continue_recovery.name]  # type: ignore
+        super().__init__(context, own_transitions, add_outcomes=[transition.name for transition in RecoveryStateTransitions])  # type: ignore
         self.waypoint_calculated = False
         self.waypoint_behind = None
         self.current_action = JTurnAction.moving_back
+
+    def reset(self) -> None:
+        self.waypoint_calculated = False
+        self.waypoint_behind = None
+        self.current_action = JTurnAction.moving_back
+        self.context.rover.stuck = False
 
     def evaluate(self, ud) -> str:
         # Making waypoint behind the rover to go backwards
@@ -79,9 +86,6 @@ class RecoveryState(BaseState):
 
             # set stuck to False
             if arrived_turn:
-                self.context.rover.stuck = False  # change to subscriber
-                self.waypoint_behind = None
-                self.current_action = JTurnAction.moving_back
                 return self.context.rover.previous_state
 
         return RecoveryStateTransitions.continue_recovery.name  # type: ignore

@@ -67,11 +67,16 @@ class SearchState(BaseState):
         self,
         context: Context,
     ):
+        own_transitions = [SearchStateTransitions.continue_search.name]  # type: ignore
         super().__init__(
             context,
+            own_transitions,
             add_outcomes=[transition.name for transition in SearchStateTransitions],  # type: ignore
         )
         self.traj: Optional[SearchTrajectory] = None
+
+    def reset(self) -> None:
+        self.traj = None
 
     def evaluate(self, ud):
         # Check if a path has been generated, and it's associated with the same

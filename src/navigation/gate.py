@@ -216,21 +216,26 @@ class GateTraverseStateTransitions(Enum):
 
 
 class GateTraverseState(BaseState):
+
     STOP_THRESH = get_rosparam("gate/stop_thresh", 0.2)
     DRIVE_FWD_THRESH = get_rosparam("gate/drive_fwd_thresh", 0.34)  # 20 degrees
-
     APPROACH_DISTANCE = get_rosparam("gate/approach_distance", 2.0)
+
+    traj: Optional[GatePath] = None
 
     def __init__(
         self,
         context: Context,
     ):
+        own_transitions = [GateTraverseStateTransitions.continue_gate_traverse.name]  # type: ignore
         super().__init__(
             context,
+            own_transitions=own_transitions,  # type: ignore
             add_outcomes=[transition.name for transition in GateTraverseStateTransitions],  # type: ignore
         )
-        self.traj: Optional[GatePath] = None
-        self.pts_from_end: Optional[int] = None
+
+    def reset(self) -> None:
+        self.traj = None
 
     def evaluate(self, ud):
         # Check if a path has been generated and its associated with the same
@@ -251,7 +256,6 @@ class GateTraverseState(BaseState):
         # continue executing this path from wherever it left off
         target_pos = self.traj.get_cur_pt()
         if target_pos is None:
-            self.traj = None
             self.context.course.increment_waypoint()
             return GateTraverseStateTransitions.finished_gate.name  # type: ignore
 

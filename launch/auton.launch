@@ -54,5 +54,5 @@
         <param name="source_frame_name" type="string" value="base_link"/>
         <param name="trajectory_update_rate" type="double" value="4"/>
         <param name="trajectory_publish_rate" type="double" value="4"/>
-    </node> -->
+    </node>-->
 </launch>

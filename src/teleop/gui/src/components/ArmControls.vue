@@ -44,6 +44,7 @@
     <div class="controls-flex">
       <h4>Misc. Controls</h4>
       <ToggleButton
+        id="arm_laser"
         :current-state="laser_enabled"
         label-enable-text="Arm Laser On"
         label-disable-text="Arm Laser Off"

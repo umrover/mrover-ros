@@ -100,8 +100,12 @@ class PostBackupState(BaseState):
         self,
         context: Context,
     ):
-        super().__init__(context, add_outcomes=[transition.name for transition in PostBackupTransitions])  # type: ignore
+        own_transitions = [PostBackupTransitions.continue_post_backup.name]  # type: ignore
+        super().__init__(context, own_transitions, add_outcomes=[transition.name for transition in PostBackupTransitions])  # type: ignore
         self.traj: Optional[AvoidPostTrajectory] = None
+
+    def reset(self):
+        self.traj = None
 
     def evaluate(self, ud):
         try:
