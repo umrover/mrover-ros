@@ -58,8 +58,6 @@
         <param name="trajectory_update_rate" type="double" value="4"/>
         <param name="trajectory_publish_rate" type="double" value="4"/>
     </node> -->
-    </node>
-
     <!--
       Set rosparams required for odom frame if its true, else set them correclty to not use odom frame
     -->
