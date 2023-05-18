@@ -19,6 +19,7 @@ default_constants = {
 }
 ODOM_CONSTANTS = get_rosparam("drive/odom", default_constants)
 MAP_CONSTANTS = get_rosparam("drive/map", default_constants)
+LOOKAHEAD_DISTANCE = get_rosparam("drive/lookahead_distance", 3.0)
 
 
 class DriveController:
@@ -120,7 +121,7 @@ class DriveController:
                 return (cmd_vel, False)
         else:
             raise ValueError(f"Invalid drive state {self._driver_state}")
-    
+
     def get_lookahead_pt(
         self: DriveController,
         prev_target_pos: np.ndarray,
@@ -152,7 +153,6 @@ class DriveController:
         else:
             return prev_target_pos + lookahead_pt
 
-
     def get_drive_command(
         self: DriveController,
         target_pos: np.ndarray,
@@ -161,7 +161,7 @@ class DriveController:
         turn_in_place_thresh: float,
         in_odom: bool = False,
         drive_back: bool = False,
-        
+        prev_target: Optional[np.ndarray] = None,
     ) -> Tuple[Twist, bool]:
         """
         Returns a drive command to get the rover to the target position, calls the state machine to do so and updates the last angular error in the process
@@ -171,6 +171,7 @@ class DriveController:
         :param turn_in_place_thresh: The angle threshold to consider the rover facing the target position and ready to drive forward towards it.
         :param in_odom: Whether to use odom constants or map constants.
         :param drive_back: True if rover should drive backwards, false otherwise.
+        :param prev_target: The previous target position, used to compute the lookahead point. (this is optional, if not provided then the lookahead point will be the target position)
         :return: A tuple of the drive command and a boolean indicating whether the rover is at the target position.
         :modifies: self._last_angular_error
         """
@@ -185,6 +186,14 @@ class DriveController:
         rover_pos = rover_pose.position
         rover_pos[2] = 0
         target_pos[2] = 0
+
+        if np.linalg.norm(target_pos - rover_pos) < completion_thresh:
+            self.reset()
+            return (Twist(), True)
+
+        if prev_target is not None:
+            target_pos = self.get_lookahead_pt(prev_target, target_pos, rover_pos, LOOKAHEAD_DISTANCE)
+
         target_dir = target_pos - rover_pos
 
         # if the target is farther than completion distance away from the last one, reset the controller
