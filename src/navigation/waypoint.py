@@ -38,8 +38,10 @@ class WaypointState(BaseState):
         add_outcomes = add_outcomes or []
         add_input_keys = add_input_keys or []
         add_output_keys = add_output_keys or []
+        own_transitions = [WaypointStateTransitions.continue_waypoint_traverse.name]  # type: ignore
         super().__init__(
             context,
+            own_transitions,
             add_outcomes + [transition.name for transition in WaypointStateTransitions],  # type: ignore
             add_input_keys,
             add_output_keys,
