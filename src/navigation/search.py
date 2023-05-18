@@ -1,5 +1,5 @@
 from __future__ import annotations
-from typing import ClassVar, Optional
+from typing import ClassVar, Optional, Callable, Union
 
 import numpy as np
 import rospy
@@ -13,23 +13,28 @@ from mrover.msg import GPSPointList
 from util.ros_utils import get_rosparam
 from math import ceil
 
+
 @dataclass
 class SearchTrajectory(Trajectory):
     # Associated fiducial for this trajectory
     fid_id: int
 
     @classmethod
-    def get_polar_spiral_formula(cls, distance_between_spirals: float) -> callable:
+    def get_polar_spiral_formula(
+        cls, distance_between_spirals: float
+    ) -> Callable[[Union[np.ndarray, float]], Union[np.ndarray, float]]:
         """
-        Returns a polar function that takes in an angle and returns the radius of a spiral 
+        Returns a polar function that takes in an angle and returns the radius of a spiral
         such that the distance between each spiral is 'distance_between_spirals'
         :param distance_between_spirals:    distance between each spiral (float)
-        :return:    polar function (callable)
+        :return:    polar function (callable that takes in either a float angle or an array of angles and outputs the radius at that angle or angles)
         """
-        return lambda theta: theta * (distance_between_spirals / (2*np.pi))
+        return lambda theta: theta * (distance_between_spirals / (2 * np.pi))
 
     @classmethod
-    def gen_spiral_coordinates(cls, coverage_radius: float, distance_between_spirals: float, num_points_per_spiral: int) -> np.ndarray:
+    def gen_spiral_coordinates(
+        cls, coverage_radius: float, distance_between_spirals: float, num_points_per_spiral: int
+    ) -> np.ndarray:
         """
         Generates a set of coordinates for a spiral search pattern centered at the origin
         :param coverage_radius:     radius of the spiral search pattern (float)
@@ -38,14 +43,21 @@ class SearchTrajectory(Trajectory):
         :return:    np.ndarray of coordinates
         """
         num_spirals = ceil(coverage_radius / distance_between_spirals) + 1
-        angles = np.linspace(0, 2*np.pi*num_spirals, num_points_per_spiral*num_spirals + 1)
+        angles = np.linspace(0, 2 * np.pi * num_spirals, num_points_per_spiral * num_spirals + 1)
         radii = cls.get_polar_spiral_formula(distance_between_spirals)(angles)
-        xcoords = np.cos(angles)*radii
-        ycoords = np.sin(angles)*radii
+        xcoords = np.cos(angles) * radii
+        ycoords = np.sin(angles) * radii
         return np.hstack((xcoords.reshape(-1, 1), ycoords.reshape(-1, 1)))
 
     @classmethod
-    def spiral_traj(cls, center: np.ndarray, coverage_radius: float, distance_between_spirals: float, points_per_turn: int,fid_id: int) -> SearchTrajectory:
+    def spiral_traj(
+        cls,
+        center: np.ndarray,
+        coverage_radius: float,
+        distance_between_spirals: float,
+        points_per_turn: int,
+        fid_id: int,
+    ) -> SearchTrajectory:
         """
         Generates a square spiral search pattern around a center position, assumes rover is at the center position
         :param center:      position to center spiral on (np.ndarray)
@@ -56,12 +68,12 @@ class SearchTrajectory(Trajectory):
         :return:    SearchTrajectory object
         """
         deltas = cls.gen_spiral_coordinates(coverage_radius, distance_between_spirals, points_per_turn)
-        
+
         # At this point we use cumsum to create a new array of vectors where each vector
         # is the sum of all the previous deltas up to that index in the old array. We
         # also make sure to add the center coordinate in here too so the spiral is in
         # the correct location
-        coordinates = np.cumsum(np.vstack((center, deltas)), axis=0)
+        coordinates = deltas + center
         return SearchTrajectory(
             np.hstack((coordinates, np.zeros(coordinates.shape[0]).reshape(-1, 1))),
             fid_id,
