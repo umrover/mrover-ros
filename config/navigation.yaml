@@ -47,8 +47,4 @@ failure_identification:
 watchdog:
   window_size: 100 #size of window we are looking at for being stuck
   angular_threshold: 0.1 
-<<<<<<< HEAD
-  linear_threshold: 0.55
-=======
   linear_threshold: 0.2
->>>>>>> master
