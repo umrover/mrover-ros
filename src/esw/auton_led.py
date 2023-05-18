@@ -3,11 +3,8 @@ import rospy
 import serial
 import threading
 
-from mrover.srv import (
-    ChangeAutonLEDState,
-    ChangeAutonLEDStateRequest,
-    ChangeAutonLEDStateResponse,
-)
+
+from std_msgs.msg import String
 
 
 class LedBridge:
@@ -49,39 +46,40 @@ class LedBridge:
 
         self._ser = serial.Serial(port=port, baudrate=baud)
 
-        self.update()
+        with self._color_lock:
+            self._update()
 
-    def handle_change_state(self, req: ChangeAutonLEDStateRequest) -> ChangeAutonLEDStateResponse:
+    def handle_message(self, color: String) -> None:
         """
-        Processes a request to change the auton LED array state.
+        Processes the current color requested by teleop.
 
-        :param req: A string that is the color of the requested state of the
+        :param color: A string that is the color of the requested state of the
             auton LED array. Note that green actually means blinking green.
-        :returns: A response object that is always True to indicate success.
         """
-        if req.color.lower() not in self.SIGNAL_MAP:
-            return ChangeAutonLEDStateResponse(False)
+        if color.data.lower() not in self.SIGNAL_MAP:
+            rospy.logerr(f"Auton LED node received invalid color: {color.data}")
+            return
 
         with self._color_lock:
-            self._color = req.color.lower()
+            self._color = color.data.lower()
 
-        self.update()
+            # Don't update if green, since flash_if_green() will handle this case.
+            if self._color != "green":
+                self._update()
 
-        return ChangeAutonLEDStateResponse(True)
 
-    def update(self):
+    def _update(self):
         """
         Writes to serial to change LED color.
+        Note: assumes self._color_lock is held!
         """
-        with self._color_lock:
-            assert self._color in self.SIGNAL_MAP
-            self._ser.write(self.SIGNAL_MAP[self._color])
+        assert self._color in self.SIGNAL_MAP
+        self._ser.write(self.SIGNAL_MAP[self._color])
 
     def flash_if_green(self, event=None):
         """
         Flash green if necessary. Function is expected to be called every self.SLEEP_AMOUNT seconds.
         """
-
         # Upon waking up, flash green if necessary
         with self._color_lock:
             if self._color != "green":
@@ -113,8 +111,8 @@ def main():
     # Construct the bridge.
     led_bridge = LedBridge(port, baud)
 
-    # Configure request handler.
-    rospy.Service("change_auton_led_state", ChangeAutonLEDState, led_bridge.handle_change_state)
+    # Configure subscriber.
+    rospy.Subscriber("auton_led_cmd", String, led_bridge.handle_message)
 
     # Sleep indefinitely, flashing if necessary.
     rospy.Timer(rospy.Duration(led_bridge.SLEEP_AMOUNT), led_bridge.flash_if_green)
