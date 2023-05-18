@@ -6,7 +6,7 @@ from enum import Enum
 
 from geometry_msgs.msg import Twist
 from util.SE3 import SE3
-from util.np_utils import angle_to_rotate
+from util.np_utils import angle_to_rotate, normalized
 from util.ros_utils import get_rosparam
 
 default_constants = {
@@ -120,6 +120,38 @@ class DriveController:
                 return (cmd_vel, False)
         else:
             raise ValueError(f"Invalid drive state {self._driver_state}")
+    
+    def get_lookahead_pt(
+        self: DriveController,
+        prev_target_pos: np.ndarray,
+        target_pos: np.ndarray,
+        rover_pos: np.ndarray,
+        lookahead_dist: float,
+    ) -> np.ndarray:
+        """
+        Returns a point that the rover should target on the path from the previous target position to the current target position
+        The point is computed by first projecting the rovers position onto the path and then propogating ahead by the lookahead distance
+        if the target is closer than that then it is returned instead
+        :param prev_target_pos: the previous target position
+        :param target_pos: the current target position
+        :param rover_pos: the current rover position
+        :param lookahead_dist: the distance to look ahead on the path
+        :return: the lookahead point
+        """
+        # compute the vector from the previous target position to the current target position
+        path_vec = target_pos - prev_target_pos
+        # compute the vector from the previous target position to the rover position
+        rover_vec = rover_pos - prev_target_pos
+        # compute the projection of the rover vector onto the target vector
+        proj_vec = np.dot(rover_vec, path_vec) / np.dot(path_vec, path_vec) * path_vec
+        lookahead_vec = lookahead_dist * normalized(path_vec)
+        lookahead_pt = proj_vec + lookahead_vec
+        # if the lookahead point is further away than the target, just return the target
+        if np.linalg.norm(lookahead_pt) > np.linalg.norm(path_vec):
+            return target_pos
+        else:
+            return prev_target_pos + lookahead_pt
+
 
     def get_drive_command(
         self: DriveController,
@@ -129,6 +161,7 @@ class DriveController:
         turn_in_place_thresh: float,
         in_odom: bool = False,
         drive_back: bool = False,
+        
     ) -> Tuple[Twist, bool]:
         """
         Returns a drive command to get the rover to the target position, calls the state machine to do so and updates the last angular error in the process
