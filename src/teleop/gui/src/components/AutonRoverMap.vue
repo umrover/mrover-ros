@@ -40,7 +40,7 @@
         :lat-lng="search_path_point.latLng"
         :icon="searchPathIcon"
       >
-        <l-tooltip :options="{ permanent: 'true', direction: 'top' }"
+        <l-tooltip :options="{ permanent: 'false', direction: 'top' }"
           >Search Path {{ index }}</l-tooltip
         >
       </l-marker>
