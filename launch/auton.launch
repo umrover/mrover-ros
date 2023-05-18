@@ -4,9 +4,6 @@
     <arg name="sim" default="false"/>
     <arg name="use_ekf" default="true"/>
     <arg name="ekf_start_delay" default="0"/>
-    <arg name="use_odom_frame" default="true"/>
-
-    
 
     <!--
       ==========
@@ -52,23 +49,10 @@
     <node name="gps_linearization" pkg="mrover" type="gps_linearization.py" output="screen"/>
 
     <!-- plot the rover trajectory in rviz as it drives -->
-    <node name="hector_trajectory_server" output="screen" pkg="hector_trajectory_server" type="hector_trajectory_server">
+    <!-- <node name="hector_trajectory_server" output="screen" pkg="hector_trajectory_server" type="hector_trajectory_server">
         <param name="target_frame_name" type="string" value="map"/>
         <param name="source_frame_name" type="string" value="base_link"/>
         <param name="trajectory_update_rate" type="double" value="4"/>
         <param name="trajectory_publish_rate" type="double" value="4"/>
-    </node>
-
-    <!--
-      Set rosparams required for odom frame if its true, else set them correclty to not use odom frame
-    -->
-    <param if="$(arg use_odom_frame)" name="use_odom_frame" value="true"/>
-    <param unless="$(arg use_odom_frame)" name="use_odom_frame" value="false"/>
-    <param if="$(arg use_odom_frame)" name="odom_frame" value="odom"/>
-    <param unless="$(arg use_odom_frame)" name="odom_frame" value="map"/>
-    <param if="$(arg use_odom_frame)" name="map_frame" value="map"/>
-    <param unless="$(arg use_odom_frame)" name="map_frame" value="none"/>
-    <param name="base_link_frame" value="base_link"/>
-    <param name="world_frame" value="map"/>
- 
+    </node>-->
 </launch>

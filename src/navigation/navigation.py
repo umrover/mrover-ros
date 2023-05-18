@@ -10,11 +10,12 @@ import smach_ros
 from context import Context
 from gate import GateTraverseState, GateTraverseStateTransitions
 from approach_post import ApproachPostState, ApproachPostStateTransitions
-from state import DoneState, DoneStateTransitions, OffState, OffStateTransitions
+from navigation.state import DoneState, DoneStateTransitions, OffState, OffStateTransitions
 from waypoint import WaypointState, WaypointStateTransitions
 from search import SearchState, SearchStateTransitions
 from recovery import RecoveryState, RecoveryStateTransitions
 from partial_gate import PartialGateState, PartialGateStateTransitions
+from post_backup import PostBackupState, PostBackupTransitions
 from smach.log import set_loggers
 from smach.log import loginfo, logwarn, logerr
 
@@ -63,6 +64,11 @@ class Navigation(threading.Thread):
                 "PartialGateState",
                 PartialGateState(self.context),
                 transitions=self.get_transitions(PartialGateStateTransitions),
+            )
+            self.state_machine.add(
+                "PostBackupState",
+                PostBackupState(self.context),
+                transitions=self.get_transitions(PostBackupTransitions),
             )
 
     def get_transitions(self, transitions_enum):

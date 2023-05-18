@@ -22,6 +22,7 @@ class RecoveryStateTransitions(Enum):
     continue_gate_traverse = "GateTraverseState"
     continue_search = "SearchState"
     continue_recovery = "RecoveryState"
+    continue_post_backup = "PostBackupState"
     recovery_state = "RecoveryState"
     partial_gate = "PartialGateState"
 
@@ -61,7 +62,7 @@ class RecoveryState(BaseState):
                 self.waypoint_behind = pose.position + dir_vector
 
             cmd_vel, arrived_back = self.context.rover.driver.get_drive_command(
-                self.waypoint_behind, pose, STOP_THRESH, DRIVE_FWD_THRESH, True
+                self.waypoint_behind, pose, STOP_THRESH, DRIVE_FWD_THRESH, drive_back=True
             )
             self.context.rover.send_drive_command(cmd_vel)
 
@@ -79,7 +80,7 @@ class RecoveryState(BaseState):
                 self.waypoint_behind = pose.position + dir_vector
 
             cmd_vel, arrived_turn = self.context.rover.driver.get_drive_command(
-                self.waypoint_behind, pose, STOP_THRESH, DRIVE_FWD_THRESH, True
+                self.waypoint_behind, pose, STOP_THRESH, DRIVE_FWD_THRESH, drive_back=True
             )
             self.context.rover.send_drive_command(cmd_vel)
 

@@ -128,6 +128,7 @@ class DriveController:
         completion_thresh: float,
         turn_in_place_thresh: float,
         in_odom: bool = False,
+        drive_back: bool = False,
     ) -> Tuple[Twist, bool]:
         """
         Returns a drive command to get the rover to the target position, calls the state machine to do so and updates the last angular error in the process
@@ -136,6 +137,7 @@ class DriveController:
         :param completion_thresh: The distance threshold to consider the rover at the target position.
         :param turn_in_place_thresh: The angle threshold to consider the rover facing the target position and ready to drive forward towards it.
         :param in_odom: Whether to use odom constants or map constants.
+        :param drive_back: True if rover should drive backwards, false otherwise.
         :return: A tuple of the drive command and a boolean indicating whether the rover is at the target position.
         :modifies: self._last_angular_error
         """
@@ -143,6 +145,10 @@ class DriveController:
         # get the direction vector of the rover and the target position, zero the Z components of both since our controller only assumes motion and control over the Rover in the XY plane
         rover_dir = rover_pose.rotation.direction_vector()
         rover_dir[2] = 0
+
+        if drive_back:
+            rover_dir *= -1
+
         rover_pos = rover_pose.position
         rover_pos[2] = 0
         target_pos[2] = 0
@@ -159,6 +165,9 @@ class DriveController:
         output = self._get_state_machine_output(
             in_odom, angular_error, linear_error, completion_thresh, turn_in_place_thresh
         )
+
+        if drive_back:
+            output[0].linear.x *= -1
 
         self._last_angular_error = angular_error
         self._last_target = target_pos

@@ -3,7 +3,6 @@ import rospy
 from context import Context
 from aenum import Enum, NoAlias
 from geometry_msgs.msg import Twist
-from waypoint import WaypointState
 from util.ros_utils import get_rosparam
 from state import BaseState
 
@@ -50,6 +49,9 @@ class ApproachPostState(BaseState):
                 in_odom=self.context.use_odom,
             )
             if arrived:
+                self.context.env.arrived_at_post = True
+                self.context.env.last_post_location = self.context.env.current_fid_pos(odom_override=False)
+                print(f"set last post location to {self.context.env.last_post_location}.")
                 self.context.course.increment_waypoint()
                 return ApproachPostStateTransitions.finished_fiducial.name  # type: ignore
             self.context.rover.send_drive_command(cmd_vel)

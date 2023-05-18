@@ -2,8 +2,8 @@ drive:
   map:
     max_driving_effort: 1.0
     min_driving_effort: -1.0
-    max_turning_effort: 1.0
-    min_turning_effort: -1.0
+    max_turning_effort: 0.7
+    min_turning_effort: -0.7
     turning_p: 10.0
     driving_p: 20.0
   odom:
@@ -21,12 +21,13 @@ gate:
   post_radius: 0.7
 
 search:
-  stop_thresh: 0.2
+  stop_thresh: 0.6
   drive_fwd_thresh: 0.34
 
 single_fiducial:
-  stop_thresh: 0.7
+  stop_thresh: 1.0
   fiducial_stop_threshold: 1.75
+  post_avoidance_multiplier: 1.42
 
 waypoint:
   stop_thresh: 0.5
@@ -36,8 +37,14 @@ waypoint:
 recovery:
   stop_thresh: 0.2
   drive_fwd_thresh: 0.34
-  recovery_distance: 1.0 # distance the rover moves back in each leg of j-turn
+  recovery_distance: 2.0 # distance the rover moves back in each leg of j-turn
 
 failure_identification:
-  dataframe_max_size: 50
-  test_recovery_state: True
+  dataframe_max_size: 200
+  test_recovery_state: False
+
+
+watchdog:
+  window_size: 100 #size of window we are looking at for being stuck
+  angular_threshold: 0.1 
+  linear_threshold: 0.2

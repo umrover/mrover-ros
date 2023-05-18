@@ -1,10 +1,7 @@
 <launch>
-    <arg name="use_odom_frame" default="true"/>
     <include file="$(find mrover)/launch/jetson.launch"/>
     <include file="$(find mrover)/launch/zed.launch">
-        <arg name="use_builtin_visual_odom" value="$(arg use_odom_frame)"/>
+        <arg name="use_builtin_visual_odom" value="true"/>
     </include>
-    <include file="$(find mrover)/launch/auton.launch">
-        <arg name="use_odom_frame" value="$(arg use_odom_frame)"/>
-    </include>
+    <include file="$(find mrover)/launch/auton.launch"/>
 </launch>
