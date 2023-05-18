@@ -67,7 +67,6 @@ class LedBridge:
             if self._color != "green":
                 self._update()
 
-
     def _update(self):
         """
         Writes to serial to change LED color.
