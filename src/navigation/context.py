@@ -85,6 +85,8 @@ class Environment:
 
     ctx: Context
     NO_FIDUCIAL: ClassVar[int] = -1
+    arrived_at_post: bool = False
+    last_post_location: Optional[np.ndarray] = None
 
     def get_fid_pos(self, fid_id: int, in_odom_frame: bool = True) -> Optional[np.ndarray]:
         """
@@ -99,25 +101,30 @@ class Environment:
             )
             now = rospy.Time.now()
             if now.to_sec() - time.to_sec() >= TAG_EXPIRATION_TIME_SECONDS:
+                print(f"TAG EXPIRED {fid_id}!")
                 return None
         except (
             tf2_ros.LookupException,
             tf2_ros.ConnectivityException,
             tf2_ros.ExtrapolationException,
-        ):
+        ) as e:
+            rospy.logerr(e)
             return None
         return fid_pose.position
 
-    def current_fid_pos(self) -> Optional[np.ndarray]:
+    def current_fid_pos(self, odom_override: bool = True) -> Optional[np.ndarray]:
         """
         Retrieves the position of the current fiducial (and we are looking for it)
+        :param: odom_override if false will force it to be in the map frame
         """
         assert self.ctx.course
+        in_odom = self.ctx.use_odom and odom_override
         current_waypoint = self.ctx.course.current_waypoint()
         if current_waypoint is None:
+            print("CURRENT WAYPOINT IS NONE")
             return None
 
-        return self.get_fid_pos(current_waypoint.fiducial_id, self.ctx.use_odom)
+        return self.get_fid_pos(current_waypoint.fiducial_id, in_odom)
 
     def other_gate_fid_pos(self) -> Optional[np.ndarray]:
         """

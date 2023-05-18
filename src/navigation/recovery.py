@@ -22,6 +22,7 @@ class RecoveryStateTransitions(Enum):
     continue_gate_traverse = "GateTraverseState"
     continue_search = "SearchState"
     continue_recovery = "RecoveryState"
+    continue_post_backup = "PostBackupState"
     recovery_state = "RecoveryState"
     partial_gate = "PartialGateState"
 

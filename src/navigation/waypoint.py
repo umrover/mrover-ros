@@ -20,6 +20,7 @@ class WaypointStateTransitions(Enum):
     go_to_gate = "GateTraverseState"
     recovery_state = "RecoveryState"
     partial_gate = "PartialGateState"
+    backup_from_post = "PostBackupState"
 
 
 class WaypointState(BaseState):
@@ -60,6 +61,11 @@ class WaypointState(BaseState):
         current_waypoint = self.context.course.current_waypoint()
         if current_waypoint is None:
             return WaypointStateTransitions.no_waypoint.name  # type: ignore
+
+        # if we are at a post currently (from a previous leg), backup to avoid collision
+        if self.context.env.arrived_at_post:
+            self.context.env.arrived_at_post = False
+            return WaypointStateTransitions.backup_from_post.name  # type: ignore
 
         # Go into either gate or search if we see them early (and are looking)
         if self.context.course.look_for_gate():
