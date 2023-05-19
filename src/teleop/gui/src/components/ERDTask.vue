@@ -65,10 +65,13 @@
       <ArmControls />
     </div>
     <div class="box moteus light-bg">
-      <MoteusStateTable :moteus-state-data="moteusState" />
+      <DriveMoteusStateTable :moteus-state-data="moteusState" />
     </div>
     <div v-show="false">
       <MastGimbalControls></MastGimbalControls>
+    </div>
+    <div class="box light-bg">
+      <ArmMoteusStateTable/>
     </div>
   </div>
 </template>
@@ -83,7 +86,8 @@ import MastGimbalControls from "./MastGimbalControls.vue";
 import BasicMap from "./BasicRoverMap.vue";
 import BasicWaypointEditor from "./BasicWaypointEditor.vue";
 import JointStateTable from "./JointStateTable.vue";
-import MoteusStateTable from "./MoteusStateTable.vue";
+import DriveMoteusStateTable from "./DriveMoteusStateTable.vue";
+import ArmMoteusStateTable from "./ArmMoteusStateTable.vue";
 import OdometryReading from "./OdometryReading.vue";
 import PDBFuse from "./PDBFuse.vue";
 import CommReadout from "./CommReadout.vue";
@@ -93,13 +97,14 @@ import { quaternionToMapAngle, disableAutonLED } from "../utils.js";
 export default {
   components: {
     ArmControls,
+    ArmMoteusStateTable,
     Cameras,
     DriveControls,
     BasicMap,
     BasicWaypointEditor,
     JointStateTable,
     MastGimbalControls,
-    MoteusStateTable,
+    DriveMoteusStateTable,
     OdometryReading,
     PDBFuse,
     CommReadout,

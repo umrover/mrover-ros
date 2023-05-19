@@ -61,7 +61,7 @@
       <JointStateTable :joint-state-data="jointState" :vertical="true" />
     </div>
     <div class="box light-bg moteus">
-      <MoteusStateTable :moteus-state-data="moteusState" />
+      <DriveMoteusStateTable :moteus-state-data="moteusState" />
     </div>
     <div class="box light-bg limit">
       <h3>Limit Switches</h3>
@@ -115,7 +115,7 @@ import MastGimbalControls from "./MastGimbalControls.vue";
 import SAArmControls from "./SAArmControls.vue";
 import PDBFuse from "./PDBFuse.vue";
 import Cameras from "./Cameras.vue";
-import MoteusStateTable from "./MoteusStateTable.vue";
+import DriveMoteusStateTable from "./DriveMoteusStateTable.vue";
 import JointStateTable from "./JointStateTable.vue";
 import LimitSwitch from "./LimitSwitch.vue";
 import CalibrationCheckbox from "./CalibrationCheckbox.vue";
@@ -133,7 +133,7 @@ export default {
     DriveControls,
     JointStateTable,
     MastGimbalControls,
-    MoteusStateTable,
+    DriveMoteusStateTable,
     PDBFuse,
     SAArmControls,
     LimitSwitch,
