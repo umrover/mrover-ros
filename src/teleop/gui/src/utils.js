@@ -39,25 +39,17 @@ const quaternionToMapAngle = function (quaternion) {
 };
 
 const disableAutonLED = function (ros) {
-  let auton_led_client = new ROSLIB.Service({
+  let auton_led_pub = new ROSLIB.Topic({
     ros: ros,
-    name: "change_auton_led_state",
-    serviceType: "mrover/ChangeAutonLEDState",
+    name: "auton_led_cmd",
+    serviceType: "std_msgs/String",
   });
 
-  let request = new ROSLIB.ServiceRequest({
-    color: "off",
+  const msg = new ROSLIB.Message({
+    data: "off"
   });
 
-  auton_led_client.callService(request, (result) => {
-    // Wait 1 second then try again if fail
-    if (!result.success) {
-      alert("Failed to disable auton LED. Retrying in 1 second.");
-      setTimeout(() => {
-        disableAutonLED(ros);
-      }, 1000);
-    }
-  });
+  auton_led_pub.publish(msg);
 };
 
 export { convertDMS, quaternionToMapAngle, disableAutonLED };

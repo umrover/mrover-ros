@@ -4,9 +4,8 @@
 The science codebase deals with reading and parsing NMEA-like messages
 from the STM32 chip over UART to complete tasks for almost
 every mission. These tasks include operating the science box and getting
-relevant data during the Science task, controlling the arm laser during the
-Equipment Servicing task, and controlling the LED array used during the
-Autonomous Traversal task. It also transmits diagnostic data on temperature
+relevant data during the Science task, as well as controlling the arm laser during the
+Equipment Servicing task. It also transmits diagnostic data on temperature
 and current on the 3.3V, 5V, and 12V lines for the PDB.
 """
 import threading
@@ -20,9 +19,6 @@ from mrover.msg import Diagnostic, HeaterData, ScienceTemperature, Spectral
 from std_msgs.msg import Bool
 
 from mrover.srv import (
-    ChangeAutonLEDState,
-    ChangeAutonLEDStateRequest,
-    ChangeAutonLEDStateResponse,
     ChangeHeaterState,
     ChangeHeaterStateRequest,
     ChangeHeaterStateResponse,
@@ -49,8 +45,6 @@ class ScienceBridge:
         science MCU is active or not (based on whether any messages were heard)
     :param _allowed_mosfet_names: A list of allowed mosfet names for the "enable
         mosfet" device service
-    :param _id_by_color: A dictionary that maps the possible colors of the auton
-        LED to an integer for the UART message.
     :param _mcu_active_timeout_s: This represents the maximum amount of time
         in seconds without receiving a UART message until the MCU is called
         not active.
@@ -74,14 +68,12 @@ class ScienceBridge:
     :param _uart_lock: A lock used to prevent clashing over the UART transmit
         line.
     :param _last_mcu_active: The last note for whether the mcu was active or not.
-    :param _auton_led_color: The last received auton led color requested.
     """
 
     NUM_SPECTRAL_CHANNELS = 6
 
     _active_publisher: rospy.Publisher
     _allowed_mosfet_names: List[str]
-    _id_by_color: Dict[str, int]
     _mcu_active_timeout_s: int
     _mosfet_number_by_device_name: Dict[str, int]
     _num_diag_current: int
@@ -96,13 +88,11 @@ class ScienceBridge:
     _uart_lock: threading.Lock
     ser: serial.Serial
     _last_mcu_active: Bool
-    _auton_led_color: str
 
     def __init__(self) -> None:
 
         self._active_publisher = rospy.Publisher("science_mcu_active", Bool, queue_size=1)
 
-        self._id_by_color = rospy.get_param("science/auton_color_ids")
         self._mcu_active_timeout_s = rospy.get_param("science/info/mcu_active_timeout_s")
         self._mosfet_number_by_device_name = rospy.get_param("science/device_mosfet_numbers")
         self._allowed_mosfet_names = ["arm_laser", "uv_led_carousel", "uv_led_end_effector", "white_led", "raman_laser"]
@@ -144,7 +134,6 @@ class ScienceBridge:
             timeout=rospy.get_param("science/serial/timeout"),
         )
         self._last_mcu_active = True
-        self._auton_led_color = "off"
 
     def __del__(self) -> None:
         """
@@ -166,12 +155,6 @@ class ScienceBridge:
         self._active_publisher.publish(ros_msg)
         return True
 
-    def send_auton_led_cmd_to_mcu(self, event=None) -> None:
-        """Send the current auton led color to the MCU.
-        This is called repeatedly in case the MCU missed a message or reset.
-        """
-        self._send_auton_led_uart_message()
-
     def handle_enable_mosfet_device(self, req: EnableDeviceRequest) -> EnableDeviceResponse:
         """Process a request to change the state of a MOSFET device by issuing
         the command to the STM32 chip via UART.
@@ -184,24 +167,6 @@ class ScienceBridge:
             return EnableDeviceResponse(success)
 
         return EnableDeviceResponse(False)
-
-    def handle_change_auton_led_state(self, req: ChangeAutonLEDStateRequest) -> ChangeAutonLEDStateResponse:
-        """Process a request to change the auton LED array state by issuing
-        the command to the STM32 chip via UART.
-        :param req: A string that is the color of the requested state of the
-            auton LED array. Note that green actually means blinking green.
-        :returns: A boolean that is the success of sent UART transaction.
-        """
-        color = req.color.lower()
-
-        if color not in self._id_by_color.keys():
-            rospy.logerr("Invalid auton LED color.")
-            return ChangeAutonLEDStateResponse(False)
-
-        self._auton_led_color = color
-
-        success = self._send_auton_led_uart_message()
-        return ChangeAutonLEDStateResponse(success)
 
     def handle_change_heater_auto_shutoff_state(self, req: SetBoolRequest) -> SetBoolResponse:
         """Process a request to change the auto shut off state of the
@@ -239,15 +204,6 @@ class ScienceBridge:
 
         success = self._servo_transmit(req.id, req.angle)
         return ChangeServoAngleResponse(success)
-
-    def _send_auton_led_uart_message(self) -> bool:
-        """Look at the current color and send the message over UART
-        :returns: A boolean that is the success of the transaction."""
-        requested_state = self._id_by_color[self._auton_led_color]
-        msg = f"$LED,{requested_state}"
-        success = self._send_msg(msg)
-
-        return success
 
     def _heater_auto_shutoff_transmit(self, enable: bool) -> bool:
         """Send a UART message to the STM32 chip commanding the auto shut off
@@ -472,13 +428,11 @@ def main():
     rospy.init_node("science")
     bridge = ScienceBridge()
     rospy.Service("enable_mosfet_device", EnableDevice, bridge.handle_enable_mosfet_device)
-    rospy.Service("change_auton_led_state", ChangeAutonLEDState, bridge.handle_change_auton_led_state)
     rospy.Service("change_heater_state", ChangeHeaterState, bridge.handle_change_heater_state)
     rospy.Service("change_heater_auto_shutoff_state", SetBool, bridge.handle_change_heater_auto_shutoff_state)
     rospy.Service("change_servo_angle", ChangeServoAngle, bridge.handle_change_servo_angle)
     rospy.Timer(rospy.Duration(400.0 / 1000.0), bridge.feed_uart_watchdog)
     rospy.Timer(rospy.Duration(1.0), bridge.publish_mcu_active)
-    rospy.Timer(rospy.Duration(1.0), bridge.send_auton_led_cmd_to_mcu)
 
     while not rospy.is_shutdown():
         # receive() sleeps when no message is received.

@@ -24,4 +24,8 @@
 
     <!-- camera node -->
     <node name="cameras" pkg="mrover" type="cameras.py"/>
+
+    <!-- Run the auton led program -->
+    <node name="auton_led" pkg="mrover" type="auton_led.py" output="screen"></node>
+
 </launch>
