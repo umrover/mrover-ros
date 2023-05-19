@@ -81,7 +81,7 @@
               v-for="position in jointStateData.position"
               class="tableElement"
             >
-              {{ position.toFixed(3) }}
+              {{ (position * radius_m).toFixed(3) }}
             </td>
           </tr>
           <tr>
@@ -90,7 +90,7 @@
               v-for="velocity in jointStateData.velocity"
               class="tableElement"
             >
-              {{ velocity.toFixed(3) }}
+              {{ (velocity * radius_m).toFixed(3) }}
             </td>
           </tr>
           <tr>
@@ -121,11 +121,26 @@ export default {
       required: true,
     },
   },
+
   data() {
     return {
       motors: [],
+
+      radius_m: 0
     };
   },
+
+  created: function () {
+    let radius_param = new ROSLIB.Param({
+      ros: this.$ros,
+      name: "wheel/radius"
+    });
+
+    radius_param.get((radius_m) => {
+      this.radius_m = radius_m;
+      console.log(this.radius_m);
+    })
+  }
 };
 </script>
 
