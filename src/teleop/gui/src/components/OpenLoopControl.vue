@@ -20,30 +20,42 @@ let interval;
 export default {
   props: {
     forwardsKey:
-      // ID of key to send positive velocity
-      {
-        type: Number,
-        required: true,
-      },
+    // ID of key to send positive velocity
+    {
+      type: Number,
+      required: true,
+    },
+
     backwardsKey:
-      // ID of key to send negative velocity
-      {
-        type: Number,
-        required: true,
-      },
+    // ID of key to send negative velocity
+    {
+      type: Number,
+      required: true,
+    },
+
     updateRate:
-      // In seconds
-      {
-        type: Number,
-        required: false,
-        default: 0.1,
-      },
+    // In seconds
+    {
+      type: Number,
+      required: false,
+      default: 0.1,
+    },
+
+    scaleDefault:
+    // Default velocityScale in percent
+    {
+      type: Number,
+      required: false,
+      default: 100,
+    },
   },
+
   emits: ["velocity"],
+
   data() {
     return {
       velocity: 0,
-      velocityScale: 100,
+      velocityScale: this.scaleDefault,
     };
   },
 

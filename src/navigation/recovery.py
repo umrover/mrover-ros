@@ -22,6 +22,7 @@ class RecoveryStateTransitions(Enum):
     continue_gate_traverse = "GateTraverseState"
     continue_search = "SearchState"
     continue_recovery = "RecoveryState"
+    continue_post_backup = "PostBackupState"
     recovery_state = "RecoveryState"
     partial_gate = "PartialGateState"
 
@@ -36,10 +37,17 @@ class RecoveryState(BaseState):
     current_action: JTurnAction
 
     def __init__(self, context: Context):
-        super().__init__(context, add_outcomes=[transition.name for transition in RecoveryStateTransitions])  # type: ignore
+        own_transitions = [RecoveryStateTransitions.continue_recovery.name]  # type: ignore
+        super().__init__(context, own_transitions, add_outcomes=[transition.name for transition in RecoveryStateTransitions])  # type: ignore
         self.waypoint_calculated = False
         self.waypoint_behind = None
         self.current_action = JTurnAction.moving_back
+
+    def reset(self) -> None:
+        self.waypoint_calculated = False
+        self.waypoint_behind = None
+        self.current_action = JTurnAction.moving_back
+        self.context.rover.stuck = False
 
     def evaluate(self, ud) -> str:
         # Making waypoint behind the rover to go backwards
@@ -54,7 +62,7 @@ class RecoveryState(BaseState):
                 self.waypoint_behind = pose.position + dir_vector
 
             cmd_vel, arrived_back = self.context.rover.driver.get_drive_command(
-                self.waypoint_behind, pose, STOP_THRESH, DRIVE_FWD_THRESH, True
+                self.waypoint_behind, pose, STOP_THRESH, DRIVE_FWD_THRESH, drive_back=True
             )
             self.context.rover.send_drive_command(cmd_vel)
 
@@ -72,15 +80,12 @@ class RecoveryState(BaseState):
                 self.waypoint_behind = pose.position + dir_vector
 
             cmd_vel, arrived_turn = self.context.rover.driver.get_drive_command(
-                self.waypoint_behind, pose, STOP_THRESH, DRIVE_FWD_THRESH, True
+                self.waypoint_behind, pose, STOP_THRESH, DRIVE_FWD_THRESH, drive_back=True
             )
             self.context.rover.send_drive_command(cmd_vel)
 
             # set stuck to False
             if arrived_turn:
-                self.context.rover.stuck = False  # change to subscriber
-                self.waypoint_behind = None
-                self.current_action = JTurnAction.moving_back
                 return self.context.rover.previous_state
 
         return RecoveryStateTransitions.continue_recovery.name  # type: ignore

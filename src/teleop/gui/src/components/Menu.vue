@@ -12,6 +12,7 @@
       <div class="spacer"></div>
       <div class="mode-toggle">
         <ToggleButton
+          id="competition_mode"
           :label-enable-text="'Competition Mode On'"
           :label-disable-text="'Competition Mode Off'"
           :current-state="competitionMode"
@@ -51,7 +52,7 @@ export default {
 
   data() {
     return {
-      competitionMode: true,
+      competitionMode: false,
     };
   },
 

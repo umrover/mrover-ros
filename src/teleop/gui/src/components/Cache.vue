@@ -1,20 +1,33 @@
 <template>
   <div>
     <h3>Cache Controls</h3>
-    <!-- Left and right arrows keys -->
-    <p>Control with left and right arrows keys</p>
-    <OpenLoopControl
-      :forwards-key="39"
-      :backwards-key="37"
-      @velocity="velocity = $event"
-    ></OpenLoopControl>
-    <div class="limit-switch">
-      <LEDIndicator
-        :connected="limit_switch_pressed"
-        :name="'Cache Limit Switch'"
-        :show_name="true"
-      />
-    </div>
+      <div class="box1">
+        <ToggleButton
+          id="cache_enabled"
+          :current-state="enabled"
+          label-enable-text="Open Loop"
+          label-disable-text="Disabled"
+          @change="toggleEnabled"
+        />
+        <div class="controls">
+          <div v-if="enabled">
+            <p>Close cache with C and open with O</p>
+            <OpenLoopControl
+              :forwards-key="79"
+              :backwards-key="67"
+              :scale-default="50"
+              @velocity="velocity = $event"
+            ></OpenLoopControl>
+          </div>
+        </div>
+        <div class="cache_limit_switch">
+          <LEDIndicator
+            :connected="limit_switch_pressed"
+            :name="'Cache Limit Switch'"
+            :show_name="true"
+          />
+        </div>
+      </div>
   </div>
 </template>
 
@@ -22,6 +35,7 @@
 import ROSLIB from "roslib";
 import OpenLoopControl from "./OpenLoopControl.vue";
 import LEDIndicator from "./LEDIndicator.vue";
+import ToggleButton from "./ToggleButton.vue";
 
 // In seconds
 const updateRate = 0.1;
@@ -31,11 +45,14 @@ let interval;
 export default {
   components: {
     OpenLoopControl,
-    LEDIndicator
+    LEDIndicator,
+    ToggleButton,
   },
 
   data() {
     return {
+      enabled: false,
+
       limit_switch_pressed: false,
       velocity: 0,
 
@@ -46,17 +63,31 @@ export default {
 
   computed: {
     messageObject: function () {
-      const msg = {
-        name: ["cache"],
-        position: [],
-        velocity: [this.velocity],
-        effort: []
-      };
-      return new ROSLIB.Message(msg);
+      if (this.enabled) {
+        const msg = {
+          name: ["cache"],
+          position: [],
+          velocity: [this.velocity],
+          effort: []
+        };
+        return new ROSLIB.Message(msg);
+      }
+      else {
+        const msg = {
+          name: ["cache"],
+          position: [],
+          velocity: [0],
+          effort: []
+        };
+        return new ROSLIB.Message(msg);
+      }
     }
   },
 
   beforeDestroy: function () {
+    this.enabled = false;
+    this.cache_pub.publish(this.messageObject);
+
     window.clearInterval(interval);
   },
 
@@ -80,27 +111,30 @@ export default {
     interval = window.setInterval(() => {
       this.cache_pub.publish(this.messageObject);
     }, updateRate * 1000);
-  }
+  },
+
+  methods: {
+    toggleEnabled: function () {
+      this.enabled = !this.enabled;
+    }
+  },
 };
 </script>
 
 <style scoped>
-#circle {
-  height: 20px;
-  width: 20px;
-  border-radius: 50%;
-  background-color: green;
-  margin-right: 2%;
-}
-
-#box-1 {
-  margin-top: 5%;
-  display: flex;
-  flex-direction: row;
-}
-
-.limit-switch {
+.controls {
+  display: inline-block;
   margin-top: 10px;
-  margin-left: -36px;
+}
+
+.box1 {
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+}
+
+.cache_limit_switch {
+  margin-top: 10px;
+  margin-left: -22px;
 }
 </style>
