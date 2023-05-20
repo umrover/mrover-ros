@@ -201,7 +201,7 @@ class StreamManager:
     The commands requested by the secondary IP endpoint.
     """
 
-    _available_cams_pub: rospy.publisher
+    _available_cams_pub: rospy.Publisher
     """
     Publishes the available cameras
     """
