@@ -212,9 +212,9 @@ class StreamManager:
     Publishes the available cameras.
     """
 
-    _available_cams_lock: Lock
+    _available_cameras_lock: Lock
     """
-    A lock that protects member variables _device_arr and _camera_types.
+    A lock that protects member variable _available_cameras.
     """
 
     _available_cameras: List[AvailableCamera]
@@ -224,7 +224,7 @@ class StreamManager:
 
     def __init__(self):
         self._lock = Lock()
-        self._available_cams_lock = Lock()
+        self._available_cameras_lock = Lock()
 
         self._stream_by_device = [None for _ in range(self.MAX_DEVICE_ID)]
         self._primary_cmds = [CameraCmd(-1, -1) for _ in range(StreamManager.MAX_STREAMS)]
@@ -244,7 +244,7 @@ class StreamManager:
             # If the camera_type is unsupported (""), then ignore it.
             if camera_type != "":
                 available_cameras.append(AvailableCamera(device_id, camera_type))
-        with self._available_cams_lock:
+        with self._available_cameras_lock:
             self._available_cameras = available_cameras
 
     def publish_available_cameras(self, event=None) -> None:
@@ -252,7 +252,7 @@ class StreamManager:
         Publish list of available cameras
         """
         self._update_available_cameras()
-        with self._available_cams_lock:
+        with self._available_cameras_lock:
             device_arr = [available_camera.id for available_camera in self._available_cameras]
             camera_types = [available_camera.type for available_camera in self._available_cameras]
         available_cameras = AvailableCameras(num_available=len(device_arr), camera_types=camera_types)
@@ -292,9 +292,9 @@ class StreamManager:
         :return: A corresponding response.
         """
 
-        # Get most up to date available cameras
+        # Get most up-to-date available cameras
         self._update_available_cameras()
-        with self._available_cams_lock:
+        with self._available_cameras_lock:
             device_arr = [available_camera.id for available_camera in self._available_cameras]
             camera_types = [available_camera.type for available_camera in self._available_cameras]
 
