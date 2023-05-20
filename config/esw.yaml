@@ -365,7 +365,7 @@ brushless:
     controllers:
       FrontLeft:
         id: 2
-        bus: 1
+        bus: 5
         multiplier: -1
       FrontRight:
         id: 3
@@ -373,7 +373,7 @@ brushless:
         multiplier: 1
       MiddleLeft:
         id: 1
-        bus: 1
+        bus: 5
         multiplier: -1
       MiddleRight:
         id: 4
@@ -381,7 +381,7 @@ brushless:
         multiplier: -1
       BackLeft:
         id: 0
-        bus: 1
+        bus: 5
         multiplier: -1
       BackRight:
         id: 5
