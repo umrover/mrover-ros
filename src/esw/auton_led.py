@@ -61,10 +61,19 @@ class LedBridge:
             return
 
         with self._color_lock:
+            prev_color = self._color
             self._color = color.data.lower()
 
-            # Don't update if green, since flash_if_green() will handle this case.
+            # If the desired color is red, blue, or off, then just update:
             if self._color != "green":
+                self._update()
+
+            # If the desired color is green, and we previously were not green, then update too.
+            elif prev_color != "green":
+                # Set to self.GREEN_PERIOD_S instead of 0,
+                # so it just automatically resets at 0 once
+                # flash_if_green() is called.
+                self._green_counter_s = self.GREEN_PERIOD_S
                 self._update()
 
     def _update(self):
