@@ -34,10 +34,10 @@
           <tr v-for="(joint, index) in jointStateData.name" :key="index">
             <td class="tableElement">{{ joint }}</td>
             <td class="tableElement">
-              {{ jointStateData.position[index].toFixed(3) }}
+              {{ (jointStateData.position[index] * radius_m).toFixed(3) }}
             </td>
             <td class="tableElement">
-              {{ jointStateData.velocity[index].toFixed(3) }}
+              {{ (jointStateData.velocity[index] * radius_m).toFixed(3) }}
             </td>
             <td class="tableElement">
               {{ jointStateData.effort[index].toFixed(3) }}
@@ -138,7 +138,6 @@ export default {
 
     radius_param.get((radius_m) => {
       this.radius_m = radius_m;
-      console.log(this.radius_m);
     })
   }
 };
