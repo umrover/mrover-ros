@@ -42,6 +42,12 @@ class CameraTypeInfo:
 CAMERA_TYPE_INFO_BY_NAME: Dict[str, CameraTypeInfo] = {}  # initialized in main()
 
 
+class AvailableCamera:
+    def __init__(self, cam_id: int, cam_type: str):
+        self.id: int = cam_id
+        self.type: str = cam_type
+
+
 def generate_dev_list() -> List[int]:
     """
     Generates an integer list of valid devices X found in /dev/video*, not including those that are MetaData devices.
@@ -202,24 +208,29 @@ class StreamManager:
     """
 
     _available_cams_pub: rospy.Publisher
-    """
-    Publishes the available cameras
+    """s
+    Publishes the available cameras.
     """
 
-    device_arr: List[int]
+    _available_cams_lock: Lock
     """
-    List of all the available supported devices video IDs
+    A lock that protects member variables _device_arr and _camera_types.
+    """
+
+    _available_cameras: List[AvailableCamera]
+    """
+    List of all the available supported camera devices.
     """
 
     def __init__(self):
         self._lock = Lock()
+        self._available_cams_lock = Lock()
 
         self._stream_by_device = [None for _ in range(self.MAX_DEVICE_ID)]
         self._primary_cmds = [CameraCmd(-1, -1) for _ in range(StreamManager.MAX_STREAMS)]
         self._secondary_cmds = [CameraCmd(-1, -1) for _ in range(StreamManager.MAX_STREAMS)]
         self._available_cams_pub = rospy.Publisher("available_cameras", AvailableCameras, queue_size=1)
-        self.device_arr = []
-        self.camera_types = []
+        self._available_cameras = []
         self._update_available_cameras()
 
     def _update_available_cameras(self) -> None:
@@ -227,22 +238,24 @@ class StreamManager:
         Update the available cameras
         """
         raw_device_arr = generate_dev_list()
-        device_arr = []
-        camera_types = []
+        available_cameras = []
         for device_id in raw_device_arr:
             camera_type = get_camera_type(f"/dev/video{device_id}")
+            # If the camera_type is unsupported (""), then ignore it.
             if camera_type != "":
-                device_arr.append(device_id)
-                camera_types.append(camera_type)
-        self.device_arr = device_arr
-        self.camera_types = camera_types
+                available_cameras.append(AvailableCamera(device_id, camera_type))
+        with self._available_cams_lock:
+            self._available_cameras = available_cameras
 
     def publish_available_cameras(self, event=None) -> None:
         """
         Publish list of available cameras
         """
         self._update_available_cameras()
-        available_cameras = AvailableCameras(num_available=len(self.device_arr), camera_types=self.camera_types)
+        with self._available_cams_lock:
+            device_arr = [available_camera.id for available_camera in self._available_cameras]
+            camera_types = [available_camera.type for available_camera in self._available_cameras]
+        available_cameras = AvailableCameras(num_available=len(device_arr), camera_types=camera_types)
         self._available_cams_pub.publish(available_cameras)
 
     def reset_streams(self, req: ResetCamerasRequest) -> ResetCamerasResponse:
@@ -281,8 +294,9 @@ class StreamManager:
 
         # Get most up to date available cameras
         self._update_available_cameras()
-        device_arr = self.device_arr
-        camera_types = self.camera_types
+        with self._available_cams_lock:
+            device_arr = [available_camera.id for available_camera in self._available_cameras]
+            camera_types = [available_camera.type for available_camera in self._available_cameras]
 
         try:
             device_id = device_arr[req.camera_cmd.device]
