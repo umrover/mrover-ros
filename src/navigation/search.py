@@ -20,33 +20,30 @@ class SearchTrajectory(Trajectory):
     fid_id: int
 
     @classmethod
-    def get_polar_spiral_formula(
-        cls, distance_between_spirals: float
-    ) -> Callable[[Union[np.ndarray, float]], Union[np.ndarray, float]]:
-        """
-        Returns a polar function that takes in an angle and returns the radius of a spiral
-        such that the distance between each spiral is 'distance_between_spirals'
-        :param distance_between_spirals:    distance between each spiral (float)
-        :return:    polar function (callable that takes in either a float angle or an array of angles and outputs the radius at that angle or angles)
-        """
-        return lambda theta: theta * (distance_between_spirals / (2 * np.pi))
-
-    @classmethod
     def gen_spiral_coordinates(
-        cls, coverage_radius: float, distance_between_spirals: float, num_points_per_spiral: int
+        cls, coverage_radius: float, distance_between_spirals: float, num_segments_per_rotation: int
     ) -> np.ndarray:
         """
         Generates a set of coordinates for a spiral search pattern centered at the origin
         :param coverage_radius:     radius of the spiral search pattern (float)
-        :param distance_between_spirals:    distance between each spiral (float)
-        :param num_points_per_spiral:   number of points per spiral (int)
+        :param distance_between_spirals:    distance between each spiralradii = angles * (distance_between_spirals / (2*np.pi)) (float)
+        :param num_segments_per_rotation:   number of segments that the spiral has per rotation (int)
         :return:    np.ndarray of coordinates
         """
+        # the number of spirals should ensure coverage of the entire radius.
+        # We add 1 to ensure that the last spiral covers the radius along the entire rotation,
+        # as otherwise we will just make the outermost point touch the radius
         num_spirals = ceil(coverage_radius / distance_between_spirals) + 1
-        angles = np.linspace(0, 2 * np.pi * num_spirals, num_points_per_spiral * num_spirals + 1)
-        radii = cls.get_polar_spiral_formula(distance_between_spirals)(angles)
+        # the angles are evenly spaced between 0 and 2pi*num_segments_per_rotation (add one to the number of points because N+1 points make N segments)
+        angles = np.linspace(0, 2 * np.pi * num_spirals, num_segments_per_rotation * num_spirals + 1)
+        # radii are computed via following polar formula.
+        # This is correct because you want the radius to increase by 'distance_between_spirals' every 2pi radians (one rotation)
+        radii = angles * (distance_between_spirals / (2 * np.pi))
+        # convert to cartesian coordinates
         xcoords = np.cos(angles) * radii
         ycoords = np.sin(angles) * radii
+        # we want to return as a 2D matrix where each row is a coordinate pair
+        # so we reshape x and y coordinates to be (n, 1) matricies then stack horizontally to get (n, 2) matrix
         return np.hstack((xcoords.reshape(-1, 1), ycoords.reshape(-1, 1)))
 
     @classmethod
@@ -55,7 +52,7 @@ class SearchTrajectory(Trajectory):
         center: np.ndarray,
         coverage_radius: float,
         distance_between_spirals: float,
-        points_per_turn: int,
+        segments_per_rotation: int,
         fid_id: int,
     ) -> SearchTrajectory:
         """
@@ -63,19 +60,22 @@ class SearchTrajectory(Trajectory):
         :param center:      position to center spiral on (np.ndarray)
         :param coverage_radius:     radius of the spiral search pattern (float)
         :param distance_between_spirals:    distance between each spiral (float)
-        :param points_per_turn:     number of points per spiral (int)
+        :param segments_per_rotation:     number of segments per spiral (int), for example, 4 segments per rotation would be a square spiral, 8 segments per rotation would be an octagonal spiral
         :param fid_id:      fiducial id to associate with this trajectory (int)
         :return:    SearchTrajectory object
         """
-        deltas = cls.gen_spiral_coordinates(coverage_radius, distance_between_spirals, points_per_turn)
+        zero_centered_spiral_r2 = cls.gen_spiral_coordinates(
+            coverage_radius, distance_between_spirals, segments_per_rotation
+        )
 
-        # At this point we use cumsum to create a new array of vectors where each vector
-        # is the sum of all the previous deltas up to that index in the old array. We
-        # also make sure to add the center coordinate in here too so the spiral is in
-        # the correct location
-        coordinates = deltas + center
+        # numpy broadcasting magic to add center to each row of the spiral coordinates
+        spiral_coordinates_r2 = zero_centered_spiral_r2 + center
+        # add a column of zeros to make it 3D
+        spiral_coordinates_r3 = np.hstack(
+            (spiral_coordinates_r2, np.zeros(spiral_coordinates_r2.shape[0]).reshape(-1, 1))
+        )
         return SearchTrajectory(
-            np.hstack((coordinates, np.zeros(coordinates.shape[0]).reshape(-1, 1))),
+            spiral_coordinates_r3,
             fid_id,
         )
 
@@ -95,7 +95,7 @@ class SearchState(BaseState):
     STOP_THRESH = get_rosparam("search/stop_thresh", 0.2)
     DRIVE_FWD_THRESH = get_rosparam("search/drive_fwd_thresh", 0.34)  # 20 degrees
     SPIRAL_COVERAGE_RADIUS = get_rosparam("search/coverage_radius", 20)
-    POINTS_PER_SPIRAL = get_rosparam("search/points_per_spiral", 8)
+    SEGMENTS_PER_ROTATION = get_rosparam("search/segments_per_rotation", 8)
     DISTANCE_BETWEEN_SPIRALS = get_rosparam("search/distance_between_spirals", 2.5)
 
     def __init__(
@@ -124,7 +124,7 @@ class SearchState(BaseState):
                 self.context.rover.get_pose().position[0:2],
                 self.SPIRAL_COVERAGE_RADIUS,
                 self.DISTANCE_BETWEEN_SPIRALS,
-                self.POINTS_PER_SPIRAL,
+                self.SEGMENTS_PER_ROTATION,
                 waypoint.fiducial_id,
             )
 
