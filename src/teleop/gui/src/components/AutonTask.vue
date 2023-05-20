@@ -113,6 +113,9 @@ const navGreen = "yellowgreen";
 const navRed = "lightcoral";
 const navGrey = "lightgrey";
 
+const ledUpdateRate = 1;
+let ledInterval;
+
 export default {
   components: {
     AutonRoverMap,
@@ -171,7 +174,7 @@ export default {
       nav_status_sub: null,
       odom_sub: null,
       stuck_sub: null,
-      auton_led_client: null,
+      auton_led_pub: null,
       tfClient: null
     };
   },
@@ -218,6 +221,12 @@ export default {
     }
   },
 
+  beforeDestroy: function () {
+    this.ledColor = "off";
+    this.sendColor();
+    window.clearInterval(ledInterval);
+  },
+
   created: function () {
     this.nav_status_sub = new ROSLIB.Topic({
       ros: this.$ros,
@@ -245,10 +254,10 @@ export default {
       transThres: 0.01
     });
 
-    this.auton_led_client = new ROSLIB.Service({
+    this.auton_led_pub = new ROSLIB.Topic({
       ros: this.$ros,
-      name: "change_auton_led_state",
-      serviceType: "mrover/ChangeAutonLEDState"
+      name: "auton_led_cmd",
+      messageType: "std_msgs/String"
     });
 
     // Subscriber for odom to base_link transform
@@ -289,29 +298,21 @@ export default {
       this.navBlink = !this.navBlink;
     }, 500);
 
-    // Initialize color to blue
+    // Initialize color to red.
     this.sendColor();
-  },
 
-  beforeDestroy: function () {
-    this.ledColor = "off";
-    this.sendColor();
+    ledInterval = window.setInterval(() => {
+      this.sendColor();
+    }, ledUpdateRate * 1000);
   },
 
   methods: {
     sendColor() {
-      let request = new ROSLIB.ServiceRequest({
-        color: this.ledColor
+      const msg = new ROSLIB.Message({
+        data: this.ledColor
       });
 
-      this.auton_led_client.callService(request, (result) => {
-        // Wait 1 second then try again if fail
-        if (!result.success) {
-          setTimeout(() => {
-            this.sendColor();
-          }, 1000);
-        }
-      });
+      this.auton_led_pub.publish(msg);
     }
   }
 };

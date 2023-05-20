@@ -53,7 +53,6 @@ set(MROVER_SERVICE_FILES
         AdjustMotors.srv
         CalibrateMotors.srv
         ChangeArmMode.srv
-        ChangeAutonLEDState.srv
         ChangeCameras.srv
         ChangeHeaterState.srv
         ChangeServoAngle.srv
