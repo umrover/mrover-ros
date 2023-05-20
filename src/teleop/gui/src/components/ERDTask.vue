@@ -66,12 +66,10 @@
     </div>
     <div class="box moteus light-bg">
       <DriveMoteusStateTable :moteus-state-data="moteusState" />
+      <ArmMoteusStateTable/>
     </div>
     <div v-show="false">
       <MastGimbalControls></MastGimbalControls>
-    </div>
-    <div class="box light-bg">
-      <ArmMoteusStateTable/>
     </div>
   </div>
 </template>
