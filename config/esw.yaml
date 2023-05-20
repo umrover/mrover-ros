@@ -1,3 +1,7 @@
+auton_led_driver:
+  port: "/dev/auton_led"
+  baud: 115200
+
 gps_driver:
   port: "/dev/gps"
   baud: 115200
@@ -361,7 +365,7 @@ brushless:
     controllers:
       FrontLeft:
         id: 2
-        bus: 1
+        bus: 5
         multiplier: -1
         gear_ratio: 50
       FrontRight:
@@ -371,7 +375,7 @@ brushless:
         gear_ratio: 50
       MiddleLeft:
         id: 1
-        bus: 1
+        bus: 5
         multiplier: -1
         gear_ratio: 50
       MiddleRight:
@@ -381,7 +385,7 @@ brushless:
         gear_ratio: 50
       BackLeft:
         id: 0
-        bus: 1
+        bus: 5
         multiplier: -1
         gear_ratio: 50
       BackRight:
