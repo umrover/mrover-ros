@@ -9,7 +9,7 @@ from multiprocessing import Process
 from typing import Dict, List, Any
 from threading import Lock
 
-from mrover.msg import CameraCmd
+from mrover.msg import AvailableCameras, CameraCmd
 
 from mrover.srv import (
     ChangeCameras,
@@ -201,12 +201,49 @@ class StreamManager:
     The commands requested by the secondary IP endpoint.
     """
 
+    _available_cams_pub: rospy.publisher
+    """
+    Publishes the available cameras
+    """
+
+    device_arr: List[int]
+    """
+    List of all the available supported devices video IDs
+    """
+
     def __init__(self):
         self._lock = Lock()
 
         self._stream_by_device = [None for _ in range(self.MAX_DEVICE_ID)]
         self._primary_cmds = [CameraCmd(-1, -1) for _ in range(StreamManager.MAX_STREAMS)]
         self._secondary_cmds = [CameraCmd(-1, -1) for _ in range(StreamManager.MAX_STREAMS)]
+        self._available_cams_pub = rospy.Publisher("available_cameras", AvailableCameras, queue_size=1)
+        self.device_arr = []
+        self.camera_types = []
+        self._update_available_cameras()
+
+    def _update_available_cameras(self) -> None:
+        """
+        Update the available cameras
+        """
+        raw_device_arr = generate_dev_list()
+        device_arr = []
+        camera_types = []
+        for device_id in raw_device_arr:
+            camera_type = get_camera_type(f"/dev/video{device_id}")
+            if camera_type != "":
+                device_arr.append(device_id)
+                camera_types.append(camera_type)
+        self.device_arr = device_arr
+        self.camera_types = camera_types
+
+    def publish_available_cameras(self, event=None) -> None:
+        """
+        Publish list of available cameras
+        """
+        self._update_available_cameras()
+        available_cameras = AvailableCameras(num_available=len(self.device_arr), camera_types=self.camera_types)
+        self._available_cams_pub.publish(available_cameras)
 
     def reset_streams(self, req: ResetCamerasRequest) -> ResetCamerasResponse:
         """
@@ -242,7 +279,11 @@ class StreamManager:
         :return: A corresponding response.
         """
 
-        device_arr = generate_dev_list()
+        # Get most up to date available cameras
+        self._update_available_cameras()
+        device_arr = self.device_arr
+        camera_types = self.camera_types
+
         try:
             device_id = device_arr[req.camera_cmd.device]
         except IndexError:
@@ -288,15 +329,9 @@ class StreamManager:
                 # Get a reference to an available slot and give to a new stream.
                 cmd_obj = self._get_open_cmd_slot(req.primary)
 
-                camera_type = get_camera_type(f"/dev/video{device_id}")
-
-                if camera_type == "":
-                    rospy.logerr(
-                        f"Camera type of device ID {req.camera_cmd.device} (/dev/video{device_id}) is unsupported"
-                    )
-                    return self._get_change_response(False)
-
-                self._stream_by_device[device_id] = Stream(req, cmd_obj, available_port, camera_type)
+                self._stream_by_device[device_id] = Stream(
+                    req, cmd_obj, available_port, camera_types[req.camera_cmd.device]
+                )
 
             return self._get_change_response(True)
 
@@ -402,6 +437,7 @@ def main():
     stream_manager = StreamManager()
     rospy.Service("change_cameras", ChangeCameras, stream_manager.handle_req)
     rospy.Service("reset_cameras", ResetCameras, stream_manager.reset_streams)
+    rospy.Timer(rospy.Duration(1), stream_manager.publish_available_cameras)
 
     rospy.spin()
 
