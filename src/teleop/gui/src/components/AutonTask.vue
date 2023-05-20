@@ -81,13 +81,13 @@
           <h4>Obstruction Detected</h4>
         </div>
       </div>
-    </div>
-    <div class="box1 cameras" style="margin-top: 10px">
-      <Cameras :primary="true" />
-    </div>
-    <div class="box1 moteus">
-      <DriveMoteusStateTable :moetus-state-data="moteusState" />
-      <JointStateTable :joint-state-data="jointState" :vertical="true" />
+      <div class="box1 cameras">
+        <Cameras :primary="true" />
+      </div>
+      <div class="box1 moteus">
+        <DriveMoteusStateTable :moteus-state-data="moteusState" />
+        <JointStateTable :joint-state-data="jointState" :vertical="true" />
+      </div>
     </div>
   </div>
 </template>
@@ -299,6 +299,7 @@ export default {
     }, 500);
 
     // Initialize color to red.
+    this.ledColor = "red";
     this.sendColor();
 
     ledInterval = window.setInterval(() => {
@@ -322,14 +323,14 @@ export default {
 .wrapper {
   display: grid;
   grid-gap: 10px;
-  grid-template-columns: 60vw auto;
+  grid-template-columns: 45vw 15vw auto;
   grid-template-rows: 60px 50vh auto auto auto;
   grid-template-areas:
-    "header header"
-    "map waypoints"
-    "data waypoints"
-    "data conditions"
-    "cameras moteus";
+    "header header header"
+    "map map waypoints"
+    "data data waypoints"
+    "data data conditions"
+    "cameras moteus moteus";
 
   font-family: sans-serif;
   height: auto;
