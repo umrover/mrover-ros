@@ -308,6 +308,12 @@ class StreamManager:
             rospy.logerr(f"Camera device ID {device_id} is not supported, max is {self.MAX_DEVICE_ID}")
             return self._get_change_response(False)
 
+        # The client's device is passed into the actual device array, so then we get device_id
+        # Then we just update the request to use the actually mapped device_id
+
+        original_req_dev_id = req.camera_cmd.device
+        req.camera_cmd.device = device_id
+
         with self._lock:
             # Reset the stream object if it exists. If it was running, this finalizes the stream
             # object, which in turn kills the process and resets the command.
@@ -340,7 +346,7 @@ class StreamManager:
                 cmd_obj = self._get_open_cmd_slot(req.primary)
 
                 self._stream_by_device[device_id] = Stream(
-                    req, cmd_obj, available_port, camera_types[req.camera_cmd.device]
+                    req, cmd_obj, available_port, camera_types[original_req_dev_id]
                 )
 
             return self._get_change_response(True)
