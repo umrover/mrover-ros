@@ -85,6 +85,10 @@
     <div class="box1 cameras" style="margin-top: 10px">
       <Cameras :primary="true" />
     </div>
+    <div class="box1 moteus">
+      <DriveMoteusStateTable :moetus-state-data="moteusState" />
+      <JointStateTable :joint-state-data="jointState" :vertical="true" />
+    </div>
   </div>
 </template>
 
@@ -96,6 +100,8 @@ import DriveControls from "./DriveControls.vue";
 import MastGimbalControls from "./MastGimbalControls.vue";
 import { mapGetters } from "vuex";
 import JoystickValues from "./JoystickValues.vue";
+import DriveMoteusStateTable from "./DriveMoteusStateTable.vue";
+import JointStateTable from "./JointStateTable.vue";
 import CommReadout from "./CommReadout.vue";
 import Cameras from "./Cameras.vue";
 import MCUReset from "./MCUReset.vue"
@@ -116,6 +122,8 @@ export default {
     MastGimbalControls,
     CommReadout,
     Cameras,
+    DriveMoteusStateTable,
+    JointStateTable,
     MCUReset,
     OdometryReading
   },
@@ -147,6 +155,17 @@ export default {
       ledColor: "red",
 
       stuck_status: false,
+
+      brushless_motors_sub: null,
+
+      // Default object isn't empty, so has to be initialized to ""
+      moteusState: {
+        name: ["", "", "", "", "", ""],
+        error: ["", "", "", "", "", ""],
+        state: ["", "", "", "", "", ""],
+      },
+
+      jointState: {},
 
       // Pubs and Subs
       nav_status_sub: null,
@@ -254,6 +273,17 @@ export default {
       this.stuck_status = msg.data;
     });
 
+    this.brushless_motors = new ROSLIB.Topic({
+      ros: this.$ros,
+      name: "drive_status",
+      messageType: "mrover/MotorsStatus",
+    });
+
+    this.brushless_motors.subscribe((msg) => {
+      this.jointState = msg.joint_states;
+      this.moteusState = msg.moteus_states;
+    });
+
     // Blink interval for green and off flasing
     setInterval(() => {
       this.navBlink = !this.navBlink;
@@ -292,12 +322,13 @@ export default {
   display: grid;
   grid-gap: 10px;
   grid-template-columns: 60vw auto;
-  grid-template-rows: 60px 50vh auto auto;
+  grid-template-rows: 60px 50vh auto auto auto;
   grid-template-areas:
     "header header"
     "map waypoints"
     "data waypoints"
-    "data conditions";
+    "data conditions"
+    "cameras moteus";
 
   font-family: sans-serif;
   height: auto;
@@ -435,6 +466,10 @@ h2 {
 
 .cameras {
   grid-area: cameras;
+}
+
+.moteus {
+  grid-area: moteus;
 }
 
 .data {

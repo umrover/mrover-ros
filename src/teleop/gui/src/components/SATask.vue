@@ -152,6 +152,8 @@ export default {
         bearing_deg: 0
       },
 
+      brushless_motors_sub: null,
+
       jointState: {},
       // Moteus state table is set up to look for specific keys in moteusState so it can't be empty
       moteusState: {
@@ -195,13 +197,13 @@ export default {
       this.odom.bearing_deg = quaternionToMapAngle(tf.rotation);
     });
 
-    this.brushless_motors = new ROSLIB.Topic({
+    this.brushless_motors_sub = new ROSLIB.Topic({
       ros: this.$ros,
       name: "drive_status",
       messageType: "mrover/MotorsStatus"
     });
 
-    this.brushless_motors.subscribe((msg) => {
+    this.brushless_motors_sub.subscribe((msg) => {
       this.jointState = msg.joint_states;
       this.moteusState = msg.moteus_states;
     });

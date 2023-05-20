@@ -129,6 +129,8 @@ export default {
       odom_sub: null,
       tfClient: null,
 
+      brushless_motors_sub: null,
+
       // Default object isn't empty, so has to be initialized to ""
       moteusState: {
         name: ["", "", "", "", "", ""],
@@ -167,13 +169,13 @@ export default {
       this.odom.longitude_deg = msg.longitude;
     });
 
-    this.brushless_motors = new ROSLIB.Topic({
+    this.brushless_motors_sub = new ROSLIB.Topic({
       ros: this.$ros,
       name: "drive_status",
       messageType: "mrover/MotorsStatus",
     });
 
-    this.brushless_motors.subscribe((msg) => {
+    this.brushless_motors_sub.subscribe((msg) => {
       this.jointState = msg.joint_states;
       this.moteusState = msg.moteus_states;
     });
