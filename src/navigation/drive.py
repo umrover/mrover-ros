@@ -193,7 +193,7 @@ class DriveController:
 
         if prev_target is not None:
             target_pos = self.get_lookahead_pt(prev_target, target_pos, rover_pos, LOOKAHEAD_DISTANCE)
-        
+
         target_dir = target_pos - rover_pos
 
         # if the target is farther than completion distance away from the last one, reset the controller
