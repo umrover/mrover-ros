@@ -77,32 +77,23 @@ def generate_dev_list() -> List[int]:
     return dev_num_list
 
 
-def get_camera_info(video_device: str, info_type: str) -> str:
-    """
-    Get the detail of video device
-    :param video_device: the video device name (e.g. /dev/video0)
-    :param info_type: the detail (e.g. VENDOR_ID or VENDOR)
-    :return: The detail of the device
-    """
-    # Execute the v4l2-ctl command to get the serial number of the device
-    output = subprocess.check_output(["udevadm", "info", "--query=all", video_device])
-    info = ""
-    for line in output.decode().splitlines():
-        if info_type in line:
-            info = line.split("=")[1].strip()
-            break
-    return info
-
-
 def get_camera_type(video_device: str) -> str:
     """
     Get the camera type of video device
     :param video_device: the video device name (e.g. /dev/video0)
     :return: The name of the camera type
     """
+    # Execute the v4l2-ctl command to get the serial number of the device
+    output = subprocess.check_output(["udevadm", "info", "--query=all", video_device])
 
-    vendor_id = get_camera_info(video_device, "VENDOR_ID")
-    vendor = get_camera_info(video_device, "VENDOR")
+    vendor_id = ""
+    vendor = ""
+
+    for line in output.decode().splitlines():
+        if "VENDOR_ID" in line:
+            vendor_id = line.split("=")[1].strip()
+        if "VENDOR" in line:
+            vendor = line.split("=")[1].strip()
 
     for name in CAMERA_TYPE_INFO_BY_NAME:
         if vendor_id == CAMERA_TYPE_INFO_BY_NAME[name].vendor_id and vendor == CAMERA_TYPE_INFO_BY_NAME[name].vendor:
@@ -239,11 +230,14 @@ class StreamManager:
         """
         raw_device_arr = generate_dev_list()
         available_cameras = []
+
         for device_id in raw_device_arr:
             camera_type = get_camera_type(f"/dev/video{device_id}")
+
             # If the camera_type is unsupported (""), then ignore it.
             if camera_type != "":
                 available_cameras.append(AvailableCamera(device_id, camera_type))
+
         with self._available_cameras_lock:
             self._available_cameras = available_cameras
 
@@ -252,9 +246,11 @@ class StreamManager:
         Publish list of available cameras
         """
         self._update_available_cameras()
+
         with self._available_cameras_lock:
             device_arr = [available_camera.id for available_camera in self._available_cameras]
             camera_types = [available_camera.type for available_camera in self._available_cameras]
+
         available_cameras = AvailableCameras(num_available=len(device_arr), camera_types=camera_types)
         self._available_cams_pub.publish(available_cameras)
 
@@ -292,8 +288,6 @@ class StreamManager:
         :return: A corresponding response.
         """
 
-        # Get most up-to-date available cameras
-        self._update_available_cameras()
         with self._available_cameras_lock:
             device_arr = [available_camera.id for available_camera in self._available_cameras]
             camera_types = [available_camera.type for available_camera in self._available_cameras]
@@ -453,7 +447,7 @@ def main():
     stream_manager = StreamManager()
     rospy.Service("change_cameras", ChangeCameras, stream_manager.handle_req)
     rospy.Service("reset_cameras", ResetCameras, stream_manager.reset_streams)
-    rospy.Timer(rospy.Duration(1), stream_manager.publish_available_cameras)
+    rospy.Timer(rospy.Duration(2), stream_manager.publish_available_cameras)
 
     rospy.spin()
 
