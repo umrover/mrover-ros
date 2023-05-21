@@ -13,7 +13,7 @@ drive:
     min_turning_effort: -0.3
     turning_p: 3.0
     driving_p: 5.0
-  lookahead_distance: 3.0
+  lookahead_distance: 1.0
 
 gate:
   stop_thresh: 0.2
