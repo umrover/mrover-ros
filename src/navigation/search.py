@@ -33,7 +33,7 @@ class SearchTrajectory(Trajectory):
         # the number of spirals should ensure coverage of the entire radius.
         # We add 1 to ensure that the last spiral covers the radius along the entire rotation,
         # as otherwise we will just make the outermost point touch the radius
-        num_spirals = ceil(coverage_radius / distance_between_spirals) + 1
+        num_spirals = np.ceil(coverage_radius / distance_between_spirals).astype("int") + 1
         # the angles are evenly spaced between 0 and 2pi*num_segments_per_rotation (add one to the number of points because N+1 points make N segments)
         angles = np.linspace(0, 2 * np.pi * num_spirals, num_segments_per_rotation * num_spirals + 1)
         # radii are computed via following polar formula.
