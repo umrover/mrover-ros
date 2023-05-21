@@ -353,7 +353,7 @@ def send(
     quality: int = 0,
     camera_type: str = "",
 ):
-    # Construct video capture pipeline string
+    # Construct video capture pipeline string using str.join()
 
     try:
         best_option = len(CAMERA_TYPE_INFO_BY_NAME[camera_type].quality_options) - 1
@@ -372,23 +372,29 @@ def send(
         rospy.logerr(f"Unsupported camera type {camera_type}")
         assert False
 
+    capture_str_parts = []
+    capture_str_parts.append(f"v4l2src device=/dev/video{device} do-timestamp=true io-mode=2 ! ")
+
     if use_jpeg:
-        cap_str = f"v4l2src device=/dev/video{device} do-timestamp=true io-mode=2 ! "
-        cap_str += f"image/jpeg, width={width}, height={height}, framerate={fps}/1 ! jpegdec ! videorate ! video/x-raw, framerate={fps}/1 ! nvvidconv ! "
-        cap_str += f"video/x-raw, format=BGRx ! videoconvert ! video/x-raw, format=BGR ! appsink"
+        capture_str_parts.append(
+            f"image/jpeg, width={width}, height={height}, framerate={fps}/1 ! "
+            f"jpegdec ! videorate ! video/x-raw, framerate={fps}/1 ! nvvidconv ! "
+            f"video/x-raw, format=BGRx ! videoconvert ! video/x-raw, format=BGR ! appsink"
+        )
     else:
-        cap_str = f"v4l2src device=/dev/video{device} do-timestamp=true io-mode=2 ! "
-        cap_str += (
+        capture_str_parts.append(
             f"videorate ! video/x-raw, width={width}, height={height}, framerate={fps}/1 ! videoconvert ! appsink"
         )
 
     # openCV video capture from v4l2 device
-    cap_send = cv2.VideoCapture(cap_str, cv2.CAP_GSTREAMER)
+    cap_send = cv2.VideoCapture("".join(capture_str_parts), cv2.CAP_GSTREAMER)
 
     # Construct stream transmit pipeline string
-    txstr = "appsrc ! video/x-raw, format=BGR ! videoconvert ! video/x-raw, format=BGRx ! nvvidconv ! "
-    txstr += f"nvv4l2h264enc bitrate={bitrate} ! h264parse ! rtph264pay pt=96 config-interval=1 ! "
-    txstr += f"udpsink host={host} port={port}"
+    txstr = (
+        "appsrc ! video/x-raw, format=BGR ! videoconvert ! video/x-raw, format=BGRx ! nvvidconv ! "
+        f"nvv4l2h264enc bitrate={bitrate} ! h264parse ! rtph264pay pt=96 config-interval=1 ! "
+        f"udpsink host={host} port={port}"
+    )
 
     # We need to set with proper width instead of desired width, otherwise it's very slow when capturing images
     # We can just capture the images at the proper width and convert them later.
@@ -398,19 +404,8 @@ def send(
     out_send = cv2.VideoWriter(txstr, cv2.CAP_GSTREAMER, fourcc, 60, (int(width), int(height)), True)
 
     rospy.loginfo(
-        "\nTransmitting /dev/video"
-        + str(device)
-        + " to "
-        + host
-        + ":"
-        + str(port)
-        + " with "
-        + str(float(bitrate) / 1e6)
-        + " Mbps target, ("
-        + str(width)
-        + ","
-        + str(height)
-        + ") resolution\n"
+        f"\nTransmitting /dev/video{str(device)} to {host}: {str(port)} with {str(float(bitrate) / 1e6)} Mbps target, "
+        f"({str(width)}, {str(height)}) resolution\n"
     )
 
     if not cap_send.isOpened() or not out_send.isOpened():
