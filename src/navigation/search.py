@@ -11,7 +11,6 @@ from dataclasses import dataclass
 from trajectory import Trajectory
 from mrover.msg import GPSPointList
 from util.ros_utils import get_rosparam
-from math import ceil
 
 
 @dataclass
