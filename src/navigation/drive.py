@@ -191,8 +191,12 @@ class DriveController:
             self.reset()
             return (Twist(), True)
 
+        print(f"rover pos: {rover_pos}, target pos: {target_pos}")
         if prev_target is not None:
             target_pos = self.get_lookahead_pt(prev_target, target_pos, rover_pos, LOOKAHEAD_DISTANCE)
+            print(f"lookahead pos: {target_pos}")
+        
+        
 
         target_dir = target_pos - rover_pos
 

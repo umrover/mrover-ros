@@ -7,7 +7,7 @@ from geometry_msgs.msg import Twist
 import rospy
 import numpy as np
 from typing import Optional
-from util.np_utils import perpendicular_2d
+from util.np_utils import perpendicular_2d, rotate_2d
 from util.ros_utils import get_rosparam
 
 
@@ -69,6 +69,7 @@ class RecoveryState(BaseState):
             if arrived_back:
                 self.current_action = JTurnAction.j_turning  # move to second part of turn
                 self.waypoint_behind = None
+                self.context.rover.driver.reset()
 
         # if second round, set a waypoint off to the side of the rover and command it to
         # turn and drive backwards towards it until it arrives at that point. So it will begin
@@ -76,7 +77,8 @@ class RecoveryState(BaseState):
         if self.current_action == JTurnAction.j_turning:
             if self.waypoint_behind is None:
                 dir_vector = pose.rotation.direction_vector()
-                dir_vector[:2] = RECOVERY_DISTANCE * perpendicular_2d(dir_vector[:2])
+                #the waypoint will be 45 degrees to the left of the rover behind it.
+                dir_vector[:2] = RECOVERY_DISTANCE * rotate_2d(dir_vector[:2], 3 * np.pi / 4)
                 self.waypoint_behind = pose.position + dir_vector
 
             cmd_vel, arrived_turn = self.context.rover.driver.get_drive_command(

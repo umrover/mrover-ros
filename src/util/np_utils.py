@@ -27,6 +27,20 @@ def perpendicular_2d(v):
     orig_shape = v.shape
     return np.reshape((np.array([-v.flatten()[1], v.flatten()[0]])), orig_shape)
 
+def rotate_2d(v: np.ndarray, angle: float) -> np.ndarray:
+    """
+    rotates a 2D vector by angle radians
+    :param v: the vector to rotate
+    :param angle: the angle to rotate by
+    :return: the rotated vector
+    """
+    if v.shape != (2,) and v.shape != (1, 2) and v.shape != (2, 1):
+        raise Exception("vector must be 2D!!!")
+    orig_shape = v.shape
+    v = v.flatten()
+    rotation_mat = np.array([[np.cos(angle), -np.sin(angle)], [np.sin(angle), np.cos(angle)]])
+    return np.reshape(np.matmul(rotation_mat, v), orig_shape)
+
 
 def angle_to_rotate(v1, v2):
     """
