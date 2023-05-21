@@ -90,9 +90,9 @@ def get_camera_type(video_device: str) -> str:
     vendor = ""
 
     for line in output.decode().splitlines():
-        if "VENDOR_ID" in line:
+        if line.startswith("E: ID_VENDOR_ID="):
             vendor_id = line.split("=")[1].strip()
-        if "VENDOR" in line:
+        if line.startswith("E: ID_VENDOR="):
             vendor = line.split("=")[1].strip()
 
     for name in CAMERA_TYPE_INFO_BY_NAME:
