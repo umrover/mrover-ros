@@ -9,7 +9,7 @@ from multiprocessing import Process
 from typing import Dict, List, Any
 from threading import Lock
 
-from mrover.msg import CameraCmd
+from mrover.msg import AvailableCameras, CameraCmd
 
 from mrover.srv import (
     ChangeCameras,
@@ -42,6 +42,12 @@ class CameraTypeInfo:
 CAMERA_TYPE_INFO_BY_NAME: Dict[str, CameraTypeInfo] = {}  # initialized in main()
 
 
+class AvailableCamera:
+    def __init__(self, cam_id: int, cam_type: str):
+        self.id: int = cam_id
+        self.type: str = cam_type
+
+
 def generate_dev_list() -> List[int]:
     """
     Generates an integer list of valid devices X found in /dev/video*, not including those that are MetaData devices.
@@ -71,32 +77,23 @@ def generate_dev_list() -> List[int]:
     return dev_num_list
 
 
-def get_camera_info(video_device: str, info_type: str) -> str:
-    """
-    Get the detail of video device
-    :param video_device: the video device name (e.g. /dev/video0)
-    :param info_type: the detail (e.g. VENDOR_ID or VENDOR)
-    :return: The detail of the device
-    """
-    # Execute the v4l2-ctl command to get the serial number of the device
-    output = subprocess.check_output(["udevadm", "info", "--query=all", video_device])
-    info = ""
-    for line in output.decode().splitlines():
-        if info_type in line:
-            info = line.split("=")[1].strip()
-            break
-    return info
-
-
 def get_camera_type(video_device: str) -> str:
     """
     Get the camera type of video device
     :param video_device: the video device name (e.g. /dev/video0)
     :return: The name of the camera type
     """
+    # Execute the v4l2-ctl command to get the serial number of the device
+    output = subprocess.check_output(["udevadm", "info", "--query=all", video_device])
 
-    vendor_id = get_camera_info(video_device, "VENDOR_ID")
-    vendor = get_camera_info(video_device, "VENDOR")
+    vendor_id = ""
+    vendor = ""
+
+    for line in output.decode().splitlines():
+        if line.startswith("E: ID_VENDOR_ID="):
+            vendor_id = line.split("=")[1].strip()
+        if line.startswith("E: ID_VENDOR="):
+            vendor = line.split("=")[1].strip()
 
     for name in CAMERA_TYPE_INFO_BY_NAME:
         if vendor_id == CAMERA_TYPE_INFO_BY_NAME[name].vendor_id and vendor == CAMERA_TYPE_INFO_BY_NAME[name].vendor:
@@ -201,12 +198,61 @@ class StreamManager:
     The commands requested by the secondary IP endpoint.
     """
 
+    _available_cams_pub: rospy.Publisher
+    """s
+    Publishes the available cameras.
+    """
+
+    _available_cameras_lock: Lock
+    """
+    A lock that protects member variable _available_cameras.
+    """
+
+    _available_cameras: List[AvailableCamera]
+    """
+    List of all the available supported camera devices.
+    """
+
     def __init__(self):
         self._lock = Lock()
+        self._available_cameras_lock = Lock()
 
         self._stream_by_device = [None for _ in range(self.MAX_DEVICE_ID)]
         self._primary_cmds = [CameraCmd(-1, -1) for _ in range(StreamManager.MAX_STREAMS)]
         self._secondary_cmds = [CameraCmd(-1, -1) for _ in range(StreamManager.MAX_STREAMS)]
+        self._available_cams_pub = rospy.Publisher("available_cameras", AvailableCameras, queue_size=1)
+        self._available_cameras = []
+        self._update_available_cameras()
+
+    def _update_available_cameras(self) -> None:
+        """
+        Update the available cameras
+        """
+        raw_device_arr = generate_dev_list()
+        available_cameras = []
+
+        for device_id in raw_device_arr:
+            camera_type = get_camera_type(f"/dev/video{device_id}")
+
+            # If the camera_type is unsupported (""), then ignore it.
+            if camera_type != "":
+                available_cameras.append(AvailableCamera(device_id, camera_type))
+
+        with self._available_cameras_lock:
+            self._available_cameras = available_cameras
+
+    def publish_available_cameras(self, event=None) -> None:
+        """
+        Publish list of available cameras
+        """
+        self._update_available_cameras()
+
+        with self._available_cameras_lock:
+            device_arr = [available_camera.id for available_camera in self._available_cameras]
+            camera_types = [available_camera.type for available_camera in self._available_cameras]
+
+        available_cameras = AvailableCameras(num_available=len(device_arr), camera_types=camera_types)
+        self._available_cams_pub.publish(available_cameras)
 
     def reset_streams(self, req: ResetCamerasRequest) -> ResetCamerasResponse:
         """
@@ -242,7 +288,10 @@ class StreamManager:
         :return: A corresponding response.
         """
 
-        device_arr = generate_dev_list()
+        with self._available_cameras_lock:
+            device_arr = [available_camera.id for available_camera in self._available_cameras]
+            camera_types = [available_camera.type for available_camera in self._available_cameras]
+
         try:
             device_id = device_arr[req.camera_cmd.device]
         except IndexError:
@@ -255,6 +304,8 @@ class StreamManager:
 
         # The client's device is passed into the actual device array, so then we get device_id
         # Then we just update the request to use the actually mapped device_id
+
+        original_req_dev_id = req.camera_cmd.device
         req.camera_cmd.device = device_id
 
         with self._lock:
@@ -288,15 +339,9 @@ class StreamManager:
                 # Get a reference to an available slot and give to a new stream.
                 cmd_obj = self._get_open_cmd_slot(req.primary)
 
-                camera_type = get_camera_type(f"/dev/video{device_id}")
-
-                if camera_type == "":
-                    rospy.logerr(
-                        f"Camera type of device ID {req.camera_cmd.device} (/dev/video{device_id}) is unsupported"
-                    )
-                    return self._get_change_response(False)
-
-                self._stream_by_device[device_id] = Stream(req, cmd_obj, available_port, camera_type)
+                self._stream_by_device[device_id] = Stream(
+                    req, cmd_obj, available_port, camera_types[original_req_dev_id]
+                )
 
             return self._get_change_response(True)
 
@@ -308,7 +353,7 @@ def send(
     quality: int = 0,
     camera_type: str = "",
 ):
-    # Construct video capture pipeline string
+    # Construct video capture pipeline string using str.join()
 
     try:
         best_option = len(CAMERA_TYPE_INFO_BY_NAME[camera_type].quality_options) - 1
@@ -327,23 +372,29 @@ def send(
         rospy.logerr(f"Unsupported camera type {camera_type}")
         assert False
 
+    capture_str_parts = []
+    capture_str_parts.append(f"v4l2src device=/dev/video{device} do-timestamp=true io-mode=2 ! ")
+
     if use_jpeg:
-        cap_str = f"v4l2src device=/dev/video{device} do-timestamp=true io-mode=2 ! "
-        cap_str += f"image/jpeg, width={width}, height={height}, framerate={fps}/1 ! jpegdec ! videorate ! video/x-raw, framerate={fps}/1 ! nvvidconv ! "
-        cap_str += f"video/x-raw, format=BGRx ! videoconvert ! video/x-raw, format=BGR ! appsink"
+        capture_str_parts.append(
+            f"image/jpeg, width={width}, height={height}, framerate={fps}/1 ! "
+            f"jpegdec ! videorate ! video/x-raw, framerate={fps}/1 ! nvvidconv ! "
+            f"video/x-raw, format=BGRx ! videoconvert ! video/x-raw, format=BGR ! appsink"
+        )
     else:
-        cap_str = f"v4l2src device=/dev/video{device} do-timestamp=true io-mode=2 ! "
-        cap_str += (
+        capture_str_parts.append(
             f"videorate ! video/x-raw, width={width}, height={height}, framerate={fps}/1 ! videoconvert ! appsink"
         )
 
     # openCV video capture from v4l2 device
-    cap_send = cv2.VideoCapture(cap_str, cv2.CAP_GSTREAMER)
+    cap_send = cv2.VideoCapture("".join(capture_str_parts), cv2.CAP_GSTREAMER)
 
     # Construct stream transmit pipeline string
-    txstr = "appsrc ! video/x-raw, format=BGR ! videoconvert ! video/x-raw, format=BGRx ! nvvidconv ! "
-    txstr += f"nvv4l2h264enc bitrate={bitrate} ! h264parse ! rtph264pay pt=96 config-interval=1 ! "
-    txstr += f"udpsink host={host} port={port}"
+    txstr = (
+        "appsrc ! video/x-raw, format=BGR ! videoconvert ! video/x-raw, format=BGRx ! nvvidconv ! "
+        f"nvv4l2h264enc bitrate={bitrate} ! h264parse ! rtph264pay pt=96 config-interval=1 ! "
+        f"udpsink host={host} port={port}"
+    )
 
     # We need to set with proper width instead of desired width, otherwise it's very slow when capturing images
     # We can just capture the images at the proper width and convert them later.
@@ -353,19 +404,8 @@ def send(
     out_send = cv2.VideoWriter(txstr, cv2.CAP_GSTREAMER, fourcc, 60, (int(width), int(height)), True)
 
     rospy.loginfo(
-        "\nTransmitting /dev/video"
-        + str(device)
-        + " to "
-        + host
-        + ":"
-        + str(port)
-        + " with "
-        + str(float(bitrate) / 1e6)
-        + " Mbps target, ("
-        + str(width)
-        + ","
-        + str(height)
-        + ") resolution\n"
+        f"\nTransmitting /dev/video{str(device)} to {host}: {str(port)} with {str(float(bitrate) / 1e6)} Mbps target, "
+        f"({str(width)}, {str(height)}) resolution\n"
     )
 
     if not cap_send.isOpened() or not out_send.isOpened():
@@ -402,6 +442,7 @@ def main():
     stream_manager = StreamManager()
     rospy.Service("change_cameras", ChangeCameras, stream_manager.handle_req)
     rospy.Service("reset_cameras", ResetCameras, stream_manager.reset_streams)
+    rospy.Timer(rospy.Duration(2), stream_manager.publish_available_cameras)
 
     rospy.spin()
 
