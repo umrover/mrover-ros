@@ -561,25 +561,21 @@ export default {
         };
       });
 
-      // Always start the ids at 1 after the max id in currently in the array
-      let start_id =
-        this.storedWaypoints.length > 0
-          ? Math.max(...this.storedWaypoints.map((waypoint) => waypoint.id)) + 1
-          : 0;
-
+      // Start AR tag is always 0
       this.storedWaypoints.push({
         name: "Start",
-        id: start_id,
+        id: 0,
         lat: convertDMS(coordinates[0].lat, "D").d,
         lon: convertDMS(coordinates[0].lon, "D").d,
         gate: false,
         post: false,
       });
-      // Add Waypoints
+
+      // Add Waypoints, which we set as sentinel value -1.
       for (let i = 1; i < 4; ++i) {
         this.storedWaypoints.push({
           name: "Waypoint " + i,
-          id: start_id + i,
+          id: -1,
           lat: convertDMS(coordinates[i].lat, "D").d,
           lon: convertDMS(coordinates[i].lon, "D").d,
           gate: false,
@@ -587,11 +583,11 @@ export default {
         });
       }
 
-      // Add AR Tag Posts
+      // Add AR Tag Posts with IDs 1-3
       for (let i = 4; i < 7; ++i) {
         this.storedWaypoints.push({
           name: "AR Tag Post " + (i - 3),
-          id: start_id + i,
+          id: i - 3,
           lat: convertDMS(coordinates[i].lat, "D").d,
           lon: convertDMS(coordinates[i].lon, "D").d,
           gate: false,
@@ -599,10 +595,10 @@ export default {
         });
       }
 
-      // Add Gate Location
+      // Add Gate Location with ID 4, meaning posts 4 and 5.
       this.storedWaypoints.push({
         name: "Gate",
-        id: start_id + 7,
+        id: 4,
         lat: convertDMS(coordinates[7].lat, "D").d,
         lon: convertDMS(coordinates[7].lon, "D").d,
         gate: true,
