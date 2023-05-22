@@ -108,7 +108,6 @@ class Environment:
             tf2_ros.ConnectivityException,
             tf2_ros.ExtrapolationException,
         ) as e:
-            rospy.logerr(e)
             return None
         return fid_pose.position
 

@@ -4,7 +4,7 @@ drive:
     min_driving_effort: -1.0
     max_turning_effort: 0.7
     min_turning_effort: -0.7
-    turning_p: 10.0
+    turning_p: 3.0
     driving_p: 20.0
   odom:
     max_driving_effort: 0.5
@@ -13,6 +13,7 @@ drive:
     min_turning_effort: -0.3
     turning_p: 3.0
     driving_p: 5.0
+  lookahead_distance: 1.0
 
 gate:
   stop_thresh: 0.2
@@ -21,8 +22,10 @@ gate:
   post_radius: 0.7
 
 search:
-  stop_thresh: 0.6
+  stop_thresh: 0.5
   drive_fwd_thresh: 0.34
+  coverage_radius: 20
+  segments_per_rotation: 8
 
 single_fiducial:
   stop_thresh: 1.0
@@ -42,7 +45,6 @@ recovery:
 failure_identification:
   dataframe_max_size: 200
   test_recovery_state: False
-
 
 watchdog:
   window_size: 100 #size of window we are looking at for being stuck
