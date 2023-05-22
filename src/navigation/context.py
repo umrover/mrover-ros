@@ -140,6 +140,7 @@ class Environment:
     def current_gate(self, odom_override: bool = True) -> Optional[Gate]:
         """
         retrieves the position of the gate (if we know where it is, and we are looking for one)
+        :param: odom_override if false will force it to be in the map frame, true will mean use odom if we are using it (set by rosparam)
         """
 
         if self.ctx.course:
