@@ -1,10 +1,9 @@
 from __future__ import annotations
-from typing import ClassVar, Optional, Callable, Union
+from typing import Optional
 
 import numpy as np
-import rospy
 
-from context import Context, Environment, convert_cartesian_to_gps
+from context import Context, convert_cartesian_to_gps
 from aenum import Enum, NoAlias
 from state import BaseState
 from dataclasses import dataclass
@@ -134,7 +133,7 @@ class SearchState(BaseState):
             self.context.rover.get_pose(),
             self.STOP_THRESH,
             self.DRIVE_FWD_THRESH,
-            prev_target=self.prev_target,
+            path_start=self.prev_target,
         )
         if arrived:
             self.prev_target = target_pos
