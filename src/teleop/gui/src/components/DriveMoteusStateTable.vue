@@ -1,7 +1,7 @@
 <template>
   <div class="wrap">
     <div>
-      <h3>Moteus States</h3>
+      <h3>Drive Moteus States</h3>
     </div>
     <table
       class="tableFormat"

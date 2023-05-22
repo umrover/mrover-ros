@@ -61,7 +61,7 @@
       <JointStateTable :joint-state-data="jointState" :vertical="true" />
     </div>
     <div class="box light-bg moteus">
-      <MoteusStateTable :moteus-state-data="moteusState" />
+      <DriveMoteusStateTable :moteus-state-data="moteusState" />
     </div>
     <div class="box light-bg limit">
       <h3>Limit Switches</h3>
@@ -115,7 +115,7 @@ import MastGimbalControls from "./MastGimbalControls.vue";
 import SAArmControls from "./SAArmControls.vue";
 import PDBFuse from "./PDBFuse.vue";
 import Cameras from "./Cameras.vue";
-import MoteusStateTable from "./MoteusStateTable.vue";
+import DriveMoteusStateTable from "./DriveMoteusStateTable.vue";
 import JointStateTable from "./JointStateTable.vue";
 import LimitSwitch from "./LimitSwitch.vue";
 import CalibrationCheckbox from "./CalibrationCheckbox.vue";
@@ -133,7 +133,7 @@ export default {
     DriveControls,
     JointStateTable,
     MastGimbalControls,
-    MoteusStateTable,
+    DriveMoteusStateTable,
     PDBFuse,
     SAArmControls,
     LimitSwitch,
@@ -151,6 +151,8 @@ export default {
         longitude_deg: -83.70781314674628,
         bearing_deg: 0
       },
+
+      brushless_motors_sub: null,
 
       jointState: {},
       // Moteus state table is set up to look for specific keys in moteusState so it can't be empty
@@ -195,13 +197,13 @@ export default {
       this.odom.bearing_deg = quaternionToMapAngle(tf.rotation);
     });
 
-    this.brushless_motors = new ROSLIB.Topic({
+    this.brushless_motors_sub = new ROSLIB.Topic({
       ros: this.$ros,
       name: "drive_status",
       messageType: "mrover/MotorsStatus"
     });
 
-    this.brushless_motors.subscribe((msg) => {
+    this.brushless_motors_sub.subscribe((msg) => {
       this.jointState = msg.joint_states;
       this.moteusState = msg.moteus_states;
     });
