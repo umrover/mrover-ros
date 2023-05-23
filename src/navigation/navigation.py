@@ -76,7 +76,7 @@ class Navigation(threading.Thread):
         transition_dict = {transition.name: transition.value for transition in transitions_enum}
         transition_dict["off"] = "OffState"  # logic for switching to offstate is built into OffState
         return transition_dict
-    
+
     def publish_state(self, event=None):
         with self.state_machine:
             active_states = self.state_machine.get_active_states()
@@ -85,7 +85,6 @@ class Navigation(threading.Thread):
 
     def run(self):
         self.state_machine.execute()
-        
 
     def stop(self):
         self.sis.stop()
