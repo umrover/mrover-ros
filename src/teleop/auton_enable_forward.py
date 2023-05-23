@@ -35,6 +35,12 @@ class AutonBridge:
             except rospy.ServiceException as e:
                 rospy.logerr(f"Could not forward enable auton message: {e}")
 
+                self.service_client.close()
+                self.service_client = rospy.ServiceProxy("enable_auton", PublishEnableAuton, persistent=True)
+
+                self.msg = None
+
+
 
 def main():
     rospy.init_node("auton_enable_forward")
