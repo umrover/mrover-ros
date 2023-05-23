@@ -6,7 +6,7 @@ from enum import Enum
 
 from geometry_msgs.msg import Twist
 from util.SE3 import SE3
-from util.np_utils import angle_to_rotate
+from util.np_utils import angle_to_rotate, normalized
 from util.ros_utils import get_rosparam
 
 default_constants = {
@@ -19,6 +19,7 @@ default_constants = {
 }
 ODOM_CONSTANTS = get_rosparam("drive/odom", default_constants)
 MAP_CONSTANTS = get_rosparam("drive/map", default_constants)
+LOOKAHEAD_DISTANCE = get_rosparam("drive/lookahead_distance", 3.0)
 
 
 class DriveController:
@@ -121,6 +122,37 @@ class DriveController:
         else:
             raise ValueError(f"Invalid drive state {self._driver_state}")
 
+    def get_lookahead_pt(
+        self: DriveController,
+        path_start: np.ndarray,
+        path_end: np.ndarray,
+        rover_pos: np.ndarray,
+        lookahead_dist: float,
+    ) -> np.ndarray:
+        """
+        Returns a point that the rover should target on the path from the previous target position to the current target position
+        The point is computed by first projecting the rovers position onto the path and then propogating ahead by the lookahead distance
+        if the target is closer than that then it is returned instead
+        :param path_start: the start of the line segment on which to calculate a lookahead point
+        :param path_end: the current target position (end of the line segment on which to calculate a lookahead point)
+        :param rover_pos: the current rover position
+        :param lookahead_dist: the distance to look ahead on the path
+        :return: the lookahead point
+        """
+        # compute the vector from the previous target position to the current target position
+        path_vec = path_end - path_start
+        # compute the vector from the previous target position to the rover position
+        rover_vec = rover_pos - path_start
+        # compute the projection of the rover vector onto the target vector
+        proj_vec = np.dot(rover_vec, path_vec) / np.dot(path_vec, path_vec) * path_vec
+        lookahead_vec = lookahead_dist * normalized(path_vec)
+        lookahead_pt = proj_vec + lookahead_vec
+        # if the lookahead point is further away than the target, just return the target
+        if np.linalg.norm(lookahead_pt) > np.linalg.norm(path_vec):
+            return path_end
+        else:
+            return path_start + lookahead_pt
+
     def get_drive_command(
         self: DriveController,
         target_pos: np.ndarray,
@@ -129,6 +161,7 @@ class DriveController:
         turn_in_place_thresh: float,
         in_odom: bool = False,
         drive_back: bool = False,
+        path_start: Optional[np.ndarray] = None,
     ) -> Tuple[Twist, bool]:
         """
         Returns a drive command to get the rover to the target position, calls the state machine to do so and updates the last angular error in the process
@@ -138,6 +171,7 @@ class DriveController:
         :param turn_in_place_thresh: The angle threshold to consider the rover facing the target position and ready to drive forward towards it.
         :param in_odom: Whether to use odom constants or map constants.
         :param drive_back: True if rover should drive backwards, false otherwise.
+        :param path_start: If you want the rover to drive on a line segment (and actively try to stay on the line), pass the start of the line segment as this param, otherwise pass None.
         :return: A tuple of the drive command and a boolean indicating whether the rover is at the target position.
         :modifies: self._last_angular_error
         """
@@ -152,6 +186,14 @@ class DriveController:
         rover_pos = rover_pose.position
         rover_pos[2] = 0
         target_pos[2] = 0
+
+        if np.linalg.norm(target_pos - rover_pos) < completion_thresh:
+            self.reset()
+            return (Twist(), True)
+
+        if path_start is not None:
+            target_pos = self.get_lookahead_pt(path_start, target_pos, rover_pos, LOOKAHEAD_DISTANCE)
+
         target_dir = target_pos - rover_pos
 
         # if the target is farther than completion distance away from the last one, reset the controller

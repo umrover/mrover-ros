@@ -40,7 +40,7 @@
         :lat-lng="search_path_point.latLng"
         :icon="searchPathIcon"
       >
-        <l-tooltip :options="{ permanent: 'true', direction: 'top' }"
+        <l-tooltip
           >Search Path {{ index }}</l-tooltip
         >
       </l-marker>
@@ -244,8 +244,8 @@ export default {
     });
     this.searchPathIcon = L.icon({
       iconUrl: "/static/map_marker_projected.png",
-      iconSize: [64, 64],
-      iconAnchor: [32, 64],
+      iconSize: [32, 32],
+      iconAnchor: [16, 16],
       popupAnchor: [0, -32]
     });
     this.gatePathIcon = L.icon({
