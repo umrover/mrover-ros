@@ -230,8 +230,8 @@ export default {
   created: function () {
     this.nav_status_sub = new ROSLIB.Topic({
       ros: this.$ros,
-      name: "/smach/container_status",
-      messageType: "smach_msgs/SmachContainerStatus"
+      name: "/nav_state",
+      messageType: "std_msgs/String"
     });
 
     this.odom_sub = new ROSLIB.Topic({
@@ -268,7 +268,7 @@ export default {
 
     this.nav_status_sub.subscribe((msg) => {
       // Callback for nav_status
-      this.nav_status.nav_state_name = msg.active_states[0];
+      this.nav_status.nav_state_name = msg.data;
     });
 
     this.odom_sub.subscribe((msg) => {

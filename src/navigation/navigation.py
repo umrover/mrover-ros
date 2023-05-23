@@ -70,14 +70,22 @@ class Navigation(threading.Thread):
                 PostBackupState(self.context),
                 transitions=self.get_transitions(PostBackupTransitions),
             )
+            rospy.Timer(rospy.Duration(0.1), self.publish_state)
 
     def get_transitions(self, transitions_enum):
         transition_dict = {transition.name: transition.value for transition in transitions_enum}
         transition_dict["off"] = "OffState"  # logic for switching to offstate is built into OffState
         return transition_dict
+    
+    def publish_state(self, event=None):
+        with self.state_machine:
+            active_states = self.state_machine.get_active_states()
+            if len(active_states) > 0:
+                self.state_publisher.publish(active_states[0])
 
     def run(self):
         self.state_machine.execute()
+        
 
     def stop(self):
         self.sis.stop()
