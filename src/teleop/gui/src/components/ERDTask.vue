@@ -56,7 +56,7 @@
       <JointStateTable :joint-state-data="jointState" :vertical="true" />
     </div>
     <div v-if="type === 'EDM'" class="box waypoint-editor light-bg">
-      <BasicWaypointEditor />
+      <BasicWaypointEditor :odom="odom" />
     </div>
     <div>
       <DriveControls></DriveControls>
@@ -66,7 +66,7 @@
     </div>
     <div class="box moteus light-bg">
       <DriveMoteusStateTable :moteus-state-data="moteusState" />
-      <ArmMoteusStateTable/>
+      <ArmMoteusStateTable />
     </div>
     <div v-show="false">
       <MastGimbalControls></MastGimbalControls>
@@ -89,7 +89,7 @@ import ArmMoteusStateTable from "./ArmMoteusStateTable.vue";
 import OdometryReading from "./OdometryReading.vue";
 import PDBFuse from "./PDBFuse.vue";
 import CommReadout from "./CommReadout.vue";
-import MCUReset from "./MCUReset.vue"
+import MCUReset from "./MCUReset.vue";
 import { quaternionToMapAngle, disableAutonLED } from "../utils.js";
 
 export default {
@@ -106,14 +106,14 @@ export default {
     OdometryReading,
     PDBFuse,
     CommReadout,
-    MCUReset,
+    MCUReset
   },
 
   props: {
     type: {
       type: String,
-      required: true,
-    },
+      required: true
+    }
   },
   data() {
     return {
@@ -122,7 +122,7 @@ export default {
         latitude_deg: 42.294864932393835,
         longitude_deg: -83.70781314674628,
         bearing_deg: 0,
-        speed: 0,
+        speed: 0
       },
 
       // Pubs and Subs
@@ -135,10 +135,10 @@ export default {
       moteusState: {
         name: ["", "", "", "", "", ""],
         error: ["", "", "", "", "", ""],
-        state: ["", "", "", "", "", ""],
+        state: ["", "", "", "", "", ""]
       },
 
-      jointState: {},
+      jointState: {}
     };
   },
 
@@ -147,7 +147,7 @@ export default {
     this.odom_sub = new ROSLIB.Topic({
       ros: this.$ros,
       name: "/gps/fix",
-      messageType: "sensor_msgs/NavSatFix",
+      messageType: "sensor_msgs/NavSatFix"
     });
 
     this.tfClient = new ROSLIB.TFClient({
@@ -155,7 +155,7 @@ export default {
       fixedFrame: "map",
       // Thresholds to trigger subscription callback
       angularThres: 0.0001,
-      transThres: 0.01,
+      transThres: 0.01
     });
 
     // Subscriber for odom to base_link transform
@@ -172,14 +172,14 @@ export default {
     this.brushless_motors_sub = new ROSLIB.Topic({
       ros: this.$ros,
       name: "drive_status",
-      messageType: "mrover/MotorsStatus",
+      messageType: "mrover/MotorsStatus"
     });
 
     this.brushless_motors_sub.subscribe((msg) => {
       this.jointState = msg.joint_states;
       this.moteusState = msg.moteus_states;
     });
-  },
+  }
 };
 </script>
 
@@ -209,7 +209,7 @@ export default {
     "header header"
     "cameras arm-controls"
     "drive-vel-data moteus"
-    "pdb pdb"; 
+    "pdb pdb";
   font-family: sans-serif;
   height: auto;
 }
