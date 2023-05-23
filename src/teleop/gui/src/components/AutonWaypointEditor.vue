@@ -448,8 +448,8 @@ export default {
 
     this.nav_status_sub = new ROSLIB.Topic({
       ros: this.$ros,
-      name: "/smach/container_status",
-      messageType: "smach_msgs/SmachContainerStatus",
+      name: "/nav_state",
+      messageType: "std_msgs/String",
     });
 
     this.rover_stuck_pub = new ROSLIB.Topic({
@@ -462,9 +462,12 @@ export default {
     this.odom_format_in = this.odom_format;
 
     this.nav_status_sub.subscribe((msg) => {
-      if (msg.active_states[0] !== "OffState" && !this.autonEnabled) {
+      // If still waiting for nav...
+      if ((msg.data == "OffState" && this.autonEnabled) ||
+          (msg.data !== "OffState" && !this.autonEnabled)) {
         return;
       }
+
       this.waitingForNav = false;
       this.autonButtonColor = this.autonEnabled ? "green" : "red";
     });
