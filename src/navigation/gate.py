@@ -271,9 +271,6 @@ class GateTraverseState(BaseState):
             self.context.rover.previous_state = GateTraverseStateTransitions.continue_gate_traverse.name  # type: ignore
             return GateTraverseStateTransitions.recovery_state.name  # type: ignore
 
-        # self.context.gate_path_publisher.publish(
-        #     GPSPointList([convert_cartesian_to_gps(pt) for pt in self.traj.coordinates])
-        # )
         map_gate = self.context.env.current_gate(odom_override=False)
         self.context.gate_point_publisher.publish(
             GPSPointList([convert_cartesian_to_gps(p) for p in [map_gate.post1, map_gate.post2]])
