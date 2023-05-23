@@ -271,7 +271,6 @@ class GateTraverseState(BaseState):
             self.context.rover.previous_state = GateTraverseStateTransitions.continue_gate_traverse.name  # type: ignore
             return GateTraverseStateTransitions.recovery_state.name  # type: ignore
 
-
         map_gate = self.context.env.current_gate(odom_override=False)
         if map_gate is not None:
             self.context.gate_point_publisher.publish(
