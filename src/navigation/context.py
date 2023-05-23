@@ -136,9 +136,10 @@ class Environment:
         else:
             return None
 
-    def current_gate(self) -> Optional[Gate]:
+    def current_gate(self, odom_override: bool = True) -> Optional[Gate]:
         """
         retrieves the position of the gate (if we know where it is, and we are looking for one)
+        :param: odom_override if false will force it to be in the map frame, true will mean use odom if we are using it (set by rosparam)
         """
 
         if self.ctx.course:
@@ -146,8 +147,8 @@ class Environment:
             if current_waypoint is None or not self.ctx.course.look_for_gate():
                 return None
 
-            post1 = self.get_fid_pos(current_waypoint.fiducial_id, self.ctx.use_odom)
-            post2 = self.get_fid_pos(current_waypoint.fiducial_id + 1, self.ctx.use_odom)
+            post1 = self.get_fid_pos(current_waypoint.fiducial_id, self.ctx.use_odom and odom_override)
+            post2 = self.get_fid_pos(current_waypoint.fiducial_id + 1, self.ctx.use_odom and odom_override)
             if post1 is None or post2 is None:
                 return None
             return Gate(post1[:2], post2[:2])
