@@ -18,6 +18,7 @@ from partial_gate import PartialGateState, PartialGateStateTransitions
 from post_backup import PostBackupState, PostBackupTransitions
 from smach.log import set_loggers
 from smach.log import loginfo, logwarn, logerr
+from std_msgs.msg import String
 
 
 class Navigation(threading.Thread):
@@ -34,6 +35,7 @@ class Navigation(threading.Thread):
         self.context = context
         self.sis = smach_ros.IntrospectionServer("", self.state_machine, "/SM_ROOT")
         self.sis.start()
+        self.state_publisher = rospy.Publisher("/nav_state", String, queue_size=1)
         with self.state_machine:
             self.state_machine.add(
                 "OffState", OffState(self.context), transitions=self.get_transitions(OffStateTransitions)
