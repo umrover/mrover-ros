@@ -65,7 +65,8 @@
       <ArmControls />
     </div>
     <div class="box moteus light-bg">
-      <MoteusStateTable :moteus-state-data="moteusState" />
+      <DriveMoteusStateTable :moteus-state-data="moteusState" />
+      <ArmMoteusStateTable/>
     </div>
     <div v-show="false">
       <MastGimbalControls></MastGimbalControls>
@@ -83,7 +84,8 @@ import MastGimbalControls from "./MastGimbalControls.vue";
 import BasicMap from "./BasicRoverMap.vue";
 import BasicWaypointEditor from "./BasicWaypointEditor.vue";
 import JointStateTable from "./JointStateTable.vue";
-import MoteusStateTable from "./MoteusStateTable.vue";
+import DriveMoteusStateTable from "./DriveMoteusStateTable.vue";
+import ArmMoteusStateTable from "./ArmMoteusStateTable.vue";
 import OdometryReading from "./OdometryReading.vue";
 import PDBFuse from "./PDBFuse.vue";
 import CommReadout from "./CommReadout.vue";
@@ -93,13 +95,14 @@ import { quaternionToMapAngle, disableAutonLED } from "../utils.js";
 export default {
   components: {
     ArmControls,
+    ArmMoteusStateTable,
     Cameras,
     DriveControls,
     BasicMap,
     BasicWaypointEditor,
     JointStateTable,
     MastGimbalControls,
-    MoteusStateTable,
+    DriveMoteusStateTable,
     OdometryReading,
     PDBFuse,
     CommReadout,
@@ -125,6 +128,8 @@ export default {
       // Pubs and Subs
       odom_sub: null,
       tfClient: null,
+
+      brushless_motors_sub: null,
 
       // Default object isn't empty, so has to be initialized to ""
       moteusState: {
@@ -164,13 +169,13 @@ export default {
       this.odom.longitude_deg = msg.longitude;
     });
 
-    this.brushless_motors = new ROSLIB.Topic({
+    this.brushless_motors_sub = new ROSLIB.Topic({
       ros: this.$ros,
       name: "drive_status",
       messageType: "mrover/MotorsStatus",
     });
 
-    this.brushless_motors.subscribe((msg) => {
+    this.brushless_motors_sub.subscribe((msg) => {
       this.jointState = msg.joint_states;
       this.moteusState = msg.moteus_states;
     });

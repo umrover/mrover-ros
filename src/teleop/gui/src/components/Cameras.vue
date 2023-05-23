@@ -1,6 +1,6 @@
 <template>
   <div class="wrap">
-    <h3>Cameras</h3>
+    <h3>Cameras ({{ num_available }} available)</h3>
     <div class="input">
       Camera name:
       <input v-model="cameraName" class="rounded" type="message" /> Camera
@@ -68,7 +68,10 @@ export default {
       cameraName: "",
       capacity: 2,
       qualities: new Array(9).fill(-1),
-      streamOrder: [-1, -1, -1, -1]
+      streamOrder: [-1, -1, -1, -1],
+
+      available_sub: null,
+      num_available: -1
     };
   },
 
@@ -104,6 +107,16 @@ export default {
       primary: this.primary
     });
     resetService.callService(request, (result) => {});
+
+    this.available_sub = new ROSLIB.Topic({
+      ros: this.$ros,
+      name: "available_cameras",
+      messageType: "mrover/AvailableCameras"
+    });
+
+    this.available_sub.subscribe((msg) => {
+      this.num_available = msg.num_available;
+    });
   },
 
   methods: {

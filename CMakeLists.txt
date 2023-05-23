@@ -22,6 +22,7 @@ set(MROVER_PACKAGES
 
 # Message files
 set(MROVER_MESSAGE_FILES
+        AvailableCameras.msg
         Calibrated.msg
         CalibrationStatus.msg
         CameraCmd.msg

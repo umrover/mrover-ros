@@ -129,13 +129,14 @@ class MoteusBridge:
     MOTEUS_RESPONSE_TIME_INDICATING_DISCONNECTED_S = 0.01
     ROVER_NODE_TO_MOTEUS_WATCHDOG_TIMEOUT_S = 0.1
 
-    def __init__(self, can_id: int, transport):
+    def __init__(self, can_id: int, transport, gear_ratio: int):
 
         self._can_id = can_id
         self.controller = moteus.Controller(id=can_id, transport=transport)
         self.command_lock = threading.Lock()
         # self._command is the next command that this ROS node will send to the Moteus
         # once self._send_command is called.
+        self._gear_ratio = gear_ratio
         self._command = CommandData()
         self.moteus_state = MoteusState(state=MoteusState.DISCONNECTED_STATE, error_name=MoteusState.NO_ERROR_NAME)
         self.moteus_data = MoteusData()
@@ -217,8 +218,8 @@ class MoteusBridge:
                 self._change_state(MoteusState.ARMED_STATE)
 
             self.moteus_data = MoteusData(
-                position=state.values[moteus.Register.POSITION],
-                velocity=state.values[moteus.Register.VELOCITY],
+                position=state.values[moteus.Register.POSITION] * 2 * math.pi / self._gear_ratio,
+                velocity=state.values[moteus.Register.VELOCITY] * 2 * math.pi / self._gear_ratio,
                 torque=state.values[moteus.Register.TORQUE],
             )
 
@@ -332,12 +333,14 @@ class MotorsManager(ABC):
     _last_updated_time_s: float
     _motors_status_publisher: rospy.Publisher
     _lost_communication: bool
+    _gear_ratios: Dict[str, int]
 
     def __init__(self, motor_controller_info_by_name: dict, transport):
         self._motor_bridges = {}
         self._multipliers = {}
+        self._gear_ratios = {}
         for name, info in motor_controller_info_by_name.items():
-            self._motor_bridges[name] = MoteusBridge(info["id"], transport)
+            self._motor_bridges[name] = MoteusBridge(info["id"], transport, info["gear_ratio"])
             self._multipliers[name] = info["multiplier"]
 
         self._last_updated_time_s = t.time()
@@ -548,7 +551,7 @@ class Application:
 
             transport = moteus_pi3hat.Pi3HatRouter(
                 servo_bus_map={
-                    1: [info["id"] for info in drive_controller_info_by_name.values() if info["bus"] == 1],
+                    5: [info["id"] for info in drive_controller_info_by_name.values() if info["bus"] == 5],
                     2: [info["id"] for info in drive_controller_info_by_name.values() if info["bus"] == 2],
                     3: [info["id"] for info in arm_controller_info_by_name.values() if info["bus"] == 3],
                 }
