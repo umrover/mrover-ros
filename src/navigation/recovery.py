@@ -7,13 +7,14 @@ from geometry_msgs.msg import Twist
 import rospy
 import numpy as np
 from typing import Optional
-from util.np_utils import perpendicular_2d
+from util.np_utils import perpendicular_2d, rotate_2d
 from util.ros_utils import get_rosparam
 
 
 STOP_THRESH = get_rosparam("recovery/stop_thresh", 0.2)
 DRIVE_FWD_THRESH = get_rosparam("recovery/drive_fwd_thresh", 0.34)  # 20 degrees
 RECOVERY_DISTANCE = get_rosparam("recovery/recovery_distance", 1.0)
+GIVE_UP_TIME = get_rosparam("recovery/give_up_time", 10.0)
 
 
 class RecoveryStateTransitions(Enum):
@@ -35,6 +36,7 @@ class JTurnAction(Enum):
 class RecoveryState(BaseState):
     waypoint_behind: Optional[np.ndarray]
     current_action: JTurnAction
+    start_time: Optional[rospy.Time] = None
 
     def __init__(self, context: Context):
         own_transitions = [RecoveryStateTransitions.continue_recovery.name]  # type: ignore
@@ -48,8 +50,13 @@ class RecoveryState(BaseState):
         self.waypoint_behind = None
         self.current_action = JTurnAction.moving_back
         self.context.rover.stuck = False
+        self.start_time = None
 
     def evaluate(self, ud) -> str:
+        if self.start_time is None:
+            self.start_time = rospy.Time.now()
+        if rospy.Time.now() - self.start_time > rospy.Duration(GIVE_UP_TIME):
+            return self.context.rover.previous_state
         # Making waypoint behind the rover to go backwards
         pose = self.context.rover.get_pose()
         # if first round, set a waypoint directly behind the rover and command it to
@@ -69,6 +76,7 @@ class RecoveryState(BaseState):
             if arrived_back:
                 self.current_action = JTurnAction.j_turning  # move to second part of turn
                 self.waypoint_behind = None
+                self.context.rover.driver.reset()
 
         # if second round, set a waypoint off to the side of the rover and command it to
         # turn and drive backwards towards it until it arrives at that point. So it will begin
@@ -76,7 +84,8 @@ class RecoveryState(BaseState):
         if self.current_action == JTurnAction.j_turning:
             if self.waypoint_behind is None:
                 dir_vector = pose.rotation.direction_vector()
-                dir_vector[:2] = RECOVERY_DISTANCE * perpendicular_2d(dir_vector[:2])
+                # the waypoint will be 45 degrees to the left of the rover behind it.
+                dir_vector[:2] = RECOVERY_DISTANCE * rotate_2d(dir_vector[:2], 3 * np.pi / 4)
                 self.waypoint_behind = pose.position + dir_vector
 
             cmd_vel, arrived_turn = self.context.rover.driver.get_drive_command(
