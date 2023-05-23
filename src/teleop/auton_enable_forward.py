@@ -12,8 +12,7 @@ class AutonBridge:
     """
 
     def __init__(self):
-        """
-        """
+        """ """
         rospy.wait_for_service("enable_auton")
 
         self.service_client = rospy.ServiceProxy("enable_auton", PublishEnableAuton, persistent=True)
@@ -22,8 +21,7 @@ class AutonBridge:
         self.msg_lock = threading.Lock()
 
     def handle_message(self, msg) -> None:
-        """
-        """
+        """ """
         with self.msg_lock:
             if self.msg == msg:
                 return
@@ -39,7 +37,6 @@ class AutonBridge:
                 self.service_client = rospy.ServiceProxy("enable_auton", PublishEnableAuton, persistent=True)
 
                 self.msg = None
-
 
 
 def main():
