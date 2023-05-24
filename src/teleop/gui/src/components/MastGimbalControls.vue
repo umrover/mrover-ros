@@ -10,7 +10,7 @@
 <script>
 import ROSLIB from "roslib";
 
-const UPDATE_RATE_S = 1;
+const UPDATE_RATE_S = 0.2;
 let interval;
 
 export default {
