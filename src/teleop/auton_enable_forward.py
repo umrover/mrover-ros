@@ -60,7 +60,7 @@ class AutonBridge:
 
             # Attempt to make service request, updating msg state if successful.
             try:
-                self.service_client(PublishEnableAutonRequest(self.msg))
+                self.service_client(PublishEnableAutonRequest(msg))
                 self.msg = msg
 
             # Reconnect service client upon failure.
