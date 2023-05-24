@@ -17,6 +17,7 @@ from util.SO3 import SO3
 from typing import Optional
 
 DATAFRAME_MAX_SIZE = get_rosparam("failure_identification/dataframe_max_size", 200)
+POST_RECOVERY_GRACE_PERIOD = 5
 
 
 class FailureIdentifier:
@@ -173,10 +174,11 @@ class FailureIdentifier:
         # publish the watchdog status if the nav state is not recovery
         if TEST_RECOVERY_STATE:
             self.stuck_publisher.publish(Bool(self.cur_stuck))
-        elif nav_status.active_states[0] != "recovery":
+        elif nav_status.active_states[0] != "RecoveryState":
             if self.recovery_end_time is None or rospy.Time.now() - self.recovery_end_time > rospy.Duration(POST_RECOVERY_GRACE_PERIOD):
                 self.stuck_publisher.publish(Bool(self.watchdog.is_stuck(self._df)))
         else:
+            self.stuck_publisher.publish(False)
             self.recovery_end_time = rospy.Time.now()
 
 
