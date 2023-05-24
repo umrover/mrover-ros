@@ -261,7 +261,7 @@ import _ from "lodash";
 import L from "leaflet";
 import ROSLIB from "roslib";
 
-let interval, intermediate_publish_interval;
+let stuck_interval, intermediate_publish_interval;
 
 const WAYPOINT_TYPES = {
   NO_SEARCH: 0,
@@ -433,7 +433,7 @@ export default {
   },
 
   beforeDestroy: function () {
-    window.clearInterval(interval);
+    window.clearInterval(stuck_interval);
     window.clearInterval(intermediate_publish_interval);
     this.autonEnabled = false;
     this.sendEnableAuton();
@@ -473,7 +473,7 @@ export default {
     });
 
     // Interval for publishing stuck status for training data
-    interval = window.setInterval(() => {
+    stuck_interval = window.setInterval(() => {
       this.rover_stuck_pub.publish({ data: this.roverStuck });
     }, 100);
 
