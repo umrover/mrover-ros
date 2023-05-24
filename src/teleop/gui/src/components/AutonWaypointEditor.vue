@@ -677,8 +677,8 @@ export default {
 
     toggleAutonMode: function (val) {
       this.setAutonMode(val);
-      // This will trigger the yellow "waiting for nav" state of the checkbox only if we are enabling the button
-      this.autonButtonColor = val ? "yellow" : "red";
+      // This will trigger the yellow "waiting for nav" state of the checkbox
+      this.autonButtonColor = "yellow";
       this.waitingForNav = true;
       this.sendEnableAuton();
     },
