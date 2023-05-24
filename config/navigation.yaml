@@ -26,6 +26,7 @@ search:
   drive_fwd_thresh: 0.34
   coverage_radius: 20
   segments_per_rotation: 8
+  distance_between_spirals: 3
 
 single_fiducial:
   stop_thresh: 1.0
@@ -41,6 +42,7 @@ recovery:
   stop_thresh: 0.2
   drive_fwd_thresh: 0.34
   recovery_distance: 2.0 # distance the rover moves back in each leg of j-turn
+  give_up_time: 10.0
 
 failure_identification:
   dataframe_max_size: 200
