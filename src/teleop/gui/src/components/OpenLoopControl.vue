@@ -68,19 +68,6 @@ export default {
   created: function () {
     document.addEventListener("keyup", this.keyMonitorUp);
     document.addEventListener("keydown", this.keyMonitorDown);
-    // Prevent scrolling with the arrows when an open loop controller is on screen
-    window.addEventListener(
-      "preventScroll",
-      function (e) {
-        if (
-          ["ArrowUp", "ArrowDown", "ArrowLeft", "ArrowRight"].indexOf(e.code) >
-          -1
-        ) {
-          e.preventDefault();
-        }
-      },
-      false
-    );
 
     interval = setInterval(() => {
       this.$emit("velocity", this.velocity);
@@ -88,21 +75,6 @@ export default {
   },
 
   beforeDestroy: function () {
-    document.removeEventListener("keyup", this.keyMonitorUp);
-    document.removeEventListener("keydown", this.keyMonitorDown);
-    window.removeEventListener(
-      "preventScroll",
-      function (e) {
-        if (
-          ["Space", "ArrowUp", "ArrowDown", "ArrowLeft", "ArrowRight"].indexOf(
-            e.code
-          ) > -1
-        ) {
-          e.preventDefault();
-        }
-      },
-      false
-    );
     window.clearInterval(interval);
   },
 
