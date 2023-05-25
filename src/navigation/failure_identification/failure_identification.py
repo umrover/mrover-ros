@@ -14,8 +14,10 @@ import os
 from pathlib import Path
 from util.ros_utils import get_rosparam
 from util.SO3 import SO3
+from typing import Optional
 
 DATAFRAME_MAX_SIZE = get_rosparam("failure_identification/dataframe_max_size", 200)
+POST_RECOVERY_GRACE_PERIOD = get_rosparam("failure_identification/post_recovery_grace_period", 5.0)
 
 
 class FailureIdentifier:
@@ -33,6 +35,7 @@ class FailureIdentifier:
     path_name: Path
     data_collecting_mode: bool
     cols: list
+    last_recorded_recovery_time: Optional[rospy.Time] = None
 
     def __init__(self):
         nav_status_sub = message_filters.Subscriber("smach/container_status", SmachContainerStatus)
@@ -171,8 +174,15 @@ class FailureIdentifier:
         # publish the watchdog status if the nav state is not recovery
         if TEST_RECOVERY_STATE:
             self.stuck_publisher.publish(Bool(self.cur_stuck))
-        elif nav_status.active_states[0] != "recovery":
-            self.stuck_publisher.publish(Bool(self.watchdog.is_stuck(self._df)))
+        elif nav_status.active_states[0] != "RecoveryState":
+            if (
+                self.last_recorded_recovery_time is None
+                or rospy.Time.now() - self.last_recorded_recovery_time > rospy.Duration(POST_RECOVERY_GRACE_PERIOD)
+            ):
+                self.stuck_publisher.publish(Bool(self.watchdog.is_stuck(self._df)))
+        else:
+            self.stuck_publisher.publish(False)
+            self.last_recorded_recovery_time = rospy.Time.now()
 
 
 def main():
