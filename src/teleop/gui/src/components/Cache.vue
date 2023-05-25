@@ -15,7 +15,7 @@
             <OpenLoopControl
               :forwards-key="79"
               :backwards-key="67"
-              :scale-default="50"
+              :scale-default="100"
               @velocity="velocity = $event"
             ></OpenLoopControl>
           </div>

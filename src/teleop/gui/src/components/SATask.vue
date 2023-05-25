@@ -43,7 +43,7 @@
       <BasicMap :odom="odom" />
     </div>
     <div class="box waypoints light-bg">
-      <BasicWaypointEditor />
+      <BasicWaypointEditor :odom="odom" />
     </div>
     <div class="box light-bg cameras">
       <Cameras :primary="true" />
@@ -93,7 +93,7 @@
         :options="[
           { name: 'sa_joint_1', option: 'Joint 1' },
           { name: 'sa_joint_2', option: 'Joint 2' },
-          { name: 'sa_joint_3', option: 'Joint 3' },
+          { name: 'sa_joint_3', option: 'Joint 3' }
         ]"
       />
     </div>

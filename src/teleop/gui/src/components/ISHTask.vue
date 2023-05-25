@@ -55,7 +55,7 @@
       <Carousel />
     </div>
     <div class="box light-bg cache">
-      <Cache :site="site" />
+      <Cache />
     </div>
     <div class="box light-bg chlorophyll">
       <Chlorophyll :spectral_data="spectral_data" />
