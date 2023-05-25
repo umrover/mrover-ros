@@ -47,6 +47,7 @@ recovery:
 failure_identification:
   dataframe_max_size: 200
   test_recovery_state: False
+  post_recovery_grace_period: 5.0
 
 watchdog:
   window_size: 100 #size of window we are looking at for being stuck
