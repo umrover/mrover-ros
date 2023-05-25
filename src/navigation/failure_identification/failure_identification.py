@@ -175,8 +175,9 @@ class FailureIdentifier:
         if TEST_RECOVERY_STATE:
             self.stuck_publisher.publish(Bool(self.cur_stuck))
         elif nav_status.active_states[0] != "RecoveryState":
-            if self.last_recorded_recovery_time is None or rospy.Time.now() - self.last_recorded_recovery_time > rospy.Duration(
-                POST_RECOVERY_GRACE_PERIOD
+            if (
+                self.last_recorded_recovery_time is None
+                or rospy.Time.now() - self.last_recorded_recovery_time > rospy.Duration(POST_RECOVERY_GRACE_PERIOD)
             ):
                 self.stuck_publisher.publish(Bool(self.watchdog.is_stuck(self._df)))
         else:
