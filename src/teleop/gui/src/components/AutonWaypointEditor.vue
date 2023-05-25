@@ -261,7 +261,7 @@ import _ from "lodash";
 import L from "leaflet";
 import ROSLIB from "roslib";
 
-let interval;
+let stuck_interval, intermediate_publish_interval;
 
 const WAYPOINT_TYPES = {
   NO_SEARCH: 0,
@@ -433,42 +433,53 @@ export default {
   },
 
   beforeDestroy: function () {
-    window.clearInterval(interval);
+    window.clearInterval(stuck_interval);
+    window.clearInterval(intermediate_publish_interval);
     this.autonEnabled = false;
     this.sendEnableAuton();
   },
 
   created: function () {
-    (this.course_pub = new ROSLIB.Service({
+    this.course_pub = new ROSLIB.Topic({
       ros: this.$ros,
-      name: "/enable_auton",
-      serviceType: "mrover/PublishEnableAuton",
-    })),
-      (this.nav_status_sub = new ROSLIB.Topic({
-        ros: this.$ros,
-        name: "/smach/container_status",
-        messageType: "smach_msgs/SmachContainerStatus",
-      })),
-      (this.rover_stuck_pub = new ROSLIB.Topic({
-        ros: this.$ros,
-        name: "/rover_stuck",
-        messageType: "std_msgs/Bool",
-      })),
-      // Make sure local odom format matches vuex odom format
-      (this.odom_format_in = this.odom_format);
+      name: "/intermediate_enable_auton",
+      messageType: "mrover/EnableAuton",
+    });
+
+    this.nav_status_sub = new ROSLIB.Topic({
+      ros: this.$ros,
+      name: "/nav_state",
+      messageType: "std_msgs/String",
+    });
+
+    this.rover_stuck_pub = new ROSLIB.Topic({
+      ros: this.$ros,
+      name: "/rover_stuck",
+      messageType: "std_msgs/Bool",
+    });
+
+    // Make sure local odom format matches vuex odom format
+    this.odom_format_in = this.odom_format;
 
     this.nav_status_sub.subscribe((msg) => {
-      if (msg.active_states[0] !== "OffState" && !this.autonEnabled) {
+      // If still waiting for nav...
+      if ((msg.data == "OffState" && this.autonEnabled) ||
+          (msg.data !== "OffState" && !this.autonEnabled)) {
         return;
       }
+
       this.waitingForNav = false;
       this.autonButtonColor = this.autonEnabled ? "green" : "red";
     });
 
     // Interval for publishing stuck status for training data
-    interval = window.setInterval(() => {
+    stuck_interval = window.setInterval(() => {
       this.rover_stuck_pub.publish({ data: this.roverStuck });
     }, 100);
+
+    intermediate_publish_interval = window.setInterval(() => {
+      this.sendEnableAuton();
+    }, 1000);
   },
 
   mounted: function () {
@@ -490,12 +501,9 @@ export default {
     }),
 
     sendEnableAuton() {
-      let course;
-
       // If Auton Enabled send course
       if (this.autonEnabled) {
-        course = {
-          enable: true,
+        this.course_pub.publish({
           // Map for every waypoint in the current route
           waypoints: _.map(this.route, (waypoint) => {
             const lat = waypoint.lat;
@@ -516,20 +524,12 @@ export default {
               id: parseInt(waypoint.id),
             };
           }),
-        };
+          enable: true
+        });
       } else {
         // Else send false and no array
-        course = {
-          enable: false,
-          waypoints: [],
-        };
+        this.course_pub.publish({waypoints: [], enable: false});
       }
-
-      const course_request = new ROSLIB.ServiceRequest({
-        enableMsg: course,
-      });
-
-      this.course_pub.callService(course_request, () => {});
     },
 
     openModal: function () {
@@ -677,8 +677,8 @@ export default {
 
     toggleAutonMode: function (val) {
       this.setAutonMode(val);
-      // This will trigger the yellow "waiting for nav" state of the checkbox only if we are enabling the button
-      this.autonButtonColor = val ? "yellow" : "red";
+      // This will trigger the yellow "waiting for nav" state of the checkbox
+      this.autonButtonColor = "yellow";
       this.waitingForNav = true;
       this.sendEnableAuton();
     },
