@@ -117,10 +117,10 @@ export default {
   },
   data() {
     return {
-      // Default coordinates are at NC 53 Parking Lot
+      // Default coordinates at MDRS
       odom: {
-        latitude_deg: 42.294864932393835,
-        longitude_deg: -83.70781314674628,
+        latitude_deg: 38.4060250,
+        longitude_deg: -110.7923723,
         bearing_deg: 0,
         speed: 0
       },

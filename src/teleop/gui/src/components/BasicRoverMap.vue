@@ -68,7 +68,7 @@ const onlineTileOptions = {
   subdomains: ["mt0", "mt1", "mt2", "mt3"],
 };
 const offlineTileOptions = {
-  maxNativeZoom: 22,
+  maxNativeZoom: 14,
   maxZoom: 100,
 };
 
@@ -87,8 +87,8 @@ export default {
 
   data() {
     return {
-      // Default Center In NC 53 Parking Lot
-      center: L.latLng(42.294864932393835, -83.70781314674628),
+      // Default Center at MDRS
+      center: L.latLng(38.4060250, -110.7923723),
       attribution:
         '&copy; <a href="http://osm.org/copyright">OpenStreetMap</a> contributors',
       online: true,
