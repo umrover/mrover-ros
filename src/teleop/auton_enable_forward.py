@@ -64,7 +64,7 @@ class AutonBridge:
                 self.msg = msg
 
             # Reconnect service client upon failure.
-            except rospy.ServiceException as e:
+            except Exception as e:
                 rospy.logerr(f"Could not forward enable auton message: {e}")
 
                 self.service_client.close()
