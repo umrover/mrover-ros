@@ -111,7 +111,7 @@ const onlineTileOptions = {
   subdomains: ["mt0", "mt1", "mt2", "mt3"]
 };
 const offlineTileOptions = {
-  maxNativeZoom: 14,
+  maxNativeZoom: 16,
   maxZoom: 100
 };
 

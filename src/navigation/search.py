@@ -108,10 +108,12 @@ class SearchState(BaseState):
         )
         self.traj: Optional[SearchTrajectory] = None
         self.prev_target: Optional[np.ndarray] = None
+        self.is_recovering = False
 
     def reset(self) -> None:
-        self.traj = None
-        self.prev_target = None
+        if not self.is_recovering:
+            self.traj = None
+            self.prev_target = None
 
     def evaluate(self, ud):
         # Check if a path has been generated, and it's associated with the same
@@ -143,7 +145,10 @@ class SearchState(BaseState):
 
         if self.context.rover.stuck:
             self.context.rover.previous_state = SearchStateTransitions.continue_search.name  # type: ignore
+            self.is_recovering = True
             return SearchStateTransitions.recovery_state.name  # type: ignore
+        else:
+            self.is_recovering = False
 
         self.context.search_point_publisher.publish(
             GPSPointList([convert_cartesian_to_gps(pt) for pt in self.traj.coordinates])

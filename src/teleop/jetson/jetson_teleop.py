@@ -332,8 +332,8 @@ class ArmControl:
                     * self.filter_xbox_button(msg.buttons, "right_bumper", "left_bumper"),
                 ]
 
-                slow_mode_activated = msg.buttons[self.xbox_mappings["a"]] or msg.buttons[self.xbox_mappings["b"]]
-                if slow_mode_activated:
+                fast_mode_activated = msg.buttons[self.xbox_mappings["a"]] or msg.buttons[self.xbox_mappings["b"]]
+                if not fast_mode_activated:
                     for i, name in enumerate(self.SA_NAMES):
                         # When going up (vel > 0) with SA joint 2, we DON'T want slow mode.
                         if not (name == "sa_joint_2" and self.sa_cmd.velocity[i] > 0):

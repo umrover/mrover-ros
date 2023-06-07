@@ -338,7 +338,7 @@ science:
     - pushed: 60
       start: 90
     - pushed: 0
-      start: 50
+      start: 80
   info:
     mcu_active_timeout_s: 2
     mcu_reset_period_s: 20
