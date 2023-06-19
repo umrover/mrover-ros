@@ -6,6 +6,7 @@ from sensor_msgs.msg import PointCloud2
 from std_msgs.msg import Header
 import numpy as np
 import matplotlib.pyplot as plt
+from mpl_toolkits.mplot3d import Axes3D
 from tf.transformations import euler_from_quaternion
 import sensor_msgs.point_cloud2 as pc2
 import rasterio
@@ -94,8 +95,34 @@ class TerrainParticleFilter:
         # print(min_x, min_y, max_x, max_y)
         # print(min_i, min_j, max_i, max_j)
         neighborhood = self.terrain_map[min_i:max_i, min_j:max_j]
-        # print(neighborhood.shape)
-        return neighborhood
+        # return neighborhood
+
+        # get principal components of neighborhood
+        points = neighborhood.reshape(-1, 3)
+        cov = np.cov(points.T)
+        eig_vals, eig_vecs = np.linalg.eig(cov)
+        
+        # get third largest component
+        v = eig_vecs[:, np.argsort(eig_vals)[-3]] 
+        self.plot_normal(neighborhood, v)
+        return v
+
+    def plot_normal(self, neighborhood: np.array, v: np.array) -> None:
+        points = neighborhood.reshape(-1, 3)
+        mean = np.mean(points, axis=0)
+        points = points - mean
+        # d = -mean.dot(v)
+        d = 0
+        xx, yy = np.meshgrid(np.linspace(-1, 1, 10), np.linspace(-1, 1, 10))
+        z = (-v[0] * xx - v[1] * yy - d) / v[2]
+        fig = plt.figure()
+        ax = fig.add_subplot(projection="3d")
+        ax.plot_surface(xx, yy, z, alpha=0.2)
+        ax.scatter(points[:, 0], points[:, 1], points[:, 2], c=points[:, 2], marker="o", s=10)
+        print(v)
+        ax.quiver(0, 0, 0, v[0], v[1], v[2], length=0.05, color="red")
+        plt.show()
+
     
     def init_particles(self, num_particles: int, initial_pose: np.array) -> np.array:
         """
@@ -172,7 +199,7 @@ class TerrainParticleFilterNode:
         points = self.pf.terrain_map[i, j]
         points = self.pf.get_surface_normal(self.pf.particles[0])
         points = points.reshape(-1, 3)
-        print(points.shape)
+        # print(points.shape)
         # points = np.hstack((points, np.zeros((points.shape[0], 1))))
         # points = np.vstack((points, points, points))
         # pc = pc2.create_cloud_xyz32(header, self.pf.terrain_map.reshape(-1, 3))
@@ -199,7 +226,7 @@ class TerrainParticleFilterNode:
                 self.terrain_filepath, self.num_particles, 0.0, 0.0, np.array([p.x, p.y, theta])
             )
             self.initialized = True
-            print(np.array([p.x, p.y, theta]))
+            # print(np.array([p.x, p.y, theta]))
 
         if self.gt_count < 100:
             self.gt_count += 1
