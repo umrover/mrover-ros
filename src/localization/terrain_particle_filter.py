@@ -17,6 +17,7 @@ class TerrainParticleFilter:
         self.particles = self.init_particles(num_particles, initial_pose)
         self.sigma_x = sigma_x
         self.sigma_theta = sigma_theta
+        self.footprint_dims = np.array([2, 3])
 
     def tf_matrix(self, pose: np.array) -> np.array:
         """
@@ -37,21 +38,21 @@ class TerrainParticleFilter:
         :param path: path to raster file
         :returns: NxMx3 np array of terrain points [x, y, z]
         """
-        length = 50
-        width = 50
-        height = 4.820803273566
+        self.length = 50
+        self.width = 50
+        # height = 4.820803273566
         
         with rasterio.open(path) as f:
             terrain_map = f.read().squeeze()
-        p_length = length / terrain_map.shape[0]
-        p_width = width / terrain_map.shape[1]
+        p_length =self.length / terrain_map.shape[0]
+        p_width = self.width / terrain_map.shape[1]
         # print(f"vmin: {np.min(terrain_map)}, vmax: {np.max(terrain_map)}")
         
         points = np.empty((terrain_map.shape[0], terrain_map.shape[1], 3))
         for i in range(terrain_map.shape[0]):
             for j in range(terrain_map.shape[1]):
-                x = (i + 0.5) * p_length - length / 2
-                y = (j + 0.5) * p_width - width / 2
+                x = (i + 0.5) * p_length -self.length / 2
+                y = (j + 0.5) * p_width - self.width / 2
                 z = terrain_map[i, j] #* height
                 points[i, j] = np.array([x, y, z])
 
@@ -60,6 +61,27 @@ class TerrainParticleFilter:
         # ax = fig.add_subplot(projection="3d")
         # ax.scatter(points[:, 0], points[:, 1], points[:, 2], c=points[:, 2], marker=".", s=0.1)
         # plt.show()
+
+    def get_surface_normal(self, pose: np.array) -> np.array:
+        """
+        Compute the surface normal vector of the terrain at a given pose.
+
+        :param pose: np array containing pose [x, y, theta]
+        :returns: np array containing surface normal vector [x, y, z]
+        """
+        # get a footprint sized neighborhood of points around the current pose
+        map_dims = np.array([self.length, self.width])
+        map_offset = map_dims / 2
+        min_x, min_y = pose[:2] - self.footprint_dims / 2 + map_offset
+        max_x, max_y = pose[:2] + self.footprint_dims / 2 + map_offset
+        min_i, min_j = self.terrain_map.shape[:2] * np.array([min_x, min_y]) / map_dims
+        max_i, max_j = self.terrain_map.shape[:2] * np.array([max_x, max_y]) / map_dims
+        min_i, min_j = int(min_i), int(min_j)
+        max_i, max_j = int(max_i), int(max_j)
+        # print(min_i, min_j, max_i, max_j)
+        neighborhood = self.terrain_map[min_i:max_i, min_j:max_j]
+        # print(neighborhood.shape)
+        return neighborhood
     
     def init_particles(self, num_particles: int, initial_pose: np.array) -> np.array:
         """
@@ -121,7 +143,7 @@ class TerrainParticleFilterNode:
         rospy.Subscriber("/cmd_vel", Twist, self.cmd_callback)
         rospy.Subscriber("/ground_truth", Odometry, self.ground_truth_callback)
         self.terrain_pub = rospy.Publisher("/terrain_map", PointCloud2, queue_size=10)
-        rospy.on_shutdown(self.plot_data)
+        # rospy.on_shutdown(self.plot_data)
 
     def publish_terrain_map(self) -> None:
         """
@@ -132,7 +154,8 @@ class TerrainParticleFilterNode:
         header = Header()
         header.stamp = rospy.Time.now()
         header.frame_id = "map"
-        pc = pc2.create_cloud_xyz32(header, self.pf.terrain_map)
+        # pc = pc2.create_cloud_xyz32(header, self.pf.terrain_map.reshape(-1, 3))
+        pc = pc2.create_cloud_xyz32(header, self.pf.get_surface_normal(self.pf.particles[0]).reshape(-1, 3))
         self.terrain_pub.publish(pc)
         
     def cmd_callback(self, msg: Twist) -> None:
