@@ -54,13 +54,30 @@ class TerrainParticleFilter:
                 x = (i + 0.5) * p_length -self.length / 2
                 y = (j + 0.5) * p_width - self.width / 2
                 z = terrain_map[i, j] #* height
-                points[i, j] = np.array([x, y, z])
+                points[i, j] = np.array([y, -x, z])
 
         return points 
         # fig = plt.figure()
         # ax = fig.add_subplot(projection="3d")
         # ax.scatter(points[:, 0], points[:, 1], points[:, 2], c=points[:, 2], marker=".", s=0.1)
         # plt.show()
+
+    def position_to_map_idx(self, position: np.array) -> np.array:
+        """
+        Convert a position in the map frame to a point in the map index frame.
+
+        :param position: np array containing position [x, y]
+        :returns: np array containing map index [i, j]
+        """
+        map_dims = np.array([self.length, self.width])
+        map_offset = map_dims / 2
+        p = position
+        p = np.array([-p[1],p[0]])
+        p = p + map_offset
+        # print(p)
+        idx = self.terrain_map.shape[:2] * p / map_dims
+        # print(idx.astype(int))
+        return idx.astype(int)
 
     def get_surface_normal(self, pose: np.array) -> np.array:
         """
@@ -70,14 +87,11 @@ class TerrainParticleFilter:
         :returns: np array containing surface normal vector [x, y, z]
         """
         # get a footprint sized neighborhood of points around the current pose
-        map_dims = np.array([self.length, self.width])
-        map_offset = map_dims / 2
-        min_x, min_y = pose[:2] - self.footprint_dims / 2 + map_offset
-        max_x, max_y = pose[:2] + self.footprint_dims / 2 + map_offset
-        min_i, min_j = self.terrain_map.shape[:2] * np.array([min_x, min_y]) / map_dims
-        max_i, max_j = self.terrain_map.shape[:2] * np.array([max_x, max_y]) / map_dims
-        min_i, min_j = int(min_i), int(min_j)
-        max_i, max_j = int(max_i), int(max_j)
+        min_x, min_y = pose[:2] - self.footprint_dims / 2
+        max_x, max_y = pose[:2] + self.footprint_dims / 2
+        max_i, min_j = self.position_to_map_idx(np.array([min_x, min_y]))
+        min_i, max_j = self.position_to_map_idx(np.array([max_x, max_y]))
+        # print(min_x, min_y, max_x, max_y)
         # print(min_i, min_j, max_i, max_j)
         neighborhood = self.terrain_map[min_i:max_i, min_j:max_j]
         # print(neighborhood.shape)
@@ -133,7 +147,7 @@ class TerrainParticleFilter:
 
 class TerrainParticleFilterNode:
     def __init__(self) -> None:
-        self.terrain_filepath = "terrain.tif"
+        self.terrain_filepath = "/home/riley/catkin_ws/src/mrover/src/localization/terrain.tif"
         self.num_particles = 1
         self.initialized = False
         self.last_time = rospy.Time.now()
@@ -154,8 +168,15 @@ class TerrainParticleFilterNode:
         header = Header()
         header.stamp = rospy.Time.now()
         header.frame_id = "map"
+        i, j = self.pf.position_to_map_idx(self.pf.particles[0][:2])
+        points = self.pf.terrain_map[i, j]
+        points = self.pf.get_surface_normal(self.pf.particles[0])
+        points = points.reshape(-1, 3)
+        print(points.shape)
+        # points = np.hstack((points, np.zeros((points.shape[0], 1))))
+        # points = np.vstack((points, points, points))
         # pc = pc2.create_cloud_xyz32(header, self.pf.terrain_map.reshape(-1, 3))
-        pc = pc2.create_cloud_xyz32(header, self.pf.get_surface_normal(self.pf.particles[0]).reshape(-1, 3))
+        pc = pc2.create_cloud_xyz32(header, points)
         self.terrain_pub.publish(pc)
         
     def cmd_callback(self, msg: Twist) -> None:
