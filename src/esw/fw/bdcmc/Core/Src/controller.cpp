@@ -42,13 +42,13 @@ void Controller::feed(ControlMessage const& message) {
     m_message = message;
 }
 
-void Controller::feed(const OpenLoop& message) {
+void Controller::feed(OpenLoop const& message) {
 }
 
-void Controller::feed(const VelocityControl& message) {
+void Controller::feed(VelocityControl const& message) {
 }
 
-void Controller::feed(const PositionControl& message) {
+void Controller::feed(PositionControl const& message) {
 }
 
 void Controller::step() {

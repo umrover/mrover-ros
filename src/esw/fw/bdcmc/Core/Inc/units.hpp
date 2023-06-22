@@ -2,7 +2,7 @@
 
 #include <ratio>
 
-template<typename Rep, typename Period>
+template<typename Rep, typename Ratio>
 struct unit_t {
 public:
     unit_t(Rep value) : m_value{value} {}
