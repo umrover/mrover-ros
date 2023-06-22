@@ -1,11 +1,13 @@
 #pragma once
 
-#include "main.h"
 #include "messaging.hpp"
+#include "pidf.hpp"
+#include "units.hpp"
 
 class Controller {
 private:
     ControlMessage m_message;
+    PIDF<radians, volts, milliseconds> m_position_controller;
 
 public:
     void feed(ControlMessage const& message);

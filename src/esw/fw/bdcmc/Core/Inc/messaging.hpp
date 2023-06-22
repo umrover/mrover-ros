@@ -15,11 +15,11 @@ struct OpenLoop {
 };
 
 struct VelocityControl {
-    meters_per_second velocity;
+    units::velocity::meters_per_second velocity;
 };
 
 struct PositionControl {
-    meters position;
+    units::length::meter position;
 };
 
 using ControlMessage = std::variant<Idle, OpenLoop, VelocityControl, PositionControl>;

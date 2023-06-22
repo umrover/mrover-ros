@@ -1,8 +1,11 @@
 #include "controller.hpp"
 
+#include "main.h"
 #include "messaging.hpp"
 
 #include <optional>
+
+using namespace units::literals;
 
 //extern ADC_HandleTypeDef hadc1;
 extern FDCAN_HandleTypeDef hfdcan1;
@@ -49,6 +52,8 @@ void Controller::feed(VelocityControl const& message) {
 }
 
 void Controller::feed(PositionControl const& message) {
+    auto yo = units::make_unit<units::angle::radian_t>(100);
+    m_position_controller.calculate(yo, yo);
 }
 
 void Controller::step() {
