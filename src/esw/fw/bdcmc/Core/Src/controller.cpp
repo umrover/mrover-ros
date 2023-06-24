@@ -15,9 +15,10 @@ HAL_StatusTypeDef HAL_FDCAN_GetRxMessage(FDCAN_HandleTypeDef* hfdcan, uint32_t R
 }
 
 void init() {
-    if (HAL_FDCAN_ActivateNotification(&hfdcan1,
-                                       FDCAN_IT_RX_FIFO0_NEW_MESSAGE | FDCAN_IT_ERROR_PASSIVE | FDCAN_IT_ERROR_WARNING | FDCAN_IT_ARB_PROTOCOL_ERROR | FDCAN_IT_DATA_PROTOCOL_ERROR | FDCAN_IT_ERROR_LOGGING_OVERFLOW,
-                                       0) != HAL_OK) {
+    if (HAL_FDCAN_ActivateNotification(
+                &hfdcan1,
+                FDCAN_IT_RX_FIFO0_NEW_MESSAGE | FDCAN_IT_ERROR_PASSIVE | FDCAN_IT_ERROR_WARNING | FDCAN_IT_ARB_PROTOCOL_ERROR | FDCAN_IT_DATA_PROTOCOL_ERROR | FDCAN_IT_ERROR_LOGGING_OVERFLOW,
+                0) != HAL_OK) {
         Error_Handler();
     }
     if (HAL_FDCAN_Start(&hfdcan1) != HAL_OK) {

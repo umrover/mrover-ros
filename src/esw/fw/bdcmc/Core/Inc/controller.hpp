@@ -7,6 +7,10 @@
 template<typename TInput, typename TOutput, typename TTime>
 class Controller {
 private:
+    using Input = unit_t<TInput>;
+    using Output = unit_t<TOutput>;
+    using Time = unit_t<TTime>;
+
     struct PositionMode {
         PIDF<TInput, TOutput, TTime> pidf;
     };
@@ -19,6 +23,10 @@ private:
 
     Message m_command;
     Mode m_mode;
+
+    Input read_input() {
+        return {};
+    }
 
 public:
     std::monostate feed(IdleCommand const& message, std::monostate) {
@@ -34,6 +42,7 @@ public:
     }
 
     PositionMode feed(PositionCommand const& message, PositionMode mode) {
+        mode.pidf.calculate(read_input(), message.position);
         return mode;
     }
 

@@ -10,19 +10,23 @@ constexpr size_t FRAME_SIZE = 64;
 
 #define PACKED __attribute__((packed))
 
-struct IdleCommand {
-};
+struct BaseCommand {
+    uint8_t motor_id;
+} PACKED;
 
-struct ThrottleCommand {
+struct IdleCommand : BaseCommand {
+} PACKED;
+
+struct ThrottleCommand : BaseCommand {
     double throttle;
 } PACKED;
 
-struct VelocityCommand {
-    meters_per_second velocity;
+struct VelocityCommand : BaseCommand {
+    radians_per_second_t velocity;
 } PACKED;
 
-struct PositionCommand {
-    meter position;
+struct PositionCommand : BaseCommand {
+    radian_t position;
 } PACKED;
 
 struct StatusState {
