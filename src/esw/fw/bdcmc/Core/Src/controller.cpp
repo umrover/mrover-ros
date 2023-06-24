@@ -3,17 +3,11 @@
 #include "main.h"
 #include "messaging.hpp"
 
-#include <optional>
-
 using namespace units::literals;
 
-//extern ADC_HandleTypeDef hadc1;
 extern FDCAN_HandleTypeDef hfdcan1;
-extern TIM_HandleTypeDef htim1;
 
-constexpr size_t MAX_CONTROLLERS = 4;
-
-std::array<std::optional<Controller>, MAX_CONTROLLERS> controllers;
+Controller<radians, volts, milliseconds> controller;
 
 template<size_t N>
 HAL_StatusTypeDef HAL_FDCAN_GetRxMessage(FDCAN_HandleTypeDef* hfdcan, uint32_t RxLocation, FDCAN_RxHeaderTypeDef* pRxHeader, std::array<std::byte, N>& RxData) {
@@ -38,24 +32,6 @@ void loop() {
         if (HAL_FDCAN_GetRxMessage(&hfdcan1, FDCAN_RX_FIFO0, &header, frame.bytes)) {
             Error_Handler();
         }
+        controller.step(frame.message);
     }
-}
-
-void Controller::feed(ControlMessage const& message) {
-    m_message = message;
-}
-
-void Controller::feed(OpenLoop const& message) {
-}
-
-void Controller::feed(VelocityControl const& message) {
-}
-
-void Controller::feed(PositionControl const& message) {
-    auto yo = units::make_unit<units::angle::radian_t>(100);
-    m_position_controller.calculate(yo, yo);
-}
-
-void Controller::step() {
-    std::visit([&](auto const& arg) { feed(arg); }, m_message);
 }

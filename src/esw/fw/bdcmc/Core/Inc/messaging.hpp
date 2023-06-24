@@ -5,27 +5,35 @@
 
 #include "units.hpp"
 
+// CAN FD supports up to 64 bytes per frame
 constexpr size_t FRAME_SIZE = 64;
 
-struct Idle {
+#define PACKED __attribute__((packed))
+
+struct IdleCommand {
 };
 
-struct OpenLoop {
+struct ThrottleCommand {
     double throttle;
-};
+} PACKED;
 
-struct VelocityControl {
-    units::velocity::meters_per_second velocity;
-};
+struct VelocityCommand {
+    meters_per_second velocity;
+} PACKED;
 
-struct PositionControl {
-    units::length::meter position;
-};
+struct PositionCommand {
+    meter position;
+} PACKED;
 
-using ControlMessage = std::variant<Idle, OpenLoop, VelocityControl, PositionControl>;
-static_assert(sizeof(ControlMessage) <= FRAME_SIZE);
+struct StatusState {
+
+} PACKED;
+
+using Message = std::variant<
+        IdleCommand, ThrottleCommand, VelocityCommand, PositionCommand>;
+static_assert(sizeof(Message) <= FRAME_SIZE);
 
 union FdCanFrame {
-    ControlMessage message;
+    Message message;
     std::array<std::byte, FRAME_SIZE> bytes;
 };

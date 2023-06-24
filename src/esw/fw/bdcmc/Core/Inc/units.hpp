@@ -4671,3 +4671,4 @@ using namespace units::length;
 using namespace units::angular_velocity;
 using namespace units::velocity;
 using namespace units::math;
+using namespace units::frequency;
