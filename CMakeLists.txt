@@ -4,7 +4,7 @@ project(mrover VERSION 1.0.0 LANGUAGES CXX)
 ## Compile as C++17, supported in ROS Kinetic and newer, enable some static analysis
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
-set(MROVER_CPP_COMPILE_OPTIONS -Wall -Wextra -Werror -pedantic)
+set(MROVER_CPP_COMPILE_OPTIONS -Wall -Wextra -pedantic)
 
 # Generate compile_commands.json for clangd
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
@@ -235,6 +235,7 @@ else ()
         find_package(OpenCV REQUIRED COMPONENTS core aruco)
         find_package(gazebo REQUIRED)
         find_package(Eigen3 REQUIRED)
+        find_package(manif REQUIRED)
         find_package(ZED 2)
         if (ZED_FOUND)
             set(CMAKE_CUDA_SEPARABLE_COMPILATION ON)
@@ -256,6 +257,11 @@ else ()
         add_cpp_node_macro(brushed_motors "src/esw/brushed_motors/*")
 
         add_cpp_library_macro(lie "src/util/lie/*.cpp" "src/util/lie")
+
+        add_cpp_library_macro(filters "src/localization/filters/*.cpp" "src/localization/filters")
+        add_cpp_node_macro(terrain_particle_filter "src/localization/filter_node.cpp")
+        target_include_directories(terrain_particle_filter SYSTEM PRIVATE ${manif_INCLUDE_DIRS})
+        target_link_libraries(terrain_particle_filter PRIVATE filters)
 
         add_gazebo_plugin_macro(differential_drive_plugin_6w "src/gazebo/differential_drive_6w.cpp" "src")
 

@@ -90,6 +90,10 @@ class TerrainParticleFilter:
         # get a footprint sized neighborhood of points around the current pose
         min_x, min_y = pose[:2] - self.footprint_dims / 2
         max_x, max_y = pose[:2] + self.footprint_dims / 2
+        np.clip(min_x, -self.length / 2, self.length / 2)
+        np.clip(min_y, -self.width / 2, self.width / 2)
+        np.clip(max_x, -self.length / 2, self.length / 2)
+        np.clip(max_y, -self.width / 2, self.width / 2)
         max_i, min_j = self.position_to_map_idx(np.array([min_x, min_y]))
         min_i, max_j = self.position_to_map_idx(np.array([max_x, max_y]))
         # print(min_x, min_y, max_x, max_y)
@@ -104,7 +108,7 @@ class TerrainParticleFilter:
         
         # get third largest component
         v = eig_vecs[:, np.argsort(eig_vals)[-3]] 
-        self.plot_normal(neighborhood, v)
+        # self.plot_normal(neighborhood, v)
         return v
 
     def plot_normal(self, neighborhood: np.array, v: np.array) -> None:
@@ -119,11 +123,32 @@ class TerrainParticleFilter:
         ax = fig.add_subplot(projection="3d")
         ax.plot_surface(xx, yy, z, alpha=0.2)
         ax.scatter(points[:, 0], points[:, 1], points[:, 2], c=points[:, 2], marker="o", s=10)
+        # ax.plot([0, v[0]*0.2], [0, v[1]*0.2], [0, v[2]*0.2], "r-")
         print(v)
         ax.quiver(0, 0, 0, v[0], v[1], v[2], length=0.05, color="red")
         plt.show()
 
-    
+    def plot_normals(self):
+        fig = plt.figure()
+        ax = fig.add_subplot(projection="3d")
+        points = self.terrain_map.reshape(-1, 3)
+        ax.scatter(points[:, 0], points[:, 1], points[:, 2], c=points[:, 2], marker=".", s=0.1)
+        for i in range(self.terrain_map.shape[0]):
+            for j in range(self.terrain_map.shape[1]):
+                if i % 10 == 0 and j % 10 == 0:
+                    point = self.terrain_map[i, j]
+                    x, y, z = point
+                    try:
+                        v = self.get_surface_normal(self.terrain_map[i, j])
+                        plt.quiver(self.terrain_map[i, j, 0], self.terrain_map[i, j, 1], self.terrain_map[i, j, 2], v[0], v[1], v[2], length=0.2, color="red")
+                        d = -self.terrain_map[i,j].dot(v)
+                        xx, yy = np.meshgrid(np.linspace(x-1, x+1, 10), np.linspace(y-1, y+1, 10))
+                        zz = (-v[0] * xx - v[1] * yy - d) / v[2]
+                        ax.plot_surface(xx, yy, zz, alpha=0.2)
+                    except:
+                        print(f"Error at {i}, {j}")
+        plt.show()
+                    
     def init_particles(self, num_particles: int, initial_pose: np.array) -> np.array:
         """
         Initialize the particles with a gaussian distribution around the initial pose estimate.
@@ -195,6 +220,7 @@ class TerrainParticleFilterNode:
         header = Header()
         header.stamp = rospy.Time.now()
         header.frame_id = "map"
+        self.pf.plot_normals()
         i, j = self.pf.position_to_map_idx(self.pf.particles[0][:2])
         points = self.pf.terrain_map[i, j]
         points = self.pf.get_surface_normal(self.pf.particles[0])
