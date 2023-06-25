@@ -46,6 +46,6 @@ void loop() {
         if (HAL_FDCAN_GetRxMessage(&hfdcan1, FDCAN_RX_FIFO0, &header, frame.bytes)) {
             Error_Handler();
         }
-        controller.step(frame.message);
+        controller.update(frame.message);
     }
 }

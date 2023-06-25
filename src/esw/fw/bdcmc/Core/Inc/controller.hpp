@@ -58,33 +58,30 @@ private:
     struct command_to_mode;
 
     template<typename Command, typename ModeHead, typename... Modes>
-    struct command_to_mode<Command, std::variant<ModeHead, Modes...>> {
+    struct command_to_mode<Command, std::variant<ModeHead, Modes...>> { // Linear search to find corresponding mode
         using type = std::conditional_t<
                 requires(Controller controller, Command command, ModeHead mode) { controller.feed(command, mode); },
                 ModeHead,
-                typename command_to_mode<Command, std::variant<Modes...>>::type>;
+                typename command_to_mode<Command, std::variant<Modes...>>::type>; // Recursive call
     };
 
-    template<typename Command>
+    template<typename Command> // Base case
     struct command_to_mode<Command, std::variant<>> {
         using type = std::monostate;
     };
 
-    void feed(Message const& message) {
-        std::visit(
-                [&](auto const& command) {
-                    // Find the feed function that has the right type for the command
-                    using ModeForCommand = command_to_mode<decltype(command), Mode>::type;
-                    // If the current mode is not the mode that the feed function expects, change the mode, providing a new blank mode
-                    if (!std::holds_alternative<ModeForCommand>(m_mode))
-                        m_mode.template emplace<ModeForCommand>();
-                    feed(command, std::get<ModeForCommand>(m_mode));
-                },
-                message);
+public:
+    template<typename Command>
+    void update(Command const& command) {
+        // Find the feed function that has the right type for the command
+        using ModeForCommand = command_to_mode<Command, Mode>::type;
+        // If the current mode is not the mode that the feed function expects, change the mode, providing a new blank mode
+        if (!std::holds_alternative<ModeForCommand>(m_mode))
+            m_mode.template emplace<ModeForCommand>();
+        feed(command, std::get<ModeForCommand>(m_mode));
     }
 
-public:
-    void step(Message const& message) {
-        feed(message);
+    void update(Message const& message) {
+        std::visit([&](auto const& command) { update(command); }, message);
     }
 };
