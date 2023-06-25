@@ -7,7 +7,20 @@ using namespace units::literals;
 
 extern FDCAN_HandleTypeDef hfdcan1;
 
-Controller<radians, volts, milliseconds> controller;
+struct EncoderReader {
+    TIM_HandleTypeDef* htim;
+
+    [[nodiscard]] radians read_input() {
+        return {};
+    }
+};
+
+struct BrushedMotorWriter {
+    void write_output(volts output) {
+    }
+};
+
+Controller<radians, volts, EncoderReader, BrushedMotorWriter> controller;
 
 template<size_t N>
 HAL_StatusTypeDef HAL_FDCAN_GetRxMessage(FDCAN_HandleTypeDef* hfdcan, uint32_t RxLocation, FDCAN_RxHeaderTypeDef* pRxHeader, std::array<std::byte, N>& RxData) {

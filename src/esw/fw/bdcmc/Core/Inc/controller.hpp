@@ -1,10 +1,26 @@
 #pragma once
 
+#include <concepts>
+#include <optional>
+#include <variant>
+
 #include "messaging.hpp"
 #include "pidf.hpp"
 #include "units.hpp"
 
-template<typename TInput, typename TOutput, typename TTime>
+template<typename T, typename TInput>
+concept InputReader = requires(T t) {
+    { t.read_input() } -> std::convertible_to<TInput>;
+};
+
+template<typename T, typename TOutput>
+concept OutputWriter = requires(T t, TOutput output) {
+    { t.write_output(output) };
+};
+
+template<typename TInput, typename TOutput,
+         InputReader<TInput> Reader, OutputWriter<TOutput> Writer,
+         typename TTime = seconds>
 class Controller {
 private:
     using Input = unit_t<TInput>;
@@ -21,12 +37,10 @@ private:
 
     using Mode = std::variant<std::monostate, PositionMode, VelocityMode>;
 
+    Reader m_reader;
+    Writer m_writer;
     Message m_command;
     Mode m_mode;
-
-    Input read_input() {
-        return {};
-    }
 
 public:
     std::monostate feed(IdleCommand const& message, std::monostate) {
@@ -42,12 +56,11 @@ public:
     }
 
     PositionMode feed(PositionCommand const& message, PositionMode mode) {
-        mode.pidf.calculate(read_input(), message.position);
         return mode;
     }
 
     void feed(Message const& message) {
-        std::visit(
+        m_mode = std::visit(
                 [&](auto const& command) {
                     // TODO: see if we can have void return type on feed's and take const reference for second argument
                     // Find the feed function that has the right type for the command
@@ -55,14 +68,12 @@ public:
                     // If the current mode is not the mode that the feed function expects, change the mode, providing a new blank mode
                     if (!std::holds_alternative<ModeForCommand>(m_mode))
                         m_mode.template emplace<ModeForCommand>();
-                    feed(command, std::get<ModeForCommand>(m_mode));
+                    return feed(command, std::get<ModeForCommand>(m_mode));
                 },
                 message);
     }
 
-    void step(std::optional<Message> const& message) {
-        if (message) {
-            feed(message.value());
-        }
+    void step(Message const& message) {
+        feed(message);
     }
 };

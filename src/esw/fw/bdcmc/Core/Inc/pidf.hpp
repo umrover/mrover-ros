@@ -20,7 +20,7 @@
  * @tparam TOutput  Unit of output, usually a motor command (for example voltage for a motor)
  * @tparam TTime    Unit of time
  */
-template<typename TInput, typename TOutput, typename TTime>
+template<typename TInput, typename TOutput, typename TTime = seconds>
 struct PIDF {
 private:
     using Input = unit_t<TInput>;
