@@ -259,7 +259,7 @@ else ()
         add_cpp_library_macro(lie "src/util/lie/*.cpp" "src/util/lie")
 
         add_cpp_library_macro(filters "src/localization/filters/*.cpp" "src/localization/filters")
-        add_cpp_node_macro(terrain_particle_filter "src/localization/filter_node.cpp")
+        add_cpp_node_macro(terrain_particle_filter "src/localization/*")
         target_include_directories(terrain_particle_filter SYSTEM PRIVATE ${manif_INCLUDE_DIRS})
         target_link_libraries(terrain_particle_filter PRIVATE filters)
 

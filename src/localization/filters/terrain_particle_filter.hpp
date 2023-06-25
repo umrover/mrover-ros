@@ -1,6 +1,7 @@
 #include <manif/impl/se2/SE2.h>
 #include <manif/manif.h>
 #include <Eigen/Geometry>
+#include <random>
 
 class TerrainParticleFilter {
 private:
@@ -9,19 +10,22 @@ private:
     // TODO: do this better
     std::vector<manif::SE2d> mParticles;
     std::vector<double> mParticleWeights;
-    double mSigmaX, mSigmaTheta;
+    manif::SE2d mPoseEstimate;
+    std::normal_distribution<double> mXDist, mThetaDist;
+    std::default_random_engine mRNG;
     double mFootprintX, mFootprintY;
 
-    // TODO: add const and no discard
-    void load_terrain_cloud(std::string const& filename);
-    void init_particles(manif::SE2d const& initialPose);
-    Eigen::Vector3d get_surface_normal(manif::SE2d const& pose);
+    void load_terrain_cloud(const std::string& filename);
+    [[nodiscard]] const Eigen::Vector3d get_surface_normal(const manif::SE2d& pose) const;
 
 public:
-    TerrainParticleFilter(std::string const& terrainFilename, double sigmaX, double sigmaTheta, double footprintX, double footprintY);   
-    void init(manif::SE2d const& initialPose);
+    TerrainParticleFilter(const std::string& terrainFilename, double sigmaX, double sigmaTheta, double footprintX, double footprintY);   
+    void init_particles(const manif::SE2d& initialPose, int numParticles);
 
     // TODO: add overloads for odometry and IMU pose
-    void predict(Eigen::Vector3d const& velCmd, double dt);
-    void update(Eigen::Vector3d const& accelMeasurement);
+    void predict(const Eigen::Vector3d& velCmd, double dt);
+    void update(const Eigen::Vector3d& accelMeasurement);
+
+    [[nodiscard]] const manif::SE2d& get_pose_estimate() const;
+    [[nodiscard]] const std::vector<manif::SE2d>& get_particles() const;
 };
