@@ -73,19 +73,19 @@ namespace mrover {
         using kelvin_exp_t = KelvinExp;
         using byte_exp_t = ByteExp;
 
-        constexpr static double conversion = static_cast<double>(conversion_t::num) / conversion_t::den;
+        constexpr static double CONVERSION = static_cast<double>(conversion_t::num) / conversion_t::den;
 
         // Stores the SI base unit value, NOT the transformed unit value based on the conversion ratio
         double rep;
 
         [[nodiscard]] constexpr auto get() const -> double {
-            return rep / conversion;
+            return rep / CONVERSION;
         }
     };
 
     template<Unitable U>
     inline constexpr auto make_unit(Scalar auto const& value) -> U {
-        return {static_cast<double>(value) * U::conversion};
+        return {static_cast<double>(value) * U::CONVERSION};
     }
 
     using dimensionless_t = Unit<>;

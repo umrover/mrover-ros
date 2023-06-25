@@ -20,30 +20,30 @@ namespace mrover {
      * @tparam TOutput  Unit of output, usually a motor command (for example voltage for a motor)
      * @tparam TTime    Unit of time
      */
-    template<Unitable Input, Unitable Output, Unitable Time = Seconds>
+    template<Unitable InputUnit, Unitable OutputUnit, Unitable TimeUnit = Seconds>
     struct PIDF {
     private:
-        using TotalError = compound_unit<Input, Time>;
+        using TotalError = compound_unit<InputUnit, TimeUnit>;
         // Settings
-        compound_unit<Output, inverse<Input>> m_p{};
-        compound_unit<Output, inverse<Input>, inverse<Time>> m_i{};
-        compound_unit<Output, inverse<compound_unit<Input, inverse<Time>>>> m_d{};
-        compound_unit<Output, inverse<Input>> m_f{};
-        Input m_dead_band{};
-        std::pair<Output, Output> m_output_bound{};
-        std::optional<std::pair<Input, Input>> m_input_bound;
+        compound_unit<OutputUnit, inverse<InputUnit>> m_p{};
+        compound_unit<OutputUnit, inverse<InputUnit>, inverse<TimeUnit>> m_i{};
+        compound_unit<OutputUnit, inverse<compound_unit<InputUnit, inverse<TimeUnit>>>> m_d{};
+        compound_unit<OutputUnit, inverse<InputUnit>> m_f{};
+        InputUnit m_dead_band{};
+        std::pair<OutputUnit, OutputUnit> m_output_bound{};
+        std::optional<std::pair<InputUnit, InputUnit>> m_input_bound;
         // State
         TotalError m_total_error{};
-        Input m_last_error{};
-        Time m_last_time{};
+        InputUnit m_last_error{};
+        TimeUnit m_last_time{};
 
-        auto calculate(Input input, Input target, Time dt) -> Output {
-            Input error = target - input;
+        auto calculate(InputUnit input, InputUnit target, TimeUnit dt) -> OutputUnit {
+            InputUnit error = target - input;
 
             if (m_input_bound) {
                 auto [in_min, in_max] = m_input_bound.value();
                 if (abs(error) > (in_max - in_min) / 2) {
-                    if (error > Input{}) {
+                    if (error > InputUnit{}) {
                         error -= in_max - in_min;
                     } else {
                         error += in_max - in_min;
@@ -58,8 +58,8 @@ namespace mrover {
                 m_total_error = TotalError{};
             }
 
-            Input error_for_p = abs(error) < m_dead_band ? Input{} : error;
-            Output result = m_p * error_for_p + m_i * m_total_error + m_d * (error - m_last_error) / dt + m_f * target;
+            InputUnit error_for_p = abs(error) < m_dead_band ? InputUnit{} : error;
+            OutputUnit result = m_p * error_for_p + m_i * m_total_error + m_d * (error - m_last_error) / dt + m_f * target;
             m_last_error = error;
 
             return clamp(result, out_min, out_max);
@@ -73,11 +73,11 @@ namespace mrover {
          * @param target    Desired final value
          * @return          Output value to control the input to move to the target
          */
-        auto calculate(Input input, Input target) -> Output {
+        auto calculate(InputUnit input, InputUnit target) -> OutputUnit {
             double current_ticks = HAL_GetTick();
             auto tick_frequency = make_unit<Hertz>(HAL_GetTickFreq());
-            Time now = current_ticks / tick_frequency;
-            Time dt = now - m_last_time;
+            TimeUnit now = current_ticks / tick_frequency;
+            TimeUnit dt = now - m_last_time;
             m_last_time = now;
             return calculate(input, target, now);
             return {};
@@ -103,12 +103,12 @@ namespace mrover {
             return *this;
         }
 
-        auto with_dead_band(Input dead_band) -> PIDF& {
+        auto with_dead_band(InputUnit dead_band) -> PIDF& {
             m_dead_band = dead_band;
             return *this;
         }
 
-        auto with_input_bound(Input min, Input max) -> PIDF& {
+        auto with_input_bound(InputUnit min, InputUnit max) -> PIDF& {
             m_input_bound = {min, max};
             return *this;
         }

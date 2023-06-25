@@ -10,27 +10,27 @@
 
 namespace mrover {
 
-    template<typename T, typename TInput>
+    template<typename T, typename Input>
     concept InputReader = requires(T t) {
-        { t.read_input() } -> std::convertible_to<TInput>;
+        { t.read_input() } -> std::convertible_to<Input>;
     };
 
-    template<typename T, typename TOutput>
-    concept OutputWriter = requires(T t, TOutput output) {
+    template<typename T, typename Output>
+    concept OutputWriter = requires(T t, Output output) {
         { t.write_output(output) };
     };
 
-    template<Unitable Input, Unitable Output,
-             InputReader<Input> Reader, OutputWriter<Output> Writer,
-             Unitable Time = Seconds>
+    template<Unitable InputUnit, Unitable OutputUnit,
+             InputReader<InputUnit> Reader, OutputWriter<OutputUnit> Writer,
+             Unitable TimeUnit = Seconds>
     class Controller {
     private:
         struct PositionMode {
-            PIDF<Input, Output, Time> pidf;
+            PIDF<InputUnit, OutputUnit, TimeUnit> pidf;
         };
 
         struct VelocityMode {
-            PIDF<compound_unit<Input, inverse<Time>>, Output, Time> pidf;
+            PIDF<compound_unit<InputUnit, inverse<TimeUnit>>, OutputUnit, TimeUnit> pidf;
         };
 
         using Mode = std::variant<std::monostate, PositionMode, VelocityMode>;
@@ -44,14 +44,14 @@ namespace mrover {
         }
 
         void feed(ThrottleCommand const& message) {
-//            m_writer.write_output(message.throttle);
+            m_writer.write_output(make_unit<OutputUnit>(message.throttle.get()));
         }
 
         void feed(VelocityCommand const& message, VelocityMode mode) {
         }
 
         void feed(PositionCommand const& message, PositionMode mode) {
-            mode.pidf.calculate(Input{}, Input{});
+            mode.pidf.calculate(InputUnit{}, InputUnit{});
         }
 
         struct detail {
