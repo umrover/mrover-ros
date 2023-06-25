@@ -4,6 +4,7 @@
 #include <cmath>
 #include <concepts>
 #include <ratio>
+#include <type_traits>
 
 namespace mrover {
 
@@ -62,7 +63,7 @@ namespace mrover {
              Ratioable KelvinExp = zero_exp_t,
              Ratioable ByteExp = zero_exp_t>
         requires(Conversion::num != 0 && Conversion::den != 0)
-    struct unit {
+    struct Unit {
         using conversion_t = Conversion;
         using meter_exp_t = MeterExp;
         using kilogram_exp_t = KilogramExp;
@@ -77,19 +78,17 @@ namespace mrover {
         // Stores the SI base unit value, NOT the transformed unit value based on the conversion ratio
         double rep;
 
-        constexpr static unit ZERO{};
-
-        [[nodiscard]] constexpr double get() const {
+        [[nodiscard]] constexpr auto get() const -> double {
             return rep / conversion;
         }
     };
 
-    template<Unitable U, Scalar S>
-    inline constexpr auto make_unit(S value) {
-        return U{static_cast<double>(value) * U::conversion};
+    template<Unitable U>
+    inline constexpr auto make_unit(Scalar auto const& value) -> U {
+        return {static_cast<double>(value) * U::conversion};
     }
 
-    using dimensionless_t = unit<>;
+    using dimensionless_t = Unit<>;
 
     //
     //  Static Operations
@@ -100,7 +99,7 @@ namespace mrover {
         template<Unitable U>
         struct inverse {
             using inverse_ratio_t = std::ratio<-1>;
-            using type = unit<
+            using type = Unit<
                     std::ratio<U::conversion_t::den, U::conversion_t::num>, // inverse ratio
                     std::ratio_multiply<typename U::meter_exp_t, inverse_ratio_t>,
                     std::ratio_multiply<typename U::kilogram_exp_t, inverse_ratio_t>,
@@ -113,7 +112,7 @@ namespace mrover {
 
         template<Unitable U1, Unitable U2>
         struct unit_multiply {
-            using type = unit<
+            using type = Unit<
                     std::ratio_multiply<typename U1::conversion_t, typename U2::conversion_t>,
                     std::ratio_add<typename U1::meter_exp_t, typename U2::meter_exp_t>,
                     std::ratio_add<typename U1::kilogram_exp_t, typename U2::kilogram_exp_t>,
@@ -152,84 +151,68 @@ namespace mrover {
     //  Runtime Operations
     //
 
-    template<Scalar N, Unitable U>
-    inline constexpr auto operator*(const N& n, const U& u) {
-        return U{static_cast<double>(n) * u.rep};
+    inline constexpr auto operator*(Scalar auto const& n, Unitable auto const& u) -> std::remove_cvref_t<decltype(u)> {
+        return {static_cast<double>(n) * u.rep};
     }
 
-    template<Unitable U, Scalar N>
-    inline constexpr auto operator*(const U& u, const N& n) {
-        return U{u.rep * static_cast<double>(n)};
+    inline constexpr auto operator*(Unitable auto const& u, Scalar auto const& n) -> std::remove_cvref_t<decltype(u)> {
+        return {u.rep * static_cast<double>(n)};
     }
 
-    template<Unitable U1, Unitable U2>
-    inline constexpr auto operator*(const U1& u1, const U2& u2) {
-        return multiply<U1, U2>{u1.rep * u2.rep};
+    inline constexpr auto operator*(Unitable auto const& u1, Unitable auto const& u2) -> multiply<std::remove_cvref_t<decltype(u1)>, std::remove_cvref_t<decltype(u2)>> {
+        return {u1.rep * u2.rep};
     }
 
-    template<Unitable U, Scalar N>
-    inline constexpr auto operator*=(U& u, const N& n) {
+    inline constexpr auto operator*=(Unitable auto& u, Scalar auto const& n) {
         return u = u * static_cast<double>(n);
     }
 
-    template<Unitable U, Scalar N>
-    inline constexpr auto operator/(const U& u, const N& n) {
-        return U{u.rep / static_cast<double>(n)};
+    inline constexpr auto operator/(Unitable auto const& u, Scalar auto const& n) -> std::remove_cvref_t<decltype(u)> {
+        return {u.rep / static_cast<double>(n)};
     }
 
-    template<Scalar N, Unitable U>
-    inline constexpr auto operator/(const N& n, const U& u) {
-        return inverse<U>{static_cast<double>(n) / u.rep};
+    inline constexpr auto operator/(Scalar auto const& n, Unitable auto const& u) -> inverse<std::remove_cvref_t<decltype(u)>> {
+        return {static_cast<double>(n) / u.rep};
     }
 
-    template<Unitable U1, Unitable U2>
-    inline constexpr auto operator/(const U1& u1, const U2& u2) {
-        return multiply<U1, inverse<U2>>{u1.rep / u2.rep};
+    inline constexpr auto operator/(Unitable auto const& u1, Unitable auto const& u2) -> multiply<std::remove_cvref_t<decltype(u1)>, inverse<std::remove_cvref_t<decltype(u2)>>> {
+        return {u1.rep / u2.rep};
     }
 
-    template<Unitable U, Scalar N>
-    inline constexpr auto operator/=(U& u, const N& n) {
+    inline constexpr auto operator/=(Unitable auto& u, Scalar auto const& n) {
         return u = u / static_cast<double>(n);
     }
 
-    template<Unitable U>
-    inline constexpr auto operator-(const U& u) {
-        return U{-u.rep};
+    inline constexpr auto operator-(Unitable auto const& u) -> std::remove_cvref_t<decltype(u)> {
+        return {-u.rep};
     }
 
-    template<Unitable U1, Unitable U2>
-    inline constexpr auto operator+(const U1& u1, const U2& u2) {
-        return U1{u1.rep + u2.rep};
+    inline constexpr auto operator+(Unitable auto const& u1, Unitable auto const& u2) -> std::remove_cvref_t<decltype(u1)> {
+        return {u1.rep + u2.rep};
     }
 
-    template<Unitable U1, Unitable U2>
-    inline constexpr auto operator-(const U1& u1, const U2& u2) {
-        return U1{u1.rep - u2.rep};
+    inline constexpr auto operator-(Unitable auto const& u1, Unitable auto const& u2) -> std::remove_cvref_t<decltype(u1)> {
+        return {u1.rep - u2.rep};
     }
 
-    template<Unitable U1, Unitable U2>
-    inline constexpr auto operator+=(U1& u1, const U2& u2) {
+    inline constexpr auto operator+=(Unitable auto& u1, Unitable auto const& u2) {
         return u1 = u1 + u2;
     }
 
-    template<Unitable U1, Unitable U2>
-    inline constexpr auto operator-=(U1& u1, const U2& u2) {
+    inline constexpr auto operator-=(Unitable auto& u1, Unitable auto const& u2) {
         return u1 = u1 - u2;
     }
 
-    template<Unitable U1, Unitable U2>
-    inline constexpr auto operator<=>(const U1& u1, const U2& u2) {
+    inline constexpr auto operator<=>(Unitable auto const& u1, Unitable auto const& u2) {
         return u1.rep <=> u2.rep;
     }
 
-    template<Unitable U>
-    inline constexpr auto abs(const U& u) {
-        return U{std::fabs(u.rep)};
+    inline constexpr auto abs(Unitable auto const& u) -> std::remove_cvref_t<decltype(u)> {
+        return {std::fabs(u.rep)};
     }
 
-    template<Unitable U>
-    inline constexpr auto clamp(const U& u, const U& min, const U& max) {
-        return U{std::clamp(u.rep, min.rep, max.rep)};
+    inline constexpr auto clamp(Unitable auto const& u, Unitable auto const& min, Unitable auto const& max) -> std::remove_cvref_t<decltype(u)> {
+        return {std::clamp(u.rep, min.rep, max.rep)};
     }
 
     //
@@ -237,18 +220,18 @@ namespace mrover {
     //
 
     // Conversion, Meter, Kilogram, Second, Radian, Ampere, Kelvin, Byte
-    using Meters = unit<std::ratio<1>, std::ratio<1>>;
-    using Centimeters = unit<std::centi, std::ratio<1>>;
-    using Millimeters = unit<std::milli, std::ratio<1>>;
-    using Seconds = unit<std::ratio<1>, zero_exp_t, zero_exp_t, std::ratio<1>>;
+    using Meters = Unit<std::ratio<1>, std::ratio<1>>;
+    using Centimeters = Unit<std::centi, std::ratio<1>>;
+    using Millimeters = Unit<std::milli, std::ratio<1>>;
+    using Seconds = Unit<std::ratio<1>, zero_exp_t, zero_exp_t, std::ratio<1>>;
     using Hertz = inverse<Seconds>;
-    using Minutes = unit<std::ratio<60>, zero_exp_t, zero_exp_t, std::ratio<1>>;
-    using Hours = unit<std::ratio<3600>, zero_exp_t, zero_exp_t, std::ratio<1>>;
-    using Milliseconds = unit<std::milli, zero_exp_t, zero_exp_t, std::ratio<1>>;
-    using Microseconds = unit<std::micro, zero_exp_t, zero_exp_t, std::ratio<1>>;
-    using Nanoseconds = unit<std::nano, zero_exp_t, zero_exp_t, std::ratio<1>>;
-    using Radians = unit<std::ratio<1>, zero_exp_t, zero_exp_t, zero_exp_t, std::ratio<1>>;
+    using Minutes = Unit<std::ratio<60>, zero_exp_t, zero_exp_t, std::ratio<1>>;
+    using Hours = Unit<std::ratio<3600>, zero_exp_t, zero_exp_t, std::ratio<1>>;
+    using Milliseconds = Unit<std::milli, zero_exp_t, zero_exp_t, std::ratio<1>>;
+    using Microseconds = Unit<std::micro, zero_exp_t, zero_exp_t, std::ratio<1>>;
+    using Nanoseconds = Unit<std::nano, zero_exp_t, zero_exp_t, std::ratio<1>>;
+    using Radians = Unit<std::ratio<1>, zero_exp_t, zero_exp_t, zero_exp_t, std::ratio<1>>;
     using RadiansPerSecond = compound_unit<Radians, inverse<Seconds>>;
-    using Volts = unit<std::ratio<1>, std::ratio<2>, std::ratio<1>, std::ratio<-3>, zero_exp_t, std::ratio<-1>, zero_exp_t>;
+    using Volts = Unit<std::ratio<1>, std::ratio<2>, std::ratio<1>, std::ratio<-3>, zero_exp_t, std::ratio<-1>, zero_exp_t>;
 
 } // namespace mrover

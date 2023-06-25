@@ -44,6 +44,7 @@ namespace mrover {
         }
 
         void feed(ThrottleCommand const& message) {
+//            m_writer.write_output(message.throttle);
         }
 
         void feed(VelocityCommand const& message, VelocityMode mode) {

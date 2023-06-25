@@ -37,13 +37,13 @@ namespace mrover {
         Input m_last_error{};
         Time m_last_time{};
 
-        Output calculate(Input input, Input target, Time dt) {
+        auto calculate(Input input, Input target, Time dt) -> Output {
             Input error = target - input;
 
             if (m_input_bound) {
                 auto [in_min, in_max] = m_input_bound.value();
                 if (abs(error) > (in_max - in_min) / 2) {
-                    if (error > Input::ZERO) {
+                    if (error > Input{}) {
                         error -= in_max - in_min;
                     } else {
                         error += in_max - in_min;
@@ -55,10 +55,10 @@ namespace mrover {
             if (out_min < error * m_p && error * m_p < out_max) {
                 m_total_error += error * dt;
             } else {
-                m_total_error = TotalError::ZERO;
+                m_total_error = TotalError{};
             }
 
-            Input error_for_p = abs(error) < m_dead_band ? Input::ZERO : error;
+            Input error_for_p = abs(error) < m_dead_band ? Input{} : error;
             Output result = m_p * error_for_p + m_i * m_total_error + m_d * (error - m_last_error) / dt + m_f * target;
             m_last_error = error;
 
@@ -73,46 +73,47 @@ namespace mrover {
          * @param target    Desired final value
          * @return          Output value to control the input to move to the target
          */
-        Output calculate(Input input, Input target) {
+        auto calculate(Input input, Input target) -> Output {
             double current_ticks = HAL_GetTick();
             auto tick_frequency = make_unit<Hertz>(HAL_GetTickFreq());
             Time now = current_ticks / tick_frequency;
             Time dt = now - m_last_time;
             m_last_time = now;
             return calculate(input, target, now);
+            return {};
         }
 
-        PIDF& with_p(double p) {
+        auto with_p(double p) -> PIDF& {
             m_p = p;
             return *this;
         }
 
-        PIDF& with_i(double i) {
+        auto with_i(double i) -> PIDF& {
             m_i = i;
             return *this;
         }
 
-        PIDF& with_d(double d) {
+        auto with_d(double d) -> PIDF& {
             m_d = d;
             return *this;
         }
 
-        PIDF& with_f(double f) {
+        auto with_f(double f) -> PIDF& {
             m_f = f;
             return *this;
         }
 
-        PIDF& with_dead_band(Input dead_band) {
+        auto with_dead_band(Input dead_band) -> PIDF& {
             m_dead_band = dead_band;
             return *this;
         }
 
-        PIDF& with_input_bound(Input min, Input max) {
+        auto with_input_bound(Input min, Input max) -> PIDF& {
             m_input_bound = {min, max};
             return *this;
         }
 
-        PIDF& with_output_bound(double min, double max) {
+        auto with_output_bound(double min, double max) -> PIDF& {
             m_output_bound = {min, max};
             return *this;
         }

@@ -21,7 +21,7 @@ namespace mrover {
     } PACKED;
 
     struct ThrottleCommand : BaseCommand {
-        double throttle;
+        dimensionless_t throttle;
     } PACKED;
 
     struct VelocityCommand : BaseCommand {
