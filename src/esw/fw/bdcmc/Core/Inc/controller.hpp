@@ -68,7 +68,7 @@ public:
                     // If the current mode is not the mode that the feed function expects, change the mode, providing a new blank mode
                     if (!std::holds_alternative<ModeForCommand>(m_mode))
                         m_mode.template emplace<ModeForCommand>();
-                    return feed(command, std::get<ModeForCommand>(m_mode));
+                    return Mode{feed(command, std::get<ModeForCommand>(m_mode))};
                 },
                 message);
     }
