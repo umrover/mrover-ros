@@ -5,39 +5,44 @@
 
 #include "units.hpp"
 
-// CAN FD supports up to 64 bytes per frame
-constexpr size_t FRAME_SIZE = 64;
+
+namespace mrover {
+
+    // CAN FD supports up to 64 bytes per frame
+    constexpr size_t FRAME_SIZE = 64;
 
 #define PACKED __attribute__((packed))
 
-struct BaseCommand {
-    uint8_t motor_id;
-} PACKED;
+    struct BaseCommand {
+        uint8_t motor_id;
+    } PACKED;
 
-struct IdleCommand : BaseCommand {
-} PACKED;
+    struct IdleCommand : BaseCommand {
+    } PACKED;
 
-struct ThrottleCommand : BaseCommand {
-    double throttle;
-} PACKED;
+    struct ThrottleCommand : BaseCommand {
+        double throttle;
+    } PACKED;
 
-struct VelocityCommand : BaseCommand {
-    radians_per_second_t velocity;
-} PACKED;
+    struct VelocityCommand : BaseCommand {
+        RadiansPerSecond velocity;
+    } PACKED;
 
-struct PositionCommand : BaseCommand {
-    radian_t position;
-} PACKED;
+    struct PositionCommand : BaseCommand {
+        Radians position;
+    } PACKED;
 
-struct StatusState {
+    struct StatusState {
 
-} PACKED;
+    } PACKED;
 
-using Message = std::variant<
-        IdleCommand, ThrottleCommand, VelocityCommand, PositionCommand>;
-static_assert(sizeof(Message) <= FRAME_SIZE);
+    using Message = std::variant<
+            IdleCommand, ThrottleCommand, VelocityCommand, PositionCommand>;
+    static_assert(sizeof(Message) <= FRAME_SIZE);
 
-union FdCanFrame {
-    Message message;
-    std::array<std::byte, FRAME_SIZE> bytes;
-};
+    union FdCanFrame {
+        Message message;
+        std::array<std::byte, FRAME_SIZE> bytes;
+    };
+
+} // namespace mrover

@@ -3,24 +3,26 @@
 #include "main.h"
 #include "messaging.hpp"
 
-using namespace units::literals;
-
 extern FDCAN_HandleTypeDef hfdcan1;
 
-struct EncoderReader {
-    TIM_HandleTypeDef* htim;
+namespace mrover {
 
-    [[nodiscard]] radians read_input() {
-        return {};
-    }
-};
+    struct EncoderReader {
+        TIM_HandleTypeDef* htim;
 
-struct BrushedMotorWriter {
-    void write_output(volts output) {
-    }
-};
+        [[nodiscard]] Radians read_input() {
+            return {};
+        }
+    };
 
-Controller<radians, volts, EncoderReader, BrushedMotorWriter> controller;
+    struct BrushedMotorWriter {
+        void write_output(Volts output) {
+        }
+    };
+
+    Controller<Radians, Volts, EncoderReader, BrushedMotorWriter> controller;
+
+} // namespace mrover
 
 template<size_t N>
 HAL_StatusTypeDef HAL_FDCAN_GetRxMessage(FDCAN_HandleTypeDef* hfdcan, uint32_t RxLocation, FDCAN_RxHeaderTypeDef* pRxHeader, std::array<std::byte, N>& RxData) {
@@ -42,10 +44,10 @@ void init() {
 void loop() {
     if (HAL_FDCAN_GetRxFifoFillLevel(&hfdcan1, FDCAN_RX_FIFO0)) {
         FDCAN_RxHeaderTypeDef header;
-        FdCanFrame frame{};
+        mrover::FdCanFrame frame{};
         if (HAL_FDCAN_GetRxMessage(&hfdcan1, FDCAN_RX_FIFO0, &header, frame.bytes)) {
             Error_Handler();
         }
-        controller.update(frame.message);
+        mrover::controller.update(frame.message);
     }
 }
