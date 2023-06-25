@@ -14,7 +14,7 @@ class FilterNode {
 private:
     ros::NodeHandle mNh;
     ros::Publisher mPosePub;
-    ros::Subscriber mGroundTruthSub, mCmdVelSub;
+    ros::Subscriber mGroundTruthSub, mVelCmdSub;
     TerrainParticleFilter mFilter;
     std::chrono::time_point<std::chrono::system_clock> mLastTime;
     bool mInitialized = false;
@@ -36,7 +36,7 @@ private:
 
     void cmd_vel_callback(const geometry_msgs::Twist& msg) {
         if (!mInitialized) return;
-        std::cout << "Predicting" << std::endl;
+        // std::cout << "Predicting" << std::endl;
         Eigen::Vector3d velCmd(msg.linear.x, msg.linear.y, msg.angular.z);
         auto now = std::chrono::system_clock::now();
         double dt = std::chrono::duration<double>(now - mLastTime).count();
@@ -45,10 +45,11 @@ private:
 
     void publish_pose() {
         if (!mInitialized) return;
-        std::cout << "Publishing pose" << std::endl;
         auto pose = mFilter.get_pose_estimate();
+        std::cout << "Publishing pose: " << pose.x() << ", " << pose.y() << ", " << pose.angle() << std::endl;
         geometry_msgs::PoseStamped msg;
         msg.header.stamp = ros::Time::now();
+        msg.header.frame_id = "map";
         msg.pose.position.x = pose.x();
         msg.pose.position.y = pose.y();
 
@@ -59,12 +60,12 @@ private:
     }
 
 public:
-    FilterNode() : mFilter("terrain.pcd", 0.1, 0.1, 0.1, 0.1) {
+    FilterNode() : mFilter("terrain.pcd", 0, 0, 0.1, 0.1) {
         std::cout << "FilterNode constructor" << std::endl;
         mNumParticles = 1;
         mPosePub = mNh.advertise<geometry_msgs::PoseStamped>("pf_pose", 1);
-        ros::Subscriber mGroundTruthSub = mNh.subscribe("ground_truth", 1, &FilterNode::ground_truth_callback, this);
-        ros::Subscriber mVelCmdSub = mNh.subscribe("cmd_vel", 1, &FilterNode::cmd_vel_callback, this);
+        mGroundTruthSub = mNh.subscribe("ground_truth", 1, &FilterNode::ground_truth_callback, this);
+        mVelCmdSub = mNh.subscribe("cmd_vel", 1, &FilterNode::cmd_vel_callback, this);
         // ros::Subscriber mVelCmdSub = mNh.subscribe("cmd_vel", 1, &[](const geometry_msgs::Twist& msg) {
         //     std::cout << "cmd_vel callback" << std::endl;
         // });
@@ -74,7 +75,7 @@ public:
     void spin() {
         ros::Rate rate(10);
         while (ros::ok()) {
-            std::cout << "Spinning" << std::endl;
+            // std::cout << "Spinning" << std::endl;
             ros::spinOnce();
             publish_pose();
             rate.sleep();
