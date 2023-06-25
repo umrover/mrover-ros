@@ -51,7 +51,10 @@ namespace mrover {
         }
 
         void feed(PositionCommand const& message, PositionMode mode) {
-            mode.pidf.calculate(InputUnit{}, InputUnit{});
+            InputUnit input = m_reader.read_input();
+            InputUnit target = message.position;
+            OutputUnit output = mode.pidf.calculate(input, target);
+            m_writer.write_output(output);
         }
 
         struct detail {
