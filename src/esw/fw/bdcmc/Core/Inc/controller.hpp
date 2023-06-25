@@ -42,37 +42,48 @@ private:
     Message m_command;
     Mode m_mode;
 
-public:
-    std::monostate feed(IdleCommand const& message, std::monostate) {
-        return {};
+    void feed(IdleCommand const& message, std::monostate) {
     }
 
-    std::monostate feed(ThrottleCommand const& message, std::monostate) {
-        return {};
+    void feed(ThrottleCommand const& message, std::monostate) {
     }
 
-    VelocityMode feed(VelocityCommand const& message, VelocityMode mode) {
-        return mode;
+    void feed(VelocityCommand const& message, VelocityMode mode) {
     }
 
-    PositionMode feed(PositionCommand const& message, PositionMode mode) {
-        return mode;
+    void feed(PositionCommand const& message, PositionMode mode) {
     }
+
+    template<typename Command, typename V>
+    struct command_to_mode;
+
+    template<typename Command, typename ModeHead, typename... Modes>
+    struct command_to_mode<Command, std::variant<ModeHead, Modes...>> {
+        using type = std::conditional_t<
+                requires(Controller controller, Command command, ModeHead mode) { controller.feed(command, mode); },
+                ModeHead,
+                typename command_to_mode<Command, std::variant<Modes...>>::type>;
+    };
+
+    template<typename Command>
+    struct command_to_mode<Command, std::variant<>> {
+        using type = std::monostate;
+    };
 
     void feed(Message const& message) {
-        m_mode = std::visit(
+        std::visit(
                 [&](auto const& command) {
-                    // TODO: see if we can have void return type on feed's and take const reference for second argument
                     // Find the feed function that has the right type for the command
-                    using ModeForCommand = decltype(feed(command, {}));
+                    using ModeForCommand = command_to_mode<decltype(command), Mode>::type;
                     // If the current mode is not the mode that the feed function expects, change the mode, providing a new blank mode
                     if (!std::holds_alternative<ModeForCommand>(m_mode))
                         m_mode.template emplace<ModeForCommand>();
-                    return Mode{feed(command, std::get<ModeForCommand>(m_mode))};
+                    feed(command, std::get<ModeForCommand>(m_mode));
                 },
                 message);
     }
 
+public:
     void step(Message const& message) {
         feed(message);
     }
