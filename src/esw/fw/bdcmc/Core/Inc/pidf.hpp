@@ -75,7 +75,7 @@ namespace mrover {
          */
         Output calculate(Input input, Input target) {
             double current_ticks = HAL_GetTick();
-            auto tick_frequency = Hertz{static_cast<double>(HAL_GetTickFreq())};
+            auto tick_frequency = make_unit<Hertz>(HAL_GetTickFreq());
             Time now = current_ticks / tick_frequency;
             Time dt = now - m_last_time;
             m_last_time = now;

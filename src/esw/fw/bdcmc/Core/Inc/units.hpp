@@ -38,6 +38,9 @@ namespace mrover {
         { t.get() } -> std::convertible_to<double>;
     };
 
+    template<typename T>
+    concept Scalar = std::convertible_to<T, double>;
+
     //
     //  Structs
     //
@@ -46,6 +49,9 @@ namespace mrover {
 
     /**
      * @brief International System of Units (SI) base units
+     *
+     * @tparam Conversion   Conversion ratio to base SI unit. For example, for millimeters, this would be std::milli (1/1000)
+     * All other template parameters are exponents of the base SI units.
      */
     template<Ratioable Conversion = std::ratio<1>,
              Ratioable MeterExp = zero_exp_t,
@@ -55,6 +61,7 @@ namespace mrover {
              Ratioable AmpereExp = zero_exp_t,
              Ratioable KelvinExp = zero_exp_t,
              Ratioable ByteExp = zero_exp_t>
+        requires(Conversion::num != 0 && Conversion::den != 0)
     struct unit {
         using conversion_t = Conversion;
         using meter_exp_t = MeterExp;
@@ -65,23 +72,21 @@ namespace mrover {
         using kelvin_exp_t = KelvinExp;
         using byte_exp_t = ByteExp;
 
-        consteval static double multiplier() {
-            if constexpr (Conversion::den == 0) return 1;
-            return static_cast<double>(Conversion::num) / static_cast<double>(Conversion::den);
-        }
+        constexpr static double conversion = static_cast<double>(conversion_t::num) / conversion_t::den;
 
+        // Stores the SI base unit value, NOT the transformed unit value based on the conversion ratio
         double rep;
 
         constexpr static unit ZERO{};
 
         [[nodiscard]] constexpr double get() const {
-            return rep * multiplier();
+            return rep / conversion;
         }
     };
 
-    template<Unitable U>
-    inline constexpr auto make_unit(double value) {
-        return U{value / U::multiplier()};
+    template<Unitable U, Scalar S>
+    inline constexpr auto make_unit(S value) {
+        return U{static_cast<double>(value) * U::conversion};
     }
 
     using dimensionless_t = unit<>;
@@ -91,18 +96,19 @@ namespace mrover {
     //
 
     namespace detail {
-        template<Unitable Unit>
+
+        template<Unitable U>
         struct inverse {
             using inverse_ratio_t = std::ratio<-1>;
             using type = unit<
-                    std::ratio<Unit::conversion_t::den, Unit::conversion_t::num>,
-                    std::ratio_multiply<typename Unit::meter_exp_t, inverse_ratio_t>,
-                    std::ratio_multiply<typename Unit::kilogram_exp_t, inverse_ratio_t>,
-                    std::ratio_multiply<typename Unit::second_exp_t, inverse_ratio_t>,
-                    std::ratio_multiply<typename Unit::radian_exp_t, inverse_ratio_t>,
-                    std::ratio_multiply<typename Unit::ampere_exp_t, inverse_ratio_t>,
-                    std::ratio_multiply<typename Unit::kelvin_exp_t, inverse_ratio_t>,
-                    std::ratio_multiply<typename Unit::byte_exp_t, inverse_ratio_t>>;
+                    std::ratio<U::conversion_t::den, U::conversion_t::num>, // inverse ratio
+                    std::ratio_multiply<typename U::meter_exp_t, inverse_ratio_t>,
+                    std::ratio_multiply<typename U::kilogram_exp_t, inverse_ratio_t>,
+                    std::ratio_multiply<typename U::second_exp_t, inverse_ratio_t>,
+                    std::ratio_multiply<typename U::radian_exp_t, inverse_ratio_t>,
+                    std::ratio_multiply<typename U::ampere_exp_t, inverse_ratio_t>,
+                    std::ratio_multiply<typename U::kelvin_exp_t, inverse_ratio_t>,
+                    std::ratio_multiply<typename U::byte_exp_t, inverse_ratio_t>>;
         };
 
         template<Unitable U1, Unitable U2>
@@ -136,18 +142,15 @@ namespace mrover {
     template<Unitable U1, Unitable U2>
     using multiply = typename detail::unit_multiply<U1, U2>::type;
 
-    template<Unitable Unit>
-    using inverse = typename detail::inverse<Unit>::type;
+    template<Unitable U>
+    using inverse = typename detail::inverse<U>::type;
 
-    template<Unitable... Units>
-    using compound_unit = typename detail::compound<Units...>::type;
+    template<Unitable... Us>
+    using compound_unit = typename detail::compound<Us...>::type;
 
     //
     //  Runtime Operations
     //
-
-    template<typename T>
-    concept Scalar = std::convertible_to<T, double>;
 
     template<Scalar N, Unitable U>
     inline constexpr auto operator*(const N& n, const U& u) {
