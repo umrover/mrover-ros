@@ -11,10 +11,11 @@ namespace mrover {
 
     /**
      * A PIDF controller. An output signal is generated based on the error of the current input and the desired input target.
-     *  P - Proportional    Multiplied by the error
-     *  I - Integral        Multiplied by the integral of the error. Alleviates steady state error, use with caution.
-     *  D - Derivative      Multiplied by the derivative of the error
-     *  F - Feedforward     Multiplied by the target. This is useful for gravity compensation.
+     *
+     * P - Proportional    Multiplied by the error
+     * I - Integral        Multiplied by the integral of the error. Alleviates steady state error, use with caution.
+     * D - Derivative      Multiplied by the derivative of the error
+     * F - Feedforward     Multiplied by the target. This is useful for gravity compensation.
      *
      * @tparam TInput   Unit of input, usually a sensor reading (for example encoder ticks for an arm)
      * @tparam TOutput  Unit of output, usually a motor command (for example voltage for a motor)
@@ -75,7 +76,7 @@ namespace mrover {
          */
         auto calculate(InputUnit input, InputUnit target) -> OutputUnit {
             double current_ticks = HAL_GetTick();
-            auto tick_frequency = make_unit<Hertz>(HAL_GetTickFreq());
+            mrover::Unitable auto tick_frequency = make_unit<Hertz>(HAL_GetTickFreq());
             TimeUnit now = current_ticks / tick_frequency;
             TimeUnit dt = now - m_last_time;
             m_last_time = now;
