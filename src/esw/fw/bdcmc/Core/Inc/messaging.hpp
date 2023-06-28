@@ -13,8 +13,10 @@ namespace mrover {
 
 #define PACKED __attribute__((packed))
 
+    using motor_id_t = uint8_t;
+
     struct BaseCommand {
-        uint8_t motor_id;
+        motor_id_t id;
     } PACKED;
 
     struct IdleCommand : BaseCommand {
