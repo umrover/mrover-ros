@@ -1,13 +1,32 @@
 #include "terrain_particle_filter.hpp"
 #include <Eigen/src/Core/Matrix.h>
+#include <opencv2/core.hpp>
+#include <opencv2/imgcodecs.hpp>
+#include <opencv2/imgproc.hpp>
+#include <opencv2/highgui.hpp>
+#include <cstddef>
 #include <random>
+#include <iostream>
 
 TerrainParticleFilter::TerrainParticleFilter(const std::string& terrainFilename, double sigmaX, double sigmaTheta, double footprintX, double footprintY) : mXDist(0, sigmaX), mThetaDist(0, sigmaTheta), mFootprintX(footprintX), mFootprintY(footprintY) {
     load_terrain_cloud(terrainFilename);
 }
 
 void TerrainParticleFilter::load_terrain_cloud(const std::string& filename) {
-
+    cv::Mat terrainImage = cv::imread(filename, cv::IMREAD_LOAD_GDAL);
+    std::cout << terrainImage.depth() << " " << terrainImage.channels() << std::endl;
+    if (terrainImage.empty()) throw std::runtime_error("Could not open terrain file");
+    
+    cv::rotate(terrainImage, terrainImage, cv::ROTATE_90_COUNTERCLOCKWISE);
+    mTerrainCloud = Eigen::MatrixXd(terrainImage.rows, terrainImage.cols);
+    for (int i = 0; i < terrainImage.rows; i++) {
+        for (int j = 0; j < terrainImage.cols; j++) {
+            mTerrainCloud(i, j) = terrainImage.at<double>(i, j);
+            // std::cout <<terrainImage.at<double>(i, j) << " ";
+        }
+    }
+    // cv::imshow("Terrain", terrainImage);
+    // cv::waitKey(0);
 }
 
 void TerrainParticleFilter::init_particles(const manif::SE2d& initialPose, int numParticles) {
@@ -37,4 +56,8 @@ const manif::SE2d& TerrainParticleFilter::get_pose_estimate() const {
 
 const std::vector<manif::SE2d>& TerrainParticleFilter::get_particles() const {
     return mParticles;
+}
+
+const Eigen::MatrixXd& TerrainParticleFilter::get_terrain_cloud() const {
+    return mTerrainCloud;
 }

@@ -28,4 +28,5 @@ public:
 
     [[nodiscard]] const manif::SE2d& get_pose_estimate() const;
     [[nodiscard]] const std::vector<manif::SE2d>& get_particles() const;
+    [[nodiscard]] const Eigen::MatrixXd& get_terrain_cloud() const;
 };

@@ -7,13 +7,19 @@
 #include <tf2/LinearMath/Matrix3x3.h>
 #include <tf2_geometry_msgs/tf2_geometry_msgs.h>
 #include <tf2/LinearMath/Quaternion.h>
+#include <pcl/point_cloud.h>
+#include <pcl/point_types.h>
+#include <pcl_ros/point_cloud.h>
+#include <pcl_conversions/pcl_conversions.h>
 #include <chrono>
 #include <iostream>
+
+using PointCloud = pcl::PointCloud<pcl::PointXYZ>;
 
 class FilterNode {
 private:
     ros::NodeHandle mNh;
-    ros::Publisher mPosePub;
+    ros::Publisher mPosePub, mTerrainPub;
     ros::Subscriber mGroundTruthSub, mVelCmdSub;
     TerrainParticleFilter mFilter;
     std::chrono::time_point<std::chrono::system_clock> mLastTime;
@@ -46,7 +52,7 @@ private:
     void publish_pose() {
         if (!mInitialized) return;
         auto pose = mFilter.get_pose_estimate();
-        std::cout << "Publishing pose: " << pose.x() << ", " << pose.y() << ", " << pose.angle() << std::endl;
+        // std::cout << "Publishing pose: " << pose.x() << ", " << pose.y() << ", " << pose.angle() << std::endl;
         geometry_msgs::PoseStamped msg;
         msg.header.stamp = ros::Time::now();
         msg.header.frame_id = "map";
@@ -59,11 +65,35 @@ private:
         mPosePub.publish(msg);
     }
 
+    void publish_terrain() {
+        if (!mInitialized) return;
+        auto cloud = mFilter.get_terrain_cloud();
+
+        // TODO: is pointer necessary? emplace_back?
+        PointCloud::Ptr pclCloud(new PointCloud);
+        for (size_t i = 0; i < cloud.rows(); i++) {
+            for (size_t j = 0; j < cloud.cols(); j++) {
+                pcl::PointXYZ point;
+                point.x = j;
+                point.y = i;
+                point.z = cloud(i, j);
+                pclCloud->points.push_back(point);
+            }
+        }
+        pclCloud->header.frame_id = "map";
+        pclCloud->width = pclCloud->points.size();
+        pclCloud->height = 1;
+        pcl_conversions::toPCL(ros::Time::now(), pclCloud->header.stamp);
+
+        mTerrainPub.publish(*pclCloud);
+    }
+
 public:
-    FilterNode() : mFilter("terrain.pcd", 0, 0, 0.1, 0.1) {
-        std::cout << "FilterNode constructor" << std::endl;
+    FilterNode() : mFilter("/home/riley/catkin_ws/src/mrover/src/localization/terrain.tif", 0, 0, 0.1, 0.1) {
+        // std::cout << "FilterNode constructor" << std::endl;
         mNumParticles = 1;
         mPosePub = mNh.advertise<geometry_msgs::PoseStamped>("pf_pose", 1);
+        mTerrainPub = mNh.advertise<PointCloud>("terrain_map", 1);
         mGroundTruthSub = mNh.subscribe("ground_truth", 1, &FilterNode::ground_truth_callback, this);
         mVelCmdSub = mNh.subscribe("cmd_vel", 1, &FilterNode::cmd_vel_callback, this);
         // ros::Subscriber mVelCmdSub = mNh.subscribe("cmd_vel", 1, &[](const geometry_msgs::Twist& msg) {
@@ -78,6 +108,7 @@ public:
             // std::cout << "Spinning" << std::endl;
             ros::spinOnce();
             publish_pose();
+            publish_terrain();
             rate.sleep();
         }
     }
