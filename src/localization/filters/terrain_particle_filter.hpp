@@ -12,6 +12,7 @@ struct TerrainMap {
 class TerrainParticleFilter {
 private:
     TerrainMap mTerrainMap;
+    TerrainMap mNeighborhood;
      
     // TODO: do this better
     std::vector<manif::SE2d> mParticles;
@@ -19,13 +20,13 @@ private:
     manif::SE2d mPoseEstimate;
     std::normal_distribution<double> mXDist, mThetaDist;
     std::default_random_engine mRNG;
-    double mFootprintX, mFootprintY;
+    Eigen::Vector2d mFootprint;
 
     void load_terrain_map(const std::string& filename);
-    [[nodiscard]] const Eigen::Vector3d get_surface_normal(const manif::SE2d& pose) const;
+    [[nodiscard]] const Eigen::Vector3d get_surface_normal(const manif::SE2d& pose);
 
 public:
-    TerrainParticleFilter(const std::string& terrainFilename, double sigmaX, double sigmaTheta, double footprintX, double footprintY);   
+    TerrainParticleFilter(const std::string& terrainFilename, double sigmaX, double sigmaTheta, const Eigen::Vector2d& footprint);   
     void init_particles(const manif::SE2d& initialPose, int numParticles);
 
     // TODO: add overloads for odometry and IMU pose
@@ -33,9 +34,9 @@ public:
     void update(const Eigen::Vector3d& accelMeasurement);
 
     [[nodiscard]] const Eigen::Vector2d idx_to_position(const Eigen::Vector2i& idx) const;
-    [[nodiscard]] const Eigen::Vector2i position_to_idx(const Eigen::Vector2d& position) const;
+    [[nodiscard]] const Eigen::Vector2i position_to_idx(const Eigen::Vector2d& position, bool clampBounds) const;
 
     [[nodiscard]] const manif::SE2d& get_pose_estimate() const;
     [[nodiscard]] const std::vector<manif::SE2d>& get_particles() const;
-    [[nodiscard]] const Eigen::MatrixXd& get_terrain_grid() const;
+    [[nodiscard]] const Eigen::MatrixXd& get_terrain_grid();
 };

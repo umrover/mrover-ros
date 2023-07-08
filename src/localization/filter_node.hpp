@@ -90,7 +90,7 @@ private:
     }
 
 public:
-    FilterNode() : mFilter("/home/riley/catkin_ws/src/mrover/src/localization/terrain.tif", 0, 0, 0.1, 0.1) {
+    FilterNode() : mFilter("/home/riley/catkin_ws/src/mrover/src/localization/terrain.tif", 0, 0, Eigen::Vector2d(1, 1)) {
         // std::cout << "FilterNode constructor" << std::endl;
         mNumParticles = 1;
         mPosePub = mNh.advertise<geometry_msgs::PoseStamped>("pf_pose", 1);
