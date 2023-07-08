@@ -9,24 +9,35 @@
 #include <iostream>
 
 TerrainParticleFilter::TerrainParticleFilter(const std::string& terrainFilename, double sigmaX, double sigmaTheta, double footprintX, double footprintY) : mXDist(0, sigmaX), mThetaDist(0, sigmaTheta), mFootprintX(footprintX), mFootprintY(footprintY) {
-    load_terrain_cloud(terrainFilename);
+    load_terrain_map(terrainFilename);
 }
 
-void TerrainParticleFilter::load_terrain_cloud(const std::string& filename) {
+void TerrainParticleFilter::load_terrain_map(const std::string& filename) {
     cv::Mat terrainImage = cv::imread(filename, cv::IMREAD_LOAD_GDAL);
     std::cout << terrainImage.depth() << " " << terrainImage.channels() << std::endl;
     if (terrainImage.empty()) throw std::runtime_error("Could not open terrain file");
     
-    cv::rotate(terrainImage, terrainImage, cv::ROTATE_90_COUNTERCLOCKWISE);
-    mTerrainCloud = Eigen::MatrixXd(terrainImage.rows, terrainImage.cols);
+    cv::rotate(terrainImage, terrainImage, cv::ROTATE_90_CLOCKWISE);
+    double width = 50.0, height = 50.0;
+    mTerrainMap.origin = Eigen::Vector2d(width / 2.0, height / 2.0);
+    mTerrainMap.metersPerCell = width / terrainImage.cols;
+    mTerrainMap.grid = Eigen::MatrixXd(terrainImage.rows, terrainImage.cols);
     for (int i = 0; i < terrainImage.rows; i++) {
         for (int j = 0; j < terrainImage.cols; j++) {
-            mTerrainCloud(i, j) = terrainImage.at<double>(i, j);
+            mTerrainMap.grid(i, j) = terrainImage.at<double>(i, j);
             // std::cout <<terrainImage.at<double>(i, j) << " ";
         }
     }
     // cv::imshow("Terrain", terrainImage);
     // cv::waitKey(0);
+}
+
+const Eigen::Vector2d TerrainParticleFilter::idx_to_position(const Eigen::Vector2i& idx) const {
+    return idx.cast<double>() * mTerrainMap.metersPerCell - mTerrainMap.origin;
+}
+
+const Eigen::Vector2i TerrainParticleFilter::position_to_idx(const Eigen::Vector2d& position) const {
+    return ((position + mTerrainMap.origin) / mTerrainMap.metersPerCell).cast<int>();
 }
 
 void TerrainParticleFilter::init_particles(const manif::SE2d& initialPose, int numParticles) {
@@ -58,6 +69,6 @@ const std::vector<manif::SE2d>& TerrainParticleFilter::get_particles() const {
     return mParticles;
 }
 
-const Eigen::MatrixXd& TerrainParticleFilter::get_terrain_cloud() const {
-    return mTerrainCloud;
+const Eigen::MatrixXd& TerrainParticleFilter::get_terrain_grid() const {
+    return mTerrainMap.grid;
 }

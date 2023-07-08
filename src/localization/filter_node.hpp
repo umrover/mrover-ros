@@ -67,16 +67,17 @@ private:
 
     void publish_terrain() {
         if (!mInitialized) return;
-        auto cloud = mFilter.get_terrain_cloud();
+        auto grid = mFilter.get_terrain_grid();
 
         // TODO: is pointer necessary? emplace_back?
         PointCloud::Ptr pclCloud(new PointCloud);
-        for (size_t i = 0; i < cloud.rows(); i++) {
-            for (size_t j = 0; j < cloud.cols(); j++) {
+        for (size_t i = 0; i < grid.rows(); i++) {
+            for (size_t j = 0; j < grid.cols(); j++) {
                 pcl::PointXYZ point;
-                point.x = j;
-                point.y = i;
-                point.z = cloud(i, j);
+                Eigen::Vector2d pos = mFilter.idx_to_position(Eigen::Vector2i(i, j));
+                point.x = pos.x();
+                point.y = pos.y();
+                point.z = grid(i, j);
                 pclCloud->points.push_back(point);
             }
         }
