@@ -6,6 +6,8 @@
 #include <opencv2/highgui.hpp>
 #include <opencv2/imgcodecs.hpp>
 #include <opencv2/imgproc.hpp>
+#include <pcl/point_types.h>
+#include <pcl/point_cloud.h>
 #include <random>
 
 TerrainParticleFilter::TerrainParticleFilter(const std::string& terrainFilename, double sigmaX, double sigmaTheta, const Eigen::Vector2d& footprint) : mXDist(0, sigmaX), mThetaDist(0, sigmaTheta), mFootprint(footprint) {
@@ -35,7 +37,9 @@ void TerrainParticleFilter::load_terrain_map(const std::string& filename) {
 }
 
 const Eigen::Vector2d TerrainParticleFilter::idx_to_position(const Eigen::Vector2i& idx) const {
-    return idx.cast<double>() * mTerrainMap.metersPerCell - mTerrainMap.origin;
+    // TODO: make better choices on use of array vs matrix
+    // offset by half a cell to put point at center of the cell
+    return (idx.cast<double>().array() + 0.5).matrix() * mTerrainMap.metersPerCell - mTerrainMap.origin;
 }
 
 const Eigen::Vector2i TerrainParticleFilter::position_to_idx(const Eigen::Vector2d& position, bool clampBounds = true) const {
@@ -57,11 +61,13 @@ const Eigen::Vector3d TerrainParticleFilter::get_surface_normal(manif::SE2d cons
     Eigen::Vector2i minCorner = position_to_idx(pose.translation() - mFootprint / 2.0);
     Eigen::Vector2i maxCorner = position_to_idx(pose.translation() + mFootprint / 2.0);
     Eigen::Vector2i footprintCells = maxCorner - minCorner;
+    // TODO: index with seq if eigen 3.4 is available
     Eigen::MatrixXd neighborhood = mTerrainMap.grid.block(minCorner.x(), minCorner.y(),
                                                          footprintCells.x(), footprintCells.y());
     if(neighborhood.rows() == 0 || neighborhood.cols() == 0)
         throw std::runtime_error("pose out of bounds of terrain map");
-    // Eigen::MatrixXd neighborhood = mTerrainMap.grid(Eigen::seq(minCorner.x(), maxCorner.x()), Eigen::seq(minCorner.y(), maxCorner.y()));
+
+    pcl::PointCloud<pcl::PointXYZ>::Ptr neighborhood_cloud(new pcl::PointCloud<pcl::PointXYZ>);
 
     mNeighborhood = mTerrainMap;
     mNeighborhood.grid = Eigen::MatrixXd::Zero(mTerrainMap.grid.rows(), mTerrainMap.grid.cols());

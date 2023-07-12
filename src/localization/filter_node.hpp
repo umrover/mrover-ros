@@ -7,8 +7,6 @@
 #include <tf2/LinearMath/Matrix3x3.h>
 #include <tf2_geometry_msgs/tf2_geometry_msgs.h>
 #include <tf2/LinearMath/Quaternion.h>
-#include <pcl/point_cloud.h>
-#include <pcl/point_types.h>
 #include <pcl_ros/point_cloud.h>
 #include <pcl_conversions/pcl_conversions.h>
 #include <chrono>
@@ -90,7 +88,7 @@ private:
     }
 
 public:
-    FilterNode() : mFilter("/home/riley/catkin_ws/src/mrover/src/localization/terrain.tif", 0, 0, Eigen::Vector2d(1, 1)) {
+    FilterNode() : mFilter("/home/riley/catkin_ws/src/mrover/src/localization/terrain.tif", 0, 0, Eigen::Vector2d(10, 10)) {
         // std::cout << "FilterNode constructor" << std::endl;
         mNumParticles = 1;
         mPosePub = mNh.advertise<geometry_msgs::PoseStamped>("pf_pose", 1);
