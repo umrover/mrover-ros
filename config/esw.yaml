@@ -8,6 +8,11 @@ gps_driver:
   useRMC: false # get covariance instead of velocity, see wiki for more info
   frame_id: "base_link"
 
+basestation_gps_driver:
+  port: "/dev/ttyACM0"
+  baud: 115200
+  frame_id: "base_link"
+
 imu_driver:
   port: "/dev/imu"
   baud: 115200
