@@ -18,17 +18,19 @@ TerrainParticleFilter::TerrainParticleFilter(const std::string& terrainFilename,
 
 void TerrainParticleFilter::load_terrain_map(const std::string& filename) {
     cv::Mat terrainImage = cv::imread(filename, cv::IMREAD_LOAD_GDAL);
-    std::cout << terrainImage.depth() << " " << terrainImage.channels() << std::endl;
+    // std::cout << terrainImage.depth() << " " << terrainImage.channels() << std::endl;
     if (terrainImage.empty()) throw std::runtime_error("Could not open terrain file");
 
     cv::rotate(terrainImage, terrainImage, cv::ROTATE_90_CLOCKWISE);
     double width = 50.0, height = 50.0;
     mTerrainMap.origin = Eigen::Vector2d(width / 2.0, height / 2.0);
     mTerrainMap.metersPerCell = width / terrainImage.cols;
+    // std::cout << "Meters per cell: " << mTerrainMap.metersPerCell << std::endl;
+    // std::cout << "Origin: " << mTerrainMap.origin.transpose() << std::endl;
     mTerrainMap.grid = Eigen::MatrixXd(terrainImage.rows, terrainImage.cols);
     for (int i = 0; i < terrainImage.rows; i++) {
         for (int j = 0; j < terrainImage.cols; j++) {
-            mTerrainMap.grid(i, j) = terrainImage.at<double>(i, j);
+            mTerrainMap.grid(i, j) = terrainImage.at<double>(j, i);
             // std::cout <<terrainImage.at<double>(i, j) << " ";
         }
     }
@@ -36,18 +38,23 @@ void TerrainParticleFilter::load_terrain_map(const std::string& filename) {
     // cv::waitKey(0);
 }
 
-const Eigen::Vector2d TerrainParticleFilter::idx_to_position(const Eigen::Vector2i& idx) const {
+Eigen::Vector2d TerrainParticleFilter::idx_to_position(const Eigen::Vector2i& idx) const {
     // TODO: make better choices on use of array vs matrix
+    // swap i and j to convert from row-major to column-major
+    Eigen::Vector2i temp_idx = idx;
+    std::swap(temp_idx.x(), temp_idx.y());
+
     // offset by half a cell to put point at center of the cell
-    return (idx.cast<double>().array() + 0.5).matrix() * mTerrainMap.metersPerCell - mTerrainMap.origin;
+    return (temp_idx.cast<double>().array() + 0.5).matrix() * mTerrainMap.metersPerCell - mTerrainMap.origin;
 }
 
-const Eigen::Vector2i TerrainParticleFilter::position_to_idx(const Eigen::Vector2d& position, bool clampBounds = true) const {
+Eigen::Vector2i TerrainParticleFilter::position_to_idx(const Eigen::Vector2d& position, bool clampBounds) const {
     Eigen::Vector2i idx = ((position + mTerrainMap.origin) / mTerrainMap.metersPerCell).cast<int>();
+    std::swap(idx.x(), idx.y());
     if (clampBounds) {
         // TODO: use vector of longs for idx?
-        idx.x() = std::clamp(idx.x(), 0, static_cast<int>(mTerrainMap.grid.rows() - 1));
-        idx.y() = std::clamp(idx.y(), 0, static_cast<int>(mTerrainMap.grid.cols() - 1));
+        idx.x() = std::clamp(idx.x(), 0, static_cast<int>(mTerrainMap.grid.cols() - 1));
+        idx.y() = std::clamp(idx.y(), 0, static_cast<int>(mTerrainMap.grid.rows() - 1));
     }
     return idx;
 }
@@ -101,6 +108,6 @@ const std::vector<manif::SE2d>& TerrainParticleFilter::get_particles() const {
 const Eigen::MatrixXd& TerrainParticleFilter::get_terrain_grid() {
     auto v = get_surface_normal(mParticles[0]);
     // std::cout << mNeighborhood.grid << std::endl;
-    return mNeighborhood.grid;
-    // return mTerrainMap.grid;
+    // return mNeighborhood.grid;
+    return mTerrainMap.grid;
 }

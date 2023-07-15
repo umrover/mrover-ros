@@ -91,6 +91,12 @@ public:
     FilterNode() : mFilter("/home/riley/catkin_ws/src/mrover/src/localization/terrain.tif", 0, 0, Eigen::Vector2d(10, 10)) {
         // std::cout << "FilterNode constructor" << std::endl;
         mNumParticles = 1;
+        Eigen::Vector2i idx(3,1);
+        Eigen::Vector2d pos = mFilter.idx_to_position(idx);
+        Eigen::Vector2i idx2 = mFilter.position_to_idx(pos);
+        std::cout << "idx: " << idx.x() << ", " << idx.y() << std::endl;
+        std::cout << "pos: " << pos.x() << ", " << pos.y() << std::endl;
+        std::cout << "idx2: " << idx2.x() << ", " << idx2.y() << std::endl;
         mPosePub = mNh.advertise<geometry_msgs::PoseStamped>("pf_pose", 1);
         mTerrainPub = mNh.advertise<PointCloud>("terrain_map", 1);
         mGroundTruthSub = mNh.subscribe("ground_truth", 1, &FilterNode::ground_truth_callback, this);

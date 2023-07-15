@@ -33,8 +33,8 @@ public:
     void predict(const Eigen::Vector3d& velCmd, double dt);
     void update(const Eigen::Vector3d& accelMeasurement);
 
-    [[nodiscard]] const Eigen::Vector2d idx_to_position(const Eigen::Vector2i& idx) const;
-    [[nodiscard]] const Eigen::Vector2i position_to_idx(const Eigen::Vector2d& position, bool clampBounds) const;
+    [[nodiscard]] Eigen::Vector2d idx_to_position(const Eigen::Vector2i& idx) const;
+    [[nodiscard]] Eigen::Vector2i position_to_idx(const Eigen::Vector2d& position, bool clampBounds = true) const;
 
     [[nodiscard]] const manif::SE2d& get_pose_estimate() const;
     [[nodiscard]] const std::vector<manif::SE2d>& get_particles() const;
