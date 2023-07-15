@@ -6,9 +6,7 @@
 #include <opencv2/highgui.hpp>
 #include <opencv2/imgcodecs.hpp>
 #include <opencv2/imgproc.hpp>
-#include <pcl/point_types.h>
-#include <pcl/point_cloud.h>
-#include <random>
+#include <pcl/features/normal_3d.h>
 
 TerrainParticleFilter::TerrainParticleFilter(const std::string& terrainFilename, double sigmaX, double sigmaTheta, const Eigen::Vector2d& footprint) : mXDist(0, sigmaX), mThetaDist(0, sigmaTheta), mFootprint(footprint) {
     assert(footprint.x() > 0 && footprint.y() > 0);
@@ -64,7 +62,7 @@ void TerrainParticleFilter::init_particles(const manif::SE2d& initialPose, int n
 }
 
 // TODO: make it const
-const Eigen::Vector3d TerrainParticleFilter::get_surface_normal(manif::SE2d const& pose) {
+Eigen::Vector3d TerrainParticleFilter::get_surface_normal(manif::SE2d const& pose) {
     Eigen::Vector2i minCorner = position_to_idx(pose.translation() - mFootprint / 2.0);
     Eigen::Vector2i maxCorner = position_to_idx(pose.translation() + mFootprint / 2.0);
     Eigen::Vector2i footprintCells = maxCorner - minCorner;
@@ -75,12 +73,31 @@ const Eigen::Vector3d TerrainParticleFilter::get_surface_normal(manif::SE2d cons
         throw std::runtime_error("pose out of bounds of terrain map");
 
     pcl::PointCloud<pcl::PointXYZ>::Ptr neighborhood_cloud(new pcl::PointCloud<pcl::PointXYZ>);
+    for (size_t i = 0; i < neighborhood.rows(); i++) {
+        for (size_t j = 0; j < neighborhood.cols(); j++) {
+            if (neighborhood(i, j) > 0) {
+                Eigen::Vector2i idx = minCorner + Eigen::Vector2i(i, j);
+                Eigen::Vector2d position = idx_to_position(idx);
+                neighborhood_cloud->push_back(pcl::PointXYZ(position.x(), position.y(), neighborhood(i, j)));
+            }
+        }
+    }
+    Eigen::Vector4f plane_parameters;
+    float curvature;
+    pcl::computePointNormal(*neighborhood_cloud, plane_parameters, curvature);
+    Eigen::Vector3d normal(plane_parameters.x(), plane_parameters.y(), plane_parameters.z());
+    std::cout << "Normal: " << normal.transpose() << std::endl;
 
+    // DEBUG
+    neighborhood_cloud->width = neighborhood_cloud->size();
+    neighborhood_cloud->height = 1;
+    neighborhood_cloud->is_dense = true;
+    mNeighborhoodCloud = neighborhood_cloud;
     mNeighborhood = mTerrainMap;
     mNeighborhood.grid = Eigen::MatrixXd::Zero(mTerrainMap.grid.rows(), mTerrainMap.grid.cols());
     mNeighborhood.grid.block(minCorner.x(), minCorner.y(),
                              footprintCells.x(), footprintCells.y()) = neighborhood;
-    return Eigen::Vector3d();
+    return normal;
 }
 
 void TerrainParticleFilter::predict(const Eigen::Vector3d& velCmd, double dt) {
@@ -106,8 +123,16 @@ const std::vector<manif::SE2d>& TerrainParticleFilter::get_particles() const {
 
 // TODO: make it const
 const Eigen::MatrixXd& TerrainParticleFilter::get_terrain_grid() {
-    auto v = get_surface_normal(mParticles[0]);
+    // auto v = get_surface_normal(mParticles[0]);
     // std::cout << mNeighborhood.grid << std::endl;
-    // return mNeighborhood.grid;
-    return mTerrainMap.grid;
+    return mNeighborhood.grid;
+    // return mTerrainMap.grid;
+}
+
+pcl::PointCloud<pcl::PointXYZ>::Ptr TerrainParticleFilter::get_neighborhood() {
+    return mNeighborhoodCloud;
+}
+
+Eigen::Vector3d TerrainParticleFilter::get_normal() {
+    return get_surface_normal(mParticles[0]);
 }
