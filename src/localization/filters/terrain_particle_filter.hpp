@@ -24,6 +24,7 @@ private:
     std::normal_distribution<double> mXDist, mThetaDist;
     std::default_random_engine mRNG;
     Eigen::Vector2d mFootprint;
+    Eigen::Vector3d mVelocity;
 
     void load_terrain_map(const std::string& filename);
     void update_pose_estimate(const std::vector<manif::SE2d>& particles, const std::vector<double>& weights);
@@ -34,6 +35,7 @@ public:
 
     // TODO: add overloads for odometry and IMU pose
     void predict(const Eigen::Vector3d& velCmd, double dt);
+    void predict(const Eigen::Quaterniond& orientation, const Eigen::Vector3d& accel, const Eigen::Vector3d& gyro, double dt);
     void update(const Eigen::Quaterniond& orientation);
 
     [[nodiscard]] Eigen::Vector2d idx_to_position(const Eigen::Vector2i& idx) const;

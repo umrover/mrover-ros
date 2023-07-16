@@ -43,17 +43,21 @@ private:
 
     void cmd_vel_callback(const geometry_msgs::Twist& msg) {
         if (!mInitialized) return;
-        // std::cout << "Predicting" << std::endl;
-        Eigen::Vector3d velCmd(msg.linear.x, msg.linear.y, msg.angular.z);
         auto now = std::chrono::system_clock::now();
         double dt = std::chrono::duration<double>(now - mLastTime).count();
-        mFilter.predict(velCmd, dt);
+        Eigen::Vector3d velCmd(msg.linear.x, msg.linear.y, msg.angular.z);
+        // mFilter.predict(velCmd, dt);
     }
 
     void imu_callback(const sensor_msgs::Imu& msg) {
         if (!mInitialized) return;
         // std::cout << "Updating" << std::endl;
+        auto now = std::chrono::system_clock::now();
+        double dt = std::chrono::duration<double>(now - mLastTime).count();
         Eigen::Quaterniond orientation(msg.orientation.w, msg.orientation.x, msg.orientation.y, msg.orientation.z);
+        Eigen::Vector3d gyro(msg.angular_velocity.x, msg.angular_velocity.y, msg.angular_velocity.z);
+        Eigen::Vector3d accel(msg.linear_acceleration.x, msg.linear_acceleration.y, msg.linear_acceleration.z);
+        mFilter.predict(orientation, accel, gyro, dt);
         mFilter.update(orientation);
     }
 
@@ -223,9 +227,9 @@ private:
     }
 
 public:
-    FilterNode() : mFilter("/home/riley/catkin_ws/src/mrover/src/localization/terrain.tif", 0, 0, Eigen::Vector2d(2, 2)) {
+    FilterNode() : mFilter("/home/riley/catkin_ws/src/mrover/src/localization/terrain.tif", 0.01, 0.01, Eigen::Vector2d(1, 1)) {
         // std::cout << "FilterNode constructor" << std::endl;
-        mNumParticles = 1;
+        mNumParticles = 10;
         Eigen::Vector2i idx(3,1);
         Eigen::Vector2d pos = mFilter.idx_to_position(idx);
         Eigen::Vector2i idx2 = mFilter.position_to_idx(pos);

@@ -5,8 +5,6 @@ Panels:
     Property Tree Widget:
       Expanded:
         - /Marker1
-        - /MarkerArray1
-        - /MarkerArray2
       Splitter Ratio: 0.5
     Tree Height: 753
   - Class: rviz/Selection
@@ -26,7 +24,7 @@ Panels:
   - Class: rviz/Time
     Name: Time
     SyncMode: 0
-    SyncSource: Terrain Cloud
+    SyncSource: ""
 Preferences:
   PromptSaveOnExit: true
 Toolbars:
@@ -285,7 +283,7 @@ Visualization Manager:
       Color: 255; 255; 255
       Color Transformer: AxisColor
       Decay Time: 0
-      Enabled: true
+      Enabled: false
       Invert Rainbow: false
       Max Color: 255; 255; 255
       Min Color: 0; 0; 0
@@ -300,7 +298,7 @@ Visualization Manager:
       Unreliable: false
       Use Fixed Frame: true
       Use rainbow: true
-      Value: true
+      Value: false
     - Alpha: 1
       Autocompute Intensity Bounds: true
       Autocompute Value Bounds:
@@ -350,13 +348,13 @@ Visualization Manager:
       Marker Topic: /normal_vector
       Name: Marker
       Namespaces:
-        normal: true
+        {}
       Queue Size: 100
       Value: true
     - Class: rviz/MarkerArray
       Enabled: true
       Marker Topic: /normals
-      Name: MarkerArray
+      Name: normals
       Namespaces:
         {}
       Queue Size: 100
@@ -364,9 +362,9 @@ Visualization Manager:
     - Class: rviz/MarkerArray
       Enabled: true
       Marker Topic: /particles
-      Name: MarkerArray
+      Name: particles
       Namespaces:
-        particles: true
+        {}
       Queue Size: 100
       Value: true
   Enabled: true
@@ -397,7 +395,7 @@ Visualization Manager:
   Views:
     Current:
       Class: rviz/Orbit
-      Distance: 40.48085403442383
+      Distance: 18.799476623535156
       Enable Stereo Rendering:
         Stereo Eye Separation: 0.05999999865889549
         Stereo Focal Distance: 1
@@ -413,9 +411,9 @@ Visualization Manager:
       Invert Z Axis: false
       Name: Current View
       Near Clip Distance: 0.009999999776482582
-      Pitch: 0.4552033543586731
+      Pitch: 0.35020333528518677
       Target Frame: <Fixed Frame>
-      Yaw: 1.9985569715499878
+      Yaw: 4.428569316864014
     Saved: ~
 Window Geometry:
   Displays:

@@ -114,6 +114,27 @@ void TerrainParticleFilter::predict(const Eigen::Vector3d& velCmd, double dt) {
     }
 }
 
+void TerrainParticleFilter::predict(const Eigen::Quaterniond& orientation, const Eigen::Vector3d& accel, const Eigen::Vector3d& gyro, double dt) {
+    // TODO: track velocity to increase accuracy
+    // remove gravity vector
+    Eigen::Vector3d accelWorld = orientation * accel;
+    accelWorld.z() -= 9.81;
+    Eigen::Vector3d accelBody = orientation.inverse() * accelWorld;
+    std::cout << "Accel: " << accelBody.transpose() << std::endl;
+
+    Eigen::Vector3d velCmd(mVelocity.x() + 0.5 * accelBody.x() * dt, 0, gyro.z());
+    predict(velCmd, dt);
+    mVelocity += accelBody * dt;
+    // for (auto& particle : mParticles) {
+    // // only consider x acceleration and z angular velocity
+    // // TODO: use angular velocity in world frame
+    // double deltaX = (accelBody.x() + mXDist(mRNG)) * dt * dt / 2.0;
+    // double deltaTheta = (gyro.z() + mThetaDist(mRNG)) * dt;
+    // manif::SE2Tangentd increment(deltaX, 0, deltaTheta);
+    // particle = particle.rplus(increment);
+    // }
+}
+
 void TerrainParticleFilter::update(const Eigen::Quaterniond& orientation) {
     // compute weights
     // TODO: make this not a vector
@@ -123,7 +144,7 @@ void TerrainParticleFilter::update(const Eigen::Quaterniond& orientation) {
         Eigen::Vector3d zAxis = orientation * Eigen::Vector3d::UnitZ();
         // TODO: handle negatives
         double weight = normal.dot(zAxis);
-        std::cout << "Alignment: " << weight << std::endl;
+        // std::cout << "Alignment: " << weight << std::endl;
         weights.push_back(weight);
     }
     update_pose_estimate(mParticles, weights);
