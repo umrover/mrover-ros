@@ -6,6 +6,7 @@
 #include <visualization_msgs/Marker.h>
 #include <visualization_msgs/MarkerArray.h>
 #include <nav_msgs/Odometry.h>
+#include <sensor_msgs/Imu.h>
 #include <tf2/LinearMath/Matrix3x3.h>
 #include <tf2_geometry_msgs/tf2_geometry_msgs.h>
 #include <tf2/LinearMath/Quaternion.h>
@@ -19,8 +20,8 @@ using PointCloud = pcl::PointCloud<pcl::PointXYZ>;
 class FilterNode {
 private:
     ros::NodeHandle mNh;
-    ros::Publisher mPosePub, mTerrainPub, mNeighborhoodPub, mNormalPub, mNormalsPub;
-    ros::Subscriber mGroundTruthSub, mVelCmdSub;
+    ros::Publisher mPosePub, mTerrainPub, mNeighborhoodPub, mNormalPub, mNormalsPub, mParticlesPub;
+    ros::Subscriber mGroundTruthSub, mVelCmdSub, mImuSub;
     TerrainParticleFilter mFilter;
     std::chrono::time_point<std::chrono::system_clock> mLastTime;
     bool mInitialized = false;
@@ -47,6 +48,49 @@ private:
         auto now = std::chrono::system_clock::now();
         double dt = std::chrono::duration<double>(now - mLastTime).count();
         mFilter.predict(velCmd, dt);
+    }
+
+    void imu_callback(const sensor_msgs::Imu& msg) {
+        if (!mInitialized) return;
+        // std::cout << "Updating" << std::endl;
+        Eigen::Quaterniond orientation(msg.orientation.w, msg.orientation.x, msg.orientation.y, msg.orientation.z);
+        mFilter.update(orientation);
+    }
+
+    void publish_particles() {
+        if (!mInitialized) return;
+        auto particles = mFilter.get_particles();
+        visualization_msgs::MarkerArray msg;
+        std::vector<visualization_msgs::Marker> markers;
+        for (size_t i = 0; i < particles.size(); i++) {
+            auto rotation = particles[i].rotation();
+            Eigen::Rotation2Dd rotation2d(rotation);
+            Eigen::Quaterniond q(Eigen::AngleAxisd(rotation2d.angle(), Eigen::Vector3d::UnitZ()));
+            visualization_msgs::Marker marker;
+            marker.header.stamp = ros::Time();
+            marker.header.frame_id = "map";
+            marker.ns = "particles";
+            marker.id = i;
+            marker.type = visualization_msgs::Marker::ARROW;
+            marker.action = visualization_msgs::Marker::ADD;
+            marker.pose.position.x = particles[i].x();
+            marker.pose.position.y = particles[i].y();
+            marker.pose.position.z = 0;
+            marker.pose.orientation.x = q.x();
+            marker.pose.orientation.y = q.y();
+            marker.pose.orientation.z = q.z();
+            marker.pose.orientation.w = q.w();
+            marker.scale.x = 1;
+            marker.scale.y = 0.1;
+            marker.scale.z = 0.1;
+            marker.color.a = 0.5;
+            marker.color.r = 0.0;
+            marker.color.g = 1.0;
+            marker.color.b = 0.0;
+            markers.push_back(marker);
+        }
+        msg.markers = markers;
+        mParticlesPub.publish(msg);
     }
 
     void publish_pose() {
@@ -193,11 +237,10 @@ public:
         mNeighborhoodPub = mNh.advertise<PointCloud>("neighborhood", 1);
         mNormalPub = mNh.advertise<visualization_msgs::Marker>("normal_vector", 1);
         mNormalsPub = mNh.advertise<visualization_msgs::MarkerArray>("normals", 1);
+        mParticlesPub = mNh.advertise<visualization_msgs::MarkerArray>("particles", 1);
         mGroundTruthSub = mNh.subscribe("ground_truth", 1, &FilterNode::ground_truth_callback, this);
         mVelCmdSub = mNh.subscribe("cmd_vel", 1, &FilterNode::cmd_vel_callback, this);
-        // ros::Subscriber mVelCmdSub = mNh.subscribe("cmd_vel", 1, &[](const geometry_msgs::Twist& msg) {
-        //     std::cout << "cmd_vel callback" << std::endl;
-        // });
+        mImuSub = mNh.subscribe("imu/imu_only", 1, &FilterNode::imu_callback, this);
         mLastTime = std::chrono::system_clock::now();
     }
     
@@ -206,8 +249,9 @@ public:
         while (ros::ok()) {
             // std::cout << "Spinning" << std::endl;
             ros::spinOnce();
-            publish_normals();
+            // publish_normals();
             publish_normal();
+            publish_particles();
             publish_pose();
             publish_terrain();
             rate.sleep();

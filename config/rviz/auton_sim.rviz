@@ -6,6 +6,7 @@ Panels:
       Expanded:
         - /Marker1
         - /MarkerArray1
+        - /MarkerArray2
       Splitter Ratio: 0.5
     Tree Height: 753
   - Class: rviz/Selection
@@ -25,7 +26,7 @@ Panels:
   - Class: rviz/Time
     Name: Time
     SyncMode: 0
-    SyncSource: Neighborhood Cloud
+    SyncSource: Terrain Cloud
 Preferences:
   PromptSaveOnExit: true
 Toolbars:
@@ -357,7 +358,15 @@ Visualization Manager:
       Marker Topic: /normals
       Name: MarkerArray
       Namespaces:
-        normals: true
+        {}
+      Queue Size: 100
+      Value: true
+    - Class: rviz/MarkerArray
+      Enabled: true
+      Marker Topic: /particles
+      Name: MarkerArray
+      Namespaces:
+        particles: true
       Queue Size: 100
       Value: true
   Enabled: true

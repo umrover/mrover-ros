@@ -26,6 +26,7 @@ private:
     Eigen::Vector2d mFootprint;
 
     void load_terrain_map(const std::string& filename);
+    void update_pose_estimate(const std::vector<manif::SE2d>& particles, const std::vector<double>& weights);
 
 public:
     TerrainParticleFilter(const std::string& terrainFilename, double sigmaX, double sigmaTheta, const Eigen::Vector2d& footprint);   

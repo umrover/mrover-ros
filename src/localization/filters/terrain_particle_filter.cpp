@@ -100,6 +100,11 @@ Eigen::Vector3d TerrainParticleFilter::get_surface_normal(manif::SE2d const& pos
     return normal;
 }
 
+void TerrainParticleFilter::update_pose_estimate(const std::vector<manif::SE2d>& particles, const std::vector<double>& weights) {
+    size_t maxIdx = std::distance(weights.begin(), std::max_element(weights.begin(), weights.end()));
+    mPoseEstimate = particles[maxIdx];
+}
+
 void TerrainParticleFilter::predict(const Eigen::Vector3d& velCmd, double dt) {
     manif::SE2Tangentd increment;
     for (auto& particle: mParticles) {
@@ -110,11 +115,31 @@ void TerrainParticleFilter::predict(const Eigen::Vector3d& velCmd, double dt) {
 }
 
 void TerrainParticleFilter::update(const Eigen::Quaterniond& orientation) {
+    // compute weights
+    // TODO: make this not a vector
+    std::vector<double> weights;
+    for (auto& particle: mParticles) {
+        Eigen::Vector3d normal = get_surface_normal(particle);
+        Eigen::Vector3d zAxis = orientation * Eigen::Vector3d::UnitZ();
+        // TODO: handle negatives
+        double weight = normal.dot(zAxis);
+        std::cout << "Alignment: " << weight << std::endl;
+        weights.push_back(weight);
+    }
+    update_pose_estimate(mParticles, weights);
+
+    // resample particles
+    std::discrete_distribution<int> distribution(weights.begin(), weights.end());
+    std::vector<manif::SE2d> newParticles;
+    for (int i = 0; i < mParticles.size(); i++) {
+        newParticles.push_back(mParticles[distribution(mRNG)]);
+    }
+    mParticles = newParticles;
 }
 
 const manif::SE2d& TerrainParticleFilter::get_pose_estimate() const {
-    // return mPoseEstimate;
-    return mParticles[0];
+    return mPoseEstimate;
+    // return mParticles[0];
 }
 
 const std::vector<manif::SE2d>& TerrainParticleFilter::get_particles() const {
