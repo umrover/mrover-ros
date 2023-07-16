@@ -26,7 +26,6 @@ private:
     Eigen::Vector2d mFootprint;
 
     void load_terrain_map(const std::string& filename);
-    [[nodiscard]] Eigen::Vector3d get_surface_normal(const manif::SE2d& pose);
 
 public:
     TerrainParticleFilter(const std::string& terrainFilename, double sigmaX, double sigmaTheta, const Eigen::Vector2d& footprint);   
@@ -34,7 +33,7 @@ public:
 
     // TODO: add overloads for odometry and IMU pose
     void predict(const Eigen::Vector3d& velCmd, double dt);
-    void update(const Eigen::Vector3d& accelMeasurement);
+    void update(const Eigen::Quaterniond& orientation);
 
     [[nodiscard]] Eigen::Vector2d idx_to_position(const Eigen::Vector2i& idx) const;
     [[nodiscard]] Eigen::Vector2i position_to_idx(const Eigen::Vector2d& position, bool clampBounds = true) const;
@@ -43,5 +42,5 @@ public:
     [[nodiscard]] const std::vector<manif::SE2d>& get_particles() const;
     [[nodiscard]] const Eigen::MatrixXd& get_terrain_grid();
     [[nodiscard]] pcl::PointCloud<pcl::PointXYZ>::Ptr get_neighborhood();
-    [[nodiscard]] Eigen::Vector3d get_normal();
+    [[nodiscard]] Eigen::Vector3d get_surface_normal(const manif::SE2d& pose);
 };

@@ -4,6 +4,7 @@
 #include <geometry_msgs/Twist.h>
 #include <geometry_msgs/PoseStamped.h>
 #include <visualization_msgs/Marker.h>
+#include <visualization_msgs/MarkerArray.h>
 #include <nav_msgs/Odometry.h>
 #include <tf2/LinearMath/Matrix3x3.h>
 #include <tf2_geometry_msgs/tf2_geometry_msgs.h>
@@ -18,7 +19,7 @@ using PointCloud = pcl::PointCloud<pcl::PointXYZ>;
 class FilterNode {
 private:
     ros::NodeHandle mNh;
-    ros::Publisher mPosePub, mTerrainPub, mNeighborhoodPub, mNormalPub;
+    ros::Publisher mPosePub, mTerrainPub, mNeighborhoodPub, mNormalPub, mNormalsPub;
     ros::Subscriber mGroundTruthSub, mVelCmdSub;
     TerrainParticleFilter mFilter;
     std::chrono::time_point<std::chrono::system_clock> mLastTime;
@@ -64,11 +65,49 @@ private:
         mPosePub.publish(msg);
     }
 
+    void publish_normals() {
+        auto grid = mFilter.get_terrain_grid();
+        visualization_msgs::MarkerArray msg;
+        std::vector<visualization_msgs::Marker> markers;
+        for (size_t i = 0; i < grid.rows(); i+=10) {
+            for (size_t j = 0; j < grid.cols(); j+=10) {
+                Eigen::Vector2i idx = Eigen::Vector2i(i, j);
+                Eigen::Vector2d position = mFilter.idx_to_position(idx);
+                double height = grid(i, j);
+                auto normal = mFilter.get_surface_normal(manif::SE2d(position.x(), position.y(), 0));
+                visualization_msgs::Marker marker;
+                marker.header.stamp = ros::Time();
+                marker.header.frame_id = "map";
+                marker.ns = "normals";
+                marker.id = i * grid.cols() + j;
+                marker.type = visualization_msgs::Marker::ARROW;
+                marker.action = visualization_msgs::Marker::ADD;
+                marker.points.resize(2);
+                marker.points[0].x = position.x();
+                marker.points[0].y = position.y();
+                marker.points[0].z = height;
+                marker.points[1].x = position.x() + normal.x();
+                marker.points[1].y = position.y() + normal.y();
+                marker.points[1].z = height + normal.z();
+                marker.scale.x = 0.05;
+                marker.scale.y = 0.1;
+                marker.scale.z = 0.5;
+                marker.color.a = 1.0;
+                marker.color.r = 1.0;
+                marker.color.g = 0.0;
+                marker.color.b = 0.0;
+                markers.push_back(marker);
+            }
+        }
+        msg.markers = markers;
+        mNormalsPub.publish(msg);
+    }
+
     // TODO: clean this up
     void publish_normal() {
         if (!mInitialized) return;
-        auto normal = mFilter.get_normal();
         auto pose = mFilter.get_pose_estimate();
+        auto normal = mFilter.get_surface_normal(pose);
         
         // convert direction vector to quaternion
         Eigen::Vector3d basis2 = normal.cross(Eigen::Vector3d::UnitZ());
@@ -140,19 +179,20 @@ private:
     }
 
 public:
-    FilterNode() : mFilter("/home/riley/catkin_ws/src/mrover/src/localization/terrain.tif", 0, 0, Eigen::Vector2d(10, 10)) {
+    FilterNode() : mFilter("/home/riley/catkin_ws/src/mrover/src/localization/terrain.tif", 0, 0, Eigen::Vector2d(2, 2)) {
         // std::cout << "FilterNode constructor" << std::endl;
         mNumParticles = 1;
         Eigen::Vector2i idx(3,1);
         Eigen::Vector2d pos = mFilter.idx_to_position(idx);
         Eigen::Vector2i idx2 = mFilter.position_to_idx(pos);
-        std::cout << "idx: " << idx.x() << ", " << idx.y() << std::endl;
-        std::cout << "pos: " << pos.x() << ", " << pos.y() << std::endl;
-        std::cout << "idx2: " << idx2.x() << ", " << idx2.y() << std::endl;
+        // std::cout << "idx: " << idx.x() << ", " << idx.y() << std::endl;
+        // std::cout << "pos: " << pos.x() << ", " << pos.y() << std::endl;
+        // std::cout << "idx2: " << idx2.x() << ", " << idx2.y() << std::endl;
         mPosePub = mNh.advertise<geometry_msgs::PoseStamped>("pf_pose", 1);
         mTerrainPub = mNh.advertise<PointCloud>("terrain_map", 1);
         mNeighborhoodPub = mNh.advertise<PointCloud>("neighborhood", 1);
         mNormalPub = mNh.advertise<visualization_msgs::Marker>("normal_vector", 1);
+        mNormalsPub = mNh.advertise<visualization_msgs::MarkerArray>("normals", 1);
         mGroundTruthSub = mNh.subscribe("ground_truth", 1, &FilterNode::ground_truth_callback, this);
         mVelCmdSub = mNh.subscribe("cmd_vel", 1, &FilterNode::cmd_vel_callback, this);
         // ros::Subscriber mVelCmdSub = mNh.subscribe("cmd_vel", 1, &[](const geometry_msgs::Twist& msg) {
@@ -166,6 +206,7 @@ public:
         while (ros::ok()) {
             // std::cout << "Spinning" << std::endl;
             ros::spinOnce();
+            publish_normals();
             publish_normal();
             publish_pose();
             publish_terrain();

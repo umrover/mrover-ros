@@ -86,7 +86,7 @@ Eigen::Vector3d TerrainParticleFilter::get_surface_normal(manif::SE2d const& pos
     float curvature;
     pcl::computePointNormal(*neighborhood_cloud, plane_parameters, curvature);
     Eigen::Vector3d normal(plane_parameters.x(), plane_parameters.y(), plane_parameters.z());
-    std::cout << "Normal: " << normal.transpose() << std::endl;
+    // std::cout << "Normal: " << normal.transpose() << std::endl;
 
     // DEBUG
     neighborhood_cloud->width = neighborhood_cloud->size();
@@ -109,7 +109,7 @@ void TerrainParticleFilter::predict(const Eigen::Vector3d& velCmd, double dt) {
     }
 }
 
-void TerrainParticleFilter::update(const Eigen::Vector3d& accelMeasurement) {
+void TerrainParticleFilter::update(const Eigen::Quaterniond& orientation) {
 }
 
 const manif::SE2d& TerrainParticleFilter::get_pose_estimate() const {
@@ -125,14 +125,10 @@ const std::vector<manif::SE2d>& TerrainParticleFilter::get_particles() const {
 const Eigen::MatrixXd& TerrainParticleFilter::get_terrain_grid() {
     // auto v = get_surface_normal(mParticles[0]);
     // std::cout << mNeighborhood.grid << std::endl;
-    return mNeighborhood.grid;
-    // return mTerrainMap.grid;
+    // return mNeighborhood.grid;
+    return mTerrainMap.grid;
 }
 
 pcl::PointCloud<pcl::PointXYZ>::Ptr TerrainParticleFilter::get_neighborhood() {
     return mNeighborhoodCloud;
-}
-
-Eigen::Vector3d TerrainParticleFilter::get_normal() {
-    return get_surface_normal(mParticles[0]);
 }
