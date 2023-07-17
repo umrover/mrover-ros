@@ -26,8 +26,12 @@ private:
     std::chrono::time_point<std::chrono::system_clock> mLastTime;
     bool mInitialized = false;
     int mNumParticles;
+    std::default_random_engine mRNG;
 
     void ground_truth_callback(const nav_msgs::Odometry& msg) {
+        auto now = std::chrono::system_clock::now();
+        double dt = std::chrono::duration<double>(now - mLastTime).count();
+        mLastTime = now;
         if (!mInitialized) {
             std::cout << "Initializing filter" << std::endl;
             tf2::Quaternion q;
@@ -39,26 +43,38 @@ private:
             mFilter.init_particles(pose, mNumParticles);
             mInitialized = true;
         }
+
+        Eigen::Quaterniond orientation(msg.pose.pose.orientation.w, msg.pose.pose.orientation.x, msg.pose.pose.orientation.y, msg.pose.pose.orientation.z);
+        Eigen::Vector3d velocityWorld(msg.twist.twist.linear.x, msg.twist.twist.linear.y, msg.twist.twist.linear.z);
+        Eigen::Vector3d velocityBody = orientation.inverse() * velocityWorld;
+        std::normal_distribution<double> xDist(0, 0.1);
+        std::normal_distribution<double> thetaDist(0, 0.1);
+        Eigen::Vector3d velCmd(velocityBody.x(), velocityBody.y(), msg.twist.twist.angular.z);
+        std::cout << "Vel cmd: " << velCmd.transpose() << std::endl;
+        Eigen::Vector3d noise(xDist(mRNG), 0, thetaDist(mRNG));
+        mFilter.predict(velCmd, dt);
     }
 
     void cmd_vel_callback(const geometry_msgs::Twist& msg) {
-        if (!mInitialized) return;
-        auto now = std::chrono::system_clock::now();
-        double dt = std::chrono::duration<double>(now - mLastTime).count();
-        Eigen::Vector3d velCmd(msg.linear.x, msg.linear.y, msg.angular.z);
+        // if (!mInitialized) return;
+        // auto now = std::chrono::system_clock::now();
+        // double dt = std::chrono::duration<double>(now - mLastTime).count();
+        // mLastTime = now;
+        // Eigen::Vector3d velCmd(msg.linear.x, msg.linear.y, msg.angular.z);
         // mFilter.predict(velCmd, dt);
     }
 
     void imu_callback(const sensor_msgs::Imu& msg) {
         if (!mInitialized) return;
         // std::cout << "Updating" << std::endl;
-        auto now = std::chrono::system_clock::now();
-        double dt = std::chrono::duration<double>(now - mLastTime).count();
+        // auto now = std::chrono::system_clock::now();
+        // double dt = std::chrono::duration<double>(now - mLastTime).count();
+        // mLastTime = now;
         Eigen::Quaterniond orientation(msg.orientation.w, msg.orientation.x, msg.orientation.y, msg.orientation.z);
         Eigen::Vector3d gyro(msg.angular_velocity.x, msg.angular_velocity.y, msg.angular_velocity.z);
         Eigen::Vector3d accel(msg.linear_acceleration.x, msg.linear_acceleration.y, msg.linear_acceleration.z);
-        mFilter.predict(orientation, accel, gyro, dt);
-        mFilter.update(orientation);
+        // mFilter.predict(orientation, accel, gyro, dt);
+        // mFilter.update(orientation);
     }
 
     void publish_particles() {
