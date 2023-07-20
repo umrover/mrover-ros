@@ -137,23 +137,22 @@ void TerrainParticleFilter::predict(const Eigen::Quaterniond& orientation, const
 
 void TerrainParticleFilter::update(const Eigen::Quaterniond& orientation) {
     // compute weights
-    // TODO: make this not a vector
-    std::vector<double> weights;
-    for (auto& particle: mParticles) {
-        Eigen::Vector3d normal = get_surface_normal(particle);
+    Eigen::VectorXd weights(mParticles.size());
+    for (size_t i = 0; i < mParticles.size(); i++) {
+        Eigen::Vector3d normal = get_surface_normal(mParticles[i]);
         Eigen::Vector3d zAxis = orientation * Eigen::Vector3d::UnitZ();
-        // TODO: handle negatives
-        double weight = normal.dot(zAxis);
-        // std::cout << "Alignment: " << weight << std::endl;
-        weights.push_back(weight);
+        double weight = std::clamp(normal.dot(zAxis), 0.0, 1.0);
+        weights[i] = weight;
     }
-    update_pose_estimate(mParticles, weights);
+    weights /= weights.sum();
+    std::vector<double> weights_vec(weights.data(), weights.data() + weights.size());
+    update_pose_estimate(mParticles, weights_vec);
 
     // resample particles
-    std::discrete_distribution<int> distribution(weights.begin(), weights.end());
-    std::vector<manif::SE2d> newParticles;
+    std::discrete_distribution<int> distribution(weights_vec.begin(), weights_vec.end());
+    std::vector<manif::SE2d> newParticles(mParticles.size());
     for (int i = 0; i < mParticles.size(); i++) {
-        newParticles.push_back(mParticles[distribution(mRNG)]);
+        newParticles[i] = mParticles[distribution(mRNG)];
     }
     mParticles = newParticles;
 }

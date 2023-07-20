@@ -74,7 +74,7 @@ private:
         Eigen::Vector3d gyro(msg.angular_velocity.x, msg.angular_velocity.y, msg.angular_velocity.z);
         Eigen::Vector3d accel(msg.linear_acceleration.x, msg.linear_acceleration.y, msg.linear_acceleration.z);
         // mFilter.predict(orientation, accel, gyro, dt);
-        // mFilter.update(orientation);
+        mFilter.update(orientation);
     }
 
     void publish_particles() {
@@ -243,12 +243,11 @@ private:
     }
 
 public:
-    FilterNode() : mFilter("/home/riley/catkin_ws/src/mrover/src/localization/terrain.tif", 0.01, 0.01, Eigen::Vector2d(1, 1)) {
-        // std::cout << "FilterNode constructor" << std::endl;
-        mNumParticles = 10;
-        Eigen::Vector2i idx(3,1);
-        Eigen::Vector2d pos = mFilter.idx_to_position(idx);
-        Eigen::Vector2i idx2 = mFilter.position_to_idx(pos);
+    FilterNode() : mFilter("/home/riley/catkin_ws/src/mrover/src/localization/waves.tif", 0.01, 0.03, Eigen::Vector2d(1, 1)) {
+        mNumParticles = 50;
+        // Eigen::Vector2i idx(3,1);
+        // Eigen::Vector2d pos = mFilter.idx_to_position(idx);
+        // Eigen::Vector2i idx2 = mFilter.position_to_idx(pos);
         // std::cout << "idx: " << idx.x() << ", " << idx.y() << std::endl;
         // std::cout << "pos: " << pos.x() << ", " << pos.y() << std::endl;
         // std::cout << "idx2: " << idx2.x() << ", " << idx2.y() << std::endl;

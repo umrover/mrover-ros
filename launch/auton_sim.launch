@@ -3,6 +3,7 @@
  -->
 <launch>
     <arg name="rvizconfig" default="$(find mrover)/config/rviz/auton_sim.rviz"/>
+    <!-- <arg name="world_name" default="world_waves"/> -->
     <arg name="world_name" default="world"/>
     <arg name="use_odom" default="true"/>
 

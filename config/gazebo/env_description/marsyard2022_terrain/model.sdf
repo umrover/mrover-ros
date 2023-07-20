@@ -10,9 +10,11 @@
       <collision name="terrain_collision">
         <geometry>
           <heightmap>
-            <uri>model://marsyard2022_terrain/dem/marsyard2022_terrain_hm.tif</uri>
+            <!-- <uri>model://marsyard2022_terrain/dem/marsyard2022_terrain_hm.tif</uri> -->
+            <uri>model://marsyard2022_terrain/dem/waves.tif</uri>
             <pos>0 0 0</pos>
-            <size>50 50 4.820803273566</size>
+            <!-- <size>50 50 4.820803273566</size> -->
+            <size>50 50 3</size>
           </heightmap>
         </geometry>
       </collision>
@@ -21,12 +23,16 @@
         <geometry>
           <heightmap>
             <use_terrain_paging>false</use_terrain_paging>
-            <uri>model://marsyard2022_terrain/dem/marsyard2022_terrain_hm.tif</uri>
+            <!-- <uri>model://marsyard2022_terrain/dem/marsyard2022_terrain_hm.tif</uri> -->
+            <uri>model://marsyard2022_terrain/dem/waves.tif</uri>
             <pos>0 0 0</pos>
-            <size>50 50 4.820803273566</size>
+            <!-- <size>50 50 4.820803273566</size> -->
+            <size>50 50 3</size>
             <texture>
-              <diffuse>model://marsyard2022_terrain/dem/marsyard2022_terrain_texture.png</diffuse>
-              <normal>file://media/materials/textures/flat_normal.png</normal>
+              <!-- <diffuse>model://marsyard2022_terrain/dem/marsyard2022_terrain_texture.png</diffuse> -->
+              <diffuse>model://soil_base.png</diffuse>
+              <!-- <normal>file://media/materials/textures/flat_normal.png</normal> -->
+              <normal>model://soil_normal.png</normal>
               <size>50</size>
             </texture>
           </heightmap>
