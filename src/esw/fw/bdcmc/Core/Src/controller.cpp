@@ -7,10 +7,24 @@ extern FDCAN_HandleTypeDef hfdcan1;
 
 namespace mrover {
 
-    struct EncoderReader {
-        TIM_HandleTypeDef* htim;
+    class EncoderReader {
+        TIM_HandleTypeDef* m_relative_encoder_timer = nullptr;
+        I2C_HandleTypeDef* m_absolute_encoder_i2c = nullptr;
+
+    public:
+        EncoderReader() = default;
+
+        EncoderReader(TIM_HandleTypeDef* relative_encoder_timer, I2C_HandleTypeDef* absolute_encoder_i2c)
+            : m_relative_encoder_timer{relative_encoder_timer}, m_absolute_encoder_i2c{absolute_encoder_i2c} {
+
+            // TODO: initialize with HAL
+            // TODO: store state to center the relative encoder readings based on absolute
+        }
 
         [[nodiscard]] Radians read_input() {
+
+            // TODO: read relative encoder using timer
+
             return {};
         }
     };
