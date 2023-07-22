@@ -61,6 +61,18 @@ void TerrainParticleFilter::init_particles(const manif::SE2d& initialPose, int n
     mParticles = std::vector<manif::SE2d>(numParticles, initialPose);
 }
 
+void TerrainParticleFilter::init_particles(int numParticles) {
+    mParticles = std::vector<manif::SE2d>(numParticles);
+    std::uniform_real_distribution<double> xDist(0, mTerrainMap.grid.cols() * mTerrainMap.metersPerCell);
+    std::uniform_real_distribution<double> yDist(0, mTerrainMap.grid.rows() * mTerrainMap.metersPerCell);
+    std::uniform_real_distribution<double> thetaDist(-M_PI, M_PI);
+    for (auto& particle : mParticles) {
+        // particle.translation().x() = xDist(mRNG);
+        // particle.translation().y() = yDist(mRNG);
+        // particle.so2().log().x() = thetaDist(mRNG);
+    }
+}
+
 // TODO: make it const
 Eigen::Vector3d TerrainParticleFilter::get_surface_normal(manif::SE2d const& pose) {
     Eigen::Vector2i minCorner = position_to_idx(pose.translation() - mFootprint / 2.0);

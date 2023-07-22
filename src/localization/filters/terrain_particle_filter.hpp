@@ -32,6 +32,7 @@ private:
 public:
     TerrainParticleFilter(const std::string& terrainFilename, double sigmaX, double sigmaTheta, const Eigen::Vector2d& footprint);   
     void init_particles(const manif::SE2d& initialPose, int numParticles);
+    void init_particles(int numParticles);
 
     // TODO: add overloads for odometry and IMU pose
     void predict(const Eigen::Vector3d& velCmd, double dt);
