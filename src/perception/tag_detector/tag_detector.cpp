@@ -30,6 +30,7 @@ namespace mrover {
 
         mIt.emplace(mNh);
         mImgPub = mIt->advertise("tag_detection", 1);
+        mTagIdPub = mNh.advertise<std::string>("tag_id", 1);
         mDictionary = cv::aruco::getPredefinedDictionary(dictionaryNumber);
 
         mPcSub = mNh.subscribe("camera/left/points", 1, &TagDetectorNodelet::pointCloudCallback, this);

@@ -1,4 +1,5 @@
 #include <optional>
+#include <ros/publisher.h>
 #include <string>
 #include <unordered_map>
 
@@ -34,6 +35,7 @@ namespace mrover {
 
         std::optional<image_transport::ImageTransport> mIt;
         image_transport::Publisher mImgPub;
+        ros::Publisher mTagIdPub;
         std::unordered_map<int, image_transport::Publisher> mThreshPubs; // Map from threshold scale to publisher
         ros::ServiceServer mServiceEnableDetections;
 

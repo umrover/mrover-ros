@@ -122,7 +122,7 @@ namespace mrover {
                     // Publish tag to odom
                     std::string const& parentFrameId = mUseOdom ? mOdomFrameId : mMapFrameId;
                     SE3 tagInParent = SE3::fromTfTree(mTfBuffer, parentFrameId, immediateFrameId);
-                    SE3::pushToTfTree(mTfBroadcaster, "fiducial" + std::to_string(id), parentFrameId, tagInParent);
+                    SE3::pushToTfTree(mTfBroadcaster, "fiducial", parentFrameId, tagInParent);
                 } catch (tf2::ExtrapolationException const&) {
                     NODELET_WARN("Old data for immediate tag");
                 } catch (tf2::LookupException const&) {
@@ -146,7 +146,7 @@ namespace mrover {
                     cv::Point pt{tagBoxWidth * tagCount, mImg.rows / 10};
                     std::string text = "id" + std::to_string(id) + ":" + std::to_string((tag.hitCount));
                     cv::putText(mImg, text, pt, cv::FONT_HERSHEY_COMPLEX, mImg.cols / 800.0, color, mImg.cols / 300);
-
+                    mTagIdPub.publish("Tag ID: " + std::to_string(id) + "\n");
                     ++tagCount;
                 }
             }
