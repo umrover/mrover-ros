@@ -12,6 +12,8 @@
 #include <cmath>
 #include <execution>
 #include <numeric>
+#include "std_msgs/String.h"
+
 
 namespace mrover {
 
@@ -146,7 +148,9 @@ namespace mrover {
                     cv::Point pt{tagBoxWidth * tagCount, mImg.rows / 10};
                     std::string text = "id" + std::to_string(id) + ":" + std::to_string((tag.hitCount));
                     cv::putText(mImg, text, pt, cv::FONT_HERSHEY_COMPLEX, mImg.cols / 800.0, color, mImg.cols / 300);
-                    mTagIdPub.publish("Tag ID: " + std::to_string(id) + "\n");
+                    std_msgs::String str;
+                    str.data = "Tag ID: " + std::to_string(id) + "\n";
+                    mTagIdPub.publish(str);
                     ++tagCount;
                 }
             }
