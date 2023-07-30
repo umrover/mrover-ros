@@ -40,7 +40,8 @@ private:
             double roll, pitch, yaw;
             r.getRPY(roll, pitch, yaw);
             manif::SE2d pose(msg.pose.pose.position.x, msg.pose.pose.position.y, yaw);
-            mFilter.init_particles(pose, mNumParticles);
+            mFilter.init_particles(mNumParticles);
+            // mFilter.init_particles(pose, mNumParticles);
             mInitialized = true;
         }
 

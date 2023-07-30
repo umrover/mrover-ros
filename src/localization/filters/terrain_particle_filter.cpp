@@ -57,19 +57,17 @@ Eigen::Vector2i TerrainParticleFilter::position_to_idx(const Eigen::Vector2d& po
     return idx;
 }
 
-void TerrainParticleFilter::init_particles(const manif::SE2d& initialPose, int numParticles) {
+void TerrainParticleFilter::init_particles(const manif::SE2d& initialPose, size_t numParticles) {
     mParticles = std::vector<manif::SE2d>(numParticles, initialPose);
 }
 
-void TerrainParticleFilter::init_particles(int numParticles) {
-    mParticles = std::vector<manif::SE2d>(numParticles);
+void TerrainParticleFilter::init_particles(size_t numParticles) {
     std::uniform_real_distribution<double> xDist(0, mTerrainMap.grid.cols() * mTerrainMap.metersPerCell);
     std::uniform_real_distribution<double> yDist(0, mTerrainMap.grid.rows() * mTerrainMap.metersPerCell);
     std::uniform_real_distribution<double> thetaDist(-M_PI, M_PI);
-    for (auto& particle : mParticles) {
-        // particle.translation().x() = xDist(mRNG);
-        // particle.translation().y() = yDist(mRNG);
-        // particle.so2().log().x() = thetaDist(mRNG);
+    mParticles.resize(numParticles);
+    for (size_t i = 0; i < numParticles; i++) {
+        mParticles[i] = manif::SE2d(xDist(mRNG), yDist(mRNG), thetaDist(mRNG));
     }
 }
 
@@ -82,7 +80,7 @@ Eigen::Vector3d TerrainParticleFilter::get_surface_normal(manif::SE2d const& pos
     Eigen::MatrixXd neighborhood = mTerrainMap.grid.block(minCorner.x(), minCorner.y(),
                                                          footprintCells.x(), footprintCells.y());
     if(neighborhood.rows() == 0 || neighborhood.cols() == 0)
-        throw std::runtime_error("pose out of bounds of terrain map");
+        throw std::runtime_error("pose out of bounds of terrain map: " + pose.to_string());
 
     pcl::PointCloud<pcl::PointXYZ>::Ptr neighborhood_cloud(new pcl::PointCloud<pcl::PointXYZ>);
     for (size_t i = 0; i < neighborhood.rows(); i++) {
