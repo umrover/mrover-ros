@@ -44,7 +44,7 @@ export default {
     }
   },
 
-  beforeDestroy: function () {
+  beforeUnmount: function () {
     this.updateArmMode("sa_disabled", this.arm_mode);
     window.clearInterval(interval);
   },

@@ -432,7 +432,7 @@ export default {
     },
   },
 
-  beforeDestroy: function () {
+  beforeUnmount: function () {
     window.clearInterval(stuck_interval);
     window.clearInterval(intermediate_publish_interval);
     this.autonEnabled = false;
