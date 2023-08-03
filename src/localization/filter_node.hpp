@@ -245,7 +245,7 @@ private:
 
 public:
     FilterNode() : mFilter("/home/riley/catkin_ws/src/mrover/src/localization/waves.tif", 0.01, 0.03, Eigen::Vector2d(1, 1)) {
-        mNumParticles = 50;
+        mNumParticles = 1000;
         // Eigen::Vector2i idx(3,1);
         // Eigen::Vector2d pos = mFilter.idx_to_position(idx);
         // Eigen::Vector2i idx2 = mFilter.position_to_idx(pos);

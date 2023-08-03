@@ -67,7 +67,11 @@ void TerrainParticleFilter::init_particles(size_t numParticles) {
     std::uniform_real_distribution<double> thetaDist(-M_PI, M_PI);
     mParticles.resize(numParticles);
     for (size_t i = 0; i < numParticles; i++) {
-        mParticles[i] = manif::SE2d(xDist(mRNG), yDist(mRNG), thetaDist(mRNG));
+        Eigen::Vector2d position(xDist(mRNG), yDist(mRNG));
+        position -= mTerrainMap.origin;
+        // mParticles[i] = manif::SE2d(position.x(), position.y(), thetaDist(mRNG));
+        mParticles[i] = manif::SE2d(position.x(), position.y(), thetaDist(mRNG));
+        // mParticles[i] = manif::SE2d::Random();
     }
 }
 
@@ -79,8 +83,11 @@ Eigen::Vector3d TerrainParticleFilter::get_surface_normal(manif::SE2d const& pos
     // TODO: index with seq if eigen 3.4 is available
     Eigen::MatrixXd neighborhood = mTerrainMap.grid.block(minCorner.x(), minCorner.y(),
                                                          footprintCells.x(), footprintCells.y());
-    if(neighborhood.rows() == 0 || neighborhood.cols() == 0)
-        throw std::runtime_error("pose out of bounds of terrain map: " + pose.to_string());
+    if(neighborhood.rows() == 0 || neighborhood.cols() == 0) {
+        std::stringstream ss;
+        ss << "pose out of bounds of terrain map: " << pose.translation().transpose();
+        throw std::runtime_error(ss.str());
+    }
 
     pcl::PointCloud<pcl::PointXYZ>::Ptr neighborhood_cloud(new pcl::PointCloud<pcl::PointXYZ>);
     for (size_t i = 0; i < neighborhood.rows(); i++) {
