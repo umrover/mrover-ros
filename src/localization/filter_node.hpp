@@ -140,6 +140,7 @@ private:
                 Eigen::Vector2d position = mFilter.idx_to_position(idx);
                 double height = grid(i, j);
                 auto normal = mFilter.get_surface_normal(manif::SE2d(position.x(), position.y(), 0));
+                if (!normal) continue;
                 visualization_msgs::Marker marker;
                 marker.header.stamp = ros::Time();
                 marker.header.frame_id = "map";
@@ -151,9 +152,9 @@ private:
                 marker.points[0].x = position.x();
                 marker.points[0].y = position.y();
                 marker.points[0].z = height;
-                marker.points[1].x = position.x() + normal.x();
-                marker.points[1].y = position.y() + normal.y();
-                marker.points[1].z = height + normal.z();
+                marker.points[1].x = position.x() + normal->x();
+                marker.points[1].y = position.y() + normal->y();
+                marker.points[1].z = height + normal->z();
                 marker.scale.x = 0.05;
                 marker.scale.y = 0.1;
                 marker.scale.z = 0.5;
@@ -173,12 +174,13 @@ private:
         if (!mInitialized) return;
         auto pose = mFilter.get_pose_estimate();
         auto normal = mFilter.get_surface_normal(pose);
+        if (!normal) return;
         
         // convert direction vector to quaternion
-        Eigen::Vector3d basis2 = normal.cross(Eigen::Vector3d::UnitZ());
-        Eigen::Vector3d basis3 = normal.cross(basis2);
+        Eigen::Vector3d basis2 = normal->cross(Eigen::Vector3d::UnitZ());
+        Eigen::Vector3d basis3 = normal->cross(basis2);
         Eigen::Matrix3d basis = Eigen::Matrix3d::Zero();
-        basis.col(0) = normal;
+        basis.col(0) = *normal;
         basis.col(1) = basis2;
         basis.col(2) = basis3;
         Eigen::Quaterniond q(basis);

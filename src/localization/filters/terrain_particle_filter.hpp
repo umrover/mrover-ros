@@ -4,6 +4,7 @@
 #include <pcl/point_types.h>
 #include <pcl/point_cloud.h>
 #include <random>
+#include <optional>
 
 struct TerrainMap {
     Eigen::MatrixXd grid;
@@ -21,12 +22,14 @@ private:
     std::vector<manif::SE2d> mParticles;
     std::vector<double> mParticleWeights;
     manif::SE2d mPoseEstimate;
-    std::normal_distribution<double> mXDist, mThetaDist;
+    std::normal_distribution<double> mXDist, mThetaDist, mResamplingXDist, mResamplingThetaDist;
+    std::uniform_real_distribution<> mXDistUniform, mYDistUniform, mThetaDistUniform;
     std::default_random_engine mRNG;
     Eigen::Vector2d mFootprint;
     Eigen::Vector3d mVelocity;
+    double mRandomInjectionRate;
 
-    void load_terrain_map(const std::string& filename);
+    static TerrainMap load_terrain_map(const std::string& filename);
     void update_pose_estimate(const std::vector<manif::SE2d>& particles, const std::vector<double>& weights);
 
 public:
@@ -46,5 +49,5 @@ public:
     [[nodiscard]] const std::vector<manif::SE2d>& get_particles() const;
     [[nodiscard]] const Eigen::MatrixXd& get_terrain_grid();
     [[nodiscard]] pcl::PointCloud<pcl::PointXYZ>::Ptr get_neighborhood();
-    [[nodiscard]] Eigen::Vector3d get_surface_normal(const manif::SE2d& pose);
+    [[nodiscard]] std::optional<Eigen::Vector3d> get_surface_normal(const manif::SE2d& pose);
 };
