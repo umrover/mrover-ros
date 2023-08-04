@@ -159,18 +159,35 @@ void TerrainParticleFilter::update(const Eigen::Quaterniond& orientation) {
     // compute weights
     Eigen::VectorXd weights(mParticles.size());
     for (size_t i = 0; i < mParticles.size(); i++) {
-        std::optional<Eigen::Vector3d> normal = get_surface_normal(mParticles[i]);
-        if (!normal) {
+        std::optional<Eigen::Vector3d> maybe_normal = get_surface_normal(mParticles[i]);
+        if (!maybe_normal) {
             weights[i] = 0;
             continue;
         }
-        Eigen::Vector3d zAxis = orientation * Eigen::Vector3d::UnitZ();
-        double weight = std::clamp(normal->dot(zAxis), 0.0, 1.0);
+        Eigen::Vector3d normal = *maybe_normal;
+        Eigen::Vector2d forward2d = mParticles[i].rotation() * Eigen::Vector2d::UnitX();
+        Eigen::Vector3d particle_forward(forward2d.x(), forward2d.y(), 0);
+        Eigen::Vector3d left = normal.cross(particle_forward);
+        Eigen::Vector3d forward = left.cross(normal);
+        Eigen::Matrix3d rotation;
+        rotation.col(0) = forward.normalized();
+        rotation.col(1) = left.normalized();
+        // TODO: is this necessary?
+        rotation.col(2) = normal.normalized();
+        Eigen::Quaterniond particle_orientation(rotation);
+        manif::SO3d particle_SO3(particle_orientation.normalized());
+        manif::SO3d true_SO3(orientation);
+        manif::SO3Tangentd difference_tangent = particle_SO3.lminus(true_SO3);
+        double weight = std::exp(-0.5 * difference_tangent.coeffs().squaredNorm());
+        // std::cout << "Rotation: " << std::endl << rotation << std::endl;
+        // std::cout << "forward: " << forward2d.transpose() << std::endl;
+        // Eigen::Vector3d zAxis = orientation * Eigen::Vector3d::UnitZ();
+        // double weight = std::clamp(normal.dot(zAxis), 0.0, 1.0);
         weights[i] = weight;
     }
 
     // normalize weights and use them to update pose estimate
-    weights /= weights.sum();
+    weights.normalize();
     std::vector<double> weights_vec(weights.data(), weights.data() + weights.size());
     update_pose_estimate(mParticles, weights_vec);
 
