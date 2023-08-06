@@ -84,8 +84,6 @@ class SearchStateTransitions(Enum):
     no_fiducial = "WaypointState"
     continue_search = "SearchState"
     found_fiducial_post = "ApproachPostState"
-    found_fiducial_gate = "PartialGateState"
-    found_gate = "GateTraverseState"
     recovery_state = "RecoveryState"
 
 
@@ -155,13 +153,8 @@ class SearchState(BaseState):
         )
         self.context.rover.send_drive_command(cmd_vel)
 
-        # if we see the fiduicial or gate, go to either fiducial or gate state
-        if self.context.env.current_gate() is not None:
-            return SearchStateTransitions.found_gate.name  # type: ignore
-        elif self.context.env.current_fid_pos() is not None and self.context.course.look_for_post():
+        # if we see the fiduicial go to fiducial state
+        if self.context.env.current_fid_pos() is not None and self.context.course.look_for_post():
             return SearchStateTransitions.found_fiducial_post.name  # type: ignore
-        elif (
-            self.context.env.current_fid_pos() is not None or self.context.env.other_gate_fid_pos() is not None
-        ) and self.context.course.look_for_gate():
-            return SearchStateTransitions.found_fiducial_gate.name  # type: ignore
+
         return SearchStateTransitions.continue_search.name  # type: ignore
