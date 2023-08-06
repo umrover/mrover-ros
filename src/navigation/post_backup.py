@@ -141,7 +141,7 @@ class PostBackupState(BaseState):
                     return PostBackupTransitions.finished_traj.name  # type: ignore
 
             if self.context.rover.stuck:
-                self.context.rover.previous_state = PartialGateStateTransitions.partial_gate.name  # type: ignore
+                self.context.rover.previous_state = PostBackupTransitions.continue_post_backup.name  # type: ignore
                 self.traj = None
                 return PostBackupTransitions.recovery_state.name  # type: ignore
 
