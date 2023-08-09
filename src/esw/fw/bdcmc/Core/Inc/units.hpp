@@ -13,9 +13,9 @@ namespace mrover {
     //
 
     template<typename T>
-    concept Ratioable = requires(T t) {
-        { t.num } -> std::convertible_to<std::intmax_t>;
-        { t.den } -> std::convertible_to<std::intmax_t>;
+    concept Ratioable = requires(T) {
+        { T::num } -> std::convertible_to<std::intmax_t>;
+        { T::den } -> std::convertible_to<std::intmax_t>;
     };
 
     template<typename T>
