@@ -81,7 +81,6 @@ namespace mrover {
             TimeUnit dt = now - m_last_time;
             m_last_time = now;
             return calculate(input, target, now);
-            return {};
         }
 
         auto with_p(double p) -> PIDF& {
