@@ -3,6 +3,7 @@
 #include <algorithm>
 #include <cmath>
 #include <concepts>
+#include <numbers>
 #include <ratio>
 #include <type_traits>
 
@@ -95,8 +96,7 @@ namespace mrover {
         }
 
         constexpr Unit() = default;
-
-        constexpr explicit Unit(double d) : rep{d * CONVERSION} {}
+        constexpr explicit Unit(Scalar auto const& val) : rep{static_cast<double>(val) * CONVERSION} {}
 
         template<Unitable U>
         constexpr Unit(U const& other)
@@ -116,7 +116,7 @@ namespace mrover {
 
     template<Unitable U>
     inline constexpr auto make_unit(Scalar auto const& value) -> U {
-        return U{static_cast<double>(value) * U::CONVERSION};
+        return U{value};
     }
 
     using dimensionless_t = Unit<>;
@@ -259,6 +259,8 @@ namespace mrover {
     //  Common units
     //
 
+    constexpr auto TWO_PI = 2 * std::numbers::pi;
+
     // First template is conversion ratio to base SI unit
     // Following template arguments are exponents in the order: Meter, Kilogram, Second, Radian, Ampere, Kelvin, Byte
     using Meters = Unit<std::ratio<1>, std::ratio<1>>;
@@ -278,4 +280,27 @@ namespace mrover {
     using Bytes = Unit<std::ratio<1>, zero_exp_t, zero_exp_t, zero_exp_t, zero_exp_t, zero_exp_t, zero_exp_t, std::ratio<1>>;
     using Volts = Unit<std::ratio<1>, std::ratio<2>, std::ratio<1>, std::ratio<-3>, zero_exp_t, std::ratio<-1>, zero_exp_t>;
 
+    //
+    // Angle specialization
+    //
+
+    inline constexpr auto operator*(Scalar auto const& n, Radians const& r) {
+        return make_unit<Radians>(std::fmod(static_cast<double>(n) * r.rep, TWO_PI) + static_cast<double>(n) < 0 ? TWO_PI : 0);
+    }
+
+    inline constexpr auto operator*(Radians const& r, Scalar auto const& n) {
+        return operator*(n, r);
+    }
+
+    inline constexpr auto operator-(Radians const& r) {
+        return make_unit<Radians>(std::fmod(TWO_PI - r.rep, TWO_PI));
+    }
+
+    inline constexpr auto operator+(Radians const& r1, Radians const& r2) {
+        return make_unit<Radians>(std::fmod(r1.rep + r2.rep, TWO_PI));
+    }
+
+    inline constexpr auto operator-(Radians const& r1, Radians const& r2) {
+        return make_unit<Radians>(std::fmod(r1.rep - r2.rep + TWO_PI, TWO_PI));
+    }
 } // namespace mrover
