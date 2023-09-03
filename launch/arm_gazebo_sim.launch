@@ -3,9 +3,9 @@ Launch File to open Gazebo sim for arm,
 positions published to /ra_cmd and /gazebo_arm_controller/command
 -->
 <launch>
-	<rosparam command="load" file="$(find mrover)/config/teleop.yaml" />
-	<include file="$(find mrover_arm)/launch/demo_gazebo.launch">
-    </include>
-	
-	<node name="mrover_arm_follow_joint_trajectory" pkg="mrover" type="arm_trajectory_server.py"/>
+  <rosparam command="load" file="$(find mrover)/config/teleop.yaml"/>
+  <include file="$(find mrover_arm)/launch/demo_gazebo.launch">
+  </include>
+
+  <node name="mrover_arm_follow_joint_trajectory" pkg="mrover" type="arm_trajectory_server.py"/>
 </launch>

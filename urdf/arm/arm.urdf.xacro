@@ -25,7 +25,7 @@
         <visual>
             <origin xyz="${x} ${y} ${z}" rpy="${roll} ${pitch} ${yaw}"/>
             <geometry>
-                <mesh filename="$(find mrover)/urdf/meshes/${fileName}"/>
+                <mesh filename="package://mrover/urdf/meshes/${fileName}"/>
             </geometry>
             <material name="${col}">
                 <color rgba="${r} ${g} ${b} 1"/>
