@@ -17,6 +17,11 @@
     repo: deb http://apt.llvm.org/{{ ubuntu_release }}/ llvm-toolchain-{{ ubuntu_release }}-16 main
     filename: llvm
 
+- name: ROS Key
+  apt_key:
+    url: https://raw.githubusercontent.com/ros/rosdistro/master/ros.asc
+    keyring: /usr/share/keyrings/ros-keyring.gpg
+
 - name: ROS APT
   apt_repository:
     repo: deb http://packages.ros.org/ros/ubuntu {{ ubuntu_release }} main
