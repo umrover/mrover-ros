@@ -17,6 +17,11 @@
     repo: deb http://apt.llvm.org/{{ ubuntu_release }}/ llvm-toolchain-{{ ubuntu_release }}-16 main
     filename: llvm
 
+- name: ROS APT
+  apt_repository:
+    repo: deb http://packages.ros.org/ros/ubuntu {{ ubuntu_release }} main
+    filename: ros
+
 - name: Install APT Packages
   apt:
     update_cache: true
