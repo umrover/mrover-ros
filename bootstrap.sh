@@ -33,4 +33,4 @@ if [ ! -d "${MROVER_PATH}" ]; then
 fi
 
 echo "Using Ansible to finish up ..."
-ansible-playbook -i "localhost," -c local ${MROVER_PATH}/ansible
+ansible-playbook -i "localhost," -c local ${MROVER_PATH}/ansible/dev.yml --extra-vars "catkin_workspace=${CATKIN_PATH}"
