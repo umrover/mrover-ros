@@ -1,7 +1,3 @@
-- name: Add Git PPA
-  apt_repository:
-    repo: ppa:git-core/ppa
-
 - name: Add CMake Key
   apt_key:
     url: https://apt.kitware.com/keys/kitware-archive-latest.asc
@@ -29,10 +25,10 @@
       - zsh
       - neovim
       - sudo
-      - git
       - cmake
       - ccache
       - tmux
+      - zstd
       - python3-pip
       - python3-catkin-tools
       - clang-16

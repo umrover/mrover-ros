@@ -1,3 +1,4 @@
+# TODO: wait for jetpack 5.1.2 support
 # - name: ZED SDK Download
 #   get_url:
 #     url: https://download.stereolabs.com/zedsdk/4.0/l4t35.1/jetsons

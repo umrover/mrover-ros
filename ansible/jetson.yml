@@ -4,6 +4,7 @@
   vars:
     ubuntu_release: focal
   roles:
+    - dev
     - jetson_dev
     - jetson_networks
     - jetson_services
