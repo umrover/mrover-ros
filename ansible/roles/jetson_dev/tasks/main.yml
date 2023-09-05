@@ -14,7 +14,7 @@
 #   become_method: sudo
 
 - name: Oh-My-Zsh Install
-  git:
+  ansible.builtin.git:
     repo: https://github.com/ohmyzsh/ohmyzsh.git
     dest: /home/{{ ansible_user_id }}/.oh-my-zsh
     version: master
