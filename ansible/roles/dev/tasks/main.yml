@@ -1,32 +1,39 @@
 - name: Add CMake Key
+  become: True
   apt_key:
     url: https://apt.kitware.com/keys/kitware-archive-latest.asc
     keyring: /usr/share/keyrings/kitware-archive-keyring.gpg
 
 - name: Add CMake APT
+  become: True
   apt_repository:
     repo: deb [signed-by=/usr/share/keyrings/kitware-archive-keyring.gpg] https://apt.kitware.com/ubuntu/ {{ ubuntu_release }} main
     filename: kitware
 
 - name: Add LLVM Key
+  become: True
   apt_key:
     url: https://apt.llvm.org/llvm-snapshot.gpg.key
 
 - name: Add LLVM APT
+  become: True
   apt_repository:
     repo: deb http://apt.llvm.org/{{ ubuntu_release }}/ llvm-toolchain-{{ ubuntu_release }}-16 main
     filename: llvm
 
 - name: ROS Key
+  become: True
   apt_key:
     url: https://raw.githubusercontent.com/ros/rosdistro/master/ros.asc
 
 - name: ROS APT
+  become: True
   apt_repository:
     repo: deb http://packages.ros.org/ros/ubuntu {{ ubuntu_release }} main
     filename: ros
 
 - name: Install APT Packages
+  become: True
   apt:
     update_cache: true
     state: latest
@@ -48,10 +55,8 @@
       - lldb-16
 
 - name: Initialize rosdep
-  command: rosdep init
   become: True
-  become_user: root
-  become_method: sudo
+  command: rosdep init
   args:
     creates: /etc/ros/rosdep/sources.list.d/20-default.list
 

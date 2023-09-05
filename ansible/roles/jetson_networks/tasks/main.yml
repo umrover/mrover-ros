@@ -1,4 +1,5 @@
 - name: Switch Wired Connection
+  become: True
   community.general.nmcli:
     conn_name: SwitchWiredConnection
     type: ethernet
