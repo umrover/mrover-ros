@@ -2,6 +2,7 @@
 - hosts: all
   become: True
   vars:
+    ros_distro: noetic
     ubuntu_release: focal
   roles:
     - dev
