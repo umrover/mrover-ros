@@ -3,15 +3,13 @@
   vars:
     ubuntu_release: focal
   tasks:
-    - name: Base Station Wired Connection
+    - name: Wired Connection
       become: True
       nmcli:
-        conn_name: BaseStation
+        conn_name: MRover
         type: ethernet
         ifname: enp5s0
+        method4: shared
         state: present
         autoconnect: yes
         ip4: 10.0.0.2/24
-        dns4:
-          - 1.1.1.1
-          - 1.0.0.1
