@@ -9,10 +9,23 @@ if [ ! -f ~/.ssh/id_rsa ]; then
   exit 1
 fi
 
-echo "Ensuring Git & Ansible are installed ..."
-sudo apt-add-repository ppa:ansible/ansible -y
-sudo apt-add-repository ppa:git-core/ppa -y
-sudo apt update -y
+PPAS=(
+  ansible/ansible
+  git-core/ppa
+)
+UPDATED=false
+for PPA in "${PPAS[@]}"; do
+  if ! grep -q "^deb .*${PPA}" /etc/apt/sources.list /etc/apt/sources.list.d/*;
+  then
+    echo "Adding PPA: ${PPA}"
+    sudo apt-add-repository ppa:"${PPA}" -y
+    UPDATED=true
+  fi
+done
+
+if [ "${UPDATED}" = true ]; then
+    sudo apt update
+fi
 sudo apt install -y ansible git git-lfs
 
 readonly DEFAULT_CATKIN_PATH=~/catkin_ws
