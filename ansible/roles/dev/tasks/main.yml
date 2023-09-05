@@ -54,11 +54,11 @@
   args:
     creates: /etc/ros/rosdep/sources.list.d/20-default.list
 
-- name: Install ROS Dependencies
-  command: rosdep update && rosdep install --from-paths {{ catkin_workspace }}/src --ignore-src -y --rosdistro=noetic
-  become: True
-  become_user: root
-  become_method: sudo
+- name: Update rosdep
+  command: rosdep update
+
+- name: Install ROS packages
+  command: rosdep install --from-paths {{ catkin_workspace }}/src --ignore-src -y --rosdistro=noetic
 
 - name: Install Catkin Profiles
   synchronize:
