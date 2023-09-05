@@ -1,12 +1,10 @@
-- name: Radio Wired Connection
+- name: Wired Connection
   become: True
   nmcli:
-    conn_name: RadioWiredConnection
+    conn_name: MRover
     type: ethernet
-    ifname: ens160
+    ifname: enp5s0
+    method: shared
     state: present
     autoconnect: yes
     ip4: 10.0.0.2/24
-    dns4:
-      - 1.1.1.1
-      - 1.0.0.1

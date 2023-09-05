@@ -1,13 +1,9 @@
-- name: Switch Wired Connection
+- name: Wired Connection
   become: True
   nmcli:
-    conn_name: SwitchWiredConnection
+    conn_name: MRover
     type: ethernet
     ifname: eth0
     state: present
     autoconnect: yes
     ip4: 10.0.0.10/24
-    gw4: 10.0.0.2/24
-    dns4:
-      - 1.1.1.1
-      - 1.0.0.1

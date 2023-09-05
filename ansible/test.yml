@@ -3,15 +3,15 @@
   vars:
     ubuntu_release: focal
   tasks:
-    - name: Switch Wired Connection
-      community.general.nmcli:
-        conn_name: dummy-dummy0
-        type: dummy
-        ifname: dummy0
+    - name: Base Station Wired Connection
+      become: True
+      nmcli:
+        conn_name: BaseStation
+        type: ethernet
+        ifname: enp5s0
         state: present
         autoconnect: yes
         ip4: 10.0.0.2/24
-        gw4: 10.0.0.7/24
         dns4:
           - 1.1.1.1
           - 1.0.0.1
