@@ -1,13 +1,13 @@
 - name: Switch Wired Connection
   become: True
-  community.general.nmcli:
+  nmcli:
     conn_name: SwitchWiredConnection
     type: ethernet
     ifname: eth0
-    state: absent
+    state: present
     autoconnect: yes
-    ip4: 10.0.0.2/24
-    gw4: 10.0.0.7/24
+    ip4: 10.0.0.10/24
+    gw4: 10.0.0.2/24
     dns4:
       - 1.1.1.1
       - 1.0.0.1
