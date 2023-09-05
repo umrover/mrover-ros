@@ -1,21 +1,21 @@
 #!/usr/bin/env python3
 """
-	Node for testing service requests for services that are still in development
-	Logs the service request to stdout
+Node for testing service requests for services that are still in development
+Logs the service request to stdout
 """
 
 from typing import Any
 import rospy
-from mrover.srv import ChangeServoAngle, ChangeServoAngleResponse
+from mrover.srv import PublishEnableAuton, PublishEnableAutonResponse
 
 # Change these values for the service name and type definition to test different values
-SERVICE_NAME = "/change_servo_angle"
-SERVICE_TYPE = ChangeServoAngle
+SERVICE_NAME = "enable_auton"
+SERVICE_TYPE = PublishEnableAuton
 
 
 def print_service_request(service_request: Any):
     rospy.loginfo(service_request)
-    return ChangeServoAngleResponse(success=True)
+    return PublishEnableAutonResponse(success=True)
 
 
 def main():

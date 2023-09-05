@@ -10,10 +10,15 @@ import smach_ros
 from context import Context
 from gate import GateTraverseState, GateTraverseStateTransitions
 from approach_post import ApproachPostState, ApproachPostStateTransitions
-from state import DoneState, DoneStateTransitions, OffState, OffStateTransitions
+from navigation.state import DoneState, DoneStateTransitions, OffState, OffStateTransitions
 from waypoint import WaypointState, WaypointStateTransitions
 from search import SearchState, SearchStateTransitions
+from recovery import RecoveryState, RecoveryStateTransitions
 from partial_gate import PartialGateState, PartialGateStateTransitions
+from post_backup import PostBackupState, PostBackupTransitions
+from smach.log import set_loggers
+from smach.log import loginfo, logwarn, logerr
+from std_msgs.msg import String
 
 
 class Navigation(threading.Thread):
@@ -23,12 +28,14 @@ class Navigation(threading.Thread):
 
     def __init__(self, context: Context):
         super().__init__()
+        set_loggers(info=lambda _: None, warn=loginfo, error=loginfo, debug=loginfo)
         self.name = "NavigationThread"
         self.state_machine = smach.StateMachine(outcomes=["terminated"])
         self.state_machine.userdata.waypoint_index = 0
         self.context = context
         self.sis = smach_ros.IntrospectionServer("", self.state_machine, "/SM_ROOT")
         self.sis.start()
+        self.state_publisher = rospy.Publisher("/nav_state", String, queue_size=1)
         with self.state_machine:
             self.state_machine.add(
                 "OffState", OffState(self.context), transitions=self.get_transitions(OffStateTransitions)
@@ -42,11 +49,7 @@ class Navigation(threading.Thread):
             self.state_machine.add(
                 "ApproachPostState",
                 ApproachPostState(self.context),
-                # The lines below are necessary because ApproachPostState inherits from WaypointState, so WaypointState's transitions
-                # need to be registered for ApproachPostState as well.
-                transitions=dict(
-                    self.get_transitions(ApproachPostStateTransitions), **self.get_transitions(WaypointStateTransitions)
-                ),
+                transitions=self.get_transitions(ApproachPostStateTransitions),
             )
             self.state_machine.add(
                 "SearchState", SearchState(self.context), transitions=self.get_transitions(SearchStateTransitions)
@@ -57,15 +60,30 @@ class Navigation(threading.Thread):
                 transitions=self.get_transitions(GateTraverseStateTransitions),
             )
             self.state_machine.add(
+                "RecoveryState", RecoveryState(self.context), transitions=self.get_transitions(RecoveryStateTransitions)
+            )
+            self.state_machine.add(
                 "PartialGateState",
                 PartialGateState(self.context),
                 transitions=self.get_transitions(PartialGateStateTransitions),
             )
+            self.state_machine.add(
+                "PostBackupState",
+                PostBackupState(self.context),
+                transitions=self.get_transitions(PostBackupTransitions),
+            )
+            rospy.Timer(rospy.Duration(0.1), self.publish_state)
 
     def get_transitions(self, transitions_enum):
         transition_dict = {transition.name: transition.value for transition in transitions_enum}
         transition_dict["off"] = "OffState"  # logic for switching to offstate is built into OffState
         return transition_dict
+
+    def publish_state(self, event=None):
+        with self.state_machine:
+            active_states = self.state_machine.get_active_states()
+            if len(active_states) > 0:
+                self.state_publisher.publish(active_states[0])
 
     def run(self):
         self.state_machine.execute()

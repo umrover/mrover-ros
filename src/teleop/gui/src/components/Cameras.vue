@@ -1,6 +1,6 @@
 <template>
   <div class="wrap">
-    <h3>Cameras</h3>
+    <h3>Cameras ({{ num_available }} available)</h3>
     <div class="input">
       Camera name:
       <input v-model="cameraName" class="rounded" type="message" /> Camera
@@ -46,18 +46,19 @@ import Vue from "vue";
 import ROSLIB from "roslib/src/RosLib";
 import CameraSelection from "../components/CameraSelection.vue";
 import CameraInfo from "../components/CameraInfo.vue";
+import { mapGetters, mapMutations } from "vuex";
 
 export default {
   components: {
     CameraSelection,
-    CameraInfo,
+    CameraInfo
   },
 
   props: {
     primary: {
       type: Boolean,
-      required: true,
-    },
+      required: true
+    }
   },
   data() {
     return {
@@ -66,52 +67,80 @@ export default {
       cameraIdx: 1,
       cameraName: "",
       capacity: 2,
-      qualities: new Array(9).fill(1),
+      qualities: new Array(9).fill(-1),
       streamOrder: [-1, -1, -1, -1],
+
+      available_sub: null,
+      num_available: -1
     };
   },
+
+  // computed: {
+  //   ...mapGetters("cameras", {
+  //     camsEnabled: "camsEnabled",
+  //     names: "names",
+  //     cameraIdx: "cameraIdx",
+  //     cameraName: "cameraName",
+  //     capacity: "capacity",
+  //     qualities: "qualities",
+  //     streamOrder: "streamOrder"
+  //   })
+  // },
 
   watch: {
     capacity: function (newCap, oldCap) {
       if (newCap < oldCap) {
         var numStreaming = this.streamOrder.filter((index) => index != -1);
         var ind = numStreaming.length - 1;
-        Vue.set(
-          this.camsEnabled,
-          numStreaming[ind],
-          !this.camsEnabled[numStreaming[ind]]
-        );
-        this.changeStream(numStreaming[ind]);
+        this.setCamIndex(numStreaming[ind]);
       }
-    },
+    }
+  },
+
+  created: function () {
+    var resetService = new ROSLIB.Service({
+      ros: this.$ros,
+      name: "reset_cameras",
+      serviceType: "ResetCameras"
+    });
+    var request = new ROSLIB.ServiceRequest({
+      primary: this.primary
+    });
+    resetService.callService(request, (result) => {});
+
+    this.available_sub = new ROSLIB.Topic({
+      ros: this.$ros,
+      name: "available_cameras",
+      messageType: "mrover/AvailableCameras"
+    });
+
+    this.available_sub.subscribe((msg) => {
+      this.num_available = msg.num_available;
+    });
   },
 
   methods: {
     setCamIndex: function (index) {
       //every time a button is pressed, it changes cam status and adds/removes from stream
       Vue.set(this.camsEnabled, index, !this.camsEnabled[index]);
+      if (this.camsEnabled[index]) this.qualities[index] = 2; //if enabling camera, turn on medium quality
       this.changeStream(index);
-      this.sendCameras();
     },
 
-    sendCameras: function () {
+    sendCameras: function (index) {
       //sends cameras to a service to display on screen
-      var msgs = [];
-      for (var i = 0; i < 4; i++) {
-        var camId = this.streamOrder[i];
-        var res = this.qualities[camId];
-        msgs.push(new ROSLIB.Message({ device: camId, resolution: res })); //CameraCmd msg
-      }
+      var res = this.qualities[index];
+      var msg = new ROSLIB.Message({ device: index, resolution: res }); //CameraCmd msg
 
       var changeCamsService = new ROSLIB.Service({
         ros: this.$ros,
         name: "change_cameras",
-        serviceType: "ChangeCameras",
+        serviceType: "ChangeCameras"
       });
 
       var request = new ROSLIB.ServiceRequest({
         primary: this.primary,
-        camera_cmds: msgs,
+        camera_cmd: msg
       });
       changeCamsService.callService(request, (result) => {});
     },
@@ -122,14 +151,13 @@ export default {
 
     changeQuality({ index, value }) {
       Vue.set(this.qualities, index, value);
-      this.sendCameras();
+      this.sendCameras(index);
     },
 
     swapStream({ prev, newest }) {
       var temp = this.streamOrder[prev];
       Vue.set(this.streamOrder, prev, this.streamOrder[newest]);
       Vue.set(this.streamOrder, newest, temp);
-      this.sendCameras();
     },
 
     changeStream(index) {
@@ -137,13 +165,26 @@ export default {
       if (found) {
         this.streamOrder.splice(this.streamOrder.indexOf(index), 1);
         this.streamOrder.push(-1);
+        this.qualities[index] = -1; //close the stream when sending it to comms
       } else Vue.set(this.streamOrder, this.streamOrder.indexOf(-1), index);
+      this.sendCameras(index);
     },
 
+    //
     getStreamNum(index) {
       return this.streamOrder.indexOf(index);
-    },
-  },
+    }
+
+    // ...mapMutations("cameras", {
+    //   setCamsEnabled: "setCamsEnabled",
+    //   setNames: "setNames",
+    //   setCameraIdx: "setCameraIdx",
+    //   setCameraName: "setCameraName",
+    //   setCapacity: "setCapacity",
+    //   setQualities: "setQualities",
+    //   setStreamOrder: "setStreamOrder"
+    // }),
+  }
 };
 </script>
 

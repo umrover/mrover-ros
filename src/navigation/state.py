@@ -13,10 +13,12 @@ class BaseState(smach.State, ABC):
     """
 
     context: Context
+    own_transitions: List[str]  # any transitions that map back to the same state
 
     def __init__(
         self,
         context: Context,
+        own_transitions: List[str],
         add_outcomes: List[str] = None,
         add_input_keys: List[str] = None,
         add_output_keys: List[str] = None,
@@ -24,6 +26,7 @@ class BaseState(smach.State, ABC):
         add_outcomes = add_outcomes or []
         add_input_keys = add_input_keys or []
         add_output_keys = add_output_keys or []
+        self.own_transitions = own_transitions
         super().__init__(
             add_outcomes + ["terminated", "off"],
             add_input_keys + ["waypoint_index"],
@@ -40,12 +43,32 @@ class BaseState(smach.State, ABC):
         """
         if self.preempt_requested():
             self.service_preempt()
+            self.context.rover.stuck = False
             return "terminated"
         if self.context.disable_requested:
             self.context.disable_requested = False
             self.context.course = None
+            self.context.rover.stuck = False
+            self.context.rover.driver.reset()
+            self.reset()
             return "off"
-        return self.evaluate(ud)
+        transition = self.evaluate(ud)
+
+        if transition in self.own_transitions:
+            # we are staying in the same state
+            return transition
+        else:
+            # we are exiting the state so cleanup
+            self.reset()
+            return transition
+
+    def reset(self):
+        """
+        Is called anytime we transition out of the current state.
+        Override this function to reset any state variables
+        that need to reset everytime we exit the state.
+        """
+        pass
 
     def evaluate(self, ud: smach.UserData) -> str:
         """Override me instead of execute!"""
@@ -63,6 +86,7 @@ class DoneState(BaseState):
     def __init__(self, context: Context):
         super().__init__(
             context,
+            [DoneStateTransitions.idle.name],  # type: ignore
             add_outcomes=[transition.name for transition in DoneStateTransitions],  # type: ignore
         )
 
@@ -88,6 +112,7 @@ class OffState(BaseState):
     def __init__(self, context: Context):
         super().__init__(
             context,
+            [OffStateTransitions.idle.name],  # type: ignore
             add_outcomes=[transition.name for transition in OffStateTransitions],  # type: ignore
         )
         self.stop_count = 0

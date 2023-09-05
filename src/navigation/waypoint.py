@@ -5,7 +5,6 @@ import rospy
 
 import tf2_ros
 from context import Context, Environment
-from drive import get_drive_command
 from aenum import Enum, NoAlias
 from state import BaseState
 from util.ros_utils import get_rosparam
@@ -19,7 +18,9 @@ class WaypointStateTransitions(Enum):
     no_waypoint = "DoneState"
     find_approach_post = "ApproachPostState"
     go_to_gate = "GateTraverseState"
+    recovery_state = "RecoveryState"
     partial_gate = "PartialGateState"
+    backup_from_post = "PostBackupState"
 
 
 class WaypointState(BaseState):
@@ -37,8 +38,10 @@ class WaypointState(BaseState):
         add_outcomes = add_outcomes or []
         add_input_keys = add_input_keys or []
         add_output_keys = add_output_keys or []
+        own_transitions = [WaypointStateTransitions.continue_waypoint_traverse.name]  # type: ignore
         super().__init__(
             context,
+            own_transitions,
             add_outcomes + [transition.name for transition in WaypointStateTransitions],  # type: ignore
             add_input_keys,
             add_output_keys,
@@ -59,6 +62,11 @@ class WaypointState(BaseState):
         if current_waypoint is None:
             return WaypointStateTransitions.no_waypoint.name  # type: ignore
 
+        # if we are at a post currently (from a previous leg), backup to avoid collision
+        if self.context.env.arrived_at_post:
+            self.context.env.arrived_at_post = False
+            return WaypointStateTransitions.backup_from_post.name  # type: ignore
+
         # Go into either gate or search if we see them early (and are looking)
         if self.context.course.look_for_gate():
             if self.context.env.current_gate() is not None:
@@ -72,7 +80,7 @@ class WaypointState(BaseState):
         # Attempt to find the waypoint in the TF tree and drive to it
         try:
             waypoint_pos = self.context.course.current_waypoint_pose().position
-            cmd_vel, arrived = get_drive_command(
+            cmd_vel, arrived = self.context.rover.driver.get_drive_command(
                 waypoint_pos,
                 self.context.rover.get_pose(),
                 self.STOP_THRESH,
@@ -85,6 +93,12 @@ class WaypointState(BaseState):
                 else:
                     # We finished a waypoint associated with a fiducial id, but we have not seen it yet.
                     return WaypointStateTransitions.search_at_waypoint.name  # type: ignore
+
+            if self.context.rover.stuck:
+                # Removed .name
+                self.context.rover.previous_state = WaypointStateTransitions.continue_waypoint_traverse.name  # type: ignore
+                return WaypointStateTransitions.recovery_state.name  # type: ignore
+
             self.context.rover.send_drive_command(cmd_vel)
 
         except (

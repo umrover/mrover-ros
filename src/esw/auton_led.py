@@ -1,14 +1,10 @@
 #!/usr/bin/env python3
 import rospy
 import serial
-import time
 import threading
 
-from mrover.srv import (
-    ChangeAutonLEDState,
-    ChangeAutonLEDStateRequest,
-    ChangeAutonLEDStateResponse,
-)
+
+from std_msgs.msg import String
 
 
 class LedBridge:
@@ -50,43 +46,48 @@ class LedBridge:
 
         self._ser = serial.Serial(port=port, baudrate=baud)
 
-        self.update()
-
-    def handle_change_state(self, req: ChangeAutonLEDStateRequest) -> ChangeAutonLEDStateResponse:
-        """
-        Processes a request to change the auton LED array state.
-
-        :param req: A string that is the color of the requested state of the
-            auton LED array. Note that green actually means blinking green.
-        :returns: A response object that is always True to indicate success.
-        """
         with self._color_lock:
-            self._color = req.color.lower()
+            self._update()
 
-            if self._color == "green":
-                self._green_counter_s = 0
+    def handle_message(self, color: String) -> None:
+        """
+        Processes the current color requested by teleop.
 
-            if self._color not in self.SIGNAL_MAP:
-                self._color = "off"
+        :param color: A string that is the color of the requested state of the
+            auton LED array. Note that green actually means blinking green.
+        """
+        if color.data.lower() not in self.SIGNAL_MAP:
+            rospy.logerr(f"Auton LED node received invalid color: {color.data}")
+            return
 
-        self.update()
+        with self._color_lock:
+            prev_color = self._color
+            self._color = color.data.lower()
 
-        return ChangeAutonLEDStateResponse(True)
+            # If the desired color is red, blue, or off, then just update:
+            if self._color != "green":
+                self._update()
 
-    def update(self):
+            # If the desired color is green, and we previously were not green, then update too.
+            elif prev_color != "green":
+                # Set to self.GREEN_PERIOD_S instead of 0,
+                # so it just automatically resets at 0 once
+                # flash_if_green() is called.
+                self._green_counter_s = self.GREEN_PERIOD_S
+                self._update()
+
+    def _update(self):
         """
         Writes to serial to change LED color.
+        Note: assumes self._color_lock is held!
         """
-        with self._color_lock:
-            assert self._color in self.SIGNAL_MAP
-            self._ser.write(self.SIGNAL_MAP[self._color])
+        assert self._color in self.SIGNAL_MAP
+        self._ser.write(self.SIGNAL_MAP[self._color])
 
-    def flash_if_green(self):
+    def flash_if_green(self, event=None):
         """
-        Sleeps and flashes green as necessary.
+        Flash green if necessary. Function is expected to be called every self.SLEEP_AMOUNT seconds.
         """
-        time.sleep(self.SLEEP_AMOUNT)
-
         # Upon waking up, flash green if necessary
         with self._color_lock:
             if self._color != "green":
@@ -104,7 +105,7 @@ class LedBridge:
                 self._ser.write(self.SIGNAL_MAP["green"])
 
             # If we just passed the threshold of GREEN_ON_S, turn off.
-            elif prev_counter < self.GREEN_ON_S and self._green_counter_s >= self.GREEN_ON_S:
+            elif prev_counter < self.GREEN_ON_S <= self._green_counter_s:
                 self._ser.write(self.SIGNAL_MAP["off"])
 
 
@@ -118,12 +119,13 @@ def main():
     # Construct the bridge.
     led_bridge = LedBridge(port, baud)
 
-    # Configure request handler.
-    rospy.Service("change_auton_led_state", ChangeAutonLEDState, led_bridge.handle_change_state)
+    # Configure subscriber.
+    rospy.Subscriber("auton_led_cmd", String, led_bridge.handle_message)
 
     # Sleep indefinitely, flashing if necessary.
-    while not rospy.is_shutdown():
-        led_bridge.flash_if_green()
+    rospy.Timer(rospy.Duration(led_bridge.SLEEP_AMOUNT), led_bridge.flash_if_green)
+
+    rospy.spin()
 
 
 if __name__ == "__main__":

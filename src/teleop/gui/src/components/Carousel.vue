@@ -1,28 +1,40 @@
 <template>
   <div>
-    <h3>Carousel Data</h3>
+    <h3>Carousel Controls</h3>
     <div class="box1">
-      <Checkbox
-        ref="open-loop"
-        :name="'Open Loop'"
-        @toggle="openLoop = !openLoop"
+      <ToggleButton
+        id="carousel_open_loop"
+        :current-state="openLoop"
+        label-enable-text="Open Loop"
+        label-disable-text="Disabled"
+        @change="toggleOpenLoop"
       />
       <div class="controls">
-        <div v-if="!openLoop">
+        <div v-if="openLoop">
+          <p>Control with X (Forward) and Z (Backwards)</p>
+          <OpenLoopControl
+            :forwards-key="88"
+            :backwards-key="90"
+            :scale-default="50"
+            @velocity="velocity = $event"
+          />
+        </div>
+        <!-- <div v-else>
           <label for="position">Rotate carousel to position: </label>
           <input v-model="site" type="radio" value="A" />A
           <input v-model="site" type="radio" value="B" />B
           <input v-model="site" type="radio" value="C" />C
-        </div>
-        <div v-else>
-          <!-- Up and down arrows keys -->
-          <p>Control with up and down arrow keys</p>
-          <OpenLoopControl
-            :forwards-key="38"
-            :backwards-key="40"
-            @velocity="velocity = $event"
-          ></OpenLoopControl>
-        </div>
+          <CalibrationCheckbox
+            :name="'Carousel Calibration'"
+            :joint_name="'carousel'"
+            :calibrate_topic="'carousel_is_calibrated'"
+          />
+          <MotorAdjust :options="[{ name: 'carousel', option: 'Carousel' }]" />
+          <LimitSwitch
+            :switch_name="'carousel'"
+            :name="'Carousel Limit Switch'"
+          />
+        </div> -->
       </div>
     </div>
   </div>
@@ -30,8 +42,11 @@
 
 <script>
 import ROSLIB from "roslib";
-import Checkbox from "./Checkbox.vue";
+import ToggleButton from "./ToggleButton.vue";
 import OpenLoopControl from "./OpenLoopControl.vue";
+import CalibrationCheckbox from "./CalibrationCheckbox.vue";
+import MotorAdjust from "./MotorAdjust.vue";
+import LimitSwitch from "./LimitSwitch.vue";
 
 // In seconds
 const updateRate = 0.1;
@@ -40,8 +55,11 @@ let interval;
 
 export default {
   components: {
-    Checkbox,
     OpenLoopControl,
+    CalibrationCheckbox,
+    MotorAdjust,
+    LimitSwitch,
+    ToggleButton,
   },
   data() {
     return {
@@ -55,12 +73,22 @@ export default {
 
   computed: {
     messageObject: function () {
-      const msg = {
-        open_loop: this.openLoop,
-        vel: this.velocity,
-        site: this.site,
-      };
-      return new ROSLIB.Message(msg);
+      if (this.openLoop) {
+        const msg = {
+          open_loop: true,
+          vel: this.velocity,
+          site: this.site,
+        };
+        return new ROSLIB.Message(msg);
+      }
+      else {
+        const msg = {
+          open_loop: true,
+          vel: 0,
+          site: this.site,
+        };
+        return new ROSLIB.Message(msg);
+      }
     },
 
     velocityScaleDecimal: function () {
@@ -69,6 +97,9 @@ export default {
   },
 
   beforeDestroy: function () {
+    this.openLoop = false;
+    this.carousel_pub.publish(this.messageObject);
+
     window.clearInterval(interval);
   },
 
@@ -83,6 +114,12 @@ export default {
       this.carousel_pub.publish(this.messageObject);
     }, updateRate * 1000);
   },
+
+  methods: {
+    toggleOpenLoop: function () {
+      this.openLoop = !this.openLoop;
+    }
+  },
 };
 </script>
 
@@ -93,8 +130,8 @@ export default {
 }
 
 .box1 {
-  text-align: left;
-  vertical-align: top;
-  display: inline-block;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
 }
 </style>

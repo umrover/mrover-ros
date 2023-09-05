@@ -9,28 +9,28 @@ teleop:
       slow_mode_multiplier: 0.5
       invert: False
     joint_b:
-      multiplier: 1
+      multiplier: -1
       slow_mode_multiplier: 1
       invert: False
     joint_c:
       multiplier: 1
-      slow_mode_multiplier: 0.5
+      slow_mode_multiplier: 0.6
       invert: True
     joint_d:
       multiplier: 1
-      slow_mode_multiplier: 0.5
+      slow_mode_multiplier: 1
       invert: False
     joint_e:
       multiplier: 1
-      slow_mode_multiplier: 0.5
+      slow_mode_multiplier: 1
       invert: False
     joint_f:
       multiplier: 1
-      slow_mode_multiplier: 0.5
+      slow_mode_multiplier: 1
       invert: False
     finger:
       multiplier: 1
-      slow_mode_multiplier: 0.5
+      slow_mode_multiplier: 1
       invert: False
     gripper:
       multiplier: 1
@@ -40,14 +40,19 @@ teleop:
   sa_controls:
     sa_joint_1:
       multiplier: 1
+      slow_mode_multiplier: 0.5
     sa_joint_2:
-      multiplier: 1
+      multiplier: -1
+      slow_mode_multiplier: 0.5
     sa_joint_3:
-      multiplier: 1
+      multiplier: -1
+      slow_mode_multiplier: 0.5
     scoop:
       multiplier: 1
+      slow_mode_multiplier: 1.0
     microscope:
       multiplier: 1
+      slow_mode_multiplier: 0.5
   
   drive_controls:
     forward_back:
@@ -69,10 +74,8 @@ teleop:
     right_js_y: 4
     right_bumper: 5
     left_bumper: 4
-    d_pad_up: 12
-    d_pad_down: 13
-    d_pad_right: 14
-    d_pad_left: 15
+    d_pad_x: 6
+    d_pad_y: 7
     a: 0
     b: 1
     x: 2
@@ -85,6 +88,21 @@ teleop:
     dampen: 3
     pan: 4
     tilt: 5
+
+  mast_gimbal_power:
+    rotation_pwr: 1.0
+    up_down_pwr: 0.75
+
+  # Thresholds in radians
+  # Euclidean error is the norm of all the joint position errors
+  euclidean_error_threshold: 3.14
+
+  joint_error_thresholds:
+    joint_a: 1.57
+    joint_b: 1.57
+    joint_c: 1.57
+    joint_d: 1.57
+    joint_e: 1.57
 
   # Mappings from site name to index in which values will be sent
   # for each site, mostly for heaters and which syringe servos we want to use

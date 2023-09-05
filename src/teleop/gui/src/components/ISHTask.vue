@@ -10,8 +10,9 @@
       />
       <h1>ISH Dashboard</h1>
       <div class="spacer"></div>
+      <MCUReset class="mcu_reset"></MCUReset>
       <div class="spacer"></div>
-      <CommReadout class="comm"></CommReadout>
+      <CommReadout class="comms"></CommReadout>
       <div class="help">
         <img
           src="/static/help.png"
@@ -44,8 +45,8 @@
     <div class="box light-bg raman">
       <Raman />
     </div>
-    <div class="box light-bg sudan">
-      <Sudan :site="site" :site-index="siteIndex" />
+    <div class="box light-bg emulsion">
+      <Emulsion :site="site" :site-index="siteIndex" />
     </div>
     <div class="box light-bg cameras">
       <Cameras :primary="primary" />
@@ -54,7 +55,7 @@
       <Carousel />
     </div>
     <div class="box light-bg cache">
-      <Cache :site="site" />
+      <Cache />
     </div>
     <div class="box light-bg chlorophyll">
       <Chlorophyll :spectral_data="spectral_data" />
@@ -69,25 +70,28 @@
 import ROSLIB from "roslib";
 import SelectSite from "./SelectSite.vue";
 import Raman from "./Raman.vue";
-import Sudan from "./Sudan.vue";
+import Emulsion from "./EmulsionTest.vue";
 import Carousel from "./Carousel.vue";
 import Cache from "./Cache.vue";
 import Chlorophyll from "./Chlorophyll.vue";
 import Amino from "./Amino.vue";
 import Cameras from "../components/Cameras.vue";
 import CommReadout from "./CommReadout.vue";
+import MCUReset from "./MCUReset.vue"
+import { disableAutonLED } from "../utils.js";
 
 export default {
   components: {
     SelectSite,
     Raman,
-    Sudan,
+    Emulsion,
     Carousel,
     Cache,
     Chlorophyll,
     Amino,
     Cameras,
     CommReadout,
+    MCUReset,
   },
   data() {
     return {
@@ -112,6 +116,7 @@ export default {
   },
 
   created: function () {
+    disableAutonLED(this.$ros);
     this.spectral_sub = new ROSLIB.Topic({
       ros: this.$ros,
       name: "science/spectral",
@@ -146,19 +151,17 @@ export default {
 .wrapper {
   display: grid;
   grid-gap: 10px;
-  grid-template-columns: 85vh auto auto;
+  grid-template-columns: auto auto;
   grid-template-rows: 60px auto auto auto auto auto auto auto auto auto;
   grid-template-areas:
-    "header header header"
-    "cameras cameras siteSelect"
-    "cameras cameras raman"
-    "cameras cameras sudan"
-    "carousel chlorophyll chlorophyll"
-    "carousel chlorophyll chlorophyll"
-    "cache chlorophyll chlorophyll"
-    "cache chlorophyll chlorophyll"
-    "cache amino amino"
-    "cache amino amino";
+    "header header"
+    "cameras siteSelect"
+    "cameras raman"
+    "cameras emulsion"
+    "cameras chlorophyll"
+    "carousel chlorophyll"
+    "carousel amino"
+    "cache amino";
   font-family: sans-serif;
   height: auto;
 }
@@ -170,6 +173,10 @@ img {
 
 .spacer {
   flex-grow: 0.8;
+}
+
+.comms {
+  margin-right: 5px;
 }
 
 .helpscreen {
@@ -245,8 +252,8 @@ img {
   grid-area: raman;
 }
 
-.sudan {
-  grid-area: sudan;
+.emulsion {
+  grid-area: emulsion;
 }
 
 .carousel {

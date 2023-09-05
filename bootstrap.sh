@@ -4,7 +4,7 @@
 set -Eeuo pipefail
 
 echo "Ensuring SSH keys are set up ..."
-if [ ! -f ~/.ssh/id_rsa ]; then
+if [ ! -f ~/.ssh/id_ed25519 ]; then
   echo "Please see: https://docs.github.com/en/authentication/connecting-to-github-with-ssh/generating-a-new-ssh-key-and-adding-it-to-the-ssh-agent"
   exit 1
 fi

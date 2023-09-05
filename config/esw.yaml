@@ -1,5 +1,5 @@
 auton_led_driver:
-  port: "/dev/ttyACM0"
+  port: "/dev/auton_led"
   baud: 115200
 
 gps_driver:
@@ -23,6 +23,7 @@ brushed_motors:
       inversion: 1.0
       limit_a_present: true
       limit_b_present: false
+      active_limit_a: false
       counts_limit_a: 0
       limit_a_is_fwd: true
       calibration_vel: 0.25
@@ -34,6 +35,7 @@ brushed_motors:
       inversion: 1.0
       limit_a_present: true
       limit_b_present: false
+      active_limit_a: true
       counts_limit_a: 0
       limit_a_is_fwd: true
       calibration_vel: 0.25
@@ -57,9 +59,10 @@ brushed_motors:
       quad_cpr: 4096.0
       kP: -0.1
       kI: -0.0
-      inversion: -1.0
+      inversion: 1.0
       limit_a_present: true
       limit_b_present: false
+      active_limit_a: false
       counts_limit_a: 0
       limit_a_is_fwd: true
       calibration_vel: 0.25
@@ -71,7 +74,7 @@ brushed_motors:
       quad_cpr: -2048.0
       kP: 0.05
       kI: 0.0
-      inversion: -1.0
+      inversion: 1.0
       limit_a_present: false
       limit_b_present: false
     - name: "finger"
@@ -79,9 +82,11 @@ brushed_motors:
       motor_max_voltage: 12.0
       mcu_id: 1
       motor_id: 3
-      inversion: 1.0
+      inversion: -1.0
       limit_a_present: true
       limit_b_present: true
+      active_limit_a: false
+      active_limit_b: false
       counts_limit_a: 0
       counts_limit_b: 0
       limit_a_is_fwd: true
@@ -99,7 +104,7 @@ brushed_motors:
       motor_max_voltage: 12.0
       mcu_id: 2
       motor_id: 4
-      inversion: -1.0
+      inversion: 1.0
       limit_a_present: false
       limit_b_present: false
     - name: "mast_gimbal_left_right"
@@ -118,18 +123,22 @@ brushed_motors:
       inversion: 1.0
       limit_a_present: true
       limit_b_present: true
+      active_limit_a: false
+      active_limit_b: false
       counts_limit_a: 0
       counts_limit_b: 0
-      limit_a_is_fwd: true
+      limit_a_is_fwd: false
       calibration_vel: 0.25
     - name: "sa_joint_1"
       driver_voltage: 36.0
       motor_max_voltage: 12.0
       mcu_id: 1
       motor_id: 0
+      quad_cpr: -32653.0
       inversion: 1.0
       limit_a_present: true
       limit_b_present: false
+      active_limit_a: false
       counts_limit_a: 0
       limit_a_is_fwd: true
       calibration_vel: 0.25
@@ -138,20 +147,24 @@ brushed_motors:
       motor_max_voltage: 12.0
       mcu_id: 1
       motor_id: 1
+      quad_cpr: -75600.0
       inversion: -1.0
       limit_a_present: true
       limit_b_present: false
+      active_limit_a: false
       counts_limit_a: 0
-      limit_a_is_fwd: true
+      limit_a_is_fwd: false
       calibration_vel: 0.25
     - name: "sa_joint_3"
       driver_voltage: 12.0
       motor_max_voltage: 12.0
       mcu_id: 1
       motor_id: 2
-      inversion: 1.0
+      quad_cpr: 97960.0
+      inversion: -1.0
       limit_a_present: true
       limit_b_present: false
+      active_limit_a: false
       counts_limit_a: 0
       limit_a_is_fwd: true
       calibration_vel: 0.25
@@ -163,75 +176,178 @@ brushed_motors:
       inversion: 1.0
       limit_a_present: true
       limit_b_present: true
+      active_limit_a: false
+      active_limit_b: false
       counts_limit_a: 0
       counts_limit_b: 0
-      limit_a_is_fwd: true
+      limit_a_is_fwd: false
       calibration_vel: 0.25
   i2c_device_file: "/dev/i2c-1"
+  uart_device_file: "/dev/ttyACM0"
+  use_uart_and_send_only: true
   test: false
+  
+cameras:
+  camera_type_info:
+    # vendor_id and vendor is obtained by running `udevadm info --query=all /dev/video0`
+    # width and height are obtained by running `v4l2-ctl -d /dev/video0 --list-formats-ext`
+    # An important thing to know is that actual bps is much less than bps in config.
+    # However, we need to keep bps in config higher otherwise there is too much compression
+    regular:
+      vendor_id: "32e4"
+      vendor: "HD_USB_Camera"
+      use_jpeg: true
+      quality_options:
+        - width: 320
+          height: 240
+          fps: 15
+          bps: 173000
+        - width: 352
+          height: 288
+          fps: 15
+          bps: 691000
+        - width: 640
+          height: 480
+          fps: 15
+          bps: 2000000
+        - width: 960
+          height: 720
+          fps: 15
+          bps: 3000000
+        - width: 1280
+          height: 720
+          fps: 15
+          bps: 4200000
+    microscope:
+      vendor_id: "a16f"
+      vendor: "GenesysLogic_Technology_Co.__Ltd."
+      use_jpeg: false
+      quality_options:
+        - width: 160
+          height: 120
+          fps: 25
+          bps: 173000
+        - width: 176
+          height: 144
+          fps: 25
+          bps: 691000
+        - width: 320
+          height: 240
+          fps: 25
+          bps: 2000000
+        - width: 352
+          height: 288
+          fps: 25
+          bps: 3000000
+        - width: 640
+          height: 480
+          fps: 25
+          bps: 4200000
+    res_1080:
+      vendor_id: "0c45"
+      vendor: "Sonix_Technology_Co.__Ltd."
+      use_jpeg: true
+      quality_options:
+        - width: 320
+          height: 240
+          fps: 30
+          bps: 173000
+        - width: 800
+          height: 600
+          fps: 30
+          bps: 691000
+        - width: 960
+          height: 720
+          fps: 30
+          bps: 2000000
+        - width: 1280
+          height: 720
+          fps: 30
+          bps: 3000000
+        - width: 1920
+          height: 1080
+          fps: 30
+          bps: 4200000
+    rock_4k:
+      vendor_id: "0c45"
+      vendor: "Arducam_Technology_Co.__Ltd."
+      use_jpeg: true
+      quality_options:
+        # Only have some resolutions since there are only a few
+        # with the same aspect ratio. When changing aspect ratios,
+        # there are sometimes issues with decoding jpeg images.
+        # We also reuse some resolutions so that we the default
+        # resolution (option 2) is not maximum quality (which
+        # has some delay of ~2 seconds).
+        - width: 640
+          height: 480
+          fps: 30
+          bps: 173000
+        - width: 640
+          height: 480
+          fps: 30
+          bps: 173000
+        - width: 1600
+          height: 1200
+          fps: 30
+          bps: 7000000
+        - width: 1600
+          height: 1200
+          fps: 30
+          bps: 7000000
+        - width: 3264
+          height: 2448
+          fps: 15
+          bps: 9000000
+  max_num_resolutions: 5
+  # Number of devices corresponds to number of cmds in
+  #   - ChangeCameras.srv
+  #   - ResetCameras.srv
+  max_streams: 4
+  max_device_id: 20
+  ips:
+    primary: "10.0.0.7"
+    secondary: "10.0.0.8"
 
 science:
   auton_color_ids:
     red: 0
-    blue: 1
-    green: 2
+    green: 1
+    blue: 2
     "off": 3
   device_mosfet_numbers:
     arm_laser: 6
+    raman_laser: 0
     uv_led_carousel: 1
     uv_led_end_effector: 6
     white_led: 2
+  # How fast the GUI should send heater service requests in ms
+  heater_service_request_interval: 1000
   serial:
     baud_rate: 9600
     timeout: 0
     port: "/dev/ttyTHS0" 
   # These position are random for now
-  syringe_servo_positions:  # This is in degrees
-    site_A:
-      pushed: 80
+  servo_id_by_site:  # This is in degrees
+    A: 2
+    B: 1
+    C: 0
+  servo_positions:
+    - pushed: 70
       start: 100
-    site_B:
-      pushed: 60
+    - pushed: 60
       start: 90
-    site_C:
-      pushed: 10
-      start: 50
+    - pushed: 0
+      start: 80
   info:
+    mcu_active_timeout_s: 2
+    mcu_reset_period_s: 20
     num_diag_current: 3
     num_diag_thermistors: 3
     num_science_thermistors: 3
     num_spectral: 1
     sleep: 0.01
     uart_transmit_msg_len: 30
-
-cameras:
-    arguments:
-      144_res:
-        - "--headless"
-        - "--bitrate=300000"
-        - "--width=256"
-        - "--height=144"
-      360_res:
-        - "--headless"
-        - "--bitrate=800000"
-        - "--width=480"
-        - "--height=360"
-      720_res:
-        - "--headless"
-        - "--bitrate=1800000"
-        - "--width=1280"
-        - "--height=720"
-    max_video_device_id_number: 10
-    endpoints:
-      primary_0: "10.0.0.7:5000"
-      primary_1: "10.0.0.7:5001"
-      primary_2: "10.0.0.7:5002"
-      primary_3: "10.0.0.7:5003"
-      secondary_0: "10.0.0.8:5000"
-      secondary_1: "10.0.0.8:5001"
-      secondary_2: "10.0.0.8:5002"
-      secondary_3: "10.0.0.8:5003"
-    skip_every_other_device: true
 
 rover:
   length: 0.86
@@ -249,47 +365,56 @@ brushless:
     controllers:
       FrontLeft:
         id: 2
-        bus: 1
+        bus: 5
         multiplier: -1
+        gear_ratio: 50
       FrontRight:
         id: 3
         bus: 2
         multiplier: 1
+        gear_ratio: 50
       MiddleLeft:
         id: 1
-        bus: 1
+        bus: 5
         multiplier: -1
+        gear_ratio: 50
       MiddleRight:
         id: 4
         bus: 2
-        multiplier: 1
+        multiplier: -1
+        gear_ratio: 50
       BackLeft:
         id: 0
-        bus: 1
+        bus: 5
         multiplier: -1
+        gear_ratio: 50
       BackRight:
         id: 5
         bus: 2
-        multiplier: -1
+        multiplier: 1
+        gear_ratio: 50
   arm:
     controllers:
       joint_c:
         id: 6
         bus: 3
-        max_rps: 50
-        max_torque: 0.3
+        max_rps: 80
+        max_torque: 0.7
         multiplier: -1
+        gear_ratio: 484
       joint_d:
         id: 7
         bus: 3
         max_rps: 80
-        max_torque: 0.13
-        multiplier: 1
+        max_torque: 0.3
+        multiplier: -1
+        gear_ratio: 484
       joint_e:
         id: 8
         bus: 3
-        max_rps: 70
-        max_torque: 0.13
-        multiplier: -1
+        max_rps: 80
+        max_torque: 0.3
+        multiplier: 1
+        gear_ratio: 484
 
-network_iface: "enp44s0"
+default_network_iface: "enp0s31f6"

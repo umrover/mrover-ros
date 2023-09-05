@@ -4,33 +4,36 @@
 The science codebase deals with reading and parsing NMEA-like messages
 from the STM32 chip over UART to complete tasks for almost
 every mission. These tasks include operating the science box and getting
-relevant data during the Science task, controlling the arm laser during the
-Equipment Servicing task, and controlling the LED array used during the
-Autonomous Traversal task. It also transmits diagnostic data on temperature
+relevant data during the Science task, as well as controlling the arm laser during the
+Equipment Servicing task. It also transmits diagnostic data on temperature
 and current on the 3.3V, 5V, and 12V lines for the PDB.
 """
 import threading
-from typing import Any, Callable, Dict
+from typing import Any, Callable, Dict, List
 
 import rospy
 import serial
+import time as t
 
 from mrover.msg import Diagnostic, HeaterData, ScienceTemperature, Spectral
 from std_msgs.msg import Bool
 
 from mrover.srv import (
-    ChangeAutonLEDState,
-    ChangeAutonLEDStateRequest,
-    ChangeAutonLEDStateResponse,
-    ChangeDeviceState,
-    ChangeDeviceStateRequest,
-    ChangeDeviceStateResponse,
     ChangeHeaterState,
     ChangeHeaterStateRequest,
     ChangeHeaterStateResponse,
     ChangeServoAngle,
     ChangeServoAngleRequest,
     ChangeServoAngleResponse,
+    EnableDevice,
+    EnableDeviceRequest,
+    EnableDeviceResponse,
+)
+
+from std_srvs.srv import (
+    SetBool,
+    SetBoolRequest,
+    SetBoolResponse,
 )
 
 
@@ -38,8 +41,13 @@ class ScienceBridge:
     """Manages all the information and functions used for dealing with the
     bridge between the science board and the Jetson.
     One ScienceBridge will be made in main.
-    :param _id_by_color: A dictionary that maps the possible colors of the auton
-        LED to an integer for the UART message.
+    :param _active_publisher: A publisher that publishes whether the
+        science MCU is active or not (based on whether any messages were heard)
+    :param _allowed_mosfet_names: A list of allowed mosfet names for the "enable
+        mosfet" device service
+    :param _mcu_active_timeout_s: This represents the maximum amount of time
+        in seconds without receiving a UART message until the MCU is called
+        not active.
     :param _mosfet_number_by_device_name: A dictionary that maps each actual
         device to a MOSFET device number.
     :param _num_diag_current: The number of diagnostic current sensors.
@@ -53,15 +61,20 @@ class ScienceBridge:
         UART message to its corresponding ROS Publisher object.
     :param _sleep_amt_s: A float representing the sleep duration used for when the
         sleep function is called, in seconds.
+    :param _time_since_last_received_msg: The time since last received a
+        UART message.
     :param _uart_transmit_msg_len: An integer representing the maximum length
         for a transmitted UART message.
     :param _uart_lock: A lock used to prevent clashing over the UART transmit
         line.
+    :param _last_mcu_active: The last note for whether the mcu was active or not.
     """
 
     NUM_SPECTRAL_CHANNELS = 6
 
-    _id_by_color: Dict[str, int]
+    _active_publisher: rospy.Publisher
+    _allowed_mosfet_names: List[str]
+    _mcu_active_timeout_s: int
     _mosfet_number_by_device_name: Dict[str, int]
     _num_diag_current: int
     _num_diag_thermistors: int
@@ -70,13 +83,19 @@ class ScienceBridge:
     _handler_function_by_tag: Dict[str, Callable[[str], Any]]
     _ros_publisher_by_tag: Dict[str, rospy.Publisher]
     _sleep_amt_s: float
+    _time_since_last_received_msg: float
     _uart_transmit_msg_len: int
     _uart_lock: threading.Lock
     ser: serial.Serial
+    _last_mcu_active: Bool
 
     def __init__(self) -> None:
-        self._id_by_color = rospy.get_param("science/auton_color_ids")
+
+        self._active_publisher = rospy.Publisher("science_mcu_active", Bool, queue_size=1)
+
+        self._mcu_active_timeout_s = rospy.get_param("science/info/mcu_active_timeout_s")
         self._mosfet_number_by_device_name = rospy.get_param("science/device_mosfet_numbers")
+        self._allowed_mosfet_names = ["arm_laser", "uv_led_carousel", "uv_led_end_effector", "white_led", "raman_laser"]
 
         self._num_diag_current = rospy.get_param("/science/info/num_diag_current")
         self._num_diag_thermistors = rospy.get_param("/science/info/num_diag_thermistors")
@@ -99,6 +118,9 @@ class ScienceBridge:
         }
 
         self._sleep_amt_s = rospy.get_param("science/info/sleep")
+
+        self._time_since_last_received_msg = t.time()
+
         self._uart_transmit_msg_len = rospy.get_param("science/info/uart_transmit_msg_len")
         self._uart_lock = threading.Lock()
 
@@ -111,6 +133,7 @@ class ScienceBridge:
             bytesize=serial.EIGHTBITS,
             timeout=rospy.get_param("science/serial/timeout"),
         )
+        self._last_mcu_active = True
 
     def __del__(self) -> None:
         """
@@ -118,34 +141,43 @@ class ScienceBridge:
         """
         self.ser.close()
 
-    def handle_change_arm_laser_state(self, req: ChangeDeviceStateRequest) -> ChangeDeviceStateResponse:
-        """Process a request to change the laser state of the arm by issuing
+    def feed_uart_watchdog(self, event=None) -> bool:
+        """Sends a message to the UART lines to feed the watchdog"""
+        msg = "$WATCHDOG"
+        success = self._send_msg(msg)
+        return success
+
+    def publish_mcu_active(self, event=None) -> bool:
+        """Publish whether the mcu is active or not"""
+        mcu_active = bool(t.time() - self._time_since_last_received_msg < self._mcu_active_timeout_s)
+        self._last_mcu_active = mcu_active
+        ros_msg = Bool(mcu_active)
+        self._active_publisher.publish(ros_msg)
+        return True
+
+    def handle_enable_mosfet_device(self, req: EnableDeviceRequest) -> EnableDeviceResponse:
+        """Process a request to change the state of a MOSFET device by issuing
         the command to the STM32 chip via UART.
         :param req: A boolean that is the requested arm laser state.
         :returns: A boolean that is the success of sent UART transaction.
         """
-        success = self._send_mosfet_msg("arm_laser", req.enable)
-        return ChangeDeviceStateResponse(success)
 
-    def handle_change_auton_led_state(self, req: ChangeAutonLEDStateRequest) -> ChangeAutonLEDStateResponse:
-        """Process a request to change the auton LED array state by issuing
-        the command to the STM32 chip via UART.
-        :param req: A string that is the color of the requested state of the
-            auton LED array. Note that green actually means blinking green.
-        :returns: A boolean that is the success of sent UART transaction.
-        """
-        success = self._auton_led_transmit(req.color.lower())
-        return ChangeAutonLEDStateResponse(success)
+        if req.name in self._allowed_mosfet_names:
+            success = self._send_mosfet_msg(req.name, req.enable)
+            return EnableDeviceResponse(success)
 
-    def handle_change_heater_auto_shutoff_state(self, req: ChangeDeviceStateRequest) -> ChangeDeviceStateResponse:
+        return EnableDeviceResponse(False)
+
+    def handle_change_heater_auto_shutoff_state(self, req: SetBoolRequest) -> SetBoolResponse:
         """Process a request to change the auto shut off state of the
         carousel heaters by issuing the command to the STM32 chip via UART.
-        :param req: A boolean that is the requested auto shut off state of the
+        :param req: A SetBoolRequest object that has
+            a boolean that is the requested auto shut off state of the
             carousel heaters.
         :returns: A boolean that is the success of sent UART transaction.
         """
-        success = self._heater_auto_shutoff_transmit(req.enable)
-        return ChangeDeviceStateResponse(success)
+        success = self._heater_auto_shutoff_transmit(req.data)
+        return SetBoolResponse(success=success, message="")
 
     def handle_change_heater_state(self, req: ChangeHeaterStateRequest) -> ChangeHeaterStateResponse:
         """Process a request to change the carousel heater state by issuing
@@ -165,54 +197,13 @@ class ScienceBridge:
             a float representing the id and the angle respectively.
         :returns: A boolean that is the success of sent UART transaction.
         """
+        if not 0 <= req.id < 3:
+            # 0 <= req.id < 3 must be true since only 0, 1, and 2 are accepted.
+            rospy.logerr(f"Site {req.id} for changing servo angle is invalid.")
+            return ChangeServoAngleResponse(False)
+
         success = self._servo_transmit(req.id, req.angle)
         return ChangeServoAngleResponse(success)
-
-    def handle_change_uv_led_carousel_state(self, req: ChangeDeviceStateRequest) -> ChangeDeviceStateResponse:
-        """Process a request to change the carousel UV LED by
-        issuing the command to the STM32 chip via UART.
-        :param req: A boolean that is the requested UV LED state.
-        :returns: A boolean that is the success of sent UART transaction.
-        """
-        success = self._send_mosfet_msg("uv_led_carousel", req.enable)
-        return ChangeDeviceStateResponse(success)
-
-    def handle_change_uv_led_end_effector_state(self, req: ChangeDeviceStateRequest) -> ChangeDeviceStateResponse:
-        """Process a request to change the UV LED on the end effector by
-        issuing the command to the STM32 chip via UART.
-        :param req: A boolean that is the requested UV LED state.
-        :returns: A boolean that is the success of sent UART transaction.
-        """
-        success = self._send_mosfet_msg("uv_led_end_effector", req.enable)
-        return ChangeDeviceStateResponse(success)
-
-    def handle_change_white_led_state(self, req: ChangeDeviceStateRequest) -> ChangeDeviceStateResponse:
-        """Process a request to change the carousel white LED by
-        issuing the command to the STM32 chip via UART.
-        :param: req: A boolean that is the requested white LED state.
-        :returns: A boolean that is the success of sent UART transaction.
-        """
-        success = self._send_mosfet_msg("white_led", req.enable)
-        return ChangeDeviceStateResponse(success)
-
-    def _auton_led_transmit(self, color: str) -> bool:
-        """Send a UART message to the STM32 commanding the auton LED array
-        state.
-        :param color: A string that is the color of the requested state of
-            the auton LED array. Note that green actually means blinking green.
-            The string should be lower case.
-        :returns: A boolean that is the success of the transaction. Note that
-            this could be because an invalid color was sent.
-        """
-        color = color.lower()
-        if color not in self._id_by_color.keys():
-            rospy.logerr("Invalid auton LED color.")
-            return False
-
-        requested_state = self._id_by_color[color]
-        msg = f"$LED,{requested_state}"
-        success = self._send_msg(msg)
-        return success
 
     def _heater_auto_shutoff_transmit(self, enable: bool) -> bool:
         """Send a UART message to the STM32 chip commanding the auto shut off
@@ -222,7 +213,7 @@ class ScienceBridge:
             carousel heaters.
         :returns: A boolean that is the success of the transaction.
         """
-        tx_msg = f"$AUTO_SHUTOFF,{enable}"
+        tx_msg = f"$AUTO_SHUTOFF,{int(enable)}"
         success = self._send_msg(tx_msg)
         return success
 
@@ -239,17 +230,18 @@ class ScienceBridge:
         success = self._send_msg(tx_msg)
         return success
 
-    def _servo_transmit(self, id: int, angle: float) -> bool:
+    def _servo_transmit(self, servo_id: int, angle: float) -> bool:
         """Send a UART message to the STM32 chip commanding the angles of the
         carousel servos.
-        :param angles: Three floats in an array that represent the angles of
+        :param servo_id: A servo id. Should be 0, 1, or 2.
+        :param angle: Three floats in an array that represent the angles of
             the servos. Note that this angle is what the servo interprets as
             the angle, and it may differ from servo to servo. Also note that
             the range of angles may vary (the safe range is between about 0
             and 150).
         :returns: A boolean that is the success of the transaction.
         """
-        tx_msg = f"$SERVO,{id},{angle}"
+        tx_msg = f"$SERVO,{servo_id},{angle}"
         success = self._send_msg(tx_msg)
         return success
 
@@ -310,7 +302,12 @@ class ScienceBridge:
             rospy.sleep(self._sleep_amt_s)
             return
 
-        self._handler_function_by_tag[tag](rx_msg)
+        self._time_since_last_received_msg = t.time()
+
+        try:
+            self._handler_function_by_tag[tag](rx_msg)
+        except ValueError as e:
+            rospy.logerr(f"Received invalid message. Exception: {e}")
 
     def _read_msg(self) -> str:
         """Read a message on the UART receive line from the STM32 chip.
@@ -364,7 +361,6 @@ class ScienceBridge:
         if len(arr) < 2:
             rospy.logerr(f"Only {len(arr)} parameters in auto shutoff handler")
             return
-
         ros_msg = Bool(bool(int(arr[1])))
         self._ros_publisher_by_tag[arr[0][3:]].publish(ros_msg)
 
@@ -431,14 +427,12 @@ class ScienceBridge:
 def main():
     rospy.init_node("science")
     bridge = ScienceBridge()
-    rospy.Service("change_arm_laser_state", ChangeDeviceState, bridge.handle_change_arm_laser_state)
-    rospy.Service("change_auton_led_state", ChangeAutonLEDState, bridge.handle_change_auton_led_state)
-    rospy.Service("change_heater_auto_shutoff_state", ChangeDeviceState, bridge.handle_change_heater_auto_shutoff_state)
+    rospy.Service("enable_mosfet_device", EnableDevice, bridge.handle_enable_mosfet_device)
     rospy.Service("change_heater_state", ChangeHeaterState, bridge.handle_change_heater_state)
-    rospy.Service("change_servo_angles", ChangeServoAngle, bridge.handle_change_servo_angle)
-    rospy.Service("change_uv_led_carousel_state", ChangeDeviceState, bridge.handle_change_uv_led_carousel_state)
-    rospy.Service("change_uv_led_end_effector_state", ChangeDeviceState, bridge.handle_change_uv_led_end_effector_state)
-    rospy.Service("change_white_led_state", ChangeDeviceState, bridge.handle_change_white_led_state)
+    rospy.Service("change_heater_auto_shutoff_state", SetBool, bridge.handle_change_heater_auto_shutoff_state)
+    rospy.Service("change_servo_angle", ChangeServoAngle, bridge.handle_change_servo_angle)
+    rospy.Timer(rospy.Duration(400.0 / 1000.0), bridge.feed_uart_watchdog)
+    rospy.Timer(rospy.Duration(1.0), bridge.publish_mcu_active)
 
     while not rospy.is_shutdown():
         # receive() sleeps when no message is received.

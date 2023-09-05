@@ -20,30 +20,42 @@ let interval;
 export default {
   props: {
     forwardsKey:
-      // ID of key to send positive velocity
-      {
-        type: Number,
-        required: true,
-      },
+    // ID of key to send positive velocity
+    {
+      type: Number,
+      required: true,
+    },
+
     backwardsKey:
-      // ID of key to send negative velocity
-      {
-        type: Number,
-        required: true,
-      },
+    // ID of key to send negative velocity
+    {
+      type: Number,
+      required: true,
+    },
+
     updateRate:
-      // In seconds
-      {
-        type: Number,
-        required: false,
-        default: 0.1,
-      },
+    // In seconds
+    {
+      type: Number,
+      required: false,
+      default: 0.1,
+    },
+
+    scaleDefault:
+    // Default velocityScale in percent
+    {
+      type: Number,
+      required: false,
+      default: 100,
+    },
   },
+
   emits: ["velocity"],
+
   data() {
     return {
       velocity: 0,
-      velocityScale: 100,
+      velocityScale: this.scaleDefault,
     };
   },
 
@@ -56,19 +68,6 @@ export default {
   created: function () {
     document.addEventListener("keyup", this.keyMonitorUp);
     document.addEventListener("keydown", this.keyMonitorDown);
-    // Prevent scrolling with the arrows when an open loop controller is on screen
-    window.addEventListener(
-      "preventScroll",
-      function (e) {
-        if (
-          ["ArrowUp", "ArrowDown", "ArrowLeft", "ArrowRight"].indexOf(e.code) >
-          -1
-        ) {
-          e.preventDefault();
-        }
-      },
-      false
-    );
 
     interval = setInterval(() => {
       this.$emit("velocity", this.velocity);
@@ -76,21 +75,6 @@ export default {
   },
 
   beforeDestroy: function () {
-    document.removeEventListener("keyup", this.keyMonitorUp);
-    document.removeEventListener("keydown", this.keyMonitorDown);
-    window.removeEventListener(
-      "preventScroll",
-      function (e) {
-        if (
-          ["Space", "ArrowUp", "ArrowDown", "ArrowLeft", "ArrowRight"].indexOf(
-            e.code
-          ) > -1
-        ) {
-          e.preventDefault();
-        }
-      },
-      false
-    );
     window.clearInterval(interval);
   },
 

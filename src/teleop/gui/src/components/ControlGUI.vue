@@ -8,7 +8,8 @@
       :joint-state-data="jointState"
       :vertical="true"
     ></JointStateTable>
-    <MoteusStateTable :moteus-state-data="moteusState"></MoteusStateTable>
+    <DriveMoteusStateTable :moteus-state-data="moteusState"></DriveMoteusStateTable>
+    <FlightAttitudeIndicator></FlightAttitudeIndicator>
   </div>
 </template>
 
@@ -18,8 +19,9 @@ import DriveControls from "./DriveControls.vue";
 import ArmControls from "./ArmControls.vue";
 import MastGimbalControls from "./MastGimbalControls.vue";
 import JointStateTable from "./JointStateTable.vue";
-import MoteusStateTable from "./MoteusStateTable.vue";
+import DriveMoteusStateTable from "./DriveMoteusStateTable.vue";
 import CommReadout from "./CommReadout.vue";
+import FlightAttitudeIndicator from "./FlightAttitudeIndicator.vue";
 
 export default {
   components: {
@@ -27,8 +29,9 @@ export default {
     ArmControls,
     JointStateTable,
     MastGimbalControls,
-    MoteusStateTable,
+    DriveMoteusStateTable,
     CommReadout,
+    FlightAttitudeIndicator
   },
   data() {
     return {

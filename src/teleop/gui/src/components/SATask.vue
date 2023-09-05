@@ -10,8 +10,9 @@
       />
       <h1>SA Dashboard</h1>
       <div class="spacer"></div>
+      <MCUReset class="mcu_reset"></MCUReset>
       <div class="spacer"></div>
-      <CommReadout class="comm"></CommReadout>
+      <CommReadout class="comms"></CommReadout>
       <div class="help">
         <img
           src="/static/help.png"
@@ -42,16 +43,13 @@
       <BasicMap :odom="odom" />
     </div>
     <div class="box waypoints light-bg">
-      <BasicWaypointEditor />
+      <BasicWaypointEditor :odom="odom" />
     </div>
     <div class="box light-bg cameras">
       <Cameras :primary="true" />
     </div>
     <div>
       <DriveControls />
-    </div>
-    <div class="box light-bg scoop">
-      <EndEffectorUV />
     </div>
     <div class="box light-bg arm">
       <SAArmControls />
@@ -63,10 +61,47 @@
       <JointStateTable :joint-state-data="jointState" :vertical="true" />
     </div>
     <div class="box light-bg moteus">
-      <MoteusStateTable :moteus-state-data="moteusState" />
+      <DriveMoteusStateTable :moteus-state-data="moteusState" />
+    </div>
+    <div class="box light-bg limit">
+      <h3>Limit Switches</h3>
+      <LimitSwitch :switch_name="'sa_joint_1'" :name="'Joint 1 Switch'" />
+      <LimitSwitch :switch_name="'sa_joint_2'" :name="'Joint 2 Switch'" />
+      <LimitSwitch :switch_name="'sa_joint_3'" :name="'Joint 3 Switch'" />
+      <LimitSwitch :switch_name="'scoop'" :name="'Scoop Switch'" />
+    </div>
+    <div class="box light-bg calibration">
+      <h3>Calibrations</h3>
+      <div class="calibration-checkboxes">
+        <CalibrationCheckbox
+          :name="'Joint 1 Calibration'"
+          :joint_name="'sa_joint_1'"
+          :calibrate_topic="'sa_is_calibrated'"
+        />
+        <CalibrationCheckbox
+          :name="'Joint 2 Calibration'"
+          :joint_name="'sa_joint_2'"
+          :calibrate_topic="'sa_is_calibrated'"
+        />
+        <CalibrationCheckbox
+          :name="'Joint 3 Calibration'"
+          :joint_name="'sa_joint_3'"
+          :calibrate_topic="'sa_is_calibrated'"
+        />
+      </div>
+      <MotorAdjust
+        :options="[
+          { name: 'sa_joint_1', option: 'Joint 1' },
+          { name: 'sa_joint_2', option: 'Joint 2' },
+          { name: 'sa_joint_3', option: 'Joint 3' }
+        ]"
+      />
     </div>
     <div v-show="false">
       <MastGimbalControls></MastGimbalControls>
+    </div>
+    <div class="box light-bg odom">
+      <OdometryReading :odom="odom"></OdometryReading>
     </div>
   </div>
 </template>
@@ -77,15 +112,18 @@ import BasicMap from "./BasicRoverMap.vue";
 import BasicWaypointEditor from "./BasicWaypointEditor.vue";
 import DriveControls from "./DriveControls.vue";
 import MastGimbalControls from "./MastGimbalControls.vue";
-import EndEffectorUV from "./EndEffectorUV.vue";
 import SAArmControls from "./SAArmControls.vue";
 import PDBFuse from "./PDBFuse.vue";
-import * as qte from "quaternion-to-euler";
 import Cameras from "./Cameras.vue";
-import MoteusStateTable from "./MoteusStateTable.vue";
+import DriveMoteusStateTable from "./DriveMoteusStateTable.vue";
 import JointStateTable from "./JointStateTable.vue";
+import LimitSwitch from "./LimitSwitch.vue";
+import CalibrationCheckbox from "./CalibrationCheckbox.vue";
 import CommReadout from "./CommReadout.vue";
-import { quaternionToDisplayAngle } from "../utils.js";
+import MCUReset from "./MCUReset.vue";
+import MotorAdjust from "./MotorAdjust.vue";
+import OdometryReading from "./OdometryReading.vue";
+import { disableAutonLED, quaternionToMapAngle } from "../utils.js";
 
 export default {
   components: {
@@ -93,13 +131,17 @@ export default {
     BasicWaypointEditor,
     Cameras,
     DriveControls,
-    EndEffectorUV,
     JointStateTable,
     MastGimbalControls,
-    MoteusStateTable,
+    DriveMoteusStateTable,
     PDBFuse,
     SAArmControls,
+    LimitSwitch,
+    CalibrationCheckbox,
     CommReadout,
+    MCUReset,
+    MotorAdjust,
+    OdometryReading
   },
   data() {
     return {
@@ -107,28 +149,32 @@ export default {
       odom: {
         latitude_deg: 42.294864932393835,
         longitude_deg: -83.70781314674628,
-        bearing_deg: 0,
+        bearing_deg: 0
       },
+
+      brushless_motors_sub: null,
 
       jointState: {},
       // Moteus state table is set up to look for specific keys in moteusState so it can't be empty
       moteusState: {
         name: ["", "", "", "", "", ""],
         error: ["", "", "", "", "", ""],
-        state: ["", "", "", "", "", ""],
+        state: ["", "", "", "", "", ""]
       },
 
       // Pubs and Subs
       odom_sub: null,
-      tfClient: null,
+      tfClient: null
     };
   },
 
   created: function () {
+    disableAutonLED(this.$ros);
+
     this.odom_sub = new ROSLIB.Topic({
       ros: this.$ros,
       name: "/gps/fix",
-      messageType: "sensor_msgs/NavSatFix",
+      messageType: "sensor_msgs/NavSatFix"
     });
 
     this.odom_sub.subscribe((msg) => {
@@ -141,27 +187,27 @@ export default {
       ros: this.$ros,
       fixedFrame: "odom",
       // Thresholds to trigger subscription callback
-      angularThres: 0.01,
-      transThres: 0.01,
+      angularThres: 0.0001,
+      transThres: 0.01
     });
 
     // Subscriber for odom to base_link transform
     this.tfClient.subscribe("base_link", (tf) => {
       // Callback for IMU quaternion that describes bearing
-      this.odom.bearing_deg = quaternionToDisplayAngle(tf.rotation);
+      this.odom.bearing_deg = quaternionToMapAngle(tf.rotation);
     });
 
-    this.brushless_motors = new ROSLIB.Topic({
+    this.brushless_motors_sub = new ROSLIB.Topic({
       ros: this.$ros,
       name: "drive_status",
-      messageType: "mrover/MotorsStatus",
+      messageType: "mrover/MotorsStatus"
     });
 
-    this.brushless_motors.subscribe((msg) => {
+    this.brushless_motors_sub.subscribe((msg) => {
       this.jointState = msg.joint_states;
       this.moteusState = msg.moteus_states;
     });
-  },
+  }
 };
 </script>
 
@@ -169,16 +215,15 @@ export default {
 <style scoped>
 .wrapper {
   display: grid;
-  overflow: hidden;
   grid-gap: 10px;
-  grid-template-columns: 40vw 5vw 25vw 25vw;
-  grid-template-rows: 60px 70vh auto auto auto;
+  grid-template-columns: auto auto auto;
+  grid-template-rows: 60px 50vh auto auto auto;
   grid-template-areas:
-    "header header header header"
-    "map map waypoints waypoints"
-    "cameras cameras cameras scoop"
-    "arm moteus moteus jointState"
-    "pdb moteus moteus jointState";
+    "header header header"
+    "map map waypoints"
+    "odom cameras cameras"
+    "arm limit calibration"
+    "pdb moteus jointState";
   font-family: sans-serif;
   height: auto;
 }
@@ -228,13 +273,7 @@ h2 {
 }
 
 .comms {
-  display: flex;
-  flex-direction: column;
-  align-items: flex-start;
-}
-.comms * {
-  margin-top: 2px;
-  margin-bottom: 2px;
+  margin-right: 5px;
 }
 
 .helpscreen {
@@ -290,10 +329,6 @@ h2 {
   grid-area: waypoints;
 }
 
-.scoop {
-  grid-area: scoop;
-}
-
 .arm {
   grid-area: arm;
 }
@@ -308,6 +343,24 @@ h2 {
 
 .moteus {
   grid-area: moteus;
+}
+
+.limit {
+  grid-area: limit;
+}
+
+.odom {
+  grid-area: odom;
+}
+
+.calibration {
+  grid-area: calibration;
+  display: flex;
+  flex-direction: column;
+}
+
+.calibration-checkboxes {
+  margin: -4% 0 1% 0;
 }
 
 .Joystick {

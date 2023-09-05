@@ -11,7 +11,9 @@
       <h1 v-if="type === 'ES'">ES GUI Dashboard</h1>
       <h1 v-else>EDM GUI Dashboard</h1>
       <div class="spacer"></div>
-      <CommReadout class="comm"></CommReadout>
+      <MCUReset class="mcu_reset"></MCUReset>
+      <div class="spacer"></div>
+      <CommReadout class="comms"></CommReadout>
       <div class="help">
         <img
           src="/static/help.png"
@@ -54,7 +56,7 @@
       <JointStateTable :joint-state-data="jointState" :vertical="true" />
     </div>
     <div v-if="type === 'EDM'" class="box waypoint-editor light-bg">
-      <BasicWaypointEditor />
+      <BasicWaypointEditor :odom="odom" />
     </div>
     <div>
       <DriveControls></DriveControls>
@@ -63,7 +65,8 @@
       <ArmControls />
     </div>
     <div class="box moteus light-bg">
-      <MoteusStateTable :moteus-state-data="moteusState" />
+      <DriveMoteusStateTable :moteus-state-data="moteusState" />
+      <ArmMoteusStateTable />
     </div>
     <div v-show="false">
       <MastGimbalControls></MastGimbalControls>
@@ -81,63 +84,70 @@ import MastGimbalControls from "./MastGimbalControls.vue";
 import BasicMap from "./BasicRoverMap.vue";
 import BasicWaypointEditor from "./BasicWaypointEditor.vue";
 import JointStateTable from "./JointStateTable.vue";
-import MoteusStateTable from "./MoteusStateTable.vue";
+import DriveMoteusStateTable from "./DriveMoteusStateTable.vue";
+import ArmMoteusStateTable from "./ArmMoteusStateTable.vue";
 import OdometryReading from "./OdometryReading.vue";
 import PDBFuse from "./PDBFuse.vue";
 import CommReadout from "./CommReadout.vue";
-import { quaternionToDisplayAngle } from "../utils.js";
+import MCUReset from "./MCUReset.vue";
+import { quaternionToMapAngle, disableAutonLED } from "../utils.js";
 
 export default {
   components: {
     ArmControls,
+    ArmMoteusStateTable,
     Cameras,
     DriveControls,
     BasicMap,
     BasicWaypointEditor,
     JointStateTable,
     MastGimbalControls,
-    MoteusStateTable,
+    DriveMoteusStateTable,
     OdometryReading,
     PDBFuse,
     CommReadout,
+    MCUReset
   },
 
   props: {
     type: {
       type: String,
-      required: true,
-    },
+      required: true
+    }
   },
   data() {
     return {
-      // Default coordinates are at NC 53 Parking Lot
+      // Default coordinates at MDRS
       odom: {
-        latitude_deg: 42.294864932393835,
-        longitude_deg: -83.70781314674628,
+        latitude_deg: 38.4060250,
+        longitude_deg: -110.7923723,
         bearing_deg: 0,
-        speed: 0,
+        speed: 0
       },
 
       // Pubs and Subs
       odom_sub: null,
       tfClient: null,
 
+      brushless_motors_sub: null,
+
       // Default object isn't empty, so has to be initialized to ""
       moteusState: {
         name: ["", "", "", "", "", ""],
         error: ["", "", "", "", "", ""],
-        state: ["", "", "", "", "", ""],
+        state: ["", "", "", "", "", ""]
       },
 
-      jointState: {},
+      jointState: {}
     };
   },
 
   created: function () {
+    disableAutonLED(this.$ros);
     this.odom_sub = new ROSLIB.Topic({
       ros: this.$ros,
       name: "/gps/fix",
-      messageType: "sensor_msgs/NavSatFix",
+      messageType: "sensor_msgs/NavSatFix"
     });
 
     this.tfClient = new ROSLIB.TFClient({
@@ -145,12 +155,12 @@ export default {
       fixedFrame: "map",
       // Thresholds to trigger subscription callback
       angularThres: 0.0001,
-      transThres: 0.01,
+      transThres: 0.01
     });
 
     // Subscriber for odom to base_link transform
     this.tfClient.subscribe("base_link", (tf) => {
-      this.odom.bearing_deg = quaternionToDisplayAngle(tf.rotation);
+      this.odom.bearing_deg = quaternionToMapAngle(tf.rotation);
     });
 
     this.odom_sub.subscribe((msg) => {
@@ -159,17 +169,17 @@ export default {
       this.odom.longitude_deg = msg.longitude;
     });
 
-    this.brushless_motors = new ROSLIB.Topic({
+    this.brushless_motors_sub = new ROSLIB.Topic({
       ros: this.$ros,
       name: "drive_status",
-      messageType: "mrover/MotorsStatus",
+      messageType: "mrover/MotorsStatus"
     });
 
-    this.brushless_motors.subscribe((msg) => {
+    this.brushless_motors_sub.subscribe((msg) => {
       this.jointState = msg.joint_states;
       this.moteusState = msg.moteus_states;
     });
-  },
+  }
 };
 </script>
 
@@ -178,13 +188,13 @@ export default {
   display: grid;
   grid-gap: 10px;
   grid-template-columns: auto auto;
-  grid-template-rows: 60px 250px auto auto auto auto;
+  grid-template-rows: 60px 200px 300px auto auto auto;
   grid-template-areas:
     "header header"
     "map waypoint-editor"
     "map odom"
-    "map arm-controls"
-    "cameras drive-vel-data"
+    "map cameras"
+    "arm-controls drive-vel-data"
     "moteus pdb";
   font-family: sans-serif;
   height: auto;
@@ -194,13 +204,12 @@ export default {
   display: grid;
   grid-gap: 10px;
   grid-template-columns: auto auto;
-  grid-template-rows: 60px 250px auto auto auto;
+  grid-template-rows: 60px auto auto auto;
   grid-template-areas:
     "header header"
-    "cameras moteus"
-    "cameras moteus"
-    "drive-vel-data pdb"
-    "arm-controls arm-controls";
+    "cameras arm-controls"
+    "drive-vel-data moteus"
+    "pdb pdb";
   font-family: sans-serif;
   height: auto;
 }
@@ -231,6 +240,10 @@ img {
 
 .spacer {
   flex-grow: 1;
+}
+
+.comms {
+  margin-right: 5px;
 }
 
 .helpscreen {

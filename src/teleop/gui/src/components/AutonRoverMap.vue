@@ -40,7 +40,7 @@
         :lat-lng="search_path_point.latLng"
         :icon="searchPathIcon"
       >
-        <l-tooltip :options="{ permanent: 'true', direction: 'top' }"
+        <l-tooltip
           >Search Path {{ index }}</l-tooltip
         >
       </l-marker>
@@ -95,7 +95,7 @@ import {
   LPolyline,
   LPopup,
   LTooltip,
-  LControlScale,
+  LControlScale
 } from "vue2-leaflet";
 import { mapGetters, mapMutations } from "vuex";
 import L from "../leaflet-rotatedmarker";
@@ -108,11 +108,11 @@ const offlineUrl = "/static/map/{z}/{x}/{y}.png";
 const onlineTileOptions = {
   maxNativeZoom: 22,
   maxZoom: 100,
-  subdomains: ["mt0", "mt1", "mt2", "mt3"],
+  subdomains: ["mt0", "mt1", "mt2", "mt3"]
 };
 const offlineTileOptions = {
-  maxNativeZoom: 22,
-  maxZoom: 100,
+  maxNativeZoom: 16,
+  maxZoom: 100
 };
 
 export default {
@@ -125,18 +125,18 @@ export default {
     LPolyline,
     LPopup,
     LTooltip,
-    LControlScale,
+    LControlScale
   },
   props: {
     odom: {
       type: Object,
-      required: true,
-    },
+      required: true
+    }
   },
   data() {
     return {
-      // Default Center In NC 53 Parking Lot
-      center: L.latLng(42.294864932393835, -83.70781314674628),
+      // Default Center at MDRS
+      center: L.latLng(38.4060250, -110.7923723),
       attribution:
         '&copy; <a href="http://osm.org/copyright">OpenStreetMap</a> contributors',
       online: true,
@@ -160,13 +160,14 @@ export default {
       post1: null,
       post2: null,
 
-      findRover: false,
+      findRover: false
     };
   },
   computed: {
     ...mapGetters("autonomy", {
       route: "route",
       waypointList: "waypointList",
+      autonEnabled: "autonEnabled"
     }),
 
     // Convert to latLng object for Leaflet to use
@@ -179,13 +180,12 @@ export default {
       return [this.odomLatLng].concat(
         this.route.map((waypoint) => waypoint.latLng)
       );
-    },
+    }
   },
   watch: {
     odom: {
       handler: function (val) {
         // Trigger every time rover odom is changed
-
         const lat = val.latitude_deg;
         const lng = val.longitude_deg;
         const angle = val.bearing_deg;
@@ -215,57 +215,68 @@ export default {
         this.odomPath[this.odomPath.length - 1] = latLng;
       },
       // Deep will watch for changes in children of an object
-      deep: true,
+      deep: true
     },
+    autonEnabled: {
+      handler: function () {
+        if (this.autonEnabled) {
+          this.searchPathPoints = [];
+          this.gatePathPoints = [];
+
+          this.post1 = null;
+          this.post2 = null;
+        }
+      }
+    }
   },
   created: function () {
     // Get Icons for Map
     this.locationIcon = L.icon({
       iconUrl: "/static/location_marker_icon.png",
       iconSize: [40, 40],
-      iconAnchor: [20, 20],
+      iconAnchor: [20, 20]
     });
     this.waypointIcon = L.icon({
       iconUrl: "/static/map_marker.png",
       iconSize: [64, 64],
       iconAnchor: [32, 64],
-      popupAnchor: [0, -32],
+      popupAnchor: [0, -32]
     });
     this.searchPathIcon = L.icon({
       iconUrl: "/static/map_marker_projected.png",
-      iconSize: [64, 64],
-      iconAnchor: [32, 64],
-      popupAnchor: [0, -32],
+      iconSize: [32, 32],
+      iconAnchor: [16, 16],
+      popupAnchor: [0, -32]
     });
     this.gatePathIcon = L.icon({
       iconUrl: "/static/map_marker_highlighted.png",
       iconSize: [64, 64],
       iconAnchor: [32, 64],
-      popupAnchor: [0, -32],
+      popupAnchor: [0, -32]
     });
     this.postIcon = L.icon({
       iconUrl: "/static/gate_location.png",
       iconSize: [64, 64],
       iconAnchor: [32, 64],
-      popupAnchor: [0, -32],
+      popupAnchor: [0, -32]
     });
 
     this.search_path_topic = new ROSLIB.Topic({
       ros: this.$ros,
       name: "/search_path",
-      messageType: "mrover/GPSPointList",
+      messageType: "mrover/GPSPointList"
     });
 
     this.gate_path_topic = new ROSLIB.Topic({
       ros: this.$ros,
       name: "/gate_path",
-      messageType: "mrover/GPSPointList",
+      messageType: "mrover/GPSPointList"
     });
 
     this.estimated_gate_topic = new ROSLIB.Topic({
       ros: this.$ros,
       name: "/estimated_gate_location",
-      messageType: "mrover/GPSPointList",
+      messageType: "mrover/GPSPointList"
     });
 
     this.search_path_topic.subscribe((msg) => {
@@ -275,7 +286,7 @@ export default {
           latLng: L.latLng(
             search_path_point.latitude_degrees,
             search_path_point.longitude_degrees
-          ),
+          )
         };
       });
     });
@@ -287,7 +298,7 @@ export default {
           latLng: L.latLng(
             gate_path_point.latitude_degrees,
             gate_path_point.longitude_degrees
-          ),
+          )
         };
       });
     });
@@ -316,16 +327,16 @@ export default {
     getClickedLatLon: function (e) {
       this.setClickPoint({
         lat: e.latlng.lat,
-        lon: e.latlng.lng,
+        lon: e.latlng.lng
       });
     },
 
     ...mapMutations("autonomy", {
       setClickPoint: "setClickPoint",
       setWaypointList: "setWaypointList",
-      setOdomFormat: "setOdomFormat",
-    }),
-  },
+      setOdomFormat: "setOdomFormat"
+    })
+  }
 };
 </script>
 

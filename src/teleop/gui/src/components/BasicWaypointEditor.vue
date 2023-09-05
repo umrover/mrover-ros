@@ -42,6 +42,7 @@
       <br />
       <div style="display: inline-block">
         <button @click="addWaypoint(input)">Add Waypoint</button>
+        <button @click="addWaypoint(formatted_odom)">Drop Waypoint</button>
       </div>
     </div>
     <div class="box1">
@@ -73,6 +74,13 @@ import _ from "lodash";
 import L from "leaflet";
 
 export default {
+  props: {
+    odom: {
+      type: Object,
+      required: true
+    }
+  },
+
   data() {
     return {
       name: "Waypoint",
@@ -81,27 +89,27 @@ export default {
         lat: {
           d: 0,
           m: 0,
-          s: 0,
+          s: 0
         },
         lon: {
           d: 0,
           m: 0,
-          s: 0,
-        },
+          s: 0
+        }
       },
 
-      storedWaypoints: [],
+      storedWaypoints: []
     };
   },
 
   methods: {
     ...mapMutations("erd", {
       setWaypointList: "setWaypointList",
-      setHighlightedWaypoint: "setHighlightedWaypoint",
+      setHighlightedWaypoint: "setHighlightedWaypoint"
     }),
 
     ...mapMutations("map", {
-      setOdomFormat: "setOdomFormat",
+      setOdomFormat: "setOdomFormat"
     }),
 
     deleteItem: function (payload) {
@@ -115,7 +123,7 @@ export default {
       this.storedWaypoints.push({
         name: this.name,
         lat: (coord.lat.d + coord.lat.m / 60 + coord.lat.s / 3600).toFixed(5),
-        lon: (coord.lon.d + coord.lon.m / 60 + coord.lon.s / 3600).toFixed(5),
+        lon: (coord.lon.d + coord.lon.m / 60 + coord.lon.s / 3600).toFixed(5)
       });
     },
 
@@ -129,7 +137,7 @@ export default {
 
     clearWaypoint: function () {
       this.storedWaypoints = [];
-    },
+    }
   },
 
   watch: {
@@ -137,7 +145,7 @@ export default {
       const waypoints = newList.map((waypoint) => {
         return {
           latLng: L.latLng(waypoint.lat, waypoint.lon),
-          name: waypoint.name,
+          name: waypoint.name
         };
       });
       this.setWaypointList(waypoints);
@@ -158,23 +166,26 @@ export default {
       this.input.lon.s = 0;
       this.input.lat = convertDMS(this.input.lat, this.odom_format_in);
       this.input.lon = convertDMS(this.input.lon, this.odom_format_in);
-    },
+    }
   },
 
   created: function () {
     // Reset waypoint editors
     this.setHighlightedWaypoint(-1);
     this.setWaypointList([]);
+
+    // Set odometer format
+    this.odom_format_in = this.odom_format;
   },
 
   computed: {
     ...mapGetters("erd", {
       highlightedWaypoint: "highlightedWaypoint",
-      clickPoint: "clickPoint",
+      clickPoint: "clickPoint"
     }),
 
     ...mapGetters("map", {
-      odom_format: "odomFormat",
+      odom_format: "odomFormat"
     }),
 
     min_enabled: function () {
@@ -184,13 +195,26 @@ export default {
     sec_enabled: function () {
       return this.odom_format == "DMS";
     },
+
+    formatted_odom: function () {
+      return {
+        lat: convertDMS(
+          { d: this.odom.latitude_deg, m: 0, s: 0 },
+          this.odom_format
+        ),
+        lon: convertDMS(
+          { d: this.odom.longitude_deg, m: 0, s: 0 },
+          this.odom_format
+        )
+      };
+    }
   },
 
   components: {
     draggable,
     WaypointItem,
-    Checkbox,
-  },
+    Checkbox
+  }
 };
 </script>
 

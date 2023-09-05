@@ -1,75 +1,93 @@
 <template>
-  <div class="wrapper">
-    <div class="box header">
-      <img
-        src="/static/mrover.png"
-        alt="MRover"
-        title="MRover"
-        width="48"
-        height="48"
-      />
-      <h1>Auton Dashboard</h1>
-      <div class="spacer"></div>
-      <div class="spacer"></div>
-      <CommReadout class="comm"></CommReadout>
-      <div class="help">
+  <div>
+    <div class="wrapper">
+      <div class="box header">
         <img
-          src="/static/help.png"
-          alt="Help"
-          title="Help"
+          src="/static/mrover.png"
+          alt="MRover"
+          title="MRover"
           width="48"
           height="48"
         />
+        <h1>Auton Dashboard</h1>
+        <div class="spacer"></div>
+        <MCUReset class="mcu_reset"></MCUReset>
+        <div class="spacer"></div>
+        <CommReadout class="comms"></CommReadout>
+        <div class="help">
+          <img
+            src="/static/help.png"
+            alt="Help"
+            title="Help"
+            width="48"
+            height="48"
+          />
+        </div>
+        <div class="helpscreen"></div>
+        <div
+          class="helpimages"
+          style="
+            display: flex;
+            align-items: center;
+            justify-content: space-evenly;
+          "
+        >
+          <img
+            src="/static/joystick.png"
+            alt="Joystick"
+            title="Joystick Controls"
+            style="width: auto; height: 70%; display: inline-block"
+          />
+        </div>
       </div>
-      <div class="helpscreen"></div>
-      <div
-        class="helpimages"
-        style="
-          display: flex;
-          align-items: center;
-          justify-content: space-evenly;
-        "
-      >
-        <img
-          src="/static/joystick.png"
-          alt="Joystick"
-          title="Joystick Controls"
-          style="width: auto; height: 70%; display: inline-block"
+      <div class="box1 data" :style="{ backgroundColor: nav_state_color }">
+        <div>
+          <h2>Nav State: {{ nav_status.nav_state_name }}</h2>
+        </div>
+        <div>
+          <p style="margin-top: 6px">Joystick Values</p>
+        </div>
+        <div></div>
+        <JoystickValues />
+        <div>
+          <OdometryReading :odom="odom"></OdometryReading>
+        </div>
+      </div>
+      <div class="box map light-bg">
+        <AutonRoverMap :odom="odom" />
+      </div>
+      <div class="box waypoints light-bg">
+        <AutonWaypointEditor
+          :odom="odom"
+          @toggleTeleop="teleopEnabledCheck = $event"
         />
       </div>
-    </div>
-    <div class="box1 data" :style="{ backgroundColor: nav_state_color }">
-      <div>
-        <h2>Nav State: {{ nav_status.nav_state_name }}</h2>
+      <!--Enable the drive controls if auton is off-->
+      <div
+        v-if="!autonEnabled && teleopEnabledCheck"
+        v-show="false"
+        class="driveControls"
+      >
+        <DriveControls />
       </div>
-      <div>
-        <p style="margin-top: 6px">Joystick Values</p>
+      <div v-show="false">
+        <MastGimbalControls></MastGimbalControls>
       </div>
-      <div></div>
-      <JoystickValues />
-      <div class="calibration status data" style="background-color: lightgray">
-        <IMUCalibration />
+      <div class="conditions">
+        <div v-if="!stuck_status" class="stuck not-stuck">
+          <h4>Nominal Conditions</h4>
+        </div>
+        <div v-else class="stuck rover-stuck">
+          <h4>Obstruction Detected</h4>
+        </div>
       </div>
-    </div>
-    <div class="box map light-bg">
-      <AutonRoverMap :odom="odom" />
-    </div>
-    <div class="box waypoints light-bg">
-      <AutonWaypointEditor
-        :odom="odom"
-        @toggleTeleop="teleopEnabledCheck = $event"
-      />
-    </div>
-    <!--Enable the drive controls if auton is off-->
-    <div
-      v-if="!autonEnabled && teleopEnabledCheck"
-      v-show="false"
-      class="driveControls"
-    >
-      <DriveControls />
-    </div>
-    <div v-show="false">
-      <MastGimbalControls></MastGimbalControls>
+      <div class="box1 cameras">
+        <Cameras :primary="true" />
+      </div>
+      <div class="box1 moteus">
+        <DriveMoteusStateTable :moteus-state-data="moteusState" />
+        <JointStateTable :joint-state-data="jointState" :vertical="true" />
+      </div>
     </div>
   </div>
 </template>
@@ -82,44 +100,55 @@ import DriveControls from "./DriveControls.vue";
 import MastGimbalControls from "./MastGimbalControls.vue";
 import { mapGetters } from "vuex";
 import JoystickValues from "./JoystickValues.vue";
-import IMUCalibration from "./IMUCalibration.vue";
+import DriveMoteusStateTable from "./DriveMoteusStateTable.vue";
+import JointStateTable from "./JointStateTable.vue";
 import CommReadout from "./CommReadout.vue";
-import { quaternionToDisplayAngle } from "../utils.js";
+import Cameras from "./Cameras.vue";
+import MCUReset from "./MCUReset.vue"
 
+import { quaternionToMapAngle } from "../utils.js";
+import OdometryReading from "./OdometryReading.vue";
 const navBlue = "#4695FF";
 const navGreen = "yellowgreen";
 const navRed = "lightcoral";
 const navGrey = "lightgrey";
+
+const ledUpdateRate = 1;
+let ledInterval;
 
 export default {
   components: {
     AutonRoverMap,
     AutonWaypointEditor,
     DriveControls,
-    IMUCalibration,
     JoystickValues,
     MastGimbalControls,
     CommReadout,
+    Cameras,
+    DriveMoteusStateTable,
+    JointStateTable,
+    MCUReset,
+    OdometryReading
   },
 
   data() {
     return {
-      // Default coordinates are at NC 53 Parking Lot
+      // Default coordinates are at MDRS
       odom: {
-        latitude_deg: 42.294864932393835,
-        longitude_deg: -83.70781314674628,
-        bearing_deg: 0,
+        latitude_deg: 38.4060250,
+        longitude_deg: -110.7923723,
+        bearing_deg: 0
       },
 
       nav_status: {
         nav_state_name: "OffState",
         completed_wps: 0,
-        total_wps: 0,
+        total_wps: 0
       },
 
       enableAuton: {
         enable: false,
-        GPSWaypoint: [],
+        GPSWaypoint: []
       },
 
       teleopEnabledCheck: false,
@@ -128,18 +157,32 @@ export default {
       greenHook: false,
       ledColor: "red",
 
+      stuck_status: false,
+
+      brushless_motors_sub: null,
+
+      // Default object isn't empty, so has to be initialized to ""
+      moteusState: {
+        name: ["", "", "", "", "", ""],
+        error: ["", "", "", "", "", ""],
+        state: ["", "", "", "", "", ""],
+      },
+
+      jointState: {},
+
       // Pubs and Subs
       nav_status_sub: null,
       odom_sub: null,
-      auton_led_client: null,
-      tfClient: null,
+      stuck_sub: null,
+      auton_led_pub: null,
+      tfClient: null
     };
   },
 
   computed: {
     ...mapGetters("autonomy", {
       autonEnabled: "autonEnabled",
-      teleopEnabled: "teleopEnabled",
+      teleopEnabled: "teleopEnabled"
     }),
 
     nav_state_color: function () {
@@ -156,7 +199,7 @@ export default {
       } else {
         return navRed;
       }
-    },
+    }
   },
 
   watch: {
@@ -175,45 +218,57 @@ export default {
       if (send) {
         this.sendColor();
       }
-    },
+    }
+  },
+
+  beforeDestroy: function () {
+    this.ledColor = "off";
+    this.sendColor();
+    window.clearInterval(ledInterval);
   },
 
   created: function () {
     this.nav_status_sub = new ROSLIB.Topic({
       ros: this.$ros,
-      name: "/smach/container_status",
-      messageType: "smach_msgs/SmachContainerStatus",
+      name: "/nav_state",
+      messageType: "std_msgs/String"
     });
 
     this.odom_sub = new ROSLIB.Topic({
       ros: this.$ros,
       name: "/gps/fix",
-      messageType: "sensor_msgs/NavSatFix",
+      messageType: "sensor_msgs/NavSatFix"
+    });
+
+    this.stuck_sub = new ROSLIB.Topic({
+      ros: this.$ros,
+      name: "/stuck_status",
+      messageType: "std_msgs/Bool"
     });
 
     this.tfClient = new ROSLIB.TFClient({
       ros: this.$ros,
       fixedFrame: "map",
       // Thresholds to trigger subscription callback
-      angularThres: 0.01,
-      transThres: 0.01,
+      angularThres: 0.0001,
+      transThres: 0.01
     });
 
-    this.auton_led_client = new ROSLIB.Service({
+    this.auton_led_pub = new ROSLIB.Topic({
       ros: this.$ros,
-      name: "change_auton_led_state",
-      serviceType: "mrover/ChangeAutonLEDState",
+      name: "auton_led_cmd",
+      messageType: "std_msgs/String"
     });
 
     // Subscriber for odom to base_link transform
     this.tfClient.subscribe("base_link", (tf) => {
       // Callback for IMU quaternion that describes bearing
-      this.odom.bearing_deg = quaternionToDisplayAngle(tf.rotation);
+      this.odom.bearing_deg = quaternionToMapAngle(tf.rotation);
     });
 
     this.nav_status_sub.subscribe((msg) => {
       // Callback for nav_status
-      this.nav_status.nav_state_name = msg.active_states[0];
+      this.nav_status.nav_state_name = msg.data;
     });
 
     this.odom_sub.subscribe((msg) => {
@@ -222,47 +277,61 @@ export default {
       this.odom.longitude_deg = msg.longitude;
     });
 
+    this.stuck_sub.subscribe((msg) => {
+      // Callback for stuck status
+      this.stuck_status = msg.data;
+    });
+
+    this.brushless_motors = new ROSLIB.Topic({
+      ros: this.$ros,
+      name: "drive_status",
+      messageType: "mrover/MotorsStatus",
+    });
+
+    this.brushless_motors.subscribe((msg) => {
+      this.jointState = msg.joint_states;
+      this.moteusState = msg.moteus_states;
+    });
+
     // Blink interval for green and off flasing
     setInterval(() => {
       this.navBlink = !this.navBlink;
     }, 500);
 
-    // Initialize color to blue
+    // Initialize color to red.
+    this.ledColor = "red";
     this.sendColor();
+
+    ledInterval = window.setInterval(() => {
+      this.sendColor();
+    }, ledUpdateRate * 1000);
   },
 
   methods: {
     sendColor() {
-      let request = new ROSLIB.ServiceRequest({
-        color: this.ledColor,
+      const msg = new ROSLIB.Message({
+        data: this.ledColor
       });
 
-      this.auton_led_client.callService(request, (result) => {
-        // Wait 1 second then try again if fail
-        if (!result.success) {
-          setTimeout(() => {
-            this.sendColor();
-          }, 1000);
-        }
-      });
-    },
-  },
+      this.auton_led_pub.publish(msg);
+    }
+  }
 };
 </script>
 
 <style scoped>
 .wrapper {
   display: grid;
-  overflow: hidden;
-  min-height: 98vh;
   grid-gap: 10px;
-  grid-template-columns: 2fr 1.25fr 0.75fr;
-  grid-template-rows: 50px 2fr 1fr 15vh;
+  grid-template-columns: 45vw 15vw auto;
+  grid-template-rows: 60px 50vh auto auto auto;
   grid-template-areas:
     "header header header"
-    "map waypoints waypoints"
-    "map waypoints waypoints"
-    "data waypoints waypoints";
+    "map map waypoints"
+    "data data waypoints"
+    "data data conditions"
+    "cameras moteus moteus";
+
   font-family: sans-serif;
   height: auto;
   width: auto;
@@ -282,11 +351,33 @@ export default {
   overflow-y: scroll;
   height: 12 px;
   display: grid;
-  grid-template-columns: 40% 60%;
+  grid-template-columns: 50% 50%;
 }
 
 .box2 {
   display: block;
+}
+
+.stuck {
+  grid-area: stuck;
+  border-radius: 5px;
+  line-height: 40px;
+  border: 1px solid black;
+  font-size: 20px;
+  text-align: center;
+  justify-content: center;
+}
+
+.stuck h1 {
+  margin-top: 30px;
+}
+
+.rover-stuck {
+  background-color: lightcoral;
+}
+
+.not-stuck {
+  background-color: yellowgreen;
 }
 
 .light-bg {
@@ -318,14 +409,7 @@ h2 {
 }
 
 .comms {
-  display: flex;
-  flex-direction: column;
-  align-items: flex-start;
-}
-
-.comms * {
-  margin-top: 2px;
-  margin-bottom: 2px;
+  margin-right: 5px;
 }
 
 .helpscreen {
@@ -378,8 +462,20 @@ h2 {
   grid-area: waypoints;
 }
 
-.comm {
-  position: absolute;
-  left: 50%;
+.conditions {
+  grid-area: conditions;
 }
+
+.cameras {
+  grid-area: cameras;
+}
+
+.moteus {
+  grid-area: moteus;
+}
+
+.data {
+  grid-area: data;
+}
+
 </style>

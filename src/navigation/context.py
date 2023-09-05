@@ -13,7 +13,12 @@ from dataclasses import dataclass
 from shapely.geometry import Point, LineString
 from mrover.msg import Waypoint, GPSWaypoint, EnableAuton, WaypointType, GPSPointList
 import pymap3d
-from std_msgs.msg import Time
+from drive import DriveController
+from util.ros_utils import get_rosparam
+
+from std_msgs.msg import Time, Bool
+from drive import DriveController
+from util.ros_utils import get_rosparam
 
 
 TAG_EXPIRATION_TIME_SECONDS = 60
@@ -22,6 +27,8 @@ REF_LAT = rospy.get_param("gps_linearization/reference_point_latitude")
 REF_LON = rospy.get_param("gps_linearization/reference_point_longitude")
 
 tf_broadcaster: tf2_ros.StaticTransformBroadcaster = tf2_ros.StaticTransformBroadcaster()
+
+POST_RADIUS = get_rosparam("gate/post_radius", 0.7)
 
 
 @dataclass
@@ -34,12 +41,10 @@ class Gate:
         Creates a circular path of RADIUS around each post for checking intersection with our path
         :return: tuple of the two shapely Point objects representing the posts
         """
-        # Declare radius to 0.5 meters
-        RADIUS = 0.5
 
         # Find circle of both posts
-        post1_shape = Point(self.post1[:2]).buffer(RADIUS)
-        post2_shape = Point(self.post2[:2]).buffer(RADIUS)
+        post1_shape = Point(self.post1[:2]).buffer(POST_RADIUS)
+        post2_shape = Point(self.post2[:2]).buffer(POST_RADIUS)
 
         return post1_shape, post2_shape
 
@@ -47,6 +52,9 @@ class Gate:
 @dataclass
 class Rover:
     ctx: Context
+    stuck: bool
+    previous_state: str
+    driver: DriveController = DriveController()
 
     def get_pose(self, in_odom_frame: bool = False) -> SE3:
         if in_odom_frame and self.ctx.use_odom:
@@ -77,6 +85,8 @@ class Environment:
 
     ctx: Context
     NO_FIDUCIAL: ClassVar[int] = -1
+    arrived_at_post: bool = False
+    last_post_location: Optional[np.ndarray] = None
 
     def get_fid_pos(self, fid_id: int, in_odom_frame: bool = True) -> Optional[np.ndarray]:
         """
@@ -91,25 +101,29 @@ class Environment:
             )
             now = rospy.Time.now()
             if now.to_sec() - time.to_sec() >= TAG_EXPIRATION_TIME_SECONDS:
+                print(f"TAG EXPIRED {fid_id}!")
                 return None
         except (
             tf2_ros.LookupException,
             tf2_ros.ConnectivityException,
             tf2_ros.ExtrapolationException,
-        ):
+        ) as e:
             return None
         return fid_pose.position
 
-    def current_fid_pos(self) -> Optional[np.ndarray]:
+    def current_fid_pos(self, odom_override: bool = True) -> Optional[np.ndarray]:
         """
         Retrieves the position of the current fiducial (and we are looking for it)
+        :param: odom_override if false will force it to be in the map frame
         """
         assert self.ctx.course
+        in_odom = self.ctx.use_odom and odom_override
         current_waypoint = self.ctx.course.current_waypoint()
         if current_waypoint is None:
+            print("CURRENT WAYPOINT IS NONE")
             return None
 
-        return self.get_fid_pos(current_waypoint.fiducial_id, self.ctx.use_odom)
+        return self.get_fid_pos(current_waypoint.fiducial_id, in_odom)
 
     def other_gate_fid_pos(self) -> Optional[np.ndarray]:
         """
@@ -122,9 +136,10 @@ class Environment:
         else:
             return None
 
-    def current_gate(self) -> Optional[Gate]:
+    def current_gate(self, odom_override: bool = True) -> Optional[Gate]:
         """
         retrieves the position of the gate (if we know where it is, and we are looking for one)
+        :param: odom_override if false will force it to be in the map frame, true will mean use odom if we are using it (set by rosparam)
         """
 
         if self.ctx.course:
@@ -132,8 +147,8 @@ class Environment:
             if current_waypoint is None or not self.ctx.course.look_for_gate():
                 return None
 
-            post1 = self.get_fid_pos(current_waypoint.fiducial_id, self.ctx.use_odom)
-            post2 = self.get_fid_pos(current_waypoint.fiducial_id + 1, self.ctx.use_odom)
+            post1 = self.get_fid_pos(current_waypoint.fiducial_id, self.ctx.use_odom and odom_override)
+            post2 = self.get_fid_pos(current_waypoint.fiducial_id + 1, self.ctx.use_odom and odom_override)
             if post1 is None or post2 is None:
                 return None
             return Gate(post1[:2], post2[:2])
@@ -252,6 +267,7 @@ class Context:
     gate_path_publisher: rospy.Publisher
     vis_publisher: rospy.Publisher
     course_listener: rospy.Subscriber
+    stuck_listener: rospy.Subscriber
 
     # Use these as the primary interfaces in states
     course: Optional[Course]
@@ -274,8 +290,9 @@ class Context:
         self.gate_path_publisher = rospy.Publisher("gate_path", GPSPointList, queue_size=1)
         self.gate_point_publisher = rospy.Publisher("estimated_gate_location", GPSPointList, queue_size=1)
         self.enable_auton_service = rospy.Service("enable_auton", mrover.srv.PublishEnableAuton, self.recv_enable_auton)
+        self.stuck_listener = rospy.Subscriber("nav_stuck", Bool, self.stuck_callback)
         self.course = None
-        self.rover = Rover(self)
+        self.rover = Rover(self, False, "")
         self.env = Environment(self)
         self.disable_requested = False
         self.use_odom = rospy.get_param("use_odom_frame")
@@ -290,3 +307,6 @@ class Context:
         else:
             self.disable_requested = True
         return mrover.srv.PublishEnableAutonResponse(True)
+
+    def stuck_callback(self, msg: Bool):
+        self.rover.stuck = msg.data

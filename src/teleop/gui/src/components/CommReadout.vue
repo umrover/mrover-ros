@@ -1,8 +1,8 @@
 <template>
   <div class="wrap">
     <span
-      >TX: {{ parseFloat(tx).toFixed(2) }} RX:
-      {{ parseFloat(rx).toFixed(2) }}</span
+      >TX: {{ parseFloat(tx).toFixed(2) }} Mbps RX:
+      {{ parseFloat(rx).toFixed(2) }} Mbps</span
     >
   </div>
 </template>
