@@ -13,17 +13,17 @@ PPAS=(
   ansible/ansible
   git-core/ppa
 )
-UPDATED=false
+NEED_APT_UPDATE=false
 for PPA in "${PPAS[@]}"; do
   if ! grep -q "^deb .*${PPA}" /etc/apt/sources.list /etc/apt/sources.list.d/*;
   then
     echo "Adding PPA: ${PPA}"
     sudo apt-add-repository ppa:"${PPA}" -y
-    UPDATED=true
+    NEED_APT_UPDATE=true
   fi
 done
 
-if [ "${UPDATED}" = true ]; then
+if [ "${NEED_APT_UPDATE}" = true ]; then
     sudo apt update
 fi
 sudo apt install -y ansible git git-lfs
