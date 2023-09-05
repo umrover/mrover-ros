@@ -14,12 +14,14 @@
 #   become_method: sudo
 
 - name: Oh-My-Zsh Install
+  become: True
   ansible.builtin.git:
     repo: https://github.com/ohmyzsh/ohmyzsh.git
     dest: /home/{{ ansible_user_id }}/.oh-my-zsh
     version: master
 
 - name: Dotfiles Setup
+  become: True
   synchronize:
     src: files/home
     dest: /
