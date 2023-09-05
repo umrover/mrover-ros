@@ -2,7 +2,7 @@
 - hosts: all
   become: True
   vars:
+    ros_distro: noetic
     ubuntu_release: focal
-    catkin_workspace: /home/mrover/catkin_ws
   roles:
     - dev

@@ -38,6 +38,7 @@
       - ccache
       - tmux
       - zstd
+      - htop
       - python3-pip
       - python3-rosdep
       - python3-catkin-tools
@@ -57,12 +58,11 @@
 - name: Update rosdep
   command: rosdep update
 
-- name: Install ROS packages
-  command: rosdep install --from-paths {{ catkin_workspace }}/src --ignore-src -y --rosdistro=noetic
+- name: Install ROS Packages
+  command: rosdep install --from-paths {{ catkin_workspace }}/src --ignore-src -y --rosdistro={{ ros_distro }}
 
 - name: Install Catkin Profiles
   synchronize:
     src: files/profiles
     dest: "{{ catkin_workspace }}/.catkin_tools"
     recursive: true
-  

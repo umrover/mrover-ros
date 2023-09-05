@@ -3,6 +3,5 @@
   become: True
   vars:
     ubuntu_release: focal
-    catkin_workspace: /home/mrover/catkin_ws
   roles:
     - macos_dev

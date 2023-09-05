@@ -13,7 +13,12 @@
 #   become_user: root
 #   become_method: sudo
 
-- name: Shell Setup
+- name: Oh-My-Zsh Install
+  git:
+    repo: https://github.com/ohmyzsh/ohmyzsh.git
+    dest: /home/{{ ansible_user_id }}/.oh-my-zsh
+
+- name: Dotfiles Setup
   synchronize:
     src: files/home
     dest: /
