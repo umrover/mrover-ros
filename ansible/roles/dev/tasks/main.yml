@@ -39,6 +39,7 @@
     state: latest
     name:
       - zsh
+      - fzf
       - neovim
       - sudo
       - cmake
