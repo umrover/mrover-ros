@@ -17,6 +17,7 @@
   git:
     repo: https://github.com/ohmyzsh/ohmyzsh.git
     dest: /home/{{ ansible_user_id }}/.oh-my-zsh
+    version: master
 
 - name: Dotfiles Setup
   synchronize:
