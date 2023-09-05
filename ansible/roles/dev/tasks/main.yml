@@ -39,11 +39,25 @@
       - tmux
       - zstd
       - python3-pip
+      - python3-rosdep
       - python3-catkin-tools
       - clang-16
       - clangd-16
       - lld-16
       - lldb-16
+
+- name: Initialize rosdep
+  command: rosdep init
+  become: True
+  become_user: root
+  become_method: sudo
+  creates: /etc/ros/rosdep/sources.list.d/20-default.list
+
+- name: Install ROS Dependencies
+  command: rosdep update && rosdep install --from-paths={{ catkin_workspace }}/src --ignore-src -y --rosdistro=noetic
+  become: True
+  become_user: root
+  become_method: sudo
 
 - name: Install Catkin Profiles
   synchronize:
