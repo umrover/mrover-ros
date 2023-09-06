@@ -11,6 +11,7 @@
     recursive: true
 
 - name: Jetson Stats
+  become: True
   pip:
     name: jetson-stats
 
