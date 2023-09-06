@@ -13,14 +13,18 @@
 #   become_user: root
 #   become_method: sudo
 
-- name: Oh-My-Zsh Install
+- name: Oh-My-Zsh
   git:
     repo: https://github.com/ohmyzsh/ohmyzsh.git
     dest: /home/{{ ansible_user_id }}/.oh-my-zsh
     version: master
 
-- name: Dotfiles Setup
+- name: Dotfiles
   synchronize:
     src: files/home
     dest: /
     recursive: true
+
+- name: Jetson Stats
+  pip:
+    name: jetson-stats
