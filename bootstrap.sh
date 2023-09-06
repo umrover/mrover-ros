@@ -3,6 +3,9 @@
 # See: https://vaneyckt.io/posts/safer_bash_scripts_with_set_euxo_pipefail/
 set -Eeuo pipefail
 
+BLUE='\033[0;34m'
+NC='\033[0m'
+
 echo "Ensuring SSH keys are set up ..."
 if [ ! -f ~/.ssh/id_ed25519 ]; then
   echo "Please see: https://docs.github.com/en/authentication/connecting-to-github-with-ssh/generating-a-new-ssh-key-and-adding-it-to-the-ssh-agent"
@@ -30,7 +33,7 @@ sudo apt install -y ansible git git-lfs
 
 readonly DEFAULT_CATKIN_PATH=~/catkin_ws
 
-echo "Enter path to ROS workspace... [leave blank for ${DEFAULT_CATKIN_PATH}]:"
+echo "${BLUE}Enter path to ROS workspace... [leave blank for ${DEFAULT_CATKIN_PATH}]:${NC}"
 read -r CATKIN_PATH
 if [ -z "${CATKIN_PATH}" ]; then
   CATKIN_PATH=${DEFAULT_CATKIN_PATH}
