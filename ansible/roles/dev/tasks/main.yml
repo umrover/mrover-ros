@@ -35,7 +35,7 @@
 - name: Install APT Packages
   become: True
   apt:
-    update_cache: true
+    cache_valid_time: 604800
     state: latest
     name:
       - zsh
@@ -44,6 +44,7 @@
       - sudo
       - cmake
       - ccache
+      - ninja-build
       - tmux
       - zstd
       - htop

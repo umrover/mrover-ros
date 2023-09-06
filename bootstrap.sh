@@ -1,5 +1,9 @@
 #!/usr/bin/env bash
 
+# Run on a fresh Ubuntu 20.04 install.
+# Installs Ansible and Git, then clones the mrover repo
+# Ansible will be used to finish configuring the system
+
 # See: https://vaneyckt.io/posts/safer_bash_scripts_with_set_euxo_pipefail/
 set -Eeuo pipefail
 
@@ -7,7 +11,7 @@ BLUE='\033[0;34m'
 NC='\033[0m'
 
 echo "Ensuring SSH keys are set up ..."
-if [ ! -f ~/.ssh/id_ed25519 ]; then
+if [ ! -f ~/.ssh/id_ed25519 ] && [ ! -f ~/.ssh/id_rsa ]; then
   echo "Please see: https://docs.github.com/en/authentication/connecting-to-github-with-ssh/generating-a-new-ssh-key-and-adding-it-to-the-ssh-agent"
   exit 1
 fi
@@ -49,4 +53,4 @@ if [ ! -d "${MROVER_PATH}" ]; then
 fi
 
 echo "Using Ansible to finish up ..."
-ansible-playbook -i "localhost," -c local ${MROVER_PATH}/ansible/dev.yml --extra-vars "catkin_workspace=${CATKIN_PATH}"
+${MROVER_PATH}/ansible.sh dev.yml

@@ -1,3 +1,27 @@
+- name: Oh-My-Zsh
+  git:
+    repo: https://github.com/ohmyzsh/ohmyzsh.git
+    dest: /home/{{ ansible_user_id }}/.oh-my-zsh
+    version: master
+
+- name: Dotfiles
+  synchronize:
+    src: files/home
+    dest: /home/{{ ansible_user_id }}
+    recursive: true
+
+- name: Jetson Stats
+  pip:
+    name: jetson-stats
+
+- name: Jetpack
+  become: True
+  apt:
+    update_cache: true
+    state: latest
+    name:
+      - nvidia-jetpack
+
 # TODO: wait for jetpack 5.1.2 support
 # - name: ZED SDK Download
 #   get_url:
@@ -12,19 +36,3 @@
 #   become: True
 #   become_user: root
 #   become_method: sudo
-
-- name: Oh-My-Zsh
-  git:
-    repo: https://github.com/ohmyzsh/ohmyzsh.git
-    dest: /home/{{ ansible_user_id }}/.oh-my-zsh
-    version: master
-
-- name: Dotfiles
-  synchronize:
-    src: files/home
-    dest: /
-    recursive: true
-
-- name: Jetson Stats
-  pip:
-    name: jetson-stats
