@@ -100,6 +100,5 @@ source $ZSH/oh-my-zsh.sh
 # alias zshconfig="mate ~/.zshrc"
 # alias ohmyzsh="mate ~/.oh-my-zsh"
 
-source ~/catkin_ws/src/mrover/ansible/roles/jestson_dev/files/
 source /opt/ros/noetic/setup.zsh
 source ~/catkin_ws/devel/setup.zsh

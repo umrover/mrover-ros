@@ -7,6 +7,8 @@ if [ "$#" -ne 1 ]; then
     exit 1
 fi
 
+sudo -v # Ensure Ansible has sudo permission
+
 MROVER_PATH=$(dirname "$0")
-CATKIN_WORKSPACE_PATH=${MROVER_PATH}/../..
-ansible-playbook -i "localhost," -c local "${MROVER_PATH}"/ansible/"$1" --ask-become-pass --extra-vars "catkin_workspace=${CATKIN_WORKSPACE_PATH}"
+CATKIN_WORKSPACE_PATH=$(realpath "${MROVER_PATH}"/../..)
+ansible-playbook -i "localhost," -c local "${MROVER_PATH}"/ansible/"$1" --extra-vars "catkin_workspace=${CATKIN_WORKSPACE_PATH}"

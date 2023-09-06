@@ -10,6 +10,9 @@
     dest: /home/{{ ansible_user_id }}
     recursive: true
 
+- name: Use ZSH as a default shell
+  command: chsh -s /usr/bin/zsh
+
 - name: Jetson Stats
   become: True
   pip:
@@ -18,7 +21,7 @@
 - name: Jetpack
   become: True
   apt:
-    update_cache: true
+    cache_valid_time: 604800
     state: latest
     name:
       - nvidia-jetpack

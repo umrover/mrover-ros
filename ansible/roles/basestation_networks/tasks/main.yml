@@ -4,7 +4,15 @@
     conn_name: MRover
     type: ethernet
     ifname: enp5s0
+    # Share connection to the Internet
     method4: shared
     state: present
     autoconnect: yes
     ip4: 10.0.0.2/24
+
+- name: Jetson SSH Config
+  community.general.ssh_config:
+    user: "{{ ansible_user_id }}"
+    host: jetson
+    hostname: 10.0.0.10
+    remote_user: mrover

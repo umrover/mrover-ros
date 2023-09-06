@@ -55,6 +55,7 @@
       - clangd-16
       - lld-16
       - lldb-16
+      - ros-{{ ros_distro }}-rosbash
 
 - name: Initialize rosdep
   become: True

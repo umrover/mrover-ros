@@ -8,7 +8,7 @@
 
 - name: Install APT Packages
   apt:
-    update_cache: true
+    cache_valid_time: 604800
     state: latest
     name:
       - mainline
