@@ -6,12 +6,13 @@
 
 - name: Dotfiles
   synchronize:
-    src: files/home
-    dest: /home/{{ ansible_user_id }}
+    src: files/home/mrover
+    dest: /home
     recursive: true
 
 - name: Use ZSH as a default shell
-  command: chsh -s /usr/bin/zsh
+  become: true
+  command: chsh --shell /usr/bin/zsh {{ ansible_user_id }}
 
 - name: Jetson Stats
   become: True
