@@ -1,2 +1,38 @@
+[project]
+name = "mrover"
+version = "1.0.0"
+description = "MRover Python Code"
+readme = "README.md"
+requires-python = ">=3.10.0"
+license = { file = "LICENSE.md" }
+maintainers = [
+    { name = "Michigan Mars Rover Team" }
+]
+dependencies = [
+    "django",
+    "empy",
+    "numpy",
+    "pandas",
+    "shapely",
+    "pyserial",
+    "moteus",
+    "pymap3d",
+    "aenum",
+    "pyyaml",
+    "rospkg",
+]
+
+[project.optional-dependencies]
+dev = [
+    "black",
+    "mypy",
+]
+
+[project.urls]
+"Homepage" = "https://mrover.org"
+
+[build-system]
+requires = ["setuptools", "rospkg"]
+
 [tool.black]
 line-length = 120

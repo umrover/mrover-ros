@@ -1,10 +1,11 @@
 cmake_minimum_required(VERSION 3.16)
 project(mrover VERSION 1.0.0 LANGUAGES CXX)
 
-## Compile as C++17, supported in ROS Kinetic and newer, enable some static analysis
-set(CMAKE_CXX_STANDARD 17)
+set(CMAKE_CXX_STANDARD 23)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(MROVER_CPP_COMPILE_OPTIONS -Wall -Wextra -Werror -pedantic)
+add_link_options(-fuse-ld=lld-16)
+#add_compile_definitions(_LIBCPP_ENABLE_CXX17_REMOVED_FEATURES _LIBCPP_ENABLE_CXX20_REMOVED_FEATURES)
 
 # Generate compile_commands.json for clangd
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
@@ -18,7 +19,7 @@ set(MROVER_PACKAGES
         dynamic_reconfigure
         rostest
         sensor_msgs
-        )
+)
 
 # Message files
 set(MROVER_MESSAGE_FILES
@@ -47,7 +48,7 @@ set(MROVER_MESSAGE_FILES
         Waypoint.msg
         WaypointType.msg
         GPSPointList.msg
-        )
+)
 
 # Service files
 set(MROVER_SERVICE_FILES
@@ -64,24 +65,24 @@ set(MROVER_SERVICE_FILES
         PublishEnableAuton.srv
         PublishCourse.srv
         ResetCameras.srv
-        )
+)
 
 # Generate messages list
 set(MROVER_ROS_MESSAGES
         sensor_msgs
         std_msgs
         sensor_msgs
-        )
+)
 
 # Dynamic reconfigure parameter file list
 set(MROVER_PARAMETERS
         config/DetectorParams.cfg
-        )
+)
 
 # catkin packages list
 set(MROVER_CATKIN_PACKAGES
         roscpp rospy std_msgs message_runtime
-        )
+)
 
 macro(rosify_cpp_target_macro target)
     target_link_libraries(${target} PRIVATE ${catkin_LIBRARIES})
@@ -94,7 +95,7 @@ macro(rosify_cpp_target_macro target)
             ARCHIVE DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
             LIBRARY DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
             RUNTIME DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
-            )
+    )
 endmacro()
 
 macro(add_cpp_library_macro name sources includes)
@@ -122,13 +123,14 @@ macro(add_gazebo_plugin_macro name sources includes)
     target_link_directories(${name} PRIVATE ${GAZEBO_LIBRARY_DIRS} /opt/ros/noetic/lib)
     target_link_libraries(${name} PRIVATE ${GAZEBO_LIBRARIES} ${Boost_LIBRARIES})
     target_include_directories(${name} SYSTEM PRIVATE ${GAZEBO_INCLUDE_DIRS} ${Boost_INCLUDE_DIRS})
+    set_target_properties(${name} PROPERTIES CXX_STANDARD 17)
 endmacro()
 
 # launch install macro
 macro(install_launch_macro)
     install(DIRECTORY launch/
             DESTINATION ${CATKIN_PACKAGE_SHARE_DESTINATION}/launch
-            )
+    )
 endmacro()
 
 macro(add_tests_macro)
@@ -219,12 +221,12 @@ else ()
             moveit_ros_warehouse
             moveit_setup_assistant
             moveit_simple_controller_manager
-            )
+    )
 
     # append subdirectories
     list(APPEND CMAKE_SUBDIRS
             starter_project/teleop
-            )
+    )
 
     # -=-=-=-=-
     # Macros
@@ -251,9 +253,10 @@ else ()
     # Put items here to build
     macro(add_and_link_macro)
         add_cpp_nodelet_macro(tag_detector_nodelet "src/perception/tag_detector/*.cpp" "src/perception/tag_detector")
+        target_precompile_headers(tag_detector_nodelet PRIVATE src/perception/tag_detector/pch.hpp)
         target_link_libraries(tag_detector_nodelet PRIVATE ${OpenCV_LIBRARIES} lie)
 
-        add_cpp_node_macro(brushed_motors "src/esw/brushed_motors/*")
+        add_cpp_node_macro(brushed_motors "src/esw/brushed_motors/*.cpp")
 
         add_cpp_library_macro(lie "src/util/lie/*.cpp" "src/util/lie")
 
@@ -270,6 +273,7 @@ else ()
             #            target_link_libraries(zed_node PRIVATE ${ZED_LIBRARIES} ${OpenCV_LIBRARIES} ${SPECIAL_OS_LIBS} lie tag_detector_nodelet)
 
             add_cpp_nodelet_macro(zed_nodelet "src/perception/zed_wrapper/*.c*" , "src/perception/zed_wrapper")
+            target_precompile_headers(zed_nodelet PRIVATE src/perception/zed_wrapper/pch.hpp)
             target_include_directories(zed_nodelet SYSTEM PRIVATE ${ZED_INCLUDE_DIRS} ${CUDA_INCLUDE_DIRS})
             target_link_libraries(zed_nodelet PRIVATE ${ZED_LIBRARIES} ${OpenCV_LIBRARIES} ${SPECIAL_OS_LIBS} lie)
             target_compile_definitions(zed_nodelet PRIVATE MROVER_IS_NODELET)

@@ -1,9 +1,5 @@
 #pragma once
 
-#include <cstdint>
-
-#include <sensor_msgs/point_cloud2_iterator.h>
-
 namespace mrover {
 
     /**
