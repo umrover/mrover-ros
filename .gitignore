@@ -16,6 +16,7 @@ cmake-build*/
 **/keys.json*
 **/yarn.lock*
 **/yarn-error.log*
+.venv/
 
 # Bag Files
 bags/
