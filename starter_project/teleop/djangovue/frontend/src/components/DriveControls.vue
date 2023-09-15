@@ -8,8 +8,6 @@
 
 <script>
 
-import axios from 'axios';
-
 let interval;
 
 export default {
@@ -19,7 +17,16 @@ data () {
     linear: 0,
 
     left: 0,
-    forward: 0
+    forward: 0,
+
+    socket: null
+  }
+},
+
+mounted: function() {
+  this.socket = new WebSocket('ws://127.0.0.1:8000/ws/play/');
+  this.socket.onnmessage = (event) => {
+    console.log(event.data);
   }
 },
 
@@ -29,25 +36,7 @@ beforeUnmount: function () {
 },
 
 methods: {
-  getVals : function() {
-    axios.get('/api/joystick/').then(
-      response => {
-        this.forward = response.data[0].forward_back;
-        this.left = response.data[0].left_right;
-      }
-    );
-  },
-  postVals: function() {
-    axios.post('/api/joystick/', 
-    {
-      forward_back: 123.456, 
-      left_right: 987.654
-    }).then(
-      response => {
-        this.left = response.data;
-      }
-    );
-  },
+
 
 },
 
@@ -61,8 +50,6 @@ created: function () {
     'pan': 4,
     'tilt': 5
   }
-
-  this.postVals();
 
   const updateRate = 1;
   interval = window.setInterval(() => {
@@ -93,7 +80,6 @@ created: function () {
         
       }
 
-      this.getVals();
   }, updateRate*1000)
 },
 

@@ -83,6 +83,7 @@ set(MROVER_CATKIN_PACKAGES
         roscpp rospy std_msgs message_runtime
         )
 
+
 macro(rosify_cpp_target_macro target)
     target_link_libraries(${target} PRIVATE ${catkin_LIBRARIES})
     target_include_directories(${target} SYSTEM PRIVATE ${catkin_INCLUDE_DIRS} "src/util")
@@ -223,7 +224,7 @@ else ()
 
     # append subdirectories
     list(APPEND CMAKE_SUBDIRS
-            starter_project/teleop
+            starter_project/teleop/CMakeLists.txt
             )
 
     # -=-=-=-=-
@@ -232,7 +233,7 @@ else ()
 
     # These packages need to be found individually
     macro(add_packages_macro)
-        find_package(OpenCV REQUIRED COMPONENTS core aruco)
+        # find_package(OpenCV REQUIRED COMPONENTS core aruco)
         find_package(gazebo REQUIRED)
         find_package(Eigen3 REQUIRED)
         find_package(ZED 2)
@@ -293,10 +294,9 @@ endif ()
 # 4. Python module support
 catkin_python_setup()
 
-
 # 4.5. Subdirectories before message declarations
-if (NOT "${CMAKE_SUBDIRS}" MATCHES "")
-    add_subdirectory(
+if (NOT "${CMAKE_SUBDIRS}" STREQUAL "")
+    include(
             ${CMAKE_SUBDIRS}
     )
 endif ()

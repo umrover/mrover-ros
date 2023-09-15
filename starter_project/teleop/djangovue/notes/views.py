@@ -17,12 +17,13 @@ class JoystickViewSet(viewsets.ModelViewSet):
     API endpoint that allows items to be viewed or edited.
     """
     serializer_class = JoystickSerializer
+    queryset = Joystick.objects.all()
     
-    def get_queryset(self):
-        """
-        Override get_queryset method to return only the last object
-        """
-        return [Joystick.objects.last()] if Joystick.objects.last() else []
+    # def get_queryset(self):
+    #     """
+    #     Override get_queryset method to return only the last object
+    #     """
+    #     return [Joystick.objects.last()] if Joystick.objects.last() else []
     
     def create(self, request):
         serializer = self.get_serializer(data=request.data)
@@ -31,8 +32,8 @@ class JoystickViewSet(viewsets.ModelViewSet):
         
         pub = rospy.Publisher('joystick_pub', JoystickMsg)
         message = JoystickMsg()
-        message.forward_back = 12.32
-        message.left_right = 43.25
+        message.forward_back = float(request.data['forward_back'])
+        message.left_right = float(request.data['left_right'])
         pub.publish(message)
 
         return Response(serializer.data, status=status.HTTP_201_CREATED)
