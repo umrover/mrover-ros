@@ -24,9 +24,15 @@ data () {
 },
 
 mounted: function() {
-  this.socket = new WebSocket('ws://127.0.0.1:8000/ws/play/');
-  this.socket.onnmessage = (event) => {
-    console.log(event.data);
+  this.socket = new WebSocket('ws://127.0.0.1:8000/ws/drive-controls');
+  this.socket.onerror = (event) => {
+    console.log(event);
+  }
+  this.socket.onopen = () => {}
+  this.socket.onmessage = (event) => {
+    event = JSON.parse(event.data)
+    this.forward = event.forward_back;
+    this.left = event.left_right;
   }
 },
 
