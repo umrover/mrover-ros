@@ -1,3 +1,6 @@
+# VMWare Fusion requires an elevated kernel version to enable graphical acceleration
+# This makes a big difference in running the simulator
+
 - name: Add Mesa PPA
   become: true
   apt_repository:
@@ -16,6 +19,7 @@
     name:
       - mainline
 
+# This upgrades existing Mesa packages
 - name: Upgrade APT Packages
   apt:
     upgrade: yes
@@ -24,6 +28,7 @@
   become: true
   command: mainline --install-latest
 
+# mainline leaves apt in a broken state which is annoying
 - name: Fix Broken APT
   become: true
   command: apt --fix-broken install -y
