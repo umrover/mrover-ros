@@ -1,0 +1,19 @@
+name: Style
+on:
+  pull_request:
+    branches:
+      - master
+  push:
+    branches:
+      - master
+jobs:
+  code-style:
+    name: Code Style Check
+    runs-on: ubuntu-latest
+    container:
+      image: umrover1/ros:latest
+      options: --user root
+    steps:
+      - uses: actions/checkout@v3
+      - name: Style check C++/Python
+        run: ./style.sh

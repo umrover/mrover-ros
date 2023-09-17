@@ -1,0 +1,9 @@
+.vscode/
+.idea/
+
+.cache/
+__pycache__/
+.mypy_cache/
+
+build/
+bin/

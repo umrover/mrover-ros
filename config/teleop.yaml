@@ -1,0 +1,52 @@
+teleop:
+  constants:
+    track_radius: 10.0 # Distance between left and right wheels in meters
+    wheel_radius: 0.5 # Radius of the rover wheels in meters
+  ra_controls:
+    joint_a:
+      multiplier: 1
+    joint_b:
+      multiplier: 1
+    joint_c:
+      multiplier: 1
+    joint_d:
+      multiplier: 1
+    joint_e:
+      multiplier: 1
+    joint_f:
+      multiplier: 1
+    finger:
+      multiplier: 1
+    grip:
+      multiplier: 1
+  drive_controls:
+    forward_back:
+      multiplier: 1
+    left_right:
+      multiplier: -1
+    twist:
+      multiplier: -1
+  xbox_mappings:
+    left_js_x: 0
+    left_js_y: 1
+    left_trigger: 6
+    right_trigger: 7
+    right_js_x: 2
+    right_js_y: 3
+    right_bumper: 5
+    left_bumper: 4
+    d_pad_up: 12
+    d_pad_down: 13
+    d_pad_right: 14
+    d_pad_left: 15
+    a: 0
+    b: 1
+    x: 2
+    y: 3
+  joystick_mappings:
+    left_right: 0
+    forward_back: 1
+    twist: 2
+    dampen: 3
+    pan: 4
+    tilt: 5
