@@ -62,6 +62,7 @@
       - python3-pip
       - python3-rosdep
       - python3-catkin-tools
+      - python3-virtualenvwrapper
       - clang-16
       - clangd-16
       - clang-format-16
