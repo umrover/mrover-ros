@@ -39,7 +39,7 @@ sudo apt install -y ansible git git-lfs
 
 readonly DEFAULT_CATKIN_PATH=~/catkin_ws
 
-echo -e "${BLUE_BOLD}Enter path to ROS workspace... [leave blank for ${DEFAULT_CATKIN_PATH}]:${NC}"
+echo -e "${BLUE_BOLD}[ADVANCED] Enter path to ROS workspace... [leave blank for ${DEFAULT_CATKIN_PATH}]:${NC}"
 read -r CATKIN_PATH
 if [ -z "${CATKIN_PATH}" ]; then
   CATKIN_PATH=${DEFAULT_CATKIN_PATH}
