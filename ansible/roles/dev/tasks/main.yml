@@ -6,8 +6,8 @@
 
 - name: Dotfiles
   synchronize:
-    src: files/home/mrover
-    dest: /home
+    src: files/home/
+    dest: /home/{{ ansible_user_id }}
     recursive: true
 
 - name: Use ZSH as a default shell
