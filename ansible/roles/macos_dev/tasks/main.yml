@@ -1,12 +1,15 @@
 - name: Add Mesa PPA
+  become: true
   apt_repository:
     repo: ppa:kisak/kisak-mesa
 
 - name: Add Mainline Kernel PPA
+  become: true
   apt_repository:
     repo: ppa:cappelikan/ppa
 
 - name: Install APT Packages
+  become: true
   apt:
     cache_valid_time: 604800
     state: latest
@@ -16,3 +19,11 @@
 - name: Upgrade APT Packages
   apt:
     upgrade: yes
+
+- name: Install Mainline Kernel
+  become: true
+  command: mainline --install-latest
+
+- name: Fix Broken APT
+  become: true
+  command: apt --fix-broken install -y
