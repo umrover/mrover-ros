@@ -12,7 +12,7 @@ readonly BLUE_BOLD='\033[1;34m'
 readonly GREY_BOLD='\033[1;30m'
 readonly NC='\033[0m'
 
-echo -e "${GREY_BOLD}Ensuring SSH keys are set up ...${NC}}"
+echo -e "${GREY_BOLD}Ensuring SSH keys are set up ...${NC}"
 if [ ! -f ~/.ssh/id_ed25519 ] && [ ! -f ~/.ssh/id_rsa ]; then
   echo -e "${RED_BOLD}Please see: https://docs.github.com/en/authentication/connecting-to-github-with-ssh/generating-a-new-ssh-key-and-adding-it-to-the-ssh-agent${NC}"
   exit 1
@@ -47,12 +47,13 @@ fi
 echo -e "${GREY_BOLD}Using ${CATKIN_PATH} as ROS workspace${NC}"
 
 readonly MROVER_PATH=${CATKIN_PATH}/src/mrover
-readonly FIRST_TIME_SETUP=[ ! -d ${MROVER_PATH}]
+FIRST_TIME_SETUP=false
 
-if [ "${FIRST_TIME_SETUP}" ]; then
+if [ ! -d ${MROVER_PATH} ]; then
   echo -e "${GREY_BOLD}Creating ROS workspace ...${NC}"
   mkdir -p ${CATKIN_PATH}/src
   git clone git@github.com:umrover/mrover-ros ${CATKIN_PATH}/src/mrover -b qd/ansible
+  FIRST_TIME_SETUP=true
 fi
 
 echo -e "${GREY_BOLD}Using Ansible to finish up ...${NC}"
