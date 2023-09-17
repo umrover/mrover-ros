@@ -83,9 +83,11 @@ namespace mrover {
         void update(Command const& command) {
             // Find the feed function that has the right type for the command
             using ModeForCommand = command_to_mode_t<Command, Mode>;
+
             // If the current mode is not the mode that the feed function expects, change the mode, providing a new blank mode
             if (!std::holds_alternative<ModeForCommand>(m_mode))
                 m_mode.template emplace<ModeForCommand>();
+
             if constexpr (std::is_same_v<ModeForCommand, std::monostate>) {
                 feed(command);
             } else {

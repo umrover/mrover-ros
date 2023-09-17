@@ -60,9 +60,11 @@ namespace mrover {
 
     struct BrushedMotorWriter {
         void write_output(Volts output) {
+            // TODO implement
         }
     };
 
+    // Motor Controller Definitions Here
     Controller<Radians, Volts, EncoderReader, BrushedMotorWriter> controller;
 
 } // namespace mrover
