@@ -62,8 +62,8 @@ ${MROVER_PATH}/ansible.sh dev.yml
 if [ ! -d ${MROVER_PATH}/venv ]; then
   echo -e "${GREY_BOLD}Setting up Python virtual environment ...${NC}"
   python3.10 -m venv ${MROVER_PATH}/venv
-  source ${MROVER_PATH}/venv/bin/activate
-  pip install -e "${MROVER_PATH}[dev]"
+#  source ${MROVER_PATH}/venv/bin/activate
+#  pip install -e "${MROVER_PATH}[dev]"
 fi
 
 if [ "${FIRST_TIME_SETUP}" ]; then
