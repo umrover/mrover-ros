@@ -102,3 +102,4 @@ source $ZSH/oh-my-zsh.sh
 
 source /opt/ros/noetic/setup.zsh
 source ~/catkin_ws/devel/setup.zsh
+alias mrover="roscd mrover"

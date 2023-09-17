@@ -7,8 +7,8 @@
 # See: https://vaneyckt.io/posts/safer_bash_scripts_with_set_euxo_pipefail/
 set -Eeuo pipefail
 
-BLUE='\033[0;34m'
-NC='\033[0m'
+readonly BLUE='\033[0;34m'
+readonly NC='\033[0m'
 
 echo "Ensuring SSH keys are set up ..."
 if [ ! -f ~/.ssh/id_ed25519 ] && [ ! -f ~/.ssh/id_rsa ]; then
@@ -45,12 +45,24 @@ fi
 echo "Using ${CATKIN_PATH} as ROS workspace"
 
 readonly MROVER_PATH=${CATKIN_PATH}/src/mrover
+readonly FIRST_TIME_SETUP=[ ! -d ${MROVER_PATH}]
 
-if [ ! -d "${MROVER_PATH}" ]; then
+if [ "${FIRST_TIME_SETUP}" ]; then
   echo "Creating ROS workspace ..."
   mkdir -p ${CATKIN_PATH}/src
-  git clone git@github.com:umrover/mrover-ros ${CATKIN_PATH}/src/mrover
+  git clone git@github.com:umrover/mrover-ros ${CATKIN_PATH}/src/mrover -b qd/ansible
 fi
 
 echo "Using Ansible to finish up ..."
 ${MROVER_PATH}/ansible.sh dev.yml
+
+if [ ! -d ${MROVER_PATH}/venv ]; then
+  echo "Setting up Python virtual environment ..."
+  python3.10 -m venv ${MROVER_PATH}/venv
+  source ${MROVER_PATH}/venv/bin/activate
+  pip install -e "${MROVER_PATH}[dev]"
+fi
+
+if [ "${FIRST_TIME_SETUP}" ]; then
+  echo "All done! Welcome to MRover!"
+fi
