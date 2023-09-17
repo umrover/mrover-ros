@@ -1,0 +1,135 @@
+- name: Add Python PPA
+  become: True
+  apt_repository:
+    repo: ppa:deadsnakes/ppa
+
+- name: Add GCC PPA
+  become: True
+  apt_repository:
+    repo: ppa:ubuntu-toolchain-r/test
+
+- name: Add LLVM APT Key
+  become: True
+  apt_key:
+    url: https://apt.llvm.org/llvm-snapshot.gpg.key
+
+- name: Add LLVM APT List
+  become: True
+  apt_repository:
+    repo: deb http://apt.llvm.org/{{ ubuntu_release }}/ llvm-toolchain-{{ ubuntu_release }}-16 main
+    filename: llvm
+
+- name: Add CMake APT Key
+  become: True
+  apt_key:
+    url: https://apt.kitware.com/keys/kitware-archive-latest.asc
+    keyring: /usr/share/keyrings/kitware-archive-keyring.gpg
+
+- name: Add CMake APT List
+  become: True
+  apt_repository:
+    repo: deb [signed-by=/usr/share/keyrings/kitware-archive-keyring.gpg] https://apt.kitware.com/ubuntu/ {{ ubuntu_release }} main
+    filename: kitware
+
+- name: Add ROS APT Key
+  become: True
+  apt_key:
+    url: https://raw.githubusercontent.com/ros/rosdistro/master/ros.asc
+
+- name: Add ROS APT List
+  become: True
+  apt_repository:
+    repo: deb http://packages.ros.org/ros/ubuntu {{ ubuntu_release }} main
+    filename: ros
+
+- name: Install APT Packages
+  become: True
+  apt:
+    cache_valid_time: 604800
+    state: latest
+    name:
+      - zsh
+      - fzf
+      - neovim
+      - sudo
+      - cmake
+      - ccache
+      - ninja-build
+      - tmux
+      - zstd
+      - htop
+      - curl
+      - python3-pip
+      - python3-rosdep
+      - python3-catkin-tools
+      - python3-virtualenvwrapper
+      - clang-16
+      - clangd-16
+      - clang-format-16
+      - lld-16
+      - lldb-16
+      - g++-11
+      - python3.10
+      - python3.10-venv
+      - ros-{{ ros_distro }}-rosbash
+
+- name: Initialize rosdep
+  become: True
+  command: rosdep init
+  args:
+    creates: /etc/ros/rosdep/sources.list.d/20-default.list
+
+- name: Update rosdep
+  command: rosdep update
+
+- name: Install ROS Packages
+  command: rosdep install --from-paths {{ catkin_workspace }}/src --ignore-src -y --rosdistro={{ ros_distro }}
+
+- name: Download Bun Installer
+  get_url:
+    url: https://bun.sh/install
+    dest: /tmp/bun_installer.sh
+    mode: 0755
+
+- name: Run Bun Installer
+  command: /tmp/bun_installer.sh
+  args:
+    creates: ~/.bun/bin/bun
+
+- name: Install Catkin Profiles
+  synchronize:
+    src: files/profiles
+    dest: "{{ catkin_workspace }}/.catkin_tools"
+    recursive: true
+
+- name: Set G++ 11 as Default
+  become: True
+  alternatives:
+    name: g++
+    path: /usr/bin/g++-11
+    link: /usr/bin/g++
+    priority: 110
+
+- name: Set GCC 11 as Default
+  become: True
+  alternatives:
+    name: gcc
+    path: /usr/bin/gcc-11
+    link: /usr/bin/gcc
+    priority: 110
+
+- name: Set Clang++ 16 as Default
+  become: True
+  alternatives:
+    name: clang++
+    path: /usr/bin/clang++-16
+    link: /usr/bin/clang++
+    priority: 160
+
+- name: Set Clang 16 as Default
+  become: True
+  alternatives:
+    name: clang
+    path: /usr/bin/clang-16
+    link: /usr/bin/clang
+    priority: 160

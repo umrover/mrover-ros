@@ -1,14 +1,14 @@
 #!/usr/bin/env bash
 
-# Print each command, fail on unset variables
-set -xu
+# See: https://vaneyckt.io/posts/safer_bash_scripts_with_set_euxo_pipefail/
+set -Eeuo pipefail
 
 RED='\033[0;31m'
 NC='\033[0m'
 
 ## Check that all tools are installed
 
-clang_format_executable=clang-format-12
+clang_format_executable=clang-format-16
 clang_format_executable_path=$(which "$clang_format_executable")
 if [ ! -x "$clang_format_executable_path" ]; then
   echo -e "${RED}[Error] Please install clang-format with: sudo apt install ${clang_format_executable}${NC}"

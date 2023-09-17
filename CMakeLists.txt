@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.16)
-project(mrover VERSION 1.0.0 LANGUAGES CXX)
+project(mrover VERSION 2024.0 LANGUAGES CXX)
 
 ## Compile as C++17, supported in ROS Kinetic and newer, enable some static analysis
 set(CMAKE_CXX_STANDARD 17)
@@ -18,7 +18,7 @@ set(MROVER_PACKAGES
         dynamic_reconfigure
         rostest
         sensor_msgs
-        )
+)
 
 # Message files
 set(MROVER_MESSAGE_FILES
@@ -47,7 +47,7 @@ set(MROVER_MESSAGE_FILES
         Waypoint.msg
         WaypointType.msg
         GPSPointList.msg
-        )
+)
 
 # Service files
 set(MROVER_SERVICE_FILES
@@ -64,24 +64,24 @@ set(MROVER_SERVICE_FILES
         PublishEnableAuton.srv
         PublishCourse.srv
         ResetCameras.srv
-        )
+)
 
 # Generate messages list
 set(MROVER_ROS_MESSAGES
         sensor_msgs
         std_msgs
         sensor_msgs
-        )
+)
 
 # Dynamic reconfigure parameter file list
 set(MROVER_PARAMETERS
         config/DetectorParams.cfg
-        )
+)
 
 # catkin packages list
 set(MROVER_CATKIN_PACKAGES
         roscpp rospy std_msgs message_runtime
-        )
+)
 
 macro(rosify_cpp_target_macro target)
     target_link_libraries(${target} PRIVATE ${catkin_LIBRARIES})
@@ -94,7 +94,7 @@ macro(rosify_cpp_target_macro target)
             ARCHIVE DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
             LIBRARY DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
             RUNTIME DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
-            )
+    )
 endmacro()
 
 macro(add_cpp_library_macro name sources includes)
@@ -128,7 +128,7 @@ endmacro()
 macro(install_launch_macro)
     install(DIRECTORY launch/
             DESTINATION ${CATKIN_PACKAGE_SHARE_DESTINATION}/launch
-            )
+    )
 endmacro()
 
 macro(add_tests_macro)
@@ -219,12 +219,12 @@ else ()
             moveit_ros_warehouse
             moveit_setup_assistant
             moveit_simple_controller_manager
-            )
+    )
 
     # append subdirectories
     list(APPEND CMAKE_SUBDIRS
             starter_project/teleop
-            )
+    )
 
     # -=-=-=-=-
     # Macros
