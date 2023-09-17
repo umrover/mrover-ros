@@ -100,5 +100,11 @@ source $ZSH/oh-my-zsh.sh
 # alias zshconfig="mate ~/.zshrc"
 # alias ohmyzsh="mate ~/.oh-my-zsh"
 
+alias mrover="cd ~/catkin_ws/src/mrover"
+
+readonly CATKIN_WORKSPACE_PATH=~/catkin_ws
 source /opt/ros/noetic/setup.zsh
-source ~/catkin_ws/devel/setup.zsh
+readonly CATKIN_SETUP_PATH=${CATKIN_WORKSPACE_PATH}/devel/setup.zsh
+if [ -f ${CATKIN_SETUP_PATH} ]; then
+    source ${CATKIN_SETUP_PATH}
+fi
