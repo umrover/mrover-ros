@@ -6,8 +6,11 @@
 
 - name: Dotfiles
   synchronize:
-    src: files/home/mrover
-    dest: /home
+    # The trailing slash is very important here
+    # It tells rsync to copy only the CONTENTS of the folder and not the folder itself
+    # This is vital to make sure this works will any usernames
+    src: files/home/
+    dest: /home/{{ ansible_user_id }}
     recursive: true
 
 - name: Use ZSH as a default shell

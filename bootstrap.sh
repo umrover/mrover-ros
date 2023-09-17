@@ -10,6 +10,7 @@ set -Eeuo pipefail
 readonly RED_BOLD='\033[1;31m'
 readonly BLUE_BOLD='\033[1;34m'
 readonly GREY_BOLD='\033[1;30m'
+readonly YELLOW_BOLD='\033[1;33m'
 readonly NC='\033[0m'
 
 echo -e "${GREY_BOLD}Ensuring SSH keys are set up ...${NC}"
@@ -68,4 +69,5 @@ fi
 
 if [ "${FIRST_TIME_SETUP}" ]; then
   echo -e "${GREY_BOLD}All done! Welcome to MRover!${NC}"
+  echo -e "${YELLOW_BOLD}Please log out and back in!${NC}"
 fi
