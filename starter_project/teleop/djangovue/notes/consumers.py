@@ -8,7 +8,7 @@ class GUIConsumer(AsyncJsonWebsocketConsumer):
     async def connect(self):
         self.room_name = 'drive-controls'
 
-        rospy.Subscriber('/joystick_pub', Joystick, self.joystick_callback)
+        self.sub = rospy.Subscriber('/joystick_pub', Joystick, self.joystick_callback)
 
         # Join room group
         await self.channel_layer.group_add(
@@ -30,10 +30,11 @@ class GUIConsumer(AsyncJsonWebsocketConsumer):
             self.channel_name
         )
 
+        self.sub.unregister()
+
     async def receive(self, text_data):
         """
         Receive message from WebSocket.
-        Get the event and send the appropriate event
         """
         response = json.loads(text_data)
         fb = response.get("forward_back", None)
@@ -64,12 +65,12 @@ class GUIConsumer(AsyncJsonWebsocketConsumer):
             'left_right': lr
         }))
 
-    async def joystick_callback(self,msg):
+    def joystick_callback(self, msg):
         forward_back = msg.forward_back
         left_right = msg.left_right
 
         # Send message to WebSocket
-        await self.send(text_data=json.dumps({
+        self.send(text_data=json.dumps({
             'forward_back': forward_back,
             'left_right': left_right
         }))
