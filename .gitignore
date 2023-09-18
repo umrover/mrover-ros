@@ -3,33 +3,34 @@ __pycache__/
 *.py[cod]
 *$py.class
 .mypy_cache/
+*.egg-info/
 
 # Common IDE's, ideally this should be in global gitignore per user
-**/.vscode/
-**/.idea/
-cmake-build*/
+.vscode/
+.idea/
+/cmake-build*/
 
 #GUI Files
+node_modules/
 /src/teleop/gui/dist/
-/src/teleop/gui/node_modules/
 /src/teleop/gui/src/static/map
-**/keys.json*
-**/yarn.lock*
-**/yarn-error.log*
+keys.json*
+yarn.lock*
+yarn-error.log*
 
 # Bag Files
-bags/
-
-# Bag Files
-bags/
+/bags/
 
 # Catkin
-build/
-devel/
-logs/
+/build/
+/devel/
+/logs/
 
 # Moteus
 moteus-cal*
 
 # CSV
 *.csv
+
+# Virtual Environment
+/venv/

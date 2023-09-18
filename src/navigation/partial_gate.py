@@ -64,7 +64,6 @@ class PartialGateStateTransitions(Enum):
 
 
 class PartialGateState(BaseState):
-
     traj: Optional[PartialGateTrajectory] = None
 
     def __init__(

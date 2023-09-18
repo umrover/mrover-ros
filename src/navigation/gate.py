@@ -216,7 +216,6 @@ class GateTraverseStateTransitions(Enum):
 
 
 class GateTraverseState(BaseState):
-
     STOP_THRESH = get_rosparam("gate/stop_thresh", 0.2)
     DRIVE_FWD_THRESH = get_rosparam("gate/drive_fwd_thresh", 0.34)  # 20 degrees
     APPROACH_DISTANCE = get_rosparam("gate/approach_distance", 2.0)
