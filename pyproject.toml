@@ -9,23 +9,23 @@ maintainers = [
     { name = "Michigan Mars Rover Team" }
 ]
 dependencies = [
-    "django",
-    "empy",
-    "numpy",
-    "pandas",
-    "shapely",
-    "pyserial",
-    "moteus",
-    "pymap3d",
-    "aenum",
-    "pyyaml",
-    "rospkg",
+    "Django==4.2.5",
+    "empy==3.3.4",
+    "numpy==1.26.0",
+    "pandas==2.1.0",
+    "shapely==2.0.1",
+    "pyserial==3.5",
+    "moteus==0.3.59",
+    "pymap3d==3.0.1",
+    "aenum==3.1.15",
+    "PyYAML==6.0.1",
+    "rospkg==1.5.0",
 ]
 
 [project.optional-dependencies]
 dev = [
-    "black",
-    "mypy",
+    "black==23.9.1",
+    "mypy==1.5.1",
 ]
 
 [project.urls]

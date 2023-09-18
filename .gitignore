@@ -33,3 +33,6 @@ moteus-cal*
 
 # CSV
 *.csv
+
+# Virtual Environment
+venv/
