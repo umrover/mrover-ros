@@ -1,0 +1,39 @@
+name: CI
+on:
+  pull_request:
+    branches:
+      - master
+  push:
+    branches:
+      - master
+jobs:
+  ci:
+    name: CI
+    runs-on: ubuntu-latest
+    container:
+      image: umrover1/ros:latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          lfs: "true"
+          # This makes sure that $GITHUB_WORKSPACE is the catkin workspace path
+          path: "src/mrover"
+      - name: Ensure Python Requirements
+        run: . /home/mrover/catkin_ws/src/mrover/venv/bin/activate && pip install -e "$GITHUB_WORKSPACE/src/mrover[dev]"
+      - name: Style Check
+        run: . /home/mrover/catkin_ws/src/mrover/venv/bin/activate && cd $GITHUB_WORKSPACE/src/mrover/ && ./style.sh
+      - name: Ensure APT Requirements
+        if: github.event.pull_request.draft == false
+        run: rosdep update && rosdep install --from-paths "$GITHUB_WORKSPACE/src" --ignore-src -r -y --rosdistro noetic
+      - name: Copy Catkin Profiles
+        if: github.event.pull_request.draft == false
+        run: rsync -r $GITHUB_WORKSPACE/src/mrover/ansible/roles/build/files/profiles $GITHUB_WORKSPACE/.catkin_tools
+      - name: Initialize
+        if: github.event.pull_request.draft == false
+        run: . /opt/ros/noetic/setup.sh && catkin init && catkin profile set ci
+      - name: Build
+        if: github.event.pull_request.draft == false
+        run: . /opt/ros/noetic/setup.sh && . /home/mrover/catkin_ws/src/mrover/venv/bin/activate && catkin build
+      - name: Test
+        if: github.event.pull_request.draft == false
+        run: . /opt/ros/noetic/setup.sh && . /home/mrover/catkin_ws/src/mrover/venv/bin/activate && . $GITHUB_WORKSPACE/devel/setup.sh && catkin test -j1

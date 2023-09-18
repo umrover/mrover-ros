@@ -55,8 +55,8 @@ readonly FOLDERS=(
   ./src/gazebo
   ./src/util
 )
-for folder in "${FOLDERS[@]}"; do
-  find "$folder" -regex '.*\.\(cpp\|hpp\|h\)' -exec "$clang_format_executable_path" --dry-run -style=file -i {} \;
+for FOLDER in "${FOLDERS[@]}"; do
+  find "${FOLDER}" -regex '.*\.\(cpp\|hpp\|h\)' -exec "$clang_format_executable_path" --dry-run -style=file -i {} \;
 done
 echo "Done"
 

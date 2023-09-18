@@ -1,6 +1,6 @@
 [project]
 name = "mrover"
-version = "2024.0"
+version = "2024.0.0"
 description = "MRover Python Code"
 readme = "README.md"
 requires-python = ">=3.10.0"
@@ -9,6 +9,11 @@ maintainers = [
     { name = "Michigan Mars Rover Team" }
 ]
 dependencies = [
+    # ROS dependencies
+    "rospkg==1.5.0",
+    "netifaces==0.11.0",
+    "defusedxml==0.7.1",
+    # MRover dependencies
     "Django==4.2.5",
     "empy==3.3.4",
     "numpy==1.26.0",
@@ -18,8 +23,6 @@ dependencies = [
     "moteus==0.3.59",
     "pymap3d==3.0.1",
     "aenum==3.1.15",
-    "PyYAML==6.0.1",
-    "rospkg==1.5.0",
 ]
 
 [project.optional-dependencies]

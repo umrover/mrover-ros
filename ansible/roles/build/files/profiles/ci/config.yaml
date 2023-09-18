@@ -3,12 +3,11 @@ blacklist: [ ]
 build_space: build
 catkin_make_args: [ ]
 cmake_args:
-  - -DCMAKE_BUILD_TYPE=Debug
+  - -DCMAKE_BUILD_TYPE=Release
   - -DCMAKE_CXX_FLAGS=-pipe
   - -DCMAKE_C_COMPILER=clang-16
   - -DCMAKE_CXX_COMPILER=clang++-16
-  - -DCMAKE_CXX_COMPILER_LAUNCHER=ccache
-  - -DCMAKE_CUDA_COMPILER_LAUNCHER=ccache
+  - -DCMAKE_CXX_CLANG_TIDY=clang-tidy-16
 devel_layout: linked
 devel_space: devel
 extend_path: null

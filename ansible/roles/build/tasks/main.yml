@@ -80,11 +80,13 @@
       - python3-virtualenvwrapper
       - clang-16
       - clangd-16
+      - clang-tidy-16
       - clang-format-16
       - lld-16
       - lldb-16
       - g++-11
       - python3.10
+      - python3.10-dev
       - python3.10-venv
       - ros-{{ ros_distro }}-rosbash
 
