@@ -149,7 +149,7 @@ macro(add_tests_macro)
 endmacro()
 
 # Subdirectories before message declarations
-set(CMAKE_SUBDIRS "")
+set(MROVER_CMAKE_INCLUDES "")
 
 
 # -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
@@ -202,8 +202,8 @@ else ()
     )
 
     # append subdirectories
-    list(APPEND CMAKE_SUBDIRS
-            starter_project/teleop
+    list(APPEND MROVER_CMAKE_INCLUDES
+            starter_project/autonomy/AutonomyStarterProject.cmake
     )
 
     # -=-=-=-=-
@@ -274,12 +274,10 @@ endif ()
 catkin_python_setup()
 
 
-# 4.5. Subdirectories before message declarations
-if (NOT "${CMAKE_SUBDIRS}" MATCHES "")
-    add_subdirectory(
-            ${CMAKE_SUBDIRS}
-    )
-endif ()
+# 4.5. CMake includes before message declarations
+foreach (CMAKE_INCLUDE ${MROVER_CMAKE_INCLUDES})
+    include(${CMAKE_INCLUDE})
+endforeach ()
 
 
 # 5. Message Generators (add_xxx)
