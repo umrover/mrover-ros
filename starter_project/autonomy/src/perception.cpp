@@ -21,7 +21,7 @@ namespace mrover {
         // Subscribe to camera image messages
         // Every time another node publishes to this topic we will be notified
         // Specifically the callback we passed will be invoked
-        mImageSubscriber = mImageTransport.subscribe("camera/color/image_raw", 1, &Perception::imageCallback, this);
+        mImageSubscriber = mImageTransport.subscribe("camera/right/image", 1, &Perception::imageCallback, this);
 
         // Create a publisher for our tag topic
         // See: http://wiki.ros.org/ROS/Tutorials/WritingPublisherSubscriber%28c%2B%2B%29
