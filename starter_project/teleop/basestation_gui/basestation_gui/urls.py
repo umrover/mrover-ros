@@ -1,5 +1,5 @@
 """
-URL configuration for djangovue project.
+URL configuration for basestation_gui project.
 
 The `urlpatterns` list routes URLs to views. For more information please see:
     https://docs.djangoproject.com/en/4.2/topics/http/urls/
@@ -19,7 +19,7 @@ from django.urls import path, include
 from django.http import HttpResponse
 from django.shortcuts import render
 
-from notes.consumers import GUIConsumer
+from backend.consumers import GUIConsumer
 
 vue_urls = [
   path('', lambda request: HttpResponse(render(request, 'vue_index.html'))),
@@ -28,7 +28,6 @@ vue_urls = [
 
 urlpatterns = [
   path('admin/', admin.site.urls),
-#   path('api/', include('notes.urls')),
   path('', include(vue_urls)),
 ]
 

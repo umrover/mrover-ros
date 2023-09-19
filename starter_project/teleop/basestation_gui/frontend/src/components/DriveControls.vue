@@ -1,8 +1,8 @@
 <template>
   <div>
       <p>Drive Controls</p>
-      <p>{{ forward }}</p>
-      <p> {{ left }}</p>
+      <p>{{ left }}</p>
+      <p> {{ right }}</p>
   </div>
 </template>
 
@@ -17,7 +17,7 @@ data () {
     linear: 0,
 
     left: 0,
-    forward: 0,
+    right: 0,
 
     socket: null
   }
@@ -28,11 +28,10 @@ mounted: function() {
   this.socket.onerror = (event) => {
     console.log(event);
   }
-  this.socket.onopen = () => {}
-  this.socket.onmessage = (event) => {
-    event = JSON.parse(event.data)
-    this.forward = event.forward_back;
-    this.left = event.left_right;
+  this.socket.onmessage = (msg) => {
+    msg = JSON.parse(msg.data)
+    this.left = msg.left;
+    this.right = msg.right;
   }
 },
 
@@ -42,9 +41,13 @@ beforeUnmount: function () {
 },
 
 methods: {
-
-
+  sendToROS(msg) {
+    msg.type = "joystick_update";
+    this.socket.send(JSON.stringify(msg));
+  }
 },
+
+
 
 created: function () {
 
@@ -77,10 +80,13 @@ created: function () {
             // forward on joystick is -1, so invert
             this.linear = -1 * gamepad.axes[JOYSTICK_CONFIG['forward_back']]
             
-            // const joystickData = {
-            //   'forward_back': this.linear,
-            //   'left_right': this.rotational,
-            // }
+            const joystickData = {
+              'forward_back': this.linear,
+              'left_right': this.rotational,
+            }
+
+            this.sendToROS(joystickData);
+
           }
         }
         

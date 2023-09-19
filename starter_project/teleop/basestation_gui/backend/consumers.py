@@ -17,11 +17,6 @@ class GUIConsumer(JsonWebsocketConsumer):
         )
         self.accept()
 
-        self.send(text_data=json.dumps({
-            'forward_back': 1.23,
-            'left_right': 4.56
-        }))
-
     def disconnect(self, close_code):
         # Leave room group
         self.channel_layer.group_discard(
@@ -68,8 +63,20 @@ class GUIConsumer(JsonWebsocketConsumer):
         forward_back = msg.forward_back
         left_right = msg.left_right
 
+        #Scaling multiplier to adjust values if needed
+        K = 1
+        
+        left = K * (forward_back + left_right)
+        right = K * (forward_back - left_right)
+
+        #Ensure values are [-1,1] for each motor
+        if abs(left) > 1:
+            left = left/abs(left)
+        if abs(right) > 1:
+            right = right/abs(right)
+
         # Send message to WebSocket
         self.send(text_data=json.dumps({
-            'forward_back': forward_back,
-            'left_right': left_right
+            'left': left,
+            'right': right
         }))

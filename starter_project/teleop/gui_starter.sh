@@ -30,4 +30,4 @@
 # fi
 
 # yarn run serve
-python3 djangovue/manage.py runserver
+python3 basestation_gui/manage.py runserver

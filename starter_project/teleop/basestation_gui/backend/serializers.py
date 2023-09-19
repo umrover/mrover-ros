@@ -1,5 +1,5 @@
 from rest_framework import serializers
-from notes.models import Joystick
+from backend.models import Joystick
 
 # Serializer tells the REST API what needs to be returned and how to convert to JSON
 
