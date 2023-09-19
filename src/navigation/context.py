@@ -1,25 +1,23 @@
 from __future__ import annotations
-from pdb import post_mortem
+
+from dataclasses import dataclass
+from typing import ClassVar, Optional, List, Tuple
+
+import mrover.msg
+import mrover.srv
+import numpy as np
+import pymap3d
 import rospy
 import tf2_ros
 from geometry_msgs.msg import Twist
-import mrover.msg
-import mrover.srv
-from util.SE3 import SE3
-from visualization_msgs.msg import Marker
-from typing import ClassVar, Optional, List, Tuple
-import numpy as np
-from dataclasses import dataclass
-from shapely.geometry import Point, LineString
 from mrover.msg import Waypoint, GPSWaypoint, EnableAuton, WaypointType, GPSPointList
-import pymap3d
-from drive import DriveController
-from util.ros_utils import get_rosparam
-
+from shapely.geometry import Point
 from std_msgs.msg import Time, Bool
-from drive import DriveController
+from util.SE3 import SE3
 from util.ros_utils import get_rosparam
+from visualization_msgs.msg import Marker
 
+from drive import DriveController
 
 TAG_EXPIRATION_TIME_SECONDS = 60
 

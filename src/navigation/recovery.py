@@ -1,15 +1,14 @@
-import smach
-from typing import List
 from context import Context
-from aenum import Enum, NoAlias
-from state import BaseState
-from geometry_msgs.msg import Twist
-import rospy
-import numpy as np
 from typing import Optional
-from util.np_utils import perpendicular_2d, rotate_2d
+
+import numpy as np
+import rospy
+from aenum import Enum, NoAlias
+from util.np_utils import rotate_2d
 from util.ros_utils import get_rosparam
 
+from context import Context
+from state import BaseState
 
 STOP_THRESH = get_rosparam("recovery/stop_thresh", 0.2)
 DRIVE_FWD_THRESH = get_rosparam("recovery/drive_fwd_thresh", 0.34)  # 20 degrees
