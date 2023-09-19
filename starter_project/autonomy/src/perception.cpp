@@ -46,7 +46,7 @@ namespace mrover {
         publishTag(tag);
     }
 
-    void Perception::findTagsInImage(cv::Mat const& image, std::vector<StarterProjectTag>& tags) {
+    void Perception::findTagsInImage(cv::Mat const& image, std::vector<StarterProjectTag>& tags) { // NOLINT(*-convert-member-functions-to-static)
         // hint: take a look at OpenCV's documentation for the detectMarkers function
         // hint: you have mTagDictionary, mTagCorners, mTagIds, and mTagDetectorParams member variables already defined!
         // hint: write and use the "getCenterFromTagCorners" and "getClosenessMetricFromTagCorners" functions
@@ -56,30 +56,27 @@ namespace mrover {
         // TODO: implement me!
     }
 
-
-    StarterProjectTag Perception::selectTag(std::vector<StarterProjectTag> const& tags) {
+    StarterProjectTag Perception::selectTag(std::vector<StarterProjectTag> const& tags) { // NOLINT(*-convert-member-functions-to-static)
         // TODO: implement me!
-
-        // return;
+        return {};
     }
 
     void Perception::publishTag(StarterProjectTag const& tag) {
         // TODO: implement me!
     }
 
-    float Perception::getClosenessMetricFromTagCorners(cv::Mat const& image, std::vector<cv::Point2f> const& tagCorners) {
+    float Perception::getClosenessMetricFromTagCorners(cv::Mat const& image, std::vector<cv::Point2f> const& tagCorners) { // NOLINT(*-convert-member-functions-to-static)
         // hint: think about how you can use the "image" parameter
         // hint: this is an approximation that will be used later by navigation to stop "close enough" to a tag.
         // hint: try not overthink, this metric does not have to be perfectly accurate, just correlated to distance away from a tag
-        // TODO: implement me!
 
-        // return;
+        // TODO: implement me!
+        return {};
     }
 
-    std::pair<float, float> Perception::getCenterFromTagCorners(std::vector<cv::Point2f> const& tagCorners) {
+    std::pair<float, float> Perception::getCenterFromTagCorners(std::vector<cv::Point2f> const& tagCorners) { // NOLINT(*-convert-member-functions-to-static)
         // TODO: implement me!
-
-        // return;
+        return {};
     }
 
 } // namespace mrover
