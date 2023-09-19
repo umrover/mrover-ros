@@ -12,6 +12,7 @@ jobs:
     runs-on: ubuntu-latest
     container:
       image: umrover1/ros:latest
+      options: --user root
     steps:
       - uses: actions/checkout@v4
         with:
@@ -22,9 +23,12 @@ jobs:
         run: . /home/mrover/catkin_ws/src/mrover/venv/bin/activate && pip install -e "$GITHUB_WORKSPACE/src/mrover[dev]"
       - name: Style Check
         run: . /home/mrover/catkin_ws/src/mrover/venv/bin/activate && cd $GITHUB_WORKSPACE/src/mrover/ && ./style.sh
-      - name: Ensure APT Requirements
+      - name: Update ROS APT
         if: github.event.pull_request.draft == false
-        run: rosdep update && rosdep install --from-paths "$GITHUB_WORKSPACE/src" --ignore-src -r -y --rosdistro noetic
+        run: runuser -u mrover -- rosdep update
+      - name: Ensure ROS APT Requirements
+        if: github.event.pull_request.draft == false
+        run: runuser -u mrover -- rosdep install --from-paths "$GITHUB_WORKSPACE/src" --ignore-src -r -y --rosdistro noetic
       - name: Copy Catkin Profiles
         if: github.event.pull_request.draft == false
         run: rsync -r $GITHUB_WORKSPACE/src/mrover/ansible/roles/build/files/profiles $GITHUB_WORKSPACE/.catkin_tools
