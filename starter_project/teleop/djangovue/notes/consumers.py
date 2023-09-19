@@ -1,38 +1,37 @@
 import json
-from channels.generic.websocket import AsyncJsonWebsocketConsumer
+from channels.generic.websocket import JsonWebsocketConsumer
 
 import rospy
 from mrover.msg import Joystick
 
-class GUIConsumer(AsyncJsonWebsocketConsumer):
-    async def connect(self):
+class GUIConsumer(JsonWebsocketConsumer):
+    def connect(self):
         self.room_name = 'drive-controls'
 
         self.sub = rospy.Subscriber('/joystick_pub', Joystick, self.joystick_callback)
 
         # Join room group
-        await self.channel_layer.group_add(
+        self.channel_layer.group_add(
             self.room_name,
             self.channel_name
         )
-        await self.accept()
+        self.accept()
 
-        await self.channel_layer.group_send(self.room_name, {
-                'type': 'joystick_update',
-                'forward_back': 1.23,
-                'left_right': 4.56
-            })
+        self.send(text_data=json.dumps({
+            'forward_back': 1.23,
+            'left_right': 4.56
+        }))
 
-    async def disconnect(self, close_code):
+    def disconnect(self, close_code):
         # Leave room group
-        await self.channel_layer.group_discard(
+        self.channel_layer.group_discard(
             self.room_name,
             self.channel_name
         )
-
+        # what is the channel_layer
         self.sub.unregister()
 
-    async def receive(self, text_data):
+    def receive(self, text_data):
         """
         Receive message from WebSocket.
         """
@@ -40,7 +39,7 @@ class GUIConsumer(AsyncJsonWebsocketConsumer):
         fb = response.get("forward_back", None)
         lr = response.get("left_right", None)
         # Send message to room group
-        await self.channel_layer.group_send(self.room_name, {
+        self.channel_layer.group_send(self.room_name, {
             'type': 'joystick_update',
             'forward_back': fb,
             'left_right': lr
@@ -48,7 +47,7 @@ class GUIConsumer(AsyncJsonWebsocketConsumer):
 
 
     #Receives message from room group --- follows the 'type' key above
-    async def joystick_update(self, event):
+    def joystick_update(self, event):
         """ Receive message from room group """
         fb = event["forward_back"]
         lr = event["left_right"]
@@ -60,7 +59,7 @@ class GUIConsumer(AsyncJsonWebsocketConsumer):
         pub.publish(message)
 
         # Send message to WebSocket
-        await self.send(text_data=json.dumps({
+        self.send(text_data=json.dumps({
             'forward_back': fb,
             'left_right': lr
         }))
