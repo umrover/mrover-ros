@@ -1,10 +1,11 @@
-from abc import ABC
+from abc import ABC, abstractmethod
 from typing import List, Optional
 
 import smach
-from context import Context
 from aenum import Enum, NoAlias
 from geometry_msgs.msg import Twist
+
+from context import Context
 
 
 class BaseState(smach.State, ABC):
@@ -70,9 +71,10 @@ class BaseState(smach.State, ABC):
         """
         pass
 
+    @abstractmethod
     def evaluate(self, ud: smach.UserData) -> str:
         """Override me instead of execute!"""
-        raise NotImplementedError
+        ...
 
 
 class DoneStateTransitions(Enum):

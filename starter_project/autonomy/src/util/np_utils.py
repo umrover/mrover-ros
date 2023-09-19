@@ -1,7 +1,8 @@
-import numpy as np
-
-from geometry_msgs.msg import Vector3, Quaternion, Point
 from typing import Union
+
+import numpy as np
+from geometry_msgs.msg import Vector3, Quaternion, Point
+
 
 def _translation_to_numpy(translation: Vector3) -> np.ndarray:
     return np.array([translation.x, translation.y, translation.z])
@@ -18,6 +19,7 @@ def _rotation_to_numpy(rotation: Quaternion) -> np.ndarray:
 def normalized(v):
     norm = np.linalg.norm(v)
     return v / norm
+
 
 def numpify(msg: Union[Vector3, Quaternion, Point]) -> np.ndarray:
     if msg.__class__ == Vector3:

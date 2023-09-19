@@ -1,13 +1,14 @@
 from __future__ import annotations
+
 from dataclasses import dataclass, field
 
 import numpy as np
-import tf2_ros
 import rospy
-
-from .np_utils import numpify
+import tf2_ros
 from geometry_msgs.msg import TransformStamped, Vector3, Quaternion
+
 from .SO3 import SO3
+from .np_utils import numpify
 
 
 @dataclass(frozen=True)
@@ -92,7 +93,7 @@ class SE3:
         :param p: another SE3
         :returns: euclidean distance between the two SE3s
         """
-        return np.linalg.norm(p.position - self.position)
+        return np.linalg.norm(p.position - self.position)  # type: ignore
 
     def is_approx(self, p: SE3, tolerance=1e-8) -> bool:
         """

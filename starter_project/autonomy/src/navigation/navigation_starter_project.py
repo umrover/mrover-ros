@@ -11,8 +11,8 @@ import smach_ros
 
 # navigation specific imports
 from context import Context
-from state import DoneState
 from drive_state import DriveState
+from state import DoneState
 from tag_seek import TagSeekState
 
 
@@ -29,16 +29,16 @@ class Navigation(threading.Thread):
         self.sis = smach_ros.IntrospectionServer("", self.state_machine, "/SM_ROOT")
         self.sis.start()
         with self.state_machine:
-            #TODO: add DriveState and its transitions here
- 
+            # TODO: add DriveState and its transitions here
+
             # DoneState and its transitions
             self.state_machine.add(
                 "DoneState",
                 DoneState(self.context),
                 transitions={"done": "DoneState"},
             )
-            #TODO: add TagSeekState and its transitions here
-            
+            # TODO: add TagSeekState and its transitions here
+
     def run(self):
         self.state_machine.execute()
 
@@ -53,7 +53,7 @@ class Navigation(threading.Thread):
 
 def main():
     # TODO: init a node called "navigation"
-    
+
     # context and navigation objects
     context = Context()
     navigation = Navigation(context)

@@ -1,17 +1,20 @@
 from __future__ import annotations
+
 from dataclasses import dataclass
-import numpy as np
 from typing import Optional
-from state import BaseState
-from trajectory import Trajectory
+
+import numpy as np
+import rospy
+import tf2_ros
 from aenum import Enum, NoAlias
-from context import Context
-from util.ros_utils import get_rosparam
-from util.np_utils import perpendicular_2d
 from shapely.geometry import Point, LineString
 from util.SE3 import SE3
-import tf2_ros
-import rospy
+from util.np_utils import perpendicular_2d
+from util.ros_utils import get_rosparam
+
+from context import Context
+from state import BaseState
+from trajectory import Trajectory
 
 POST_RADIUS = get_rosparam("gate/post_radius", 0.7) * get_rosparam("single_fiducial/post_avoidance_multiplier", 1.42)
 BACKUP_DISTANCE = get_rosparam("recovery/recovery_distance", 2.0)

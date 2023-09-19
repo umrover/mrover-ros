@@ -1,12 +1,13 @@
 from dataclasses import dataclass
-import numpy as np
-
-from util import np_utils
 from typing import Optional
+
+import numpy as np
+from aenum import Enum, NoAlias
+from util import np_utils
+
+from context import Context
 from state import BaseState
 from trajectory import Trajectory
-from aenum import Enum, NoAlias
-from context import Context
 
 STOP_THRESH = 0.2
 DRIVE_FWD_THRESH = 0.95

@@ -1,5 +1,7 @@
 from __future__ import annotations
+
 from dataclasses import dataclass, field
+
 import numpy as np
 from tf.transformations import (
     quaternion_inverse,

@@ -1,15 +1,15 @@
 from __future__ import annotations
-from re import S
+
+from dataclasses import dataclass
+from typing import Optional
+
+import numpy as np
 import rospy
 import tf2_ros
 from geometry_msgs.msg import Twist
 from mrover.msg import StarterProjectTag
-import mrover.srv
 from util.SE3 import SE3
 from visualization_msgs.msg import Marker
-from typing import ClassVar, Optional
-import numpy as np
-from dataclasses import dataclass
 
 
 @dataclass
@@ -17,16 +17,17 @@ class Rover:
     ctx: Context
 
     def get_pose(self) -> Optional[SE3]:
-        #TODO: return the pose of the rover (or None if we don't have one (catch exception))
+        # TODO: return the pose of the rover (or None if we don't have one (catch exception))
         pass
 
     def send_drive_command(self, twist: Twist):
-        #TODO: send the Twist message to the rover
+        # TODO: send the Twist message to the rover
         pass
 
     def send_drive_stop(self):
-        #TODO: tell the rover to stop
+        # TODO: tell the rover to stop
         pass
+
 
 @dataclass
 class Environment:
@@ -38,17 +39,18 @@ class Environment:
     ctx: Context
     fid_pos: Optional[StarterProjectTag]
 
-    def recieve_fid_data(self, message : StarterProjectTag):
-        #TODO: handle incoming FID data messages here
+    def receive_fid_data(self, message: StarterProjectTag):
+        # TODO: handle incoming FID data messages here
         pass
 
     def get_fid_data(self) -> Optional[StarterProjectTag]:
         """
-        Retrieves the last recieved message regarding fid pose
+        Retrieves the last received message regarding fid pose
         if it exists, otherwise returns None
         """
-        #TODO: return either None or your position message
+        # TODO: return either None or your position message
         pass
+
 
 class Context:
     tf_buffer: tf2_ros.Buffer
@@ -68,4 +70,4 @@ class Context:
         self.vis_publisher = rospy.Publisher("nav_vis", Marker)
         self.rover = Rover(self)
         self.env = Environment(self, None)
-        self.fid_listener = rospy.Subscriber("/tag", StarterProjectTag,self.env.recieve_fid_data)
+        self.fid_listener = rospy.Subscriber("/tag", StarterProjectTag, self.env.receive_fid_data)
