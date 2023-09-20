@@ -23,18 +23,6 @@ data () {
   }
 },
 
-mounted: function() {
-  this.socket = new WebSocket('ws://127.0.0.1:8000/ws/drive-controls');
-  this.socket.onerror = (event) => {
-    console.log(event);
-  }
-  this.socket.onmessage = (msg) => {
-    msg = JSON.parse(msg.data)
-    this.left = msg.left;
-    this.right = msg.right;
-  }
-},
-
 
 beforeUnmount: function () {
   window.clearInterval(interval);
@@ -42,12 +30,9 @@ beforeUnmount: function () {
 
 methods: {
   sendToROS(msg) {
-    msg.type = "joystick_update";
     this.socket.send(JSON.stringify(msg));
   }
 },
-
-
 
 created: function () {
 
@@ -60,7 +45,27 @@ created: function () {
     'tilt': 5
   }
 
-  const updateRate = 1;
+  this.socket = new WebSocket('ws://127.0.0.1:8000/ws/drive-controls');
+  this.socket.onerror = (event) => {
+    console.log(event);
+  }
+  this.socket.onmessage = (msg) => {
+    msg = JSON.parse(msg.data)
+    if(msg.type == "wheel_cmd"){
+      this.left = msg.left;
+      this.right = msg.right;
+    }
+  }
+
+  this.socket.onopen = () => {
+    this.sendToROS({
+      type: "joystick", 
+      forward_back: 0.5,
+      left_right: -0.5 
+    });
+  }
+
+  const updateRate = 0.05;
   interval = window.setInterval(() => {
       const gamepads = navigator.getGamepads()
       for (let i = 0; i < 4; i++) {
@@ -79,14 +84,14 @@ created: function () {
             }
             // forward on joystick is -1, so invert
             this.linear = -1 * gamepad.axes[JOYSTICK_CONFIG['forward_back']]
-            
+
             const joystickData = {
               'forward_back': this.linear,
-              'left_right': this.rotational,
+              'left_right': this.rotational
             }
 
             this.sendToROS(joystickData);
-
+        
           }
         }
         
