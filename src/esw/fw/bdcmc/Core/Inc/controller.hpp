@@ -8,6 +8,12 @@
 #include "pidf.hpp"
 #include "units.hpp"
 
+static inline void check(bool cond, std::invocable auto handler) {
+    if (!cond) {
+        handler();
+    }
+}
+
 namespace mrover {
 
     template<typename T, typename Input>
