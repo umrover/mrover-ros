@@ -3,58 +3,67 @@
 # See: https://vaneyckt.io/posts/safer_bash_scripts_with_set_euxo_pipefail/
 set -Eeuo pipefail
 
-RED='\033[0;31m'
-NC='\033[0m'
+readonly RED='\033[0;31m'
+readonly NC='\033[0m'
+
+BLACK_ARGS=(
+  "--line-length=120"
+  "--color"
+)
+CLANG_FORMAT_ARGS=(
+  "-style=file"
+)
+
+# Just do a dry run if the "fix" argument is not passed
+if [ $# -eq 0 ] || [ "$1" != "--fix" ]; then
+  BLACK_ARGS+=("--diff") # Show difference
+  BLACK_ARGS+=("--check") # Exit with non-zero code if changes are required (for CI)
+  CLANG_FORMAT_ARGS+=("--dry-run")
+fi
+
+function print_update_error() {
+  echo -e "${RED}[Error] Please update with ./ansible.sh build.yml${NC}"
+  exit 1
+}
+
+function find_executable() {
+  local readonly executable="$1"
+  local readonly version="$2"
+  local readonly path=$(which "${executable}")
+  if [ ! -x "${path}" ]; then
+    echo -e "${RED}[Error] Could not find ${executable}${NC}"
+    print_update_error
+  fi
+  if ! "${path}" --version | grep -q "${version}"; then
+    echo -e "${RED}[Error] Wrong ${executable} version${NC}"
+    print_update_error
+  fi
+  echo "${path}"
+}
 
 ## Check that all tools are installed
 
-clang_format_executable=clang-format-16
-clang_format_executable_path=$(which "$clang_format_executable")
-if [ ! -x "$clang_format_executable_path" ]; then
-  echo -e "${RED}[Error] Please install clang-format with: sudo apt install ${clang_format_executable}${NC}"
-  exit 1
-fi
-
-
-black_executable=black
-black_executable_path=$(which "$black_executable")
-if [ ! -x "$black_executable_path" ]; then
-  echo -e "${RED}[Error] Please run pip3 install -r requirements.txt${NC}"
-  exit 1
-fi
-
-# Style check Python with black
-if ! black --version | grep -q 'black, 22.8.0'; then
-  echo -e "${RED}[Error] Wrong black version${NC}"
-  exit 1
-fi
-
-
-mypy_executable=mypy
-mypy_executable_path=$(which "$mypy_executable")
-if [ ! -x "$mypy_executable_path" ]; then
-  echo -e "${RED}[Error] Please run pip3 install -r requirements.txt${NC}"
-  exit 1
-fi
-
-if ! mypy --version | grep -q 'mypy 0.971'; then
-  echo -e "${RED}[Error] Wrong mypy version${NC}"
-  exit 1
-fi
+readonly CLANG_FORMAT_PATH=$(find_executable clang-format-16 16.0)
+readonly BLACK_PATH=$(find_executable black 23.9.1)
+readonly MYPY_PATH=$(find_executable mypy 1.5.1)
 
 ## Run checks
 
-# Fail immediately if any command below fails
-set -Eeo pipefail
-
 echo "Style checking C++ ..."
-find ./src -regex '.*\.\(cpp\|hpp\|h\)' -exec "$clang_format_executable_path" --dry-run -style=file -i {} \;
+readonly FOLDERS=(
+  ./src/perception
+  ./src/gazebo
+  ./src/util
+)
+for FOLDER in "${FOLDERS[@]}"; do
+  find "${FOLDER}" -regex '.*\.\(cpp\|hpp\|h\)' -exec "${CLANG_FORMAT_PATH}" "${CLANG_FORMAT_ARGS[@]}" -i {} \;
+done
 echo "Done"
 
+echo
 echo "Style checking Python with black ..."
-"$black_executable_path" --check --diff --line-length=120 ./src ./scripts
-echo "Done"
+"$BLACK_PATH" "${BLACK_ARGS[@]}" ./src ./scripts
 
+echo
 echo "Style checking Python with mypy ..."
-"$mypy_executable_path" --config-file mypy.ini --check ./src ./scripts
-echo "Done"
+"$MYPY_PATH" --config-file=mypy.ini --check ./src ./scripts

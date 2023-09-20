@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.16)
-project(mrover VERSION 2024.0 LANGUAGES CXX)
+project(mrover VERSION 2024.0.0 LANGUAGES CXX)
 
 ## Compile as C++17, supported in ROS Kinetic and newer, enable some static analysis
 set(CMAKE_CXX_STANDARD 17)
@@ -149,7 +149,7 @@ macro(add_tests_macro)
 endmacro()
 
 # Subdirectories before message declarations
-set(CMAKE_SUBDIRS "")
+set(MROVER_CMAKE_INCLUDES "")
 
 
 # -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
@@ -199,31 +199,11 @@ else ()
             rosbridge_server
             teleop_twist_joy
             gazebo_ros
-            moveit_commander
-            moveit_core
-            moveit_fake_controller_manager
-            moveit_kinematics
-            moveit_msgs
-            moveit_planners_chomp
-            moveit_planners_ompl
-            moveit_ros_benchmarks
-            moveit_ros_control_interface
-            moveit_ros_manipulation
-            moveit_ros_move_group
-            moveit_ros_occupancy_map_monitor
-            moveit_ros_perception
-            moveit_ros_planning
-            moveit_ros_planning_interface
-            moveit_ros_robot_interaction
-            moveit_ros_visualization
-            moveit_ros_warehouse
-            moveit_setup_assistant
-            moveit_simple_controller_manager
     )
 
     # append subdirectories
-    list(APPEND CMAKE_SUBDIRS
-            starter_project/teleop
+    list(APPEND MROVER_CMAKE_INCLUDES
+            starter_project/autonomy/AutonomyStarterProject.cmake
     )
 
     # -=-=-=-=-
@@ -235,7 +215,7 @@ else ()
         find_package(OpenCV REQUIRED COMPONENTS core aruco)
         find_package(gazebo REQUIRED)
         find_package(Eigen3 REQUIRED)
-        find_package(ZED 2)
+        find_package(ZED 2 QUIET)
         if (ZED_FOUND)
             set(CMAKE_CUDA_SEPARABLE_COMPILATION ON)
             set(CMAKE_CUDA_STANDARD 17)
@@ -294,12 +274,10 @@ endif ()
 catkin_python_setup()
 
 
-# 4.5. Subdirectories before message declarations
-if (NOT "${CMAKE_SUBDIRS}" MATCHES "")
-    add_subdirectory(
-            ${CMAKE_SUBDIRS}
-    )
-endif ()
+# 4.5. CMake includes before message declarations
+foreach (CMAKE_INCLUDE ${MROVER_CMAKE_INCLUDES})
+    include(${CMAKE_INCLUDE})
+endforeach ()
 
 
 # 5. Message Generators (add_xxx)
