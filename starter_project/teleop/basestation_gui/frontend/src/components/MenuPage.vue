@@ -5,20 +5,13 @@
       <h1>Mrover Teleop Training</h1>
       <div class="spacer"></div>
     </div>
-    <div class="box row">
-      <MenuButton link="/motor_sim" name="Motor Simulator"></MenuButton>
-    </div>
   </div>
 </template>
 
 <script>
-import MenuButton from './MenuButton.vue';
 
 export default {
   name: 'MenuPage',
-  components: {
-    MenuButton
-  }
 
 }
 </script>

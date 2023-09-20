@@ -4,7 +4,4 @@ add_message_files(
         DIRECTORY
         ${CMAKE_CURRENT_LIST_DIR}/msg
         FILES
-        Joystick.msg
 )
-
-# set(mrover_MESSAGE_FILES ${mrover_MESSAGE_FILES} PARENT_SCOPE)

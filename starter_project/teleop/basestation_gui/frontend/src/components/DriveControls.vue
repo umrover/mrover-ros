@@ -1,8 +1,6 @@
 <template>
   <div>
       <p>Drive Controls</p>
-      <p>{{ left }}</p>
-      <p> {{ right }}</p>
   </div>
 </template>
 
@@ -16,9 +14,6 @@ data () {
     rotational: 0,
     linear: 0,
 
-    left: 0,
-    right: 0,
-
     socket: null
   }
 },
@@ -29,9 +24,7 @@ beforeUnmount: function () {
 },
 
 methods: {
-  sendToROS(msg) {
-    this.socket.send(JSON.stringify(msg));
-  }
+  
 },
 
 created: function () {
@@ -43,26 +36,6 @@ created: function () {
     'dampen': 3,
     'pan': 4,
     'tilt': 5
-  }
-
-  this.socket = new WebSocket('ws://127.0.0.1:8000/ws/drive-controls');
-  this.socket.onerror = (event) => {
-    console.log(event);
-  }
-  this.socket.onmessage = (msg) => {
-    msg = JSON.parse(msg.data)
-    if(msg.type == "wheel_cmd"){
-      this.left = msg.left;
-      this.right = msg.right;
-    }
-  }
-
-  this.socket.onopen = () => {
-    this.sendToROS({
-      type: "joystick", 
-      forward_back: 0.5,
-      left_right: -0.5 
-    });
   }
 
   const updateRate = 0.05;
@@ -86,11 +59,10 @@ created: function () {
             this.linear = -1 * gamepad.axes[JOYSTICK_CONFIG['forward_back']]
 
             const joystickData = {
+              'type': 'joystick',
               'forward_back': this.linear,
               'left_right': this.rotational
             }
-
-            this.sendToROS(joystickData);
         
           }
         }
