@@ -3,13 +3,12 @@
   pip:
     name: jetson-stats
 
-- name: Install APT Packages
+- name: Install JetPack APT
   become: True
   apt:
     cache_valid_time: 604800
     state: latest
     name:
-      - clang-12
       - nvidia-jetpack
 
 # TODO: wait for jetpack 5.1.2 support

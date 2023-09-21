@@ -64,10 +64,8 @@
       - neovim
       - sudo
       - cmake
-      # Caches intermediate build files, speeds up compilation over time
-      - ccache
-      # Faster than make
-      - ninja-build
+      - ccache # Caches intermediate build files, speeds up compilation over time
+      - ninja-build # Faster than make
       - tmux
       - zstd
       - htop
