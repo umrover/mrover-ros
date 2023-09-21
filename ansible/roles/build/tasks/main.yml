@@ -151,6 +151,14 @@
     link: /usr/bin/clang
     priority: 160
 
+- name: Set clangd 16 as Default
+  become: True
+  alternatives:
+    name: clangd
+    path: /usr/bin/clangd-16
+    link: /usr/bin/clangd
+    priority: 160
+
 - name: Setup Python Virtual Environment
   pip:
     name:

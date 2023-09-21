@@ -34,3 +34,6 @@ moteus-cal*
 
 # Virtual Environment
 /venv/
+
+# clangd Output
+.cache/
