@@ -83,8 +83,7 @@ class FailureIdentifier:
             # append to csv if csv exists else write to csv
             rospy.loginfo("writing to file")
             if self.path_name is None:
-                home = Path.home()
-                path = home / "catkin_ws/src/mrover/failure_data"
+                path = Path.cwd() / "failure_data"
                 path.mkdir(exist_ok=True)
 
                 file_name = f"failure_data_{rospy.Time.now()}.csv"

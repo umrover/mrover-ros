@@ -11,6 +11,7 @@ d = generate_distutils_setup(
         "navigation",
         "navigation.failure_identification",
         "esw",
+        "teleop",
         "teleoperation.teleoperation",
     ],
     package_dir={"": "src"},
