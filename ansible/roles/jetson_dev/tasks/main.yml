@@ -1,18 +1,3 @@
-- name: Oh-My-Zsh
-  git:
-    repo: https://github.com/ohmyzsh/ohmyzsh.git
-    dest: /home/{{ ansible_user_id }}/.oh-my-zsh
-    version: master
-
-- name: Dotfiles
-  synchronize:
-    src: files/home
-    dest: /home/{{ ansible_user_id }}
-    recursive: true
-
-- name: Use ZSH as a default shell
-  command: chsh -s /usr/bin/zsh
-
 - name: Jetson Stats
   become: True
   pip:

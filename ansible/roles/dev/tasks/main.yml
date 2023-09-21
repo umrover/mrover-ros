@@ -1,76 +1,38 @@
-- name: Add CMake Key
-  become: True
+- name: Oh-My-Zsh
+  git:
+    repo: https://github.com/ohmyzsh/ohmyzsh.git
+    dest: /home/{{ ansible_user_id }}/.oh-my-zsh
+    version: master
+
+- name: Dotfiles
+  synchronize:
+    # The trailing slash is very important here
+    # It tells rsync to copy only the CONTENTS of the folder and not the folder itself
+    # This is vital to make sure this works will any usernames
+    src: files/home/
+    dest: /home/{{ ansible_user_id }}
+    recursive: true
+
+- name: Use ZSH as a default shell
+  become: true
+  command: chsh --shell /usr/bin/zsh {{ ansible_user_id }}
+
+- name: Add VSCode APT Key
+  become: true
   apt_key:
-    url: https://apt.kitware.com/keys/kitware-archive-latest.asc
-    keyring: /usr/share/keyrings/kitware-archive-keyring.gpg
+    url: https://packages.microsoft.com/keys/microsoft.asc
+    keyring: /usr/share/keyrings/packages.microsoft.gpg
 
-- name: Add CMake APT
-  become: True
+- name: Add VSCode APT List
+  become: true
   apt_repository:
-    repo: deb [signed-by=/usr/share/keyrings/kitware-archive-keyring.gpg] https://apt.kitware.com/ubuntu/ {{ ubuntu_release }} main
-    filename: kitware
+    filename: vscode
+    repo: "deb [arch=amd64,arm64,armhf signed-by=/usr/share/keyrings/packages.microsoft.gpg] https://packages.microsoft.com/repos/code stable main"
 
-- name: Add LLVM Key
-  become: True
-  apt_key:
-    url: https://apt.llvm.org/llvm-snapshot.gpg.key
-
-- name: Add LLVM APT
-  become: True
-  apt_repository:
-    repo: deb http://apt.llvm.org/{{ ubuntu_release }}/ llvm-toolchain-{{ ubuntu_release }}-16 main
-    filename: llvm
-
-- name: ROS Key
-  become: True
-  apt_key:
-    url: https://raw.githubusercontent.com/ros/rosdistro/master/ros.asc
-
-- name: ROS APT
-  become: True
-  apt_repository:
-    repo: deb http://packages.ros.org/ros/ubuntu {{ ubuntu_release }} main
-    filename: ros
-
-- name: Install APT Packages
-  become: True
+- name: Install VSCode APT Package
+  become: true
   apt:
     cache_valid_time: 604800
     state: latest
     name:
-      - zsh
-      - fzf
-      - neovim
-      - sudo
-      - cmake
-      - ccache
-      - ninja-build
-      - tmux
-      - zstd
-      - htop
-      - python3-pip
-      - python3-rosdep
-      - python3-catkin-tools
-      - clang-16
-      - clangd-16
-      - lld-16
-      - lldb-16
-      - ros-{{ ros_distro }}-rosbash
-
-- name: Initialize rosdep
-  become: True
-  command: rosdep init
-  args:
-    creates: /etc/ros/rosdep/sources.list.d/20-default.list
-
-- name: Update rosdep
-  command: rosdep update
-
-- name: Install ROS Packages
-  command: rosdep install --from-paths {{ catkin_workspace }}/src --ignore-src -y --rosdistro={{ ros_distro }}
-
-- name: Install Catkin Profiles
-  synchronize:
-    src: files/profiles
-    dest: "{{ catkin_workspace }}/.catkin_tools"
-    recursive: true
+      - code

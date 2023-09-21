@@ -4,4 +4,5 @@
     ros_distro: noetic
     ubuntu_release: focal
   roles:
+    - build
     - dev
