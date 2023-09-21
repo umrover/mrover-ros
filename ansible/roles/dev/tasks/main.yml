@@ -26,7 +26,7 @@
 - name: GitHub APT List
   become: True
   apt_repository:
-    repo: deb [arch=amd64 signed-by=/usr/share/keyrings/githubcli-archive-keyring.gpg] https://cli.github.com/packages stable main
+    repo: deb [signed-by=/usr/share/keyrings/githubcli-archive-keyring.gpg] https://cli.github.com/packages stable main
     filename: github-cli
 
 - name: Add VSCode APT Key
