@@ -8,7 +8,6 @@ from mrover.msg import ImuAndMag
 from pymap3d.enu import geodetic2enu
 from sensor_msgs.msg import NavSatFix
 from std_msgs.msg import Header
-
 from util.SE3 import SE3
 from util.np_utils import numpify
 
