@@ -3,7 +3,7 @@
   pip:
     name: jetson-stats
 
-- name: Jetpack
+- name: Install JetPack APT
   become: True
   apt:
     cache_valid_time: 604800

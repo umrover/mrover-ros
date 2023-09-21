@@ -9,6 +9,9 @@ cmake_args:
   - -DCMAKE_CXX_COMPILER=clang++-16
   - -DCMAKE_CXX_COMPILER_LAUNCHER=ccache
   - -DCMAKE_CUDA_COMPILER_LAUNCHER=ccache
+  - -DCMAKE_CUDA_HOST_COMPILER=clang++-12
+  - -DCMAKE_INTERPROCEDURAL_OPTIMIZATION=ON
+  - -Wno-dev
 devel_layout: linked
 devel_space: devel
 extend_path: null

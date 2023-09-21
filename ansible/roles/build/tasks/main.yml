@@ -64,10 +64,8 @@
       - neovim
       - sudo
       - cmake
-      # Caches intermediate build files, speeds up compilation over time
-      - ccache
-      # Faster than make
-      - ninja-build
+      - ccache # Caches intermediate build files, speeds up compilation over time
+      - ninja-build # Faster than make
       - tmux
       - zstd
       - htop
@@ -151,6 +149,14 @@
     name: clang
     path: /usr/bin/clang-16
     link: /usr/bin/clang
+    priority: 160
+
+- name: Set clangd 16 as Default
+  become: True
+  alternatives:
+    name: clangd
+    path: /usr/bin/clangd-16
+    link: /usr/bin/clangd
     priority: 160
 
 - name: Setup Python Virtual Environment
