@@ -12,6 +12,8 @@ jobs:
     runs-on: ubuntu-latest
     container:
       image: umrover1/ros:latest
+      # GitHub is silly and requires us to be running as root for their checkout action
+      # Our docker container exports the user mrover, so we have to specific this explicitly
       options: --user root
     steps:
       - uses: actions/checkout@v4
