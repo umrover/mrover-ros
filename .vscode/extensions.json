@@ -1,0 +1,13 @@
+{
+    "recommendations": [
+        "ms-python.python",
+        "ms-vscode.cpptools",
+        "ms-vscode.cmake-tools",
+        "redhat.vscode-xml",
+        "redhat.vscode-yaml",
+        "llvm-vs-code-extensions.vscode-clangd",
+    ],
+    "unwantedRecommendations": [
+        "ms-vscode.cpptools-extension-pack",
+    ],
+}

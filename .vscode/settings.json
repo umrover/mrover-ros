@@ -1,0 +1,26 @@
+{
+    //// Cmake
+    "cmake.generator": "Unix Makefiles",
+    "cmake.buildDirectory": "${workspaceFolder}/../../build/mrover",
+    // We want catkin to configure
+    "cmake.configureOnOpen": false,
+    "cmake.configureOnEdit": false,
+    "cmake.automaticReconfigure": false,
+    //// Microsoft C++
+    // Disable since clangd is used instead
+    "C_Cpp.intelliSenseEngine": "disabled",
+    //// Python
+    "python.analysis.inlayHints.variableTypes": true,
+    "python.analysis.inlayHints.callArgumentNames": "all",
+    "python.analysis.inlayHints.functionReturnTypes": true,
+    "python.autoComplete.extraPaths": [
+        "/opt/ros/noetic/lib/python3/dist-packages",
+        "${workspaceFolder}/../../devel/lib/python3/dist-packages",
+    ],
+    "python.analysis.extraPaths": [
+        "/opt/ros/noetic/lib/python3/dist-packages",
+        "${workspaceFolder}/../../devel/lib/python3/dist-packages",
+    ],
+    //// Miscellaneous
+    "redhat.telemetry.enabled": false,
+}
