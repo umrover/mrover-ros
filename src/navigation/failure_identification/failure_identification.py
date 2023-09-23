@@ -1,20 +1,21 @@
 #!/usr/bin/env python3
-import rospy
+
+from pathlib import Path
+from typing import Optional
+
 import message_filters
-from mrover.msg import MotorsStatus
+import numpy as np
+import pandas as pd
+import rospy
 from geometry_msgs.msg import Twist
+from mrover.msg import MotorsStatus
 from nav_msgs.msg import Odometry
+from pandas import DataFrame
 from smach_msgs.msg import SmachContainerStatus
 from std_msgs.msg import Bool
-import pandas as pd
-from pandas import DataFrame
-from watchdog import WatchDog
-import numpy as np
-import os
-from pathlib import Path
 from util.ros_utils import get_rosparam
-from util.SO3 import SO3
-from typing import Optional
+
+from watchdog import WatchDog
 
 DATAFRAME_MAX_SIZE = get_rosparam("failure_identification/dataframe_max_size", 200)
 POST_RECOVERY_GRACE_PERIOD = get_rosparam("failure_identification/post_recovery_grace_period", 5.0)
@@ -82,8 +83,7 @@ class FailureIdentifier:
             # append to csv if csv exists else write to csv
             rospy.loginfo("writing to file")
             if self.path_name is None:
-                home = Path.home()
-                path = home / "catkin_ws/src/mrover/failure_data"
+                path = Path.cwd() / "failure_data"
                 path.mkdir(exist_ok=True)
 
                 file_name = f"failure_data_{rospy.Time.now()}.csv"

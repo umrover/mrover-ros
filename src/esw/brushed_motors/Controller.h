@@ -2,13 +2,13 @@
 
 #include "I2C.h"                    // for I2C and IOFailure
 #include "UART.h"                   // for UART
-#include <assert.h>                 // for assert
+#include <cassert>                  // for assert
 #include <cmath>                    // for M_PI
+#include <cstring>                  // for string and memcpy
 #include <limits>                   // for numeric limits
 #include <mrover/LimitSwitchData.h> // for LimitSwitchData
 #include <mutex>                    // for mutex
 #include <ros/console.h>            // for ROS_ERROR
-#include <string.h>                 // for string and memcpy
 
 #define OFF_OP 0x00
 #define OFF_WB 0

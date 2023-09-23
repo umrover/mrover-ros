@@ -1,23 +1,4 @@
-#include <optional>
-#include <string>
-#include <unordered_map>
-
-#include <opencv2/aruco.hpp>
-#include <opencv2/core/mat.hpp>
-
-#include <dynamic_reconfigure/server.h>
-#include <image_transport/image_transport.h>
-#include <nodelet/nodelet.h>
-#include <sensor_msgs/PointCloud2.h>
-#include <std_srvs/SetBool.h>
-#include <tf2_ros/transform_broadcaster.h>
-#include <tf2_ros/transform_listener.h>
-
-#include <mrover/DetectorParamsConfig.h>
-
-#include <se3.hpp>
-
-#include "loop_profiler.hpp"
+#include "pch.hpp"
 
 namespace mrover {
 

@@ -1,21 +1,18 @@
 from __future__ import annotations
-from typing import ClassVar, Optional
-from unicodedata import normalize
-from context import Gate, Context
+
+from dataclasses import dataclass
+from typing import Optional
 
 import numpy as np
-import rospy
-
-from context import Context, Environment, Rover, convert_cartesian_to_gps
 from aenum import Enum, NoAlias
-from state import BaseState
-from trajectory import Trajectory
-from dataclasses import dataclass
-from drive import DriveController
+from mrover.msg import GPSPointList
+from shapely.geometry import LineString, Polygon, Point
 from util.np_utils import normalized, perpendicular_2d
 from util.ros_utils import get_rosparam
-from shapely.geometry import LineString, Polygon, Point
-from mrover.msg import GPSPointList
+
+from context import Context, Rover, convert_cartesian_to_gps
+from context import Gate
+from state import BaseState
 
 STOP_THRESH = get_rosparam("gate/stop_thresh", 0.2)
 DRIVE_FWD_THRESH = get_rosparam("gate/drive_fwd_thresh", 0.34)  # 20 degrees
@@ -216,7 +213,6 @@ class GateTraverseStateTransitions(Enum):
 
 
 class GateTraverseState(BaseState):
-
     STOP_THRESH = get_rosparam("gate/stop_thresh", 0.2)
     DRIVE_FWD_THRESH = get_rosparam("gate/drive_fwd_thresh", 0.34)  # 20 degrees
     APPROACH_DISTANCE = get_rosparam("gate/approach_distance", 2.0)

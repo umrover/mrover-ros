@@ -1,13 +1,12 @@
-from typing import List
+from typing import List, Optional
 
 import numpy as np
-import rospy
-
 import tf2_ros
-from context import Context, Environment
 from aenum import Enum, NoAlias
-from state import BaseState
 from util.ros_utils import get_rosparam
+
+from context import Context
+from state import BaseState
 
 
 class WaypointStateTransitions(Enum):
@@ -31,9 +30,9 @@ class WaypointState(BaseState):
     def __init__(
         self,
         context: Context,
-        add_outcomes: List[str] = None,
-        add_input_keys: List[str] = None,
-        add_output_keys: List[str] = None,
+        add_outcomes: Optional[List[str]] = None,
+        add_input_keys: Optional[List[str]] = None,
+        add_output_keys: Optional[List[str]] = None,
     ):
         add_outcomes = add_outcomes or []
         add_input_keys = add_input_keys or []

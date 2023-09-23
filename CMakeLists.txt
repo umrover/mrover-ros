@@ -1,9 +1,11 @@
 cmake_minimum_required(VERSION 3.16)
-project(mrover VERSION 1.0.0 LANGUAGES CXX)
+project(mrover VERSION 2024.0.0 LANGUAGES CXX)
 
-## Compile as C++17, supported in ROS Kinetic and newer, enable some static analysis
-set(CMAKE_CXX_STANDARD 17)
+set(CMAKE_CXX_STANDARD 23)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
+if (CMAKE_CXX_COMPILER_ID STREQUAL "Clang")
+    add_link_options(-fuse-ld=lld-16)
+endif ()
 set(MROVER_CPP_COMPILE_OPTIONS -Wall -Wextra -Werror -pedantic)
 
 # Generate compile_commands.json for clangd
@@ -18,7 +20,7 @@ set(MROVER_PACKAGES
         dynamic_reconfigure
         rostest
         sensor_msgs
-        )
+)
 
 # Message files
 set(MROVER_MESSAGE_FILES
@@ -47,7 +49,7 @@ set(MROVER_MESSAGE_FILES
         Waypoint.msg
         WaypointType.msg
         GPSPointList.msg
-        )
+)
 
 # Service files
 set(MROVER_SERVICE_FILES
@@ -64,24 +66,24 @@ set(MROVER_SERVICE_FILES
         PublishEnableAuton.srv
         PublishCourse.srv
         ResetCameras.srv
-        )
+)
 
 # Generate messages list
 set(MROVER_ROS_MESSAGES
         sensor_msgs
         std_msgs
         sensor_msgs
-        )
+)
 
 # Dynamic reconfigure parameter file list
 set(MROVER_PARAMETERS
         config/DetectorParams.cfg
-        )
+)
 
 # catkin packages list
 set(MROVER_CATKIN_PACKAGES
         roscpp rospy std_msgs message_runtime
-        )
+)
 
 
 macro(rosify_cpp_target_macro target)
@@ -95,7 +97,7 @@ macro(rosify_cpp_target_macro target)
             ARCHIVE DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
             LIBRARY DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
             RUNTIME DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
-            )
+    )
 endmacro()
 
 macro(add_cpp_library_macro name sources includes)
@@ -123,13 +125,14 @@ macro(add_gazebo_plugin_macro name sources includes)
     target_link_directories(${name} PRIVATE ${GAZEBO_LIBRARY_DIRS} /opt/ros/noetic/lib)
     target_link_libraries(${name} PRIVATE ${GAZEBO_LIBRARIES} ${Boost_LIBRARIES})
     target_include_directories(${name} SYSTEM PRIVATE ${GAZEBO_INCLUDE_DIRS} ${Boost_INCLUDE_DIRS})
+    set_target_properties(${name} PROPERTIES CXX_STANDARD 17)
 endmacro()
 
 # launch install macro
 macro(install_launch_macro)
     install(DIRECTORY launch/
             DESTINATION ${CATKIN_PACKAGE_SHARE_DESTINATION}/launch
-            )
+    )
 endmacro()
 
 macro(add_tests_macro)
@@ -150,7 +153,7 @@ macro(add_tests_macro)
 endmacro()
 
 # Subdirectories before message declarations
-set(CMAKE_SUBDIRS "")
+set(MROVER_CMAKE_INCLUDES "")
 
 
 # -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
@@ -200,32 +203,13 @@ else ()
             rosbridge_server
             teleop_twist_joy
             gazebo_ros
-            moveit_commander
-            moveit_core
-            moveit_fake_controller_manager
-            moveit_kinematics
-            moveit_msgs
-            moveit_planners_chomp
-            moveit_planners_ompl
-            moveit_ros_benchmarks
-            moveit_ros_control_interface
-            moveit_ros_manipulation
-            moveit_ros_move_group
-            moveit_ros_occupancy_map_monitor
-            moveit_ros_perception
-            moveit_ros_planning
-            moveit_ros_planning_interface
-            moveit_ros_robot_interaction
-            moveit_ros_visualization
-            moveit_ros_warehouse
-            moveit_setup_assistant
-            moveit_simple_controller_manager
-            )
+    )
 
     # append subdirectories
-    list(APPEND CMAKE_SUBDIRS
+    list(APPEND MROVER_CMAKE_INCLUDES
+            starter_project/autonomy/AutonomyStarterProject.cmake
             starter_project/teleop/CMakeLists.txt
-            )
+    )
 
     # -=-=-=-=-
     # Macros
@@ -236,11 +220,11 @@ else ()
         # find_package(OpenCV REQUIRED COMPONENTS core aruco)
         find_package(gazebo REQUIRED)
         find_package(Eigen3 REQUIRED)
-        find_package(ZED 2)
+        find_package(ZED 2 QUIET)
         if (ZED_FOUND)
-            set(CMAKE_CUDA_SEPARABLE_COMPILATION ON)
             set(CMAKE_CUDA_STANDARD 17)
             set(CMAKE_CUDA_STANDARD_REQUIRED ON)
+            set(CMAKE_CUDA_SEPARABLE_COMPILATION ON)
             # Jetson Xavier NX is Volta 7.2 architecture
             # Perception Laptop (A4000, Quadro version of RTX 3080) is Ampere 8.6 architecture
             set(CMAKE_CUDA_ARCHITECTURES 72 86)
@@ -252,9 +236,10 @@ else ()
     # Put items here to build
     macro(add_and_link_macro)
         add_cpp_nodelet_macro(tag_detector_nodelet "src/perception/tag_detector/*.cpp" "src/perception/tag_detector")
+        target_precompile_headers(tag_detector_nodelet PRIVATE src/perception/tag_detector/pch.hpp)
         target_link_libraries(tag_detector_nodelet PRIVATE ${OpenCV_LIBRARIES} lie)
 
-        add_cpp_node_macro(brushed_motors "src/esw/brushed_motors/*")
+        add_cpp_node_macro(brushed_motors "src/esw/brushed_motors/*.cpp")
 
         add_cpp_library_macro(lie "src/util/lie/*.cpp" "src/util/lie")
 
@@ -271,6 +256,7 @@ else ()
             #            target_link_libraries(zed_node PRIVATE ${ZED_LIBRARIES} ${OpenCV_LIBRARIES} ${SPECIAL_OS_LIBS} lie tag_detector_nodelet)
 
             add_cpp_nodelet_macro(zed_nodelet "src/perception/zed_wrapper/*.c*" , "src/perception/zed_wrapper")
+            target_precompile_headers(zed_nodelet PRIVATE src/perception/zed_wrapper/pch.hpp)
             target_include_directories(zed_nodelet SYSTEM PRIVATE ${ZED_INCLUDE_DIRS} ${CUDA_INCLUDE_DIRS})
             target_link_libraries(zed_nodelet PRIVATE ${ZED_LIBRARIES} ${OpenCV_LIBRARIES} ${SPECIAL_OS_LIBS} lie)
             target_compile_definitions(zed_nodelet PRIVATE MROVER_IS_NODELET)
@@ -294,12 +280,11 @@ endif ()
 # 4. Python module support
 catkin_python_setup()
 
-# 4.5. Subdirectories before message declarations
-if (NOT "${CMAKE_SUBDIRS}" STREQUAL "")
-    include(
-            ${CMAKE_SUBDIRS}
-    )
-endif ()
+
+# 4.5. CMake includes before message declarations
+foreach (CMAKE_INCLUDE ${MROVER_CMAKE_INCLUDES})
+    include(${CMAKE_INCLUDE})
+endforeach ()
 
 
 # 5. Message Generators (add_xxx)
