@@ -1,9 +1,6 @@
-# NVIDIA JetPack comes with CUDA but it is old (11.4 as of writing)
-# We want to download the latest instead (12.2 as of writing)
-# See: https://developer.nvidia.com/cuda-downloads?target_os=Linux&target_arch=aarch64-jetson&Compilation=Native&Distribution=Ubuntu&target_version=20.04&target_type=deb_network
 - name: Download CUDA Keyring
   get_url:
-    url: https://developer.download.nvidia.com/compute/cuda/repos/ubuntu2004/arm64/cuda-keyring_1.1-1_all.deb
+    url: https://developer.download.nvidia.com/compute/cuda/repos/ubuntu2004/x86_64/cuda-keyring_1.1-1_all.deb
     dest: /tmp/cuda-keyring_1.1-1_all.deb
 
 - name: Install CUDA Keyring
@@ -23,11 +20,11 @@
 - name: ZED SDK Download
   get_url:
     url: https://download.stereolabs.com/zedsdk/4.0/cu121/ubuntu20
-    dest: /home/{{ ansible_user_id }}/Downloads/ZED_SDK_Ubuntu20_cuda12.1_v4.0.7.zstd.run
+    dest: /tmp/ZED_SDK_Ubuntu20_cuda12.1_v4.0.7.zstd.run
     mode: 0755
 
 - name: ZED SDK Install
   # Silent mode prevents any user input prompting
-  command: /home/{{ ansible_user_id }}/Downloads/ZED_SDK_Ubuntu20_cuda12.1_v4.0.7.zstd.run -- silent
+  command: /tmp/ZED_SDK_Ubuntu20_cuda12.1_v4.0.7.zstd.run -- silent
   args:
     creates: /usr/local/zed
