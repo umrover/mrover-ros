@@ -67,7 +67,6 @@
       - ccache # Caches intermediate build files, speeds up compilation over time
       - ninja-build # Faster than make
       - tmux
-      - zstd
       - htop
       - curl
       - unzip
