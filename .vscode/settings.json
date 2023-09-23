@@ -6,6 +6,9 @@
     "cmake.configureOnOpen": false,
     "cmake.configureOnEdit": false,
     "cmake.automaticReconfigure": false,
+    "cmake.debugConfig": {
+        "miDebuggerPath": "/usr/bin/gdb",
+    },
     //// Microsoft C++
     // Disable since clangd is used instead
     "C_Cpp.intelliSenseEngine": "disabled",

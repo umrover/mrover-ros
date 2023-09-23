@@ -1,13 +1,11 @@
 {
     "recommendations": [
-        "ms-python.python",
         "ms-vscode.cpptools",
         "ms-vscode.cmake-tools",
+        "ms-python.vscode-pylance",
+        "dbaeumer.vscode-eslint",
         "redhat.vscode-xml",
         "redhat.vscode-yaml",
         "llvm-vs-code-extensions.vscode-clangd",
-    ],
-    "unwantedRecommendations": [
-        "ms-vscode.cpptools-extension-pack",
     ],
 }
