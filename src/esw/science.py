@@ -90,7 +90,6 @@ class ScienceBridge:
     _last_mcu_active: Bool
 
     def __init__(self) -> None:
-
         self._active_publisher = rospy.Publisher("science_mcu_active", Bool, queue_size=1)
 
         self._mcu_active_timeout_s = rospy.get_param("science/info/mcu_active_timeout_s")

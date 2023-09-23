@@ -1,8 +1,10 @@
+# Allows us to install Python versions newer than 3.8
 - name: Add Python PPA
   become: True
   apt_repository:
     repo: ppa:deadsnakes/ppa
 
+# Allows us to install G++13, so we can use an updated libstdc++ which provides more standard library features (C++20)
 - name: Add GCC PPA
   become: True
   apt_repository:
@@ -13,6 +15,7 @@
   apt_key:
     url: https://apt.llvm.org/llvm-snapshot.gpg.key
 
+# Allows us to install Clang 16 and other LLVM tools
 - name: Add LLVM APT List
   become: True
   apt_repository:
@@ -25,6 +28,7 @@
     url: https://apt.kitware.com/keys/kitware-archive-latest.asc
     keyring: /usr/share/keyrings/kitware-archive-keyring.gpg
 
+# Allows us to install CMake versions newer than 3.16
 - name: Add CMake APT List
   become: True
   apt_repository:
@@ -42,6 +46,13 @@
     repo: deb http://packages.ros.org/ros/ubuntu {{ ubuntu_release }} main
     filename: ros
 
+- name: Upgrade APT Packages
+  become: True
+  apt:
+    cache_valid_time: 604800
+    state: latest
+    upgrade: yes
+
 - name: Install APT Packages
   become: True
   apt:
@@ -53,23 +64,28 @@
       - neovim
       - sudo
       - cmake
-      - ccache
-      - ninja-build
+      - ccache # Caches intermediate build files, speeds up compilation over time
+      - ninja-build # Faster than make
       - tmux
       - zstd
       - htop
       - curl
+      - unzip
+      - rsync
       - python3-pip
       - python3-rosdep
       - python3-catkin-tools
       - python3-virtualenvwrapper
       - clang-16
       - clangd-16
+      - clang-tidy-16
       - clang-format-16
       - lld-16
       - lldb-16
-      - g++-11
+      - gcc-13
+      - g++-13
       - python3.10
+      - python3.10-dev
       - python3.10-venv
       - ros-{{ ros_distro }}-rosbash
 
@@ -77,6 +93,7 @@
   become: True
   command: rosdep init
   args:
+    # This command will be skipped if this file already exists
     creates: /etc/ros/rosdep/sources.list.d/20-default.list
 
 - name: Update rosdep
@@ -102,21 +119,21 @@
     dest: "{{ catkin_workspace }}/.catkin_tools"
     recursive: true
 
-- name: Set G++ 11 as Default
+- name: Set G++ 13 as Default
   become: True
   alternatives:
     name: g++
-    path: /usr/bin/g++-11
+    path: /usr/bin/g++-13
     link: /usr/bin/g++
-    priority: 110
+    priority: 130
 
-- name: Set GCC 11 as Default
+- name: Set GCC 13 as Default
   become: True
   alternatives:
     name: gcc
-    path: /usr/bin/gcc-11
+    path: /usr/bin/gcc-13
     link: /usr/bin/gcc
-    priority: 110
+    priority: 130
 
 - name: Set Clang++ 16 as Default
   become: True
@@ -133,3 +150,19 @@
     path: /usr/bin/clang-16
     link: /usr/bin/clang
     priority: 160
+
+- name: Set clangd 16 as Default
+  become: True
+  alternatives:
+    name: clangd
+    path: /usr/bin/clangd-16
+    link: /usr/bin/clangd
+    priority: 160
+
+- name: Setup Python Virtual Environment
+  pip:
+    name:
+      # Installs from pyproject.toml
+      - "{{ catkin_workspace }}/src/mrover[dev]"
+    virtualenv: "{{ catkin_workspace }}/src/mrover/venv"
+    virtualenv_command: python3.10 -m venv

@@ -1,15 +1,16 @@
 from __future__ import annotations
+
+from dataclasses import dataclass
 from typing import Optional
 
 import numpy as np
-
-from context import Context, convert_cartesian_to_gps
 from aenum import Enum, NoAlias
-from state import BaseState
-from dataclasses import dataclass
-from trajectory import Trajectory
 from mrover.msg import GPSPointList
 from util.ros_utils import get_rosparam
+
+from context import Context, convert_cartesian_to_gps
+from state import BaseState
+from trajectory import Trajectory
 
 
 @dataclass

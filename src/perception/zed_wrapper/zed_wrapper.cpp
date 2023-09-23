@@ -1,16 +1,8 @@
 #include "zed_wrapper.hpp"
 
-#include <chrono>
-
-#include <image_transport/image_transport.h>
-#include <nodelet/loader.h>
-#include <ros/init.h>
-
-#include <se3.hpp>
-
-using namespace std::chrono_literals;
-
 namespace mrover {
+
+    using namespace std::chrono_literals;
 
     /**
      * Allows us to store enums as strings in the config file.

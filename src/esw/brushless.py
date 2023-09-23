@@ -125,12 +125,10 @@ def is_mode_indicating_error(mode: int) -> bool:
 
 
 class MoteusBridge:
-
     MOTEUS_RESPONSE_TIME_INDICATING_DISCONNECTED_S = 0.01
     ROVER_NODE_TO_MOTEUS_WATCHDOG_TIMEOUT_S = 0.1
 
     def __init__(self, can_id: int, transport, gear_ratio: int):
-
         self._can_id = can_id
         self.controller = moteus.Controller(id=can_id, transport=transport)
         self.command_lock = threading.Lock()
@@ -369,7 +367,6 @@ class MotorsManager(ABC):
 
         for bridge in self._motor_bridges.values():
             if lost_communication_now:
-
                 # If we only just lost communications this iteration.
                 if not self._lost_communication:
                     rospy.loginfo(

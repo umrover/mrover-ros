@@ -108,3 +108,10 @@ readonly CATKIN_SETUP_PATH=${CATKIN_WORKSPACE_PATH}/devel/setup.zsh
 if [ -f ${CATKIN_SETUP_PATH} ]; then
     source ${CATKIN_SETUP_PATH}
 fi
+
+# bun completions
+[ -s "/home/mrover/.bun/_bun" ] && source "/home/mrover/.bun/_bun"
+
+# bun
+export BUN_INSTALL="$HOME/.bun"
+export PATH="$BUN_INSTALL/bin:$PATH"

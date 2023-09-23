@@ -60,13 +60,6 @@ fi
 echo -e "${GREY_BOLD}Using Ansible to finish up ...${NC}"
 ${MROVER_PATH}/ansible.sh dev.yml
 
-if [ ! -d ${MROVER_PATH}/venv ]; then
-  echo -e "${GREY_BOLD}Setting up Python virtual environment ...${NC}"
-  python3.10 -m venv ${MROVER_PATH}/venv
-  source ${MROVER_PATH}/venv/bin/activate
-  pip install -e "${MROVER_PATH}[dev]"
-fi
-
 if [ "${FIRST_TIME_SETUP}" ]; then
   echo -e "${GREY_BOLD}All done! Welcome to MRover!${NC}"
   echo -e "${YELLOW_BOLD}Please log out and back in!${NC}"

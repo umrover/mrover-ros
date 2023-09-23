@@ -1,9 +1,9 @@
 import tf2_ros
-import rospy
-from context import Context
 from aenum import Enum, NoAlias
 from geometry_msgs.msg import Twist
 from util.ros_utils import get_rosparam
+
+from context import Context
 from state import BaseState
 
 

@@ -1,10 +1,5 @@
 #include "tag_detector.hpp"
 
-#include <execution>
-
-#include <opencv2/opencv.hpp>
-#include <sensor_msgs/image_encodings.h>
-
 namespace mrover {
 
     void threshold(cv::InputArray in, cv::OutputArray out, int windowSize, double constant) {
@@ -50,7 +45,7 @@ namespace mrover {
             mThreshMsg.is_bigendian = __BYTE_ORDER__ == __ORDER_BIG_ENDIAN__;
             size_t size = mThreshMsg.step * mThreshMsg.height;
             mThreshMsg.data.resize(size);
-            std::copy(std::execution::par_unseq, mGrayImg.data, mGrayImg.data + size, mThreshMsg.data.begin());
+            std::uninitialized_copy(std::execution::par_unseq, mGrayImg.data, mGrayImg.data + size, mThreshMsg.data.begin());
 
             publisher.publish(mThreshMsg);
         }

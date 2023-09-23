@@ -169,7 +169,6 @@ class Stream:
 
 
 class StreamManager:
-
     MAX_STREAMS: int = rospy.get_param("cameras/max_streams")
     """
     The maximum number of streams that can be simultaneously sustained.
@@ -316,7 +315,6 @@ class StreamManager:
             # If a stream is being requested...
             # (resolution == -1 means a request to cancel stream)
             if req.camera_cmd.resolution >= 0:
-
                 # If we cannot handle any more streams, return False.
                 available_port_arr = [True, True, True, True]
                 for i, stream in enumerate(self._stream_by_device):
@@ -414,7 +412,6 @@ def send(
 
     # Transmit loop
     while True:
-
         ret, frame = cap_send.read()
         if not ret:
             rospy.logerr("Empty frame")

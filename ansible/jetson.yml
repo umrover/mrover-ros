@@ -5,8 +5,6 @@
     ubuntu_release: focal
   roles:
     - jetson_dev
-    - build
     - dev
     - jetson_networks
     - jetson_services
-

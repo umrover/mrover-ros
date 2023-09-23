@@ -91,7 +91,6 @@ def main():
     attempts = 0
 
     while not rospy.is_shutdown():
-
         # try to read a line from the serial connection,
         # if this fails 100 times in a row then end the program
         try:
