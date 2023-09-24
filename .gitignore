@@ -1,16 +1,19 @@
-# Python Byte-compiled / optimized / DLL files
+# Python
 __pycache__/
 *.py[cod]
 *$py.class
 .mypy_cache/
 *.egg-info/
+/venv/
 
 # Common IDE's, ideally this should be in global gitignore per user
 .vscode/
 .idea/
-/cmake-build*/
+.cache/
+cmake-build*/
+/build/
 
-#GUI Files
+# GUI Files
 node_modules/
 /src/teleop/gui/dist/
 /src/teleop/gui/src/static/map
@@ -20,11 +23,6 @@ yarn-error.log*
 
 # Bag Files
 /bags/
-
-# Catkin
-/build/
-/devel/
-/logs/
 
 # Moteus
 moteus-cal*
@@ -46,9 +44,3 @@ RemoteSystemsTempFiles/
 
 *.xml
 *.launch
-
-# Virtual Environment
-/venv/
-
-# clangd Output
-.cache/
