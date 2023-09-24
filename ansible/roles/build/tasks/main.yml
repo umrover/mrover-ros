@@ -112,6 +112,9 @@
   args:
     creates: ~/.bun/bin/bun
 
+- name: Upgrade Bun
+  command: ~/.bun/bin/bun upgrade
+
 - name: Install Catkin Profiles
   synchronize:
     src: files/profiles
