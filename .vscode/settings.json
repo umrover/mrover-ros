@@ -30,6 +30,10 @@
     "[python]": {
         "editor.defaultFormatter": "ms-python.black-formatter",
     },
+    "mypy-type-checker.args": [
+        "--config-file=${workspaceFolder}/mypy.ini",
+    ],
     //// Miscellaneous
     "redhat.telemetry.enabled": false,
+    "python.analysis.typeCheckingMode": "basic",
 }
