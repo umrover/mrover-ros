@@ -3,7 +3,7 @@
     // Catkin only works with Make... ideally we could use Ninja
     "cmake.generator": "Unix Makefiles",
     // Set to the catkin build directory
-    "cmake.buildDirectory": "${workspaceFolder}/../../build/mrover",
+    "cmake.buildDirectory": "../../build/mrover",
     // We want catkin to configure
     // VSCode will try to use its own toolchain and ignore the catkin profile
     "cmake.configureOnOpen": false,
@@ -19,21 +19,17 @@
     "python.analysis.inlayHints.variableTypes": true,
     "python.analysis.inlayHints.callArgumentNames": "all",
     "python.analysis.inlayHints.functionReturnTypes": true,
-    "python.autoComplete.extraPaths": [
-        "/opt/ros/noetic/lib/python3/dist-packages",
-        "${workspaceFolder}/../../devel/lib/python3/dist-packages",
-    ],
+    // ~/catkin_ws/devel/lib/python3/dist-packages is already in PYTHONPATH,
+    // but Pylance currently has a bug where it cannot handle the symlinks in it.
+    // Below we are just putting directly where those symlinks go
     "python.analysis.extraPaths": [
-        "/opt/ros/noetic/lib/python3/dist-packages",
-        "${workspaceFolder}/../../devel/lib/python3/dist-packages",
+        "../../devel/.private/mrover/lib/python3/dist-packages",
     ],
     "[python]": {
         "editor.defaultFormatter": "ms-python.black-formatter",
     },
-    "mypy-type-checker.args": [
-        "--config-file=${workspaceFolder}/mypy.ini",
-    ],
+    // We use mypy for this, see style.sh
+    "python.analysis.typeCheckingMode": "off",
     //// Miscellaneous
     "redhat.telemetry.enabled": false,
-    "python.analysis.typeCheckingMode": "basic",
 }
