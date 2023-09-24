@@ -358,6 +358,34 @@ wheel:
   gear_ratio: 50.0
   radius: 0.13
 
+motors:
+  joint_a:
+    type: "brushed"
+    driver_voltage: 24.0
+    motor_max_voltage: 24.0
+  joint_b:
+    type: "brushed"
+    driver_voltage: 24.0
+    motor_max_voltage: 12.0
+  FrontLeft:
+    type: "brushless"
+  FrontRight:
+    type: "brushless"
+  MiddleLeft:
+    type: "brushless"
+  MiddleRight:
+    type: "brushless"
+  BackLeft:
+    type: "brushless"
+  BackRight:
+    type: "brushless"
+  joint_c:
+    type: "brushless"
+  joint_d:
+    type: "brushless"
+  joint_e:
+    type: "brushless"
+
 brushless:
   using_pi3_hat: true
   drive:
