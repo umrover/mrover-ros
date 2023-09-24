@@ -23,6 +23,7 @@
     // but Pylance currently has a bug where it cannot handle the symlinks in it.
     // Below we are just putting directly where those symlinks go
     "python.analysis.extraPaths": [
+        "/opt/ros/noetic/lib/python3/dist-packages",
         "../../devel/.private/mrover/lib/python3/dist-packages",
     ],
     "[python]": {
@@ -32,4 +33,5 @@
     "python.analysis.typeCheckingMode": "off",
     //// Miscellaneous
     "redhat.telemetry.enabled": false,
+    "editor.formatOnSave": true,
 }
