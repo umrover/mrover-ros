@@ -4,18 +4,10 @@
 
 #include "zed_wrapper.hpp"
 
-#include <cassert>
-
-#include <sl/Camera.hpp>
-
-#include <sensor_msgs/CameraInfo.h>
-#include <sensor_msgs/distortion_models.h>
-#include <sensor_msgs/image_encodings.h>
-
-constexpr float DEG2RAD = M_PI / 180.0f;
-constexpr uint64_t NS_PER_S = 1000000000;
-
 namespace mrover {
+
+    constexpr float DEG2RAD = M_PI / 180.0f;
+    constexpr uint64_t NS_PER_S = 1000000000;
 
     ros::Time slTime2Ros(sl::Timestamp t) {
         return {static_cast<uint32_t>(t.getNanoseconds() / NS_PER_S),

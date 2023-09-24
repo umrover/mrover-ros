@@ -1,11 +1,5 @@
 #include "tag_detector.hpp"
 
-#include <limits>
-#include <string>
-#include <type_traits>
-
-#include <nodelet/loader.h>
-
 namespace mrover {
 
     void TagDetectorNodelet::onInit() {
