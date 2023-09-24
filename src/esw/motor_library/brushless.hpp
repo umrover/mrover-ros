@@ -47,8 +47,10 @@ enum class ErrorCode {
 
 class BrushlessController final : public Controller {
 public:
-    
-    void update_motor(std::string const& name, float speed, float position) override;
+    void update(uint64_t frame) override;
+
+    void set_desired_speed(double speed) override;
+    void set_desired_position(int position) override;
 
 private:
     std::optional<ErrorCode> err;
