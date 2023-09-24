@@ -27,6 +27,9 @@
         "/opt/ros/noetic/lib/python3/dist-packages",
         "${workspaceFolder}/../../devel/lib/python3/dist-packages",
     ],
+    "[python]": {
+        "editor.defaultFormatter": "ms-python.black-formatter",
+    },
     //// Miscellaneous
     "redhat.telemetry.enabled": false,
 }

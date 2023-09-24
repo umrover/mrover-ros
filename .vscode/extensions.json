@@ -3,6 +3,8 @@
         "ms-vscode.cpptools",
         "ms-vscode.cmake-tools",
         "ms-python.vscode-pylance",
+        "ms-python.black-formatter",
+        "ms-python.mypy-type-checker",
         "dbaeumer.vscode-eslint",
         "redhat.vscode-xml",
         "redhat.vscode-yaml",
