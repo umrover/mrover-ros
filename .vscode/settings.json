@@ -1,8 +1,11 @@
 {
     //// Cmake
+    // Catkin only works with Make... ideally we could use Ninja
     "cmake.generator": "Unix Makefiles",
+    // Set to the catkin build directory
     "cmake.buildDirectory": "${workspaceFolder}/../../build/mrover",
     // We want catkin to configure
+    // VSCode will try to use its own toolchain and ignore the catkin profile
     "cmake.configureOnOpen": false,
     "cmake.configureOnEdit": false,
     "cmake.automaticReconfigure": false,
