@@ -1,7 +1,8 @@
 #include "../motor_library/motors_manager.hpp"
 #include <ros/ros.h>       // for ros and ROS_INFO
 
-void ROSHandler::moveDrive(const geometry_msgs::Twist::ConstPtr& msg);
+void moveDrive(const geometry_msgs::Twist::ConstPtr& msg);
+void heartbeatCallback(const ros::TimerEvent&);
 
 MotorsManager driveManager;
 std::vector<std::string> driveNames = 
@@ -16,9 +17,6 @@ int main(int argc, char** argv) {
 
     ros::init(argc, argv, "drive_bridge");
     ros::NodeHandle nh;
-
-    std::vector<std::string> driveNames = 
-        {"FrontLeft", "FrontRight", "MiddleLeft", "MiddleRight", "BackLeft", "BackRight"};
 
     XmlRpc::XmlRpcValue controllersRoot;
     nh.getParam("motors/controllers", controllersRoot);
@@ -46,7 +44,8 @@ int main(int argc, char** argv) {
 
     ros::Subscriber moveDriveSubscriber = n->subscribe<sensor_msgs::JointState>("ra_cmd", 1, moveDrive);;
 
-    ROS_INFO("Initialization Done. \nLooping. \n");
+    // Create a 0.1 second heartbeat timer
+    ros::Timer heartbeatTimer = nh.createTimer(ros::Duration(0.1), heartbeatCallback);
 
     ros::spin();
 
@@ -96,4 +95,20 @@ void moveDrive(const geometry_msgs::Twist::ConstPtr& msg) {
         Controller& controller = driveManager.get_controller(name);
         controller.set_desired_speed(velocity);
     }
+
+    // Set the messageReceived flag to true when a message is received
+    messageReceived = true;
+}
+
+void heartbeatCallback(const ros::TimerEvent&) {
+    // If no message has been received within the last 0.1 seconds, set desired speed to 0 for all motors
+    if (!messageReceived) {
+        for (const auto& name : driveNames) {
+            Controller& controller = driveManager.get_controller(name);
+            controller.set_desired_speed(0.0);
+        }
+    }
+
+    // Reset the messageReceived flag
+    messageReceived = false;
 }
