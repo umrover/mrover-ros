@@ -358,6 +358,21 @@ wheel:
   gear_ratio: 50.0
   radius: 0.13
 
+drive:
+  controllers:
+    FrontLeft:
+      multiplier: 1
+    FrontRight:
+      multiplier: 1
+    MiddleLeft:
+      multiplier: 1
+    MiddleRight:
+      multiplier: 1
+    BackLeft:
+      multiplier: 1
+    BackRight:
+      multiplier: 1
+
 motors:
   joint_a:
     type: "brushed"

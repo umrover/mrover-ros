@@ -1,5 +1,7 @@
 #include "../motor_library/motors_manager.hpp"
-#include <ros/ros.h>       // for ros and ROS_INFO
+#include <ros/ros.h>
+#include <geometry_msgs/Twist.h>
+#include <std_msgs/Float32.h> // To publish heartbeats
 
 void moveDrive(const geometry_msgs::Twist::ConstPtr& msg);
 void heartbeatCallback(const ros::TimerEvent&);
@@ -8,55 +10,79 @@ MotorsManager driveManager;
 std::vector<std::string> driveNames = 
     {"FrontLeft", "FrontRight", "MiddleLeft", "MiddleRight", "BackLeft", "BackRight"};
 
+std::unordered_map<std::string, float> motorMultipliers; // Store the multipliers for each motor
+
 std::optional<float> WHEEL_DISTANCE_INNER;
 std::optional<float> WHEEL_DISTANCE_OUTER;
 std::optional<float> WHEELS_M_S_TO_MOTOR_REV_S;
 std::optional<float> MAX_MOTOR_SPEED_REV_S;
 
 int main(int argc, char** argv) {
-
+    // Initialize the ROS node
     ros::init(argc, argv, "drive_bridge");
     ros::NodeHandle nh;
 
+    // Load motor controllers configuration from the ROS parameter server
     XmlRpc::XmlRpcValue controllersRoot;
-    nh.getParam("motors/controllers", controllersRoot);
+    assert(nh.getParam("motors/controllers", controllersRoot));
+    assert(controllersRoot.getType() == XmlRpc::XmlRpcValue::TypeStruct);
     driveManager = MotorsManager(driveNames, controllersRoot);
 
+    // Load motor multipliers from the ROS parameter server
+    XmlRpc::XmlRpcValue driveControllers;
+    assert(nh.getParam("drive/controllers", driveControllers));
+    assert(driveControllers.getType() == XmlRpc::XmlRpcValue::TypeStruct);
+    for (const auto& driveName : driveNames) {
+        assert(driveControllers.hasMember(driveName));
+        assert(driveControllers[driveName].getType() == XmlRpc::XmlRpcValue::TypeStruct);
+        if (driveControllers[driveName].hasMember("multiplier")) {
+            motorMultipliers[driveName] = static_cast<double>(driveControllers[driveName]["multiplier"]);
+        }
+    }
+
+    // Load rover dimensions and other parameters from the ROS parameter server
     float roverWidth;
     float roverLength;
-    nh.getParam("rover/width", roverWidth);
-    nh.getParam("rover/length", roverLength);
+    assert(nh.getParam("rover/width", roverWidth));
+    assert(roverWidth.getType() == XmlRpc::XmlRpcValue::TypeDouble);
+    assert(nh.getParam("rover/length", roverLength))
+    assert(roverLength.getType() == XmlRpc::XmlRpcValue::TypeDouble);
     WHEEL_DISTANCE_INNER = roverWidth / 2.0
     WHEEL_DISTANCE_OUTER = sqrt(((roverWidth / 2.0) ** 2) + ((roverLength / 2.0) ** 2))
 
-    float ratioMotorToWheel = rospy.get_param("wheel/gear_ratio")
-    nh.getParam("wheel/gear_ratio", ratioMotorToWheel);
+    float ratioMotorToWheel;
+    assert(nh.getParam("wheel/gear_ratio", ratioMotorToWheel));
+    assert(ratioMotorToWheel.getType() == XmlRpc::XmlRpcValue::TypeDouble);
     // To convert m/s to rev/s, multiply by this constant. Divide by circumference, multiply by gear ratio.
     float wheelRadius;
     nh.getParam("wheel/radius", wheelRadius);
     WHEELS_M_S_TO_MOTOR_REV_S = (1 / (wheelRadius * 2 * M_PI)) * ratioMotorToWheel;
 
     float maxSpeedMPerS = rospy.get_param("rover/max_speed")
-    nh.getParam("rover/max_speed", maxSpeedMPerS);
+    assert(nh.getParam("rover/max_speed", maxSpeedMPerS));
+    assert(maxSpeedMPerS.getType() == XmlRpc::XmlRpcValue::TypeDouble);
     assert(maxSpeedMPerS > 0);
 
-    MAX_MOTOR_SPEED_REV_S = maxSpeedMPerS * self.WHEELS_M_S_TO_MOTOR_REV_S
+    MAX_MOTOR_SPEED_REV_S = maxSpeedMPerS * self.WHEELS_M_S_TO_MOTOR_REV_S;
 
+    // Subscribe to the ROS topic for drive commands
     ros::Subscriber moveDriveSubscriber = n->subscribe<sensor_msgs::JointState>("ra_cmd", 1, moveDrive);;
 
     // Create a 0.1 second heartbeat timer
     ros::Timer heartbeatTimer = nh.createTimer(ros::Duration(0.1), heartbeatCallback);
 
+    // Enter the ROS event loop
     ros::spin();
 
     return 0;
 }
 
 void moveDrive(const geometry_msgs::Twist::ConstPtr& msg) {
-
+    // Process drive commands and set motor speeds
     float forward = msg->linear.x;
     float turn = msg->angular.z;
 
+    // Calculate motor speeds and adjust for maximum speed
     float turn_difference_inner = turn * WHEEL_DISTANCE_INNER;
     float turn_difference_outer = turn * WHEEL_DISTANCE_OUTER;
 
@@ -85,12 +111,13 @@ void moveDrive(const geometry_msgs::Twist::ConstPtr& msg) {
     };
 
     for (const auto& pair : driveCommandVelocities) {
+        // Apply the multiplier for each motor
         const std::string& name = pair.first;
         float velocity = pair.second;
 
-        // TODO - account for multipliers
-        float multiplier = 1;
-        velocity *= multiplier;
+        // Set the desired speed for the motor
+        float multiplier = motorMultipliers[name];
+        float velocity = pair.second * multiplier;
 
         Controller& controller = driveManager.get_controller(name);
         controller.set_desired_speed(velocity);
