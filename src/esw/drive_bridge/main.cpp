@@ -66,7 +66,7 @@ int main(int argc, char** argv) {
     MAX_MOTOR_SPEED_REV_S = maxSpeedMPerS * self.WHEELS_M_S_TO_MOTOR_REV_S;
 
     // Subscribe to the ROS topic for drive commands
-    ros::Subscriber moveDriveSubscriber = n->subscribe<sensor_msgs::JointState>("ra_cmd", 1, moveDrive);;
+    ros::Subscriber moveDriveSubscriber = n->subscribe<geometry_msgs::Twist>("cmd_vel", 1, moveDrive);
 
     // Create a 0.1 second heartbeat timer
     ros::Timer heartbeatTimer = nh.createTimer(ros::Duration(0.1), heartbeatCallback);
@@ -113,7 +113,6 @@ void moveDrive(const geometry_msgs::Twist::ConstPtr& msg) {
     for (const auto& pair : driveCommandVelocities) {
         // Apply the multiplier for each motor
         const std::string& name = pair.first;
-        float velocity = pair.second;
 
         // Set the desired speed for the motor
         float multiplier = motorMultipliers[name];

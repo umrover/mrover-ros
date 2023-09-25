@@ -360,6 +360,21 @@ wheel:
 
 drive:
   controllers:
+    joint_a:
+      multiplier: 1
+    joint_b:
+      multiplier: 1
+    joint_c:
+      multiplier: 1
+    joint_de:
+      multiplier: 1
+    finger:
+      multiplier: 1
+    gripper:
+      multiplier: 1
+
+drive:
+  controllers:
     FrontLeft:
       multiplier: 1
     FrontRight:
@@ -375,13 +390,17 @@ drive:
 
 motors:
   joint_a:
-    type: "brushed"
-    driver_voltage: 24.0
-    motor_max_voltage: 24.0
+    type: "brushless"
   joint_b:
     type: "brushed"
-    driver_voltage: 24.0
-    motor_max_voltage: 12.0
+  joint_c:
+    type: "brushed"
+  joint_de:
+    type: "brushed"
+  finger:
+    type: "brushed"
+  gripper:
+    type: "brushless"
   FrontLeft:
     type: "brushless"
   FrontRight:
