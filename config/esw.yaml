@@ -358,7 +358,7 @@ wheel:
   gear_ratio: 50.0
   radius: 0.13
 
-drive:
+arm:
   controllers:
     joint_a:
       multiplier: 1

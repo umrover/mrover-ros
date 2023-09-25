@@ -50,8 +50,10 @@ int main(int argc, char** argv) {
 void moveArm(const sensor_msgs::JointState::ConstPtr& msg) {
     assert(msg->name == armNames);
     for (size_t i = 0; i < msg->name.size(); ++i) {
-        Controller& controller = armManager.get_controller(msg->name[i]);
-        controller.set_desired_speed(msg->velocity[i]);
+        std::string& name = msg->name[i];
+        Controller& controller = armManager.get_controller(name);
+        float velocity = std::clamp(msg->velocity[i], -1.0, 1.0);
+        controller.set_desired_speed_unit(velocity);
     }
 
     // Set the messageReceived flag to true when a message is received

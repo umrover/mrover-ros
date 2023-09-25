@@ -119,7 +119,7 @@ void moveDrive(const geometry_msgs::Twist::ConstPtr& msg) {
         float velocity = pair.second * multiplier;
 
         Controller& controller = driveManager.get_controller(name);
-        controller.set_desired_speed(velocity);
+        controller.set_desired_speed_rev_s(velocity);
     }
 
     // Set the messageReceived flag to true when a message is received
@@ -131,7 +131,7 @@ void heartbeatCallback(const ros::TimerEvent&) {
     if (!messageReceived) {
         for (const auto& name : driveNames) {
             Controller& controller = driveManager.get_controller(name);
-            controller.set_desired_speed(0.0);
+            controller.set_desired_speed_unit(0.0);
         }
     }
 
