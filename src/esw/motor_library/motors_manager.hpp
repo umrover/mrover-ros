@@ -6,17 +6,18 @@
 
 class MotorsManager {
 public:
-    MotorsManager(const std::vector<std::string>& controllerNames, XmlRpc::XmlRpcValue root) {
+    MotorsManager(ros::NodeHandle* n, const std::vector<std::string>& controllerNames, XmlRpc::XmlRpcValue root) {
+        CANPublisher = n->advertise<mrover::CAN>("can_requests", 1);
         for (const std::string& name: controllerNames) {
             assert(root[name].hasMember("type") &&
                root[name]["type"].getType() == XmlRpc::XmlRpcValue::TypeString);
             std::string type = static_cast<std::string>(root[name]["type"]);
             assert(type == "brushed" || type == "brushless");
             if (type == "brushed") {
-                m[name] = std::make_unique<BrushedController>();    
+                m[name] = std::make_unique<BrushedController>(&CANPublisher);    
             }
             else if (type == "brushless") {
-                m[name] = std::make_unique<BrushlessController>();
+                m[name] = std::make_unique<BrushlessController>(&CANPublisher);
             }
         }
     }
@@ -28,5 +29,6 @@ public:
     virtual void process_frame(uint64_t frame) = 0;
 
 private:
+    ros::Publisher CANPublisher;
     std::map<std::string, std::unique_ptr<Controller>> m;
 };

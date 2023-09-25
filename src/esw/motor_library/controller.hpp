@@ -22,6 +22,7 @@ protected:
     int CAN_id{};
     double velocity{};
     int position{};
+    ros::Publisher* CANPublisher;
 
     virtual void send_CAN_frame(uint64_t frame);
 };
