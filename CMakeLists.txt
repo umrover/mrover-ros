@@ -134,6 +134,7 @@ endmacro()
 
 ## Dependencies
 
+find_package(OpenCV 4.8 EXACT REQUIRED)
 find_package(ZED 2 QUIET)
 find_package(gazebo REQUIRED)
 find_package(Eigen3 REQUIRED)
@@ -147,49 +148,6 @@ if (ZED_FOUND)
     set(CMAKE_CUDA_ARCHITECTURES 72 86)
     enable_language(CUDA)
 endif ()
-
-set(BUILD_LIST "core,imgproc,objdetect")
-set(BUILD_JAVA OFF)
-set(BUILD_TESTS OFF)
-set(BUILD_EXAMPLES OFF)
-set(BUILD_PERF_TESTS OFF)
-set(OPENCV_ENABLE_NONFREE ON)
-#    set(OPENCV_EXTRA_MODULES_PATH ${CMAKE_CURRENT_LIST_DIR}/deps/opencv_contrib/modules)
-#    set(WITH_CUDA ON)
-set(WITH_EIGEN ON)
-set(WITH_LAPACK ON)
-set(WITH_LAPACK ON)
-set(WITH_LAPACK ON)
-set(CUDA_ARCH_BIN 8.6)
-add_subdirectory(deps/opencv)
-
-#include(FetchContent)
-#FetchContent_Declare(
-#        OpenCV
-#        SOURCE_DIR ${CMAKE_CURRENT_LIST_DIR}/deps/opencv
-#        SYSTEM
-#        OVERRIDE_FIND_PACKAGE
-#)
-#FetchContent_MakeAvailable(OpenCV)
-#if (NOT OpenCV_POPULATED)
-#    FetchContent_Populate(opencv)
-#    set(BUILD_LIST "core,objdetect")
-#    set(BUILD_JAVA OFF)
-#    set(BUILD_TESTS OFF)
-#    set(BUILD_EXAMPLES OFF)
-#    set(BUILD_PERF_TESTS OFF)
-#    set(OPENCV_ENABLE_NONFREE ON)
-#    set(OPENCV_EXTRA_MODULES_PATH ${CMAKE_CURRENT_LIST_DIR}/deps/opencv_contrib/modules)
-#    set(WITH_CUDA ON)
-#    set(WITH_EIGEN ON)
-#    set(WITH_LAPACK ON)
-#    set(CUDA_ARCH_BIN 8.6)
-#    add_subdirectory(${OpenCV_SOURCE_DIR} ${OpenCV_BINARY_DIR})
-#endif ()
-target_include_directories(opencv_core SYSTEM INTERFACE $<BUILD_INTERFACE:${CMAKE_CURRENT_BINARY_DIR}>)
-target_include_directories(opencv_core SYSTEM INTERFACE $<BUILD_INTERFACE:${CMAKE_CURRENT_LIST_DIR}/deps/opencv/modules/core/include>)
-target_include_directories(opencv_imgproc SYSTEM INTERFACE $<BUILD_INTERFACE:${CMAKE_CURRENT_LIST_DIR}/deps/opencv/modules/imgproc/include>)
-target_include_directories(opencv_objdetect SYSTEM INTERFACE $<BUILD_INTERFACE:${CMAKE_CURRENT_LIST_DIR}/deps/opencv/modules/objdetect/include>)
 
 find_package(
         catkin REQUIRED COMPONENTS
@@ -237,8 +195,10 @@ add_cpp_node_macro(brushed_motors src/esw/brushed_motors/*.c*)
 
 if (ZED_FOUND)
     add_cpp_library_macro(streaming src/esw/streaming/*.c* src/esw/streaming)
-    target_link_libraries(streaming PUBLIC /usr/lib/x86_64-linux-gnu/libnvidia-encode.so)
-    target_include_directories(streaming PUBLIC deps)
+    target_link_libraries(streaming PUBLIC opencv_core opencv_cudacodec)
+#    target_link_libraries(streaming PUBLIC /usr/lib/x86_64-linux-gnu/libnvidia-encode.so)
+#    target_include_directories(streaming PUBLIC deps)
+
 
     add_cpp_node_macro(cameras src/esw/cameras/*.c*)
     target_link_libraries(cameras PRIVATE streaming)

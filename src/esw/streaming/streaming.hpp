@@ -1,10 +1,9 @@
 #pragma once
 
-#include <nvenv/nvEncodeAPI.h>
+#include <opencv2/cudacodec.hpp>
 
 struct Streamer {
-
-    NV_ENCODE_API_FUNCTION_LIST m_nvenc{NV_ENCODE_API_FUNCTION_LIST_VER};
+    cv::Ptr<cv::cudacodec::VideoWriter> m_writer;
 
     Streamer();
 };
