@@ -67,7 +67,9 @@ namespace mrover {
 
         // Detect the tag vertices in screen space and their respective ids
         // {mImmediateCorneres, mImmediateIds} are the outputs from OpenCV
-        cv::aruco::detectMarkers(mImg, mDictionary, mImmediateCorners, mImmediateIds, mDetectorParams);
+        mDetector.setDictionary(mDictionary);
+        mDetector.setDetectorParameters(mDetectorParams);
+        mDetector.detectMarkers(mImg, mImmediateCorners, mImmediateIds);
         NODELET_DEBUG("OpenCV detect size: %zu", mImmediateIds.size());
         mProfiler.measureEvent("OpenCV Detect");
 

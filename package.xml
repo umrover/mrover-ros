@@ -56,8 +56,6 @@
   <exec_depend>xacro</exec_depend>
   <exec_depend>joint_state_publisher</exec_depend>
   <exec_depend>robot_state_publisher</exec_depend>
-  <exec_depend>rosbridge_server</exec_depend>
-  <exec_depend>tf2_web_republisher</exec_depend>
 
   <!-- Visualization -->
   <depend>rviz</depend>
@@ -68,9 +66,6 @@
   <depend>tf2_ros</depend>
   <depend>tf2_geometry_msgs</depend>
   <depend>image_transport</depend>
-  <depend>theora_image_transport</depend>
-  <depend>compressed_image_transport</depend>
-  <depend>compressed_depth_image_transport</depend>
   <depend>sensor_msgs</depend>
   <depend>dynamic_reconfigure</depend>
 

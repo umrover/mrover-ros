@@ -8,8 +8,8 @@
 #include <vector>
 
 // OpenCV Headers, cv namespace
-#include <opencv2/aruco.hpp>
 #include <opencv2/core/mat.hpp>
+#include <opencv2/objdetect.hpp>
 
 // ROS Headers, ros namespace
 #include <image_transport/image_transport.h>
@@ -38,8 +38,9 @@ namespace mrover {
         ros::NodeHandle mNodeHandle;
         image_transport::ImageTransport mImageTransport;
         image_transport::Subscriber mImageSubscriber;
-        cv::Ptr<cv::aruco::DetectorParameters> mTagDetectorParams;
-        cv::Ptr<cv::aruco::Dictionary> mTagDictionary;
+        cv::aruco::ArucoDetector mTagDetector;
+        cv::aruco::DetectorParameters mTagDetectorParams;
+        cv::aruco::Dictionary mTagDictionary;
         std::vector<std::vector<cv::Point2f>> mTagCorners;
         std::vector<int> mTagIds;
         std::vector<StarterProjectTag> mTags;
@@ -52,9 +53,9 @@ namespace mrover {
          * Called when we receive a new image message from the camera.
          * Specifically this is one frame.
          *
-         * @param image
+         * @param imageMessage
          */
-        void imageCallback(sensor_msgs::ImageConstPtr const& image);
+        void imageCallback(sensor_msgs::ImageConstPtr const& imageMessage);
 
         /**
          *  Given an image, detect ArUco tags, and fill a vector full of output messages.
@@ -94,7 +95,7 @@ namespace mrover {
          * @param tags          Vector of tags
          * @return              Center tag
          */
-        [[nodiscard]] StarterProjectTag selectTag(std::vector<StarterProjectTag> const& tags);
+        [[nodiscard]] StarterProjectTag selectTag(cv::Mat const& image, std::vector<StarterProjectTag> const& tags);
     };
 
 } // namespace mrover

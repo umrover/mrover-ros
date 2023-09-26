@@ -19,7 +19,7 @@ namespace mrover {
         cvtColor(mImg, mGrayImg, cv::COLOR_BGR2GRAY);
 
         // number of window sizes (scales) to apply adaptive thresholding
-        int scaleCount = (mDetectorParams->adaptiveThreshWinSizeMax - mDetectorParams->adaptiveThreshWinSizeMin) / mDetectorParams->adaptiveThreshWinSizeStep + 1;
+        int scaleCount = (mDetectorParams.adaptiveThreshWinSizeMax - mDetectorParams.adaptiveThreshWinSizeMin) / mDetectorParams.adaptiveThreshWinSizeStep + 1;
 
         // for each value in the interval of thresholding window sizes
         for (int scale = 0; scale < scaleCount; ++scale) {
@@ -32,8 +32,8 @@ namespace mrover {
 
             if (publisher.getNumSubscribers() == 0) continue;
 
-            int windowSize = mDetectorParams->adaptiveThreshWinSizeMin + scale * mDetectorParams->adaptiveThreshWinSizeStep;
-            threshold(mGrayImg, mGrayImg, windowSize, mDetectorParams->adaptiveThreshConstant);
+            int windowSize = mDetectorParams.adaptiveThreshWinSizeMin + scale * mDetectorParams.adaptiveThreshWinSizeStep;
+            threshold(mGrayImg, mGrayImg, windowSize, mDetectorParams.adaptiveThreshConstant);
 
             mThreshMsg.header.seq = mSeqNum;
             mThreshMsg.header.stamp = ros::Time::now();
