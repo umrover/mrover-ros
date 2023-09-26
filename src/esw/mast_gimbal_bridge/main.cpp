@@ -3,12 +3,12 @@
 #include <sensor_msgs/JointState.h>
 #include <std_msgs/Float32.h> // To publish heartbeats
 
-void moveArm(const sensor_msgs::JointState::ConstPtr& msg);
+void moveMastGimbal(const sensor_msgs::JointState::ConstPtr& msg);
 void heartbeatCallback(const ros::TimerEvent&);
 
-MotorsManager armManager;
-std::vector<std::string> armNames = 
-    {"joint_a", "joint_b", "joint_c", "joint_de", "finger", "gripper"};
+MotorsManager mastGimbalManager;
+std::vector<std::string> mastGimbalNames = 
+    {"mast_gimbal_pitch", "mast_gimbal_yaw"};
 
 std::unordered_map<std::string, float> motorMultipliers; // Store the multipliers for each motor
 
@@ -21,22 +21,10 @@ int main(int argc, char** argv) {
     XmlRpc::XmlRpcValue controllersRoot;
     assert(nh.getParam("motors/controllers", controllersRoot));
     assert(controllersRoot.getType() == XmlRpc::XmlRpcValue::TypeStruct);
-    armManager = MotorsManager(armNames, controllersRoot);
-
-    // Load motor multipliers from the ROS parameter server
-    XmlRpc::XmlRpcValue armControllers;
-    assert(nh.getParam("arm/controllers", armControllers));
-    assert(armControllers.getType() == XmlRpc::XmlRpcValue::TypeStruct);
-    for (const auto& armName : armNames) {
-        assert(armControllers.hasMember(armName));
-        assert(armControllers[armName].getType() == XmlRpc::XmlRpcValue::TypeStruct);
-        if (armControllers[armName].hasMember("multiplier")) {
-            motorMultipliers[armName] = static_cast<double>(armControllers[armName]["multiplier"]);
-        }
-    }
+    mastGimbalManager = MotorsManager(mastGimbalNames, controllersRoot);
 
     // Subscribe to the ROS topic for arm commands
-    ros::Subscriber moveArmSubscriber = n->subscribe<sensor_msgs::JointState>("ra_cmd", 1, moveArm);
+    ros::Subscriber moveMastGimbalSubscriber = n->subscribe<sensor_msgs::JointState>("mast_gimbal_cmd", 1, moveMastGimbal);
 
     // Create a 0.1 second heartbeat timer
     ros::Timer heartbeatTimer = nh.createTimer(ros::Duration(0.1), heartbeatCallback);
@@ -47,14 +35,14 @@ int main(int argc, char** argv) {
     return 0;
 }
 
-void moveArm(const sensor_msgs::JointState::ConstPtr& msg) {
-    if (msg->name != armNames && msg->name.size() != msg->name.velocity.size()) {
-        ROS_ERROR("Arm request is invalid!");
+void moveMastGimbal(const sensor_msgs::JointState::ConstPtr& msg) {
+    if (msg->name != mastGimbalName && msg->name.size() != msg->name.velocity.size()) {
+        ROS_ERROR("Mast Gimbal request is invalid!");
         return;
     }
     for (size_t i = 0; i < msg->name.size(); ++i) {
         std::string& name = msg->name[i];
-        Controller& controller = armManager.get_controller(name);
+        Controller& controller = mastGimbalManager.get_controller(name);
         float velocity = std::clamp(msg->velocity[i], -1.0, 1.0);
         controller.set_desired_speed_unit(velocity);
     }
@@ -66,8 +54,8 @@ void moveArm(const sensor_msgs::JointState::ConstPtr& msg) {
 void heartbeatCallback(const ros::TimerEvent&) {
     // If no message has been received within the last 0.1 seconds, set desired speed to 0 for all motors
     if (!messageReceived) {
-        for (const auto& armName : armNames) {
-            Controller& controller = armManager.get_controller(armName);
+        for (const auto& mastGimbalName : mastGimbalNames) {
+            Controller& controller = mastGimbalManager.get_controller(mastGimbalName);
             controller.set_desired_speed(0.0);
         }
     }

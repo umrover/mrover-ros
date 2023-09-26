@@ -12,7 +12,6 @@ int main(int argc, char** argv) {
     ros::NodeHandle nh;
 
     PDBPublisher = n->advertise<mrover::PDB>("pdb_data", 1);
-
     CANSubscriber = n->subscribe<mrover::CAN>("can_data", 1, processCANData);
 
     // Enter the ROS event loop
