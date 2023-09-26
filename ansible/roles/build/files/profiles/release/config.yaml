@@ -4,12 +4,12 @@ build_space: build
 catkin_make_args: [ ]
 cmake_args:
   - -DCMAKE_BUILD_TYPE=Release
-  - -DCMAKE_CXX_FLAGS=-march=native -pipe
   - -DCMAKE_C_COMPILER=clang-16
+  - -DCMAKE_CXX_FLAGS=-march=native -pipe
   - -DCMAKE_CXX_COMPILER=clang++-16
   - -DCMAKE_CXX_COMPILER_LAUNCHER=ccache
   - -DCMAKE_CUDA_COMPILER_LAUNCHER=ccache
-  - -DCMAKE_CUDA_HOST_COMPILER=clang++-12
+  - -DCMAKE_CUDA_HOST_COMPILER=clang++-16
   - -DCMAKE_INTERPROCEDURAL_OPTIMIZATION=ON
   - -Wno-dev
 devel_layout: linked
