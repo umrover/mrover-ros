@@ -67,10 +67,16 @@ void Error_Handler(void);
 #define CURR_2_GPIO_Port GPIOA
 #define CURR_3_Pin GPIO_PIN_3
 #define CURR_3_GPIO_Port GPIOA
+#define RED_LED_Pin GPIO_PIN_7
+#define RED_LED_GPIO_Port GPIOA
+#define GREEN_LED_Pin GPIO_PIN_4
+#define GREEN_LED_GPIO_Port GPIOC
 #define TEMP_4_Pin GPIO_PIN_0
 #define TEMP_4_GPIO_Port GPIOB
 #define TEMP_2_Pin GPIO_PIN_1
 #define TEMP_2_GPIO_Port GPIOB
+#define BLUE_LED_Pin GPIO_PIN_2
+#define BLUE_LED_GPIO_Port GPIOB
 #define TEMP_3_Pin GPIO_PIN_11
 #define TEMP_3_GPIO_Port GPIOB
 #define TEMP_1_Pin GPIO_PIN_12

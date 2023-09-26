@@ -1,9 +1,11 @@
 cmake_minimum_required(VERSION 3.16)
 project(mrover VERSION 2024.0.0 LANGUAGES CXX)
 
-## Compile as C++17, supported in ROS Kinetic and newer, enable some static analysis
-set(CMAKE_CXX_STANDARD 17)
+set(CMAKE_CXX_STANDARD 23)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
+if (CMAKE_CXX_COMPILER_ID STREQUAL "Clang")
+    add_link_options(-fuse-ld=lld-16)
+endif ()
 set(MROVER_CPP_COMPILE_OPTIONS -Wall -Wextra -Werror -pedantic)
 
 # Generate compile_commands.json for clangd
@@ -104,6 +106,11 @@ macro(add_cpp_library_macro name sources includes)
     rosify_cpp_target_macro(${name})
 endmacro()
 
+macro(add_cpp_interface_library_macro name includes)
+    add_library(${name} INTERFACE)
+    target_include_directories(${name} INTERFACE ${includes})
+endmacro()
+
 macro(add_cpp_node_macro name sources)
     file(GLOB_RECURSE CPP_NODE_SOURCES ${sources})
     add_executable(${name} ${CPP_NODE_SOURCES})
@@ -122,6 +129,7 @@ macro(add_gazebo_plugin_macro name sources includes)
     target_link_directories(${name} PRIVATE ${GAZEBO_LIBRARY_DIRS} /opt/ros/noetic/lib)
     target_link_libraries(${name} PRIVATE ${GAZEBO_LIBRARIES} ${Boost_LIBRARIES})
     target_include_directories(${name} SYSTEM PRIVATE ${GAZEBO_INCLUDE_DIRS} ${Boost_INCLUDE_DIRS})
+    set_target_properties(${name} PROPERTIES CXX_STANDARD 17)
 endmacro()
 
 # launch install macro
@@ -217,9 +225,10 @@ else ()
         find_package(Eigen3 REQUIRED)
         find_package(ZED 2 QUIET)
         if (ZED_FOUND)
-            set(CMAKE_CUDA_SEPARABLE_COMPILATION ON)
+            # Anything newer than C++17 combined with libstdc++13 is not supported just yet by NVCC (the CUDA compiler)
             set(CMAKE_CUDA_STANDARD 17)
             set(CMAKE_CUDA_STANDARD_REQUIRED ON)
+            set(CMAKE_CUDA_SEPARABLE_COMPILATION ON)
             # Jetson Xavier NX is Volta 7.2 architecture
             # Perception Laptop (A4000, Quadro version of RTX 3080) is Ampere 8.6 architecture
             set(CMAKE_CUDA_ARCHITECTURES 72 86)
@@ -230,16 +239,19 @@ else ()
     # define an add and link macro
     # Put items here to build
     macro(add_and_link_macro)
-        add_cpp_nodelet_macro(tag_detector_nodelet "src/perception/tag_detector/*.cpp" "src/perception/tag_detector")
+        add_cpp_nodelet_macro(tag_detector_nodelet src/perception/tag_detector/*.cpp src/perception/tag_detector)
+        target_precompile_headers(tag_detector_nodelet PRIVATE src/perception/tag_detector/pch.hpp)
         target_link_libraries(tag_detector_nodelet PRIVATE ${OpenCV_LIBRARIES} lie)
 
-        add_cpp_node_macro(brushed_motors "src/esw/brushed_motors/*")
+        add_cpp_node_macro(brushed_motors src/esw/brushed_motors/*.cpp)
 
-        add_cpp_library_macro(lie "src/util/lie/*.cpp" "src/util/lie")
+        add_cpp_library_macro(lie src/util/lie/*.cpp src/util/lie)
 
-        add_gazebo_plugin_macro(differential_drive_plugin_6w "src/gazebo/differential_drive_6w.cpp" "src")
+        add_cpp_interface_library_macro(moteus deps/moteus/lib/cpp/mjbots)
 
-        add_gazebo_plugin_macro(kinect_plugin "src/gazebo/gazebo_ros_openni_kinect.cpp" "src/gazebo")
+        add_gazebo_plugin_macro(differential_drive_plugin_6w src/gazebo/differential_drive_6w.cpp src)
+
+        add_gazebo_plugin_macro(kinect_plugin src/gazebo/gazebo_ros_openni_kinect.cpp src/gazebo)
         target_link_libraries(kinect_plugin PRIVATE gazebo_ros_camera_utils DepthCameraPlugin Eigen3::Eigen)
         set_target_properties(kinect_plugin PROPERTIES CXX_CLANG_TIDY "")
 
@@ -249,11 +261,11 @@ else ()
             #            target_include_directories(zed_node SYSTEM PRIVATE ${ZED_INCLUDE_DIRS} ${CUDA_INCLUDE_DIRS})
             #            target_link_libraries(zed_node PRIVATE ${ZED_LIBRARIES} ${OpenCV_LIBRARIES} ${SPECIAL_OS_LIBS} lie tag_detector_nodelet)
 
-            add_cpp_nodelet_macro(zed_nodelet "src/perception/zed_wrapper/*.c*" , "src/perception/zed_wrapper")
+            add_cpp_nodelet_macro(zed_nodelet src/perception/zed_wrapper/*.c* src/perception/zed_wrapper)
+            target_precompile_headers(zed_nodelet PRIVATE src/perception/zed_wrapper/pch.hpp)
             target_include_directories(zed_nodelet SYSTEM PRIVATE ${ZED_INCLUDE_DIRS} ${CUDA_INCLUDE_DIRS})
             target_link_libraries(zed_nodelet PRIVATE ${ZED_LIBRARIES} ${OpenCV_LIBRARIES} ${SPECIAL_OS_LIBS} lie)
-            target_compile_definitions(zed_nodelet PRIVATE MROVER_IS_NODELET)
-            target_compile_options(zed_nodelet PRIVATE $<$<COMPILE_LANGUAGE:CUDA>:--expt-extended-lambda>)
+            target_compile_definitions(zed_nodelet PRIVATE MROVER_IS_NODELET ALLOW_BUILD_DEBUG)
         endif ()
     endmacro()
 endif ()

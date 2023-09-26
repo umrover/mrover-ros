@@ -7,7 +7,6 @@ import threading
 import rospy
 import smach
 import smach_ros
-from navigation.state import DoneState, DoneStateTransitions, OffState, OffStateTransitions
 from smach.log import loginfo
 from smach.log import set_loggers
 from std_msgs.msg import String
@@ -19,6 +18,7 @@ from partial_gate import PartialGateState, PartialGateStateTransitions
 from post_backup import PostBackupState, PostBackupTransitions
 from recovery import RecoveryState, RecoveryStateTransitions
 from search import SearchState, SearchStateTransitions
+from state import DoneState, DoneStateTransitions, OffState, OffStateTransitions
 from waypoint import WaypointState, WaypointStateTransitions
 
 

@@ -3,8 +3,6 @@
 
 #include "zed_wrapper.hpp"
 
-#include <sl/Camera.hpp>
-
 namespace mrover {
 
     // Optimal for the Jetson Xavier NX - this is max threads per block and each block has a max of 2048 threads
@@ -45,7 +43,7 @@ namespace mrover {
         auto* bgraGpuPtr = bgraGpu.getPtr<sl::uchar4>(sl::MEM::GPU);
         auto* xyzGpuPtr = xyzGpu.getPtr<sl::float4>(sl::MEM::GPU);
         msg->is_bigendian = __BYTE_ORDER__ == __ORDER_BIG_ENDIAN__;
-        msg->is_dense = true;  
+        msg->is_dense = true;
         msg->height = bgraGpu.getHeight();
         msg->width = bgraGpu.getWidth();
         fillPointCloudMessageHeader(msg);

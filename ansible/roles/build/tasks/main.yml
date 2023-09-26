@@ -4,7 +4,7 @@
   apt_repository:
     repo: ppa:deadsnakes/ppa
 
-# Allows us to install G++11, so we can use an updated libstdc++ which provides more standard library features (C++20)
+# Allows us to install G++13, so we can use an updated libstdc++ which provides more standard library features (C++20)
 - name: Add GCC PPA
   become: True
   apt_repository:
@@ -64,12 +64,9 @@
       - neovim
       - sudo
       - cmake
-      # Caches intermediate build files, speeds up compilation over time
-      - ccache
-      # Faster than make
-      - ninja-build
+      - ccache # Caches intermediate build files, speeds up compilation over time
+      - ninja-build # Faster than make
       - tmux
-      - zstd
       - htop
       - curl
       - unzip
@@ -84,7 +81,8 @@
       - clang-format-16
       - lld-16
       - lldb-16
-      - g++-11
+      - gcc-13
+      - g++-13
       - python3.10
       - python3.10-dev
       - python3.10-venv
@@ -114,27 +112,30 @@
   args:
     creates: ~/.bun/bin/bun
 
+- name: Upgrade Bun
+  command: ~/.bun/bin/bun upgrade
+
 - name: Install Catkin Profiles
   synchronize:
     src: files/profiles
     dest: "{{ catkin_workspace }}/.catkin_tools"
     recursive: true
 
-- name: Set G++ 11 as Default
+- name: Set G++ 13 as Default
   become: True
   alternatives:
     name: g++
-    path: /usr/bin/g++-11
+    path: /usr/bin/g++-13
     link: /usr/bin/g++
-    priority: 110
+    priority: 130
 
-- name: Set GCC 11 as Default
+- name: Set GCC 13 as Default
   become: True
   alternatives:
     name: gcc
-    path: /usr/bin/gcc-11
+    path: /usr/bin/gcc-13
     link: /usr/bin/gcc
-    priority: 110
+    priority: 130
 
 - name: Set Clang++ 16 as Default
   become: True
@@ -150,6 +151,14 @@
     name: clang
     path: /usr/bin/clang-16
     link: /usr/bin/clang
+    priority: 160
+
+- name: Set clangd 16 as Default
+  become: True
+  alternatives:
+    name: clangd
+    path: /usr/bin/clangd-16
+    link: /usr/bin/clangd
     priority: 160
 
 - name: Setup Python Virtual Environment
