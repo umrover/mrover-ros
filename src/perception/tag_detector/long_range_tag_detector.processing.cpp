@@ -1,6 +1,7 @@
 #include "long_range_tag_detector.hpp"
 
 #include "../point.hpp"
+#include <opencv2/core.hpp>
 #include <opencv2/core/types.hpp>
 
 namespace mrover {
@@ -49,22 +50,12 @@ namespace mrover {
         cv::aruco::detectMarkers(mImg, mDictionary, mImmediateCorners, mImmediateIds, mDetectorParams);
     }
 
+
     void LongRangeTagDetectorNodelet::updateHitCounts() {
         //loop through all identified IDs
-        for (size_t i = 0; i < mImmediateIds.size(); i++) {
-            int currentId = mImmediateIds[i];
+        for (size_t i = 0; i < mImmediateIds.size(); i++)
+            updateNewlyIdentifiedTags(i);
 
-            //Create new struct for each tag
-            LongRangeTag lrt = createLrt(currentId, mImmediateCorners[i]);
-
-            //Check if the tag was already detected and update hitCount to reflect
-            if (mTags.contains(currentId)) {
-                //Key exist sin mTags
-                lrt.hitCount = std::min(mTags[currentId].hitCount + mTagIncrementWeight, mMaxHitCount);
-            }
-
-            mTags[currentId] = lrt;
-        }
 
         //Now decrement all the hitcounts for tags that were not updated
         // Set updated status to false
@@ -96,9 +87,63 @@ namespace mrover {
         lrt.id = tagId;
         lrt.updated = true;
 
-        lrt.imageCenter = getImageCenter(tagCorners);
+        lrt.imageCenter = getNormedTagCenterOffset(tagCorners);
 
         return lrt;
+    }
+
+    void LongRangeTagDetectorNodelet::updateNewlyIdentifiedTags(size_t tagIndex) {
+        int currentId = mImmediateIds[tagIndex];
+
+        //Create new struct for each tag
+        LongRangeTag lrt = createLrt(currentId, mImmediateCorners[tagIndex]);
+
+        //Check if the tag was already detected and update hitCount to reflect
+        if (mTags.contains(currentId)) {
+            //Key exist sin mTags
+            lrt.hitCount = std::min(mTags[currentId].hitCount + mTagIncrementWeight, mMaxHitCount);
+        }
+
+        mTags[currentId] = lrt;
+    }
+
+    cv::Point2f LongRangeTagDetectorNodelet::getTagCenterPixels(std::vector<cv::Point2f>& tagCorners) {
+        cv::Point2f centerPoint;
+        float centerX = 0;
+        float centerY = 0;
+
+        for (size_t i = 0; i < 4; i++) {
+            centerX += tagCorners[i].x;
+            centerY += tagCorners[i].y;
+        }
+
+        centerX /= 4.0;
+        centerY /= 4.0;
+
+        centerPoint.x = centerX;
+        centerPoint.y = centerY;
+
+        return centerPoint;
+    }
+
+    cv::Point2f LongRangeTagDetectorNodelet::getTagCenterOffsetPixels(std::vector<cv::Point2f>& tagCorners) const {
+        cv::Point2f centerPoint = getTagCenterPixels(tagCorners);
+
+        centerPoint.x -= float(mImgMsg.width);
+
+        //-1 is necessary because of 0,0 being in the top left
+        centerPoint.y = float(-1.0) * (centerPoint.y - float(mImgMsg.height));
+
+        return centerPoint;
+    }
+
+    cv::Point2f LongRangeTagDetectorNodelet::getNormedTagCenterOffset(std::vector<cv::Point2f>& tagCorners) const {
+        cv::Point2f offsetCenterPoint = getTagCenterOffsetPixels(tagCorners);
+
+        offsetCenterPoint.x /= float(mImgMsg.width);
+        offsetCenterPoint.y /= float(mImgMsg.height);
+
+        return offsetCenterPoint;
     }
 
 } // namespace mrover

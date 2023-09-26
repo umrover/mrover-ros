@@ -92,14 +92,41 @@ namespace mrover {
         */
         void updateHitCounts();
 
+        /**
+        * @see updateNewlyIdentifiedTags()
+        * @param tagId - the tagId of the current tag
+        * @param tagCorners - Reference to the mTagCorners vector of Point2fs for the current id of the lrt being created
+        * @return a new LongRangeTag
+        */
         LongRangeTag createLrt(int tagId, std::vector<cv::Point2f>& tagCorners);
 
         /**
+        * @see getNormedTagCenter
         *  Assumes that mImg exists
         *  @return a cv::Point2f that contains the centerx and centery
         * centerx and centery are -0.5, 0.5, and reflect a normalized offset from the image center
         * Average all x values
         */
-        cv::Point2f getImageCenter(std::vector<cv::Point2f>& tagCorners);
+        cv::Point2f static getTagCenterPixels(std::vector<cv::Point2f>& tagCorners);
+
+        /**
+        * Assumes upper left corner is 0, 0
+        * Want to return a negative pixel offset if width less than image_width / 2
+        * similarily, negative if height > image_height / 2
+        * @param tagCorners reference to tag corners, passed to @see getTagCenterPixesl
+        * @return Point2f of pixel offset from center
+        */
+        cv::Point2f getTagCenterOffsetPixels(std::vector<cv::Point2f>& tagCorners) const;
+
+        cv::Point2f getNormedTagCenterOffset(std::vector<cv::Point2f>& tagCorners) const;
+
+        /**
+        * @see updateHitCounts()
+        * Helper function used in updateHitCounts
+        * Creates a new LongRangeTag for the identified tags and handles 
+        * logic of adding it to the map
+        * @param tagIndex the index i of the target tag in the mImmediate vectors
+        */
+        void updateNewlyIdentifiedTags(size_t tagIndex);
     };
 }; // namespace mrover
