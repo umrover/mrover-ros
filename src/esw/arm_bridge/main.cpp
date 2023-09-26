@@ -48,7 +48,7 @@ int main(int argc, char** argv) {
 }
 
 void moveArm(const sensor_msgs::JointState::ConstPtr& msg) {
-    if (msg->name != armNames && msg->name.size() != msg->name.velocity.size()) {
+    if (msg->name != armNames && msg->name.size() != msg->velocity.size()) {
         ROS_ERROR("Arm request is invalid!");
         return;
     }

@@ -36,7 +36,7 @@ int main(int argc, char** argv) {
 }
 
 void moveMastGimbal(const sensor_msgs::JointState::ConstPtr& msg) {
-    if (msg->name != mastGimbalName && msg->name.size() != msg->name.velocity.size()) {
+    if (msg->name != mastGimbalName && msg->name.size() != msg->velocity.size()) {
         ROS_ERROR("Mast Gimbal request is invalid!");
         return;
     }
