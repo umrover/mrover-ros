@@ -14,7 +14,7 @@
 
 #include <boost_cpp23_workaround.hpp>
 
-#include <opencv2/aruco.hpp>
+#include <opencv2/objdetect.hpp>
 #include <opencv2/core/mat.hpp>
 #include <opencv2/imgproc.hpp>
 

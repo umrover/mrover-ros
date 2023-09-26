@@ -28,26 +28,25 @@ namespace mrover {
         // TODO: uncomment me!
         // mTagPublisher = mNodeHandle.advertise<StarterProjectTag>("tag", 1);
 
-        mTagDetectorParams = cv::aruco::DetectorParameters::create();
-        mTagDictionary = cv::aruco::getPredefinedDictionary(0);
+        mTagDictionary = cv::aruco::getPredefinedDictionary(0)  ;
     }
 
-    void Perception::imageCallback(sensor_msgs::ImageConstPtr const& image) {
+    void Perception::imageCallback(sensor_msgs::ImageConstPtr const& imageMessage) {
         // Create a cv::Mat from the ROS image message
         // Note this does not copy the image data, it is basically a pointer
         // Be careful if you extend its lifetime beyond this function
-        cv::Mat cvImage{static_cast<int>(image->height), static_cast<int>(image->width),
-                        CV_8UC3, const_cast<uint8_t*>(image->data.data())};
+        cv::Mat image{static_cast<int>(imageMessage->height), static_cast<int>(imageMessage->width),
+                      CV_8UC3, const_cast<uint8_t*>(imageMessage->data.data())};
         // Detect tags in the image pixels
-        findTagsInImage(cvImage, mTags);
+        findTagsInImage(image, mTags);
         // Select the tag that is closest to the middle of the screen
-        StarterProjectTag tag = selectTag(mTags);
+        StarterProjectTag tag = selectTag(image, mTags);
         // Publish the message to our topic so navigation or others can receive it
         publishTag(tag);
     }
 
     void Perception::findTagsInImage(cv::Mat const& image, std::vector<StarterProjectTag>& tags) { // NOLINT(*-convert-member-functions-to-static)
-        // hint: take a look at OpenCV's documentation for the detectMarkers function
+        // hint: take a look at OpenCV's documentation for the detectMarkers function that can be called on mTagDetector
         // hint: you have mTagDictionary, mTagCorners, mTagIds, and mTagDetectorParams member variables already defined!
         // hint: write and use the "getCenterFromTagCorners" and "getClosenessMetricFromTagCorners" functions
 
@@ -56,7 +55,7 @@ namespace mrover {
         // TODO: implement me!
     }
 
-    StarterProjectTag Perception::selectTag(std::vector<StarterProjectTag> const& tags) { // NOLINT(*-convert-member-functions-to-static)
+    StarterProjectTag Perception::selectTag(cv::Mat const& image, std::vector<StarterProjectTag> const& tags) { // NOLINT(*-convert-member-functions-to-static)
         // TODO: implement me!
         return {};
     }

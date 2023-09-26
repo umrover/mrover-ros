@@ -33,8 +33,9 @@ namespace mrover {
         int mTagIncrementWeight{};
         int mTagDecrementWeight{};
 
-        cv::Ptr<cv::aruco::DetectorParameters> mDetectorParams;
-        cv::Ptr<cv::aruco::Dictionary> mDictionary;
+        cv::aruco::ArucoDetector mDetector;
+        cv::aruco::DetectorParameters mDetectorParams;
+        cv::aruco::Dictionary mDictionary;
 
         cv::Mat mImg;
         cv::Mat mGrayImg;
