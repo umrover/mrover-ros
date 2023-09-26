@@ -8,13 +8,13 @@ void heartbeatCallback(const ros::TimerEvent&);
 
 MotorsManager mastGimbalManager;
 std::vector<std::string> mastGimbalNames = 
-    {"mast_gimbal_pitch", "mast_gimbal_yaw"};
+    {"mast_gimbal_x", "mast_gimbal_y"};
 
 std::unordered_map<std::string, float> motorMultipliers; // Store the multipliers for each motor
 
 int main(int argc, char** argv) {
     // Initialize the ROS node
-    ros::init(argc, argv, "arm_bridge");
+    ros::init(argc, argv, "mast_gimbal_bridge");
     ros::NodeHandle nh;
 
     // Load motor controllers configuration from the ROS parameter server
