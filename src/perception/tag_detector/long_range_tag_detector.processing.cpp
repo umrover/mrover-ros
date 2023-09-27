@@ -1,6 +1,8 @@
 #include "long_range_tag_detector.hpp"
 
-#include "../point.hpp"
+#include "../point.hpp" //Might not actually need?'
+#include "mrover/LongRangeTags.h"
+
 #include <opencv2/core.hpp>
 #include <opencv2/core/types.hpp>
 
@@ -26,8 +28,10 @@ namespace mrover {
         // 3. We only want to publish the tags if the topic has subscribers
         if (mPublishImages && mImgPub.getNumSubscribers()) {
             // Draw the tags on the image using OpenCV
-            // LongRangeTagDetectorNodelet::publishDrawnImages()
+            publishTagsOnImage();
         }
+
+        publishThresholdTags();
 
         //PUBLISH TAGS
     }
@@ -61,7 +65,7 @@ namespace mrover {
         // Set updated status to false
 
         for (auto& mTag: mTags) {
-            LongRangeTag& curtag = mTag.second;
+            LongRangeTagStruct& curtag = mTag.second;
 
             if (curtag.updated) {
                 curtag.updated = false;
@@ -80,8 +84,8 @@ namespace mrover {
         //decrement non updated & set updated status to false
     }
 
-    LongRangeTag LongRangeTagDetectorNodelet::createLrt(int tagId, std::vector<cv::Point2f>& tagCorners) {
-        LongRangeTag lrt;
+    LongRangeTagStruct LongRangeTagDetectorNodelet::createLrt(int tagId, std::vector<cv::Point2f>& tagCorners) {
+        LongRangeTagStruct lrt;
 
         lrt.hitCount = mBaseHitCount; //Start at base hit count value
         lrt.id = tagId;
@@ -96,7 +100,7 @@ namespace mrover {
         int currentId = mImmediateIds[tagIndex];
 
         //Create new struct for each tag
-        LongRangeTag lrt = createLrt(currentId, mImmediateCorners[tagIndex]);
+        LongRangeTagStruct lrt = createLrt(currentId, mImmediateCorners[tagIndex]);
 
         //Check if the tag was already detected and update hitCount to reflect
         if (mTags.contains(currentId)) {
@@ -144,6 +148,30 @@ namespace mrover {
         offsetCenterPoint.y /= float(mImgMsg.height);
 
         return offsetCenterPoint;
+    }
+
+    void LongRangeTagDetectorNodelet::publishThresholdTags() {
+        //Loop through all the tags
+        LongRangeTags tagsMessage; //
+
+        for (auto& tag: mTags) {
+            if (tag.second.hitCount >= mMinHitCountBeforePublish) {
+                //LongRangeTag message
+                LongRangeTag newTagMessage;
+
+                //Fill in fields
+                newTagMessage.id = tag.second.id;
+                newTagMessage.xOffset = tag.second.imageCenter.x;
+                newTagMessage.yOffset = tag.second.imageCenter.y;
+
+                //Add to back of tagsMessage
+                tagsMessage.longRangeTags.push_back(newTagMessage);
+            }
+        }
+
+        //tagsMessage should be a vector of LongRangeTag messages
+        //Need something like an mTagsPublisher
+        mLongRangeTagsPub.publish(tagsMessage);
     }
 
 } // namespace mrover

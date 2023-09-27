@@ -1,4 +1,9 @@
+#include "mrover/LongRangeTag.h"
+#include "mrover/LongRangeTags.h"
+
 #include <opencv2/core/types.hpp>
+#include <ros/publisher.h>
+
 namespace mrover {
 
     typedef struct LongRangeTagType {
@@ -6,22 +11,23 @@ namespace mrover {
         int id = -1;
         int hitCount = 0;
         cv::Point2f imageCenter{};
-    } LongRangeTag;
+    } LongRangeTagStruct;
 
     class LongRangeTagDetectorNodelet : public nodelet::Nodelet {
         ros::NodeHandle mNh, mPnh;
 
-        std::optional<image_transport::ImageTransport> mIt;
-        image_transport::Publisher mImgPub;
-        std::unordered_map<int, image_transport::Publisher> mThreshPubs; // Map from threshold scale to publisher
-        ros::ServiceServer mServiceEnableDetections;
-
+        //Image Subscriber
         image_transport::Subscriber mImgSub;
+        image_transport::Publisher mImgPub;
 
+        //Publishes LongRangeTags messages
+        ros::Publisher mLongRangeTagsPub;
+
+        //Publishing Flags
         bool mEnableDetections = true;
-        bool mUseOdom{};
-        std::string mOdomFrameId, mMapFrameId, mCameraFrameId;
         bool mPublishImages{}; // If set, we publish the images with the tags drawn on top
+
+        //Constatns set in ROS params for num hits needed to publish
         int mMinHitCountBeforePublish{};
         int mMaxHitCount{};
         int mBaseHitCount{}; //Value the tag is initialized with after first detection. (Not incremented)
@@ -34,34 +40,33 @@ namespace mrover {
         cv::Ptr<cv::aruco::DetectorParameters> mDetectorParams;
         cv::Ptr<cv::aruco::Dictionary> mDictionary;
 
-        //IMAGE MESSAGE VARIABLES
-
+        //IMAGE VARIABLES
         cv::Mat mImg;
-        cv::Mat mGrayImg;
         sensor_msgs::Image mImgMsg;
-        sensor_msgs::Image mThreshMsg;
-
-
-        uint32_t mSeqNum{};
-        std::optional<size_t> mPrevDetectedCount; // Log spam prevention
 
         //Raw Tag Data from CV::ARUCO
         std::vector<std::vector<cv::Point2f>> mImmediateCorners;
         std::vector<int> mImmediateIds;
 
         //Map from tagID to Tag
-        std::unordered_map<int, LongRangeTag> mTags;
+        std::unordered_map<int, LongRangeTagStruct> mTags;
+
+        //TODO
+        //All these variables are unused by long_range_tag_detector.processing.cpp
+        //A bunch of things I think I should be able to delete
+        //But I am not sure about
+        uint32_t mSeqNum{};
+        std::optional<size_t> mPrevDetectedCount; // Log spam prevention
         dynamic_reconfigure::Server<mrover::DetectorParamsConfig> mConfigServer;
         dynamic_reconfigure::Server<mrover::DetectorParamsConfig>::CallbackType mCallbackType;
-
-        LoopProfiler mProfiler{"Tag Detector"};
+        LoopProfiler mProfiler{"Long RangeTag Detector"};
+        std::optional<image_transport::ImageTransport> mIt;
+        std::unordered_map<int, image_transport::Publisher> mThreshPubs; // Map from threshold scale to publisher
+        ros::ServiceServer mServiceEnableDetections;
+        bool mUseOdom{};
+        std::string mOdomFrameId, mMapFrameId, mCameraFrameId;
 
         void onInit() override;
-
-        void publishThresholdedImage();
-
-        std::optional<SE3> getTagInCamFromPixel(sensor_msgs::PointCloud2ConstPtr const& cloudPtr, size_t u, size_t v);
-
 
         /**
         * Detects tags in an image, draws the detected markers onto the image, and publishes them to /long_range_tag_detection
@@ -98,7 +103,7 @@ namespace mrover {
         * @param tagCorners - Reference to the mTagCorners vector of Point2fs for the current id of the lrt being created
         * @return a new LongRangeTag
         */
-        LongRangeTag createLrt(int tagId, std::vector<cv::Point2f>& tagCorners);
+        LongRangeTagStruct createLrt(int tagId, std::vector<cv::Point2f>& tagCorners);
 
         /**
         * @see getNormedTagCenter
@@ -128,5 +133,18 @@ namespace mrover {
         * @param tagIndex the index i of the target tag in the mImmediate vectors
         */
         void updateNewlyIdentifiedTags(size_t tagIndex);
+
+
+        /**
+        * Publish the tags which have been detected for more than
+        * mMinHitCountBeforePublish
+        */
+        void publishThresholdTags();
+
+        /**
+        * publishes the thresholded tags onto an image using OpenCV
+        * only if mPublishImages and the topic has a subscriber
+        */
+        void publishTagsOnImage();
     };
 }; // namespace mrover
