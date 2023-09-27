@@ -143,6 +143,7 @@ if (ZED_FOUND)
     set(CMAKE_CUDA_STANDARD 17)
     set(CMAKE_CUDA_STANDARD_REQUIRED ON)
     set(CMAKE_CUDA_SEPARABLE_COMPILATION ON)
+    set(CMAKE_CUDA_FLAGS "--diag-suppress 108,68")
     # Jetson Xavier NX is Volta 7.2 architecture
     # Perception Laptop (A4000, Quadro version of RTX 3080) is Ampere 8.6 architecture
     set(CMAKE_CUDA_ARCHITECTURES 72 86)
@@ -196,8 +197,8 @@ add_cpp_node_macro(brushed_motors src/esw/brushed_motors/*.c*)
 if (ZED_FOUND)
     add_cpp_library_macro(streaming src/esw/streaming/*.c* src/esw/streaming)
 #    target_link_libraries(streaming PUBLIC opencv_core opencv_cudacodec)
-    target_link_libraries(streaming PUBLIC cuda /usr/lib/x86_64-linux-gnu/libnvidia-encode.so)
-    target_include_directories(streaming PUBLIC deps/nvenc)
+    target_link_libraries(streaming PUBLIC cuda nvidia-encode)
+    target_include_directories(streaming SYSTEM PUBLIC deps/nvenc)
 
 
     add_cpp_node_macro(cameras src/esw/cameras/*.c*)
