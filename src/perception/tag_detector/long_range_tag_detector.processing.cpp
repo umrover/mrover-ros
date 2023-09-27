@@ -3,8 +3,12 @@
 #include "../point.hpp" //Might not actually need?'
 #include "mrover/LongRangeTags.h"
 
+#include <image_transport/image_transport.h>
+#include <opencv2/aruco.hpp>
 #include <opencv2/core.hpp>
+#include <opencv2/core/mat.hpp>
 #include <opencv2/core/types.hpp>
+#include <sensor_msgs/Image.h>
 
 namespace mrover {
 
@@ -31,6 +35,7 @@ namespace mrover {
             publishTagsOnImage();
         }
 
+        //Publish all tags that meet threshold
         publishThresholdTags();
 
         //PUBLISH TAGS
@@ -172,6 +177,18 @@ namespace mrover {
         //tagsMessage should be a vector of LongRangeTag messages
         //Need something like an mTagsPublisher
         mLongRangeTagsPub.publish(tagsMessage);
+    }
+
+    void LongRangeTagDetectorNodelet::publishTagsOnImage() {
+        cv::Mat markedImage;
+        mImg.copyTo(markedImage);
+
+        cv::aruco::drawDetectedMarkers(markedImage, mImmediateCorners);
+
+        sensor_msgs::Image imgMsgOut = mImgMsg;
+        imgMsgOut.data = markedImage;
+
+        mImgPub.publish(imgMsgOut);
     }
 
 } // namespace mrover
