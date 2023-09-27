@@ -133,10 +133,10 @@ namespace mrover {
     cv::Point2f LongRangeTagDetectorNodelet::getTagCenterOffsetPixels(std::vector<cv::Point2f>& tagCorners) const {
         cv::Point2f centerPoint = getTagCenterPixels(tagCorners);
 
-        centerPoint.x -= float(mImgMsg.width);
+        centerPoint.x -= static_cast<float>(mImgMsg.width);
 
         //-1 is necessary because of 0,0 being in the top left
-        centerPoint.y = float(-1.0) * (centerPoint.y - float(mImgMsg.height));
+        centerPoint.y = static_cast<float>(-1.0) * (centerPoint.y - static_cast<float>(mImgMsg.height));
 
         return centerPoint;
     }
@@ -144,8 +144,8 @@ namespace mrover {
     cv::Point2f LongRangeTagDetectorNodelet::getNormedTagCenterOffset(std::vector<cv::Point2f>& tagCorners) const {
         cv::Point2f offsetCenterPoint = getTagCenterOffsetPixels(tagCorners);
 
-        offsetCenterPoint.x /= float(mImgMsg.width);
-        offsetCenterPoint.y /= float(mImgMsg.height);
+        offsetCenterPoint.x /= static_cast<float>(mImgMsg.width);
+        offsetCenterPoint.y /= static_cast<float>(mImgMsg.height);
 
         return offsetCenterPoint;
     }
