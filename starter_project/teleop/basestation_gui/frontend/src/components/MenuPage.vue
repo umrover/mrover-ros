@@ -1,9 +1,12 @@
 <template>
   <div class="wrapper">
     <div class="box header">
-      <img src="/static/mrover.png" alt="MRover" title="MRover" width="48" height="48" />
+      <img src="../static/mrover.png" alt="MRover" title="MRover" width="48" height="48" />
       <h1>Mrover Teleop Training</h1>
       <div class="spacer"></div>
+    </div>
+    <div class="box row">
+      <MenuButton link="#/motor_sim" name="Motor Simulator">Motor Simulator</MenuButton>
     </div>
   </div>
 </template>
