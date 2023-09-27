@@ -19,6 +19,10 @@ namespace mrover {
         motor_id_t id;
     } PACKED;
 
+    struct ConfigCommand : BaseCommand {
+        Volts maxVolts;
+    } PACKED;
+
     struct IdleCommand : BaseCommand {
     } PACKED;
 

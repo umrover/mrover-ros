@@ -1,9 +1,12 @@
 #pragma once
 
+#include "main.h"
+
 #include <concepts>
 #include <optional>
 #include <variant>
 
+#include "config.hpp"
 #include "messaging.hpp"
 #include "pidf.hpp"
 #include "units.hpp"
@@ -41,26 +44,40 @@ namespace mrover {
 
         using Mode = std::variant<std::monostate, PositionMode, VelocityMode>;
 
+        Config m_config;
         Reader m_reader;
         Writer m_writer;
         Message m_command;
         Mode m_mode;
+        uint32_t m_id;
 
-        void feed(IdleCommand const& message) {
+        inline void force_configure() {
+            if (!m_config.configured()) {
+                Error_Handler();
+            }
         }
 
+        void feed(IdleCommand const& message) { }
+
         void feed(ThrottleCommand const& message) {
-            m_writer.write_output(make_unit<OutputUnit>(message.throttle.get()));
+            force_configure();
+            m_writer.write(message.throttle * m_config.getMaxVoltage());
         }
 
         void feed(VelocityCommand const& message, VelocityMode mode) {
+            force_configure();
+            (void) message;
+            (void) mode;
         }
 
         void feed(PositionCommand const& message, PositionMode mode) {
-            InputUnit input = m_reader.read_input();
-            InputUnit target = message.position;
-            OutputUnit output = mode.pidf.calculate(input, target);
-            m_writer.write_output(output);
+            force_configure();
+            (void) message;
+            (void) mode;
+//            InputUnit input = m_reader.read_input();
+//            InputUnit target = message.position;
+//            OutputUnit output = mode.pidf.calculate(input, target);
+//            m_writer.write_output(output);
         }
 
         struct detail {
@@ -85,6 +102,9 @@ namespace mrover {
         using command_to_mode_t = typename detail::template command_to_mode<Command, T>::type;
 
     public:
+
+        explicit Controller(const uint32_t id) : m_config(id), m_id(id) {}
+
         template<typename Command>
         void update(Command const& command) {
             // Find the feed function that has the right type for the command
@@ -96,6 +116,8 @@ namespace mrover {
 
             if constexpr (std::is_same_v<ModeForCommand, std::monostate>) {
                 feed(command);
+            } else if (std::is_same_v<ModeForCommand, ConfigCommand>) {
+                m_config.configure(command);
             } else {
                 feed(command, std::get<ModeForCommand>(m_mode));
             }

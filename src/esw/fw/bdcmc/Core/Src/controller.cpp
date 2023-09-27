@@ -7,12 +7,14 @@
 #include "writer.hpp"
 #include "reader.hpp"
 
+#define CAN_ID 1
+
 extern FDCAN_HandleTypeDef hfdcan1;
 
 namespace mrover {
 
     // Motor Controller Definitions Here
-    Controller<Radians, Volts, EncoderReader, BrushedMotorWriter> controller;
+    Controller<Radians, Volts, EncoderReader, BrushedMotorWriter> controller(CAN_ID);
 
 } // namespace mrover
 

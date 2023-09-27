@@ -1,0 +1,3 @@
+/home/edurso/dev/rover/src/mrover/src/esw/fw/bdcmc/cmake-build-stm32-dbg/CMakeFiles/bdcmc.elf.dir
+/home/edurso/dev/rover/src/mrover/src/esw/fw/bdcmc/cmake-build-stm32-dbg/CMakeFiles/edit_cache.dir
+/home/edurso/dev/rover/src/mrover/src/esw/fw/bdcmc/cmake-build-stm32-dbg/CMakeFiles/rebuild_cache.dir
