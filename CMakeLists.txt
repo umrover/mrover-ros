@@ -195,9 +195,9 @@ add_cpp_node_macro(brushed_motors src/esw/brushed_motors/*.c*)
 
 if (ZED_FOUND)
     add_cpp_library_macro(streaming src/esw/streaming/*.c* src/esw/streaming)
-    target_link_libraries(streaming PUBLIC opencv_core opencv_cudacodec)
-#    target_link_libraries(streaming PUBLIC /usr/lib/x86_64-linux-gnu/libnvidia-encode.so)
-#    target_include_directories(streaming PUBLIC deps)
+#    target_link_libraries(streaming PUBLIC opencv_core opencv_cudacodec)
+    target_link_libraries(streaming PUBLIC cuda /usr/lib/x86_64-linux-gnu/libnvidia-encode.so)
+    target_include_directories(streaming PUBLIC deps/nvenc)
 
 
     add_cpp_node_macro(cameras src/esw/cameras/*.c*)
