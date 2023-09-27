@@ -1,1 +1,1 @@
-LongRangeTags[] longRangeTags
+LongRangeTag[] longRangeTags

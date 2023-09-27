@@ -49,6 +49,8 @@ set(MROVER_MESSAGE_FILES
         Waypoint.msg
         WaypointType.msg
         GPSPointList.msg
+        LongRangeTag.msg
+        LongRangeTags.msg
 )
 
 # Service files
