@@ -11,7 +11,6 @@ namespace mrover {
         this->initialized = true;
 
         // TODO Init PWM, Timers, etc.
-        
 
     }
 

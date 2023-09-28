@@ -59,9 +59,13 @@ namespace mrover {
 
         void feed(IdleCommand const& message) { }
 
+        void feed(ConfigCommand const& message) {
+            m_config.configure(message);
+        }
+
         void feed(ThrottleCommand const& message) {
             force_configure();
-            m_writer.write(message.throttle * m_config.getMaxVoltage());
+            m_writer.write_output(message.throttle * m_config.getMaxVoltage());
         }
 
         void feed(VelocityCommand const& message, VelocityMode mode) {
@@ -116,8 +120,6 @@ namespace mrover {
 
             if constexpr (std::is_same_v<ModeForCommand, std::monostate>) {
                 feed(command);
-            } else if (std::is_same_v<ModeForCommand, ConfigCommand>) {
-                m_config.configure(command);
             } else {
                 feed(command, std::get<ModeForCommand>(m_mode));
             }
