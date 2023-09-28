@@ -155,6 +155,14 @@ void Streamer::feed(cv::InputArray frame) {
         throw std::runtime_error("Wrong size");
     }
 
+    NV_ENC_LOCK_INPUT_BUFFER lockInputBufferParams{
+            .version = NV_ENC_LOCK_INPUT_BUFFER_VER,
+            .inputBuffer = m_input,
+    };
+    NvCheck(m_nvenc.nvEncLockInputBuffer(m_encoder, &lockInputBufferParams));
+    std::memcpy(lockInputBufferParams.bufferDataPtr, frame.getMat().data, frame.total() * frame.getMat().elemSize());
+    NvCheck(m_nvenc.nvEncUnlockInputBuffer(m_encoder, m_input));
+
     NV_ENC_PIC_PARAMS picParams{
             .version = NV_ENC_PIC_PARAMS_VER,
             .inputWidth = m_size.width,
@@ -183,6 +191,14 @@ void Streamer::feed(cv::InputArray frame) {
     };
 
     NvCheck(m_nvenc.nvEncEncodePicture(m_encoder, &picParams));
+
+    NV_ENC_LOCK_BITSTREAM lockBitstreamParams{
+            .version = NV_ENC_LOCK_BITSTREAM_VER,
+            .outputBitstream = m_output,
+    };
+    NvCheck(m_nvenc.nvEncLockBitstream(m_encoder, &lockBitstreamParams));
+    std::cout << "Encoded frame " << m_frame_index << " with " << lockBitstreamParams.bitstreamSizeInBytes << " bytes" << std::endl;
+    NvCheck(m_nvenc.nvEncUnlockBitstream(m_encoder, m_output));
 }
 
 Streamer::~Streamer() {

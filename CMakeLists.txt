@@ -213,7 +213,7 @@ if (ZED_FOUND)
     target_precompile_headers(zed_nodelet PRIVATE src/perception/zed_wrapper/pch.hpp)
     target_include_directories(zed_nodelet SYSTEM PRIVATE ${ZED_INCLUDE_DIRS} ${CUDA_INCLUDE_DIRS})
     target_link_libraries(zed_nodelet PRIVATE ${ZED_LIBRARIES} ${SPECIAL_OS_LIBS} lie)
-    target_compile_definitions(zed_nodelet PRIVATE MROVER_IS_NODELET ALLOW_BUILD_DEBUG)
+    target_compile_definitions(zed_nodelet PRIVATE MROVER_IS_NODELET ALLOW_BUILD_DEBUG __CUDA_INCLUDE_COMPILER_INTERNAL_HEADERS__)
 endif ()
 
 add_gazebo_plugin_macro(differential_drive_plugin_6w src/gazebo/differential_drive_6w.cpp src)
