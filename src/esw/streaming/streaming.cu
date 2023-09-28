@@ -1,11 +1,11 @@
+#include "streaming.hpp"
+
 #include <algorithm>
 #include <cstdint>
 #include <iostream>
 #include <stdexcept>
 #include <unordered_map>
 #include <vector>
-
-#include "streaming.hpp"
 
 #include <cuda.h>
 #include <nvEncodeAPI.h>
@@ -60,7 +60,7 @@ std::unordered_map<GUID, std::string> GUID_TO_NAME{
         {NV_ENC_CODEC_AV1_GUID, "AV1"},
 };
 
-Streamer::Streamer(std::uint32_t width, std::uint32_t height) {
+Streamer::Streamer(Size32u const& size) : m_size{size} {
     cudaCheck(cudaSetDevice(0));
     CUcontext context;
     cuCheck(cuCtxGetCurrent(&context));
@@ -72,20 +72,19 @@ Streamer::Streamer(std::uint32_t width, std::uint32_t height) {
             .device = context,
             .apiVersion = NVENCAPI_VERSION,
     };
-    void* encoder = nullptr;
-    NvCheck(m_nvenc.nvEncOpenEncodeSessionEx(&params, &encoder));
-    if (!encoder) {
+    NvCheck(m_nvenc.nvEncOpenEncodeSessionEx(&params, &m_encoder));
+    if (!m_encoder) {
         throw std::runtime_error("No encoder");
     }
 
     std::uint32_t guidCount;
-    NvCheck(m_nvenc.nvEncGetEncodeGUIDCount(encoder, &guidCount));
+    NvCheck(m_nvenc.nvEncGetEncodeGUIDCount(m_encoder, &guidCount));
     if (guidCount == 0) {
         throw std::runtime_error("No GUIDs");
     }
 
     std::vector<GUID> guids(guidCount);
-    NvCheck(m_nvenc.nvEncGetEncodeGUIDs(encoder, guids.data(), guidCount, &guidCount));
+    NvCheck(m_nvenc.nvEncGetEncodeGUIDs(m_encoder, guids.data(), guidCount, &guidCount));
     std::cout << "Supported encoders:" << std::endl;
     for (GUID const& guid: guids) {
         std::cout << "\t" << GUID_TO_NAME[guid] << std::endl;
@@ -101,9 +100,9 @@ Streamer::Streamer(std::uint32_t width, std::uint32_t height) {
     }
 
     std::uint32_t presetCount;
-    NvCheck(m_nvenc.nvEncGetEncodePresetCount(encoder, desiredEncodeGuid, &presetCount));
+    NvCheck(m_nvenc.nvEncGetEncodePresetCount(m_encoder, desiredEncodeGuid, &presetCount));
     std::vector<GUID> presetGuids(presetCount);
-    NvCheck(m_nvenc.nvEncGetEncodePresetGUIDs(encoder, desiredEncodeGuid, presetGuids.data(), presetCount, &presetCount));
+    NvCheck(m_nvenc.nvEncGetEncodePresetGUIDs(m_encoder, desiredEncodeGuid, presetGuids.data(), presetCount, &presetCount));
     if (std::none_of(presetGuids.begin(), presetGuids.end(), [&](const GUID& guid) {
             return std::equal_to<GUID>{}(guid, desiredPresetGuid);
         })) {
@@ -117,20 +116,77 @@ Streamer::Streamer(std::uint32_t width, std::uint32_t height) {
                     .version = NV_ENC_CONFIG_VER,
             },
     };
-    NvCheck(m_nvenc.nvEncGetEncodePresetConfigEx(encoder, desiredEncodeGuid, desiredPresetGuid, tuningInfo, &presetConfig));
+    NvCheck(m_nvenc.nvEncGetEncodePresetConfigEx(m_encoder, desiredEncodeGuid, desiredPresetGuid, tuningInfo, &presetConfig));
 
-    NV_ENC_INITIALIZE_PARAMS encInitParams{
+    NV_ENC_INITIALIZE_PARAMS initEncParams{
             .version = NV_ENC_INITIALIZE_PARAMS_VER,
             .encodeGUID = desiredEncodeGuid,
             .presetGUID = desiredPresetGuid,
-            .encodeWidth = width,
-            .encodeHeight = height,
-            .darWidth = width,
-            .darHeight = height,
+            .encodeWidth = size.width,
+            .encodeHeight = size.height,
+            .darWidth = size.width,
+            .darHeight = size.height,
             .frameRateNum = 30,
             .frameRateDen = 1,
-            .tuningInfo = tuningInfo,
+            .enablePTD = true,
             .encodeConfig = &presetConfig.presetCfg,
+            .tuningInfo = tuningInfo,
     };
-    NvCheck(m_nvenc.nvEncInitializeEncoder(encoder, &encInitParams));
+    NvCheck(m_nvenc.nvEncInitializeEncoder(m_encoder, &initEncParams));
+
+    NV_ENC_CREATE_INPUT_BUFFER createInputBufferParams{
+            .version = NV_ENC_CREATE_INPUT_BUFFER_VER,
+            .width = size.width,
+            .height = size.height,
+            .bufferFmt = NV_ENC_BUFFER_FORMAT_NV12_PL,
+    };
+    NvCheck(m_nvenc.nvEncCreateInputBuffer(m_encoder, &createInputBufferParams));
+    m_input = createInputBufferParams.inputBuffer;
+
+    NV_ENC_CREATE_BITSTREAM_BUFFER createBitstreamBufferParams{
+            .version = NV_ENC_CREATE_BITSTREAM_BUFFER_VER,
+    };
+    NvCheck(m_nvenc.nvEncCreateBitstreamBuffer(m_encoder, &createBitstreamBufferParams));
+    m_output = createBitstreamBufferParams.bitstreamBuffer;
+}
+
+void Streamer::feed(cv::InputArray frame) {
+    if (Size32u{frame.size()} != m_size) {
+        throw std::runtime_error("Wrong size");
+    }
+
+    NV_ENC_PIC_PARAMS picParams{
+            .version = NV_ENC_PIC_PARAMS_VER,
+            .inputWidth = m_size.width,
+            .inputHeight = m_size.height,
+            //            .inputPitch = frame.step() * frame.getMat().elemSize(),
+            //            .encodePicFlags = NV_ENC_PIC_FLAG_FORCEIDR, //https://ottverse.com/what-are-idr-cra-frames-hevc-differences-uses/
+            .frameIdx = m_frame_index++,
+            .inputTimeStamp = static_cast<std::uint64_t>(m_clock.now().time_since_epoch().count()),
+            //            .inputDuration = {},
+            .inputBuffer = m_input,
+            .outputBitstream = m_output,
+            .completionEvent = nullptr,
+            .bufferFmt = NV_ENC_BUFFER_FORMAT_NV12_PL,
+            .pictureStruct = NV_ENC_PIC_STRUCT_FRAME,
+            //            .pictureType = NV_ENC_PIC_TYPE_IDR,
+            //            .codecPicParams = {
+            //                    .hevcPicParams = {
+            //
+            //                    },
+            //            },
+            //            .meHintCountsPerBlock = {
+            //                    {},
+            //                    {},
+            //            },
+            //            .meExternalHints = nullptr,
+    };
+
+    NvCheck(m_nvenc.nvEncEncodePicture(m_encoder, &picParams));
+}
+
+Streamer::~Streamer() {
+    NvCheck(m_nvenc.nvEncDestroyInputBuffer(m_encoder, m_input));
+    NvCheck(m_nvenc.nvEncDestroyBitstreamBuffer(m_encoder, m_output));
+    NvCheck(m_nvenc.nvEncDestroyEncoder(m_encoder));
 }
