@@ -200,7 +200,6 @@ if (ZED_FOUND)
     target_link_libraries(streaming PUBLIC cuda nvidia-encode opencv_core opencv_videoio)
     target_include_directories(streaming SYSTEM PUBLIC deps/nvenc)
 
-
     add_cpp_node_macro(cameras src/esw/cameras/*.c*)
     target_link_libraries(cameras PRIVATE streaming)
 
@@ -221,6 +220,8 @@ add_gazebo_plugin_macro(differential_drive_plugin_6w src/gazebo/differential_dri
 add_gazebo_plugin_macro(kinect_plugin src/gazebo/gazebo_ros_openni_kinect.cpp src/gazebo)
 target_link_libraries(kinect_plugin PRIVATE gazebo_ros_camera_utils DepthCameraPlugin Eigen3::Eigen)
 set_target_properties(kinect_plugin PROPERTIES CXX_CLANG_TIDY "")
+
+add_subdirectory(src/teleoperation/streaming)
 
 ## Testing
 
