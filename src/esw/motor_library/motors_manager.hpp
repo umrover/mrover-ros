@@ -2,31 +2,37 @@
 
 #include "controller.hpp"
 
-#include <map>
+#include <unordered_map>
 
 class MotorsManager {
 public:
     MotorsManager(ros::NodeHandle* n, const std::vector<std::string>& controllerNames, XmlRpc::XmlRpcValue root) {
         for (const std::string& name: controllerNames) {
             assert(root[name].hasMember("type") &&
-               root[name]["type"].getType() == XmlRpc::XmlRpcValue::TypeString);
+                   root[name]["type"].getType() == XmlRpc::XmlRpcValue::TypeString);
             std::string type = static_cast<std::string>(root[name]["type"]);
             assert(type == "brushed" || type == "brushless");
+
             if (type == "brushed") {
-                m[name] = std::make_unique<BrushedController>(&CANPublisher);    
+                controllers[name] = std::make_unique<BrushedController>(n, name);
+            } else if (type == "brushless") {
+                controllers[name] = std::make_unique<BrushlessController>(n, name);
             }
-            else if (type == "brushless") {
-                m[name] = std::make_unique<BrushlessController>(&CANPublisher);
-            }
+
+            names[controllers[name].get_can_manager().get_id()] = name;
         }
     }
 
     auto& get_controller(std::string const& name) {
-        return m.at(name);
+        return controllers.at(name);
     }
 
-    virtual void process_frame(uint64_t frame) = 0;
+    void process_frame(int bus, int id, uint64_t frame_data) {
+        // TODO: figure out how to organize by bus
+        controllers[names[id]].update(frame_data);
+    }
 
 private:
-    std::map<std::string, std::unique_ptr<Controller>> m;
+    std::unordered_map<std::string, std::unique_ptr<Controller>> controllers;
+    std::unordered_map<int, std::string> names;
 };

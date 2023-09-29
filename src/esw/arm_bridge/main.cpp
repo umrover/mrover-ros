@@ -7,8 +7,8 @@ void moveArm(const sensor_msgs::JointState::ConstPtr& msg);
 void heartbeatCallback(const ros::TimerEvent&);
 
 MotorsManager armManager;
-std::vector<std::string> armNames = 
-    {"joint_a", "joint_b", "joint_c", "joint_de", "finger", "gripper"};
+std::vector<std::string> armNames =
+        {"joint_a", "joint_b", "joint_c", "joint_de", "finger", "gripper"};
 
 std::unordered_map<std::string, float> motorMultipliers; // Store the multipliers for each motor
 
@@ -21,13 +21,13 @@ int main(int argc, char** argv) {
     XmlRpc::XmlRpcValue controllersRoot;
     assert(nh.getParam("motors/controllers", controllersRoot));
     assert(controllersRoot.getType() == XmlRpc::XmlRpcValue::TypeStruct);
-    armManager = MotorsManager(armNames, controllersRoot);
+    armManager = MotorsManager(&nh, armNames, controllersRoot);
 
     // Load motor multipliers from the ROS parameter server
     XmlRpc::XmlRpcValue armControllers;
     assert(nh.getParam("arm/controllers", armControllers));
     assert(armControllers.getType() == XmlRpc::XmlRpcValue::TypeStruct);
-    for (const auto& armName : armNames) {
+    for (const auto& armName: armNames) {
         assert(armControllers.hasMember(armName));
         assert(armControllers[armName].getType() == XmlRpc::XmlRpcValue::TypeStruct);
         if (armControllers[armName].hasMember("multiplier")) {
@@ -66,7 +66,7 @@ void moveArm(const sensor_msgs::JointState::ConstPtr& msg) {
 void heartbeatCallback(const ros::TimerEvent&) {
     // If no message has been received within the last 0.1 seconds, set desired speed to 0 for all motors
     if (!messageReceived) {
-        for (const auto& armName : armNames) {
+        for (const auto& armName: armNames) {
             Controller& controller = armManager.get_controller(armName);
             controller.set_desired_speed(0.0);
         }

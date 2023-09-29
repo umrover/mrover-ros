@@ -1,7 +1,5 @@
 #pragma once
 
-#include "controller.hpp"
-
 #include <map>
 
 class CANManager {
@@ -15,6 +13,10 @@ public:
     }
 
     void send_raw_data(uint64_t frame);
+
+    int get_id() {
+        return id;
+    }
 
 private:
     ros::Publisher CANPublisher;
