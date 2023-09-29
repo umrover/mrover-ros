@@ -17,6 +17,10 @@ namespace mrover {
         volatile uint32_t *ccr;
         uint32_t channel;
         bool initialized{false};
+        bool forward_pin;
+        bool backward_pin;
+        inline void set_direction_pins(double duty_cycle);
+        inline void set_pwm(double duty_cycle);
     };
 
 } // namespace mrover
