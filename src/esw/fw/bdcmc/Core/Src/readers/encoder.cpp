@@ -30,7 +30,7 @@ namespace mrover {
         rotation = RADIANS_PER_COUNT_RELATIVE * m_relative_encoder_timer->Instance->CNT + absolute_relative_diff;
     }
 
-    [[nodiscard]] Radians EncoderReader::read_input() const {
+    [[nodiscard]] Radians EncoderReader::read_input(const Config& config) const {
         return rotation;
     }
 

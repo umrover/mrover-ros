@@ -20,13 +20,13 @@ static inline void check(bool cond, std::invocable auto handler) {
 namespace mrover {
 
     template<typename T, typename Input>
-    concept InputReader = requires(T t) {
-        { t.read_input() } -> std::convertible_to<Input>;
+    concept InputReader = requires(T t, Config& config) {
+        { t.read_input(config) } -> std::convertible_to<Input>;
     };
 
     template<typename T, typename Output>
-    concept OutputWriter = requires(T t, Output output) {
-        { t.write_output(output) };
+    concept OutputWriter = requires(T t, Config& config, Output output) {
+        { t.write_output(config, output) };
     };
 
     template<Unitable InputUnit, Unitable OutputUnit,
@@ -65,7 +65,7 @@ namespace mrover {
 
         void feed(ThrottleCommand const& message) {
             force_configure();
-            m_writer.write_output(message.throttle * m_config.getMaxVoltage());
+            m_writer.write_output(m_config, message.throttle * m_config.getMaxVoltage());
         }
 
         void feed(VelocityCommand const& message, VelocityMode mode) {

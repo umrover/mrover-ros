@@ -2,6 +2,7 @@
 
 #include <numbers>
 #include <units.hpp>
+#include <config.hpp>
 
 #include "stm32g4xx_hal.h"
 
@@ -18,7 +19,7 @@ namespace mrover {
         EncoderReader(TIM_HandleTypeDef* relative_encoder_timer, I2C_HandleTypeDef* absolute_encoder_i2c);
         void refresh_absolute();
         void update_count();
-        [[nodiscard]] Radians read_input() const;
+        [[nodiscard]] Radians read_input(const Config& config) const;
 
     private:
         TIM_HandleTypeDef* m_relative_encoder_timer{};
