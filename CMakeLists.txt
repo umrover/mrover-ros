@@ -134,7 +134,7 @@ endmacro()
 
 ## Dependencies
 
-find_package(OpenCV 4.8 EXACT REQUIRED)
+find_package(OpenCV 4.8.1 EXACT REQUIRED)
 find_package(ZED 2 QUIET)
 find_package(gazebo REQUIRED)
 find_package(Eigen3 REQUIRED)
@@ -196,7 +196,7 @@ add_cpp_node_macro(brushed_motors src/esw/brushed_motors/*.c*)
 
 if (ZED_FOUND)
     add_cpp_library_macro(streaming src/esw/streaming/*.c* src/esw/streaming)
-#    target_link_libraries(streaming PUBLIC opencv_core opencv_cudacodec)
+    #    target_link_libraries(streaming PUBLIC opencv_core opencv_cudacodec)
     target_link_libraries(streaming PUBLIC cuda nvidia-encode opencv_core opencv_videoio)
     target_include_directories(streaming SYSTEM PUBLIC deps/nvenc)
 
