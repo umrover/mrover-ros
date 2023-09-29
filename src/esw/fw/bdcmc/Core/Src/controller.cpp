@@ -7,9 +7,9 @@
 #include "writer.hpp"
 #include "reader.hpp"
 
-#define CAN_ID 1
-
 extern FDCAN_HandleTypeDef hfdcan1;
+
+constexpr uint32_t CAN_ID = 1;
 
 namespace mrover {
 
@@ -36,6 +36,8 @@ void loop() {
         FDCAN_RxHeaderTypeDef header;
         mrover::FdCanFrame frame{};
         check(HAL_FDCAN_GetRxMessage(&hfdcan1, FDCAN_RX_FIFO0, &header, frame.bytes) == 0, Error_Handler);
-        mrover::controller.update(frame.message);
+        if (header.Identifier == CAN_ID) {
+            mrover::controller.update(frame.message);
+        }
     }
 }
