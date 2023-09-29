@@ -1,7 +1,9 @@
 #include "writer.hpp"
 
+#include <config.hpp>
+#include <hardware.hpp>
+
 #include "main.h"
-#include "config.hpp"
 
 extern TIM_HandleTypeDef htim3;
 
@@ -17,6 +19,10 @@ namespace mrover {
         this->arr = &(TIM3->ARR);
         this->ccr = &(TIM3->CCR1);
 
+        // Direction pins
+        this->forward_pin = Pin(GPIOA, GPIO_PIN_0);
+        this->reverse_pin = Pin(GPIOA, GPIO_PIN_1);
+
         HAL_TIM_PWM_Start(this->timer, this->channel);
     }
 
@@ -24,15 +30,15 @@ namespace mrover {
         // Force init on first call
         if (!this->initialized) this->init(config);
 
-        // Set duty cycle
+        // Set direction pins/duty cycle
         double duty_cycle = (output / config.getMaxVoltage()).get();
         this->set_direction_pins(duty_cycle);
         this->set_pwm(duty_cycle);
     }
 
     void BrushedMotorWriter::set_direction_pins(double duty_cycle) {
-        this->forward_pin = duty_cycle > 0 ? 1 : 0;
-        this->backward_pin = duty_cycle < 0 ? 1 : 0;
+        this->forward_pin.write((duty_cycle > 0) ? GPIO_PIN_SET : GPIO_PIN_RESET);
+        this->reverse_pin.write((duty_cycle < 0) ? GPIO_PIN_SET : GPIO_PIN_RESET);
     }
 
     void BrushedMotorWriter::set_pwm(double duty_cycle) {
