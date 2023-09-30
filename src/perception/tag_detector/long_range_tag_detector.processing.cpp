@@ -70,16 +70,16 @@ namespace mrover {
         // Set updated status to false
 
         for (auto& mTag: mTags) {
-            LongRangeTagStruct& curtag = mTag.second;
+            LongRangeTagStruct& currentTag = mTag.second;
 
-            if (curtag.updated) {
-                curtag.updated = false;
+            if (currentTag.updated) {
+                currentTag.updated = false;
             } else {
                 //Decrement weight of undetected tags
-                curtag.hitCount -= mTagDecrementWeight;
+                currentTag.hitCount -= mTagDecrementWeight;
 
                 //if the value has fallen belown the minimum, remove it
-                if (curtag.hitCount <= mTagRemoveWeight) {
+                if (currentTag.hitCount <= mTagRemoveWeight) {
                     mTags.erase(mTag.first);
                 }
             }

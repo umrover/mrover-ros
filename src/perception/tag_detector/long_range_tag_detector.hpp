@@ -6,12 +6,12 @@
 
 namespace mrover {
 
-    typedef struct LongRangeTagType {
+    struct LongRangeTagStruct {
         bool updated = false;
         int id = -1;
         int hitCount = 0;
         cv::Point2f imageCenter{};
-    } LongRangeTagStruct;
+    };
 
     class LongRangeTagDetectorNodelet : public nodelet::Nodelet {
         ros::NodeHandle mNh, mPnh;
