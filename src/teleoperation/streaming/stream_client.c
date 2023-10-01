@@ -12,7 +12,7 @@ EM_BOOL on_open(int event_type, const EmscriptenWebSocketOpenEvent* websocket_ev
 }
 
 EM_BOOL on_error(int event_type, const EmscriptenWebSocketErrorEvent* websocket_event, void* user_data) {
-    printf("Stream errored :( %d\n", event_type);
+    puts("Stream errored :(");
 
     return EM_TRUE;
 }
@@ -24,7 +24,7 @@ EM_BOOL on_close(int event_type, const EmscriptenWebSocketCloseEvent* websocket_
 }
 
 EM_BOOL on_message(int event_type, const EmscriptenWebSocketMessageEvent* websocket_event, void* user_data) {
-    de265_error error = de265_push_data(decoder, websocket_event->data, websocket_event->numBytes, clock(), NULL);
+    de265_error error = de265_push_data(decoder, websocket_event->data, (int) websocket_event->numBytes, clock(), NULL);
     if (error != DE265_OK) {
         puts("Errored pushing encoder data");
         return EM_FALSE;
@@ -33,26 +33,27 @@ EM_BOOL on_message(int event_type, const EmscriptenWebSocketMessageEvent* websoc
     int more = 0;
     de265_error decode_status;
     while ((decode_status = de265_decode(decoder, &more)) == DE265_OK && more) {
+    }
 
-        if (decode_status != DE265_OK && decode_status != DE265_ERROR_WAITING_FOR_INPUT_DATA) {
-            printf("Errored decoding: %d\n", decode_status);
+    if (decode_status != DE265_OK && decode_status != DE265_ERROR_WAITING_FOR_INPUT_DATA) {
+        printf("Errored decoding: %d\n", decode_status);
+        return EM_FALSE;
+    }
+
+    const struct de265_image* image;
+    while ((image = de265_peek_next_picture(decoder)) != NULL) {
+        int width = de265_get_image_width(image, 0);
+        int height = de265_get_image_height(image, 0);
+        int format = de265_get_chroma_format(image);
+
+        printf("Got image: %dx%d %d\n", width, height, format);
+
+        if (format != de265_chroma_420) {
+            puts("Unsupported chroma format");
             return EM_FALSE;
         }
 
-        const struct de265_image* image = de265_get_next_picture(decoder);
-
-        if (image != NULL) {
-            int width = de265_get_image_width(image, 0);
-            int height = de265_get_image_height(image, 0);
-            int format = de265_get_chroma_format(image);
-
-            printf("Got image: %dx%d %d\n", width, height, format);
-
-            if (format != de265_chroma_420) {
-                puts("Unsupported chroma format");
-                return EM_FALSE;
-            }
-        }
+        de265_release_next_picture(decoder);
     }
 
     return EM_TRUE;
