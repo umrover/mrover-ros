@@ -1,9 +1,9 @@
 #include "../motor_library/motors_manager.hpp"
 #include <ros/ros.h>
-#include <sensor_msgs/JointState.h>
+#include <mrover/Throttle.h>
 #include <std_msgs/Float32.h> // To publish heartbeats
 
-void moveArm(const sensor_msgs::JointState::ConstPtr& msg);
+void moveArmThrottle(const mrover::Throttle::ConstPtr& msg);
 void heartbeatCallback(const ros::TimerEvent&);
 
 MotorsManager armManager;
@@ -36,7 +36,7 @@ int main(int argc, char** argv) {
     }
 
     // Subscribe to the ROS topic for arm commands
-    ros::Subscriber moveArmSubscriber = n->subscribe<sensor_msgs::JointState>("ra_cmd", 1, moveArm);
+    ros::Subscriber moveArmSubscriber = n->subscribe<sensor_msgs::JointState>("ra_throttle_cmd", 1, moveArmThrottle);
 
     // Create a 0.1 second heartbeat timer
     ros::Timer heartbeatTimer = nh.createTimer(ros::Duration(0.1), heartbeatCallback);
@@ -47,7 +47,7 @@ int main(int argc, char** argv) {
     return 0;
 }
 
-void moveArm(const sensor_msgs::JointState::ConstPtr& msg) {
+void moveArmThrottle(const mrover::Throttle::ConstPtr& msg) {
     if (msg->name != armNames && msg->name.size() != msg->velocity.size()) {
         ROS_ERROR("Arm request is invalid!");
         return;
@@ -56,7 +56,7 @@ void moveArm(const sensor_msgs::JointState::ConstPtr& msg) {
         std::string& name = msg->name[i];
         Controller& controller = armManager.get_controller(name);
         float velocity = std::clamp(msg->velocity[i], -1.0, 1.0);
-        controller.set_desired_speed_unit(velocity);
+        controller.set_desired_speed_throttle(velocity);
     }
 
     // Set the messageReceived flag to true when a message is received
