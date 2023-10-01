@@ -61,6 +61,10 @@ void loop();
 /* USER CODE END EFP */
 
 /* Private defines -----------------------------------------------------------*/
+#define LIMIT_A_0_Pin GPIO_PIN_13
+#define LIMIT_A_0_GPIO_Port GPIOC
+#define LIMIT_B_0_Pin GPIO_PIN_14
+#define LIMIT_B_0_GPIO_Port GPIOC
 #define QUAD_0_B_Pin GPIO_PIN_4
 #define QUAD_0_B_GPIO_Port GPIOA
 #define QUAD_0_A_Pin GPIO_PIN_6
