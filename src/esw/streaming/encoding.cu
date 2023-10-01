@@ -138,7 +138,7 @@ Encoder::Encoder(cv::Size const& size) : m_size{size} {
             .version = NV_ENC_CREATE_INPUT_BUFFER_VER,
             .width = static_cast<std::uint32_t>(m_size.width),
             .height = static_cast<std::uint32_t>(m_size.height),
-            .bufferFmt = NV_ENC_BUFFER_FORMAT_NV12_PL,
+            .bufferFmt = NV_ENC_BUFFER_FORMAT_IYUV,
     };
     NvCheck(m_nvenc.nvEncCreateInputBuffer(m_encoder, &createInputBufferParams));
     m_input = createInputBufferParams.inputBuffer;
@@ -151,7 +151,9 @@ Encoder::Encoder(cv::Size const& size) : m_size{size} {
 }
 
 Encoder::BitstreamView Encoder::feed(cv::InputArray frame) {
-    if (frame.size() != m_size) {
+    if (!frame.isContinuous()) throw std::runtime_error("Frame is not continuous");
+
+    if (frame.size() != cv::Size{m_size.width, m_size.height + m_size.height / 2}) {
         throw std::runtime_error("Wrong size");
     }
 
@@ -160,7 +162,8 @@ Encoder::BitstreamView Encoder::feed(cv::InputArray frame) {
             .inputBuffer = m_input,
     };
     NvCheck(m_nvenc.nvEncLockInputBuffer(m_encoder, &lockInputBufferParams));
-    std::memcpy(lockInputBufferParams.bufferDataPtr, frame.getMat().data, frame.total() * frame.getMat().elemSize());
+    cv::Mat mat = frame.getMat();
+    std::memcpy(lockInputBufferParams.bufferDataPtr, mat.datastart, mat.dataend - mat.datastart);
     NvCheck(m_nvenc.nvEncUnlockInputBuffer(m_encoder, m_input));
 
     NV_ENC_PIC_PARAMS picParams{
@@ -172,7 +175,7 @@ Encoder::BitstreamView Encoder::feed(cv::InputArray frame) {
             .inputBuffer = m_input,
             .outputBitstream = m_output,
             .completionEvent = nullptr,
-            .bufferFmt = NV_ENC_BUFFER_FORMAT_NV12_PL,
+            .bufferFmt = NV_ENC_BUFFER_FORMAT_IYUV,
             .pictureStruct = NV_ENC_PIC_STRUCT_FRAME,
     };
 

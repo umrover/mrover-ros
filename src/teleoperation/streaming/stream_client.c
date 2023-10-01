@@ -5,25 +5,30 @@
 
 de265_decoder_context* decoder = NULL;
 
-EM_BOOL on_open(int event_type, const EmscriptenWebSocketOpenEvent* websocket_event, void* user_data) {
+EM_BOOL on_open(int _event_type, const EmscriptenWebSocketOpenEvent* websocket_event, void* user_data) {
     puts("Stream opened");
 
     return EM_TRUE;
 }
 
-EM_BOOL on_error(int event_type, const EmscriptenWebSocketErrorEvent* websocket_event, void* user_data) {
+EM_BOOL on_error(int _event_type, const EmscriptenWebSocketErrorEvent* websocket_event, void* user_data) {
     puts("Stream errored :(");
 
     return EM_TRUE;
 }
 
-EM_BOOL on_close(int event_type, const EmscriptenWebSocketCloseEvent* websocket_event, void* user_data) {
+EM_BOOL on_close(int _event_type, const EmscriptenWebSocketCloseEvent* websocket_event, void* user_data) {
     puts("Stream closed");
 
     return EM_TRUE;
 }
 
-EM_BOOL on_message(int event_type, const EmscriptenWebSocketMessageEvent* websocket_event, void* user_data) {
+EM_BOOL on_message(int _event_type, const EmscriptenWebSocketMessageEvent* websocket_event, void* user_data) {
+    if (websocket_event->isText) {
+        puts("Got text when expected binary");
+        return EM_FALSE;
+    }
+
     de265_error error = de265_push_data(decoder, websocket_event->data, (int) websocket_event->numBytes, clock(), NULL);
     if (error != DE265_OK) {
         puts("Errored pushing encoder data");

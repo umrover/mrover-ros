@@ -3,8 +3,9 @@ project(mrover_streaming VERSION 2024.0.0 LANGUAGES C)
 
 if (EMSCRIPTEN)
     message(STATUS "Building for the browser")
-    add_compile_options(-msimd128 -flto)
-    add_link_options(-flto -s ALLOW_MEMORY_GROWTH=1)
+#    add_compile_options(-msimd128 -flto)
+#    add_link_options(-flto)
+    add_link_options(-sINITIAL_MEMORY=512MB -sSTACK_SIZE=16MB)
 endif ()
 
 set(ENABLE_SDL OFF)

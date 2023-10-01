@@ -186,6 +186,8 @@ catkin_package()
 
 ## Targets
 
+add_subdirectory(src/teleoperation/streaming)
+
 add_cpp_library_macro(lie src/util/lie/*.c* src/util/lie)
 
 add_cpp_nodelet_macro(tag_detector_nodelet src/perception/tag_detector/*.c* src/perception/tag_detector)
@@ -204,6 +206,9 @@ if (ZED_FOUND)
     add_cpp_node_macro(cameras src/esw/cameras/*.c*)
     target_link_libraries(cameras PRIVATE streaming)
 
+    target_link_libraries(cameras PUBLIC de265)
+    target_include_directories(cameras PUBLIC deps/libde265 ${CMAKE_BINARY_DIR}/libde265)
+
     #            add_cpp_node_macro(zed_node "src/perception/zed_wrapper/*.c*")
     #            target_link_options(zed_node PRIVATE "LINKER:--copy-dt-needed-entries")
     #            target_include_directories(zed_node SYSTEM PRIVATE ${ZED_INCLUDE_DIRS} ${CUDA_INCLUDE_DIRS})
@@ -221,8 +226,6 @@ add_gazebo_plugin_macro(differential_drive_plugin_6w src/gazebo/differential_dri
 add_gazebo_plugin_macro(kinect_plugin src/gazebo/gazebo_ros_openni_kinect.cpp src/gazebo)
 target_link_libraries(kinect_plugin PRIVATE gazebo_ros_camera_utils DepthCameraPlugin Eigen3::Eigen)
 set_target_properties(kinect_plugin PROPERTIES CXX_CLANG_TIDY "")
-
-add_subdirectory(src/teleoperation/streaming)
 
 ## Testing
 
