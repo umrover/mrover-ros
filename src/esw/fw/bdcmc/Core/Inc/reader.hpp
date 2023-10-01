@@ -16,12 +16,13 @@ namespace mrover {
     class EncoderReader {
     public:
         EncoderReader() = default;
-        EncoderReader(TIM_HandleTypeDef* relative_encoder_timer, I2C_HandleTypeDef* absolute_encoder_i2c);
-        void refresh_absolute();
-        void update_count();
         [[nodiscard]] Radians read_input(const Config& config) const;
 
     private:
+        void init(TIM_HandleTypeDef* relative_encoder_timer, I2C_HandleTypeDef* absolute_encoder_i2c);
+        void refresh_absolute();
+        uint32_t read_absolute();
+        void update_count();
         TIM_HandleTypeDef* m_relative_encoder_timer{};
         I2C_HandleTypeDef* m_absolute_encoder_i2c{};
         Radians rotation{};

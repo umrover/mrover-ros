@@ -20,18 +20,18 @@ static inline void check(bool cond, std::invocable auto handler) {
 namespace mrover {
 
     template<typename T, typename Input>
-    concept InputReader = requires(T t, Config& config) {
+    concept InputReader = requires(T t, Config &config) {
         { t.read_input(config) } -> std::convertible_to<Input>;
     };
 
     template<typename T, typename Output>
-    concept OutputWriter = requires(T t, Config& config, Output output) {
+    concept OutputWriter = requires(T t, Config &config, Output output) {
         { t.write_output(config, output) };
     };
 
     template<Unitable InputUnit, Unitable OutputUnit,
-             InputReader<InputUnit> Reader, OutputWriter<OutputUnit> Writer,
-             Unitable TimeUnit = Seconds>
+            InputReader<InputUnit> Reader, OutputWriter<OutputUnit> Writer,
+            Unitable TimeUnit = Seconds>
     class Controller {
     private:
         struct PositionMode {
@@ -57,24 +57,24 @@ namespace mrover {
             }
         }
 
-        void feed(IdleCommand const& message) { }
+        void feed(IdleCommand const &message) {}
 
-        void feed(ConfigCommand const& message) {
+        void feed(ConfigCommand const &message) {
             m_config.configure(message);
         }
 
-        void feed(ThrottleCommand const& message) {
+        void feed(ThrottleCommand const &message) {
             force_configure();
             m_writer.write_output(m_config, message.throttle * m_config.getMaxVoltage());
         }
 
-        void feed(VelocityCommand const& message, VelocityMode mode) {
+        void feed(VelocityCommand const &message, VelocityMode mode) {
             force_configure();
             (void) message;
             (void) mode;
         }
 
-        void feed(PositionCommand const& message, PositionMode mode) {
+        void feed(PositionCommand const &message, PositionMode mode) {
             force_configure();
             (void) message;
             (void) mode;
@@ -90,8 +90,8 @@ namespace mrover {
 
             template<typename Command, typename ModeHead, typename... Modes>
             struct command_to_mode<Command, std::variant<ModeHead, Modes...>> { // Linear search to find corresponding mode
-                using type = std::conditional_t<
-                        requires(Controller controller, Command command, ModeHead mode) { controller.feed(command, mode); },
+                using type = std::conditional_t<requires(Controller controller, Command command,
+                                                         ModeHead mode) { controller.feed(command, mode); },
                         ModeHead,
                         typename command_to_mode<Command, std::variant<Modes...>>::type>; // Recursive call
             };
@@ -110,7 +110,7 @@ namespace mrover {
         explicit Controller(const uint32_t id) : m_config(id), m_id(id) {}
 
         template<typename Command>
-        void update(Command const& command) {
+        void process(Command const &command) {
             // Find the feed function that has the right type for the command
             using ModeForCommand = command_to_mode_t<Command, Mode>;
 
@@ -125,9 +125,14 @@ namespace mrover {
             }
         }
 
-        void update(Message const& message) {
-            std::visit([&](auto const& command) { update(command); }, message);
+        void process(Message const &message) {
+            std::visit([&](auto const &command) { process(command); }, message);
         }
+
+        void update() {
+            // TODO enforce limit switch constraints
+        }
+
     };
 
 } // namespace mrover

@@ -5,7 +5,7 @@
 
 #include "main.h"
 
-extern TIM_HandleTypeDef htim3;
+extern TIM_HandleTypeDef* htim3;
 
 namespace mrover {
 
@@ -14,7 +14,7 @@ namespace mrover {
         this->initialized = true;
 
         // Define Writer Constants
-        this->timer = &htim3;
+        this->timer = htim3;
         this->channel = TIM_CHANNEL_1;
         this->arr = &(TIM3->ARR);
         this->ccr = &(TIM3->CCR1);

@@ -32,12 +32,13 @@ void init() {
 }
 
 void loop() {
+    mrover::controller.update();
     if (HAL_FDCAN_GetRxFifoFillLevel(&hfdcan1, FDCAN_RX_FIFO0)) {
         FDCAN_RxHeaderTypeDef header;
         mrover::FdCanFrame frame{};
         check(HAL_FDCAN_GetRxMessage(&hfdcan1, FDCAN_RX_FIFO0, &header, frame.bytes) == 0, Error_Handler);
         if (header.Identifier == CAN_ID) {
-            mrover::controller.update(frame.message);
+            mrover::controller.process(frame.message);
         }
     }
 }

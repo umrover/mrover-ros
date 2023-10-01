@@ -24,21 +24,19 @@ namespace mrover {
 
     class LimitSwitch {
     public:
-        LimitSwitch(uint8_t _valid, Pin _pin)
+        LimitSwitch(Pin _pin)
             : m_pin(_pin)
             , m_enabled(0)
             , m_is_pressed(0)
-            , m_valid(_valid)
             , m_active_high(0)
             , m_associated_count(0)
             { }
 
         void update_limit_switch() {
             // This suggests active low
-            if (this->m_valid && this->m_enabled) {
+            if (this->m_enabled) {
                 this->m_is_pressed = (this->m_active_high == this->m_pin.read());
-            }
-            else {
+            } else {
                 this->m_is_pressed = 0;
             }
         }
@@ -51,13 +49,6 @@ namespace mrover {
         uint8_t m_active_high;
         int32_t m_associated_count;
 
-void update_limit_switch(LimitSwitch *limit_switch) {
-	// This suggests active low
-	if (limit_switch->valid && limit_switch->enabled) {
-		limit_switch->is_pressed = (limit_switch->active_high == read_pin_value(limit_switch->pin));
-	}
-	else {
-		limit_switch->is_pressed = 0;
-	}
-}   };
+    };
+
 }
