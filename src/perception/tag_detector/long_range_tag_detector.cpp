@@ -2,7 +2,7 @@
 
 namespace mrover {
 
-    void TagDetectorNodelet::onInit() {
+    void LongRangeTagDetectorNodelet::onInit() {
         mNh = getMTNodeHandle();
         mPnh = getMTPrivateNodeHandle();
         mDetectorParams = new cv::aruco::DetectorParameters();
@@ -21,7 +21,7 @@ namespace mrover {
         mImgPub = mIt->advertise("long_range_tag_detection", 1);
         mDictionary = cv::aruco::getPredefinedDictionary(dictionaryNumber);
 
-        mPcSub = mNh.subscribe("zoom_cam/image", 1, &LongRangeTagDetectorNodelet::imageCallback, this);
+        mPcSub = mNh.subscribe("long_range_cam/image", 1, &LongRangeTagDetectorNodelet::imageCallback, this);
         mServiceEnableDetections = mNh.advertiseService("enable_detections", &TagDetectorNodelet::enableDetectionsCallback, this);
 
         // Lambda handles passing class pointer (implicit first parameter) to configCallback
@@ -124,7 +124,7 @@ namespace mrover {
         mDetectorParams->polygonalApproxAccuracyRate = config.polygonalApproxAccuracyRate;
     }
 
-    bool TagDetectorNodelet::enableDetectionsCallback(std_srvs::SetBool::Request& req, std_srvs::SetBool::Response& res) {
+    bool LongRangeTagDetectorNodelet::enableDetectionsCallback(std_srvs::SetBool::Request& req, std_srvs::SetBool::Response& res) {
         mEnableDetections = req.data;
         if (mEnableDetections) {
             res.message = "Enabled tag detections.";
@@ -141,11 +141,11 @@ namespace mrover {
 } // namespace mrover
 
 int main(int argc, char** argv) {
-    ros::init(argc, argv, "tag_detector");
+    ros::init(argc, argv, "long_range_tag_detector");
 
-    // Start the ZED Nodelet
+    // Start the long range cam Nodelet
     nodelet::Loader nodelet;
-    nodelet.load(ros::this_node::getName(), "mrover/TagDetectorNodelet", ros::names::getRemappings(), {});
+    nodelet.load(ros::this_node::getName(), "mrover/LongRangeTagDetectorNodelet", ros::names::getRemappings(), {});
 
     ros::spin();
 
@@ -153,4 +153,4 @@ int main(int argc, char** argv) {
 }
 
 #include <pluginlib/class_list_macros.h>
-PLUGINLIB_EXPORT_CLASS(mrover::TagDetectorNodelet, nodelet::Nodelet)
+PLUGINLIB_EXPORT_CLASS(mrover::LongRangeTagDetectorNodelet, nodelet::Nodelet)
