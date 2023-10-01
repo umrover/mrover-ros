@@ -16,8 +16,8 @@ public:
     // will receive CAN frame with updated motor information (current speed, position, etc.)
     virtual void update(uint64_t frame) = 0;
 
-    virtual void set_desired_speed_throttle(double throttle) = 0; // from -1.0 to 1.0
-    virtual void set_desired_speed_rad_s(double velocity) = 0;  // in rad/s
+    virtual void set_desired_throttle(double throttle) = 0; // from -1.0 to 1.0
+    virtual void set_desired_velocity(double velocity) = 0;  // in rad/s
     virtual void set_desired_position(double position) = 0;  // in rad
     virtual MotorType get_type() = 0;
 
