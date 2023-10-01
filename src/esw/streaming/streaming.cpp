@@ -7,7 +7,7 @@
 #include <boost/beast/core/tcp_stream.hpp>
 #include <boost/beast/websocket.hpp>
 
-Streamer::Streamer(std::string_view host, std::uint16_t port)
+StreamServer::StreamServer(std::string_view host, std::uint16_t port)
     : m_acceptor{m_context} {
 
     tcp::socket socket{m_context};
@@ -40,7 +40,7 @@ Streamer::Streamer(std::string_view host, std::uint16_t port)
     std::cout << "Client connected" << std::endl;
 }
 
-void Streamer::feed(std::span<std::byte> data) {
+void StreamServer::feed(std::span<std::byte> data) {
     net::mutable_buffer buffer{data.data(), data.size()};
     m_client->write(buffer);
 }

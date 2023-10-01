@@ -16,14 +16,14 @@ namespace websocket = beast::websocket;
 
 using tcp = net::ip::tcp;
 
-struct Streamer {
+struct StreamServer {
 
     net::io_context m_context;
     tcp::acceptor m_acceptor;
     std::optional<websocket::stream<beast::tcp_stream>> m_client;
 
 public:
-    Streamer(std::string_view host, std::uint16_t port);
+    StreamServer(std::string_view host, std::uint16_t port);
 
     void feed(std::span<std::byte> data);
 };

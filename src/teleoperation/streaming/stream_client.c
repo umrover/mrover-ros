@@ -98,8 +98,6 @@ EM_BOOL on_message(int _event_type, const EmscriptenWebSocketMessageEvent* webso
             const imageBuffer = Module.imageBuffer;
             const imageData = imageBuffer.data;
 
-            console.log(width, height, yStride, uStride, vStride);
-
             for (let i = 0; i < height; i++) {
                 for (let j = 0; j < width; j++) {
                     const yIndex = i * yStride + j;
@@ -119,8 +117,8 @@ EM_BOOL on_message(int _event_type, const EmscriptenWebSocketMessageEvent* webso
             }
 
             ctx.putImageData(imageBuffer, 0, 0);
-        },
-               width, height, y, u, v, y_stride, u_stride, v_stride);
+
+        }, width, height, y, u, v, y_stride, u_stride, v_stride);
 
         de265_release_next_picture(decoder);
     }

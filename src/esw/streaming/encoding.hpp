@@ -6,7 +6,7 @@
 #include <nvEncodeAPI.h>
 #include <opencv2/core/mat.hpp>
 
-struct Encoder {
+struct NvEncoder {
 
     struct BitstreamView {
         NV_ENCODE_API_FUNCTION_LIST* nvenc = nullptr;
@@ -34,9 +34,9 @@ struct Encoder {
     std::chrono::high_resolution_clock m_clock;
 
 public:
-    Encoder(cv::Size const& size);
+    NvEncoder(cv::Size const& size);
 
-    [[nodiscard]] BitstreamView feed(cv::InputArray frame);
+    [[nodiscard]] BitstreamView feed(cv::InputArray frameI420);
 
-    ~Encoder();
+    ~NvEncoder();
 };

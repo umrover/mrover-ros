@@ -60,7 +60,7 @@ std::unordered_map<GUID, std::string> GUID_TO_NAME{
         {NV_ENC_CODEC_AV1_GUID, "AV1"},
 };
 
-Encoder::Encoder(cv::Size const& size) : m_size{size} {
+NvEncoder::NvEncoder(cv::Size const& size) : m_size{size} {
     cudaCheck(cudaSetDevice(0));
     CUcontext context;
     cuCheck(cuCtxGetCurrent(&context));
@@ -148,19 +148,19 @@ Encoder::Encoder(cv::Size const& size) : m_size{size} {
     m_output = createBitstreamBufferParams.bitstreamBuffer;
 }
 
-Encoder::BitstreamView Encoder::feed(cv::InputArray frame) {
-    if (!frame.isContinuous()) throw std::runtime_error("Frame is not continuous");
-    if (frame.type() != CV_8UC1) throw std::runtime_error("Frame is not I420");
-    if (frame.size() != cv::Size{m_size.width, m_size.height + m_size.height / 2}) throw std::runtime_error("Wrong size");
+NvEncoder::BitstreamView NvEncoder::feed(cv::InputArray frameI420) {
+    if (!frameI420.isContinuous()) throw std::runtime_error("Frame is not continuous");
+    if (frameI420.type() != CV_8UC1) throw std::runtime_error("Not single channel, note that YUV420 is expected");
+    if (frameI420.size() != cv::Size{m_size.width, m_size.height + m_size.height / 2}) throw std::runtime_error("Wrong size, note that YUV420 is expected");
 
     NV_ENC_LOCK_INPUT_BUFFER lockInputBufferParams{
             .version = NV_ENC_LOCK_INPUT_BUFFER_VER,
             .inputBuffer = m_input,
     };
     NvCheck(m_nvenc.nvEncLockInputBuffer(m_encoder, &lockInputBufferParams));
-    for (int r = 0; r < frame.rows(); ++r) {
+    for (int r = 0; r < frameI420.rows(); ++r) {
         std::byte* row = static_cast<std::byte*>(lockInputBufferParams.bufferDataPtr) + r * lockInputBufferParams.pitch;
-        std::memcpy(row, frame.getMat().ptr(r), frame.cols());
+        std::memcpy(row, frameI420.getMat().ptr(r), frameI420.cols());
     }
     NvCheck(m_nvenc.nvEncUnlockInputBuffer(m_encoder, m_input));
 
@@ -182,22 +182,22 @@ Encoder::BitstreamView Encoder::feed(cv::InputArray frame) {
     return {&m_nvenc, m_encoder, m_output};
 }
 
-Encoder::BitstreamView::BitstreamView(NV_ENCODE_API_FUNCTION_LIST* nvenc, void* encoder, NV_ENC_OUTPUT_PTR output)
+NvEncoder::BitstreamView::BitstreamView(NV_ENCODE_API_FUNCTION_LIST* nvenc, void* encoder, NV_ENC_OUTPUT_PTR output)
     : nvenc{nvenc}, encoder{encoder}, output{output}, lockParams{.version = NV_ENC_LOCK_BITSTREAM_VER, .outputBitstream = output} {
     NvCheck(nvenc->nvEncLockBitstream(encoder, &lockParams));
 }
 
-Encoder::BitstreamView::~BitstreamView() {
+NvEncoder::BitstreamView::~BitstreamView() {
     if (nvenc && encoder && output) {
         NvCheck(nvenc->nvEncUnlockBitstream(encoder, output));
     }
 }
 
-Encoder::BitstreamView::BitstreamView(Encoder::BitstreamView&& other) noexcept {
+NvEncoder::BitstreamView::BitstreamView(NvEncoder::BitstreamView&& other) noexcept {
     *this = std::move(other);
 }
 
-Encoder::BitstreamView& Encoder::BitstreamView::operator=(Encoder::BitstreamView&& other) noexcept {
+NvEncoder::BitstreamView& NvEncoder::BitstreamView::operator=(NvEncoder::BitstreamView&& other) noexcept {
     std::swap(nvenc, other.nvenc);
     std::swap(encoder, other.encoder);
     std::swap(output, other.output);
@@ -205,7 +205,7 @@ Encoder::BitstreamView& Encoder::BitstreamView::operator=(Encoder::BitstreamView
     return *this;
 }
 
-Encoder::~Encoder() {
+NvEncoder::~NvEncoder() {
     NvCheck(m_nvenc.nvEncDestroyInputBuffer(m_encoder, m_input));
     NvCheck(m_nvenc.nvEncDestroyBitstreamBuffer(m_encoder, m_output));
     NvCheck(m_nvenc.nvEncDestroyEncoder(m_encoder));
