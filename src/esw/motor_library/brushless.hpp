@@ -50,7 +50,7 @@ public:
     void update(uint64_t frame) override;
 
     void set_desired_speed_throttle(double speed) override; // from -1.0 to 1.0
-    void set_desired_speed_rev_s(double speed);  // in rev/s
+    void set_desired_speed_rad_s(double speed);  // in rev/s
     void set_desired_position(int position) override;
     MotorType get_type() override;
 

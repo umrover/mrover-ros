@@ -116,10 +116,11 @@ void moveDrive(const geometry_msgs::Twist::ConstPtr& msg) {
 
         // Set the desired speed for the motor
         float multiplier = motorMultipliers[name];
-        float velocity = pair.second * multiplier;
+        float velocity = pair.second * multiplier;  // currently in rad/s
 
         Controller& controller = driveManager.get_controller(name);
-        controller.set_desired_speed_rev_s(velocity);
+        float vel_rad_s = velocity * 2 * M_PI;
+        controller.set_desired_speed_rad_s(vel_rad_s);
     }
 
     // Set the messageReceived flag to true when a message is received
