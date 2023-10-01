@@ -1,8 +1,14 @@
 #include "long_range_tag_detector.hpp"
 
-#include "../point.hpp"
+#include "../point.hpp" //Might not actually need?'
+#include "mrover/LongRangeTags.h"
+
+#include <image_transport/image_transport.h>
+#include <opencv2/aruco.hpp>
 #include <opencv2/core.hpp>
+#include <opencv2/core/mat.hpp>
 #include <opencv2/core/types.hpp>
+#include <sensor_msgs/Image.h>
 
 namespace mrover {
 
@@ -26,8 +32,11 @@ namespace mrover {
         // 3. We only want to publish the tags if the topic has subscribers
         if (mPublishImages && mImgPub.getNumSubscribers()) {
             // Draw the tags on the image using OpenCV
-            // LongRangeTagDetectorNodelet::publishDrawnImages()
+            publishTagsOnImage();
         }
+
+        //Publish all tags that meet threshold
+        publishThresholdTags();
 
         //PUBLISH TAGS
     }
@@ -61,16 +70,16 @@ namespace mrover {
         // Set updated status to false
 
         for (auto& mTag: mTags) {
-            LongRangeTag& curtag = mTag.second;
+            LongRangeTagStruct& currentTag = mTag.second;
 
-            if (curtag.updated) {
-                curtag.updated = false;
+            if (currentTag.updated) {
+                currentTag.updated = false;
             } else {
                 //Decrement weight of undetected tags
-                curtag.hitCount -= mTagDecrementWeight;
+                currentTag.hitCount -= mTagDecrementWeight;
 
                 //if the value has fallen belown the minimum, remove it
-                if (curtag.hitCount <= mTagRemoveWeight) {
+                if (currentTag.hitCount <= mTagRemoveWeight) {
                     mTags.erase(mTag.first);
                 }
             }
@@ -80,8 +89,8 @@ namespace mrover {
         //decrement non updated & set updated status to false
     }
 
-    LongRangeTag LongRangeTagDetectorNodelet::createLrt(int tagId, std::vector<cv::Point2f>& tagCorners) {
-        LongRangeTag lrt;
+    LongRangeTagStruct LongRangeTagDetectorNodelet::createLrt(int tagId, std::vector<cv::Point2f>& tagCorners) {
+        LongRangeTagStruct lrt;
 
         lrt.hitCount = mBaseHitCount; //Start at base hit count value
         lrt.id = tagId;
@@ -96,7 +105,7 @@ namespace mrover {
         int currentId = mImmediateIds[tagIndex];
 
         //Create new struct for each tag
-        LongRangeTag lrt = createLrt(currentId, mImmediateCorners[tagIndex]);
+        LongRangeTagStruct lrt = createLrt(currentId, mImmediateCorners[tagIndex]);
 
         //Check if the tag was already detected and update hitCount to reflect
         if (mTags.contains(currentId)) {
@@ -129,10 +138,10 @@ namespace mrover {
     cv::Point2f LongRangeTagDetectorNodelet::getTagCenterOffsetPixels(std::vector<cv::Point2f>& tagCorners) const {
         cv::Point2f centerPoint = getTagCenterPixels(tagCorners);
 
-        centerPoint.x -= float(mImgMsg.width);
+        centerPoint.x -= static_cast<float>(mImgMsg.width);
 
         //-1 is necessary because of 0,0 being in the top left
-        centerPoint.y = float(-1.0) * (centerPoint.y - float(mImgMsg.height));
+        centerPoint.y = static_cast<float>(-1.0) * (centerPoint.y - static_cast<float>(mImgMsg.height));
 
         return centerPoint;
     }
@@ -140,10 +149,46 @@ namespace mrover {
     cv::Point2f LongRangeTagDetectorNodelet::getNormedTagCenterOffset(std::vector<cv::Point2f>& tagCorners) const {
         cv::Point2f offsetCenterPoint = getTagCenterOffsetPixels(tagCorners);
 
-        offsetCenterPoint.x /= float(mImgMsg.width);
-        offsetCenterPoint.y /= float(mImgMsg.height);
+        offsetCenterPoint.x /= static_cast<float>(mImgMsg.width);
+        offsetCenterPoint.y /= static_cast<float>(mImgMsg.height);
 
         return offsetCenterPoint;
+    }
+
+    void LongRangeTagDetectorNodelet::publishThresholdTags() {
+        //Loop through all the tags
+        LongRangeTags tagsMessage; //
+
+        for (auto& tag: mTags) {
+            if (tag.second.hitCount >= mMinHitCountBeforePublish) {
+                //LongRangeTag message
+                LongRangeTag newTagMessage;
+
+                //Fill in fields
+                newTagMessage.id = tag.second.id;
+                newTagMessage.xOffset = tag.second.imageCenter.x;
+                newTagMessage.yOffset = tag.second.imageCenter.y;
+
+                //Add to back of tagsMessage
+                tagsMessage.longRangeTags.push_back(newTagMessage);
+            }
+        }
+
+        //tagsMessage should be a vector of LongRangeTag messages
+        //Need something like an mTagsPublisher
+        mLongRangeTagsPub.publish(tagsMessage);
+    }
+
+    void LongRangeTagDetectorNodelet::publishTagsOnImage() {
+        cv::Mat markedImage;
+        mImg.copyTo(markedImage);
+
+        cv::aruco::drawDetectedMarkers(markedImage, mImmediateCorners);
+
+        sensor_msgs::Image imgMsgOut = mImgMsg;
+        imgMsgOut.data = markedImage;
+
+        mImgPub.publish(imgMsgOut);
     }
 
 } // namespace mrover
