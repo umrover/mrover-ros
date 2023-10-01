@@ -3,6 +3,24 @@
 #include <emscripten/websocket.h>
 #include <libde265/de265.h>
 
+//typedef struct {
+//    int width;
+//    int height;
+//    uint8_t* data;
+//} rgba_image_t;
+//
+//rgba_image_t* new_rgba_image(int width, int height) {
+//    rgba_image_t* image = malloc(sizeof(rgba_image_t));
+//    if (!image) return NULL;
+//
+//    image->width = width;
+//    image->height = height;
+//    image->data = malloc(width * height * 4);
+//    return image;
+//}
+//
+//rgba_image_t* rgba_image = NULL;
+
 de265_decoder_context* decoder = NULL;
 
 EM_BOOL on_open(int _event_type, const EmscriptenWebSocketOpenEvent* websocket_event, void* user_data) {
@@ -51,12 +69,58 @@ EM_BOOL on_message(int _event_type, const EmscriptenWebSocketMessageEvent* webso
         int height = de265_get_image_height(image, 0);
         int format = de265_get_chroma_format(image);
 
-        printf("Got image: %dx%d %d\n", width, height, format);
-
         if (format != de265_chroma_420) {
             puts("Unsupported chroma format");
             return EM_FALSE;
         }
+
+        int y_stride, u_stride, v_stride;
+        const uint8_t* y = de265_get_image_plane(image, 0, &y_stride);
+        const uint8_t* u = de265_get_image_plane(image, 1, &u_stride);
+        const uint8_t* v = de265_get_image_plane(image, 2, &v_stride);
+
+        EM_ASM({
+            const width = $0;
+            const height = $1;
+
+            const y = HEAPU8.subarray($2, $2 + width * height);
+            const u = HEAPU8.subarray($3, $3 + width * height / 4);
+            const v = HEAPU8.subarray($4, $4 + width * height / 4);
+
+            const yStride = $5;
+            const uStride = $6;
+            const vStride = $7;
+
+            const ctx = document.getElementById('canvas').getContext('2d');
+            if (Module.imageBuffer === undefined) {
+                Module.imageBuffer = ctx.createImageData(width, height);
+            }
+            const imageBuffer = Module.imageBuffer;
+            const imageData = imageBuffer.data;
+
+            console.log(width, height, yStride, uStride, vStride);
+
+            for (let i = 0; i < height; i++) {
+                for (let j = 0; j < width; j++) {
+                    const yIndex = i * yStride + j;
+                    const uIndex = (i / 2 | 0) * uStride + (j / 2 | 0);
+                    const vIndex = (i / 2 | 0) * vStride + (j / 2 | 0);
+
+                    const r = y[yIndex] + 1.402 * (v[vIndex] - 128);
+                    const g = y[yIndex] - 0.344136 * (u[uIndex] - 128) - 0.714136 * (v[vIndex] - 128);
+                    const b = y[yIndex] + 1.772 * (u[uIndex] - 128);
+
+                    const index = (i * width + j) * 4;
+                    imageData[index + 0] = y[yIndex];
+                    imageData[index + 1] = y[yIndex];
+                    imageData[index + 2] = y[yIndex];
+                    imageData[index + 3] = 255;
+                }
+            }
+
+            ctx.putImageData(imageBuffer, 0, 0);
+        },
+               width, height, y, u, v, y_stride, u_stride, v_stride);
 
         de265_release_next_picture(decoder);
     }
@@ -69,6 +133,9 @@ int main() {
 
     decoder = de265_new_decoder();
     if (!decoder) return EXIT_FAILURE;
+
+    //    rgba_image = new_rgba_image(640, 480);
+    //    if (!rgba_image) return EXIT_FAILURE;
 
     de265_error error = de265_start_worker_threads(decoder, 0);
     if (error != DE265_OK) return EXIT_FAILURE;

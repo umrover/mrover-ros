@@ -152,18 +152,15 @@ Encoder::Encoder(cv::Size const& size) : m_size{size} {
 
 Encoder::BitstreamView Encoder::feed(cv::InputArray frame) {
     if (!frame.isContinuous()) throw std::runtime_error("Frame is not continuous");
-
-    if (frame.size() != cv::Size{m_size.width, m_size.height + m_size.height / 2}) {
-        throw std::runtime_error("Wrong size");
-    }
+    if (frame.type() != CV_8UC1) throw std::runtime_error("Frame is not I420");
+    if (frame.size() != cv::Size{m_size.width, m_size.height + m_size.height / 2}) throw std::runtime_error("Wrong size");
 
     NV_ENC_LOCK_INPUT_BUFFER lockInputBufferParams{
             .version = NV_ENC_LOCK_INPUT_BUFFER_VER,
             .inputBuffer = m_input,
     };
     NvCheck(m_nvenc.nvEncLockInputBuffer(m_encoder, &lockInputBufferParams));
-    cv::Mat mat = frame.getMat();
-    std::memcpy(lockInputBufferParams.bufferDataPtr, mat.datastart, mat.dataend - mat.datastart);
+    std::memcpy(lockInputBufferParams.bufferDataPtr, frame.getMat().data, frame.total());
     NvCheck(m_nvenc.nvEncUnlockInputBuffer(m_encoder, m_input));
 
     NV_ENC_PIC_PARAMS picParams{

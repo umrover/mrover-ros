@@ -1,6 +1,8 @@
 cmake_minimum_required(VERSION 3.16)
 project(mrover_streaming VERSION 2024.0.0 LANGUAGES C)
 
+#set(CMAKE_TOOLCHAIN_FILE /home/quintin/Programming/emsdk/upstream/emscripten/cmake/Modules/Platform/Emscripten.cmake
+
 if (EMSCRIPTEN)
     message(STATUS "Building for the browser")
     if (CMAKE_BUILD_TYPE STREQUAL Release)
