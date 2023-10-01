@@ -26,7 +26,10 @@ namespace mrover {
         bool mUseLoopProfiler{};
         bool mUseDepthStabilization{};
         float mDepthMaximumDistance{};
+       
 
+
+        
         Measures mGrabMeasures, mPcMeasures;
 
         std::thread mGrabThread;
