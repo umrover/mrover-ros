@@ -1,4 +1,4 @@
-#include "streaming.hpp"
+#include "encoding.hpp"
 
 #include <algorithm>
 #include <cstdint>
@@ -60,7 +60,7 @@ std::unordered_map<GUID, std::string> GUID_TO_NAME{
         {NV_ENC_CODEC_AV1_GUID, "AV1"},
 };
 
-Streamer::Streamer(Size32u const& size) : m_size{size} {
+Encoder::Encoder(cv::Size const& size) : m_size{size} {
     cudaCheck(cudaSetDevice(0));
     CUcontext context;
     cuCheck(cuCtxGetCurrent(&context));
@@ -122,10 +122,10 @@ Streamer::Streamer(Size32u const& size) : m_size{size} {
             .version = NV_ENC_INITIALIZE_PARAMS_VER,
             .encodeGUID = desiredEncodeGuid,
             .presetGUID = desiredPresetGuid,
-            .encodeWidth = size.width,
-            .encodeHeight = size.height,
-            .darWidth = size.width,
-            .darHeight = size.height,
+            .encodeWidth = static_cast<std::uint32_t>(m_size.width),
+            .encodeHeight = static_cast<std::uint32_t>(m_size.height),
+            .darWidth = static_cast<std::uint32_t>(m_size.width),
+            .darHeight = static_cast<std::uint32_t>(m_size.height),
             .frameRateNum = 30,
             .frameRateDen = 1,
             .enablePTD = true,
@@ -136,8 +136,8 @@ Streamer::Streamer(Size32u const& size) : m_size{size} {
 
     NV_ENC_CREATE_INPUT_BUFFER createInputBufferParams{
             .version = NV_ENC_CREATE_INPUT_BUFFER_VER,
-            .width = size.width,
-            .height = size.height,
+            .width = static_cast<std::uint32_t>(m_size.width),
+            .height = static_cast<std::uint32_t>(m_size.height),
             .bufferFmt = NV_ENC_BUFFER_FORMAT_NV12_PL,
     };
     NvCheck(m_nvenc.nvEncCreateInputBuffer(m_encoder, &createInputBufferParams));
@@ -150,8 +150,8 @@ Streamer::Streamer(Size32u const& size) : m_size{size} {
     m_output = createBitstreamBufferParams.bitstreamBuffer;
 }
 
-void Streamer::feed(cv::InputArray frame) {
-    if (Size32u{frame.size()} != m_size) {
+Encoder::BitstreamView Encoder::feed(cv::InputArray frame) {
+    if (frame.size() != m_size) {
         throw std::runtime_error("Wrong size");
     }
 
@@ -165,43 +165,46 @@ void Streamer::feed(cv::InputArray frame) {
 
     NV_ENC_PIC_PARAMS picParams{
             .version = NV_ENC_PIC_PARAMS_VER,
-            .inputWidth = m_size.width,
-            .inputHeight = m_size.height,
-            //            .inputPitch = frame.step() * frame.getMat().elemSize(),
-            //            .encodePicFlags = NV_ENC_PIC_FLAG_FORCEIDR, //https://ottverse.com/what-are-idr-cra-frames-hevc-differences-uses/
+            .inputWidth = static_cast<std::uint32_t>(m_size.width),
+            .inputHeight = static_cast<std::uint32_t>(m_size.height),
             .frameIdx = m_frame_index++,
             .inputTimeStamp = static_cast<std::uint64_t>(m_clock.now().time_since_epoch().count()),
-            //            .inputDuration = {},
             .inputBuffer = m_input,
             .outputBitstream = m_output,
             .completionEvent = nullptr,
             .bufferFmt = NV_ENC_BUFFER_FORMAT_NV12_PL,
             .pictureStruct = NV_ENC_PIC_STRUCT_FRAME,
-            //            .pictureType = NV_ENC_PIC_TYPE_IDR,
-            //            .codecPicParams = {
-            //                    .hevcPicParams = {
-            //
-            //                    },
-            //            },
-            //            .meHintCountsPerBlock = {
-            //                    {},
-            //                    {},
-            //            },
-            //            .meExternalHints = nullptr,
     };
 
     NvCheck(m_nvenc.nvEncEncodePicture(m_encoder, &picParams));
 
-    NV_ENC_LOCK_BITSTREAM lockBitstreamParams{
-            .version = NV_ENC_LOCK_BITSTREAM_VER,
-            .outputBitstream = m_output,
-    };
-    NvCheck(m_nvenc.nvEncLockBitstream(m_encoder, &lockBitstreamParams));
-    std::cout << "Encoded frame " << m_frame_index << " with " << lockBitstreamParams.bitstreamSizeInBytes << " bytes" << std::endl;
-    NvCheck(m_nvenc.nvEncUnlockBitstream(m_encoder, m_output));
+    return {&m_nvenc, m_encoder, m_output};
 }
 
-Streamer::~Streamer() {
+Encoder::BitstreamView::BitstreamView(NV_ENCODE_API_FUNCTION_LIST* nvenc, void* encoder, NV_ENC_OUTPUT_PTR output)
+    : nvenc{nvenc}, encoder{encoder}, output{output}, lockParams{.version = NV_ENC_LOCK_BITSTREAM_VER, .outputBitstream = output} {
+    NvCheck(nvenc->nvEncLockBitstream(encoder, &lockParams));
+}
+
+Encoder::BitstreamView::~BitstreamView() {
+    if (nvenc && encoder && output) {
+        NvCheck(nvenc->nvEncUnlockBitstream(encoder, output));
+    }
+}
+
+Encoder::BitstreamView::BitstreamView(Encoder::BitstreamView&& other) noexcept {
+    *this = std::move(other);
+}
+
+Encoder::BitstreamView& Encoder::BitstreamView::operator=(Encoder::BitstreamView&& other) noexcept {
+    std::swap(nvenc, other.nvenc);
+    std::swap(encoder, other.encoder);
+    std::swap(output, other.output);
+    std::swap(lockParams, other.lockParams);
+    return *this;
+}
+
+Encoder::~Encoder() {
     NvCheck(m_nvenc.nvEncDestroyInputBuffer(m_encoder, m_input));
     NvCheck(m_nvenc.nvEncDestroyBitstreamBuffer(m_encoder, m_output));
     NvCheck(m_nvenc.nvEncDestroyEncoder(m_encoder));

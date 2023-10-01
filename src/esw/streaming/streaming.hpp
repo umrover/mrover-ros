@@ -1,22 +1,29 @@
 #pragma once
 
-#include "pch.hpp"
+#include <cstdint>
+#include <optional>
+#include <span>
+#include <string_view>
 
-using Size32u = cv::Size_<std::uint32_t>;
+#include <boost/asio/ip/tcp.hpp>
+#include <boost/beast/core/tcp_stream.hpp>
+#include <boost/beast/websocket.hpp>
+
+namespace net = boost::asio;
+namespace beast = boost::beast;
+namespace http = beast::http;
+namespace websocket = beast::websocket;
+
+using tcp = net::ip::tcp;
 
 struct Streamer {
 
-    Size32u m_size;
-    NV_ENCODE_API_FUNCTION_LIST m_nvenc{NV_ENCODE_API_FUNCTION_LIST_VER};
-    void* m_encoder = nullptr;
-    NV_ENC_INPUT_PTR m_input = nullptr;
-    NV_ENC_OUTPUT_PTR m_output = nullptr;
-    uint32_t m_frame_index = 0;
-    std::chrono::high_resolution_clock m_clock;
+    net::io_context m_context;
+    tcp::acceptor m_acceptor;
+    std::optional<websocket::stream<beast::tcp_stream>> m_client;
 
-    Streamer(Size32u const& size);
+public:
+    Streamer(std::string_view host, std::uint16_t port);
 
-    void feed(cv::InputArray frame);
-
-    ~Streamer();
+    void feed(std::span<std::byte> data);
 };

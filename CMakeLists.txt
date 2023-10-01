@@ -199,6 +199,7 @@ if (ZED_FOUND)
     #    target_link_libraries(streaming PUBLIC opencv_core opencv_cudacodec)
     target_link_libraries(streaming PUBLIC cuda nvidia-encode opencv_core opencv_videoio)
     target_include_directories(streaming SYSTEM PUBLIC deps/nvenc)
+    target_compile_definitions(streaming PUBLIC BOOST_ASIO_NO_DEPRECATED)
 
     add_cpp_node_macro(cameras src/esw/cameras/*.c*)
     target_link_libraries(cameras PRIVATE streaming)
