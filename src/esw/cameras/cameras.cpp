@@ -33,22 +33,13 @@ int main() {
     //            "v4l2src ! videoconvert ! video/x-raw,width=320,height=240,format=I420,framerate=30/1 ! appsink",
     //            cv::CAP_GSTREAMER};
 
-    cv::VideoCapture cap{"videotestsrc pattern=smpte100 ! video/x-raw,width=320,height=240,format=I420,framerate=30/1 ! appsink", cv::CAP_GSTREAMER};
+    cv::VideoCapture cap{"videotestsrc ! video/x-raw,width=320,height=240,format=I420,framerate=30/1 ! appsink", cv::CAP_GSTREAMER};
 
-    if (!cap.isOpened()) {
-        throw std::runtime_error{"Failed to open capture"};
-    }
+    if (!cap.isOpened()) throw std::runtime_error{"Failed to open capture"};
 
     static de265_decoder_context* decoder = de265_new_decoder();
     if (!decoder) return EXIT_FAILURE;
     if (de265_error error = de265_start_worker_threads(decoder, 0); error != DE265_OK) throw std::runtime_error{"Errored starting worker threads"};
-
-    //    static en265_encoder_context* encoder = en265_new_encoder();
-    //    if (!encoder) throw std::runtime_error{"Errored creating encoder"};
-    //    if (de265_error error = en265_start_encoder(encoder, 12); error != DE265_OK) throw std::runtime_error{"Errored starting encoder"};
-    //
-    //    static de265_image* encode_image = en265_allocate_image(encoder, size.width, size.height, de265_chroma_420, 0, nullptr);
-    //    if (!encode_image) throw std::runtime_error{"Errored allocating image"};
 
     int more = 1;
     while (more) {
@@ -81,14 +72,7 @@ int main() {
 
                 int ystride;
                 auto* y = de265_get_image_plane(image, 0, &ystride);
-                std::cout << std::format("Got image of size {}x{} with stride {} and bpp {}\n", width, height, ystride, bpp);
-                cv::Mat Y = cv::Mat::zeros(height, width, CV_8UC1);
-                std::memcpy(Y.data, y, width * height);
-                //            cv::Mat Y = cv::Mat::zeros(height, width, CV_8UC1);
-                //            for (int i = 0; i < width; ++i) {
-                //                cv::Mat row = cv::Mat{height, 1, CV_8UC1, (void*) (y + i * ystride)};
-                //                row.copyTo(Y.col(i));
-                //            }
+                cv::Mat Y{height, width, CV_8UC1, (void*) y, static_cast<size_t>(ystride)};
                 cv::imshow("Y", Y);
                 cv::waitKey(1);
 
@@ -96,26 +80,6 @@ int main() {
             }
         } while (image);
     }
-
-    //        auto* y = de265_get_image_plane(encode_image, 0, nullptr);
-    //        auto* u = de265_get_image_plane(encode_image, 1, nullptr);
-    //        auto* v = de265_get_image_plane(encode_image, 2, nullptr);
-    //        std::memcpy((void*) y, frame.data, size.area());0
-    //        std::memcpy((void*) u, frame.data + size.area(), size.area() / 4);
-    //        std::memcpy((void*) v, frame.data + size.area() + size.area() / 4, size.area() / 4);
-
-    //        if (de265_error error = en265_push_image(encoder, encode_image); error != DE265_OK) throw std::runtime_error{"Errored pushing encoder image"};
-    //        if (de265_error error = en265_encode(encoder); error != DE265_OK) throw std::runtime_error{"Errored encoding"};
-
-    //        en265_packet* packet;
-    //        while ((packet = en265_get_packet(encoder, 0))) {
-    //            std::cout << std::format("Got packet of size {}\n", packet->length);
-    //            de265_error error = de265_push_data(decoder, packet->data, packet->length, 0, nullptr);
-    //            if (error != DE265_OK) {
-    //                throw std::runtime_error{"Errored pushing encoder data"};
-    //            }
-    //        }
-
 
     return EXIT_SUCCESS;
 }

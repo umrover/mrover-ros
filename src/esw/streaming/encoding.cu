@@ -124,8 +124,6 @@ Encoder::Encoder(cv::Size const& size) : m_size{size} {
             .presetGUID = desiredPresetGuid,
             .encodeWidth = static_cast<std::uint32_t>(m_size.width),
             .encodeHeight = static_cast<std::uint32_t>(m_size.height),
-            .darWidth = static_cast<std::uint32_t>(m_size.width),
-            .darHeight = static_cast<std::uint32_t>(m_size.height),
             .frameRateNum = 30,
             .frameRateDen = 1,
             .enablePTD = true,
@@ -160,7 +158,10 @@ Encoder::BitstreamView Encoder::feed(cv::InputArray frame) {
             .inputBuffer = m_input,
     };
     NvCheck(m_nvenc.nvEncLockInputBuffer(m_encoder, &lockInputBufferParams));
-    std::memcpy(lockInputBufferParams.bufferDataPtr, frame.getMat().data, frame.total());
+    for (int r = 0; r < frame.rows(); ++r) {
+        std::byte* row = static_cast<std::byte*>(lockInputBufferParams.bufferDataPtr) + r * lockInputBufferParams.pitch;
+        std::memcpy(row, frame.getMat().ptr(r), frame.cols());
+    }
     NvCheck(m_nvenc.nvEncUnlockInputBuffer(m_encoder, m_input));
 
     NV_ENC_PIC_PARAMS picParams{
