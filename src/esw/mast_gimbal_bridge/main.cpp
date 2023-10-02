@@ -39,12 +39,12 @@ int main(int argc, char** argv) {
 }
 
 void moveMastGimbalThrottle(const mrover::Throttle::ConstPtr& msg) {
-    if (msg->name != mastGimbalNames && msg->name.size() != msg->throttle.size()) {
+    if (msg->names != mastGimbalNames && msg->names.size() != msg->throttle.size()) {
         ROS_ERROR("Mast Gimbal request is invalid!");
         return;
     }
-    for (size_t i = 0; i < msg->name.size(); ++i) {
-        std::string& name = msg->name[i];
+    for (size_t i = 0; i < msg->names.size(); ++i) {
+        std::string& name = msg->names[i];
         Controller& controller = mastGimbalManager.get_controller(name);
         float throttle = std::clamp(msg->throttle[i], -1.0, 1.0);
         controller.set_desired_throttle(throttle);
@@ -55,12 +55,12 @@ void moveMastGimbalThrottle(const mrover::Throttle::ConstPtr& msg) {
 }
 
 void moveMastGimbalPositionSubscriber(const mrover::Position::ConstPtr& msg) {
-    if (msg->name != mastGimbalNames && msg->name.size() != msg->position.size()) {
+    if (msg->names != mastGimbalNames && msg->names.size() != msg->position.size()) {
         ROS_ERROR("Mast Gimbal request is invalid!");
         return;
     }
-    for (size_t i = 0; i < msg->name.size(); ++i) {
-        std::string& name = msg->name[i];
+    for (size_t i = 0; i < msg->names.size(); ++i) {
+        std::string& name = msg->names[i];
         Controller& controller = mastGimbalManager.get_controller(name);
         float position = 0.0;
 

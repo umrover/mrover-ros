@@ -1,6 +1,12 @@
 #pragma once
 
+#include <ros/ros.h>
 #include <map>
+#include <string>
+#include <stdint.h>
+#include <mrover/CAN.h>
+#include <XmlRpcValue.h>
+
 
 class CANManager {
 public:

@@ -26,7 +26,7 @@ int main(int argc, char** argv) {
     XmlRpc::XmlRpcValue controllersRoot;
     assert(nh.getParam("motors/controllers", controllersRoot));
     assert(controllersRoot.getType() == XmlRpc::XmlRpcValue::TypeStruct);
-    driveManager = MotorsManager(driveNames, controllersRoot);
+    driveManager = MotorsManager(&nh, driveNames, controllersRoot);
 
     // Load motor multipliers from the ROS parameter server
     XmlRpc::XmlRpcValue driveControllers;
@@ -47,8 +47,8 @@ int main(int argc, char** argv) {
     assert(roverWidth.getType() == XmlRpc::XmlRpcValue::TypeDouble);
     assert(nh.getParam("rover/length", roverLength))
     assert(roverLength.getType() == XmlRpc::XmlRpcValue::TypeDouble);
-    WHEEL_DISTANCE_INNER = roverWidth / 2.0
-    WHEEL_DISTANCE_OUTER = sqrt(((roverWidth / 2.0) ** 2) + ((roverLength / 2.0) ** 2))
+    WHEEL_DISTANCE_INNER = roverWidth / 2.0;
+    WHEEL_DISTANCE_OUTER = sqrt(((roverWidth / 2.0) ** 2) + ((roverLength / 2.0) ** 2));
 
     float ratioMotorToWheel;
     assert(nh.getParam("wheel/gear_ratio", ratioMotorToWheel));

@@ -4,6 +4,7 @@
 #include <mrover/Velocity.h>
 #include <mrover/Position.h>
 #include <std_msgs/Float32.h> // To publish heartbeats
+#include <algorithm>
 
 void moveArmThrottle(const mrover::Throttle::ConstPtr& msg);
 void moveArmVelocity(const mrover::Velocity::ConstPtr& msg); 
@@ -40,9 +41,9 @@ int main(int argc, char** argv) {
     }
 
     // Subscribe to the ROS topic for arm commands
-    ros::Subscriber moveArmThrottleSub = n->subscribe<mrover::Throttle>("ra_throttle_cmd", 1, moveArmThrottle);
-    ros::Subscriber moveArmVelocitySub = n->subscribe<mrover::Velocity>("ra_velocity_cmd", 1, moveArmVelocity);
-    ros::Subscriber moveArmPositionSub = n->subscribe<mrover::Position>("ra_position_cmd", 1, moveArmPosition);
+    ros::Subscriber moveArmThrottleSub = nh.subscribe<mrover::Throttle>("ra_throttle_cmd", 1, moveArmThrottle);
+    ros::Subscriber moveArmVelocitySub = nh.subscribe<mrover::Velocity>("ra_velocity_cmd", 1, moveArmVelocity);
+    ros::Subscriber moveArmPositionSub = nh.subscribe<mrover::Position>("ra_position_cmd", 1, moveArmPosition);
 
     // Create a 0.1 second heartbeat timer
     ros::Timer heartbeatTimer = nh.createTimer(ros::Duration(0.1), heartbeatCallback);
@@ -54,12 +55,12 @@ int main(int argc, char** argv) {
 }
 
 void moveArmThrottle(const mrover::Throttle::ConstPtr& msg) {
-    if (msg->name != armNames && msg->name.size() != msg->throttle.size()) {
+    if (msg->names != armNames && msg->names.size() != msg->throttle.size()) {
         ROS_ERROR("Arm request is invalid!");
         return;
     }
-    for (size_t i = 0; i < msg->name.size(); ++i) {
-        std::string& name = msg->name[i];
+    for (size_t i = 0; i < msg->names.size(); ++i) {
+        std::string& name = msg->names[i];
         Controller& controller = armManager.get_controller(name);
         float throttle = std::clamp(msg->throttle[i], -1.0, 1.0);
         controller.set_desired_throttle(throttle);
@@ -70,12 +71,12 @@ void moveArmThrottle(const mrover::Throttle::ConstPtr& msg) {
 }
 
 void moveArmVelocity(const mrover::Velocity::ConstPtr& msg) {
-    if (msg->name != armNames && msg->name.size() != msg->velocity.size()) {
+    if (msg->names != armNames && msg->names.size() != msg->velocity.size()) {
         ROS_ERROR("Arm request is invalid!");
         return;
     }
-    for (size_t i = 0; i < msg->name.size(); ++i) {
-        std::string& name = msg->name[i];
+    for (size_t i = 0; i < msg->names.size(); ++i) {
+        std::string& name = msg->names[i];
         Controller& controller = armManager.get_controller(name);
         float velocity = std::clamp(msg->velocity[i], -1.0, 1.0);
 
@@ -89,12 +90,12 @@ void moveArmVelocity(const mrover::Velocity::ConstPtr& msg) {
 }
 
 void moveArmPosition(const mrover::Position::ConstPtr& msg) {
-    if (msg->name != armNames && msg->name.size() != msg->position.size()) {
+    if (msg->names != armNames && msg->names.size() != msg->position.size()) {
         ROS_ERROR("Arm request is invalid!");
         return;
     }
-    for (size_t i = 0; i < msg->name.size(); ++i) {
-        std::string& name = msg->name[i];
+    for (size_t i = 0; i < msg->names.size(); ++i) {
+        std::string& name = msg->names[i];
         Controller& controller = armManager.get_controller(name);
         float position = 0.0f;
 

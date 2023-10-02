@@ -1,7 +1,7 @@
 #include <ros/ros.h>
 #include <mrover/CAN.h>
 
-void sendCAN(const mrover::CAN::ConstPtr& msg)
+void sendCAN(const mrover::CAN::ConstPtr& msg);
 
 int main(int argc, char** argv) {
     // Initialize the ROS node
@@ -9,7 +9,7 @@ int main(int argc, char** argv) {
     ros::NodeHandle nh;
 
     // Subscribe to the ROS topic for arm commands
-    ros::Subscriber CANRequestSubscriber = n->subscribe<mrover::CAN>("can_requests", 1, sendCAN);
+    ros::Subscriber CANRequestSubscriber = nh.subscribe<mrover::CAN>("can_requests", 1, sendCAN);
 
     // Enter the ROS event loop
     ros::spin();
@@ -19,4 +19,7 @@ int main(int argc, char** argv) {
 
 void sendCAN(const mrover::CAN::ConstPtr& msg) {
     // TODO
+    if (msg->bus == 0) {
+        return; // TODO
+    }
 }

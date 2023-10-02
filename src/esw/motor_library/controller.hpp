@@ -3,6 +3,7 @@
 #include "../can_library/can_manager.hpp"
 #include <string>
 #include <units/units.hpp>
+#include <ros/ros.h>
 
 enum class MotorType {
     Brushed = 0,
