@@ -259,8 +259,11 @@ else ()
             target_precompile_headers(zed_nodelet PRIVATE src/perception/zed_wrapper/pch.hpp)
             target_include_directories(zed_nodelet SYSTEM PRIVATE ${ZED_INCLUDE_DIRS} ${CUDA_INCLUDE_DIRS})
             target_link_libraries(zed_nodelet PRIVATE ${ZED_LIBRARIES} ${OpenCV_LIBRARIES} ${SPECIAL_OS_LIBS} lie)
-            target_compile_definitions(zed_nodelet PRIVATE MROVER_IS_NODELET)
-            target_compile_options(zed_nodelet PRIVATE $<$<COMPILE_LANGUAGE:CUDA>:--expt-extended-lambda>)
+            target_compile_definitions(zed_nodelet PRIVATE
+                    MROVER_IS_NODELET # Generate code relevant to nodelet
+                    ALLOW_BUILD_DEBUG # Ignore ZED warnings about Debug mode
+                    __CUDA_INCLUDE_COMPILER_INTERNAL_HEADERS__ # Eigen includes some files it should not, ignore
+            )
         endif ()
     endmacro()
 endif ()

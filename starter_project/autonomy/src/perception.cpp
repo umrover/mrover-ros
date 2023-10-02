@@ -28,8 +28,8 @@ namespace mrover {
         // TODO: uncomment me!
         // mTagPublisher = mNodeHandle.advertise<StarterProjectTag>("tag", 1);
 
-        mTagDetectorParams = cv::aruco::DetectorParameters::create();
-        mTagDictionary = cv::aruco::getPredefinedDictionary(0);
+        mTagDetectorParams = cv::makePtr<cv::aruco::DetectorParameters>();
+        mTagDictionary = cv::makePtr<cv::aruco::Dictionary>(cv::aruco::getPredefinedDictionary(0));
     }
 
     void Perception::imageCallback(sensor_msgs::ImageConstPtr const& image) {
