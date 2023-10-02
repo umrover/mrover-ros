@@ -91,7 +91,7 @@ NvEncoder::NvEncoder(cv::Size const& size) : m_size{size} {
     }
 
     GUID desiredEncodeGuid = NV_ENC_CODEC_HEVC_GUID;
-    GUID desiredPresetGuid = NV_ENC_PRESET_P4_GUID;
+    GUID desiredPresetGuid = NV_ENC_PRESET_P3_GUID;
 
     if (std::none_of(guids.begin(), guids.end(), [&](const GUID& guid) {
             return std::equal_to<GUID>{}(guid, desiredEncodeGuid);

@@ -12,19 +12,21 @@
 #include <libde265/de265.h>
 
 int main() {
-    StreamServer streamServer{"127.0.0.1", 8080};
+    StreamServer streamServer{"0.0.0.0", 8080};
 
-    cv::Size size{320, 240};
+    cv::Size size{1280, 720};
 
     NvEncoder nvEncoder{size};
 
-    //    cv::VideoCapture cap{
-    //            "v4l2src ! videoconvert ! video/x-raw,width=320,height=240,format=I420,framerate=30/1 ! appsink",
-    //            cv::CAP_GSTREAMER};
+    cv::VideoCapture cap{std::format("v4l2src ! videoconvert ! video/x-raw,width={},height={},format=I420,framerate=10/1 ! appsink", size.width, size.height), cv::CAP_GSTREAMER};
 
-    cv::VideoCapture cap{std::format("videotestsrc ! video/x-raw,width={},height={},format=I420,framerate=30/1 ! appsink", size.width, size.height), cv::CAP_GSTREAMER};
+    //    cv::VideoCapture cap{std::format("videotestsrc ! video/x-raw,width={},height={},format=I420,framerate=30/1 ! appsink", size.width, size.height), cv::CAP_GSTREAMER};
 
     if (!cap.isOpened()) throw std::runtime_error{"Failed to open capture"};
+
+    size_t totalSent = 0;
+    size_t totalFrames = 0;
+    auto now = std::chrono::high_resolution_clock::now();
 
     cv::Mat frameI420;
     while (streamServer.m_client->is_open() && cap.read(frameI420)) {
@@ -36,6 +38,15 @@ int main() {
         NvEncoder::BitstreamView view = nvEncoder.feed(frameI420);
         std::span span{static_cast<std::byte*>(view.lockParams.bitstreamBufferPtr), view.lockParams.bitstreamSizeInBytes};
         streamServer.feed(span);
+
+        totalSent += span.size_bytes();
+        totalFrames++;
+        double MB = totalSent / 1024.0 / 1024.0;
+        auto elapsed = std::chrono::duration<double>(std::chrono::high_resolution_clock::now() - now);
+        double MBps = MB / elapsed.count();
+        double fps = totalFrames / elapsed.count();
+
+        std::cout << std::format("MBps: {} FPS: {}\n", MBps, fps);
     }
 
     //    static de265_decoder_context* decoder = de265_new_decoder();

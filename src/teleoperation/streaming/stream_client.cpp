@@ -1,55 +1,39 @@
-#include <stdio.h>
+#include <cstdio>
+#include <string>
 
+#include <emscripten/val.h>
 #include <emscripten/websocket.h>
+
 #include <libde265/de265.h>
 
-//typedef struct {
-//    int width;
-//    int height;
-//    uint8_t* data;
-//} rgba_image_t;
-//
-//rgba_image_t* new_rgba_image(int width, int height) {
-//    rgba_image_t* image = malloc(sizeof(rgba_image_t));
-//    if (!image) return NULL;
-//
-//    image->width = width;
-//    image->height = height;
-//    image->data = malloc(width * height * 4);
-//    return image;
-//}
-//
-//rgba_image_t* rgba_image = NULL;
-
-de265_decoder_context* decoder = NULL;
+de265_decoder_context* decoder = nullptr;
 
 EM_BOOL on_open(int _event_type, const EmscriptenWebSocketOpenEvent* websocket_event, void* user_data) {
-    puts("Stream opened");
+    std::puts("Stream opened");
 
     return EM_TRUE;
 }
 
 EM_BOOL on_error(int _event_type, const EmscriptenWebSocketErrorEvent* websocket_event, void* user_data) {
-    puts("Stream errored :(");
+    std::puts("Stream errored :(");
 
     return EM_TRUE;
 }
 
 EM_BOOL on_close(int _event_type, const EmscriptenWebSocketCloseEvent* websocket_event, void* user_data) {
-    puts("Stream closed");
+    std::puts("Stream closed");
 
     return EM_TRUE;
 }
 
 EM_BOOL on_message(int _event_type, const EmscriptenWebSocketMessageEvent* websocket_event, void* user_data) {
     if (websocket_event->isText) {
-        puts("Got text when expected binary");
+        std::puts("Got text when expected binary");
         return EM_FALSE;
     }
 
-    de265_error error = de265_push_data(decoder, websocket_event->data, (int) websocket_event->numBytes, clock(), NULL);
-    if (error != DE265_OK) {
-        puts("Errored pushing encoder data");
+    if (de265_error error = de265_push_data(decoder, websocket_event->data, (int) websocket_event->numBytes, clock(), NULL); error != DE265_OK) {
+        std::puts("Errored pushing encoder data");
         return EM_FALSE;
     }
 
@@ -59,7 +43,7 @@ EM_BOOL on_message(int _event_type, const EmscriptenWebSocketMessageEvent* webso
     }
 
     if (decode_status != DE265_OK && decode_status != DE265_ERROR_WAITING_FOR_INPUT_DATA) {
-        printf("Errored decoding: %d\n", decode_status);
+        std::printf("Errored decoding: %d\n", decode_status);
         return EM_FALSE;
     }
 
@@ -70,15 +54,16 @@ EM_BOOL on_message(int _event_type, const EmscriptenWebSocketMessageEvent* webso
         int format = de265_get_chroma_format(image);
 
         if (format != de265_chroma_420) {
-            puts("Unsupported chroma format");
+            std::puts("Unsupported chroma format");
             return EM_FALSE;
         }
 
         int y_stride, u_stride, v_stride;
-        const uint8_t* y = de265_get_image_plane(image, 0, &y_stride);
-        const uint8_t* u = de265_get_image_plane(image, 1, &u_stride);
-        const uint8_t* v = de265_get_image_plane(image, 2, &v_stride);
+        const std::uint8_t* y = de265_get_image_plane(image, 0, &y_stride);
+        const std::uint8_t* u = de265_get_image_plane(image, 1, &u_stride);
+        const std::uint8_t* v = de265_get_image_plane(image, 2, &v_stride);
 
+        // clang-format off
         EM_ASM({
             const width = $0;
             const height = $1;
@@ -91,9 +76,12 @@ EM_BOOL on_message(int _event_type, const EmscriptenWebSocketMessageEvent* webso
             const uStride = $6;
             const vStride = $7;
 
-            const ctx = document.getElementById('canvas').getContext('2d');
+            const canvas = document.getElementById('canvas');
+            const ctx = canvas.getContext   ('2d');
             if (Module.imageBuffer === undefined) {
                 Module.imageBuffer = ctx.createImageData(width, height);
+                canvas.width = width;
+                canvas.height = height;
             }
             const imageBuffer = Module.imageBuffer;
             const imageData = imageBuffer.data;
@@ -109,9 +97,9 @@ EM_BOOL on_message(int _event_type, const EmscriptenWebSocketMessageEvent* webso
                     const b = y[yIndex] + 1.772 * (u[uIndex] - 128);
 
                     const index = (i * width + j) * 4;
-                    imageData[index + 0] = y[yIndex];
-                    imageData[index + 1] = y[yIndex];
-                    imageData[index + 2] = y[yIndex];
+                    imageData[index + 0] = r;
+                    imageData[index + 1] = g;
+                    imageData[index + 2] = b;
                     imageData[index + 3] = 255;
                 }
             }
@@ -119,6 +107,7 @@ EM_BOOL on_message(int _event_type, const EmscriptenWebSocketMessageEvent* webso
             ctx.putImageData(imageBuffer, 0, 0);
 
         }, width, height, y, u, v, y_stride, u_stride, v_stride);
+        // clang-format on
 
         de265_release_next_picture(decoder);
     }
@@ -132,14 +121,13 @@ int main() {
     decoder = de265_new_decoder();
     if (!decoder) return EXIT_FAILURE;
 
-    //    rgba_image = new_rgba_image(640, 480);
-    //    if (!rgba_image) return EXIT_FAILURE;
+    if (de265_error error = de265_start_worker_threads(decoder, 0); error != DE265_OK) return EXIT_FAILURE;
 
-    de265_error error = de265_start_worker_threads(decoder, 0);
-    if (error != DE265_OK) return EXIT_FAILURE;
-
+    emscripten::val location = emscripten::val::global("location");
+    std::string url = "ws://" + location["hostname"].as<std::string>() + ":8080";
+    printf("Connecting to %s ...\n", url.c_str());
     EmscriptenWebSocketCreateAttributes create_socket_attributes = {
-            .url = "ws://127.0.0.1:8080",
+            .url = url.c_str(),
             .protocols = "binary",
             .createOnMainThread = EM_TRUE,
     };
