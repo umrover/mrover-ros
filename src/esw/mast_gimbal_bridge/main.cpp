@@ -1,10 +1,12 @@
 #include "../motor_library/motors_manager.hpp"
 #include <ros/ros.h>
 #include <mrover/Throttle.h>
+#include <mrover/Velocity.h>
 #include <mrover/Position.h>
 #include <std_msgs/Float32.h> // To publish heartbeats
 
 void moveMastGimbalThrottle(const mrover::Throttle::ConstPtr& msg);
+void moveMastGimbalVelocity(const mrover::Velocity::ConstPtr& msg);
 void moveMastGimbalPosition(const mrover::Position::ConstPtr& msg);
 void heartbeatCallback(const ros::TimerEvent&);
 
@@ -27,6 +29,7 @@ int main(int argc, char** argv) {
 
     // Subscribe to the ROS topic for arm commands
     ros::Subscriber moveMastGimbalThrottleSubscriber = n->subscribe<mrover::Throttle>("mast_gimbal_throttle_cmd", 1, moveMastGimbalThrottle);
+    ros::Subscriber moveMastGimbalVelocityeSubscriber = n->subscribe<mrover::Velocity>("mast_gimbal_velocity_cmd", 1, moveMastGimbalVelocity);
     ros::Subscriber moveMastGimbalPositionSubscriber = n->subscribe<mrover::Position>("mast_gimbal_position_cmd", 1, moveMastGimbalPosition);
 
     // Create a 0.1 second heartbeat timer
@@ -48,6 +51,22 @@ void moveMastGimbalThrottle(const mrover::Throttle::ConstPtr& msg) {
         Controller& controller = *mastGimbalManager.get_controller(name);
         float throttle = std::clamp(msg->throttle[i], -1.0, 1.0);
         controller.set_desired_throttle(throttle);
+    }
+
+    // Set the messageReceived flag to true when a message is received
+    messageReceived = true;
+}
+
+void moveMastGimbalVelocity(const mrover::Velocity::ConstPtr& msg) {
+    if (msg->names != mastGimbalNames && msg->names.size() != msg->velocity.size()) {
+        ROS_ERROR("Mast Gimbal request is invalid!");
+        return;
+    }
+    for (size_t i = 0; i < msg->names.size(); ++i) {
+        std::string& name = msg->names[i];
+        Controller& controller = *mastGimbalManager.get_controller(name);
+        float velocity = std::clamp(msg->velocity[i], -1.0, 1.0);  // TODO
+        controller.set_desired_throttle(velocity);
     }
 
     // Set the messageReceived flag to true when a message is received
