@@ -1,0 +1,1 @@
+float32[6] temperatures  # Celsius
