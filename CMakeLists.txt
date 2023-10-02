@@ -200,6 +200,10 @@ if (ZED_FOUND)
     #            target_include_directories(zed_node SYSTEM PRIVATE ${ZED_INCLUDE_DIRS} ${CUDA_INCLUDE_DIRS})
     #            target_link_libraries(zed_node PRIVATE ${ZED_LIBRARIES} ${OpenCV_LIBRARIES} ${SPECIAL_OS_LIBS} lie tag_detector_nodelet)
 
+    add_cpp_nodelet_macro(object_detector_nodelet src/perception/object_detector/*.c* src/object_detector_nodelet/tag_detector)
+    target_precompile_headers(object_detector_nodelet PRIVATE src/perception/object_detector/pch.hpp)
+    target_link_libraries(object_detector_nodelet PRIVATE opencv_core opencv_dnn opencv_imgproc lie)
+
     add_cpp_nodelet_macro(zed_nodelet src/perception/zed_wrapper/*.c* , src/perception/zed_wrapper)
     target_precompile_headers(zed_nodelet PRIVATE src/perception/zed_wrapper/pch.hpp)
     target_include_directories(zed_nodelet SYSTEM PRIVATE ${ZED_INCLUDE_DIRS} ${CUDA_INCLUDE_DIRS})

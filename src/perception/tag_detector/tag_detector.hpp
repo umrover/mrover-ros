@@ -9,7 +9,7 @@ namespace mrover {
         std::optional<SE3> tagInCam;
     };
 
-    class TagDetectorNodelet : public nodelet::Nodelet {
+    class ObjectDetectorNodelet : public nodelet::Nodelet {
     private:
         ros::NodeHandle mNh, mPnh;
 
@@ -58,9 +58,9 @@ namespace mrover {
         std::optional<SE3> getTagInCamFromPixel(sensor_msgs::PointCloud2ConstPtr const& cloudPtr, size_t u, size_t v);
 
     public:
-        TagDetectorNodelet() = default;
+        ObjectDetectorNodelet() = default;
 
-        ~TagDetectorNodelet() override = default;
+        ~ObjectDetectorNodelet() override = default;
 
         void pointCloudCallback(sensor_msgs::PointCloud2ConstPtr const& msg);
 
