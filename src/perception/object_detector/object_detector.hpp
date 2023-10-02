@@ -6,6 +6,21 @@ namespace mrover {
     private:
         ros::NodeHandle mNh, mPnh;
 
+        // Publishers
+
+        ros::Subscriber mImgSub;
+
+        // Subscribers
+
+        dynamic_reconfigure::Server<mrover::ObjectDetectorParamsConfig> mConfigServer;
+        dynamic_reconfigure::Server<mrover::ObjectDetectorParamsConfig>::CallbackType mCallbackType;
+
+        // Internal state
+
+        cv::dnn::Net mNet;
+
+        // Debug
+
         LoopProfiler mProfiler{"Object Detector"};
 
         void onInit() override;
@@ -16,8 +31,6 @@ namespace mrover {
         ~ObjectDetectorNodelet() override = default;
 
         void imageCallback(sensor_msgs::ImageConstPtr const& msg);
-
-        bool enableDetectionsCallback(std_srvs::SetBool::Request& req, std_srvs::SetBool::Response& res);
     };
 
 } // namespace mrover

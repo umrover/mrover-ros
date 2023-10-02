@@ -30,7 +30,7 @@
 #include <tf2_ros/transform_broadcaster.h>
 #include <tf2_ros/transform_listener.h>
 
-#include <mrover/DetectorParamsConfig.h>
+#include <mrover/TagDetectorParamsConfig.h>
 
 #include <loop_profiler.hpp>
 #include <se3.hpp>

@@ -2,7 +2,7 @@
 
 namespace mrover {
 
-    void ObjectDetectorNodelet::onInit() {
+    void TagDetectorNodelet::onInit() {
         mNh = getMTNodeHandle();
         mPnh = getMTPrivateNodeHandle();
         cv::aruco::DetectorParameters defaultDetectorParams;
@@ -25,11 +25,11 @@ namespace mrover {
         mImgPub = mIt->advertise("tag_detection", 1);
         mDictionary = cv::aruco::getPredefinedDictionary(dictionaryNumber);
 
-        mPcSub = mNh.subscribe("camera/left/points", 1, &ObjectDetectorNodelet::pointCloudCallback, this);
-        mServiceEnableDetections = mNh.advertiseService("enable_detections", &ObjectDetectorNodelet::enableDetectionsCallback, this);
+        mPcSub = mNh.subscribe("camera/left/points", 1, &TagDetectorNodelet::pointCloudCallback, this);
+        mServiceEnableDetections = mNh.advertiseService("enable_detections", &TagDetectorNodelet::enableDetectionsCallback, this);
 
         // Lambda handles passing class pointer (implicit first parameter) to configCallback
-        mCallbackType = [this](mrover::DetectorParamsConfig& config, uint32_t level) { configCallback(config, level); };
+        mCallbackType = [this](mrover::TagDetectorParamsConfig& config, uint32_t level) { configCallback(config, level); };
         mConfigServer.setCallback(mCallbackType);
 
         mPnh.param<double>("adaptiveThreshConstant",
@@ -94,7 +94,7 @@ namespace mrover {
         NODELET_INFO("Tag detection ready, use odom frame: %s, min hit count: %d, max hit count: %d, hit increment weight: %d, hit decrement weight: %d", mUseOdom ? "true" : "false", mMinHitCountBeforePublish, mMaxHitCount, mTagIncrementWeight, mTagDecrementWeight);
     }
 
-    void ObjectDetectorNodelet::configCallback(mrover::DetectorParamsConfig& config, uint32_t level) {
+    void TagDetectorNodelet::configCallback(mrover::TagDetectorParamsConfig& config, uint32_t level) {
         // Don't load initial config, since it will overwrite the rosparam settings
         if (level == std::numeric_limits<uint32_t>::max()) return;
 
@@ -128,7 +128,7 @@ namespace mrover {
         mDetectorParams.polygonalApproxAccuracyRate = config.polygonalApproxAccuracyRate;
     }
 
-    bool ObjectDetectorNodelet::enableDetectionsCallback(std_srvs::SetBool::Request& req, std_srvs::SetBool::Response& res) {
+    bool TagDetectorNodelet::enableDetectionsCallback(std_srvs::SetBool::Request& req, std_srvs::SetBool::Response& res) {
         mEnableDetections = req.data;
         if (mEnableDetections) {
             res.message = "Enabled tag detections.";
@@ -157,4 +157,4 @@ int main(int argc, char** argv) {
 }
 
 #include <pluginlib/class_list_macros.h>
-PLUGINLIB_EXPORT_CLASS(mrover::ObjectDetectorNodelet, nodelet::Nodelet)
+PLUGINLIB_EXPORT_CLASS(mrover::TagDetectorNodelet, nodelet::Nodelet)

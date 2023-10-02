@@ -5,6 +5,11 @@ namespace mrover {
     void ObjectDetectorNodelet::onInit() {
         mNh = getMTNodeHandle();
         mPnh = getMTPrivateNodeHandle();
+
+        // TODO(percep/obj-detectr): paramaterize this
+        mNet = cv::dnn::readNetFromTorch("/home/quintin/Downloads/yolov8n.pt");
+
+        mImgSub = mNh.subscribe("image", 1, &ObjectDetectorNodelet::imageCallback, this);
     }
 
 } // namespace mrover

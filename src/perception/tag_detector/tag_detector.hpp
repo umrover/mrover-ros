@@ -9,20 +9,28 @@ namespace mrover {
         std::optional<SE3> tagInCam;
     };
 
-    class ObjectDetectorNodelet : public nodelet::Nodelet {
+    class TagDetectorNodelet : public nodelet::Nodelet {
     private:
         ros::NodeHandle mNh, mPnh;
+
+        // Publishers
 
         std::optional<image_transport::ImageTransport> mIt;
         image_transport::Publisher mImgPub;
         std::unordered_map<int, image_transport::Publisher> mThreshPubs; // Map from threshold scale to publisher
         ros::ServiceServer mServiceEnableDetections;
 
+        // Subscribers
+
         ros::Subscriber mPcSub;
-        image_transport::Subscriber mImgSub;
         tf2_ros::Buffer mTfBuffer;
         tf2_ros::TransformListener mTfListener{mTfBuffer};
         tf2_ros::TransformBroadcaster mTfBroadcaster;
+
+        dynamic_reconfigure::Server<mrover::TagDetectorParamsConfig> mConfigServer;
+        dynamic_reconfigure::Server<mrover::TagDetectorParamsConfig>::CallbackType mCallbackType;
+
+        // Settings
 
         bool mEnableDetections = true;
         bool mUseOdom{};
@@ -32,10 +40,10 @@ namespace mrover {
         int mMaxHitCount{};
         int mTagIncrementWeight{};
         int mTagDecrementWeight{};
-
-        cv::aruco::ArucoDetector mDetector;
         cv::aruco::DetectorParameters mDetectorParams;
         cv::aruco::Dictionary mDictionary;
+
+        // Internal state
 
         cv::Mat mImg;
         cv::Mat mGrayImg;
@@ -46,8 +54,9 @@ namespace mrover {
         std::vector<std::vector<cv::Point2f>> mImmediateCorners;
         std::vector<int> mImmediateIds;
         std::unordered_map<int, Tag> mTags;
-        dynamic_reconfigure::Server<mrover::DetectorParamsConfig> mConfigServer;
-        dynamic_reconfigure::Server<mrover::DetectorParamsConfig>::CallbackType mCallbackType;
+        cv::aruco::ArucoDetector mDetector;
+
+        // Debug
 
         LoopProfiler mProfiler{"Tag Detector"};
 
@@ -58,13 +67,13 @@ namespace mrover {
         std::optional<SE3> getTagInCamFromPixel(sensor_msgs::PointCloud2ConstPtr const& cloudPtr, size_t u, size_t v);
 
     public:
-        ObjectDetectorNodelet() = default;
+        TagDetectorNodelet() = default;
 
-        ~ObjectDetectorNodelet() override = default;
+        ~TagDetectorNodelet() override = default;
 
         void pointCloudCallback(sensor_msgs::PointCloud2ConstPtr const& msg);
 
-        void configCallback(mrover::DetectorParamsConfig& config, uint32_t level);
+        void configCallback(mrover::TagDetectorParamsConfig& config, uint32_t level);
 
         bool enableDetectionsCallback(std_srvs::SetBool::Request& req, std_srvs::SetBool::Response& res);
     };

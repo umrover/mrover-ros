@@ -81,7 +81,8 @@ set(MROVER_MESSAGE_DEPENDENCIES
 
 # Dynamic reconfigure parameter file list
 set(MROVER_PARAMETERS
-        config/DetectorParams.cfg
+        config/TagDetectorParams.cfg
+        config/ObjectDetectorParams.cfg
 )
 
 set(MROVER_CMAKE_INCLUDES
@@ -92,7 +93,7 @@ set(MROVER_CMAKE_INCLUDES
 
 macro(rosify_cpp_target_macro target)
     target_link_libraries(${target} PRIVATE ${catkin_LIBRARIES})
-    target_include_directories(${target} SYSTEM PRIVATE ${catkin_INCLUDE_DIRS} "src/util")
+    target_include_directories(${target} SYSTEM PRIVATE ${catkin_INCLUDE_DIRS} src/util)
     add_dependencies(${target} ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
 
     target_compile_options(${target} PRIVATE $<$<COMPILE_LANGUAGE:CXX>:${MROVER_CPP_COMPILE_OPTIONS}>)
@@ -195,14 +196,15 @@ target_link_libraries(tag_detector_nodelet PRIVATE opencv_core opencv_objdetect 
 add_cpp_node_macro(brushed_motors src/esw/brushed_motors/*.c*)
 
 if (ZED_FOUND)
-    #            add_cpp_node_macro(zed_node "src/perception/zed_wrapper/*.c*")
-    #            target_link_options(zed_node PRIVATE "LINKER:--copy-dt-needed-entries")
-    #            target_include_directories(zed_node SYSTEM PRIVATE ${ZED_INCLUDE_DIRS} ${CUDA_INCLUDE_DIRS})
-    #            target_link_libraries(zed_node PRIVATE ${ZED_LIBRARIES} ${OpenCV_LIBRARIES} ${SPECIAL_OS_LIBS} lie tag_detector_nodelet)
-
-    add_cpp_nodelet_macro(object_detector_nodelet src/perception/object_detector/*.c* src/object_detector_nodelet/tag_detector)
+    add_cpp_nodelet_macro(object_detector_nodelet src/perception/object_detector/*.c* src/perception/object_detector)
     target_precompile_headers(object_detector_nodelet PRIVATE src/perception/object_detector/pch.hpp)
     target_link_libraries(object_detector_nodelet PRIVATE opencv_core opencv_dnn opencv_imgproc lie)
+    target_compile_definitions(object_detector_nodelet PRIVATE MROVER_IS_NODELET)
+
+    # TODO: remove eventually, just for testing
+    add_cpp_node_macro(object_detector_node src/perception/object_detector/*.c* src/perception/object_detector)
+    target_precompile_headers(object_detector_node PRIVATE src/perception/object_detector/pch.hpp)
+    target_link_libraries(object_detector_node PRIVATE opencv_core opencv_dnn opencv_imgproc lie /opt/ros/noetic/lib/libnodeletlib.so)
 
     add_cpp_nodelet_macro(zed_nodelet src/perception/zed_wrapper/*.c* , src/perception/zed_wrapper)
     target_precompile_headers(zed_nodelet PRIVATE src/perception/zed_wrapper/pch.hpp)

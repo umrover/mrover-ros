@@ -10,7 +10,7 @@ namespace mrover {
      * @param u     X Pixel Position
      * @param v     Y Pixel Position
      */
-    std::optional<SE3> ObjectDetectorNodelet::getTagInCamFromPixel(sensor_msgs::PointCloud2ConstPtr const& cloudPtr, size_t u, size_t v) {
+    std::optional<SE3> TagDetectorNodelet::getTagInCamFromPixel(sensor_msgs::PointCloud2ConstPtr const& cloudPtr, size_t u, size_t v) {
         assert(cloudPtr);
 
         if (u >= cloudPtr->width || v >= cloudPtr->height) {
@@ -34,7 +34,7 @@ namespace mrover {
      *
      * @param msg   Point cloud message
      */
-    void ObjectDetectorNodelet::pointCloudCallback(sensor_msgs::PointCloud2ConstPtr const& msg) {
+    void TagDetectorNodelet::pointCloudCallback(sensor_msgs::PointCloud2ConstPtr const& msg) {
         assert(msg);
         assert(msg->height > 0);
         assert(msg->width > 0);
