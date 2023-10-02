@@ -8,7 +8,7 @@
   <!-- Functions -->
 
   <xacro:macro name="joints"
-               params="name type:=revolute parent child x y z rx:=0 ry:=0 rz:=0 axis_x:=0 axis_y:=1 axis_z:=0 lower upper damp:=1.0">
+               params="name type:=revolute parent child x y z rx:=0 ry:=0 rz:=0 axis_x:=0 axis_y:=0 axis_z:=0 lower upper damp:=1.0">
     <joint name="${name}" type="${type}">
       <origin xyz="${x} ${y} ${z}" rpy="${rx} ${ry} ${rz}"/>
       <parent link="${parent}"/>
@@ -91,23 +91,25 @@
   <!-- Joints -->
 
   <xacro:joints name="base_link_joint" type="prismatic" parent="base_link" child="a_link"
-                x="0.031359" y="9.9173" z="0"
+                axis_y="1"
+                x="0" y="-10" z="0"
                 lower="0" upper="20"/>
   <xacro:joints name="a_joint" parent="a_link" child="b_link"
+                axis_y="1"
                 x="1.32728" y="0.02613" z="1.99693"
-                ry="-1.04509"
-                lower="-3.14" upper="3.14"/>
+                lower="${-PI / 2}" upper="0"/>
   <xacro:joints name="b_joint" parent="b_link" child="c_link"
+                axis_y="1"
                 x="22.8544" y="1.81734" z="0.378175"
-                ry="2.61595"
-                lower="-1.064651" upper="0"/>
+                lower="0" upper="${PI}"/>
   <xacro:joints name="c_joint" parent="c_link" child="d_link"
+                axis_y="1"
                 x="19.5129" y="0.264652" z="0.03498"
-                ry="-1.5708"
-                lower="-0.087267" upper="4.886922"/>
+                lower="${-PI}" upper="${PI}"/>
   <xacro:joints name="d_joint" parent="d_link" child="e_link"
+                axis_x="1"
                 x="5.59352" y="-2.05037" z="0.040519"
-                lower="-3.14" upper="3.14"/>
+                lower="${-PI}" upper="${PI}"/>
 
   <!-- Links -->
 
