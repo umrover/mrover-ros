@@ -1,1 +1,1 @@
-float32[6] temperatures  # Celsius
+sensor_msgs/Temperature temperatures  # Celsius

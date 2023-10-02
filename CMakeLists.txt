@@ -28,24 +28,30 @@ set(MROVER_MESSAGE_FILES
         Calibrated.msg
         CalibrationStatus.msg
         CameraCmd.msg
-        Carousel.msg
+        CAN.msg
         Chassis.msg
+        ControllerGroupState.msg
+        ControllerState.msg
         Course.msg
         Diagnostic.msg
         EnableAuton.msg
-        GPSWaypoint.msg
         GPSPointList.msg
+        GPSWaypoint.msg
         HeaterData.msg
         ImuAndMag.msg
+        LED.msg
         LimitSwitchData.msg
-        MastGimbal.msg
-        JointLock.msg
         MoteusState.msg
         MotorsStatus.msg
         NavMetadata.msg
         NetworkBandwidth.msg
-        ScienceTemperature.msg
+        PDB.msg
+        Position.msg
+        ScienceTemperatures.msg
         Spectral.msg
+        SpectralGroup.msg
+        Throttle.msg
+        Velocity.msg
         Waypoint.msg
         WaypointType.msg
         GPSPointList.msg
@@ -54,18 +60,14 @@ set(MROVER_MESSAGE_FILES
 # Service files
 set(MROVER_SERVICE_FILES
         AdjustMotors.srv
-        CalibrateMotors.srv
         ChangeArmMode.srv
         ChangeCameras.srv
         ChangeHeaterState.srv
         ChangeServoAngle.srv
-        EnableDevice.srv
-        FetchMessageFromPackage.srv
         FetchMessageFromPackage.srv
         FetchPackages.srv
-        PublishEnableAuton.srv
         PublishCourse.srv
-        ResetCameras.srv
+        PublishEnableAuton.srv
 )
 
 # Generate messages list
