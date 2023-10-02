@@ -134,6 +134,7 @@ endmacro()
 
 ## Dependencies
 
+find_package(OpenCV 4.8.1 EXACT REQUIRED)
 find_package(ZED 2 QUIET)
 find_package(gazebo REQUIRED)
 find_package(Eigen3 REQUIRED)
@@ -142,54 +143,12 @@ if (ZED_FOUND)
     set(CMAKE_CUDA_STANDARD 17)
     set(CMAKE_CUDA_STANDARD_REQUIRED ON)
     set(CMAKE_CUDA_SEPARABLE_COMPILATION ON)
+    set(CMAKE_CUDA_FLAGS "--diag-suppress 108,68")
     # Jetson Xavier NX is Volta 7.2 architecture
     # Perception Laptop (A4000, Quadro version of RTX 3080) is Ampere 8.6 architecture
     set(CMAKE_CUDA_ARCHITECTURES 72 86)
     enable_language(CUDA)
 endif ()
-
-set(BUILD_LIST "core,imgproc,objdetect")
-set(BUILD_JAVA OFF)
-set(BUILD_TESTS OFF)
-set(BUILD_EXAMPLES OFF)
-set(BUILD_PERF_TESTS OFF)
-set(OPENCV_ENABLE_NONFREE ON)
-#    set(OPENCV_EXTRA_MODULES_PATH ${CMAKE_CURRENT_LIST_DIR}/deps/opencv_contrib/modules)
-#    set(WITH_CUDA ON)
-set(WITH_EIGEN ON)
-set(WITH_LAPACK ON)
-set(WITH_LAPACK ON)
-set(WITH_LAPACK ON)
-set(CUDA_ARCH_BIN 8.6)
-add_subdirectory(deps/opencv)
-
-#include(FetchContent)
-#FetchContent_Declare(
-#        OpenCV
-#        SOURCE_DIR ${CMAKE_CURRENT_LIST_DIR}/deps/opencv
-#        SYSTEM
-#        OVERRIDE_FIND_PACKAGE
-#)
-#FetchContent_MakeAvailable(OpenCV)
-#if (NOT OpenCV_POPULATED)
-#    FetchContent_Populate(opencv)
-#    set(BUILD_LIST "core,objdetect")
-#    set(BUILD_JAVA OFF)
-#    set(BUILD_TESTS OFF)
-#    set(BUILD_EXAMPLES OFF)
-#    set(BUILD_PERF_TESTS OFF)
-#    set(OPENCV_ENABLE_NONFREE ON)
-#    set(OPENCV_EXTRA_MODULES_PATH ${CMAKE_CURRENT_LIST_DIR}/deps/opencv_contrib/modules)
-#    set(WITH_CUDA ON)
-#    set(WITH_EIGEN ON)
-#    set(WITH_LAPACK ON)
-#    set(CUDA_ARCH_BIN 8.6)
-#    add_subdirectory(${OpenCV_SOURCE_DIR} ${OpenCV_BINARY_DIR})
-#endif ()
-target_include_directories(opencv_core SYSTEM INTERFACE $<BUILD_INTERFACE:${CMAKE_CURRENT_BINARY_DIR}>)
-target_include_directories(opencv_core SYSTEM INTERFACE $<BUILD_INTERFACE:${CMAKE_CURRENT_LIST_DIR}/deps/opencv/modules/core/include>)
-target_include_directories(opencv_imgproc SYSTEM INTERFACE $<BUILD_INTERFACE:${CMAKE_CURRENT_LIST_DIR}/deps/opencv/modules/imgproc/include>)
-target_include_directories(opencv_objdetect SYSTEM INTERFACE $<BUILD_INTERFACE:${CMAKE_CURRENT_LIST_DIR}/deps/opencv/modules/objdetect/include>)
 
 find_package(
         catkin REQUIRED COMPONENTS
@@ -236,13 +195,6 @@ target_link_libraries(tag_detector_nodelet PRIVATE opencv_core opencv_objdetect 
 add_cpp_node_macro(brushed_motors src/esw/brushed_motors/*.c*)
 
 if (ZED_FOUND)
-    add_cpp_library_macro(streaming src/esw/streaming/*.c* src/esw/streaming)
-    target_link_libraries(streaming PUBLIC /usr/lib/x86_64-linux-gnu/libnvidia-encode.so)
-    target_include_directories(streaming PUBLIC deps)
-
-    add_cpp_node_macro(cameras src/esw/cameras/*.c*)
-    target_link_libraries(cameras PRIVATE streaming)
-
     #            add_cpp_node_macro(zed_node "src/perception/zed_wrapper/*.c*")
     #            target_link_options(zed_node PRIVATE "LINKER:--copy-dt-needed-entries")
     #            target_include_directories(zed_node SYSTEM PRIVATE ${ZED_INCLUDE_DIRS} ${CUDA_INCLUDE_DIRS})
@@ -252,7 +204,7 @@ if (ZED_FOUND)
     target_precompile_headers(zed_nodelet PRIVATE src/perception/zed_wrapper/pch.hpp)
     target_include_directories(zed_nodelet SYSTEM PRIVATE ${ZED_INCLUDE_DIRS} ${CUDA_INCLUDE_DIRS})
     target_link_libraries(zed_nodelet PRIVATE ${ZED_LIBRARIES} ${SPECIAL_OS_LIBS} lie)
-    target_compile_definitions(zed_nodelet PRIVATE MROVER_IS_NODELET ALLOW_BUILD_DEBUG)
+    target_compile_definitions(zed_nodelet PRIVATE MROVER_IS_NODELET ALLOW_BUILD_DEBUG __CUDA_INCLUDE_COMPILER_INTERNAL_HEADERS__)
 endif ()
 
 add_gazebo_plugin_macro(differential_drive_plugin_6w src/gazebo/differential_drive_6w.cpp src)
