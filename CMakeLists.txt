@@ -186,7 +186,7 @@ catkin_package()
 
 ## Targets
 
-add_subdirectory(src/teleoperation/streaming)
+add_subdirectory(src/teleoperation/streaming EXCLUDE_FROM_ALL)
 
 add_cpp_library_macro(lie src/util/lie/*.c* src/util/lie)
 
@@ -206,8 +206,8 @@ if (ZED_FOUND)
     add_cpp_node_macro(cameras src/esw/cameras/*.c*)
     target_link_libraries(cameras PRIVATE streaming opencv_videoio opencv_highgui)
 
-    target_link_libraries(cameras PUBLIC de265)
-    target_include_directories(cameras PUBLIC deps/libde265 ${CMAKE_BINARY_DIR}/libde265)
+    #    target_link_libraries(cameras PUBLIC de265)
+    #    target_include_directories(cameras PUBLIC deps/libde265 ${CMAKE_BINARY_DIR}/libde265)
 
     #            add_cpp_node_macro(zed_node "src/perception/zed_wrapper/*.c*")
     #            target_link_options(zed_node PRIVATE "LINKER:--copy-dt-needed-entries")

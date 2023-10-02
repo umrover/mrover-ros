@@ -9,7 +9,7 @@
 #include <opencv2/imgproc.hpp>
 #include <opencv2/videoio.hpp>
 
-#include <libde265/de265.h>
+//#include <libde265/de265.h>
 
 int main() {
     StreamServer streamServer{"0.0.0.0", 8080};
