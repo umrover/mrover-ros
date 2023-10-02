@@ -45,7 +45,7 @@ void moveMastGimbalThrottle(const mrover::Throttle::ConstPtr& msg) {
     }
     for (size_t i = 0; i < msg->names.size(); ++i) {
         std::string& name = msg->names[i];
-        Controller& controller = mastGimbalManager.get_controller(name);
+        Controller& controller = *mastGimbalManager.get_controller(name);
         float throttle = std::clamp(msg->throttle[i], -1.0, 1.0);
         controller.set_desired_throttle(throttle);
     }
@@ -61,7 +61,7 @@ void moveMastGimbalPositionSubscriber(const mrover::Position::ConstPtr& msg) {
     }
     for (size_t i = 0; i < msg->names.size(); ++i) {
         std::string& name = msg->names[i];
-        Controller& controller = mastGimbalManager.get_controller(name);
+        Controller& controller = *mastGimbalManager.get_controller(name);
         float position = 0.0;
 
         // TODO - change the position and make sure to clamp it
@@ -77,7 +77,7 @@ void heartbeatCallback(const ros::TimerEvent&) {
     // If no message has been received within the last 0.1 seconds, set desired speed to 0 for all motors
     if (!messageReceived) {
         for (const auto& mastGimbalName : mastGimbalNames) {
-            Controller& controller = mastGimbalManager.get_controller(mastGimbalName);
+            Controller& controller = *mastGimbalManager.get_controller(mastGimbalName);
             controller.set_desired_throttle(0.0);
         }
     }

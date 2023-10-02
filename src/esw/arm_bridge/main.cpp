@@ -11,9 +11,10 @@ void moveArmVelocity(const mrover::Velocity::ConstPtr& msg);
 void moveArmPosition(const mrover::Position::ConstPtr& msg); 
 void heartbeatCallback(const ros::TimerEvent&);
 
-MotorsManager armManager;
+std::optional<MotorsManager> armManager;
 std::vector<std::string> armNames =
         {"joint_a", "joint_b", "joint_c", "joint_de", "finger", "gripper"};
+bool messageReceived;
 
 std::unordered_map<std::string, float> motorMultipliers; // Store the multipliers for each motor
 
@@ -60,9 +61,9 @@ void moveArmThrottle(const mrover::Throttle::ConstPtr& msg) {
         return;
     }
     for (size_t i = 0; i < msg->names.size(); ++i) {
-        std::string& name = msg->names[i];
-        Controller& controller = armManager.get_controller(name);
-        float throttle = std::clamp(msg->throttle[i], -1.0, 1.0);
+        const std::string& name = msg->names[i];
+        Controller& controller = *armManager.value().get_controller(name);
+        float throttle = std::clamp(msg->throttle[i], -1.0f, 1.0f);
         controller.set_desired_throttle(throttle);
     }
 
@@ -76,9 +77,9 @@ void moveArmVelocity(const mrover::Velocity::ConstPtr& msg) {
         return;
     }
     for (size_t i = 0; i < msg->names.size(); ++i) {
-        std::string& name = msg->names[i];
-        Controller& controller = armManager.get_controller(name);
-        float velocity = std::clamp(msg->velocity[i], -1.0, 1.0);
+        const std::string& name = msg->names[i];
+        Controller& controller = *armManager.value().get_controller(name);
+        float velocity = std::clamp(msg->velocity[i], -1.0f, 1.0f);
 
         // TODO - need to take into consideration gear ratio
 
@@ -95,13 +96,13 @@ void moveArmPosition(const mrover::Position::ConstPtr& msg) {
         return;
     }
     for (size_t i = 0; i < msg->names.size(); ++i) {
-        std::string& name = msg->names[i];
-        Controller& controller = armManager.get_controller(name);
+        const std::string& name = msg->names[i];
+        Controller& controller = *armManager.value().get_controller(name);
         float position = 0.0f;
 
         // TODO - change the position and make sure to clamp it
 
-        controller.set_desired_position(0.0);
+        controller.set_desired_position(position);
     }
 
     // Set the messageReceived flag to true when a message is received
@@ -112,7 +113,7 @@ void heartbeatCallback(const ros::TimerEvent&) {
     // If no message has been received within the last 0.1 seconds, set desired speed to 0 for all motors
     if (!messageReceived) {
         for (const auto& armName: armNames) {
-            Controller& controller = armManager.get_controller(armName);
+            Controller& controller = *armManager.value().get_controller(armName);
             controller.set_desired_throttle(0.0);
         }
     }

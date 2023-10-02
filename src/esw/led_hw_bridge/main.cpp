@@ -1,5 +1,6 @@
 #include <ros/ros.h>
 #include <mrover/LED.h>
+#include <stdint>
 #include <mrover/CAN.h>
 
 void changeLED(const mrover::LED::ConstPtr& msg);
@@ -13,7 +14,7 @@ int main(int argc, char** argv) {
 
     CANPublisher = n->advertise<mrover::CAN>("can_requests", 1);
     // Subscribe to the ROS topic for arm commands
-    ros::Subscriber moveArmSubscriber = n->subscribe<mrover::LED>("led_hw_bridge", 1, changeLED);
+    ros::Subscriber moveArmSubscriber = nh.subscribe<mrover::LED>("led_hw_bridge", 1, changeLED);
 
     // Enter the ROS event loop
     ros::spin();
@@ -23,7 +24,9 @@ int main(int argc, char** argv) {
 
 void changeLED(const mrover::LED::ConstPtr& msg) {
     mrover::CAN CANRequest;
-    CANRequest.name = "led_hw";
-    CANRequest.data = (msg->red) | (msg->green << 1) | (msg->blue << 2) | (msg->is_blinking << 3);
+    CANRequest.bus = 0;  // TODO
+    CANRequest.id = 0;
+    uint8_t data = msg->blue | (msg->red & 0b1) | (msg->green << 1) | (msg->blue << 2) | (msg->is_blinking << 3);
+    CANRequest.data.push_back(data);
     CANPublisher.publish(CANRequest);
 }

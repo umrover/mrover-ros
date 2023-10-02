@@ -12,10 +12,10 @@ std::vector<std::string> driveNames =
 
 std::unordered_map<std::string, float> motorMultipliers; // Store the multipliers for each motor
 
-std::optional<float> WHEEL_DISTANCE_INNER;
-std::optional<float> WHEEL_DISTANCE_OUTER;
-std::optional<float> WHEELS_M_S_TO_MOTOR_REV_S;
-std::optional<float> MAX_MOTOR_SPEED_REV_S;
+float WHEEL_DISTANCE_INNER;
+float WHEEL_DISTANCE_OUTER;
+float WHEELS_M_S_TO_MOTOR_REV_S;
+float MAX_MOTOR_SPEED_REV_S;
 
 int main(int argc, char** argv) {
     // Initialize the ROS node
@@ -44,23 +44,19 @@ int main(int argc, char** argv) {
     float roverWidth;
     float roverLength;
     assert(nh.getParam("rover/width", roverWidth));
-    assert(roverWidth.getType() == XmlRpc::XmlRpcValue::TypeDouble);
-    assert(nh.getParam("rover/length", roverLength))
-    assert(roverLength.getType() == XmlRpc::XmlRpcValue::TypeDouble);
+    assert(nh.getParam("rover/length", roverLength));
     WHEEL_DISTANCE_INNER = roverWidth / 2.0;
     WHEEL_DISTANCE_OUTER = sqrt(((roverWidth / 2.0) ** 2) + ((roverLength / 2.0) ** 2));
 
     float ratioMotorToWheel;
     assert(nh.getParam("wheel/gear_ratio", ratioMotorToWheel));
-    assert(ratioMotorToWheel.getType() == XmlRpc::XmlRpcValue::TypeDouble);
     // To convert m/s to rev/s, multiply by this constant. Divide by circumference, multiply by gear ratio.
     float wheelRadius;
     nh.getParam("wheel/radius", wheelRadius);
     WHEELS_M_S_TO_MOTOR_REV_S = (1 / (wheelRadius * 2 * M_PI)) * ratioMotorToWheel;
 
-    float maxSpeedMPerS = rospy.get_param("rover/max_speed")
+    float maxSpeedMPerS;
     assert(nh.getParam("rover/max_speed", maxSpeedMPerS));
-    assert(maxSpeedMPerS.getType() == XmlRpc::XmlRpcValue::TypeDouble);
     assert(maxSpeedMPerS > 0);
 
     MAX_MOTOR_SPEED_REV_S = maxSpeedMPerS * self.WHEELS_M_S_TO_MOTOR_REV_S;
@@ -118,7 +114,7 @@ void moveDrive(const geometry_msgs::Twist::ConstPtr& msg) {
         float multiplier = motorMultipliers[name];
         float velocity = pair.second * multiplier;  // currently in rad/s
 
-        Controller& controller = driveManager.get_controller(name);
+        Controller& controller = **driveManager.get_controller(name);
         float vel_rad_s = velocity * 2 * M_PI;
         controller.set_desired_velocity(vel_rad_s);
     }
@@ -131,7 +127,7 @@ void heartbeatCallback(const ros::TimerEvent&) {
     // If no message has been received within the last 0.1 seconds, set desired speed to 0 for all motors
     if (!messageReceived) {
         for (const auto& name : driveNames) {
-            Controller& controller = driveManager.get_controller(name);
+            Controller& controller = **driveManager.get_controller(name);
             controller.set_desired_throttle(0.0);
         }
     }
