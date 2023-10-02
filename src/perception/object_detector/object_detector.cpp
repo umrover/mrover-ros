@@ -6,7 +6,8 @@ namespace mrover {
         mNh = getMTNodeHandle();
         mPnh = getMTPrivateNodeHandle();
 
-        // TODO(percep/obj-detectr): paramaterize this
+        // Note(quintin): I downloaded this pt (PyTorch) model file from: https://github.com/ultralytics/assets/releases
+        // TODO(percep/obj-detectr): make this configurable
         mNet = cv::dnn::readNetFromTorch("/home/quintin/Downloads/yolov8n.pt");
 
         mImgSub = mNh.subscribe("image", 1, &ObjectDetectorNodelet::imageCallback, this);

@@ -49,7 +49,7 @@ namespace mrover {
         // So we need to copy the data into the correct format
         if (static_cast<int>(msg->height) != mImg.rows || static_cast<int>(msg->width) != mImg.cols) {
             NODELET_INFO("Image size changed from [%d %d] to [%u %u]", mImg.cols, mImg.rows, msg->width, msg->height);
-            mImg = cv::Mat{static_cast<int>(msg->height), static_cast<int>(msg->width), CV_8UC3, cv::Scalar{0, 0, 0}};
+            mImg = cv::Mat::zeros(msg->height, msg->width, CV_8UC3);
         }
         auto* pixelPtr = reinterpret_cast<cv::Vec3b*>(mImg.data);
         auto* pointPtr = reinterpret_cast<Point const*>(msg->data.data());
@@ -66,7 +66,7 @@ namespace mrover {
         mProfiler.measureEvent("Threshold");
 
         // Detect the tag vertices in screen space and their respective ids
-        // {mImmediateCorneres, mImmediateIds} are the outputs from OpenCV
+        // {mImmediateCorners, mImmediateIds} are the outputs from OpenCV
         mDetector.setDictionary(mDictionary);
         mDetector.setDetectorParameters(mDetectorParams);
         mDetector.detectMarkers(mImg, mImmediateCorners, mImmediateIds);
