@@ -1,7 +1,6 @@
 <launch>
-  <arg name="model" default="$(find mrover)/rover_description/rover.urdf" />
   <arg name="gui" default="false" />
-  <param name="robot_description" command="xacro $(find mrover)/rover_description/rover.xacro" />
+  <param name="robot_description" command="xacro $(find mrover)/urdf/rover/rover.urdf.xacro" />
   <arg name="rvizconfig" default="$(find mrover)/starter_project/autonomy/config/starter_project.rviz" />
   <node name="rviz" pkg="rviz" type="rviz" args="-d $(arg rvizconfig)" required="true" />
 
@@ -20,7 +19,7 @@
     <arg name="verbose" default="false" />
     <arg name="gui_required" value="true" />
   </include>
-starter_project/
+
   <node name="spawn_model" pkg="gazebo_ros" type="spawn_model" output="screen" args="
     -urdf -param robot_description
     -model rover" />

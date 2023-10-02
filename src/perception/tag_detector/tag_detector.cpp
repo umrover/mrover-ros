@@ -21,8 +21,7 @@ namespace mrover {
         mPnh.param<int>("tag_increment_weight", mTagIncrementWeight, 2);
         mPnh.param<int>("tag_decrement_weight", mTagDecrementWeight, 1);
 
-        mIt.emplace(mNh);
-        mImgPub = mIt->advertise("tag_detection", 1);
+        mImgPub = mNh.advertise<sensor_msgs::Image>("tag_detection", 1);
         mDictionary = cv::makePtr<cv::aruco::Dictionary>(cv::aruco::getPredefinedDictionary(dictionaryNumber));
 
         mPcSub = mNh.subscribe("camera/left/points", 1, &TagDetectorNodelet::pointCloudCallback, this);

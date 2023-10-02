@@ -39,7 +39,6 @@
 
   <!-- IMU -->
   <gazebo reference="imu_link">
-    <gravity>false</gravity>
     <sensor name="imu_sensor" type="imu">
       <always_on>true</always_on>
       <update_rate>100</update_rate>
@@ -80,12 +79,12 @@
   <!-- camera -->
   <gazebo reference="camera_link">
     <sensor name="camera_link_camera" type="depth">
-      <update_rate>20</update_rate>
+      <update_rate>15</update_rate>
       <camera>
         <horizontal_fov>1.919862</horizontal_fov>
         <image>
-          <width>640</width>
-          <height>480</height>
+          <width>320</width>
+          <height>240</height>
           <format>R8G8B8</format>
         </image>
         <clip>
@@ -94,9 +93,9 @@
         </clip>
       </camera>
       <plugin name="gazebo_ros_openni_kinect_plugin" filename="libkinect_plugin.so">
-        <baseline>0.2</baseline>
+        <baseline>0</baseline> <!-- Publish same rate as camera -->
         <alwaysOn>true</alwaysOn>
-        <updateRate>1.0</updateRate>
+        <updateRate>5</updateRate>
         <cameraName>camera/left</cameraName>
         <imageTopicName>image</imageTopicName>
         <cameraInfoTopicName>camera_info</cameraInfoTopicName>
@@ -116,70 +115,6 @@
         <Cy>0</Cy>
         <focalLength>0</focalLength>
         <hackBaseline>0</hackBaseline>
-      </plugin>
-    </sensor>
-  </gazebo>
-
-  <gazebo reference="left_camera_link">
-    <sensor name="left_camera_link_camera" type="camera">
-      <update_rate>20</update_rate>
-      <camera>
-        <horizontal_fov>1.919862</horizontal_fov>
-        <image>
-          <width>640</width>
-          <height>480</height>
-          <format>R8G8B8</format>
-        </image>
-        <clip>
-          <near>0.2</near>
-          <far>20</far>
-        </clip>
-      </camera>
-      <plugin name="left_camera_controller" filename="libgazebo_ros_camera.so">
-        <alwaysOn>true</alwaysOn>
-        <updateRate>20</updateRate>
-        <cameraName>camera/left</cameraName>
-        <imageTopicName>image</imageTopicName>
-        <cameraInfoTopicName>camera_info</cameraInfoTopicName>
-        <frameName>base_link</frameName>
-        <hackBaseline>0.02</hackBaseline>
-        <distortionK1>0.0</distortionK1>
-        <distortionK2>0.0</distortionK2>
-        <distortionK3>0.0</distortionK3>
-        <distortionT1>0.0</distortionT1>
-        <distortionT2>0.0</distortionT2>
-      </plugin>
-    </sensor>
-  </gazebo>
-
-  <gazebo reference="right_camera_link">
-    <sensor name="right_camera_link_camera" type="camera">
-      <update_rate>20</update_rate>
-      <camera>
-        <horizontal_fov>1.919862</horizontal_fov>
-        <image>
-          <width>640</width>
-          <height>480</height>
-          <format>R8G8B8</format>
-        </image>
-        <clip>
-          <near>0.2</near>
-          <far>20</far>
-        </clip>
-      </camera>
-      <plugin name="right_camera_controller" filename="libgazebo_ros_camera.so">
-        <alwaysOn>true</alwaysOn>
-        <updateRate>20</updateRate>
-        <cameraName>camera/right</cameraName>
-        <imageTopicName>image</imageTopicName>
-        <cameraInfoTopicName>camera_info</cameraInfoTopicName>
-        <frameName>base_link</frameName>
-        <hackBaseline>0.07</hackBaseline>
-        <distortionK1>0.0</distortionK1>
-        <distortionK2>0.0</distortionK2>
-        <distortionK3>0.0</distortionK3>
-        <distortionT1>0.0</distortionT1>
-        <distortionT2>0.0</distortionT2>
       </plugin>
     </sensor>
   </gazebo>

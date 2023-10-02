@@ -17,11 +17,11 @@ int main(int argc, char** argv) {
 
 namespace mrover {
 
-    Perception::Perception() : mNodeHandle{}, mImageTransport{mNodeHandle} {
+    Perception::Perception() : mNodeHandle{} {
         // Subscribe to camera image messages
         // Every time another node publishes to this topic we will be notified
         // Specifically the callback we passed will be invoked
-        mImageSubscriber = mImageTransport.subscribe("camera/right/image", 1, &Perception::imageCallback, this);
+        mImageSubscriber = mNodeHandle.subscribe("camera/right/image", 1, &Perception::imageCallback, this);
 
         // Create a publisher for our tag topic
         // See: http://wiki.ros.org/ROS/Tutorials/WritingPublisherSubscriber%28c%2B%2B%29
@@ -29,7 +29,7 @@ namespace mrover {
         // mTagPublisher = mNodeHandle.advertise<StarterProjectTag>("tag", 1);
 
         mTagDetectorParams = cv::makePtr<cv::aruco::DetectorParameters>();
-        mTagDictionary = cv::makePtr<cv::aruco::Dictionary>(cv::aruco::getPredefinedDictionary(0));
+        mTagDictionary = cv::makePtr<cv::aruco::Dictionary>(cv::aruco::getPredefinedDictionary(cv::aruco::DICT_4X4_50));
     }
 
     void Perception::imageCallback(sensor_msgs::ImageConstPtr const& image) {
