@@ -1,12 +1,19 @@
 from .state import State, ExitState
 from typing import Dict, Set, List
 import time
+from dataclasses import dataclass
+
+@dataclass
+class TransitionRecord:
+    time: float
+    origin_state: str
+    dest_state: str
 
 class StateMachine:
     def __init__(self, initial_state: State):
         self.current_state = initial_state
         self.state_transitions: Dict[type[State], Set[type[State]]]  = {}
-        self.transition_log: List[str] = []
+        self.transition_log: List[TransitionRecord] = []
         self.context = None
     
     def __update(self):
@@ -15,7 +22,7 @@ class StateMachine:
             raise Exception(f"Invalid transition from {self.current_state} to {next_state}")
         if type(next_state) is not type(self.current_state):
             self.current_state.on_exit(self.context)
-            self.transition_log.append(f"Time: {time.time()}, From: {self.current_state} To: {next_state}")
+            self.transition_log.append(TransitionRecord(time.time(), str(self.current_state), str(next_state)))
             self.current_state = next_state
             self.current_state.on_enter(self.context)
     
