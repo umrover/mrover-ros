@@ -5,38 +5,36 @@ namespace mrover {
     class LongRangeCamNodelet : public nodelet::Nodelet {
     
     private:
-        explicit LongRangeCamNodelet;
-        virtual ~LongRangeCamNodelet;
-        LongRangeCamNodelet
+        cv::VideoCapture mCapture;
+
+        struct Measures {
+            ros::Time time;
+            cv::OutputArray mImage;
+
+            Measures() = default;
+
+            Measures(Measures&) = delete;
+            Measures& operator=(Measures&) = delete;
+
+            Measures(Measures&&) noexcept;
+            Measures& operator=(Measures&&) noexcept;
+        };
+
         ros::NodeHandle mNh, mPnh;
 
         ros::Publisher mCamInfoPub;
-        image_transport::Publisher mCamImgPub;
+        image_transport::Publisher mImgPub;
 
-        PointCloudGpu mPointCloudGpu;
+        Measures mGrabMeasures, mPubMeasures;
 
-        sl::Resolution mImageResolution;
-        sl::String mSvoPath;
-        int mGrabTargetFps{};
-        int mDepthConfidence{};
-        int mTextureConfidence{};
-        bool mUseBuiltinPosTracking{};
-        bool mUseAreaMemory{};
-        bool mUsePoseSmoothing{};
-        bool mUseLoopProfiler{};
-        bool mUseDepthStabilization{};
-        float mDepthMaximumDistance{};
-
-        Measures mGrabMeasures, mPcMeasures;
-
-        std::thread mGrabThread;
+        std::thread mReadThread;
         std::mutex mSwapMutex;
         std::condition_variable mSwapCv;
         std::atomic_bool mIsSwapReady = false;
 
         LoopProfiler mGrabThreadProfiler{"Long Range Cam Grab"};
 
-        size_t mGrabUpdateTick = 0, mPointCloudUpdateTick = 0;
+        size_t mGrabUpdateTick = 0;
 
         void onInit() override;
 
@@ -45,16 +43,13 @@ namespace mrover {
 
         ~LongRangeCamNodelet() override;
 
-        void grabUpdate();
+        void readUpdate();
+        void imagePubUpdate();
     };
-
-    ros::Time slTime2Ros(sl::Timestamp t);
 
     void fillCameraInfoMessages(sl::CalibrationParameters& calibration, sl::Resolution const& resolution,
                                 sensor_msgs::CameraInfoPtr const& leftInfoMsg, sensor_msgs::CameraInfoPtr const& rightInfoMsg);
 
     void fillImageMessage(sl::Mat& bgra, sensor_msgs::ImagePtr const& msg);
-
-    void checkCudaError(cudaError_t error);
 
 } // namespace mrover
