@@ -1,9 +1,15 @@
 
-from  ..lib.state_machine import StateMachine
-from ..lib.state import State, ExitState
+from util.state_lib.state_machine import StateMachine
+from util.state_lib.state import State, ExitState
 import random
 from threading import Thread, Lock
 import time
+
+'''
+Test multi-threaded program that has an external thread that feeds a resource that the
+Context object queries. Not a unit-test but run manually to ensure relatively predicatble
+behavior
+'''
 
 class Context:
     def __init__(self):
@@ -61,13 +67,14 @@ class RunningState(State):
     def on_exit(self, context):
         print("Stopped")
 
-sm = StateMachine(WaitingState())
-sm.add_transition(WaitingState(), RunningState())
-sm.add_transition(RunningState(), WaitingState())
-sm.add_transition(RunningState(), RunningState())
-sm.add_transition(WaitingState(), WaitingState())
-context = Context()
-sm.set_context(context)
-thread = Thread(target=context.stateCapture.random_loop)
-thread.start()
-sm.run()
+if __name__ == "__main__":
+    sm = StateMachine(WaitingState())
+    sm.add_transition(WaitingState(), RunningState())
+    sm.add_transition(RunningState(), WaitingState())
+    sm.add_transition(RunningState(), RunningState())
+    sm.add_transition(WaitingState(), WaitingState())
+    context = Context()
+    sm.set_context(context)
+    thread = Thread(target=context.stateCapture.random_loop)
+    thread.start()
+    sm.run()
