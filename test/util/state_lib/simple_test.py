@@ -44,7 +44,7 @@ class Context:
 
 class TestSimpleStateMachine(unittest.TestCase):
     def test_simple(self):
-        sm = StateMachine(ForwardState())
+        sm = StateMachine(ForwardState(), "SimpleStateMachine")
         context = Context()
         sm.set_context(context)
         sm.add_transition(ForwardState(), BackwardState())
