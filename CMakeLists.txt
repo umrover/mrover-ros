@@ -25,27 +25,32 @@ set(MROVER_PACKAGES
 # Message files
 set(MROVER_MESSAGE_FILES
         AvailableCameras.msg
-        Calibrated.msg
         CalibrationStatus.msg
         CameraCmd.msg
-        Carousel.msg
+        CAN.msg
         Chassis.msg
+        ControllerGroupState.msg
+        ControllerState.msg
         Course.msg
         Diagnostic.msg
         EnableAuton.msg
-        GPSWaypoint.msg
         GPSPointList.msg
+        GPSWaypoint.msg
         HeaterData.msg
         ImuAndMag.msg
+        LED.msg
         LimitSwitchData.msg
-        MastGimbal.msg
-        JointLock.msg
         MoteusState.msg
         MotorsStatus.msg
         NavMetadata.msg
         NetworkBandwidth.msg
-        ScienceTemperature.msg
+        PDB.msg
+        Position.msg
+        ScienceTemperatures.msg
         Spectral.msg
+        SpectralGroup.msg
+        Throttle.msg
+        Velocity.msg
         Waypoint.msg
         WaypointType.msg
         GPSPointList.msg
@@ -53,19 +58,15 @@ set(MROVER_MESSAGE_FILES
 
 # Service files
 set(MROVER_SERVICE_FILES
-        AdjustMotors.srv
-        CalibrateMotors.srv
+        AdjustMotor.srv
         ChangeArmMode.srv
         ChangeCameras.srv
         ChangeHeaterState.srv
         ChangeServoAngle.srv
-        EnableDevice.srv
-        FetchMessageFromPackage.srv
         FetchMessageFromPackage.srv
         FetchPackages.srv
-        PublishEnableAuton.srv
         PublishCourse.srv
-        ResetCameras.srv
+        PublishEnableAuton.srv
 )
 
 # Generate messages list
@@ -188,7 +189,14 @@ if (${DEVICE} MATCHES "raspi4")
     # define an add and link macro
     # Put items here to build
     macro(add_and_link_macro)
-        add_cpp_node_macro(brushed_motors "src/esw/brushed_motors/*")
+        add_cpp_node_macro(arm_bridge "src/esw/arm_bridge/*")
+        add_cpp_node_macro(can_bridge "src/esw/can_bridge/*")
+        # add_cpp_node_macro(can_library "src/esw/can_library/*")
+        add_cpp_node_macro(drive_bridge "src/esw/drive_bridge/*")
+        add_cpp_node_macro(led_hw_bridge "src/esw/led_hw_bridge/*")
+        add_cpp_node_macro(mast_gimbal_bridge "src/esw/mast_gimbal_bridge/*")
+        # add_cpp_node_macro(motor_library "src/esw/motor_library/*")
+        add_cpp_node_macro(pdb_bridge "src/esw/pdb_bridge/*")
     endmacro()
 else ()
     # -=-=-=-=-
@@ -243,7 +251,14 @@ else ()
         target_precompile_headers(tag_detector_nodelet PRIVATE src/perception/tag_detector/pch.hpp)
         target_link_libraries(tag_detector_nodelet PRIVATE ${OpenCV_LIBRARIES} lie)
 
-        add_cpp_node_macro(brushed_motors src/esw/brushed_motors/*.cpp)
+        add_cpp_node_macro(arm_bridge src/esw/arm_bridge/*.cpp)
+        add_cpp_node_macro(can_bridge src/esw/can_bridge/*.cpp)
+        # add_cpp_node_macro(can_library src/esw/can_library/*.cpp)
+        add_cpp_node_macro(drive_bridge src/esw/drive_bridge/*.cpp)
+        add_cpp_node_macro(led_hw_bridge src/esw/led_hw_bridge/*.cpp)
+        add_cpp_node_macro(mast_gimbal_bridge src/esw/mast_gimbal_bridge/*.cpp)
+        # add_cpp_node_macro(motor_library src/esw/motor_library/*.cpp)
+        add_cpp_node_macro(pdb_bridge src/esw/pdb_bridge/*.cpp)
 
         add_cpp_library_macro(lie src/util/lie/*.cpp src/util/lie)
 

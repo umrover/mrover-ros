@@ -1,2 +1,2 @@
-float32[3] temperatures  # 0 means 3v3 data, 1 means 5v data, and 2 means 12v data. Unit is Celsius.
-float32[3] currents   #  Follow same convention as aboveCur. Unit is Amps.
+float32[5] temperatures # 0-2 are for the 12V bucks, 3 is for 5V, 4 is for 3.3V.
+float32[5] currents

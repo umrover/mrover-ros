@@ -1,8 +1,11 @@
 #pragma once
 
 #include "../can_library/can_manager.hpp"
+#include "brushed.hpp"
+#include "brushless.hpp"
 #include <string>
 #include <units/units.hpp>
+#include <ros/ros.h>
 
 enum class MotorType {
     Brushed = 0,
@@ -11,7 +14,7 @@ enum class MotorType {
 
 class Controller {
 public:
-    Controller(ros::NodeHandle* n, std::string name) : name(name), can_manager(CANManager(n, name)) {}
+    Controller(ros::NodeHandle* n, const std::string &name) : name(name), can_manager(CANManager(n, name)) {}
 
     // will receive CAN frame with updated motor information (current speed, position, etc.)
     virtual void update(uint64_t frame) = 0;

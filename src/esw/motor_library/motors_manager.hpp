@@ -1,8 +1,9 @@
 #pragma once
 
 #include "controller.hpp"
-
+#include <XmlRpcValue.h>
 #include <unordered_map>
+#include <ros/ros.h>
 
 class MotorsManager {
 public:
@@ -19,7 +20,7 @@ public:
                 controllers[name] = std::make_unique<BrushlessController>(n, name);
             }
 
-            names[controllers[name].get_can_manager().get_id()] = name;
+            names[controllers[name]->get_can_manager().get_id()] = name;
         }
     }
 
@@ -29,7 +30,7 @@ public:
 
     void process_frame(int bus, int id, uint64_t frame_data) {
         // TODO: figure out how to organize by bus
-        controllers[names[id]].update(frame_data);
+        controllers[names[id]]->update(frame_data);
     }
 
 private:
