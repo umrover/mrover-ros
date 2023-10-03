@@ -59,7 +59,7 @@ int main(int argc, char** argv) {
 }
 
 void moveArmThrottle(const mrover::Throttle::ConstPtr& msg) {
-    if (msg->names != armNames && msg->names.size() != msg->throttle.size()) {
+    if (msg->names != armNames && msg->names.size() != msg->throttles.size()) {
         ROS_ERROR("Arm request is invalid!");
         return;
     }
@@ -69,13 +69,13 @@ void moveArmThrottle(const mrover::Throttle::ConstPtr& msg) {
     for (size_t i = 0; i < msg->names.size(); ++i) {
         const std::string& name = msg->names[i];
         Controller& controller = *armManager.value().get_controller(name);
-        float throttle = std::clamp(msg->throttle[i], -1.0f, 1.0f);
+        float throttle = std::clamp(msg->throttles[i], -1.0f, 1.0f);
         controller.set_desired_throttle(throttle);
     }
 }
 
 void moveArmVelocity(const mrover::Velocity::ConstPtr& msg) {
-    if (msg->names != armNames && msg->names.size() != msg->velocity.size()) {
+    if (msg->names != armNames && msg->names.size() != msg->velocities.size()) {
         ROS_ERROR("Arm request is invalid!");
         return;
     }
@@ -85,7 +85,7 @@ void moveArmVelocity(const mrover::Velocity::ConstPtr& msg) {
     for (size_t i = 0; i < msg->names.size(); ++i) {
         const std::string& name = msg->names[i];
         Controller& controller = *armManager.value().get_controller(name);
-        float velocity = std::clamp(msg->velocity[i], -1.0f, 1.0f);
+        float velocity = std::clamp(msg->velocities[i], -1.0f, 1.0f);
 
         // TODO - need to take into consideration gear ratio
 
@@ -94,7 +94,7 @@ void moveArmVelocity(const mrover::Velocity::ConstPtr& msg) {
 }
 
 void moveArmPosition(const mrover::Position::ConstPtr& msg) {
-    if (msg->names != armNames && msg->names.size() != msg->position.size()) {
+    if (msg->names != armNames && msg->names.size() != msg->positions.size()) {
         ROS_ERROR("Arm request is invalid!");
         return;
     }

@@ -24,7 +24,6 @@ set(MROVER_PACKAGES
 
 # Message files
 set(MROVER_MESSAGE_FILES
-        AvailableCameras.msg
         CalibrationStatus.msg
         CameraCmd.msg
         CAN.msg
@@ -32,21 +31,17 @@ set(MROVER_MESSAGE_FILES
         ControllerGroupState.msg
         ControllerState.msg
         Course.msg
-        Diagnostic.msg
         EnableAuton.msg
         GPSPointList.msg
         GPSWaypoint.msg
         HeaterData.msg
         ImuAndMag.msg
         LED.msg
-        LimitSwitchData.msg
-        MoteusState.msg
-        MotorsStatus.msg
         NavMetadata.msg
         NetworkBandwidth.msg
         PDB.msg
         Position.msg
-        ScienceTemperatures.msg
+        ScienceThermistors.msg
         Spectral.msg
         SpectralGroup.msg
         Throttle.msg
@@ -61,8 +56,6 @@ set(MROVER_SERVICE_FILES
         AdjustMotor.srv
         ChangeArmMode.srv
         ChangeCameras.srv
-        ChangeHeaterState.srv
-        ChangeServoAngle.srv
         FetchMessageFromPackage.srv
         FetchPackages.srv
         PublishCourse.srv

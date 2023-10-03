@@ -1,3 +1,3 @@
 string name
-string state
+string state # Armed, Disconnected, or Error
 string error
