@@ -49,8 +49,6 @@ extern "C" {
 
 /* USER CODE END EM */
 
-void HAL_TIM_MspPostInit(TIM_HandleTypeDef *htim);
-
 /* Exported functions prototypes ---------------------------------------------*/
 void Error_Handler(void);
 
@@ -59,48 +57,52 @@ void Error_Handler(void);
 /* USER CODE END EFP */
 
 /* Private defines -----------------------------------------------------------*/
+#define UV_LED_0_Pin GPIO_PIN_13
+#define UV_LED_0_GPIO_Port GPIOC
+#define UV_LED_1_Pin GPIO_PIN_14
+#define UV_LED_1_GPIO_Port GPIOC
+#define UV_LED_2_Pin GPIO_PIN_15
+#define UV_LED_2_GPIO_Port GPIOC
+#define WHITE_LED_0_Pin GPIO_PIN_0
+#define WHITE_LED_0_GPIO_Port GPIOF
+#define WHITE_LED_1_Pin GPIO_PIN_1
+#define WHITE_LED_1_GPIO_Port GPIOF
+#define WHITE_LED_2_Pin GPIO_PIN_10
+#define WHITE_LED_2_GPIO_Port GPIOG
 #define THERM_0_Pin GPIO_PIN_0
 #define THERM_0_GPIO_Port GPIOA
 #define THERM_1_Pin GPIO_PIN_1
 #define THERM_1_GPIO_Port GPIOA
 #define THERM_2_Pin GPIO_PIN_2
 #define THERM_2_GPIO_Port GPIOA
-#define MOTOR_1_PWM_Pin GPIO_PIN_3
-#define MOTOR_1_PWM_GPIO_Port GPIOA
-#define QUAD0_B_Pin GPIO_PIN_4
-#define QUAD0_B_GPIO_Port GPIOA
-#define SERVO_0_PWM_Pin GPIO_PIN_5
-#define SERVO_0_PWM_GPIO_Port GPIOA
-#define QUAD_0_A_Pin GPIO_PIN_6
-#define QUAD_0_A_GPIO_Port GPIOA
-#define HEATER_0_Pin GPIO_PIN_7
-#define HEATER_0_GPIO_Port GPIOA
-#define HEATER_1_Pin GPIO_PIN_4
-#define HEATER_1_GPIO_Port GPIOC
-#define HEATER_2_Pin GPIO_PIN_0
+#define THERM_3_Pin GPIO_PIN_6
+#define THERM_3_GPIO_Port GPIOA
+#define THERM_4_Pin GPIO_PIN_7
+#define THERM_4_GPIO_Port GPIOA
+#define THERM_5_Pin GPIO_PIN_4
+#define THERM_5_GPIO_Port GPIOC
+#define HEATER_5_Pin GPIO_PIN_14
+#define HEATER_5_GPIO_Port GPIOB
+#define HEATER_4_Pin GPIO_PIN_15
+#define HEATER_4_GPIO_Port GPIOB
+#define HEATER_3_Pin GPIO_PIN_6
+#define HEATER_3_GPIO_Port GPIOC
+#define I2C_MUX_1_Pin GPIO_PIN_15
+#define I2C_MUX_1_GPIO_Port GPIOA
+#define I2C_MUX_0_Pin GPIO_PIN_10
+#define I2C_MUX_0_GPIO_Port GPIOC
+#define HEATER_5C11_Pin GPIO_PIN_11
+#define HEATER_5C11_GPIO_Port GPIOC
+#define HEATER_4B3_Pin GPIO_PIN_3
+#define HEATER_4B3_GPIO_Port GPIOB
+#define HEATER_3B4_Pin GPIO_PIN_4
+#define HEATER_3B4_GPIO_Port GPIOB
+#define HEATER_2_Pin GPIO_PIN_5
 #define HEATER_2_GPIO_Port GPIOB
-#define MOTOR_1_DIR_Pin GPIO_PIN_1
-#define MOTOR_1_DIR_GPIO_Port GPIOB
-#define MOTOR_1_NDIR_Pin GPIO_PIN_2
-#define MOTOR_1_NDIR_GPIO_Port GPIOB
-#define SERVO_2_PWM_Pin GPIO_PIN_10
-#define SERVO_2_PWM_GPIO_Port GPIOB
-#define WHITE_LED_Pin GPIO_PIN_12
-#define WHITE_LED_GPIO_Port GPIOB
-#define UV_LED_Pin GPIO_PIN_13
-#define UV_LED_GPIO_Port GPIOB
-#define MOTOR_0_PWM_Pin GPIO_PIN_14
-#define MOTOR_0_PWM_GPIO_Port GPIOB
-#define MOTOR_0_NDIR_Pin GPIO_PIN_15
-#define MOTOR_0_NDIR_GPIO_Port GPIOB
-#define MOTOR_0_DIR_Pin GPIO_PIN_6
-#define MOTOR_0_DIR_GPIO_Port GPIOC
-#define SERVO_1_PWM_Pin GPIO_PIN_3
-#define SERVO_1_PWM_GPIO_Port GPIOB
-#define QUAD_1_A_Pin GPIO_PIN_6
-#define QUAD_1_A_GPIO_Port GPIOB
-#define QUAD1_B_Pin GPIO_PIN_7
-#define QUAD1_B_GPIO_Port GPIOB
+#define HEATER_1_Pin GPIO_PIN_6
+#define HEATER_1_GPIO_Port GPIOB
+#define HEATER_0_Pin GPIO_PIN_7
+#define HEATER_0_GPIO_Port GPIOB
 
 /* USER CODE BEGIN Private defines */
 
