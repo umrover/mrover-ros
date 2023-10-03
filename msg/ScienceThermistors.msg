@@ -1,1 +1,1 @@
-sensor_msgs/Temperature temperatures[6]  # Celsius
+sensor_msgs/Temperature[6] temperatures  # Celsius
