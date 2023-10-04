@@ -53,25 +53,26 @@ namespace mrover {
 
     class SMBus {
     public:
-        SMBus(I2C_HandleTypeDef* hi2c) : i2c(hi2c){
+        SMBus(I2C_HandleTypeDef* hi2c) 
+            : m_i2c(hi2c) {
             for (size_t i = 0; i < 30; i++) {
-                buf[i] = 0;
+                m_buf[i] = 0;
             }
         }
 
         long read_word_data(uint8_t addr, char cmd) {
-            buf[0] = cmd;
-            ret = HAL_I2C_Master_Transmit(i2c, addr << 1, buf, 1, 500);
+            this->m_buf[0] = cmd;
+            this->m_ret = HAL_I2C_Master_Transmit(this->m_i2c, addr << 1, this->m_buf, 1, 500);
 
             //reads from address sent above
-            ret = HAL_I2C_Master_Receive(i2c, (addr << 1) | 1, buf, 2, 500);
+            this->m_ret = HAL_I2C_Master_Receive(this->m_i2c, (addr << 1) | 1, this->m_buf, 2, 500);
 
-            long data = buf[0] | (buf[1] << 8);
-            if (ret != HAL_OK)
+            long data = this->m_buf[0] | (this->m_buf[1] << 8);
+            if (this->m_ret != HAL_OK)
             {
-                HAL_I2C_DeInit(i2c);
+                HAL_I2C_DeInit(this->m_i2c);
                 HAL_Delay(5);
-                HAL_I2C_Init(i2c);
+                HAL_I2C_Init(this->m_i2c);
                 data = 0;
             }
 
@@ -79,10 +80,11 @@ namespace mrover {
         }
 
     private:
-        I2C_HandleTypeDef *i2c;
-        HAL_StatusTypeDef ret;
-        uint8_t buf[30];
-        uint8_t DMA;
+        I2C_HandleTypeDef *m_i2c;
+        HAL_StatusTypeDef m_ret;
+        uint8_t m_buf[30];
+        // TODO: Delete?
+        //uint8_t DMA;
     };
 
 }

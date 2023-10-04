@@ -17,41 +17,24 @@ namespace mrover {
         AbsoluteEncoder() = default;
 
         // A1/A2 is 1 if pin connected to power, 0 if pin connected to ground
-        AbsoluteEncoder(SMBus i2cBus, uint8_t A1, uint8_t A2) {
-            if (A1 && A2) {
+        AbsoluteEncoder(SMBus _i2cBus, uint8_t _A1, uint8_t _A2)
+            : m_i2cBus(_i2cBus)
+            , m_angle_rad(0)
+            {
+            // could be put into member list if we use ternary
+            if (_A1 && _A2) {
                 this->m_address = device_slave_address_both_power;
-            } else if (A1) {
+            } else if (_A1) {
                 this->m_address = device_slave_address_a1_power;
-            } else if (A2) {
+            } else if (_A2) {
                 this->m_address = device_slave_address_a2_power;
             } else { 
                 this->m_address = device_slave_address_none_power;
             }
-            this->m_i2cBus = i2cBus;
-            this->m_angle_rad = 0;
         }
 
-        long read_word_data(uint8_t addr, char cmd) {
-            this->m_i2cBus->buf[0] = cmd;
-            this->m_i2cBus->ret = HAL_I2C_Master_Transmit(this->m_i2cBus->i2c, addr << 1, this->m_i2cBus->buf, 1, 500);
-
-            //reads from address sent above
-            this->m_i2cBus->ret = HAL_I2C_Master_Receive(this->m_i2cBus->i2c, (addr << 1) | 1, this->m_i2cBus->buf, 2, 500);
-
-            long data = this->m_i2cBus->buf[0] | (this->m_i2cBus->buf[1] << 8);
-            if (this->m_i2cBus->ret != HAL_OK)
-            {
-                HAL_I2C_DeInit(this->m_i2cBus->i2c);
-                HAL_Delay(5);
-                HAL_I2C_Init(this->m_i2cBus->i2c);
-                data = 0;
-            }
-
-            return data;
-        }
-
-        int read_raw_angle(AbsEncoder* abs_encoder) {
-            int raw_data = read_word_data(abs_encoder->i2cBus, abs_encoder->address, 0xFF);
+        int read_raw_angle() {
+            int raw_data = this->m_i2cBus->read_word_data(this->m_address, 0xFF);
             int angle_left = ( raw_data >> 8 ) & 0xFF; // 0xFE
             int angle_right = raw_data & 0xFF; // 0xFF
             int angle_left_modified = angle_left & 0x3F;
@@ -59,12 +42,12 @@ namespace mrover {
             return angle_raw;
         }
 
-
-        void refresh_angle_radians() {
-            int angle_raw = read_raw_angle(encoder);
-            float radians = (float)angle_raw / RAW_TO_RADIANS_CONVERSION_FACTOR;
-            encoder->angle_rad = radians;
-        }
+        // TODO: Delete? Don't think this is needed because of the way encoder is setup
+        // void refresh_angle_radians() {
+            // int angle_raw = read_raw_angle();
+            // float radians = (float)angle_raw / RAW_TO_RADIANS_CONVERSION_FACTOR;
+            // this->m_angle_rad = radians;
+        // }
 
     private:
         int m_address;
