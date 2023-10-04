@@ -39,6 +39,8 @@ set(MROVER_MESSAGE_FILES
         HeaterData.msg
         ImuAndMag.msg
         LED.msg
+        MoteusState.msg
+        MotorsStatus.msg
         NavMetadata.msg
         NavState.msg
         NetworkBandwidth.msg
