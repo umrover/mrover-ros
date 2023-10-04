@@ -12,7 +12,7 @@ void moveArmVelocity(const mrover::Velocity::ConstPtr& msg);
 void moveArmPosition(const mrover::Position::ConstPtr& msg); 
 void heartbeatCallback(const ros::TimerEvent&);
 
-std::optional<MotorsManager> armManager;
+std::unique_ptr<MotorsManager> armManager;
 std::vector<std::string> armNames =
         {"joint_a", "joint_b", "joint_c", "joint_de", "finger", "gripper"};
 
@@ -30,7 +30,7 @@ int main(int argc, char** argv) {
     XmlRpc::XmlRpcValue controllersRoot;
     assert(nh.getParam("motors/controllers", controllersRoot));
     assert(controllersRoot.getType() == XmlRpc::XmlRpcValue::TypeStruct);
-    armManager = MotorsManager(&nh, armNames, controllersRoot);
+    armManager = std::make_unique<MotorsManager>(&nh, armNames, controllersRoot);
 
     // Load motor multipliers from the ROS parameter server
     XmlRpc::XmlRpcValue armControllers;
@@ -68,7 +68,7 @@ void moveArmThrottle(const mrover::Throttle::ConstPtr& msg) {
     
     for (size_t i = 0; i < msg->names.size(); ++i) {
         const std::string& name = msg->names[i];
-        Controller& controller = armManager.value().get_controller(name);
+        Controller& controller = armManager->get_controller(name);
         float throttle = std::clamp(msg->throttles[i], -1.0f, 1.0f);
         controller.set_desired_throttle(throttle);
     }
@@ -84,7 +84,7 @@ void moveArmVelocity(const mrover::Velocity::ConstPtr& msg) {
 
     for (size_t i = 0; i < msg->names.size(); ++i) {
         const std::string& name = msg->names[i];
-        Controller& controller = armManager.value().get_controller(name);
+        Controller& controller = armManager->get_controller(name);
         float velocity = std::clamp(msg->velocities[i], -1.0f, 1.0f);
 
         // TODO - need to take into consideration gear ratio
@@ -103,7 +103,7 @@ void moveArmPosition(const mrover::Position::ConstPtr& msg) {
 
     for (size_t i = 0; i < msg->names.size(); ++i) {
         const std::string& name = msg->names[i];
-        Controller& controller = armManager.value().get_controller(name);
+        Controller& controller = armManager->get_controller(name);
         float position = 0.0f;
 
         // TODO - change the position and make sure to clamp it
@@ -116,7 +116,7 @@ void heartbeatCallback(const ros::TimerEvent&) {
     auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::high_resolution_clock::now() - lastConnection);
     if (duration.count() < 100) {
         for (const auto& armName: armNames) {
-            Controller& controller = armManager.value().get_controller(armName);
+            Controller& controller = armManager->get_controller(armName);
             controller.set_desired_throttle(0.0);
         }
     }

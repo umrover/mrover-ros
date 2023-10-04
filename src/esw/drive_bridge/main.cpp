@@ -74,7 +74,7 @@ int main(int argc, char** argv) {
     controllerDataPublisher = nh.advertise<mrover::ControllerGroupState>("drive_controller_data", 1);
 
     // Subscribe to the ROS topic for drive commands
-    ros::Subscriber moveDriveSubscriber = n->subscribe<geometry_msgs::Twist>("cmd_vel", 1, moveDrive);
+    ros::Subscriber moveDriveSubscriber = nh.subscribe<geometry_msgs::Twist>("cmd_vel", 1, moveDrive);
 
     // Create a 0.1 second heartbeat timer
     ros::Timer heartbeatTimer = nh.createTimer(ros::Duration(0.1), heartbeatCallback);
