@@ -1,6 +1,8 @@
 #pragma once
 
 #include "controller.hpp"
+#include "brushless.hpp"
+#include "brushed.hpp"
 #include <XmlRpcValue.h>
 #include <unordered_map>
 #include <ros/ros.h>
@@ -15,9 +17,11 @@ public:
             assert(type == "brushed" || type == "brushless");
 
             if (type == "brushed") {
-                controllers[name] = std::make_unique<BrushedController>(n, name);
+                auto temp = std::make_unique<BrushedController>(n, name);
+                controllers[name] = std::move(temp);
             } else if (type == "brushless") {
-                controllers[name] = std::make_unique<BrushlessController>(n, name);
+                auto temp = std::make_unique<BrushlessController>(n, name);
+                controllers[name] = std::move(temp);
             }
 
             names[controllers[name]->get_can_manager().get_id()] = name;
@@ -25,7 +29,7 @@ public:
     }
 
     auto& get_controller(std::string const& name) {
-        return controllers.at(name);
+        return *controllers.at(name);
     }
 
     void process_frame(int bus, int id, uint64_t frame_data) {

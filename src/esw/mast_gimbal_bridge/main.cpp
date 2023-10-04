@@ -54,7 +54,7 @@ void moveMastGimbalThrottle(const mrover::Throttle::ConstPtr& msg) {
     
     for (size_t i = 0; i < msg->names.size(); ++i) {
         std::string& name = msg->names[i];
-        Controller& controller = *mastGimbalManager.get_controller(name);
+        Controller& controller = mastGimbalManager.get_controller(name);
         float throttle = std::clamp(msg->throttles[i], -1.0, 1.0);
         controller.set_desired_throttle(throttle);
     }
@@ -70,7 +70,7 @@ void moveMastGimbalVelocity(const mrover::Velocity::ConstPtr& msg) {
 
     for (size_t i = 0; i < msg->names.size(); ++i) {
         std::string& name = msg->names[i];
-        Controller& controller = *mastGimbalManager.get_controller(name);
+        Controller& controller = mastGimbalManager.get_controller(name);
         float velocity = std::clamp(msg->velocities[i], -1.0, 1.0);  // TODO
         controller.set_desired_throttle(velocity);
     }
@@ -86,7 +86,7 @@ void moveMastGimbalPositionSubscriber(const mrover::Position::ConstPtr& msg) {
 
     for (size_t i = 0; i < msg->names.size(); ++i) {
         std::string& name = msg->names[i];
-        Controller& controller = *mastGimbalManager.get_controller(name);
+        Controller& controller = mastGimbalManager.get_controller(name);
         float position = 0.0;
 
         // TODO - change the position and make sure to clamp it
@@ -100,7 +100,7 @@ void heartbeatCallback(const ros::TimerEvent&) {
     auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::high_resolution_clock::now() - lastConnection);
     if (duration.count() < 100) {
         for (const auto& mastGimbalName : mastGimbalNames) {
-            Controller& controller = *mastGimbalManager.get_controller(mastGimbalName);
+            Controller& controller = mastGimbalManager.get_controller(mastGimbalName);
             controller.set_desired_throttle(0.0);
         }
     }

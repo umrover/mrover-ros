@@ -1,6 +1,6 @@
 #include <ros/ros.h>
 #include <mrover/LED.h>
-#include <stdint>
+#include <cstdint>
 #include <mrover/CAN.h>
 
 void changeLED(const mrover::LED::ConstPtr& msg);
@@ -12,7 +12,7 @@ int main(int argc, char** argv) {
     ros::init(argc, argv, "led_hw_bridge");
     ros::NodeHandle nh;
 
-    CANPublisher = n->advertise<mrover::CAN>("can_requests", 1);
+    CANPublisher = nh.advertise<mrover::CAN>("can_requests", 1);
     // Subscribe to the ROS topic for arm commands
     ros::Subscriber moveArmSubscriber = nh.subscribe<mrover::LED>("led_hw_bridge", 1, changeLED);
 

@@ -10,7 +10,7 @@
 
 class CANManager {
 public:
-    CANManager(ros::NodeHandle* n, std::string& name) {
+    CANManager(ros::NodeHandle* n, const std::string& name) {
         CANPublisher = n->advertise<mrover::CAN>("can_requests", 1);
         assert(n->getParam("can/" + name + "/bus", bus));
         assert(n->getParam("can/" + name + "/id", id));

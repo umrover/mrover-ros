@@ -132,7 +132,7 @@ void moveDrive(const geometry_msgs::Twist::ConstPtr& msg) {
         float multiplier = motorMultipliers[name];
         float velocity = pair.second * multiplier;  // currently in rad/s
 
-        Controller& controller = *driveManager.get_controller(name);
+        Controller& controller = driveManager.get_controller(name);
         float vel_rad_s = velocity * 2 * M_PI;
         controller.set_desired_velocity(vel_rad_s);
     }
@@ -143,7 +143,7 @@ void heartbeatCallback(const ros::TimerEvent&) {
     auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::high_resolution_clock::now() - lastConnection);
     if (duration.count() < 100) {
         for (const auto& name : driveNames) {
-            Controller& controller = *driveManager.get_controller(name);
+            Controller& controller = driveManager.get_controller(name);
             controller.set_desired_throttle(0.0);
         }
     }

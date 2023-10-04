@@ -45,7 +45,7 @@ enum class ErrorCode {
     PositionInvalid = 43,
 };
 
-class BrushlessController final : public Controller {
+class BrushlessController : public Controller {
 public:
     void update(uint64_t frame);
 
@@ -53,6 +53,9 @@ public:
     void set_desired_velocity(double velocity);  // in rev/s
     void set_desired_position(double position);
     MotorType get_type();
+
+    BrushlessController(ros::NodeHandle* n, const std::string &name) : Controller(n, name) {}
+    ~BrushlessController() = default;
 
 private:
     std::optional<ErrorCode> err;
