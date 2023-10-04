@@ -31,7 +31,7 @@ int main(int argc, char** argv) {
 
     // Subscribe to the ROS topic for arm commands
     ros::Subscriber moveMastGimbalThrottleSubscriber = nh.subscribe<mrover::Throttle>("mast_gimbal_throttle_cmd", 1, moveMastGimbalThrottle);
-    ros::Subscriber moveMastGimbalVelocityeSubscriber = nh.subscribe<mrover::Velocity>("mast_gimbal_velocity_cmd", 1, moveMastGimbalVelocity);
+    ros::Subscriber moveMastGimbalVelocitySubscriber = nh.subscribe<mrover::Velocity>("mast_gimbal_velocity_cmd", 1, moveMastGimbalVelocity);
     ros::Subscriber moveMastGimbalPositionSubscriber = nh.subscribe<mrover::Position>("mast_gimbal_position_cmd", 1, moveMastGimbalPosition);
 
     // Create a 0.1 second heartbeat timer
@@ -54,8 +54,7 @@ void moveMastGimbalThrottle(const mrover::Throttle::ConstPtr& msg) {
     for (size_t i = 0; i < msg->names.size(); ++i) {
         const std::string& name = msg->names[i];
         Controller& controller = mastGimbalManager->get_controller(name);
-        double throttle = std::clamp(msg->throttles[i], -1.0, 1.0);
-        controller.set_desired_throttle(throttle);
+        controller.set_desired_throttle(msg->throttles[i]);
     }
 }
 
@@ -70,8 +69,7 @@ void moveMastGimbalVelocity(const mrover::Velocity::ConstPtr& msg) {
     for (size_t i = 0; i < msg->names.size(); ++i) {
         const std::string& name = msg->names[i];
         Controller& controller = mastGimbalManager->get_controller(name);
-        double velocity = std::clamp(msg->velocities[i], -1.0, 1.0); // TODO
-        controller.set_desired_throttle(velocity);
+        controller.set_desired_throttle(msg->velocities[i]);
     }
 }
 
@@ -86,11 +84,7 @@ void moveMastGimbalPosition(const mrover::Position::ConstPtr& msg) {
     for (size_t i = 0; i < msg->names.size(); ++i) {
         const std::string& name = msg->names[i];
         Controller& controller = mastGimbalManager->get_controller(name);
-        double position = msg->positions[i];
-
-        // TODO - change the position and make sure to clamp it
-
-        controller.set_desired_position(position);
+        controller.set_desired_position(msg->positions[i]);
     }
 }
 

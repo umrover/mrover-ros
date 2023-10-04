@@ -65,8 +65,7 @@ void moveArmThrottle(const mrover::Throttle::ConstPtr& msg) {
     for (size_t i = 0; i < msg->names.size(); ++i) {
         const std::string& name = msg->names[i];
         Controller& controller = armManager->get_controller(name);
-        double throttle = std::clamp(msg->throttles[i], -1.0, 1.0);
-        controller.set_desired_throttle(throttle);
+        controller.set_desired_throttle(msg->throttles[i]);
     }
 }
 
@@ -81,11 +80,7 @@ void moveArmVelocity(const mrover::Velocity::ConstPtr& msg) {
     for (size_t i = 0; i < msg->names.size(); ++i) {
         const std::string& name = msg->names[i];
         Controller& controller = armManager->get_controller(name);
-        double velocity = std::clamp(msg->velocities[i], -1.0, 1.0);
-
-        // TODO - need to take into consideration gear ratio
-
-        controller.set_desired_velocity(velocity);
+        controller.set_desired_velocity(msg->velocities[i]);
     }
 }
 
@@ -100,11 +95,7 @@ void moveArmPosition(const mrover::Position::ConstPtr& msg) {
     for (size_t i = 0; i < msg->names.size(); ++i) {
         const std::string& name = msg->names[i];
         Controller& controller = armManager->get_controller(name);
-        double position = msg->positions[i];
-
-        // TODO - change the position and make sure to clamp it
-
-        controller.set_desired_position(position);
+        controller.set_desired_position(msg->positions[i]);
     }
 }
 

@@ -20,10 +20,7 @@ public:
     }
 
     void send_raw_data(uint64_t frame) {
-        if (frame == 0) {
-            bus = 0;
-            // TODO
-        }
+        ROS_INFO("TODO - need to send %lu.", frame);
     }
 
     int get_id() const {
