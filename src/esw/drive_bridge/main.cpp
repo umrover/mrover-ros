@@ -12,7 +12,7 @@ void jointDataCallback(const ros::TimerEvent&);
 void controllerDataCallback(const ros::TimerEvent&);
 
 std::unique_ptr<MotorsManager> driveManager;
-std::vector<std::string> driveNames{"FrontLeft", "FrontRight", "MiddleLeft", "MiddleRight", "BackLeft", "BackRight"};
+std::vector<std::string> driveNames{"front_left", "front_right", "middle_left", "middle_right", "back_left", "back_right"};
 
 ros::Publisher jointDataPublisher;
 ros::Publisher controllerDataPublisher;

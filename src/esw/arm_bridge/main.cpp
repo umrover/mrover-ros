@@ -3,7 +3,7 @@
 #include <motors_manager.hpp>
 
 std::unique_ptr<MotorsManager> armManager;
-std::vector<std::string> armNames{"joint_a", "joint_b", "joint_c", "joint_de", "finger", "gripper"};
+std::vector<std::string> armNames{"joint_a", "joint_b", "joint_c", "joint_de_0", "joint_de_1", "finger", "gripper"};
 
 int main(int argc, char** argv) {
     // Initialize the ROS node
