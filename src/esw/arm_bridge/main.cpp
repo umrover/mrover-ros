@@ -1,23 +1,24 @@
-#include "../motor_library/motors_manager.hpp"
-#include <ros/ros.h>
-#include <mrover/Throttle.h>
-#include <mrover/Velocity.h>
-#include <mrover/Position.h>
-#include <std_msgs/Float32.h> // To publish heartbeats
 #include <algorithm>
 #include <chrono>
 
+#include <ros/ros.h>
+#include <std_msgs/Float32.h> // To publish heartbeats
+
+#include <motors_manager.hpp>
+
+#include <mrover/Position.h>
+#include <mrover/Throttle.h>
+#include <mrover/Velocity.h>
+
 void moveArmThrottle(const mrover::Throttle::ConstPtr& msg);
-void moveArmVelocity(const mrover::Velocity::ConstPtr& msg); 
-void moveArmPosition(const mrover::Position::ConstPtr& msg); 
+void moveArmVelocity(const mrover::Velocity::ConstPtr& msg);
+void moveArmPosition(const mrover::Position::ConstPtr& msg);
 void heartbeatCallback(const ros::TimerEvent&);
 
 std::unique_ptr<MotorsManager> armManager;
-std::vector<std::string> armNames =
-        {"joint_a", "joint_b", "joint_c", "joint_de", "finger", "gripper"};
+std::vector<std::string> armNames{"joint_a", "joint_b", "joint_c", "joint_de", "finger", "gripper"};
 
 std::chrono::high_resolution_clock::time_point lastConnection = std::chrono::high_resolution_clock::now();
-
 
 std::unordered_map<std::string, float> motorMultipliers; // Store the multipliers for each motor
 
@@ -65,7 +66,7 @@ void moveArmThrottle(const mrover::Throttle::ConstPtr& msg) {
     }
 
     lastConnection = std::chrono::high_resolution_clock::now();
-    
+
     for (size_t i = 0; i < msg->names.size(); ++i) {
         const std::string& name = msg->names[i];
         Controller& controller = armManager->get_controller(name);

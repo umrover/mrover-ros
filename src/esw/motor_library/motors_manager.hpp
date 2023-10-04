@@ -1,14 +1,16 @@
 #pragma once
 
-#include "controller.hpp"
-#include "brushless.hpp"
 #include "brushed.hpp"
+#include "brushless.hpp"
+#include "controller.hpp"
 #include <XmlRpcValue.h>
-#include <unordered_map>
 #include <ros/ros.h>
+#include <unordered_map>
 
 class MotorsManager {
 public:
+    MotorsManager() = default;
+
     MotorsManager(ros::NodeHandle* n, const std::vector<std::string>& controllerNames, XmlRpc::XmlRpcValue root) {
         for (const std::string& name: controllerNames) {
             assert(root[name].hasMember("type") &&

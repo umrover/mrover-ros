@@ -1,10 +1,13 @@
-#include "../motor_library/motors_manager.hpp"
-#include <ros/ros.h>
-#include <geometry_msgs/Twist.h>
-#include <std_msgs/Float32.h> // To publish heartbeats
-#include <sensor_msgs/JointState.h>
-#include <mrover/ControllerGroupState.h>
 #include <chrono>
+
+#include <geometry_msgs/Twist.h>
+#include <ros/ros.h>
+#include <sensor_msgs/JointState.h>
+#include <std_msgs/Float32.h> // To publish heartbeats
+
+#include <motors_manager.hpp>
+
+#include <mrover/ControllerGroupState.h>
 
 void moveDrive(const geometry_msgs::Twist::ConstPtr& msg);
 void heartbeatCallback(const ros::TimerEvent&);
@@ -12,8 +15,7 @@ void jointDataCallback(const ros::TimerEvent&);
 void controllerDataCallback(const ros::TimerEvent&);
 
 MotorsManager driveManager;
-std::vector<std::string> driveNames = 
-    {"FrontLeft", "FrontRight", "MiddleLeft", "MiddleRight", "BackLeft", "BackRight"};
+std::vector<std::string> driveNames{"FrontLeft", "FrontRight", "MiddleLeft", "MiddleRight", "BackLeft", "BackRight"};
 
 ros::Publisher jointDataPublisher;
 ros::Publisher controllerDataPublisher;
@@ -41,7 +43,7 @@ int main(int argc, char** argv) {
     XmlRpc::XmlRpcValue driveControllers;
     assert(nh.getParam("drive/controllers", driveControllers));
     assert(driveControllers.getType() == XmlRpc::XmlRpcValue::TypeStruct);
-    for (const auto& driveName : driveNames) {
+    for (const auto& driveName: driveNames) {
         assert(driveControllers.hasMember(driveName));
         assert(driveControllers[driveName].getType() == XmlRpc::XmlRpcValue::TypeStruct);
         if (driveControllers[driveName].hasMember("multiplier")) {
@@ -54,15 +56,15 @@ int main(int argc, char** argv) {
     float roverLength;
     assert(nh.getParam("rover/width", roverWidth));
     assert(nh.getParam("rover/length", roverLength));
-    WHEEL_DISTANCE_INNER = roverWidth / 2.0;
-    WHEEL_DISTANCE_OUTER = sqrt(((roverWidth / 2.0) * (roverWidth / 2.0)) + ((roverLength / 2.0) * (roverLength / 2.0) ));
+    WHEEL_DISTANCE_INNER = roverWidth / 2;
+    WHEEL_DISTANCE_OUTER = std::sqrt(((roverWidth / 2.0) * (roverWidth / 2.0)) + ((roverLength / 2.0) * (roverLength / 2.0)));
 
     float ratioMotorToWheel;
     assert(nh.getParam("wheel/gear_ratio", ratioMotorToWheel));
     // To convert m/s to rev/s, multiply by this constant. Divide by circumference, multiply by gear ratio.
     float wheelRadius;
     nh.getParam("wheel/radius", wheelRadius);
-    WHEELS_M_S_TO_MOTOR_REV_S = (1 / (wheelRadius * 2 * M_PI)) * ratioMotorToWheel;
+    WHEELS_M_S_TO_MOTOR_REV_S = (1 / (wheelRadius * 2 * std::numbers::pi)) * ratioMotorToWheel;
 
     float maxSpeedMPerS;
     assert(nh.getParam("rover/max_speed", maxSpeedMPerS));
@@ -116,24 +118,23 @@ void moveDrive(const geometry_msgs::Twist::ConstPtr& msg) {
     }
 
     std::unordered_map<std::string, float> driveCommandVelocities = {
-        {"FrontLeft", left_rev_outer},
-        {"FrontRight", right_rev_outer},
-        {"MiddleLeft", left_rev_inner},
-        {"MiddleRight", right_rev_inner},
-        {"BackLeft", left_rev_outer},
-        {"BackRight", right_rev_outer}
-    };
+            {"FrontLeft", left_rev_outer},
+            {"FrontRight", right_rev_outer},
+            {"MiddleLeft", left_rev_inner},
+            {"MiddleRight", right_rev_inner},
+            {"BackLeft", left_rev_outer},
+            {"BackRight", right_rev_outer}};
 
-    for (const auto& pair : driveCommandVelocities) {
+    for (const auto& pair: driveCommandVelocities) {
         // Apply the multiplier for each motor
         const std::string& name = pair.first;
 
         // Set the desired speed for the motor
         float multiplier = motorMultipliers[name];
-        float velocity = pair.second * multiplier;  // currently in rad/s
+        float velocity = pair.second * multiplier; // currently in rad/s
 
         Controller& controller = driveManager.get_controller(name);
-        float vel_rad_s = velocity * 2 * M_PI;
+        float vel_rad_s = velocity * 2 * std::numbers::pi;
         controller.set_desired_velocity(vel_rad_s);
     }
 }
@@ -142,7 +143,7 @@ void heartbeatCallback(const ros::TimerEvent&) {
     // If no message has been received within the last 0.1 seconds, set desired speed to 0 for all motors
     auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::high_resolution_clock::now() - lastConnection);
     if (duration.count() < 100) {
-        for (const auto& name : driveNames) {
+        for (const auto& name: driveNames) {
             Controller& controller = driveManager.get_controller(name);
             controller.set_desired_throttle(0.0);
         }
@@ -151,7 +152,7 @@ void heartbeatCallback(const ros::TimerEvent&) {
 
 void jointDataCallback(const ros::TimerEvent&) {
     //TODO
-    sensor_msgs::JointState jointData;  // TODO
+    sensor_msgs::JointState jointData; // TODO
     jointDataPublisher.publish(jointData);
 }
 
