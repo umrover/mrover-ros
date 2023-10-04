@@ -14,7 +14,7 @@ enum class MotorType {
 
 class Controller {
 public:
-    Controller(ros::NodeHandle* n, const std::string& name) : name(name), can_manager(CANManager(n, name)) {}
+    Controller(ros::NodeHandle& n, const std::string& name) : name{name}, can_manager{CANManager{n, name}} {}
 
     virtual ~Controller() = default;
 

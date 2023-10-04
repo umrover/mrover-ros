@@ -11,7 +11,7 @@ class MotorsManager {
 public:
     MotorsManager() = default;
 
-    MotorsManager(ros::NodeHandle* n, const std::vector<std::string>& controllerNames, XmlRpc::XmlRpcValue root) {
+    MotorsManager(ros::NodeHandle& n, const std::vector<std::string>& controllerNames, XmlRpc::XmlRpcValue root) {
         for (const std::string& name: controllerNames) {
             assert(root[name].hasMember("type") &&
                    root[name]["type"].getType() == XmlRpc::XmlRpcValue::TypeString);

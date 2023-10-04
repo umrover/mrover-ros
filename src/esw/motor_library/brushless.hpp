@@ -54,7 +54,7 @@ public:
     void set_desired_position(double position) override;
     MotorType get_type() override;
 
-    BrushlessController(ros::NodeHandle* n, const std::string& name) : Controller(n, name) {}
+    BrushlessController(ros::NodeHandle& n, const std::string& name) : Controller(n, name) {}
     ~BrushlessController() override = default;
 
 private:

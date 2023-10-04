@@ -37,7 +37,7 @@ int main(int argc, char** argv) {
     XmlRpc::XmlRpcValue controllersRoot;
     assert(nh.getParam("motors/controllers", controllersRoot));
     assert(controllersRoot.getType() == XmlRpc::XmlRpcValue::TypeStruct);
-    driveManager = MotorsManager(&nh, driveNames, controllersRoot);
+    driveManager = MotorsManager(nh, driveNames, controllersRoot);
 
     // Load motor multipliers from the ROS parameter server
     XmlRpc::XmlRpcValue driveControllers;
@@ -117,13 +117,14 @@ void moveDrive(const geometry_msgs::Twist::ConstPtr& msg) {
         right_rev_outer *= change_ratio;
     }
 
-    std::unordered_map<std::string, float> driveCommandVelocities = {
+    std::unordered_map<std::string, float> driveCommandVelocities{
             {"FrontLeft", left_rev_outer},
             {"FrontRight", right_rev_outer},
             {"MiddleLeft", left_rev_inner},
             {"MiddleRight", right_rev_inner},
             {"BackLeft", left_rev_outer},
-            {"BackRight", right_rev_outer}};
+            {"BackRight", right_rev_outer},
+    };
 
     for (const auto& pair: driveCommandVelocities) {
         // Apply the multiplier for each motor

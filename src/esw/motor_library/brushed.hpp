@@ -11,7 +11,7 @@ public:
     void set_desired_position(double position) override;
     MotorType get_type() override;
 
-    BrushedController(ros::NodeHandle* n, const std::string& name) : Controller(n, name) {}
+    BrushedController(ros::NodeHandle& n, const std::string& name) : Controller(n, name) {}
     ~BrushedController() override = default;
 
 private:
