@@ -20,11 +20,15 @@ public:
     }
 
     void send_raw_data(uint64_t frame) {
-        ROS_INFO("TODO - need to send %lu.", frame);
+        ROS_INFO("TODO - need to send %lu based on bus %i.", frame, bus);
     }
 
     int get_id() const {
         return id;
+    }
+
+    int get_bus() const {
+        return bus;
     }
 
 private:

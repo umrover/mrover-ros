@@ -40,6 +40,7 @@ set(MROVER_MESSAGE_FILES
         ImuAndMag.msg
         LED.msg
         NavMetadata.msg
+        NavState.msg
         NetworkBandwidth.msg
         PDB.msg
         Position.msg

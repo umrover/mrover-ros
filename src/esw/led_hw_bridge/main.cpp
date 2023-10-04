@@ -14,8 +14,7 @@ int main(int argc, char** argv) {
     ros::NodeHandle nh;
 
     CANPublisher = nh.advertise<mrover::CAN>("can_requests", 1);
-    // Subscribe to the ROS topic for arm commands
-    ros::Subscriber moveArmSubscriber = nh.subscribe<mrover::LED>("led_hw_bridge", 1, changeLED);
+    ros::Subscriber changeLEDSubscriber = nh.subscribe<mrover::LED>("led", 1, changeLED);
 
     // Enter the ROS event loop
     ros::spin();
