@@ -13,11 +13,18 @@ class CANManager {
 public:
     CANManager(ros::NodeHandle& n, const std::string& name) {
         CANPublisher = n.advertise<mrover::CAN>("can_requests", 1);
-        assert(n.getParam("can/" + name + "/bus", bus));
-        assert(n.getParam("can/" + name + "/id", id));
+        std::string can_bus_name = "can/" + name + "/bus";
+        assert(n.getParam(can_bus_name, bus));
+        std::string can_id_name = "can/" + name + "/id";
+        assert(n.getParam(can_id_name, id));
     }
 
-    void send_raw_data(uint64_t frame);
+    void send_raw_data(uint64_t frame) {
+        if (frame == 0) {
+            bus = 0;
+            // TODO
+        }
+    }
 
     int get_id() const {
         return id;

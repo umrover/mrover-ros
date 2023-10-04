@@ -11,11 +11,15 @@ class MotorsManager {
 public:
     MotorsManager() = default;
 
-    MotorsManager(ros::NodeHandle& n, const std::vector<std::string>& controllerNames, XmlRpc::XmlRpcValue root) {
+    MotorsManager(ros::NodeHandle& n, const std::vector<std::string>& controllerNames) {
+        // Load motor controllers configuration from the ROS parameter server
+        XmlRpc::XmlRpcValue controllersRoot;
+        assert(n.getParam("motors/controllers", controllersRoot));
+        assert(controllersRoot.getType() == XmlRpc::XmlRpcValue::TypeStruct);
         for (const std::string& name: controllerNames) {
-            assert(root[name].hasMember("type") &&
-                   root[name]["type"].getType() == XmlRpc::XmlRpcValue::TypeString);
-            std::string type = static_cast<std::string>(root[name]["type"]);
+            assert(controllersRoot[name].hasMember("type") &&
+                   controllersRoot[name]["type"].getType() == XmlRpc::XmlRpcValue::TypeString);
+            std::string type = static_cast<std::string>(controllersRoot[name]["type"]);
             assert(type == "brushed" || type == "brushless");
 
             if (type == "brushed") {

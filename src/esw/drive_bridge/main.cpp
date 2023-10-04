@@ -3,11 +3,11 @@
 #include <geometry_msgs/Twist.h>
 #include <ros/ros.h>
 #include <sensor_msgs/JointState.h>
-#include <std_msgs/Float32.h> // To publish heartbeats
 
 #include <motors_manager.hpp>
 
 #include <mrover/ControllerGroupState.h>
+#include "can_manager.hpp"
 
 void moveDrive(const geometry_msgs::Twist::ConstPtr& msg);
 void heartbeatCallback(const ros::TimerEvent&);
@@ -21,12 +21,12 @@ ros::Publisher jointDataPublisher;
 ros::Publisher controllerDataPublisher;
 std::chrono::high_resolution_clock::time_point lastConnection = std::chrono::high_resolution_clock::now();
 
-std::unordered_map<std::string, float> motorMultipliers; // Store the multipliers for each motor
+std::unordered_map<std::string, double> motorMultipliers; // Store the multipliers for each motor
 
-float WHEEL_DISTANCE_INNER;
-float WHEEL_DISTANCE_OUTER;
-float WHEELS_M_S_TO_MOTOR_REV_S;
-float MAX_MOTOR_SPEED_REV_S;
+double WHEEL_DISTANCE_INNER;
+double WHEEL_DISTANCE_OUTER;
+double WHEELS_M_S_TO_MOTOR_REV_S;
+double MAX_MOTOR_SPEED_REV_S;
 
 int main(int argc, char** argv) {
     // Initialize the ROS node
@@ -34,10 +34,7 @@ int main(int argc, char** argv) {
     ros::NodeHandle nh;
 
     // Load motor controllers configuration from the ROS parameter server
-    XmlRpc::XmlRpcValue controllersRoot;
-    assert(nh.getParam("motors/controllers", controllersRoot));
-    assert(controllersRoot.getType() == XmlRpc::XmlRpcValue::TypeStruct);
-    driveManager = MotorsManager(nh, driveNames, controllersRoot);
+    driveManager = MotorsManager(nh, driveNames);
 
     // Load motor multipliers from the ROS parameter server
     XmlRpc::XmlRpcValue driveControllers;
@@ -47,26 +44,26 @@ int main(int argc, char** argv) {
         assert(driveControllers.hasMember(driveName));
         assert(driveControllers[driveName].getType() == XmlRpc::XmlRpcValue::TypeStruct);
         if (driveControllers[driveName].hasMember("multiplier")) {
-            motorMultipliers[driveName] = static_cast<double>(driveControllers[driveName]["multiplier"]);
+            motorMultipliers[driveName] = driveControllers[driveName]["multiplier"];
         }
     }
 
     // Load rover dimensions and other parameters from the ROS parameter server
-    float roverWidth;
-    float roverLength;
+    double roverWidth = 0.0;
+    double roverLength = 0.0;
     assert(nh.getParam("rover/width", roverWidth));
     assert(nh.getParam("rover/length", roverLength));
     WHEEL_DISTANCE_INNER = roverWidth / 2;
     WHEEL_DISTANCE_OUTER = std::sqrt(((roverWidth / 2.0) * (roverWidth / 2.0)) + ((roverLength / 2.0) * (roverLength / 2.0)));
 
-    float ratioMotorToWheel;
+    double ratioMotorToWheel = 0.0;
     assert(nh.getParam("wheel/gear_ratio", ratioMotorToWheel));
     // To convert m/s to rev/s, multiply by this constant. Divide by circumference, multiply by gear ratio.
-    float wheelRadius;
+    double wheelRadius = 0.0;
     nh.getParam("wheel/radius", wheelRadius);
     WHEELS_M_S_TO_MOTOR_REV_S = (1 / (wheelRadius * 2 * std::numbers::pi)) * ratioMotorToWheel;
 
-    float maxSpeedMPerS;
+    double maxSpeedMPerS = 0.0;
     assert(nh.getParam("rover/max_speed", maxSpeedMPerS));
     assert(maxSpeedMPerS > 0);
 
@@ -95,29 +92,29 @@ void moveDrive(const geometry_msgs::Twist::ConstPtr& msg) {
     lastConnection = std::chrono::high_resolution_clock::now();
 
     // Process drive commands and set motor speeds
-    float forward = msg->linear.x;
-    float turn = msg->angular.z;
+    double forward = msg->linear.x;
+    double turn = msg->angular.z;
 
     // Calculate motor speeds and adjust for maximum speed
-    float turn_difference_inner = turn * WHEEL_DISTANCE_INNER;
-    float turn_difference_outer = turn * WHEEL_DISTANCE_OUTER;
+    double turn_difference_inner = turn * WHEEL_DISTANCE_INNER;
+    double turn_difference_outer = turn * WHEEL_DISTANCE_OUTER;
 
-    float left_rev_inner = (forward - turn_difference_inner) * WHEELS_M_S_TO_MOTOR_REV_S;
-    float right_rev_inner = (forward + turn_difference_inner) * WHEELS_M_S_TO_MOTOR_REV_S;
-    float left_rev_outer = (forward - turn_difference_outer) * WHEELS_M_S_TO_MOTOR_REV_S;
-    float right_rev_outer = (forward + turn_difference_outer) * WHEELS_M_S_TO_MOTOR_REV_S;
+    double left_rev_inner = (forward - turn_difference_inner) * WHEELS_M_S_TO_MOTOR_REV_S;
+    double right_rev_inner = (forward + turn_difference_inner) * WHEELS_M_S_TO_MOTOR_REV_S;
+    double left_rev_outer = (forward - turn_difference_outer) * WHEELS_M_S_TO_MOTOR_REV_S;
+    double right_rev_outer = (forward + turn_difference_outer) * WHEELS_M_S_TO_MOTOR_REV_S;
 
     // If speed too fast, scale to max speed. Ignore inner for comparison since outer > inner, always.
-    float larger_abs_rev_s = std::max(abs(left_rev_outer), abs(right_rev_outer));
+    double larger_abs_rev_s = std::max(abs(left_rev_outer), abs(right_rev_outer));
     if (larger_abs_rev_s > MAX_MOTOR_SPEED_REV_S) {
-        float change_ratio = MAX_MOTOR_SPEED_REV_S / larger_abs_rev_s;
+        double change_ratio = MAX_MOTOR_SPEED_REV_S / larger_abs_rev_s;
         left_rev_inner *= change_ratio;
         right_rev_inner *= change_ratio;
         left_rev_outer *= change_ratio;
         right_rev_outer *= change_ratio;
     }
 
-    std::unordered_map<std::string, float> driveCommandVelocities{
+    std::unordered_map<std::string, double> driveCommandVelocities{
             {"FrontLeft", left_rev_outer},
             {"FrontRight", right_rev_outer},
             {"MiddleLeft", left_rev_inner},
@@ -131,11 +128,11 @@ void moveDrive(const geometry_msgs::Twist::ConstPtr& msg) {
         const std::string& name = pair.first;
 
         // Set the desired speed for the motor
-        float multiplier = motorMultipliers[name];
-        float velocity = pair.second * multiplier; // currently in rad/s
+        double multiplier = motorMultipliers[name];
+        double velocity = pair.second * multiplier; // currently in rad/s
 
         Controller& controller = driveManager.get_controller(name);
-        float vel_rad_s = velocity * 2 * std::numbers::pi;
+        double vel_rad_s = velocity * 2 * std::numbers::pi;
         controller.set_desired_velocity(vel_rad_s);
     }
 }

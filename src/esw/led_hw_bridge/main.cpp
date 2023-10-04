@@ -2,6 +2,7 @@
 #include <mrover/LED.h>
 #include <cstdint>
 #include <mrover/CAN.h>
+#include "can_manager.hpp"
 
 void changeLED(const mrover::LED::ConstPtr& msg);
 

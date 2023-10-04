@@ -54,7 +54,9 @@ public:
     void set_desired_position(double position) override;
     MotorType get_type() override;
 
-    BrushlessController(ros::NodeHandle& n, const std::string& name) : Controller(n, name) {}
+    BrushlessController(ros::NodeHandle& n, const std::string& name) : Controller(n, name) {
+        torque = 0.3f;
+    }
     ~BrushlessController() override = default;
 
 private:

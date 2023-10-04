@@ -2,7 +2,6 @@
 #include <chrono>
 
 #include <ros/ros.h>
-#include <std_msgs/Float32.h> // To publish heartbeats
 
 #include <motors_manager.hpp>
 
@@ -20,18 +19,14 @@ std::vector<std::string> armNames{"joint_a", "joint_b", "joint_c", "joint_de", "
 
 std::chrono::high_resolution_clock::time_point lastConnection = std::chrono::high_resolution_clock::now();
 
-std::unordered_map<std::string, float> motorMultipliers; // Store the multipliers for each motor
+std::unordered_map<std::string, double> motorMultipliers; // Store the multipliers for each motor
 
 int main(int argc, char** argv) {
     // Initialize the ROS node
     ros::init(argc, argv, "arm_bridge");
     ros::NodeHandle nh;
 
-    // Load motor controllers configuration from the ROS parameter server
-    XmlRpc::XmlRpcValue controllersRoot;
-    assert(nh.getParam("motors/controllers", controllersRoot));
-    assert(controllersRoot.getType() == XmlRpc::XmlRpcValue::TypeStruct);
-    armManager = std::make_unique<MotorsManager>(&nh, armNames, controllersRoot);
+    armManager = std::make_unique<MotorsManager>(nh, armNames);
 
     // Load motor multipliers from the ROS parameter server
     XmlRpc::XmlRpcValue armControllers;
@@ -70,7 +65,7 @@ void moveArmThrottle(const mrover::Throttle::ConstPtr& msg) {
     for (size_t i = 0; i < msg->names.size(); ++i) {
         const std::string& name = msg->names[i];
         Controller& controller = armManager->get_controller(name);
-        float throttle = std::clamp(msg->throttles[i], -1.0f, 1.0f);
+        double throttle = std::clamp(msg->throttles[i], -1.0, 1.0);
         controller.set_desired_throttle(throttle);
     }
 }
@@ -86,7 +81,7 @@ void moveArmVelocity(const mrover::Velocity::ConstPtr& msg) {
     for (size_t i = 0; i < msg->names.size(); ++i) {
         const std::string& name = msg->names[i];
         Controller& controller = armManager->get_controller(name);
-        float velocity = std::clamp(msg->velocities[i], -1.0f, 1.0f);
+        double velocity = std::clamp(msg->velocities[i], -1.0, 1.0);
 
         // TODO - need to take into consideration gear ratio
 
@@ -105,7 +100,7 @@ void moveArmPosition(const mrover::Position::ConstPtr& msg) {
     for (size_t i = 0; i < msg->names.size(); ++i) {
         const std::string& name = msg->names[i];
         Controller& controller = armManager->get_controller(name);
-        float position = 0.0f;
+        double position = msg->positions[i];
 
         // TODO - change the position and make sure to clamp it
 

@@ -1,2 +1,2 @@
 string[] names # names of joints
-float32[] velocities # velocity should be in rad/s for joints
+float64[] velocities # velocity should be in rad/s for joints

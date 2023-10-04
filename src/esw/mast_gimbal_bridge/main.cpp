@@ -19,7 +19,7 @@ std::vector<std::string> mastGimbalNames =
 
 
 std::chrono::high_resolution_clock::time_point lastConnection = std::chrono::high_resolution_clock::now();
-std::unordered_map<std::string, float> motorMultipliers; // Store the multipliers for each motor
+std::unordered_map<std::string, double> motorMultipliers; // Store the multipliers for each motor
 
 int main(int argc, char** argv) {
     // Initialize the ROS node
@@ -27,10 +27,7 @@ int main(int argc, char** argv) {
     ros::NodeHandle nh;
 
     // Load motor controllers configuration from the ROS parameter server
-    XmlRpc::XmlRpcValue controllersRoot;
-    assert(nh.getParam("motors/controllers", controllersRoot));
-    assert(controllersRoot.getType() == XmlRpc::XmlRpcValue::TypeStruct);
-    mastGimbalManager = std::make_unique<MotorsManager>(&nh, mastGimbalNames, controllersRoot);
+    mastGimbalManager = std::make_unique<MotorsManager>(nh, mastGimbalNames);
 
     // Subscribe to the ROS topic for arm commands
     ros::Subscriber moveMastGimbalThrottleSubscriber = nh.subscribe<mrover::Throttle>("mast_gimbal_throttle_cmd", 1, moveMastGimbalThrottle);
@@ -57,7 +54,7 @@ void moveMastGimbalThrottle(const mrover::Throttle::ConstPtr& msg) {
     for (size_t i = 0; i < msg->names.size(); ++i) {
         const std::string& name = msg->names[i];
         Controller& controller = mastGimbalManager->get_controller(name);
-        float throttle = std::clamp(msg->throttles[i], -1.0f, 1.0f);
+        double throttle = std::clamp(msg->throttles[i], -1.0, 1.0);
         controller.set_desired_throttle(throttle);
     }
 }
@@ -73,7 +70,7 @@ void moveMastGimbalVelocity(const mrover::Velocity::ConstPtr& msg) {
     for (size_t i = 0; i < msg->names.size(); ++i) {
         const std::string& name = msg->names[i];
         Controller& controller = mastGimbalManager->get_controller(name);
-        float velocity = std::clamp(msg->velocities[i], -1.0f, 1.0f); // TODO
+        double velocity = std::clamp(msg->velocities[i], -1.0, 1.0); // TODO
         controller.set_desired_throttle(velocity);
     }
 }
@@ -89,7 +86,7 @@ void moveMastGimbalPosition(const mrover::Position::ConstPtr& msg) {
     for (size_t i = 0; i < msg->names.size(); ++i) {
         const std::string& name = msg->names[i];
         Controller& controller = mastGimbalManager->get_controller(name);
-        float position = 0.0;
+        double position = msg->positions[i];
 
         // TODO - change the position and make sure to clamp it
 
