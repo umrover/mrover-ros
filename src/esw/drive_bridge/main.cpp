@@ -1,5 +1,3 @@
-#include <chrono>
-
 #include <geometry_msgs/Twist.h>
 #include <ros/ros.h>
 #include <sensor_msgs/JointState.h>
@@ -10,17 +8,14 @@
 #include "can_manager.hpp"
 
 void moveDrive(const geometry_msgs::Twist::ConstPtr& msg);
-void heartbeatCallback(const ros::TimerEvent&);
 void jointDataCallback(const ros::TimerEvent&);
 void controllerDataCallback(const ros::TimerEvent&);
 
-MotorsManager driveManager;
+std::unique_ptr<MotorsManager> driveManager;
 std::vector<std::string> driveNames{"FrontLeft", "FrontRight", "MiddleLeft", "MiddleRight", "BackLeft", "BackRight"};
 
 ros::Publisher jointDataPublisher;
 ros::Publisher controllerDataPublisher;
-std::chrono::high_resolution_clock::time_point lastConnection = std::chrono::high_resolution_clock::now();
-
 std::unordered_map<std::string, double> motorMultipliers; // Store the multipliers for each motor
 
 double WHEEL_DISTANCE_INNER;
@@ -34,7 +29,7 @@ int main(int argc, char** argv) {
     ros::NodeHandle nh;
 
     // Load motor controllers configuration from the ROS parameter server
-    driveManager = MotorsManager(nh, driveNames);
+    driveManager = std::make_unique<MotorsManager>(nh, "drive", driveNames);
 
     // Load motor multipliers from the ROS parameter server
     XmlRpc::XmlRpcValue driveControllers;
@@ -75,9 +70,6 @@ int main(int argc, char** argv) {
     // Subscribe to the ROS topic for drive commands
     ros::Subscriber moveDriveSubscriber = nh.subscribe<geometry_msgs::Twist>("cmd_vel", 1, moveDrive);
 
-    // Create a 0.1 second heartbeat timer
-    ros::Timer heartbeatTimer = nh.createTimer(ros::Duration(0.1), heartbeatCallback);
-
     ros::Timer jointDataTimer = nh.createTimer(ros::Duration(0.1), jointDataCallback);
     ros::Timer controllerDataTimer = nh.createTimer(ros::Duration(0.1), controllerDataCallback);
 
@@ -88,8 +80,6 @@ int main(int argc, char** argv) {
 }
 
 void moveDrive(const geometry_msgs::Twist::ConstPtr& msg) {
-
-    lastConnection = std::chrono::high_resolution_clock::now();
 
     // Process drive commands and set motor speeds
     double forward = msg->linear.x;
@@ -131,21 +121,12 @@ void moveDrive(const geometry_msgs::Twist::ConstPtr& msg) {
         double multiplier = motorMultipliers[name];
         double velocity = pair.second * multiplier; // currently in rad/s
 
-        Controller& controller = driveManager.get_controller(name);
+        Controller& controller = driveManager->get_controller(name);
         double vel_rad_s = velocity * 2 * std::numbers::pi;
         controller.set_desired_velocity(vel_rad_s);
     }
-}
 
-void heartbeatCallback(const ros::TimerEvent&) {
-    // If no message has been received within the last 0.1 seconds, set desired speed to 0 for all motors
-    auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::high_resolution_clock::now() - lastConnection);
-    if (duration.count() < 100) {
-        for (const auto& name: driveNames) {
-            Controller& controller = driveManager.get_controller(name);
-            controller.set_desired_throttle(0.0);
-        }
-    }
+    driveManager->updateLastConnection();
 }
 
 void jointDataCallback(const ros::TimerEvent&) {
