@@ -1,8 +1,10 @@
 #include <ros/ros.h>
-#include <mrover/Led.h>
+#include <mrover/LED.h>
+#include <cstdint>
 #include <mrover/CAN.h>
+#include "can_manager.hpp"
 
-void changeLED(const mrover::Led::ConstPtr& msg);
+void changeLED(const mrover::LED::ConstPtr& msg);
 
 ros::Publisher CANPublisher;
 
@@ -11,9 +13,8 @@ int main(int argc, char** argv) {
     ros::init(argc, argv, "led_hw_bridge");
     ros::NodeHandle nh;
 
-    CANPublisher = n->advertise<mrover::CAN>("can_requests", 1);
-    // Subscribe to the ROS topic for arm commands
-    ros::Subscriber moveArmSubscriber = n->subscribe<mrover::Led>("led_hw_bridge", 1, changeLED);
+    CANPublisher = nh.advertise<mrover::CAN>("can_requests", 1);
+    ros::Subscriber changeLEDSubscriber = nh.subscribe<mrover::LED>("led", 1, changeLED);
 
     // Enter the ROS event loop
     ros::spin();
@@ -21,9 +22,11 @@ int main(int argc, char** argv) {
     return 0;
 }
 
-void changeLED(const mrover::Led::ConstPtr& msg) {
+void changeLED(const mrover::LED::ConstPtr& msg) {
     mrover::CAN CANRequest;
-    CANRequest.name = "led_hw";
-    CANRequest.data = (msg->red) | (msg->green << 1) | (msg->blue << 2) | (msg->is_blinking << 3);
+    CANRequest.bus = 0;  // TODO
+    CANRequest.id = 0;
+    uint8_t data = msg->blue | (msg->red & 0b1) | (msg->green << 1) | (msg->blue << 2) | (msg->is_blinking << 3);
+    CANRequest.data.push_back(data);
     CANPublisher.publish(CANRequest);
 }

@@ -1,0 +1,1 @@
+sensor_msgs/Temperature[6] temperatures  # Celsius
