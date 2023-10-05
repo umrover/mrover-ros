@@ -67,7 +67,6 @@
       - ccache # Caches intermediate build files, speeds up compilation over time
       - ninja-build # Faster than make
       - tmux
-      - zstd
       - htop
       - curl
       - unzip
@@ -112,6 +111,9 @@
   command: /tmp/bun_installer.sh
   args:
     creates: ~/.bun/bin/bun
+
+- name: Upgrade Bun
+  command: ~/.bun/bin/bun upgrade
 
 - name: Install Catkin Profiles
   synchronize:

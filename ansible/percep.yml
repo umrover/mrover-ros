@@ -1,7 +1,8 @@
 ---
 - hosts: all
   vars:
+    ros_distro: noetic
     ubuntu_release: focal
   roles:
-    - base_dev
-    - percep_dev
+    - build
+    - percep_build

@@ -8,4 +8,5 @@
     autoconnect: yes
     ip4: 10.0.0.10/24
     gw4: 10.0.0.2
+    dns4: [10.0.0.2]
     method6: disabled
