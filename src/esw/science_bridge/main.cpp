@@ -2,97 +2,23 @@
 #include "std_srvs/SetBool.h"
 #include <unordered_map>
 
-bool heater0Callback(std_srvs::SetBool::Request& req, std_srvs::SetBool::Response& res) {
-    int device_id = 0;
-    ROS_INFO("Heater 0 - request for device_id %i. Value: %s", device_id, req.data ? "true" : "false");
-    res.success = true;
-    res.message = "DONE";
-    return true;
-}
+std::unordered_map<std::string, int> device_name_to_index = {
+    {"heater_0", 0},
+    {"heater_1", 1},
+    {"heater_2", 2},
+    {"heater_3", 3},
+    {"heater_4", 4},
+    {"heater_5", 5},
+    {"white_led_0", 6},
+    {"white_led_1", 7},
+    {"white_led_2", 8},
+    {"uv_led_0", 9},
+    {"uv_led_1", 10},
+    {"uv_led_2", 11}
+};
 
-bool heater1Callback(std_srvs::SetBool::Request& req, std_srvs::SetBool::Response& res) {
-    int device_id = 1;
-    ROS_INFO("Heater 1 - request for device_id %i. Value: %s", device_id, req.data ? "true" : "false");
-    res.success = true;
-    res.message = "DONE";
-    return true;
-}
-
-bool heater2Callback(std_srvs::SetBool::Request& req, std_srvs::SetBool::Response& res) {
-    int device_id = 2;
-    ROS_INFO("Heater 2 - request for device_id %i. Value: %s", device_id, req.data ? "true" : "false");
-    res.success = true;
-    res.message = "DONE";
-    return true;
-}
-
-bool heater3Callback(std_srvs::SetBool::Request& req, std_srvs::SetBool::Response& res) {
-    int device_id = 3;
-    ROS_INFO("Heater 3 - request for device_id %i. Value: %s", device_id, req.data ? "true" : "false");
-    res.success = true;
-    res.message = "DONE";
-    return true;
-}
-
-bool heater4Callback(std_srvs::SetBool::Request& req, std_srvs::SetBool::Response& res) {
-    int device_id = 4;
-    ROS_INFO("Heater 4 - request for device_id %i. Value: %s", device_id, req.data ? "true" : "false");
-    res.success = true;
-    res.message = "DONE";
-    return true;
-}
-
-bool heater5Callback(std_srvs::SetBool::Request& req, std_srvs::SetBool::Response& res) {
-    int device_id = 5;
-    ROS_INFO("Heater 5 - request for device_id %i. Value: %s", device_id, req.data ? "true" : "false");
-    res.success = true;
-    res.message = "DONE";
-    return true;
-}
-
-bool whiteLED0Callback(std_srvs::SetBool::Request& req, std_srvs::SetBool::Response& res) {
-    int device_id = 6;
-    ROS_INFO("White LED 0 - request for device_id %i. Value: %s", device_id, req.data ? "true" : "false");
-    res.success = true;
-    res.message = "DONE";
-    return true;
-}
-
-bool whiteLED1Callback(std_srvs::SetBool::Request& req, std_srvs::SetBool::Response& res) {
-    int device_id = 7;
-    ROS_INFO("White LED 1 - request for device_id %i. Value: %s", device_id, req.data ? "true" : "false");
-    res.success = true;
-    res.message = "DONE";
-    return true;
-}
-
-bool whiteLED2Callback(std_srvs::SetBool::Request& req, std_srvs::SetBool::Response& res) {
-    int device_id = 8;
-    ROS_INFO("White LED 2 - request for device_id %i. Value: %s", device_id, req.data ? "true" : "false");
-    res.success = true;
-    res.message = "DONE";
-    return true;
-}
-
-bool uvLED0Callback(std_srvs::SetBool::Request& req, std_srvs::SetBool::Response& res) {
-    int device_id = 9;
-    ROS_INFO("UV LED 0 - request for device_id %i. Value: %s", device_id, req.data ? "true" : "false");
-    res.success = true;
-    res.message = "DONE";
-    return true;
-}
-
-bool uvLED1Callback(std_srvs::SetBool::Request& req, std_srvs::SetBool::Response& res) {
-    int device_id = 10;
-    ROS_INFO("UV LED 1 - request for device_id %i. Value: %s", device_id, req.data ? "true" : "false");
-    res.success = true;
-    res.message = "DONE";
-    return true;
-}
-
-bool uvLED2Callback(std_srvs::SetBool::Request& req, std_srvs::SetBool::Response& res) {
-    int device_id = 11;
-    ROS_INFO("UV LED 2 - request for device_id %i. Value: %s", device_id, req.data ? "true" : "false");
+bool serviceCallback(std_srvs::SetBool::Request& req, std_srvs::SetBool::Response& res, int device_id) {
+    ROS_INFO("TODO - request for device_id %i. Value: %s", device_id, req.data ? "true" : "false");
     res.success = true;
     res.message = "DONE";
     return true;
@@ -103,18 +29,17 @@ int main(int argc, char** argv) {
     ros::init(argc, argv, "science_bridge");
     ros::NodeHandle nh;
 
-    nh.advertiseService("science_enable_heater_0", heater0Callback);
-    nh.advertiseService("science_enable_heater_1", heater1Callback);
-    nh.advertiseService("science_enable_heater_2", heater2Callback);
-    nh.advertiseService("science_enable_heater_3", heater3Callback);
-    nh.advertiseService("science_enable_heater_4", heater4Callback);
-    nh.advertiseService("science_enable_heater_5", heater5Callback);
-    nh.advertiseService("science_enable_white_led_0", whiteLED0Callback);
-    nh.advertiseService("science_enable_white_led_1", whiteLED1Callback);
-    nh.advertiseService("science_enable_white_led_2", whiteLED2Callback);
-    nh.advertiseService("science_enable_uv_led_0", uvLED0Callback);
-    nh.advertiseService("science_enable_uv_led_1", uvLED1Callback);
-    nh.advertiseService("science_enable_uv_led_2", uvLED2Callback);
+    for (auto const& [deviceName, deviceID] : device_name_to_index) {
+        // Advertise services and set the callback using a lambda function
+        nh.advertiseService<std_srvs::SetBool::Request, std_srvs::SetBool::Response>(
+            "science_enable_" + deviceName,
+            [deviceID](std_srvs::SetBool::Request& req, std_srvs::SetBool::Response& res) {
+                return serviceCallback(req, res, deviceID);
+            }
+        );
+    }
+    
+
     // Enter the ROS event loop
     ros::spin();
 
