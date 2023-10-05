@@ -133,7 +133,7 @@ namespace mrover {
                 for (auto& [id, tag]: mTags) {
                     cv::Scalar color{255, 0, 0};
                     cv::Point pt{tagBoxWidth * tagCount, mImg.rows / 10};
-                    std::string text = "id" + std::to_string(id) + ":" + std::to_string((tag.hitCount));
+                    std::string text = "id" + std::to_string(id) + ":" + std::to_string(tag.hitCount);
                     cv::putText(mImg, text, pt, cv::FONT_HERSHEY_COMPLEX, mImg.cols / 800.0, color, mImg.cols / 300);
 
                     ++tagCount;

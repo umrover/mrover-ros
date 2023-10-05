@@ -12,7 +12,6 @@
 #include <opencv2/core/mat.hpp>
 
 // ROS Headers, ros namespace
-#include <image_transport/image_transport.h>
 #include <ros/node_handle.h>
 #include <ros/publisher.h>
 #include <sensor_msgs/Image.h>
@@ -36,8 +35,7 @@ namespace mrover {
     class Perception {
     private:
         ros::NodeHandle mNodeHandle;
-        image_transport::ImageTransport mImageTransport;
-        image_transport::Subscriber mImageSubscriber;
+        ros::Subscriber mImageSubscriber;
         cv::Ptr<cv::aruco::DetectorParameters> mTagDetectorParams;
         cv::Ptr<cv::aruco::Dictionary> mTagDictionary;
         std::vector<std::vector<cv::Point2f>> mTagCorners;
