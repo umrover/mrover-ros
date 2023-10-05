@@ -1,20 +1,27 @@
+from mrover.msg import Joystick, WheelCmd
+
 <template>
   <div class="wrapper">
     <div class="box header">
       <img src="../static/mrover.png" alt="MRover" title="MRover" width="48" height="48" />
-      <h1>Mrover Teleop Training</h1>
+      <h1>Mrover Teleop</h1>
       <div class="spacer"></div>
     </div>
     <div class="box row">
-      <MenuButton link="#/motor_sim" name="Motor Simulator">Motor Simulator</MenuButton>
+      <MenuButton link="/motor_sim" name="Motor Simulator"></MenuButton>
     </div>
   </div>
 </template>
 
 <script>
+import MenuButton from './MenuButton.vue';
 
 export default {
   name: 'MenuPage',
+
+components: {
+    MenuButton,
+}
 
 }
 </script>
