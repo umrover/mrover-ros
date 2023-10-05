@@ -87,7 +87,7 @@ set(MROVER_CATKIN_PACKAGES
 
 macro(rosify_cpp_target_macro target)
     target_link_libraries(${target} PRIVATE ${catkin_LIBRARIES})
-    target_include_directories(${target} SYSTEM PRIVATE ${catkin_INCLUDE_DIRS} "src/util")
+    target_include_directories(${target} SYSTEM PRIVATE ${catkin_INCLUDE_DIRS} src/util)
     add_dependencies(${target} ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
 
     target_compile_options(${target} PRIVATE $<$<COMPILE_LANGUAGE:CXX>:${MROVER_CPP_COMPILE_OPTIONS}>)
@@ -195,12 +195,6 @@ else ()
             tf2_geometry_msgs
             tf2_ros
             tf2
-            tf2_web_republisher
-            visualization_msgs
-            image_transport
-            cv_bridge
-            rosbridge_server
-            teleop_twist_joy
             gazebo_ros
     )
 
@@ -209,13 +203,14 @@ else ()
             starter_project/autonomy/AutonomyStarterProject.cmake
     )
 
+
     # -=-=-=-=-
     # Macros
     # -=-=-=-=-
 
     # These packages need to be found individually
     macro(add_packages_macro)
-        find_package(OpenCV REQUIRED COMPONENTS core aruco)
+        find_package(OpenCV REQUIRED)
         find_package(gazebo REQUIRED)
         find_package(Eigen3 REQUIRED)
         find_package(ZED 2 QUIET)
@@ -234,9 +229,9 @@ else ()
     # define an add and link macro
     # Put items here to build
     macro(add_and_link_macro)
-        add_cpp_nodelet_macro(tag_detector_nodelet "src/perception/tag_detector/*.cpp" "src/perception/tag_detector")
+        add_cpp_nodelet_macro(tag_detector_nodelet src/perception/tag_detector/*.cpp src/perception/tag_detector)
         target_precompile_headers(tag_detector_nodelet PRIVATE src/perception/tag_detector/pch.hpp)
-        target_link_libraries(tag_detector_nodelet PRIVATE ${OpenCV_LIBRARIES} lie)
+        target_link_libraries(tag_detector_nodelet PRIVATE opencv_core opencv_objdetect opencv_aruco opencv_imgproc lie)
 
         add_cpp_node_macro(brushed_motors "src/esw/brushed_motors/*.cpp")
 
@@ -258,8 +253,11 @@ else ()
             target_precompile_headers(zed_nodelet PRIVATE src/perception/zed_wrapper/pch.hpp)
             target_include_directories(zed_nodelet SYSTEM PRIVATE ${ZED_INCLUDE_DIRS} ${CUDA_INCLUDE_DIRS})
             target_link_libraries(zed_nodelet PRIVATE ${ZED_LIBRARIES} ${OpenCV_LIBRARIES} ${SPECIAL_OS_LIBS} lie)
-            target_compile_definitions(zed_nodelet PRIVATE MROVER_IS_NODELET)
-            target_compile_options(zed_nodelet PRIVATE $<$<COMPILE_LANGUAGE:CUDA>:--expt-extended-lambda>)
+            target_compile_definitions(zed_nodelet PRIVATE
+                    MROVER_IS_NODELET # Generate code relevant to nodelet
+                    ALLOW_BUILD_DEBUG # Ignore ZED warnings about Debug mode
+                    __CUDA_INCLUDE_COMPILER_INTERNAL_HEADERS__ # Eigen includes some files it should not, ignore
+            )
         endif ()
     endmacro()
 endif ()
