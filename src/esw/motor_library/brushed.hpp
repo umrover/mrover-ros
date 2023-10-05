@@ -4,7 +4,7 @@
 
 class BrushedController : public Controller {
 public:
-    void update(uint64_t frame) override;
+    void update(const std::vector<uint8_t> &frame) override;
 
     void set_desired_throttle(double throttle) override; // from -1.0 to 1.0
     void set_desired_velocity(double velocity) override; // from -1.0 to 1.0

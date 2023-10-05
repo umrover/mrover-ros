@@ -19,8 +19,12 @@ public:
         assert(n.getParam(can_id_name, id));
     }
 
-    void send_raw_data(uint64_t frame) {
-        ROS_INFO("TODO - need to send %lu based on bus %i.", frame, bus);
+    void send_raw_data(std::vector<uint8_t> data) {
+        mrover::CAN CANMessage;
+        CANMessage.bus = bus;
+        CANMessage.id = id;
+        CANMessage.data = data;
+        CANPublisher.publish(CANMessage);
     }
 
     int get_id() const {

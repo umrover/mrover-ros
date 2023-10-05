@@ -39,7 +39,7 @@ Controller& MotorsManager::get_controller(std::string const& name) {
     return *controllers.at(name);
 }
 
-void MotorsManager::process_frame(int bus, int id, uint64_t frame_data) {
+void MotorsManager::process_frame(int bus, int id, const std::vector<uint8_t> &frame_data) {
     // TODO: figure out how to organize by bus
     controllers[names[bus | (id << 4)]]->update(frame_data);
 }

@@ -19,7 +19,7 @@ public:
     virtual ~Controller() = default;
 
     // will receive CAN frame with updated motor information (current speed, position, etc.)
-    virtual void update(uint64_t frame) = 0;
+    virtual void update(const std::vector<uint8_t> &frame) = 0;
 
     virtual void set_desired_throttle(double throttle) = 0; // from -1.0 to 1.0
     virtual void set_desired_velocity(double velocity) = 0; // in rad/s of joint output

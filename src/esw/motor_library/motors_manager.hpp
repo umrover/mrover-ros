@@ -19,7 +19,7 @@ public:
 
     Controller& get_controller(std::string const& name);
 
-    void process_frame(int bus, int id, uint64_t frame_data);
+    void process_frame(int bus, int id, const std::vector<uint8_t> &frame_data);
 
     void moveMotorsThrottle(const mrover::Throttle::ConstPtr& msg);
 
