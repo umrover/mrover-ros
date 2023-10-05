@@ -22,7 +22,7 @@ public:
     void send_raw_data(std::vector<uint8_t> data) {
         mrover::CAN CANMessage;
         CANMessage.bus = bus;
-        CANMessage.id = id;
+        CANMessage.message_id = id;  // TODO - mix with message name id
         CANMessage.data = data;
         CANPublisher.publish(CANMessage);
     }

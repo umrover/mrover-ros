@@ -25,7 +25,7 @@ int main(int argc, char** argv) {
 void changeLED(const mrover::LED::ConstPtr& msg) {
     mrover::CAN CANRequest;
     CANRequest.bus = 0;  // TODO
-    CANRequest.id = 0;
+    CANRequest.message_id = 0;
     uint8_t data = msg->blue | (msg->red & 0b1) | (msg->green << 1) | (msg->blue << 2) | (msg->is_blinking << 3);
     CANRequest.data.push_back(data);
     CANPublisher.publish(CANRequest);

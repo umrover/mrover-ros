@@ -21,7 +21,7 @@ int main(int argc, char** argv) {
 }
 
 void processCANData(const mrover::CAN::ConstPtr& msg) {
-    if (msg->bus == 0 && msg->id == 0) {
+    if (msg->bus == 0 && msg->message_id == 0) {
         return;
         // TODO
     }
