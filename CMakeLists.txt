@@ -6,7 +6,9 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 if (CMAKE_CXX_COMPILER_ID STREQUAL "Clang")
     add_link_options(-fuse-ld=lld-16)
 endif ()
-set(MROVER_CPP_COMPILE_OPTIONS -Wall -Wextra -Werror -pedantic)
+if (CMAKE_BUILD_TYPE STREQUAL "Release")
+    set(MROVER_CPP_COMPILE_OPTIONS -Wall -Wextra -Werror -pedantic)
+endif ()
 
 # Generate compile_commands.json for clangd
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
@@ -24,28 +26,31 @@ set(MROVER_PACKAGES
 
 # Message files
 set(MROVER_MESSAGE_FILES
-        AvailableCameras.msg
-        Calibrated.msg
         CalibrationStatus.msg
         CameraCmd.msg
-        Carousel.msg
+        CAN.msg
         Chassis.msg
+        ControllerGroupState.msg
+        ControllerState.msg
         Course.msg
-        Diagnostic.msg
         EnableAuton.msg
-        GPSWaypoint.msg
         GPSPointList.msg
+        GPSWaypoint.msg
         HeaterData.msg
         ImuAndMag.msg
-        LimitSwitchData.msg
-        MastGimbal.msg
-        JointLock.msg
+        LED.msg
         MoteusState.msg
         MotorsStatus.msg
         NavMetadata.msg
+        NavState.msg
         NetworkBandwidth.msg
-        ScienceTemperature.msg
+        PDB.msg
+        Position.msg
+        ScienceThermistors.msg
         Spectral.msg
+        SpectralGroup.msg
+        Throttle.msg
+        Velocity.msg
         Waypoint.msg
         WaypointType.msg
         GPSPointList.msg
@@ -53,19 +58,13 @@ set(MROVER_MESSAGE_FILES
 
 # Service files
 set(MROVER_SERVICE_FILES
-        AdjustMotors.srv
-        CalibrateMotors.srv
+        AdjustMotor.srv
         ChangeArmMode.srv
         ChangeCameras.srv
-        ChangeHeaterState.srv
-        ChangeServoAngle.srv
-        EnableDevice.srv
-        FetchMessageFromPackage.srv
         FetchMessageFromPackage.srv
         FetchPackages.srv
-        PublishEnableAuton.srv
         PublishCourse.srv
-        ResetCameras.srv
+        PublishEnableAuton.srv
 )
 
 # Generate messages list
@@ -87,7 +86,7 @@ set(MROVER_CATKIN_PACKAGES
 
 macro(rosify_cpp_target_macro target)
     target_link_libraries(${target} PRIVATE ${catkin_LIBRARIES})
-    target_include_directories(${target} SYSTEM PRIVATE ${catkin_INCLUDE_DIRS} "src/util")
+    target_include_directories(${target} SYSTEM PRIVATE ${catkin_INCLUDE_DIRS} src/util)
     add_dependencies(${target} ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
 
     target_compile_options(${target} PRIVATE $<$<COMPILE_LANGUAGE:CXX>:${MROVER_CPP_COMPILE_OPTIONS}>)
@@ -188,7 +187,15 @@ if (${DEVICE} MATCHES "raspi4")
     # define an add and link macro
     # Put items here to build
     macro(add_and_link_macro)
-        add_cpp_node_macro(brushed_motors "src/esw/brushed_motors/*")
+        add_cpp_node_macro(arm_bridge "src/esw/arm_bridge/*")
+        add_cpp_node_macro(cache_bridge "src/esw/cache_bridge/*")
+        add_cpp_node_macro(can_bridge "src/esw/can_bridge/*")
+        add_cpp_node_macro(drive_bridge "src/esw/drive_bridge/*")
+        add_cpp_node_macro(led_hw_bridge "src/esw/led_hw_bridge/*")
+        add_cpp_node_macro(mast_gimbal_bridge "src/esw/mast_gimbal_bridge/*")
+        add_cpp_node_macro(pdb_bridge "src/esw/pdb_bridge/*")
+        add_cpp_node_macro(sa_bridge "src/esw/sa_bridge/*")
+        add_cpp_node_macro(science_bridge "src/esw/science_bridge/*")
     endmacro()
 else ()
     # -=-=-=-=-
@@ -200,12 +207,6 @@ else ()
             tf2_geometry_msgs
             tf2_ros
             tf2
-            tf2_web_republisher
-            visualization_msgs
-            image_transport
-            cv_bridge
-            rosbridge_server
-            teleop_twist_joy
             gazebo_ros
     )
 
@@ -214,13 +215,14 @@ else ()
             starter_project/autonomy/AutonomyStarterProject.cmake
     )
 
+
     # -=-=-=-=-
     # Macros
     # -=-=-=-=-
 
     # These packages need to be found individually
     macro(add_packages_macro)
-        find_package(OpenCV REQUIRED COMPONENTS core aruco)
+        find_package(OpenCV REQUIRED)
         find_package(gazebo REQUIRED)
         find_package(Eigen3 REQUIRED)
         find_package(ZED 2 QUIET)
@@ -241,13 +243,29 @@ else ()
     macro(add_and_link_macro)
         add_cpp_nodelet_macro(tag_detector_nodelet src/perception/tag_detector/*.cpp src/perception/tag_detector)
         target_precompile_headers(tag_detector_nodelet PRIVATE src/perception/tag_detector/pch.hpp)
-        target_link_libraries(tag_detector_nodelet PRIVATE ${OpenCV_LIBRARIES} lie)
-
-        add_cpp_node_macro(brushed_motors src/esw/brushed_motors/*.cpp)
+        target_link_libraries(tag_detector_nodelet PRIVATE opencv_core opencv_objdetect opencv_aruco opencv_imgproc lie)
 
         add_cpp_library_macro(lie src/util/lie/*.cpp src/util/lie)
 
         add_cpp_interface_library_macro(moteus deps/moteus/lib/cpp/mjbots)
+        add_cpp_interface_library_macro(can_library src/esw/can_library)
+        add_cpp_library_macro(motor_library src/esw/motor_library/*.cpp src/esw/motor_library)
+        target_link_libraries(motor_library PRIVATE can_library)
+
+        macro(add_esw_bridge_cpp_node_macro name sources)
+            add_cpp_node_macro(${name} ${sources})
+            target_link_libraries(${name} PRIVATE can_library motor_library)
+        endmacro()
+
+        add_esw_bridge_cpp_node_macro(arm_bridge src/esw/arm_bridge/*.cpp)
+        add_esw_bridge_cpp_node_macro(cache_bridge src/esw/cache_bridge/*.cpp)
+        add_esw_bridge_cpp_node_macro(can_bridge src/esw/can_bridge/*.cpp)
+        add_esw_bridge_cpp_node_macro(drive_bridge src/esw/drive_bridge/*.cpp)
+        add_esw_bridge_cpp_node_macro(led_hw_bridge src/esw/led_hw_bridge/*.cpp)
+        add_esw_bridge_cpp_node_macro(mast_gimbal_bridge src/esw/mast_gimbal_bridge/*.cpp)
+        add_esw_bridge_cpp_node_macro(pdb_bridge src/esw/pdb_bridge/*.cpp)
+        add_esw_bridge_cpp_node_macro(sa_bridge src/esw/sa_bridge/*.cpp)
+        add_esw_bridge_cpp_node_macro(science_bridge src/esw/science_bridge/*.cpp)
 
         add_gazebo_plugin_macro(differential_drive_plugin_6w src/gazebo/differential_drive_6w.cpp src)
 
@@ -256,16 +274,15 @@ else ()
         set_target_properties(kinect_plugin PROPERTIES CXX_CLANG_TIDY "")
 
         if (ZED_FOUND)
-            #            add_cpp_node_macro(zed_node "src/perception/zed_wrapper/*.c*")
-            #            target_link_options(zed_node PRIVATE "LINKER:--copy-dt-needed-entries")
-            #            target_include_directories(zed_node SYSTEM PRIVATE ${ZED_INCLUDE_DIRS} ${CUDA_INCLUDE_DIRS})
-            #            target_link_libraries(zed_node PRIVATE ${ZED_LIBRARIES} ${OpenCV_LIBRARIES} ${SPECIAL_OS_LIBS} lie tag_detector_nodelet)
-
             add_cpp_nodelet_macro(zed_nodelet src/perception/zed_wrapper/*.c* src/perception/zed_wrapper)
             target_precompile_headers(zed_nodelet PRIVATE src/perception/zed_wrapper/pch.hpp)
             target_include_directories(zed_nodelet SYSTEM PRIVATE ${ZED_INCLUDE_DIRS} ${CUDA_INCLUDE_DIRS})
             target_link_libraries(zed_nodelet PRIVATE ${ZED_LIBRARIES} ${OpenCV_LIBRARIES} ${SPECIAL_OS_LIBS} lie)
-            target_compile_definitions(zed_nodelet PRIVATE MROVER_IS_NODELET ALLOW_BUILD_DEBUG)
+            target_compile_definitions(zed_nodelet PRIVATE
+                    MROVER_IS_NODELET # Generate code relevant to nodelet
+                    ALLOW_BUILD_DEBUG # Ignore ZED warnings about Debug mode
+                    __CUDA_INCLUDE_COMPILER_INTERNAL_HEADERS__ # Eigen includes some files it should not, ignore
+            )
         endif ()
     endmacro()
 endif ()

@@ -19,7 +19,7 @@
           args="0 0 0 0 0 0 base_link zed_mount_link 100"/>
 
     <!-- Load ZED URDF -->
-    <param name="zed_description" command="$(find xacro)/xacro '$(find mrover)/rover_description/zed/zed_descr.urdf.xacro'
+    <param name="zed_description" command="$(find xacro)/xacro '$(find mrover)/urdf/zed/zed_descr.urdf.xacro'
         camera_name:=$(arg zed_model)
         camera_model:=$(arg zed_model)"/>
 
