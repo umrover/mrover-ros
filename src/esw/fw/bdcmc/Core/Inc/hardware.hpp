@@ -53,6 +53,8 @@ namespace mrover {
 
     class SMBus {
     public:
+        SMBus() = default;
+
         SMBus(I2C_HandleTypeDef* hi2c) 
             : m_i2c(hi2c) {
             for (size_t i = 0; i < 30; i++) {
@@ -68,8 +70,7 @@ namespace mrover {
             this->m_ret = HAL_I2C_Master_Receive(this->m_i2c, (addr << 1) | 1, this->m_buf, 2, 500);
 
             long data = this->m_buf[0] | (this->m_buf[1] << 8);
-            if (this->m_ret != HAL_OK)
-            {
+            if (this->m_ret != HAL_OK) {
                 HAL_I2C_DeInit(this->m_i2c);
                 HAL_Delay(5);
                 HAL_I2C_Init(this->m_i2c);
@@ -83,8 +84,6 @@ namespace mrover {
         I2C_HandleTypeDef *m_i2c;
         HAL_StatusTypeDef m_ret;
         uint8_t m_buf[30];
-        // TODO: Delete?
-        //uint8_t DMA;
     };
 
 }

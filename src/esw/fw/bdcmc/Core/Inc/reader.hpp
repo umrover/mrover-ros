@@ -3,13 +3,16 @@
 #include <numbers>
 #include <units.hpp>
 #include <config.hpp>
+#include <hardware.hpp>
 
-#include "stm32g4xx_hal.h"
+#include "main.h"
+
 
 constexpr uint32_t COUNTS_PER_ROTATION_RELATIVE = 4096;
 constexpr uint32_t COUNTS_PER_ROTATION_ABSOLUTE = 1024;
 constexpr auto RADIANS_PER_COUNT_RELATIVE = mrover::Radians{2 * std::numbers::pi} / COUNTS_PER_ROTATION_RELATIVE;
 constexpr auto RADIANS_PER_COUNT_ABSOLUTE = mrover::Radians{2 * std::numbers::pi} / COUNTS_PER_ROTATION_ABSOLUTE;
+
 
 namespace mrover {
     class AbsoluteEncoder {
@@ -34,7 +37,7 @@ namespace mrover {
         }
 
         int read_raw_angle() {
-            int raw_data = this->m_i2cBus->read_word_data(this->m_address, 0xFF);
+            int raw_data = this->m_i2cBus.read_word_data(this->m_address, 0xFF);
             int angle_left = ( raw_data >> 8 ) & 0xFF; // 0xFE
             int angle_right = raw_data & 0xFF; // 0xFF
             int angle_left_modified = angle_left & 0x3F;
@@ -69,7 +72,7 @@ namespace mrover {
         I2C_HandleTypeDef* m_absolute_encoder_i2c{};
         Radians rotation{};
         Radians absolute_relative_diff{};
-        AbsoluteEncoder abs_encoder{};
+        AbsoluteEncoder abs_encoder;
     };
 
 } // namespace mrover
