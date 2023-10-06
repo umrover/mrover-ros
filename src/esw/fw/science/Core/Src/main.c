@@ -60,7 +60,11 @@ static void MX_FDCAN1_Init(void);
 static void MX_I2C1_Init(void);
 static void MX_ADC1_Init(void);
 static void MX_ADC2_Init(void);
+
 void StartDefaultTask(void const * argument);
+void SpectralTask(void const * argument);
+void ThermistorTask(void const * argument);
+void HeaterUpdatesTask(void const * argument);
 
 /* USER CODE BEGIN PFP */
 
@@ -483,6 +487,23 @@ static void MX_GPIO_Init(void)
 }
 
 /* USER CODE BEGIN 4 */
+void SpectralTask(void const * argument) {
+	for (;;) {
+
+	}
+}
+
+void ThermistorTask(void const * argument) {
+	for (;;) {
+
+	}
+}
+
+void HeaterUpdatesTask(void const * argument) {
+	for (;;) {
+
+	}
+}
 
 /* USER CODE END 4 */
 
