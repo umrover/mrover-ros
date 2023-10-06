@@ -31,7 +31,8 @@ extern "C" {
 
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
-
+#include "diag_curr_sensor.h"
+#include "diag_temp_sensor.h"
 /* USER CODE END Includes */
 
 /* Exported types ------------------------------------------------------------*/
