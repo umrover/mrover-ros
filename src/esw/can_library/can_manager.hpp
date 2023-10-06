@@ -3,10 +3,8 @@
 #include <cstdint>
 #include <map>
 #include <string>
-
 #include <XmlRpcValue.h>
 #include <ros/ros.h>
-
 #include <mrover/CAN.h>
 
 struct MessageID {
@@ -25,17 +23,8 @@ union BoolMessage{
     uint8_t bytes[sizeof(bool)];
 };
 
-std::vector<uint8_t> createFloatMessage(float floatValue) {
-    FloatMessage u = {floatValue};
-    std::vector<uint8_t> message(u.bytes, u.bytes + sizeof(float));
-    return message;
-}
-
-std::vector<uint8_t> createBoolMessage(bool boolValue) {
-    BoolMessage u = {boolValue};
-    std::vector<uint8_t> message(u.bytes, u.bytes + sizeof(bool));
-    return message;
-}
+std::vector<uint8_t> createFloatMessage(float floatValue);
+std::vector<uint8_t> createBoolMessage(bool boolValue);
 
 class CANManager {
 public:
