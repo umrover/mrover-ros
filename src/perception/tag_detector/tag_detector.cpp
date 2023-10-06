@@ -1,18 +1,12 @@
 #include "tag_detector.hpp"
 
-#include <limits>
-#include <string>
-#include <type_traits>
-
-#include <nodelet/loader.h>
-
 namespace mrover {
 
     void TagDetectorNodelet::onInit() {
         mNh = getMTNodeHandle();
         mPnh = getMTPrivateNodeHandle();
-        mDetectorParams = new cv::aruco::DetectorParameters();
-        auto defaultDetectorParams = cv::aruco::DetectorParameters::create();
+        mDetectorParams = cv::makePtr<cv::aruco::DetectorParameters>();
+        auto defaultDetectorParams = cv::makePtr<cv::aruco::DetectorParameters>();
         int dictionaryNumber;
 
         mNh.param<bool>("use_odom_frame", mUseOdom, false);
@@ -21,16 +15,14 @@ namespace mrover {
         mNh.param<std::string>("camera_frame", mCameraFrameId, "zed2i_left_camera_frame");
 
         mPnh.param<bool>("publish_images", mPublishImages, true);
-        using DictEnumType = std::underlying_type_t<cv::aruco::PREDEFINED_DICTIONARY_NAME>;
-        mPnh.param<int>("dictionary", dictionaryNumber, static_cast<DictEnumType>(cv::aruco::DICT_4X4_50));
+        mPnh.param<int>("dictionary", dictionaryNumber, static_cast<int>(cv::aruco::DICT_4X4_50));
         mPnh.param<int>("min_hit_count_before_publish", mMinHitCountBeforePublish, 5);
         mPnh.param<int>("max_hit_count", mMaxHitCount, 5);
         mPnh.param<int>("tag_increment_weight", mTagIncrementWeight, 2);
         mPnh.param<int>("tag_decrement_weight", mTagDecrementWeight, 1);
 
-        mIt.emplace(mNh);
-        mImgPub = mIt->advertise("tag_detection", 1);
-        mDictionary = cv::aruco::getPredefinedDictionary(dictionaryNumber);
+        mImgPub = mNh.advertise<sensor_msgs::Image>("tag_detection", 1);
+        mDictionary = cv::makePtr<cv::aruco::Dictionary>(cv::aruco::getPredefinedDictionary(dictionaryNumber));
 
         mPcSub = mNh.subscribe("camera/left/points", 1, &TagDetectorNodelet::pointCloudCallback, this);
         mServiceEnableDetections = mNh.advertiseService("enable_detections", &TagDetectorNodelet::enableDetectionsCallback, this);

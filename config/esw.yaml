@@ -358,6 +358,68 @@ wheel:
   gear_ratio: 50.0
   radius: 0.13
 
+arm:
+  controllers:
+    joint_a:
+      multiplier: 1
+    joint_b:
+      multiplier: 1
+    joint_c:
+      multiplier: 1
+    joint_de:
+      multiplier: 1
+    finger:
+      multiplier: 1
+    gripper:
+      multiplier: 1
+
+drive:
+  controllers:
+    FrontLeft:
+      multiplier: 1
+    FrontRight:
+      multiplier: 1
+    MiddleLeft:
+      multiplier: 1
+    MiddleRight:
+      multiplier: 1
+    BackLeft:
+      multiplier: 1
+    BackRight:
+      multiplier: 1
+
+motors:
+  joint_a:
+    type: "brushless"
+  joint_b:
+    type: "brushed"
+  joint_c:
+    type: "brushed"
+  joint_de:
+    type: "brushed"
+  finger:
+    type: "brushed"
+  gripper:
+    type: "brushless"
+  FrontLeft:
+    type: "brushless"
+  FrontRight:
+    type: "brushless"
+  MiddleLeft:
+    type: "brushless"
+  MiddleRight:
+    type: "brushless"
+  BackLeft:
+    type: "brushless"
+  BackRight:
+    type: "brushless"
+  joint_c:
+    type: "brushless"
+  joint_d:
+    type: "brushless"
+  joint_e:
+    type: "brushless"
+
 brushless:
   using_pi3_hat: true
   drive:

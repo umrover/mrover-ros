@@ -1,0 +1,37 @@
+{
+    //// Cmake
+    // Catkin only works with Make... ideally we could use Ninja
+    "cmake.generator": "Unix Makefiles",
+    // Set to the catkin build directory
+    "cmake.buildDirectory": "${workspaceFolder}/../../build/mrover",
+    // We want catkin to configure
+    // VSCode will try to use its own toolchain and ignore the catkin profile
+    "cmake.configureOnOpen": false,
+    "cmake.configureOnEdit": false,
+    "cmake.automaticReconfigure": false,
+    "cmake.debugConfig": {
+        "miDebuggerPath": "/usr/bin/gdb",
+    },
+    //// Microsoft C++
+    // Disable since clangd is used instead
+    "C_Cpp.intelliSenseEngine": "disabled",
+    //// Python
+    "python.analysis.inlayHints.variableTypes": true,
+    "python.analysis.inlayHints.callArgumentNames": "all",
+    "python.analysis.inlayHints.functionReturnTypes": true,
+    // ~/catkin_ws/devel/lib/python3/dist-packages is already in PYTHONPATH,
+    // but Pylance currently has a bug where it cannot handle the symlinks in it.
+    // Below we are just putting directly where those symlinks go
+    "python.analysis.extraPaths": [
+        "/opt/ros/noetic/lib/python3/dist-packages",
+        "../../devel/.private/mrover/lib/python3/dist-packages",
+    ],
+    "[python]": {
+        "editor.defaultFormatter": "ms-python.black-formatter",
+    },
+    // We use mypy for this, see style.sh
+    "python.analysis.typeCheckingMode": "off",
+    //// Miscellaneous
+    "redhat.telemetry.enabled": false,
+    "editor.formatOnSave": true,
+}

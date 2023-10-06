@@ -1,7 +1,7 @@
 world_frame: "map"
 odom_frame: "odom"
 rover_frame: "base_link"
-use_odom_frame: true
+use_odom_frame: false
 
 gps_linearization:
   reference_point_latitude: 42.293195

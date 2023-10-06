@@ -1,6 +1,6 @@
 #pragma once
 
-#include <string>
+#include <boost_cpp23_workaround.hpp>
 
 #include <tf2_ros/buffer.h>
 #include <tf2_ros/transform_broadcaster.h>

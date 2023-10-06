@@ -2,17 +2,6 @@
 
 #include "../point.hpp"
 
-#include <sensor_msgs/image_encodings.h>
-#include <tf/exceptions.h>
-
-#include <opencv2/imgproc.hpp>
-
-#include <algorithm>
-#include <cassert>
-#include <cmath>
-#include <execution>
-#include <numeric>
-
 namespace mrover {
 
     /**
@@ -88,7 +77,7 @@ namespace mrover {
             Tag& tag = mTags[id];
             tag.hitCount = std::clamp(tag.hitCount + mTagIncrementWeight, 0, mMaxHitCount);
             tag.id = id;
-            tag.imageCenter = std::accumulate(mImmediateCorners[i].begin(), mImmediateCorners[i].end(), cv::Point2f{}) / static_cast<float>(mImmediateCorners[i].size());
+            tag.imageCenter = std::reduce(mImmediateCorners[i].begin(), mImmediateCorners[i].end()) / static_cast<float>(mImmediateCorners[i].size());
             tag.tagInCam = getTagInCamFromPixel(msg, std::lround(tag.imageCenter.x), std::lround(tag.imageCenter.y));
 
             if (tag.tagInCam) {
@@ -103,7 +92,7 @@ namespace mrover {
         auto it = mTags.begin();
         while (it != mTags.end()) {
             auto& [id, tag] = *it;
-            if (std::find(mImmediateIds.begin(), mImmediateIds.end(), id) == mImmediateIds.end()) {
+            if (std::ranges::find(mImmediateIds, id) == mImmediateIds.end()) {
                 tag.hitCount -= mTagDecrementWeight;
                 tag.tagInCam = std::nullopt;
                 if (tag.hitCount <= 0) {
@@ -144,7 +133,7 @@ namespace mrover {
                 for (auto& [id, tag]: mTags) {
                     cv::Scalar color{255, 0, 0};
                     cv::Point pt{tagBoxWidth * tagCount, mImg.rows / 10};
-                    std::string text = "id" + std::to_string(id) + ":" + std::to_string((tag.hitCount));
+                    std::string text = "id" + std::to_string(id) + ":" + std::to_string(tag.hitCount);
                     cv::putText(mImg, text, pt, cv::FONT_HERSHEY_COMPLEX, mImg.cols / 800.0, color, mImg.cols / 300);
 
                     ++tagCount;
@@ -160,7 +149,7 @@ namespace mrover {
             mImgMsg.is_bigendian = __BYTE_ORDER__ == __ORDER_BIG_ENDIAN__;
             size_t size = mImgMsg.step * mImgMsg.height;
             mImgMsg.data.resize(size);
-            std::copy(std::execution::par_unseq, mImg.data, mImg.data + size, mImgMsg.data.begin());
+            std::uninitialized_copy(std::execution::par_unseq, mImg.data, mImg.data + size, mImgMsg.data.begin());
             mImgPub.publish(mImgMsg);
         }
 
