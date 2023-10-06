@@ -15,7 +15,7 @@ namespace mrover {
 
     void EncoderReader::init(TIM_HandleTypeDef* relative_encoder_timer, I2C_HandleTypeDef* absolute_encoder_i2c) 
         : m_relative_encoder_timer{relative_encoder_timer}
-        , m_absolute_encoder_i2c{absolute_encoder_i2c}
+        , m_absolute_encoder_i2c{absolute_encoder_i2c} 
         {
         // Initialize the TIM and I2C encoders
         check(HAL_TIM_Encoder_Init(m_relative_encoder_timer, nullptr /* TODO: replace with config */) == HAL_OK, Error_Handler);
@@ -34,7 +34,7 @@ namespace mrover {
     }
 
     uint32_t read_absolute() {
-        return 0; // TODO: get absolute count here
+        return abs_encoder.read_raw_angle();
     }
 
     void EncoderReader::update_count() {

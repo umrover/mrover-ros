@@ -42,13 +42,6 @@ namespace mrover {
             return angle_raw;
         }
 
-        // TODO: Delete? Don't think this is needed because of the way encoder is setup
-        // void refresh_angle_radians() {
-            // int angle_raw = read_raw_angle();
-            // float radians = (float)angle_raw / RAW_TO_RADIANS_CONVERSION_FACTOR;
-            // this->m_angle_rad = radians;
-        // }
-
     private:
         int m_address;
         float m_angle_rad;
@@ -76,6 +69,7 @@ namespace mrover {
         I2C_HandleTypeDef* m_absolute_encoder_i2c{};
         Radians rotation{};
         Radians absolute_relative_diff{};
+        AbsoluteEncoder abs_encoder{};
     };
 
 } // namespace mrover
