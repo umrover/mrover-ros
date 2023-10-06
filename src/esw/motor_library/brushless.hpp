@@ -1,6 +1,7 @@
 #pragma once
 
 #include "controller.hpp"
+#include "can_manager.hpp"
 
 #include <optional>
 
@@ -49,10 +50,9 @@ class BrushlessController : public Controller {
 public:
     void update(const std::vector<uint8_t> &frame) override;
 
-    void set_desired_throttle(double throttle) override; // from -1.0 to 1.0
-    void set_desired_velocity(double velocity) override; // in rev/s
-    void set_desired_position(double position) override;
-    MotorType get_type() override;
+    void set_desired_throttle(float throttle) override; // from -1.0 to 1.0
+    void set_desired_velocity(float velocity) override; // in rev/s
+    void set_desired_position(float position) override;
 
     BrushlessController(ros::NodeHandle& n, const std::string& name) : Controller(n, name) {
         torque = 0.3f;

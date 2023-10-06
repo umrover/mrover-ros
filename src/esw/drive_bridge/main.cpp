@@ -16,12 +16,12 @@ std::vector<std::string> driveNames{"front_left", "front_right", "middle_left", 
 
 ros::Publisher jointDataPublisher;
 ros::Publisher controllerDataPublisher;
-std::unordered_map<std::string, double> motorMultipliers; // Store the multipliers for each motor
+std::unordered_map<std::string, float> motorMultipliers; // Store the multipliers for each motor
 
-double WHEEL_DISTANCE_INNER;
-double WHEEL_DISTANCE_OUTER;
-double WHEELS_M_S_TO_MOTOR_REV_S;
-double MAX_MOTOR_SPEED_REV_S;
+float WHEEL_DISTANCE_INNER;
+float WHEEL_DISTANCE_OUTER;
+float WHEELS_M_S_TO_MOTOR_REV_S;
+float MAX_MOTOR_SPEED_REV_S;
 
 int main(int argc, char** argv) {
     // Initialize the ROS node
@@ -38,29 +38,29 @@ int main(int argc, char** argv) {
     for (const auto& driveName: driveNames) {
         assert(driveControllers.hasMember(driveName));
         assert(driveControllers[driveName].getType() == XmlRpc::XmlRpcValue::TypeStruct);
-        if (driveControllers[driveName].hasMember("multiplier")) {
-            motorMultipliers[driveName] = driveControllers[driveName]["multiplier"];
+        if (driveControllers[driveName].hasMember("multiplier") &&  driveControllers[driveName]["multiplier"].getType() == XmlRpc::XmlRpcValue::TypeDouble) {
+            motorMultipliers[driveName] = (float) static_cast<double>(driveControllers[driveName]["multiplier"]);
         }
     }
 
     // Load rover dimensions and other parameters from the ROS parameter server
-    double roverWidth = 0.0;
-    double roverLength = 0.0;
+    float roverWidth = 0.0f;
+    float roverLength = 0.0f;
     assert(nh.getParam("rover/width", roverWidth));
     assert(nh.getParam("rover/length", roverLength));
-    WHEEL_DISTANCE_INNER = roverWidth / 2;
-    WHEEL_DISTANCE_OUTER = std::sqrt(((roverWidth / 2.0) * (roverWidth / 2.0)) + ((roverLength / 2.0) * (roverLength / 2.0)));
+    WHEEL_DISTANCE_INNER = roverWidth / 2.0f;
+    WHEEL_DISTANCE_OUTER = std::sqrt(((roverWidth / 2.0f) * (roverWidth / 2.0f)) + ((roverLength / 2.0f) * (roverLength / 2.0f)));
 
-    double ratioMotorToWheel = 0.0;
+    float ratioMotorToWheel = 0.0f;
     assert(nh.getParam("wheel/gear_ratio", ratioMotorToWheel));
     // To convert m/s to rev/s, multiply by this constant. Divide by circumference, multiply by gear ratio.
-    double wheelRadius = 0.0;
+    float wheelRadius = 0.0f;
     nh.getParam("wheel/radius", wheelRadius);
-    WHEELS_M_S_TO_MOTOR_REV_S = (1 / (wheelRadius * 2 * std::numbers::pi)) * ratioMotorToWheel;
+    WHEELS_M_S_TO_MOTOR_REV_S = (1.0f / (wheelRadius * 2.0f * static_cast<float>(std::numbers::pi))) * ratioMotorToWheel;
 
-    double maxSpeedMPerS = 0.0;
+    float maxSpeedMPerS = 0.0f;
     assert(nh.getParam("rover/max_speed", maxSpeedMPerS));
-    assert(maxSpeedMPerS > 0);
+    assert(maxSpeedMPerS > 0.0f);
 
     MAX_MOTOR_SPEED_REV_S = maxSpeedMPerS * WHEELS_M_S_TO_MOTOR_REV_S;
 
@@ -82,29 +82,29 @@ int main(int argc, char** argv) {
 void moveDrive(const geometry_msgs::Twist::ConstPtr& msg) {
 
     // Process drive commands and set motor speeds
-    double forward = msg->linear.x;
-    double turn = msg->angular.z;
+    auto forward = static_cast<float>(msg->linear.x);
+    auto turn = static_cast<float>(msg->angular.z);
 
     // Calculate motor speeds and adjust for maximum speed
-    double turn_difference_inner = turn * WHEEL_DISTANCE_INNER;
-    double turn_difference_outer = turn * WHEEL_DISTANCE_OUTER;
+    float turn_difference_inner = turn * WHEEL_DISTANCE_INNER;
+    float turn_difference_outer = turn * WHEEL_DISTANCE_OUTER;
 
-    double left_rev_inner = (forward - turn_difference_inner) * WHEELS_M_S_TO_MOTOR_REV_S;
-    double right_rev_inner = (forward + turn_difference_inner) * WHEELS_M_S_TO_MOTOR_REV_S;
-    double left_rev_outer = (forward - turn_difference_outer) * WHEELS_M_S_TO_MOTOR_REV_S;
-    double right_rev_outer = (forward + turn_difference_outer) * WHEELS_M_S_TO_MOTOR_REV_S;
+    float left_rev_inner = (forward - turn_difference_inner) * WHEELS_M_S_TO_MOTOR_REV_S;
+    float right_rev_inner = (forward + turn_difference_inner) * WHEELS_M_S_TO_MOTOR_REV_S;
+    float left_rev_outer = (forward - turn_difference_outer) * WHEELS_M_S_TO_MOTOR_REV_S;
+    float right_rev_outer = (forward + turn_difference_outer) * WHEELS_M_S_TO_MOTOR_REV_S;
 
     // If speed too fast, scale to max speed. Ignore inner for comparison since outer > inner, always.
-    double larger_abs_rev_s = std::max(abs(left_rev_outer), abs(right_rev_outer));
+    float larger_abs_rev_s = std::max(abs(left_rev_outer), abs(right_rev_outer));
     if (larger_abs_rev_s > MAX_MOTOR_SPEED_REV_S) {
-        double change_ratio = MAX_MOTOR_SPEED_REV_S / larger_abs_rev_s;
+        float change_ratio = MAX_MOTOR_SPEED_REV_S / larger_abs_rev_s;
         left_rev_inner *= change_ratio;
         right_rev_inner *= change_ratio;
         left_rev_outer *= change_ratio;
         right_rev_outer *= change_ratio;
     }
 
-    std::unordered_map<std::string, double> driveCommandVelocities{
+    std::unordered_map<std::string, float> driveCommandVelocities{
             {"FrontLeft", left_rev_outer},
             {"FrontRight", right_rev_outer},
             {"MiddleLeft", left_rev_inner},
@@ -118,11 +118,11 @@ void moveDrive(const geometry_msgs::Twist::ConstPtr& msg) {
         const std::string& name = pair.first;
 
         // Set the desired speed for the motor
-        double multiplier = motorMultipliers[name];
-        double velocity = pair.second * multiplier; // currently in rad/s
+        float multiplier = motorMultipliers[name];
+        float velocity = pair.second * multiplier; // currently in rad/s
 
         Controller& controller = driveManager->get_controller(name);
-        double vel_rad_s = velocity * 2 * std::numbers::pi;
+        float vel_rad_s = velocity * 2.0f * static_cast<float>(std::numbers::pi);
         controller.set_desired_velocity(vel_rad_s);
     }
 

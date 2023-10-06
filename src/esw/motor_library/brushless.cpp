@@ -2,34 +2,32 @@
 
 void BrushlessController::update(const std::vector<uint8_t> &frame) {
     if (frame.empty()) {
-        return; // TOOD
+        return; // TODO
+    }
+    else {
+        // TODO - TEMPORARY
+        velocity = 0;
     }
     ROS_INFO("TODO - need to update based on frame.");
 }
 
-void BrushlessController::set_desired_throttle(double throttle) {
-    throttle = std::clamp(throttle, -1.0, 1.0);
-    std::vector<uint8_t> can_frame = {0};
-    ROS_INFO("TODO - need to convert from %f to rev/s and send torque %f.", throttle, torque);
-    can_manager.send_raw_data(can_frame);
+void BrushlessController::set_desired_throttle(float throttle) {
+    throttle = std::clamp(throttle, -1.0f, 1.0f);
+    std::vector<uint8_t> can_frame = createFloatMessage(throttle);
+    // TODO - need to convert from throttle to rev/s 
+    can_manager.send_raw_data("throttle_cmd", can_frame);
 }
 
-void BrushlessController::set_desired_position(double position) {
+void BrushlessController::set_desired_position(float position) {
     position = std::clamp(position, min_position, max_position);
-    std::vector<uint8_t> can_frame = {0};
-    ROS_INFO("TODO - need to send %f.", position);
-    // For moteus, it needs to send rev/s.
-    can_manager.send_raw_data(can_frame);
+    // TODO - need to convert to use revs 
+    std::vector<uint8_t> can_frame = createFloatMessage(position);
+    can_manager.send_raw_data("position_cmd", can_frame);
 }
 
-void BrushlessController::set_desired_velocity(double velocity) {
+void BrushlessController::set_desired_velocity(float velocity) {
     velocity = std::clamp(velocity, min_velocity, max_velocity);
-    std::vector<uint8_t> can_frame = {0};
-    ROS_INFO("TODO - need to send %f.", velocity);
-    // For moteus, it needs to send rev/s.
-    can_manager.send_raw_data(can_frame);
-}
-
-MotorType BrushlessController::get_type() {
-    return {};
+    // TODO - need to convert to use rev/s
+    std::vector<uint8_t> can_frame = createFloatMessage(velocity);
+    can_manager.send_raw_data("velocity_cmd", can_frame);
 }
