@@ -24,10 +24,12 @@ class GUIConsumer(JsonWebsocketConsumer):
         # split up message to get specific values
         # create an instance of message type Joy
         # assign the properties of message to 
+        axes = message['axes']
+        buttons = message['buttons']
         pub = rospy.Publisher('/joystick', Joy, queue_size=100)
         message = Joy()
-        # message.gamepad = float(fb)
-        # message.left_right = float(lr)
+        message.axes = axes
+        message.buttons = buttons
         pub.publish(message)
 
         twist_pub = ros.Publisher("/cmd_vel", Twist, queue_size=100)
