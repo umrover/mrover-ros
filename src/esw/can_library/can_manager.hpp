@@ -37,9 +37,9 @@ public:
                 n.getParam("can/messages", can_messages);
 
                 if (can_messages.getType() == XmlRpc::XmlRpcValue::TypeStruct) {
-                    for (auto it = can_messages.begin(); it != can_messages.end(); ++it) {
-                        if (it->second.getType() == XmlRpc::XmlRpcValue::TypeInt) {
-                            m_message_name_to_id[it->first] = static_cast<int>(it->second);
+                    for (auto [messageName, messageId]: can_messages) {
+                        if (messageId.getType() == XmlRpc::XmlRpcValue::TypeInt) {
+                            m_message_name_to_id[messageName] = static_cast<int>(messageId);
                         }
                     }
                 } else {
@@ -55,6 +55,7 @@ public:
 
     template<TriviallyCopyable T>
     void send_data(std::string const& messageName, T& data) {
+        // This is okay since "send_raw_data" makes a copy
         auto* address = reinterpret_cast<std::byte*>(&data);
         send_raw_data(messageName, {address, sizeof(T)});
     }
