@@ -1,16 +1,14 @@
+#include "can_manager.hpp"
+#include <motors_manager.hpp>
 #include <ros/ros.h>
 #include <std_srvs/SetBool.h>
-#include <motors_manager.hpp>
-#include "can_manager.hpp"
 
 std::unique_ptr<MotorsManager> SAManager;
-std::vector<std::string> SANames =
-        {"sa_x", "sa_y", "sa_z", "scoop", "drill"};
+std::vector<std::string> SANames{"sa_x", "sa_y", "sa_z", "scoop", "drill"};
 std::unique_ptr<CANManager> uv_bulb_can_manager;
 
 bool uvBulbCallback(std_srvs::SetBool::Request& req, std_srvs::SetBool::Response& res) {
-    std::vector<uint8_t> frame_data = createBoolMessage(req.data);
-    uv_bulb_can_manager->send_raw_data("uv_bulb_cmd", frame_data);
+    uv_bulb_can_manager->send_data("uv_bulb_cmd", req.data);
     res.success = true;
     res.message = "DONE";
     return true;
