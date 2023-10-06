@@ -1,3 +1,5 @@
+#pragma once
+
 #include <cstdint>
 #include <cstdio>
 #include <linux/can.h>
@@ -7,6 +9,8 @@
 #include <sys/types.h>
 #include <sys/ioctl.h>
 #include <vector>
+#include <iostream>
+#include <cstring>
 
 const size_t FRAME_SIZE = 64;
 
@@ -39,9 +43,9 @@ public:
 
 
 private:
-    uint8_t bus;
-    struct canfd_frame frame;
-    int s;
+    uint8_t bus{};
+    struct canfd_frame frame{};
+    int s{};
 
     // Helper function for debug
     void printFrame();

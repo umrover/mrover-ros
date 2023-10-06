@@ -1,7 +1,4 @@
 #include "CanNode.hpp"
-#include <cstdint>
-#include <iostream>
-#include <linux/can.h>
 
 CanNode::CanNode() {
     struct sockaddr_can addr{};
@@ -37,7 +34,8 @@ void CanNode::sendFrame(uint8_t bus, uint16_t id, size_t dataLength, std::vector
         frame.data[i] = data[i];
     }
 
-    write(s, &frame, sizeof(struct can_frame));
+    // write(s, &frame, sizeof(struct can_frame));
+    sendto(s, &frame, sizeof(struct can_frame), 0, nullptr, 0);
 }
 
 void CanNode::printFrame() {
