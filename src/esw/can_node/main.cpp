@@ -1,6 +1,6 @@
 #include "CanNode.hpp"
-#include <ros/ros.h>
 #include <mrover/CAN.h>
+#include <ros/ros.h>
 
 void handleMessage(const mrover::CAN::ConstPtr& msg);
 
@@ -18,10 +18,9 @@ int main(int argc, char** argv) {
 }
 
 void handleMessage(const mrover::CAN::ConstPtr& msg) {
-    uint8_t bus = msg->bus;
-    uint16_t id = msg->message_id;
-    size_t dataLength = (msg->data).size();
-    std::vector<uint8_t> data = msg->data;
+    node.set_bus(msg->bus);
+    node.set_frame_id(msg->message_id);
+    node.set_frame_data((msg->data).size(), msg->data);
 
-    node.sendFrame(bus, id, dataLength, data);
+    node.send_frame();
 }
