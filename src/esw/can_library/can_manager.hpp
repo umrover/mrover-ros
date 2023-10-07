@@ -31,25 +31,14 @@ public:
         std::string can_id_name = "can/" + name + "/id";
         assert(n.getParam(can_id_name, m_id));
 
-        try {
-            if (n.hasParam("can/messages")) {
-                XmlRpc::XmlRpcValue can_messages;
-                n.getParam("can/messages", can_messages);
-
-                if (can_messages.getType() == XmlRpc::XmlRpcValue::TypeStruct) {
-                    for (auto [messageName, messageId]: can_messages) {
-                        if (messageId.getType() == XmlRpc::XmlRpcValue::TypeInt) {
-                            m_message_name_to_id[messageName] = static_cast<int>(messageId);
-                        }
-                    }
-                } else {
-                    throw std::runtime_error("YAML parameter is not in the expected format (TypeStruct).");
-                }
-            } else {
-                throw std::runtime_error("Failed to retrieve the YAML parameter from the parameter server.");
+        assert(n.hasParam("can/messages"));
+        XmlRpc::XmlRpcValue can_messages;
+        n.getParam("can/messages", can_messages);
+        assert(can_messages.getType() == XmlRpc::XmlRpcValue::TypeStruct);
+        for (auto [messageName, messageId]: can_messages) {
+            if (messageId.getType() == XmlRpc::XmlRpcValue::TypeInt) {
+                m_message_name_to_id[messageName] = static_cast<int>(messageId);
             }
-        } catch (std::exception const& e) {
-            ROS_ERROR_STREAM(e.what());
         }
     }
 
