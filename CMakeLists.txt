@@ -54,6 +54,7 @@ set(MROVER_MESSAGE_FILES
         Waypoint.msg
         WaypointType.msg
         GPSPointList.msg
+        IK.msg
 )
 
 # Service files
