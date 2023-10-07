@@ -1,11 +1,12 @@
 #include "motors_manager.hpp"
 
-MotorsManager::MotorsManager(ros::NodeHandle& n, const std::string& groupName, const std::vector<std::string>& controllerNames) {
+MotorsManager::MotorsManager(ros::NodeHandle& nh, const std::string& groupName, const std::vector<std::string>& controllerNames) {
     motorGroupName = groupName;
     motorNames = controllerNames;
     // Load motor controllers configuration from the ROS parameter server
     XmlRpc::XmlRpcValue controllersRoot;
-    assert(n.getParam("motors/controllers", controllersRoot));
+    assert(nh.hasParam("motors/controllers"));
+    nh.getParam("motors/controllers", controllersRoot);
     assert(controllersRoot.getType() == XmlRpc::XmlRpcValue::TypeStruct);
     for (const std::string& name: controllerNames) {
         assert(controllersRoot[name].hasMember("type") &&
@@ -14,10 +15,10 @@ MotorsManager::MotorsManager(ros::NodeHandle& n, const std::string& groupName, c
         assert(type == "brushed" || type == "brushless");
 
         if (type == "brushed") {
-            auto temp = std::make_unique<BrushedController>(n, name);
+            auto temp = std::make_unique<BrushedController>(nh, name);
             controllers[name] = std::move(temp);
         } else if (type == "brushless") {
-            auto temp = std::make_unique<BrushlessController>(n, name);
+            auto temp = std::make_unique<BrushlessController>(nh, name);
             controllers[name] = std::move(temp);
         }
 
@@ -27,12 +28,12 @@ MotorsManager::MotorsManager(ros::NodeHandle& n, const std::string& groupName, c
     updateLastConnection();
 
     // Subscribe to the ROS topic for commands
-    ros::Subscriber moveThrottleSub = n.subscribe<mrover::Throttle>(groupName + "_throttle_cmd", 1, &MotorsManager::moveMotorsThrottle, this);
-    ros::Subscriber moveVelocitySub = n.subscribe<mrover::Velocity>(groupName + "_velocity_cmd", 1, &MotorsManager::moveMotorsVelocity, this);
-    ros::Subscriber movePositionSub = n.subscribe<mrover::Position>(groupName + "_position_cmd", 1, &MotorsManager::moveMotorsPosition, this);
+    ros::Subscriber moveThrottleSub = nh.subscribe<mrover::Throttle>(groupName + "_throttle_cmd", 1, &MotorsManager::moveMotorsThrottle, this);
+    ros::Subscriber moveVelocitySub = nh.subscribe<mrover::Velocity>(groupName + "_velocity_cmd", 1, &MotorsManager::moveMotorsVelocity, this);
+    ros::Subscriber movePositionSub = nh.subscribe<mrover::Position>(groupName + "_position_cmd", 1, &MotorsManager::moveMotorsPosition, this);
 
     // Create a 0.1 second heartbeat timer
-    ros::Timer heartbeatTimer = n.createTimer(ros::Duration(0.1), &MotorsManager::heartbeatCallback, this);
+    ros::Timer heartbeatTimer = nh.createTimer(ros::Duration(0.1), &MotorsManager::heartbeatCallback, this);
 }
 
 Controller& MotorsManager::get_controller(std::string const& name) {

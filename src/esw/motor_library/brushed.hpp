@@ -11,7 +11,7 @@ public:
     void set_desired_velocity(float velocity) override;
     void set_desired_position(float position) override;
 
-    BrushedController(ros::NodeHandle& n, const std::string& name) : Controller(n, name) {}
+    BrushedController(ros::NodeHandle& nh, const std::string& name) : Controller(nh, name) {}
     ~BrushedController() override = default;
 
 private:

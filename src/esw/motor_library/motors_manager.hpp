@@ -15,7 +15,7 @@ class MotorsManager {
 public:
     MotorsManager() = default;
 
-    MotorsManager(ros::NodeHandle& n, const std::string& groupName, const std::vector<std::string>& controllerNames);
+    MotorsManager(ros::NodeHandle& nh, const std::string& groupName, const std::vector<std::string>& controllerNames);
 
     Controller& get_controller(std::string const& name);
 

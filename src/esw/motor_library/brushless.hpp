@@ -54,7 +54,7 @@ public:
     void set_desired_velocity(float velocity) override; // in rev/s
     void set_desired_position(float position) override;
 
-    BrushlessController(ros::NodeHandle& n, const std::string& name) : Controller(n, name) {
+    BrushlessController(ros::NodeHandle& nh, const std::string& name) : Controller(nh, name) {
         torque = 0.3f;
     }
     ~BrushlessController() override = default;

@@ -33,7 +33,8 @@ int main(int argc, char** argv) {
 
     // Load motor multipliers from the ROS parameter server
     XmlRpc::XmlRpcValue driveControllers;
-    assert(nh.getParam("drive/controllers", driveControllers));
+    assert(nh.hasParam("drive/controllers"));
+    nh.getParam("drive/controllers", driveControllers);
     assert(driveControllers.getType() == XmlRpc::XmlRpcValue::TypeStruct);
     for (const auto& driveName: driveNames) {
         assert(driveControllers.hasMember(driveName));
@@ -46,20 +47,24 @@ int main(int argc, char** argv) {
     // Load rover dimensions and other parameters from the ROS parameter server
     float roverWidth = 0.0f;
     float roverLength = 0.0f;
-    assert(nh.getParam("rover/width", roverWidth));
-    assert(nh.getParam("rover/length", roverLength));
+    assert(nh.hasParam("rover/width"));
+    nh.getParam("rover/width", roverWidth);
+    assert(nh.hasParam("rover/length"));
+    nh.getParam("rover/length", roverLength);
     WHEEL_DISTANCE_INNER = roverWidth / 2.0f;
     WHEEL_DISTANCE_OUTER = std::sqrt(((roverWidth / 2.0f) * (roverWidth / 2.0f)) + ((roverLength / 2.0f) * (roverLength / 2.0f)));
 
     float ratioMotorToWheel = 0.0f;
-    assert(nh.getParam("wheel/gear_ratio", ratioMotorToWheel));
+    assert(nh.hasParam("wheel/gear_ratio"));
+    nh.getParam("wheel/gear_ratio", ratioMotorToWheel);
     // To convert m/s to rev/s, multiply by this constant. Divide by circumference, multiply by gear ratio.
     float wheelRadius = 0.0f;
     nh.getParam("wheel/radius", wheelRadius);
     WHEELS_M_S_TO_MOTOR_REV_S = (1.0f / (wheelRadius * 2.0f * static_cast<float>(std::numbers::pi))) * ratioMotorToWheel;
 
     float maxSpeedMPerS = 0.0f;
-    assert(nh.getParam("rover/max_speed", maxSpeedMPerS));
+    assert(nh.hasParam("rover/max_speed"));
+    nh.getParam("rover/max_speed", maxSpeedMPerS);
     assert(maxSpeedMPerS > 0.0f);
 
     MAX_MOTOR_SPEED_REV_S = maxSpeedMPerS * WHEELS_M_S_TO_MOTOR_REV_S;

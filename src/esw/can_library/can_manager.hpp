@@ -24,16 +24,22 @@ concept TriviallyCopyable = std::is_trivially_copyable_v<T>;
 
 class CANManager {
 public:
-    CANManager(ros::NodeHandle& n, const std::string& name) {
-        m_can_publisher = n.advertise<mrover::CAN>("can_requests", 1);
+    CANManager(ros::NodeHandle& nh, const std::string& name) {
+        m_can_publisher = nh.advertise<mrover::CAN>("can_requests", 1);
         std::string can_bus_name = "can/" + name + "/bus";
-        assert(n.getParam(can_bus_name, m_bus));
+        assert(nh.hasParam(can_bus_name));
+        int bus;
+        nh.getParam(can_bus_name, bus);
+        m_bus = static_cast<int>(bus);
         std::string can_id_name = "can/" + name + "/id";
-        assert(n.getParam(can_id_name, m_id));
+        assert(nh.hasParam(can_id_name));
+        int id;
+        nh.getParam(can_id_name, id);
+        m_id = static_cast<int>(id);
 
-        assert(n.hasParam("can/messages"));
         XmlRpc::XmlRpcValue can_messages;
-        n.getParam("can/messages", can_messages);
+        assert(nh.hasParam("can/messages"));
+        nh.getParam("can/messages", can_messages);
         assert(can_messages.getType() == XmlRpc::XmlRpcValue::TypeStruct);
         for (auto [messageName, messageId]: can_messages) {
             if (messageId.getType() == XmlRpc::XmlRpcValue::TypeInt) {
