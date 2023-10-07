@@ -187,15 +187,7 @@ if (${DEVICE} MATCHES "raspi4")
     # define an add and link macro
     # Put items here to build
     macro(add_and_link_macro)
-        add_cpp_node_macro(arm_bridge "src/esw/arm_bridge/*")
-        add_cpp_node_macro(cache_bridge "src/esw/cache_bridge/*")
-        add_cpp_node_macro(can_node "src/esw/can_node/*")
-        add_cpp_node_macro(drive_bridge "src/esw/drive_bridge/*")
-        add_cpp_node_macro(led_hw_bridge "src/esw/led_hw_bridge/*")
-        add_cpp_node_macro(mast_gimbal_bridge "src/esw/mast_gimbal_bridge/*")
-        add_cpp_node_macro(pdb_bridge "src/esw/pdb_bridge/*")
-        add_cpp_node_macro(sa_bridge "src/esw/sa_bridge/*")
-        add_cpp_node_macro(science_bridge "src/esw/science_bridge/*")
+        # add_cpp_node_macro(arm_bridge "src/esw/arm_bridge/*")
     endmacro()
 else ()
     # -=-=-=-=-
@@ -248,25 +240,7 @@ else ()
         add_cpp_library_macro(lie src/util/lie/*.cpp src/util/lie)
 
         add_cpp_interface_library_macro(moteus deps/moteus/lib/cpp/mjbots)
-        add_cpp_interface_library_macro(can_library src/esw/can_library)
-        add_cpp_library_macro(motor_library src/esw/motor_library/*.cpp src/esw/motor_library)
-        target_link_libraries(motor_library PRIVATE can_library)
-
-        macro(add_esw_bridge_cpp_node_macro name sources)
-            add_cpp_node_macro(${name} ${sources})
-            target_link_libraries(${name} PRIVATE can_library motor_library)
-        endmacro()
-
-        add_esw_bridge_cpp_node_macro(arm_bridge src/esw/arm_bridge/*.cpp)
-        add_esw_bridge_cpp_node_macro(cache_bridge src/esw/cache_bridge/*.cpp)
-        add_esw_bridge_cpp_node_macro(can_node src/esw/can_node/*.cpp)
-        add_esw_bridge_cpp_node_macro(drive_bridge src/esw/drive_bridge/*.cpp)
-        add_esw_bridge_cpp_node_macro(led_hw_bridge src/esw/led_hw_bridge/*.cpp)
-        add_esw_bridge_cpp_node_macro(mast_gimbal_bridge src/esw/mast_gimbal_bridge/*.cpp)
-        add_esw_bridge_cpp_node_macro(pdb_bridge src/esw/pdb_bridge/*.cpp)
-        add_esw_bridge_cpp_node_macro(sa_bridge src/esw/sa_bridge/*.cpp)
-        add_esw_bridge_cpp_node_macro(science_bridge src/esw/science_bridge/*.cpp)
-
+        
         add_gazebo_plugin_macro(differential_drive_plugin_6w src/gazebo/differential_drive_6w.cpp src)
 
         add_gazebo_plugin_macro(kinect_plugin src/gazebo/gazebo_ros_openni_kinect.cpp src/gazebo)
