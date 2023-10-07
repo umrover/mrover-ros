@@ -244,8 +244,7 @@ else ()
         add_gazebo_plugin_macro(differential_drive_plugin_6w src/simulator/differential_drive_6w.cpp src)
 
         add_gazebo_plugin_macro(kinect_plugin src/simulator/gazebo_ros_openni_kinect.cpp src/simulator)
-        target_link_libraries(kinect_plugin PRIVATE gazebo_ros_camera_utils DepthCameraPlugin Eigen3::Eigen)
-        set_target_properties(kinect_plugin PROPERTIES CXX_CLANG_TIDY "")
+        add_cpp_node_macro(arm_controller src/teleoperation/arm_controller/*.cpp)
 
         add_cpp_node_macro(sim_arm_bridge src/simulator/arm_bridge/*.cpp)
 
