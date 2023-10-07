@@ -240,6 +240,8 @@ else ()
         add_cpp_library_macro(lie src/util/lie/*.cpp src/util/lie)
 
         add_cpp_interface_library_macro(moteus deps/moteus/lib/cpp/mjbots)
+
+        add_cpp_nodelet_macro(spatial_mapper src/teleoperation/spatial_mapper/*.cpp src/teleoperation/spatial_mapper)
         
         add_gazebo_plugin_macro(differential_drive_plugin_6w src/gazebo/differential_drive_6w.cpp src)
 
