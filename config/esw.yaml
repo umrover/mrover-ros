@@ -13,35 +13,6 @@ imu_driver:
   baud: 115200
   frame_id: "imu_link"
 
-can:
-  messages:
-    throttle_cmd: 1
-    velocity_cmd: 2
-    position_cmd: 3
-    calibrate: 4
-    adjust: 5
-    enable_limit_switches: 6
-    enable_device: 7
-    heater_autoshutoff_state_cmd: 8
-    uv_bulb_cmd: 9
-    arm_laser_cmd: 10
-    led_cmd: 11
-    joint_data: 12
-    controller_data: 13
-    spectral_data_0: 14
-    spectral_data_1: 15
-    spectral_data_2: 16
-    thermistor_data_0: 17
-    thermistor_data_1: 18
-    thermistor_data_2: 19
-    heater_state_data: 20
-    pdb_0_data: 21
-    pdb_1_data: 22
-    pdb_2_data: 23
-    pdb_3_data: 24
-    pdb_4_data: 25
-    pdb_5_data: 26
-
 brushed_motors:
   controllers:
     - name: "cache"
@@ -386,68 +357,6 @@ rover:
 wheel:
   gear_ratio: 50.0
   radius: 0.13
-
-arm:
-  controllers:
-    joint_a:
-      multiplier: 1
-    joint_b:
-      multiplier: 1
-    joint_c:
-      multiplier: 1
-    joint_de:
-      multiplier: 1
-    finger:
-      multiplier: 1
-    gripper:
-      multiplier: 1
-
-drive:
-  controllers:
-    FrontLeft:
-      multiplier: 1
-    FrontRight:
-      multiplier: 1
-    MiddleLeft:
-      multiplier: 1
-    MiddleRight:
-      multiplier: 1
-    BackLeft:
-      multiplier: 1
-    BackRight:
-      multiplier: 1
-
-motors:
-  joint_a:
-    type: "brushless"
-  joint_b:
-    type: "brushed"
-  joint_c:
-    type: "brushed"
-  joint_de:
-    type: "brushed"
-  finger:
-    type: "brushed"
-  gripper:
-    type: "brushless"
-  FrontLeft:
-    type: "brushless"
-  FrontRight:
-    type: "brushless"
-  MiddleLeft:
-    type: "brushless"
-  MiddleRight:
-    type: "brushless"
-  BackLeft:
-    type: "brushless"
-  BackRight:
-    type: "brushless"
-  joint_c:
-    type: "brushless"
-  joint_d:
-    type: "brushless"
-  joint_e:
-    type: "brushless"
 
 brushless:
   using_pi3_hat: true
