@@ -50,9 +50,9 @@ namespace mrover {
          * Called when we receive a new image message from the camera.
          * Specifically this is one frame.
          *
-         * @param image
+         * @param imageMessage
          */
-        void imageCallback(sensor_msgs::ImageConstPtr const& image);
+        void imageCallback(sensor_msgs::ImageConstPtr const& imageMessage);
 
         /**
          *  Given an image, detect ArUco tags, and fill a vector full of output messages.
@@ -92,7 +92,7 @@ namespace mrover {
          * @param tags          Vector of tags
          * @return              Center tag
          */
-        [[nodiscard]] StarterProjectTag selectTag(std::vector<StarterProjectTag> const& tags);
+        [[nodiscard]] StarterProjectTag selectTag(cv::Mat const& image, std::vector<StarterProjectTag> const& tags);
     };
 
 } // namespace mrover
