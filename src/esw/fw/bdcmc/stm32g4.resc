@@ -1,0 +1,6 @@
+using sysbus
+
+mach create
+machine LoadPlatformDescription @stm32g4.repl
+sysbus LoadELF @Build/bdcmc.elf
+machine StartGdbServer 3333
