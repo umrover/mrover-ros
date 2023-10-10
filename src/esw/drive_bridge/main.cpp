@@ -75,9 +75,6 @@ int main(int argc, char** argv) {
     // Subscribe to the ROS topic for drive commands
     ros::Subscriber moveDriveSubscriber = nh.subscribe<geometry_msgs::Twist>("cmd_vel", 1, moveDrive);
 
-    ros::Timer jointDataTimer = nh.createTimer(ros::Duration(0.1), jointDataCallback);
-    ros::Timer controllerDataTimer = nh.createTimer(ros::Duration(0.1), controllerDataCallback);
-
     // Enter the ROS event loop
     ros::spin();
 
@@ -85,7 +82,6 @@ int main(int argc, char** argv) {
 }
 
 void moveDrive(const geometry_msgs::Twist::ConstPtr& msg) {
-
     // Process drive commands and set motor speeds
     auto forward = static_cast<float>(msg->linear.x);
     auto turn = static_cast<float>(msg->angular.z);
@@ -100,7 +96,7 @@ void moveDrive(const geometry_msgs::Twist::ConstPtr& msg) {
     float right_rev_outer = (forward + turn_difference_outer) * WHEELS_M_S_TO_MOTOR_REV_S;
 
     // If speed too fast, scale to max speed. Ignore inner for comparison since outer > inner, always.
-    float larger_abs_rev_s = std::max(abs(left_rev_outer), abs(right_rev_outer));
+    float larger_abs_rev_s = fmax(abs(left_rev_outer), abs(right_rev_outer));
     if (larger_abs_rev_s > MAX_MOTOR_SPEED_REV_S) {
         float change_ratio = MAX_MOTOR_SPEED_REV_S / larger_abs_rev_s;
         left_rev_inner *= change_ratio;
