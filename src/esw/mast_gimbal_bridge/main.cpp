@@ -3,8 +3,7 @@
 #include <mrover/Throttle.h>
 #include <mrover/Velocity.h>
 #include <mrover/Position.h>
-#include <std_msgs/Float32.h> 
-#include <chrono>
+#include <std_msgs/Float32.h> // To publish heartbeats
 
 void moveMastGimbalThrottle(const mrover::Throttle::ConstPtr& msg);
 void moveMastGimbalVelocity(const mrover::Velocity::ConstPtr& msg);
@@ -15,8 +14,6 @@ MotorsManager mastGimbalManager;
 std::vector<std::string> mastGimbalNames = 
     {"mast_gimbal_x", "mast_gimbal_y"};
 
-
-std::chrono::high_resolution_clock::time_point lastConnection = std::chrono::high_resolution_clock::now();
 std::unordered_map<std::string, float> motorMultipliers; // Store the multipliers for each motor
 
 int main(int argc, char** argv) {
@@ -49,15 +46,15 @@ void moveMastGimbalThrottle(const mrover::Throttle::ConstPtr& msg) {
         ROS_ERROR("Mast Gimbal request is invalid!");
         return;
     }
-
-    lastConnection = std::chrono::high_resolution_clock::now();
-    
     for (size_t i = 0; i < msg->names.size(); ++i) {
         std::string& name = msg->names[i];
         Controller& controller = *mastGimbalManager.get_controller(name);
         float throttle = std::clamp(msg->throttle[i], -1.0, 1.0);
         controller.set_desired_throttle(throttle);
     }
+
+    // Set the messageReceived flag to true when a message is received
+    messageReceived = true;
 }
 
 void moveMastGimbalVelocity(const mrover::Velocity::ConstPtr& msg) {
@@ -65,15 +62,15 @@ void moveMastGimbalVelocity(const mrover::Velocity::ConstPtr& msg) {
         ROS_ERROR("Mast Gimbal request is invalid!");
         return;
     }
-
-    lastConnection = std::chrono::high_resolution_clock::now();
-
     for (size_t i = 0; i < msg->names.size(); ++i) {
         std::string& name = msg->names[i];
         Controller& controller = *mastGimbalManager.get_controller(name);
         float velocity = std::clamp(msg->velocity[i], -1.0, 1.0);  // TODO
         controller.set_desired_throttle(velocity);
     }
+
+    // Set the messageReceived flag to true when a message is received
+    messageReceived = true;
 }
 
 void moveMastGimbalPositionSubscriber(const mrover::Position::ConstPtr& msg) {
@@ -81,9 +78,6 @@ void moveMastGimbalPositionSubscriber(const mrover::Position::ConstPtr& msg) {
         ROS_ERROR("Mast Gimbal request is invalid!");
         return;
     }
-
-    lastConnection = std::chrono::high_resolution_clock::now();
-
     for (size_t i = 0; i < msg->names.size(); ++i) {
         std::string& name = msg->names[i];
         Controller& controller = *mastGimbalManager.get_controller(name);
@@ -93,15 +87,20 @@ void moveMastGimbalPositionSubscriber(const mrover::Position::ConstPtr& msg) {
 
         controller.set_desired_position(position);
     }
+
+    // Set the messageReceived flag to true when a message is received
+    messageReceived = true;
 }
 
 void heartbeatCallback(const ros::TimerEvent&) {
     // If no message has been received within the last 0.1 seconds, set desired speed to 0 for all motors
-    auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::high_resolution_clock::now() - lastConnection);
-    if (duration.count() < 100) {
+    if (!messageReceived) {
         for (const auto& mastGimbalName : mastGimbalNames) {
             Controller& controller = *mastGimbalManager.get_controller(mastGimbalName);
             controller.set_desired_throttle(0.0);
         }
     }
+
+    // Reset the messageReceived flag
+    messageReceived = false;
 }
