@@ -4,7 +4,7 @@
 
 #include <motors_manager.hpp>
 
-#include <mrover/ControllerGroupState.h>
+#include <mrover/ControllerState.h>
 #include "can_manager.hpp"
 
 void moveDrive(const geometry_msgs::Twist::ConstPtr& msg);
@@ -70,7 +70,7 @@ int main(int argc, char** argv) {
     MAX_MOTOR_SPEED_REV_S = maxSpeedMPerS * WHEELS_M_S_TO_MOTOR_REV_S;
 
     jointDataPublisher = nh.advertise<sensor_msgs::JointState>("drive_joint_data", 1);
-    controllerDataPublisher = nh.advertise<mrover::ControllerGroupState>("drive_controller_data", 1);
+    controllerDataPublisher = nh.advertise<mrover::ControllerState>("drive_controller_data", 1);
 
     // Subscribe to the ROS topic for drive commands
     ros::Subscriber moveDriveSubscriber = nh.subscribe<geometry_msgs::Twist>("cmd_vel", 1, moveDrive);
@@ -142,6 +142,6 @@ void jointDataCallback(const ros::TimerEvent&) {
 
 void controllerDataCallback(const ros::TimerEvent&) {
     //TODO
-    mrover::ControllerGroupState controllerData;
+    mrover::ControllerState controllerData;
     controllerDataPublisher.publish(controllerData);
 }

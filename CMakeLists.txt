@@ -30,7 +30,6 @@ set(MROVER_MESSAGE_FILES
         CameraCmd.msg
         CAN.msg
         Chassis.msg
-        ControllerGroupState.msg
         ControllerState.msg
         Course.msg
         EnableAuton.msg
