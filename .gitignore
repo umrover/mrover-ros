@@ -20,6 +20,7 @@ node_modules/
 keys.json*
 yarn.lock*
 yarn-error.log*
+bun.lock*
 
 # Bag Files
 /bags/

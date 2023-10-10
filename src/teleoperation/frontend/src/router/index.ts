@@ -1,15 +1,17 @@
-import { createRouter, createWebHistory } from 'vue-router'
-import AutonomyView from '../views/AutonomyView.vue'
+import { createWebHistory, createRouter } from "vue-router";
+import Menu from "../components/Menu.vue";
+
+const routes = [
+  {
+    path: "/",
+    name: "Menu",
+    component: Menu,
+  },
+];
 
 const router = createRouter({
-  history: createWebHistory(import.meta.env.BASE_URL),
-  routes: [
-    {
-      path: '/autonomy',
-      name: 'autonomy',
-      component: AutonomyView
-    }
-  ]
-})
+  history: createWebHistory(),
+  routes,
+});
 
-export default router
+export default router;

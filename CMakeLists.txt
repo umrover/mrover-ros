@@ -203,9 +203,9 @@ else ()
     )
 
     # append subdirectories
-    list(APPEND MROVER_CMAKE_INCLUDES
-            starter_project/autonomy/AutonomyStarterProject.cmake
-    )
+    # list(APPEND MROVER_CMAKE_INCLUDES
+    #         starter_project/autonomy/AutonomyStarterProject.cmake
+    # )
 
 
     # -=-=-=-=-
@@ -233,9 +233,9 @@ else ()
     # define an add and link macro
     # Put items here to build
     macro(add_and_link_macro)
-        add_cpp_nodelet_macro(tag_detector_nodelet src/perception/tag_detector/*.cpp src/perception/tag_detector)
-        target_precompile_headers(tag_detector_nodelet PRIVATE src/perception/tag_detector/pch.hpp)
-        target_link_libraries(tag_detector_nodelet PRIVATE opencv_core opencv_objdetect opencv_aruco opencv_imgproc lie)
+        # add_cpp_nodelet_macro(tag_detector_nodelet src/perception/tag_detector/*.cpp src/perception/tag_detector)
+        # target_precompile_headers(tag_detector_nodelet PRIVATE src/perception/tag_detector/pch.hpp)
+        # target_link_libraries(tag_detector_nodelet PRIVATE opencv_core opencv_objdetect opencv_aruco opencv_imgproc lie)
 
         add_cpp_library_macro(lie src/util/lie/*.cpp src/util/lie)
 
