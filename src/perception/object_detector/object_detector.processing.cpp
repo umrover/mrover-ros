@@ -1,5 +1,9 @@
 #include "object_detector.hpp"
+#include <opencv2/core/cvstd.hpp>
+#include <opencv2/core/mat.hpp>
 #include <opencv2/dnn/dnn.hpp>
+#include <string>
+#include <vector>
 
 namespace mrover {
 
@@ -10,11 +14,18 @@ namespace mrover {
 
         cv::Mat imageView{static_cast<int>(msg->width), static_cast<int>(msg->height), CV_8UC3, const_cast<uint8_t*>(msg->data.data())};
 
-
         cv::Mat imageBlob = cv::dnn::blobFromImage(imageView);
+        //Set the input data for the model
+        mNet.setInput(imageBlob);
 
-        mNet.forward(imageBlob);
+        //Run the network and get the results
+        cv::Mat results = mNet.forward();
 
+        ROS_INFO("%d cols", results.cols);
+        ROS_INFO("%d rows", results.rows);
+
+
+        //Look at yolov8 documentation for the output matrix
 
         /*
          * TODO(percep/obj-detector):
