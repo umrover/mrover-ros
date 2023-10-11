@@ -1,6 +1,6 @@
 #include "long_range_tag_detector.hpp"
 
-#include "../point.hpp" //Might not actually need?'
+#include "../../point.hpp" //Might not actually need?'
 #include "mrover/LongRangeTags.h"
 
 #include <image_transport/image_transport.h>

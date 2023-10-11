@@ -1,6 +1,6 @@
 #include "tag_detector.hpp"
 
-#include "../point.hpp"
+#include "../../point.hpp"
 
 namespace mrover {
 

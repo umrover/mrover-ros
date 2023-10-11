@@ -235,15 +235,16 @@ else ()
     # define an add and link macro
     # Put items here to build
     macro(add_and_link_macro)
-        add_cpp_nodelet_macro(tag_detector_nodelet src/perception/tag_detector/*.cpp src/perception/tag_detector)
-        target_precompile_headers(tag_detector_nodelet PRIVATE src/perception/tag_detector/pch.hpp)
+        # add_cpp_nodelet_macro(usb_camera_nodelet src/perception/long_range_cam/*.cpp src/perception/long_range_cam) 
+
+        add_cpp_nodelet_macro(tag_detector_nodelet src/perception/tag_detector/zed/*.cpp src/perception/tag_detector/zed)
+        target_precompile_headers(tag_detector_nodelet PRIVATE src/perception/tag_detector/zed/pch.hpp)
         target_link_libraries(tag_detector_nodelet PRIVATE opencv_core opencv_objdetect opencv_aruco opencv_imgproc lie)
 
-        add_cpp_nodelet_macro(long_range_tag_detector_nodelet src/perception/long_range_cam/*.cpp src/perception/long_range_cam)
-        target_precompile_headers(long_range_tag_detector_nodelet PRIVATE src/perception/long_range_cam/pch.hpp)
-        target_link_libraries(long_range_tag_detector_nodelet PRIVATE ${OpenCV_LIBRARIES} lie)
+        # add_cpp_nodelet_macro(long_range_tag_detector_nodelet src/perception/long_range_cam/*.cpp src/perception/long_range_cam)
+        # target_precompile_headers(long_range_tag_detector_nodelet PRIVATE src/perception/long_range_cam/pch.hpp)
+        # target_link_libraries(long_range_tag_detector_nodelet PRIVATE ${OpenCV_LIBRARIES} lie)
 
-        add_cpp_node_macro(brushed_motors "src/esw/brushed_motors/*.cpp")
         add_cpp_library_macro(lie src/util/lie/*.cpp src/util/lie)
 
         add_cpp_interface_library_macro(moteus deps/moteus/lib/cpp/mjbots)
