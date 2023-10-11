@@ -240,6 +240,10 @@ else ()
         target_precompile_headers(tag_detector_nodelet PRIVATE src/perception/tag_detector/pch.hpp)
         target_link_libraries(tag_detector_nodelet PRIVATE ${OpenCV_LIBRARIES} lie)
 
+        add_cpp_nodelet_macro(long_range_tag_detector_nodelet src/perception/long_range_cam/*.cpp src/perception/long_range_cam)
+        target_precompile_headers(long_range_tag_detector_nodelet PRIVATE src/perception/long_range_cam/pch.hpp)
+        target_link_libraries(long_range_tag_detector_nodelet PRIVATE ${OpenCV_LIBRARIES} lie)
+
         add_cpp_node_macro(brushed_motors "src/esw/brushed_motors/*.cpp")
 
         add_cpp_library_macro(lie "src/util/lie/*.cpp" "src/util/lie")
