@@ -57,6 +57,11 @@ const osThreadAttr_t defaultTask_attributes = {
   .stack_size = 128 * 4
 };
 /* USER CODE BEGIN PV */
+ADCSensor* adc;
+DiagCurrentSensor* current_sensors[NUM_CURRENT_SENSORS];
+DiagTempSensor* temp_sensors[NUM_TEMP_SENSORS];
+
+osMutexId_t can_mutex;
 
 /* USER CODE END PV */
 
@@ -68,6 +73,7 @@ static void MX_FDCAN1_Init(void);
 void StartDefaultTask(void *argument);
 
 /* USER CODE BEGIN PFP */
+void SendCurrentTemperature(void *argument);
 
 /* USER CODE END PFP */
 
@@ -113,18 +119,16 @@ int main(void)
   // Channels 0-4: CURR 0-4
   // Channels 5-9: TEMP 0-4
 
-  ADCSensor * test_ADC = new_adc_sensor(&hadc1, NUM_CHANNELS);
-  DiagCurrentSensor * current_sensors[NUM_CURRENT_SENSORS];
-  DiagTempSensor * temp_sensors[NUM_TEMP_SENSORS];
+  adc = new_adc_sensor(&hadc1, NUM_CHANNELS);
 
   // Create current sensor objects (test_ADC channels 0-4)
   for(int i = 0; i < NUM_CURRENT_SENSORS; ++i) {
-	  current_sensors[i] = new_diag_current_sensor(test_ADC, i);
+	  current_sensors[i] = new_diag_current_sensor(adc, i);
   }
 
   // Create temp sensor objects (test_ADC channels 5-9)
   for(int i = 0; i < NUM_TEMP_SENSORS; ++i) {
-	  temp_sensors[i] = new_diag_temp_sensor(test_ADC, i + 5);
+	  temp_sensors[i] = new_diag_temp_sensor(adc, i + 5);
   }
 
   /* USER CODE END 2 */
@@ -133,11 +137,10 @@ int main(void)
   osKernelInitialize();
 
   /* USER CODE BEGIN RTOS_MUTEX */
-  /* add mutexes, ... */
+  can_mutex = osMutexNew(NULL); // default attr. for now
   /* USER CODE END RTOS_MUTEX */
 
   /* USER CODE BEGIN RTOS_SEMAPHORES */
-  /* add semaphores, ... */
   /* USER CODE END RTOS_SEMAPHORES */
 
   /* USER CODE BEGIN RTOS_TIMERS */
@@ -150,7 +153,7 @@ int main(void)
 
   /* Create the thread(s) */
   /* creation of defaultTask */
-  defaultTaskHandle = osThreadNew(StartDefaultTask, NULL, &defaultTask_attributes);
+  defaultTaskHandle = osThreadNew(SendCurrentTemperature, NULL, &defaultTask_attributes);
 
   /* USER CODE BEGIN RTOS_THREADS */
   /* add threads, ... */
@@ -170,24 +173,6 @@ int main(void)
     /* USER CODE END WHILE */
 
     /* USER CODE BEGIN 3 */
-
-	  // Update ADC values every loop
-	  update_adc_sensor_values(test_ADC);
-
-	  // TODO: Maybe we can make this into interrupts, update every interval of X
-	  // Rather than doing polling like this (but this is okay for testing)
-	  for(int i = 0; i < NUM_CURRENT_SENSORS; ++i) {
-		  update_diag_current_sensor_val(current_sensors[i]);
-		  get_diag_current_sensor_val(current_sensors[i]);
-	  }
-
-	  for(int i = 0; i < NUM_TEMP_SENSORS; ++i) {
-		  update_diag_temp_sensor_val(temp_sensors[i]);
-		  get_diag_temp_sensor_val(temp_sensors[i]);
-	  }
-
-
-
   }
   /* USER CODE END 3 */
 }
@@ -476,6 +461,39 @@ static void MX_GPIO_Init(void)
 }
 
 /* USER CODE BEGIN 4 */
+// TODO: remove
+void fakeCANSend(float* msg) {
+	return;
+}
+
+void SendCurrentTemperature(void* argument) {
+	uint32_t tick = osKernelGetTickCount();
+
+	for(;;) {
+		tick += osKernelGetTickFreq(); // 1 Hz
+		update_adc_sensor_values(adc);
+
+		float fake_can_msg[NUM_CURRENT_SENSORS+NUM_TEMP_SENSORS]; // TODO: replace with real CAN frame
+
+		/* update current and temperature values + build CAN msg */
+		for(int i = 0; i < NUM_CURRENT_SENSORS; ++i) {
+		  update_diag_current_sensor_val(current_sensors[i]);
+		  fake_can_msg[i] = get_diag_current_sensor_val(current_sensors[i]);
+		}
+
+		for(int i = 0; i < NUM_TEMP_SENSORS; ++i) {
+		  update_diag_temp_sensor_val(temp_sensors[i]);
+		  fake_can_msg[NUM_CURRENT_SENSORS + i] = get_diag_temp_sensor_val(temp_sensors[i]);
+		}
+
+		/* send current and temperature over CAN */
+		osMutexAcquire(can_mutex, osWaitForever);
+		fakeCANSend(fake_can_msg); // TODO: replace with real CAN function
+		osMutexRelease(can_mutex);
+
+		osDelayUntil(tick);
+	}
+}
 
 /* USER CODE END 4 */
 
