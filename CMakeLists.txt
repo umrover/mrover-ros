@@ -241,11 +241,13 @@ else ()
 
         add_cpp_interface_library_macro(moteus deps/moteus/lib/cpp/mjbots)
         
-        add_gazebo_plugin_macro(differential_drive_plugin_6w src/gazebo/differential_drive_6w.cpp src)
+        add_gazebo_plugin_macro(differential_drive_plugin_6w src/simulator/differential_drive_6w.cpp src)
 
-        add_gazebo_plugin_macro(kinect_plugin src/gazebo/gazebo_ros_openni_kinect.cpp src/gazebo)
+        add_gazebo_plugin_macro(kinect_plugin src/simulator/gazebo_ros_openni_kinect.cpp src/simulator)
         target_link_libraries(kinect_plugin PRIVATE gazebo_ros_camera_utils DepthCameraPlugin Eigen3::Eigen)
         set_target_properties(kinect_plugin PROPERTIES CXX_CLANG_TIDY "")
+
+        add_cpp_node_macro(sim_arm_bridge src/simulator/arm_bridge/*.cpp)
 
         if (ZED_FOUND)
             add_cpp_nodelet_macro(zed_nodelet src/perception/zed_wrapper/*.c* src/perception/zed_wrapper)
