@@ -6,9 +6,10 @@ namespace mrover {
         mNh = getMTNodeHandle();
         mPnh = getMTPrivateNodeHandle();
 
+        //read ONNX file into this mNet, YOLOV8, second smallest one
         // Note(quintin): I downloaded this pt (PyTorch) model file from: https://github.com/ultralytics/assets/releases
         // TODO(percep/obj-detectr): make this configurable
-        mNet = cv::dnn::readNetFromTorch("/home/quintin/Downloads/yolov8n.pt");
+        mNet = cv::dnn::readNetFromTorch("/home/marshallvielmetti/Downloads/yolov8s.pt");
 
         mImgSub = mNh.subscribe("image", 1, &ObjectDetectorNodelet::imageCallback, this);
     }

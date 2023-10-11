@@ -1,4 +1,5 @@
 #include "object_detector.hpp"
+#include <opencv2/dnn/dnn.hpp>
 
 namespace mrover {
 
@@ -8,6 +9,12 @@ namespace mrover {
         assert(msg->width > 0);
 
         cv::Mat imageView{static_cast<int>(msg->width), static_cast<int>(msg->height), CV_8UC3, const_cast<uint8_t*>(msg->data.data())};
+
+
+        cv::Mat imageBlob = cv::dnn::blobFromImage(imageView);
+
+        mNet.forward(imageBlob);
+
 
         /*
          * TODO(percep/obj-detector):
