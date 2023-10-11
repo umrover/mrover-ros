@@ -28,12 +28,17 @@
 <script lang="ts">
 import MenuButton from "./MenuButton.vue";
 
-import { defineComponent } from 'vue'
+import { defineComponent, inject } from 'vue'
 
 export default defineComponent({
   name: "MainMenu",
   components: {
     MenuButton,
+  },
+  created() {
+    const ws:any = inject<WebSocket>('webSocketService');
+
+    ws.send('Hello, WebSocket!');
   },
 
   data() {
