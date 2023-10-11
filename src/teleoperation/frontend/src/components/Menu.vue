@@ -37,16 +37,7 @@ export default defineComponent({
   },
 
   data() {
-    return {
-      socket: new WebSocket(`ws://localhost:8000/ws/gui`)
-    };
-  },
-
-  created: function() {
-    this.socket.onopen = () => {
-      console.log("opening websocket");
-      this.socket.send(JSON.stringify({type: 'hello1!!!!'}));
-    }
+    return {};
   }
 
 });
