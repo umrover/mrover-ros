@@ -32,7 +32,6 @@
  */
 
 #include "differential_drive_6w.hpp"
-#include "mrover/MotorsStatus.h"
 
 #include <algorithm>
 
@@ -44,6 +43,8 @@
 #include <ros/ros.h>
 #include <tf/transform_broadcaster.h>
 #include <tf/transform_listener.h>
+
+#include <mrover/MotorsStatus.h>
 
 namespace gazebo {
 

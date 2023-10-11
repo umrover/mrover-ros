@@ -12,13 +12,12 @@
 #include <sl/Camera.hpp>
 #include <thrust/device_vector.h>
 
-#include <image_transport/image_transport.h>
-#include <image_transport/publisher.h>
 #include <nodelet/loader.h>
 #include <nodelet/nodelet.h>
 #include <ros/init.h>
 #include <ros/node_handle.h>
 #include <sensor_msgs/CameraInfo.h>
+#include <sensor_msgs/Image.h>
 #include <sensor_msgs/Imu.h>
 #include <sensor_msgs/MagneticField.h>
 #include <sensor_msgs/PointCloud2.h>
