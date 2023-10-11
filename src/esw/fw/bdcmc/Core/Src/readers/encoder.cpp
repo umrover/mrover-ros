@@ -14,6 +14,7 @@ extern I2C_HandleTypeDef* absolute_encoder_i2c;
 namespace mrover {
 
     void EncoderReader::init(TIM_HandleTypeDef* relative_encoder_timer, I2C_HandleTypeDef* absolute_encoder_i2c) {
+
         m_relative_encoder_timer = relative_encoder_timer;
         m_absolute_encoder_i2c = absolute_encoder_i2c;
 
