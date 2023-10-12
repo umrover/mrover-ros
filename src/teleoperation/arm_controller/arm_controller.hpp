@@ -2,6 +2,6 @@
 
 namespace mrover {
 
-    void ikCallback(IK const& ik);
+    void ik_callback(IK const& ik);
 
 } // namespace mrover
