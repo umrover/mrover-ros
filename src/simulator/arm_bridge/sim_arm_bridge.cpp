@@ -19,7 +19,7 @@ namespace mrover {
     uint32_t seq = 0;
     sensor_msgs::JointState joint_state;
 
-    int init(int argc, char* argv[]) {
+    int run(int argc, char* argv[]) {
         ros::init(argc, argv, "sim_arm_bridge");
         ros::NodeHandle nh;
 
@@ -42,5 +42,5 @@ namespace mrover {
 } // namespace mrover
 
 int main(int argc, char* argv[]) {
-    return mrover::init(argc, argv);
+    return mrover::run(argc, argv);
 }

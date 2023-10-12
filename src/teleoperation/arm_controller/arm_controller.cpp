@@ -23,7 +23,7 @@ namespace mrover {
     IK ik_target;
     Position positions;
 
-    int init(int argc, char** argv) {
+    int run(int argc, char** argv) {
         ros::init(argc, argv, "arm_controller");
         ros::NodeHandle nh;
 
@@ -38,31 +38,21 @@ namespace mrover {
 
         ros::Rate rate{frequency};
         while (ros::ok()) {
-            auto const [q1, q2, q3] = solve(ik_target.pose.position.x, ik_target.pose.position.z, 0);
-            if (std::isfinite(q1) && std::isfinite(q2) && std::isfinite(q3)) {
-                positions.positions[0] = static_cast<float>(ik_target.pose.position.y + LINK_CHASSIS_ARM / 2);
-                positions.positions[1] = static_cast<float>(q1);
-                positions.positions[2] = static_cast<float>(q2);
-                positions.positions[3] = static_cast<float>(q3);
-                position_publisher.publish(positions);
-            }
+            // 1. Check out: https://hive.blog/hive-196387/@juecoree/forward-and-reverse-kinematics-for-3r-planar-manipulator
+            // 2. Create a function that takes in "ik_target" and solves for the linear joint angle (at index 0) and
+            //    the angular joint angles (at indices 1, 2, and 3)
+            // 3. Note that linear joint angle is the y position of the end effector (very simple)
+            // 4. Note that angular will be more difficult, check the posed URL in 1 for help
+            // 5. Fill in values from this function you wrote into "positions" variable
+            // 6. Publish these positions. If in the sim, the sim arm bridge will subscribe to this.
+            //    If on the real rover the arm bridge will subscribe to this.
+            //    On the real rover it is ESW's job to achieve these desired joint angles.
 
             rate.sleep();
             ros::spinOnce();
         }
 
         return EXIT_SUCCESS;
-    }
-
-    std::array<double, 3> solve(double x, double z, double theta) {
-        // See: https://hive.blog/hive-196387/@juecoree/forward-and-reverse-kinematics-for-3r-planar-manipulator
-        double norm_sq = x * x + z * z;
-        double alpha = std::acos((norm_sq - LINK_AB * LINK_AB - LINK_BC * LINK_BC) / (2 * LINK_AB * LINK_BC));
-        double beta = std::asin(LINK_BC * std::sin(alpha) / std::sqrt(norm_sq));
-        double q1 = std::atan2(z, x) - beta;
-        double q2 = alpha;
-        double q3 = theta - q1 - q2;
-        return {q1, q2, q3};
     }
 
     void ik_callback(IK const& new_ik_target) {
@@ -72,5 +62,5 @@ namespace mrover {
 } // namespace mrover
 
 int main(int argc, char** argv) {
-    return mrover::init(argc, argv);
+    return mrover::run(argc, argv);
 }
