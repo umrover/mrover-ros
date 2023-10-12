@@ -1,4 +1,5 @@
 #include "object_detector.hpp"
+#include "mrover/Object.h"
 #include <opencv2/core.hpp>
 #include <opencv2/core/cvstd.hpp>
 #include <opencv2/core/hal/interface.h>
@@ -7,6 +8,7 @@
 #include <opencv2/dnn/dnn.hpp>
 #include <string>
 #include <vector>
+
 
 namespace mrover {
 
@@ -130,6 +132,15 @@ namespace mrover {
         cv::Point classID;                                                 //A place for the desired class id to go
         double classScore;                                                 //The corresponding score
         cv::minMaxLoc(classScore, nullptr, &classScore, nullptr, &classID);
+
+        Object msgData;
+        msgData.object_type = classes[classID.x];
+        msgData.detection_confidence = classConfidence;
+        msgData.heading = ; //I'm not sure what heading is
+        msgData.xBoxPixel = box.x;
+        msgData.yBoxPixel = box.y;
+        msgData.width = box.width;
+        msgData.height = box.height;
 
 
         //Look at yolov8 documentation for the output matrix
