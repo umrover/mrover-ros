@@ -2,8 +2,8 @@
 
 namespace mrover {
 
-    void ik_callback(IK const& newIkTarget);
+    void ik_callback(IK const& new_ik_target);
 
-    std::array<double, 3> solve(Eigen::Vector2d const& target);
+    std::array<double, 3> solve(double x, double z, double theta);
 
 } // namespace mrover

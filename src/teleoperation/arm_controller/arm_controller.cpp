@@ -4,8 +4,11 @@ namespace mrover {
 
     // Constants
 
-    constexpr double LINK_A = 22.8544;
-    constexpr double LINK_B = 19.5129;
+    // From: arm.urdf.xacro
+    constexpr double LINK_CHASSIS_ARM = 20;
+    constexpr double LINK_AB = 22.8544;
+    constexpr double LINK_BC = 19.5129;
+    constexpr double LINK_CD = 5.59352;
 
     // Subscribers
 
@@ -17,12 +20,15 @@ namespace mrover {
 
     // Private state
 
-    IK ikTarget;
+    IK ik_target;
     Position positions;
 
     int init(int argc, char** argv) {
         ros::init(argc, argv, "arm_controller");
         ros::NodeHandle nh;
+
+        double frequency{};
+        nh.param<double>("/frequency", frequency, 100.0);
 
         ik_subscriber = nh.subscribe("arm_ik", 1, ik_callback);
         position_publisher = nh.advertise<Position>("arm_position_cmd", 1);
@@ -30,11 +36,11 @@ namespace mrover {
         positions.names = {"base_link_joint", "a_joint", "b_joint", "c_joint", "d_joint"};
         positions.positions.resize(positions.names.size(), 0.f);
 
-        ros::Rate rate{100};
+        ros::Rate rate{frequency};
         while (ros::ok()) {
-            auto const [q1, q2, q3] = solve({ikTarget.pose.position.x, ikTarget.pose.position.z});
+            auto const [q1, q2, q3] = solve(ik_target.pose.position.x, ik_target.pose.position.z, 0);
             if (std::isfinite(q1) && std::isfinite(q2) && std::isfinite(q3)) {
-                positions.positions[0] = static_cast<float>(ikTarget.pose.position.y) + 10;
+                positions.positions[0] = static_cast<float>(ik_target.pose.position.y + LINK_CHASSIS_ARM / 2);
                 positions.positions[1] = static_cast<float>(q1);
                 positions.positions[2] = static_cast<float>(q2);
                 positions.positions[3] = static_cast<float>(q3);
@@ -48,15 +54,19 @@ namespace mrover {
         return EXIT_SUCCESS;
     }
 
-    std::array<double, 3> solve(Eigen::Vector2d const& target) {
-        double q2 = -std::acos((target.squaredNorm() - LINK_A * LINK_A - LINK_B * LINK_B) / (2 * LINK_A * LINK_B));
-        double q1 = std::atan2(target.y(), target.x()) + std::atan2(LINK_B * std::sin(q2), LINK_A + LINK_B * std::cos(q2));
-        double q3 = std::numbers::pi / 8 - q1 - q2;
-        return {q1, -q2, q3};
+    std::array<double, 3> solve(double x, double z, double theta) {
+        // See: https://hive.blog/hive-196387/@juecoree/forward-and-reverse-kinematics-for-3r-planar-manipulator
+        double norm_sq = x * x + z * z;
+        double alpha = std::acos((norm_sq - LINK_AB * LINK_AB - LINK_BC * LINK_BC) / (2 * LINK_AB * LINK_BC));
+        double beta = std::asin(LINK_BC * std::sin(alpha) / std::sqrt(norm_sq));
+        double q1 = std::atan2(z, x) - beta;
+        double q2 = alpha;
+        double q3 = theta - q1 - q2;
+        return {q1, q2, q3};
     }
 
-    void ik_callback(IK const& newIkTarget) {
-        ikTarget = newIkTarget;
+    void ik_callback(IK const& new_ik_target) {
+        ik_target = new_ik_target;
     }
 
 } // namespace mrover
