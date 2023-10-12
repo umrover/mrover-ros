@@ -4,31 +4,27 @@
 #include <ros/node_handle.h>
 #include <sensor_msgs/JointState.h>
 
-#include <boost/range/combine.hpp>
+ros::Subscriber subscriber;
 
-ros::Subscriber sub;
+ros::Publisher jointStatePublisher;
 
-ros::Publisher jointStatePub;
+constexpr std::string_view ARM_THROTTLE_CMD_TOPIC = "arm_throttle_cmd";
+constexpr std::string_view ARM_VELOCITY_CMD_TOPIC = "arm_velocity_cmd";
+constexpr std::string_view ARM_POSITION_CMD_TOPIC = "arm_position_cmd";
 
 int main(int argc, char* argv[]) {
     ros::init(argc, argv, "sim_arm_bridge");
     ros::NodeHandle nh;
 
-    sub = nh.subscribe("arm_position", 1, positionCallback);
+    subscriber = nh.subscribe(std::string{ARM_POSITION_CMD_TOPIC}, 1, positionCallback);
 
     ros::spin();
     return EXIT_SUCCESS;
 }
 
 void positionCallback(mrover::Position const& positions) {
-    std::string_view name;
-    float position;
     sensor_msgs::JointState jointState;
-    for (auto const& tuple: boost::combine(positions.names, positions.positions)) {
-        boost::tie(name, position) = tuple;
-
-        jointState.name.emplace_back(name);
-        jointState.position.emplace_back(position);
-    }
-    jointStatePub.publish(jointState);
+    jointState.name = positions.names;
+    jointState.position.assign(positions.positions.begin(), positions.positions.end());
+    jointStatePublisher.publish(jointState);
 }
