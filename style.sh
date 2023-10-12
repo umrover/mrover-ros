@@ -51,6 +51,7 @@ readonly MYPY_PATH=$(find_executable mypy 1.5.1)
 
 echo "Style checking C++ ..."
 readonly FOLDERS=(
+  ./src/teleoperation/arm_controller
   ./src/perception
   ./src/simulator
   ./src/util

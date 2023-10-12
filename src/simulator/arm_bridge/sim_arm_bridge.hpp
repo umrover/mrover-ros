@@ -2,4 +2,7 @@
 
 #include <mrover/Position.h>
 
-void positionCallback(mrover::Position const& positions);
+namespace mrover {
+
+    void positionCallback(Position const& positions);
+}
