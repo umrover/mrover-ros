@@ -1,6 +1,9 @@
 #include "smbus.h"	// for SMBus
 // datasheet for spectral sensor: https://www.mouser.com/datasheet/2/588/AS7262_DS000486_2-00-1082195.pdf
 
+#define SPECTRAL_DEVICES 3
+#define SPECTRAL_CHANNELS 6
+
 // AS7262 Spectral sensor
 typedef struct
 {
@@ -38,3 +41,12 @@ void spectral_read(Spectral* spectral){
 	
 }
 
+
+// REQUIRES: spectral is a Spectral object and 0 <= channel < 6
+// MODIFIES: nothing
+// EFFECTS: Returns the spectral data of a particular channel
+uint16_t get_spectral_channel_data(Spectral *spectral, uint8_t channel);
+
+
+
+// TODO: add virtual read and write functions (find information from datasheet)
