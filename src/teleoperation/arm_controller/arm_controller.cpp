@@ -3,6 +3,7 @@
 namespace mrover {
 
     ros::Subscriber ikSub;
+    ros::Publisher positionPublisher;
 
     int init(int argc, char** argv) {
         ros::init(argc, argv, "arm_controller");
@@ -13,6 +14,8 @@ namespace mrover {
     }
 
     void ikCallback(IK const& ik) {
+        // Linear
+        Position linearRailPositiono;
     }
 
 } // namespace mrover
