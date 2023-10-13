@@ -17,6 +17,11 @@ namespace mrover {
 
         m_relative_encoder_timer = relative_encoder_timer;
         m_absolute_encoder_i2c = absolute_encoder_i2c;
+        m_abs_encoder.init(SMBus(absolute_encoder_i2c), 1, /* TODO: figure out how to get _A1 */ 1,/* TODO: figure out how to get _A2 */ )
+        m_quad_encoder.init(relative_encoder_timer, TIM2 /* TODO: need to figure out how to get _tim */)
+    }
+
+    void AbsoluteEncoder::init(SMBus _i2cBus, uint8_t _A1, uint8_t _A2) {
 
         // Initialize the TIM and I2C encoders
         check(HAL_TIM_Encoder_Init(m_relative_encoder_timer, nullptr /* TODO: replace with config */) == HAL_OK, Error_Handler);
@@ -35,7 +40,7 @@ namespace mrover {
     }
 
     uint32_t EncoderReader::read_absolute() {
-        return abs_encoder.read_raw_angle();
+        return m_abs_encoder.read_raw_angle();
     }
 
     void EncoderReader::update_count() {

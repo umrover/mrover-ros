@@ -19,7 +19,7 @@ namespace mrover {
     public:
         AbsoluteEncoder() = default;
 
-        AbsoluteEncoder(SMBus _i2cBus, uint8_t _A1, uint8_t _A2);
+        void init(SMBus _i2cBus, uint8_t _A1, uint8_t _A2);
         int read_raw_angle();
 
     private:
@@ -39,10 +39,18 @@ namespace mrover {
         QuadEncoder() = default;
         ~QuadEncoder() = default;
 
+        int32_t count_delta();
+        void init(bool _valid, TIM_HandleTypeDef *_htim, TIM_TypeDef *_tim);
         void update();
 
     private:
+        TIM_HandleTypeDef* m_htim;
+        TIM_TypeDef* m_tim;
 
+        // TODO: Delete counts if we're just using quad for difference
+        int32_t m_counts;
+        int16_t m_counts_raw_prev;
+        int16_t m_counts_raw_now;
     };
 
 
@@ -60,7 +68,8 @@ namespace mrover {
         I2C_HandleTypeDef* m_absolute_encoder_i2c{};
         Radians rotation{};
         Radians absolute_relative_diff{};
-        AbsoluteEncoder abs_encoder;
+        AbsoluteEncoder m_abs_encoder;
+        QuadEncoder m_quad_encoder;
     };
 
 } // namespace mrover

@@ -12,8 +12,7 @@ namespace mrover {
     }
 
     // A1/A2 is 1 if pin connected to power, 0 if pin connected to ground
-    AbsoluteEncoder::AbsoluteEncoder(SMBus _i2cBus, uint8_t _A1, uint8_t _A2)
-        : m_i2cBus(_i2cBus), m_angle_rad(0) {
+    void AbsoluteEncoder::init(SMBus _i2cBus, uint8_t _A1, uint8_t _A2) {
         // could be put into member list if we use ternary
         if (_A1 && _A2) {
             this->m_address = device_slave_address_both_power;
