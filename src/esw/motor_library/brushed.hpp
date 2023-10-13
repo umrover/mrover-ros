@@ -1,16 +1,18 @@
 #pragma once
 
 #include "controller.hpp"
+#include "can_manager.hpp"
 
-
-class BrushedController final : public Controller {
+class BrushedController : public Controller {
 public:
-    void update(uint64_t frame) override;
+    void update(const std::vector<uint8_t> &frame) override;
 
-    void set_desired_speed_unit(double speed); // from -1.0 to 1.0
-    void set_desired_position(int position) override;
-    MotorType get_type() override;
+    void set_desired_throttle(float throttle) override; // from -1.0 to 1.0
+    void set_desired_velocity(float velocity) override;
+    void set_desired_position(float position) override;
+
+    BrushedController(ros::NodeHandle& nh, const std::string& name) : Controller(nh, name) {}
+    ~BrushedController() override = default;
 
 private:
-
 };

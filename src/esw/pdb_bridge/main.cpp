@@ -11,8 +11,8 @@ int main(int argc, char** argv) {
     ros::init(argc, argv, "pdb_bridge");
     ros::NodeHandle nh;
 
-    PDBPublisher = n->advertise<mrover::PDB>("pdb_data", 1);
-    CANSubscriber = n->subscribe<mrover::CAN>("can_data", 1, processCANData);
+    PDBPublisher = nh.advertise<mrover::PDB>("pdb_data", 1);
+    ros::Subscriber CANSubscriber = nh.subscribe<mrover::CAN>("can_data", 1, processCANData);
 
     // Enter the ROS event loop
     ros::spin();
@@ -21,12 +21,13 @@ int main(int argc, char** argv) {
 }
 
 void processCANData(const mrover::CAN::ConstPtr& msg) {
-    if (msg->name != "PDB") {
-        return
+    if (msg->bus == 0 && msg->message_id == 0) {
+        return;
+        // TODO
     }
 
     mrover::PDB PDBData;
-    PDBData.temperatures = {0, 0, 0};  // TODO
-    PDBData.current = {0, 0, 0};  // TODO
+    PDBData.temperatures = {0, 0, 0, 0, 0};  // TODO
+    PDBData.currents = {0, 0, 0, 0, 0};  // TODO
     PDBPublisher.publish(PDBData);
 }

@@ -3,6 +3,7 @@
 #include "controller.hpp"
 #include "moteus.h"
 
+#include "can_manager.hpp"
 
 #include <optional>
 #include <unistd.h>
@@ -51,9 +52,9 @@ enum class ErrorCode {
     PositionInvalid = 43,
 };
 
-class BrushlessController final : public Controller {
+class BrushlessController : public Controller {
 public:
-    void update(uint64_t frame) override;
+    void update(const std::vector<uint8_t> &frame) override;
 
     void set_desired_speed_unit(double speed) override // from -1.0 to 1.0
     void set_desired_speed_rev_s(double speed)  // in rev/s
@@ -168,6 +169,14 @@ public:
         transport->BlockingCycle(&send_frames[0], send_frames.size(),
                              &receive_frames);
     }
+    void set_desired_throttle(float throttle) override; // from -1.0 to 1.0
+    void set_desired_velocity(float velocity) override; // in rev/s
+    void set_desired_position(float position) override;
+
+    BrushlessController(ros::NodeHandle& nh, const std::string& name) : Controller(nh, name) {
+        torque = 0.3f;
+    }
+    ~BrushlessController() override = default;
 
 private:
     std::optional<ErrorCode> err;
