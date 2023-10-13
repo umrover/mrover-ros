@@ -40,7 +40,7 @@
       <heading_deg>0</heading_deg>
     </spherical_coordinates>
     <model name='waypoint_post'>
-      <pose>5.5 2.0 0.5 0 0 4.71239</pose>
+      <pose>1.0 0.0 0.5</pose>
       <static>1</static>
       <link name='link'>
         <collision name='collision'>
