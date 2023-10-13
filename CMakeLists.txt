@@ -37,6 +37,7 @@ set(MROVER_MESSAGE_FILES
         Carousel.msg
         Chassis.msg
         Course.msg
+        DetectedObject.msg
         Diagnostic.msg
         EnableAuton.msg
         GPSWaypoint.msg

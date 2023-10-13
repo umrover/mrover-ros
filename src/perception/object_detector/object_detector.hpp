@@ -1,3 +1,4 @@
+#include "inference.h"
 #include "pch.hpp"
 
 namespace mrover {
@@ -5,6 +6,8 @@ namespace mrover {
     class ObjectDetectorNodelet : public nodelet::Nodelet {
     private:
         ros::NodeHandle mNh, mPnh;
+
+        Inference inference;
 
         // Publishers
 
