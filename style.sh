@@ -52,7 +52,7 @@ readonly MYPY_PATH=$(find_executable mypy 1.5.1)
 echo "Style checking C++ ..."
 readonly FOLDERS=(
   ./src/perception
-  ./src/gazebo
+  ./src/simulator
   ./src/util
 )
 for FOLDER in "${FOLDERS[@]}"; do
