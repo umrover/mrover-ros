@@ -36,10 +36,9 @@ namespace mrover {
         // [31]: Frame format flag (0 = standard 11bit, 1 = extended 29bit)
         // In the future, if we want to send different types of messages,
         // we should have logic for switching bits such as errorFrameFlag.
-        void setFrameId(uint32_t id);
+        void setFrameId(uint32_t identifier);
 
-        // TODO(owen) change parameter to std::byte<const std::byte>
-        void setFrameData(std::span<std::byte> const& data);
+        void setFrameData(std::span<const std::byte> data);
 
     private:
         ros::NodeHandle mNh, mPnh;

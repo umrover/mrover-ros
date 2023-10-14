@@ -42,7 +42,7 @@ namespace mrover {
         sendto(mSocket, &mFrame, sizeof(can_frame), 0, nullptr, 0);
     }
 
-    void CanNodelet::setFrameData(std::span<std::byte> const& data) {
+    void CanNodelet::setFrameData(std::span<const std::byte> data) {
         // TODO(owen) this function needs to be thread safe. add a std::mutex and use std::scoped_lock
         // TODO(owen) change to std::memcpy
         for (size_t i = 0; i < data.size(); ++i) {
@@ -50,28 +50,25 @@ namespace mrover {
         }
     }
 
-    void CanNodelet::setFrameId(uint32_t id) {
-        // TODO(owen) consider using std::bitset
-        uint32_t frameFormatFlag;
-        uint32_t identifier;
+    void CanNodelet::setFrameId(uint32_t identifier) {
+        std::bitset<32> can_id_bits;
         if (mIsExtendedFrame) {
-            frameFormatFlag = 0x80000000; // set can_id[31] high for extended frame
-            identifier = id & 0x01FFFFFF; // lower 29 bit mask of id (extended)
+            can_id_bits.set(31);                      // set can_id[31] high for extended frame
+            can_id_bits |= (identifier & 0x01FFFFFF); // lower 29 bit mask of id (extended)
         } else {
-            frameFormatFlag = 0x00000000; // set can_id[31] low for standard frame
-            identifier = id & 0x000007FF; // lower 11 bit mask of id (standard)
+            can_id_bits.reset(31);                    // set can_id[31] low for standard frame
+            can_id_bits |= (identifier & 0x000007FF); // lower 11 bit mask of id (standard)
         }
-        uint32_t errorFrameFlag = 0x20000000; // set can_id[29] high
-        uint32_t rtrFlag = 0x40000000;        // set can_id[30] high
+        can_id_bits.set(29); // set can_id[29] high (error frame flag)
+        can_id_bits.set(30); // set can_id[30] high (rtr flag)
 
-        mFrame.can_id = identifier | errorFrameFlag | rtrFlag | frameFormatFlag;
+        mFrame.can_id = can_id_bits.to_ullong();
     }
 
     void CanNodelet::handleMessage(CAN::ConstPtr const& msg) {
         setBus(msg->bus);
         setFrameId(msg->message_id);
-        // TODO(owen) currently not compiling
-        //            setFrameData(std::span<std::byte>(reinterpret_cast<std::byte*>(msg->data.data()), msg->data.size()));
+        setFrameData(std::span(reinterpret_cast<const std::byte*>(msg->data.data()), msg->data.size()));
 
         sendFrame();
     }
@@ -81,9 +78,8 @@ namespace mrover {
         std::cout << std::format("CAN_ID: {}", mFrame.can_id) << std::endl;
         std::cout << std::format("LEN: {}", mFrame.len) << std::endl;
         std::cout << "DATA:" << std::endl;
-        // TOOD(owen) change i to uint8_t and use hex formatter for std::format
-        for (size_t i = 0; i < static_cast<size_t>(mFrame.len); ++i) {
-            std::cout << std::format("Index = {}\tData = {}", i, unsigned(mFrame.data[i])) << std::endl;
+        for (uint8_t i = 0; i < mFrame.len; ++i) {
+            std::cout << std::format("Index = {}\tData = {:#X}", i, mFrame.data[i]) << std::endl;
         }
     }
 } // namespace mrover
