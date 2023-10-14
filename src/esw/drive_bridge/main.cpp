@@ -2,24 +2,24 @@
 #include <ros/ros.h>
 #include <sensor_msgs/JointState.h>
 
+#include <can_manager.hpp>
 #include <motors_manager.hpp>
 
 #include <mrover/ControllerState.h>
-#include "can_manager.hpp"
 
 void moveDrive(const geometry_msgs::Twist::ConstPtr& msg);
 void jointDataCallback(const ros::TimerEvent&);
 void controllerDataCallback(const ros::TimerEvent&);
 
-std::unique_ptr<MotorsManager> driveManager;
+std::unique_ptr<mrover::MotorsManager> driveManager;
 std::vector<std::string> driveNames{"front_left", "front_right", "middle_left", "middle_right", "back_left", "back_right"};
 
 ros::Publisher jointDataPublisher;
 ros::Publisher controllerDataPublisher;
-std::unordered_map<std::string, float> motorMultipliers; // Store the multipliers for each motor
+std::unordered_map<std::string, mrover::Dimensionless> motorMultipliers; // Store the multipliers for each motor
 
-float WHEEL_DISTANCE_INNER;
-float WHEEL_DISTANCE_OUTER;
+mrover::Meters WHEEL_DISTANCE_INNER;
+mrover::Meters WHEEL_DISTANCE_OUTER;
 float WHEELS_M_S_TO_MOTOR_REV_S;
 float MAX_MOTOR_SPEED_REV_S;
 
@@ -29,7 +29,7 @@ int main(int argc, char** argv) {
     ros::NodeHandle nh;
 
     // Load motor controllers configuration from the ROS parameter server
-    driveManager = std::make_unique<MotorsManager>(nh, "drive", driveNames);
+    driveManager = std::make_unique<mrover::MotorsManager>(nh, "drive", driveNames);
 
     // Load motor multipliers from the ROS parameter server
     XmlRpc::XmlRpcValue driveControllers;
@@ -39,20 +39,16 @@ int main(int argc, char** argv) {
     for (const auto& driveName: driveNames) {
         assert(driveControllers.hasMember(driveName));
         assert(driveControllers[driveName].getType() == XmlRpc::XmlRpcValue::TypeStruct);
-        if (driveControllers[driveName].hasMember("multiplier") &&  driveControllers[driveName]["multiplier"].getType() == XmlRpc::XmlRpcValue::TypeDouble) {
-            motorMultipliers[driveName] = (float) static_cast<double>(driveControllers[driveName]["multiplier"]);
+        if (driveControllers[driveName].hasMember("multiplier") && driveControllers[driveName]["multiplier"].getType() == XmlRpc::XmlRpcValue::TypeDouble) {
+            motorMultipliers[driveName] = mrover::Dimensionless{static_cast<double>(driveControllers[driveName]["multiplier"])};
         }
     }
 
     // Load rover dimensions and other parameters from the ROS parameter server
-    float roverWidth = 0.0f;
-    float roverLength = 0.0f;
-    assert(nh.hasParam("rover/width"));
-    nh.getParam("rover/width", roverWidth);
-    assert(nh.hasParam("rover/length"));
-    nh.getParam("rover/length", roverLength);
-    WHEEL_DISTANCE_INNER = roverWidth / 2.0f;
-    WHEEL_DISTANCE_OUTER = std::sqrt(((roverWidth / 2.0f) * (roverWidth / 2.0f)) + ((roverLength / 2.0f) * (roverLength / 2.0f)));
+    auto roverWidth = mrover::requireParamAsUnit<mrover::Meters>(nh, "rover/width");
+    auto roverLength = mrover::requireParamAsUnit<mrover::Meters>(nh, "rover/length");
+    WHEEL_DISTANCE_INNER = roverWidth / 2;
+    WHEEL_DISTANCE_OUTER = mrover::sqrt(((roverWidth / 2) * (roverWidth / 2)) + ((roverLength / 2) * (roverLength / 2)));
 
     float ratioMotorToWheel = 0.0f;
     assert(nh.hasParam("wheel/gear_ratio"));
@@ -60,7 +56,7 @@ int main(int argc, char** argv) {
     // To convert m/s to rev/s, multiply by this constant. Divide by circumference, multiply by gear ratio.
     float wheelRadius = 0.0f;
     nh.getParam("wheel/radius", wheelRadius);
-    WHEELS_M_S_TO_MOTOR_REV_S = (1.0f / (wheelRadius * 2.0f * static_cast<float>(std::numbers::pi))) * ratioMotorToWheel;
+    WHEELS_M_S_TO_MOTOR_REV_S = (1.0f / (wheelRadius * 2 * std::numbers::pi_v<float>) * ratioMotorToWheel;
 
     float maxSpeedMPerS = 0.0f;
     assert(nh.hasParam("rover/max_speed"));
@@ -122,7 +118,7 @@ void moveDrive(const geometry_msgs::Twist::ConstPtr& msg) {
         float multiplier = motorMultipliers[name];
         float velocity = pair.second * multiplier; // currently in rad/s
 
-        Controller& controller = driveManager->get_controller(name);
+        mrover::Controller& controller = driveManager->get_controller(name);
         float vel_rad_s = velocity * 2.0f * static_cast<float>(std::numbers::pi);
         controller.set_desired_velocity(vel_rad_s);
     }

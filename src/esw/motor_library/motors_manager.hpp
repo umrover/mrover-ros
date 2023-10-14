@@ -1,41 +1,56 @@
 #pragma once
 
-#include "brushed.hpp"
-#include "brushless.hpp"
-#include "controller.hpp"
+#include <chrono>
+#include <unordered_map>
+
 #include <XmlRpcValue.h>
 #include <ros/ros.h>
-#include <unordered_map>
-#include <chrono>
+
+#include <brushed.hpp>
+#include <brushless.hpp>
+#include <controller.hpp>
+
 #include <mrover/Position.h>
 #include <mrover/Throttle.h>
 #include <mrover/Velocity.h>
 
-class MotorsManager {
-public:
-    MotorsManager() = default;
+namespace mrover {
 
-    MotorsManager(ros::NodeHandle& nh, const std::string& groupName, const std::vector<std::string>& controllerNames);
+    template<IsUnit Unit>
+    Unit requireParamAsUnit(ros::NodeHandle const& nh, std::string const& name) {
+        assert(nh.hasParam(name));
 
-    Controller& get_controller(std::string const& name);
+        typename Unit::rep_t value;
+        nh.getParam(name, value);
+        return make_unit<Unit>(value);
+    }
 
-    void process_frame(int bus, int id, const std::vector<uint8_t> &frame_data);
+    class MotorsManager {
+    public:
+        MotorsManager() = default;
 
-    void moveMotorsThrottle(const mrover::Throttle::ConstPtr& msg);
+        MotorsManager(ros::NodeHandle& nh, const std::string& groupName, const std::vector<std::string>& controllerNames);
 
-    void moveMotorsVelocity(const mrover::Velocity::ConstPtr& msg);
+        Controller& get_controller(std::string const& name);
 
-    void moveMotorsPosition(const mrover::Position::ConstPtr& msg);
+        void process_frame(int bus, int id, std::span<std::byte const> frame_data);
 
-    void heartbeatCallback(const ros::TimerEvent&);
+        void moveMotorsThrottle(const Throttle::ConstPtr& msg);
 
-    void updateLastConnection();
+        void moveMotorsVelocity(const Velocity::ConstPtr& msg);
 
-private:
-    std::unordered_map<std::string, std::unique_ptr<Controller>> controllers;
-    std::unordered_map<int, std::string> names;
-    std::string motorGroupName;
-    std::vector<std::string> motorNames;
-    std::chrono::high_resolution_clock::time_point lastConnection;
+        void moveMotorsPosition(const Position::ConstPtr& msg);
 
-};
+        void heartbeatCallback(const ros::TimerEvent&);
+
+        void updateLastConnection();
+
+    private:
+        std::unordered_map<std::string, std::unique_ptr<Controller>> controllers;
+        std::unordered_map<int, std::string> names;
+        std::string motorGroupName;
+        std::vector<std::string> motorNames;
+        std::chrono::high_resolution_clock::time_point lastConnection;
+    };
+
+} // namespace mrover

@@ -202,7 +202,7 @@ mrover_add_header_only_library(moteus deps/moteus/lib/cpp/mjbots)
 mrover_add_header_only_library(moteus_fw deps/moteus)
 mrover_add_header_only_library(can_library src/esw/can_library)
 mrover_add_library(motor_library src/esw/motor_library/*.cpp src/esw/motor_library)
-target_link_libraries(motor_library PRIVATE can_library moteus moteus_fw)
+target_link_libraries(motor_library PUBLIC can_library moteus moteus_fw)
 
 macro(mrover_add_esw_bridge_node name sources)
     mrover_add_node(${name} ${sources})
