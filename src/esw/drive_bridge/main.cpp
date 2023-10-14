@@ -22,7 +22,7 @@ std::unordered_map<std::string, Dimensionless> motorMultipliers; // Store the mu
 
 Meters WHEEL_DISTANCE_INNER;
 Meters WHEEL_DISTANCE_OUTER;
-compound_unit<Meters, inverse<Radians>> WHEEL_LINEAR_PER_ANGULAR;
+compound_unit<Radians, inverse<Meters>> WHEEL_LINEAR_TO_ANGULAR;
 RadiansPerSecond MAX_MOTOR_SPEED;
 
 int main(int argc, char** argv) {
@@ -55,12 +55,12 @@ int main(int argc, char** argv) {
     auto ratioMotorToWheel = requireParamAsUnit<Dimensionless>(nh, "wheel/gear_ratio");
     auto wheelRadius = requireParamAsUnit<Meters>(nh, "wheel/radius");
     // TODO(quintin) is dividing by ratioMotorToWheel right?
-    WHEEL_LINEAR_PER_ANGULAR = wheelRadius / make_unit<Radians>(1) / ratioMotorToWheel;
+    WHEEL_LINEAR_TO_ANGULAR = make_unit<Radians>(1) / wheelRadius * ratioMotorToWheel;
 
     auto maxLinearSpeed = requireParamAsUnit<MetersPerSecond>(nh, "rover/max_speed");
     assert(maxLinearSpeed > 0_mps);
 
-    MAX_MOTOR_SPEED = maxLinearSpeed / WHEEL_LINEAR_PER_ANGULAR;
+    MAX_MOTOR_SPEED = maxLinearSpeed * WHEEL_LINEAR_TO_ANGULAR;
 
     jointDataPublisher = nh.advertise<sensor_msgs::JointState>("drive_joint_data", 1);
     controllerDataPublisher = nh.advertise<ControllerState>("drive_controller_data", 1);
@@ -78,11 +78,11 @@ void moveDrive(const geometry_msgs::Twist::ConstPtr& msg) {
     // See 11.5.1 in "Controls Engineering in the FIRST Robotics Competition" for the math
     auto forward = make_unit<MetersPerSecond>(msg->linear.x);
     auto turn = make_unit<RadiansPerSecond>(msg->angular.z);
-    auto angular_per_linear = 1 / WHEEL_LINEAR_PER_ANGULAR;
-    compound_unit<Meters, RadiansPerSecond> delta = turn * WHEEL_DISTANCE_INNER;
-    // TODO(quintin) why are the units not matching up? why do I have to cancel out a meter in the numerator?
-    RadiansPerSecond left = forward * angular_per_linear - delta / Meters{1};
-    RadiansPerSecond right = forward * angular_per_linear + delta / Meters{1};
+    // TODO(quintin)    Don't ask me to explain perfectly why we need to cancel out a meters unit in the numerator
+    //                  I think it comes from the fact that there is a unit vector in the denominator of the equation
+    auto delta = turn * WHEEL_DISTANCE_INNER / Meters{1};
+    RadiansPerSecond left = forward * WHEEL_LINEAR_TO_ANGULAR - delta;
+    RadiansPerSecond right = forward * WHEEL_LINEAR_TO_ANGULAR + delta;
 
     std::unordered_map<std::string, RadiansPerSecond> driveCommandVelocities{
             {"FrontLeft", left},
