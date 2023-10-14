@@ -8,6 +8,10 @@
 
 namespace mrover {
 
+    constexpr size_t CAN_EXTENDED_BIT_INDEX = 31;
+    constexpr size_t CAN_ERROR_BIT_INDEX = 29;
+    constexpr size_t CAN_RTR_BIT_INDEX = 30;
+
     void CanNodelet::onInit() {
         mNh = getMTNodeHandle();
         mPnh = getMTPrivateNodeHandle();
@@ -44,21 +48,17 @@ namespace mrover {
     }
 
     void CanNodelet::setFrameData(std::span<const std::byte> data) {
-        // TODO(owen) this function needs to be thread safe. add a std::mutex and use std::scoped_lock
         std::memcpy(mFrame.data, data.data(), data.size());
     }
 
     void CanNodelet::setFrameId(uint32_t identifier) {
-        std::bitset<32> can_id_bits;
-        if (mIsExtendedFrame) {
-            can_id_bits.set(31);                      // set can_id[31] high for extended frame
-            can_id_bits |= (identifier & 0x01FFFFFF); // lower 29 bit mask of id (extended)
-        } else {
-            can_id_bits.reset(31);                    // set can_id[31] low for standard frame
-            can_id_bits |= (identifier & 0x000007FF); // lower 11 bit mask of id (standard)
-        }
-        can_id_bits.set(29); // set can_id[29] high (error frame flag)
-        can_id_bits.set(30); // set can_id[30] high (rtr flag)
+        // Check that the identifier is not too large
+        assert(std::bit_width(identifier) <= mIsExtendedFrame ? CAN_EFF_ID_BITS : CAN_SFF_ID_BITS);
+
+        std::bitset<32> can_id_bits{identifier};
+        if (mIsExtendedFrame) can_id_bits.set(CAN_EXTENDED_BIT_INDEX);
+        can_id_bits.set(CAN_ERROR_BIT_INDEX);
+        can_id_bits.set(CAN_RTR_BIT_INDEX);
 
         mFrame.can_id = can_id_bits.to_ullong();
     }
