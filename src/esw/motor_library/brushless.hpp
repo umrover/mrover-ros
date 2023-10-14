@@ -1,13 +1,13 @@
 #pragma once
 
-#include "controller.hpp"
-#include "moteus.h"
-
-#include "can_manager.hpp"
-
+#include <iostream>
 #include <optional>
 #include <unistd.h>
-#include <iostream>
+
+#include <moteus/moteus.h>
+
+#include <can_manager.hpp>
+#include <controller.hpp>
 
 using namespace mjbots;
 
@@ -54,10 +54,11 @@ enum class ErrorCode {
 
 class BrushlessController : public Controller {
 public:
-    void update(const std::vector<uint8_t> &frame) override;
+    void update(const std::vector<uint8_t>& frame) override;
 
-    void set_desired_speed_unit(double speed) override // from -1.0 to 1.0
-    void set_desired_speed_rev_s(double speed)  // in rev/s
+    void set_desired_speed_unit(double speed) override; // from -1.0 to 1.0
+
+    void set_desired_speed_rev_s(double speed); // in rev/s
 
     void set_desired_torque() override {
         moteus::Controller::Options options;
@@ -70,25 +71,23 @@ public:
         // Command a stop to the controller in order to clear any faults.
         controller.SetStop();
 
-            std::vector<moteus::CanFdFrame> send_frames;
-            //std::vector<moteus::CanFdFrame> receive_frames;
+        std::vector<moteus::CanFdFrame> send_frames;
+        //std::vector<moteus::CanFdFrame> receive_frames;
 
 
-            moteus::CurrentMode::Command cmd;
+        moteus::CurrentMode::Command cmd;
 
-            TorqueModel dut(0.41f, 17.0f, 0.002f, 97.0f);
-            const float calculated_current = dut.torque_to_current(torque);
+        TorqueModel dut(0.41f, 17.0f, 0.002f, 97.0f);
+        const float calculated_current = dut.torque_to_current(torque);
 
-            cmd.q_A = // TODO
-            cmd.d_A = // TODO
-            
+        //        cmd.q_A = // TODO
+        //        cmd.d_A = // TODO
 
-            
-            send_frames.push_back(controller.MakeCurrent(cmd));
-        
-            transport->BlockingCycle(&send_frames[0], send_frames.size(),
-                                &receive_frames);
-    
+
+        send_frames.push_back(controller.MakeCurrent(cmd));
+
+        transport->BlockingCycle(&send_frames[0], send_frames.size(),
+                                 &receive_frames);
     }
 
     void set_desired_position(int position) override {
@@ -111,44 +110,43 @@ public:
 
         //debug
         if (maybe_result) {
-        const auto r = maybe_result->values;
-        ::printf("%3d p/v/t=(%7.3f,%7.3f,%7.3f)  v/t/f=(%5.1f,%5.1f,%3d)   \r",
-                static_cast<int>(r.mode),
-                r.position,
-                r.velocity,
-                r.torque,
-                r.voltage,
-                r.temperature,
-                r.fault);
-        ::fflush(stdout);
-        }    
-
+            const auto r = maybe_result->values;
+            ::printf("%3d p/v/t=(%7.3f,%7.3f,%7.3f)  v/t/f=(%5.1f,%5.1f,%3d)   \r",
+                     static_cast<int>(r.mode),
+                     r.position,
+                     r.velocity,
+                     r.torque,
+                     r.voltage,
+                     r.temperature,
+                     r.fault);
+            ::fflush(stdout);
+        }
     }
 
     MotorType get_type() override {
         return MotorType::Brushless;
     }
-    
+
     void test_set_velocity(double speed) {
 
-    // The following DefaultArgProcess is an optional call.  If made,
-    // then command line arguments will be handled which allow setting
-    // and configuring the default 'transport' to be used if none is
-    // specified in Controller::Options::transport.
-    //moteus::Controller::DefaultArgProcess(argc, argv);
+        // The following DefaultArgProcess is an optional call.  If made,
+        // then command line arguments will be handled which allow setting
+        // and configuring the default 'transport' to be used if none is
+        // specified in Controller::Options::transport.
+        //moteus::Controller::DefaultArgProcess(argc, argv);
 
-    // There are many possible options to set for each controller
-    // instance.  Here we re-set the ID to the default (1), just to show
-    // how it is done.
-    moteus::Controller::Options options;
-    options.id = 1;
+        // There are many possible options to set for each controller
+        // instance.  Here we re-set the ID to the default (1), just to show
+        // how it is done.
+        moteus::Controller::Options options;
+        options.id = 1;
 
-    moteus::Controller controller(options);
-    auto transport = moteus::Controller::MakeSingletonTransport({});
+        moteus::Controller controller(options);
+        auto transport = moteus::Controller::MakeSingletonTransport({});
 
 
-    // Command a stop to the controller in order to clear any faults.
-    controller.SetStop();
+        // Command a stop to the controller in order to clear any faults.
+        controller.SetStop();
 
         std::vector<moteus::CanFdFrame> send_frames;
         std::vector<moteus::CanFdFrame> receive_frames;
@@ -161,13 +159,12 @@ public:
 
         cmd.position = std::numeric_limits<double>::quiet_NaN();
         cmd.velocity = speed;
-        
 
-        
+
         send_frames.push_back(controller.MakePosition(cmd));
-       
+
         transport->BlockingCycle(&send_frames[0], send_frames.size(),
-                             &receive_frames);
+                                 &receive_frames);
     }
     void set_desired_throttle(float throttle) override; // from -1.0 to 1.0
     void set_desired_velocity(float velocity) override; // in rev/s
@@ -182,4 +179,3 @@ private:
     std::optional<ErrorCode> err;
     float torque{};
 };
-
