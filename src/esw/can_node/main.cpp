@@ -4,7 +4,7 @@
 
 void handleMessage(const mrover::CAN::ConstPtr& msg);
 
-CanNode node;
+CanNode node(false);
 
 int main(int argc, char** argv) {
     ros::init(argc, argv, "can_node");
@@ -20,7 +20,7 @@ int main(int argc, char** argv) {
 void handleMessage(const mrover::CAN::ConstPtr& msg) {
     node.set_bus(msg->bus);
     node.set_frame_id(msg->message_id);
-    node.set_frame_data((msg->data).size(), msg->data);
+    node.set_frame_data(std::span<std::byte>(reinterpret_cast<std::byte*>(msg->data.data()), msg->data.size()));
 
     node.send_frame();
 }

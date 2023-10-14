@@ -4,6 +4,7 @@
 #include <cstdint>
 #include <cstdio>
 #include <cstring>
+#include <format>
 #include <iostream>
 #include <linux/can.h>
 #include <linux/can/raw.h>
@@ -15,9 +16,9 @@
 
 class CanNode {
 public:
-    CanNode() {
-        struct sockaddr_can addr {};
-        struct ifreq ifr {};
+    CanNode(bool _isExtendedFrame) : isExtendedFrame(_isExtendedFrame) {
+        sockaddr_can addr{};
+        ifreq ifr{};
 
         if ((s = socket(PF_CAN, SOCK_RAW, CAN_RAW)) < 0) {
             perror("Error while opening socket");
@@ -44,19 +45,32 @@ public:
         this->bus = bus;
     }
 
-    void set_frame_id(uint16_t id) {
-        uint32_t identifier = static_cast<uint32_t>(id) & 0x000007FF; // can_id[0-10]
-        uint32_t errorFrameFlag = 0x20000000;                         // can_id[29]
-        uint32_t rtrFlag = 0x40000000;                                // can_id[30]
-        uint32_t frameFormatFlag = 0;                                 // can_id[31]
+    // canfd_frame.can_id is a uint32_t with format:
+    // [0-28]: CAN identifier (11/29bit)
+    // [29]: Error frame flag (0 = data frame, 1 = error frame)
+    // [30]: Remote transmission request flag (1 = rtr frame)
+    // [31]: Frame format flag (0 = standard 11bit, 1 = extended 29bit)
+    // In the future, if we want to send different types of messages,
+    // we should have logic for switching bits such as errorFrameFlag.
+    void set_frame_id(uint32_t id) {
+        uint32_t frameFormatFlag;
+        uint32_t identifier;
+        if (isExtendedFrame) {
+            frameFormatFlag = 0x80000000; // set can_id[31] high for extended frame
+            identifier = id & 0x01FFFFFF; // lower 29 bit mask of id (extended)
+        } else {
+            frameFormatFlag = 0x00000000; // set can_id[31] low for standard frame
+            identifier = id & 0x000007FF; // lower 11 bit mask of id (standard)
+        }
+        uint32_t errorFrameFlag = 0x20000000; // set can_id[29] high
+        uint32_t rtrFlag = 0x40000000;        // set can_id[30] high
 
         frame.can_id = identifier | errorFrameFlag | rtrFlag | frameFormatFlag;
     }
 
-    void set_frame_data(size_t len, std::vector<uint8_t> const& data) {
-        frame.len = static_cast<uint8_t>(len);
-        for (size_t i = 0; i < len; ++i) {
-            frame.data[i] = data[i];
+    void set_frame_data(std::span<std::byte> const& data) {
+        for (size_t i = 0; i < data.size(); ++i) {
+            frame.data[i] = std::to_integer<uint8_t>(data[i]);
         }
     }
 
@@ -64,16 +78,16 @@ private:
     uint8_t bus{};
     struct canfd_frame frame {};
     int s{};
+    bool isExtendedFrame;
 
     // Helper function for debug
     void printFrame() {
-        std::cout << "BUS: " << unsigned(bus) << "\n";
-        std::cout << "CAN_ID: " << frame.can_id << "\n";
-        std::cout << "LEN: " << unsigned(frame.len) << "\n";
-        std::cout << "DATA:\n";
-
+        std::cout << std::format("BUS: {}", bus) << std::endl;
+        std::cout << std::format("CAN_ID: {}", frame.can_id) << std::endl;
+        std::cout << std::format("LEN: {}", frame.len) << std::endl;
+        std::cout << "DATA:" << std::endl;
         for (size_t i = 0; i < static_cast<size_t>(frame.len); ++i) {
-            std::cout << "Index = " << i << "\tData = " << unsigned(frame.data[i]) << "\n";
+            std::cout << std::format("Index = {}\tData = {}", i, unsigned(frame.data[i])) << std::endl;
         }
     }
 };
