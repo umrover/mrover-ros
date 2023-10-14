@@ -6,6 +6,7 @@
 #include <cstring>
 #include <format>
 #include <iostream>
+#include <mutex>
 #include <span>
 
 #include <linux/can.h>
@@ -49,6 +50,8 @@ namespace mrover {
         bool mIsExtendedFrame{};
 
         ros::Subscriber mCanSubscriber;
+
+        std::mutex mMutex;
 
         // Helper function for debug
         void printFrame();

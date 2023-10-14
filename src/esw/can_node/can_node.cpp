@@ -1,5 +1,6 @@
 #include "can_node.hpp"
 
+#include <mutex>
 #include <nodelet/loader.h>
 #include <ros/init.h>
 #include <ros/names.h>
@@ -44,10 +45,7 @@ namespace mrover {
 
     void CanNodelet::setFrameData(std::span<const std::byte> data) {
         // TODO(owen) this function needs to be thread safe. add a std::mutex and use std::scoped_lock
-        // TODO(owen) change to std::memcpy
-        for (size_t i = 0; i < data.size(); ++i) {
-            mFrame.data[i] = std::to_integer<uint8_t>(data[i]);
-        }
+        std::memcpy(mFrame.data, data.data(), data.size());
     }
 
     void CanNodelet::setFrameId(uint32_t identifier) {
@@ -66,9 +64,11 @@ namespace mrover {
     }
 
     void CanNodelet::handleMessage(CAN::ConstPtr const& msg) {
+        std::scoped_lock lock(mMutex);
+
         setBus(msg->bus);
         setFrameId(msg->message_id);
-        setFrameData(std::span(reinterpret_cast<const std::byte*>(msg->data.data()), msg->data.size()));
+        setFrameData({reinterpret_cast<std::byte const*>(msg->data.data()), msg->data.size()});
 
         sendFrame();
     }
