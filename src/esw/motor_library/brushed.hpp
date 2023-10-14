@@ -1,18 +1,22 @@
 #pragma once
 
-#include "controller.hpp"
-#include "can_manager.hpp"
+#include <can_manager.hpp>
+#include <controller.hpp>
 
-class BrushedController : public Controller {
-public:
-    void update(const std::vector<uint8_t> &frame) override;
+namespace mrover {
 
-    void set_desired_throttle(float throttle) override; // from -1.0 to 1.0
-    void set_desired_velocity(float velocity) override;
-    void set_desired_position(float position) override;
+    class BrushedController : public Controller {
+    public:
+        void update(std::span<std::byte const> frame) override;
 
-    BrushedController(ros::NodeHandle& nh, const std::string& name) : Controller(nh, name) {}
-    ~BrushedController() override = default;
+        void set_desired_throttle(Dimensionless throttle) override; // from -1.0 to 1.0
+        void set_desired_velocity(RadiansPerSecond velocity) override;
+        void set_desired_position(Radians position) override;
 
-private:
-};
+        BrushedController(ros::NodeHandle& nh, const std::string& name) : Controller(nh, name) {}
+        ~BrushedController() override = default;
+
+    private:
+    };
+
+} // namespace mrover

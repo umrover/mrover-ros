@@ -3,7 +3,6 @@
 #include <ros/ros.h>
 #include <std_srvs/SetBool.h>
 
-std::unique_ptr<MotorsManager> SAManager;
 std::vector<std::string> SANames{"sa_x", "sa_y", "sa_z", "scoop", "drill"};
 std::unique_ptr<CANManager> uv_bulb_can_manager;
 
@@ -21,7 +20,7 @@ int main(int argc, char** argv) {
 
     // Load motor controllers configuration from the ROS parameter server
     uv_bulb_can_manager = std::make_unique<CANManager>(nh, "uv_bulb");
-    SAManager = std::make_unique<MotorsManager>(nh, "sa", SANames);
+    [[maybe_unused]] auto SAManager = std::make_unique<mrover::MotorsManager>(nh, "sa", SANames);
     nh.advertiseService("sa_enable_uv_bulb", uvBulbCallback);
     // Enter the ROS event loop
     ros::spin();

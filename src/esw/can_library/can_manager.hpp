@@ -43,7 +43,9 @@ public:
         assert(can_messages.getType() == XmlRpc::XmlRpcValue::TypeStruct);
         for (auto [messageName, messageId]: can_messages) {
             if (messageId.getType() == XmlRpc::XmlRpcValue::TypeInt) {
-                m_message_name_to_id[messageName] = static_cast<int>(messageId);
+                int messageid = static_cast<int>(messageId);
+                m_message_name_to_id[messageName] = messageid;
+                m_id_to_message_name[messageid] = messageName;
             }
         }
     }
@@ -55,7 +57,7 @@ public:
         send_raw_data(messageName, {address, sizeof(T)});
     }
 
-    void send_raw_data(std::string const& messageName, std::span<std::byte> data) {
+    void send_raw_data(std::string const& messageName, std::span<std::byte const> data) {
         if (!m_message_name_to_id.contains(messageName)) {
             throw std::invalid_argument(std::format("message_name {} is not valid.", messageName));
         }
@@ -81,9 +83,14 @@ public:
         return m_bus;
     }
 
+    std::string get_message(int messageId){
+        return m_id_to_message_name[messageId];
+    }
+
 private:
     ros::Publisher m_can_publisher;
     uint8_t m_bus{};
     uint8_t m_id{};
     std::unordered_map<std::string, uint8_t> m_message_name_to_id;
+    std::unordered_map<uint8_t, std::string> m_id_to_message_name;
 };

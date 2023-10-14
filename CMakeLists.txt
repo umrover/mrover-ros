@@ -194,13 +194,31 @@ catkin_package()
 
 ## Libraries
 
-mrover_add_header_only_library(moteus deps/moteus/lib/cpp/mjbots)
 mrover_add_library(lie src/util/lie/*.cpp src/util/lie)
 
 ## ESW
 
-mrover_add_node(sim_arm_bridge src/simulator/arm_bridge/*.cpp)
+mrover_add_header_only_library(moteus deps/moteus/lib/cpp/mjbots)
+mrover_add_header_only_library(moteus_fw deps/moteus)
+mrover_add_header_only_library(can_library src/esw/can_library)
+mrover_add_library(motor_library src/esw/motor_library/*.cpp src/esw/motor_library)
+target_link_libraries(motor_library PUBLIC can_library moteus moteus_fw)
+
 mrover_add_nodelet(can src/esw/can_node/*.cpp src/esw/can_node)
+
+macro(mrover_add_esw_bridge_node name sources)
+    mrover_add_node(${name} ${sources})
+    target_link_libraries(${name} PRIVATE can_library motor_library)
+endmacro()
+
+mrover_add_esw_bridge_node(arm_bridge src/esw/arm_bridge/*.cpp)
+mrover_add_esw_bridge_node(cache_bridge src/esw/cache_bridge/*.cpp)
+mrover_add_esw_bridge_node(drive_bridge src/esw/drive_bridge/*.cpp)
+mrover_add_esw_bridge_node(led_hw_bridge src/esw/led_hw_bridge/*.cpp)
+mrover_add_esw_bridge_node(mast_gimbal_bridge src/esw/mast_gimbal_bridge/*.cpp)
+mrover_add_esw_bridge_node(pdb_bridge src/esw/pdb_bridge/*.cpp)
+mrover_add_esw_bridge_node(sa_bridge src/esw/sa_bridge/*.cpp)
+mrover_add_esw_bridge_node(science_bridge src/esw/science_bridge/*.cpp)
 
 ## Perception
 
@@ -218,6 +236,8 @@ if (ZED_FOUND)
 endif ()
 
 ## Simulator
+
+mrover_add_node(sim_arm_bridge src/simulator/arm_bridge/*.cpp)
 
 mrover_add_gazebo_plugin(differential_drive_plugin_6w src/simulator/differential_drive_6w.cpp src)
 
