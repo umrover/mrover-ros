@@ -4,8 +4,8 @@
 #include <optional>
 #include <unistd.h>
 
-// TODO(quintin) this is not defined in my system can header for some reason, but moteus needs it?
-#define CANFD_FDF 999
+// TODO(quintin) this is not defined in my system can header for some reason, but moteus needs it? Is this the correct value?
+#define CANFD_FDF 0x04
 #include <moteus/moteus.h>
 
 #include <can_manager.hpp>

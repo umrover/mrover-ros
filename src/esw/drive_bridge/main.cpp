@@ -7,21 +7,23 @@
 
 #include <mrover/ControllerState.h>
 
+using namespace mrover;
+
 void moveDrive(const geometry_msgs::Twist::ConstPtr& msg);
 void jointDataCallback(const ros::TimerEvent&);
 void controllerDataCallback(const ros::TimerEvent&);
 
-std::unique_ptr<mrover::MotorsManager> driveManager;
+std::unique_ptr<MotorsManager> driveManager;
 std::vector<std::string> driveNames{"front_left", "front_right", "middle_left", "middle_right", "back_left", "back_right"};
 
 ros::Publisher jointDataPublisher;
 ros::Publisher controllerDataPublisher;
-std::unordered_map<std::string, mrover::Dimensionless> motorMultipliers; // Store the multipliers for each motor
+std::unordered_map<std::string, Dimensionless> motorMultipliers; // Store the multipliers for each motor
 
-mrover::Meters WHEEL_DISTANCE_INNER;
-mrover::Meters WHEEL_DISTANCE_OUTER;
-float WHEELS_M_S_TO_MOTOR_REV_S;
-float MAX_MOTOR_SPEED_REV_S;
+Meters WHEEL_DISTANCE_INNER;
+Meters WHEEL_DISTANCE_OUTER;
+compound_unit<Meters, inverse<Radians>> WHEEL_LINEAR_PER_ANGULAR;
+RadiansPerSecond MAX_MOTOR_SPEED;
 
 int main(int argc, char** argv) {
     // Initialize the ROS node
@@ -29,7 +31,7 @@ int main(int argc, char** argv) {
     ros::NodeHandle nh;
 
     // Load motor controllers configuration from the ROS parameter server
-    driveManager = std::make_unique<mrover::MotorsManager>(nh, "drive", driveNames);
+    driveManager = std::make_unique<MotorsManager>(nh, "drive", driveNames);
 
     // Load motor multipliers from the ROS parameter server
     XmlRpc::XmlRpcValue driveControllers;
@@ -40,33 +42,28 @@ int main(int argc, char** argv) {
         assert(driveControllers.hasMember(driveName));
         assert(driveControllers[driveName].getType() == XmlRpc::XmlRpcValue::TypeStruct);
         if (driveControllers[driveName].hasMember("multiplier") && driveControllers[driveName]["multiplier"].getType() == XmlRpc::XmlRpcValue::TypeDouble) {
-            motorMultipliers[driveName] = mrover::Dimensionless{static_cast<double>(driveControllers[driveName]["multiplier"])};
+            motorMultipliers[driveName] = Dimensionless{static_cast<double>(driveControllers[driveName]["multiplier"])};
         }
     }
 
     // Load rover dimensions and other parameters from the ROS parameter server
-    auto roverWidth = mrover::requireParamAsUnit<mrover::Meters>(nh, "rover/width");
-    auto roverLength = mrover::requireParamAsUnit<mrover::Meters>(nh, "rover/length");
+    auto roverWidth = requireParamAsUnit<Meters>(nh, "rover/width");
+    auto roverLength = requireParamAsUnit<Meters>(nh, "rover/length");
     WHEEL_DISTANCE_INNER = roverWidth / 2;
-    WHEEL_DISTANCE_OUTER = mrover::sqrt(((roverWidth / 2) * (roverWidth / 2)) + ((roverLength / 2) * (roverLength / 2)));
+    WHEEL_DISTANCE_OUTER = sqrt(((roverWidth / 2) * (roverWidth / 2)) + ((roverLength / 2) * (roverLength / 2)));
 
-    float ratioMotorToWheel = 0.0f;
-    assert(nh.hasParam("wheel/gear_ratio"));
-    nh.getParam("wheel/gear_ratio", ratioMotorToWheel);
-    // To convert m/s to rev/s, multiply by this constant. Divide by circumference, multiply by gear ratio.
-    float wheelRadius = 0.0f;
-    nh.getParam("wheel/radius", wheelRadius);
-    WHEELS_M_S_TO_MOTOR_REV_S = (1.0f / (wheelRadius * 2 * std::numbers::pi_v<float>) * ratioMotorToWheel;
+    auto ratioMotorToWheel = requireParamAsUnit<Dimensionless>(nh, "wheel/gear_ratio");
+    auto wheelRadius = requireParamAsUnit<Meters>(nh, "wheel/radius");
+    // TODO(quintin) is dividing by ratioMotorToWheel right?
+    WHEEL_LINEAR_PER_ANGULAR = wheelRadius / make_unit<Radians>(1) / ratioMotorToWheel;
 
-    float maxSpeedMPerS = 0.0f;
-    assert(nh.hasParam("rover/max_speed"));
-    nh.getParam("rover/max_speed", maxSpeedMPerS);
-    assert(maxSpeedMPerS > 0.0f);
+    auto maxLinearSpeed = requireParamAsUnit<MetersPerSecond>(nh, "rover/max_speed");
+    assert(maxLinearSpeed > 0_mps);
 
-    MAX_MOTOR_SPEED_REV_S = maxSpeedMPerS * WHEELS_M_S_TO_MOTOR_REV_S;
+    MAX_MOTOR_SPEED = maxLinearSpeed / WHEEL_LINEAR_PER_ANGULAR;
 
     jointDataPublisher = nh.advertise<sensor_msgs::JointState>("drive_joint_data", 1);
-    controllerDataPublisher = nh.advertise<mrover::ControllerState>("drive_controller_data", 1);
+    controllerDataPublisher = nh.advertise<ControllerState>("drive_controller_data", 1);
 
     // Subscribe to the ROS topic for drive commands
     ros::Subscriber moveDriveSubscriber = nh.subscribe<geometry_msgs::Twist>("cmd_vel", 1, moveDrive);
@@ -78,49 +75,30 @@ int main(int argc, char** argv) {
 }
 
 void moveDrive(const geometry_msgs::Twist::ConstPtr& msg) {
-    // Process drive commands and set motor speeds
-    auto forward = static_cast<float>(msg->linear.x);
-    auto turn = static_cast<float>(msg->angular.z);
+    // See 11.5.1 in "Controls Engineering in the FIRST Robotics Competition" for the math
+    auto forward = make_unit<MetersPerSecond>(msg->linear.x);
+    auto turn = make_unit<RadiansPerSecond>(msg->angular.z);
+    auto angular_per_linear = 1 / WHEEL_LINEAR_PER_ANGULAR;
+    compound_unit<Meters, RadiansPerSecond> delta = turn * WHEEL_DISTANCE_INNER;
+    // TODO(quintin) why are the units not matching up? why do I have to cancel out a meter in the numerator?
+    RadiansPerSecond left = forward * angular_per_linear - delta / Meters{1};
+    RadiansPerSecond right = forward * angular_per_linear + delta / Meters{1};
 
-    // Calculate motor speeds and adjust for maximum speed
-    float turn_difference_inner = turn * WHEEL_DISTANCE_INNER;
-    float turn_difference_outer = turn * WHEEL_DISTANCE_OUTER;
-
-    float left_rev_inner = (forward - turn_difference_inner) * WHEELS_M_S_TO_MOTOR_REV_S;
-    float right_rev_inner = (forward + turn_difference_inner) * WHEELS_M_S_TO_MOTOR_REV_S;
-    float left_rev_outer = (forward - turn_difference_outer) * WHEELS_M_S_TO_MOTOR_REV_S;
-    float right_rev_outer = (forward + turn_difference_outer) * WHEELS_M_S_TO_MOTOR_REV_S;
-
-    // If speed too fast, scale to max speed. Ignore inner for comparison since outer > inner, always.
-    float larger_abs_rev_s = fmax(abs(left_rev_outer), abs(right_rev_outer));
-    if (larger_abs_rev_s > MAX_MOTOR_SPEED_REV_S) {
-        float change_ratio = MAX_MOTOR_SPEED_REV_S / larger_abs_rev_s;
-        left_rev_inner *= change_ratio;
-        right_rev_inner *= change_ratio;
-        left_rev_outer *= change_ratio;
-        right_rev_outer *= change_ratio;
-    }
-
-    std::unordered_map<std::string, float> driveCommandVelocities{
-            {"FrontLeft", left_rev_outer},
-            {"FrontRight", right_rev_outer},
-            {"MiddleLeft", left_rev_inner},
-            {"MiddleRight", right_rev_inner},
-            {"BackLeft", left_rev_outer},
-            {"BackRight", right_rev_outer},
+    std::unordered_map<std::string, RadiansPerSecond> driveCommandVelocities{
+            {"FrontLeft", left},
+            {"FrontRight", right},
+            {"MiddleLeft", left},
+            {"MiddleRight", right},
+            {"BackLeft", left},
+            {"BackRight", right},
     };
 
-    for (const auto& pair: driveCommandVelocities) {
-        // Apply the multiplier for each motor
-        const std::string& name = pair.first;
-
+    for (auto [name, angularVelocity]: driveCommandVelocities) {
         // Set the desired speed for the motor
-        float multiplier = motorMultipliers[name];
-        float velocity = pair.second * multiplier; // currently in rad/s
+        Dimensionless multiplier = motorMultipliers[name];
+        RadiansPerSecond scaledAngularVelocity = angularVelocity * multiplier; // currently in rad/s
 
-        mrover::Controller& controller = driveManager->get_controller(name);
-        float vel_rad_s = velocity * 2.0f * static_cast<float>(std::numbers::pi);
-        controller.set_desired_velocity(vel_rad_s);
+        driveManager->get_controller(name).set_desired_velocity(scaledAngularVelocity);
     }
 
     driveManager->updateLastConnection();
@@ -134,6 +112,6 @@ void jointDataCallback(const ros::TimerEvent&) {
 
 void controllerDataCallback(const ros::TimerEvent&) {
     //TODO
-    mrover::ControllerState controllerData;
+    ControllerState controllerData;
     controllerDataPublisher.publish(controllerData);
 }

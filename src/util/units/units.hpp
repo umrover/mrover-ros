@@ -44,7 +44,7 @@ namespace mrover {
     };
 
     template<typename U1, typename U2>
-    concept IsConvertible =
+    concept AreExponentsSame =
             IsUnit<U1> && IsUnit<U2> &&
             std::is_same_v<typename U1::meter_exp_t, typename U2::meter_exp_t> &&
             std::is_same_v<typename U1::kilogram_exp_t, typename U2::kilogram_exp_t> &&
@@ -102,14 +102,14 @@ namespace mrover {
 
         template<IsUnit U>
         constexpr Unit(U const& other)
-            requires IsConvertible<Unit, U>
+            requires AreExponentsSame<Unit, U>
         {
             rep = other.get();
         }
 
         template<IsUnit U>
         [[nodiscard]] constexpr auto operator=(U const& rhs) -> Unit&
-            requires IsConvertible<Unit, U>
+            requires AreExponentsSame<Unit, U>
         {
             rep = rhs.get();
             return *this;
@@ -229,14 +229,16 @@ namespace mrover {
         return U{-u.rep};
     }
 
-    template<IsUnit U>
-    inline constexpr auto operator+(U const& u1, IsUnit auto const& u2) {
-        return U{u1.rep + u2.rep};
+    template<IsUnit U1, IsUnit U2>
+        requires AreExponentsSame<U1, U2>
+    inline constexpr auto operator+(U1 const& u1, U2 const& u2) {
+        return U1{u1.rep + u2.rep};
     }
 
-    template<IsUnit U>
-    inline constexpr auto operator-(U const& u1, IsUnit auto const& u2) {
-        return U{u1.rep - u2.rep};
+    template<IsUnit U1, IsUnit U2>
+        requires AreExponentsSame<U1, U2>
+    inline constexpr auto operator-(U1 const& u1, U2 const& u2) {
+        return U1{u1.rep - u2.rep};
     }
 
     inline constexpr auto operator+=(IsUnit auto& u1, IsUnit auto const& u2) {
@@ -256,15 +258,10 @@ namespace mrover {
         return root<U>{std::sqrt(u.rep)};
     }
 
-    //    template<IsUnit U>
-    //    inline constexpr auto abs(U const& u) {
-    //        return U{std::fabs(u.rep)};
-    //    }
-
-    //    template<IsUnit U>
-    //    inline constexpr auto clamp(U const& u, IsUnit auto const& min, IsUnit auto const& max) {
-    //        return U{std::clamp(u.rep, min.rep, max.rep)};
-    //    }
+    template<IsUnit U>
+    inline constexpr auto abs(U const& u) {
+        return U{std::fabs(u.rep)};
+    }
 
     //
     //  Common units
@@ -287,11 +284,16 @@ namespace mrover {
     using Hours = Unit<default_rep_t, std::ratio<3600>, zero_exp_t, zero_exp_t, std::ratio<1>>;
     using Hertz = inverse<Seconds>;
     using Radians = Unit<default_rep_t, std::ratio<1>, zero_exp_t, zero_exp_t, zero_exp_t, std::ratio<1>>;
+    using tau_ratio_t = std::ratio<6283185307179586476, 10000000000000000000>; // TODO(quintin) is this 0-head play?
+    using Revolutions = Unit<default_rep_t, tau_ratio_t, zero_exp_t, zero_exp_t, zero_exp_t, std::ratio<1>>;
     using RadiansPerSecond = compound_unit<Radians, inverse<Seconds>>;
     using Amperes = Unit<default_rep_t, std::ratio<1>, zero_exp_t, zero_exp_t, zero_exp_t, zero_exp_t, std::ratio<1>>;
     using Kelvin = Unit<default_rep_t, std::ratio<1>, zero_exp_t, zero_exp_t, zero_exp_t, zero_exp_t, zero_exp_t, std::ratio<1>>;
     using Bytes = Unit<default_rep_t, std::ratio<1>, zero_exp_t, zero_exp_t, zero_exp_t, zero_exp_t, zero_exp_t, zero_exp_t, std::ratio<1>>;
     using Volts = Unit<default_rep_t, std::ratio<1>, std::ratio<2>, std::ratio<1>, std::ratio<-3>, zero_exp_t, std::ratio<-1>, zero_exp_t>;
+
+    using RevolutionsPerSecond = compound_unit<Revolutions, inverse<Seconds>>;
+    using MetersPerSecond = compound_unit<Meters, inverse<Seconds>>;
 
     //
     // Literals
@@ -335,6 +337,10 @@ namespace mrover {
 
     inline constexpr auto operator""_V(unsigned long long int n) {
         return make_unit<Volts>(n);
+    }
+
+    inline constexpr auto operator""_mps(unsigned long long int n) {
+        return make_unit<MetersPerSecond>(n);
     }
 
     //
