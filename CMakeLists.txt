@@ -22,6 +22,7 @@ set(MROVER_PACKAGES
         dynamic_reconfigure
         rostest
         sensor_msgs
+        nodelet
 )
 
 # Message files
@@ -119,6 +120,7 @@ endmacro()
 macro(add_cpp_nodelet_macro name sources includes)
     # A nodelet runs inside another process so it is a library
     add_cpp_library_macro(${name} ${sources} ${includes})
+    target_compile_definitions(${name} PRIVATE MROVER_IS_NODELET)
 endmacro()
 
 macro(add_gazebo_plugin_macro name sources includes)
@@ -252,20 +254,27 @@ else ()
         add_cpp_library_macro(motor_library src/esw/motor_library/*.cpp src/esw/motor_library)
         target_link_libraries(motor_library PRIVATE can_library)
 
+        # TODO(quintin) transition everything using this to use add_esw_bridge_cpp_nodelet_macro
         macro(add_esw_bridge_cpp_node_macro name sources)
             add_cpp_node_macro(${name} ${sources})
             target_link_libraries(${name} PRIVATE can_library motor_library)
         endmacro()
 
+        macro(add_esw_bridge_cpp_nodelet_macro name sources includes)
+            add_esw_bridge_cpp_node_macro(${name}let ${sources})
+            add_cpp_nodelet_macro(${name} ${sources} ${includes})
+            target_link_libraries(${name} PRIVATE can_library motor_library)
+        endmacro()
+
         add_esw_bridge_cpp_node_macro(arm_bridge src/esw/arm_bridge/*.cpp)
         add_esw_bridge_cpp_node_macro(cache_bridge src/esw/cache_bridge/*.cpp)
-        add_esw_bridge_cpp_node_macro(can_node src/esw/can_node/*.cpp)
         add_esw_bridge_cpp_node_macro(drive_bridge src/esw/drive_bridge/*.cpp)
         add_esw_bridge_cpp_node_macro(led_hw_bridge src/esw/led_hw_bridge/*.cpp)
         add_esw_bridge_cpp_node_macro(mast_gimbal_bridge src/esw/mast_gimbal_bridge/*.cpp)
         add_esw_bridge_cpp_node_macro(pdb_bridge src/esw/pdb_bridge/*.cpp)
         add_esw_bridge_cpp_node_macro(sa_bridge src/esw/sa_bridge/*.cpp)
         add_esw_bridge_cpp_node_macro(science_bridge src/esw/science_bridge/*.cpp)
+        add_esw_bridge_cpp_nodelet_macro(can_node src/esw/can_node/*.cpp src/esw/can_node)
 
         add_gazebo_plugin_macro(differential_drive_plugin_6w src/simulator/differential_drive_6w.cpp src)
 
@@ -281,7 +290,6 @@ else ()
             target_include_directories(zed_nodelet SYSTEM PRIVATE ${ZED_INCLUDE_DIRS} ${CUDA_INCLUDE_DIRS})
             target_link_libraries(zed_nodelet PRIVATE ${ZED_LIBRARIES} ${OpenCV_LIBRARIES} ${SPECIAL_OS_LIBS} lie)
             target_compile_definitions(zed_nodelet PRIVATE
-                    MROVER_IS_NODELET # Generate code relevant to nodelet
                     ALLOW_BUILD_DEBUG # Ignore ZED warnings about Debug mode
                     __CUDA_INCLUDE_COMPILER_INTERNAL_HEADERS__ # Eigen includes some files it should not, ignore
             )
