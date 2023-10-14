@@ -1,12 +1,14 @@
 #include "CanNode.hpp"
-#include <mrover/CAN.h>
+
 #include <ros/ros.h>
+
+#include <mrover/CAN.h>
 
 void handleMessage(const mrover::CAN::ConstPtr& msg);
 
 CanNode node(false);
 
-int main(int argc, char** argv) {
+int main(int argc, char* argv[]) {
     ros::init(argc, argv, "can_node");
     ros::NodeHandle nh;
 
@@ -14,7 +16,7 @@ int main(int argc, char** argv) {
 
     ros::spin();
 
-    return 0;
+    return EXIT_SUCCESS;
 }
 
 void handleMessage(const mrover::CAN::ConstPtr& msg) {
