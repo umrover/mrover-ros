@@ -8,9 +8,9 @@
 
 namespace mrover {
 
-    constexpr size_t CAN_EXTENDED_BIT_INDEX = 31;
     constexpr size_t CAN_ERROR_BIT_INDEX = 29;
     constexpr size_t CAN_RTR_BIT_INDEX = 30;
+    constexpr size_t CAN_EXTENDED_BIT_INDEX = 31;
 
     void CanNodelet::onInit() {
         mNh = getMTNodeHandle();
