@@ -24,6 +24,7 @@ class RecoveryStateTransitions(Enum):
     continue_post_backup = "PostBackupState"
     recovery_state = "RecoveryState"
 
+
 class JTurnAction(Enum):
     moving_back: Enum = 0
     j_turning: Enum = 1

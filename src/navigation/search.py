@@ -154,8 +154,8 @@ class SearchState(BaseState):
         )
         self.context.rover.send_drive_command(cmd_vel)
 
-        # if we see the fiduicial go to either fiducial 
+        # if we see the fiduicial go to either fiducial
         if self.context.env.current_fid_pos() is not None and self.context.course.look_for_post():
             return SearchStateTransitions.found_fiducial_post.name  # type: ignore
-        
+
         return SearchStateTransitions.continue_search.name  # type: ignore

@@ -27,8 +27,6 @@ REF_LON = rospy.get_param("gps_linearization/reference_point_longitude")
 tf_broadcaster: tf2_ros.StaticTransformBroadcaster = tf2_ros.StaticTransformBroadcaster()
 
 
-
-
 @dataclass
 class Rover:
     ctx: Context
@@ -106,7 +104,6 @@ class Environment:
         return self.get_fid_pos(current_waypoint.fiducial_id, in_odom)
 
 
-
 @dataclass
 class Course:
     ctx: Context
@@ -140,7 +137,6 @@ class Course:
         if self.course_data is None or self.waypoint_index >= len(self.course_data.waypoints):
             return None
         return self.course_data.waypoints[self.waypoint_index]
-
 
     def look_for_post(self) -> bool:
         """
