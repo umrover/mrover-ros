@@ -57,7 +57,7 @@ public:
         send_raw_data(messageName, {address, sizeof(T)});
     }
 
-    void send_raw_data(std::string const& messageName, std::span<std::byte> data) {
+    void send_raw_data(std::string const& messageName, std::span<std::byte const> data) {
         if (!m_message_name_to_id.contains(messageName)) {
             throw std::invalid_argument(std::format("message_name {} is not valid.", messageName));
         }

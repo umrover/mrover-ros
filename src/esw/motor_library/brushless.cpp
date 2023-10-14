@@ -1,6 +1,6 @@
 #include "brushless.hpp"
 
-void BrushlessController::update(const std::vector<uint8_t>& frame) {
+void BrushlessController::update(std::span<std::byte const> frame) {
     if (frame.empty()) {
         return; // TODO
     } else {

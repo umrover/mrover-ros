@@ -54,7 +54,7 @@ enum class ErrorCode {
 
 class BrushlessController : public Controller {
 public:
-    void update(const std::vector<uint8_t>& frame) override;
+    void update(std::span<std::byte const> frame) override;
 
     void set_desired_speed_unit(double speed) override; // from -1.0 to 1.0
 

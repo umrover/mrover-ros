@@ -1,6 +1,6 @@
 #include "brushed.hpp"
 
-void BrushedController::update(const std::vector<uint8_t>& frame) {
+void BrushedController::update(std::span<std::byte const> frame) {
     if (frame.empty()) {
         return;
     } else {

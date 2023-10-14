@@ -13,7 +13,7 @@ public:
     virtual ~Controller() = default;
 
     // will receive CAN frame with updated motor information (current speed, position, etc.)
-    virtual void update(const std::vector<uint8_t>& frame) = 0;
+    virtual void update(std::span<std::byte const> frame) = 0;
 
     virtual void set_desired_throttle(float throttle) = 0; // from -1.0 to 1.0
     virtual void set_desired_velocity(float velocity) = 0; // in rad/s of joint output
@@ -26,6 +26,7 @@ public:
 protected:
     std::string name;
     CANManager can_manager;
+    // TODO(quintin) use units library here please!
     float velocity{};
     float position{};
     float min_velocity{}; // this is min_velocity of joint output
