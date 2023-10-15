@@ -1,0 +1,18 @@
+<launch>
+    <arg name="manual" default="false"/>
+    <arg name="rvizconfig" default="$(find mrover)/config/rviz/arm.rviz"/>
+
+    <param name="robot_description" command="xacro $(find mrover)/urdf/arm/arm.urdf.xacro"/>
+
+    <node if="$(arg manual)" name="joint_state_publisher" pkg="joint_state_publisher_gui"
+          type="joint_state_publisher_gui"/>
+    <group unless="$(arg manual)">
+        <node name="arm_controller" pkg="mrover" type="arm_controller"/>
+        <node name="sim_arm_bridge" pkg="mrover" type="sim_arm_bridge"/>
+        <node name="debug_arm_ik" pkg="mrover" type="debug_arm_ik.py"/>
+    </group>
+
+    <node name="robot_state_publisher" pkg="robot_state_publisher" type="robot_state_publisher"/>
+
+    <node name="rviz" pkg="rviz" type="rviz" args="-d $(arg rvizconfig)" required="true"/>
+</launch>
