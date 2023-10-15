@@ -1,13 +1,11 @@
 #include "can_node.hpp"
 
 #include <mutex>
-#include <system_error>
-
 #include <nodelet/loader.h>
-#include <nodelet/nodelet.h>
 #include <ros/init.h>
 #include <ros/names.h>
 #include <ros/this_node.h>
+#include <stdexcept>
 
 namespace mrover {
 
@@ -24,23 +22,23 @@ namespace mrover {
             mIsExtendedFrame = mNh.param<bool>("is_extended_frame", false);
 
             if ((mSocket = socket(PF_CAN, SOCK_RAW, CAN_RAW)) < 0) {
-                throw std::system_error(errno, std::generic_category(), "Failed to make socket");
+                throw std::runtime_error("Failed to open socket");
             }
 
             ifreq ifr{};
-            strcpy(ifr.ifr_name, "can0");
-            if (ioctl(mSocket, SIOCGIFINDEX, &ifr) < 0) {
-                throw std::system_error(errno, std::generic_category(), "Failed to ioctl");
-            }
+            const char* interfaceName = "can0";
+            strcpy(ifr.ifr_name, interfaceName);
+            ioctl(mSocket, SIOCGIFINDEX, &ifr);
 
             sockaddr_can addr{
                     .can_family = AF_CAN,
                     .can_ifindex = ifr.ifr_ifindex,
             };
-            if (bind(mSocket, reinterpret_cast<sockaddr*>(&addr), sizeof(addr)) < 0) {
-                throw std::system_error(errno, std::generic_category(), "Failed to bind");
-            }
 
+
+            if (bind(mSocket, reinterpret_cast<sockaddr*>(&addr), sizeof(addr)) < 0) {
+                throw std::runtime_error("Failed to bind to socket");
+            }
         } catch (std::exception const& exception) {
             ROS_ERROR_STREAM(exception.what());
             ros::requestShutdown();
@@ -51,17 +49,18 @@ namespace mrover {
         this->mBus = bus;
     }
 
+    // todo(owen): while loop until nbytes == size of can frame
     void CanNodelet::sendFrame() const {
         size_t nbytes = write(mSocket, &mFrame, sizeof(can_frame));
         if (nbytes < sizeof(struct can_frame)) {
-            std::cout << "error: write incomplete CAN frame" << std::endl;
+            NODELET_INFO_STREAM("error: write incomplete CAN frame");
         }
         // sendto(mSocket, &mFrame, sizeof(can_frame), 0, nullptr, 0);
     }
 
     void CanNodelet::setFrameData(std::span<const std::byte> data) {
         std::memcpy(mFrame.data, data.data(), data.size());
-        mFrame.can_dlc = data.size();
+        mFrame.len = data.size();
     }
 
     void CanNodelet::setFrameId(uint32_t identifier) {
@@ -83,7 +82,7 @@ namespace mrover {
         setFrameId(msg->message_id);
         setFrameData({reinterpret_cast<std::byte const*>(msg->data.data()), msg->data.size()});
 
-        printFrame();
+        // printFrame();
 
         sendFrame();
     }
@@ -91,9 +90,9 @@ namespace mrover {
     void CanNodelet::printFrame() {
         std::cout << std::format("BUS: {}", mBus) << std::endl;
         std::cout << std::format("CAN_ID: {}", mFrame.can_id) << std::endl;
-        std::cout << std::format("LEN: {}", mFrame.can_dlc) << std::endl;
+        std::cout << std::format("LEN: {}", mFrame.len) << std::endl;
         std::cout << "DATA:" << std::endl;
-        for (uint8_t i = 0; i < mFrame.can_dlc; ++i) {
+        for (uint8_t i = 0; i < mFrame.len; ++i) {
             std::cout << std::format("Index = {}\tData = {:#X}", i, mFrame.data[i]) << std::endl;
         }
     }

@@ -46,8 +46,7 @@ namespace mrover {
         ros::NodeHandle mNh, mPnh;
 
         uint8_t mBus{};
-        can_frame mFrame{};
-        // canfd_frame mFrame{};
+        canfd_frame mFrame{};
         int mSocket{};
         bool mIsExtendedFrame{};
 
