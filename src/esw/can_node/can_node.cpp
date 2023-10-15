@@ -1,7 +1,10 @@
 #include "can_node.hpp"
 
 #include <mutex>
+#include <system_error>
+
 #include <nodelet/loader.h>
+#include <nodelet/nodelet.h>
 #include <ros/init.h>
 #include <ros/names.h>
 #include <ros/this_node.h>
@@ -13,29 +16,34 @@ namespace mrover {
     constexpr size_t CAN_EXTENDED_BIT_INDEX = 31;
 
     void CanNodelet::onInit() {
-        std::cout << "INIT";
-        mNh = getMTNodeHandle();
-        mPnh = getMTPrivateNodeHandle();
-        mCanSubscriber = mNh.subscribe<CAN>("can_requests", 1, &CanNodelet::handleMessage, this);
+        try {
+            mNh = getMTNodeHandle();
+            mPnh = getMTPrivateNodeHandle();
+            mCanSubscriber = mNh.subscribe<CAN>("can_requests", 1, &CanNodelet::handleMessage, this);
 
-        mIsExtendedFrame = mNh.param<bool>("is_extended_frame", false);
+            mIsExtendedFrame = mNh.param<bool>("is_extended_frame", false);
 
-        sockaddr_can addr{};
-        ifreq ifr{};
+            if ((mSocket = socket(PF_CAN, SOCK_RAW, CAN_RAW)) < 0) {
+                throw std::system_error(errno, std::generic_category(), "Failed to make socket");
+            }
 
-        if ((mSocket = socket(PF_CAN, SOCK_RAW, CAN_RAW)) < 0) {
-            std::cout << "Error while opening socket" << std::endl;
-        }
+            ifreq ifr{};
+            strcpy(ifr.ifr_name, "can0");
+            if (ioctl(mSocket, SIOCGIFINDEX, &ifr) < 0) {
+                throw std::system_error(errno, std::generic_category(), "Failed to ioctl");
+            }
 
-        const char* interfaceName = "can0";
-        strcpy(ifr.ifr_name, interfaceName);
-        ioctl(mSocket, SIOCGIFINDEX, &ifr);
+            sockaddr_can addr{
+                    .can_family = AF_CAN,
+                    .can_ifindex = ifr.ifr_ifindex,
+            };
+            if (bind(mSocket, reinterpret_cast<sockaddr*>(&addr), sizeof(addr)) < 0) {
+                throw std::system_error(errno, std::generic_category(), "Failed to bind");
+            }
 
-        addr.can_family = AF_CAN;
-        addr.can_ifindex = ifr.ifr_ifindex;
-
-        if (bind(mSocket, reinterpret_cast<sockaddr*>(&addr), sizeof(addr)) < 0) {
-            std::cout << "Error in socket bind" << std::endl;
+        } catch (std::exception const& exception) {
+            ROS_ERROR_STREAM(exception.what());
+            ros::requestShutdown();
         }
     }
 
