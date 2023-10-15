@@ -13,6 +13,7 @@ namespace mrover {
     constexpr size_t CAN_EXTENDED_BIT_INDEX = 31;
 
     void CanNodelet::onInit() {
+        std::cout << "INIT";
         mNh = getMTNodeHandle();
         mPnh = getMTPrivateNodeHandle();
         mCanSubscriber = mNh.subscribe<CAN>("can_requests", 1, &CanNodelet::handleMessage, this);
@@ -23,7 +24,7 @@ namespace mrover {
         ifreq ifr{};
 
         if ((mSocket = socket(PF_CAN, SOCK_RAW, CAN_RAW)) < 0) {
-            perror("Error while opening socket");
+            std::cout << "Error while opening socket" << std::endl;
         }
 
         const char* interfaceName = "can0";
@@ -34,7 +35,7 @@ namespace mrover {
         addr.can_ifindex = ifr.ifr_ifindex;
 
         if (bind(mSocket, reinterpret_cast<sockaddr*>(&addr), sizeof(addr)) < 0) {
-            perror("Error in socket bind");
+            std::cout << "Error in socket bind" << std::endl;
         }
     }
 
@@ -43,12 +44,16 @@ namespace mrover {
     }
 
     void CanNodelet::sendFrame() const {
-        // write(s, &frame, sizeof(struct can_frame));
-        sendto(mSocket, &mFrame, sizeof(can_frame), 0, nullptr, 0);
+        size_t nbytes = write(mSocket, &mFrame, sizeof(can_frame));
+        if (nbytes < sizeof(struct can_frame)) {
+            std::cout << "error: write incomplete CAN frame" << std::endl;
+        }
+        // sendto(mSocket, &mFrame, sizeof(can_frame), 0, nullptr, 0);
     }
 
     void CanNodelet::setFrameData(std::span<const std::byte> data) {
         std::memcpy(mFrame.data, data.data(), data.size());
+        mFrame.can_dlc = data.size();
     }
 
     void CanNodelet::setFrameId(uint32_t identifier) {
@@ -70,19 +75,28 @@ namespace mrover {
         setFrameId(msg->message_id);
         setFrameData({reinterpret_cast<std::byte const*>(msg->data.data()), msg->data.size()});
 
+        printFrame();
+
         sendFrame();
     }
 
     void CanNodelet::printFrame() {
         std::cout << std::format("BUS: {}", mBus) << std::endl;
         std::cout << std::format("CAN_ID: {}", mFrame.can_id) << std::endl;
-        std::cout << std::format("LEN: {}", mFrame.len) << std::endl;
+        std::cout << std::format("LEN: {}", mFrame.can_dlc) << std::endl;
         std::cout << "DATA:" << std::endl;
-        for (uint8_t i = 0; i < mFrame.len; ++i) {
+        for (uint8_t i = 0; i < mFrame.can_dlc; ++i) {
             std::cout << std::format("Index = {}\tData = {:#X}", i, mFrame.data[i]) << std::endl;
         }
     }
 } // namespace mrover
+
+#if MROVER_IS_NODELET
+
+#include <pluginlib/class_list_macros.h>
+PLUGINLIB_EXPORT_CLASS(mrover::CanNodelet, nodelet::Nodelet)
+
+#else
 
 int main(int argc, char** argv) {
     ros::init(argc, argv, "can_node");
@@ -96,5 +110,4 @@ int main(int argc, char** argv) {
     return EXIT_SUCCESS;
 }
 
-#include <pluginlib/class_list_macros.h>
-PLUGINLIB_EXPORT_CLASS(mrover::CanNodelet, nodelet::Nodelet)
+#endif

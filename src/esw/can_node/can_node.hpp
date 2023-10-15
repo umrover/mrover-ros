@@ -1,5 +1,6 @@
 #pragma once
 
+#include <bitset>
 #include <cstddef>
 #include <cstdint>
 #include <cstdio>
@@ -45,7 +46,8 @@ namespace mrover {
         ros::NodeHandle mNh, mPnh;
 
         uint8_t mBus{};
-        canfd_frame mFrame{};
+        can_frame mFrame{};
+        // canfd_frame mFrame{};
         int mSocket{};
         bool mIsExtendedFrame{};
 
