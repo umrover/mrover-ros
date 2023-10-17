@@ -214,6 +214,7 @@ if (ZED_FOUND)
     mrover_nodelet_link_libraries(object_detector PRIVATE opencv_core opencv_dnn opencv_imgproc lie)
     # Temporary
     mrover_nodelet_link_libraries(object_detector PRIVATE opencv_imgcodecs)
+    mrover_nodelet_link_libraries(object_detector PRIVATE opencv_highgui)
 
     mrover_add_nodelet(zed src/perception/zed_wrapper/*.c* src/perception/zed_wrapper src/perception/zed_wrapper/pch.hpp)
     mrover_nodelet_include_directories(zed ${ZED_INCLUDE_DIRS} ${CUDA_INCLUDE_DIRS})

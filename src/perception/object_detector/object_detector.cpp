@@ -18,29 +18,9 @@ namespace mrover {
         // Note(quintin): I downloaded this pt (PyTorch) model file from: https://github.com/ultralytics/assets/releases
         // TODO(percep/obj-detectr): make this configurable
 
-        cv::Mat rawImg = cv::imread("//home//jabra//Downloads//Water.jpg");
-        cv::Mat sizedImg;
-        cv::resize(rawImg, sizedImg, cv::Size(640, 640));
-        //cv::Mat imageView{static_cast<int>(msg->width), static_cast<int>(msg->height), CV_8UC3, const_cast<uint8_t*>(msg->data.data())};
-
-        std::vector<Detection> detections = inference.runInference(sizedImg);
-
-        Detection firstDetection = detections[0];
-
-        float classConfidence = 0.0;
-        cv::Rect box = firstDetection.box;
-
-
-        DetectedObject msgData;
-        msgData.object_type = firstDetection.className;
-        msgData.detection_confidence = classConfidence;
-        msgData.xBoxPixel = (float) box.x;
-        msgData.yBoxPixel = (float) box.y;
-        msgData.width = (float) box.width;
-        msgData.height = (float) box.height;
-        msgData.heading = 0;
-        ROS_INFO(firstDetection.className.c_str());
-
+        while (true) {
+            ObjectDetectorNodelet::imageCallback(sensor_msgs::ImageConstPtr());
+        }
         mImgSub = mNh.subscribe("image", 1, &ObjectDetectorNodelet::imageCallback, this);
     }
 
