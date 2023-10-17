@@ -15,11 +15,27 @@ namespace mrover {
 
     void CanNodelet::onInit() {
         try {
+            // todo(owen): Find better way to set interface up without system() calls
+            if (system("ip addr | grep -q can") != 0) {
+                throw std::runtime_error("Failed to find CAN device");
+            }
+            system("sudo modprobe can");
+            system("sudo modprobe can_raw");
+            system("sudo modprobe mttcan"); // Jetson CAN interface support
+            if (system("lsmod | grep -q can") != 0) {
+                throw std::runtime_error("Failed to modprobe can");
+            }
+            // Sets can0 with bus bit rate of 500 kbps and data bit rate of 1 Mbps
+            if (system("ip link set can0 up type can bitrate 500000 dbitrate 1000000 berr-reporting on fd on") == -1) {
+                throw std::runtime_error("Failed to set can0 up");
+            }
+
             mNh = getMTNodeHandle();
             mPnh = getMTPrivateNodeHandle();
             mCanSubscriber = mNh.subscribe<CAN>("can_requests", 1, &CanNodelet::handleMessage, this);
 
-            mIsExtendedFrame = mNh.param<bool>("is_extended_frame", false);
+            mIsExtendedFrame = mNh.param<bool>("is_extended_frame", true);
+
 
             if ((mSocket = socket(PF_CAN, SOCK_RAW, CAN_RAW)) < 0) {
                 throw std::runtime_error("Failed to open socket");
@@ -56,13 +72,14 @@ namespace mrover {
         this->mBus = bus;
     }
 
-    // todo(owen): while loop until nbytes == size of can frame
+    //todo(owen) Possible timeout mechanism? Maybe a limit of num writes before while look breaks and throws error
     void CanNodelet::sendFrame() const {
         size_t nbytes = write(mSocket, &mFrame, sizeof(can_frame));
-        if (nbytes < sizeof(struct can_frame)) {
-            NODELET_INFO_STREAM("error: write incomplete CAN frame");
+        while (nbytes < sizeof(struct can_frame)) {
+            // nbytes = sendto(mSocket, &mFrame, sizeof(can_frame), 0, nullptr, 0);
+            nbytes = write(mSocket, &mFrame, sizeof(can_frame));
         }
-        // sendto(mSocket, &mFrame, sizeof(can_frame), 0, nullptr, 0);
+        // NODELET_INFO_STREAM("error: write incomplete CAN frame");
     }
 
     void CanNodelet::setFrameData(std::span<const std::byte> data) {
