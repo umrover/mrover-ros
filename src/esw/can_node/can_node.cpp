@@ -75,7 +75,7 @@ namespace mrover {
     //todo(owen) Possible timeout mechanism? Maybe a limit of num writes before while look breaks and throws error
     void CanNodelet::sendFrame() const {
         size_t nbytes = write(mSocket, &mFrame, sizeof(can_frame));
-        while (nbytes < sizeof(struct can_frame)) {
+        while (nbytes != sizeof(struct can_frame)) {
             // nbytes = sendto(mSocket, &mFrame, sizeof(can_frame), 0, nullptr, 0);
             nbytes = write(mSocket, &mFrame, sizeof(can_frame));
         }
