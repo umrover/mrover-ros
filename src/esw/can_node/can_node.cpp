@@ -76,23 +76,18 @@ namespace mrover {
         }
     }
 
-    void CanNodelet::setBus(uint8_t bus) {
-        this->mBus = bus;
-    }
-
     //todo(owen) Possible timeout mechanism? Maybe a limit of num writes before while look breaks and throws error
     void CanNodelet::sendFrame() const {
-        size_t nbytes = write(mSocket, &mFrame, sizeof(can_frame));
-        while (nbytes != sizeof(struct can_frame)) {
-            // nbytes = sendto(mSocket, &mFrame, sizeof(can_frame), 0, nullptr, 0);
-            nbytes = write(mSocket, &mFrame, sizeof(can_frame));
+        size_t nbytes = write(mSocket, &mFrame, sizeof(canfd_frame));
+        while (nbytes != sizeof(struct canfd_frame)) {
+            // nbytes = sendto(mSocket, &mFrame, sizeof(canfd_frame), 0, nullptr, 0);
+            nbytes = write(mSocket, &mFrame, sizeof(canfd_frame));
         }
         // NODELET_INFO_STREAM("error: write incomplete CAN frame");
     }
 
-    void CanNodelet::setFrameData(std::span<const std::byte> data) {
-        std::memcpy(mFrame.data, data.data(), data.size());
-        mFrame.len = data.size();
+    void CanNodelet::setBus(uint8_t bus) {
+        this->mBus = bus;
     }
 
     void CanNodelet::setFrameId(uint32_t identifier) {
@@ -105,6 +100,11 @@ namespace mrover {
         can_id_bits.set(CAN_RTR_BIT_INDEX);
 
         mFrame.can_id = can_id_bits.to_ullong();
+    }
+
+    void CanNodelet::setFrameData(std::span<const std::byte> data) {
+        std::memcpy(mFrame.data, data.data(), data.size());
+        mFrame.len = data.size();
     }
 
     void CanNodelet::handleMessage(CAN::ConstPtr const& msg) {
