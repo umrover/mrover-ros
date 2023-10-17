@@ -18,6 +18,7 @@ namespace mrover {
         // Note(quintin): I downloaded this pt (PyTorch) model file from: https://github.com/ultralytics/assets/releases
         // TODO(percep/obj-detectr): make this configurable
 
+        //TEMP CODE
         while (true) {
             ObjectDetectorNodelet::imageCallback(sensor_msgs::ImageConstPtr());
         }
