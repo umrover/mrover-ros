@@ -13,24 +13,15 @@ namespace mrover {
     private:
         ros::NodeHandle mNh, mPnh;
 
-        // Publishers
-
-        std::optional<image_transport::ImageTransport> mIt;
-        image_transport::Publisher mImgPub;
-        std::unordered_map<int, image_transport::Publisher> mThreshPubs; // Map from threshold scale to publisher
+        ros::Publisher mImgPub;
+        std::unordered_map<int, ros::Publisher> mThreshPubs; // Map from threshold scale to publisher
         ros::ServiceServer mServiceEnableDetections;
 
-        // Subscribers
-
         ros::Subscriber mPcSub;
+        ros::Subscriber mImgSub;
         tf2_ros::Buffer mTfBuffer;
         tf2_ros::TransformListener mTfListener{mTfBuffer};
         tf2_ros::TransformBroadcaster mTfBroadcaster;
-
-        dynamic_reconfigure::Server<mrover::TagDetectorParamsConfig> mConfigServer;
-        dynamic_reconfigure::Server<mrover::TagDetectorParamsConfig>::CallbackType mCallbackType;
-
-        // Settings
 
         bool mEnableDetections = true;
         bool mUseOdom{};
@@ -40,10 +31,9 @@ namespace mrover {
         int mMaxHitCount{};
         int mTagIncrementWeight{};
         int mTagDecrementWeight{};
-        cv::aruco::DetectorParameters mDetectorParams;
-        cv::aruco::Dictionary mDictionary;
 
-        // Internal state
+        cv::Ptr<cv::aruco::DetectorParameters> mDetectorParams;
+        cv::Ptr<cv::aruco::Dictionary> mDictionary;
 
         cv::Mat mImg;
         cv::Mat mGrayImg;
@@ -54,9 +44,8 @@ namespace mrover {
         std::vector<std::vector<cv::Point2f>> mImmediateCorners;
         std::vector<int> mImmediateIds;
         std::unordered_map<int, Tag> mTags;
-        cv::aruco::ArucoDetector mDetector;
-
-        // Debug
+        dynamic_reconfigure::Server<mrover::TagDetectorParamsConfig> mConfigServer;
+        dynamic_reconfigure::Server<mrover::TagDetectorParamsConfig>::CallbackType mCallbackType;
 
         LoopProfiler mProfiler{"Tag Detector"};
 

@@ -41,25 +41,25 @@
 
   <!-- Common -->
   <buildtool_depend>catkin</buildtool_depend>
-  <build_depend>message_generation</build_depend>
   <depend>roscpp</depend>
   <depend>rospy</depend>
   <depend>std_msgs</depend>
+  <depend>geometry_msgs</depend>
   <depend>nodelet</depend>
+  <build_depend>message_generation</build_depend>
   <exec_depend>xacro</exec_depend>
-  <exec_depend>message_runtime</exec_depend>
-  <exec_depend>joint_state_publisher</exec_depend>
   <exec_depend>robot_state_publisher</exec_depend>
+  <exec_depend>joint_state_publisher</exec_depend>
+  <exec_depend>joint_state_publisher_gui</exec_depend>
+  <exec_depend>message_runtime</exec_depend>
 
   <!-- Visualization -->
-  <depend>rviz</depend>
-  <depend>hector_trajectory_server</depend>
+  <exec_depend>rviz</exec_depend>
 
   <!-- Perception -->
   <depend>tf2</depend>
   <depend>tf2_ros</depend>
   <depend>tf2_geometry_msgs</depend>
-  <depend>image_transport</depend>
   <depend>sensor_msgs</depend>
   <depend>dynamic_reconfigure</depend>
 
@@ -73,12 +73,12 @@
   <depend>control_msgs</depend>
 
   <!-- Teleop -->
-  <depend>teleop_twist_joy</depend>
+  <exec_depend>teleop_twist_joy</exec_depend>
 
   <!-- Simulation -->
   <depend>gazebo_ros</depend>
-  <depend>hector_gazebo</depend>
-  <depend>teleop_twist_keyboard</depend>
+  <exec_depend>hector_gazebo</exec_depend>
+  <exec_depend>teleop_twist_keyboard</exec_depend>
 
   <!-- Test -->
   <test_depend>rosunit</test_depend>

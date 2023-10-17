@@ -49,7 +49,7 @@ namespace mrover {
         // So we need to copy the data into the correct format
         if (static_cast<int>(msg->height) != mImg.rows || static_cast<int>(msg->width) != mImg.cols) {
             NODELET_INFO("Image size changed from [%d %d] to [%u %u]", mImg.cols, mImg.rows, msg->width, msg->height);
-            mImg = cv::Mat::zeros(msg->height, msg->width, CV_8UC3);
+            mImg = cv::Mat{static_cast<int>(msg->height), static_cast<int>(msg->width), CV_8UC3, cv::Scalar{0, 0, 0}};
         }
         auto* pixelPtr = reinterpret_cast<cv::Vec3b*>(mImg.data);
         auto* pointPtr = reinterpret_cast<Point const*>(msg->data.data());
@@ -66,10 +66,16 @@ namespace mrover {
         mProfiler.measureEvent("Threshold");
 
         // Detect the tag vertices in screen space and their respective ids
-        // {mImmediateCorners, mImmediateIds} are the outputs from OpenCV
-        mDetector.setDictionary(mDictionary);
-        mDetector.setDetectorParameters(mDetectorParams);
-        mDetector.detectMarkers(mImg, mImmediateCorners, mImmediateIds);
+        // {mImmediateCorneres, mImmediateIds} are the outputs from OpenCV
+#if CV_VERSION_MINOR <= 6
+        cv::aruco::detectMarkers(mImg, mDictionary, mImmediateCorners, mImmediateIds, mDetectorParams);
+#else
+        // TODO(quintin) this is not ideal
+        static cv::aruco::ArucoDetector detector;
+        detector.setDictionary(*mDictionary);
+        detector.setDetectorParameters(*mDetectorParams);
+        detector.detectMarkers(mImg, mImmediateCorners, mImmediateIds);
+#endif
         NODELET_DEBUG("OpenCV detect size: %zu", mImmediateIds.size());
         mProfiler.measureEvent("OpenCV Detect");
 
@@ -135,7 +141,7 @@ namespace mrover {
                 for (auto& [id, tag]: mTags) {
                     cv::Scalar color{255, 0, 0};
                     cv::Point pt{tagBoxWidth * tagCount, mImg.rows / 10};
-                    std::string text = "id" + std::to_string(id) + ":" + std::to_string((tag.hitCount));
+                    std::string text = "id" + std::to_string(id) + ":" + std::to_string(tag.hitCount);
                     cv::putText(mImg, text, pt, cv::FONT_HERSHEY_COMPLEX, mImg.cols / 800.0, color, mImg.cols / 300);
 
                     ++tagCount;

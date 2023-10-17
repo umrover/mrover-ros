@@ -3,9 +3,9 @@
 	Positions will be published to /ra_cmd 
 -->
 <launch>
-	<include file="$(find mrover_arm)/launch/demo.launch">
-		<arg name="moveit_controller_manager" value="simple" />
-    </include>
-	
-	<node name="mrover_arm_follow_joint_trajectory" pkg="mrover" type="arm_trajectory"></node>
+  <include file="$(find mrover_arm)/launch/demo.launch">
+    <arg name="moveit_controller_manager" value="simple"/>
+  </include>
+
+  <node name="mrover_arm_follow_joint_trajectory" pkg="mrover" type="arm_trajectory"/>
 </launch>

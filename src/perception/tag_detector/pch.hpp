@@ -19,9 +19,9 @@
 #include <opencv2/imgproc.hpp>
 
 #include <dynamic_reconfigure/server.h>
-#include <image_transport/image_transport.h>
 #include <nodelet/loader.h>
 #include <nodelet/nodelet.h>
+#include <sensor_msgs/Image.h>
 #include <sensor_msgs/PointCloud2.h>
 #include <sensor_msgs/image_encodings.h>
 #include <sensor_msgs/point_cloud2_iterator.h>

@@ -30,8 +30,7 @@ namespace mrover {
         tf2_ros::Buffer mTfBuffer;
         tf2_ros::TransformListener mTfListener{mTfBuffer};
         tf2_ros::TransformBroadcaster mTfBroadcaster;
-        ros::Publisher mPcPub, mImuPub, mMagPub, mLeftCamInfoPub, mRightCamInfoPub;
-        image_transport::Publisher mLeftImgPub, mRightImgPub;
+        ros::Publisher mPcPub, mImuPub, mMagPub, mLeftCamInfoPub, mRightCamInfoPub, mLeftImgPub, mRightImgPub;
 
         PointCloudGpu mPointCloudGpu;
 
