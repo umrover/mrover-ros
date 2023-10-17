@@ -10,7 +10,7 @@ namespace mrover {
 
         //Inference
 
-        inference = Inference("/home/jabra/Downloads/yolov8s.pt", cv::Size(720, 480), "", false);
+        inference = Inference("//home//jabra//Desktop//Rover//yolov8s.onnx", cv::Size(640, 640), "", false);
 
         //read ONNX file into this mNet, YOLOV8, second smallest one
         // Note(quintin): I downloaded this pt (PyTorch) model file from: https://github.com/ultralytics/assets/releases

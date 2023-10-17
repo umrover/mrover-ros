@@ -8,6 +8,7 @@
 #include <opencv2/core/types.hpp>
 #include <opencv2/dnn/dnn.hpp>
 #include <opencv2/imgcodecs.hpp>
+#include <opencv2/imgproc.hpp>
 #include <string>
 #include <vector>
 
@@ -18,18 +19,12 @@ namespace mrover {
         assert(msg);
         assert(msg->height > 0);
         assert(msg->width > 0);
-        cv::Mat imageView = cv::imread("/home/jabra/Downloads/Water.jpg");
+        cv::Mat rawImg = cv::imread("//home//jabra//Downloads//Water.jpg");
+        cv::Mat sizedImg;
+        cv::resize(rawImg, sizedImg, cv::Size(640, 640));
         //cv::Mat imageView{static_cast<int>(msg->width), static_cast<int>(msg->height), CV_8UC3, const_cast<uint8_t*>(msg->data.data())};
 
-        std::vector<Detection> detections = inference.runInference(imageView);
-
-        // struct Detection {
-        //     int class_id{0};
-        //     std::string className{};
-        //     float confidence{0.0};
-        //     cv::Scalar color{};
-        //     cv::Rect box{};
-        // };
+        std::vector<Detection> detections = inference.runInference(sizedImg);
 
         Detection firstDetection = detections[0];
 
@@ -53,6 +48,7 @@ namespace mrover {
         objectHeading = xCenter * fovPerPixel;
         msgData.heading = objectHeading;
 
+        ROS_INFO("%f", msgData.xBoxPixel);
 
         //Look at yolov8 documentation for the output matrix
 
