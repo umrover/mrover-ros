@@ -19,12 +19,20 @@ namespace mrover {
             if (system("ip addr | grep -q can") != 0) {
                 throw std::runtime_error("Failed to find CAN device");
             }
-            system("sudo modprobe can");
-            system("sudo modprobe can_raw");
-            system("sudo modprobe mttcan"); // Jetson CAN interface support
-            if (system("lsmod | grep -q can") != 0) {
+
+            if (system("sudo modprobe can") == -1) {
                 throw std::runtime_error("Failed to modprobe can");
             }
+            if (system("sudo modprobe can_raw") == -1) {
+                throw std::runtime_error("Failed to modprobe can_raw");
+            }
+            if (system("sudo modprobe mttcan") == -1) { // Jetson CAN interface support
+                throw std::runtime_error("Failed to modprobe mttcan");
+            }
+            if (system("lsmod | grep -q can") != 0) {
+                throw std::runtime_error("Failed to modprobe can drivers");
+            }
+
             // Sets can0 with bus bit rate of 500 kbps and data bit rate of 1 Mbps
             if (system("ip link set can0 up type can bitrate 500000 dbitrate 1000000 berr-reporting on fd on") == -1) {
                 throw std::runtime_error("Failed to set can0 up");
