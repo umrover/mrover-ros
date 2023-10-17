@@ -39,6 +39,13 @@ namespace mrover {
             if (bind(mSocket, reinterpret_cast<sockaddr*>(&addr), sizeof(addr)) < 0) {
                 throw std::runtime_error("Failed to bind to socket");
             }
+
+            int enable_canfd = 1;
+            if (setsockopt(mSocket, SOL_CAN_RAW, CAN_RAW_FD_FRAMES, &enable_canfd, sizeof(enable_canfd)) < 0) {
+                throw std::runtime_error("Failed to enable CAN FD");
+            }
+
+
         } catch (std::exception const& exception) {
             ROS_ERROR_STREAM(exception.what());
             ros::requestShutdown();
