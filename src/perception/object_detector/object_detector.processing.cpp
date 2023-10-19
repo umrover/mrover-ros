@@ -18,15 +18,15 @@
 namespace mrover {
 
     void ObjectDetectorNodelet::imageCallback(sensor_msgs::ImageConstPtr const& msg) {
-        //assert(msg);
-        //assert(msg->height > 0);
-        //assert(msg->width > 0);
+        assert(msg);
+        assert(msg->height > 0);
+        assert(msg->width > 0);
         cv::VideoCapture cap(0);
         cv::Mat rawImg; // = cv::imread("//home//jabra//Downloads//Water.jpg");
         cap.read(rawImg);
         cv::Mat sizedImg;
         cv::resize(rawImg, sizedImg, cv::Size(640, 640));
-        //cv::Mat imageView{static_cast<int>(msg->width), static_cast<int>(msg->height), CV_8UC3, const_cast<uint8_t*>(msg->data.data())};
+        cv::Mat imageView{static_cast<int>(msg->width), static_cast<int>(msg->height), CV_8UC3, const_cast<uint8_t*>(msg->data.data())};
 
         std::vector<Detection> detections = inference.runInference(sizedImg);
         if (!detections.empty()) {
@@ -34,7 +34,6 @@ namespace mrover {
 
             float classConfidence = 0.0;
             cv::Rect box = firstDetection.box;
-
 
             DetectedObject msgData;
             msgData.object_type = firstDetection.className;

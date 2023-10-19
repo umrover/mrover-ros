@@ -1,9 +1,12 @@
 #include "object_detector.hpp"
 #include "inference.h"
+#include <cv_bridge/cv_bridge.h>
 #include <mrover/DetectedObject.h>
 #include <opencv2/core/types.hpp>
+#include <opencv2/videoio.hpp>
 #include <sensor_msgs/Image.h>
 #include <string>
+
 
 namespace mrover {
 
@@ -19,8 +22,12 @@ namespace mrover {
         // TODO(percep/obj-detectr): make this configurable
 
         //TEMP CODE
+        cv::VideoCapture cap(0);
+        cv::Mat img;
         while (true) {
-            ObjectDetectorNodelet::imageCallback(sensor_msgs::ImageConstPtr());
+            cap.read(img);
+            sensor_msgs::ImageConstPtr imgMsg = cv_bridge::CvImage(std_msgs::Header(), "bgr8", img).toImageMsg();
+            ObjectDetectorNodelet::imageCallback(imgMsg);
         }
         mImgSub = mNh.subscribe("image", 1, &ObjectDetectorNodelet::imageCallback, this);
     }
