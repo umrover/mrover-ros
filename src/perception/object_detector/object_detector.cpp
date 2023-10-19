@@ -25,13 +25,13 @@ namespace mrover {
         cv::VideoCapture cap(0);
         cv::Mat img;
         while (true) {
-            cap.read(img);
-            sensor_msgs::ImageConstPtr imgMsg = cv_bridge::CvImage(std_msgs::Header(), "bgr8", img).toImageMsg();
-            ObjectDetectorNodelet::imageCallback(imgMsg);
+            if (cap.read(img)) {
+                sensor_msgs::ImageConstPtr imgMsg = cv_bridge::CvImage(std_msgs::Header(), "bgr8", img).toImageMsg();
+                ObjectDetectorNodelet::imageCallback(imgMsg);
+            }
         }
         mImgSub = mNh.subscribe("image", 1, &ObjectDetectorNodelet::imageCallback, this);
     }
-
 } // namespace mrover
 
 int main(int argc, char** argv) {

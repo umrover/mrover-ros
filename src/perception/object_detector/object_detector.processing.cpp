@@ -1,5 +1,6 @@
 #include "object_detector.hpp"
 #include "inference.h"
+#include <cv_bridge/cv_bridge.h>
 #include <mrover/DetectedObject.h>
 #include <opencv2/core.hpp>
 #include <opencv2/core/cvstd.hpp>
@@ -21,12 +22,17 @@ namespace mrover {
         assert(msg);
         assert(msg->height > 0);
         assert(msg->width > 0);
-        cv::VideoCapture cap(0);
-        cv::Mat rawImg; // = cv::imread("//home//jabra//Downloads//Water.jpg");
-        cap.read(rawImg);
+        typedef boost::shared_ptr<cv_bridge::CvImage> CvImagePtr;
+        CvImagePtr ptr = cv_bridge::toCvCopy(msg, sensor_msgs::image_encodings::BGR8);
+        cv::Mat rawImg = ptr->image.clone();
+        //cv::Mat rawImg{static_cast<int>(msg->width), static_cast<int>(msg->height), CV_8UC3, const_cast<uint8_t*>(msg->data.data())};
+        ROS_INFO("bool %d", rawImg.cols);
         cv::Mat sizedImg;
+        cv::imshow("window", rawImg);
+        cv::waitKey(0);
+
         cv::resize(rawImg, sizedImg, cv::Size(640, 640));
-        cv::Mat imageView{static_cast<int>(msg->width), static_cast<int>(msg->height), CV_8UC3, const_cast<uint8_t*>(msg->data.data())};
+        // ROS_INFO("width %d height %d", rawImg.cols, rawImg.rows);
 
         std::vector<Detection> detections = inference.runInference(sizedImg);
         if (!detections.empty()) {
