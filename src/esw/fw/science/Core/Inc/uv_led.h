@@ -9,14 +9,14 @@ typedef struct
     /* data */
     GPIO_InitTypeDef p; 
     uint16_t pin;
-}white_led;
+}uv_led;
 
 // REQUIRES: led is an white_led object
 // MODIFIES: pin
 // EFFECTS: set the value of pin ot value
-void set_pin_value(white_led *led, bool value);
+void set_pin_value(uv_led *led, bool value);
 
 // REQUIRES: led is an white_led object
 // MODIFIES: 
 // EFFECTS: get the value of pin
-bool get_pin_value(white_led *led);
+bool get_pin_value(uv_led *led);
