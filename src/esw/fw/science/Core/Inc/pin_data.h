@@ -1,3 +1,5 @@
+//COPIED FROM LAST YEAR'S CODE MAY NOT BE NEEDED
+
 #pragma once
 
 #include "stm32g4xx_hal.h"

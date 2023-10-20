@@ -52,18 +52,40 @@ uint16_t get_spectral_channel_data(Spectral *spectral, uint8_t channel){
 	return spectral->channel_data;
 }
 
-//REQUIRES: sensors is an array of Spectral structs of size 3
-//MODIFIES: nothing
-//EFFECTS: returns a pointer to the spectral sensor that should be used
+/*REQUIRES: i2c_mux0 and 1 are valid GPIO pins, i2c_mux_pins are valid pins, and 
+spectral_sensor_number is the number of the sensor to be turned on (0 - 2 inclusive)
+Mux system (i2c_mux0_pin, i2c_mux1_pin) => Spectral sensor:
+1, 1 => Not allowed
+1, 0 => Spectral sensor 2
+0, 1 => Spectral sensor 1
+0, 0 => Spectral sensor 0
+*/
+//MODIFIES: mux pins are set so that the right spectral sensor is enabled.
+//EFFECTS: None
 Spectral* get_active_spectral_sensor(GPIO_InitTypeDef i2c_mux0, int i2c_mux0_pin, 
-    			GPIO_InitTypeDef i2c_mux1, int i2c_mux1_pin, Spectral sensors[] ) {
+    			GPIO_InitTypeDef i2c_mux1, int i2c_mux1_pin, int spectral_sensor_number) {
 
-	int pin1 = HAL_GPIO_ReadPin(i2c_mux0, i2c_mux0_pin);
-    int pin2 = HAL_GPIO_ReadPin(i2c_mux1, i2c_mux1_pin);
-    if (pin1 && pin2){
-        return NULL;
+    if (spectral_sensor_number > 2 || spectral_sensor_number < 0){
+        failed = true;
+        return;
     }
-    return &(sensors[2 * pin1 + pin2]);
+
+    if (spectral_sensor_number == 2){
+        HAL_GPIO_WritePin(i2c_mux0, i2c_mux0_pin, GPIO_PIN_SET);
+        HAL_GPIO_WritePin(i2c_mux1, i2c_mux1_pin, GPIO_PIN_RESET);
+        return;
+    }
+
+    if (spectral_sensor_number == 1){
+        HAL_GPIO_WritePin(i2c_mux0, i2c_mux0_pin, GPIO_PIN_RESET);
+        HAL_GPIO_WritePin(i2c_mux1, i2c_mux1_pin, GPIO_PIN_SET);
+        return;
+    }
+
+    HAL_GPIO_WritePin(i2c_mux0, i2c_mux0_pin, GPIO_PIN_RESET);
+    HAL_GPIO_WritePin(i2c_mux1, i2c_mux1_pin, GPIO_PIN_RESET);
+    return;
+
 }
 
 

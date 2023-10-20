@@ -38,7 +38,7 @@ uint16_t get_spectral_channel_data(Spectral *spectral, uint8_t channel);
 //MODIFIES: nothing
 //EFFECTS: returns a pointer to the spectral sensor that should be used
 Spectral* get_active_spectral_sensor(GPIO_InitTypeDef i2c_mux0, int i2c_mux0_pin, 
-    			GPIO_InitTypeDef i2c_mux1, int i2c_mux1_pin, Spectral sensors[] )
+    			GPIO_InitTypeDef i2c_mux1, int i2c_mux1_pin, Spectral sensors[] );
 
 
 // TODO: add virtual read and write functions (find information from datasheet)
