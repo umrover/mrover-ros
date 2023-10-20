@@ -6,12 +6,12 @@
 
 // TODO(quintin) this is not defined in my system can header for some reason, but moteus needs it? Is this the correct value?
 #define CANFD_FDF 0x04
-#include <moteus/moteus.h>
+//#include <moteus/moteus.h>
 
 #include <can_manager.hpp>
 #include <controller.hpp>
 
-using namespace mjbots;
+//using namespace mjbots;
 
 namespace mrover {
 
@@ -65,7 +65,7 @@ namespace mrover {
         void set_desired_speed_rev_s(double speed) {} // in rev/s
 
         void set_desired_torque() {
-            moteus::Controller::Options options;
+            /*moteus::Controller::Options options;
             options.id = 1;
 
             moteus::Controller controller(options);
@@ -90,9 +90,11 @@ namespace mrover {
             //            send_frames.push_back(controller.MakeCurrent(cmd));
             //            transport->BlockingCycle(&send_frames[0], send_frames.size(),
             //                                     &receive_frames);
+            */
         }
 
         void set_desired_position(int position) {
+            /*
             moteus::Controller::Options options;
             options.id = 1;
 
@@ -123,6 +125,7 @@ namespace mrover {
                             r.fault);
                 std::fflush(stdout);
             }
+            */
         }
 
         // TODO
@@ -141,6 +144,7 @@ namespace mrover {
             // There are many possible options to set for each controller
             // instance.  Here we re-set the ID to the default (1), just to show
             // how it is done.
+            /*
             moteus::Controller::Options options;
             options.id = 1;
 
@@ -168,6 +172,7 @@ namespace mrover {
 
             transport->BlockingCycle(&send_frames[0], send_frames.size(),
                                      &receive_frames);
+                                     */
         }
 
         void set_desired_throttle(Dimensionless throttle) override;

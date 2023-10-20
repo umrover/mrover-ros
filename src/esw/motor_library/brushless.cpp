@@ -21,6 +21,7 @@ namespace mrover {
     void BrushlessController::set_desired_position(Radians position) {
         position = std::clamp(position, min_position, max_position);
         // TODO - need to convert to use revs
+
         can_manager.send_data("position_cmd", position);
     }
 
