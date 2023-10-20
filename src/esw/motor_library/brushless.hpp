@@ -91,7 +91,7 @@ public:
     
     }
 
-    void set_desired_position(int position) override {
+    void set_desired_position(float position) override {
         moteus::Controller::Options options;
         options.id = 1;
 
@@ -129,7 +129,7 @@ public:
         return MotorType::Brushless;
     }
     
-    void test_set_velocity(double speed) {
+     uint8_t[64] test_set_velocity(double speed) {
 
     // The following DefaultArgProcess is an optional call.  If made,
     // then command line arguments will be handled which allow setting
@@ -165,13 +165,14 @@ public:
 
         
         send_frames.push_back(controller.MakePosition(cmd));
+
+        return send_frames[0].data;
        
-        transport->BlockingCycle(&send_frames[0], send_frames.size(),
-                             &receive_frames);
+      //  transport->BlockingCycle(&send_frames[0], send_frames.size(),
+       //                      &receive_frames);
     }
     void set_desired_throttle(float throttle) override; // from -1.0 to 1.0
     void set_desired_velocity(float velocity) override; // in rev/s
-    void set_desired_position(float position) override;
 
     BrushlessController(ros::NodeHandle& nh, const std::string& name) : Controller(nh, name) {
         torque = 0.3f;

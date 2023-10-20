@@ -27,3 +27,11 @@ void BrushlessController::set_desired_velocity(float velocity) {
     // TODO - need to convert to use rev/s
     can_manager.send_data("velocity_cmd", velocity);
 }
+
+int main() {
+    uint8_t[64] velocity = test_set_velocity(5.0);
+    cout << velocity;
+    
+
+    //can_manager.send_data("velocity_cmd", velocity);
+}
