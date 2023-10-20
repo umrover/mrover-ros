@@ -2,9 +2,7 @@
 
 #include <motors_manager.hpp>
 
-std::unique_ptr<MotorsManager> cacheManager;
-std::vector<std::string> cacheNames =
-        {"cache"};
+std::vector<std::string> cacheNames{"cache"};
 
 int main(int argc, char** argv) {
     // Initialize the ROS node
@@ -12,10 +10,10 @@ int main(int argc, char** argv) {
     ros::NodeHandle nh;
 
     // Load motor controllers configuration from the ROS parameter server
-    cacheManager = std::make_unique<MotorsManager>(nh, "cache", cacheNames);
+    [[maybe_unused]] auto cacheManager = std::make_unique<mrover::MotorsManager>(nh, "cache", cacheNames);
 
     // Enter the ROS event loop
     ros::spin();
 
-    return 0;
+    return EXIT_SUCCESS;
 }
