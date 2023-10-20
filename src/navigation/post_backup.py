@@ -13,8 +13,10 @@ from util.np_utils import perpendicular_2d
 from util.ros_utils import get_rosparam
 
 from context import Context
-from state import BaseState
 from trajectory import Trajectory
+
+from util.state_lib.state import State
+import waypoint, recovery
 
 POST_RADIUS = get_rosparam("gate/post_radius", 0.7) * get_rosparam("single_fiducial/post_avoidance_multiplier", 1.42)
 BACKUP_DISTANCE = get_rosparam("recovery/recovery_distance", 2.0)
@@ -90,39 +92,27 @@ class AvoidPostTrajectory(Trajectory):
         return AvoidPostTrajectory(coords)
 
 
-class PostBackupTransitions(Enum):
-    _settings_ = NoAlias
-    # State Transitions
-    finished_traj = "WaypointState"
-    recovery_state = "RecoveryState"
-    continue_post_backup = "PostBackupState"
 
+class PostBackupState(State):
 
-class PostBackupState(BaseState):
-    def __init__(
-        self,
-        context: Context,
-    ):
-        own_transitions = [PostBackupTransitions.continue_post_backup.name]  # type: ignore
-        super().__init__(context, own_transitions, add_outcomes=[transition.name for transition in PostBackupTransitions])  # type: ignore
-        self.traj: Optional[AvoidPostTrajectory] = None
-
-    def reset(self):
+    def on_exit(self, context):
         self.traj = None
+    
+    def on_enter(self, context) -> None:
+        if context.env.last_post_location is None:
+            self.traj = None
+        else:
+            self.traj = AvoidPostTrajectory.avoid_post_trajectory(
+                context.rover.get_pose(),
+                context.env.last_post_location,
+                context.course.current_waypoint_pose().position,
+            )
+            self.traj.cur_pt = 0
 
-    def evaluate(self, ud):
+    def on_loop(self, context) -> State:
         try:
             if self.traj is None:
-                if self.context.env.last_post_location is None:
-                    rospy.logerr("PostBackupState: last_post_location is None")
-                    return PostBackupTransitions.finished_traj.name  # type: ignore
-
-                self.traj = AvoidPostTrajectory.avoid_post_trajectory(
-                    self.context.rover.get_pose(),
-                    self.context.env.last_post_location,
-                    self.context.course.current_waypoint_pose().position,
-                )
-                self.traj.cur_pt = 0
+                return waypoint.WaypointState()
 
             target_pos = self.traj.get_cur_pt()
 
@@ -130,9 +120,9 @@ class PostBackupState(BaseState):
             point_index = self.traj.cur_pt
             drive_backwards = point_index == 0
 
-            cmd_vel, arrived = self.context.rover.driver.get_drive_command(
+            cmd_vel, arrived = context.rover.driver.get_drive_command(
                 target_pos,
-                self.context.rover.get_pose(),
+                context.rover.get_pose(),
                 STOP_THRESH,
                 DRIVE_FWD_THRESH,
                 drive_back=drive_backwards,
@@ -141,18 +131,18 @@ class PostBackupState(BaseState):
                 print(f"ARRIVED AT POINT {point_index}")
                 if self.traj.increment_point():
                     self.traj = None
-                    return PostBackupTransitions.finished_traj.name  # type: ignore
+                    return waypoint.WaypointState()
 
-            if self.context.rover.stuck:
-                self.context.rover.previous_state = PostBackupTransitions.continue_post_backup.name  # type: ignore
+            if context.rover.stuck:
+                context.rover.previous_state = self
                 self.traj = None
-                return PostBackupTransitions.recovery_state.name  # type: ignore
+                return recovery.RecoveryState()
 
-            self.context.rover.send_drive_command(cmd_vel)
-            return PostBackupTransitions.continue_post_backup.name  # type: ignore
+            context.rover.send_drive_command(cmd_vel)
+            return self
         except (
             tf2_ros.LookupException,
             tf2_ros.ConnectivityException,
             tf2_ros.ExtrapolationException,
         ):
-            return PostBackupTransitions.continue_post_backup.name  # type: ignore
+            return self

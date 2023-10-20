@@ -1,4 +1,5 @@
-from state_machine import StateMachine
+from __future__ import annotations
+from util.state_lib.state_machine import StateMachine
 from state import State
 import rospy
 from mrover.msg import StateMachineStructure, StateMachineTransition, StateMachineStateUpdate
@@ -25,6 +26,8 @@ class StatePublisher:
         self.__struct_thread = threading.Thread(target=self.run_at_interval, args=(self.publish_structure, structure_update_rate_hz))
         self.__state_thread = threading.Thread(target=self.run_at_interval, args=(self.publish_state, state_update_rate_hz))
         self.__stop = False
+        self.__struct_thread.start()
+        self.__state_thread.start()
     
     def stop(self) -> None:
         with self.__stop_lock:
@@ -48,7 +51,7 @@ class StatePublisher:
         state.state = str(cur_state)
         state_publiser.publish(state)
     
-    def run_at_interval(self, func: Callable[[StatePublisher, [None]]], update_hz: float):
+    def run_at_interval(self, func: Callable[[StatePublisher], None], update_hz: float):
         desired_loop_time = 1.0 / update_hz
         while True:
             start_time = time.time()

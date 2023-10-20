@@ -1,5 +1,5 @@
 from .state import State, ExitState
-from typing import Dict, Set, List, Callable
+from typing import Dict, Set, List, Callable, Any, Optional
 import time
 from dataclasses import dataclass
 from threading import Lock
@@ -14,15 +14,20 @@ class StateMachine:
     def __init__(self, initial_state: State, name: str):
         self.current_state = initial_state
         self.state_lock = Lock()
-        self.state_transitions: Dict[type[State], Set[type[State]]]  = {}
+        self.state_transitions: Dict[type[State], Set[type[State]]]  = {type(self.current_state) : set()}
         self.transition_log: List[TransitionRecord] = []
         self.context = None
         self.name = name
+        self.off_lamdba = None
+        self.off_state = None
     
     def __update(self):
         with self.state_lock:
             current_state = self.current_state
-        next_state = current_state.on_loop(self.context)
+        if self.off_lambda is not None and self.off_lambda(self.context):
+            next_state = self.off_state
+        else:
+            next_state = current_state.on_loop(self.context)
         if type(next_state) not in self.state_transitions[type(current_state)]:
             raise Exception(f"Invalid transition from {current_state} to {next_state}")
         if type(next_state) is not type(current_state):
@@ -52,11 +57,27 @@ class StateMachine:
                 warning_handle(f"[WARNING] state machine loop overran target loop time by {elapsed_time - target_loop_time} s")
                 
     
-    def add_transition(self, state_from: State, state_to: State):
+    def add_transition(self, state_from: State, state_to: State) -> None:
         if type(state_from) not in self.state_transitions:
             self.state_transitions[type(state_from)] = set()
         self.state_transitions[type(state_from)].add(type(state_to))
     
-    def set_context(self, context):
+    def add_transitions(self, state_from: State, states_to: List[State]) -> None:
+        for state_to in states_to:
+            self.add_transition(state_from, state_to)
+        self.add_transition(state_from, state_from)
+        if self.off_state is not None:
+            self.add_transition(state_from, self.off_state)
+    
+    def set_context(self, context: Any):
         self.context = context
+
+    def configure_off_switch(self, off_state: State, off_lambda: Callable[[Any], bool]):
+        if type(off_state) not in self.state_transitions:
+            raise Exception("Attempted to configure an Off State that doesn't exist")
+        self.off_state = off_state
+        self.off_lambda = off_lambda
+        for _, to_states in self.state_transitions.items():
+            to_states.add(type(off_state))
+        
 

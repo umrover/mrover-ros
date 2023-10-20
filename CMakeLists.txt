@@ -49,6 +49,9 @@ set(MROVER_MESSAGE_FILES
         Waypoint.msg
         WaypointType.msg
         GPSPointList.msg
+        StateMachineStateUpdate.msg
+        StateMachineStructure.msg
+        StateMachineTransition.msg
 )
 
 # Service files
