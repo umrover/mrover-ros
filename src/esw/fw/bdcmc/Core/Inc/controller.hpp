@@ -50,6 +50,7 @@ namespace mrover {
         Message m_command;
         Mode m_mode;
         uint32_t m_id;
+        FDCAN_TxHeaderTypeDef TxHeader;
 
         inline void force_configure() {
             if (!m_config.configured()) {
@@ -57,7 +58,10 @@ namespace mrover {
             }
         }
 
-        void feed(IdleCommand const &message) {}
+        void feed(IdleCommand const &message) {
+            // TODO: Feel like we should be actively calling something here
+            // maybe write_output with a throttle of 0?
+        }
 
         void feed(ConfigCommand const &message) {
             m_config.configure(message);
@@ -127,6 +131,48 @@ namespace mrover {
 
         void process(Message const &message) {
             std::visit([&](auto const &command) { process(command); }, message);
+        }
+
+        // Transmit motor data out as CAN message
+        void transmit_motor_data() {
+            // TODO: send out Controller data as CAN message
+            // Use getters to get info from encoder reader, have the bundling into CAN in controller
+            //  then controller sends the array as a CAN message
+            /* CAN FRAME FORMAT 
+             * 4 BYTES: Position (0-3)
+             * 4 BYTES: Velocity (4-7)
+             * 1 BYTES: Is Configured, Is Calibrated, Errors (8)
+             * 1 BYTES: Limit a/b/c/d is hit. (9)
+             */
+            Radians position = m_reader.read_input();
+            RadiansPerSecond velocity = m_reader.read_velocity();
+            // TODO: Actually fill the config_calib_error_data with data
+            uint8_t config_calib_error_data = 0x00;
+            // TODO: Is this going to be right or left aligned?
+            // TODO: actually fill with correct values
+            uint8_t limits_hit = 0x00;
+            // TODO: Write code to transmit data. 
+            FdCanFrame frame;
+            size_t i = 0;
+            frame.bytes = reinterpret_cast<std::byte>&position.get();
+            frame.bytes + 4 = reinterpret_cast<std::byte>&velocity.get();
+            frame.bytes + 8 = static_cast<std::byte>(config_calib_error_data);
+            frame.bytes + 9 = static_cast<std::byte>(limits_hit);
+
+            // TODO: Copied values from somewhere else. 
+            // TODO: Identifier probably needs to change?
+            TxHeader.Identifier = 0x11;
+            TxHeader.IdType = FDCAN_STANDARD_ID;
+            TxHeader.TxFrameType = FDCAN_DATA_FRAME;
+            TxHeader.DataLength = FDCAN_DLC_BYTES_12;
+            TxHeader.ErrorStateIndicator = FDCAN_ESI_ACTIVE;
+            TxHeader.BitRateSwitch = FDCAN_BRS_OFF;
+            TxHeader.FDFormat = FDCAN_FD_CAN;
+            TxHeader.TxEventFifoControl = FDCAN_NO_TX_EVENTS;
+            TxHeader.MessageMarker = 0;
+
+            // TODO: I think this is all that is required to transmit a CAN message
+            check(HAL_FDCAN_AddMessageToTxFifoQ(hfdcan, &TxHeader, &frame) == HAL_OK, Error_Handler);
         }
 
         void update() {

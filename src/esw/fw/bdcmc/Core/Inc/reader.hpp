@@ -40,7 +40,7 @@ namespace mrover {
         ~QuadEncoder() = default;
 
         int32_t count_delta();
-        void init(bool _valid, TIM_HandleTypeDef *_htim, TIM_TypeDef *_tim);
+        void init(TIM_HandleTypeDef *_htim, TIM_TypeDef *_tim);
         void update();
 
     private:
@@ -58,6 +58,7 @@ namespace mrover {
     public:
         EncoderReader() = default;
         [[nodiscard]] Radians read_input(const Config& config) const;
+        RadiansPerSecond read_velocity() const;
 
     private:
         void init(TIM_HandleTypeDef* relative_encoder_timer, I2C_HandleTypeDef* absolute_encoder_i2c);

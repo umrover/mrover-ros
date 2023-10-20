@@ -33,12 +33,26 @@ void init() {
 
 void loop() {
     mrover::controller.update();
+
+    // If the Receiver has messages waiting in its queue
     if (HAL_FDCAN_GetRxFifoFillLevel(&hfdcan1, FDCAN_RX_FIFO0)) {
         FDCAN_RxHeaderTypeDef header;
         mrover::FdCanFrame frame{};
-        check(HAL_FDCAN_GetRxMessage(&hfdcan1, FDCAN_RX_FIFO0, &header, frame.bytes) == 0, Error_Handler);
+
+        check(HAL_FDCAN_GetRxMessage(&hfdcan1, FDCAN_RX_FIFO0, &header, frame.bytes) == HAL_OK, Error_Handler);
         if (header.Identifier == CAN_ID) {
             mrover::controller.process(frame.message);
         }
     }
+
+    // TODO: send out Controller data as CAN message
+    // Use getters to get info from encoder reader, have the bundling into CAN in controller
+    //  then controller sends the array as a CAN message
+    /* CAN FRAME FORMAT 
+     * 4 BYTES: Position (0-3). In RADIANS
+     * 4 BYTES: Velocity (4-7). In RADIANS/SECOND
+     * 1 BYTES: Is Configured, Is Calibrated, Errors (8)
+     * 1 BYTES: Limit a/b/c/d is hit. (9)
+     */
+    mrover::controller.transmit_motor_data();
 }
