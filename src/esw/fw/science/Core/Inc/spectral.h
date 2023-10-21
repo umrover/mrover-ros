@@ -25,28 +25,20 @@ Spectral *new_spectral(SMBus *smbus);
 // EFFECTS: Initializes the spectral device
 void initialize_spectral(Spectral *spectral);
 
-//OUR FUNCTIONS :)
-
 //REQUIRES: spectral is a Spectral device
 //MODIFIES: spectral
 //EFFECTS: spectral channel_data is loaded with data read in from the sensor
-void spectral_read(Spectral* spectral){
-	//addresses for channel data
-	char addresses[6] = {0x08, 0x09, 0x10, 0x11, 0x12, 0x13};
-	
-	const char DEV_ADDR = 0x49;
-	for (int i = 0; i < 6; ++i){
-		spectral->channel_data[i] = smbus_read_byte_data(spectral->smbus, addresses[i], DEV_ADDR);
-	}
-	
-}
-
+void spectral_read(Spectral* spectral);
 
 // REQUIRES: spectral is a Spectral object and 0 <= channel < 6
 // MODIFIES: nothing
 // EFFECTS: Returns the spectral data of a particular channel
 uint16_t get_spectral_channel_data(Spectral *spectral, uint8_t channel);
-
+//REQUIRES: sensors is an array of Spectral structs of size 3
+//MODIFIES: nothing
+//EFFECTS: returns a pointer to the spectral sensor that should be used
+Spectral* get_active_spectral_sensor(GPIO_InitTypeDef i2c_mux0, int i2c_mux0_pin, 
+    			GPIO_InitTypeDef i2c_mux1, int i2c_mux1_pin, Spectral sensors[] );
 
 
 // TODO: add virtual read and write functions (find information from datasheet)
