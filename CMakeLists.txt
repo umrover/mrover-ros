@@ -96,6 +96,7 @@ macro(mrover_add_nodelet name sources includes)
     mrover_add_library(${name}_nodelet ${sources} ${includes})
     # Also add a node for quick debugging
     mrover_add_node(${name}_node ${sources})
+    add_dependencies(${name}_node ${name}_nodelet)
     target_compile_definitions(${name}_nodelet PRIVATE MROVER_IS_NODELET)
     # Optional PCH
     if (ARGV3)
@@ -137,6 +138,9 @@ find_package(OpenCV REQUIRED)
 find_package(ZED 2 QUIET)
 find_package(gazebo REQUIRED)
 find_package(Eigen3 REQUIRED)
+find_package(PkgConfig REQUIRED)
+pkg_search_module(NetLink REQUIRED libnl-3.0)
+pkg_search_module(NetLinkRoute REQUIRED libnl-route-3.0)
 if (ZED_FOUND)
     # Anything newer than C++17 combined with libstdc++13 is not supported just yet by NVCC (the CUDA compiler)
     set(CMAKE_CUDA_STANDARD 17)
@@ -205,6 +209,9 @@ mrover_add_library(motor_library src/esw/motor_library/*.cpp src/esw/motor_libra
 target_link_libraries(motor_library PUBLIC can_library moteus moteus_fw)
 
 mrover_add_nodelet(can src/esw/can_node/*.cpp src/esw/can_node)
+mrover_nodelet_link_libraries(can nl-3 nl-route-3)
+#mrover_nodelet_link_libraries(can ${NetLink_LIBRARIES} ${NetLinkRoute_LIBRARIES}})
+mrover_nodelet_include_directories(can /usr/include/libnl3)
 
 macro(mrover_add_esw_bridge_node name sources)
     mrover_add_node(${name} ${sources})

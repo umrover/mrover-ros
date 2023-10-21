@@ -1,11 +1,15 @@
 #include "can_node.hpp"
 
 #include <mutex>
+#include <stdexcept>
+
+#include <netlink/route/link.h>
+#include <netlink/route/link/can.h>
+
 #include <nodelet/loader.h>
 #include <ros/init.h>
 #include <ros/names.h>
 #include <ros/this_node.h>
-#include <stdexcept>
 
 namespace mrover {
 
@@ -16,27 +20,27 @@ namespace mrover {
     void CanNodelet::onInit() {
         try {
             // todo(owen): Find better way to set interface up without system() calls
-            if (system("ip addr | grep -q can") != 0) {
-                throw std::runtime_error("Failed to find CAN device");
-            }
-
-            if (system("sudo modprobe can") == -1) {
-                throw std::runtime_error("Failed to modprobe can");
-            }
-            if (system("sudo modprobe can_raw") == -1) {
-                throw std::runtime_error("Failed to modprobe can_raw");
-            }
-            if (system("sudo modprobe mttcan") == -1) { // Jetson CAN interface support
-                throw std::runtime_error("Failed to modprobe mttcan");
-            }
-            if (system("lsmod | grep -q can") != 0) {
-                throw std::runtime_error("Failed to modprobe can drivers");
-            }
-
-            // Sets can0 with bus bit rate of 500 kbps and data bit rate of 1 Mbps
-            if (system("ip link set can0 up type can bitrate 500000 dbitrate 1000000 berr-reporting on fd on") == -1) {
-                throw std::runtime_error("Failed to set can0 up");
-            }
+            //            if (system("ip addr | grep -q can") != 0) {
+            //                throw std::runtime_error("Failed to find CAN device");
+            //            }
+            //
+            //            if (system("sudo modprobe can") == -1) {
+            //                throw std::runtime_error("Failed to modprobe can");
+            //            }
+            //            if (system("sudo modprobe can_raw") == -1) {
+            //                throw std::runtime_error("Failed to modprobe can_raw");
+            //            }
+            //            if (system("sudo modprobe mttcan") == -1) { // Jetson CAN interface support
+            //                throw std::runtime_error("Failed to modprobe mttcan");
+            //            }
+            //            if (system("lsmod | grep -q can") != 0) {
+            //                throw std::runtime_error("Failed to modprobe can drivers");
+            //            }
+            //
+            //            // Sets can0 with bus bit rate of 500 kbps and data bit rate of 1 Mbps
+            //            if (system("ip link set can0 up type can bitrate 500000 dbitrate 1000000 berr-reporting on fd on") == -1) {
+            //                throw std::runtime_error("Failed to set can0 up");
+            //            }
 
             mNh = getMTNodeHandle();
             mPnh = getMTPrivateNodeHandle();
@@ -44,6 +48,33 @@ namespace mrover {
 
             mIsExtendedFrame = mNh.param<bool>("is_extended_frame", true);
 
+            nl_sock* socket = nl_socket_alloc();
+            if (socket == nullptr) {
+                throw std::runtime_error("Failed to allocate netlink socket");
+            }
+
+            if (int status = nl_connect(socket, NETLINK_ROUTE); status < 0) {
+                throw std::runtime_error("Failed to connect to netlink socket");
+            }
+
+            nl_cache* cache;
+            rtnl_link_alloc_cache(socket, AF_UNSPEC, &cache);
+            if (cache == nullptr) {
+                throw std::runtime_error("Failed to allocate rtnl_link cache");
+            }
+
+            rtnl_link* link = rtnl_link_get_by_name(cache, "can0");
+            if (link == nullptr) {
+                throw std::runtime_error("Failed to get rtnl_link");
+            }
+
+            can_bittiming bt{
+                    .bitrate = 500000,
+                    .brp = 2,
+            };
+            if (int result = rtnl_link_can_set_bittiming(link, &bt); result < 0) {
+                throw std::runtime_error("Failed to set bittiming");
+            }
 
             if ((mSocket = socket(PF_CAN, SOCK_RAW, CAN_RAW)) < 0) {
                 throw std::runtime_error("Failed to open socket");
