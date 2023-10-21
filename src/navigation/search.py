@@ -14,6 +14,7 @@ from trajectory import Trajectory
 from util.state_lib.state import State
 import waypoint, approach_post, recovery
 
+
 @dataclass
 class SearchTrajectory(Trajectory):
     # Associated fiducial for this trajectory
@@ -80,23 +81,22 @@ class SearchTrajectory(Trajectory):
         )
 
 
-
 class SearchState(State):
     STOP_THRESH = get_rosparam("search/stop_thresh", 0.2)
     DRIVE_FWD_THRESH = get_rosparam("search/drive_fwd_thresh", 0.34)  # 20 degrees
     SPIRAL_COVERAGE_RADIUS = get_rosparam("search/coverage_radius", 20)
     SEGMENTS_PER_ROTATION = get_rosparam("search/segments_per_rotation", 8)
     DISTANCE_BETWEEN_SPIRALS = get_rosparam("search/distance_between_spirals", 2.5)
-    
+
     def on_enter(self, context) -> None:
         waypoint = context.course.current_waypoint()
         self.traj = SearchTrajectory.spiral_traj(
-                context.rover.get_pose().position[0:2],
-                self.SPIRAL_COVERAGE_RADIUS,
-                self.DISTANCE_BETWEEN_SPIRALS,
-                self.SEGMENTS_PER_ROTATION,
-                waypoint.fiducial_id,
-            )
+            context.rover.get_pose().position[0:2],
+            self.SPIRAL_COVERAGE_RADIUS,
+            self.DISTANCE_BETWEEN_SPIRALS,
+            self.SEGMENTS_PER_ROTATION,
+            waypoint.fiducial_id,
+        )
         self.prev_target = None
 
     def on_exit(self, context) -> None:

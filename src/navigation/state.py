@@ -9,10 +9,11 @@ from geometry_msgs.msg import Twist
 from context import Context
 import waypoint
 
+
 class DoneState(State):
     def on_enter(self, context) -> None:
         pass
-    
+
     def on_exit(self, context) -> None:
         pass
 
@@ -28,10 +29,9 @@ class DoneState(State):
 
 
 class OffState(State):
-    
     def on_enter(self, context) -> None:
         pass
-    
+
     def on_exit(self, context) -> None:
         pass
 
@@ -42,6 +42,7 @@ class OffState(State):
         cmd_vel = Twist()
         context.rover.send_drive_command(cmd_vel)
         return self
+
 
 def off_check(context) -> bool:
     """

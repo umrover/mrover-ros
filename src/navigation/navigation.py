@@ -34,14 +34,17 @@ class Navigation(threading.Thread):
         self.state_machine.set_context(context)
         self.state_machine.add_transitions(ApproachPostState(), [WaypointState(), SearchState(), RecoveryState()])
         self.state_machine.add_transitions(PostBackupState(), [WaypointState(), RecoveryState()])
-        self.state_machine.add_transitions(RecoveryState(), [WaypointState(), SearchState(), PostBackupState(), ApproachPostState()])
+        self.state_machine.add_transitions(
+            RecoveryState(), [WaypointState(), SearchState(), PostBackupState(), ApproachPostState()]
+        )
         self.state_machine.add_transitions(SearchState(), [ApproachPostState(), WaypointState(), RecoveryState()])
         self.state_machine.add_transitions(DoneState(), [WaypointState()])
-        self.state_machine.add_transitions(WaypointState(), [PostBackupState(), ApproachPostState(), SearchState(), RecoveryState()])
+        self.state_machine.add_transitions(
+            WaypointState(), [PostBackupState(), ApproachPostState(), SearchState(), RecoveryState()]
+        )
         self.state_machine.add_transitions(OffState(), [WaypointState()])
         self.state_machine.configure_off_switch(OffState(), off_check)
         self.state_machine_server = StatePublisher(self.state_machine, "nav_structure", 1, "nav_state", 10)
-        
 
     def run(self):
         self.state_machine.run()

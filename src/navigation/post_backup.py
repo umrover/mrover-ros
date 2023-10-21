@@ -92,12 +92,10 @@ class AvoidPostTrajectory(Trajectory):
         return AvoidPostTrajectory(coords)
 
 
-
 class PostBackupState(State):
-
     def on_exit(self, context):
         self.traj = None
-    
+
     def on_enter(self, context) -> None:
         if context.env.last_post_location is None:
             self.traj = None

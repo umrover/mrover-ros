@@ -9,18 +9,17 @@ from util.state_lib.state import State
 import waypoint, search, recovery
 
 
-
 class ApproachPostState(State):
     STOP_THRESH = get_rosparam("single_fiducial/stop_thresh", 0.7)
     FIDUCIAL_STOP_THRESHOLD = get_rosparam("single_fiducial/fiducial_stop_threshold", 1.75)
     DRIVE_FWD_THRESH = get_rosparam("waypoint/drive_fwd_thresh", 0.34)  # 20 degrees
-    
+
     def on_enter(self, context) -> None:
         pass
-    
+
     def on_exit(self, context) -> None:
         pass
-    
+
     def on_loop(self, context) -> State:
         """
         Drive towards a single fiducial if we see it and stop within a certain threshold if we see it.

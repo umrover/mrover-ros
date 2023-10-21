@@ -10,16 +10,17 @@ import time
 class ForwardState(State):
     def on_enter(self, context):
         pass
-    
+
     def on_exit(self, context):
         pass
-    
+
     def on_loop(self, context) -> State:
         context.var += 1
         context.forward_loop_count += 1
         if context.var == 3:
             return BackwardState()
         return ForwardState()
+
 
 class BackwardState(State):
     def on_enter(self, context):
@@ -36,7 +37,9 @@ class BackwardState(State):
             return ExitState()
         return BackwardState()
 
+
 from dataclasses import dataclass
+
 
 @dataclass
 class Context:
@@ -44,11 +47,14 @@ class Context:
     forward_loop_count: int = 0
     backward_loop_count: int = 0
 
+
 @dataclass
 class WarningHandle:
     got_warning: bool = False
+
     def set_warning(self, s):
         self.got_warning = True
+
 
 class TestLoopOverrun(unittest.TestCase):
     def test_loop_overrun(self):
@@ -65,14 +71,14 @@ class TestLoopOverrun(unittest.TestCase):
         self.assertTrue(wh.got_warning)
         tlog = sm.transition_log
         timeless = [(t.origin_state, t.dest_state) for t in tlog]
-        expected = [('ForwardState', 'BackwardState'), ('BackwardState', 'ExitState')]
+        expected = [("ForwardState", "BackwardState"), ("BackwardState", "ExitState")]
         for t, e in zip(timeless, expected):
             self.assertEqual(t, e)
         self.assertEqual(context.forward_loop_count, 3)
         self.assertEqual(context.backward_loop_count, 3)
 
+
 if __name__ == "__main__":
     import rostest
 
     rostest.rosrun("mrover", "SimpleStateLibraryTaste", TestLoopOverrun)
-

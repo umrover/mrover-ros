@@ -9,16 +9,17 @@ import unittest
 class ForwardState(State):
     def on_enter(self, context):
         pass
-    
+
     def on_exit(self, context):
         pass
-    
+
     def on_loop(self, context) -> State:
         context.var += 1
         context.forward_loop_count += 1
         if context.var == 3:
             return BackwardState()
         return ForwardState()
+
 
 class BackwardState(State):
     def on_enter(self, context):
@@ -34,13 +35,16 @@ class BackwardState(State):
             return ExitState()
         return BackwardState()
 
+
 from dataclasses import dataclass
+
 
 @dataclass
 class Context:
     var: int = 0
     forward_loop_count: int = 0
     backward_loop_count: int = 0
+
 
 class TestSimpleStateMachine(unittest.TestCase):
     def test_simple(self):
@@ -55,14 +59,14 @@ class TestSimpleStateMachine(unittest.TestCase):
         sm.run()
         tlog = sm.transition_log
         timeless = [(t.origin_state, t.dest_state) for t in tlog]
-        expected = [('ForwardState', 'BackwardState'), ('BackwardState', 'ExitState')]
+        expected = [("ForwardState", "BackwardState"), ("BackwardState", "ExitState")]
         for t, e in zip(timeless, expected):
             self.assertEqual(t, e)
         self.assertEqual(context.forward_loop_count, 3)
         self.assertEqual(context.backward_loop_count, 3)
 
+
 if __name__ == "__main__":
     import rostest
 
     rostest.rosrun("mrover", "SimpleStateLibraryTaste", TestSimpleStateMachine)
-

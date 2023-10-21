@@ -15,10 +15,10 @@ class WaypointState(State):
     STOP_THRESH = get_rosparam("waypoint/stop_thresh", 0.5)
     DRIVE_FWD_THRESH = get_rosparam("waypoint/drive_fwd_thresh", 0.34)  # 20 degrees
     NO_FIDUCIAL = get_rosparam("waypoint/no_fiducial", -1)
-    
+
     def on_enter(self, context) -> None:
         pass
-    
+
     def on_exit(self, context) -> None:
         pass
 

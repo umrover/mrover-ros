@@ -27,7 +27,6 @@ class RecoveryState(State):
     current_action: JTurnAction
     start_time: Optional[rospy.Time] = None
 
-
     def reset(self, context) -> None:
         self.waypoint_calculated = False
         self.waypoint_behind = None
@@ -38,7 +37,7 @@ class RecoveryState(State):
     def on_enter(self, context) -> None:
         self.reset(context)
         self.start_time = rospy.Time.now()
-    
+
     def on_exit(self, context) -> None:
         self.reset(context)
 
