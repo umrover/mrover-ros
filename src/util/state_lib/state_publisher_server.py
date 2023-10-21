@@ -23,10 +23,10 @@ class StatePublisher:
         self.structure_publisher = rospy.Publisher(structure_pub_topic, StateMachineStructure, queue_size=1)
         self.state_publisher = rospy.Publisher(state_pub_topic, StateMachineStateUpdate, queue_size=1)
         self.__stop_lock = threading.Lock()
-        self.__struct_thread = threading.Thread(target=self.run_at_interval, args=(self.publish_structure, structure_update_rate_hz))
+        self.__structure_thread = threading.Thread(target=self.run_at_interval, args=(self.publish_structure, structure_update_rate_hz))
         self.__state_thread = threading.Thread(target=self.run_at_interval, args=(self.publish_state, state_update_rate_hz))
         self.__stop = False
-        self.__struct_thread.start()
+        self.__structure_thread.start()
         self.__state_thread.start()
     
     def stop(self) -> None:
@@ -38,18 +38,18 @@ class StatePublisher:
         structure.machineName = self.state_machine.name
         for origin, destinations in self.state_machine.state_transitions.items():
             transition = StateMachineTransition()
-            transition.origin = str(origin)
-            transition.destinations = [str(dest) for dest in destinations]
+            transition.origin = origin.__name__
+            transition.destinations = [dest.__name__ for dest in destinations]
             structure.transitions.append(transition)
-        structure_publisher.publish(structure)
+        self.structure_publisher.publish(structure)
     
     def publish_state(self) -> None:
         with self.state_machine.state_lock:
             cur_state = self.state_machine.current_state
         state = StateMachineStateUpdate()
-        state.machineName = self.state_machine.name
+        state.stateMachineName = self.state_machine.name
         state.state = str(cur_state)
-        state_publiser.publish(state)
+        self.state_publisher.publish(state)
     
     def run_at_interval(self, func: Callable[[StatePublisher], None], update_hz: float):
         desired_loop_time = 1.0 / update_hz
@@ -57,8 +57,10 @@ class StatePublisher:
             start_time = time.time()
             with self.__stop_lock:
                 if self.__stop: break
-            self.func()
-            time.sleep(desired_loop_time - (time.time() - start_time))
+            func()
+            elapsed_time = time.time() - start_time
+            if desired_loop_time - elapsed_time > 0:
+                time.sleep(desired_loop_time - elapsed_time)
 
 
         
