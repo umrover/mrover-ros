@@ -48,17 +48,17 @@ namespace mrover {
 
             mIsExtendedFrame = mNh.param<bool>("is_extended_frame", true);
 
-            nl_sock* socket = nl_socket_alloc();
-            if (socket == nullptr) {
+            nl_sock* netLinkSocket = nl_socket_alloc();
+            if (netLinkSocket == nullptr) {
                 throw std::runtime_error("Failed to allocate netlink socket");
             }
 
-            if (int status = nl_connect(socket, NETLINK_ROUTE); status < 0) {
+            if (int status = nl_connect(netLinkSocket, NETLINK_ROUTE); status < 0) {
                 throw std::runtime_error("Failed to connect to netlink socket");
             }
 
             nl_cache* cache;
-            rtnl_link_alloc_cache(socket, AF_UNSPEC, &cache);
+            rtnl_link_alloc_cache(netLinkSocket, AF_UNSPEC, &cache);
             if (cache == nullptr) {
                 throw std::runtime_error("Failed to allocate rtnl_link cache");
             }
