@@ -335,7 +335,7 @@ static void MX_GPIO_Init(void)
   HAL_GPIO_WritePin(WHITE_LED_2_GPIO_Port, WHITE_LED_2_Pin, GPIO_PIN_RESET);
 
   /*Configure GPIO pin Output Level */
-  HAL_GPIO_WritePin(GPIOB, UV_LED_4_Pin|UV_LED_5_Pin|I2C_MUX_1_Pin|I2C_MUX_0_Pin, GPIO_PIN_RESET);
+  HAL_GPIO_WritePin(GPIOB, UV_LED_4_Pin|UV_LED_5_Pin|I2C_MUX_RST_Pin, GPIO_PIN_RESET);
 
   /*Configure GPIO pins : UV_LED_0_Pin UV_LED_1_Pin UV_LED_2_Pin UV_LED_3_Pin
                            WHITE_LED_0_Pin WHITE_LED_1_Pin */
@@ -353,8 +353,8 @@ static void MX_GPIO_Init(void)
   GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
   HAL_GPIO_Init(WHITE_LED_2_GPIO_Port, &GPIO_InitStruct);
 
-  /*Configure GPIO pins : UV_LED_4_Pin UV_LED_5_Pin I2C_MUX_1_Pin I2C_MUX_0_Pin */
-  GPIO_InitStruct.Pin = UV_LED_4_Pin|UV_LED_5_Pin|I2C_MUX_1_Pin|I2C_MUX_0_Pin;
+  /*Configure GPIO pins : UV_LED_4_Pin UV_LED_5_Pin I2C_MUX_RST_Pin */
+  GPIO_InitStruct.Pin = UV_LED_4_Pin|UV_LED_5_Pin|I2C_MUX_RST_Pin;
   GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
   GPIO_InitStruct.Pull = GPIO_NOPULL;
   GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;

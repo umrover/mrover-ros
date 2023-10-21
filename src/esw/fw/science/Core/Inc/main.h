@@ -87,10 +87,8 @@ void Error_Handler(void);
 #define UV_LED_4_GPIO_Port GPIOB
 #define UV_LED_5_Pin GPIO_PIN_15
 #define UV_LED_5_GPIO_Port GPIOB
-#define I2C_MUX_1_Pin GPIO_PIN_6
-#define I2C_MUX_1_GPIO_Port GPIOB
-#define I2C_MUX_0_Pin GPIO_PIN_7
-#define I2C_MUX_0_GPIO_Port GPIOB
+#define I2C_MUX_RST_Pin GPIO_PIN_7
+#define I2C_MUX_RST_GPIO_Port GPIOB
 
 /* USER CODE BEGIN Private defines */
 
