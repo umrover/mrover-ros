@@ -68,17 +68,17 @@ namespace mrover {
                 throw std::runtime_error("Failed to get rtnl_link");
             }
 
-            rtnl_link_set_flags(link, IFF_UP);
-            if (int result = rtnl_link_change(netLinkSocket, link, link, 0); result < 0 && result != -NLE_SEQ_MISMATCH) {
-                throw std::runtime_error(std::format("Failed to change rtnl_link: {}", result));
-            }
-
             can_bittiming bt{
                     .bitrate = 500000,
                     .brp = 2,
             };
             if (int result = rtnl_link_can_set_bittiming(link, &bt); result < 0) {
                 throw std::runtime_error("Failed to set bittiming");
+            }
+
+            rtnl_link_set_flags(link, IFF_UP);
+            if (int result = rtnl_link_change(netLinkSocket, link, link, 0); result < 0 && result != -NLE_SEQ_MISMATCH) {
+                throw std::runtime_error(std::format("Failed to change rtnl_link: {}", result));
             }
 
             if ((mSocket = socket(PF_CAN, SOCK_RAW, CAN_RAW)) < 0) {
