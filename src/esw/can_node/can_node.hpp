@@ -8,7 +8,9 @@
 #include <format>
 #include <iostream>
 #include <mutex>
+#include <ros/publisher.h>
 #include <span>
+#include <thread>
 
 #include <linux/can.h>
 #include <linux/can/raw.h>
@@ -27,7 +29,9 @@ namespace mrover {
 
     class CanNodelet : public nodelet::Nodelet {
     public:
-        void sendFrame() const;
+        void readFrame();
+
+        void writeFrame() const;
 
         void setBus(uint8_t bus);
 
@@ -50,6 +54,7 @@ namespace mrover {
         int mSocket{};
         bool mIsExtendedFrame{};
 
+        ros::Publisher mCanPublisher;
         ros::Subscriber mCanSubscriber;
 
         std::mutex mMutex;
@@ -59,7 +64,7 @@ namespace mrover {
 
         void onInit() override;
 
-        void handleMessage(CAN::ConstPtr const& msg);
+        void handleWriteMessage(CAN::ConstPtr const& msg);
     };
 
 } // namespace mrover

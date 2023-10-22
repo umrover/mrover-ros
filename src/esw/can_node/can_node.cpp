@@ -1,6 +1,8 @@
 #include "can_node.hpp"
 
 #include <mutex>
+#include <net/if.h>
+#include <netlink/handlers.h>
 #include <stdexcept>
 
 #include <netlink/route/link.h>
@@ -11,44 +13,11 @@
 #include <ros/names.h>
 #include <ros/this_node.h>
 
-namespace mrover {
 
-    constexpr size_t CAN_ERROR_BIT_INDEX = 29;
-    constexpr size_t CAN_RTR_BIT_INDEX = 30;
-    constexpr size_t CAN_EXTENDED_BIT_INDEX = 31;
-
-    void CanNodelet::onInit() {
+struct Netlink {
+    Netlink() {
         try {
-            // todo(owen): Find better way to set interface up without system() calls
-            //            if (system("ip addr | grep -q can") != 0) {
-            //                throw std::runtime_error("Failed to find CAN device");
-            //            }
-            //
-            //            if (system("sudo modprobe can") == -1) {
-            //                throw std::runtime_error("Failed to modprobe can");
-            //            }
-            //            if (system("sudo modprobe can_raw") == -1) {
-            //                throw std::runtime_error("Failed to modprobe can_raw");
-            //            }
-            //            if (system("sudo modprobe mttcan") == -1) { // Jetson CAN interface support
-            //                throw std::runtime_error("Failed to modprobe mttcan");
-            //            }
-            //            if (system("lsmod | grep -q can") != 0) {
-            //                throw std::runtime_error("Failed to modprobe can drivers");
-            //            }
-            //
-            //            // Sets can0 with bus bit rate of 500 kbps and data bit rate of 1 Mbps
-            //            if (system("ip link set can0 up type can bitrate 500000 dbitrate 1000000 berr-reporting on fd on") == -1) {
-            //                throw std::runtime_error("Failed to set can0 up");
-            //            }
-
-            mNh = getMTNodeHandle();
-            mPnh = getMTPrivateNodeHandle();
-            mCanSubscriber = mNh.subscribe<CAN>("can_requests", 1, &CanNodelet::handleMessage, this);
-
-            mIsExtendedFrame = mNh.param<bool>("is_extended_frame", true);
-
-            nl_sock* netLinkSocket = nl_socket_alloc();
+            netLinkSocket = nl_socket_alloc();
             if (netLinkSocket == nullptr) {
                 throw std::runtime_error("Failed to allocate netlink socket");
             }
@@ -63,7 +32,7 @@ namespace mrover {
                 throw std::runtime_error("Failed to allocate rtnl_link cache");
             }
 
-            rtnl_link* link = rtnl_link_get_by_name(cache, "can0");
+            link = rtnl_link_get_by_name(cache, "can0");
             if (link == nullptr) {
                 throw std::runtime_error("Failed to get rtnl_link");
             }
@@ -80,7 +49,37 @@ namespace mrover {
             if (int result = rtnl_link_change(netLinkSocket, link, link, 0); result < 0 && result != -NLE_SEQ_MISMATCH) {
                 throw std::runtime_error(std::format("Failed to change rtnl_link: {}", result));
             }
+        } catch (std::exception const& exception) {
+            ROS_ERROR_STREAM(exception.what());
+            ros::requestShutdown();
+        }
+    }
+    ~Netlink() {
+        try {
+            rtnl_link_unset_flags(link, IFF_UP);
+            if (int result = rtnl_link_change(netLinkSocket, link, link, 0); result < 0 && result != -NLE_SEQ_MISMATCH) {
+                throw std::runtime_error(std::format("Failed to change rtnl_link: {}", result));
+            }
+        } catch (std::exception const& exception) {
+            ROS_ERROR_STREAM(exception.what());
+            ros::requestShutdown();
+        }
+    }
 
+    nl_sock* netLinkSocket;
+    rtnl_link* link;
+};
+
+namespace mrover {
+
+    constexpr size_t CAN_ERROR_BIT_INDEX = 29;
+    constexpr size_t CAN_RTR_BIT_INDEX = 30;
+    constexpr size_t CAN_EXTENDED_BIT_INDEX = 31;
+
+    Netlink nLink;
+
+    void CanNodelet::onInit() {
+        try {
             if ((mSocket = socket(PF_CAN, SOCK_RAW, CAN_RAW)) < 0) {
                 throw std::runtime_error("Failed to open socket");
             }
@@ -95,7 +94,6 @@ namespace mrover {
                     .can_ifindex = ifr.ifr_ifindex,
             };
 
-
             if (bind(mSocket, reinterpret_cast<sockaddr*>(&addr), sizeof(addr)) < 0) {
                 throw std::runtime_error("Failed to bind to socket");
             }
@@ -106,14 +104,37 @@ namespace mrover {
             }
 
 
+            mNh = getMTNodeHandle();
+            mPnh = getMTPrivateNodeHandle();
+            mCanSubscriber = mNh.subscribe<CAN>("can_requests", 5, &CanNodelet::handleWriteMessage, this);
+
+            mIsExtendedFrame = mNh.param<bool>("is_extended_frame", true);
+
+
         } catch (std::exception const& exception) {
             ROS_ERROR_STREAM(exception.what());
             ros::requestShutdown();
         }
     }
 
+    void CanNodelet::readFrame() {
+        canfd_frame frame{};
+        size_t nBytesRead;
+        while (true) {
+            nBytesRead = read(mSocket, &frame, sizeof(canfd_frame));
+            if (nBytesRead == sizeof(canfd_frame)) {
+                mrover::CAN msg;
+                msg.bus = 0;
+                msg.message_id = frame.can_id;
+                std::memcpy(msg.data.data(), frame.data, frame.len);
+
+                mCanPublisher.publish(msg);
+            }
+        }
+    }
+
     //todo(owen) Possible timeout mechanism? Maybe a limit of num writes before while look breaks and throws error
-    void CanNodelet::sendFrame() const {
+    void CanNodelet::writeFrame() const {
         size_t nbytes = write(mSocket, &mFrame, sizeof(canfd_frame));
         while (nbytes != sizeof(struct canfd_frame)) {
             // nbytes = sendto(mSocket, &mFrame, sizeof(canfd_frame), 0, nullptr, 0);
@@ -143,16 +164,15 @@ namespace mrover {
         mFrame.len = data.size();
     }
 
-    void CanNodelet::handleMessage(CAN::ConstPtr const& msg) {
+    void CanNodelet::handleWriteMessage(CAN::ConstPtr const& msg) {
         std::scoped_lock lock(mMutex);
 
         setBus(msg->bus);
         setFrameId(msg->message_id);
         setFrameData({reinterpret_cast<std::byte const*>(msg->data.data()), msg->data.size()});
 
+        writeFrame();
         // printFrame();
-
-        sendFrame();
     }
 
     void CanNodelet::printFrame() {
