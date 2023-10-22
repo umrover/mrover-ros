@@ -115,9 +115,12 @@ namespace mrover {
             mStream.emplace(ios);
             mStream->assign(mSocketFd);
 
-            mStream->async_read_some(
+            boost::asio::async_read(
+                    mStream.value(),
                     boost::asio::buffer(&mReadFrame, sizeof(mReadFrame)),
-                    [this](auto const& ec, auto const& bytes) { readFrame(ec, bytes); });
+                    [this](boost::system::error_code const& ec, std::size_t bytes) {
+                        readFrame(ec, bytes);
+                    });
 
             ios.run();
 
@@ -153,7 +156,6 @@ namespace mrover {
     }
 
     void CanNodelet::writeFrame() {
-        // TODO(quintin) Convert to async_write_some
         boost::asio::async_write(
                 mStream.value(),
                 boost::asio::buffer(&mWriteFrame, sizeof(mWriteFrame)),
