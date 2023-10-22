@@ -32,7 +32,7 @@ namespace mrover {
 
     class CanNodelet : public nodelet::Nodelet {
     public:
-        void readFrame(struct can_frame& rec_frame, boost::asio::posix::basic_stream_descriptor<>& stream);
+        void readFrame(boost::system::error_code const& ec, std::size_t bytes_transferred);
 
         void writeFrame() const;
 
@@ -55,13 +55,15 @@ namespace mrover {
         uint8_t mBus{};
         canfd_frame mWriteFrame{};
         canfd_frame mReadFrame{};
-        int mSocket{};
+        int mSocketFd{};
         bool mIsExtendedFrame{};
 
         ros::Publisher mCanPublisher;
         ros::Subscriber mCanSubscriber;
 
         std::mutex mMutex;
+
+        std::optional<boost::asio::posix::basic_stream_descriptor<>> mStream;
 
         // Helper function for debug
         void printFrame();

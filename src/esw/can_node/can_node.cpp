@@ -80,29 +80,28 @@ namespace mrover {
 
     void CanNodelet::onInit() {
         try {
-            if ((mSocket = socket(PF_CAN, SOCK_RAW, CAN_RAW)) < 0) {
+            if ((mSocketFd = socket(PF_CAN, SOCK_RAW, CAN_RAW)) < 0) {
                 throw std::runtime_error("Failed to open socket");
             }
 
             ifreq ifr{};
             const char* interfaceName = "can0";
             strcpy(ifr.ifr_name, interfaceName);
-            ioctl(mSocket, SIOCGIFINDEX, &ifr);
+            ioctl(mSocketFd, SIOCGIFINDEX, &ifr);
 
             sockaddr_can addr{
                     .can_family = AF_CAN,
                     .can_ifindex = ifr.ifr_ifindex,
             };
 
-            if (bind(mSocket, reinterpret_cast<sockaddr*>(&addr), sizeof(addr)) < 0) {
+            if (bind(mSocketFd, reinterpret_cast<sockaddr*>(&addr), sizeof(addr)) < 0) {
                 throw std::runtime_error("Failed to bind to socket");
             }
 
             int enable_canfd = 1;
-            if (setsockopt(mSocket, SOL_CAN_RAW, CAN_RAW_FD_FRAMES, &enable_canfd, sizeof(enable_canfd)) < 0) {
+            if (setsockopt(mSocketFd, SOL_CAN_RAW, CAN_RAW_FD_FRAMES, &enable_canfd, sizeof(enable_canfd)) < 0) {
                 throw std::runtime_error("Failed to enable CAN FD");
             }
-
 
             mNh = getMTNodeHandle();
             mPnh = getMTPrivateNodeHandle();
@@ -111,15 +110,14 @@ namespace mrover {
             mIsExtendedFrame = mNh.param<bool>("is_extended_frame", true);
 
             boost::asio::io_service ios;
-            boost::asio::posix::basic_stream_descriptor<> stream(ios);
-            stream.assign(mSocket);
+            mStream.emplace(ios);
+            mStream->assign(mSocketFd);
 
-
-            stream.async_read_some(
+            mStream->async_read_some(
                     boost::asio::buffer(&mReadFrame, sizeof(mReadFrame)),
-                    boost::bind(&readFrame, this, boost::ref(mReadFrame), boost::ref(stream)));
-            ios.run();
+                    [this](auto const& ec, auto const& bytes) { readFrame(ec, bytes); });
 
+            ios.run();
 
         } catch (std::exception const& exception) {
             ROS_ERROR_STREAM(exception.what());
@@ -128,25 +126,28 @@ namespace mrover {
     }
 
 
-    void CanNodelet::readFrame(struct can_frame& rec_frame,
-                               boost::asio::posix::basic_stream_descriptor<>& stream) {
+    void CanNodelet::readFrame(boost::system::error_code const& ec, std::size_t bytes_transferred) {
+        // TODO(quintin) check ec
 
-        std::cout << std::hex << rec_frame.can_id << "  ";
-        for (int i = 0; i < rec_frame.can_dlc; i++) {
-            std::cout << std::hex << int(rec_frame.data[i]) << " ";
+        std::cout << std::hex << mReadFrame.can_id << "  ";
+        for (int i = 0; i < mReadFrame.len; i++) {
+            std::cout << std::hex << int(mReadFrame.data[i]) << " ";
         }
         std::cout << std::dec << std::endl;
-        stream.async_read_some(
-                boost::asio::buffer(&rec_frame, sizeof(rec_frame)),
-                boost::bind(data_rec, boost::ref(rec_frame), boost::ref(stream)));
+
+        mStream->async_read_some(
+                boost::asio::buffer(&mReadFrame, sizeof(mReadFrame)),
+                [this](auto const& ec, auto const& bytes) { readFrame(ec, bytes); });
     }
 
     //todo(owen) Possible timeout mechanism? Maybe a limit of num writes before while look breaks and throws error
     void CanNodelet::writeFrame() const {
-        size_t nbytes = write(mSocket, &mWriteFrame, sizeof(canfd_frame));
+        // TODO(quintin) Convert to async_write_some
+
+        size_t nbytes = write(mSocketFd, &mWriteFrame, sizeof(canfd_frame));
         while (nbytes != sizeof(struct canfd_frame)) {
             // nbytes = sendto(mSocket, &mFrame, sizeof(canfd_frame), 0, nullptr, 0);
-            nbytes = write(mSocket, &mWriteFrame, sizeof(canfd_frame));
+            nbytes = write(mSocketFd, &mWriteFrame, sizeof(canfd_frame));
         }
         // NODELET_INFO_STREAM("error: write incomplete CAN frame");
     }
