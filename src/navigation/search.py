@@ -100,9 +100,7 @@ class SearchState(State):
         self.prev_target = None
 
     def on_exit(self, context) -> None:
-        if not self.is_recovering:
-            self.traj = None
-            self.prev_target = None
+        pass
 
     def on_loop(self, context) -> State:
         waypoint = context.course.current_waypoint()

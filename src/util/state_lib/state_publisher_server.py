@@ -14,7 +14,7 @@ class StatePublisher:
     state_machine: StateMachine
     __struct_thread: threading.Thread
     __state_thread: threading.Thread
-    __stop_lock: threading.Lock()
+    __stop_lock: threading.Lock
     __stop: bool
 
     def __init__(
@@ -61,7 +61,7 @@ class StatePublisher:
         state.state = str(cur_state)
         self.state_publisher.publish(state)
 
-    def run_at_interval(self, func: Callable[[StatePublisher], None], update_hz: float):
+    def run_at_interval(self, func: Callable[[], None], update_hz: float):
         desired_loop_time = 1.0 / update_hz
         while True:
             start_time = time.time()

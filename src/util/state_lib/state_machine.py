@@ -21,6 +21,19 @@ class TransitionRecord:
 
 
 class StateMachine:
+    current_state: State
+    state_lock: Lock
+    state_transitions: DefaultDict[type[State], Set[type[State]]]
+    transition_log: List[TransitionRecord]
+    context: Any
+    name: str
+    off_lambda: Optional[Callable[[Any], bool]]
+    off_state: Optional[State]
+    log_level: LogLevel
+    logger: Callable[[str], None]
+    on: bool
+    onLock: Lock
+
     def __init__(
         self,
         initial_state: State,
@@ -30,7 +43,7 @@ class StateMachine:
     ):
         self.current_state = initial_state
         self.state_lock = Lock()
-        self.state_transitions: DefaultDict[type[State], Set[type[State]]] = defaultdict(set)
+        self.state_transitions = defaultdict(set)
         self.state_transitions[type(self.current_state)] = set()
         self.transition_log: List[TransitionRecord] = []
         self.context = None
@@ -39,13 +52,15 @@ class StateMachine:
         self.off_state = None
         self.log_level = log_level
         self.logger = logger
+        self.on = True
+        self.onLock = Lock()
 
     def __update(self):
         with self.state_lock:
             current_state = self.current_state
         if self.log_level == LogLevel.VERBOSE:
             self.logger(f"{self.name} state machine, current state = {str(current_state)}")
-        if self.off_lambda is not None and self.off_lambda(self.context):
+        if self.off_lambda is not None and self.off_lambda(self.context) and self.off_state is not None:
             next_state = self.off_state
         else:
             next_state = current_state.on_loop(self.context)
@@ -60,6 +75,10 @@ class StateMachine:
                 self.current_state = next_state
                 self.current_state.on_enter(self.context)
 
+    def stop(self):
+        with self.onLock:
+            self.on = False
+
     def run(self, update_rate: float = float("inf"), warning_handle: Callable = print):
         """
         Runs the state machine until it returns an ExitState.
@@ -68,11 +87,15 @@ class StateMachine:
         """
         target_loop_time = None if update_rate == float("inf") else (1.0 / update_rate)
         self.current_state.on_enter(self.context)
-        while True:
+        is_on = True
+
+        while is_on:
             start = time.time()
             self.__update()
             if type(self.current_state) == ExitState:
                 break
+            with self.onLock:
+                is_on = self.on
             elapsed_time = time.time() - start
             if target_loop_time is not None and elapsed_time < target_loop_time:
                 time.sleep(target_loop_time - elapsed_time)

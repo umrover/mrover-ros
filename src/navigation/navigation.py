@@ -50,10 +50,8 @@ class Navigation(threading.Thread):
         self.state_machine.run()
 
     def stop(self):
-        self.sis.stop()
         # Requests current state to go into 'terminated' to cleanly exit state machine
-        self.state_machine.request_preempt()
-        # Wait for smach thread to terminate
+        self.state_machine.stop()
         self.join()
         self.context.rover.send_drive_stop()
 
