@@ -4,7 +4,8 @@
             <div>
                 <h3>Motor Data</h3>
             </div>
-            <table class="tableFormat" style="undefined;table-layout: fixed; width: 745px">
+            <table class="table" 
+            style="table-layout: fixed; width: 745px">
                 <colgroup>
                     <col style="width: 85px" />
                     <col style="width: 60px" />
@@ -20,23 +21,23 @@
 
                 <thead>
                     <tr>
-                        <th class="tableElement">Motor</th>
-                        <th class="tableElement">Positon (m)</th>
-                        <th class="tableElement">Velocity (m/s)</th>
-                        <th class="tableElement">Effort (Nm)</th>
+                        <th class="table-primary">Motor</th>
+                        <th>Positon (m)</th>
+                        <th>Velocity (m/s)</th>
+                        <th>Effort (Nm)</th>
                     </tr>
                 </thead>
 
                 <tbody>
                     <tr v-for="(joint, index) in jointStateData.name" :key="index">
-                        <td class="tableElement">{{ joint }}</td>
-                        <td class="tableElement">
+                        <td>{{ joint }}</td>
+                        <td>
                             {{ (jointStateData.position[index] * radius_m).toFixed(3) }}
                         </td>
-                        <td class="tableElement">
+                        <td>
                             {{ (jointStateData.velocity[index] * radius_m).toFixed(3) }}
                         </td>
-                        <td class="tableElement">
+                        <td>
                             {{ jointStateData.effort[index].toFixed(3) }}
                         </td>
                     </tr>
@@ -48,7 +49,8 @@
             <div>
                 <h3>Motor Data</h3>
             </div>
-            <table class="tableFormat" style="undefined;table-layout: fixed; width: 745px">
+            <table class="table" 
+            style="table-layout: fixed; width: 745px">
                 <colgroup>
                     <col style="width: 85px" />
                     <col style="width: 60px" />
@@ -64,25 +66,25 @@
 
                 <thead>
                     <tr>
-                        <th class="tableElement">Motor</th>
+                        <th>Motor</th>
                         <th v-for="name in jointStateData.name" class="tableElement">
                             {{ name.toFixed(3) }}
                         </th>
                     </tr>
                     <tr>
-                        <th class="tableElement">Position (m)</th>
+                        <th>Position (m)</th>
                         <td v-for="position in jointStateData.position" class="tableElement">
                             {{ (position * radius_m).toFixed(3) }}
                         </td>
                     </tr>
                     <tr>
-                        <th class="tableElement">Velocity (m/s)</th>
+                        <th>Velocity (m/s)</th>
                         <td v-for="velocity in jointStateData.velocity" class="tableElement">
                             {{ (velocity * radius_m).toFixed(3) }}
                         </td>
                     </tr>
                     <tr>
-                        <th class="tableElement">Effort (Nm)</th>
+                        <th>Effort (Nm)</th>
                         <td v-for="effort in jointStateData.effort" class="tableElement">
                             {{ effort.toFixed(3) }}
                         </td>

@@ -2,6 +2,7 @@
   <div class="wrap">
     <div class="pages">
       <fieldset class="row">
+        <JointStateTable :jointStateData="{}" :vertical="true" />
         <legend>Tasks</legend>
         <MenuButton link="/EDMTask" name="EDM Mission" />
         <MenuButton link="/ESTask" name="ES Mission" />
@@ -17,12 +18,16 @@
 
 <script lang="ts">
 import { inject } from 'vue'
+import JointStateTable from "./JointStateTable.vue"
 export default {
   created() {
     const ws: any = inject<WebSocket>('webSocketService');
 
     ws.send('Hello, WebSocket!');
   },
+  components: {
+    JointStateTable
+  }
 };
 
 </script>
