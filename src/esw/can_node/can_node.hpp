@@ -7,8 +7,6 @@
 #include <cstring>
 #include <format>
 #include <iostream>
-#include <mutex>
-#include <ros/publisher.h>
 #include <span>
 #include <thread>
 
@@ -19,24 +17,33 @@
 
 #include <nodelet/nodelet.h>
 #include <ros/node_handle.h>
+#include <ros/publisher.h>
 #include <ros/subscriber.h>
 
+#include <boost/asio/io_service.hpp>
 #include <boost/asio/posix/basic_stream_descriptor.hpp>
-#include <boost/system/error_code.hpp>
 
 #include <mrover/CAN.h>
+
+#include "can_net_link.hpp"
 
 namespace mrover {
 
     class CanNodelet : public nodelet::Nodelet {
     public:
-        void readFrame(boost::system::error_code const& ec, std::size_t bytes_transferred);
+        CanNodelet() = default;
 
-        void writeFrame();
+        ~CanNodelet() override;
+
+        void readFrameAsync();
+
+        void writeFrameAsync();
+
+        void processFrame();
 
         void setBus(std::uint8_t bus);
 
-        // canfd_frame.can_id is a uint32_t with format:
+        // canfd_frame.can_id is an uint32_t with format:
         // [0-28]: CAN identifier (11/29bit)
         // [29]: Error frame flag (0 = data frame, 1 = error frame)
         // [30]: Remote transmission request flag (1 = rtr frame)
@@ -50,25 +57,27 @@ namespace mrover {
     private:
         ros::NodeHandle mNh, mPnh;
 
+        bool mIsExtendedFrame{};
+
         std::uint8_t mBus{};
         canfd_frame mWriteFrame{};
         canfd_frame mReadFrame{};
-        int mSocketFd{};
-        bool mIsExtendedFrame{};
+        std::optional<CanNetLink> mCanNetLink;
+        std::optional<boost::asio::posix::basic_stream_descriptor<>> mStream;
+        std::jthread mIoThread;
+        boost::asio::io_service mIoService;
 
         ros::Publisher mCanPublisher;
         ros::Subscriber mCanSubscriber;
 
-        std::mutex mMutex;
-
-        std::optional<boost::asio::posix::basic_stream_descriptor<>> mStream;
+        int setupSocket();
 
         // Helper function for debug
         void printFrame();
 
         void onInit() override;
 
-        void handleWriteMessage(CAN::ConstPtr const& msg);
+        void canSendRequestCallback(CAN::ConstPtr const& msg);
     };
 
 } // namespace mrover

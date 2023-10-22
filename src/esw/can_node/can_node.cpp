@@ -1,10 +1,6 @@
 #include "can_node.hpp"
 
-#include <mutex>
 #include <stdexcept>
-
-#include <netlink/route/link.h>
-#include <netlink/route/link/can.h>
 
 #include <boost/asio/io_service.hpp>
 #include <boost/asio/read.hpp>
@@ -15,130 +11,106 @@
 #include <ros/names.h>
 #include <ros/this_node.h>
 
-struct Netlink {
-    Netlink() {
-        try {
-            netLinkSocket = nl_socket_alloc();
-            if (netLinkSocket == nullptr) {
-                throw std::runtime_error("Failed to allocate netlink socket");
-            }
-
-            if (int status = nl_connect(netLinkSocket, NETLINK_ROUTE); status < 0) {
-                throw std::runtime_error("Failed to connect to netlink socket");
-            }
-
-            nl_cache* cache;
-            rtnl_link_alloc_cache(netLinkSocket, AF_UNSPEC, &cache);
-            if (cache == nullptr) {
-                throw std::runtime_error("Failed to allocate rtnl_link cache");
-            }
-
-            link = rtnl_link_get_by_name(cache, "can0");
-            if (link == nullptr) {
-                throw std::runtime_error("Failed to get rtnl_link");
-            }
-
-            can_bittiming bt{
-                    .bitrate = 500000,
-                    .brp = 2,
-            };
-            if (int result = rtnl_link_can_set_bittiming(link, &bt); result < 0) {
-                throw std::runtime_error("Failed to set bittiming");
-            }
-
-            rtnl_link_set_flags(link, IFF_UP);
-            if (int result = rtnl_link_change(netLinkSocket, link, link, 0); result < 0 && result != -NLE_SEQ_MISMATCH) {
-                throw std::runtime_error(std::format("Failed to change rtnl_link: {}", result));
-            }
-        } catch (std::exception const& exception) {
-            ROS_ERROR_STREAM(exception.what());
-            ros::requestShutdown();
-        }
-    }
-    ~Netlink() {
-        try {
-            rtnl_link_unset_flags(link, IFF_UP);
-            if (int result = rtnl_link_change(netLinkSocket, link, link, 0); result < 0 && result != -NLE_SEQ_MISMATCH) {
-                throw std::runtime_error(std::format("Failed to change rtnl_link: {}", result));
-            }
-        } catch (std::exception const& exception) {
-            ROS_ERROR_STREAM(exception.what());
-            ros::requestShutdown();
-        }
-    }
-
-    nl_sock* netLinkSocket;
-    rtnl_link* link;
-};
-
 namespace mrover {
 
     constexpr size_t CAN_ERROR_BIT_INDEX = 29;
     constexpr size_t CAN_RTR_BIT_INDEX = 30;
     constexpr size_t CAN_EXTENDED_BIT_INDEX = 31;
 
-    Netlink nLink;
+    void checkErrorCode(boost::system::error_code const& ec) {
+        if (ec.value() == boost::system::errc::success) return;
+
+        throw std::runtime_error(std::format("Boost failure: {}", ec.value()));
+    }
+
+    int checkSyscallResult(int result) {
+        if (result < 0) throw std::system_error{errno, std::generic_category()};
+
+        return result;
+    }
 
     void CanNodelet::onInit() {
         try {
-            if ((mSocketFd = socket(PF_CAN, SOCK_RAW, CAN_RAW)) < 0) {
-                throw std::runtime_error("Failed to open socket");
-            }
-
-            ifreq ifr{};
-            const char* interfaceName = "can0";
-            strcpy(ifr.ifr_name, interfaceName);
-            ioctl(mSocketFd, SIOCGIFINDEX, &ifr);
-
-            sockaddr_can addr{
-                    .can_family = AF_CAN,
-                    .can_ifindex = ifr.ifr_ifindex,
-            };
-
-            if (bind(mSocketFd, reinterpret_cast<sockaddr*>(&addr), sizeof(addr)) < 0) {
-                throw std::runtime_error("Failed to bind to socket");
-            }
-
-            int enable_canfd = 1;
-            if (setsockopt(mSocketFd, SOL_CAN_RAW, CAN_RAW_FD_FRAMES, &enable_canfd, sizeof(enable_canfd)) < 0) {
-                throw std::runtime_error("Failed to enable CAN FD");
-            }
+            NODELET_INFO("CAN Node starting...");
 
             mNh = getMTNodeHandle();
             mPnh = getMTPrivateNodeHandle();
-            mCanSubscriber = mNh.subscribe<CAN>("can_requests", 5, &CanNodelet::handleWriteMessage, this);
-            mCanPublisher = mNh.advertise<mrover::CAN>("{INSERT TOPIC NAME}", 1);
 
             mIsExtendedFrame = mNh.param<bool>("is_extended_frame", true);
 
-            boost::asio::io_service ios;
-            mStream.emplace(ios);
-            mStream->assign(mSocketFd);
+            mCanSubscriber = mNh.subscribe<CAN>("can_requests", 5, &CanNodelet::canSendRequestCallback, this);
+            //            mCanPublisher = mNh.advertise<mrover::CAN>("{INSERT TOPIC NAME}", 1);
 
-            boost::asio::async_read(
-                    mStream.value(),
-                    boost::asio::buffer(&mReadFrame, sizeof(mReadFrame)),
-                    [this](boost::system::error_code const& ec, std::size_t bytes) {
-                        readFrame(ec, bytes);
-                    });
+            mCanNetLink.emplace();
 
-            ios.run();
+            int socketFd = setupSocket();
+            mStream.emplace(mIoService);
+            mStream->assign(socketFd);
+
+            readFrameAsync();
+
+            mIoThread = std::jthread{[&] {
+                mIoService.run();
+            }};
+
+            NODELET_INFO("CAN Node started");
 
         } catch (std::exception const& exception) {
-            ROS_ERROR_STREAM(exception.what());
-            ros::requestShutdown();
+            NODELET_ERROR_STREAM("Exception in initialization: " << exception.what());
+            ros::shutdown();
         }
     }
 
+    int CanNodelet::setupSocket() {
+        int socketFd = checkSyscallResult(socket(PF_CAN, SOCK_RAW, CAN_RAW));
+        NODELET_INFO("Opened CAN socket");
 
-    void CanNodelet::readFrame(boost::system::error_code const& ec, std::size_t bytes_transferred) {
-        if (ec.value() != boost::system::errc::success) {
-            throw std::runtime_error(std::format("Failed to read frame. Reason: {}", ec.value()));
-        }
-        if (bytes_transferred != sizeof(mReadFrame)) {
-            throw std::runtime_error("Failed to read full frame");
-        }
+        ifreq ifr{};
+        const char* interfaceName = "can0";
+        strcpy(ifr.ifr_name, interfaceName);
+        ioctl(socketFd, SIOCGIFINDEX, &ifr);
 
+        sockaddr_can addr{
+                .can_family = AF_CAN,
+                .can_ifindex = ifr.ifr_ifindex,
+        };
+        checkSyscallResult(bind(socketFd, reinterpret_cast<sockaddr*>(&addr), sizeof(addr)));
+        NODELET_INFO("Bound CAN socket");
+
+        int enableCanFd = 1;
+        checkSyscallResult(setsockopt(socketFd, SOL_CAN_RAW, CAN_RAW_FD_FRAMES, &enableCanFd, sizeof(enableCanFd)));
+
+        return socketFd;
+    }
+
+    void CanNodelet::readFrameAsync() { // NOLINT(*-no-recursion)
+        boost::asio::async_read(
+                mStream.value(),
+                boost::asio::buffer(&mReadFrame, sizeof(mReadFrame)),
+                [&](boost::system::error_code const& ec, std::size_t bytes) {
+                    checkErrorCode(ec);
+
+                    return sizeof(mReadFrame);
+                },
+                [&](boost::system::error_code const& ec, std::size_t bytes) { // NOLINT(*-no-recursion)
+                    checkErrorCode(ec);
+                    assert(bytes == sizeof(mReadFrame));
+
+                    processFrame();
+                });
+    }
+
+    void CanNodelet::writeFrameAsync() {
+        boost::asio::async_write(
+                mStream.value(),
+                boost::asio::buffer(&mWriteFrame, sizeof(mWriteFrame)),
+                [&](boost::system::error_code const& ec, std::size_t bytes) {
+                    checkErrorCode(ec);
+                    assert(bytes == sizeof(mWriteFrame));
+                });
+    }
+
+    void CanNodelet::processFrame() { // NOLINT(*-no-recursion)
         CAN msg;
         msg.bus = 0;
         msg.message_id = mReadFrame.can_id;
@@ -147,23 +119,7 @@ namespace mrover {
 
         mCanPublisher.publish(msg);
 
-        boost::asio::async_read(
-                mStream.value(),
-                boost::asio::buffer(&mReadFrame, sizeof(mReadFrame)),
-                [this](boost::system::error_code const& ec, std::size_t bytes) {
-                    readFrame(ec, bytes);
-                });
-    }
-
-    void CanNodelet::writeFrame() {
-        boost::asio::async_write(
-                mStream.value(),
-                boost::asio::buffer(&mWriteFrame, sizeof(mWriteFrame)),
-                [](boost::system::error_code const& ec, std::size_t bytes) {
-                    if (ec.value() != boost::system::errc::success) {
-                        throw std::runtime_error(std::format("Failed to write frame. Reason: {}", ec.value()));
-                    }
-                });
+        readFrameAsync();
     }
 
     void CanNodelet::setBus(uint8_t bus) {
@@ -174,12 +130,12 @@ namespace mrover {
         // Check that the identifier is not too large
         assert(std::bit_width(identifier) <= mIsExtendedFrame ? CAN_EFF_ID_BITS : CAN_SFF_ID_BITS);
 
-        std::bitset<32> can_id_bits{identifier};
-        if (mIsExtendedFrame) can_id_bits.set(CAN_EXTENDED_BIT_INDEX);
-        can_id_bits.set(CAN_ERROR_BIT_INDEX);
-        can_id_bits.set(CAN_RTR_BIT_INDEX);
+        std::bitset<32> canIdBits{identifier};
+        if (mIsExtendedFrame) canIdBits.set(CAN_EXTENDED_BIT_INDEX);
+        canIdBits.set(CAN_ERROR_BIT_INDEX);
+        canIdBits.set(CAN_RTR_BIT_INDEX);
 
-        mWriteFrame.can_id = can_id_bits.to_ullong();
+        mWriteFrame.can_id = canIdBits.to_ullong();
     }
 
     void CanNodelet::setFrameData(std::span<const std::byte> data) {
@@ -187,14 +143,12 @@ namespace mrover {
         mWriteFrame.len = data.size();
     }
 
-    void CanNodelet::handleWriteMessage(CAN::ConstPtr const& msg) {
-        std::scoped_lock lock(mMutex);
-
+    void CanNodelet::canSendRequestCallback(CAN::ConstPtr const& msg) {
         setBus(msg->bus);
         setFrameId(msg->message_id);
         setFrameData({reinterpret_cast<std::byte const*>(msg->data.data()), msg->data.size()});
 
-        writeFrame();
+        writeFrameAsync();
         // printFrame();
     }
 
@@ -207,14 +161,19 @@ namespace mrover {
             std::cout << std::format("Index = {}\tData = {:#X}", i, mWriteFrame.data[i]) << std::endl;
         }
     }
+
+    CanNodelet::~CanNodelet() {
+        mIoService.stop();
+    }
+
 } // namespace mrover
 
-#if MROVER_IS_NODELET
+#ifdef MROVER_IS_NODELET
 
 #include <pluginlib/class_list_macros.h>
 PLUGINLIB_EXPORT_CLASS(mrover::CanNodelet, nodelet::Nodelet)
 
-#else
+#endif
 
 int main(int argc, char** argv) {
     ros::init(argc, argv, "can_node");
@@ -227,5 +186,3 @@ int main(int argc, char** argv) {
 
     return EXIT_SUCCESS;
 }
-
-#endif
