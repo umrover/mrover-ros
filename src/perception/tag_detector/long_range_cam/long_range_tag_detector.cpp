@@ -1,4 +1,4 @@
-#include "tag_detector.hpp"
+#include "long_range_tag_detector.hpp"
 
 namespace mrover {
 
@@ -6,12 +6,10 @@ namespace mrover {
         mNh = getMTNodeHandle();
         mPnh = getMTPrivateNodeHandle();
         mDetectorParams = new cv::aruco::DetectorParameters();
-        auto defaultDetectorParams = cv::aruco::DetectorParameters::create();
+        auto defaultDetectorParams = cv::makePtr<cv::aruco::DetectorParameters>();
         int dictionaryNumber;
 
         mPnh.param<bool>("publish_images", mPublishImages, true);
-        using DictEnumType = std::underlying_type_t<cv::aruco::PREDEFINED_DICTIONARY_NAME>;
-        mPnh.param<int>("dictionary", dictionaryNumber, static_cast<DictEnumType>(cv::aruco::DICT_4X4_50));
         mPnh.param<int>("min_hit_count_before_publish", mMinHitCountBeforePublish, 5);
         mPnh.param<int>("max_hit_count", mMaxHitCount, 5);
         mPnh.param<int>("tag_increment_weight", mTagIncrementWeight, 2);
@@ -19,10 +17,8 @@ namespace mrover {
 
         mIt.emplace(mNh);
         mImgPub = mIt->advertise("long_range_tag_detection", 1);
-        mDictionary = cv::aruco::getPredefinedDictionary(dictionaryNumber);
 
-        mPcSub = mNh.subscribe("long_range_cam/image", 1, &LongRangeTagDetectorNodelet::imageCallback, this);
-        mServiceEnableDetections = mNh.advertiseService("enable_detections", &TagDetectorNodelet::enableDetectionsCallback, this);
+        mServiceEnableDetections = mNh.advertiseService("enable_detections", &LongRangeTagDetectorNodelet::enableDetectionsCallback, this);
 
         // Lambda handles passing class pointer (implicit first parameter) to configCallback
         mCallbackType = [this](mrover::DetectorParamsConfig& config, uint32_t level) { configCallback(config, level); };
@@ -90,7 +86,7 @@ namespace mrover {
         NODELET_INFO("Tag detection ready, use odom frame: %s, min hit count: %d, max hit count: %d, hit increment weight: %d, hit decrement weight: %d", mUseOdom ? "true" : "false", mMinHitCountBeforePublish, mMaxHitCount, mTagIncrementWeight, mTagDecrementWeight);
     }
 
-    void TagDetectorNodelet::configCallback(mrover::DetectorParamsConfig& config, uint32_t level) {
+    void LongRangeTagDetectorNodelet::configCallback(mrover::DetectorParamsConfig& config, uint32_t level) {
         // Don't load initial config, since it will overwrite the rosparam settings
         if (level == std::numeric_limits<uint32_t>::max()) return;
 

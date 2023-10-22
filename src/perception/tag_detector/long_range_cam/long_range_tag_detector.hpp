@@ -29,9 +29,11 @@ namespace mrover {
 
         //Constatns set in ROS params for num hits needed to publish
         int mMinHitCountBeforePublish{};
+        int mBaseHitCount{};
         int mMaxHitCount{};
         int mTagIncrementWeight{};
         int mTagDecrementWeight{};
+        int mTagRemoveWeight{};
 
         cv::Ptr<cv::aruco::DetectorParameters> mDetectorParams;
         cv::Ptr<cv::aruco::Dictionary> mDictionary;
@@ -142,5 +144,9 @@ namespace mrover {
         * only if mPublishImages and the topic has a subscriber
         */
         void publishTagsOnImage();
+
+        void configCallback(mrover::DetectorParamsConfig& config, uint32_t level);
+
+        bool enableDetectionsCallback(std_srvs::SetBool::Request& req, std_srvs::SetBool::Response& res);
     };
 }; // namespace mrover

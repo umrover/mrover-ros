@@ -1,34 +1,14 @@
 #include "long_range_cam.hpp"
+#include <opencv2/highgui/highgui.hpp>
+#include <opencv2/videoio.hpp>
+#include <stdexcept>
 
 namespace mrover {
 
     using namespace std::chrono_literals;
 
-
-    cv::VideoCapture cap {
-            0,
-           { cv::CAP_V4L2,
-            cv::CAP_PROP_FRAME_WIDTH, size.width,
-            cv::CAP_PROP_FRAME_HEIGHT, size.height,
-            cv::CAP_PROP_FPS, 30,
-
-             }
-        void fillImageMessage(sl::Mat& bgra, sensor_msgs::ImagePtr const& msg) {
-            
-
-        }
-    };
-    void cv::VideoCapture::fillImageMessage(sl::Mat& bgra, sensor_msgs::ImagePtr const& msg) {
-        assert(bgra.getChannels() == 4);
-        assert(msg);
-        msg->height = bgra.getHeight();
-        msg->width = bgra.getWidth();
-        msg->encoding = sensor_msgs::image_encodings::BGRA8;
-        msg->step = bgra.getStepBytes();
-        msg->is_bigendian = __BYTE_ORDER__ == __ORDER_BIG_ENDIAN__;
-        bytes_to_copy = image.total() * image.elemSize()
-        std::memcpy(msg->data.data(), bgra.data, bytes_to_copy)
-    }
+    // gst-launch-1.0 -e -v v4l2src device=/dev/video4 ! videoconvert ! videoscale ! videorate ! "video/x-raw,format=I420,width=640,height=480,framerate=30/1" ! x264enc key-int-max=15 ! rtph264pay ! udpsink host=localhost port=5000
+    // gst-launch-1.0 -v udpsrc uri=udp://localhost:5000 ! application/x-rtp,media=video,clock-rate=90000,encoding-name=H264,payload=96 ! rtph264depay ! avdec_h264 ! autovideosink
     /**
      * @brief Load config, open the camera, and start our threads
      */
@@ -38,148 +18,47 @@ namespace mrover {
             // MT means multithreaded
             mNh = getMTNodeHandle();
             mPnh = getMTPrivateNodeHandle();
-            mCamInfoPub = mNh.advertise<sensor_msgs::CameraInfo>("camera/right/camera_info", 1);
+            mCamInfoPub = mNh.advertise<sensor_msgs::CameraInfo>("long_range_cam/camera_info", 1);
             image_transport::ImageTransport it{mNh};
-            mRightImgPub = it.advertise("long_range_cam/image", 1);
+            mImgPub = it.advertise("long_range_cam/image", 1);
 
-            int imageWidth{};   
-            int imageHeight{};
-            // TODO: edit these so they correspond to the long range cam's resolution
-            mPnh.param("image_width", imageWidth, 1280);
-            mPnh.param("image_height", imageHeight, 720);
-
-            if (imageWidth < 0 || imageHeight < 0) {
-                throw std::invalid_argument("Invalid image dimensions");
+            // TODO: Fix hardcoded components of this string
+            mCapture = cv::VideoCapture("v4l2src device=/dev/video4 ! videoconvert ! videoscale ! videorate ! 'video / x - raw, format = I420, width = 640, height = 480, framerate = 30 / 1' ! x264enc key-int-max=15 ! rtph264pay ! udpsink");
+            cv::VideoWriter out = cv::VideoWriter("udpsrc ! application/x-rtp,media=video,clock-rate=90000,encoding-name=H264,payload=96 ! rtph264depay ! avdec_h264 ! autovideosink host=localhost port =5000", cv::CAP_GSTREAMER, 0, 30, cv::Size(640, 480), true);
+            if (!mCapture.isOpened()) {
+                throw std::runtime_error("Long range cam failed to open");
             }
-            if (mGrabTargetFps < 0) {
-                throw std::invalid_argument("Invalid grab target framerate");
+            ROS_ERROR("NODELET LOADED");
+            cv::Mat frame;
+            while (true) {
+                mCapture.read(frame);
+                if (frame.empty()) {
+                    break;
+                }
+                out.write(frame);
+                cv::imshow("Sender", frame);
+                if (cv::waitKey(1) == 's') {
+                    break;
+                }
             }
-
-            mImageResolution = sl::Resolution(imageWidth, imageHeight);
-            mPointResolution = sl::Resolution(imageWidth, imageHeight);
-
-            NODELET_INFO("Resolution: %s image: %zux%zu points: %zux%zu",
-                         grabResolutionString.c_str(), mImageResolution.width, mImageResolution.height);
-
-            sl::InitParameters initParameters;
-            if (mSvoPath) {
-                initParameters.input.setFromSVOFile(mSvoPath);
-            } else {
-                initParameters.input.setFromCameraID(-1, sl::BUS_TYPE::USB);
-            }
-            initParameters.depth_stabilization = mUseDepthStabilization;
-            initParameters.camera_resolution = stringToZedEnum<sl::RESOLUTION>(grabResolutionString);
-            initParameters.depth_mode = stringToZedEnum<sl::DEPTH_MODE>(depthModeString);
-            initParameters.coordinate_units = sl::UNIT::METER;
-            initParameters.sdk_verbose = true; // Log useful information
-            initParameters.camera_fps = mGrabTargetFps;
-            initParameters.coordinate_system = sl::COORDINATE_SYSTEM::RIGHT_HANDED_Z_UP_X_FWD; // Match ROS
-            initParameters.depth_maximum_distance = mDepthMaximumDistance;
-
-            if (mZed.open(initParameters) != sl::ERROR_CODE::SUCCESS) {
-                throw std::runtime_error("ZED failed to open");
-            }
-
-            cudaDeviceProp prop{};
-            cudaGetDeviceProperties(&prop, 0);
-            ROS_INFO("MP count: %d, Max threads/MP: %d, Max blocks/MP: %d, max threads/block: %d",
-                     prop.multiProcessorCount, prop.maxThreadsPerMultiProcessor, prop.maxBlocksPerMultiProcessor, prop.maxThreadsPerBlock);
-
-            mGrabThread = std::thread(&ZedNodelet::grabUpdate, this);
-
         } catch (std::exception const& e) {
             NODELET_FATAL("Exception while starting: %s", e.what());
             ros::shutdown();
         }
     }
 
-    /**
-     * @brief Grabs measures from the ZED.
-     *
-     * This update loop needs to happen as fast as possible.
-     * grab() on the ZED updates positional tracking (visual odometry) which works best at high update rates.
-     * As such we retrieve the image and point cloud on the GPU to send to the other thread for processing.
-     * This only happens if the other thread is ready to avoid blocking, hence the try lock.
-     */
-    void ZedNodelet::grabUpdate() {
-        try {
-            NODELET_INFO("Starting grab thread");
-            while (ros::ok()) {
-                mGrabThreadProfiler.beginLoop();      
-
-                sl::RuntimeParameters runtimeParameters;
-                runtimeParameters.confidence_threshold = mDepthConfidence;
-                runtimeParameters.texture_confidence_threshold = mTextureConfidence;
-
-                if (mZed.grab(runtimeParameters) != sl::ERROR_CODE::SUCCESS)
-                    throw std::runtime_error("ZED failed to grab");
-                mGrabThreadProfiler.measureEvent("Grab");
-
-                // Retrieval has to happen on the same thread as grab so that the image and point cloud are synced
-                if (mRightImgPub.getNumSubscribers())
-                    if (mZed.retrieveImage(mGrabMeasures.rightImage, sl::VIEW::RIGHT, sl::MEM::GPU, mImageResolution) != sl::ERROR_CODE::SUCCESS)
-                        throw std::runtime_error("ZED failed to retrieve right image");
-                // Only left set is used for processing
-                if (mZed.retrieveImage(mGrabMeasures.leftImage, sl::VIEW::LEFT, sl::MEM::GPU, mImageResolution) != sl::ERROR_CODE::SUCCESS)
-                    throw std::runtime_error("ZED failed to retrieve left image");
-                if (mZed.retrieveMeasure(mGrabMeasures.leftPoints, sl::MEASURE::XYZ, sl::MEM::GPU, mPointResolution) != sl::ERROR_CODE::SUCCESS)
-                    throw std::runtime_error("ZED failed to retrieve point cloud");
-
-                assert(mGrabMeasures.leftImage.timestamp == mGrabMeasures.leftPoints.timestamp);
-
-
-                mGrabMeasures.time = mSvoPath ? ros::Time::now() : slTime2Ros(mZed.getTimestamp(sl::TIME_REFERENCE::IMAGE));
-                mGrabThreadProfiler.measureEvent("Retrieve");
-
-                // If the processing thread is busy skip
-                // We want this thread to run as fast as possible for grab and positional tracking
-                if (mSwapMutex.try_lock()) {
-                    std::swap(mGrabMeasures, mPcMeasures);
-                    mIsSwapReady = true;
-                    mSwapMutex.unlock();
-                    mSwapCv.notify_one();
-                }
-                mGrabThreadProfiler.measureEvent("Try swap");
-
-                mGrabUpdateTick++;
-            }
-
-            mZed.close();
-            NODELET_INFO("Grab thread finished");
-
-        } catch (std::exception const& e) {
-            NODELET_FATAL("Exception while running grab thread: %s", e.what());
-            mZed.close();
-            ros::shutdown();
-            std::exit(EXIT_FAILURE);
-        }
-    }
-
     LongRangeCamNodelet::~LongRangeCamNodelet() {
         NODELET_INFO("Long range cam node shutting down");
-        mPointCloudThread.join();
-        mGrabThread.join();
     }
 
-    ZedNodelet::Measures::Measures(ZedNodelet::Measures&& other) noexcept {
-        *this = std::move(other);
-    }
-
-    ZedNodelet::Measures& ZedNodelet::Measures::operator=(ZedNodelet::Measures&& other) noexcept {
-        sl::Mat::swap(other.leftImage, leftImage);
-        sl::Mat::swap(other.rightImage, rightImage);
-        sl::Mat::swap(other.leftPoints, leftPoints);
-        std::swap(time, other.time);
-        return *this;
-    }
 } // namespace mrover
 
 int main(int argc, char** argv) {
-    ros::init(argc, argv, "zed_wrapper");
+    ros::init(argc, argv, "long_range_cam");
 
     // Start the ZED Nodelet
     nodelet::Loader nodelet;
-    nodelet.load(ros::this_node::getName(), "mrover/ZedNodelet", ros::names::getRemappings(), {});
+    nodelet.load(ros::this_node::getName(), "mrover/LongRangeCamNodelet", ros::names::getRemappings(), {});
 
     ros::spin();
 
