@@ -4,4 +4,11 @@ import router from './router'
 
 import './app.scss' //custom CSS override file
 
-createApp(App).use(router).mount('#app')
+const ws:WebSocket = new WebSocket('ws://localhost:8000/ws/gui');
+
+ws.onopen = () => {
+	  console.log('WebSocket connection opened successfully.');
+	  const app:App<Element> = createApp(App);
+	  app.provide('webSocketService', ws);
+	  app.use(router).mount('#app');
+}
