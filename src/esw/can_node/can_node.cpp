@@ -129,14 +129,17 @@ namespace mrover {
 
 
     void CanNodelet::readFrame(boost::system::error_code const& ec, std::size_t bytes_transferred) {
-        // TODO(quintin) check ec
         if (ec.value() != boost::system::errc::success) {
             throw std::runtime_error(std::format("Failed to read frame. Reason: {}", ec.value()));
+        }
+        if (bytes_transferred != sizeof(mReadFrame)) {
+            throw std::runtime_error("Failed to read full frame");
         }
 
         CAN msg;
         msg.bus = 0;
         msg.message_id = mReadFrame.can_id;
+        msg.data.resize(mReadFrame.len);
         std::memcpy(msg.data.data(), mReadFrame.data, mReadFrame.len);
 
         mCanPublisher.publish(msg);
