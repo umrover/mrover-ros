@@ -21,17 +21,18 @@ namespace mrover {
     void BrushlessController::set_desired_position(Radians position) {
         position = std::clamp(position, min_position, max_position);
         // TODO - need to convert to use revs
-
-void BrushlessController::set_desired_velocity(float velocity) {
-    velocity = std::clamp(velocity, min_velocity, max_velocity);
-    // TODO - need to convert to use rev/s
-    can_manager.send_data("velocity_cmd", velocity);
-}
-
+    }
+    void BrushlessController::set_desired_velocity(float velocity) {
+        velocity = std::clamp(velocity, min_velocity, max_velocity);
+        // TODO - need to convert to use rev/s
+        can_manager.send_data("velocity_cmd", velocity);
+    }
+} // namespace mrover
 int main() {
-    uint8_t[64] velocity = test_set_velocity(5.0);
-    cout << velocity;
-    
+    mrover::BrushlessController bc();
+    uint8_t[64] velocity = bc.test_set_velocity(5.0);
+    std::cout << velocity;
+
 
     //can_manager.send_data("velocity_cmd", velocity);
 }

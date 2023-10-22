@@ -133,7 +133,7 @@ namespace mrover {
         //            return MotorType::Brushless;
         //        }
 
-        void test_set_velocity(double speed) {
+        uint8_t* test_set_velocity(double speed) {
 
             // The following DefaultArgProcess is an optional call.  If made,
             // then command line arguments will be handled which allow setting
@@ -144,7 +144,7 @@ namespace mrover {
             // There are many possible options to set for each controller
             // instance.  Here we re-set the ID to the default (1), just to show
             // how it is done.
-            /*
+
             moteus::Controller::Options options;
             options.id = 1;
 
@@ -169,10 +169,9 @@ namespace mrover {
 
 
             send_frames.push_back(controller.MakePosition(cmd));
-
-            transport->BlockingCycle(&send_frames[0], send_frames.size(),
-                                     &receive_frames);
-                                     */
+            return send_frames[0].data;
+            //transport->BlockingCycle(&send_frames[0], send_frames.size(),
+            //                        &receive_frames);
         }
 
         void set_desired_throttle(Dimensionless throttle) override;
