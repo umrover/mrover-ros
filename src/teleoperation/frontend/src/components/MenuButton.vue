@@ -1,7 +1,5 @@
 <template>
-  <button class="btn btn-primary">
-    <a :href="link">{{ name }}</a>
-  </button>
+  <a class="btn btn-primary" :href="link">{{ name }}</a>
 </template>
   
 <script lang="ts">
@@ -24,13 +22,11 @@ export default defineComponent({
 </script>
 
 <style scoped>
-  button {
+  a {
     margin: 5px;
     width: 250px;
     height: 150px;
-  }
 
-  a {
     text-decoration: none;
     color: white;
   }
