@@ -23,13 +23,16 @@
 #include <ros/node_handle.h>
 #include <ros/subscriber.h>
 
+#include <boost/asio.hpp>
+#include <boost/bind.hpp>
+
 #include <mrover/CAN.h>
 
 namespace mrover {
 
     class CanNodelet : public nodelet::Nodelet {
     public:
-        void readFrame();
+        void readFrame(struct can_frame& rec_frame, boost::asio::posix::basic_stream_descriptor<>& stream);
 
         void writeFrame() const;
 
@@ -50,7 +53,8 @@ namespace mrover {
         ros::NodeHandle mNh, mPnh;
 
         uint8_t mBus{};
-        canfd_frame mFrame{};
+        canfd_frame mWriteFrame{};
+        canfd_frame mReadFrame{};
         int mSocket{};
         bool mIsExtendedFrame{};
 

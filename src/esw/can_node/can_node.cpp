@@ -110,6 +110,16 @@ namespace mrover {
 
             mIsExtendedFrame = mNh.param<bool>("is_extended_frame", true);
 
+            boost::asio::io_service ios;
+            boost::asio::posix::basic_stream_descriptor<> stream(ios);
+            stream.assign(mSocket);
+
+
+            stream.async_read_some(
+                    boost::asio::buffer(&mReadFrame, sizeof(mReadFrame)),
+                    boost::bind(&readFrame, this, boost::ref(mReadFrame), boost::ref(stream)));
+            ios.run();
+
 
         } catch (std::exception const& exception) {
             ROS_ERROR_STREAM(exception.what());
@@ -117,28 +127,26 @@ namespace mrover {
         }
     }
 
-    void CanNodelet::readFrame() {
-        canfd_frame frame{};
-        size_t nBytesRead;
-        while (true) {
-            nBytesRead = read(mSocket, &frame, sizeof(canfd_frame));
-            if (nBytesRead == sizeof(canfd_frame)) {
-                mrover::CAN msg;
-                msg.bus = 0;
-                msg.message_id = frame.can_id;
-                std::memcpy(msg.data.data(), frame.data, frame.len);
 
-                mCanPublisher.publish(msg);
-            }
+    void CanNodelet::readFrame(struct can_frame& rec_frame,
+                               boost::asio::posix::basic_stream_descriptor<>& stream) {
+
+        std::cout << std::hex << rec_frame.can_id << "  ";
+        for (int i = 0; i < rec_frame.can_dlc; i++) {
+            std::cout << std::hex << int(rec_frame.data[i]) << " ";
         }
+        std::cout << std::dec << std::endl;
+        stream.async_read_some(
+                boost::asio::buffer(&rec_frame, sizeof(rec_frame)),
+                boost::bind(data_rec, boost::ref(rec_frame), boost::ref(stream)));
     }
 
     //todo(owen) Possible timeout mechanism? Maybe a limit of num writes before while look breaks and throws error
     void CanNodelet::writeFrame() const {
-        size_t nbytes = write(mSocket, &mFrame, sizeof(canfd_frame));
+        size_t nbytes = write(mSocket, &mWriteFrame, sizeof(canfd_frame));
         while (nbytes != sizeof(struct canfd_frame)) {
             // nbytes = sendto(mSocket, &mFrame, sizeof(canfd_frame), 0, nullptr, 0);
-            nbytes = write(mSocket, &mFrame, sizeof(canfd_frame));
+            nbytes = write(mSocket, &mWriteFrame, sizeof(canfd_frame));
         }
         // NODELET_INFO_STREAM("error: write incomplete CAN frame");
     }
@@ -156,12 +164,12 @@ namespace mrover {
         can_id_bits.set(CAN_ERROR_BIT_INDEX);
         can_id_bits.set(CAN_RTR_BIT_INDEX);
 
-        mFrame.can_id = can_id_bits.to_ullong();
+        mWriteFrame.can_id = can_id_bits.to_ullong();
     }
 
     void CanNodelet::setFrameData(std::span<const std::byte> data) {
-        std::memcpy(mFrame.data, data.data(), data.size());
-        mFrame.len = data.size();
+        std::memcpy(mWriteFrame.data, data.data(), data.size());
+        mWriteFrame.len = data.size();
     }
 
     void CanNodelet::handleWriteMessage(CAN::ConstPtr const& msg) {
@@ -177,11 +185,11 @@ namespace mrover {
 
     void CanNodelet::printFrame() {
         std::cout << std::format("BUS: {}", mBus) << std::endl;
-        std::cout << std::format("CAN_ID: {}", mFrame.can_id) << std::endl;
-        std::cout << std::format("LEN: {}", mFrame.len) << std::endl;
+        std::cout << std::format("CAN_ID: {}", mWriteFrame.can_id) << std::endl;
+        std::cout << std::format("LEN: {}", mWriteFrame.len) << std::endl;
         std::cout << "DATA:" << std::endl;
-        for (uint8_t i = 0; i < mFrame.len; ++i) {
-            std::cout << std::format("Index = {}\tData = {:#X}", i, mFrame.data[i]) << std::endl;
+        for (uint8_t i = 0; i < mWriteFrame.len; ++i) {
+            std::cout << std::format("Index = {}\tData = {:#X}", i, mWriteFrame.data[i]) << std::endl;
         }
     }
 } // namespace mrover
