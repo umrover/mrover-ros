@@ -10,7 +10,7 @@
     </div>
   </template>
   
-  <script>
+  <script lang = "ts">
   import ToggleButton from "./ToggleButton.vue";
   
   export default {

@@ -2,6 +2,7 @@
     <PDBFuse/>
     <DriveMoteusStateTable :moteus-state-data="moteusState" />
     <ArmMoteusStateTable/>
+    <ArmControls/>
 </template>
 
 <script lang="ts">
@@ -9,12 +10,13 @@ import { defineComponent } from 'vue'
 import PDBFuse from "./PDBFuse.vue";
 import DriveMoteusStateTable from "./DriveMoteusStateTable.vue";
 import ArmMoteusStateTable from "./ArmMoteusStateTable.vue";
-
+import ArmControls from "./ArmControls.vue";
 export default defineComponent({
   components : {
     PDBFuse,
     DriveMoteusStateTable,
-    ArmMoteusStateTable
+    ArmMoteusStateTable,
+    ArmControls,
   },
 
   data() {

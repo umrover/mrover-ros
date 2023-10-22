@@ -7,10 +7,10 @@
     </div>
   </template>
   
-  <script>
+  <script lang ="ts">
   import Checkbox from "./Checkbox.vue";
   import LEDIndicator from "./LEDIndicator.vue";
-  import ROSLIB from "roslib/src/RosLib";
+  //import ROSLIB from "roslib/src/RosLib";
   
   export default {
     components: {

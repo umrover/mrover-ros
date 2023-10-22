@@ -52,7 +52,8 @@
     </div>
 </template>
   
-<script>
+<script lang ="ts">
+import { inject } from 'vue';
 import ToggleButton from "./ToggleButton.vue";
 import CalibrationCheckbox from "./CalibrationCheckbox.vue";
 import JointAdjust from "./MotorAdjust.vue";
@@ -64,13 +65,14 @@ let interval;
 
 export default {
     components: {
+        ToggleButton,
         CalibrationCheckbox,
         JointAdjust,
-        ToggleButton,
         LimitSwitch
     },
     data() {
         return {
+            websocket: inject("webSocketService") as WebSocket,
             arm_mode: "arm_disabled",
             joints_array: [false, false, false, false, false, false],
             laser_enabled: false,
@@ -92,102 +94,102 @@ export default {
         window.clearInterval(interval);
     },
 
-    created: function () {
-        this.joystick_pub = new ROSLIB.Topic({
-            ros: this.$ros,
-            name: "/xbox/ra_control",
-            messageType: "sensor_msgs/Joy"
-        });
-        this.laser_service = new ROSLIB.Service({
-            ros: this.$ros,
-            name: "enable_mosfet_device",
-            serviceType: "mrover/EnableDevice",
-        });
-        this.ra_mode_service = new ROSLIB.Service({
-            ros: this.$ros,
-            name: "change_ra_mode",
-            serviceType: "mrover/ChangeArmMode"
-        });
-        this.jointlock_pub = new ROSLIB.Topic({
-            ros: this.$ros,
-            name: "/joint_lock",
-            messageType: "mrover/JointLock"
-        });
-        this.updateArmMode("arm_disabled", this.arm_mode);
-        const jointData = {
-            //publishes array of all falses when refreshing the page
-            joints: this.joints_array
-        };
-        var jointlockMsg = new ROSLIB.Message(jointData);
-        this.jointlock_pub.publish(jointlockMsg);
+    // created: function () {
+    //     this.joystick_pub = new ROSLIB.Topic({
+    //         ros: this.$ros,
+    //         name: "/xbox/ra_control",
+    //         messageType: "sensor_msgs/Joy"
+    //     });
+    //     this.laser_service = new ROSLIB.Service({
+    //         ros: this.$ros,
+    //         name: "enable_mosfet_device",
+    //         serviceType: "mrover/EnableDevice",
+    //     });
+    //     this.ra_mode_service = new ROSLIB.Service({
+    //         ros: this.$ros,
+    //         name: "change_ra_mode",
+    //         serviceType: "mrover/ChangeArmMode"
+    //     });
+    //     this.jointlock_pub = new ROSLIB.Topic({
+    //         ros: this.$ros,
+    //         name: "/joint_lock",
+    //         messageType: "mrover/JointLock"
+    //     });
+    //     this.updateArmMode("arm_disabled", this.arm_mode);
+    //     const jointData = {
+    //         //publishes array of all falses when refreshing the page
+    //         joints: this.joints_array
+    //     };
+    //     var jointlockMsg = new ROSLIB.Message(jointData);
+    //     this.jointlock_pub.publish(jointlockMsg);
 
-        interval = window.setInterval(() => {
-            const gamepads = navigator.getGamepads();
-            for (let i = 0; i < 4; i++) {
-                const gamepad = gamepads[i];
-                if (gamepad) {
-                    // Microsoft and Xbox for old Xbox 360 controllers
-                    // X-Box for new PowerA Xbox One controllers
-                    if (
-                        gamepad.id.includes("Microsoft") ||
-                        gamepad.id.includes("Xbox") ||
-                        gamepad.id.includes("X-Box")
-                    ) {
-                        let buttons = gamepad.buttons.map((button) => {
-                            return button.value;
-                        });
-                        this.publishJoystickMessage(gamepad.axes, buttons);
-                    }
-                }
-            }
-        }, updateRate * 1000);
-    },
+    //     interval = window.setInterval(() => {
+    //         const gamepads = navigator.getGamepads();
+    //         for (let i = 0; i < 4; i++) {
+    //             const gamepad = gamepads[i];
+    //             if (gamepad) {
+    //                 // Microsoft and Xbox for old Xbox 360 controllers
+    //                 // X-Box for new PowerA Xbox One controllers
+    //                 if (
+    //                     gamepad.id.includes("Microsoft") ||
+    //                     gamepad.id.includes("Xbox") ||
+    //                     gamepad.id.includes("X-Box")
+    //                 ) {
+    //                     let buttons = gamepad.buttons.map((button) => {
+    //                         return button.value;
+    //                     });
+    //                     this.publishJoystickMessage(gamepad.axes, buttons);
+    //                 }
+    //             }
+    //         }
+    //     }, updateRate * 1000);
+    // },
 
-    methods: {
-        updateArmMode: function (newMode, oldMode) {
-            const armData = {
-                mode: newMode
-            };
-            var armcontrolsmsg = new ROSLIB.ServiceRequest(armData);
-            this.ra_mode_service.callService(armcontrolsmsg, (response) => {
-                if (!response.success) {
-                    this.arm_mode = oldMode;
-                    alert("Failed to change arm mode");
-                }
-            });
-        },
+    // methods: {
+    //     updateArmMode: function (newMode, oldMode) {
+    //         const armData = {
+    //             mode: newMode
+    //         };
+    //         var armcontrolsmsg = new ROSLIB.ServiceRequest(armData);
+    //         this.ra_mode_service.callService(armcontrolsmsg, (response) => {
+    //             if (!response.success) {
+    //                 this.arm_mode = oldMode;
+    //                 alert("Failed to change arm mode");
+    //             }
+    //         });
+    //     },
 
-        updateJointsEnabled: function (jointnum, enabled) {
-            this.joints_array[jointnum] = enabled;
-            const jointData = {
-                joints: this.joints_array
-            };
-            var jointlockMsg = new ROSLIB.Message(jointData);
-            this.jointlock_pub.publish(jointlockMsg);
-        },
+    //     updateJointsEnabled: function (jointnum, enabled) {
+    //         this.joints_array[jointnum] = enabled;
+    //         const jointData = {
+    //             joints: this.joints_array
+    //         };
+    //         var jointlockMsg = new ROSLIB.Message(jointData);
+    //         this.jointlock_pub.publish(jointlockMsg);
+    //     },
 
-        publishJoystickMessage: function (axes, buttons) {
-            const joystickData = {
-                axes: axes,
-                buttons: buttons
-            };
-            var joystickMsg = new ROSLIB.Message(joystickData);
-            this.joystick_pub.publish(joystickMsg);
-        },
-        toggleArmLaser: function () {
-            this.laser_enabled = !this.laser_enabled;
-            let request = new ROSLIB.ServiceRequest({
-                name: "arm_laser",
-                enable: this.laser_enabled,
-            });
-            this.laser_service.callService(request, (result) => {
-                if (!result) {
-                    this.laser_enabled = !this.laser_enabled;
-                    alert("Toggling Arm Laser failed.");
-                }
-            });
-        }
-    }
+    //     publishJoystickMessage: function (axes, buttons) {
+    //         const joystickData = {
+    //             axes: axes,
+    //             buttons: buttons
+    //         };
+    //         var joystickMsg = new ROSLIB.Message(joystickData);
+    //         this.joystick_pub.publish(joystickMsg);
+    //     },
+    //     toggleArmLaser: function () {
+    //         this.laser_enabled = !this.laser_enabled;
+    //         let request = new ROSLIB.ServiceRequest({
+    //             name: "arm_laser",
+    //             enable: this.laser_enabled,
+    //         });
+    //         this.laser_service.callService(request, (result) => {
+    //             if (!result) {
+    //                 this.laser_enabled = !this.laser_enabled;
+    //                 alert("Toggling Arm Laser failed.");
+    //             }
+    //         });
+    //     }
+    // }
 };
 </script>
   
