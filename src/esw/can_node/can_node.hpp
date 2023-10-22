@@ -39,7 +39,7 @@ namespace mrover {
 
         void writeFrameAsync();
 
-        void processFrame();
+        void processReadFrame();
 
         void setBus(std::uint8_t bus);
 

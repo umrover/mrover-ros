@@ -33,13 +33,13 @@ namespace mrover {
                 throw std::runtime_error("Failed to get rtnl_link");
             }
 
-            //            can_bittiming bt{
-            //                    .bitrate = 500000,
-            //                    .brp = 2,
-            //            };
-            //            if (int result = rtnl_link_can_set_bittiming(mLink, &bt); result < 0) {
-            //                throw std::runtime_error("Failed to set bittiming");
-            //            }
+            can_bittiming bt{
+                    .bitrate = 500000,
+                    .brp = 2,
+            };
+            if (int result = rtnl_link_can_set_bittiming(mLink, &bt); result < 0) {
+                throw std::runtime_error("Failed to set bittiming");
+            }
 
             rtnl_link_set_flags(mLink, IFF_UP);
             if (int result = rtnl_link_change(mSocket, mLink, mLink, 0); result < 0 && result != -NLE_SEQ_MISMATCH) {

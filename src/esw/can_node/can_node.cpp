@@ -2,9 +2,9 @@
 
 #include <stdexcept>
 
-#include <boost/asio/io_service.hpp>
 #include <boost/asio/read.hpp>
 #include <boost/asio/write.hpp>
+#include <boost/system/error_code.hpp>
 
 #include <nodelet/loader.h>
 #include <ros/init.h>
@@ -13,9 +13,9 @@
 
 namespace mrover {
 
-    constexpr size_t CAN_ERROR_BIT_INDEX = 29;
-    constexpr size_t CAN_RTR_BIT_INDEX = 30;
-    constexpr size_t CAN_EXTENDED_BIT_INDEX = 31;
+    constexpr static std::size_t CAN_ERROR_BIT_INDEX = 29;
+    constexpr static std::size_t CAN_RTR_BIT_INDEX = 30;
+    constexpr static std::size_t CAN_EXTENDED_BIT_INDEX = 31;
 
     void checkErrorCode(boost::system::error_code const& ec) {
         if (ec.value() == boost::system::errc::success) return;
@@ -96,7 +96,9 @@ namespace mrover {
                     checkErrorCode(ec);
                     assert(bytes == sizeof(mReadFrame));
 
-                    processFrame();
+                    processReadFrame();
+
+                    readFrameAsync();
                 });
     }
 
@@ -110,7 +112,7 @@ namespace mrover {
                 });
     }
 
-    void CanNodelet::processFrame() { // NOLINT(*-no-recursion)
+    void CanNodelet::processReadFrame() { // NOLINT(*-no-recursion)
         CAN msg;
         msg.bus = 0;
         msg.message_id = mReadFrame.can_id;
@@ -118,15 +120,13 @@ namespace mrover {
         std::memcpy(msg.data.data(), mReadFrame.data, mReadFrame.len);
 
         mCanPublisher.publish(msg);
-
-        readFrameAsync();
     }
 
-    void CanNodelet::setBus(uint8_t bus) {
+    void CanNodelet::setBus(std::uint8_t bus) {
         this->mBus = bus;
     }
 
-    void CanNodelet::setFrameId(uint32_t identifier) {
+    void CanNodelet::setFrameId(std::uint32_t identifier) {
         // Check that the identifier is not too large
         assert(std::bit_width(identifier) <= mIsExtendedFrame ? CAN_EFF_ID_BITS : CAN_SFF_ID_BITS);
 
@@ -157,7 +157,7 @@ namespace mrover {
         std::cout << std::format("CAN_ID: {}", mWriteFrame.can_id) << std::endl;
         std::cout << std::format("LEN: {}", mWriteFrame.len) << std::endl;
         std::cout << "DATA:" << std::endl;
-        for (uint8_t i = 0; i < mWriteFrame.len; ++i) {
+        for (std::uint8_t i = 0; i < mWriteFrame.len; ++i) {
             std::cout << std::format("Index = {}\tData = {:#X}", i, mWriteFrame.data[i]) << std::endl;
         }
     }
