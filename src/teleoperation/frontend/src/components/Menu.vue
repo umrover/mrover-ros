@@ -27,7 +27,7 @@
 
 <script lang="ts">
 import MenuButton from "./MenuButton.vue";
-
+import ControlGui from "./controlgui.vue";
 import { defineComponent } from 'vue'
 
 export default defineComponent({

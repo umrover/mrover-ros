@@ -53,7 +53,6 @@
 </template>
   
 <script>
-import ROSLIB from "roslib";
 import ToggleButton from "./ToggleButton.vue";
 import CalibrationCheckbox from "./CalibrationCheckbox.vue";
 import JointAdjust from "./MotorAdjust.vue";
@@ -192,7 +191,7 @@ export default {
 };
 </script>
   
-<style scoped>
+<!-- <style scoped>
 .wrap {
     display: flex;
     flex-direction: column;
@@ -275,4 +274,4 @@ export default {
   .laser {
     padding-top: 10px;
   }
-  </style>
+  </style> -->
