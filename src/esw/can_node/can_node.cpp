@@ -1,19 +1,19 @@
 #include "can_node.hpp"
 
-#include <boost/asio/write.hpp>
 #include <mutex>
-#include <net/if.h>
-#include <netlink/handlers.h>
 #include <stdexcept>
 
 #include <netlink/route/link.h>
 #include <netlink/route/link/can.h>
 
+#include <boost/asio/io_service.hpp>
+#include <boost/asio/read.hpp>
+#include <boost/asio/write.hpp>
+
 #include <nodelet/loader.h>
 #include <ros/init.h>
 #include <ros/names.h>
 #include <ros/this_node.h>
-
 
 struct Netlink {
     Netlink() {
@@ -144,17 +144,17 @@ namespace mrover {
         boost::asio::async_read(
                 mStream.value(),
                 boost::asio::buffer(&mReadFrame, sizeof(mReadFrame)),
-                [this](auto const& ec, auto const& bytes) {
+                [this](boost::system::error_code const& ec, std::size_t bytes) {
                     readFrame(ec, bytes);
                 });
     }
 
-    void CanNodelet::writeFrame() const {
+    void CanNodelet::writeFrame() {
         // TODO(quintin) Convert to async_write_some
         boost::asio::async_write(
                 mStream.value(),
                 boost::asio::buffer(&mWriteFrame, sizeof(mWriteFrame)),
-                [](auto const& ec, auto const& bytes) {
+                [](boost::system::error_code const& ec, std::size_t bytes) {
                     if (ec.value() != boost::system::errc::success) {
                         throw std::runtime_error(std::format("Failed to write frame. Reason: {}", ec.value()));
                     }

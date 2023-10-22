@@ -14,8 +14,6 @@
 
 #include <linux/can.h>
 #include <linux/can/raw.h>
-#include <net/if.h>
-#include <sys/ioctl.h>
 #include <sys/socket.h>
 #include <sys/types.h>
 
@@ -23,10 +21,7 @@
 #include <ros/node_handle.h>
 #include <ros/subscriber.h>
 
-#include <boost/asio.hpp>
-#include <boost/asio/write.hpp>
-
-#include <boost/bind.hpp>
+#include <boost/asio/posix/basic_stream_descriptor.hpp>
 #include <boost/system/error_code.hpp>
 
 #include <mrover/CAN.h>
@@ -37,9 +32,9 @@ namespace mrover {
     public:
         void readFrame(boost::system::error_code const& ec, std::size_t bytes_transferred);
 
-        void writeFrame() const;
+        void writeFrame();
 
-        void setBus(uint8_t bus);
+        void setBus(std::uint8_t bus);
 
         // canfd_frame.can_id is a uint32_t with format:
         // [0-28]: CAN identifier (11/29bit)
@@ -48,14 +43,14 @@ namespace mrover {
         // [31]: Frame format flag (0 = standard 11bit, 1 = extended 29bit)
         // In the future, if we want to send different types of messages,
         // we should have logic for switching bits such as errorFrameFlag.
-        void setFrameId(uint32_t identifier);
+        void setFrameId(std::uint32_t identifier);
 
         void setFrameData(std::span<const std::byte> data);
 
     private:
         ros::NodeHandle mNh, mPnh;
 
-        uint8_t mBus{};
+        std::uint8_t mBus{};
         canfd_frame mWriteFrame{};
         canfd_frame mReadFrame{};
         int mSocketFd{};
