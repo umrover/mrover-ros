@@ -33,7 +33,7 @@ namespace mrover {
         Radians position;
     };
     
-    struct MotorDataStateCommand : BaseCommand {
+    struct MotorDataState : BaseCommand {
         RadiansPerSecond velocity;
         Radians position;
         uint8_t config_calib_error_data;
@@ -45,7 +45,7 @@ namespace mrover {
     };
 
     using Message = std::variant<
-            ConfigCommand, IdleCommand, ThrottleCommand, VelocityCommand, PositionCommand, MotorDataStateCommand>;
+            ConfigCommand, IdleCommand, ThrottleCommand, VelocityCommand, PositionCommand, MotorDataState>;
 
     union FdCanFrame {
         Message message;

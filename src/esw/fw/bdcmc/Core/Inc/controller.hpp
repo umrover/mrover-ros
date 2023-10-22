@@ -70,7 +70,7 @@ namespace mrover {
         }
 
         // This function is needed for compilation so all variant types are satisfied
-        void feed(MotorDataStateCommand const &message) { }
+        void feed(MotorDataState const &message) { }
 
         void feed(ThrottleCommand const &message) {
             force_configure();
@@ -153,20 +153,17 @@ namespace mrover {
              * 1 BYTES: Is Configured, Is Calibrated, Errors (8)
              * 1 BYTES: Limit a/b/c/d is hit. (9)
              */
-            Radians position = m_reader.read_input();
-            RadiansPerSecond velocity = m_reader.read_velocity();
+            std::pair<Radians, RadiansPerSecond> reading = m_reader.read_input();
+
+            mrover::FdCanFrame frame{};
+
+            frame.message.velocity = reading.first;
+            frame.message.position = reading.second;
             // TODO: Actually fill the config_calib_error_data with data
-            uint8_t config_calib_error_data = 0x00;
+            frame.message.config_calib_error_data = 0x00;
             // TODO: Is this going to be right or left aligned?
             // TODO: actually fill with correct values
-            uint8_t limits_hit = 0x00;
-            // TODO: Write code to transmit data.
-            mrover::FdCanFrame frame{};
-            size_t i = 0;
-//            frame.bytes = reinterpret_cast<std::byte>&position.get();
-//            frame.bytes + 4 = reinterpret_cast<std::byte>&velocity.get();
-//            frame.bytes + 8 = static_cast<std::byte>(config_calib_error_data);
-//            frame.bytes + 9 = static_cast<std::byte>(limits_hit);
+            frame.message.limits_switches = 0x00;
 
             // TODO: Copied values from somewhere else.
             // TODO: Identifier probably needs to change?

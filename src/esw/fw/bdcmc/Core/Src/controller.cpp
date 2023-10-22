@@ -45,15 +45,5 @@ void loop() {
             mrover::controller.process(frame.message);
         }
     }
-
-    // TODO: send out Controller data as CAN message
-    // Use getters to get info from encoder reader, have the bundling into CAN in controller
-    //  then controller sends the array as a CAN message
-    /* CAN FRAME FORMAT 
-     * 4 BYTES: Position (0-3). In RADIANS
-     * 4 BYTES: Velocity (4-7). In RADIANS/SECOND
-     * 1 BYTES: Is Configured, Is Calibrated, Errors (8)
-     * 1 BYTES: Limit a/b/c/d is hit. (9)
-     */
-//    mrover::controller.transmit_motor_data();
+    mrover::controller.m_reader.send();
 }

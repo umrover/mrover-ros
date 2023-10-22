@@ -25,10 +25,11 @@ namespace mrover {
         uint32_t m_address{};
         SMBus m_i2cBus{};
         enum {
-            device_slave_address_none_power = 0x40,
-            device_slave_address_a1_power = 0x41,
-            device_slave_address_a2_power = 0x42,
-            device_slave_address_both_power = 0x43,
+            // default i2c address is 0x40
+            device_slave_address_none_high = 0x40,
+            device_slave_address_a1_high = 0x41,
+            device_slave_address_a2_high = 0x42,
+            device_slave_address_both_high = 0x43,
         };
     };
 
