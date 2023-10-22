@@ -9,7 +9,6 @@ import time
 
 
 class StatePublisher:
-
     structure_publisher: rospy.Publisher
     state_publisher: rospy.Publisher
     state_machine: StateMachine
