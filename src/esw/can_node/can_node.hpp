@@ -24,7 +24,10 @@
 #include <ros/subscriber.h>
 
 #include <boost/asio.hpp>
+#include <boost/asio/write.hpp>
+
 #include <boost/bind.hpp>
+#include <boost/system/error_code.hpp>
 
 #include <mrover/CAN.h>
 

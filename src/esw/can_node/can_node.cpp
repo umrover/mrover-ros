@@ -1,5 +1,6 @@
 #include "can_node.hpp"
 
+#include <boost/asio/write.hpp>
 #include <mutex>
 #include <net/if.h>
 #include <netlink/handlers.h>
@@ -106,6 +107,7 @@ namespace mrover {
             mNh = getMTNodeHandle();
             mPnh = getMTPrivateNodeHandle();
             mCanSubscriber = mNh.subscribe<CAN>("can_requests", 5, &CanNodelet::handleWriteMessage, this);
+            mCanPublisher = mNh.advertise<mrover::CAN>("{INSERT TOPIC NAME}", 1);
 
             mIsExtendedFrame = mNh.param<bool>("is_extended_frame", true);
 
@@ -128,28 +130,35 @@ namespace mrover {
 
     void CanNodelet::readFrame(boost::system::error_code const& ec, std::size_t bytes_transferred) {
         // TODO(quintin) check ec
-
-        std::cout << std::hex << mReadFrame.can_id << "  ";
-        for (int i = 0; i < mReadFrame.len; i++) {
-            std::cout << std::hex << int(mReadFrame.data[i]) << " ";
+        if (ec.value() != boost::system::errc::success) {
+            throw std::runtime_error(std::format("Failed to read frame. Reason: {}", ec.value()));
         }
-        std::cout << std::dec << std::endl;
 
-        mStream->async_read_some(
+        CAN msg;
+        msg.bus = 0;
+        msg.message_id = mReadFrame.can_id;
+        std::memcpy(msg.data.data(), mReadFrame.data, mReadFrame.len);
+
+        mCanPublisher.publish(msg);
+
+        boost::asio::async_read(
+                mStream.value(),
                 boost::asio::buffer(&mReadFrame, sizeof(mReadFrame)),
-                [this](auto const& ec, auto const& bytes) { readFrame(ec, bytes); });
+                [this](auto const& ec, auto const& bytes) {
+                    readFrame(ec, bytes);
+                });
     }
 
-    //todo(owen) Possible timeout mechanism? Maybe a limit of num writes before while look breaks and throws error
     void CanNodelet::writeFrame() const {
         // TODO(quintin) Convert to async_write_some
-
-        size_t nbytes = write(mSocketFd, &mWriteFrame, sizeof(canfd_frame));
-        while (nbytes != sizeof(struct canfd_frame)) {
-            // nbytes = sendto(mSocket, &mFrame, sizeof(canfd_frame), 0, nullptr, 0);
-            nbytes = write(mSocketFd, &mWriteFrame, sizeof(canfd_frame));
-        }
-        // NODELET_INFO_STREAM("error: write incomplete CAN frame");
+        boost::asio::async_write(
+                mStream.value(),
+                boost::asio::buffer(&mWriteFrame, sizeof(mWriteFrame)),
+                [](auto const& ec, auto const& bytes) {
+                    if (ec.value() != boost::system::errc::success) {
+                        throw std::runtime_error(std::format("Failed to write frame. Reason: {}", ec.value()));
+                    }
+                });
     }
 
     void CanNodelet::setBus(uint8_t bus) {
