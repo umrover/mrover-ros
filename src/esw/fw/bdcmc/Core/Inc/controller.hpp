@@ -11,6 +11,8 @@
 #include "pidf.hpp"
 #include "units.hpp"
 
+extern FDCAN_HandleTypeDef hfdcan1;
+
 static inline void check(bool cond, std::invocable auto handler) {
     if (!cond) {
         handler();
@@ -19,9 +21,9 @@ static inline void check(bool cond, std::invocable auto handler) {
 
 namespace mrover {
 
-    template<typename T, typename Input>
+    template<typename T, typename Input, typename TimeUnit = Seconds>
     concept InputReader = requires(T t, Config &config) {
-        { t.read_input(config) } -> std::convertible_to<Input>;
+        { t.read_input(config) } -> std::convertible_to<std::pair<Input, compound_unit<Input, inverse<TimeUnit>>>>;
     };
 
     template<typename T, typename Output>
@@ -34,6 +36,7 @@ namespace mrover {
             Unitable TimeUnit = Seconds>
     class Controller {
     private:
+
         struct PositionMode {
             PIDF<InputUnit, OutputUnit, TimeUnit> pidf;
         };
@@ -49,7 +52,6 @@ namespace mrover {
         Writer m_writer;
         Message m_command;
         Mode m_mode;
-        uint32_t m_id;
         FDCAN_TxHeaderTypeDef TxHeader;
 
         inline void force_configure() {
@@ -66,6 +68,9 @@ namespace mrover {
         void feed(ConfigCommand const &message) {
             m_config.configure(message);
         }
+
+        // This function is needed for compilation so all variant types are satisfied
+        void feed(MotorDataStateCommand const &message) { }
 
         void feed(ThrottleCommand const &message) {
             force_configure();
@@ -111,7 +116,7 @@ namespace mrover {
 
     public:
 
-        explicit Controller(const uint32_t id) : m_config(id), m_id(id) {}
+        Controller(const uint32_t id, Reader &&reader, Writer &&writer) : m_config(id), m_reader(std::move(reader)), m_writer(std::move(writer)) {}
 
         template<typename Command>
         void process(Command const &command) {
@@ -133,12 +138,16 @@ namespace mrover {
             std::visit([&](auto const &command) { process(command); }, message);
         }
 
+        void update() {
+            // TODO enforce limit switch constraints
+        }
+
         // Transmit motor data out as CAN message
-        void transmit_motor_data() {
+        void send() {
             // TODO: send out Controller data as CAN message
             // Use getters to get info from encoder reader, have the bundling into CAN in controller
             //  then controller sends the array as a CAN message
-            /* CAN FRAME FORMAT 
+            /* CAN FRAME FORMAT
              * 4 BYTES: Position (0-3)
              * 4 BYTES: Velocity (4-7)
              * 1 BYTES: Is Configured, Is Calibrated, Errors (8)
@@ -151,15 +160,15 @@ namespace mrover {
             // TODO: Is this going to be right or left aligned?
             // TODO: actually fill with correct values
             uint8_t limits_hit = 0x00;
-            // TODO: Write code to transmit data. 
-            FdCanFrame frame;
+            // TODO: Write code to transmit data.
+            mrover::FdCanFrame frame{};
             size_t i = 0;
-            frame.bytes = reinterpret_cast<std::byte>&position.get();
-            frame.bytes + 4 = reinterpret_cast<std::byte>&velocity.get();
-            frame.bytes + 8 = static_cast<std::byte>(config_calib_error_data);
-            frame.bytes + 9 = static_cast<std::byte>(limits_hit);
+//            frame.bytes = reinterpret_cast<std::byte>&position.get();
+//            frame.bytes + 4 = reinterpret_cast<std::byte>&velocity.get();
+//            frame.bytes + 8 = static_cast<std::byte>(config_calib_error_data);
+//            frame.bytes + 9 = static_cast<std::byte>(limits_hit);
 
-            // TODO: Copied values from somewhere else. 
+            // TODO: Copied values from somewhere else.
             // TODO: Identifier probably needs to change?
             TxHeader.Identifier = 0x11;
             TxHeader.IdType = FDCAN_STANDARD_ID;
@@ -172,11 +181,7 @@ namespace mrover {
             TxHeader.MessageMarker = 0;
 
             // TODO: I think this is all that is required to transmit a CAN message
-            check(HAL_FDCAN_AddMessageToTxFifoQ(hfdcan, &TxHeader, &frame) == HAL_OK, Error_Handler);
-        }
-
-        void update() {
-            // TODO enforce limit switch constraints
+            check(HAL_FDCAN_AddMessageToTxFifoQ(&hfdcan1, &TxHeader, reinterpret_cast<uint8_t*>(&frame.bytes)) == HAL_OK, Error_Handler);
         }
 
     };

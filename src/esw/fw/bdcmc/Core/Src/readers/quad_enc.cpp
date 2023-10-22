@@ -1,17 +1,9 @@
+#include "controller.hpp"
 #include "reader.hpp"
 
 namespace mrover {
 
-    void QuadEncoder::update() {
-        
-    }
-
-    void QuadEncoder::init(TIM_HandleTypeDef *_htim, TIM_TypeDef *_tim) {
-        this->m_tim = _tim;
-        this->m_htim = _htim;
-        this->m_counts = 0;
-        this->m_counts_raw_prev = 0;
-        this->m_counts_raw_now = 0;
+    QuadEncoder::QuadEncoder(TIM_TypeDef *_tim) : m_tim(_tim), m_counts_raw_prev{}, m_counts_raw_now{} {
     }
 
     int32_t QuadEncoder::count_delta() {

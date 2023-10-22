@@ -15,17 +15,15 @@ constexpr auto RADIANS_PER_COUNT_ABSOLUTE = mrover::Radians{2 * std::numbers::pi
 
 
 namespace mrover {
+
     class AbsoluteEncoder {
     public:
         AbsoluteEncoder() = default;
-
-        void init(SMBus _i2cBus, uint8_t _A1, uint8_t _A2);
-        int read_raw_angle();
-
+        AbsoluteEncoder(SMBus i2cBus, uint8_t A1, uint8_t A2);
+        uint64_t read_raw_angle();
     private:
-        int m_address;
-        float m_angle_rad;
-        SMBus m_i2cBus;
+        uint32_t m_address{};
+        SMBus m_i2cBus{};
         enum {
             device_slave_address_none_power = 0x40,
             device_slave_address_a1_power = 0x41,
@@ -34,43 +32,38 @@ namespace mrover {
         };
     };
 
+
     class QuadEncoder {
     public:
         QuadEncoder() = default;
+        QuadEncoder(TIM_TypeDef *_tim);
         ~QuadEncoder() = default;
-
         int32_t count_delta();
-        void init(TIM_HandleTypeDef *_htim, TIM_TypeDef *_tim);
-        void update();
-
     private:
-        TIM_HandleTypeDef* m_htim;
         TIM_TypeDef* m_tim;
-
-        // TODO: Delete counts if we're just using quad for difference
-        int32_t m_counts;
-        int16_t m_counts_raw_prev;
-        int16_t m_counts_raw_now;
+        int32_t m_counts_raw_prev;
+        int32_t m_counts_raw_now;
     };
 
 
     class EncoderReader {
     public:
         EncoderReader() = default;
-        [[nodiscard]] Radians read_input(const Config& config) const;
-        RadiansPerSecond read_velocity() const;
+        EncoderReader(TIM_HandleTypeDef* relative_encoder_timer, I2C_HandleTypeDef* absolute_encoder_i2c);
+        [[nodiscard]] std::pair<Radians, RadiansPerSecond> read_input(const Config& config);
 
     private:
-        void init(TIM_HandleTypeDef* relative_encoder_timer, I2C_HandleTypeDef* absolute_encoder_i2c);
         void refresh_absolute();
-        uint32_t read_absolute();
-        void update_count();
-        TIM_HandleTypeDef* m_relative_encoder_timer{};
-        I2C_HandleTypeDef* m_absolute_encoder_i2c{};
-        Radians rotation{};
-        Radians absolute_relative_diff{};
+        uint64_t read_absolute();
+        void update();
+
         AbsoluteEncoder m_abs_encoder;
         QuadEncoder m_quad_encoder;
+
+        TIM_HandleTypeDef* m_relative_encoder_timer{};
+        I2C_HandleTypeDef* m_absolute_encoder_i2c{};
+        Radians absolute_relative_diff{};
+        Radians position{};
     };
 
 } // namespace mrover

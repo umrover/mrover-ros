@@ -9,12 +9,13 @@
 
 extern FDCAN_HandleTypeDef hfdcan1;
 
+// NOTE: Change This For Each Motor Controller
 constexpr uint32_t CAN_ID = 1;
 
 namespace mrover {
 
     // Motor Controller Definitions Here
-    Controller<Radians, Volts, EncoderReader, BrushedMotorWriter> controller(CAN_ID);
+    Controller<Radians, Volts, EncoderReader, BrushedMotorWriter> controller(CAN_ID, EncoderReader(), BrushedMotorWriter());
 
 } // namespace mrover
 
@@ -54,5 +55,5 @@ void loop() {
      * 1 BYTES: Is Configured, Is Calibrated, Errors (8)
      * 1 BYTES: Limit a/b/c/d is hit. (9)
      */
-    mrover::controller.transmit_motor_data();
+//    mrover::controller.transmit_motor_data();
 }

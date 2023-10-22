@@ -55,14 +55,14 @@ namespace mrover {
     public:
         SMBus() = default;
 
-        SMBus(I2C_HandleTypeDef* hi2c) 
+        explicit SMBus(I2C_HandleTypeDef* hi2c)
             : m_i2c(hi2c) {
-            for (size_t i = 0; i < 30; i++) {
-                m_buf[i] = 0;
+            for (unsigned char & i : m_buf) {
+                i = 0;
             }
         }
 
-        long read_word_data(uint8_t addr, char cmd) {
+        uint64_t read_word_data(uint8_t addr, char cmd) {
             this->m_buf[0] = cmd;
             this->m_ret = HAL_I2C_Master_Transmit(this->m_i2c, addr << 1, this->m_buf, 1, 500);
 
@@ -81,9 +81,9 @@ namespace mrover {
         }
 
     private:
-        I2C_HandleTypeDef *m_i2c;
-        HAL_StatusTypeDef m_ret;
-        uint8_t m_buf[30];
+        I2C_HandleTypeDef *m_i2c{};
+        HAL_StatusTypeDef m_ret{};
+        uint8_t m_buf[30]{};
     };
 
 }
