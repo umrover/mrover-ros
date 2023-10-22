@@ -1,9 +1,9 @@
 from __future__ import annotations
-from typing import Tuple, Optional
-import numpy as np
-import rospy
-from enum import Enum
 
+from enum import Enum
+from typing import Tuple, Optional
+
+import numpy as np
 from geometry_msgs.msg import Twist
 from util.SE3 import SE3
 from util.np_utils import angle_to_rotate, normalized

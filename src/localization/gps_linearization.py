@@ -1,14 +1,15 @@
 #!/usr/bin/env python3
+from typing import Optional, Tuple
+
+import numpy as np
 import rospy
+from geometry_msgs.msg import PoseWithCovarianceStamped, PoseWithCovariance, Pose, Point, Quaternion
+from mrover.msg import ImuAndMag
+from pymap3d.enu import geodetic2enu
+from sensor_msgs.msg import NavSatFix
+from std_msgs.msg import Header
 from util.SE3 import SE3
 from util.np_utils import numpify
-from mrover.msg import ImuAndMag
-from sensor_msgs.msg import NavSatFix
-from geometry_msgs.msg import PoseWithCovarianceStamped, PoseWithCovariance, Pose, Point, Quaternion
-from std_msgs.msg import Header
-import numpy as np
-from pymap3d.enu import geodetic2enu
-from typing import List, Optional, Tuple
 
 
 class GPSLinearization:

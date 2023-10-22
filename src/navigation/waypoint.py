@@ -1,13 +1,12 @@
-from typing import List
+from typing import List, Optional
 
 import numpy as np
-import rospy
-
 import tf2_ros
-from context import Context, Environment
 from aenum import Enum, NoAlias
-from state import BaseState
 from util.ros_utils import get_rosparam
+
+from context import Context
+from state import BaseState
 
 
 class WaypointStateTransitions(Enum):
@@ -17,9 +16,7 @@ class WaypointStateTransitions(Enum):
     search_at_waypoint = "SearchState"
     no_waypoint = "DoneState"
     find_approach_post = "ApproachPostState"
-    go_to_gate = "GateTraverseState"
     recovery_state = "RecoveryState"
-    partial_gate = "PartialGateState"
     backup_from_post = "PostBackupState"
 
 
@@ -31,9 +28,9 @@ class WaypointState(BaseState):
     def __init__(
         self,
         context: Context,
-        add_outcomes: List[str] = None,
-        add_input_keys: List[str] = None,
-        add_output_keys: List[str] = None,
+        add_outcomes: Optional[List[str]] = None,
+        add_input_keys: Optional[List[str]] = None,
+        add_output_keys: Optional[List[str]] = None,
     ):
         add_outcomes = add_outcomes or []
         add_input_keys = add_input_keys or []
@@ -66,13 +63,6 @@ class WaypointState(BaseState):
         if self.context.env.arrived_at_post:
             self.context.env.arrived_at_post = False
             return WaypointStateTransitions.backup_from_post.name  # type: ignore
-
-        # Go into either gate or search if we see them early (and are looking)
-        if self.context.course.look_for_gate():
-            if self.context.env.current_gate() is not None:
-                return WaypointStateTransitions.go_to_gate.name  # type: ignore
-            if self.context.env.current_fid_pos() is not None or self.context.env.other_gate_fid_pos() is not None:
-                return WaypointStateTransitions.partial_gate.name  # type: ignore
         if self.context.course.look_for_post():
             if self.context.env.current_fid_pos() is not None:
                 return WaypointStateTransitions.find_approach_post.name  # type: ignore
@@ -87,7 +77,7 @@ class WaypointState(BaseState):
                 self.DRIVE_FWD_THRESH,
             )
             if arrived:
-                if not self.context.course.look_for_gate() and not self.context.course.look_for_post():
+                if not self.context.course.look_for_post():
                     # We finished a regular waypoint, go onto the next one
                     self.context.course.increment_waypoint()
                 else:

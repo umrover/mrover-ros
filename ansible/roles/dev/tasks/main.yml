@@ -1,0 +1,51 @@
+- name: Oh-My-Zsh
+  git:
+    repo: https://github.com/ohmyzsh/ohmyzsh.git
+    dest: ~/.oh-my-zsh
+    version: master
+
+- name: Dotfiles
+  synchronize:
+    # The trailing slash is very important here
+    # It tells rsync to copy only the CONTENTS of the folder and not the folder itself
+    # This is vital to make sure this works will any usernames
+    src: files/home/
+    dest: ~/
+    recursive: true
+
+- name: Use ZSH as a default shell
+  become: true
+  command: chsh --shell /usr/bin/zsh {{ ansible_user_id }}
+
+- name: GitHub CLI APT Key
+  become: True
+  apt_key:
+    url: https://cli.github.com/packages/githubcli-archive-keyring.gpg
+    keyring: /usr/share/keyrings/githubcli-archive-keyring.gpg
+
+- name: GitHub APT List
+  become: True
+  apt_repository:
+    repo: deb [signed-by=/usr/share/keyrings/githubcli-archive-keyring.gpg] https://cli.github.com/packages stable main
+    filename: github-cli
+
+- name: Add VSCode APT Key
+  become: true
+  apt_key:
+    url: https://packages.microsoft.com/keys/microsoft.asc
+    keyring: /usr/share/keyrings/packages.microsoft.gpg
+
+- name: Add VSCode APT List
+  become: true
+  apt_repository:
+    filename: vscode
+    repo: "deb [arch=amd64,arm64,armhf signed-by=/usr/share/keyrings/packages.microsoft.gpg] https://packages.microsoft.com/repos/code stable main"
+
+- name: Install APT Packages
+  become: true
+  apt:
+    cache_valid_time: 604800
+    state: latest
+    name:
+      - gh
+      - code

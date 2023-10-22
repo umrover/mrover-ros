@@ -3,8 +3,8 @@
  -->
 <launch>
     <!-- load our rover's model -->
-    <param name="robot_description" command="xacro $(find mrover)/rover_description/rover.xacro" />
+    <param name="robot_description" command="xacro $(find mrover)/urdf/rover/rover.urdf.xacro" />
 
     <!-- publish the state of each joint as a transform in the TF tree -->
-    <node name="robot_state_publisher" pkg="robot_state_publisher" type="robot_state_publisher" />
+    <node name="robot_state_publisher" pkg="robot_state_publisher" type="robot_state_publisher" output="screen" />
 </launch>

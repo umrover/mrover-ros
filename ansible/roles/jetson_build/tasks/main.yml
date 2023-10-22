@@ -1,0 +1,39 @@
+- name: Jetson Stats
+  become: true
+  pip:
+    name: jetson-stats
+
+# NVIDIA JetPack comes with CUDA but it is old (11.4 as of writing)
+# We want to download the latest instead (12.2 as of writing)
+# See: https://developer.nvidia.com/cuda-downloads?target_os=Linux&target_arch=aarch64-jetson&Compilation=Native&Distribution=Ubuntu&target_version=20.04&target_type=deb_network
+- name: Download CUDA Keyring
+  get_url:
+    url: https://developer.download.nvidia.com/compute/cuda/repos/ubuntu2004/arm64/cuda-keyring_1.1-1_all.deb
+    dest: /tmp/cuda-keyring_1.1-1_all.deb
+
+- name: Install CUDA Keyring
+  become: true
+  apt:
+    deb: /tmp/cuda-keyring_1.1-1_all.deb
+
+- name: Install APT Packages
+  become: true
+  apt:
+    cache_valid_time: 604800
+    state: latest
+    name:
+      - zstd # Required to unpack ZED installer
+      - cuda
+      - nvidia-jetpack
+
+- name: ZED SDK Download
+  get_url:
+    url: https://download.stereolabs.com/zedsdk/4.0/l4t35.4/jetsons
+    dest: /tmp/ZED_SDK_Tegra_L4T35.4_v4.0.7.zstd.run
+    mode: 0755
+
+- name: ZED SDK Install
+  # Silent mode prevents any user input prompting
+  command: /tmp/Downloads/ZED_SDK_Tegra_L4T35.4_v4.0.7.zstd.run -- silent
+  args:
+    creates: /usr/local/zed

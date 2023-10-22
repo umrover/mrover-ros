@@ -1,0 +1,48 @@
+<launch>
+  <arg name="gui" default="false"/>
+  <param name="robot_description" command="xacro $(find mrover)/urdf/rover/rover.urdf.xacro"/>
+  <arg name="rvizconfig" default="$(find mrover)/starter_project/autonomy/config/starter_project.rviz"/>
+  <node name="rviz" pkg="rviz" type="rviz" args="-d $(arg rvizconfig)" required="true"/>
+
+  <node if="$(arg gui)" name="joint_state_publisher" pkg="joint_state_publisher_gui" type="joint_state_publisher_gui"/>
+  <node unless="$(arg gui)" name="joint_state_publisher" pkg="joint_state_publisher" type="joint_state_publisher"/>
+  <node name="robot_state_publisher" pkg="robot_state_publisher" type="robot_state_publisher"/>
+
+  <include file="$(find gazebo_ros)/launch/empty_world.launch">
+    <env name="GAZEBO_MODEL_PATH" value="$(find mrover)/config/gazebo/env_description:$(find mrover)/starter_project/autonomy/config"/>
+    <arg name="world_name" value="$(find mrover)/starter_project/autonomy/config/starter_project.world"/>
+    <arg name="paused" value="false"/>
+    <arg name="use_sim_time" value="true"/>
+    <arg name="gui" value="true"/>
+    <arg name="headless" value="false"/>
+    <arg name="debug" value="false"/>
+    <arg name="verbose" default="false"/>
+    <arg name="gui_required" value="true"/>
+  </include>
+
+  <node name="spawn_model" pkg="gazebo_ros" type="spawn_model" output="screen" args="
+    -urdf -param robot_description
+    -model rover"/>
+
+  <!--
+    ==========
+    Perception
+    ==========
+  -->
+     <node name="starter_project_perception" pkg="mrover" type="starter_project_perception" />
+
+  <!--
+    ===========
+    Navigation
+    ===========
+  -->
+    <!-- <node name="nav" pkg="mrover" type="navigation_starter_project.py" />-->
+
+  <!--
+    ============
+    Localization
+    ============
+  -->
+  <!-- <node name="localization" pkg="mrover" type="localization.py" output="screen" /> -->
+
+</launch>

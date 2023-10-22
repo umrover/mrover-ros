@@ -1,9 +1,9 @@
-import numpy as np
-import rospy
-from pandas import DataFrame
-from util.ros_utils import get_rosparam
-from util.SO3 import SO3
 from typing import Tuple
+
+import numpy as np
+from pandas import DataFrame
+from util.SO3 import SO3
+from util.ros_utils import get_rosparam
 
 WINDOW_SIZE = get_rosparam("watchdog/window_size", 100)
 ANGULAR_THRESHOLD = get_rosparam("watchdog/angular_threshold", 0.001)
