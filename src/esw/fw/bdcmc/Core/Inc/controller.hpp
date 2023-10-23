@@ -155,15 +155,18 @@ namespace mrover {
              */
             std::pair<Radians, RadiansPerSecond> reading = m_reader.read_input();
 
-            mrover::FdCanFrame frame{};
+            mrover::MotorDataState motor_data;
 
-            frame.message.velocity = reading.first;
-            frame.message.position = reading.second;
+            motor_data.velocity = reading.first;
+            motor_data.position = reading.second;
             // TODO: Actually fill the config_calib_error_data with data
-            frame.message.config_calib_error_data = 0x00;
+            motor_data.config_calib_error_data = 0x00;
             // TODO: Is this going to be right or left aligned?
             // TODO: actually fill with correct values
-            frame.message.limits_switches = 0x00;
+            motor_data.limits_switches = 0x00;
+
+            mrover::FdCanFrame frame{};
+            frame.message = motor_data;
 
             // TODO: Copied values from somewhere else.
             // TODO: Identifier probably needs to change?
