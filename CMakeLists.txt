@@ -96,8 +96,12 @@ macro(mrover_add_nodelet name sources includes)
     mrover_add_library(${name}_nodelet ${sources} ${includes})
     # Also add a node for quick debugging
     mrover_add_node(${name}_node ${sources})
+    # Explicitly tell CMake to re-build the nodelet when the node is built
+    # CMake cannot tell these are dependent since a node dynamically (at runtime) loads the nodelet as a shared library
+    add_dependencies(${name}_node ${name}_nodelet)
+    # Allows the source code to split based on whether it is a node or a nodelet
     target_compile_definitions(${name}_nodelet PRIVATE MROVER_IS_NODELET)
-    # Optional PCH
+    # Optional pre-compiled header (PCH) support
     if (ARGV3)
         target_precompile_headers(${name}_node PRIVATE ${ARGV3})
         target_precompile_headers(${name}_nodelet PRIVATE ${ARGV3})
