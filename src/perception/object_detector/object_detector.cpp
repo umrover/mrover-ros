@@ -22,7 +22,7 @@ namespace mrover {
         // TODO(percep/obj-detectr): make this configurable
 
         mImgSub = mNh.subscribe("/camera/left/image", 1, &ObjectDetectorNodelet::imageCallback, this);
-        //mDebugImgPub = mNh.advertise<sensor_msgs::ImageConstPtr>("/object_detector/debug_img", 1);
+        mDebugImgPub = mNh.advertise<sensor_msgs::Image>("/object_detector/debug_img", 1);
     }
 } // namespace mrover
 

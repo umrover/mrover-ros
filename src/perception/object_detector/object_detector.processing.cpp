@@ -28,9 +28,6 @@ namespace mrover {
 
         cv::cvtColor(sizedImg, sizedImg, cv::COLOR_BGRA2BGR);
 
-        cv::imshow("heheh", sizedImg);
-        cv::waitKey(1);
-
         std::vector<Detection> detections = inference.runInference(sizedImg);
         if (!detections.empty()) {
             Detection firstDetection = detections[0];
@@ -67,28 +64,37 @@ namespace mrover {
             int font_weight = 2;
             putText(sizedImg, msgData.object_type, text_position, cv::FONT_HERSHEY_COMPLEX, font_size, font_Color, font_weight); //Putting the text in the matrix//
 
-            //Show the image
-            cv::imshow("obj detector", sizedImg);
-            cv::waitKey(1);
 
             //Print the type of objected detected
             ROS_INFO_STREAM(firstDetection.className.c_str());
 
-            // if (mDebugImgPub.getNumSubscribers() > 0) {
-            //     // Create sensor msg image
-            //     sensor_msgs::ImageConstPtr newMessage;
+            if (mDebugImgPub.getNumSubscribers() > 0 || true) {
+                // Create sensor msg image
+                sensor_msgs::Image newDebugImageMessage;
 
-            //     newMessage->height = sizedImg.getHeight();
-            //     newMessage->width = sizedImg.getWidth();
-            //     newMessage->encoding = sensor_msgs::image_encodings::BGRA8;
-            //     newMessage->step = sizedImg.getStepBytes();
-            //     newMessage->is_bigendian = __BYTE_ORDER__ == __ORDER_BIG_ENDIAN__;
-            //     auto* bgrGpuPtr = bgra.getPtr<sl::uchar1>(sl::MEM::GPU);
-            //     size_t size = msg->step * msg->height;
-            //     msg->data.resize(size);
+                //Change the mat to from bgr to bgra
+                cv::cvtColor(sizedImg, sizedImg, cv::COLOR_BGR2BGRA);
 
-            //     checkCudaError(cudaMemcpy(msg->data.data(), bgrGpuPtr, size, cudaMemcpyDeviceToHost));
-            // }
+
+                newDebugImageMessage.height = sizedImg.rows;
+                newDebugImageMessage.width = sizedImg.cols;
+
+                newDebugImageMessage.encoding = sensor_msgs::image_encodings::BGRA8;
+
+                //Calculate the step for the imgMsg
+                newDebugImageMessage.step = sizedImg.channels() * sizedImg.cols;
+                newDebugImageMessage.is_bigendian = __BYTE_ORDER__ == __ORDER_BIG_ENDIAN__;
+
+                // auto* bgrGpuPtr = sizedImage.getPtr<sl::uchar1>(sl::MEM::GPU);
+                auto imgPtr = sizedImg.data;
+
+                size_t size = msg->step * msg->height;
+                newDebugImageMessage.data.resize(size);
+
+                memcpy(newDebugImageMessage.data.data(), imgPtr, size);
+
+                mDebugImgPub.publish(newDebugImageMessage);
+            }
             // Publish to
         }
         //Look at yolov8 documentation for the output matrix
