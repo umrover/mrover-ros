@@ -45,14 +45,14 @@ namespace mrover {
             msgData.height = static_cast<float>(box.height);
 
             //Get the heading
-            /*
+
             float objectHeading;
             float zedFOV = 54; //54 @ 720; 42 @ 1080
             float fovPerPixel = (float) zedFOV / (float) (msg->width);
             float xCenter = (float) box.x + ((float) box.width) / 2 - ((float) msg->width) / 2;
             objectHeading = xCenter * fovPerPixel;
             msgData.heading = objectHeading;
-            */
+
 
             //Put the rectangle on the image
             cv::rectangle(sizedImg, box, cv::Scalar(0, 0, 0), 1, cv::LINE_8, 0);
@@ -67,6 +67,9 @@ namespace mrover {
 
             //Print the type of objected detected
             ROS_INFO_STREAM(firstDetection.className.c_str());
+
+            //Publish Dectection Data
+            mDetectionData.publish(msgData);
 
             if (mDebugImgPub.getNumSubscribers() > 0 || true) {
                 // Create sensor msg image

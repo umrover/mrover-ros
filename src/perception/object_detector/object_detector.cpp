@@ -23,6 +23,7 @@ namespace mrover {
 
         mImgSub = mNh.subscribe("/camera/left/image", 1, &ObjectDetectorNodelet::imageCallback, this);
         mDebugImgPub = mNh.advertise<sensor_msgs::Image>("/object_detector/debug_img", 1);
+        mDetectionData = mNh.advertise<DetectedObject>("/object_detector/detected_object", 1);
     }
 } // namespace mrover
 
