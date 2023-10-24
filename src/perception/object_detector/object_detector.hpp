@@ -1,6 +1,7 @@
 #include "inference.h"
 #include "pch.hpp"
 #include <opencv2/core/mat.hpp>
+#include <ros/publisher.h>
 
 namespace mrover {
 
@@ -12,9 +13,12 @@ namespace mrover {
 
         // Publishers
 
-        ros::Subscriber mImgSub;
+        ros::Publisher mDebugImgPub;
 
         // Subscribers
+
+        ros::Subscriber mImgSub;
+
 
         dynamic_reconfigure::Server<mrover::ObjectDetectorParamsConfig> mConfigServer;
         dynamic_reconfigure::Server<mrover::ObjectDetectorParamsConfig>::CallbackType mCallbackType;

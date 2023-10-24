@@ -27,7 +27,6 @@ set(MROVER_ROS_DEPENDENCIES
         tf2_ros
         tf2_geometry_msgs
         gazebo_ros
-        cv_bridge
 )
 
 # Search a path for all files matching a glob pattern and extract the filenames

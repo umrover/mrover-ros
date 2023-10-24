@@ -12,6 +12,7 @@
 #include <opencv2/imgcodecs.hpp>
 #include <opencv2/imgproc.hpp>
 #include <opencv2/videoio.hpp>
+#include <sensor_msgs/Image.h>
 #include <string>
 #include <vector>
 
@@ -22,13 +23,13 @@ namespace mrover {
         assert(msg);
         assert(msg->height > 0);
         assert(msg->width > 0);
-        typedef boost::shared_ptr<cv_bridge::CvImage> CvImagePtr;
-        CvImagePtr ptr = cv_bridge::toCvCopy(msg, sensor_msgs::image_encodings::BGR8);
-        cv::Mat rawImg = ptr->image;
-        //cv::Mat rawImg{static_cast<int>(msg->width), static_cast<int>(msg->height), CV_8UC3, const_cast<uint8_t*>(msg->data.data())};
-        cv::Mat sizedImg;
 
-        cv::resize(rawImg, sizedImg, cv::Size(640, 640));
+        cv::Mat sizedImg{static_cast<int>(msg->height), static_cast<int>(msg->width), CV_8UC4, const_cast<uint8_t*>(msg->data.data())};
+
+        cv::cvtColor(sizedImg, sizedImg, cv::COLOR_BGRA2BGR);
+
+        cv::imshow("heheh", sizedImg);
+        cv::waitKey(1);
 
         std::vector<Detection> detections = inference.runInference(sizedImg);
         if (!detections.empty()) {
@@ -40,10 +41,11 @@ namespace mrover {
             DetectedObject msgData;
             msgData.object_type = firstDetection.className;
             msgData.detection_confidence = classConfidence;
-            msgData.xBoxPixel = (float) box.x;
-            msgData.yBoxPixel = (float) box.y;
-            msgData.width = (float) box.width;
-            msgData.height = (float) box.height;
+
+            msgData.xBoxPixel = static_cast<float>(box.x);
+            msgData.yBoxPixel = static_cast<float>(box.y);
+            msgData.width = static_cast<float>(box.width);
+            msgData.height = static_cast<float>(box.height);
 
             //Get the heading
             /*
@@ -54,7 +56,6 @@ namespace mrover {
             objectHeading = xCenter * fovPerPixel;
             msgData.heading = objectHeading;
             */
-
 
             //Put the rectangle on the image
             cv::rectangle(sizedImg, box, cv::Scalar(0, 0, 0), 1, cv::LINE_8, 0);
@@ -69,8 +70,26 @@ namespace mrover {
             //Show the image
             cv::imshow("obj detector", sizedImg);
             cv::waitKey(1);
+
             //Print the type of objected detected
-            ROS_INFO(firstDetection.className.c_str());
+            ROS_INFO_STREAM(firstDetection.className.c_str());
+
+            // if (mDebugImgPub.getNumSubscribers() > 0) {
+            //     // Create sensor msg image
+            //     sensor_msgs::ImageConstPtr newMessage;
+
+            //     newMessage->height = sizedImg.getHeight();
+            //     newMessage->width = sizedImg.getWidth();
+            //     newMessage->encoding = sensor_msgs::image_encodings::BGRA8;
+            //     newMessage->step = sizedImg.getStepBytes();
+            //     newMessage->is_bigendian = __BYTE_ORDER__ == __ORDER_BIG_ENDIAN__;
+            //     auto* bgrGpuPtr = bgra.getPtr<sl::uchar1>(sl::MEM::GPU);
+            //     size_t size = msg->step * msg->height;
+            //     msg->data.resize(size);
+
+            //     checkCudaError(cudaMemcpy(msg->data.data(), bgrGpuPtr, size, cudaMemcpyDeviceToHost));
+            // }
+            // Publish to
         }
         //Look at yolov8 documentation for the output matrix
         /*

@@ -21,7 +21,8 @@ namespace mrover {
         // Note(quintin): I downloaded this pt (PyTorch) model file from: https://github.com/ultralytics/assets/releases
         // TODO(percep/obj-detectr): make this configurable
 
-        mImgSub = mNh.subscribe("image", 1, &ObjectDetectorNodelet::imageCallback, this);
+        mImgSub = mNh.subscribe("/camera/left/image", 1, &ObjectDetectorNodelet::imageCallback, this);
+        //mDebugImgPub = mNh.advertise<sensor_msgs::ImageConstPtr>("/object_detector/debug_img", 1);
     }
 } // namespace mrover
 
