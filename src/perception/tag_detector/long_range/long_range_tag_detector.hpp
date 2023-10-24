@@ -1,3 +1,4 @@
+#include "pch.hpp"
 #include "mrover/LongRangeTag.h"
 #include "mrover/LongRangeTags.h"
 
@@ -96,10 +97,10 @@ namespace mrover {
         /**
         * @see updateNewlyIdentifiedTags()
         * @param tagId - the tagId of the current tag
-        * @param tagCorners - Reference to the mTagCorners vector of Point2fs for the current id of the lrt being created
+        * @param tag_bearing - Bearing of the current tag
         * @return a new LongRangeTag
         */
-        LongRangeTagStruct createLrt(int tagId, std::vector<cv::Point2f>& tagCorners);
+        LongRangeTagStruct createLrt(int tagId, float bearing);
 
         /**
         * @see getNormedTagCenter
@@ -120,6 +121,14 @@ namespace mrover {
         cv::Point2f getTagCenterOffsetPixels(std::vector<cv::Point2f>& tagCorners) const;
 
         cv::Point2f getNormedTagCenterOffset(std::vector<cv::Point2f>& tagCorners) const;
+
+        /**
+        * Given the known tag information and the ZED FOV (hard code for now, we'll
+        * assign params later), calculate relative bearing of a detected tag
+        * @param tagCorners reference to tag corners, passed to @see getTagCenterPixels
+        * @return float of tag bearing
+        */
+        float getTagBearing(std::vector<cv::Point2f>& tagCorners) const;
 
         /**
         * @see updateHitCounts()

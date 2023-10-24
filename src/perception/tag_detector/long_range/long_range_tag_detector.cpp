@@ -1,4 +1,4 @@
-#include "tag_detector.hpp"
+#include "long_range_tag_detector.hpp"
 
 namespace mrover {
 
@@ -90,7 +90,7 @@ namespace mrover {
         NODELET_INFO("Tag detection ready, use odom frame: %s, min hit count: %d, max hit count: %d, hit increment weight: %d, hit decrement weight: %d", mUseOdom ? "true" : "false", mMinHitCountBeforePublish, mMaxHitCount, mTagIncrementWeight, mTagDecrementWeight);
     }
 
-    void TagDetectorNodelet::configCallback(mrover::DetectorParamsConfig& config, uint32_t level) {
+    void LongRangeTagDetectorNodelet::configCallback(mrover::DetectorParamsConfig& config, uint32_t level) {
         // Don't load initial config, since it will overwrite the rosparam settings
         if (level == std::numeric_limits<uint32_t>::max()) return;
 

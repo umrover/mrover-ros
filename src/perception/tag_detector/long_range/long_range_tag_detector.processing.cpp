@@ -1,6 +1,5 @@
 #include "long_range_tag_detector.hpp"
 
-#include "../point.hpp" //Might not actually need?'
 #include "mrover/LongRangeTags.h"
 
 #include <image_transport/image_transport.h>
@@ -90,6 +89,7 @@ namespace mrover {
     }
 
     LongRangeTagStruct LongRangeTagDetectorNodelet::createLrt(int tagId, std::vector<cv::Point2f>& tagCorners) {
+        //TODO: Modify the LRT struct and this function to assign a bearing instead of an imageCenter
         LongRangeTagStruct lrt;
 
         lrt.hitCount = mBaseHitCount; //Start at base hit count value
@@ -153,6 +153,12 @@ namespace mrover {
         offsetCenterPoint.y /= static_cast<float>(mImgMsg.height);
 
         return offsetCenterPoint;
+    }
+
+    float getTagBearing(std::vector<cv::Point2f>& tagCorners) const {
+        //TODO: Implement me!
+
+        return {};
     }
 
     void LongRangeTagDetectorNodelet::publishThresholdTags() {
