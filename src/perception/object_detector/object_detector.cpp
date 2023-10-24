@@ -21,15 +21,6 @@ namespace mrover {
         // Note(quintin): I downloaded this pt (PyTorch) model file from: https://github.com/ultralytics/assets/releases
         // TODO(percep/obj-detectr): make this configurable
 
-        //TEMP CODE
-        cv::VideoCapture cap(0);
-        cv::Mat img;
-        while (true) {
-            if (cap.read(img)) {
-                sensor_msgs::ImageConstPtr imgMsg = cv_bridge::CvImage(std_msgs::Header(), "bgr8", img).toImageMsg();
-                ObjectDetectorNodelet::imageCallback(imgMsg);
-            }
-        }
         mImgSub = mNh.subscribe("image", 1, &ObjectDetectorNodelet::imageCallback, this);
     }
 } // namespace mrover

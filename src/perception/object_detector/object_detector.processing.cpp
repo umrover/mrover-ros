@@ -24,15 +24,11 @@ namespace mrover {
         assert(msg->width > 0);
         typedef boost::shared_ptr<cv_bridge::CvImage> CvImagePtr;
         CvImagePtr ptr = cv_bridge::toCvCopy(msg, sensor_msgs::image_encodings::BGR8);
-        cv::Mat rawImg = ptr->image.clone();
+        cv::Mat rawImg = ptr->image;
         //cv::Mat rawImg{static_cast<int>(msg->width), static_cast<int>(msg->height), CV_8UC3, const_cast<uint8_t*>(msg->data.data())};
-        ROS_INFO("bool %d", rawImg.cols);
         cv::Mat sizedImg;
-        cv::imshow("window", rawImg);
-        cv::waitKey(0);
 
         cv::resize(rawImg, sizedImg, cv::Size(640, 640));
-        // ROS_INFO("width %d height %d", rawImg.cols, rawImg.rows);
 
         std::vector<Detection> detections = inference.runInference(sizedImg);
         if (!detections.empty()) {
@@ -48,7 +44,16 @@ namespace mrover {
             msgData.yBoxPixel = (float) box.y;
             msgData.width = (float) box.width;
             msgData.height = (float) box.height;
-            msgData.heading = 0;
+
+            //Get the heading
+            /*
+            float objectHeading;
+            float zedFOV = 54; //54 @ 720; 42 @ 1080
+            float fovPerPixel = (float) zedFOV / (float) (msg->width);
+            float xCenter = (float) box.x + ((float) box.width) / 2 - ((float) msg->width) / 2;
+            objectHeading = xCenter * fovPerPixel;
+            msgData.heading = objectHeading;
+            */
 
 
             //Put the rectangle on the image

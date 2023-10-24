@@ -1,5 +1,6 @@
 #include "inference.h"
 #include "pch.hpp"
+#include <opencv2/core/mat.hpp>
 
 namespace mrover {
 
