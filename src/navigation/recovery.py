@@ -19,12 +19,10 @@ GIVE_UP_TIME = get_rosparam("recovery/give_up_time", 10.0)
 class RecoveryStateTransitions(Enum):
     _settings_ = NoAlias
     continue_waypoint_traverse = "WaypointState"
-    continue_gate_traverse = "GateTraverseState"
     continue_search = "SearchState"
     continue_recovery = "RecoveryState"
     continue_post_backup = "PostBackupState"
     recovery_state = "RecoveryState"
-    partial_gate = "PartialGateState"
 
 
 class JTurnAction(Enum):

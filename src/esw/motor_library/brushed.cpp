@@ -1,33 +1,30 @@
 #include "brushed.hpp"
 
-void BrushedController::update(const std::vector<uint8_t> &frame) {
-    if (frame.empty()) {
-        return;
+namespace mrover {
+
+    void BrushedController::update(std::span<std::byte const> frame) {
+        if (frame.empty()) {
+            return;
+        } else {
+            // TODO - TEMPORARY
+            velocity = 0_rad_per_s;
+        }
+        ROS_INFO("TODO - need to update based on frame.");
     }
-    ROS_INFO("TODO - need to update based on frame.");
-}
 
-void BrushedController::set_desired_throttle(double throttle) {
-    throttle = std::clamp(throttle, -1.0, 1.0);
-    std::vector<uint8_t> can_frame = {0};
-    ROS_INFO("TODO - need to send %f.", throttle);
-    can_manager.send_raw_data(can_frame);
-}
+    void BrushedController::set_desired_throttle(Dimensionless throttle) {
+        throttle = std::clamp(throttle, Dimensionless{-1}, Dimensionless{1});
+        can_manager.send_data("throttle_cmd", throttle);
+    }
 
-void BrushedController::set_desired_position(double position) {
-    position = std::clamp(position, min_position, max_position);
-    std::vector<uint8_t> can_frame = {0};
-    ROS_INFO("TODO - need to send %f.", position);
-    can_manager.send_raw_data(can_frame);
-}
+    void BrushedController::set_desired_position(Radians position) {
+        position = std::clamp(position, min_position, max_position);
+        can_manager.send_data("position_cmd", position);
+    }
 
-void BrushedController::set_desired_velocity(double velocity) {
-    velocity = std::clamp(velocity, min_velocity, max_velocity);
-    std::vector<uint8_t> can_frame = {0};
-    ROS_INFO("TODO - need to send %f.", velocity);
-    can_manager.send_raw_data(can_frame);
-}
+    void BrushedController::set_desired_velocity(RadiansPerSecond velocity) {
+        velocity = std::clamp(velocity, min_velocity, max_velocity);
+        can_manager.send_data("velocity_cmd", velocity);
+    }
 
-MotorType BrushedController::get_type() {
-    return {};
-}
+} // namespace mrover

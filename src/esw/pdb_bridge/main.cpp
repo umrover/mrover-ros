@@ -1,6 +1,6 @@
-#include <ros/ros.h>
-#include <mrover/PDB.h>
 #include <mrover/CAN.h>
+#include <mrover/PDB.h>
+#include <ros/ros.h>
 
 void processCANData(const mrover::CAN::ConstPtr& msg);
 
@@ -21,13 +21,13 @@ int main(int argc, char** argv) {
 }
 
 void processCANData(const mrover::CAN::ConstPtr& msg) {
-    if (msg->bus == 0 && msg->id == 0) {
+    if (msg->bus == 0 && msg->message_id == 0) {
         return;
         // TODO
     }
 
     mrover::PDB PDBData;
-    PDBData.temperatures = {0, 0, 0, 0, 0};  // TODO
-    PDBData.currents = {0, 0, 0, 0, 0};  // TODO
+    PDBData.temperatures = {0, 0, 0, 0, 0}; // TODO
+    PDBData.currents = {0, 0, 0, 0, 0};     // TODO
     PDBPublisher.publish(PDBData);
 }

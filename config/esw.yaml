@@ -13,6 +13,35 @@ imu_driver:
   baud: 115200
   frame_id: "imu_link"
 
+can:
+  messages:
+    throttle_cmd: 1
+    velocity_cmd: 2
+    position_cmd: 3
+    calibrate: 4
+    adjust: 5
+    enable_limit_switches: 6
+    enable_device: 7
+    heater_autoshutoff_state_cmd: 8
+    uv_bulb_cmd: 9
+    arm_laser_cmd: 10
+    led_cmd: 11
+    joint_data: 12
+    controller_data: 13
+    spectral_data_0: 14
+    spectral_data_1: 15
+    spectral_data_2: 16
+    thermistor_data_0: 17
+    thermistor_data_1: 18
+    thermistor_data_2: 19
+    heater_state_data: 20
+    pdb_0_data: 21
+    pdb_1_data: 22
+    pdb_2_data: 23
+    pdb_3_data: 24
+    pdb_4_data: 25
+    pdb_5_data: 26
+
 brushed_motors:
   controllers:
     - name: "cache"

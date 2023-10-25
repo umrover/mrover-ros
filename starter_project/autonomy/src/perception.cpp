@@ -21,7 +21,7 @@ namespace mrover {
         // Subscribe to camera image messages
         // Every time another node publishes to this topic we will be notified
         // Specifically the callback we passed will be invoked
-        mImageSubscriber = mNodeHandle.subscribe("camera/right/image", 1, &Perception::imageCallback, this);
+        mImageSubscriber = mNodeHandle.subscribe("camera/left/image", 1, &Perception::imageCallback, this);
 
         // Create a publisher for our tag topic
         // See: http://wiki.ros.org/ROS/Tutorials/WritingPublisherSubscriber%28c%2B%2B%29
@@ -32,16 +32,16 @@ namespace mrover {
         mTagDictionary = cv::makePtr<cv::aruco::Dictionary>(cv::aruco::getPredefinedDictionary(cv::aruco::DICT_4X4_50));
     }
 
-    void Perception::imageCallback(sensor_msgs::ImageConstPtr const& image) {
+    void Perception::imageCallback(sensor_msgs::ImageConstPtr const& imageMessage) {
         // Create a cv::Mat from the ROS image message
         // Note this does not copy the image data, it is basically a pointer
         // Be careful if you extend its lifetime beyond this function
-        cv::Mat cvImage{static_cast<int>(image->height), static_cast<int>(image->width),
-                        CV_8UC3, const_cast<uint8_t*>(image->data.data())};
+        cv::Mat image{static_cast<int>(imageMessage->height), static_cast<int>(imageMessage->width),
+                      CV_8UC3, const_cast<uint8_t*>(imageMessage->data.data())};
         // Detect tags in the image pixels
-        findTagsInImage(cvImage, mTags);
+        findTagsInImage(image, mTags);
         // Select the tag that is closest to the middle of the screen
-        StarterProjectTag tag = selectTag(mTags);
+        StarterProjectTag tag = selectTag(image, mTags);
         // Publish the message to our topic so navigation or others can receive it
         publishTag(tag);
     }
@@ -56,7 +56,7 @@ namespace mrover {
         // TODO: implement me!
     }
 
-    StarterProjectTag Perception::selectTag(std::vector<StarterProjectTag> const& tags) { // NOLINT(*-convert-member-functions-to-static)
+    StarterProjectTag Perception::selectTag(cv::Mat const& image, std::vector<StarterProjectTag> const& tags) { // NOLINT(*-convert-member-functions-to-static)
         // TODO: implement me!
         return {};
     }

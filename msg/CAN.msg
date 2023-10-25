@@ -1,3 +1,3 @@
 uint8 bus
-uint8 id
+uint32 message_id
 uint8[] data
