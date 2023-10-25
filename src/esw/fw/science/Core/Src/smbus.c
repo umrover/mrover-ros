@@ -60,3 +60,7 @@ void smbus_write_byte_data(SMBus *smbus, char reg, uint8_t data, uint8_t device_
     );
     
 }
+
+// Write(0)to 0x70
+// sets the desination to port 0
+//write(1)  to 0x70 sends data 1 to port 0

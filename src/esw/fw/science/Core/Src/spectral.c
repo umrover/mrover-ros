@@ -53,37 +53,37 @@ uint16_t get_spectral_channel_data(Spectral *spectral, uint8_t channel){
 }
 
 /*REQUIRES: i2c_mux0 and 1 are valid GPIO pins, i2c_mux_pins are valid pins, and 
-spectral_sensor_number is the number of the sensor to be turned on (0 - 2 inclusive)
-Mux system (i2c_mux0_pin, i2c_mux1_pin) => Spectral sensor:
-1, 1 => Not allowed
-1, 0 => Spectral sensor 2
-0, 1 => Spectral sensor 1
-0, 0 => Spectral sensor 0
+spectral_sensor_number is the pin number of the sensor to be set as the active I2C device
+spectral_sensor_number is 0, 1, or 2 for B0, B1, or B2 
 */
-//MODIFIES: mux pins are set so that the right spectral sensor is enabled.
-//EFFECTS: None
-Spectral* get_active_spectral_sensor(GPIO_InitTypeDef i2c_mux0, int i2c_mux0_pin, 
-    			GPIO_InitTypeDef i2c_mux1, int i2c_mux1_pin, int spectral_sensor_number) {
+//MODIFIES: mux pins are set so that the chosen spectral sensor is enabled.
+//EFFECTS: spectral sensor chosen will now receive I2C signals
+Spectral* set_active_spectral_sensor(I2C_HandleTypeDef* i2c_mux, int spectral_sensor_number) {
 
     if (spectral_sensor_number > 2 || spectral_sensor_number < 0){
         failed = true;
         return;
     }
 
+    SMBus* bus = new_smbus(i2c_mux);
+    uint8_t formatted = 1 << spectral_sensor_number;
+    smbus_write_byte_data(bus, 0x00, spectral_sensor_number, 0x70);
+    /*
+    uint8_t buf[1] = {spectral_sensor_number};
+
+
     if (spectral_sensor_number == 2){
-        HAL_GPIO_WritePin(i2c_mux0, i2c_mux0_pin, GPIO_PIN_SET);
-        HAL_GPIO_WritePin(i2c_mux1, i2c_mux1_pin, GPIO_PIN_RESET);
+        HAL_I2C_Mem_Write(i2c_mux, 0x70, 0x70, 1, buf, 1, 1);
         return;
     }
 
     if (spectral_sensor_number == 1){
-        HAL_GPIO_WritePin(i2c_mux0, i2c_mux0_pin, GPIO_PIN_RESET);
-        HAL_GPIO_WritePin(i2c_mux1, i2c_mux1_pin, GPIO_PIN_SET);
+        HAL_I2C_Mem_Write(i2c_mux, 0x70, 0x70, 1, buf, 1, 1);
         return;
     }
+    */
 
-    HAL_GPIO_WritePin(i2c_mux0, i2c_mux0_pin, GPIO_PIN_RESET);
-    HAL_GPIO_WritePin(i2c_mux1, i2c_mux1_pin, GPIO_PIN_RESET);
+   
     return;
 
 }
