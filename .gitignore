@@ -29,18 +29,3 @@ moteus-cal*
 
 # CSV
 *.csv
-
-# STM32 workspace
-.metadata
-
-Debug/
-Release/
-.metadata/
-.settings/
-RemoteSystemsTempFiles/
-
-*.chm
-*.settings.xml
-
-*.xml
-*.launch
