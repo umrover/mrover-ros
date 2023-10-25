@@ -154,33 +154,32 @@ namespace mrover {
              * 1 BYTES: Is Configured, Is Calibrated, Errors (8)
              * 1 BYTES: Limit a/b/c/d is hit. (9)
              */
-            std::pair<Radians, RadiansPerSecond> reading = m_reader.read();
-
-            mrover::MotorDataState motor_data{};
-
-            motor_data.velocity = reading.first; // TODO how to assign?
-            motor_data.position = reading.second; // TODO how to assign?
-            // TODO: Actually fill the config_calib_error_data with data
-            motor_data.config_calib_error_data = 0x00;
-            // TODO: Is this going to be right or left aligned?
-            // TODO: actually fill with correct values
-            motor_data.limit_switches = 0x00;
-
-            mrover::FdCanFrameOut frame{};
-            frame.message = motor_data;
+            auto [position, velocity] = m_reader.read();
+            mrover::FdCanFrameOut frame{
+                    .message = mrover::MotorDataState{
+                            .velocity = velocity,
+                            .position = position,
+                            // TODO: Actually fill the config_calib_error_data with data
+                            .config_calib_error_data = 0x00,
+                            // TODO: Is this going to be right or left aligned?
+                            // TODO: actually fill with correct values
+                            .limit_switches = 0x00,
+                    },
+            };
 
             // TODO: Copied values from somewhere else.
             // TODO: Identifier probably needs to change?
-            TxHeader.Identifier = 0x11;
-            TxHeader.IdType = FDCAN_STANDARD_ID;
-            TxHeader.TxFrameType = FDCAN_DATA_FRAME;
-            TxHeader.DataLength = FDCAN_DLC_BYTES_12;
-            TxHeader.ErrorStateIndicator = FDCAN_ESI_ACTIVE;
-            TxHeader.BitRateSwitch = FDCAN_BRS_OFF;
-            TxHeader.FDFormat = FDCAN_FD_CAN;
-            TxHeader.TxEventFifoControl = FDCAN_NO_TX_EVENTS;
-            TxHeader.MessageMarker = 0;
-
+            TxHeader = {
+                    .Identifier = 0x11,
+                    .IdType = FDCAN_STANDARD_ID,
+                    .TxFrameType = FDCAN_DATA_FRAME,
+                    .DataLength = FDCAN_DLC_BYTES_12,
+                    .ErrorStateIndicator = FDCAN_ESI_ACTIVE,
+                    .BitRateSwitch = FDCAN_BRS_OFF,
+                    .FDFormat = FDCAN_FD_CAN,
+                    .TxEventFifoControl = FDCAN_NO_TX_EVENTS,
+                    .MessageMarker = 0,
+            };
             // TODO: I think this is all that is required to transmit a CAN message
             check(HAL_FDCAN_AddMessageToTxFifoQ(&hfdcan1, &TxHeader, reinterpret_cast<uint8_t*>(&frame.bytes)) == HAL_OK, Error_Handler);
         }
