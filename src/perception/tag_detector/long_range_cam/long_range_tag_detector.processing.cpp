@@ -155,7 +155,7 @@ namespace mrover {
         return offsetCenterPoint;
     }
 
-    float getTagBearing(std::vector<cv::Point2f>& tagCorners) const {
+    float LongRangeTagDetectorNodelet::getTagBearing(std::vector<cv::Point2f>& tagCorners) const {
         //TODO: Implement me!
 
         return {};

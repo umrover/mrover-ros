@@ -1,6 +1,6 @@
-#include "pch.hpp"
 #include "mrover/LongRangeTag.h"
 #include "mrover/LongRangeTags.h"
+#include "pch.hpp"
 
 #include <opencv2/core/types.hpp>
 #include <ros/publisher.h>
@@ -102,7 +102,7 @@ namespace mrover {
         * @param tag_bearing - Bearing of the current tag
         * @return a new LongRangeTag
         */
-        LongRangeTagStruct createLrt(int tagId, float bearing);
+        LongRangeTagStruct createLrt(int tagId, std::vector<cv::Point2f>& tagCorners);
 
         /**
         * @see getNormedTagCenter
