@@ -5,81 +5,49 @@ project(mrover VERSION 2024.0.0 LANGUAGES CXX)
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 set(CMAKE_CXX_STANDARD 23)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
+set(CMAKE_EXPORT_COMPILE_COMMANDS ON) # Generate compile_commands.json for clangd
 if (CMAKE_CXX_COMPILER_ID STREQUAL "Clang")
-    add_link_options(-fuse-ld=lld-16)
+    add_link_options(-fuse-ld=lld-16) # LLVM lld is faster than GNU ld
 endif ()
-
-#set(MROVER_CPP_COMPILE_OPTIONS -Wall -Wextra -Werror -pedantic)
+if (CMAKE_BUILD_TYPE STREQUAL "Release")
+    set(MROVER_CPP_COMPILE_OPTIONS -Wall -Wextra -Werror -pedantic)
+endif ()
 
 # ROS packages list
 set(MROVER_ROS_DEPENDENCIES
         rospy
         roscpp
+        rostest
+        nodelet
         std_msgs
+        sensor_msgs
         message_generation
         dynamic_reconfigure
-        rostest
-        sensor_msgs
         tf2
         tf2_ros
         tf2_geometry_msgs
-        image_transport
-        teleop_twist_joy
         gazebo_ros
 )
 
-# Message files
-set(MROVER_MESSAGE_FILES
-        AvailableCameras.msg
-        Calibrated.msg
-        CalibrationStatus.msg
-        CameraCmd.msg
-        Carousel.msg
-        Chassis.msg
-        Course.msg
-        Diagnostic.msg
-        EnableAuton.msg
-        GPSWaypoint.msg
-        GPSPointList.msg
-        HeaterData.msg
-        ImuAndMag.msg
-        LimitSwitchData.msg
-        MastGimbal.msg
-        JointLock.msg
-        MoteusState.msg
-        MotorsStatus.msg
-        NavMetadata.msg
-        NetworkBandwidth.msg
-        ScienceTemperature.msg
-        Spectral.msg
-        Waypoint.msg
-        WaypointType.msg
-        GPSPointList.msg
-)
+# Search a path for all files matching a glob pattern and extract the filenames
+macro(extract_filenames directory_path out_file_names)
+    file(GLOB_RECURSE full_paths ${directory_path})
+    set(${out_file_names} "")
+    foreach (FULL_PATH ${full_paths})
+        get_filename_component(FILE_NAME ${FULL_PATH} NAME)
+        list(APPEND ${out_file_names} ${FILE_NAME})
+    endforeach ()
+endmacro()
 
-# Service files
-set(MROVER_SERVICE_FILES
-        AdjustMotors.srv
-        CalibrateMotors.srv
-        ChangeArmMode.srv
-        ChangeCameras.srv
-        ChangeHeaterState.srv
-        ChangeServoAngle.srv
-        EnableDevice.srv
-        FetchMessageFromPackage.srv
-        FetchMessageFromPackage.srv
-        FetchPackages.srv
-        PublishEnableAuton.srv
-        PublishCourse.srv
-        ResetCameras.srv
-)
+extract_filenames(msg/*.msg MROVER_MESSAGE_FILES)
+
+extract_filenames(srv/*.srv MROVER_SERVICE_FILES)
 
 set(MROVER_MESSAGE_DEPENDENCIES
         std_msgs
         sensor_msgs
 )
 
-# Dynamic reconfigure parameter file list
 set(MROVER_PARAMETERS
         config/DetectorParams.cfg
 )
@@ -88,15 +56,18 @@ set(MROVER_CMAKE_INCLUDES
         starter_project/autonomy/AutonomyStarterProject.cmake
 )
 
-## Macros
+### ====== ###
+### Macros ###
+### ====== ###
 
-macro(rosify_cpp_target_macro target)
+macro(target_rosify target)
     target_link_libraries(${target} PRIVATE ${catkin_LIBRARIES})
-    target_include_directories(${target} SYSTEM PRIVATE ${catkin_INCLUDE_DIRS} "src/util")
+    target_include_directories(${target} SYSTEM PRIVATE ${catkin_INCLUDE_DIRS} src/util)
     add_dependencies(${target} ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
 
     target_compile_options(${target} PRIVATE $<$<COMPILE_LANGUAGE:CXX>:${MROVER_CPP_COMPILE_OPTIONS}>)
 
+    # Installing is necessary for roslaunch to find the node
     install(TARGETS ${target}
             ARCHIVE DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
             LIBRARY DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
@@ -104,26 +75,58 @@ macro(rosify_cpp_target_macro target)
     )
 endmacro()
 
-macro(add_cpp_library_macro name sources includes)
+macro(mrover_add_library name sources includes)
     file(GLOB_RECURSE CPP_LIB_SOURCES ${sources})
     add_library(${name} ${CPP_LIB_SOURCES})
     target_include_directories(${name} PUBLIC ${includes})
-    rosify_cpp_target_macro(${name})
+    target_rosify(${name})
 endmacro()
 
-macro(add_cpp_node_macro name sources)
-    file(GLOB_RECURSE CPP_NODE_SOURCES ${sources})
-    add_executable(${name} ${CPP_NODE_SOURCES})
-    rosify_cpp_target_macro(${name})
+macro(mrover_add_header_only_library name includes)
+    add_library(${name} INTERFACE)
+    target_include_directories(${name} INTERFACE ${includes})
 endmacro()
 
-macro(add_cpp_nodelet_macro name sources includes)
+macro(mrover_add_node name sources)
+    file(GLOB_RECURSE NODE_SOURCES ${sources})
+    add_executable(${name} ${NODE_SOURCES})
+    target_rosify(${name})
+endmacro()
+
+macro(mrover_add_nodelet name sources includes)
     # A nodelet runs inside another process so it is a library
-    add_cpp_library_macro(${name} ${sources} ${includes})
+    mrover_add_library(${name}_nodelet ${sources} ${includes})
+    # Also add a node for quick debugging
+    mrover_add_node(${name}_node ${sources})
+    # Explicitly tell CMake to re-build the nodelet when the node is built
+    # CMake cannot tell these are dependent since a node dynamically (at runtime) loads the nodelet as a shared library
+    add_dependencies(${name}_node ${name}_nodelet)
+    # Allows the source code to split based on whether it is a node or a nodelet
+    target_compile_definitions(${name}_nodelet PRIVATE MROVER_IS_NODELET)
+    # Optional pre-compiled header (PCH) support
+    if (ARGV3)
+        target_precompile_headers(${name}_node PRIVATE ${ARGV3})
+        target_precompile_headers(${name}_nodelet PRIVATE ${ARGV3})
+    endif ()
 endmacro()
 
-macro(add_gazebo_plugin_macro name sources includes)
-    add_cpp_library_macro(${name} ${sources} ${includes})
+macro(mrover_nodelet_link_libraries name)
+    target_link_libraries(${name}_node PRIVATE ${ARGN})
+    target_link_libraries(${name}_nodelet PRIVATE ${ARGN})
+endmacro()
+
+macro(mrover_nodelet_include_directories name)
+    target_include_directories(${name}_node SYSTEM PRIVATE ${ARGN})
+    target_include_directories(${name}_nodelet SYSTEM PRIVATE ${ARGN})
+endmacro()
+
+macro(mrover_nodelet_defines name)
+    target_compile_definitions(${name}_node PRIVATE ${ARGN})
+    target_compile_definitions(${name}_nodelet PRIVATE ${ARGN})
+endmacro()
+
+macro(mrover_add_gazebo_plugin name sources includes)
+    mrover_add_library(${name} ${sources} ${includes})
 
     # TODO: find a proper variable name that points to /opt/ros/noetic/lib
     target_link_directories(${name} PRIVATE ${GAZEBO_LIBRARY_DIRS} /opt/ros/noetic/lib)
@@ -132,9 +135,11 @@ macro(add_gazebo_plugin_macro name sources includes)
     set_target_properties(${name} PROPERTIES CXX_STANDARD 17)
 endmacro()
 
-## Dependencies
+### ============ ###
+### Dependencies ###
+### ============ ###
 
-find_package(OpenCV 4.8.1 EXACT REQUIRED)
+find_package(OpenCV REQUIRED)
 find_package(ZED 2 QUIET)
 find_package(gazebo REQUIRED)
 find_package(Eigen3 REQUIRED)
@@ -161,7 +166,9 @@ foreach (MROVER_CMAKE_INCLUDE ${MROVER_CMAKE_INCLUDES})
     include(${MROVER_CMAKE_INCLUDE})
 endforeach ()
 
-## Messages
+### ======== ###
+### Messages ###
+### ======== ###
 
 add_message_files(
         FILES
@@ -184,50 +191,54 @@ generate_dynamic_reconfigure_options(
 
 catkin_package()
 
-## Targets
+### ======= ###
+### Targets ###
+### ======= ###
 
-add_subdirectory(src/teleoperation/streaming EXCLUDE_FROM_ALL)
+# Please browse the "Macros" section before adding anything here
+# Lots of custom macros have been added to make adding new targets easier
 
-add_cpp_library_macro(lie src/util/lie/*.c* src/util/lie)
+## Libraries
 
-add_cpp_nodelet_macro(tag_detector_nodelet src/perception/tag_detector/*.c* src/perception/tag_detector)
-target_precompile_headers(tag_detector_nodelet PRIVATE src/perception/tag_detector/pch.hpp)
-target_link_libraries(tag_detector_nodelet PRIVATE opencv_core opencv_objdetect opencv_imgproc lie)
+mrover_add_header_only_library(moteus deps/moteus/lib/cpp/mjbots)
+mrover_add_library(lie src/util/lie/*.cpp src/util/lie)
 
-add_cpp_node_macro(brushed_motors src/esw/brushed_motors/*.c*)
+## ESW
+
+mrover_add_node(sim_arm_bridge src/simulator/arm_bridge/*.cpp)
+
+## Perception
+
+mrover_add_nodelet(tag_detector src/perception/tag_detector/*.cpp src/perception/tag_detector src/perception/tag_detector/pch.hpp)
+mrover_nodelet_link_libraries(tag_detector opencv_core opencv_objdetect opencv_aruco opencv_imgproc tbb lie)
 
 if (ZED_FOUND)
-    add_cpp_library_macro(streaming src/esw/streaming/*.c* src/esw/streaming)
+    mrover_add_library(streaming src/esw/streaming/*.c* src/esw/streaming)
     #    target_link_libraries(streaming PUBLIC opencv_core opencv_cudacodec)
     target_link_libraries(streaming PUBLIC cuda nvidia-encode opencv_core)
     target_include_directories(streaming SYSTEM PUBLIC deps/nvenc)
     target_compile_definitions(streaming PUBLIC BOOST_ASIO_NO_DEPRECATED)
 
-    add_cpp_node_macro(cameras src/esw/cameras/*.c*)
-    target_link_libraries(cameras PRIVATE streaming opencv_videoio opencv_highgui)
-
-    #    target_link_libraries(cameras PUBLIC de265)
-    #    target_include_directories(cameras PUBLIC deps/libde265 ${CMAKE_BINARY_DIR}/libde265)
-
-    #            add_cpp_node_macro(zed_node "src/perception/zed_wrapper/*.c*")
-    #            target_link_options(zed_node PRIVATE "LINKER:--copy-dt-needed-entries")
-    #            target_include_directories(zed_node SYSTEM PRIVATE ${ZED_INCLUDE_DIRS} ${CUDA_INCLUDE_DIRS})
-    #            target_link_libraries(zed_node PRIVATE ${ZED_LIBRARIES} ${OpenCV_LIBRARIES} ${SPECIAL_OS_LIBS} lie tag_detector_nodelet)
-
-    add_cpp_nodelet_macro(zed_nodelet src/perception/zed_wrapper/*.c* , src/perception/zed_wrapper)
-    target_precompile_headers(zed_nodelet PRIVATE src/perception/zed_wrapper/pch.hpp)
-    target_include_directories(zed_nodelet SYSTEM PRIVATE ${ZED_INCLUDE_DIRS} ${CUDA_INCLUDE_DIRS})
-    target_link_libraries(zed_nodelet PRIVATE ${ZED_LIBRARIES} ${SPECIAL_OS_LIBS} lie)
-    target_compile_definitions(zed_nodelet PRIVATE MROVER_IS_NODELET ALLOW_BUILD_DEBUG __CUDA_INCLUDE_COMPILER_INTERNAL_HEADERS__)
+    mrover_add_nodelet(zed src/perception/zed_wrapper/*.c* src/perception/zed_wrapper src/perception/zed_wrapper/pch.hpp)
+    mrover_nodelet_include_directories(zed ${ZED_INCLUDE_DIRS} ${CUDA_INCLUDE_DIRS})
+    mrover_nodelet_link_libraries(zed ${ZED_LIBRARIES} ${SPECIAL_OS_LIBS} lie)
+    mrover_nodelet_defines(zed
+            ALLOW_BUILD_DEBUG # Ignore ZED warnings about Debug mode
+            __CUDA_INCLUDE_COMPILER_INTERNAL_HEADERS__ # Eigen includes some files it should not, ignore
+    )
 endif ()
 
-add_gazebo_plugin_macro(differential_drive_plugin_6w src/gazebo/differential_drive_6w.cpp src)
+## Simulator
 
-add_gazebo_plugin_macro(kinect_plugin src/gazebo/gazebo_ros_openni_kinect.cpp src/gazebo)
+mrover_add_gazebo_plugin(differential_drive_plugin_6w src/simulator/differential_drive_6w.cpp src)
+
+mrover_add_gazebo_plugin(kinect_plugin src/simulator/gazebo_ros_openni_kinect.cpp src/simulator)
 target_link_libraries(kinect_plugin PRIVATE gazebo_ros_camera_utils DepthCameraPlugin Eigen3::Eigen)
 set_target_properties(kinect_plugin PROPERTIES CXX_CLANG_TIDY "")
 
-## Testing
+### ======= ###
+### Testing ###
+### ======= ###
 
 # Add C++ unit tests
 catkin_add_gtest(example-cpp-test test/example/cpp_test.cpp)

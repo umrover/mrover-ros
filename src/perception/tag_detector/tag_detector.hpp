@@ -13,13 +13,12 @@ namespace mrover {
     private:
         ros::NodeHandle mNh, mPnh;
 
-        std::optional<image_transport::ImageTransport> mIt;
-        image_transport::Publisher mImgPub;
-        std::unordered_map<int, image_transport::Publisher> mThreshPubs; // Map from threshold scale to publisher
+        ros::Publisher mImgPub;
+        std::unordered_map<int, ros::Publisher> mThreshPubs; // Map from threshold scale to publisher
         ros::ServiceServer mServiceEnableDetections;
 
         ros::Subscriber mPcSub;
-        image_transport::Subscriber mImgSub;
+        ros::Subscriber mImgSub;
         tf2_ros::Buffer mTfBuffer;
         tf2_ros::TransformListener mTfListener{mTfBuffer};
         tf2_ros::TransformBroadcaster mTfBroadcaster;
@@ -33,9 +32,8 @@ namespace mrover {
         int mTagIncrementWeight{};
         int mTagDecrementWeight{};
 
-        cv::aruco::ArucoDetector mDetector;
-        cv::aruco::DetectorParameters mDetectorParams;
-        cv::aruco::Dictionary mDictionary;
+        cv::Ptr<cv::aruco::DetectorParameters> mDetectorParams;
+        cv::Ptr<cv::aruco::Dictionary> mDictionary;
 
         cv::Mat mImg;
         cv::Mat mGrayImg;

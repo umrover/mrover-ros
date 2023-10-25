@@ -1,0 +1,194 @@
+<?xml version="1.0"?>
+<robot xmlns:xacro="http://www.ros.org/wiki/xacro" name="rover">
+
+  <xacro:property name="base_width" value="0.7357"/>
+  <xacro:property name="base_len" value="1.0"/>
+  <xacro:property name="base_height" value="0.6"/>
+  <xacro:property name="wheel_radius" value="0.13"/>
+  <xacro:property name="wheel_width" value="0.1"/>
+  <xacro:property name="wheel_mass" value="2"/>
+
+  <xacro:property name="PI" value="3.141592"/>
+
+  <!-- Inertial macros-->
+  <xacro:macro name="cylinder_inertia" params="m r h">
+    <inertial>
+      <mass value="${m}"/>
+      <inertia ixx="${m*(3*r*r+h*h)/12}" ixy="0" ixz="0" iyy="${m*(3*r*r+h*h)/12}" iyz="0" izz="${m*r*r/2}"/>
+    </inertial>
+  </xacro:macro>
+
+  <xacro:macro name="box_inertia" params="m w h d">
+    <inertial>
+      <mass value="${m}"/>
+      <inertia ixx="${m / 12.0 * (d*d + h*h)}" ixy="0.0" ixz="0.0" iyy="${m / 12.0 * (w*w + h*h)}" iyz="0.0" izz="${m / 12.0 * (w*w + d*d)}"/>
+    </inertial>
+  </xacro:macro>
+
+  <xacro:macro name="sphere_inertia" params="m r">
+    <inertial>
+      <mass value="${m}"/>
+      <inertia ixx="${2.0*m*(r*r)/5.0}" ixy="0.0" ixz="0.0" iyy="${2.0*m*(r*r)/5.0}" iyz="0.0" izz="${2.0*m*(r*r)/5.0}"/>
+    </inertial>
+  </xacro:macro>
+
+  <!-- Links -->
+
+  <link name="base_link"/>
+
+  <link name="chassis_link">
+    <xacro:box_inertia m="3.0" w="${base_len}" h="${base_width}" d="${base_height}"/>
+    <visual>
+      <origin rpy="0 0 0" xyz="0 0 0"/>
+      <geometry>
+        <mesh filename="package://mrover/urdf/meshes/rover.dae"/>
+      </geometry>
+    </visual>
+    <collision>
+      <geometry>
+        <box size="${base_len} ${base_width} ${base_height}"/>
+      </geometry>
+    </collision>
+  </link>
+
+  <xacro:macro name="wheel" params="side reflect">
+    <link name="front_${side}_wheel_link">
+      <xacro:sphere_inertia m="${wheel_mass}" r="${wheel_radius}"/>
+      <visual>
+        <origin rpy="0 ${min(0, reflect) * PI} 0" xyz="0 0 0"/>
+        <geometry>
+          <mesh filename="package://mrover/urdf/meshes/rover.wheel.dae"/>
+        </geometry>
+      </visual>
+      <collision>
+        <geometry>
+          <sphere radius="${wheel_radius}"/>
+        </geometry>
+      </collision>
+    </link>
+
+    <link name="center_${side}_wheel_link">
+      <xacro:cylinder_inertia m="${wheel_mass}" r="${wheel_radius}" h="${wheel_width}"/>
+      <visual>
+        <origin rpy="0 ${min(0, reflect) * PI} 0" xyz="0 0 0"/>
+        <geometry>
+          <mesh filename="package://mrover/urdf/meshes/rover.wheel.dae"/>
+        </geometry>
+      </visual>
+      <collision>
+        <geometry>
+          <cylinder length="${wheel_width}" radius="${wheel_radius}"/>
+        </geometry>
+      </collision>
+    </link>
+
+    <link name="back_${side}_wheel_link">
+      <xacro:sphere_inertia m="${wheel_mass}" r="${wheel_radius}"/>
+
+      <visual>
+        <origin rpy="0 ${min(0, reflect) * PI} 0" xyz="0 0 0"/>
+        <geometry>
+          <mesh filename="package://mrover/urdf/meshes/rover.wheel.dae"/>
+        </geometry>
+      </visual>
+      <collision>
+        <geometry>
+          <sphere radius="${wheel_radius}"/>
+        </geometry>
+      </collision>
+    </link>
+
+    <joint name="front_${side}_wheel_joint" type="continuous">
+      <parent link="chassis_link"/>
+      <child link="front_${side}_wheel_link"/>
+      <origin xyz="0.42 ${reflect * (base_width/2 + 0.06)} -0.373" rpy="${-PI/2} 0 0"/>
+      <axis xyz="0 0 1"/>
+    </joint>
+
+    <joint name="center_${side}_wheel_joint" type="continuous">
+      <parent link="chassis_link"/>
+      <child link="center_${side}_wheel_link"/>
+      <origin xyz="0 ${reflect * (base_width/2 + 0.06)} -0.373" rpy="${-PI/2} 0 0"/>
+      <axis xyz="0 0 1"/>
+    </joint>
+
+    <joint name="back_${side}_wheel_joint" type="continuous">
+      <parent link="chassis_link"/>
+      <child link="back_${side}_wheel_link"/>
+      <origin xyz="-0.42 ${reflect * (base_width/2 + 0.06)} -0.373" rpy="${-PI/2} 0 0"/>
+      <axis xyz="0 0 1"/>
+    </joint>
+  </xacro:macro>
+
+  <!-- Joints -->
+
+  <joint name="base_link_to_chassis" type="fixed">
+    <origin xyz="0 0 0.5"/>
+    <parent link="base_link"/>
+    <child link="chassis_link"/>
+  </joint>
+
+  <!-- IMU -->
+  <joint name="imu_joint" type="fixed">
+    <origin xyz="0 0 0.2"/>
+    <parent link="chassis_link"/>
+    <child link="imu_link"/>
+  </joint>
+
+  <link name="imu_link"/>
+
+  <!-- Camera -->
+  <joint name="camera_joint" type="fixed">
+    <origin xyz="0 0 0.1"/>
+    <parent link="chassis_link"/>
+    <child link="camera_link"/>
+  </joint>
+
+  <link name="camera_link">
+    <collision>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <geometry>
+        <box size="0.01 0.1 0.01"/>
+      </geometry>
+    </collision>
+
+    <visual>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <geometry>
+        <mesh filename="package://mrover/urdf/meshes/zed2i.dae"/>
+      </geometry>
+    </visual>
+
+    <inertial>
+      <mass value="1e-5"/>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <inertia ixx="1e-6" ixy="0" ixz="0" iyy="1e-6" iyz="0" izz="1e-6"/>
+    </inertial>
+  </link>
+
+  <!-- Left Camera -->
+  <joint name="left_camera_joint" type="fixed">
+    <origin xyz="0 -0.05 0.1"/>
+    <parent link="chassis_link"/>
+    <child link="left_camera_link"/>
+  </joint>
+
+  <link name="left_camera_link">
+    <collision>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <geometry>
+        <box size="0.06 0.01 0.06"/>
+      </geometry>
+    </collision>
+
+    <inertial>
+      <mass value="1e-5"/>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <inertia ixx="1e-6" ixy="0" ixz="0" iyy="1e-6" iyz="0" izz="1e-6"/>
+    </inertial>
+  </link>
+
+  <xacro:include filename="$(find mrover)/urdf/rover/rover_gazebo_plugins.urdf.xacro"/>
+  <xacro:wheel side="left" reflect="1"/>
+  <xacro:wheel side="right" reflect="-1"/>
+</robot>
