@@ -67,9 +67,7 @@ namespace mrover {
 
         // Detect the tag vertices in screen space and their respective ids
         // {mImmediateCorneres, mImmediateIds} are the outputs from OpenCV
-        mDetector.setDictionary(mDictionary);
-        mDetector.setDetectorParameters(mDetectorParams);
-        mDetector.detectMarkers(mImg, mImmediateCorners, mImmediateIds);
+        cv::aruco::detectMarkers(mImg, mDictionary, mImmediateCorners, mImmediateIds, mDetectorParams);
         NODELET_DEBUG("OpenCV detect size: %zu", mImmediateIds.size());
         mProfiler.measureEvent("OpenCV Detect");
 
@@ -135,7 +133,7 @@ namespace mrover {
                 for (auto& [id, tag]: mTags) {
                     cv::Scalar color{255, 0, 0};
                     cv::Point pt{tagBoxWidth * tagCount, mImg.rows / 10};
-                    std::string text = "id" + std::to_string(id) + ":" + std::to_string((tag.hitCount));
+                    std::string text = "id" + std::to_string(id) + ":" + std::to_string(tag.hitCount);
                     cv::putText(mImg, text, pt, cv::FONT_HERSHEY_COMPLEX, mImg.cols / 800.0, color, mImg.cols / 300);
 
                     ++tagCount;
