@@ -22,21 +22,22 @@ static inline void check(bool cond, std::invocable auto handler) {
 namespace mrover {
 
     template<typename T, typename Input, typename TimeUnit = Seconds>
-    concept InputReader = requires(T t, Config &config) {
-        { t.read_input(config) } -> std::convertible_to<std::pair<Input, compound_unit<Input, inverse<TimeUnit>>>>;
+    concept InputReader = requires(T t, Config& config) {
+        { t.update(config) };
+        { t.read() } -> std::convertible_to<std::pair<Input, compound_unit<Input, inverse<TimeUnit>>>>;
     };
 
     template<typename T, typename Output>
-    concept OutputWriter = requires(T t, Config &config, Output output) {
-        { t.write_output(config, output) };
+    concept OutputWriter = requires(T t, Config& config, Output output) {
+        { t.set_tgt(config, output) };
+        { t.write() };
     };
 
     template<Unitable InputUnit, Unitable OutputUnit,
-            InputReader<InputUnit> Reader, OutputWriter<OutputUnit> Writer,
-            Unitable TimeUnit = Seconds>
+             InputReader<InputUnit> Reader, OutputWriter<OutputUnit> Writer,
+             Unitable TimeUnit = Seconds>
     class Controller {
     private:
-
         struct PositionMode {
             PIDF<InputUnit, OutputUnit, TimeUnit> pidf;
         };
@@ -50,7 +51,7 @@ namespace mrover {
         Config m_config;
         Reader m_reader;
         Writer m_writer;
-        Message m_command;
+        InBoundMessage m_command;
         Mode m_mode;
         FDCAN_TxHeaderTypeDef TxHeader;
 
@@ -60,37 +61,34 @@ namespace mrover {
             }
         }
 
-        void feed(IdleCommand const &message) {
+        void feed(IdleCommand const& message) {
             // TODO: Feel like we should be actively calling something here
             // maybe write_output with a throttle of 0?
         }
 
-        void feed(ConfigCommand const &message) {
+        void feed(ConfigCommand const& message) {
             m_config.configure(message);
         }
 
-        // This function is needed for compilation so all variant types are satisfied
-        void feed(MotorDataState const &message) { }
-
-        void feed(ThrottleCommand const &message) {
+        void feed(ThrottleCommand const& message) {
             force_configure();
-            m_writer.write_output(m_config, message.throttle * m_config.getMaxVoltage());
+            m_writer.set_tgt(m_config, message.throttle * m_config.getMaxVoltage());
         }
 
-        void feed(VelocityCommand const &message, VelocityMode mode) {
+        void feed(VelocityCommand const& message, VelocityMode mode) {
             force_configure();
             (void) message;
             (void) mode;
         }
 
-        void feed(PositionCommand const &message, PositionMode mode) {
+        void feed(PositionCommand const& message, PositionMode mode) {
             force_configure();
             (void) message;
             (void) mode;
-//            InputUnit input = m_reader.read_input();
-//            InputUnit target = message.position;
-//            OutputUnit output = mode.pidf.calculate(input, target);
-//            m_writer.write_output(output);
+            // InputUnit input = m_reader.read_input();
+            // InputUnit target = message.position;
+            // OutputUnit output = mode.pidf.calculate(input, target);
+            // m_writer.write_output(output);
         }
 
         struct detail {
@@ -101,8 +99,8 @@ namespace mrover {
             struct command_to_mode<Command, std::variant<ModeHead, Modes...>> { // Linear search to find corresponding mode
                 using type = std::conditional_t<requires(Controller controller, Command command,
                                                          ModeHead mode) { controller.feed(command, mode); },
-                        ModeHead,
-                        typename command_to_mode<Command, std::variant<Modes...>>::type>; // Recursive call
+                                                ModeHead,
+                                                typename command_to_mode<Command, std::variant<Modes...>>::type>; // Recursive call
             };
 
             template<typename Command> // Base case
@@ -115,11 +113,11 @@ namespace mrover {
         using command_to_mode_t = typename detail::template command_to_mode<Command, T>::type;
 
     public:
-
-        Controller(const uint32_t id, Reader &&reader, Writer &&writer) : m_config(id), m_reader(std::move(reader)), m_writer(std::move(writer)) {}
+        Controller(const uint32_t id, Reader&& reader, Writer&& writer)
+            : m_config(id), m_reader(std::move(reader)), m_writer(std::move(writer)), TxHeader{} {}
 
         template<typename Command>
-        void process(Command const &command) {
+        void process(Command const& command) {
             // Find the feed function that has the right type for the command
             using ModeForCommand = command_to_mode_t<Command, Mode>;
 
@@ -134,16 +132,19 @@ namespace mrover {
             }
         }
 
-        void process(Message const &message) {
-            std::visit([&](auto const &command) { process(command); }, message);
+        void process(InBoundMessage const& message) {
+            std::visit([&](auto const& command) { process(command); }, message);
         }
 
         void update() {
+            m_reader.update(m_config);
+            m_writer.write();
             // TODO enforce limit switch constraints
         }
 
         // Transmit motor data out as CAN message
-        void send() {
+        void transmit() {
+            // TODO: add modulo for frequency
             // TODO: send out Controller data as CAN message
             // Use getters to get info from encoder reader, have the bundling into CAN in controller
             //  then controller sends the array as a CAN message
@@ -153,19 +154,19 @@ namespace mrover {
              * 1 BYTES: Is Configured, Is Calibrated, Errors (8)
              * 1 BYTES: Limit a/b/c/d is hit. (9)
              */
-            std::pair<Radians, RadiansPerSecond> reading = m_reader.read_input();
+            std::pair<Radians, RadiansPerSecond> reading = m_reader.read();
 
-            mrover::MotorDataState motor_data;
+            mrover::MotorDataState motor_data{};
 
-            motor_data.velocity = reading.first;
-            motor_data.position = reading.second;
+            motor_data.velocity = reading.first; // TODO how to assign?
+            motor_data.position = reading.second; // TODO how to assign?
             // TODO: Actually fill the config_calib_error_data with data
             motor_data.config_calib_error_data = 0x00;
             // TODO: Is this going to be right or left aligned?
             // TODO: actually fill with correct values
-            motor_data.limits_switches = 0x00;
+            motor_data.limit_switches = 0x00;
 
-            mrover::FdCanFrame frame{};
+            mrover::FdCanFrameOut frame{};
             frame.message = motor_data;
 
             // TODO: Copied values from somewhere else.
@@ -183,7 +184,6 @@ namespace mrover {
             // TODO: I think this is all that is required to transmit a CAN message
             check(HAL_FDCAN_AddMessageToTxFifoQ(&hfdcan1, &TxHeader, reinterpret_cast<uint8_t*>(&frame.bytes)) == HAL_OK, Error_Handler);
         }
-
     };
 
 } // namespace mrover

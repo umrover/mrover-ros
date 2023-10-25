@@ -44,13 +44,21 @@ namespace mrover {
     struct StatusState {
     };
 
-    using Message = std::variant<
-            ConfigCommand, IdleCommand, ThrottleCommand, VelocityCommand, PositionCommand, MotorDataState>;
+    using InBoundMessage = std::variant<
+            ConfigCommand, IdleCommand, ThrottleCommand, VelocityCommand, PositionCommand>;
+    using OutBoundMessage = std::variant<
+            MotorDataState, StatusState>;
 
-    union FdCanFrame {
-        Message message;
+    union FdCanFrameIn {
+        InBoundMessage message;
         std::array<std::byte, FRAME_SIZE> bytes;
     };
-    static_assert(sizeof(FdCanFrame) == FRAME_SIZE);
+    static_assert(sizeof(FdCanFrameIn) == FRAME_SIZE);
+
+    union FdCanFrameOut {
+        OutBoundMessage message;
+        std::array<std::byte, FRAME_SIZE> bytes;
+    };
+    static_assert(sizeof(FdCanFrameOut) == FRAME_SIZE);
 
 } // namespace mrover

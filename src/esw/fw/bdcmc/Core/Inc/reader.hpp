@@ -39,11 +39,11 @@ namespace mrover {
         QuadEncoder() = default;
         QuadEncoder(TIM_TypeDef *_tim);
         ~QuadEncoder() = default;
-        int32_t count_delta();
+        int64_t count_delta();
     private:
         TIM_TypeDef* m_tim;
-        int32_t m_counts_raw_prev;
-        int32_t m_counts_raw_now;
+        uint32_t m_counts_raw_prev;
+        uint32_t m_counts_raw_now;
     };
 
 
@@ -51,20 +51,20 @@ namespace mrover {
     public:
         EncoderReader() = default;
         EncoderReader(TIM_HandleTypeDef* relative_encoder_timer, I2C_HandleTypeDef* absolute_encoder_i2c);
-        [[nodiscard]] std::pair<Radians, RadiansPerSecond> read_input(const Config& config);
+        [[nodiscard]] std::pair<Radians, RadiansPerSecond> read();
+        void update(const Config& config);
 
     private:
         void refresh_absolute();
         uint64_t read_absolute();
-        void update();
 
         AbsoluteEncoder m_abs_encoder;
-        QuadEncoder m_quad_encoder;
+        QuadEncoder m_quad_encoder{};
 
         TIM_HandleTypeDef* m_relative_encoder_timer{};
         I2C_HandleTypeDef* m_absolute_encoder_i2c{};
-        Radians absolute_relative_diff{};
         Radians position{};
+        RadiansPerSecond velocity{};
     };
 
 } // namespace mrover
