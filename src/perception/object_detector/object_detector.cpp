@@ -16,7 +16,7 @@ namespace mrover {
 
         //Inference
 
-        inference = Inference("//home//jabra//Desktop//Rover//yolov8s.onnx", cv::Size(640, 640), "", false);
+        inference = Inference("//home//marshallvielmetti//Downloads//yolov8s.onnx", cv::Size(640, 640), "", true);
         //read ONNX file into this mNet, YOLOV8, second smallest one
         // Note(quintin): I downloaded this pt (PyTorch) model file from: https://github.com/ultralytics/assets/releases
         // TODO(percep/obj-detectr): make this configurable

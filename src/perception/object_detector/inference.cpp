@@ -19,8 +19,10 @@ std::vector<Detection> Inference::runInference(const cv::Mat& input) {
     cv::dnn::blobFromImage(modelInput, blob, 1.0 / 255.0, modelShape, cv::Scalar(), true, false);
     net.setInput(blob);
 
-    std::vector<cv::Mat> outputs;
+    std::vector<std::vector<cv::Mat>> outputs;
     net.forward(outputs, net.getUnconnectedOutLayersNames());
+
+    std::cout << outputs[0].data << std::endl;
 
     int rows = outputs[0].size[1];
     int dimensions = outputs[0].size[2];
@@ -37,7 +39,9 @@ std::vector<Detection> Inference::runInference(const cv::Mat& input) {
         outputs[0] = outputs[0].reshape(1, dimensions);
         cv::transpose(outputs[0], outputs[0]);
     }
+
     float* data = (float*) outputs[0].data;
+
 
     float x_factor = modelInput.cols / modelShape.width;
     float y_factor = modelInput.rows / modelShape.height;
@@ -71,7 +75,8 @@ std::vector<Detection> Inference::runInference(const cv::Mat& input) {
                 int width = int(w * x_factor);
                 int height = int(h * y_factor);
 
-                boxes.push_back(cv::Rect(left, top, width, height));
+
+                boxes.emplace_back(left, top, width, height);
             }
         } else // yolov5
         {

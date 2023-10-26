@@ -12,6 +12,8 @@
 #include <opencv2/imgproc.hpp>
 #include <opencv2/opencv.hpp>
 
+#include "pch.hpp"
+
 struct Detection {
     int class_id{0};
     std::string className{};

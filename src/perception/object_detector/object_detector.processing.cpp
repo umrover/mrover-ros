@@ -29,6 +29,8 @@ namespace mrover {
         cv::cvtColor(sizedImg, sizedImg, cv::COLOR_BGRA2BGR);
 
         std::vector<Detection> detections = inference.runInference(sizedImg);
+
+
         if (!detections.empty()) {
             Detection firstDetection = detections[0];
 
@@ -66,7 +68,7 @@ namespace mrover {
 
 
             //Print the type of objected detected
-            ROS_INFO_STREAM(firstDetection.className.c_str());
+            // ROS_INFO_STREAM(firstDetection.className.c_str());
 
             //Publish Dectection Data
             mDetectionData.publish(msgData);
