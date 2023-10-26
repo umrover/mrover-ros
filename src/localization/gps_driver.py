@@ -11,6 +11,8 @@ import threading
 import numpy as np
 from os import getenv
 from rover_msgs import GPS, RTCM
+from pyubx2 import UBXReader, UBX_PROTOCOL, RTCM3_PROTOCOL, protocol
+from rtcm_msgs.msg import Message
 
 
 class GPS_Driver():
@@ -44,7 +46,9 @@ class GPS_Driver():
     def gps_data_thread(self):
         while not rospy.is_shutdown():
             self.lock.acquire()
-            rover_gps_data = self.ser.readline()
+            reader = UBXReader(ser, protfilter=(UBX_PROTOCOL | RTCM3_PROTOCOL))
+            # rover_gps_data = self.ser.readline()
+            raw, rover_gps_data = reader.read()
             parsed_gps_data = self.parse_rover_gps_data(rover_gps_data)
             self.gps_pub.publish(parsed_gps_data)
             self.lock.release()
