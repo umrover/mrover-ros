@@ -1,7 +1,4 @@
 #include "long_range_cam.hpp"
-#include <opencv2/highgui/highgui.hpp>
-#include <opencv2/videoio.hpp>
-#include <stdexcept>
 
 namespace mrover {
 
@@ -19,8 +16,7 @@ namespace mrover {
             mNh = getMTNodeHandle();
             mPnh = getMTPrivateNodeHandle();
             mCamInfoPub = mNh.advertise<sensor_msgs::CameraInfo>("long_range_cam/camera_info", 1);
-            image_transport::ImageTransport it{mNh};
-            mImgPub = it.advertise("long_range_cam/image", 1);
+            mImgPub = mNh.advertise<sensor_msgs::Image>("long_range_cam/image", 1);
 
             // TODO: Fix hardcoded components of this string
             mCapture = cv::VideoCapture("v4l2src device=/dev/video4 ! videoconvert ! videoscale ! videorate ! 'video / x - raw, format = I420, width = 640, height = 480, framerate = 30 / 1' ! x264enc key-int-max=15 ! rtph264pay ! udpsink");

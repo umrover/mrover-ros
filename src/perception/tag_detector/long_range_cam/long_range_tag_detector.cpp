@@ -15,9 +15,7 @@ namespace mrover {
         mPnh.param<int>("tag_increment_weight", mTagIncrementWeight, 2);
         mPnh.param<int>("tag_decrement_weight", mTagDecrementWeight, 1);
 
-        mIt.emplace(mNh);
-        mImgPub = mIt->advertise("long_range_tag_detection", 1);
-
+        mImgPub = mNh.advertise<sensor_msgs::Image>("long_range_tag_detection", 1);
         mServiceEnableDetections = mNh.advertiseService("enable_detections", &LongRangeTagDetectorNodelet::enableDetectionsCallback, this);
 
         // Lambda handles passing class pointer (implicit first parameter) to configCallback

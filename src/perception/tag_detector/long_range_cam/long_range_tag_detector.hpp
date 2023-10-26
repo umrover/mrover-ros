@@ -1,9 +1,4 @@
-#include "mrover/LongRangeTag.h"
-#include "mrover/LongRangeTags.h"
 #include "pch.hpp"
-
-#include <opencv2/core/types.hpp>
-#include <ros/publisher.h>
 
 namespace mrover {
 
@@ -18,8 +13,8 @@ namespace mrover {
         ros::NodeHandle mNh, mPnh;
 
         //Image Subscriber
-        image_transport::Subscriber mImgSub;
-        image_transport::Publisher mImgPub;
+        ros::Subscriber mImgSub;
+        ros::Publisher mImgPub;
 
         //Publishes LongRangeTags messages
         ros::Publisher mLongRangeTagsPub;
@@ -59,8 +54,7 @@ namespace mrover {
         dynamic_reconfigure::Server<mrover::DetectorParamsConfig> mConfigServer;
         dynamic_reconfigure::Server<mrover::DetectorParamsConfig>::CallbackType mCallbackType;
         LoopProfiler mProfiler{"Long RangeTag Detector"};
-        std::optional<image_transport::ImageTransport> mIt;
-        std::unordered_map<int, image_transport::Publisher> mThreshPubs; // Map from threshold scale to publisher
+        std::unordered_map<int, ros::Publisher> mThreshPubs; // Map from threshold scale to publisher
         ros::ServiceServer mServiceEnableDetections;
         bool mUseOdom{};
         std::string mOdomFrameId, mMapFrameId, mCameraFrameId;

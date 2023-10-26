@@ -12,7 +12,7 @@ namespace mrover {
         ros::NodeHandle mNh, mPnh;
 
         ros::Publisher mCamInfoPub;
-        image_transport::Publisher mImgPub;
+        ros::Publisher mImgPub;
 
         std::thread mReadThread;
         std::mutex mSwapMutex;

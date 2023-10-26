@@ -1,14 +1,5 @@
 #include "long_range_tag_detector.hpp"
 
-#include "mrover/LongRangeTags.h"
-
-#include <image_transport/image_transport.h>
-#include <opencv2/aruco.hpp>
-#include <opencv2/core.hpp>
-#include <opencv2/core/mat.hpp>
-#include <opencv2/core/types.hpp>
-#include <sensor_msgs/Image.h>
-
 namespace mrover {
 
     /**
