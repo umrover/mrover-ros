@@ -4,6 +4,7 @@
 
   <rosparam command="load" file="$(find mrover)/config/esw.yaml" />
   <node pkg="mrover" type="basestation_gps_driver.py" name="basestation_gps_driver" output="screen"/>
+  <node pkg="mrover" type="gps_driver.py" name="gps_driver" output="screen"/>
   <node pkg="ublox_gps" type="ublox_gps" name="f9p" output="screen" >
     <rosparam command="load" file="$(find mrover)/config/zed_f9p.yaml" />
   </node>

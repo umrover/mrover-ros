@@ -16,8 +16,9 @@ from rover_msgs import GPS, RTCM
 class GPS_Driver():
 
     def __init__(self, port, baudrate):
-        self.port = port
-        self.baudrate = baudrate
+        rospy.init_node('gps_driver')
+        self.port = rospy.get_param("rover_gps_driver/port")
+        self.baud = rospy.get_param("rover_gps_driver/baud")
         self.base_station_sub = rospy.Subscriber('/rtcm', RTCM, process_rtcm)
         self.gps_pub = rospy.Publisher('/gps', NavSatFix, queue_size=1)
         self.lock = threading.Lock()
