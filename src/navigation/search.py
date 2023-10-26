@@ -4,15 +4,14 @@ from dataclasses import dataclass
 from typing import Optional
 
 import numpy as np
-from aenum import Enum, NoAlias
 from mrover.msg import GPSPointList
+
 from util.ros_utils import get_rosparam
-
-from context import Context, convert_cartesian_to_gps
-from trajectory import Trajectory
-
 from util.state_lib.state import State
-import waypoint, approach_post, recovery
+
+from navigation import approach_post, recovery
+from navigation.context import convert_cartesian_to_gps
+from navigation.trajectory import Trajectory
 
 
 @dataclass
@@ -82,6 +81,10 @@ class SearchTrajectory(Trajectory):
 
 
 class SearchState(State):
+    traj: SearchTrajectory
+    prev_target: Optional[np.ndarray]
+    is_recovering: bool
+
     STOP_THRESH = get_rosparam("search/stop_thresh", 0.2)
     DRIVE_FWD_THRESH = get_rosparam("search/drive_fwd_thresh", 0.34)  # 20 degrees
     SPIRAL_COVERAGE_RADIUS = get_rosparam("search/coverage_radius", 20)

@@ -4,19 +4,16 @@ from dataclasses import dataclass
 from typing import Optional
 
 import numpy as np
-import rospy
 import tf2_ros
-from aenum import Enum, NoAlias
 from shapely.geometry import Point, LineString
+
 from util.SE3 import SE3
 from util.np_utils import perpendicular_2d
 from util.ros_utils import get_rosparam
-
-from context import Context
-from trajectory import Trajectory
-
 from util.state_lib.state import State
-import waypoint, recovery
+
+from navigation import waypoint, recovery
+from navigation.trajectory import Trajectory
 
 POST_RADIUS = get_rosparam("gate/post_radius", 0.7) * get_rosparam("single_fiducial/post_avoidance_multiplier", 1.42)
 BACKUP_DISTANCE = get_rosparam("recovery/recovery_distance", 2.0)
@@ -26,6 +23,7 @@ DRIVE_FWD_THRESH = get_rosparam("search/drive_fwd_thresh", 0.34)
 
 @dataclass
 class AvoidPostTrajectory(Trajectory):
+    @staticmethod
     def avoid_post_trajectory(rover_pose: SE3, post_pos: np.ndarray, waypoint_pos: np.ndarray) -> AvoidPostTrajectory:
         """
         Generates a trajectory that avoids a post until the rover has a clear path to the waypoint
@@ -93,6 +91,8 @@ class AvoidPostTrajectory(Trajectory):
 
 
 class PostBackupState(State):
+    traj: Optional[AvoidPostTrajectory]
+
     def on_exit(self, context):
         self.traj = None
 

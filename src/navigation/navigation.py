@@ -5,21 +5,17 @@ import sys
 import threading
 
 import rospy
-from std_msgs.msg import String
 
 from util.state_lib.state_machine import StateMachine
-from util.state_lib.state import State
 from util.state_lib.state_publisher_server import StatePublisher
 
-
-from context import Context
-from approach_post import ApproachPostState
-from post_backup import PostBackupState
-from recovery import RecoveryState
-from search import SearchState
-from state import DoneState, OffState
-from waypoint import WaypointState
-from state import off_check
+from navigation.approach_post import ApproachPostState
+from navigation.context import Context
+from navigation.post_backup import PostBackupState
+from navigation.recovery import RecoveryState
+from navigation.search import SearchState
+from navigation.state import DoneState, OffState, off_check
+from navigation.waypoint import WaypointState
 
 
 class Navigation(threading.Thread):
@@ -53,7 +49,7 @@ class Navigation(threading.Thread):
         # Requests current state to go into 'terminated' to cleanly exit state machine
         self.state_machine.stop()
         self.join()
-        self.context.rover.send_drive_stop()
+        self.state_machine.context.rover.send_drive_stop()
 
 
 def main():

@@ -1,15 +1,12 @@
-from context import Context
 from typing import Optional
 
 import numpy as np
 import rospy
-from aenum import Enum, NoAlias
+from aenum import Enum
+
 from util.np_utils import rotate_2d
 from util.ros_utils import get_rosparam
-
-from context import Context
 from util.state_lib.state import State
-
 
 STOP_THRESH = get_rosparam("recovery/stop_thresh", 0.2)
 DRIVE_FWD_THRESH = get_rosparam("recovery/drive_fwd_thresh", 0.34)  # 20 degrees
@@ -26,6 +23,7 @@ class RecoveryState(State):
     waypoint_behind: Optional[np.ndarray]
     current_action: JTurnAction
     start_time: Optional[rospy.Time] = None
+    waypoint_calculated: bool
 
     def reset(self, context) -> None:
         self.waypoint_calculated = False

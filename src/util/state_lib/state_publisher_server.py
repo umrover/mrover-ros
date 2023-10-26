@@ -1,11 +1,13 @@
 from __future__ import annotations
-from util.state_lib.state_machine import StateMachine
-from state import State
+
+import threading
+import time
+from typing import Callable
+
 import rospy
 from mrover.msg import StateMachineStructure, StateMachineTransition, StateMachineStateUpdate
-import threading
-from typing import Callable
-import time
+
+from util.state_lib.state_machine import StateMachine
 
 
 class StatePublisher:

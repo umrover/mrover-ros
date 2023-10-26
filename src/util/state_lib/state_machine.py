@@ -1,10 +1,11 @@
-from .state import State, ExitState
-from typing import DefaultDict, Set, List, Callable, Any, Optional
 import time
-from dataclasses import dataclass
-from threading import Lock
 from collections import defaultdict
+from dataclasses import dataclass
 from enum import Enum
+from threading import Lock
+from typing import DefaultDict, Set, List, Callable, Any, Optional
+
+from util.state_lib.state import State, ExitState
 
 
 class LogLevel(Enum):
@@ -83,7 +84,7 @@ class StateMachine:
         """
         Runs the state machine until it returns an ExitState.
         Aims for as close to update_rate_hz, updates per second
-        :param update_rate (float): targetted updates per second
+        :param update_rate: targeted updates per second
         """
         target_loop_time = None if update_rate == float("inf") else (1.0 / update_rate)
         self.current_state.on_enter(self.context)
@@ -92,7 +93,7 @@ class StateMachine:
         while is_on:
             start = time.time()
             self.__update()
-            if type(self.current_state) == ExitState:
+            if isinstance(self.current_state, ExitState):
                 break
             with self.onLock:
                 is_on = self.on
