@@ -1,5 +1,7 @@
 #pragma once
 
+#include "pch.hpp"
+
 namespace mrover {
 
     class LongRangeCamNodelet : public nodelet::Nodelet {
