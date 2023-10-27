@@ -53,7 +53,7 @@ namespace mrover {
         std::thread mPointCloudThread, mGrabThread;
         std::mutex mSwapMutex;
         std::condition_variable mSwapCv;
-        std::atomic_bool mIsSwapReady = false;
+        bool mIsSwapReady = false;
 
         LoopProfiler mPcThreadProfiler{"Zed Wrapper Point Cloud"}, mGrabThreadProfiler{"Zed Wrapper Grab"};
 
