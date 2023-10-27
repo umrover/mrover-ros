@@ -15,14 +15,29 @@ namespace mrover {
     };
 
     struct ConfigCommand : BaseCommand {
-        Volts maxVolts;
+        Meters gear_ratio;
+        // TODO: Terrible naming for the limit switch info
+        uint8_t limit_switch_info_x;
+        uint8_t limit_switch_info_y;
+        uint8_t limit_switch_info_z;
+        uint8_t quad_abs_enc_info;
+        Meters   limit_a_readj_pos;
+        Meters   limit_b_readj_pos;
+        Meters   limit_c_readj_pos;
+        Meters   limit_d_readj_pos;
+        Meters   quad_enc_out_ratio;
+        Meters   abs_enc_out_ratio;
+        Dimensionless   max_pwm;
+        uint8_t limit_max_pos;
+        Meters   max_forward_pos;
+        Meters   max_back_pos;
     };
 
     struct IdleCommand : BaseCommand {
     };
 
     struct ThrottleCommand : BaseCommand {
-        dimensionless_t throttle;
+        Dimensionless throttle;
     };
 
     struct VelocityCommand : BaseCommand {

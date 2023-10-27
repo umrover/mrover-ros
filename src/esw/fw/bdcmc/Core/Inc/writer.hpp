@@ -11,13 +11,14 @@ namespace mrover {
     struct BrushedMotorWriter {
     public:
         explicit BrushedMotorWriter(TIM_HandleTypeDef* timer);
-        void set_tgt(const Config& config, Volts output);
+        void set_tgt(const Config& config, Dimensionless output);
         void write();
 
     private:
         inline void set_direction_pins(double duty_cycle);
         inline void set_pwm(double duty_cycle);
 
+        Dimensionless max_pwm;
         Pin forward_pin{};
         Pin reverse_pin{};
         TIM_HandleTypeDef *timer{};

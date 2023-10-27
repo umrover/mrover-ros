@@ -15,7 +15,7 @@ extern TIM_HandleTypeDef htim3;
 // NOTE: Change This For Each Motor Controller
 constexpr uint32_t CAN_ID = 1;
 
-using controller_t = mrover::Controller<mrover::Radians, mrover::Volts, mrover::EncoderReader, mrover::BrushedMotorWriter>;
+using controller_t = mrover::Controller<mrover::Radians, mrover::Dimensionless, mrover::EncoderReader, mrover::BrushedMotorWriter>;
 
 namespace mrover {
     std::optional<controller_t> controller;

@@ -33,9 +33,9 @@ namespace mrover {
         { t.write() };
     };
 
-    template<Unitable InputUnit, Unitable OutputUnit,
+    template<IsUnit InputUnit, IsUnit OutputUnit,
              InputReader<InputUnit> Reader, OutputWriter<OutputUnit> Writer,
-             Unitable TimeUnit = Seconds>
+             IsUnit TimeUnit = Seconds>
     class Controller {
     private:
         struct PositionMode {
@@ -72,7 +72,7 @@ namespace mrover {
 
         void feed(ThrottleCommand const& message) {
             force_configure();
-            m_writer.set_tgt(m_config, message.throttle * m_config.getMaxVoltage());
+            m_writer.set_tgt(m_config, message.throttle);
         }
 
         void feed(VelocityCommand const& message, VelocityMode mode) {
@@ -138,8 +138,8 @@ namespace mrover {
 
         void update() {
             m_reader.update(m_config);
+            // TODO: enforce limit switch constraints
             m_writer.write();
-            // TODO enforce limit switch constraints
         }
 
         // Transmit motor data out as CAN message
@@ -156,7 +156,7 @@ namespace mrover {
              */
             auto [position, velocity] = m_reader.read();
             mrover::FdCanFrameOut frame{
-                    .message = mrover::MotorDataState{
+                            .message = mrover::MotorDataState{
                             .velocity = velocity,
                             .position = position,
                             // TODO: Actually fill the config_calib_error_data with data

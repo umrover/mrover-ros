@@ -22,9 +22,10 @@ namespace mrover {
         HAL_TIM_PWM_Start(this->timer, this->channel);
     }
 
-    void BrushedMotorWriter::set_tgt(const Config& config, Volts output) {
+    void BrushedMotorWriter::set_tgt(const Config& config, Dimensionless output) {
         // Set direction pins/duty cycle
-        this->tgt_duty_cycle = (output / config.getMaxVoltage()).get();
+        this->max_pwm = config.getMaxPWM();
+        this->tgt_duty_cycle = output.get();
     }
 
     void BrushedMotorWriter::write() {
@@ -40,7 +41,7 @@ namespace mrover {
     void BrushedMotorWriter::set_pwm(double duty_cycle) {
         // Obtain magnitude of duty_cycle and normalize
         duty_cycle *= duty_cycle > 0 ? 1 : -1;
-        duty_cycle = duty_cycle > 1 ? 1 : duty_cycle;
+        duty_cycle = duty_cycle > this->max_pwm.get() ? this->max_pwm.get() : duty_cycle;
 
         // Set CCR register
         // The ccr register compares its value to the timer and outputs a signal based on the result
