@@ -38,8 +38,8 @@ namespace mrover {
 
             mIsExtendedFrame = mNh.param<bool>("is_extended_frame", true);
 
-            mCanSubscriber = mNh.subscribe<CAN>("can_requests", 5, &CanNodelet::canSendRequestCallback, this);
-            //            mCanPublisher = mNh.advertise<mrover::CAN>("{INSERT TOPIC NAME}", 1);
+            mCanSubscriber = mNh.subscribe<CAN>("can_requests", 16, &CanNodelet::canSendRequestCallback, this);
+            mCanPublisher = mNh.advertise<mrover::CAN>("can_data", 16);
 
             mCanNetLink.emplace();
 

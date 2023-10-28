@@ -28,7 +28,7 @@ namespace mrover {
                 throw std::runtime_error("Failed to allocate rtnl_link cache");
             }
 
-            mLink = rtnl_link_get_by_name(cache, "vcan0");
+            mLink = rtnl_link_get_by_name(cache, "can0");
             if (mLink == nullptr) {
                 throw std::runtime_error("Failed to get rtnl_link");
             }
@@ -60,11 +60,12 @@ namespace mrover {
             if (int result = rtnl_link_change(mSocket, mLink, mLink, 0); result < 0 && result != -NLE_SEQ_MISMATCH) {
                 throw std::runtime_error(std::format("Failed to change rtnl_link: {}", result));
             }
-            ROS_INFO_STREAM("Set CAN socket down");
+
+            nl_socket_free(mSocket);
 
         } catch (std::exception const& exception) {
-            ROS_ERROR_STREAM("Exception in link cleanup: " << exception.what());
-            ros::shutdown();
+            std::cerr << std::format(
+                    "Exception in link cleanup:  {}\n", exception.what());
         }
     }
 
