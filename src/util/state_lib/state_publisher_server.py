@@ -14,7 +14,7 @@ class StatePublisher:
     structure_publisher: rospy.Publisher
     state_publisher: rospy.Publisher
     state_machine: StateMachine
-    __struct_thread: threading.Thread
+    __structure_thread: threading.Thread
     __state_thread: threading.Thread
     __stop_lock: threading.Lock
     __stop: bool

@@ -3,7 +3,7 @@ import tf2_ros
 from util.ros_utils import get_rosparam
 from util.state_lib.state import State
 
-from navigation import search, recovery, approach_post, post_backup
+from navigation import search, recovery, approach_post, post_backup, state
 
 
 class WaypointState(State):
@@ -27,7 +27,7 @@ class WaypointState(State):
         """
         current_waypoint = context.course.current_waypoint()
         if current_waypoint is None:
-            return self
+            return state.DoneState()
 
         # if we are at a post currently (from a previous leg), backup to avoid collision
         if context.env.arrived_at_post:
@@ -48,7 +48,7 @@ class WaypointState(State):
                 self.DRIVE_FWD_THRESH,
             )
             if arrived:
-                if not context.course.look_for_gate() and not context.course.look_for_post():
+                if not context.course.look_for_post():
                     # We finished a regular waypoint, go onto the next one
                     context.course.increment_waypoint()
                 else:
