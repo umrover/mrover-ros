@@ -1,39 +1,5 @@
 import numpy as np
-
-# 2 antennas on the rover a fixed distance apart and pointing in the same direction
-# antennas receive GNSS data (latitude, longitude)
-
-# "mobile" RTK system in that the base station is also moving
-
-# heading measurement is derived from differencing the 2 GNSS measurements
-# at a single point in time
-
-# vector connecting the two points (in latitude, longitude) can give accurate heading
-
-# 2 antennas are close to each other, so RTK error subtracting can be applied
-
-# bearing can be defined as the angle between the north-south line of the earth
-# and the vector connecting the 2 GNSS antenna points
-
-
-# bearing formula
-# beta = atan2(X, Y)
-# X = cos (latitude B) * sin(change in longitude)
-# Y = cos (latitude A) * sin(latitude B) - sin(latitude A) * cos(latitude B) * cos(change in longitude)
-
-# rospy.init_node('gps_driver')
-
-# there are already imu and gps callback functions that publishes data to a linearized pose
-
-# A GNSS Compass/INS also contains an additional feature that utilizes the two separate
-# onboard GNSS receivers to accurately estimate the system's heading: the powerful technique known as GNSS compassing.
-
-# moving baseline rtk (determine heading of rover based off of relative position of two attennas)
-
-# Bearing can be defined as direction or an angle, between the north-south line of earth or meridian
-# and the line connecting the target and the reference point.
-
-# While Heading is an angle or direction where you are currently navigating in.
+import matplotlib.pyplot as plt
 
 
 def get_heading(antenna_point_A, antenna_point_B):
@@ -51,5 +17,34 @@ def get_heading(antenna_point_A, antenna_point_B):
     return bearing
 
 
-test_bearing = get_heading(np.array([39.099912, -94.581213]), np.array([38.627089, -90.200203]))
-print(test_bearing)
+# test_bearing = get_heading(np.array([39.099912, -94.581213]), np.array([38.627089, -90.200203]))
+# print(test_bearing)
+
+
+def spherical_to_cartesian(spherical_coord: np.ndarray, reference_coord: np.ndarray) -> np.ndarray:
+    r = 6371000
+    x = r * (np.radians(spherical_coord[1]) - np.radians(reference_coord[1])) * np.cos(np.radians(reference_coord[0]))
+    y = r * (np.radians(spherical_coord[0]) - np.radians(reference_coord[0]))
+    z = 0
+    return np.array([x, y, z])
+
+
+P_1 = spherical_to_cartesian(np.array([39.099912, -94.581213]), np.array([42.293195, -83.7096706]))
+
+P_2 = spherical_to_cartesian(np.array([38.627089, -90.200203]), np.array([42.293195, -83.7096706]))
+
+result = P_1 - P_2
+
+plt.scatter([P_1[0], P_2[0], result[0]], [P_1[1], P_2[1], result[1]])
+plt.plot(
+    [P_1[0], P_2[0]],
+    [
+        P_1[1],
+        P_2[1],
+    ],
+)
+
+plt.xlabel("X-axis")
+plt.ylabel("Y-axis")
+plt.grid(True)
+plt.show()
