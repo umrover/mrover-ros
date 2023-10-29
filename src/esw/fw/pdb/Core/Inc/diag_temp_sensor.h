@@ -11,6 +11,12 @@
 #define DIAG_TEMP_COEFFICIENT 0.0064f // Ohms / Celsius
 #define DIAG_TEMP_25_DEGREE_RESISTANCE 47000 // Ohms
 
+#define THRM_A0	-5.160732E+02
+#define THRM_A1	6.831122E+02
+#define THRM_A2 -3.774928E+02
+#define THRM_A3 1.159826E+02
+#define THRM_A4 -1.060407E+01
+
 // Part Link
 // https://www.ti.com/lit/ds/symlink/tmp64.pdf
 typedef struct {

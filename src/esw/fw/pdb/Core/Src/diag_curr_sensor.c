@@ -26,8 +26,12 @@ DiagCurrentSensor* new_diag_current_sensor(ADCSensor* adc_sensor, uint8_t channe
 // EFFECTS: updates the sensor value
 void update_diag_current_sensor_val(DiagCurrentSensor* sensor) {
     // sensor returns volts (I think) so get to millivolts and solve the proportion for amps then add the offset. (vcc/2)
-	float measured_volts = get_adc_sensor_value(sensor, sensor->channel) * 3.3f / 4096.0f;
-    sensor->amps = (1000 * (measured_volts / DIAG_CURR_MV_PER_AMP)) - DIAG_CURR_VCC/2;
+	uint16_t adc_val = get_adc_sensor_value(sensor->adc_sensor, sensor->channel);
+	float measured_volts = (adc_val * 3.3f) / 4096.0f;
+
+	// V_out = I_in * S + V_s / 2
+	// I_in = (V_s / 2 - V_out) / -S
+	sensor->amps = (DIAG_CURR_V_s / 2.0f - measured_volts) / -DIAG_CURR_S;
 }
 
 // REQUIRES: valid current sensor
