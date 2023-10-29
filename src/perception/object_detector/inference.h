@@ -3,9 +3,20 @@
 
 // Cpp native
 #include <fstream>
+#include <memory>
 #include <random>
 #include <string>
 #include <vector>
+
+
+//Tensor-RT Specific
+#include "cudaWrapper.h"
+#include <NvInfer.h>
+#include <NvInferRuntime.h>
+#include <NvOnnxParser.h>
+
+
+#include "ioHelper.h"
 
 // OpenCV / DNN / Inference
 #include <opencv2/dnn.hpp>
@@ -13,6 +24,10 @@
 #include <opencv2/opencv.hpp>
 
 #include "pch.hpp"
+
+using nvinfer1::cuda;
+using nvinfer1::ICudaEngine;
+using nvinfer1::IExecutionContext;
 
 struct Detection {
     int class_id{0};
@@ -50,4 +65,39 @@ private:
     cv::dnn::Net net;
 };
 
+class InferenceNew {
+private:
+    static const int BATCH_SIZE = 1;
+
+    Logger logger;
+
+
+    //Ptr to the engine
+    std::unique_ptr<ICudaEngine, nvinfer1::Destroy<ICudaEngine>> enginePtr;
+    //Ptr to the context
+    std::unique_ptr<IExecutionContext, nvinfer1::Destroy<IExecutionContext>> context;
+    //Input, output and reference tensors
+    std::vector<float> inputTensor;
+    std::vector<float> outputTensor;
+    std::vector<float> referenceTensor;
+
+    //Cuda Stream
+    CudaStream stream;
+
+    //Bindings
+    std::array<void*, 2> bindings{};
+
+public:
+    InferenceNew() = default;
+
+    InferenceNew(std::string_view onnxModelPath, cv::Size modelInputShape = {640, 640}, std::string_view classesTxtFile = "");
+
+    std::vector<Detection> runInference(cv::Mat const& input);
+
+private:
+    //Creates a ptr to the engine
+    void createCudaEngine(std::string_view onnxModelPath, int batchSize);
+
+    void launchInference(IExecutionContext* context, cudaStream_t stream, std::vector<float> const& inputTensor, std::vector<float>& outputTensor, void** bindings, int batchSize);
+}
 #endif // INFERENCE_H

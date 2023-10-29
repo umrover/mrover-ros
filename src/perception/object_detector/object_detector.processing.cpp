@@ -19,6 +19,7 @@
 
 namespace mrover {
 
+
     void ObjectDetectorNodelet::imageCallback(sensor_msgs::ImageConstPtr const& msg) {
         assert(msg);
         assert(msg->height > 0);
