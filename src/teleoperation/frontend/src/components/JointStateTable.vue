@@ -20,8 +20,8 @@
                 </colgroup>
 
                 <thead>
-                    <tr>
-                        <th class="table-primary">Motor</th>
+                    <tr class="table-primary">
+                        <th>Motor</th>
                         <th>Positon (m)</th>
                         <th>Velocity (m/s)</th>
                         <th>Effort (Nm)</th>
@@ -38,7 +38,7 @@
                             {{ (jointStateData.velocity[index] * radius_m).toFixed(3) }}
                         </td>
                         <td>
-                            {{ jointStateData.effort[index].toFixed(3) }}
+                            {{ (jointStateData.effort[index]*1).toFixed(3) }}
                         </td>
                     </tr>
                 </tbody>
@@ -96,7 +96,7 @@
 </template>
   
 <script lang="ts">
-
+import { inject } from 'vue';
 export default {
     props: {
         // Table will only render headers if these values are not passed w/ v-bind
@@ -113,13 +113,23 @@ export default {
 
     data() {
         return {
+            websocket: inject('webSocketService') as WebSocket,
             motors: [],
 
-            radius_m: 0
+            radius_m: 1
         };
     },
 
     created: function () {
+        this.websocket.onmessage = (msg) => {
+        msg = JSON.parse(msg.data)
+        if(msg.type == "joint_state"){
+            this.name = msg.name;
+            this.position = msg.position;
+            this.velocity = msg.velocity;
+            this.effort = msg.effort;
+    }
+  }
         // let radius_param = new ROSLIB.Param({
         //     ros: this.$ros,
         //     name: "wheel/radius"

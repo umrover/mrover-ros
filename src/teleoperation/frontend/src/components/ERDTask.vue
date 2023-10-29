@@ -1,5 +1,6 @@
 <template>
     <PDBFuse/>
+    <JointStateTable :jointStateData="JointState" :vertical="true" />
     <DriveMoteusStateTable :moteus-state-data="moteusState" />
     <ArmMoteusStateTable/>
 </template>
@@ -9,12 +10,15 @@ import { defineComponent } from 'vue'
 import PDBFuse from "./PDBFuse.vue";
 import DriveMoteusStateTable from "./DriveMoteusStateTable.vue";
 import ArmMoteusStateTable from "./ArmMoteusStateTable.vue";
+import JointStateTable from "./JointStateTable.vue";
+
 
 export default defineComponent({
   components : {
     PDBFuse,
     DriveMoteusStateTable,
-    ArmMoteusStateTable
+    ArmMoteusStateTable,
+    JointStateTable
   },
 
   data() {
@@ -25,6 +29,12 @@ export default defineComponent({
         error: ["", "", "", "", "", ""],
         state: ["", "", "", "", "", ""]
       },
+      JointState: {
+        name: [],
+        position: [],
+        velocity: [],
+        effort: []
+      }
     }
   }
 })
