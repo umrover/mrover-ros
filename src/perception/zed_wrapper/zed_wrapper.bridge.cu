@@ -37,7 +37,7 @@ namespace mrover {
         assert(bgraGpu.getWidth() >= xyzGpu.getWidth());
         assert(bgraGpu.getHeight() >= xyzGpu.getHeight());
         assert(bgraGpu.getChannels() == 4);
-        assert(xyzGpu.getChannels() == 3);
+        assert(xyzGpu.getChannels() == 4); // Last channel is unused
         assert(msg);
 
         auto* bgraGpuPtr = bgraGpu.getPtr<sl::uchar4>(sl::MEM::GPU);

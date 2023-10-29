@@ -89,5 +89,6 @@
   <export>
     <nodelet plugin="${prefix}/plugins/tag_detector_plugin.xml"/>
     <nodelet plugin="${prefix}/plugins/zed_plugin.xml"/>
+    <nodelet plugin="${prefix}/plugins/can.xml"/>
   </export>
 </package>
