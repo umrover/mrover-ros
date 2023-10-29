@@ -3,6 +3,7 @@
     <div class="shadow p-3 mb-5 header">
       <h1>Menu</h1>
       <img
+        class="logo"
         src="../static/mrover.png"
         alt="MRover"
         title="MRover"
@@ -13,7 +14,7 @@
     <div class="pages">
       <fieldset class="row">
         <legend>Tasks</legend>
-        <MenuButton link="/EDMTask" name="EDM Mission" />
+        <MenuButton link="/DMTask" name="EDM Mission" />
         <MenuButton link="/ESTask" name="ES Mission" />
         <MenuButton link="/ISHTask" name="ISH GUI" />
         <MenuButton link="/SATask" name="Sample Acquisition GUI" />
@@ -53,14 +54,15 @@ export default defineComponent({
 .header {
   grid-area: header;
   display: flex;
+  justify-content: space-between;
   align-items: center;
-  justify-content: center;
+  padding: 10px;
 }
 
-.header h1 {
+.logo {
   position: absolute;
-  left: 25px;
-  top: 10px;
+  left: 50%;
+  transform: translateX(-50%);
 }
 
 .pages {
@@ -78,7 +80,7 @@ export default defineComponent({
   display: grid;
   grid-gap: 10px;
   grid-template-columns: 1fr;
-  grid-template-rows: 125px 1fr;
+  grid-template-rows: auto 1fr;
   grid-template-areas: "header" "pages";
   font-family: sans-serif;
   height: auto;
