@@ -93,6 +93,8 @@ void Error_Handler(void);
 #define HEATER_4_GPIO_Port GPIOA
 #define HEATER_5_Pin GPIO_PIN_9
 #define HEATER_5_GPIO_Port GPIOA
+#define CAN_STANDBY_Pin GPIO_PIN_15
+#define CAN_STANDBY_GPIO_Port GPIOA
 #define I2C_MUX_RST_Pin GPIO_PIN_7
 #define I2C_MUX_RST_GPIO_Port GPIOB
 
