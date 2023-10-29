@@ -69,16 +69,18 @@ void loop();
 #define LIMIT_0_C_GPIO_Port GPIOC
 #define LIMIT_0_D_Pin GPIO_PIN_0
 #define LIMIT_0_D_GPIO_Port GPIOF
-#define QUAD_0_B_Pin GPIO_PIN_4
-#define QUAD_0_B_GPIO_Port GPIOA
-#define QUAD_0_A_Pin GPIO_PIN_6
-#define QUAD_0_A_GPIO_Port GPIOA
 #define MOTOR_0_PWM_Pin GPIO_PIN_14
 #define MOTOR_0_PWM_GPIO_Port GPIOB
 #define MOTOR_0_NDIR_Pin GPIO_PIN_15
 #define MOTOR_0_NDIR_GPIO_Port GPIOB
 #define MOTOR_0_DIR_Pin GPIO_PIN_6
 #define MOTOR_0_DIR_GPIO_Port GPIOC
+#define CAN_STANDBY_Pin GPIO_PIN_15
+#define CAN_STANDBY_GPIO_Port GPIOA
+#define QUAD_0_A_Pin GPIO_PIN_6
+#define QUAD_0_A_GPIO_Port GPIOB
+#define QUAD_0_B_Pin GPIO_PIN_7
+#define QUAD_0_B_GPIO_Port GPIOB
 
 /* USER CODE BEGIN Private defines */
 
