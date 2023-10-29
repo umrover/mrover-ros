@@ -61,7 +61,10 @@ ADCSensor* adc;
 DiagCurrentSensor* current_sensors[NUM_CURRENT_SENSORS];
 DiagTempSensor* temp_sensors[NUM_TEMP_SENSORS];
 
-osMutexId_t can_mutex;
+osMutexId_t can_tx_mutex;
+
+uint8_t rx_data[12];
+FDCAN_RxHeaderTypeDef rx_header;
 
 /* USER CODE END PV */
 
@@ -131,13 +134,21 @@ int main(void)
 	  temp_sensors[i] = new_diag_temp_sensor(adc, i + 5);
   }
 
+  if (HAL_FDCAN_Start(&hfdcan1) != HAL_OK) {
+	  Error_Handler();
+  }
+  if (HAL_FDCAN_ActivateNotification(&hfdcan1, FDCAN_IT_RX_FIFO0_NEW_MESSAGE, 0) != HAL_OK) {
+	  /* Notification Error */
+	  Error_Handler();
+  }
+
   /* USER CODE END 2 */
 
   /* Init scheduler */
   osKernelInitialize();
 
   /* USER CODE BEGIN RTOS_MUTEX */
-  can_mutex = osMutexNew(NULL); // default attr. for now
+  can_tx_mutex = osMutexNew(NULL); // default attr. for now
   /* USER CODE END RTOS_MUTEX */
 
   /* USER CODE BEGIN RTOS_SEMAPHORES */
@@ -487,12 +498,33 @@ void SendCurrentTemperature(void* argument) {
 		}
 
 		/* send current and temperature over CAN */
-		osMutexAcquire(can_mutex, osWaitForever);
+		osMutexAcquire(can_tx_mutex, osWaitForever);
 		fakeCANSend(fake_can_msg); // TODO: replace with real CAN function
-		osMutexRelease(can_mutex);
+		osMutexRelease(can_tx_mutex);
 
 		osDelayUntil(tick);
 	}
+}
+
+void HAL_FDCAN_RxFifo0Callback(FDCAN_HandleTypeDef *hfdcan, uint32_t RxFifo0ITs)
+{
+  if((RxFifo0ITs & FDCAN_IT_RX_FIFO0_NEW_MESSAGE) != RESET)
+  {
+    /* Retreive Rx messages from RX FIFO0 */
+    if (HAL_FDCAN_GetRxMessage(hfdcan, FDCAN_RX_FIFO0, &RxHeader, RxData) != HAL_OK)
+    {
+    /* Reception Error */
+    Error_Handler();
+    }
+
+    // TODO: process incoming CAN message and unblock corresponding tasks
+
+    if (HAL_FDCAN_ActivateNotification(hfdcan, FDCAN_IT_RX_FIFO0_NEW_MESSAGE, 0) != HAL_OK)
+    {
+      /* Notification Error */
+      Error_Handler();
+    }
+  }
 }
 
 /* USER CODE END 4 */
