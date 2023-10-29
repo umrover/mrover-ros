@@ -5,6 +5,7 @@
 </template>
 
 <script lang="ts">
+import ROSLIB from "roslib";
 import { defineComponent } from 'vue'
 import PDBFuse from "./PDBFuse.vue";
 import DriveMoteusStateTable from "./DriveMoteusStateTable.vue";
@@ -26,6 +27,18 @@ export default defineComponent({
         state: ["", "", "", "", "", ""]
       },
     }
+  },
+
+  created: function() {
+    this.odom_sub = new ROSLIB.Topic({
+      ros: this.$ros,
+      name: "/gps/fix",
+      messageType: "sensor_msgs/NavSatFix"
+    });
+
+    this.odom_sub.subscribe((msg) => {
+      this.odom.altitude = msg.altitude;
+    });
   }
 })
 </script>
