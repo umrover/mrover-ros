@@ -1,4 +1,4 @@
-string object_type
+DetectedObjectType type
 float32 detection_confidence
 float32 bearing
 float32 width
