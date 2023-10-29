@@ -1,0 +1,1 @@
+{ "dependencies": { "@vitejs/plugin-vue": "^4.4.0", "bootstrap-vue": "^2.23.1", "vite": "^4.4.11", "vue": "^3.3.4" } }

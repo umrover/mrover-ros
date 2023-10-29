@@ -4,7 +4,8 @@
     </div>
   </template>
   
-  <script>
+  <script lang="ts">
+  import {inject} from "vue";
   
   let interval;
   
@@ -12,7 +13,7 @@
     data() {
       return {
         joystick_pub: null,
-        socket: null,
+        websocket: inject("webSocketService") as WebSocket,
       };
     },
   
@@ -21,10 +22,7 @@
     },
   
     created: function () {
-      const updateRate = 0.05;
-
-      this.socket = new WebSocket('ws://127.0.0.1:8000/ws/drive-controls');
-    
+      const updateRate = 0.05;    
 
       interval = window.setInterval(() => {
         const gamepads = navigator.getGamepads();
@@ -41,7 +39,7 @@
               buttons: buttons,
             };
 
-            this.socket.send(JSON.stringify(joystickData));
+            this.websocket.send(JSON.stringify(joystickData));
             
           }
         }
