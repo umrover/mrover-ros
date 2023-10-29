@@ -65,7 +65,7 @@
     created: function () {
         this.websocket.onmessage = (event) => {
             const msg = JSON.parse(event.data);
-            if(msg.type=="calibrationstatus"){
+            if(msg.type=="calibration_status"){
             for (var i = 0; i < msg.names.length; ++i) {
               if (msg.names[i] == this.joint_name) {
                 this.calibrated = msg.calibrated[i];
@@ -73,28 +73,15 @@
               }
             }
             }
-            // else if(msg.type =="calibration_checkbox")
+            else if(msg.type =="calibrate_service"){
+              if (!msg.result) {
+              this.toggleEnabled = false;
+              alert("ESW cannot calibrate this motor");
+          }
+            }
         };
-      this.calibrate_service = new ROSLIB.Service({
-        ros: this.$ros,
-        name: "calibrate",
-        serviceType: "mrover/CalibrateMotors",
-      });
-  
-      // this.calibrate_sub = new ROSLIB.Topic({
-      //   ros: this.$ros,
-      //   name: this.calibrate_topic,
-      //   messageType: "mrover/Calibrated",
-      // });
-  
-      // this.calibrate_sub.subscribe((msg) => {
-      //   for (var i = 0; i < msg.names.length; ++i) {
-      //     if (msg.names[i] == this.joint_name) {
-      //       this.calibrated = msg.calibrated[i];
-      //       break;
-      //     }
-      //   }
-      // });
+
+     
   
       this.interval = setInterval(() => {
         if (!this.calibrated && this.toggleEnabled) {
@@ -108,16 +95,7 @@
         this.toggleEnabled = !this.toggleEnabled;
       },
       publishCalibrationMessage: function () {
-        // let request = new ROSLIB.ServiceRequest({
-        //   name: this.joint_name,
-        //   calibrate: this.toggleEnabled,
-        // });
-        this.calibrate_service.callService(request, (result: any) => {
-          if (!result) {
-            this.toggleEnabled = false;
-            alert("ESW cannot calibrate this motor");
-          }
-        });
+        this.websocket.send(JSON.stringify({type:"calibrate_service", data:this.toggleEnabled}))
       },
     },
   });

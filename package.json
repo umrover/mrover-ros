@@ -1,5 +1,5 @@
 {
-  "dependencies": { "@vitejs/plugin-vue": "^4.4.0", "bootstrap": "4", "bootstrap-vue": "^2.23.1", "vite": "^4.4.11", "vue": "^3.3.4" },
+  "dependencies": { "@vitejs/plugin-vue": "^4.4.0", "@vue-leaflet/vue-leaflet": "^0.10.1", "bootstrap": "4", "bootstrap-vue": "^2.23.1", "leaflet": "^1.9.4", "vite": "^4.4.11", "vue": "^3.3.4", "vuedraggable": "^2.24.3", "vuex": "^4.1.0" },
   "devDependencies": {
     "sass": "^1.69.2"
   }

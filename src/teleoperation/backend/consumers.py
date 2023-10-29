@@ -2,8 +2,9 @@ import json
 from channels.generic.websocket import JsonWebsocketConsumer
 
 import rospy
-from mrover.msg import PDB, ControllerState
-from mrover.srv import EnableLaser,EnableDevice
+from std_srvs.srv import SetBool, Trigger
+from mrover.msg import PDB, ControllerState, Calibrated
+from mrover.srv import EnableDevice
 from std_msgs.msg import String
 
 class GUIConsumer(JsonWebsocketConsumer):
@@ -11,9 +12,11 @@ class GUIConsumer(JsonWebsocketConsumer):
     def connect(self):
         self.pdb_sub = rospy.Subscriber('/pdb_data', PDB, self.pdb_callback)
         self.arm_moteus_sub = rospy.Subscriber('/arm_controller_data', ControllerState, self.arm_controller_callback)
-        self.laser_service = rospy.ServiceProxy("enable_mosfet_device", EnableLaser)
+        self.arm_moteus_sub = rospy.Subscriber('/calibration_checkbox', Calibrated, self.calibration_checkbox_callback_callback)
+        self.laser_service = rospy.ServiceProxy("enable_mosfet_device",SetBool )
         # rospy.wait_for_service("enable_limit_switches")
         self.limit_switch_service = rospy.ServiceProxy("enable_limit_switches", EnableDevice)
+        self.calibrate_service = rospy.ServiceProxy("arm_calibrate", Trigger)
         self.accept()
 
     def disconnect(self, close_code):
@@ -31,6 +34,9 @@ class GUIConsumer(JsonWebsocketConsumer):
             self.disable_auton_led(message)
         elif message["type"] == "laser_service":
             self.enable_laser_callback(message)
+        elif message["type"] == "calibrate_service":
+            self.calibrate_motors_callback_callback(message)
+
 
 
     def pdb_callback(self, msg):
@@ -38,6 +44,13 @@ class GUIConsumer(JsonWebsocketConsumer):
             'type': 'pdb',
             'temperatures': msg.temperatures,
             'currents': msg.currents
+        }))
+
+    def calibration_checkbox_callback(self, msg):
+        self.send(text_data=json.dumps({
+            'type': 'calibration_status',
+            'names': msg.names,
+            'calibrated': msg.calibrated
         }))
 
     def arm_controller_callback(self, msg): 
@@ -60,21 +73,21 @@ class GUIConsumer(JsonWebsocketConsumer):
     
     def enable_device_callback(self, msg):
         try:
-            result = self.limit_switch_service(name=msg["name"], enable=msg["enable"])
+            result = self.calibrate_service(name=msg["name"], calibrate=msg["calibrate"])
             self.send(text_data=json.dumps({
-                'type': 'enable_device_srv',
+                'type': 'calibrate_service',
                 'result': result.success
             }))
         except rospy.ServiceException as e:
             print(f"Service call failed: {e}")
 
-    # def calibration_checkbox_callback(self,msg):
-    #      self.send(text_data=json.dumps({
-    #         'type': 'calibration_checkbox',
-    #         'name': msg.name,
-    #         'state': msg.state,
-    #         'error': msg.error
-    #     }))
+    def calibrate_motors_callback(self,msg):
+         self.send(text_data=json.dumps({
+            'type': 'calibrate_service',
+            'name': msg.name,
+            'state': msg.state,
+            'error': msg.error
+        }))
         
 
   

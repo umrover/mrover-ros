@@ -112,11 +112,7 @@ export default defineComponent({
     //         name: "/xbox/ra_control",
     //         messageType: "sensor_msgs/Joy"
     //     });
-    //     this.laser_service = new ROSLIB.Service({
-    //         ros: this.$ros,
-    //         name: "enable_mosfet_device",
-    //         serviceType: "mrover/EnableDevice",
-    //     });
+   
     //     this.ra_mode_service = new ROSLIB.Service({
     //         ros: this.$ros,
     //         name: "change_ra_mode",
