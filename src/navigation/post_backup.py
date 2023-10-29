@@ -15,7 +15,9 @@ from util.state_lib.state import State
 from navigation import waypoint, recovery
 from navigation.trajectory import Trajectory
 
-POST_RADIUS = get_rosparam("single_fiducial/post_radius", 0.7) * get_rosparam("single_fiducial/post_avoidance_multiplier", 1.42)
+POST_RADIUS = get_rosparam("single_fiducial/post_radius", 0.7) * get_rosparam(
+    "single_fiducial/post_avoidance_multiplier", 1.42
+)
 BACKUP_DISTANCE = get_rosparam("recovery/recovery_distance", 2.0)
 STOP_THRESH = get_rosparam("search/stop_thresh", 0.2)
 DRIVE_FWD_THRESH = get_rosparam("search/drive_fwd_thresh", 0.34)
