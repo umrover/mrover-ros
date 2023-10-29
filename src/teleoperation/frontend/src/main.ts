@@ -1,6 +1,7 @@
 import { createApp } from 'vue'
 import App from './App.vue'
 import router from './router'
+import { store } from './store'
 
 import './app.scss' //custom CSS override file
 
@@ -10,5 +11,5 @@ ws.onopen = () => {
 	  console.log('WebSocket connection opened successfully.');
 	  const app:App<Element> = createApp(App);
 	  app.provide('webSocketService', ws);
-	  app.use(router).mount('#app');
+	  app.use(router).use(store).mount('#app');
 }

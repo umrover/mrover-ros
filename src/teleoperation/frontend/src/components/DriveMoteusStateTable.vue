@@ -50,15 +50,17 @@
   </template>
   
   <script lang="ts">
+  import { defineComponent } from 'vue';
+
   
-  export default {
+  export default defineComponent({
     props: {
       moteusStateData: {
         type: Object,
         required: true,
       },
     },
-  };
+  });
   </script>
   
   <style scoped>
