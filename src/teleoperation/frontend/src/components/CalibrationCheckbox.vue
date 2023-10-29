@@ -8,11 +8,12 @@
   </template>
   
   <script lang ="ts">
+  import { defineComponent, inject } from 'vue';
   import Checkbox from "./Checkbox.vue";
   import LEDIndicator from "./LEDIndicator.vue";
   //import ROSLIB from "roslib/src/RosLib";
   
-  export default {
+  export default defineComponent({
     components: {
       Checkbox,
       LEDIndicator,
@@ -35,14 +36,16 @@
   
     data() {
       return {
+        websocket: inject("webSocketService") as WebSocket,
+        socket: null,
         toggleEnabled: false,
         calibrated: false,
         calibrate_service: null,
         calibrate_sub: null,
-        interval: null,
+        interval: 0 as number,
       };
     },
-  
+    
     watch: {
       toggleEnabled: function (val) {
         // When the checkbox is toggled, publish a single false request to the calibrate service
@@ -52,33 +55,46 @@
       },
     },
   
-    beforeDestroy: function () {
+    beforeUnmount: function () {
       clearInterval(this.interval);
       this.toggleEnabled = false;
       this.publishCalibrationMessage();
     },
-  
+
+
     created: function () {
+        this.websocket.onmessage = (event) => {
+            const msg = JSON.parse(event.data);
+            if(msg.type=="calibrationstatus"){
+            for (var i = 0; i < msg.names.length; ++i) {
+              if (msg.names[i] == this.joint_name) {
+                this.calibrated = msg.calibrated[i];
+                break;
+              }
+            }
+            }
+            // else if(msg.type =="calibration_checkbox")
+        };
       this.calibrate_service = new ROSLIB.Service({
         ros: this.$ros,
         name: "calibrate",
         serviceType: "mrover/CalibrateMotors",
       });
   
-      this.calibrate_sub = new ROSLIB.Topic({
-        ros: this.$ros,
-        name: this.calibrate_topic,
-        messageType: "mrover/Calibrated",
-      });
+      // this.calibrate_sub = new ROSLIB.Topic({
+      //   ros: this.$ros,
+      //   name: this.calibrate_topic,
+      //   messageType: "mrover/Calibrated",
+      // });
   
-      this.calibrate_sub.subscribe((msg) => {
-        for (var i = 0; i < msg.names.length; ++i) {
-          if (msg.names[i] == this.joint_name) {
-            this.calibrated = msg.calibrated[i];
-            break;
-          }
-        }
-      });
+      // this.calibrate_sub.subscribe((msg) => {
+      //   for (var i = 0; i < msg.names.length; ++i) {
+      //     if (msg.names[i] == this.joint_name) {
+      //       this.calibrated = msg.calibrated[i];
+      //       break;
+      //     }
+      //   }
+      // });
   
       this.interval = setInterval(() => {
         if (!this.calibrated && this.toggleEnabled) {
@@ -92,11 +108,11 @@
         this.toggleEnabled = !this.toggleEnabled;
       },
       publishCalibrationMessage: function () {
-        let request = new ROSLIB.ServiceRequest({
-          name: this.joint_name,
-          calibrate: this.toggleEnabled,
-        });
-        this.calibrate_service.callService(request, (result) => {
+        // let request = new ROSLIB.ServiceRequest({
+        //   name: this.joint_name,
+        //   calibrate: this.toggleEnabled,
+        // });
+        this.calibrate_service.callService(request, (result: any) => {
           if (!result) {
             this.toggleEnabled = false;
             alert("ESW cannot calibrate this motor");
@@ -104,7 +120,7 @@
         });
       },
     },
-  };
+  });
   </script>
   
   <style>

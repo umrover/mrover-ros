@@ -1,1 +1,6 @@
-{ "dependencies": { "@vitejs/plugin-vue": "^4.4.0", "bootstrap-vue": "^2.23.1", "vite": "^4.4.11", "vue": "^3.3.4" } }
+{
+  "dependencies": { "@vitejs/plugin-vue": "^4.4.0", "bootstrap": "4", "bootstrap-vue": "^2.23.1", "vite": "^4.4.11", "vue": "^3.3.4" },
+  "devDependencies": {
+    "sass": "^1.69.2"
+  }
+}

@@ -53,7 +53,7 @@
 </template>
   
 <script lang ="ts">
-import { inject } from 'vue';
+import { inject, defineComponent } from 'vue';
 import ToggleButton from "./ToggleButton.vue";
 import CalibrationCheckbox from "./CalibrationCheckbox.vue";
 import JointAdjust from "./MotorAdjust.vue";
@@ -63,7 +63,7 @@ import LimitSwitch from "./LimitSwitch.vue";
 const updateRate = 0.1;
 let interval;
 
-export default {
+export default defineComponent({
     components: {
         ToggleButton,
         CalibrationCheckbox,
@@ -83,15 +83,27 @@ export default {
         };
     },
 
-    watch: {
-        arm_mode: function (newMode, oldMode) {
-            this.updateArmMode(newMode, oldMode);
-        }
-    },
+    // watch: {
+    //     arm_mode: function (newMode, oldMode) {
+    //         this.updateArmMode(newMode, oldMode);
+    //     }
+    // },
 
-    beforeDestroy: function () {
-        this.updateArmMode("arm_disabled", this.arm_mode);
-        window.clearInterval(interval);
+    // beforeDestroy: function () {
+    //     this.updateArmMode("arm_disabled", this.arm_mode);
+    //     window.clearInterval(interval);
+    // },
+
+    created: function () {
+        this.websocket.onmessage = (event) => {
+            const msg = JSON.parse(event.data);
+            if(msg.type=="laser_service"){
+                if (!msg.result) {
+                    this.laser_enabled = !this.laser_enabled;
+                    alert("Toggling Arm Laser failed.");
+                }
+            }
+        };
     },
 
     // created: function () {
@@ -145,7 +157,7 @@ export default {
     //     }, updateRate * 1000);
     // },
 
-    // methods: {
+    methods: {
     //     updateArmMode: function (newMode, oldMode) {
     //         const armData = {
     //             mode: newMode
@@ -176,24 +188,16 @@ export default {
     //         var joystickMsg = new ROSLIB.Message(joystickData);
     //         this.joystick_pub.publish(joystickMsg);
     //     },
-    //     toggleArmLaser: function () {
-    //         this.laser_enabled = !this.laser_enabled;
-    //         let request = new ROSLIB.ServiceRequest({
-    //             name: "arm_laser",
-    //             enable: this.laser_enabled,
-    //         });
-    //         this.laser_service.callService(request, (result) => {
-    //             if (!result) {
-    //                 this.laser_enabled = !this.laser_enabled;
-    //                 alert("Toggling Arm Laser failed.");
-    //             }
-    //         });
-    //     }
-    // }
-};
+        toggleArmLaser: function () {
+            this.laser_enabled = !this.laser_enabled;
+            this.websocket.send(JSON.stringify({type:"laser_service", data:this.laser_enabled}))
+            
+         }
+    }
+});
 </script>
   
-<!-- <style scoped>
+<style scoped>
 .wrap {
     display: flex;
     flex-direction: column;
@@ -254,26 +258,5 @@ export default {
 .laser {
     padding-top: 10px;
 }
-</style>in-top: -20px;
-  }
-  .limit-switch h4 {
-    margin-bottom: 5px;
-  }
-  
-  .header {
-    display: flex;
-    align-items: center;
-  }
-  
-  .joint-b-calibration {
-    display: flex;
-    gap: 10px;
-    width: 250px;
-    font-weight: bold;
-    color: red;
-  }
-  
-  .laser {
-    padding-top: 10px;
-  }
-  </style> -->
+
+  </style>
