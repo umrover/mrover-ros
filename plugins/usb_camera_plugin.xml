@@ -1,4 +1,4 @@
-<library path="lib/liblong_range_cam_nodelet">
+<library path="lib/libusb_camera_nodelet">
     <class name="mrover/LongRangeCamNodelet"
         type="mrover::LongRangeCamNodelet"
         base_class_type="nodelet::Nodelet">

@@ -14,7 +14,7 @@ namespace mrover {
         ros::Publisher mCamInfoPub;
         ros::Publisher mImgPub;
 
-        std::thread mReadThread;
+        std::jthread mGrabThread;
         std::mutex mSwapMutex;
         boost::condition_variable mSwapCv;
         std::atomic_bool mIsSwapReady = false;
@@ -30,8 +30,9 @@ namespace mrover {
 
         ~LongRangeCamNodelet() override;
 
-        void readUpdate();
-        void imagePubUpdate();
+        void grabUpdate();
     };
+
+    void fillImageMessage(cv::Mat& grey, sensor_msgs::ImagePtr const& msg);
 
 } // namespace mrover
