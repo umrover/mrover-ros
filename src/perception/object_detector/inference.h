@@ -87,6 +87,9 @@ private:
     //Bindings
     std::array<void*, 2> bindings{};
 
+    //ONNX Model Path
+    std::string onnxModelPath;
+
 public:
     InferenceNew() = default;
 
@@ -99,5 +102,7 @@ private:
     void createCudaEngine(std::string_view onnxModelPath, int batchSize);
 
     void launchInference(IExecutionContext* context, cudaStream_t stream, std::vector<float> const& inputTensor, std::vector<float>& outputTensor, void** bindings, int batchSize);
+
+    static int getBindingInputIndex(nvinfer1::IExecutionContext* context);
 }
 #endif // INFERENCE_H
