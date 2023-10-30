@@ -1,4 +1,6 @@
 #include "long_range_tag_detector.hpp"
+#include <cstdint>
+#include <sensor_msgs/Image.h>
 
 namespace mrover {
 
@@ -7,7 +9,7 @@ namespace mrover {
      *
      * @param msg   image message
      */
-    void LongRangeTagDetectorNodelet::imageCallback(sensor_msgs::Image const& msg) {
+    void LongRangeTagDetectorNodelet::imageCallback(sensor_msgs::ImageConstPtr const& msg) {
         if (!mEnableDetections) return;
 
         //Store image contents to member variables
@@ -33,14 +35,16 @@ namespace mrover {
 
     //HELPER FUNCTIONS
 
-    void LongRangeTagDetectorNodelet::updateImageMatrices(sensor_msgs::Image const& msg) {
+    void LongRangeTagDetectorNodelet::updateImageMatrices(sensor_msgs::ImageConstPtr const& msg) {
+        assert(msg);
+        assert(msg->height > 0);
+        assert(msg->width > 0);
         //Store image message to mImgMsg member variable
-        mImgMsg = msg;
-
-        cv::Mat cvImage{static_cast<int>(msg.height), static_cast<int>(msg.width), CV_8UC3, const_cast<uint8_t*>(msg.data.data())};
+        mImgMsg = *msg;
+        mImg = cv::Mat{static_cast<int>(msg->height), static_cast<int>(msg->width), CV_8UC4, const_cast<uint8_t*>(msg->data.data())};
 
         //Store to mImg member variable - unsure if necessary but need it to persist
-        cvImage.copyTo(mImg);
+        // cvImage.copyTo(mImg);
 
         // TODO: Set the grayImage if neccesary
     }

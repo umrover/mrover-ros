@@ -25,17 +25,17 @@ namespace mrover {
         }
     }
 
-    void fillImageMessage(cv::Mat& grey, sensor_msgs::ImagePtr const& msg) {
+    void fillImageMessage(cv::Mat& bgra, sensor_msgs::ImagePtr const& msg) {
         // TODO: Uncomment this
         // assert(img.channels() == 4);
         assert(msg);
 
-        msg->height = grey.rows;
-        msg->width = grey.cols;
-        msg->encoding = sensor_msgs::image_encodings::MONO8;
-        msg->step = grey.step[0];
+        msg->height = bgra.rows;
+        msg->width = bgra.cols;
+        msg->encoding = sensor_msgs::image_encodings::BGRA8;
+        msg->step = bgra.step[0];
         msg->is_bigendian = __BYTE_ORDER__ == __ORDER_BIG_ENDIAN__;
-        auto* imgPtr = grey.ptr<float>(0);
+        auto* imgPtr = bgra.ptr<float>(0);
         size_t size = msg->step * msg->height;
         msg->data.resize(size);
         std::cout << "data size " << msg->data.size() << std::endl;
@@ -65,9 +65,9 @@ namespace mrover {
                 cv::imshow("Sender", frame);
                 if (mImgPub.getNumSubscribers()) {
                     auto imgMsg = boost::make_shared<sensor_msgs::Image>();
-                    cv::Mat grey;
-                    cv::cvtColor(frame, grey, cv::COLOR_YUV2GRAY_I420);
-                    fillImageMessage(grey, imgMsg);
+                    cv::Mat bgra;
+                    cv::cvtColor(frame, bgra, cv::COLOR_YUV2BGRA_I420);
+                    fillImageMessage(bgra, imgMsg);
                     imgMsg->header.frame_id = "long_range_cam_frame";
                     imgMsg->header.stamp = ros::Time::now();
                     imgMsg->header.seq = mGrabUpdateTick;

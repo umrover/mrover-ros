@@ -33,6 +33,6 @@ namespace mrover {
         void grabUpdate();
     };
 
-    void fillImageMessage(cv::Mat& grey, sensor_msgs::ImagePtr const& msg);
+    void fillImageMessage(cv::Mat& bgra, sensor_msgs::ImagePtr const& msg);
 
 } // namespace mrover

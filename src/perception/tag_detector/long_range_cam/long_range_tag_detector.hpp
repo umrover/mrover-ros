@@ -1,4 +1,5 @@
 #include "pch.hpp"
+#include <sensor_msgs/Image.h>
 
 namespace mrover {
 
@@ -21,7 +22,8 @@ namespace mrover {
 
         //Publishing Flags
         bool mEnableDetections = true;
-        bool mPublishImages{}; // If set, we publish the images with the tags drawn on top
+        // TODO: change this to param
+        bool mPublishImages = true; // If set, we publish the images with the tags drawn on top
 
         //Constatns set in ROS params for num hits needed to publish
         int mMinHitCountBeforePublish{};
@@ -53,7 +55,7 @@ namespace mrover {
         std::optional<size_t> mPrevDetectedCount; // Log spam prevention
         dynamic_reconfigure::Server<mrover::DetectorParamsConfig> mConfigServer;
         dynamic_reconfigure::Server<mrover::DetectorParamsConfig>::CallbackType mCallbackType;
-        LoopProfiler mProfiler{"Long RangeTag Detector"};
+        LoopProfiler mProfiler{"Long Range Tag Detector"};
         std::unordered_map<int, ros::Publisher> mThreshPubs; // Map from threshold scale to publisher
         ros::ServiceServer mServiceEnableDetections;
         bool mUseOdom{};
@@ -66,7 +68,7 @@ namespace mrover {
         * 1. Updates mImg to store the underlying image matrix
         * @param msg   image message
         */
-        void imageCallback(sensor_msgs::Image const& msg);
+        void imageCallback(sensor_msgs::ImageConstPtr const& msg);
 
         /**
         * Stores msg to mImgMsg
@@ -74,7 +76,7 @@ namespace mrover {
         *
         * @param msg Current Image Message
         */
-        void updateImageMatrices(sensor_msgs::Image const& msg);
+        void updateImageMatrices(sensor_msgs::ImageConstPtr const& msg);
 
         /**
         * Runs the cv::aruco tag detection on the cv::mat 
