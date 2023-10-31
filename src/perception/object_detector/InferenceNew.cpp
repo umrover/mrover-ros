@@ -7,24 +7,12 @@ using namespace std;
 InferenceNew::InferenceNew(std::string_view onnxModelPath, cv::Size modelInputShape = {640, 640}, std::string_view classesTxtFile = "") {
     createCudaEngine(onnxModelPath, BATCH_SIZE);
 
-
     assert(InferenceNew::enginePtr->getNbBindings() == 2);
     assert(InferenceNew::enginePtr->bindingIsInput(0) ^ enginePtr->bindingIsInput(1));
 
     InferenceNew::onnxModelPath = onnxModelPath;
 
-    for (int i = 0; i < enginePtr->getNbBindings(); ++i) {
-        Dims dims{enginePtr->getBindingDimensions(i)};
-        size_t size = accumulate(dims.d + 1, dims.d + dims.nbDims, BATCH_SIZE, multiplies<size_t>());
-        // Create CUDA buffer for Tensor.
-        cudaMalloc(&bindings[i], BATCH_SIZE * size * sizeof(float));
-
-        // Resize CPU buffers to fit Tensor.
-        if (enginePtr->bindingIsInput(i)) {
-            inputTensor.resize(size);
-        } else
-            outputTensor.resize(size);
-    }
+    InferenceNew::prepTensors();
 }
 
 void InferenceNew::createCudaEngine(std::string_view onnxModelPath, int batchSize) {
