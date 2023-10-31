@@ -1,0 +1,4 @@
+DetectedObjectType type
+float32 detection_confidence
+float32 bearing
+float32 distance
