@@ -30,7 +30,7 @@ starter_project/
     Perception
     ==========
   -->
-     <node name="starter_project_perception" pkg="mrover" type="starter_project_perception" />
+     <!-- <node name="starter_project_perception" pkg="mrover" type="starter_project_perception" /> -->
 
   <!--
     ===========
