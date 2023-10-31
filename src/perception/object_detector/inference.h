@@ -104,5 +104,7 @@ private:
     void launchInference(IExecutionContext* context, cudaStream_t stream, std::vector<float> const& inputTensor, std::vector<float>& outputTensor, void** bindings, int batchSize);
 
     static int getBindingInputIndex(nvinfer1::IExecutionContext* context);
+
+    void InferenceNew::setUpContext(std::string const inputFile); //This will need to be adjusted to the img msg, but I think its ok to just run pictures as an intial test
 }
 #endif // INFERENCE_H

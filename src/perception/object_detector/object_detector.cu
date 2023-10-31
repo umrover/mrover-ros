@@ -42,17 +42,17 @@ void InferenceNew::launchInference(IExecutionContext* context, cudaStream_t stre
     cudaMemcpyAsync(outputTensor.data(), bindings[1 - inputId], outputTensor.size() * sizeof(float), cudaMemcpyDeviceToHost, stream);
 }
 
-void InferenceNew::prepTensors() {
-    for (int i = 0; i < InferenceNew::enginePtr->getNbBindings(); ++i) {
-        Dims dims{InferenceNew::enginePtr->getBindingDimensions(i)};
+void InferenceNew::prepTensors(std::unique_ptr<ICudaEngine, nvinfer1::Destroy<ICudaEngine>> enginePtr, std::array<void*, 2> bindings, std::vector<float>& inputTensor, std::vector<float>& outputTensor) {
+    for (int i = 0; i < enginePtr->getNbBindings(); ++i) {
+        Dims dims{enginePtr->getBindingDimensions(i)};
         size_t size = accumulate(dims.d + 1, dims.d + dims.nbDims, InferenceNew::BATCH_SIZE, std::multiplies<size_t>());
         // Create CUDA buffer for Tensor.
-        cudaMalloc(&InferenceNew::bindings[i], InferenceNew::BATCH_SIZE * size * sizeof(float));
+        cudaMalloc(&bindings[i], InferenceNew::BATCH_SIZE * size * sizeof(float));
 
         // Resize CPU buffers to fit Tensor.
-        if (InferenceNew::enginePtr->bindingIsInput(i)) {
-            InferenceNew::inputTensor.resize(size);
+        if (enginePtr->bindingIsInput(i)) {
+            inputTensor.resize(size);
         } else
-            InferenceNew::outputTensor.resize(size);
+            outputTensor.resize(size);
     }
 }

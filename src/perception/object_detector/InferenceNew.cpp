@@ -1,4 +1,5 @@
 #include "inference.h"
+#include <string>
 
 
 using namespace nvinfer1;
@@ -11,8 +12,6 @@ InferenceNew::InferenceNew(std::string_view onnxModelPath, cv::Size modelInputSh
     assert(InferenceNew::enginePtr->bindingIsInput(0) ^ enginePtr->bindingIsInput(1));
 
     InferenceNew::onnxModelPath = onnxModelPath;
-
-    InferenceNew::prepTensors();
 }
 
 void InferenceNew::createCudaEngine(std::string_view onnxModelPath, int batchSize) {
@@ -40,4 +39,18 @@ void InferenceNew::createCudaEngine(std::string_view onnxModelPath, int batchSiz
 
 static int InferenceNew::getBindingInputIndex(nvinfer1::IExecutionContext* context) {
     return !context->getEngine().bindingIsInput(0); // 0 (false) if bindingIsInput(0), 1 (true) otherwise
+}
+
+void InferenceNew::setUpContext(std::string const inputFile, ) {
+    // Read input tensor from input picture file.
+    if (readTensor(inputFile, InferenceNew::inputTensor) != InferenceNew::inputTensor.size()) {
+        cout << "Couldn't read input Tensor" << endl;
+    }
+
+    // Create Execution Context.
+    InferenceNew::context.reset(InferenceNew::enginePtr->createExecutionContext());
+
+    Dims dims_i{InferenceNew::enginePtr->getBindingDimensions(0)};
+    Dims4 inputDims{InferenceNew::BATCH_SIZE, dims_i.d[1], dims_i.d[2], dims_i.d[3]};
+    context->setBindingDimensions(0, inputDims);
 }
