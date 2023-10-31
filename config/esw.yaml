@@ -9,13 +9,13 @@ gps_driver:
   frame_id: "base_link"
 
 rover_gps_driver:
-  port: "TODO"
-  baud: 115200
+  port: "/dev/ttyACM1"
+  baud: 38400
   frame_id: "base_link"
 
 basestation_gps_driver:
-  port: "/dev/ttyACM1"
-  baud: 115200
+  port: "/dev/ttyACM0"
+  baud: 38400
   frame_id: "base_link"
 
 imu_driver:

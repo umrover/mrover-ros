@@ -4,7 +4,7 @@ from serial import Serial
 from pyubx2 import UBXReader, UBX_PROTOCOL, RTCM3_PROTOCOL, protocol
 from rtcm_msgs.msg import Message
 
-def main():
+def main() -> None:
     rtcm_pub = rospy.Publisher('rtcm', Message, queue_size=1)
     rospy.init_node('basestation_driver')
     port = rospy.get_param("basestation_gps_driver/port")
