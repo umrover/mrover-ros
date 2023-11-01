@@ -100,9 +100,9 @@ namespace mrover {
     struct MotorDataState : BaseCommand {
         RadiansPerSecond velocity;
         Radians position;
-        std::uint8_t config_calib_error_data;
+        std::uint8_t config_calib_error_data{};
         // TODO: Are these going to be left or right aligned.
-        std::uint8_t limit_switches;
+        std::uint8_t limit_switches{};
     };
 
     struct StatusState {
@@ -110,19 +110,8 @@ namespace mrover {
 
     using InBoundMessage = std::variant<
             ConfigCommand, IdleCommand, ThrottleCommand, VelocityCommand, PositionCommand>;
+
     using OutBoundMessage = std::variant<
             MotorDataState, StatusState>;
-
-    union FdCanFrameIn {
-        InBoundMessage message;
-        std::array<std::byte, CANFD_MAX_FRAME_SIZE> bytes;
-    };
-    static_assert(sizeof(FdCanFrameIn) == CANFD_MAX_FRAME_SIZE);
-
-    union FdCanFrameOut {
-        OutBoundMessage message;
-        std::array<std::byte, CANFD_MAX_FRAME_SIZE> bytes;
-    };
-    static_assert(sizeof(FdCanFrameOut) == CANFD_MAX_FRAME_SIZE);
 
 } // namespace mrover

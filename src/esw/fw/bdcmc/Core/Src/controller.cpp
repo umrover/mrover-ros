@@ -37,10 +37,10 @@ namespace mrover {
 
     void loop() {
         // If the Receiver has messages waiting in its queue
-        if (std::optional received = fdcan_bus.receive<FdCanFrameIn>()) {
-            auto const& [header, data] = received.value();
+        if (std::optional received = fdcan_bus.receive<InBoundMessage>()) {
+            auto const& [header, message] = received.value();
             if (header.Identifier == CAN_ID)
-                controller.receive(data.message);
+                controller.receive(message);
         }
 
         controller.send();

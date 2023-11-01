@@ -130,18 +130,15 @@ namespace mrover {
 
         void send() {
             auto [position, velocity] = m_reader.read(m_config);
-            FdCanFrameOut frame{
-                    .message = MotorDataState{
-                            .velocity = velocity,
-                            .position = position,
-                            // TODO: Actually fill the config_calib_error_data with data
-                            .config_calib_error_data = 0x00,
-                            // TODO: Is this going to be right or left aligned?
-                            // TODO: actually fill with correct values
-                            .limit_switches = 0x00,
-                    },
-            };
-            m_fdcan_bus.broadcast(frame);
+            m_fdcan_bus.broadcast(MotorDataState{
+                    .velocity = velocity,
+                    .position = position,
+                    // TODO: Actually fill the config_calib_error_data with data
+                    .config_calib_error_data = 0x00,
+                    // TODO: Is this going to be right or left aligned?
+                    // TODO: actually fill with correct values
+                    .limit_switches = 0x00,
+            });
         }
     };
 
