@@ -1,53 +1,66 @@
 <template>
     <div class="wrap">
-        <div class="identification">Name: <input v-model="name" size="15" /></div>
-        <br />
-        <input v-model="odom_format_in" type="radio" value="D" class="checkbox" />
-        <font size="2">D</font>
-        <input
-          v-model="odom_format_in"
-          type="radio"
-          value="DM"
-          class="checkbox"
-        />
-        <font size="2">DM</font>
-        <input
-          v-model="odom_format_in"
-          type="radio"
-          value="DMS"
-          class="checkbox"
-        />
-        <font size="2">DMS</font><br />
-        <div class="wp-input">
-          <p><input v-model.number="input.lat.d" size="13" />º</p>
-          <p v-if="min_enabled">
-            <input v-model.number="input.lat.m" size="13" />'
-          </p>
-          <p v-if="sec_enabled">
-            <input v-model.number="input.lat.s" size="13" />"
-          </p>
+      <div class="box">
+        <div class="form-group">
+          <label for="waypointname">Name:</label>
+          <input class="form-control" id="waypointname" v-model="name">
+        </div>
+
+        <div class="form-check form-check-inline">
+          <input v-model="odom_format_in" class="form-check-input" type="radio" id="radioD" value="D">
+          <label class="form-check-label" for="radioD">D</label>
+        </div>
+        <div class="form-check form-check-inline">
+          <input v-model="odom_format_in" class="form-check-input" type="radio" id="radioDM" value="DM">
+          <label class="form-check-label" for="radioDM">DM</label>
+        </div>
+        <div class="form-check form-check-inline">
+          <input v-model="odom_format_in" class="form-check-input" type="radio" id="radioDMS" value="DMS">
+          <label class="form-check-label" for="radioDMS">DMS</label>
+        </div>
+
+        <div class="row">
+          <div class="col input-group">
+            <input class="form-control" id="deg1" v-model.number="input.lat.d">
+            <span for="deg1" class="input-group-text">º</span>
+          </div>
+          <div v-if="min_enabled" class="col input-group">
+            <input class="form-control" id="min1" v-model.number="input.lat.m">
+            <span for="min1" class="input-group-text">'</span>
+          </div>
+          <div v-if="sec_enabled" class="col input-group">
+            <input class="form-control" id="sec1" v-model.number="input.lat.s">
+            <span for="sec1" class="input-group-text">"</span>
+          </div>
           N
         </div>
-        <div class="wp-input">
-          <p><input v-model.number="input.lon.d" size="13" />º</p>
-          <p v-if="min_enabled">
-            <input v-model.number="input.lon.m" size="13" />'
-          </p>
-          <p v-if="sec_enabled">
-            <input v-model.number="input.lon.s" size="13" />"
-          </p>
+        <div class="row">
+          <div class="col input-group">
+            <input class="form-control" id="deg2" v-model.number="input.lon.d">
+            <span for="deg2" class="input-group-text">º</span>
+          </div>
+          <div v-if="min_enabled" class="col input-group">
+            <input class="form-control" id="min2" v-model.number="input.lon.m">
+            <span for="min2" class="input-group-text">'</span>
+          </div>
+          <div v-if="sec_enabled" class="col input-group">
+            <input class="form-control" id="sec2" v-model.number="input.lon.s">
+            <span for="sec2" class="input-group-text">"</span>
+          </div>
           E
         </div>
-        <br />
-        <div style="display: inline-block">
-          <button @click="addWaypoint(input)">Add Waypoint</button>
-          <button @click="addWaypoint(formatted_odom)">Drop Waypoint</button>
+
+        <div class="add-drop">
+          <button class="btn btn-primary" @click="addWaypoint(input)">Add Waypoint</button>
+          <button class="btn btn-primary" @click="addWaypoint(formatted_odom)">Drop Waypoint</button>
         </div>
+      </div>
+      <div class="box">
         <div class="all-waypoints">
           <h4 class="waypoint-headers">Waypoints</h4>
-          <button @click="clearWaypoint">Clear Waypoints</button>
+          <button class="btn btn-primary" @click="clearWaypoint">Clear Waypoints</button>
         </div>
-        <draggable v-model="storedWaypoints" class="dragArea" draggable=".item'">
+        <!-- <draggable v-model="storedWaypoints" class="dragArea" draggable=".item'">
           <WaypointItem
             v-for="(waypoint, i) in storedWaypoints"
             :key="i"
@@ -56,7 +69,8 @@
             @delete="deleteItem($event)"
             @find="findWaypoint($event)"
           />
-        </draggable>
+        </draggable> -->
+      </div>
     </div>
   </template>
   
@@ -214,40 +228,40 @@
   
   <style scoped>
   .wrap {
-    position: relative;
     display: flex;
     flex-direction: row;
     height: 100%;
     margin: auto;
+  }
+
+  .box {
+    width: 50%;
+    height: 100%;
+    margin-right: 20px;
   }
   
   .dragArea {
     height: 100%;
   }
   
-  .identification {
-    display: inline-block;
-  }
-  
   .all-waypoints {
     display: inline-flex;
+    align-items: center;
   }
   
   .all-waypoints button {
     margin: 5px;
-    width: 115px;
-    height: 20px;
   }
-  
-  .joystick {
-    grid-area: joystick;
-  }
-  
-  .wp-input p {
-    display: inline;
-  }
-  
+ 
   .waypoint-headers {
-    margin: 5px 0px 0px 5px;
+    margin: auto;
+  }
+
+  .add-drop {
+    text-align: center;
+  }
+
+  .add-drop button{
+    margin: 10px;
   }
   </style>

@@ -30,17 +30,15 @@
         <OdometryReading :odom="odom"></OdometryReading>
         </div> -->
         </div>
-        <Checkbox :name="'Agh'" :disabled="false"></Checkbox>
-        <Checkbox :name="'Ew'" :disabled="true"></Checkbox>
-        <!-- <div class="map">
-        <AutonRoverMap :odom="odom" />
-    </div> -->
-        <!-- <div class="waypoints">
+        <div class="map">
+            <AutonRoverMap :odom="odom" />
+        </div>
+        <div class="waypoints">
         <AutonWaypointEditor
         :odom="odom"
         @toggleTeleop="teleopEnabledCheck = $event"
         />
-    </div> -->
+        </div>
         <!--Enable the drive controls if auton is off-->
         <!-- <div
         v-if="!autonEnabled && teleopEnabledCheck"
@@ -73,7 +71,8 @@
 <script lang="ts">
 // import { mapGetters } from "vuex";
 import DriveMoteusStateTable from "./DriveMoteusStateTable.vue";
-import Checkbox from "./Checkbox.vue";
+import AutonRoverMap from "./AutonRoverMap.vue";
+import AutonWaypointEditor from "./AutonWaypointEditor.vue";
 // import { quaternionToMapAngle } from "../utils.js";
 import { defineComponent } from "vue";
 
@@ -88,7 +87,8 @@ let ledInterval: number;
 export default defineComponent({
     components: {
         DriveMoteusStateTable,
-        Checkbox
+        AutonRoverMap,
+        AutonWaypointEditor
     },
 
     data() {

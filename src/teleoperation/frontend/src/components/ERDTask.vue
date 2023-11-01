@@ -37,9 +37,9 @@
     </div>
     </div>
     
-    <!-- <div class="cameras">
+    <div class="cameras">
       <Cameras :primary="true" />
-    </div> -->
+    </div>
     <!-- <div v-if="type === 'DM'" class="odom">
       <OdometryReading :odom="odom" />
     </div> -->
@@ -78,6 +78,7 @@ import DriveMoteusStateTable from "./DriveMoteusStateTable.vue";
 import ArmMoteusStateTable from "./ArmMoteusStateTable.vue";
 import BasicMap from "./BasicRoverMap.vue";
 import BasicWaypointEditor from './BasicWaypointEditor.vue';
+import Cameras from './Cameras.vue';
 
 export default defineComponent({
   components : {
@@ -85,7 +86,8 @@ export default defineComponent({
     DriveMoteusStateTable,
     ArmMoteusStateTable,
     BasicMap,
-    BasicWaypointEditor
+    BasicWaypointEditor,
+    Cameras
   },
 
   props: {
@@ -123,7 +125,7 @@ export default defineComponent({
 .wrapper-dm {
   display: grid;
   grid-gap: 10px;
-  grid-template-columns: repeat(2, auto);
+  grid-template-columns: 50% 50%;
   grid-template-rows: auto 200px 300px repeat(3, auto);
   grid-template-areas:
     "header header"
