@@ -20,7 +20,10 @@ struct __attribute__((__packed__)) MessageID {
 };
 
 template<typename T>
-concept TriviallyCopyable = std::is_trivially_copyable_v<T>;
+concept IsSerializable = std::is_trivially_copyable_v<T>;
+
+template<typename T>
+concept IsFDCANSerializable = IsSerializable<T> && sizeof(T) <= 64;
 
 class CANManager {
 public:
@@ -43,38 +46,49 @@ public:
         assert(can_messages.getType() == XmlRpc::XmlRpcValue::TypeStruct);
         for (auto [messageName, messageId]: can_messages) {
             if (messageId.getType() == XmlRpc::XmlRpcValue::TypeInt) {
-                int messageid = static_cast<int>(messageId);
-                m_message_name_to_id[messageName] = messageid;
-                m_id_to_message_name[messageid] = messageName;
+                auto messageIdInt = static_cast<int>(messageId);
+                m_message_name_to_id[messageName] = messageIdInt;
+                m_id_to_message_name[messageIdInt] = messageName;
             }
         }
     }
 
-    template<TriviallyCopyable T>
-    void send_data(std::string const& messageName, T& data) {
+    void send_data(std::string const& messageName, IsFDCANSerializable auto const& data) {
         // This is okay since "send_raw_data" makes a copy
-        auto* address = reinterpret_cast<std::byte*>(&data);
-        send_raw_data(messageName, {address, sizeof(T)});
+        auto* address = std::bit_cast<std::byte const*>(std::addressof(data));
+        send_raw_data(messageName, {address, sizeof(data)});
     }
 
-    void send_moteus_data(moteus::CanFdFrame canfd) {
-        mrover::CAN can_message;
-        can_message.bus = canfd.bus;
-        can_message.message_id = std::bit_cast<uint16_t>((canfd.source << 8) + (canfd.destination));
-        
-        if (canfd.reply_required) {
-            can_message.message_id |= 0x8000; 
-        }
+    //    void send_moteus_data(mjbots::moteus::CanFdFrame canfd) {
+    //        mrover::CAN can_message;
+    //        can_message.bus = canfd.bus;
+    //        can_message.message_id = std::bit_cast<uint16_t>((canfd.source << 8) + (canfd.destination));
+    //
+    //        if (canfd.reply_required) {
+    //            can_message.message_id |= 0x8000;
+    //        }
+    //
+    //        else {
+    //            can_message.message_id &= 0x7FFF;
+    //        }
+    //
+    //        can_message.data.resize(canfd.data.size());
+    //
+    //        std::memcpy(can_message.data.data(), canfd.data.data(), canfd.data.size());
+    //
+    //        m_can_publisher.publish(can_message);
+    //    }
 
-        else {
-            can_message.message_id &= 0x7FFF; 
-        }
-       
-        can_message.data.resize(canfd.data.size());
-
-        std::memcpy(can_message.data.data(), canfd.data.data(), canfd.data.size());
-
-        m_can_publisher.publish(can_message);
+    static std::size_t nearest_fitting_fdcan_frame_size(std::size_t size) {
+        if (size <= 8) return size;
+        if (size <= 12) return 12;
+        if (size <= 16) return 16;
+        if (size <= 20) return 20;
+        if (size <= 24) return 24;
+        if (size <= 32) return 32;
+        if (size <= 48) return 48;
+        if (size <= 64) return 64;
+        throw std::runtime_error("Too large!");
     }
 
     void send_raw_data(std::string const& messageName, std::span<std::byte const> data) {
@@ -88,8 +102,7 @@ public:
                 .message_num = m_message_name_to_id[messageName],
                 .device_id = m_id,
         });
-        // This is ugly but needed since ROS has no std::byte message type
-        can_message.data.resize(data.size());
+        can_message.data.resize(nearest_fitting_fdcan_frame_size(data.size()));
         std::memcpy(can_message.data.data(), data.data(), data.size());
 
         m_can_publisher.publish(can_message);
@@ -103,7 +116,7 @@ public:
         return m_bus;
     }
 
-    std::string get_message(int messageId){
+    std::string get_message(int messageId) {
         return m_id_to_message_name[messageId];
     }
 

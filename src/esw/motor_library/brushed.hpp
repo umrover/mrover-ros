@@ -3,6 +3,8 @@
 #include <can_manager.hpp>
 #include <controller.hpp>
 
+#include "messaging.hpp"
+
 namespace mrover {
 
     class BrushedController : public Controller {
@@ -17,6 +19,7 @@ namespace mrover {
         ~BrushedController() override = default;
 
     private:
+        void send_brushed_message(std::string const& topic, InBoundMessage const& message);
     };
 
 } // namespace mrover

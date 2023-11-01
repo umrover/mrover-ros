@@ -1,10 +1,10 @@
 #pragma once
 
 #include <array>
+#include <cstdint>
 #include <variant>
 
-#include "units.hpp"
-
+#include <units/units.hpp>
 
 namespace mrover {
 
@@ -62,35 +62,51 @@ namespace mrover {
     };
 
     struct BaseCommand {
-        motor_id_t id;
-    } PACKED;
+    };
+
+    struct ConfigCommand : BaseCommand {
+        Dimensionless gear_ratio;
+        // TODO: Terrible naming for the limit switch info
+        ConfigLimitSwitchInfo0 limit_switch_info_0;
+        ConfigLimitSwitchInfo1 limit_switch_info_1;
+        ConfigLimitSwitchInfo2 limit_switch_info_2;
+        ConfigEncoderInfo quad_abs_enc_info;
+        Radians limit_a_readj_pos;
+        Radians limit_b_readj_pos;
+        Radians limit_c_readj_pos;
+        Radians limit_d_readj_pos;
+        Dimensionless quad_enc_out_ratio;
+        Dimensionless abs_enc_out_ratio;
+        Dimensionless max_pwm;
+        ConfigLimitInfo limit_max_pos;
+        Meters max_forward_pos;
+        Meters max_back_pos;
+    };
 
     struct IdleCommand : BaseCommand {
-    } PACKED;
+    };
 
     struct ThrottleCommand : BaseCommand {
-        dimensionless_t throttle;
-    } PACKED;
+        Percent throttle;
+    };
 
     struct VelocityCommand : BaseCommand {
         RadiansPerSecond velocity;
-    } PACKED;
+    };
 
     struct PositionCommand : BaseCommand {
         Radians position;
-    } PACKED;
+    };
+
+    struct MotorDataState : BaseCommand {
+        RadiansPerSecond velocity;
+        Radians position;
+        std::uint8_t config_calib_error_data{};
+        // TODO: Are these going to be left or right aligned.
+        std::uint8_t limit_switches{};
+    };
 
     struct StatusState {
-
-    } PACKED;
-
-    using Message = std::variant<
-            IdleCommand, ThrottleCommand, VelocityCommand, PositionCommand>;
-    static_assert(sizeof(Message) <= FRAME_SIZE);
-
-    union FdCanFrame {
-        Message message;
-        std::array<std::byte, FRAME_SIZE> bytes;
     };
 
     using InBoundMessage = std::variant<
