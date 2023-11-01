@@ -1,5 +1,6 @@
 #include "can_node.hpp"
 
+#include <linux/can.h>
 #include <stdexcept>
 
 #include <boost/asio/read.hpp>
@@ -84,21 +85,43 @@ namespace mrover {
     }
 
     void CanNodelet::readFrameAsync() { // NOLINT(*-no-recursion)
+
+        // 1. Read the entire header to find the data size
         boost::asio::async_read(
                 mStream.value(),
-                boost::asio::buffer(&mReadFrame, sizeof(mReadFrame)),
+                boost::asio::buffer(&mReadHeader, sizeof(mReadHeader)),
+                // This lambda ensures we read ALL the header in case it comes in chunks
+                // It is a completion condition essentially
                 [](boost::system::error_code const& ec, std::size_t bytes) {
                     checkErrorCode(ec);
 
-                    return sizeof(mReadFrame);
+                    return sizeof(mReadHeader);
                 },
+                // This lambda is called on completion
                 [this](boost::system::error_code const& ec, std::size_t bytes) { // NOLINT(*-no-recursion)
                     checkErrorCode(ec);
-                    assert(bytes == sizeof(mReadFrame));
+                    assert(bytes == sizeof(mReadHeader));
+                    mReadData.resize(mReadHeader.len);
 
-                    processReadFrame();
+                    // 2. Read the main data, we know how much to read from the header
+                    boost::asio::async_read(
+                            mStream.value(),
+                            boost::asio::buffer(&mReadData, mReadData.size()),
+                            [this](boost::system::error_code const& ec, std::size_t bytes) {
+                                checkErrorCode(ec);
 
-                    readFrameAsync();
+                                return mReadData.size();
+                            },
+                            [this](boost::system::error_code const& ec, std::size_t bytes) { // NOLINT(*-no-recursion)
+                                checkErrorCode(ec);
+                                assert(bytes == mReadData.size());
+
+                                // 3. We have all the data associated with the frame, process it
+
+                                processReadFrame();
+
+                                readFrameAsync();
+                            });
                 });
     }
 
@@ -116,9 +139,8 @@ namespace mrover {
     void CanNodelet::processReadFrame() { // NOLINT(*-no-recursion)
         CAN msg;
         msg.bus = 0;
-        msg.message_id = mReadFrame.can_id;
-        msg.data.resize(mReadFrame.len);
-        std::memcpy(msg.data.data(), mReadFrame.data, mReadFrame.len);
+        msg.message_id = mReadHeader.can_id;
+        msg.data = std::move(mReadData);
 
         mCanPublisher.publish(msg);
     }

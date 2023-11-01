@@ -27,6 +27,14 @@
 
 #include "can_net_link.hpp"
 
+struct canfd_header {
+    canid_t can_id;     /* 32 bit CAN_ID + EFF/RTR/ERR flags */
+    std::uint8_t len;   /* frame payload length in byte */
+    std::uint8_t flags; /* additional flags for CAN FD */
+    std::uint8_t res0;  /* reserved / padding */
+    std::uint8_t res1;  /* reserved / padding */
+};
+
 namespace mrover {
 
     class CanNodelet : public nodelet::Nodelet {
@@ -61,7 +69,8 @@ namespace mrover {
 
         std::uint8_t mBus{};
         canfd_frame mWriteFrame{};
-        canfd_frame mReadFrame{};
+        canfd_header mReadHeader{};
+        std::vector<std::uint8_t> mReadData{};
         std::optional<CanNetLink> mCanNetLink;
         std::optional<boost::asio::posix::basic_stream_descriptor<>> mStream;
         std::jthread mIoThread;
@@ -102,35 +111,4 @@ struct canfd_frame {
     // REQUIREMENT: DATA MUST BE 0-8, 12, 16, 20, 24, 32, 36, 48, or 64 BYTES LONG
     uint8_t data[64];
 };
-
-CAN Frame Layout:
-
-Start of Frame (SOF): 1 bit
-
-Arbitration Field: 12 bits (for standard ID)
-
-ID: 11 bits
-RTR: 1 bit
-Control Field: more bits compared to classic CAN due to extended DLC
-
-IDE: 1 bit
-r0: 1 bit
-Extended Data Length (EDL): 1 bit
-Bit Rate Switch (BRS): 1 bit
-Error State Indicator (ESI): 1 bit
-DLC: 4 bits
-Data Field: up to 64 bytes in CAN FD (not limited to 8 bytes as in classic CAN)
-
-CRC Field: variable size depending on the length of the Data Field
-
-CRC Sequence
-CRC Delimiter: 1 bit
-Acknowledgment Field: 2 bits
-
-ACK Slot: 1 bit
-ACK Delimiter: 1 bit
-End of Frame (EOF): 7 bits
-
-Intermission: 3 bits
-
 */
