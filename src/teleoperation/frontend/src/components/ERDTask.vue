@@ -5,14 +5,14 @@
       <h1 v-else>DM GUI Dashboard</h1>
       <img
         class="logo"
-        src="mrover.png"
+        src="../static/mrover.png"
         alt="MRover"
         title="MRover"
         width="200"
       />
       <div class="help">
         <img
-          src="help.png"
+          src="../static/help.png"
           alt="Help"
           title="Help"
           width="48"
@@ -29,7 +29,7 @@
         "
       >
         <img
-          src="joystick.png"
+          src="../static/joystick.png"
           alt="Joystick"
           title="Joystick Controls"
           style="width: auto; height: 70%; display: inline-block"
@@ -37,9 +37,9 @@
     </div>
     </div>
     
-    <div class="cameras">
+    <!-- <div class="cameras">
       <Cameras :primary="true" />
-    </div>
+    </div> -->
     <!-- <div v-if="type === 'DM'" class="odom">
       <OdometryReading :odom="odom" />
     </div> -->
@@ -65,6 +65,9 @@
       <DriveMoteusStateTable :moteus-state-data="moteusState" />
       <ArmMoteusStateTable />
     </div>
+    <div>
+      <ArmControls></ArmControls>
+    </div>
     <!-- <div v-show="false">
       <MastGimbalControls></MastGimbalControls>
     </div> -->
@@ -76,18 +79,18 @@ import { defineComponent } from 'vue'
 import PDBFuse from "./PDBFuse.vue";
 import DriveMoteusStateTable from "./DriveMoteusStateTable.vue";
 import ArmMoteusStateTable from "./ArmMoteusStateTable.vue";
+import ArmControls from "./ArmControls.vue";
 import BasicMap from "./BasicRoverMap.vue";
 import BasicWaypointEditor from './BasicWaypointEditor.vue';
-import Cameras from './Cameras.vue';
 
 export default defineComponent({
   components : {
     PDBFuse,
     DriveMoteusStateTable,
     ArmMoteusStateTable,
+    ArmControls,
     BasicMap,
-    BasicWaypointEditor,
-    Cameras
+    BasicWaypointEditor
   },
 
   props: {
@@ -125,7 +128,7 @@ export default defineComponent({
 .wrapper-dm {
   display: grid;
   grid-gap: 10px;
-  grid-template-columns: 50% 50%;
+  grid-template-columns: repeat(2, auto);
   grid-template-rows: auto 200px 300px repeat(3, auto);
   grid-template-areas:
     "header header"
