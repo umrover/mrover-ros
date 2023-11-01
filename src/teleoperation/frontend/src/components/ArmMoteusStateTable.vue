@@ -41,9 +41,9 @@
   </template>
   
   <script lang="ts">
-  import { inject } from "vue";
+  import { defineComponent, inject } from "vue";
   
-  export default {
+  export default defineComponent({
     props: {
       header: {
         type: String,
@@ -92,7 +92,7 @@
         }
       }
     }
-  };
+  });
   </script>
   
   <style scoped>
