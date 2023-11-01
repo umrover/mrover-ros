@@ -32,7 +32,7 @@ namespace mrover {
         check(HAL_FDCAN_Start(&hfdcan1) == HAL_OK, Error_Handler);
 
         fdcan_bus = FDCANBus{&hfdcan1};
-        controller = BrushedController{CAN_ID, FusedReader(&htim4, &hi2c1), HBridgeWriter(&htim15), fdcan_bus};
+        controller = BrushedController{CAN_ID, FusedReader{&htim4, &hi2c1}, HBridgeWriter{&htim15}, fdcan_bus};
     }
 
     void loop() {

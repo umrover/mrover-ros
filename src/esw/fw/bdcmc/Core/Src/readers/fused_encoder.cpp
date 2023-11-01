@@ -6,12 +6,11 @@
 
 namespace mrover {
 
-    FusedReader::FusedReader(TIM_HandleTypeDef* relative_encoder_timer, I2C_HandleTypeDef* absolute_encoder_i2c) {
-        m_relative_encoder_timer = relative_encoder_timer;
-        m_absolute_encoder_i2c = absolute_encoder_i2c;
+    FusedReader::FusedReader(TIM_HandleTypeDef* relative_encoder_timer, I2C_HandleTypeDef* absolute_encoder_i2c)
+        : m_relative_encoder_timer{relative_encoder_timer}, m_absolute_encoder_i2c{absolute_encoder_i2c} {
 
-        m_abs_encoder = AbsoluteEncoder(SMBus(absolute_encoder_i2c), 1, /* TODO: figure out how to get _A1 */ 1 /* TODO: figure out how to get _A2 */);
-        m_quad_encoder = QuadratureEncoder(TIM1);
+        m_abs_encoder = AbsoluteEncoder{SMBus{absolute_encoder_i2c}, 1, /* TODO: figure out how to get _A1 */ 1 /* TODO: figure out how to get _A2 */};
+        m_quad_encoder = QuadratureEncoder{TIM1};
 
         // Initialize the TIM and I2C encoders
         check(HAL_I2C_Init(m_absolute_encoder_i2c) == HAL_OK, Error_Handler);
