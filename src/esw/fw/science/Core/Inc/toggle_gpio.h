@@ -11,12 +11,12 @@ typedef struct
     uint16_t pin;
 }Toggle_GPIO;
 
-// REQUIRES: led is an led object
-// MODIFIES: pin
-// EFFECTS: set the value of pin ot value
+// REQUIRES: obj is an obj object
+// MODIFIES: obj
+// EFFECTS: set the value of pin with value
 void set_pin_value(Toggle_GPIO* obj, bool value);
 
-// REQUIRES: led is an led object
+// REQUIRES: obj is an obj object
 // MODIFIES: 
 // EFFECTS: get the value of pin
 bool get_pin_value(Toggle_GPIO* obj);
