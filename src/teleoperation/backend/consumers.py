@@ -8,10 +8,10 @@ from sensor_msgs.msg import JointState
 class GUIConsumer(JsonWebsocketConsumer):
 
     def connect(self):
+        self.accept()
         self.pdb_sub = rospy.Subscriber('/pdb_data', PDB, self.pdb_callback)
         self.arm_moteus_sub = rospy.Subscriber('/arm_controller_data', ControllerState, self.arm_controller_callback)
-        self.joint_state_sub = rospy.Subscriber('/arm_joint_data', JointState, self.joint_state_callback)
-        self.accept()
+        self.joint_state_sub = rospy.Subscriber('/drive_joint_data', JointState, self.joint_state_callback)
 
     def disconnect(self, close_code):
         self.pdb_sub.unregister()
@@ -38,10 +38,13 @@ class GUIConsumer(JsonWebsocketConsumer):
         }))
 
     def joint_state_callback(self, msg):
+        # self.send(text_data=json.dumps({
+        #     'type': 'joint_state',
+        #     'name': msg.name,
+        #     'position': msg.position,
+        #     'velocity': msg.velocity,
+        #     'effort': msg.effort
+        # }))
         self.send(text_data=json.dumps({
-            'type': 'joint_state',
-            'name': msg.name,
-            'position': msg.position,
-            'velocity': msg.velocity,
-            'effort': msg.effort
+            'type': 'joint_state'
         }))

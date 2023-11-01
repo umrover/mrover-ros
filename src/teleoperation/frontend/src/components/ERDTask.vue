@@ -1,17 +1,16 @@
 <template>
   <PDBFuse />
-  <JointStateTable :jointStateData="JointState" :vertical="true" />
+  <JointStateTable :jointStateData="jointState" :vertical="true" />
   <DriveMoteusStateTable :moteus-state-data="moteusState" />
   <ArmMoteusStateTable />
 </template>
 
 <script lang="ts">
-import { defineComponent } from 'vue'
+import { defineComponent, inject } from 'vue'
 import PDBFuse from "./PDBFuse.vue";
 import DriveMoteusStateTable from "./DriveMoteusStateTable.vue";
 import ArmMoteusStateTable from "./ArmMoteusStateTable.vue";
-
-import JointStateTable from "./JointStateTable.vue"
+import JointStateTable from "./JointStateTable.vue";
 
 export default defineComponent({
   components: {
@@ -23,17 +22,30 @@ export default defineComponent({
 
   data() {
     return {
+      websocket: inject("webSocketService") as WebSocket,
+      //websocket: new WebSocket("ws://localhost:8080/ws/g"),
       // Default object isn't empty, so has to be initialized to ""
       moteusState: {
         name: ["", "", "", "", "", ""],
         error: ["", "", "", "", "", ""],
         state: ["", "", "", "", "", ""]
       },
-      JointState: {
-        name: [""],
-        position: [""],
-        velocity: [""],
-        effort: [0]
+      jointState: {}
+    }
+  },
+  created() {
+    this.websocket.onopen = () => {
+      console.log("Hejej")
+    }
+    this.websocket.onmessage = (event) => {
+      console.log("HI")
+      const msg = JSON.parse(event.data)
+      if (msg.type == "joint_state") {
+        console.log(msg.type)
+        // this.jointState.name = msg.name;
+        // this.jointState.position = msg.position;
+        // this.jointState.velocity = msg.velocity;
+        // this.jointState.effort = msg.effort;
       }
     }
   }
