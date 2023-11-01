@@ -131,7 +131,7 @@ namespace mrover {
         CAN msg;
         msg.bus = 0;
         msg.message_id = mReadHeader.can_id;
-        msg.data = mReadData;
+        msg.data = std::move(mReadData);
 
         mCanPublisher.publish(msg);
     }

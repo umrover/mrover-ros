@@ -28,11 +28,11 @@
 #include "can_net_link.hpp"
 
 struct canfd_header {
-    canid_t can_id; /* 32 bit CAN_ID + EFF/RTR/ERR flags */
-    __u8 len;       /* frame payload length in byte */
-    __u8 flags;     /* additional flags for CAN FD */
-    __u8 res0;      /* reserved / padding */
-    __u8 res1;      /* reserved / padding */
+    canid_t can_id;     /* 32 bit CAN_ID + EFF/RTR/ERR flags */
+    std::uint8_t len;   /* frame payload length in byte */
+    std::uint8_t flags; /* additional flags for CAN FD */
+    std::uint8_t res0;  /* reserved / padding */
+    std::uint8_t res1;  /* reserved / padding */
 };
 
 namespace mrover {
@@ -70,7 +70,7 @@ namespace mrover {
         std::uint8_t mBus{};
         canfd_frame mWriteFrame{};
         canfd_header mReadHeader{};
-        std::vector<__u8> mReadData{};
+        std::vector<std::uint8_t> mReadData{};
         std::optional<CanNetLink> mCanNetLink;
         std::optional<boost::asio::posix::basic_stream_descriptor<>> mStream;
         std::jthread mIoThread;
