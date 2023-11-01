@@ -1,63 +1,64 @@
 #pragma once
 
 #include <array>
+#include <cstdint>
 #include <variant>
 
+#include "hardware.hpp"
 #include "units.hpp"
-
 
 namespace mrover {
 
-    // CAN FD supports up to 64 bytes per frame
-    constexpr size_t FRAME_SIZE = 64;
-
     struct __attribute__((__packed__)) ConfigLimitSwitchInfo0 {
-        uint8_t a_present : 1;
-        uint8_t b_present : 1;
-        uint8_t c_present : 1;
-        uint8_t d_present : 1;
-        uint8_t a_enable : 1;
-        uint8_t b_enable : 1;
-        uint8_t c_enable : 1;
-        uint8_t d_enable : 1;
+        std::uint8_t a_present : 1;
+        std::uint8_t b_present : 1;
+        std::uint8_t c_present : 1;
+        std::uint8_t d_present : 1;
+        std::uint8_t a_enable : 1;
+        std::uint8_t b_enable : 1;
+        std::uint8_t c_enable : 1;
+        std::uint8_t d_enable : 1;
     };
+    static_assert(sizeof(ConfigLimitSwitchInfo0) == 1);
 
     struct __attribute__((__packed__)) ConfigLimitSwitchInfo1 {
-		uint8_t a_active_high : 1;
-		uint8_t b_active_high : 1;
-		uint8_t c_active_high : 1;
-		uint8_t d_active_high : 1;
-		uint8_t a_limits_forward : 1;
-		uint8_t b_limits_forward : 1;
-		uint8_t c_limits_forward : 1;
-		uint8_t d_limits_forward : 1;
-
-	};
+        std::uint8_t a_active_high : 1;
+        std::uint8_t b_active_high : 1;
+        std::uint8_t c_active_high : 1;
+        std::uint8_t d_active_high : 1;
+        std::uint8_t a_limits_forward : 1;
+        std::uint8_t b_limits_forward : 1;
+        std::uint8_t c_limits_forward : 1;
+        std::uint8_t d_limits_forward : 1;
+    };
+    static_assert(sizeof(ConfigLimitSwitchInfo1) == 1);
 
     struct __attribute__((__packed__)) ConfigLimitSwitchInfo2 {
-		uint8_t a_use_for_readjustment : 1;
-		uint8_t b_use_for_readjustment : 1;
-		uint8_t c_use_for_readjustment : 1;
-		uint8_t d_use_for_readjustment : 1;
-		uint8_t a_is_default_enabled : 1;
-		uint8_t b_is_default_enabled : 1;
-		uint8_t c_is_default_enabled : 1;
-		uint8_t d_is_default_enabled : 1;
-	};
+        std::uint8_t a_use_for_readjustment : 1;
+        std::uint8_t b_use_for_readjustment : 1;
+        std::uint8_t c_use_for_readjustment : 1;
+        std::uint8_t d_use_for_readjustment : 1;
+        std::uint8_t a_is_default_enabled : 1;
+        std::uint8_t b_is_default_enabled : 1;
+        std::uint8_t c_is_default_enabled : 1;
+        std::uint8_t d_is_default_enabled : 1;
+    };
+    static_assert(sizeof(ConfigLimitSwitchInfo2) == 1);
 
     struct __attribute__((__packed__)) ConfigEncoderInfo {
-    	[[maybe_unused]] uint8_t _ignore : 4; // 8 bits - (4 meaningful bits) = 4 ignored bits
-		uint8_t quad_present : 1;
-		uint8_t quad_is_forward_polarity : 1;
-		uint8_t abs_present : 1;
-		uint8_t abs_is_forward_polarity : 1;
-	};
+        [[maybe_unused]] std::uint8_t _ignore : 4; // 8 bits - (4 meaningful bits) = 4 ignored bits
+        std::uint8_t quad_present : 1;
+        std::uint8_t quad_is_forward_polarity : 1;
+        std::uint8_t abs_present : 1;
+        std::uint8_t abs_is_forward_polarity : 1;
+    };
+    static_assert(sizeof(ConfigEncoderInfo) == 1);
 
     struct __attribute__((__packed__)) ConfigLimitInfo {
-        	[[maybe_unused]] uint8_t _ignore : 6; // 8 bits - (2 meaningful bits) = 6 ignored bits
-    		uint8_t limit_max_forward_position : 1;
-    		uint8_t limit_max_backward_position : 1;
-    	};
+        [[maybe_unused]] std::uint8_t _ignore : 6; // 8 bits - (2 meaningful bits) = 6 ignored bits
+        std::uint8_t limit_max_forward_position : 1;
+        std::uint8_t limit_max_backward_position : 1;
+    };
 
     struct BaseCommand {
     };
@@ -85,7 +86,7 @@ namespace mrover {
     };
 
     struct ThrottleCommand : BaseCommand {
-        Dimensionless throttle;
+        Percent throttle;
     };
 
     struct VelocityCommand : BaseCommand {
@@ -95,13 +96,13 @@ namespace mrover {
     struct PositionCommand : BaseCommand {
         Radians position;
     };
-    
+
     struct MotorDataState : BaseCommand {
         RadiansPerSecond velocity;
         Radians position;
-        uint8_t config_calib_error_data;
+        std::uint8_t config_calib_error_data;
         // TODO: Are these going to be left or right aligned.
-        uint8_t limit_switches; 
+        std::uint8_t limit_switches;
     };
 
     struct StatusState {
@@ -114,14 +115,14 @@ namespace mrover {
 
     union FdCanFrameIn {
         InBoundMessage message;
-        std::array<std::byte, FRAME_SIZE> bytes;
+        std::array<std::byte, CANFD_MAX_FRAME_SIZE> bytes;
     };
-    static_assert(sizeof(FdCanFrameIn) == FRAME_SIZE);
+    static_assert(sizeof(FdCanFrameIn) == CANFD_MAX_FRAME_SIZE);
 
     union FdCanFrameOut {
         OutBoundMessage message;
-        std::array<std::byte, FRAME_SIZE> bytes;
+        std::array<std::byte, CANFD_MAX_FRAME_SIZE> bytes;
     };
-    static_assert(sizeof(FdCanFrameOut) == FRAME_SIZE);
+    static_assert(sizeof(FdCanFrameOut) == CANFD_MAX_FRAME_SIZE);
 
 } // namespace mrover

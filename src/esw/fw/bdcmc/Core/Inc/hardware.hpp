@@ -3,37 +3,61 @@
 #include "main.h"
 #include "messaging.hpp"
 
-#define NOOP 0x50
+#include <bit>
+#include <concepts>
+#include <cstdint>
+#include <optional>
+#include <type_traits>
 
 namespace mrover {
 
+    constexpr static std::size_t I2C_MAX_FRAME_SIZE = 32, CANFD_MAX_FRAME_SIZE = 64;
+
+    template<typename T>
+    concept IsSerializable = std::is_trivially_copyable_v<T>;
+
+    template<typename T>
+    concept IsI2CSerializable = IsSerializable<T> && sizeof(T) <= mrover::I2C_MAX_FRAME_SIZE;
+
+    template<typename T>
+    concept IsFDCANSerializable = IsSerializable<T> && sizeof(T) <= mrover::CANFD_MAX_FRAME_SIZE;
+
+    static inline auto check(bool cond, std::invocable auto handler) -> void {
+        if (cond) return;
+
+        handler();
+    }
+
+    template<typename T>
+    static inline auto address_of(auto object) -> T* {
+        return std::bit_cast<T*>(std::addressof(object));
+    }
+
     class Pin {
     public:
-        explicit Pin() = default;
-        Pin(GPIO_TypeDef *port, uint16_t pin) : port(port), pin(pin) { }
+        Pin() = default;
 
-        inline GPIO_PinState read() {
-            return HAL_GPIO_ReadPin(this->port, this->pin);
+        Pin(GPIO_TypeDef* port, std::uint16_t pin) : m_port{port}, m_pin{pin} {}
+
+        [[nodiscard]] inline GPIO_PinState read() {
+            return HAL_GPIO_ReadPin(this->m_port, this->m_pin);
         }
 
         inline void write(GPIO_PinState val) {
-            HAL_GPIO_WritePin(this->port, this->pin, val);
+            HAL_GPIO_WritePin(this->m_port, this->m_pin, val);
         }
 
     private:
-        GPIO_TypeDef *port{};
-        uint16_t pin{};
+        GPIO_TypeDef* m_port{};
+        std::uint16_t m_pin{};
     };
 
     class LimitSwitch {
     public:
+        LimitSwitch() = default;
+
         LimitSwitch(Pin _pin)
-            : m_pin(_pin)
-            , m_enabled(0)
-            , m_is_pressed(0)
-            , m_active_high(0)
-            , m_associated_count(0)
-            { }
+            : m_pin{_pin} {}
 
         void update_limit_switch() {
             // This suggests active low
@@ -46,208 +70,110 @@ namespace mrover {
 
     private:
         Pin m_pin;
-        uint8_t m_enabled;
-        uint8_t m_is_pressed;
-        uint8_t m_valid;
-        uint8_t m_active_high;
-        int32_t m_associated_count;
-
+        std::uint8_t m_enabled{};
+        std::uint8_t m_is_pressed{};
+        std::uint8_t m_valid{};
+        std::uint8_t m_active_high{};
+        std::int32_t m_associated_count{};
     };
 
     class SMBus {
+        constexpr static std::uint32_t I2C_TIMEOUT = 500, I2C_REBOOT_DELAY = 5;
+
+        void reboot() {
+            HAL_I2C_DeInit(this->m_i2c);
+            HAL_Delay(I2C_REBOOT_DELAY);
+            HAL_I2C_Init(this->m_i2c);
+        }
+
     public:
         SMBus() = default;
 
         explicit SMBus(I2C_HandleTypeDef* hi2c)
-            : m_i2c(hi2c) {
-            for (unsigned char & i : m_buf) {
-                i = 0;
-            }
+            : m_i2c{hi2c} {
         }
 
-        uint64_t read_word_data(uint8_t addr, char cmd) {
-            this->m_buf[0] = cmd;
-            this->m_ret = HAL_I2C_Master_Transmit(this->m_i2c, addr << 1, this->m_buf, 1, 500);
+        template<IsI2CSerializable TSend, IsI2CSerializable TReceive>
+        auto transact(std::uint16_t address, TSend const& send) -> std::optional<TReceive> {
+            if (HAL_I2C_Master_Transmit(this->m_i2c, address << 1, address_of<std::uint8_t>(send), sizeof(send), I2C_TIMEOUT) != HAL_OK) {
+                // TODO(quintin): Do we want a different error handler here?
+                return std::nullopt;
+            }
 
             //reads from address sent above
-            this->m_ret = HAL_I2C_Master_Receive(this->m_i2c, (addr << 1) | 1, this->m_buf, 2, 500);
-
-            long data = this->m_buf[0] | (this->m_buf[1] << 8);
-            if (this->m_ret != HAL_OK) {
-                HAL_I2C_DeInit(this->m_i2c);
-                HAL_Delay(5);
-                HAL_I2C_Init(this->m_i2c);
-                data = 0;
+            if (TReceive receive{}; HAL_I2C_Master_Receive(this->m_i2c, (address << 1) | 1, address_of<std::uint8_t>(receive), sizeof(receive), I2C_TIMEOUT) == HAL_OK) {
+                return receive;
+            } else {
+                reboot();
+                return std::nullopt;
             }
-
-            return data;
         }
 
     private:
-        I2C_HandleTypeDef *m_i2c{};
-        HAL_StatusTypeDef m_ret{};
-        uint8_t m_buf[30]{};
+        I2C_HandleTypeDef* m_i2c{};
     };
 
-    class CANWrapper {
+    class FDCANBus {
+        constexpr static std::uint8_t NOOP = 0x50;
+
     public:
-        CANWrapper() = default;
+        FDCANBus() = default;
 
-        explicit CANWrapper(FDCAN_HandleTypeDef* hfdcan)
-            : m_fdcan(hfdcan) {
+        explicit FDCANBus(FDCAN_HandleTypeDef* hfdcan)
+            : m_fdcan{hfdcan} {
 
-        	if (HAL_FDCAN_Start(m_fdcan) != HAL_OK) {
-			  Error_Handler();
-			}
-			if (HAL_FDCAN_ActivateNotification(m_fdcan, FDCAN_IT_RX_FIFO0_NEW_MESSAGE, 0) != HAL_OK) {
-			  /* Notification Error */
-			  Error_Handler();
-			}
-
-        	TxHeader.Identifier = 0x11;
-			TxHeader.IdType = FDCAN_STANDARD_ID;
-			TxHeader.TxFrameType = FDCAN_DATA_FRAME;
-			TxHeader.DataLength = FDCAN_DLC_BYTES_12;
-			TxHeader.ErrorStateIndicator = FDCAN_ESI_ACTIVE;
-			TxHeader.BitRateSwitch = FDCAN_BRS_OFF;
-			TxHeader.FDFormat = FDCAN_FD_CAN;
-			TxHeader.TxEventFifoControl = FDCAN_NO_TX_EVENTS;
-			TxHeader.MessageMarker = 0;
+            check(HAL_FDCAN_Start(m_fdcan) == HAL_OK, Error_Handler);
         }
 
-
-        // Need to define the function
-        // void HAL_FDCAN_RxFifo0Callback(FDCAN_HandleTypeDef *hfdcan, uint32_t RxFifo0ITs)
-        // in main
-        // and call this function
-        void insert_HAL_FDCAN_RxFifo0Callback(FDCAN_HandleTypeDef *hfdcan, uint32_t RxFifo0ITs)
-        {
-          if((RxFifo0ITs & FDCAN_IT_RX_FIFO0_NEW_MESSAGE) != RESET)
-          {
-            /* Retrieve messages from RX FIFO0 */
-            if (HAL_FDCAN_GetRxMessage(hfdcan, FDCAN_RX_FIFO0, &m_RxHeader, m_rxdata) != HAL_OK)
-            {
-            /* Reception Error */
-            Error_Handler();
+        template<IsFDCANSerializable TReceive>
+        [[nodiscard]] auto receive() -> std::optional<std::pair<FDCAN_RxHeaderTypeDef, TReceive>> {
+            if (HAL_FDCAN_GetRxFifoFillLevel(m_fdcan, FDCAN_RX_FIFO0)) {
+                FDCAN_RxHeaderTypeDef header;
+                TReceive receive{};
+                check(HAL_FDCAN_GetRxMessage(m_fdcan, FDCAN_RX_FIFO0, &header, address_of<std::uint8_t>(receive)) == HAL_OK, Error_Handler);
+                return std::make_pair(header, receive);
+            } else {
+                return std::nullopt;
             }
-
-            // TODO - process information
-            // Refer to ICD
-
-
-
-            if (HAL_FDCAN_ActivateNotification(hfdcan, FDCAN_IT_RX_FIFO0_NEW_MESSAGE, 0) != HAL_OK)
-            {
-              /* Notification Error */
-              Error_Handler();
-            }
-          }
         }
 
-        void send_data(uint8_t data[], uint8_t data_length) {
+        consteval static auto nearest_fitting_fdcan_frame_size(std::size_t size) -> std::uint32_t {
+            if (size <= 0) return FDCAN_DLC_BYTES_0;
+            if (size <= 1) return FDCAN_DLC_BYTES_1;
+            if (size <= 2) return FDCAN_DLC_BYTES_2;
+            if (size <= 3) return FDCAN_DLC_BYTES_3;
+            if (size <= 4) return FDCAN_DLC_BYTES_4;
+            if (size <= 5) return FDCAN_DLC_BYTES_5;
+            if (size <= 6) return FDCAN_DLC_BYTES_6;
+            if (size <= 7) return FDCAN_DLC_BYTES_7;
+            if (size <= 8) return FDCAN_DLC_BYTES_8;
+            if (size <= 12) return FDCAN_DLC_BYTES_12;
+            if (size <= 16) return FDCAN_DLC_BYTES_16;
+            if (size <= 20) return FDCAN_DLC_BYTES_20;
+            if (size <= 24) return FDCAN_DLC_BYTES_24;
+            if (size <= 32) return FDCAN_DLC_BYTES_32;
+            if (size <= 48) return FDCAN_DLC_BYTES_48;
+            if (size <= 64) return FDCAN_DLC_BYTES_64;
+            throw std::runtime_error("Too large!");
+        }
 
-			if (data_length == 0) {
-        		m_TxHeader.DataLength = FDCAN_DLC_BYTES_0;
-        	}
-        	else if (data_length == 1) {
-        		m_TxHeader.DataLength = FDCAN_DLC_BYTES_1;
-        		m_txdata[0] = data[0];
-        	}
-        	else if (data_length == 2) {
-        		m_tx_header.DataLength = FDCAN_DLC_Bytes_2;
-        		memcpy(m_txdata, data, data_length);
-        	}
-        	else if (data_length == 3) {
-        		m_tx_header.DataLength = FDCAN_DLC_Bytes_3;
-				memcpy(m_txdata, data, data_length);
-        	}
-        	else if (data_length == 4) {
-        		m_tx_header.DataLength = FDCAN_DLC_Bytes_4;
-				memcpy(m_txdata, data, data_length);
-        	}
-        	else if (data_length == 5) {
-        		m_tx_header.DataLength = FDCAN_DLC_Bytes_5;
-				memcpy(m_txdata, data, data_length);
-        	}
-        	else if (data_length == 6) {
-        		m_tx_header.DataLength = FDCAN_DLC_Bytes_6;
-				memcpy(m_txdata, data, data_length);
-        	}
-        	else if (data_length == 7) {
-        		m_tx_header.DataLength = FDCAN_DLC_Bytes_7;
-				memcpy(m_txdata, data, data_length);
-        	}
-        	else if (data_length == 8) {
-        		m_tx_header.DataLength = FDCAN_DLC_Bytes_8;
-				memcpy(m_txdata, data, data_length);
-        	}
-        	else if (data_length <= 12) {
-        		m_tx_header.DataLength = FDCAN_DLC_Bytes_12;
-				memcpy(m_txdata, data, data_length);
-				for (int i = data_length; i < 12; ++i) {
-					m_txdata[i] = NOOP;
-				}
-        	}
-        	else if (data_length <= 16) {
-				m_tx_header.DataLength = FDCAN_DLC_Bytes_16;
-				memcpy(m_txdata, data, data_length);
-				for (int i = data_length; i < 16; ++i) {
-					m_txdata[i] = NOOP;
-				}
-			}
-        	else if (data_length <= 20) {
-				m_tx_header.DataLength = FDCAN_DLC_Bytes_20;
-				memcpy(m_txdata, data, data_length);
-				for (int i = data_length; i < 20; ++i) {
-					m_txdata[i] = NOOP;
-				}
-			}
-        	else if (data_length <= 24) {
-				m_tx_header.DataLength = FDCAN_DLC_Bytes_24;
-				memcpy(m_txdata, data, data_length);
-				for (int i = data_length; i < 24; ++i) {
-					m_txdata[i] = NOOP;
-				}
-			}
-        	else if (data_length <= 32) {
-				m_tx_header.DataLength = FDCAN_DLC_Bytes_32;
-				memcpy(m_txdata, data, data_length);
-				for (int i = data_length; i < 32; ++i) {
-					m_txdata[i] = NOOP;
-				}
-			}
-        	else if (data_length <= 48) {
-				m_tx_header.DataLength = FDCAN_DLC_Bytes_48;
-				memcpy(m_txdata, data, data_length);
-				for (int i = data_length; i < 48; ++i) {
-					m_txdata[i] = NOOP;
-				}
-			}
-        	else if (data_length <= 64) {
-				m_tx_header.DataLength = FDCAN_DLC_Bytes_64;
-				memcpy(m_txdata, data, data_length);
-				for (int i = data_length; i < 64; ++i) {
-					m_txdata[i] = NOOP;
-				}
-			}
-        	else {
-        		// Invalid length
-        		return;
-        	}
-
-        	if (HAL_FDCAN_AddMessageToTxFifoQ(m_fdcan, &TxHeader, TxData)!= HAL_OK)
-			{
-				Error_Handler();
-			}
+        auto broadcast(IsFDCANSerializable auto const& send) -> void {
+            FDCAN_TxHeaderTypeDef header{
+                    .Identifier = 0x11,
+                    .IdType = FDCAN_STANDARD_ID,
+                    .TxFrameType = FDCAN_DATA_FRAME,
+                    .DataLength = nearest_fitting_fdcan_frame_size(sizeof(send)),
+                    .ErrorStateIndicator = FDCAN_ESI_ACTIVE,
+                    .BitRateSwitch = FDCAN_BRS_OFF,
+                    .FDFormat = FDCAN_FD_CAN,
+                    .TxEventFifoControl = FDCAN_NO_TX_EVENTS,
+                    .MessageMarker = 0,
+            };
+            check(HAL_FDCAN_AddMessageToTxFifoQ(m_fdcan, &header, address_of<std::uint8_t>(send)) == HAL_OK, Error_Handler);
         }
 
     private:
-        FDCAN_HandleTypeDef *m_fdcan{};
-        HAL_StatusTypeDef m_ret{};
-        FDCAN_TxHeaderTypeDef m_TxHeader;
-        FDCAN_RxHeaderTypeDef m_RxHeader;
-        uint8_t m_rxdata[64]{};
-        uint8_t m_txdata[64]{};
+        FDCAN_HandleTypeDef* m_fdcan{};
     };
 
-}
+} // namespace mrover

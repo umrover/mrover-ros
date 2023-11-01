@@ -8,24 +8,23 @@
 
 namespace mrover {
 
-    struct BrushedMotorWriter {
+    struct HBridgeWriter {
     public:
-        explicit BrushedMotorWriter(TIM_HandleTypeDef* timer);
-        void target_target_duty_cycle(const Config& config, Percent output);
-        void write();
+        HBridgeWriter() = default;
+
+        explicit HBridgeWriter(TIM_HandleTypeDef* timer);
+        void write(Config const& config, Percent output);
 
     private:
-        inline void set_direction_pins(Percent duty_cycle);
-        inline void set_duty_cycle(Percent duty_cycle);
+        void set_direction_pins(Percent duty_cycle);
+        void set_duty_cycle(Percent duty_cycle, Percent max_duty_cycle);
 
-        Percent max_duty_cycle;
-        Pin forward_pin{};
-        Pin reverse_pin{};
-        TIM_HandleTypeDef* timer{};
-        volatile std::uint32_t* arr{};
-        volatile std::uint32_t* ccr{};
-        std::uint32_t channel{};
-        Percent target_duty_cycle;
+        Pin m_forward_pins{};
+        Pin m_reverse_pins{};
+        TIM_HandleTypeDef* m_timer{};
+        std::uint32_t m_channel{};
+        volatile std::uint32_t* m_arr_register{};
+        volatile std::uint32_t* m_ccr_register{};
     };
 
 } // namespace mrover
