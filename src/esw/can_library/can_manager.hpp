@@ -79,18 +79,6 @@ public:
     //        m_can_publisher.publish(can_message);
     //    }
 
-    static std::size_t nearest_fitting_fdcan_frame_size(std::size_t size) {
-        if (size <= 8) return size;
-        if (size <= 12) return 12;
-        if (size <= 16) return 16;
-        if (size <= 20) return 20;
-        if (size <= 24) return 24;
-        if (size <= 32) return 32;
-        if (size <= 48) return 48;
-        if (size <= 64) return 64;
-        throw std::runtime_error("Too large!");
-    }
-
     void send_raw_data(std::string const& messageName, std::span<std::byte const> data) {
         if (!m_message_name_to_id.contains(messageName)) {
             throw std::invalid_argument(std::format("message_name {} is not valid.", messageName));
@@ -102,7 +90,7 @@ public:
                 .message_num = m_message_name_to_id[messageName],
                 .device_id = m_id,
         });
-        can_message.data.resize(nearest_fitting_fdcan_frame_size(data.size()));
+        can_message.data.resize(data.size());
         std::memcpy(can_message.data.data(), data.data(), data.size());
 
         m_can_publisher.publish(can_message);

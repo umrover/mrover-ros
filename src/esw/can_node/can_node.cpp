@@ -138,9 +138,23 @@ namespace mrover {
         mWriteFrame.can_id = canIdBits.to_ullong();
     }
 
+    static std::size_t nearest_fitting_fdcan_frame_size(std::size_t size) {
+        //        if (size <= 8) return size;
+        //        if (size <= 12) return 12;
+        //        if (size <= 16) return 16;
+        //        if (size <= 20) return 20;
+        //        if (size <= 24) return 24;
+        //        if (size <= 32) return 32;
+        //        if (size <= 48) return 48;
+        //        if (size <= 64) return 64;
+        //        throw std::runtime_error("Too large!");
+        // TODO(quintin, owen) support variable sized frames
+        return 64;
+    }
+
     void CanNodelet::setFrameData(std::span<const std::byte> data) {
         std::memcpy(mWriteFrame.data, data.data(), data.size());
-        mWriteFrame.len = data.size();
+        mWriteFrame.len = nearest_fitting_fdcan_frame_size(data.size());
     }
 
     void CanNodelet::canSendRequestCallback(CAN::ConstPtr const& msg) {
