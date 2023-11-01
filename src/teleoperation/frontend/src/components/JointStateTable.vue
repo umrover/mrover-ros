@@ -4,8 +4,7 @@
             <div>
                 <h3>Motor Data</h3>
             </div>
-            <table class="table" 
-            style="table-layout: fixed; width: 745px">
+            <table class="table" style="table-layout: fixed; width: 745px">
                 <colgroup>
                     <col style="width: 85px" />
                     <col style="width: 60px" />
@@ -20,8 +19,8 @@
                 </colgroup>
 
                 <thead>
-                    <tr>
-                        <th class="table-primary">Motor</th>
+                    <tr class="table-primary">
+                        <th>Motor</th>
                         <th>Positon (m)</th>
                         <th>Velocity (m/s)</th>
                         <th>Effort (Nm)</th>
@@ -49,8 +48,7 @@
             <div>
                 <h3>Motor Data</h3>
             </div>
-            <table class="table" 
-            style="table-layout: fixed; width: 745px">
+            <table class="table" style="table-layout: fixed; width: 745px">
                 <colgroup>
                     <col style="width: 85px" />
                     <col style="width: 60px" />
@@ -96,6 +94,8 @@
 </template>
   
 <script lang="ts">
+import { inject } from 'vue';
+
 
 export default {
     props: {
@@ -113,21 +113,22 @@ export default {
 
     data() {
         return {
+            websocket: inject("webSocketService") as WebSocket,
             motors: [],
-
             radius_m: 0
         };
     },
 
     created: function () {
-        // let radius_param = new ROSLIB.Param({
-        //     ros: this.$ros,
-        //     name: "wheel/radius"
-        // });
-
-        // radius_param.get((radius_m) => {
-        //     this.radius_m = radius_m;
-        // })
+        this.websocket.onmessage = (msg) => {
+            msg = JSON.parse(msg.data)
+            if (msg.type == "joint_state") {
+                this.name = msg.name;
+                this.position = msg.position;
+                this.velocity = msg.velocity;
+                this.effore = msg.effort;
+            }
+        }
     }
 };
 </script>
