@@ -5,14 +5,14 @@
       <h1 v-else>DM GUI Dashboard</h1>
       <img
         class="logo"
-        src="../static/mrover.png"
+        src="mrover.png"
         alt="MRover"
         title="MRover"
         width="200"
       />
       <div class="help">
         <img
-          src="../static/help.png"
+          src="help.png"
           alt="Help"
           title="Help"
           width="48"
@@ -29,7 +29,7 @@
         "
       >
         <img
-          src="../static/joystick.png"
+          src="joystick.png"
           alt="Joystick"
           title="Joystick Controls"
           style="width: auto; height: 70%; display: inline-block"

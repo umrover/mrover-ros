@@ -1,12 +1,12 @@
 <template>
     <div class="wrapper">
         <div class="shadow p-3 mb-5 header">
-            <img class="logo" src="../static/mrover.png" alt="MRover" title="MRover" width="200" />
+            <img class="logo" src="mrover.png" alt="MRover" title="MRover" width="200" />
             <h1>Auton Dashboard</h1>
             <!-- <MCUReset class="mcu_reset"></MCUReset>
         <CommReadout class="comms"></CommReadout> -->
             <div class="help">
-                <img src="../static/help.png" alt="Help" title="Help" width="48" height="48" />
+                <img src="help.png" alt="Help" title="Help" width="48" height="48" />
             </div>
             <div class="helpscreen"></div>
             <div class="helpimages" style="
@@ -14,13 +14,14 @@
                 align-items: center;
                 justify-content: space-evenly;
                 ">
-                <img src="../static/joystick.png" alt="Joystick" title="Joystick Controls"
+                <img src="joystick.png" alt="Joystick" title="Joystick Controls"
                     style="width: auto; height: 70%; display: inline-block" />
             </div>
         </div>
         <div class="data" :style="`background-color: {{nav_state_color}}`">
             <div>
                 <h2>Nav State: {{ nav_status.nav_state_name }}</h2>
+                <CameraFeed></CameraFeed>
             </div>
             <!-- <div>
         <p style="margin-top: 6px">Joystick Values</p>
@@ -73,6 +74,7 @@
 import DriveMoteusStateTable from "./DriveMoteusStateTable.vue";
 import AutonRoverMap from "./AutonRoverMap.vue";
 import AutonWaypointEditor from "./AutonWaypointEditor.vue";
+import CameraFeed from "./CameraFeed.vue";
 // import { quaternionToMapAngle } from "../utils.js";
 import { defineComponent } from "vue";
 
@@ -88,7 +90,8 @@ export default defineComponent({
     components: {
         DriveMoteusStateTable,
         AutonRoverMap,
-        AutonWaypointEditor
+        AutonWaypointEditor,
+        CameraFeed
     },
 
     data() {

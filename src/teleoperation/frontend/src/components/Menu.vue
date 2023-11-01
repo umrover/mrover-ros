@@ -4,7 +4,7 @@
       <h1>Menu</h1>
       <img
         class="logo"
-        src="../static/mrover.png"
+        src="mrover.png"
         alt="MRover"
         title="MRover"
         width="200"

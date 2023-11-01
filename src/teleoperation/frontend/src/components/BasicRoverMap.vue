@@ -56,7 +56,7 @@
   const MAX_ODOM_COUNT = 1000;
   const DRAW_FREQUENCY = 10;
   const onlineUrl = "http://{s}.google.com/vt/lyrs=s&x={x}&y={y}&z={z}";
-  const offlineUrl = "/static/map/{z}/{x}/{y}.png";
+  const offlineUrl = "map/{z}/{x}/{y}.png";
   const onlineTileOptions = {
     maxNativeZoom: 22,
     maxZoom: 100,
@@ -103,18 +103,18 @@
   
     created: function () {
       this.locationIcon = L.icon({
-        iconUrl: "../static/location_marker_icon.png",
+        iconUrl: "location_marker_icon.png",
         iconSize: [64, 64],
         iconAnchor: [32, 32],
       });
       this.waypointIcon = L.icon({
-        iconUrl: "../static/map_marker.png",
+        iconUrl: "map_marker.png",
         iconSize: [64, 64],
         iconAnchor: [32, 64],
         popupAnchor: [0, -32],
       });
       this.highlightedWaypointIcon = L.icon({
-        iconUrl: "../static/map_marker_highlighted.png",
+        iconUrl: "map_marker_highlighted.png",
         iconSize: [64, 64],
         iconAnchor: [32, 64],
         popupAnchor: [0, -32],

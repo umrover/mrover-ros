@@ -8,7 +8,7 @@
 
 <script lang="ts">
 import { defineComponent } from 'vue'
-import '../embuild/stream_client.js'
+import '/streaming/stream_client.js?url'
 
 export default defineComponent({
   data() {
