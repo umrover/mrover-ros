@@ -67,8 +67,6 @@ void Error_Handler(void);
 #define UV_LED_2_GPIO_Port GPIOA
 #define THERM_0_Pin GPIO_PIN_3
 #define THERM_0_GPIO_Port GPIOA
-#define UV_LED_3_Pin GPIO_PIN_5
-#define UV_LED_3_GPIO_Port GPIOA
 #define WHITE_LED_0_Pin GPIO_PIN_6
 #define WHITE_LED_0_GPIO_Port GPIOA
 #define WHITE_LED_1_Pin GPIO_PIN_7
@@ -83,10 +81,20 @@ void Error_Handler(void);
 #define THERM_4_GPIO_Port GPIOB
 #define THERM_2_Pin GPIO_PIN_12
 #define THERM_2_GPIO_Port GPIOB
-#define UV_LED_4_Pin GPIO_PIN_14
-#define UV_LED_4_GPIO_Port GPIOB
-#define UV_LED_5_Pin GPIO_PIN_15
-#define UV_LED_5_GPIO_Port GPIOB
+#define HEATER_0_Pin GPIO_PIN_13
+#define HEATER_0_GPIO_Port GPIOB
+#define HEATER_1_Pin GPIO_PIN_14
+#define HEATER_1_GPIO_Port GPIOB
+#define HEATER_2_Pin GPIO_PIN_15
+#define HEATER_2_GPIO_Port GPIOB
+#define HEATER_3_Pin GPIO_PIN_6
+#define HEATER_3_GPIO_Port GPIOC
+#define HEATER_4_Pin GPIO_PIN_8
+#define HEATER_4_GPIO_Port GPIOA
+#define HEATER_5_Pin GPIO_PIN_9
+#define HEATER_5_GPIO_Port GPIOA
+#define CAN_STANDBY_Pin GPIO_PIN_15
+#define CAN_STANDBY_GPIO_Port GPIOA
 #define I2C_MUX_RST_Pin GPIO_PIN_7
 #define I2C_MUX_RST_GPIO_Port GPIOB
 
