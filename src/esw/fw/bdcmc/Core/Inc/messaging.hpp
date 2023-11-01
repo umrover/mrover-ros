@@ -11,26 +11,74 @@ namespace mrover {
     // CAN FD supports up to 64 bytes per frame
     constexpr size_t FRAME_SIZE = 64;
 
+    struct __attribute__((__packed__)) ConfigLimitSwitchInfo0 {
+        uint8_t a_present : 1;
+        uint8_t b_present : 1;
+        uint8_t c_present : 1;
+        uint8_t d_present : 1;
+        uint8_t a_enable : 1;
+        uint8_t b_enable : 1;
+        uint8_t c_enable : 1;
+        uint8_t d_enable : 1;
+    };
+
+    struct __attribute__((__packed__)) ConfigLimitSwitchInfo1 {
+		uint8_t a_active_high : 1;
+		uint8_t b_active_high : 1;
+		uint8_t c_active_high : 1;
+		uint8_t d_active_high : 1;
+		uint8_t a_limits_forward : 1;
+		uint8_t b_limits_forward : 1;
+		uint8_t c_limits_forward : 1;
+		uint8_t d_limits_forward : 1;
+
+	};
+
+    struct __attribute__((__packed__)) ConfigLimitSwitchInfo2 {
+		uint8_t a_use_for_readjustment : 1;
+		uint8_t b_use_for_readjustment : 1;
+		uint8_t c_use_for_readjustment : 1;
+		uint8_t d_use_for_readjustment : 1;
+		uint8_t a_is_default_enabled : 1;
+		uint8_t b_is_default_enabled : 1;
+		uint8_t c_is_default_enabled : 1;
+		uint8_t d_is_default_enabled : 1;
+	};
+
+    struct __attribute__((__packed__)) ConfigEncoderInfo {
+    	[[maybe_unused]] uint8_t _ignore : 4; // 8 bits - (4 meaningful bits) = 4 ignored bits
+		uint8_t quad_present : 1;
+		uint8_t quad_is_forward_polarity : 1;
+		uint8_t abs_present : 1;
+		uint8_t abs_is_forward_polarity : 1;
+	};
+
+    struct __attribute__((__packed__)) ConfigLimitInfo {
+        	[[maybe_unused]] uint8_t _ignore : 6; // 8 bits - (2 meaningful bits) = 6 ignored bits
+    		uint8_t limit_max_forward_position : 1;
+    		uint8_t limit_max_backward_position : 1;
+    	};
+
     struct BaseCommand {
     };
 
     struct ConfigCommand : BaseCommand {
-        Meters gear_ratio;
+        Dimensionless gear_ratio;
         // TODO: Terrible naming for the limit switch info
-        uint8_t limit_switch_info_x;
-        uint8_t limit_switch_info_y;
-        uint8_t limit_switch_info_z;
-        uint8_t quad_abs_enc_info;
-        Meters   limit_a_readj_pos;
-        Meters   limit_b_readj_pos;
-        Meters   limit_c_readj_pos;
-        Meters   limit_d_readj_pos;
-        Meters   quad_enc_out_ratio;
-        Meters   abs_enc_out_ratio;
-        Dimensionless   max_pwm;
-        uint8_t limit_max_pos;
-        Meters   max_forward_pos;
-        Meters   max_back_pos;
+        ConfigLimitSwitchInfo0 limit_switch_info_0;
+        ConfigLimitSwitchInfo1 limit_switch_info_1;
+        ConfigLimitSwitchInfo2 limit_switch_info_2;
+        ConfigEncoderInfo quad_abs_enc_info;
+        Radians limit_a_readj_pos;
+        Radians limit_b_readj_pos;
+        Radians limit_c_readj_pos;
+        Radians limit_d_readj_pos;
+        Dimensionless quad_enc_out_ratio;
+        Dimensionless abs_enc_out_ratio;
+        Dimensionless max_pwm;
+        ConfigLimitInfo limit_max_pos;
+        Meters max_forward_pos;
+        Meters max_back_pos;
     };
 
     struct IdleCommand : BaseCommand {
