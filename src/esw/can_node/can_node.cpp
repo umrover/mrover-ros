@@ -49,7 +49,7 @@ namespace mrover {
 
             readFrameAsync();
 
-            mIoThread = std::jthread{[&] {
+            mIoThread = std::jthread{[this] {
                 mIoService.run();
             }};
 
@@ -87,12 +87,12 @@ namespace mrover {
         boost::asio::async_read(
                 mStream.value(),
                 boost::asio::buffer(&mReadFrame, sizeof(mReadFrame)),
-                [&](boost::system::error_code const& ec, std::size_t bytes) {
+                [](boost::system::error_code const& ec, std::size_t bytes) {
                     checkErrorCode(ec);
 
                     return sizeof(mReadFrame);
                 },
-                [&](boost::system::error_code const& ec, std::size_t bytes) { // NOLINT(*-no-recursion)
+                [this](boost::system::error_code const& ec, std::size_t bytes) { // NOLINT(*-no-recursion)
                     checkErrorCode(ec);
                     assert(bytes == sizeof(mReadFrame));
 
@@ -103,12 +103,13 @@ namespace mrover {
     }
 
     void CanNodelet::writeFrameAsync() {
+        std::size_t toSend = mWriteFrame.len;
         boost::asio::async_write(
                 mStream.value(),
-                boost::asio::buffer(&mWriteFrame, sizeof(mWriteFrame)),
-                [&](boost::system::error_code const& ec, std::size_t bytes) {
+                boost::asio::buffer(&mWriteFrame, toSend),
+                [toSend](boost::system::error_code const& ec, std::size_t bytes) {
                     checkErrorCode(ec);
-                    assert(bytes == sizeof(mWriteFrame));
+                    assert(bytes == toSend);
                 });
     }
 
@@ -138,23 +139,22 @@ namespace mrover {
         mWriteFrame.can_id = canIdBits.to_ullong();
     }
 
-    static std::size_t nearest_fitting_fdcan_frame_size(std::size_t size) {
-        //        if (size <= 8) return size;
-        //        if (size <= 12) return 12;
-        //        if (size <= 16) return 16;
-        //        if (size <= 20) return 20;
-        //        if (size <= 24) return 24;
-        //        if (size <= 32) return 32;
-        //        if (size <= 48) return 48;
-        //        if (size <= 64) return 64;
-        //        throw std::runtime_error("Too large!");
-        // TODO(quintin, owen) support variable sized frames
-        return 64;
+    static std::size_t nearestFittingFdcanFrameSize(std::size_t size) {
+        if (size <= 8) return size;
+        if (size <= 12) return 12;
+        if (size <= 16) return 16;
+        if (size <= 20) return 20;
+        if (size <= 24) return 24;
+        if (size <= 32) return 32;
+        if (size <= 48) return 48;
+        if (size <= 64) return 64;
+        throw std::runtime_error("Too large!");
     }
 
     void CanNodelet::setFrameData(std::span<const std::byte> data) {
+        std::size_t frameSize = nearestFittingFdcanFrameSize(data.size());
         std::memcpy(mWriteFrame.data, data.data(), data.size());
-        mWriteFrame.len = nearest_fitting_fdcan_frame_size(data.size());
+        mWriteFrame.len = frameSize;
     }
 
     void CanNodelet::canSendRequestCallback(CAN::ConstPtr const& msg) {
