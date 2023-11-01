@@ -38,34 +38,6 @@ struct Detection {
 };
 
 class Inference {
-public:
-    Inference() = default;
-    Inference(const std::string& onnxModelPath, const cv::Size& modelInputShape = {640, 640}, const std::string& classesTxtFile = "", const bool& runWithCuda = true);
-    std::vector<Detection> runInference(const cv::Mat& input);
-
-private:
-    void loadClassesFromFile();
-    void loadOnnxNetwork();
-    cv::Mat formatToSquare(const cv::Mat& source);
-
-    std::string modelPath;
-    std::string classesPath;
-    bool cudaEnabled{};
-
-    std::vector<std::string> classes{"person", "bicycle", "car", "motorcycle", "airplane", "bus", "train", "truck", "boat", "traffic light", "fire hydrant", "stop sign", "parking meter", "bench", "bird", "cat", "dog", "horse", "sheep", "cow", "elephant", "bear", "zebra", "giraffe", "backpack", "umbrella", "handbag", "tie", "suitcase", "frisbee", "skis", "snowboard", "sports ball", "kite", "baseball bat", "baseball glove", "skateboard", "surfboard", "tennis racket", "bottle", "wine glass", "cup", "fork", "knife", "spoon", "bowl", "banana", "apple", "sandwich", "orange", "broccoli", "carrot", "hot dog", "pizza", "donut", "cake", "chair", "couch", "potted plant", "bed", "dining table", "toilet", "tv", "laptop", "mouse", "remote", "keyboard", "cell phone", "microwave", "oven", "toaster", "sink", "refrigerator", "book", "clock", "vase", "scissors", "teddy bear", "hair drier", "toothbrush"};
-
-    cv::Size2f modelShape{};
-
-    float modelConfidenceThreshold{0.25};
-    float modelScoreThreshold{0.45};
-    float modelNMSThreshold{0.50};
-
-    bool letterBoxForSquare = true;
-
-    cv::dnn::Net net;
-};
-
-class InferenceNew {
 private:
     static const int BATCH_SIZE = 1;
 
@@ -90,21 +62,28 @@ private:
     //ONNX Model Path
     std::string onnxModelPath;
 
-public:
-    InferenceNew() = default;
+private:
+    //STATIC FUNCTIONS
+    static int getBindingInputIndex(nvinfer1::IExecutionContext* context);
 
-    InferenceNew(std::string_view onnxModelPath, cv::Size modelInputShape = {640, 640}, std::string_view classesTxtFile = "");
+public:
+    Inference() = default;
+
+    Inference(std::string_view onnxModelPath, cv::Size modelInputShape = {640, 640}, std::string_view classesTxtFile = "");
+
 
     std::vector<Detection> runInference(cv::Mat const& input);
 
 private:
     //Creates a ptr to the engine
-    void createCudaEngine(std::string_view onnxModelPath, int batchSize);
+    void createCudaEngine(std::string& onnxModelPath);
 
-    void launchInference(IExecutionContext* context, cudaStream_t stream, std::vector<float> const& inputTensor, std::vector<float>& outputTensor, void** bindings, int batchSize);
+    void launchInference();
 
-    static int getBindingInputIndex(nvinfer1::IExecutionContext* context);
+    void setUpContext(const std::string& inputFile); //This will need to be adjusted to the img msg, but I think its ok to just run pictures as an intial test
 
-    void InferenceNew::setUpContext(std::string const inputFile); //This will need to be adjusted to the img msg, but I think its ok to just run pictures as an intial test
+    void prepTensors();
+
+    void doDetection();
 }
 #endif // INFERENCE_H

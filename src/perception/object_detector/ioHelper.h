@@ -7,11 +7,11 @@
 
 namespace nvinfer1 {
 
-    std::ostream& operator<<(std::ostream& o, const ILogger::Severity severity);
+    std::ostream& operator<<(std::ostream& o, ILogger::Severity severity);
 
     class Logger : public nvinfer1::ILogger {
     public:
-        virtual void log(Severity severity, const char* msg) override {
+        void log(Severity severity, const char* msg) override {
             std::cerr << severity << ": " << msg << std::endl;
         }
     };
