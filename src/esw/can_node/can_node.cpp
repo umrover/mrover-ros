@@ -117,9 +117,11 @@ namespace mrover {
                                 assert(bytes == mReadData.size());
 
                                 // 3. We have all the data associated with the frame, process it
-
                                 processReadFrame();
 
+                                // 4. Ready for the next frame, start listening
+                                //    Note this is recursive, but it is safe because it is async
+                                //    i.e. the stack is not growing
                                 readFrameAsync();
                             });
                 });
