@@ -26,10 +26,7 @@ DiagTempSensor* new_diag_temp_sensor(ADCSensor* adc_sensor, int channel) {
 // EFFECTS: updates the sensor value
 void update_diag_temp_sensor_val(DiagTempSensor* sensor) {
 	float measured_voltage = get_adc_sensor_value(sensor->adc_sensor, sensor->channel) * 3.3f / 4096.0f;
-	// V_Thermistor = 3.3V * (R_Thermistor / (R_Thermistor + 10k)
-	// R_Thermistor = ((R1 * Vout)/(3.3V)) / (1 - Vout/3.3)
-	// Temperature = 25 + (((10000 * V_Thermistor) / (3.3 - V_Thermistor)) - DIAG_TEMP_25_DEGREE_RESISTANCE) / DIAG_TEMP_COEFFICIENT
-    sensor->temp = 25 + (((10000 * measured_voltage) / (3.3 - measured_voltage)) - DIAG_TEMP_25_DEGREE_RESISTANCE) / DIAG_TEMP_COEFFICIENT;
+    sensor->temp = (THRM_A4 * powf(measured_voltage,4)) + (THRM_A3 * powf(measured_voltage,3)) + (THRM_A2 * powf(measured_voltage,2)) + (THRM_A1 *  measured_voltage) + THRM_A0;
 }
 
 // REQUIRES: valid temp sensor

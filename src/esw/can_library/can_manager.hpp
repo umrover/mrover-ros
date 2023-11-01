@@ -57,6 +57,26 @@ public:
         send_raw_data(messageName, {address, sizeof(T)});
     }
 
+    void send_moteus_data(moteus::CanFdFrame canfd) {
+        mrover::CAN can_message;
+        can_message.bus = canfd.bus;
+        can_message.message_id = std::bit_cast<uint16_t>((canfd.source << 8) + (canfd.destination));
+        
+        if (canfd.reply_required) {
+            can_message.message_id |= 0x8000; 
+        }
+
+        else {
+            can_message.message_id &= 0x7FFF; 
+        }
+       
+        can_message.data.resize(canfd.data.size());
+
+        std::memcpy(can_message.data.data(), canfd.data.data(), canfd.data.size());
+
+        m_can_publisher.publish(can_message);
+    }
+
     void send_raw_data(std::string const& messageName, std::span<std::byte const> data) {
         if (!m_message_name_to_id.contains(messageName)) {
             throw std::invalid_argument(std::format("message_name {} is not valid.", messageName));

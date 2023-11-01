@@ -24,15 +24,26 @@ namespace mrover {
     }
     void BrushlessController::set_desired_velocity(float velocity) {
         velocity = std::clamp(velocity, min_velocity, max_velocity);
+        moteus::Controller::Options options;
+            options.id = 1;
+
+            moteus::Controller controller(options);
+            auto transport = moteus::Controller::MakeSingletonTransport({});
+
+            // Command a stop to the controller in order to clear any faults.
+            controller.SetStop();
+
+            moteus::PositionMode::Command cmd;
+
+            // Here we will just command a position of NaN and a velocity of
+            // 0.0.  This means "hold position wherever you are".
+
+            cmd.position = std::numeric_limits<double>::quiet_NaN();
+            cmd.velocity = velocity;
+
+            auto CANfd = controller.MakePosition(cmd);
+
         // TODO - need to convert to use rev/s
-        can_manager.send_data("velocity_cmd", velocity);
+        can_manager.send_data("velocity_cmd", CANfd.data);
     }
 } // namespace mrover
-int main() {
-    mrover::BrushlessController bc();
-    uint8_t[64] velocity = bc.test_set_velocity(5.0);
-    std::cout << velocity;
-
-
-    //can_manager.send_data("velocity_cmd", velocity);
-}

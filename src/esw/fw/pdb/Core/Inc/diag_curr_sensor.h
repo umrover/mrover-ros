@@ -9,7 +9,10 @@
 #include <string.h>
 
 #define DIAG_CURR_VCC 3.3f
-#define DIAG_CURR_MV_PER_AMP 264	  // MV_PER_AMP = 400mV/A * VCC/5.0
+#define DIAG_CURR_V_PER_AMP 0.4f
+
+#define DIAG_CURR_V_s 3.3f
+#define DIAG_CURR_S 0.2f
 
 // Part Link
 // https://www.digikey.com/en/products/detail/texas-instruments/TMCS1108A4BQDR/13692775
