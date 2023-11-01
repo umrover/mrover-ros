@@ -8,31 +8,31 @@ namespace mrover {
 
     class Config {
     private:
-        uint32_t motorId{};
+        std::uint32_t motor_id{};
         Meters gear_ratio{};
         // TODO: Terrible naming for the limit switch info
         uint8_t limit_switch_info_x{};
         uint8_t limit_switch_info_y{};
         uint8_t limit_switch_info_z{};
         uint8_t quad_abs_enc_info{};
-        Meters   limit_a_readj_pos{};
-        Meters   limit_b_readj_pos{};
-        Meters   limit_c_readj_pos{};
-        Meters   limit_d_readj_pos{};
-        Meters   quad_enc_out_ratio{};
-        Meters   abs_enc_out_ratio{};
-        Dimensionless   max_pwm{};
-        uint8_t limit_max_pos{};
-        Meters   max_forward_pos{};
-        Meters   max_back_pos{};
-        bool isConfigured{false};
-    public:
+        Meters limit_a_readj_pos{};
+        Meters limit_b_readj_pos{};
+        Meters limit_c_readj_pos{};
+        Meters limit_d_readj_pos{};
+        Meters quad_enc_out_ratio{};
+        Meters abs_enc_out_ratio{};
+        Dimensionless max_duty_cycle{};
+        std::uint8_t limit_max_pos{};
+        Meters max_forward_pos{};
+        Meters max_back_pos{};
+        bool is_configured{false};
 
-        explicit Config(uint32_t motorId) : motorId{motorId} {}
+    public:
+        explicit Config(std::uint32_t motor_id) : motor_id{motor_id} {}
 
         void configure(ConfigCommand command) {
             // Flag configuration as initialized
-            this->isConfigured = true;
+            this->is_configured = true;
 
             // Initialize values
             this->gear_ratio = command.gear_ratio;
@@ -47,24 +47,23 @@ namespace mrover {
             this->limit_d_readj_pos = command.limit_d_readj_pos;
             this->quad_enc_out_ratio = command.quad_enc_out_ratio;
             this->abs_enc_out_ratio = command.abs_enc_out_ratio;
-            this->max_pwm = command.max_pwm;
+            this->max_duty_cycle = command.max_pwm;
             this->limit_max_pos = command.limit_max_pos;
             this->max_forward_pos = command.max_forward_pos;
             this->max_back_pos = command.max_back_pos;
         }
 
-        [[nodiscard]] uint32_t getMotorId() {
-            return motorId;
+        [[nodiscard]] std::uint32_t get_motor_id() {
+            return motor_id;
         }
 
         [[nodiscard]] bool configured() const {
-            return this->isConfigured;
+            return this->is_configured;
         }
 
-        [[nodiscard]] Dimensionless getMaxPWM() const {
-            return this->max_pwm;
+        [[nodiscard]] Dimensionless get_max_duty_cyce() const {
+            return this->max_duty_cycle;
         }
-
     };
 
-}
+} // namespace mrover

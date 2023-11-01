@@ -273,6 +273,7 @@ namespace mrover {
     // Following template arguments are exponents in the order: Meter, Kilogram, Second, Radian, Ampere, Kelvin, Byte
     using default_rep_t = float;
     using Dimensionless = Unit<default_rep_t>;
+    using Percent = Dimensionless;
     using Meters = Unit<default_rep_t, std::ratio<1>, std::ratio<1>>;
     using Centimeters = Unit<default_rep_t, std::centi, std::ratio<1>>;
     using Millimeters = Unit<default_rep_t, std::milli, std::ratio<1>>;
@@ -284,7 +285,7 @@ namespace mrover {
     using Hours = Unit<default_rep_t, std::ratio<3600>, zero_exp_t, zero_exp_t, std::ratio<1>>;
     using Hertz = inverse<Seconds>;
     using Radians = Unit<default_rep_t, std::ratio<1>, zero_exp_t, zero_exp_t, zero_exp_t, std::ratio<1>>;
-    using tau_ratio_t = std::ratio<6283185307179586476, 10000000000000000000>; // TODO(quintin) is this 0-head play?
+    using tau_ratio_t = std::ratio<628318530717958647, 1000000000000000000>; // TODO(quintin) is this 0-head play?
     using Revolutions = Unit<default_rep_t, tau_ratio_t, zero_exp_t, zero_exp_t, zero_exp_t, std::ratio<1>>;
     using RadiansPerSecond = compound_unit<Radians, inverse<Seconds>>;
     using Amperes = Unit<default_rep_t, std::ratio<1>, zero_exp_t, zero_exp_t, zero_exp_t, zero_exp_t, std::ratio<1>>;
@@ -341,6 +342,10 @@ namespace mrover {
 
     inline constexpr auto operator""_mps(unsigned long long int n) {
         return make_unit<MetersPerSecond>(n);
+    }
+
+    inline constexpr auto operator""_percent(unsigned long long int n) {
+        return make_unit<Percent>(n);
     }
 
     //

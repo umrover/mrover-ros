@@ -29,7 +29,7 @@ namespace mrover {
 
     template<typename T, typename Output>
     concept OutputWriter = requires(T t, Config& config, Output output) {
-        { t.set_tgt(config, output) };
+        { t.target_target_duty_cycle(config, output) };
         { t.write() };
     };
 
@@ -72,7 +72,7 @@ namespace mrover {
 
         void feed(ThrottleCommand const& message) {
             force_configure();
-            m_writer.set_tgt(m_config, message.throttle);
+            m_writer.target_target_duty_cycle(m_config, message.throttle);
         }
 
         void feed(VelocityCommand const& message, VelocityMode mode) {

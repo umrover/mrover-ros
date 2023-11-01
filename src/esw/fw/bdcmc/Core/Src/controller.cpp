@@ -4,8 +4,8 @@
 
 #include "main.h"
 #include "messaging.hpp"
-#include "writer.hpp"
 #include "reader.hpp"
+#include "writer.hpp"
 
 extern FDCAN_HandleTypeDef hfdcan1;
 extern I2C_HandleTypeDef hi2c1;
@@ -13,7 +13,7 @@ extern TIM_HandleTypeDef htim15;
 extern TIM_HandleTypeDef htim3;
 
 // NOTE: Change This For Each Motor Controller
-constexpr uint32_t CAN_ID = 1;
+constexpr std::uint32_t CAN_ID = 1;
 
 using controller_t = mrover::Controller<mrover::Radians, mrover::Dimensionless, mrover::EncoderReader, mrover::BrushedMotorWriter>;
 
@@ -21,7 +21,7 @@ namespace mrover {
     std::optional<controller_t> controller;
 } // namespace mrover
 
-HAL_StatusTypeDef HAL_FDCAN_GetRxMessage(FDCAN_HandleTypeDef* hfdcan, uint32_t RxLocation, FDCAN_RxHeaderTypeDef* pRxHeader, std::span<std::byte, mrover::FRAME_SIZE> RxData) {
+HAL_StatusTypeDef HAL_FDCAN_GetRxMessage(FDCAN_HandleTypeDef* hfdcan, std::uint32_t RxLocation, FDCAN_RxHeaderTypeDef* pRxHeader, std::span<std::byte, mrover::FRAME_SIZE> RxData) {
     return HAL_FDCAN_GetRxMessage(hfdcan, RxLocation, pRxHeader, reinterpret_cast<uint8_t*>(RxData.data()));
 }
 
