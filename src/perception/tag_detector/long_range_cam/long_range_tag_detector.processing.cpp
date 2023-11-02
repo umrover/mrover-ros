@@ -141,7 +141,7 @@ namespace mrover {
         return centerPoint;
     }
 
-    cv::Point2f LongRangeTagDetectorNodelet::getNormedTagCenterOffset(std::vector<cv::Point2f>& tagCorners) const {
+    cv::Poinjt2f LongRangeTagDetectorNodelet::getNormedTagCenterOffset(std::vector<cv::Point2f>& tagCorners) const {
         cv::Point2f offsetCenterPoint = getTagCenterOffsetPixels(tagCorners);
 
         offsetCenterPoint.x /= static_cast<float>(mImgMsg.width);
@@ -151,9 +151,15 @@ namespace mrover {
     }
 
     float LongRangeTagDetectorNodelet::getTagBearing(std::vector<cv::Point2f>& tagCorners) const {
-        //TODO: Implement me!
-
-        return {};
+        //TODO: FINISH
+        //for HD720 resolution
+        pair<float, float> center = getTagCenterPixels(tagCorners);
+        float x = center.first;
+        int width = //get width of the image
+        int angleOfFOV = 104; 
+        float bearing = ((x - width / 2) / width) * angleOfFOV;
+    
+        return bearing;
     }
 
     void LongRangeTagDetectorNodelet::publishThresholdTags() {

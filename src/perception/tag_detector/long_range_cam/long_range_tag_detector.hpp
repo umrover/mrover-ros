@@ -25,7 +25,7 @@ namespace mrover {
         // TODO: change this to param
         bool mPublishImages = true; // If set, we publish the images with the tags drawn on top
 
-        //Constatns set in ROS params for num hits needed to publish
+        //Constants set in ROS params for num hits needed to publish
         int mMinHitCountBeforePublish{};
         int mBaseHitCount{};
         int mMaxHitCount{};

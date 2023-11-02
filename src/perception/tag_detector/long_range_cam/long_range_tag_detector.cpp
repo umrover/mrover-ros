@@ -8,7 +8,7 @@ namespace mrover {
         mDetectorParams = new cv::aruco::DetectorParameters();
         auto defaultDetectorParams = cv::makePtr<cv::aruco::DetectorParameters>();
         int dictionaryNumber;
-
+        
         mPnh.param<bool>("publish_images", mPublishImages, true);
         mPnh.param<int>("min_hit_count_before_publish", mMinHitCountBeforePublish, 5);
         mPnh.param<int>("max_hit_count", mMaxHitCount, 5);
