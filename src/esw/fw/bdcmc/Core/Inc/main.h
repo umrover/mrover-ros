@@ -71,10 +71,8 @@ void loop();
 #define LIMIT_0_D_GPIO_Port GPIOF
 #define MOTOR_0_PWM_Pin GPIO_PIN_14
 #define MOTOR_0_PWM_GPIO_Port GPIOB
-#define MOTOR_0_NDIR_Pin GPIO_PIN_15
-#define MOTOR_0_NDIR_GPIO_Port GPIOB
-#define MOTOR_0_DIR_Pin GPIO_PIN_6
-#define MOTOR_0_DIR_GPIO_Port GPIOC
+#define MOTOR_0_DIR_Pin GPIO_PIN_15
+#define MOTOR_0_DIR_GPIO_Port GPIOB
 #define CAN_STANDBY_Pin GPIO_PIN_15
 #define CAN_STANDBY_GPIO_Port GPIOA
 #define QUAD_0_A_Pin GPIO_PIN_6
