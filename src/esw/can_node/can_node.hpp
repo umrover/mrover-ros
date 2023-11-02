@@ -65,7 +65,10 @@ namespace mrover {
     private:
         ros::NodeHandle mNh, mPnh;
 
+        std::string mInterface;
         bool mIsExtendedFrame{};
+        std::uint32_t mBitrate{};
+        std::uint32_t mBitratePrescaler{};
 
         std::uint8_t mBus{};
         canfd_frame mWriteFrame{};

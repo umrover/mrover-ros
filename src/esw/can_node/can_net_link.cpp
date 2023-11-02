@@ -11,7 +11,7 @@
 
 namespace mrover {
 
-    CanNetLink::CanNetLink() {
+    CanNetLink::CanNetLink(std::string const& interface, std::uint32_t bitrate, std::uint32_t bitrate_prescaler) {
         try {
             mSocket = nl_socket_alloc();
             if (mSocket == nullptr) {
@@ -28,14 +28,14 @@ namespace mrover {
                 throw std::runtime_error("Failed to allocate rtnl_link cache");
             }
 
-            mLink = rtnl_link_get_by_name(cache, "can0");
+            mLink = rtnl_link_get_by_name(cache, interface.c_str());
             if (mLink == nullptr) {
                 throw std::runtime_error("Failed to get rtnl_link");
             }
 
             can_bittiming bt{
-                    .bitrate = 500000,
-                    .brp = 2,
+                    .bitrate = bitrate,
+                    .brp = bitrate_prescaler,
             };
             if (int result = rtnl_link_can_set_bittiming(mLink, &bt); result < 0) {
                 throw std::runtime_error("Failed to set bittiming");

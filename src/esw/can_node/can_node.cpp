@@ -37,22 +37,24 @@ namespace mrover {
             mNh = getMTNodeHandle();
             mPnh = getMTPrivateNodeHandle();
 
-            mIsExtendedFrame = mNh.param<bool>("is_extended_frame", true);
+            mInterface = mPnh.param<std::string>("interface", "can0");
+            mIsExtendedFrame = mPnh.param<bool>("is_extended_frame", true);
+            mBitrate = static_cast<std::uint32_t>(mPnh.param<int>("bitrate", 500000));
+            mBitratePrescaler = static_cast<std::uint32_t>(mPnh.param<int>("bitrate_prescaler", 2));
 
             mCanSubscriber = mNh.subscribe<CAN>("can_requests", 16, &CanNodelet::canSendRequestCallback, this);
-            mCanPublisher = mNh.advertise<mrover::CAN>("can_data", 16);
+            mCanPublisher = mNh.advertise<CAN>("can_data", 16);
 
-            mCanNetLink.emplace();
+            mCanNetLink.emplace(mInterface, mBitrate, mBitratePrescaler);
 
-            int socketFd = setupSocket();
+            int socketFileDescriptor = setupSocket();
             mStream.emplace(mIoService);
-            mStream->assign(socketFd);
+            mStream->assign(socketFileDescriptor);
 
             readFrameAsync();
 
-            mIoThread = std::jthread{[this] {
-                mIoService.run();
-            }};
+            // Since "onInit" needs to return, kick off a self-joining thread to run the IO concurrently
+            mIoThread = std::jthread{[this] { mIoService.run(); }};
 
             NODELET_INFO("CAN Node started");
 
@@ -67,8 +69,7 @@ namespace mrover {
         NODELET_INFO("Opened CAN socket");
 
         ifreq ifr{};
-        const char* interfaceName = "can0";
-        strcpy(ifr.ifr_name, interfaceName);
+        std::strcpy(ifr.ifr_name, mInterface.c_str());
         ioctl(socketFd, SIOCGIFINDEX, &ifr);
 
         sockaddr_can addr{
@@ -101,6 +102,7 @@ namespace mrover {
                 [this](boost::system::error_code const& ec, std::size_t bytes) { // NOLINT(*-no-recursion)
                     checkErrorCode(ec);
                     assert(bytes == sizeof(mReadHeader));
+
                     mReadData.resize(mReadHeader.len);
 
                     // 2. Read the main data, we know how much to read from the header
@@ -128,13 +130,16 @@ namespace mrover {
     }
 
     void CanNodelet::writeFrameAsync() {
-        std::size_t toSend = mWriteFrame.len;
+        std::size_t sendLength = mWriteFrame.len;
         boost::asio::async_write(
                 mStream.value(),
-                boost::asio::buffer(&mWriteFrame, toSend),
-                [toSend](boost::system::error_code const& ec, std::size_t bytes) {
+                boost::asio::buffer(&mWriteFrame, sendLength),
+                // Copy the amount to send BY VALUE
+                // Otherwise, it would be a reference to a local variable that would go out of scope
+                // This lambda ensures we wrote all the data in the frame
+                [sendLength](boost::system::error_code const& ec, std::size_t bytes) {
                     checkErrorCode(ec);
-                    assert(bytes == toSend);
+                    assert(bytes == sendLength);
                 });
     }
 
@@ -177,8 +182,8 @@ namespace mrover {
 
     void CanNodelet::setFrameData(std::span<const std::byte> data) {
         std::size_t frameSize = nearestFittingFdcanFrameSize(data.size());
-        std::memcpy(mWriteFrame.data, data.data(), data.size());
         mWriteFrame.len = frameSize;
+        std::memcpy(mWriteFrame.data, data.data(), data.size());
     }
 
     void CanNodelet::canSendRequestCallback(CAN::ConstPtr const& msg) {
@@ -206,13 +211,6 @@ namespace mrover {
 
 } // namespace mrover
 
-#ifdef MROVER_IS_NODELET
-
-#include <pluginlib/class_list_macros.h>
-PLUGINLIB_EXPORT_CLASS(mrover::CanNodelet, nodelet::Nodelet)
-
-#endif
-
 int main(int argc, char** argv) {
     ros::init(argc, argv, "can_node");
 
@@ -224,3 +222,8 @@ int main(int argc, char** argv) {
 
     return EXIT_SUCCESS;
 }
+
+#ifdef MROVER_IS_NODELET
+#include <pluginlib/class_list_macros.h>
+PLUGINLIB_EXPORT_CLASS(mrover::CanNodelet, nodelet::Nodelet)
+#endif
