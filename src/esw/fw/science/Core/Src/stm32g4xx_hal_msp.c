@@ -115,17 +115,17 @@ void HAL_ADC_MspInit(ADC_HandleTypeDef* hadc)
     PB11     ------> ADC1_IN14
     PB12     ------> ADC1_IN11
     */
-    GPIO_InitStruct.Pin = THERM_1_Pin;
+    GPIO_InitStruct.Pin = THERM_N1_Pin;
     GPIO_InitStruct.Mode = GPIO_MODE_ANALOG;
     GPIO_InitStruct.Pull = GPIO_NOPULL;
-    HAL_GPIO_Init(THERM_1_GPIO_Port, &GPIO_InitStruct);
+    HAL_GPIO_Init(THERM_N1_GPIO_Port, &GPIO_InitStruct);
 
-    GPIO_InitStruct.Pin = THERM_0_Pin;
+    GPIO_InitStruct.Pin = THERM_B0_Pin;
     GPIO_InitStruct.Mode = GPIO_MODE_ANALOG;
     GPIO_InitStruct.Pull = GPIO_NOPULL;
-    HAL_GPIO_Init(THERM_0_GPIO_Port, &GPIO_InitStruct);
+    HAL_GPIO_Init(THERM_B0_GPIO_Port, &GPIO_InitStruct);
 
-    GPIO_InitStruct.Pin = THERM_5_Pin|THERM_3_Pin|THERM_4_Pin|THERM_2_Pin;
+    GPIO_InitStruct.Pin = THERM_N2_Pin|THERM_N1B1_Pin|THERM_B2_Pin|THERM_B1_Pin;
     GPIO_InitStruct.Mode = GPIO_MODE_ANALOG;
     GPIO_InitStruct.Pull = GPIO_NOPULL;
     HAL_GPIO_Init(GPIOB, &GPIO_InitStruct);
@@ -161,11 +161,11 @@ void HAL_ADC_MspDeInit(ADC_HandleTypeDef* hadc)
     PB11     ------> ADC1_IN14
     PB12     ------> ADC1_IN11
     */
-    HAL_GPIO_DeInit(THERM_1_GPIO_Port, THERM_1_Pin);
+    HAL_GPIO_DeInit(THERM_N1_GPIO_Port, THERM_N1_Pin);
 
-    HAL_GPIO_DeInit(THERM_0_GPIO_Port, THERM_0_Pin);
+    HAL_GPIO_DeInit(THERM_B0_GPIO_Port, THERM_B0_Pin);
 
-    HAL_GPIO_DeInit(GPIOB, THERM_5_Pin|THERM_3_Pin|THERM_4_Pin|THERM_2_Pin);
+    HAL_GPIO_DeInit(GPIOB, THERM_N2_Pin|THERM_N1B1_Pin|THERM_B2_Pin|THERM_B1_Pin);
 
   /* USER CODE BEGIN ADC1_MspDeInit 1 */
 
