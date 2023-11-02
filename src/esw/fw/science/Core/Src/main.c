@@ -206,7 +206,7 @@ static void MX_ADC1_Init(void)
   sConfig.Channel = ADC_CHANNEL_11;
   sConfig.Rank = ADC_REGULAR_RANK_1;
   sConfig.SamplingTime = ADC_SAMPLETIME_2CYCLES_5;
-  sConfig.SingleDiff = ADC_DIFFERENTIAL_ENDED;
+  sConfig.SingleDiff = ADC_SINGLE_ENDED;
   sConfig.OffsetNumber = ADC_OFFSET_NONE;
   sConfig.Offset = 0;
   if (HAL_ADC_ConfigChannel(&hadc1, &sConfig) != HAL_OK)
@@ -322,39 +322,42 @@ static void MX_GPIO_Init(void)
 /* USER CODE END MX_GPIO_Init_1 */
 
   /* GPIO Ports Clock Enable */
+  __HAL_RCC_GPIOC_CLK_ENABLE();
   __HAL_RCC_GPIOF_CLK_ENABLE();
   __HAL_RCC_GPIOA_CLK_ENABLE();
-  __HAL_RCC_GPIOC_CLK_ENABLE();
   __HAL_RCC_GPIOB_CLK_ENABLE();
 
   /*Configure GPIO pin Output Level */
+  HAL_GPIO_WritePin(GPIOC, DEBUG_LED_0_Pin|DEBUG_LED_1_Pin|DEBUG_LED_2_Pin|WHITE_LED_2_Pin
+                          |HEATER_N1_Pin, GPIO_PIN_RESET);
+
+  /*Configure GPIO pin Output Level */
   HAL_GPIO_WritePin(GPIOA, UV_LED_0_Pin|UV_LED_1_Pin|UV_LED_2_Pin|WHITE_LED_0_Pin
-                          |WHITE_LED_1_Pin|HEATER_4_Pin|HEATER_5_Pin|CAN_STANDBY_Pin, GPIO_PIN_RESET);
+                          |WHITE_LED_1_Pin|HEATER_B2_Pin|HEATER_N2_Pin|CAN_STANDBY_Pin, GPIO_PIN_RESET);
 
   /*Configure GPIO pin Output Level */
-  HAL_GPIO_WritePin(GPIOC, WHITE_LED_2_Pin|HEATER_3_Pin, GPIO_PIN_RESET);
+  HAL_GPIO_WritePin(GPIOB, HEATER_B0_Pin|HEATER_N0_Pin|HEATER_B1_Pin|I2C_MUX_RST_Pin, GPIO_PIN_RESET);
 
-  /*Configure GPIO pin Output Level */
-  HAL_GPIO_WritePin(GPIOB, HEATER_0_Pin|HEATER_1_Pin|HEATER_2_Pin|I2C_MUX_RST_Pin, GPIO_PIN_RESET);
-
-  /*Configure GPIO pins : UV_LED_0_Pin UV_LED_1_Pin UV_LED_2_Pin WHITE_LED_0_Pin
-                           WHITE_LED_1_Pin HEATER_4_Pin HEATER_5_Pin CAN_STANDBY_Pin */
-  GPIO_InitStruct.Pin = UV_LED_0_Pin|UV_LED_1_Pin|UV_LED_2_Pin|WHITE_LED_0_Pin
-                          |WHITE_LED_1_Pin|HEATER_4_Pin|HEATER_5_Pin|CAN_STANDBY_Pin;
-  GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
-  GPIO_InitStruct.Pull = GPIO_NOPULL;
-  GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
-  HAL_GPIO_Init(GPIOA, &GPIO_InitStruct);
-
-  /*Configure GPIO pins : WHITE_LED_2_Pin HEATER_3_Pin */
-  GPIO_InitStruct.Pin = WHITE_LED_2_Pin|HEATER_3_Pin;
+  /*Configure GPIO pins : DEBUG_LED_0_Pin DEBUG_LED_1_Pin DEBUG_LED_2_Pin WHITE_LED_2_Pin
+                           HEATER_N1_Pin */
+  GPIO_InitStruct.Pin = DEBUG_LED_0_Pin|DEBUG_LED_1_Pin|DEBUG_LED_2_Pin|WHITE_LED_2_Pin
+                          |HEATER_N1_Pin;
   GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
   GPIO_InitStruct.Pull = GPIO_NOPULL;
   GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
   HAL_GPIO_Init(GPIOC, &GPIO_InitStruct);
 
-  /*Configure GPIO pins : HEATER_0_Pin HEATER_1_Pin HEATER_2_Pin I2C_MUX_RST_Pin */
-  GPIO_InitStruct.Pin = HEATER_0_Pin|HEATER_1_Pin|HEATER_2_Pin|I2C_MUX_RST_Pin;
+  /*Configure GPIO pins : UV_LED_0_Pin UV_LED_1_Pin UV_LED_2_Pin WHITE_LED_0_Pin
+                           WHITE_LED_1_Pin HEATER_B2_Pin HEATER_N2_Pin CAN_STANDBY_Pin */
+  GPIO_InitStruct.Pin = UV_LED_0_Pin|UV_LED_1_Pin|UV_LED_2_Pin|WHITE_LED_0_Pin
+                          |WHITE_LED_1_Pin|HEATER_B2_Pin|HEATER_N2_Pin|CAN_STANDBY_Pin;
+  GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
+  GPIO_InitStruct.Pull = GPIO_NOPULL;
+  GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
+  HAL_GPIO_Init(GPIOA, &GPIO_InitStruct);
+
+  /*Configure GPIO pins : HEATER_B0_Pin HEATER_N0_Pin HEATER_B1_Pin I2C_MUX_RST_Pin */
+  GPIO_InitStruct.Pin = HEATER_B0_Pin|HEATER_N0_Pin|HEATER_B1_Pin|I2C_MUX_RST_Pin;
   GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
   GPIO_InitStruct.Pull = GPIO_NOPULL;
   GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
