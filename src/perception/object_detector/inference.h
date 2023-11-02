@@ -84,6 +84,8 @@ private:
 
     void prepTensors();
 
-    void doDetection();
+    void Inference::setUpContext();
+
+    std::vector<Detection> Inference::doDetections(const std::string& inputFile)
 }
 #endif // INFERENCE_H

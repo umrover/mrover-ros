@@ -6,10 +6,15 @@
 #include "ioHelper.h"
 
 #include <memory>
+#include <opencv4/opencv2/core/mat.hpp>
 #include <opencv4/opencv2/core/types.hpp>
 #include <string>
 
+
 #include "inference.h"
+
+//Include Parser
+#include "Parser.cpp"
 
 #include <array>
 #include <string_view>
@@ -99,16 +104,23 @@ int Inference::getBindingInputIndex(nvinfer1::IExecutionContext* context) {
 }
 
 
-void Inference::setUpContext(const std::string& inputFile) {
-    // Read input tensor from input picture file.
-    if (readTensor(inputFile, this->inputTensor) != this->inputTensor.size()) {
-        std::cout << "Couldn't read input Tensor" << std::endl;
-    }
-
+void Inference::setUpContext() {
     // Create Execution Context.
     this->context.reset(this->enginePtr->createExecutionContext());
 
     Dims dims_i{this->enginePtr->getBindingDimensions(0)};
     Dims4 inputDims{Inference::BATCH_SIZE, dims_i.d[1], dims_i.d[2], dims_i.d[3]};
     context->setBindingDimensions(0, inputDims);
+}
+
+std::vector<Detection> Inference::doDetections(const std::string& inputFile) {
+    // Read input tensor from input picture file.
+    if (readTensor(inputFile, this->inputTensor) != this->inputTensor.size()) {
+        std::cout << "Couldn't read input Tensor" << std::endl;
+    }
+
+    //Do the forward pass on the network
+    launchInference();
+
+    return Parser(this->outputTensor).parseTensor();
 }
