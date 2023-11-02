@@ -69,6 +69,12 @@ void loop();
 #define LIMIT_0_C_GPIO_Port GPIOC
 #define LIMIT_0_D_Pin GPIO_PIN_0
 #define LIMIT_0_D_GPIO_Port GPIOF
+#define DEBUG_LED_0_Pin GPIO_PIN_1
+#define DEBUG_LED_0_GPIO_Port GPIOA
+#define DEBUG_LED_1_Pin GPIO_PIN_2
+#define DEBUG_LED_1_GPIO_Port GPIOA
+#define DEBUG_LED_2_Pin GPIO_PIN_3
+#define DEBUG_LED_2_GPIO_Port GPIOA
 #define MOTOR_0_PWM_Pin GPIO_PIN_14
 #define MOTOR_0_PWM_GPIO_Port GPIOB
 #define MOTOR_0_DIR_Pin GPIO_PIN_15

@@ -154,6 +154,10 @@ namespace mrover {
             if (size <= 32) return FDCAN_DLC_BYTES_32;
             if (size <= 48) return FDCAN_DLC_BYTES_48;
             if (size <= 64) return FDCAN_DLC_BYTES_64;
+            // exception handling disabled, use '-fexceptions' to enable
+            // project -> Properties -> C/C++ Build -> Settings ->
+            // Tool Settings -> MCU G++ Compiler -> Miscellaneous
+            // Add the "-fexceptions" flag there.
             throw std::runtime_error("Too large!");
         }
 
