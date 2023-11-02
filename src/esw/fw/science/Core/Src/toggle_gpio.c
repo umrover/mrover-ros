@@ -13,3 +13,5 @@ void set_pin_value(Toggle_GPIO* led, bool value) {
 bool get_pin_value(Toggle_GPIO *led) {
     return HAL_GPIO_ReadPin(led->p, led->pin);
 }
+
+
