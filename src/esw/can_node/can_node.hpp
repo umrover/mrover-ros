@@ -74,7 +74,7 @@ namespace mrover {
         canfd_frame mWriteFrame{};
         canfd_header mReadHeader{};
         std::vector<std::uint8_t> mReadData{};
-        std::optional<CanNetLink> mCanNetLink;
+        CanNetLink mCanNetLink;
         std::optional<boost::asio::posix::basic_stream_descriptor<>> mStream;
         std::jthread mIoThread;
         boost::asio::io_service mIoService;

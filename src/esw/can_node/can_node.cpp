@@ -45,7 +45,7 @@ namespace mrover {
             mCanSubscriber = mNh.subscribe<CAN>("can_requests", 16, &CanNodelet::canSendRequestCallback, this);
             mCanPublisher = mNh.advertise<CAN>("can_data", 16);
 
-            mCanNetLink.emplace(mInterface, mBitrate, mBitratePrescaler);
+            mCanNetLink = {mInterface, mBitrate, mBitratePrescaler};
 
             int socketFileDescriptor = setupSocket();
             mStream.emplace(mIoService);
