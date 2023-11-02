@@ -20,31 +20,35 @@ int main(int argc, char** argv) {
 
 namespace mrover {
 
-    Perception::Perception() : mNodeHandle{}, mImageTransport{mNodeHandle} {
+    Perception::Perception() : mNodeHandle{} {
         // Subscribe to camera image messages
         // Every time another node publishes to this topic we will be notified
         // Specifically the callback we passed will be invoked
-        mImageSubscriber = mImageTransport.subscribe("camera/right/image", 1, &Perception::imageCallback, this);
+        mImageSubscriber = mNodeHandle.subscribe("camera/left/image", 1, &Perception::imageCallback, this);
 
         // Create a publisher for our tag topic
         // See: http://wiki.ros.org/ROS/Tutorials/WritingPublisherSubscriber%28c%2B%2B%29
         // TODO: uncomment me!
         mTagPublisher = mNodeHandle.advertise<StarterProjectTag>("tag", 1);
 
-        mTagDetectorParams = cv::aruco::DetectorParameters::create();
-        mTagDictionary = cv::aruco::getPredefinedDictionary(0);
+        mTagDetectorParams = cv::makePtr<cv::aruco::DetectorParameters>();
+        mTagDictionary = cv::makePtr<cv::aruco::Dictionary>(cv::aruco::getPredefinedDictionary(cv::aruco::DICT_4X4_50));
     }
 
-    void Perception::imageCallback(sensor_msgs::ImageConstPtr const& image) {
+    void Perception::imageCallback(sensor_msgs::ImageConstPtr const& imageMessage) {
         // Create a cv::Mat from the ROS image message
         // Note this does not copy the image data, it is basically a pointer
         // Be careful if you extend its lifetime beyond this function
-        cv::Mat cvImage{static_cast<int>(image->height), static_cast<int>(image->width),
-                        CV_8UC3, const_cast<uint8_t*>(image->data.data())};
+        cv::Mat image{static_cast<int>(imageMessage->height), static_cast<int>(imageMessage->width),
+                      CV_8UC3, const_cast<uint8_t*>(imageMessage->data.data())};
         // Detect tags in the image pixels
-        findTagsInImage(cvImage, mTags);
+        findTagsInImage(image, mTags);
         // Select the tag that is closest to the middle of the screen
+<<<<<<< HEAD
         StarterProjectTag tag = selectTag(mTags, cvImage);
+=======
+        StarterProjectTag tag = selectTag(image, mTags);
+>>>>>>> 263466d467bd4ac78fec1d9f971037997b41f600
         // Publish the message to our topic so navigation or others can receive it
         publishTag(tag);
     }
@@ -73,7 +77,7 @@ namespace mrover {
         }
     }
 
-    StarterProjectTag Perception::selectTag(std::vector<StarterProjectTag> const& tags, cv::Mat const& image) { // NOLINT(*-convert-member-functions-to-static)
+    StarterProjectTag Perception::selectTag(cv::Mat const& image, std::vector<StarterProjectTag> const& tags) { // NOLINT(*-convert-member-functions-to-static)
         // TODO: implement me!
 
         // for each tag in the list, see how close it is to the center, keep track of the closest one

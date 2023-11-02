@@ -15,12 +15,6 @@ drive:
     driving_p: 10.0
   lookahead_distance: 1.0
 
-gate:
-  stop_thresh: 0.2
-  drive_fwd_thresh: 0.34
-  approach_distance: 2.0
-  post_radius: 0.7
-
 search:
   stop_thresh: 0.5
   drive_fwd_thresh: 0.34
@@ -32,6 +26,7 @@ single_fiducial:
   stop_thresh: 1.0
   fiducial_stop_threshold: 1.75
   post_avoidance_multiplier: 1.42
+  post_radius: 0.7
 
 waypoint:
   stop_thresh: 0.5

@@ -30,8 +30,7 @@ namespace mrover {
         tf2_ros::Buffer mTfBuffer;
         tf2_ros::TransformListener mTfListener{mTfBuffer};
         tf2_ros::TransformBroadcaster mTfBroadcaster;
-        ros::Publisher mPcPub, mImuPub, mMagPub, mLeftCamInfoPub, mRightCamInfoPub;
-        image_transport::Publisher mLeftImgPub, mRightImgPub;
+        ros::Publisher mPcPub, mImuPub, mMagPub, mLeftCamInfoPub, mRightCamInfoPub, mLeftImgPub, mRightImgPub;
 
         PointCloudGpu mPointCloudGpu;
 
@@ -54,7 +53,7 @@ namespace mrover {
         std::thread mPointCloudThread, mGrabThread;
         std::mutex mSwapMutex;
         std::condition_variable mSwapCv;
-        std::atomic_bool mIsSwapReady = false;
+        bool mIsSwapReady = false;
 
         LoopProfiler mPcThreadProfiler{"Zed Wrapper Point Cloud"}, mGrabThreadProfiler{"Zed Wrapper Grab"};
 

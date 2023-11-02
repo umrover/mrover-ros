@@ -1,0 +1,2 @@
+string origin
+string[] destinations

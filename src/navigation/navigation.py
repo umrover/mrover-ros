@@ -5,97 +5,51 @@ import sys
 import threading
 
 import rospy
-import smach
-import smach_ros
-from smach.log import loginfo
-from smach.log import set_loggers
-from std_msgs.msg import String
 
-from approach_post import ApproachPostState, ApproachPostStateTransitions
-from context import Context
-from gate import GateTraverseState, GateTraverseStateTransitions
-from partial_gate import PartialGateState, PartialGateStateTransitions
-from post_backup import PostBackupState, PostBackupTransitions
-from recovery import RecoveryState, RecoveryStateTransitions
-from search import SearchState, SearchStateTransitions
-from state import DoneState, DoneStateTransitions, OffState, OffStateTransitions
-from waypoint import WaypointState, WaypointStateTransitions
+from util.state_lib.state_machine import StateMachine
+from util.state_lib.state_publisher_server import StatePublisher
+
+from navigation.approach_post import ApproachPostState
+from navigation.context import Context
+from navigation.post_backup import PostBackupState
+from navigation.recovery import RecoveryState
+from navigation.search import SearchState
+from navigation.state import DoneState, OffState, off_check
+from navigation.waypoint import WaypointState
 
 
 class Navigation(threading.Thread):
-    state_machine: smach.StateMachine
+    state_machine: StateMachine
     context: Context
-    sis: smach_ros.IntrospectionServer
+    state_machine_server: StatePublisher
 
     def __init__(self, context: Context):
         super().__init__()
-        set_loggers(info=lambda _: None, warn=loginfo, error=loginfo, debug=loginfo)
         self.name = "NavigationThread"
-        self.state_machine = smach.StateMachine(outcomes=["terminated"])
-        self.state_machine.userdata.waypoint_index = 0
-        self.context = context
-        self.sis = smach_ros.IntrospectionServer("", self.state_machine, "/SM_ROOT")
-        self.sis.start()
-        self.state_publisher = rospy.Publisher("/nav_state", String, queue_size=1)
-        with self.state_machine:
-            self.state_machine.add(
-                "OffState", OffState(self.context), transitions=self.get_transitions(OffStateTransitions)
-            )
-            self.state_machine.add(
-                "DoneState", DoneState(self.context), transitions=self.get_transitions(DoneStateTransitions)
-            )
-            self.state_machine.add(
-                "WaypointState", WaypointState(self.context), transitions=self.get_transitions(WaypointStateTransitions)
-            )
-            self.state_machine.add(
-                "ApproachPostState",
-                ApproachPostState(self.context),
-                transitions=self.get_transitions(ApproachPostStateTransitions),
-            )
-            self.state_machine.add(
-                "SearchState", SearchState(self.context), transitions=self.get_transitions(SearchStateTransitions)
-            )
-            self.state_machine.add(
-                "GateTraverseState",
-                GateTraverseState(self.context),
-                transitions=self.get_transitions(GateTraverseStateTransitions),
-            )
-            self.state_machine.add(
-                "RecoveryState", RecoveryState(self.context), transitions=self.get_transitions(RecoveryStateTransitions)
-            )
-            self.state_machine.add(
-                "PartialGateState",
-                PartialGateState(self.context),
-                transitions=self.get_transitions(PartialGateStateTransitions),
-            )
-            self.state_machine.add(
-                "PostBackupState",
-                PostBackupState(self.context),
-                transitions=self.get_transitions(PostBackupTransitions),
-            )
-            rospy.Timer(rospy.Duration(0.1), self.publish_state)
-
-    def get_transitions(self, transitions_enum):
-        transition_dict = {transition.name: transition.value for transition in transitions_enum}
-        transition_dict["off"] = "OffState"  # logic for switching to offstate is built into OffState
-        return transition_dict
-
-    def publish_state(self, event=None):
-        with self.state_machine:
-            active_states = self.state_machine.get_active_states()
-            if len(active_states) > 0:
-                self.state_publisher.publish(active_states[0])
+        self.state_machine = StateMachine(OffState(), "NavStateMachine")
+        self.state_machine.set_context(context)
+        self.state_machine.add_transitions(ApproachPostState(), [WaypointState(), SearchState(), RecoveryState()])
+        self.state_machine.add_transitions(PostBackupState(), [WaypointState(), RecoveryState()])
+        self.state_machine.add_transitions(
+            RecoveryState(), [WaypointState(), SearchState(), PostBackupState(), ApproachPostState()]
+        )
+        self.state_machine.add_transitions(SearchState(), [ApproachPostState(), WaypointState(), RecoveryState()])
+        self.state_machine.add_transitions(DoneState(), [WaypointState()])
+        self.state_machine.add_transitions(
+            WaypointState(), [PostBackupState(), ApproachPostState(), SearchState(), RecoveryState()]
+        )
+        self.state_machine.add_transitions(OffState(), [WaypointState()])
+        self.state_machine.configure_off_switch(OffState(), off_check)
+        self.state_machine_server = StatePublisher(self.state_machine, "nav_structure", 1, "nav_state", 10)
 
     def run(self):
-        self.state_machine.execute()
+        self.state_machine.run()
 
     def stop(self):
-        self.sis.stop()
         # Requests current state to go into 'terminated' to cleanly exit state machine
-        self.state_machine.request_preempt()
-        # Wait for smach thread to terminate
+        self.state_machine.stop()
         self.join()
-        self.context.rover.send_drive_stop()
+        self.state_machine.context.rover.send_drive_stop()
 
 
 def main():

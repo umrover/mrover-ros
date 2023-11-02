@@ -37,9 +37,8 @@ namespace mrover {
             mMagPub = mNh.advertise<sensor_msgs::MagneticField>("mag", 1);
             mLeftCamInfoPub = mNh.advertise<sensor_msgs::CameraInfo>("camera/left/camera_info", 1);
             mRightCamInfoPub = mNh.advertise<sensor_msgs::CameraInfo>("camera/right/camera_info", 1);
-            image_transport::ImageTransport it{mNh};
-            mLeftImgPub = it.advertise("camera/left/image", 1);
-            mRightImgPub = it.advertise("camera/right/image", 1);
+            mLeftImgPub = mNh.advertise<sensor_msgs::Image>("camera/left/image", 1);
+            mRightImgPub = mNh.advertise<sensor_msgs::Image>("camera/right/image", 1);
 
             std::string grabResolutionString;
             mPnh.param("grab_resolution", grabResolutionString, std::string{sl::toString(sl::RESOLUTION::HD720)});
@@ -138,7 +137,7 @@ namespace mrover {
                 {
                     std::unique_lock lock{mSwapMutex};
                     // Waiting on the condition variable will drop the lock and reacquire it when the condition is met
-                    mSwapCv.wait(lock, [this] { return mIsSwapReady.load(); });
+                    mSwapCv.wait(lock, [this] { return mIsSwapReady; });
                     mIsSwapReady = false;
                     mPcThreadProfiler.measureEvent("Wait");
 
