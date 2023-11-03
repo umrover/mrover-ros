@@ -229,6 +229,7 @@ mrover_add_esw_bridge_node(mast_gimbal_bridge src/esw/mast_gimbal_bridge/*.cpp)
 mrover_add_esw_bridge_node(pdb_bridge src/esw/pdb_bridge/*.cpp)
 mrover_add_esw_bridge_node(sa_bridge src/esw/sa_bridge/*.cpp)
 mrover_add_esw_bridge_node(science_bridge src/esw/science_bridge/*.cpp)
+mrover_add_esw_bridge_node(brushless_test_bridge src/esw/motor_library/*.cpp)
 
 ## Perception
 

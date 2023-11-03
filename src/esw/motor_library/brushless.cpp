@@ -44,6 +44,6 @@ namespace mrover {
         auto CANfd = controller.MakePosition(cmd);
 
         // TODO - need to convert to use rev/s
-        can_manager.send_data("velocity_cmd", CANfd.data);
+        can_manager.send_moteus_data(CANfd);
     }
 } // namespace mrover
