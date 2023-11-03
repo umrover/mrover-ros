@@ -1,4 +1,4 @@
-#include "ioHelper.h"
+#include "ioHelper.cuh"
 #include <algorithm>
 #include <fstream>
 #include <google/protobuf/io/coded_stream.h>
