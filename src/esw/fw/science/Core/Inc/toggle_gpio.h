@@ -20,3 +20,8 @@ void set_pin_value(Toggle_GPIO* obj, bool value);
 // MODIFIES: 
 // EFFECTS: get the value of pin
 bool get_pin_value(Toggle_GPIO* obj);
+
+// REQUIRES: p and pin are valid GPIO_Init and pin numbers
+// MODIFIES: 
+// EFFECTS: creates a new pointer to a Toggle_GPIO set to the pin info provided
+Toggle_GPIO* new_toggle_gpio(GPIO_InitTypeDef p_in, uint16_t pin_in);

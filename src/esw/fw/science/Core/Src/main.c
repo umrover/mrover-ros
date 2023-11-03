@@ -105,6 +105,88 @@ int main(void)
   MX_TIM3_Init();
   /* USER CODE BEGIN 2 */
 
+  //Create all our stuff!
+  Spectral* spectral_sensor[3];
+  SMBus* buses[3];
+  for (int i = 0; i < 3; ++i){
+	  buses[i] = new_smbus(&hi2c1);
+	  spectral_sensor[i] = new_spectral(buses[i]);
+  }
+
+
+  for (int i = 0; i < 3; ++i){
+	  adc_sensors[i] = new_adc_sensor(&hadc, total_channels);
+	  thermistors[i] = new_diag_temp_sensor(adc_sensors[i], thermistor_channels[i]);
+  }
+
+  Toggle_GPIO* uv_led_1[3];
+  GPIO_InitTypeDef uv_led_pins[3] = {GPIOA, GPIOA, GPIOA};
+  uint16_t uv_led_pin_numbers[3] = {GPIO_PIN_0, GPIO_PIN_1, GPIO_PIN_2};
+  for (int i = 0; i < 3; ++i){
+	  uv_led[i] = new_toggle_gpio(uv_led_pins[i], uv_led_pin_numbers[i]);
+  }
+
+
+  Toggle_GPIO* white_leds[3];
+  GPIO_InitTypeDef white_led_pins[3] = {GPIOA, GPIOA, GPIOC};
+  uint16_t white_led_pin_numbers[3] = {GPIO_PIN_6, GPIO_PIN_7, GPIO_PIN_4};
+  for (int i = 0; i < 3; ++i){
+	  white_leds[i] = new_toggle_gpio(white_led_pins[i], white_led_pin_numbers[i]);
+  }
+
+  Toggle_GPIO* debug_leds[3];
+  GPIO_InitTypeDef debug_led_pins[3] = {GPIOC, GPIOC, GPIOC};
+  uint16_t debug_led_pin_numbers[3] = {GPIO_PIN_13, GPIO_PIN_14, GPIO_PIN_15};
+  for (int i = 0; i < 3; ++i){
+  	  debug_leds[i] = new_toggle_gpio(debug_led_pins[i], debug_led_pin_numbers[i]);
+  }
+
+  /*
+   * Pins for these not known yet!
+  Toggle_GPIO* raman_laser = new_toggle_gpio();
+  Toggle_GPIO* uv_bulb = new_toggle_gpio();
+  */
+
+  //PLACEHOLDERS
+  int total_channels = 8;
+  int thermistor_channel_ns[3] = {0, 1, 2};
+  int thermistor_channel_bs[3] = {0, 1, 2};
+
+  Heater* heater_bs[3];
+  Toggle_GPIO* heater_b_toggles[3];
+  GPIO_InitTypeDef heater_b_pins[3] = {GPIOB, GPIOB, GPIOA};
+  uint16_t heater_b_pin_numbers[3] = {GPIO_PIN_13, GPIO_PIN_15, GPIO_PIN_8};
+  DiagTempSensor* thermistor_bs[3];
+  ADCSensor* adc_sensor_bs[3];
+
+  Heater* heater_ns[3];
+  Toggle_GPIO* heater_n_toggles[3];
+  GPIO_InitTypeDef heater_n_pins[3] = {GPIOB, GPIOC, GPIOA};
+  uint16_t heater_n_pin_numbers[3] = {GPIO_PIN_14, GPIO_PIN_6, GPIO_PIN_9};
+  DiagTempSensor* thermistor_ns[3];
+  ADCSensor* adc_sensor_ns[3];
+
+  for (int i = 0; i < 3; ++i){
+  	  adc_sensor_bs[i] = new_adc_sensor(&hadc, total_channels);
+  	  thermistor_bs[i] = new_diag_temp_sensor(adc_sensor_bs[i], thermistor_channels_bs[i]);
+  	  heater_b_toggles[i] = new_toggle_gpio(heater_b_pins[i], heater_b_pin_numbers[i]);
+  	  heater_bs[i] = new_heater(heater_b_toggles[i], thermistor_bs[i]);
+  }
+  for (int i = 0; i < 3; ++i){
+	  adc_sensor_ns[i] = new_adc_sensor(&hadc, total_channels);
+	  thermistor_ns[i] = new_diag_temp_sensor(adc_sensor_ns[i], thermistor_channels_ns[i]);
+	  heater_n_toggles[i] = new_toggle_gpio(heater_n_pins[i], heater_n_pin_numbers[i]);
+	  heater_ns[i] = new_heater(heater_n_toggles[i], thermistor_ns[i]);
+  }
+
+
+
+  Servo* servo = new_servo(&htim3, TIM_CHANNEL_3, &(TIM3->CCR1));
+
+
+
+
+
   /* USER CODE END 2 */
 
   /* Infinite loop */

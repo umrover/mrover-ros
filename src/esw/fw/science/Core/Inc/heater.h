@@ -39,3 +39,8 @@ void tick_heater(Heater *heater);
 // MODIFIES: nothing
 // EFFECTS: Updates temperature of heater thermistor
 void update_heater_temperature(Heater *heater);
+
+// REQUIRES: parameters are all valid
+// MODIFIES: 
+// EFFECTS: creates a heater object and returns a pointer to it
+Heater* new_heater(Toggle_GPIO* pin, DiagTempSensor* thermistor);

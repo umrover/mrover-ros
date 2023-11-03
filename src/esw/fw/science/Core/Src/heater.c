@@ -57,3 +57,15 @@ void update_heater_temperature(Heater *heater)
 {
     update_diag_temp_sensor_val(heater->thermistor);
 }
+
+// REQUIRES: parameters are all valid
+// MODIFIES: 
+// EFFECTS: creates a heater object and returns a pointer to it
+Heater* new_heater(Toggle_GPIO* pin, DiagTempSensor* thermistor){
+    Heater* heater = malloc(sizeof(Heater));
+    heater->is_on = false;
+    heater->pin = pin;
+    heater->thermistor = thermistor;
+    heater->auto_shutoff = false;
+    heater->ms_since_last_received_heater_msg = 0;
+}
