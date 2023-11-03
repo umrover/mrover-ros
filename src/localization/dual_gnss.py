@@ -1,6 +1,5 @@
 import numpy as np
 import matplotlib.pyplot as plt
-import math
 
 
 # def get_heading(antenna_point_A, antenna_point_B):
@@ -36,14 +35,12 @@ def get_heading_vector_from_angle(heading_angle):
     return np.array([x, y])
 
 def get_heading_vector(point_L: np.array, point_R: np.array):
-    vector_connecting = np.array([point_R[0] - point_L[0], point_R[1] - point_L[1], 0])
+    vector_connecting = np.array([point_R[0] - point_L[0], point_R[1] - point_L[1]])
     vector_perp = np.zeros_like(vector_connecting)
     vector_perp[0] = -vector_connecting[1]
     vector_perp[1] = vector_connecting[0]
-    print(vector_perp)
+    #print(vector_perp)
     return vector_perp / np.linalg.norm(vector_perp)
-
-
 
 def plot_vectors(P_1, P_2):
     result = P_1 - P_2
@@ -62,39 +59,27 @@ def plot_vectors(P_1, P_2):
     plt.axvline(x=midpoint[0], color="b")
 
     angle = np.degrees(np.arctan((midpoint[0] - x_intercept) / midpoint[1]))
-    print(angle)
-    # plt.plot([0, 1, 0])
     plt.xlabel("X-axis")
     plt.ylabel("Y-axis")
     plt.grid(True)
     plt.show()
 
+def offset_lat_long(P_1, P_2,n):
+    return P_1 + n * 0.001, P_2 + n * 0.001
 
-P_1 = spherical_to_cartesian(np.array([39.099912, -94.581213]), np.array([42.293195, -83.7096706]))
-P_2 = spherical_to_cartesian(np.array([38.627089, -90.200203]), np.array([42.293195, -83.7096706]))
-result = P_1 - P_2
-plot_vectors(P_1, P_2)
+P_1 = np.array([42.3006, -83.71006])
+P_2 = np.array([42.30061, -83.71006])
+ref = np.array([42.293195, -83.7096706])
 
+for i in range(4000,4100):
+    new_p1, new_p2 = offset_lat_long(P_1, P_2, i)
+    new_p1 = spherical_to_cartesian(new_p1, ref)
+    new_p2 = spherical_to_cartesian(new_p2, ref)
+    print("P1")
+    print(new_p1)
+    print("P2")
+    print(new_p2)
+    print("heading")
+    print(get_heading_vector(new_p1, new_p2))
 
-def calculate_angle_from_true_north(P_1, P_2):
-    result = P_1 - P_2  # this should be changed to be the perpendicular vector
-    # print(result)
-    true_north = (0, 1, 0)  # not sure if this true north vector works
-    # Calculate the dot product between the resultant vector and the true north vector
-    dot_product = result[0] * true_north[0] + result[1] * true_north[1]
-
-    # Calculate the magnitudes of both vectors
-    magnitude_result = math.sqrt(result[0] ** 2 + result[1] ** 2)
-    magnitude_north = math.sqrt(true_north[0] ** 2 + true_north[1] ** 2 + true_north[2] ** 2)
-
-    angle_radians = math.acos(dot_product / (magnitude_result * magnitude_north))
-    angle = math.degrees(angle_radians)
-
-    return angle
-
-
-# print(calculate_angle_from_true_north(P_1, P_2))
-# print(get_heading_vector_from_angle((3 * np.pi) / 2))
-# print(get_heading_vector_from_angle(np.pi / 4))
-
-print(get_heading_vector(np.array([0, 0]), np.array([3, 3])))
+#print(get_heading_vector(np.array([0, 0]), np.array([3, 3])))
