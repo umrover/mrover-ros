@@ -85,6 +85,9 @@ namespace mrover {
     }
 
     void CanNodelet::readFrameAsync() { // NOLINT(*-no-recursion)
+        // You would think we would have to read the header first to find the data length (which is not always 64 bytes) and THEN read the data
+        // However socketcan is nice and just requires we read the max length
+        // It then puts the actual length in the header
         boost::asio::async_read(
                 mStream.value(),
                 boost::asio::buffer(&mReadFrame, sizeof(mReadFrame)),
