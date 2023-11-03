@@ -39,7 +39,7 @@
 
 #define PDB_CAN_ID 0x30
 #define CAN_MSG_LED_CMD 10
-#define CAN_MSG_UV_BULD_CMD 11
+#define CAN_MSG_UV_BULB_CMD 11
 
 /* USER CODE END PD */
 
@@ -530,16 +530,13 @@ void HAL_FDCAN_RxFifo0Callback(FDCAN_HandleTypeDef *hfdcan, uint32_t RxFifo0ITs)
     	switch (msg_type) {
     	case CAN_MSG_LED_CMD:
     		break;
-
-    	case CAN_MSG_UV_BULD_CMD:
+    	case CAN_MSG_UV_BULB_CMD:
     		break;
     	default:
     		// unrecognized message
     		break;
     	}
     }
-
-    // TODO: process incoming CAN message and unblock corresponding tasks
 
     if (HAL_FDCAN_ActivateNotification(hfdcan, FDCAN_IT_RX_FIFO0_NEW_MESSAGE, 0) != HAL_OK)
     {
