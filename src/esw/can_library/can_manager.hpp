@@ -16,11 +16,11 @@
 using namespace mjbots;
 
 // Attribute needed to pack the struct into 16 bits
-struct __attribute__((__packed__)) MessageID {
-    [[maybe_unused]] uint8_t _ignore : 5; // 16 bits - (6 + 5 meaningful bits) = 5 ignored bits
-    uint8_t message_num : 6;              // 6 bits for message number
-    uint8_t device_id : 5;                // 5 bits for device ID
-};
+struct MessageID {
+    [[maybe_unused]] std::uint8_t _ignore : 5; // 16 bits - (6 + 5 meaningful bits) = 5 ignored bits
+    std::uint8_t message_num : 6;              // 6 bits for message number
+    std::uint8_t device_id : 5;                // 5 bits for device ID
+} __attribute__((__packed__));
 
 template<typename T>
 concept IsSerializable = std::is_trivially_copyable_v<T>;
@@ -56,8 +56,8 @@ public:
         }
     }
 
-    template<TriviallyCopyable T>
-    virtual void send_data(std::string const& messageName, T& data) {
+    template<IsFDCANSerializable T>
+    void send_data(std::string const& messageName, T& data) {
         // This is okay since "send_raw_data" makes a copy
         auto* address = std::bit_cast<std::byte const*>(std::addressof(data));
         send_raw_data(messageName, {address, sizeof(data)});
@@ -80,6 +80,24 @@ public:
         m_can_publisher.publish(can_message);
     }
 
+    void send_moteus_data(moteus::CanFdFrame const& frame) {
+        mrover::CAN can_message;
+        can_message.bus = frame.bus;
+        struct MoteusId {
+            std::int8_t destination;
+            std::int8_t source : 7;
+            bool reply_required : 1;
+        } __attribute__((__packed__));
+        can_message.message_id = std::bit_cast<std::uint16_t>(MoteusId{
+                .destination = frame.destination,
+                .source = frame.source,
+                .reply_required = frame.reply_required,
+        });
+        can_message.data.assign(frame.data, frame.data + frame.size);
+
+        m_can_publisher.publish(can_message);
+    }
+
     uint8_t get_id() const {
         return m_id;
     }
@@ -95,45 +113,10 @@ public:
 private:
     ros::Publisher m_can_publisher;
     uint8_t m_bus{}; // Who sets/determines the bus field?
-    uint8_t m_id{}; // Who sets this/how does it relate to the devices
+    uint8_t m_id{};  // Who sets this/how does it relate to the devices
     // ^^Change the wording of m_id to imply this is the destination id
-    // Guthrie assigns an ID and we then use the moteus gui to configure the 
+    // Guthrie assigns an ID and we then use the moteus gui to configure the
     // id of the moteus to the ID Guthrie assigns.
-    std::unordered_map<std::string, uint8_t> m_message_name_to_id;
-    std::unordered_map<uint8_t, std::string> m_id_to_message_name;
-};
-
-class CANManager_Moteus : public CANManager {
-public:
-    
-    template<TriviallyCopyable T>
-    void send_data(std::string const& messageName, T& data) override {
-        mrover::CAN can_message;
-        can_message.bus = canfd.bus;
-        can_message.message_id = std::bit_cast<uint16_t>(static_cast<uint16_t>(
-            (static_cast<uint16_t>(canfd.source) << 8)
-             | (static_cast<uint16_t>(canfd.destination))));
-        
-        if (canfd.reply_required) {
-            can_message.message_id |= 0x8000; 
-        }
-
-        else {
-            can_message.message_id &= 0x7FFF; 
-        }
-       
-        can_message.data.resize(canfd.size);
-
-        std::memcpy(can_message.data.data(), canfd.data, canfd.size);
-
-        m_can_publisher.publish(can_message);
-    }
-
-
-private:
-    ros::Publisher m_can_publisher;
-    uint8_t m_bus{};
-    uint8_t m_id{};
     std::unordered_map<std::string, uint8_t> m_message_name_to_id;
     std::unordered_map<uint8_t, std::string> m_id_to_message_name;
 };
