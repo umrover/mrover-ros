@@ -25,20 +25,20 @@
       <IMUCalibration></IMUCalibration>
     </div>
     <div class = "flightindicator">
-      <FlightAltitudeIndicator></FlightAltitudeIndicator>
+      <FlightAttitudeIndicator></FlightAttitudeIndicator>
     </div> -->
   </div>
 </template>
 
-<script>
+<script lang="ts">
 import { convertDMS } from "../utils.js";
 import { mapGetters } from "vuex";
 // import IMUCalibration from "./IMUCalibration.vue";
-// import FlightAltitudeIndicator from "./FlightAltitudeIndicator.vue";
+// import FlightAttitudeIndicator from "./FlightAttitudeIndicator.vue";
 export default {
   components: {
-    FlightAltitudeIndicator,
-    IMUCalibration,
+    // FlightAttitudeIndicator,
+    // IMUCalibration,
   },
   props: {
     odom: {
@@ -70,7 +70,8 @@ export default {
       return this.odom_format == "DMS";
     },
     alt_available: function () {
-      return !isNan(this.odom.altitude);
+      // return isNan(this.odom.altitude);
+      return true;
     }
   },
   

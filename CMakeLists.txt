@@ -61,6 +61,7 @@ set(MROVER_SERVICE_FILES
         AdjustMotor.srv
         ChangeArmMode.srv
         ChangeCameras.srv
+        EnableDevice.srv
         FetchMessageFromPackage.srv
         FetchPackages.srv
         PublishCourse.srv

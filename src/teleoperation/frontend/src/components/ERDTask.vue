@@ -68,18 +68,19 @@
     <!-- <div v-show="false">
       <MastGimbalControls></MastGimbalControls>
     </div> -->
+    <OdometryReading :odom="odom" />
   </div>
 </template>
 
 <script lang="ts">
-import ROSLIB from "roslib";
-import { defineComponent } from 'vue'
+import { defineComponent, inject } from 'vue'
 import PDBFuse from "./PDBFuse.vue";
 import DriveMoteusStateTable from "./DriveMoteusStateTable.vue";
 import ArmMoteusStateTable from "./ArmMoteusStateTable.vue";
 import BasicMap from "./BasicRoverMap.vue";
 import BasicWaypointEditor from './BasicWaypointEditor.vue';
 import Cameras from './Cameras.vue';
+import OdometryReading from "./OdometryReading.vue";
 
 export default defineComponent({
   components : {
@@ -88,7 +89,8 @@ export default defineComponent({
     ArmMoteusStateTable,
     BasicMap,
     BasicWaypointEditor,
-    Cameras
+    Cameras,
+    OdometryReading
   },
 
   props: {
@@ -105,10 +107,9 @@ export default defineComponent({
         latitude_deg: 38.4060250,
         longitude_deg: -110.7923723,
         bearing_deg: 0,
+        altitude: 0,
         speed: 0
       },
-
-      
       // Default object isn't empty, so has to be initialized to ""
       moteusState: {
         name: ["", "", "", "", "", ""],
@@ -116,20 +117,21 @@ export default defineComponent({
         state: ["", "", "", "", "", ""]
       },
 
-      jointState: {}
+      jointState: {},
+      
+      websocket: inject("webSocketService") as WebSocket,
     }
   },
 
   created: function() {
-    this.odom_sub = new ROSLIB.Topic({
-      ros: this.$ros,
-      name: "/gps/fix",
-      messageType: "sensor_msgs/NavSatFix"
-    });
-
-    this.odom_sub.subscribe((msg) => {
-      this.odom.altitude = msg.altitude;
-    });
+    this.websocket.onmessage = (event) => {
+      const msg = JSON.parse(event.data);
+      if(msg.type == "nav_sat_fix") {
+        this.odom.latitude_deg = msg.latitude;
+        this.odom.longitude_deg = msg.longitude;
+        this.odom.altitude = msg.altitude;
+      }
+    };
   }
 })
 </script>

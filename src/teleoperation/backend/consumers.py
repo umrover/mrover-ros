@@ -5,12 +5,14 @@ import rospy
 from mrover.msg import PDB, ControllerState
 from mrover.srv import EnableDevice
 from std_msgs.msg import String
+from sensor_msgs.msg import NavSatFix
 
 class GUIConsumer(JsonWebsocketConsumer):
 
     def connect(self):
         self.pdb_sub = rospy.Subscriber('/pdb_data', PDB, self.pdb_callback)
         self.arm_moteus_sub = rospy.Subscriber('/arm_controller_data', ControllerState, self.arm_controller_callback)
+        self.gps_fix = rospy.Subscriber('/gps/fix', NavSatFix, self.gps_fix_callback)
         # rospy.wait_for_service("enable_limit_switches")
         self.limit_switch_service = rospy.ServiceProxy("enable_limit_switches", EnableDevice)
         self.accept()
@@ -59,3 +61,11 @@ class GUIConsumer(JsonWebsocketConsumer):
         message = String()
         message.data = "off"
         led_pub.publish(message)
+    
+    def gps_fix_callback(self, msg):
+        self.send(text_data=json.dumps({
+            'type': 'nav_sat_fix',
+            'latitude': msg.latitude,
+            'longitude': msg.longitude,
+            'altitude': msg.altitude
+        }))
