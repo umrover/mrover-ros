@@ -68,24 +68,8 @@ Spectral* set_active_spectral_sensor(I2C_HandleTypeDef* i2c_mux, int spectral_se
     SMBus* bus = new_smbus(i2c_mux);
     uint8_t formatted = 1 << spectral_sensor_number;
     smbus_write_byte_data(bus, 0x00, spectral_sensor_number, 0x70);
-    /*
-    uint8_t buf[1] = {spectral_sensor_number};
 
-
-    if (spectral_sensor_number == 2){
-        HAL_I2C_Mem_Write(i2c_mux, 0x70, 0x70, 1, buf, 1, 1);
-        return;
-    }
-
-    if (spectral_sensor_number == 1){
-        HAL_I2C_Mem_Write(i2c_mux, 0x70, 0x70, 1, buf, 1, 1);
-        return;
-    }
-    */
-
-   
     return;
-
 }
 
 
