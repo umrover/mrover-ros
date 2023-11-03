@@ -33,12 +33,14 @@ namespace mrover {
                 throw std::runtime_error(std::format("Failed to retrieve the network link {} by name", interface));
             }
 
-            can_bittiming bt{
-                    .bitrate = bitrate,
-                    .brp = bitrate_prescaler,
-            };
-            if (int result = rtnl_link_can_set_bittiming(mLink, &bt); result < 0) {
-                throw std::runtime_error("Failed to set bit timing");
+            if (interface.starts_with("can")) {
+                can_bittiming bt{
+                        .bitrate = bitrate,
+                        .brp = bitrate_prescaler,
+                };
+                if (int result = rtnl_link_can_set_bittiming(mLink, &bt); result < 0) {
+                    throw std::runtime_error("Failed to set bit timing");
+                }
             }
 
             rtnl_link_set_flags(mLink, IFF_UP);

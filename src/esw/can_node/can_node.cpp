@@ -1,7 +1,6 @@
 #include "can_node.hpp"
 
 #include <linux/can.h>
-#include <stdexcept>
 
 #include <boost/asio/read.hpp>
 #include <boost/asio/write.hpp>
@@ -66,7 +65,7 @@ namespace mrover {
 
     int CanNodelet::setupSocket() {
         int socketFd = checkSyscallResult(socket(PF_CAN, SOCK_RAW, CAN_RAW));
-        NODELET_INFO("Opened CAN socket");
+        NODELET_INFO_STREAM("Opened CAN socket with file descriptor: " << socketFd);
 
         ifreq ifr{};
         std::strcpy(ifr.ifr_name, mInterface.c_str());
@@ -86,68 +85,38 @@ namespace mrover {
     }
 
     void CanNodelet::readFrameAsync() { // NOLINT(*-no-recursion)
-
-        // 1. Read the entire header to find the data size
         boost::asio::async_read(
                 mStream.value(),
-                boost::asio::buffer(&mReadHeader, sizeof(mReadHeader)),
-                // This lambda ensures we read ALL the header in case it comes in chunks
-                // It is a completion condition essentially
-                [](boost::system::error_code const& ec, std::size_t bytes) {
-                    checkErrorCode(ec);
-
-                    return sizeof(mReadHeader);
-                },
-                // This lambda is called on completion
+                boost::asio::buffer(&mReadFrame, sizeof(mReadFrame)),
+                // Supply lambda that is called on completion
                 [this](boost::system::error_code const& ec, std::size_t bytes) { // NOLINT(*-no-recursion)
                     checkErrorCode(ec);
-                    assert(bytes == sizeof(mReadHeader));
+                    assert(bytes == sizeof(mReadFrame));
 
-                    mReadData.resize(mReadHeader.len);
+                    processReadFrame();
 
-                    // 2. Read the main data, we know how much to read from the header
-                    boost::asio::async_read(
-                            mStream.value(),
-                            boost::asio::buffer(&mReadData, mReadData.size()),
-                            [this](boost::system::error_code const& ec, std::size_t bytes) {
-                                checkErrorCode(ec);
-
-                                return mReadData.size();
-                            },
-                            [this](boost::system::error_code const& ec, std::size_t bytes) { // NOLINT(*-no-recursion)
-                                checkErrorCode(ec);
-                                assert(bytes == mReadData.size());
-
-                                // 3. We have all the data associated with the frame, process it
-                                processReadFrame();
-
-                                // 4. Ready for the next frame, start listening
-                                //    Note this is recursive, but it is safe because it is async
-                                //    i.e. the stack is not growing
-                                readFrameAsync();
-                            });
+                    // Ready for the next frame, start listening again
+                    // Note this is recursive, but it is safe because it is async
+                    // i.e. the stack is not growing
+                    readFrameAsync();
                 });
     }
 
     void CanNodelet::writeFrameAsync() {
-        std::size_t sendLength = mWriteFrame.len;
         boost::asio::async_write(
                 mStream.value(),
-                boost::asio::buffer(&mWriteFrame, sendLength),
-                // Copy the amount to send BY VALUE
-                // Otherwise, it would be a reference to a local variable that would go out of scope
-                // This lambda ensures we wrote all the data in the frame
-                [sendLength](boost::system::error_code const& ec, std::size_t bytes) {
+                boost::asio::buffer(&mWriteFrame, sizeof(mWriteFrame)),
+                [](boost::system::error_code const& ec, std::size_t bytes) {
                     checkErrorCode(ec);
-                    assert(bytes == sendLength);
+                    assert(bytes == sizeof(mWriteFrame));
                 });
     }
 
     void CanNodelet::processReadFrame() { // NOLINT(*-no-recursion)
         CAN msg;
         msg.bus = 0;
-        msg.message_id = mReadHeader.can_id;
-        msg.data = std::move(mReadData);
+        msg.message_id = std::bit_cast<FdcanId>(mReadFrame.can_id).identifier;
+        msg.data.assign(mReadFrame.data, mReadFrame.data + mReadFrame.len);
 
         mCanPublisher.publish(msg);
     }
@@ -160,12 +129,10 @@ namespace mrover {
         // Check that the identifier is not too large
         assert(std::bit_width(identifier) <= mIsExtendedFrame ? CAN_EFF_ID_BITS : CAN_SFF_ID_BITS);
 
-        std::bitset<32> canIdBits{identifier};
-        if (mIsExtendedFrame) canIdBits.set(CAN_EXTENDED_BIT_INDEX);
-        canIdBits.set(CAN_ERROR_BIT_INDEX);
-        canIdBits.set(CAN_RTR_BIT_INDEX);
-
-        mWriteFrame.can_id = canIdBits.to_ullong();
+        mWriteFrame.can_id = std::bit_cast<std::uint32_t>(FdcanId{
+                .identifier = identifier,
+                .isExtendedFrame = mIsExtendedFrame,
+        });
     }
 
     static std::size_t nearestFittingFdcanFrameSize(std::size_t size) {
@@ -192,7 +159,7 @@ namespace mrover {
         setFrameData({reinterpret_cast<std::byte const*>(msg->data.data()), msg->data.size()});
 
         writeFrameAsync();
-        // printFrame();
+        //        printFrame();
     }
 
     void CanNodelet::printFrame() {

@@ -27,15 +27,15 @@
 
 #include "can_net_link.hpp"
 
-struct canfd_header {
-    canid_t can_id;     /* 32 bit CAN_ID + EFF/RTR/ERR flags */
-    std::uint8_t len;   /* frame payload length in byte */
-    std::uint8_t flags; /* additional flags for CAN FD */
-    std::uint8_t res0;  /* reserved / padding */
-    std::uint8_t res1;  /* reserved / padding */
-};
-
 namespace mrover {
+
+    struct FdcanId {
+        std::uint32_t identifier : 29;
+        bool isExtendedFrame : 1;
+        bool isErrorFrame : 1;
+        bool isRemoteTransmissionRequest : 1;
+    };
+    static_assert(sizeof(FdcanId) == sizeof(canid_t));
 
     class CanNodelet : public nodelet::Nodelet {
     public:
@@ -71,9 +71,8 @@ namespace mrover {
         std::uint32_t mBitratePrescaler{};
 
         std::uint8_t mBus{};
+        canfd_frame mReadFrame{};
         canfd_frame mWriteFrame{};
-        canfd_header mReadHeader{};
-        std::vector<std::uint8_t> mReadData{};
         CanNetLink mCanNetLink;
         std::optional<boost::asio::posix::basic_stream_descriptor<>> mStream;
         std::jthread mIoThread;
