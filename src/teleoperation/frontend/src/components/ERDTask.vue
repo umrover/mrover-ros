@@ -34,34 +34,34 @@
           title="Joystick Controls"
           style="width: auto; height: 70%; display: inline-block"
         />
-    </div>
+      </div>
     </div>
     
-    <div class="cameras">
+    <div class="shadow p-3 rounded cameras">
       <Cameras :primary="true" />
     </div>
     <!-- <div v-if="type === 'DM'" class="odom">
       <OdometryReading :odom="odom" />
     </div> -->
-    <div v-if="type === 'DM'" class="map">
+    <div v-if="type === 'DM'" class="shadow p-3 rounded map">
       <BasicMap :odom="odom" />
     </div>
-    <div class="pdb">
+    <div class="shadow p-3 rounded pdb">
       <PDBFuse />
     </div>
-    <div class="drive-vel-data">
+    <div class="shadow p-3 rounded drive-vel-data">
       <JointStateTable :joint-state-data="jointState" :vertical="true" />
     </div>
-    <div v-if="type === 'DM'" class="waypoint-editor">
+    <div v-if="type === 'DM'" class="shadow p-3 rounded waypoint-editor">
       <BasicWaypointEditor :odom="odom" />
     </div>
     <!-- <div>
       <DriveControls></DriveControls>
     </div> -->
-    <!-- <div class="arm-controls">
+    <div class="shadow p-3 rounded arm-controls">
       <ArmControls />
-    </div> -->
-    <div class="moteus">
+    </div>
+    <div class="shadow p-3 rounded moteus">
       <DriveMoteusStateTable :moteus-state-data="moteusState" />
       <ArmMoteusStateTable />
     </div>
@@ -76,6 +76,7 @@ import { defineComponent, inject } from 'vue'
 import PDBFuse from "./PDBFuse.vue";
 import DriveMoteusStateTable from "./DriveMoteusStateTable.vue";
 import ArmMoteusStateTable from "./ArmMoteusStateTable.vue";
+import ArmControls from "./ArmControls.vue";
 import BasicMap from "./BasicRoverMap.vue";
 import BasicWaypointEditor from './BasicWaypointEditor.vue';
 import Cameras from './Cameras.vue';
@@ -86,6 +87,7 @@ export default defineComponent({
     PDBFuse,
     DriveMoteusStateTable,
     ArmMoteusStateTable,
+    ArmControls,
     BasicMap,
     BasicWaypointEditor,
     Cameras,
@@ -138,9 +140,9 @@ export default defineComponent({
 <style>
 .wrapper-dm {
   display: grid;
-  grid-gap: 10px;
+  gap: 10px;
   grid-template-columns: 50% 50%;
-  grid-template-rows: auto 200px 300px repeat(3, auto);
+  grid-template-rows: repeat(6, auto);
   grid-template-areas:
     "header header"
     "map waypoint-editor"
@@ -154,7 +156,7 @@ export default defineComponent({
 
 .wrapper-es {
   display: grid;
-  grid-gap: 10px;
+  gap: 10px;
   grid-template-columns: repeat(2, auto);;
   grid-template-rows: repeat(4, auto);;
   grid-template-areas:

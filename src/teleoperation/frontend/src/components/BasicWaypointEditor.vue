@@ -258,6 +258,7 @@
   }
 
   .add-drop {
+    display: flex;
     text-align: center;
   }
 

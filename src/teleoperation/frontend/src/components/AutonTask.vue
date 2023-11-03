@@ -18,7 +18,7 @@
                     style="width: auto; height: 70%; display: inline-block" />
             </div>
         </div>
-        <div class="data" :style="`background-color: {{nav_state_color}}`">
+        <div class="shadow p-3 rounded data" :style="`background-color: {{nav_state_color}}`">
             <div>
                 <h2>Nav State: {{ nav_status.nav_state_name }}</h2>
                 <CameraFeed></CameraFeed>
@@ -31,10 +31,10 @@
         <OdometryReading :odom="odom"></OdometryReading>
         </div> -->
         </div>
-        <div class="map">
+        <div class="shadow p-3 rounded map">
             <AutonRoverMap :odom="odom" />
         </div>
-        <div class="waypoints">
+        <div class="shadow p-3 rounded waypoints">
         <AutonWaypointEditor
         :odom="odom"
         @toggleTeleop="teleopEnabledCheck = $event"
@@ -52,17 +52,17 @@
         <MastGimbalControls></MastGimbalControls>
     </div> -->
         <div class="conditions">
-            <div v-if="!stuck_status" class="stuck not-stuck">
+            <div v-if="!stuck_status" class="shadow p-3 rounded stuck not-stuck">
                 <h4>Nominal Conditions</h4>
             </div>
-            <div v-else class="stuck rover-stuck">
+            <div v-else class="shadow p-3 rounded stuck rover-stuck">
                 <h4>Obstruction Detected</h4>
             </div>
         </div>
-        <div class="cameras">
+        <div class="shadow p-3 rounded cameras">
         <Cameras :primary="true" />
         </div>
-        <div class="moteus">
+        <div class="shadow p-3 rounded moteus">
             <DriveMoteusStateTable :moteus-state-data="moteusState" />
             <JointStateTable :joint-state-data="jointState" :vertical="true" />
         </div>
