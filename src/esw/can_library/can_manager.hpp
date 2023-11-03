@@ -95,9 +95,9 @@ public:
 private:
     ros::Publisher m_can_publisher;
     uint8_t m_bus{}; // Who sets/determines the bus field?
-    uint8_t m_id{}; // Who sets this/how does it relate to the devices
+    uint8_t m_id{};  // Who sets this/how does it relate to the devices
     // ^^Change the wording of m_id to imply this is the destination id
-    // Guthrie assigns an ID and we then use the moteus gui to configure the 
+    // Guthrie assigns an ID and we then use the moteus gui to configure the
     // id of the moteus to the ID Guthrie assigns.
     std::unordered_map<std::string, uint8_t> m_message_name_to_id;
     std::unordered_map<uint8_t, std::string> m_id_to_message_name;
@@ -105,26 +105,24 @@ private:
 
 class CANManager_Moteus : public CANManager {
 public:
-    
     template<TriviallyCopyable T>
-    void send_data(std::string const& messageName, T& data) override {
+    void send_data(moteus::CanFdFrame& canfd) override {
         mrover::CAN can_message;
-        can_message.bus = canfd.bus;
+        can_message.bus = data.bus;
         can_message.message_id = std::bit_cast<uint16_t>(static_cast<uint16_t>(
-            (static_cast<uint16_t>(canfd.source) << 8)
-             | (static_cast<uint16_t>(canfd.destination))));
-        
-        if (canfd.reply_required) {
-            can_message.message_id |= 0x8000; 
+                (static_cast<uint16_t>(data.source) << 8) | (static_cast<uint16_t>(data.destination))));
+
+        if (data.reply_required) {
+            can_message.message_id |= 0x8000;
         }
 
         else {
-            can_message.message_id &= 0x7FFF; 
+            can_message.message_id &= 0x7FFF;
         }
-       
-        can_message.data.resize(canfd.size);
 
-        std::memcpy(can_message.data.data(), canfd.data, canfd.size);
+        can_message.data.resize(data.size);
+
+        std::memcpy(can_message.data.data(), data.data, data.size);
 
         m_can_publisher.publish(can_message);
     }
