@@ -42,9 +42,8 @@
   <style scoped>
   .wrap-button {
     display: block;
-    height: 100%;
-    width: 100%;
     align-items: center;
+    justify-content: center;
     padding: 1px;
   }
   

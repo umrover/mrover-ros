@@ -59,12 +59,12 @@
                 <h4>Obstruction Detected</h4>
             </div>
         </div>
-        <!-- <div class="cameras">
+        <div class="cameras">
         <Cameras :primary="true" />
-    </div> -->
+        </div>
         <div class="moteus">
             <DriveMoteusStateTable :moteus-state-data="moteusState" />
-            <!-- <JointStateTable :joint-state-data="jointState" :vertical="true" /> -->
+            <JointStateTable :joint-state-data="jointState" :vertical="true" />
         </div>
     </div>
 </template>
@@ -75,6 +75,8 @@ import DriveMoteusStateTable from "./DriveMoteusStateTable.vue";
 import AutonRoverMap from "./AutonRoverMap.vue";
 import AutonWaypointEditor from "./AutonWaypointEditor.vue";
 import CameraFeed from "./CameraFeed.vue";
+import Cameras from "./Cameras.vue";
+import JointStateTable from "./JointStateTable.vue";
 // import { quaternionToMapAngle } from "../utils.js";
 import { defineComponent } from "vue";
 
@@ -91,7 +93,9 @@ export default defineComponent({
         DriveMoteusStateTable,
         AutonRoverMap,
         AutonWaypointEditor,
-        CameraFeed
+        CameraFeed,
+        Cameras,
+        JointStateTable
     },
 
     data() {
@@ -224,7 +228,6 @@ export default defineComponent({
     grid-area: stuck;
     border-radius: 5px;
     line-height: 40px;
-    border: 1px solid black;
     font-size: 20px;
     text-align: center;
     justify-content: center;

@@ -49,9 +49,9 @@
     <div class="pdb">
       <PDBFuse />
     </div>
-    <!-- <div class="drive-vel-data">
+    <div class="drive-vel-data">
       <JointStateTable :joint-state-data="jointState" :vertical="true" />
-    </div> -->
+    </div>
     <div v-if="type === 'DM'" class="waypoint-editor">
       <BasicWaypointEditor :odom="odom" />
     </div>
@@ -72,22 +72,24 @@
 </template>
 
 <script lang="ts">
-import { defineComponent } from 'vue'
+import { defineComponent, inject } from 'vue'
 import PDBFuse from "./PDBFuse.vue";
 import DriveMoteusStateTable from "./DriveMoteusStateTable.vue";
 import ArmMoteusStateTable from "./ArmMoteusStateTable.vue";
 import BasicMap from "./BasicRoverMap.vue";
 import BasicWaypointEditor from './BasicWaypointEditor.vue';
 import Cameras from './Cameras.vue';
+import JointStateTable from "./JointStateTable.vue";
 
 export default defineComponent({
-  components : {
+  components: {
     PDBFuse,
     DriveMoteusStateTable,
     ArmMoteusStateTable,
     BasicMap,
     BasicWaypointEditor,
-    Cameras
+    Cameras,
+    JointStateTable
   },
 
   props: {
@@ -95,10 +97,12 @@ export default defineComponent({
       type: String,
       required: true
     }
+    
   },
 
   data() {
     return {
+      websocket: inject("webSocketService") as WebSocket,
       // Default coordinates at MDRS
       odom: {
         latitude_deg: 38.4060250,
@@ -106,7 +110,6 @@ export default defineComponent({
         bearing_deg: 0,
         speed: 0
       },
-
       
       // Default object isn't empty, so has to be initialized to ""
       moteusState: {
@@ -114,9 +117,20 @@ export default defineComponent({
         error: ["", "", "", "", "", ""],
         state: ["", "", "", "", "", ""]
       },
-
       jointState: {}
     }
+  },
+
+  created() {
+    // this.websocket.onmessage = (event) => {
+    //   const msg = JSON.parse(event.data)
+    //   if (msg.type == "joint_state") {
+    //     this.jointState.name = msg.name;
+    //     this.jointState.position = msg.position;
+    //     this.jointState.velocity = msg.velocity;
+    //     this.jointState.effort = msg.effort;
+    //   }
+    // }
   }
 })
 </script>

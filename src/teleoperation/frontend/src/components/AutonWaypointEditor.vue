@@ -87,17 +87,17 @@
         </div>
       </div>
       <div class="col-wrap" style="left: 50%">
-        <div class="check">
           <!-- <div class="auton-check"> -->
             <AutonModeCheckbox
               ref="autonCheckbox"
+              class="auton-checkbox"
               :name="autonButtonText"
               :color="autonButtonColor"
               @toggle="toggleAutonMode($event)"
             />
             <div class="stats">
-            <VelocityCommand />
-          </div>
+                <VelocityCommand />
+            </div>
             <Checkbox
               ref="teleopCheckbox"
               class="teleop-checkbox"
@@ -105,15 +105,11 @@
               @toggle="toggleTeleopMode($event)"
             />
           <!-- </div> -->
-          <div class="stuck-check">
             <Checkbox
               class="stuck-checkbox"
               name="Stuck"
               @toggle="roverStuck = !roverStuck"
             ></Checkbox>
-          </div>
-          
-        </div>
         <div class="box">
           <h4 class="waypoint-headers">Current Course</h4>
           <!-- <draggable v-model="route" class="dragArea" draggable=".item'">
@@ -740,27 +736,40 @@
   
   .teleop-checkbox {
     grid-area: teleop-check;
-    margin-top: -40px;
+    /* margin-top: -40px; */
+    width: 50%;
+    float: left;
+    clear: both;
   }
   
   .stats {
-    margin-top: 10px;
+    /* margin-top: 10px; */
     grid-area: stats;
-  }
-  
-  .stuck-check {
-    align-content: center;
-    grid-area: stuck-check;
-    padding-inline: 20px;
-  }
-  .stuck-check .stuck-checkbox {
-    transform: scale(1.5);
+    float: right;
+    width: 50%;
   }
 
-  .check {
-    display: flex;
+  /* .teleop-stuck-btns {
     width: 100%;
-    flex-wrap: wrap;
+    clear:both;
+  } */
+  
+  .stuck-checkbox {
+    /* align-content: center; */
+    grid-area: stuck-check;
+    /* padding-inline: 20px; */
+    width: 50%;
+    float:right;
+  }
+
+  /* .stuck-check .stuck-checkbox {
+    transform: scale(1.5);
+  } */
+
+
+  .auton-checkbox {
+    float: left;
+    width: 50%;
   }
   
   .odom {
