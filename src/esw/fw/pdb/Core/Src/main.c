@@ -33,9 +33,13 @@
 /* Private define ------------------------------------------------------------*/
 /* USER CODE BEGIN PD */
 
-# define NUM_CHANNELS 10
-# define NUM_CURRENT_SENSORS 5
-# define NUM_TEMP_SENSORS 5
+#define NUM_CHANNELS 10
+#define NUM_CURRENT_SENSORS 5
+#define NUM_TEMP_SENSORS 5
+
+#define PDB_CAN_ID 0x30
+#define CAN_MSG_LED_CMD 10
+#define CAN_MSG_UV_BULD_CMD 11
 
 /* USER CODE END PD */
 
@@ -511,10 +515,28 @@ void HAL_FDCAN_RxFifo0Callback(FDCAN_HandleTypeDef *hfdcan, uint32_t RxFifo0ITs)
   if((RxFifo0ITs & FDCAN_IT_RX_FIFO0_NEW_MESSAGE) != RESET)
   {
     /* Retreive Rx messages from RX FIFO0 */
-    if (HAL_FDCAN_GetRxMessage(hfdcan, FDCAN_RX_FIFO0, &RxHeader, RxData) != HAL_OK)
+    if (HAL_FDCAN_GetRxMessage(hfdcan, FDCAN_RX_FIFO0, &rx_header, &rx_data) != HAL_OK)
     {
-    /* Reception Error */
-    Error_Handler();
+		/* Reception Error */
+		Error_Handler();
+    }
+
+    // check if this message is for us
+    if (rx_header.IdType == FDCAN_EXTENDED_ID && ((rx_header.Identifier >> 13) & 0xFF) == PDB_CAN_ID) {
+    	uint8_t msg_source = rx_header.Identifier >> (13+8); // leftmost 8 bits
+    	uint16_t msg_type = rx_header.Identifier & 0x1FFF; // rightmost 13 bits
+
+    	// TODO: implement cases
+    	switch (msg_type) {
+    	case CAN_MSG_LED_CMD:
+    		break;
+
+    	case CAN_MSG_UV_BULD_CMD:
+    		break;
+    	default:
+    		// unrecognized message
+    		break;
+    	}
     }
 
     // TODO: process incoming CAN message and unblock corresponding tasks
