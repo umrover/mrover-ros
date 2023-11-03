@@ -12,6 +12,9 @@
 
 #include <mrover/CAN.h>
 
+#include <moteus/moteus.h>
+using namespace mjbots;
+
 // Attribute needed to pack the struct into 16 bits
 struct __attribute__((__packed__)) MessageID {
     [[maybe_unused]] uint8_t _ignore : 5; // 16 bits - (6 + 5 meaningful bits) = 5 ignored bits
@@ -53,31 +56,12 @@ public:
         }
     }
 
-    void send_data(std::string const& messageName, IsFDCANSerializable auto const& data) {
+    template<TriviallyCopyable T>
+    virtual void send_data(std::string const& messageName, T& data) {
         // This is okay since "send_raw_data" makes a copy
         auto* address = std::bit_cast<std::byte const*>(std::addressof(data));
         send_raw_data(messageName, {address, sizeof(data)});
     }
-
-    //    void send_moteus_data(mjbots::moteus::CanFdFrame canfd) {
-    //        mrover::CAN can_message;
-    //        can_message.bus = canfd.bus;
-    //        can_message.message_id = std::bit_cast<uint16_t>((canfd.source << 8) + (canfd.destination));
-    //
-    //        if (canfd.reply_required) {
-    //            can_message.message_id |= 0x8000;
-    //        }
-    //
-    //        else {
-    //            can_message.message_id &= 0x7FFF;
-    //        }
-    //
-    //        can_message.data.resize(canfd.data.size());
-    //
-    //        std::memcpy(can_message.data.data(), canfd.data.data(), canfd.data.size());
-    //
-    //        m_can_publisher.publish(can_message);
-    //    }
 
     void send_raw_data(std::string const& messageName, std::span<std::byte const> data) {
         if (!m_message_name_to_id.contains(messageName)) {
@@ -107,6 +91,44 @@ public:
     std::string get_message(int messageId) {
         return m_id_to_message_name[messageId];
     }
+
+private:
+    ros::Publisher m_can_publisher;
+    uint8_t m_bus{}; // Who sets/determines the bus field?
+    uint8_t m_id{}; // Who sets this/how does it relate to the devices
+    // ^^Change the wording of m_id to imply this is the destination id
+    // Guthrie assigns an ID and we then use the moteus gui to configure the 
+    // id of the moteus to the ID Guthrie assigns.
+    std::unordered_map<std::string, uint8_t> m_message_name_to_id;
+    std::unordered_map<uint8_t, std::string> m_id_to_message_name;
+};
+
+class CANManager_Moteus : public CANManager {
+public:
+    
+    template<TriviallyCopyable T>
+    void send_data(std::string const& messageName, T& data) override {
+        mrover::CAN can_message;
+        can_message.bus = canfd.bus;
+        can_message.message_id = std::bit_cast<uint16_t>(static_cast<uint16_t>(
+            (static_cast<uint16_t>(canfd.source) << 8)
+             | (static_cast<uint16_t>(canfd.destination))));
+        
+        if (canfd.reply_required) {
+            can_message.message_id |= 0x8000; 
+        }
+
+        else {
+            can_message.message_id &= 0x7FFF; 
+        }
+       
+        can_message.data.resize(canfd.size);
+
+        std::memcpy(can_message.data.data(), canfd.data, canfd.size);
+
+        m_can_publisher.publish(can_message);
+    }
+
 
 private:
     ros::Publisher m_can_publisher;
