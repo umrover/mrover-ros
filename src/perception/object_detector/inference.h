@@ -2,8 +2,12 @@
 #define INFERENCE_H
 
 // Cpp native
+#include <NvInferLegacyDims.h>
+#include <NvInferRuntimeBase.h>
 #include <fstream>
+#include <iterator>
 #include <memory>
+#include <opencv2/core/mat.hpp>
 #include <random>
 #include <string>
 #include <vector>
@@ -25,9 +29,11 @@
 
 #include "pch.hpp"
 
-using nvinfer1::cuda;
 using nvinfer1::ICudaEngine;
 using nvinfer1::IExecutionContext;
+
+// ROS Mesage -> CV View Matrix -> cv::blobFromImage -> cv::Mat (input)
+// Preallocated CV::Mat of floats of correct size -> transpose into CV::Mat (also preallocated
 
 struct Detection {
     int class_id{0};
@@ -46,12 +52,16 @@ private:
 
     //Ptr to the engine
     std::unique_ptr<ICudaEngine, nvinfer1::Destroy<ICudaEngine>> enginePtr;
+
     //Ptr to the context
     std::unique_ptr<IExecutionContext, nvinfer1::Destroy<IExecutionContext>> context;
+
     //Input, output and reference tensors
-    std::vector<float> inputTensor;
-    std::vector<float> outputTensor;
-    std::vector<float> referenceTensor;
+    cv::Mat inputTensor;
+    cv::Mat outputTensor;
+    //Num Entries
+    nvinfer1::Dims3 inputEntries;
+    nvinfer1::Dims3 outputEntries;
 
     //Cuda Stream
     CudaStream stream;
@@ -61,6 +71,10 @@ private:
 
     //ONNX Model Path
     std::string onnxModelPath;
+
+    //Size of Model
+    std::modelInputShape;
+    cv::Size modelOutputShape;
 
 private:
     //STATIC FUNCTIONS
@@ -78,7 +92,7 @@ private:
     //Creates a ptr to the engine
     void createCudaEngine(std::string& onnxModelPath);
 
-    void launchInference();
+    void Inference::launchInference(float* input, float* output, int tensorSize);
 
     void setUpContext(const std::string& inputFile); //This will need to be adjusted to the img msg, but I think its ok to just run pictures as an intial test
 
@@ -86,6 +100,6 @@ private:
 
     void Inference::setUpContext();
 
-    std::vector<Detection> Inference::doDetections(const std::string& inputFile)
+    std::vector<Detection> Inference::doDetections(const std::string& inputFile);
 }
 #endif // INFERENCE_H

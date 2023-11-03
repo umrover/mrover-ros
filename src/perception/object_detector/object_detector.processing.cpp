@@ -1,5 +1,6 @@
 #include "object_detector.hpp"
 #include "inference.h"
+
 #include <cv_bridge/cv_bridge.h>
 #include <mrover/DetectedObject.h>
 #include <opencv2/core.hpp>

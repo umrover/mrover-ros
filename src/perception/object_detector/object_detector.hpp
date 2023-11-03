@@ -1,46 +1,51 @@
-#include "inference.h"
+//#include "inference.h"
 #include "pch.hpp"
 #include <opencv2/core/mat.hpp>
 #include <ros/publisher.h>
 
-namespace mrover {
+class ObjectDetectorNodelet : public nodelet::Nodelet {
+    static const int NUM_CHANNELS = 3;
+    static const int IMG_WIDTH = 1280;
+    static const int IMG_HEIGHT = 720;
 
-    class ObjectDetectorNodelet : public nodelet::Nodelet {
-    private:
-        ros::NodeHandle mNh, mPnh;
+private:
+    ros::NodeHandle mNh, mPnh;
 
-        Inference inference;
+    //Inference inference;
 
-        // Publishers
+    // Publishers
 
-        ros::Publisher mDebugImgPub;
-        ros::Publisher mDetectionData;
-
-
-        // Subscribers
-
-        ros::Subscriber mImgSub;
+    ros::Publisher mDebugImgPub;
+    ros::Publisher mDetectionData;
 
 
-        dynamic_reconfigure::Server<mrover::ObjectDetectorParamsConfig> mConfigServer;
-        dynamic_reconfigure::Server<mrover::ObjectDetectorParamsConfig>::CallbackType mCallbackType;
+    // Subscribers
 
-        // Internal state
+    ros::Subscriber mImgSub;
 
-        cv::dnn::Net mNet;
+    // Preallocated cv::Mats
+    cv::Mat imageBlob;
 
-        // Debug
+    dynamic_reconfigure::Server<mrover::ObjectDetectorParamsConfig> mConfigServer;
+    dynamic_reconfigure::Server<mrover::ObjectDetectorParamsConfig>::CallbackType mCallbackType;
 
-        LoopProfiler mProfiler{"Object Detector"};
+    // Internal state
 
-        void onInit() override;
+    cv::dnn::Net mNet;
 
-    public:
-        ObjectDetectorNodelet() = default;
+    // Debug
 
-        ~ObjectDetectorNodelet() override = default;
+    LoopProfiler mProfiler{"Object Detector"};
 
-        void imageCallback(sensor_msgs::ImageConstPtr const& msg);
-    };
+    void onInit() override;
 
-} // namespace mrover
+    //DetectedObject convertToObjMsg(Detection& detection);
+
+
+public:
+    ObjectDetectorNodelet() = default;
+
+    ~ObjectDetectorNodelet() override = default;
+
+    void imageCallback(sensor_msgs::ImageConstPtr const& msg);
+};
