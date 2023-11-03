@@ -6,12 +6,12 @@
 
 // TODO(quintin) this is not defined in my system can header for some reason, but moteus needs it? Is this the correct value?
 #define CANFD_FDF 0x04
-//#include <moteus/moteus.h>
+#include <moteus/moteus.h>
 
 #include <can_manager.hpp>
 #include <controller.hpp>
 
-//using namespace mjbots;
+using namespace mjbots;
 
 namespace mrover {
 
