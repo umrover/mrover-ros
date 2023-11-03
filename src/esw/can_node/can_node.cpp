@@ -20,7 +20,7 @@ namespace mrover {
     void checkErrorCode(boost::system::error_code const& ec) {
         if (ec.value() == boost::system::errc::success) return;
 
-        throw std::runtime_error(std::format("Boost failure: {}", ec.value()));
+        throw std::runtime_error(std::format("Boost failure: {} {}", ec.value(), ec.message()));
     }
 
     int checkSyscallResult(int result) {
