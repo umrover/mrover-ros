@@ -1,7 +1,8 @@
 #include "object_detector.hpp"
-#include "inference.h"
+//#include "inference.h"
 
 #include <cv_bridge/cv_bridge.h>
+#include <iostream>
 #include <mrover/DetectedObject.h>
 #include <opencv2/core.hpp>
 #include <opencv2/core/cvstd.hpp>
@@ -22,6 +23,42 @@ namespace mrover {
 
 
     void ObjectDetectorNodelet::imageCallback(sensor_msgs::ImageConstPtr const& msg) {
+        uint x;
+        x = msg->height;
+        std::cout << x << std::endl;
+    }
+    /*
+    void ObjectDetectorNodelet::imageCallback(sensor_msgs::ImageConstPtr const& msg) {
+        //Ensure a valid message was received
+        assert(msg);
+
+        //Get a CV::Mat image view
+        cv::Mat imageView{static_cast<int>(msg->height), static_cast<int>(msg->width), CV_8UC3, const_cast<uint8_t*>(msg->data.data())};
+
+        cv::dnn::blobFromImage(imageView, this->imageBlob);
+
+        //Run Image Detections
+        //Return type of Detection struct
+        std::vector<Detection> detections = this->inference.doDetections(imageView);
+
+        //just an array of DetectedObject
+        DetectedObjects detectionsMessage;
+
+        detectionsMessage.num_detections = static_cast<int>(detections.size());
+
+        //Convert Vector of Detections to Output Message
+        for (Detection& detection: detections) {
+            DetectedObject objMsg = convertToObjMsg(detection);
+            detectionsMessage.push_back(objMsg);
+        }
+
+        // detectionsMessage.header.seq = mSeqNum;
+        detectionsMessage.header.stamp = ros::Time::now();
+        // detectionsMessage.header.frame_id = "frame"
+
+        this->publisher;
+    }
+    
         assert(msg);
         assert(msg->height > 0);
         assert(msg->width > 0);
@@ -104,8 +141,9 @@ namespace mrover {
             }
             // Publish to
         }
-        //Look at yolov8 documentation for the output matrix
-        /*
+        */
+    //Look at yolov8 documentation for the output matrix
+    /*
          * TODO(percep/obj-detector):
          * 0. Google "OpenCV DNN example." View a couple of tutorials. Most will be in Python but the C++ API is similar.
          * 1. Use cv::dnn::blobFromImage to convert the image to a blob
@@ -113,6 +151,5 @@ namespace mrover {
          * 3. Parse the output of the network to get the bounding boxes
          * 4. Publish the bounding boxes
          */
-    }
 
 } // namespace mrover
