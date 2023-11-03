@@ -11,9 +11,9 @@
 #include <can_manager.hpp>
 #include <controller.hpp>
 
-using namespace mjbots;
-
 namespace mrover {
+
+    using namespace mjbots;
 
     enum class Mode {
         Stopped = 0,
