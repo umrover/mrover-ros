@@ -23,13 +23,11 @@
                 <h2>Nav State: {{ nav_status.nav_state_name }}</h2>
                 <CameraFeed></CameraFeed>
             </div>
-            <!-- <div>
-        <p style="margin-top: 6px">Joystick Values</p>
-        </div>
-        <JoystickValues />
-        <div>
-        <OdometryReading :odom="odom"></OdometryReading>
-        </div> -->
+            <div>
+            <p style="margin-top: 6px">Joystick Values</p>
+            </div>
+            <!-- <JoystickValues /> -->
+            <OdometryReading :odom="odom"></OdometryReading>
         </div>
         <div class="shadow p-3 rounded map">
             <AutonRoverMap :odom="odom" />
@@ -77,6 +75,7 @@ import AutonWaypointEditor from "./AutonWaypointEditor.vue";
 import CameraFeed from "./CameraFeed.vue";
 import Cameras from "./Cameras.vue";
 import JointStateTable from "./JointStateTable.vue";
+import OdometryReading from "./OdometryReading.vue";
 // import { quaternionToMapAngle } from "../utils.js";
 import { defineComponent } from "vue";
 
@@ -95,7 +94,8 @@ export default defineComponent({
         AutonWaypointEditor,
         CameraFeed,
         Cameras,
-        JointStateTable
+        JointStateTable,
+        OdometryReading
     },
 
     data() {

@@ -20,7 +20,6 @@
     "leaflet": "^1.9.4",
     "vue": "^3.3.4",
     "vue-router": "^4.2.4",
-    "vue2-leaflet": "^2.7.1",
     "vuedraggable": "^2.24.3",
     "vuex": "^4.1.0"
   },

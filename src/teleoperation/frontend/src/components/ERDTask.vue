@@ -40,9 +40,9 @@
     <div class="shadow p-3 rounded cameras">
       <Cameras :primary="true" />
     </div>
-    <!-- <div v-if="type === 'DM'" class="odom">
+    <div v-if="type === 'DM'" class="shadow p-3 rounded odom">
       <OdometryReading :odom="odom" />
-    </div> -->
+    </div>
     <div v-if="type === 'DM'" class="shadow p-3 rounded map">
       <BasicMap :odom="odom" />
     </div>
@@ -81,6 +81,7 @@ import BasicMap from "./BasicRoverMap.vue";
 import BasicWaypointEditor from './BasicWaypointEditor.vue';
 import Cameras from './Cameras.vue';
 import JointStateTable from "./JointStateTable.vue";
+import OdometryReading from "./OdometryReading.vue";
 
 export default defineComponent({
   components: {
@@ -91,7 +92,8 @@ export default defineComponent({
     BasicMap,
     BasicWaypointEditor,
     Cameras,
-    JointStateTable
+    JointStateTable,
+    OdometryReading
   },
 
   props: {
@@ -110,6 +112,7 @@ export default defineComponent({
         latitude_deg: 38.4060250,
         longitude_deg: -110.7923723,
         bearing_deg: 0,
+        altitude: 0,
         speed: 0
       },
       
@@ -119,20 +122,30 @@ export default defineComponent({
         error: ["", "", "", "", "", ""],
         state: ["", "", "", "", "", ""]
       },
-      jointState: {}
+
+      jointState: {
+        name: [],
+        position: [],
+        velocity: [],
+        effort: []
+      }
+    }
+  },
+
+  mounted() {
+    this.websocket.onmessage = (event) => {
+      const msg = JSON.parse(event.data)
+      if (msg.type == "joint_state") {
+        this.jointState.name = msg.name;
+        this.jointState.position = msg.position;
+        this.jointState.velocity = msg.velocity;
+        this.jointState.effort = msg.effort;
+        console.log(this.jointState);
+      }
     }
   },
 
   created() {
-    // this.websocket.onmessage = (event) => {
-    //   const msg = JSON.parse(event.data)
-    //   if (msg.type == "joint_state") {
-    //     this.jointState.name = msg.name;
-    //     this.jointState.position = msg.position;
-    //     this.jointState.velocity = msg.velocity;
-    //     this.jointState.effort = msg.effort;
-    //   }
-    // }
   }
 })
 </script>
