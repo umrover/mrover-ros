@@ -7,7 +7,8 @@ std::vector<std::string> SANames{"sa_x", "sa_y", "sa_z", "scoop", "drill"};
 std::unique_ptr<mrover::CANManager> uv_bulb_can_manager;
 
 bool uvBulbCallback(std_srvs::SetBool::Request& req, std_srvs::SetBool::Response& res) {
-    uv_bulb_can_manager->send_data("uv_bulb_cmd", req.data);
+    // TODO - make sure send_data works
+    uv_bulb_can_manager->send_data("pdlb", req.data);
     res.success = true;
     res.message = "DONE";
     return true;

@@ -15,7 +15,7 @@ namespace mrover {
     void BrushlessController::set_desired_throttle(Dimensionless throttle) {
         throttle = std::clamp(throttle, Dimensionless{-1}, Dimensionless{1});
         // TODO - need to convert from throttle to rev/s
-        can_manager.send_data("throttle_cmd", throttle);
+        can_manager.send_data(name, throttle);
     }
 
     void BrushlessController::set_desired_position(Radians position) {
