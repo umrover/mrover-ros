@@ -1,0 +1,6 @@
+- name: fdcanusb Rules
+  become: true
+  synchronize:
+    src: files/rules/
+    dest: /etc/udev/rules.d
+    recursive: true

@@ -21,11 +21,11 @@ namespace mrover {
 
     // Attribute needed to pack the struct into 32 bits
     struct FDCANMessageID {
-        [[maybe_unused]] std::uint8_t _ignore : 3;
-        std::uint16_t padding : 13;      // padding
-        std::uint8_t source_id : 8;      // source id
-        std::uint8_t destination_id : 8; // destination id
-    } __attribute__((__packed__));
+        std::uint8_t destination;
+        std::uint8_t source : 7;
+        bool reply_required : 1;
+    };
+    static_assert(sizeof(FDCANMessageID) == 2);
 
     template<typename T>
     concept IsSerializable = std::is_trivially_copyable_v<T>;
@@ -42,9 +42,9 @@ namespace mrover {
             XmlRpc::XmlRpcValue canDevices;
             nh.getParam("can/devices", canDevices);
             assert(nh.hasParam("can/devices"));
-            assert(can_messages.getType() == XmlRpc::XmlRpcValue::TypeStruct);
-            int32_t size = canDevices.size();
-            for (int32_t i = 0; i < size; ++i) {
+            assert(canDevices.getType() == XmlRpc::XmlRpcValue::TypeStruct);
+            int size = canDevices.size();
+            for (int i = 0; i < size; ++i) {
                 assert(canDevices[i].hasMember("name") &&
                        canDevices[i]["name"].getType() == XmlRpc::XmlRpcValue::TypeString);
                 std::string name = static_cast<std::string>(canDevices[i]["name"]);
@@ -78,11 +78,10 @@ namespace mrover {
 
 
             mrover::CAN can_message;
-            can_message.bus = m_name_to_bus[destinationName];
-            can_message.message_id = std::bit_cast<uint16_t>(FDCANMessageID{
-                    .padding = 0,
-                    .source_id = m_name_to_id[m_source_name],
-                    .destination_id = m_name_to_id[destinationName],
+            can_message.bus = m_name_to_bus.at(destinationName);
+            can_message.message_id = std::bit_cast<std::uint16_t>(FDCANMessageID{
+                    .destination = m_name_to_id.at(destinationName),
+                    .source = m_name_to_id.at(m_source_name),
             });
             can_message.data.resize(data.size());
             std::memcpy(can_message.data.data(), data.data(), data.size());
@@ -93,14 +92,9 @@ namespace mrover {
         void send_moteus_data(moteus::CanFdFrame const& frame) {
             mrover::CAN can_message;
             can_message.bus = frame.bus;
-            struct MoteusId {
-                std::int8_t destination;
-                std::int8_t source : 7;
-                bool reply_required : 1;
-            } __attribute__((__packed__));
-            can_message.message_id = std::bit_cast<std::uint16_t>(MoteusId{
-                    .destination = frame.destination,
-                    .source = frame.source,
+            can_message.message_id = std::bit_cast<std::uint16_t>(FDCANMessageID{
+                    .destination = static_cast<std::uint8_t>(frame.destination),
+                    .source = static_cast<std::uint8_t>(frame.source),
                     .reply_required = frame.reply_required,
             });
             can_message.data.assign(frame.data, frame.data + frame.size);
@@ -111,9 +105,9 @@ namespace mrover {
     private:
         ros::Publisher m_can_publisher;
         std::string m_source_name{};
-        std::unordered_map<std::string, uint8_t> m_name_to_id;
+        std::unordered_map<std::string, std::uint8_t> m_name_to_id;
         std::unordered_map<uint8_t, std::string> m_id_to_name;
-        std::unordered_map<std::string, uint8_t> m_name_to_bus;
+        std::unordered_map<std::string, std::uint8_t> m_name_to_bus;
         std::unordered_map<uint8_t, std::string> m_bus_to_name;
     };
 

@@ -97,7 +97,7 @@ namespace mrover {
         if (duration.count() < 100) {
             for (const auto& motorName: motorNames) {
                 Controller& controller = get_controller(motorName);
-                controller.set_desired_throttle(Dimensionless{0});
+                controller.set_desired_throttle(0_percent);
             }
         }
     }
