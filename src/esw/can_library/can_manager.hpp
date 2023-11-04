@@ -19,11 +19,12 @@ namespace mrover {
 
     using namespace mjbots;
 
-    // Attribute needed to pack the struct into 16 bits
-    struct MessageID {
-        [[maybe_unused]] std::uint8_t _ignore : 5; // 16 bits - (6 + 5 meaningful bits) = 5 ignored bits
-        std::uint8_t message_num : 6;              // 6 bits for message number
-        std::uint8_t device_id : 5;                // 5 bits for device ID
+    // Attribute needed to pack the struct into 32 bits
+    struct FDCANMessageID {
+        [[maybe_unused]] std::uint8_t _ignore : 3;
+        std::uint16_t padding : 13;      // padding
+        std::uint8_t source_id : 8;      // source id
+        std::uint8_t destination_id : 8; // destination id
     } __attribute__((__packed__));
 
     template<typename T>
@@ -74,7 +75,7 @@ namespace mrover {
 
             mrover::CAN can_message;
             can_message.bus = m_bus;
-            can_message.message_id = std::bit_cast<uint16_t>(MessageID{
+            can_message.message_id = std::bit_cast<uint16_t>(FDCANMessageID{
                     .message_num = m_message_name_to_id[messageName],
                     .device_id = m_id,
             });
