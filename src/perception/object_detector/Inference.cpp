@@ -1,21 +1,13 @@
-#include "inference.h"
-#include <NvInfer.h>
-#include <NvInferRuntimeBase.h>
-#include <NvOnnxParser.h>
-#include <cuda_runtime_api.h>
+
 #include <opencv2/core/mat.hpp>
 #include <string>
 
-#include "ioHelper.h"
 
-#include "NvInfer.h"
+namespace mrover {
 
-
-using namespace nvinfer1;
-using namespace std;
-
+    /*
 //  : logger{}, inputTensor{}, outputTensor{}, referenceTensor{}, stream{}
-Inference::Inference(std::string onnxModelPath, cv::Size modelInputShape = {640, 640}, std::string_view classesTxtFile = "") : logger{}, inputTensor{}, outputTensor{}, referenceTensor{}, stream{} {
+Inference::Inference(std::string onnxModelPath, cv::Size modelInputShape = {640, 640}, std::string classesTxtFile = "") : logger{}, inputTensor{}, outputTensor{}, referenceTensor{}, stream{} {
 
     createCudaEngine(onnxModelPath);
 
@@ -59,11 +51,9 @@ std::vector<Detection> Inference::doDetections(cv::Mat& img) {
 
     return Parser(this->outputTensor).parseTensor();
 }
+*/
 
-int Inference::getBindingInputIndex(nvinfer1::IExecutionContext* context) {
-    return context->getEngine().getTensorIOMode(context->getEngine().getIOTensorName(0)) != nvinfer1::TensorIOMode::kINPUT; // 0 (false) if bindingIsInput(0), 1 (true) otherwise
-}
-
+    /*
 void Inference::setUpContext() {
     // Create Execution Context.
     this->context.reset(this->enginePtr->createExecutionContext());
@@ -72,3 +62,6 @@ void Inference::setUpContext() {
     Dims4 inputDims{Inference::BATCH_SIZE, dims_i.d[1], dims_i.d[2], dims_i.d[3]};
     context->setBindingDimensions(0, inputDims);
 }
+*/
+
+} // namespace mrover

@@ -26,6 +26,8 @@ namespace mrover {
         uint x;
         x = msg->height;
         std::cout << x << std::endl;
+
+        cv::Mat mat;
     }
     /*
     void ObjectDetectorNodelet::imageCallback(sensor_msgs::ImageConstPtr const& msg) {
