@@ -78,6 +78,8 @@ void HAL_MspInit(void)
   /* USER CODE END MspInit 1 */
 }
 
+static uint32_t HAL_RCC_ADC12_CLK_ENABLED=0;
+
 /**
 * @brief ADC MSP Initialization
 * This function configures the hardware resources used in this example
@@ -104,7 +106,10 @@ void HAL_ADC_MspInit(ADC_HandleTypeDef* hadc)
     }
 
     /* Peripheral clock enable */
-    __HAL_RCC_ADC12_CLK_ENABLE();
+    HAL_RCC_ADC12_CLK_ENABLED++;
+    if(HAL_RCC_ADC12_CLK_ENABLED==1){
+      __HAL_RCC_ADC12_CLK_ENABLE();
+    }
 
     __HAL_RCC_GPIOF_CLK_ENABLE();
     __HAL_RCC_GPIOA_CLK_ENABLE();
@@ -121,18 +126,18 @@ void HAL_ADC_MspInit(ADC_HandleTypeDef* hadc)
     PB12     ------> ADC1_IN11
     PB14     ------> ADC1_IN5
     */
-    GPIO_InitStruct.Pin = TEMP_0_Pin;
+    GPIO_InitStruct.Pin = CURR_3V3_Pin;
     GPIO_InitStruct.Mode = GPIO_MODE_ANALOG;
     GPIO_InitStruct.Pull = GPIO_NOPULL;
-    HAL_GPIO_Init(TEMP_0_GPIO_Port, &GPIO_InitStruct);
+    HAL_GPIO_Init(CURR_3V3_GPIO_Port, &GPIO_InitStruct);
 
-    GPIO_InitStruct.Pin = CURR_0_Pin|CURR_1_Pin|CURR_2_Pin|CURR_3_Pin;
+    GPIO_InitStruct.Pin = CURR_24V_Pin|CURR_12V_JETSON_Pin|CURR_12V_REST_Pin|CURR_12V_BUCK_Pin;
     GPIO_InitStruct.Mode = GPIO_MODE_ANALOG;
     GPIO_InitStruct.Pull = GPIO_NOPULL;
     HAL_GPIO_Init(GPIOA, &GPIO_InitStruct);
 
-    GPIO_InitStruct.Pin = TEMP_4_Pin|TEMP_2_Pin|TEMP_3_Pin|TEMP_1_Pin
-                          |CURR_4_Pin;
+    GPIO_InitStruct.Pin = TEMP_12V_BUCK_Pin|TEMP_12V_JETSON_Pin|TEMP_12V_REST_Pin|TEMP_24V_Pin
+                          |CURR_5V_Pin;
     GPIO_InitStruct.Mode = GPIO_MODE_ANALOG;
     GPIO_InitStruct.Pull = GPIO_NOPULL;
     HAL_GPIO_Init(GPIOB, &GPIO_InitStruct);
@@ -140,6 +145,47 @@ void HAL_ADC_MspInit(ADC_HandleTypeDef* hadc)
   /* USER CODE BEGIN ADC1_MspInit 1 */
 
   /* USER CODE END ADC1_MspInit 1 */
+  }
+  else if(hadc->Instance==ADC2)
+  {
+  /* USER CODE BEGIN ADC2_MspInit 0 */
+
+  /* USER CODE END ADC2_MspInit 0 */
+
+  /** Initializes the peripherals clocks
+  */
+    PeriphClkInit.PeriphClockSelection = RCC_PERIPHCLK_ADC12;
+    PeriphClkInit.Adc12ClockSelection = RCC_ADC12CLKSOURCE_SYSCLK;
+    if (HAL_RCCEx_PeriphCLKConfig(&PeriphClkInit) != HAL_OK)
+    {
+      Error_Handler();
+    }
+
+    /* Peripheral clock enable */
+    HAL_RCC_ADC12_CLK_ENABLED++;
+    if(HAL_RCC_ADC12_CLK_ENABLED==1){
+      __HAL_RCC_ADC12_CLK_ENABLE();
+    }
+
+    __HAL_RCC_GPIOF_CLK_ENABLE();
+    __HAL_RCC_GPIOB_CLK_ENABLE();
+    /**ADC2 GPIO Configuration
+    PF1-OSC_OUT     ------> ADC2_IN10
+    PB15     ------> ADC2_IN15
+    */
+    GPIO_InitStruct.Pin = TEMP_5V_Pin;
+    GPIO_InitStruct.Mode = GPIO_MODE_ANALOG;
+    GPIO_InitStruct.Pull = GPIO_NOPULL;
+    HAL_GPIO_Init(TEMP_5V_GPIO_Port, &GPIO_InitStruct);
+
+    GPIO_InitStruct.Pin = TEMP_3V3_Pin;
+    GPIO_InitStruct.Mode = GPIO_MODE_ANALOG;
+    GPIO_InitStruct.Pull = GPIO_NOPULL;
+    HAL_GPIO_Init(TEMP_3V3_GPIO_Port, &GPIO_InitStruct);
+
+  /* USER CODE BEGIN ADC2_MspInit 1 */
+
+  /* USER CODE END ADC2_MspInit 1 */
   }
 
 }
@@ -158,7 +204,10 @@ void HAL_ADC_MspDeInit(ADC_HandleTypeDef* hadc)
 
   /* USER CODE END ADC1_MspDeInit 0 */
     /* Peripheral clock disable */
-    __HAL_RCC_ADC12_CLK_DISABLE();
+    HAL_RCC_ADC12_CLK_ENABLED--;
+    if(HAL_RCC_ADC12_CLK_ENABLED==0){
+      __HAL_RCC_ADC12_CLK_DISABLE();
+    }
 
     /**ADC1 GPIO Configuration
     PF0-OSC_IN     ------> ADC1_IN10
@@ -172,16 +221,39 @@ void HAL_ADC_MspDeInit(ADC_HandleTypeDef* hadc)
     PB12     ------> ADC1_IN11
     PB14     ------> ADC1_IN5
     */
-    HAL_GPIO_DeInit(TEMP_0_GPIO_Port, TEMP_0_Pin);
+    HAL_GPIO_DeInit(CURR_3V3_GPIO_Port, CURR_3V3_Pin);
 
-    HAL_GPIO_DeInit(GPIOA, CURR_0_Pin|CURR_1_Pin|CURR_2_Pin|CURR_3_Pin);
+    HAL_GPIO_DeInit(GPIOA, CURR_24V_Pin|CURR_12V_JETSON_Pin|CURR_12V_REST_Pin|CURR_12V_BUCK_Pin);
 
-    HAL_GPIO_DeInit(GPIOB, TEMP_4_Pin|TEMP_2_Pin|TEMP_3_Pin|TEMP_1_Pin
-                          |CURR_4_Pin);
+    HAL_GPIO_DeInit(GPIOB, TEMP_12V_BUCK_Pin|TEMP_12V_JETSON_Pin|TEMP_12V_REST_Pin|TEMP_24V_Pin
+                          |CURR_5V_Pin);
 
   /* USER CODE BEGIN ADC1_MspDeInit 1 */
 
   /* USER CODE END ADC1_MspDeInit 1 */
+  }
+  else if(hadc->Instance==ADC2)
+  {
+  /* USER CODE BEGIN ADC2_MspDeInit 0 */
+
+  /* USER CODE END ADC2_MspDeInit 0 */
+    /* Peripheral clock disable */
+    HAL_RCC_ADC12_CLK_ENABLED--;
+    if(HAL_RCC_ADC12_CLK_ENABLED==0){
+      __HAL_RCC_ADC12_CLK_DISABLE();
+    }
+
+    /**ADC2 GPIO Configuration
+    PF1-OSC_OUT     ------> ADC2_IN10
+    PB15     ------> ADC2_IN15
+    */
+    HAL_GPIO_DeInit(TEMP_5V_GPIO_Port, TEMP_5V_Pin);
+
+    HAL_GPIO_DeInit(TEMP_3V3_GPIO_Port, TEMP_3V3_Pin);
+
+  /* USER CODE BEGIN ADC2_MspDeInit 1 */
+
+  /* USER CODE END ADC2_MspDeInit 1 */
   }
 
 }
