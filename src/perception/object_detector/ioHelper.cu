@@ -4,7 +4,7 @@
 #include <google/protobuf/io/coded_stream.h>
 #include <google/protobuf/io/zero_copy_stream_impl.h>
 #include <iterator>
-#include <onnx/onnx_pb.h>
+
 using namespace std;
 
 namespace nvinfer1 {
@@ -35,37 +35,6 @@ namespace nvinfer1 {
                 break;
         }
         return o;
-    }
-
-    // returns number of floats successfully read from tensor protobuf
-    size_t readTensorProto(string const& path, float* buffer) {
-        string const data{readBuffer(path)};
-        onnx::TensorProto tensorProto;
-        if (!tensorProto.ParseFromString(data))
-            return 0;
-
-        assert(tensorProto.has_raw_data());
-        assert(tensorProto.raw_data().size() % sizeof(float) == 0);
-
-        memcpy(buffer, tensorProto.raw_data().data(), tensorProto.raw_data().size());
-        return tensorProto.raw_data().size() / sizeof(float);
-    }
-
-    // returns number of floats successfully read from tensorProtoPaths
-    size_t readTensor(vector<string> const& tensorProtoPaths, vector<float>& buffer) {
-        GOOGLE_PROTOBUF_VERIFY_VERSION;
-        size_t totalElements = 0;
-
-        for (size_t i = 0; i < tensorProtoPaths.size(); ++i) {
-            size_t elements = readTensorProto(tensorProtoPaths[i], &buffer[totalElements]);
-            if (!elements) {
-                cout << "ERROR: could not read tensor from file " << tensorProtoPaths[i] << endl;
-                break;
-            }
-            totalElements += elements;
-        }
-
-        return totalElements;
     }
 
     void writeBuffer(void* buffer, size_t size, string const& path) {
