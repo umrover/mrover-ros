@@ -27,7 +27,7 @@
 #ifndef __CUDA_WRAPPER_H__
 #define __CUDA_WRAPPER_H__
 
-#include <cuda_runtime.h>
+#include <cuda_runtime_api.h>
 
 namespace cudawrapper {
 

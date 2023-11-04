@@ -1,24 +1,11 @@
-
 #include <opencv2/core/mat.hpp>
 #include <string>
 
 
 namespace mrover {
 
+
     /*
-//  : logger{}, inputTensor{}, outputTensor{}, referenceTensor{}, stream{}
-Inference::Inference(std::string onnxModelPath, cv::Size modelInputShape = {640, 640}, std::string classesTxtFile = "") : logger{}, inputTensor{}, outputTensor{}, referenceTensor{}, stream{} {
-
-    createCudaEngine(onnxModelPath);
-
-    this->modelInputShape = modelInputShape;
-
-    assert(this->enginePtr->getNbBindings() == 2);
-    assert(this->enginePtr->bindingIsInput(0) ^ enginePtr->bindingIsInput(1));
-
-    this->onnxModelPath = onnxModelPath;
-}
-
 
 // Initializes enginePtr with built engine
 void Inference::createCudaEngine(std::string& onnxModelPath) {

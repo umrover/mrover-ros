@@ -1,4 +1,5 @@
 #include <NvInfer.h>
+#include <NvInferRuntime.h>
 #include <NvInferRuntimeBase.h>
 #include <NvOnnxParser.h>
 #include <cuda_runtime_api.h>
@@ -10,7 +11,7 @@
 #include <opencv4/opencv2/core/types.hpp>
 #include <string>
 
-#include "inference.h"
+#include "inference.cuh"
 
 #include <array>
 #include <string_view>
@@ -35,13 +36,59 @@ using namespace nvinfer1;
 */
 namespace mrover {
 
+    //Constructor
+    //  : logger{}, inputTensor{}, outputTensor{}, referenceTensor{}, stream{}
+    Inference::Inference(std::string onnxModelPath, cv::Size modelInputShape = {640, 640}, std::string classesTxtFile = "") : logger{}, inputTensor{}, outputTensor{}, stream{} {
+
+        enginePtr.reset(createCudaEngine(onnxModelPath));
+
+        this->modelInputShape = modelInputShape;
+
+        assert(this->enginePtr->getNbBindings() == 2);
+        assert(this->enginePtr->bindingIsInput(0) ^ enginePtr->bindingIsInput(1));
+
+        this->onnxModelPath = onnxModelPath;
+    }
+
+    // Initializes enginePtr with built engine
+    nvinfer1::ICudaEngine* Inference::createCudaEngine(std::string& onnxModelPath) {
+        // See link sfor additional context
+        const auto explicitBatch = 1U << static_cast<uint32_t>(nvinfer1::NetworkDefinitionCreationFlag::kEXPLICIT_BATCH);
+        std::unique_ptr<nvinfer1::IBuilder, Destroy<nvinfer1::IBuilder>> builder{nvinfer1::createInferBuilder(logger)};
+        std::unique_ptr<nvinfer1::INetworkDefinition, Destroy<nvinfer1::INetworkDefinition>> network{builder->createNetworkV2(explicitBatch)};
+        std::unique_ptr<nvonnxparser::IParser, Destroy<nvonnxparser::IParser>> parser{nvonnxparser::createParser(*network, logger)};
+        std::unique_ptr<nvinfer1::IBuilderConfig, Destroy<nvinfer1::IBuilderConfig>> config{builder->createBuilderConfig()};
+
+        //Parse the onnx from file
+        if (!parser->parseFromFile(onnxModelPath.c_str(), static_cast<int>(ILogger::Severity::kINFO))) {
+            std::cout << "ERROR: could not parse input engine." << std::endl;
+        }
+
+        config->setMemoryPoolLimit(MemoryPoolType::kWORKSPACE, 1 << 30);
+
+        auto profile = builder->createOptimizationProfile();
+        profile->setDimensions(network->getInput(0)->getName(), OptProfileSelector::kMIN, Dims4{1, 3, 256, 256});
+        profile->setDimensions(network->getInput(0)->getName(), OptProfileSelector::kOPT, Dims4{1, 3, 256, 256});
+        profile->setDimensions(network->getInput(0)->getName(), OptProfileSelector::kMAX, Dims4{32, 3, 256, 256});
+        config->addOptimizationProfile(profile);
+
+        return builder->buildEngineWithConfig(*network, *config);
+    }
+
+    std::vector<Detection> Inference::doDetections(cv::Mat& img) {
+        //Do the forward pass on the network
+        launchInference(img.data, this->outputTensor.data);
+
+        return Parser(this->outputTensor).parseTensor();
+    }
+
     void Inference::launchInference(float* input, float* output) {
         int inputId = Inference::getBindingInputIndex(this->contextPtr.get());
 
         //Copy data to GPU memory
         cudaMemcpyAsync(this->bindings[inputId], input, inputEntries.d[0] * inputEntries.d[1] * inputEntries.d[2] * sizeof(float), cudaMemcpyHostToDevice, this->stream);
 
-        //
+        //Queue the async engine process
         this->contextPtr->enqueueV3(this->stream);
 
         //Copy data to CPU memory

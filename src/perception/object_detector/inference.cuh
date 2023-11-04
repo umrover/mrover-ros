@@ -1,4 +1,5 @@
 // Cpp native
+#include <NvInferRuntime.h>
 #include <fstream>
 #include <iterator>
 #include <memory>
@@ -81,14 +82,14 @@ namespace mrover {
     public:
         Inference() = default;
 
-        Inference(std::string_view onnxModelPath, cv::Size modelInputShape = {640, 640}, std::string_view classesTxtFile = "");
+        Inference(std::string onnxModelPath, cv::Size modelInputShape, std::string classesTxtFile);
 
 
         std::vector<Detection> runInference(cv::Mat const& input);
 
     private:
         //Creates a ptr to the engine
-        void createCudaEngine(std::string& onnxModelPath);
+        nvinfer1::ICudaEngine* createCudaEngine(std::string& onnxModelPath);
 
         void launchInference(float* input, float* output);
 
@@ -98,6 +99,6 @@ namespace mrover {
 
         void setUpContext();
 
-        std::vector<Detection> doDetections(const std::string& inputFile);
+        std::vector<Detection> doDetections(cv::Mat& img);
     };
 } // namespace mrover
