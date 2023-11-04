@@ -17,6 +17,7 @@ cmake-build*/
 node_modules/
 /src/teleop/gui/dist/
 /src/teleop/gui/src/static/map
+starter_project/teleop/basestation_gui/frontend/build
 keys.json*
 yarn.lock*
 yarn-error.log*

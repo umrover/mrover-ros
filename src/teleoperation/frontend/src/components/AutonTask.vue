@@ -19,14 +19,14 @@
             </div>
         </div>
         <div class="shadow p-3 rounded data" :style="`background-color: {{nav_state_color}}`">
-            <div>
-                <h2>Nav State: {{ nav_status.nav_state_name }}</h2>
+            <h2>Nav State: {{ nav_status.nav_state_name }}</h2>
+            <div style="display: inline-block;">
                 <CameraFeed></CameraFeed>
             </div>
-            <div>
+            <div style="display: inline-block; vertical-align: top;">
             <p style="margin-top: 6px">Joystick Values</p>
+            <JoystickValues />
             </div>
-            <!-- <JoystickValues /> -->
             <OdometryReading :odom="odom"></OdometryReading>
         </div>
         <div class="shadow p-3 rounded map">
@@ -39,13 +39,13 @@
         />
         </div>
         <!--Enable the drive controls if auton is off-->
-        <!-- <div
+        <div
         v-if="!autonEnabled && teleopEnabledCheck"
         v-show="false"
         class="driveControls"
     >
         <DriveControls />
-    </div> -->
+    </div>
         <!-- <div v-show="false">
         <MastGimbalControls></MastGimbalControls>
     </div> -->
@@ -68,7 +68,7 @@
 </template>
   
 <script lang="ts">
-// import { mapGetters } from "vuex";
+import { mapGetters } from "vuex";
 import DriveMoteusStateTable from "./DriveMoteusStateTable.vue";
 import AutonRoverMap from "./AutonRoverMap.vue";
 import AutonWaypointEditor from "./AutonWaypointEditor.vue";
@@ -76,6 +76,8 @@ import CameraFeed from "./CameraFeed.vue";
 import Cameras from "./Cameras.vue";
 import JointStateTable from "./JointStateTable.vue";
 import OdometryReading from "./OdometryReading.vue";
+import JoystickValues from './JoystickValues.vue';
+import DriveControls from "./DriveControls.vue";
 // import { quaternionToMapAngle } from "../utils.js";
 import { defineComponent } from "vue";
 
@@ -95,7 +97,9 @@ export default defineComponent({
         CameraFeed,
         Cameras,
         JointStateTable,
-        OdometryReading
+        OdometryReading,
+        JoystickValues,
+        DriveControls
     },
 
     data() {
@@ -138,15 +142,15 @@ export default defineComponent({
     },
 
     computed: {
-        // ...mapGetters("autonomy", {
-        //     autonEnabled: "autonEnabled",
-        //     teleopEnabled: "teleopEnabled"
-        // }),
+        ...mapGetters("autonomy", {
+            autonEnabled: "autonEnabled",
+            teleopEnabled: "teleopEnabled"
+        }),
 
         nav_state_color(): string {
-            // if (!this.autonEnabled && this.teleopEnabledCheck) {
-            //     return navBlue;
-            // }
+            if (!this.autonEnabled && this.teleopEnabledCheck) {
+                return navBlue;
+            }
             if (this.nav_status.nav_state_name == "DoneState" && this.navBlink) {
                 return navGreen;
             } else if (

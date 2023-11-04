@@ -84,7 +84,7 @@ export default {
 
     data() {
         return {
-            radius_m: 0
+            radius_m: 1
         };
     },
 

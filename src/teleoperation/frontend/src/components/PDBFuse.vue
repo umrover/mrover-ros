@@ -64,7 +64,7 @@
         ],
       };
     },
-    created: function () {
+    mounted: function () {
         this.websocket.onmessage = (event) => {
             const msg = JSON.parse(event.data);
             if(msg.type == "pdb") {

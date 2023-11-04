@@ -11,6 +11,17 @@
             <input class="form-control" id="waypointid" v-model="id" type="number" max="249" min="-1" step="1">
           </div>
 
+          <div class="dropdown show my-3">
+          <a class="btn btn-secondary dropdown-toggle" href="#" role="button" id="dropdownMenuLink" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+            Object
+          </a>
+          <div class="dropdown-menu" aria-labelledby="dropdownMenuLink">
+            <a class="dropdown-item" href="#">None</a>
+            <a class="dropdown-item" href="#">Mallet</a>
+            <a class="dropdown-item" href="#">Bottle</a>
+          </div>
+          </div>
+
           <div class="form-check form-check-inline">
             <input v-model="odom_format_in" class="form-check-input" type="radio" id="radioD" value="D">
             <label class="form-check-label" for="radioD">D</label>

@@ -55,9 +55,9 @@
     <div v-if="type === 'DM'" class="shadow p-3 rounded waypoint-editor">
       <BasicWaypointEditor :odom="odom" />
     </div>
-    <!-- <div>
+    <div>
       <DriveControls></DriveControls>
-    </div> -->
+    </div>
     <div class="shadow p-3 rounded arm-controls">
       <ArmControls />
     </div>
@@ -82,6 +82,7 @@ import BasicWaypointEditor from './BasicWaypointEditor.vue';
 import Cameras from './Cameras.vue';
 import JointStateTable from "./JointStateTable.vue";
 import OdometryReading from "./OdometryReading.vue";
+import DriveControls from './DriveControls.vue';
 
 export default defineComponent({
   components: {
@@ -93,7 +94,8 @@ export default defineComponent({
     BasicWaypointEditor,
     Cameras,
     JointStateTable,
-    OdometryReading
+    OdometryReading,
+    DriveControls
   },
 
   props: {
@@ -140,7 +142,6 @@ export default defineComponent({
         this.jointState.position = msg.position;
         this.jointState.velocity = msg.velocity;
         this.jointState.effort = msg.effort;
-        console.log(this.jointState);
       }
     }
   },
