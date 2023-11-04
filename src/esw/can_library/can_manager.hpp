@@ -35,49 +35,54 @@ namespace mrover {
 
     class CANManager {
     public:
-        CANManager(ros::NodeHandle& nh, const std::string& name) {
+        CANManager(ros::NodeHandle& nh, const std::string& source_name) {
+            m_source_name = source_name;
             m_can_publisher = nh.advertise<mrover::CAN>("can_requests", 1);
-            std::string can_bus_name = "can/" + name + "/bus";
-            assert(nh.hasParam(can_bus_name));
-            int bus;
-            nh.getParam(can_bus_name, bus);
-            m_bus = static_cast<int>(bus);
-            std::string can_id_name = "can/" + name + "/id";
-            assert(nh.hasParam(can_id_name));
-            int id;
-            nh.getParam(can_id_name, id);
-            m_id = static_cast<int>(id);
 
-            XmlRpc::XmlRpcValue can_messages;
-            assert(nh.hasParam("can/messages"));
-            nh.getParam("can/messages", can_messages);
+            XmlRpc::XmlRpcValue canDevices;
+            nh.getParam("can/devices", canDevices);
+            assert(nh.hasParam("can/devices"));
             assert(can_messages.getType() == XmlRpc::XmlRpcValue::TypeStruct);
-            for (auto [messageName, messageId]: can_messages) {
-                if (messageId.getType() == XmlRpc::XmlRpcValue::TypeInt) {
-                    auto messageIdInt = static_cast<int>(messageId);
-                    m_message_name_to_id[messageName] = messageIdInt;
-                    m_id_to_message_name[messageIdInt] = messageName;
-                }
+            int32_t size = canDevices.size();
+            for (int32_t i = 0; i < size; ++i) {
+                assert(canDevices[i].hasMember("name") &&
+                       canDevices[i]["name"].getType() == XmlRpc::XmlRpcValue::TypeString);
+                std::string name = static_cast<std::string>(canDevices[i]["name"]);
+
+                assert(canDevices[i].hasMember("id") &&
+                       canDevices[i]["id"].getType() == XmlRpc::XmlRpcValue::TypeInt);
+                auto id = (uint8_t) static_cast<int>(canDevices[i]["id"]);
+                m_name_to_id[name] = id;
+                m_id_to_name[id] = name;
+
+                assert(canDevices[i].hasMember("bus") &&
+                       canDevices[i]["bus"].getType() == XmlRpc::XmlRpcValue::TypeInt);
+                auto bus = (uint8_t) static_cast<int>(canDevices[i]["bus"]);
+                m_name_to_bus[name] = bus;
+                m_bus_to_name[bus] = name;
             }
         }
 
         template<IsFDCANSerializable T>
-        void send_data(std::string const& messageName, T& data) {
+        void send_data(std::string const& destinationName, T& data) {
+            // TODO - make sure everything is consistent in the bridge files
             // This is okay since "send_raw_data" makes a copy
             auto* address = std::bit_cast<std::byte const*>(std::addressof(data));
-            send_raw_data(messageName, {address, sizeof(data)});
+            send_raw_data(destinationName, {address, sizeof(data)});
         }
 
-        void send_raw_data(std::string const& messageName, std::span<std::byte const> data) {
-            if (!m_message_name_to_id.contains(messageName)) {
-                throw std::invalid_argument(std::format("message_name {} is not valid.", messageName));
+        void send_raw_data(std::string const& destinationName, std::span<std::byte const> data) {
+            if (!m_name_to_bus.contains(destinationName) || !m_name_to_id.contains(destinationName)) {
+                throw std::invalid_argument(std::format("destinationName {} is not valid.", destinationName));
             }
 
+
             mrover::CAN can_message;
-            can_message.bus = m_bus;
+            can_message.bus = m_name_to_bus[destinationName];
             can_message.message_id = std::bit_cast<uint16_t>(FDCANMessageID{
-                    .message_num = m_message_name_to_id[messageName],
-                    .device_id = m_id,
+                    .padding = 0,
+                    .source_id = m_name_to_id[m_source_name],
+                    .destination_id = m_name_to_id[destinationName],
             });
             can_message.data.resize(data.size());
             std::memcpy(can_message.data.data(), data.data(), data.size());
@@ -103,27 +108,13 @@ namespace mrover {
             m_can_publisher.publish(can_message);
         }
 
-        uint8_t get_id() const {
-            return m_id;
-        }
-
-        uint8_t get_bus() const {
-            return m_bus;
-        }
-
-        std::string get_message(int messageId) {
-            return m_id_to_message_name[messageId];
-        }
-
     private:
         ros::Publisher m_can_publisher;
-        uint8_t m_bus{}; // Who sets/determines the bus field?
-        uint8_t m_id{};  // Who sets this/how does it relate to the devices
-        // ^^Change the wording of m_id to imply this is the destination id
-        // Guthrie assigns an ID and we then use the moteus gui to configure the
-        // id of the moteus to the ID Guthrie assigns.
-        std::unordered_map<std::string, uint8_t> m_message_name_to_id;
-        std::unordered_map<uint8_t, std::string> m_id_to_message_name;
+        std::string m_source_name{};
+        std::unordered_map<std::string, uint8_t> m_name_to_id;
+        std::unordered_map<uint8_t, std::string> m_id_to_name;
+        std::unordered_map<std::string, uint8_t> m_name_to_bus;
+        std::unordered_map<uint8_t, std::string> m_bus_to_name;
     };
 
 } // namespace mrover
