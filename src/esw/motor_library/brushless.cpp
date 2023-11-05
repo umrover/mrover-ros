@@ -12,10 +12,10 @@ namespace mrover {
         ROS_INFO("TODO - need to update based on frame.");
     }
 
-    void BrushlessController::set_desired_throttle(Dimensionless throttle) {
-        throttle = std::clamp(throttle, Dimensionless{-1}, Dimensionless{1});
+    void BrushlessController::set_desired_throttle(Percent throttle) {
+        throttle = std::clamp(throttle, -1_percent, 1_percent);
         // TODO - need to convert from throttle to rev/s
-        can_manager.send_data(name, throttle);
+        // TODO - create a CAN frame
     }
 
     void BrushlessController::set_desired_position(Radians position) {

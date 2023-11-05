@@ -63,8 +63,14 @@ namespace mrover {
             }
         }
 
-        template<IsFDCANSerializable T>
-        void send_data(std::string const& destinationName, T& data) {
+        template<typename V>
+        void send_data(std::string const& destinationName, V const& v) {
+            send_data(destinationName, v);
+        }
+
+        template<typename... Variants>
+            requires(IsFDCANSerializable<std::variant<Variants...>>)
+        void send_data(std::string const& destinationName, std::variant<Variants...> const& data) {
             // TODO - make sure everything is consistent in the bridge files
             // This is okay since "send_raw_data" makes a copy
             auto* address = std::bit_cast<std::byte const*>(std::addressof(data));

@@ -133,7 +133,7 @@ namespace mrover {
         //            return MotorType::Brushless;
         //        }
 
-        void set_desired_throttle(Dimensionless throttle) override;
+        void set_desired_throttle(Percent throttle) override;
         void set_desired_velocity(RadiansPerSecond velocity) override;
         void set_desired_position(Radians position) override;
 

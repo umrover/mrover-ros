@@ -17,9 +17,6 @@ namespace mrover {
 
         BrushedController(ros::NodeHandle& nh, const std::string& name) : Controller(nh, name) {}
         ~BrushedController() override = default;
-
-    private:
-        void send_brushed_message(std::string const& destinationName, InBoundMessage const& message);
     };
 
 } // namespace mrover
