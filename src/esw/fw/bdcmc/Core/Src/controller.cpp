@@ -35,7 +35,6 @@ namespace mrover {
     }
 
     void loop() {
-        /* Commented out for pwm test
         // If the Receiver has messages waiting in its queue
         if (std::optional received = fdcan_bus.receive<InBoundMessage>()) {
             auto const& [header, message] = received.value();
@@ -43,15 +42,8 @@ namespace mrover {
                 controller.receive(message);
         }
 
-        controller.send();
-    */
-
-       Percent duty_cycle = make_unit<Percent>(-10.0);
-       ThrottleCommand pwmtest;
-       pwmtest.throttle = duty_cycle;
-       controller.receive(pwmtest);
-       controller.send();
-
+        /* Commented out for testing */
+        // controller.send();
     }
 
 } // namespace mrover
