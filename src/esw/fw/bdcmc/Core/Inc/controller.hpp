@@ -142,7 +142,7 @@ namespace mrover {
 
         void send() {
             auto [position, velocity] = m_reader.read(m_config);
-            m_fdcan_bus.broadcast(ControllerDataState{
+            m_fdcan_bus.broadcast(OutBoundMessage{ControllerDataState{
                     .position = position,
                     .velocity = velocity,
                     // TODO: Actually fill the config_calib_error_data with data
@@ -150,7 +150,7 @@ namespace mrover {
                     // TODO: Is this going to be right or left aligned?
                     // TODO: actually fill with correct values
                     .limit_switches = 0x00,
-            });
+            }});
         }
     };
 
