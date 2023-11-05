@@ -14,7 +14,7 @@ imu_driver:
   frame_id: "imu_link"
 
 can:
-  devices: 
+  devices:
     - name: "jetson"
       bus: 0
       id: 0x10
@@ -448,9 +448,9 @@ science:
   serial:
     baud_rate: 9600
     timeout: 0
-    port: "/dev/ttyTHS0" 
+    port: "/dev/ttyTHS0"
   # These position are random for now
-  servo_id_by_site:  # This is in degrees
+  servo_id_by_site: # This is in degrees
     A: 2
     B: 1
     C: 0
@@ -534,8 +534,6 @@ motors:
   BackLeft:
     type: "brushless"
   BackRight:
-    type: "brushless"
-  joint_c:
     type: "brushless"
   joint_d:
     type: "brushless"

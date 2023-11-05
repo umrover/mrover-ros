@@ -82,7 +82,6 @@ namespace mrover {
                 throw std::invalid_argument(std::format("destinationName {} is not valid.", destinationName));
             }
 
-
             mrover::CAN can_message;
             can_message.bus = m_name_to_bus.at(destinationName);
             can_message.message_id = std::bit_cast<std::uint16_t>(FDCANMessageID{

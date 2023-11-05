@@ -1,0 +1,5 @@
+can:
+  devices:
+    - name: "test"
+      bus: 0
+      id: 0x8

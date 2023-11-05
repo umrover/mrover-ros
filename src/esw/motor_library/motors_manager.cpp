@@ -25,7 +25,7 @@ namespace mrover {
             }
 
             // TODO(guthrie) make this compile
-            names[controllers[name]->get_can_manager().get_id()] = name;
+//            names[controllers[name]->get_can_manager().get_id()] = name;
         }
 
         updateLastConnection();
