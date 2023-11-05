@@ -87,185 +87,228 @@ can:
     - name: "science"
       bus: 0
       id: 0x33
-      
-        
-  
-
 
 brushed_motors:
   controllers:
-    - name: "cache"
-      driver_voltage: 12.0
-      motor_max_voltage: 12.0
-      mcu_id: 2
-      motor_id: 2
-      inversion: 1.0
-      limit_a_present: true
-      limit_b_present: false
-      active_limit_a: false
-      counts_limit_a: 0
-      limit_a_is_fwd: true
-      calibration_vel: 0.25
-    - name: "carousel"
-      driver_voltage: 12.0
-      motor_max_voltage: 12.0
-      mcu_id: 2
-      motor_id: 1
-      inversion: 1.0
-      limit_a_present: true
-      limit_b_present: false
-      active_limit_a: true
-      counts_limit_a: 0
-      limit_a_is_fwd: true
-      calibration_vel: 0.25
-    - name: "joint_a"
-      driver_voltage: 36.0
-      motor_max_voltage: 24.0
-      voltage_multiplier: 0.75
-      mcu_id: 1
-      motor_id: 0
-      quad_cpr: -28800.0
-      kP: -0.005
-      kI: -0.0
-      inversion: -1.0
-      limit_a_present: false
-      limit_b_present: false
+    # - name: "example"
+    #   gear_ratio: 1  # motor ratio compared to joint, e.g. if 5, then 5 rotations of motor = 1 rotation of joint
+    #   limit_a_present: false
+    #   limit_b_present: false
+    #   limit_c_present: false
+    #   limit_d_present: false
+    #   limit_a_default_enabled: false
+    #   limit_b_default_enabled: false
+    #   limit_c_default_enabled: false
+    #   limit_d_default_enabled: false
+    #   limit_a_is_active_high: true
+    #   limit_b_is_active_high: true
+    #   limit_c_is_active_high: true
+    #   limit_d_is_active_high: true
+    #   limit_a_limits_fwd: true
+    #   limit_b_limits_fwd: true
+    #   limit_c_limits_fwd: true
+    #   limit_d_limits_fwd: true
+    #   limit_a_used_for_readjustment: false
+    #   limit_b_used_for_readjustment: false
+    #   limit_c_used_for_readjustment: false
+    #   limit_d_used_for_readjustment: false
+    #   quad_present: false
+    #   quad_is_fwd_polarity: true
+    #   abs_present: false
+    #   abs_is_fwd_polarity: true
+    #   limit_a_readjust_position: 0  # radians
+    #   limit_b_readjust_position: 0  # radians
+    #   limit_c_readjust_position: 0  # radians
+    #   limit_d_readjust_position: 0  # radians
+    #   quad_ratio: 1  # encoder ratio compared to motor
+    #   abs_ratio: 1  # encoder ratio compared to motor
+    #   abs_encoder_offset: 0 # 0 for joint position corresponds to this radians reading by absolute encoder
+    #   driver_voltage: 24  # used to calculate max pwm
+    #   motor_max_voltage: 12  # used to calculate max pwm
+    #   limit_max_forward_pos: false
+    #   limit_max_backward_pos: false
+    #   max_forward_pos: 1
+    #   max_backward_pos: 0
     - name: "joint_b"
-      driver_voltage: 36.0
-      motor_max_voltage: 12.0
-      mcu_id: 2
-      motor_id: 0
-      quad_cpr: 4096.0
-      kP: -0.1
-      kI: -0.0
-      inversion: 1.0
+      gear_ratio: 1  # motor ratio compared to joint, e.g. if 5, then 5 rotations of motor = 1 rotation of joint
       limit_a_present: true
-      limit_b_present: false
-      active_limit_a: false
-      counts_limit_a: 0
-      limit_a_is_fwd: true
-      calibration_vel: 0.25
-    - name: "joint_f"
-      driver_voltage: 12.0
-      motor_max_voltage: 8.0
-      mcu_id: 1
-      motor_id: 1
-      quad_cpr: -2048.0
-      kP: 0.05
-      kI: 0.0
-      inversion: 1.0
-      limit_a_present: false
-      limit_b_present: false
-    - name: "finger"
-      driver_voltage: 12.0
-      motor_max_voltage: 12.0
-      mcu_id: 1
-      motor_id: 3
-      inversion: -1.0
+      limit_a_default_enabled: true
+      limit_a_is_active_high: true
+      limit_a_limits_fwd: false
+      limit_a_used_for_readjustment: true
+      abs_present: true
+      abs_is_fwd_polarity: true
+      limit_a_readjust_position: 0  # radians
+      abs_ratio: 1  # encoder ratio compared to motor
+      abs_encoder_offset: 0 # 0 for joint position corresponds to this radians reading by absolute encoder
+      driver_voltage: 24  # used to calculate max pwm
+      motor_max_voltage: 12  # used to calculate max pwm
+      limit_max_forward_pos: true
+      max_forward_pos: 1
+    - name: "allen_key"
+      gear_ratio: 30  # motor ratio compared to joint, e.g. if 5, then 5 rotations of motor = 1 rotation of joint
       limit_a_present: true
       limit_b_present: true
-      active_limit_a: false
-      active_limit_b: false
-      counts_limit_a: 0
-      counts_limit_b: 0
-      limit_a_is_fwd: true
-      calibration_vel: 0.25
+      limit_a_default_enabled: true
+      limit_b_default_enabled: true
+      limit_a_is_active_high: true
+      limit_b_is_active_high: true
+      limit_a_limits_fwd: true
+      limit_b_limits_fwd: true
+      limit_a_used_for_readjustment: true
+      limit_b_used_for_readjustment: true
+      quad_present: true
+      quad_is_fwd_polarity: true
+      limit_a_readjust_position: 0  # radians
+      limit_b_readjust_position: 0  # radians
+      quad_ratio: 1  # encoder ratio compared to motor
+      driver_voltage: 24  # used to calculate max pwm
+      motor_max_voltage: 12  # used to calculate max pwm
     - name: "gripper"
-      driver_voltage: 12.0
-      motor_max_voltage: 12.0
-      mcu_id: 1
-      motor_id: 2
-      inversion: 1.0
-      limit_a_present: false
-      limit_b_present: false
-    - name: "mast_gimbal_up_down"
-      driver_voltage: 12.0
-      motor_max_voltage: 12.0
-      mcu_id: 2
-      motor_id: 4
-      inversion: 1.0
-      limit_a_present: false
-      limit_b_present: false
-    - name: "mast_gimbal_left_right"
-      driver_voltage: 12.0
-      motor_max_voltage: 12.0
-      mcu_id: 2
-      motor_id: 3
-      inversion: -1.0
-      limit_a_present: false
-      limit_b_present: false
-    - name: "microscope"
-      driver_voltage: 12.0
-      motor_max_voltage: 12.0
-      mcu_id: 1
-      motor_id: 4
-      inversion: 1.0
+      gear_ratio: 47  # motor ratio compared to joint, e.g. if 5, then 5 rotations of motor = 1 rotation of joint
+      quad_present: false
+      quad_is_fwd_polarity: true
+      abs_present: false
+      abs_is_fwd_polarity: true
+      quad_ratio: 1  # encoder ratio compared to motor
+      driver_voltage: 24  # used to calculate max pwm
+      motor_max_voltage: 12  # used to calculate max pwm
+    - name: "mast_gimbal_x"
+      gear_ratio: 1000  # motor ratio compared to joint, e.g. if 5, then 5 rotations of motor = 1 rotation of joint
       limit_a_present: true
       limit_b_present: true
-      active_limit_a: false
-      active_limit_b: false
-      counts_limit_a: 0
-      counts_limit_b: 0
-      limit_a_is_fwd: false
-      calibration_vel: 0.25
-    - name: "sa_joint_1"
-      driver_voltage: 36.0
-      motor_max_voltage: 12.0
-      mcu_id: 1
-      motor_id: 0
-      quad_cpr: -32653.0
-      inversion: 1.0
+      limit_a_default_enabled: true
+      limit_b_default_enabled: true
+      limit_a_is_active_high: true
+      limit_b_is_active_high: true
+      limit_a_limits_fwd: true
+      limit_b_limits_fwd: false
+      limit_a_used_for_readjustment: true
+      limit_b_used_for_readjustment: true
+      quad_present: true
+      quad_is_fwd_polarity: true
+      limit_a_readjust_position: 0  # radians
+      limit_b_readjust_position: 6.28  # radians
+      quad_ratio: 1  # encoder ratio compared to motor
+      driver_voltage: 24  # used to calculate max pwm
+      motor_max_voltage: 12  # used to calculate max pwm
+    - name: "mast_gimbal_y"
+      gear_ratio: 1000  # motor ratio compared to joint, e.g. if 5, then 5 rotations of motor = 1 rotation of joint
+      driver_voltage: 24  # used to calculate max pwm
+      motor_max_voltage: 12  # used to calculate max pwm
+    - name: "sa_x"
+      gear_ratio: 75  # motor ratio compared to joint, e.g. if 5, then 5 rotations of motor = 1 rotation of joint
       limit_a_present: true
-      limit_b_present: false
-      active_limit_a: false
-      counts_limit_a: 0
-      limit_a_is_fwd: true
-      calibration_vel: 0.25
-    - name: "sa_joint_2"
-      driver_voltage: 12.0
-      motor_max_voltage: 12.0
-      mcu_id: 1
-      motor_id: 1
-      quad_cpr: -75600.0
-      inversion: -1.0
+      limit_b_present: true
+      limit_c_present: true
+      limit_a_default_enabled: true
+      limit_b_default_enabled: true
+      limit_c_default_enabled: true
+      limit_a_is_active_high: true
+      limit_b_is_active_high: true
+      limit_c_is_active_high: true
+      limit_a_limits_fwd: true
+      limit_b_limits_fwd: false
+      limit_c_limits_fwd: true
+      limit_a_used_for_readjustment: true
+      limit_b_used_for_readjustment: true
+      limit_c_used_for_readjustment: false
+      quad_present: true
+      quad_is_fwd_polarity: true
+      limit_a_readjust_position: 0  # radians
+      limit_b_readjust_position: 0  # radians
+      quad_ratio: 48  # encoder ratio compared to motor
+      driver_voltage: 24  # used to calculate max pwm
+      motor_max_voltage: 6  # used to calculate max pwm
+    - name: "sa_y"
+      gear_ratio: 75  # motor ratio compared to joint, e.g. if 5, then 5 rotations of motor = 1 rotation of joint
       limit_a_present: true
-      limit_b_present: false
-      active_limit_a: false
-      counts_limit_a: 0
-      limit_a_is_fwd: false
-      calibration_vel: 0.25
-    - name: "sa_joint_3"
-      driver_voltage: 12.0
-      motor_max_voltage: 12.0
-      mcu_id: 1
-      motor_id: 2
-      quad_cpr: 97960.0
-      inversion: -1.0
+      limit_b_present: true
+      limit_a_default_enabled: true
+      limit_b_default_enabled: true
+      limit_a_is_active_high: true
+      limit_b_is_active_high: true
+      limit_a_limits_fwd: true
+      limit_b_limits_fwd: false
+      limit_a_used_for_readjustment: true
+      limit_b_used_for_readjustment: true
+      quad_present: true
+      quad_is_fwd_polarity: true
+      limit_a_readjust_position: 0  # radians
+      limit_b_readjust_position: 0  # radians
+      quad_ratio: 48  # encoder ratio compared to motor
+      driver_voltage: 24  # used to calculate max pwm
+      motor_max_voltage: 6  # used to calculate max pwm
+    - name: "sa_z"
+      gear_ratio: 75  # motor ratio compared to joint, e.g. if 5, then 5 rotations of motor = 1 rotation of joint
       limit_a_present: true
-      limit_b_present: false
-      active_limit_a: false
-      counts_limit_a: 0
-      limit_a_is_fwd: true
-      calibration_vel: 0.25
+      limit_b_present: true
+      limit_a_default_enabled: true
+      limit_b_default_enabled: true
+      limit_a_is_active_high: true
+      limit_b_is_active_high: true
+      limit_a_limits_fwd: true
+      limit_b_limits_fwd: false
+      limit_a_used_for_readjustment: true
+      limit_b_used_for_readjustment: true
+      quad_present: true
+      quad_is_fwd_polarity: true
+      limit_a_readjust_position: 0  # radians
+      limit_b_readjust_position: 0  # radians
+      quad_ratio: 48  # encoder ratio compared to motor
+      driver_voltage: 24  # used to calculate max pwm
+      motor_max_voltage: 6  # used to calculate max pwm
     - name: "scoop"
-      driver_voltage: 12.0
-      motor_max_voltage: 12.0
-      mcu_id: 1
-      motor_id: 3
-      inversion: 1.0
+      gear_ratio: 75  # motor ratio compared to joint, e.g. if 5, then 5 rotations of motor = 1 rotation of joint
       limit_a_present: true
       limit_b_present: true
-      active_limit_a: false
-      active_limit_b: false
-      counts_limit_a: 0
-      counts_limit_b: 0
-      limit_a_is_fwd: false
-      calibration_vel: 0.25
-  i2c_device_file: "/dev/i2c-1"
-  uart_device_file: "/dev/ttyACM0"
-  use_uart_and_send_only: true
-  test: false
-  
+      limit_a_default_enabled: true
+      limit_b_default_enabled: true
+      limit_a_is_active_high: true
+      limit_b_is_active_high: true
+      limit_a_limits_fwd: true
+      limit_b_limits_fwd: false
+      limit_a_used_for_readjustment: true
+      limit_b_used_for_readjustment: true
+      quad_present: true
+      quad_is_fwd_polarity: true
+      limit_a_readjust_position: 0  # radians
+      limit_b_readjust_position: 0  # radians
+      quad_ratio: 48  # encoder ratio compared to motor
+      driver_voltage: 24  # used to calculate max pwm
+      motor_max_voltage: 6  # used to calculate max pwm
+    - name: "sensor_actuator"
+      gear_ratio: 1  # motor ratio compared to joint, e.g. if 5, then 5 rotations of motor = 1 rotation of joint
+      limit_a_present: true
+      limit_b_present: true
+      limit_a_default_enabled: true
+      limit_b_default_enabled: true
+      limit_a_is_active_high: true
+      limit_b_is_active_high: true
+      limit_a_limits_fwd: true
+      limit_b_limits_fwd: false
+      limit_a_used_for_readjustment: true
+      limit_b_used_for_readjustment: true
+      limit_a_readjust_position: 0  # radians
+      limit_b_readjust_position: 0  # radians
+      driver_voltage: 24  # used to calculate max pwm
+      motor_max_voltage: 6  # used to calculate max pwm
+    - name: "cache"
+      gear_ratio: 1  # motor ratio compared to joint, e.g. if 5, then 5 rotations of motor = 1 rotation of joint
+      limit_a_present: true
+      limit_b_present: true
+      limit_a_default_enabled: true
+      limit_b_default_enabled: true
+      limit_a_is_active_high: true
+      limit_b_is_active_high: true
+      limit_a_limits_fwd: true
+      limit_b_limits_fwd: false
+      limit_a_used_for_readjustment: true
+      limit_b_used_for_readjustment: true
+      limit_a_readjust_position: 0  # radians
+      limit_b_readjust_position: 0  # radians
+      driver_voltage: 24  # used to calculate max pwm
+      motor_max_voltage: 6  # used to calculate max pwm
 cameras:
   camera_type_info:
     # vendor_id and vendor is obtained by running `udevadm info --query=all /dev/video0`
