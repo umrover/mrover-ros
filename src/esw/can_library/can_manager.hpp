@@ -42,7 +42,7 @@ namespace mrover {
             XmlRpc::XmlRpcValue canDevices;
             nh.getParam("can/devices", canDevices);
             assert(nh.hasParam("can/devices"));
-            assert(canDevices.getType() == XmlRpc::XmlRpcValue::TypeStruct);
+            assert(canDevices.getType() == XmlRpc::XmlRpcValue::TypeArray);
             int size = canDevices.size();
             for (int i = 0; i < size; ++i) {
                 assert(canDevices[i].hasMember("name") &&
@@ -61,11 +61,6 @@ namespace mrover {
                 m_name_to_bus[name] = bus;
                 m_bus_to_name[bus] = name;
             }
-        }
-
-        template<typename V>
-        void send_data(std::string const& destinationName, V const& v) {
-            send_data(destinationName, v);
         }
 
         template<typename... Variants>

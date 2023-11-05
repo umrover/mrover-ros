@@ -3,3 +3,6 @@ can:
     - name: "test"
       bus: 0
       id: 0x8
+    - name: "test_brushed_controller"
+      bus: 0
+      id: 0x7

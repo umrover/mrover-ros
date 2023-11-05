@@ -61,7 +61,28 @@ namespace mrover {
         std::uint8_t limit_max_backward_position : 1;
     };
 
+    struct ConfigCalibErrorInfo {
+        [[maybe_unused]] std::uint8_t _ignore : 2; // 8 bits - (6 meaningful bits) = 2 ignored bits
+        std::uint8_t configured : 1;
+        std::uint8_t calibrated : 1;
+        std::uint8_t error : 4; // 0 means no error, anything else is error
+    };
+    static_assert(sizeof(ConfigCalibErrorInfo) == 1);
+
+    struct LimitStateInfo {
+        [[maybe_unused]] std::uint8_t _ignore : 4; // 8 bits - (4 meaningful bits) = 4 ignored bits
+        std::uint8_t limit_a_hit : 1;
+        std::uint8_t limit_b_hit : 1;
+        std::uint8_t limit_c_hit : 1;
+        std::uint8_t limit_d_hit : 1;
+    };
+    static_assert(sizeof(LimitStateInfo) == 1);
+
     struct BaseCommand {
+    };
+
+    struct AdjustCommand : BaseCommand {
+        Radians position;
     };
 
     struct ConfigCommand : BaseCommand {
@@ -83,6 +104,10 @@ namespace mrover {
         Meters max_back_pos;
     };
 
+    struct EnableLimitSwitchesCommand : BaseCommand {
+        bool enable;
+    };
+
     struct IdleCommand : BaseCommand {
     };
 
@@ -98,22 +123,18 @@ namespace mrover {
         Radians position;
     };
 
-    struct MotorDataState : BaseCommand {
-        RadiansPerSecond velocity;
+    struct ControllerDataState : BaseCommand {
         Radians position;
-        std::uint8_t config_calib_error_data{};
-        // TODO: Are these going to be left or right aligned.
-        std::uint8_t limit_switches{};
-    };
-
-    struct StatusState {
+        RadiansPerSecond velocity;
+        ConfigCalibErrorInfo config_calib_error_data;
+        LimitStateInfo limit_switches;
     };
 
     using InBoundMessage = std::variant<
-            ConfigCommand, IdleCommand, ThrottleCommand, VelocityCommand, PositionCommand>;
+            AdjustCommand, ConfigCommand, EnableLimitSwitchesCommand, IdleCommand, ThrottleCommand, VelocityCommand, PositionCommand>;
 
     using OutBoundMessage = std::variant<
-            MotorDataState, StatusState>;
+            ControllerDataState>;
 
 #pragma pack(pop)
 

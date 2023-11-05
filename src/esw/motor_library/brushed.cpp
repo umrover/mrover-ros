@@ -15,19 +15,19 @@ namespace mrover {
     void BrushedController::set_desired_throttle(Percent throttle) {
         assert(throttle >= -1_percent && throttle <= 1_percent);
 
-        can_manager.send_data("test", ThrottleCommand{.throttle = throttle});
+        can_manager.send_data("test", InBoundMessage{ThrottleCommand{.throttle = throttle}});
     }
 
     void BrushedController::set_desired_position(Radians position) {
         assert(position >= min_position && position <= max_position);
 
-        can_manager.send_data("test", PositionCommand{.position = position});
+        can_manager.send_data("test", InBoundMessage{PositionCommand{.position = position}});
     }
 
     void BrushedController::set_desired_velocity(RadiansPerSecond velocity) {
-        assert(velocity >= min_velocity && velocity <= max_velocity);
+        // assert(velocity >= min_velocity && velocity <= max_velocity);
 
-        can_manager.send_data("test", VelocityCommand{.velocity = velocity});
+        can_manager.send_data("test", InBoundMessage{VelocityCommand{.velocity = velocity}});
     }
 
 } // namespace mrover

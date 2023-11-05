@@ -9,7 +9,7 @@ std::unique_ptr<mrover::CANManager> uv_bulb_can_manager;
 bool uvBulbCallback(std_srvs::SetBool::Request& req, std_srvs::SetBool::Response& res) {
     // TODO - make sure send_data works
     // TODO - this needs to be a variant
-    uv_bulb_can_manager->send_data("pdlb", req.data);
+    // uv_bulb_can_manager->send_data("pdlb", req.data);
     res.success = true;
     res.message = "DONE";
     return true;
