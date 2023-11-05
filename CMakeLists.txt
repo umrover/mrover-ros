@@ -215,7 +215,7 @@ mrover_nodelet_link_libraries(tag_detector opencv_core opencv_objdetect opencv_a
 
 if (ZED_FOUND)
     mrover_add_nodelet(object_detector src/perception/object_detector/*.c* src/perception/object_detector src/perception/object_detector/pch.hpp)
-    mrover_nodelet_link_libraries(object_detector PRIVATE opencv_core opencv_dnn opencv_imgproc lie)
+    mrover_nodelet_link_libraries(object_detector PRIVATE opencv_core opencv_dnn opencv_imgproc lie nvinfer nvonnxparser)
     # Temporary
     mrover_nodelet_link_libraries(object_detector PRIVATE opencv_imgcodecs)
     mrover_nodelet_link_libraries(object_detector PRIVATE opencv_highgui)

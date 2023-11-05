@@ -74,7 +74,7 @@ namespace mrover {
 
         return builder->buildEngineWithConfig(*network, *config);
     }
-
+    /*
     std::vector<Detection> Inference::doDetections(cv::Mat& img) {
         //Do the forward pass on the network
         launchInference(img.data, this->outputTensor.data);
@@ -94,6 +94,7 @@ namespace mrover {
         //Copy data to CPU memory
         cudaMemcpyAsync(output, this->bindings[1 - inputId], outputEntries.d[0] * outputEntries.d[1] * outputEntries.d[2] * sizeof(float), cudaMemcpyDeviceToHost, this->stream);
     }
+    */
 
     /**
 * Takes tensor bindings and allocates memory on the GPU for input and output tensors
