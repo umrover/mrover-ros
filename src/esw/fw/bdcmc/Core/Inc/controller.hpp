@@ -82,6 +82,18 @@ namespace mrover {
             m_writer.write(m_config, output);
         }
 
+        void feed(EnableLimitSwitchesCommand const& message) {
+            force_configure();
+
+            // TODO: implement
+        }
+
+        void feed(AdjustCommand const& message) {
+            force_configure();
+
+            // TODO: implement
+        }
+
         struct detail {
             template<typename Command, typename V>
             struct command_to_mode;
@@ -130,9 +142,9 @@ namespace mrover {
 
         void send() {
             auto [position, velocity] = m_reader.read(m_config);
-            m_fdcan_bus.broadcast(MotorDataState{
-                    .velocity = velocity,
+            m_fdcan_bus.broadcast(ControllerDataState{
                     .position = position,
+                    .velocity = velocity,
                     // TODO: Actually fill the config_calib_error_data with data
                     .config_calib_error_data = 0x00,
                     // TODO: Is this going to be right or left aligned?
