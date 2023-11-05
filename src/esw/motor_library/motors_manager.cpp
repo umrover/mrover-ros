@@ -24,6 +24,7 @@ namespace mrover {
                 controllers[name] = std::move(temp);
             }
 
+            // TODO(guthrie) make this compile
             names[controllers[name]->get_can_manager().get_id()] = name;
         }
 

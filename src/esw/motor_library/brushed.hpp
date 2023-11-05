@@ -19,7 +19,7 @@ namespace mrover {
         ~BrushedController() override = default;
 
     private:
-        void send_brushed_message(std::string const& topic, InBoundMessage const& message);
+        void send_brushed_message(std::string const& destinationName, InBoundMessage const& message);
     };
 
 } // namespace mrover

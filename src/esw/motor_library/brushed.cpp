@@ -12,9 +12,9 @@ namespace mrover {
         ROS_INFO("TODO - need to update based on frame.");
     }
 
-    void BrushedController::send_brushed_message(InBoundMessage const& message) {
+    void BrushedController::send_brushed_message(std::string const& destinationName, InBoundMessage const& message) {
         // TODO(quintin): we may need to do some bit hacking here
-        can_manager.send_data(name, message);
+        can_manager.send_data(destinationName, message);
     }
 
     void BrushedController::set_desired_throttle(Percent throttle) {
