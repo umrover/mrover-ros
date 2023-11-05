@@ -1,6 +1,10 @@
-- name: fdcanusb Rules
+- name: mjbots fdcanusb Rules
   become: true
   synchronize:
     src: files/rules/
     dest: /etc/udev/rules.d
     recursive: true
+
+- name: Install Moteus GUI
+  pip:
+    name: moteus_gui
