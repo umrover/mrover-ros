@@ -14,33 +14,83 @@ imu_driver:
   frame_id: "imu_link"
 
 can:
-  messages:
-    throttle_cmd: 1
-    velocity_cmd: 2
-    position_cmd: 3
-    calibrate: 4
-    adjust: 5
-    enable_limit_switches: 6
-    enable_device: 7
-    heater_autoshutoff_state_cmd: 8
-    uv_bulb_cmd: 9
-    arm_laser_cmd: 10
-    led_cmd: 11
-    joint_data: 12
-    controller_data: 13
-    spectral_data_0: 14
-    spectral_data_1: 15
-    spectral_data_2: 16
-    thermistor_data_0: 17
-    thermistor_data_1: 18
-    thermistor_data_2: 19
-    heater_state_data: 20
-    pdb_0_data: 21
-    pdb_1_data: 22
-    pdb_2_data: 23
-    pdb_3_data: 24
-    pdb_4_data: 25
-    pdb_5_data: 26
+  devices: 
+    - name: "jetson"
+      bus: 0
+      id: 0x10
+    - name: "front_left"
+      bus: 0
+      id: 0x11
+    - name: "front_right"
+      bus: 0
+      id: 0x12
+    - name: "middle_left"
+      bus: 0
+      id: 0x13
+    - name: "middle_right"
+      bus: 0
+      id: 0x14
+    - name: "back_left"
+      bus: 0
+      id: 0x15
+    - name: "back_right"
+      bus: 0
+      id: 0x16
+    - name: "joint_a"
+      bus: 0
+      id: 0x17
+    - name: "joint_b"
+      bus: 0
+      id: 0x18
+    - name: "joint_c"
+      bus: 0
+      id: 0x19
+    - name: "joint_de_0"
+      bus: 0
+      id: 0x20
+    - name: "joint_de_1"
+      bus: 0
+      id: 0x21
+    - name: "allen_key"
+      bus: 0
+      id: 0x22
+    - name: "gripper"
+      bus: 0
+      id: 0x23
+    - name: "mast_gimbal_x"
+      bus: 0
+      id: 0x24
+    - name: "mast_gimbal_y"
+      bus: 0
+      id: 0x25
+    - name: "sa_x"
+      bus: 0
+      id: 0x26
+    - name: "sa_y"
+      bus: 0
+      id: 0x27
+    - name: "sa_z"
+      bus: 0
+      id: 0x28
+    - name: "scoop"
+      bus: 0
+      id: 0x29
+    - name: "sensor_actuator"
+      bus: 0
+      id: 0x30
+    - name: "cache"
+      bus: 0
+      id: 0x31
+    - name: "pdlb"
+      bus: 0
+      id: 0x32
+    - name: "science"
+      bus: 0
+      id: 0x33
+      
+        
+  
+
 
 brushed_motors:
   controllers:
