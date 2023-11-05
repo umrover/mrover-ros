@@ -153,12 +153,12 @@ namespace mrover {
                     .limit_switches = 0x00,
             }});
             */
-           m_fdcan_bus.broadcast(OutBoundMessage{ControllerDataState{
+            m_fdcan_bus.broadcast(OutBoundMessage{ControllerDataState{
                     .position = make_unit<Radians>(323323),
                     .velocity = make_unit<RadiansPerSecond>(323323),
-                    .config_calib_error_data = 0x66,
-                    .limit_switches = 0x66
-           }});
+                    .config_calib_error_data = std::bit_cast<ConfigCalibErrorInfo>(uint8_t{0xFF}),
+                    .limit_switches = std::bit_cast<LimitStateInfo>(uint8_t{0xFF}),
+            }});
         }
     };
 

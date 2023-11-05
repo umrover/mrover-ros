@@ -29,7 +29,7 @@ namespace mrover {
     }
 
     template<typename T>
-    static inline auto address_of(auto object) -> T* {
+    static inline auto address_of(auto const& object) -> T* {
         return std::bit_cast<T*>(std::addressof(object));
     }
 
