@@ -174,6 +174,8 @@ namespace mrover {
                     .MessageMarker = 0,
             };
             check(HAL_FDCAN_AddMessageToTxFifoQ(m_fdcan, &header, address_of<std::uint8_t>(send)) == HAL_OK, Error_Handler);
+            //check(HAL_FDCAN_AddMessageToTxFifoQ(m_fdcan, &header, buf) == HAL_OK, Error_Handler);
+
         }
 
     private:

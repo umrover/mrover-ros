@@ -29,13 +29,13 @@ namespace mrover {
                       FDCAN_IT_RX_FIFO0_NEW_MESSAGE | FDCAN_IT_ERROR_PASSIVE | FDCAN_IT_ERROR_WARNING | FDCAN_IT_ARB_PROTOCOL_ERROR | FDCAN_IT_DATA_PROTOCOL_ERROR | FDCAN_IT_ERROR_LOGGING_OVERFLOW,
                       0) == HAL_OK,
               Error_Handler);
-        check(HAL_FDCAN_Start(&hfdcan1) == HAL_OK, Error_Handler);
 
         fdcan_bus = FDCANBus{&hfdcan1};
         controller = BrushedController{CAN_ID, FusedReader{&htim4, &hi2c1}, HBridgeWriter{&htim15}, fdcan_bus};
     }
 
     void loop() {
+        /* Commented out for pwm test
         // If the Receiver has messages waiting in its queue
         if (std::optional received = fdcan_bus.receive<InBoundMessage>()) {
             auto const& [header, message] = received.value();
@@ -44,6 +44,14 @@ namespace mrover {
         }
 
         controller.send();
+    */
+
+       Percent duty_cycle = make_unit<Percent>(-10.0);
+       ThrottleCommand pwmtest;
+       pwmtest.throttle = duty_cycle;
+       controller.receive(pwmtest);
+       controller.send();
+
     }
 
 } // namespace mrover

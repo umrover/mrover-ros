@@ -21,11 +21,12 @@ namespace mrover {
         Meters limit_d_readj_pos{};
         Meters quad_enc_out_ratio{};
         Meters abs_enc_out_ratio{};
-        Dimensionless max_duty_cycle{};
+        Percent max_duty_cycle = make_unit<Percent>(1.0);
         std::uint8_t limit_max_pos{};
         Meters max_forward_pos{};
         Meters max_back_pos{};
-        bool is_configured = false;
+        // TODO: change back after testing
+        bool is_configured = true;
 
     public:
         Config() = default;

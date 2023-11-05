@@ -11,7 +11,7 @@ namespace mrover {
         : m_timer{timer},
           m_channel{TIM_CHANNEL_1},
           m_arr_register{&TIM15->ARR}, m_ccr_register{&TIM15->CCR1},
-          m_forward_pins{GPIOC, GPIO_PIN_6}, m_reverse_pins{GPIOB, GPIO_PIN_15} {
+          m_forward_pins{GPIOC, GPIO_PIN_6}, m_reverse_pins{GPIOB, GPIO_PIN_13} {
 
         HAL_TIM_PWM_Start(m_timer, m_channel);
     }

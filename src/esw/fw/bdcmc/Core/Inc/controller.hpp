@@ -141,6 +141,7 @@ namespace mrover {
         }
 
         void send() {
+            /* Commented out for testing
             auto [position, velocity] = m_reader.read(m_config);
             m_fdcan_bus.broadcast(OutBoundMessage{ControllerDataState{
                     .position = position,
@@ -151,6 +152,13 @@ namespace mrover {
                     // TODO: actually fill with correct values
                     .limit_switches = 0x00,
             }});
+            */
+           m_fdcan_bus.broadcast(OutBoundMessage{ControllerDataState{
+                    .position = make_unit<Radians>(323323),
+                    .velocity = make_unit<RadiansPerSecond>(323323),
+                    .config_calib_error_data = 0x66,
+                    .limit_switches = 0x66
+           }});
         }
     };
 
