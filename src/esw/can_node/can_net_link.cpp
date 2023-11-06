@@ -43,9 +43,14 @@ namespace mrover {
                 }
             }
 
-            rtnl_link_set_flags(mLink, IFF_UP);
-            if (int result = rtnl_link_change(mSocket, mLink, mLink, 0); result < 0 && result != -NLE_SEQ_MISMATCH) {
-                throw std::runtime_error(std::format("Failed to set network link up: {}", result));
+            uint flags = rtnl_link_get_flags(mLink);
+            if (flags & IFF_UP) {
+                ROS_WARN("Network link is already up");
+            } else {
+                rtnl_link_set_flags(mLink, IFF_UP);
+                if (int result = rtnl_link_change(mSocket, mLink, mLink, 0); result < 0 && result != -NLE_SEQ_MISMATCH) {
+                    throw std::runtime_error(std::format("Failed to set network link up: {}", result));
+                }
             }
 
             ROS_INFO_STREAM("Set CAN socket up");
