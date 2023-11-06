@@ -30,8 +30,10 @@ namespace mrover {
 
             mLink = rtnl_link_get_by_name(cache, interface.c_str());
             if (mLink == nullptr) {
-                throw std::runtime_error(std::format("Failed to retrieve the network link {} by name", interface));
+                throw std::runtime_error(std::format("Failed to retrieve the link {} by name", interface));
             }
+
+            bool is_up = rtnl_link_get_flags(mLink) & IFF_UP;
 
             if (interface.starts_with("can")) {
                 can_bittiming bt{
@@ -39,21 +41,24 @@ namespace mrover {
                         .brp = bitrate_prescaler,
                 };
                 if (int result = rtnl_link_can_set_bittiming(mLink, &bt); result < 0) {
-                    throw std::runtime_error("Failed to set bit timing");
+                    throw std::runtime_error("Failed to set CAN bit timing");
+                }
+
+                if (is_up) {
+                    ROS_WARN("Link is already up");
+                } else {
+                    rtnl_link_set_flags(mLink, IFF_UP);
+                    if (int result = rtnl_link_change(mSocket, mLink, mLink, 0); result < 0 && result != -NLE_SEQ_MISMATCH) {
+                        throw std::runtime_error(std::format("Failed to set CAN link up: {}", result));
+                    }
+                }
+            } else if (interface.starts_with("vcan")) {
+                if (!is_up) {
+                    throw std::runtime_error("Virtual CAN link must be set up manually");
                 }
             }
 
-            uint flags = rtnl_link_get_flags(mLink);
-            if (flags & IFF_UP) {
-                ROS_WARN("Network link is already up");
-            } else {
-                rtnl_link_set_flags(mLink, IFF_UP);
-                if (int result = rtnl_link_change(mSocket, mLink, mLink, 0); result < 0 && result != -NLE_SEQ_MISMATCH) {
-                    throw std::runtime_error(std::format("Failed to set network link up: {}", result));
-                }
-            }
-
-            ROS_INFO_STREAM("Set CAN socket up");
+            ROS_INFO_STREAM("Set CAN link up");
 
         } catch (std::exception const& exception) {
             ROS_ERROR_STREAM("Exception in link setup: " << exception.what());
