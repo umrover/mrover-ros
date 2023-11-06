@@ -40,8 +40,7 @@ namespace mrover {
             mNh = getMTNodeHandle();
             mPnh = getMTPrivateNodeHandle();
 
-            mInterface = mPnh.param<std::string>("interface", "can0");
-            mIsVerbose = mPnh.param<bool>("verbose", true);
+            mInterface = mPnh.param<std::string>("interface", "vcan0");
             mIsExtendedFrame = mPnh.param<bool>("is_extended_frame", true);
             mBitrate = static_cast<std::uint32_t>(mPnh.param<int>("bitrate", 500000));
             mBitratePrescaler = static_cast<std::uint32_t>(mPnh.param<int>("bitrate_prescaler", 2));
@@ -121,12 +120,13 @@ namespace mrover {
     }
 
     void CanNodelet::processReadFrame() { // NOLINT(*-no-recursion)
-        if (mIsVerbose) printFrame(mReadFrame);
-
         CAN msg;
         msg.bus = 0;
         msg.message_id = std::bit_cast<RawFdcanId>(mReadFrame.can_id).identifier;
         msg.data.assign(mReadFrame.data, mReadFrame.data + mReadFrame.len);
+
+        ROS_DEBUG_STREAM("Received CAN message:\n"
+                         << msg);
 
         mCanPublisher.publish(msg);
     }
@@ -164,7 +164,8 @@ namespace mrover {
     }
 
     void CanNodelet::canSendRequestCallback(CAN::ConstPtr const& msg) {
-        if (mIsVerbose) ROS_INFO_STREAM("Received request to send CAN message:\n" << *msg);
+        ROS_DEBUG_STREAM("Received request to send CAN message:\n"
+                         << *msg);
 
         setBus(msg->bus);
         setFrameId(msg->message_id);
@@ -172,7 +173,7 @@ namespace mrover {
 
         writeFrameAsync();
 
-        if (mIsVerbose) ROS_INFO_STREAM("Sent CAN message");
+        ROS_DEBUG_STREAM("Sent CAN message");
     }
 
     CanNodelet::~CanNodelet() {

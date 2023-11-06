@@ -67,7 +67,6 @@ namespace mrover {
 
         std::string mInterface;
         bool mIsExtendedFrame{};
-        bool mIsVerbose{};
         std::uint32_t mBitrate{};
         std::uint32_t mBitratePrescaler{};
 
