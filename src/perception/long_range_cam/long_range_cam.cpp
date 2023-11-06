@@ -32,7 +32,7 @@ namespace mrover {
 
         msg->height = bgra.rows;
         msg->width = bgra.cols;
-        msg->encoding = sensor_msgs::image_encodings::BGRA8;
+        msg->encoding = sensor_msgs::image_encodings::BGR8;
         msg->step = bgra.step[0];
         msg->is_bigendian = __BYTE_ORDER__ == __ORDER_BIG_ENDIAN__;
         auto* imgPtr = bgra.ptr<float>(0);
@@ -66,7 +66,7 @@ namespace mrover {
                 if (mImgPub.getNumSubscribers()) {
                     auto imgMsg = boost::make_shared<sensor_msgs::Image>();
                     cv::Mat bgra;
-                    cv::cvtColor(frame, bgra, cv::COLOR_YUV2BGRA_I420);
+                    cv::cvtColor(frame, bgra, cv::COLOR_YUV2BGR_I420);
                     fillImageMessage(bgra, imgMsg);
                     imgMsg->header.frame_id = "long_range_cam_frame";
                     imgMsg->header.stamp = ros::Time::now();

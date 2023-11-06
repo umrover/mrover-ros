@@ -24,7 +24,7 @@ namespace mrover {
         // 3. We only want to publish the tags if the topic has subscribers
         if (mPublishImages && mImgPub.getNumSubscribers()) {
             // Draw the tags on the image using OpenCV
-            publishTagsOnImage();
+            // publishTagsOnImage();
         }
 
         //Publish all tags that meet threshold
@@ -45,6 +45,7 @@ namespace mrover {
         //Store to mImg member variable - unsure if necessary but need it to persist
         cvImage.copyTo(mImg);
 
+        publishTagsOnImage();
         // TODO: Set the grayImage if neccesary
     }
 
