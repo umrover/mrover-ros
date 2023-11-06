@@ -58,8 +58,6 @@ namespace mrover {
 
     class BrushlessController : public Controller {
     public:
-        void update(std::span<std::byte const> frame) override;
-
         void set_desired_speed_unit(double speed) {} // from -1.0 to 1.0
 
         void set_desired_speed_rev_s(double speed) {} // in rev/s

@@ -25,7 +25,7 @@ namespace mrover {
             }
 
             // TODO(guthrie) make this compile
-//            names[controllers[name]->get_can_manager().get_id()] = name;
+            //            names[controllers[name]->get_can_manager().get_id()] = name;
         }
 
         updateLastConnection();
@@ -44,8 +44,7 @@ namespace mrover {
     }
 
     void MotorsManager::process_frame(int bus, int id, std::span<std::byte const> frame_data) {
-        // TODO: figure out how to organize by bus
-        controllers[names[bus | (id << 4)]]->update(frame_data);
+        // TODO: figure out how to send to corresponding controller
     }
 
     void MotorsManager::moveMotorsThrottle(const Throttle::ConstPtr& msg) {
@@ -59,7 +58,7 @@ namespace mrover {
         for (size_t i = 0; i < msg->names.size(); ++i) {
             const std::string& name = msg->names[i];
             Controller& controller = get_controller(name);
-            controller.set_desired_throttle(make_unit<Dimensionless>(msg->throttles[i]));
+            controller.set_desired_throttle(msg->throttles[i]);
         }
     }
 
@@ -74,7 +73,7 @@ namespace mrover {
         for (size_t i = 0; i < msg->names.size(); ++i) {
             const std::string& name = msg->names[i];
             Controller& controller = get_controller(name);
-            controller.set_desired_velocity(make_unit<RadiansPerSecond>(msg->velocities[i]));
+            controller.set_desired_velocity(RadiansPerSecond{msg->velocities[i]});
         }
     }
 
@@ -89,7 +88,7 @@ namespace mrover {
         for (size_t i = 0; i < msg->names.size(); ++i) {
             const std::string& name = msg->names[i];
             Controller& controller = get_controller(name);
-            controller.set_desired_position(make_unit<Radians>(msg->positions[i]));
+            controller.set_desired_position(Radians{msg->positions[i]});
         }
     }
 

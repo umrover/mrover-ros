@@ -17,12 +17,12 @@
 namespace mrover {
 
     template<IsUnit Unit>
-    Unit requireParamAsUnit(ros::NodeHandle const& nh, std::string const& name) {
+    auto requireParamAsUnit(ros::NodeHandle const& nh, std::string const& name) -> Unit {
         assert(nh.hasParam(name));
 
         typename Unit::rep_t value;
         nh.getParam(name, value);
-        return make_unit<Unit>(value);
+        return Unit{value};
     }
 
     class MotorsManager {

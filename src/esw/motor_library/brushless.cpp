@@ -2,16 +2,6 @@
 
 namespace mrover {
 
-    void BrushlessController::update(std::span<std::byte const> frame) {
-        if (frame.empty()) {
-            return; // TODO
-        } else {
-            // TODO - TEMPORARY
-            velocity = 0_rad_per_s;
-        }
-        ROS_INFO("TODO - need to update based on frame.");
-    }
-
     void BrushlessController::set_desired_throttle(Percent throttle) {
         throttle = std::clamp(throttle, -1_percent, 1_percent);
         // TODO - need to convert from throttle to rev/s
@@ -19,11 +9,11 @@ namespace mrover {
     }
 
     void BrushlessController::set_desired_position(Radians position) {
-        position = std::clamp(position, min_position, max_position);
+        position = std::clamp(position, m_min_position, m_max_position);
         // TODO - need to convert to use revs
     }
     void BrushlessController::set_desired_velocity(RadiansPerSecond velocity) {
-        velocity = std::clamp(velocity, min_velocity, max_velocity);
+        velocity = std::clamp(velocity, m_min_velocity, m_max_velocity);
         moteus::Controller::Options options;
         options.id = 1;
 
@@ -44,6 +34,6 @@ namespace mrover {
         auto CANfd = controller.MakePosition(cmd);
 
         // TODO - need to convert to use rev/s
-        can_manager.send_moteus_data(CANfd);
+        m_can_manager.send_moteus_data(CANfd);
     }
 } // namespace mrover
