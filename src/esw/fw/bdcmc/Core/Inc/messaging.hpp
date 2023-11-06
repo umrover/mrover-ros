@@ -9,7 +9,9 @@
 
 namespace mrover {
 
-    struct __attribute__((__packed__)) ConfigLimitSwitchInfo0 {
+#pragma pack(push, 1)
+
+    struct ConfigLimitSwitchInfo0 {
         std::uint8_t a_present : 1;
         std::uint8_t b_present : 1;
         std::uint8_t c_present : 1;
@@ -21,7 +23,7 @@ namespace mrover {
     };
     static_assert(sizeof(ConfigLimitSwitchInfo0) == 1);
 
-    struct __attribute__((__packed__)) ConfigLimitSwitchInfo1 {
+    struct ConfigLimitSwitchInfo1 {
         std::uint8_t a_active_high : 1;
         std::uint8_t b_active_high : 1;
         std::uint8_t c_active_high : 1;
@@ -33,7 +35,7 @@ namespace mrover {
     };
     static_assert(sizeof(ConfigLimitSwitchInfo1) == 1);
 
-    struct __attribute__((__packed__)) ConfigLimitSwitchInfo2 {
+    struct ConfigLimitSwitchInfo2 {
         std::uint8_t a_use_for_readjustment : 1;
         std::uint8_t b_use_for_readjustment : 1;
         std::uint8_t c_use_for_readjustment : 1;
@@ -45,7 +47,7 @@ namespace mrover {
     };
     static_assert(sizeof(ConfigLimitSwitchInfo2) == 1);
 
-    struct __attribute__((__packed__)) ConfigEncoderInfo {
+    struct ConfigEncoderInfo {
         [[maybe_unused]] std::uint8_t _ignore : 4; // 8 bits - (4 meaningful bits) = 4 ignored bits
         std::uint8_t quad_present : 1;
         std::uint8_t quad_is_forward_polarity : 1;
@@ -54,35 +56,35 @@ namespace mrover {
     };
     static_assert(sizeof(ConfigEncoderInfo) == 1);
 
-    struct __attribute__((__packed__)) ConfigLimitInfo {
+    struct ConfigLimitInfo {
         [[maybe_unused]] std::uint8_t _ignore : 6; // 8 bits - (2 meaningful bits) = 6 ignored bits
         std::uint8_t limit_max_forward_position : 1;
         std::uint8_t limit_max_backward_position : 1;
     };
 
-    struct __attribute__((__packed__)) ConfigCalibErrorInfo {
-    	[[maybe_unused]] std::uint8_t _ignore : 2; // 8 bits - (6 meaningful bits) = 2 ignored bits
-		std::uint8_t configured : 1;
-		std::uint8_t calibrated : 1;
-		std::uint8_t error : 4; // 0 means no error, anything else is error
-	};
-	static_assert(sizeof(ConfigCalibErrorInfo) == 1);
+    struct ConfigCalibErrorInfo {
+        [[maybe_unused]] std::uint8_t _ignore : 2; // 8 bits - (6 meaningful bits) = 2 ignored bits
+        std::uint8_t configured : 1;
+        std::uint8_t calibrated : 1;
+        std::uint8_t error : 4; // 0 means no error, anything else is error
+    };
+    static_assert(sizeof(ConfigCalibErrorInfo) == 1);
 
-	struct __attribute__((__packed__)) LimitStateInfo {
-		[[maybe_unused]] std::uint8_t _ignore : 4; // 8 bits - (4 meaningful bits) = 4 ignored bits
-		std::uint8_t limit_a_hit : 1;
-		std::uint8_t limit_b_hit : 1;
-		std::uint8_t limit_c_hit : 1;
-		std::uint8_t limit_d_hit : 1;
-	};
-	static_assert(sizeof(LimitStateInfo) == 1);
+    struct LimitStateInfo {
+        [[maybe_unused]] std::uint8_t _ignore : 4; // 8 bits - (4 meaningful bits) = 4 ignored bits
+        std::uint8_t limit_a_hit : 1;
+        std::uint8_t limit_b_hit : 1;
+        std::uint8_t limit_c_hit : 1;
+        std::uint8_t limit_d_hit : 1;
+    };
+    static_assert(sizeof(LimitStateInfo) == 1);
 
     struct BaseCommand {
     };
 
     struct AdjustCommand : BaseCommand {
-		Radians position;
-	};
+        Radians position;
+    };
 
     struct ConfigCommand : BaseCommand {
         Dimensionless gear_ratio;
@@ -104,8 +106,8 @@ namespace mrover {
     };
 
     struct EnableLimitSwitchesCommand : BaseCommand {
-		bool enable;
-	};
+        bool enable;
+    };
 
     struct IdleCommand : BaseCommand {
     };
@@ -123,16 +125,18 @@ namespace mrover {
     };
 
     struct ControllerDataState : BaseCommand {
-		Radians position;
-		RadiansPerSecond velocity;
-		ConfigCalibErrorInfo config_calib_error_data;
-		LimitStateInfo limit_switches;
-	};
+        Radians position;
+        RadiansPerSecond velocity;
+        ConfigCalibErrorInfo config_calib_error_data;
+        LimitStateInfo limit_switches;
+    };
 
     using InBoundMessage = std::variant<
             AdjustCommand, ConfigCommand, EnableLimitSwitchesCommand, IdleCommand, ThrottleCommand, VelocityCommand, PositionCommand>;
 
     using OutBoundMessage = std::variant<
             ControllerDataState>;
+
+#pragma pack(pop)
 
 } // namespace mrover
