@@ -11,7 +11,8 @@ namespace mrover {
 
     class Controller {
     public:
-        Controller(ros::NodeHandle& nh, std::string const& name) : m_name{name}, m_can_manager{nh, name} {}
+        Controller(ros::NodeHandle& nh, std::string const& name, std::string const& controller_name)
+            : m_name{name}, m_can_manager{nh, name} {}
 
         virtual ~Controller() = default;
 
@@ -22,7 +23,7 @@ namespace mrover {
         virtual void set_desired_position(Radians position) = 0;          // joint output
 
     protected:
-        std::string m_name;
+        std::string m_name, m_controller_name;
         CANManager m_can_manager;
         RadiansPerSecond m_min_velocity{};
         RadiansPerSecond m_max_velocity{};

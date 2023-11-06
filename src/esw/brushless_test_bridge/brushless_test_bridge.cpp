@@ -9,7 +9,7 @@ int main(int argc, char** argv) {
     ros::init(argc, argv, "brushless_test_bridge");
     ros::NodeHandle nh;
 
-    [[maybe_unused]] auto brushlessController = std::make_unique<mrover::BrushlessController>(nh, "test_brushless_controller");
+    [[maybe_unused]] auto brushlessController = std::make_unique<mrover::BrushlessController>(nh, "jetson", "test_brushless_controller");
 
     brushlessController->set_desired_velocity(mrover::RadiansPerSecond{1.0f});
     ROS_INFO("Sent velocity command to Moteus");

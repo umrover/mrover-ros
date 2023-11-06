@@ -10,7 +10,7 @@ int main(int argc, char** argv) {
     ros::init(argc, argv, "brushed_test_bridge");
     ros::NodeHandle nh;
 
-    [[maybe_unused]] auto brushlessController = std::make_unique<mrover::BrushedController>(nh, "devboard");
+    [[maybe_unused]] auto brushlessController = std::make_unique<mrover::BrushedController>(nh, "jetson", "devboard");
 
     brushlessController->set_desired_throttle(0.5);
 

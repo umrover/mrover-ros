@@ -16,11 +16,12 @@ namespace mrover {
             std::string type = static_cast<std::string>(controllersRoot[name]["type"]);
             assert(type == "brushed" || type == "brushless");
 
+            // TODO: avoid hard coding Jetson here
             if (type == "brushed") {
-                auto temp = std::make_unique<BrushedController>(nh, name);
+                auto temp = std::make_unique<BrushedController>(nh, "jetson", name);
                 controllers[name] = std::move(temp);
             } else if (type == "brushless") {
-                auto temp = std::make_unique<BrushlessController>(nh, name);
+                auto temp = std::make_unique<BrushlessController>(nh, "jetson", name);
                 controllers[name] = std::move(temp);
             }
 

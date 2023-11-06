@@ -2,6 +2,13 @@
 
 namespace mrover {
 
+    BrushlessController::BrushlessController(ros::NodeHandle& nh, const std::string& name, const std::string& controller_name)
+        : Controller{nh, name, controller_name} {
+
+        // TODO: change
+        torque = 0.3f;
+    }
+
     void BrushlessController::set_desired_throttle(Percent throttle) {
         throttle = std::clamp(throttle, -1_percent, 1_percent);
         // TODO - need to convert from throttle to rev/s
@@ -36,4 +43,5 @@ namespace mrover {
         // TODO - need to convert to use rev/s
         m_can_manager.send_moteus_data(CANfd);
     }
+
 } // namespace mrover

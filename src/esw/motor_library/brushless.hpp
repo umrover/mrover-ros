@@ -135,9 +135,7 @@ namespace mrover {
         void set_desired_velocity(RadiansPerSecond velocity) override;
         void set_desired_position(Radians position) override;
 
-        BrushlessController(ros::NodeHandle& nh, const std::string& name) : Controller(nh, name) {
-            torque = 0.3f;
-        }
+        BrushlessController(ros::NodeHandle& nh, std::string const& name, std::string const& controller_name);
         ~BrushlessController() override = default;
 
     private:
