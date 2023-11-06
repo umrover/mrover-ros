@@ -1,0 +1,2 @@
+string stateMachineName
+string state
