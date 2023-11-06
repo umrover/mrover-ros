@@ -31,9 +31,9 @@ namespace mrover {
 
     struct RawFdcanId {
         std::uint32_t identifier : 29;
-        bool isExtendedFrame : 1;
         bool isErrorFrame : 1;
         bool isRemoteTransmissionRequest : 1;
+        bool isExtendedFrame : 1;
     };
     static_assert(sizeof(RawFdcanId) == sizeof(canid_t));
 

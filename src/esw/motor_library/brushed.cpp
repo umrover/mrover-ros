@@ -2,12 +2,12 @@
 
 namespace mrover {
 
-    BrushedController::BrushedController(ros::NodeHandle& nh, const std::string& name, const std::string& controller_name)
-        : Controller{nh, name, controller_name} {
+    BrushedController::BrushedController(ros::NodeHandle const& nh, std::string name, std::string controller_name)
+        : Controller{nh, std::move(name), std::move(controller_name)} {
 
         XmlRpc::XmlRpcValue brushed_motor_data;
-        nh.getParam(std::format("brushed_motors/controllers/{}", name), brushed_motor_data);
-        assert(nh.hasParam(std::format("brushed_motors/controllers/{}", name)));
+        m_nh.getParam(std::format("brushed_motors/controllers/{}", m_controller_name), brushed_motor_data);
+        assert(m_nh.hasParam(std::format("brushed_motors/controllers/{}", m_controller_name)));
         assert(brushed_motor_data.getType() == XmlRpc::XmlRpcValue::TypeStruct);
 
         assert(brushed_motor_data.hasMember("gear_ratio") &&

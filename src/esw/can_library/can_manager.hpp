@@ -35,13 +35,14 @@ namespace mrover {
 
     class CANManager {
     public:
-        CANManager(ros::NodeHandle& nh, const std::string& source_name) {
-            m_source_name = source_name;
-            m_can_publisher = nh.advertise<mrover::CAN>("can_requests", 1);
+        CANManager(ros::NodeHandle const& nh, std::string source_name)
+            : m_nh{nh},
+              m_source_name{std::move(source_name)},
+              m_can_publisher{m_nh.advertise<mrover::CAN>("can_requests", 1)} {
 
             XmlRpc::XmlRpcValue canDevices;
-            nh.getParam("can/devices", canDevices);
-            assert(nh.hasParam("can/devices"));
+            m_nh.getParam("can/devices", canDevices);
+            assert(m_nh.hasParam("can/devices"));
             assert(canDevices.getType() == XmlRpc::XmlRpcValue::TypeArray);
             int size = canDevices.size();
             for (int i = 0; i < size; ++i) {
@@ -103,6 +104,7 @@ namespace mrover {
         }
 
     private:
+        ros::NodeHandle m_nh;
         ros::Publisher m_can_publisher;
         std::string m_source_name{};
         std::unordered_map<std::string, std::uint8_t> m_name_to_id;

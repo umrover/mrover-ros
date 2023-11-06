@@ -1,5 +1,5 @@
 #include <mrover/CAN.h>
-#include <mrover/PDB.h>
+#include <mrover/PDLB.h>
 #include <ros/ros.h>
 
 void processCANData(const mrover::CAN::ConstPtr& msg);
@@ -11,7 +11,7 @@ int main(int argc, char** argv) {
     ros::init(argc, argv, "pdb_bridge");
     ros::NodeHandle nh;
 
-    PDBPublisher = nh.advertise<mrover::PDB>("pdb_data", 1);
+    PDBPublisher = nh.advertise<mrover::PDLB>("pdb_data", 1);
     ros::Subscriber CANSubscriber = nh.subscribe<mrover::CAN>("can_data", 1, processCANData);
 
     // Enter the ROS event loop
@@ -26,7 +26,7 @@ void processCANData(const mrover::CAN::ConstPtr& msg) {
         // TODO
     }
 
-    mrover::PDB PDBData;
+    mrover::PDLB PDBData;
     PDBData.temperatures = {0, 0, 0, 0, 0}; // TODO
     PDBData.currents = {0, 0, 0, 0, 0};     // TODO
     PDBPublisher.publish(PDBData);

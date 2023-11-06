@@ -3,11 +3,12 @@
 #include <format>
 #include <stdexcept>
 
+#include <linux/can.h>
 #include <net/if.h>
 
-#include <ros/init.h>
-
 #include <netlink/route/link.h>
+
+#include <ros/console.h>
 
 namespace mrover {
 
@@ -44,13 +45,18 @@ namespace mrover {
                     throw std::runtime_error("Failed to set CAN bit timing");
                 }
 
+                // Trying to send to the socket without this will return error code 22 (invalid argument)
+                // By default the MTU is only set for regular CAN frames which are much smaller
+                // The effects of these calls will not be realized until "rtnl_link_change"
+                rtnl_link_set_mtu(mLink, sizeof(canfd_frame));
                 if (is_up) {
                     ROS_WARN("Link is already up");
                 } else {
                     rtnl_link_set_flags(mLink, IFF_UP);
-                    if (int result = rtnl_link_change(mSocket, mLink, mLink, 0); result < 0 && result != -NLE_SEQ_MISMATCH) {
-                        throw std::runtime_error(std::format("Failed to set CAN link up: {}", result));
-                    }
+                }
+
+                if (int result = rtnl_link_change(mSocket, mLink, mLink, 0); result < 0 && result != -NLE_SEQ_MISMATCH) {
+                    throw std::runtime_error(std::format("Failed to set CAN link up: {}", result));
                 }
             } else if (interface.starts_with("vcan")) {
                 if (!is_up) {
@@ -69,20 +75,14 @@ namespace mrover {
     CanNetLink::~CanNetLink() {
         if (!mLink || !mSocket) return;
 
-        try {
-            rtnl_link_unset_flags(mLink, IFF_UP);
-            if (int result = rtnl_link_change(mSocket, mLink, mLink, 0); result < 0 && result != -NLE_SEQ_MISMATCH) {
-                throw std::runtime_error(std::format("Failed to set network link down: {}", result));
-            }
-            mLink = nullptr;
-
-            nl_socket_free(mSocket);
-            mSocket = nullptr;
-
-        } catch (std::exception const& exception) {
-            // Can not use ROS logging here because ROS is already shutdown
-            std::cerr << std::format("Exception in network link cleanup: {}", exception.what()) << std::endl;
+        rtnl_link_unset_flags(mLink, IFF_UP);
+        if (int result = rtnl_link_change(mSocket, mLink, mLink, 0); result < 0 && result != -NLE_SEQ_MISMATCH) {
+            std::cerr << std::format("Failed to change link: {}", result) << std::endl;
         }
+        mLink = nullptr;
+
+        nl_socket_free(mSocket);
+        mSocket = nullptr;
     }
 
 } // namespace mrover

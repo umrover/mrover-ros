@@ -2,8 +2,8 @@
 
 namespace mrover {
 
-    BrushlessController::BrushlessController(ros::NodeHandle& nh, const std::string& name, const std::string& controller_name)
-        : Controller{nh, name, controller_name} {
+    BrushlessController::BrushlessController(ros::NodeHandle const& nh, std::string name, std::string controller_name)
+        : Controller{nh, std::move(name), std::move(controller_name)} {
 
         // TODO: change
         torque = 0.3f;

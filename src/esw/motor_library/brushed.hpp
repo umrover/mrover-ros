@@ -15,7 +15,7 @@ namespace mrover {
 
         void send_configuration();
 
-        BrushedController(ros::NodeHandle& nh, std::string const& name, std::string const& controller_name);
+        BrushedController(ros::NodeHandle const& nh, std::string name, std::string controller_name);
         ~BrushedController() override = default;
 
     private:
