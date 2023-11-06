@@ -11,7 +11,7 @@ namespace mrover {
 
         CanNetLink() = default;
 
-        CanNetLink(std::string const& interface, std::uint32_t bitrate, std::uint32_t bitrate_prescaler);
+        CanNetLink(std::string, std::uint32_t bitrate, std::uint32_t bitrate_prescaler);
 
         CanNetLink(CanNetLink const&) = delete;
         CanNetLink& operator=(CanNetLink const&) = delete;
@@ -21,15 +21,17 @@ namespace mrover {
         }
 
         CanNetLink& operator=(CanNetLink&& other) noexcept {
+            mInterface = std::move(other.mInterface);
             mSocket = std::exchange(other.mSocket, nullptr);
-            mLink = std::exchange(other.mLink, nullptr);
+            mCache = std::exchange(other.mCache, nullptr);
             return *this;
         }
 
         ~CanNetLink();
 
+        std::string mInterface{};
+        nl_cache* mCache{};
         nl_sock* mSocket{};
-        rtnl_link* mLink{};
     };
 
 } // namespace mrover
