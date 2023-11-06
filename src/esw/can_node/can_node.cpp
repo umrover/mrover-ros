@@ -15,13 +15,9 @@ namespace mrover {
 
     static void printFrame(canfd_frame const& frame) {
         std::ostringstream stream;
-        auto id = std::bit_cast<FdcanId>(frame.can_id);
-        stream << std::format("CANFD ID: {:#X}\n", std::uint32_t{id.identifier});
-        stream << std::format("LENGTH: {}\n", frame.len);
-        stream << "DATA:\n";
-        for (std::uint8_t i = 0; i < frame.len; ++i) {
-            stream << std::format("Index = {}\tData = {:#X}\n", i, frame.data[i]);
-        }
+        auto id = std::bit_cast<RawFdcanId>(frame.can_id);
+        stream << std::format("ID: {:#X} SIZE: {} DATA:", std::uint32_t{id.identifier}, frame.len);
+        for (std::uint8_t i = 0; i < frame.len; ++i) stream << std::format(" {:#X}", frame.data[i]);
         ROS_INFO_STREAM(stream.str());
     }
 
@@ -129,7 +125,7 @@ namespace mrover {
 
         CAN msg;
         msg.bus = 0;
-        msg.message_id = std::bit_cast<FdcanId>(mReadFrame.can_id).identifier;
+        msg.message_id = std::bit_cast<RawFdcanId>(mReadFrame.can_id).identifier;
         msg.data.assign(mReadFrame.data, mReadFrame.data + mReadFrame.len);
 
         mCanPublisher.publish(msg);
@@ -143,7 +139,7 @@ namespace mrover {
         // Check that the identifier is not too large
         assert(std::bit_width(identifier) <= mIsExtendedFrame ? CAN_EFF_ID_BITS : CAN_SFF_ID_BITS);
 
-        mWriteFrame.can_id = std::bit_cast<std::uint32_t>(FdcanId{
+        mWriteFrame.can_id = std::bit_cast<std::uint32_t>(RawFdcanId{
                 .identifier = identifier,
                 .isExtendedFrame = mIsExtendedFrame,
         });
@@ -168,13 +164,15 @@ namespace mrover {
     }
 
     void CanNodelet::canSendRequestCallback(CAN::ConstPtr const& msg) {
+        if (mIsVerbose) ROS_INFO_STREAM("Received request to send CAN message:\n" << *msg);
+
         setBus(msg->bus);
         setFrameId(msg->message_id);
         setFrameData({reinterpret_cast<std::byte const*>(msg->data.data()), msg->data.size()});
 
         writeFrameAsync();
 
-        if (mIsVerbose) printFrame(mWriteFrame);
+        if (mIsVerbose) ROS_INFO_STREAM("Sent CAN message");
     }
 
     CanNodelet::~CanNodelet() {

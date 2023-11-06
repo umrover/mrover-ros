@@ -20,12 +20,12 @@ namespace mrover {
     using namespace mjbots;
 
     // Attribute needed to pack the struct into 32 bits
-    struct FDCANMessageID {
+    struct FdcanMessageId {
         std::uint8_t destination;
         std::uint8_t source : 7;
         bool reply_required : 1;
     };
-    static_assert(sizeof(FDCANMessageID) == 2);
+    static_assert(sizeof(FdcanMessageId) == 2);
 
     template<typename T>
     concept IsSerializable = std::is_trivially_copyable_v<T>;
@@ -79,7 +79,7 @@ namespace mrover {
 
             mrover::CAN can_message;
             can_message.bus = m_name_to_bus.at(destinationName);
-            can_message.message_id = std::bit_cast<std::uint16_t>(FDCANMessageID{
+            can_message.message_id = std::bit_cast<std::uint16_t>(FdcanMessageId{
                     .destination = m_name_to_id.at(destinationName),
                     .source = m_name_to_id.at(m_source_name),
             });
@@ -92,7 +92,7 @@ namespace mrover {
         void send_moteus_data(moteus::CanFdFrame const& frame) {
             mrover::CAN can_message;
             can_message.bus = frame.bus;
-            can_message.message_id = std::bit_cast<std::uint16_t>(FDCANMessageID{
+            can_message.message_id = std::bit_cast<std::uint16_t>(FdcanMessageId{
                     .destination = static_cast<std::uint8_t>(frame.destination),
                     .source = static_cast<std::uint8_t>(frame.source),
                     .reply_required = frame.reply_required,
