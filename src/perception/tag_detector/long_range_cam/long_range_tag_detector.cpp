@@ -8,7 +8,7 @@ namespace mrover {
         mDetectorParams = new cv::aruco::DetectorParameters();
         auto defaultDetectorParams = cv::makePtr<cv::aruco::DetectorParameters>();
         int dictionaryNumber;
-        
+
         mPnh.param<bool>("publish_images", mPublishImages, true);
         mPnh.param<int>("min_hit_count_before_publish", mMinHitCountBeforePublish, 5);
         mPnh.param<int>("max_hit_count", mMaxHitCount, 5);
@@ -18,6 +18,7 @@ namespace mrover {
         mImgPub = mNh.advertise<sensor_msgs::Image>("long_range_tag_detection", 1);
 
         mImgSub = mNh.subscribe("long_range_cam/image", 1, &LongRangeTagDetectorNodelet::imageCallback, this);
+        mDictionary = cv::makePtr<cv::aruco::Dictionary>(cv::aruco::getPredefinedDictionary(dictionaryNumber));
         mServiceEnableDetections = mNh.advertiseService("enable_detections", &LongRangeTagDetectorNodelet::enableDetectionsCallback, this);
 
         // Lambda handles passing class pointer (implicit first parameter) to configCallback

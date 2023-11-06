@@ -28,7 +28,7 @@ namespace mrover {
         }
 
         //Publish all tags that meet threshold
-        publishThresholdTags();
+        // publishThresholdTags();
 
         //PUBLISH TAGS
     }
@@ -40,16 +40,16 @@ namespace mrover {
         assert(msg->height > 0);
         assert(msg->width > 0);
         //Store image message to mImgMsg member variable
-        mImgMsg = *msg;
-        mImg = cv::Mat{static_cast<int>(msg->height), static_cast<int>(msg->width), CV_8UC4, const_cast<uint8_t*>(msg->data.data())};
+        cv::Mat cvImage = cv::Mat{static_cast<int>(msg->height), static_cast<int>(msg->width), CV_8UC3, const_cast<uint8_t*>(msg->data.data())};
 
         //Store to mImg member variable - unsure if necessary but need it to persist
-        // cvImage.copyTo(mImg);
+        cvImage.copyTo(mImg);
 
         // TODO: Set the grayImage if neccesary
     }
 
     void LongRangeTagDetectorNodelet::runTagDetection() {
+        std::cout << mDetectorParams->adaptiveThreshConstant << std::endl;
         cv::aruco::detectMarkers(mImg, mDictionary, mImmediateCorners, mImmediateIds, mDetectorParams);
     }
 
@@ -141,7 +141,7 @@ namespace mrover {
         return centerPoint;
     }
 
-    cv::Poinjt2f LongRangeTagDetectorNodelet::getNormedTagCenterOffset(std::vector<cv::Point2f>& tagCorners) const {
+    cv::Point2f LongRangeTagDetectorNodelet::getNormedTagCenterOffset(std::vector<cv::Point2f>& tagCorners) const {
         cv::Point2f offsetCenterPoint = getTagCenterOffsetPixels(tagCorners);
 
         offsetCenterPoint.x /= static_cast<float>(mImgMsg.width);
@@ -151,15 +151,16 @@ namespace mrover {
     }
 
     float LongRangeTagDetectorNodelet::getTagBearing(std::vector<cv::Point2f>& tagCorners) const {
-        //TODO: FINISH
-        //for HD720 resolution
-        pair<float, float> center = getTagCenterPixels(tagCorners);
-        float x = center.first;
-        int width = //get width of the image
-        int angleOfFOV = 104; 
-        float bearing = ((x - width / 2) / width) * angleOfFOV;
-    
-        return bearing;
+        // //TODO: FINISH
+        // //for HD720 resolution
+        // pair<float, float> center = getTagCenterPixels(tagCorners);
+        // float x = center.first;
+        // int width = //get width of the image
+        //         int angleOfFOV = 104;
+        // float bearing = ((x - width / 2) / width) * angleOfFOV;
+
+        // return bearing;
+        return {};
     }
 
     void LongRangeTagDetectorNodelet::publishThresholdTags() {
@@ -187,15 +188,23 @@ namespace mrover {
     }
 
     void LongRangeTagDetectorNodelet::publishTagsOnImage() {
-        cv::Mat markedImage;
-        mImg.copyTo(markedImage);
+        // cv::Mat markedImage;
+        // markedImage.copyTo(mImg);
+        // std::cout << markedImage.total() << ", " << markedImage.channels() << std::endl;
 
-        cv::aruco::drawDetectedMarkers(markedImage, mImmediateCorners);
-
-        sensor_msgs::Image imgMsgOut = mImgMsg;
-        imgMsgOut.data = markedImage;
-
-        mImgPub.publish(imgMsgOut);
+        cv::aruco::drawDetectedMarkers(mImg, mImmediateCorners, mImmediateIds);
+        mImgMsg.header.seq = mSeqNum;
+        mImgMsg.header.stamp = ros::Time::now();
+        mImgMsg.header.frame_id = "long_range_cam_frame";
+        mImgMsg.height = mImg.rows;
+        mImgMsg.width = mImg.cols;
+        mImgMsg.encoding = sensor_msgs::image_encodings::BGR8;
+        mImgMsg.step = mImg.step;
+        mImgMsg.is_bigendian = __BYTE_ORDER__ == __ORDER_BIG_ENDIAN__;
+        size_t size = mImgMsg.step * mImgMsg.height;
+        mImgMsg.data.resize(size);
+        std::uninitialized_copy(std::execution::par_unseq, mImg.data, mImg.data + size, mImgMsg.data.begin());
+        mImgPub.publish(mImgMsg);
     }
 
 } // namespace mrover
