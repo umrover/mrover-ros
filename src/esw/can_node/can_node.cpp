@@ -13,17 +13,25 @@
 
 namespace mrover {
 
-    constexpr static std::size_t CAN_ERROR_BIT_INDEX = 29;
-    constexpr static std::size_t CAN_RTR_BIT_INDEX = 30;
-    constexpr static std::size_t CAN_EXTENDED_BIT_INDEX = 31;
+    static void printFrame(canfd_frame const& frame) {
+        std::ostringstream stream;
+        auto id = std::bit_cast<FdcanId>(frame.can_id);
+        stream << std::format("CANFD ID: {:#X}\n", std::uint32_t{id.identifier});
+        stream << std::format("LENGTH: {}\n", frame.len);
+        stream << "DATA:\n";
+        for (std::uint8_t i = 0; i < frame.len; ++i) {
+            stream << std::format("Index = {}\tData = {:#X}\n", i, frame.data[i]);
+        }
+        ROS_INFO_STREAM(stream.str());
+    }
 
-    void checkErrorCode(boost::system::error_code const& ec) {
+    static void checkErrorCode(boost::system::error_code const& ec) {
         if (ec.value() == boost::system::errc::success) return;
 
         throw std::runtime_error(std::format("Boost failure: {} {}", ec.value(), ec.message()));
     }
 
-    int checkSyscallResult(int result) {
+    static int checkSyscallResult(int result) {
         if (result < 0) throw std::system_error{errno, std::generic_category()};
 
         return result;
@@ -37,6 +45,7 @@ namespace mrover {
             mPnh = getMTPrivateNodeHandle();
 
             mInterface = mPnh.param<std::string>("interface", "can0");
+            mIsVerbose = mPnh.param<bool>("verbose", true);
             mIsExtendedFrame = mPnh.param<bool>("is_extended_frame", true);
             mBitrate = static_cast<std::uint32_t>(mPnh.param<int>("bitrate", 500000));
             mBitratePrescaler = static_cast<std::uint32_t>(mPnh.param<int>("bitrate_prescaler", 2));
@@ -116,6 +125,8 @@ namespace mrover {
     }
 
     void CanNodelet::processReadFrame() { // NOLINT(*-no-recursion)
+        if (mIsVerbose) printFrame(mReadFrame);
+
         CAN msg;
         msg.bus = 0;
         msg.message_id = std::bit_cast<FdcanId>(mReadFrame.can_id).identifier;
@@ -162,17 +173,8 @@ namespace mrover {
         setFrameData({reinterpret_cast<std::byte const*>(msg->data.data()), msg->data.size()});
 
         writeFrameAsync();
-        //        printFrame();
-    }
 
-    void CanNodelet::printFrame() {
-        std::cout << std::format("BUS: {}", mBus) << std::endl;
-        std::cout << std::format("CAN_ID: {}", mWriteFrame.can_id) << std::endl;
-        std::cout << std::format("LEN: {}", mWriteFrame.len) << std::endl;
-        std::cout << "DATA:" << std::endl;
-        for (std::uint8_t i = 0; i < mWriteFrame.len; ++i) {
-            std::cout << std::format("Index = {}\tData = {:#X}", i, mWriteFrame.data[i]) << std::endl;
-        }
+        if (mIsVerbose) printFrame(mWriteFrame);
     }
 
     CanNodelet::~CanNodelet() {
