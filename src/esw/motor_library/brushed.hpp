@@ -19,9 +19,9 @@ namespace mrover {
             m_is_configured = false;
 
             XmlRpc::XmlRpcValue brushed_motor_data;
-            nh.getParam("brushed_motors/controllers/" + name, brushed_motor_data);
-            assert(nh.hasParam("brushed_motors/controllers/" + name));
-            assert(brushed_motor_data.getType() == XmlRpc::XmlRpcValue::TypeArray);
+            nh.getParam(std::format("brushed_motors/controllers/{}", name), brushed_motor_data);
+            assert(nh.hasParam(std::format("brushed_motors/controllers/{}", name)));
+            assert(brushed_motor_data.getType() == XmlRpc::XmlRpcValue::TypeStruct);
 
             assert(brushed_motor_data.hasMember("gear_ratio") &&
                    brushed_motor_data["gear_ratio"].getType() == XmlRpc::XmlRpcValue::TypeDouble);
@@ -68,7 +68,7 @@ namespace mrover {
 
             assert(brushed_motor_data.hasMember("driver_voltage") &&
                    brushed_motor_data["driver_voltage"].getType() == XmlRpc::XmlRpcValue::TypeDouble);
-            auto driver_voltage = static_cast<double>(brushed_motor_data["gear_ratio"]);
+            auto driver_voltage = static_cast<double>(brushed_motor_data["driver_voltage"]);
             assert(driver_voltage > 0);
             assert(brushed_motor_data.hasMember("motor_max_voltage") &&
                    brushed_motor_data["motor_max_voltage"].getType() == XmlRpc::XmlRpcValue::TypeDouble);
@@ -76,10 +76,11 @@ namespace mrover {
             assert(0 < motor_max_voltage && motor_max_voltage <= driver_voltage);
 
             m_config_command.max_pwm = motor_max_voltage / driver_voltage;
+
             m_config_command.limit_max_pos.limit_max_forward_position = static_cast<bool>(brushed_motor_data["limit_max_forward_pos"]);
             m_config_command.limit_max_pos.limit_max_backward_position = static_cast<bool>(brushed_motor_data["limit_max_backward_pos"]);
-            m_config_command.max_forward_pos = Meters{static_cast<double>(brushed_motor_data["limit_max_forward_pos"])};
-            m_config_command.max_back_pos = Meters{static_cast<double>(brushed_motor_data["limit_max_backward_pos"])};
+            m_config_command.max_forward_pos = Meters{static_cast<double>(brushed_motor_data["max_forward_pos"])};
+            m_config_command.max_back_pos = Meters{static_cast<double>(brushed_motor_data["max_backward_pos"])};
         }
         ~BrushedController() override = default;
 

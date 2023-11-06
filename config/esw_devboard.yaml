@@ -1,8 +1,50 @@
 can:
   devices:
-    - name: "test"
+    - name: "jetson"
       bus: 0
       id: 0x8
-    - name: "test_brushed_controller"
+    - name: "devboard"
       bus: 0
       id: 0x7
+
+brushed_motors:
+  controllers:
+    devboard:
+      gear_ratio: 1.0 # motor ratio compared to joint, e.g. if 5, then 5 rotations of motor = 1 rotation of joint
+      limit_a_present: false
+      limit_b_present: false
+      limit_c_present: false
+      limit_d_present: false
+      limit_a_default_enabled: false
+      limit_b_default_enabled: false
+      limit_c_default_enabled: false
+      limit_d_default_enabled: false
+      limit_a_is_active_high: true
+      limit_b_is_active_high: true
+      limit_c_is_active_high: true
+      limit_d_is_active_high: true
+      limit_a_limits_fwd: true
+      limit_b_limits_fwd: true
+      limit_c_limits_fwd: true
+      limit_d_limits_fwd: true
+      limit_a_used_for_readjustment: false
+      limit_b_used_for_readjustment: false
+      limit_c_used_for_readjustment: false
+      limit_d_used_for_readjustment: false
+      quad_present: false
+      quad_is_fwd_polarity: true
+      abs_present: false
+      abs_is_fwd_polarity: true
+      limit_a_readjust_position: 0.0 # radians
+      limit_b_readjust_position: 0.0 # radians
+      limit_c_readjust_position: 0.0 # radians
+      limit_d_readjust_position: 0.0 # radians
+      quad_ratio: 1.0 # encoder ratio compared to motor
+      abs_ratio: 1.0 # encoder ratio compared to motor
+      abs_encoder_offset: 0.0 # 0 for joint position corresponds to this radians reading by absolute encoder
+      driver_voltage: 12.0 # used to calculate max pwm
+      motor_max_voltage: 12.0 # used to calculate max pwm
+      limit_max_forward_pos: false
+      limit_max_backward_pos: false
+      max_forward_pos: 1.0
+      max_backward_pos: 0.0

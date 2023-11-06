@@ -40,7 +40,7 @@ namespace mrover {
             mNh = getMTNodeHandle();
             mPnh = getMTPrivateNodeHandle();
 
-            mInterface = mPnh.param<std::string>("interface", "vcan0");
+            mInterface = mPnh.param<std::string>("interface", "can0");
             mIsExtendedFrame = mPnh.param<bool>("is_extended_frame", true);
             mBitrate = static_cast<std::uint32_t>(mPnh.param<int>("bitrate", 500000));
             mBitratePrescaler = static_cast<std::uint32_t>(mPnh.param<int>("bitrate_prescaler", 2));
