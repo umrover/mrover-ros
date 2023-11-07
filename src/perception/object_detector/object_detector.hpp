@@ -1,4 +1,4 @@
-//#include "inference.h"
+#include "inference.cuh"
 #include "pch.hpp"
 #include <opencv2/core/mat.hpp>
 #include <ros/publisher.h>
