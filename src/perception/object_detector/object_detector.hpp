@@ -23,6 +23,7 @@ namespace mrover {
 
         //Inference inference;
 
+
         // Publishers
 
         ros::Publisher mDebugImgPub;

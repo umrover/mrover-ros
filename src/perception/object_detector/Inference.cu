@@ -72,17 +72,17 @@ namespace mrover {
         profile->setDimensions(network->getInput(0)->getName(), OptProfileSelector::kMAX, Dims4{32, 3, 256, 256});
         config->addOptimizationProfile(profile);
 
-        return builder->buildEngineWithConfig(*network, *config);
+        return nullptr; //builder->buildEngineWithConfig(*network, *config);
     }
-    /*
-    std::vector<Detection> Inference::doDetections(cv::Mat& img) {
+
+    void Inference::doDetections(cv::Mat& img) {
         //Do the forward pass on the network
         launchInference(img.data, this->outputTensor.data);
 
-        return Parser(this->outputTensor).parseTensor();
+        //return Parser(this->outputTensor).parseTensor();
     }
 
-    void Inference::launchInference(float* input, float* output) {
+    void Inference::launchInference(void* input, void* output) {
         int inputId = Inference::getBindingInputIndex(this->contextPtr.get());
 
         //Copy data to GPU memory
@@ -94,7 +94,7 @@ namespace mrover {
         //Copy data to CPU memory
         cudaMemcpyAsync(output, this->bindings[1 - inputId], outputEntries.d[0] * outputEntries.d[1] * outputEntries.d[2] * sizeof(float), cudaMemcpyDeviceToHost, this->stream);
     }
-    */
+
 
     /**
 * Takes tensor bindings and allocates memory on the GPU for input and output tensors
@@ -113,14 +113,6 @@ namespace mrover {
 
             // Create CUDA buffer for Tensor.
             cudaMalloc(&(this->bindings)[i], Inference::BATCH_SIZE * size * sizeof(float));
-
-
-            //Size the tensors based on tensor type
-            if (this->enginePtr->getTensorIOMode(this->enginePtr->getIOTensorName(i)) == nvinfer1::TensorIOMode::kINPUT) {
-                this->inputTensor.reshape(3, sizes);
-            } else if (this->enginePtr->getTensorIOMode(this->enginePtr->getIOTensorName(i)) == nvinfer1::TensorIOMode::kOUTPUT) {
-                this->outputTensor.resize(size);
-            }
         }
     }
 

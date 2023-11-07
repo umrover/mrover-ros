@@ -1,4 +1,5 @@
 // Cpp native
+#pragma once
 #include <NvInferRuntime.h>
 #include <fstream>
 #include <iterator>
@@ -91,7 +92,7 @@ namespace mrover {
         //Creates a ptr to the engine
         nvinfer1::ICudaEngine* createCudaEngine(std::string& onnxModelPath);
 
-        void launchInference(float* input, float* output);
+        void launchInference(void* input, void* output);
 
         void setUpContext(const std::string& inputFile); //This will need to be adjusted to the img msg, but I think its ok to just run pictures as an intial test
 
@@ -99,6 +100,6 @@ namespace mrover {
 
         void setUpContext();
 
-        std::vector<Detection> doDetections(cv::Mat& img);
+        void doDetections(cv::Mat& img);
     };
 } // namespace mrover

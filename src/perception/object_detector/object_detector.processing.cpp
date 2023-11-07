@@ -23,11 +23,15 @@ namespace mrover {
 
 
     void ObjectDetectorNodelet::imageCallback(sensor_msgs::ImageConstPtr const& msg) {
-        uint x;
-        x = msg->height;
-        std::cout << x << std::endl;
+        assert(msg);
+        assert(msg->height > 0);
+        assert(msg->width > 0);
 
-        cv::Mat mat;
+        cv::Mat imageView{static_cast<int>(msg->height), static_cast<int>(msg->width), CV_8UC4, const_cast<uint8_t*>(msg->data.data())};
+
+        std::cout << "BRUHH" << std::endl;
+        cv::imshow("dumb", imageView);
+        cv::waitKey(100);
     }
     /*
     void ObjectDetectorNodelet::imageCallback(sensor_msgs::ImageConstPtr const& msg) {
