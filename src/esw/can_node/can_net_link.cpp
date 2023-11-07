@@ -14,6 +14,7 @@ namespace mrover {
 
     CanNetLink::CanNetLink(std::string interface, std::uint32_t bitrate, std::uint32_t bitrate_prescaler)
         : mInterface{std::move(interface)} {
+
         try {
             mSocket = nl_socket_alloc();
             if (mSocket == nullptr) {
@@ -45,10 +46,12 @@ namespace mrover {
                     throw std::runtime_error("Failed to set CAN link bit timings");
                 }
 
+                // See https://android.googlesource.com/platform/external/libnl/+/bbcb553f0f4636dd40e84d320a576b3de7b95357/lib/route/link.c
+                // Specifically the section "@par 2) Changing Link attributes"
                 rtnl_link* link_request = rtnl_link_alloc();
 
                 // Trying to send to the socket without this will return error code 22 (invalid argument)
-                // By default the MTU is only set for regular CAN frames which are much smaller
+                // By default the MTU is configured for regular CAN frame which are much smaller
                 // The effects of these calls will not be realized until "rtnl_link_change"
                 rtnl_link_set_mtu(link_request, sizeof(canfd_frame));
                 if (is_up) {
@@ -58,8 +61,12 @@ namespace mrover {
                 }
 
                 if (int result = rtnl_link_change(mSocket, link, link_request, 0); result < 0) {
+                    rtnl_link_put(link); // TODO(quintin) Use RAII here
                     throw std::runtime_error(std::format("Failed to change CAN link: {}", result));
                 }
+
+                rtnl_link_put(link); // Free
+
             } else if (mInterface.starts_with("vcan")) {
                 if (!is_up) {
                     throw std::runtime_error("Virtual CAN link must be set up manually");
@@ -77,13 +84,15 @@ namespace mrover {
     CanNetLink::~CanNetLink() {
         if (!mSocket || !mCache) return;
 
-        rtnl_link* link = rtnl_link_get_by_name(mCache, mInterface.c_str());
+        if (mInterface.starts_with("can")) {
+            rtnl_link *link = rtnl_link_get_by_name(mCache, mInterface.c_str()), *link_request = rtnl_link_alloc();
 
-        rtnl_link* link_request = rtnl_link_alloc();
+            rtnl_link_unset_flags(link_request, IFF_UP);
+            if (int result = rtnl_link_change(mSocket, link, link_request, 0); result < 0) {
+                std::cerr << std::format("Failed to change CAN link: {}", result) << std::endl;
+            }
 
-        rtnl_link_unset_flags(link_request, IFF_UP);
-        if (int result = rtnl_link_change(mSocket, link, link_request, 0); result < 0 && result) {
-            std::cerr << std::format("Failed to change CAN link: {}", result) << std::endl;
+            rtnl_link_put(link); // Free
         }
 
         nl_socket_free(mSocket);

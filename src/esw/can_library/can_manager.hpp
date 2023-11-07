@@ -69,7 +69,7 @@ namespace mrover {
         void send_message(std::string const& destinationName, std::variant<Variants...> const& data) {
             // TODO - make sure everything is consistent in the bridge files
             // This is okay since "send_raw_data" makes a copy
-            auto* address = std::bit_cast<std::byte const*>(std::addressof(data));
+            auto* address = reinterpret_cast<std::byte const*>(std::addressof(data));
             send_raw_data(destinationName, {address, sizeof(data)});
         }
 

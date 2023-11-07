@@ -13,12 +13,10 @@
 
 namespace mrover {
 
-    static void printFrame(canfd_frame const& frame) {
-        std::ostringstream stream;
-        auto id = std::bit_cast<RawFdcanId>(frame.can_id);
-        stream << std::format("ID: {:#X} SIZE: {} DATA:", std::uint32_t{id.identifier}, frame.len);
-        for (std::uint8_t i = 0; i < frame.len; ++i) stream << std::format(" {:#X}", frame.data[i]);
-        ROS_INFO_STREAM(stream.str());
+    static int checkSyscallResult(int result) {
+        if (result < 0) throw std::system_error{errno, std::generic_category()};
+
+        return result;
     }
 
     static void checkErrorCode(boost::system::error_code const& ec) {
@@ -27,10 +25,16 @@ namespace mrover {
         throw std::runtime_error(std::format("Boost failure: {} {}", ec.value(), ec.message()));
     }
 
-    static int checkSyscallResult(int result) {
-        if (result < 0) throw std::system_error{errno, std::generic_category()};
-
-        return result;
+    static std::uint8_t nearestFittingFdcanFrameSize(std::size_t size) {
+        if (size <= 8) return size;
+        if (size <= 12) return 12;
+        if (size <= 16) return 16;
+        if (size <= 20) return 20;
+        if (size <= 24) return 24;
+        if (size <= 32) return 32;
+        if (size <= 48) return 48;
+        if (size <= 64) return 64;
+        throw std::runtime_error("Too large!");
     }
 
     void CanNodelet::onInit() {
@@ -45,7 +49,7 @@ namespace mrover {
             mBitrate = static_cast<std::uint32_t>(mPnh.param<int>("bitrate", 500000));
             mBitratePrescaler = static_cast<std::uint32_t>(mPnh.param<int>("bitrate_prescaler", 2));
 
-            mCanSubscriber = mNh.subscribe<CAN>("can_requests", 16, &CanNodelet::canSendRequestCallback, this);
+            mCanSubscriber = mNh.subscribe<CAN>("can_requests", 16, &CanNodelet::frameSendRequestCallback, this);
             mCanPublisher = mNh.advertise<CAN>("can_data", 16);
 
             mCanNetLink = {mInterface, mBitrate, mBitratePrescaler};
@@ -100,7 +104,7 @@ namespace mrover {
                     checkErrorCode(ec);
                     assert(bytes == sizeof(mReadFrame));
 
-                    processReadFrame();
+                    frameReadCallback();
 
                     // Ready for the next frame, start listening again
                     // Note this is recursive, but it is safe because it is async
@@ -109,20 +113,10 @@ namespace mrover {
                 });
     }
 
-    void CanNodelet::writeFrameAsync() {
-        boost::asio::async_write(
-                mStream.value(),
-                boost::asio::buffer(&mWriteFrame, sizeof(mWriteFrame)),
-                [](boost::system::error_code const& ec, std::size_t bytes) {
-                    checkErrorCode(ec);
-                    assert(bytes == sizeof(mWriteFrame));
-                });
-    }
-
-    void CanNodelet::processReadFrame() { // NOLINT(*-no-recursion)
+    void CanNodelet::frameReadCallback() { // NOLINT(*-no-recursion)
         CAN msg;
-        msg.bus = 0;
-        msg.message_id = std::bit_cast<RawFdcanId>(mReadFrame.can_id).identifier;
+        msg.bus = 0; // TODO(owen) support multiple buses
+        msg.message_id = std::bit_cast<RawCanfdId>(mReadFrame.can_id).identifier;
         msg.data.assign(mReadFrame.data, mReadFrame.data + mReadFrame.len);
 
         ROS_DEBUG_STREAM("Received CAN message:\n"
@@ -131,53 +125,31 @@ namespace mrover {
         mCanPublisher.publish(msg);
     }
 
-    void CanNodelet::setBus(std::uint8_t bus) {
-        this->mBus = bus;
-    }
-
-    void CanNodelet::setFrameId(std::uint32_t identifier) {
-        // Check that the identifier is not too large
-        assert(std::bit_width(identifier) <= mIsExtendedFrame ? CAN_EFF_ID_BITS : CAN_SFF_ID_BITS);
-
-        mWriteFrame.can_id = std::bit_cast<std::uint32_t>(RawFdcanId{
-                .identifier = identifier,
-                .isExtendedFrame = mIsExtendedFrame,
-        });
-    }
-
-    static std::size_t nearestFittingFdcanFrameSize(std::size_t size) {
-        if (size <= 8) return size;
-        if (size <= 12) return 12;
-        if (size <= 16) return 16;
-        if (size <= 20) return 20;
-        if (size <= 24) return 24;
-        if (size <= 32) return 32;
-        if (size <= 48) return 48;
-        if (size <= 64) return 64;
-        throw std::runtime_error("Too large!");
-    }
-
-    void CanNodelet::setFrameData(std::span<const std::byte> data) {
-        std::size_t frameSize = nearestFittingFdcanFrameSize(data.size());
-        mWriteFrame.len = frameSize;
-        std::memcpy(mWriteFrame.data, data.data(), data.size());
-    }
-
-    void CanNodelet::canSendRequestCallback(CAN::ConstPtr const& msg) {
+    void CanNodelet::frameSendRequestCallback(CAN::ConstPtr const& msg) {
         ROS_DEBUG_STREAM("Received request to send CAN message:\n"
                          << *msg);
 
-        setBus(msg->bus);
-        setFrameId(msg->message_id);
-        setFrameData({reinterpret_cast<std::byte const*>(msg->data.data()), msg->data.size()});
+        // Check that the identifier is not too large
+        assert(std::bit_width(msg->message_id) <= mIsExtendedFrame ? CAN_EFF_ID_BITS : CAN_SFF_ID_BITS);
 
-        writeFrameAsync();
+        // Craft the SocketCAN frame from the ROS message
+        canfd_frame frame{
+                .can_id = std::bit_cast<canid_t>(RawCanfdId{
+                        .identifier = msg->message_id,
+                        .isExtendedFrame = mIsExtendedFrame,
+                }),
+                .len = nearestFittingFdcanFrameSize(msg->data.size()),
+        };
+        std::memcpy(frame.data, msg->data.data(), msg->data.size());
+
+        std::size_t written = boost::asio::write(mStream.value(), boost::asio::buffer(std::addressof(frame), sizeof(frame)));
+        if (written != sizeof(frame)) throw std::runtime_error("Failed to write entire CAN frame");
 
         ROS_DEBUG_STREAM("Sent CAN message");
     }
 
     CanNodelet::~CanNodelet() {
-        mIoService.stop();
+        mIoService.stop(); // This causes the io thread to finish
     }
 
 } // namespace mrover

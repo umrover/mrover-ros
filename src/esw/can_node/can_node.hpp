@@ -27,40 +27,29 @@
 
 #include "can_net_link.hpp"
 
+// TODO(owen): support multiple buses
+
 namespace mrover {
 
-    struct RawFdcanId {
+    // [0-28]: CAN identifier (11/29bit)
+    // [29]: Error frame flag (0 = data frame, 1 = error frame)
+    // [30]: Remote transmission request flag (1 = rtr frame)
+    // [31]: Frame format flag (0 = standard 11bit, 1 = extended 29bit)
+    // In the future, if we want to send different types of messages,
+    // we should have logic for switching bits such as errorFrameFlag.
+    struct RawCanfdId {
         std::uint32_t identifier : 29;
         bool isErrorFrame : 1;
         bool isRemoteTransmissionRequest : 1;
         bool isExtendedFrame : 1;
     };
-    static_assert(sizeof(RawFdcanId) == sizeof(canid_t));
+    static_assert(sizeof(RawCanfdId) == sizeof(canid_t));
 
     class CanNodelet : public nodelet::Nodelet {
     public:
         CanNodelet() = default;
 
         ~CanNodelet() override;
-
-        void readFrameAsync();
-
-        void writeFrameAsync();
-
-        void processReadFrame();
-
-        void setBus(std::uint8_t bus);
-
-        // canfd_frame.can_id is an uint32_t with format:
-        // [0-28]: CAN identifier (11/29bit)
-        // [29]: Error frame flag (0 = data frame, 1 = error frame)
-        // [30]: Remote transmission request flag (1 = rtr frame)
-        // [31]: Frame format flag (0 = standard 11bit, 1 = extended 29bit)
-        // In the future, if we want to send different types of messages,
-        // we should have logic for switching bits such as errorFrameFlag.
-        void setFrameId(std::uint32_t identifier);
-
-        void setFrameData(std::span<const std::byte> data);
 
     private:
         ros::NodeHandle mNh, mPnh;
@@ -70,9 +59,7 @@ namespace mrover {
         std::uint32_t mBitrate{};
         std::uint32_t mBitratePrescaler{};
 
-        std::uint8_t mBus{};
         canfd_frame mReadFrame{};
-        canfd_frame mWriteFrame{};
         CanNetLink mCanNetLink;
         std::optional<boost::asio::posix::basic_stream_descriptor<>> mStream;
         std::jthread mIoThread;
@@ -85,29 +72,11 @@ namespace mrover {
 
         void onInit() override;
 
-        void canSendRequestCallback(CAN::ConstPtr const& msg);
+        void readFrameAsync();
+
+        void frameReadCallback();
+
+        void frameSendRequestCallback(CAN::ConstPtr const& msg);
     };
 
 } // namespace mrover
-
-// 1 = high = recessive
-// 0 = low = dominant
-
-/*
-struct canfd_frame {
-    uint32_t can_id; // 32 bit CAN_ID + EFF/RTR/ERR flags
-                     // [0-28]: CAN identifier (11/29bit)
-                     // [29]: Error frame flag (0 = data frame, 1 = error frame)
-                     // [30]: Remote transmission request flag (1 = rtr frame)
-                     // [31]: Frame format flag (0 = standard 11bit, 1 = extended 29bit)
-
-    uint8_t len;    // frame payload length in byte (0 .. 64)
-    uint8_t flags;  // additional flags for CAN FD
-    uint8_t __res0; // reserved / padding
-    uint8_t __res1; // reserved / padding
-
-    
-    // REQUIREMENT: DATA MUST BE 0-8, 12, 16, 20, 24, 32, 36, 48, or 64 BYTES LONG
-    uint8_t data[64];
-};
-*/
