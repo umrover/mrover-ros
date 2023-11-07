@@ -1,6 +1,6 @@
 #pragma once
 
-#include <can_fd_bus.hpp>
+#include <can_device.hpp>
 #include <controller.hpp>
 
 #include "messaging.hpp"

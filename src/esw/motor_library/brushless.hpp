@@ -8,7 +8,7 @@
 #define CANFD_FDF 0x04
 #include <moteus/moteus.h>
 
-#include <can_fd_bus.hpp>
+#include <can_device.hpp>
 #include <controller.hpp>
 
 namespace mrover {

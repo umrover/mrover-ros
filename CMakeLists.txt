@@ -207,18 +207,19 @@ mrover_add_library(lie src/util/lie/*.cpp src/util/lie)
 
 mrover_add_header_only_library(moteus deps/moteus/lib/cpp/mjbots)
 mrover_add_header_only_library(moteus_fw deps/moteus)
-mrover_add_header_only_library(can_library src/esw/can_library)
+mrover_add_header_only_library(can_device src/esw/can_device)
 mrover_add_library(motor_library src/esw/motor_library/*.cpp src/esw/motor_library)
-target_link_libraries(motor_library PUBLIC can_library moteus moteus_fw)
+target_link_libraries(motor_library PUBLIC can_device moteus moteus_fw)
 
-mrover_add_nodelet(can src/esw/can_node/*.cpp src/esw/can_node)
-mrover_nodelet_link_libraries(can nl-3 nl-route-3)
+# TODO(quintin) Fix this CMake hard coding
+mrover_add_nodelet(can_driver src/esw/can_driver/*.cpp src/esw/can_driver)
+mrover_nodelet_link_libraries(can_driver nl-3 nl-route-3)
 #mrover_nodelet_link_libraries(can ${NetLink_LIBRARIES} ${NetLinkRoute_LIBRARIES}})
-mrover_nodelet_include_directories(can /usr/include/libnl3)
+mrover_nodelet_include_directories(can_driver /usr/include/libnl3)
 
 macro(mrover_add_esw_bridge_node name sources)
     mrover_add_node(${name} ${sources})
-    target_link_libraries(${name} PRIVATE can_library motor_library)
+    target_link_libraries(${name} PRIVATE can_device motor_library)
 endmacro()
 
 mrover_add_esw_bridge_node(arm_bridge src/esw/arm_bridge/*.cpp)

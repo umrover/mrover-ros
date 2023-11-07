@@ -1,4 +1,4 @@
-#include "can_node.hpp"
+#include "can_driver.hpp"
 
 #include <linux/can.h>
 
@@ -116,7 +116,7 @@ namespace mrover {
     void CanNodelet::frameReadCallback() { // NOLINT(*-no-recursion)
         CAN msg;
         msg.bus = 0; // TODO(owen) support multiple buses
-        msg.message_id = std::bit_cast<RawCanfdId>(mReadFrame.can_id).identifier;
+        msg.message_id = std::bit_cast<RawCanFdId>(mReadFrame.can_id).identifier;
         msg.data.assign(mReadFrame.data, mReadFrame.data + mReadFrame.len);
 
         ROS_DEBUG_STREAM("Received CAN message:\n"
@@ -134,7 +134,7 @@ namespace mrover {
 
         // Craft the SocketCAN frame from the ROS message
         canfd_frame frame{
-                .can_id = std::bit_cast<canid_t>(RawCanfdId{
+                .can_id = std::bit_cast<canid_t>(RawCanFdId{
                         .identifier = msg->message_id,
                         .isExtendedFrame = mIsExtendedFrame,
                 }),

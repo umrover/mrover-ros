@@ -4,7 +4,7 @@
 
 #include <ros/ros.h>
 
-#include <can_fd_bus.hpp>
+#include <can_device.hpp>
 #include <units/units.hpp>
 
 namespace mrover {
@@ -15,7 +15,7 @@ namespace mrover {
             : m_nh{nh},
               m_name{std::move(name)},
               m_controller_name{std::move(controller_name)},
-              m_can_manager{nh, m_name} {}
+              m_device{nh, m_name} {}
 
         virtual ~Controller() = default;
 
@@ -28,7 +28,7 @@ namespace mrover {
     protected:
         ros::NodeHandle m_nh;
         std::string m_name, m_controller_name;
-        CanFdBus m_can_manager;
+        CanDevice m_device;
         RadiansPerSecond m_min_velocity{}, m_max_velocity{};
         Radians m_min_position{}, m_max_position{};
 

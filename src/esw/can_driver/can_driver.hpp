@@ -37,13 +37,13 @@ namespace mrover {
     // [31]: Frame format flag (0 = standard 11bit, 1 = extended 29bit)
     // In the future, if we want to send different types of messages,
     // we should have logic for switching bits such as errorFrameFlag.
-    struct RawCanfdId {
+    struct RawCanFdId {
         std::uint32_t identifier : 29;
         bool isErrorFrame : 1;
         bool isRemoteTransmissionRequest : 1;
         bool isExtendedFrame : 1;
     };
-    static_assert(sizeof(RawCanfdId) == sizeof(canid_t));
+    static_assert(sizeof(RawCanFdId) == sizeof(canid_t));
 
     class CanNodelet : public nodelet::Nodelet {
     public:

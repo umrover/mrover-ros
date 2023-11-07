@@ -39,9 +39,9 @@ namespace mrover {
         bool operator<=>(CanFdDeviceAddress const& other) const = default;
     };
 
-    class CanFdBus {
+    class CanDevice {
     public:
-        CanFdBus(ros::NodeHandle const& nh, std::string for_device)
+        CanDevice(ros::NodeHandle const& nh, std::string for_device)
             : m_nh{nh},
               m_for_device{std::move(for_device)},
               m_can_publisher{m_nh.advertise<mrover::CAN>("can_requests", 1)} {
@@ -83,6 +83,17 @@ namespace mrover {
             publish_data(to_device, {address, frame.size}, frame.reply_required);
         }
 
+    private:
+        ros::NodeHandle m_nh;
+        ros::Publisher m_can_publisher;
+        std::string m_for_device{};
+
+        bimap<std::string, CanFdDeviceAddress,
+              std::hash<std::string>, decltype([](CanFdDeviceAddress const& location) {
+                  return std::hash<std::uint8_t>{}(location.bus) ^ std::hash<std::uint8_t>{}(location.id);
+              })>
+                m_devices;
+
         void publish_data(std::string const& to_device, std::span<std::byte const> data, bool reply_required = false) {
             if (!m_devices.contains(to_device)) {
                 throw std::invalid_argument(std::format("CAN destination device {} does not exist", to_device));
@@ -103,17 +114,6 @@ namespace mrover {
 
             m_can_publisher.publish(can_message);
         }
-
-    private:
-        ros::NodeHandle m_nh;
-        ros::Publisher m_can_publisher;
-        std::string m_for_device{};
-
-        bimap<std::string, CanFdDeviceAddress,
-              std::hash<std::string>, decltype([](CanFdDeviceAddress const& location) {
-                  return std::hash<std::uint8_t>{}(location.bus) ^ std::hash<std::uint8_t>{}(location.id);
-              })>
-                m_devices;
     };
 
 } // namespace mrover
