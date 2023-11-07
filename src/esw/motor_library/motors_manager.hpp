@@ -29,7 +29,7 @@ namespace mrover {
     public:
         MotorsManager() = default;
 
-        MotorsManager(ros::NodeHandle& nh, const std::string& groupName, const std::vector<std::string>& controllerNames);
+        MotorsManager(ros::NodeHandle const& nh, std::string groupName, std::vector<std::string> controllerNames);
 
         Controller& get_controller(std::string const& name);
 
@@ -46,10 +46,16 @@ namespace mrover {
         void updateLastConnection();
 
     private:
-        std::unordered_map<std::string, std::unique_ptr<Controller>> controllers;
-        std::unordered_map<int, std::string> names;
-        std::string motorGroupName;
-        std::vector<std::string> motorNames;
+        ros::NodeHandle mNh;
+
+        ros::Subscriber mMoveThrottleSub;
+        ros::Subscriber mMoveVelocitySub;
+        ros::Subscriber mMovePositionSub;
+
+        std::unordered_map<std::string, std::unique_ptr<Controller>> mControllers;
+        std::unordered_map<int, std::string> mNames;
+        std::string mGroupName;
+        std::vector<std::string> mControllerNames;
         std::chrono::high_resolution_clock::time_point lastConnection;
     };
 

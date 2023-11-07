@@ -10,6 +10,7 @@
 #include <XmlRpcValue.h>
 #include <ros/ros.h>
 
+#include <bimap.hpp>
 #include <mrover/CAN.h>
 
 #define CANFD_FDF 0x04
@@ -19,7 +20,6 @@ namespace mrover {
 
     using namespace mjbots;
 
-    // Attribute needed to pack the struct into 32 bits
     struct FdcanMessageId {
         std::uint8_t destination;
         std::uint8_t source : 7;
@@ -32,6 +32,13 @@ namespace mrover {
 
     template<typename T>
     concept IsFDCANSerializable = IsSerializable<T> && sizeof(T) <= 64;
+
+    struct FdcanDeviceAddress {
+        std::uint8_t bus;
+        std::uint8_t id;
+
+        bool operator<=>(FdcanDeviceAddress const& other) const = default;
+    };
 
     class CANManager {
     public:
@@ -50,47 +57,49 @@ namespace mrover {
                        canDevices[i]["name"].getType() == XmlRpc::XmlRpcValue::TypeString);
                 std::string name = static_cast<std::string>(canDevices[i]["name"]);
 
-                assert(canDevices[i].hasMember("id") &&
-                       canDevices[i]["id"].getType() == XmlRpc::XmlRpcValue::TypeInt);
-                auto id = (uint8_t) static_cast<int>(canDevices[i]["id"]);
-                m_name_to_id[name] = id;
-                m_id_to_name[id] = name;
-
                 assert(canDevices[i].hasMember("bus") &&
                        canDevices[i]["bus"].getType() == XmlRpc::XmlRpcValue::TypeInt);
-                auto bus = (uint8_t) static_cast<int>(canDevices[i]["bus"]);
-                m_name_to_bus[name] = bus;
-                m_bus_to_name[bus] = name;
+                auto bus = static_cast<std::uint8_t>(static_cast<int>(canDevices[i]["bus"]));
+
+                assert(canDevices[i].hasMember("id") &&
+                       canDevices[i]["id"].getType() == XmlRpc::XmlRpcValue::TypeInt);
+                auto id = static_cast<std::uint8_t>(static_cast<int>(canDevices[i]["id"]));
+
+                m_devices.emplace(name, FdcanDeviceAddress{bus, id});
             }
         }
 
         template<typename... Variants>
             requires(IsFDCANSerializable<std::variant<Variants...>>)
-        void send_message(std::string const& destinationName, std::variant<Variants...> const& data) {
+        void send_message(std::string const& to_device, std::variant<Variants...> const& data) {
             // TODO - make sure everything is consistent in the bridge files
             // This is okay since "send_raw_data" makes a copy
             auto* address = reinterpret_cast<std::byte const*>(std::addressof(data));
-            send_raw_data(destinationName, {address, sizeof(data)});
+            std::size_t size = sizeof(data);
+            send_raw_data(to_device, {address, size});
         }
 
-        void send_raw_data(std::string const& destinationName, std::span<std::byte const> data) {
-            if (!m_name_to_bus.contains(destinationName) || !m_name_to_id.contains(destinationName)) {
-                throw std::invalid_argument(std::format("destinationName {} is not valid.", destinationName));
+        void send_raw_data(std::string const& to_device, std::span<std::byte const> data) {
+            if (!m_devices.contains(to_device)) {
+                throw std::invalid_argument(std::format("CAN destination device {} does not exist", to_device));
             }
 
+            FdcanDeviceAddress const& source = m_devices.at(m_source_name);
+            FdcanDeviceAddress const& destination = m_devices.at(to_device);
+            assert(source.bus == destination.bus);
+
             mrover::CAN can_message;
-            can_message.bus = m_name_to_bus.at(destinationName);
+            can_message.bus = destination.bus;
             can_message.message_id = std::bit_cast<std::uint16_t>(FdcanMessageId{
-                    .destination = m_name_to_id.at(destinationName),
-                    .source = m_name_to_id.at(m_source_name),
+                    .destination = destination.id,
+                    .source = source.id,
             });
-            can_message.data.resize(data.size());
-            std::memcpy(can_message.data.data(), data.data(), data.size());
+            std::ranges::transform(data, std::back_inserter(can_message.data), [](std::byte b) { return static_cast<std::uint8_t>(b); });
 
             m_can_publisher.publish(can_message);
         }
 
-        void send_moteus_data(moteus::CanFdFrame const& frame) {
+        void send_moteus_frame(moteus::CanFdFrame const& frame) {
             mrover::CAN can_message;
             can_message.bus = frame.bus;
             can_message.message_id = std::bit_cast<std::uint16_t>(FdcanMessageId{
@@ -107,10 +116,12 @@ namespace mrover {
         ros::NodeHandle m_nh;
         ros::Publisher m_can_publisher;
         std::string m_source_name{};
-        std::unordered_map<std::string, std::uint8_t> m_name_to_id;
-        std::unordered_map<uint8_t, std::string> m_id_to_name;
-        std::unordered_map<std::string, std::uint8_t> m_name_to_bus;
-        std::unordered_map<uint8_t, std::string> m_bus_to_name;
+
+        bimap<std::string, FdcanDeviceAddress,
+              std::hash<std::string>, decltype([](FdcanDeviceAddress const& location) {
+                  return std::hash<std::uint8_t>{}(location.bus) ^ std::hash<std::uint8_t>{}(location.id);
+              })>
+                m_devices;
     };
 
 } // namespace mrover
