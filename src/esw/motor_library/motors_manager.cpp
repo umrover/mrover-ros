@@ -37,9 +37,9 @@ namespace mrover {
         updateLastConnection();
 
         // Subscribe to the ROS topic for commands
-        mMoveThrottleSub = mNh.subscribe<Throttle>(mGroupName + "_throttle_cmd", 1, &MotorsManager::moveMotorsThrottle, this);
-        mMoveVelocitySub = mNh.subscribe<Velocity>(mGroupName + "_velocity_cmd", 1, &MotorsManager::moveMotorsVelocity, this);
-        mMovePositionSub = mNh.subscribe<Position>(mGroupName + "_position_cmd", 1, &MotorsManager::moveMotorsPosition, this);
+        mMoveThrottleSub = mNh.subscribe<Throttle>(std::format("{}_throttle_cmd", mGroupName), 1, &MotorsManager::moveMotorsThrottle, this);
+        mMoveVelocitySub = mNh.subscribe<Velocity>(std::format("{}_velocity_cmd", mGroupName), 1, &MotorsManager::moveMotorsVelocity, this);
+        mMovePositionSub = mNh.subscribe<Position>(std::format("{}_position_cmd", mGroupName), 1, &MotorsManager::moveMotorsPosition, this);
 
         // Create a 0.1 second heartbeat timer
         ros::Timer heartbeatTimer = nh.createTimer(ros::Duration(0.1), &MotorsManager::heartbeatCallback, this);

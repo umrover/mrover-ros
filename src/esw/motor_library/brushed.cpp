@@ -78,7 +78,7 @@ namespace mrover {
 
         assert(throttle >= -1_percent && throttle <= 1_percent);
 
-        m_can_manager.send_message("devboard", InBoundMessage{ThrottleCommand{.throttle = throttle}});
+        m_can_manager.publish_message(m_controller_name, InBoundMessage{ThrottleCommand{.throttle = throttle}});
     }
 
     void BrushedController::set_desired_position(Radians position) {
@@ -89,7 +89,7 @@ namespace mrover {
 
         assert(position >= m_min_position && position <= m_max_position);
 
-        m_can_manager.send_message(m_controller_name, InBoundMessage{PositionCommand{.position = position}});
+        m_can_manager.publish_message(m_controller_name, InBoundMessage{PositionCommand{.position = position}});
     }
 
     void BrushedController::set_desired_velocity(RadiansPerSecond velocity) {
@@ -100,11 +100,11 @@ namespace mrover {
 
         assert(velocity >= m_min_velocity && velocity <= m_max_velocity);
 
-        m_can_manager.send_message(m_controller_name, InBoundMessage{VelocityCommand{.velocity = velocity}});
+        m_can_manager.publish_message(m_controller_name, InBoundMessage{VelocityCommand{.velocity = velocity}});
     }
 
     void BrushedController::send_configuration() {
-        m_can_manager.send_message(m_controller_name, InBoundMessage{m_config_command});
+        m_can_manager.publish_message(m_controller_name, InBoundMessage{m_config_command});
 
         // TODO: do we need to await confirmation?
         m_is_configured = true;

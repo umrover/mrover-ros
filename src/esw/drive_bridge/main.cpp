@@ -2,7 +2,7 @@
 #include <ros/ros.h>
 #include <sensor_msgs/JointState.h>
 
-#include <can_manager.hpp>
+#include <can_fd_bus.hpp>
 #include <motors_manager.hpp>
 
 #include <mrover/ControllerState.h>

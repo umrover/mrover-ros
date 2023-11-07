@@ -4,7 +4,7 @@
 
 #include <ros/ros.h>
 
-#include <can_manager.hpp>
+#include <can_fd_bus.hpp>
 #include <units/units.hpp>
 
 namespace mrover {
@@ -12,7 +12,10 @@ namespace mrover {
     class Controller {
     public:
         Controller(ros::NodeHandle const& nh, std::string name, std::string controller_name)
-            : m_nh{nh}, m_name{std::move(name)}, m_controller_name{std::move(controller_name)}, m_can_manager{nh, m_name} {}
+            : m_nh{nh},
+              m_name{std::move(name)},
+              m_controller_name{std::move(controller_name)},
+              m_can_manager{nh, m_name} {}
 
         virtual ~Controller() = default;
 
@@ -25,11 +28,9 @@ namespace mrover {
     protected:
         ros::NodeHandle m_nh;
         std::string m_name, m_controller_name;
-        CANManager m_can_manager;
-        RadiansPerSecond m_min_velocity{};
-        RadiansPerSecond m_max_velocity{};
-        Radians m_min_position{};
-        Radians m_max_position{};
+        CanFdBus m_can_manager;
+        RadiansPerSecond m_min_velocity{}, m_max_velocity{};
+        Radians m_min_position{}, m_max_position{};
 
         //    virtual void send_CAN_frame(uint64_t frame) = 0;
     };
