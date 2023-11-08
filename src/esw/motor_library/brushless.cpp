@@ -35,7 +35,7 @@ namespace mrover {
         moteus::CanFdFrame positionFrame = controller.MakePosition(command);
 
         // TODO - need to convert to use rev/s
-        m_device.publish_moteus_frame(m_controller_name, positionFrame);
+        m_device.publish_moteus_frame(positionFrame);
     }
 
 } // namespace mrover

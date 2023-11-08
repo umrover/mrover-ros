@@ -23,6 +23,7 @@
 #include <boost/asio/io_service.hpp>
 #include <boost/asio/posix/basic_stream_descriptor.hpp>
 
+#include "can_device.hpp"
 #include <mrover/CAN.h>
 
 #include "can_net_link.hpp"
@@ -65,8 +66,20 @@ namespace mrover {
         std::jthread mIoThread;
         boost::asio::io_service mIoService;
 
-        ros::Publisher mCanPublisher;
-        ros::Subscriber mCanSubscriber;
+        std::unordered_map<std::string, ros::Publisher> mCanPublisherByDeviceName;
+        std::unordered_map<std::string, ros::Subscriber> mCanSubscriberByDeviceName;
+        std::unordered_map<uint8_t, std::string> mDeviceNameByID; // TODO - use bimap
+        std::unordered_map<std::string, uint8_t> mIDByDeviceName;
+
+        // TODO - HERE IS AN EXAMPLE OF A BIMAP
+        // bimap<std::string, CanFdDeviceAddress,
+        //             std::hash<std::string>, decltype([](CanFdDeviceAddress const& location) {
+        //                 return std::hash<std::uint8_t>{}(location.bus) ^ std::hash<std::uint8_t>{}(location.id);
+        //             })>
+        //                 m_devices;
+
+
+        std::unordered_map<std::string, uint8_t> mBusByDeviceName;
 
         int setupSocket();
 

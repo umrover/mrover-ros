@@ -51,7 +51,6 @@ namespace mrover {
         ros::Subscriber mMoveThrottleSub;
         ros::Subscriber mMoveVelocitySub;
         ros::Subscriber mMovePositionSub;
-
         std::unordered_map<std::string, std::unique_ptr<Controller>> mControllers;
         std::unordered_map<int, std::string> mNames;
         std::string mGroupName;

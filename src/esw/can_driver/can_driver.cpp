@@ -49,8 +49,29 @@ namespace mrover {
             mBitrate = static_cast<std::uint32_t>(mPnh.param<int>("bitrate", 500000));
             mBitratePrescaler = static_cast<std::uint32_t>(mPnh.param<int>("bitrate_prescaler", 2));
 
-            mCanSubscriber = mNh.subscribe<CAN>("can_requests", 16, &CanNodelet::frameSendRequestCallback, this);
-            mCanPublisher = mNh.advertise<CAN>("can_data", 16);
+            XmlRpc::XmlRpcValue can_devices;
+            mNh.getParam("can/devices", can_devices);
+
+            for (auto& can_device: can_devices) {
+                assert(can_device.hasMember("name") &&
+                       can_device["name"].getType() == XmlRpc::XmlRpcValue::TypeString);
+                std::string device_name = static_cast<std::string>(can_device["name"]);
+                mCanSubscriberByDeviceName[device_name] = mNh.subscribe<CAN>(std::format("can/{}/out", device_name), 16, &CanNodelet::frameSendRequestCallback, this);
+                mCanPublisherByDeviceName[device_name] = mNh.advertise<CAN>(std::format("can/{}/in", device_name), 16);
+
+                assert(can_device.hasMember("id") &&
+                       can_device["id"].getType() == XmlRpc::XmlRpcValue::TypeInt);
+                auto can_id = (uint8_t) static_cast<int>(can_device["id"]);
+
+                mDeviceNameByID[can_id] = device_name;
+                mIDByDeviceName[device_name] = can_id;
+
+                assert(can_device.hasMember("bus") &&
+                       can_device["bus"].getType() == XmlRpc::XmlRpcValue::TypeInt);
+                auto can_bus = (uint8_t) static_cast<int>(can_device["bus"]);
+
+                mBusByDeviceName[device_name] = bus;
+            }
 
             mCanNetLink = {mInterface, mBitrate, mBitratePrescaler};
 
@@ -115,14 +136,18 @@ namespace mrover {
 
     void CanNodelet::frameReadCallback() { // NOLINT(*-no-recursion)
         CAN msg;
-        msg.bus = 0; // TODO(owen) support multiple buses
-        msg.message_id = std::bit_cast<RawCanFdId>(mReadFrame.can_id).identifier;
+        // uint8_t bus = mBusByDeviceName[source]; // TODO - maybe ignore bus. if all ids are unique, then its ok to ignore.
+        // TODO - parse this: std::bit_cast<RawCanFdId>(mReadFrame.can_id).identifier
+        uint8_t raw_source_id = 0;      // TODO - fix
+        uint8_t raw_destination_id = 0; // TODO - fix
+        msg.source = mDeviceNameByID[raw_source_id];
+        msg.destination = mDeviceNameByID[raw_destination_id];
         msg.data.assign(mReadFrame.data, mReadFrame.data + mReadFrame.len);
 
         ROS_DEBUG_STREAM("Received CAN message:\n"
                          << msg);
 
-        mCanPublisher.publish(msg);
+        mCanPublisherByDeviceName[source].publish(msg);
     }
 
     void CanNodelet::frameSendRequestCallback(CAN::ConstPtr const& msg) {
@@ -130,12 +155,24 @@ namespace mrover {
                          << *msg);
 
         // Check that the identifier is not too large
-        assert(std::bit_width(msg->message_id) <= mIsExtendedFrame ? CAN_EFF_ID_BITS : CAN_SFF_ID_BITS);
+        // TODO - see if following assert is still needed
+        // assert(std::bit_width(msg->message_id) <= mIsExtendedFrame ? CAN_EFF_ID_BITS : CAN_SFF_ID_BITS);
+
+        // TODO - need to send it on the proper bus.
+        // right now idek what bus it sends from (sincerely, guthrie)
+        uint8_t bus = mBusByDeviceName[msg->destination]; // TODO(owen) support multiple buses
+
+        // need to create CAN message ID
+        uint16_t message_id;
+        CanFdMessageId can_message_id;
+        can_message_id.destination = mIDByDeviceName[msg->destination];
+        can_message_id.source = mIDByDeviceName[msg->source];
+        can_message_id.reply_required = 0; // TODO - i don't think we currently care about this right now
 
         // Craft the SocketCAN frame from the ROS message
         canfd_frame frame{
                 .can_id = std::bit_cast<canid_t>(RawCanFdId{
-                        .identifier = msg->message_id,
+                        .identifier = can_message_id,
                         .isExtendedFrame = mIsExtendedFrame,
                 }),
                 .len = nearestFittingFdcanFrameSize(msg->data.size()),
@@ -157,7 +194,7 @@ namespace mrover {
 int main(int argc, char** argv) {
     ros::init(argc, argv, "can_node");
 
-    // Start the ZED Nodelet
+    // Start the CAN Nodelet
     nodelet::Loader nodelet;
     nodelet.load(ros::this_node::getName(), "mrover/CanNodelet", ros::names::getRemappings(), {});
 
