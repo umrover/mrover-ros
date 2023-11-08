@@ -30,22 +30,9 @@ namespace mrover {
     public:
         CanDevice(ros::NodeHandle const& nh, std::string from_device, std::string to_device)
             : m_nh{nh},
-              m_can_publisher{m_nh.advertise<mrover::CAN>(std::format("can/{}/out", from_device), 1)},
+              m_can_publisher{m_nh.advertise<mrover::CAN>(std::format("can/{}/out", to_device), 1)},
               m_from_device{std::move(from_device)},
               m_to_device{std::move(to_device)} {
-        }
-
-        template<typename... Variants>
-            requires(IsCanFdSerializable<std::variant<Variants...>>)
-        std::variant<Variants...> process_message(CAN::ConstPtr const& msg) {
-            // TODO.
-            // You will want to call this function on the bridge node
-            // void CanDevice::process_incoming_message(CAN::ConstPtr const& msg)
-            // m_can_subscriber{m_nh.subscribe<CAN>(std::format("can/{}/in", can_device), 16, &CanDevice::process_incoming_message, this)}
-
-
-            // This code should process the message
-            // TODO - actually don't know how we should process the messages
         }
 
         template<typename... Variants>

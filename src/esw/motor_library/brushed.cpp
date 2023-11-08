@@ -113,8 +113,7 @@ namespace mrover {
     void BrushedController::sendConfiguration() {
         mDevice.publish_message(InBoundMessage{mConfigCommand});
 
-        // TODO: do we need to await confirmation?
-        mIsConfigured = true;
+        // Need to await configuration. Can NOT directly set mIsConfigured to true.
     }
 
     void BrushedController::processMessage(ControllerDataState const& state) {
@@ -147,7 +146,7 @@ namespace mrover {
     }
 
     double BrushedController::getEffort() {
-        return std::numeric_limits<double>::quiet_NaN(); // TODO: which kind of NaN do we want
+        return std::numeric_limits<double>::quiet_NaN();
     }
 
 } // namespace mrover

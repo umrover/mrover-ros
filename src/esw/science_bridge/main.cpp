@@ -36,44 +36,42 @@ bool serviceCallback(std_srvs::SetBool::Request& req, std_srvs::SetBool::Respons
 }
 
 void processMessage(HeaterStateData const& message) {
-    mrover::HeaterData heater_data;
-    heater_data.b0 = message.heater_state_info.b0;
-    heater_data.n0 = message.heater_state_info.n0;
-    heater_data.b1 = message.heater_state_info.b1;
-    heater_data.n1 = message.heater_state_info.n1;
-    heater_data.b2 = message.heater_state_info.b2;
-    heater_data.n2 = message.heater_state_info.n2;
+    mrover::HeaterData heaterData;
+    heaterData.b0 = message.heater_state_info.b0;
+    heaterData.n0 = message.heater_state_info.n0;
+    heaterData.b1 = message.heater_state_info.b1;
+    heaterData.n1 = message.heater_state_info.n1;
+    heaterData.b2 = message.heater_state_info.b2;
+    heaterData.n2 = message.heater_state_info.n2;
 
-    heaterDataPublisher->publish(heater_data);
+    heaterDataPublisher->publish(heaterData);
 }
 
 void processMessage(SpectralData const& message) {
-    mrover::SpectralGroup spectral_data;
+    mrover::SpectralGroup spectralData;
     for (int i = 0; i < 3; ++i) {
         for (int j = 0; j < 6; ++j) {
-            spectral_data.spectrals[i].data[j] = message.spectrals[i].data[j];
+            spectralData.spectrals[i].data[j] = message.spectrals[i].data[j];
         }
     }
-    spectralDataPublisher->publish(spectral_data);
+    spectralDataPublisher->publish(spectralData);
 }
 
 void processMessage(ThermistorData const& message) {
-    mrover::ScienceThermistors science_thermistors;
-    science_thermistors.b0.temperature = message.b0;
-    science_thermistors.n0.temperature = message.n0;
-    science_thermistors.b1.temperature = message.b1;
-    science_thermistors.n1.temperature = message.n1;
-    science_thermistors.b2.temperature = message.b2;
-    science_thermistors.n2.temperature = message.n2;
-    thermistorDataPublisher->publish(science_thermistors);
+    mrover::ScienceThermistors scienceThermistors;
+    scienceThermistors.b0.temperature = message.b0;
+    scienceThermistors.n0.temperature = message.n0;
+    scienceThermistors.b1.temperature = message.b1;
+    scienceThermistors.n1.temperature = message.n1;
+    scienceThermistors.b2.temperature = message.b2;
+    scienceThermistors.n2.temperature = message.n2;
+    thermistorDataPublisher->publish(scienceThermistors);
 }
 
 void processCANData(const mrover::CAN::ConstPtr& msg) {
 
-    // TODO - there is a lot of code that needs to be fixed here
-    assert(msg->source == "pdlb");
+    assert(msg->source == "science");
     assert(msg->destination == "jetson");
-
 
     OutBoundScienceMessage const& message = *reinterpret_cast<OutBoundScienceMessage const*>(msg->data.data());
 
@@ -97,7 +95,7 @@ int main(int argc, char** argv) {
 
     heaterDataPublisher = std::make_unique<ros::Publisher>(nh.advertise<mrover::HeaterData>("science_heater_state", 1));
     spectralDataPublisher = std::make_unique<ros::Publisher>(nh.advertise<mrover::SpectralGroup>("science_spectral", 1));
-    thermistorDataPublisher = std::make_unique<ros::Publisher>(nh.advertise<mrover::ScienceThermistors>("science_thermistors", 1));
+    thermistorDataPublisher = std::make_unique<ros::Publisher>(nh.advertise<mrover::ScienceThermistors>("scienceThermistors", 1));
 
     ros::Subscriber CANSubscriber = nh.subscribe<mrover::CAN>("can/pdlb/in", 1, processCANData);
 

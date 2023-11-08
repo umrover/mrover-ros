@@ -1,9 +1,11 @@
 #include "can_device.hpp"
-
+#include "messaging.hpp"
 #include <ros/ros.h>
 
 #include <mrover/CAN.h>
 #include <mrover/LED.h>
+
+std::unique_ptr<CanDevice> ledCanDevice;
 
 void changeLED(const mrover::LED::ConstPtr& msg);
 
@@ -13,6 +15,8 @@ int main(int argc, char** argv) {
     // Initialize the ROS node
     ros::init(argc, argv, "led_hw_bridge");
     ros::NodeHandle nh;
+
+    ledCanDevice = std::make_unique<CanDevice>(nh, "jetson", "pdlb");
 
     CANPublisher = nh.advertise<mrover::CAN>("can/pdlb/out", 1);
     ros::Subscriber changeLEDSubscriber = nh.subscribe<mrover::LED>("led", 1, changeLED);
@@ -24,11 +28,11 @@ int main(int argc, char** argv) {
 }
 
 void changeLED(const mrover::LED::ConstPtr& msg) {
-    mrover::CAN CANRequest;
-    CANRequest.source = "jetson";
-    CANRequest.destination = "pdlb";
-    // TODO - this need to be an invariant
-    uint8_t data = msg->blue | (msg->red & 0b1) | (msg->green << 1) | (msg->blue << 2) | (msg->is_blinking << 3);
-    CANRequest.data.push_back(data);
-    CANPublisher.publish(CANRequest);
+
+    LEDInfo ledInfo;
+    ledInfo.red = msg->red;
+    ledInfo.green = msg->green;
+    ledInfo.blue = msg->blue;
+    ledInfo.blinking = msg->is_blinking;
+    ledCanDevice->publish_message(InBoundPDLBMessage{LEDCommand{.led_info = ledInfo}});
 }

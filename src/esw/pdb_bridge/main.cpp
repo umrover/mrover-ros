@@ -42,10 +42,8 @@ void processMessage(PDBData const& message) {
 
 void processCANData(const mrover::CAN::ConstPtr& msg) {
 
-    // TODO - there is a lot of code that needs to be fixed here
     assert(msg->source == "pdlb");
     assert(msg->destination == "jetson");
-
 
     OutBoundPDLBMessage const& message = *reinterpret_cast<OutBoundPDLBMessage const*>(msg->data.data());
 
