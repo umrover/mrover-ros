@@ -130,7 +130,7 @@ brushed_motors:
     #   max_forward_pos: 1
     #   max_backward_pos: 0
     joint_b:
-      gear_ratio: 1 # motor ratio compared to joint, e.g. if 5, then 5 rotations of motor = 1 rotation of joint
+      gear_ratio: 1.0 # motor ratio compared to joint, e.g. if 5, then 5 rotations of motor = 1 rotation of joint
       limit_a_present: true
       limit_a_default_enabled: true
       limit_a_is_active_high: true
@@ -146,7 +146,7 @@ brushed_motors:
       limit_max_forward_pos: true
       max_forward_pos: 1
     allen_key:
-      gear_ratio: 30 # motor ratio compared to joint, e.g. if 5, then 5 rotations of motor = 1 rotation of joint
+      gear_ratio: 30.0 # motor ratio compared to joint, e.g. if 5, then 5 rotations of motor = 1 rotation of joint
       limit_a_present: true
       limit_b_present: true
       limit_a_default_enabled: true
@@ -165,7 +165,7 @@ brushed_motors:
       driver_voltage: 24 # used to calculate max pwm
       motor_max_voltage: 12 # used to calculate max pwm
     gripper:
-      gear_ratio: 47 # motor ratio compared to joint, e.g. if 5, then 5 rotations of motor = 1 rotation of joint
+      gear_ratio: 47.0 # motor ratio compared to joint, e.g. if 5, then 5 rotations of motor = 1 rotation of joint
       quad_present: false
       quad_is_fwd_polarity: true
       abs_present: false
@@ -174,7 +174,7 @@ brushed_motors:
       driver_voltage: 24 # used to calculate max pwm
       motor_max_voltage: 12 # used to calculate max pwm
     mast_gimbal_x:
-      gear_ratio: 1000 # motor ratio compared to joint, e.g. if 5, then 5 rotations of motor = 1 rotation of joint
+      gear_ratio: 1000.0 # motor ratio compared to joint, e.g. if 5, then 5 rotations of motor = 1 rotation of joint
       limit_a_present: true
       limit_b_present: true
       limit_a_default_enabled: true
@@ -193,11 +193,11 @@ brushed_motors:
       driver_voltage: 24 # used to calculate max pwm
       motor_max_voltage: 12 # used to calculate max pwm
     mast_gimbal_y:
-      gear_ratio: 1000 # motor ratio compared to joint, e.g. if 5, then 5 rotations of motor = 1 rotation of joint
+      gear_ratio: 1000.0 # motor ratio compared to joint, e.g. if 5, then 5 rotations of motor = 1 rotation of joint
       driver_voltage: 24 # used to calculate max pwm
       motor_max_voltage: 12 # used to calculate max pwm
     sa_x:
-      gear_ratio: 75 # motor ratio compared to joint, e.g. if 5, then 5 rotations of motor = 1 rotation of joint
+      gear_ratio: 75.0 # motor ratio compared to joint, e.g. if 5, then 5 rotations of motor = 1 rotation of joint
       limit_a_present: true
       limit_b_present: true
       limit_c_present: true
@@ -221,7 +221,7 @@ brushed_motors:
       driver_voltage: 24 # used to calculate max pwm
       motor_max_voltage: 6 # used to calculate max pwm
     sa_y:
-      gear_ratio: 75 # motor ratio compared to joint, e.g. if 5, then 5 rotations of motor = 1 rotation of joint
+      gear_ratio: 75.0 # motor ratio compared to joint, e.g. if 5, then 5 rotations of motor = 1 rotation of joint
       limit_a_present: true
       limit_b_present: true
       limit_a_default_enabled: true
@@ -240,7 +240,7 @@ brushed_motors:
       driver_voltage: 24 # used to calculate max pwm
       motor_max_voltage: 6 # used to calculate max pwm
     sa_z:
-      gear_ratio: 75 # motor ratio compared to joint, e.g. if 5, then 5 rotations of motor = 1 rotation of joint
+      gear_ratio: 75.0 # motor ratio compared to joint, e.g. if 5, then 5 rotations of motor = 1 rotation of joint
       limit_a_present: true
       limit_b_present: true
       limit_a_default_enabled: true
@@ -259,7 +259,7 @@ brushed_motors:
       driver_voltage: 24 # used to calculate max pwm
       motor_max_voltage: 6 # used to calculate max pwm
     scoop:
-      gear_ratio: 75 # motor ratio compared to joint, e.g. if 5, then 5 rotations of motor = 1 rotation of joint
+      gear_ratio: 75.0 # motor ratio compared to joint, e.g. if 5, then 5 rotations of motor = 1 rotation of joint
       limit_a_present: true
       limit_b_present: true
       limit_a_default_enabled: true
@@ -278,7 +278,7 @@ brushed_motors:
       driver_voltage: 24 # used to calculate max pwm
       motor_max_voltage: 6 # used to calculate max pwm
     sensor_actuator:
-      gear_ratio: 1 # motor ratio compared to joint, e.g. if 5, then 5 rotations of motor = 1 rotation of joint
+      gear_ratio: 1.0 # motor ratio compared to joint, e.g. if 5, then 5 rotations of motor = 1 rotation of joint
       limit_a_present: true
       limit_b_present: true
       limit_a_default_enabled: true
@@ -294,7 +294,7 @@ brushed_motors:
       driver_voltage: 24 # used to calculate max pwm
       motor_max_voltage: 6 # used to calculate max pwm
     cache:
-      gear_ratio: 1 # motor ratio compared to joint, e.g. if 5, then 5 rotations of motor = 1 rotation of joint
+      gear_ratio: 1.0 # motor ratio compared to joint, e.g. if 5, then 5 rotations of motor = 1 rotation of joint
       limit_a_present: true
       limit_b_present: true
       limit_a_default_enabled: true
@@ -488,93 +488,110 @@ arm:
       multiplier: 1
     joint_c:
       multiplier: 1
-    joint_de:
+    joint_de_0:
       multiplier: 1
-    finger:
+    joint_de_1:
+      multiplier: 1
+    allen_key:
       multiplier: 1
     gripper:
       multiplier: 1
 
 drive:
   controllers:
-    FrontLeft:
+    front_left:
       multiplier: 1
-    FrontRight:
+    front_right:
       multiplier: 1
-    MiddleLeft:
+    middle_left:
       multiplier: 1
-    MiddleRight:
+    middle_right:
       multiplier: 1
-    BackLeft:
+    back_left:
       multiplier: 1
-    BackRight:
+    back_right:
       multiplier: 1
 
 motors:
-  joint_a:
-    type: "brushless"
-  joint_b:
-    type: "brushed"
-  joint_c:
-    type: "brushed"
-  joint_de:
-    type: "brushed"
-  finger:
-    type: "brushed"
-  gripper:
-    type: "brushless"
-  FrontLeft:
-    type: "brushless"
-  FrontRight:
-    type: "brushless"
-  MiddleLeft:
-    type: "brushless"
-  MiddleRight:
-    type: "brushless"
-  BackLeft:
-    type: "brushless"
-  BackRight:
-    type: "brushless"
-  joint_d:
-    type: "brushless"
-  joint_e:
-    type: "brushless"
+  controllers:
+    joint_a:
+      type: "brushless"
+    joint_b:
+      type: "brushed"
+    joint_c:
+      type: "brushed"
+    joint_de_0:
+      type: "brushed"
+    joint_de_1:
+      type: "brushed"
+    allen_key:
+      type: "brushed"
+    gripper:
+      type: "brushless"
+    front_left:
+      type: "brushless"
+    front_right:
+      type: "brushless"
+    middle_left:
+      type: "brushless"
+    middle_right:
+      type: "brushless"
+    back_left:
+      type: "brushless"
+    back_right:
+      type: "brushless"
+    mast_gimbal_x:
+      type: "brushed"
+    mast_gimbal_y:
+      type: "brushed"
+    sa_x:
+      type: "brushed"
+    sa_y:
+      type: "brushed"
+    sa_z:
+      type: "brushed"
+    scoop:
+      type: "brushed"
+    sensor_actuator:
+      type: "brushed"
+    cache:
+      type: "brushed"
 
 brushless:
   using_pi3_hat: true
   drive:
     max_torque: 0.3
     controllers:
-      FrontLeft:
+      front_left:
         id: 2
         bus: 5
         multiplier: -1
-        gear_ratio: 50
-      FrontRight:
+        gear_ratio: 50.0
+      front_right:
         id: 3
         bus: 2
         multiplier: 1
-        gear_ratio: 50
-      MiddleLeft:
+        gear_ratio: 50.0
+      middle_left:
         id: 1
         bus: 5
         multiplier: -1
-        gear_ratio: 50
-      MiddleRight:
+        gear_ratio: 50.0
+      middle_right:
         id: 4
         bus: 2
         multiplier: -1
-        gear_ratio: 50
-      BackLeft:
+        gear_ratio: 50.0
+      back_left:
         id: 0
         bus: 5
         multiplier: -1
-        gear_ratio: 50
-      BackRight:
+        gear_ratio: 50.0
+      back_right:
         id: 5
         bus: 2
         multiplier: 1
-        gear_ratio: 50
+        gear_ratio: 50.0
   arm:
     controllers:
       joint_c:
