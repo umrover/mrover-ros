@@ -88,10 +88,10 @@ namespace mrover {
     struct ConfigCommand : BaseCommand {
         Dimensionless gear_ratio;
         // TODO: Terrible naming for the limit switch info
-        ConfigLimitSwitchInfo0 limit_switch_info_0;
-        ConfigLimitSwitchInfo1 limit_switch_info_1;
-        ConfigLimitSwitchInfo2 limit_switch_info_2;
-        ConfigEncoderInfo quad_abs_enc_info;
+        ConfigLimitSwitchInfo0 limit_switch_info_0{};
+        ConfigLimitSwitchInfo1 limit_switch_info_1{};
+        ConfigLimitSwitchInfo2 limit_switch_info_2{};
+        ConfigEncoderInfo quad_abs_enc_info{};
         Radians limit_a_readj_pos;
         Radians limit_b_readj_pos;
         Radians limit_c_readj_pos;
@@ -99,7 +99,7 @@ namespace mrover {
         Dimensionless quad_enc_out_ratio;
         Dimensionless abs_enc_out_ratio;
         Dimensionless max_pwm;
-        ConfigLimitInfo limit_max_pos;
+        ConfigLimitInfo limit_max_pos{};
         Meters max_forward_pos;
         Meters max_back_pos;
     };
@@ -126,8 +126,8 @@ namespace mrover {
     struct ControllerDataState : BaseCommand {
         Radians position;
         RadiansPerSecond velocity;
-        ConfigCalibErrorInfo config_calib_error_data;
-        LimitStateInfo limit_switches;
+        ConfigCalibErrorInfo config_calib_error_data{};
+        LimitStateInfo limit_switches{};
     };
 
     using InBoundMessage = std::variant<
@@ -135,6 +135,44 @@ namespace mrover {
 
     using OutBoundMessage = std::variant<
             ControllerDataState>;
+
+    struct ArmLaserCommand : BaseCommand {
+        bool enable;
+    };
+
+    struct LEDInfo {
+        [[maybe_unused]] std::uint8_t _ignore : 4; // 8 bits - (4 meaningful bits) = 4 ignored bits
+        std::uint8_t red : 1;
+        std::uint8_t green : 1;
+        std::uint8_t blue : 1;
+        std::uint8_t blinking : 1;
+    };
+    static_assert(sizeof(LEDInfo) == 1);
+
+    struct LEDCommand : BaseCommand {
+        LEDInfo led_info;
+    };
+
+    struct PDBData : BaseCommand {
+        float temperature_24v;
+        float temperature_12v_jetson;
+        float temperature_12v_rest;
+        float temperature_12v_buck;
+        float temperature_5v;
+        float temperature_3v3;
+        float current_24v;
+        float current_12v_jetson;
+        float current_12v_rest;
+        float current_12v_buck;
+        float current_5v;
+        float current_3v3;
+    };
+
+    using InBoundPDLBMessage = std::variant<
+            ArmLaserCommand, LEDCommand>;
+
+    using OutBoundPDLBMessage = std::variant<
+            PDBData>;
 
 #pragma pack(pop)
 
