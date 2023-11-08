@@ -8,25 +8,26 @@ namespace mrover {
 
     class Config {
     private:
-        std::uint32_t motor_id{};
-        Dimensionless gear_ratio{};
+        Dimensionless gear_ratio;
         // TODO: Terrible naming for the limit switch info
-        std::uint8_t limit_switch_info_x{};
-        std::uint8_t limit_switch_info_y{};
-        std::uint8_t limit_switch_info_z{};
-        std::uint8_t quad_abs_enc_info{};
-        Meters limit_a_readj_pos{};
-        Meters limit_b_readj_pos{};
-        Meters limit_c_readj_pos{};
-        Meters limit_d_readj_pos{};
-        Meters quad_enc_out_ratio{};
-        Meters abs_enc_out_ratio{};
-        Percent max_duty_cycle = make_unit<Percent>(1.0);
-        std::uint8_t limit_max_pos{};
-        Meters max_forward_pos{};
-        Meters max_back_pos{};
-        // TODO: change back after testing
-        bool is_configured = true;
+        ConfigLimitSwitchInfo0 limit_switch_info_0;
+        ConfigLimitSwitchInfo1 limit_switch_info_1;
+        ConfigLimitSwitchInfo2 limit_switch_info_2;
+        ConfigEncoderInfo quad_abs_enc_info;
+        Radians limit_a_readj_pos;
+        Radians limit_b_readj_pos;
+        Radians limit_c_readj_pos;
+        Radians limit_d_readj_pos;
+        Ratio quad_enc_out_ratio;
+        Ratio abs_enc_out_ratio;
+        Percent max_pwm;
+        ConfigLimitInfo limit_max_pos;
+        Meters max_forward_pos;
+        Meters max_back_pos;
+
+        // This stuff is not part of motor message
+        uint32_t motor_id;
+        bool is_configured;
 
     public:
         Config() = default;
@@ -65,8 +66,24 @@ namespace mrover {
             return this->is_configured;
         }
 
-        [[nodiscard]] Dimensionless get_max_duty_cycle() const {
-            return this->max_duty_cycle;
+        [[nodiscard]] Percent get_max_pwm() const {
+            return this->max_pwm;
+        }
+
+        ConfigEncoderInfo get_encoder_info() const {
+            return this->quad_abs_enc_info;
+        }
+
+        ConfigLimitSwitchInfo0 get_limit_switch_0() const {
+            return this->limit_switch_info_0;
+        }
+
+        ConfigLimitSwitchInfo1 get_limit_switch_1() const {
+            return this->limit_switch_info_1;
+        }
+
+        ConfigLimitSwitchInfo2 get_limit_switch_2() const {
+            return this->limit_switch_info_2;
         }
     };
 

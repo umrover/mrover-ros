@@ -54,17 +54,31 @@ namespace mrover {
     class FusedReader {
     public:
         FusedReader() = default;
-        FusedReader(TIM_HandleTypeDef* relative_encoder_timer, I2C_HandleTypeDef* absolute_encoder_i2c);
+        FusedReader(TIM_HandleTypeDef* relative_encoder_timer, I2C_HandleTypeDef* absolute_encoder_i2c, Config const& config);
         [[nodiscard]] std::pair<Radians, RadiansPerSecond> read(Config const& config);
+        void configure(Config const& config);
 
     private:
+        void setup_limit_switches();
+
         AbsoluteEncoder m_abs_encoder;
         QuadratureEncoder m_quad_encoder;
+        Config m_config;
+
+        LimitSwitch m_limit_switch_a;
+        LimitSwitch m_limit_switch_b;
+        LimitSwitch m_limit_switch_c;
+        LimitSwitch m_limit_switch_d;
 
         TIM_HandleTypeDef* m_relative_encoder_timer{};
         I2C_HandleTypeDef* m_absolute_encoder_i2c{};
         Radians m_position{};
         RadiansPerSecond m_velocity{};
+
+        ConfigEncoderInfo m_encoder_info;
+        ConfigLimitSwitchInfo0 m_limit_switch_info_0;
+        ConfigLimitSwitchInfo1 m_limit_switch_info_1;
+        ConfigLimitSwitchInfo2 m_limit_switch_info_2;
 
         void refresh_absolute();
     };

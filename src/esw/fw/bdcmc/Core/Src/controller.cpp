@@ -42,8 +42,7 @@ namespace mrover {
                 controller.receive(message);
         }
 
-        /* Commented out for testing */
-        // controller.send();
+        controller.send();
     }
 
 } // namespace mrover

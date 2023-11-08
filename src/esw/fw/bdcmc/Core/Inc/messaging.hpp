@@ -97,9 +97,9 @@ namespace mrover {
         Radians limit_b_readj_pos;
         Radians limit_c_readj_pos;
         Radians limit_d_readj_pos;
-        Dimensionless quad_enc_out_ratio;
-        Dimensionless abs_enc_out_ratio;
-        Dimensionless max_pwm;
+        Ratio quad_enc_out_ratio;
+        Ratio abs_enc_out_ratio;
+        Percent max_pwm;
         ConfigLimitInfo limit_max_pos;
         Meters max_forward_pos;
         Meters max_back_pos;

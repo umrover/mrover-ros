@@ -68,9 +68,17 @@ namespace mrover {
             }
         }
 
+        bool pressed() {
+            this->m_is_pressed;
+        }
+
+        void enable() {
+            this->m_enabled = true;
+        }
+
     private:
         Pin m_pin;
-        std::uint8_t m_enabled{};
+        std::uint8_t m_enabled = false;
         std::uint8_t m_is_pressed{};
         std::uint8_t m_valid{};
         std::uint8_t m_active_high{};

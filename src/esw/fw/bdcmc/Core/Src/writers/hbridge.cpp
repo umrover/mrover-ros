@@ -19,7 +19,7 @@ namespace mrover {
     void HBridgeWriter::write(Config const& config, Percent output) {
         // Set direction pins/duty cycle
         set_direction_pins(output);
-        set_duty_cycle(output, config.get_max_duty_cycle());
+        set_duty_cycle(output, config.get_max_pwm());
     }
 
     void HBridgeWriter::set_direction_pins(Percent duty_cycle) {
