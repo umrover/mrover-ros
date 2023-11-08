@@ -27,6 +27,8 @@ namespace mrover {
         virtual void set_desired_velocity(RadiansPerSecond velocity) = 0; // joint output
         virtual void set_desired_position(Radians position) = 0;          // joint output
         virtual void processCANMessage(CAN::ConstPtr const& msg) = 0;
+        Radians getCurrentPosition() { return mCurrentPosition; }
+        RadiansPerSecond getCurrentVelocity() { return mCurrentVelocity; };
 
     protected:
         ros::NodeHandle mNh;
@@ -35,7 +37,14 @@ namespace mrover {
         ros::Subscriber mIncomingCANSub;
         RadiansPerSecond mMinVelocity{}, mMaxVelocity{};
         Radians mMinPosition{}, mMaxPosition{};
-
+        Radians mCurrentPosition{};
+        RadiansPerSecond mCurrentVelocity{};
+        bool mIsCalibrated{};
+        uint8_t mErrorState{};
+        bool mLimitAHit{};
+        bool mLimitBHit{};
+        bool mLimitCHit{};
+        bool mLimitDHit{};
         //    virtual void send_CAN_frame(uint64_t frame) = 0;
     };
 

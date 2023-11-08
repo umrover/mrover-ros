@@ -10,9 +10,11 @@
 #include <brushless.hpp>
 #include <controller.hpp>
 
+#include <mrover/ControllerState.h>
 #include <mrover/Position.h>
 #include <mrover/Throttle.h>
 #include <mrover/Velocity.h>
+#include <sensor_msgs/JointState.h>
 
 namespace mrover {
 
@@ -43,6 +45,8 @@ namespace mrover {
 
         void heartbeatCallback(const ros::TimerEvent&);
 
+        void publishDataCallback(const ros::TimerEvent&);
+
         void updateLastConnection();
 
     private:
@@ -51,6 +55,9 @@ namespace mrover {
         ros::Subscriber mMoveThrottleSub;
         ros::Subscriber mMoveVelocitySub;
         ros::Subscriber mMovePositionSub;
+        ros::Publisher mJointDataPub;
+        ros::Publisher mControllerDataPub;
+        // TODO - create a publisher and add to ESW TELEOP ICD about limit switch hit stuff
         std::unordered_map<std::string, std::unique_ptr<Controller>> mControllers;
         std::unordered_map<int, std::string> mNames;
         std::string mGroupName;

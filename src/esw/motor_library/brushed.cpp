@@ -111,18 +111,25 @@ namespace mrover {
     }
 
     void BrushedController::processCANMessage(CAN::ConstPtr const& msg) {
-        //
-        OutBoundMessage out_bound_message;
+        assert(msg->source == mControllerName);
+        assert(msg->destination == mName);
+
+        auto* out_bound_message = reinterpret_cast<OutBoundMessage const*>(std::addressof(msg->data));
+
         std::visit([&](auto&& message) {
             if constexpr (std::is_same_v<std::decay_t<decltype(message)>, ControllerDataState>) {
                 ControllerDataState controller_data_state;
-                Radians pos = controller_data_state.position;
-                RadiansPerSecond vel = controller_data_state.velocity;
+                mCurrentPosition = controller_data_state.position;
+                mCurrentVelocity = controller_data_state.velocity;
                 ConfigCalibErrorInfo config_calib_err_info = controller_data_state.config_calib_error_data;
-                LimitStateInfo limit_state_info = controller_data_state.limit_switches;
-
-                // TODO - need to fix the rest
                 m_is_configured = config_calib_err_info.configured;
+                mIsCalibrated = config_calib_err_info.calibrated;
+                mErrorState = config_calib_err_info.error;
+                LimitStateInfo limit_state_info = controller_data_state.limit_switches;
+                mLimitAHit = limit_state_info.limit_a_hit;
+                mLimitBHit = limit_state_info.limit_b_hit;
+                mLimitCHit = limit_state_info.limit_c_hit;
+                mLimitDHit = limit_state_info.limit_d_hit;
             } else {
                 // do whatever
             }

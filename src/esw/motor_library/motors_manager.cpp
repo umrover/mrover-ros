@@ -41,8 +41,12 @@ namespace mrover {
         mMoveVelocitySub = mNh.subscribe<Velocity>(std::format("{}_velocity_cmd", mGroupName), 1, &MotorsManager::moveMotorsVelocity, this);
         mMovePositionSub = mNh.subscribe<Position>(std::format("{}_position_cmd", mGroupName), 1, &MotorsManager::moveMotorsPosition, this);
 
+        mJointDataPub = mNh.advertise<sensor_msgs::JointState>(std::format("{}_joint_data", groupName), 1);
+        mControllerDataPub = mNh.advertise<ControllerState>(std::format("{}_controller_data", groupName), 1);
+
         // Create a 0.1 second heartbeat timer
         ros::Timer heartbeatTimer = nh.createTimer(ros::Duration(0.1), &MotorsManager::heartbeatCallback, this);
+        ros::Timer publishDataTimer = nh.createTimer(ros::Duration(0.1), &MotorsManager::publishDataCallback, this);
     }
 
     Controller& MotorsManager::get_controller(std::string const& name) {
@@ -106,6 +110,26 @@ namespace mrover {
                 controller.set_desired_throttle(0_percent);
             }
         }
+    }
+
+    void MotorsManager::publishDataCallback(const ros::TimerEvent&) {
+        sensor_msgs::JointState joint_state;
+        ControllerState controller_state;
+        // TODO - need to properly populate these
+        for (const std::string& name: mControllerNames) {
+            Controller& controller = get_controller(name);
+            joint_state.name.push_back(name);
+            joint_state.position.push_back(double{controller.getCurrentPosition()});
+            joint_state.velocity.push_back(double{controller.getCurrentVelocity()});
+            joint_state.effort.push_back(0); // TODO
+
+            controller_state.name.push_back(name);
+            controller_state.state.push_back("Armed");    // TODO
+            controller_state.error.push_back("No Error"); // TODO - map
+        }
+
+        mJointDataPub.publish(joint_state);
+        mControllerDataPub.publish(controller_state);
     }
 
     void MotorsManager::updateLastConnection() {
