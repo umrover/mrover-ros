@@ -52,45 +52,50 @@ namespace mrover {
 
             XmlRpc::XmlRpcValue canDevices;
             mNh.getParam("can/devices", canDevices);
-            assert(canDevices.getType() == XmlRpc::XmlRpcValue::TypeArray);
+            if (canDevices.getType() == XmlRpc::XmlRpcValue::TypeArray) {
+                for (int size = canDevices.size(), i = 0; i < size; ++i) {
+                    XmlRpc::XmlRpcValue const& canDevice = canDevices[i];
 
-            for (int size = canDevices.size(), i = 0; i < size; ++i) {
-                XmlRpc::XmlRpcValue const& canDevice = canDevices[i];
+                    // TODO(quintin): Replace things like this with 1 function call that auto casts and throws if the type is wrong
+                    assert(canDevice.hasMember("bus") &&
+                           canDevice["bus"].getType() == XmlRpc::XmlRpcValue::TypeInt);
+                    auto bus = static_cast<std::uint8_t>(static_cast<int>(canDevice["bus"]));
 
-                assert(canDevice.hasMember("bus") &&
-                       canDevice["bus"].getType() == XmlRpc::XmlRpcValue::TypeInt);
-                auto bus = static_cast<std::uint8_t>(static_cast<int>(canDevice["bus"]));
+                    if (std::isdigit(mInterface.back() - '0')) {
+                        throw std::runtime_error("Interface is not valid (must end with a number)");
+                    }
+                    uint8_t mInterfaceNum = mInterface.back() - '0';
+                    if (bus != mInterfaceNum) {
+                        continue;
+                    }
 
-                if (std::isdigit(mInterface.back() - '0')) {
-                    throw std::runtime_error("Interface is not valid (must end with a number)");
+                    assert(canDevice.getType() == XmlRpc::XmlRpcValue::TypeStruct);
+
+                    assert(canDevice.hasMember("name") &&
+                           canDevice["name"].getType() == XmlRpc::XmlRpcValue::TypeString);
+                    auto name = static_cast<std::string>(canDevice["name"]);
+
+                    assert(canDevice.hasMember("id") &&
+                           canDevice["id"].getType() == XmlRpc::XmlRpcValue::TypeInt);
+                    auto id = static_cast<std::uint8_t>(static_cast<int>(canDevice["id"]));
+
+                    mDevices.emplace(name,
+                                     CanFdAddress{
+                                             .bus = bus,
+                                             .id = id,
+                                     });
+
+                    mDevicesPubSub.emplace(name,
+                                           CanFdPubSub{
+                                                   .publisher = mNh.advertise<CAN>(std::format("can/{}/in", name), 16),
+                                                   .subscriber = mNh.subscribe<CAN>(std::format("can/{}/out", name), 16, &CanNodelet::frameSendRequestCallback, this),
+                                           });
+
+                    NODELET_DEBUG_STREAM(std::format("Added CAN device: {} (bus: {}, id: {})", name, bus, id));
                 }
-                uint8_t mInterfaceNum = mInterface.back() - '0';
-                if (bus != mInterfaceNum) {
-                    continue;
-                }
-
-                assert(canDevice.getType() == XmlRpc::XmlRpcValue::TypeStruct);
-
-                assert(canDevice.hasMember("name") &&
-                       canDevice["name"].getType() == XmlRpc::XmlRpcValue::TypeString);
-                auto name = static_cast<std::string>(canDevice["name"]);
-
-                assert(canDevice.hasMember("id") &&
-                       canDevice["id"].getType() == XmlRpc::XmlRpcValue::TypeInt);
-                auto id = static_cast<std::uint8_t>(static_cast<int>(canDevice["id"]));
-
-
-                mDevices.emplace(name,
-                                 CanFdAddress{
-                                         .bus = bus,
-                                         .id = id,
-                                 });
-
-                mDevicesPubSub.emplace(name,
-                                       CanFdPubSub{
-                                               .publisher = mNh.advertise<CAN>(std::format("can/{}/in", name), 16),
-                                               .subscriber = mNh.subscribe<CAN>(std::format("can/{}/out", name), 16, &CanNodelet::frameSendRequestCallback, this),
-                                       });
+            } else {
+                NODELET_WARN("No CAN devices specified or config was invalid. Did you forget to load the correct ROS parameters?");
+                NODELET_WARN("For example before testing the devboard run: \"rosparam load config/esw_devboard.yml\"");
             }
 
             mCanNetLink = {mInterface, mBitrate, mBitratePrescaler};
@@ -104,10 +109,10 @@ namespace mrover {
             // Since "onInit" needs to return, kick off a self-joining thread to run the IO concurrently
             mIoThread = std::jthread{[this] { mIoService.run(); }};
 
-            NODELET_INFO("CAN Node started");
+            NODELET_INFO("CAN driver started");
 
         } catch (std::exception const& exception) {
-            NODELET_ERROR_STREAM("Exception in initialization: " << exception.what());
+            NODELET_FATAL_STREAM(std::format("CAN driver failed to start: {}", exception.what()));
             ros::shutdown();
         }
     }
@@ -157,35 +162,55 @@ namespace mrover {
     void CanNodelet::frameReadCallback() { // NOLINT(*-no-recursion)
         auto rawId = std::bit_cast<RawCanFdId>(mReadFrame.can_id);
         auto messageId = std::bit_cast<CanFdMessageId>(static_cast<std::uint16_t>(rawId.identifier));
-        std::string sourceDeviceName = mDevices.backward(CanFdAddress{
+
+        std::optional sourceDeviceName = mDevices.backward(CanFdAddress{
                 .bus = 0, // TODO set correct bus
                 .id = messageId.source,
         });
-        std::string destinationDeviceName = mDevices.backward(CanFdAddress{
+        if (!sourceDeviceName) {
+            NODELET_WARN_STREAM(std::format("Received CAN message on interface {} that had an unknown source ID: {}", mInterface, std::uint8_t{messageId.source}));
+            return;
+        }
+
+        std::optional destinationDeviceName = mDevices.backward(CanFdAddress{
                 .bus = 0, // TODO set correct bus
                 .id = messageId.destination,
         });
+        if (!destinationDeviceName) {
+            NODELET_WARN_STREAM(std::format("Received CAN message on interface {} that had an unknown destination ID: {}", mInterface, std::uint8_t{messageId.destination}));
+            return;
+        }
 
         CAN msg;
-        msg.source = sourceDeviceName;
-        msg.destination = destinationDeviceName;
+        msg.source = sourceDeviceName.value();
+        msg.destination = destinationDeviceName.value();
         msg.data.assign(mReadFrame.data, mReadFrame.data + mReadFrame.len);
 
         ROS_DEBUG_STREAM("Received CAN message:\n"
                          << msg);
 
-        mDevicesPubSub.at(destinationDeviceName).publisher.publish(msg);
+        mDevicesPubSub.at(destinationDeviceName.value()).publisher.publish(msg);
     }
 
     void CanNodelet::frameSendRequestCallback(CAN::ConstPtr const& msg) {
         ROS_DEBUG_STREAM("Received request to send CAN message:\n"
                          << *msg);
 
-        // TODO: Send on proper bus
+        std::optional source = mDevices.forward(msg->source);
+        if (!source) {
+            NODELET_WARN_STREAM(std::format("Sending CAN message on interface {} that had an unknown source: {}", mInterface, msg->source));
+            return;
+        }
+
+        std::optional destination = mDevices.forward(msg->destination);
+        if (!destination) {
+            NODELET_WARN_STREAM(std::format("Sending CAN message on interface {} that had an unknown destination: {}", mInterface, msg->destination));
+            return;
+        }
 
         CanFdMessageId messageId{
-                .destination = mDevices.forward(msg->destination).id,
-                .source = mDevices.forward(msg->source).id,
+                .destination = destination->get().id,
+                .source = source->get().id,
                 .replyRequired = static_cast<bool>(msg->reply_required),
         };
 
@@ -200,7 +225,11 @@ namespace mrover {
         std::memcpy(frame.data, msg->data.data(), msg->data.size());
 
         std::size_t written = boost::asio::write(mStream.value(), boost::asio::buffer(std::addressof(frame), sizeof(frame)));
-        if (written != sizeof(frame)) throw std::runtime_error("Failed to write entire CAN frame");
+        if (written != sizeof(frame)) {
+            NODELET_FATAL_STREAM(std::format("Failed to write CAN frame to socket! Expected to write {} bytes, but only wrote {} bytes", sizeof(frame), written));
+            ros::shutdown();
+            return;
+        }
 
         ROS_DEBUG_STREAM("Sent CAN message");
     }

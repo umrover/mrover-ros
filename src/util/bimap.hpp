@@ -13,16 +13,14 @@ namespace mrover {
             m_reverse.emplace(u, t);
         }
 
-        bool contains(T const& t) const {
-            return m_forward.contains(t);
+        std::optional<std::reference_wrapper<U>> forward(T const& t) {
+            auto it = m_forward.find(t);
+            return it == m_forward.end() ? std::nullopt : std::make_optional(std::ref(it->second));
         }
 
-        U const& forward(T const& t) const {
-            return m_forward.at(t);
-        }
-
-        T const& backward(U const& u) const {
-            return m_reverse.at(u);
+        std::optional<std::reference_wrapper<T>> backward(U const& u) {
+            auto it = m_reverse.find(u);
+            return it == m_reverse.end() ? std::nullopt : std::make_optional(std::ref(it->second));
         }
     };
 

@@ -76,7 +76,7 @@ namespace mrover {
             ROS_INFO_STREAM("Set link up");
 
         } catch (std::exception const& exception) {
-            ROS_ERROR_STREAM("Exception in link setup: " << exception.what());
+            ROS_FATAL_STREAM("Exception in link setup: " << exception.what());
             ros::shutdown();
         }
     }

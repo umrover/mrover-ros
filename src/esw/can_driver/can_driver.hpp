@@ -57,6 +57,8 @@ namespace mrover {
         std::uint8_t bus{};
         std::uint8_t id{};
 
+        // "Spaceship" operator
+        // See: https://devblogs.microsoft.com/cppblog/simplify-your-code-with-rocket-science-c20s-spaceship-operator/
         bool operator<=>(CanFdAddress const& other) const = default;
     };
 
