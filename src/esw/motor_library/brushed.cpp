@@ -117,40 +117,36 @@ namespace mrover {
         m_is_configured = true;
     }
 
+    void BrushedController::processMessage(ControllerDataState const& state) {
+        mCurrentPosition = state.position;
+        mCurrentVelocity = state.velocity;
+        ConfigCalibErrorInfo config_calib_err_info = state.config_calib_error_data;
+        m_is_configured = config_calib_err_info.configured;
+        mIsCalibrated = config_calib_err_info.calibrated;
+        mErrorState = brushedErrorByCode.at(config_calib_err_info.error);
+        LimitStateInfo limit_state_info = state.limit_switches;
+        mLimitAHit = limit_state_info.limit_a_hit;
+        mLimitBHit = limit_state_info.limit_b_hit;
+        mLimitCHit = limit_state_info.limit_c_hit;
+        mLimitDHit = limit_state_info.limit_d_hit;
+        if (mIsCalibrated) {
+            mState = "Armed";
+        } else {
+            mState = "Not Armed";
+        }
+    }
+
     void BrushedController::processCANMessage(CAN::ConstPtr const& msg) {
         assert(msg->source == mControllerName);
         assert(msg->destination == mName);
 
-        auto* out_bound_message = reinterpret_cast<OutBoundMessage const*>(msg->data.data());
+        OutBoundMessage const& out_bound_message = *reinterpret_cast<OutBoundMessage const*>(msg->data.data());
 
-        std::visit([&](auto&& message) {
-            if constexpr (std::is_same_v<std::decay_t<decltype(message)>, ControllerDataState>) {
-                ControllerDataState controller_data_state;
-                mCurrentPosition = controller_data_state.position;
-                mCurrentVelocity = controller_data_state.velocity;
-                ConfigCalibErrorInfo config_calib_err_info = controller_data_state.config_calib_error_data;
-                m_is_configured = config_calib_err_info.configured;
-                mIsCalibrated = config_calib_err_info.calibrated;
-                mErrorState = brushedErrorByCode.at(config_calib_err_info.error);
-                LimitStateInfo limit_state_info = controller_data_state.limit_switches;
-                mLimitAHit = limit_state_info.limit_a_hit;
-                mLimitBHit = limit_state_info.limit_b_hit;
-                mLimitCHit = limit_state_info.limit_c_hit;
-                mLimitDHit = limit_state_info.limit_d_hit;
-                if (mIsCalibrated) {
-                    mState = "Armed";
-                } else {
-                    mState = "Not Armed";
-                }
-            } else {
-                // do whatever
-            }
-        },
-                   out_bound_message);
+        std::visit([&](auto const& message) { processMessage(message); }, out_bound_message);
     }
 
     double BrushedController::getEffort() {
-        return std::nan("1"); // TODO - is there a purpose for the tag
+        return std::numeric_limits<double>::quiet_NaN(); // TODO: which kind of NaN do we want
     }
 
 } // namespace mrover

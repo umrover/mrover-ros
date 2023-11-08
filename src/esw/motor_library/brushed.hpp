@@ -15,6 +15,8 @@ namespace mrover {
         void processCANMessage(CAN::ConstPtr const& msg) override;
         double getEffort() override;
 
+        void processMessage(ControllerDataState const& state);
+
         void send_configuration();
 
         BrushedController(ros::NodeHandle const& nh, std::string name, std::string controller_name);

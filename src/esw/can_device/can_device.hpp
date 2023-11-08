@@ -52,9 +52,13 @@ namespace mrover {
             requires(IsCanFdSerializable<std::variant<Variants...>>)
         void publish_message(std::variant<Variants...> const& data) {
             // TODO - make sure everything is consistent in the bridge files
-            // This is okay since "send_raw_data" makes a copy
-            auto* address = reinterpret_cast<std::byte const*>(std::addressof(data));
-            publish_data({address, sizeof(data)});
+            // This is okay since "publish_data" makes a copy
+            auto* address = reinterpret_cast<std::byte const*>(&data);
+            // Consider a variant where one alternative is very small and the other is very large
+            // We don't want to always serialize the size of the large one (e.g. if we just did sizeof the overall variant)
+            // This visit ensures we get the size of the actual underlying current alternative
+            std::size_t size = std::visit([](auto const& v) { return sizeof(v); }, data);
+            publish_data({address, size});
         }
 
         void publish_moteus_frame(moteus::CanFdFrame const& frame) {
@@ -68,7 +72,6 @@ namespace mrover {
         std::string m_from_device{}, m_to_device{};
 
         void publish_data(std::span<std::byte const> data, bool reply_required = false) {
-
             mrover::CAN can_message;
             can_message.source = m_from_device;
             can_message.destination = m_to_device;
