@@ -40,7 +40,10 @@ namespace mrover {
     //  : logger{}, inputTensor{}, outputTensor{}, referenceTensor{}, stream{}
     Inference::Inference(std::string onnxModelPath, cv::Size modelInputShape = {640, 640}, std::string classesTxtFile = "") : logger{}, inputTensor{}, outputTensor{}, stream{} {
 
-        enginePtr.reset(createCudaEngine(onnxModelPath));
+        enginePtr = std::unique_ptr<ICudaEngine, nvinfer1::Destroy<ICudaEngine>>{createCudaEngine(onnxModelPath)};
+        if (!enginePtr) {
+            throw std::runtime_error("Failed to create CUAD engine");
+        }
 
         this->modelInputShape = modelInputShape;
 
@@ -53,7 +56,7 @@ namespace mrover {
     }
 
     // Initializes enginePtr with built engine
-    nvinfer1::ICudaEngine* Inference::createCudaEngine(std::string& onnxModelPath) {
+    ICudaEngine* Inference::createCudaEngine(std::string& onnxModelPath) {
         // See link sfor additional context
         const auto explicitBatch = 1U << static_cast<uint32_t>(nvinfer1::NetworkDefinitionCreationFlag::kEXPLICIT_BATCH);
         std::unique_ptr<nvinfer1::IBuilder, Destroy<nvinfer1::IBuilder>> builder{nvinfer1::createInferBuilder(logger)};
@@ -73,9 +76,9 @@ namespace mrover {
         profile->setDimensions(network->getInput(0)->getName(), OptProfileSelector::kOPT, Dims4{1, 3, 256, 256});
         profile->setDimensions(network->getInput(0)->getName(), OptProfileSelector::kMAX, Dims4{32, 3, 256, 256});
         config->addOptimizationProfile(profile);
-
-        return nullptr;
-        builder->buildEngineWithConfig(*network, *config);
+        nvinfer1::IHostMemory* serializedEngine = builder->buildSerializedNetwork(*network, *config);
+        nvinfer1::IRuntime* runtime = createInferRuntime(logger);
+        return runtime->deserializeCudaEngine(serializedEngine->data(), serializedEngine->size());
     }
 
     void Inference::doDetections(cv::Mat& img) {

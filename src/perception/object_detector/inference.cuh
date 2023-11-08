@@ -88,7 +88,7 @@ namespace mrover {
 
     private:
         //Creates a ptr to the engine
-        nvinfer1::ICudaEngine* createCudaEngine(std::string& onnxModelPath);
+        ICudaEngine* createCudaEngine(std::string& onnxModelPath);
 
         void launchInference(void* input, void* output);
 
