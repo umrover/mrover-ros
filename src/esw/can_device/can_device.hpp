@@ -26,24 +26,18 @@ namespace mrover {
     template<typename T>
     concept IsCanFdSerializable = IsSerializable<T> && sizeof(T) <= 64;
 
-    struct CanFdMessageId {
-        std::uint8_t destination{};
-        std::uint8_t source : 7 {};
-        bool reply_required : 1 {};
-    };
-    static_assert(sizeof(CanFdMessageId) == 2);
-
     class CanDevice {
     public:
-        CanDevice(ros::NodeHandle const& nh, std::string can_device)
+        CanDevice(ros::NodeHandle const& nh, std::string from_device, std::string to_device)
             : m_nh{nh},
-              m_can_publisher{m_nh.advertise<mrover::CAN>(std::format("can/{}/out", can_device), 1)},
-              m_can_device{std::move(can_device)} {
+              m_can_publisher{m_nh.advertise<mrover::CAN>(std::format("can/{}/out", to_device), 1)},
+              m_from_device{std::move(from_device)},
+              m_to_device{std::move(to_device)} {
         }
 
         template<typename... Variants>
             requires(IsCanFdSerializable<std::variant<Variants...>>)
-        Variants CanDevice::process_incoming_message(CAN::ConstPtr const& msg) {
+        std::variant<Variants...> process_incoming_message(CAN::ConstPtr const& msg) {
             // TODO.
             // You will want to call this function on the bridge node
             // void CanDevice::process_incoming_message(CAN::ConstPtr const& msg)
@@ -71,13 +65,14 @@ namespace mrover {
     private:
         ros::NodeHandle m_nh;
         ros::Publisher m_can_publisher;
-        std::string m_can_device{};
+        std::string m_from_device{}, m_to_device{};
 
         void publish_data(std::span<std::byte const> data, bool reply_required = false) {
 
             mrover::CAN can_message;
-            can_message.destination = m_can_device;
-            can_message.source = "jetson";
+            can_message.source = m_to_device;
+            can_message.destination = m_to_device;
+            can_message.reply_required = reply_required;
             std::ranges::transform(data, std::back_inserter(can_message.data), [](std::byte b) { return static_cast<std::uint8_t>(b); });
             m_can_publisher.publish(can_message);
         }

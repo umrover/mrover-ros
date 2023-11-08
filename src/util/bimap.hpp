@@ -17,8 +17,12 @@ namespace mrover {
             return m_forward.contains(t);
         }
 
-        U const& at(T const& t) const {
+        U const& forward(T const& t) const {
             return m_forward.at(t);
+        }
+
+        T const& backward(U const& u) const {
+            return m_reverse.at(u);
         }
     };
 

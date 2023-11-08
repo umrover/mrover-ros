@@ -6,8 +6,8 @@ namespace mrover {
         : Controller{nh, std::move(name), std::move(controller_name)} {
 
         XmlRpc::XmlRpcValue brushed_motor_data;
-        m_nh.getParam(std::format("brushed_motors/controllers/{}", m_controller_name), brushed_motor_data);
-        assert(m_nh.hasParam(std::format("brushed_motors/controllers/{}", m_controller_name)));
+        mNh.getParam(std::format("brushed_motors/controllers/{}", mControllerName), brushed_motor_data);
+        assert(mNh.hasParam(std::format("brushed_motors/controllers/{}", mControllerName)));
         assert(brushed_motor_data.getType() == XmlRpc::XmlRpcValue::TypeStruct);
 
         assert(brushed_motor_data.hasMember("gear_ratio") &&
@@ -78,7 +78,7 @@ namespace mrover {
 
         assert(throttle >= -1_percent && throttle <= 1_percent);
 
-        m_device.publish_message(InBoundMessage{ThrottleCommand{.throttle = throttle}});
+        mDevice.publish_message(InBoundMessage{ThrottleCommand{.throttle = throttle}});
     }
 
     void BrushedController::set_desired_position(Radians position) {
@@ -87,9 +87,9 @@ namespace mrover {
             return;
         }
 
-        assert(position >= m_min_position && position <= m_max_position);
+        assert(position >= mMinPosition && position <= mMaxPosition);
 
-        m_device.publish_message(InBoundMessage{PositionCommand{.position = position}});
+        mDevice.publish_message(InBoundMessage{PositionCommand{.position = position}});
     }
 
     void BrushedController::set_desired_velocity(RadiansPerSecond velocity) {
@@ -98,13 +98,13 @@ namespace mrover {
             return;
         }
 
-        assert(velocity >= m_min_velocity && velocity <= m_max_velocity);
+        assert(velocity >= mMinVelocity && velocity <= mMaxVelocity);
 
-        m_device.publish_message(InBoundMessage{VelocityCommand{.velocity = velocity}});
+        mDevice.publish_message(InBoundMessage{VelocityCommand{.velocity = velocity}});
     }
 
     void BrushedController::send_configuration() {
-        m_device.publish_message(InBoundMessage{m_config_command});
+        mDevice.publish_message(InBoundMessage{m_config_command});
 
         // TODO: do we need to await confirmation?
         m_is_configured = true;
@@ -113,7 +113,7 @@ namespace mrover {
     void BrushedController::processCANMessage(CAN::ConstPtr const& msg) {
         //
         OutBoundMessage out_bound_message;
-        std::visit([](auto&& message) {
+        std::visit([&](auto&& message) {
             if constexpr (std::is_same_v<std::decay_t<decltype(message)>, ControllerDataState>) {
                 ControllerDataState controller_data_state;
                 Radians pos = controller_data_state.position;

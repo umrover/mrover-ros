@@ -58,85 +58,13 @@ namespace mrover {
 
     class BrushlessController : public Controller {
     public:
-        void set_desired_speed_unit(double speed) {} // from -1.0 to 1.0
-
-        void set_desired_speed_rev_s(double speed) {} // in rev/s
-
-        void set_desired_torque() {
-            /*moteus::Controller::Options options;
-            options.id = 1;
-
-            moteus::Controller controller(options);
-            auto transport = moteus::Controller::MakeSingletonTransport({});
-
-
-            // Command a stop to the controller in order to clear any faults.
-            controller.SetStop();
-
-            std::vector<moteus::CanFdFrame> send_frames;
-            //std::vector<moteus::CanFdFrame> receive_frames;
-
-
-            moteus::CurrentMode::Command cmd;
-
-            // TODO
-            //            TorqueModel dut(0.41f, 17.0f, 0.002f, 97.0f);
-            //            const float calculated_current = dut.torque_to_current(torque);
-
-            //        cmd.q_A =
-            //        cmd.d_A =
-            //            send_frames.push_back(controller.MakeCurrent(cmd));
-            //            transport->BlockingCycle(&send_frames[0], send_frames.size(),
-            //                                     &receive_frames);
-            */
-        }
-
-        void set_desired_position(int position) {
-            /*
-            moteus::Controller::Options options;
-            options.id = 1;
-
-            moteus::Controller controller(options);
-
-            // Command a stop to the controller in order to clear any faults.
-            controller.SetStop();
-
-            moteus::PositionMode::Command cmd;
-
-            // Here we will just command a position of NaN and a velocity of
-            // 0.0.  This means "hold position wherever you are".
-            cmd.position = position;
-            //cmd.velocity = 0.0;
-
-            const auto maybe_result = controller.SetPositionWaitComplete(cmd, 0.01);
-
-            //debug
-            if (maybe_result) {
-                const auto r = maybe_result->values;
-                std::printf("%3d p/v/t=(%7.3f,%7.3f,%7.3f)  v/t/f=(%5.1f,%5.1f,%3d)   \r",
-                            static_cast<int>(r.mode),
-                            r.position,
-                            r.velocity,
-                            r.torque,
-                            r.voltage,
-                            r.temperature,
-                            r.fault);
-                std::fflush(stdout);
-            }
-            */
-        }
-
-        // TODO
-        //        MotorType get_type() override {
-        //            return MotorType::Brushless;
-        //        }
+        BrushlessController(ros::NodeHandle const& nh, std::string name, std::string controller_name);
+        ~BrushlessController() override = default;
 
         void set_desired_throttle(Percent throttle) override;
         void set_desired_velocity(RadiansPerSecond velocity) override;
         void set_desired_position(Radians position) override;
-
-        BrushlessController(ros::NodeHandle const& nh, std::string name, std::string controller_name);
-        ~BrushlessController() override = default;
+        void processCANMessage(CAN::ConstPtr const& msg) override;
 
     private:
         std::optional<ErrorCode> err;

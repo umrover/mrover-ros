@@ -16,11 +16,12 @@ namespace mrover {
     }
 
     void BrushlessController::set_desired_position(Radians position) {
-        position = std::clamp(position, m_min_position, m_max_position);
+        position = std::clamp(position, mMinPosition, mMaxPosition);
         // TODO - need to convert to use revs
     }
+
     void BrushlessController::set_desired_velocity(RadiansPerSecond velocity) {
-        velocity = std::clamp(velocity, m_min_velocity, m_max_velocity);
+        velocity = std::clamp(velocity, mMinVelocity, mMaxVelocity);
 
         moteus::Controller::Options options;
         moteus::Controller controller{options};
@@ -35,7 +36,10 @@ namespace mrover {
         moteus::CanFdFrame positionFrame = controller.MakePosition(command);
 
         // TODO - need to convert to use rev/s
-        m_device.publish_moteus_frame(positionFrame);
+        mDevice.publish_moteus_frame(positionFrame);
+    }
+
+    void BrushlessController::processCANMessage(CAN::ConstPtr const& msg) {
     }
 
 } // namespace mrover

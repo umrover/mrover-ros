@@ -21,7 +21,7 @@ int main(int argc, char** argv) {
     ros::NodeHandle nh;
 
     // Load motor controllers configuration from the ROS parameter server
-    uv_bulb_can_manager = std::make_unique<mrover::CanDevice>(nh, "uv_bulb");
+    uv_bulb_can_manager = std::make_unique<mrover::CanDevice>(nh, "jetson", "uv_bulb");
     [[maybe_unused]] auto SAManager = std::make_unique<mrover::MotorsManager>(nh, "sa", SANames);
     nh.advertiseService("sa_enable_uv_bulb", uvBulbCallback);
     // Enter the ROS event loop

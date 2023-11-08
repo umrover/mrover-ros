@@ -23,7 +23,7 @@
 #include <boost/asio/io_service.hpp>
 #include <boost/asio/posix/basic_stream_descriptor.hpp>
 
-#include "can_device.hpp"
+#include <bimap.hpp>
 #include <mrover/CAN.h>
 
 #include "can_net_link.hpp"
@@ -39,12 +39,31 @@ namespace mrover {
     // In the future, if we want to send different types of messages,
     // we should have logic for switching bits such as errorFrameFlag.
     struct RawCanFdId {
-        std::uint32_t identifier : 29;
-        bool isErrorFrame : 1;
-        bool isRemoteTransmissionRequest : 1;
-        bool isExtendedFrame : 1;
+        std::uint32_t identifier : 29 {};
+        bool isErrorFrame : 1 {};
+        bool isRemoteTransmissionRequest : 1 {};
+        bool isExtendedFrame : 1 {};
     };
     static_assert(sizeof(RawCanFdId) == sizeof(canid_t));
+
+    struct CanFdMessageId {
+        std::uint8_t destination{};
+        std::uint8_t source : 7 {};
+        bool replyRequired : 1 {};
+    };
+    static_assert(sizeof(CanFdMessageId) == 2);
+
+    struct CanFdAddress {
+        std::uint8_t bus{};
+        std::uint8_t id{};
+
+        bool operator<=>(CanFdAddress const& other) const = default;
+    };
+
+    struct CanFdPubSub {
+        ros::Publisher publisher;
+        ros::Subscriber subscriber;
+    };
 
     class CanNodelet : public nodelet::Nodelet {
     public:
@@ -66,20 +85,12 @@ namespace mrover {
         std::jthread mIoThread;
         boost::asio::io_service mIoService;
 
-        std::unordered_map<std::string, ros::Publisher> mCanPublisherByDeviceName;
-        std::unordered_map<std::string, ros::Subscriber> mCanSubscriberByDeviceName;
-        std::unordered_map<uint8_t, std::string> mDeviceNameByID; // TODO - use bimap
-        std::unordered_map<std::string, uint8_t> mIDByDeviceName;
-
-        // TODO - HERE IS AN EXAMPLE OF A BIMAP
-        // bimap<std::string, CanFdDeviceAddress,
-        //             std::hash<std::string>, decltype([](CanFdDeviceAddress const& location) {
-        //                 return std::hash<std::uint8_t>{}(location.bus) ^ std::hash<std::uint8_t>{}(location.id);
-        //             })>
-        //                 m_devices;
-
-
-        std::unordered_map<std::string, uint8_t> mBusByDeviceName;
+        bimap<std::string, CanFdAddress,
+              std::hash<std::string>, decltype([](CanFdAddress const& address) {
+                  return std::hash<std::uint8_t>{}(address.bus) ^ std::hash<std::uint8_t>{}(address.id);
+              })>
+                mDevices;
+        std::unordered_map<std::string, CanFdPubSub> mDevicesPubSub;
 
         int setupSocket();
 

@@ -52,25 +52,30 @@ namespace mrover {
             XmlRpc::XmlRpcValue can_devices;
             mNh.getParam("can/devices", can_devices);
 
-            for (auto& can_device: can_devices) {
+            for (auto const& [_, can_device]: can_devices) {
                 assert(can_device.hasMember("name") &&
                        can_device["name"].getType() == XmlRpc::XmlRpcValue::TypeString);
-                std::string device_name = static_cast<std::string>(can_device["name"]);
-                mCanSubscriberByDeviceName[device_name] = mNh.subscribe<CAN>(std::format("can/{}/out", device_name), 16, &CanNodelet::frameSendRequestCallback, this);
-                mCanPublisherByDeviceName[device_name] = mNh.advertise<CAN>(std::format("can/{}/in", device_name), 16);
+                auto device_name = static_cast<std::string>(can_device["name"]);
 
                 assert(can_device.hasMember("id") &&
                        can_device["id"].getType() == XmlRpc::XmlRpcValue::TypeInt);
-                auto can_id = (uint8_t) static_cast<int>(can_device["id"]);
-
-                mDeviceNameByID[can_id] = device_name;
-                mIDByDeviceName[device_name] = can_id;
+                auto can_id = static_cast<std::uint8_t>(static_cast<int>(can_device["id"]));
 
                 assert(can_device.hasMember("bus") &&
                        can_device["bus"].getType() == XmlRpc::XmlRpcValue::TypeInt);
-                auto can_bus = (uint8_t) static_cast<int>(can_device["bus"]);
+                auto can_bus = static_cast<std::uint8_t>(static_cast<int>(can_device["bus"]));
 
-                mBusByDeviceName[device_name] = bus;
+                mDevices.emplace(device_name,
+                                 CanFdAddress{
+                                         .bus = can_bus,
+                                         .id = can_id,
+                                 });
+
+                mDevicesPubSub.emplace(device_name,
+                                       CanFdPubSub{
+                                               .publisher = mNh.advertise<CAN>(std::format("can/{}/in", device_name), 16),
+                                               .subscriber = mNh.subscribe<CAN>(std::format("can/{}/out", device_name), 16, &CanNodelet::frameSendRequestCallback, this),
+                                       });
             }
 
             mCanNetLink = {mInterface, mBitrate, mBitratePrescaler};
@@ -135,44 +140,44 @@ namespace mrover {
     }
 
     void CanNodelet::frameReadCallback() { // NOLINT(*-no-recursion)
+        auto rawId = std::bit_cast<RawCanFdId>(mReadFrame.can_id);
+        auto messageId = std::bit_cast<CanFdMessageId>(static_cast<std::uint16_t>(rawId.identifier));
+        std::string sourceDeviceName = mDevices.backward(CanFdAddress{
+                .bus = 0, // TODO set correct bus
+                .id = messageId.source,
+        });
+        std::string destinationDeviceName = mDevices.backward(CanFdAddress{
+                .bus = 0, // TODO set correct bus
+                .id = messageId.destination,
+        });
+
         CAN msg;
-        // uint8_t bus = mBusByDeviceName[source]; // TODO - maybe ignore bus. if all ids are unique, then its ok to ignore.
-        // TODO - parse this: std::bit_cast<RawCanFdId>(mReadFrame.can_id).identifier
-        uint8_t raw_source_id = 0;      // TODO - fix
-        uint8_t raw_destination_id = 0; // TODO - fix
-        msg.source = mDeviceNameByID[raw_source_id];
-        msg.destination = mDeviceNameByID[raw_destination_id];
+        msg.source = sourceDeviceName;
+        msg.destination = destinationDeviceName;
         msg.data.assign(mReadFrame.data, mReadFrame.data + mReadFrame.len);
 
         ROS_DEBUG_STREAM("Received CAN message:\n"
                          << msg);
 
-        mCanPublisherByDeviceName[source].publish(msg);
+        mDevicesPubSub.at(destinationDeviceName).publisher.publish(msg);
     }
 
     void CanNodelet::frameSendRequestCallback(CAN::ConstPtr const& msg) {
         ROS_DEBUG_STREAM("Received request to send CAN message:\n"
                          << *msg);
 
-        // Check that the identifier is not too large
-        // TODO - see if following assert is still needed
-        // assert(std::bit_width(msg->message_id) <= mIsExtendedFrame ? CAN_EFF_ID_BITS : CAN_SFF_ID_BITS);
+        // TODO: Send on proper bus
 
-        // TODO - need to send it on the proper bus.
-        // right now idek what bus it sends from (sincerely, guthrie)
-        uint8_t bus = mBusByDeviceName[msg->destination]; // TODO(owen) support multiple buses
-
-        // need to create CAN message ID
-        uint16_t message_id;
-        CanFdMessageId can_message_id;
-        can_message_id.destination = mIDByDeviceName[msg->destination];
-        can_message_id.source = mIDByDeviceName[msg->source];
-        can_message_id.reply_required = 0; // TODO - i don't think we currently care about this right now
+        CanFdMessageId messageId{
+                .destination = mDevices.forward(msg->destination).id,
+                .source = mDevices.forward(msg->source).id,
+                .replyRequired = static_cast<bool>(msg->reply_required),
+        };
 
         // Craft the SocketCAN frame from the ROS message
         canfd_frame frame{
                 .can_id = std::bit_cast<canid_t>(RawCanFdId{
-                        .identifier = can_message_id,
+                        .identifier = std::bit_cast<std::uint16_t>(messageId),
                         .isExtendedFrame = mIsExtendedFrame,
                 }),
                 .len = nearestFittingFdcanFrameSize(msg->data.size()),
