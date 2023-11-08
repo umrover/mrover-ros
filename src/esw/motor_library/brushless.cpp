@@ -2,25 +2,25 @@
 
 namespace mrover {
 
-    BrushlessController::BrushlessController(ros::NodeHandle const& nh, std::string name, std::string controller_name)
-        : Controller{nh, std::move(name), std::move(controller_name)} {
+    BrushlessController::BrushlessController(ros::NodeHandle const& nh, std::string name, std::string controllerName)
+        : Controller{nh, std::move(name), std::move(controllerName)} {
 
         // TODO: change
         torque = 0.3f;
     }
 
-    void BrushlessController::set_desired_throttle(Percent throttle) {
+    void BrushlessController::setDesiredThrottle(Percent throttle) {
         throttle = std::clamp(throttle, -1_percent, 1_percent);
         // TODO - need to convert from throttle to rev/s
         // TODO - create a CAN frame
     }
 
-    void BrushlessController::set_desired_position(Radians position) {
+    void BrushlessController::setDesiredPosition(Radians position) {
         position = std::clamp(position, mMinPosition, mMaxPosition);
         // TODO - need to convert to use revs
     }
 
-    void BrushlessController::set_desired_velocity(RadiansPerSecond velocity) {
+    void BrushlessController::setDesiredVelocity(RadiansPerSecond velocity) {
         velocity = std::clamp(velocity, mMinVelocity, mMaxVelocity);
 
         moteus::Controller::Options options;

@@ -11,7 +11,7 @@ int main(int argc, char** argv) {
 
     [[maybe_unused]] auto brushlessController = std::make_unique<mrover::BrushlessController>(nh, "jetson", "test_brushless_controller");
 
-    brushlessController->set_desired_velocity(mrover::RadiansPerSecond{1.0f});
+    brushlessController->setDesiredVelocity(mrover::RadiansPerSecond{1.0f});
     ROS_INFO("Sent velocity command to Moteus");
     // Enter the ROS event loop
     ros::spin();

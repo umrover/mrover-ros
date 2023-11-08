@@ -58,12 +58,12 @@ namespace mrover {
 
     class BrushlessController : public Controller {
     public:
-        BrushlessController(ros::NodeHandle const& nh, std::string name, std::string controller_name);
+        BrushlessController(ros::NodeHandle const& nh, std::string name, std::string controllerName);
         ~BrushlessController() override = default;
 
-        void set_desired_throttle(Percent throttle) override;
-        void set_desired_velocity(RadiansPerSecond velocity) override;
-        void set_desired_position(Radians position) override;
+        void setDesiredThrottle(Percent throttle) override;
+        void setDesiredVelocity(RadiansPerSecond velocity) override;
+        void setDesiredPosition(Radians position) override;
         void processCANMessage(CAN::ConstPtr const& msg) override;
         double getEffort() override;
 

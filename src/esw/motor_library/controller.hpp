@@ -11,10 +11,10 @@ namespace mrover {
 
     class Controller {
     public:
-        Controller(ros::NodeHandle const& nh, std::string name, std::string controller_name)
+        Controller(ros::NodeHandle const& nh, std::string name, std::string controllerName)
             : mNh{nh},
               mName{std::move(name)},
-              mControllerName{std::move(controller_name)},
+              mControllerName{std::move(controllerName)},
               mDevice{nh, mName, mControllerName},
               mIncomingCANSub{mNh.subscribe<CAN>(std::format("can/{}/in", name), 16, &Controller::processCANMessage, this)} {
         }
@@ -23,9 +23,9 @@ namespace mrover {
 
         // TODO: receive information
 
-        virtual void set_desired_throttle(Percent throttle) = 0;          // from -1.0 to 1.0
-        virtual void set_desired_velocity(RadiansPerSecond velocity) = 0; // joint output
-        virtual void set_desired_position(Radians position) = 0;          // joint output
+        virtual void setDesiredThrottle(Percent throttle) = 0;          // from -1.0 to 1.0
+        virtual void setDesiredVelocity(RadiansPerSecond velocity) = 0; // joint output
+        virtual void setDesiredPosition(Radians position) = 0;          // joint output
         virtual void processCANMessage(CAN::ConstPtr const& msg) = 0;
         Radians getCurrentPosition() { return mCurrentPosition; }
         RadiansPerSecond getCurrentVelocity() { return mCurrentVelocity; }

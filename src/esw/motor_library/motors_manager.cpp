@@ -68,7 +68,7 @@ namespace mrover {
         for (size_t i = 0; i < msg->names.size(); ++i) {
             const std::string& name = msg->names[i];
             Controller& controller = get_controller(name);
-            controller.set_desired_throttle(msg->throttles[i]);
+            controller.setDesiredThrottle(msg->throttles[i]);
         }
     }
 
@@ -83,7 +83,7 @@ namespace mrover {
         for (size_t i = 0; i < msg->names.size(); ++i) {
             const std::string& name = msg->names[i];
             Controller& controller = get_controller(name);
-            controller.set_desired_velocity(RadiansPerSecond{msg->velocities[i]});
+            controller.setDesiredVelocity(RadiansPerSecond{msg->velocities[i]});
         }
     }
 
@@ -98,7 +98,7 @@ namespace mrover {
         for (std::size_t i = 0; i < msg->names.size(); ++i) {
             const std::string& name = msg->names[i];
             Controller& controller = get_controller(name);
-            controller.set_desired_position(Radians{msg->positions[i]});
+            controller.setDesiredPosition(Radians{msg->positions[i]});
         }
     }
 
@@ -107,7 +107,7 @@ namespace mrover {
         if (duration < 100ms) {
             for (const auto& motorName: mControllerNames) {
                 Controller& controller = get_controller(motorName);
-                controller.set_desired_throttle(0_percent);
+                controller.setDesiredThrottle(0_percent);
             }
         }
     }

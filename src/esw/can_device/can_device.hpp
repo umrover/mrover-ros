@@ -37,7 +37,7 @@ namespace mrover {
 
         template<typename... Variants>
             requires(IsCanFdSerializable<std::variant<Variants...>>)
-        std::variant<Variants...> process_incoming_message(CAN::ConstPtr const& msg) {
+        std::variant<Variants...> process_message(CAN::ConstPtr const& msg) {
             // TODO.
             // You will want to call this function on the bridge node
             // void CanDevice::process_incoming_message(CAN::ConstPtr const& msg)
@@ -76,6 +76,7 @@ namespace mrover {
             can_message.source = m_from_device;
             can_message.destination = m_to_device;
             can_message.reply_required = reply_required;
+            // This is needed since ROS is old and uses std::uint8_t instead of std::byte
             std::ranges::transform(data, std::back_inserter(can_message.data), [](std::byte b) { return static_cast<std::uint8_t>(b); });
             m_can_publisher.publish(can_message);
         }
