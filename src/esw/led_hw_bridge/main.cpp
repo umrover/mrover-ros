@@ -5,7 +5,7 @@
 #include <mrover/CAN.h>
 #include <mrover/LED.h>
 
-std::unique_ptr<CanDevice> ledCanDevice;
+std::unique_ptr<mrover::CanDevice> ledCanDevice;
 
 void changeLED(const mrover::LED::ConstPtr& msg);
 
@@ -16,7 +16,7 @@ int main(int argc, char** argv) {
     ros::init(argc, argv, "led_hw_bridge");
     ros::NodeHandle nh;
 
-    ledCanDevice = std::make_unique<CanDevice>(nh, "jetson", "pdlb");
+    ledCanDevice = std::make_unique<mrover::CanDevice>(nh, "jetson", "pdlb");
 
     CANPublisher = nh.advertise<mrover::CAN>("can/pdlb/out", 1);
     ros::Subscriber changeLEDSubscriber = nh.subscribe<mrover::LED>("led", 1, changeLED);
@@ -28,11 +28,10 @@ int main(int argc, char** argv) {
 }
 
 void changeLED(const mrover::LED::ConstPtr& msg) {
-
-    LEDInfo ledInfo;
+    mrover::LEDInfo ledInfo{};
     ledInfo.red = msg->red;
     ledInfo.green = msg->green;
     ledInfo.blue = msg->blue;
     ledInfo.blinking = msg->is_blinking;
-    ledCanDevice->publish_message(InBoundPDLBMessage{LEDCommand{.led_info = ledInfo}});
+    ledCanDevice->publish_message(mrover::InBoundPDLBMessage{mrover::LEDCommand{.led_info = ledInfo}});
 }

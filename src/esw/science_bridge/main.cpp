@@ -1,3 +1,4 @@
+#include "messaging.hpp"
 #include "std_srvs/SetBool.h"
 #include <memory>
 #include <mrover/CAN.h>
@@ -35,7 +36,7 @@ bool serviceCallback(std_srvs::SetBool::Request& req, std_srvs::SetBool::Respons
     return true;
 }
 
-void processMessage(HeaterStateData const& message) {
+void processMessage(mrover::HeaterStateData const& message) {
     mrover::HeaterData heaterData;
     heaterData.b0 = message.heater_state_info.b0;
     heaterData.n0 = message.heater_state_info.n0;
@@ -47,7 +48,7 @@ void processMessage(HeaterStateData const& message) {
     heaterDataPublisher->publish(heaterData);
 }
 
-void processMessage(SpectralData const& message) {
+void processMessage(mrover::SpectralData const& message) {
     mrover::SpectralGroup spectralData;
     for (int i = 0; i < 3; ++i) {
         for (int j = 0; j < 6; ++j) {
@@ -57,7 +58,7 @@ void processMessage(SpectralData const& message) {
     spectralDataPublisher->publish(spectralData);
 }
 
-void processMessage(ThermistorData const& message) {
+void processMessage(mrover::ThermistorData const& message) {
     mrover::ScienceThermistors scienceThermistors;
     scienceThermistors.b0.temperature = message.b0;
     scienceThermistors.n0.temperature = message.n0;
@@ -73,7 +74,7 @@ void processCANData(const mrover::CAN::ConstPtr& msg) {
     assert(msg->source == "science");
     assert(msg->destination == "jetson");
 
-    OutBoundScienceMessage const& message = *reinterpret_cast<OutBoundScienceMessage const*>(msg->data.data());
+    mrover::OutBoundScienceMessage const& message = *reinterpret_cast<mrover::OutBoundScienceMessage const*>(msg->data.data());
 
     // This calls the correct process function based on the current value of the alternative
     std::visit([&](auto const& messageAlternative) { processMessage(messageAlternative); }, message);

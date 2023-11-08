@@ -21,7 +21,7 @@ int main(int argc, char** argv) {
     return 0;
 }
 
-void processMessage(PDBData const& message) {
+void processMessage(mrover::PDBData const& message) {
     mrover::PDLB pdlb_data;
     pdlb_data.temperatures = {
             message.temperature_24v,
@@ -45,7 +45,7 @@ void processCANData(const mrover::CAN::ConstPtr& msg) {
     assert(msg->source == "pdlb");
     assert(msg->destination == "jetson");
 
-    OutBoundPDLBMessage const& message = *reinterpret_cast<OutBoundPDLBMessage const*>(msg->data.data());
+    mrover::OutBoundPDLBMessage const& message = *reinterpret_cast<mrover::OutBoundPDLBMessage const*>(msg->data.data());
 
     // This calls the correct process function based on the current value of the alternative
     std::visit([&](auto const& messageAlternative) { processMessage(messageAlternative); }, message);
