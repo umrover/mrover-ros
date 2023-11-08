@@ -519,15 +519,15 @@ motors:
     joint_b:
       type: "brushed"
     joint_c:
-      type: "brushed"
+      type: "brushless"
     joint_de_0:
-      type: "brushed"
+      type: "brushless"
     joint_de_1:
-      type: "brushed"
+      type: "brushless"
     allen_key:
       type: "brushed"
     gripper:
-      type: "brushless"
+      type: "brushed"
     front_left:
       type: "brushless"
     front_right:

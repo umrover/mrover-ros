@@ -41,12 +41,12 @@ namespace mrover {
         mMoveVelocitySub = mNh.subscribe<Velocity>(std::format("{}_velocity_cmd", mGroupName), 1, &MotorsManager::moveMotorsVelocity, this);
         mMovePositionSub = mNh.subscribe<Position>(std::format("{}_position_cmd", mGroupName), 1, &MotorsManager::moveMotorsPosition, this);
 
-        mJointDataPub = mNh.advertise<sensor_msgs::JointState>(std::format("{}_joint_data", groupName), 1);
-        mControllerDataPub = mNh.advertise<ControllerState>(std::format("{}_controller_data", groupName), 1);
+        mJointDataPub = mNh.advertise<sensor_msgs::JointState>(std::format("{}_joint_data", mGroupName), 1);
+        mControllerDataPub = mNh.advertise<ControllerState>(std::format("{}_controller_data", mGroupName), 1);
 
         // Create a 0.1 second heartbeat timer
-        ros::Timer heartbeatTimer = nh.createTimer(ros::Duration(0.1), &MotorsManager::heartbeatCallback, this);
-        ros::Timer publishDataTimer = nh.createTimer(ros::Duration(0.1), &MotorsManager::publishDataCallback, this);
+        heartbeatTimer = mNh.createTimer(ros::Duration(0.1), &MotorsManager::heartbeatCallback, this);
+        publishDataTimer = mNh.createTimer(ros::Duration(0.1), &MotorsManager::publishDataCallback, this);
     }
 
     Controller& MotorsManager::get_controller(std::string const& name) {

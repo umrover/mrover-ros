@@ -63,6 +63,8 @@ namespace mrover {
         std::string mGroupName;
         std::vector<std::string> mControllerNames;
         std::chrono::high_resolution_clock::time_point lastConnection;
+        ros::Timer heartbeatTimer;
+        ros::Timer publishDataTimer;
     };
 
 } // namespace mrover

@@ -5,7 +5,7 @@
 
 std::unique_ptr<mrover::CanDevice> armLaserCanDevice;
 
-std::vector<std::string> armNames{"joint_a", "joint_b", "joint_c", "joint_de_0", "joint_de_1", "finger", "gripper"};
+std::vector<std::string> armNames{"joint_a", "joint_b", "joint_c", "joint_de_0", "joint_de_1", "allen_key", "gripper"};
 
 bool armLaserCallback(std_srvs::SetBool::Request& req, std_srvs::SetBool::Response& res) {
     armLaserCanDevice->publish_message(mrover::InBoundPDLBMessage{mrover::ArmLaserCommand{.enable = static_cast<bool>(req.data)}});
