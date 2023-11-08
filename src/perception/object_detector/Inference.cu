@@ -72,7 +72,8 @@ namespace mrover {
         profile->setDimensions(network->getInput(0)->getName(), OptProfileSelector::kMAX, Dims4{32, 3, 256, 256});
         config->addOptimizationProfile(profile);
 
-        return nullptr; //builder->buildEngineWithConfig(*network, *config);
+        return nullptr;
+        builder->buildEngineWithConfig(*network, *config);
     }
 
     void Inference::doDetections(cv::Mat& img) {
