@@ -174,6 +174,58 @@ namespace mrover {
     using OutBoundPDLBMessage = std::variant<
             PDBData>;
 
+    enum ScienceDevice {
+        HEATER_B0,
+        HEATER_N0,
+        HEATER_B1,
+        HEATER_N1,
+        HEATER_B2,
+        HEATER_N2,
+    };
+
+    struct EnableScienceDeviceCommand : BaseCommand {
+        ScienceDevice science_device;
+        bool enable;
+    };
+
+    struct HeaterAutoShutOffCommand : BaseCommand {
+        bool enable_auto_shutoff;
+    };
+
+    struct HeaterStateInfo {
+        [[maybe_unused]] std::uint8_t _ignore : 2;
+        std::uint8_t heater_b0 : 1;
+        std::uint8_t heater_n0 : 1;
+        std::uint8_t heater_b1 : 1;
+        std::uint8_t heater_n1 : 1;
+        std::uint8_t heater_b2 : 1;
+        std::uint8_t heater_n2 : 1;
+    };
+    static_assert(sizeof(HeaterStateInfo) == 1);
+
+    struct HeaterStateData : BaseCommand {
+        HeaterStateInfo heater_state_info;
+    };
+
+    struct SpectralInfo {
+        std::uint8_t channel_data[6];
+    };
+
+    struct SpectralData : BaseCommand {
+        SpectralInfo spectrals[3];
+    };
+
+    struct ThermistorData : BaseCommand {
+        float temperatures[3];
+    };
+
+    using InBoundScienceMessage = std::variant<
+            EnableScienceDeviceCommand, HeaterAutoShutOffCommand>;
+
+    using OutBoundScienceMessage = std::variant<
+            HeaterStateData, SpectralData, ThermistorData>;
+
+
 #pragma pack(pop)
 
 } // namespace mrover
