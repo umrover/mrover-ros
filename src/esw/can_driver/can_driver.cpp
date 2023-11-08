@@ -202,7 +202,7 @@ namespace mrover {
 } // namespace mrover
 
 int main(int argc, char** argv) {
-    ros::init(argc, argv, "can_node");
+    ros::init(argc, argv, "can_driver");
 
     // Start the CAN Nodelet
     nodelet::Loader nodelet;
