@@ -45,6 +45,14 @@ void spectral_read(Spectral* spectral){
 	}
 	
 }
+
+//REQUIRES: spectral is a Spectral device, buffer is an array of data to write
+//MODIFIES: spectral
+//EFFECTS: resets the spectral sensor
+void spectral_reset(Spectral* spectral, uint8_t buffer[]){
+    smbus_write_byte_data(spectral->smbus, 0x00, 0x00, 0x70);
+}
+
 // REQUIRES: spectral is a Spectral object and 0 <= channel < 6
 // MODIFIES: nothing
 // EFFECTS: Returns the spectral data of a particular channel
@@ -58,7 +66,7 @@ spectral_sensor_number is 0, 1, or 2 for B0, B1, or B2
 */
 //MODIFIES: mux pins are set so that the chosen spectral sensor is enabled.
 //EFFECTS: spectral sensor chosen will now receive I2C signals
-Spectral* set_active_spectral_sensor(I2C_HandleTypeDef* i2c_mux, int spectral_sensor_number) {
+void set_active_spectral_sensor(I2C_HandleTypeDef* i2c_mux, int spectral_sensor_number) {
 
     if (spectral_sensor_number > 2 || spectral_sensor_number < 0){
         failed = true;
@@ -71,5 +79,4 @@ Spectral* set_active_spectral_sensor(I2C_HandleTypeDef* i2c_mux, int spectral_se
 
     return;
 }
-
 

@@ -30,6 +30,11 @@ void initialize_spectral(Spectral *spectral);
 //EFFECTS: spectral channel_data is loaded with data read in from the sensor
 void spectral_read(Spectral* spectral);
 
+//REQUIRES: spectral is a Spectral device, buffer is an array of data to write
+//MODIFIES: spectral
+//EFFECTS: writes the provided data to the sensor 
+void spectral_write(Spectral* spectral, u_int8_t buffer[]);
+
 // REQUIRES: spectral is a Spectral object and 0 <= channel < 6
 // MODIFIES: nothing
 // EFFECTS: Returns the spectral data of a particular channel

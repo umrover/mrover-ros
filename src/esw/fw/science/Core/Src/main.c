@@ -115,6 +115,8 @@ int main(void)
 	  spectral_sensor[i] = new_spectral(buses[i]);
   }
 
+  set_active_spectral_sensor(&hi2c1, 0);
+
   //initialize thermistors NOT NEEDED BECAUSE EVERY THERMISTOR IS ASSIGNED TO A HEATER?
   /*ADCSensor* adc_sensors[3];
   DiagTempSensor* thermistors[3];
@@ -123,6 +125,9 @@ int main(void)
 	  adc_sensors[i] = new_adc_sensor(&hadc, total_channels);
 	  thermistors[i] = new_diag_temp_sensor(adc_sensors[i], thermistor_channels[i]);
   }*/
+
+  //MUX is hi2c1
+
 
   //initialize leds
   Toggle_GPIO* uv_led[3];
