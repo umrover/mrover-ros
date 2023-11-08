@@ -1,10 +1,10 @@
 #pragma once
 
 #include <array>
+#include <cstdint>
 #include <variant>
 
-#include "units.hpp"
-
+#include <units/units.hpp>
 
 namespace mrover {
 
@@ -61,43 +61,80 @@ namespace mrover {
         std::uint8_t limit_max_backward_position : 1;
     };
 
+    struct ConfigCalibErrorInfo {
+        [[maybe_unused]] std::uint8_t _ignore : 2; // 8 bits - (6 meaningful bits) = 2 ignored bits
+        std::uint8_t configured : 1;
+        std::uint8_t calibrated : 1;
+        std::uint8_t error : 4; // 0 means no error, anything else is error
+    };
+    static_assert(sizeof(ConfigCalibErrorInfo) == 1);
+
+    struct LimitStateInfo {
+        [[maybe_unused]] std::uint8_t _ignore : 4; // 8 bits - (4 meaningful bits) = 4 ignored bits
+        std::uint8_t limit_a_hit : 1;
+        std::uint8_t limit_b_hit : 1;
+        std::uint8_t limit_c_hit : 1;
+        std::uint8_t limit_d_hit : 1;
+    };
+    static_assert(sizeof(LimitStateInfo) == 1);
+
     struct BaseCommand {
-        motor_id_t id;
-    } PACKED;
+    };
+
+    struct AdjustCommand : BaseCommand {
+        Radians position;
+    };
+
+    struct ConfigCommand : BaseCommand {
+        Dimensionless gear_ratio;
+        // TODO: Terrible naming for the limit switch info
+        ConfigLimitSwitchInfo0 limit_switch_info_0;
+        ConfigLimitSwitchInfo1 limit_switch_info_1;
+        ConfigLimitSwitchInfo2 limit_switch_info_2;
+        ConfigEncoderInfo quad_abs_enc_info;
+        Radians limit_a_readj_pos;
+        Radians limit_b_readj_pos;
+        Radians limit_c_readj_pos;
+        Radians limit_d_readj_pos;
+        Dimensionless quad_enc_out_ratio;
+        Dimensionless abs_enc_out_ratio;
+        Dimensionless max_pwm;
+        ConfigLimitInfo limit_max_pos;
+        Meters max_forward_pos;
+        Meters max_back_pos;
+    };
+
+    struct EnableLimitSwitchesCommand : BaseCommand {
+        bool enable;
+    };
 
     struct IdleCommand : BaseCommand {
-    } PACKED;
+    };
 
     struct ThrottleCommand : BaseCommand {
-        dimensionless_t throttle;
-    } PACKED;
+        Percent throttle;
+    };
 
     struct VelocityCommand : BaseCommand {
         RadiansPerSecond velocity;
-    } PACKED;
+    };
 
     struct PositionCommand : BaseCommand {
         Radians position;
-    } PACKED;
+    };
 
-    struct StatusState {
-
-    } PACKED;
-
-    using Message = std::variant<
-            IdleCommand, ThrottleCommand, VelocityCommand, PositionCommand>;
-    static_assert(sizeof(Message) <= FRAME_SIZE);
-
-    union FdCanFrame {
-        Message message;
-        std::array<std::byte, FRAME_SIZE> bytes;
+    struct ControllerDataState : BaseCommand {
+        Radians position;
+        RadiansPerSecond velocity;
+        ConfigCalibErrorInfo config_calib_error_data;
+        LimitStateInfo limit_switches;
     };
 
     using InBoundMessage = std::variant<
-            ConfigCommand, IdleCommand, ThrottleCommand, VelocityCommand, PositionCommand>;
+            AdjustCommand, ConfigCommand, EnableLimitSwitchesCommand, IdleCommand, ThrottleCommand, VelocityCommand, PositionCommand>;
 
     using OutBoundMessage = std::variant<
-            MotorDataState, StatusState>;
+            ControllerDataState>;
 
 #pragma pack(pop)
 

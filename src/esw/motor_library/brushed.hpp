@@ -12,6 +12,7 @@ namespace mrover {
         void set_desired_throttle(Percent throttle) override; // from -1.0 to 1.0
         void set_desired_velocity(RadiansPerSecond velocity) override;
         void set_desired_position(Radians position) override;
+        void processCANMessage(CAN::ConstPtr const& msg) override;
 
         void send_configuration();
 
