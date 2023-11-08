@@ -11,6 +11,17 @@
             <input class="form-control" id="waypointid" v-model="id" type="number" max="249" min="-1" step="1">
           </div>
 
+          <div class="dropdown show my-3">
+          <a class="btn btn-secondary dropdown-toggle" href="#" role="button" id="dropdownMenuLink" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+            Object
+          </a>
+          <div class="dropdown-menu" aria-labelledby="dropdownMenuLink">
+            <a class="dropdown-item" href="#">None</a>
+            <a class="dropdown-item" href="#">Mallet</a>
+            <a class="dropdown-item" href="#">Bottle</a>
+          </div>
+          </div>
+
           <div class="form-check form-check-inline">
             <input v-model="odom_format_in" class="form-check-input" type="radio" id="radioD" value="D">
             <label class="form-check-label" for="radioD">D</label>
@@ -87,17 +98,17 @@
         </div>
       </div>
       <div class="col-wrap" style="left: 50%">
-        <div class="check">
           <!-- <div class="auton-check"> -->
             <AutonModeCheckbox
               ref="autonCheckbox"
+              class="auton-checkbox"
               :name="autonButtonText"
               :color="autonButtonColor"
               @toggle="toggleAutonMode($event)"
             />
             <div class="stats">
-            <VelocityCommand />
-          </div>
+                <VelocityCommand />
+            </div>
             <Checkbox
               ref="teleopCheckbox"
               class="teleop-checkbox"
@@ -105,15 +116,11 @@
               @toggle="toggleTeleopMode($event)"
             />
           <!-- </div> -->
-          <div class="stuck-check">
             <Checkbox
               class="stuck-checkbox"
               name="Stuck"
               @toggle="roverStuck = !roverStuck"
             ></Checkbox>
-          </div>
-          
-        </div>
         <div class="box">
           <h4 class="waypoint-headers">Current Course</h4>
           <!-- <draggable v-model="route" class="dragArea" draggable=".item'">
@@ -740,27 +747,40 @@
   
   .teleop-checkbox {
     grid-area: teleop-check;
-    margin-top: -40px;
+    /* margin-top: -40px; */
+    width: 50%;
+    float: left;
+    clear: both;
   }
   
   .stats {
-    margin-top: 10px;
+    /* margin-top: 10px; */
     grid-area: stats;
-  }
-  
-  .stuck-check {
-    align-content: center;
-    grid-area: stuck-check;
-    padding-inline: 20px;
-  }
-  .stuck-check .stuck-checkbox {
-    transform: scale(1.5);
+    float: right;
+    width: 50%;
   }
 
-  .check {
-    display: flex;
+  /* .teleop-stuck-btns {
     width: 100%;
-    flex-wrap: wrap;
+    clear:both;
+  } */
+  
+  .stuck-checkbox {
+    /* align-content: center; */
+    grid-area: stuck-check;
+    /* padding-inline: 20px; */
+    width: 50%;
+    float:right;
+  }
+
+  /* .stuck-check .stuck-checkbox {
+    transform: scale(1.5);
+  } */
+
+
+  .auton-checkbox {
+    float: left;
+    width: 50%;
   }
   
   .odom {
@@ -769,6 +789,7 @@
 
 
   .add-drop {
+    display: flex;
     text-align: center;
   }
 

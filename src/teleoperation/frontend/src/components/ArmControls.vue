@@ -218,40 +218,19 @@ export default defineComponent({
     display: flex;
     align-items: center;
     width: 100%;
-    column-gap: 10px;
-    border: 1px solid black;
+    column-gap: 20px;
     padding-left: 10px;
     margin-bottom: 5px;
     margin-top: 5px;
-    width: calc(100% - 10px);
 }
 
 .limit-switch {
     display: flex;
     flex-direction: column;
     align-items: center;
-    margin-top: -20px;
 }
 
 .limit-switch h4 {
     margin-bottom: 5px;
 }
-
-.header {
-    display: flex;
-    align-items: center;
-}
-
-.joint-b-calibration {
-    display: flex;
-    gap: 10px;
-    width: 250px;
-    font-weight: bold;
-    color: red;
-}
-
-.laser {
-    padding-top: 10px;
-}
-
   </style>

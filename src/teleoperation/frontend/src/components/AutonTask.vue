@@ -18,63 +18,66 @@
                     style="width: auto; height: 70%; display: inline-block" />
             </div>
         </div>
-        <div class="data" :style="`background-color: {{nav_state_color}}`">
-            <div>
-                <h2>Nav State: {{ nav_status.nav_state_name }}</h2>
+        <div class="shadow p-3 rounded data" :style="`background-color: {{nav_state_color}}`">
+            <h2>Nav State: {{ nav_status.nav_state_name }}</h2>
+            <div style="display: inline-block;">
                 <CameraFeed></CameraFeed>
             </div>
-            <!-- <div>
-        <p style="margin-top: 6px">Joystick Values</p>
+            <div style="display: inline-block; vertical-align: top;">
+            <p style="margin-top: 6px">Joystick Values</p>
+            <JoystickValues />
+            </div>
+            <OdometryReading :odom="odom"></OdometryReading>
         </div>
-        <JoystickValues />
-        <div>
-        <OdometryReading :odom="odom"></OdometryReading>
-        </div> -->
-        </div>
-        <div class="map">
+        <div class="shadow p-3 rounded map">
             <AutonRoverMap :odom="odom" />
         </div>
-        <div class="waypoints">
+        <div class="shadow p-3 rounded waypoints">
         <AutonWaypointEditor
         :odom="odom"
         @toggleTeleop="teleopEnabledCheck = $event"
         />
         </div>
         <!--Enable the drive controls if auton is off-->
-        <!-- <div
+        <div
         v-if="!autonEnabled && teleopEnabledCheck"
         v-show="false"
         class="driveControls"
     >
         <DriveControls />
-    </div> -->
+    </div>
         <!-- <div v-show="false">
         <MastGimbalControls></MastGimbalControls>
     </div> -->
         <div class="conditions">
-            <div v-if="!stuck_status" class="stuck not-stuck">
+            <div v-if="!stuck_status" class="shadow p-3 rounded stuck not-stuck">
                 <h4>Nominal Conditions</h4>
             </div>
-            <div v-else class="stuck rover-stuck">
+            <div v-else class="shadow p-3 rounded stuck rover-stuck">
                 <h4>Obstruction Detected</h4>
             </div>
         </div>
-        <!-- <div class="cameras">
+        <div class="shadow p-3 rounded cameras">
         <Cameras :primary="true" />
-    </div> -->
-        <div class="moteus">
+        </div>
+        <div class="shadow p-3 rounded moteus">
             <DriveMoteusStateTable :moteus-state-data="moteusState" />
-            <!-- <JointStateTable :joint-state-data="jointState" :vertical="true" /> -->
+            <JointStateTable :joint-state-data="jointState" :vertical="true" />
         </div>
     </div>
 </template>
   
 <script lang="ts">
-// import { mapGetters } from "vuex";
+import { mapGetters } from "vuex";
 import DriveMoteusStateTable from "./DriveMoteusStateTable.vue";
 import AutonRoverMap from "./AutonRoverMap.vue";
 import AutonWaypointEditor from "./AutonWaypointEditor.vue";
 import CameraFeed from "./CameraFeed.vue";
+import Cameras from "./Cameras.vue";
+import JointStateTable from "./JointStateTable.vue";
+import OdometryReading from "./OdometryReading.vue";
+import JoystickValues from './JoystickValues.vue';
+import DriveControls from "./DriveControls.vue";
 // import { quaternionToMapAngle } from "../utils.js";
 import { defineComponent } from "vue";
 
@@ -91,7 +94,12 @@ export default defineComponent({
         DriveMoteusStateTable,
         AutonRoverMap,
         AutonWaypointEditor,
-        CameraFeed
+        CameraFeed,
+        Cameras,
+        JointStateTable,
+        OdometryReading,
+        JoystickValues,
+        DriveControls
     },
 
     data() {
@@ -134,15 +142,15 @@ export default defineComponent({
     },
 
     computed: {
-        // ...mapGetters("autonomy", {
-        //     autonEnabled: "autonEnabled",
-        //     teleopEnabled: "teleopEnabled"
-        // }),
+        ...mapGetters("autonomy", {
+            autonEnabled: "autonEnabled",
+            teleopEnabled: "teleopEnabled"
+        }),
 
         nav_state_color(): string {
-            // if (!this.autonEnabled && this.teleopEnabledCheck) {
-            //     return navBlue;
-            // }
+            if (!this.autonEnabled && this.teleopEnabledCheck) {
+                return navBlue;
+            }
             if (this.nav_status.nav_state_name == "DoneState" && this.navBlink) {
                 return navGreen;
             } else if (
@@ -224,7 +232,6 @@ export default defineComponent({
     grid-area: stuck;
     border-radius: 5px;
     line-height: 40px;
-    border: 1px solid black;
     font-size: 20px;
     text-align: center;
     justify-content: center;

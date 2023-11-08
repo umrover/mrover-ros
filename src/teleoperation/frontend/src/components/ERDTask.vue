@@ -34,34 +34,34 @@
           title="Joystick Controls"
           style="width: auto; height: 70%; display: inline-block"
         />
-    </div>
+      </div>
     </div>
     
-    <!-- <div class="cameras">
+    <div class="shadow p-3 rounded cameras">
       <Cameras :primary="true" />
-    </div> -->
-    <!-- <div v-if="type === 'DM'" class="odom">
+    </div>
+    <div v-if="type === 'DM'" class="shadow p-3 rounded odom">
       <OdometryReading :odom="odom" />
-    </div> -->
-    <div v-if="type === 'DM'" class="map">
+    </div>
+    <div v-if="type === 'DM'" class="shadow p-3 rounded map">
       <BasicMap :odom="odom" />
     </div>
-    <div class="pdb">
+    <div class="shadow p-3 rounded pdb">
       <PDBFuse />
     </div>
-    <!-- <div class="drive-vel-data">
+    <div class="shadow p-3 rounded drive-vel-data">
       <JointStateTable :joint-state-data="jointState" :vertical="true" />
-    </div> -->
-    <div v-if="type === 'DM'" class="waypoint-editor">
+    </div>
+    <div v-if="type === 'DM'" class="shadow p-3 rounded waypoint-editor">
       <BasicWaypointEditor :odom="odom" />
     </div>
-    <!-- <div>
+    <div>
       <DriveControls></DriveControls>
-    </div> -->
-    <!-- <div class="arm-controls">
+    </div>
+    <div class="shadow p-3 rounded arm-controls">
       <ArmControls />
-    </div> -->
-    <div class="moteus">
+    </div>
+    <div class="shadow p-3 rounded moteus">
       <DriveMoteusStateTable :moteus-state-data="moteusState" />
       <ArmMoteusStateTable />
     </div>
@@ -75,22 +75,30 @@
 </template>
 
 <script lang="ts">
-import { defineComponent } from 'vue'
+import { defineComponent, inject } from 'vue'
 import PDBFuse from "./PDBFuse.vue";
 import DriveMoteusStateTable from "./DriveMoteusStateTable.vue";
 import ArmMoteusStateTable from "./ArmMoteusStateTable.vue";
 import ArmControls from "./ArmControls.vue";
 import BasicMap from "./BasicRoverMap.vue";
 import BasicWaypointEditor from './BasicWaypointEditor.vue';
+import Cameras from './Cameras.vue';
+import JointStateTable from "./JointStateTable.vue";
+import OdometryReading from "./OdometryReading.vue";
+import DriveControls from './DriveControls.vue';
 
 export default defineComponent({
-  components : {
+  components: {
     PDBFuse,
     DriveMoteusStateTable,
     ArmMoteusStateTable,
     ArmControls,
     BasicMap,
-    BasicWaypointEditor
+    BasicWaypointEditor,
+    Cameras,
+    JointStateTable,
+    OdometryReading,
+    DriveControls
   },
 
   props: {
@@ -98,18 +106,20 @@ export default defineComponent({
       type: String,
       required: true
     }
+    
   },
 
   data() {
     return {
+      websocket: inject("webSocketService") as WebSocket,
       // Default coordinates at MDRS
       odom: {
         latitude_deg: 38.4060250,
         longitude_deg: -110.7923723,
         bearing_deg: 0,
+        altitude: 0,
         speed: 0
       },
-
       
       // Default object isn't empty, so has to be initialized to ""
       moteusState: {
@@ -118,8 +128,28 @@ export default defineComponent({
         state: ["", "", "", "", "", ""]
       },
 
-      jointState: {}
+      jointState: {
+        name: [],
+        position: [],
+        velocity: [],
+        effort: []
+      }
     }
+  },
+
+  mounted() {
+    this.websocket.onmessage = (event) => {
+      const msg = JSON.parse(event.data)
+      if (msg.type == "joint_state") {
+        this.jointState.name = msg.name;
+        this.jointState.position = msg.position;
+        this.jointState.velocity = msg.velocity;
+        this.jointState.effort = msg.effort;
+      }
+    }
+  },
+
+  created() {
   }
 })
 </script>
@@ -127,9 +157,9 @@ export default defineComponent({
 <style>
 .wrapper-dm {
   display: grid;
-  grid-gap: 10px;
-  grid-template-columns: repeat(2, auto);
-  grid-template-rows: auto 200px 300px repeat(3, auto);
+  gap: 10px;
+  grid-template-columns: 50% 50%;
+  grid-template-rows: repeat(6, auto);
   grid-template-areas:
     "header header"
     "map waypoint-editor"
@@ -143,7 +173,7 @@ export default defineComponent({
 
 .wrapper-es {
   display: grid;
-  grid-gap: 10px;
+  gap: 10px;
   grid-template-columns: repeat(2, auto);;
   grid-template-rows: repeat(4, auto);;
   grid-template-areas:

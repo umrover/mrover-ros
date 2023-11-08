@@ -27,28 +27,20 @@
 </template>
 
 <script lang="ts">
-import MenuButton from "./MenuButton.vue";
-
-import { defineComponent, inject } from 'vue'
-
-export default defineComponent({
-  name: "MainMenu",
-  components: {
-    MenuButton,
-  },
+import { inject } from 'vue'
+import MenuButton from './MenuButton.vue'
+export default {
   created() {
-    const ws:any = inject<WebSocket>('webSocketService');
+    const ws: any = inject<WebSocket>('webSocketService');
 
     ws.send('Hello, WebSocket!');
   },
-
-  data() {
-    return {};
+  components: {
+    MenuButton
   }
+};
 
-});
 </script>
-
 <style scoped>
 
 .header {
