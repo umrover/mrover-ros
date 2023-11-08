@@ -121,7 +121,7 @@ namespace mrover {
         assert(msg->source == mControllerName);
         assert(msg->destination == mName);
 
-        auto* out_bound_message = reinterpret_cast<OutBoundMessage const*>(std::addressof(msg->data));
+        auto* out_bound_message = reinterpret_cast<OutBoundMessage const*>(msg->data.data());
 
         std::visit([&](auto&& message) {
             if constexpr (std::is_same_v<std::decay_t<decltype(message)>, ControllerDataState>) {
