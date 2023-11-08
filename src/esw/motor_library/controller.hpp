@@ -28,7 +28,10 @@ namespace mrover {
         virtual void set_desired_position(Radians position) = 0;          // joint output
         virtual void processCANMessage(CAN::ConstPtr const& msg) = 0;
         Radians getCurrentPosition() { return mCurrentPosition; }
-        RadiansPerSecond getCurrentVelocity() { return mCurrentVelocity; };
+        RadiansPerSecond getCurrentVelocity() { return mCurrentVelocity; }
+        std::string getErrorState() { return mErrorState; }
+        std::string getState() { return mState; }
+        virtual double getEffort() = 0; // TODO implement in base files. for brushed it is 0/nan, for brushless it exists.
 
     protected:
         ros::NodeHandle mNh;
@@ -40,7 +43,8 @@ namespace mrover {
         Radians mCurrentPosition{};
         RadiansPerSecond mCurrentVelocity{};
         bool mIsCalibrated{};
-        uint8_t mErrorState{};
+        std::string mErrorState{};
+        std::string mState{};
         bool mLimitAHit{};
         bool mLimitBHit{};
         bool mLimitCHit{};

@@ -65,10 +65,12 @@ namespace mrover {
         void set_desired_velocity(RadiansPerSecond velocity) override;
         void set_desired_position(Radians position) override;
         void processCANMessage(CAN::ConstPtr const& msg) override;
+        double getEffort() override;
 
     private:
         std::optional<ErrorCode> err;
-        float torque{};
+        float torque;
+        double mMeasuredEffort{};
     };
 
 } // namespace mrover

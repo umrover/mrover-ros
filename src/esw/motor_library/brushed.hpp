@@ -13,6 +13,7 @@ namespace mrover {
         void set_desired_velocity(RadiansPerSecond velocity) override;
         void set_desired_position(Radians position) override;
         void processCANMessage(CAN::ConstPtr const& msg) override;
+        double getEffort() override;
 
         void send_configuration();
 
@@ -22,6 +23,7 @@ namespace mrover {
     private:
         bool m_is_configured = false;
         ConfigCommand m_config_command;
+        static const std::unordered_map<int, std::string> brushedErrorByCode;
     };
 
 } // namespace mrover

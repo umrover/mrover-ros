@@ -2,6 +2,10 @@
 
 namespace mrover {
 
+    const std::unordered_map<int, std::string> BrushedController::brushedErrorByCode = {
+            {0, "No Error"},
+            {1, "Error"}}; // TODO - NEED MORE SPECIFIC ERRORS
+
     BrushedController::BrushedController(ros::NodeHandle const& nh, std::string name, std::string controller_name)
         : Controller{nh, std::move(name), std::move(controller_name)} {
 
@@ -68,6 +72,9 @@ namespace mrover {
         m_config_command.limit_max_pos.limit_max_backward_position = static_cast<bool>(brushed_motor_data["limit_max_backward_pos"]);
         m_config_command.max_forward_pos = Meters{static_cast<double>(brushed_motor_data["max_forward_pos"])};
         m_config_command.max_back_pos = Meters{static_cast<double>(brushed_motor_data["max_backward_pos"])};
+
+        mErrorState = "Unknown";
+        mState = "Unknown";
     }
 
     void BrushedController::set_desired_throttle(Percent throttle) {
@@ -124,17 +131,26 @@ namespace mrover {
                 ConfigCalibErrorInfo config_calib_err_info = controller_data_state.config_calib_error_data;
                 m_is_configured = config_calib_err_info.configured;
                 mIsCalibrated = config_calib_err_info.calibrated;
-                mErrorState = config_calib_err_info.error;
+                mErrorState = brushedErrorByCode.at(config_calib_err_info.error);
                 LimitStateInfo limit_state_info = controller_data_state.limit_switches;
                 mLimitAHit = limit_state_info.limit_a_hit;
                 mLimitBHit = limit_state_info.limit_b_hit;
                 mLimitCHit = limit_state_info.limit_c_hit;
                 mLimitDHit = limit_state_info.limit_d_hit;
+                if (mIsCalibrated) {
+                    mState = "Armed";
+                } else {
+                    mState = "Not Armed";
+                }
             } else {
                 // do whatever
             }
         },
                    out_bound_message);
+    }
+
+    double BrushedController::getEffort() {
+        return std::nan("1"); // TODO - is there a purpose for the tag
     }
 
 } // namespace mrover

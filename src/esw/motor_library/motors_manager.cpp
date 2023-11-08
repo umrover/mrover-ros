@@ -119,13 +119,13 @@ namespace mrover {
         for (const std::string& name: mControllerNames) {
             Controller& controller = get_controller(name);
             joint_state.name.push_back(name);
-            joint_state.position.push_back(double{controller.getCurrentPosition()});
-            joint_state.velocity.push_back(double{controller.getCurrentVelocity()});
-            joint_state.effort.push_back(0); // TODO
+            joint_state.position.push_back(controller.getCurrentPosition().get());
+            joint_state.velocity.push_back(controller.getCurrentVelocity().get());
+            joint_state.effort.push_back(controller.getEffort()); // TODO
 
             controller_state.name.push_back(name);
-            controller_state.state.push_back("Armed");    // TODO
-            controller_state.error.push_back("No Error"); // TODO - map
+            controller_state.state.push_back(controller.getState());      // TODO
+            controller_state.error.push_back(controller.getErrorState()); // TODO - map
         }
 
         mJointDataPub.publish(joint_state);

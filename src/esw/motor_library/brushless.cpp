@@ -42,4 +42,9 @@ namespace mrover {
     void BrushlessController::processCANMessage(CAN::ConstPtr const& msg) {
     }
 
+    double BrushlessController::getEffort() {
+        // TODO - actually do something
+        return mMeasuredEffort;
+    }
+
 } // namespace mrover
