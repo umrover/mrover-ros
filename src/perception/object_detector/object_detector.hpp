@@ -22,7 +22,7 @@ namespace mrover {
         ros::NodeHandle mNh, mPnh;
 
         //Inference inference;
-
+        InferenceWrapper inferenceWrapper;
 
         // Publishers
 

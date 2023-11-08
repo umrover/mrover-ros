@@ -1,6 +1,5 @@
 #include "object_detector.hpp"
-//#include "inference.h"
-
+#include "inferenceWrapper.hpp"
 #include <cv_bridge/cv_bridge.h>
 #include <iostream>
 #include <mrover/DetectedObject.h>
@@ -28,10 +27,6 @@ namespace mrover {
         assert(msg->width > 0);
 
         cv::Mat imageView{static_cast<int>(msg->height), static_cast<int>(msg->width), CV_8UC4, const_cast<uint8_t*>(msg->data.data())};
-
-        std::cout << "BRUHH" << std::endl;
-        cv::imshow("dumb", imageView);
-        cv::waitKey(100);
     }
     /*
     void ObjectDetectorNodelet::imageCallback(sensor_msgs::ImageConstPtr const& msg) {

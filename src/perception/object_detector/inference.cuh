@@ -81,8 +81,6 @@ namespace mrover {
         static int getBindingInputIndex(nvinfer1::IExecutionContext* context);
 
     public:
-        Inference() = default;
-
         Inference(std::string onnxModelPath, cv::Size modelInputShape, std::string classesTxtFile);
 
 

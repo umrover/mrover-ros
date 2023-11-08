@@ -48,6 +48,8 @@ namespace mrover {
         assert(this->enginePtr->bindingIsInput(0) ^ enginePtr->bindingIsInput(1));
 
         this->onnxModelPath = onnxModelPath;
+
+        prepTensors();
     }
 
     // Initializes enginePtr with built engine

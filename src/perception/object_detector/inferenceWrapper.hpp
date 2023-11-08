@@ -10,9 +10,13 @@ namespace mrover {
     class InferenceWrapper {
     private:
         //The pointer to the inference class
-        std::unique_ptr<Inference> inferencePtr;
+        std::shared_ptr<Inference> inferencePtr;
 
     public:
+        InferenceWrapper() = default;
+
+        ~InferenceWrapper() = default;
+
         //The constructor for the inferencewrapper
         InferenceWrapper(std::string onnxModelPath, cv::Size modelInputShape, std::string classesTxtFile);
 

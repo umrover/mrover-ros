@@ -1,4 +1,5 @@
 #include "object_detector.hpp"
+#include "inferenceWrapper.hpp"
 //#include "inference.h"
 
 #include <mrover/DetectedObject.h>
@@ -17,7 +18,7 @@ namespace mrover {
     void ObjectDetectorNodelet::onInit() {
         mNh = getMTNodeHandle();
         mPnh = getMTPrivateNodeHandle();
-
+        inferenceWrapper = InferenceWrapper("//home//jabra//Desktop//Rover//yolov8s.onnx", cv::Size(640, 640), "");
         //inference = Inference("//home//jabra//Desktop//Rover//yolov8s.onnx", cv::Size(640, 640), "");
         //read ONNX file into this mNet, YOLOV8, second smallest one
         // Note(quintin): I downloaded this pt (PyTorch) model file from: https://github.com/ultralytics/assets/releases
