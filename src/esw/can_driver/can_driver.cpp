@@ -49,32 +49,37 @@ namespace mrover {
             mBitrate = static_cast<std::uint32_t>(mPnh.param<int>("bitrate", 500000));
             mBitratePrescaler = static_cast<std::uint32_t>(mPnh.param<int>("bitrate_prescaler", 2));
 
-            XmlRpc::XmlRpcValue can_devices;
-            mNh.getParam("can/devices", can_devices);
+            XmlRpc::XmlRpcValue canDevices;
+            mNh.getParam("can/devices", canDevices);
+            assert(canDevices.getType() == XmlRpc::XmlRpcValue::TypeArray);
 
-            for (auto const& [_, can_device]: can_devices) {
-                assert(can_device.hasMember("name") &&
-                       can_device["name"].getType() == XmlRpc::XmlRpcValue::TypeString);
-                auto device_name = static_cast<std::string>(can_device["name"]);
+            for (int size = canDevices.size(), i = 0; i < size; ++i) {
+                XmlRpc::XmlRpcValue const& canDevice = canDevices[i];
 
-                assert(can_device.hasMember("id") &&
-                       can_device["id"].getType() == XmlRpc::XmlRpcValue::TypeInt);
-                auto can_id = static_cast<std::uint8_t>(static_cast<int>(can_device["id"]));
+                assert(canDevice.getType() == XmlRpc::XmlRpcValue::TypeStruct);
 
-                assert(can_device.hasMember("bus") &&
-                       can_device["bus"].getType() == XmlRpc::XmlRpcValue::TypeInt);
-                auto can_bus = static_cast<std::uint8_t>(static_cast<int>(can_device["bus"]));
+                assert(canDevice.hasMember("name") &&
+                       canDevice["name"].getType() == XmlRpc::XmlRpcValue::TypeString);
+                auto name = static_cast<std::string>(canDevice["name"]);
 
-                mDevices.emplace(device_name,
+                assert(canDevice.hasMember("id") &&
+                       canDevice["id"].getType() == XmlRpc::XmlRpcValue::TypeInt);
+                auto id = static_cast<std::uint8_t>(static_cast<int>(canDevice["id"]));
+
+                assert(canDevice.hasMember("bus") &&
+                       canDevice["bus"].getType() == XmlRpc::XmlRpcValue::TypeInt);
+                auto bus = static_cast<std::uint8_t>(static_cast<int>(canDevice["bus"]));
+
+                mDevices.emplace(name,
                                  CanFdAddress{
-                                         .bus = can_bus,
-                                         .id = can_id,
+                                         .bus = bus,
+                                         .id = id,
                                  });
 
-                mDevicesPubSub.emplace(device_name,
+                mDevicesPubSub.emplace(name,
                                        CanFdPubSub{
-                                               .publisher = mNh.advertise<CAN>(std::format("can/{}/in", device_name), 16),
-                                               .subscriber = mNh.subscribe<CAN>(std::format("can/{}/out", device_name), 16, &CanNodelet::frameSendRequestCallback, this),
+                                               .publisher = mNh.advertise<CAN>(std::format("can/{}/in", name), 16),
+                                               .subscriber = mNh.subscribe<CAN>(std::format("can/{}/out", name), 16, &CanNodelet::frameSendRequestCallback, this),
                                        });
             }
 
