@@ -1,5 +1,6 @@
 #include "can_driver.hpp"
 
+#include <cctype>
 #include <linux/can.h>
 
 #include <boost/asio/read.hpp>
@@ -56,6 +57,18 @@ namespace mrover {
             for (int size = canDevices.size(), i = 0; i < size; ++i) {
                 XmlRpc::XmlRpcValue const& canDevice = canDevices[i];
 
+                assert(canDevice.hasMember("bus") &&
+                       canDevice["bus"].getType() == XmlRpc::XmlRpcValue::TypeInt);
+                auto bus = static_cast<std::uint8_t>(static_cast<int>(canDevice["bus"]));
+
+                if (std::isdigit(mInterface.back() - '0')) {
+                    throw std::runtime_error("Interface is not valid (must end with a number)");
+                }
+                uint8_t mInterfaceNum = mInterface.back() - '0';
+                if (bus != mInterfaceNum) {
+                    continue;
+                }
+
                 assert(canDevice.getType() == XmlRpc::XmlRpcValue::TypeStruct);
 
                 assert(canDevice.hasMember("name") &&
@@ -66,9 +79,6 @@ namespace mrover {
                        canDevice["id"].getType() == XmlRpc::XmlRpcValue::TypeInt);
                 auto id = static_cast<std::uint8_t>(static_cast<int>(canDevice["id"]));
 
-                assert(canDevice.hasMember("bus") &&
-                       canDevice["bus"].getType() == XmlRpc::XmlRpcValue::TypeInt);
-                auto bus = static_cast<std::uint8_t>(static_cast<int>(canDevice["bus"]));
 
                 mDevices.emplace(name,
                                  CanFdAddress{
