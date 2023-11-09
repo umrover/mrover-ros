@@ -39,7 +39,7 @@ class GPS_Driver():
         self.ser.close()
 
     def process_rtcm(self, data) -> None:
-        print("hello")
+        print("processing RTCM")
         with self.lock:
             # rtcm_data = RTCM.decode(data)
             self.ser.write(data.message)
@@ -50,23 +50,36 @@ class GPS_Driver():
         if not msg:
             return
         
-        print("hello")
-        
-        if rover_gps_data.identity == "RXM-RTCM":
+        try:
+            print(msg.identity)
             rospy.loginfo(vars(rover_gps_data))
+
+        except:
+            pass
+
+
+        print("parsing GPS")
+                
+        if rover_gps_data.identity == "RXM-RTCM":
+            print("RXM")
+            # rospy.loginfo(vars(rover_gps_data))
         
         if rover_gps_data.identity == "NAV-PVT":
+            print("PVT")
             rospy.loginfo(vars(rover_gps_data))
+
+        if rover_gps_data.identity == "NAV-STATUS":
+            print("NAV STATUS")
+
 
 
     def gps_data_thread(self) -> None:
         #TODO: add more message checks if needed
         while not rospy.is_shutdown():
-            print()
-            # with self.lock:
-            #     if self.ser.in_waiting:
-            #         raw, rover_gps_data = self.reader.read()
-            #         parsed_gps_data = self.parse_rover_gps_data(rover_gps_data)
+            with self.lock:
+                if self.ser.in_waiting:
+                    raw, rover_gps_data = self.reader.read()
+                    parsed_gps_data = self.parse_rover_gps_data(rover_gps_data)
 
 
 def main():
