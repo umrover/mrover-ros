@@ -56,28 +56,28 @@ namespace mrover {
     public:
         LimitSwitch() = default;
 
-        LimitSwitch(Pin pin) : m_pin{pin} {}
+        explicit LimitSwitch(Pin const& pin) : m_pin{pin} {}
 
         void update_limit_switch() {
             // This suggests active low
-            if (this->m_enabled) {
-                this->m_is_pressed = this->m_active_high == this->m_pin.read();
+            if (m_enabled) {
+                m_is_pressed = m_active_high == m_pin.read();
             } else {
-                this->m_is_pressed = 0;
+                m_is_pressed = 0;
             }
         }
 
-        bool pressed() {
-            return this->m_is_pressed;
+        [[nodiscard]] bool pressed() const {
+            return m_is_pressed;
         }
 
         void enable() {
-            this->m_enabled = true;
+            m_enabled = true;
         }
 
     private:
         Pin m_pin;
-        std::uint8_t m_enabled = false;
+        std::uint8_t m_enabled{};
         std::uint8_t m_is_pressed{};
         std::uint8_t m_valid{};
         std::uint8_t m_active_high{};
@@ -88,16 +88,15 @@ namespace mrover {
         constexpr static std::uint32_t I2C_TIMEOUT = 500, I2C_REBOOT_DELAY = 5;
 
         void reboot() {
-            HAL_I2C_DeInit(this->m_i2c);
+            HAL_I2C_DeInit(m_i2c);
             HAL_Delay(I2C_REBOOT_DELAY);
-            HAL_I2C_Init(this->m_i2c);
+            HAL_I2C_Init(m_i2c);
         }
 
     public:
         SMBus() = default;
 
-        explicit SMBus(I2C_HandleTypeDef* hi2c)
-                : m_i2c{hi2c} {
+        explicit SMBus(I2C_HandleTypeDef* hi2c) : m_i2c{hi2c} {
         }
 
         template<IsI2CSerializable TSend, IsI2CSerializable TReceive>

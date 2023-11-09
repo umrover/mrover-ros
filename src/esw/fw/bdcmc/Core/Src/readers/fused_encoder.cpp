@@ -36,22 +36,4 @@ namespace mrover {
         return {m_position, m_velocity};
     }
 
-    void FusedReader::setup_limit_switches(Config const& config) {
-        if (config.limit_switch_info_0.a_present && config.limit_switch_info_0.a_enable) {
-            m_limit_switch_a.enable();
-        }
-
-        if (config.limit_switch_info_0.b_present && config.limit_switch_info_0.b_enable) {
-            m_limit_switch_b.enable();
-        }
-
-        if (config.limit_switch_info_0.c_present && config.limit_switch_info_0.c_enable) {
-            m_limit_switch_c.enable();
-        }
-
-        if (config.limit_switch_info_0.d_present && config.limit_switch_info_0.d_enable) {
-            m_limit_switch_d.enable();
-        }
-    }
-
 } // namespace mrover

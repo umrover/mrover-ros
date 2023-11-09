@@ -40,6 +40,10 @@ namespace mrover {
         Config m_config;
         Reader m_reader;
         Writer m_writer;
+        LimitSwitch m_limit_switch_a;
+        LimitSwitch m_limit_switch_b;
+        LimitSwitch m_limit_switch_c;
+        LimitSwitch m_limit_switch_d;
         FDCANBus m_fdcan_bus;
 
         InBoundMessage m_command;
@@ -49,9 +53,28 @@ namespace mrover {
             // TODO - this needs to be implemented!
         }
 
-
         void feed(ConfigCommand const& message) {
             m_config.configure(message);
+
+            if (m_config.limit_switch_info_0.a_present && m_config.limit_switch_info_0.a_enable) {
+                m_limit_switch_a.enable();
+            }
+
+            if (m_config.limit_switch_info_0.b_present && m_config.limit_switch_info_0.b_enable) {
+                m_limit_switch_b.enable();
+            }
+
+            if (m_config.limit_switch_info_0.c_present && m_config.limit_switch_info_0.c_enable) {
+                m_limit_switch_c.enable();
+            }
+
+            if (m_config.limit_switch_info_0.d_present && m_config.limit_switch_info_0.d_enable) {
+                m_limit_switch_d.enable();
+            }
+        }
+
+        void feed(IdleCommand const& message) {
+
         }
 
         void feed(ThrottleCommand const& message) {
@@ -88,10 +111,6 @@ namespace mrover {
         }
 
         void feed(EnableLimitSwitchesCommand const& message) {
-            // TODO: implement
-        }
-
-        void feed(AdjustCommand const& message) {
             // TODO: implement
         }
 
@@ -144,16 +163,16 @@ namespace mrover {
         void send() {
             auto [position, velocity] = m_reader.read(m_config);
 
-            ConfigCalibErrorInfo config_calib_error_info{};
+            ConfigCalibErrorInfo config_calib_error_info;
             config_calib_error_info.configured = m_config.is_configured;
             config_calib_error_info.calibrated = false; // TODO
             config_calib_error_info.error = 0; // TODO
 
-            LimitStateInfo limit_state_info{};
-            limit_state_info.limit_a_hit = m_reader.m_limit_switch_a.pressed();
-            limit_state_info.limit_b_hit = m_reader.m_limit_switch_b.pressed();
-            limit_state_info.limit_c_hit = m_reader.m_limit_switch_c.pressed();
-            limit_state_info.limit_d_hit = m_reader.m_limit_switch_d.pressed();
+            LimitStateInfo limit_state_info;
+            limit_state_info.limit_a_hit = m_limit_switch_a.pressed();
+            limit_state_info.limit_b_hit = m_limit_switch_b.pressed();
+            limit_state_info.limit_c_hit = m_limit_switch_c.pressed();
+            limit_state_info.limit_d_hit = m_limit_switch_d.pressed();
 
             m_fdcan_bus.broadcast(OutBoundMessage{ControllerDataState{
                     .position = position,

@@ -5,7 +5,6 @@
 #include "config.hpp"
 #include "hardware.hpp"
 #include "units/units.hpp"
-#include "main.h"
 
 constexpr std::uint32_t COUNTS_PER_ROTATION_RELATIVE = 4096;
 constexpr std::uint32_t COUNTS_PER_ROTATION_ABSOLUTE = 1024;
@@ -23,19 +22,19 @@ namespace mrover {
         std::optional<std::uint64_t> read_raw_angle();
 
     private:
-        std::uint8_t m_address{};
-        SMBus m_i2cBus;
-        enum {
-            // default i2c address is 0x40
-            device_slave_address_none_high = 0x40,
-            device_slave_address_a1_high = 0x41,
-            device_slave_address_a2_high = 0x42,
-            device_slave_address_both_high = 0x43,
+        struct I2CAddress {
+            constexpr static std::uint16_t
+                    device_slave_address_none_high = 0x40,
+                    device_slave_address_a1_high = 0x41,
+                    device_slave_address_a2_high = 0x42,
+                    device_slave_address_both_high = 0x43;
         };
+
+        std::uint16_t m_address{};
+        SMBus m_i2cBus;
 
         std::uint64_t m_previous_raw_data{};
     };
-
 
     class QuadratureEncoder {
     public:
@@ -64,19 +63,16 @@ namespace mrover {
         AbsoluteEncoder m_abs_encoder;
         QuadratureEncoder m_quad_encoder;
 
-        LimitSwitch m_limit_switch_a;
-        LimitSwitch m_limit_switch_b;
-        LimitSwitch m_limit_switch_c;
-        LimitSwitch m_limit_switch_d;
-
         TIM_HandleTypeDef* m_relative_encoder_timer{};
         I2C_HandleTypeDef* m_absolute_encoder_i2c{};
         Radians m_position;
         RadiansPerSecond m_velocity;
 
         void refresh_absolute(Config const& config);
+    };
 
-        void setup_limit_switches(Config const& config);
+    class LimitSwitchReader {
+
     };
 
 } // namespace mrover
