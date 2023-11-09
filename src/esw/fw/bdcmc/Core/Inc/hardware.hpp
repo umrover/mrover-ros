@@ -121,13 +121,13 @@ namespace mrover {
     };
 
     class FDCANBus {
-        constexpr static std::uint8_t NOOP = 0x50;
+//        constexpr static std::uint8_t NO_DATA = 0x50;
 
     public:
         FDCANBus() = default;
 
-        explicit FDCANBus(FDCAN_HandleTypeDef* hfdcan)
-                : m_fdcan{hfdcan} {
+        explicit FDCANBus(std::uint8_t source, std::uint8_t destination, FDCAN_HandleTypeDef* fdcan)
+                : m_fdcan{fdcan}, m_source{source}, m_destination{destination} {
 
             check(HAL_FDCAN_Start(m_fdcan) == HAL_OK, Error_Handler);
         }
@@ -169,8 +169,21 @@ namespace mrover {
         }
 
         auto broadcast(IsFdcanSerializable auto const& send) -> void {
+            struct FdcanMessageId {
+                std::uint8_t destination{};
+                std::uint8_t source: 7 {};
+                bool replyRequired: 1 {};
+                [[maybe_unused]] std::uint16_t _ignored: 13 {};
+                bool isError: 1 {};
+                bool isRemote: 1 {};
+                bool isExtended: 1 {};
+            } message{
+                    .destination = m_destination,
+                    .source = m_source,
+                    .isExtended = true,
+            };
             FDCAN_TxHeaderTypeDef header{
-                    .Identifier = 0x11,
+                    .Identifier = std::bit_cast<std::uint32_t>(message),
                     .IdType = FDCAN_STANDARD_ID,
                     .TxFrameType = FDCAN_DATA_FRAME,
                     .DataLength = nearest_fitting_can_fd_frame_size(sizeof(send)),
@@ -185,6 +198,7 @@ namespace mrover {
 
     private:
         FDCAN_HandleTypeDef* m_fdcan{};
+        std::uint8_t m_source{}, m_destination{};
     };
 
 } // namespace mrover
