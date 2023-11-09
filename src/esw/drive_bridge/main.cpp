@@ -2,7 +2,7 @@
 #include <ros/ros.h>
 #include <sensor_msgs/JointState.h>
 
-#include <can_manager.hpp>
+#include <can_device.hpp>
 #include <motors_manager.hpp>
 
 #include <mrover/ControllerState.h>
@@ -55,7 +55,7 @@ int main(int argc, char** argv) {
     auto ratioMotorToWheel = requireParamAsUnit<Dimensionless>(nh, "wheel/gear_ratio");
     auto wheelRadius = requireParamAsUnit<Meters>(nh, "wheel/radius");
     // TODO(quintin) is dividing by ratioMotorToWheel right?
-    WHEEL_LINEAR_TO_ANGULAR = make_unit<Radians>(1) / wheelRadius * ratioMotorToWheel;
+    WHEEL_LINEAR_TO_ANGULAR = Radians{1} / wheelRadius * ratioMotorToWheel;
 
     auto maxLinearSpeed = requireParamAsUnit<MetersPerSecond>(nh, "rover/max_speed");
     assert(maxLinearSpeed > 0_mps);
@@ -76,8 +76,8 @@ int main(int argc, char** argv) {
 
 void moveDrive(const geometry_msgs::Twist::ConstPtr& msg) {
     // See 11.5.1 in "Controls Engineering in the FIRST Robotics Competition" for the math
-    auto forward = make_unit<MetersPerSecond>(msg->linear.x);
-    auto turn = make_unit<RadiansPerSecond>(msg->angular.z);
+    auto forward = MetersPerSecond{msg->linear.x};
+    auto turn = RadiansPerSecond{msg->angular.z};
     // TODO(quintin)    Don't ask me to explain perfectly why we need to cancel out a meters unit in the numerator
     //                  I think it comes from the fact that there is a unit vector in the denominator of the equation
     auto delta = turn * WHEEL_DISTANCE_INNER / Meters{1};
@@ -98,7 +98,7 @@ void moveDrive(const geometry_msgs::Twist::ConstPtr& msg) {
         Dimensionless multiplier = motorMultipliers[name];
         RadiansPerSecond scaledAngularVelocity = angularVelocity * multiplier; // currently in rad/s
 
-        driveManager->get_controller(name).set_desired_velocity(scaledAngularVelocity);
+        driveManager->get_controller(name).setDesiredVelocity(scaledAngularVelocity);
     }
 
     driveManager->updateLastConnection();

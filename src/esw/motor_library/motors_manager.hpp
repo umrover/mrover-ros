@@ -10,26 +10,28 @@
 #include <brushless.hpp>
 #include <controller.hpp>
 
+#include <mrover/ControllerState.h>
 #include <mrover/Position.h>
 #include <mrover/Throttle.h>
 #include <mrover/Velocity.h>
+#include <sensor_msgs/JointState.h>
 
 namespace mrover {
 
     template<IsUnit Unit>
-    Unit requireParamAsUnit(ros::NodeHandle const& nh, std::string const& name) {
+    auto requireParamAsUnit(ros::NodeHandle const& nh, std::string const& name) -> Unit {
         assert(nh.hasParam(name));
 
         typename Unit::rep_t value;
         nh.getParam(name, value);
-        return make_unit<Unit>(value);
+        return Unit{value};
     }
 
     class MotorsManager {
     public:
         MotorsManager() = default;
 
-        MotorsManager(ros::NodeHandle& nh, const std::string& groupName, const std::vector<std::string>& controllerNames);
+        MotorsManager(ros::NodeHandle const& nh, std::string groupName, std::vector<std::string> controllerNames);
 
         Controller& get_controller(std::string const& name);
 
@@ -43,14 +45,26 @@ namespace mrover {
 
         void heartbeatCallback(const ros::TimerEvent&);
 
+        void publishDataCallback(const ros::TimerEvent&);
+
         void updateLastConnection();
 
     private:
-        std::unordered_map<std::string, std::unique_ptr<Controller>> controllers;
-        std::unordered_map<int, std::string> names;
-        std::string motorGroupName;
-        std::vector<std::string> motorNames;
+        ros::NodeHandle mNh;
+
+        ros::Subscriber mMoveThrottleSub;
+        ros::Subscriber mMoveVelocitySub;
+        ros::Subscriber mMovePositionSub;
+        ros::Publisher mJointDataPub;
+        ros::Publisher mControllerDataPub;
+        // TODO - create a publisher and add to ESW TELEOP ICD about limit switch hit stuff
+        std::unordered_map<std::string, std::unique_ptr<Controller>> mControllers;
+        std::unordered_map<int, std::string> mNames;
+        std::string mGroupName;
+        std::vector<std::string> mControllerNames;
         std::chrono::high_resolution_clock::time_point lastConnection;
+        ros::Timer heartbeatTimer;
+        ros::Timer publishDataTimer;
     };
 
 } // namespace mrover

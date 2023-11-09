@@ -1,22 +1,33 @@
 #pragma once
 
-#include <can_manager.hpp>
+#include <can_device.hpp>
 #include <controller.hpp>
+
+#include "messaging.hpp"
 
 namespace mrover {
 
     class BrushedController : public Controller {
     public:
-        void update(std::span<std::byte const> frame) override;
+        void setDesiredThrottle(Percent throttle) override; // from -1.0 to 1.0
+        void setDesiredVelocity(RadiansPerSecond velocity) override;
+        void setDesiredPosition(Radians position) override;
 
-        void set_desired_throttle(Dimensionless throttle) override; // from -1.0 to 1.0
-        void set_desired_velocity(RadiansPerSecond velocity) override;
-        void set_desired_position(Radians position) override;
+        void processCANMessage(CAN::ConstPtr const& msg) override;
 
-        BrushedController(ros::NodeHandle& nh, const std::string& name) : Controller(nh, name) {}
+        void processMessage(ControllerDataState const& state);
+
+        void sendConfiguration();
+
+        double getEffort() override;
+
+        BrushedController(ros::NodeHandle const& nh, std::string name, std::string controllerName);
         ~BrushedController() override = default;
 
     private:
+        bool mIsConfigured = false;
+        ConfigCommand mConfigCommand;
+        static const std::unordered_map<int, std::string> mCodeToError;
     };
 
 } // namespace mrover

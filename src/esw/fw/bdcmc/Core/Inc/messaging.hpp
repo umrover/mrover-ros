@@ -12,70 +12,70 @@ namespace mrover {
 #pragma pack(push, 1)
 
     struct ConfigLimitSwitchInfo0 {
-        std::uint8_t a_present: 1 {};
-        std::uint8_t b_present: 1 {};
-        std::uint8_t c_present: 1 {};
-        std::uint8_t d_present: 1 {};
-        std::uint8_t a_enable: 1 {};
-        std::uint8_t b_enable: 1 {};
-        std::uint8_t c_enable: 1 {};
-        std::uint8_t d_enable: 1 {};
+        std::uint8_t a_present : 1 {};
+        std::uint8_t b_present : 1 {};
+        std::uint8_t c_present : 1 {};
+        std::uint8_t d_present : 1 {};
+        std::uint8_t a_enable : 1 {};
+        std::uint8_t b_enable : 1 {};
+        std::uint8_t c_enable : 1 {};
+        std::uint8_t d_enable : 1 {};
     };
     static_assert(sizeof(ConfigLimitSwitchInfo0) == 1);
 
     struct ConfigLimitSwitchInfo1 {
-        std::uint8_t a_active_high: 1 {};
-        std::uint8_t b_active_high: 1 {};
-        std::uint8_t c_active_high: 1 {};
-        std::uint8_t d_active_high: 1 {};
-        std::uint8_t a_limits_forward: 1 {};
-        std::uint8_t b_limits_forward: 1 {};
-        std::uint8_t c_limits_forward: 1 {};
-        std::uint8_t d_limits_forward: 1 {};
+        std::uint8_t a_active_high : 1 {};
+        std::uint8_t b_active_high : 1 {};
+        std::uint8_t c_active_high : 1 {};
+        std::uint8_t d_active_high : 1 {};
+        std::uint8_t a_limits_forward : 1 {};
+        std::uint8_t b_limits_forward : 1 {};
+        std::uint8_t c_limits_forward : 1 {};
+        std::uint8_t d_limits_forward : 1 {};
     };
     static_assert(sizeof(ConfigLimitSwitchInfo1) == 1);
 
     struct ConfigLimitSwitchInfo2 {
-        std::uint8_t a_use_for_readjustment: 1 {};
-        std::uint8_t b_use_for_readjustment: 1 {};
-        std::uint8_t c_use_for_readjustment: 1 {};
-        std::uint8_t d_use_for_readjustment: 1 {};
-        std::uint8_t a_is_default_enabled: 1 {};
-        std::uint8_t b_is_default_enabled: 1 {};
-        std::uint8_t c_is_default_enabled: 1 {};
-        std::uint8_t d_is_default_enabled: 1 {};
+        std::uint8_t a_use_for_readjustment : 1 {};
+        std::uint8_t b_use_for_readjustment : 1 {};
+        std::uint8_t c_use_for_readjustment : 1 {};
+        std::uint8_t d_use_for_readjustment : 1 {};
+        std::uint8_t a_is_default_enabled : 1 {};
+        std::uint8_t b_is_default_enabled : 1 {};
+        std::uint8_t c_is_default_enabled : 1 {};
+        std::uint8_t d_is_default_enabled : 1 {};
     };
     static_assert(sizeof(ConfigLimitSwitchInfo2) == 1);
 
     struct ConfigEncoderInfo {
-        [[maybe_unused]] std::uint8_t _ignore: 4 {}; // 8 bits - (4 meaningful bits) = 4 ignored bits
-        std::uint8_t quad_present: 1 {};
-        std::uint8_t quad_is_forward_polarity: 1 {};
-        std::uint8_t abs_present: 1 {};
-        std::uint8_t abs_is_forward_polarity: 1 {};
+        [[maybe_unused]] std::uint8_t _ignore : 4 {}; // 8 bits - (4 meaningful bits) = 4 ignored bits
+        std::uint8_t quad_present : 1 {};
+        std::uint8_t quad_is_forward_polarity : 1 {};
+        std::uint8_t abs_present : 1 {};
+        std::uint8_t abs_is_forward_polarity : 1 {};
     };
     static_assert(sizeof(ConfigEncoderInfo) == 1);
 
     struct ConfigLimitInfo {
-        [[maybe_unused]] std::uint8_t _ignore: 6 {}; // 8 bits - (2 meaningful bits) = 6 ignored bits
-        std::uint8_t limit_max_forward_position: 1 {};
-        std::uint8_t limit_max_backward_position: 1 {};
+        [[maybe_unused]] std::uint8_t _ignore : 6 {}; // 8 bits - (2 meaningful bits) = 6 ignored bits
+        std::uint8_t limit_max_forward_position : 1 {};
+        std::uint8_t limit_max_backward_position : 1 {};
     };
 
     struct ConfigCalibErrorInfo {
-        [[maybe_unused]] std::uint8_t _ignore: 2 {}; // 8 bits - (6 meaningful bits) = 2 ignored bits
-        std::uint8_t configured: 1 {};
-        std::uint8_t calibrated: 1 {};
-        std::uint8_t error: 4 {}; // 0 means no error, anything else is error
+        [[maybe_unused]] std::uint8_t _ignore : 2 {}; // 8 bits - (6 meaningful bits) = 2 ignored bits
+        std::uint8_t configured : 1 {};
+        std::uint8_t calibrated : 1 {};
+        std::uint8_t error : 4 {}; // 0 means no error, anything else is error
     };
     static_assert(sizeof(ConfigCalibErrorInfo) == 1);
 
     struct LimitStateInfo {
-        [[maybe_unused]] std::uint8_t _ignore: 4 {}; // 8 bits - (4 meaningful bits) = 4 ignored bits
-        std::uint8_t limit_a_hit: 1 {};
-        std::uint8_t limit_b_hit: 1 {};
-        std::uint8_t limit_c_hit: 1 {};
-        std::uint8_t limit_d_hit: 1 {};
+        [[maybe_unused]] std::uint8_t _ignore : 4 {}; // 8 bits - (4 meaningful bits) = 4 ignored bits
+        std::uint8_t limit_a_hit : 1 {};
+        std::uint8_t limit_b_hit : 1 {};
+        std::uint8_t limit_c_hit : 1 {};
+        std::uint8_t limit_d_hit : 1 {};
     };
     static_assert(sizeof(LimitStateInfo) == 1);
 
