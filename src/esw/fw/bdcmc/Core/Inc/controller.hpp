@@ -45,27 +45,29 @@ namespace mrover {
         InBoundMessage m_command;
         Mode m_mode;
 
-        inline void force_configure() {
-            check(m_config.is_configured, Error_Handler);
+        void feed(AdjustCommand const& message) {
+            // TODO - this needs to be implemented!
         }
 
-        void feed(IdleCommand const& message) {
-            // TODO: Feel like we should be actively calling something here
-            // maybe write_output with a throttle of 0?
-        }
 
         void feed(ConfigCommand const& message) {
             m_config.configure(message);
         }
 
         void feed(ThrottleCommand const& message) {
-            force_configure();
+            if (!m_config.is_configured) {
+                // TODO - set Error state
+                return;
+            }
 
             m_writer.write(m_config, message.throttle);
         }
 
         void feed(VelocityCommand const& message, VelocityMode mode) {
-            force_configure();
+            if (!m_config.is_configured) {
+                // TODO - set Error state
+                return;
+            }
 
             auto [_, input] = m_reader.read(m_config);
             auto target = message.velocity;
@@ -74,7 +76,10 @@ namespace mrover {
         }
 
         void feed(PositionCommand const& message, PositionMode mode) {
-            force_configure();
+            if (!m_config.is_configured) {
+                // TODO - set Error state
+                return;
+            }
 
             auto [input, _] = m_reader.read(m_config);
             auto target = message.position;
@@ -83,14 +88,10 @@ namespace mrover {
         }
 
         void feed(EnableLimitSwitchesCommand const& message) {
-            force_configure();
-
             // TODO: implement
         }
 
         void feed(AdjustCommand const& message) {
-            force_configure();
-
             // TODO: implement
         }
 
@@ -142,14 +143,23 @@ namespace mrover {
 
         void send() {
             auto [position, velocity] = m_reader.read(m_config);
+
+            ConfigCalibErrorInfo config_calib_error_info{};
+            config_calib_error_info.configured = m_config.is_configured;
+            config_calib_error_info.calibrated = false; // TODO
+            config_calib_error_info.error = 0; // TODO
+
+            LimitStateInfo limit_state_info{};
+            limit_state_info.limit_a_hit = m_reader.m_limit_switch_a.pressed();
+            limit_state_info.limit_b_hit = m_reader.m_limit_switch_b.pressed();
+            limit_state_info.limit_c_hit = m_reader.m_limit_switch_c.pressed();
+            limit_state_info.limit_d_hit = m_reader.m_limit_switch_d.pressed();
+
             m_fdcan_bus.broadcast(OutBoundMessage{ControllerDataState{
                     .position = position,
                     .velocity = velocity,
-                    // TODO: Actually fill the config_calib_error_data with data
-                    .config_calib_error_data = 0x00,
-                    // TODO: Is this going to be right or left aligned?
-                    // TODO: actually fill with correct values
-                    .limit_switches = 0x00,
+                    .config_calib_error_data = config_calib_error_info,
+                    .limit_switches = limit_state_info,
             }});
         }
     };
