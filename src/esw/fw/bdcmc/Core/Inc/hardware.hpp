@@ -40,11 +40,11 @@ namespace mrover {
         Pin(GPIO_TypeDef* port, std::uint16_t pin) : m_port{port}, m_pin{pin} {}
 
         [[nodiscard]] inline GPIO_PinState read() {
-            return HAL_GPIO_ReadPin(this->m_port, this->m_pin);
+            return HAL_GPIO_ReadPin(m_port, m_pin);
         }
 
         inline void write(GPIO_PinState val) {
-            HAL_GPIO_WritePin(this->m_port, this->m_pin, val);
+            HAL_GPIO_WritePin(m_port, m_pin, val);
         }
 
     private:
@@ -101,13 +101,13 @@ namespace mrover {
 
         template<IsI2CSerializable TSend, IsI2CSerializable TReceive>
         auto transact(std::uint16_t address, TSend const& send) -> std::optional<TReceive> {
-            if (HAL_I2C_Master_Transmit(this->m_i2c, address << 1, address_of<std::uint8_t>(send), sizeof(send), I2C_TIMEOUT) != HAL_OK) {
+            if (HAL_I2C_Master_Transmit(m_i2c, address << 1, address_of<std::uint8_t>(send), sizeof(send), I2C_TIMEOUT) != HAL_OK) {
                 // TODO(quintin): Do we want a different error handler here?
                 return std::nullopt;
             }
 
             //reads from address sent above
-            if (TReceive receive{}; HAL_I2C_Master_Receive(this->m_i2c, (address << 1) | 1, address_of<std::uint8_t>(receive), sizeof(receive), I2C_TIMEOUT) == HAL_OK) {
+            if (TReceive receive{}; HAL_I2C_Master_Receive(m_i2c, (address << 1) | 1, address_of<std::uint8_t>(receive), sizeof(receive), I2C_TIMEOUT) == HAL_OK) {
                 return receive;
             } else {
                 reboot();
