@@ -18,7 +18,10 @@ namespace mrover {
     using BrushedController = Controller<Radians, Percent, FusedReader, HBridgeWriter>;
 
     // NOTE: Change This For Each Motor Controller
-    constexpr static std::uint32_t CAN_ID = 1;
+    constexpr static std::uint32_t DEVICE_ID = 0x1;
+
+    // Usually this is the Jetson
+    constexpr static std::uint32_t DESTINATION_DEVICE_ID = 0x0;
 
     FDCANBus fdcan_bus;
     BrushedController controller;
@@ -31,14 +34,14 @@ namespace mrover {
               Error_Handler);
 
         fdcan_bus = FDCANBus{&hfdcan1};
-        controller = BrushedController{CAN_ID, FusedReader{&htim4, &hi2c1}, HBridgeWriter{&htim15}, fdcan_bus};
+        controller = BrushedController{DEVICE_ID, FusedReader{&htim4, &hi2c1}, HBridgeWriter{&htim15}, fdcan_bus};
     }
 
     void loop() {
         // If the Receiver has messages waiting in its queue
         if (std::optional received = fdcan_bus.receive<InBoundMessage>()) {
             auto const& [header, message] = received.value();
-            if (header.Identifier == CAN_ID)
+            if (header.Identifier == DEVICE_ID)
                 controller.receive(message);
         }
 

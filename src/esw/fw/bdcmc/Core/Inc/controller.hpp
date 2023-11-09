@@ -23,8 +23,8 @@ namespace mrover {
     };
 
     template<IsUnit InputUnit, IsUnit OutputUnit,
-             InputReader<InputUnit> Reader, OutputWriter<OutputUnit> Writer,
-             IsUnit TimeUnit = Seconds>
+            InputReader<InputUnit> Reader, OutputWriter<OutputUnit> Writer,
+            IsUnit TimeUnit = Seconds>
     class Controller {
     private:
         struct PositionMode {
@@ -46,7 +46,7 @@ namespace mrover {
         Mode m_mode;
 
         inline void force_configure() {
-            check(m_config.configured(), Error_Handler);
+            check(m_config.is_configured, Error_Handler);
         }
 
         void feed(IdleCommand const& message) {
@@ -101,8 +101,8 @@ namespace mrover {
             template<typename Command, typename ModeHead, typename... Modes>
             struct command_to_mode<Command, std::variant<ModeHead, Modes...>> { // Linear search to find corresponding mode
                 using type = std::conditional_t<requires(Controller controller, Command command, ModeHead mode) { controller.feed(command, mode); },
-                                                ModeHead,
-                                                typename command_to_mode<Command, std::variant<Modes...>>::type>; // Recursive call
+                        ModeHead,
+                        typename command_to_mode<Command, std::variant<Modes...>>::type>; // Recursive call
             };
 
             template<typename Command> // Base case
@@ -118,7 +118,7 @@ namespace mrover {
         Controller() = default;
 
         Controller(std::uint32_t id, Reader&& reader, Writer&& writer, FDCANBus const& fdcan_bus)
-            : m_config{id}, m_reader{std::move(reader)}, m_writer{std::move(writer)}, m_fdcan_bus{fdcan_bus} {}
+                : m_config{Config{.id = id}}, m_reader{std::move(reader)}, m_writer{std::move(writer)}, m_fdcan_bus{fdcan_bus} {}
 
         template<typename Command>
         void process(Command const& command) {

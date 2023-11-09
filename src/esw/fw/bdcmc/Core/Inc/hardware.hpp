@@ -11,7 +11,7 @@
 
 namespace mrover {
 
-    constexpr static std::size_t I2C_MAX_FRAME_SIZE = 32, CANFD_MAX_FRAME_SIZE = 64;
+    constexpr static std::size_t I2C_MAX_FRAME_SIZE = 32, FDCAN_MAX_FRAME_SIZE = 64;
 
     template<typename T>
     concept IsSerializable = std::is_trivially_copyable_v<T>;
@@ -20,7 +20,7 @@ namespace mrover {
     concept IsI2CSerializable = IsSerializable<T> && sizeof(T) <= mrover::I2C_MAX_FRAME_SIZE;
 
     template<typename T>
-    concept IsFDCANSerializable = IsSerializable<T> && sizeof(T) <= mrover::CANFD_MAX_FRAME_SIZE;
+    concept IsFdcanSerializable = IsSerializable<T> && sizeof(T) <= mrover::FDCAN_MAX_FRAME_SIZE;
 
     static inline auto check(bool cond, std::invocable auto handler) -> void {
         if (cond) return;
@@ -56,20 +56,19 @@ namespace mrover {
     public:
         LimitSwitch() = default;
 
-        LimitSwitch(Pin _pin)
-            : m_pin{_pin} {}
+        LimitSwitch(Pin pin) : m_pin{pin} {}
 
         void update_limit_switch() {
             // This suggests active low
             if (this->m_enabled) {
-                this->m_is_pressed = (this->m_active_high == this->m_pin.read());
+                this->m_is_pressed = this->m_active_high == this->m_pin.read();
             } else {
                 this->m_is_pressed = 0;
             }
         }
 
         bool pressed() {
-            this->m_is_pressed;
+            return this->m_is_pressed;
         }
 
         void enable() {
@@ -98,7 +97,7 @@ namespace mrover {
         SMBus() = default;
 
         explicit SMBus(I2C_HandleTypeDef* hi2c)
-            : m_i2c{hi2c} {
+                : m_i2c{hi2c} {
         }
 
         template<IsI2CSerializable TSend, IsI2CSerializable TReceive>
@@ -128,12 +127,12 @@ namespace mrover {
         FDCANBus() = default;
 
         explicit FDCANBus(FDCAN_HandleTypeDef* hfdcan)
-            : m_fdcan{hfdcan} {
+                : m_fdcan{hfdcan} {
 
             check(HAL_FDCAN_Start(m_fdcan) == HAL_OK, Error_Handler);
         }
 
-        template<IsFDCANSerializable TReceive>
+        template<IsFdcanSerializable TReceive>
         [[nodiscard]] auto receive() -> std::optional<std::pair<FDCAN_RxHeaderTypeDef, TReceive>> {
             if (HAL_FDCAN_GetRxFifoFillLevel(m_fdcan, FDCAN_RX_FIFO0)) {
                 FDCAN_RxHeaderTypeDef header;
@@ -145,7 +144,7 @@ namespace mrover {
             }
         }
 
-        consteval static auto nearest_fitting_fdcan_frame_size(std::size_t size) -> std::uint32_t {
+        consteval static auto nearest_fitting_can_fd_frame_size(std::size_t size) -> std::uint32_t {
             if (size <= 0) return FDCAN_DLC_BYTES_0;
             if (size <= 1) return FDCAN_DLC_BYTES_1;
             if (size <= 2) return FDCAN_DLC_BYTES_2;
@@ -169,12 +168,12 @@ namespace mrover {
             throw std::runtime_error("Too large!");
         }
 
-        auto broadcast(IsFDCANSerializable auto const& send) -> void {
+        auto broadcast(IsFdcanSerializable auto const& send) -> void {
             FDCAN_TxHeaderTypeDef header{
                     .Identifier = 0x11,
                     .IdType = FDCAN_STANDARD_ID,
                     .TxFrameType = FDCAN_DATA_FRAME,
-                    .DataLength = nearest_fitting_fdcan_frame_size(sizeof(send)),
+                    .DataLength = nearest_fitting_can_fd_frame_size(sizeof(send)),
                     .ErrorStateIndicator = FDCAN_ESI_ACTIVE,
                     .BitRateSwitch = FDCAN_BRS_ON,
                     .FDFormat = FDCAN_FD_CAN,
@@ -182,8 +181,6 @@ namespace mrover {
                     .MessageMarker = 0,
             };
             check(HAL_FDCAN_AddMessageToTxFifoQ(m_fdcan, &header, address_of<std::uint8_t>(send)) == HAL_OK, Error_Handler);
-            //check(HAL_FDCAN_AddMessageToTxFifoQ(m_fdcan, &header, buf) == HAL_OK, Error_Handler);
-
         }
 
     private:

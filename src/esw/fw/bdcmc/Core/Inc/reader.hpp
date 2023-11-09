@@ -12,12 +12,12 @@ constexpr std::uint32_t COUNTS_PER_ROTATION_ABSOLUTE = 1024;
 constexpr auto RADIANS_PER_COUNT_RELATIVE = mrover::Radians{2 * std::numbers::pi} / COUNTS_PER_ROTATION_RELATIVE;
 constexpr auto RADIANS_PER_COUNT_ABSOLUTE = mrover::Radians{2 * std::numbers::pi} / COUNTS_PER_ROTATION_ABSOLUTE;
 
-
 namespace mrover {
 
     class AbsoluteEncoder {
     public:
         AbsoluteEncoder() = default;
+
         AbsoluteEncoder(SMBus i2c_bus, std::uint8_t A1, std::uint8_t A2);
 
         std::optional<std::uint64_t> read_raw_angle();
@@ -40,6 +40,7 @@ namespace mrover {
     class QuadratureEncoder {
     public:
         QuadratureEncoder() = default;
+
         QuadratureEncoder(TIM_TypeDef* _tim);
 
         std::int64_t count_delta();
@@ -54,16 +55,14 @@ namespace mrover {
     class FusedReader {
     public:
         FusedReader() = default;
-        FusedReader(TIM_HandleTypeDef* relative_encoder_timer, I2C_HandleTypeDef* absolute_encoder_i2c, Config const& config);
+
+        FusedReader(TIM_HandleTypeDef* relative_encoder_timer, I2C_HandleTypeDef* absolute_encoder_i2c);
+
         [[nodiscard]] std::pair<Radians, RadiansPerSecond> read(Config const& config);
-        void configure(Config const& config);
 
     private:
-        void setup_limit_switches();
-
         AbsoluteEncoder m_abs_encoder;
         QuadratureEncoder m_quad_encoder;
-        Config m_config;
 
         LimitSwitch m_limit_switch_a;
         LimitSwitch m_limit_switch_b;
@@ -72,15 +71,12 @@ namespace mrover {
 
         TIM_HandleTypeDef* m_relative_encoder_timer{};
         I2C_HandleTypeDef* m_absolute_encoder_i2c{};
-        Radians m_position{};
-        RadiansPerSecond m_velocity{};
+        Radians m_position;
+        RadiansPerSecond m_velocity;
 
-        ConfigEncoderInfo m_encoder_info;
-        ConfigLimitSwitchInfo0 m_limit_switch_info_0;
-        ConfigLimitSwitchInfo1 m_limit_switch_info_1;
-        ConfigLimitSwitchInfo2 m_limit_switch_info_2;
+        void refresh_absolute(Config const& config);
 
-        void refresh_absolute();
+        void setup_limit_switches(Config const& config);
     };
 
 } // namespace mrover
