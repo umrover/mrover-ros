@@ -2,6 +2,9 @@ import json
 from channels.generic.websocket import JsonWebsocketConsumer
 
 import rospy
+import tf2_ros
+from util.SE3 import SE3
+
 from mrover.msg import PDB, ControllerState, CalibrationStatus
 from mrover.srv import EnableDevice
 from std_msgs.msg import String
@@ -17,6 +20,14 @@ class GUIConsumer(JsonWebsocketConsumer):
         self.imu_calibration = rospy.Subscriber('/imu/calibration', CalibrationStatus, self.imu_calibration_callback)
         # rospy.wait_for_service("enable_limit_switches")
         self.limit_switch_service = rospy.ServiceProxy("enable_limit_switches", EnableDevice)
+
+        # odom TF
+        self.odom_frame = rospy.get_param("odom_frame")
+        self.rover_frame = rospy.get_param("base_link_frame")
+
+        self.tf_buffer = tf2_ros.Buffer()
+        self.tf_listener = tf2_ros.TransformListener(self.tf_buffer)
+        self.idk = rospy.Subscriber("idk", IDK, self.idk_callback)
 
     def disconnect(self, close_code):
         self.pdb_sub.unregister()
@@ -79,3 +90,16 @@ class GUIConsumer(JsonWebsocketConsumer):
             'accelerometer_calibration': msg.accelerometer_calibration,
             'magnetometer_calibration': msg.magnetometer_calibration
         }))
+    
+    def idk_callback(self, msg):
+        try:
+            base_link_in_odom = SE3.from_tf_tree(self.tf_buffer, self.odom_frame, self.base_link_frame)
+
+        # don't do anything if you can't find that transform
+        except (
+            tf2_ros.LookupException,
+            tf2_ros.ConnectivityException,
+            tf2_ros.ExtrapolationException,
+        ):
+            rospy.logerr(f"Could not find transform from {self.odom_frame} frame to {self.base_link_frame} frame")
+            return
