@@ -44,7 +44,8 @@ namespace mrover {
             // Consider a variant where one alternative is very small and the other is very large
             // We don't want to always serialize the size of the large one (e.g. if we just did sizeof the overall variant)
             // This visit ensures we get the size of the actual underlying current alternative
-            std::size_t size = std::visit([](auto const& v) { return sizeof(v); }, data);
+            // std::size_t size = std::visit([](auto const& v) { return sizeof(v); }, data);
+            std::size_t size = sizeof(data);
             publish_data({address, size});
         }
 

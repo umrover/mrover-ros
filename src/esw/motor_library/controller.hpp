@@ -16,7 +16,7 @@ namespace mrover {
               mName{std::move(name)},
               mControllerName{std::move(controllerName)},
               mDevice{nh, mName, mControllerName},
-              mIncomingCANSub{mNh.subscribe<CAN>(std::format("can/{}/in", name), 16, &Controller::processCANMessage, this)} {
+              mIncomingCANSub{mNh.subscribe<CAN>(std::format("can/{}/in", mControllerName), 16, &Controller::processCANMessage, this)} {
         }
 
         virtual ~Controller() = default;

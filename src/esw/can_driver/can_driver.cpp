@@ -189,7 +189,7 @@ namespace mrover {
         ROS_DEBUG_STREAM("Received CAN message:\n"
                          << msg);
 
-        mDevicesPubSub.at(destinationDeviceName.value()).publisher.publish(msg);
+        mDevicesPubSub.at(sourceDeviceName.value()).publisher.publish(msg);
     }
 
     void CanNodelet::frameSendRequestCallback(CAN::ConstPtr const& msg) {

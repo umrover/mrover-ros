@@ -38,13 +38,13 @@ namespace mrover {
             bool is_up = rtnl_link_get_flags(link) & IFF_UP;
 
             if (mInterface.starts_with("can")) {
-                can_bittiming bt{
-                        .bitrate = bitrate,
-                        .brp = bitrate_prescaler,
-                };
-                if (int result = rtnl_link_can_set_bittiming(link, &bt); result < 0) {
-                    throw std::runtime_error("Failed to set CAN link bit timings");
-                }
+                // can_bittiming bt{
+                //         .bitrate = bitrate,
+                //         .brp = bitrate_prescaler,
+                // };
+                // if (int result = rtnl_link_can_set_bittiming(link, &bt); result < 0) {
+                //     throw std::runtime_error("Failed to set CAN link bit timings");
+                // }
 
                 // See https://android.googlesource.com/platform/external/libnl/+/bbcb553f0f4636dd40e84d320a576b3de7b95357/lib/route/link.c
                 // Specifically the section "@par 2) Changing Link attributes"
@@ -53,7 +53,7 @@ namespace mrover {
                 // Trying to send to the socket without this will return error code 22 (invalid argument)
                 // By default the MTU is configured for regular CAN frame which are much smaller
                 // The effects of these calls will not be realized until "rtnl_link_change"
-                rtnl_link_set_mtu(link_request, sizeof(canfd_frame));
+                // rtnl_link_set_mtu(link_request, sizeof(canfd_frame));
                 if (is_up) {
                     ROS_WARN("CAN link is already up");
                 } else {
