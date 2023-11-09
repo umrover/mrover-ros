@@ -43,9 +43,9 @@
     <!-- <div v-if="type === 'DM'" class="odom">
       <OdometryReading :odom="odom" />
     </div> -->
-    <div v-if="type === 'DM'" class="map">
+    <!-- <div v-if="type === 'DM'" class="map">
       <BasicMap :odom="odom" />
-    </div>
+    </div> -->
     <div class="pdb">
       <PDBFuse />
     </div>
@@ -119,7 +119,7 @@ export default defineComponent({
 
       jointState: {},
       
-      websocket: inject("webSocketService") as WebSocket,
+      websocket: new WebSocket("ws://localhost:8000/ws/gui"),
     }
   },
 

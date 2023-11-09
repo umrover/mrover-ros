@@ -10,12 +10,12 @@ from sensor_msgs.msg import NavSatFix
 class GUIConsumer(JsonWebsocketConsumer):
 
     def connect(self):
+        self.accept()
         self.pdb_sub = rospy.Subscriber('/pdb_data', PDB, self.pdb_callback)
         self.arm_moteus_sub = rospy.Subscriber('/arm_controller_data', ControllerState, self.arm_controller_callback)
         self.gps_fix = rospy.Subscriber('/gps/fix', NavSatFix, self.gps_fix_callback)
         # rospy.wait_for_service("enable_limit_switches")
         self.limit_switch_service = rospy.ServiceProxy("enable_limit_switches", EnableDevice)
-        self.accept()
 
     def disconnect(self, close_code):
         self.pdb_sub.unregister()
