@@ -1,10 +1,10 @@
 #pragma once
 
-#include <config.hpp>
-#include <hardware.hpp>
 #include <numbers>
-#include <units.hpp>
 
+#include "config.hpp"
+#include "hardware.hpp"
+#include "units/units.hpp"
 #include "main.h"
 
 constexpr std::uint32_t COUNTS_PER_ROTATION_RELATIVE = 4096;

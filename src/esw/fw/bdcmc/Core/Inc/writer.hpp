@@ -1,9 +1,8 @@
 #pragma once
 
-#include <config.hpp>
-#include <hardware.hpp>
-#include <units.hpp>
-
+#include "config.hpp"
+#include "hardware.hpp"
+#include "units/units.hpp"
 #include "main.h"
 
 namespace mrover {
@@ -13,10 +12,12 @@ namespace mrover {
         HBridgeWriter() = default;
 
         explicit HBridgeWriter(TIM_HandleTypeDef* timer);
+
         void write(Config const& config, Percent output);
 
     private:
         void set_direction_pins(Percent duty_cycle);
+
         void set_duty_cycle(Percent duty_cycle, Percent max_duty_cycle);
 
         Pin m_forward_pins{};

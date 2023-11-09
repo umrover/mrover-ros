@@ -313,6 +313,7 @@ namespace mrover {
     // Following template arguments are exponents in the order: Meter, Kilogram, Second, Radian, Ampere, Kelvin, Byte
     using default_rep_t = float;
     using Dimensionless = Unit<default_rep_t>;
+    using Ratio = Dimensionless;
     using Percent = Dimensionless;
     using Meters = Unit<default_rep_t, std::ratio<1>, std::ratio<1>>;
     using Centimeters = Unit<default_rep_t, std::centi, std::ratio<1>>;
