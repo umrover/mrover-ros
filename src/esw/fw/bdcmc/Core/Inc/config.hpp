@@ -37,20 +37,20 @@ namespace mrover {
             this->gear_ratio = command.gear_ratio;
             // TODO: Terrible naming for the limit switch info
             // TODO(guthrie): make this compile
-            //            this->limit_switch_info_x = command.limit_switch_info_x;
-            //            this->limit_switch_info_y = command.limit_switch_info_y;
-            //            this->limit_switch_info_z = command.limit_switch_info_z;
-            //            this->quad_abs_enc_info = command.quad_abs_enc_info;
-            //            this->limit_a_readj_pos = command.limit_a_readj_pos;
-            //            this->limit_b_readj_pos = command.limit_b_readj_pos;
-            //            this->limit_c_readj_pos = command.limit_c_readj_pos;
-            //            this->limit_d_readj_pos = command.limit_d_readj_pos;
-            //            this->quad_enc_out_ratio = command.quad_enc_out_ratio;
-            //            this->abs_enc_out_ratio = command.abs_enc_out_ratio;
-            //            this->max_duty_cycle = command.max_pwm;
-            //            this->limit_max_pos = command.limit_max_pos;
-            //            this->max_forward_pos = command.max_forward_pos;
-            //            this->max_back_pos = command.max_back_pos;
+			this->limit_switch_info_0 = command.limit_switch_info_0;
+			this->limit_switch_info_1 = command.limit_switch_info_1;
+			this->limit_switch_info_2 = command.limit_switch_info_2;
+			this->quad_abs_enc_info = command.quad_abs_enc_info;
+			this->limit_a_readj_pos = command.limit_a_readj_pos;
+			this->limit_b_readj_pos = command.limit_b_readj_pos;
+			this->limit_c_readj_pos = command.limit_c_readj_pos;
+			this->limit_d_readj_pos = command.limit_d_readj_pos;
+			this->quad_enc_out_ratio = command.quad_enc_out_ratio;
+			this->abs_enc_out_ratio = command.abs_enc_out_ratio;
+			this->max_pwm = command.max_pwm;
+			this->limit_max_pos = command.limit_max_pos;
+			this->max_forward_pos = command.max_forward_pos;
+			this->max_back_pos = command.max_back_pos;
         }
     };
 
