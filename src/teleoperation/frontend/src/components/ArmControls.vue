@@ -72,14 +72,10 @@ export default defineComponent({
     },
     data() {
         return {
-            websocket: inject("webSocketService") as WebSocket,
+            websocket: new WebSocket("ws://localhost:8000/ws/gui"),
             arm_mode: "arm_disabled",
             joints_array: [false, false, false, false, false, false],
-            laser_enabled: false,
-            ra_mode_service: null,
-            jointlock_pub: null,
-            joystick_pub: null,
-            laser_service: null,
+            laser_enabled: false
         };
     },
 
@@ -98,6 +94,7 @@ export default defineComponent({
         this.websocket.onmessage = (event) => {
             const msg = JSON.parse(event.data);
             if(msg.type=="laser_service"){
+                console.log("hi")
                 if (!msg.result) {
                     this.laser_enabled = !this.laser_enabled;
                     alert("Toggling Arm Laser failed.");
@@ -186,6 +183,7 @@ export default defineComponent({
     //     },
         toggleArmLaser: function () {
             this.laser_enabled = !this.laser_enabled;
+            console.log(this.laser_enabled)
             this.websocket.send(JSON.stringify({type:"laser_service", data:this.laser_enabled}))
             
          }

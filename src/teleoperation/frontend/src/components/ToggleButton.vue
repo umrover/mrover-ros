@@ -37,7 +37,6 @@ import  { defineComponent } from 'vue'
           return this.currentState;
         },
         set(newValue: Boolean) {
-          console.log(newValue);
           this.$emit("change", newValue);
         },
       },

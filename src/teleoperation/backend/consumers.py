@@ -133,7 +133,7 @@ class GUIConsumer(JsonWebsocketConsumer):
         self.send(text_data=json.dumps({
             'type': 'calibration_status',
             'names': msg.names,
-            'calibrated': msg.calibrated
+            'calibrated': msg.calibrated,
         }))
 
     def arm_controller_callback(self, msg): 
@@ -145,42 +145,44 @@ class GUIConsumer(JsonWebsocketConsumer):
         }))
 
     def enable_laser_callback(self, msg):
+        
         try:
-            result = self.laser_service(data=msg["data"])
-            self.send(text_data=json.dumps({
-                'type': 'laser_service',
-                'result': result.success
-            }))
+            result = self.laser_service(data=msg.data)
+            rospy.logerr(result)
+            # self.send(text_data=json.dumps({
+            #     'type': 'laser_service',
+            #     'result': result.success
+            # }))
         except rospy.ServiceException as e:
             print(f"Service call failed: {e}")
     
     def enable_device_callback(self, msg):
         try:
-            result = self.calibrate_service(name=msg["name"], calibrate=msg["calibrate"])
-            self.send(text_data=json.dumps({
-                'type': 'calibrate_service',
-                'result': result.success
-            }))
+            result = self.calibrate_service(name=msg.name, calibrate=msg.calibrate)
+            # self.send(text_data=json.dumps({
+            #     'type': 'calibrate_service',
+            #     'result': result.success
+            # }))
         except rospy.ServiceException as e:
             print(f"Service call failed: {e}")
 
     def calibrate_motors_callback(self,msg):
         try:
             result = self.calibrate_service()
-            self.send(text_data=json.dumps({
-                'type': 'calibrate_motors',
-                'result': result.success
-            }))
+            # self.send(text_data=json.dumps({
+            #     'type': 'calibrate_motors',
+            #     'result': result.success
+            # }))
         except rospy.ServiceException as e:
             print(f"Service call failed: {e}")
     
     def arm_adjust_callback(self,msg):
         try:
-            result = self.calibrate_service(name=msg["name"], value=msg["value"])
-            self.send(text_data=json.dumps({
-                'type': 'arm_adjust',
-                'result': result.success
-            }))
+            result = self.calibrate_service(name=msg.name, value=msg.value)
+            # self.send(text_data=json.dumps({
+            #     'type': 'arm_adjust',
+            #     'result': result.success
+            # }))
         except rospy.ServiceException as e:
             print(f"Service call failed: {e}")
         
