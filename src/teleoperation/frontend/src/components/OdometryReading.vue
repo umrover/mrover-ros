@@ -21,10 +21,10 @@
         <p v-if="alt_available">Altitude: {{ odom.altitude.toFixed(2) }}m</p>
       </div>
     </div>
-    <!-- <div class="calibration imu">
+    <div class="calibration imu">
       <IMUCalibration></IMUCalibration>
     </div>
-    <div class = "flightindicator">
+    <!-- <div class = "flightindicator">
       <FlightAttitudeIndicator></FlightAttitudeIndicator>
     </div> -->
   </div>
@@ -33,12 +33,12 @@
 <script lang="ts">
 import { convertDMS } from "../utils.js";
 import { mapGetters } from "vuex";
-// import IMUCalibration from "./IMUCalibration.vue";
+import IMUCalibration from "./IMUCalibration.vue";
 // import FlightAttitudeIndicator from "./FlightAttitudeIndicator.vue";
 export default {
   components: {
     // FlightAttitudeIndicator,
-    // IMUCalibration,
+    IMUCalibration,
   },
   props: {
     odom: {

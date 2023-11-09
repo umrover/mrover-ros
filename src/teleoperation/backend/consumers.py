@@ -2,7 +2,7 @@ import json
 from channels.generic.websocket import JsonWebsocketConsumer
 
 import rospy
-from mrover.msg import PDB, ControllerState
+from mrover.msg import PDB, ControllerState, CalibrationStatus
 from mrover.srv import EnableDevice
 from std_msgs.msg import String
 from sensor_msgs.msg import NavSatFix
@@ -14,6 +14,7 @@ class GUIConsumer(JsonWebsocketConsumer):
         self.pdb_sub = rospy.Subscriber('/pdb_data', PDB, self.pdb_callback)
         self.arm_moteus_sub = rospy.Subscriber('/arm_controller_data', ControllerState, self.arm_controller_callback)
         self.gps_fix = rospy.Subscriber('/gps/fix', NavSatFix, self.gps_fix_callback)
+        self.imu_calibration = rospy.Subscriber('/imu/calibration', CalibrationStatus, self.imu_calibration_callback)
         # rospy.wait_for_service("enable_limit_switches")
         self.limit_switch_service = rospy.ServiceProxy("enable_limit_switches", EnableDevice)
 
@@ -68,4 +69,13 @@ class GUIConsumer(JsonWebsocketConsumer):
             'latitude': msg.latitude,
             'longitude': msg.longitude,
             'altitude': msg.altitude
+        }))
+
+    def imu_calibration_callback(self, msg) -> None:
+        self.send(text_data=json.dumps({
+            'type': 'calibration_status',
+            'system_calibration': msg.system_calibration,
+            'gyroscope_calibration': msg.gyroscope_calibration,
+            'accelerometer_calibration': msg.accelerometer_calibration,
+            'magnetometer_calibration': msg.magnetometer_calibration
         }))
