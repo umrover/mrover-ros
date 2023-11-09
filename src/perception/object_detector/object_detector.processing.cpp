@@ -27,6 +27,10 @@ namespace mrover {
         assert(msg->width > 0);
 
         cv::Mat imageView{static_cast<int>(msg->height), static_cast<int>(msg->width), CV_8UC4, const_cast<uint8_t*>(msg->data.data())};
+        cv::Mat sizedImage;
+        cv::resize(imageView, sizedImage, cv::Size(640, 640));
+        cv::Mat blob = cv::dnn::blobFromImage(sizedImage);
+        inferenceWrapper.doDetections(sizedImage);
     }
     /*
     void ObjectDetectorNodelet::imageCallback(sensor_msgs::ImageConstPtr const& msg) {

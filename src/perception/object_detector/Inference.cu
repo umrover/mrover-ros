@@ -9,6 +9,8 @@
 #include <memory>
 #include <opencv4/opencv2/core/mat.hpp>
 #include <opencv4/opencv2/core/types.hpp>
+#include <opencv4/opencv2/imgproc.hpp>
+#include <ostream>
 #include <string>
 
 #include "inference.cuh"
@@ -83,8 +85,9 @@ namespace mrover {
 
     void Inference::doDetections(cv::Mat& img) {
         //Do the forward pass on the network
+        std::cout << "HI" << std::endl;
         launchInference(img.data, this->outputTensor.data);
-
+        std::cout << *(this->outputTensor.data) << std::endl;
         //return Parser(this->outputTensor).parseTensor();
     }
 
@@ -120,6 +123,10 @@ namespace mrover {
             // Create CUDA buffer for Tensor.
             cudaMalloc(&(this->bindings)[i], Inference::BATCH_SIZE * size * sizeof(float));
         }
+
+        inputEntries = nvinfer1::Dims3(modelInputShape.width, modelInputShape.height, 3);
+        inputEntries = nvinfer1::Dims3(1, 84, 8400);
+        cv::resize(outputTensor, outputTensor, cv::Size(84, 840));
     }
 
     int Inference::getBindingInputIndex(nvinfer1::IExecutionContext* context) {
