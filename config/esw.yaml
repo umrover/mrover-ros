@@ -431,46 +431,6 @@ cameras:
     primary: "10.0.0.7"
     secondary: "10.0.0.8"
 
-science:
-  auton_color_ids:
-    red: 0
-    green: 1
-    blue: 2
-    "off": 3
-  device_mosfet_numbers:
-    arm_laser: 6
-    raman_laser: 0
-    uv_led_carousel: 1
-    uv_led_end_effector: 6
-    white_led: 2
-  # How fast the GUI should send heater service requests in ms
-  heater_service_request_interval: 1000
-  serial:
-    baud_rate: 9600
-    timeout: 0
-    port: "/dev/ttyTHS0"
-  # These position are random for now
-  servo_id_by_site: # This is in degrees
-    A: 2
-    B: 1
-    C: 0
-  servo_positions:
-    - pushed: 70
-      start: 100
-    - pushed: 60
-      start: 90
-    - pushed: 0
-      start: 80
-  info:
-    mcu_active_timeout_s: 2
-    mcu_reset_period_s: 20
-    num_diag_current: 3
-    num_diag_thermistors: 3
-    num_science_thermistors: 3
-    num_spectral: 1
-    sleep: 0.01
-    uart_transmit_msg_len: 30
-
 rover:
   length: 0.86
   width: 0.86
@@ -592,28 +552,5 @@ brushless:
         bus: 2
         multiplier: 1
         gear_ratio: 50.0
-  arm:
-    controllers:
-      joint_c:
-        id: 6
-        bus: 3
-        max_rps: 80
-        max_torque: 0.7
-        multiplier: -1
-        gear_ratio: 484
-      joint_d:
-        id: 7
-        bus: 3
-        max_rps: 80
-        max_torque: 0.3
-        multiplier: -1
-        gear_ratio: 484
-      joint_e:
-        id: 8
-        bus: 3
-        max_rps: 80
-        max_torque: 0.3
-        multiplier: 1
-        gear_ratio: 484
 
 default_network_iface: "enp0s31f6"
