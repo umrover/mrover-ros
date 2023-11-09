@@ -80,12 +80,13 @@ namespace mrover {
         config->addOptimizationProfile(profile);
         nvinfer1::IHostMemory* serializedEngine = builder->buildSerializedNetwork(*network, *config);
         nvinfer1::IRuntime* runtime = createInferRuntime(logger);
+        std::cout << (serializedEngine->data()) << std::endl;
         return runtime->deserializeCudaEngine(serializedEngine->data(), serializedEngine->size());
     }
 
     void Inference::doDetections(cv::Mat& img) {
         //Do the forward pass on the network
-        std::cout << "HI" << std::endl;
+        ROS_INFO("HI");
         launchInference(img.data, this->outputTensor.data);
         std::cout << *(this->outputTensor.data) << std::endl;
         //return Parser(this->outputTensor).parseTensor();

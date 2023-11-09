@@ -30,6 +30,7 @@ namespace mrover {
         cv::Mat sizedImage;
         cv::resize(imageView, sizedImage, cv::Size(640, 640));
         cv::Mat blob = cv::dnn::blobFromImage(sizedImage);
+        ROS_INFO("hi");
         inferenceWrapper.doDetections(sizedImage);
     }
     /*
