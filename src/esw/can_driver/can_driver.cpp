@@ -163,7 +163,7 @@ namespace mrover {
         auto rawId = std::bit_cast<RawCanFdId>(mReadFrame.can_id);
         auto messageId = std::bit_cast<CanFdMessageId>(static_cast<std::uint16_t>(rawId.identifier));
 
-        std::optional sourceDeviceName = mDevices.backward(CanFdAddress{
+        optional_ref<std::string> sourceDeviceName = mDevices.backward(CanFdAddress{
                 .bus = 0, // TODO set correct bus
                 .id = messageId.source,
         });
@@ -172,7 +172,7 @@ namespace mrover {
             return;
         }
 
-        std::optional destinationDeviceName = mDevices.backward(CanFdAddress{
+        optional_ref<std::string> destinationDeviceName = mDevices.backward(CanFdAddress{
                 .bus = 0, // TODO set correct bus
                 .id = messageId.destination,
         });
@@ -196,13 +196,13 @@ namespace mrover {
         ROS_DEBUG_STREAM("Received request to send CAN message:\n"
                          << *msg);
 
-        std::optional source = mDevices.forward(msg->source);
+        optional_ref<CanFdAddress> source = mDevices.forward(msg->source);
         if (!source) {
             NODELET_WARN_STREAM(std::format("Sending CAN message on interface {} that had an unknown source: {}", mInterface, msg->source));
             return;
         }
 
-        std::optional destination = mDevices.forward(msg->destination);
+        optional_ref<CanFdAddress> destination = mDevices.forward(msg->destination);
         if (!destination) {
             NODELET_WARN_STREAM(std::format("Sending CAN message on interface {} that had an unknown destination: {}", mInterface, msg->destination));
             return;

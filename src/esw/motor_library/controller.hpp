@@ -43,8 +43,8 @@ namespace mrover {
         Radians mCurrentPosition{};
         RadiansPerSecond mCurrentVelocity{};
         bool mIsCalibrated{};
-        std::string mErrorState{};
-        std::string mState{};
+        std::string mErrorState;
+        std::string mState;
         bool mLimitAHit{};
         bool mLimitBHit{};
         bool mLimitCHit{};
