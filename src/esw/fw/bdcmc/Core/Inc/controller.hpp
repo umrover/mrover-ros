@@ -10,10 +10,6 @@
 #include "pidf.hpp"
 #include "units/units.hpp"
 
-// Macros needed to operate on bitfields
-#define SET_BIT_AT_INDEX(x, index, value) (x = (x & ~(1 << index)) | (value << index))
-#define GET_BIT_AT_INDEX(x, index) (x & (1 << index))
-
 namespace mrover {
 
     template<typename T, typename Input, typename TimeUnit = Seconds>
@@ -27,8 +23,8 @@ namespace mrover {
     };
 
     template<IsUnit InputUnit, IsUnit OutputUnit,
-            InputReader<InputUnit> Reader, OutputWriter<OutputUnit> Writer,
-            IsUnit TimeUnit = Seconds>
+             InputReader<InputUnit> Reader, OutputWriter<OutputUnit> Writer,
+             IsUnit TimeUnit = Seconds>
     class Controller {
     private:
         struct PositionMode {
@@ -65,7 +61,6 @@ namespace mrover {
         }
 
         void feed(IdleCommand const& message) {
-
         }
 
         void feed(ThrottleCommand const& message) {
@@ -112,8 +107,8 @@ namespace mrover {
             template<typename Command, typename ModeHead, typename... Modes>
             struct command_to_mode<Command, std::variant<ModeHead, Modes...>> { // Linear search to find corresponding mode
                 using type = std::conditional_t<requires(Controller controller, Command command, ModeHead mode) { controller.feed(command, mode); },
-                        ModeHead,
-                        typename command_to_mode<Command, std::variant<Modes...>>::type>; // Recursive call
+                                                ModeHead,
+                                                typename command_to_mode<Command, std::variant<Modes...>>::type>; // Recursive call
             };
 
             template<typename Command> // Base case
@@ -129,7 +124,7 @@ namespace mrover {
         Controller() = default;
 
         Controller(std::uint32_t id, Reader&& reader, Writer&& writer, FDCANBus const& fdcan_bus)
-                : m_config{Config{.id = id}}, m_reader{std::move(reader)}, m_writer{std::move(writer)}, m_fdcan_bus{fdcan_bus} {}
+            : m_config{Config{.id = id}}, m_reader{std::move(reader)}, m_writer{std::move(writer)}, m_fdcan_bus{fdcan_bus} {}
 
         template<typename Command>
         void process(Command const& command) {
@@ -179,7 +174,7 @@ namespace mrover {
             ConfigCalibErrorInfo config_calib_error_info;
             config_calib_error_info.configured = m_config.is_configured;
             config_calib_error_info.calibrated = false; // TODO
-            config_calib_error_info.error = 0; // TODO
+            config_calib_error_info.error = 0;          // TODO
 
             LimitStateInfo limit_state_info;
             for (std::size_t i = 0; i < m_limit_switches.size(); ++i) {

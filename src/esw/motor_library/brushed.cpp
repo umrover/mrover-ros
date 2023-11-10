@@ -20,42 +20,24 @@ namespace mrover {
 
         // TODO - CREATE TEMPLATED FUNCTION - I DO LATER HAHAA
 
-        mConfigCommand.limit_switch_info_0.a_present = static_cast<bool>(brushedMotorData["limit_a_present"]);
-        mConfigCommand.limit_switch_info_0.b_present = static_cast<bool>(brushedMotorData["limit_b_present"]);
-        mConfigCommand.limit_switch_info_0.c_present = static_cast<bool>(brushedMotorData["limit_c_present"]);
-        mConfigCommand.limit_switch_info_0.d_present = static_cast<bool>(brushedMotorData["limit_d_present"]);
-        mConfigCommand.limit_switch_info_0.a_enable = static_cast<bool>(brushedMotorData["limit_a_enable"]);
-        mConfigCommand.limit_switch_info_0.b_enable = static_cast<bool>(brushedMotorData["limit_b_enable"]);
-        mConfigCommand.limit_switch_info_0.c_enable = static_cast<bool>(brushedMotorData["limit_c_enable"]);
-        mConfigCommand.limit_switch_info_0.d_enable = static_cast<bool>(brushedMotorData["limit_d_enable"]);
+        for (std::size_t i = 0; i < 4; ++i) {
+            SET_BIT_AT_INDEX(mConfigCommand.limit_switch_info_0.present, i, static_cast<bool>(brushedMotorData[std::format("limit_{}_present", i)]));
+            SET_BIT_AT_INDEX(mConfigCommand.limit_switch_info_0.enabled, i, static_cast<bool>(brushedMotorData[std::format("limit_{}_enable", i)]));
 
-        mConfigCommand.limit_switch_info_1.a_active_high = static_cast<bool>(brushedMotorData["limit_a_is_active_high"]);
-        mConfigCommand.limit_switch_info_1.b_active_high = static_cast<bool>(brushedMotorData["limit_b_is_active_high"]);
-        mConfigCommand.limit_switch_info_1.c_active_high = static_cast<bool>(brushedMotorData["limit_c_is_active_high"]);
-        mConfigCommand.limit_switch_info_1.d_active_high = static_cast<bool>(brushedMotorData["limit_d_is_active_high"]);
-        mConfigCommand.limit_switch_info_1.a_limits_forward = static_cast<bool>(brushedMotorData["limit_a_limits_fwd"]);
-        mConfigCommand.limit_switch_info_1.b_limits_forward = static_cast<bool>(brushedMotorData["limit_b_limits_fwd"]);
-        mConfigCommand.limit_switch_info_1.c_limits_forward = static_cast<bool>(brushedMotorData["limit_c_limits_fwd"]);
-        mConfigCommand.limit_switch_info_1.d_limits_forward = static_cast<bool>(brushedMotorData["limit_d_limits_fwd"]);
+            mConfigCommand.limit_switch_info_1.active_high = static_cast<bool>(brushedMotorData[std::format("limit_{}_active_high", i)]);
+            mConfigCommand.limit_switch_info_1.limits_forward = static_cast<bool>(brushedMotorData[std::format("limit_{}_limits_fwd", i)]);
 
-        mConfigCommand.limit_switch_info_2.a_use_for_readjustment = static_cast<bool>(brushedMotorData["limit_a_used_for_readjustment"]);
-        mConfigCommand.limit_switch_info_2.b_use_for_readjustment = static_cast<bool>(brushedMotorData["limit_b_used_for_readjustment"]);
-        mConfigCommand.limit_switch_info_2.c_use_for_readjustment = static_cast<bool>(brushedMotorData["limit_c_used_for_readjustment"]);
-        mConfigCommand.limit_switch_info_2.d_use_for_readjustment = static_cast<bool>(brushedMotorData["limit_d_used_for_readjustment"]);
-        mConfigCommand.limit_switch_info_2.a_is_default_enabled = static_cast<bool>(brushedMotorData["limit_a_default_enabled"]);
-        mConfigCommand.limit_switch_info_2.b_is_default_enabled = static_cast<bool>(brushedMotorData["limit_b_default_enabled"]);
-        mConfigCommand.limit_switch_info_2.c_is_default_enabled = static_cast<bool>(brushedMotorData["limit_c_default_enabled"]);
-        mConfigCommand.limit_switch_info_2.d_is_default_enabled = static_cast<bool>(brushedMotorData["limit_d_default_enabled"]);
+            mConfigCommand.limit_switch_info_2.use_for_readjustment = static_cast<bool>(brushedMotorData[std::format("limit_{}_used_for_readjustment", i)]);
+            mConfigCommand.limit_switch_info_2.is_default_enabled = static_cast<bool>(brushedMotorData[std::format("limit_{}_default_enabled", i)]);
+
+            mConfigCommand.limit_readj_pos[i] = Radians{static_cast<double>(brushedMotorData[std::format("limit_{}_readjust_position", i)])};
+        }
 
         mConfigCommand.quad_abs_enc_info.quad_present = static_cast<bool>(brushedMotorData["quad_present"]);
         mConfigCommand.quad_abs_enc_info.quad_is_forward_polarity = static_cast<bool>(brushedMotorData["quad_is_forward_polarity"]);
         mConfigCommand.quad_abs_enc_info.abs_present = static_cast<bool>(brushedMotorData["abs_present"]);
         mConfigCommand.quad_abs_enc_info.abs_is_forward_polarity = static_cast<bool>(brushedMotorData["abs_is_forward_polarity"]);
 
-        mConfigCommand.limit_a_readj_pos = Radians{static_cast<double>(brushedMotorData["limit_a_readjust_position"])};
-        mConfigCommand.limit_b_readj_pos = Radians{static_cast<double>(brushedMotorData["limit_b_readjust_position"])};
-        mConfigCommand.limit_c_readj_pos = Radians{static_cast<double>(brushedMotorData["limit_c_readjust_position"])};
-        mConfigCommand.limit_d_readj_pos = Radians{static_cast<double>(brushedMotorData["limit_d_readjust_position"])};
         mConfigCommand.quad_enc_out_ratio = static_cast<double>(brushedMotorData["quad_ratio"]);
         mConfigCommand.abs_enc_out_ratio = static_cast<double>(brushedMotorData["abs_ratio"]);
 
@@ -126,10 +108,9 @@ namespace mrover {
         mIsCalibrated = configCalibErrInfo.calibrated;
         mErrorState = mCodeToError.at(configCalibErrInfo.error);
         LimitStateInfo limitSStateInfo = state.limit_switches;
-        mLimitAHit = limitSStateInfo.limit_a_hit;
-        mLimitBHit = limitSStateInfo.limit_b_hit;
-        mLimitCHit = limitSStateInfo.limit_c_hit;
-        mLimitDHit = limitSStateInfo.limit_d_hit;
+        for (std::size_t i = 0; i < mLimitHit.size(); ++i) {
+            mLimitHit[i] = GET_BIT_AT_INDEX(limitSStateInfo.hit, i);
+        }
         if (mIsCalibrated) {
             mState = "Armed";
         } else {

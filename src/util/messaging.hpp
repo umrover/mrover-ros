@@ -6,54 +6,58 @@
 
 #include "units/units.hpp"
 
+// Macros needed to operate on bitfields
+#define SET_BIT_AT_INDEX(x, index, value) (x = (x & ~(1 << index)) | (value << index))
+#define GET_BIT_AT_INDEX(x, index) (x & (1 << index))
+
 namespace mrover {
 
 #pragma pack(push, 1)
 
     struct ConfigLimitSwitchInfo0 {
-        std::uint8_t present: 4{};
-        std::uint8_t enabled: 4{};
+        std::uint8_t present : 4 {};
+        std::uint8_t enabled : 4 {};
     };
     static_assert(sizeof(ConfigLimitSwitchInfo0) == 1);
 
     struct ConfigLimitSwitchInfo1 {
-        std::uint8_t active_high: 4{};
-        std::uint8_t limits_forward: 4{};
+        std::uint8_t active_high : 4 {};
+        std::uint8_t limits_forward : 4 {};
     };
     static_assert(sizeof(ConfigLimitSwitchInfo1) == 1);
 
     struct ConfigLimitSwitchInfo2 {
-        std::uint8_t use_for_readjustment: 4 {};
-        std::uint8_t is_default_enabled: 4 {};
+        std::uint8_t use_for_readjustment : 4 {};
+        std::uint8_t is_default_enabled : 4 {};
     };
     static_assert(sizeof(ConfigLimitSwitchInfo2) == 1);
 
     struct ConfigEncoderInfo {
-        [[maybe_unused]] std::uint8_t _ignore: 4 {}; // 8 bits - (4 meaningful bits) = 4 ignored bits
-        std::uint8_t quad_present: 1 {};
-        std::uint8_t quad_is_forward_polarity: 1 {};
-        std::uint8_t abs_present: 1 {};
-        std::uint8_t abs_is_forward_polarity: 1 {};
+        [[maybe_unused]] std::uint8_t _ignore : 4 {}; // 8 bits - (4 meaningful bits) = 4 ignored bits
+        std::uint8_t quad_present : 1 {};
+        std::uint8_t quad_is_forward_polarity : 1 {};
+        std::uint8_t abs_present : 1 {};
+        std::uint8_t abs_is_forward_polarity : 1 {};
     };
     static_assert(sizeof(ConfigEncoderInfo) == 1);
 
     struct ConfigLimitInfo {
-        [[maybe_unused]] std::uint8_t _ignore: 6 {}; // 8 bits - (2 meaningful bits) = 6 ignored bits
-        std::uint8_t limit_max_forward_position: 1 {};
-        std::uint8_t limit_max_backward_position: 1 {};
+        [[maybe_unused]] std::uint8_t _ignore : 6 {}; // 8 bits - (2 meaningful bits) = 6 ignored bits
+        std::uint8_t limit_max_forward_position : 1 {};
+        std::uint8_t limit_max_backward_position : 1 {};
     };
 
     struct ConfigCalibErrorInfo {
-        [[maybe_unused]] std::uint8_t _ignore: 2 {}; // 8 bits - (6 meaningful bits) = 2 ignored bits
-        std::uint8_t configured: 1 {};
-        std::uint8_t calibrated: 1 {};
-        std::uint8_t error: 4 {}; // 0 means no error, anything else is error
+        [[maybe_unused]] std::uint8_t _ignore : 2 {}; // 8 bits - (6 meaningful bits) = 2 ignored bits
+        std::uint8_t configured : 1 {};
+        std::uint8_t calibrated : 1 {};
+        std::uint8_t error : 4 {}; // 0 means no error, anything else is error
     };
     static_assert(sizeof(ConfigCalibErrorInfo) == 1);
 
     struct LimitStateInfo {
-        [[maybe_unused]] std::uint8_t _ignore: 4 {}; // 8 bits - (4 meaningful bits) = 4 ignored bits
-        std::uint8_t hit: 4{};
+        [[maybe_unused]] std::uint8_t _ignore : 4 {}; // 8 bits - (4 meaningful bits) = 4 ignored bits
+        std::uint8_t hit : 4 {};
     };
     static_assert(sizeof(LimitStateInfo) == 1);
 
@@ -117,11 +121,11 @@ namespace mrover {
     };
 
     struct LEDInfo {
-        [[maybe_unused]] std::uint8_t _ignore: 4 {}; // 8 bits - (4 meaningful bits) = 4 ignored bits
-        std::uint8_t red: 1 {};
-        std::uint8_t green: 1 {};
-        std::uint8_t blue: 1 {};
-        std::uint8_t blinking: 1 {};
+        [[maybe_unused]] std::uint8_t _ignore : 4 {}; // 8 bits - (4 meaningful bits) = 4 ignored bits
+        std::uint8_t red : 1 {};
+        std::uint8_t green : 1 {};
+        std::uint8_t blue : 1 {};
+        std::uint8_t blinking : 1 {};
     };
     static_assert(sizeof(LEDInfo) == 1);
 
@@ -169,13 +173,13 @@ namespace mrover {
     };
 
     struct HeaterStateInfo {
-        [[maybe_unused]] std::uint8_t _ignore: 2 {};
-        std::uint8_t b0: 1 {};
-        std::uint8_t n0: 1 {};
-        std::uint8_t b1: 1 {};
-        std::uint8_t n1: 1 {};
-        std::uint8_t b2: 1 {};
-        std::uint8_t n2: 1 {};
+        [[maybe_unused]] std::uint8_t _ignore : 2 {};
+        std::uint8_t b0 : 1 {};
+        std::uint8_t n0 : 1 {};
+        std::uint8_t b1 : 1 {};
+        std::uint8_t n1 : 1 {};
+        std::uint8_t b2 : 1 {};
+        std::uint8_t n2 : 1 {};
     };
     static_assert(sizeof(HeaterStateInfo) == 1);
 

@@ -45,11 +45,7 @@ namespace mrover {
         bool mIsCalibrated{};
         std::string mErrorState;
         std::string mState;
-        bool mLimitAHit{};
-        bool mLimitBHit{};
-        bool mLimitCHit{};
-        bool mLimitDHit{};
-        //    virtual void send_CAN_frame(uint64_t frame) = 0;
+        std::array<bool, 4> mLimitHit{};
     };
 
 } // namespace mrover
