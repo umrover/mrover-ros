@@ -46,6 +46,27 @@ namespace mrover {
         InBoundMessage m_command;
         Mode m_mode;
 
+        bool m_should_limit_forward;
+        bool m_should_limit_backward;
+        bool m_is_calibrated;
+        Radians m_current_position;
+        Percent m_current_throttle;
+        RadiansPerSecond m_current_velocity;
+        // If the m_reader reads in 6 Radians and offset is 4 Radians,
+        // Then my actual m_current_position should be 2 Radians.
+        Radians m_offset_position;
+
+        void write_output_if_valid(Percent output) {
+        	if (m_should_limit_forward && output > Percent{0}) {
+        		output = Percent{0};
+			}
+			else if (m_should_limit_backward && output < Percent{0}) {
+				output = Percent{0};
+			}
+        	m_writer.write(m_config, output);
+        	m_current_throttle = output;
+        }
+
         void feed(AdjustCommand const& message) {
             // TODO - this needs to be implemented!
         }
@@ -69,7 +90,7 @@ namespace mrover {
                 return;
             }
 
-            m_writer.write(m_config, message.throttle);
+            write_output_if_valid(message.throttle);
         }
 
         void feed(VelocityCommand const& message, VelocityMode mode) {
@@ -81,7 +102,8 @@ namespace mrover {
             auto [_, input] = m_reader.read(m_config);
             auto target = message.velocity;
             OutputUnit output = mode.pidf.calculate(input, target);
-            m_writer.write(m_config, output);
+
+            write_output_if_valid(output);
         }
 
         void feed(PositionCommand const& message, PositionMode mode) {
@@ -93,7 +115,8 @@ namespace mrover {
             auto [input, _] = m_reader.read(m_config);
             auto target = message.position;
             OutputUnit output = mode.pidf.calculate(input, target);
-            m_writer.write(m_config, output);
+
+            write_output_if_valid(output);
         }
 
         void feed(EnableLimitSwitchesCommand const& message) {
@@ -153,27 +176,31 @@ namespace mrover {
                 limit_switch.update_limit_switch();
             }
 
-            bool should_limit_forward = std::ranges::any_of(m_limit_switches, [](LimitSwitch const& limit_switch) { return limit_switch.limit_forward(); });
-            bool should_limit_backward = std::ranges::any_of(m_limit_switches, [](LimitSwitch const& limit_switch) { return limit_switch.limit_backward(); });
-
+			auto [reader_position, m_current_velocity] = m_reader.read(m_config);
             for (auto& limit_switch: m_limit_switches) {
                 std::optional<float> readj_pos = limit_switch.get_readjustment_position();
                 if (readj_pos) {
-                    // TODO - readjust position
-
-                    // TODO - insert code for using should_limit_forward and should_limit_backward;
-
-                    // TODO - insert code for readjusting values
+                	m_is_calibrated = true;
+                	m_offset_position = reader_position - Radians{readj_pos.value()};
                 }
             }
+            m_current_position = reader_position - m_offset_position;
+
+            m_should_limit_forward = (std::ranges::any_of(m_limit_switches, [](
+					LimitSwitch const& limit_switch) { return limit_switch.limit_forward(); })
+					|| (m_is_calibrated && m_current_position >= m_config.max_forward_pos));
+
+			m_should_limit_backward = (std::ranges::any_of(m_limit_switches, [](
+					LimitSwitch const& limit_switch) { return limit_switch.limit_backward(); })
+					|| (m_is_calibrated && m_current_position <= m_config.max_backward_pos));
+
+			write_output_if_valid(m_current_throttle);
 
 
             // 2. Send Information
-            auto [position, velocity] = m_reader.read(m_config);
-
             ConfigCalibErrorInfo config_calib_error_info;
             config_calib_error_info.configured = m_config.is_configured;
-            config_calib_error_info.calibrated = false; // TODO
+            config_calib_error_info.calibrated = m_is_calibrated; // TODO
             config_calib_error_info.error = 0;          // TODO
 
             LimitStateInfo limit_state_info;
@@ -182,8 +209,8 @@ namespace mrover {
             }
 
             m_fdcan_bus.broadcast(OutBoundMessage{ControllerDataState{
-                    .position = position,
-                    .velocity = velocity,
+                    .position = m_current_position,
+                    .velocity = m_current_velocity,
                     .config_calib_error_data = config_calib_error_info,
                     .limit_switches = limit_state_info,
             }});

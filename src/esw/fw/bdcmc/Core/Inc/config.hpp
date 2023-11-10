@@ -19,8 +19,8 @@ namespace mrover {
         Ratio abs_enc_out_ratio;
         Percent max_pwm;
         ConfigLimitInfo limit_max_pos;
-        Meters max_forward_pos;
-        Meters max_back_pos;
+        Radians max_forward_pos;
+        Radians max_backward_pos;
 
         // This stuff is not part of motor message
         std::uint32_t id{};
