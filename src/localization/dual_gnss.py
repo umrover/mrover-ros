@@ -29,18 +29,21 @@ def spherical_to_cartesian(spherical_coord: np.ndarray, reference_coord: np.ndar
     z = 0
     return np.array([x, y, z])
 
+
 def get_heading_vector_from_angle(heading_angle):
     x = np.sin(heading_angle)
     y = np.cos(heading_angle)
     return np.array([x, y])
+
 
 def get_heading_vector(point_L: np.array, point_R: np.array):
     vector_connecting = np.array([point_R[0] - point_L[0], point_R[1] - point_L[1]])
     vector_perp = np.zeros_like(vector_connecting)
     vector_perp[0] = -vector_connecting[1]
     vector_perp[1] = vector_connecting[0]
-    #print(vector_perp)
+    # print(vector_perp)
     return vector_perp / np.linalg.norm(vector_perp)
+
 
 def plot_vectors(P_1, P_2):
     result = P_1 - P_2
@@ -64,22 +67,47 @@ def plot_vectors(P_1, P_2):
     plt.grid(True)
     plt.show()
 
-def offset_lat_long(P_1, P_2,n):
-    return P_1 + n * 0.001, P_2 + n * 0.001
 
-P_1 = np.array([42.3006, -83.71006])
-P_2 = np.array([42.30061, -83.71006])
+def offset_lat_left(P_1, P_2, n):
+    return P_1 - n * 0.0000001, P_2
+
+
+def offset_lat_right(P_1, P_2, n):
+    return P_1 + n * 0.0000001, P_2
+
+
+def offset_long_left(P_1, P_2, n):
+    return P_1, P_2 - n * 0.0000001
+
+
+def offset_long_right(P_1, P_2, n):
+    return P_1, P_2 + n * 0.0000001
+
+
+# [1,0], [-1,0] if switched latitude 5th digit
+# P_1 = np.array([42.30061, -83.71006])
+# P_2 = np.array([42.30060, -83.71006])
+
+# [0,-1], [0,1] if switched longitude 5th digit
+P_1 = np.array([42.300611, -83.710071])
+P_2 = np.array([42.300611, -83.710083])
 ref = np.array([42.293195, -83.7096706])
 
-for i in range(4000,4100):
-    new_p1, new_p2 = offset_lat_long(P_1, P_2, i)
+for i in range(0, 170):  # graph changes based on these bounds due to reference coordinate
+    new_p1, new_p2 = offset_lat_left(P_1, P_2, i)  # optimal bound is 0.0000001 (1e^-7)
     new_p1 = spherical_to_cartesian(new_p1, ref)
     new_p2 = spherical_to_cartesian(new_p2, ref)
-    print("P1")
-    print(new_p1)
-    print("P2")
-    print(new_p2)
+    # print("P1")
+    # print(new_p1)
+    # print("P2")
+    # print(new_p2)
     print("heading")
     print(get_heading_vector(new_p1, new_p2))
+    test = get_heading_vector(new_p1, new_p2)
+    plt.scatter(test[0], test[1])
+plt.xlabel("heading x")
+plt.ylabel("heading y")
+plt.grid(True)
+plt.show()
 
-#print(get_heading_vector(np.array([0, 0]), np.array([3, 3])))
+# print(get_heading_vector(np.array([0, 0]), np.array([3, 3])))
