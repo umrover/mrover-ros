@@ -139,13 +139,19 @@ namespace mrover {
     using OutBoundPDLBMessage = std::variant<
             PDBData>;
 
-    enum ScienceDevice {
+    enum struct ScienceDevice {
         HEATER_B0,
         HEATER_N0,
         HEATER_B1,
         HEATER_N1,
         HEATER_B2,
         HEATER_N2,
+        WHITE_LED_0,
+        WHITE_LED_1,
+        WHITE_LED_2,
+        UV_LED_0,
+        UV_LED_1,
+        UV_LED_2
     };
 
     struct EnableScienceDeviceCommand : BaseCommand {

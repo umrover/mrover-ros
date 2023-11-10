@@ -10,27 +10,15 @@
 
 void processCANData(const mrover::CAN::ConstPtr& msg);
 
-std::unordered_map<std::string, int> device_name_to_index{
-        {"heater_0", 0},
-        {"heater_1", 1},
-        {"heater_2", 2},
-        {"heater_3", 3},
-        {"heater_4", 4},
-        {"heater_5", 5},
-        {"white_led_0", 6},
-        {"white_led_1", 7},
-        {"white_led_2", 8},
-        {"uv_led_0", 9},
-        {"uv_led_1", 10},
-        {"uv_led_2", 11},
-};
-
 std::unique_ptr<ros::Publisher> heaterDataPublisher;
 std::unique_ptr<ros::Publisher> spectralDataPublisher;
 std::unique_ptr<ros::Publisher> thermistorDataPublisher;
 
-bool serviceCallback(std_srvs::SetBool::Request& req, std_srvs::SetBool::Response& res, int device_id) {
-    ROS_INFO("TODO - request for device_id %i. Value: %s", device_id, req.data ? "true" : "false");
+bool serviceCallback(std_srvs::SetBool::Request& req, std_srvs::SetBool::Response& res, mrover::ScienceDevice scienceDevice) {
+    // TODO - send message based on req.data and scienceDevice
+    mrover::EnableScienceDeviceCommand enable_science_device_cmd;
+    enable_science_device_cmd.science_device = scienceDevice;
+    enable_science_device_cmd.enable = req.data;
     res.success = true;
     res.message = "DONE";
     return true;
@@ -80,17 +68,32 @@ void processCANData(const mrover::CAN::ConstPtr& msg) {
     std::visit([&](auto const& messageAlternative) { processMessage(messageAlternative); }, message);
 }
 
+
 int main(int argc, char** argv) {
     // Initialize the ROS node
     ros::init(argc, argv, "science_bridge");
     ros::NodeHandle nh;
 
-    for (auto const& [deviceName, deviceID]: device_name_to_index) {
-        // Advertise services and set the callback using a lambda function
+    std::unordered_map<std::string, mrover::ScienceDevice> scienceDeviceByName = {
+            {"heater_b0", mrover::ScienceDevice::HEATER_B0},
+            {"heater_n0", mrover::ScienceDevice::HEATER_N0},
+            {"heater_b1", mrover::ScienceDevice::HEATER_B1},
+            {"heater_n1", mrover::ScienceDevice::HEATER_N1},
+            {"heater_b2", mrover::ScienceDevice::HEATER_B2},
+            {"heater_n2", mrover::ScienceDevice::HEATER_N2},
+            {"white_led_0", mrover::ScienceDevice::WHITE_LED_0},
+            {"white_led_1", mrover::ScienceDevice::WHITE_LED_1},
+            {"uv_led_0", mrover::ScienceDevice::UV_LED_0},
+            {"uv_led_1", mrover::ScienceDevice::UV_LED_1},
+            {"uv_led_2", mrover::ScienceDevice::UV_LED_2},
+    };
+
+    for (auto const& [deviceName, scienceDevice]: scienceDeviceByName) {
+        // Advertise services and set the callback using a la0mbda function
         nh.advertiseService<std_srvs::SetBool::Request, std_srvs::SetBool::Response>(
                 "science_enable_" + deviceName,
-                [deviceID](std_srvs::SetBool::Request& req, std_srvs::SetBool::Response& res) {
-                    return serviceCallback(req, res, deviceID);
+                [scienceDevice](std_srvs::SetBool::Request& req, std_srvs::SetBool::Response& res) {
+                    return serviceCallback(req, res, scienceDevice);
                 });
     }
 
