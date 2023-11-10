@@ -131,25 +131,29 @@ int main(void)
   // Channels 0-4: CURR 0-4
   // Channels 5-9: TEMP 0-4
 
-  adc = new_adc_sensor(&hadc1, NUM_CHANNELS);
+  init();
 
-  // Create current sensor objects (test_ADC channels 0-4)
-  for(int i = 0; i < NUM_CURRENT_SENSORS; ++i) {
-	  current_sensors[i] = new_diag_current_sensor(adc, i);
-  }
+  // TODO - move lal code to init
 
-  // Create temp sensor objects (test_ADC channels 5-9)
-  for(int i = 0; i < NUM_TEMP_SENSORS; ++i) {
-	  temp_sensors[i] = new_diag_temp_sensor(adc, i + 5);
-  }
-
-  if (HAL_FDCAN_Start(&hfdcan1) != HAL_OK) {
-	  Error_Handler();
-  }
-  if (HAL_FDCAN_ActivateNotification(&hfdcan1, FDCAN_IT_RX_FIFO0_NEW_MESSAGE, 0) != HAL_OK) {
-	  /* Notification Error */
-	  Error_Handler();
-  }
+//  adc = new_adc_sensor(&hadc1, NUM_CHANNELS);
+//
+//  // Create current sensor objects (test_ADC channels 0-4)
+//  for(int i = 0; i < NUM_CURRENT_SENSORS; ++i) {
+//	  current_sensors[i] = new_diag_current_sensor(adc, i);
+//  }
+//
+//  // Create temp sensor objects (test_ADC channels 5-9)
+//  for(int i = 0; i < NUM_TEMP_SENSORS; ++i) {
+//	  temp_sensors[i] = new_diag_temp_sensor(adc, i + 5);
+//  }
+//
+//  if (HAL_FDCAN_Start(&hfdcan1) != HAL_OK) {
+//	  Error_Handler();
+//  }
+//  if (HAL_FDCAN_ActivateNotification(&hfdcan1, FDCAN_IT_RX_FIFO0_NEW_MESSAGE, 0) != HAL_OK) {
+//	  /* Notification Error */
+//	  Error_Handler();
+//  }
 
   /* USER CODE END 2 */
 
@@ -577,6 +581,12 @@ void fakeCANSend(float* msg) {
 
 void ReceiveMessages(void* argument) {
 	// TODO
+	uint32_t tick = osKernelGetTickCount();
+	for(;;) {
+		tick += osKernelGetTickFreq(); // 1 Hz
+		update_led();
+		osDelayUntil(tick);
+	}
 }
 
 void SendCurrentTemperature(void* argument) {
@@ -612,6 +622,12 @@ void SendCurrentTemperature(void* argument) {
 
 void UpdateLEDState(void* argument) {
 	// TODO
+	uint32_t tick = osKernelGetTickCount();
+	for(;;) {
+		tick += osKernelGetTickFreq(); // 1 Hz
+		update_led();
+		osDelayUntil(tick);
+	}
 }
 
 /* USER CODE END 4 */

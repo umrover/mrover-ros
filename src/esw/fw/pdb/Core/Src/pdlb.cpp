@@ -28,26 +28,21 @@ namespace mrover {
         pdlb = PDLB{fdcan_bus};
     }
 
-    void loop() {
-        // If the Receiver has messages waiting in its queue
-        if (std::optional received = fdcan_bus.receive<InBoundMessage>()) {
-            auto const& [header, message] = received.value();
-            auto messageId = std::bit_cast<FDCANBus::MessageId>(header.Identifier);
-            if (messageId.destination == DEVICE_ID)
-                controller.receive(message);
-        }
-
-        HAL_Delay(100); // TODO: remove after debugging
-
-        controller.update_and_send();
-    }
-
 } // namespace mrover
 
 void init() {
     mrover::init();
 }
 
-void loop() {
-    mrover::loop();
+void update_and_send_current_temp() {
+	mrover::update_and_send_current_temp();
 }
+
+void update_led() {
+	mrover::update_led();
+}
+
+void receive_message() {
+	mrover::receive_message();
+}
+

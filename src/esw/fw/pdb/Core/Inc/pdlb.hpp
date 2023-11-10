@@ -43,6 +43,15 @@ namespace mrover {
         void update_led() {
         	// TODO - implement and call inside main
         }
+
+        void receive_messages() {
+        	if (std::optional received = fdcan_bus.receive<InBoundMessage>()) {
+				auto const& [header, message] = received.value();
+				auto messageId = std::bit_cast<FDCANBus::MessageId>(header.Identifier);
+				if (messageId.destination == DEVICE_ID)
+					controller.receive(message);
+			}
+        }
     };
 
 } // namespace mrover
