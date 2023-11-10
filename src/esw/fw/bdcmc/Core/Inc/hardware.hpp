@@ -58,6 +58,16 @@ namespace mrover {
 
         explicit LimitSwitch(Pin const& pin) : m_pin{pin} {}
 
+        void initialize(bool enabled, bool active_high, bool used_for_readjustment, bool limits_forward, float associated_position) {
+        	m_valid = true;
+        	m_enabled = enabled;
+        	m_is_pressed = 0;
+        	m_active_high = active_high;
+        	m_used_for_readjustment = used_for_readjustment;
+        	m_limits_forward = limits_forward;
+        	m_associated_position = associated_position;
+        }
+
         void update_limit_switch() {
             // This suggests active low
             if (m_enabled) {
@@ -71,17 +81,42 @@ namespace mrover {
             return m_is_pressed;
         }
 
+        [[nodiscard]] bool limit_forward() const {
+        	return m_valid && m_enabled && m_is_pressed && m_limits_forward;
+        }
+
+        [[nodiscard]] bool limit_backward() const {
+        	return m_valid && m_enabled && m_is_pressed && !m_limits_forward;
+        }
+
+        [[nodiscard]] std::optional<float> get_readjustment_position() const {
+        	// Returns std::null_opt if the value should not be readjusted
+        	if (m_valid && m_enabled && m_used_for_readjustment && m_is_pressed) {
+        		return m_associated_position;
+        	}
+        	else {
+        		return std::nullopt;
+        	}
+        }
+
         void enable() {
             m_enabled = true;
         }
 
+        void disable() {
+        	m_enabled = false;
+        	m_is_pressed = 0;
+        }
+
     private:
         Pin m_pin;
-        std::uint8_t m_enabled{};
-        std::uint8_t m_is_pressed{};
-        std::uint8_t m_valid{};
-        std::uint8_t m_active_high{};
-        std::int32_t m_associated_count{};
+        bool m_valid{};
+        bool m_enabled{};
+        bool m_is_pressed{};
+        bool m_active_high{};
+        bool m_used_for_readjustment{};
+        bool m_limits_forward{};
+        float m_associated_position{};
     };
 
     class SMBus {

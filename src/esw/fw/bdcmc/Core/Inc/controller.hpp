@@ -10,6 +10,10 @@
 #include "pidf.hpp"
 #include "units/units.hpp"
 
+// Macros needed to operate on bitfields
+#define SET_BIT_AT_INDEX(x, index, value) (x = (x & ~(1 << index)) | (value << index))
+#define GET_BIT_AT_INDEX(x, index) (x & (1 << index))
+
 namespace mrover {
 
     template<typename T, typename Input, typename TimeUnit = Seconds>
@@ -40,10 +44,7 @@ namespace mrover {
         Config m_config;
         Reader m_reader;
         Writer m_writer;
-        LimitSwitch m_limit_switch_a;
-        LimitSwitch m_limit_switch_b;
-        LimitSwitch m_limit_switch_c;
-        LimitSwitch m_limit_switch_d;
+        std::array<LimitSwitch, 4> m_limit_switches;
         FDCANBus m_fdcan_bus;
 
         InBoundMessage m_command;
@@ -56,20 +57,10 @@ namespace mrover {
         void feed(ConfigCommand const& message) {
             m_config.configure(message);
 
-            if (m_config.limit_switch_info_0.a_present && m_config.limit_switch_info_0.a_enable) {
-                m_limit_switch_a.enable();
-            }
-
-            if (m_config.limit_switch_info_0.b_present && m_config.limit_switch_info_0.b_enable) {
-                m_limit_switch_b.enable();
-            }
-
-            if (m_config.limit_switch_info_0.c_present && m_config.limit_switch_info_0.c_enable) {
-                m_limit_switch_c.enable();
-            }
-
-            if (m_config.limit_switch_info_0.d_present && m_config.limit_switch_info_0.d_enable) {
-                m_limit_switch_d.enable();
+            for (std::size_t i = 0; i < 4; ++i) {
+                if (GET_BIT_AT_INDEX(m_config.limit_switch_info_0.present, i) && GET_BIT_AT_INDEX(m_config.limit_switch_info_0.enabled, i)) {
+                    m_limit_switches[i].enable();
+                }
             }
         }
 
@@ -160,7 +151,29 @@ namespace mrover {
             std::visit([&](auto const& command) { process(command); }, message);
         }
 
-        void send() {
+        void update_and_send() {
+            // 1. Update Information
+
+            for (auto& limit_switch: m_limit_switches) {
+                limit_switch.update_limit_switch();
+            }
+
+            bool should_limit_forward = std::ranges::any_of(m_limit_switches, [](LimitSwitch const& limit_switch) { return limit_switch.limit_forward(); });
+            bool should_limit_backward = std::ranges::any_of(m_limit_switches, [](LimitSwitch const& limit_switch) { return limit_switch.limit_backward(); });
+
+            for (auto& limit_switch: m_limit_switches) {
+                std::optional<float> readj_pos = limit_switch.get_readjustment_position();
+                if (readj_pos) {
+                    // TODO - readjust position
+
+                    // TODO - insert code for using should_limit_forward and should_limit_backward;
+
+                    // TODO - insert code for readjusting values
+                }
+            }
+
+
+            // 2. Send Information
             auto [position, velocity] = m_reader.read(m_config);
 
             ConfigCalibErrorInfo config_calib_error_info;
@@ -169,10 +182,9 @@ namespace mrover {
             config_calib_error_info.error = 0; // TODO
 
             LimitStateInfo limit_state_info;
-            limit_state_info.limit_a_hit = m_limit_switch_a.pressed();
-            limit_state_info.limit_b_hit = m_limit_switch_b.pressed();
-            limit_state_info.limit_c_hit = m_limit_switch_c.pressed();
-            limit_state_info.limit_d_hit = m_limit_switch_d.pressed();
+            for (std::size_t i = 0; i < m_limit_switches.size(); ++i) {
+                SET_BIT_AT_INDEX(limit_state_info.hit, i, m_limit_switches[i].pressed());
+            }
 
             m_fdcan_bus.broadcast(OutBoundMessage{ControllerDataState{
                     .position = position,

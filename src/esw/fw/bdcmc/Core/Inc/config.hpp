@@ -14,10 +14,7 @@ namespace mrover {
         ConfigLimitSwitchInfo1 limit_switch_info_1;
         ConfigLimitSwitchInfo2 limit_switch_info_2;
         ConfigEncoderInfo quad_abs_enc_info;
-        Radians limit_a_readj_pos;
-        Radians limit_b_readj_pos;
-        Radians limit_c_readj_pos;
-        Radians limit_d_readj_pos;
+        std::array<Radians, 4> limit_readj_pos;
         Ratio quad_enc_out_ratio;
         Ratio abs_enc_out_ratio;
         Percent max_pwm;
@@ -37,20 +34,19 @@ namespace mrover {
             this->gear_ratio = command.gear_ratio;
             // TODO: Terrible naming for the limit switch info
             // TODO(guthrie): make this compile
-			this->limit_switch_info_0 = command.limit_switch_info_0;
-			this->limit_switch_info_1 = command.limit_switch_info_1;
-			this->limit_switch_info_2 = command.limit_switch_info_2;
-			this->quad_abs_enc_info = command.quad_abs_enc_info;
-			this->limit_a_readj_pos = command.limit_a_readj_pos;
-			this->limit_b_readj_pos = command.limit_b_readj_pos;
-			this->limit_c_readj_pos = command.limit_c_readj_pos;
-			this->limit_d_readj_pos = command.limit_d_readj_pos;
-			this->quad_enc_out_ratio = command.quad_enc_out_ratio;
-			this->abs_enc_out_ratio = command.abs_enc_out_ratio;
-			this->max_pwm = command.max_pwm;
-			this->limit_max_pos = command.limit_max_pos;
-			this->max_forward_pos = command.max_forward_pos;
-			this->max_back_pos = command.max_back_pos;
+            this->limit_switch_info_0 = command.limit_switch_info_0;
+            this->limit_switch_info_1 = command.limit_switch_info_1;
+            this->limit_switch_info_2 = command.limit_switch_info_2;
+            this->quad_abs_enc_info = command.quad_abs_enc_info;
+            for (std::size_t i = 0; i < this->limit_readj_pos.size(); ++i) {
+                this->limit_readj_pos[i] = command.limit_readj_pos[i];
+            }
+            this->quad_enc_out_ratio = command.quad_enc_out_ratio;
+            this->abs_enc_out_ratio = command.abs_enc_out_ratio;
+            this->max_pwm = command.max_pwm;
+            this->limit_max_pos = command.limit_max_pos;
+            this->max_forward_pos = command.max_forward_pos;
+            this->max_back_pos = command.max_back_pos;
         }
     };
 

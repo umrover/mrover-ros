@@ -48,7 +48,7 @@ namespace mrover {
 
         HAL_Delay(100); // TODO: remove after debugging
 
-        controller.send();
+        controller.update_and_send();
     }
 
 } // namespace mrover
