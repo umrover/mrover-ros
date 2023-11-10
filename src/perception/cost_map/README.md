@@ -7,7 +7,7 @@
 
 ### Explanation
 
-The goal of this code is to take in a local occupancy grid / costmap and output a global occupancy grid.
+The goal of this code is to take in a local occupancy grid / costmap (using http://docs.ros.org/en/melodic/api/nav_msgs/html/msg/OccupancyGrid.html) and output a global occupancy grid (again using http://docs.ros.org/en/melodic/api/nav_msgs/html/msg/OccupancyGrid.html).
 
 ~~The goal of this code is to take in pointcloud data from the zed and output a cost map / occupancy grid that represents the difficulty of passing terrain.~~ 
 
