@@ -261,6 +261,6 @@ TIM15.Channel-PWM\ Generation1\ CH1=TIM_CHANNEL_1
 TIM15.Channel-PWM\ Generation2\ CH2=TIM_CHANNEL_2
 TIM15.IPParameters=Prescaler,PeriodNoDither,Channel-PWM Generation1 CH1,Channel-PWM Generation2 CH2
 TIM15.PeriodNoDither=100
-TIM15.Prescaler=3
+TIM15.Prescaler=63
 board=custom
 isbadioc=false
