@@ -41,7 +41,8 @@ namespace mrover {
         // If the Receiver has messages waiting in its queue
         if (std::optional received = fdcan_bus.receive<InBoundMessage>()) {
             auto const& [header, message] = received.value();
-            if (header.Identifier == DEVICE_ID)
+            auto messageId = std::bit_cast<FDCANBus::MessageId>(header.Identifier);
+            if (messageId.destination == DEVICE_ID)
                 controller.receive(message);
         }
 

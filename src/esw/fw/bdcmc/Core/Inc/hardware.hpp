@@ -120,13 +120,21 @@ namespace mrover {
     };
 
     class FDCANBus {
-//        constexpr static std::uint8_t NO_DATA = 0x50;
+        //        constexpr static std::uint8_t NO_DATA = 0x50;
 
     public:
+        struct MessageId {
+            std::uint8_t destination{};
+            std::uint8_t source : 7 {};
+            bool replyRequired : 1 {};
+            [[maybe_unsued]] std::uint16_t _ignored{};
+        };
+        static_assert(sizeof(MessageId) == 4);
+
         FDCANBus() = default;
 
         explicit FDCANBus(std::uint8_t source, std::uint8_t destination, FDCAN_HandleTypeDef* fdcan)
-                : m_fdcan{fdcan}, m_source{source}, m_destination{destination} {
+            : m_fdcan{fdcan}, m_source{source}, m_destination{destination} {
 
             check(HAL_FDCAN_Start(m_fdcan) == HAL_OK, Error_Handler);
         }
@@ -134,7 +142,7 @@ namespace mrover {
         template<IsFdcanSerializable TReceive>
         [[nodiscard]] auto receive() -> std::optional<std::pair<FDCAN_RxHeaderTypeDef, TReceive>> {
             if (HAL_FDCAN_GetRxFifoFillLevel(m_fdcan, FDCAN_RX_FIFO0)) {
-                FDCAN_RxHeaderTypeDef header;
+                FDCAN_RxHeaderTypeDef header{};
                 TReceive receive{};
                 check(HAL_FDCAN_GetRxMessage(m_fdcan, FDCAN_RX_FIFO0, &header, address_of<std::uint8_t>(receive)) == HAL_OK, Error_Handler);
                 return std::make_pair(header, receive);
@@ -168,31 +176,26 @@ namespace mrover {
         }
 
         auto broadcast(IsFdcanSerializable auto const& send) -> void {
-            struct FdcanMessageId {
-                std::uint8_t destination{};
-                std::uint8_t source: 7 {};
-                bool replyRequired: 1 {};
-                [[maybe_unused]] std::uint16_t _ignored: 13 {};
-                bool isError: 1 {};
-                bool isRemote: 1 {};
-                bool isExtended: 1 {};
-            } message{
+            MessageId messageId{
                     .destination = m_destination,
                     .source = m_source,
-                    .isExtended = true,
             };
             FDCAN_TxHeaderTypeDef header{
-                    .Identifier = std::bit_cast<std::uint32_t>(message),
-                    .IdType = FDCAN_STANDARD_ID,
+                    .Identifier = std::bit_cast<std::uint32_t>(messageId),
+                    .IdType = FDCAN_EXTENDED_ID,
                     .TxFrameType = FDCAN_DATA_FRAME,
                     .DataLength = nearest_fitting_can_fd_frame_size(sizeof(send)),
                     .ErrorStateIndicator = FDCAN_ESI_ACTIVE,
                     .BitRateSwitch = FDCAN_BRS_ON,
                     .FDFormat = FDCAN_FD_CAN,
                     .TxEventFifoControl = FDCAN_NO_TX_EVENTS,
-                    .MessageMarker = 0,
             };
-            check(HAL_FDCAN_AddMessageToTxFifoQ(m_fdcan, &header, address_of<std::uint8_t>(send)) == HAL_OK, Error_Handler);
+            if (HAL_FDCAN_GetTxFifoFreeLevel(m_fdcan)) {
+                check(HAL_FDCAN_AddMessageToTxFifoQ(m_fdcan, &header, address_of<std::uint8_t>(send)) == HAL_OK, Error_Handler);
+            } else {
+                // TODO: somehow convey that this is an error
+                HAL_FDCAN_AbortTxRequest(m_fdcan, FDCAN_TX_BUFFER0);
+            }
         }
 
     private:
