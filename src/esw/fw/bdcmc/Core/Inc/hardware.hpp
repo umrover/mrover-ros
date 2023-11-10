@@ -151,7 +151,7 @@ namespace mrover {
             }
         }
 
-        consteval static auto nearest_fitting_can_fd_frame_size(std::size_t size) -> std::uint32_t {
+        [[nodiscard]] consteval static auto nearest_fitting_can_fd_frame_size(std::size_t size) -> std::uint32_t {
             if (size <= 0) return FDCAN_DLC_BYTES_0;
             if (size <= 1) return FDCAN_DLC_BYTES_1;
             if (size <= 2) return FDCAN_DLC_BYTES_2;
@@ -168,11 +168,10 @@ namespace mrover {
             if (size <= 32) return FDCAN_DLC_BYTES_32;
             if (size <= 48) return FDCAN_DLC_BYTES_48;
             if (size <= 64) return FDCAN_DLC_BYTES_64;
-            // exception handling disabled, use '-fexceptions' to enable
-            // project -> Properties -> C/C++ Build -> Settings ->
-            // Tool Settings -> MCU G++ Compiler -> Miscellaneous
-            // Add the "-fexceptions" flag there.
-            throw std::runtime_error("Too large!");
+            // Need to cause a compile error as this size is not feasible to put in a single FDCAN frame
+            // Trying to call a non-consteval function will do this
+            Error_Handler();
+            return {};
         }
 
         auto broadcast(IsFdcanSerializable auto const& send) -> void {
@@ -190,9 +189,14 @@ namespace mrover {
                     .FDFormat = FDCAN_FD_CAN,
                     .TxEventFifoControl = FDCAN_NO_TX_EVENTS,
             };
+            // Sending a message to the bus gets added to a mailbox
+            // Messages in the mailbox are removed when they are sent out
+            // They are sent out when the bus is free AND there is at least one other device on the bus
             if (HAL_FDCAN_GetTxFifoFreeLevel(m_fdcan)) {
+                // Free space in the mailbox
                 check(HAL_FDCAN_AddMessageToTxFifoQ(m_fdcan, &header, address_of<std::uint8_t>(send)) == HAL_OK, Error_Handler);
             } else {
+                // Abort oldest message in the mailbox to make room for the new message
                 // TODO: somehow convey that this is an error
                 HAL_FDCAN_AbortTxRequest(m_fdcan, FDCAN_TX_BUFFER0);
             }
