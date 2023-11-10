@@ -81,7 +81,7 @@ namespace mrover {
         Percent max_pwm;
         ConfigLimitInfo limit_max_pos;
         Radians max_forward_pos;
-        Radians max_back_pos;
+        Radians max_backward_pos;
     };
 
     struct EnableLimitSwitchesCommand : BaseCommand {

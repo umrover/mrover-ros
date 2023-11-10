@@ -46,7 +46,7 @@ namespace mrover {
             this->max_pwm = command.max_pwm;
             this->limit_max_pos = command.limit_max_pos;
             this->max_forward_pos = command.max_forward_pos;
-            this->max_back_pos = command.max_back_pos;
+            this->max_backward_pos = command.max_backward_pos;
         }
     };
 
