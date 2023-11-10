@@ -126,6 +126,11 @@ namespace mrover {
             controller_state.name.push_back(name);
             controller_state.state.push_back(controller.getState());      // TODO
             controller_state.error.push_back(controller.getErrorState()); // TODO - map
+            uint8_t limit_hit;
+            for (int i = 0; i < 4; ++i) {
+                limit_hit |= controller.isLimitHit(i) << i;
+            }
+            controller_state.limit_hit.push_back(limit_hit);
         }
 
         mJointDataPub.publish(joint_state);

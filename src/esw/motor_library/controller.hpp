@@ -32,6 +32,9 @@ namespace mrover {
         std::string getErrorState() { return mErrorState; }
         std::string getState() { return mState; }
         virtual double getEffort() = 0; // TODO implement in base files. for brushed it is 0/nan, for brushless it exists.
+        bool isLimitHit(uint8_t index) {
+            return mLimitHit.at(index);
+        }
 
     protected:
         ros::NodeHandle mNh;

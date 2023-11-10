@@ -54,8 +54,8 @@ namespace mrover {
 
         mConfigCommand.limit_max_pos.limit_max_forward_position = static_cast<bool>(brushedMotorData["limit_max_forward_pos"]);
         mConfigCommand.limit_max_pos.limit_max_backward_position = static_cast<bool>(brushedMotorData["limit_max_backward_pos"]);
-        mConfigCommand.max_forward_pos = Meters{static_cast<double>(brushedMotorData["max_forward_pos"])};
-        mConfigCommand.max_back_pos = Meters{static_cast<double>(brushedMotorData["max_backward_pos"])};
+        mConfigCommand.max_forward_pos = Radians{static_cast<double>(brushedMotorData["max_forward_pos"])};
+        mConfigCommand.max_backward_pos = Radians{static_cast<double>(brushedMotorData["max_backward_pos"])};
 
         mErrorState = "Unknown";
         mState = "Unknown";
