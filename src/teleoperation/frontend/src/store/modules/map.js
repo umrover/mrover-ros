@@ -11,7 +11,7 @@ const state = {
   
   // mutations
   const mutations = {
-    setOdomFormat(commit, newOdomFormat) {
+    setOdomFormat(state, newOdomFormat) {
       state.odomFormat = newOdomFormat;
     },
   };

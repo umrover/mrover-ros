@@ -13,7 +13,8 @@
     data() {
       return {
         joystick_pub: null,
-        websocket: inject("webSocketService") as WebSocket,
+        // websocket: inject("webSocketService") as WebSocket,
+        websocket: new WebSocket('ws://localhost:8000/ws/gui'),
       };
     },
   

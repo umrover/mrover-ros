@@ -1,13 +1,13 @@
 <template>
-    <div class="calibration-wrapper">
-      <Checkbox :name="name" @toggle="toggleCalibration"> </Checkbox>
-      <span class="led">
-        <LEDIndicator :connected="calibrated" :name="name" :show_name="false" />
-      </span>
-    </div>
-  </template>
+  <div class="calibration-wrapper">
+    <Checkbox :name="name" @toggle="toggleCalibration"> </Checkbox>
+    <span class="led">
+      <LEDIndicator :connected="calibrated" :name="name" :show_name="false" />
+    </span>
+  </div>
+</template>
   
-  <script lang ="ts">
+<script lang ="ts">
   import { defineComponent, inject } from 'vue';
   import Checkbox from "./Checkbox.vue";
   import LEDIndicator from "./LEDIndicator.vue";
@@ -36,7 +36,8 @@
   
     data() {
       return {
-        websocket: inject("webSocketService") as WebSocket,
+        // websocket: inject("webSocketService") as WebSocket,
+        websocket: new WebSocket('ws://localhost:8000/ws/gui'),
         socket: null,
         toggleEnabled: false,
         calibrated: false,
@@ -63,7 +64,7 @@
 
 
     created: function () {
-        this.websocket.onmessage = (event) => {
+        this.websocket.onmessage = (event) => { console.log(event.data)
             const msg = JSON.parse(event.data);
             if(msg.type=="calibration_status"){
             for (var i = 0; i < msg.names.length; ++i) {
@@ -101,15 +102,15 @@
   });
   </script>
   
-  <style>
-  .calibration-wrapper {
-    padding: 1% 0 1% 0;
-    display: flex;
-    flex-direction: row;
-  }
-  
-  .led {
-    margin-left: 5%;
-    display: block;
-  }
-  </style>
+<style>
+.calibration-wrapper {
+  padding: 1% 0 1% 0;
+  display: flex;
+  flex-direction: row;
+}
+
+.led {
+  margin-left: 5%;
+  display: block;
+}
+</style>

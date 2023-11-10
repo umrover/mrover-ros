@@ -19,19 +19,19 @@ const state = {
   
   // mutations
   const mutations = {
-    setWaypointList(commit, newList) {
+    setWaypointList(state, newList) {
       state.waypointList = newList;
     },
   
-    setHighlightedWaypoint(commit, newWaypoint) {
+    setHighlightedWaypoint(state, newWaypoint) {
       state.highlightedWaypoint = newWaypoint;
     },
   
-    setOdomFormat(commit, newOdomFormat) {
+    setOdomFormat(state, newOdomFormat) {
       state.odomFormat = newOdomFormat;
     },
   
-    setClickPoint(commit, newClickPoint) {
+    setClickPoint(state, newClickPoint) {
       state.clickPoint = newClickPoint;
     },
   };

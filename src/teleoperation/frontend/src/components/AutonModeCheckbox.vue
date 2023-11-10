@@ -1,11 +1,11 @@
 <template>
-    <div class="wrap-button">
+    <!-- <div class="wrap-button"> -->
       <button :class="['btn', color]" @click="toggleAndEmit()">
         <span class="white-text"
           >{{ name }}: <br />{{ active ? "\u2611" : "\u2610" }}</span
         >
       </button>
-    </div>
+    <!-- </div> -->
   </template>
   
   <script lang="ts">
@@ -45,18 +45,6 @@
     align-items: center;
     justify-content: center;
     padding: 1px;
-  }
-  
-  .green {
-    background-color: green;
-  }
-  
-  .red {
-    background-color: red;
-  }
-  
-  .yellow {
-    background-color: #ffd700;
   }
   
   .white-text {

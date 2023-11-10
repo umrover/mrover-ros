@@ -1,5 +1,5 @@
 // Function to convert coordinates between different odom formats
-// import * as qte from "quaternion-to-euler";
+import * as qte from "quaternion-to-euler";
 import { inject } from "vue";
 const convertDMS = function (coord_in, odom_format) {
   const DEG_DECIMALS = 8;
@@ -39,7 +39,8 @@ const quaternionToMapAngle = function (quaternion) {
 };
 
 const disableAutonLED = function () {
-    const ws = inject<WebSocket>("webSocketService");
+    // const ws = inject<WebSocket>("webSocketService");
+    const ws =  new WebSocket('ws://localhost:8000/ws/gui');
     ws.send(JSON.stringify({type:"disable_auton_led"}))
 };
 

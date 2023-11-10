@@ -8,7 +8,13 @@
             <input ref="arm-enabled" v-model="arm_mode" type="radio" :name="'Arm Enabled'" value="arm_disabled" />
             Arm Disabled
             <input ref="open-loop-enabled" v-model="arm_mode" type="radio" :name="'Open Loop Enabled'" value="open_loop" />
-            Open Loop
+            IK
+            <input ref="arm-enabled" v-model="arm_mode" type="radio" :name="'Arm Enabled'" value="arm_disabled" />
+            Position
+            <input ref="open-loop-enabled" v-model="arm_mode" type="radio" :name="'Open Loop Enabled'" value="open_loop" />
+            Velocity
+            <input ref="arm-enabled" v-model="arm_mode" type="radio" :name="'Arm Enabled'" value="arm_disabled" />
+            Throttle
             <!-- Commented until servoing works :( -->
             <!-- <input
               ref="servo-enabled"
@@ -34,13 +40,13 @@
             <ToggleButton id="arm_laser" :current-state="laser_enabled" label-enable-text="Arm Laser On"
                 label-disable-text="Arm Laser Off" @change="toggleArmLaser()" />
             <div class="limit-switch">
-                <h4>Joint B Limit Switch</h4>
-                <LimitSwitch :switch_name="'joint_b'" :name="'Joint B Switch'" />
+                <h4>Limit Switches</h4>
+                <LimitSwitch :switch_name="'joint_b'" :name="'All Switches'" />
             </div>
         </div>
         <div class="controls-flex">
             <h4>Calibration</h4>
-            <CalibrationCheckbox name="Joint B Calibration" joint_name="joint_b" calibrate_topic="ra_is_calibrated" />
+            <CalibrationCheckbox name="All Joints Calibration" joint_name="joint_b" calibrate_topic="ra_is_calibrated" />
             <JointAdjust :options="[
                 { name: 'joint_a', option: 'Joint A' },
                 { name: 'joint_b', option: 'Joint B' },
@@ -72,7 +78,8 @@ export default defineComponent({
     },
     data() {
         return {
-            websocket: inject("webSocketService") as WebSocket,
+            // websocket: inject("webSocketService") as WebSocket,
+            websocket: new WebSocket('ws://localhost:8000/ws/gui'),
             arm_mode: "arm_disabled",
             joints_array: [false, false, false, false, false, false],
             laser_enabled: false,
@@ -95,7 +102,7 @@ export default defineComponent({
     // },
 
     created: function () {
-        this.websocket.onmessage = (event) => {
+        this.websocket.onmessage = (event) => { console.log(event.data)
             const msg = JSON.parse(event.data);
             if(msg.type=="laser_service"){
                 if (!msg.result) {
@@ -233,4 +240,4 @@ export default defineComponent({
 .limit-switch h4 {
     margin-bottom: 5px;
 }
-  </style>
+</style>

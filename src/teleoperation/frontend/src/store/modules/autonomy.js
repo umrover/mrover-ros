@@ -25,31 +25,31 @@ const state = {
   
   // mutations
   const mutations = {
-    setRoute(commit, newRoute) {
+    setRoute(state, newRoute) {
       state.route = newRoute;
     },
   
-    setAutonMode(commit, newAutonEnabled) {
+    setAutonMode(state, newAutonEnabled) {
       state.autonEnabled = newAutonEnabled;
     },
   
-    setTeleopMode(commit, newTeleopEnabled) {
+    setTeleopMode(state, newTeleopEnabled) {
       state.teleopEnabled = newTeleopEnabled;
     },
   
-    setWaypointList(commit, newList) {
+    setWaypointList(state, newList) {
       state.waypointList = newList;
     },
   
-    setHighlightedWaypoint(commit, newWaypoint) {
+    setHighlightedWaypoint(state, newWaypoint) {
       state.highlightedWaypoint = newWaypoint;
     },
   
-    setOdomFormat(commit, newOdomFormat) {
+    setOdomFormat(state, newOdomFormat) {
       state.odomFormat = newOdomFormat;
     },
   
-    setClickPoint(commit, newClickPoint) {
+    setClickPoint(state, newClickPoint) {
       state.clickPoint = newClickPoint;
     },
   };

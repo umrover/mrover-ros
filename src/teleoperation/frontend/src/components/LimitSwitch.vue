@@ -1,16 +1,11 @@
 <template>
-    <div class="wrap">
-      <ToggleButton
-        :id="name"
-        :current-state="limit_enabled"
-        :label-enable-text="name + ' On'"
-        :label-disable-text="name + ' Off'"
-        @change="toggleLimitSwitch()"
-      />
-    </div>
-  </template>
+  <div class="wrap">
+    <ToggleButton :id="name" :current-state="limit_enabled" :label-enable-text="name + ' On'"
+      :label-disable-text="name + ' Off'" @change="toggleLimitSwitch()" />
+  </div>
+</template>
   
-  <script lang="ts">
+<script lang="ts">
   import  { defineComponent, inject } from "vue";
   import ToggleButton from "./ToggleButton.vue";
   
@@ -31,13 +26,14 @@
   
     data() {
       return {
-        websocket: inject("webSocketService") as WebSocket,
+        // websocket: inject("webSocketService") as WebSocket,
+        websocket: new WebSocket('ws://localhost:8000/ws/gui'),
         limit_enabled: false,
       };
     },
   
     created: function () {
-      this.websocket.onmessage = (event) => {
+      this.websocket.onmessage = (event) => { console.log(event.data)
         const msg = JSON.parse(event.data);
         if(msg.type == "enable_device_srv") {
           if(!msg.result) {
@@ -47,7 +43,7 @@
         }
       };
 
-      this.toggleLimitSwitch(); //enables the limit switch when created
+      // this.toggleLimitSwitch(); //enables the limit switch when created
     },
   
     methods: {

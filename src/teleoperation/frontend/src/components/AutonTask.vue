@@ -27,7 +27,7 @@
             <p style="margin-top: 6px">Joystick Values</p>
             <JoystickValues />
             </div>
-            <OdometryReading :odom="odom"></OdometryReading>
+            <OdometryReading :odom="odom" />
         </div>
         <div class="shadow p-3 rounded map">
             <AutonRoverMap :odom="odom" />
@@ -50,15 +50,15 @@
         <MastGimbalControls></MastGimbalControls>
     </div> -->
         <div class="conditions">
-            <div v-if="!stuck_status" class="shadow p-3 rounded stuck not-stuck">
+            <div v-if="!stuck_status" class="shadow p-3 rounded bg-success text-center">
                 <h4>Nominal Conditions</h4>
             </div>
-            <div v-else class="shadow p-3 rounded stuck rover-stuck">
+            <div v-else class="shadow p-3 rounded bg-danger text-center">
                 <h4>Obstruction Detected</h4>
             </div>
         </div>
         <div class="shadow p-3 rounded cameras">
-        <Cameras :primary="true" />
+            <Cameras :primary="true" />
         </div>
         <div class="shadow p-3 rounded moteus">
             <DriveMoteusStateTable :moteus-state-data="moteusState" />
@@ -78,7 +78,7 @@ import JointStateTable from "./JointStateTable.vue";
 import OdometryReading from "./OdometryReading.vue";
 import JoystickValues from './JoystickValues.vue';
 import DriveControls from "./DriveControls.vue";
-// import { quaternionToMapAngle } from "../utils.js";
+import { quaternionToMapAngle } from "../utils.js";
 import { defineComponent } from "vue";
 
 const navBlue: string = "#4695FF";
@@ -104,6 +104,7 @@ export default defineComponent({
 
     data() {
         return {
+            websocket: new WebSocket("ws://localhost:8000/ws/gui"),
             // Default coordinates are at MDRS
             odom: {
                 latitude_deg: 38.4060250,
@@ -130,14 +131,18 @@ export default defineComponent({
 
             stuck_status: false,
 
-            // Default object isn't empty, so has to be initialized to ""
             moteusState: {
-                name: ["", "", "", "", "", ""],
-                error: ["", "", "", "", "", ""],
-                state: ["", "", "", "", "", ""],
+                name: [] as string[],
+                error: [] as string[],
+                state: [] as string[],
             },
 
-            jointState: {},
+            jointState: {
+                name: [] as string[],
+                position: [] as number[],
+                velocity: [] as number[],
+                effort: [] as number[]
+            }
         };
     },
 
@@ -178,14 +183,14 @@ export default defineComponent({
                 this.ledColor = "green";
             }
             if (send) {
-                //   this.sendColor();
+                this.sendColor();
             }
         }
     },
 
     beforeUnmount: function () {
         this.ledColor = "off";
-        //   this.sendColor();
+        this.sendColor();
         window.clearInterval(ledInterval);
     },
 
@@ -197,14 +202,47 @@ export default defineComponent({
 
         // Initialize color to red.
         this.ledColor = "red";
-        //   this.sendColor();
+        this.sendColor();
 
         ledInterval = window.setInterval(() => {
-            // this.sendColor();
+            this.sendColor();
         }, ledUpdateRate * 1000);
+
+
+
+        this.websocket.onmessage = (event) => {
+            const msg = JSON.parse(event.data)
+            if (msg.type == "joint_state") {
+                this.jointState.name = msg.name;
+                this.jointState.position = msg.position;
+                this.jointState.velocity = msg.velocity;
+                this.jointState.effort = msg.effort;
+            }
+            else if(msg.type == "drive_moteus") {
+                let index = this.moteusState.name.findIndex((n) => n === msg.name);
+                if(this.moteusState.name.length == 6 || index != -1) {
+                    //if all motors are in table or there's an update to one before all are in
+                    if (index !== -1) {
+                        this.moteusState.state[index] = msg.state;
+                        this.moteusState.error[index] = msg.error;
+                    }
+                    else {
+                        console.log("Invalid arm moteus name: " + msg.name);
+                    }
+                }
+                else {
+                    this.moteusState.name.push(msg.name);
+                    this.moteusState.state.push(msg.state);
+                    this.moteusState.error.push(msg.error);
+                }
+            }
+        }
     },
 
     methods: {
+        sendColor() {
+            // this.websocket.send(JSON.stringify({type: 'auton_led', data: this.ledColor}));
+        }
     }
 });
 </script>
@@ -213,8 +251,8 @@ export default defineComponent({
 .wrapper {
     display: grid;
     grid-gap: 10px;
-    grid-template-columns: 45vw 15vw auto;
-    grid-template-rows: auto 50vh auto auto auto;
+    grid-template-columns: 40% 20% auto;
+    grid-template-rows: auto 40% auto auto auto;
     grid-template-areas:
         "header header header"
         "map map waypoints"
@@ -228,7 +266,7 @@ export default defineComponent({
 }
 
 
-.stuck {
+/* .stuck {
     grid-area: stuck;
     border-radius: 5px;
     line-height: 40px;
@@ -239,7 +277,7 @@ export default defineComponent({
 
 .stuck h1 {
     margin-top: 30px;
-}
+} */
 
 .rover-stuck {
     background-color: lightcoral;

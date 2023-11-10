@@ -33,7 +33,8 @@ import {inject} from "vue"
   export default {
     data() {
       return {
-        websocket: inject("webSocketService") as WebSocket,
+        // websocket: inject("webSocketService") as WebSocket,
+        websocket: new WebSocket('ws://localhost:8000/ws/gui'),
         joystick_mappings: {},
         joystick_values: {
           left_right: 0,

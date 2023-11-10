@@ -1,34 +1,34 @@
 <template>
-    <div class="wrap">
-      <div>
-        <h3>Power Distribution Board</h3>
-      </div>
-    <table class="table">
-        <thead>
-            <tr class="table-primary">
-                <th></th>
-                <th>Temperature</th>
-                <th>Current</th>
-            </tr>
-        </thead>
-        <tbody>
-            <template v-for="(item, i) in pdb_data" :key="item">
-                <tr>
-                <th class="table-secondary">{{ voltage[i] }}</th>
-                <td :class="item.temp.color ">
-                    {{ item.temp.val.toFixed(2) }}°C
-                </td>
-                <td :class="item.current.color">
-                    {{ item.current.val.toFixed(2) }} A
-                </td>
-                </tr>
-            </template>
-        </tbody>
-    </table>
+  <div class="wrap">
+    <div>
+      <h3>Power Distribution Board</h3>
     </div>
-  </template>
+    <table class="table">
+      <thead>
+        <tr class="table-primary">
+          <th></th>
+          <th>Temperature</th>
+          <th>Current</th>
+        </tr>
+      </thead>
+      <tbody>
+        <template v-for="(item, i) in pdb_data" :key="item">
+          <tr>
+            <th class="table-secondary">{{ voltage[i] }}</th>
+            <td :class="item.temp.color">
+              {{ item.temp.val.toFixed(2) }}°C
+            </td>
+            <td :class="item.current.color">
+              {{ item.current.val.toFixed(2) }} A
+            </td>
+          </tr>
+        </template>
+      </tbody>
+    </table>
+  </div>
+</template>
   
-  <script lang="ts">
+<script lang="ts">
   import { inject } from 'vue';
   const pdb_temp_limit = 100;
   const pdb_current_limits = [
@@ -38,7 +38,8 @@
   export default {
     data() {
       return {
-        websocket: inject("webSocketService") as WebSocket,
+        // websocket: inject("webSocketService") as WebSocket,
+        websocket: new WebSocket('ws://localhost:8000/ws/gui'),
         voltage: ["3.3V", "5V", "12V Buck #1", "12V Buck #2", "12V Buck #3"],
         pdb_data: [
           {
@@ -65,7 +66,7 @@
       };
     },
     mounted: function () {
-        this.websocket.onmessage = (event) => {
+        this.websocket.onmessage = (event) => { console.log(event.data)
             const msg = JSON.parse(event.data);
             if(msg.type == "pdb") {
                 for (let i = this.pdb_data.length-1; i >= 0; i--) {
@@ -97,9 +98,9 @@
   };
   </script>
   
-  <style scoped>
-  .wrap {
-    display: inline-block;
-    align-content: center;
-  }
-  </style>
+<style scoped>
+.wrap {
+  display: inline-block;
+  align-content: center;
+}
+</style>

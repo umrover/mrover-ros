@@ -54,7 +54,8 @@
   
     data() {
       return {
-        websocket: inject("webSocketService") as WebSocket,
+        // websocket: inject("webSocketService") as WebSocket,
+        websocket: new WebSocket('ws://localhost:8000/ws/gui'),
 
         moteusStateName: [] as string[],
         moteusStateState: [] as string[],
@@ -65,7 +66,7 @@
     created: function () {
       this.websocket.onmessage = (event) => {
             const msg = JSON.parse(event.data);
-            if(msg.type == "arm_controller") {
+            if(msg.type == "arm_moteus") {
               let index = this.moteusStateName.findIndex((n) => n === msg.name);
 
               if(this.moteusStateName.length == 4 || index != -1) {
