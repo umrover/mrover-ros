@@ -23,6 +23,13 @@
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
 
+#include "adc_sensor.h"
+#include "diag_temp_sensor.h"
+#include "heater.h"
+#include "smbus.h"
+#include "spectral.h"
+#include "toggle_gpio.h"
+
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -47,6 +54,8 @@ FDCAN_HandleTypeDef hfdcan1;
 
 I2C_HandleTypeDef hi2c1;
 
+TIM_HandleTypeDef htim2;
+
 /* Definitions for defaultTask */
 osThreadId_t defaultTaskHandle;
 const osThreadAttr_t defaultTask_attributes = {
@@ -64,7 +73,7 @@ static void MX_GPIO_Init(void);
 static void MX_FDCAN1_Init(void);
 static void MX_I2C1_Init(void);
 static void MX_ADC1_Init(void);
-static void MX_ADC2_Init(void);
+static void MX_TIM2_Init(void);
 void StartDefaultTask(void *argument);
 
 /* USER CODE BEGIN PFP */
@@ -107,7 +116,102 @@ int main(void)
   MX_FDCAN1_Init();
   MX_I2C1_Init();
   MX_ADC1_Init();
+  MX_TIM2_Init();
   /* USER CODE BEGIN 2 */
+
+  //Create all our stuff!
+
+  //initialize spectral sensor
+  Spectral* spectral_sensor[3];
+  SMBus* buses[3];
+  for (int i = 0; i < 3; ++i){
+	  buses[i] = new_smbus(&hi2c1);
+	  spectral_sensor[i] = new_spectral(buses[i]);
+  }
+
+  set_active_spectral_sensor(&hi2c1, 0);
+
+  //initialize thermistors NOT NEEDED BECAUSE EVERY THERMISTOR IS ASSIGNED TO A HEATER?
+  /*ADCSensor* adc_sensors[3];
+  DiagTempSensor* thermistors[3];
+  int thermistor_channels [3] = {0, 1, 2};
+  for (int i = 0; i < 3; ++i){
+	  adc_sensors[i] = new_adc_sensor(&hadc, total_channels);
+	  thermistors[i] = new_diag_temp_sensor(adc_sensors[i], thermistor_channels[i]);
+  }*/
+
+  //MUX is hi2c1
+
+
+  //initialize leds
+  Toggle_GPIO* uv_led[3];
+  GPIO_TypeDef* uv_led_pins[3] = {GPIOA, GPIOA, GPIOA};
+  uint16_t uv_led_pin_numbers[3] = {GPIO_PIN_0, GPIO_PIN_1, GPIO_PIN_2};
+  for (int i = 0; i < 3; ++i){
+	  uv_led[i] = new_toggle_gpio(uv_led_pins[i], uv_led_pin_numbers[i]);
+  }
+
+
+  //initialize white leds
+  Toggle_GPIO* white_leds[3];
+  GPIO_TypeDef* white_led_pins[3] = {GPIOA, GPIOA, GPIOC};
+  uint16_t white_led_pin_numbers[3] = {GPIO_PIN_6, GPIO_PIN_7, GPIO_PIN_4};
+  for (int i = 0; i < 3; ++i){
+	  white_leds[i] = new_toggle_gpio(white_led_pins[i], white_led_pin_numbers[i]);
+  }
+
+  //initialize debug leds
+  Toggle_GPIO* debug_leds[3];
+  GPIO_TypeDef* debug_led_pins[3] = {GPIOC, GPIOC, GPIOC};
+  uint16_t debug_led_pin_numbers[3] = {GPIO_PIN_13, GPIO_PIN_14, GPIO_PIN_15};
+  for (int i = 0; i < 3; ++i){
+  	  debug_leds[i] = new_toggle_gpio(debug_led_pins[i], debug_led_pin_numbers[i]);
+  }
+
+  /*
+   * Pins for these not known yet!
+  Toggle_GPIO* raman_laser = new_toggle_gpio();
+  Toggle_GPIO* uv_bulb = new_toggle_gpio();
+  */
+
+  //PLACEHOLDERS
+  int total_channels = 8;
+  int thermistor_channel_ns[3] = {0, 1, 2};
+  int thermistor_channel_bs[3] = {0, 1, 2};
+
+  //There are B and N heaters
+  //Each heater needs a Toggle_GPIO struct and a thermistor
+  //Each Toggle_GPIO is initialized with the pin and number
+
+  Heater* heater_bs[3];
+  Toggle_GPIO* heater_b_toggles[3];
+  GPIO_TypeDef* heater_b_pins[3] = {GPIOB, GPIOB, GPIOA};
+  uint16_t heater_b_pin_numbers[3] = {GPIO_PIN_13, GPIO_PIN_15, GPIO_PIN_8};
+  DiagTempSensor* thermistor_bs[3];
+  ADCSensor* adc_sensor_bs[3];
+
+  Heater* heater_ns[3];
+  Toggle_GPIO* heater_n_toggles[3];
+  GPIO_TypeDef* heater_n_pins[3] = {GPIOB, GPIOC, GPIOA};
+  uint16_t heater_n_pin_numbers[3] = {GPIO_PIN_14, GPIO_PIN_6, GPIO_PIN_9};
+  DiagTempSensor* thermistor_ns[3];
+  ADCSensor* adc_sensor_ns[3];
+
+  for (int i = 0; i < 3; ++i){
+  	  adc_sensor_bs[i] = new_adc_sensor(&hadc1, total_channels);
+  	  thermistor_bs[i] = new_diag_temp_sensor(adc_sensor_bs[i], thermistor_channel_bs[i]);
+  	  heater_b_toggles[i] = new_toggle_gpio(heater_b_pins[i], heater_b_pin_numbers[i]);
+  	  heater_bs[i] = new_heater(heater_b_toggles[i], thermistor_bs[i]);
+  	  adc_sensor_ns[i] = new_adc_sensor(&hadc1, total_channels);
+  	  thermistor_ns[i] = new_diag_temp_sensor(adc_sensor_ns[i], thermistor_channel_ns[i]);
+  	  heater_n_toggles[i] = new_toggle_gpio(heater_n_pins[i], heater_n_pin_numbers[i]);
+      heater_ns[i] = new_heater(heater_n_toggles[i], thermistor_ns[i]);
+  }
+
+
+
+
+
 
   /* USER CODE END 2 */
 
@@ -356,6 +460,51 @@ static void MX_I2C1_Init(void)
 }
 
 /**
+  * @brief TIM2 Initialization Function
+  * @param None
+  * @retval None
+  */
+static void MX_TIM2_Init(void)
+{
+
+  /* USER CODE BEGIN TIM2_Init 0 */
+
+  /* USER CODE END TIM2_Init 0 */
+
+  TIM_ClockConfigTypeDef sClockSourceConfig = {0};
+  TIM_MasterConfigTypeDef sMasterConfig = {0};
+
+  /* USER CODE BEGIN TIM2_Init 1 */
+
+  /* USER CODE END TIM2_Init 1 */
+  htim2.Instance = TIM2;
+  htim2.Init.Prescaler = 0;
+  htim2.Init.CounterMode = TIM_COUNTERMODE_UP;
+  htim2.Init.Period = 4.294967295E9;
+  htim2.Init.ClockDivision = TIM_CLOCKDIVISION_DIV1;
+  htim2.Init.AutoReloadPreload = TIM_AUTORELOAD_PRELOAD_DISABLE;
+  if (HAL_TIM_Base_Init(&htim2) != HAL_OK)
+  {
+    Error_Handler();
+  }
+  sClockSourceConfig.ClockSource = TIM_CLOCKSOURCE_INTERNAL;
+  if (HAL_TIM_ConfigClockSource(&htim2, &sClockSourceConfig) != HAL_OK)
+  {
+    Error_Handler();
+  }
+  sMasterConfig.MasterOutputTrigger = TIM_TRGO_RESET;
+  sMasterConfig.MasterSlaveMode = TIM_MASTERSLAVEMODE_DISABLE;
+  if (HAL_TIMEx_MasterConfigSynchronization(&htim2, &sMasterConfig) != HAL_OK)
+  {
+    Error_Handler();
+  }
+  /* USER CODE BEGIN TIM2_Init 2 */
+
+  /* USER CODE END TIM2_Init 2 */
+
+}
+
+/**
   * @brief GPIO Initialization Function
   * @param None
   * @retval None
@@ -373,36 +522,36 @@ static void MX_GPIO_Init(void)
   __HAL_RCC_GPIOB_CLK_ENABLE();
 
   /*Configure GPIO pin Output Level */
-  HAL_GPIO_WritePin(GPIOC, UV_LED_0_Pin|UV_LED_1_Pin|UV_LED_2_Pin|WHITE_LED_2_Pin
-                          |HEATER_3_Pin|HEATER_2_Pin, GPIO_PIN_RESET);
+  HAL_GPIO_WritePin(GPIOC, DEBUG_LED_0_Pin|DEBUG_LED_1_Pin|DEBUG_LED_2_Pin|WHITE_LED_0_Pin
+                          |HEATER_N1_Pin, GPIO_PIN_RESET);
 
   /*Configure GPIO pin Output Level */
-  HAL_GPIO_WritePin(GPIOA, WHITE_LED_0_Pin|WHITE_LED_1_Pin, GPIO_PIN_RESET);
+  HAL_GPIO_WritePin(GPIOA, UV_LED_2_Pin|UV_LED_1_Pin|UV_LED_0_Pin|WHITE_LED_2_Pin
+                          |WHITE_LED_1_Pin|HEATER_B0_Pin|HEATER_N0_Pin|CAN_STANDBY_Pin, GPIO_PIN_RESET);
 
   /*Configure GPIO pin Output Level */
-  HAL_GPIO_WritePin(GPIOB, HEATER_5_Pin|HEATER_4_Pin|HEATER_1_Pin|HEATER_0_Pin
-                          |I2C_MUX1_Pin|I2C_MUX0_Pin, GPIO_PIN_RESET);
+  HAL_GPIO_WritePin(GPIOB, HEATER_B2_Pin|HEATER_N2_Pin|HEATER_B1_Pin|I2C_MUX_RST_Pin, GPIO_PIN_RESET);
 
-  /*Configure GPIO pins : UV_LED_0_Pin UV_LED_1_Pin UV_LED_2_Pin WHITE_LED_2_Pin
-                           HEATER_3_Pin HEATER_2_Pin */
-  GPIO_InitStruct.Pin = UV_LED_0_Pin|UV_LED_1_Pin|UV_LED_2_Pin|WHITE_LED_2_Pin
-                          |HEATER_3_Pin|HEATER_2_Pin;
+  /*Configure GPIO pins : DEBUG_LED_0_Pin DEBUG_LED_1_Pin DEBUG_LED_2_Pin WHITE_LED_0_Pin
+                           HEATER_N1_Pin */
+  GPIO_InitStruct.Pin = DEBUG_LED_0_Pin|DEBUG_LED_1_Pin|DEBUG_LED_2_Pin|WHITE_LED_0_Pin
+                          |HEATER_N1_Pin;
   GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
   GPIO_InitStruct.Pull = GPIO_NOPULL;
   GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
   HAL_GPIO_Init(GPIOC, &GPIO_InitStruct);
 
-  /*Configure GPIO pins : WHITE_LED_0_Pin WHITE_LED_1_Pin */
-  GPIO_InitStruct.Pin = WHITE_LED_0_Pin|WHITE_LED_1_Pin;
+  /*Configure GPIO pins : UV_LED_2_Pin UV_LED_1_Pin UV_LED_0_Pin WHITE_LED_2_Pin
+                           WHITE_LED_1_Pin HEATER_B0_Pin HEATER_N0_Pin CAN_STANDBY_Pin */
+  GPIO_InitStruct.Pin = UV_LED_2_Pin|UV_LED_1_Pin|UV_LED_0_Pin|WHITE_LED_2_Pin
+                          |WHITE_LED_1_Pin|HEATER_B0_Pin|HEATER_N0_Pin|CAN_STANDBY_Pin;
   GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
   GPIO_InitStruct.Pull = GPIO_NOPULL;
   GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
   HAL_GPIO_Init(GPIOA, &GPIO_InitStruct);
 
-  /*Configure GPIO pins : HEATER_5_Pin HEATER_4_Pin HEATER_1_Pin HEATER_0_Pin
-                           I2C_MUX1_Pin I2C_MUX0_Pin */
-  GPIO_InitStruct.Pin = HEATER_5_Pin|HEATER_4_Pin|HEATER_1_Pin|HEATER_0_Pin
-                          |I2C_MUX1_Pin|I2C_MUX0_Pin;
+  /*Configure GPIO pins : HEATER_B2_Pin HEATER_N2_Pin HEATER_B1_Pin I2C_MUX_RST_Pin */
+  GPIO_InitStruct.Pin = HEATER_B2_Pin|HEATER_N2_Pin|HEATER_B1_Pin|I2C_MUX_RST_Pin;
   GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
   GPIO_InitStruct.Pull = GPIO_NOPULL;
   GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
