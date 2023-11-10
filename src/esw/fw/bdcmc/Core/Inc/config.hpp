@@ -10,15 +10,11 @@ namespace mrover {
 
         Dimensionless gear_ratio;
         // TODO: Terrible naming for the limit switch info
-        ConfigLimitSwitchInfo0 limit_switch_info_0;
-        ConfigLimitSwitchInfo1 limit_switch_info_1;
-        ConfigLimitSwitchInfo2 limit_switch_info_2;
+        ConfigLimitSwitchInfo limit_switch_info;
         ConfigEncoderInfo quad_abs_enc_info;
-        std::array<Radians, 4> limit_readj_pos;
         Ratio quad_enc_out_ratio;
         Ratio abs_enc_out_ratio;
         Percent max_pwm;
-        ConfigLimitInfo limit_max_pos;
         Radians max_forward_pos;
         Radians max_backward_pos;
 
@@ -28,25 +24,18 @@ namespace mrover {
 
         void configure(ConfigCommand const& command) {
             // Flag configuration as initialized
-            this->is_configured = true;
+            is_configured = true;
 
             // Initialize values
-            this->gear_ratio = command.gear_ratio;
+            gear_ratio = command.gear_ratio;
             // TODO: Terrible naming for the limit switch info
-            // TODO(guthrie): make this compile
-            this->limit_switch_info_0 = command.limit_switch_info_0;
-            this->limit_switch_info_1 = command.limit_switch_info_1;
-            this->limit_switch_info_2 = command.limit_switch_info_2;
-            this->quad_abs_enc_info = command.quad_abs_enc_info;
-            for (std::size_t i = 0; i < this->limit_readj_pos.size(); ++i) {
-                this->limit_readj_pos[i] = command.limit_readj_pos[i];
-            }
-            this->quad_enc_out_ratio = command.quad_enc_out_ratio;
-            this->abs_enc_out_ratio = command.abs_enc_out_ratio;
-            this->max_pwm = command.max_pwm;
-            this->limit_max_pos = command.limit_max_pos;
-            this->max_forward_pos = command.max_forward_pos;
-            this->max_backward_pos = command.max_backward_pos;
+            limit_switch_info = command.limit_switch_info;
+            quad_abs_enc_info = command.quad_abs_enc_info;
+            quad_enc_out_ratio = command.quad_enc_out_ratio;
+            abs_enc_out_ratio = command.abs_enc_out_ratio;
+            max_pwm = command.max_pwm;
+            max_forward_pos = command.max_forward_pos;
+            max_backward_pos = command.max_backward_pos;
         }
     };
 

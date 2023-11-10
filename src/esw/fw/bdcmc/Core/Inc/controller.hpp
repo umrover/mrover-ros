@@ -72,10 +72,23 @@ namespace mrover {
         }
 
         void feed(ConfigCommand const& message) {
-            m_config.configure(message);
+            m_config.configure(message);  // TODO - this needs to be removed eventually
+            // TODO - this referring to m_config being removed
 
             for (std::size_t i = 0; i < 4; ++i) {
-                if (GET_BIT_AT_INDEX(m_config.limit_switch_info_0.present, i) && GET_BIT_AT_INDEX(m_config.limit_switch_info_0.enabled, i)) {
+            	if (GET_BIT_AT_INDEX(message.limit_switch_info.present, i)) {
+            		bool enabled = GET_BIT_AT_INDEX(message.limit_switch_info.enabled, i);
+            		bool active_high = GET_BIT_AT_INDEX(message.limit_switch_info.active_high, i);
+            		bool used_for_readjustment = GET_BIT_AT_INDEX(message.limit_switch_info.use_for_readjustment, i);
+            		bool limits_forward = GET_BIT_AT_INDEX(message.limit_switch_info.limits_forward, i);
+            		Radians associated_position = Radians{message.limit_switch_info.limit_readj_pos[i]};
+
+            		m_limit_switches[i].initialize(enabled, active_high, used_for_readjustment, limits_forward, associated_position);
+            	}
+            }
+
+            for (std::size_t i = 0; i < 4; ++i) {
+                if (GET_BIT_AT_INDEX(m_config.limit_switch_info.present, i) && GET_BIT_AT_INDEX(m_config.limit_switch_info.enabled, i)) {
                     m_limit_switches[i].enable();
                 }
             }
@@ -178,10 +191,10 @@ namespace mrover {
 
 			auto [reader_position, m_current_velocity] = m_reader.read(m_config);
             for (auto& limit_switch: m_limit_switches) {
-                std::optional<float> readj_pos = limit_switch.get_readjustment_position();
+                std::optional<Radians> readj_pos = limit_switch.get_readjustment_position();
                 if (readj_pos) {
                 	m_is_calibrated = true;
-                	m_offset_position = reader_position - Radians{readj_pos.value()};
+                	m_offset_position = reader_position - readj_pos.value();
                 }
             }
             m_current_position = reader_position - m_offset_position;

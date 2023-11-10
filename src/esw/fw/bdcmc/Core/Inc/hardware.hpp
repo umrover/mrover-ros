@@ -58,7 +58,7 @@ namespace mrover {
 
         explicit LimitSwitch(Pin const& pin) : m_pin{pin} {}
 
-        void initialize(bool enabled, bool active_high, bool used_for_readjustment, bool limits_forward, float associated_position) {
+        void initialize(bool enabled, bool active_high, bool used_for_readjustment, bool limits_forward, Radians associated_position) {
         	m_valid = true;
         	m_enabled = enabled;
         	m_is_pressed = 0;
@@ -89,7 +89,7 @@ namespace mrover {
         	return m_valid && m_enabled && m_is_pressed && !m_limits_forward;
         }
 
-        [[nodiscard]] std::optional<float> get_readjustment_position() const {
+        [[nodiscard]] std::optional<Radians> get_readjustment_position() const {
         	// Returns std::null_opt if the value should not be readjusted
         	if (m_valid && m_enabled && m_used_for_readjustment && m_is_pressed) {
         		return m_associated_position;
@@ -116,7 +116,7 @@ namespace mrover {
         bool m_active_high{};
         bool m_used_for_readjustment{};
         bool m_limits_forward{};
-        float m_associated_position{};
+        Radians m_associated_position{};
     };
 
     class SMBus {

@@ -14,23 +14,18 @@ namespace mrover {
 
 #pragma pack(push, 1)
 
-    struct ConfigLimitSwitchInfo0 {
+    struct ConfigLimitSwitchInfo {
         std::uint8_t present : 4 {};
         std::uint8_t enabled : 4 {};
-    };
-    static_assert(sizeof(ConfigLimitSwitchInfo0) == 1);
-
-    struct ConfigLimitSwitchInfo1 {
         std::uint8_t active_high : 4 {};
         std::uint8_t limits_forward : 4 {};
-    };
-    static_assert(sizeof(ConfigLimitSwitchInfo1) == 1);
-
-    struct ConfigLimitSwitchInfo2 {
-        std::uint8_t use_for_readjustment : 4 {};
         std::uint8_t is_default_enabled : 4 {};
+        std::uint8_t limit_max_forward_position : 1 {};
+        std::uint8_t limit_max_backward_position : 1 {};
+        std::uint8_t use_for_readjustment : 4 {};
+        std::array<Radians, 4> limit_readj_pos;
     };
-    static_assert(sizeof(ConfigLimitSwitchInfo2) == 1);
+    static_assert(sizeof(ConfigLimitSwitchInfo) == 20);
 
     struct ConfigEncoderInfo {
         [[maybe_unused]] std::uint8_t _ignore : 4 {}; // 8 bits - (4 meaningful bits) = 4 ignored bits
@@ -40,12 +35,6 @@ namespace mrover {
         std::uint8_t abs_is_forward_polarity : 1 {};
     };
     static_assert(sizeof(ConfigEncoderInfo) == 1);
-
-    struct ConfigLimitInfo {
-        [[maybe_unused]] std::uint8_t _ignore : 6 {}; // 8 bits - (2 meaningful bits) = 6 ignored bits
-        std::uint8_t limit_max_forward_position : 1 {};
-        std::uint8_t limit_max_backward_position : 1 {};
-    };
 
     struct ConfigCalibErrorInfo {
         [[maybe_unused]] std::uint8_t _ignore : 2 {}; // 8 bits - (6 meaningful bits) = 2 ignored bits
@@ -71,15 +60,11 @@ namespace mrover {
     struct ConfigCommand : BaseCommand {
         Dimensionless gear_ratio;
         // TODO: Terrible naming for the limit switch info
-        ConfigLimitSwitchInfo0 limit_switch_info_0;
-        ConfigLimitSwitchInfo1 limit_switch_info_1;
-        ConfigLimitSwitchInfo2 limit_switch_info_2;
+        ConfigLimitSwitchInfo limit_switch_info;
         ConfigEncoderInfo quad_abs_enc_info;
-        std::array<Radians, 4> limit_readj_pos;
         Ratio quad_enc_out_ratio;
         Ratio abs_enc_out_ratio;
         Percent max_pwm;
-        ConfigLimitInfo limit_max_pos;
         Radians max_forward_pos;
         Radians max_backward_pos;
     };
