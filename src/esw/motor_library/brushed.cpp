@@ -21,16 +21,16 @@ namespace mrover {
         // TODO - CREATE TEMPLATED FUNCTION - I DO LATER HAHAA
 
         for (std::size_t i = 0; i < 4; ++i) {
-            SET_BIT_AT_INDEX(mConfigCommand.limit_switch_info_0.present, i, static_cast<bool>(brushedMotorData[std::format("limit_{}_present", i)]));
-            SET_BIT_AT_INDEX(mConfigCommand.limit_switch_info_0.enabled, i, static_cast<bool>(brushedMotorData[std::format("limit_{}_enable", i)]));
+            SET_BIT_AT_INDEX(mConfigCommand.limit_switch_info.present, i, static_cast<bool>(brushedMotorData[std::format("limit_{}_present", i)]));
+            SET_BIT_AT_INDEX(mConfigCommand.limit_switch_info.enabled, i, static_cast<bool>(brushedMotorData[std::format("limit_{}_enable", i)]));
 
-            mConfigCommand.limit_switch_info_1.active_high = static_cast<bool>(brushedMotorData[std::format("limit_{}_active_high", i)]);
-            mConfigCommand.limit_switch_info_1.limits_forward = static_cast<bool>(brushedMotorData[std::format("limit_{}_limits_fwd", i)]);
+            mConfigCommand.limit_switch_info.active_high = static_cast<bool>(brushedMotorData[std::format("limit_{}_active_high", i)]);
+            mConfigCommand.limit_switch_info.limits_forward = static_cast<bool>(brushedMotorData[std::format("limit_{}_limits_fwd", i)]);
 
-            mConfigCommand.limit_switch_info_2.use_for_readjustment = static_cast<bool>(brushedMotorData[std::format("limit_{}_used_for_readjustment", i)]);
-            mConfigCommand.limit_switch_info_2.is_default_enabled = static_cast<bool>(brushedMotorData[std::format("limit_{}_default_enabled", i)]);
+            mConfigCommand.limit_switch_info.use_for_readjustment = static_cast<bool>(brushedMotorData[std::format("limit_{}_used_for_readjustment", i)]);
+            mConfigCommand.limit_switch_info.is_default_enabled = static_cast<bool>(brushedMotorData[std::format("limit_{}_default_enabled", i)]);
 
-            mConfigCommand.limit_readj_pos[i] = Radians{static_cast<double>(brushedMotorData[std::format("limit_{}_readjust_position", i)])};
+            mConfigCommand.limit_switch_info.limit_readj_pos[i] = Radians{static_cast<double>(brushedMotorData[std::format("limit_{}_readjust_position", i)])};
         }
 
         mConfigCommand.quad_abs_enc_info.quad_present = static_cast<bool>(brushedMotorData["quad_present"]);
@@ -52,8 +52,8 @@ namespace mrover {
 
         mConfigCommand.max_pwm = motor_max_voltage / driver_voltage;
 
-        mConfigCommand.limit_max_pos.limit_max_forward_position = static_cast<bool>(brushedMotorData["limit_max_forward_pos"]);
-        mConfigCommand.limit_max_pos.limit_max_backward_position = static_cast<bool>(brushedMotorData["limit_max_backward_pos"]);
+        mConfigCommand.limit_switch_info.limit_max_forward_position = static_cast<bool>(brushedMotorData["limit_max_forward_pos"]);
+        mConfigCommand.limit_switch_info.limit_max_backward_position = static_cast<bool>(brushedMotorData["limit_max_backward_pos"]);
         mConfigCommand.max_forward_pos = Radians{static_cast<double>(brushedMotorData["max_forward_pos"])};
         mConfigCommand.max_backward_pos = Radians{static_cast<double>(brushedMotorData["max_backward_pos"])};
 
