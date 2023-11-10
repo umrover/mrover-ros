@@ -59,6 +59,7 @@ namespace mrover {
 
     // Initializes enginePtr with built engine
     ICudaEngine* Inference::createCudaEngine(std::string& onnxModelPath) {
+        logger = Logger();
         // See link sfor additional context
         const auto explicitBatch = 1U << static_cast<uint32_t>(nvinfer1::NetworkDefinitionCreationFlag::kEXPLICIT_BATCH);
         std::unique_ptr<nvinfer1::IBuilder, Destroy<nvinfer1::IBuilder>> builder{nvinfer1::createInferBuilder(logger)};
@@ -78,9 +79,9 @@ namespace mrover {
         profile->setDimensions(network->getInput(0)->getName(), OptProfileSelector::kOPT, Dims4{1, 3, 256, 256});
         profile->setDimensions(network->getInput(0)->getName(), OptProfileSelector::kMAX, Dims4{32, 3, 256, 256});
         config->addOptimizationProfile(profile);
+        std::cout << network.get() << std::endl;
         nvinfer1::IHostMemory* serializedEngine = builder->buildSerializedNetwork(*network, *config);
         nvinfer1::IRuntime* runtime = createInferRuntime(logger);
-        std::cout << (serializedEngine->data()) << std::endl;
         return runtime->deserializeCudaEngine(serializedEngine->data(), serializedEngine->size());
     }
 
