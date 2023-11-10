@@ -8,17 +8,23 @@
 #include <ros/ros.h>
 #include <unordered_map>
 
+std::unique_ptr<mrover::CanDevice> scienceCanDevice;
+
 void processCANData(const mrover::CAN::ConstPtr& msg);
 
 std::unique_ptr<ros::Publisher> heaterDataPublisher;
 std::unique_ptr<ros::Publisher> spectralDataPublisher;
 std::unique_ptr<ros::Publisher> thermistorDataPublisher;
 
-bool serviceCallback(std_srvs::SetBool::Request& req, std_srvs::SetBool::Response& res, mrover::ScienceDevice scienceDevice) {
-    // TODO - send message based on req.data and scienceDevice
-    mrover::EnableScienceDeviceCommand enable_science_device_cmd;
-    enable_science_device_cmd.science_device = scienceDevice;
-    enable_science_device_cmd.enable = req.data;
+bool enableScienceDeviceCallback(std_srvs::SetBool::Request& req, std_srvs::SetBool::Response& res, mrover::ScienceDevice scienceDevice) {
+    scienceCanDevice->publish_message(mrover::InBoundScienceMessage{mrover::HeaterAutoShutOffCommand{.enable = req,data}});
+    res.success = true;
+    res.message = "DONE";
+    return true;
+}
+
+bool changeHeaterAutoShutoffState(std_srvs::SetBool::Request& req, std_srvs::SetBool::Response& res, mrover::ScienceDevice scienceDevice) {
+    scienceCanDevice->publish_message(mrover::InBoundScienceMessage{mrover::EnableScienceDeviceCommand{.science_device = science_device, .enable = req,data}});
     res.success = true;
     res.message = "DONE";
     return true;
@@ -83,19 +89,24 @@ int main(int argc, char** argv) {
             {"heater_n2", mrover::ScienceDevice::HEATER_N2},
             {"white_led_0", mrover::ScienceDevice::WHITE_LED_0},
             {"white_led_1", mrover::ScienceDevice::WHITE_LED_1},
+            {"white_led_2", mrover::ScienceDevice::WHITE_LED_2},
             {"uv_led_0", mrover::ScienceDevice::UV_LED_0},
             {"uv_led_1", mrover::ScienceDevice::UV_LED_1},
             {"uv_led_2", mrover::ScienceDevice::UV_LED_2},
     };
+
+    scienceCanDevice = std::make_unique<mrover::CanDevice>(nh, "jetson", "science");
 
     for (auto const& [deviceName, scienceDevice]: scienceDeviceByName) {
         // Advertise services and set the callback using a la0mbda function
         nh.advertiseService<std_srvs::SetBool::Request, std_srvs::SetBool::Response>(
                 "science_enable_" + deviceName,
                 [scienceDevice](std_srvs::SetBool::Request& req, std_srvs::SetBool::Response& res) {
-                    return serviceCallback(req, res, scienceDevice);
+                    return enableScienceDeviceCallback(req, res, scienceDevice);
                 });
     }
+
+    nh.advertiseService<std_srvs::SetBool::Request, std_srvs::SetBool::Response>("science_change_heater_auto_shutoff_state", changeHeaterAutoShutoffState);
 
     heaterDataPublisher = std::make_unique<ros::Publisher>(nh.advertise<mrover::HeaterData>("science_heater_state", 1));
     spectralDataPublisher = std::make_unique<ros::Publisher>(nh.advertise<mrover::SpectralGroup>("science_spectral", 1));
