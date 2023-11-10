@@ -37,7 +37,7 @@
 #define NUM_CURRENT_SENSORS 5
 #define NUM_TEMP_SENSORS 5
 
-#define PDB_CAN_ID 0x30
+#define PDB_CAN_ID 0x32
 #define CAN_MSG_LED_CMD 10
 #define CAN_MSG_UV_BULB_CMD 11
 
@@ -124,7 +124,6 @@ int main(void)
   MX_ADC2_Init();
   /* USER CODE BEGIN 2 */
 
-  // TODO: set up ADCSensor stuff
   // 10 channels: 5 for current, 5 for temperature
   // Channels 0-4: CURR 0-4
   // Channels 5-9: TEMP 0-4
@@ -576,7 +575,7 @@ void HAL_FDCAN_RxFifo0Callback(FDCAN_HandleTypeDef *hfdcan, uint32_t RxFifo0ITs)
 {
   if((RxFifo0ITs & FDCAN_IT_RX_FIFO0_NEW_MESSAGE) != RESET)
   {
-    /* Retreive Rx messages from RX FIFO0 */
+    /* Retrieve Rx messages from RX FIFO0 */
     if (HAL_FDCAN_GetRxMessage(hfdcan, FDCAN_RX_FIFO0, &rx_header, &rx_data) != HAL_OK)
     {
 		/* Reception Error */
