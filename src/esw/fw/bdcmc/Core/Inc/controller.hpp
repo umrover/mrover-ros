@@ -43,7 +43,6 @@ namespace mrover {
         std::array<LimitSwitch, 4> m_limit_switches;
         FDCANBus m_fdcan_bus;
 
-        InBoundMessage m_command;
         Mode m_mode;
 
         bool m_should_limit_forward;
@@ -159,8 +158,8 @@ namespace mrover {
     public:
         Controller() = default;
 
-        Controller(std::uint32_t id, Reader&& reader, Writer&& writer, FDCANBus const& fdcan_bus)
-            : m_config{Config{.id = id}}, m_reader{std::move(reader)}, m_writer{std::move(writer)}, m_fdcan_bus{fdcan_bus} {}
+        Controller(Reader&& reader, Writer&& writer, FDCANBus const& fdcan_bus)
+            : m_reader{std::move(reader)}, m_writer{std::move(writer)}, m_fdcan_bus{fdcan_bus} {}
 
         template<typename Command>
         void process(Command const& command) {

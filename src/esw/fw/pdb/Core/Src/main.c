@@ -33,13 +33,11 @@
 /* Private define ------------------------------------------------------------*/
 /* USER CODE BEGIN PD */
 
-#define NUM_CHANNELS 10
-#define NUM_CURRENT_SENSORS 5
-#define NUM_TEMP_SENSORS 5
+#define NUM_CHANNELS 12
+#define NUM_CURRENT_SENSORS 6
+#define NUM_TEMP_SENSORS 6
 
 #define PDB_CAN_ID 0x32
-#define CAN_MSG_LED_CMD 10
-#define CAN_MSG_UV_BULB_CMD 11
 
 /* USER CODE END PD */
 
@@ -85,6 +83,8 @@ void StartDefaultTask(void *argument);
 
 /* USER CODE BEGIN PFP */
 void SendCurrentTemperature(void *argument);
+void ReceiveMessages(void *argument);
+void UpdateLEDState(void *argument);
 
 /* USER CODE END PFP */
 
@@ -176,6 +176,10 @@ int main(void)
   defaultTaskHandle = osThreadNew(StartDefaultTask, NULL, &defaultTask_attributes);
 
   /* USER CODE BEGIN RTOS_THREADS */
+
+  defaultTaskHandle = osThreadNew(ReceiveMessages, NULL, &defaultTask_attributes);
+  defaultTaskHandle = osThreadNew(SendCurrentTemperature, NULL, &defaultTask_attributes);
+  defaultTaskHandle = osThreadNew(UpdateLEDState, NULL, &defaultTask_attributes);
   /* add threads, ... */
   /* USER CODE END RTOS_THREADS */
 
@@ -571,69 +575,43 @@ void fakeCANSend(float* msg) {
 	return;
 }
 
+void ReceiveMessages(void* argument) {
+	// TODO
+}
+
 void SendCurrentTemperature(void* argument) {
 	uint32_t tick = osKernelGetTickCount();
 
 	for(;;) {
 		tick += osKernelGetTickFreq(); // 1 Hz
-		update_adc_sensor_values(adc);
+//		update_adc_sensor_values(adc);
+//
+//		float fake_can_msg[NUM_CURRENT_SENSORS+NUM_TEMP_SENSORS]; // TODO: replace with real CAN frame
+//
+//		/* update current and temperature values + build CAN msg */
+//		for(int i = 0; i < NUM_CURRENT_SENSORS; ++i) {
+//		  update_diag_current_sensor_val(current_sensors[i]);
+//		  fake_can_msg[i] = get_diag_current_sensor_val(current_sensors[i]);
+//		}
+//
+//		for(int i = 0; i < NUM_TEMP_SENSORS; ++i) {
+//		  update_diag_temp_sensor_val(temp_sensors[i]);
+//		  fake_can_msg[NUM_CURRENT_SENSORS + i] = get_diag_temp_sensor_val(temp_sensors[i]);
+//		}
+//
+//		/* send current and temperature over CAN */
+//		osMutexAcquire(can_tx_mutex, osWaitForever);
+//		fakeCANSend(fake_can_msg); // TODO: replace with real CAN function
+//		osMutexRelease(can_tx_mutex);
+//
 
-		float fake_can_msg[NUM_CURRENT_SENSORS+NUM_TEMP_SENSORS]; // TODO: replace with real CAN frame
-
-		/* update current and temperature values + build CAN msg */
-		for(int i = 0; i < NUM_CURRENT_SENSORS; ++i) {
-		  update_diag_current_sensor_val(current_sensors[i]);
-		  fake_can_msg[i] = get_diag_current_sensor_val(current_sensors[i]);
-		}
-
-		for(int i = 0; i < NUM_TEMP_SENSORS; ++i) {
-		  update_diag_temp_sensor_val(temp_sensors[i]);
-		  fake_can_msg[NUM_CURRENT_SENSORS + i] = get_diag_temp_sensor_val(temp_sensors[i]);
-		}
-
-		/* send current and temperature over CAN */
-		osMutexAcquire(can_tx_mutex, osWaitForever);
-		fakeCANSend(fake_can_msg); // TODO: replace with real CAN function
-		osMutexRelease(can_tx_mutex);
-
+		update_and_send_current_temp();
 		osDelayUntil(tick);
 	}
 }
 
-void HAL_FDCAN_RxFifo0Callback(FDCAN_HandleTypeDef *hfdcan, uint32_t RxFifo0ITs)
-{
-  if((RxFifo0ITs & FDCAN_IT_RX_FIFO0_NEW_MESSAGE) != RESET)
-  {
-    /* Retrieve Rx messages from RX FIFO0 */
-    if (HAL_FDCAN_GetRxMessage(hfdcan, FDCAN_RX_FIFO0, &rx_header, &rx_data) != HAL_OK)
-    {
-		/* Reception Error */
-		Error_Handler();
-    }
-
-    // check if this message is for us
-    if (rx_header.IdType == FDCAN_EXTENDED_ID && ((rx_header.Identifier >> 13) & 0xFF) == PDB_CAN_ID) {
-    	uint8_t msg_source = rx_header.Identifier >> (13+8); // leftmost 8 bits
-    	uint16_t msg_type = rx_header.Identifier & 0x1FFF; // rightmost 13 bits
-
-    	// TODO: implement cases
-    	switch (msg_type) {
-    	case CAN_MSG_LED_CMD:
-    		break;
-    	case CAN_MSG_UV_BULB_CMD:
-    		break;
-    	default:
-    		// unrecognized message
-    		break;
-    	}
-    }
-
-    if (HAL_FDCAN_ActivateNotification(hfdcan, FDCAN_IT_RX_FIFO0_NEW_MESSAGE, 0) != HAL_OK)
-    {
-      /* Notification Error */
-      Error_Handler();
-    }
-  }
+void UpdateLEDState(void* argument) {
+	// TODO
 }
 
 /* USER CODE END 4 */

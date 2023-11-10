@@ -45,42 +45,6 @@ ADC1.SamplingTime-8\#ChannelRegularConversion=ADC_SAMPLETIME_2CYCLES_5
 ADC1.SamplingTime-9\#ChannelRegularConversion=ADC_SAMPLETIME_2CYCLES_5
 ADC1.master=1
 ADC2.Channel-0\#ChannelRegularConversion=ADC_CHANNEL_10
-<<<<<<< HEAD
-ADC2.Channel-1\#ChannelRegularConversion=ADC_CHANNEL_15
-ADC2.CommonPathInternal=null|null|null|null
-ADC2.ContinuousConvMode=DISABLE
-ADC2.IPParameters=Rank-0\#ChannelRegularConversion,Channel-0\#ChannelRegularConversion,SamplingTime-0\#ChannelRegularConversion,OffsetNumber-0\#ChannelRegularConversion,NbrOfConversionFlag,ContinuousConvMode,Rank-1\#ChannelRegularConversion,Channel-1\#ChannelRegularConversion,SamplingTime-1\#ChannelRegularConversion,OffsetNumber-1\#ChannelRegularConversion,NbrOfConversion,CommonPathInternal
-ADC2.NbrOfConversion=2
-ADC2.NbrOfConversionFlag=1
-ADC2.OffsetNumber-0\#ChannelRegularConversion=ADC_OFFSET_NONE
-ADC2.OffsetNumber-1\#ChannelRegularConversion=ADC_OFFSET_NONE
-ADC2.Rank-0\#ChannelRegularConversion=1
-ADC2.Rank-1\#ChannelRegularConversion=2
-ADC2.SamplingTime-0\#ChannelRegularConversion=ADC_SAMPLETIME_2CYCLES_5
-ADC2.SamplingTime-1\#ChannelRegularConversion=ADC_SAMPLETIME_2CYCLES_5
-CAD.formats=
-CAD.pinconfig=
-CAD.provider=
-Dma.ADC2.0.Direction=DMA_PERIPH_TO_MEMORY
-Dma.ADC2.0.EventEnable=DISABLE
-Dma.ADC2.0.Instance=DMA1_Channel1
-Dma.ADC2.0.MemDataAlignment=DMA_MDATAALIGN_HALFWORD
-Dma.ADC2.0.MemInc=DMA_MINC_ENABLE
-Dma.ADC2.0.Mode=DMA_NORMAL
-Dma.ADC2.0.PeriphDataAlignment=DMA_PDATAALIGN_HALFWORD
-Dma.ADC2.0.PeriphInc=DMA_PINC_DISABLE
-Dma.ADC2.0.Polarity=HAL_DMAMUX_REQ_GEN_RISING
-Dma.ADC2.0.Priority=DMA_PRIORITY_LOW
-Dma.ADC2.0.RequestNumber=1
-Dma.ADC2.0.RequestParameters=Instance,Direction,PeriphInc,MemInc,PeriphDataAlignment,MemDataAlignment,Mode,Priority,SignalID,Polarity,RequestNumber,SyncSignalID,SyncPolarity,SyncEnable,EventEnable,SyncRequestNumber
-Dma.ADC2.0.SignalID=NONE
-Dma.ADC2.0.SyncEnable=DISABLE
-Dma.ADC2.0.SyncPolarity=HAL_DMAMUX_SYNC_NO_EVENT
-Dma.ADC2.0.SyncRequestNumber=1
-Dma.ADC2.0.SyncSignalID=NONE
-Dma.Request0=ADC2
-Dma.RequestsNb=1
-=======
 ADC2.CommonPathInternal=null|null|null|null
 ADC2.IPParameters=Rank-0\#ChannelRegularConversion,Channel-0\#ChannelRegularConversion,SamplingTime-0\#ChannelRegularConversion,OffsetNumber-0\#ChannelRegularConversion,NbrOfConversionFlag,CommonPathInternal
 ADC2.NbrOfConversionFlag=1
@@ -90,7 +54,6 @@ ADC2.SamplingTime-0\#ChannelRegularConversion=ADC_SAMPLETIME_2CYCLES_5
 CAD.formats=
 CAD.pinconfig=
 CAD.provider=
->>>>>>> embedded-pdb
 FDCAN1.CalculateBaudRateNominal=500000
 FDCAN1.CalculateTimeBitNominal=2000
 FDCAN1.CalculateTimeQuantumNominal=62.5
@@ -98,11 +61,7 @@ FDCAN1.DataSyncJumpWidth=7
 FDCAN1.DataTimeSeg1=8
 FDCAN1.DataTimeSeg2=7
 FDCAN1.FrameFormat=FDCAN_FRAME_FD_BRS
-<<<<<<< HEAD
-FDCAN1.IPParameters=CalculateTimeQuantumNominal,CalculateTimeBitNominal,CalculateBaudRateNominal,FrameFormat,TransmitPause,NominalSyncJumpWidth,DataSyncJumpWidth,DataTimeSeg1,DataTimeSeg2,NominalTimeSeg1,NominalTimeSeg2,NominalPrescaler
-=======
 FDCAN1.IPParameters=CalculateTimeQuantumNominal,CalculateTimeBitNominal,CalculateBaudRateNominal,FrameFormat,DataSyncJumpWidth,NominalSyncJumpWidth,NominalTimeSeg1,NominalTimeSeg2,NominalPrescaler,DataTimeSeg1,DataTimeSeg2,TransmitPause
->>>>>>> embedded-pdb
 FDCAN1.NominalPrescaler=1
 FDCAN1.NominalSyncJumpWidth=16
 FDCAN1.NominalTimeSeg1=26
@@ -117,22 +76,12 @@ Mcu.CPN=STM32G431CBU3
 Mcu.Family=STM32G4
 Mcu.IP0=ADC1
 Mcu.IP1=ADC2
-<<<<<<< HEAD
-Mcu.IP2=DMA
-Mcu.IP3=FDCAN1
-Mcu.IP4=FREERTOS
-Mcu.IP5=NVIC
-Mcu.IP6=RCC
-Mcu.IP7=SYS
-Mcu.IPNb=8
-=======
 Mcu.IP2=FDCAN1
 Mcu.IP3=FREERTOS
 Mcu.IP4=NVIC
 Mcu.IP5=RCC
 Mcu.IP6=SYS
 Mcu.IPNb=7
->>>>>>> embedded-pdb
 Mcu.Name=STM32G431C(6-8-B)Ux
 Mcu.Package=UFQFPN48
 Mcu.Pin0=PC13
@@ -152,12 +101,7 @@ Mcu.Pin20=PA11
 Mcu.Pin21=PA12
 Mcu.Pin22=PA13
 Mcu.Pin23=PA14
-<<<<<<< HEAD
-Mcu.Pin24=PA15
-Mcu.Pin25=VP_FREERTOS_VS_CMSIS_V2
-=======
 Mcu.Pin24=VP_FREERTOS_VS_CMSIS_V2
->>>>>>> embedded-pdb
 Mcu.Pin3=PF0-OSC_IN
 Mcu.Pin4=PF1-OSC_OUT
 Mcu.Pin5=PA0
@@ -165,11 +109,7 @@ Mcu.Pin6=PA1
 Mcu.Pin7=PA2
 Mcu.Pin8=PA3
 Mcu.Pin9=PA5
-<<<<<<< HEAD
-Mcu.PinsNb=26
-=======
 Mcu.PinsNb=25
->>>>>>> embedded-pdb
 Mcu.ThirdPartyNb=0
 Mcu.UserConstants=
 Mcu.UserName=STM32G431CBUx

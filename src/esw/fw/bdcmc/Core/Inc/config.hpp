@@ -19,7 +19,6 @@ namespace mrover {
         Radians max_backward_pos;
 
         // This stuff is not part of motor message
-        std::uint32_t id{};
         bool is_configured{};
 
         void configure(ConfigCommand const& command) {

@@ -1,12 +1,5 @@
-#include "controller.hpp"
-
+#include <pdlb.hpp>
 #include <cstdint>
-
-#include "hardware.hpp"
-#include "main.h"
-#include "messaging.hpp"
-#include "reader.hpp"
-#include "writer.hpp"
 
 extern FDCAN_HandleTypeDef hfdcan1;
 extern I2C_HandleTypeDef hi2c1;
@@ -15,8 +8,6 @@ extern TIM_HandleTypeDef htim4;
 
 namespace mrover {
 
-    using BrushedController = Controller<Radians, Percent, FusedReader, HBridgeWriter>;
-
     // NOTE: Change This For Each Motor Controller
     constexpr static std::uint8_t DEVICE_ID = 0x1;
 
@@ -24,7 +15,7 @@ namespace mrover {
     constexpr static std::uint8_t DESTINATION_DEVICE_ID = 0x0;
 
     FDCANBus fdcan_bus;
-    BrushedController controller;
+    PDLB pdlb;
 
     void init() {
         check(HAL_FDCAN_ActivateNotification(
@@ -34,7 +25,7 @@ namespace mrover {
               Error_Handler);
 
         fdcan_bus = FDCANBus{DEVICE_ID, DESTINATION_DEVICE_ID, &hfdcan1};
-        controller = BrushedController{FusedReader{&htim4, &hi2c1}, HBridgeWriter{&htim15}, fdcan_bus};
+        pdlb = PDLB{fdcan_bus};
     }
 
     void loop() {
