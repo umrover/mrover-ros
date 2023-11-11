@@ -20,8 +20,6 @@ namespace mrover {
     	// TODO -
     	m_i2c_mux.select_channel(m_i2c_mux_channel);
     	// TODO - implement select_channel using the following code:
-    	// uint8_t formatted = 1 << spectral_sensor_number;
-        // smbus_write_byte_data(bus, 0x00, spectral_sensor_number, 0x70);
 
     	// TODO - implement reading - here is some exmaple code from before
     	//REQUIRES: spectral is a Spectral device
