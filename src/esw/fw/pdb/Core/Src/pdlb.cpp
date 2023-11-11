@@ -1,10 +1,11 @@
 #include <pdlb.hpp>
 #include <cstdint>
+#include "main.h"
 
 extern FDCAN_HandleTypeDef hfdcan1;
-extern I2C_HandleTypeDef hi2c1;
-extern TIM_HandleTypeDef htim15;
-extern TIM_HandleTypeDef htim4;
+//extern I2C_HandleTypeDef hi2c1;
+//extern TIM_HandleTypeDef htim15;
+//extern TIM_HandleTypeDef htim4;
 
 namespace mrover {
 

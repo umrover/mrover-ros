@@ -98,8 +98,6 @@ void Error_Handler(void);
 #define CURR_5V_GPIO_Port GPIOB
 #define TEMP_3V3_Pin GPIO_PIN_15
 #define TEMP_3V3_GPIO_Port GPIOB
-#define CAN_STANDBY_Pin GPIO_PIN_15
-#define CAN_STANDBY_GPIO_Port GPIOA
 
 /* USER CODE BEGIN Private defines */
 

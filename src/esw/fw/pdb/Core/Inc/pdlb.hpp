@@ -6,7 +6,7 @@
 
 #include "hardware.hpp"
 #include "messaging.hpp"
-#include "units/units.hpp"
+#include "units.hpp"
 
 namespace mrover {
 
