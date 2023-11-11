@@ -119,18 +119,9 @@ namespace mrover {
     };
 
     struct PDBData : BaseCommand {
-        float temperature_24v{};
-        float temperature_12v_jetson{};
-        float temperature_12v_rest{};
-        float temperature_12v_buck{};
-        float temperature_5v{};
-        float temperature_3v3{};
-        float current_24v{};
-        float current_12v_jetson{};
-        float current_12v_rest{};
-        float current_12v_buck{};
-        float current_5v{};
-        float current_3v3{};
+    	// order is always 24V, then 12v Jetson, 12v rest, 12v buck, 5v, 3v3
+    	float temperatures[6] {};
+    	float currents[6] {};
     };
 
     using InBoundPDLBMessage = std::variant<

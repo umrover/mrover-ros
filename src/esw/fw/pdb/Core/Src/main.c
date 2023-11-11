@@ -60,14 +60,6 @@ const osThreadAttr_t defaultTask_attributes = {
   .stack_size = 128 * 4
 };
 /* USER CODE BEGIN PV */
-ADCSensor* adc;
-DiagCurrentSensor* current_sensors[NUM_CURRENT_SENSORS];
-DiagTempSensor* temp_sensors[NUM_TEMP_SENSORS];
-
-osMutexId_t can_tx_mutex;
-
-uint8_t rx_data[12];
-FDCAN_RxHeaderTypeDef rx_header;
 
 /* USER CODE END PV */
 
@@ -129,28 +121,6 @@ int main(void)
   // Channels 5-9: TEMP 0-4
 
   init();
-
-  // TODO - move lal code to init
-
-//  adc = new_adc_sensor(&hadc1, NUM_CHANNELS);
-//
-//  // Create current sensor objects (test_ADC channels 0-4)
-//  for(int i = 0; i < NUM_CURRENT_SENSORS; ++i) {
-//	  current_sensors[i] = new_diag_current_sensor(adc, i);
-//  }
-//
-//  // Create temp sensor objects (test_ADC channels 5-9)
-//  for(int i = 0; i < NUM_TEMP_SENSORS; ++i) {
-//	  temp_sensors[i] = new_diag_temp_sensor(adc, i + 5);
-//  }
-//
-//  if (HAL_FDCAN_Start(&hfdcan1) != HAL_OK) {
-//	  Error_Handler();
-//  }
-//  if (HAL_FDCAN_ActivateNotification(&hfdcan1, FDCAN_IT_RX_FIFO0_NEW_MESSAGE, 0) != HAL_OK) {
-//	  /* Notification Error */
-//	  Error_Handler();
-//  }
 
   /* USER CODE END 2 */
 
@@ -565,26 +535,6 @@ void SendCurrentTemperature(void* argument) {
 
 	for(;;) {
 		tick += osKernelGetTickFreq(); // 1 Hz
-//		update_adc_sensor_values(adc);
-//
-//		float fake_can_msg[NUM_CURRENT_SENSORS+NUM_TEMP_SENSORS]; // TODO: replace with real CAN frame
-//
-//		/* update current and temperature values + build CAN msg */
-//		for(int i = 0; i < NUM_CURRENT_SENSORS; ++i) {
-//		  update_diag_current_sensor_val(current_sensors[i]);
-//		  fake_can_msg[i] = get_diag_current_sensor_val(current_sensors[i]);
-//		}
-//
-//		for(int i = 0; i < NUM_TEMP_SENSORS; ++i) {
-//		  update_diag_temp_sensor_val(temp_sensors[i]);
-//		  fake_can_msg[NUM_CURRENT_SENSORS + i] = get_diag_temp_sensor_val(temp_sensors[i]);
-//		}
-//
-//		/* send current and temperature over CAN */
-//		osMutexAcquire(can_tx_mutex, osWaitForever);
-//		fakeCANSend(fake_can_msg); // TODO: replace with real CAN function
-//		osMutexRelease(can_tx_mutex);
-//
 
 		update_and_send_current_temp();
 		osDelayUntil(tick);

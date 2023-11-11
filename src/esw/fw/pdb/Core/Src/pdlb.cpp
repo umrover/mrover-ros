@@ -3,17 +3,14 @@
 #include "main.h"
 
 extern FDCAN_HandleTypeDef hfdcan1;
-//extern I2C_HandleTypeDef hi2c1;
-//extern TIM_HandleTypeDef htim15;
-//extern TIM_HandleTypeDef htim4;
 
 namespace mrover {
 
-    // NOTE: Change This For Each Motor Controller
-    constexpr static std::uint8_t DEVICE_ID = 0x1;
+    // NOTE: Change this for the PDLB controller
+    constexpr static std::uint8_t DEVICE_ID = 0x32;
 
     // Usually this is the Jetson
-    constexpr static std::uint8_t DESTINATION_DEVICE_ID = 0x0;
+    constexpr static std::uint8_t DESTINATION_DEVICE_ID = 0x10;
 
     FDCANBus fdcan_bus;
     PDLB pdlb;

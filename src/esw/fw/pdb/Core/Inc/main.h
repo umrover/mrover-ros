@@ -31,8 +31,6 @@ extern "C" {
 
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
-#include "diag_curr_sensor.h"
-#include "diag_temp_sensor.h"
 /* USER CODE END Includes */
 
 /* Exported types ------------------------------------------------------------*/
@@ -54,6 +52,14 @@ extern "C" {
 void Error_Handler(void);
 
 /* USER CODE BEGIN EFP */
+
+void init();
+
+void update_and_send_current_temp();
+
+void update_led();
+
+void receive_message();
 
 /* USER CODE END EFP */
 
