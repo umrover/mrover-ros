@@ -15,7 +15,7 @@ namespace mrover {
 	constexpr static float THRM_A3 = 1.159826E+02;
 	constexpr static float THRM_A4 = -1.060407E+01;
 
-    DiagTempSensor::DiagTempSensor(ADCSensor* adc_sensor, uint8_t channel)
+    DiagTempSensor::DiagTempSensor(std::shared_ptr<ADCSensor> adc_sensor, uint8_t channel)
     	: m_adc_sensor(adc_sensor), m_channel(channel) {}
 
     // TODO - rename everything to current sensor

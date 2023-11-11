@@ -12,7 +12,7 @@ namespace mrover {
     constexpr static float DIAG_CURR_V_S = 3.3f;
     constexpr static float DIAG_CURR_S = 0.2f;
 
-    CurrentSensor::CurrentSensor(ADCSensor* adc_sensor, uint8_t channel)
+    CurrentSensor::CurrentSensor(std::shared_ptr<ADCSensor> adc_sensor, uint8_t channel)
     	: m_adc_sensor(adc_sensor), m_channel(channel) {}
 
     void CurrentSensor::update_current() {

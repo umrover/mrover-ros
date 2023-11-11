@@ -1,8 +1,8 @@
 #pragma once
 
+#include <adc_sensor.hpp>
 #include "stm32g4xx_hal.h"
 
-#include "adc_sensor.h"
 #include <stdint.h>
 #include <math.h>
 #include <stdio.h>
@@ -19,14 +19,14 @@ namespace mrover {
     public:
         CurrentSensor() = default;
 
-        CurrentSensor(ADCSensor* adc_sensor, uint8_t channel);
+        CurrentSensor(std::shared_ptr<ADCSensor> adc_sensor, uint8_t channel);
 
         void update_current();
 
         float get_current();
 
     private:
-        ADCSensor* m_adc_sensor;
+        std::shared_ptr<ADCSensor> m_adc_sensor;
         uint8_t m_channel; // channel of adc sensor
 
         float m_current{};

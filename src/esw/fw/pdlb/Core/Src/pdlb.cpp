@@ -22,13 +22,36 @@ namespace mrover {
                       0) == HAL_OK,
               Error_Handler);
 
-        AutonLED auton_led = AutonLed{
+        AutonLed auton_led = AutonLed{
         	Pin{RED_LED_GPIO_Port, RED_LED_Pin},
 			Pin{GREEN_LED_GPIO_Port, GREEN_LED_Pin},
 			Pin{BLUE_LED_GPIO_Port, BLUE_LED_Pin}
         };
+        std::shared_ptr<ADCSensor> adc_sensor_1 = std::make_shared<ADCSensor>(&hadc1, 10);
+        std::shared_ptr<ADCSensor> adc_sensor_2 = std::make_shared<ADCSensor>(&hadc2, 2);
+
+        std::array<CurrentSensor, 6> current_sensors =
+		{
+				CurrentSensor{adc_sensor_1, 0},
+				CurrentSensor{adc_sensor_1, 1},
+				CurrentSensor{adc_sensor_1, 2},
+				CurrentSensor{adc_sensor_1, 3},
+				CurrentSensor{adc_sensor_1, 4},
+				CurrentSensor{adc_sensor_1, 5},
+
+		};
+        std::array<DiagTempSensor, 6> diag_temp_sensors =
+        {
+        		DiagTempSensor{adc_sensor_1, 6},
+				DiagTempSensor{adc_sensor_1, 7},
+				DiagTempSensor{adc_sensor_1, 8},
+				DiagTempSensor{adc_sensor_1, 9},
+				DiagTempSensor{adc_sensor_2, 0},
+				DiagTempSensor{adc_sensor_2, 1},
+        };
+
         fdcan_bus = FDCANBus{DEVICE_ID, DESTINATION_DEVICE_ID, &hfdcan1};
-        pdlb = PDLB{fdcan_bus, auton_led};
+        pdlb = PDLB{fdcan_bus, auton_led, adc_sensor_1, adc_sensor_2, current_sensors, diag_temp_sensors};
     }
 
 } // namespace mrover
@@ -41,8 +64,8 @@ void update_and_send_current_temp() {
 	mrover::update_and_send_current_temp();
 }
 
-void update_led() {
-	mrover::update_led();
+void blink_led_if_applicable() {
+	mrover::blink_led_if_applicable();
 }
 
 void receive_message() {

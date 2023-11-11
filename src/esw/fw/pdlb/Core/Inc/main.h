@@ -57,7 +57,7 @@ void init();
 
 void update_and_send_current_temp();
 
-void update_led();
+void blink_led_if_applicable();
 
 void receive_message();
 
