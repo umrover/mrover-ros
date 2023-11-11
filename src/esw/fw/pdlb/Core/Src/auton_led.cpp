@@ -28,11 +28,9 @@ namespace mrover {
     }
 
     void AutonLed::change_all_pins() {
-    	if (m_on) {
-    		m_red_pin.write(m_red);
-    		m_green_pin.write(m_green);
-    		m_blue_pin.write(m_blue);
-    	}
+		m_red_pin.write(m_red && m_on);
+		m_green_pin.write(m_green && m_on);
+		m_blue_pin.write(m_blue && m_on);
     }
 
 
