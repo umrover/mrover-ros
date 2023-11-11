@@ -93,17 +93,19 @@ int main(int argc, char** argv) {
     };
 
     scienceCanDevice = std::make_unique<mrover::CanDevice>(nh, "jetson", "science");
+    std::vector<ros::ServiceServer> services;
+    services.reserve(scienceDeviceByName.size() + 1);
 
     for (auto const& [deviceName, scienceDevice]: scienceDeviceByName) {
         // Advertise services and set the callback using a la0mbda function
-        nh.advertiseService<std_srvs::SetBool::Request, std_srvs::SetBool::Response>(
+        services.emplace_back(nh.advertiseService<std_srvs::SetBool::Request, std_srvs::SetBool::Response>(
                 "science_enable_" + deviceName,
                 [scienceDevice](std_srvs::SetBool::Request& req, std_srvs::SetBool::Response& res) {
                     return enableScienceDeviceCallback(req, res, scienceDevice);
-                });
+                }));
     }
 
-    nh.advertiseService<std_srvs::SetBool::Request, std_srvs::SetBool::Response>("science_change_heater_auto_shutoff_state", changeHeaterAutoShutoffState);
+    services.emplace_back(nh.advertiseService<std_srvs::SetBool::Request, std_srvs::SetBool::Response>("science_change_heater_auto_shutoff_state", changeHeaterAutoShutoffState));
 
     heaterDataPublisher = std::make_unique<ros::Publisher>(nh.advertise<mrover::HeaterData>("science_heater_state", 1));
     spectralDataPublisher = std::make_unique<ros::Publisher>(nh.advertise<mrover::SpectralGroup>("science_spectral", 1));
