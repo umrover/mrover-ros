@@ -70,7 +70,12 @@ namespace mrover {
 	}
 
     void receive_message() {
-		pdlb.receive_message();
+    	if (std::optional received = fdcan_bus.receive<InBoundPDLBMessage>()) {
+			auto const& [header, message] = received.value();
+			auto messageId = std::bit_cast<FDCANBus::MessageId>(header.Identifier);
+			if (messageId.destination == DEVICE_ID)
+				pdlb.receive(message);
+		}
 	}
 
 } // namespace mrover

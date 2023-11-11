@@ -9,7 +9,8 @@
 #include "curr_sensor.hpp"
 #include "diag_temp_sensor.hpp"
 #include "messaging.hpp"
-#include "units.hpp"
+#include "units/units.hpp"
+#include "cmsis_os2.h"
 
 namespace mrover {
 
@@ -26,7 +27,7 @@ namespace mrover {
         osMutexId_t m_can_tx_mutex;
 
         void feed(ArmLaserCommand const& message) {
-            m_arm_laser_pin.write(message.enable);
+            m_arm_laser_pin.write(message.enable ? GPIO_PIN_SET : GPIO_PIN_RESET);
         }
 
         void feed(LEDCommand const& message) {
@@ -58,8 +59,8 @@ namespace mrover {
 	   {
 	   }
 
-        void receive(InBoundMessage const& message) {
-            std::visit([&](auto const& command) { process(command); }, message);
+        void receive(InBoundPDLBMessage const& message) {
+            std::visit([&](auto const& command) { feed(command); }, message);
         }
 
         void update_and_send_current_temp() {
@@ -73,8 +74,7 @@ namespace mrover {
 				pdb_data.currents.at(i) = m_current_sensors.at(i).get_current();
 			}
 
-			for(int i = 0; i < NUM_TEMP_SENSORS; ++i) {
-				update_diag_temp_sensor_val(temp_sensors[i]);
+			for(int i = 0; i < 6; ++i) {
 				m_diag_temp_sensors.at(i).update_temp();
 				pdb_data.temperatures.at(i) = m_diag_temp_sensors.at(i).get_temp();
 			}
@@ -87,15 +87,6 @@ namespace mrover {
 
         void blink_led_if_applicable() {
         	m_auton_led.blink();
-        }
-
-        void receive_message() {
-        	if (std::optional received = fdcan_bus.receive<InBoundMessage>()) {
-				auto const& [header, message] = received.value();
-				auto messageId = std::bit_cast<FDCANBus::MessageId>(header.Identifier);
-				if (messageId.destination == DEVICE_ID)
-					pdlb.receive(message);
-			}
         }
     };
 
