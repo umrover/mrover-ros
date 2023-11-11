@@ -4,7 +4,6 @@
 #include <optional>
 #include <variant>
 
-#include "config.hpp"
 #include "hardware.hpp"
 #include "messaging.hpp"
 #include "pidf.hpp"
@@ -13,13 +12,13 @@
 namespace mrover {
 
     template<typename T, typename Input, typename TimeUnit = Seconds>
-    concept InputReader = requires(T t, Config& config) {
-        { t.read(config) } -> std::convertible_to<std::pair<Input, compound_unit<Input, inverse<TimeUnit>>>>;
+    concept InputReader = requires(T t) {
+        { t.read() } -> std::convertible_to<std::pair<Input, compound_unit<Input, inverse<TimeUnit>>>>;
     };
 
     template<typename T, typename Output>
-    concept OutputWriter = requires(T t, Config& config, Output output) {
-        { t.write(config, output) };
+    concept OutputWriter = requires(T t, Output output) {
+        { t.write(output) };
     };
 
     template<IsUnit InputUnit, IsUnit OutputUnit,
@@ -37,7 +36,6 @@ namespace mrover {
 
         using Mode = std::variant<std::monostate, PositionMode, VelocityMode>;
 
-        Config m_config;
         Reader m_reader;
         Writer m_writer;
         std::array<LimitSwitch, 4> m_limit_switches; // TODO - m_limit_switches not actually defined
@@ -45,15 +43,19 @@ namespace mrover {
 
         Mode m_mode;
 
-        bool m_should_limit_forward;
-        bool m_should_limit_backward;
-        bool m_is_calibrated;
-        Radians m_current_position;
-        Percent m_current_throttle;
-        RadiansPerSecond m_current_velocity;
+        bool m_should_limit_forward{};
+        bool m_should_limit_backward{};
+        bool m_is_calibrated{};
+        Radians m_current_position{};
+        Percent m_current_throttle{};
+        RadiansPerSecond m_current_velocity{};
         // If the m_reader reads in 6 Radians and offset is 4 Radians,
         // Then my actual m_current_position should be 2 Radians.
-        Radians m_offset_position;
+        Radians m_offset_position{};
+        bool m_is_configured{};
+        Dimensionless m_gear_ratio{};
+        Radians m_max_forward_pos;
+        Radians m_max_backward_pos;
 
         void write_output_if_valid(Percent output) {
         	if (m_should_limit_forward && output > Percent{0}) {
@@ -62,17 +64,47 @@ namespace mrover {
 			else if (m_should_limit_backward && output < Percent{0}) {
 				output = Percent{0};
 			}
-        	m_writer.write(m_config, output);
+        	m_writer.write(output);
         	m_current_throttle = output;
         }
 
         void feed(AdjustCommand const& message) {
-            // TODO - this needs to be implemented!
+        	auto [reader_position, m_current_velocity] = m_reader.read();
+        	m_is_calibrated = true;
+			m_offset_position = reader_position - message.position;
+			m_current_position = reader_position - m_offset_position;
         }
 
         void feed(ConfigCommand const& message) {
-            m_config.configure(message);  // TODO - this needs to be removed eventually
-            // TODO - this referring to m_config being removed
+
+        	// TODO FIX UP
+        	m_is_configured = true;
+
+			// Initialize values
+			m_gear_ratio = message.gear_ratio;
+			// TODO: Terrible naming for the limit switch info
+			if (message.quad_abs_enc_info.quad_present && message.quad_abs_enc_info.abs_present) {
+				// TODO - use fused encoder
+				// use message.quad_abs_enc_info.quad_is_forward_polarity
+				// and use message.quad_abs_enc_info.abs_is_forward_polarity
+				// and message.quad_enc_out_ratio and message.abs_enc_out_ratio
+
+			}
+			else if (message.quad_abs_enc_info.quad_present) {
+				// TODO - use quad
+				// use message.quad_abs_enc_info.quad_is_forward_polarity
+				// and message.quad_enc_out_ratio
+			}
+			else if (message.quad_abs_enc_info.abs_present) {
+				// TODO - use abs
+				// use message.quad_abs_enc_info.abs_is_forward_polarity
+				// and message.abs_enc_out_ratio
+			}
+
+			// TODO - recreate hbridge.cpp using message.max_pwm
+
+			m_max_forward_pos = message.max_forward_pos;
+			m_max_backward_pos = message.max_backward_pos;
 
             for (std::size_t i = 0; i < 4; ++i) {
             	if (GET_BIT_AT_INDEX(message.limit_switch_info.present, i)) {
@@ -87,7 +119,7 @@ namespace mrover {
             }
 
             for (std::size_t i = 0; i < 4; ++i) {
-                if (GET_BIT_AT_INDEX(m_config.limit_switch_info.present, i) && GET_BIT_AT_INDEX(m_config.limit_switch_info.enabled, i)) {
+                if (GET_BIT_AT_INDEX(message.limit_switch_info.present, i) && GET_BIT_AT_INDEX(message.limit_switch_info.enabled, i)) {
                     m_limit_switches[i].enable();
                 }
             }
@@ -97,7 +129,7 @@ namespace mrover {
         }
 
         void feed(ThrottleCommand const& message) {
-            if (!m_config.is_configured) {
+            if (!m_is_configured) {
                 // TODO - set Error state
                 return;
             }
@@ -106,12 +138,12 @@ namespace mrover {
         }
 
         void feed(VelocityCommand const& message, VelocityMode mode) {
-            if (!m_config.is_configured) {
+            if (!m_is_configured) {
                 // TODO - set Error state
                 return;
             }
 
-            auto [_, input] = m_reader.read(m_config);
+            auto [_, input] = m_reader.read();
             auto target = message.velocity;
             OutputUnit output = mode.pidf.calculate(input, target);
 
@@ -119,12 +151,12 @@ namespace mrover {
         }
 
         void feed(PositionCommand const& message, PositionMode mode) {
-            if (!m_config.is_configured) {
+            if (!m_is_configured) {
                 // TODO - set Error state
                 return;
             }
 
-            auto [input, _] = m_reader.read(m_config);
+            auto [input, _] = m_reader.read();
             auto target = message.position;
             OutputUnit output = mode.pidf.calculate(input, target);
 
@@ -188,7 +220,7 @@ namespace mrover {
                 limit_switch.update_limit_switch();
             }
 
-			auto [reader_position, m_current_velocity] = m_reader.read(m_config);
+			auto [reader_position, m_current_velocity] = m_reader.read();
             for (auto& limit_switch: m_limit_switches) {
                 std::optional<Radians> readj_pos = limit_switch.get_readjustment_position();
                 if (readj_pos) {
@@ -200,19 +232,19 @@ namespace mrover {
 
             m_should_limit_forward = (std::ranges::any_of(m_limit_switches, [](
 					LimitSwitch const& limit_switch) { return limit_switch.limit_forward(); })
-					|| (m_is_calibrated && m_current_position >= m_config.max_forward_pos));
+					|| (m_is_calibrated && m_current_position >= m_max_forward_pos));
 
 			m_should_limit_backward = (std::ranges::any_of(m_limit_switches, [](
 					LimitSwitch const& limit_switch) { return limit_switch.limit_backward(); })
-					|| (m_is_calibrated && m_current_position <= m_config.max_backward_pos));
+					|| (m_is_calibrated && m_current_position <= m_max_backward_pos));
 
 			write_output_if_valid(m_current_throttle);
 
 
             // 2. Send Information
             ConfigCalibErrorInfo config_calib_error_info;
-            config_calib_error_info.configured = m_config.is_configured;
-            config_calib_error_info.calibrated = m_is_calibrated; // TODO
+            config_calib_error_info.configured = m_is_configured;
+            config_calib_error_info.calibrated = m_is_calibrated;
             config_calib_error_info.error = 0;          // TODO
 
             LimitStateInfo limit_state_info;

@@ -1,6 +1,5 @@
 #pragma once
 
-#include "config.hpp"
 #include "hardware.hpp"
 #include "units/units.hpp"
 #include "main.h"
@@ -13,7 +12,7 @@ namespace mrover {
 
         explicit HBridgeWriter(TIM_HandleTypeDef* timer);
 
-        void write(Config const& config, Percent output);
+        void write(Percent output);
 
     private:
         void set_direction_pins(Percent duty_cycle);
@@ -26,6 +25,7 @@ namespace mrover {
         std::uint32_t m_channel{};
         volatile std::uint32_t* m_arr_register{};
         volatile std::uint32_t* m_ccr_register{};
+        Percent m_max_pwm{};
     };
 
 } // namespace mrover

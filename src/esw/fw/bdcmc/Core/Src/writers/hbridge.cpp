@@ -1,24 +1,29 @@
 #include "writer.hpp"
 
-#include "config.hpp"
 #include "main.h"
 
 namespace mrover {
 
     HBridgeWriter::HBridgeWriter(TIM_HandleTypeDef* timer)
-            : m_timer{timer},
+            :
+              m_forward_pins{GPIOC, GPIO_PIN_6},
+			  m_reverse_pins{GPIOB, GPIO_PIN_13},
+			  m_timer{timer},
               m_channel{TIM_CHANNEL_1},
-              m_arr_register{&TIM15->ARR}, m_ccr_register{&TIM15->CCR1},
-              m_forward_pins{GPIOC, GPIO_PIN_6}, m_reverse_pins{GPIOB, GPIO_PIN_13} {
+              m_arr_register{&TIM15->ARR},
+			  m_ccr_register{&TIM15->CCR1},
+			  m_max_pwm{Percent{0}}
+              {
+
 
         *m_ccr_register = 0;
         HAL_TIM_PWM_Start(m_timer, m_channel);
     }
 
-    void HBridgeWriter::write(Config const& config, Percent output) {
+    void HBridgeWriter::write(Percent output) {
         // Set direction pins/duty cycle
         set_direction_pins(output);
-        set_duty_cycle(output, config.max_pwm);
+        set_duty_cycle(output, m_max_pwm);
     }
 
     void HBridgeWriter::set_direction_pins(Percent duty_cycle) {

@@ -2,7 +2,6 @@
 
 #include <numbers>
 
-#include "config.hpp"
 #include "hardware.hpp"
 #include "units/units.hpp"
 
@@ -57,7 +56,7 @@ namespace mrover {
 
         FusedReader(TIM_HandleTypeDef* relative_encoder_timer, I2C_HandleTypeDef* absolute_encoder_i2c);
 
-        [[nodiscard]] std::pair<Radians, RadiansPerSecond> read(Config const& config);
+        [[nodiscard]] std::pair<Radians, RadiansPerSecond> read();
 
     private:
         AbsoluteEncoder m_abs_encoder;
@@ -68,7 +67,7 @@ namespace mrover {
         Radians m_position;
         RadiansPerSecond m_velocity;
 
-        void refresh_absolute(Config const& config);
+        void refresh_absolute();
     };
 
     class LimitSwitchReader {
