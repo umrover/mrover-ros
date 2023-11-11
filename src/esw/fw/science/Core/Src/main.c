@@ -17,6 +17,8 @@
   */
 /* USER CODE END Header */
 /* Includes ------------------------------------------------------------------*/
+#include <heater.hpp>
+#include <spectral.hpp>
 #include "main.h"
 #include "cmsis_os.h"
 
@@ -25,9 +27,7 @@
 
 #include "adc_sensor.h"
 #include "diag_temp_sensor.h"
-#include "heater.h"
 #include "smbus.h"
-#include "spectral.h"
 #include "toggle_gpio.h"
 
 /* USER CODE END Includes */
@@ -54,8 +54,6 @@ FDCAN_HandleTypeDef hfdcan1;
 
 I2C_HandleTypeDef hi2c1;
 
-TIM_HandleTypeDef htim2;
-
 /* Definitions for defaultTask */
 osThreadId_t defaultTaskHandle;
 const osThreadAttr_t defaultTask_attributes = {
@@ -65,6 +63,35 @@ const osThreadAttr_t defaultTask_attributes = {
 };
 /* USER CODE BEGIN PV */
 
+
+osThreadId_t ReceiveMessagesHandle;
+const osThreadAttr_t ReceiveMessages_attributes = {
+  .name = "ReceiveMessages",
+  .priority = (osPriority_t) osPriorityNormal,
+  .stack_size = 128 * 4
+};
+
+osThreadId_t SpectralTaskHandle;
+const osThreadAttr_t SpectralTask_attributes = {
+  .name = "SpectralTask",
+  .priority = (osPriority_t) osPriorityNormal,
+  .stack_size = 128 * 4
+};
+
+osThreadId_t ThermistorAndAutoShutoffTaskHandle;
+const osThreadAttr_t ThermistorAndAutoShutoffTask_attributes = {
+  .name = "ThermistorAndAutoShutoffTask",
+  .priority = (osPriority_t) osPriorityNormal,
+  .stack_size = 128 * 4
+};
+
+osThreadId_t HeaterUpdatesTaskHandle;
+const osThreadAttr_t HeaterUpdatesTask_attributes = {
+  .name = "HeaterUpdatesTask",
+  .priority = (osPriority_t) osPriorityNormal,
+  .stack_size = 128 * 4
+};
+
 /* USER CODE END PV */
 
 /* Private function prototypes -----------------------------------------------*/
@@ -73,7 +100,6 @@ static void MX_GPIO_Init(void);
 static void MX_FDCAN1_Init(void);
 static void MX_I2C1_Init(void);
 static void MX_ADC1_Init(void);
-static void MX_TIM2_Init(void);
 void StartDefaultTask(void *argument);
 
 /* USER CODE BEGIN PFP */
@@ -116,7 +142,6 @@ int main(void)
   MX_FDCAN1_Init();
   MX_I2C1_Init();
   MX_ADC1_Init();
-  MX_TIM2_Init();
   /* USER CODE BEGIN 2 */
 
   //Create all our stuff!
@@ -208,7 +233,7 @@ int main(void)
       heater_ns[i] = new_heater(heater_n_toggles[i], thermistor_ns[i]);
   }
 
-
+  init();
 
 
 
@@ -239,6 +264,12 @@ int main(void)
   defaultTaskHandle = osThreadNew(StartDefaultTask, NULL, &defaultTask_attributes);
 
   /* USER CODE BEGIN RTOS_THREADS */
+
+  ReceiveMessagesHandle = osThreadNew(ReceiveMessagesTask, NULL, &ReceiveMessages_attributes);
+  SpectralTaskHandle = osThreadNew(SpectralTaskTask, NULL, &SpectralTask_attributes);
+  ThermistorAndAutoShutoffTaskHandle = osThreadNew(ThermistorAndAutoShutoffTask, NULL, &ThermistorAndAutoShutoffTask_attributes);
+  HeaterUpdatesTaskHandle = osThreadNew(HeaterUpdatesTaskTask, NULL, &HeaterUpdatesTask_attributes);
+
   /* add threads, ... */
   /* USER CODE END RTOS_THREADS */
 
@@ -460,51 +491,6 @@ static void MX_I2C1_Init(void)
 }
 
 /**
-  * @brief TIM2 Initialization Function
-  * @param None
-  * @retval None
-  */
-static void MX_TIM2_Init(void)
-{
-
-  /* USER CODE BEGIN TIM2_Init 0 */
-
-  /* USER CODE END TIM2_Init 0 */
-
-  TIM_ClockConfigTypeDef sClockSourceConfig = {0};
-  TIM_MasterConfigTypeDef sMasterConfig = {0};
-
-  /* USER CODE BEGIN TIM2_Init 1 */
-
-  /* USER CODE END TIM2_Init 1 */
-  htim2.Instance = TIM2;
-  htim2.Init.Prescaler = 0;
-  htim2.Init.CounterMode = TIM_COUNTERMODE_UP;
-  htim2.Init.Period = 4.294967295E9;
-  htim2.Init.ClockDivision = TIM_CLOCKDIVISION_DIV1;
-  htim2.Init.AutoReloadPreload = TIM_AUTORELOAD_PRELOAD_DISABLE;
-  if (HAL_TIM_Base_Init(&htim2) != HAL_OK)
-  {
-    Error_Handler();
-  }
-  sClockSourceConfig.ClockSource = TIM_CLOCKSOURCE_INTERNAL;
-  if (HAL_TIM_ConfigClockSource(&htim2, &sClockSourceConfig) != HAL_OK)
-  {
-    Error_Handler();
-  }
-  sMasterConfig.MasterOutputTrigger = TIM_TRGO_RESET;
-  sMasterConfig.MasterSlaveMode = TIM_MASTERSLAVEMODE_DISABLE;
-  if (HAL_TIMEx_MasterConfigSynchronization(&htim2, &sMasterConfig) != HAL_OK)
-  {
-    Error_Handler();
-  }
-  /* USER CODE BEGIN TIM2_Init 2 */
-
-  /* USER CODE END TIM2_Init 2 */
-
-}
-
-/**
   * @brief GPIO Initialization Function
   * @param None
   * @retval None
@@ -562,21 +548,43 @@ static void MX_GPIO_Init(void)
 }
 
 /* USER CODE BEGIN 4 */
-void SpectralTask(void const * argument) {
-	for (;;) {
 
+void ReceiveMessages(void* argument) {
+	uint32_t tick = osKernelGetTickCount();
+	for(;;) {
+		tick += osKernelGetTickFreq(); // 1 Hz
+		receive_message();
+		osDelayUntil(tick);
 	}
 }
 
-void ThermistorTask(void const * argument) {
-	for (;;) {
+void SpectralTask(void const * argument) {
+	uint32_t tick = osKernelGetTickCount();
+	for(;;) {
+		tick += osKernelGetTickFreq(); // 1 Hz
 
+		update_and_send_spectral();
+		osDelayUntil(tick);
+	}
+}
+
+void ThermistorAndAutoShutoffTask(void const * argument) {
+	uint32_t tick = osKernelGetTickCount();
+	for(;;) {
+		tick += osKernelGetTickFreq(); // 1 Hz
+
+		update_and_send_thermistor_and_auto_shutoff_if_applicable();
+		osDelayUntil(tick);
 	}
 }
 
 void HeaterUpdatesTask(void const * argument) {
-	for (;;) {
+	uint32_t tick = osKernelGetTickCount();
+	for(;;) {
+		tick += osKernelGetTickFreq(); // 1 Hz
 
+		update_and_send_heater();
+		osDelayUntil(tick);
 	}
 }
 

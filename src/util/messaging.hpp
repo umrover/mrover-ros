@@ -156,12 +156,7 @@ namespace mrover {
 
     struct HeaterStateInfo {
         [[maybe_unused]] std::uint8_t _ignore : 2 {};
-        std::uint8_t b0 : 1 {};
-        std::uint8_t n0 : 1 {};
-        std::uint8_t b1 : 1 {};
-        std::uint8_t n1 : 1 {};
-        std::uint8_t b2 : 1 {};
-        std::uint8_t n2 : 1 {};
+        std::uint8_t on : 6 {};
     };
     static_assert(sizeof(HeaterStateInfo) == 1);
 
@@ -170,7 +165,7 @@ namespace mrover {
     };
 
     struct SpectralInfo {
-        std::array<std::uint8_t, 6> data;
+        std::array<std::uint16_t, 6> data;
     };
 
     struct SpectralData : BaseCommand {
@@ -178,12 +173,7 @@ namespace mrover {
     };
 
     struct ThermistorData : BaseCommand {
-        float b0{};
-        float n0{};
-        float b1{};
-        float n1{};
-        float b2{};
-        float n2{};
+    	std::array<float, 6> temps;
     };
 
     using InBoundScienceMessage = std::variant<

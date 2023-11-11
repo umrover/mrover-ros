@@ -1,0 +1,158 @@
+#pragma once
+
+#include <concepts>
+#include <optional>
+#include <variant>
+#include "messaging.hpp"
+#include "units/units.hpp"
+
+namespace mrover {
+
+    class Science {
+    private:
+
+        FDCANBus m_fdcan_bus;
+        std::array<Spectral, 3> m_spectral_sensors;
+        std::shared_ptr<ADCSensor> m_adc_sensor;
+        std::array<Heater, 6> m_heaters;
+        std::array<Pin, 3> m_uv_leds;
+        std::array<Pin, 3> m_white_leds;
+        bool m_heater_auto_shutoff_enabled {};
+        osMutexId_t m_can_tx_mutex;
+
+        void feed(EnableScienceDeviceCommand const& message) {
+        	switch (message.science_device) {
+        	case HEATER_B0:
+        		m_heaters.at(0).enable_if_possible(message.enable);
+        		break;
+        	case HEATER_N0:
+				m_heaters.at(1).enable_if_possible(message.enable);
+				break;
+        	case HEATER_B1:
+				m_heaters.at(2).enable_if_possible(message.enable);
+				break;
+        	case HEATER_N1:
+				m_heaters.at(3).enable_if_possible(message.enable);
+				break;
+        	case HEATER_B2:
+				m_heaters.at(4).enable_if_possible(message.enable);
+				break;
+        	case HEATER_N2:
+				m_heaters.at(5).enable_if_possible(message.enable);
+				break;
+        	case WHITE_LED_0:
+        		m_white_leds.at(0).write(message.enable);
+				break;
+			case WHITE_LED_1:
+        		m_white_leds.at(1).write(message.enable);
+				break;
+			case WHITE_LED_2:
+        		m_white_leds.at(2).write(message.enable);
+				break;
+			case UV_LED_0:
+				m_uv_leds.at(0).write(message.enable);
+				break;
+			case UV_LED_1:
+				m_uv_leds.at(1).write(message.enable);
+				break;
+			case UV_LED_2:
+				m_uv_leds.at(2).write(message.enable);
+				break;
+        	}
+        }
+
+        void feed(HeaterAutoShutOffCommand const& message) {
+        	for (int i = 0; i < 6; ++i) {
+        		m_heaters.at(i).set_auto_shutoff(message.enable_auto_shutoff);
+        	}
+        }
+
+    public:
+        Science() = default;
+
+        Science(FDCANBus const& fdcan_bus,
+        		std::array<Spectral, 3> spectral_sensors,
+				std::shared_ptr<ADCSensor> adc_sensor,
+				std::array<DiagTempSensor, 6> diag_temp_sensors,
+				std::array<Pin, 6> heater_pins,
+				std::array<Pin, 3> uv_leds,
+				std::array<Pin, 3> white_leds
+				) :
+           m_fdcan_bus{fdcan_bus},
+		   m_spectral_sensors{std::move(spectral_sensors)},
+		   m_adc_sensor{std::move(adc_sensor)},
+		   m_uv_leds{std::move(uv_leds)},
+		   m_white_leds{std::move(white_leds)},
+		   m_can_tx_mutex{osMutexNew(NULL)}
+	   {
+		   for (int i = 0; i < 6; ++i) {
+			   m_heaters.at(i) = Heater(diag_temp_sensors[i], heater_pins[i]);
+		   }
+	   }
+
+        void receive(InBoundMessage const& message) {
+            std::visit([&](auto const& command) { process(command); }, message);
+        }
+
+        void update_and_send_spectral() {
+        	SpectralData spectral_data;
+        	for (int i = 0; i < 3; ++i) {
+        		for (int j = 0; j < 6; ++j) {
+        			m_spectral_sensors.at(i).update_channel_data(j);
+					spectral_data.spectrals.at(i).data.at(j) =
+							m_spectral_sensors.at(i).get_channel_data(j);
+        		}
+        	}
+
+        	osMutexAcquire(m_can_tx_mutex, osWaitForever);
+			m_fdcan_bus.broadcast(OutBoundScienceMessage{spectral_data});
+			osMutexRelease(m_can_tx_mutex);
+        }
+
+        void update_and_send_thermistor_and_auto_shutoff_if_applicable() {
+        	m_adc_sensor->update();
+        	ThermistorData thermistor_data;
+
+			for(int i = 0; i < 6; ++i) {
+				m_heaters.at(i).update_temp_and_auto_shutoff_if_applicable();
+				thermistor_data.temps.at(i) = m_heaters.at(i).get_temp();
+			}
+
+
+			/* send current and temperature over CAN */
+			osMutexAcquire(m_can_tx_mutex, osWaitForever);
+			m_fdcan_bus.broadcast(OutBoundPDLBMessage{thermistor_data});
+			osMutexRelease(m_can_tx_mutex);
+        }
+
+        void send_heater() {
+
+        	// TODO - check watchdog
+
+        	for (int i = 0; i < 6; ++i) {
+        		// TODO - assume that this function is called every 1 second
+        		m_heaters.at(i).turn_off_if_watchdog_not_fed();
+        	}
+
+        	HeaterStateData heater_state_data;
+
+        	for (int i = 0; i < 6; ++i) {
+        		SET_BIT_AT_INDEX(heater_state_data.heater_state_info, i, m_heaters.at(i).get_state());
+        	}
+
+        	osMutexAcquire(m_can_tx_mutex, osWaitForever);
+			m_fdcan_bus.broadcast(OutBoundPDLBMessage{heater_state_data});
+			osMutexRelease(m_can_tx_mutex);
+        }
+
+        void receive_messages() {
+        	if (std::optional received = fdcan_bus.receive<InBoundMessage>()) {
+				auto const& [header, message] = received.value();
+				auto messageId = std::bit_cast<FDCANBus::MessageId>(header.Identifier);
+				if (messageId.destination == DEVICE_ID)
+					science.receive(message);
+			}
+        }
+    };
+
+} // namespace mrover

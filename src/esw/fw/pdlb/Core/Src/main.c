@@ -57,6 +57,27 @@ const osThreadAttr_t defaultTask_attributes = {
 };
 /* USER CODE BEGIN PV */
 
+osThreadId_t ReceiveMessagesHandle;
+const osThreadAttr_t ReceiveMessages_attributes = {
+  .name = "ReceiveMessages",
+  .priority = (osPriority_t) osPriorityNormal,
+  .stack_size = 128 * 4
+};
+
+osThreadId_t SendCurrentTemperatureHandle;
+const osThreadAttr_t SendCurrentTemperature_attributes = {
+  .name = "SendCurrentTemperature",
+  .priority = (osPriority_t) osPriorityNormal,
+  .stack_size = 128 * 4
+};
+
+osThreadId_t BlinkAutonLedHandle;
+const osThreadAttr_t BlinkAutonLed_attributes = {
+  .name = "BlinkAutonLed",
+  .priority = (osPriority_t) osPriorityNormal,
+  .stack_size = 128 * 4
+};
+
 /* USER CODE END PV */
 
 /* Private function prototypes -----------------------------------------------*/
@@ -114,10 +135,6 @@ int main(void)
   MX_ADC2_Init();
   /* USER CODE BEGIN 2 */
 
-  // 10 channels: 5 for current, 5 for temperature
-  // Channels 0-4: CURR 0-4
-  // Channels 5-9: TEMP 0-4
-
   init();
 
   /* USER CODE END 2 */
@@ -145,9 +162,9 @@ int main(void)
 
   /* USER CODE BEGIN RTOS_THREADS */
 
-  defaultTaskHandle = osThreadNew(ReceiveMessages, NULL, &defaultTask_attributes);
-  defaultTaskHandle = osThreadNew(SendCurrentTemperature, NULL, &defaultTask_attributes);
-  defaultTaskHandle = osThreadNew(BlinkAutonLed, NULL, &defaultTask_attributes);
+  ReceiveMessagesHandle = osThreadNew(ReceiveMessages, NULL, &ReceiveMessages_attributes);
+  SendCurrentTemperatureHandle = osThreadNew(SendCurrentTemperature, NULL, &SendCurrentTemperature_attributes);
+  BlinkAutonLedHandle = osThreadNew(BlinkAutonLed, NULL, &BlinkAutonLed_attributes);
   /* add threads, ... */
   /* USER CODE END RTOS_THREADS */
 
@@ -516,7 +533,7 @@ static void MX_GPIO_Init(void)
   HAL_GPIO_WritePin(GPIOC, DEBUG_LED_0_Pin|DEBUG_LED_1_Pin|DEBUG_LED_2_Pin|GREEN_LED_Pin, GPIO_PIN_RESET);
 
   /*Configure GPIO pin Output Level */
-  HAL_GPIO_WritePin(GPIOA, RA_LASER_Pin|UV_BULB_Pin|RED_LED_Pin, GPIO_PIN_RESET);
+  HAL_GPIO_WritePin(GPIOA, ARM_LASER_Pin|RED_LED_Pin, GPIO_PIN_RESET);
 
   /*Configure GPIO pin Output Level */
   HAL_GPIO_WritePin(BLUE_LED_GPIO_Port, BLUE_LED_Pin, GPIO_PIN_RESET);
@@ -528,8 +545,8 @@ static void MX_GPIO_Init(void)
   GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
   HAL_GPIO_Init(GPIOC, &GPIO_InitStruct);
 
-  /*Configure GPIO pins : RA_LASER_Pin UV_BULB_Pin RED_LED_Pin */
-  GPIO_InitStruct.Pin = RA_LASER_Pin|UV_BULB_Pin|RED_LED_Pin;
+  /*Configure GPIO pins : ARM_LASER_Pin RED_LED_Pin */
+  GPIO_InitStruct.Pin = ARM_LASER_Pin|RED_LED_Pin;
   GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
   GPIO_InitStruct.Pull = GPIO_NOPULL;
   GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
@@ -553,7 +570,6 @@ void fakeCANSend(float* msg) {
 }
 
 void ReceiveMessages(void* argument) {
-	// TODO
 	uint32_t tick = osKernelGetTickCount();
 	for(;;) {
 		tick += osKernelGetTickFreq(); // 1 Hz
@@ -564,7 +580,6 @@ void ReceiveMessages(void* argument) {
 
 void SendCurrentTemperature(void* argument) {
 	uint32_t tick = osKernelGetTickCount();
-
 	for(;;) {
 		tick += osKernelGetTickFreq(); // 1 Hz
 
@@ -574,7 +589,6 @@ void SendCurrentTemperature(void* argument) {
 }
 
 void BlinkAutonLed(void* argument) {
-	// TODO
 	uint32_t tick = osKernelGetTickCount();
 	for(;;) {
 		tick += osKernelGetTickFreq(); // 1 Hz

@@ -8,7 +8,6 @@
 #include "auton_led.hpp"
 #include "curr_sensor.hpp"
 #include "diag_temp_sensor.hpp"
-#include "adc_sensor.hpp"
 #include "messaging.hpp"
 #include "units.hpp"
 
@@ -18,6 +17,7 @@ namespace mrover {
     private:
 
         FDCANBus m_fdcan_bus;
+        Pin m_arm_laser_pin;
         AutonLed m_auton_led;
         std::shared_ptr<ADCSensor> m_adc_sensor_1;
         std::shared_ptr<ADCSensor> m_adc_sensor_2;
@@ -26,17 +26,21 @@ namespace mrover {
         osMutexId_t m_can_tx_mutex;
 
         void feed(ArmLaserCommand const& message) {
-            // TODO - this needs to be implemented!
+            m_arm_laser_pin.write(message.enable);
         }
 
         void feed(LEDCommand const& message) {
-            // TODO - this needs to be implemented
+        	m_auton_led.change_state(message.led_info.red,
+        			message.led_info.green,
+					message.led_info.blue,
+					message.led_info.blinking);
         }
 
     public:
         PDLB() = default;
 
         PDLB(FDCANBus const& fdcan_bus,
+        		Pin arm_laser_pin,
         		AutonLed auton_led,
 				std::shared_ptr<ADCSensor> adc_sensor_1,
 				std::shared_ptr<ADCSensor> adc_sensor_2,
@@ -44,6 +48,7 @@ namespace mrover {
 				std::array<DiagTempSensor, 6> diag_temp_sensors
 				) :
            m_fdcan_bus{fdcan_bus},
+		   m_arm_laser_pin{std::move(arm_laser_pin)},
 		   m_auton_led{std::move(auton_led)},
 		   m_adc_sensor_1{std::move(adc_sensor_1)},
 		   m_adc_sensor_2{std::move(adc_sensor_2)},
@@ -84,7 +89,7 @@ namespace mrover {
         	m_auton_led.blink();
         }
 
-        void receive_messages() {
+        void receive_message() {
         	if (std::optional received = fdcan_bus.receive<InBoundMessage>()) {
 				auto const& [header, message] = received.value();
 				auto messageId = std::bit_cast<FDCANBus::MessageId>(header.Identifier);

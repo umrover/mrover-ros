@@ -82,10 +82,8 @@ void receive_message();
 #define CURR_12V_REST_GPIO_Port GPIOA
 #define CURR_12V_BUCK_Pin GPIO_PIN_3
 #define CURR_12V_BUCK_GPIO_Port GPIOA
-#define RA_LASER_Pin GPIO_PIN_5
-#define RA_LASER_GPIO_Port GPIOA
-#define UV_BULB_Pin GPIO_PIN_6
-#define UV_BULB_GPIO_Port GPIOA
+#define ARM_LASER_Pin GPIO_PIN_5
+#define ARM_LASER_GPIO_Port GPIOA
 #define RED_LED_Pin GPIO_PIN_7
 #define RED_LED_GPIO_Port GPIOA
 #define GREEN_LED_Pin GPIO_PIN_4

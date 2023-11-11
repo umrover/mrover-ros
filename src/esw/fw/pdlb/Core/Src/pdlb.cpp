@@ -51,8 +51,22 @@ namespace mrover {
         };
 
         fdcan_bus = FDCANBus{DEVICE_ID, DESTINATION_DEVICE_ID, &hfdcan1};
-        pdlb = PDLB{fdcan_bus, auton_led, adc_sensor_1, adc_sensor_2, current_sensors, diag_temp_sensors};
+        pdlb = PDLB{fdcan_bus, Pin{ARM_LASER_GPIO_Port, ARM_LASER_Pin},
+        	auton_led, adc_sensor_1, adc_sensor_2,
+			current_sensors, diag_temp_sensors};
     }
+
+    void update_and_send_current_temp() {
+    	pdlb.update_and_send_current_temp();
+    }
+
+    void blink_led_if_applicable() {
+		pdlb.blink_led_if_applicable();
+	}
+
+    void receive_message() {
+		pdlb.receive_message();
+	}
 
 } // namespace mrover
 
