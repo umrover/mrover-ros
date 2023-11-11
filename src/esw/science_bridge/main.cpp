@@ -33,12 +33,10 @@ bool enableScienceDeviceCallback(std_srvs::SetBool::Request& req, std_srvs::SetB
 
 void processMessage(mrover::HeaterStateData const& message) {
     mrover::HeaterData heaterData;
-    heaterData.b0 = message.heater_state_info.b0;
-    heaterData.n0 = message.heater_state_info.n0;
-    heaterData.b1 = message.heater_state_info.b1;
-    heaterData.n1 = message.heater_state_info.n1;
-    heaterData.b2 = message.heater_state_info.b2;
-    heaterData.n2 = message.heater_state_info.n2;
+    heaterData.state.resize(6);
+    for (int i = 0; i < 6; ++i) {
+        heaterData.state.at(i) = GET_BIT_AT_INDEX(message.heater_state_info.on, i);
+    }
 
     heaterDataPublisher->publish(heaterData);
 }
@@ -47,7 +45,7 @@ void processMessage(mrover::SpectralData const& message) {
     mrover::SpectralGroup spectralData;
     for (int i = 0; i < 3; ++i) {
         for (int j = 0; j < 6; ++j) {
-            spectralData.spectrals[i].data[j] = message.spectrals[i].data[j];
+            spectralData.spectrals.at(i).data.at(j) = message.spectrals.at(i).data.at(j);
         }
     }
     spectralDataPublisher->publish(spectralData);
@@ -55,12 +53,10 @@ void processMessage(mrover::SpectralData const& message) {
 
 void processMessage(mrover::ThermistorData const& message) {
     mrover::ScienceThermistors scienceThermistors;
-    scienceThermistors.b0.temperature = message.b0;
-    scienceThermistors.n0.temperature = message.n0;
-    scienceThermistors.b1.temperature = message.b1;
-    scienceThermistors.n1.temperature = message.n1;
-    scienceThermistors.b2.temperature = message.b2;
-    scienceThermistors.n2.temperature = message.n2;
+    scienceThermistors.temps.resize(6);
+    for (int i = 0; i < 6; ++i) {
+        scienceThermistors.temps.at(i).temperature = message.temps.at(i);
+    }
     thermistorDataPublisher->publish(scienceThermistors);
 }
 
