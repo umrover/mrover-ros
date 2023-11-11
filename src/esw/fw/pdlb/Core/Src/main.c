@@ -33,12 +33,6 @@
 /* Private define ------------------------------------------------------------*/
 /* USER CODE BEGIN PD */
 
-#define NUM_CHANNELS 12
-#define NUM_CURRENT_SENSORS 6
-#define NUM_TEMP_SENSORS 6
-
-#define PDB_CAN_ID 0x32
-
 /* USER CODE END PD */
 
 /* Private macro -------------------------------------------------------------*/
@@ -128,7 +122,6 @@ int main(void)
   osKernelInitialize();
 
   /* USER CODE BEGIN RTOS_MUTEX */
-  can_tx_mutex = osMutexNew(NULL); // default attr. for now
   /* USER CODE END RTOS_MUTEX */
 
   /* USER CODE BEGIN RTOS_SEMAPHORES */
@@ -525,7 +518,7 @@ void ReceiveMessages(void* argument) {
 	uint32_t tick = osKernelGetTickCount();
 	for(;;) {
 		tick += osKernelGetTickFreq(); // 1 Hz
-		update_led();
+		receive_message();
 		osDelayUntil(tick);
 	}
 }

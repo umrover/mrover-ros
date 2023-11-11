@@ -61,14 +61,14 @@ void loop();
 /* USER CODE END EFP */
 
 /* Private defines -----------------------------------------------------------*/
-#define LIMIT_0_A_Pin GPIO_PIN_13
-#define LIMIT_0_A_GPIO_Port GPIOC
-#define LIMIT_0_B_Pin GPIO_PIN_14
-#define LIMIT_0_B_GPIO_Port GPIOC
-#define LIMIT_0_C_Pin GPIO_PIN_15
-#define LIMIT_0_C_GPIO_Port GPIOC
-#define LIMIT_0_D_Pin GPIO_PIN_0
-#define LIMIT_0_D_GPIO_Port GPIOF
+#define LIMIT_0_0_Pin GPIO_PIN_13
+#define LIMIT_0_0_GPIO_Port GPIOC
+#define LIMIT_0_1_Pin GPIO_PIN_14
+#define LIMIT_0_1_GPIO_Port GPIOC
+#define LIMIT_0_2_Pin GPIO_PIN_15
+#define LIMIT_0_2_GPIO_Port GPIOC
+#define LIMIT_0_3_Pin GPIO_PIN_0
+#define LIMIT_0_3_GPIO_Port GPIOF
 #define DEBUG_LED_0_Pin GPIO_PIN_1
 #define DEBUG_LED_0_GPIO_Port GPIOA
 #define DEBUG_LED_1_Pin GPIO_PIN_2
@@ -79,14 +79,14 @@ void loop();
 #define QUAD_1_B_GPIO_Port GPIOA
 #define QUAD_1_A_Pin GPIO_PIN_6
 #define QUAD_1_A_GPIO_Port GPIOA
-#define LIMIT_1_A_Pin GPIO_PIN_4
-#define LIMIT_1_A_GPIO_Port GPIOC
-#define LIMIT_1_B_Pin GPIO_PIN_0
-#define LIMIT_1_B_GPIO_Port GPIOB
-#define LIMIT_1_C_Pin GPIO_PIN_1
-#define LIMIT_1_C_GPIO_Port GPIOB
-#define LIMIT_1_D_Pin GPIO_PIN_2
-#define LIMIT_1_D_GPIO_Port GPIOB
+#define LIMIT_1_0_Pin GPIO_PIN_4
+#define LIMIT_1_0_GPIO_Port GPIOC
+#define LIMIT_1_1_Pin GPIO_PIN_0
+#define LIMIT_1_1_GPIO_Port GPIOB
+#define LIMIT_1_2_Pin GPIO_PIN_1
+#define LIMIT_1_2_GPIO_Port GPIOB
+#define LIMIT_1_3_Pin GPIO_PIN_2
+#define LIMIT_1_3_GPIO_Port GPIOB
 #define MOTOR_0_DIR_Pin GPIO_PIN_13
 #define MOTOR_0_DIR_GPIO_Port GPIOB
 #define MOTOR_0_PWM_Pin GPIO_PIN_14

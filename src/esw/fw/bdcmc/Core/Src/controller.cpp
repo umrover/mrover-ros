@@ -34,7 +34,13 @@ namespace mrover {
               Error_Handler);
 
         fdcan_bus = FDCANBus{DEVICE_ID, DESTINATION_DEVICE_ID, &hfdcan1};
-        controller = BrushedController{FusedReader{&htim4, &hi2c1}, HBridgeWriter{&htim15}, fdcan_bus};
+        std::array<LimitSwitch, 4> limit_switches = {
+        		LimitSwitch{Pin{LIMIT_0_0_GPIO_Port, LIMIT_0_0_Pin}},
+				LimitSwitch{Pin{LIMIT_0_1_GPIO_Port, LIMIT_0_1_Pin}},
+				LimitSwitch{Pin{LIMIT_0_2_GPIO_Port, LIMIT_0_2_Pin}},
+				LimitSwitch{Pin{LIMIT_0_3_GPIO_Port, LIMIT_0_3_Pin}}
+        };
+        controller = BrushedController{FusedReader{&htim4, &hi2c1}, HBridgeWriter{&htim15}, limit_switches, fdcan_bus};
     }
 
     void loop() {

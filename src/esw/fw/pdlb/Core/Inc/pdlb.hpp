@@ -5,6 +5,7 @@
 #include <variant>
 
 #include "hardware.hpp"
+#include "auton_led.hpp"
 #include "messaging.hpp"
 #include "units.hpp"
 
@@ -13,13 +14,13 @@ namespace mrover {
     class PDLB {
     private:
 
-    	// TODO - Add Celsius to the units library
-    	PDBData pdb_data;
-
         FDCANBus m_fdcan_bus;
-        ADCSensor* adc;
-        DiagCurrentSensor* current_sensors[NUM_CURRENT_SENSORS];
-        DiagTempSensor* temp_sensors[NUM_TEMP_SENSORS];
+        ADCSensor* m_adc_1;
+        ADCSensor* m_adc_2;
+        DiagCurrentSensor* m_current_sensors[NUM_CURRENT_SENSORS];
+        DiagTempSensor* m_temp_sensors[NUM_TEMP_SENSORS];
+        osMutexId_t m_mutex_id1;
+        AutonLed m_auton_led;
 
         void feed(ArmLaserCommand const& message) {
             // TODO - this needs to be implemented!
@@ -32,20 +33,23 @@ namespace mrover {
     public:
         PDLB() = default;
 
-        PDLB(FDCANBus const& fdcan_bus) :
-           m_fdcan_bus{fdcan_bus} {
+        PDLB(FDCANBus const& fdcan_bus, AutonLed auton_led) :
+           m_fdcan_bus{fdcan_bus}, m_auton_led{std::move(auton_led)} {
 
-		   adc = new_adc_sensor(&hadc1, NUM_CHANNELS);
+		   m_adc_1 = new_adc_sensor(&hadc1, 10);
+		   m_adc_2 = new_adc_sensor(&hadc2, 2);
 
-		   // Create current sensor objects (test_ADC channels 0-4)
+		   // TODO - fix - the ioc isnt actually like this
 		   for(int i = 0; i < NUM_CURRENT_SENSORS; ++i) {
-			  current_sensors[i] = new_diag_current_sensor(adc, i);
+			  m_current_sensors[i] = new_diag_current_sensor(adc, i);
 		   }
 
 		   // Create temp sensor objects (test_ADC channels 5-9)
 		   for(int i = 0; i < NUM_TEMP_SENSORS; ++i) {
-			  temp_sensors[i] = new_diag_temp_sensor(adc, i + 5);
+			  m_temp_sensors[i] = new_diag_temp_sensor(adc, i + 5);
 		   }
+
+		   can_tx_mutex = osMutexNew(NULL); // default attr. for now
 
 	   }
 

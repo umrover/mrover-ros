@@ -40,7 +40,7 @@ namespace mrover {
         Config m_config;
         Reader m_reader;
         Writer m_writer;
-        std::array<LimitSwitch, 4> m_limit_switches;
+        std::array<LimitSwitch, 4> m_limit_switches; // TODO - m_limit_switches not actually defined
         FDCANBus m_fdcan_bus;
 
         Mode m_mode;
@@ -158,8 +158,8 @@ namespace mrover {
     public:
         Controller() = default;
 
-        Controller(Reader&& reader, Writer&& writer, FDCANBus const& fdcan_bus)
-            : m_reader{std::move(reader)}, m_writer{std::move(writer)}, m_fdcan_bus{fdcan_bus} {}
+        Controller(Reader&& reader, Writer&& writer, std::array<LimitSwitch, 4> limit_switches, FDCANBus const& fdcan_bus)
+            : m_reader{std::move(reader)}, m_writer{std::move(writer)}, m_limit_switches{std::move(limit_switches)}, m_fdcan_bus{fdcan_bus} {}
 
         template<typename Command>
         void process(Command const& command) {

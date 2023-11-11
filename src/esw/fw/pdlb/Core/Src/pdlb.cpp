@@ -22,8 +22,13 @@ namespace mrover {
                       0) == HAL_OK,
               Error_Handler);
 
+        AutonLED auton_led = AutonLed{
+        	Pin{RED_LED_GPIO_Port, RED_LED_Pin},
+			Pin{GREEN_LED_GPIO_Port, GREEN_LED_Pin},
+			Pin{BLUE_LED_GPIO_Port, BLUE_LED_Pin}
+        };
         fdcan_bus = FDCANBus{DEVICE_ID, DESTINATION_DEVICE_ID, &hfdcan1};
-        pdlb = PDLB{fdcan_bus};
+        pdlb = PDLB{fdcan_bus, auton_led};
     }
 
 } // namespace mrover
