@@ -17,14 +17,14 @@ std::unique_ptr<ros::Publisher> heaterDataPublisher;
 std::unique_ptr<ros::Publisher> spectralDataPublisher;
 std::unique_ptr<ros::Publisher> thermistorDataPublisher;
 
-bool enableScienceDeviceCallback(std_srvs::SetBool::Request& req, std_srvs::SetBool::Response& res) {
+bool changeHeaterAutoShutoffState(std_srvs::SetBool::Request& req, std_srvs::SetBool::Response& res) {
     scienceCanDevice->publish_message(mrover::InBoundScienceMessage{mrover::HeaterAutoShutOffCommand{.enable_auto_shutoff = static_cast<bool>(req.data)}});
     res.success = true;
     res.message = "DONE";
     return true;
 }
 
-bool changeHeaterAutoShutoffState(std_srvs::SetBool::Request& req, std_srvs::SetBool::Response& res, mrover::ScienceDevice scienceDevice) {
+bool enableScienceDeviceCallback(std_srvs::SetBool::Request& req, std_srvs::SetBool::Response& res, mrover::ScienceDevice scienceDevice) {
     scienceCanDevice->publish_message(mrover::InBoundScienceMessage{mrover::EnableScienceDeviceCommand{.science_device = scienceDevice, .enable = static_cast<bool>(req.data)}});
     res.success = true;
     res.message = "DONE";
