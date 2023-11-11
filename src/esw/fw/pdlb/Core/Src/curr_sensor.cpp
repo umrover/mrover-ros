@@ -16,7 +16,7 @@ namespace mrover {
     	: m_adc_sensor(adc_sensor), m_channel(channel) {}
 
     void CurrentSensor::update_current() {
-    	uint16_t adc_val = get_adc_sensor_value(m_adc_sensor, m_channel);
+    	uint16_t adc_val = m_adc_sensor->get_raw_channel_value(m_channel);
 		float measured_volts = (adc_val * 3.3f) / 4096.0f;
 
 		m_current = (DIAG_CURR_V_S / 2.0f - measured_volts) / -DIAG_CURR_S;

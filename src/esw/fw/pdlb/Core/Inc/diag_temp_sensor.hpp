@@ -1,12 +1,13 @@
 #pragma once
 
-#include <adc_sensor.hpp>
+#include "hardware.hpp"
 #include "stm32g4xx_hal.h"
 
 #include <stdint.h>
 #include <math.h>
 #include <stdio.h>
 #include <string.h>
+#include <memory>
 
 namespace mrover {
 

@@ -32,6 +32,8 @@ extern "C" {
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
 
+#define I2C_ON
+
 /* USER CODE END Includes */
 
 /* Exported types ------------------------------------------------------------*/

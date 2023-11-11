@@ -63,18 +63,19 @@ namespace mrover {
 			m_values.resize(channels);
 		}
 
-		uint16_t get_raw_channel_value(uint8_t channel) {
+		uint32_t get_raw_channel_value(uint8_t channel) {
 			return m_values.at(channel);
 		}
 
 		void update() {
+
 			HAL_ADC_Start_DMA(m_hadc, m_values.data(), m_channels);
 		}
 
 	private:
 		ADC_HandleTypeDef* m_hadc;
 		uint8_t m_channels;
-		std::vector<uint16_t> m_values;
+		std::vector<uint32_t> m_values;
 	};
 
 #endif
@@ -146,6 +147,8 @@ namespace mrover {
         Radians m_associated_position{};
     };
 
+#ifdef I2C_ON
+
     class SMBus {
         constexpr static std::uint32_t I2C_TIMEOUT = 500, I2C_REBOOT_DELAY = 5;
 
@@ -180,6 +183,8 @@ namespace mrover {
     private:
         I2C_HandleTypeDef* m_i2c{};
     };
+
+#endif
 
     class FDCANBus {
         //        constexpr static std::uint8_t NO_DATA = 0x50;

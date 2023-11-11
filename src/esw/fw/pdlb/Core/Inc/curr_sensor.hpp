@@ -1,12 +1,12 @@
 #pragma once
 
-#include <adc_sensor.hpp>
 #include "stm32g4xx_hal.h"
 
 #include <stdint.h>
 #include <math.h>
 #include <stdio.h>
 #include <string.h>
+#include <memory>
 
 // Part Link
 // https://www.digikey.com/en/products/detail/texas-instruments/TMCS1108A4BQDR/13692775
