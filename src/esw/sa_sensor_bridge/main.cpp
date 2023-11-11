@@ -1,12 +1,14 @@
 #include "std_srvs/SetBool.h"
 #include <ros/ros.h>
+#include <sensor_msgs/RelativeHumidity.h>
+#include <sensor_msgs/Temperature.h>
 #include <unordered_map>
 
 void tempCallback(const ros::TimerEvent&);
-void humiditiCallback(const ros::TimerEvent&);
+void humidityCallback(const ros::TimerEvent&);
 
-ros::publisher tempDataPublisher;
-ros::publisher humidityDataPublisher;
+ros::Publisher tempDataPublisher;
+ros::Publisher humidityDataPublisher;
 
 
 int main(int argc, char** argv) {
@@ -14,11 +16,8 @@ int main(int argc, char** argv) {
     ros::init(argc, argv, "sa_sensor_bridge");
     ros::NodeHandle nh;
 
-    // TODO
-
-    tempDataPublisher = nh.advertise<sensor_msgs::Temperature>("drive_joint_data", 1);
-    humidityDataPublisher = nh.advertise<sensor_msgs::Temperature>("drive_controller_data", 1);
-
+    tempDataPublisher = nh.advertise<sensor_msgs::Temperature>("sa_temp_data", 1);
+    humidityDataPublisher = nh.advertise<sensor_msgs::RelativeHumidity>("sa_humidity_data", 1);
 
     // Enter the ROS event loop
     ros::spin();
@@ -27,15 +26,13 @@ int main(int argc, char** argv) {
 }
 
 void tempCallback(const ros::TimerEvent&) {
-    // TODO
-
-    senor_msgs::Temperature tempData;
+    sensor_msgs::Temperature tempData;
+    tempData.temperature = 0; // TODO
     tempDataPublisher.publish(tempData);
 }
 
-void humiditiCallback(const ros::TimerEvent&) {
-    // TODO
-
+void humidityCallback(const ros::TimerEvent&) {
     sensor_msgs::RelativeHumidity humidityData;
+    humidityData.relative_humidity = 0; // TODO
     humidityDataPublisher.publish(humidityData);
 }
