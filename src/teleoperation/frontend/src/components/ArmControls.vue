@@ -94,7 +94,6 @@ export default defineComponent({
         this.websocket.onmessage = (event) => {
             const msg = JSON.parse(event.data);
             if(msg.type=="laser_service"){
-                console.log("hi")
                 if (!msg.result) {
                     this.laser_enabled = !this.laser_enabled;
                     alert("Toggling Arm Laser failed.");

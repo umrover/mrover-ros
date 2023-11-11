@@ -29,10 +29,10 @@ class GUIConsumer(JsonWebsocketConsumer):
         self.accept()
         self.pdb_sub = rospy.Subscriber('/pdb_data', PDB, self.pdb_callback)
         self.arm_moteus_sub = rospy.Subscriber('/arm_controller_data', ControllerState, self.arm_controller_callback)
-        self.calibration_checkbox_sub = rospy.Subscriber('/calibration_checkbox', Calibrated, self.calibration_checkbox_callback)
-        self.laser_service = rospy.ServiceProxy("laser_service",SetBool )
+        # self.calibration_checkbox_sub = rospy.Subscriber('/calibration_checkbox', Calibrated, self.calibration_checkbox_callback)
+        self.laser_service = rospy.ServiceProxy("laser_service",SetBool)
         # rospy.wait_for_service("enable_limit_switches")
-        self.limit_switch_service = rospy.ServiceProxy("enable_limit_switches", EnableDevice)
+        # self.limit_switch_service = rospy.ServiceProxy("enable_limit_switches", EnableDevice)
         self.calibrate_service = rospy.ServiceProxy("calibrate_service", Trigger)
         self.arm_adjust_service = rospy.ServiceProxy("arm_adjust",AdjustMotor )
         # self.arm_moteus_sub = rospy.Subscriber('/calibration_checkbox', Calibrated, self.calibration_checkbox_callback_callback)
@@ -51,15 +51,15 @@ class GUIConsumer(JsonWebsocketConsumer):
         message = json.loads(text_data)
      
         if message["type"] == "enable_decive_srv":
-            self.enable_device_callback(message)
+            self.enable_device(message)
         elif message["type"] == "disable_auton_led":
             self.disable_auton_led(message)
         elif message["type"] == "laser_service":
-            self.enable_laser_callback(message)
+            self.enable_laser(message)
         elif message["type"] == "calibrate_service":
-            self.calibrate_motors_callback(message)
+            self.calibrate_motors(message)
         elif message["type"] == "arm_adjust":
-            self.arm_adjust_callback(message)
+            self.arm_adjust(message)
         elif message['type'] == "joystick_values":
             self.handle_joystick_message(message)
 
@@ -144,49 +144,45 @@ class GUIConsumer(JsonWebsocketConsumer):
             'error': msg.error
         }))
 
-    def enable_laser_callback(self, msg):
-        
+    def enable_laser(self, msg):
         try:
-            result = self.laser_service(data=msg.data)
-            rospy.logerr(result)
-            # self.send(text_data=json.dumps({
-            #     'type': 'laser_service',
-            #     'result': result.success
-            # }))
+            result = self.laser_service(msg['data'])
+            self.send(text_data=json.dumps({
+                'type': 'laser_service',
+                'result': result.success
+            }))
         except rospy.ServiceException as e:
-            print(f"Service call failed: {e}")
+            rospy.logerr(e)
     
-    def enable_device_callback(self, msg):
+    def enable_device(self, msg):
         try:
-            result = self.calibrate_service(name=msg.name, calibrate=msg.calibrate)
-            # self.send(text_data=json.dumps({
-            #     'type': 'calibrate_service',
-            #     'result': result.success
-            # }))
+            result = self.calibrate_service(name=msg['name'], calibrate=msg['calibrate'])
+            self.send(text_data=json.dumps({
+                'type': 'calibrate_service',
+                'result': result.success
+            }))
         except rospy.ServiceException as e:
             print(f"Service call failed: {e}")
 
-    def calibrate_motors_callback(self,msg):
+    def calibrate_motors(self,msg):
         try:
             result = self.calibrate_service()
-            # self.send(text_data=json.dumps({
-            #     'type': 'calibrate_motors',
-            #     'result': result.success
-            # }))
+            self.send(text_data=json.dumps({
+                'type': 'calibrate_motors',
+                'result': result.success
+            }))
         except rospy.ServiceException as e:
             print(f"Service call failed: {e}")
     
-    def arm_adjust_callback(self,msg):
+    def arm_adjust(self,msg):
         try:
-            result = self.calibrate_service(name=msg.name, value=msg.value)
-            # self.send(text_data=json.dumps({
-            #     'type': 'arm_adjust',
-            #     'result': result.success
-            # }))
+            result = self.calibrate_service(name=msg['name'], value=msg['value'])
+            self.send(text_data=json.dumps({
+                'type': 'arm_adjust',
+                'result': result.success
+            }))
         except rospy.ServiceException as e:
             print(f"Service call failed: {e}")
-        
-
   
     def disable_auton_led(self, msg):
         led_pub = rospy.Publisher("/auton_led_cmd", String, queue_size=100)
