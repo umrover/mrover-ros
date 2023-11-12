@@ -18,7 +18,6 @@ namespace mrover {
     DiagTempSensor::DiagTempSensor(std::shared_ptr<ADCSensor> adc_sensor, uint8_t channel)
     	: m_adc_sensor(adc_sensor), m_channel(channel) {}
 
-    // TODO - rename everything to current sensor
     void DiagTempSensor::update_temp() {
     	float measured_voltage = m_adc_sensor->get_raw_channel_value(m_channel) * 3.3f / 4096.0f;
     	m_temp = (THRM_A4 * powf(measured_voltage,4)) + (THRM_A3 * powf(measured_voltage,3)) + (THRM_A2 * powf(measured_voltage,2)) + (THRM_A1 *  measured_voltage) + THRM_A0;

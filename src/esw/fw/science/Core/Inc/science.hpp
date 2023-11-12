@@ -131,10 +131,7 @@ namespace mrover {
 
         void update_and_send_heater() {
 
-        	// TODO - check watchdog
-
         	for (int i = 0; i < 6; ++i) {
-        		// TODO - assume that this function is called every 1 second
         		m_heaters.at(i).turn_off_if_watchdog_not_fed();
         	}
 
