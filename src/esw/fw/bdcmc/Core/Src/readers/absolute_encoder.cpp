@@ -31,4 +31,17 @@ namespace mrover {
         }
     }
 
+    [[nodiscard]] std::optional<EncoderReading> AbsoluteEncoderReader::read() {
+    	std::optional<std::uint64_t> count = read_raw_angle();
+		if (!count) return std::nullopt;
+
+		std::uint64_t ticks_now = HAL_GetTick();
+
+		m_position = RADIANS_PER_COUNT_ABSOLUTE * count.value();
+		m_velocity = (m_position - m_angle_prev) / ((ticks_now - m_ticks_prev) * SECONDS_PER_TICK);
+		m_ticks_prev = ticks_now;
+
+		return std::make_optional(EncoderReading{m_position, m_velocity});
+    }
+
 } // namespace mrover

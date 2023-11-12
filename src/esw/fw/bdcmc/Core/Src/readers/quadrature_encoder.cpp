@@ -24,7 +24,7 @@ namespace mrover {
         return mod_dif;
     }
 
-    [[nodiscard]] std::pair<Radians, RadiansPerSecond> QuadratureEncoderReader::read() {
+    [[nodiscard]] std::optional<EncoderReading> QuadratureEncoderReader::read() {
     	Radians delta_angle = RADIANS_PER_COUNT_RELATIVE * count_delta();
     	m_ticks_now = HAL_GetTick();
 
@@ -33,6 +33,6 @@ namespace mrover {
 
     	m_ticks_prev = m_ticks_now;
 
-    	return {m_position, m_velocity};
+    	return std::make_optional(EncoderReading{m_position, m_velocity});
     }
 } // namespace mrover

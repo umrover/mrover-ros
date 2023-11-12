@@ -13,6 +13,11 @@ constexpr auto SECONDS_PER_TICK = mrover::Seconds{1 / 1000.0};
 
 namespace mrover {
 
+	struct EncoderReading {
+		Radians position;
+		RadiansPerSecond velocity;
+	};
+
     class AbsoluteEncoderReader {
     public:
         AbsoluteEncoderReader() = default;
@@ -21,7 +26,7 @@ namespace mrover {
 
         std::optional<std::uint64_t> read_raw_angle();
 
-        [[nodiscard]] std::pair<Radians, RadiansPerSecond> read();
+        [[nodiscard]] std::optional<EncoderReading> read();
 
     private:
         struct I2CAddress {
@@ -36,6 +41,12 @@ namespace mrover {
         SMBus m_i2cBus;
 
         std::uint64_t m_previous_raw_data{};
+
+        std::uint32_t m_ticks_prev{};
+        Radians m_angle_prev;
+
+        Radians m_position;
+        RadiansPerSecond m_velocity;
     };
 
     class QuadratureEncoderReader {
@@ -44,7 +55,7 @@ namespace mrover {
 
         QuadratureEncoderReader(TIM_TypeDef* _tim);
 
-        [[nodiscard]] std::pair<Radians, RadiansPerSecond> read();
+        [[nodiscard]] std::optional<EncoderReading> read();
 
     private:
         TIM_TypeDef* m_timer{};
@@ -60,6 +71,7 @@ namespace mrover {
     };
 
 
+    // obsolete?
     class FusedReader {
     public:
         FusedReader() = default;
