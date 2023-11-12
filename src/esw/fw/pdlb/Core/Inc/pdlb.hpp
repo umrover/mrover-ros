@@ -4,6 +4,7 @@
 #include <optional>
 #include <variant>
 
+#include "hardware_adc.hpp"
 #include "hardware.hpp"
 #include "auton_led.hpp"
 #include "curr_sensor.hpp"

@@ -8,6 +8,7 @@ int main(int argc, char** argv) {
     // Initialize the ROS node
     ros::init(argc, argv, "brushless_test_bridge");
     ros::NodeHandle nh;
+    ROS_INFO("Running");
 
     [[maybe_unused]] auto brushlessController = std::make_unique<mrover::BrushlessController>(nh, "jetson", "test_brushless_controller");
 
