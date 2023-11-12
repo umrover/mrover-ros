@@ -41,9 +41,7 @@ int main(int argc, char** argv) {
     for (const auto& driveName: driveNames) {
         assert(driveControllers.hasMember(driveName));
         assert(driveControllers[driveName].getType() == XmlRpc::XmlRpcValue::TypeStruct);
-        if (driveControllers[driveName].hasMember("multiplier") && driveControllers[driveName]["multiplier"].getType() == XmlRpc::XmlRpcValue::TypeDouble) {
-            motorMultipliers[driveName] = Dimensionless{static_cast<double>(driveControllers[driveName]["multiplier"])};
-        }
+        motorMultipliers[driveName] = Dimensionless{xmlRpcValueToTypeOrDefault<double>(driveControllers[driveName], "multiplier", 1.0)};
     }
 
     // Load rover dimensions and other parameters from the ROS parameter server

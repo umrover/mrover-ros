@@ -56,10 +56,7 @@ namespace mrover {
                 for (int size = canDevices.size(), i = 0; i < size; ++i) {
                     XmlRpc::XmlRpcValue const& canDevice = canDevices[i];
 
-                    // TODO(quintin): Replace things like this with 1 function call that auto casts and throws if the type is wrong
-                    assert(canDevice.hasMember("bus") &&
-                           canDevice["bus"].getType() == XmlRpc::XmlRpcValue::TypeInt);
-                    auto bus = static_cast<std::uint8_t>(static_cast<int>(canDevice["bus"]));
+                    auto bus = xmlRpcValueToTypeOrDefault<std::uint8_t>(canDevice, "bus");
 
                     if (std::isdigit(mInterface.back() - '0')) {
                         throw std::runtime_error("Interface is not valid (must end with a number)");
@@ -71,13 +68,9 @@ namespace mrover {
 
                     assert(canDevice.getType() == XmlRpc::XmlRpcValue::TypeStruct);
 
-                    assert(canDevice.hasMember("name") &&
-                           canDevice["name"].getType() == XmlRpc::XmlRpcValue::TypeString);
-                    auto name = static_cast<std::string>(canDevice["name"]);
+                    auto name = xmlRpcValueToTypeOrDefault<std::string>(canDevice, "name");
 
-                    assert(canDevice.hasMember("id") &&
-                           canDevice["id"].getType() == XmlRpc::XmlRpcValue::TypeInt);
-                    auto id = static_cast<std::uint8_t>(static_cast<int>(canDevice["id"]));
+                    auto id = xmlRpcValueToTypeOrDefault<std::uint8_t>(canDevice, "id");
 
                     mDevices.emplace(name,
                                      CanFdAddress{
