@@ -11,13 +11,10 @@
 
 namespace mrover {
 
-    constexpr static std::size_t I2C_MAX_FRAME_SIZE = 32, FDCAN_MAX_FRAME_SIZE = 64;
+    constexpr static std::size_t FDCAN_MAX_FRAME_SIZE = 64;
 
     template<typename T>
     concept IsSerializable = std::is_trivially_copyable_v<T>;
-
-    template<typename T>
-    concept IsI2CSerializable = IsSerializable<T> && sizeof(T) <= mrover::I2C_MAX_FRAME_SIZE;
 
     template<typename T>
     concept IsFdcanSerializable = IsSerializable<T> && sizeof(T) <= mrover::FDCAN_MAX_FRAME_SIZE;
@@ -51,35 +48,7 @@ namespace mrover {
         GPIO_TypeDef* m_port{};
         std::uint16_t m_pin{};
     };
-
-#ifdef ADC_ON
-
-    class ADCSensor {
-	public:
-		ADCSensor() = default;
-
-		ADCSensor(ADC_HandleTypeDef *hadc, uint8_t channels)
-			: m_hadc(hadc), m_channels(channels) {
-			m_values.resize(channels);
-		}
-
-		uint32_t get_raw_channel_value(uint8_t channel) {
-			return m_values.at(channel);
-		}
-
-		void update() {
-
-			HAL_ADC_Start_DMA(m_hadc, m_values.data(), m_channels);
-		}
-
-	private:
-		ADC_HandleTypeDef* m_hadc;
-		uint8_t m_channels;
-		std::vector<uint32_t> m_values;
-	};
-
-#endif
-
+    
     class LimitSwitch {
     public:
         LimitSwitch() = default;
@@ -146,45 +115,6 @@ namespace mrover {
         bool m_limits_forward{};
         Radians m_associated_position{};
     };
-
-#ifdef I2C_ON
-
-    class SMBus {
-        constexpr static std::uint32_t I2C_TIMEOUT = 500, I2C_REBOOT_DELAY = 5;
-
-        void reboot() {
-            HAL_I2C_DeInit(m_i2c);
-            HAL_Delay(I2C_REBOOT_DELAY);
-            HAL_I2C_Init(m_i2c);
-        }
-
-    public:
-        SMBus() = default;
-
-        explicit SMBus(I2C_HandleTypeDef* hi2c) : m_i2c{hi2c} {
-        }
-
-        template<IsI2CSerializable TSend, IsI2CSerializable TReceive>
-        auto transact(std::uint16_t address, TSend const& send) -> std::optional<TReceive> {
-            if (HAL_I2C_Master_Transmit(m_i2c, address << 1, address_of<std::uint8_t>(send), sizeof(send), I2C_TIMEOUT) != HAL_OK) {
-                // TODO(quintin): Do we want a different error handler here?
-                return std::nullopt;
-            }
-
-            //reads from address sent above
-            if (TReceive receive{}; HAL_I2C_Master_Receive(m_i2c, (address << 1) | 1, address_of<std::uint8_t>(receive), sizeof(receive), I2C_TIMEOUT) == HAL_OK) {
-                return receive;
-            } else {
-                reboot();
-                return std::nullopt;
-            }
-        }
-
-    private:
-        I2C_HandleTypeDef* m_i2c{};
-    };
-
-#endif
 
     class FDCANBus {
         //        constexpr static std::uint8_t NO_DATA = 0x50;

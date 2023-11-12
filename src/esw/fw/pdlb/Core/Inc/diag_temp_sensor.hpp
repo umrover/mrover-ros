@@ -1,6 +1,6 @@
 #pragma once
 
-#include "hardware.hpp"
+#include "hardware_adc.hpp"
 #include "stm32g4xx_hal.h"
 
 #include <stdint.h>

@@ -7,7 +7,7 @@
 #include <stdio.h>
 #include <string.h>
 
-#include "hardware.hpp"
+#include "hardware_i2c.hpp"
 
 namespace mrover {
 

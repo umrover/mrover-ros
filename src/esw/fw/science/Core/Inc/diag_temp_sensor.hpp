@@ -6,7 +6,7 @@
 #include <math.h>
 #include <stdio.h>
 #include <string.h>
-#include "hardware.hpp"
+#include "hardware_adc.hpp"
 #include <memory>
 
 namespace mrover {

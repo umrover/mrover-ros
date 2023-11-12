@@ -9,6 +9,8 @@
 #include "hardware.hpp"
 #include "heater.hpp"
 #include "cmsis_os2.h"
+#include "hardware_adc.hpp"
+#include "hardware_i2c.hpp"
 
 namespace mrover {
 

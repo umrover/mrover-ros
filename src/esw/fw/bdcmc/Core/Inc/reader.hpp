@@ -3,6 +3,7 @@
 #include <numbers>
 
 #include "hardware.hpp"
+#include "hardware_i2c.hpp"
 #include "units/units.hpp"
 
 constexpr std::uint32_t COUNTS_PER_ROTATION_RELATIVE = 4096;
