@@ -2,10 +2,6 @@
 
 namespace mrover {
 
-    const std::unordered_map<int, std::string> BrushedController::mCodeToError = {
-            {0, "No Error"},
-            {1, "Error"}}; // TODO - NEED MORE SPECIFIC ERRORS
-
     BrushedController::BrushedController(ros::NodeHandle const& nh, std::string name, std::string controllerName)
         : Controller{nh, std::move(name), std::move(controllerName)} {
 
@@ -106,7 +102,7 @@ namespace mrover {
         ConfigCalibErrorInfo configCalibErrInfo = state.config_calib_error_data;
         mIsConfigured = configCalibErrInfo.configured;
         mIsCalibrated = configCalibErrInfo.calibrated;
-        mErrorState = mCodeToError.at(configCalibErrInfo.error);
+        mErrorState = errorToString(static_cast<mrover::BDCMCErrorInfo>(errorCode));
         LimitStateInfo limitSStateInfo = state.limit_switches;
         for (std::size_t i = 0; i < mLimitHit.size(); ++i) {
             mLimitHit[i] = GET_BIT_AT_INDEX(limitSStateInfo.hit, i);
@@ -130,6 +126,21 @@ namespace mrover {
 
     double BrushedController::getEffort() {
         return std::numeric_limits<double>::quiet_NaN();
+    }
+
+    std::string BrushedController:: errorToString(BDCMCErrorInfo errorCode) {
+        switch (errorCode) {
+            case BDCMCErrorInfo::NO_ERROR:
+                return "NO_ERROR";
+            case BDCMCErrorInfo::DEFAULT_START_UP_NOT_CONFIGURED:
+                return "DEFAULT_START_UP_NOT_CONFIGURED";
+            case BDCMCErrorInfo::RECEIVING_COMMANDS_WHEN_NOT_CONFIGURED:
+                return "RECEIVING_COMMANDS_WHEN_NOT_CONFIGURED";
+            case BDCMCErrorInfo::RECEIVING_POSITION_COMMANDS_WHEN_NOT_CALIBRATED:
+                return "RECEIVING_POSITION_COMMANDS_WHEN_NOT_CALIBRATED";
+            default:
+                return "UNKNOWN_ERROR_CODE";
+        }
     }
 
 } // namespace mrover

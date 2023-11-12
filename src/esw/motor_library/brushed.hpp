@@ -25,9 +25,10 @@ namespace mrover {
         ~BrushedController() override = default;
 
     private:
+        std::string errorToString(BDCMCErrorInfo errorCode);
+
         bool mIsConfigured = false;
         ConfigCommand mConfigCommand;
-        static const std::unordered_map<int, std::string> mCodeToError;
     };
 
 } // namespace mrover
