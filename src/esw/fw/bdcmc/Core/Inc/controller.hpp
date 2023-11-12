@@ -26,7 +26,7 @@ namespace mrover {
     using Writer = HBridgeWriter;
 
     using Reader = std::variant<
-            std::monostate, FusedReader>;
+            std::monostate, FusedReader, QuadratureEncoderReader, AbsoluteEncoderReader>;
 
     template<IsUnit InputUnit = Radians, IsUnit OutputUnit = Percent, IsUnit TimeUnit = Seconds>
     class Controller {
@@ -61,6 +61,8 @@ namespace mrover {
         Dimensionless m_gear_ratio{};
         Radians m_max_forward_pos;
         Radians m_max_backward_pos;
+
+        I2C_HandleTypeDef* m_abs_enc_i2c{};
 
         BDCMCErrorInfo m_error{};
 
@@ -106,6 +108,7 @@ namespace mrover {
 			m_gear_ratio = message.gear_ratio;
 			if (message.quad_abs_enc_info.quad_present && message.quad_abs_enc_info.abs_present) {
 				// TODO - use fused encoder
+                m_reader = FusedReader{};
 				// use message.quad_abs_enc_info.quad_is_forward_polarity
 				// and use message.quad_abs_enc_info.abs_is_forward_polarity
 				// and message.quad_enc_out_ratio and message.abs_enc_out_ratio
@@ -113,11 +116,13 @@ namespace mrover {
 			}
 			else if (message.quad_abs_enc_info.quad_present) {
 				// TODO - use quad
+                m_reader = QuadratureEncoderReader{TIM4}; // TODO is this the timer?
 				// use message.quad_abs_enc_info.quad_is_forward_polarity
 				// and message.quad_enc_out_ratio
 			}
 			else if (message.quad_abs_enc_info.abs_present) {
 				// TODO - use abs
+                m_reader = AbsoluteEncoderReader{SMBus{m_abs_enc_i2c}, 1, 1}; // TODO how to get A1 & A2?
 				// use message.quad_abs_enc_info.abs_is_forward_polarity
 				// and message.abs_enc_out_ratio
 			}
@@ -223,10 +228,11 @@ namespace mrover {
     public:
         Controller() = default;
 
-        Controller(TIM_HandleTypeDef* timer, std::array<LimitSwitch, 4> limit_switches, FDCANBus const& fdcan_bus)
-            : m_writer{timer},
+        Controller(TIM_HandleTypeDef* output_timer, std::array<LimitSwitch, 4> limit_switches, FDCANBus const& fdcan_bus, I2C_HandleTypeDef* abs_enc_i2c_line)
+            : m_writer{output_timer},
               m_limit_switches{limit_switches},
 			  m_fdcan_bus{fdcan_bus},
+              m_abs_enc_i2c{abs_enc_i2c_line},
 			  m_error{BDCMCErrorInfo::DEFAULT_START_UP_NOT_CONFIGURED} {}
 
         template<typename Command>
