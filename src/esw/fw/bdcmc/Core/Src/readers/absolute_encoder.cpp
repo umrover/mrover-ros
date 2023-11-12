@@ -2,7 +2,7 @@
 
 namespace mrover {
 
-    std::optional<std::uint64_t> AbsoluteEncoder::read_raw_angle() {
+    std::optional<std::uint64_t> AbsoluteEncoderReader::read_raw_angle() {
         std::optional raw_data_optional = m_i2cBus.transact<std::uint8_t, std::uint16_t>(m_address, 0xFF);
         if (!raw_data_optional) return std::nullopt;
 
@@ -18,7 +18,7 @@ namespace mrover {
     }
 
     // A1/A2 is 1 if pin connected to power, 0 if pin connected to ground
-    AbsoluteEncoder::AbsoluteEncoder(SMBus i2c_bus, std::uint8_t A1, std::uint8_t A2) {
+    AbsoluteEncoderReader::AbsoluteEncoderReader(SMBus i2c_bus, std::uint8_t A1, std::uint8_t A2) {
         // could be put into member list if we use ternary
         if (A1 && A2) {
             m_address = I2CAddress::device_slave_address_both_high;

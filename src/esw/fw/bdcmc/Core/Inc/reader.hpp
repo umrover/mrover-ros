@@ -9,16 +9,19 @@ constexpr std::uint32_t COUNTS_PER_ROTATION_RELATIVE = 4096;
 constexpr std::uint32_t COUNTS_PER_ROTATION_ABSOLUTE = 1024;
 constexpr auto RADIANS_PER_COUNT_RELATIVE = mrover::Radians{2 * std::numbers::pi} / COUNTS_PER_ROTATION_RELATIVE;
 constexpr auto RADIANS_PER_COUNT_ABSOLUTE = mrover::Radians{2 * std::numbers::pi} / COUNTS_PER_ROTATION_ABSOLUTE;
+constexpr auto SECONDS_PER_TICK = mrover::Seconds{1 / 1000.0};
 
 namespace mrover {
 
-    class AbsoluteEncoder {
+    class AbsoluteEncoderReader {
     public:
-        AbsoluteEncoder() = default;
+        AbsoluteEncoderReader() = default;
 
-        AbsoluteEncoder(SMBus i2c_bus, std::uint8_t A1, std::uint8_t A2);
+        AbsoluteEncoderReader(SMBus i2c_bus, std::uint8_t A1, std::uint8_t A2);
 
         std::optional<std::uint64_t> read_raw_angle();
+
+        [[nodiscard]] std::pair<Radians, RadiansPerSecond> read();
 
     private:
         struct I2CAddress {
@@ -35,18 +38,25 @@ namespace mrover {
         std::uint64_t m_previous_raw_data{};
     };
 
-    class QuadratureEncoder {
+    class QuadratureEncoderReader {
     public:
-        QuadratureEncoder() = default;
+        QuadratureEncoderReader() = default;
 
-        QuadratureEncoder(TIM_TypeDef* _tim);
+        QuadratureEncoderReader(TIM_TypeDef* _tim);
 
-        std::int64_t count_delta();
+        [[nodiscard]] std::pair<Radians, RadiansPerSecond> read();
 
     private:
         TIM_TypeDef* m_timer{};
-        std::uint32_t m_counts_raw_prev{};
+        std::int64_t m_counts_unwrapped_prev{};
         std::uint32_t m_counts_raw_now{};
+        std::uint32_t m_ticks_prev{};
+        std::uint32_t m_ticks_now{};
+
+        Radians m_position;
+        RadiansPerSecond m_velocity;
+
+        std::int64_t count_delta();
     };
 
 
@@ -59,8 +69,8 @@ namespace mrover {
         [[nodiscard]] std::pair<Radians, RadiansPerSecond> read();
 
     private:
-        AbsoluteEncoder m_abs_encoder;
-        QuadratureEncoder m_quad_encoder;
+        AbsoluteEncoderReader m_abs_encoder;
+        QuadratureEncoderReader m_quad_encoder;
 
         TIM_HandleTypeDef* m_relative_encoder_timer{};
         I2C_HandleTypeDef* m_absolute_encoder_i2c{};

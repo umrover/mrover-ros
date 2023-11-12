@@ -28,8 +28,10 @@ namespace mrover {
 
     [[nodiscard]] std::pair<Radians, RadiansPerSecond> FusedReader::read() {
     	// TODO - fix everything
-		m_position += RADIANS_PER_COUNT_RELATIVE * m_quad_encoder.count_delta();
+//		m_position += RADIANS_PER_COUNT_RELATIVE * m_quad_encoder.count_delta();
         // TODO update velocity here
+
+
         return {m_position, m_velocity};
     }
 
