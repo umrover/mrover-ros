@@ -25,7 +25,7 @@ namespace mrover {
         ~BrushedController() override = default;
 
     private:
-        std::string errorToString(BDCMCErrorInfo errorCode);
+        static std::string errorToString(BDCMCErrorInfo errorCode);
 
         bool mIsConfigured = false;
         ConfigCommand mConfigCommand;

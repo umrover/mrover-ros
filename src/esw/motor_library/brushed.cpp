@@ -102,7 +102,7 @@ namespace mrover {
         ConfigCalibErrorInfo configCalibErrInfo = state.config_calib_error_data;
         mIsConfigured = configCalibErrInfo.configured;
         mIsCalibrated = configCalibErrInfo.calibrated;
-        mErrorState = errorToString(static_cast<mrover::BDCMCErrorInfo>(errorCode));
+        mErrorState = errorToString(static_cast<BDCMCErrorInfo>(configCalibErrInfo.error));
         LimitStateInfo limitSStateInfo = state.limit_switches;
         for (std::size_t i = 0; i < mLimitHit.size(); ++i) {
             mLimitHit[i] = GET_BIT_AT_INDEX(limitSStateInfo.hit, i);
@@ -128,7 +128,7 @@ namespace mrover {
         return std::numeric_limits<double>::quiet_NaN();
     }
 
-    std::string BrushedController:: errorToString(BDCMCErrorInfo errorCode) {
+    std::string BrushedController::errorToString(BDCMCErrorInfo errorCode) {
         switch (errorCode) {
             case BDCMCErrorInfo::NO_ERROR:
                 return "NO_ERROR";
