@@ -24,12 +24,14 @@ namespace mrover {
                       0) == HAL_OK,
               Error_Handler);
 
-        std::shared_ptr<I2CMux> i2c_mux = std::make_shared<I2CMux>(&hi2c1);
+        std::shared_ptr<SMBus> i2c_bus = std::make_shared<SMBus>(&hi2c1);
+
+        std::shared_ptr<I2CMux> i2c_mux = std::make_shared<I2CMux>(i2c_bus);
 
         std::array<Spectral, 3> spectral_sensors = {
-        		Spectral(i2c_mux, 0),
-				Spectral(i2c_mux, 1),
-				Spectral(i2c_mux, 2)
+        		Spectral(i2c_bus, i2c_mux, 0),
+				Spectral(i2c_bus, i2c_mux, 1),
+				Spectral(i2c_bus, i2c_mux, 2)
         };
 
         std::shared_ptr<ADCSensor> adc_sensor = std::make_shared<ADCSensor>(&hadc1, 6);

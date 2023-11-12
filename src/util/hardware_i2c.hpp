@@ -3,6 +3,7 @@
 #include "main.h"
 #include "messaging.hpp"
 
+#include "hardware.hpp"
 #include <bit>
 #include <concepts>
 #include <cstdint>
