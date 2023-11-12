@@ -8,6 +8,7 @@
 namespace mrover {
 
     constexpr static float MAX_HEATER_TEMP = 65.0f;
+    constexpr static int MAX_HEATER_WATCHDOG_TICK = 3000;
 
     Heater::Heater(DiagTempSensor const& diag_temp_sensor, Pin const& heater_pin)
     	: m_diag_temp_sensor(std::move(diag_temp_sensor)),
@@ -37,7 +38,7 @@ namespace mrover {
 
     	m_heater_pin.write(m_state ? GPIO_PIN_SET : GPIO_PIN_RESET);
 
-    	// TODO - need to update m_last_time_received_message and feed watchdog
+    	feed_watchdog();
     }
 
     void Heater::update_temp_and_auto_shutoff_if_applicable() {
@@ -50,7 +51,7 @@ namespace mrover {
 
     void Heater::turn_off_if_watchdog_not_fed() {
     	if (m_state) {
-			bool watchdog_is_fed_recently = true; // TOOD - actually need to implement logic
+			bool watchdog_is_fed_recently = (HAL_GetTick() - m_last_time_received_message) <= MAX_HEATER_WATCHDOG_TICK;
 			if (!watchdog_is_fed_recently) {
 				m_state = false;
 				m_heater_pin.write(GPIO_PIN_RESET);
@@ -59,7 +60,7 @@ namespace mrover {
     }
 
     void Heater::feed_watchdog() {
-    	// TODO - implement the code
+    	m_last_time_received_message = HAL_GetTick();
     }
 
     void Heater::set_auto_shutoff(bool enable) {

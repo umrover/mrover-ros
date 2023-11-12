@@ -27,11 +27,12 @@ namespace mrover {
 
         void turn_off_if_watchdog_not_fed();
 
-        void feed_watchdog();
 
         void set_auto_shutoff(bool enable);
 
     private:
+        void feed_watchdog();
+
         DiagTempSensor m_diag_temp_sensor;
         Pin m_heater_pin;
         bool m_state {};
