@@ -38,7 +38,7 @@ namespace mrover {
 
         Reader m_reader;
         Writer m_writer;
-        std::array<LimitSwitch, 4> m_limit_switches; // TODO - m_limit_switches not actually defined
+        std::array<LimitSwitch, 4> m_limit_switches;
         FDCANBus m_fdcan_bus;
 
         Mode m_mode;
@@ -56,6 +56,8 @@ namespace mrover {
         Dimensionless m_gear_ratio{};
         Radians m_max_forward_pos;
         Radians m_max_backward_pos;
+
+        BDCMCErrorInfo m_error{};
 
         void write_output_if_valid(Percent output) {
         	if (m_should_limit_forward && output > Percent{0}) {
@@ -77,12 +79,10 @@ namespace mrover {
 
         void feed(ConfigCommand const& message) {
 
-        	// TODO FIX UP
         	m_is_configured = true;
 
 			// Initialize values
 			m_gear_ratio = message.gear_ratio;
-			// TODO: Terrible naming for the limit switch info
 			if (message.quad_abs_enc_info.quad_present && message.quad_abs_enc_info.abs_present) {
 				// TODO - use fused encoder
 				// use message.quad_abs_enc_info.quad_is_forward_polarity
@@ -101,7 +101,7 @@ namespace mrover {
 				// and message.abs_enc_out_ratio
 			}
 
-			// TODO - recreate hbridge.cpp using message.max_pwm
+			m_writer.change_max_pwm(message.max_pwm);
 
 			m_max_forward_pos = message.max_forward_pos;
 			m_max_backward_pos = message.max_backward_pos;
@@ -130,7 +130,7 @@ namespace mrover {
 
         void feed(ThrottleCommand const& message) {
             if (!m_is_configured) {
-                // TODO - set Error state
+            	m_error = BDCMCErrorInfo::RECEIVING_COMMANDS_WHEN_NOT_CONFIGURED;
                 return;
             }
 
@@ -139,7 +139,7 @@ namespace mrover {
 
         void feed(VelocityCommand const& message, VelocityMode mode) {
             if (!m_is_configured) {
-                // TODO - set Error state
+            	m_error = BDCMCErrorInfo::RECEIVING_COMMANDS_WHEN_NOT_CONFIGURED;
                 return;
             }
 
@@ -152,8 +152,12 @@ namespace mrover {
 
         void feed(PositionCommand const& message, PositionMode mode) {
             if (!m_is_configured) {
-                // TODO - set Error state
+            	m_error = BDCMCErrorInfo::RECEIVING_COMMANDS_WHEN_NOT_CONFIGURED;
                 return;
+            }
+            if (!m_is_calibrated) {
+            	m_error = BDCMCErrorInfo::RECEIVING_POSITION_COMMANDS_WHEN_NOT_CALIBRATED;
+            	return;
             }
 
             auto [input, _] = m_reader.read();
@@ -191,7 +195,10 @@ namespace mrover {
         Controller() = default;
 
         Controller(Reader&& reader, Writer&& writer, std::array<LimitSwitch, 4> limit_switches, FDCANBus const& fdcan_bus)
-            : m_reader{std::move(reader)}, m_writer{std::move(writer)}, m_limit_switches{std::move(limit_switches)}, m_fdcan_bus{fdcan_bus} {}
+            : m_reader{std::move(reader)}, m_writer{std::move(writer)},
+			  m_limit_switches{std::move(limit_switches)},
+			  m_fdcan_bus{fdcan_bus},
+			  m_error{BDCMCErrorInfo::DEFAULT_START_UP_NOT_CONFIGURED} {}
 
         template<typename Command>
         void process(Command const& command) {
@@ -245,7 +252,8 @@ namespace mrover {
             ConfigCalibErrorInfo config_calib_error_info;
             config_calib_error_info.configured = m_is_configured;
             config_calib_error_info.calibrated = m_is_calibrated;
-            config_calib_error_info.error = 0;          // TODO
+
+			config_calib_error_info.error = static_cast<uint8_t>(m_error);
 
             LimitStateInfo limit_state_info;
             for (std::size_t i = 0; i < m_limit_switches.size(); ++i) {

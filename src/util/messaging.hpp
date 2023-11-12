@@ -36,6 +36,13 @@ namespace mrover {
     };
     static_assert(sizeof(ConfigEncoderInfo) == 1);
 
+    enum struct BDCMCErrorInfo {
+		NO_ERROR,
+    	DEFAULT_START_UP_NOT_CONFIGURED,
+		RECEIVING_COMMANDS_WHEN_NOT_CONFIGURED,
+		RECEIVING_POSITION_COMMANDS_WHEN_NOT_CALIBRATED
+	};
+
     struct ConfigCalibErrorInfo {
         [[maybe_unused]] std::uint8_t _ignore : 2 {}; // 8 bits - (6 meaningful bits) = 2 ignored bits
         std::uint8_t configured : 1 {};
@@ -59,7 +66,6 @@ namespace mrover {
 
     struct ConfigCommand : BaseCommand {
         Dimensionless gear_ratio;
-        // TODO: Terrible naming for the limit switch info
         ConfigLimitSwitchInfo limit_switch_info;
         ConfigEncoderInfo quad_abs_enc_info;
         Ratio quad_enc_out_ratio;

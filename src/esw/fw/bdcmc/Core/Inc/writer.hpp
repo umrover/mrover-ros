@@ -14,6 +14,8 @@ namespace mrover {
 
         void write(Percent output);
 
+        void change_max_pwm(Percent max_pwm);
+
     private:
         void set_direction_pins(Percent duty_cycle);
 

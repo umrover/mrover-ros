@@ -498,7 +498,6 @@ void HeaterUpdatesTask(void *argument) {
 	uint32_t tick = osKernelGetTickCount();
 	for(;;) {
 		tick += osKernelGetTickFreq(); // 1 Hz
-
 		update_and_send_heater();
 		osDelayUntil(tick);
 	}

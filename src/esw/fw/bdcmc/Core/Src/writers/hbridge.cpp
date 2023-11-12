@@ -45,4 +45,8 @@ namespace mrover {
         // TODO(quintin) we should error if the registers are null pointers
     }
 
+    void HBridgeWriter::change_max_pwm(Percent max_pwm) {
+    	m_max_pwm = max_pwm;
+    }
+
 } // namespace mrover
