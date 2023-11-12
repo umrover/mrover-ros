@@ -8,6 +8,8 @@
 #include <string.h>
 #include <memory>
 
+#include "hardware_adc.hpp"
+
 // Part Link
 // https://www.digikey.com/en/products/detail/texas-instruments/TMCS1108A4BQDR/13692775
 // Sensitivity: 400 mV/A
