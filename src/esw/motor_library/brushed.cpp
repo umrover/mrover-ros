@@ -10,48 +10,60 @@ namespace mrover {
         assert(mNh.hasParam(std::format("brushed_motors/controllers/{}", mControllerName)));
         assert(brushedMotorData.getType() == XmlRpc::XmlRpcValue::TypeStruct);
 
-        assert(brushedMotorData.hasMember("gear_ratio") &&
-               brushedMotorData["gear_ratio"].getType() == XmlRpc::XmlRpcValue::TypeDouble);
-        mConfigCommand.gear_ratio = static_cast<double>(brushedMotorData["gear_ratio"]);
-
-        // TODO - CREATE TEMPLATED FUNCTION - I DO LATER HAHAA
+        mConfigCommand.gear_ratio = xmlRpcValueToTypeOrDefault<double>(brushedMotorData, "gear_ratio");
 
         for (std::size_t i = 0; i < 4; ++i) {
-            SET_BIT_AT_INDEX(mConfigCommand.limit_switch_info.present, i, static_cast<bool>(brushedMotorData[std::format("limit_{}_present", i)]));
-            SET_BIT_AT_INDEX(mConfigCommand.limit_switch_info.enabled, i, static_cast<bool>(brushedMotorData[std::format("limit_{}_enable", i)]));
+            SET_BIT_AT_INDEX(mConfigCommand.limit_switch_info.present, i, xmlRpcValueToTypeOrDefault<bool>(brushedMotorData, std::format("limit_{}_present", i), false));
+            SET_BIT_AT_INDEX(mConfigCommand.limit_switch_info.enabled, i, xmlRpcValueToTypeOrDefault<bool>(brushedMotorData, std::format("limit_{}_enable", i), false));
 
-            mConfigCommand.limit_switch_info.active_high = static_cast<bool>(brushedMotorData[std::format("limit_{}_active_high", i)]);
-            mConfigCommand.limit_switch_info.limits_forward = static_cast<bool>(brushedMotorData[std::format("limit_{}_limits_fwd", i)]);
+            mConfigCommand.limit_switch_info.active_high = xmlRpcValueToTypeOrDefault<bool>(
+                    brushedMotorData, std::format("limit_{}_active_high", i), false);
+            mConfigCommand.limit_switch_info.limits_forward = xmlRpcValueToTypeOrDefault<bool>(
+                    brushedMotorData, std::format("limit_{}_limits_fwd", i), false);
 
-            mConfigCommand.limit_switch_info.use_for_readjustment = static_cast<bool>(brushedMotorData[std::format("limit_{}_used_for_readjustment", i)]);
-            mConfigCommand.limit_switch_info.is_default_enabled = static_cast<bool>(brushedMotorData[std::format("limit_{}_default_enabled", i)]);
+
+            mConfigCommand.limit_switch_info.use_for_readjustment = xmlRpcValueToTypeOrDefault<bool>(
+                    brushedMotorData, std::format("limit_{}_used_for_readjustment", i), false);
+
+            mConfigCommand.limit_switch_info.is_default_enabled = xmlRpcValueToTypeOrDefault<bool>(
+                    brushedMotorData, std::format("limit_{}_default_enabled", i), false);
 
             mConfigCommand.limit_switch_info.limit_readj_pos[i] = Radians{static_cast<double>(brushedMotorData[std::format("limit_{}_readjust_position", i)])};
         }
 
-        mConfigCommand.quad_abs_enc_info.quad_present = static_cast<bool>(brushedMotorData["quad_present"]);
-        mConfigCommand.quad_abs_enc_info.quad_is_forward_polarity = static_cast<bool>(brushedMotorData["quad_is_forward_polarity"]);
-        mConfigCommand.quad_abs_enc_info.abs_present = static_cast<bool>(brushedMotorData["abs_present"]);
-        mConfigCommand.quad_abs_enc_info.abs_is_forward_polarity = static_cast<bool>(brushedMotorData["abs_is_forward_polarity"]);
+        mConfigCommand.quad_abs_enc_info.quad_present = xmlRpcValueToTypeOrDefault<bool>(
+                brushedMotorData, "quad_present", false);
+        mConfigCommand.quad_abs_enc_info.quad_is_forward_polarity = xmlRpcValueToTypeOrDefault<bool>(
+                brushedMotorData, "quad_is_forward_polarity", false);
+        mConfigCommand.quad_abs_enc_info.abs_present = xmlRpcValueToTypeOrDefault<bool>(
+                brushedMotorData, "abs_present", false);
 
-        mConfigCommand.quad_enc_out_ratio = static_cast<double>(brushedMotorData["quad_ratio"]);
-        mConfigCommand.abs_enc_out_ratio = static_cast<double>(brushedMotorData["abs_ratio"]);
+        mConfigCommand.quad_abs_enc_info.abs_is_forward_polarity = xmlRpcValueToTypeOrDefault<bool>(
+                brushedMotorData, "abs_is_forward_polarity", false);
 
-        assert(brushedMotorData.hasMember("driver_voltage") &&
-               brushedMotorData["driver_voltage"].getType() == XmlRpc::XmlRpcValue::TypeDouble);
-        auto driver_voltage = static_cast<double>(brushedMotorData["driver_voltage"]);
+        mConfigCommand.quad_enc_out_ratio = xmlRpcValueToTypeOrDefault<bool>(
+                brushedMotorData, "quad_ratio", 1.0);
+
+        mConfigCommand.abs_enc_out_ratio = xmlRpcValueToTypeOrDefault<bool>(
+                brushedMotorData, "abs_ratio", 1.0);
+
+        auto driver_voltage = xmlRpcValueToTypeOrDefault<double>(brushedMotorData, "driver_voltage");
         assert(driver_voltage > 0);
-        assert(brushedMotorData.hasMember("motor_max_voltage") &&
-               brushedMotorData["motor_max_voltage"].getType() == XmlRpc::XmlRpcValue::TypeDouble);
-        auto motor_max_voltage = static_cast<double>(brushedMotorData["motor_max_voltage"]);
+        auto motor_max_voltage = xmlRpcValueToTypeOrDefault<double>(brushedMotorData, "motor_max_voltage");
         assert(0 < motor_max_voltage && motor_max_voltage <= driver_voltage);
 
         mConfigCommand.max_pwm = motor_max_voltage / driver_voltage;
 
-        mConfigCommand.limit_switch_info.limit_max_forward_position = static_cast<bool>(brushedMotorData["limit_max_forward_pos"]);
-        mConfigCommand.limit_switch_info.limit_max_backward_position = static_cast<bool>(brushedMotorData["limit_max_backward_pos"]);
-        mConfigCommand.max_forward_pos = Radians{static_cast<double>(brushedMotorData["max_forward_pos"])};
-        mConfigCommand.max_backward_pos = Radians{static_cast<double>(brushedMotorData["max_backward_pos"])};
+        mConfigCommand.limit_switch_info.limit_max_forward_position = xmlRpcValueToTypeOrDefault<bool>(
+                brushedMotorData, "limit_max_forward_pos", false);
+
+        mConfigCommand.limit_switch_info.limit_max_backward_position = xmlRpcValueToTypeOrDefault<bool>(
+                brushedMotorData, "limit_max_backward_pos", false);
+
+        mConfigCommand.max_forward_pos = Radians{
+                xmlRpcValueToTypeOrDefault<double>(brushedMotorData, "max_forward_pos", 0.0)};
+        mConfigCommand.max_backward_pos = Radians{
+                xmlRpcValueToTypeOrDefault<double>(brushedMotorData, "max_backward_pos", 0.0)};
 
         mErrorState = "Unknown";
         mState = "Unknown";

@@ -27,6 +27,7 @@
 #include <mrover/CAN.h>
 
 #include "can_net_link.hpp"
+#include "params_utils.hpp"
 
 // TODO(owen): support multiple buses
 

@@ -16,9 +16,7 @@ namespace mrover {
         assert(controllersRoot.getType() == XmlRpc::XmlRpcValue::TypeStruct);
 
         for (const std::string& name: mControllerNames) {
-            assert(controllersRoot[name].hasMember("type") &&
-                   controllersRoot[name]["type"].getType() == XmlRpc::XmlRpcValue::TypeString);
-            std::string type = static_cast<std::string>(controllersRoot[name]["type"]);
+            auto type = xmlRpcValueToTypeOrDefault<std::string>(controllersRoot[name], "type");
             assert(type == "brushed" || type == "brushless");
 
             // TODO: avoid hard coding Jetson here
