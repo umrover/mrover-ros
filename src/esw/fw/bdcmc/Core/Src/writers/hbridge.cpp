@@ -12,7 +12,7 @@ namespace mrover {
               m_channel{TIM_CHANNEL_1},
               m_arr_register{&TIM15->ARR},
 			  m_ccr_register{&TIM15->CCR1},
-			  m_max_pwm{Percent{0}}
+			  m_max_pwm{0_percent}
               {
 
 

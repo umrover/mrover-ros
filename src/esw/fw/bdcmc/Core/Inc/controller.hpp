@@ -60,11 +60,11 @@ namespace mrover {
         BDCMCErrorInfo m_error{};
 
         void write_output_if_valid(Percent output) {
-        	if (m_should_limit_forward && output > Percent{0}) {
-        		output = Percent{0};
+        	if (m_should_limit_forward && output > 0_percent) {
+        		output = 0_percent;
 			}
-			else if (m_should_limit_backward && output < Percent{0}) {
-				output = Percent{0};
+			else if (m_should_limit_backward && output < 0_percent) {
+				output = 0_percent;
 			}
         	m_writer.write(output);
         	m_current_throttle = output;
