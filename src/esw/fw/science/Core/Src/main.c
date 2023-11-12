@@ -17,18 +17,12 @@
   */
 /* USER CODE END Header */
 /* Includes ------------------------------------------------------------------*/
-#include <heater.hpp>
-#include <spectral.hpp>
 #include "main.h"
-#include "cmsis_os.h"
+#include "cmsis_os2.h"
 
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
 
-#include "adc_sensor.h"
-#include "diag_temp_sensor.h"
-#include "smbus.h"
-#include "toggle_gpio.h"
 
 /* USER CODE END Includes */
 
@@ -103,6 +97,10 @@ static void MX_ADC1_Init(void);
 void StartDefaultTask(void *argument);
 
 /* USER CODE BEGIN PFP */
+void ReceiveMessages(void *argument);
+void SpectralTask(void *argument);
+void ThermistorAndAutoShutoffTask(void *argument);
+void HeaterUpdatesTask(void *argument);
 
 /* USER CODE END PFP */
 
@@ -135,6 +133,16 @@ int main(void)
 
   /* USER CODE BEGIN SysInit */
 
+  /* USER CODE BEGIN SysInit */
+  // TODO(quintin)  Figure out why the HAL does not configure this properly
+  //                See: https://community.st.com/t5/stm32-mcus-products/hal-delay-stuck-systick-not-triggered-workaround-for-stm32f105/td-p/585510
+  //                Without this HAL_Delay does not work (SysTick_Handler is never called)
+#ifdef VECT_TAB_SRAM
+  SCB->VTOR = SRAM_BASE;
+#else
+  SCB->VTOR = FLASH_BASE;
+#endif
+
   /* USER CODE END SysInit */
 
   /* Initialize all configured peripherals */
@@ -144,99 +152,7 @@ int main(void)
   MX_ADC1_Init();
   /* USER CODE BEGIN 2 */
 
-  //Create all our stuff!
-
-  //initialize spectral sensor
-  Spectral* spectral_sensor[3];
-  SMBus* buses[3];
-  for (int i = 0; i < 3; ++i){
-	  buses[i] = new_smbus(&hi2c1);
-	  spectral_sensor[i] = new_spectral(buses[i]);
-  }
-
-  set_active_spectral_sensor(&hi2c1, 0);
-
-  //initialize thermistors NOT NEEDED BECAUSE EVERY THERMISTOR IS ASSIGNED TO A HEATER?
-  /*ADCSensor* adc_sensors[3];
-  DiagTempSensor* thermistors[3];
-  int thermistor_channels [3] = {0, 1, 2};
-  for (int i = 0; i < 3; ++i){
-	  adc_sensors[i] = new_adc_sensor(&hadc, total_channels);
-	  thermistors[i] = new_diag_temp_sensor(adc_sensors[i], thermistor_channels[i]);
-  }*/
-
-  //MUX is hi2c1
-
-
-  //initialize leds
-  Toggle_GPIO* uv_led[3];
-  GPIO_TypeDef* uv_led_pins[3] = {GPIOA, GPIOA, GPIOA};
-  uint16_t uv_led_pin_numbers[3] = {GPIO_PIN_0, GPIO_PIN_1, GPIO_PIN_2};
-  for (int i = 0; i < 3; ++i){
-	  uv_led[i] = new_toggle_gpio(uv_led_pins[i], uv_led_pin_numbers[i]);
-  }
-
-
-  //initialize white leds
-  Toggle_GPIO* white_leds[3];
-  GPIO_TypeDef* white_led_pins[3] = {GPIOA, GPIOA, GPIOC};
-  uint16_t white_led_pin_numbers[3] = {GPIO_PIN_6, GPIO_PIN_7, GPIO_PIN_4};
-  for (int i = 0; i < 3; ++i){
-	  white_leds[i] = new_toggle_gpio(white_led_pins[i], white_led_pin_numbers[i]);
-  }
-
-  //initialize debug leds
-  Toggle_GPIO* debug_leds[3];
-  GPIO_TypeDef* debug_led_pins[3] = {GPIOC, GPIOC, GPIOC};
-  uint16_t debug_led_pin_numbers[3] = {GPIO_PIN_13, GPIO_PIN_14, GPIO_PIN_15};
-  for (int i = 0; i < 3; ++i){
-  	  debug_leds[i] = new_toggle_gpio(debug_led_pins[i], debug_led_pin_numbers[i]);
-  }
-
-  /*
-   * Pins for these not known yet!
-  Toggle_GPIO* raman_laser = new_toggle_gpio();
-  Toggle_GPIO* uv_bulb = new_toggle_gpio();
-  */
-
-  //PLACEHOLDERS
-  int total_channels = 8;
-  int thermistor_channel_ns[3] = {0, 1, 2};
-  int thermistor_channel_bs[3] = {0, 1, 2};
-
-  //There are B and N heaters
-  //Each heater needs a Toggle_GPIO struct and a thermistor
-  //Each Toggle_GPIO is initialized with the pin and number
-
-  Heater* heater_bs[3];
-  Toggle_GPIO* heater_b_toggles[3];
-  GPIO_TypeDef* heater_b_pins[3] = {GPIOB, GPIOB, GPIOA};
-  uint16_t heater_b_pin_numbers[3] = {GPIO_PIN_13, GPIO_PIN_15, GPIO_PIN_8};
-  DiagTempSensor* thermistor_bs[3];
-  ADCSensor* adc_sensor_bs[3];
-
-  Heater* heater_ns[3];
-  Toggle_GPIO* heater_n_toggles[3];
-  GPIO_TypeDef* heater_n_pins[3] = {GPIOB, GPIOC, GPIOA};
-  uint16_t heater_n_pin_numbers[3] = {GPIO_PIN_14, GPIO_PIN_6, GPIO_PIN_9};
-  DiagTempSensor* thermistor_ns[3];
-  ADCSensor* adc_sensor_ns[3];
-
-  for (int i = 0; i < 3; ++i){
-  	  adc_sensor_bs[i] = new_adc_sensor(&hadc1, total_channels);
-  	  thermistor_bs[i] = new_diag_temp_sensor(adc_sensor_bs[i], thermistor_channel_bs[i]);
-  	  heater_b_toggles[i] = new_toggle_gpio(heater_b_pins[i], heater_b_pin_numbers[i]);
-  	  heater_bs[i] = new_heater(heater_b_toggles[i], thermistor_bs[i]);
-  	  adc_sensor_ns[i] = new_adc_sensor(&hadc1, total_channels);
-  	  thermistor_ns[i] = new_diag_temp_sensor(adc_sensor_ns[i], thermistor_channel_ns[i]);
-  	  heater_n_toggles[i] = new_toggle_gpio(heater_n_pins[i], heater_n_pin_numbers[i]);
-      heater_ns[i] = new_heater(heater_n_toggles[i], thermistor_ns[i]);
-  }
-
   init();
-
-
-
 
   /* USER CODE END 2 */
 
@@ -265,10 +181,10 @@ int main(void)
 
   /* USER CODE BEGIN RTOS_THREADS */
 
-  ReceiveMessagesHandle = osThreadNew(ReceiveMessagesTask, NULL, &ReceiveMessages_attributes);
-  SpectralTaskHandle = osThreadNew(SpectralTaskTask, NULL, &SpectralTask_attributes);
+  ReceiveMessagesHandle = osThreadNew(ReceiveMessages, NULL, &ReceiveMessages_attributes);
+  SpectralTaskHandle = osThreadNew(SpectralTask, NULL, &SpectralTask_attributes);
   ThermistorAndAutoShutoffTaskHandle = osThreadNew(ThermistorAndAutoShutoffTask, NULL, &ThermistorAndAutoShutoffTask_attributes);
-  HeaterUpdatesTaskHandle = osThreadNew(HeaterUpdatesTaskTask, NULL, &HeaterUpdatesTask_attributes);
+  HeaterUpdatesTaskHandle = osThreadNew(HeaterUpdatesTask, NULL, &HeaterUpdatesTask_attributes);
 
   /* add threads, ... */
   /* USER CODE END RTOS_THREADS */
@@ -549,7 +465,7 @@ static void MX_GPIO_Init(void)
 
 /* USER CODE BEGIN 4 */
 
-void ReceiveMessages(void* argument) {
+void ReceiveMessages(void *argument) {
 	uint32_t tick = osKernelGetTickCount();
 	for(;;) {
 		tick += osKernelGetTickFreq(); // 1 Hz
@@ -558,7 +474,7 @@ void ReceiveMessages(void* argument) {
 	}
 }
 
-void SpectralTask(void const * argument) {
+void SpectralTask(void *argument) {
 	uint32_t tick = osKernelGetTickCount();
 	for(;;) {
 		tick += osKernelGetTickFreq(); // 1 Hz
@@ -568,7 +484,7 @@ void SpectralTask(void const * argument) {
 	}
 }
 
-void ThermistorAndAutoShutoffTask(void const * argument) {
+void ThermistorAndAutoShutoffTask(void *argument) {
 	uint32_t tick = osKernelGetTickCount();
 	for(;;) {
 		tick += osKernelGetTickFreq(); // 1 Hz
@@ -578,7 +494,7 @@ void ThermistorAndAutoShutoffTask(void const * argument) {
 	}
 }
 
-void HeaterUpdatesTask(void const * argument) {
+void HeaterUpdatesTask(void *argument) {
 	uint32_t tick = osKernelGetTickCount();
 	for(;;) {
 		tick += osKernelGetTickFreq(); // 1 Hz

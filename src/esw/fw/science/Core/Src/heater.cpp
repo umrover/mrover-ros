@@ -18,7 +18,7 @@ namespace mrover {
 	   {}
 
     float Heater::get_temp() {
-    	return diag_temp_sensor.get_temp();
+    	return m_diag_temp_sensor.get_temp();
     }
 
     bool Heater::get_state() {
@@ -35,7 +35,7 @@ namespace mrover {
     		m_state = enable;
     	}
 
-    	m_heater_pin.write(m_state);
+    	m_heater_pin.write(m_state ? GPIO_PIN_SET : GPIO_PIN_RESET);
 
     	// TODO - need to update m_last_time_received_message and feed watchdog
     }
@@ -44,7 +44,7 @@ namespace mrover {
     	m_diag_temp_sensor.update_temp();
     	if (m_state && m_auto_shutoff_enabled && get_temp() >= MAX_HEATER_TEMP) {
 			m_state = false;
-			m_heater_pin.write(false);
+			m_heater_pin.write(GPIO_PIN_RESET);
 		}
     }
 
@@ -53,13 +53,17 @@ namespace mrover {
 			bool watchdog_is_fed_recently = true; // TOOD - actually need to implement logic
 			if (!watchdog_is_fed_recently) {
 				m_state = false;
-				m_heater_pin.write(false);
+				m_heater_pin.write(GPIO_PIN_RESET);
 			}
     	}
     }
 
     void Heater::feed_watchdog() {
     	// TODO - implement the code
+    }
+
+    void Heater::set_auto_shutoff(bool enable) {
+    	m_auto_shutoff_enabled = enable;
     }
 
 } // namespace mrover

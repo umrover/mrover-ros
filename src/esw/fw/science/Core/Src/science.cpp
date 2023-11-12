@@ -24,12 +24,12 @@ namespace mrover {
                       0) == HAL_OK,
               Error_Handler);
 
-        I2CMux i2c_mux = I2CMux(&hi2c1);
+        std::shared_ptr<I2CMux> i2c_mux = std::make_shared<I2CMux>(&hi2c1);
 
-        std::array<Spectral, 3> = {
-        		Spectral{i2c_mux, 0},
-				Spectral{i2c_mux, 1},
-				Spectral{i2c_mux, 2}
+        std::array<Spectral, 3> spectral_sensors = {
+        		Spectral(i2c_mux, 0),
+				Spectral(i2c_mux, 1),
+				Spectral(i2c_mux, 2)
         };
 
         std::shared_ptr<ADCSensor> adc_sensor = std::make_shared<ADCSensor>(&hadc1, 6);
@@ -67,7 +67,7 @@ namespace mrover {
 		};
 
         fdcan_bus = FDCANBus{DEVICE_ID, DESTINATION_DEVICE_ID, &hfdcan1};
-        science = Science{fdcan_bus, adc_sensor, diag_temp_sensors, heater_pins, uv_leds, white_leds};
+        science = Science{fdcan_bus, spectral_sensors, adc_sensor, diag_temp_sensors, heater_pins, uv_leds, white_leds};
     }
 
     void update_and_send_spectral() {
@@ -83,8 +83,13 @@ namespace mrover {
 	}
 
     void receive_message() {
-    	science.receive_message();
-    }
+		if (std::optional received = fdcan_bus.receive<InBoundScienceMessage>()) {
+			auto const& [header, message] = received.value();
+			auto messageId = std::bit_cast<FDCANBus::MessageId>(header.Identifier);
+			if (messageId.destination == DEVICE_ID)
+				science.receive(message);
+		}
+	}
 
 } // namespace mrover
 

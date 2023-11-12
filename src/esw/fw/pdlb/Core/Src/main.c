@@ -125,6 +125,16 @@ int main(void)
 
   /* USER CODE BEGIN SysInit */
 
+  /* USER CODE BEGIN SysInit */
+  // TODO(quintin)  Figure out why the HAL does not configure this properly
+  //                See: https://community.st.com/t5/stm32-mcus-products/hal-delay-stuck-systick-not-triggered-workaround-for-stm32f105/td-p/585510
+  //                Without this HAL_Delay does not work (SysTick_Handler is never called)
+#ifdef VECT_TAB_SRAM
+  SCB->VTOR = SRAM_BASE;
+#else
+  SCB->VTOR = FLASH_BASE;
+#endif
+
   /* USER CODE END SysInit */
 
   /* Initialize all configured peripherals */

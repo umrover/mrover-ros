@@ -14,7 +14,7 @@ namespace mrover {
 
     void I2CMux::select_channel(uint8_t channel) {
     	 uint8_t formatted = 1 << channel;
-    	 m_i2c_bus.transact(channel, 0x70); // TODO - verify if this is correct
+//    	 m_i2c_bus.transact(channel, 0x70); // TODO - verify if this is correct
     }
 } // namespace mrover
 

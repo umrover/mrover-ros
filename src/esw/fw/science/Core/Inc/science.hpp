@@ -5,6 +5,10 @@
 #include <variant>
 #include "messaging.hpp"
 #include "units/units.hpp"
+#include "spectral.hpp"
+#include "hardware.hpp"
+#include "heater.hpp"
+#include "cmsis_os2.h"
 
 namespace mrover {
 
@@ -22,41 +26,41 @@ namespace mrover {
 
         void feed(EnableScienceDeviceCommand const& message) {
         	switch (message.science_device) {
-        	case HEATER_B0:
+        	case ScienceDevice::HEATER_B0:
         		m_heaters.at(0).enable_if_possible(message.enable);
         		break;
-        	case HEATER_N0:
+        	case ScienceDevice::HEATER_N0:
 				m_heaters.at(1).enable_if_possible(message.enable);
 				break;
-        	case HEATER_B1:
+        	case ScienceDevice::HEATER_B1:
 				m_heaters.at(2).enable_if_possible(message.enable);
 				break;
-        	case HEATER_N1:
+        	case ScienceDevice::HEATER_N1:
 				m_heaters.at(3).enable_if_possible(message.enable);
 				break;
-        	case HEATER_B2:
+        	case ScienceDevice::HEATER_B2:
 				m_heaters.at(4).enable_if_possible(message.enable);
 				break;
-        	case HEATER_N2:
+        	case ScienceDevice::HEATER_N2:
 				m_heaters.at(5).enable_if_possible(message.enable);
 				break;
-        	case WHITE_LED_0:
-        		m_white_leds.at(0).write(message.enable);
+        	case ScienceDevice::WHITE_LED_0:
+        		m_white_leds.at(0).write(message.enable ? GPIO_PIN_SET : GPIO_PIN_RESET);
 				break;
-			case WHITE_LED_1:
-        		m_white_leds.at(1).write(message.enable);
+			case ScienceDevice::WHITE_LED_1:
+        		m_white_leds.at(1).write(message.enable ? GPIO_PIN_SET : GPIO_PIN_RESET);
 				break;
-			case WHITE_LED_2:
-        		m_white_leds.at(2).write(message.enable);
+			case ScienceDevice::WHITE_LED_2:
+        		m_white_leds.at(2).write(message.enable ? GPIO_PIN_SET : GPIO_PIN_RESET);
 				break;
-			case UV_LED_0:
-				m_uv_leds.at(0).write(message.enable);
+			case ScienceDevice::UV_LED_0:
+				m_uv_leds.at(0).write(message.enable ? GPIO_PIN_SET : GPIO_PIN_RESET);
 				break;
-			case UV_LED_1:
-				m_uv_leds.at(1).write(message.enable);
+			case ScienceDevice::UV_LED_1:
+				m_uv_leds.at(1).write(message.enable ? GPIO_PIN_SET : GPIO_PIN_RESET);
 				break;
-			case UV_LED_2:
-				m_uv_leds.at(2).write(message.enable);
+			case ScienceDevice::UV_LED_2:
+				m_uv_leds.at(2).write(message.enable ? GPIO_PIN_SET : GPIO_PIN_RESET);
 				break;
         	}
         }
@@ -90,8 +94,8 @@ namespace mrover {
 		   }
 	   }
 
-        void receive(InBoundMessage const& message) {
-            std::visit([&](auto const& command) { process(command); }, message);
+        void receive(InBoundScienceMessage const& message) {
+            std::visit([&](auto const& command) { feed(command); }, message);
         }
 
         void update_and_send_spectral() {
@@ -121,11 +125,11 @@ namespace mrover {
 
 			/* send current and temperature over CAN */
 			osMutexAcquire(m_can_tx_mutex, osWaitForever);
-			m_fdcan_bus.broadcast(OutBoundPDLBMessage{thermistor_data});
+			m_fdcan_bus.broadcast(OutBoundScienceMessage{thermistor_data});
 			osMutexRelease(m_can_tx_mutex);
         }
 
-        void send_heater() {
+        void update_and_send_heater() {
 
         	// TODO - check watchdog
 
@@ -137,22 +141,14 @@ namespace mrover {
         	HeaterStateData heater_state_data;
 
         	for (int i = 0; i < 6; ++i) {
-        		SET_BIT_AT_INDEX(heater_state_data.heater_state_info, i, m_heaters.at(i).get_state());
+        		SET_BIT_AT_INDEX(heater_state_data.heater_state_info.on, i, m_heaters.at(i).get_state());
         	}
 
         	osMutexAcquire(m_can_tx_mutex, osWaitForever);
-			m_fdcan_bus.broadcast(OutBoundPDLBMessage{heater_state_data});
+			m_fdcan_bus.broadcast(OutBoundScienceMessage{heater_state_data});
 			osMutexRelease(m_can_tx_mutex);
         }
 
-        void receive_messages() {
-        	if (std::optional received = fdcan_bus.receive<InBoundMessage>()) {
-				auto const& [header, message] = received.value();
-				auto messageId = std::bit_cast<FDCANBus::MessageId>(header.Identifier);
-				if (messageId.destination == DEVICE_ID)
-					science.receive(message);
-			}
-        }
     };
 
 } // namespace mrover

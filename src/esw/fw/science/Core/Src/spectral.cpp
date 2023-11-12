@@ -18,7 +18,7 @@ namespace mrover {
 
     void Spectral::update_channel_data(uint8_t channel) {
     	// TODO -
-    	m_i2c_mux.select_channel(m_i2c_mux_channel);
+    	m_i2c_mux->select_channel(m_i2c_mux_channel);
     	// TODO - implement select_channel using the following code:
 
     	// TODO - implement reading - here is some exmaple code from before
@@ -45,7 +45,7 @@ namespace mrover {
 //    	}
     }
 
-    float Spectral::get_channel_data(uint8_t channel) {
+    uint16_t Spectral::get_channel_data(uint8_t channel) {
     	return channel_data.at(channel);
     }
 } // namespace mrover

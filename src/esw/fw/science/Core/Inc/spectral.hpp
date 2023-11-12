@@ -12,6 +12,8 @@
 #include <string.h>
 
 #include "hardware.hpp"
+#include "i2c_mux.hpp"
+#include <memory>
 
 namespace mrover {
 
@@ -26,7 +28,7 @@ namespace mrover {
         uint16_t get_channel_data(uint8_t channel);
 
     private:
-        std::share_ptr<I2CMux> m_i2c_mux;
+        std::shared_ptr<I2CMux> m_i2c_mux;
         uint8_t m_i2c_mux_channel;
         std::array<uint16_t, 6> channel_data {};
     };
