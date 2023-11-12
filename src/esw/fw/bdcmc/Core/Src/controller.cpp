@@ -15,8 +15,6 @@ extern TIM_HandleTypeDef htim4;
 
 namespace mrover {
 
-    using BrushedController = Controller<Radians, Percent, FusedReader, HBridgeWriter>;
-
     // NOTE: Change This For Each Motor Controller
     constexpr static std::uint8_t DEVICE_ID = 0x1;
 
@@ -24,7 +22,7 @@ namespace mrover {
     constexpr static std::uint8_t DESTINATION_DEVICE_ID = 0x0;
 
     FDCANBus fdcan_bus;
-    BrushedController controller;
+    Controller controller;
 
     void init() {
         check(HAL_FDCAN_ActivateNotification(
@@ -40,7 +38,8 @@ namespace mrover {
 				LimitSwitch{Pin{LIMIT_0_2_GPIO_Port, LIMIT_0_2_Pin}},
 				LimitSwitch{Pin{LIMIT_0_3_GPIO_Port, LIMIT_0_3_Pin}}
         };
-        controller = BrushedController{FusedReader{&htim4, &hi2c1}, HBridgeWriter{&htim15}, limit_switches, fdcan_bus};
+        // controller = BrushedController{FusedReader{&htim4, &hi2c1}, HBridgeWriter{&htim15}, limit_switches, fdcan_bus};
+        controller = Controller{&htim15, limit_switches, fdcan_bus};
     }
 
     void loop() {

@@ -4,6 +4,8 @@
 #include <optional>
 #include <variant>
 
+#include "writer.hpp"
+#include "reader.hpp"
 #include "hardware.hpp"
 #include "messaging.hpp"
 #include "pidf.hpp"
@@ -12,18 +14,21 @@
 namespace mrover {
 
     template<typename T, typename Input, typename TimeUnit = Seconds>
-    concept InputReader = requires(T t) {
+    concept IsReader = std::is_same_v<T, std::monostate> || requires(T t) {
         { t.read() } -> std::convertible_to<std::pair<Input, compound_unit<Input, inverse<TimeUnit>>>>;
     };
 
     template<typename T, typename Output>
-    concept OutputWriter = requires(T t, Output output) {
+    concept IsWriter = std::is_same_v<T, std::monostate> || requires(T t, Output output) {
         { t.write(output) };
     };
 
-    template<IsUnit InputUnit, IsUnit OutputUnit,
-             InputReader<InputUnit> Reader, OutputWriter<OutputUnit> Writer,
-             IsUnit TimeUnit = Seconds>
+    using Writer = HBridgeWriter;
+
+    using Reader = std::variant<
+            std::monostate, FusedReader>;
+
+    template<IsUnit InputUnit = Radians, IsUnit OutputUnit = Percent, IsUnit TimeUnit = Seconds>
     class Controller {
     private:
         struct PositionMode {
@@ -36,11 +41,11 @@ namespace mrover {
 
         using Mode = std::variant<std::monostate, PositionMode, VelocityMode>;
 
-        Reader m_reader;
-        Writer m_writer;
         std::array<LimitSwitch, 4> m_limit_switches;
         FDCANBus m_fdcan_bus;
 
+        Writer m_writer;
+        Reader m_reader;
         Mode m_mode;
 
         bool m_should_limit_forward{};
@@ -59,16 +64,24 @@ namespace mrover {
 
         BDCMCErrorInfo m_error{};
 
+        auto read() {
+            return std::visit([&](auto& reader) {
+                if constexpr (std::is_same_v<decltype(reader), std::monostate&>) {
+                    return std::optional<std::pair<InputUnit, compound_unit<InputUnit, inverse<TimeUnit>>>>{};
+                } else {
+                    return std::make_optional(reader.read());
+                }
+            }, m_reader);
+        }
+
         void write_output_if_valid(Percent output) {
         	if (m_should_limit_forward && output > 0_percent) {
         		output = 0_percent;
         		m_error = BDCMCErrorInfo::OUTPUT_SET_TO_ZERO_SINCE_EXCEEDING_LIMITS;
-			}
-			else if (m_should_limit_backward && output < 0_percent) {
+			} else if (m_should_limit_backward && output < 0_percent) {
 				output = 0_percent;
 				m_error = BDCMCErrorInfo::OUTPUT_SET_TO_ZERO_SINCE_EXCEEDING_LIMITS;
-			}
-			else {
+			} else {
 				m_error = BDCMCErrorInfo::NO_ERROR;
 			}
         	m_writer.write(output);
@@ -76,10 +89,13 @@ namespace mrover {
         }
 
         void feed(AdjustCommand const& message) {
-        	auto [reader_position, m_current_velocity] = m_reader.read();
-        	m_is_calibrated = true;
-			m_offset_position = reader_position - message.position;
-			m_current_position = reader_position - m_offset_position;
+            auto reading = read();
+            if (reading) {
+                auto [reader_position, m_current_velocity] = *reading;
+                m_is_calibrated = true;
+                m_offset_position = reader_position - message.position;
+                m_current_position = reader_position - m_offset_position;
+            }
         }
 
         void feed(ConfigCommand const& message) {
@@ -148,11 +164,15 @@ namespace mrover {
                 return;
             }
 
-            auto [_, input] = m_reader.read();
-            auto target = message.velocity;
-            OutputUnit output = mode.pidf.calculate(input, target);
+            auto reading = read();
+            if (reading) {
+                auto [_, input] = *reading;
+                auto target = message.velocity;
+                OutputUnit output = mode.pidf.calculate(input, target);
 
-            write_output_if_valid(output);
+                write_output_if_valid(output);
+            }
+
         }
 
         void feed(PositionCommand const& message, PositionMode mode) {
@@ -165,11 +185,15 @@ namespace mrover {
             	return;
             }
 
-            auto [input, _] = m_reader.read();
-            auto target = message.position;
-            OutputUnit output = mode.pidf.calculate(input, target);
+            auto reading = read();
+            if (reading) {
+                auto [input, _] = *reading;
+                auto target = message.position;
+                OutputUnit output = mode.pidf.calculate(input, target);
 
-            write_output_if_valid(output);
+                write_output_if_valid(output);
+            }
+
         }
 
         void feed(EnableLimitSwitchesCommand const& message) {
@@ -199,9 +223,9 @@ namespace mrover {
     public:
         Controller() = default;
 
-        Controller(Reader&& reader, Writer&& writer, std::array<LimitSwitch, 4> limit_switches, FDCANBus const& fdcan_bus)
-            : m_reader{std::move(reader)}, m_writer{std::move(writer)},
-			  m_limit_switches{std::move(limit_switches)},
+        Controller(TIM_HandleTypeDef* timer, std::array<LimitSwitch, 4> limit_switches, FDCANBus const& fdcan_bus)
+            : m_writer{timer},
+              m_limit_switches{limit_switches},
 			  m_fdcan_bus{fdcan_bus},
 			  m_error{BDCMCErrorInfo::DEFAULT_START_UP_NOT_CONFIGURED} {}
 
@@ -232,26 +256,31 @@ namespace mrover {
                 limit_switch.update_limit_switch();
             }
 
-			auto [reader_position, m_current_velocity] = m_reader.read();
-            for (auto& limit_switch: m_limit_switches) {
-                std::optional<Radians> readj_pos = limit_switch.get_readjustment_position();
-                if (readj_pos) {
-                	m_is_calibrated = true;
-                	m_offset_position = reader_position - readj_pos.value();
+            auto reading = read();
+
+            if (reading) {
+                auto [reader_position, m_current_velocity] = *reading;
+
+                for (auto& limit_switch: m_limit_switches) {
+                    std::optional<Radians> readj_pos = limit_switch.get_readjustment_position();
+                    if (readj_pos) {
+                        m_is_calibrated = true;
+                        m_offset_position = reader_position - readj_pos.value();
+                    }
                 }
+                m_current_position = reader_position - m_offset_position;
+
+                m_should_limit_forward = (std::ranges::any_of(m_limit_switches, [](
+                        LimitSwitch const& limit_switch) { return limit_switch.limit_forward(); })
+                        || (m_is_calibrated && m_current_position >= m_max_forward_pos));
+
+                m_should_limit_backward = (std::ranges::any_of(m_limit_switches, [](
+                        LimitSwitch const& limit_switch) { return limit_switch.limit_backward(); })
+                        || (m_is_calibrated && m_current_position <= m_max_backward_pos));
+
+                write_output_if_valid(m_current_throttle);
+
             }
-            m_current_position = reader_position - m_offset_position;
-
-            m_should_limit_forward = (std::ranges::any_of(m_limit_switches, [](
-					LimitSwitch const& limit_switch) { return limit_switch.limit_forward(); })
-					|| (m_is_calibrated && m_current_position >= m_max_forward_pos));
-
-			m_should_limit_backward = (std::ranges::any_of(m_limit_switches, [](
-					LimitSwitch const& limit_switch) { return limit_switch.limit_backward(); })
-					|| (m_is_calibrated && m_current_position <= m_max_backward_pos));
-
-			write_output_if_valid(m_current_throttle);
-
 
             // 2. Send Information
             ConfigCalibErrorInfo config_calib_error_info;
