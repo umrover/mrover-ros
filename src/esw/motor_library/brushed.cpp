@@ -138,6 +138,8 @@ namespace mrover {
                 return "RECEIVING_COMMANDS_WHEN_NOT_CONFIGURED";
             case BDCMCErrorInfo::RECEIVING_POSITION_COMMANDS_WHEN_NOT_CALIBRATED:
                 return "RECEIVING_POSITION_COMMANDS_WHEN_NOT_CALIBRATED";
+            case BDCMCErrorInfo::OUTPUT_SET_TO_ZERO_SINCE_EXCEEDING_LIMITS:
+                return "OUTPUT_SET_TO_ZERO_SINCE_EXCEEDING_LIMITS";
             default:
                 return "UNKNOWN_ERROR_CODE";
         }
