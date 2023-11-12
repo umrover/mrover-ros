@@ -18,24 +18,35 @@ namespace mrover {
     void BrushlessController::set_desired_position(Radians position) {
         position = std::clamp(position, mMinPosition, mMaxPosition);
         // TODO - need to convert to use revs
-    }
-
-    void BrushlessController::set_desired_velocity(RadiansPerSecond velocity) {
-        velocity = std::clamp(velocity, mMinVelocity, mMaxVelocity);
 
         moteus::Controller::Options options;
         moteus::Controller controller{options};
 
-        // Here we will just command a position of NaN and a velocity of
-        // 0.0.  This means "hold position wherever you are".
+        moteus::PositionMode::Command command{
+                .position = position.get(),
+                .velocity = 0.0,
+        };
+        moteus::CanFdFrame positionFrame = controller.MakePosition(command);
+        mDevice.publish_moteus_frame(positionFrame);
+    }
+
+    // Position     Velocity
+    // Nan          2.0         = spin at 2 rev/s
+    // 1.0          0.0         = Stay put at 1 rev round
+    // Nan          0.0         = Don't move
+
+    void BrushlessController::set_desired_velocity(RadiansPerSecond velocity) {
+        // TODO: Convert radians per second to revolutions per second
+        velocity = std::clamp(velocity, mMinVelocity, mMaxVelocity);
+
+        moteus::Controller::Options options;
+        moteus::Controller controller{options};
 
         moteus::PositionMode::Command command{
                 .position = std::numeric_limits<double>::quiet_NaN(),
                 .velocity = velocity.get(),
         };
         moteus::CanFdFrame positionFrame = controller.MakePosition(command);
-
-        // TODO - need to convert to use rev/s
         mDevice.publish_moteus_frame(positionFrame);
     }
 
