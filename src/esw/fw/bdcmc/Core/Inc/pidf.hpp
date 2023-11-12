@@ -2,10 +2,10 @@
 
 #include "stm32g4xx_hal.h"
 
-#include "units.hpp"
-
 #include <optional>
 #include <utility>
+
+#include "units/units.hpp"
 
 namespace mrover {
 
@@ -21,7 +21,7 @@ namespace mrover {
      * @tparam TOutput  Unit of output, usually a motor command (for example voltage for a motor)
      * @tparam TTime    Unit of time
      */
-    template<Unitable InputUnit, Unitable OutputUnit, Unitable TimeUnit = Seconds>
+    template<IsUnit InputUnit, IsUnit OutputUnit, IsUnit TimeUnit = Seconds>
     struct PIDF {
     private:
         using TotalError = compound_unit<InputUnit, TimeUnit>;
@@ -76,7 +76,7 @@ namespace mrover {
          */
         auto calculate(InputUnit input, InputUnit target) -> OutputUnit {
             double current_ticks = HAL_GetTick();
-            mrover::Unitable auto tick_frequency = make_unit<Hertz>(HAL_GetTickFreq());
+            mrover::IsUnit auto tick_frequency = Hertz{HAL_GetTickFreq()};
             TimeUnit now = current_ticks / tick_frequency;
             TimeUnit dt = now - m_last_time;
             m_last_time = now;

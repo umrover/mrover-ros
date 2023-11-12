@@ -1,3 +1,4 @@
+#include "messaging.hpp"
 #include <mrover/CAN.h>
 #include <mrover/PDLB.h>
 #include <ros/ros.h>
@@ -20,9 +21,22 @@ int main(int argc, char** argv) {
     return 0;
 }
 
+void processMessage(mrover::PDBData const& message) {
+    mrover::PDLB pdlb_data;
+    for (int i = 0; i < 6; ++i) {
+        pdlb_data.temperatures.at(i) = message.temperatures[i];
+        pdlb_data.currents.at(i) = message.currents[i];
+    }
+    PDBPublisher.publish(pdlb_data);
+}
+
 void processCANData(const mrover::CAN::ConstPtr& msg) {
-    mrover::PDLB PDBData;
-    PDBData.temperatures = {0, 0, 0, 0, 0}; // TODO
-    PDBData.currents = {0, 0, 0, 0, 0};     // TODO
-    PDBPublisher.publish(PDBData);
+
+    assert(msg->source == "pdlb");
+    assert(msg->destination == "jetson");
+
+    mrover::OutBoundPDLBMessage const& message = *reinterpret_cast<mrover::OutBoundPDLBMessage const*>(msg->data.data());
+
+    // This calls the correct process function based on the current value of the alternative
+    std::visit([&](auto const& messageAlternative) { processMessage(messageAlternative); }, message);
 }

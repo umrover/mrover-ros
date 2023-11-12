@@ -11,34 +11,34 @@ brushed_motors:
   controllers:
     devboard:
       gear_ratio: 1.0 # motor ratio compared to joint, e.g. if 5, then 5 rotations of motor = 1 rotation of joint
-      limit_a_present: false
-      limit_b_present: false
-      limit_c_present: false
-      limit_d_present: false
-      limit_a_default_enabled: false
-      limit_b_default_enabled: false
-      limit_c_default_enabled: false
-      limit_d_default_enabled: false
-      limit_a_is_active_high: true
-      limit_b_is_active_high: true
-      limit_c_is_active_high: true
-      limit_d_is_active_high: true
-      limit_a_limits_fwd: true
-      limit_b_limits_fwd: true
-      limit_c_limits_fwd: true
-      limit_d_limits_fwd: true
-      limit_a_used_for_readjustment: false
-      limit_b_used_for_readjustment: false
-      limit_c_used_for_readjustment: false
-      limit_d_used_for_readjustment: false
+      limit_0_present: false
+      limit_1_present: false
+      limit_2_present: false
+      limit_3_present: false
+      limit_0_default_enabled: false
+      limit_1_default_enabled: false
+      limit_2_default_enabled: false
+      limit_3_default_enabled: false
+      limit_0_is_active_high: true
+      limit_1_is_active_high: true
+      limit_2_is_active_high: true
+      limit_3_is_active_high: true
+      limit_0_limits_fwd: true
+      limit_1_limits_fwd: true
+      limit_2_limits_fwd: true
+      limit_3_limits_fwd: true
+      limit_0_used_for_readjustment: false
+      limit_1_used_for_readjustment: false
+      limit_2_used_for_readjustment: false
+      limit_3_used_for_readjustment: false
       quad_present: false
       quad_is_fwd_polarity: true
       abs_present: false
       abs_is_fwd_polarity: true
-      limit_a_readjust_position: 0.0 # radians
-      limit_b_readjust_position: 0.0 # radians
-      limit_c_readjust_position: 0.0 # radians
-      limit_d_readjust_position: 0.0 # radians
+      limit_0_readjust_position: 0.0 # radians
+      limit_1_readjust_position: 0.0 # radians
+      limit_2_readjust_position: 0.0 # radians
+      limit_3_readjust_position: 0.0 # radians
       quad_ratio: 1.0 # encoder ratio compared to motor
       abs_ratio: 1.0 # encoder ratio compared to motor
       abs_encoder_offset: 0.0 # 0 for joint position corresponds to this radians reading by absolute encoder

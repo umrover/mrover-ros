@@ -2,23 +2,22 @@
 
 namespace mrover {
 
-    BrushlessController::BrushlessController(ros::NodeHandle const& nh, std::string name, std::string controller_name)
-        : Controller{nh, std::move(name), std::move(controller_name)} {
+    BrushlessController::BrushlessController(ros::NodeHandle const& nh, std::string name, std::string controllerName)
+        : Controller{nh, std::move(name), std::move(controllerName)} {
 
         // TODO: change
         torque = 0.3f;
     }
 
-    void BrushlessController::set_desired_throttle(Percent throttle) {
+    void BrushlessController::setDesiredThrottle(Percent throttle) {
         throttle = std::clamp(throttle, -1_percent, 1_percent);
         // TODO - need to convert from throttle to rev/s
         // TODO - create a CAN frame
     }
 
-    void BrushlessController::set_desired_position(Radians position) {
+    void BrushlessController::setDesiredPosition(Radians position) {
         position = std::clamp(position, mMinPosition, mMaxPosition);
         // TODO - need to convert to use revs
-
         moteus::Controller::Options options;
         moteus::Controller controller{options};
 
@@ -35,7 +34,7 @@ namespace mrover {
     // 1.0          0.0         = Stay put at 1 rev round
     // Nan          0.0         = Don't move
 
-    void BrushlessController::set_desired_velocity(RadiansPerSecond velocity) {
+    void BrushlessController::setDesiredVelocity(RadiansPerSecond velocity) {
         // TODO: Convert radians per second to revolutions per second
         velocity = std::clamp(velocity, mMinVelocity, mMaxVelocity);
 
@@ -51,6 +50,11 @@ namespace mrover {
     }
 
     void BrushlessController::processCANMessage(CAN::ConstPtr const& msg) {
+    }
+
+    double BrushlessController::getEffort() {
+        // TODO - actually do something
+        return mMeasuredEffort;
     }
 
 } // namespace mrover

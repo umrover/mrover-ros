@@ -106,7 +106,7 @@
          configuration. */
 /*!< Uncomment the following line if you need to relocate the vector table
      anywhere in Flash or Sram, else the vector table is kept at the automatic
-     remap of boot address selected */
+     remap of boot address_of selected */
 /* #define USER_VECT_TAB_ADDRESS */
 
 #if defined(USER_VECT_TAB_ADDRESS)
@@ -196,7 +196,7 @@ void SystemInit(void)
   *         other parameters.
   *
   * @note   Each time the core clock (HCLK) changes, this function must be called
-  *         to update SystemCoreClock variable value. Otherwise, any configuration
+  *         to send SystemCoreClock variable value. Otherwise, any configuration
   *         based on this variable will be incorrect.
   *
   * @note   - The system frequency computed by this function is not the real

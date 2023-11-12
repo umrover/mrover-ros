@@ -13,8 +13,9 @@ int main(int argc, char** argv) {
 
     ros::Rate rate(1);
     while (ros::ok()) {
-        brushlessController->set_desired_throttle(0.5);
+        brushlessController->setDesiredThrottle(0.5);
         rate.sleep();
+        ros::spinOnce();
     }
 
     return EXIT_SUCCESS;

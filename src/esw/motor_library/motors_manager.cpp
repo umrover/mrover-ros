@@ -41,8 +41,12 @@ namespace mrover {
         mMoveVelocitySub = mNh.subscribe<Velocity>(std::format("{}_velocity_cmd", mGroupName), 1, &MotorsManager::moveMotorsVelocity, this);
         mMovePositionSub = mNh.subscribe<Position>(std::format("{}_position_cmd", mGroupName), 1, &MotorsManager::moveMotorsPosition, this);
 
+        mJointDataPub = mNh.advertise<sensor_msgs::JointState>(std::format("{}_joint_data", mGroupName), 1);
+        mControllerDataPub = mNh.advertise<ControllerState>(std::format("{}_controller_data", mGroupName), 1);
+
         // Create a 0.1 second heartbeat timer
-        ros::Timer heartbeatTimer = nh.createTimer(ros::Duration(0.1), &MotorsManager::heartbeatCallback, this);
+        heartbeatTimer = mNh.createTimer(ros::Duration(0.1), &MotorsManager::heartbeatCallback, this);
+        publishDataTimer = mNh.createTimer(ros::Duration(0.1), &MotorsManager::publishDataCallback, this);
     }
 
     Controller& MotorsManager::get_controller(std::string const& name) {
@@ -64,7 +68,7 @@ namespace mrover {
         for (size_t i = 0; i < msg->names.size(); ++i) {
             const std::string& name = msg->names[i];
             Controller& controller = get_controller(name);
-            controller.set_desired_throttle(msg->throttles[i]);
+            controller.setDesiredThrottle(msg->throttles[i]);
         }
     }
 
@@ -79,7 +83,7 @@ namespace mrover {
         for (size_t i = 0; i < msg->names.size(); ++i) {
             const std::string& name = msg->names[i];
             Controller& controller = get_controller(name);
-            controller.set_desired_velocity(RadiansPerSecond{msg->velocities[i]});
+            controller.setDesiredVelocity(RadiansPerSecond{msg->velocities[i]});
         }
     }
 
@@ -94,7 +98,7 @@ namespace mrover {
         for (std::size_t i = 0; i < msg->names.size(); ++i) {
             const std::string& name = msg->names[i];
             Controller& controller = get_controller(name);
-            controller.set_desired_position(Radians{msg->positions[i]});
+            controller.setDesiredPosition(Radians{msg->positions[i]});
         }
     }
 
@@ -103,9 +107,34 @@ namespace mrover {
         if (duration < 100ms) {
             for (const auto& motorName: mControllerNames) {
                 Controller& controller = get_controller(motorName);
-                controller.set_desired_throttle(0_percent);
+                controller.setDesiredThrottle(0_percent);
             }
         }
+    }
+
+    void MotorsManager::publishDataCallback(const ros::TimerEvent&) {
+        sensor_msgs::JointState joint_state;
+        ControllerState controller_state;
+        // TODO - need to properly populate these
+        for (const std::string& name: mControllerNames) {
+            Controller& controller = get_controller(name);
+            joint_state.name.push_back(name);
+            joint_state.position.push_back(controller.getCurrentPosition().get());
+            joint_state.velocity.push_back(controller.getCurrentVelocity().get());
+            joint_state.effort.push_back(controller.getEffort()); // TODO
+
+            controller_state.name.push_back(name);
+            controller_state.state.push_back(controller.getState());      // TODO
+            controller_state.error.push_back(controller.getErrorState()); // TODO - map
+            uint8_t limit_hit;
+            for (int i = 0; i < 4; ++i) {
+                limit_hit |= controller.isLimitHit(i) << i;
+            }
+            controller_state.limit_hit.push_back(limit_hit);
+        }
+
+        mJointDataPub.publish(joint_state);
+        mControllerDataPub.publish(controller_state);
     }
 
     void MotorsManager::updateLastConnection() {
