@@ -9,7 +9,7 @@ gps_driver:
   frame_id: "base_link"
 
 rover_gps_driver:
-  port: "/dev/ttyACM2"
+  port: "/dev/ttyACM0"
   baud: 38400
   frame_id: "base_link"
 
