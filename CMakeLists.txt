@@ -212,7 +212,7 @@ mrover_add_library(motor_library src/esw/motor_library/*.cpp src/esw/motor_libra
 target_link_libraries(motor_library PUBLIC can_device moteus moteus_fw)
 
 # TODO(quintin) Fix this CMake hard coding
-mrover_add_nodelet(can_driver src/esw/can_driver/*.cpp src/esw/can_driver)
+mrover_add_nodelet(can_driver src/esw/can_driver/*.cpp src/esw/can_driver src/esw/can_driver/pch.hpp)
 mrover_nodelet_link_libraries(can_driver nl-3 nl-route-3)
 #mrover_nodelet_link_libraries(can ${NetLink_LIBRARIES} ${NetLinkRoute_LIBRARIES}})
 mrover_nodelet_include_directories(can_driver /usr/include/libnl3)

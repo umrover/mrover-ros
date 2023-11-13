@@ -1,15 +1,5 @@
 #include "can_net_link.hpp"
 
-#include <format>
-#include <stdexcept>
-
-#include <linux/can.h>
-#include <net/if.h>
-
-#include <netlink/route/link.h>
-
-#include <ros/init.h>
-
 namespace mrover {
 
     CanNetLink::CanNetLink(std::string interface, std::uint32_t bitrate, std::uint32_t bitrate_prescaler)

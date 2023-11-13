@@ -1,17 +1,5 @@
 #include "can_driver.hpp"
 
-#include <cctype>
-#include <linux/can.h>
-
-#include <boost/asio/read.hpp>
-#include <boost/asio/write.hpp>
-#include <boost/system/error_code.hpp>
-
-#include <nodelet/loader.h>
-#include <ros/init.h>
-#include <ros/names.h>
-#include <ros/this_node.h>
-
 namespace mrover {
 
     static int checkSyscallResult(int result) {
@@ -58,11 +46,7 @@ namespace mrover {
 
                     auto bus = xmlRpcValueToTypeOrDefault<std::uint8_t>(canDevice, "bus");
 
-                    if (std::isdigit(mInterface.back() - '0')) {
-                        throw std::runtime_error("Interface is not valid (must end with a number)");
-                    }
-                    uint8_t mInterfaceNum = mInterface.back() - '0';
-                    if (bus != mInterfaceNum) {
+                    if (std::uint8_t interfaceNumber = mInterface.back() - '0'; bus != interfaceNumber) {
                         continue;
                     }
 
@@ -110,7 +94,7 @@ namespace mrover {
         }
     }
 
-    int CanNodelet::setupSocket() {
+    int CanNodelet::setupSocket() const {
         int socketFd = checkSyscallResult(socket(PF_CAN, SOCK_RAW, CAN_RAW));
         NODELET_INFO_STREAM("Opened CAN socket with file descriptor: " << socketFd);
 
@@ -135,7 +119,7 @@ namespace mrover {
         // You would think we would have to read the header first to find the data length (which is not always 64 bytes) and THEN read the data
         // However socketcan is nice and just requires we read the max length
         // It then puts the actual length in the header
-        boost::asio::async_read(
+        async_read(
                 mStream.value(),
                 boost::asio::buffer(&mReadFrame, sizeof(mReadFrame)),
                 // Supply lambda that is called on completion
@@ -217,8 +201,8 @@ namespace mrover {
         };
         std::memcpy(frame.data, msg->data.data(), msg->data.size());
 
-        std::size_t written = boost::asio::write(mStream.value(), boost::asio::buffer(std::addressof(frame), sizeof(frame)));
-        if (written != sizeof(frame)) {
+        if (std::size_t written = boost::asio::write(mStream.value(), boost::asio::buffer(std::addressof(frame), sizeof(frame)));
+            written != sizeof(frame)) {
             NODELET_FATAL_STREAM(std::format("Failed to write CAN frame to socket! Expected to write {} bytes, but only wrote {} bytes", sizeof(frame), written));
             ros::shutdown();
             return;

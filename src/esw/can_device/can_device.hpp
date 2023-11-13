@@ -5,12 +5,10 @@
 #include <format>
 #include <span>
 #include <string>
-#include <unordered_map>
+#include <variant>
 
-#include <XmlRpcValue.h>
 #include <ros/ros.h>
 
-#include <bimap.hpp>
 #include <mrover/CAN.h>
 
 #define CANFD_FDF 0x04
@@ -32,7 +30,7 @@ namespace mrover {
             : m_nh{nh},
               m_from_device{std::move(from_device)},
               m_to_device{std::move(to_device)} {
-            m_can_publisher = m_nh.advertise<mrover::CAN>(std::format("can/{}/out", m_to_device), 1);
+            m_can_publisher = m_nh.advertise<CAN>(std::format("can/{}/out", m_to_device), 1);
         }
 
 
@@ -61,7 +59,7 @@ namespace mrover {
         std::string m_from_device{}, m_to_device{};
 
         void publish_data(std::span<std::byte const> data, bool reply_required = false) {
-            mrover::CAN can_message;
+            CAN can_message;
             can_message.source = m_from_device;
             can_message.destination = m_to_device;
             can_message.reply_required = reply_required;
