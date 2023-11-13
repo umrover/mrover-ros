@@ -32,11 +32,11 @@ namespace mrover {
               Error_Handler);
 
         fdcan_bus = FDCANBus{DEVICE_ID, DESTINATION_DEVICE_ID, &hfdcan1};
-        std::array<LimitSwitch, 4> limit_switches = {
-        		LimitSwitch{Pin{LIMIT_0_0_GPIO_Port, LIMIT_0_0_Pin}},
-				LimitSwitch{Pin{LIMIT_0_1_GPIO_Port, LIMIT_0_1_Pin}},
-				LimitSwitch{Pin{LIMIT_0_2_GPIO_Port, LIMIT_0_2_Pin}},
-				LimitSwitch{Pin{LIMIT_0_3_GPIO_Port, LIMIT_0_3_Pin}}
+        std::array limit_switches = {
+                LimitSwitch{Pin{LIMIT_0_0_GPIO_Port, LIMIT_0_0_Pin}},
+                LimitSwitch{Pin{LIMIT_0_1_GPIO_Port, LIMIT_0_1_Pin}},
+                LimitSwitch{Pin{LIMIT_0_2_GPIO_Port, LIMIT_0_2_Pin}},
+                LimitSwitch{Pin{LIMIT_0_3_GPIO_Port, LIMIT_0_3_Pin}}
         };
         // controller = BrushedController{FusedReader{&htim4, &hi2c1}, HBridgeWriter{&htim15}, limit_switches, fdcan_bus};
         controller = Controller{&htim15, limit_switches, fdcan_bus, &hi2c1};
@@ -46,8 +46,8 @@ namespace mrover {
         // If the Receiver has messages waiting in its queue
         if (std::optional received = fdcan_bus.receive<InBoundMessage>()) {
             auto const& [header, message] = received.value();
-            auto messageId = std::bit_cast<FDCANBus::MessageId>(header.Identifier);
-            if (messageId.destination == DEVICE_ID)
+            if (auto messageId = std::bit_cast<FDCANBus::MessageId>(header.Identifier);
+                messageId.destination == DEVICE_ID)
                 controller.receive(message);
         }
 

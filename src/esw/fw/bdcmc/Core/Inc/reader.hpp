@@ -1,6 +1,8 @@
 #pragma once
 
 #include <numbers>
+#include <cstdint>
+#include <optional>
 
 #include "hardware.hpp"
 #include "hardware_i2c.hpp"
@@ -14,10 +16,10 @@ constexpr auto SECONDS_PER_TICK = mrover::Seconds{1 / 1000.0};
 
 namespace mrover {
 
-	struct EncoderReading {
-		Radians position;
-		RadiansPerSecond velocity;
-	};
+    struct EncoderReading {
+        Radians position;
+        RadiansPerSecond velocity;
+    };
 
     class AbsoluteEncoderReader {
     public:
@@ -55,7 +57,7 @@ namespace mrover {
     public:
         QuadratureEncoderReader() = default;
 
-        QuadratureEncoderReader(TIM_TypeDef* _tim, Ratio multiplier);
+        QuadratureEncoderReader(TIM_TypeDef* timer, Ratio multiplier);
 
         [[nodiscard]] std::optional<EncoderReading> read();
 
@@ -95,8 +97,6 @@ namespace mrover {
         void refresh_absolute();
     };
 
-    class LimitSwitchReader {
-
-    };
+    class LimitSwitchReader {};
 
 } // namespace mrover
