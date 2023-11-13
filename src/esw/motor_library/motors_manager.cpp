@@ -19,7 +19,8 @@ namespace mrover {
             auto type = xmlRpcValueToTypeOrDefault<std::string>(controllersRoot[name], "type");
             assert(type == "brushed" || type == "brushless");
 
-            // TODO: avoid hard coding Jetson here
+            // TODO: avoid hard coding Jetson here - can move into constructor of MotorsManager
+            // and let the bridge nodes hardcode as jetson.
             if (type == "brushed") {
                 auto temp = std::make_unique<BrushedController>(nh, "jetson", name);
                 mControllers[name] = std::move(temp);
@@ -27,9 +28,6 @@ namespace mrover {
                 auto temp = std::make_unique<BrushlessController>(nh, "jetson", name);
                 mControllers[name] = std::move(temp);
             }
-
-            // TODO(guthrie) make this compile
-            //            names[controllers[name]->get_can_manager().get_id()] = name;
         }
 
         updateLastConnection();

@@ -57,9 +57,7 @@ namespace mrover {
         ros::Subscriber mMovePositionSub;
         ros::Publisher mJointDataPub;
         ros::Publisher mControllerDataPub;
-        // TODO - create a publisher and add to ESW TELEOP ICD about limit switch hit stuff
         std::unordered_map<std::string, std::unique_ptr<Controller>> mControllers;
-        std::unordered_map<int, std::string> mNames;
         std::string mGroupName;
         std::vector<std::string> mControllerNames;
         std::chrono::high_resolution_clock::time_point lastConnection;

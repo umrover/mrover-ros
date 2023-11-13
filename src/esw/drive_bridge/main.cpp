@@ -23,9 +23,6 @@ int main(int argc, char** argv) {
     ros::init(argc, argv, "drive_bridge");
     ros::NodeHandle nh;
 
-    // Load motor controllers configuration from the ROS parameter server
-    driveManager = std::make_unique<MotorsManager>(nh, "drive", driveNames);
-
     // Load motor multipliers from the ROS parameter server
     XmlRpc::XmlRpcValue driveControllers;
     assert(nh.hasParam("drive/controllers"));
@@ -52,6 +49,8 @@ int main(int argc, char** argv) {
     assert(maxLinearSpeed > 0_mps);
 
     MAX_MOTOR_SPEED = maxLinearSpeed * WHEEL_LINEAR_TO_ANGULAR;
+
+    driveManager = std::make_unique<MotorsManager>(nh, "drive", driveNames);
 
     // Subscribe to the ROS topic for drive commands
     ros::Subscriber moveDriveSubscriber = nh.subscribe<geometry_msgs::Twist>("cmd_vel", 1, moveDrive);
