@@ -152,6 +152,8 @@ namespace mrover {
                 return "RECEIVING_POSITION_COMMANDS_WHEN_NOT_CALIBRATED";
             case BDCMCErrorInfo::OUTPUT_SET_TO_ZERO_SINCE_EXCEEDING_LIMITS:
                 return "OUTPUT_SET_TO_ZERO_SINCE_EXCEEDING_LIMITS";
+            case BDCMCErrorInfo::RECEIVING_PID_COMMANDS_WHEN_NO_READER_EXISTS:
+                return "RECEIVING_PID_COMMANDS_WHEN_NO_READER_EXISTS";
             default:
                 return "UNKNOWN_ERROR_CODE";
         }

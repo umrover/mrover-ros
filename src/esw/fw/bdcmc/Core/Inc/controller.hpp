@@ -100,6 +100,7 @@ namespace mrover {
                 m_offset_position = reader_position - message.position;
                 m_current_position = reader_position - m_offset_position;
             }
+            // ELSE: If there is no reader, then we don't need to do anything
         }
 
         void feed(ConfigCommand const& message) {
@@ -109,7 +110,6 @@ namespace mrover {
 			// Initialize values
 			m_gear_ratio = message.gear_ratio;
 			if (message.quad_abs_enc_info.quad_present && message.quad_abs_enc_info.abs_present) {
-				// TODO - use fused encoder
 				Ratio quad_multiplier = (
 						message.quad_abs_enc_info.quad_is_forward_polarity ? 1 : -1
 								) * message.quad_enc_out_ratio;
@@ -119,13 +119,9 @@ namespace mrover {
 								) * message.abs_enc_out_ratio;
 
                 m_reader = FusedReader(TIM4, m_abs_enc_i2c, quad_multiplier, abs_multiplier);
-				// use message.quad_abs_enc_info.quad_is_forward_polarity
-				// and use message.quad_abs_enc_info.abs_is_forward_polarity
-				// and message.quad_enc_out_ratio and message.abs_enc_out_ratio
 
 			}
 			else if (message.quad_abs_enc_info.quad_present) {
-				// TODO - use quad
 				Ratio multiplier = (
 						message.quad_abs_enc_info.quad_is_forward_polarity ? 1 : -1
 								) * message.quad_enc_out_ratio;
@@ -140,7 +136,7 @@ namespace mrover {
 							) * message.abs_enc_out_ratio;
 
 				// A1 and A2 are grounded
-                m_reader = AbsoluteEncoderReader{SMBus{m_abs_enc_i2c}, 0, 0, multiplier}; // TODO how to get A1 & A2?
+                m_reader = AbsoluteEncoderReader{SMBus{m_abs_enc_i2c}, 0, 0, multiplier};
 			}
 
 			m_writer.change_max_pwm(message.max_pwm);
@@ -168,6 +164,9 @@ namespace mrover {
         }
 
         void feed(IdleCommand const& message) {
+            // TODO - what is the expected behavior? just afk?
+
+
         }
 
         void feed(ThrottleCommand const& message) {
@@ -193,6 +192,9 @@ namespace mrover {
 
                 write_output_if_valid(output);
             }
+            else {
+                m_error = BDCMCErrorInfo::RECEIVING_PID_COMMANDS_WHEN_NO_READER_EXISTS;
+            }
 
         }
 
@@ -214,11 +216,18 @@ namespace mrover {
 
                 write_output_if_valid(output);
             }
+            else {
+                m_error = BDCMCErrorInfo::RECEIVING_PID_COMMANDS_WHEN_NO_READER_EXISTS;
+            }
 
         }
 
         void feed(EnableLimitSwitchesCommand const& message) {
-            // TODO: implement
+            // We are allowed to just enable all limit switches.
+            // The valid bit is kept track of separately.
+            for (int i = 0; i < 4; ++i) {
+                m_limit_switches[i].enable();
+            }
         }
 
         struct detail {
