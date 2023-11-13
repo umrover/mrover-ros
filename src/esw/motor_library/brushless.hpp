@@ -68,8 +68,7 @@ namespace mrover {
         double getEffort() override;
 
     private:
-        std::optional<ErrorCode> err;
-        float torque;
+        moteus::Controller mController{{}};
         double mMeasuredEffort{};
     };
 

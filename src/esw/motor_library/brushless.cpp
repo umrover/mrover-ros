@@ -5,8 +5,10 @@ namespace mrover {
     BrushlessController::BrushlessController(ros::NodeHandle const& nh, std::string name, std::string controllerName)
         : Controller{nh, std::move(name), std::move(controllerName)} {
 
+        mMinVelocity = RadiansPerSecond{-1.0f};
+        mMaxVelocity = RadiansPerSecond{1.0f};
+
         // TODO: change
-        torque = 0.3f;
     }
 
     void BrushlessController::setDesiredThrottle(Percent throttle) {
@@ -38,27 +40,31 @@ namespace mrover {
         // TODO: Convert radians per second to revolutions per second
         velocity = std::clamp(velocity, mMinVelocity, mMaxVelocity);
 
-        moteus::Controller::Options options;
-        moteus::Controller controller{options};
-
         moteus::PositionMode::Command command{
                 .position = std::numeric_limits<double>::quiet_NaN(),
                 .velocity = velocity.get(),
         };
-        moteus::CanFdFrame positionFrame = controller.MakePosition(command);
+
+        moteus::CanFdFrame positionFrame = mController.MakePosition(command);
         mDevice.publish_moteus_frame(positionFrame);
     }
 
     void BrushlessController::processCANMessage(CAN::ConstPtr const& msg) {
-        auto r = moteus::Query::Parse(msg->data.data(), msg->data.size());
+        auto result = moteus::Query::Parse(msg->data.data(), msg->data.size());
         ROS_INFO("%3d p/v/t=(%7.3f,%7.3f,%7.3f)  v/t/f=(%5.1f,%5.1f,%3d)",
-                 r.mode,
-                 r.position,
-                 r.velocity,
-                 r.torque,
-                 r.voltage,
-                 r.temperature,
-                 r.fault);
+                 result.mode,
+                 result.position,
+                 result.velocity,
+                 result.torque,
+                 result.voltage,
+                 result.temperature,
+                 result.fault);
+
+        if (result.mode == moteus::Mode::kPositionTimeout) {
+            moteus::CanFdFrame stopFrame = mController.MakeStop();
+            mDevice.publish_moteus_frame(stopFrame);
+            ROS_WARN("Position timeout hit");
+        }
     }
 
     double BrushlessController::getEffort() {
