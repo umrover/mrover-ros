@@ -38,9 +38,9 @@ namespace mrover {
         template<typename... Variants>
             requires(IsCanFdSerializable<std::variant<Variants...>>)
         void publish_message(std::variant<Variants...> const& data) {
-            // TODO - make sure everything is consistent in the bridge files
             // This is okay since "publish_data" makes a copy
             auto* address = reinterpret_cast<std::byte const*>(&data);
+            // TODO - currently doesnt work since tag is at end
             // Consider a variant where one alternative is very small and the other is very large
             // We don't want to always serialize the size of the large one (e.g. if we just did sizeof the overall variant)
             // This visit ensures we get the size of the actual underlying current alternative
