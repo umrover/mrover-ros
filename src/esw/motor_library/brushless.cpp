@@ -50,6 +50,15 @@ namespace mrover {
     }
 
     void BrushlessController::processCANMessage(CAN::ConstPtr const& msg) {
+        auto r = moteus::Query::Parse(msg->data.data(), msg->data.size());
+        ROS_INFO("%3d p/v/t=(%7.3f,%7.3f,%7.3f)  v/t/f=(%5.1f,%5.1f,%3d)",
+                 r.mode,
+                 r.position,
+                 r.velocity,
+                 r.torque,
+                 r.voltage,
+                 r.temperature,
+                 r.fault);
     }
 
     double BrushlessController::getEffort() {
