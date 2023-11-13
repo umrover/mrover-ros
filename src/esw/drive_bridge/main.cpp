@@ -1,23 +1,16 @@
 #include <geometry_msgs/Twist.h>
 #include <ros/ros.h>
-#include <sensor_msgs/JointState.h>
 
 #include <can_device.hpp>
 #include <motors_manager.hpp>
 
-#include <mrover/ControllerState.h>
-
 using namespace mrover;
 
 void moveDrive(const geometry_msgs::Twist::ConstPtr& msg);
-void jointDataCallback(const ros::TimerEvent&);
-void controllerDataCallback(const ros::TimerEvent&);
 
 std::unique_ptr<MotorsManager> driveManager;
 std::vector<std::string> driveNames{"front_left", "front_right", "middle_left", "middle_right", "back_left", "back_right"};
 
-ros::Publisher jointDataPublisher;
-ros::Publisher controllerDataPublisher;
 std::unordered_map<std::string, Dimensionless> motorMultipliers; // Store the multipliers for each motor
 
 Meters WHEEL_DISTANCE_INNER;
@@ -60,9 +53,6 @@ int main(int argc, char** argv) {
 
     MAX_MOTOR_SPEED = maxLinearSpeed * WHEEL_LINEAR_TO_ANGULAR;
 
-    jointDataPublisher = nh.advertise<sensor_msgs::JointState>("drive_joint_data", 1);
-    controllerDataPublisher = nh.advertise<ControllerState>("drive_controller_data", 1);
-
     // Subscribe to the ROS topic for drive commands
     ros::Subscriber moveDriveSubscriber = nh.subscribe<geometry_msgs::Twist>("cmd_vel", 1, moveDrive);
 
@@ -100,16 +90,4 @@ void moveDrive(const geometry_msgs::Twist::ConstPtr& msg) {
     }
 
     driveManager->updateLastConnection();
-}
-
-void jointDataCallback(const ros::TimerEvent&) {
-    //TODO
-    sensor_msgs::JointState jointData; // TODO
-    jointDataPublisher.publish(jointData);
-}
-
-void controllerDataCallback(const ros::TimerEvent&) {
-    //TODO
-    ControllerState controllerData;
-    controllerDataPublisher.publish(controllerData);
 }
