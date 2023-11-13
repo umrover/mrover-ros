@@ -201,11 +201,21 @@ namespace mrover {
         };
         std::memcpy(frame.data, msg->data.data(), msg->data.size());
 
-        if (std::size_t written = boost::asio::write(mStream.value(), boost::asio::buffer(std::addressof(frame), sizeof(frame)));
-            written != sizeof(frame)) {
-            NODELET_FATAL_STREAM(std::format("Failed to write CAN frame to socket! Expected to write {} bytes, but only wrote {} bytes", sizeof(frame), written));
-            ros::shutdown();
-            return;
+        try {
+            if (std::size_t written = boost::asio::write(mStream.value(), boost::asio::buffer(std::addressof(frame), sizeof(frame)));
+                written != sizeof(frame)) {
+                NODELET_FATAL_STREAM(std::format("Failed to write CAN frame to socket! Expected to write {} bytes, but only wrote {} bytes", sizeof(frame), written));
+                ros::shutdown();
+                return;
+            }
+        } catch (boost::system::system_error const& error) {
+            // check if ran out of buffer space
+            if (error.code() == boost::asio::error::no_buffer_space) {
+                NODELET_WARN_STREAM("No buffer space available to send CAN message");
+                return;
+            } else {
+                throw;
+            }
         }
 
         ROS_DEBUG_STREAM("Sent CAN message");
