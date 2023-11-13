@@ -233,6 +233,7 @@ mrover_add_esw_bridge_node(sa_sensor_bridge src/esw/sa_sensor_bridge/*.cpp)
 mrover_add_esw_bridge_node(science_bridge src/esw/science_bridge/*.cpp)
 mrover_add_esw_bridge_node(brushless_test_bridge src/esw/brushless_test_bridge/*.cpp motor_library)
 mrover_add_esw_bridge_node(brushed_test_bridge src/esw/brushed_test_bridge/*.cpp)
+mrover_add_esw_bridge_node(test_arm_bridge src/esw/test_arm_bridge/*.cpp)
 
 ## Perception
 

@@ -30,10 +30,11 @@ namespace mrover {
     public:
         CanDevice(ros::NodeHandle const& nh, std::string from_device, std::string to_device)
             : m_nh{nh},
-              m_can_publisher{m_nh.advertise<mrover::CAN>(std::format("can/{}/out", to_device), 1)},
               m_from_device{std::move(from_device)},
               m_to_device{std::move(to_device)} {
+            m_can_publisher = m_nh.advertise<mrover::CAN>(std::format("can/{}/out", m_to_device), 1);
         }
+
 
         template<typename... Variants>
             requires(IsCanFdSerializable<std::variant<Variants...>>)
