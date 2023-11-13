@@ -36,6 +36,11 @@ namespace mrover {
                 throw std::invalid_argument("Expected XmlRpcValue of TypeDouble for member: " + member);
             }
             return static_cast<double>(value);
+        } else if constexpr (std::is_same_v<T, bool>) {
+            if (value.getType() != XmlRpc::XmlRpcValue::TypeBoolean) {
+                throw std::invalid_argument("Expected XmlRpcValue of TypeBoolean for member: " + member);
+            }
+            return static_cast<bool>(value);
         } else {
             throw std::invalid_argument("Unsupported type conversion for member: " + member);
         }

@@ -41,10 +41,10 @@ namespace mrover {
         mConfigCommand.quad_abs_enc_info.abs_is_forward_polarity = xmlRpcValueToTypeOrDefault<bool>(
                 brushedMotorData, "abs_is_forward_polarity", false);
 
-        mConfigCommand.quad_enc_out_ratio = xmlRpcValueToTypeOrDefault<bool>(
+        mConfigCommand.quad_enc_out_ratio = xmlRpcValueToTypeOrDefault<double>(
                 brushedMotorData, "quad_ratio", 1.0);
 
-        mConfigCommand.abs_enc_out_ratio = xmlRpcValueToTypeOrDefault<bool>(
+        mConfigCommand.abs_enc_out_ratio = xmlRpcValueToTypeOrDefault<double>(
                 brushedMotorData, "abs_ratio", 1.0);
 
         auto driver_voltage = xmlRpcValueToTypeOrDefault<double>(brushedMotorData, "driver_voltage");
