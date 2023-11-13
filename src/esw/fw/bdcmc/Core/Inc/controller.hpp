@@ -66,12 +66,14 @@ namespace mrover {
 
         BDCMCErrorInfo m_error{};
 
-        auto read() {
+        std::optional<EncoderReading> read() {
             return std::visit([&](auto& reader) {
                 if constexpr (std::is_same_v<decltype(reader), std::monostate&>) {
-                    return std::optional<std::pair<InputUnit, compound_unit<InputUnit, inverse<TimeUnit>>>>{};
-                } else {
-                    return std::make_optional(reader.read());
+                	std::optional<EncoderReading> ret = std::nullopt;
+                	return ret;
+                }
+                else {
+                	return reader.read();
                 }
             }, m_reader);
         }
@@ -108,7 +110,15 @@ namespace mrover {
 			m_gear_ratio = message.gear_ratio;
 			if (message.quad_abs_enc_info.quad_present && message.quad_abs_enc_info.abs_present) {
 				// TODO - use fused encoder
-                m_reader = FusedReader{};
+				Ratio quad_multiplier = (
+						message.quad_abs_enc_info.quad_is_forward_polarity ? 1 : -1
+								) * message.quad_enc_out_ratio;
+
+				Ratio abs_multiplier = (
+						message.quad_abs_enc_info.abs_is_forward_polarity ? 1 : -1
+								) * message.abs_enc_out_ratio;
+
+                m_reader = FusedReader(TIM4, m_abs_enc_i2c, quad_multiplier, abs_multiplier);
 				// use message.quad_abs_enc_info.quad_is_forward_polarity
 				// and use message.quad_abs_enc_info.abs_is_forward_polarity
 				// and message.quad_enc_out_ratio and message.abs_enc_out_ratio
@@ -116,15 +126,21 @@ namespace mrover {
 			}
 			else if (message.quad_abs_enc_info.quad_present) {
 				// TODO - use quad
-                m_reader = QuadratureEncoderReader{TIM4}; // TODO is this the timer?
-				// use message.quad_abs_enc_info.quad_is_forward_polarity
-				// and message.quad_enc_out_ratio
+				Ratio multiplier = (
+						message.quad_abs_enc_info.quad_is_forward_polarity ? 1 : -1
+								) * message.quad_enc_out_ratio;
+
+                m_reader = QuadratureEncoderReader{
+                	TIM4,
+					multiplier};
 			}
 			else if (message.quad_abs_enc_info.abs_present) {
-				// TODO - use abs
-                m_reader = AbsoluteEncoderReader{SMBus{m_abs_enc_i2c}, 1, 1}; // TODO how to get A1 & A2?
-				// use message.quad_abs_enc_info.abs_is_forward_polarity
-				// and message.abs_enc_out_ratio
+				Ratio multiplier = (
+					message.quad_abs_enc_info.abs_is_forward_polarity ? 1 : -1
+							) * message.abs_enc_out_ratio;
+
+				// A1 and A2 are grounded
+                m_reader = AbsoluteEncoderReader{SMBus{m_abs_enc_i2c}, 0, 0, multiplier}; // TODO how to get A1 & A2?
 			}
 
 			m_writer.change_max_pwm(message.max_pwm);
@@ -229,8 +245,8 @@ namespace mrover {
         Controller() = default;
 
         Controller(TIM_HandleTypeDef* output_timer, std::array<LimitSwitch, 4> limit_switches, FDCANBus const& fdcan_bus, I2C_HandleTypeDef* abs_enc_i2c_line)
-            : m_writer{output_timer},
-              m_limit_switches{limit_switches},
+            : m_writer{HBridgeWriter(output_timer)},
+              m_limit_switches{std::move(limit_switches)},
 			  m_fdcan_bus{fdcan_bus},
               m_abs_enc_i2c{abs_enc_i2c_line},
 			  m_error{BDCMCErrorInfo::DEFAULT_START_UP_NOT_CONFIGURED} {}

@@ -23,7 +23,7 @@ namespace mrover {
     public:
         AbsoluteEncoderReader() = default;
 
-        AbsoluteEncoderReader(SMBus i2c_bus, std::uint8_t A1, std::uint8_t A2);
+        AbsoluteEncoderReader(SMBus i2c_bus, std::uint8_t A1, std::uint8_t A2, Ratio multiplier);
 
         std::optional<std::uint64_t> read_raw_angle();
 
@@ -45,6 +45,7 @@ namespace mrover {
 
         std::uint32_t m_ticks_prev{};
         Radians m_angle_prev;
+        Ratio m_multiplier;
 
         Radians m_position;
         RadiansPerSecond m_velocity;
@@ -54,7 +55,7 @@ namespace mrover {
     public:
         QuadratureEncoderReader() = default;
 
-        QuadratureEncoderReader(TIM_TypeDef* _tim);
+        QuadratureEncoderReader(TIM_TypeDef* _tim, Ratio multiplier);
 
         [[nodiscard]] std::optional<EncoderReading> read();
 
@@ -64,6 +65,7 @@ namespace mrover {
         std::uint32_t m_counts_raw_now{};
         std::uint32_t m_ticks_prev{};
         std::uint32_t m_ticks_now{};
+        Ratio m_multiplier;
 
         Radians m_position;
         RadiansPerSecond m_velocity;
@@ -77,15 +79,15 @@ namespace mrover {
     public:
         FusedReader() = default;
 
-        FusedReader(TIM_HandleTypeDef* relative_encoder_timer, I2C_HandleTypeDef* absolute_encoder_i2c);
+        FusedReader(TIM_TypeDef* _tim, I2C_HandleTypeDef* absolute_encoder_i2c, Ratio quad_multiplier, Ratio abs_multiplier);
 
-        [[nodiscard]] std::pair<Radians, RadiansPerSecond> read();
+        [[nodiscard]] std::optional<EncoderReading> read();
 
     private:
         AbsoluteEncoderReader m_abs_encoder;
         QuadratureEncoderReader m_quad_encoder;
 
-        TIM_HandleTypeDef* m_relative_encoder_timer{};
+        TIM_TypeDef* m_relative_encoder_timer{};
         I2C_HandleTypeDef* m_absolute_encoder_i2c{};
         Radians m_position;
         RadiansPerSecond m_velocity;

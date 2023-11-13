@@ -2,7 +2,13 @@
 
 namespace mrover {
 
-    QuadratureEncoderReader::QuadratureEncoderReader(TIM_TypeDef* _tim) : m_timer{_tim} {
+    QuadratureEncoderReader::QuadratureEncoderReader(
+    		TIM_TypeDef* _tim, Ratio multiplier) :
+    				m_timer{_tim}, m_multiplier{multiplier} {
+
+			// TODO - TIMERS need to be intiialized
+//			check(HAL_TIM_Encoder_Start(m_relative_encoder_timer, TIM_CHANNEL_ALL) == HAL_OK, Error_Handler);
+
     }
 
     std::int64_t QuadratureEncoderReader::count_delta() {
@@ -25,7 +31,7 @@ namespace mrover {
     }
 
     [[nodiscard]] std::optional<EncoderReading> QuadratureEncoderReader::read() {
-    	Radians delta_angle = RADIANS_PER_COUNT_RELATIVE * count_delta();
+    	Radians delta_angle = m_multiplier * RADIANS_PER_COUNT_RELATIVE * count_delta();
     	m_ticks_now = HAL_GetTick();
 
     	m_position += delta_angle;

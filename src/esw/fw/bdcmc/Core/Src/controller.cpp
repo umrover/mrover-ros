@@ -39,7 +39,7 @@ namespace mrover {
 				LimitSwitch{Pin{LIMIT_0_3_GPIO_Port, LIMIT_0_3_Pin}}
         };
         // controller = BrushedController{FusedReader{&htim4, &hi2c1}, HBridgeWriter{&htim15}, limit_switches, fdcan_bus};
-        controller = Controller{&htim15, limit_switches, fdcan_bus};
+        controller = Controller{&htim15, limit_switches, fdcan_bus, &hi2c1};
     }
 
     void loop() {

@@ -18,7 +18,9 @@ namespace mrover {
     }
 
     // A1/A2 is 1 if pin connected to power, 0 if pin connected to ground
-    AbsoluteEncoderReader::AbsoluteEncoderReader(SMBus i2c_bus, std::uint8_t A1, std::uint8_t A2) {
+    AbsoluteEncoderReader::AbsoluteEncoderReader(
+    		SMBus i2c_bus, std::uint8_t A1, std::uint8_t A2, Ratio multiplier) :
+		m_i2cBus{i2c_bus}, m_multiplier{multiplier}{
         // could be put into member list if we use ternary
         if (A1 && A2) {
             m_address = I2CAddress::device_slave_address_both_high;
@@ -37,7 +39,7 @@ namespace mrover {
 
 		std::uint64_t ticks_now = HAL_GetTick();
 
-		m_position = RADIANS_PER_COUNT_ABSOLUTE * count.value();
+		m_position = m_multiplier * RADIANS_PER_COUNT_ABSOLUTE * count.value();
 		m_velocity = (m_position - m_angle_prev) / ((ticks_now - m_ticks_prev) * SECONDS_PER_TICK);
 		m_ticks_prev = ticks_now;
 
