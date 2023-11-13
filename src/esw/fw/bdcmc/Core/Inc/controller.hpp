@@ -165,8 +165,12 @@ namespace mrover {
 
         void feed(IdleCommand const& message) {
             // TODO - what is the expected behavior? just afk?
+            if (!m_is_configured) {
+            	m_error = BDCMCErrorInfo::RECEIVING_COMMANDS_WHEN_NOT_CONFIGURED;
+                return;
+            }
 
-
+            write_output_if_valid(0_percent);
         }
 
         void feed(ThrottleCommand const& message) {

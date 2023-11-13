@@ -21,8 +21,6 @@ namespace mrover {
 
         virtual ~Controller() = default;
 
-        // TODO: receive information
-
         virtual void setDesiredThrottle(Percent throttle) = 0;          // from -1.0 to 1.0
         virtual void setDesiredVelocity(RadiansPerSecond velocity) = 0; // joint output
         virtual void setDesiredPosition(Radians position) = 0;          // joint output
@@ -30,8 +28,8 @@ namespace mrover {
         Radians getCurrentPosition() { return mCurrentPosition; }
         RadiansPerSecond getCurrentVelocity() { return mCurrentVelocity; }
         std::string getErrorState() { return mErrorState; }
-        std::string getState() { return mState; }
-        virtual double getEffort() = 0; // TODO implement in base files. for brushed it is 0/nan, for brushless it exists.
+        std::string getState() { return mState; }  // TODO - we probably don't need both mErrorState and mState
+        virtual double getEffort() = 0;
         bool isLimitHit(uint8_t index) {
             return mLimitHit.at(index);
         }

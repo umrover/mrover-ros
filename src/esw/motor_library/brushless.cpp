@@ -53,7 +53,7 @@ namespace mrover {
     }
 
     double BrushlessController::getEffort() {
-        // TODO - actually do something
+        // TODO - need to properly set mMeasuredEFfort elsewhere
         return mMeasuredEffort;
     }
 

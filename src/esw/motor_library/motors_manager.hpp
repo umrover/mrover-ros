@@ -35,8 +35,6 @@ namespace mrover {
 
         Controller& get_controller(std::string const& name);
 
-        void process_frame(int bus, int id, std::span<std::byte const> frame_data);
-
         void moveMotorsThrottle(const Throttle::ConstPtr& msg);
 
         void moveMotorsVelocity(const Velocity::ConstPtr& msg);
