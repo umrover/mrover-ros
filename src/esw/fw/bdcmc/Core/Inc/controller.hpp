@@ -11,6 +11,8 @@
 #include "pidf.hpp"
 #include "units/units.hpp"
 
+extern TIM_HandleTypeDef htim4;
+
 namespace mrover {
 
     // Utility for std::visit with lambdas
@@ -113,12 +115,12 @@ namespace mrover {
 
                 Ratio abs_multiplier = (message.quad_abs_enc_info.abs_is_forward_polarity ? 1 : -1) * message.abs_enc_out_ratio;
 
-                m_reader = FusedReader{TIM4, m_abs_enc_i2c, quad_multiplier, abs_multiplier};
+                m_reader = FusedReader{&htim4, m_abs_enc_i2c, quad_multiplier, abs_multiplier};
 
             } else if (message.quad_abs_enc_info.quad_present) {
                 Ratio multiplier = (message.quad_abs_enc_info.quad_is_forward_polarity ? 1 : -1) * message.quad_enc_out_ratio;
 
-                m_reader = QuadratureEncoderReader{TIM4, multiplier};
+                m_reader = QuadratureEncoderReader{&htim4, multiplier};
             } else if (message.quad_abs_enc_info.abs_present) {
                 Ratio multiplier = (message.quad_abs_enc_info.abs_is_forward_polarity ? 1 : -1) * message.abs_enc_out_ratio;
 
