@@ -1,3 +1,6 @@
+// PCA9546A I2C Multiplexer/Switch
+// Datasheet: https://www.ti.com/lit/ds/symlink/pca9546a.pdf
+
 #pragma once
 
 #include "stm32g4xx_hal.h"
@@ -22,10 +25,12 @@ namespace mrover {
 
     	I2CMux(std::shared_ptr<SMBus> i2c_bus);
 
-        void select_channel(uint8_t channel);
+        void set_channel(uint8_t channel);
 
     private:
         std::shared_ptr<SMBus> m_i2c_bus;
+        uint8_t current_channel = 0;
+        constexpr static std::uint16_t MUX_7b_ADDRESS = 0x70;
     };
 
 } // namespace mrover
