@@ -1,4 +1,5 @@
 #include "cost_map.hpp"
+#include <tf2_ros/buffer.h>
 
 namespace mrover {
 
@@ -11,14 +12,13 @@ namespace mrover {
         mNh.param<int>("map_width", map_width, 1);
         mNh.param<int>("map_height", map_height, 1);
         mNh.param<float>("cutoff", cutoff, 1);
-        
+
 
         //mCostMapPub = mCmt.advertise<nav_msgs::OccupancyGrid>("cost_maps", 1);
 
         mPcSub = mNh.subscribe("camera/left/points", 1, &CostMapNodelet::pointCloudCallback, this);
-
     }
-}
+} // namespace mrover
 
 /*
 TODO:

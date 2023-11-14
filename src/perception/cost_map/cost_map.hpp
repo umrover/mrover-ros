@@ -1,3 +1,4 @@
+#include "nav_msgs/OccupancyGrid.h"
 #include "pch.hpp"
 
 namespace mrover {
@@ -33,11 +34,11 @@ namespace mrover {
         int map_width = 1;
         int map_height = 1;
         float cutoff = 1;
+        const tf2_ros::Buffer tf_buffer = tf2_ros::Buffer();
 
     public:
         CostMapNodelet() = default;
         ~CostMapNodelet() override = default;
-        void pointCloudCallback(sensor_msgs::PointCloud2ConstPtr const& msg);
-
+        void occupancyGridCallback(nav_msgs::OccupancyGrid const& msg);
     };
-}
+} // namespace mrover

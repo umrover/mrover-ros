@@ -1,49 +1,33 @@
 #include "cost_map.hpp"
-
 #include "../point.hpp"
+
 #include <algorithm>
 #include <pstl/glue_execution_defs.h>
+#include <se3.hpp>
 
 namespace mrover {
 
     /**
-     * Calculate the costs of each point in pointcloud 
-     * and stitch to occupancy grid.
+     * Stitches local occupancy grid to global occupancy grid
      *
-     * @param msg   Point cloud message
+     * @param msg   Local Occupancy Grid Mesasge
      */
-    void CostMapNodelet::pointCloudCallback(sensor_msgs::PointCloud2ConstPtr const& msg){
-        assert(msg);
-        assert(msg->height > 0);
-        assert(msg->width > 0);
+    void CostMapNodelet::occupancyGridCallback(nav_msgs::OccupancyGrid const& msg) {
 
-        auto* pointPtr = reinterpret_cast<Point const*>(msg->data.data());
-        // Question: Determine number of points in pointcloud in msg
-        int size = 0; //TODO
-        std::for_each(std::execution::par_unseq, pointPtr, pointPtr + size, [&cutoff](Point& point)
-        {
-            float curv = point.curvature;
-            int cost = 0;
-            if (curv >= cutoff)
-            {
-                cost = 100;
-            }
-            // Question: How do we get the transformation matrix to get to the correct basis?
-            
-            
+        // Make sure message is valid
+        assert(msg.info.width > 0);
+        assert(msg.info.height > 0);
+        assert(msg.info.resolution > 0);
+
+        // Using tf_tree, get the transformation
+
+        SE3 base_to_map = SE3::fromTfTree(tf_buffer, "base_link", "map");
+        SE3 zed_to_base = SE3::fromTfTree(tf_buffer, "zed2i_left_camera_frame", "base_link");
+        Eigen::Matrix4d transformMatrix = zed_to_base.matrix() * base_to_map.matrix(); // This is the matrix transform from zed to the map
+
+        auto* pointPtr = &msg.data;
+        std::for_each(std::execution::par_unseq, &msg.data, &msg.data + msg.info.width, [&](int& point) {
 
         });
-        
-    }   
-}
-
-/*
-TODO:
-- Nodelet takes in pointcloud
-PARALLELIZE
-- Get cost of point
-- Transform point to nav basis
-- Stitch to nav grid
-END
-
-*/
+    }
+} // namespace mrover
