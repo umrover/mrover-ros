@@ -1,4 +1,5 @@
 #include "arm_controller.hpp"
+#include "mrover/Position.h"
 
 namespace mrover {
 
@@ -37,6 +38,8 @@ namespace mrover {
         positions.positions.resize(positions.names.size(), 0.f);
 
         ros::Rate rate{frequency};
+        int counter = 0;
+        double radius = 3;
         while (ros::ok()) {
             // 1. Check out: https://hive.blog/hive-196387/@juecoree/forward-and-reverse-kinematics-for-3r-planar-manipulator
             // 2. Create a function that takes in "ik_target" and solves for the linear joint angle (at index 0) and
@@ -47,9 +50,44 @@ namespace mrover {
             // 6. Publish these positions. If in the sim, the sim arm bridge will subscribe to this.
             //    If on the real rover the arm bridge will subscribe to this.
             //    On the real rover it is ESW's job to achieve these desired joint angles.
+            double y = ik_target.pose.position.y + 10 + radius * cos(counter / 100.0);
 
+            double gamma = 0;
+
+            // position of end of second link
+            double x3 = ik_target.pose.position.x - LINK_CD * cos(gamma);
+            double z3 = ik_target.pose.position.z - LINK_CD * sin(gamma) + radius * sin(counter / 100.0);
+
+            // double alpha = acos((pow(x3, 2) + pow(z3, 2) - pow(LINK_AB, 2) - pow(LINK_BC, 2)) / (2 * LINK_AB * LINK_BC));
+            // double beta = asin((LINK_BC * sin(alpha)) / sqrt(pow(x3, 2) + pow(z3, 2)));
+            // double thetaA = atan(z3 / x3) + beta;
+            // double thetaB = -(3.1415 - alpha);
+            // double thetaC = gamma - thetaA - thetaB;
+
+            // double thetaB = -acos((pow(x3, 2) + pow(z3, 2) - pow(LINK_AB, 2) - pow(LINK_BC, 2)) / (2 * LINK_AB * LINK_BC));
+            // double thetaA = atan(z3 / x3) + atan((LINK_BC * sin(thetaB)) / (LINK_AB + LINK_BC * cos(thetaB)));
+            // double thetaC = gamma - thetaA - thetaB;
+
+            double C = sqrt(pow(x3, 2) + pow(z3, 2));
+            double alpha = acos((pow(LINK_AB, 2) + pow(LINK_BC, 2) - pow(C, 2)) / (2 * LINK_AB * LINK_BC));
+            double beta = acos((pow(LINK_AB, 2) + pow(C, 2) - pow(LINK_BC, 2)) / (2 * LINK_AB * C));
+            double thetaA = atan(z3 / x3) + beta;
+            double thetaB = -(3.1415 - alpha);
+            double thetaC = gamma - thetaA - thetaB;
+
+            positions.positions[0] = static_cast<float>(y);
+            if (thetaA == thetaA)
+                positions.positions[1] = static_cast<float>(-thetaA);
+            if (thetaB == thetaB)
+                positions.positions[2] = static_cast<float>(-thetaB);
+            if (thetaC == thetaC)
+                positions.positions[3] = static_cast<float>(-thetaC);
+            // positions.positions[4] = static_cast<float>(ik_target.pose.orientation.w);
+
+            position_publisher.publish(positions);
             rate.sleep();
             ros::spinOnce();
+            counter++;
         }
 
         return EXIT_SUCCESS;
