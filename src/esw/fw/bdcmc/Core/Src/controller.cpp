@@ -11,9 +11,10 @@ extern FDCAN_HandleTypeDef hfdcan1;
 extern I2C_HandleTypeDef hi2c1;
 extern TIM_HandleTypeDef htim4;  // Quadrature encoder #1
 extern TIM_HandleTypeDef htim3;  // Quadrature encoder #2
-extern TIM_HandleTypeDef htim6;  // Update timer
-extern TIM_HandleTypeDef htim7;  // Send timer
+extern TIM_HandleTypeDef htim6;  // 10,000 Hz Update timer
+extern TIM_HandleTypeDef htim7;  // 100 Hz Send timer
 extern TIM_HandleTypeDef htim15; // H-Bridge PWM
+extern TIM_HandleTypeDef htim16; // Message watchdog timer
 // extern WWDG_HandleTypeDef hwwdg;
 
 namespace mrover {
@@ -39,6 +40,7 @@ namespace mrover {
         controller = Controller{
                 &htim15,
                 fdcan_bus,
+                &htim16,
                 &htim4,
                 &hi2c1,
                 {
@@ -48,6 +50,11 @@ namespace mrover {
                         LimitSwitch{Pin{LIMIT_0_3_GPIO_Port, LIMIT_0_3_Pin}},
                 },
         };
+
+        HAL_TIM_Base_Start(&htim6);
+        HAL_TIM_Base_Start_IT(&htim6);
+        HAL_TIM_Base_Start(&htim7);
+        HAL_TIM_Base_Start_IT(&htim7);
     }
 
     void fdcan_received_callback() {
@@ -71,6 +78,10 @@ namespace mrover {
         controller.send();
     }
 
+    void fdcan_watchdog_expired() {
+        controller.receive_watchdog_expired();
+    }
+
 } // namespace mrover
 
 void HAL_PostInit() {
@@ -82,6 +93,8 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef* htim) {
         mrover::update_callback();
     } else if (htim == &htim7) {
         mrover::send_callback();
+    } else if (htim == &htim16) {
+        mrover::fdcan_watchdog_expired();
     }
 }
 

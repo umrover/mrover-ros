@@ -46,7 +46,7 @@ elseif ("${CMAKE_BUILD_TYPE}" STREQUAL "MinSizeRel")
     add_compile_options(-Os)
 else ()
     message(STATUS "Minimal optimization, debug info included")
-    # (MRover) Change to -Og to use less flash when debugging
+    # (MRover) Change to -O0 if you need more fine grain debugging
     add_compile_options(-Og -g)
 endif ()
 

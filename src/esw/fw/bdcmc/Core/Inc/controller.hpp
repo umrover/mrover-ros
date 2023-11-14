@@ -36,6 +36,8 @@ namespace mrover {
         FDCAN m_fdcan;
         MotorDriver m_motor_driver;
         Encoder m_encoder;
+        TIM_HandleTypeDef* m_watchdog_timer{};
+        bool m_watchdog_enabled{};
         TIM_HandleTypeDef* m_quadrature_encoder_timer{};
         I2C_HandleTypeDef* m_absolute_encoder_i2c{};
         std::array<LimitSwitch, 4> m_limit_switches;
@@ -281,9 +283,10 @@ namespace mrover {
     public:
         Controller() = default;
 
-        Controller(TIM_HandleTypeDef* hbridge_output, FDCAN const& fdcan, TIM_HandleTypeDef* quadrature_encoder_timer, I2C_HandleTypeDef* absolute_encoder_i2c, std::array<LimitSwitch, 4> const& limit_switches)
+        Controller(TIM_HandleTypeDef* hbridge_output, FDCAN const& fdcan, TIM_HandleTypeDef* watchdog_timer, TIM_HandleTypeDef* quadrature_encoder_timer, I2C_HandleTypeDef* absolute_encoder_i2c, std::array<LimitSwitch, 4> const& limit_switches)
             : m_motor_driver{HBridge(hbridge_output)},
               m_fdcan{fdcan},
+              m_watchdog_timer{watchdog_timer},
               m_quadrature_encoder_timer{quadrature_encoder_timer},
               m_absolute_encoder_i2c{absolute_encoder_i2c},
               m_limit_switches{limit_switches} {}
@@ -294,7 +297,7 @@ namespace mrover {
             using ModeForCommand = command_to_mode_t<Command, Mode>;
 
             // If the current mode is not the mode that "process_command" expects, change the mode, providing a new blank mode
-            if (!std::holds_alternative<ModeForCommand>(m_mode)) m_mode.template emplace<ModeForCommand>();
+            if (!std::holds_alternative<ModeForCommand>(m_mode)) m_mode.emplace<ModeForCommand>();
 
             if constexpr (std::is_same_v<ModeForCommand, std::monostate>) {
                 process_command(command);
@@ -304,6 +307,14 @@ namespace mrover {
         }
 
         auto receive(InBoundMessage const& message) -> void {
+            // Ensure watchdog is enabled once we have received a message and that it is reset to zero
+            if (!m_watchdog_enabled) {
+                HAL_TIM_Base_Start(m_watchdog_timer);
+                HAL_TIM_Base_Start_IT(m_watchdog_timer);
+                m_watchdog_enabled = true;
+            }
+            m_watchdog_timer->Instance->CNT = 0;
+
             m_inbound = message;
             process_command();
         }
@@ -312,6 +323,17 @@ namespace mrover {
             // m_elapsed_since_last_message = 0;
             std::visit([&](auto const& command) { process_command(command); }, m_inbound);
             drive_motor();
+        }
+
+        auto receive_watchdog_expired() -> void {
+            HAL_TIM_Base_Stop(m_watchdog_timer);
+            HAL_TIM_Base_Stop_IT(m_watchdog_timer);
+            m_watchdog_enabled = false;
+
+            // We lost connection or some other error happened
+            // Make sure the motor stops
+            m_inbound = IdleCommand{};
+            process_command();
         }
 
         auto update() -> void {
