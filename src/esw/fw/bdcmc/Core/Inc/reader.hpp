@@ -57,12 +57,12 @@ namespace mrover {
     public:
         QuadratureEncoderReader() = default;
 
-        QuadratureEncoderReader(TIM_TypeDef* timer, Ratio multiplier);
+        QuadratureEncoderReader(TIM_HandleTypeDef* timer, Ratio multiplier);
 
         [[nodiscard]] std::optional<EncoderReading> read();
 
     private:
-        TIM_TypeDef* m_timer{};
+        TIM_HandleTypeDef* m_timer{};
         std::int64_t m_counts_unwrapped_prev{};
         std::uint32_t m_counts_raw_now{};
         std::uint32_t m_ticks_prev{};
@@ -81,7 +81,7 @@ namespace mrover {
     public:
         FusedReader() = default;
 
-        FusedReader(TIM_TypeDef* _tim, I2C_HandleTypeDef* absolute_encoder_i2c, Ratio quad_multiplier, Ratio abs_multiplier);
+        FusedReader(TIM_HandleTypeDef* timer, I2C_HandleTypeDef* absolute_encoder_i2c, Ratio quad_multiplier, Ratio abs_multiplier);
 
         [[nodiscard]] std::optional<EncoderReading> read();
 
@@ -89,8 +89,6 @@ namespace mrover {
         AbsoluteEncoderReader m_abs_encoder;
         QuadratureEncoderReader m_quad_encoder;
 
-        TIM_TypeDef* m_relative_encoder_timer{};
-        I2C_HandleTypeDef* m_absolute_encoder_i2c{};
         Radians m_position;
         RadiansPerSecond m_velocity;
 

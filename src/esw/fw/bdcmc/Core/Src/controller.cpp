@@ -12,6 +12,7 @@ extern FDCAN_HandleTypeDef hfdcan1;
 extern I2C_HandleTypeDef hi2c1;
 extern TIM_HandleTypeDef htim15;
 extern TIM_HandleTypeDef htim4;
+// extern WWDG_HandleTypeDef hwwdg;
 
 namespace mrover {
 
@@ -43,12 +44,15 @@ namespace mrover {
     }
 
     void loop() {
+        // HAL_WWDG_Refresh(&hwwdg);
+
         // If the Receiver has messages waiting in its queue
         if (std::optional received = fdcan_bus.receive<InBoundMessage>()) {
             auto const& [header, message] = received.value();
             if (auto messageId = std::bit_cast<FDCANBus::MessageId>(header.Identifier);
-                messageId.destination == DEVICE_ID)
+                messageId.destination == DEVICE_ID) {
                 controller.receive(message);
+            }
         }
 
         HAL_Delay(100); // TODO: remove after debugging
