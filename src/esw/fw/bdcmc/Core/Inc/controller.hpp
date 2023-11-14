@@ -307,13 +307,13 @@ namespace mrover {
         }
 
         auto receive(InBoundMessage const& message) -> void {
-            // Ensure watchdog is enabled once we have received a message and that it is reset to zero
+            // Ensure watchdog timer is reset and enabled now that we are receiving messages
+            m_watchdog_timer->Instance->CNT = 0;
             if (!m_watchdog_enabled) {
                 HAL_TIM_Base_Start(m_watchdog_timer);
                 HAL_TIM_Base_Start_IT(m_watchdog_timer);
                 m_watchdog_enabled = true;
             }
-            m_watchdog_timer->Instance->CNT = 0;
 
             m_inbound = message;
             process_command();
