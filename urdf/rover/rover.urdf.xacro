@@ -36,18 +36,6 @@
 
   <link name="base_link"/>
 
-  <link name="rover_gps_left">
-    <visual>
-      <origin rpy="0 0 0" xyz="0.5 0 0"/>
-    </visual>
-  </link>
-
-  <link name="rover_gps_right">
-    <visual>
-      <origin rpy="0 0 0" xyz="-0.5 0 0"/>
-    </visual>
-  </link>
-
   <link name="chassis_link">
     <xacro:box_inertia m="3.0" w="${base_len}" h="${base_width}" d="${base_height}"/>
     <visual>
@@ -148,6 +136,24 @@
   </joint>
 
   <link name="imu_link"/>
+
+
+  <!-- GPS -->
+  <joint name="rover_gps_left_joint" type="fixed">
+    <origin xyz="-0.5 0 0"/>
+    <parent link="chassis_link"/>
+    <child link="rover_gps_left_link"/>
+  </joint>
+
+  <link name="rover_gps_left_link"/>
+
+  <joint name="rover_gps_right_joint" type="fixed">
+    <origin xyz="0.5 0 0"/>
+    <parent link="chassis_link"/>
+    <child link="rover_gps_right_link"/>
+  </joint>
+
+  <link name="rover_gps_right_link"/>
 
   <!-- Camera -->
   <joint name="camera_joint" type="fixed">
