@@ -152,20 +152,17 @@ namespace mrover {
     }
 
     float LongRangeTagDetectorNodelet::getTagBearing(std::vector<cv::Point2f>& tagCorners) const {
-        // //TODO: FINISH
-        // //for HD720 resolution
-        // pair<float, float> center = getTagCenterPixels(tagCorners);
-        // float x = center.first;
-        // int width = //get width of the image
-        //         int angleOfFOV = 104;
-        // float bearing = ((x - width / 2) / width) * angleOfFOV;
+        //for HD720 resolution
+        cv::Point2f center = getTagCenterPixels(tagCorners);
+        float width = 2 * center.x;
+        float angleOfFOV = 104;
+        float bearing = ((center.x - width / 2) / width) * angleOfFOV;
 
-        // return bearing;
-        return {};
+        return bearing;
     }
 
     void LongRangeTagDetectorNodelet::publishThresholdTags() {
-        //Loop through all the tags
+        //Loop through all the tagsj
         LongRangeTags tagsMessage; //
 
         for (auto& tag: mTags) {
