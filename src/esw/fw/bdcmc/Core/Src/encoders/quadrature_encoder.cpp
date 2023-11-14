@@ -1,4 +1,8 @@
-#include "reader.hpp"
+#include "encoders.hpp"
+
+#include <cstdint>
+
+#include <units/units.hpp>
 
 namespace mrover {
 
@@ -7,7 +11,6 @@ namespace mrover {
 
         // TODO - TIMERS need to be intiialized
         check(HAL_TIM_Encoder_Start(m_timer, TIM_CHANNEL_ALL) == HAL_OK, Error_Handler);
-
     }
 
     std::int64_t QuadratureEncoderReader::count_delta() {
@@ -29,15 +32,16 @@ namespace mrover {
         return mod_dif;
     }
 
-    [[nodiscard]] std::optional<EncoderReading> QuadratureEncoderReader::read() {
-        Radians delta_angle = m_multiplier * RADIANS_PER_COUNT_RELATIVE * count_delta();
+    [[nodiscard]] auto QuadratureEncoderReader::read() -> std::optional<EncoderReading> {
+        Radians delta_angle = m_multiplier * Ticks{count_delta()} / RELATIVE_CPR;
         m_ticks_now = HAL_GetTick();
 
         m_position += delta_angle;
-        m_velocity = delta_angle / ((m_ticks_now - m_ticks_prev) * SECONDS_PER_TICK);
+        Seconds seconds_per_tick = 1 / Hertz{HAL_GetTickFreq()};
+        m_velocity = delta_angle / ((m_ticks_now - m_ticks_prev) * seconds_per_tick);
 
         m_ticks_prev = m_ticks_now;
 
-        return std::make_optional(EncoderReading{m_position, m_velocity});
+        return EncoderReading{m_position, m_velocity};
     }
 } // namespace mrover

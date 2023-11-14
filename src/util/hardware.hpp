@@ -1,13 +1,14 @@
 #pragma once
 
-#include "main.h"
-#include "messaging.hpp"
-
 #include <bit>
 #include <concepts>
 #include <cstdint>
 #include <optional>
 #include <type_traits>
+
+#include <units/units.hpp>
+
+#include "main.h"
 
 namespace mrover {
 
@@ -17,16 +18,16 @@ namespace mrover {
     concept IsSerializable = std::is_trivially_copyable_v<T>;
 
     template<typename T>
-    concept IsFdcanSerializable = IsSerializable<T> && sizeof(T) <= mrover::FDCAN_MAX_FRAME_SIZE;
+    concept IsFdcanSerializable = IsSerializable<T> && sizeof(T) <= FDCAN_MAX_FRAME_SIZE;
 
-    static inline auto check(bool cond, std::invocable auto handler) -> void {
+    static auto check(bool cond, std::invocable auto handler) -> void {
         if (cond) return;
 
         handler();
     }
 
     template<typename T>
-    static inline auto address_of(auto const& object) -> T* {
+    static auto address_of(auto const& object) -> T* {
         return std::bit_cast<T*>(std::addressof(object));
     }
 
@@ -37,11 +38,11 @@ namespace mrover {
         Pin(GPIO_TypeDef* port, std::uint16_t pin)
             : m_port{port}, m_pin{pin} {}
 
-        [[nodiscard]] GPIO_PinState read() const {
+        [[nodiscard]] auto read() const -> GPIO_PinState {
             return HAL_GPIO_ReadPin(m_port, m_pin);
         }
 
-        inline void write(GPIO_PinState val) const {
+        inline auto write(GPIO_PinState val) const -> void {
             HAL_GPIO_WritePin(m_port, m_pin, val);
         }
 
@@ -57,7 +58,7 @@ namespace mrover {
         explicit LimitSwitch(Pin const& pin)
             : m_pin{pin} {}
 
-        void initialize(bool enabled, bool active_high, bool used_for_readjustment, bool limits_forward, Radians associated_position) {
+        auto initialize(bool enabled, bool active_high, bool used_for_readjustment, bool limits_forward, Radians associated_position) -> void {
             m_valid = true;
             m_enabled = enabled;
             m_is_pressed = false;
@@ -67,7 +68,7 @@ namespace mrover {
             m_associated_position = associated_position;
         }
 
-        void update_limit_switch() {
+        auto update_limit_switch() -> void {
             // This suggests active low
             if (m_enabled) {
                 m_is_pressed = m_active_high == m_pin.read();
@@ -76,19 +77,19 @@ namespace mrover {
             }
         }
 
-        [[nodiscard]] bool pressed() const {
+        [[nodiscard]] auto pressed() const -> bool {
             return m_is_pressed;
         }
 
-        [[nodiscard]] bool limit_forward() const {
+        [[nodiscard]] auto limit_forward() const -> bool {
             return m_valid && m_enabled && m_is_pressed && m_limits_forward;
         }
 
-        [[nodiscard]] bool limit_backward() const {
+        [[nodiscard]] auto limit_backward() const -> bool {
             return m_valid && m_enabled && m_is_pressed && !m_limits_forward;
         }
 
-        [[nodiscard]] std::optional<Radians> get_readjustment_position() const {
+        [[nodiscard]] auto get_readjustment_position() const -> std::optional<Radians> {
             // Returns std::null_opt if the value should not be readjusted
             if (m_valid && m_enabled && m_used_for_readjustment && m_is_pressed) {
                 return m_associated_position;
@@ -117,7 +118,7 @@ namespace mrover {
         Radians m_associated_position{};
     };
 
-    class FDCANBus {
+    class FDCAN {
         //        constexpr static std::uint8_t NO_DATA = 0x50;
 
     public:
@@ -130,11 +131,12 @@ namespace mrover {
 
         static_assert(sizeof(MessageId) == 4);
 
-        FDCANBus() = default;
+        FDCAN() = default;
 
-        explicit FDCANBus(std::uint8_t source, std::uint8_t destination, FDCAN_HandleTypeDef* fdcan)
+        explicit FDCAN(std::uint8_t source, std::uint8_t destination, FDCAN_HandleTypeDef* fdcan)
             : m_fdcan{fdcan}, m_source{source}, m_destination{destination} {
 
+            check(HAL_FDCAN_ActivateNotification(m_fdcan, FDCAN_IT_RX_FIFO0_NEW_MESSAGE, 0) == HAL_OK, Error_Handler);
             check(HAL_FDCAN_Start(m_fdcan) == HAL_OK, Error_Handler);
         }
 

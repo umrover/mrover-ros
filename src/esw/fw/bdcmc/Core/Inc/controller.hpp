@@ -1,139 +1,170 @@
 #pragma once
 
+#include <array>
 #include <concepts>
 #include <optional>
+#include <type_traits>
 #include <variant>
 
-#include "writer.hpp"
-#include "reader.hpp"
-#include "hardware.hpp"
-#include "messaging.hpp"
-#include "pidf.hpp"
-#include "units/units.hpp"
+#include <hardware.hpp>
+#include <messaging.hpp>
+#include <pidf.hpp>
+#include <units/units.hpp>
 
-extern TIM_HandleTypeDef htim4;
+#include "encoders.hpp"
+#include "hbridge.hpp"
 
 namespace mrover {
 
-    // Utility for std::visit with lambdas
-    template<class... Ts>
-    struct overloaded : Ts... {
-        using Ts::operator()...;
-    };
-
-    template<typename T, typename Input, typename TimeUnit = Seconds>
-    concept IsReader = std::is_same_v<T, std::monostate> || requires(T t) {
-        { t.read() } -> std::convertible_to<std::pair<Input, compound_unit<Input, inverse<TimeUnit>>>>;
-    };
-
-    template<typename T, typename Output>
-    concept IsWriter = std::is_same_v<T, std::monostate> || requires(T t, Output output) {
-        { t.write(output) };
-    };
-
-    using Writer = HBridgeWriter;
-
-    using Reader = std::variant<
-        std::monostate, FusedReader, QuadratureEncoderReader, AbsoluteEncoderReader>;
-
-    template<IsUnit InputUnit = Radians, IsUnit OutputUnit = Percent, IsUnit TimeUnit = Seconds>
     class Controller {
+        using MotorDriver = HBridge;
+
+        using Encoder = std::variant<
+                std::monostate, FusedReader, QuadratureEncoderReader, AbsoluteEncoderReader>;
+
         struct PositionMode {
-            PIDF<InputUnit, OutputUnit, TimeUnit> pidf;
+            PIDF<Radians, Percent> pidf;
         };
 
         struct VelocityMode {
-            PIDF<compound_unit<InputUnit, inverse<TimeUnit>>, OutputUnit, TimeUnit> pidf;
+            PIDF<compound_unit<Radians, inverse<Seconds>>, Percent> pidf;
         };
 
         using Mode = std::variant<std::monostate, PositionMode, VelocityMode>;
 
+        /* Hardware */
+        FDCAN m_fdcan;
+        MotorDriver m_motor_driver;
+        Encoder m_encoder;
+        TIM_HandleTypeDef* m_quadrature_encoder_timer{};
+        I2C_HandleTypeDef* m_absolute_encoder_i2c{};
         std::array<LimitSwitch, 4> m_limit_switches;
-        FDCANBus m_fdcan_bus;
 
-        Writer m_writer;
-        Reader m_reader;
+        /* Internal State */
         Mode m_mode;
+        // General State
+        Percent m_desired_output; // "Desired" since it may be overriden if we are at a limit switch
+        std::optional<Radians> m_position;
+        std::optional<RadiansPerSecond> m_velocity;
+        BDCMCErrorInfo m_error = BDCMCErrorInfo::DEFAULT_START_UP_NOT_CONFIGURED;
+        // Configuration State
+        struct StateAfterConfig {
+            Dimensionless gear_ratio;
+            Radians max_forward_pos;
+            Radians max_backward_pos;
+        };
+        std::optional<StateAfterConfig> m_state_after_config;
+        // Calibration State
+        struct StateAfterCalib {
+            // Ex: If the encoder reads in 6 Radians and offset is 4 Radians,
+            // Then my actual current position should be 2 Radians.
+            Radians offset_position;
+        };
+        std::optional<StateAfterCalib> m_state_after_calib;
+        // Messaging
+        InBoundMessage m_inbound = IdleCommand{};
+        OutBoundMessage m_outbound = ControllerDataState{.config_calib_error_data = {.error = m_error}};
 
-        bool m_should_limit_forward{};
-        bool m_should_limit_backward{};
-        bool m_is_calibrated{};
-        Radians m_current_position{};
-        Percent m_current_throttle{};
-        RadiansPerSecond m_current_velocity{};
-        // If the m_reader reads in 6 Radians and offset is 4 Radians,
-        // Then my actual m_current_position should be 2 Radians.
-        Radians m_offset_position{};
-        bool m_is_configured{};
-        Dimensionless m_gear_ratio{};
-        Radians m_max_forward_pos;
-        Radians m_max_backward_pos;
+        /**
+         * \brief Updates \link m_position and \link m_velocity based on the hardware
+         */
+        auto update_encoder() -> void {
+            std::optional<EncoderReading> reading;
 
-        I2C_HandleTypeDef* m_abs_enc_i2c{};
+            // Only read the encoder if we are configured
+            if (m_state_after_config) {
+                reading = std::visit(
+                        overloaded{
+                                [&](std::monostate) -> std::optional<EncoderReading> { return std::nullopt; },
+                                [&](auto& reader) -> std::optional<EncoderReading> { return reader.read(); },
+                        },
+                        m_encoder);
+            }
 
-        BDCMCErrorInfo m_error{};
-
-        std::optional<EncoderReading> read() {
-            return std::visit(overloaded{
-                                      [&](std::monostate) -> std::optional<EncoderReading> { return std::nullopt; },
-                                      [&](auto& reader) -> std::optional<EncoderReading> { return reader.read(); },
-                              }, m_reader);
-        }
-
-        void write_output_if_valid(Percent output) {
-            if (m_should_limit_forward && output > 0_percent) {
-                output = 0_percent;
-                m_error = BDCMCErrorInfo::OUTPUT_SET_TO_ZERO_SINCE_EXCEEDING_LIMITS;
-            } else if (m_should_limit_backward && output < 0_percent) {
-                output = 0_percent;
-                m_error = BDCMCErrorInfo::OUTPUT_SET_TO_ZERO_SINCE_EXCEEDING_LIMITS;
+            if (reading) {
+                auto const& [position, velocity] = reading.value();
+                if (std::holds_alternative<QuadratureEncoderReader>(m_encoder)) {
+                    // For relative encoder update position only if we are calibrated (otherwise we don't know our absolute position)
+                    if (m_state_after_calib)
+                        m_position = position - m_state_after_calib->offset_position;
+                } else {
+                    m_position = position;
+                }
+                m_velocity = velocity;
             } else {
-                m_error = BDCMCErrorInfo::NO_ERROR;
+                m_position = std::nullopt;
+                m_velocity = std::nullopt;
             }
-            m_writer.write(output);
-            m_current_throttle = output;
         }
 
-        void feed(AdjustCommand const& message) {
-            if (std::optional<EncoderReading> reading = read()) {
-                auto [reader_position, m_current_velocity] = *reading;
-                m_is_calibrated = true;
-                m_offset_position = reader_position - message.position;
-                m_current_position = reader_position - m_offset_position;
+        auto update_limit_switches() -> void {
+            for (LimitSwitch& limit_switch: m_limit_switches) {
+                limit_switch.update_limit_switch();
+                // Each limit switch may have a position associated with it
+                // If we reach there update our offset position since we know exactly where we are
+                if (limit_switch.pressed() && m_position && m_state_after_calib) {
+                    if (std::optional<Radians> readjustment_position = limit_switch.get_readjustment_position()) {
+                        m_state_after_calib->offset_position = m_position.value() - readjustment_position.value();
+                    }
+                }
             }
-            // ELSE: If there is no reader, then we don't need to do anything
         }
 
-        void feed(ConfigCommand const& message) {
+        auto drive_motor() -> void {
+            std::optional<Percent> output;
 
-            m_is_configured = true;
+            if (m_state_after_config) {
+                bool limit_forward = m_desired_output > 0_percent && std::ranges::any_of(m_limit_switches, [](LimitSwitch const& limit_switch) { return limit_switch.limit_forward(); });
+                bool limit_backward = m_desired_output < 0_percent && std::ranges::any_of(m_limit_switches, [](LimitSwitch const& limit_switch) { return limit_switch.limit_backward(); });
+                if (limit_forward || limit_backward) {
+                    m_error = BDCMCErrorInfo::OUTPUT_SET_TO_ZERO_SINCE_EXCEEDING_LIMITS;
+                } else {
+                    output = m_desired_output;
+                }
+            }
 
+            m_motor_driver.write(output.value_or(0_percent));
+        }
+
+        auto process_command(AdjustCommand const& message) -> void {
+            update_encoder();
+
+            if (m_position && m_state_after_config) {
+                m_state_after_calib = StateAfterCalib{
+                        .offset_position = m_position.value() - message.position,
+                };
+            }
+        }
+
+        auto process_command(ConfigCommand const& message) -> void {
             // Initialize values
-            m_gear_ratio = message.gear_ratio;
+            StateAfterConfig config{.gear_ratio = message.gear_ratio};
+
             if (message.quad_abs_enc_info.quad_present && message.quad_abs_enc_info.abs_present) {
                 Ratio quad_multiplier = (message.quad_abs_enc_info.quad_is_forward_polarity ? 1 : -1) * message.quad_enc_out_ratio;
 
                 Ratio abs_multiplier = (message.quad_abs_enc_info.abs_is_forward_polarity ? 1 : -1) * message.abs_enc_out_ratio;
 
-                m_reader = FusedReader{&htim4, m_abs_enc_i2c, quad_multiplier, abs_multiplier};
+                m_encoder = FusedReader{m_quadrature_encoder_timer, m_absolute_encoder_i2c, quad_multiplier, abs_multiplier};
 
             } else if (message.quad_abs_enc_info.quad_present) {
-                Ratio multiplier = (message.quad_abs_enc_info.quad_is_forward_polarity ? 1 : -1) * message.quad_enc_out_ratio;
+                // TODO(quintin): Why TF does this crash without .get() ?
+                Ratio multiplier = (message.quad_abs_enc_info.quad_is_forward_polarity ? 1.0f : -1.0f) * message.quad_enc_out_ratio.get();
 
-                m_reader = QuadratureEncoderReader{&htim4, multiplier};
+                m_encoder = QuadratureEncoderReader{m_quadrature_encoder_timer, multiplier};
             } else if (message.quad_abs_enc_info.abs_present) {
                 Ratio multiplier = (message.quad_abs_enc_info.abs_is_forward_polarity ? 1 : -1) * message.abs_enc_out_ratio;
 
                 // A1 and A2 are grounded
-                m_reader = AbsoluteEncoderReader{SMBus{m_abs_enc_i2c}, 0, 0, multiplier};
+                m_encoder = AbsoluteEncoderReader{SMBus{m_absolute_encoder_i2c}, 0, 0, multiplier};
             }
 
-            m_writer.change_max_pwm(message.max_pwm);
+            m_motor_driver.change_max_pwm(message.max_pwm);
 
-            m_max_forward_pos = message.max_forward_pos;
-            m_max_backward_pos = message.max_backward_pos;
+            config.max_forward_pos = message.max_forward_pos;
+            config.max_backward_pos = message.max_backward_pos;
 
-            for (std::size_t i = 0; i < 4; ++i) {
+            for (std::size_t i = 0; i < m_limit_switches.size(); ++i) {
                 if (GET_BIT_AT_INDEX(message.limit_switch_info.present, i)) {
                     bool enabled = GET_BIT_AT_INDEX(message.limit_switch_info.enabled, i);
                     bool active_high = GET_BIT_AT_INDEX(message.limit_switch_info.active_high, i);
@@ -145,73 +176,81 @@ namespace mrover {
                 }
             }
 
-            for (std::size_t i = 0; i < 4; ++i) {
+            for (std::size_t i = 0; i < m_limit_switches.size(); ++i) {
                 if (GET_BIT_AT_INDEX(message.limit_switch_info.present, i) && GET_BIT_AT_INDEX(message.limit_switch_info.enabled, i)) {
                     m_limit_switches[i].enable();
                 }
             }
+
+            m_state_after_config = config;
+
+            update_encoder();
         }
 
-        void feed(IdleCommand const& message) {
+        auto process_command(IdleCommand const&) -> void {
             // TODO - what is the expected behavior? just afk?
-            if (!m_is_configured) {
+            if (!m_state_after_config) {
                 m_error = BDCMCErrorInfo::RECEIVING_COMMANDS_WHEN_NOT_CONFIGURED;
                 return;
             }
 
-            write_output_if_valid(0_percent);
+            m_desired_output = 0_percent;
+            m_error = BDCMCErrorInfo::NO_ERROR;
         }
 
-        void feed(ThrottleCommand const& message) {
-            if (!m_is_configured) {
+        auto process_command(ThrottleCommand const& message) -> void {
+            if (!m_state_after_config) {
                 m_error = BDCMCErrorInfo::RECEIVING_COMMANDS_WHEN_NOT_CONFIGURED;
                 return;
             }
 
-            write_output_if_valid(message.throttle);
+            m_desired_output = message.throttle;
+            m_error = BDCMCErrorInfo::NO_ERROR;
         }
 
-        void feed(VelocityCommand const& message, VelocityMode mode) {
-            if (!m_is_configured) {
+        auto process_command(VelocityCommand const& message, VelocityMode& mode) -> void {
+            if (!m_state_after_config) {
                 m_error = BDCMCErrorInfo::RECEIVING_COMMANDS_WHEN_NOT_CONFIGURED;
                 return;
             }
 
-            if (std::optional<EncoderReading> reading = read()) {
-                auto [_, input] = *reading;
-                RadiansPerSecond target = message.velocity;
-                OutputUnit output = mode.pidf.calculate(input, target);
+            update_encoder();
 
-                write_output_if_valid(output);
-            } else {
+            if (!m_velocity) {
                 m_error = BDCMCErrorInfo::RECEIVING_PID_COMMANDS_WHEN_NO_READER_EXISTS;
+                return;
             }
 
+            RadiansPerSecond target = message.velocity;
+            RadiansPerSecond input = m_velocity.value();
+            m_desired_output = mode.pidf.calculate(input, target);
+            m_error = BDCMCErrorInfo::NO_ERROR;
         }
 
-        void feed(PositionCommand const& message, PositionMode mode) {
-            if (!m_is_configured) {
+        auto process_command(PositionCommand const& message, PositionMode& mode) -> void {
+            if (!m_state_after_config) {
                 m_error = BDCMCErrorInfo::RECEIVING_COMMANDS_WHEN_NOT_CONFIGURED;
                 return;
             }
-            if (!m_is_calibrated) {
+            if (!m_state_after_calib) {
                 m_error = BDCMCErrorInfo::RECEIVING_POSITION_COMMANDS_WHEN_NOT_CALIBRATED;
                 return;
             }
 
-            if (std::optional<EncoderReading> reading = read()) {
-                auto [input, _] = *reading;
-                Radians target = message.position;
-                OutputUnit output = mode.pidf.calculate(input, target);
+            update_encoder();
 
-                write_output_if_valid(output);
-            } else {
+            if (!m_position) {
                 m_error = BDCMCErrorInfo::RECEIVING_PID_COMMANDS_WHEN_NO_READER_EXISTS;
+                return;
             }
 
+            Radians target = message.position;
+            Radians input = m_position.value();
+            m_desired_output = mode.pidf.calculate(input, target);
+            m_error = BDCMCErrorInfo::NO_ERROR;
         }
 
-        void feed(EnableLimitSwitchesCommand const& message) {
+        auto process_command(EnableLimitSwitchesCommand const&) -> void {
             // We are allowed to just enable all limit switches.
             // The valid bit is kept track of separately.
             for (int i = 0; i < 4; ++i) {
@@ -225,7 +264,7 @@ namespace mrover {
 
             template<typename Command, typename ModeHead, typename... Modes>
             struct command_to_mode<Command, std::variant<ModeHead, Modes...>> { // Linear search to find corresponding mode
-                using type = std::conditional_t<requires(Controller controller, Command command, ModeHead mode) { controller.feed(command, mode); },
+                using type = std::conditional_t<requires(Controller controller, Command command, ModeHead mode) { controller.process_command(command, mode); },
                                                 ModeHead,
                                                 typename command_to_mode<Command, std::variant<Modes...>>::type>; // Recursive call
             };
@@ -242,84 +281,66 @@ namespace mrover {
     public:
         Controller() = default;
 
-        Controller(TIM_HandleTypeDef* output_timer, std::array<LimitSwitch, 4> const& limit_switches, FDCANBus const& fdcan_bus, I2C_HandleTypeDef* abs_enc_i2c_line)
-            : m_writer{HBridgeWriter(output_timer)},
-              m_limit_switches{limit_switches},
-              m_fdcan_bus{fdcan_bus},
-              m_abs_enc_i2c{abs_enc_i2c_line},
-              m_error{BDCMCErrorInfo::DEFAULT_START_UP_NOT_CONFIGURED} {}
+        Controller(TIM_HandleTypeDef* hbridge_output, FDCAN const& fdcan, TIM_HandleTypeDef* quadrature_encoder_timer, I2C_HandleTypeDef* absolute_encoder_i2c, std::array<LimitSwitch, 4> const& limit_switches)
+            : m_motor_driver{HBridge(hbridge_output)},
+              m_fdcan{fdcan},
+              m_quadrature_encoder_timer{quadrature_encoder_timer},
+              m_absolute_encoder_i2c{absolute_encoder_i2c},
+              m_limit_switches{limit_switches} {}
 
         template<typename Command>
-        void process(Command const& command) {
-            // Find the feed function that has the right type for the command
+        auto process_command(Command const& command) -> void {
+            // Find the "process_command" function that has the right type for the command
             using ModeForCommand = command_to_mode_t<Command, Mode>;
 
-            // If the current mode is not the mode that the feed function expects, change the mode, providing a new blank mode
+            // If the current mode is not the mode that "process_command" expects, change the mode, providing a new blank mode
             if (!std::holds_alternative<ModeForCommand>(m_mode)) m_mode.template emplace<ModeForCommand>();
 
             if constexpr (std::is_same_v<ModeForCommand, std::monostate>) {
-                feed(command);
+                process_command(command);
             } else {
-                feed(command, std::get<ModeForCommand>(m_mode));
+                process_command(command, std::get<ModeForCommand>(m_mode));
             }
         }
 
-        void receive(InBoundMessage const& message) {
-            std::visit([&](auto const& command) { process(command); }, message);
+        auto receive(InBoundMessage const& message) -> void {
+            m_inbound = message;
+            process_command();
         }
 
-        void update_and_send() {
-            // 1. Update Information
+        auto process_command() -> void {
+            // m_elapsed_since_last_message = 0;
+            std::visit([&](auto const& command) { process_command(command); }, m_inbound);
+            drive_motor();
+        }
 
-            for (LimitSwitch& limit_switch: m_limit_switches) {
-                limit_switch.update_limit_switch();
-            }
+        auto update() -> void {
+            // 1. Update State
+            update_limit_switches();
 
-            if (std::optional<EncoderReading> reading = read()) {
-                auto [reader_position, m_current_velocity] = *reading;
+            update_encoder();
 
-                for (LimitSwitch& limit_switch: m_limit_switches) {
-                    if (std::optional<Radians> readj_pos = limit_switch.get_readjustment_position()) {
-                        m_is_calibrated = true;
-                        m_offset_position = reader_position - readj_pos.value();
-                    }
-                }
-                m_current_position = reader_position - m_offset_position;
+            process_command();
 
-                m_should_limit_forward = std::ranges::any_of(m_limit_switches, [](
-                                                             LimitSwitch const& limit_switch) {
-                                                                 return limit_switch.limit_forward();
-                                                             })
-                                         || (m_is_calibrated && m_current_position >= m_max_forward_pos);
-
-                m_should_limit_backward = std::ranges::any_of(m_limit_switches, [](
-                                                              LimitSwitch const& limit_switch) {
-                                                                  return limit_switch.limit_backward();
-                                                              })
-                                          || (m_is_calibrated && m_current_position <= m_max_backward_pos);
-
-                write_output_if_valid(m_current_throttle);
-
-            }
-
-            // 2. Send Information
-            ConfigCalibErrorInfo config_calib_error_info;
-            config_calib_error_info.configured = m_is_configured;
-            config_calib_error_info.calibrated = m_is_calibrated;
-
-            config_calib_error_info.error = static_cast<uint8_t>(m_error);
-
-            LimitStateInfo limit_state_info;
+            // 2. Update Outbound Message (note we are not sending yet)
+            ControllerDataState state{
+                    .position = m_position.value_or(Radians{std::numeric_limits<float>::quiet_NaN()}),
+                    .velocity = m_velocity.value_or(RadiansPerSecond{std::numeric_limits<float>::quiet_NaN()}),
+                    .config_calib_error_data = ConfigCalibErrorInfo{
+                            .configured = m_state_after_calib.has_value(),
+                            .calibrated = m_state_after_calib.has_value(),
+                            .error = m_error,
+                    },
+            };
             for (std::size_t i = 0; i < m_limit_switches.size(); ++i) {
-                SET_BIT_AT_INDEX(limit_state_info.hit, i, m_limit_switches[i].pressed());
+                SET_BIT_AT_INDEX(state.limit_switches.hit, i, m_limit_switches[i].pressed());
             }
 
-            m_fdcan_bus.broadcast(OutBoundMessage{ControllerDataState{
-                    .position = m_current_position,
-                    .velocity = m_current_velocity,
-                    .config_calib_error_data = config_calib_error_info,
-                    .limit_switches = limit_state_info,
-            }});
+            m_outbound = state;
+        }
+
+        auto send() -> void {
+            m_fdcan.broadcast(m_outbound);
         }
     };
 
