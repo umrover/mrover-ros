@@ -18,10 +18,10 @@
       <bodyName>base_link</bodyName>
     </plugin>
 
-    <!-- GPS -->
-    <plugin name="gazebo_ros_gps" filename="libhector_gazebo_ros_gps.so">
+    <!-- Rover GPS Left -->
+    <plugin name="rover_gps_left" filename="libhector_gazebo_ros_gps.so">
       <updateRate>100.0</updateRate>
-      <bodyName>base_link</bodyName>
+      <bodyName>rover_gps_left</bodyName>
       <frameId>base_link</frameId>
       <topicName>gps/fix</topicName>
       <velocityTopicName>gps/fix_velocity</velocityTopicName>
@@ -35,7 +35,26 @@
       <velocityDrift>0.0 0.0 0.0</velocityDrift>
       <velocityGaussianNoise>0.2 0.2 0.2</velocityGaussianNoise>
     </plugin>
+
+    <!-- Rover GPS Right -->
+    <plugin name="rover_gps_right" filename="libhector_gazebo_ros_gps.so">
+      <updateRate>100.0</updateRate>
+      <bodyName>rover_gps_right</bodyName>
+      <frameId></frameId>
+      <velocityTopicName>gps/fix_velocity</velocityTopicName>
+      <referenceLatitude></referenceLatitude>
+      <referenceLongitude></referenceLongitude>
+      <referenceAltitude></referenceAltitude>
+      <offset></offset>
+      <drift></droft>
+      <gaussianNoise></gaussianNoise>
+      <velocityDrift></velocityDrift>
+      <velocityGaussianNoise></velocityGaussianNoise>
+    </plugin>
+
   </gazebo>
+
+
 
   <!-- IMU -->
   <gazebo reference="imu_link">
