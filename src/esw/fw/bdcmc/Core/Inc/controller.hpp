@@ -17,11 +17,6 @@
 namespace mrover {
 
     class Controller {
-        using MotorDriver = HBridge;
-
-        using Encoder = std::variant<
-                std::monostate, FusedReader, QuadratureEncoderReader, AbsoluteEncoderReader>;
-
         struct PositionMode {
             PIDF<Radians, Percent> pidf;
         };
@@ -34,12 +29,14 @@ namespace mrover {
 
         /* Hardware */
         FDCAN m_fdcan;
-        MotorDriver m_motor_driver;
-        Encoder m_encoder;
+        HBridge m_motor_driver;
         TIM_HandleTypeDef* m_watchdog_timer{};
         bool m_watchdog_enabled{};
         TIM_HandleTypeDef* m_quadrature_encoder_timer{};
         I2C_HandleTypeDef* m_absolute_encoder_i2c{};
+        std::optional<QuadratureEncoderReader> m_relative_encoder;
+        // TODO: implement
+        std::optional<AbsoluteEncoderReader> m_absolute_encoder;
         std::array<LimitSwitch, 4> m_limit_switches;
 
         /* Internal State */
@@ -49,19 +46,23 @@ namespace mrover {
         std::optional<Radians> m_position;
         std::optional<RadiansPerSecond> m_velocity;
         BDCMCErrorInfo m_error = BDCMCErrorInfo::DEFAULT_START_UP_NOT_CONFIGURED;
+
         // Configuration State
         struct StateAfterConfig {
             Dimensionless gear_ratio;
             Radians max_forward_pos;
             Radians max_backward_pos;
         };
+
         std::optional<StateAfterConfig> m_state_after_config;
+
         // Calibration State
         struct StateAfterCalib {
             // Ex: If the encoder reads in 6 Radians and offset is 4 Radians,
             // Then my actual current position should be 2 Radians.
             Radians offset_position;
         };
+
         std::optional<StateAfterCalib> m_state_after_calib;
         // Messaging
         InBoundMessage m_inbound = IdleCommand{};
@@ -70,27 +71,18 @@ namespace mrover {
         /**
          * \brief Updates \link m_position and \link m_velocity based on the hardware
          */
-        auto update_encoder() -> void {
+        auto update_relative_encoder() -> void {
             std::optional<EncoderReading> reading;
 
             // Only read the encoder if we are configured
-            if (m_state_after_config) {
-                reading = std::visit(
-                        overloaded{
-                                [&](std::monostate) -> std::optional<EncoderReading> { return std::nullopt; },
-                                [&](auto& reader) -> std::optional<EncoderReading> { return reader.read(); },
-                        },
-                        m_encoder);
+            if (m_relative_encoder) {
+                reading = m_relative_encoder->read();
             }
 
             if (reading) {
                 auto const& [position, velocity] = reading.value();
-                if (std::holds_alternative<QuadratureEncoderReader>(m_encoder)) {
-                    // For relative encoder update position only if we are calibrated (otherwise we don't know our absolute position)
-                    if (m_state_after_calib)
-                        m_position = position - m_state_after_calib->offset_position;
-                } else {
-                    m_position = position;
+                if (m_state_after_calib) {
+                    m_position = position - m_state_after_calib->offset_position;
                 }
                 m_velocity = velocity;
             } else {
@@ -129,7 +121,7 @@ namespace mrover {
         }
 
         auto process_command(AdjustCommand const& message) -> void {
-            update_encoder();
+            update_relative_encoder();
 
             if (m_position && m_state_after_config) {
                 m_state_after_calib = StateAfterCalib{
@@ -142,23 +134,14 @@ namespace mrover {
             // Initialize values
             StateAfterConfig config{.gear_ratio = message.gear_ratio};
 
-            if (message.quad_abs_enc_info.quad_present && message.quad_abs_enc_info.abs_present) {
-                Ratio quad_multiplier = (message.quad_abs_enc_info.quad_is_forward_polarity ? 1 : -1) * message.quad_enc_out_ratio;
-
-                Ratio abs_multiplier = (message.quad_abs_enc_info.abs_is_forward_polarity ? 1 : -1) * message.abs_enc_out_ratio;
-
-                m_encoder = FusedReader{m_quadrature_encoder_timer, m_absolute_encoder_i2c, quad_multiplier, abs_multiplier};
-
-            } else if (message.quad_abs_enc_info.quad_present) {
+            if (message.quad_abs_enc_info.quad_present) {
                 // TODO(quintin): Why TF does this crash without .get() ?
                 Ratio multiplier = (message.quad_abs_enc_info.quad_is_forward_polarity ? 1.0f : -1.0f) * message.quad_enc_out_ratio.get();
-
-                m_encoder = QuadratureEncoderReader{m_quadrature_encoder_timer, multiplier};
-            } else if (message.quad_abs_enc_info.abs_present) {
+                m_relative_encoder.emplace(m_quadrature_encoder_timer, multiplier);
+            }
+            if (message.quad_abs_enc_info.abs_present) {
                 Ratio multiplier = (message.quad_abs_enc_info.abs_is_forward_polarity ? 1 : -1) * message.abs_enc_out_ratio;
-
-                // A1 and A2 are grounded
-                m_encoder = AbsoluteEncoderReader{SMBus{m_absolute_encoder_i2c}, 0, 0, multiplier};
+                m_absolute_encoder.emplace(SMBus{m_absolute_encoder_i2c}, 0, 0, multiplier);
             }
 
             m_motor_driver.change_max_pwm(message.max_pwm);
@@ -186,7 +169,7 @@ namespace mrover {
 
             m_state_after_config = config;
 
-            update_encoder();
+            update_relative_encoder();
         }
 
         auto process_command(IdleCommand const&) -> void {
@@ -216,7 +199,7 @@ namespace mrover {
                 return;
             }
 
-            update_encoder();
+            update_relative_encoder();
 
             if (!m_velocity) {
                 m_error = BDCMCErrorInfo::RECEIVING_PID_COMMANDS_WHEN_NO_READER_EXISTS;
@@ -239,7 +222,7 @@ namespace mrover {
                 return;
             }
 
-            update_encoder();
+            update_relative_encoder();
 
             if (!m_position) {
                 m_error = BDCMCErrorInfo::RECEIVING_PID_COMMANDS_WHEN_NO_READER_EXISTS;
@@ -320,7 +303,8 @@ namespace mrover {
         }
 
         auto process_command() -> void {
-            // m_elapsed_since_last_message = 0;
+            update_limit_switches();
+            update_relative_encoder();
             std::visit([&](auto const& command) { process_command(command); }, m_inbound);
             drive_motor();
         }
@@ -336,15 +320,7 @@ namespace mrover {
             process_command();
         }
 
-        auto update() -> void {
-            // 1. Update State
-            update_limit_switches();
-
-            update_encoder();
-
-            process_command();
-
-            // 2. Update Outbound Message (note we are not sending yet)
+        auto update_outbound() -> void {
             ControllerDataState state{
                     .position = m_position.value_or(Radians{std::numeric_limits<float>::quiet_NaN()}),
                     .velocity = m_velocity.value_or(RadiansPerSecond{std::numeric_limits<float>::quiet_NaN()}),
@@ -357,8 +333,13 @@ namespace mrover {
             for (std::size_t i = 0; i < m_limit_switches.size(); ++i) {
                 SET_BIT_AT_INDEX(state.limit_switches.hit, i, m_limit_switches[i].pressed());
             }
-
             m_outbound = state;
+        }
+
+        auto update() -> void {
+            process_command();
+
+            update_outbound();
         }
 
         auto send() -> void {

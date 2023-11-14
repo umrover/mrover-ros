@@ -77,26 +77,4 @@ namespace mrover {
         std::int64_t count_delta();
     };
 
-
-    // TODO: implement
-    class FusedReader {
-    public:
-        FusedReader() = default;
-
-        FusedReader(TIM_HandleTypeDef* relative_encoder_timer, I2C_HandleTypeDef* absolute_encoder_i2c, Ratio quad_multiplier, Ratio abs_multiplier);
-
-        [[nodiscard]] auto read() -> std::optional<EncoderReading>;
-
-    private:
-        AbsoluteEncoderReader m_absolute_encoder;
-        QuadratureEncoderReader m_relative_encoder;
-
-        Radians m_position;
-        RadiansPerSecond m_velocity;
-
-        auto refresh_absolute() -> void;
-    };
-
-    class LimitSwitchReader {};
-
 } // namespace mrover
