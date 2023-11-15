@@ -16,6 +16,7 @@
 #include "inference.cuh"
 
 #include <array>
+#include <filesystem>
 #include <string_view>
 #include <vector>
 
@@ -43,8 +44,9 @@ namespace mrover {
     Inference::Inference(std::string onnxModelPath, cv::Size modelInputShape = {640, 640}, std::string classesTxtFile = "") : logger{}, inputTensor{}, outputTensor{}, stream{} {
 
         enginePtr = std::unique_ptr<ICudaEngine, nvinfer1::Destroy<ICudaEngine>>{createCudaEngine(onnxModelPath)};
+
         if (!enginePtr) {
-            throw std::runtime_error("Failed to create CUAD engine");
+            throw std::runtime_error("Failed to create CUDA engine");
         }
 
         this->modelInputShape = modelInputShape;
@@ -74,15 +76,46 @@ namespace mrover {
 
         config->setMemoryPoolLimit(MemoryPoolType::kWORKSPACE, 1 << 30);
 
-        auto profile = builder->createOptimizationProfile();
-        profile->setDimensions(network->getInput(0)->getName(), OptProfileSelector::kMIN, Dims4{1, 3, 256, 256});
-        profile->setDimensions(network->getInput(0)->getName(), OptProfileSelector::kOPT, Dims4{1, 3, 256, 256});
-        profile->setDimensions(network->getInput(0)->getName(), OptProfileSelector::kMAX, Dims4{32, 3, 256, 256});
-        config->addOptimizationProfile(profile);
+        // auto profile = builder->createOptimizationProfile();
+        // profile->setDimensions(network->getInput(0)->getName(), OptProfileSelector::kMIN, Dims4{1, 3, 256, 256});
+        // profile->setDimensions(network->getInput(0)->getName(), OptProfileSelector::kOPT, Dims4{1, 3, 256, 256});
+        // profile->setDimensions(network->getInput(0)->getName(), OptProfileSelector::kMAX, Dims4{32, 3, 256, 256});
+
+        // config->addOptimizationProfile(profile);
+
+        std::cout << "FLAG" << std::endl;
         std::cout << network.get() << std::endl;
-        nvinfer1::IHostMemory* serializedEngine = builder->buildSerializedNetwork(*network, *config);
+
+        //Create runtime engine
         nvinfer1::IRuntime* runtime = createInferRuntime(logger);
-        return runtime->deserializeCudaEngine(serializedEngine->data(), serializedEngine->size());
+
+        std::filesystem::path enginePath("./tensorrt-engine.engine");
+
+        bool isEngineFile = std::filesystem::exists(enginePath);
+
+        //Check if engine file exists
+        if (isEngineFile) {
+            //Load engine from file
+            std::ifstream inputFileStream("./tensorrt-engine.engine", std::ios::binary);
+            std::stringstream engineBuffer;
+
+            engineBuffer << inputFileStream.rdbuf();
+            std::string enginePlan = engineBuffer.str();
+            return runtime->deserializeCudaEngine((void*) enginePlan.data(), enginePlan.size(), nullptr);
+        } else {
+            nvinfer1::IHostMemory* serializedEngine = builder->buildSerializedNetwork(*network, *config);
+
+            //Create temporary engine for serializing
+            auto tempEng = runtime->deserializeCudaEngine(serializedEngine->data(), serializedEngine->size());
+
+            //Save Engine to File
+            auto trtModelStream = tempEng->serialize();
+            std::ofstream outputFileStream("./tensorrt-engine.engine", std::ios::binary);
+            outputFileStream.write((const char*) trtModelStream->data(), trtModelStream->size());
+            outputFileStream.close();
+
+            return tempEng;
+        }
     }
 
     void Inference::doDetections(cv::Mat& img) {
