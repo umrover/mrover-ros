@@ -10,7 +10,15 @@ int main(int argc, char** argv) {
     ros::NodeHandle nh;
     ROS_INFO("Running");
 
+    auto brushlessController = std::make_unique<mrover::BrushlessController>(nh, "jetson", "devboard");
     [[maybe_unused]] auto brushlessController = std::make_unique<mrover::BrushlessController>(nh, "jetson", "devboard");
+
+    ros::Rate rate{100};
+    while (ros::ok()) {
+        brushlessController->setDesiredVelocity(mrover::RadiansPerSecond{1.0f});
+        ros::spinOnce();
+        rate.sleep();
+    }
 
     // Enter the ROS event loop
     brushlessController->SetStop();

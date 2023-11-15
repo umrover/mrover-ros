@@ -13,7 +13,7 @@ int main(int argc, char** argv) {
 
     ros::Rate rate(1);
     while (ros::ok()) {
-        brushlessController->setDesiredThrottle(0.5);
+        brushlessController->setDesiredThrottle(0.8);
         rate.sleep();
         ros::spinOnce();
     }

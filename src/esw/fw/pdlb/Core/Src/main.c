@@ -574,10 +574,6 @@ static void MX_GPIO_Init(void)
 }
 
 /* USER CODE BEGIN 4 */
-// TODO: remove
-void fakeCANSend(float* msg) {
-	return;
-}
 
 void ReceiveMessages(void* argument) {
 	uint32_t tick = osKernelGetTickCount();

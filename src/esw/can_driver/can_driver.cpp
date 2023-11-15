@@ -1,17 +1,5 @@
 #include "can_driver.hpp"
 
-#include <cctype>
-#include <linux/can.h>
-
-#include <boost/asio/read.hpp>
-#include <boost/asio/write.hpp>
-#include <boost/system/error_code.hpp>
-
-#include <nodelet/loader.h>
-#include <ros/init.h>
-#include <ros/names.h>
-#include <ros/this_node.h>
-
 namespace mrover {
 
     static int checkSyscallResult(int result) {
@@ -56,28 +44,17 @@ namespace mrover {
                 for (int size = canDevices.size(), i = 0; i < size; ++i) {
                     XmlRpc::XmlRpcValue const& canDevice = canDevices[i];
 
-                    // TODO(quintin): Replace things like this with 1 function call that auto casts and throws if the type is wrong
-                    assert(canDevice.hasMember("bus") &&
-                           canDevice["bus"].getType() == XmlRpc::XmlRpcValue::TypeInt);
-                    auto bus = static_cast<std::uint8_t>(static_cast<int>(canDevice["bus"]));
+                    auto bus = xmlRpcValueToTypeOrDefault<std::uint8_t>(canDevice, "bus");
 
-                    if (std::isdigit(mInterface.back() - '0')) {
-                        throw std::runtime_error("Interface is not valid (must end with a number)");
-                    }
-                    uint8_t mInterfaceNum = mInterface.back() - '0';
-                    if (bus != mInterfaceNum) {
+                    if (std::uint8_t interfaceNumber = mInterface.back() - '0'; bus != interfaceNumber) {
                         continue;
                     }
 
                     assert(canDevice.getType() == XmlRpc::XmlRpcValue::TypeStruct);
 
-                    assert(canDevice.hasMember("name") &&
-                           canDevice["name"].getType() == XmlRpc::XmlRpcValue::TypeString);
-                    auto name = static_cast<std::string>(canDevice["name"]);
+                    auto name = xmlRpcValueToTypeOrDefault<std::string>(canDevice, "name");
 
-                    assert(canDevice.hasMember("id") &&
-                           canDevice["id"].getType() == XmlRpc::XmlRpcValue::TypeInt);
-                    auto id = static_cast<std::uint8_t>(static_cast<int>(canDevice["id"]));
+                    auto id = xmlRpcValueToTypeOrDefault<std::uint8_t>(canDevice, "id");
 
                     mDevices.emplace(name,
                                      CanFdAddress{
@@ -117,7 +94,7 @@ namespace mrover {
         }
     }
 
-    int CanNodelet::setupSocket() {
+    int CanNodelet::setupSocket() const {
         int socketFd = checkSyscallResult(socket(PF_CAN, SOCK_RAW, CAN_RAW));
         NODELET_INFO_STREAM("Opened CAN socket with file descriptor: " << socketFd);
 
@@ -142,7 +119,7 @@ namespace mrover {
         // You would think we would have to read the header first to find the data length (which is not always 64 bytes) and THEN read the data
         // However socketcan is nice and just requires we read the max length
         // It then puts the actual length in the header
-        boost::asio::async_read(
+        async_read(
                 mStream.value(),
                 boost::asio::buffer(&mReadFrame, sizeof(mReadFrame)),
                 // Supply lambda that is called on completion
@@ -224,11 +201,21 @@ namespace mrover {
         };
         std::memcpy(frame.data, msg->data.data(), msg->data.size());
 
-        std::size_t written = boost::asio::write(mStream.value(), boost::asio::buffer(std::addressof(frame), sizeof(frame)));
-        if (written != sizeof(frame)) {
-            NODELET_FATAL_STREAM(std::format("Failed to write CAN frame to socket! Expected to write {} bytes, but only wrote {} bytes", sizeof(frame), written));
-            ros::shutdown();
-            return;
+        try {
+            if (std::size_t written = boost::asio::write(mStream.value(), boost::asio::buffer(std::addressof(frame), sizeof(frame)));
+                written != sizeof(frame)) {
+                NODELET_FATAL_STREAM(std::format("Failed to write CAN frame to socket! Expected to write {} bytes, but only wrote {} bytes", sizeof(frame), written));
+                ros::shutdown();
+                return;
+            }
+        } catch (boost::system::system_error const& error) {
+            // check if ran out of buffer space
+            if (error.code() == boost::asio::error::no_buffer_space) {
+                NODELET_WARN_STREAM("No buffer space available to send CAN message");
+                return;
+            } else {
+                throw;
+            }
         }
 
         ROS_DEBUG_STREAM("Sent CAN message");

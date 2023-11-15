@@ -2,14 +2,42 @@
 
 namespace mrover {
 
-    QuadratureEncoder::QuadratureEncoder(TIM_TypeDef* _tim) : m_timer{_tim} {
+    QuadratureEncoderReader::QuadratureEncoderReader(TIM_HandleTypeDef* timer, Ratio multiplier)
+        : m_timer{timer}, m_multiplier{multiplier} {
+
+        // TODO - TIMERS need to be intiialized
+        check(HAL_TIM_Encoder_Start(m_timer, TIM_CHANNEL_ALL) == HAL_OK, Error_Handler);
+
     }
 
-    std::int64_t QuadratureEncoder::count_delta() {
-        m_counts_raw_now = m_timer->CNT;
-        std::int64_t delta = m_counts_raw_now - m_counts_raw_prev;
-        m_counts_raw_prev = m_counts_raw_now;
-        return delta;
+    std::int64_t QuadratureEncoderReader::count_delta() {
+        m_counts_raw_now = m_timer->Instance->CNT;
+        std::uint32_t max_value = m_timer->Instance->ARR;
+
+        // adapted from: https://electronics.stackexchange.com/questions/605278/how-to-increase-stm32-timer-encoder-mode-counter-value
+        // handle when timer wraps around
+        std::int64_t c64 = static_cast<std::int64_t>(m_counts_raw_now) - max_value / 2; // remove half period to determine (+/-) sign of the wrap
+        std::int64_t dif = c64 - m_counts_unwrapped_prev;                               // prev + (current - prev) = current
+
+        // wrap difference from -HALF_PERIOD to HALF_PERIOD. modulo prevents differences after the wrap from having an incorrect result
+        std::int64_t mod_dif = (dif + max_value / 2) % max_value - max_value / 2;
+        if (dif < -max_value / 2) mod_dif += max_value; // account for mod of negative number behavior in C
+
+        std::int64_t unwrapped = m_counts_unwrapped_prev + mod_dif;
+        m_counts_unwrapped_prev = unwrapped;
+
+        return mod_dif;
     }
 
+    [[nodiscard]] std::optional<EncoderReading> QuadratureEncoderReader::read() {
+        Radians delta_angle = m_multiplier * RADIANS_PER_COUNT_RELATIVE * count_delta();
+        m_ticks_now = HAL_GetTick();
+
+        m_position += delta_angle;
+        m_velocity = delta_angle / ((m_ticks_now - m_ticks_prev) * SECONDS_PER_TICK);
+
+        m_ticks_prev = m_ticks_now;
+
+        return std::make_optional(EncoderReading{m_position, m_velocity});
+    }
 } // namespace mrover

@@ -1,30 +1,6 @@
 #pragma once
 
-#include <bitset>
-#include <cstddef>
-#include <cstdint>
-#include <cstdio>
-#include <cstring>
-#include <format>
-#include <iostream>
-#include <span>
-#include <thread>
-
-#include <linux/can.h>
-#include <linux/can/raw.h>
-#include <sys/socket.h>
-#include <sys/types.h>
-
-#include <nodelet/nodelet.h>
-#include <ros/node_handle.h>
-#include <ros/publisher.h>
-#include <ros/subscriber.h>
-
-#include <boost/asio/io_service.hpp>
-#include <boost/asio/posix/basic_stream_descriptor.hpp>
-
-#include <bimap.hpp>
-#include <mrover/CAN.h>
+#include "pch.hpp"
 
 #include "can_net_link.hpp"
 
@@ -59,7 +35,7 @@ namespace mrover {
 
         // "Spaceship" operator
         // See: https://devblogs.microsoft.com/cppblog/simplify-your-code-with-rocket-science-c20s-spaceship-operator/
-        bool operator<=>(CanFdAddress const& other) const = default;
+        auto operator<=>(CanFdAddress const& other) const = default;
     };
 
     struct CanFdPubSub {
@@ -94,7 +70,7 @@ namespace mrover {
                 mDevices;
         std::unordered_map<std::string, CanFdPubSub> mDevicesPubSub;
 
-        int setupSocket();
+        [[nodiscard]] int setupSocket() const;
 
         void onInit() override;
 

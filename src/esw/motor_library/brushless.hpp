@@ -69,8 +69,7 @@ namespace mrover {
         void SetStop();
 
     private:
-        std::optional<ErrorCode> err;
-        float torque;
+        moteus::Controller mController{{}};
         double mMeasuredEffort{};
     };
 

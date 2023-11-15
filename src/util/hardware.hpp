@@ -34,13 +34,14 @@ namespace mrover {
     public:
         Pin() = default;
 
-        Pin(GPIO_TypeDef* port, std::uint16_t pin) : m_port{port}, m_pin{pin} {}
+        Pin(GPIO_TypeDef* port, std::uint16_t pin)
+            : m_port{port}, m_pin{pin} {}
 
-        [[nodiscard]] inline GPIO_PinState read() {
+        [[nodiscard]] GPIO_PinState read() const {
             return HAL_GPIO_ReadPin(m_port, m_pin);
         }
 
-        inline void write(GPIO_PinState val) {
+        inline void write(GPIO_PinState val) const {
             HAL_GPIO_WritePin(m_port, m_pin, val);
         }
 
@@ -48,21 +49,22 @@ namespace mrover {
         GPIO_TypeDef* m_port{};
         std::uint16_t m_pin{};
     };
-    
+
     class LimitSwitch {
     public:
         LimitSwitch() = default;
 
-        explicit LimitSwitch(Pin const& pin) : m_pin{pin} {}
+        explicit LimitSwitch(Pin const& pin)
+            : m_pin{pin} {}
 
         void initialize(bool enabled, bool active_high, bool used_for_readjustment, bool limits_forward, Radians associated_position) {
-        	m_valid = true;
-        	m_enabled = enabled;
-        	m_is_pressed = 0;
-        	m_active_high = active_high;
-        	m_used_for_readjustment = used_for_readjustment;
-        	m_limits_forward = limits_forward;
-        	m_associated_position = associated_position;
+            m_valid = true;
+            m_enabled = enabled;
+            m_is_pressed = false;
+            m_active_high = active_high;
+            m_used_for_readjustment = used_for_readjustment;
+            m_limits_forward = limits_forward;
+            m_associated_position = associated_position;
         }
 
         void update_limit_switch() {
@@ -70,7 +72,7 @@ namespace mrover {
             if (m_enabled) {
                 m_is_pressed = m_active_high == m_pin.read();
             } else {
-                m_is_pressed = 0;
+                m_is_pressed = false;
             }
         }
 
@@ -79,21 +81,20 @@ namespace mrover {
         }
 
         [[nodiscard]] bool limit_forward() const {
-        	return m_valid && m_enabled && m_is_pressed && m_limits_forward;
+            return m_valid && m_enabled && m_is_pressed && m_limits_forward;
         }
 
         [[nodiscard]] bool limit_backward() const {
-        	return m_valid && m_enabled && m_is_pressed && !m_limits_forward;
+            return m_valid && m_enabled && m_is_pressed && !m_limits_forward;
         }
 
         [[nodiscard]] std::optional<Radians> get_readjustment_position() const {
-        	// Returns std::null_opt if the value should not be readjusted
-        	if (m_valid && m_enabled && m_used_for_readjustment && m_is_pressed) {
-        		return m_associated_position;
-        	}
-        	else {
-        		return std::nullopt;
-        	}
+            // Returns std::null_opt if the value should not be readjusted
+            if (m_valid && m_enabled && m_used_for_readjustment && m_is_pressed) {
+                return m_associated_position;
+            } else {
+                return std::nullopt;
+            }
         }
 
         void enable() {
@@ -101,8 +102,8 @@ namespace mrover {
         }
 
         void disable() {
-        	m_enabled = false;
-        	m_is_pressed = 0;
+            m_enabled = false;
+            m_is_pressed = false;
         }
 
     private:
@@ -126,6 +127,7 @@ namespace mrover {
             bool replyRequired : 1 {};
             [[maybe_unsued]] std::uint16_t _ignored{};
         };
+
         static_assert(sizeof(MessageId) == 4);
 
         FDCANBus() = default;
