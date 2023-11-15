@@ -120,7 +120,7 @@ int main(void)
   MX_TIM7_Init();
   MX_TIM16_Init();
   /* USER CODE BEGIN 2 */
-  HAL_PostInit();
+  mrover_init();
   /* USER CODE END 2 */
 
   /* Infinite loop */
@@ -617,6 +617,39 @@ static void MX_GPIO_Init(void)
 }
 
 /* USER CODE BEGIN 4 */
+void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef* htim) {
+    if (htim == &htim6) {
+        mrover_update_callback();
+    } else if (htim == &htim7) {
+        mrover_send_callback();
+    } else if (htim == &htim16) {
+        mrover_fdcan_watchdog_expired();
+    }
+}
+
+void HAL_FDCAN_RxFifo0Callback(FDCAN_HandleTypeDef* hfdcan, uint32_t RxFifo0ITs) {
+    if (RxFifo0ITs & FDCAN_IT_RX_FIFO0_NEW_MESSAGE) {
+        mrover_fdcan_received_callback();
+    } else {
+        // Mailbox is full OR we lost a frame
+        Error_Handler();
+    }
+}
+
+// TODO: error callback on FDCAN
+
+void HAL_I2C_SlaveRxCpltCallback(I2C_HandleTypeDef* hi2c) {}
+
+// void HAL_I2C_SlaveTxCpltCallback(I2C_HandleTypeDef* hi2c) {
+// }
+//
+// void HAL_I2C_MasterRxCpltCallback(I2C_HandleTypeDef *hi2c) {
+// }
+//
+// void HAL_I2C_MasterTxCpltCallback(I2C_HandleTypeDef *hi2c) {
+// }
+
+void HAL_I2C_ErrorCallback(I2C_HandleTypeDef* hi2c) {}
 /* USER CODE END 4 */
 
 /**

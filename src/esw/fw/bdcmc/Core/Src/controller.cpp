@@ -84,44 +84,8 @@ namespace mrover {
 
 } // namespace mrover
 
-void HAL_PostInit() {
-    mrover::init();
-}
-
-extern "C" {
-
-void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef* htim) {
-    if (htim == &htim6) {
-        mrover::update_callback();
-    } else if (htim == &htim7) {
-        mrover::send_callback();
-    } else if (htim == &htim16) {
-        mrover::fdcan_watchdog_expired();
-    }
-}
-
-void HAL_FDCAN_RxFifo0Callback(FDCAN_HandleTypeDef* hfdcan, uint32_t RxFifo0ITs) {
-    if (RxFifo0ITs & FDCAN_IT_RX_FIFO0_NEW_MESSAGE) {
-        mrover::fdcan_received_callback();
-    } else {
-        // Mailbox is full OR we lost a frame
-        Error_Handler();
-    }
-}
-
-// TODO: error callback on FDCAN
-
-void HAL_I2C_SlaveRxCpltCallback(I2C_HandleTypeDef* hi2c) {}
-
-// void HAL_I2C_SlaveTxCpltCallback(I2C_HandleTypeDef* hi2c) {
-// }
-//
-// void HAL_I2C_MasterRxCpltCallback(I2C_HandleTypeDef *hi2c) {
-// }
-//
-// void HAL_I2C_MasterTxCpltCallback(I2C_HandleTypeDef *hi2c) {
-// }
-
-void HAL_I2C_ErrorCallback(I2C_HandleTypeDef* hi2c) {}
-
-}
+void mrover_update_callback() { mrover::update_callback(); }
+void mrover_send_callback() { mrover::send_callback(); }
+void mrover_fdcan_watchdog_expired() { mrover::fdcan_watchdog_expired(); }
+void mrover_fdcan_received_callback() { mrover::fdcan_received_callback(); }
+void mrover_init() { mrover::init(); }
