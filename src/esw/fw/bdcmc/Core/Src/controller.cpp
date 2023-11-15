@@ -12,6 +12,16 @@
 
 extern FDCAN_HandleTypeDef hfdcan1;
 extern I2C_HandleTypeDef hi2c1;
+
+/**
+ * For each timer, the update rate is determined by the .ioc file.
+ *
+ * Specifically the ARR value. You can use the following equation: ARR = (MCU Clock Speed) / (Update Rate) / (Prescaler + 1) - 1
+ * For the STM32G4 we have a 144 MHz clock speed configured.
+ *
+ * You must also set auto reload to true so the interurpt gets called on a cycle.
+ */
+
 extern TIM_HandleTypeDef htim4;  // Quadrature encoder #1
 extern TIM_HandleTypeDef htim3;  // Quadrature encoder #2
 extern TIM_HandleTypeDef htim6;  // 10,000 Hz Update timer
@@ -33,13 +43,6 @@ namespace mrover {
     Controller controller;
 
     void init() {
-        // Currently using polling based for CAN
-         // check(HAL_FDCAN_ActivateNotification(
-         //               &hfdcan1,
-         //               FDCAN_IT_RX_FIFO0_NEW_MESSAGE | FDCAN_IT_ERROR_PASSIVE | FDCAN_IT_ERROR_WARNING | FDCAN_IT_ARB_PROTOCOL_ERROR | FDCAN_IT_DATA_PROTOCOL_ERROR | FDCAN_IT_ERROR_LOGGING_OVERFLOW,
-         //               0) == HAL_OK,
-         //       Error_Handler);
-
         fdcan_bus = FDCAN{DEVICE_ID, DESTINATION_DEVICE_ID, &hfdcan1};
         controller = Controller{
                 &htim15,
@@ -55,6 +58,7 @@ namespace mrover {
                 },
         };
 
+        // Necessary for the timer interrupt to work
         check(HAL_TIM_Base_Start_IT(&htim6) == HAL_OK, Error_Handler);
         check(HAL_TIM_Base_Start_IT(&htim7) == HAL_OK, Error_Handler);
     }
@@ -88,42 +92,56 @@ namespace mrover {
 
 extern "C" {
 
-	void HAL_PostInit() {
-		mrover::init();
-	}
+void HAL_PostInit() {
+    mrover::init();
+}
 
-    void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef* htim) {
-        if (htim == &htim6) {
-            mrover::update_callback();
-        } else if (htim == &htim7) {
-            mrover::send_callback();
-        } else if (htim == &htim16) {
-            mrover::fdcan_watchdog_expired();
-        }
+/**
+* These are interrupt handlers. They are called by the HAL.
+*
+* These are set up in the .ioc file.
+* They have to be enabled in the NVIC settings.
+* It is important th
+*/
+
+/**
+ * \note Timers have to be started with "HAL_TIM_Base_Start_IT" for this interrupt to work for them.
+ */
+void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef* htim) {
+    if (htim == &htim6) {
+        mrover::update_callback();
+    } else if (htim == &htim7) {
+        mrover::send_callback();
+    } else if (htim == &htim16) {
+        mrover::fdcan_watchdog_expired();
     }
+}
 
-    void HAL_FDCAN_RxFifo0Callback(FDCAN_HandleTypeDef* hfdcan, uint32_t RxFifo0ITs) {
-        if (RxFifo0ITs & FDCAN_IT_RX_FIFO0_NEW_MESSAGE) {
-            mrover::fdcan_received_callback();
-        } else {
-            // Mailbox is full OR we lost a frame
-            Error_Handler();
-        }
+/**
+ * \note FDCAN1 has to be configured with "HAL_FDCAN_ActivateNotification" and started with "HAL_FDCAN_Start" for this interrupt to work.
+ */
+void HAL_FDCAN_RxFifo0Callback(FDCAN_HandleTypeDef* hfdcan, uint32_t RxFifo0ITs) {
+    if (RxFifo0ITs & FDCAN_IT_RX_FIFO0_NEW_MESSAGE) {
+        mrover::fdcan_received_callback();
+    } else {
+        // Mailbox is full OR we lost a frame
+        Error_Handler();
     }
+}
 
-    // TODO: error callback on FDCAN
+// TODO: error callback on FDCAN
 
-    void HAL_I2C_SlaveRxCpltCallback(I2C_HandleTypeDef* hi2c) {}
+void HAL_I2C_SlaveRxCpltCallback(I2C_HandleTypeDef* hi2c) {}
 
-    // void HAL_I2C_SlaveTxCpltCallback(I2C_HandleTypeDef* hi2c) {
-    // }
-    //
-    // void HAL_I2C_MasterRxCpltCallback(I2C_HandleTypeDef *hi2c) {
-    // }
-    //
-    // void HAL_I2C_MasterTxCpltCallback(I2C_HandleTypeDef *hi2c) {
-    // }
+// void HAL_I2C_SlaveTxCpltCallback(I2C_HandleTypeDef* hi2c) {
+// }
+//
+// void HAL_I2C_MasterRxCpltCallback(I2C_HandleTypeDef *hi2c) {
+// }
+//
+// void HAL_I2C_MasterTxCpltCallback(I2C_HandleTypeDef *hi2c) {
+// }
 
-    void HAL_I2C_ErrorCallback(I2C_HandleTypeDef* hi2c) {}
+void HAL_I2C_ErrorCallback(I2C_HandleTypeDef* hi2c) {}
 
 }
