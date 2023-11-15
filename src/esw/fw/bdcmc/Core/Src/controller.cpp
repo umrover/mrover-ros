@@ -88,6 +88,8 @@ void HAL_PostInit() {
     mrover::init();
 }
 
+extern "C" {
+
 void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef* htim) {
     if (htim == &htim6) {
         mrover::update_callback();
@@ -109,8 +111,7 @@ void HAL_FDCAN_RxFifo0Callback(FDCAN_HandleTypeDef* hfdcan, uint32_t RxFifo0ITs)
 
 // TODO: error callback on FDCAN
 
-void HAL_I2C_SlaveRxCpltCallback(I2C_HandleTypeDef* hi2c) {
-}
+void HAL_I2C_SlaveRxCpltCallback(I2C_HandleTypeDef* hi2c) {}
 
 // void HAL_I2C_SlaveTxCpltCallback(I2C_HandleTypeDef* hi2c) {
 // }
@@ -121,5 +122,6 @@ void HAL_I2C_SlaveRxCpltCallback(I2C_HandleTypeDef* hi2c) {
 // void HAL_I2C_MasterTxCpltCallback(I2C_HandleTypeDef *hi2c) {
 // }
 
-void HAL_I2C_ErrorCallback(I2C_HandleTypeDef* hi2c) {
+void HAL_I2C_ErrorCallback(I2C_HandleTypeDef* hi2c) {}
+
 }
