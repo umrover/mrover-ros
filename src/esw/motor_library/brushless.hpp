@@ -66,6 +66,7 @@ namespace mrover {
         void setDesiredPosition(Radians position) override;
         void processCANMessage(CAN::ConstPtr const& msg) override;
         double getEffort() override;
+        void SetStop();
 
     private:
         std::optional<ErrorCode> err;

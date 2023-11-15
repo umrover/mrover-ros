@@ -20,7 +20,7 @@ namespace mrover {
         // TODO - need to convert to use revs
         moteus::Controller::Options options;
         moteus::Controller controller{options};
-
+        controller.SetStop();
         moteus::PositionMode::Command command{
                 .position = position.get(),
                 .velocity = 0.0,
@@ -40,13 +40,21 @@ namespace mrover {
 
         moteus::Controller::Options options;
         moteus::Controller controller{options};
-
+        controller.SetStop();
         moteus::PositionMode::Command command{
                 .position = std::numeric_limits<double>::quiet_NaN(),
                 .velocity = velocity.get(),
         };
         moteus::CanFdFrame positionFrame = controller.MakePosition(command);
         mDevice.publish_moteus_frame(positionFrame);
+    }
+
+    void BrushlessController::SetStop() {
+
+        moteus::Controller::Options options;
+        moteus::Controller controller{options};
+        moteus::CanFdFrame setStopFrame = controller.MakeStop();
+        mDevice.publish_moteus_frame(setStopFrame);
     }
 
     void BrushlessController::processCANMessage(CAN::ConstPtr const& msg) {

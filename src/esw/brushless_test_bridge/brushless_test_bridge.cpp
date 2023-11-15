@@ -10,12 +10,17 @@ int main(int argc, char** argv) {
     ros::NodeHandle nh;
     ROS_INFO("Running");
 
-    [[maybe_unused]] auto brushlessController = std::make_unique<mrover::BrushlessController>(nh, "jetson", "test_brushless_controller");
+    [[maybe_unused]] auto brushlessController = std::make_unique<mrover::BrushlessController>(nh, "jetson", "devboard");
 
-    brushlessController->setDesiredVelocity(mrover::RadiansPerSecond{1.0f});
-    ROS_INFO("Sent velocity command to Moteus");
     // Enter the ROS event loop
-    ros::spin();
-
+    brushlessController->SetStop();
+    ROS_INFO("Sent stop command");
+    ros::Rate rate(1);
+    while (ros::ok()) {
+        brushlessController->setDesiredVelocity(mrover::RadiansPerSecond{1.0f});
+        ROS_INFO("Sent velocity command to Moteus");
+        rate.sleep();
+        ros::spinOnce();
+    }
     return EXIT_SUCCESS;
 }
