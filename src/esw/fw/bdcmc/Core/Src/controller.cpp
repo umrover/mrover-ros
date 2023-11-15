@@ -30,11 +30,11 @@ namespace mrover {
 
     void init() {
         // Currently using polling based for CAN
-         check(HAL_FDCAN_ActivateNotification(
-                       &hfdcan1,
-                       FDCAN_IT_RX_FIFO0_NEW_MESSAGE | FDCAN_IT_ERROR_PASSIVE | FDCAN_IT_ERROR_WARNING | FDCAN_IT_ARB_PROTOCOL_ERROR | FDCAN_IT_DATA_PROTOCOL_ERROR | FDCAN_IT_ERROR_LOGGING_OVERFLOW,
-                       0) == HAL_OK,
-               Error_Handler);
+         // check(HAL_FDCAN_ActivateNotification(
+         //               &hfdcan1,
+         //               FDCAN_IT_RX_FIFO0_NEW_MESSAGE | FDCAN_IT_ERROR_PASSIVE | FDCAN_IT_ERROR_WARNING | FDCAN_IT_ARB_PROTOCOL_ERROR | FDCAN_IT_DATA_PROTOCOL_ERROR | FDCAN_IT_ERROR_LOGGING_OVERFLOW,
+         //               0) == HAL_OK,
+         //       Error_Handler);
 
         fdcan_bus = FDCAN{DEVICE_ID, DESTINATION_DEVICE_ID, &hfdcan1};
         controller = Controller{

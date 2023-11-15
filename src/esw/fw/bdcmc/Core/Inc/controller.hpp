@@ -137,11 +137,11 @@ namespace mrover {
             if (message.quad_abs_enc_info.quad_present) {
                 // TODO(quintin): Why TF does this crash without .get() ?
                 Ratio multiplier = (message.quad_abs_enc_info.quad_is_forward_polarity ? 1.0f : -1.0f) * message.quad_enc_out_ratio.get();
-                m_relative_encoder.emplace(m_quadrature_encoder_timer, multiplier);
+                if (!m_relative_encoder) m_relative_encoder.emplace(m_quadrature_encoder_timer, multiplier);
             }
             if (message.quad_abs_enc_info.abs_present) {
                 Ratio multiplier = (message.quad_abs_enc_info.abs_is_forward_polarity ? 1 : -1) * message.abs_enc_out_ratio;
-                m_absolute_encoder.emplace(SMBus{m_absolute_encoder_i2c}, 0, 0, multiplier);
+                if (!m_absolute_encoder) m_absolute_encoder.emplace(SMBus{m_absolute_encoder_i2c}, 0, 0, multiplier);
             }
 
             m_motor_driver.change_max_pwm(message.max_pwm);
@@ -291,7 +291,8 @@ namespace mrover {
 
         auto receive(InBoundMessage const& message) -> void {
             // Ensure watchdog timer is reset and enabled now that we are receiving messages
-            m_watchdog_timer->Instance->CNT = 0;
+
+            __HAL_TIM_SetCounter(m_watchdog_timer, 0);
             if (!m_watchdog_enabled) {
                 HAL_TIM_Base_Start_IT(m_watchdog_timer);
                 m_watchdog_enabled = true;

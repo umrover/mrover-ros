@@ -136,7 +136,7 @@ namespace mrover {
         explicit FDCAN(std::uint8_t source, std::uint8_t destination, FDCAN_HandleTypeDef* fdcan)
             : m_fdcan{fdcan}, m_source{source}, m_destination{destination} {
 
-//            check(HAL_FDCAN_ActivateNotification(m_fdcan, FDCAN_IT_RX_FIFO0_NEW_MESSAGE, 0) == HAL_OK, Error_Handler);
+            check(HAL_FDCAN_ActivateNotification(m_fdcan, FDCAN_IT_RX_FIFO0_NEW_MESSAGE, 0) == HAL_OK, Error_Handler);
             check(HAL_FDCAN_Start(m_fdcan) == HAL_OK, Error_Handler);
         }
 

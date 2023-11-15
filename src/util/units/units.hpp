@@ -406,24 +406,24 @@ namespace mrover {
     // Specialization
     //
 
-    constexpr auto operator*(IsArithmetic auto const& n, Radians const& r) {
-        return Radians{std::fmod(static_cast<typename Radians::rep_t>(n) * r.rep, TAU) + static_cast<typename Radians::rep_t>(n) < 0 ? TAU : 0};
-    }
-
-    constexpr auto operator*(Radians const& r, IsArithmetic auto const& n) {
-        return operator*(n, r);
-    }
-
-    constexpr auto operator-(Radians const& r) {
-        return Radians{std::fmod(TAU - r.rep, TAU)};
-    }
-
-    constexpr auto operator+(Radians const& r1, Radians const& r2) {
-        return Radians{std::fmod(r1.rep + r2.rep, TAU)};
-    }
-
-    constexpr auto operator-(Radians const& r1, Radians const& r2) {
-        return Radians{std::fmod(r1.rep - r2.rep + TAU, TAU)};
-    }
+    // constexpr auto operator*(IsArithmetic auto const& n, Radians const& r) {
+    //     return Radians{std::fmod(static_cast<typename Radians::rep_t>(n) * r.rep, TAU) + static_cast<typename Radians::rep_t>(n) < 0 ? TAU : 0};
+    // }
+    //
+    // constexpr auto operator*(Radians const& r, IsArithmetic auto const& n) {
+    //     return operator*(n, r);
+    // }
+    //
+    // constexpr auto operator-(Radians const& r) {
+    //     return Radians{std::fmod(TAU - r.rep, TAU)};
+    // }
+    //
+    // constexpr auto operator+(Radians const& r1, Radians const& r2) {
+    //     return Radians{std::fmod(r1.rep + r2.rep, TAU)};
+    // }
+    //
+    // constexpr auto operator-(Radians const& r1, Radians const& r2) {
+    //     return Radians{std::fmod(r1.rep - r2.rep + TAU, TAU)};
+    // }
 
 } // namespace mrover

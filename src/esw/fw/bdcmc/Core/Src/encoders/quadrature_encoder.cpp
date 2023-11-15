@@ -4,13 +4,15 @@
 
 #include <units/units.hpp>
 
-namespace mrover {
+namespace mrover { 
 
     QuadratureEncoderReader::QuadratureEncoderReader(TIM_HandleTypeDef* timer, Ratio multiplier)
         : m_timer{timer}, m_multiplier{multiplier} {
 
-        // TODO - TIMERS need to be intiialized
-//        check(HAL_TIM_Encoder_Start(m_timer, TIM_CHANNEL_ALL) == HAL_OK, Error_Handler);
+        __HAL_TIM_SetCounter(m_timer, 0);
+        // TODO(joseph) this seems really sussy and weird I'd like a better way of making sure it starts at zero
+        m_counts_unwrapped_prev = __HAL_TIM_GetAutoreload(m_timer) / 2;
+        check(HAL_TIM_Encoder_Start(m_timer, TIM_CHANNEL_ALL) == HAL_OK, Error_Handler);
     }
 
     std::int64_t QuadratureEncoderReader::count_delta() {
@@ -37,8 +39,7 @@ namespace mrover {
         m_ticks_now = HAL_GetTick();
 
         m_position += delta_angle;
-        Seconds seconds_per_tick = 1 / Hertz{HAL_GetTickFreq()};
-        m_velocity = delta_angle / ((m_ticks_now - m_ticks_prev) * seconds_per_tick);
+        m_velocity = delta_angle / Seconds{1 / 10000.0f};
 
         m_ticks_prev = m_ticks_now;
 
