@@ -31,13 +31,6 @@ extern "C" {
 
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
-void mrover_send_callback();
-
-void mrover_update_callback();
-
-void mrover_fdcan_received_callback();
-
-void mrover_fdcan_watchdog_expired();
 /* USER CODE END Includes */
 
 /* Exported types ------------------------------------------------------------*/
@@ -61,7 +54,7 @@ void HAL_TIM_MspPostInit(TIM_HandleTypeDef* htim);
 void Error_Handler(void);
 
 /* USER CODE BEGIN EFP */
-void mrover_init();
+void HAL_PostInit();
 /* USER CODE END EFP */
 
 /* Private defines -----------------------------------------------------------*/
