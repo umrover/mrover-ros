@@ -27,7 +27,7 @@ namespace mrover {
 
         using Mode = std::variant<std::monostate, PositionMode, VelocityMode>;
 
-        /* Hardware */
+        /* ==================== Hardware ==================== */
         FDCAN m_fdcan;
         HBridge m_motor_driver;
         TIM_HandleTypeDef* m_watchdog_timer{};
@@ -39,31 +39,31 @@ namespace mrover {
         std::optional<AbsoluteEncoderReader> m_absolute_encoder;
         std::array<LimitSwitch, 4> m_limit_switches;
 
-        /* Internal State */
+        /* ==================== Internal State ==================== */
         Mode m_mode;
-        // General State
-        Percent m_desired_output; // "Desired" since it may be overriden if we are at a limit switch
+        // "Desired" since it may be overridden.
+        // For example if we are trying to drive into a limit switch it will be overriden to zero.
+        Percent m_desired_output;
         std::optional<Radians> m_position;
         std::optional<RadiansPerSecond> m_velocity;
         BDCMCErrorInfo m_error = BDCMCErrorInfo::DEFAULT_START_UP_NOT_CONFIGURED;
 
-        // Configuration State
         struct StateAfterConfig {
             Dimensionless gear_ratio;
             Radians max_forward_pos;
             Radians max_backward_pos;
         };
 
-        std::optional<StateAfterConfig> m_state_after_config;
+        std::optional<StateAfterConfig> m_state_after_config; // Present if and only if we are configured
 
-        // Calibration State
         struct StateAfterCalib {
             // Ex: If the encoder reads in 6 Radians and offset is 4 Radians,
             // Then my actual current position should be 2 Radians.
             Radians offset_position;
         };
 
-        std::optional<StateAfterCalib> m_state_after_calib;
+        std::optional<StateAfterCalib> m_state_after_calib; // Present if and only if we are calibrated
+
         // Messaging
         InBoundMessage m_inbound = IdleCommand{};
         OutBoundMessage m_outbound = ControllerDataState{.config_calib_error_data = {.error = m_error}};
@@ -92,6 +92,7 @@ namespace mrover {
         }
 
         auto update_limit_switches() -> void {
+            // TODO: verify this is correct
             for (LimitSwitch& limit_switch: m_limit_switches) {
                 limit_switch.update_limit_switch();
                 // Each limit switch may have a position associated with it
@@ -108,6 +109,7 @@ namespace mrover {
             std::optional<Percent> output;
 
             if (m_state_after_config) {
+                // TODO: verify this is correct
                 bool limit_forward = m_desired_output > 0_percent && std::ranges::any_of(m_limit_switches, [](LimitSwitch const& limit_switch) { return limit_switch.limit_forward(); });
                 bool limit_backward = m_desired_output < 0_percent && std::ranges::any_of(m_limit_switches, [](LimitSwitch const& limit_switch) { return limit_switch.limit_backward(); });
                 if (limit_forward || limit_backward) {
@@ -123,6 +125,7 @@ namespace mrover {
         auto process_command(AdjustCommand const& message) -> void {
             update_relative_encoder();
 
+            // TODO: verify this is correct
             if (m_position && m_state_after_config) {
                 m_state_after_calib = StateAfterCalib{
                         .offset_position = m_position.value() - message.position,
@@ -149,6 +152,7 @@ namespace mrover {
             config.max_forward_pos = message.max_forward_pos;
             config.max_backward_pos = message.max_backward_pos;
 
+            // TODO: verify this is correct
             for (std::size_t i = 0; i < m_limit_switches.size(); ++i) {
                 if (GET_BIT_AT_INDEX(message.limit_switch_info.present, i)) {
                     bool enabled = GET_BIT_AT_INDEX(message.limit_switch_info.enabled, i);
@@ -160,7 +164,6 @@ namespace mrover {
                     m_limit_switches[i].initialize(enabled, active_high, used_for_readjustment, limits_forward, associated_position);
                 }
             }
-
             for (std::size_t i = 0; i < m_limit_switches.size(); ++i) {
                 if (GET_BIT_AT_INDEX(message.limit_switch_info.present, i) && GET_BIT_AT_INDEX(message.limit_switch_info.enabled, i)) {
                     m_limit_switches[i].enable();
@@ -238,8 +241,8 @@ namespace mrover {
         auto process_command(EnableLimitSwitchesCommand const&) -> void {
             // We are allowed to just enable all limit switches.
             // The valid bit is kept track of separately.
-            for (int i = 0; i < 4; ++i) {
-                m_limit_switches[i].enable();
+            for (auto& m_limit_switche : m_limit_switches) {
+                m_limit_switche.enable();
             }
         }
 
@@ -279,7 +282,7 @@ namespace mrover {
             // Find the "process_command" function that has the right type for the command
             using ModeForCommand = command_to_mode_t<Command, Mode>;
 
-            // If the current mode is not the mode that "process_command" expects, change the mode, providing a new blank mode
+            // If the current mode is not the mode that "process_command" expects, change the mode to a fresh new instance of the correct one
             if (!std::holds_alternative<ModeForCommand>(m_mode)) m_mode.emplace<ModeForCommand>();
 
             if constexpr (std::is_same_v<ModeForCommand, std::monostate>) {
@@ -289,9 +292,14 @@ namespace mrover {
             }
         }
 
+        /**
+         * \brief           Called from the FDCAN interrupt handler when a new message is received, updating \link m_inbound and processing it.
+         * \param message   Command message to process.
+         *
+         * \note            This resets the message watchdog timer.
+         */
         auto receive(InBoundMessage const& message) -> void {
             // Ensure watchdog timer is reset and enabled now that we are receiving messages
-
             __HAL_TIM_SetCounter(m_watchdog_timer, 0);
             if (!m_watchdog_enabled) {
                 HAL_TIM_Base_Start_IT(m_watchdog_timer);
@@ -302,6 +310,11 @@ namespace mrover {
             process_command();
         }
 
+        /**
+         * \brief Update all non-blocking readings, process the current command stored in \link m_inbound, update \link m_outbound, and drive the motor.
+         *
+         * \note Reading the limit switches and encoders is non-blocking since they are memory-mapped.
+         */
         auto process_command() -> void {
             update_limit_switches();
             update_relative_encoder();
@@ -309,6 +322,11 @@ namespace mrover {
             drive_motor();
         }
 
+        /**
+         * \brief Called after not receiving a message for too long. Responsible for stopping the motor for safety.
+         *
+         * This disables the watchdog timer until we receive another message.
+         */
         auto receive_watchdog_expired() -> void {
             HAL_TIM_Base_Stop_IT(m_watchdog_timer);
             m_watchdog_enabled = false;
@@ -319,8 +337,15 @@ namespace mrover {
             process_command();
         }
 
+        /**
+         * \brief Serialize our internal state into an outbound status message
+         *
+         * \note This does not actually send the message it just updates it. We want to send at a lower rate in \link send()
+         */
         auto update_outbound() -> void {
             ControllerDataState state{
+                    // Encoding as NaN instead of an optional saves space in the message
+                    // It also has a predictable memory layout
                     .position = m_position.value_or(Radians{std::numeric_limits<float>::quiet_NaN()}),
                     .velocity = m_velocity.value_or(RadiansPerSecond{std::numeric_limits<float>::quiet_NaN()}),
                     .config_calib_error_data = ConfigCalibErrorInfo{
@@ -335,12 +360,25 @@ namespace mrover {
             m_outbound = state;
         }
 
+        /**
+         * \brief Process the last received command again and update our outbound status message.
+         *
+         * We want to process again since the encoder readings may have changed and we need to update our motor output.
+         * We also may have new readings that need to be put in the outbound message.
+         *
+         * This update loop should be called as fast as possible without overloading the MCU.
+         */
         auto update() -> void {
             process_command();
 
             update_outbound();
         }
 
+        /**
+         * \brief Send out the current outbound status message.
+         *
+         * The update rate should be limited to avoid hammering the FDCAN bus.
+         */
         auto send() -> void {
             m_fdcan.broadcast(m_outbound);
         }

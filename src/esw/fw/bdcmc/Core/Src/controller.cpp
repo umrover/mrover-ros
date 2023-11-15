@@ -7,6 +7,9 @@
 
 #include "main.h"
 
+// TODO: enable the watchdog and feed it in the htim6 update loop. make sure when the interrupt fires we disable PWN output. you will probably have to make the interrupt definition
+// TODO: add another timer for absolute encoder? another solution is starting a transaction in the 10,000 Hz update loop if we are done with the previous transaction
+
 extern FDCAN_HandleTypeDef hfdcan1;
 extern I2C_HandleTypeDef hi2c1;
 extern TIM_HandleTypeDef htim4;  // Quadrature encoder #1
@@ -15,6 +18,7 @@ extern TIM_HandleTypeDef htim6;  // 10,000 Hz Update timer
 extern TIM_HandleTypeDef htim7;  // 100 Hz Send timer
 extern TIM_HandleTypeDef htim15; // H-Bridge PWM
 extern TIM_HandleTypeDef htim16; // Message watchdog timer
+
 // extern WWDG_HandleTypeDef hwwdg;
 
 namespace mrover {
