@@ -65,11 +65,14 @@ import CalibrationCheckbox from "./CalibrationCheckbox.vue";
 import JointAdjust from "./MotorAdjust.vue";
 import LimitSwitch from "./LimitSwitch.vue";
 
+import { mapState, mapActions } from 'vuex';
+
 // In seconds
 const updateRate = 0.1;
 let interval;
 
 export default defineComponent({
+
     components: {
         ToggleButton,
         CalibrationCheckbox,
@@ -79,7 +82,7 @@ export default defineComponent({
     data() {
         return {
             // websocket: inject("webSocketService") as WebSocket,
-            websocket: new WebSocket('ws://localhost:8000/ws/gui'),
+            // websocket: new WebSocket('ws://localhost:8000/ws/gui'),
             arm_mode: "arm_disabled",
             joints_array: [false, false, false, false, false, false],
             laser_enabled: false,
@@ -88,6 +91,21 @@ export default defineComponent({
             joystick_pub: null,
             laser_service: null,
         };
+    },
+
+    computed: {
+        ...mapState('websocket', ['message'])
+    },
+
+    watch: {
+        message(msg) {
+            if(msg.type=="laser_service"){
+                if (!msg.result) {
+                    this.laser_enabled = !this.laser_enabled;
+                    alert("Toggling Arm Laser failed.");
+                }
+            }
+        }
     },
 
     // watch: {
@@ -101,17 +119,17 @@ export default defineComponent({
     //     window.clearInterval(interval);
     // },
 
-    created: function () {
-        this.websocket.onmessage = (event) => { console.log(event.data)
-            const msg = JSON.parse(event.data);
-            if(msg.type=="laser_service"){
-                if (!msg.result) {
-                    this.laser_enabled = !this.laser_enabled;
-                    alert("Toggling Arm Laser failed.");
-                }
-            }
-        };
-    },
+    // created: function () {
+    //     this.websocket.onmessage = (event) => { console.log(event.data)
+    //         const msg = JSON.parse(event.data);
+    //         if(msg.type=="laser_service"){
+    //             if (!msg.result) {
+    //                 this.laser_enabled = !this.laser_enabled;
+    //                 alert("Toggling Arm Laser failed.");
+    //             }
+    //         }
+    //     };
+    // },
 
     // created: function () {
     //     this.joystick_pub = new ROSLIB.Topic({
@@ -191,9 +209,11 @@ export default defineComponent({
     //         var joystickMsg = new ROSLIB.Message(joystickData);
     //         this.joystick_pub.publish(joystickMsg);
     //     },
+    ...mapActions('websocket', ['sendMessage']),
+    
         toggleArmLaser: function () {
             this.laser_enabled = !this.laser_enabled;
-            this.websocket.send(JSON.stringify({type:"laser_service", data:this.laser_enabled}))
+            this.sendMessage({type:"laser_service", data:this.laser_enabled});
             
          }
     }

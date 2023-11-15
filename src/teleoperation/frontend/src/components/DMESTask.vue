@@ -54,6 +54,7 @@
 
 <script lang="ts">
 import { defineComponent, inject } from 'vue'
+import { mapState } from 'vuex';
 import PDBFuse from "./PDBFuse.vue";
 import DriveMoteusStateTable from "./DriveMoteusStateTable.vue";
 import ArmMoteusStateTable from "./ArmMoteusStateTable.vue";
@@ -90,7 +91,7 @@ export default defineComponent({
   data() {
     return {
       // websocket: inject("webSocketService") as WebSocket,
-      websocket: new WebSocket('ws://localhost:8000/ws/gui'),
+      // websocket: new WebSocket('ws://localhost:8000/ws/gui'),
       // Default coordinates at MDRS
       odom: {
         latitude_deg: 38.4060250,
@@ -116,9 +117,12 @@ export default defineComponent({
     }
   },
 
-  created() {
-    this.websocket.onmessage = (event) => {
-      const msg = JSON.parse(event.data)
+  computed: {
+    ...mapState('websocket', ['message'])
+  },
+
+  watch: {
+    message(msg) {
       if (msg.type == "joint_state") {
         this.jointState.name = msg.name;
         this.jointState.position = msg.position;
@@ -127,6 +131,18 @@ export default defineComponent({
       }
     }
   }
+
+  // created() {
+  //   this.websocket.onmessage = (event) => {
+  //     const msg = JSON.parse(event.data)
+  //     if (msg.type == "joint_state") {
+  //       this.jointState.name = msg.name;
+  //       this.jointState.position = msg.position;
+  //       this.jointState.velocity = msg.velocity;
+  //       this.jointState.effort = msg.effort;
+  //     }
+  //   }
+  // }
 })
 </script>
 

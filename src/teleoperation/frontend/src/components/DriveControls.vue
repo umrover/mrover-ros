@@ -6,16 +6,20 @@
   
   <script lang="ts">
   import {inject} from "vue";
+  import { mapActions } from 'vuex';
   
   let interval:number;
   
   export default {
     data() {
       return {
-        joystick_pub: null,
         // websocket: inject("webSocketService") as WebSocket,
-        websocket: new WebSocket('ws://localhost:8000/ws/gui'),
+        // websocket: new WebSocket('ws://localhost:8000/ws/gui'),
       };
+    },
+
+    methods: {
+      ...mapActions('websocket', ['sendMessage'])
     },
   
     beforeUnmount: function () {
@@ -40,7 +44,7 @@
               buttons: buttons,
             };
 
-            this.websocket.send(JSON.stringify(joystickData));
+            this.sendMessage(joystickData);
             
           }
         }

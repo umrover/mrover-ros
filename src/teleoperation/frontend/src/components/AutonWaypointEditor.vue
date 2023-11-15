@@ -254,7 +254,7 @@
   import { convertDMS } from "../utils.js";
   import VelocityCommand from "./VelocityCommand.vue";
   import WaypointItem from "./AutonWaypointItem.vue";
-  import { mapMutations, mapGetters } from "vuex";
+  import { mapState, mapActions, mapMutations, mapGetters } from "vuex";
   import _ from "lodash";
   import L from "leaflet";
   
@@ -278,7 +278,7 @@
   
     data() {
       return {
-        websocket: new WebSocket("ws://localhost:8000/ws/gui"),
+        // websocket: new WebSocket("ws://localhost:8000/ws/gui"),
         name: "Waypoint",
         id: "-1",
         type: 1,
@@ -425,22 +425,28 @@
       this.autonEnabled = false;
       // this.sendAutonCommand();
     },
+
+    mounted: function() {
+      console.log(this.$store); // Check the store structure
+      console.log(this.$store.state.websocket); // Check the 'websocket' module
+      console.log(this.sendMessage); // Check if 'sendMessage' is available
+    },
   
     created: function () {
 
-      this.websocket.onmessage = (event) => {
-        const msg = JSON.parse(event.data);
-        if(msg.type == 'nav_state'){
-          // If still waiting for nav...
-          if ((msg.state == "OffState" && this.autonEnabled) ||
-              (msg.state !== "OffState" && !this.autonEnabled)) {
-            return;
-          }
+      // this.websocket.onmessage = (event) => {
+      //   const msg = JSON.parse(event.data);
+      //   if(msg.type == 'nav_state'){
+      //     // If still waiting for nav...
+      //     if ((msg.state == "OffState" && this.autonEnabled) ||
+      //         (msg.state !== "OffState" && !this.autonEnabled)) {
+      //       return;
+      //     }
     
-          this.waitingForNav = false;
-          this.autonButtonColor = this.autonEnabled ? "btn-success" : "btn-danger";
-        }
-      };
+      //     this.waitingForNav = false;
+      //     this.autonButtonColor = this.autonEnabled ? "btn-success" : "btn-danger";
+      //   }
+      // };
       // Make sure local odom format matches vuex odom format
       this.odom_format_in = this.odom_format;
   
@@ -457,6 +463,8 @@
     // },
   
     methods: {
+      ...mapActions('websocket', ['sendMessage']),
+      
       ...mapMutations("autonomy", {
         setRoute: "setRoute",
         setWaypointList: "setWaypointList",
@@ -471,7 +479,7 @@
   
       sendAutonCommand() {
         if(this.autonEnabled) {
-          this.websocket.send(JSON.stringify({
+          this.sendMessage({
             type: "auton_command",
             is_enabled: true, 
             waypoints: _.map(this.route, (waypoint: { lat: number; lon: number; id: string; type: number; }) => {
@@ -485,10 +493,10 @@
                 type:  waypoint.type
               };
             })
-          }));
+          });
         }
         else { //if auton's not enabled, send an empty message
-          this.websocket.send(JSON.stringify({type: "auton_command", is_enabled: false, waypoints: []}));
+          this.sendMessage({type: "auton_command", is_enabled: false, waypoints: []});
         }
       },
   
@@ -626,7 +634,7 @@
   
       toggleTeleopMode: function () {
         this.teleopEnabledCheck = !this.teleopEnabledCheck;
-        this.websocket.send(JSON.stringify({type: 'teleop_enabled', data: this.teleopEnabledCheck}));
+        this.sendMessage({type: 'teleop_enabled', data: this.teleopEnabledCheck});
         this.$emit("toggleTeleop", this.teleopEnabledCheck);
       },
     }

@@ -2,7 +2,7 @@ import json
 from channels.generic.websocket import JsonWebsocketConsumer
 import rospy
 from std_srvs.srv import SetBool, Trigger
-from mrover.msg import PDB, ControllerState, AutonCommand, GPSWaypoint
+from mrover.msg import PDB, ControllerState, AutonCommand, GPSWaypoint, LED
 from mrover.srv import EnableDevice
 from std_msgs.msg import String, Bool
 from sensor_msgs.msg import JointState, Joy, NavSatFix
@@ -38,7 +38,7 @@ class GUIConsumer(JsonWebsocketConsumer):
         self.joint_state_sub = rospy.Subscriber('/drive_joint_data', JointState, self.joint_state_callback)
         self.calibrate_service = rospy.ServiceProxy("arm_calibrate", Trigger)
         self.joy_sub = rospy.Subscriber('/joystick', Joy, self.handle_joystick_message)
-        # self.nav_state_sub = rospy.Subscriber("/nav_state", StateMachineStateUpdate, self.nav_state_callback())
+        self.led_sub = rospy.Subscriber("/led", LED, self.led_callback)
 
 
     def disconnect(self, close_code):
@@ -225,8 +225,11 @@ class GUIConsumer(JsonWebsocketConsumer):
         teleop_pub = rospy.Publisher("/teleop_enabled", Bool, queue_size=1)
         teleop_pub.publish(msg['data'])
 
-    # def nav_state_callback(self, msg):
-    #     self.send(text_data=json.dumps({
-    #         'type': 'nav_state',
-    #         'state': msg.state
-    #     }))
+    def led_callback(self, msg):
+        self.send(text_data=json.dumps({
+            'type': 'led',
+            'red': msg.red,
+            'green': msg.green,
+            'blue': msg.blue,
+            'is_blinking': msg.is_blinking
+        }))

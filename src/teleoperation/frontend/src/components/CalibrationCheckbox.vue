@@ -11,7 +11,7 @@
   import { defineComponent, inject } from 'vue';
   import Checkbox from "./Checkbox.vue";
   import LEDIndicator from "./LEDIndicator.vue";
-  //import ROSLIB from "roslib/src/RosLib";
+  import { mapState, mapActions } from 'vuex';
   
   export default defineComponent({
     components: {
@@ -37,7 +37,7 @@
     data() {
       return {
         // websocket: inject("webSocketService") as WebSocket,
-        websocket: new WebSocket('ws://localhost:8000/ws/gui'),
+        // websocket: new WebSocket('ws://localhost:8000/ws/gui'),
         socket: null,
         toggleEnabled: false,
         calibrated: false,
@@ -46,8 +46,29 @@
         interval: 0 as number,
       };
     },
+
+    computed: {
+      ...mapState('websocket', ['message'])
+    },
     
     watch: {
+      message(msg) {
+        if(msg.type=="calibration_status"){
+          for (var i = 0; i < msg.names.length; ++i) {
+            if (msg.names[i] == this.joint_name) {
+              this.calibrated = msg.calibrated[i];
+              break;
+            }
+          }
+        }
+        else if(msg.type =="calibrate_service"){
+          if (!msg.result) {
+            this.toggleEnabled = false;
+            alert("ESW cannot calibrate this motor");
+          }
+        }
+      },
+
       toggleEnabled: function (val) {
         // When the checkbox is toggled, publish a single false request to the calibrate service
         if (!val) {
@@ -64,23 +85,23 @@
 
 
     created: function () {
-        this.websocket.onmessage = (event) => { console.log(event.data)
-            const msg = JSON.parse(event.data);
-            if(msg.type=="calibration_status"){
-            for (var i = 0; i < msg.names.length; ++i) {
-              if (msg.names[i] == this.joint_name) {
-                this.calibrated = msg.calibrated[i];
-                break;
-              }
-            }
-            }
-            else if(msg.type =="calibrate_service"){
-              if (!msg.result) {
-              this.toggleEnabled = false;
-              alert("ESW cannot calibrate this motor");
-          }
-            }
-        };
+        // this.websocket.onmessage = (event) => { console.log(event.data)
+        //     const msg = JSON.parse(event.data);
+        //     if(msg.type=="calibration_status"){
+        //     for (var i = 0; i < msg.names.length; ++i) {
+        //       if (msg.names[i] == this.joint_name) {
+        //         this.calibrated = msg.calibrated[i];
+        //         break;
+        //       }
+        //     }
+        //     }
+        //     else if(msg.type =="calibrate_service"){
+        //       if (!msg.result) {
+        //       this.toggleEnabled = false;
+        //       alert("ESW cannot calibrate this motor");
+        //   }
+        //     }
+        // };
 
      
   
@@ -92,11 +113,12 @@
     },
   
     methods: {
+      ...mapActions('websocket', ['sendMessage']),
       toggleCalibration: function () {
         this.toggleEnabled = !this.toggleEnabled;
       },
       publishCalibrationMessage: function () {
-        this.websocket.send(JSON.stringify({type:"calibrate_service", data:this.toggleEnabled}))
+        this.sendMessage(({type:"calibrate_service", data:this.toggleEnabled}));
       },
     },
   });

@@ -30,6 +30,7 @@
   
 <script lang="ts">
   import { inject } from 'vue';
+  import { mapState } from 'vuex';
   const pdb_temp_limit = 100;
   const pdb_current_limits = [
     //TBD
@@ -39,7 +40,7 @@
     data() {
       return {
         // websocket: inject("webSocketService") as WebSocket,
-        websocket: new WebSocket('ws://localhost:8000/ws/gui'),
+        // websocket: new WebSocket('ws://localhost:8000/ws/gui'),
         voltage: ["3.3V", "5V", "12V Buck #1", "12V Buck #2", "12V Buck #3"],
         pdb_data: [
           {
@@ -65,25 +66,47 @@
         ],
       };
     },
-    mounted: function () {
-        this.websocket.onmessage = (event) => { console.log(event.data)
-            const msg = JSON.parse(event.data);
-            if(msg.type == "pdb") {
-                for (let i = this.pdb_data.length-1; i >= 0; i--) {
-                    this.updateVal(
-                        this.pdb_data[i].temp,
-                        msg.temperatures[i],
-                        pdb_temp_limit
-                    );
-                    this.updateVal(
-                        this.pdb_data[i].current,
-                        msg.currents[i],
-                        pdb_current_limits[i]
-                    );
-                }
-            }
-        };
+    computed: {
+      ...mapState('websocket', ['message']),
     },
+
+    watch : {
+      message(msg) {
+        if(msg.type == "pdb") {
+            for (let i = this.pdb_data.length-1; i >= 0; i--) {
+                this.updateVal(
+                    this.pdb_data[i].temp,
+                    msg.temperatures[i],
+                    pdb_temp_limit
+                );
+                this.updateVal(
+                    this.pdb_data[i].current,
+                    msg.currents[i],
+                    pdb_current_limits[i]
+                );
+            }
+        }
+      }
+    },
+    // mounted: function () {
+    //     this.websocket.onmessage = (event) => { console.log(event.data)
+    //         const msg = JSON.parse(event.data);
+    //         if(msg.type == "pdb") {
+    //             for (let i = this.pdb_data.length-1; i >= 0; i--) {
+    //                 this.updateVal(
+    //                     this.pdb_data[i].temp,
+    //                     msg.temperatures[i],
+    //                     pdb_temp_limit
+    //                 );
+    //                 this.updateVal(
+    //                     this.pdb_data[i].current,
+    //                     msg.currents[i],
+    //                     pdb_current_limits[i]
+    //                 );
+    //             }
+    //         }
+    //     };
+    // },
 
     methods: {
       updateVal: function (struct: { val: any; color: string; }, val: number, threshold: number) {
