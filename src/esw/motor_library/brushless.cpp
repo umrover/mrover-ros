@@ -42,7 +42,6 @@ namespace mrover {
     // Nan          0.0         = Don't move
 
     void BrushlessController::setDesiredVelocity(RadiansPerSecond velocity) {
-        // TODO: Convert radians per second to revolutions per second
         RevolutionsPerSecond velocity_rev_s = std::clamp(velocity, mMinVelocity, mMaxVelocity);
 
         // TODO - remove eventually after debugging
