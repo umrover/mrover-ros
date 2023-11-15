@@ -1,6 +1,7 @@
 import { createWebHistory, createRouter } from "vue-router";
 import Menu from "../components/Menu.vue";
-import ERDTask from "../components/ERDTask.vue";
+import DMESTask from "../components/DMESTask.vue";
+import AutonTask from "../components/AutonTask.vue";
 
 const routes = [
   {
@@ -9,12 +10,27 @@ const routes = [
     component: Menu,
   },
   {
-    path: "/EDMTask",
-    name: "EDMTask",
-    component: ERDTask,
+    path: "/DMTask",
+    name: "DMTask",
+    component: DMESTask,
+    props: {
+      type: "DM",
+    },
+  },
+  {
+    path: "/ESTask",
+    name: "ESTask",
+    component: DMESTask,
+    props: {
+      type: "ES",
+    },
+  },
+  {
+    path: "/AutonTask",
+    name: "AutonTask",
+    component: AutonTask,
   },
 ];
-
 const router = createRouter({
   history: createWebHistory(),
   routes,

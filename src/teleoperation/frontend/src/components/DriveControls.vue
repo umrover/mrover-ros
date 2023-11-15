@@ -6,6 +6,7 @@
   
 <script lang="ts">
 import { inject } from "vue";
+import { mapActions } from 'vuex';
 
 let interval: number;
 
@@ -13,39 +14,45 @@ export default {
   data() {
     return {
       // websocket: inject("webSocketService") as WebSocket,
-      websocket: new WebSocket("ws://localhost:8000/ws/gui"),
+      // websocket: new WebSocket('ws://localhost:8000/ws/gui'),
     };
   },
 
-  beforeDestroy: function () {
+  methods: {
+    ...mapActions('websocket', ['sendMessage'])
+  },
+
+  beforeUnmount: function () {
     window.clearInterval(interval);
   },
 
   created: function () {
     const updateRate = 0.05;
 
-    interval = window.setInterval(() => {
-      const gamepads = navigator.getGamepads();
-      for (let i = 0; i < 4; i++) {
-        const gamepad = gamepads[i];
-        if (gamepad && (gamepad.id.includes("Logitech") || gamepad.id.includes("Thrustmaster"))) {
-          let buttons = gamepad.buttons.map((button) => {
-            return button.value;
-          });
+    let interval: number;
 
-          const joystickData = {
-            type: 'joystick_values',
-            axes: gamepad.axes,
-            buttons: buttons,
-          };
+        interval = window.setInterval(() => {
+          const gamepads = navigator.getGamepads();
+          for (let i = 0; i < 4; i++) {
+            const gamepad = gamepads[i];
+            if (gamepad && (gamepad.id.includes("Logitech") || gamepad.id.includes("Thrustmaster"))) {
+              let buttons = gamepad.buttons.map((button) => {
+                return button.value;
+              });
 
-          this.websocket.send(JSON.stringify(joystickData));
+              const joystickData = {
+                type: 'joystick_values',
+                axes: gamepad.axes,
+                buttons: buttons,
+              };
 
-        }
-      }
-    }, updateRate * 1000);
-  },
-};
+              this.sendMessage(joystickData);
+
+            }
+          }
+        }, updateRate * 1000);
+      },
+}
 </script>
   
 <style scoped>

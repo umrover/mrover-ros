@@ -1,4 +1,4 @@
 float64 latitude_degrees
 float64 longitude_degrees
-WaypointType type
-int32 id
+uint8 tag_id
+uint8 type

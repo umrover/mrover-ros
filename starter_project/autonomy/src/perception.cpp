@@ -28,8 +28,8 @@ namespace mrover {
         // TODO: uncomment me!
         // mTagPublisher = mNodeHandle.advertise<StarterProjectTag>("tag", 1);
 
-        mTagDetectorParams = cv::makePtr<cv::aruco::DetectorParameters>();
-        mTagDictionary = cv::makePtr<cv::aruco::Dictionary>(cv::aruco::getPredefinedDictionary(cv::aruco::DICT_4X4_50));
+        // mTagDetectorParams = cv::makePtr<cv::aruco::DetectorParameters>();
+        // mTagDictionary = cv::makePtr<cv::aruco::Dictionary>(cv::aruco::getPredefinedDictionary(cv::aruco::DICT_4X4_50));
     }
 
     void Perception::imageCallback(sensor_msgs::ImageConstPtr const& imageMessage) {
@@ -47,7 +47,7 @@ namespace mrover {
     }
 
     void Perception::findTagsInImage(cv::Mat const& image, std::vector<StarterProjectTag>& tags) { // NOLINT(*-convert-member-functions-to-static)
-        // hint: take a look at OpenCV's documentation for the detectMarkers function
+        // hint: take a look at OpenCV's documentation for the detectMarkers function that can be called on mTagDetector
         // hint: you have mTagDictionary, mTagCorners, mTagIds, and mTagDetectorParams member variables already defined!
         // hint: write and use the "getCenterFromTagCorners" and "getClosenessMetricFromTagCorners" functions
 

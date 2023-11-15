@@ -3,7 +3,8 @@
     <div class="shadow p-3 mb-5 header">
       <h1>Menu</h1>
       <img
-        src="../static/mrover.png"
+        class="logo"
+        src="mrover.png"
         alt="MRover"
         title="MRover"
         width="200"
@@ -13,7 +14,7 @@
     <div class="pages">
       <fieldset class="row">
         <legend>Tasks</legend>
-        <MenuButton link="/EDMTask" name="EDM Mission" />
+        <MenuButton link="/DMTask" name="DM Mission" />
         <MenuButton link="/ESTask" name="ES Mission" />
         <MenuButton link="/ISHTask" name="ISH GUI" />
         <MenuButton link="/SATask" name="Sample Acquisition GUI" />
@@ -26,41 +27,29 @@
 </template>
 
 <script lang="ts">
-import MenuButton from "./MenuButton.vue";
-
-import { defineComponent, inject } from 'vue'
-
-export default defineComponent({
-  name: "MainMenu",
+import { inject } from 'vue'
+import MenuButton from './MenuButton.vue'
+export default {
   components: {
-    MenuButton,
-  },
-  created() {
-    const ws:any = inject<WebSocket>('webSocketService');
-
-    ws.send('Hello, WebSocket!');
-  },
-
-  data() {
-    return {};
+    MenuButton
   }
+};
 
-});
 </script>
-
 <style scoped>
 
 .header {
   grid-area: header;
   display: flex;
+  justify-content: space-between;
   align-items: center;
-  justify-content: center;
+  padding: 10px;
 }
 
-.header h1 {
+.logo {
   position: absolute;
-  left: 25px;
-  top: 10px;
+  left: 50%;
+  transform: translateX(-50%);
 }
 
 .pages {
@@ -78,7 +67,7 @@ export default defineComponent({
   display: grid;
   grid-gap: 10px;
   grid-template-columns: 1fr;
-  grid-template-rows: 125px 1fr;
+  grid-template-rows: auto 1fr;
   grid-template-areas: "header" "pages";
   font-family: sans-serif;
   height: auto;

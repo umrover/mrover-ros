@@ -155,5 +155,7 @@ int main(int argc, char** argv) {
     return EXIT_SUCCESS;
 }
 
+#ifdef MROVER_IS_NODELET
 #include <pluginlib/class_list_macros.h>
 PLUGINLIB_EXPORT_CLASS(mrover::TagDetectorNodelet, nodelet::Nodelet)
+#endif

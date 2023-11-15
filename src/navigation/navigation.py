@@ -13,8 +13,6 @@ from std_msgs.msg import String
 
 from approach_post import ApproachPostState, ApproachPostStateTransitions
 from context import Context
-from gate import GateTraverseState, GateTraverseStateTransitions
-from partial_gate import PartialGateState, PartialGateStateTransitions
 from post_backup import PostBackupState, PostBackupTransitions
 from recovery import RecoveryState, RecoveryStateTransitions
 from search import SearchState, SearchStateTransitions
@@ -56,17 +54,7 @@ class Navigation(threading.Thread):
                 "SearchState", SearchState(self.context), transitions=self.get_transitions(SearchStateTransitions)
             )
             self.state_machine.add(
-                "GateTraverseState",
-                GateTraverseState(self.context),
-                transitions=self.get_transitions(GateTraverseStateTransitions),
-            )
-            self.state_machine.add(
                 "RecoveryState", RecoveryState(self.context), transitions=self.get_transitions(RecoveryStateTransitions)
-            )
-            self.state_machine.add(
-                "PartialGateState",
-                PartialGateState(self.context),
-                transitions=self.get_transitions(PartialGateStateTransitions),
             )
             self.state_machine.add(
                 "PostBackupState",

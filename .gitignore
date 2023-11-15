@@ -22,6 +22,7 @@ keys.json*
 yarn.lock*
 yarn-error.log*
 bun.lock*
+package-lock.json*
 
 # Bag Files
 /bags/
@@ -31,18 +32,3 @@ moteus-cal*
 
 # CSV
 *.csv
-
-# STM32 workspace
-.metadata
-
-Debug/
-Release/
-.metadata/
-.settings/
-RemoteSystemsTempFiles/
-
-*.chm
-*.settings.xml
-
-*.xml
-*.launch

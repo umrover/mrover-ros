@@ -1,2 +1,0 @@
-GPSWaypoint[] waypoints
-bool enable
