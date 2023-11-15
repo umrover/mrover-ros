@@ -1,25 +1,35 @@
 #pragma once
 
 #include <numbers>
+#include <cstdint>
+#include <optional>
 
-#include "config.hpp"
 #include "hardware.hpp"
+#include "hardware_i2c.hpp"
 #include "units/units.hpp"
 
 constexpr std::uint32_t COUNTS_PER_ROTATION_RELATIVE = 4096;
 constexpr std::uint32_t COUNTS_PER_ROTATION_ABSOLUTE = 1024;
 constexpr auto RADIANS_PER_COUNT_RELATIVE = mrover::Radians{2 * std::numbers::pi} / COUNTS_PER_ROTATION_RELATIVE;
 constexpr auto RADIANS_PER_COUNT_ABSOLUTE = mrover::Radians{2 * std::numbers::pi} / COUNTS_PER_ROTATION_ABSOLUTE;
+constexpr auto SECONDS_PER_TICK = mrover::Seconds{1 / 1000.0};
 
 namespace mrover {
 
-    class AbsoluteEncoder {
-    public:
-        AbsoluteEncoder() = default;
+    struct EncoderReading {
+        Radians position;
+        RadiansPerSecond velocity;
+    };
 
-        AbsoluteEncoder(SMBus i2c_bus, std::uint8_t A1, std::uint8_t A2);
+    class AbsoluteEncoderReader {
+    public:
+        AbsoluteEncoderReader() = default;
+
+        AbsoluteEncoderReader(SMBus i2c_bus, std::uint8_t A1, std::uint8_t A2, Ratio multiplier);
 
         std::optional<std::uint64_t> read_raw_angle();
+
+        [[nodiscard]] std::optional<EncoderReading> read();
 
     private:
         struct I2CAddress {
@@ -34,45 +44,57 @@ namespace mrover {
         SMBus m_i2cBus;
 
         std::uint64_t m_previous_raw_data{};
+
+        std::uint32_t m_ticks_prev{};
+        Radians m_angle_prev;
+        Ratio m_multiplier;
+
+        Radians m_position;
+        RadiansPerSecond m_velocity;
     };
 
-    class QuadratureEncoder {
+    class QuadratureEncoderReader {
     public:
-        QuadratureEncoder() = default;
+        QuadratureEncoderReader() = default;
 
-        QuadratureEncoder(TIM_TypeDef* _tim);
+        QuadratureEncoderReader(TIM_HandleTypeDef* timer, Ratio multiplier);
 
-        std::int64_t count_delta();
+        [[nodiscard]] std::optional<EncoderReading> read();
 
     private:
-        TIM_TypeDef* m_timer{};
-        std::uint32_t m_counts_raw_prev{};
+        TIM_HandleTypeDef* m_timer{};
+        std::int64_t m_counts_unwrapped_prev{};
         std::uint32_t m_counts_raw_now{};
+        std::uint32_t m_ticks_prev{};
+        std::uint32_t m_ticks_now{};
+        Ratio m_multiplier;
+
+        Radians m_position;
+        RadiansPerSecond m_velocity;
+
+        std::int64_t count_delta();
     };
 
 
+    // obsolete?
     class FusedReader {
     public:
         FusedReader() = default;
 
-        FusedReader(TIM_HandleTypeDef* relative_encoder_timer, I2C_HandleTypeDef* absolute_encoder_i2c);
+        FusedReader(TIM_HandleTypeDef* timer, I2C_HandleTypeDef* absolute_encoder_i2c, Ratio quad_multiplier, Ratio abs_multiplier);
 
-        [[nodiscard]] std::pair<Radians, RadiansPerSecond> read(Config const& config);
+        [[nodiscard]] std::optional<EncoderReading> read();
 
     private:
-        AbsoluteEncoder m_abs_encoder;
-        QuadratureEncoder m_quad_encoder;
+        AbsoluteEncoderReader m_abs_encoder;
+        QuadratureEncoderReader m_quad_encoder;
 
-        TIM_HandleTypeDef* m_relative_encoder_timer{};
-        I2C_HandleTypeDef* m_absolute_encoder_i2c{};
         Radians m_position;
         RadiansPerSecond m_velocity;
 
-        void refresh_absolute(Config const& config);
+        void refresh_absolute();
     };
 
-    class LimitSwitchReader {
-
-    };
+    class LimitSwitchReader {};
 
 } // namespace mrover

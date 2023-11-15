@@ -5,8 +5,10 @@ namespace mrover {
     BrushlessController::BrushlessController(ros::NodeHandle const& nh, std::string name, std::string controllerName)
         : Controller{nh, std::move(name), std::move(controllerName)} {
 
+        mMinVelocity = RadiansPerSecond{-1.0f};
+        mMaxVelocity = RadiansPerSecond{1.0f};
+
         // TODO: change
-        torque = 0.3f;
     }
 
     void BrushlessController::setDesiredThrottle(Percent throttle) {
@@ -18,32 +20,55 @@ namespace mrover {
     void BrushlessController::setDesiredPosition(Radians position) {
         position = std::clamp(position, mMinPosition, mMaxPosition);
         // TODO - need to convert to use revs
-    }
-
-    void BrushlessController::setDesiredVelocity(RadiansPerSecond velocity) {
-        velocity = std::clamp(velocity, mMinVelocity, mMaxVelocity);
-
         moteus::Controller::Options options;
         moteus::Controller controller{options};
 
-        // Here we will just command a position of NaN and a velocity of
-        // 0.0.  This means "hold position wherever you are".
+        moteus::PositionMode::Command command{
+                .position = position.get(),
+                .velocity = 0.0,
+        };
+        moteus::CanFdFrame positionFrame = controller.MakePosition(command);
+        mDevice.publish_moteus_frame(positionFrame);
+    }
+
+    // Position     Velocity
+    // Nan          2.0         = spin at 2 rev/s
+    // 1.0          0.0         = Stay put at 1 rev round
+    // Nan          0.0         = Don't move
+
+    void BrushlessController::setDesiredVelocity(RadiansPerSecond velocity) {
+        // TODO: Convert radians per second to revolutions per second
+        velocity = std::clamp(velocity, mMinVelocity, mMaxVelocity);
 
         moteus::PositionMode::Command command{
                 .position = std::numeric_limits<double>::quiet_NaN(),
                 .velocity = velocity.get(),
         };
-        moteus::CanFdFrame positionFrame = controller.MakePosition(command);
 
-        // TODO - need to convert to use rev/s
+        moteus::CanFdFrame positionFrame = mController.MakePosition(command);
         mDevice.publish_moteus_frame(positionFrame);
     }
 
     void BrushlessController::processCANMessage(CAN::ConstPtr const& msg) {
+        auto result = moteus::Query::Parse(msg->data.data(), msg->data.size());
+        ROS_INFO("%3d p/v/t=(%7.3f,%7.3f,%7.3f)  v/t/f=(%5.1f,%5.1f,%3d)",
+                 result.mode,
+                 result.position,
+                 result.velocity,
+                 result.torque,
+                 result.voltage,
+                 result.temperature,
+                 result.fault);
+
+        if (result.mode == moteus::Mode::kPositionTimeout) {
+            moteus::CanFdFrame stopFrame = mController.MakeStop();
+            mDevice.publish_moteus_frame(stopFrame);
+            ROS_WARN("Position timeout hit");
+        }
     }
 
     double BrushlessController::getEffort() {
-        // TODO - actually do something
+        // TODO - need to properly set mMeasuredEFfort elsewhere
         return mMeasuredEffort;
     }
 

@@ -23,7 +23,7 @@ int main(int argc, char** argv) {
 
     [[maybe_unused]] auto armManager = std::make_unique<mrover::MotorsManager>(nh, "arm", armNames);
 
-    nh.advertiseService("enable_arm_laser", armLaserCallback);
+    ros::ServiceServer arm_laser_service = nh.advertiseService("enable_arm_laser", armLaserCallback);
 
     // Enter the ROS event loop
     ros::spin();

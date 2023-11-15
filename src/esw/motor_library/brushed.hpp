@@ -1,9 +1,9 @@
 #pragma once
 
+#include "messaging.hpp"
+#include "params_utils.hpp"
 #include <can_device.hpp>
 #include <controller.hpp>
-
-#include "messaging.hpp"
 
 namespace mrover {
 
@@ -25,9 +25,10 @@ namespace mrover {
         ~BrushedController() override = default;
 
     private:
+        static std::string errorToString(BDCMCErrorInfo errorCode);
+
         bool mIsConfigured = false;
         ConfigCommand mConfigCommand;
-        static const std::unordered_map<int, std::string> mCodeToError;
     };
 
 } // namespace mrover

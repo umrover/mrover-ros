@@ -8,13 +8,16 @@ int main(int argc, char** argv) {
     // Initialize the ROS node
     ros::init(argc, argv, "brushless_test_bridge");
     ros::NodeHandle nh;
+    ROS_INFO("Running");
 
-    [[maybe_unused]] auto brushlessController = std::make_unique<mrover::BrushlessController>(nh, "jetson", "test_brushless_controller");
+    auto brushlessController = std::make_unique<mrover::BrushlessController>(nh, "jetson", "devboard");
 
-    brushlessController->setDesiredVelocity(mrover::RadiansPerSecond{1.0f});
-    ROS_INFO("Sent velocity command to Moteus");
-    // Enter the ROS event loop
-    ros::spin();
+    ros::Rate rate{100};
+    while (ros::ok()) {
+        brushlessController->setDesiredVelocity(mrover::RadiansPerSecond{1.0f});
+        ros::spinOnce();
+        rate.sleep();
+    }
 
     return EXIT_SUCCESS;
 }

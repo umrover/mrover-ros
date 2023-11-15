@@ -12,10 +12,9 @@ extern FDCAN_HandleTypeDef hfdcan1;
 extern I2C_HandleTypeDef hi2c1;
 extern TIM_HandleTypeDef htim15;
 extern TIM_HandleTypeDef htim4;
+// extern WWDG_HandleTypeDef hwwdg;
 
 namespace mrover {
-
-    using BrushedController = Controller<Radians, Percent, FusedReader, HBridgeWriter>;
 
     // NOTE: Change This For Each Motor Controller
     constexpr static std::uint8_t DEVICE_ID = 0x1;
@@ -24,7 +23,7 @@ namespace mrover {
     constexpr static std::uint8_t DESTINATION_DEVICE_ID = 0x0;
 
     FDCANBus fdcan_bus;
-    BrushedController controller;
+    Controller controller;
 
     void init() {
         check(HAL_FDCAN_ActivateNotification(
@@ -34,16 +33,26 @@ namespace mrover {
               Error_Handler);
 
         fdcan_bus = FDCANBus{DEVICE_ID, DESTINATION_DEVICE_ID, &hfdcan1};
-        controller = BrushedController{DEVICE_ID, FusedReader{&htim4, &hi2c1}, HBridgeWriter{&htim15}, fdcan_bus};
+        std::array limit_switches = {
+                LimitSwitch{Pin{LIMIT_0_0_GPIO_Port, LIMIT_0_0_Pin}},
+                LimitSwitch{Pin{LIMIT_0_1_GPIO_Port, LIMIT_0_1_Pin}},
+                LimitSwitch{Pin{LIMIT_0_2_GPIO_Port, LIMIT_0_2_Pin}},
+                LimitSwitch{Pin{LIMIT_0_3_GPIO_Port, LIMIT_0_3_Pin}}
+        };
+        // controller = BrushedController{FusedReader{&htim4, &hi2c1}, HBridgeWriter{&htim15}, limit_switches, fdcan_bus};
+        controller = Controller{&htim15, limit_switches, fdcan_bus, &hi2c1};
     }
 
     void loop() {
+        // HAL_WWDG_Refresh(&hwwdg);
+
         // If the Receiver has messages waiting in its queue
         if (std::optional received = fdcan_bus.receive<InBoundMessage>()) {
             auto const& [header, message] = received.value();
-            auto messageId = std::bit_cast<FDCANBus::MessageId>(header.Identifier);
-            if (messageId.destination == DEVICE_ID)
+            if (auto messageId = std::bit_cast<FDCANBus::MessageId>(header.Identifier);
+                messageId.destination == DEVICE_ID) {
                 controller.receive(message);
+            }
         }
 
         HAL_Delay(100); // TODO: remove after debugging

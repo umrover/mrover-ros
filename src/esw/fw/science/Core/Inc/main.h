@@ -54,6 +54,16 @@ void Error_Handler(void);
 
 /* USER CODE BEGIN EFP */
 
+void init();
+
+void update_and_send_spectral();
+
+void update_and_send_thermistor_and_auto_shutoff_if_applicable();
+
+void update_and_send_heater();
+
+void receive_message();
+
 /* USER CODE END EFP */
 
 /* Private defines -----------------------------------------------------------*/

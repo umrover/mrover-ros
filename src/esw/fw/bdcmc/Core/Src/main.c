@@ -22,6 +22,7 @@
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
 
+
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -456,17 +457,17 @@ static void MX_GPIO_Init(void)
   /*Configure GPIO pin Output Level */
   HAL_GPIO_WritePin(MOTOR_1_DIR_GPIO_Port, MOTOR_1_DIR_Pin, GPIO_PIN_RESET);
 
-  /*Configure GPIO pins : LIMIT_0_A_Pin LIMIT_0_B_Pin LIMIT_0_C_Pin LIMIT_1_A_Pin */
-  GPIO_InitStruct.Pin = LIMIT_0_A_Pin|LIMIT_0_B_Pin|LIMIT_0_C_Pin|LIMIT_1_A_Pin;
+  /*Configure GPIO pins : LIMIT_0_0_Pin LIMIT_0_1_Pin LIMIT_0_2_Pin LIMIT_1_0_Pin */
+  GPIO_InitStruct.Pin = LIMIT_0_0_Pin|LIMIT_0_1_Pin|LIMIT_0_2_Pin|LIMIT_1_0_Pin;
   GPIO_InitStruct.Mode = GPIO_MODE_INPUT;
   GPIO_InitStruct.Pull = GPIO_NOPULL;
   HAL_GPIO_Init(GPIOC, &GPIO_InitStruct);
 
-  /*Configure GPIO pin : LIMIT_0_D_Pin */
-  GPIO_InitStruct.Pin = LIMIT_0_D_Pin;
+  /*Configure GPIO pin : LIMIT_0_3_Pin */
+  GPIO_InitStruct.Pin = LIMIT_0_3_Pin;
   GPIO_InitStruct.Mode = GPIO_MODE_INPUT;
   GPIO_InitStruct.Pull = GPIO_NOPULL;
-  HAL_GPIO_Init(LIMIT_0_D_GPIO_Port, &GPIO_InitStruct);
+  HAL_GPIO_Init(LIMIT_0_3_GPIO_Port, &GPIO_InitStruct);
 
   /*Configure GPIO pins : DEBUG_LED_0_Pin DEBUG_LED_1_Pin DEBUG_LED_2_Pin CAN_STANDBY_Pin */
   GPIO_InitStruct.Pin = DEBUG_LED_0_Pin|DEBUG_LED_1_Pin|DEBUG_LED_2_Pin|CAN_STANDBY_Pin;
@@ -475,8 +476,8 @@ static void MX_GPIO_Init(void)
   GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
   HAL_GPIO_Init(GPIOA, &GPIO_InitStruct);
 
-  /*Configure GPIO pins : LIMIT_1_B_Pin LIMIT_1_C_Pin LIMIT_1_D_Pin */
-  GPIO_InitStruct.Pin = LIMIT_1_B_Pin|LIMIT_1_C_Pin|LIMIT_1_D_Pin;
+  /*Configure GPIO pins : LIMIT_1_1_Pin LIMIT_1_2_Pin LIMIT_1_3_Pin */
+  GPIO_InitStruct.Pin = LIMIT_1_1_Pin|LIMIT_1_2_Pin|LIMIT_1_3_Pin;
   GPIO_InitStruct.Mode = GPIO_MODE_INPUT;
   GPIO_InitStruct.Pull = GPIO_NOPULL;
   HAL_GPIO_Init(GPIOB, &GPIO_InitStruct);

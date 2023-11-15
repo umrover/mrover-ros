@@ -23,20 +23,10 @@ int main(int argc, char** argv) {
 
 void processMessage(mrover::PDBData const& message) {
     mrover::PDLB pdlb_data;
-    pdlb_data.temperatures = {
-            message.temperature_24v,
-            message.temperature_12v_jetson,
-            message.temperature_12v_rest,
-            message.temperature_12v_buck,
-            message.temperature_5v,
-            message.temperature_3v3};
-    pdlb_data.currents = {
-            message.current_24v,
-            message.current_12v_jetson,
-            message.temperature_12v_rest,
-            message.current_12v_buck,
-            message.current_5v,
-            message.current_3v3};
+    for (int i = 0; i < 6; ++i) {
+        pdlb_data.temperatures.at(i) = message.temperatures[i];
+        pdlb_data.currents.at(i) = message.currents[i];
+    }
     PDBPublisher.publish(pdlb_data);
 }
 

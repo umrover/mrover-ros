@@ -212,7 +212,7 @@ mrover_add_library(motor_library src/esw/motor_library/*.cpp src/esw/motor_libra
 target_link_libraries(motor_library PUBLIC can_device moteus moteus_fw)
 
 # TODO(quintin) Fix this CMake hard coding
-mrover_add_nodelet(can_driver src/esw/can_driver/*.cpp src/esw/can_driver)
+mrover_add_nodelet(can_driver src/esw/can_driver/*.cpp src/esw/can_driver src/esw/can_driver/pch.hpp)
 mrover_nodelet_link_libraries(can_driver nl-3 nl-route-3)
 #mrover_nodelet_link_libraries(can ${NetLink_LIBRARIES} ${NetLinkRoute_LIBRARIES}})
 mrover_nodelet_include_directories(can_driver /usr/include/libnl3)
@@ -229,9 +229,11 @@ mrover_add_esw_bridge_node(led_hw_bridge src/esw/led_hw_bridge/*.cpp)
 mrover_add_esw_bridge_node(mast_gimbal_bridge src/esw/mast_gimbal_bridge/*.cpp)
 mrover_add_esw_bridge_node(pdb_bridge src/esw/pdb_bridge/*.cpp)
 mrover_add_esw_bridge_node(sa_bridge src/esw/sa_bridge/*.cpp)
+mrover_add_esw_bridge_node(sa_sensor_bridge src/esw/sa_sensor_bridge/*.cpp)
 mrover_add_esw_bridge_node(science_bridge src/esw/science_bridge/*.cpp)
-mrover_add_esw_bridge_node(brushless_test_bridge src/esw/brushless_test_bridge/*.cpp)
+mrover_add_esw_bridge_node(brushless_test_bridge src/esw/brushless_test_bridge/*.cpp motor_library)
 mrover_add_esw_bridge_node(brushed_test_bridge src/esw/brushed_test_bridge/*.cpp)
+mrover_add_esw_bridge_node(test_arm_bridge src/esw/test_arm_bridge/*.cpp)
 
 ## Perception
 

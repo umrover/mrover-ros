@@ -16,12 +16,11 @@ namespace mrover {
         assert(controllersRoot.getType() == XmlRpc::XmlRpcValue::TypeStruct);
 
         for (const std::string& name: mControllerNames) {
-            assert(controllersRoot[name].hasMember("type") &&
-                   controllersRoot[name]["type"].getType() == XmlRpc::XmlRpcValue::TypeString);
-            std::string type = static_cast<std::string>(controllersRoot[name]["type"]);
+            auto type = xmlRpcValueToTypeOrDefault<std::string>(controllersRoot[name], "type");
             assert(type == "brushed" || type == "brushless");
 
-            // TODO: avoid hard coding Jetson here
+            // TODO: avoid hard coding Jetson here - can move into constructor of MotorsManager
+            // and let the bridge nodes hardcode as jetson.
             if (type == "brushed") {
                 auto temp = std::make_unique<BrushedController>(nh, "jetson", name);
                 mControllers[name] = std::move(temp);
@@ -29,9 +28,6 @@ namespace mrover {
                 auto temp = std::make_unique<BrushlessController>(nh, "jetson", name);
                 mControllers[name] = std::move(temp);
             }
-
-            // TODO(guthrie) make this compile
-            //            names[controllers[name]->get_can_manager().get_id()] = name;
         }
 
         updateLastConnection();
@@ -52,11 +48,6 @@ namespace mrover {
     Controller& MotorsManager::get_controller(std::string const& name) {
         return *mControllers.at(name);
     }
-
-    void MotorsManager::process_frame(int bus, int id, std::span<std::byte const> frame_data) {
-        // TODO: figure out how to send to corresponding controller
-    }
-
     void MotorsManager::moveMotorsThrottle(const Throttle::ConstPtr& msg) {
         if (msg->names != mControllerNames && msg->names.size() != msg->throttles.size()) {
             ROS_ERROR("Throttle request is invalid!");
@@ -115,17 +106,16 @@ namespace mrover {
     void MotorsManager::publishDataCallback(const ros::TimerEvent&) {
         sensor_msgs::JointState joint_state;
         ControllerState controller_state;
-        // TODO - need to properly populate these
         for (const std::string& name: mControllerNames) {
             Controller& controller = get_controller(name);
             joint_state.name.push_back(name);
             joint_state.position.push_back(controller.getCurrentPosition().get());
             joint_state.velocity.push_back(controller.getCurrentVelocity().get());
-            joint_state.effort.push_back(controller.getEffort()); // TODO
+            joint_state.effort.push_back(controller.getEffort());
 
             controller_state.name.push_back(name);
-            controller_state.state.push_back(controller.getState());      // TODO
-            controller_state.error.push_back(controller.getErrorState()); // TODO - map
+            controller_state.state.push_back(controller.getState());
+            controller_state.error.push_back(controller.getErrorState());
             uint8_t limit_hit;
             for (int i = 0; i < 4; ++i) {
                 limit_hit |= controller.isLimitHit(i) << i;

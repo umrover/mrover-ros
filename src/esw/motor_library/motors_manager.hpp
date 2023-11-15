@@ -35,8 +35,6 @@ namespace mrover {
 
         Controller& get_controller(std::string const& name);
 
-        void process_frame(int bus, int id, std::span<std::byte const> frame_data);
-
         void moveMotorsThrottle(const Throttle::ConstPtr& msg);
 
         void moveMotorsVelocity(const Velocity::ConstPtr& msg);
@@ -57,9 +55,7 @@ namespace mrover {
         ros::Subscriber mMovePositionSub;
         ros::Publisher mJointDataPub;
         ros::Publisher mControllerDataPub;
-        // TODO - create a publisher and add to ESW TELEOP ICD about limit switch hit stuff
         std::unordered_map<std::string, std::unique_ptr<Controller>> mControllers;
-        std::unordered_map<int, std::string> mNames;
         std::string mGroupName;
         std::vector<std::string> mControllerNames;
         std::chrono::high_resolution_clock::time_point lastConnection;

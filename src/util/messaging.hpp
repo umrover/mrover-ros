@@ -36,6 +36,15 @@ namespace mrover {
     };
     static_assert(sizeof(ConfigEncoderInfo) == 1);
 
+    enum struct BDCMCErrorInfo {
+		NO_ERROR,
+    	DEFAULT_START_UP_NOT_CONFIGURED,
+		RECEIVING_COMMANDS_WHEN_NOT_CONFIGURED,
+		RECEIVING_POSITION_COMMANDS_WHEN_NOT_CALIBRATED,
+		OUTPUT_SET_TO_ZERO_SINCE_EXCEEDING_LIMITS,
+        RECEIVING_PID_COMMANDS_WHEN_NO_READER_EXISTS
+	};
+
     struct ConfigCalibErrorInfo {
         [[maybe_unused]] std::uint8_t _ignore : 2 {}; // 8 bits - (6 meaningful bits) = 2 ignored bits
         std::uint8_t configured : 1 {};
@@ -59,7 +68,6 @@ namespace mrover {
 
     struct ConfigCommand : BaseCommand {
         Dimensionless gear_ratio;
-        // TODO: Terrible naming for the limit switch info
         ConfigLimitSwitchInfo limit_switch_info;
         ConfigEncoderInfo quad_abs_enc_info;
         Ratio quad_enc_out_ratio;
@@ -119,18 +127,9 @@ namespace mrover {
     };
 
     struct PDBData : BaseCommand {
-        float temperature_24v{};
-        float temperature_12v_jetson{};
-        float temperature_12v_rest{};
-        float temperature_12v_buck{};
-        float temperature_5v{};
-        float temperature_3v3{};
-        float current_24v{};
-        float current_12v_jetson{};
-        float current_12v_rest{};
-        float current_12v_buck{};
-        float current_5v{};
-        float current_3v3{};
+        // order is always 24V, then 12v Jetson, 12v rest, 12v buck, 5v, 3v3
+        std::array<float, 6> temperatures{};
+        std::array<float, 6> currents{};
     };
 
     using InBoundPDLBMessage = std::variant<
@@ -165,12 +164,7 @@ namespace mrover {
 
     struct HeaterStateInfo {
         [[maybe_unused]] std::uint8_t _ignore : 2 {};
-        std::uint8_t b0 : 1 {};
-        std::uint8_t n0 : 1 {};
-        std::uint8_t b1 : 1 {};
-        std::uint8_t n1 : 1 {};
-        std::uint8_t b2 : 1 {};
-        std::uint8_t n2 : 1 {};
+        std::uint8_t on : 6 {};
     };
     static_assert(sizeof(HeaterStateInfo) == 1);
 
@@ -179,7 +173,7 @@ namespace mrover {
     };
 
     struct SpectralInfo {
-        std::array<std::uint8_t, 6> data;
+        std::array<std::uint16_t, 6> data;
     };
 
     struct SpectralData : BaseCommand {
@@ -187,12 +181,7 @@ namespace mrover {
     };
 
     struct ThermistorData : BaseCommand {
-        float b0{};
-        float n0{};
-        float b1{};
-        float n1{};
-        float b2{};
-        float n2{};
+    	std::array<float, 6> temps;
     };
 
     using InBoundScienceMessage = std::variant<
