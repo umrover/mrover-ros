@@ -51,10 +51,8 @@ namespace mrover {
                 },
         };
 
-        HAL_TIM_Base_Start(&htim6);
-        HAL_TIM_Base_Start_IT(&htim6);
-        HAL_TIM_Base_Start(&htim7);
-        HAL_TIM_Base_Start_IT(&htim7);
+        check(HAL_TIM_Base_Start_IT(&htim6) == HAL_OK, Error_Handler);
+        check(HAL_TIM_Base_Start_IT(&htim7) == HAL_OK, Error_Handler);
     }
 
     void fdcan_received_callback() {

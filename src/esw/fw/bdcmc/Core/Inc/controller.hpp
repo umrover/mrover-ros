@@ -293,7 +293,6 @@ namespace mrover {
             // Ensure watchdog timer is reset and enabled now that we are receiving messages
             m_watchdog_timer->Instance->CNT = 0;
             if (!m_watchdog_enabled) {
-                HAL_TIM_Base_Start(m_watchdog_timer);
                 HAL_TIM_Base_Start_IT(m_watchdog_timer);
                 m_watchdog_enabled = true;
             }
@@ -310,7 +309,6 @@ namespace mrover {
         }
 
         auto receive_watchdog_expired() -> void {
-            HAL_TIM_Base_Stop(m_watchdog_timer);
             HAL_TIM_Base_Stop_IT(m_watchdog_timer);
             m_watchdog_enabled = false;
 
