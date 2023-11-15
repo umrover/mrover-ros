@@ -15,7 +15,7 @@ def deadzone(magnitude: float, threshold: float) -> float:
     else:
         temp_mag = (temp_mag - threshold) / (1 - threshold)
 
-        return copysign(temp_mag, magnitude)
+    return copysign(temp_mag, magnitude)
 
 def quadratic(val: float) -> float:
     return copysign(val**2, val)
@@ -23,10 +23,9 @@ def quadratic(val: float) -> float:
 class GUIConsumer(JsonWebsocketConsumer):
 
     def connect(self):
+        self.accept()
         self.pdb_sub = rospy.Subscriber('/pdb_data', PDB, self.pdb_callback)
         self.arm_moteus_sub = rospy.Subscriber('/arm_controller_data', ControllerState, self.arm_controller_callback)
-        self.joy_sub = rospy.Subscriber('/joystick', Joy, self.handle_joystick_message)
-        self.accept()
 
     def disconnect(self, close_code):
         self.pdb_sub.unregister()
@@ -50,7 +49,7 @@ class GUIConsumer(JsonWebsocketConsumer):
         twist_pub = rospy.Publisher("/cmd_vel", Twist, queue_size=100)
 
         # Super small deadzone so we can safely e-stop with dampen switch
-        dampen = deadzone(msg.axes[mappings["dampen"]], 0.01)
+        dampen = deadzone(msg["axes"][mappings["dampen"]], 0.01)
 
         # Makes dampen [0,1] instead of [-1,1]
         # negative sign required to drive forward by default instead of backward
@@ -58,7 +57,7 @@ class GUIConsumer(JsonWebsocketConsumer):
         dampen = -1 * ((-1 * dampen) + 1) / 2
 
         linear = deadzone(
-            msg.axes[mappings["forward_back"]] * drive_config["forward_back"]["multiplier"], 0.05
+            msg["axes"][mappings["forward_back"]] * drive_config["forward_back"]["multiplier"], 0.05
         )
 
         # Convert from [0,1] to [0, max_wheel_speed] and apply dampen
@@ -67,13 +66,13 @@ class GUIConsumer(JsonWebsocketConsumer):
         # Deadzones for each axis
         left_right = (
             deadzone(
-                msg.axes[mappings["left_right"]] * drive_config["left_right"]["multiplier"], 0.4
+                msg["axes"][mappings["left_right"]] * drive_config["left_right"]["multiplier"], 0.4
             )
             if drive_config["left_right"]["enabled"]
             else 0
         )
         twist = quadratic(
-            deadzone(msg.axes[mappings["twist"]] * drive_config["twist"]["multiplier"], 0.1)
+            deadzone(msg["axes"][mappings["twist"]] * drive_config["twist"]["multiplier"], 0.1)
         )
 
         angular = twist + left_right
@@ -92,12 +91,12 @@ class GUIConsumer(JsonWebsocketConsumer):
         self.send(text_data=json.dumps({
             'type': 'joystick',
             'left_right':left_right,
-            'forward_back': msg.axes[mappings["forward_back"]],
+            'forward_back': msg["axes"][mappings["forward_back"]],
             'twist': twist,
             'dampen': dampen,
-            'pan': msg.axes[mappings["pan"]],
-            'tilt': msg.axes[mappings["tilt"]],
-            }))
+            'pan': msg["axes"][mappings["pan"]],
+            'tilt': msg["axes"][mappings["tilt"]],
+        }))
 
     def pdb_callback(self, msg):
         self.send(text_data=json.dumps({

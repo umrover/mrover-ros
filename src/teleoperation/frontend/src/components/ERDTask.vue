@@ -3,6 +3,7 @@
     <DriveMoteusStateTable :moteus-state-data="moteusState" />
     <ArmMoteusStateTable/>
     <JoystickValues/>
+    <DriveControls></DriveControls>
 </template>
 
 <script lang="ts">
@@ -11,6 +12,7 @@ import PDBFuse from "./PDBFuse.vue";
 import DriveMoteusStateTable from "./DriveMoteusStateTable.vue";
 import JoystickValues from './JoystickValues.vue';
 import ArmMoteusStateTable from "./ArmMoteusStateTable.vue";
+import DriveControls from './DriveControls.vue';
 
 export default defineComponent({
   components : {
@@ -18,6 +20,7 @@ export default defineComponent({
     DriveMoteusStateTable,
     ArmMoteusStateTable,
     JoystickValues,
+    DriveControls
 },
 
   data() {
