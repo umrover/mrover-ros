@@ -6,8 +6,8 @@ namespace mrover {
         : Controller{nh, std::move(name), std::move(controllerName)} {
 
         XmlRpc::XmlRpcValue brushedMotorData;
-        mNh.getParam(std::format("brushed_motors/controllers/{}", mControllerName), brushedMotorData);
         assert(mNh.hasParam(std::format("brushed_motors/controllers/{}", mControllerName)));
+        mNh.getParam(std::format("brushed_motors/controllers/{}", mControllerName), brushedMotorData);
         assert(brushedMotorData.getType() == XmlRpc::XmlRpcValue::TypeStruct);
 
         mConfigCommand.gear_ratio = xmlRpcValueToTypeOrDefault<double>(brushedMotorData, "gear_ratio");

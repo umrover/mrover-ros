@@ -7,17 +7,20 @@ namespace mrover {
     BrushlessController::BrushlessController(ros::NodeHandle const& nh, std::string name, std::string controllerName)
         : Controller{nh, std::move(name), std::move(controllerName)} {
 
-        mMinVelocity = RadiansPerSecond{-1.0f};
-        mMaxVelocity = RadiansPerSecond{1.0f};
+        XmlRpc::XmlRpcValue brushlessMotorData;
+        assert(mNh.hasParam(std::format("brushless_motors/controllers/{}", mControllerName)));
+        mNh.getParam(std::format("brushless_motors/controllers/{}", mControllerName), brushlessMotorData);
+        assert(brushlessMotorData.getType() == XmlRpc::XmlRpcValue::TypeStruct);
 
-        // TODO: change
+        mMinVelocity = RadiansPerSecond{xmlRpcValueToTypeOrDefault<double>(
+                brushlessMotorData, "min_velocity", 1.0)};
+        mMaxVelocity = RadiansPerSecond{xmlRpcValueToTypeOrDefault<double>(
+                brushlessMotorData, "max_velocity", 1.0)};
     }
 
     void BrushlessController::setDesiredThrottle(Percent throttle) {
         throttle = std::clamp(throttle, -1_percent, 1_percent);
-        setDesiredVelocity(mMaxVelocity * throttle);
-        // TODO - need to convert from throttle to rev/s
-        // TODO - create a CAN frame
+        setDesiredVelocity(mapThrottleToVelocity(throttle));
     }
 
     void BrushlessController::setDesiredPosition(Radians position) {
@@ -42,7 +45,8 @@ namespace mrover {
         // TODO: Convert radians per second to revolutions per second
         RevolutionsPerSecond velocity_rev_s = std::clamp(velocity, mMinVelocity, mMaxVelocity);
 
-        std::cout << velocity.get() << " " << velocity_rev_s.get() << std::endl;
+        // TODO - remove eventually after debugging
+        // std::cout << velocity.get() << " " << velocity_rev_s.get() << std::endl;
         moteus::PositionMode::Command command{
                 .position = std::numeric_limits<double>::quiet_NaN(),
                 .velocity = velocity_rev_s.get(),
@@ -61,6 +65,8 @@ namespace mrover {
     }
 
     void BrushlessController::processCANMessage(CAN::ConstPtr const& msg) {
+        assert(msg->source == mControllerName);
+        assert(msg->destination == mName);
         auto result = moteus::Query::Parse(msg->data.data(), msg->data.size());
         ROS_INFO("%3d p/v/t=(%7.3f,%7.3f,%7.3f)  v/t/f=(%5.1f,%5.1f,%3d)",
                  result.mode,
@@ -81,6 +87,13 @@ namespace mrover {
     double BrushlessController::getEffort() {
         // TODO - need to properly set mMeasuredEFfort elsewhere
         return mMeasuredEffort;
+    }
+
+    RadiansPerSecond BrushlessController::mapThrottleToVelocity(Percent throttle) {
+        std::clamp(throttle, -1_percent, 1_percent);
+
+        // Map the throttle to the velocity range
+        return RadiansPerSecond{(throttle.get() + 1.0f) / 2.0f * (mMaxVelocity.get() - mMinVelocity.get()) + mMinVelocity.get()};
     }
 
 } // namespace mrover

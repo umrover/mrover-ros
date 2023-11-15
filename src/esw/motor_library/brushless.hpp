@@ -1,5 +1,6 @@
 #pragma once
 
+#include "params_utils.hpp"
 #include <iostream>
 #include <optional>
 #include <unistd.h>
@@ -71,6 +72,9 @@ namespace mrover {
     private:
         moteus::Controller mController{{}};
         double mMeasuredEffort{};
+
+        // Function to map throttle to velocity
+        RadiansPerSecond mapThrottleToVelocity(Percent throttle);
     };
 
 } // namespace mrover

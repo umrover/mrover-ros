@@ -84,9 +84,42 @@ can:
       bus: 0
       id: 0x33
 
+brushless_motors:
+  controllers:
+    front_left:
+      min_velocity: 1.0
+      max_velocity: 1.0
+    front_right:
+      min_velocity: 1.0
+      max_velocity: 1.0
+    middle_left:
+      min_velocity: 1.0
+      max_velocity: 1.0
+    middle_right:
+      min_velocity: 1.0
+      max_velocity: 1.0
+    back_left:
+      min_velocity: 1.0
+      max_velocity: 1.0
+    back_right:
+      min_velocity: 1.0
+      max_velocity: 1.0
+    joint_a:
+      min_velocity: 1.0
+      max_velocity: 1.0
+    joint_c:
+      min_velocity: 1.0
+      max_velocity: 1.0
+    joint_de_0:
+      min_velocity: 1.0
+      max_velocity: 1.0
+    joint_de_1:
+      min_velocity: 1.0
+      max_velocity: 1.0
+
 brushed_motors:
   controllers:
-    # - name: "example"
+    # example_name:
     #   gear_ratio: 1.0  # motor ratio compared to joint, e.g. if 5, then 5 rotations of motor = 1 rotation of joint
     #   limit_0_present: false
     #   limit_1_present: false
