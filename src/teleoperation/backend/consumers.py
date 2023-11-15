@@ -175,7 +175,7 @@ class GUIConsumer(JsonWebsocketConsumer):
     
     def arm_adjust(self,msg):
         try:
-            result = self.calibrate_service(name=msg['name'], value=msg['value'])
+            result = self.arm_adjust_service(name=msg['name'], value=msg['value'])
             self.send(text_data=json.dumps({
                 'type': 'arm_adjust',
                 'result': result.success

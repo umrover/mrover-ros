@@ -62,7 +62,7 @@ import { inject, defineComponent } from 'vue';
   export default {
     props: {
       options: {
-        type: Array,
+        type: Array <{ name: string; option: string }>,
         required: true,
         // Default to empty array
         // Should be array of object in format {name: "joint_a", option: "A"}
@@ -72,7 +72,7 @@ import { inject, defineComponent } from 'vue';
   
     data() {
       return {
-        websocket: inject("webSocketService") as WebSocket,
+        websocket: new WebSocket("ws://localhost:8000/ws/gui"),
         adjustmentAngle: 0,
         selectedMotor: "",
   
@@ -102,7 +102,7 @@ import { inject, defineComponent } from 'vue';
         if (this.selectedMotor != "") {
           this.websocket.send(JSON.stringify({ type: "arm_adjust", name: this.selectedMotor,
           value: this.clamp(
-            parseFloat(this.adjustmentAngle),
+            parseFloat(this.adjustmentAngle.toString()),
             -2 * Math.PI,
             2 * Math.PI
           ),}))
