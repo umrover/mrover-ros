@@ -28,19 +28,24 @@ namespace mrover {
             : m_i2c{hi2c} {}
 
         template<IsI2CSerializable TSend, IsI2CSerializable TReceive>
-        auto transact(std::uint16_t address, TSend const& send) -> std::optional<TReceive> {
+        auto blocking_transact(std::uint16_t address, TSend const& send) -> std::optional<TReceive> {
             if (HAL_I2C_Master_Transmit(m_i2c, address << 1, address_of<std::uint8_t>(send), sizeof(send), I2C_TIMEOUT) != HAL_OK) {
                 // TODO(quintin): Do we want a different error handler here?
                 return std::nullopt;
             }
 
             //reads from address sent above
-            if (TReceive receive{}; HAL_I2C_Master_Receive(m_i2c, (address << 1) | 1, address_of<std::uint8_t>(receive), sizeof(receive), I2C_TIMEOUT) != HAL_OK) {
+            if (TReceive receive{}; HAL_I2C_Master_Receive(m_i2c, address << 1 | 1, address_of<std::uint8_t>(receive), sizeof(receive), I2C_TIMEOUT) != HAL_OK) {
                 reboot();
                 return std::nullopt;
             } else {
                 return receive;
             }
+        }
+
+        template<IsI2CSerializable TSend>
+        auto async_transact(std::uint16_t address, TSend const& send) -> void {
+            check(HAL_I2C_Master_Transmit_IT(m_i2c, address << 1, address_of<std::uint8_t>(send), sizeof(send)) == HAL_OK, Error_Handler);
         }
 
     private:

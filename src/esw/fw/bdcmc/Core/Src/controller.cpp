@@ -11,7 +11,11 @@
 // TODO: add another timer for absolute encoder? another solution is starting a transaction in the 10,000 Hz update loop if we are done with the previous transaction
 
 extern FDCAN_HandleTypeDef hfdcan1;
+
 extern I2C_HandleTypeDef hi2c1;
+#define ABSOLUTE_I2C &hi2c1
+
+// extern WWDG_HandleTypeDef hwwdg;
 
 /**
  * For each timer, the update rate is determined by the .ioc file.
@@ -28,8 +32,12 @@ extern TIM_HandleTypeDef htim6;  // 10,000 Hz Update timer
 extern TIM_HandleTypeDef htim7;  // 100 Hz Send timer
 extern TIM_HandleTypeDef htim15; // H-Bridge PWM
 extern TIM_HandleTypeDef htim16; // Message watchdog timer
-
-// extern WWDG_HandleTypeDef hwwdg;
+#define QUADRATURE_TIMER_1 &htim4
+#define QUADRATURE_TIMER_2 &htim3
+#define UPDATE_TIMER &htim6
+#define SEND_TIMER &htim7
+#define PWM_TIMER &htim15
+#define FDCAN_WATCHDOG_TIMER &htim16
 
 namespace mrover {
 
@@ -45,11 +53,11 @@ namespace mrover {
     void init() {
         fdcan_bus = FDCAN{DEVICE_ID, DESTINATION_DEVICE_ID, &hfdcan1};
         controller = Controller{
-                &htim15,
+                PWM_TIMER,
                 fdcan_bus,
-                &htim16,
-                &htim4,
-                &hi2c1,
+                FDCAN_WATCHDOG_TIMER,
+                QUADRATURE_TIMER_1,
+                ABSOLUTE_I2C,
                 {
                         LimitSwitch{Pin{LIMIT_0_0_GPIO_Port, LIMIT_0_0_Pin}},
                         LimitSwitch{Pin{LIMIT_0_1_GPIO_Port, LIMIT_0_1_Pin}},
@@ -59,8 +67,8 @@ namespace mrover {
         };
 
         // Necessary for the timer interrupt to work
-        check(HAL_TIM_Base_Start_IT(&htim6) == HAL_OK, Error_Handler);
-        check(HAL_TIM_Base_Start_IT(&htim7) == HAL_OK, Error_Handler);
+        check(HAL_TIM_Base_Start_IT(UPDATE_TIMER) == HAL_OK, Error_Handler);
+        check(HAL_TIM_Base_Start_IT(SEND_TIMER) == HAL_OK, Error_Handler);
     }
 
     void fdcan_received_callback() {
@@ -108,11 +116,11 @@ void HAL_PostInit() {
  * \note Timers have to be started with "HAL_TIM_Base_Start_IT" for this interrupt to work for them.
  */
 void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef* htim) {
-    if (htim == &htim6) {
+    if (htim == UPDATE_TIMER) {
         mrover::update_callback();
-    } else if (htim == &htim7) {
+    } else if (htim == SEND_TIMER) {
         mrover::send_callback();
-    } else if (htim == &htim16) {
+    } else if (htim == FDCAN_WATCHDOG_TIMER) {
         mrover::fdcan_watchdog_expired();
     }
 }
@@ -129,18 +137,19 @@ void HAL_FDCAN_RxFifo0Callback(FDCAN_HandleTypeDef* hfdcan, uint32_t RxFifo0ITs)
     }
 }
 
-// TODO: error callback on FDCAN
+// TODO: implement
+
+void HAL_FDCAN_ErrorCallback(FDCAN_HandleTypeDef* hfdcan) {}
+
+void HAL_FDCAN_ErrorStatusCallback(FDCAN_HandleTypeDef* hfdcan, uint32_t ErrorStatusITs) {}
 
 void HAL_I2C_SlaveRxCpltCallback(I2C_HandleTypeDef* hi2c) {}
 
-// void HAL_I2C_SlaveTxCpltCallback(I2C_HandleTypeDef* hi2c) {
-// }
-//
-// void HAL_I2C_MasterRxCpltCallback(I2C_HandleTypeDef *hi2c) {
-// }
-//
-// void HAL_I2C_MasterTxCpltCallback(I2C_HandleTypeDef *hi2c) {
-// }
+void HAL_I2C_SlaveTxCpltCallback(I2C_HandleTypeDef* hi2c) {}
+
+void HAL_I2C_MasterRxCpltCallback(I2C_HandleTypeDef* hi2c) {}
+
+void HAL_I2C_MasterTxCpltCallback(I2C_HandleTypeDef* hi2c) {}
 
 void HAL_I2C_ErrorCallback(I2C_HandleTypeDef* hi2c) {}
 

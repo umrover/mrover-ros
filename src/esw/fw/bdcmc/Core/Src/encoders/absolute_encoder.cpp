@@ -21,7 +21,7 @@ namespace mrover {
     }
 
     auto AbsoluteEncoderReader::try_read_raw_angle() -> std::optional<std::uint64_t> {
-        std::optional raw_data_optional = m_i2cBus.transact<std::uint8_t, std::uint16_t>(m_address, 0xFF);
+        std::optional raw_data_optional = m_i2cBus.blocking_transact<std::uint8_t, std::uint16_t>(m_address, 0xFF);
         if (!raw_data_optional) return std::nullopt;
 
         std::uint16_t raw_data = raw_data_optional.value();
