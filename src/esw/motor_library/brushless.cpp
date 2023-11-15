@@ -1,4 +1,6 @@
 #include "brushless.hpp"
+#include "moteus/moteus_protocol.h"
+#include <units/units.hpp>
 
 namespace mrover {
 
@@ -13,18 +15,18 @@ namespace mrover {
 
     void BrushlessController::setDesiredThrottle(Percent throttle) {
         throttle = std::clamp(throttle, -1_percent, 1_percent);
+        setDesiredVelocity(mMaxVelocity * throttle);
         // TODO - need to convert from throttle to rev/s
         // TODO - create a CAN frame
     }
 
     void BrushlessController::setDesiredPosition(Radians position) {
-        position = std::clamp(position, mMinPosition, mMaxPosition);
-        // TODO - need to convert to use revs
+        auto position_revs = std::clamp(position, mMinPosition, mMaxPosition);
         moteus::Controller::Options options;
         moteus::Controller controller{options};
         controller.SetStop();
         moteus::PositionMode::Command command{
-                .position = position.get(),
+                .position = position_revs.get(),
                 .velocity = 0.0,
         };
         moteus::CanFdFrame positionFrame = controller.MakePosition(command);
@@ -38,11 +40,12 @@ namespace mrover {
 
     void BrushlessController::setDesiredVelocity(RadiansPerSecond velocity) {
         // TODO: Convert radians per second to revolutions per second
-        velocity = std::clamp(velocity, mMinVelocity, mMaxVelocity);
+        RevolutionsPerSecond velocity_rev_s = std::clamp(velocity, mMinVelocity, mMaxVelocity);
 
+        std::cout << velocity.get() << " " << velocity_rev_s.get() << std::endl;
         moteus::PositionMode::Command command{
                 .position = std::numeric_limits<double>::quiet_NaN(),
-                .velocity = velocity.get(),
+                .velocity = velocity_rev_s.get(),
         };
 
         moteus::CanFdFrame positionFrame = mController.MakePosition(command);
@@ -68,7 +71,7 @@ namespace mrover {
                  result.temperature,
                  result.fault);
 
-        if (result.mode == moteus::Mode::kPositionTimeout) {
+        if (result.mode == moteus::Mode::kPositionTimeout || result.mode == moteus::Mode::kFault) {
             moteus::CanFdFrame stopFrame = mController.MakeStop();
             mDevice.publish_moteus_frame(stopFrame);
             ROS_WARN("Position timeout hit");

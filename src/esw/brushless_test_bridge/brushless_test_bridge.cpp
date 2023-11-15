@@ -10,25 +10,25 @@ int main(int argc, char** argv) {
     ros::NodeHandle nh;
     ROS_INFO("Running");
 
+    // To get it to run:
+    // - ./fdcanusb_daemon -F -v /dev/fdcanusb vcan0
+    // - sudo ip link set vcan0 up
+    // - rosparam load config/esw_devboard.yaml
+    // - rosrun mrover can_driver_node _interface:=vcan0
+    // - roslaunch brushless_test.launch
+
     auto brushlessController = std::make_unique<mrover::BrushlessController>(nh, "jetson", "devboard");
-    [[maybe_unused]] auto brushlessController = std::make_unique<mrover::BrushlessController>(nh, "jetson", "devboard");
 
-    ros::Rate rate{100};
+    int count = -100;
+    ros::Rate rate{25};
     while (ros::ok()) {
-        brushlessController->setDesiredVelocity(mrover::RadiansPerSecond{1.0f});
+        // Throttle test
+        brushlessController->setDesiredThrottle(mrover::Percent{(float) count / 100.0});
+        count++;
+        if (count == 101) break;
         ros::spinOnce();
         rate.sleep();
     }
 
-    // Enter the ROS event loop
-    brushlessController->SetStop();
-    ROS_INFO("Sent stop command");
-    ros::Rate rate(1);
-    while (ros::ok()) {
-        brushlessController->setDesiredVelocity(mrover::RadiansPerSecond{1.0f});
-        ROS_INFO("Sent velocity command to Moteus");
-        rate.sleep();
-        ros::spinOnce();
-    }
     return EXIT_SUCCESS;
 }
