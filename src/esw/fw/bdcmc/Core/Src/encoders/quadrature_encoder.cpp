@@ -10,7 +10,7 @@ namespace mrover {
         : m_timer{timer}, m_multiplier{multiplier} {
 
         // TODO - TIMERS need to be intiialized
-        check(HAL_TIM_Encoder_Start(m_timer, TIM_CHANNEL_ALL) == HAL_OK, Error_Handler);
+//        check(HAL_TIM_Encoder_Start(m_timer, TIM_CHANNEL_ALL) == HAL_OK, Error_Handler);
     }
 
     std::int64_t QuadratureEncoderReader::count_delta() {

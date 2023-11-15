@@ -323,7 +323,7 @@ namespace mrover {
                     .position = m_position.value_or(Radians{std::numeric_limits<float>::quiet_NaN()}),
                     .velocity = m_velocity.value_or(RadiansPerSecond{std::numeric_limits<float>::quiet_NaN()}),
                     .config_calib_error_data = ConfigCalibErrorInfo{
-                            .configured = m_state_after_calib.has_value(),
+                            .configured = m_state_after_config.has_value(),
                             .calibrated = m_state_after_calib.has_value(),
                             .error = m_error,
                     },
