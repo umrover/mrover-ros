@@ -1,9 +1,12 @@
 import json
+import math
 from channels.generic.websocket import JsonWebsocketConsumer
 
 import rospy
 import tf2_ros
+import threading
 from util.SE3 import SE3
+from tf.transformations import euler_from_quaternion
 
 from mrover.msg import PDB, ControllerState, CalibrationStatus
 from mrover.srv import EnableDevice
@@ -21,13 +24,9 @@ class GUIConsumer(JsonWebsocketConsumer):
         # rospy.wait_for_service("enable_limit_switches")
         self.limit_switch_service = rospy.ServiceProxy("enable_limit_switches", EnableDevice)
 
-        # odom TF
-        self.odom_frame = rospy.get_param("odom_frame")
-        self.rover_frame = rospy.get_param("base_link_frame")
+        self.tf_listener = threading.Thread(target=self.flight_attitude_listener)
+        self.tf_listener.join()
 
-        self.tf_buffer = tf2_ros.Buffer()
-        self.tf_listener = tf2_ros.TransformListener(self.tf_buffer)
-        self.idk = rospy.Subscriber("idk", IDK, self.idk_callback)
 
     def disconnect(self, close_code):
         self.pdb_sub.unregister()
@@ -90,16 +89,40 @@ class GUIConsumer(JsonWebsocketConsumer):
             'accelerometer_calibration': msg.accelerometer_calibration,
             'magnetometer_calibration': msg.magnetometer_calibration
         }))
-    
-    def idk_callback(self, msg):
-        try:
-            base_link_in_odom = SE3.from_tf_tree(self.tf_buffer, self.odom_frame, self.base_link_frame)
 
-        # don't do anything if you can't find that transform
-        except (
-            tf2_ros.LookupException,
-            tf2_ros.ConnectivityException,
-            tf2_ros.ExtrapolationException,
-        ):
-            rospy.logerr(f"Could not find transform from {self.odom_frame} frame to {self.base_link_frame} frame")
-            return
+    def flight_attitude_listener(self):
+        tf_buffer = tf2_ros.Buffer()
+        tf_listener = tf2_ros.TransformListener(tf_buffer)
+
+        # threshold that must be exceeded to send JSON message
+        threshold = 0.0001
+        map_to_baselink = SE3()
+
+        rate = rospy.Rate(10.0)
+        while not rospy.is_shutdown():
+            try:
+                tf_msg = SE3.from_tf_tree(tf_buffer, "map", "base_link")
+
+                if tf_msg.is_approx(map_to_baselink, threshold):
+                    continue
+            except (
+                tf2_ros.LookupException,
+                tf2_ros.ConnectivityException,
+                tf2_ros.ExtrapolationException,
+            ):
+                rate.sleep()
+                continue
+
+            map_to_baselink = tf_msg
+            rotation = map_to_baselink.rotation
+            euler = euler_from_quaternion(rotation.quaternion)
+            pitch = euler[0] * 180 / math.pi
+            roll = euler[1] * 180 / math.pi
+
+            self.send(text_data=json.dumps({
+                'type': 'flight_attitude',
+                'pitch': pitch,
+                'roll': roll
+            }))
+
+            rate.sleep()
