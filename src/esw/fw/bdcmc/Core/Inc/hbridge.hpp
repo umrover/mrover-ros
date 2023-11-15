@@ -1,15 +1,16 @@
 #pragma once
 
+#include <cstdint>
+
 #include "hardware.hpp"
 #include "units/units.hpp"
-#include "main.h"
 
 namespace mrover {
 
-    struct HBridgeWriter {
-        HBridgeWriter() = default;
+    struct HBridge {
+        HBridge() = default;
 
-        explicit HBridgeWriter(TIM_HandleTypeDef* timer);
+        explicit HBridge(TIM_HandleTypeDef* timer);
 
         void write(Percent output) const;
 
@@ -24,8 +25,8 @@ namespace mrover {
         Pin m_reverse_pins{};
         TIM_HandleTypeDef* m_timer{};
         std::uint32_t m_channel = TIM_CHANNEL_1;
-        volatile std::uint32_t* m_arr_register{};
-        volatile std::uint32_t* m_ccr_register{};
+        std::uint32_t volatile* m_arr_register{};
+        std::uint32_t volatile* m_ccr_register{};
         Percent m_max_pwm{};
     };
 

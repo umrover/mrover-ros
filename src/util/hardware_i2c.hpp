@@ -2,7 +2,6 @@
 
 #include <cstdint>
 #include <optional>
-#include <type_traits>
 
 #include "hardware.hpp"
 

@@ -1,20 +1,22 @@
 #pragma once
 
-#include <numbers>
 #include <cstdint>
+#include <numbers>
 #include <optional>
 
-#include "hardware.hpp"
-#include "hardware_i2c.hpp"
-#include "units/units.hpp"
-
-constexpr std::uint32_t COUNTS_PER_ROTATION_RELATIVE = 4096;
-constexpr std::uint32_t COUNTS_PER_ROTATION_ABSOLUTE = 1024;
-constexpr auto RADIANS_PER_COUNT_RELATIVE = mrover::Radians{2 * std::numbers::pi} / COUNTS_PER_ROTATION_RELATIVE;
-constexpr auto RADIANS_PER_COUNT_ABSOLUTE = mrover::Radians{2 * std::numbers::pi} / COUNTS_PER_ROTATION_ABSOLUTE;
-constexpr auto SECONDS_PER_TICK = mrover::Seconds{1 / 1000.0};
+#include <hardware.hpp>
+#include <hardware_i2c.hpp>
+#include <units/units.hpp>
 
 namespace mrover {
+
+    constexpr auto tau = 2 * std::numbers::pi_v<float>;
+
+    // Counts (ticks) per radian (NOT per rotation)
+    using CPR = compound_unit<Ticks, inverse<Radians>>;
+
+    constexpr auto RELATIVE_CPR = CPR{4096 / tau};
+    constexpr auto ABSOLUTE_CPR = CPR{1024 / tau};
 
     struct EncoderReading {
         Radians position;
@@ -27,9 +29,9 @@ namespace mrover {
 
         AbsoluteEncoderReader(SMBus i2c_bus, std::uint8_t A1, std::uint8_t A2, Ratio multiplier);
 
-        std::optional<std::uint64_t> read_raw_angle();
+        auto try_read_raw_angle() -> std::optional<std::uint64_t>;
 
-        [[nodiscard]] std::optional<EncoderReading> read();
+        [[nodiscard]] auto read() -> std::optional<EncoderReading>;
 
     private:
         struct I2CAddress {
@@ -59,7 +61,7 @@ namespace mrover {
 
         QuadratureEncoderReader(TIM_HandleTypeDef* timer, Ratio multiplier);
 
-        [[nodiscard]] std::optional<EncoderReading> read();
+        [[nodiscard]] auto read() -> std::optional<EncoderReading>;
 
     private:
         TIM_HandleTypeDef* m_timer{};
@@ -74,27 +76,5 @@ namespace mrover {
 
         std::int64_t count_delta();
     };
-
-
-    // obsolete?
-    class FusedReader {
-    public:
-        FusedReader() = default;
-
-        FusedReader(TIM_HandleTypeDef* timer, I2C_HandleTypeDef* absolute_encoder_i2c, Ratio quad_multiplier, Ratio abs_multiplier);
-
-        [[nodiscard]] std::optional<EncoderReading> read();
-
-    private:
-        AbsoluteEncoderReader m_abs_encoder;
-        QuadratureEncoderReader m_quad_encoder;
-
-        Radians m_position;
-        RadiansPerSecond m_velocity;
-
-        void refresh_absolute();
-    };
-
-    class LimitSwitchReader {};
 
 } // namespace mrover
