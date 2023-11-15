@@ -36,11 +36,10 @@
   
     data() {
       return {
-        websocket: inject("webSocketService") as WebSocket,
+        websocket: new WebSocket("ws://localhost:8000/ws/gui"),
         socket: null,
         toggleEnabled: false,
         calibrated: false,
-        calibrate_service: null,
         calibrate_sub: null,
         interval: 0 as number,
       };
@@ -73,12 +72,14 @@
               }
             }
             }
-            else if(msg.type =="calibrate_service"){
+            else if(msg.type =="calibrate_motors"){
               if (!msg.result) {
               this.toggleEnabled = false;
               alert("ESW cannot calibrate this motor");
           }
             }
+            
+           
         };
 
      
@@ -95,7 +96,7 @@
         this.toggleEnabled = !this.toggleEnabled;
       },
       publishCalibrationMessage: function () {
-        this.websocket.send(JSON.stringify({type:"calibrate_service", data:this.toggleEnabled}))
+        this.websocket.send(JSON.stringify({type:"calibrate_motors", data:this.toggleEnabled}))
       },
     },
   });

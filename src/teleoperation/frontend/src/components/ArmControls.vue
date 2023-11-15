@@ -182,7 +182,7 @@ export default defineComponent({
     //     },
         toggleArmLaser: function () {
             this.laser_enabled = !this.laser_enabled;
-            console.log(this.laser_enabled)
+            // console.log(this.laser_enabled)
             this.websocket.send(JSON.stringify({type:"laser_service", data:this.laser_enabled}))
             
          }

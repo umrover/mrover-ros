@@ -29,13 +29,12 @@ class GUIConsumer(JsonWebsocketConsumer):
         self.accept()
         self.pdb_sub = rospy.Subscriber('/pdb_data', PDB, self.pdb_callback)
         self.arm_moteus_sub = rospy.Subscriber('/arm_controller_data', ControllerState, self.arm_controller_callback)
-        # self.calibration_checkbox_sub = rospy.Subscriber('/calibration_checkbox', Calibrated, self.calibration_checkbox_callback)
+        self.calibration_checkbox_sub = rospy.Subscriber('/calibration_checkbox', Calibrated, self.calibration_checkbox_callback)
         self.laser_service = rospy.ServiceProxy("laser_service",SetBool)
         # rospy.wait_for_service("enable_limit_switches")
         # self.limit_switch_service = rospy.ServiceProxy("enable_limit_switches", EnableDevice)
-        self.calibrate_service = rospy.ServiceProxy("calibrate_service", Trigger)
+        self.calibrate_service = rospy.ServiceProxy("calibrate_motors", Trigger)
         self.arm_adjust_service = rospy.ServiceProxy("arm_adjust",AdjustMotor )
-        # self.arm_moteus_sub = rospy.Subscriber('/calibration_checkbox', Calibrated, self.calibration_checkbox_callback_callback)
         self.gps_fix = rospy.Subscriber('/gps/fix', NavSatFix, self.gps_fix_callback)
         self.joint_state_sub = rospy.Subscriber('/drive_joint_data', JointState, self.joint_state_callback)
         self.joy_sub = rospy.Subscriber('/joystick', Joy, self.handle_joystick_message)
@@ -56,7 +55,7 @@ class GUIConsumer(JsonWebsocketConsumer):
             self.disable_auton_led(message)
         elif message["type"] == "laser_service":
             self.enable_laser(message)
-        elif message["type"] == "calibrate_service":
+        elif message["type"] == "calibrate_motors":
             self.calibrate_motors(message)
         elif message["type"] == "arm_adjust":
             self.arm_adjust(message)
