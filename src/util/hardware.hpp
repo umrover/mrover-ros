@@ -125,7 +125,7 @@ namespace mrover {
             std::uint8_t destination{};
             std::uint8_t source : 7 {};
             bool replyRequired : 1 {};
-            [[maybe_unsued]] std::uint16_t _ignored{};
+            [[maybe_unused]] std::uint16_t _ignored{};
         };
 
         static_assert(sizeof(MessageId) == 4);
