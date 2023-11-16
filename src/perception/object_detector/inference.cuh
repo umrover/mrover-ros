@@ -1,8 +1,10 @@
 // Cpp native
 #pragma once
+
 #include <NvInferRuntime.h>
 #include <fstream>
 #include <iterator>
+
 #include <memory>
 
 #include <random>
@@ -43,56 +45,49 @@ using nvinfer1::IExecutionContext;
 // Preallocated CV::Mat of floats of correct size -> transpose into CV::Mat (also preallocated
 
 namespace mrover {
+
     class Inference {
-    private:
-        static const int BATCH_SIZE = 1;
+        constexpr static int BATCH_SIZE = 1;
 
-        nvinfer1::Logger logger;
-
+        nvinfer1::Logger mLogger;
 
         //Ptr to the engine
-        std::unique_ptr<ICudaEngine, nvinfer1::Destroy<ICudaEngine>> enginePtr;
+        std::unique_ptr<ICudaEngine, nvinfer1::Destroy<ICudaEngine>> mEngine;
 
         //Ptr to the context
-        std::unique_ptr<IExecutionContext, nvinfer1::Destroy<IExecutionContext>> contextPtr;
+        std::unique_ptr<IExecutionContext, nvinfer1::Destroy<IExecutionContext>> mContext;
 
         //Input, output and reference tensors
-        cv::Mat inputTensor;
-        cv::Mat outputTensor;
+        cv::Mat mInputTensor;
+        cv::Mat mOutputTensor;
         //Num Entries
-        nvinfer1::Dims3 inputEntries;
-        nvinfer1::Dims3 outputEntries;
+        nvinfer1::Dims3 mInputDimensions;
+        nvinfer1::Dims3 mOutputDimensions;
 
         //Cuda Stream
-        cudawrapper::CudaStream stream;
+        std::optional<cudawrapper::CudaStream> mStream;
 
         //Bindings
-        std::array<void*, 2> bindings{};
+        std::array<void*, 2> mBindings{};
 
         //ONNX Model Path
-        std::string onnxModelPath;
+        std::string mOnnxModelPath;
 
         //Size of Model
-        cv::Size modelInputShape;
-        cv::Size modelOutputShape;
+        cv::Size mModelInputShape;
+        cv::Size mModelOutputShape;
 
-    private:
         //STATIC FUNCTIONS
-        static int getBindingInputIndex(nvinfer1::IExecutionContext* context);
+        static int getBindingInputIndex(IExecutionContext* context);
 
     public:
-        Inference(std::string onnxModelPath, cv::Size modelInputShape, std::string classesTxtFile);
-
-
-        std::vector<Detection> runInference(cv::Mat const& input);
+        Inference(std::string const& onnxModelPath, cv::Size modelInputShape, std::string const& classesTxtFile);
 
     private:
         //Creates a ptr to the engine
-        ICudaEngine* createCudaEngine(std::string& onnxModelPath);
+        ICudaEngine* createCudaEngine(std::string const& onnxModelPath);
 
         void launchInference(void* input, void* output);
-
-        void setUpContext(const std::string& inputFile); //This will need to be adjusted to the img msg, but I think its ok to just run pictures as an intial test
 
         void prepTensors();
 
@@ -101,4 +96,5 @@ namespace mrover {
     public:
         void doDetections(cv::Mat& img);
     };
+
 } // namespace mrover

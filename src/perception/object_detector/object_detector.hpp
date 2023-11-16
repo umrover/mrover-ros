@@ -7,18 +7,18 @@ namespace mrover {
 
     struct Detection {
         int class_id{0};
-        std::string className{};
+        std::string className;
         float confidence{0.0};
         cv::Scalar color{};
         cv::Rect box{};
     };
 
     class ObjectDetectorNodelet : public nodelet::Nodelet {
-        static const int NUM_CHANNELS = 3;
-        static const int IMG_WIDTH = 1280;
-        static const int IMG_HEIGHT = 720;
 
-    private:
+        constexpr static int NUM_CHANNELS = 3;
+        constexpr static int IMG_WIDTH = 1280;
+        constexpr static int IMG_HEIGHT = 720;
+
         ros::NodeHandle mNh, mPnh;
 
         //Inference inference;
@@ -29,7 +29,6 @@ namespace mrover {
         ros::Publisher mDebugImgPub;
         ros::Publisher mDetectionData;
 
-
         // Subscribers
 
         ros::Subscriber mImgSub;
@@ -37,8 +36,8 @@ namespace mrover {
         // Preallocated cv::Mats
         cv::Mat imageBlob;
 
-        dynamic_reconfigure::Server<mrover::ObjectDetectorParamsConfig> mConfigServer;
-        dynamic_reconfigure::Server<mrover::ObjectDetectorParamsConfig>::CallbackType mCallbackType;
+        dynamic_reconfigure::Server<ObjectDetectorParamsConfig> mConfigServer;
+        dynamic_reconfigure::Server<ObjectDetectorParamsConfig>::CallbackType mCallbackType;
 
         // Internal state
 
