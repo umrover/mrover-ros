@@ -9,6 +9,7 @@
 #include <opencv2/core/mat.hpp>
 #include <opencv2/core/types.hpp>
 #include <opencv2/videoio.hpp>
+#include <ostream>
 #include <sensor_msgs/Image.h>
 #include <string>
 
@@ -19,7 +20,7 @@ namespace mrover {
         mNh = getMTNodeHandle();
         mPnh = getMTPrivateNodeHandle();
         inferenceWrapper = InferenceWrapper("//home//jabra//Desktop//Rover//yolov8s.onnx", cv::Size(640, 640), "");
-        ROS_INFO("hi");
+        std::cout << "bruh" << std::endl;
 
         //inference = Inference("//home//jabra//Desktop//Rover//yolov8s.onnx", cv::Size(640, 640), "");
         //read ONNX file into this mNet, YOLOV8, second smallest one

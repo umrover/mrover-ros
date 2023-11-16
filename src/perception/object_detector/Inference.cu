@@ -55,13 +55,18 @@ namespace mrover {
         assert(this->enginePtr->bindingIsInput(0) ^ enginePtr->bindingIsInput(1));
 
         this->onnxModelPath = onnxModelPath;
+        std::cout << "reach2.5" << std::endl;
 
         prepTensors();
+
+        setUpContext();
+        std::cout << "reach3" << std::endl;
     }
 
     // Initializes enginePtr with built engine
     ICudaEngine* Inference::createCudaEngine(std::string& onnxModelPath) {
         logger = Logger();
+        this->stream = cudawrapper::CudaStream();
         // See link sfor additional context
         const auto explicitBatch = 1U << static_cast<uint32_t>(nvinfer1::NetworkDefinitionCreationFlag::kEXPLICIT_BATCH);
         std::unique_ptr<nvinfer1::IBuilder, Destroy<nvinfer1::IBuilder>> builder{nvinfer1::createInferBuilder(logger)};
@@ -118,6 +123,15 @@ namespace mrover {
         }
     }
 
+    void Inference::setUpContext() {
+        // Create Execution Context.
+        this->contextPtr.reset(this->enginePtr->createExecutionContext());
+
+        Dims dims_i{this->enginePtr->getBindingDimensions(0)};
+        Dims4 inputDims{Inference::BATCH_SIZE, dims_i.d[1], dims_i.d[2], dims_i.d[3]};
+        contextPtr->setBindingDimensions(0, inputDims);
+    }
+
     void Inference::doDetections(cv::Mat& img) {
         //Do the forward pass on the network
         ROS_INFO("HI");
@@ -130,6 +144,7 @@ namespace mrover {
         int inputId = Inference::getBindingInputIndex(this->contextPtr.get());
 
         //Copy data to GPU memory
+        std::cout << "ptr " << this->bindings[inputId] << " size " << inputEntries.d[0] * inputEntries.d[1] * inputEntries.d[2] * sizeof(float) << std::endl;
         cudaMemcpyAsync(this->bindings[inputId], input, inputEntries.d[0] * inputEntries.d[1] * inputEntries.d[2] * sizeof(float), cudaMemcpyHostToDevice, this->stream);
 
         //Queue the async engine process
@@ -146,6 +161,7 @@ namespace mrover {
 * Modifies bindings, inputTensor, and outputTensor
 */
     void Inference::prepTensors() {
+
         for (int i = 0; i < this->enginePtr->getNbIOTensors(); i++) {
             const char* tensorName = this->enginePtr->getIOTensorName(i);
 
@@ -159,9 +175,7 @@ namespace mrover {
             cudaMalloc(&(this->bindings)[i], Inference::BATCH_SIZE * size * sizeof(float));
         }
 
-        inputEntries = nvinfer1::Dims3(modelInputShape.width, modelInputShape.height, 3);
-        inputEntries = nvinfer1::Dims3(1, 84, 8400);
-        cv::resize(outputTensor, outputTensor, cv::Size(84, 840));
+        inputEntries = nvinfer1::Dims3(modelInputShape.width, modelInputShape.height, 3); //3 Is for the 3 RGB pixels
     }
 
     int Inference::getBindingInputIndex(nvinfer1::IExecutionContext* context) {
