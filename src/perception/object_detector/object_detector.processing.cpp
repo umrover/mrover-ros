@@ -34,8 +34,9 @@ namespace mrover {
         cv::Mat finalMat;
         sizedImage.convertTo(finalMat, CV_32FC3);
         //cv::Mat blob = cv::dnn::blobFromImage(sizedImage);
-        ROS_INFO("hi");
-        inferenceWrapper.doDetections(sizedImage);
+        std::cout << finalMat.elemSize() * 640 * 640 << std::endl;
+        std::cout << finalMat.data << " awdasda" << std::endl;
+        inferenceWrapper.doDetections(finalMat);
     }
     /*
     void ObjectDetectorNodelet::imageCallback(sensor_msgs::ImageConstPtr const& msg) {

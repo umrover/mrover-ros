@@ -53,6 +53,7 @@ namespace mrover {
 
         assert(this->enginePtr->getNbBindings() == 2);
         assert(this->enginePtr->bindingIsInput(0) ^ enginePtr->bindingIsInput(1));
+        this->stream = cudawrapper::CudaStream();
 
         this->onnxModelPath = onnxModelPath;
         std::cout << "reach2.5" << std::endl;
@@ -66,7 +67,6 @@ namespace mrover {
     // Initializes enginePtr with built engine
     ICudaEngine* Inference::createCudaEngine(std::string& onnxModelPath) {
         logger = Logger();
-        this->stream = cudawrapper::CudaStream();
         // See link sfor additional context
         const auto explicitBatch = 1U << static_cast<uint32_t>(nvinfer1::NetworkDefinitionCreationFlag::kEXPLICIT_BATCH);
         std::unique_ptr<nvinfer1::IBuilder, Destroy<nvinfer1::IBuilder>> builder{nvinfer1::createInferBuilder(logger)};
@@ -99,7 +99,7 @@ namespace mrover {
         bool isEngineFile = std::filesystem::exists(enginePath);
 
         //Check if engine file exists
-        if (isEngineFile) {
+        if (false) {
             //Load engine from file
             std::ifstream inputFileStream("./tensorrt-engine.engine", std::ios::binary);
             std::stringstream engineBuffer;
@@ -144,6 +144,7 @@ namespace mrover {
         int inputId = Inference::getBindingInputIndex(this->contextPtr.get());
 
         //Copy data to GPU memory
+        std::cout << input << std::endl;
         std::cout << "ptr " << this->bindings[inputId] << " size " << inputEntries.d[0] * inputEntries.d[1] * inputEntries.d[2] * sizeof(float) << std::endl;
         cudaMemcpyAsync(this->bindings[inputId], input, inputEntries.d[0] * inputEntries.d[1] * inputEntries.d[2] * sizeof(float), cudaMemcpyHostToDevice, this->stream);
 
