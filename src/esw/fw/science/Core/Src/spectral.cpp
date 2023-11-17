@@ -38,12 +38,23 @@ namespace mrover {
 				return;
 			}
 		}
-
 		auto result = m_i2c_bus->blocking_transact<uint16_t, uint8_t>(SPECTRAL_7b_ADDRESS, CONTROL_SETUP_REG);
+		if (!result) {
+			m_error = true;
+			return;
+		}
 		result = m_i2c_bus->blocking_transact<uint16_t, uint8_t>(SPECTRAL_7b_ADDRESS, control_data);
+		if (!result) {
+			m_error = true;
+			return;
+		}
 		// Integration time = 2.8ms & 0xFF
 		uint8_t int_time_multiplier = 0xFF;
 		result = m_i2c_bus->blocking_transact<uint16_t, uint8_t>(SPECTRAL_7b_ADDRESS, int_time_multiplier);
+		if (!result) {
+			m_error = true;
+			return;
+		}
 
 		m_initialized = true;
 		m_error = false;
