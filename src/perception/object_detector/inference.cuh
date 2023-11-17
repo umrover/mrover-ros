@@ -94,7 +94,7 @@ namespace mrover {
         void setUpContext();
 
     public:
-        void doDetections(cv::Mat& img);
+        void doDetections(const cv::Mat& img);
     };
 
 } // namespace mrover

@@ -141,7 +141,7 @@ namespace mrover {
         mContext->setBindingDimensions(0, inputDims);
     }
 
-    void Inference::doDetections(cv::Mat& img) {
+    void Inference::doDetections(const cv::Mat& img) {
         //Do the forward pass on the network
         ROS_INFO("HI");
         launchInference(img.data, mOutputTensor.data);
@@ -151,7 +151,7 @@ namespace mrover {
 
     void Inference::launchInference(void* input, void* output) {
         assert(input);
-        assert(output);
+        // assert(output);
         assert(mContext);
         assert(mStream);
 
@@ -182,12 +182,11 @@ namespace mrover {
 
             Dims dims{mEngine->getTensorShape(tensorName)};
 
-            size_t size = accumulate(dims.d + 1, dims.d + dims.nbDims, BATCH_SIZE, std::multiplies<>());
-            std::vector<int> sizes = {dims.d[1], dims.d[2], dims.d[3]};
-
+            std::size_t size = accumulate(dims.d + 1, dims.d + dims.nbDims, BATCH_SIZE, std::multiplies<>());
+            std::vector sizes{dims.d[1], dims.d[2], dims.d[3]};
 
             // Create CUDA buffer for Tensor.
-            cudaMalloc(&(mBindings)[i], BATCH_SIZE * size * sizeof(float));
+            cudaMalloc(&mBindings[i], BATCH_SIZE * size * sizeof(float));
         }
 
         mInputDimensions = Dims3(mModelInputShape.width, mModelInputShape.height, 3); //3 Is for the 3 RGB pixels

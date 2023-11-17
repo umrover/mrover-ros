@@ -24,17 +24,23 @@
  * (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
-#ifndef __CUDA_WRAPPER_H__
-#define __CUDA_WRAPPER_H__
+
+#pragma once
 
 #include <cuda_runtime_api.h>
+
+inline void check(cudaError_t result) {
+    if (result == cudaSuccess) return;
+
+    throw std::runtime_error{std::string{"CUDA Error:"} + cudaGetErrorString(result)};
+}
 
 namespace cudawrapper {
 
     class CudaStream {
     public:
         CudaStream() {
-            cudaStreamCreate(&mStream);
+            check(cudaStreamCreate(&mStream));
         }
 
         operator cudaStream_t() {
@@ -52,7 +58,7 @@ namespace cudawrapper {
     class CudaEvent {
     public:
         CudaEvent() {
-            cudaEventCreate(&mEvent);
+            check(cudaEventCreate(&mEvent));
         }
 
         operator cudaEvent_t() {
@@ -68,5 +74,3 @@ namespace cudawrapper {
     };
 
 } // namespace cudawrapper
-
-#endif /*__CUDA_WRAPPER_H__*/
