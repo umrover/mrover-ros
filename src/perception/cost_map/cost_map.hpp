@@ -3,38 +3,22 @@
 
 namespace mrover {
 
-    struct CostMapNode {
-        cv::Point2f position{};
-        double cost = 0;
-    };
-    /*
-    (2,3) -> 100
-    (3,4) -> 0
-    (1,1) -> 100
-    
-    -1 -1 -1 -1 -1
-    -1 100 -1 -1 -1
-    -1 -1 -1 100 -1
-    -1 -1 -1 -1 0
-    -1 -1 -1 -1 -1
-    
-    */
-
     class CostMapNodelet : public nodelet::Nodelet {
     private:
         ros::NodeHandle mNh, mPnh, mCmt;
         ros::Publisher mCostMapPub;
         ros::Subscriber mPcSub;
-        std::vector<CostMapNode> costMapPointList;
         void onInit() override;
 
-        bool publishCostMaps = false;
-        bool verbose = false;
-        float element_size = 1;
-        int map_width = 1;
-        int map_height = 1;
-        float cutoff = 1;
+        bool publishCostMaps = false; // Do we publish our global cost maps?
+        bool verbose = false;         // Do we print extra information for debugging?
+        float resolution = 1;         // In m/cell
+        int map_width = 1;            // Number of cells wide
+        int map_height = 1;           // Number of cells high
         const tf2_ros::Buffer tf_buffer = tf2_ros::Buffer();
+
+        nav_msgs::OccupancyGrid globalGridMsg;
+
 
     public:
         CostMapNodelet() = default;
