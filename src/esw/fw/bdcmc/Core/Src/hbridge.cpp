@@ -1,10 +1,11 @@
-#include "writer.hpp"
+#include "hbridge.hpp"
 
-#include "main.h"
+#include <algorithm>
+#include <cmath>
 
 namespace mrover {
 
-    HBridgeWriter::HBridgeWriter(TIM_HandleTypeDef* timer)
+    HBridge::HBridge(TIM_HandleTypeDef* timer)
         : m_forward_pins{GPIOC, GPIO_PIN_6},
           m_reverse_pins{GPIOB, GPIO_PIN_13},
           m_timer{timer},
@@ -17,18 +18,18 @@ namespace mrover {
         HAL_TIM_PWM_Start(m_timer, m_channel);
     }
 
-    void HBridgeWriter::write(Percent output) const {
+    void HBridge::write(Percent output) const {
         // Set direction pins/duty cycle
         set_direction_pins(output);
         set_duty_cycle(output, m_max_pwm);
     }
 
-    void HBridgeWriter::set_direction_pins(Percent duty_cycle) const {
+    void HBridge::set_direction_pins(Percent duty_cycle) const {
         m_forward_pins.write(duty_cycle > 0_percent ? GPIO_PIN_SET : GPIO_PIN_RESET);
         m_reverse_pins.write(duty_cycle < 0_percent ? GPIO_PIN_SET : GPIO_PIN_RESET);
     }
 
-    void HBridgeWriter::set_duty_cycle(Percent duty_cycle, Percent max_duty_cycle) const {
+    void HBridge::set_duty_cycle(Percent duty_cycle, Percent max_duty_cycle) const {
         // Clamp absolute value of the duty cycle to the supported range
         duty_cycle = std::clamp(abs(duty_cycle), 0_percent, max_duty_cycle);
 
@@ -42,7 +43,7 @@ namespace mrover {
         // TODO(quintin) we should error if the registers are null pointers
     }
 
-    void HBridgeWriter::change_max_pwm(Percent max_pwm) {
+    void HBridge::change_max_pwm(Percent max_pwm) {
         m_max_pwm = max_pwm;
     }
 

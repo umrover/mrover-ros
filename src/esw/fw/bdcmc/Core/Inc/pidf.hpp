@@ -1,11 +1,11 @@
 #pragma once
 
-#include "stm32g4xx_hal.h"
-
 #include <optional>
 #include <utility>
 
-#include "units/units.hpp"
+#include <units/units.hpp>
+
+#include "stm32g4xx_hal.h"
 
 namespace mrover {
 

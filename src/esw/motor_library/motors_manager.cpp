@@ -15,7 +15,7 @@ namespace mrover {
         nh.getParam("motors/controllers", controllersRoot);
         assert(controllersRoot.getType() == XmlRpc::XmlRpcValue::TypeStruct);
 
-        for (const std::string& name: mControllerNames) {
+        for (std::string const& name: mControllerNames) {
             auto type = xmlRpcValueToTypeOrDefault<std::string>(controllersRoot[name], "type");
             assert(type == "brushed" || type == "brushless");
 
@@ -48,8 +48,8 @@ namespace mrover {
     Controller& MotorsManager::get_controller(std::string const& name) {
         return *mControllers.at(name);
     }
-    void MotorsManager::moveMotorsThrottle(const Throttle::ConstPtr& msg) {
-        if (msg->names != mControllerNames && msg->names.size() != msg->throttles.size()) {
+    void MotorsManager::moveMotorsThrottle(Throttle::ConstPtr const& msg) {
+        if (msg->names != mControllerNames || msg->names.size() != msg->throttles.size()) {
             ROS_ERROR("Throttle request is invalid!");
             return;
         }
@@ -57,14 +57,14 @@ namespace mrover {
         updateLastConnection();
 
         for (size_t i = 0; i < msg->names.size(); ++i) {
-            const std::string& name = msg->names[i];
+            std::string const& name = msg->names[i];
             Controller& controller = get_controller(name);
             controller.setDesiredThrottle(msg->throttles[i]);
         }
     }
 
-    void MotorsManager::moveMotorsVelocity(const Velocity::ConstPtr& msg) {
-        if (msg->names != mControllerNames && msg->names.size() != msg->velocities.size()) {
+    void MotorsManager::moveMotorsVelocity(Velocity::ConstPtr const& msg) {
+        if (msg->names != mControllerNames || msg->names.size() != msg->velocities.size()) {
             ROS_ERROR("Velocity request is invalid!");
             return;
         }
@@ -72,14 +72,14 @@ namespace mrover {
         updateLastConnection();
 
         for (size_t i = 0; i < msg->names.size(); ++i) {
-            const std::string& name = msg->names[i];
+            std::string const& name = msg->names[i];
             Controller& controller = get_controller(name);
             controller.setDesiredVelocity(RadiansPerSecond{msg->velocities[i]});
         }
     }
 
-    void MotorsManager::moveMotorsPosition(const Position::ConstPtr& msg) {
-        if (msg->names != mControllerNames && msg->names.size() != msg->positions.size()) {
+    void MotorsManager::moveMotorsPosition(Position::ConstPtr const& msg) {
+        if (msg->names != mControllerNames || msg->names.size() != msg->positions.size()) {
             ROS_ERROR("Arm request is invalid!");
             return;
         }
@@ -87,26 +87,26 @@ namespace mrover {
         updateLastConnection();
 
         for (std::size_t i = 0; i < msg->names.size(); ++i) {
-            const std::string& name = msg->names[i];
+            std::string const& name = msg->names[i];
             Controller& controller = get_controller(name);
             controller.setDesiredPosition(Radians{msg->positions[i]});
         }
     }
 
-    void MotorsManager::heartbeatCallback(const ros::TimerEvent&) {
+    void MotorsManager::heartbeatCallback(ros::TimerEvent const&) {
         auto duration = std::chrono::high_resolution_clock::now() - lastConnection;
         if (duration < 100ms) {
-            for (const auto& motorName: mControllerNames) {
+            for (auto const& motorName: mControllerNames) {
                 Controller& controller = get_controller(motorName);
                 controller.setDesiredThrottle(0_percent);
             }
         }
     }
 
-    void MotorsManager::publishDataCallback(const ros::TimerEvent&) {
+    void MotorsManager::publishDataCallback(ros::TimerEvent const&) {
         sensor_msgs::JointState joint_state;
         ControllerState controller_state;
-        for (const std::string& name: mControllerNames) {
+        for (std::string const& name: mControllerNames) {
             Controller& controller = get_controller(name);
             joint_state.name.push_back(name);
             joint_state.position.push_back(controller.getCurrentPosition().get());

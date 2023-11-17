@@ -28,7 +28,7 @@ namespace mrover {
         Radians getCurrentPosition() { return mCurrentPosition; }
         RadiansPerSecond getCurrentVelocity() { return mCurrentVelocity; }
         std::string getErrorState() { return mErrorState; }
-        std::string getState() { return mState; }  // TODO - we probably don't need both mErrorState and mState
+        std::string getState() { return mState; } // TODO - we probably don't need both mErrorState and mState
         virtual double getEffort() = 0;
         bool isLimitHit(uint8_t index) {
             return mLimitHit.at(index);

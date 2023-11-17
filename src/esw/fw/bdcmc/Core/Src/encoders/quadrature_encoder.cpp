@@ -1,13 +1,18 @@
-#include "reader.hpp"
+#include "encoders.hpp"
 
-namespace mrover {
+#include <cstdint>
+
+#include <units/units.hpp>
+
+namespace mrover { 
 
     QuadratureEncoderReader::QuadratureEncoderReader(TIM_HandleTypeDef* timer, Ratio multiplier)
         : m_timer{timer}, m_multiplier{multiplier} {
 
-        // TODO - TIMERS need to be intiialized
+        __HAL_TIM_SetCounter(m_timer, 0);
+        // TODO(joseph) this seems really sussy and weird I'd like a better way of making sure it starts at zero
+        m_counts_unwrapped_prev = __HAL_TIM_GetAutoreload(m_timer) / 2;
         check(HAL_TIM_Encoder_Start(m_timer, TIM_CHANNEL_ALL) == HAL_OK, Error_Handler);
-
     }
 
     std::int64_t QuadratureEncoderReader::count_delta() {
@@ -29,15 +34,15 @@ namespace mrover {
         return mod_dif;
     }
 
-    [[nodiscard]] std::optional<EncoderReading> QuadratureEncoderReader::read() {
-        Radians delta_angle = m_multiplier * RADIANS_PER_COUNT_RELATIVE * count_delta();
+    [[nodiscard]] auto QuadratureEncoderReader::read() -> std::optional<EncoderReading> {
+        Radians delta_angle = m_multiplier * Ticks{count_delta()} / RELATIVE_CPR;
         m_ticks_now = HAL_GetTick();
 
         m_position += delta_angle;
-        m_velocity = delta_angle / ((m_ticks_now - m_ticks_prev) * SECONDS_PER_TICK);
+        m_velocity = delta_angle / Seconds{1 / 10000.0f};
 
         m_ticks_prev = m_ticks_now;
 
-        return std::make_optional(EncoderReading{m_position, m_velocity});
+        return EncoderReading{m_position, m_velocity};
     }
 } // namespace mrover
