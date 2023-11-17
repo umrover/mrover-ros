@@ -137,35 +137,54 @@ namespace mrover {
         explicit FDCAN(std::uint8_t source, std::uint8_t destination, FDCAN_HandleTypeDef* fdcan)
             : m_fdcan{fdcan}, m_source{source}, m_destination{destination} {
 
-            std::bitset<16> sourceBits(source << 8);
-            std::bitset<16> destinationBits(destination);
-            std::bitset<16> filter = sourceBits | destinationBits;
-            FDCAN_FilterTypeDef sFilterConfig {
-                .IdType = FDCAN_EXTENDED_ID,
-                .FilterIndex = 0,
-                .FilterType = FDCAN_FILTER_MASK, // Classic filter: FilterID1 = filter, FilterID2 = mask   
-                .FilterConfig = FDCAN_FILTER_TO_RXFIFO0,
-                .FilterID1 = filter.to_ulong(),
-                .FilterID2 = 0x7FFF // Mask the first 15 bits of the ID (8 bits of destination and 7 bits of source)
-            };
-            check(HAL_FDCAN_ConfigFilter(&hfdcan1, &sFilterConfig) == HAL_OK, Error_Handler);
+            configure_filter();
 
             check(HAL_FDCAN_ActivateNotification(m_fdcan, FDCAN_IT_RX_FIFO0_NEW_MESSAGE, 0) == HAL_OK, Error_Handler);
             check(HAL_FDCAN_Start(m_fdcan) == HAL_OK, Error_Handler);
         }
 
-        template<IsFdcanSerializable TReceive>
-        [[nodiscard]] auto receive() -> std::optional<std::pair<FDCAN_RxHeaderTypeDef, TReceive>> {
-            if (HAL_FDCAN_GetRxFifoFillLevel(m_fdcan, FDCAN_RX_FIFO0)) {
-                FDCAN_RxHeaderTypeDef header{};
-                TReceive receive{};
-                check(HAL_FDCAN_GetRxMessage(m_fdcan, FDCAN_RX_FIFO0, &header, address_of<std::uint8_t>(receive)) == HAL_OK, Error_Handler);
-                return std::make_pair(header, receive);
-            } else {
-                return std::nullopt;
-            }
+        /**
+         * By default CAN is a broadcast protocol, meaning that all devices on the bus receive all messages.
+         * We have limited queue space, so we want to filter out messages that are not intended for us.
+         */
+        auto configure_filter() const -> void {
+            std::bitset<16> source_bits{m_source};
+            std::bitset<16> destinationBits{m_destination};
+            std::bitset<16> filter = source_bits << 8 | destinationBits;
+
+            std::bitset<15> mask; // 15 lowest bits set for source and destination, 16th (reply bit) and above should be ignored
+            mask.set();
+
+            FDCAN_FilterTypeDef filter_config{
+                    .IdType = FDCAN_EXTENDED_ID,
+                    .FilterIndex = 0,
+                    .FilterType = FDCAN_FILTER_MASK, // Classic filter: FilterID1 = filter, FilterID2 = mask
+                    .FilterConfig = FDCAN_FILTER_TO_RXFIFO0,
+                    .FilterID1 = filter.to_ulong(), // Choose which bits to examine from the incoming ID
+                    .FilterID2 = mask.to_ulong(),   // Ensure that bits that survive the filter match the mask
+            };
+            check(HAL_FDCAN_ConfigFilter(m_fdcan, &filter_config) == HAL_OK, Error_Handler);
         }
 
+        /**
+         * \brief           Attempt to pop a message from the receive queue
+         * \tparam TReceive The type of the message to receive
+         * \return          Header and message, or none if queue is empty
+         */
+        template<IsFdcanSerializable TReceive>
+        [[nodiscard]] auto receive() -> std::optional<std::pair<FDCAN_RxHeaderTypeDef, TReceive>> {
+            if (HAL_FDCAN_GetRxFifoFillLevel(m_fdcan, FDCAN_RX_FIFO0) == 0)
+                return std::nullopt;
+
+            FDCAN_RxHeaderTypeDef header{};
+            TReceive receive{};
+            check(HAL_FDCAN_GetRxMessage(m_fdcan, FDCAN_RX_FIFO0, &header, address_of<std::uint8_t>(receive)) == HAL_OK, Error_Handler);
+            return std::make_pair(header, receive);
+        }
+
+        /**
+         * \brief Needed since only certain frame sizes less than or equal to 64 bytes are allowed
+         */
         [[nodiscard]] consteval static auto nearest_fitting_can_fd_frame_size(std::size_t size) -> std::uint32_t {
             if (size <= 0) return FDCAN_DLC_BYTES_0;
             if (size <= 1) return FDCAN_DLC_BYTES_1;
@@ -204,9 +223,10 @@ namespace mrover {
                     .FDFormat = FDCAN_FD_CAN,
                     .TxEventFifoControl = FDCAN_NO_TX_EVENTS,
             };
-            // Sending a message to the bus gets added to a mailbox
-            // Messages in the mailbox are removed when they are sent out
+            // Sending a message to the bus gets added to a queue
+            // Messages in the queue are removed when they are sent out
             // They are sent out when the bus is free AND there is at least one other device on the bus
+            // This means you cannot test with just one device on the bus
             if (HAL_FDCAN_GetTxFifoFreeLevel(m_fdcan)) {
                 // Free space in the mailbox
                 check(HAL_FDCAN_AddMessageToTxFifoQ(m_fdcan, &header, address_of<std::uint8_t>(send)) == HAL_OK, Error_Handler);
