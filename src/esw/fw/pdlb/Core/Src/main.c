@@ -92,8 +92,6 @@ void StartDefaultTask(void *argument);
 
 /* USER CODE BEGIN PFP */
 void SendCurrentTemperature(void *argument);
-// No more FreeRTOS receiving
-// void ReceiveMessages(void *argument);
 void BlinkAutonLed(void *argument);
 
 /* USER CODE END PFP */
@@ -170,12 +168,10 @@ int main(void)
 
   /* Create the thread(s) */
   /* creation of defaultTask */
-  defaultTaskHandle = osThreadNew(StartDefaultTask, NULL, &defaultTask_attributes);
+//  defaultTaskHandle = osThreadNew(StartDefaultTask, NULL, &defaultTask_attributes);
 
   /* USER CODE BEGIN RTOS_THREADS */
 
-  // No more FreeRTOS receiving
-  // ReceiveMessagesHandle = osThreadNew(ReceiveMessages, NULL, &ReceiveMessages_attributes); 
 
   SendCurrentTemperatureHandle = osThreadNew(SendCurrentTemperature, NULL, &SendCurrentTemperature_attributes);
   BlinkAutonLedHandle = osThreadNew(BlinkAutonLed, NULL, &BlinkAutonLed_attributes);

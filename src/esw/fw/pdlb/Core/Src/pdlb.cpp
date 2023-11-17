@@ -17,7 +17,7 @@ namespace mrover {
     // Usually this is the Jetson
     constexpr static std::uint8_t DESTINATION_DEVICE_ID = 0x10;
 
-    FDCANBus fdcan_bus;
+    FDCAN fdcan_bus;
     PDLB pdlb;
 
     void init() {
@@ -55,7 +55,7 @@ namespace mrover {
 				DiagTempSensor{adc_sensor_2, 1},
         };
 
-        fdcan_bus = FDCANBus{DEVICE_ID, DESTINATION_DEVICE_ID, &hfdcan1};
+        fdcan_bus = FDCAN{DEVICE_ID, DESTINATION_DEVICE_ID, &hfdcan1};
         pdlb = PDLB{fdcan_bus, Pin{ARM_LASER_GPIO_Port, ARM_LASER_Pin},
         	auton_led, adc_sensor_1, adc_sensor_2,
 			current_sensors, diag_temp_sensors};
@@ -72,7 +72,7 @@ namespace mrover {
     void receive_message() {
     	if (std::optional received = fdcan_bus.receive<InBoundPDLBMessage>()) {
 			auto const& [header, message] = received.value();
-			auto messageId = std::bit_cast<FDCANBus::MessageId>(header.Identifier);
+			auto messageId = std::bit_cast<FDCAN::MessageId>(header.Identifier);
 			if (messageId.destination == DEVICE_ID)
 				pdlb.receive(message);
 		}

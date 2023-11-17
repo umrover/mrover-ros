@@ -18,7 +18,7 @@ namespace mrover {
     class PDLB {
     private:
 
-        FDCANBus m_fdcan_bus;
+    	FDCAN m_fdcan_bus;
         Pin m_arm_laser_pin;
         AutonLed m_auton_led;
         std::shared_ptr<ADCSensor> m_adc_sensor_1;
@@ -41,7 +41,7 @@ namespace mrover {
     public:
         PDLB() = default;
 
-        PDLB(FDCANBus const& fdcan_bus,
+        PDLB(FDCAN const& fdcan_bus,
         		Pin arm_laser_pin,
         		AutonLed auton_led,
 				std::shared_ptr<ADCSensor> adc_sensor_1,
