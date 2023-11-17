@@ -57,14 +57,6 @@ const osThreadAttr_t defaultTask_attributes = {
 };
 /* USER CODE BEGIN PV */
 
-
-osThreadId_t ReceiveMessagesHandle;
-const osThreadAttr_t ReceiveMessages_attributes = {
-  .name = "ReceiveMessages",
-  .priority = (osPriority_t) osPriorityNormal,
-  .stack_size = 128 * 4
-};
-
 osThreadId_t SpectralTaskHandle;
 const osThreadAttr_t SpectralTask_attributes = {
   .name = "SpectralTask",
@@ -97,7 +89,6 @@ static void MX_ADC1_Init(void);
 void StartDefaultTask(void *argument);
 
 /* USER CODE BEGIN PFP */
-void ReceiveMessages(void *argument);
 void SpectralTask(void *argument);
 void ThermistorAndAutoShutoffTask(void *argument);
 void HeaterUpdatesTask(void *argument);
@@ -181,8 +172,8 @@ int main(void)
 
   /* USER CODE BEGIN RTOS_THREADS */
 
-  ReceiveMessagesHandle = osThreadNew(ReceiveMessages, NULL, &ReceiveMessages_attributes);
-  SpectralTaskHandle = osThreadNew(SpectralTask, NULL, &SpectralTask_attributes);
+  // TODO - Using spectral causes a hardfault!!!
+//  SpectralTaskHandle = osThreadNew(SpectralTask, NULL, &SpectralTask_attributes);
   ThermistorAndAutoShutoffTaskHandle = osThreadNew(ThermistorAndAutoShutoffTask, NULL, &ThermistorAndAutoShutoffTask_attributes);
   HeaterUpdatesTaskHandle = osThreadNew(HeaterUpdatesTask, NULL, &HeaterUpdatesTask_attributes);
 

@@ -27,21 +27,21 @@ namespace mrover {
 		// GAIN is 0b10, so it is 16x sensor channel gain
 		// BANK is 0b10, so data conversion is Mode 2
 		// DATA_RDY is 0 and RSVD is 0
-    	auto status = m_i2c_bus->transact<uint16_t, uint8_t>(SPECTRAL_7b_ADDRESS, I2C_AS72XX_SLAVE_STATUS_REG);
+    	auto status = m_i2c_bus->blocking_transact<uint16_t, uint8_t>(SPECTRAL_7b_ADDRESS, I2C_AS72XX_SLAVE_STATUS_REG);
 		if(!status || status.value() & I2C_AS72XX_SLAVE_TX_VALID != 0){
 			// Try again
-			status = m_i2c_bus->transact<uint16_t, uint8_t>(SPECTRAL_7b_ADDRESS, I2C_AS72XX_SLAVE_STATUS_REG);
+			status = m_i2c_bus->blocking_transact<uint16_t, uint8_t>(SPECTRAL_7b_ADDRESS, I2C_AS72XX_SLAVE_STATUS_REG);
 			if(!status || status.value() & I2C_AS72XX_SLAVE_TX_VALID != 0){
 				// Failed. Unable to init...
 				return;
 			}
 		}
 
-		auto result = m_i2c_bus->transact<uint16_t, uint8_t>(SPECTRAL_7b_ADDRESS, CONTROL_SETUP_REG);
-		result = m_i2c_bus->transact<uint16_t, uint8_t>(SPECTRAL_7b_ADDRESS, control_data);
+		auto result = m_i2c_bus->blocking_transact<uint16_t, uint8_t>(SPECTRAL_7b_ADDRESS, CONTROL_SETUP_REG);
+		result = m_i2c_bus->blocking_transact<uint16_t, uint8_t>(SPECTRAL_7b_ADDRESS, control_data);
 		// Integration time = 2.8ms & 0xFF
 		uint8_t int_time_multiplier = 0xFF;
-		result = m_i2c_bus->transact<uint16_t, uint8_t>(SPECTRAL_7b_ADDRESS, int_time_multiplier);
+		result = m_i2c_bus->blocking_transact<uint16_t, uint8_t>(SPECTRAL_7b_ADDRESS, int_time_multiplier);
     }
 
     void Spectral::update_channel_data(uint8_t channel) {
@@ -72,7 +72,7 @@ namespace mrover {
 //
 //    	}
 
-    	auto status = m_i2c_bus->transact<uint16_t, uint8_t>(SPECTRAL_7b_ADDRESS, I2C_AS72XX_SLAVE_STATUS_REG);
+    	auto status = m_i2c_bus->blocking_transact<uint16_t, uint8_t>(SPECTRAL_7b_ADDRESS, I2C_AS72XX_SLAVE_STATUS_REG);
     	if(!status || status.value() & I2C_AS72XX_SLAVE_TX_VALID != 0){
     		// Failed. Unable to update data. We could just set the data to all 0 here.
     		return;
@@ -82,8 +82,8 @@ namespace mrover {
     		uint8_t msb_reg_addr = CHANNEL_V_HIGH + i * 2;
     		uint8_t lsb_reg_addr = CHANNEL_V_HIGH + i * 2 + 1;
 
-    		auto msb_result = m_i2c_bus->transact<uint16_t, uint8_t>(SPECTRAL_7b_ADDRESS, msb_reg_addr);
-    		auto lsb_result = m_i2c_bus->transact<uint16_t, uint8_t>(SPECTRAL_7b_ADDRESS, lsb_reg_addr);
+    		auto msb_result = m_i2c_bus->blocking_transact<uint16_t, uint8_t>(SPECTRAL_7b_ADDRESS, msb_reg_addr);
+    		auto lsb_result = m_i2c_bus->blocking_transact<uint16_t, uint8_t>(SPECTRAL_7b_ADDRESS, lsb_reg_addr);
     		if(msb_result && lsb_result){
     			channel_data[i] = (((uint16_t)msb_result.value() << 8) | lsb_result.value());
     		}
