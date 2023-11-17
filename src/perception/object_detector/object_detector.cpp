@@ -19,7 +19,7 @@ namespace mrover {
     void ObjectDetectorNodelet::onInit() {
         mNh = getMTNodeHandle();
         mPnh = getMTPrivateNodeHandle();
-        inferenceWrapper = InferenceWrapper("//home//jabra//Desktop//Rover//yolov8s.onnx", cv::Size(640, 640), "");
+        mInferenceWrapper = InferenceWrapper("//home//jabra//Desktop//Rover//yolov8s.onnx", cv::Size(640, 640), "");
 
         //inference = Inference("//home//jabra//Desktop//Rover//yolov8s.onnx", cv::Size(640, 640), "");
         //read ONNX file into this mNet, YOLOV8, second smallest one
@@ -30,7 +30,8 @@ namespace mrover {
         mDebugImgPub = mNh.advertise<sensor_msgs::Image>("/object_detector/debug_img", 1);
         //mDetectionData = mNh.advertise<DetectedObjects>("/object_detector/detected_object", 1);
 
-        this->imageBlob = cv::Mat{1, NUM_CHANNELS, IMG_WIDTH, IMG_HEIGHT, CV_32F};
+        // TODO(quintin): I don't think this is the constructor you want. You should set channels via the type (e.g. "CV_32FC2" for 2 float channels)
+        mImageBlob = cv::Mat{1, NUM_CHANNELS, IMG_WIDTH, IMG_HEIGHT, CV_32F};
     }
 } // namespace mrover
 

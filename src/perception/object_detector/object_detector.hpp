@@ -22,7 +22,7 @@ namespace mrover {
         ros::NodeHandle mNh, mPnh;
 
         //Inference inference;
-        InferenceWrapper inferenceWrapper;
+        InferenceWrapper mInferenceWrapper;
 
         // Publishers
 
@@ -34,7 +34,7 @@ namespace mrover {
         ros::Subscriber mImgSub;
 
         // Preallocated cv::Mats
-        cv::Mat imageBlob;
+        cv::Mat mImageBlob;
 
         dynamic_reconfigure::Server<ObjectDetectorParamsConfig> mConfigServer;
         dynamic_reconfigure::Server<ObjectDetectorParamsConfig>::CallbackType mCallbackType;

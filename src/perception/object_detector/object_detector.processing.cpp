@@ -31,12 +31,11 @@ namespace mrover {
 
         cv::resize(imageView, sizedImage, cv::Size(640, 640));
         cv::cvtColor(sizedImage, sizedImage, cv::COLOR_BGRA2BGR);
-        cv::Mat finalMat;
-        sizedImage.convertTo(finalMat, CV_32FC3);
+        sizedImage.convertTo(sizedImage, CV_32FC3);
         //cv::Mat blob = cv::dnn::blobFromImage(sizedImage);
         //std::cout << finalMat.elemSize() * 640 * 640 << std::endl;
         //std::cout << finalMat.data << " awdasda" << std::endl;
-        inferenceWrapper.doDetections(finalMat);
+        mInferenceWrapper.doDetections(sizedImage);
     }
     /*
     void ObjectDetectorNodelet::imageCallback(sensor_msgs::ImageConstPtr const& msg) {
