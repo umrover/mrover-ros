@@ -465,6 +465,13 @@ static void MX_GPIO_Init(void)
 
 /* USER CODE BEGIN 4 */
 
+void HAL_FDCAN_RxFifo0Callback(FDCAN_HandleTypeDef *hfdcan, uint32_t RxFifo0ITs) {
+  if((RxFifo0ITs & FDCAN_IT_RX_FIFO0_NEW_MESSAGE) != RESET)
+  {
+    receive_message();
+  }
+}
+
 void ReceiveMessages(void *argument) {
 	uint32_t tick = osKernelGetTickCount();
 	for(;;) {
