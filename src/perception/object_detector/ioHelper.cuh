@@ -1,9 +1,8 @@
-#ifndef __IO_HELPER_H__
-#define __IO_HELPER_H__
+#pragma once
 
-#include <NvInfer.h>
-#include <iostream>
-#include <vector>
+#include "pch.hpp"
+
+#include <NvInferRuntimeBase.h>
 
 namespace nvinfer1 {
 
@@ -32,5 +31,3 @@ namespace nvinfer1 {
     std::string readBuffer(std::string const& path);
 
 } // namespace nvinfer1
-
-#endif /*__IO_HELPER_H__*/

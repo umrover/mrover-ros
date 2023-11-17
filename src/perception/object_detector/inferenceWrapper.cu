@@ -1,22 +1,8 @@
-#include <NvInfer.h>
-#include <NvInferRuntime.h>
-#include <NvInferRuntimeBase.h>
-#include <NvOnnxParser.h>
-#include <cuda_runtime_api.h>
-
-#include "ioHelper.cuh"
-
-#include <memory>
-#include <opencv4/opencv2/core/mat.hpp>
-#include <opencv4/opencv2/core/types.hpp>
-#include <string>
-
-#include "inference.cuh"
 #include "inferenceWrapper.hpp"
 
-#include <array>
-#include <string_view>
-#include <vector>
+#include <NvInferRuntimeBase.h>
+
+#include "inference.cuh"
 
 using namespace nvinfer1;
 
@@ -36,12 +22,14 @@ using namespace nvinfer1;
 * Modifies stream, outputTensor
 */
 namespace mrover {
+
     //Initialize the unique_ptr to the inference class
     InferenceWrapper::InferenceWrapper(std::string onnxModelPath, cv::Size modelInputShape = {640, 640}, std::string classesTxtFile = "") {
-        inferencePtr.reset(new Inference(onnxModelPath, modelInputShape, classesTxtFile));
+        mInference.reset(new Inference(onnxModelPath, modelInputShape, classesTxtFile));
     }
 
-    void InferenceWrapper::doDetections(cv::Mat& img) {
-        inferencePtr->doDetections(img);
+    void InferenceWrapper::doDetections(const cv::Mat& img) {
+        mInference->doDetections(img);
     }
+
 } // namespace mrover

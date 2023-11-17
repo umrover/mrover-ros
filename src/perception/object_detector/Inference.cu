@@ -1,3 +1,5 @@
+#include "inference.cuh"
+
 #include <NvInfer.h>
 #include <NvInferRuntime.h>
 #include <NvInferRuntimeBase.h>
@@ -5,21 +7,6 @@
 #include <cuda_runtime_api.h>
 
 #include "ioHelper.cuh"
-
-#include <memory>
-#include <opencv4/opencv2/core/hal/interface.h>
-#include <opencv4/opencv2/core/mat.hpp>
-#include <opencv4/opencv2/core/types.hpp>
-#include <opencv4/opencv2/imgproc.hpp>
-#include <ostream>
-#include <string>
-
-#include "inference.cuh"
-
-#include <array>
-#include <filesystem>
-#include <string_view>
-#include <vector>
 
 using namespace nvinfer1;
 
@@ -136,37 +123,29 @@ namespace mrover {
         // Create Execution Context.
         mContext.reset(mEngine->createExecutionContext());
 
-        Dims dims_i{mEngine->getBindingDimensions(0)};
-        Dims4 inputDims{BATCH_SIZE, dims_i.d[1], dims_i.d[2], dims_i.d[3]};
-        mContext->setBindingDimensions(0, inputDims);
+        mContext->setBindingDimensions(0, mEngine->getBindingDimensions(0));
     }
 
     void Inference::doDetections(const cv::Mat& img) {
         //Do the forward pass on the network
-        ROS_INFO("HI");
-        launchInference(img.data, mOutputTensor.data);
-        std::cout << (mOutputTensor.data) << " bruh " << std::endl;
+        launchInference(img, mOutputTensor);
+        ROS_INFO_STREAM(static_cast<void*>(mOutputTensor.data));
         //return Parser(outputTensor).parseTensor();
     }
 
-    void Inference::launchInference(void* input, void* output) {
-        assert(input);
-        // assert(output);
+    void Inference::launchInference(cv::Mat const& input, cv::Mat const& output) {
+        assert(!input.empty());
+        assert(!output.empty());
+        assert(input.isContinuous());
+        assert(output.isContinuous());
         assert(mContext);
         assert(mStream);
 
         int inputId = getBindingInputIndex(mContext.get());
 
-        //Copy data to GPU memory
-        std::cout << input << std::endl;
-        std::cout << "ptr " << mBindings[inputId] << " size " << mInputDimensions.d[0] * mInputDimensions.d[1] * mInputDimensions.d[2] * sizeof(float) << std::endl;
-        cudaMemcpy(mBindings[inputId], input, mInputDimensions.d[0] * mInputDimensions.d[1] * mInputDimensions.d[2] * sizeof(float), cudaMemcpyHostToDevice);
-
-        //Queue the async engine process
+        cudaMemcpy(mBindings[inputId], input.data, input.total() * input.elemSize(), cudaMemcpyHostToDevice);
         mContext->executeV2(mBindings.data());
-
-        //Copy data to CPU memory
-        cudaMemcpy(output, mBindings[1 - inputId], mOutputDimensions.d[0] * mOutputDimensions.d[1] * mOutputDimensions.d[2] * sizeof(float), cudaMemcpyDeviceToHost);
+        cudaMemcpy(output.data, mBindings[1 - inputId], output.total() * output.elemSize(), cudaMemcpyDeviceToHost);
     }
 
 
@@ -180,18 +159,17 @@ namespace mrover {
         for (int i = 0; i < mEngine->getNbIOTensors(); i++) {
             const char* tensorName = mEngine->getIOTensorName(i);
 
-            Dims dims{mEngine->getTensorShape(tensorName)};
+            auto [rank, extents] = mEngine->getTensorShape(tensorName);
 
-            std::size_t size = accumulate(dims.d + 1, dims.d + dims.nbDims, BATCH_SIZE, std::multiplies<>());
-            std::vector sizes{dims.d[1], dims.d[2], dims.d[3]};
-
-            // Create CUDA buffer for Tensor.
-            cudaMalloc(&mBindings[i], BATCH_SIZE * size * sizeof(float));
+            // Multiply sizeof(float) by the product of the extents
+            // This is essentially: element count * size of each element
+            std::size_t size = std::reduce(extents, extents + rank, sizeof(float), std::multiplies<>());
+            // Create GPU memory for TensorRT to operate on
+            cudaMalloc(mBindings.data() + i, size);
         }
 
-        mInputDimensions = Dims3(mModelInputShape.width, mModelInputShape.height, 3); //3 Is for the 3 RGB pixels
-        int outputDims[] = {1, 84, 8400};
-        mOutputTensor = cv::Mat{3, outputDims, CV_32F};
+        // TODO(quintin): Avoid hardcoding this
+        mOutputTensor = cv::Mat::zeros(84, 8400, CV_MAKE_TYPE(CV_32F, 1));
     }
 
     int Inference::getBindingInputIndex(IExecutionContext* context) {

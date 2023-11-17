@@ -1,42 +1,12 @@
 // Cpp native
 #pragma once
 
-#include <NvInferRuntime.h>
-#include <fstream>
-#include <iterator>
-
-#include <memory>
-
-#include <random>
-#include <string>
-#include <vector>
-
-
-//Tensor-RT Specific
-#include "cudaWrapper.cuh"
-#include <NvInfer.h>
-#include <NvOnnxParser.h>
-
-
-#include "ioHelper.cuh"
-
-// OpenCV / DNN / Inference
-#include <opencv2/core.hpp>
-#include <opencv2/core/cvstd.hpp>
-#include <opencv2/core/hal/interface.h>
-#include <opencv2/core/mat.hpp>
-#include <opencv2/core/types.hpp>
-#include <opencv2/dnn.hpp>
-#include <opencv2/dnn/dnn.hpp>
-#include <opencv2/highgui.hpp>
-#include <opencv2/imgcodecs.hpp>
-#include <opencv2/imgproc.hpp>
-#include <opencv2/opencv.hpp>
-#include <opencv2/videoio.hpp>
-
-//MROVER MADE FILES
-#include "object_detector.hpp"
 #include "pch.hpp"
+
+#include <NvInfer.h>
+
+#include "cudaWrapper.cuh"
+#include "ioHelper.cuh"
 
 using nvinfer1::ICudaEngine;
 using nvinfer1::IExecutionContext;
@@ -47,8 +17,6 @@ using nvinfer1::IExecutionContext;
 namespace mrover {
 
     class Inference {
-        constexpr static int BATCH_SIZE = 1;
-
         nvinfer1::Logger mLogger;
 
         //Ptr to the engine
@@ -60,9 +28,6 @@ namespace mrover {
         //Input, output and reference tensors
         cv::Mat mInputTensor;
         cv::Mat mOutputTensor;
-        //Num Entries
-        nvinfer1::Dims3 mInputDimensions;
-        nvinfer1::Dims3 mOutputDimensions;
 
         //Cuda Stream
         std::optional<cudawrapper::CudaStream> mStream;
@@ -87,7 +52,7 @@ namespace mrover {
         //Creates a ptr to the engine
         ICudaEngine* createCudaEngine(std::string const& onnxModelPath);
 
-        void launchInference(void* input, void* output);
+        void launchInference(cv::Mat const& input, cv::Mat const& output);
 
         void prepTensors();
 

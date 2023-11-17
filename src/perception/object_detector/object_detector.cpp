@@ -1,25 +1,13 @@
 #include "object_detector.hpp"
+
 #include "inferenceWrapper.hpp"
-//#include "inference.h"
-
-#include <mrover/DetectedObject.h>
-//#include <mrover/DetectedObjects.h>
-
-#include <opencv2/core/hal/interface.h>
-#include <opencv2/core/mat.hpp>
-#include <opencv2/core/types.hpp>
-#include <opencv2/videoio.hpp>
-#include <ostream>
-#include <sensor_msgs/Image.h>
-#include <string>
-
 
 namespace mrover {
 
     void ObjectDetectorNodelet::onInit() {
         mNh = getMTNodeHandle();
         mPnh = getMTPrivateNodeHandle();
-        mInferenceWrapper = InferenceWrapper("//home//jabra//Desktop//Rover//yolov8s.onnx", cv::Size(640, 640), "");
+        mInferenceWrapper = InferenceWrapper("./yolov8s.onnx", cv::Size(640, 640), "");
 
         //inference = Inference("//home//jabra//Desktop//Rover//yolov8s.onnx", cv::Size(640, 640), "");
         //read ONNX file into this mNet, YOLOV8, second smallest one
@@ -47,7 +35,6 @@ int main(int argc, char** argv) {
 
     return EXIT_SUCCESS;
 }
-
 
 #ifdef MROVER_IS_NODELET
 #include <pluginlib/class_list_macros.h>

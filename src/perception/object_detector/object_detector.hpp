@@ -1,5 +1,6 @@
-#include "inferenceWrapper.hpp"
 #include "pch.hpp"
+
+#include "inferenceWrapper.hpp"
 #include <opencv2/core/mat.hpp>
 #include <ros/publisher.h>
 

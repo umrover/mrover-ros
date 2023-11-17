@@ -1,13 +1,19 @@
 #pragma once
 
 #include <algorithm>
+#include <array>
 #include <cassert>
 #include <cmath>
 #include <cstdint>
 #include <execution>
+#include <filesystem>
+#include <fstream>
+#include <iostream>
 #include <limits>
+#include <memory>
 #include <numeric>
 #include <optional>
+#include <sstream>
 #include <string>
 #include <type_traits>
 #include <unordered_map>
@@ -22,6 +28,7 @@
 #include <image_transport/image_transport.h>
 #include <nodelet/loader.h>
 #include <nodelet/nodelet.h>
+#include <ros/publisher.h>
 #include <sensor_msgs/image_encodings.h>
 #include <std_srvs/SetBool.h>
 #include <tf/exceptions.h>

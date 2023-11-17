@@ -1,9 +1,4 @@
 #include "ioHelper.cuh"
-#include <algorithm>
-#include <fstream>
-#include <google/protobuf/io/coded_stream.h>
-#include <google/protobuf/io/zero_copy_stream_impl.h>
-#include <iterator>
 
 using namespace std;
 
@@ -19,7 +14,7 @@ namespace nvinfer1 {
         return path.substr(baseId, path.rfind('.') - baseId);
     }
 
-    ostream& operator<<(ostream& o, const nvinfer1::ILogger::Severity severity) {
+    ostream& operator<<(ostream& o, const ILogger::Severity severity) {
         switch (severity) {
             case ILogger::Severity::kINTERNAL_ERROR:
                 o << "INTERNAL_ERROR";
@@ -32,6 +27,8 @@ namespace nvinfer1 {
                 break;
             case ILogger::Severity::kINFO:
                 o << "INFO";
+                break;
+            default:
                 break;
         }
         return o;

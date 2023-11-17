@@ -1,32 +1,15 @@
 #include "object_detector.hpp"
-#include "inferenceWrapper.hpp"
-#include <cv_bridge/cv_bridge.h>
-#include <iostream>
-#include <mrover/DetectedObject.h>
-#include <opencv2/core.hpp>
-#include <opencv2/core/cvstd.hpp>
-#include <opencv2/core/hal/interface.h>
-#include <opencv2/core/mat.hpp>
-#include <opencv2/core/types.hpp>
-#include <opencv2/dnn/dnn.hpp>
-#include <opencv2/highgui.hpp>
-#include <opencv2/imgcodecs.hpp>
-#include <opencv2/imgproc.hpp>
-#include <opencv2/videoio.hpp>
-#include <sensor_msgs/Image.h>
-#include <string>
-#include <vector>
 
+#include "inferenceWrapper.hpp"
 
 namespace mrover {
-
 
     void ObjectDetectorNodelet::imageCallback(sensor_msgs::ImageConstPtr const& msg) {
         assert(msg);
         assert(msg->height > 0);
         assert(msg->width > 0);
 
-        cv::Mat imageView{static_cast<int>(msg->height), static_cast<int>(msg->width), CV_8UC4, const_cast<uint8_t*>(msg->data.data())};
+        cv::Mat imageView{static_cast<int>(msg->height), static_cast<int>(msg->width), CV_8UC4, const_cast<std::uint8_t*>(msg->data.data())};
         cv::Mat sizedImage;
 
         cv::resize(imageView, sizedImage, cv::Size(640, 640));
