@@ -7,6 +7,7 @@
 #include "ioHelper.cuh"
 
 #include <memory>
+#include <opencv4/opencv2/core/hal/interface.h>
 #include <opencv4/opencv2/core/mat.hpp>
 #include <opencv4/opencv2/core/types.hpp>
 #include <opencv4/opencv2/imgproc.hpp>
@@ -41,8 +42,7 @@ namespace mrover {
 
     //Constructor
     //  : logger{}, inputTensor{}, outputTensor{}, referenceTensor{}, stream{}
-    Inference::Inference(std::string const& onnxModelPath, cv::Size modelInputShape = {640, 640}, std::string const& classesTxtFile = "")
-        : mModelInputShape{modelInputShape} {
+    Inference::Inference(std::string const& onnxModelPath, cv::Size modelInputShape = {640, 640}, std::string const& classesTxtFile = "") {
 
         mEngine = std::unique_ptr<ICudaEngine, Destroy<ICudaEngine>>{createCudaEngine(onnxModelPath)};
         if (!mEngine) throw std::runtime_error("Failed to create CUDA engine");
@@ -145,7 +145,7 @@ namespace mrover {
         //Do the forward pass on the network
         ROS_INFO("HI");
         launchInference(img.data, mOutputTensor.data);
-        std::cout << *(mOutputTensor.data) << std::endl;
+        std::cout << (mOutputTensor.data) << " bruh " << std::endl;
         //return Parser(outputTensor).parseTensor();
     }
 
@@ -160,13 +160,13 @@ namespace mrover {
         //Copy data to GPU memory
         std::cout << input << std::endl;
         std::cout << "ptr " << mBindings[inputId] << " size " << mInputDimensions.d[0] * mInputDimensions.d[1] * mInputDimensions.d[2] * sizeof(float) << std::endl;
-        cudaMemcpyAsync(mBindings[inputId], input, mInputDimensions.d[0] * mInputDimensions.d[1] * mInputDimensions.d[2] * sizeof(float), cudaMemcpyHostToDevice, mStream.value());
+        cudaMemcpy(mBindings[inputId], input, mInputDimensions.d[0] * mInputDimensions.d[1] * mInputDimensions.d[2] * sizeof(float), cudaMemcpyHostToDevice);
 
         //Queue the async engine process
-        mContext->enqueueV3(mStream.value());
+        mContext->executeV2(mBindings.data());
 
         //Copy data to CPU memory
-        cudaMemcpyAsync(output, mBindings[1 - inputId], mOutputDimensions.d[0] * mOutputDimensions.d[1] * mOutputDimensions.d[2] * sizeof(float), cudaMemcpyDeviceToHost, mStream.value());
+        cudaMemcpy(output, mBindings[1 - inputId], mOutputDimensions.d[0] * mOutputDimensions.d[1] * mOutputDimensions.d[2] * sizeof(float), cudaMemcpyDeviceToHost);
     }
 
 
@@ -190,6 +190,8 @@ namespace mrover {
         }
 
         mInputDimensions = Dims3(mModelInputShape.width, mModelInputShape.height, 3); //3 Is for the 3 RGB pixels
+        int outputDims[] = {1, 84, 8400};
+        mOutputTensor = cv::Mat{3, outputDims, CV_32F};
     }
 
     int Inference::getBindingInputIndex(IExecutionContext* context) {

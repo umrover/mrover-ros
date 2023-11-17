@@ -34,8 +34,8 @@ namespace mrover {
         cv::Mat finalMat;
         sizedImage.convertTo(finalMat, CV_32FC3);
         //cv::Mat blob = cv::dnn::blobFromImage(sizedImage);
-        std::cout << finalMat.elemSize() * 640 * 640 << std::endl;
-        std::cout << finalMat.data << " awdasda" << std::endl;
+        //std::cout << finalMat.elemSize() * 640 * 640 << std::endl;
+        //std::cout << finalMat.data << " awdasda" << std::endl;
         inferenceWrapper.doDetections(finalMat);
     }
     /*
