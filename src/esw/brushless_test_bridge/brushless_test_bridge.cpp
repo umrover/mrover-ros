@@ -20,10 +20,12 @@ int main(int argc, char** argv) {
     auto brushlessController = std::make_unique<mrover::BrushlessController>(nh, "jetson", "devboard");
 
     int count = -100;
-    ros::Rate rate{25};
+    ros::Rate rate{2};
     while (ros::ok()) {
         // Throttle test
-        brushlessController->setDesiredThrottle(mrover::Percent{(float) count / 100.0});
+        //brushlessController->setDesiredThrottle(mrover::Percent{(float) count / 100.0});
+        //brushlessController->setDesiredVelocity(mrover::RadiansPerSecond{10.0});
+        brushlessController->setDesiredPosition(mrover::Radians{(float) count / 10.0});
         count++;
         if (count == 101) break;
         ros::spinOnce();
