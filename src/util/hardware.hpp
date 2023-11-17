@@ -1,6 +1,7 @@
 #pragma once
 
 #include <bit>
+#include <bitset>
 #include <concepts>
 #include <cstdint>
 #include <optional>
@@ -135,6 +136,19 @@ namespace mrover {
 
         explicit FDCAN(std::uint8_t source, std::uint8_t destination, FDCAN_HandleTypeDef* fdcan)
             : m_fdcan{fdcan}, m_source{source}, m_destination{destination} {
+
+            std::bitset<16> sourceBits(source << 8);
+            std::bitset<16> destinationBits(destination);
+            std::bitset<16> filter = sourceBits | destinationBits;
+            FDCAN_FilterTypeDef sFilterConfig {
+                .IdType = FDCAN_EXTENDED_ID,
+                .FilterIndex = 0,
+                .FilterType = FDCAN_FILTER_MASK, // Classic filter: FilterID1 = filter, FilterID2 = mask   
+                .FilterConfig = FDCAN_FILTER_TO_RXFIFO0,
+                .FilterID1 = filter.to_ulong(),
+                .FilterID2 = 0x7FFF // Mask the first 15 bits of the ID (8 bits of destination and 7 bits of source)
+            };
+            check(HAL_FDCAN_ConfigFilter(&hfdcan1, &sFilterConfig) == HAL_OK, Error_Handler);
 
             check(HAL_FDCAN_ActivateNotification(m_fdcan, FDCAN_IT_RX_FIFO0_NEW_MESSAGE, 0) == HAL_OK, Error_Handler);
             check(HAL_FDCAN_Start(m_fdcan) == HAL_OK, Error_Handler);
