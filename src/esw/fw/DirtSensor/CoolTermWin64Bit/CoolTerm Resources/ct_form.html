@@ -1,0 +1,378 @@
+<html>
+	<head>
+		<title>CoolTerm - Web Server</title>
+		<meta name="viewport" content="width=320; initial-scale=1.0; maximum-scale=1.0; user-scalable=0;">
+	</head>
+	
+	<body>
+		
+		<center><h1>CoolTerm</h1></center>
+		<center><h4>Version: <version></h4></center>
+		<center><h4>Platform: <platform></h4></center>
+		
+		<center>
+			<form name="SENDCOMMAND" method="POST">
+				Window ID: <input type="text" name="WINID" size = 10 value="0"><br>
+				Data: <input type="text" name="DATA" size = 40 value=""><p>
+				<table border="1">
+					<tr>
+						<th>Command</th>
+						<th>Arguments</th>
+						<th>Return Value</th>
+						<th>Description</th>
+					</tr>
+					<tr>
+						<td><input type="submit" name="CMD" value="NewWindow"></td>
+						<td></td>
+						<td>integer</td>
+						<td>Opens a new terminal window. Returns the ID of the new window.</td>
+					</tr>
+					<tr>
+						<td><input type="submit" name="CMD" value="LoadSetting"></td>
+						<td>FilePath as String</td>
+						<td>integer</td>
+						<td>Loads connection settings. Returns the ID of the opened window, or -1 if loading was not successful.</td>
+					</tr>
+					<tr>
+						<td><input type="submit" name="CMD" value="SaveSetting"></td>
+						<td>ID as integer, FilePath as String</td>
+						<td>Boolean</td>
+						<td>Saves the current connection settings. Returns True on success.</td>
+					</tr>
+					<tr>
+						<td><input type="submit" name="CMD" value="WindowCount"></td>
+						<td></td>
+						<td>integer</td>
+						<td>Returns the number of currently open terminal windows.</td>
+					</tr>
+					<tr>
+						<td><input type="submit" name="CMD" value="WindowID"></td>
+						<td>index as integer</td>
+						<td>integer</td>
+						<td>Returns the ID of the window with the specified index.</td>
+					</tr>
+					<tr>
+						<td><input type="submit" name="CMD" value="WindowIDfromName"></td>
+						<td>WindowName as string</td>
+						<td>integer</td>
+						<td>Returns the ID of the window with the specified name, or -1 if the window doesn't exist.</td>
+					</tr>
+					<tr>
+						<td><input type="submit" name="CMD" value="WindowName"></td>
+						<td>index as integer</td>
+						<td>string</td>
+						<td>Returns the name of the window with the specified index.</td>
+					</tr>
+					<tr>
+						<td><input type="submit" name="CMD" value="IndexOfWindowID"></td>
+						<td>ID as integer</td>
+						<td>integer</td>
+						<td>Returns the index of the window with the specified ID.</td>
+					</tr>
+					<tr>
+						<td><input type="submit" name="CMD" value="CloseWindow"></td>
+						<td>ID as integer</td>
+						<td></td>
+						<td>Closes the specified window.</td>
+					</tr>
+					<tr>
+						<td><input type="submit" name="CMD" value="Quit"></td>
+						<td></td>
+						<td></td>
+						<td>Quits CoolTerm.</td>
+					</tr>
+					<tr>
+						<td><input type="submit" name="CMD" value="CoolTermVersion"></td>
+						<td></td>
+						<td>string</td>
+						<td>Returns the CoolTerm version.</td>
+					</tr>
+					<tr>
+						<td><input type="submit" name="CMD" value="ShowWindow"></td>
+						<td>ID as integer</td>
+						<td></td>
+						<td>Brings the specified window to the foreground.</td>
+					</tr>
+					<tr>
+						<td><input type="submit" name="CMD" value="Print"></td>
+						<td>ID as integer</td>
+						<td>Boolean</td>
+						<td>Prints the current contents of the specified window. Returns True on success.</td>
+					</tr>
+					<tr>
+						<td><input type="submit" name="CMD" value="GetFrontmostWindow"></td>
+						<td></td>
+						<td>integer</td>
+						<td>Returns the ID of the frontmost terminal window. Returns -1 if there are no open or visible windows.</td>
+					</tr>
+					<tr>
+						<td><input type="submit" name="CMD" value="PauseDisplay"></td>
+						<td>ID as integer, Value as boolean</td>
+						<td></td>
+						<td>Pauses or unpauses the display of the specified window.</td>
+					</tr>
+					<tr>
+						<td><input type="submit" name="CMD" value="Connect"></td>
+						<td>ID as integer</td>
+						<td>Boolean</td>
+						<td>Opens the serial port. Returns True on success.</td>
+					</tr>
+					<tr>
+						<td><input type="submit" name="CMD" value="Disconnect"></td>
+						<td>ID as integer</td>
+						<td></td>
+						<td>Closes the serial port.</td>
+					</tr>
+					<tr>
+						<td><input type="submit" name="CMD" value="IsConnected"></td>
+						<td>ID as integer</td>
+						<td>Boolean</td>
+						<td>Returns true if the serial port is open.</td>
+					</tr>
+					<tr>
+						<td><input type="submit" name="CMD" value="LastErrorCode"></td>
+						<td>ID as Integer</td>
+						<td>integer</td>
+						<td>Returns the last serial port error code.</td>
+					</tr>
+					<tr>
+						<td><input type="submit" name="CMD" value="Write"></td>
+						<td>ID as integer, Data as string</td>
+						<td></td>
+						<td>Writes the data to the serial port.</td>
+					</tr>
+					<tr>
+						<td><input type="submit" name="CMD" value="WriteLine"></td>
+						<td>ID as integer, Data as string</td>
+						<td></td>
+						<td>Writes the data to the serial port and terminates it with the currently selected 'Enter Key Emulation'.</td>
+					</tr>
+					<tr>
+						<td><input type="submit" name="CMD" value="WriteHex"></td>
+						<td>ID as integer, Data as string</td>
+						<td></td>
+						<td>Writes the Hex-formatted data to the serial port.</td>
+					</tr>
+					<tr>
+						<td><input type="submit" name="CMD" value="BytesLeftToSend"></td>
+						<td>ID as integer</td>
+						<td>integer</td>
+						<td>Returns the number of bytes left in the transmit buffer awaiting transmission.</td>
+					</tr>
+					<tr>
+						<td><input type="submit" name="CMD" value="Poll"></td>
+						<td>ID as integer</td>
+						<td></td>
+						<td>Polls the serial port.</td>
+					</tr>
+					<tr>
+						<td><input type="submit" name="CMD" value="Read"></td>
+						<td>ID as integer, NumChar as integer</td>
+						<td>string</td>
+						<td>Reads the specified number of characters (bytes) from the receive buffer.</td>
+					</tr>
+					<tr>
+						<td><input type="submit" name="CMD" value="ReadAll"></td>
+						<td>ID as integer</td>
+						<td>string</td>
+						<td>Reads the entire contents of the receive buffer.</td>
+					</tr>
+					<tr>
+						<td><input type="submit" name="CMD" value="ReadHex"></td>
+						<td>ID as integer, NumChar as integer</td>
+						<td>string</td>
+						<td>Reads the specified number of characters (bytes) from the receive buffer, in Hex format.</td>
+					</tr>
+					<tr>
+						<td><input type="submit" name="CMD" value="ReadAllHex"></td>
+						<td>ID as integer</td>
+						<td>string</td>
+						<td>Reads the entire contents of the receive buffer, in Hex format.</td>
+					</tr>
+					<tr>
+						<td><input type="submit" name="CMD" value="BytesAvailable"></td>
+						<td>ID as integer</td>
+						<td>integer</td>
+						<td>Returns the number of bytes currently available in the receive buffer.</td>
+					</tr>
+					<tr>
+						<td><input type="submit" name="CMD" value="LookAhead"></td>
+						<td>ID as integer</td>
+						<td>string</td>
+						<td>Returns the contents of the receive buffer without removing it.</td>
+					</tr>
+					<tr>
+						<td><input type="submit" name="CMD" value="LookAheadHex"></td>
+						<td>ID as integer</td>
+						<td>string</td>
+						<td>Returns the contents of the receive buffer, in Hex format, without removing it.</td>
+					</tr>
+					<tr>
+						<td><input type="submit" name="CMD" value="ClearBuffer"></td>
+						<td>ID as integer</td>
+						<td></td>
+						<td>Clears the contents of the receive buffer.</td>
+					</tr>
+					<tr>
+						<td><input type="submit" name="CMD" value="SendBreak"></td>
+						<td>ID as integer</td>
+						<td></td>
+						<td>Sends a break signal.</td>
+					</tr>
+					<tr>
+						<td><input type="submit" name="CMD" value="FlushPort"></td>
+						<td>ID as integer</td>
+						<td></td>
+						<td>Flushes the serial port buffers.</td>
+					</tr>
+					<tr>
+						<td><input type="submit" name="CMD" value="ResetPort"></td>
+						<td>ID as integer</td>
+						<td></td>
+						<td>Resets the serial port.</td>
+					</tr>
+					<tr>
+						<td><input type="submit" name="CMD" value="GetDTR"></td>
+						<td>ID as integer</td>
+						<td>Boolean</td>
+						<td>Returns the state of the DTR status line.</td>
+					</tr>
+					<tr>
+						<td><input type="submit" name="CMD" value="SetDTR"></td>
+						<td>ID as integer, Value as boolean</td>
+						<td></td>
+						<td>Sets the state of the DTR status line.</td>
+					</tr>
+					<tr>
+						<td><input type="submit" name="CMD" value="GetRTS"></td>
+						<td>ID as integer</td>
+						<td>Boolean</td>
+						<td>Returns the state of the RTS status line.</td>
+					</tr>
+					<tr>
+						<td><input type="submit" name="CMD" value="SetRTS"></td>
+						<td>ID as Integer, Value as Boolean</td>
+						<td></td>
+						<td>Sets the state of the RTS status line.</td>
+					</tr>
+					<tr>
+						<td><input type="submit" name="CMD" value="GetCTS"></td>
+						<td>ID as integer</td>
+						<td>Boolean</td>
+						<td>Returns the state of the CTS status line.</td>
+					</tr>
+					<tr>
+						<td><input type="submit" name="CMD" value="GetDSR"></td>
+						<td>ID as integer</td>
+						<td>Boolean</td>
+						<td>Returns the state of the DSR status line.</td>
+					</tr>
+					<tr>
+						<td><input type="submit" name="CMD" value="GetDCD"></td>
+						<td>ID as integer</td>
+						<td>Boolean</td>
+						<td>Returns the state of the DCD status line.</td>
+					</tr>
+					<tr>
+						<td><input type="submit" name="CMD" value="GetRI"></td>
+						<td>ID as integer</td>
+						<td>Boolean</td>
+						<td>Returns the state of the RI status line.</td>
+					</tr>
+					<tr>
+						<td><input type="submit" name="CMD" value="SetBreak"></td>
+						<td>ID as integer, Value as boolean</td>
+						<td></td>
+						<td>Sets the state of the break signal.</td>
+					</tr>
+					<tr>
+						<td><input type="submit" name="CMD" value="GetBreak"></td>
+						<td>ID as integer</td>
+						<td>boolean</td>
+						<td>Gets the state of the break signal.</td>
+					</tr>
+					<tr>
+						<td><input type="submit" name="CMD" value="SendTextFile"></td>
+						<td>ID as integer, FilePath as string</td>
+						<td>Boolean</td>
+						<td>Sends the specified text file. Returns True on success.</td>
+					</tr>
+					<tr>
+						<td><input type="submit" name="CMD" value="CaptureStart"></td>
+						<td>ID as integer, FilePath as string</td>
+						<td>Boolean</td>
+						<td>Starts capture of received data to the specified file. Returns True on successful creation of the capture file.</td>
+					</tr>
+					<tr>
+						<td><input type="submit" name="CMD" value="CapturePause"></td>
+						<td>ID as integer</td>
+						<td></td>
+						<td>Pauses the capture currently in progress.</td>
+					</tr>
+					<tr>
+						<td><input type="submit" name="CMD" value="CaptureResume"></td>
+						<td>ID as integer</td>
+						<td></td>
+						<td>Resumes the currently paused capture.</td>
+					</tr>
+					<tr>
+						<td><input type="submit" name="CMD" value="CaptureStop"></td>
+						<td>ID as integer</td>
+						<td></td>
+						<td>Stops the capture currently in progress and closes the capture file.</td>
+					</tr>
+					<tr>
+						<td><input type="submit" name="CMD" value="RescanSerialPorts"></td>
+						<td></td>
+						<td></td>
+						<td>Rescans the system for available serial ports.</td>
+					</tr>
+					<tr>
+						<td><input type="submit" name="CMD" value="SerialPortCount"></td>
+						<td></td>
+						<td>integer</td>
+						<td>Returns the number of available serial ports.</td>
+					</tr>
+					<tr>
+						<td><input type="submit" name="CMD" value="SerialPortName"></td>
+						<td>SerialPortIndex as integer</td>
+						<td>string</td>
+						<td>Returns the name of the serial port with the specified index.</td>
+					</tr>
+					<tr>
+						<td><input type="submit" name="CMD" value="GetCurrentSerialPort"></td>
+						<td>ID as integer</td>
+						<td>integer</td>
+						<td>Returns the index of the currently selected serial ports.</td>
+					</tr>
+					<tr>
+						<td><input type="submit" name="CMD" value="SetCurrentSerialPort"></td>
+						<td>ID as integer, SerialPortIndex as integer</td>
+						<td>Boolean</td>
+						<td>Selects the serial port with the specified index. This can only be done while the port is closed.</td>
+					</tr>
+					<tr>
+						<td><input type="submit" name="CMD" value="GetParameter"></td>
+						<td>ID as integer, ParameterName as string</td>
+						<td>string</td>
+						<td>Gets the value of the parameter with the specified name.</td>
+					</tr>
+					<tr>
+						<td><input type="submit" name="CMD" value="SetParameter"></td>
+						<td>ID as integer, ParameterName as string, Value as string</td>
+						<td>Boolean</td>
+						<td>Sets the value of the parameter with the specified name.</td>
+					</tr>
+					<tr>
+						<td><input type="submit" name="CMD" value="GetAllParameters"></td>
+						<td>ID as integer</td>
+						<td>string</td>
+						<td>Returns a list of all parameters (one per line)</td>
+					</tr>
+				</table>
+			</form>
+		</center>
+		
+	</body>
+	
+</html>

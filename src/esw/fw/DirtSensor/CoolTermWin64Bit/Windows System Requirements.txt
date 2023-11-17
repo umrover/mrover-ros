@@ -1,0 +1,19 @@
+Operating System:
+-----------------
+- Windows 7 SP1
+- Windows 8.1
+- Windows 10
+- Windows 11
+32-bit and 64-bit versions of Windows are supported.
+
+CoolTerm for Windows is a portable application and can be installed anywhere on your system.
+
+Note to Windows 7 and Windows 8.1 users:
+----------------------------------------
+CoolTerm requires the Visual C++ Redistributable for Visual Studio 2015 from Microsoft, which is distributed automatically with Windows Update and included with Windows 10. If you don't receive automatic updates, you can download it directly from Microsoft here:
+
+https://www.microsoft.com/en-us/download/details.aspx?id=48145
+
+Additional updates to this redistributable may be available from Microsoft here:
+
+https://www.microsoft.com/en-us/download/details.aspx?id=53587
