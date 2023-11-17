@@ -70,7 +70,7 @@ namespace mrover {
         void SetStop();
 
     private:
-        moteus::Controller mController{{}};
+        moteus::Controller mController{moteus::Controller::Options{}};
         double mMeasuredEffort{};
 
         // Function to map throttle to velocity

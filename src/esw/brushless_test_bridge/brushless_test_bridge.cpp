@@ -12,22 +12,25 @@ int main(int argc, char** argv) {
 
     // To get it to run:
     // - ./fdcanusb_daemon -F -v /dev/fdcanusb vcan0
+    //  On laptop:
     // - sudo ip link set vcan0 up
+    //  On Jetson:
+    // - sudo ip link set can0 up type can bitrate 500000 dbitrate 1000000 berr-reporting on fd on restart-ms 100
     // - rosparam load config/esw_devboard.yaml
     // - rosrun mrover can_driver_node _interface:=vcan0
     // - roslaunch brushless_test.launch
 
     auto brushlessController = std::make_unique<mrover::BrushlessController>(nh, "jetson", "devboard");
 
-    int count = -100;
-    ros::Rate rate{2};
+    int count = 0;
+    ros::Rate rate{100};
+    std::array<float, 4> positions = {1.0, 2.0, 3.0, 4.0};
     while (ros::ok()) {
         // Throttle test
-        //brushlessController->setDesiredThrottle(mrover::Percent{(float) count / 100.0});
+        //brushlessController->setDesiredThrottle(mrover::Percent{((float) count) / 500.0});
         //brushlessController->setDesiredVelocity(mrover::RadiansPerSecond{10.0});
-        brushlessController->setDesiredPosition(mrover::Radians{(float) count / 10.0});
+        brushlessController->setDesiredPosition(mrover::Radians{positions.at(count / 400)});
         count++;
-        if (count == 101) break;
         ros::spinOnce();
         rate.sleep();
     }
