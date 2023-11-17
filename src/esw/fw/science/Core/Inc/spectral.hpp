@@ -26,9 +26,14 @@ namespace mrover {
 
         uint16_t get_channel_data(uint8_t channel);
 
+        bool is_error();
+
         void init();
 
     private:
+        bool m_error{};
+        bool m_initialized{};
+
         std::shared_ptr<SMBus> m_i2c_bus;
         std::shared_ptr<I2CMux> m_i2c_mux;
         uint8_t m_i2c_mux_channel;
