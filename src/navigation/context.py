@@ -10,7 +10,7 @@ import pymap3d
 import rospy
 import tf2_ros
 from geometry_msgs.msg import Twist
-from mrover.msg import Waypoint, GPSWaypoint, EnableAuton, WaypointType, GPSPointList
+from mrover.msg import Waypoint, GPSWaypoint, AutonCommand, WaypointType, GPSPointList
 from std_msgs.msg import Time, Bool
 from visualization_msgs.msg import Marker
 
@@ -176,7 +176,9 @@ def convert_gps_to_cartesian(waypoint: GPSWaypoint) -> Tuple[Waypoint, SE3]:
     # navigation algorithmns currently require all coordinates to have zero as the z coordinate
     odom[2] = 0
 
-    return Waypoint(fiducial_id=waypoint.id, tf_id=f"course{waypoint.id}", type=waypoint.type), SE3(position=odom)
+    return Waypoint(fiducial_id=waypoint.tag_id, tf_id=f"course{waypoint.tag_id}", type=waypoint.type), SE3(
+        position=odom
+    )
 
 
 def convert_cartesian_to_gps(coordinate: np.ndarray) -> GPSWaypoint:
@@ -189,7 +191,7 @@ def convert_cartesian_to_gps(coordinate: np.ndarray) -> GPSWaypoint:
     return GPSWaypoint(lat, lon, WaypointType(val=WaypointType.NO_SEARCH), 0)
 
 
-def convert_and_get_course(ctx: Context, data: EnableAuton) -> Course:
+def convert_and_get_course(ctx: Context, data: AutonCommand) -> Course:
     waypoints = [convert_gps_to_cartesian(waypoint) for waypoint in data.waypoints]
     return setup_course(ctx, waypoints)
 
@@ -202,6 +204,7 @@ class Context:
     vis_publisher: rospy.Publisher
     course_listener: rospy.Subscriber
     stuck_listener: rospy.Subscriber
+    auton_command_listener: rospy.Subscriber
 
     # Use these as the primary interfaces in states
     course: Optional[Course]
@@ -221,7 +224,7 @@ class Context:
         self.vel_cmd_publisher = rospy.Publisher("cmd_vel", Twist, queue_size=1)
         self.vis_publisher = rospy.Publisher("nav_vis", Marker, queue_size=1)
         self.search_point_publisher = rospy.Publisher("search_path", GPSPointList, queue_size=1)
-        self.enable_auton_service = rospy.Service("enable_auton", mrover.srv.PublishEnableAuton, self.recv_enable_auton)
+        self.auton_command_listener = rospy.Subscriber("auton/command", AutonCommand, self.auton_command_callback)
         self.stuck_listener = rospy.Subscriber("nav_stuck", Bool, self.stuck_callback)
         self.course = None
         self.rover = Rover(self, False, "")
@@ -232,13 +235,11 @@ class Context:
         self.odom_frame = rospy.get_param("odom_frame")
         self.rover_frame = rospy.get_param("rover_frame")
 
-    def recv_enable_auton(self, req: mrover.srv.PublishEnableAutonRequest) -> mrover.srv.PublishEnableAutonResponse:
-        enable_msg = req.enableMsg
-        if enable_msg.enable:
-            self.course = convert_and_get_course(self, enable_msg)
+    def auton_command_callback(self, enableMsg: AutonCommand) -> None:
+        if enableMsg.is_enabled:
+            self.course = convert_and_get_course(self, enableMsg)
         else:
             self.disable_requested = True
-        return mrover.srv.PublishEnableAutonResponse(True)
 
     def stuck_callback(self, msg: Bool):
         self.rover.stuck = msg.data
