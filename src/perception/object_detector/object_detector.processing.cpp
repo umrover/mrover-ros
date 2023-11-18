@@ -1,6 +1,6 @@
 #include "object_detector.hpp"
 
-#include "inferenceWrapper.hpp"
+#include "inference_wrapper.hpp"
 #include <opencv2/core/mat.hpp>
 #include <opencv2/highgui.hpp>
 #include <random>

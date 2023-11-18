@@ -5,8 +5,8 @@
 
 #include <NvInfer.h>
 
-#include "cudaWrapper.cuh"
-#include "ioHelper.cuh"
+#include "cuda_raii.cuh"
+#include "logger.cuh"
 
 using nvinfer1::ICudaEngine;
 using nvinfer1::IExecutionContext;
