@@ -18,9 +18,8 @@
                     style="width: auto; height: 70%; display: inline-block" />
             </div>
         </div>
-        <!-- <div class="shadow p-3 rounded data" :style="`background-color: {{nav_state_color}}`"> -->
         <div :class="['shadow p-3 rounded data', ledColor]">
-            <h2>Nav State: {{ nav_state }}</h2>
+            <h2>Nav State: {{ navState }}</h2>
             <div style="display: inline-block;">
                 <CameraFeed></CameraFeed>
             </div>
@@ -97,8 +96,6 @@ export default defineComponent({
 
     data() {
         return {
-            // websocket: new WebSocket("ws://localhost:8000/ws/gui"),
-
             // Default coordinates are at MDRS
             odom: {
                 latitude_deg: 38.4060250,
@@ -111,6 +108,8 @@ export default defineComponent({
             ledColor: "bg-danger", //red
 
             stuck_status: false,
+
+            navState: "OffState",
             
             moteusState: {
                 name: [] as string[],
@@ -134,15 +133,6 @@ export default defineComponent({
             autonEnabled: "autonEnabled",
             teleopEnabled: "teleopEnabled"
         }),
-
-        nav_state: function() {
-            if(this.ledColor == "bg-success" || this.ledColor == "bg-white") {
-                return "DoneState";
-            }
-            else {
-                return "Not In DoneState";
-            }
-        } 
     },
 
     watch: {
@@ -176,51 +166,19 @@ export default defineComponent({
                 else if(msg.green) this.ledColor = "blink"; //blinking green
                 else if(msg.blue) this.ledColor = "bg-primary"; //blue
             }
+            else if(msg.type == "nav_state") {
+                this.navState = msg.state;
+            }
+            else if(msg.type == "nav_sat_fix") {
+                this.odom.latitude_deg = msg.latitude;
+                this.odom.longitude_deg = msg.longitude;
+            }
         }
     },
 
     beforeUnmount: function () {
         this.ledColor = "bg-white";
     },
-
-    mounted() {
-        this.$store.dispatch('websocket/setupWebSocket');
-    },
-
-    // created: function () {
-    //     this.websocket.onmessage = (event) => {
-    //         const msg = JSON.parse(event.data)
-    //         if (msg.type == "joint_state") {
-    //             this.jointState.name = msg.name;
-    //             this.jointState.position = msg.position;
-    //             this.jointState.velocity = msg.velocity;
-    //             this.jointState.effort = msg.effort;
-    //         }
-    //         else if(msg.type == "drive_moteus") {
-    //             let index = this.moteusState.name.findIndex((n) => n === msg.name);
-    //             if(this.moteusState.name.length == 6 || index != -1) {
-    //                 //if all motors are in table or there's an update to one before all are in
-    //                 if (index !== -1) {
-    //                     this.moteusState.state[index] = msg.state;
-    //                     this.moteusState.error[index] = msg.error;
-    //                 }
-    //                 else {
-    //                     console.log("Invalid arm moteus name: " + msg.name);
-    //                 }
-    //             }
-    //             else {
-    //                 this.moteusState.name.push(msg.name);
-    //                 this.moteusState.state.push(msg.state);
-    //                 this.moteusState.error.push(msg.error);
-    //             }
-    //         }
-    //         else if(msg.type == "led") {
-    //             if(msg.red) this.ledColor = "bg-danger"; //red
-    //             else if(msg.green) this.ledColor = "blink"; //blinking green
-    //             else if(msg.blue) this.ledColor = "bg-primary"; //blue
-    //         }
-    //     }
-    // },
 });
 </script>
   

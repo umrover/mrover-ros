@@ -2,10 +2,10 @@ import json
 from channels.generic.websocket import JsonWebsocketConsumer
 import rospy
 from std_srvs.srv import SetBool, Trigger
-from mrover.msg import PDB, ControllerState, AutonCommand, GPSWaypoint, LED
+from mrover.msg import PDB, ControllerState, AutonCommand, GPSWaypoint, LED, StateMachineStateUpdate
 from mrover.srv import EnableDevice
 from std_msgs.msg import String, Bool
-from sensor_msgs.msg import JointState, Joy, NavSatFix
+from sensor_msgs.msg import JointState, NavSatFix
 from geometry_msgs.msg import Twist
 from math import copysign
 import typing
@@ -17,8 +17,7 @@ def deadzone(magnitude: float, threshold: float) -> float:
         temp_mag = 0
     else:
         temp_mag = (temp_mag - threshold) / (1 - threshold)
-
-        return copysign(temp_mag, magnitude)
+    return copysign(temp_mag, magnitude)
 
 def quadratic(val: float) -> float:
     return copysign(val**2, val)
@@ -33,29 +32,31 @@ class GUIConsumer(JsonWebsocketConsumer):
         # self.calibration_sub = rospy.Subscriber('/calibration_checkbox', Calibrated, self.calibration_checkbox_callback)
         self.laser_service = rospy.ServiceProxy("enable_mosfet_device",SetBool )
         self.gps_fix = rospy.Subscriber('/gps/fix', NavSatFix, self.gps_fix_callback)
-        # rospy.wait_for_service("enable_limit_switches")
         # self.limit_switch_service = rospy.ServiceProxy("enable_limit_switches", EnableDevice)
         self.joint_state_sub = rospy.Subscriber('/drive_joint_data', JointState, self.joint_state_callback)
         self.calibrate_service = rospy.ServiceProxy("arm_calibrate", Trigger)
-        self.joy_sub = rospy.Subscriber('/joystick', Joy, self.handle_joystick_message)
         self.led_sub = rospy.Subscriber("/led", LED, self.led_callback)
+        self.nav_state_sub = rospy.Subscriber("/nav_state", StateMachineStateUpdate, self.nav_state_callback)
 
 
     def disconnect(self, close_code):
         self.pdb_sub.unregister()
         self.arm_moteus_sub.unregister()
+        self.drive_moteus_sub.unregister()
         # self.calibration_sub.unregister()
         self.joint_state_sub.unregister()
-        self.joy_sub.unregister()
         self.gps_fix.unregister()
+        self.led_sub.unregister()
+        self.nav_state_sub.unregister()
 
     def receive(self, text_data):
         """
         Receive message from WebSocket.
         """
-
         message = json.loads(text_data)
-        if message["type"] == "enable_decive_srv":
+        if message["type"] == "joystick_values":
+            self.handle_joystick_message(message)
+        elif message["type"] == "enable_decive_srv":
             self.enable_device_callback(message)
         elif message["type"] == "disable_auton_led":
             self.disable_auton_led()
@@ -79,7 +80,7 @@ class GUIConsumer(JsonWebsocketConsumer):
         twist_pub = rospy.Publisher("/cmd_vel", Twist, queue_size=100)
 
         # Super small deadzone so we can safely e-stop with dampen switch
-        dampen = deadzone(msg.axes[mappings["dampen"]], 0.01)
+        dampen = deadzone(msg["axes"][mappings["dampen"]], 0.01)
 
         # Makes dampen [0,1] instead of [-1,1]
         # negative sign required to drive forward by default instead of backward
@@ -87,7 +88,7 @@ class GUIConsumer(JsonWebsocketConsumer):
         dampen = -1 * ((-1 * dampen) + 1) / 2
 
         linear = deadzone(
-            msg.axes[mappings["forward_back"]] * drive_config["forward_back"]["multiplier"], 0.05
+            msg["axes"][mappings["forward_back"]] * drive_config["forward_back"]["multiplier"], 0.05
         )
 
         # Convert from [0,1] to [0, max_wheel_speed] and apply dampen
@@ -96,13 +97,13 @@ class GUIConsumer(JsonWebsocketConsumer):
         # Deadzones for each axis
         left_right = (
             deadzone(
-                msg.axes[mappings["left_right"]] * drive_config["left_right"]["multiplier"], 0.4
+                msg["axes"][mappings["left_right"]] * drive_config["left_right"]["multiplier"], 0.4
             )
             if drive_config["left_right"]["enabled"]
             else 0
         )
         twist = quadratic(
-            deadzone(msg.axes[mappings["twist"]] * drive_config["twist"]["multiplier"], 0.1)
+            deadzone(msg["axes"][mappings["twist"]] * drive_config["twist"]["multiplier"], 0.1)
         )
 
         angular = twist + left_right
@@ -121,11 +122,11 @@ class GUIConsumer(JsonWebsocketConsumer):
         self.send(text_data=json.dumps({
             'type': 'joystick',
             'left_right':left_right,
-            'forward_back': msg.axes[mappings["forward_back"]],
+            'forward_back': msg["axes"][mappings["forward_back"]],
             'twist': twist,
             'dampen': dampen,
-            'pan': msg.axes[mappings["pan"]],
-            'tilt': msg.axes[mappings["tilt"]],
+            'pan': msg["axes"][mappings["pan"]],
+            'tilt': msg["axes"][mappings["tilt"]],
             }))
 
     def pdb_callback(self, msg):
@@ -216,9 +217,7 @@ class GUIConsumer(JsonWebsocketConsumer):
         for w in msg['waypoints']:
             waypoints.append(GPSWaypoint(w['latitude_degrees'], w['longitude_degrees'], w['tag_id'], w['type']))
         
-        rospy.logerr(waypoints)
         message = AutonCommand(msg['is_enabled'], waypoints)
-        rospy.logerr(message)
         cmd_pub.publish(message)
 
     def send_teleop_enabled(self, msg):
@@ -232,4 +231,10 @@ class GUIConsumer(JsonWebsocketConsumer):
             'green': msg.green,
             'blue': msg.blue,
             'is_blinking': msg.is_blinking
+        }))
+
+    def nav_state_callback(self, msg):
+        self.send(text_data=json.dumps({
+            'type': 'nav_state',
+            'state': msg.state
         }))

@@ -9,7 +9,7 @@
             </div>
             <div class="form-group col-md-6">
               <label for="waypointid">ID:</label>
-              <input class="form-control" id="waypointid" v-model="id" type="number" max="249" min="-1" step="1">
+              <input class="form-control" id="waypointid" v-model="id" type="number" max="249" min="0" step="1">
             </div>
           </div>
 
@@ -70,10 +70,11 @@
           </div>
         </div>
         <div class="box">
-          <div class="all-waypoints">
-            <h4 class="waypoint-headers">All Waypoints</h4>
+          <div class="waypoint-header">
+            <h4>All Waypoints</h4>
             <button class="btn btn-primary" @click="clearWaypoint">Clear Waypoints</button>
           </div>
+          <div class="waypoints">
           <!-- <draggable
             v-model="storedWaypoints"
             class="dragArea"
@@ -90,6 +91,7 @@
               @add="addItem($event)"
             />
           <!-- </draggable> -->
+          </div>
         </div>
       </div>
       <div class="col-wrap" style="left: 50%">
@@ -280,7 +282,7 @@
       return {
         // websocket: new WebSocket("ws://localhost:8000/ws/gui"),
         name: "Waypoint",
-        id: "-1",
+        id: "0",
         type: 1,
         odom_format_in: "DM",
         input: {
@@ -326,12 +328,12 @@
         route: [],
   
         autonButtonColor: "btn-danger",
-        waitingForNav: false,
   
         roverStuck: false,
       };
     },
     computed: {
+      ...mapState('websocket', ['message']),
       ...mapGetters("autonomy", {
         autonEnabled: "autonEnabled",
         teleopEnabled: "teleopEnabled",
@@ -425,28 +427,8 @@
       this.autonEnabled = false;
       // this.sendAutonCommand();
     },
-
-    mounted: function() {
-      console.log(this.$store); // Check the store structure
-      console.log(this.$store.state.websocket); // Check the 'websocket' module
-      console.log(this.sendMessage); // Check if 'sendMessage' is available
-    },
   
     created: function () {
-
-      // this.websocket.onmessage = (event) => {
-      //   const msg = JSON.parse(event.data);
-      //   if(msg.type == 'nav_state'){
-      //     // If still waiting for nav...
-      //     if ((msg.state == "OffState" && this.autonEnabled) ||
-      //         (msg.state !== "OffState" && !this.autonEnabled)) {
-      //       return;
-      //     }
-    
-      //     this.waitingForNav = false;
-      //     this.autonButtonColor = this.autonEnabled ? "btn-success" : "btn-danger";
-      //   }
-      // };
       // Make sure local odom format matches vuex odom format
       this.odom_format_in = this.odom_format;
   
@@ -476,8 +458,20 @@
       ...mapMutations("map", {
         setOdomFormat: "setOdomFormat",
       }),
+
+      message(msg) {
+        if(msg.type == 'nav_state'){
+          // If still waiting for nav...
+          if ((msg.state == "OffState" && this.autonEnabled) ||
+              (msg.state !== "OffState" && !this.autonEnabled)) {
+            return;
+          }
+          this.autonButtonColor = this.autonEnabled ? "btn-success" : "btn-danger";
+        }
+      },
   
       sendAutonCommand() {
+        console.log(this.autonEnabled)
         if(this.autonEnabled) {
           this.sendMessage({
             type: "auton_command",
@@ -628,7 +622,6 @@
         this.setAutonMode(val);
         // This will trigger the yellow "waiting for nav" state of the checkbox
         this.autonButtonColor = "btn-warning";
-        this.waitingForNav = true;
         this.sendAutonCommand();
       },
   
@@ -675,23 +668,27 @@
     /* min-height: 16.3vh; */
   }
   
-  .all-waypoints {
+  .waypoint-header {
     display: inline-flex;
     align-items: center;
-    height: 100%;
-    /* overflow-y: scroll; */
+    /* height: 100%; */
   }
   
-  .all-waypoints button {
+  .waypoint-header button {
     margin: 5px;
+  }
+
+  .waypoint-header h4 {
+    margin: 5px 0px 0px 5px;
+  }
+
+  .waypoints {
+    height: 30%;
+    overflow-y: hidden;
   }
   
   .wp-input p {
     display: inline;
-  }
-  
-  .waypoint-headers {
-    margin: 5px 0px 0px 5px;
   }
   
   /* Grid Area Definitions */

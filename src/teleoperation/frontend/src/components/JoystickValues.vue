@@ -32,11 +32,8 @@ import { mapState } from 'vuex';
   }
   
   export default {
-    inject: ['websocket'],
     data() {
       return {
-        // websocket: inject("webSocketService") as WebSocket,
-        // websocket: new WebSocket('ws://localhost:8000/ws/gui'),
         joystick_mappings: {},
         joystick_values: {
           left_right: 0,
@@ -48,29 +45,7 @@ import { mapState } from 'vuex';
         } as JoystickValues,
       };
     },
-  
-    // created: function () {
-    //     this.websocket.onmessage = (msg) => {
-    //       console.log("here")
-    //       if (msg.type == "joystick") {
-    //         this.joystick_values.left_right = msg.left_right;
-    //         this.joystick_values.forward_back = msg.forward_back;
-    //         this.joystick_values.twist = msg.twist;
-    //         this.joystick_values.dampen = msg.dampen;
-    //         this.joystick_values.pan = msg.pan;
-    //         this.joystick_values.tilt = msg.tilt;
-    //       }
-    //     }
-    //   // get joystick mappings
-    // //   let a = new ROSLIB.Param({
-    // //     ros: this.$ros,
-    // //     name: "teleoperations/joystick_mappings",
-    // //   });
-    // //   a.get((value) => {
-    // //     this.joystick_mappings = value;
-    // //   });
 
-    // },
     computed: {
       ...mapState('websocket', ['message'])
     },
