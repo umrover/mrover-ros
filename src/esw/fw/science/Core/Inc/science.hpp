@@ -107,6 +107,8 @@ namespace mrover {
         			m_spectral_sensors.at(i).update_channel_data(j);
 					spectral_data.spectrals.at(i).data.at(j) =
 							m_spectral_sensors.at(i).get_channel_data(j);
+					spectral_data.spectrals.at(i).error =
+							m_spectral_sensors.at(i).is_error();
         		}
         	}
 
