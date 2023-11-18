@@ -5,6 +5,7 @@
 #include <NvInferRuntimeBase.h>
 #include <NvOnnxParser.h>
 #include <cuda_runtime_api.h>
+#include <opencv4/opencv2/core/hal/interface.h>
 
 #include "ioHelper.cuh"
 
@@ -132,6 +133,11 @@ namespace mrover {
         ROS_INFO_STREAM(static_cast<void*>(mOutputTensor.data));
         //return Parser(outputTensor).parseTensor();
     }
+
+    cv::Mat Inference::getOutputTensor() {
+        return mOutputTensor;
+    }
+
 
     void Inference::launchInference(cv::Mat const& input, cv::Mat const& output) {
         assert(!input.empty());

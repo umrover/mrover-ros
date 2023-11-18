@@ -1,6 +1,7 @@
 #include "inferenceWrapper.hpp"
 
 #include <NvInferRuntimeBase.h>
+#include <opencv4/opencv2/core/mat.hpp>
 
 #include "inference.cuh"
 
@@ -30,6 +31,10 @@ namespace mrover {
 
     void InferenceWrapper::doDetections(const cv::Mat& img) {
         mInference->doDetections(img);
+    }
+
+    cv::Mat InferenceWrapper::getOutputTensor() {
+        return mInference->getOutputTensor();
     }
 
 } // namespace mrover

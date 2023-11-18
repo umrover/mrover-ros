@@ -60,6 +60,8 @@ namespace mrover {
 
     public:
         void doDetections(const cv::Mat& img);
+
+        cv::Mat getOutputTensor();
     };
 
 } // namespace mrover

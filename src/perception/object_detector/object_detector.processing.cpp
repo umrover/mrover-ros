@@ -1,6 +1,9 @@
 #include "object_detector.hpp"
 
 #include "inferenceWrapper.hpp"
+#include <opencv2/core/mat.hpp>
+#include <opencv2/highgui.hpp>
+#include <random>
 
 namespace mrover {
 
@@ -14,13 +17,171 @@ namespace mrover {
 
         cv::resize(imageView, sizedImage, cv::Size(640, 640));
         cv::cvtColor(sizedImage, sizedImage, cv::COLOR_BGRA2BGR);
+        cv::Mat tempImage = sizedImage.clone();
         sizedImage.convertTo(sizedImage, CV_32FC3);
         //cv::Mat blob = cv::dnn::blobFromImage(sizedImage);
         //std::cout << finalMat.elemSize() * 640 * 640 << std::endl;
         //std::cout << finalMat.data << " awdasda" << std::endl;
         mInferenceWrapper.doDetections(sizedImage);
+
+        cv::Mat output = mInferenceWrapper.getOutputTensor();
+
+        int rows = output.rows;
+        int dimensions = output.cols;
+
+        bool yolov8 = false;
+        // yolov5 has an output of shape (batchSize, 25200, 85) (Num classes + box[x,y,w,h] + confidence[c])
+        // yolov8 has an output of shape (batchSize, 84,  8400) (Num classes + box[x,y,w,h])
+        if (dimensions > rows) // Check if the shape[2] is more than shape[1] (yolov8)
+        {
+            yolov8 = true;
+            rows = output.cols;
+            dimensions = output.rows;
+
+            output = output.reshape(1, dimensions);
+            cv::transpose(output, output);
+        }
+        float* data = (float*) output.data;
+
+        //Model Information
+        float modelInputCols = 640;
+        float modelInputRows = 640;
+        float modelShapeWidth = 640;
+        float modelShapeHeight = 640;
+
+        float modelConfidenceThresholdl = 0.25;
+        float modelScoreThreshold = 0.45;
+        float modelNMSThreshold = 0.50;
+
+
+        float x_factor = modelInputCols / modelShapeWidth;
+        float y_factor = modelInputRows / modelShapeHeight;
+
+        std::vector<int> class_ids;
+        std::vector<float> confidences;
+        std::vector<cv::Rect> boxes;
+
+        for (int i = 0; i < rows; ++i) {
+            if (yolov8) {
+                float* classes_scores = data + 4;
+
+                cv::Mat scores(1, classes.size(), CV_32FC1, classes_scores);
+                cv::Point class_id;
+                double maxClassScore;
+
+                minMaxLoc(scores, 0, &maxClassScore, 0, &class_id);
+
+                if (maxClassScore > modelScoreThreshold) {
+                    confidences.push_back(maxClassScore);
+                    class_ids.push_back(class_id.x);
+
+                    float x = data[0];
+                    float y = data[1];
+                    float w = data[2];
+                    float h = data[3];
+
+                    int left = int((x - 0.5 * w) * x_factor);
+                    int top = int((y - 0.5 * h) * y_factor);
+
+                    int width = int(w * x_factor);
+                    int height = int(h * y_factor);
+
+                    boxes.push_back(cv::Rect(left, top, width, height));
+                }
+            } else // yolov5
+            {
+                float confidence = data[4];
+
+                if (confidence >= modelConfidenceThresholdl) {
+                    float* classes_scores = data + 5;
+
+                    cv::Mat scores(1, classes.size(), CV_32FC1, classes_scores);
+                    cv::Point class_id;
+                    double max_class_score;
+
+                    minMaxLoc(scores, 0, &max_class_score, 0, &class_id);
+
+                    if (max_class_score > modelScoreThreshold) {
+                        confidences.push_back(confidence);
+                        class_ids.push_back(class_id.x);
+
+                        float x = data[0];
+                        float y = data[1];
+                        float w = data[2];
+                        float h = data[3];
+
+                        int left = int((x - 0.5 * w) * x_factor);
+                        int top = int((y - 0.5 * h) * y_factor);
+
+                        int width = int(w * x_factor);
+                        int height = int(h * y_factor);
+
+                        boxes.push_back(cv::Rect(left, top, width, height));
+                    }
+                }
+            }
+
+            data += dimensions;
+        }
+
+        std::vector<int> nms_result;
+        cv::dnn::NMSBoxes(boxes, confidences, modelScoreThreshold, modelNMSThreshold, nms_result);
+
+        std::vector<Detection> detections{};
+        for (unsigned long i = 0; i < nms_result.size(); ++i) {
+            int idx = nms_result[i];
+
+            Detection result;
+            result.class_id = class_ids[idx];
+            result.confidence = confidences[idx];
+
+            std::random_device rd;
+            std::mt19937 gen(rd());
+            std::uniform_int_distribution<int> dis(100, 255);
+            result.color = cv::Scalar(dis(gen),
+                                      dis(gen),
+                                      dis(gen));
+
+            result.className = classes[result.class_id];
+            result.box = boxes[idx];
+
+            detections.push_back(result);
+        }
+        /*
+        cv::rectangle(tempImage, detections[0].box, cv::Scalar(0, 0, 0), 1, cv::LINE_8, 0);
+
+        //Put the text on the image
+        cv::Point text_position(80, 80);
+        int font_size = 1;
+        cv::Scalar font_Color(0, 0, 0);
+        int font_weight = 2;
+        putText(tempImage, detections[0].className, text_position, cv::FONT_HERSHEY_COMPLEX, font_size, font_Color, font_weight); //Putting the text in the matrix//
+        */
+
+        //Show the image
+        cv::imshow("obj detector", tempImage);
+        cv::waitKey(1);
+        //Print the type of objected detected
+
+        std::cout << detections[0].class_id
+                  << " name" << std::endl;
     }
-    /*
+} // namespace mrover
+/*
+cv::rectangle(sizedImg, box, cv::Scalar(0, 0, 0), 1, cv::LINE_8, 0);
+
+            //Put the text on the image
+            cv::Point text_position(80, 80);
+            int font_size = 1;
+            cv::Scalar font_Color(0, 0, 0);
+            int font_weight = 2;
+            putText(sizedImg, msgData.object_type, text_position, cv::FONT_HERSHEY_COMPLEX, font_size, font_Color, font_weight); //Putting the text in the matrix//
+
+            //Show the image
+            cv::imshow("obj detector", sizedImg);
+            cv::waitKey(1);
+            //Print the type of objected detected
+            ROS_INFO(firstDetection.className.c_str());
     void ObjectDetectorNodelet::imageCallback(sensor_msgs::ImageConstPtr const& msg) {
         //Ensure a valid message was received
         assert(msg);
@@ -135,8 +296,8 @@ namespace mrover {
             // Publish to
         }
         */
-    //Look at yolov8 documentation for the output matrix
-    /*
+//Look at yolov8 documentation for the output matrix
+/*
          * TODO(percep/obj-detector):
          * 0. Google "OpenCV DNN example." View a couple of tutorials. Most will be in Python but the C++ API is similar.
          * 1. Use cv::dnn::blobFromImage to convert the image to a blob
@@ -145,4 +306,4 @@ namespace mrover {
          * 4. Publish the bounding boxes
          */
 
-} // namespace mrover
+// namespace mrover

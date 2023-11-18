@@ -16,6 +16,8 @@ namespace mrover {
         InferenceWrapper(std::string onnxModelPath, cv::Size modelInputShape, std::string classesTxtFile);
 
         void doDetections(cv::Mat const& img);
+
+        cv::Mat getOutputTensor();
     };
 
 } // namespace mrover

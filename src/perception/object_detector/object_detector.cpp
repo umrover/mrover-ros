@@ -7,7 +7,7 @@ namespace mrover {
     void ObjectDetectorNodelet::onInit() {
         mNh = getMTNodeHandle();
         mPnh = getMTPrivateNodeHandle();
-        mInferenceWrapper = InferenceWrapper("./yolov8s.onnx", cv::Size(640, 640), "");
+        mInferenceWrapper = InferenceWrapper("//home//jabra//Desktop//Rover//yolov8s.onnx", cv::Size(640, 640), "");
 
         //inference = Inference("//home//jabra//Desktop//Rover//yolov8s.onnx", cv::Size(640, 640), "");
         //read ONNX file into this mNet, YOLOV8, second smallest one
