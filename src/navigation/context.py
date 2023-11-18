@@ -11,13 +11,12 @@ import rospy
 import tf2_ros
 from geometry_msgs.msg import Twist
 from mrover.msg import Waypoint, GPSWaypoint, EnableAuton, WaypointType, GPSPointList
-from shapely.geometry import Point
 from std_msgs.msg import Time, Bool
-from util.SE3 import SE3
-from util.ros_utils import get_rosparam
 from visualization_msgs.msg import Marker
 
-from drive import DriveController
+from util.SE3 import SE3
+
+from navigation.drive import DriveController
 
 TAG_EXPIRATION_TIME_SECONDS = 60
 
@@ -162,7 +161,7 @@ def setup_course(ctx: Context, waypoints: List[Tuple[Waypoint, SE3]]) -> Course:
     return Course(ctx=ctx, course_data=mrover.msg.Course([waypoint[0] for waypoint in waypoints]))
 
 
-def convert_gps_to_cartesian(waypoint: GPSWaypoint) -> Waypoint:
+def convert_gps_to_cartesian(waypoint: GPSWaypoint) -> Tuple[Waypoint, SE3]:
     """
     Converts a GPSWaypoint into a "Waypoint" used for publishing to the CourseService.
     """

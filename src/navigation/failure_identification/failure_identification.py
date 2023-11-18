@@ -10,12 +10,12 @@ import rospy
 from geometry_msgs.msg import Twist
 from mrover.msg import MotorsStatus
 from nav_msgs.msg import Odometry
-from pandas import DataFrame
 from smach_msgs.msg import SmachContainerStatus
 from std_msgs.msg import Bool
+
 from util.ros_utils import get_rosparam
 
-from watchdog import WatchDog
+from navigation.failure_identification.watchdog import WatchDog
 
 DATAFRAME_MAX_SIZE = get_rosparam("failure_identification/dataframe_max_size", 200)
 POST_RECOVERY_GRACE_PERIOD = get_rosparam("failure_identification/post_recovery_grace_period", 5.0)
@@ -28,7 +28,7 @@ class FailureIdentifier:
     """
 
     stuck_publisher: rospy.Publisher
-    _df: DataFrame
+    _df: pd.DataFrame
     watchdog: WatchDog
     actively_collecting: bool
     cur_cmd: Twist
@@ -164,7 +164,7 @@ class FailureIdentifier:
             cur_row[f"wheel_{wheel_num}_velocity"] = drive_status.joint_states.velocity[wheel_num]
 
         # update the data frame with the cur row
-        self._df = pd.concat([self._df, DataFrame([cur_row])])
+        self._df = pd.concat([self._df, pd.DataFrame([cur_row])])
 
         if len(self._df) == DATAFRAME_MAX_SIZE:
             self.write_to_csv()
