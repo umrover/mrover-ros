@@ -17,7 +17,10 @@ namespace mrover {
 
         cv::resize(imageView, sizedImage, cv::Size(640, 640));
         cv::cvtColor(sizedImage, sizedImage, cv::COLOR_BGRA2BGR);
-        cv::Mat tempImage = sizedImage.clone();
+
+        cv::imshow("sizedImage", sizedImage);
+        cv::waitKey(0);
+
         sizedImage.convertTo(sizedImage, CV_32FC3);
         //cv::Mat blob = cv::dnn::blobFromImage(sizedImage);
         //std::cout << finalMat.elemSize() * 640 * 640 << std::endl;
@@ -159,8 +162,6 @@ namespace mrover {
         */
 
         //Show the image
-        cv::imshow("obj detector", tempImage);
-        cv::waitKey(1);
         //Print the type of objected detected
 
         std::cout << detections[0].class_id
