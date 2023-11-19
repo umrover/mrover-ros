@@ -27,7 +27,6 @@ namespace mrover {
         Revolutions position_revs = std::clamp(position, mMinPosition, mMaxPosition);
         moteus::Controller::Options options;
         moteus::Controller controller{options};
-        controller.SetStop();
         moteus::PositionMode::Command command{
                 .position = position_revs.get(),
                 .velocity = 0.0,
