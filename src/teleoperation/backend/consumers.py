@@ -33,7 +33,7 @@ class GUIConsumer(JsonWebsocketConsumer):
         self.laser_service = rospy.ServiceProxy("laser_service",SetBool)
         # rospy.wait_for_service("enable_limit_switches")
         # self.limit_switch_service = rospy.ServiceProxy("enable_limit_switches", EnableDevice)
-        self.calibrate_service = rospy.ServiceProxy("calibrate_motors", Trigger)
+        # self.ra_mode_service = rospy.ServiceProxy("change_ra_mode", )
         self.arm_adjust_service = rospy.ServiceProxy("arm_adjust",AdjustMotor )
         self.gps_fix = rospy.Subscriber('/gps/fix', NavSatFix, self.gps_fix_callback)
         self.joint_state_sub = rospy.Subscriber('/drive_joint_data', JointState, self.joint_state_callback)
@@ -48,19 +48,23 @@ class GUIConsumer(JsonWebsocketConsumer):
         """
 
         message = json.loads(text_data)
-     
-        if message["type"] == "enable_decive_srv":
-            self.enable_device(message)
-        elif message["type"] == "disable_auton_led":
-            self.disable_auton_led(message)
-        elif message["type"] == "laser_service":
-            self.enable_laser(message)
-        elif message["type"] == "calibrate_motors":
-            self.calibrate_motors(message)
-        elif message["type"] == "arm_adjust":
-            self.arm_adjust(message)
-        elif message['type'] == "joystick_values":
-            self.handle_joystick_message(message)
+        try:
+            if message["type"] == "enable_decive_srv":
+                self.enable_device(message)
+            elif message["type"] == "disable_auton_led":
+                self.disable_auton_led(message)
+            elif message["type"] == "laser_service":
+                self.enable_laser(message)
+            elif message["type"] == "calibrate_motors":
+                self.calibrate_motors(message)
+            elif message["type"] == "arm_adjust":
+                self.arm_adjust(message)
+            elif message['type'] == "joystick_values":
+                self.handle_joystick_message(message)
+            elif message['type'] == "change_ra_mode":
+                self.handle_joystick_message(message)
+        except Exception as e:
+            rospy.logerr(e)
 
     def handle_joystick_message(self, msg):
         mappings = rospy.get_param("teleop/joystick_mappings")
@@ -164,14 +168,22 @@ class GUIConsumer(JsonWebsocketConsumer):
             print(f"Service call failed: {e}")
 
     def calibrate_motors(self,msg):
-        try:
-            result = self.calibrate_service()
-            self.send(text_data=json.dumps({
-                'type': 'calibrate_motors',
-                'result': result.success
-            }))
-        except rospy.ServiceException as e:
-            print(f"Service call failed: {e}")
+        joints = ["joint_a","joint_b","joint_c","joint_de","allen_key","gripper"]
+        arm_calibrate = "arm_calibrate_"
+        fail = []
+        for joint in joints:
+            name = arm_calibrate+joint
+            self.calibrate_service = rospy.ServiceProxy(name, Trigger)
+            try:
+                result = self.calibrate_service(),
+                if not result.sucess:
+                    fail.append(joint)
+            except rospy.ServiceException as e:
+                print(f"Service call failed: {e}")
+        self.send(text_data=json.dumps({
+                    'type': 'calibrate_motors',
+                    'result': fail
+                }))
     
     def arm_adjust(self,msg):
         try:

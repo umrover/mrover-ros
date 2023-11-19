@@ -7,28 +7,17 @@
             <!-- Change to radio buttons in the future -->
             <input ref="arm-enabled" v-model="arm_mode" type="radio" :name="'Arm Enabled'" value="arm_disabled" />
             Arm Disabled
-            <input ref="open-loop-enabled" v-model="arm_mode" type="radio" :name="'Open Loop Enabled'" value="open_loop" />
+            <input ref="ik" v-model="arm_mode" type="radio" :name="'IK'" value="ik" />
             Open Loop
-            <!-- Commented until servoing works :( -->
-            <!-- <input
-              ref="servo-enabled"
-              v-model="arm_mode"
-              type="radio"
-              :name="'Servo'"
-              value="servo"
-            />
-            Servo -->
+            <input ref="position" v-model="arm_mode" type="radio" :name="'Position'" value="position" />
+            Position
+            <input ref="velocity" v-model="arm_mode" type="radio" :name="'Velocity'" value="velocity" />
+            Velocity
+            <input ref="throttle" v-model="arm_mode" type="radio" :name="'Throttle'" value="throttle" />
+            Throttle
+           
         </div>
-        <!-- Commented until joint locking is implemented -->
-        <!-- <div class="controls-flex">
-            <h4>Joint Locks</h4>
-            <Checkbox ref="A" :name="'A'" @toggle="updateJointsEnabled(0, $event)" />
-            <Checkbox ref="B" :name="'B'" @toggle="updateJointsEnabled(1, $event)" />
-            <Checkbox ref="C" :name="'C'" @toggle="updateJointsEnabled(2, $event)" />
-            <Checkbox ref="D" :name="'D'" @toggle="updateJointsEnabled(3, $event)" />
-            <Checkbox ref="E" :name="'E'" @toggle="updateJointsEnabled(4, $event)" />
-            <Checkbox ref="F" :name="'F'" @toggle="updateJointsEnabled(5, $event)" />
-          </div> -->
+       
         <div class="controls-flex">
             <h4>Misc. Controls</h4>
             <ToggleButton id="arm_laser" :current-state="laser_enabled" label-enable-text="Arm Laser On"
@@ -40,7 +29,7 @@
         </div>
         <div class="controls-flex">
             <h4>Calibration</h4>
-            <CalibrationCheckbox name="Joint B Calibration" joint_name="joint_b" calibrate_topic="ra_is_calibrated" />
+            <CalibrationCheckbox name="All Joints Calibration"/>
             <JointAdjust :options="[
                 { name: 'joint_a', option: 'Joint A' },
                 { name: 'joint_b', option: 'Joint B' },
@@ -79,11 +68,11 @@ export default defineComponent({
         };
     },
 
-    // watch: {
-    //     arm_mode: function (newMode, oldMode) {
-    //         this.updateArmMode(newMode, oldMode);
-    //     }
-    // },
+    watch: {
+        arm_mode: function (newMode, oldMode) {
+            this.updateArmMode(newMode, oldMode);
+        }
+    },
 
     // beforeDestroy: function () {
     //     this.updateArmMode("arm_disabled", this.arm_mode);
@@ -109,11 +98,11 @@ export default defineComponent({
     //         messageType: "sensor_msgs/Joy"
     //     });
    
-    //     this.ra_mode_service = new ROSLIB.Service({
-    //         ros: this.$ros,
-    //         name: "change_ra_mode",
-    //         serviceType: "mrover/ChangeArmMode"
-    //     });
+        // this.ra_mode_service = new ROSLIB.Service({
+        //     ros: this.$ros,
+        //     name: "change_ra_mode",
+        //     serviceType: "mrover/ChangeArmMode"
+        // });
     //     this.jointlock_pub = new ROSLIB.Topic({
     //         ros: this.$ros,
     //         name: "/joint_lock",
@@ -150,18 +139,18 @@ export default defineComponent({
     // },
 
     methods: {
-    //     updateArmMode: function (newMode, oldMode) {
-    //         const armData = {
-    //             mode: newMode
-    //         };
-    //         var armcontrolsmsg = new ROSLIB.ServiceRequest(armData);
-    //         this.ra_mode_service.callService(armcontrolsmsg, (response) => {
-    //             if (!response.success) {
-    //                 this.arm_mode = oldMode;
-    //                 alert("Failed to change arm mode");
-    //             }
-    //         });
-    //     },
+        updateArmMode: function (newMode, oldMode) {
+            const armData = {
+                mode: newMode
+            };
+            var armcontrolsmsg = new ROSLIB.ServiceRequest(armData);
+            this.ra_mode_service.callService(armcontrolsmsg, (response) => {
+                if (!response.success) {
+                    this.arm_mode = oldMode;
+                    alert("Failed to change arm mode");
+                }
+            });
+        },
 
     //     updateJointsEnabled: function (jointnum, enabled) {
     //         this.joints_array[jointnum] = enabled;
@@ -182,7 +171,6 @@ export default defineComponent({
     //     },
         toggleArmLaser: function () {
             this.laser_enabled = !this.laser_enabled;
-            // console.log(this.laser_enabled)
             this.websocket.send(JSON.stringify({type:"laser_service", data:this.laser_enabled}))
             
          }
