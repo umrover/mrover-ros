@@ -55,7 +55,7 @@ namespace mrover {
             double gamma = 0;
 
             // position of end of second link
-            double x3 = ik_target.pose.position.x - LINK_CD * cos(gamma);
+            double x3 = ik_target.pose.position.x - LINK_CD * cos(gamma) + radius * sin(counter / 100.0);
             double z3 = ik_target.pose.position.z - LINK_CD * sin(gamma) + radius * sin(counter / 100.0);
 
             // double alpha = acos((pow(x3, 2) + pow(z3, 2) - pow(LINK_AB, 2) - pow(LINK_BC, 2)) / (2 * LINK_AB * LINK_BC));
