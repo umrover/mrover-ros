@@ -112,9 +112,10 @@ namespace mrover {
         		}
         	}
 
-        	osMutexAcquire(m_can_tx_mutex, osWaitForever);
+        	// TODO - MUTEXS ARE BREAKING CODE!!!! IDK WHY - PLEASE FIX
+//        	osMutexAcquire(m_can_tx_mutex, osWaitForever);
 			m_fdcan_bus.broadcast(OutBoundScienceMessage{spectral_data});
-			osMutexRelease(m_can_tx_mutex);
+//			osMutexRelease(m_can_tx_mutex);
         }
 
         void update_and_send_thermistor_and_auto_shutoff_if_applicable() {
