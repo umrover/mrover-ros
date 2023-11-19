@@ -2,53 +2,54 @@
 
 namespace mrover {
 
-    MotorsManager::MotorsManager(ros::NodeHandle& nh, const std::string& groupName, const std::vector<std::string>& controllerNames) {
-        motorGroupName = groupName;
-        motorNames = controllerNames;
+    using namespace std::chrono_literals;
+
+    MotorsManager::MotorsManager(ros::NodeHandle const& nh, std::string groupName, std::vector<std::string> controllerNames)
+        : mNh{nh},
+          mControllerNames{std::move(controllerNames)},
+          mGroupName{std::move(groupName)} {
+
         // Load motor controllers configuration from the ROS parameter server
         XmlRpc::XmlRpcValue controllersRoot;
         assert(nh.hasParam("motors/controllers"));
         nh.getParam("motors/controllers", controllersRoot);
         assert(controllersRoot.getType() == XmlRpc::XmlRpcValue::TypeStruct);
-        for (const std::string& name: controllerNames) {
-            assert(controllersRoot[name].hasMember("type") &&
-                   controllersRoot[name]["type"].getType() == XmlRpc::XmlRpcValue::TypeString);
-            std::string type = static_cast<std::string>(controllersRoot[name]["type"]);
+
+        for (std::string const& name: mControllerNames) {
+            auto type = xmlRpcValueToTypeOrDefault<std::string>(controllersRoot[name], "type");
             assert(type == "brushed" || type == "brushless");
 
+            // TODO: avoid hard coding Jetson here - can move into constructor of MotorsManager
+            // and let the bridge nodes hardcode as jetson.
             if (type == "brushed") {
-                auto temp = std::make_unique<BrushedController>(nh, name);
-                controllers[name] = std::move(temp);
+                auto temp = std::make_unique<BrushedController>(nh, "jetson", name);
+                mControllers[name] = std::move(temp);
             } else if (type == "brushless") {
-                auto temp = std::make_unique<BrushlessController>(nh, name);
-                controllers[name] = std::move(temp);
+                auto temp = std::make_unique<BrushlessController>(nh, "jetson", name);
+                mControllers[name] = std::move(temp);
             }
-
-            names[controllers[name]->get_can_manager().get_id()] = name;
         }
 
         updateLastConnection();
 
         // Subscribe to the ROS topic for commands
-        ros::Subscriber moveThrottleSub = nh.subscribe<Throttle>(groupName + "_throttle_cmd", 1, &MotorsManager::moveMotorsThrottle, this);
-        ros::Subscriber moveVelocitySub = nh.subscribe<Velocity>(groupName + "_velocity_cmd", 1, &MotorsManager::moveMotorsVelocity, this);
-        ros::Subscriber movePositionSub = nh.subscribe<Position>(groupName + "_position_cmd", 1, &MotorsManager::moveMotorsPosition, this);
+        mMoveThrottleSub = mNh.subscribe<Throttle>(std::format("{}_throttle_cmd", mGroupName), 1, &MotorsManager::moveMotorsThrottle, this);
+        mMoveVelocitySub = mNh.subscribe<Velocity>(std::format("{}_velocity_cmd", mGroupName), 1, &MotorsManager::moveMotorsVelocity, this);
+        mMovePositionSub = mNh.subscribe<Position>(std::format("{}_position_cmd", mGroupName), 1, &MotorsManager::moveMotorsPosition, this);
+
+        mJointDataPub = mNh.advertise<sensor_msgs::JointState>(std::format("{}_joint_data", mGroupName), 1);
+        mControllerDataPub = mNh.advertise<ControllerState>(std::format("{}_controller_data", mGroupName), 1);
 
         // Create a 0.1 second heartbeat timer
-        ros::Timer heartbeatTimer = nh.createTimer(ros::Duration(0.1), &MotorsManager::heartbeatCallback, this);
+        heartbeatTimer = mNh.createTimer(ros::Duration(0.1), &MotorsManager::heartbeatCallback, this);
+        publishDataTimer = mNh.createTimer(ros::Duration(0.1), &MotorsManager::publishDataCallback, this);
     }
 
     Controller& MotorsManager::get_controller(std::string const& name) {
-        return *controllers.at(name);
+        return *mControllers.at(name);
     }
-
-    void MotorsManager::process_frame(int bus, int id, std::span<std::byte const> frame_data) {
-        // TODO: figure out how to organize by bus
-        controllers[names[bus | (id << 4)]]->update(frame_data);
-    }
-
-    void MotorsManager::moveMotorsThrottle(const Throttle::ConstPtr& msg) {
-        if (msg->names != motorNames && msg->names.size() != msg->throttles.size()) {
+    void MotorsManager::moveMotorsThrottle(Throttle::ConstPtr const& msg) {
+        if (msg->names != mControllerNames || msg->names.size() != msg->throttles.size()) {
             ROS_ERROR("Throttle request is invalid!");
             return;
         }
@@ -56,14 +57,14 @@ namespace mrover {
         updateLastConnection();
 
         for (size_t i = 0; i < msg->names.size(); ++i) {
-            const std::string& name = msg->names[i];
+            std::string const& name = msg->names[i];
             Controller& controller = get_controller(name);
-            controller.set_desired_throttle(make_unit<Dimensionless>(msg->throttles[i]));
+            controller.setDesiredThrottle(msg->throttles[i]);
         }
     }
 
-    void MotorsManager::moveMotorsVelocity(const Velocity::ConstPtr& msg) {
-        if (msg->names != motorNames && msg->names.size() != msg->velocities.size()) {
+    void MotorsManager::moveMotorsVelocity(Velocity::ConstPtr const& msg) {
+        if (msg->names != mControllerNames || msg->names.size() != msg->velocities.size()) {
             ROS_ERROR("Velocity request is invalid!");
             return;
         }
@@ -71,35 +72,59 @@ namespace mrover {
         updateLastConnection();
 
         for (size_t i = 0; i < msg->names.size(); ++i) {
-            const std::string& name = msg->names[i];
+            std::string const& name = msg->names[i];
             Controller& controller = get_controller(name);
-            controller.set_desired_velocity(make_unit<RadiansPerSecond>(msg->velocities[i]));
+            controller.setDesiredVelocity(RadiansPerSecond{msg->velocities[i]});
         }
     }
 
-    void MotorsManager::moveMotorsPosition(const Position::ConstPtr& msg) {
-        if (msg->names != motorNames && msg->names.size() != msg->positions.size()) {
+    void MotorsManager::moveMotorsPosition(Position::ConstPtr const& msg) {
+        if (msg->names != mControllerNames || msg->names.size() != msg->positions.size()) {
             ROS_ERROR("Arm request is invalid!");
             return;
         }
 
         updateLastConnection();
 
-        for (size_t i = 0; i < msg->names.size(); ++i) {
-            const std::string& name = msg->names[i];
+        for (std::size_t i = 0; i < msg->names.size(); ++i) {
+            std::string const& name = msg->names[i];
             Controller& controller = get_controller(name);
-            controller.set_desired_position(make_unit<Radians>(msg->positions[i]));
+            controller.setDesiredPosition(Radians{msg->positions[i]});
         }
     }
 
-    void MotorsManager::heartbeatCallback(const ros::TimerEvent&) {
-        auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::high_resolution_clock::now() - lastConnection);
-        if (duration.count() < 100) {
-            for (const auto& motorName: motorNames) {
+    void MotorsManager::heartbeatCallback(ros::TimerEvent const&) {
+        auto duration = std::chrono::high_resolution_clock::now() - lastConnection;
+        if (duration < 100ms) {
+            for (auto const& motorName: mControllerNames) {
                 Controller& controller = get_controller(motorName);
-                controller.set_desired_throttle(Dimensionless{0});
+                controller.setDesiredThrottle(0_percent);
             }
         }
+    }
+
+    void MotorsManager::publishDataCallback(ros::TimerEvent const&) {
+        sensor_msgs::JointState joint_state;
+        ControllerState controller_state;
+        for (std::string const& name: mControllerNames) {
+            Controller& controller = get_controller(name);
+            joint_state.name.push_back(name);
+            joint_state.position.push_back(controller.getCurrentPosition().get());
+            joint_state.velocity.push_back(controller.getCurrentVelocity().get());
+            joint_state.effort.push_back(controller.getEffort());
+
+            controller_state.name.push_back(name);
+            controller_state.state.push_back(controller.getState());
+            controller_state.error.push_back(controller.getErrorState());
+            uint8_t limit_hit;
+            for (int i = 0; i < 4; ++i) {
+                limit_hit |= controller.isLimitHit(i) << i;
+            }
+            controller_state.limit_hit.push_back(limit_hit);
+        }
+
+        mJointDataPub.publish(joint_state);
+        mControllerDataPub.publish(controller_state);
     }
 
     void MotorsManager::updateLastConnection() {

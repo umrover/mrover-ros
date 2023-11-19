@@ -18,10 +18,11 @@
 /* USER CODE END Header */
 /* Includes ------------------------------------------------------------------*/
 #include "main.h"
-#include "cmsis_os.h"
+#include "cmsis_os2.h"
 
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
+
 
 /* USER CODE END Includes */
 
@@ -56,6 +57,27 @@ const osThreadAttr_t defaultTask_attributes = {
 };
 /* USER CODE BEGIN PV */
 
+osThreadId_t SpectralTaskHandle;
+const osThreadAttr_t SpectralTask_attributes = {
+  .name = "SpectralTask",
+  .priority = (osPriority_t) osPriorityNormal,
+  .stack_size = 128 * 4
+};
+
+osThreadId_t ThermistorAndAutoShutoffTaskHandle;
+const osThreadAttr_t ThermistorAndAutoShutoffTask_attributes = {
+  .name = "ThermistorAndAutoShutoffTask",
+  .priority = (osPriority_t) osPriorityNormal,
+  .stack_size = 128 * 4
+};
+
+osThreadId_t HeaterUpdatesTaskHandle;
+const osThreadAttr_t HeaterUpdatesTask_attributes = {
+  .name = "HeaterUpdatesTask",
+  .priority = (osPriority_t) osPriorityNormal,
+  .stack_size = 128 * 4
+};
+
 /* USER CODE END PV */
 
 /* Private function prototypes -----------------------------------------------*/
@@ -64,10 +86,12 @@ static void MX_GPIO_Init(void);
 static void MX_FDCAN1_Init(void);
 static void MX_I2C1_Init(void);
 static void MX_ADC1_Init(void);
-static void MX_ADC2_Init(void);
 void StartDefaultTask(void *argument);
 
 /* USER CODE BEGIN PFP */
+void SpectralTask(void *argument);
+void ThermistorAndAutoShutoffTask(void *argument);
+void HeaterUpdatesTask(void *argument);
 
 /* USER CODE END PFP */
 
@@ -100,6 +124,16 @@ int main(void)
 
   /* USER CODE BEGIN SysInit */
 
+  /* USER CODE BEGIN SysInit */
+  // TODO(quintin)  Figure out why the HAL does not configure this properly
+  //                See: https://community.st.com/t5/stm32-mcus-products/hal-delay-stuck-systick-not-triggered-workaround-for-stm32f105/td-p/585510
+  //                Without this HAL_Delay does not work (SysTick_Handler is never called)
+#ifdef VECT_TAB_SRAM
+  SCB->VTOR = SRAM_BASE;
+#else
+  SCB->VTOR = FLASH_BASE;
+#endif
+
   /* USER CODE END SysInit */
 
   /* Initialize all configured peripherals */
@@ -108,6 +142,8 @@ int main(void)
   MX_I2C1_Init();
   MX_ADC1_Init();
   /* USER CODE BEGIN 2 */
+
+  init();
 
   /* USER CODE END 2 */
 
@@ -135,6 +171,12 @@ int main(void)
   defaultTaskHandle = osThreadNew(StartDefaultTask, NULL, &defaultTask_attributes);
 
   /* USER CODE BEGIN RTOS_THREADS */
+
+  // TODO - Using spectral causes a hardfault!!!
+//  SpectralTaskHandle = osThreadNew(SpectralTask, NULL, &SpectralTask_attributes);
+  ThermistorAndAutoShutoffTaskHandle = osThreadNew(ThermistorAndAutoShutoffTask, NULL, &ThermistorAndAutoShutoffTask_attributes);
+  HeaterUpdatesTaskHandle = osThreadNew(HeaterUpdatesTask, NULL, &HeaterUpdatesTask_attributes);
+
   /* add threads, ... */
   /* USER CODE END RTOS_THREADS */
 
@@ -373,36 +415,36 @@ static void MX_GPIO_Init(void)
   __HAL_RCC_GPIOB_CLK_ENABLE();
 
   /*Configure GPIO pin Output Level */
-  HAL_GPIO_WritePin(GPIOC, UV_LED_0_Pin|UV_LED_1_Pin|UV_LED_2_Pin|WHITE_LED_2_Pin
-                          |HEATER_3_Pin|HEATER_2_Pin, GPIO_PIN_RESET);
+  HAL_GPIO_WritePin(GPIOC, DEBUG_LED_0_Pin|DEBUG_LED_1_Pin|DEBUG_LED_2_Pin|WHITE_LED_0_Pin
+                          |HEATER_N1_Pin, GPIO_PIN_RESET);
 
   /*Configure GPIO pin Output Level */
-  HAL_GPIO_WritePin(GPIOA, WHITE_LED_0_Pin|WHITE_LED_1_Pin, GPIO_PIN_RESET);
+  HAL_GPIO_WritePin(GPIOA, UV_LED_2_Pin|UV_LED_1_Pin|UV_LED_0_Pin|WHITE_LED_2_Pin
+                          |WHITE_LED_1_Pin|HEATER_B0_Pin|HEATER_N0_Pin|CAN_STANDBY_Pin, GPIO_PIN_RESET);
 
   /*Configure GPIO pin Output Level */
-  HAL_GPIO_WritePin(GPIOB, HEATER_5_Pin|HEATER_4_Pin|HEATER_1_Pin|HEATER_0_Pin
-                          |I2C_MUX1_Pin|I2C_MUX0_Pin, GPIO_PIN_RESET);
+  HAL_GPIO_WritePin(GPIOB, HEATER_B2_Pin|HEATER_N2_Pin|HEATER_B1_Pin|I2C_MUX_RST_Pin, GPIO_PIN_RESET);
 
-  /*Configure GPIO pins : UV_LED_0_Pin UV_LED_1_Pin UV_LED_2_Pin WHITE_LED_2_Pin
-                           HEATER_3_Pin HEATER_2_Pin */
-  GPIO_InitStruct.Pin = UV_LED_0_Pin|UV_LED_1_Pin|UV_LED_2_Pin|WHITE_LED_2_Pin
-                          |HEATER_3_Pin|HEATER_2_Pin;
+  /*Configure GPIO pins : DEBUG_LED_0_Pin DEBUG_LED_1_Pin DEBUG_LED_2_Pin WHITE_LED_0_Pin
+                           HEATER_N1_Pin */
+  GPIO_InitStruct.Pin = DEBUG_LED_0_Pin|DEBUG_LED_1_Pin|DEBUG_LED_2_Pin|WHITE_LED_0_Pin
+                          |HEATER_N1_Pin;
   GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
   GPIO_InitStruct.Pull = GPIO_NOPULL;
   GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
   HAL_GPIO_Init(GPIOC, &GPIO_InitStruct);
 
-  /*Configure GPIO pins : WHITE_LED_0_Pin WHITE_LED_1_Pin */
-  GPIO_InitStruct.Pin = WHITE_LED_0_Pin|WHITE_LED_1_Pin;
+  /*Configure GPIO pins : UV_LED_2_Pin UV_LED_1_Pin UV_LED_0_Pin WHITE_LED_2_Pin
+                           WHITE_LED_1_Pin HEATER_B0_Pin HEATER_N0_Pin CAN_STANDBY_Pin */
+  GPIO_InitStruct.Pin = UV_LED_2_Pin|UV_LED_1_Pin|UV_LED_0_Pin|WHITE_LED_2_Pin
+                          |WHITE_LED_1_Pin|HEATER_B0_Pin|HEATER_N0_Pin|CAN_STANDBY_Pin;
   GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
   GPIO_InitStruct.Pull = GPIO_NOPULL;
   GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
   HAL_GPIO_Init(GPIOA, &GPIO_InitStruct);
 
-  /*Configure GPIO pins : HEATER_5_Pin HEATER_4_Pin HEATER_1_Pin HEATER_0_Pin
-                           I2C_MUX1_Pin I2C_MUX0_Pin */
-  GPIO_InitStruct.Pin = HEATER_5_Pin|HEATER_4_Pin|HEATER_1_Pin|HEATER_0_Pin
-                          |I2C_MUX1_Pin|I2C_MUX0_Pin;
+  /*Configure GPIO pins : HEATER_B2_Pin HEATER_N2_Pin HEATER_B1_Pin I2C_MUX_RST_Pin */
+  GPIO_InitStruct.Pin = HEATER_B2_Pin|HEATER_N2_Pin|HEATER_B1_Pin|I2C_MUX_RST_Pin;
   GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
   GPIO_InitStruct.Pull = GPIO_NOPULL;
   GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
@@ -413,21 +455,49 @@ static void MX_GPIO_Init(void)
 }
 
 /* USER CODE BEGIN 4 */
-void SpectralTask(void const * argument) {
-	for (;;) {
 
+void HAL_FDCAN_RxFifo0Callback(FDCAN_HandleTypeDef *hfdcan, uint32_t RxFifo0ITs) {
+  if((RxFifo0ITs & FDCAN_IT_RX_FIFO0_NEW_MESSAGE) != RESET)
+  {
+    receive_message();
+  }
+}
+
+void ReceiveMessages(void *argument) {
+	uint32_t tick = osKernelGetTickCount();
+	for(;;) {
+		tick += osKernelGetTickFreq(); // 1 Hz
+		receive_message();
+		osDelayUntil(tick);
 	}
 }
 
-void ThermistorTask(void const * argument) {
-	for (;;) {
+void SpectralTask(void *argument) {
+	uint32_t tick = osKernelGetTickCount();
+	for(;;) {
+		tick += osKernelGetTickFreq(); // 1 Hz
 
+		update_and_send_spectral();
+		osDelayUntil(tick);
 	}
 }
 
-void HeaterUpdatesTask(void const * argument) {
-	for (;;) {
+void ThermistorAndAutoShutoffTask(void *argument) {
+	uint32_t tick = osKernelGetTickCount();
+	for(;;) {
+		tick += osKernelGetTickFreq(); // 1 Hz
 
+		update_and_send_thermistor_and_auto_shutoff_if_applicable();
+		osDelayUntil(tick);
+	}
+}
+
+void HeaterUpdatesTask(void *argument) {
+	uint32_t tick = osKernelGetTickCount();
+	for(;;) {
+		tick += osKernelGetTickFreq(); // 1 Hz
+		update_and_send_heater();
+		osDelayUntil(tick);
 	}
 }
 

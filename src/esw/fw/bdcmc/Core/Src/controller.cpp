@@ -1,90 +1,156 @@
 #include "controller.hpp"
 
-#include "main.h"
-#include "messaging.hpp"
+#include <cstdint>
 
-#include <numbers>
-#include <span>
+#include <hardware.hpp>
+#include <messaging.hpp>
+
+#include "main.h"
+
+// TODO: enable the watchdog and feed it in the htim6 update loop. make sure when the interrupt fires we disable PWN output. you will probably have to make the interrupt definition
+// TODO: add another timer for absolute encoder? another solution is starting a transaction in the 10,000 Hz update loop if we are done with the previous transaction
 
 extern FDCAN_HandleTypeDef hfdcan1;
 
-constexpr uint32_t COUNTS_PER_ROTATION_RELATIVE = 4096;
-constexpr uint32_t COUNTS_PER_ROTATION_ABSOLUTE = 1024;
-constexpr auto RADIANS_PER_COUNT_RELATIVE = mrover::Radians{2 * std::numbers::pi} / COUNTS_PER_ROTATION_RELATIVE;
-constexpr auto RADIANS_PER_COUNT_ABSOLUTE = mrover::Radians{2 * std::numbers::pi} / COUNTS_PER_ROTATION_ABSOLUTE;
+extern I2C_HandleTypeDef hi2c1;
+#define ABSOLUTE_I2C &hi2c1
 
-static inline void check(bool cond, std::invocable auto handler) {
-    if (!cond) {
-        handler();
-    }
-}
+// extern WWDG_HandleTypeDef hwwdg;
+
+/**
+ * For each timer, the update rate is determined by the .ioc file.
+ *
+ * Specifically the ARR value. You can use the following equation: ARR = (MCU Clock Speed) / (Update Rate) / (Prescaler + 1) - 1
+ * For the STM32G4 we have a 144 MHz clock speed configured.
+ *
+ * You must also set auto reload to true so the interurpt gets called on a cycle.
+ */
+
+extern TIM_HandleTypeDef htim4;  // Quadrature encoder #1
+extern TIM_HandleTypeDef htim3;  // Quadrature encoder #2
+extern TIM_HandleTypeDef htim6;  // 10,000 Hz Update timer
+extern TIM_HandleTypeDef htim7;  // 100 Hz Send timer
+extern TIM_HandleTypeDef htim15; // H-Bridge PWM
+extern TIM_HandleTypeDef htim16; // Message watchdog timer
+#define QUADRATURE_TIMER_1 &htim4
+#define QUADRATURE_TIMER_2 &htim3
+#define UPDATE_TIMER &htim6
+#define SEND_TIMER &htim7
+#define PWM_TIMER &htim15
+#define FDCAN_WATCHDOG_TIMER &htim16
 
 namespace mrover {
 
-    class EncoderReader {
-    public:
-        EncoderReader() = default;
+    // NOTE: Change This For Each Motor Controller
+    constexpr static std::uint8_t DEVICE_ID = 0x1;
 
-        EncoderReader(TIM_HandleTypeDef* relative_encoder_timer, I2C_HandleTypeDef* absolute_encoder_i2c)
-            : m_relative_encoder_timer{relative_encoder_timer}, m_absolute_encoder_i2c{absolute_encoder_i2c} {
-            // Initialize the TIM and I2C encoders
-            check(HAL_TIM_Encoder_Init(m_relative_encoder_timer, nullptr /* TODO: replace with config */) == HAL_OK, Error_Handler);
-            check(HAL_I2C_Init(m_absolute_encoder_i2c) == HAL_OK, Error_Handler);
-            check(HAL_TIM_Encoder_Start(m_relative_encoder_timer, TIM_CHANNEL_ALL) == HAL_OK, Error_Handler);
-            // Store state to center the relative encoder readings based on absolute
-            refresh_absolute();
+    // Usually this is the Jetson
+    constexpr static std::uint8_t DESTINATION_DEVICE_ID = 0x0;
+
+    FDCAN fdcan_bus;
+    Controller controller;
+
+    void init() {
+        fdcan_bus = FDCAN{DEVICE_ID, DESTINATION_DEVICE_ID, &hfdcan1};
+        controller = Controller{
+                PWM_TIMER,
+                fdcan_bus,
+                FDCAN_WATCHDOG_TIMER,
+                QUADRATURE_TIMER_1,
+                ABSOLUTE_I2C,
+                {
+                        LimitSwitch{Pin{LIMIT_0_0_GPIO_Port, LIMIT_0_0_Pin}},
+                        LimitSwitch{Pin{LIMIT_0_1_GPIO_Port, LIMIT_0_1_Pin}},
+                        LimitSwitch{Pin{LIMIT_0_2_GPIO_Port, LIMIT_0_2_Pin}},
+                        LimitSwitch{Pin{LIMIT_0_3_GPIO_Port, LIMIT_0_3_Pin}},
+                },
+        };
+
+        // Necessary for the timer interrupt to work
+        check(HAL_TIM_Base_Start_IT(UPDATE_TIMER) == HAL_OK, Error_Handler);
+        check(HAL_TIM_Base_Start_IT(SEND_TIMER) == HAL_OK, Error_Handler);
+    }
+
+    void fdcan_received_callback() {
+        std::optional received = fdcan_bus.receive<InBoundMessage>();
+        if (!received) Error_Handler(); // This function is called WHEN we receive a message so this should never happen
+
+        auto const& [header, message] = received.value();
+
+        auto messageId = std::bit_cast<FDCAN::MessageId>(header.Identifier);
+
+        if (messageId.destination == DEVICE_ID) {
+            controller.receive(message);
         }
+    }
 
-        void refresh_absolute() {
-            uint32_t count_from_absolute_encoder = 0; // TODO: get absolute count here
-            // Get reading from absolute encoder
-            rotation = RADIANS_PER_COUNT_ABSOLUTE * count_from_absolute_encoder;
-            // Calculate how much ahead/behind the absolute encoder's reading is with respect to the relative count
-            absolute_relative_diff = rotation - RADIANS_PER_COUNT_RELATIVE * m_relative_encoder_timer->Instance->CNT;
-        }
+    void update_callback() {
+        controller.update();
+    }
 
-        void update_count() {
-            rotation = RADIANS_PER_COUNT_RELATIVE * m_relative_encoder_timer->Instance->CNT + absolute_relative_diff;
-        }
+    void send_callback() {
+        controller.send();
+    }
 
-        [[nodiscard]] Radians read_input() const {
-            return rotation;
-        }
-
-    private:
-        TIM_HandleTypeDef* m_relative_encoder_timer{};
-        I2C_HandleTypeDef* m_absolute_encoder_i2c{};
-        Radians rotation{};
-        Radians absolute_relative_diff{};
-    };
-
-    struct BrushedMotorWriter {
-        void write_output(Volts output) {
-        }
-    };
-
-    Controller<Radians, Volts, EncoderReader, BrushedMotorWriter> controller;
+    void fdcan_watchdog_expired() {
+        controller.receive_watchdog_expired();
+    }
 
 } // namespace mrover
 
-HAL_StatusTypeDef HAL_FDCAN_GetRxMessage(FDCAN_HandleTypeDef* hfdcan, uint32_t RxLocation, FDCAN_RxHeaderTypeDef* pRxHeader, std::span<std::byte, mrover::FRAME_SIZE> RxData) {
-    return HAL_FDCAN_GetRxMessage(hfdcan, RxLocation, pRxHeader, reinterpret_cast<uint8_t*>(RxData.data()));
+// TOOD: is this really necesssary?
+extern "C" {
+
+void HAL_PostInit() {
+    mrover::init();
 }
 
-void init() {
-    check(HAL_FDCAN_ActivateNotification(
-                  &hfdcan1,
-                  FDCAN_IT_RX_FIFO0_NEW_MESSAGE | FDCAN_IT_ERROR_PASSIVE | FDCAN_IT_ERROR_WARNING | FDCAN_IT_ARB_PROTOCOL_ERROR | FDCAN_IT_DATA_PROTOCOL_ERROR | FDCAN_IT_ERROR_LOGGING_OVERFLOW,
-                  0) == HAL_OK,
-          Error_Handler);
-    check(HAL_FDCAN_Start(&hfdcan1) == HAL_OK, Error_Handler);
-}
+/**
+* These are interrupt handlers. They are called by the HAL.
+*
+* These are set up in the .ioc file.
+* They have to be enabled in the NVIC settings.
+* It is important th
+*/
 
-void loop() {
-    if (HAL_FDCAN_GetRxFifoFillLevel(&hfdcan1, FDCAN_RX_FIFO0)) {
-        FDCAN_RxHeaderTypeDef header;
-        mrover::FdCanFrame frame{};
-        check(HAL_FDCAN_GetRxMessage(&hfdcan1, FDCAN_RX_FIFO0, &header, frame.bytes) == 0, Error_Handler);
-        mrover::controller.update(frame.message);
+/**
+ * \note Timers have to be started with "HAL_TIM_Base_Start_IT" for this interrupt to work for them.
+ */
+void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef* htim) {
+    if (htim == UPDATE_TIMER) {
+        mrover::update_callback();
+    } else if (htim == SEND_TIMER) {
+        mrover::send_callback();
+    } else if (htim == FDCAN_WATCHDOG_TIMER) {
+        mrover::fdcan_watchdog_expired();
     }
+}
+
+/**
+ * \note FDCAN1 has to be configured with "HAL_FDCAN_ActivateNotification" and started with "HAL_FDCAN_Start" for this interrupt to work.
+ */
+void HAL_FDCAN_RxFifo0Callback(FDCAN_HandleTypeDef* hfdcan, uint32_t RxFifo0ITs) {
+    if (RxFifo0ITs & FDCAN_IT_RX_FIFO0_NEW_MESSAGE) {
+        mrover::fdcan_received_callback();
+    } else {
+        // Mailbox is full OR we lost a frame
+        Error_Handler();
+    }
+}
+
+// TODO: implement
+
+void HAL_FDCAN_ErrorCallback(FDCAN_HandleTypeDef* hfdcan) {}
+
+void HAL_FDCAN_ErrorStatusCallback(FDCAN_HandleTypeDef* hfdcan, uint32_t ErrorStatusITs) {}
+
+void HAL_I2C_SlaveRxCpltCallback(I2C_HandleTypeDef* hi2c) {}
+
+void HAL_I2C_SlaveTxCpltCallback(I2C_HandleTypeDef* hi2c) {}
+
+void HAL_I2C_MasterRxCpltCallback(I2C_HandleTypeDef* hi2c) {}
+
+void HAL_I2C_MasterTxCpltCallback(I2C_HandleTypeDef* hi2c) {}
+
+void HAL_I2C_ErrorCallback(I2C_HandleTypeDef* hi2c) {}
 }

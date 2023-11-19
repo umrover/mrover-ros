@@ -4,39 +4,49 @@
 
 #include <ros/ros.h>
 
-#include <can_manager.hpp>
+#include <can_device.hpp>
 #include <units/units.hpp>
 
 namespace mrover {
 
     class Controller {
     public:
-        Controller(ros::NodeHandle& nh, std::string const& name) : name{name}, can_manager{nh, name} {}
+        Controller(ros::NodeHandle const& nh, std::string name, std::string controllerName)
+            : mNh{nh},
+              mName{std::move(name)},
+              mControllerName{std::move(controllerName)},
+              mDevice{nh, mName, mControllerName},
+              mIncomingCANSub{mNh.subscribe<CAN>(std::format("can/{}/in", mControllerName), 16, &Controller::processCANMessage, this)} {
+        }
 
         virtual ~Controller() = default;
 
-        // will receive CAN frame with updated motor information (current speed, position, etc.)
-        virtual void update(std::span<std::byte const> frame) = 0;
-
-        virtual void set_desired_throttle(Dimensionless throttle) = 0;    // from -1.0 to 1.0
-        virtual void set_desired_velocity(RadiansPerSecond velocity) = 0; // joint output
-        virtual void set_desired_position(Radians position) = 0;          // joint output
-
-        CANManager& get_can_manager() {
-            return can_manager;
+        virtual void setDesiredThrottle(Percent throttle) = 0;          // from -1.0 to 1.0
+        virtual void setDesiredVelocity(RadiansPerSecond velocity) = 0; // joint output
+        virtual void setDesiredPosition(Radians position) = 0;          // joint output
+        virtual void processCANMessage(CAN::ConstPtr const& msg) = 0;
+        Radians getCurrentPosition() { return mCurrentPosition; }
+        RadiansPerSecond getCurrentVelocity() { return mCurrentVelocity; }
+        std::string getErrorState() { return mErrorState; }
+        std::string getState() { return mState; } // TODO - we probably don't need both mErrorState and mState
+        virtual double getEffort() = 0;
+        bool isLimitHit(uint8_t index) {
+            return mLimitHit.at(index);
         }
 
     protected:
-        std::string name;
-        CANManager can_manager;
-        RadiansPerSecond velocity{};
-        Radians position{};
-        RadiansPerSecond min_velocity{}; // this is min_velocity of joint output
-        RadiansPerSecond max_velocity{}; // this is max_velocity of joint output
-        Radians min_position{};          // this is min_position of joint output
-        Radians max_position{};          // this is min_position of joint output
-
-        //    virtual void send_CAN_frame(uint64_t frame) = 0;
+        ros::NodeHandle mNh;
+        std::string mName, mControllerName;
+        CanDevice mDevice;
+        ros::Subscriber mIncomingCANSub;
+        RadiansPerSecond mMinVelocity{}, mMaxVelocity{};
+        Radians mMinPosition{}, mMaxPosition{};
+        Radians mCurrentPosition{};
+        RadiansPerSecond mCurrentVelocity{};
+        bool mIsCalibrated{};
+        std::string mErrorState;
+        std::string mState;
+        std::array<bool, 4> mLimitHit{};
     };
 
 } // namespace mrover

@@ -69,6 +69,8 @@ void Error_Handler(void);
 #define THERM_2_GPIO_Port GPIOB
 #define THERM_1_Pin GPIO_PIN_12
 #define THERM_1_GPIO_Port GPIOB
+#define CAN_STANDBY_Pin GPIO_PIN_15
+#define CAN_STANDBY_GPIO_Port GPIOA
 
 /* USER CODE BEGIN Private defines */
 
