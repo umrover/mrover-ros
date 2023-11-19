@@ -75,6 +75,14 @@ namespace mrover {
                  result.temperature,
                  result.fault);
 
+        mCurrentPosition = mrover::Radians{
+                mrover::Revolutions{result.position}}; // moteus stores position in revolutions.
+        mCurrentVelocity = mrover::RadiansPerSecond{
+                mrover::RevolutionsPerSecond{result.velocity}}; // moteus stores position in revolutions.
+
+        mErrorState = moteusErrorCodeToErrorState(result.mode, static_cast<ErrorCode>(result.fault));
+        mState = moteusModeToState(result.mode);
+
         if (result.mode == moteus::Mode::kPositionTimeout || result.mode == moteus::Mode::kFault) {
             SetStop();
             ROS_WARN("Position timeout hit");
@@ -82,8 +90,9 @@ namespace mrover {
     }
 
     double BrushlessController::getEffort() {
-        // TODO - need to properly set mMeasuredEFfort elsewhere
-        return mMeasuredEffort;
+        // TODO - need to properly set mMeasuredEFfort elsewhere.
+        // (Art Boyarov): return quiet_Nan, same as Brushed Controller
+        return std::numeric_limits<double>::quiet_NaN();
     }
 
     RadiansPerSecond BrushlessController::mapThrottleToVelocity(Percent throttle) {
@@ -93,4 +102,76 @@ namespace mrover {
         return RadiansPerSecond{(throttle.get() + 1.0f) / 2.0f * (mMaxVelocity.get() - mMinVelocity.get()) + mMinVelocity.get()};
     }
 
+    std::string BrushlessController::moteusErrorCodeToErrorState(moteus::Mode motor_mode, ErrorCode motor_error_code) {
+        if (motor_mode != moteus::Mode::kFault) return "No Error";
+        switch (motor_error_code) {
+            case ErrorCode::DmaStreamTransferError:
+                return "DMA Stream Transfer Error";
+            case ErrorCode::DmaStreamFifiError:
+                return "DMA Stream FIFO Error";
+            case ErrorCode::UartOverrunError:
+                return "UART Overrun Error";
+            case ErrorCode::UartFramingError:
+                return "UART Framing Error";
+            case ErrorCode::UartNoiseError:
+                return "UART Noise Error";
+            case ErrorCode::UartBufferOverrunError:
+                return "UART Buffer Overrun Error";
+            case ErrorCode::UartParityError:
+                return "UART Parity Error";
+            case ErrorCode::CalibrationFault:
+                return "Calibration Fault";
+            case ErrorCode::MotorDriverFault:
+                return "Motor Driver Fault";
+            case ErrorCode::OverVoltage:
+                return "Over Voltage";
+            case ErrorCode::EncoderFault:
+                return "Encoder Fault";
+            case ErrorCode::MotorNotConfigured:
+                return "Motor Not Configured";
+            case ErrorCode::PwmCycleOverrun:
+                return "PWM Cycle Overrun";
+            case ErrorCode::OverTemperature:
+                return "Over Temperature";
+            case ErrorCode::StartOutsideLimit:
+                return "Start Outside Limit";
+            case ErrorCode::UnderVoltage:
+                return "Under Voltage";
+            case ErrorCode::ConfigChanged:
+                return "Configuration Changed";
+            case ErrorCode::ThetaInvalid:
+                return "Theta Invalid";
+            case ErrorCode::PositionInvalid:
+                return "Position Invalid";
+            default:
+                return "Unknown Error";
+        }
+    }
+
+    std::string BrushlessController::moteusModeToState(moteus::Mode motor_mode) {
+        switch (motor_mode) {
+            case moteus::Mode::kStopped:
+                return "Motor Stopped";
+            case moteus::Mode::kFault:
+                return "Motor Fault";
+            case moteus::Mode::kPwm:
+                return "PWM Operating Mode";
+            case moteus::Mode::kVoltage:
+                return "Voltage Operating Mode";
+            case moteus::Mode::kVoltageFoc:
+                return "Voltage FOC Operating Mode";
+            case moteus::Mode::kVoltageDq:
+                return "Voltage DQ Operating Mode";
+            case moteus::Mode::kCurrent:
+                return "Current Operating Mode";
+            case moteus::Mode::kPosition:
+                return "Position Operating Mode";
+            case moteus::Mode::kPositionTimeout:
+                return "Position Timeout";
+            case moteus::Mode::kZeroVelocity:
+                return "Zero Velocity";
+            default:
+                return "Unknown Mode";
+        }
+    }
 } // namespace mrover

@@ -75,6 +75,9 @@ namespace mrover {
 
         // Function to map throttle to velocity
         RadiansPerSecond mapThrottleToVelocity(Percent throttle);
+        // Converts moteus error codes and mode codes to std::string descriptions
+        std::string moteusErrorCodeToErrorState(moteus::Mode motor_mode, ErrorCode motor_error_code);
+        std::string moteusModeToState(moteus::Mode motor_mode);
     };
 
 } // namespace mrover
