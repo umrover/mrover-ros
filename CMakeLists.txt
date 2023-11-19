@@ -208,6 +208,7 @@ mrover_add_node(sim_arm_bridge src/simulator/arm_bridge/*.cpp)
 ## Perception
 
 mrover_add_nodelet(tag_detector src/perception/tag_detector/*.cpp src/perception/tag_detector src/perception/tag_detector/pch.hpp)
+mrover_add_nodelet(costmap src/perception/cost_map/*.cpp src/perception/cost_map src/perception/cost_map/pch.hpp)
 mrover_nodelet_link_libraries(tag_detector opencv_core opencv_objdetect opencv_aruco opencv_imgproc tbb lie)
 
 if (ZED_FOUND)
