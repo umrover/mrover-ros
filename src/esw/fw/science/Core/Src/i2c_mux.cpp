@@ -7,7 +7,7 @@ namespace mrover {
 
     void I2CMux::set_channel(uint8_t channel) {
     	uint8_t go_to_channel = 1 << channel;
-    	auto result = m_i2c_bus->transact<uint16_t, uint8_t>(MUX_7b_ADDRESS, go_to_channel);
+    	auto result = m_i2c_bus->blocking_transact<uint16_t, uint8_t>(MUX_7b_ADDRESS, go_to_channel);
     	if(result){
     		current_channel = go_to_channel;
     	}

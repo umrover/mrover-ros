@@ -16,6 +16,11 @@ namespace mrover {
                 brushlessMotorData, "min_velocity", 1.0)};
         mMaxVelocity = RadiansPerSecond{xmlRpcValueToTypeOrDefault<double>(
                 brushlessMotorData, "max_velocity", 1.0)};
+
+        mMinPosition = Radians{xmlRpcValueToTypeOrDefault<double>(
+                brushlessMotorData, "min_position", 1.0)};
+        mMaxPosition = Radians{xmlRpcValueToTypeOrDefault<double>(
+                brushlessMotorData, "max_position", 1.0)};
     }
 
     void BrushlessController::setDesiredThrottle(Percent throttle) {
@@ -25,13 +30,11 @@ namespace mrover {
 
     void BrushlessController::setDesiredPosition(Radians position) {
         Revolutions position_revs = std::clamp(position, mMinPosition, mMaxPosition);
-        moteus::Controller::Options options;
-        moteus::Controller controller{options};
         moteus::PositionMode::Command command{
                 .position = position_revs.get(),
                 .velocity = 0.0,
         };
-        moteus::CanFdFrame positionFrame = controller.MakePosition(command);
+        moteus::CanFdFrame positionFrame = mController.MakePosition(command);
         mDevice.publish_moteus_frame(positionFrame);
     }
 
@@ -42,11 +45,9 @@ namespace mrover {
 
     void BrushlessController::setDesiredVelocity(RadiansPerSecond velocity) {
         RevolutionsPerSecond velocity_rev_s = std::clamp(velocity, mMinVelocity, mMaxVelocity);
-        ROS_WARN("%7.3f   %7.3f",
-                 velocity.get(), velocity_rev_s.get());
+        // ROS_WARN("%7.3f   %7.3f",
+        //  velocity.get(), velocity_rev_s.get());
 
-        // TODO - remove eventually after debugging
-        // std::cout << velocity.get() << " " << velocity_rev_s.get() << std::endl;
         moteus::PositionMode::Command command{
                 .position = std::numeric_limits<double>::quiet_NaN(),
                 .velocity = velocity_rev_s.get(),
@@ -57,10 +58,7 @@ namespace mrover {
     }
 
     void BrushlessController::SetStop() {
-
-        moteus::Controller::Options options;
-        moteus::Controller controller{options};
-        moteus::CanFdFrame setStopFrame = controller.MakeStop();
+        moteus::CanFdFrame setStopFrame = mController.MakeStop();
         mDevice.publish_moteus_frame(setStopFrame);
     }
 
@@ -78,8 +76,7 @@ namespace mrover {
                  result.fault);
 
         if (result.mode == moteus::Mode::kPositionTimeout || result.mode == moteus::Mode::kFault) {
-            moteus::CanFdFrame stopFrame = mController.MakeStop();
-            mDevice.publish_moteus_frame(stopFrame);
+            SetStop();
             ROS_WARN("Position timeout hit");
         }
     }

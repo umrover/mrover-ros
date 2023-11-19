@@ -98,6 +98,7 @@ namespace mrover {
 
 } // namespace mrover
 
+// TOOD: is this really necesssary?
 extern "C" {
 
 void HAL_PostInit() {
@@ -152,5 +153,4 @@ void HAL_I2C_MasterRxCpltCallback(I2C_HandleTypeDef* hi2c) {}
 void HAL_I2C_MasterTxCpltCallback(I2C_HandleTypeDef* hi2c) {}
 
 void HAL_I2C_ErrorCallback(I2C_HandleTypeDef* hi2c) {}
-
 }

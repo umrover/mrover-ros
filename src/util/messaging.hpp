@@ -170,6 +170,7 @@ namespace mrover {
 
     struct SpectralInfo {
         std::array<std::uint16_t, 6> data;
+        bool error;
     };
 
     struct SpectralData : BaseCommand {
