@@ -22,7 +22,7 @@ namespace mrover {
 
     	Spectral(std::shared_ptr<SMBus> i2c_bus, std::shared_ptr<I2CMux> i2c_mux, uint8_t i2c_mux_channel);
 
-        void update_channel_data(uint8_t channel);
+        void update_channel_data(); // updates all of the channels
 
         uint16_t get_channel_data(uint8_t channel);
 
@@ -47,6 +47,7 @@ namespace mrover {
         constexpr static std::uint8_t INT_TIME_REG = 0x05;
         constexpr static std::uint8_t I2C_AS72XX_SLAVE_STATUS_REG = 0x00;
         constexpr static std::uint8_t I2C_AS72XX_SLAVE_TX_VALID = 0x02;
+        constexpr static std::uint8_t I2C_AS72XX_SLAVE_RX_VALID = 0x01;
     };
 
 } // namespace mrover

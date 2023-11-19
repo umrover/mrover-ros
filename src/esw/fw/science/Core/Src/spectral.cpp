@@ -60,7 +60,7 @@ namespace mrover {
 		m_error = false;
     }
 
-    void Spectral::update_channel_data(uint8_t channel) {
+    void Spectral::update_channel_data() {
     	if (!m_initialized) {
     		init();
     	}
@@ -92,6 +92,7 @@ namespace mrover {
     	}
     	m_error = false;
     }
+
 
     uint16_t Spectral::get_channel_data(uint8_t channel) {
     	return channel_data.at(channel);

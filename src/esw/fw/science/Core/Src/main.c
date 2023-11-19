@@ -19,7 +19,7 @@
 /* Includes ------------------------------------------------------------------*/
 #include "main.h"
 #include "cmsis_os2.h"
-
+#include "semphr.h"
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
 
@@ -56,6 +56,11 @@ const osThreadAttr_t defaultTask_attributes = {
   .stack_size = 128 * 4
 };
 /* USER CODE BEGIN PV */
+
+osSemaphoreId_t read_status;
+osSemaphoreId_t write_status;
+
+uint8_t status_buffer[1];
 
 osThreadId_t SpectralTaskHandle;
 const osThreadAttr_t SpectralTask_attributes = {
@@ -463,6 +468,26 @@ void HAL_FDCAN_RxFifo0Callback(FDCAN_HandleTypeDef *hfdcan, uint32_t RxFifo0ITs)
   }
 }
 
+void HAL_I2C_MasterTXCpltCallback(I2C_HandleTypeDef *hi2c) {
+	// TODO: call asynch receive -- need globals to know who needs to receive
+}
+
+void HAL_I2C_MasterRXCpltCallback(I2C_HandleTypeDef *hi2c) {
+	if ((status_buffer[0] & I2C_AS72XX_SLAVE_TX_VALID) == 0) {
+		osSemaphoreRelease(write_status);
+	}
+
+	if (status_buffer[0] & I2C_AS72XX_SLAVE_RX_VALID == 0) {
+		osSemaphoreRelease(read_status);
+	}
+
+}
+
+void HAL_I2C_ErrorCallback(I2C_HandleTypeDef *hi2c) {
+	// TODO: implement this function somewhere
+	reboot();
+}
+
 void ReceiveMessages(void *argument) {
 	uint32_t tick = osKernelGetTickCount();
 	for(;;) {
@@ -474,9 +499,14 @@ void ReceiveMessages(void *argument) {
 
 void SpectralTask(void *argument) {
 	uint32_t tick = osKernelGetTickCount();
+
+	// create semaphore
+	semaphore_handle = osSemeaphoreNew(1U, 0U, NULL);
+	xSemaphoreCreateBinary();
 	for(;;) {
 		tick += osKernelGetTickFreq(); // 1 Hz
 
+		// finish
 		update_and_send_spectral();
 		osDelayUntil(tick);
 	}
