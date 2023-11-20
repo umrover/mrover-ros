@@ -35,17 +35,17 @@ namespace mrover {
 
         Controller& get_controller(std::string const& name);
 
-        void moveMotorsThrottle(const Throttle::ConstPtr& msg);
+        void moveMotorsThrottle(Throttle::ConstPtr const& msg);
 
-        void moveMotorsVelocity(const Velocity::ConstPtr& msg);
+        void moveMotorsVelocity(Velocity::ConstPtr const& msg);
 
-        void moveMotorsPosition(const Position::ConstPtr& msg);
+        void moveMotorsPosition(Position::ConstPtr const& msg);
 
-        void heartbeatCallback(const ros::TimerEvent&);
+        void heartbeatCallback(ros::TimerEvent const&);
 
-        void publishDataCallback(const ros::TimerEvent&);
+        void publishDataCallback(ros::TimerEvent const&);
 
-        void updateLastConnection();
+        void updateLastConnection(std::string const& name);
 
     private:
         ros::NodeHandle mNh;
@@ -58,7 +58,7 @@ namespace mrover {
         std::unordered_map<std::string, std::unique_ptr<Controller>> mControllers;
         std::string mGroupName;
         std::vector<std::string> mControllerNames;
-        std::chrono::high_resolution_clock::time_point lastConnection;
+        std::unordered_map<std::string, std::chrono::high_resolution_clock::time_point> mLastConnectionByName;
         ros::Timer heartbeatTimer;
         ros::Timer publishDataTimer;
     };

@@ -28,9 +28,9 @@ namespace mrover {
                 auto temp = std::make_unique<BrushlessController>(nh, "jetson", name);
                 mControllers[name] = std::move(temp);
             }
+            updateLastConnection(name);
         }
 
-        updateLastConnection();
 
         // Subscribe to the ROS topic for commands
         mMoveThrottleSub = mNh.subscribe<Throttle>(std::format("{}_throttle_cmd", mGroupName), 1, &MotorsManager::moveMotorsThrottle, this);
@@ -49,54 +49,48 @@ namespace mrover {
         return *mControllers.at(name);
     }
     void MotorsManager::moveMotorsThrottle(Throttle::ConstPtr const& msg) {
-        if (msg->names != mControllerNames || msg->names.size() != msg->throttles.size()) {
-            ROS_ERROR("Throttle request is invalid!");
-            return;
-        }
-
-        updateLastConnection();
-
         for (size_t i = 0; i < msg->names.size(); ++i) {
             std::string const& name = msg->names[i];
+            if (!mControllers.contains(name)) {
+                ROS_ERROR("Throttle request for %s ignored!", name.c_str());
+                continue;
+            }
             Controller& controller = get_controller(name);
             controller.setDesiredThrottle(msg->throttles[i]);
+            updateLastConnection(name);
         }
     }
 
     void MotorsManager::moveMotorsVelocity(Velocity::ConstPtr const& msg) {
-        if (msg->names != mControllerNames || msg->names.size() != msg->velocities.size()) {
-            ROS_ERROR("Velocity request is invalid!");
-            return;
-        }
-
-        updateLastConnection();
-
         for (size_t i = 0; i < msg->names.size(); ++i) {
             std::string const& name = msg->names[i];
+            if (!mControllers.contains(name)) {
+                ROS_ERROR("Velocity request for %s ignored!", name.c_str());
+                continue;
+            }
             Controller& controller = get_controller(name);
             controller.setDesiredVelocity(RadiansPerSecond{msg->velocities[i]});
+            updateLastConnection(name);
         }
     }
 
     void MotorsManager::moveMotorsPosition(Position::ConstPtr const& msg) {
-        if (msg->names != mControllerNames || msg->names.size() != msg->positions.size()) {
-            ROS_ERROR("Arm request is invalid!");
-            return;
-        }
-
-        updateLastConnection();
-
         for (std::size_t i = 0; i < msg->names.size(); ++i) {
             std::string const& name = msg->names[i];
+            if (!mControllers.contains(name)) {
+                ROS_ERROR("Position request for %s ignored!", name.c_str());
+                continue;
+            }
             Controller& controller = get_controller(name);
             controller.setDesiredPosition(Radians{msg->positions[i]});
+            updateLastConnection(name);
         }
     }
 
     void MotorsManager::heartbeatCallback(ros::TimerEvent const&) {
-        auto duration = std::chrono::high_resolution_clock::now() - lastConnection;
-        if (duration < 100ms) {
-            for (auto const& motorName: mControllerNames) {
+        for (auto const& [motorName, lastConnection]: mLastConnectionByName) {
+            auto duration = std::chrono::high_resolution_clock::now() - lastConnection;
+            if (duration < 100ms) {
                 Controller& controller = get_controller(motorName);
                 controller.setDesiredThrottle(0_percent);
             }
@@ -127,9 +121,9 @@ namespace mrover {
         mControllerDataPub.publish(controller_state);
     }
 
-    void MotorsManager::updateLastConnection() {
+    void MotorsManager::updateLastConnection(std::string const& name) {
         // Used as an override if we know that all motors have been called recently.
-        lastConnection = std::chrono::high_resolution_clock::now();
+        mLastConnectionByName.at(name) = std::chrono::high_resolution_clock::now();
     }
 
 } // namespace mrover

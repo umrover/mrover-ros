@@ -6,7 +6,7 @@
 
 using namespace mrover;
 
-void moveDrive(const geometry_msgs::Twist::ConstPtr& msg);
+void moveDrive(geometry_msgs::Twist::ConstPtr const& msg);
 
 std::unique_ptr<MotorsManager> driveManager;
 std::vector<std::string> driveNames{"front_left", "front_right", "middle_left", "middle_right", "back_left", "back_right"};
@@ -28,7 +28,7 @@ int main(int argc, char** argv) {
     assert(nh.hasParam("drive/controllers"));
     nh.getParam("drive/controllers", driveControllers);
     assert(driveControllers.getType() == XmlRpc::XmlRpcValue::TypeStruct);
-    for (const auto& driveName: driveNames) {
+    for (auto const& driveName: driveNames) {
         assert(driveControllers.hasMember(driveName));
         assert(driveControllers[driveName].getType() == XmlRpc::XmlRpcValue::TypeStruct);
         motorMultipliers[driveName] = Dimensionless{xmlRpcValueToTypeOrDefault<double>(driveControllers[driveName], "multiplier", 1.0)};
@@ -61,7 +61,7 @@ int main(int argc, char** argv) {
     return 0;
 }
 
-void moveDrive(const geometry_msgs::Twist::ConstPtr& msg) {
+void moveDrive(geometry_msgs::Twist::ConstPtr const& msg) {
     // See 11.5.1 in "Controls Engineering in the FIRST Robotics Competition" for the math
     auto forward = MetersPerSecond{msg->linear.x};
     auto turn = RadiansPerSecond{msg->angular.z};
@@ -86,7 +86,6 @@ void moveDrive(const geometry_msgs::Twist::ConstPtr& msg) {
         RadiansPerSecond scaledAngularVelocity = angularVelocity * multiplier; // currently in rad/s
 
         driveManager->get_controller(name).setDesiredVelocity(scaledAngularVelocity);
+        driveManager->updateLastConnection(name);
     }
-
-    driveManager->updateLastConnection();
 }
