@@ -15,9 +15,15 @@
 
   <group if="$(arg cameras)">
 
+    <node pkg="mrover" type="gst_websocket_streamer" name="ish_streamer"
+          output="screen">
+      <param name="dev_node" value="/dev/boomcam"/>
+      <param name="port" value="8084"/>
+    </node>
+
     <node pkg="mrover" type="gst_websocket_streamer" name="ish_1_streamer"
           output="screen">
-      <param name="dev_path" value="/devices/platform/3610000.xhci/usb1/1-2/1-2.3"/>
+      <param name="dev_path" value="/dev/arducam"/>
       <param name="port" value="8084"/>
       <param name="disable_auto_white_balance" value="true"/>
     </node>

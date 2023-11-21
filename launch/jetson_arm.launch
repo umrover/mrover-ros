@@ -8,7 +8,7 @@
 
   <node pkg="mrover" type="gst_websocket_streamer" name="boom_streamer"
         output="screen">
-    <param name="dev_node" value="/dev/boomcam"/>
+    <param name="dev_node" value="/dev/arducam"/>
     <param name="port" value="8084"/>
   </node>
 </launch>

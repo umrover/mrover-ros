@@ -5,7 +5,7 @@
     <arg name="use_builtin_visual_odom" value="$(arg use_builtin_visual_odom)"/>
   </include>
 
-  <node pkg="nodelet" type="nodelet" name="perception_nodelet_manager" required="true"
+  <node pkg="nodelet" type="nodelet" name="x" required="true"
         args="manager" output="screen"/>
 
   <node name="panorama" pkg="mrover" type="panorama.py" output="screen"/>
