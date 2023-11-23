@@ -15,13 +15,16 @@ INVERSE_TRANS_MATRIX = np.linalg.inv(TRANSFORMATION_MATRIX)  # pitch/roll = INVE
 controller_1 = moteus.Controller(id=0x20)
 controller_2 = moteus.Controller(id=0x21)
 
+g_controller_1_rev = 0
+g_controller_2_rev = 0
+
 
 def adjust_pitch_roll(believed_pitch, believed_roll):
     global pitch_roll_offset
     print(f"Adjusting pitch and roll to be {believed_pitch} and {believed_roll}")
 
     # TODO - get what the moteus thinks its revolution is
-    moteus_believed_rev = np.array([0, 0])
+    moteus_believed_rev = np.array([g_controller_1_rev, g_controller_2_rev])
     moteus_believed_pitch_roll = np.dot(INVERSE_TRANS_MATRIX, moteus_believed_rev)
 
     user_believed_pitch_roll = np.array([believed_pitch, believed_roll])
@@ -36,24 +39,24 @@ def print_key(key):
 MAX_REV_PER_SEC = 8 / 60  # 8 RPM to RPS
 
 
-def transform_coordinates_and_clamp(x1, x2):
+def transform_coordinates_and_clamp(pitch, roll):
     # Define the transformation matrix
 
     # Create the input vector
-    input_vector = np.array([x1, x2])
+    input_vector = np.array([pitch, roll])
 
     # Perform matrix multiplication
     result_vector = np.dot(TRANSFORMATION_MATRIX, input_vector)
 
     # Extract y1 and y2 from the result vector
-    y1, y2 = result_vector
+    m1, m2 = result_vector
 
-    if abs(y1) > MAX_REV_PER_SEC or abs(y2) > MAX_REV_PER_SEC:
-        larger_value = max(abs(y1), abs(y2))
-        y1 = (y1 / larger_value) * MAX_REV_PER_SEC
-        y2 = (y2 / larger_value) * MAX_REV_PER_SEC
+    if abs(m1) > MAX_REV_PER_SEC or abs(m2) > MAX_REV_PER_SEC:
+        larger_value = max(abs(m1), abs(m2))
+        m1 = (m1 / larger_value) * MAX_REV_PER_SEC
+        m2 = (m2 / larger_value) * MAX_REV_PER_SEC
 
-    return y1, y2
+    return m1, m2
 
 
 POSITION_FOR_VELOCITY_CONTROL = math.nan
@@ -92,7 +95,9 @@ async def move_velocity(pitch, roll):
         query=True,
     )
 
-    async def fix_controller_if_error(controller):
+    async def fix_controller_if_error_and_return_pos(controller, pos_val_to_update):
+        global g_controller_1_rev, g_controller_2_rev
+
         def moteus_not_found(state):
             return (
                 state is None
@@ -105,9 +110,16 @@ async def move_velocity(pitch, roll):
         controller_not_found = moteus_not_found(state)
         if controller_not_found:
             await controller.set_stop()
+            return None
+        else:
+            return state.values[moteus.Register.POSITION]
 
-    await fix_controller_if_error(controller_1)
-    await fix_controller_if_error(controller_2)
+    return_pos_1 = await fix_controller_if_error_and_return_pos(controller_1)
+    if return_pos_1 is not None:
+        g_controller_1_rev = return_pos_1
+    return_pos_2 = await fix_controller_if_error_and_return_pos(controller_2)
+    if return_pos_2 is not None:
+        g_controller_2_rev = return_pos_2
 
 
 async def main():
