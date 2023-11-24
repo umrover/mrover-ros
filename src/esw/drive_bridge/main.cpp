@@ -86,6 +86,5 @@ void moveDrive(geometry_msgs::Twist::ConstPtr const& msg) {
         RadiansPerSecond scaledAngularVelocity = angularVelocity * multiplier; // currently in rad/s
 
         driveManager->get_controller(name).setDesiredVelocity(scaledAngularVelocity);
-        driveManager->updateLastConnection(name);
     }
 }

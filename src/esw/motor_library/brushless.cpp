@@ -24,11 +24,13 @@ namespace mrover {
     }
 
     void BrushlessController::setDesiredThrottle(Percent throttle) {
+        updateLastConnection();
         throttle = std::clamp(throttle, -1_percent, 1_percent);
         setDesiredVelocity(mapThrottleToVelocity(throttle));
     }
 
     void BrushlessController::setDesiredPosition(Radians position) {
+        updateLastConnection();
         Revolutions position_revs = std::clamp(position, mMinPosition, mMaxPosition);
         moteus::PositionMode::Command command{
                 .position = position_revs.get(),
@@ -44,6 +46,7 @@ namespace mrover {
     // Nan          0.0         = Don't move
 
     void BrushlessController::setDesiredVelocity(RadiansPerSecond velocity) {
+        updateLastConnection();
         RevolutionsPerSecond velocity_rev_s = std::clamp(velocity, mMinVelocity, mMaxVelocity);
         // ROS_WARN("%7.3f   %7.3f",
         //  velocity.get(), velocity_rev_s.get());

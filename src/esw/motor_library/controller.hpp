@@ -5,6 +5,8 @@
 #include <ros/ros.h>
 
 #include <can_device.hpp>
+#include <chrono>
+#include <iostream>
 #include <units/units.hpp>
 
 namespace mrover {
@@ -17,6 +19,8 @@ namespace mrover {
               mControllerName{std::move(controllerName)},
               mDevice{nh, mName, mControllerName},
               mIncomingCANSub{mNh.subscribe<CAN>(std::format("can/{}/in", mControllerName), 16, &Controller::processCANMessage, this)} {
+            updateLastConnection();
+            mHeartbeatTimer = mNh.createTimer(ros::Duration(0.1), &Controller::heartbeatCallback, this);
         }
 
         virtual ~Controller() = default;
@@ -28,11 +32,22 @@ namespace mrover {
         Radians getCurrentPosition() { return mCurrentPosition; }
         RadiansPerSecond getCurrentVelocity() { return mCurrentVelocity; }
         std::string getErrorState() { return mErrorState; }
-        std::string getState() { return mState; } // TODO - we probably don't need both mErrorState and mState
+        std::string getState() { return mState; }
         virtual double getEffort() = 0;
         bool isLimitHit(uint8_t index) {
             return mLimitHit.at(index);
         }
+        void updateLastConnection() {
+            mLastConnection = std::chrono::high_resolution_clock::now();
+        }
+
+        void heartbeatCallback(ros::TimerEvent const&) {
+            auto duration = std::chrono::high_resolution_clock::now() - mLastConnection;
+            if (duration < std::chrono::milliseconds(100)) {
+                setDesiredThrottle(0_percent);
+            }
+        }
+
 
     protected:
         ros::NodeHandle mNh;
@@ -47,6 +62,8 @@ namespace mrover {
         std::string mErrorState;
         std::string mState;
         std::array<bool, 4> mLimitHit{};
+        std::chrono::high_resolution_clock::time_point mLastConnection;
+        ros::Timer mHeartbeatTimer;
     };
 
 } // namespace mrover

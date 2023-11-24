@@ -1,6 +1,5 @@
 #pragma once
 
-#include <chrono>
 #include <unordered_map>
 
 #include <XmlRpcValue.h>
@@ -41,11 +40,7 @@ namespace mrover {
 
         void moveMotorsPosition(Position::ConstPtr const& msg);
 
-        void heartbeatCallback(ros::TimerEvent const&);
-
         void publishDataCallback(ros::TimerEvent const&);
-
-        void updateLastConnection(std::string const& name);
 
     private:
         ros::NodeHandle mNh;
@@ -58,8 +53,6 @@ namespace mrover {
         std::unordered_map<std::string, std::unique_ptr<Controller>> mControllers;
         std::string mGroupName;
         std::vector<std::string> mControllerNames;
-        std::unordered_map<std::string, std::chrono::high_resolution_clock::time_point> mLastConnectionByName;
-        ros::Timer heartbeatTimer;
         ros::Timer publishDataTimer;
     };
 

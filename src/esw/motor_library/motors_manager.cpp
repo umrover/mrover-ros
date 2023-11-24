@@ -28,7 +28,6 @@ namespace mrover {
                 auto temp = std::make_unique<BrushlessController>(nh, "jetson", name);
                 mControllers[name] = std::move(temp);
             }
-            updateLastConnection(name);
         }
 
 
@@ -40,8 +39,6 @@ namespace mrover {
         mJointDataPub = mNh.advertise<sensor_msgs::JointState>(std::format("{}_joint_data", mGroupName), 1);
         mControllerDataPub = mNh.advertise<ControllerState>(std::format("{}_controller_data", mGroupName), 1);
 
-        // Create a 0.1 second heartbeat timer
-        heartbeatTimer = mNh.createTimer(ros::Duration(0.1), &MotorsManager::heartbeatCallback, this);
         publishDataTimer = mNh.createTimer(ros::Duration(0.1), &MotorsManager::publishDataCallback, this);
     }
 
@@ -57,7 +54,6 @@ namespace mrover {
             }
             Controller& controller = get_controller(name);
             controller.setDesiredThrottle(msg->throttles[i]);
-            updateLastConnection(name);
         }
     }
 
@@ -70,7 +66,6 @@ namespace mrover {
             }
             Controller& controller = get_controller(name);
             controller.setDesiredVelocity(RadiansPerSecond{msg->velocities[i]});
-            updateLastConnection(name);
         }
     }
 
@@ -83,17 +78,6 @@ namespace mrover {
             }
             Controller& controller = get_controller(name);
             controller.setDesiredPosition(Radians{msg->positions[i]});
-            updateLastConnection(name);
-        }
-    }
-
-    void MotorsManager::heartbeatCallback(ros::TimerEvent const&) {
-        for (auto const& [motorName, lastConnection]: mLastConnectionByName) {
-            auto duration = std::chrono::high_resolution_clock::now() - lastConnection;
-            if (duration < 100ms) {
-                Controller& controller = get_controller(motorName);
-                controller.setDesiredThrottle(0_percent);
-            }
         }
     }
 
@@ -119,11 +103,6 @@ namespace mrover {
 
         mJointDataPub.publish(joint_state);
         mControllerDataPub.publish(controller_state);
-    }
-
-    void MotorsManager::updateLastConnection(std::string const& name) {
-        // Used as an override if we know that all motors have been called recently.
-        mLastConnectionByName.at(name) = std::chrono::high_resolution_clock::now();
     }
 
 } // namespace mrover
