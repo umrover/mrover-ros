@@ -176,9 +176,7 @@ def convert_gps_to_cartesian(waypoint: GPSWaypoint) -> Tuple[Waypoint, SE3]:
     # navigation algorithmns currently require all coordinates to have zero as the z coordinate
     odom[2] = 0
 
-    return Waypoint(fiducial_id=waypoint.tag_id, tf_id=f"course{waypoint.tag_id}", type=waypoint.type), SE3(
-        position=odom
-    )
+    return Waypoint(fiducial_id=waypoint.id, tf_id=f"course{waypoint.id}", type=waypoint.type), SE3(position=odom)
 
 
 def convert_cartesian_to_gps(coordinate: np.ndarray) -> GPSWaypoint:
