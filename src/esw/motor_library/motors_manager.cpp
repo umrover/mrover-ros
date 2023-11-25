@@ -9,11 +9,11 @@ namespace mrover {
           mGroupName{std::move(groupName)} {
 
         XmlRpc::XmlRpcValue motorControllerNames;
-        assert(mNh.hasParam(std::format("motors_groups/{}", mGroupName)));
-        mNh.getParam(std::format("motors_groups/{}", mGroupName), motorControllerNames);
+        assert(mNh.hasParam(std::format("motors_group/{}", mGroupName)));
+        mNh.getParam(std::format("motors_group/{}", mGroupName), motorControllerNames);
         assert(motorControllerNames.getType() == XmlRpc::XmlRpcValue::TypeArray);
-        for (auto const& [name, type]: motorControllerNames) {
-            assert(type.getType() == XmlRpc::XmlRpcValue::TypeString);
+        for (int i = 0; i < motorControllerNames.size(); ++i) {
+            std::string name = static_cast<std::string>(motorControllerNames[i]);
             mIndexByName[name] = mControllerNames.size();
             mControllerNames.push_back(static_cast<std::string>(name));
             mThrottlePubsByName[name] = mNh.advertise<Throttle>(std::format("{}_throttle_cmd", name), 1);
@@ -46,6 +46,12 @@ namespace mrover {
         assert(controllersRoot.getType() == XmlRpc::XmlRpcValue::TypeStruct);
 
         for (std::string const& name: mControllerNames) {
+
+            if (!controllersRoot.hasMember(name)) {
+                ROS_ERROR("There is a mismatch in the config - motor %s doesn't exist!", name.c_str());
+                throw;
+            }
+
             auto type = xmlRpcValueToTypeOrDefault<std::string>(controllersRoot[name], "type");
             assert(type == "brushed" || type == "brushless");
 
@@ -59,6 +65,10 @@ namespace mrover {
                 mControllers[name] = std::move(temp);
             }
         }
+
+        mMoveThrottleSub = mNh.subscribe<Throttle>(std::format("{}_throttle_cmd", mGroupName), 1, &MotorsManager::moveMotorsThrottle, this);
+        mMoveVelocitySub = mNh.subscribe<Velocity>(std::format("{}_velocity_cmd", mGroupName), 1, &MotorsManager::moveMotorsVelocity, this);
+        mMovePositionSub = mNh.subscribe<Position>(std::format("{}_position_cmd", mGroupName), 1, &MotorsManager::moveMotorsPosition, this);
     }
 
     Controller& MotorsManager::get_controller(std::string const& name) {

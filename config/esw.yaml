@@ -508,7 +508,7 @@ motors_group:
     - "joint_c"
     - "joint_de_0"
     - "joint_de_1"
-    - "finger"
+    - "allen_key"
     - "gripper"
   mast_gimbal:
     - "mast_gimbal_x"
