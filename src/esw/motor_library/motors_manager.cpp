@@ -4,15 +4,45 @@ namespace mrover {
 
     using namespace std::chrono_literals;
 
-    MotorsManager::MotorsManager(ros::NodeHandle const& nh, std::string groupName, std::vector<std::string> controllerNames)
+    MotorsManager::MotorsManager(ros::NodeHandle const& nh, std::string groupName)
         : mNh{nh},
-          mControllerNames{std::move(controllerNames)},
           mGroupName{std::move(groupName)} {
+
+        XmlRpc::XmlRpcValue motorControllerNames;
+        assert(mNh.hasParam(std::format("motors_groups/{}", mGroupName)));
+        mNh.getParam(std::format("motors_groups/{}", mGroupName), motorControllerNames);
+        assert(motorControllerNames.getType() == XmlRpc::XmlRpcValue::TypeArray);
+        for (auto const& [name, type]: motorControllerNames) {
+            assert(type.getType() == XmlRpc::XmlRpcValue::TypeString);
+            mIndexByName[name] = mControllerNames.size();
+            mControllerNames.push_back(static_cast<std::string>(name));
+            mThrottlePubsByName[name] = mNh.advertise<Throttle>(std::format("{}_throttle_cmd", name), 1);
+            mVelocityPubsByName[name] = mNh.advertise<Velocity>(std::format("{}_velocity_cmd", name), 1);
+            mPositionPubsByName[name] = mNh.advertise<Position>(std::format("{}_position_cmd", name), 1);
+            mJointDataSubsByName[name] = mNh.subscribe<sensor_msgs::JointState>(
+                    std::format("{}_joint_data", name), 1,
+                    [name, this](sensor_msgs::JointState::ConstPtr const& msg) {
+                        return MotorsManager::processJointData(msg, name);
+                    });
+            mControllerDataSubsByName[name] = mNh.subscribe<ControllerState>(
+                    std::format("{}_controller_data", name), 1,
+                    [name, this](ControllerState::ConstPtr const& msg) {
+                        return MotorsManager::processControllerData(msg, name);
+                    });
+            mJointState.name.push_back(name);
+            mControllerState.name.push_back(name);
+        }
+        mJointState.position.resize(mJointState.name.size());
+        mJointState.velocity.resize(mJointState.name.size());
+        mJointState.effort.resize(mJointState.name.size());
+        mControllerState.state.resize(mControllerState.name.size());
+        mControllerState.error.resize(mControllerState.name.size());
+        mControllerState.limit_hit.resize(mControllerState.name.size());
 
         // Load motor controllers configuration from the ROS parameter server
         XmlRpc::XmlRpcValue controllersRoot;
-        assert(nh.hasParam("motors/controllers"));
-        nh.getParam("motors/controllers", controllersRoot);
+        assert(mNh.hasParam("motors/controllers"));
+        mNh.getParam("motors/controllers", controllersRoot);
         assert(controllersRoot.getType() == XmlRpc::XmlRpcValue::TypeStruct);
 
         for (std::string const& name: mControllerNames) {
@@ -29,22 +59,12 @@ namespace mrover {
                 mControllers[name] = std::move(temp);
             }
         }
-
-
-        // Subscribe to the ROS topic for commands
-        mMoveThrottleSub = mNh.subscribe<Throttle>(std::format("{}_throttle_cmd", mGroupName), 1, &MotorsManager::moveMotorsThrottle, this);
-        mMoveVelocitySub = mNh.subscribe<Velocity>(std::format("{}_velocity_cmd", mGroupName), 1, &MotorsManager::moveMotorsVelocity, this);
-        mMovePositionSub = mNh.subscribe<Position>(std::format("{}_position_cmd", mGroupName), 1, &MotorsManager::moveMotorsPosition, this);
-
-        mJointDataPub = mNh.advertise<sensor_msgs::JointState>(std::format("{}_joint_data", mGroupName), 1);
-        mControllerDataPub = mNh.advertise<ControllerState>(std::format("{}_controller_data", mGroupName), 1);
-
-        publishDataTimer = mNh.createTimer(ros::Duration(0.1), &MotorsManager::publishDataCallback, this);
     }
 
     Controller& MotorsManager::get_controller(std::string const& name) {
         return *mControllers.at(name);
     }
+
     void MotorsManager::moveMotorsThrottle(Throttle::ConstPtr const& msg) {
         for (size_t i = 0; i < msg->names.size(); ++i) {
             std::string const& name = msg->names[i];
@@ -52,8 +72,11 @@ namespace mrover {
                 ROS_ERROR("Throttle request for %s ignored!", name.c_str());
                 continue;
             }
-            Controller& controller = get_controller(name);
-            controller.setDesiredThrottle(msg->throttles[i]);
+
+            Throttle throttle;
+            throttle.names = {name};
+            throttle.throttles = {msg->throttles[i]};
+            mThrottlePubsByName[name].publish(throttle);
         }
     }
 
@@ -64,8 +87,12 @@ namespace mrover {
                 ROS_ERROR("Velocity request for %s ignored!", name.c_str());
                 continue;
             }
-            Controller& controller = get_controller(name);
-            controller.setDesiredVelocity(RadiansPerSecond{msg->velocities[i]});
+
+
+            Velocity velocity;
+            velocity.names = {name};
+            velocity.velocities = {msg->velocities[i]};
+            mVelocityPubsByName[name].publish(velocity);
         }
     }
 
@@ -76,33 +103,42 @@ namespace mrover {
                 ROS_ERROR("Position request for %s ignored!", name.c_str());
                 continue;
             }
-            Controller& controller = get_controller(name);
-            controller.setDesiredPosition(Radians{msg->positions[i]});
+
+            Position position;
+            position.names = {name};
+            position.positions = {msg->positions[i]};
+            mPositionPubsByName[name].publish(position);
         }
     }
 
-    void MotorsManager::publishDataCallback(ros::TimerEvent const&) {
-        sensor_msgs::JointState joint_state;
-        ControllerState controller_state;
-        for (std::string const& name: mControllerNames) {
-            Controller& controller = get_controller(name);
-            joint_state.name.push_back(name);
-            joint_state.position.push_back(controller.getCurrentPosition().get());
-            joint_state.velocity.push_back(controller.getCurrentVelocity().get());
-            joint_state.effort.push_back(controller.getEffort());
-
-            controller_state.name.push_back(name);
-            controller_state.state.push_back(controller.getState());
-            controller_state.error.push_back(controller.getErrorState());
-            uint8_t limit_hit;
-            for (int i = 0; i < 4; ++i) {
-                limit_hit |= controller.isLimitHit(i) << i;
-            }
-            controller_state.limit_hit.push_back(limit_hit);
+    void MotorsManager::processJointData(sensor_msgs::JointState::ConstPtr const& msg, std::string const& name) {
+        if (msg->name.size() != 1 || msg->position.size() != 1 || msg->velocity.size() != 1 || msg->effort.size() != 1) {
+            ROS_ERROR("Process joint data for %s ignored!", name.c_str());
+            return;
         }
 
-        mJointDataPub.publish(joint_state);
-        mControllerDataPub.publish(controller_state);
+        size_t index = mIndexByName.at(name);
+
+        mJointState.position[index] = msg->position[0];
+        mJointState.velocity[index] = msg->velocity[0];
+        mJointState.effort[index] = msg->effort[0];
+
+        mJointDataPub.publish(mJointState);
+    }
+
+    void MotorsManager::processControllerData(ControllerState::ConstPtr const& msg, std::string const& name) {
+        if (msg->name.size() != 1 || msg->state.size() != 1 || msg->error.size() != 1 || msg->limit_hit.size() != 1) {
+            ROS_ERROR("Process controller data for %s ignored!", name.c_str());
+            return;
+        }
+
+        auto index = mIndexByName.at(name);
+
+        mControllerState.state[index] = msg->state[0];
+        mControllerState.error[index] = msg->error[0];
+        mControllerState.limit_hit[index] = msg->limit_hit[0];
+
+        mControllerDataPub.publish(mControllerState);
     }
 
 } // namespace mrover

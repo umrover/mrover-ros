@@ -5,8 +5,6 @@
 
 std::unique_ptr<mrover::CanDevice> armLaserCanDevice;
 
-std::vector<std::string> armNames{"joint_a", "joint_b", "joint_c", "joint_de_0", "joint_de_1", "allen_key", "gripper"};
-
 bool armLaserCallback(std_srvs::SetBool::Request& req, std_srvs::SetBool::Response& res) {
     armLaserCanDevice->publish_message(mrover::InBoundPDLBMessage{mrover::ArmLaserCommand{.enable = static_cast<bool>(req.data)}});
     res.success = true;
@@ -21,7 +19,7 @@ int main(int argc, char** argv) {
 
     armLaserCanDevice = std::make_unique<mrover::CanDevice>(nh, "jetson", "pdlb");
 
-    [[maybe_unused]] auto armManager = std::make_unique<mrover::MotorsManager>(nh, "arm", armNames);
+    [[maybe_unused]] auto armManager = std::make_unique<mrover::MotorsManager>(nh, "arm");
 
     ros::ServiceServer arm_laser_service = nh.advertiseService("enable_arm_laser", armLaserCallback);
 

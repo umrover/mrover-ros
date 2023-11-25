@@ -50,7 +50,7 @@ int main(int argc, char** argv) {
 
     MAX_MOTOR_SPEED = maxLinearSpeed * WHEEL_LINEAR_TO_ANGULAR;
 
-    driveManager = std::make_unique<MotorsManager>(nh, "drive", driveNames);
+    driveManager = std::make_unique<MotorsManager>(nh, "drive");
 
     // Subscribe to the ROS topic for drive commands
     ros::Subscriber moveDriveSubscriber = nh.subscribe<geometry_msgs::Twist>("cmd_vel", 1, moveDrive);
