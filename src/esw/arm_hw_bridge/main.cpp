@@ -19,7 +19,7 @@ int main(int argc, char** argv) {
 
     armLaserCanDevice = std::make_unique<mrover::CanDevice>(nh, "jetson", "pdlb");
 
-    [[maybe_unused]] auto armManager = std::make_unique<mrover::MotorsGroup>(nh, "arm");
+    [[maybe_unused]] auto armManager = std::make_unique<mrover::MotorsGroup>(nh, "arm_hw");
 
     ros::ServiceServer arm_laser_service = nh.advertiseService("enable_arm_laser", armLaserCallback);
 

@@ -23,22 +23,22 @@ std::unique_ptr<float> max_rad_per_sec_de_1;
 
 void clampValues(float& val1, float& val2, float minValue1, float maxValue1, float minValue2, float maxValue2) {
     if (val1 < minValue1) {
-        float const ratio = val1 / minValue1;
+        float const ratio = minValue1 / val1;
         val1 *= ratio;
         val2 *= ratio;
     }
     if (maxValue1 < val1) {
-        float const ratio = val1 / maxValue1;
+        float const ratio = maxValue1 / val1;
         val1 *= ratio;
         val2 *= ratio;
     }
     if (val2 < minValue2) {
-        float const ratio = val2 / minValue2;
+        float const ratio = minValue2 / val2;
         val1 *= ratio;
         val2 *= ratio;
     }
     if (maxValue2 < val2) {
-        float const ratio = val2 / maxValue2;
+        float const ratio = maxValue2 / val2;
         val1 *= ratio;
         val2 *= ratio;
     }
