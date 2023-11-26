@@ -1,10 +1,10 @@
-#include "motors_manager.hpp"
+#include "motors_group.hpp"
 
 namespace mrover {
 
     using namespace std::chrono_literals;
 
-    MotorsManager::MotorsManager(ros::NodeHandle const& nh, std::string groupName)
+    MotorsGroup::MotorsGroup(ros::NodeHandle const& nh, std::string groupName)
         : mNh{nh},
           mGroupName{std::move(groupName)} {
 
@@ -22,12 +22,12 @@ namespace mrover {
             mJointDataSubsByName[name] = mNh.subscribe<sensor_msgs::JointState>(
                     std::format("{}_joint_data", name), 1,
                     [name, this](sensor_msgs::JointState::ConstPtr const& msg) {
-                        return MotorsManager::processJointData(msg, name);
+                        return MotorsGroup::processJointData(msg, name);
                     });
             mControllerDataSubsByName[name] = mNh.subscribe<ControllerState>(
                     std::format("{}_controller_data", name), 1,
                     [name, this](ControllerState::ConstPtr const& msg) {
-                        return MotorsManager::processControllerData(msg, name);
+                        return MotorsGroup::processControllerData(msg, name);
                     });
             mJointState.name.push_back(name);
             mControllerState.name.push_back(name);
@@ -55,7 +55,7 @@ namespace mrover {
             auto type = xmlRpcValueToTypeOrDefault<std::string>(controllersRoot[name], "type");
             assert(type == "brushed" || type == "brushless");
 
-            // TODO: avoid hard coding Jetson here - can move into constructor of MotorsManager
+            // TODO: avoid hard coding Jetson here - can move into constructor of MotorsGroup
             // and let the bridge nodes hardcode as jetson.
             if (type == "brushed") {
                 auto temp = std::make_unique<BrushedController>(nh, "jetson", name);
@@ -66,16 +66,16 @@ namespace mrover {
             }
         }
 
-        mMoveThrottleSub = mNh.subscribe<Throttle>(std::format("{}_throttle_cmd", mGroupName), 1, &MotorsManager::moveMotorsThrottle, this);
-        mMoveVelocitySub = mNh.subscribe<Velocity>(std::format("{}_velocity_cmd", mGroupName), 1, &MotorsManager::moveMotorsVelocity, this);
-        mMovePositionSub = mNh.subscribe<Position>(std::format("{}_position_cmd", mGroupName), 1, &MotorsManager::moveMotorsPosition, this);
+        mMoveThrottleSub = mNh.subscribe<Throttle>(std::format("{}_throttle_cmd", mGroupName), 1, &MotorsGroup::moveMotorsThrottle, this);
+        mMoveVelocitySub = mNh.subscribe<Velocity>(std::format("{}_velocity_cmd", mGroupName), 1, &MotorsGroup::moveMotorsVelocity, this);
+        mMovePositionSub = mNh.subscribe<Position>(std::format("{}_position_cmd", mGroupName), 1, &MotorsGroup::moveMotorsPosition, this);
     }
 
-    Controller& MotorsManager::get_controller(std::string const& name) {
+    Controller& MotorsGroup::get_controller(std::string const& name) {
         return *mControllers.at(name);
     }
 
-    void MotorsManager::moveMotorsThrottle(Throttle::ConstPtr const& msg) {
+    void MotorsGroup::moveMotorsThrottle(Throttle::ConstPtr const& msg) {
         for (size_t i = 0; i < msg->names.size(); ++i) {
             std::string const& name = msg->names[i];
             if (!mControllers.contains(name)) {
@@ -90,7 +90,7 @@ namespace mrover {
         }
     }
 
-    void MotorsManager::moveMotorsVelocity(Velocity::ConstPtr const& msg) {
+    void MotorsGroup::moveMotorsVelocity(Velocity::ConstPtr const& msg) {
         for (size_t i = 0; i < msg->names.size(); ++i) {
             std::string const& name = msg->names[i];
             if (!mControllers.contains(name)) {
@@ -106,7 +106,9 @@ namespace mrover {
         }
     }
 
-    void MotorsManager::moveMotorsPosition(Position::ConstPtr const& msg) {
+    void MotorsGroup::moveMotorsPosition(Position::ConstPtr const& msg) {
+        // TODO - if any of the motor positions are invalid, then u should cancel the message.
+
         for (std::size_t i = 0; i < msg->names.size(); ++i) {
             std::string const& name = msg->names[i];
             if (!mControllers.contains(name)) {
@@ -121,7 +123,7 @@ namespace mrover {
         }
     }
 
-    void MotorsManager::processJointData(sensor_msgs::JointState::ConstPtr const& msg, std::string const& name) {
+    void MotorsGroup::processJointData(sensor_msgs::JointState::ConstPtr const& msg, std::string const& name) {
         if (msg->name.size() != 1 || msg->position.size() != 1 || msg->velocity.size() != 1 || msg->effort.size() != 1) {
             ROS_ERROR("Process joint data for %s ignored!", name.c_str());
             return;
@@ -136,7 +138,7 @@ namespace mrover {
         mJointDataPub.publish(mJointState);
     }
 
-    void MotorsManager::processControllerData(ControllerState::ConstPtr const& msg, std::string const& name) {
+    void MotorsGroup::processControllerData(ControllerState::ConstPtr const& msg, std::string const& name) {
         if (msg->name.size() != 1 || msg->state.size() != 1 || msg->error.size() != 1 || msg->limit_hit.size() != 1) {
             ROS_ERROR("Process controller data for %s ignored!", name.c_str());
             return;

@@ -1,5 +1,5 @@
 #include "messaging.hpp"
-#include <motors_manager.hpp>
+#include <motors_group.hpp>
 #include <ros/ros.h>
 #include <std_srvs/SetBool.h>
 
@@ -14,12 +14,12 @@ bool armLaserCallback(std_srvs::SetBool::Request& req, std_srvs::SetBool::Respon
 
 int main(int argc, char** argv) {
     // Initialize the ROS node
-    ros::init(argc, argv, "arm_bridge");
+    ros::init(argc, argv, "arm_hw_bridge");
     ros::NodeHandle nh;
 
     armLaserCanDevice = std::make_unique<mrover::CanDevice>(nh, "jetson", "pdlb");
 
-    [[maybe_unused]] auto armManager = std::make_unique<mrover::MotorsManager>(nh, "arm");
+    [[maybe_unused]] auto armManager = std::make_unique<mrover::MotorsGroup>(nh, "arm");
 
     ros::ServiceServer arm_laser_service = nh.advertiseService("enable_arm_laser", armLaserCallback);
 

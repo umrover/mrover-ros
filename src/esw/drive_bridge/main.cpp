@@ -2,13 +2,13 @@
 #include <ros/ros.h>
 
 #include <can_device.hpp>
-#include <motors_manager.hpp>
+#include <motors_group.hpp>
 
 using namespace mrover;
 
 void moveDrive(geometry_msgs::Twist::ConstPtr const& msg);
 
-std::unique_ptr<MotorsManager> driveManager;
+std::unique_ptr<MotorsGroup> driveManager;
 std::vector<std::string> driveNames{"front_left", "front_right", "middle_left", "middle_right", "back_left", "back_right"};
 
 std::unordered_map<std::string, Dimensionless> motorMultipliers; // Store the multipliers for each motor
@@ -50,7 +50,7 @@ int main(int argc, char** argv) {
 
     MAX_MOTOR_SPEED = maxLinearSpeed * WHEEL_LINEAR_TO_ANGULAR;
 
-    driveManager = std::make_unique<MotorsManager>(nh, "drive");
+    driveManager = std::make_unique<MotorsGroup>(nh, "drive");
 
     // Subscribe to the ROS topic for drive commands
     ros::Subscriber moveDriveSubscriber = nh.subscribe<geometry_msgs::Twist>("cmd_vel", 1, moveDrive);

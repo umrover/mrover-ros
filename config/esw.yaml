@@ -502,7 +502,7 @@ drive:
       multiplier: 1.0
 
 motors_group:
-  arm:
+  arm_hw:
     - "joint_a"
     - "joint_b"
     - "joint_c"

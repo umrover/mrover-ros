@@ -1,7 +1,7 @@
 #include <ros/ros.h>
 
 #include <iostream>
-#include <motors_manager.hpp>
+#include <motors_group.hpp>
 #include <units/units.hpp>
 
 int main(int argc, char** argv) {

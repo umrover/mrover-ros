@@ -26,11 +26,11 @@ namespace mrover {
         return Unit{value};
     }
 
-    class MotorsManager {
+    class MotorsGroup {
     public:
-        MotorsManager() = default;
+        MotorsGroup() = default;
 
-        MotorsManager(ros::NodeHandle const& nh, std::string groupName);
+        MotorsGroup(ros::NodeHandle const& nh, std::string groupName);
 
         Controller& get_controller(std::string const& name);
 

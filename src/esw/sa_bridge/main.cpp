@@ -1,5 +1,5 @@
 #include "can_device.hpp"
-#include <motors_manager.hpp>
+#include <motors_group.hpp>
 #include <ros/ros.h>
 #include <std_srvs/SetBool.h>
 
@@ -9,7 +9,7 @@ int main(int argc, char** argv) {
     ros::NodeHandle nh;
 
     // Load motor controllers configuration from the ROS parameter server
-    [[maybe_unused]] auto SAManager = std::make_unique<mrover::MotorsManager>(nh, "sa");
+    [[maybe_unused]] auto SAManager = std::make_unique<mrover::MotorsGroup>(nh, "sa");
     // Enter the ROS event loop
     ros::spin();
 
