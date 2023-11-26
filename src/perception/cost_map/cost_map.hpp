@@ -1,7 +1,9 @@
-#include "nav_msgs/OccupancyGrid.h"
 #include "pch.hpp"
 
 namespace mrover {
+
+    using PointCloud = pcl::PointCloud<pcl::PointXYZRGBNormal>;
+    using PointCloudPtr = PointCloud::Ptr;
 
     class CostMapNodelet : public nodelet::Nodelet {
     private:
@@ -10,20 +12,22 @@ namespace mrover {
         ros::Subscriber mPcSub;
         void onInit() override;
 
-        bool publishCostMaps = false; // Do we publish our global cost maps?
-        bool verbose = false;         // Do we print extra information for debugging?
-        float resolution = 1;         // In m/cell
-        int cell_width = 1;            // Number of cells wide
-        int cell_height = 1;           // Number of cells high
-        int global_dim = 15;
+        bool mPublishCostMap{}; // If set, publish the global costmap
+        float mResolution{};    // Cells per meter
+        int mDimension{};       // Dimensions of the square costmap in meters
         const tf2_ros::Buffer tf_buffer = tf2_ros::Buffer();
 
-        nav_msgs::OccupancyGrid globalGridMsg;
+        std::optional<SE3> mPreviousPose;
+        nav_msgs::OccupancyGrid mGlobalGridMsg;
 
 
     public:
         CostMapNodelet() = default;
+
         ~CostMapNodelet() override = default;
+
         void occupancyGridCallback(nav_msgs::OccupancyGrid const& msg);
+        void configCallback();
+        void pointCloudCallback(sensor_msgs::PointCloud2ConstPtr const& msg);
     };
 } // namespace mrover

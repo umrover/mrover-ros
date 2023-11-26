@@ -25,6 +25,7 @@ set(MROVER_ROS_DEPENDENCIES
         tf2_ros
         tf2_geometry_msgs
         gazebo_ros
+        pcl_ros
 )
 
 # Search a path for all files matching a glob pattern and extract the filenames
@@ -141,6 +142,7 @@ find_package(OpenCV REQUIRED)
 find_package(ZED 2 QUIET)
 find_package(gazebo REQUIRED)
 find_package(Eigen3 REQUIRED)
+find_package(PCL REQUIRED)
 if (ZED_FOUND)
     # Anything newer than C++17 combined with libstdc++13 is not supported just yet by NVCC (the CUDA compiler)
     set(CMAKE_CUDA_STANDARD 17)
@@ -208,8 +210,10 @@ mrover_add_node(sim_arm_bridge src/simulator/arm_bridge/*.cpp)
 ## Perception
 
 mrover_add_nodelet(tag_detector src/perception/tag_detector/*.cpp src/perception/tag_detector src/perception/tag_detector/pch.hpp)
-mrover_add_nodelet(costmap src/perception/cost_map/*.cpp src/perception/cost_map src/perception/cost_map/pch.hpp)
 mrover_nodelet_link_libraries(tag_detector opencv_core opencv_objdetect opencv_aruco opencv_imgproc tbb lie)
+mrover_add_nodelet(costmap src/perception/cost_map/*.cpp src/perception/cost_map src/perception/cost_map/pch.hpp)
+mrover_nodelet_include_directories(costmap ${PCL_LIBRARY_DIRS})
+mrover_nodelet_link_libraries(costmap ${PCL_LIBRARIES} lie)
 
 if (ZED_FOUND)
     mrover_add_nodelet(zed src/perception/zed_wrapper/*.c* src/perception/zed_wrapper src/perception/zed_wrapper/pch.hpp)

@@ -1,34 +1,29 @@
 #include "cost_map.hpp"
-#include <nav_msgs/OccupancyGrid.h>
-#include <tf2_ros/buffer.h>
 
 namespace mrover {
 
     void CostMapNodelet::onInit() {
         mNh = getMTNodeHandle();
         mPnh = getMTPrivateNodeHandle(); // Unused for now
-        mNh.param<bool>("publish_cost_maps", publishCostMaps, true);
-        mNh.param<bool>("verbose", verbose, false);
-        mNh.param<float>("resolution", resolution, 1);
-        mNh.param<int>("map_width", map_width, 1);
-        mNh.param<int>("map_height", map_height, 1);
+        mNh.param<bool>("publish_cost_map", mPublishCostMap, true);
+        mNh.param<float>("resolution", mResolution, 2);
+        mNh.param<int>("map_width", mDimension, 15);
 
-
-        mCostMapPub = mCmt.advertise<nav_msgs::OccupancyGrid>("cost_maps", 1); // We publish our results to "cost_maps"
+        mCostMapPub = mCmt.advertise<nav_msgs::OccupancyGrid>("costmap", 1); // We publish our results to "costmap"
 
         //TODO: Change topic to whatever the occupancy grid creating node publishes to
         mPcSub = mNh.subscribe("camera/left/points", 1, &CostMapNodelet::occupancyGridCallback, this);
 
-        globalGridMsg.info.resolution = resolution;
-        globalGridMsg.info.width = map_width;
-        globalGridMsg.info.height = map_height;
+        mGlobalGridMsg.info.resolution = mResolution;
+        mGlobalGridMsg.info.width = mDimension;
+        mGlobalGridMsg.info.height = mDimension;
         //TODO: What do we choose as our original load time and origin?
         //globalGridMsg.info.map_load_time =
         //globalGridMsg.info.origin =
 
         //TODO: Why is int8 not recognized?
-        auto* initial_map = new uint8[map_width * map_height];
-        globalGridMsg.data = initial_map;
+        auto* initial_map = new uint[mDimension * mDimension];
+        mGlobalGridMsg.data = initial_map;
     }
 } // namespace mrover
 
