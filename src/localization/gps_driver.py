@@ -20,10 +20,10 @@ from rtcm_msgs.msg import Message
 
 class GPS_Driver():
 
-    def __init__(self, port, baudrate):
+    def __init__(self):
         rospy.init_node('gps_driver')
-        self.port = rospy.get_param("rover_gps_driver/port")
-        self.baud = rospy.get_param("rover_gps_driver/baud")
+        self.port = rospy.get_param("port")
+        self.baud = rospy.get_param("baud")
         self.base_station_sub = rospy.Subscriber('/rtcm', Message, self.process_rtcm)
         self.gps_pub = rospy.Publisher('/gps', NavSatFix, queue_size=1)
         self.lock = threading.Lock()
@@ -51,13 +51,7 @@ class GPS_Driver():
         # skip if message could not be parsed
         if not msg:
             return
-        
-        try:
-            print(msg.identity)
-
-        except:
-            pass
-                
+                        
         if rover_gps_data.identity == "RXM-RTCM":
             print("RXM")
             msg_used = msg.msgUsed
@@ -86,7 +80,9 @@ class GPS_Driver():
 
             if msg.difSoln == 1:
                 print("Differemtial Corrections Applied")
+            
 
+            # publidh to navsatstatus in navsatfix
             if msg.carrSoln == 0:
                 print("No RTK\n")
             elif msg.carrSoln == 1:
@@ -109,9 +105,8 @@ class GPS_Driver():
 
 
 def main():
-    rospy.logerr("rover gps driver")
     #change values
-    rtk_manager = GPS_Driver("port", baudrate=38400)
+    rtk_manager = GPS_Driver()
     rtk_manager.connect()
     #rover_gps_thread = threading.Thread(rtk_manager.gps_data_thread)
     #rover_gps_thread.start()
