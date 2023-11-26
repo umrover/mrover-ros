@@ -6,7 +6,6 @@ from typing import Optional
 import numpy as np
 import rospy
 from mrover.msg import GPSPointList
-from nav_msgs.msg import OccupancyGrid
 from util.ros_utils import get_rosparam
 from util.state_lib.state import State
 
@@ -49,7 +48,7 @@ class WaterBottleSearchState(State):
         pass
 
     #TODO: A-STAR Algorithm: f(n) = g(n) + h(n)
-    #def a_star():
+    #def a_star():j
     
 
     def on_enter(self, context) -> None:

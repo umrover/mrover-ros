@@ -20,7 +20,7 @@ if __name__ == "__main__":
         # int8[] data
         test_grid = OccupancyGrid()
         test_grid.data = np.array([1, 2, 3, 4, 5, 6, 7, 8, 9], dtype=np.int8)
-        
+
         # nav_msgs/MapMetaData info
         metadata = MapMetaData()
         metadata.map_load_time = rospy.Time.now()
@@ -33,9 +33,10 @@ if __name__ == "__main__":
         # std_msgs/Header header
         header = Header()
         test_grid.header = header
-        
-        two_d_list = [[(i * 3) + j + 1 for j in range(3)] for i in range(3)]
-        flattened_list = [element for row in two_d_list for element in row]
+        two_d_list: list[list[int]] = [[(i * 3) + j + 1 for j in range(3)] for i in range(3)]
 
-    except rospy.Servicexception as e:
-        print(f"Service call failed: {e}")
+        costpub = rospy.Publisher("costmap", OccupancyGrid, queue_size=1)
+        costpub.publisher(test_grid)
+
+    except rospy.ROSInterruptException as e:
+        print(f"Didn't work to publish or retrieve message from ros")
