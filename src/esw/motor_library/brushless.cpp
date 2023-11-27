@@ -13,12 +13,12 @@ namespace mrover {
         assert(brushlessMotorData.getType() == XmlRpc::XmlRpcValue::TypeStruct);
 
         mMinVelocity = RadiansPerSecond{xmlRpcValueToTypeOrDefault<double>(
-                brushlessMotorData, "min_velocity", 1.0)};
+                brushlessMotorData, "min_velocity", -1.0)};
         mMaxVelocity = RadiansPerSecond{xmlRpcValueToTypeOrDefault<double>(
                 brushlessMotorData, "max_velocity", 1.0)};
 
         mMinPosition = Radians{xmlRpcValueToTypeOrDefault<double>(
-                brushlessMotorData, "min_position", 1.0)};
+                brushlessMotorData, "min_position", -1.0)};
         mMaxPosition = Radians{xmlRpcValueToTypeOrDefault<double>(
                 brushlessMotorData, "max_position", 1.0)};
     }
