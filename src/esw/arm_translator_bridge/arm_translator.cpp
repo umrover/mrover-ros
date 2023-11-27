@@ -1,8 +1,8 @@
-#include "joint_de.hpp"
+#include "arm_translator.hpp"
 
 namespace mrover {
 
-    JointDE::JointDE(ros::NodeHandle& nh) {
+    ArmTranslator::ArmTranslator(ros::NodeHandle& nh) {
         assert(joint_de_pitch_index == joint_de_0_index);
         assert(joint_de_roll_index == joint_de_1_index);
         assert(armHWNames.size() == rawArmNames.size());
@@ -17,13 +17,13 @@ namespace mrover {
         min_rad_per_sec_de_1 = get_unique_float_from_ros_param(nh, "brushless_motors/controllers/joint_de_1/min_velocity");
         max_rad_per_sec_de_1 = get_unique_float_from_ros_param(nh, "brushless_motors/controllers/joint_de_1/max_velocity");
 
-        jointDEPitchPosSub = nh.subscribe<std_msgs::Float32>("joint_de_pitch_raw_position_data", 1, &JointDE::processPitchRawPositionData, this);
-        jointDERollPosSub = nh.subscribe<std_msgs::Float32>("joint_de_roll_raw_position_data", 1, &JointDE::processRollRawPositionData, this);
+        jointDEPitchPosSub = nh.subscribe<std_msgs::Float32>("joint_de_pitch_raw_position_data", 1, &ArmTranslator::processPitchRawPositionData, this);
+        jointDERollPosSub = nh.subscribe<std_msgs::Float32>("joint_de_roll_raw_position_data", 1, &ArmTranslator::processRollRawPositionData, this);
 
-        throttleSub = nh.subscribe<Throttle>("arm_throttle_cmd", 1, &JointDE::processThrottleCmd, this);
-        velocitySub = nh.subscribe<Velocity>("arm_velocity_cmd", 1, &JointDE::processVelocityCmd, this);
-        positionSub = nh.subscribe<Position>("arm_position_cmd", 1, &JointDE::processPositionCmd, this);
-        armHWJointDataSub = nh.subscribe<sensor_msgs::JointState>("arm_hw_joint_data", 1, &JointDE::processArmHWJointData, this);
+        throttleSub = nh.subscribe<Throttle>("arm_throttle_cmd", 1, &ArmTranslator::processThrottleCmd, this);
+        velocitySub = nh.subscribe<Velocity>("arm_velocity_cmd", 1, &ArmTranslator::processVelocityCmd, this);
+        positionSub = nh.subscribe<Position>("arm_position_cmd", 1, &ArmTranslator::processPositionCmd, this);
+        armHWJointDataSub = nh.subscribe<sensor_msgs::JointState>("arm_hw_joint_data", 1, &ArmTranslator::processArmHWJointData, this);
 
         throttlePub = std::make_unique<ros::Publisher>(nh.advertise<Throttle>("arm_hw_throttle_cmd", 1));
         velocityPub = std::make_unique<ros::Publisher>(nh.advertise<Velocity>("arm_hw_velocity_cmd", 1));
@@ -31,7 +31,7 @@ namespace mrover {
         jointDataPub = std::make_unique<ros::Publisher>(nh.advertise<sensor_msgs::JointState>("arm_joint_data", 1));
     }
 
-    void JointDE::clampValues(float& val1, float& val2, float minValue1, float maxValue1, float minValue2, float maxValue2) {
+    void ArmTranslator::clampValues(float& val1, float& val2, float minValue1, float maxValue1, float minValue2, float maxValue2) {
         if (val1 < minValue1) {
             float const ratio = minValue1 / val1;
             val1 *= ratio;
@@ -54,7 +54,7 @@ namespace mrover {
         }
     }
 
-    void JointDE::processThrottleCmd(Throttle::ConstPtr const& msg) {
+    void ArmTranslator::processThrottleCmd(Throttle::ConstPtr const& msg) {
         if (rawArmNames != msg->names || rawArmNames.size() != msg->throttles.size()) {
             ROS_ERROR("Throttle requests for arm is ignored!");
             return;
@@ -82,11 +82,11 @@ namespace mrover {
         throttlePub->publish(throttle);
     }
 
-    bool JointDE::jointDEIsCalibrated() {
+    bool ArmTranslator::jointDEIsCalibrated() {
         return jointDE0PosOffset.has_value() && jointDE1PosOffset.has_value();
     }
 
-    void JointDE::updatePositionOffsets() {
+    void ArmTranslator::updatePositionOffsets() {
         if (!currentRawJointDEPitch.has_value() || !currentRawJointDERoll.has_value() || !currentRawJointDE0Position.has_value() || !currentRawJointDE1Position.has_value()) {
             return;
         }
@@ -100,17 +100,17 @@ namespace mrover {
         }
     }
 
-    void JointDE::processPitchRawPositionData(std_msgs::Float32::ConstPtr const& msg) {
+    void ArmTranslator::processPitchRawPositionData(std_msgs::Float32::ConstPtr const& msg) {
         currentRawJointDEPitch = Radians{msg->data};
         updatePositionOffsets();
     }
 
-    void JointDE::processRollRawPositionData(std_msgs::Float32::ConstPtr const& msg) {
+    void ArmTranslator::processRollRawPositionData(std_msgs::Float32::ConstPtr const& msg) {
         currentRawJointDERoll = Radians{msg->data};
         updatePositionOffsets();
     }
 
-    void JointDE::processVelocityCmd(Velocity::ConstPtr const& msg) {
+    void ArmTranslator::processVelocityCmd(Velocity::ConstPtr const& msg) {
         if (rawArmNames != msg->names || rawArmNames.size() != msg->velocities.size()) {
             ROS_ERROR("Velocity requests for arm is ignored!");
             return;
@@ -139,7 +139,7 @@ namespace mrover {
     }
 
 
-    void JointDE::processPositionCmd(Position::ConstPtr const& msg) {
+    void ArmTranslator::processPositionCmd(Position::ConstPtr const& msg) {
         if (rawArmNames != msg->names || rawArmNames.size() != msg->positions.size()) {
             ROS_ERROR("Position requests for arm is ignored!");
             return;
@@ -167,7 +167,7 @@ namespace mrover {
         positionPub->publish(position);
     }
 
-    void JointDE::processArmHWJointData(sensor_msgs::JointState::ConstPtr const& msg) {
+    void ArmTranslator::processArmHWJointData(sensor_msgs::JointState::ConstPtr const& msg) {
         if (armHWNames != msg->name || armHWNames.size() != msg->position.size() || armHWNames.size() != msg->velocity.size() || armHWNames.size() != msg->effort.size()) {
             ROS_ERROR("Forwarding joint data for arm is ignored!");
             return;

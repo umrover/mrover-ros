@@ -1,6 +1,6 @@
 #include <ros/ros.h>
 
-#include "joint_de.hpp"
+#include "arm_translator.hpp"
 #include <memory.h>
 
 int main(int argc, char** argv) {
@@ -8,7 +8,7 @@ int main(int argc, char** argv) {
     ros::init(argc, argv, "arm_translator_bridge");
     ros::NodeHandle nh;
 
-    [[maybe_unused]] auto jointDEHandler = std::make_unique<mrover::JointDE>(nh);
+    [[maybe_unused]] auto armTranslator = std::make_unique<mrover::ArmTranslator>(nh);
 
     // Enter the ROS event loop
     ros::spin();

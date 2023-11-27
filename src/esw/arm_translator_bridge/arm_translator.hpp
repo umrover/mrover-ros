@@ -17,11 +17,11 @@
 
 namespace mrover {
 
-    class JointDE {
+    class ArmTranslator {
     public:
-        JointDE() = default;
+        ArmTranslator() = default;
 
-        JointDE(ros::NodeHandle& nh);
+        ArmTranslator(ros::NodeHandle& nh);
 
         void processPitchRawPositionData(std_msgs::Float32::ConstPtr const& msg);
 
