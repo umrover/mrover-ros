@@ -3,35 +3,35 @@
 namespace mrover {
 
     ArmTranslator::ArmTranslator(ros::NodeHandle& nh) {
-        assert(joint_de_pitch_index == joint_de_0_index);
-        assert(joint_de_roll_index == joint_de_1_index);
-        assert(armHWNames.size() == rawArmNames.size());
-        for (size_t i = 0; i < rawArmNames.size(); ++i) {
-            if (i != joint_de_pitch_index && i != joint_de_roll_index) {
-                assert(armHWNames.at(i) == rawArmNames.at(i));
+        assert(mJointDEPitchIndex == mJointDE0Index);
+        assert(mJointDERollIndex == mJointDE1Index);
+        assert(mArmHWNames.size() == mRawArmNames.size());
+        for (size_t i = 0; i < mRawArmNames.size(); ++i) {
+            if (i != mJointDEPitchIndex && i != mJointDERollIndex) {
+                assert(mArmHWNames.at(i) == mRawArmNames.at(i));
             }
         }
 
-        jointDEPitchOffset = Radians{*get_unique_float_from_ros_param(nh, "joint_de/pitch_offset")};
-        jointDEPitchOffset = Radians{*get_unique_float_from_ros_param(nh, "joint_de/roll_offset")};
+        mJointDEPitchOffset = Radians{getFloatFromRosParam(nh, "joint_de/pitch_offset")};
+        mJointDERollOffset = Radians{getFloatFromRosParam(nh, "joint_de/roll_offset")};
 
-        min_rad_per_sec_de_0 = get_unique_float_from_ros_param(nh, "brushless_motors/controllers/joint_de_0/min_velocity");
-        max_rad_per_sec_de_0 = get_unique_float_from_ros_param(nh, "brushless_motors/controllers/joint_de_0/max_velocity");
-        min_rad_per_sec_de_1 = get_unique_float_from_ros_param(nh, "brushless_motors/controllers/joint_de_1/min_velocity");
-        max_rad_per_sec_de_1 = get_unique_float_from_ros_param(nh, "brushless_motors/controllers/joint_de_1/max_velocity");
+        mMinRadPerSecDE0 = RadiansPerSecond{getFloatFromRosParam(nh, "brushless_motors/controllers/joint_de_0/min_velocity")};
+        mMaxRadPerSecDE0 = RadiansPerSecond{getFloatFromRosParam(nh, "brushless_motors/controllers/joint_de_0/max_velocity")};
+        mMinRadPerSecDE1 = RadiansPerSecond{getFloatFromRosParam(nh, "brushless_motors/controllers/joint_de_1/min_velocity")};
+        mMaxRadPerSecDE1 = RadiansPerSecond{getFloatFromRosParam(nh, "brushless_motors/controllers/joint_de_1/max_velocity")};
 
-        jointDEPitchPosSub = nh.subscribe<std_msgs::Float32>("joint_de_pitch_raw_position_data", 1, &ArmTranslator::processPitchRawPositionData, this);
-        jointDERollPosSub = nh.subscribe<std_msgs::Float32>("joint_de_roll_raw_position_data", 1, &ArmTranslator::processRollRawPositionData, this);
+        mJointDEPitchPosSub = nh.subscribe<std_msgs::Float32>("joint_de_pitch_raw_position_data", 1, &ArmTranslator::processPitchRawPositionData, this);
+        mJointDERollPosSub = nh.subscribe<std_msgs::Float32>("joint_de_roll_raw_position_data", 1, &ArmTranslator::processRollRawPositionData, this);
 
-        throttleSub = nh.subscribe<Throttle>("arm_throttle_cmd", 1, &ArmTranslator::processThrottleCmd, this);
-        velocitySub = nh.subscribe<Velocity>("arm_velocity_cmd", 1, &ArmTranslator::processVelocityCmd, this);
-        positionSub = nh.subscribe<Position>("arm_position_cmd", 1, &ArmTranslator::processPositionCmd, this);
-        armHWJointDataSub = nh.subscribe<sensor_msgs::JointState>("arm_hw_joint_data", 1, &ArmTranslator::processArmHWJointData, this);
+        mThrottleSub = nh.subscribe<Throttle>("arm_throttle_cmd", 1, &ArmTranslator::processThrottleCmd, this);
+        mVelocitySub = nh.subscribe<Velocity>("arm_velocity_cmd", 1, &ArmTranslator::processVelocityCmd, this);
+        mPositionSub = nh.subscribe<Position>("arm_position_cmd", 1, &ArmTranslator::processPositionCmd, this);
+        mArmHWJointDataSub = nh.subscribe<sensor_msgs::JointState>("arm_hw_joint_data", 1, &ArmTranslator::processArmHWJointData, this);
 
-        throttlePub = std::make_unique<ros::Publisher>(nh.advertise<Throttle>("arm_hw_throttle_cmd", 1));
-        velocityPub = std::make_unique<ros::Publisher>(nh.advertise<Velocity>("arm_hw_velocity_cmd", 1));
-        positionPub = std::make_unique<ros::Publisher>(nh.advertise<Position>("arm_hw_position_cmd", 1));
-        jointDataPub = std::make_unique<ros::Publisher>(nh.advertise<sensor_msgs::JointState>("arm_joint_data", 1));
+        mThrottlePub = std::make_unique<ros::Publisher>(nh.advertise<Throttle>("arm_hw_throttle_cmd", 1));
+        mVelocityPub = std::make_unique<ros::Publisher>(nh.advertise<Velocity>("arm_hw_velocity_cmd", 1));
+        mPositionPub = std::make_unique<ros::Publisher>(nh.advertise<Position>("arm_hw_position_cmd", 1));
+        mJointDataPub = std::make_unique<ros::Publisher>(nh.advertise<sensor_msgs::JointState>("arm_joint_data", 1));
     }
 
     void ArmTranslator::clampValues(float& val1, float& val2, float minValue1, float maxValue1, float minValue2, float maxValue2) {
@@ -58,7 +58,7 @@ namespace mrover {
     }
 
     void ArmTranslator::processThrottleCmd(Throttle::ConstPtr const& msg) {
-        if (rawArmNames != msg->names || rawArmNames.size() != msg->throttles.size()) {
+        if (mRawArmNames != msg->names || mRawArmNames.size() != msg->throttles.size()) {
             ROS_ERROR("Throttle requests for arm is ignored!");
             return;
         }
@@ -66,55 +66,55 @@ namespace mrover {
         Throttle throttle = *msg;
 
         auto [joint_de_0_throttle, joint_de_1_throttle] = transformPitchRollToMotorOutputs(
-                msg->throttles.at(joint_de_pitch_index),
-                msg->throttles.at(joint_de_roll_index));
+                msg->throttles.at(mJointDEPitchIndex),
+                msg->throttles.at(mJointDERollIndex));
 
         clampValues(
                 joint_de_0_throttle,
                 joint_de_1_throttle,
-                *min_rad_per_sec_de_0,
-                *max_rad_per_sec_de_0,
-                *min_rad_per_sec_de_1,
-                *max_rad_per_sec_de_1);
+                -1.0f,
+                1.0f,
+                -1.0f,
+                1.0f);
 
-        throttle.names.at(joint_de_pitch_index) = "joint_de_0";
-        throttle.names.at(joint_de_roll_index) = "joint_de_1";
-        throttle.throttles.at(joint_de_pitch_index) = joint_de_0_throttle;
-        throttle.throttles.at(joint_de_roll_index) = joint_de_1_throttle;
+        throttle.names.at(mJointDEPitchIndex) = "joint_de_0";
+        throttle.names.at(mJointDERollIndex) = "joint_de_1";
+        throttle.throttles.at(mJointDEPitchIndex) = joint_de_0_throttle;
+        throttle.throttles.at(mJointDERollIndex) = joint_de_1_throttle;
 
-        throttlePub->publish(throttle);
+        mThrottlePub->publish(throttle);
     }
 
     bool ArmTranslator::jointDEIsCalibrated() {
-        return jointDE0PosOffset.has_value() && jointDE1PosOffset.has_value();
+        return mJointDE0PosOffset.has_value() && mJointDE1PosOffset.has_value();
     }
 
     void ArmTranslator::updatePositionOffsets() {
-        if (!currentRawJointDEPitch.has_value() || !currentRawJointDERoll.has_value() || !currentRawJointDE0Position.has_value() || !currentRawJointDE1Position.has_value()) {
+        if (!mCurrentRawJointDEPitch.has_value() || !mCurrentRawJointDERoll.has_value() || !mCurrentRawJointDE0Position.has_value() || !mCurrentRawJointDE1Position.has_value()) {
             return;
         }
 
-        std::pair<float, float> expected_motor_outputs = transformPitchRollToMotorOutputs(currentRawJointDEPitch->get(), currentRawJointDERoll->get());
-        if (currentRawJointDE0Position.has_value()) {
-            jointDE0PosOffset = *currentRawJointDE0Position - Radians{expected_motor_outputs.first};
+        std::pair<float, float> expected_motor_outputs = transformPitchRollToMotorOutputs(mCurrentRawJointDEPitch->get(), mCurrentRawJointDERoll->get());
+        if (mCurrentRawJointDE0Position.has_value()) {
+            mJointDE0PosOffset = *mCurrentRawJointDE0Position - Radians{expected_motor_outputs.first};
         }
-        if (currentRawJointDE1Position.has_value()) {
-            jointDE1PosOffset = *currentRawJointDE1Position - Radians{expected_motor_outputs.second};
+        if (mCurrentRawJointDE1Position.has_value()) {
+            mJointDE1PosOffset = *mCurrentRawJointDE1Position - Radians{expected_motor_outputs.second};
         }
     }
 
     void ArmTranslator::processPitchRawPositionData(std_msgs::Float32::ConstPtr const& msg) {
-        currentRawJointDEPitch = Radians{msg->data};
+        mCurrentRawJointDEPitch = Radians{msg->data};
         updatePositionOffsets();
     }
 
     void ArmTranslator::processRollRawPositionData(std_msgs::Float32::ConstPtr const& msg) {
-        currentRawJointDERoll = Radians{msg->data};
+        mCurrentRawJointDERoll = Radians{msg->data};
         updatePositionOffsets();
     }
 
     void ArmTranslator::processVelocityCmd(Velocity::ConstPtr const& msg) {
-        if (rawArmNames != msg->names || rawArmNames.size() != msg->velocities.size()) {
+        if (mRawArmNames != msg->names || mRawArmNames.size() != msg->velocities.size()) {
             ROS_ERROR("Velocity requests for arm is ignored!");
             return;
         }
@@ -122,28 +122,28 @@ namespace mrover {
         Velocity velocity = *msg;
 
         auto [joint_de_0_vel, joint_de_1_vel] = transformPitchRollToMotorOutputs(
-                msg->velocities.at(joint_de_pitch_index),
-                msg->velocities.at(joint_de_roll_index));
+                msg->velocities.at(mJointDEPitchIndex),
+                msg->velocities.at(mJointDERollIndex));
 
         clampValues(
                 joint_de_0_vel,
                 joint_de_1_vel,
-                -1.0f,
-                1.0f,
-                -1.0f,
-                1.0f);
+                mMinRadPerSecDE0.get(),
+                mMaxRadPerSecDE0.get(),
+                mMinRadPerSecDE1.get(),
+                mMaxRadPerSecDE1.get());
 
-        velocity.names.at(joint_de_pitch_index) = "joint_de_0";
-        velocity.names.at(joint_de_roll_index) = "joint_de_1";
-        velocity.velocities.at(joint_de_pitch_index) = joint_de_0_vel;
-        velocity.velocities.at(joint_de_roll_index) = joint_de_1_vel;
+        velocity.names.at(mJointDEPitchIndex) = "joint_de_0";
+        velocity.names.at(mJointDERollIndex) = "joint_de_1";
+        velocity.velocities.at(mJointDEPitchIndex) = joint_de_0_vel;
+        velocity.velocities.at(mJointDERollIndex) = joint_de_1_vel;
 
-        velocityPub->publish(velocity);
+        mVelocityPub->publish(velocity);
     }
 
 
     void ArmTranslator::processPositionCmd(Position::ConstPtr const& msg) {
-        if (rawArmNames != msg->names || rawArmNames.size() != msg->positions.size()) {
+        if (mRawArmNames != msg->names || mRawArmNames.size() != msg->positions.size()) {
             ROS_ERROR("Position requests for arm is ignored!");
             return;
         }
@@ -156,53 +156,53 @@ namespace mrover {
         Position position = *msg;
 
         auto [joint_de_0_raw_pos, joint_de_1_raw_pos] = transformPitchRollToMotorOutputs(
-                msg->positions.at(joint_de_pitch_index),
-                msg->positions.at(joint_de_roll_index));
+                msg->positions.at(mJointDEPitchIndex),
+                msg->positions.at(mJointDERollIndex));
 
-        float joint_de_0_pos = joint_de_0_raw_pos + jointDE0PosOffset->get();
-        float joint_de_1_pos = joint_de_1_raw_pos + jointDE1PosOffset->get();
+        float joint_de_0_pos = joint_de_0_raw_pos + mJointDE0PosOffset->get();
+        float joint_de_1_pos = joint_de_1_raw_pos + mJointDE1PosOffset->get();
 
-        position.names.at(joint_de_pitch_index) = "joint_de_0";
-        position.names.at(joint_de_roll_index) = "joint_de_1";
-        position.positions.at(joint_de_pitch_index) = joint_de_0_pos;
-        position.positions.at(joint_de_roll_index) = joint_de_1_pos;
+        position.names.at(mJointDEPitchIndex) = "joint_de_0";
+        position.names.at(mJointDERollIndex) = "joint_de_1";
+        position.positions.at(mJointDEPitchIndex) = joint_de_0_pos;
+        position.positions.at(mJointDERollIndex) = joint_de_1_pos;
 
-        positionPub->publish(position);
+        mPositionPub->publish(position);
     }
 
     void ArmTranslator::processArmHWJointData(sensor_msgs::JointState::ConstPtr const& msg) {
-        if (armHWNames != msg->name || armHWNames.size() != msg->position.size() || armHWNames.size() != msg->velocity.size() || armHWNames.size() != msg->effort.size()) {
+        if (mArmHWNames != msg->name || mArmHWNames.size() != msg->position.size() || mArmHWNames.size() != msg->velocity.size() || mArmHWNames.size() != msg->effort.size()) {
             ROS_ERROR("Forwarding joint data for arm is ignored!");
             return;
         }
 
         sensor_msgs::JointState jointState = *msg;
 
-        auto [joint_de_pitch_vel, joint_de_roll_vel] = transformMotorOutputsToPitchRoll(
-                static_cast<float>(msg->velocity.at(joint_de_0_index)),
-                static_cast<float>(msg->velocity.at(joint_de_1_index)));
+        auto [jointDEPitchVel, jointDERollVel] = transformMotorOutputsToPitchRoll(
+                static_cast<float>(msg->velocity.at(mJointDE0Index)),
+                static_cast<float>(msg->velocity.at(mJointDE1Index)));
 
-        auto [joint_de_pitch_pos, joint_de_roll_pos] = transformMotorOutputsToPitchRoll(
-                static_cast<float>(msg->position.at(joint_de_0_index)),
-                static_cast<float>(msg->position.at(joint_de_1_index)));
+        auto [jointDEPitchPos, jointDERollPos] = transformMotorOutputsToPitchRoll(
+                static_cast<float>(msg->position.at(mJointDE0Index)),
+                static_cast<float>(msg->position.at(mJointDE1Index)));
 
-        auto [joint_de_pitch_eff, joint_de_roll_eff] = transformMotorOutputsToPitchRoll(
-                static_cast<float>(msg->effort.at(joint_de_0_index)),
-                static_cast<float>(msg->effort.at(joint_de_1_index)));
+        auto [jointDEPitchEff, jointDERollEff] = transformMotorOutputsToPitchRoll(
+                static_cast<float>(msg->effort.at(mJointDE0Index)),
+                static_cast<float>(msg->effort.at(mJointDE1Index)));
 
-        currentRawJointDE0Position = Radians{msg->position.at(joint_de_0_index)};
-        currentRawJointDE1Position = Radians{msg->position.at(joint_de_1_index)};
+        mCurrentRawJointDE0Position = Radians{msg->position.at(mJointDE0Index)};
+        mCurrentRawJointDE1Position = Radians{msg->position.at(mJointDE1Index)};
 
-        jointState.name.at(joint_de_0_index) = "joint_de_0";
-        jointState.name.at(joint_de_1_index) = "joint_de_1";
-        jointState.velocity.at(joint_de_0_index) = joint_de_pitch_vel;
-        jointState.velocity.at(joint_de_1_index) = joint_de_roll_vel;
-        jointState.position.at(joint_de_0_index) = joint_de_pitch_vel;
-        jointState.position.at(joint_de_1_index) = joint_de_roll_vel;
-        jointState.effort.at(joint_de_0_index) = joint_de_pitch_eff;
-        jointState.effort.at(joint_de_1_index) = joint_de_roll_eff;
+        jointState.name.at(mJointDE0Index) = "joint_de_0";
+        jointState.name.at(mJointDE1Index) = "joint_de_1";
+        jointState.velocity.at(mJointDE0Index) = jointDEPitchVel;
+        jointState.velocity.at(mJointDE1Index) = jointDERollVel;
+        jointState.position.at(mJointDE0Index) = jointDEPitchVel;
+        jointState.position.at(mJointDE1Index) = jointDERollVel;
+        jointState.effort.at(mJointDE0Index) = jointDEPitchEff;
+        jointState.effort.at(mJointDE1Index) = jointDERollEff;
 
-        jointDataPub->publish(jointState);
+        mJointDataPub->publish(jointState);
     }
 
 
