@@ -56,6 +56,9 @@ namespace mrover {
         std::optional<Radians> jointDE0PosOffset = Radians{0};
         std::optional<Radians> jointDE1PosOffset = Radians{0};
 
+        Radians jointDEPitchOffset;
+        Radians jointDERollOffset;
+
         std::optional<Radians> currentRawJointDEPitch;
         std::optional<Radians> currentRawJointDERoll;
         std::optional<Radians> currentRawJointDE0Position;

@@ -117,6 +117,10 @@ brushless_motors:
       min_velocity: -1.0
       max_velocity: 1.0
 
+joint_de:
+  pitch_offset: 0.0
+  roll_offset: 0.0
+
 brushed_motors:
   controllers:
     # example_name:

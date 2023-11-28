@@ -12,6 +12,9 @@ namespace mrover {
             }
         }
 
+        jointDEPitchOffset = Radians{*get_unique_float_from_ros_param(nh, "joint_de/pitch_offset")};
+        jointDEPitchOffset = Radians{*get_unique_float_from_ros_param(nh, "joint_de/roll_offset")};
+
         min_rad_per_sec_de_0 = get_unique_float_from_ros_param(nh, "brushless_motors/controllers/joint_de_0/min_velocity");
         max_rad_per_sec_de_0 = get_unique_float_from_ros_param(nh, "brushless_motors/controllers/joint_de_0/max_velocity");
         min_rad_per_sec_de_1 = get_unique_float_from_ros_param(nh, "brushless_motors/controllers/joint_de_1/min_velocity");
