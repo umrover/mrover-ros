@@ -225,7 +225,7 @@ class MainLoop:
                     break
 
             if self.joint_de_controller.g_velocity_mode:
-                if keyboard.is_pressed("P"):
+                if keyboard.is_pressed("p"):
                     if self.joint_de_controller.m1_m2_pos_offset is None:
                         print("Failure to go into Looping Position mode. Please calibrate with i/j/k/l first.")
                     else:
