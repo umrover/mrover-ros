@@ -19,10 +19,10 @@
     </plugin>
 
     <!-- Rover GPS Left -->
-    <plugin name="rover_gps_left" filename="libhector_gazebo_ros_gps.so">
+    <plugin name="gazebo_ros_gps" filename="libhector_gazebo_ros_gps.so">
       <updateRate>100.0</updateRate>
-      <bodyName>rover_gps_left</bodyName>
-      <frameId></frameId>
+      <bodyName>base_link</bodyName>
+      <frameId>base_link</frameId>
       <topicName>gps/fix_gps_left</topicName>
       <velocityTopicName>gps/fix_velocity</velocityTopicName>
       <referenceLatitude>42.293195</referenceLatitude>
@@ -37,10 +37,10 @@
     </plugin>
 
     <!-- Rover GPS Right -->
-    <plugin name="rover_gps_right" filename="libhector_gazebo_ros_gps.so">
+    <plugin name="gazebo_ros_gps" filename="libhector_gazebo_ros_gps.so">
       <updateRate>100.0</updateRate>
-      <bodyName>rover_gps_right</bodyName>
-      <frameId></frameId>
+      <bodyName>base_link</bodyName>
+      <frameId>base_link</frameId>
       <topicName>gps/fix_gps_right</topicName>
       <velocityTopicName>gps/fix_velocity</velocityTopicName>
       <referenceLatitude>42.293195</referenceLatitude>

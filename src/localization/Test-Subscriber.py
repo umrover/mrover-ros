@@ -32,9 +32,11 @@ class Localization:
         # self.pose = SE3()
 
     def gps_left_callback(self, msg: NavSatFix):
+        print("GPS left callback")
         print(msg)
 
     def gps_right_callback(self, msg: NavSatFix):
+        print("GPS right callback")
         print(msg)
 
 

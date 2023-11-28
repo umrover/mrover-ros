@@ -157,7 +157,8 @@
     <child link="gps_link" />
   </joint>
 
-  <link name="gps_link" />
+  <link name="gps_link">
+  </link>
 
   <!-- Camera -->
   <joint name="camera_joint" type="fixed">
