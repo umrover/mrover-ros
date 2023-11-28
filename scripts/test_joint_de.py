@@ -73,10 +73,10 @@ class JointDEController:
         # Extract y1 and y2 from the result vector
         m1, m2 = result_vector
 
-        if abs(m1) > self.MAX_REV_PER_SEC or abs(m2) > self.MAX_REV_PER_SEC:
-            larger_value = max(abs(m1), abs(m2))
-            m1 = (m1 / larger_value) * self.MAX_REV_PER_SEC
-            m2 = (m2 / larger_value) * self.MAX_REV_PER_SEC
+        # if abs(m1) > self.MAX_REV_PER_SEC or abs(m2) > self.MAX_REV_PER_SEC:
+        #     larger_value = max(abs(m1), abs(m2))
+        #     m1 = (m1 / larger_value) * self.MAX_REV_PER_SEC
+        #     m2 = (m2 / larger_value) * self.MAX_REV_PER_SEC
 
         return m1, m2
 
@@ -155,6 +155,9 @@ class MainLoop:
 
         if self.joint_de_controller.g_prev_pitch != pitch or self.joint_de_controller.g_prev_roll != roll:
             print(f"pitch: {pitch}, roll: {roll}, m1rps: {m1rps}, m2rps: {m2rps}")
+            motorsrps = np.array([m1rps, m2rps])
+            expected_pitch, expected_roll = np.dot(self.joint_de_controller.INVERSE_TRANS_MATRIX, motorsrps)
+            print(f"expected_pitch: {expected_pitch} expected_roll: {expected_roll}")
             self.joint_de_controller.g_prev_pitch = pitch
             self.joint_de_controller.g_prev_roll = roll
 
@@ -191,10 +194,10 @@ class MainLoop:
 
     async def main(self) -> None:
         mapping_by_key = {
-            "w": (1, 0),
-            "a": (0, -1),
-            "s": (-1, 0),
-            "d": (0, 1),
+            "w": (8 / 60, 0),
+            "a": (0, -8 / 60),
+            "s": (-8 / 60, 0),
+            "d": (0, 8 / 60),
         }
 
         print("Controls are the following:")
