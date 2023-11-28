@@ -114,16 +114,16 @@ class JointDEController:
 
         await self.controller_1.set_position(
             position=m1pos,
-            velocity=self.MAX_REV_PER_SEC / 4,
-            velocity_limit=self.MAX_REV_PER_SEC,
+            velocity=self.MAX_REV_PER_SEC,
+            velocity_limit=None,
             maximum_torque=self.MAX_TORQUE,
             watchdog_timeout=self.ROVER_NODE_TO_MOTEUS_WATCHDOG_TIMEOUT_S,
             query=True,
         )
         await self.controller_2.set_position(
             position=m2pos,
-            velocity=self.MAX_REV_PER_SEC / 4,
-            velocity_limit=self.MAX_REV_PER_SEC,
+            velocity=self.MAX_REV_PER_SEC,
+            velocity_limit=None,
             maximum_torque=self.MAX_TORQUE,
             watchdog_timeout=self.ROVER_NODE_TO_MOTEUS_WATCHDOG_TIMEOUT_S,
             query=True,
@@ -135,6 +135,8 @@ class JointDEController:
         return_pos_2 = await self.fix_controller_if_error_and_return_pos(self.controller_2)
         if return_pos_2 is not None:
             self.g_controller_2_rev = return_pos_2
+        if return_pos_1 is not None and return_pos_2 is not None:
+            print(f"The returned values are pos1 {return_pos_1} and {return_pos_2}")
 
     async def run_position_state_machine(self) -> None:
         if time.time() - self.time_since_last_changed > 5:
@@ -200,6 +202,8 @@ class MainLoop:
         )
         if return_pos_2 is not None:
             self.joint_de_controller.g_controller_2_rev = return_pos_2
+        if return_pos_1 is not None and return_pos_2 is not None:
+            print(f"The returned values are pos1 {return_pos_1} and {return_pos_2}")
 
     async def main(self) -> None:
         mapping_by_key = {
