@@ -167,22 +167,28 @@ class MainLoop:
         if self.joint_de_controller.DEBUG_MODE_ONLY:
             return
 
-        await self.joint_de_controller.controller_1.set_position(
-            position=self.joint_de_controller.POSITION_FOR_VELOCITY_CONTROL,
-            velocity=m1rps,
-            velocity_limit=self.joint_de_controller.MAX_REV_PER_SEC,
-            maximum_torque=self.joint_de_controller.MAX_TORQUE,
-            watchdog_timeout=self.joint_de_controller.ROVER_NODE_TO_MOTEUS_WATCHDOG_TIMEOUT_S,
-            query=True,
-        )
-        await self.joint_de_controller.controller_2.set_position(
-            position=self.joint_de_controller.POSITION_FOR_VELOCITY_CONTROL,
-            velocity=m2rps,
-            velocity_limit=self.joint_de_controller.MAX_REV_PER_SEC,
-            maximum_torque=self.joint_de_controller.MAX_TORQUE,
-            watchdog_timeout=self.joint_de_controller.ROVER_NODE_TO_MOTEUS_WATCHDOG_TIMEOUT_S,
-            query=True,
-        )
+        if abs(m1rps) > 1e-5:
+            await self.joint_de_controller.controller_1.set_position(
+                position=self.joint_de_controller.POSITION_FOR_VELOCITY_CONTROL,
+                velocity=m1rps,
+                velocity_limit=self.joint_de_controller.MAX_REV_PER_SEC,
+                maximum_torque=self.joint_de_controller.MAX_TORQUE,
+                watchdog_timeout=self.joint_de_controller.ROVER_NODE_TO_MOTEUS_WATCHDOG_TIMEOUT_S,
+                query=True,
+            )
+        else:
+            await self.joint_de_controller.controller_1.set_brake()
+        if abs(m2rps) > 1e-5:
+            await self.joint_de_controller.controller_2.set_position(
+                position=self.joint_de_controller.POSITION_FOR_VELOCITY_CONTROL,
+                velocity=m2rps,
+                velocity_limit=self.joint_de_controller.MAX_REV_PER_SEC,
+                maximum_torque=self.joint_de_controller.MAX_TORQUE,
+                watchdog_timeout=self.joint_de_controller.ROVER_NODE_TO_MOTEUS_WATCHDOG_TIMEOUT_S,
+                query=True,
+            )
+        else:
+            await self.joint_de_controller.controller_2.set_brake()
 
         return_pos_1 = await self.joint_de_controller.fix_controller_if_error_and_return_pos(
             self.joint_de_controller.controller_1
