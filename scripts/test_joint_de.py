@@ -9,13 +9,13 @@ from typing import Optional, Literal
 
 class JointDEController:
     def __init__(self) -> None:
-        self.DEBUG_MODE_ONLY = True
+        self.DEBUG_MODE_ONLY = False
         self.g_velocity_mode = True
         self.m1_m2_pos_offset = None
         self.POSITION_FOR_VELOCITY_CONTROL = math.nan
         self.MAX_TORQUE = 0.3
         self.ROVER_NODE_TO_MOTEUS_WATCHDOG_TIMEOUT_S = 0.15
-        self.MAX_REV_PER_SEC: float = 8 / 60
+        self.MAX_REV_PER_SEC: float = 12
         self.current_pos_state: Literal[""] = ""
         self.time_since_last_changed: float = time.time()
 
@@ -47,7 +47,9 @@ class JointDEController:
     async def fix_controller_if_error_and_return_pos(self, controller) -> Optional[float]:
         state = await controller.query()
         controller_not_found = self.moteus_not_found(state)
+
         if controller_not_found:
+            print("CONTROLLER NOT FOUND")
             await controller.set_stop()
             return None
         else:
@@ -59,6 +61,7 @@ class JointDEController:
             or not hasattr(state, "values")
             or moteus.Register.FAULT not in state.values
             or moteus.Register.MODE not in state.values
+            or state.values[moteus.Register.MODE] == 11  # timeout
         )
 
     def transform_coordinates_and_clamp(self, pitch, roll) -> tuple:
