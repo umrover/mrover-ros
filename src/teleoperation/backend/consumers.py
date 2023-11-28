@@ -63,9 +63,14 @@ class GUIConsumer(JsonWebsocketConsumer):
                 self.handle_joystick_message(message)
             elif message['type'] == "change_ra_mode":
                 self.handle_joystick_message(message)
+            elif message['type'] == "arm_values":
+                self.handle_arm_message(message)
         except Exception as e:
             rospy.logerr(e)
+    def handle_arm_message(self,msg):
+        yo = 1
 
+        
     def handle_joystick_message(self, msg):
         mappings = rospy.get_param("teleop/joystick_mappings")
         drive_config = rospy.get_param("teleop/drive_controls")

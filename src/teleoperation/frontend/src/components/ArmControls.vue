@@ -5,15 +5,15 @@
             <h4>Arm mode</h4>
             <!-- Make opposite option disappear so that we cannot select both -->
             <!-- Change to radio buttons in the future -->
-            <input ref="arm-enabled" v-model="arm_mode" type="radio" :name="'Arm Enabled'" value="arm_disabled" />
+            <input ref="arm-enabled" v-model="arm_mode" type="radio" name="'arm_mode'" value="arm_disabled" />
             Arm Disabled
-            <input ref="ik" v-model="arm_mode" type="radio" :name="'IK'" value="ik" />
+            <input ref="ik" v-model="arm_mode" type="radio" name="'arm_mode'" value="ik" />
             Open Loop
-            <input ref="position" v-model="arm_mode" type="radio" :name="'Position'" value="position" />
+            <input ref="position" v-model="arm_mode" type="radio" name="'arm_mode'" value="position" />
             Position
-            <input ref="velocity" v-model="arm_mode" type="radio" :name="'Velocity'" value="velocity" />
+            <input ref="velocity" v-model="arm_mode" type="radio" name="'arm_mode'" value="velocity" />
             Velocity
-            <input ref="throttle" v-model="arm_mode" type="radio" :name="'Throttle'" value="throttle" />
+            <input ref="throttle" v-model="arm_mode" type="radio" name="'arm_mode'" value="throttle" />
             Throttle
            
         </div>
@@ -50,7 +50,7 @@ import LimitSwitch from "./LimitSwitch.vue";
 
 // In seconds
 const updateRate = 0.1;
-let interval;
+let interval: number | undefined;
 
 export default defineComponent({
     components: {
@@ -68,13 +68,13 @@ export default defineComponent({
         };
     },
 
-    watch: {
-        arm_mode: function (newMode, oldMode) {
-            this.updateArmMode(newMode, oldMode);
-        }
-    },
+    // watch: {
+    //     arm_mode: function (newMode, oldMode) {
+    //         this.updateArmMode(newMode, oldMode);
+    //     }
+    // },
 
-    // beforeDestroy: function () {
+    // beforeUnmount: function () {
     //     this.updateArmMode("arm_disabled", this.arm_mode);
     //     window.clearInterval(interval);
     // },
@@ -89,6 +89,31 @@ export default defineComponent({
                 }
             }
         };
+        interval = window.setInterval(() => {
+            const gamepads = navigator.getGamepads();
+            for (let i = 0; i < 4; i++) {
+                const gamepad = gamepads[i];
+                if (gamepad) {
+                    // Microsoft and Xbox for old Xbox 360 controllers
+                    // X-Box for new PowerA Xbox One controllers
+                    if (
+                        gamepad.id.includes("Microsoft") ||
+                        gamepad.id.includes("Xbox") ||
+                        gamepad.id.includes("X-Box")
+                    ) {
+                        let buttons = gamepad.buttons.map((button) => {
+                            return button.value;
+                        });
+                        this.publishJoystickMessage(gamepad.axes, buttons, this.arm_mode);
+                    }
+                }
+            }
+        }, updateRate * 1000);
+        // this.updateArmMode("arm_disabled", this.arm_mode);
+        // const jointData = {
+        // //publishes array of all falses when refreshing the page
+        // joints: this.joints_array
+        // };
     },
 
     // created: function () {
@@ -108,7 +133,6 @@ export default defineComponent({
     //         name: "/joint_lock",
     //         messageType: "mrover/JointLock"
     //     });
-    //     this.updateArmMode("arm_disabled", this.arm_mode);
     //     const jointData = {
     //         //publishes array of all falses when refreshing the page
     //         joints: this.joints_array
@@ -116,41 +140,23 @@ export default defineComponent({
     //     var jointlockMsg = new ROSLIB.Message(jointData);
     //     this.jointlock_pub.publish(jointlockMsg);
 
-    //     interval = window.setInterval(() => {
-    //         const gamepads = navigator.getGamepads();
-    //         for (let i = 0; i < 4; i++) {
-    //             const gamepad = gamepads[i];
-    //             if (gamepad) {
-    //                 // Microsoft and Xbox for old Xbox 360 controllers
-    //                 // X-Box for new PowerA Xbox One controllers
-    //                 if (
-    //                     gamepad.id.includes("Microsoft") ||
-    //                     gamepad.id.includes("Xbox") ||
-    //                     gamepad.id.includes("X-Box")
-    //                 ) {
-    //                     let buttons = gamepad.buttons.map((button) => {
-    //                         return button.value;
-    //                     });
-    //                     this.publishJoystickMessage(gamepad.axes, buttons);
-    //                 }
-    //             }
-    //         }
-    //     }, updateRate * 1000);
+ 
     // },
 
     methods: {
-        updateArmMode: function (newMode, oldMode) {
-            const armData = {
-                mode: newMode
-            };
-            var armcontrolsmsg = new ROSLIB.ServiceRequest(armData);
-            this.ra_mode_service.callService(armcontrolsmsg, (response) => {
-                if (!response.success) {
-                    this.arm_mode = oldMode;
-                    alert("Failed to change arm mode");
-                }
-            });
-        },
+        // updateArmMode: function (newMode: any, oldMode: string) {
+        //     const armData = {
+        //         mode: newMode
+        //     };
+
+        //     var armcontrolsmsg = new ROSLIB.ServiceRequest(armData);
+        //     this.ra_mode_service.callService(armcontrolsmsg, (response: { success: any; }) => {
+        //         if (!response.success) {
+        //             this.arm_mode = oldMode;
+        //             alert("Failed to change arm mode");
+        //         }
+        //     });
+        // },
 
     //     updateJointsEnabled: function (jointnum, enabled) {
     //         this.joints_array[jointnum] = enabled;
@@ -161,14 +167,13 @@ export default defineComponent({
     //         this.jointlock_pub.publish(jointlockMsg);
     //     },
 
-    //     publishJoystickMessage: function (axes, buttons) {
-    //         const joystickData = {
-    //             axes: axes,
-    //             buttons: buttons
-    //         };
-    //         var joystickMsg = new ROSLIB.Message(joystickData);
-    //         this.joystick_pub.publish(joystickMsg);
-    //     },
+        publishJoystickMessage: function (axes: any, buttons: any, arm_mode: any) {
+            const joystickData = {
+                axes: axes,
+                buttons: buttons
+            };
+            this.websocket.send(JSON.stringify({type:"arm_values", data:joystickData, arm_mode: arm_mode}))
+        },
         toggleArmLaser: function () {
             this.laser_enabled = !this.laser_enabled;
             this.websocket.send(JSON.stringify({type:"laser_service", data:this.laser_enabled}))
