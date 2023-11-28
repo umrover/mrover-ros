@@ -13,7 +13,7 @@ class JointDEController:
         self.g_velocity_mode = True
         self.m1_m2_pos_offset = None
         self.POSITION_FOR_VELOCITY_CONTROL = math.nan
-        self.MAX_TORQUE = 0.3
+        self.MAX_TORQUE = 0.5
         self.ROVER_NODE_TO_MOTEUS_WATCHDOG_TIMEOUT_S = 0.15
         self.MAX_REV_PER_SEC: float = 12
         self.current_pos_state: Literal[""] = ""
@@ -197,10 +197,10 @@ class MainLoop:
 
     async def main(self) -> None:
         mapping_by_key = {
-            "w": (8 / 60, 0),
-            "a": (0, -8 / 60),
-            "s": (-8 / 60, 0),
-            "d": (0, 8 / 60),
+            "w": (8 / 60 * 0.3, 0),
+            "a": (0, -8 / 60 * 0.3),
+            "s": (-8 / 60 * 0.3, 0),
+            "d": (0, 8 / 60 * 0.3),
         }
 
         print("Controls are the following:")
