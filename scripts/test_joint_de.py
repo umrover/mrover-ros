@@ -68,6 +68,7 @@ class JointDEController:
             or moteus.Register.FAULT not in state.values
             or moteus.Register.MODE not in state.values
             or state.values[moteus.Register.MODE] == 11  # timeout
+            or state.values[moteus.Register.MODE] == 1  # fault mode
         )
 
     def transform_coordinates_and_clamp(self, pitch, roll) -> tuple:
