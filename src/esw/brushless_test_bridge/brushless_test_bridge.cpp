@@ -11,13 +11,14 @@ int main(int argc, char** argv) {
     ROS_INFO("Running");
 
     // To get it to run:
-    // - ./fdcanusb_daemon -F -v /dev/fdcanusb vcan0
     //  On laptop:
+    // - ./fdcanusb_daemon -F -v /dev/fdcanusb vcan0
     // - sudo ip link set vcan0 up
     //  On Jetson:
+    // - roscore
     // - sudo ip link set can0 up type can bitrate 500000 dbitrate 1000000 berr-reporting on fd on restart-ms 100
     // - rosparam load config/esw_devboard.yaml
-    // - rosrun mrover can_driver_node _interface:=vcan0
+    // - rosrun mrover can_driver_node _interface:=can0
     // - roslaunch brushless_test.launch
 
     auto brushlessController = std::make_unique<mrover::BrushlessController>(nh, "jetson", "devboard");

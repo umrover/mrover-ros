@@ -150,6 +150,8 @@ class JointDEController:
         return_pos_2 = await self.fix_controller_if_error_and_return_pos(self.controller_2)
         if return_pos_2 is not None:
             self.g_controller_2_rev = return_pos_2
+        if return_pos_1 is not None and return_pos_2 is not None:
+            print(f"The returned values are pos1 {return_pos_1} and {return_pos_2}")
 
     async def run_position_state_machine(self) -> None:
         if time.time() - self.time_since_last_changed > 5:
@@ -215,6 +217,8 @@ class MainLoop:
         )
         if return_pos_2 is not None:
             self.joint_de_controller.g_controller_2_rev = return_pos_2
+        if return_pos_1 is not None and return_pos_2 is not None:
+            print(f"The returned values are pos1 {return_pos_1} and {return_pos_2}")
 
     async def main(self) -> None:
         TEMP_SLOW_DOWN_SAFETY = 1.0  # 0.3
