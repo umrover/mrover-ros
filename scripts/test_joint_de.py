@@ -13,17 +13,17 @@ class JointDEController:
         self.g_velocity_mode = True
         self.m1_m2_pos_offset = None
         self.POSITION_FOR_VELOCITY_CONTROL = math.nan
-        self.MAX_TORQUE = 0.5
+        self.MAX_TORQUE = 0.2
         self.ROVER_NODE_TO_MOTEUS_WATCHDOG_TIMEOUT_S = 0.15
         self.MAX_REV_PER_SEC: float = 12
         self.current_pos_state: Literal[""] = ""
         self.time_since_last_changed: float = time.time()
 
         self.positions_by_key = {
-            "j": (0.5, 0),  # pitch 90
-            "k": (0, -0.5),  # roll -90
-            "l": (-0.5, 0),  # pitch - 90
-            "i": (0, 0.5),  # roll 90
+            "j": (0.3, 0),  # pitch 90
+            "k": (0, -0.3),  # roll -90
+            "l": (-0.3, 0),  # pitch - 90
+            "i": (0, 0.3),  # roll 90
         }
 
         self.current_pos_1 = None
@@ -82,11 +82,6 @@ class JointDEController:
         # Extract y1 and y2 from the result vector
         m1, m2 = result_vector
 
-        # if abs(m1) > self.MAX_REV_PER_SEC or abs(m2) > self.MAX_REV_PER_SEC:
-        #     larger_value = max(abs(m1), abs(m2))
-        #     m1 = (m1 / larger_value) * self.MAX_REV_PER_SEC
-        #     m2 = (m2 / larger_value) * self.MAX_REV_PER_SEC
-
         return m1, m2
 
     def adjust_pitch_roll(self, believed_pitch, believed_roll) -> None:
@@ -120,11 +115,13 @@ class JointDEController:
         if self.DEBUG_MODE_ONLY:
             return
 
-        if abs(self.g_controller_1_rev - m1pos) > 0.1:
+        WIGGLE_ROOM_POSITION_REV = 5
+
+        if abs(self.g_controller_1_rev - m1pos) > WIGGLE_ROOM_POSITION_REV:
             await self.controller_1.set_position(
                 position=m1pos,
                 velocity=self.MAX_REV_PER_SEC / 4,
-                velocity_limit=self.MAX_REV_PER_SEC,
+                velocity_limit=None,
                 maximum_torque=self.MAX_TORQUE,
                 watchdog_timeout=self.ROVER_NODE_TO_MOTEUS_WATCHDOG_TIMEOUT_S,
                 query=True,
@@ -132,11 +129,11 @@ class JointDEController:
         else:
             await self.controller_1.set_brake()
 
-        if abs(self.g_controller_2_rev - m1pos) > 0.1:
+        if abs(self.g_controller_2_rev - m1pos) > WIGGLE_ROOM_POSITION_REV:
             await self.controller_2.set_position(
                 position=m2pos,
                 velocity=self.MAX_REV_PER_SEC / 4,
-                velocity_limit=self.MAX_REV_PER_SEC,
+                velocity_limit=None,
                 maximum_torque=self.MAX_TORQUE,
                 watchdog_timeout=self.ROVER_NODE_TO_MOTEUS_WATCHDOG_TIMEOUT_S,
                 query=True,
@@ -188,7 +185,7 @@ class MainLoop:
             await self.joint_de_controller.controller_1.set_position(
                 position=self.joint_de_controller.POSITION_FOR_VELOCITY_CONTROL,
                 velocity=m1rps,
-                velocity_limit=self.joint_de_controller.MAX_REV_PER_SEC,
+                velocity_limit=None,
                 maximum_torque=self.joint_de_controller.MAX_TORQUE,
                 watchdog_timeout=self.joint_de_controller.ROVER_NODE_TO_MOTEUS_WATCHDOG_TIMEOUT_S,
                 query=True,
@@ -199,7 +196,7 @@ class MainLoop:
             await self.joint_de_controller.controller_2.set_position(
                 position=self.joint_de_controller.POSITION_FOR_VELOCITY_CONTROL,
                 velocity=m2rps,
-                velocity_limit=self.joint_de_controller.MAX_REV_PER_SEC,
+                velocity_limit=None,
                 maximum_torque=self.joint_de_controller.MAX_TORQUE,
                 watchdog_timeout=self.joint_de_controller.ROVER_NODE_TO_MOTEUS_WATCHDOG_TIMEOUT_S,
                 query=True,
@@ -259,13 +256,13 @@ class MainLoop:
                     break
 
             if self.joint_de_controller.g_velocity_mode:
-                if keyboard.is_pressed("p"):
-                    if self.joint_de_controller.m1_m2_pos_offset is None:
-                        print("Failure to go into Looping Position mode. Please calibrate with i/j/k/l first.")
-                    else:
-                        print("Entering the Looping Position Mode")
-                        self.joint_de_controller.g_velocity_mode = False
-                        continue
+                # if keyboard.is_pressed("p"):
+                #     if self.joint_de_controller.m1_m2_pos_offset is None:
+                #         print("Failure to go into Looping Position mode. Please calibrate with i/j/k/l first.")
+                #     else:
+                #         print("Entering the Looping Position Mode")
+                #         self.joint_de_controller.g_velocity_mode = False
+                #         continue
                 current_state = {key: keyboard.is_pressed(key) for key in ["w", "a", "s", "d"]}
 
                 pitch, roll = (0, 0)
