@@ -3,8 +3,7 @@
 import numpy as np
 
 import rospy
-from mrover.msg import EnableAuton
-from mrover.srv import PublishEnableAuton
+from mrover.msg import AutonCommand
 from util.course_publish_helpers import publish_waypoints
 
 
@@ -17,10 +16,7 @@ and without fiducials and these will get published to nav
 
 if __name__ == "__main__":
     rospy.init_node("debug_disable_auton")
-    rospy.wait_for_service("enable_auton")
-    try:
-        publish_enable = rospy.ServiceProxy("enable_auton", PublishEnableAuton)
-        msg = EnableAuton([], False)
-        publish_enable(msg)
-    except rospy.ServiceException as e:
-        print(f"Service call failed: {e}")
+    publish_enable = rospy.Publisher("auton/command", AutonCommand, queue_size=1)
+    msg = AutonCommand([], False)
+    while 1:
+        publish_enable.publish(msg)

@@ -216,6 +216,9 @@ class Context:
     odom_frame: str
     rover_frame: str
 
+    # Message sent by teleop
+    prev_auton_command: Optional[AutonCommand]
+
     def __init__(self):
         self.tf_buffer = tf2_ros.Buffer()
         self.tf_listener = tf2_ros.TransformListener(self.tf_buffer)
@@ -232,12 +235,16 @@ class Context:
         self.world_frame = rospy.get_param("world_frame")
         self.odom_frame = rospy.get_param("odom_frame")
         self.rover_frame = rospy.get_param("rover_frame")
+        self.prev_auton_command = None
 
     def auton_command_callback(self, enableMsg: AutonCommand) -> None:
-        if enableMsg.is_enabled:
-            self.course = convert_and_get_course(self, enableMsg)
-        else:
-            self.disable_requested = True
+        # if previous message is different, update self. If same, ignore
+        if self.prev_auton_command == None or enableMsg != self.prev_auton_command:
+            self.prev_auton_command = enableMsg
+            if enableMsg.is_enabled:
+                self.course = convert_and_get_course(self, enableMsg)
+            else:
+                self.disable_requested = True
 
     def stuck_callback(self, msg: Bool):
         self.rover.stuck = msg.data

@@ -14,11 +14,8 @@ REF_LON = rospy.get_param("gps_linearization/reference_point_longitude")
 def publish_waypoints(waypoints):
     publish_enable = rospy.Publisher("auton/command", AutonCommand, queue_size=1)
     msg = AutonCommand(waypoints, True)
-    rospy.loginfo("about to publish")
-    time.sleep(1)
-    publish_enable.publish(msg)
-    rospy.loginfo("published")
-    rospy.spin()
+    while 1:
+        publish_enable.publish(msg)
 
 
 def convert_waypoint_to_gps(waypoint_pose_pair: Tuple[Waypoint, SE3]) -> GPSWaypoint:
