@@ -68,6 +68,7 @@ namespace mrover {
         void processCANMessage(CAN::ConstPtr const& msg) override;
         double getEffort() override;
         void SetStop();
+        void SetBrake();
 
     private:
         moteus::Controller mController{moteus::Controller::Options{}};
