@@ -148,8 +148,8 @@ class JointDEController:
         return_pos_2 = await self.fix_controller_if_error_and_return_pos(self.controller_2)
         if return_pos_2 is not None:
             self.g_controller_2_rev = return_pos_2
-        if return_pos_1 is not None and return_pos_2 is not None:
-            print(f"The returned values are pos1 {return_pos_1} and {return_pos_2}")
+        # if return_pos_1 is not None and return_pos_2 is not None:
+        #     print(f"The returned values are pos1 {return_pos_1} and {return_pos_2}")
 
     async def run_position_state_machine(self) -> None:
         if time.time() - self.time_since_last_changed > 5:
@@ -172,10 +172,11 @@ class MainLoop:
         m1rps, m2rps = self.joint_de_controller.transform_coordinates_and_clamp(pitch, roll)
 
         if self.joint_de_controller.g_prev_pitch != pitch or self.joint_de_controller.g_prev_roll != roll:
-            print(f"pitch: {pitch}, roll: {roll}, m1rps: {m1rps}, m2rps: {m2rps}")
+            # print(f"pitch: {pitch}, roll: {roll}, m1rps: {m1rps}, m2rps: {m2rps}")
+            print(f"m1rps: {m1rps}, m2rps: {m2rps}")
             motorsrps = np.array([m1rps, m2rps])
             expected_pitch, expected_roll = np.dot(self.joint_de_controller.INVERSE_TRANS_MATRIX, motorsrps)
-            print(f"expected_pitch: {expected_pitch} expected_roll: {expected_roll}")
+            # print(f"expected_pitch: {expected_pitch} expected_roll: {expected_roll}")
             self.joint_de_controller.g_prev_pitch = pitch
             self.joint_de_controller.g_prev_roll = roll
 
@@ -215,8 +216,8 @@ class MainLoop:
         )
         if return_pos_2 is not None:
             self.joint_de_controller.g_controller_2_rev = return_pos_2
-        if return_pos_1 is not None and return_pos_2 is not None:
-            print(f"The returned values are pos1 {return_pos_1} and {return_pos_2}")
+        # if return_pos_1 is not None and return_pos_2 is not None:
+        #     print(f"The returned values are pos1 {return_pos_1} and {return_pos_2}")
 
     async def main(self) -> None:
         TEMP_SLOW_DOWN_SAFETY = 1.0  # 0.3
@@ -240,9 +241,9 @@ class MainLoop:
                 print("EXITING PROGRAM!")
                 return
 
-            print(
-                f"Controller 1 position is {self.joint_de_controller.g_controller_1_rev} and controller 2 is {self.joint_de_controller.g_controller_2_rev}"
-            )
+            # print(
+            #     f"Controller 1 position is {self.joint_de_controller.g_controller_1_rev} and controller 2 is {self.joint_de_controller.g_controller_2_rev}"
+            # )
 
             current_adjust_state = {key: keyboard.is_pressed(key) for key in ["i", "j", "k", "l"]}
             for key in self.joint_de_controller.positions_by_key:
