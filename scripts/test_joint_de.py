@@ -20,11 +20,14 @@ class JointDEController:
         self.time_since_last_changed: float = time.time()
 
         self.positions_by_key = {
-            "i": (0.5, 0),  # pitch 90
-            "j": (0, -0.5),  # roll -90
-            "k": (-0.5, 0),  # pitch - 90
-            "l": (0, 0.5),  # roll 90
+            "j": (0.5, 0),  # pitch 90
+            "k": (0, -0.5),  # roll -90
+            "l": (-0.5, 0),  # pitch - 90
+            "i": (0, 0.5),  # roll 90
         }
+
+        self.current_pos_1 = None
+        self.current_pos_2 = None
 
         self.sequence_positions = ["i", "k", "j", "l"]
 
@@ -33,6 +36,9 @@ class JointDEController:
 
         self.controller_1 = moteus.Controller(id=0x20)
         self.controller_2 = moteus.Controller(id=0x21)
+
+        self.controller_1.set_stop()
+        self.controller_2.set_stop()
 
         self.g_controller_1_rev = None
         self.g_controller_2_rev = None
@@ -95,6 +101,8 @@ class JointDEController:
 
         user_believed_pos = np.dot(self.TRANSFORMATION_MATRIX, user_believed_pitch_roll)
 
+        print(f"USER BELIEVED POSITION IS {user_believed_pos[0]} and {user_believed_pos[1]}")
+
         self.m1_m2_pos_offset = moteus_believed_pos - user_believed_pos
 
     async def move_position(self, pitch, roll) -> None:
@@ -112,22 +120,29 @@ class JointDEController:
         if self.DEBUG_MODE_ONLY:
             return
 
-        await self.controller_1.set_position(
-            position=m1pos,
-            velocity=self.MAX_REV_PER_SEC / 4,
-            velocity_limit=self.MAX_REV_PER_SEC,
-            maximum_torque=self.MAX_TORQUE,
-            watchdog_timeout=self.ROVER_NODE_TO_MOTEUS_WATCHDOG_TIMEOUT_S,
-            query=True,
-        )
-        await self.controller_2.set_position(
-            position=m2pos,
-            velocity=self.MAX_REV_PER_SEC / 4,
-            velocity_limit=self.MAX_REV_PER_SEC,
-            maximum_torque=self.MAX_TORQUE,
-            watchdog_timeout=self.ROVER_NODE_TO_MOTEUS_WATCHDOG_TIMEOUT_S,
-            query=True,
-        )
+        if abs(self.g_controller_1_rev - m1pos) > 0.1:
+            await self.controller_1.set_position(
+                position=m1pos,
+                velocity=self.MAX_REV_PER_SEC / 4,
+                velocity_limit=self.MAX_REV_PER_SEC,
+                maximum_torque=self.MAX_TORQUE,
+                watchdog_timeout=self.ROVER_NODE_TO_MOTEUS_WATCHDOG_TIMEOUT_S,
+                query=True,
+            )
+        else:
+            await self.controller_1.set_brake()
+
+        if abs(self.g_controller_2_rev - m1pos) > 0.1:
+            await self.controller_2.set_position(
+                position=m2pos,
+                velocity=self.MAX_REV_PER_SEC / 4,
+                velocity_limit=self.MAX_REV_PER_SEC,
+                maximum_torque=self.MAX_TORQUE,
+                watchdog_timeout=self.ROVER_NODE_TO_MOTEUS_WATCHDOG_TIMEOUT_S,
+                query=True,
+            )
+        else:
+            await self.controller_2.set_brake()
 
         return_pos_1 = await self.fix_controller_if_error_and_return_pos(self.controller_1)
         if return_pos_1 is not None:
@@ -202,11 +217,13 @@ class MainLoop:
             self.joint_de_controller.g_controller_2_rev = return_pos_2
 
     async def main(self) -> None:
+        TEMP_SLOW_DOWN_SAFETY = 1.0  # 0.3
+
         mapping_by_key = {
-            "w": (8 / 60 * 0.3, 0),
-            "a": (0, -8 / 60 * 0.3),
-            "s": (-8 / 60 * 0.3, 0),
-            "d": (0, 8 / 60 * 0.3),
+            "a": (8 / 60 * TEMP_SLOW_DOWN_SAFETY, 0),
+            "s": (0, -8 / 60 * TEMP_SLOW_DOWN_SAFETY),
+            "d": (-8 / 60 * TEMP_SLOW_DOWN_SAFETY, 0),
+            "w": (0, 8 / 60 * TEMP_SLOW_DOWN_SAFETY),
         }
 
         print("Controls are the following:")
@@ -220,6 +237,10 @@ class MainLoop:
                 await self.move_velocity(0, 0)
                 print("EXITING PROGRAM!")
                 return
+
+            print(
+                f"Controller 1 position is {self.joint_de_controller.g_controller_1_rev} and controller 2 is {self.joint_de_controller.g_controller_2_rev}"
+            )
 
             current_adjust_state = {key: keyboard.is_pressed(key) for key in ["i", "j", "k", "l"]}
             for key in self.joint_de_controller.positions_by_key:
@@ -251,7 +272,7 @@ class MainLoop:
                         roll += roll_change
                 await self.move_velocity(pitch, roll)
             else:
-                if keyboard.is_pressed("V"):
+                if keyboard.is_pressed("v"):
                     print("Entering Velocity Mode")
                     self.joint_de_controller.g_velocity_mode = True
                     continue
