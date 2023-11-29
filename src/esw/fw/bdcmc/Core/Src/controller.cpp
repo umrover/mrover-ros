@@ -32,12 +32,14 @@ extern TIM_HandleTypeDef htim6;  // 10,000 Hz Update timer
 extern TIM_HandleTypeDef htim7;  // 100 Hz Send timer
 extern TIM_HandleTypeDef htim15; // H-Bridge PWM
 extern TIM_HandleTypeDef htim16; // Message watchdog timer
+extern TIM_HandleTypeDef htim17; // Absolute encoder timer (currently at 20Hz)
 #define QUADRATURE_TIMER_1 &htim4
 #define QUADRATURE_TIMER_2 &htim3
 #define UPDATE_TIMER &htim6
 #define SEND_TIMER &htim7
 #define PWM_TIMER &htim15
 #define FDCAN_WATCHDOG_TIMER &htim16
+#define ABSOLUTE_ENCODER_TIMER &htim17
 
 namespace mrover {
 
@@ -124,6 +126,7 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef* htim) {
     } else if (htim == FDCAN_WATCHDOG_TIMER) {
         mrover::fdcan_watchdog_expired();
     }
+    // TODO: check for slow update timer and call on controller to send out i2c frame
 }
 
 /**
@@ -143,6 +146,8 @@ void HAL_FDCAN_RxFifo0Callback(FDCAN_HandleTypeDef* hfdcan, uint32_t RxFifo0ITs)
 void HAL_FDCAN_ErrorCallback(FDCAN_HandleTypeDef* hfdcan) {}
 
 void HAL_FDCAN_ErrorStatusCallback(FDCAN_HandleTypeDef* hfdcan, uint32_t ErrorStatusITs) {}
+
+    // TODO DMA receive callback, this should eventually call a function on the controller with most up to date info
 
 void HAL_I2C_SlaveRxCpltCallback(I2C_HandleTypeDef* hi2c) {}
 
