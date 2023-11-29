@@ -203,6 +203,7 @@ class Context:
     vis_publisher: rospy.Publisher
     course_listener: rospy.Subscriber
     stuck_listener: rospy.Subscriber
+    costmap_listener: rospy.Subscriber
 
     # Use these as the primary interfaces in states
     course: Optional[Course]
@@ -249,7 +250,8 @@ class Context:
         # update data structure
         height = msg.info.height
         width = msg.info.width
-        rospy.loginfo(f"height: {height}, width: {width}")
-        costmap2D = np.array(msg.data)
-        costmap2D.reshape(height, width)
-        rospy.loginfo(f"2D costmap: {costmap2D}")
+        rospy.logerr(f"height: {height}, width: {width}")
+        costmap1D = np.array(msg.data)
+        costmap2D = costmap1D.reshape((height, width))
+        rospy.logerr(f"2D costmap: {costmap2D.shape}")
+        rospy.logerr(f"2D costmap: {costmap2D}")

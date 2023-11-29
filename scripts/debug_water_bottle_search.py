@@ -3,6 +3,7 @@
 import numpy as np
 
 import rospy
+import time 
 from nav_msgs.msg import OccupancyGrid, MapMetaData
 from geometry_msgs.msg import Pose
 from std_msgs.msg import Header
@@ -34,11 +35,12 @@ if __name__ == "__main__":
         header = Header()
         test_grid.header = header
         
-        
+        rospy.loginfo(f"Before publish")
         costpub = rospy.Publisher("costmap", OccupancyGrid, queue_size=1)
         for i in range(10):
             costpub.publish(test_grid)
-        
+            time.sleep(1)
+        rospy.loginfo(f"After publish")
         rospy.spin()
         
 
