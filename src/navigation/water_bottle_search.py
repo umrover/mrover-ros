@@ -9,18 +9,20 @@ from mrover.msg import GPSPointList
 from util.ros_utils import get_rosparam
 from util.state_lib.state import State
 
+from nav_msgs.msg import OccupancyGrid, MapMetaData
 from navigation import approach_post, recovery, waypoint
 from navigation.context import convert_cartesian_to_gps
 from navigation.trajectory import Trajectory
 from navigation.search import SearchTrajectory
 
-# TODO: Right now this is a copy of search state, we will need to change this 
+# TODO: Right now this is a copy of search state, we will need to change this
 # REFERENCE: https://docs.google.com/document/d/18GjDWxIu5f5-N5t5UgbrZGdEyaDj9ZMEUuXex8-NKrA/edit
 
+
 class WaterBottleSearchState(State):
-    #Spiral 
-    traj: SearchTrajectory 
-    #when we are moving along the spiral 
+    # Spiral
+    traj: SearchTrajectory
+    # when we are moving along the spiral
     prev_target: Optional[np.ndarray] = None
     is_recovering: bool = False
 
@@ -28,28 +30,31 @@ class WaterBottleSearchState(State):
     STOP_THRESH = get_rosparam("search/stop_thresh", 0.5)
     DRIVE_FWD_THRESH = get_rosparam("search/drive_fwd_thresh", 0.34)
     SPIRAL_COVERAGE_RADIUS = get_rosparam("search/coverage_radius", 10)
-    SEGMENTS_PER_ROTATION = get_rosparam("search/segments_per_rotation", 8) # TODO: after testing, might need to change
-    DISTANCE_BETWEEN_SPIRALS = get_rosparam("search/distance_between_spirals", 1.25) # TODO: after testing, might need to change
-    
-    
+    SEGMENTS_PER_ROTATION = get_rosparam("search/segments_per_rotation", 8)  # TODO: after testing, might need to change
+    DISTANCE_BETWEEN_SPIRALS = get_rosparam(
+        "search/distance_between_spirals", 1.25
+    )  # TODO: after testing, might need to change
 
     # TODO: Data Structure to store the information given from the map (Look at navigation)
 
-    #2D list 
+    # 2D list
     costMap = []
 
     # TODO: Make call_back function to push into data structure
 
-    def costmap_callback(self, msg:OccupancyGrid):
-        #update data structure
-        costMap = OccupancyGrid.data
+    def costmap_callback(self, msg: OccupancyGrid):
+        # update data structure
+        height = msg.info.height
+        width = msg.info.width
+        rospy.loginfo(f"height: {height}, width: {width}")
+        costmap2D = np.array(msg.data)
+        costmap2D.reshape(height, width)
+        rospy.loginfo(f"2D costmap: {costmap2D}")
+        
+        # Call A-STAR
 
-        #Call A-STAR 
-        pass
-
-    #TODO: A-STAR Algorithm: f(n) = g(n) + h(n)
-    #def a_star():j
-    
+    # TODO: A-STAR Algorithm: f(n) = g(n) + h(n)
+    # def a_star():j
 
     def on_enter(self, context) -> None:
         self.listener = rospy.Subscriber("costmap", OccupancyGrid, self.costmap_callback)

@@ -33,10 +33,14 @@ if __name__ == "__main__":
         # std_msgs/Header header
         header = Header()
         test_grid.header = header
-        two_d_list: list[list[int]] = [[(i * 3) + j + 1 for j in range(3)] for i in range(3)]
-
+        
+        
         costpub = rospy.Publisher("costmap", OccupancyGrid, queue_size=1)
-        costpub.publisher(test_grid)
+        for i in range(10):
+            costpub.publish(test_grid)
+        
+        rospy.spin()
+        
 
     except rospy.ROSInterruptException as e:
         print(f"Didn't work to publish or retrieve message from ros")
