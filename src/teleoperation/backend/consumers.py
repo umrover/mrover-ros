@@ -104,6 +104,7 @@ class GUIConsumer(JsonWebsocketConsumer):
                 tf_msg = SE3.from_tf_tree(tf_buffer, "map", "base_link")
 
                 if tf_msg.is_approx(map_to_baselink, threshold):
+                    rate.sleep()
                     continue
             except (
                 tf2_ros.LookupException,
