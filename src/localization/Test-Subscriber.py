@@ -14,13 +14,18 @@ from sensor_msgs.msg import NavSatFix, Imu
 # SE3 library for handling poses and TF tree
 from util.SE3 import SE3
 from util.SO3 import SO3
+from matplotlib import pyplot as plt
+
+
+lat_arr = []
+long_arr = []
 
 
 class Localization:
     pose: SE3
 
     def __init__(self):
-        # create subscribers for GPS and IMU data, linking them to our callback functions
+        # create subscribers for GPS data, linking them to our callback functions
         # TODO
         rospy.Subscriber("gps/fix_gps_left", NavSatFix, self.gps_left_callback)
         rospy.Subscriber("gps/fix_gps_right", NavSatFix, self.gps_right_callback)
@@ -32,12 +37,13 @@ class Localization:
         # self.pose = SE3()
 
     def gps_left_callback(self, msg: NavSatFix):
-        print("GPS left callback")
         print(msg)
+        lat_arr.append(msg.latitude)
+        long_arr.append(msg.longitude)
 
     def gps_right_callback(self, msg: NavSatFix):
-        print("GPS right callback")
         print(msg)
+        pass
 
 
 def main():
@@ -53,3 +59,5 @@ def main():
 
 if __name__ == "__main__":
     main()
+    plt.scatter(lat_arr, long_arr)
+    plt.show()

@@ -18,6 +18,24 @@
       <bodyName>base_link</bodyName>
     </plugin>
 
+    <!-- GPS -->
+    <plugin name="gazebo_ros_gps" filename="libhector_gazebo_ros_gps.so">
+      <updateRate>100.0</updateRate>
+      <bodyName>base_link</bodyName>
+      <frameId>base_link</frameId>
+      <topicName>gps/fix</topicName>
+      <velocityTopicName>gps/fix_velocity</velocityTopicName>
+      <referenceLatitude>42.293195</referenceLatitude>
+      <referenceLongitude>-83.7096706</referenceLongitude>
+      <referenceHeading>90.0</referenceHeading>
+      <referenceAltitude>0.0</referenceAltitude>
+      <offset>0 0 0</offset>
+      <drift>0.0 0.0 0.0</drift>
+      <gaussianNoise>0.3 0.3 0.3</gaussianNoise>
+      <velocityDrift>0.0 0.0 0.0</velocityDrift>
+      <velocityGaussianNoise>0.2 0.2 0.2</velocityGaussianNoise>
+    </plugin>
+
     <!-- Rover GPS Left -->
     <plugin name="gazebo_ros_gps" filename="libhector_gazebo_ros_gps.so">
       <updateRate>100.0</updateRate>
@@ -29,9 +47,9 @@
       <referenceLongitude>-83.7096706</referenceLongitude>
       <referenceHeading>90.0</referenceHeading>
       <referenceAltitude>0.0</referenceAltitude>
-      <offset>0 0 0</offset>
+      <offset>0 0.5 0</offset>
       <drift>0.0 0.0 0.0</drift>
-      <gaussianNoise>0.3 0.3 0.3</gaussianNoise>
+      <gaussianNoise>0 0 0</gaussianNoise>
       <velocityDrift>0.0 0.0 0.0</velocityDrift>
       <velocityGaussianNoise>0.2 0.2 0.2</velocityGaussianNoise>
     </plugin>
@@ -47,9 +65,9 @@
       <referenceLongitude>-83.7096706</referenceLongitude>
       <referenceHeading>90.0</referenceHeading>
       <referenceAltitude>0.0</referenceAltitude>
-      <offset>0 0 0</offset>
+      <offset>0 -0.5 0</offset>
       <drift>0.0 0.0 0.0</drift>
-      <gaussianNoise>0.3 0.3 0.3</gaussianNoise>
+      <gaussianNoise>0 0 0</gaussianNoise>
       <velocityDrift>0.0 0.0 0.0</velocityDrift>
       <velocityGaussianNoise>0.2 0.2 0.2</velocityGaussianNoise>
     </plugin>
