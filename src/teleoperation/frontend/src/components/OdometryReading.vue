@@ -24,9 +24,9 @@
     <div class="calibration imu">
       <IMUCalibration></IMUCalibration>
     </div>
-    <!-- <div class = "flightindicator">
+    <div class = "flightindicator">
       <FlightAttitudeIndicator></FlightAttitudeIndicator>
-    </div> -->
+    </div>
   </div>
 </template>
 
@@ -34,10 +34,10 @@
 import { convertDMS } from "../utils.js";
 import { mapGetters } from "vuex";
 import IMUCalibration from "./IMUCalibration.vue";
-// import FlightAttitudeIndicator from "./FlightAttitudeIndicator.vue";
+import FlightAttitudeIndicator from "./FlightAttitudeIndicator.vue";
 export default {
   components: {
-    // FlightAttitudeIndicator,
+    FlightAttitudeIndicator,
     IMUCalibration,
   },
   props: {

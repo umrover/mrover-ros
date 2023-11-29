@@ -1,5 +1,7 @@
 <template>
   <div>
+    <p>pitch: {{pitch}}</p>
+    <p>roll: {{roll}}</p>
     <Attitude :size="200" :pitch="pitch" :roll="roll"></Attitude>
   </div>
 </template>
