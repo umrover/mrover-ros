@@ -10,6 +10,7 @@ from sensor_msgs.msg import NavSatFix
 from std_msgs.msg import Header
 from util.SE3 import SE3
 from util.np_utils import numpify
+import message_filters
 
 
 class GPSLinearization:
@@ -46,27 +47,38 @@ class GPSLinearization:
         self.last_gps_msg = None
         self.last_imu_msg = None
 
-        rospy.Subscriber("gps/fix", NavSatFix, self.gps_callback)
+        right_gps_sub = message_filters.Subscriber("right_gps_driver/fix", NavSatFix)
+        left_gps_sub = message_filters.Subscriber("left_gps_driver/fix", NavSatFix)
+
+        sync_gps_sub = message_filters.ApproximateTimeSynchronizer([right_gps_sub, left_gps_sub], 10, 0.5)
+        sync_gps_sub.registerCallback(self.gps_callback)
+
+
         rospy.Subscriber("imu/data", ImuAndMag, self.imu_callback)
         self.pose_publisher = rospy.Publisher("linearized_pose", PoseWithCovarianceStamped, queue_size=1)
 
-    def gps_callback(self, msg: NavSatFix):
+    def gps_callback(self, right_gps_msg: NavSatFix, left_gps_msg: NavSatFix):
         """
         Callback function that receives GPS messages, assigns their covariance matrix,
         and then publishes the linearized pose.
 
         :param msg: The NavSatFix message containing GPS data that was just received
+        TODO: Handle invalid PVTs
         """
-        if np.any(np.isnan([msg.latitude, msg.longitude, msg.altitude])):
+        if np.any(np.isnan([right_gps_msg.latitude, right_gps_msg.longitude, right_gps_msg.altitude])):
             return
+        if np.any(np.isnan([left_gps_msg.latitude, left_gps_msg.longitude, left_gps_msg.altitude])):
+            return
+        
+        ref_coord = np.array([self.ref_lat, self.ref_lon, self.ref_alt])
+        
+        right_cartesian = np.array(geodetic2enu(right_gps_msg.latitude, right_gps_msg.longitude, right_gps_msg.altitude, *ref_coord, deg=True))
+        left_cartesian = np.array(geodetic2enu(left_gps_msg.latitude, left_gps_msg.longitude, left_gps_msg.altitude, *ref_coord, deg=True))
 
-        if not self.use_dop_covariance:
-            msg.position_covariance = self.config_gps_covariance
+        self.compute_gps_bearing(right_cartesian=right_cartesian, left_cartesian=left_cartesian)
 
-        self.last_gps_msg = msg
+        #todo compute pose and publish to EKF topic
 
-        if self.last_imu_msg is not None:
-            self.publish_pose()
 
     def imu_callback(self, msg: ImuAndMag):
         """
@@ -79,41 +91,41 @@ class GPSLinearization:
         if self.last_gps_msg is not None:
             self.publish_pose()
 
-    @staticmethod
-    def get_linearized_pose_in_world(
-        gps_msg: NavSatFix, imu_msg: ImuAndMag, ref_coord: np.ndarray
-    ) -> Tuple[SE3, np.ndarray]:
-        """
-        Linearizes the GPS geodetic coordinates into ENU cartesian coordinates,
-        then combines them with the IMU orientation into a pose estimate relative
-        to the world frame, with corresponding covariance matrix.
+    # @staticmethod
+    # def get_linearized_pose_in_world(
+    #     gps_msg: NavSatFix, imu_msg: ImuAndMag, ref_coord: np.ndarray
+    # ) -> Tuple[SE3, np.ndarray]:
+    #     """
+    #     Linearizes the GPS geodetic coordinates into ENU cartesian coordinates,
+    #     then combines them with the IMU orientation into a pose estimate relative
+    #     to the world frame, with corresponding covariance matrix.
 
-        :param gps_msg: Message containing the rover's GPS coordinates and their corresponding
-                        covariance matrix.
-        :param imu_msg: Message containing the rover's orientation from IMU, with
-                        corresponding covariance matrix.
-        :param ref_coord: numpy array containing the geodetic coordinate which will be the origin
-                          of the tangent plane, [latitude, longitude, altitude]
-        :returns: The pose consisting of linearized GPS and IMU orientation, and the corresponding
-                  covariance matrix as a 6x6 numpy array where each row is [x, y, z, roll, pitch, yaw]
-        """
-        # linearize GPS coordinates into cartesian
-        cartesian = np.array(geodetic2enu(gps_msg.latitude, gps_msg.longitude, gps_msg.altitude, *ref_coord, deg=True))
+    #     :param gps_msg: Message containing the rover's GPS coordinates and their corresponding
+    #                     covariance matrix.
+    #     :param imu_msg: Message containing the rover's orientation from IMU, with
+    #                     corresponding covariance matrix.
+    #     :param ref_coord: numpy array containing the geodetic coordinate which will be the origin
+    #                       of the tangent plane, [latitude, longitude, altitude]
+    #     :returns: The pose consisting of linearized GPS and IMU orientation, and the corresponding
+    #               covariance matrix as a 6x6 numpy array where each row is [x, y, z, roll, pitch, yaw]
+    #     """
+    #     # linearize GPS coordinates into cartesian
+    #     cartesian = np.array(geodetic2enu(gps_msg.latitude, gps_msg.longitude, gps_msg.altitude, *ref_coord, deg=True))
 
-        # ignore Z
-        cartesian[2] = 0
+    #     # ignore Z
+    #     cartesian[2] = 0
 
-        imu_quat = numpify(imu_msg.imu.orientation)
+    #     imu_quat = numpify(imu_msg.imu.orientation)
 
-        # normalize to avoid rounding errors
-        imu_quat = imu_quat / np.linalg.norm(imu_quat)
-        pose = SE3.from_pos_quat(position=cartesian, quaternion=imu_quat)
+    #     # normalize to avoid rounding errors
+    #     imu_quat = imu_quat / np.linalg.norm(imu_quat)
+    #     pose = SE3.from_pos_quat(position=cartesian, quaternion=imu_quat)
 
-        covariance = np.zeros((6, 6))
-        covariance[:3, :3] = np.array([gps_msg.position_covariance]).reshape(3, 3)
-        covariance[3:, 3:] = np.array([imu_msg.imu.orientation_covariance]).reshape(3, 3)
+    #     covariance = np.zeros((6, 6))
+    #     covariance[:3, :3] = np.array([gps_msg.position_covariance]).reshape(3, 3)
+    #     covariance[3:, 3:] = np.array([imu_msg.imu.orientation_covariance]).reshape(3, 3)
 
-        return pose, covariance
+    #     return pose, covariance
 
     def publish_pose(self):
         """
@@ -135,6 +147,9 @@ class GPSLinearization:
         )
         self.pose_publisher.publish(pose_msg)
 
+
+    def compute_gps_bearing(self, right_cartesian, left_cartesian) -> np.ndarray:
+        ...
 
 def main():
     # start the node and spin to wait for messages to be received

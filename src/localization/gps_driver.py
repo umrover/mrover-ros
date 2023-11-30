@@ -25,7 +25,7 @@ class GPS_Driver():
         self.port = rospy.get_param("port")
         self.baud = rospy.get_param("baud")
         self.base_station_sub = rospy.Subscriber('/rtcm', Message, self.process_rtcm)
-        self.gps_pub = rospy.Publisher('/gps', NavSatFix, queue_size=1)
+        self.gps_pub = rospy.Publisher('fix', NavSatFix, queue_size=1)
         self.lock = threading.Lock()
 
 
