@@ -138,27 +138,25 @@
     <child link="imu_link" />
   </joint>
 
-  <link name="imu_link" />
+  <link name="imu_link"/>
 
 
   <!-- GPS -->
-
+  <link name="rover_gps_left_link"/>
   <joint name="rover_gps_left" type="fixed">
-    <origin xyz="0 -0.5 0" />
-    <parent link="chassis_link" />
-    <child link="gps_link" />
-  </joint>
-
-  <!-- <link name="rover_gps_right_link"/> -->
-
-  <joint name="rover_gps_right" type="fixed">
     <origin xyz="0 0.5 0" />
     <parent link="chassis_link" />
-    <child link="gps_link" />
+    <child link="rover_gps_left_link" />
   </joint>
 
-  <link name="gps_link">
-  </link>
+  
+
+  <link name="rover_gps_right_link"/>
+  <joint name="rover_gps_right" type="fixed">
+    <origin xyz="0 -0.5 0" />
+    <parent link="chassis_link" />
+    <child link="rover_gps_right_link" />
+  </joint>
 
   <!-- Camera -->
   <joint name="camera_joint" type="fixed">
