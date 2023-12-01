@@ -1,5 +1,6 @@
 #pragma once
 
+#include <any>
 #include <cstdint>
 #include <optional>
 
@@ -44,13 +45,32 @@ namespace mrover {
         }
 
         template<IsI2CSerializable TSend>
-        auto async_transact(std::uint16_t address, TSend const& send) -> void {
-            check(HAL_I2C_Master_Transmit_IT(m_i2c, address << 1, address_of<std::uint8_t>(send), sizeof(send)) == HAL_OK, Error_Handler);
+        auto async_request(const std::uint16_t address, TSend const& send) -> void {
+            // TODO: make sure actually sends to absolute encoder
+            check(HAL_I2C_Master_Transmit_DMA(m_i2c, address << 1, address_of<std::uint8_t>(send), sizeof(send)) == HAL_OK, Error_Handler);
+
+            // TODO: HAL recommends waiting until peripheral is done (same for Receive_DMA). Is this necessary?
+            while (HAL_I2C_GetState(m_i2c) != HAL_I2C_STATE_READY)
+            {
+            }
         }
 
-        // TODO: Add a seperate async_receive wrapper
+        template<IsI2CSerializable TReceive>
+        auto async_read(const std::uint16_t address) -> void {
+            m_receive_buffer = TReceive{};
+            check(HAL_I2C_Master_Receive_DMA(m_i2c, address << 1 | 1, address_of<std::uint8_t>(m_receive_buffer), sizeof(m_receive_buffer)) == HAL_OK, Error_Handler);
+        }
+
+        template<IsI2CSerializable TReceive>
+        auto get_buffer() const -> std::optional<TReceive> {
+            if (m_receive_buffer.type() != typeid(TReceive)) {
+                return std::nullopt;
+            }
+            return std::any_cast<TReceive>(m_receive_buffer);
+        }
 
     private:
         I2C_HandleTypeDef* m_i2c{};
+        std::any m_receive_buffer{};
     };
 } // namespace mrover

@@ -4,6 +4,14 @@
 #include <optional>
 
 namespace mrover {
+    /* ABSOLUTE ENCODER PROCESS:
+    1. htim17 elapses
+    2. Request transmission sent
+    3. Transmission callback interrupt
+    4. Set up read
+    5. Reception callback interrupt
+    6. Update controller
+    */
 
     // A1/A2 is 1 if pin connected to power, 0 if pin connected to ground
     AbsoluteEncoderReader::AbsoluteEncoderReader(SMBus i2c_bus, std::uint8_t A1, std::uint8_t A2, Ratio multiplier)
@@ -20,8 +28,16 @@ namespace mrover {
         }
     }
 
-    auto AbsoluteEncoderReader::try_read_raw_angle() -> std::optional<std::uint64_t> {
-        std::optional raw_data_optional = m_i2cBus.blocking_transact<std::uint8_t, std::uint16_t>(m_address, 0xFF);
+    auto AbsoluteEncoderReader::request_raw_angle() -> void {
+        m_i2cBus.async_request<std::uint8_t>(m_address, 0xFF);
+    }
+
+    auto AbsoluteEncoderReader::read_raw_angle_into_buffer() -> void {
+        m_i2cBus.async_read<std::uint16_t>(m_address);
+    }
+
+    auto AbsoluteEncoderReader::try_read_buffer() -> std::optional<std::uint64_t> {
+        std::optional raw_data_optional = m_i2cBus.get_buffer<uint16_t>();
         if (!raw_data_optional) return std::nullopt;
 
         std::uint16_t raw_data = raw_data_optional.value();
@@ -36,7 +52,7 @@ namespace mrover {
     }
 
     [[nodiscard]] auto AbsoluteEncoderReader::read() -> std::optional<EncoderReading> {
-        if (std::optional<std::uint64_t> count = try_read_raw_angle()) {
+        if (std::optional<std::uint64_t> count = try_read_buffer()) {
             std::uint64_t ticks_now = HAL_GetTick();
             m_position = m_multiplier * Ticks{count.value()} / ABSOLUTE_CPR;
             Seconds seconds_per_tick = 1 / Hertz{HAL_GetTickFreq()};

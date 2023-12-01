@@ -90,6 +90,18 @@ namespace mrover {
         controller.update();
     }
 
+    void request_absolute_encoder_data_callback() {
+        controller.request_absolute_encoder_data();
+    }
+
+    void read_absolute_encoder_data_callback() {
+        controller.read_absolute_encoder_data();
+    }
+
+    void update_absolute_encoder_data_callback() {
+        controller.update_absolute_encoder_data();
+    }
+
     void send_callback() {
         controller.send();
     }
@@ -125,6 +137,8 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef* htim) {
         mrover::send_callback();
     } else if (htim == FDCAN_WATCHDOG_TIMER) {
         mrover::fdcan_watchdog_expired();
+    } else if (htim == ABSOLUTE_ENCODER_TIMER) {
+        mrover::request_absolute_encoder_data_callback();
     }
     // TODO: check for slow update timer and call on controller to send out i2c frame
 }
@@ -153,9 +167,13 @@ void HAL_I2C_SlaveRxCpltCallback(I2C_HandleTypeDef* hi2c) {}
 
 void HAL_I2C_SlaveTxCpltCallback(I2C_HandleTypeDef* hi2c) {}
 
-void HAL_I2C_MasterRxCpltCallback(I2C_HandleTypeDef* hi2c) {}
+void HAL_I2C_MasterRxCpltCallback(I2C_HandleTypeDef* hi2c) {
+    mrover::update_absolute_encoder_data_callback();
+}
 
-void HAL_I2C_MasterTxCpltCallback(I2C_HandleTypeDef* hi2c) {}
+void HAL_I2C_MasterTxCpltCallback(I2C_HandleTypeDef* hi2c) {
+    mrover::read_absolute_encoder_data_callback();
+}
 
 void HAL_I2C_ErrorCallback(I2C_HandleTypeDef* hi2c) {}
 }
