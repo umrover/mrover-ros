@@ -15,17 +15,17 @@ namespace mrover {
     class SMBus {
         constexpr static std::uint32_t I2C_TIMEOUT = 500, I2C_REBOOT_DELAY = 5;
 
-        void reboot() const {
-            HAL_I2C_DeInit(m_i2c);
-            HAL_Delay(I2C_REBOOT_DELAY);
-            HAL_I2C_Init(m_i2c);
-        }
-
     public:
         SMBus() = default;
 
         explicit SMBus(I2C_HandleTypeDef* hi2c)
             : m_i2c{hi2c} {}
+
+        void reboot() const {
+            HAL_I2C_DeInit(m_i2c);
+            HAL_Delay(I2C_REBOOT_DELAY);
+            HAL_I2C_Init(m_i2c);
+        }
 
         template<IsI2CSerializable TSend, IsI2CSerializable TReceive>
         auto blocking_transact(std::uint16_t address, TSend const& send) -> std::optional<TReceive> {

@@ -56,6 +56,8 @@ void Error_Handler(void);
 
 void init();
 
+void poll_spectral_status();
+
 void update_and_send_spectral();
 
 void update_and_send_thermistor_and_auto_shutoff_if_applicable();

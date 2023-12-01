@@ -4,7 +4,7 @@
 
 #include "hardware.hpp"
 #include "units/units.hpp"
-#include "FreeRTOS.h"
+//#include "FreeRTOS.h"
 #include "spectral.hpp"
 
 namespace mrover {
@@ -13,6 +13,14 @@ namespace mrover {
     	: m_i2c_bus(i2c_bus),
     	  m_i2c_mux(i2c_mux),
 		  m_i2c_mux_channel(i2c_mux_channel) {}
+
+    void Spectral::reboot(){
+    	m_i2c_bus->reboot();
+    }
+
+    void Spectral::poll_status_reg(){
+    	m_i2c_bus->async_transact(SPECTRAL_7b_ADDRESS, I2C_AS72XX_SLAVE_STATUS_REG);
+    }
 
     void Spectral::init(){
     	assert(!m_initialized);
