@@ -87,35 +87,39 @@ can:
 brushless_motors:
   controllers:
     front_left:
-      min_velocity: 1.0
+      min_velocity: -1.0
       max_velocity: 1.0
     front_right:
-      min_velocity: 1.0
+      min_velocity: -1.0
       max_velocity: 1.0
     middle_left:
-      min_velocity: 1.0
+      min_velocity: -1.0
       max_velocity: 1.0
     middle_right:
-      min_velocity: 1.0
+      min_velocity: -1.0
       max_velocity: 1.0
     back_left:
-      min_velocity: 1.0
+      min_velocity: -1.0
       max_velocity: 1.0
     back_right:
-      min_velocity: 1.0
+      min_velocity: -1.0
       max_velocity: 1.0
     joint_a:
-      min_velocity: 1.0
+      min_velocity: -1.0
       max_velocity: 1.0
     joint_c:
-      min_velocity: 1.0
+      min_velocity: -1.0
       max_velocity: 1.0
     joint_de_0:
-      min_velocity: 1.0
+      min_velocity: -1.0
       max_velocity: 1.0
     joint_de_1:
-      min_velocity: 1.0
+      min_velocity: -1.0
       max_velocity: 1.0
+
+joint_de:
+  pitch_offset: 0.0
+  roll_offset: 0.0
 
 brushed_motors:
   controllers:
@@ -472,34 +476,62 @@ wheel:
 arm:
   controllers:
     joint_a:
-      multiplier: 1
+      multiplier: 1.0
     joint_b:
-      multiplier: 1
+      multiplier: 1.0
     joint_c:
-      multiplier: 1
+      multiplier: 1.0
     joint_de_0:
-      multiplier: 1
+      multiplier: 1.0
     joint_de_1:
-      multiplier: 1
+      multiplier: 1.0
     allen_key:
-      multiplier: 1
+      multiplier: 1.0
     gripper:
-      multiplier: 1
+      multiplier: 1.0
 
 drive:
   controllers:
     front_left:
-      multiplier: 1
+      multiplier: 1.0
     front_right:
-      multiplier: 1
+      multiplier: 1.0
     middle_left:
-      multiplier: 1
+      multiplier: 1.0
     middle_right:
-      multiplier: 1
+      multiplier: 1.0
     back_left:
-      multiplier: 1
+      multiplier: 1.0
     back_right:
-      multiplier: 1
+      multiplier: 1.0
+
+motors_group:
+  arm_hw:
+    - "joint_a"
+    - "joint_b"
+    - "joint_c"
+    - "joint_de_0"
+    - "joint_de_1"
+    - "allen_key"
+    - "gripper"
+  mast_gimbal:
+    - "mast_gimbal_x"
+    - "mast_gimbal_y"
+  cache:
+    - "cache_motor"
+  sa:
+    - "sa_x"
+    - "sa_y"
+    - "sa_z"
+    - "scoop"
+    - "sensor_actuator"
+  drive:
+    - "front_left"
+    - "front_right"
+    - "middle_left"
+    - "middle_right"
+    - "back_left"
+    - "back_right"
 
 motors:
   controllers:
@@ -543,7 +575,7 @@ motors:
       type: "brushed"
     sensor_actuator:
       type: "brushed"
-    cache:
+    cache_motor:
       type: "brushed"
 
 default_network_iface: "enp0s31f6"

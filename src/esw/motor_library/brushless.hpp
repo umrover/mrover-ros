@@ -68,6 +68,7 @@ namespace mrover {
         void processCANMessage(CAN::ConstPtr const& msg) override;
         double getEffort() override;
         void SetStop();
+        void SetBrake();
 
     private:
         moteus::Controller mController{moteus::Controller::Options{}};
@@ -76,8 +77,8 @@ namespace mrover {
         // Function to map throttle to velocity
         RadiansPerSecond mapThrottleToVelocity(Percent throttle);
         // Converts moteus error codes and mode codes to std::string descriptions
-        std::string moteusErrorCodeToErrorState(moteus::Mode motor_mode, ErrorCode motor_error_code);
-        std::string moteusModeToState(moteus::Mode motor_mode);
+        static std::string moteusErrorCodeToErrorState(moteus::Mode motor_mode, ErrorCode motor_error_code);
+        static std::string moteusModeToState(moteus::Mode motor_mode);
     };
 
 } // namespace mrover

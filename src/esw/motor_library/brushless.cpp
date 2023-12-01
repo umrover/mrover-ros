@@ -13,22 +13,24 @@ namespace mrover {
         assert(brushlessMotorData.getType() == XmlRpc::XmlRpcValue::TypeStruct);
 
         mMinVelocity = RadiansPerSecond{xmlRpcValueToTypeOrDefault<double>(
-                brushlessMotorData, "min_velocity", 1.0)};
+                brushlessMotorData, "min_velocity", -1.0)};
         mMaxVelocity = RadiansPerSecond{xmlRpcValueToTypeOrDefault<double>(
                 brushlessMotorData, "max_velocity", 1.0)};
 
         mMinPosition = Radians{xmlRpcValueToTypeOrDefault<double>(
-                brushlessMotorData, "min_position", 1.0)};
+                brushlessMotorData, "min_position", -1.0)};
         mMaxPosition = Radians{xmlRpcValueToTypeOrDefault<double>(
                 brushlessMotorData, "max_position", 1.0)};
     }
 
     void BrushlessController::setDesiredThrottle(Percent throttle) {
+        updateLastConnection();
         throttle = std::clamp(throttle, -1_percent, 1_percent);
         setDesiredVelocity(mapThrottleToVelocity(throttle));
     }
 
     void BrushlessController::setDesiredPosition(Radians position) {
+        updateLastConnection();
         Revolutions position_revs = std::clamp(position, mMinPosition, mMaxPosition);
         moteus::PositionMode::Command command{
                 .position = position_revs.get(),
@@ -44,22 +46,30 @@ namespace mrover {
     // Nan          0.0         = Don't move
 
     void BrushlessController::setDesiredVelocity(RadiansPerSecond velocity) {
+        updateLastConnection();
         RevolutionsPerSecond velocity_rev_s = std::clamp(velocity, mMinVelocity, mMaxVelocity);
         // ROS_WARN("%7.3f   %7.3f",
         //  velocity.get(), velocity_rev_s.get());
+        if (abs(velocity_rev_s).get() < 1e-5) {
+            SetBrake();
+        } else {
+            moteus::PositionMode::Command command{
+                    .position = std::numeric_limits<double>::quiet_NaN(),
+                    .velocity = velocity_rev_s.get(),
+            };
 
-        moteus::PositionMode::Command command{
-                .position = std::numeric_limits<double>::quiet_NaN(),
-                .velocity = velocity_rev_s.get(),
-        };
-
-        moteus::CanFdFrame positionFrame = mController.MakePosition(command);
-        mDevice.publish_moteus_frame(positionFrame);
+            moteus::CanFdFrame positionFrame = mController.MakePosition(command);
+            mDevice.publish_moteus_frame(positionFrame);
+        }
     }
 
     void BrushlessController::SetStop() {
         moteus::CanFdFrame setStopFrame = mController.MakeStop();
         mDevice.publish_moteus_frame(setStopFrame);
+    }
+    void BrushlessController::SetBrake() {
+        moteus::CanFdFrame setBrakeFrame = mController.MakeBrake();
+        mDevice.publish_moteus_frame(setBrakeFrame);
     }
 
     void BrushlessController::processCANMessage(CAN::ConstPtr const& msg) {

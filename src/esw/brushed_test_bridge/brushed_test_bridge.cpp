@@ -3,7 +3,7 @@
 #include <ros/init.h>
 #include <ros/node_handle.h>
 
-#include <motors_manager.hpp>
+#include <motors_group.hpp>
 
 int main(int argc, char** argv) {
     ros::init(argc, argv, "brushed_test_bridge");

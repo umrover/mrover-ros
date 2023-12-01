@@ -1,6 +1,5 @@
 #pragma once
 
-#include <chrono>
 #include <unordered_map>
 
 #include <XmlRpcValue.h>
@@ -27,11 +26,11 @@ namespace mrover {
         return Unit{value};
     }
 
-    class MotorsManager {
+    class MotorsGroup {
     public:
-        MotorsManager() = default;
+        MotorsGroup() = default;
 
-        MotorsManager(ros::NodeHandle const& nh, std::string groupName, std::vector<std::string> controllerNames);
+        MotorsGroup(ros::NodeHandle const& nh, std::string groupName);
 
         Controller& get_controller(std::string const& name);
 
@@ -41,11 +40,9 @@ namespace mrover {
 
         void moveMotorsPosition(Position::ConstPtr const& msg);
 
-        void heartbeatCallback(ros::TimerEvent const&);
+        void processJointData(sensor_msgs::JointState::ConstPtr const& msg, std::string const& name);
 
-        void publishDataCallback(ros::TimerEvent const&);
-
-        void updateLastConnection(std::string const& name);
+        void processControllerData(ControllerState::ConstPtr const& msg, std::string const& name);
 
     private:
         ros::NodeHandle mNh;
@@ -55,12 +52,20 @@ namespace mrover {
         ros::Subscriber mMovePositionSub;
         ros::Publisher mJointDataPub;
         ros::Publisher mControllerDataPub;
+
+        std::unordered_map<std::string, ros::Publisher> mThrottlePubsByName;
+        std::unordered_map<std::string, ros::Publisher> mVelocityPubsByName;
+        std::unordered_map<std::string, ros::Publisher> mPositionPubsByName;
+        std::unordered_map<std::string, ros::Subscriber> mJointDataSubsByName;
+        std::unordered_map<std::string, ros::Subscriber> mControllerDataSubsByName;
+        std::unordered_map<std::string, size_t> mIndexByName;
+
         std::unordered_map<std::string, std::unique_ptr<Controller>> mControllers;
         std::string mGroupName;
         std::vector<std::string> mControllerNames;
-        std::unordered_map<std::string, std::chrono::high_resolution_clock::time_point> mLastConnectionByName;
-        ros::Timer heartbeatTimer;
-        ros::Timer publishDataTimer;
+
+        sensor_msgs::JointState mJointState;
+        ControllerState mControllerState;
     };
 
 } // namespace mrover

@@ -28,7 +28,7 @@ namespace mrover {
             mConfigCommand.limit_switch_info.is_default_enabled = xmlRpcValueToTypeOrDefault<bool>(
                     brushedMotorData, std::format("limit_{}_default_enabled", i), false);
 
-            mConfigCommand.limit_switch_info.limit_readj_pos[i] = Radians{static_cast<double>(brushedMotorData[std::format("limit_{}_readjust_position", i)])};
+            mConfigCommand.limit_switch_info.limit_readj_pos.at(i) = Radians{static_cast<double>(brushedMotorData[std::format("limit_{}_readjust_position", i)])};
         }
 
         mConfigCommand.quad_abs_enc_info.quad_present = xmlRpcValueToTypeOrDefault<bool>(
@@ -70,6 +70,7 @@ namespace mrover {
     }
 
     void BrushedController::setDesiredThrottle(Percent throttle) {
+        updateLastConnection();
         if (!mIsConfigured) {
             sendConfiguration();
             return;
@@ -81,6 +82,7 @@ namespace mrover {
     }
 
     void BrushedController::setDesiredPosition(Radians position) {
+        updateLastConnection();
         if (!mIsConfigured) {
             sendConfiguration();
             return;
@@ -92,6 +94,7 @@ namespace mrover {
     }
 
     void BrushedController::setDesiredVelocity(RadiansPerSecond velocity) {
+        updateLastConnection();
         if (!mIsConfigured) {
             sendConfiguration();
             return;
@@ -117,7 +120,7 @@ namespace mrover {
         mErrorState = errorToString(static_cast<BDCMCErrorInfo>(configCalibErrInfo.error));
         LimitStateInfo limitSStateInfo = state.limit_switches;
         for (std::size_t i = 0; i < mLimitHit.size(); ++i) {
-            mLimitHit[i] = GET_BIT_AT_INDEX(limitSStateInfo.hit, i);
+            mLimitHit.at(i) = GET_BIT_AT_INDEX(limitSStateInfo.hit, i);
         }
         if (mIsCalibrated) {
             mState = "Armed";
