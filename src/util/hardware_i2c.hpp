@@ -48,6 +48,8 @@ namespace mrover {
             check(HAL_I2C_Master_Transmit_IT(m_i2c, address << 1, address_of<std::uint8_t>(send), sizeof(send)) == HAL_OK, Error_Handler);
         }
 
+        // TODO: Add a seperate async_receive wrapper
+
     private:
         I2C_HandleTypeDef* m_i2c{};
     };

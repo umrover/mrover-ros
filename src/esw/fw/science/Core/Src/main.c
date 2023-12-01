@@ -15,6 +15,7 @@
   *
   ******************************************************************************
   */
+#include "FreeRTOS.h"
 /* USER CODE END Header */
 /* Includes ------------------------------------------------------------------*/
 #include "main.h"
@@ -22,7 +23,6 @@
 #include "semphr.h"
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
-
 
 /* USER CODE END Includes */
 
@@ -57,14 +57,26 @@ const osThreadAttr_t defaultTask_attributes = {
 };
 /* USER CODE BEGIN PV */
 
-osSemaphoreId_t read_status;
-osSemaphoreId_t write_status;
+osSemaphoreId_t spectral_read_status;
+osSemaphoreId_t spectral_write_status;
 
-uint8_t status_buffer[1];
+//uint16_t SPECTRAL_7b_ADDRESS = 0x49;
+//uint8_t I2C_AS72XX_SLAVE_STATUS_REG = 0x00;
+//uint8_t I2C_AS72XX_SLAVE_TX_VALID = 0x02;
+//uint8_t I2C_AS72XX_SLAVE_RX_VALID = 0x01;
+
+uint8_t spectral_status_buffer[1];
 
 osThreadId_t SpectralTaskHandle;
 const osThreadAttr_t SpectralTask_attributes = {
   .name = "SpectralTask",
+  .priority = (osPriority_t) osPriorityNormal,
+  .stack_size = 128 * 4
+};
+
+osThreadId_t SpectralPollingTaskHandle;
+const osThreadAttr_t SpectralPollingTask_attributes = {
+  .name = "SpectralPollingTask",
   .priority = (osPriority_t) osPriorityNormal,
   .stack_size = 128 * 4
 };
@@ -94,6 +106,7 @@ static void MX_ADC1_Init(void);
 void StartDefaultTask(void *argument);
 
 /* USER CODE BEGIN PFP */
+void SpectralPollingTask(void *argument);
 void SpectralTask(void *argument);
 void ThermistorAndAutoShutoffTask(void *argument);
 void HeaterUpdatesTask(void *argument);
@@ -179,6 +192,7 @@ int main(void)
 
   // TODO - Using spectral causes a hardfault!!!
   SpectralTaskHandle = osThreadNew(SpectralTask, NULL, &SpectralTask_attributes);
+  SpectralPollingTaskHandle = osThreadNew(SpectralPollingTask, NULL, &SpectralPollingTask_attributes);
   ThermistorAndAutoShutoffTaskHandle = osThreadNew(ThermistorAndAutoShutoffTask, NULL, &ThermistorAndAutoShutoffTask_attributes);
   HeaterUpdatesTaskHandle = osThreadNew(HeaterUpdatesTask, NULL, &HeaterUpdatesTask_attributes);
 
@@ -470,20 +484,28 @@ void HAL_FDCAN_RxFifo0Callback(FDCAN_HandleTypeDef *hfdcan, uint32_t RxFifo0ITs)
 
 void HAL_I2C_MasterTXCpltCallback(I2C_HandleTypeDef *hi2c) {
 	// TODO: call asynch receive -- need globals to know who needs to receive
+	HAL_I2C_Master_Receive_IT(hi2c, (Spectral::SPECTRAL_7b_ADDRESS << 1 | 1), &spectral_status_buffer, sizeof(spectral_status_buffer));
 }
 
 void HAL_I2C_MasterRXCpltCallback(I2C_HandleTypeDef *hi2c) {
-	if ((status_buffer[0] & I2C_AS72XX_SLAVE_TX_VALID) == 0) {
-		osSemaphoreRelease(write_status);
+	// If we want to use this for anything else than checking spectral status reg,
+	// then this function needs additional logic
+
+	// TODO: need to check what happens if the semaphores are maxed at 1.
+	// Will these functions block?
+	if ((spectral_status_buffer[0] & mrover::Spectral::I2C_AS72XX_SLAVE_TX_VALID) == 0) {
+		osSemaphoreRelease(spectral_write_status);
 	}
 
-	if (status_buffer[0] & I2C_AS72XX_SLAVE_RX_VALID == 0) {
-		osSemaphoreRelease(read_status);
+	if ((spectral_status_buffer[0] & mrover::Spectral::I2C_AS72XX_SLAVE_RX_VALID) == 0) {
+		osSemaphoreRelease(spectral_read_status);
 	}
 
 }
 
 void HAL_I2C_ErrorCallback(I2C_HandleTypeDef *hi2c) {
+	// Something is most likely wrong with the I2C bus
+	// if we get to this point
 	// TODO: implement this function somewhere
 	reboot();
 }
@@ -500,14 +522,27 @@ void ReceiveMessages(void *argument) {
 void SpectralTask(void *argument) {
 	uint32_t tick = osKernelGetTickCount();
 
-	// create semaphore
-	semaphore_handle = osSemeaphoreNew(1U, 0U, NULL);
-	xSemaphoreCreateBinary();
+	// Initialize spectral semaphores
+	spectral_write_status = osSemeaphoreNew(1U, 0U, NULL);
+	spectral_read_status = osSemeaphoreNew(1U, 0U, NULL);
+
 	for(;;) {
 		tick += osKernelGetTickFreq(); // 1 Hz
 
 		// finish
 		update_and_send_spectral();
+		osDelayUntil(tick);
+	}
+}
+
+void SpectralPollingTask(void *argument) {
+	uint32_t tick = osKernelGetTickCount();
+
+	for(;;) {
+		tick += 10 * osKernelGetTickFreq(); // 10 Hz
+
+		async_transact(mrover::Spectral::SPECTRAL_7b_ADDRESS, mrover::Spectral::I2C_AS72XX_SLAVE_STATUS_REG);
+
 		osDelayUntil(tick);
 	}
 }

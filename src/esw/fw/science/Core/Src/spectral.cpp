@@ -4,13 +4,10 @@
 
 #include "hardware.hpp"
 #include "units/units.hpp"
-
+#include "FreeRTOS.h"
 #include "spectral.hpp"
 
 namespace mrover {
-
-	constexpr static uint8_t I2C_AS72XX_SLAVE_STATUS_REG = 0x00;
-	constexpr static uint8_t I2C_AS72XX_SLAVE_TX_VALID = 0x02;
 
     Spectral::Spectral(std::shared_ptr<SMBus> i2c_bus, std::shared_ptr<I2CMux> i2c_mux, uint8_t i2c_mux_channel)
     	: m_i2c_bus(i2c_bus),
@@ -28,26 +25,33 @@ namespace mrover {
 		// GAIN is 0b10, so it is 16x sensor channel gain
 		// BANK is 0b10, so data conversion is Mode 2
 		// DATA_RDY is 0 and RSVD is 0
-    	auto status = m_i2c_bus->blocking_transact<uint16_t, uint8_t>(SPECTRAL_7b_ADDRESS, I2C_AS72XX_SLAVE_STATUS_REG);
-		if(!status || status.value() & I2C_AS72XX_SLAVE_TX_VALID != 0){
-			// Try again
-			status = m_i2c_bus->blocking_transact<uint16_t, uint8_t>(SPECTRAL_7b_ADDRESS, I2C_AS72XX_SLAVE_STATUS_REG);
-			if(!status || status.value() & I2C_AS72XX_SLAVE_TX_VALID != 0){
-				// Failed. Unable to init...
-				m_error = true;
-				return;
-			}
-		}
+//    	auto status = m_i2c_bus->blocking_transact<uint16_t, uint8_t>(SPECTRAL_7b_ADDRESS, I2C_AS72XX_SLAVE_STATUS_REG);
+//		if(!status || status.value() & I2C_AS72XX_SLAVE_TX_VALID != 0){
+//			// Try again
+//			status = m_i2c_bus->blocking_transact<uint16_t, uint8_t>(SPECTRAL_7b_ADDRESS, I2C_AS72XX_SLAVE_STATUS_REG);
+//			if(!status || status.value() & I2C_AS72XX_SLAVE_TX_VALID != 0){
+//				// Failed. Unable to init...
+//				m_error = true;
+//				return;
+//			}
+//		}
+
+		osSemaphoreAcquire(spectral_write_status, osWaitForever);
+
 		auto result = m_i2c_bus->blocking_transact<uint16_t, uint8_t>(SPECTRAL_7b_ADDRESS, CONTROL_SETUP_REG);
 		if (!result) {
 			m_error = true;
 			return;
 		}
+
+		osSemaphoreAcquire(spectral_write_status, osWaitForever);
 		result = m_i2c_bus->blocking_transact<uint16_t, uint8_t>(SPECTRAL_7b_ADDRESS, control_data);
 		if (!result) {
 			m_error = true;
 			return;
 		}
+
+		osSemaphoreAcquire(spectral_write_status, osWaitForever);osSemaphoreAcquire(spectral_write_status, osWaitForever);
 		// Integration time = 2.8ms & 0xFF
 		uint8_t int_time_multiplier = 0xFF;
 		result = m_i2c_bus->blocking_transact<uint16_t, uint8_t>(SPECTRAL_7b_ADDRESS, int_time_multiplier);
@@ -80,7 +84,11 @@ namespace mrover {
     		uint8_t msb_reg_addr = CHANNEL_V_HIGH + i * 2;
     		uint8_t lsb_reg_addr = CHANNEL_V_HIGH + i * 2 + 1;
 
+    		// Technically we should we waiting/polling before trying to read from these addreses...
+    		osSemaphoreAcquire(spectral_write_status, osWaitForever);
     		auto msb_result = m_i2c_bus->blocking_transact<uint16_t, uint8_t>(SPECTRAL_7b_ADDRESS, msb_reg_addr);
+
+    		osSemaphoreAcquire(spectral_write_status, osWaitForever);
     		auto lsb_result = m_i2c_bus->blocking_transact<uint16_t, uint8_t>(SPECTRAL_7b_ADDRESS, lsb_reg_addr);
     		if(msb_result && lsb_result){
     			channel_data[i] = (((uint16_t)msb_result.value() << 8) | lsb_result.value());
