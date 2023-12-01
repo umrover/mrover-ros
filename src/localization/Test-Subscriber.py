@@ -27,8 +27,8 @@ class Localization:
     def __init__(self):
         # create subscribers for GPS data, linking them to our callback functions
         # TODO
-        rospy.Subscriber("gps/fix_gps_left", NavSatFix, self.gps_left_callback)
-        rospy.Subscriber("gps/fix_gps_right", NavSatFix, self.gps_right_callback)
+        rospy.Subscriber("gps/fix/rover_gps_left", NavSatFix, self.gps_left_callback)
+        rospy.Subscriber("gps/fix/rover_gps_right", NavSatFix, self.gps_right_callback)
 
         # create a transform broadcaster for publishing to the TF tree
         # self.tf_broadcaster = tf2_ros.TransformBroadcaster()

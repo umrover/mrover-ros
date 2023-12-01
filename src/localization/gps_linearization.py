@@ -46,7 +46,7 @@ class GPSLinearization:
         self.last_gps_msg = None
         self.last_imu_msg = None
         # gps/fix
-        rospy.Subscriber("gps/fix_gps_left", NavSatFix, self.gps_callback)
+        rospy.Subscriber("gps/fix/rover_gps_left", NavSatFix, self.gps_callback)
         rospy.Subscriber("imu/data", ImuAndMag, self.imu_callback)
         self.pose_publisher = rospy.Publisher("linearized_pose", PoseWithCovarianceStamped, queue_size=1)
 
