@@ -24,11 +24,11 @@ namespace mrover {
         // 3. We only want to publish the tags if the topic has subscribers
         if (mPublishImages && mImgPub.getNumSubscribers()) {
             // Draw the tags on the image using OpenCV
-            // publishTagsOnImage();
+            //publishTagsOnImage();
         }
 
         //Publish all tags that meet threshold
-        // publishThresholdTags();
+        //publishThresholdTags();
 
         //PUBLISH TAGS
     }
@@ -57,25 +57,29 @@ namespace mrover {
 
     void LongRangeTagDetectorNodelet::updateHitCounts() {
         //loop through all identified IDs
-        for (size_t i = 0; i < mImmediateIds.size(); i++)
+        for (size_t i = 0; i < mImmediateIds.size(); i++) {
             updateNewlyIdentifiedTags(i);
+        }
 
 
         //Now decrement all the hitcounts for tags that were not updated
         // Set updated status to false
-
-        for (auto& mTag: mTags) {
-            LongRangeTagStruct& currentTag = mTag.second;
-
+        for (auto it = mTags.begin(); it != mTags.end();) {
+            LongRangeTagStruct& currentTag = it->second;
+            std::cout << mTags.size() << "!!!" << std::endl;
             if (currentTag.updated) {
                 currentTag.updated = false;
+                it++;
             } else {
                 //Decrement weight of undetected tags
                 currentTag.hitCount -= mTagDecrementWeight;
 
                 //if the value has fallen belown the minimum, remove it
                 if (currentTag.hitCount <= mTagRemoveWeight) {
-                    mTags.erase(mTag.first);
+                    std::cout << "erasing" << std::endl;
+                    it = mTags.erase(it);
+                } else {
+                    it++;
                 }
             }
         }
@@ -108,7 +112,6 @@ namespace mrover {
             //Key exist sin mTags
             lrt.hitCount = std::min(mTags[currentId].hitCount + mTagIncrementWeight, mMaxHitCount);
         }
-
         mTags[currentId] = lrt;
     }
 
