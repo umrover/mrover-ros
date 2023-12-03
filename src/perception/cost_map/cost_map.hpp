@@ -2,9 +2,6 @@
 
 namespace mrover {
 
-    using PointCloud = pcl::PointCloud<pcl::PointXYZRGBNormal>;
-    using PointCloudPtr = PointCloud::Ptr;
-
     class CostMapNodelet : public nodelet::Nodelet {
     private:
         ros::NodeHandle mNh, mPnh, mCmt;

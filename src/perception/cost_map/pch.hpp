@@ -4,7 +4,6 @@
 #include <nav_msgs/OccupancyGrid.h>
 #include <nodelet/loader.h>
 #include <nodelet/nodelet.h>
-#include <pcl_ros/point_cloud.h>
 #include <ros/node_handle.h>
 #include <ros/publisher.h>
 #include <se3.hpp>
