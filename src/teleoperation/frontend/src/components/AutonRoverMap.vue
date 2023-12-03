@@ -79,7 +79,7 @@
   const DRAW_FREQUENCY = 10;
   // Options for the tilelayer object on the map
   const onlineUrl = "http://{s}.google.com/vt/lyrs=s&x={x}&y={y}&z={z}";
-  const offlineUrl = "/static/map/{z}/{x}/{y}.png";
+  const offlineUrl = "map/{z}/{x}/{y}.png";
   const onlineTileOptions = {
     maxNativeZoom: 22,
     maxZoom: 100,
@@ -206,24 +206,24 @@
     created: function () {
       // Get Icons for Map
       this.locationIcon = L.icon({
-        iconUrl: "/static/location_marker_icon.png",
+        iconUrl: "location_marker_icon.png",
         iconSize: [40, 40],
         iconAnchor: [20, 20]
       });
       this.waypointIcon = L.icon({
-        iconUrl: "/static/map_marker.png",
+        iconUrl: "map_marker.png",
         iconSize: [64, 64],
         iconAnchor: [32, 64],
         popupAnchor: [0, -32]
       });
       this.searchPathIcon = L.icon({
-        iconUrl: "/static/map_marker_projected.png",
+        iconUrl: "map_marker_projected.png",
         iconSize: [32, 32],
         iconAnchor: [16, 16],
         popupAnchor: [0, -32]
       });
       this.gatePathIcon = L.icon({
-        iconUrl: "/static/map_marker_highlighted.png",
+        iconUrl: "map_marker_highlighted.png",
         iconSize: [64, 64],
         iconAnchor: [32, 64],
         popupAnchor: [0, -32]

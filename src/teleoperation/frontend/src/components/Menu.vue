@@ -4,7 +4,7 @@
       <h1>Menu</h1>
       <img
         class="logo"
-        src="../static/mrover.png"
+        src="mrover.png"
         alt="MRover"
         title="MRover"
         width="200"
@@ -14,7 +14,7 @@
     <div class="pages">
       <fieldset class="row">
         <legend>Tasks</legend>
-        <MenuButton link="/DMTask" name="EDM Mission" />
+        <MenuButton link="/DMTask" name="DM Mission" />
         <MenuButton link="/ESTask" name="ES Mission" />
         <MenuButton link="/ISHTask" name="ISH GUI" />
         <MenuButton link="/SATask" name="Sample Acquisition GUI" />
@@ -27,28 +27,15 @@
 </template>
 
 <script lang="ts">
-import MenuButton from "./MenuButton.vue";
-
-import { defineComponent, inject } from 'vue'
-
-export default defineComponent({
-  name: "MainMenu",
+import { inject } from 'vue'
+import MenuButton from './MenuButton.vue'
+export default {
   components: {
-    MenuButton,
-  },
-  created() {
-    const ws:any = inject<WebSocket>('webSocketService');
-
-    ws.send('Hello, WebSocket!');
-  },
-
-  data() {
-    return {};
+    MenuButton
   }
+};
 
-});
 </script>
-
 <style scoped>
 
 .header {

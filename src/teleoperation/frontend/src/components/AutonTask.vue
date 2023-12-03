@@ -1,12 +1,12 @@
 <template>
     <div class="wrapper">
         <div class="shadow p-3 mb-5 header">
-            <img class="logo" src="../static/mrover.png" alt="MRover" title="MRover" width="200" />
+            <img class="logo" src="mrover.png" alt="MRover" title="MRover" width="200" />
             <h1>Auton Dashboard</h1>
             <!-- <MCUReset class="mcu_reset"></MCUReset>
         <CommReadout class="comms"></CommReadout> -->
             <div class="help">
-                <img src="../static/help.png" alt="Help" title="Help" width="48" height="48" />
+                <img src="help.png" alt="Help" title="Help" width="48" height="48" />
             </div>
             <div class="helpscreen"></div>
             <div class="helpimages" style="
@@ -14,81 +14,84 @@
                 align-items: center;
                 justify-content: space-evenly;
                 ">
-                <img src="../static/joystick.png" alt="Joystick" title="Joystick Controls"
+                <img src="joystick.png" alt="Joystick" title="Joystick Controls"
                     style="width: auto; height: 70%; display: inline-block" />
             </div>
         </div>
-        <div class="data" :style="`background-color: {{nav_state_color}}`">
-            <div>
-                <h2>Nav State: {{ nav_status.nav_state_name }}</h2>
+        <div :class="['shadow p-3 rounded data', ledColor]">
+            <h2>Nav State: {{ navState }}</h2>
+            <div style="display: inline-block;">
+                <CameraFeed></CameraFeed>
             </div>
-            <!-- <div>
-        <p style="margin-top: 6px">Joystick Values</p>
+            <div style="display: inline-block; vertical-align: top;">
+            <p style="margin-top: 6px">Joystick Values</p>
+            <JoystickValues />
+            </div>
+            <OdometryReading :odom="odom" />
         </div>
-        <JoystickValues />
-        <div>
-        <OdometryReading :odom="odom"></OdometryReading>
-        </div> -->
-        </div>
-        <div class="map">
+        <div class="shadow p-3 rounded map">
             <AutonRoverMap :odom="odom" />
         </div>
-        <div class="waypoints">
+        <div class="shadow p-3 rounded waypoints">
         <AutonWaypointEditor
         :odom="odom"
         @toggleTeleop="teleopEnabledCheck = $event"
         />
         </div>
         <!--Enable the drive controls if auton is off-->
-        <!-- <div
+        <div
         v-if="!autonEnabled && teleopEnabledCheck"
         v-show="false"
         class="driveControls"
     >
         <DriveControls />
-    </div> -->
+    </div>
         <!-- <div v-show="false">
         <MastGimbalControls></MastGimbalControls>
     </div> -->
         <div class="conditions">
-            <div v-if="!stuck_status" class="stuck not-stuck">
+            <div v-if="!stuck_status" class="shadow p-3 rounded bg-success text-center">
                 <h4>Nominal Conditions</h4>
             </div>
-            <div v-else class="stuck rover-stuck">
+            <div v-else class="shadow p-3 rounded bg-danger text-center">
                 <h4>Obstruction Detected</h4>
             </div>
         </div>
-        <!-- <div class="cameras">
-        <Cameras :primary="true" />
-    </div> -->
-        <div class="moteus">
+        <div class="shadow p-3 rounded cameras">
+            <Cameras :primary="true" />
+        </div>
+        <div class="shadow p-3 rounded moteus">
             <DriveMoteusStateTable :moteus-state-data="moteusState" />
-            <!-- <JointStateTable :joint-state-data="jointState" :vertical="true" /> -->
+            <JointStateTable :joint-state-data="jointState" :vertical="true" />
         </div>
     </div>
 </template>
   
 <script lang="ts">
-// import { mapGetters } from "vuex";
+import { mapState, mapGetters } from "vuex";
 import DriveMoteusStateTable from "./DriveMoteusStateTable.vue";
 import AutonRoverMap from "./AutonRoverMap.vue";
 import AutonWaypointEditor from "./AutonWaypointEditor.vue";
-// import { quaternionToMapAngle } from "../utils.js";
+import CameraFeed from "./CameraFeed.vue";
+import Cameras from "./Cameras.vue";
+import JointStateTable from "./JointStateTable.vue";
+import OdometryReading from "./OdometryReading.vue";
+import JoystickValues from './JoystickValues.vue';
+import DriveControls from "./DriveControls.vue";
+import { quaternionToMapAngle } from "../utils.js";
 import { defineComponent } from "vue";
-
-const navBlue: string = "#4695FF";
-const navGreen: string = "yellowgreen";
-const navRed: string = "lightcoral";
-const navGrey: string = "lightgrey";
-
-const ledUpdateRate: number = 1;
-let ledInterval: number;
 
 export default defineComponent({
     components: {
         DriveMoteusStateTable,
         AutonRoverMap,
-        AutonWaypointEditor
+        AutonWaypointEditor,
+        CameraFeed,
+        Cameras,
+        JointStateTable,
+        OdometryReading,
+        JoystickValues,
+        DriveControls
     },
 
     data() {
@@ -100,101 +103,82 @@ export default defineComponent({
                 bearing_deg: 0
             },
 
-            nav_status: {
-                nav_state_name: "OffState",
-                completed_wps: 0,
-                total_wps: 0
-            },
-
-            enableAuton: {
-                enable: false,
-                GPSWaypoint: []
-            },
-
             teleopEnabledCheck: false,
 
-            navBlink: false,
-            greenHook: false,
-            ledColor: "red",
+            ledColor: "bg-danger", //red
 
             stuck_status: false,
 
-            // Default object isn't empty, so has to be initialized to ""
+            navState: "OffState",
+            
             moteusState: {
-                name: ["", "", "", "", "", ""],
-                error: ["", "", "", "", "", ""],
-                state: ["", "", "", "", "", ""],
+                name: [] as string[],
+                error: [] as string[],
+                state: [] as string[],
             },
 
-            jointState: {},
+            jointState: {
+                name: [] as string[],
+                position: [] as number[],
+                velocity: [] as number[],
+                effort: [] as number[]
+            }
         };
     },
 
     computed: {
-        // ...mapGetters("autonomy", {
-        //     autonEnabled: "autonEnabled",
-        //     teleopEnabled: "teleopEnabled"
-        // }),
+        ...mapState('websocket', ['message']),
 
-        nav_state_color(): string {
-            // if (!this.autonEnabled && this.teleopEnabledCheck) {
-            //     return navBlue;
-            // }
-            if (this.nav_status.nav_state_name == "DoneState" && this.navBlink) {
-                return navGreen;
-            } else if (
-                this.nav_status.nav_state_name == "DoneState" &&
-                !this.navBlink
-            ) {
-                return navGrey;
-            } else {
-                return navRed;
-            }
-        }
+        ...mapGetters("autonomy", {
+            autonEnabled: "autonEnabled",
+            teleopEnabled: "teleopEnabled"
+        }),
     },
 
     watch: {
-        // Publish auton LED color to ESW
-        nav_state_color: function (color) {
-            var send = true;
-            if (color == navBlue) {
-                this.ledColor = "blue";
-            } else if (color == navRed) {
-                this.ledColor = "red";
-            } else if (color == navGreen || color == navGrey) {
-                // Only send if previous color was not green
-                send = !(this.ledColor == "green");
-                this.ledColor = "green";
+        message(msg) {
+            if (msg.type == "joint_state") {
+                this.jointState.name = msg.name;
+                this.jointState.position = msg.position;
+                this.jointState.velocity = msg.velocity;
+                this.jointState.effort = msg.effort;
             }
-            if (send) {
-                //   this.sendColor();
+            else if(msg.type == "drive_moteus") {
+                let index = this.moteusState.name.findIndex((n) => n === msg.name);
+                if(this.moteusState.name.length == 6 || index != -1) {
+                    //if all motors are in table or there's an update to one before all are in
+                    if (index !== -1) {
+                        this.moteusState.state[index] = msg.state;
+                        this.moteusState.error[index] = msg.error;
+                    }
+                    else {
+                        console.log("Invalid arm moteus name: " + msg.name);
+                    }
+                }
+                else {
+                    this.moteusState.name.push(msg.name);
+                    this.moteusState.state.push(msg.state);
+                    this.moteusState.error.push(msg.error);
+                }
+            }
+            else if(msg.type == "led") {
+                if(msg.red) this.ledColor = "bg-danger"; //red
+                else if(msg.green) this.ledColor = "blink"; //blinking green
+                else if(msg.blue) this.ledColor = "bg-primary"; //blue
+            }
+            else if(msg.type == "nav_state") {
+                this.navState = msg.state;
+            }
+            else if(msg.type == "nav_sat_fix") {
+                this.odom.latitude_deg = msg.latitude;
+                this.odom.longitude_deg = msg.longitude;
             }
         }
     },
 
     beforeUnmount: function () {
-        this.ledColor = "off";
-        //   this.sendColor();
-        window.clearInterval(ledInterval);
+        this.ledColor = "bg-white";
     },
-
-    created: function () {
-        // Blink interval for green and off flasing
-        setInterval(() => {
-            this.navBlink = !this.navBlink;
-        }, 500);
-
-        // Initialize color to red.
-        this.ledColor = "red";
-        //   this.sendColor();
-
-        ledInterval = window.setInterval(() => {
-            // this.sendColor();
-        }, ledUpdateRate * 1000);
-    },
-
-    methods: {
-    }
 });
 </script>
   
@@ -202,8 +186,8 @@ export default defineComponent({
 .wrapper {
     display: grid;
     grid-gap: 10px;
-    grid-template-columns: 45vw 15vw auto;
-    grid-template-rows: auto 50vh auto auto auto;
+    grid-template-columns: 40% 20% auto;
+    grid-template-rows: auto 40% auto auto auto;
     grid-template-areas:
         "header header header"
         "map map waypoints"
@@ -216,19 +200,17 @@ export default defineComponent({
     width: auto;
 }
 
-
-.stuck {
-    grid-area: stuck;
-    border-radius: 5px;
-    line-height: 40px;
-    border: 1px solid black;
-    font-size: 20px;
-    text-align: center;
-    justify-content: center;
+.blink {
+    animation: blinkAnimation 1s infinite; /* Blinks green every second */
 }
 
-.stuck h1 {
-    margin-top: 30px;
+@keyframes blinkAnimation {
+  0%, 100% {
+    background-color: var(--bs-success);
+  }
+  50% {
+    background-color: var(--bs-white);
+  }
 }
 
 .rover-stuck {
@@ -238,7 +220,6 @@ export default defineComponent({
 .not-stuck {
     background-color: yellowgreen;
 }
-
 
 .header {
   grid-area: header;

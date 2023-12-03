@@ -2,14 +2,22 @@
     <div class="wrap">
       <div class="col-wrap" style="left: 0">
         <div class="box">
-          <div class="form-group">
-            <label for="waypointname">Name:</label>
-            <input class="form-control" id="waypointname" v-model="name">
+          <div class="row">
+            <div class="form-group col-md-6">
+              <label for="waypointname">Name:</label>
+              <input class="form-control" id="waypointname" v-model="name">
+            </div>
+            <div class="form-group col-md-6">
+              <label for="waypointid">ID:</label>
+              <input class="form-control" id="waypointid" v-model="id" type="number" max="249" min="0" step="1">
+            </div>
           </div>
-          <div class="form-group">
-            <label for="waypointid">ID:</label>
-            <input class="form-control" id="waypointid" v-model="id" type="number" max="249" min="-1" step="1">
-          </div>
+
+          <select class="form-select my-3" v-model="type">
+            <option value="1" selected>Post</option>
+            <option value="2">Mallet</option>
+            <option value="3">Bottle</option>
+          </select>
 
           <div class="form-check form-check-inline">
             <input v-model="odom_format_in" class="form-check-input" type="radio" id="radioD" value="D">
@@ -62,42 +70,42 @@
           </div>
         </div>
         <div class="box">
-          <div class="all-waypoints">
-            <h4 class="waypoint-headers">All Waypoints</h4>
+          <div class="waypoint-header">
+            <h4>All Waypoints</h4>
             <button class="btn btn-primary" @click="clearWaypoint">Clear Waypoints</button>
           </div>
+          <div class="waypoints">
           <!-- <draggable
             v-model="storedWaypoints"
             class="dragArea"
             draggable=".item'"
-          >
+          > -->
             <WaypointItem
               v-for="(waypoint, i) in storedWaypoints"
               :key="i"
               :waypoint="waypoint"
-              :list="0"
+              :in_route="false"
               :index="i"
               @delete="deleteItem($event)"
-              @toggleGate="toggleGate($event)"
               @togglePost="togglePost($event)"
               @add="addItem($event)"
-              @find="findWaypoint($event)"
             />
-          </draggable> -->
+          <!-- </draggable> -->
+          </div>
         </div>
       </div>
       <div class="col-wrap" style="left: 50%">
-        <div class="check">
           <!-- <div class="auton-check"> -->
             <AutonModeCheckbox
               ref="autonCheckbox"
+              class="auton-checkbox"
               :name="autonButtonText"
               :color="autonButtonColor"
               @toggle="toggleAutonMode($event)"
             />
             <div class="stats">
-            <VelocityCommand />
-          </div>
+                <VelocityCommand />
+            </div>
             <Checkbox
               ref="teleopCheckbox"
               class="teleop-checkbox"
@@ -105,33 +113,27 @@
               @toggle="toggleTeleopMode($event)"
             />
           <!-- </div> -->
-          <div class="stuck-check">
             <Checkbox
               class="stuck-checkbox"
               name="Stuck"
               @toggle="roverStuck = !roverStuck"
             ></Checkbox>
-          </div>
-          
-        </div>
         <div class="box">
           <h4 class="waypoint-headers">Current Course</h4>
-          <!-- <draggable v-model="route" class="dragArea" draggable=".item'">
+          <!-- <draggable v-model="route" class="dragArea" draggable=".item'"> -->
             <WaypointItem
               v-for="(waypoint, i) in route"
               :id="id"
               :key="i"
               :waypoint="waypoint"
-              :list="1"
+              :in_route="true"
               :index="i"
               :name="name"
               @delete="deleteItem($event)"
-              @toggleGate="toggleGate($event)"
               @togglePost="togglePost($event)"
               @add="addItem($event)"
-              @find="findWaypoint($event)"
             />
-          </draggable> -->
+          <!-- </draggable> -->
         </div>
       </div>
   
@@ -254,17 +256,11 @@
   import { convertDMS } from "../utils.js";
   import VelocityCommand from "./VelocityCommand.vue";
   import WaypointItem from "./AutonWaypointItem.vue";
-  import { mapMutations, mapGetters } from "vuex";
+  import { mapState, mapActions, mapMutations, mapGetters } from "vuex";
   import _ from "lodash";
   import L from "leaflet";
   
   let stuck_interval: number, intermediate_publish_interval: number;
-  
-  const WAYPOINT_TYPES = {
-    NO_SEARCH: 0,
-    POST: 1,
-    GATE: 2,    //TODO: change for this year
-  };
   
   export default {
     components: {
@@ -284,8 +280,10 @@
   
     data() {
       return {
+        // websocket: new WebSocket("ws://localhost:8000/ws/gui"),
         name: "Waypoint",
-        id: "-1",
+        id: "0",
+        type: 1,
         odom_format_in: "DM",
         input: {
           lat: {
@@ -330,12 +328,12 @@
         route: [],
   
         autonButtonColor: "btn-danger",
-        waitingForNav: false,
   
         roverStuck: false,
       };
     },
     computed: {
+      ...mapState('websocket', ['message']),
       ...mapGetters("autonomy", {
         autonEnabled: "autonEnabled",
         teleopEnabled: "teleopEnabled",
@@ -380,7 +378,7 @@
       },
   
       autonButtonText: function () {
-        return this.autonButtonColor == "yellow"
+        return this.autonButtonColor == "btn-warning"
           ? "Setting to " + this.autonEnabled
           : "Autonomy Mode";
       },
@@ -427,58 +425,28 @@
       window.clearInterval(stuck_interval);
       window.clearInterval(intermediate_publish_interval);
       this.autonEnabled = false;
-      this.sendEnableAuton();
+      // this.sendAutonCommand();
     },
   
     created: function () {
-    //   this.course_pub = new ROSLIB.Topic({
-    //     ros: this.$ros,
-    //     name: "/intermediate_enable_auton",
-    //     messageType: "mrover/EnableAuton",
-    //   });
-  
-    //   this.nav_status_sub = new ROSLIB.Topic({
-    //     ros: this.$ros,
-    //     name: "/nav_state",
-    //     messageType: "std_msgs/String",
-    //   });
-  
-    //   this.rover_stuck_pub = new ROSLIB.Topic({
-    //     ros: this.$ros,
-    //     name: "/rover_stuck",
-    //     messageType: "std_msgs/Bool",
-    //   });
-  
       // Make sure local odom format matches vuex odom format
       this.odom_format_in = this.odom_format;
   
-    //   this.nav_status_sub.subscribe((msg: { data: string; }) => {
-    //     // If still waiting for nav...
-    //     if ((msg.data == "OffState" && this.autonEnabled) ||
-    //         (msg.data !== "OffState" && !this.autonEnabled)) {
-    //       return;
-    //     }
   
-    //     this.waitingForNav = false;
-    //     this.autonButtonColor = this.autonEnabled ? "green" : "red";
-    //   });
-  
-      // Interval for publishing stuck status for training data
-    //   stuck_interval = window.setInterval(() => {
-    //     this.rover_stuck_pub.publish({ data: this.roverStuck });
-    //   }, 100);
-  
-      intermediate_publish_interval = window.setInterval(() => {
-        this.sendEnableAuton();
-      }, 1000);
+      // intermediate_publish_interval = window.setInterval(() => {
+      //   this.sendAutonCommand();
+      // }, 1000);
+      // this.sendAutonCommand();
     },
   
-    mounted: function () {
-      //Send auton off if GUI is refreshed
-      this.sendEnableAuton();
-    },
+    // mounted: function () {
+    //   //Send auton off if GUI is refreshed
+    //   this.sendAutonCommand();
+    // },
   
     methods: {
+      ...mapActions('websocket', ['sendMessage']),
+      
       ...mapMutations("autonomy", {
         setRoute: "setRoute",
         setWaypointList: "setWaypointList",
@@ -490,36 +458,39 @@
       ...mapMutations("map", {
         setOdomFormat: "setOdomFormat",
       }),
+
+      message(msg) {
+        if(msg.type == 'nav_state'){
+          // If still waiting for nav...
+          if ((msg.state == "OffState" && this.autonEnabled) ||
+              (msg.state !== "OffState" && !this.autonEnabled)) {
+            return;
+          }
+          this.autonButtonColor = this.autonEnabled ? "btn-success" : "btn-danger";
+        }
+      },
   
-      sendEnableAuton() {
-        // If Auton Enabled send course
-        // if (this.autonEnabled) {
-        //   this.course_pub.publish({
-        //     // Map for every waypoint in the current route
-        //     waypoints: _.map(this.route, (waypoint: { lat: any; lon: any; gate: any; post: any; id: string; }) => {
-        //       const lat = waypoint.lat;
-        //       const lon = waypoint.lon;
-  
-        //       // Return a GPSWaypoint.msg formatted object for each
-        //       return {
-        //         latitude_degrees: lat,
-        //         longitude_degrees: lon,
-        //         // WaypointType.msg format
-        //         type: {
-        //           val: waypoint.gate
-        //             ? WAYPOINT_TYPES.GATE
-        //             : waypoint.post
-        //             ? WAYPOINT_TYPES.POST
-        //             : WAYPOINT_TYPES.NO_SEARCH,
-        //         },
-        //         id: parseInt(waypoint.id),
-        //       };
-        //     }),
-        //     enable: true
-        //   });
-        // } else {
-          // Else send false and no array
-        //   this.course_pub.publish({waypoints: [], enable: false});
+      sendAutonCommand() {
+        console.log(this.autonEnabled)
+        if(this.autonEnabled) {
+          this.sendMessage({
+            type: "auton_command",
+            is_enabled: true, 
+            waypoints: _.map(this.route, (waypoint: { lat: number; lon: number; id: string; type: number; }) => {
+              const lat = waypoint.lat;
+              const lon = waypoint.lon;
+              // Return a GPSWaypoint.msg formatted object for each
+              return {
+                latitude_degrees: lat,
+                longitude_degrees: lon,
+                tag_id: parseInt(waypoint.id),
+                type:  waypoint.type
+              };
+            })
+          });
+        }
+        else { //if auton's not enabled, send an empty message
+          this.sendMessage({type: "auton_command", is_enabled: false, waypoints: []});
         }
       },
   
@@ -561,7 +532,7 @@
           id: tag_id,
           lat: convertDMS(coordinates[coord_num].lat, "D").d,
           lon: convertDMS(coordinates[coord_num].lon, "D").d,
-          gate: false,
+          type: 0,
           post: false,
         });
   
@@ -575,7 +546,7 @@
             id: -1,
             lat: convertDMS(coordinates[coord_num].lat, "D").d,
             lon: convertDMS(coordinates[coord_num].lon, "D").d,
-            gate: false,
+            type: 0,
             post: false,
           });
         }
@@ -587,67 +558,48 @@
             id: tag_id,
             lat: convertDMS(coordinates[coord_num].lat, "D").d,
             lon: convertDMS(coordinates[coord_num].lon, "D").d,
-            gate: false,
+            type: 1,
             post: true,
           });
   
           ++tag_id;
         }
-  
-        // Add Gate Location with ID 4, meaning posts 4 and 5.
-        this.storedWaypoints.push({
-          name: "Gate",
-          id: tag_id,
-          lat: convertDMS(coordinates[coord_num].lat, "D").d,
-          lon: convertDMS(coordinates[coord_num].lon, "D").d,
-          gate: true,
-          post: false,
-        });
       },
   
-      deleteItem: function (payload: { index: any; list: number; }) {
-        if (this.highlightedWaypoint == payload.index) {
+      deleteItem: function (waypoint: { index: any; in_route: boolean; }) {
+        if (this.highlightedWaypoint == waypoint.index) {
           this.setHighlightedWaypoint(-1);
         }
-        if (payload.list === 0) {
-          this.storedWaypoints.splice(payload.index, 1);
-        } else if (payload.list === 1) {
-          this.route.splice(payload.index, 1);
+        if (!waypoint.in_route) {
+          this.storedWaypoints.splice(waypoint.index, 1);
+        } else if (waypoint.in_route) {
+          this.route.splice(waypoint.index, 1);
         }
       },
   
-      findWaypoint: function (payload: { index: any; }) {
-        if (payload.index === this.highlightedWaypoint) {
+      findWaypoint: function (waypoint: { index: any; }) {
+        if (waypoint.index === this.highlightedWaypoint) {
           this.setHighlightedWaypoint(-1);
         } else {
-          this.setHighlightedWaypoint(payload.index);
+          this.setHighlightedWaypoint(waypoint.index);
         }
       },
   
       // Add item from all waypoints div to current waypoints div
-      addItem: function (payload: { list: number; index: string | number; }) {
-        if (payload.list === 0) {
-          this.route.push(this.storedWaypoints[payload.index]);
-        } else if (payload.list === 1) {
-          this.storedWaypoints.push(this.route[payload.index]);
+      addItem: function (waypoint: { in_route: boolean; index: number; }) {
+        if (!waypoint.in_route) {
+          this.route.push(this.storedWaypoints[waypoint.index]);
+        } else if (waypoint.in_route) {
+          this.storedWaypoints.push(this.route[waypoint.index]);
         }
       },
   
-      toggleGate: function (payload: { list: number; index: string | number; }) {
-        if (payload.list === 0) {
-          this.storedWaypoints[payload.index].gate =
-            !this.storedWaypoints[payload.index].gate;
-        } else if (payload.list === 1) {
-          this.route[payload.index].gate = !this.route[payload.index].gate;
-        }
-      },
-  
-      togglePost: function (payload: { list: number; index: string | number; }) {
-        if (payload.list === 0) {
-          this.storedWaypoints[payload.index].post =
-            !this.storedWaypoints[payload.index].post;
-        } else if (payload.list === 1) {
-          this.route[payload.index].post = !this.route[payload.index].post;
+      togglePost: function (waypoint: { in_route: boolean; index: number; }) {
+        if (!waypoint.in_route) {
+          this.storedWaypoints[waypoint.index].post =
+            !this.storedWaypoints[waypoint.index].post;
+        } else if (waypoint.in_route) {
+          this.route[waypoint.index].post = !this.route[waypoint.index].post;
         }
       },
   
@@ -657,7 +609,7 @@
           id: this.id,
           lat: convertDMS(coord.lat, "D").d,
           lon: convertDMS(coord.lon, "D").d,
-          gate: false,
+          type: this.type,
           post: false,
         });
       },
@@ -669,15 +621,16 @@
       toggleAutonMode: function (val: any) {
         this.setAutonMode(val);
         // This will trigger the yellow "waiting for nav" state of the checkbox
-        this.autonButtonColor = "yellow";
-        this.waitingForNav = true;
-        this.sendEnableAuton();
+        this.autonButtonColor = "btn-warning";
+        this.sendAutonCommand();
       },
   
       toggleTeleopMode: function () {
         this.teleopEnabledCheck = !this.teleopEnabledCheck;
+        this.sendMessage({type: 'teleop_enabled', data: this.teleopEnabledCheck});
         this.$emit("toggleTeleop", this.teleopEnabledCheck);
       },
+    }
   };
   </script>
   
@@ -715,21 +668,27 @@
     /* min-height: 16.3vh; */
   }
   
-  .all-waypoints {
+  .waypoint-header {
     display: inline-flex;
     align-items: center;
+    /* height: 100%; */
   }
   
-  .all-waypoints button {
+  .waypoint-header button {
     margin: 5px;
+  }
+
+  .waypoint-header h4 {
+    margin: 5px 0px 0px 5px;
+  }
+
+  .waypoints {
+    height: 30%;
+    overflow-y: hidden;
   }
   
   .wp-input p {
     display: inline;
-  }
-  
-  .waypoint-headers {
-    margin: 5px 0px 0px 5px;
   }
   
   /* Grid Area Definitions */
@@ -740,27 +699,40 @@
   
   .teleop-checkbox {
     grid-area: teleop-check;
-    margin-top: -40px;
+    /* margin-top: -40px; */
+    width: 50%;
+    float: left;
+    clear: both;
   }
   
   .stats {
-    margin-top: 10px;
+    /* margin-top: 10px; */
     grid-area: stats;
-  }
-  
-  .stuck-check {
-    align-content: center;
-    grid-area: stuck-check;
-    padding-inline: 20px;
-  }
-  .stuck-check .stuck-checkbox {
-    transform: scale(1.5);
+    float: right;
+    width: 50%;
   }
 
-  .check {
-    display: flex;
+  /* .teleop-stuck-btns {
     width: 100%;
-    flex-wrap: wrap;
+    clear:both;
+  } */
+  
+  .stuck-checkbox {
+    /* align-content: center; */
+    grid-area: stuck-check;
+    /* padding-inline: 20px; */
+    width: 50%;
+    float:right;
+  }
+
+  /* .stuck-check .stuck-checkbox {
+    transform: scale(1.5);
+  } */
+
+
+  .auton-checkbox {
+    float: left;
+    width: 50%;
   }
   
   .odom {
@@ -769,6 +741,7 @@
 
 
   .add-drop {
+    display: flex;
     text-align: center;
   }
 

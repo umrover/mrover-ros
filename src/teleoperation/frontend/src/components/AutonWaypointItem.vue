@@ -1,42 +1,36 @@
 <template>
-    <div class="waypoint-item">
+    <div class="shadow my-1 p-3 rounded waypoint-item">
       <div class="identification">
         <p>{{ waypoint.name }}, ID: {{ waypoint.id }}</p>
       </div>
-      <div class="buttons">
-        <button class="btn btn-danger" @click="$emit('add', { list: list, index: index })">
+      <div class="row">
+        <div class="col text-center">
+        <button class="btn btn-danger" @click="$emit('add', { in_route: in_route, index: index })">
           Add
         </button>
         <button
-          :class="[waypoint.post ? 'green' : 'red']"
-          @click="$emit('togglePost', { list: list, index: index })"
+          :class="['btn', waypoint.post ? 'btn-success' : 'btn-danger']"
+          @click="$emit('togglePost', { in_route: in_route, index: index })"
         >
           Post
         </button>
         <button
-          :class="[waypoint.gate ? 'green' : 'red']"
-          @click="$emit('toggleGate', { list: list, index: index })"
-        >
-          Gate
-        </button>
-        <button
           class="btn btn-danger"
-          @click="$emit('delete', { list: list, index: index })"
+          @click="$emit('delete', { in_route: in_route, index: index })"
         >
           Delete
         </button>
+        </div>
       </div>
       <div class="location">
-        <div>
-          <p>{{ output.lat.d }}º</p>
-          <p v-if="min_enabled">{{ output.lat.m }}'</p>
-          <p v-if="sec_enabled">{{ output.lat.s }}"</p>
-          N <b>&nbsp;|</b>
-          <p>{{ output.lon.d }}º</p>
-          <p v-if="min_enabled">{{ output.lon.m }}'</p>
-          <p v-if="sec_enabled">{{ output.lon.s }}"</p>
-          W
-        </div>
+        <p>{{ output.lat.d }}º</p>
+        <p v-if="min_enabled">{{ output.lat.m }}'</p>
+        <p v-if="sec_enabled">{{ output.lat.s }}"</p>
+        N <b>|</b>
+        <p>{{ output.lon.d }}º</p>
+        <p v-if="min_enabled">{{ output.lon.m }}'</p>
+        <p v-if="sec_enabled">{{ output.lon.s }}"</p>
+        W
       </div>
     </div>
   </template>
@@ -52,8 +46,8 @@
         required: true,
       },
   
-      list: {
-        type: Number,
+      in_route: {
+        type: Boolean,
         required: true,
       },
   
@@ -91,45 +85,13 @@
   </script>
   
   <style scoped>
-  .waypoint-item {
-    background-color: rgb(180, 180, 180);
-    border-radius: 5px;
-    padding: 1px 10px 10px 10px;
-    border: 1px solid black;
-  
-    margin: 5px;
-  }
-  .location {
-    grid-area: location;
-  }
-  
   .location p {
-    display: inline;
+    display: inline-block;
+    margin: 2px;
   }
-  
-  .buttons {
-    grid-area: buttons;
-    align-self: center;
-    justify-self: center;
-    display: block;
-  }
-  
-  .red {
-    background-color: red;
-  }
-  
-  .green {
-    background-color: green;
-  }
-  
+
   button {
-    width: auto;
-    height: auto;
-    padding: 7px;
-    font-weight: bold;
+    margin: 0px 2px 0px 2px;
   }
-  
-  p {
-    margin: 5px;
-  }
+
   </style>

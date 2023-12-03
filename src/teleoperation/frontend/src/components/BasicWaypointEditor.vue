@@ -53,6 +53,7 @@
         <div class="add-drop">
           <button class="btn btn-primary" @click="addWaypoint(input)">Add Waypoint</button>
           <button class="btn btn-primary" @click="addWaypoint(formatted_odom)">Drop Waypoint</button>
+          <button class="btn btn-primary">Add Drone Position</button>
         </div>
       </div>
       <div class="box">
@@ -258,6 +259,7 @@
   }
 
   .add-drop {
+    display: flex;
     text-align: center;
   }
 
