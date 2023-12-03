@@ -10,9 +10,9 @@ namespace mrover {
 
     constexpr std::array<std::array<float, 2>, 2> CONVERT_MOTORS_TO_PITCH_ROLL_MATRIX = inverseMatrix(CONVERT_PITCH_ROLL_TO_MOTORS_MATRIX);
 
-    static std::pair<float, float> transformMotorOutputsToPitchRoll(float motor0, float motor1) {
+    static std::pair<float, float> transformMotorOutputsToPitchRoll(float motor_0, float motor_1) {
 
-        std::array<float, 2> motorsVector = {motor0, motor1};
+        std::array<float, 2> motorsVector = {motor_0, motor_1};
 
         // Perform matrix multiplication
         auto [pitch, roll] = multiplyMatrixByVector(motorsVector, CONVERT_MOTORS_TO_PITCH_ROLL_MATRIX);

@@ -51,7 +51,7 @@ namespace mrover {
         // ROS_WARN("%7.3f   %7.3f",
         //  velocity.get(), velocity_rev_s.get());
         if (abs(velocity_rev_s).get() < 1e-5) {
-            SetBrake();
+            setBrake();
         } else {
             moteus::PositionMode::Command command{
                     .position = std::numeric_limits<double>::quiet_NaN(),
@@ -63,11 +63,11 @@ namespace mrover {
         }
     }
 
-    void BrushlessController::SetStop() {
+    void BrushlessController::setStop() {
         moteus::CanFdFrame setStopFrame = mController.MakeStop();
         mDevice.publish_moteus_frame(setStopFrame);
     }
-    void BrushlessController::SetBrake() {
+    void BrushlessController::setBrake() {
         moteus::CanFdFrame setBrakeFrame = mController.MakeBrake();
         mDevice.publish_moteus_frame(setBrakeFrame);
     }
@@ -94,7 +94,7 @@ namespace mrover {
         mState = moteusModeToState(result.mode);
 
         if (result.mode == moteus::Mode::kPositionTimeout || result.mode == moteus::Mode::kFault) {
-            SetStop();
+            setStop();
             ROS_WARN("Position timeout hit");
         }
     }
