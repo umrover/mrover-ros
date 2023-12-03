@@ -67,6 +67,8 @@ class GUIConsumer(JsonWebsocketConsumer):
                 self.handle_joystick_message(message)
             elif message['type'] == "arm_values":
                 self.handle_arm_message(message)
+            elif message['type'] == 'enable_device_srv':
+                self.limit_switch(message)
         except Exception as e:
             rospy.logerr(e)
 
@@ -91,15 +93,16 @@ class GUIConsumer(JsonWebsocketConsumer):
 
         self.ra_slow_mode = False
         self.ra_cmd_pub = rospy.Publisher("ra_cmd", JointState, queue_size=100)
-        if msg.arm_mode == "arm_disabled":
+        # if msg.arm_mode == "arm_disabled":
             
-        elif msg.arm_mode == "ik":
+        # elif msg.arm_mode == "ik":
 
-        elif msg.arm_mode == "position":
+        # elif msg.arm_mode == "position":
 
-        elif msg.arm_mode == "velocity":
+        # elif msg.arm_mode == "velocity":
         
-        elif msg.arm_mode == "throttle":
+        # el
+        if msg.arm_mode == "throttle":
             d_pad_x = msg.axes[self.xbox_mappings["d_pad_x"]]
             if d_pad_x > 0.5:
                 self.ra_slow_mode = True
@@ -235,16 +238,34 @@ class GUIConsumer(JsonWebsocketConsumer):
         except rospy.ServiceException as e:
             print(f"Service call failed: {e}")
 
+    def limit_switch(self, msg):
+        joints = ["joint_a","joint_b","joint_c","joint_de_pitch","joint_de_roll","allen_key","gripper"]
+        arm_enable_limit_switch = "arm_enable_limit_switch_"
+        fail = []
+        for joint in joints:
+            name = arm_enable_limit_switch+joint
+            self.limit_switch_service = rospy.ServiceProxy(name, SetBool)
+            try:
+                result = self.limit_switch_service(data = msg['data'])
+                if not result.success:
+                    fail.append(joint)
+            except rospy.ServiceException as e:
+                print(f"Service call failed: {e}")
+        self.send(text_data=json.dumps({
+                    'type': 'enable_device_srv',
+                    'result': fail
+                }))
+
     def calibrate_motors(self,msg):
-        joints = ["joint_a","joint_b","joint_c","joint_de","allen_key","gripper"]
+        joints = ["joint_a","joint_b","joint_c","joint_de_pitch","joint_de_roll","allen_key","gripper"]
         arm_calibrate = "arm_calibrate_"
         fail = []
         for joint in joints:
             name = arm_calibrate+joint
             self.calibrate_service = rospy.ServiceProxy(name, Trigger)
             try:
-                result = self.calibrate_service(),
-                if not result.sucess:
+                result = self.calibrate_service()
+                if not result.success:
                     fail.append(joint)
             except rospy.ServiceException as e:
                 print(f"Service call failed: {e}")

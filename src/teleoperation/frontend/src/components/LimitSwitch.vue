@@ -23,10 +23,6 @@
         type: String,
         required: true,
       },
-      switch_name: {
-        type: String,
-        required: true,
-      },
     },
   
     data() {
@@ -40,9 +36,12 @@
       this.websocket.onmessage = (event) => {
         const msg = JSON.parse(event.data);
         if(msg.type == "enable_device_srv") {
-          if(!msg.result) {
+          if(msg.result.length>0) {
             this.limit_enabled = false;
-            alert("Toggling Limit Switch failed.");
+            for (var j = 0; j<msg.result.length;++j)
+              {
+                alert("Toggling Limit Switch failed for" + msg.result[j]);
+              }
           }
         }
       };
@@ -55,8 +54,7 @@
         this.limit_enabled = !this.limit_enabled;
         this.websocket.send(JSON.stringify({
           type: "enable_device_srv", 
-          name: this.switch_name, 
-          enable: this.limit_enabled
+          data: this.limit_enabled
         }));
       },
     },

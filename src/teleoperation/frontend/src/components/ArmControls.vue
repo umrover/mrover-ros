@@ -24,7 +24,7 @@
                 label-disable-text="Arm Laser Off" @change="toggleArmLaser()" />
             <div class="limit-switch">
                 <h4>Joint B Limit Switch</h4>
-                <LimitSwitch :switch_name="'joint_b'" :name="'Joint B Switch'" />
+                <LimitSwitch :name="'All Switches'" />
             </div>
         </div>
         <div class="controls-flex">
