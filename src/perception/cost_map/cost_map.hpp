@@ -2,8 +2,6 @@
 
 namespace mrover {
 
-    using PointCloud = pcl::PointCloud<pcl::PointXYZRGBNormal>;
-    using PointCloudPtr = PointCloud::Ptr;
 
     class CostMapNodelet : public nodelet::Nodelet {
     private:
@@ -15,6 +13,7 @@ namespace mrover {
         bool mPublishCostMap{}; // If set, publish the global costmap
         float mResolution{};    // Cells per meter
         int mDimension{};       // Dimensions of the square costmap in meters
+        float mNormalThreshold = 0.5;
         const tf2_ros::Buffer tf_buffer = tf2_ros::Buffer();
 
         std::optional<SE3> mPreviousPose;
@@ -26,7 +25,6 @@ namespace mrover {
 
         ~CostMapNodelet() override = default;
 
-        void occupancyGridCallback(nav_msgs::OccupancyGrid const& msg);
         void configCallback();
         void pointCloudCallback(sensor_msgs::PointCloud2ConstPtr const& msg);
     };

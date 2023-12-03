@@ -12,7 +12,7 @@ namespace mrover {
         mCostMapPub = mCmt.advertise<nav_msgs::OccupancyGrid>("costmap", 1); // We publish our results to "costmap"
 
         //TODO: Change topic to whatever the occupancy grid creating node publishes to
-        mPcSub = mNh.subscribe("camera/left/points", 1, &CostMapNodelet::occupancyGridCallback, this);
+        mPcSub = mNh.subscribe("camera/left/points", 1, &CostMapNodelet::pointCloudCallback, this);
 
         mGlobalGridMsg.info.resolution = mResolution;
         mGlobalGridMsg.info.width = mDimension;
@@ -22,7 +22,8 @@ namespace mrover {
         //globalGridMsg.info.origin =
 
         //TODO: Why is int8 not recognized?
-        auto* initial_map = new uint[mDimension * mDimension];
+        std::vector<signed char> initial_map;
+        std::fill(initial_map.begin(), initial_map.end(), -1);
         mGlobalGridMsg.data = initial_map;
     }
 } // namespace mrover

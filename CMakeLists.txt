@@ -25,7 +25,6 @@ set(MROVER_ROS_DEPENDENCIES
         tf2_ros
         tf2_geometry_msgs
         gazebo_ros
-        pcl_ros
 )
 
 # Search a path for all files matching a glob pattern and extract the filenames
@@ -142,7 +141,6 @@ find_package(OpenCV REQUIRED)
 find_package(ZED 2 QUIET)
 find_package(gazebo REQUIRED)
 find_package(Eigen3 REQUIRED)
-find_package(PCL REQUIRED)
 if (ZED_FOUND)
     # Anything newer than C++17 combined with libstdc++13 is not supported just yet by NVCC (the CUDA compiler)
     set(CMAKE_CUDA_STANDARD 17)
