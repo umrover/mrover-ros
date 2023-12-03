@@ -59,14 +59,13 @@ namespace mrover {
         //loop through all identified IDs
         for (size_t i = 0; i < mImmediateIds.size(); i++) {
             updateNewlyIdentifiedTags(i);
+            std::cout << "bearing: " << getTagBearing(mImmediateCorners[i]) << "!!!" << std::endl;
         }
-
 
         //Now decrement all the hitcounts for tags that were not updated
         // Set updated status to false
         for (auto it = mTags.begin(); it != mTags.end();) {
             LongRangeTagStruct& currentTag = it->second;
-            std::cout << mTags.size() << "!!!" << std::endl;
             if (currentTag.updated) {
                 currentTag.updated = false;
                 it++;
@@ -76,7 +75,6 @@ namespace mrover {
 
                 //if the value has fallen belown the minimum, remove it
                 if (currentTag.hitCount <= mTagRemoveWeight) {
-                    std::cout << "erasing" << std::endl;
                     it = mTags.erase(it);
                 } else {
                     it++;
@@ -157,9 +155,10 @@ namespace mrover {
     float LongRangeTagDetectorNodelet::getTagBearing(std::vector<cv::Point2f>& tagCorners) const {
         //for HD720 resolution
         cv::Point2f center = getTagCenterPixels(tagCorners);
-        float width = 2 * center.x;
-        float angleOfFOV = 104;
-        float bearing = ((center.x - width / 2) / width) * angleOfFOV;
+        auto imageWidth = (float) mImgMsg.width;
+        std::cout << "width: " << imageWidth << std::endl;
+        float angleOfFOV = 101;
+        float bearing = ((center.x - (imageWidth / 2)) / imageWidth) * angleOfFOV;
 
         return bearing;
     }
