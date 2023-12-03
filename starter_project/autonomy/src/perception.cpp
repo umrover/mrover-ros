@@ -44,11 +44,7 @@ namespace mrover {
         // Detect tags in the image pixels
         findTagsInImage(image, mTags);
         // Select the tag that is closest to the middle of the screen
-<<<<<<< HEAD
-        StarterProjectTag tag = selectTag(mTags, cvImage);
-=======
         StarterProjectTag tag = selectTag(image, mTags);
->>>>>>> 263466d467bd4ac78fec1d9f971037997b41f600
         // Publish the message to our topic so navigation or others can receive it
         publishTag(tag);
     }

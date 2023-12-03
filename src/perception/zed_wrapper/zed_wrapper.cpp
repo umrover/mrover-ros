@@ -187,6 +187,7 @@ namespace mrover {
                     mPcThreadProfiler.measureEvent("Image + camera info publish");
                 }
 
+
                 mPointCloudUpdateTick++;
             }
             NODELET_INFO("Tag thread finished");
