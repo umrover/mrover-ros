@@ -1,4 +1,5 @@
 import json
+from math import nan
 from channels.generic.websocket import JsonWebsocketConsumer
 import rospy
 from std_srvs.srv import SetBool, Trigger
@@ -38,6 +39,7 @@ class GUIConsumer(JsonWebsocketConsumer):
         self.gps_fix = rospy.Subscriber('/gps/fix', NavSatFix, self.gps_fix_callback)
         self.joint_state_sub = rospy.Subscriber('/drive_joint_data', JointState, self.joint_state_callback)
         self.joy_sub = rospy.Subscriber('/joystick', Joy, self.handle_joystick_message)
+        self.arm_joystick_sub = rospy.Subscriber('/xbox/ra_control', Joy, self.handle_arm_message)
 
     def disconnect(self, close_code):
         self.pdb_sub.unregister()
@@ -67,10 +69,71 @@ class GUIConsumer(JsonWebsocketConsumer):
                 self.handle_arm_message(message)
         except Exception as e:
             rospy.logerr(e)
-    def handle_arm_message(self,msg):
-        yo = 1
 
+    def handle_arm_message(self,msg):
+        self.ra_config = rospy.get_param("teleop/ra_controls")  #could be different name
+        self.xbox_mappings = rospy.get_param("teleop/xbox_mappings")
+        self.sa_config = rospy.get_param("teleop/sa_controls")
+        self.RA_NAMES = [
+            "joint_a",
+            "joint_b",
+            "joint_c",
+            "joint_de",
+            "allen_key",
+            "gripper"
+        ]
+        self.ra_cmd = JointState(
+            name=[name for name in self.RA_NAMES],
+            position=[nan for _ in self.RA_NAMES],
+            velocity=[0.0 for _ in self.RA_NAMES],
+            effort=[nan for _ in self.RA_NAMES],
+        )
+
+        self.ra_slow_mode = False
+        self.ra_cmd_pub = rospy.Publisher("ra_cmd", JointState, queue_size=100)
+        if msg.arm_mode == "arm_disabled":
+            
+        elif msg.arm_mode == "ik":
+
+        elif msg.arm_mode == "position":
+
+        elif msg.arm_mode == "velocity":
         
+        elif msg.arm_mode == "throttle":
+            d_pad_x = msg.axes[self.xbox_mappings["d_pad_x"]]
+            if d_pad_x > 0.5:
+                self.ra_slow_mode = True
+            elif d_pad_x < -0.5:
+                self.ra_slow_mode = False
+
+            # Filter for xbox triggers, they are typically [-1,1]
+            # Lose [-1,0] range since when joystick is initially plugged in
+            # these output 0 instead of -1 when up
+            raw_left_trigger = msg.axes[self.xbox_mappings["left_trigger"]]
+            left_trigger = raw_left_trigger if raw_left_trigger > 0 else 0
+            raw_right_trigger = msg.axes[self.xbox_mappings["right_trigger"]]
+            right_trigger = raw_right_trigger if raw_right_trigger > 0 else 0
+            self.ra_cmd.velocity = [
+                self.ra_config["joint_a"]["multiplier"] * self.filter_xbox_axis(msg.axes, "left_js_x"),
+                self.ra_config["joint_b"]["multiplier"] * self.filter_xbox_axis(msg.axes, "left_js_y"),
+                self.ra_config["joint_c"]["multiplier"] * self.filter_xbox_axis(msg.axes, "right_js_y"),
+                self.ra_config["joint_d"]["multiplier"] * self.filter_xbox_axis(msg.axes, "right_js_x"),
+                self.ra_config["joint_e"]["multiplier"] * (right_trigger - left_trigger),
+                self.ra_config["joint_f"]["multiplier"]
+                * self.filter_xbox_button(msg.buttons, "right_bumper", "left_bumper"),
+                self.ra_config["finger"]["multiplier"] * self.filter_xbox_button(msg.buttons, "y", "a"),
+                self.ra_config["gripper"]["multiplier"] * self.filter_xbox_button(msg.buttons, "b", "x"),
+            ]
+
+            for i, name in enumerate(self.RA_NAMES):
+                if self.ra_slow_mode:
+                    self.ra_cmd.velocity[i] *= self.ra_config[name]["slow_mode_multiplier"]
+                if self.ra_config[name]["invert"]:
+                    self.ra_cmd.velocity[i] *= -1
+
+            self.ra_cmd_pub.publish(self.ra_cmd)
+
+
     def handle_joystick_message(self, msg):
         mappings = rospy.get_param("teleop/joystick_mappings")
         drive_config = rospy.get_param("teleop/drive_controls")

@@ -116,12 +116,7 @@ export default defineComponent({
         // };
     },
 
-    // created: function () {
-    //     this.joystick_pub = new ROSLIB.Topic({
-    //         ros: this.$ros,
-    //         name: "/xbox/ra_control",
-    //         messageType: "sensor_msgs/Joy"
-    //     });
+    
    
         // this.ra_mode_service = new ROSLIB.Service({
         //     ros: this.$ros,
