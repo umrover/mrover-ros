@@ -211,6 +211,9 @@ mrover_add_nodelet(tag_detector src/perception/tag_detector/*.cpp src/perception
 mrover_nodelet_link_libraries(tag_detector opencv_core opencv_objdetect opencv_aruco opencv_imgproc tbb lie)
 
 if (ZED_FOUND)
+    mrover_add_node(zed_image src/perception/zed_image/*.cpp)
+    target_link_libraries(zed_image ${ZED_LIBRARIES} ${SPECIAL_OS_LIBS})
+    target_link_directories(zed_image ${ZED_INCLUDE_DIRS} ${CUDA_INCLUDE_DIRS})
     mrover_add_nodelet(zed src/perception/zed_wrapper/*.c* src/perception/zed_wrapper src/perception/zed_wrapper/pch.hpp)
     mrover_nodelet_include_directories(zed ${ZED_INCLUDE_DIRS} ${CUDA_INCLUDE_DIRS})
     mrover_nodelet_link_libraries(zed ${ZED_LIBRARIES} ${SPECIAL_OS_LIBS} lie)
