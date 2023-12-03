@@ -17,14 +17,18 @@ from sensor_msgs.msg import NavSatFix, Imu
 # from util.SO3 import SO3
 from matplotlib import pyplot as plt
 
+# import gps_linearization
+
 
 lat_arr = []
 long_arr = []
 
-coord_arr_left_latitude = []
-coord_arr_left_longitude = []
-coord_arr_right_latitude = []
-coord_arr_right_longitude = []
+# coord_arr_left_latitude = []
+# coord_arr_left_longitude = []
+# coord_arr_right_latitude = []
+# coord_arr_right_longitude = []
+coord_arr_left = np.array()
+coord_arr_right = np.array()
 distances = []
 
 
@@ -46,28 +50,57 @@ class Localization:
         # initialize pose to all zeros
         # self.pose = SE3()
 
+    def spherical_to_cartesian(spherical_coord: np.ndarray, reference_coord: np.ndarray) -> np.ndarray:
+        """
+        This is a utility function that should convert spherical (latitude, longitude)
+        coordinates into cartesian (x, y, z) coordinates using the specified reference point
+        as the center of the tangent plane used for approximation.
+        :param spherical_coord: the spherical coordinate to convert,
+                                given as a numpy array [latitude, longitude]
+        :param reference_coord: the reference coordinate to use for conversion,
+                                given as a numpy array [latitude, longitude]
+        :returns: the approximated cartesian coordinates in meters, given as a numpy array [x, y, z]
+        """
+        crc = 6371000
+        longDist = (
+            crc
+            * (np.radians(spherical_coord[1]) - np.radians(reference_coord[1]))
+            * np.cos(np.radians(reference_coord[0]))
+        )
+        latDist = crc * (np.radians(spherical_coord[0]) - np.radians(reference_coord[0]))
+        z = 0
+        return np.array([longDist, latDist])
+
     def gps_left_callback(self, msg: NavSatFix):
         # print(msg)
-        coord_arr_left_latitude.append(msg.latitude)
-        coord_arr_left_longitude.append(msg.longitude)
+        # coord_arr_left_latitude.append(gps_linearization.geodetic2enu(msg.latitude, msg.longitude)
+        # coord_arr_left_longitude.append(msg.longitude)
+        print(self.spherical_to_cartesian(np.array([msg.latitude, msg.longitude]), np.array([42.293195, -83.7096706])))
+        # print(np.array([42.293195, -83.7096706]))
+        coord_arr_left.append(
+            self.spherical_to_cartesian(np.array([msg.latitude, msg.longitude]), np.array([42.293195, -83.7096706]))
+        )
+
         # lat_arr.append(msg.latitude)
         # long_arr.append(msg.longitude)
 
     def gps_right_callback(self, msg: NavSatFix):
-        # print(msg)
-        coord_arr_right_latitude.append(msg.latitude)
-        coord_arr_right_longitude.append(msg.longitude)
+        print(msg)
+        # coord_arr_right.append(
+        #     self.spherical_to_cartesian(np.array([msg.latitude, msg.longitude]), np.array([42.293195, -83.7096706]))
+        # )
+        # coord_arr_right_latitude.append(msg.latitude)
+        # coord_arr_right_longitude.append(msg.longitude)
 
+    def main():
+        # initialize the node
+        rospy.init_node("localization_test")
 
-def main():
-    # initialize the node
-    rospy.init_node("localization_test")
+        # create and start our localization system
+        localization = Localization()
 
-    # create and start our localization system
-    localization = Localization()
-
-    # let the callback functions run asynchronously in the background
-    rospy.spin()
+        # let the callback functions run asynchronously in the background
+        rospy.spin()
 
 
 if __name__ == "__main__":
@@ -81,6 +114,6 @@ if __name__ == "__main__":
     # plt.show()
     # print("here")
     # distances[i] = math.dist([coord_arr_left_latitude])
-    plt.scatter(coord_arr_left_latitude, coord_arr_left_longitude, color="red")
-    plt.scatter(coord_arr_right_latitude, coord_arr_right_longitude, color="blue")
+    plt.scatter(coord_arr_left, color="red")
+    plt.scatter(coord_arr_right, color="blue")
     plt.show()

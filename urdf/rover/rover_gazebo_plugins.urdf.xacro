@@ -31,9 +31,9 @@
       <referenceAltitude>0.0</referenceAltitude>
       <offset>0 0 0</offset>
       <drift>0.0 0.0 0.0</drift>
-      <gaussianNoise>0.3 0.3 0.3</gaussianNoise>
+      <gaussianNoise>0 0 0</gaussianNoise>
       <velocityDrift>0.0 0.0 0.0</velocityDrift>
-      <velocityGaussianNoise>0.2 0.2 0.2</velocityGaussianNoise>
+      <velocityGaussianNoise>0 0 0</velocityGaussianNoise>
     </plugin>
 
     <!-- Rover GPS Right -->
@@ -49,9 +49,9 @@
       <referenceAltitude>0.0</referenceAltitude>
       <offset>0 0 0</offset>
       <drift>0.0 0.0 0.0</drift>
-      <gaussianNoise>0.3 0.3 0.3</gaussianNoise>
+      <gaussianNoise>0 0 0</gaussianNoise>
       <velocityDrift>0.0 0.0 0.0</velocityDrift>
-      <velocityGaussianNoise>0.2 0.2 0.2</velocityGaussianNoise>
+      <velocityGaussianNoise>0 0 0</velocityGaussianNoise>
     </plugin>
 
   </gazebo>

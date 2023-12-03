@@ -46,7 +46,7 @@
   <node unless="$(arg use_ekf)" pkg="mrover" type="passthrough_filter.py" name="passthrough_filter" />
 
   <!-- node to linearize GPS from geodetic to ENU cartesian coords -->
-  <!-- <node name="gps_linearization" pkg="mrover" type="gps_linearization.py" output="screen" /> -->
+  <node name="gps_linearization" pkg="mrover" type="gps_linearization.py" output="screen" />
 
   <node name="localization_test" pkg="mrover" type="Test-Subscriber.py" output="screen" />
 
