@@ -2,8 +2,8 @@
 // Datasheet: https://www.mouser.com/datasheet/2/588/AS7262_DS000486_2-00-1082195.pdf
 
 #pragma once
-//#include "FreeRTOS.h"
 #include "stm32g4xx_hal.h"
+#include "FreeRTOS.h"
 
 #include <stdint.h>
 #include <math.h>
@@ -13,12 +13,6 @@
 #include "hardware.hpp"
 #include "i2c_mux.hpp"
 #include <memory>
-
-//#include "cmsis_os2.h"
-
-// How do I get this file to know about these?
-extern osSemaphoreId_t spectral_read_status;
-extern osSemaphoreId_t spectral_write_status;
 
 namespace mrover {
 

@@ -4,7 +4,6 @@
 
 #include "hardware.hpp"
 #include "units/units.hpp"
-//#include "FreeRTOS.h"
 #include "spectral.hpp"
 
 namespace mrover {
@@ -19,7 +18,7 @@ namespace mrover {
     }
 
     void Spectral::poll_status_reg(){
-    	m_i2c_bus->async_transact(SPECTRAL_7b_ADDRESS, I2C_AS72XX_SLAVE_STATUS_REG);
+    	m_i2c_bus->async_transmit(SPECTRAL_7b_ADDRESS, I2C_AS72XX_SLAVE_STATUS_REG);
     }
 
     void Spectral::init(){
@@ -44,29 +43,17 @@ namespace mrover {
 //			}
 //		}
 
+    	// Waiting on semaphore replaces directly polling status register.
 		osSemaphoreAcquire(spectral_write_status, osWaitForever);
-
-		auto result = m_i2c_bus->blocking_transact<uint16_t, uint8_t>(SPECTRAL_7b_ADDRESS, CONTROL_SETUP_REG);
-		if (!result) {
-			m_error = true;
-			return;
-		}
+		m_i2c_bus->blocking_transmit<uint16_t>(SPECTRAL_7b_ADDRESS, CONTROL_SETUP_REG);
 
 		osSemaphoreAcquire(spectral_write_status, osWaitForever);
-		result = m_i2c_bus->blocking_transact<uint16_t, uint8_t>(SPECTRAL_7b_ADDRESS, control_data);
-		if (!result) {
-			m_error = true;
-			return;
-		}
+		m_i2c_bus->blocking_transmit<uint16_t>(SPECTRAL_7b_ADDRESS, control_data);
 
-		osSemaphoreAcquire(spectral_write_status, osWaitForever);osSemaphoreAcquire(spectral_write_status, osWaitForever);
+		osSemaphoreAcquire(spectral_write_status, osWaitForever);
 		// Integration time = 2.8ms & 0xFF
 		uint8_t int_time_multiplier = 0xFF;
-		result = m_i2c_bus->blocking_transact<uint16_t, uint8_t>(SPECTRAL_7b_ADDRESS, int_time_multiplier);
-		if (!result) {
-			m_error = true;
-			return;
-		}
+		m_i2c_bus->blocking_transmit<uint16_t>(SPECTRAL_7b_ADDRESS, int_time_multiplier);
 
 		m_initialized = true;
 		m_error = false;
@@ -81,25 +68,32 @@ namespace mrover {
     	}
     	m_i2c_mux->set_channel(m_i2c_mux_channel);
 
-    	auto status = m_i2c_bus->blocking_transact<uint16_t, uint8_t>(SPECTRAL_7b_ADDRESS, I2C_AS72XX_SLAVE_STATUS_REG);
-    	if(!status || status.value() & I2C_AS72XX_SLAVE_TX_VALID != 0){
-    		// Failed. Unable to update data. We could just set the data to all 0 here.
-    		m_error = true;
-    		return;
-    	}
+//    	auto status = m_i2c_bus->blocking_transact<uint16_t, uint8_t>(SPECTRAL_7b_ADDRESS, I2C_AS72XX_SLAVE_STATUS_REG);
+//    	if(!status || status.value() & I2C_AS72XX_SLAVE_TX_VALID != 0){
+//    		// Failed. Unable to update data. We could just set the data to all 0 here.
+//    		m_error = true;
+//    		return;
+//    	}
 
     	for(uint8_t i = 0; i < CHANNEL_DATA_LENGTH; ++i){
     		uint8_t msb_reg_addr = CHANNEL_V_HIGH + i * 2;
     		uint8_t lsb_reg_addr = CHANNEL_V_HIGH + i * 2 + 1;
 
-    		// Technically we should we waiting/polling before trying to read from these addreses...
+    		// Technically we should we waiting/polling before trying to read from these addresses...
     		osSemaphoreAcquire(spectral_write_status, osWaitForever);
-    		auto msb_result = m_i2c_bus->blocking_transact<uint16_t, uint8_t>(SPECTRAL_7b_ADDRESS, msb_reg_addr);
+    		m_i2c_bus->blocking_transmit<uint16_t>(SPECTRAL_7b_ADDRESS, msb_reg_addr);
+
+    		osSemaphoreAcquire(spectral_read_status, osWaitForever);
+    		auto msb_result = m_i2c_bus->blocking_receive<uint16_t>(SPECTRAL_7b_ADDRESS);
 
     		osSemaphoreAcquire(spectral_write_status, osWaitForever);
-    		auto lsb_result = m_i2c_bus->blocking_transact<uint16_t, uint8_t>(SPECTRAL_7b_ADDRESS, lsb_reg_addr);
+    		m_i2c_bus->blocking_transmit<uint16_t>(SPECTRAL_7b_ADDRESS, lsb_reg_addr);
+
+    		osSemaphoreAcquire(spectral_read_status, osWaitForever);
+			auto lsb_result = m_i2c_bus->blocking_receive<uint16_t>(SPECTRAL_7b_ADDRESS);
+
     		if(msb_result && lsb_result){
-    			channel_data[i] = (((uint16_t)msb_result.value() << 8) | lsb_result.value());
+    			channel_data[i] = (((uint16_t)msb_result << 8) | lsb_result);
     		}
     		else {
     			m_error = true;

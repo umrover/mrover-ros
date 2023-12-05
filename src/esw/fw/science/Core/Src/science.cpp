@@ -137,8 +137,6 @@ void HAL_I2C_MasterRXCpltCallback(I2C_HandleTypeDef *hi2c) {
 	// If we want to use this for anything else than checking spectral status reg,
 	// then this function needs additional logic
 
-	// TODO: need to check what happens if the semaphores are maxed at 1.
-	// Will these functions block?
 	if ((spectral_status_buffer[0] & mrover::Spectral::I2C_AS72XX_SLAVE_TX_VALID) == 0) {
 		osSemaphoreRelease(spectral_write_status);
 	}
@@ -152,6 +150,5 @@ void HAL_I2C_MasterRXCpltCallback(I2C_HandleTypeDef *hi2c) {
 void HAL_I2C_ErrorCallback(I2C_HandleTypeDef *hi2c) {
 	// Something is most likely wrong with the I2C bus
 	// if we get to this point
-	// TODO: implement this function somewhere
 	mrover::reboot_spectral();
 }
