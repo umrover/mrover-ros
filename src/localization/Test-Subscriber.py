@@ -16,6 +16,8 @@ from sensor_msgs.msg import NavSatFix, Imu
 # from util.SE3 import SE3
 # from util.SO3 import SO3
 from matplotlib import pyplot as plt
+import csv
+from decimal import Decimal
 
 # import gps_linearization
 
@@ -23,12 +25,12 @@ from matplotlib import pyplot as plt
 lat_arr = []
 long_arr = []
 
-# coord_arr_left_latitude = []
-# coord_arr_left_longitude = []
-# coord_arr_right_latitude = []
-# coord_arr_right_longitude = []
-coord_arr_left = np.array()
-coord_arr_right = np.array()
+coord_arr_left_latitude = []
+coord_arr_left_longitude = []
+coord_arr_right_latitude = []
+coord_arr_right_longitude = []
+# coord_arr_left = []
+# coord_arr_right = []
 distances = []
 
 
@@ -50,47 +52,24 @@ class Localization:
         # initialize pose to all zeros
         # self.pose = SE3()
 
-    def spherical_to_cartesian(spherical_coord: np.ndarray, reference_coord: np.ndarray) -> np.ndarray:
-        """
-        This is a utility function that should convert spherical (latitude, longitude)
-        coordinates into cartesian (x, y, z) coordinates using the specified reference point
-        as the center of the tangent plane used for approximation.
-        :param spherical_coord: the spherical coordinate to convert,
-                                given as a numpy array [latitude, longitude]
-        :param reference_coord: the reference coordinate to use for conversion,
-                                given as a numpy array [latitude, longitude]
-        :returns: the approximated cartesian coordinates in meters, given as a numpy array [x, y, z]
-        """
-        crc = 6371000
-        longDist = (
-            crc
-            * (np.radians(spherical_coord[1]) - np.radians(reference_coord[1]))
-            * np.cos(np.radians(reference_coord[0]))
-        )
-        latDist = crc * (np.radians(spherical_coord[0]) - np.radians(reference_coord[0]))
-        z = 0
-        return np.array([longDist, latDist])
-
     def gps_left_callback(self, msg: NavSatFix):
-        # print(msg)
+        print(msg)
         # coord_arr_left_latitude.append(gps_linearization.geodetic2enu(msg.latitude, msg.longitude)
         # coord_arr_left_longitude.append(msg.longitude)
-        print(self.spherical_to_cartesian(np.array([msg.latitude, msg.longitude]), np.array([42.293195, -83.7096706])))
-        # print(np.array([42.293195, -83.7096706]))
-        coord_arr_left.append(
-            self.spherical_to_cartesian(np.array([msg.latitude, msg.longitude]), np.array([42.293195, -83.7096706]))
-        )
+
+        coord_arr_left_latitude.append(msg.latitude)
+        coord_arr_left_longitude.append(msg.longitude)
+        # coord_arr_left.append([msg.latitude, msg.longitude])
 
         # lat_arr.append(msg.latitude)
         # long_arr.append(msg.longitude)
 
     def gps_right_callback(self, msg: NavSatFix):
         print(msg)
-        # coord_arr_right.append(
-        #     self.spherical_to_cartesian(np.array([msg.latitude, msg.longitude]), np.array([42.293195, -83.7096706]))
-        # )
-        # coord_arr_right_latitude.append(msg.latitude)
-        # coord_arr_right_longitude.append(msg.longitude)
+        # coord_arr_right.append([msg.latitude, msg.longitude])
+        coord_arr_right_latitude.append(msg.latitude)
+        coord_arr_right_longitude.append(msg.longitude)
+        # coord_arr_right.append([msg.latitude, msg.longitude])
 
     def main():
         # initialize the node
@@ -104,16 +83,40 @@ class Localization:
 
 
 if __name__ == "__main__":
-    main()
+    Localization.main()
 
-    # array_left = np.array(coord_arr_left)
-    # array_right = np.array(coord_arr_right)
-    # for i in range(min(len(coord_arr_left_latitude), len(coord_arr_right_latitude))):
     # plt.plot(coord_arr_left_latitude[i], coord_arr_left_longitude[i], color="red")
     # plt.plot(coord_arr_right_latitude[i], coord_arr_right_longitude[i], color="blue")
     # plt.show()
-    # print("here")
-    # distances[i] = math.dist([coord_arr_left_latitude])
-    plt.scatter(coord_arr_left, color="red")
-    plt.scatter(coord_arr_right, color="blue")
-    plt.show()
+
+    # plt.scatter(coord_arr_left_latitude, coord_arr_left_longitude, color="red")
+    # plt.scatter(coord_arr_right_latitude, coord_arr_right_longitude, color="blue")
+    # Set the scale (adjust the limits according to your data)
+    # plt.xlim(coord_arr_left_latitude[0], coord_arr_left_latitude[4])
+    # plt.ylim(coord_arr_left_longitude[0], coord_arr_right_longitude[4])
+
+    # plt.show()
+
+    for i in range(len(coord_arr_left_latitude)):
+        print(Decimal(coord_arr_left_latitude[i]) - Decimal(coord_arr_right_latitude[i]))
+        print(Decimal(coord_arr_left_longitude[i]) - Decimal(coord_arr_right_longitude[i]))
+    print("\n")
+    print(coord_arr_right_latitude[:10])
+    print(coord_arr_left_latitude[:10])
+    print("\n")
+    print(coord_arr_right_longitude[:10])
+    print(coord_arr_left_longitude[:10])
+    # print(
+    #     (sum(coord_arr_left_latitude) / len(coord_arr_left_latitude))
+    #     - (sum(coord_arr_right_latitude) / len(coord_arr_right_latitude))
+    # )
+    # print(
+    #     (sum(coord_arr_left_longitude) / len(coord_arr_right_longitude))
+    #     - (sum(coord_arr_right_longitude) / len(coord_arr_right_longitude))
+    # )
+    # plt.pause(300)
+
+    # print("Click on the plot window and press any key to close.")
+    # plt.waitforbuttonpress()
+    # plt.close()
+    # plt.show()
