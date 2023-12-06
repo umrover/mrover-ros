@@ -49,11 +49,11 @@ namespace mrover {
     // Usually this is the Jetson
     constexpr static std::uint8_t DESTINATION_DEVICE_ID = 0x0;
 
-    FDCAN fdcan_bus;
+    FDCAN<InBoundMessage> fdcan_bus;
     Controller controller;
 
     void init() {
-        fdcan_bus = FDCAN{DEVICE_ID, DESTINATION_DEVICE_ID, &hfdcan1};
+        fdcan_bus = FDCAN<InBoundMessage>{DEVICE_ID, DESTINATION_DEVICE_ID, &hfdcan1};
         controller = Controller{
                 PWM_TIMER,
                 fdcan_bus,
@@ -74,12 +74,12 @@ namespace mrover {
     }
 
     void fdcan_received_callback() {
-        std::optional received = fdcan_bus.receive<InBoundMessage>();
+        std::optional<std::pair<FDCAN_RxHeaderTypeDef, InBoundMessage>> received = fdcan_bus.receive();
         if (!received) Error_Handler(); // This function is called WHEN we receive a message so this should never happen
 
         auto const& [header, message] = received.value();
 
-        auto messageId = std::bit_cast<FDCAN::MessageId>(header.Identifier);
+        auto messageId = std::bit_cast<FDCAN<InBoundMessage>::MessageId>(header.Identifier);
 
         if (messageId.destination == DEVICE_ID) {
             controller.receive(message);
