@@ -382,6 +382,37 @@ namespace mrover {
         auto send() -> void {
             m_fdcan.broadcast(m_outbound);
         }
+
+
+
+        auto request_absolute_encoder_data() -> void {
+            // Only read the encoder if we are configured
+            if(m_absolute_encoder) {
+                m_absolute_encoder->request_raw_angle();
+            }
+        }
+
+        auto read_absolute_encoder_data() -> void {
+            if(m_absolute_encoder) {
+                m_absolute_encoder->read_raw_angle_into_buffer();
+            }
+        }
+
+        auto update_absolute_encoder_data() -> void {
+            std::optional<EncoderReading> reading;
+
+            // Only read the encoder if we are configured
+            if (m_absolute_encoder) {
+                reading = m_absolute_encoder->read();
+            }
+
+            //TODO: update the controller with the reading
+            if (reading) {
+
+            } else {
+
+            }
+        }
     };
 
 } // namespace mrover

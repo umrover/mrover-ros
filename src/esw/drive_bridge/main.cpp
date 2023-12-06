@@ -85,6 +85,6 @@ void moveDrive(geometry_msgs::Twist::ConstPtr const& msg) {
         Dimensionless multiplier = motorMultipliers[name];
         RadiansPerSecond scaledAngularVelocity = angularVelocity * multiplier; // currently in rad/s
 
-        driveManager->get_controller(name).setDesiredVelocity(scaledAngularVelocity);
+        driveManager->getController(name).setDesiredVelocity(scaledAngularVelocity);
     }
 }

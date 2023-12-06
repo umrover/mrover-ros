@@ -5,6 +5,8 @@
 
 #include "stm32g4xx_hal.h"
 
+#include "cmsis_os2.h"
+
 #include <stdint.h>
 #include <math.h>
 #include <stdio.h>
@@ -16,6 +18,9 @@
 #include "hardware.hpp"
 #include "units/units.hpp"
 #include <memory>
+
+extern osSemaphoreId_t spectral_read_status;
+extern osSemaphoreId_t spectral_write_status;
 
 namespace mrover {
 

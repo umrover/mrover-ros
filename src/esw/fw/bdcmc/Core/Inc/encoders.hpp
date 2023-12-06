@@ -29,7 +29,9 @@ namespace mrover {
 
         AbsoluteEncoderReader(SMBus i2c_bus, std::uint8_t A1, std::uint8_t A2, Ratio multiplier);
 
-        auto try_read_raw_angle() -> std::optional<std::uint64_t>;
+        auto request_raw_angle() -> void;
+        auto read_raw_angle_into_buffer() -> void;
+        auto try_read_buffer() -> std::optional<std::uint64_t>;
 
         [[nodiscard]] auto read() -> std::optional<EncoderReading>;
 

@@ -71,7 +71,7 @@ namespace mrover {
         mMovePositionSub = mNh.subscribe<Position>(std::format("{}_position_cmd", mGroupName), 1, &MotorsGroup::moveMotorsPosition, this);
     }
 
-    Controller& MotorsGroup::get_controller(std::string const& name) {
+    Controller& MotorsGroup::getController(std::string const& name) {
         return *mControllers.at(name);
     }
 
