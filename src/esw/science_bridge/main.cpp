@@ -11,7 +11,7 @@
 
 std::unique_ptr<mrover::CanDevice> scienceCanDevice;
 
-void processCANData(const mrover::CAN::ConstPtr& msg);
+void processCANData(mrover::CAN::ConstPtr const& msg);
 
 std::unique_ptr<ros::Publisher> heaterDataPublisher;
 std::unique_ptr<ros::Publisher> spectralDataPublisher;
@@ -46,6 +46,7 @@ void processMessage(mrover::SpectralData const& message) {
     for (int i = 0; i < 3; ++i) {
         for (int j = 0; j < 6; ++j) {
             spectralData.spectrals.at(i).data.at(j) = message.spectrals.at(i).data.at(j);
+            spectralData.spectrals.at(i).error = message.spectrals.at(i).error;
         }
     }
     spectralDataPublisher->publish(spectralData);
@@ -60,7 +61,7 @@ void processMessage(mrover::ThermistorData const& message) {
     thermistorDataPublisher->publish(scienceThermistors);
 }
 
-void processCANData(const mrover::CAN::ConstPtr& msg) {
+void processCANData(mrover::CAN::ConstPtr const& msg) {
 
     assert(msg->source == "science");
     assert(msg->destination == "jetson");

@@ -1,5 +1,6 @@
 #pragma once
 
+#include "params_utils.hpp"
 #include <iostream>
 #include <optional>
 #include <unistd.h>
@@ -66,10 +67,18 @@ namespace mrover {
         void setDesiredPosition(Radians position) override;
         void processCANMessage(CAN::ConstPtr const& msg) override;
         double getEffort() override;
+        void setStop();
+        void setBrake();
 
     private:
-        moteus::Controller mController{{}};
+        moteus::Controller mController{moteus::Controller::Options{}};
         double mMeasuredEffort{};
+
+        // Function to map throttle to velocity
+        RadiansPerSecond mapThrottleToVelocity(Percent throttle);
+        // Converts moteus error codes and mode codes to std::string descriptions
+        static std::string moteusErrorCodeToErrorState(moteus::Mode motor_mode, ErrorCode motor_error_code);
+        static std::string moteusModeToState(moteus::Mode motor_mode);
     };
 
 } // namespace mrover

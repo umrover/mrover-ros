@@ -28,9 +28,9 @@ namespace mrover {
     public:
         CanDevice(ros::NodeHandle const& nh, std::string from_device, std::string to_device)
             : m_nh{nh},
-              m_from_device{std::move(from_device)},
-              m_to_device{std::move(to_device)} {
-            m_can_publisher = m_nh.advertise<CAN>(std::format("can/{}/out", m_to_device), 1);
+              mFromDevice{std::move(from_device)},
+              mToDevice{std::move(to_device)} {
+            m_can_publisher = m_nh.advertise<CAN>(std::format("can/{}/out", mToDevice), 1);
         }
 
 
@@ -56,13 +56,13 @@ namespace mrover {
     private:
         ros::NodeHandle m_nh;
         ros::Publisher m_can_publisher;
-        std::string m_from_device{}, m_to_device{};
+        std::string mFromDevice{}, mToDevice{};
 
-        void publish_data(std::span<std::byte const> data, bool reply_required = false) {
+        void publish_data(std::span<std::byte const> data, bool replyRequired = false) {
             CAN can_message;
-            can_message.source = m_from_device;
-            can_message.destination = m_to_device;
-            can_message.reply_required = reply_required;
+            can_message.source = mFromDevice;
+            can_message.destination = mToDevice;
+            can_message.reply_required = replyRequired;
             // This is needed since ROS is old and uses std::uint8_t instead of std::byte
             std::ranges::transform(data, std::back_inserter(can_message.data), [](std::byte b) { return static_cast<std::uint8_t>(b); });
             m_can_publisher.publish(can_message);

@@ -57,12 +57,13 @@ const osThreadAttr_t defaultTask_attributes = {
 };
 /* USER CODE BEGIN PV */
 
-osThreadId_t ReceiveMessagesHandle;
-const osThreadAttr_t ReceiveMessages_attributes = {
-  .name = "ReceiveMessages",
-  .priority = (osPriority_t) osPriorityNormal,
-  .stack_size = 128 * 4
-};
+// No more FreeRTOS receiving
+// osThreadId_t ReceiveMessagesHandle;
+// const osThreadAttr_t ReceiveMessages_attributes = {
+//   .name = "ReceiveMessages",
+//   .priority = (osPriority_t) osPriorityNormal,
+//   .stack_size = 128 * 4
+// };
 
 osThreadId_t SendCurrentTemperatureHandle;
 const osThreadAttr_t SendCurrentTemperature_attributes = {
@@ -91,7 +92,6 @@ void StartDefaultTask(void *argument);
 
 /* USER CODE BEGIN PFP */
 void SendCurrentTemperature(void *argument);
-void ReceiveMessages(void *argument);
 void BlinkAutonLed(void *argument);
 
 /* USER CODE END PFP */
@@ -168,11 +168,11 @@ int main(void)
 
   /* Create the thread(s) */
   /* creation of defaultTask */
-  defaultTaskHandle = osThreadNew(StartDefaultTask, NULL, &defaultTask_attributes);
+//  defaultTaskHandle = osThreadNew(StartDefaultTask, NULL, &defaultTask_attributes);
 
   /* USER CODE BEGIN RTOS_THREADS */
 
-  ReceiveMessagesHandle = osThreadNew(ReceiveMessages, NULL, &ReceiveMessages_attributes);
+
   SendCurrentTemperatureHandle = osThreadNew(SendCurrentTemperature, NULL, &SendCurrentTemperature_attributes);
   BlinkAutonLedHandle = osThreadNew(BlinkAutonLed, NULL, &BlinkAutonLed_attributes);
   /* add threads, ... */
@@ -575,13 +575,30 @@ static void MX_GPIO_Init(void)
 
 /* USER CODE BEGIN 4 */
 
-void ReceiveMessages(void* argument) {
-	uint32_t tick = osKernelGetTickCount();
-	for(;;) {
-		tick += osKernelGetTickFreq(); // 1 Hz
-		receive_message();
-		osDelayUntil(tick);
-	}
+// No more FreeRTOS receiving
+// void ReceiveMessages(void* argument) {
+// 	uint32_t tick = osKernelGetTickCount();
+// 	for(;;) {
+// 		tick += osKernelGetTickFreq(); // 1 Hz
+// 		receive_message();
+// 		osDelayUntil(tick);
+// 	}
+// }
+
+// ACCORDING TO STM EXAMPLE:
+/** 
+  * @brief  Rx FIFO 0 callback.
+  * @param  hfdcan: pointer to an FDCAN_HandleTypeDef structure that contains
+  *         the configuration information for the specified FDCAN.
+  * @param  RxFifo0ITs: indicates which Rx FIFO 0 interrupts are signalled.
+  *         This parameter can be any combination of @arg FDCAN_Rx_Fifo0_Interrupts.
+  * @retval None
+*/
+void HAL_FDCAN_RxFifo0Callback(FDCAN_HandleTypeDef *hfdcan, uint32_t RxFifo0ITs) {
+  if((RxFifo0ITs & FDCAN_IT_RX_FIFO0_NEW_MESSAGE) != RESET)
+  {
+    receive_message();
+  }
 }
 
 void SendCurrentTemperature(void* argument) {

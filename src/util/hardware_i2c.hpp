@@ -1,8 +1,8 @@
 #pragma once
 
+#include <any>
 #include <cstdint>
 #include <optional>
-#include <type_traits>
 
 #include "hardware.hpp"
 
@@ -13,14 +13,9 @@ namespace mrover {
     template<typename T>
     concept IsI2CSerializable = IsSerializable<T> && sizeof(T) <= I2C_MAX_FRAME_SIZE;
 
+    template<IsI2CSerializable TSend, IsI2CSerializable TReceive>
     class SMBus {
         constexpr static std::uint32_t I2C_TIMEOUT = 500, I2C_REBOOT_DELAY = 5;
-
-        void reboot() const {
-            HAL_I2C_DeInit(m_i2c);
-            HAL_Delay(I2C_REBOOT_DELAY);
-            HAL_I2C_Init(m_i2c);
-        }
 
     public:
         SMBus() = default;
@@ -28,15 +23,30 @@ namespace mrover {
         explicit SMBus(I2C_HandleTypeDef* hi2c)
             : m_i2c{hi2c} {}
 
-        template<IsI2CSerializable TSend, IsI2CSerializable TReceive>
-        auto transact(std::uint16_t address, TSend const& send) -> std::optional<TReceive> {
+        void reboot() const {
+            HAL_I2C_DeInit(m_i2c);
+            HAL_Delay(I2C_REBOOT_DELAY);
+            HAL_I2C_Init(m_i2c);
+        }
+
+        auto blocking_transmit(std::uint16_t address, TSend const& send) -> void {
+        	HAL_I2C_Master_Transmit(m_i2c, address << 1, address_of<std::uint8_t>(send), sizeof(send), I2C_TIMEOUT);
+        }
+
+        auto blocking_receive(std::uint16_t address) -> TReceive {
+        	if(TReceive receive{}; HAL_I2C_Master_Receive(m_i2c, address << 1 | 1, address_of<std::uint8_t>(receive), sizeof(receive), I2C_TIMEOUT) == HAL_OK){
+				return receive;
+        	}
+        }
+
+        auto blocking_transact(std::uint16_t address, TSend const& send) -> std::optional<TReceive> {
             if (HAL_I2C_Master_Transmit(m_i2c, address << 1, address_of<std::uint8_t>(send), sizeof(send), I2C_TIMEOUT) != HAL_OK) {
                 // TODO(quintin): Do we want a different error handler here?
                 return std::nullopt;
             }
 
             //reads from address sent above
-            if (TReceive receive{}; HAL_I2C_Master_Receive(m_i2c, (address << 1) | 1, address_of<std::uint8_t>(receive), sizeof(receive), I2C_TIMEOUT) != HAL_OK) {
+            if (TReceive receive{}; HAL_I2C_Master_Receive(m_i2c, address << 1 | 1, address_of<std::uint8_t>(receive), sizeof(receive), I2C_TIMEOUT) != HAL_OK) {
                 reboot();
                 return std::nullopt;
             } else {
@@ -44,7 +54,27 @@ namespace mrover {
             }
         }
 
+		auto async_transmit(std::uint16_t address, TSend const& send) -> void {
+			check(HAL_I2C_Master_Transmit_IT(m_i2c, address << 1, address_of<std::uint8_t>(send), sizeof(send)) == HAL_OK, Error_Handler);
+		}
+
+        auto async_request(const std::uint16_t address, TSend const& send) -> void {
+            // TODO: make sure actually sends to absolute encoder
+            check(HAL_I2C_Master_Transmit_DMA(m_i2c, address << 1, address_of<std::uint8_t>(send), sizeof(send)) == HAL_OK, Error_Handler);
+        }
+
+        auto async_read(const std::uint16_t address) -> void {
+            m_receive_buffer = TReceive{};
+            check(HAL_I2C_Master_Receive_DMA(m_i2c, address << 1 | 1, address_of<std::uint8_t>(m_receive_buffer), sizeof(m_receive_buffer)) == HAL_OK, Error_Handler);
+        }
+
+// breaks science code: error: 'const class std::any' has no member named 'type'
+        auto get_buffer() const -> std::optional<TReceive> {
+            return m_receive_buffer;
+        }
+
     private:
         I2C_HandleTypeDef* m_i2c{};
+        TReceive m_receive_buffer{};
     };
 } // namespace mrover

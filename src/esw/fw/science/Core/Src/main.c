@@ -15,14 +15,14 @@
   *
   ******************************************************************************
   */
+#include "FreeRTOS.h"
 /* USER CODE END Header */
 /* Includes ------------------------------------------------------------------*/
 #include "main.h"
 #include "cmsis_os2.h"
-
+#include "semphr.h"
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
-
 
 /* USER CODE END Includes */
 
@@ -57,17 +57,21 @@ const osThreadAttr_t defaultTask_attributes = {
 };
 /* USER CODE BEGIN PV */
 
+osSemaphoreId_t spectral_read_status;
+osSemaphoreId_t spectral_write_status;
 
-osThreadId_t ReceiveMessagesHandle;
-const osThreadAttr_t ReceiveMessages_attributes = {
-  .name = "ReceiveMessages",
-  .priority = (osPriority_t) osPriorityNormal,
-  .stack_size = 128 * 4
-};
+uint8_t spectral_status_buffer[1];
 
 osThreadId_t SpectralTaskHandle;
 const osThreadAttr_t SpectralTask_attributes = {
   .name = "SpectralTask",
+  .priority = (osPriority_t) osPriorityNormal,
+  .stack_size = 128 * 4
+};
+
+osThreadId_t SpectralPollingTaskHandle;
+const osThreadAttr_t SpectralPollingTask_attributes = {
+  .name = "SpectralPollingTask",
   .priority = (osPriority_t) osPriorityNormal,
   .stack_size = 128 * 4
 };
@@ -97,7 +101,7 @@ static void MX_ADC1_Init(void);
 void StartDefaultTask(void *argument);
 
 /* USER CODE BEGIN PFP */
-void ReceiveMessages(void *argument);
+void SpectralPollingTask(void *argument);
 void SpectralTask(void *argument);
 void ThermistorAndAutoShutoffTask(void *argument);
 void HeaterUpdatesTask(void *argument);
@@ -181,8 +185,9 @@ int main(void)
 
   /* USER CODE BEGIN RTOS_THREADS */
 
-  ReceiveMessagesHandle = osThreadNew(ReceiveMessages, NULL, &ReceiveMessages_attributes);
+  // TODO - Using spectral causes a hardfault!!!
   SpectralTaskHandle = osThreadNew(SpectralTask, NULL, &SpectralTask_attributes);
+  SpectralPollingTaskHandle = osThreadNew(SpectralPollingTask, NULL, &SpectralPollingTask_attributes);
   ThermistorAndAutoShutoffTaskHandle = osThreadNew(ThermistorAndAutoShutoffTask, NULL, &ThermistorAndAutoShutoffTask_attributes);
   HeaterUpdatesTaskHandle = osThreadNew(HeaterUpdatesTask, NULL, &HeaterUpdatesTask_attributes);
 
@@ -465,6 +470,13 @@ static void MX_GPIO_Init(void)
 
 /* USER CODE BEGIN 4 */
 
+void HAL_FDCAN_RxFifo0Callback(FDCAN_HandleTypeDef *hfdcan, uint32_t RxFifo0ITs) {
+  if((RxFifo0ITs & FDCAN_IT_RX_FIFO0_NEW_MESSAGE) != RESET)
+  {
+    receive_message();
+  }
+}
+
 void ReceiveMessages(void *argument) {
 	uint32_t tick = osKernelGetTickCount();
 	for(;;) {
@@ -476,10 +488,28 @@ void ReceiveMessages(void *argument) {
 
 void SpectralTask(void *argument) {
 	uint32_t tick = osKernelGetTickCount();
+
+	// Initialize spectral semaphores
+	spectral_write_status = osSemaphoreNew(1U, 0U, NULL);
+	spectral_read_status = osSemaphoreNew(1U, 0U, NULL);
+
 	for(;;) {
 		tick += osKernelGetTickFreq(); // 1 Hz
 
+		// finish
 		update_and_send_spectral();
+		osDelayUntil(tick);
+	}
+}
+
+void SpectralPollingTask(void *argument) {
+	uint32_t tick = osKernelGetTickCount();
+
+	for(;;) {
+		tick += 10 * osKernelGetTickFreq(); // 10 Hz
+
+		poll_spectral_status();
+
 		osDelayUntil(tick);
 	}
 }

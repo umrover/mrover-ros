@@ -7,13 +7,22 @@ namespace mrover {
 
     void I2CMux::set_channel(uint8_t channel) {
     	uint8_t go_to_channel = 1 << channel;
-    	auto result = m_i2c_bus->transact<uint16_t, uint8_t>(MUX_7b_ADDRESS, go_to_channel);
+    	auto result = m_i2c_bus->blocking_transact<uint16_t, uint8_t>(MUX_7b_ADDRESS, go_to_channel);
     	if(result){
     		current_channel = go_to_channel;
     	}
     	else{
     		// Error handling
     	}
+
+    	// Clear read and write semaphore so that tasks need to re-acquire them
+    	if(osSemaphoreGetCount(spectral_read_status) > 0){
+    		osSemaphoreAcquire(spectral_read_status, osWaitForever);
+    	}
+
+    	if(osSemaphoreGetCount(spectral_write_status) > 0){
+			osSemaphoreAcquire(spectral_write_status, osWaitForever);
+		}
     }
 } // namespace mrover
 

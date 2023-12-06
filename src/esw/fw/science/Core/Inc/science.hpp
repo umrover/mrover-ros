@@ -17,7 +17,7 @@ namespace mrover {
     class Science {
     private:
 
-        FDCANBus m_fdcan_bus;
+    	FDCAN m_fdcan_bus;
         std::array<Spectral, 3> m_spectral_sensors;
         std::shared_ptr<ADCSensor> m_adc_sensor;
         std::array<Heater, 6> m_heaters;
@@ -76,7 +76,7 @@ namespace mrover {
     public:
         Science() = default;
 
-        Science(FDCANBus const& fdcan_bus,
+        Science(FDCAN const& fdcan_bus,
         		std::array<Spectral, 3> spectral_sensors,
 				std::shared_ptr<ADCSensor> adc_sensor,
 				std::array<DiagTempSensor, 6> diag_temp_sensors,
@@ -100,19 +100,38 @@ namespace mrover {
             std::visit([&](auto const& command) { feed(command); }, message);
         }
 
+        void poll_spectral_status() {
+        	m_spectral_sensors.at(0).poll_status_reg();
+        }
+
+        void reboot_spectral() {
+        	m_spectral_sensors.at(0).reboot();
+        }
+
         void update_and_send_spectral() {
         	SpectralData spectral_data;
         	for (int i = 0; i < 3; ++i) {
+        		m_spectral_sensors.at(i).update_channel_data();
+
+				spectral_data.spectrals.at(i).error =
+						m_spectral_sensors.at(i).is_error();
         		for (int j = 0; j < 6; ++j) {
-        			m_spectral_sensors.at(i).update_channel_data(j);
 					spectral_data.spectrals.at(i).data.at(j) =
-							m_spectral_sensors.at(i).get_channel_data(j);
+						m_spectral_sensors.at(i).get_channel_data(j);
         		}
+//        		for (int j = 0; j < 6; ++j) {
+//        			m_spectral_sensors.at(i).update_channel_data(j);
+//					spectral_data.spectrals.at(i).data.at(j) =
+//							m_spectral_sensors.at(i).get_channel_data(j);
+//					spectral_data.spectrals.at(i).error =
+//							m_spectral_sensors.at(i).is_error();
+//        		}
         	}
 
-        	osMutexAcquire(m_can_tx_mutex, osWaitForever);
+        	// TODO - MUTEXS ARE BREAKING CODE!!!! IDK WHY - PLEASE FIX
+//        	osMutexAcquire(m_can_tx_mutex, osWaitForever);
 			m_fdcan_bus.broadcast(OutBoundScienceMessage{spectral_data});
-			osMutexRelease(m_can_tx_mutex);
+//			osMutexRelease(m_can_tx_mutex);
         }
 
         void update_and_send_thermistor_and_auto_shutoff_if_applicable() {

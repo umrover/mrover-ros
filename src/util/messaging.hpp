@@ -4,11 +4,7 @@
 #include <cstdint>
 #include <variant>
 
-#include "units/units.hpp"
-
-// Macros needed to operate on bitfields
-#define SET_BIT_AT_INDEX(x, index, value) (x = (x & ~(1 << index)) | (value << index))
-#define GET_BIT_AT_INDEX(x, index) (x & (1 << index))
+#include <units/units.hpp>
 
 namespace mrover {
 
@@ -36,20 +32,20 @@ namespace mrover {
     };
     static_assert(sizeof(ConfigEncoderInfo) == 1);
 
-    enum struct BDCMCErrorInfo {
-		NO_ERROR,
-    	DEFAULT_START_UP_NOT_CONFIGURED,
-		RECEIVING_COMMANDS_WHEN_NOT_CONFIGURED,
-		RECEIVING_POSITION_COMMANDS_WHEN_NOT_CALIBRATED,
-		OUTPUT_SET_TO_ZERO_SINCE_EXCEEDING_LIMITS,
+    enum struct BDCMCErrorInfo : std::uint8_t {
+        NO_ERROR,
+        DEFAULT_START_UP_NOT_CONFIGURED,
+        RECEIVING_COMMANDS_WHEN_NOT_CONFIGURED,
+        RECEIVING_POSITION_COMMANDS_WHEN_NOT_CALIBRATED,
+        OUTPUT_SET_TO_ZERO_SINCE_EXCEEDING_LIMITS,
         RECEIVING_PID_COMMANDS_WHEN_NO_READER_EXISTS
-	};
+    };
 
     struct ConfigCalibErrorInfo {
         [[maybe_unused]] std::uint8_t _ignore : 2 {}; // 8 bits - (6 meaningful bits) = 2 ignored bits
         std::uint8_t configured : 1 {};
         std::uint8_t calibrated : 1 {};
-        std::uint8_t error : 4 {}; // 0 means no error, anything else is error
+        BDCMCErrorInfo error : 4 {}; // 0 means no error, anything else is error
     };
     static_assert(sizeof(ConfigCalibErrorInfo) == 1);
 
@@ -174,6 +170,7 @@ namespace mrover {
 
     struct SpectralInfo {
         std::array<std::uint16_t, 6> data;
+        bool error;
     };
 
     struct SpectralData : BaseCommand {
@@ -181,7 +178,7 @@ namespace mrover {
     };
 
     struct ThermistorData : BaseCommand {
-    	std::array<float, 6> temps;
+        std::array<float, 6> temps;
     };
 
     using InBoundScienceMessage = std::variant<
@@ -190,7 +187,16 @@ namespace mrover {
     using OutBoundScienceMessage = std::variant<
             HeaterStateData, SpectralData, ThermistorData>;
 
-
 #pragma pack(pop)
 
+    // Utility for std::visit with lambdas
+    template<class... Ts>
+    struct overloaded : Ts... {
+        using Ts::operator()...;
+    };
+
 } // namespace mrover
+
+// Macros needed to operate on bitfields
+#define SET_BIT_AT_INDEX(x, index, value) (x = (x & ~(1 << index)) | (value << index))
+#define GET_BIT_AT_INDEX(x, index) (x & (1 << index))

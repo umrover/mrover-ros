@@ -6,6 +6,8 @@ extern FDCAN_HandleTypeDef hfdcan1;
 extern I2C_HandleTypeDef hi2c1;
 extern ADC_HandleTypeDef hadc1;
 
+extern uint8_t spectral_status_buffer[1];
+
 namespace mrover {
 
     // NOTE: Change this for the PDLB controller
@@ -14,7 +16,7 @@ namespace mrover {
     // Usually this is the Jetson
     constexpr static std::uint8_t DESTINATION_DEVICE_ID = 0x10;
 
-    FDCANBus fdcan_bus;
+    FDCAN fdcan_bus;
     Science science;
 
     void init() {
@@ -68,8 +70,16 @@ namespace mrover {
 				Pin{WHITE_LED_1_GPIO_Port, WHITE_LED_2_Pin}
 		};
 
-        fdcan_bus = FDCANBus{DEVICE_ID, DESTINATION_DEVICE_ID, &hfdcan1};
+        fdcan_bus = FDCAN{DEVICE_ID, DESTINATION_DEVICE_ID, &hfdcan1};
         science = Science{fdcan_bus, spectral_sensors, adc_sensor, diag_temp_sensors, heater_pins, uv_leds, white_leds};
+    }
+
+    void reboot_spectral() {
+    	science.reboot_spectral();
+    }
+
+    void poll_spectral_status(){
+    	science.poll_spectral_status();
     }
 
     void update_and_send_spectral() {
@@ -87,7 +97,7 @@ namespace mrover {
     void receive_message() {
 		if (std::optional received = fdcan_bus.receive<InBoundScienceMessage>()) {
 			auto const& [header, message] = received.value();
-			auto messageId = std::bit_cast<FDCANBus::MessageId>(header.Identifier);
+			auto messageId = std::bit_cast<FDCAN::MessageId>(header.Identifier);
 			if (messageId.destination == DEVICE_ID)
 				science.receive(message);
 		}
@@ -97,6 +107,10 @@ namespace mrover {
 
 void init() {
     mrover::init();
+}
+
+void poll_spectral_status(){
+	mrover::poll_spectral_status();
 }
 
 void update_and_send_spectral() {
@@ -113,4 +127,28 @@ void update_and_send_heater() {
 
 void receive_message() {
 	mrover::receive_message();
+}
+
+void HAL_I2C_MasterTXCpltCallback(I2C_HandleTypeDef *hi2c) {
+	HAL_I2C_Master_Receive_IT(hi2c, (mrover::Spectral::SPECTRAL_7b_ADDRESS << 1 | 1), (uint8_t*)spectral_status_buffer, sizeof(spectral_status_buffer));
+}
+
+void HAL_I2C_MasterRXCpltCallback(I2C_HandleTypeDef *hi2c) {
+	// If we want to use this for anything else than checking spectral status reg,
+	// then this function needs additional logic
+
+	if ((spectral_status_buffer[0] & mrover::Spectral::I2C_AS72XX_SLAVE_TX_VALID) == 0) {
+		osSemaphoreRelease(spectral_write_status);
+	}
+
+	if ((spectral_status_buffer[0] & mrover::Spectral::I2C_AS72XX_SLAVE_RX_VALID) == 0) {
+		osSemaphoreRelease(spectral_read_status);
+	}
+
+}
+
+void HAL_I2C_ErrorCallback(I2C_HandleTypeDef *hi2c) {
+	// Something is most likely wrong with the I2C bus
+	// if we get to this point
+	mrover::reboot_spectral();
 }
