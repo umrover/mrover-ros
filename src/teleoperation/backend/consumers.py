@@ -9,6 +9,7 @@ from sensor_msgs.msg import JointState, NavSatFix
 from geometry_msgs.msg import Twist
 from math import copysign
 import typing
+import tf
 
 # If below threshold, make output zero
 def deadzone(magnitude: float, threshold: float) -> float:
@@ -238,3 +239,15 @@ class GUIConsumer(JsonWebsocketConsumer):
             'type': 'nav_state',
             'state': msg.state
         }))
+
+    def auton_bearing(self, msg):
+        listener = tf.TransformListener()
+        trans, rot = listener.lookupTransform('map', 'base_link', rospy.Time(O))
+        self.send(text_data=json.dumps({
+            'type': 'auton_tfclient',
+            'rotation': rot,
+        }))
+
+    def mast_gimbal(self, msg):
+        pub = rospy.Publisher("/mast_gimbal_throttle_cmd", Throttle, queue_size=1)
+        pub.publish(Throttle(["mast_gimbal_x", "mast_gimbal_y"], msg["throttles"]))

@@ -45,7 +45,7 @@
         class="driveControls"
     >
         <DriveControls />
-    </div>
+        </div>
         <!-- <div v-show="false">
         <MastGimbalControls></MastGimbalControls>
     </div> -->
@@ -80,6 +80,8 @@ import JoystickValues from './JoystickValues.vue';
 import DriveControls from "./DriveControls.vue";
 import { quaternionToMapAngle } from "../utils.js";
 import { defineComponent } from "vue";
+
+let interval:number;
 
 export default defineComponent({
     components: {
@@ -173,12 +175,22 @@ export default defineComponent({
                 this.odom.latitude_deg = msg.latitude;
                 this.odom.longitude_deg = msg.longitude;
             }
+            else if(msg.type == "auton_tfclient") {
+                this.odom.bearing_deg = quaternionToMapAngle(msg.rotation);
+            }
         }
     },
 
     beforeUnmount: function () {
         this.ledColor = "bg-white";
+        window.clearInterval(interval);
     },
+
+    created() {
+        interval = setInterval(() => {
+            this.$websocket.send({type: "auton_tfclient"});
+        }, 1000);
+    }
 });
 </script>
   
@@ -187,7 +199,7 @@ export default defineComponent({
     display: grid;
     grid-gap: 10px;
     grid-template-columns: 40% 20% auto;
-    grid-template-rows: auto 40% auto auto auto;
+    grid-template-rows: auto 40vh auto auto auto;
     grid-template-areas:
         "header header header"
         "map map waypoints"

@@ -1,4 +1,4 @@
 #!/bin/bash
 
 cd frontend
-npm run dev
+bun run dev
