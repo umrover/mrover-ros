@@ -406,11 +406,15 @@ namespace mrover {
                 reading = m_absolute_encoder->read();
             }
 
-            //TODO: update the controller with the reading
             if (reading) {
-
+                auto const& [position, velocity] = reading.value();
+                if (m_state_after_calib) {
+                    m_position = position - m_state_after_calib->offset_position;
+                }
+                m_velocity = velocity;
             } else {
-
+                m_position = std::nullopt;
+                m_velocity = std::nullopt;
             }
         }
     };
