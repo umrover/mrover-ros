@@ -16,7 +16,7 @@ namespace mrover {
     // Usually this is the Jetson
     constexpr static std::uint8_t DESTINATION_DEVICE_ID = 0x10;
 
-    FDCAN fdcan_bus;
+    FDCAN<InBoundScienceMessage> fdcan_bus;
     Science science;
 
     void init() {
@@ -26,7 +26,7 @@ namespace mrover {
                       0) == HAL_OK,
               Error_Handler);
 
-        std::shared_ptr<SMBus> i2c_bus = std::make_shared<SMBus>(&hi2c1);
+        std::shared_ptr<SMBus<uint8_t, uint16_t>> i2c_bus = std::make_shared<SMBus<uint8_t, uint16_t>>(&hi2c1);
 
         std::shared_ptr<I2CMux> i2c_mux = std::make_shared<I2CMux>(i2c_bus);
 
@@ -70,7 +70,7 @@ namespace mrover {
 				Pin{WHITE_LED_1_GPIO_Port, WHITE_LED_2_Pin}
 		};
 
-        fdcan_bus = FDCAN{DEVICE_ID, DESTINATION_DEVICE_ID, &hfdcan1};
+        fdcan_bus = FDCAN<InBoundScienceMessage>{DEVICE_ID, DESTINATION_DEVICE_ID, &hfdcan1};
         science = Science{fdcan_bus, spectral_sensors, adc_sensor, diag_temp_sensors, heater_pins, uv_leds, white_leds};
     }
 
@@ -95,9 +95,9 @@ namespace mrover {
 	}
 
     void receive_message() {
-		if (std::optional received = fdcan_bus.receive<InBoundScienceMessage>()) {
+		if (std::optional received = fdcan_bus.receive()) {
 			auto const& [header, message] = received.value();
-			auto messageId = std::bit_cast<FDCAN::MessageId>(header.Identifier);
+			auto messageId = std::bit_cast<FDCAN<InBoundScienceMessage>::MessageId>(header.Identifier);
 			if (messageId.destination == DEVICE_ID)
 				science.receive(message);
 		}
