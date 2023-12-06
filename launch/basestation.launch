@@ -12,9 +12,9 @@
     <node name="gui_backend" pkg="mrover" type="gui_backend.sh" cwd="node"/>
 
     <!-- run RViz with the specified config file -->
-    <arg name="rvizconfig" default="$(find mrover)/config/rviz/basestation.rviz"/>
+    <!-- <arg name="rvizconfig" default="$(find mrover)/config/rviz/basestation.rviz"/>
     <node name="rviz" pkg="rviz" type="rviz" args="-d $(arg rvizconfig)" required="true"/>
-    <node name="topic_services" pkg="mrover" type="topic_services.py"/>
+    <node name="topic_services" pkg="mrover" type="topic_services.py"/> -->
 
     <!-- Run the auton enable forwarding program -->
     <node name="auton_enable_forward" pkg="mrover" type="auton_enable_forward.py" output="screen"></node>

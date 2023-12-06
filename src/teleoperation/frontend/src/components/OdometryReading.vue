@@ -71,7 +71,8 @@ export default {
     },
     alt_available: function () {
       // return isNan(this.odom.altitude);
-      return false;
+      return true;
+      // return false;
     }
   },
   

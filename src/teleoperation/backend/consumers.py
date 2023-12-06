@@ -46,6 +46,7 @@ class GUIConsumer(JsonWebsocketConsumer):
         self.nav_state_sub = rospy.Subscriber("/nav_state", StateMachineStateUpdate, self.nav_state_callback)
 
         self.tf_listener = threading.Thread(target=self.flight_attitude_listener)
+        self.tf_listener.start()
         self.tf_listener.join()
 
 
@@ -235,17 +236,20 @@ class GUIConsumer(JsonWebsocketConsumer):
         tf_listener = tf2_ros.TransformListener(tf_buffer)
 
         # threshold that must be exceeded to send JSON message
-        threshold = 0.0001
+        threshold = 0.1
         map_to_baselink = SE3()
 
         rate = rospy.Rate(10.0)
         while not rospy.is_shutdown():
             try:
                 tf_msg = SE3.from_tf_tree(tf_buffer, "map", "base_link")
-
+                
                 if tf_msg.is_approx(map_to_baselink, threshold):
                     rate.sleep()
                     continue
+                
+                rospy.logwarn(tf_msg)
+                rospy.logerr(map_to_baselink)
             except (
                 tf2_ros.LookupException,
                 tf2_ros.ConnectivityException,

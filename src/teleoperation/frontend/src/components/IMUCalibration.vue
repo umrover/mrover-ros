@@ -70,6 +70,8 @@
 </template>
 
 <script lang="ts">
+import { mapState } from 'vuex';
+
 const calibration_limit = 3;
 
 export default {
@@ -80,12 +82,15 @@ export default {
       accelerometer_val: 0,
       magnetometer_val: 0,
       calibration_limit_master: calibration_limit,
-      websocket: new WebSocket("ws://localhost:8000/ws/gui")
     };
   },
-  created: function () {
-    this.websocket.onmessage = (event) => {
-      const msg = JSON.parse(event.data);
+  
+  computed: {
+    ...mapState('websocket', ['message'])
+  },
+
+  watch: {
+    message(msg) {
       if (msg.type == "calibration_status") {
         this.system_val = msg.system_calibration;
         this.gyroscope_val = msg.gyroscope_calibration;

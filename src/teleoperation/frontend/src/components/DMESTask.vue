@@ -129,6 +129,11 @@ export default defineComponent({
         this.jointState.velocity = msg.velocity;
         this.jointState.effort = msg.effort;
       }
+      else if (msg.type == "nav_sat_fix") {
+        this.odom.latitude_deg = msg.latitude;
+        this.odom.longitude_deg = msg.longitude;
+        this.odom.altitude = msg.altitude;
+      }
     }
   }
 

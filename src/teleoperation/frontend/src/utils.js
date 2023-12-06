@@ -1,5 +1,5 @@
 // Function to convert coordinates between different odom formats
-import * as qte from "quaternion-to-euler";
+// import * as qte from "quaternion-to-euler";
 import { inject } from "vue";
 const convertDMS = function (coord_in, odom_format) {
   const DEG_DECIMALS = 8;

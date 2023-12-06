@@ -8,6 +8,7 @@
 
 <script lang="ts">
 import { Attitude } from "vue-flight-indicators";
+import { mapState } from "vuex";
 
 export default {
   components: {
@@ -18,13 +19,16 @@ export default {
       // Pitch and Roll in Degrees
       pitch: 0,
       roll: 0,
-      websocket: new WebSocket("ws://localhost:8000/ws/gui")
+      // websocket: new WebSocket("ws://localhost:8000/ws/gui")
     };
   },
 
-  created: function () {
-    this.websocket.onmessage = (event) => {
-      const msg = JSON.parse(event.data);
+  computed: {
+    ...mapState('websocket', ['message'])
+  },
+
+  watch: {
+    message(msg) {
       if (msg.type == "flight_attitude") {
         this.pitch = msg.pitch;
         this.roll = msg.roll;
