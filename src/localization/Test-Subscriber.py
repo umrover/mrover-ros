@@ -16,8 +16,6 @@ from sensor_msgs.msg import NavSatFix, Imu
 # from util.SE3 import SE3
 # from util.SO3 import SO3
 from matplotlib import pyplot as plt
-import csv
-from decimal import Decimal
 
 # import gps_linearization
 
@@ -91,21 +89,20 @@ if __name__ == "__main__":
 
     # plt.scatter(coord_arr_left_latitude, coord_arr_left_longitude, color="red")
     # plt.scatter(coord_arr_right_latitude, coord_arr_right_longitude, color="blue")
-    # Set the scale (adjust the limits according to your data)
-    # plt.xlim(coord_arr_left_latitude[0], coord_arr_left_latitude[4])
-    # plt.ylim(coord_arr_left_longitude[0], coord_arr_right_longitude[4])
 
     # plt.show()
 
     for i in range(len(coord_arr_left_latitude)):
-        print(Decimal(coord_arr_left_latitude[i]) - Decimal(coord_arr_right_latitude[i]))
-        print(Decimal(coord_arr_left_longitude[i]) - Decimal(coord_arr_right_longitude[i]))
-    print("\n")
-    print(coord_arr_right_latitude[:10])
-    print(coord_arr_left_latitude[:10])
-    print("\n")
-    print(coord_arr_right_longitude[:10])
-    print(coord_arr_left_longitude[:10])
+        print(coord_arr_left_latitude[i] - coord_arr_right_latitude[i])
+        print(coord_arr_left_longitude[i] - coord_arr_right_longitude[i])
+
+    # print("\n")
+    # print(coord_arr_right_latitude[:10])
+    # print(coord_arr_left_latitude[:10])
+
+    # print("\n")
+    # print(coord_arr_right_longitude[:10])
+    # print(coord_arr_left_longitude[:10])
     # print(
     #     (sum(coord_arr_left_latitude) / len(coord_arr_left_latitude))
     #     - (sum(coord_arr_right_latitude) / len(coord_arr_right_latitude))
@@ -114,9 +111,3 @@ if __name__ == "__main__":
     #     (sum(coord_arr_left_longitude) / len(coord_arr_right_longitude))
     #     - (sum(coord_arr_right_longitude) / len(coord_arr_right_longitude))
     # )
-    # plt.pause(300)
-
-    # print("Click on the plot window and press any key to close.")
-    # plt.waitforbuttonpress()
-    # plt.close()
-    # plt.show()

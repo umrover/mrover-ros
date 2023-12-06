@@ -47,7 +47,7 @@
       <referenceLongitude>-83.80967060000000000000000</referenceLongitude>
       <referenceHeading>90.0</referenceHeading>
       <referenceAltitude>0.0</referenceAltitude>
-      <offset>0 0 0</offset>
+      <offset>0 10 0</offset>
       <drift>0.0 0.0 0.0</drift>
       <gaussianNoise>0 0 0</gaussianNoise>
       <velocityDrift>0.0 0.0 0.0</velocityDrift>
