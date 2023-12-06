@@ -74,7 +74,7 @@ export default {
     }, this.updateRate * 1000);
   },
 
-  beforeDestroy: function () {
+  beforeUnmount: function () {
     window.clearInterval(interval);
   },
 

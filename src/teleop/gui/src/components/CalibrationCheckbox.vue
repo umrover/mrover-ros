@@ -52,7 +52,7 @@ export default {
     },
   },
 
-  beforeDestroy: function () {
+  beforeUnmount: function () {
     clearInterval(this.interval);
     this.toggleEnabled = false;
     this.publishCalibrationMessage();
