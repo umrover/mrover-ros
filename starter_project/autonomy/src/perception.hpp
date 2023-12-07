@@ -12,7 +12,6 @@
 #include <opencv2/core/mat.hpp>
 
 // ROS Headers, ros namespace
-#include <image_transport/image_transport.h>
 #include <ros/node_handle.h>
 #include <ros/publisher.h>
 #include <sensor_msgs/Image.h>
@@ -36,8 +35,7 @@ namespace mrover {
     class Perception {
     private:
         ros::NodeHandle mNodeHandle;
-        image_transport::ImageTransport mImageTransport;
-        image_transport::Subscriber mImageSubscriber;
+        ros::Subscriber mImageSubscriber;
         cv::Ptr<cv::aruco::DetectorParameters> mTagDetectorParams;
         cv::Ptr<cv::aruco::Dictionary> mTagDictionary;
         std::vector<std::vector<cv::Point2f>> mTagCorners;
@@ -52,9 +50,9 @@ namespace mrover {
          * Called when we receive a new image message from the camera.
          * Specifically this is one frame.
          *
-         * @param image
+         * @param imageMessage
          */
-        void imageCallback(sensor_msgs::ImageConstPtr const& image);
+        void imageCallback(sensor_msgs::ImageConstPtr const& imageMessage);
 
         /**
          *  Given an image, detect ArUco tags, and fill a vector full of output messages.
@@ -94,7 +92,7 @@ namespace mrover {
          * @param tags          Vector of tags
          * @return              Center tag
          */
-        [[nodiscard]] StarterProjectTag selectTag(std::vector<StarterProjectTag> const& tags);
+        [[nodiscard]] StarterProjectTag selectTag(cv::Mat const& image, std::vector<StarterProjectTag> const& tags);
     };
 
 } // namespace mrover

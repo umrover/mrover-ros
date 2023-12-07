@@ -3,8 +3,7 @@
  -->
 <launch>
     <arg name="rvizconfig" default="$(find mrover)/config/rviz/auton_sim.rviz"/>
-    <arg name="world_name" default="world"/>
-    <arg name="use_odom" default="true"/>
+    <arg name="world_name" default="world_flat"/>
 
     <node name="rviz" pkg="rviz" type="rviz" args="-d $(arg rvizconfig)" required="true"/>
 
@@ -16,37 +15,13 @@
         <arg name="world_name" value="$(arg world_name)"/>
     </include>
 
-    <!-- visual odometry node to provide localization in odom frame -->
-    <node if="$(arg use_odom)"
-          pkg="nodelet" type="nodelet" name="rtabmap_stereo_odometry" respawn="true"
-          args="load rtabmap_odom/stereo_odometry perception_nodelet_manager" output="screen">
-        <param name="frame_id" type="string" value="base_link"/>
-        <param name="odom_frame_id" type="string" value="odom"/>
-
-        <remap from="/odom" to="/odometry"/>
-        <remap from="/left/image_rect" to="/camera/left/image"/>
-        <remap from="/left/camera_info" to="/camera/left/camera_info"/>
-        <remap from="/right/image_rect" to="/camera/right/image"/>
-        <remap from="/right/camera_info" to="/camera/right/camera_info"/>
-
-        <param name="GFTT/MinDistance" type="string" value="10"/>
-        <param name="OdomF2M/MaxSize" type="string" value="500"/>
-        <param name="Vis/MaxFeatures" type="string" value="400"/>
-        <!-- Correspondences: 0=Features Matching, 1=Optical Flow -->
-        <param name="Vis/CorType" value="0"/>
-        <!-- 0=Frame-to-Map (F2M) 1=Frame-to-Frame (F2F) -->
-        <param name="Odom/Strategy" value="0"/>
-
-        <param name="publish_tf" type="bool" value="true"/>
-    </node>
-
-    <node pkg="tf" type="static_transform_publisher" name="map_odom_publisher"
-          args="1 0 0 0 0 0 base_link zed2i_left_camera_frame 100" />
+    <node pkg="tf" type="static_transform_publisher" name="zed2i_left_camera_frame_publisher"
+          args="0 0 0 0 0 0 1 left_camera_link zed2i_left_camera_frame 100"/>
 
     <!-- launch auton -->
     <include file="$(find mrover)/launch/auton.launch">
         <arg name="sim" value="true"/>
         <arg name="use_ekf" value="true"/>
-        <arg name="ekf_start_delay" value="10.0"/>
+        <arg name="ekf_start_delay" value="5"/>
     </include>
 </launch>

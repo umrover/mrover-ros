@@ -4,13 +4,14 @@ from dataclasses import dataclass
 from typing import Optional
 
 import numpy as np
-from aenum import Enum, NoAlias
 from mrover.msg import GPSPointList
-from util.ros_utils import get_rosparam
 
-from context import Context, convert_cartesian_to_gps
-from state import BaseState
-from trajectory import Trajectory
+from util.ros_utils import get_rosparam
+from util.state_lib.state import State
+
+from navigation import approach_post, recovery, waypoint
+from navigation.context import convert_cartesian_to_gps
+from navigation.trajectory import Trajectory
 
 
 @dataclass
@@ -79,61 +80,38 @@ class SearchTrajectory(Trajectory):
         )
 
 
-class SearchStateTransitions(Enum):
-    _settings_ = NoAlias
+class SearchState(State):
+    traj: SearchTrajectory
+    prev_target: Optional[np.ndarray] = None
+    is_recovering: bool = False
 
-    no_fiducial = "WaypointState"
-    continue_search = "SearchState"
-    found_fiducial_post = "ApproachPostState"
-    found_fiducial_gate = "PartialGateState"
-    found_gate = "GateTraverseState"
-    recovery_state = "RecoveryState"
-
-
-class SearchState(BaseState):
     STOP_THRESH = get_rosparam("search/stop_thresh", 0.2)
     DRIVE_FWD_THRESH = get_rosparam("search/drive_fwd_thresh", 0.34)  # 20 degrees
     SPIRAL_COVERAGE_RADIUS = get_rosparam("search/coverage_radius", 20)
     SEGMENTS_PER_ROTATION = get_rosparam("search/segments_per_rotation", 8)
     DISTANCE_BETWEEN_SPIRALS = get_rosparam("search/distance_between_spirals", 2.5)
 
-    def __init__(
-        self,
-        context: Context,
-    ):
-        own_transitions = [SearchStateTransitions.continue_search.name]  # type: ignore
-        super().__init__(
-            context,
-            own_transitions,
-            add_outcomes=[transition.name for transition in SearchStateTransitions],  # type: ignore
-        )
-        self.traj: Optional[SearchTrajectory] = None
-        self.prev_target: Optional[np.ndarray] = None
-        self.is_recovering = False
-
-    def reset(self) -> None:
+    def on_enter(self, context) -> None:
+        search_center = context.course.current_waypoint()
         if not self.is_recovering:
-            self.traj = None
-            self.prev_target = None
-
-    def evaluate(self, ud):
-        # Check if a path has been generated, and it's associated with the same
-        # waypoint as the previous one. Generate one if not
-        waypoint = self.context.course.current_waypoint()
-        if self.traj is None or self.traj.fid_id != waypoint.fiducial_id:
             self.traj = SearchTrajectory.spiral_traj(
-                self.context.rover.get_pose().position[0:2],
+                context.rover.get_pose().position[0:2],
                 self.SPIRAL_COVERAGE_RADIUS,
                 self.DISTANCE_BETWEEN_SPIRALS,
                 self.SEGMENTS_PER_ROTATION,
-                waypoint.fiducial_id,
+                search_center.fiducial_id,
             )
+            self.prev_target = None
 
-        # continue executing this path from wherever it left off
+    def on_exit(self, context) -> None:
+        pass
+
+    def on_loop(self, context) -> State:
+        # continue executing the path from wherever it left off
         target_pos = self.traj.get_cur_pt()
-        cmd_vel, arrived = self.context.rover.driver.get_drive_command(
+        cmd_vel, arrived = context.rover.driver.get_drive_command(
             target_pos,
-            self.context.rover.get_pose(),
+            context.rover.get_pose(),
             self.STOP_THRESH,
             self.DRIVE_FWD_THRESH,
             path_start=self.prev_target,
@@ -142,27 +120,20 @@ class SearchState(BaseState):
             self.prev_target = target_pos
             # if we finish the spiral without seeing the fiducial, move on with course
             if self.traj.increment_point():
-                return SearchStateTransitions.no_fiducial.name  # type: ignore
+                return waypoint.WaypointState()
 
-        if self.context.rover.stuck:
-            self.context.rover.previous_state = SearchStateTransitions.continue_search.name  # type: ignore
+        if context.rover.stuck:
+            context.rover.previous_state = self
             self.is_recovering = True
-            return SearchStateTransitions.recovery_state.name  # type: ignore
+            return recovery.RecoveryState()
         else:
             self.is_recovering = False
 
-        self.context.search_point_publisher.publish(
+        context.search_point_publisher.publish(
             GPSPointList([convert_cartesian_to_gps(pt) for pt in self.traj.coordinates])
         )
-        self.context.rover.send_drive_command(cmd_vel)
+        context.rover.send_drive_command(cmd_vel)
 
-        # if we see the fiduicial or gate, go to either fiducial or gate state
-        if self.context.env.current_gate() is not None:
-            return SearchStateTransitions.found_gate.name  # type: ignore
-        elif self.context.env.current_fid_pos() is not None and self.context.course.look_for_post():
-            return SearchStateTransitions.found_fiducial_post.name  # type: ignore
-        elif (
-            self.context.env.current_fid_pos() is not None or self.context.env.other_gate_fid_pos() is not None
-        ) and self.context.course.look_for_gate():
-            return SearchStateTransitions.found_fiducial_gate.name  # type: ignore
-        return SearchStateTransitions.continue_search.name  # type: ignore
+        if context.env.current_fid_pos() is not None and context.course.look_for_post():
+            return approach_post.ApproachPostState()
+        return self

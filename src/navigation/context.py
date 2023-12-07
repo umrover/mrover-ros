@@ -11,13 +11,12 @@ import rospy
 import tf2_ros
 from geometry_msgs.msg import Twist
 from mrover.msg import Waypoint, GPSWaypoint, EnableAuton, WaypointType, GPSPointList
-from shapely.geometry import Point
 from std_msgs.msg import Time, Bool
-from util.SE3 import SE3
-from util.ros_utils import get_rosparam
 from visualization_msgs.msg import Marker
 
-from drive import DriveController
+from util.SE3 import SE3
+
+from navigation.drive import DriveController
 
 TAG_EXPIRATION_TIME_SECONDS = 60
 
@@ -25,26 +24,6 @@ REF_LAT = rospy.get_param("gps_linearization/reference_point_latitude")
 REF_LON = rospy.get_param("gps_linearization/reference_point_longitude")
 
 tf_broadcaster: tf2_ros.StaticTransformBroadcaster = tf2_ros.StaticTransformBroadcaster()
-
-POST_RADIUS = get_rosparam("gate/post_radius", 0.7)
-
-
-@dataclass
-class Gate:
-    post1: np.ndarray
-    post2: np.ndarray
-
-    def get_post_shapes(self) -> tuple[Point, Point]:
-        """
-        Creates a circular path of RADIUS around each post for checking intersection with our path
-        :return: tuple of the two shapely Point objects representing the posts
-        """
-
-        # Find circle of both posts
-        post1_shape = Point(self.post1[:2]).buffer(POST_RADIUS)
-        post2_shape = Point(self.post2[:2]).buffer(POST_RADIUS)
-
-        return post1_shape, post2_shape
 
 
 @dataclass
@@ -123,36 +102,6 @@ class Environment:
 
         return self.get_fid_pos(current_waypoint.fiducial_id, in_odom)
 
-    def other_gate_fid_pos(self) -> Optional[np.ndarray]:
-        """
-        retrieves the position of the other gate post (which is 1 + current id) if we are looking for a gate
-        """
-        assert self.ctx.course
-        current_waypoint = self.ctx.course.current_waypoint()
-        if self.ctx.course.look_for_gate() and current_waypoint is not None:
-            return self.get_fid_pos(current_waypoint.fiducial_id + 1, self.ctx.use_odom)
-        else:
-            return None
-
-    def current_gate(self, odom_override: bool = True) -> Optional[Gate]:
-        """
-        retrieves the position of the gate (if we know where it is, and we are looking for one)
-        :param: odom_override if false will force it to be in the map frame, true will mean use odom if we are using it (set by rosparam)
-        """
-
-        if self.ctx.course:
-            current_waypoint = self.ctx.course.current_waypoint()
-            if current_waypoint is None or not self.ctx.course.look_for_gate():
-                return None
-
-            post1 = self.get_fid_pos(current_waypoint.fiducial_id, self.ctx.use_odom and odom_override)
-            post2 = self.get_fid_pos(current_waypoint.fiducial_id + 1, self.ctx.use_odom and odom_override)
-            if post1 is None or post2 is None:
-                return None
-            return Gate(post1[:2], post2[:2])
-        else:
-            return None
-
 
 @dataclass
 class Course:
@@ -188,17 +137,6 @@ class Course:
             return None
         return self.course_data.waypoints[self.waypoint_index]
 
-    def look_for_gate(self) -> bool:
-        """
-        Returns whether the currently active waypoint (if it exists) indicates
-        that we should go to a gate
-        """
-        waypoint = self.current_waypoint()
-        if waypoint is not None:
-            return waypoint.type.val == mrover.msg.WaypointType.GATE
-        else:
-            return False
-
     def look_for_post(self) -> bool:
         """
         Returns whether the currently active waypoint (if it exists) indicates
@@ -223,7 +161,7 @@ def setup_course(ctx: Context, waypoints: List[Tuple[Waypoint, SE3]]) -> Course:
     return Course(ctx=ctx, course_data=mrover.msg.Course([waypoint[0] for waypoint in waypoints]))
 
 
-def convert_gps_to_cartesian(waypoint: GPSWaypoint) -> Waypoint:
+def convert_gps_to_cartesian(waypoint: GPSWaypoint) -> Tuple[Waypoint, SE3]:
     """
     Converts a GPSWaypoint into a "Waypoint" used for publishing to the CourseService.
     """
@@ -261,8 +199,6 @@ class Context:
     tf_listener: tf2_ros.TransformListener
     vel_cmd_publisher: rospy.Publisher
     search_point_publisher: rospy.Publisher
-    gate_point_publisher: rospy.Publisher
-    gate_path_publisher: rospy.Publisher
     vis_publisher: rospy.Publisher
     course_listener: rospy.Subscriber
     stuck_listener: rospy.Subscriber
@@ -285,8 +221,6 @@ class Context:
         self.vel_cmd_publisher = rospy.Publisher("cmd_vel", Twist, queue_size=1)
         self.vis_publisher = rospy.Publisher("nav_vis", Marker, queue_size=1)
         self.search_point_publisher = rospy.Publisher("search_path", GPSPointList, queue_size=1)
-        self.gate_path_publisher = rospy.Publisher("gate_path", GPSPointList, queue_size=1)
-        self.gate_point_publisher = rospy.Publisher("estimated_gate_location", GPSPointList, queue_size=1)
         self.enable_auton_service = rospy.Service("enable_auton", mrover.srv.PublishEnableAuton, self.recv_enable_auton)
         self.stuck_listener = rospy.Subscriber("nav_stuck", Bool, self.stuck_callback)
         self.course = None

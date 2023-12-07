@@ -1,0 +1,150 @@
+<?xml version="1.0"?>
+<robot xmlns:xacro="http://www.ros.org/wiki/xacro" name="arm">
+  <xacro:property name="PI" value="3.141592"/>
+  <xacro:property name="base_width" value="7"/>
+  <xacro:property name="base_len" value="7"/>
+  <xacro:property name="base_height" value="19"/>
+
+  <!-- Functions -->
+
+  <xacro:macro name="joints"
+               params="name type:=revolute parent child x y z rx:=0 ry:=0 rz:=0 axis_x:=0 axis_y:=0 axis_z:=0 lower upper damp:=1.0">
+    <joint name="${name}" type="${type}">
+      <origin xyz="${x} ${y} ${z}" rpy="${rx} ${ry} ${rz}"/>
+      <parent link="${parent}"/>
+      <child link="${child}"/>
+      <axis xyz="${axis_x} ${axis_y} ${axis_z}"/>
+      <!-- effort in N-m, velocity in rad/s -->
+      <limit lower="${lower}" upper="${upper}" effort="30" velocity="1"/>
+      <!-- damping in N-m-s/rad -->
+      <dynamics damping="${damp}"/>
+    </joint>
+  </xacro:macro>
+
+  <xacro:macro name="link-visual" params="fileName col r g b x:=0 y:=0 z:=0 roll:=0 pitch:=0 yaw:=0">
+    <visual>
+      <origin xyz="${x} ${y} ${z}" rpy="${roll} ${pitch} ${yaw}"/>
+      <geometry>
+        <mesh filename="package://mrover/urdf/meshes/${fileName}"/>
+      </geometry>
+      <material name="${col}">
+        <color rgba="${r} ${g} ${b} 1"/>
+      </material>
+    </visual>
+  </xacro:macro>
+
+  <xacro:macro name="link-inertial"
+               params="x:=0 y:=0 z:=0 roll:=0 pitch:=0 yaw:=0 mass ixx iyy izz ixy:=0 iyz:=0 ixz:=0">
+    <inertial>
+      <origin xyz="${x} ${y} ${z}" rpy="${roll} ${pitch} ${yaw}"/>
+      <!-- mass in kg -->
+      <mass value="${mass}"/>
+      <inertia ixx="${ixx}" iyy="${iyy}" izz="${izz}" ixy="${ixy}" iyz="${iyz}" ixz="${ixz}"/>
+    </inertial>
+  </xacro:macro>
+
+  <xacro:macro name="box_inertia" params="m w h d">
+    <inertial>
+      <mass value="${m}"/>
+      <inertia ixx="${m / 12.0 * (d*d + h*h)}" ixy="0.0" ixz="0.0" iyy="${m / 12.0 * (w*w + h*h)}" iyz="0.0"
+               izz="${m / 12.0 * (w*w + d*d)}"/>
+    </inertial>
+  </xacro:macro>
+
+  <!-- defines a cylinder collision object with two endpoints -->
+  <xacro:macro name="link-collision-cylinder" params="radius x1 y1 z1 x2 y2 z2 roll:=0 pitch:=0 yaw:=0">
+    <xacro:property name="dx" value="${x2-x1}"/>
+    <xacro:property name="dy" value="${y2-y1}"/>
+    <xacro:property name="dz" value="${z2-z1}"/>
+
+    <xacro:if value="${dx != 0}">
+      <xacro:property name="length" value="${fabs(dx)}"/>
+      <xacro:property name="rpy" value="${roll} ${pitch+PI/2} ${yaw}"/>
+    </xacro:if>
+    <xacro:if value="${dy != 0}">
+      <xacro:property name="length" value="${fabs(dy)}"/>
+      <xacro:property name="rpy" value="${roll+PI/2} ${pitch} ${yaw}"/>
+    </xacro:if>
+    <xacro:if value="${dz != 0}">
+      <xacro:property name="length" value="${fabs(dz)}"/>
+      <xacro:property name="rpy" value="${roll} ${pitch} ${yaw}"/>
+    </xacro:if>
+
+    <collision>
+      <origin xyz="${x1+dx/2} ${y1+dy/2} ${z1+dz/2}" rpy="${rpy}"/>
+      <geometry>
+        <cylinder radius="${radius}" length="${length}"/>
+      </geometry>
+    </collision>
+  </xacro:macro>
+
+  <!-- defines a box collision object with the center and dimensions -->
+  <xacro:macro name="link-collision-box" params="x:=0 y:=0 z:=0 lx ly lz roll:=0 pitch:=0 yaw:=0">
+    <collision>
+      <origin xyz="${x} ${y} ${z}" rpy="${roll} ${pitch} ${yaw}"/>
+      <geometry>
+        <box size="${lx} ${ly} ${lz}"/>
+      </geometry>
+    </collision>
+  </xacro:macro>
+
+  <!-- Joints -->
+
+  <xacro:joints name="base_link_joint" type="prismatic" parent="base_link" child="a_link"
+                axis_y="1"
+                x="0" y="-10" z="0"
+                lower="0" upper="20"/>
+  <xacro:joints name="a_joint" parent="a_link" child="b_link"
+                axis_y="1"
+                x="1.32728" y="0.02613" z="1.99693"
+                lower="${-PI / 2}" upper="0"/>
+  <xacro:joints name="b_joint" parent="b_link" child="c_link"
+                axis_y="1"
+                x="22.8544" y="1.81734" z="0.378175"
+                lower="0" upper="${PI}"/>
+  <xacro:joints name="c_joint" parent="c_link" child="d_link"
+                axis_y="1"
+                x="19.5129" y="0.264652" z="0.03498"
+                lower="${-PI}" upper="${PI}"/>
+  <xacro:joints name="d_joint" parent="d_link" child="e_link"
+                axis_x="1"
+                x="5.59352" y="-2.05037" z="0.040519"
+                lower="${-PI}" upper="${PI}"/>
+
+  <!-- Links -->
+
+  <link name="base_link">
+    <xacro:box_inertia m="3.0" w="${base_len}" h="${base_width}" d="${base_height}"/>
+    <xacro:link-visual fileName="chasis.dae" col="red" r="1" g="1" b="1"/>
+    <!--    <collision>-->
+    <!--        <origin rpy="0 0 0" xyz="0 0 -9.5"/>-->
+    <!--        <geometry>-->
+    <!--            <mesh filename="package://robo_impls/urdf/rover.dae"/>-->
+    <!--        </geometry>-->
+    <!--    </collision> -->
+  </link>
+  <link name="a_link">
+    <xacro:link-visual fileName="link.a.dae"
+                       col="white" r="1" g="1" b="1"/>
+    <!--    <xacro:link-collision-cylinder radius="3.75" x1="0" y1="0" z1="-1.25" x2="0" y2="0" z2="-3.75"/>-->
+    <!--    <xacro:link-collision-cylinder radius="1.75" x1="3.6467207" y1="3.6590503" z1="-0.75" x2="3.6467207"-->
+    <!--                                   y2="3.6590503" z2="-2.6913988"/>-->
+    <!--    <xacro:link-inertial z="-2.5" mass="0.5" ixx="2.3" iyy="2.3" izz="3.5"/>-->
+  </link>
+  <link name="b_link">
+    <xacro:link-visual fileName="link.b.dae"
+                       col="orange" r="1" g="0.43" b="0"/>
+  </link>
+  <link name="c_link">
+    <xacro:link-visual fileName="link.c.dae"
+                       col="yellow" r="1" g="1" b="0"/>
+  </link>
+  <link name="d_link">
+    <xacro:link-visual fileName="link.d.dae"
+                       col="green" r="0.43" g="1" b="0"/>
+  </link>
+  <link name="e_link">
+    <xacro:link-visual fileName="link.e.dae"
+                       col="blue" r="0" g="0" b="1"/>
+  </link>
+</robot>
