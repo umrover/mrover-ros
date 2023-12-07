@@ -1,6 +1,6 @@
 #pragma once
 
-#include <algorithm>
+#include <algorithm>//TODO: clean up :)
 #include <array>
 #include <cassert>
 #include <cmath>
@@ -17,6 +17,17 @@
 #include <string>
 #include <type_traits>
 #include <unordered_map>
+#include <cassert>
+#include <cmath>
+#include <cstdint>
+#include <execution>
+#include <limits>
+#include <numeric>
+#include <optional>
+#include <string>
+#include <type_traits>
+#include <unordered_map>
+
 
 #include <boost_cpp23_workaround.hpp>
 
@@ -42,3 +53,5 @@
 
 #include <loop_profiler.hpp>
 #include <se3.hpp>
+#include <sensor_msgs/PointCloud2.h>
+#include <sensor_msgs/point_cloud2_iterator.h>
