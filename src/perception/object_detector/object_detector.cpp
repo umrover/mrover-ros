@@ -17,9 +17,6 @@ namespace mrover {
         mImgSub = mNh.subscribe("/camera/left/image", 1, &ObjectDetectorNodelet::imageCallback, this);
         mDebugImgPub = mNh.advertise<sensor_msgs::Image>("/object_detector/debug_img", 1);
         //mDetectionData = mNh.advertise<DetectedObjects>("/object_detector/detected_object", 1);
-
-        // TODO(quintin): I don't think this is the constructor you want. You should set channels via the type (e.g. "CV_32FC2" for 2 float channels)
-        mImageBlob = cv::Mat{1, NUM_CHANNELS, IMG_WIDTH, IMG_HEIGHT, CV_32F};
     }
 } // namespace mrover
 

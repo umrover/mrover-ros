@@ -18,14 +18,10 @@ namespace mrover {
         cv::resize(imageView, sizedImage, cv::Size(640, 640));
         cv::cvtColor(sizedImage, sizedImage, cv::COLOR_BGRA2BGR);
 
-        cv::imshow("sizedImage", sizedImage);
-        cv::waitKey(0);
-
-        sizedImage.convertTo(sizedImage, CV_32FC3);
-        //cv::Mat blob = cv::dnn::blobFromImage(sizedImage);
+        cv::dnn::blobFromImage(sizedImage.clone(), mImageBlob, 1.0 / 255.0, cv::Size{640, 640}, cv::Scalar(), true, false);
         //std::cout << finalMat.elemSize() * 640 * 640 << std::endl;
         //std::cout << finalMat.data << " awdasda" << std::endl;
-        mInferenceWrapper.doDetections(sizedImage);
+        mInferenceWrapper.doDetections(mImageBlob);
 
         cv::Mat output = mInferenceWrapper.getOutputTensor();
 
@@ -150,22 +146,53 @@ namespace mrover {
 
             detections.push_back(result);
         }
-        /*
-        cv::rectangle(tempImage, detections[0].box, cv::Scalar(0, 0, 0), 1, cv::LINE_8, 0);
+        if(detections.size() != 0) {
+            for(int i = 0; i < detections.size(); i++) {
+                std::cout << detections[i].className
+                      << i << std::endl;
 
-        //Put the text on the image
-        cv::Point text_position(80, 80);
-        int font_size = 1;
-        cv::Scalar font_Color(0, 0, 0);
-        int font_weight = 2;
-        putText(tempImage, detections[0].className, text_position, cv::FONT_HERSHEY_COMPLEX, font_size, font_Color, font_weight); //Putting the text in the matrix//
-        */
 
-        //Show the image
-        //Print the type of objected detected
+                cv::rectangle(sizedImage, detections[i].box, cv::Scalar(0, 0, 0), 1, cv::LINE_8, 0);
 
-        std::cout << detections[0].class_id
-                  << " name" << std::endl;
+                //Put the text on the image
+                cv::Point text_position(80, 80 * (i+1));
+                int font_size = 1;
+                cv::Scalar font_Color(0, 0, 0);
+                int font_weight = 2;
+                putText(sizedImage, detections[i].className, text_position, cv::FONT_HERSHEY_COMPLEX, font_size, font_Color, font_weight); //Putting the text in the matrix//
+            }
+            //Show the image
+            if (mDebugImgPub.getNumSubscribers() > 0 || true) {
+                ROS_INFO("Publishing Debug Img");
+
+                // Create sensor msg image
+                sensor_msgs::Image newDebugImageMessage;
+
+                cv::cvtColor(sizedImage, sizedImage, cv::COLOR_BGR2BGRA);
+
+                newDebugImageMessage.height = sizedImage.rows;
+                newDebugImageMessage.width = sizedImage.cols;
+
+                newDebugImageMessage.encoding = sensor_msgs::image_encodings::BGRA8;
+
+                //Calculate the step for the imgMsg
+                newDebugImageMessage.step = sizedImage.channels() * sizedImage.cols;
+                newDebugImageMessage.is_bigendian = __BYTE_ORDER__ == __ORDER_BIG_ENDIAN__;
+
+                // auto* bgrGpuPtr = sizedImage.getPtr<sl::uchar1>(sl::MEM::GPU);
+                auto imgPtr = sizedImage.data;
+
+                size_t size = newDebugImageMessage.step * newDebugImageMessage.height;
+                newDebugImageMessage.data.resize(size);
+
+                memcpy(newDebugImageMessage.data.data(), imgPtr, size);
+
+                mDebugImgPub.publish(newDebugImageMessage);
+            }
+            //Print the type of objected detected
+
+
+        }
     }
 } // namespace mrover
 /*
