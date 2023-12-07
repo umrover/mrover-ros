@@ -43,7 +43,7 @@ namespace cudawrapper {
             check(cudaStreamCreate(&mStream));
         }
 
-        operator cudaStream_t() {
+        operator cudaStream_t() const {
             return mStream;
         }
 
@@ -61,7 +61,7 @@ namespace cudawrapper {
             check(cudaEventCreate(&mEvent));
         }
 
-        operator cudaEvent_t() {
+        operator cudaEvent_t() const {
             return mEvent;
         }
 

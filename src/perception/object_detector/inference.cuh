@@ -20,30 +20,30 @@ namespace mrover {
         nvinfer1::Logger mLogger;
 
         //Ptr to the engine
-        std::unique_ptr<ICudaEngine, nvinfer1::Destroy<ICudaEngine>> mEngine;
+        std::unique_ptr<ICudaEngine, nvinfer1::Destroy<ICudaEngine>> mEngine{};
 
         //Ptr to the context
-        std::unique_ptr<IExecutionContext, nvinfer1::Destroy<IExecutionContext>> mContext;
+        std::unique_ptr<IExecutionContext, nvinfer1::Destroy<IExecutionContext>> mContext{};
 
         //Input, output and reference tensors
         cv::Mat mInputTensor;
         cv::Mat mOutputTensor;
 
         //Cuda Stream
-        std::optional<cudawrapper::CudaStream> mStream;
+        std::optional<cudawrapper::CudaStream> mStream{};
 
         //Bindings
         std::array<void*, 2> mBindings{};
 
         //ONNX Model Path
-        std::string mOnnxModelPath;
+        std::string mOnnxModelPath{};
 
         //Size of Model
         cv::Size mModelInputShape;
         cv::Size mModelOutputShape;
 
         //STATIC FUNCTIONS
-        static int getBindingInputIndex(IExecutionContext* context);
+        static int getBindingInputIndex(const IExecutionContext* context);
 
     public:
         Inference(std::string const& onnxModelPath, cv::Size modelInputShape, std::string const& classesTxtFile);
@@ -52,14 +52,14 @@ namespace mrover {
         //Creates a ptr to the engine
         ICudaEngine* createCudaEngine(std::string const& onnxModelPath);
 
-        void launchInference(cv::Mat const& input, cv::Mat const& output);
+        void launchInference(cv::Mat const& input, cv::Mat const& output) const;
 
         void prepTensors();
 
         void setUpContext();
 
     public:
-        void doDetections(const cv::Mat& img);
+        void doDetections(const cv::Mat& img) const;
 
         cv::Mat getOutputTensor();
     };

@@ -19,8 +19,7 @@ namespace mrover {
         cv::cvtColor(sizedImage, sizedImage, cv::COLOR_BGRA2BGR);
 
         cv::dnn::blobFromImage(sizedImage, mImageBlob, 1.0 / 255.0, cv::Size{640, 640}, cv::Scalar(), true, false);
-        //std::cout << finalMat.elemSize() * 640 * 640 << std::endl;
-        //std::cout << finalMat.data << " awdasda" << std::endl;
+
         mInferenceWrapper.doDetections(mImageBlob);
 
         cv::Mat output = mInferenceWrapper.getOutputTensor();
@@ -48,8 +47,8 @@ namespace mrover {
         float modelShapeWidth = 640;
         float modelShapeHeight = 640;
 
-        float modelConfidenceThresholdl = 0.25;
-        float modelScoreThreshold = 0.45;
+        float modelConfidenceThresholdl = 0.9;
+        float modelScoreThreshold = 0.90;
         float modelNMSThreshold = 0.50;
 
 
@@ -170,7 +169,7 @@ namespace mrover {
             //publish the data to NAV
             mDetectionData.publish(msgData);
 
-            for (int i = 0; i < detections.size(); i++) {
+            for (size_t i = 0; i < detections.size(); i++) {
                 std::cout << detections[i].className
                           << i << std::endl;
 
@@ -185,34 +184,35 @@ namespace mrover {
                 putText(sizedImage, detections[i].className, text_position, cv::FONT_HERSHEY_COMPLEX, font_size, font_Color, font_weight); //Putting the text in the matrix//
             }
             //Show the image
-            if (mDebugImgPub.getNumSubscribers() > 0 || true) {
-                ROS_INFO("Publishing Debug Img");
 
-                // Create sensor msg image
-                sensor_msgs::Image newDebugImageMessage;
-
-                cv::cvtColor(sizedImage, sizedImage, cv::COLOR_BGR2BGRA);
-
-                newDebugImageMessage.height = sizedImage.rows;
-                newDebugImageMessage.width = sizedImage.cols;
-
-                newDebugImageMessage.encoding = sensor_msgs::image_encodings::BGRA8;
-
-                //Calculate the step for the imgMsg
-                newDebugImageMessage.step = sizedImage.channels() * sizedImage.cols;
-                newDebugImageMessage.is_bigendian = __BYTE_ORDER__ == __ORDER_BIG_ENDIAN__;
-
-                // auto* bgrGpuPtr = sizedImage.getPtr<sl::uchar1>(sl::MEM::GPU);
-                auto imgPtr = sizedImage.data;
-
-                size_t size = newDebugImageMessage.step * newDebugImageMessage.height;
-                newDebugImageMessage.data.resize(size);
-
-                memcpy(newDebugImageMessage.data.data(), imgPtr, size);
-
-                mDebugImgPub.publish(newDebugImageMessage);
-            }
             //Print the type of objected detected
+        }
+        if (mDebugImgPub.getNumSubscribers() > 0 || true) {
+            ROS_INFO("Publishing Debug Img");
+
+            // Create sensor msg image
+            sensor_msgs::Image newDebugImageMessage;
+
+            cv::cvtColor(sizedImage, sizedImage, cv::COLOR_BGR2BGRA);
+
+            newDebugImageMessage.height = sizedImage.rows;
+            newDebugImageMessage.width = sizedImage.cols;
+
+            newDebugImageMessage.encoding = sensor_msgs::image_encodings::BGRA8;
+
+            //Calculate the step for the imgMsg
+            newDebugImageMessage.step = sizedImage.channels() * sizedImage.cols;
+            newDebugImageMessage.is_bigendian = __BYTE_ORDER__ == __ORDER_BIG_ENDIAN__;
+
+            // auto* bgrGpuPtr = sizedImage.getPtr<sl::uchar1>(sl::MEM::GPU);
+            auto imgPtr = sizedImage.data;
+
+            size_t size = newDebugImageMessage.step * newDebugImageMessage.height;
+            newDebugImageMessage.data.resize(size);
+
+            memcpy(newDebugImageMessage.data.data(), imgPtr, size);
+
+            mDebugImgPub.publish(newDebugImageMessage);
         }
     }
 } // namespace mrover

@@ -13,11 +13,11 @@ namespace mrover {
 
         ~InferenceWrapper() = default;
 
-        InferenceWrapper(std::string onnxModelPath, cv::Size modelInputShape, std::string classesTxtFile);
+        InferenceWrapper(std::string onnxModelPath, cv::Size const modelInputShape, std::string classesTxtFile);
 
-        void doDetections(cv::Mat const& img);
+        void doDetections(cv::Mat const& img) const;
 
-        cv::Mat getOutputTensor();
+        cv::Mat getOutputTensor() const;
     };
 
 } // namespace mrover

@@ -1,5 +1,5 @@
 #include "object_detector.hpp"
-
+#include "pch.hpp"
 #include "inference_wrapper.hpp"
 
 namespace mrover {
@@ -7,7 +7,7 @@ namespace mrover {
     void ObjectDetectorNodelet::onInit() {
         mNh = getMTNodeHandle();
         mPnh = getMTPrivateNodeHandle();
-        mInferenceWrapper = InferenceWrapper("//home//jabra//Desktop//Rover//best.onnx", cv::Size(640, 640), "");
+        mInferenceWrapper = InferenceWrapper(std::string("//home//jabra//Desktop//Rover//best.onnx"), cv::Size(640, 640), "");
 
         //inference = Inference("//home//jabra//Desktop//Rover//yolov8s.onnx", cv::Size(640, 640), "");
         //read ONNX file into this mNet, YOLOV8, second smallest one
@@ -16,7 +16,7 @@ namespace mrover {
 
         mImgSub = mNh.subscribe("/camera/left/image", 1, &ObjectDetectorNodelet::imageCallback, this);
         mDebugImgPub = mNh.advertise<sensor_msgs::Image>("/object_detector/debug_img", 1);
-        //mDetectionData = mNh.advertise<DetectedObjects>("/object_detector/detected_object", 1);
+        mDetectionData = mNh.advertise<DetectedObject>("/object_detector/detected_object", 1);
     }
 } // namespace mrover
 

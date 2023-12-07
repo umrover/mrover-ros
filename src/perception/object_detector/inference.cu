@@ -10,17 +10,7 @@
 
 #include "logger.cuh"
 
-using namespace nvinfer1;
-
-/**
-* Example Code: @link https://github.com/NVIDIA-developer-blog/code-samples/blob/master/posts/TensorRT-introduction/simpleOnnx_1.cpp
-* IExecutionContest @link https://docs.nvidia.com/deeplearning/tensorrt/api/c_api/classnvinfer1_1_1_i_execution_context.html
-* ------------------------------------------------------
-* For additional context see @link https://www.edge-ai-vision.com/2020/04/speeding-up-deep-learning-inference-using-tensorrt/
-*/
-
-
-/**
+using namespace nvinfer1;/**
 * cudaMemcpys CPU memory in inputTensor to GPU based on bindings
 * Queues that tensor to be passed through model
 * cudaMemcpys the result back to CPU memory
@@ -29,8 +19,8 @@ using namespace nvinfer1;
 */
 namespace mrover {
 
-    constexpr static std::string_view INPUT_BINDING_NAME = "images";
-    constexpr static std::string_view OUTPUT_BINDING_NAME = "output0";
+    constexpr static const char * INPUT_BINDING_NAME = "images";
+    constexpr static const char * OUTPUT_BINDING_NAME = "output0";
 
     //Constructor
     //  : logger{}, inputTensor{}, outputTensor{}, referenceTensor{}, stream{}
@@ -42,9 +32,9 @@ namespace mrover {
         mLogger.log(ILogger::Severity::kINFO, "Created CUDA Engine");
 
         //Check some assumptions
-        if(mEngine->getNbBindings() != 2) throw std::runtime_error("Invalid Binding Count");
-        if(mEngine->getTensorIOMode(INPUT_BINDING_NAME.data()) != TensorIOMode::kINPUT) throw std::runtime_error("Expected Input Binding 0 Is An Input");
-        if(mEngine->getTensorIOMode(OUTPUT_BINDING_NAME.data()) != TensorIOMode::kOUTPUT) throw std::runtime_error("Expected Input Binding Input To Be 1");
+        if(mEngine->getNbIOTensors() != 2) throw std::runtime_error("Invalid Binding Count");
+        if(mEngine->getTensorIOMode(INPUT_BINDING_NAME) != TensorIOMode::kINPUT) throw std::runtime_error("Expected Input Binding 0 Is An Input");
+        if(mEngine->getTensorIOMode(OUTPUT_BINDING_NAME) != TensorIOMode::kOUTPUT) throw std::runtime_error("Expected Input Binding Input To Be 1");
 
         mStream.emplace();
 
@@ -106,7 +96,7 @@ namespace mrover {
             engineBuffer << inputFileStream.rdbuf();
             std::string enginePlan = engineBuffer.str();
             // TODO: deprecated
-            return runtime->deserializeCudaEngine(enginePlan.data(), enginePlan.size(), nullptr);
+            return runtime->deserializeCudaEngine(enginePlan.data(), enginePlan.size());
         } else {
             IHostMemory* serializedEngine = builder->buildSerializedNetwork(*network, *config);
             if (!serializedEngine) throw std::runtime_error("Failed to serialize engine");
@@ -129,10 +119,10 @@ namespace mrover {
         // Create Execution Context.
         mContext.reset(mEngine->createExecutionContext());
 
-        mContext->setBindingDimensions(0, mEngine->getBindingDimensions(0));
+        mContext->setInputShape(INPUT_BINDING_NAME, mEngine->getTensorShape(INPUT_BINDING_NAME));
     }
 
-    void Inference::doDetections(const cv::Mat& img) {
+    void Inference::doDetections(const cv::Mat& img) const{
         //Do the forward pass on the network
         launchInference(img, mOutputTensor);
         ROS_INFO_STREAM(static_cast<void*>(mOutputTensor.data));
@@ -144,7 +134,7 @@ namespace mrover {
     }
 
 
-    void Inference::launchInference(cv::Mat const& input, cv::Mat const& output) {
+    void Inference::launchInference(cv::Mat const& input, cv::Mat const& output) const {
         assert(!input.empty());
         assert(!output.empty());
         assert(input.isContinuous());
@@ -152,7 +142,7 @@ namespace mrover {
         assert(mContext);
         assert(mStream);
 
-        int inputId = getBindingInputIndex(mContext.get());
+        const int inputId = getBindingInputIndex(mContext.get());
 
         cudaMemcpy(mBindings[inputId], input.data, input.total() * input.elemSize(), cudaMemcpyHostToDevice);
         mContext->executeV2(mBindings.data());
@@ -174,24 +164,24 @@ namespace mrover {
 
             // Multiply sizeof(float) by the product of the extents
             // This is essentially: element count * size of each element
-            std::size_t size = std::reduce(extents, extents + rank, sizeof(float), std::multiplies<>());
+            const std::size_t size = std::reduce(extents, extents + rank, sizeof(float), std::multiplies<>());
             // Create GPU memory for TensorRT to operate on
             cudaMalloc(mBindings.data() + i, size);
         }
 
         // TODO(quintin): Avoid hardcoding this
         assert(mContext);
-        Dims inputTensorDims = mEngine->getTensorShape(OUTPUT_BINDING_NAME.data());
-        for (int i = 0; i < inputTensorDims.nbDims; i++) {
+        const Dims outputTensorDims = mEngine->getTensorShape(OUTPUT_BINDING_NAME);
+        for (int i = 0; i < outputTensorDims.nbDims; i++) {
             char message[512];
-            std::snprintf(message, sizeof(message), "size %d %d", i, inputTensorDims.d[i]);
+            std::snprintf(message, sizeof(message), "size %d %d", i, outputTensorDims.d[i]);
             mLogger.log(nvinfer1::ILogger::Severity::kINFO, message);
         }
 
-        mOutputTensor = cv::Mat::zeros(84, 8400, CV_MAKE_TYPE(CV_32F, 1));
+        mOutputTensor = cv::Mat::zeros(outputTensorDims.d[1], outputTensorDims.d[2], CV_MAKE_TYPE(CV_32F, 1));
     }
 
-    int Inference::getBindingInputIndex(IExecutionContext* context) {
+    int Inference::getBindingInputIndex(const IExecutionContext* context) {
         return context->getEngine().getTensorIOMode(context->getEngine().getIOTensorName(0)) != TensorIOMode::kINPUT; // 0 (false) if bindingIsInput(0), 1 (true) otherwise
     }
 } // namespace mrover
