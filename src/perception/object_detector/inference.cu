@@ -4,6 +4,7 @@
 #include <NvInferRuntime.h>
 #include <NvInferRuntimeBase.h>
 #include <NvOnnxParser.h>
+#include <cstdio>
 #include <cuda_runtime_api.h>
 #include <opencv4/opencv2/core/hal/interface.h>
 
@@ -28,6 +29,9 @@ using namespace nvinfer1;
 */
 namespace mrover {
 
+    constexpr static std::string_view INPUT_BINDING_NAME = "images";
+    constexpr static std::string_view OUTPUT_BINDING_NAME = "output0";
+
     //Constructor
     //  : logger{}, inputTensor{}, outputTensor{}, referenceTensor{}, stream{}
     Inference::Inference(std::string const& onnxModelPath, cv::Size modelInputShape = {640, 640}, std::string const& classesTxtFile = "") {
@@ -37,17 +41,18 @@ namespace mrover {
 
         mLogger.log(ILogger::Severity::kINFO, "Created CUDA Engine");
 
-        // TODO: these are deprecated
-        assert(mEngine->getNbBindings() == 2);
-        assert(mEngine->bindingIsInput(0) ^ mEngine->bindingIsInput(1));
+        //Check some assumptions
+        if(mEngine->getNbBindings() != 2) throw std::runtime_error("Invalid Binding Count");
+        if(mEngine->getTensorIOMode(INPUT_BINDING_NAME.data()) != TensorIOMode::kINPUT) throw std::runtime_error("Expected Input Binding 0 Is An Input");
+        if(mEngine->getTensorIOMode(OUTPUT_BINDING_NAME.data()) != TensorIOMode::kOUTPUT) throw std::runtime_error("Expected Input Binding Input To Be 1");
 
         mStream.emplace();
 
         mLogger.log(ILogger::Severity::kINFO, "Created CUDA stream");
 
-        prepTensors();
-
         setUpContext();
+
+        prepTensors();
     }
 
     // Initializes enginePtr with built engine
@@ -175,6 +180,14 @@ namespace mrover {
         }
 
         // TODO(quintin): Avoid hardcoding this
+        assert(mContext);
+        Dims inputTensorDims = mEngine->getTensorShape(OUTPUT_BINDING_NAME.data());
+        for (int i = 0; i < inputTensorDims.nbDims; i++) {
+            char message[512];
+            std::snprintf(message, sizeof(message), "size %d %d", i, inputTensorDims.d[i]);
+            mLogger.log(nvinfer1::ILogger::Severity::kINFO, message);
+        }
+
         mOutputTensor = cv::Mat::zeros(84, 8400, CV_MAKE_TYPE(CV_32F, 1));
     }
 
