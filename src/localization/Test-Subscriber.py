@@ -93,8 +93,8 @@ if __name__ == "__main__":
     # plt.show()
 
     for i in range(len(coord_arr_left_latitude)):
-        print(coord_arr_left_latitude[i] - coord_arr_right_latitude[i])
-        print(coord_arr_left_longitude[i] - coord_arr_right_longitude[i])
+        print("latitude" + str(coord_arr_left_latitude[i] - coord_arr_right_latitude[i]))
+        print("longitude" + str(coord_arr_left_longitude[i] - coord_arr_right_longitude[i]))
 
     # print("\n")
     # print(coord_arr_right_latitude[:10])
