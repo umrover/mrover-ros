@@ -39,7 +39,7 @@ namespace mrover {
             output = output.reshape(1, dimensions);
             cv::transpose(output, output);
         }
-        float* data = (float*) output.data;
+        auto data = reinterpret_cast<float*>(output.data);
 
         //Model Information
         float modelInputCols = 640;
@@ -47,7 +47,6 @@ namespace mrover {
         float modelShapeWidth = 640;
         float modelShapeHeight = 640;
 
-        float modelConfidenceThresholdl = 0.9;
         float modelScoreThreshold = 0.90;
         float modelNMSThreshold = 0.50;
 
@@ -60,17 +59,18 @@ namespace mrover {
         std::vector<cv::Rect> boxes;
 
         for (int i = 0; i < rows; ++i) {
+
             if (yolov8) {
                 float* classes_scores = data + 4;
 
-                cv::Mat scores(1, classes.size(), CV_32FC1, classes_scores);
+                cv::Mat scores(1, static_cast<int>(classes.size()), CV_32FC1, classes_scores);
                 cv::Point class_id;
                 double maxClassScore;
 
-                minMaxLoc(scores, 0, &maxClassScore, 0, &class_id);
+                minMaxLoc(scores, nullptr, &maxClassScore, nullptr, &class_id);
 
                 if (maxClassScore > modelScoreThreshold) {
-                    confidences.push_back(maxClassScore);
+                    confidences.push_back(static_cast<float>(maxClassScore));
                     class_ids.push_back(class_id.x);
 
                     float x = data[0];
@@ -78,26 +78,27 @@ namespace mrover {
                     float w = data[2];
                     float h = data[3];
 
-                    int left = int((x - 0.5 * w) * x_factor);
-                    int top = int((y - 0.5 * h) * y_factor);
+                    int left = static_cast<int>((x - 0.5 * w) * x_factor);
+                    int top = static_cast<int>((y - 0.5 * h) * y_factor);
 
-                    int width = int(w * x_factor);
-                    int height = int(h * y_factor);
+                    int width = static_cast<int>(w * x_factor);
+                    int height = static_cast<int>(h * y_factor);
 
-                    boxes.push_back(cv::Rect(left, top, width, height));
+                    boxes.emplace_back(left, top, width, height);
                 }
             } else // yolov5
             {
-                float confidence = data[4];
 
-                if (confidence >= modelConfidenceThresholdl) {
+                float modelConfidenceThresholdl = 0.9;
+
+                if (float confidence = data[4]; confidence >= modelConfidenceThresholdl) {
                     float* classes_scores = data + 5;
 
-                    cv::Mat scores(1, classes.size(), CV_32FC1, classes_scores);
+                    cv::Mat scores(1, static_cast<int>(classes.size()), CV_32FC1, classes_scores);
                     cv::Point class_id;
                     double max_class_score;
 
-                    minMaxLoc(scores, 0, &max_class_score, 0, &class_id);
+                    minMaxLoc(scores, nullptr, &max_class_score, nullptr, &class_id);
 
                     if (max_class_score > modelScoreThreshold) {
                         confidences.push_back(confidence);
@@ -108,13 +109,13 @@ namespace mrover {
                         float w = data[2];
                         float h = data[3];
 
-                        int left = int((x - 0.5 * w) * x_factor);
-                        int top = int((y - 0.5 * h) * y_factor);
+                        int left = static_cast<int>((x - 0.5 * w) * x_factor);
+                        int top = static_cast<int>((y - 0.5 * h) * y_factor);
 
-                        int width = int(w * x_factor);
-                        int height = int(h * y_factor);
+                        int width = static_cast<int>(w * x_factor);
+                        int height = static_cast<int>(h * y_factor);
 
-                        boxes.push_back(cv::Rect(left, top, width, height));
+                        boxes.emplace_back(left, top, width, height);
                     }
                 }
             }
@@ -126,9 +127,7 @@ namespace mrover {
         cv::dnn::NMSBoxes(boxes, confidences, modelScoreThreshold, modelNMSThreshold, nms_result);
 
         std::vector<Detection> detections{};
-        for (unsigned long i = 0; i < nms_result.size(); ++i) {
-            int idx = nms_result[i];
-
+        for(int idx : nms_result) {
             Detection result;
             result.class_id = class_ids[idx];
             result.confidence = confidences[idx];
@@ -161,8 +160,8 @@ namespace mrover {
             //Get the heading
             float objectHeading;
             float zedFOV = 54; //54 @ 720; 42 @ 1080
-            float fovPerPixel = (float) zedFOV / (float) (msg->width);
-            float xCenter = (float) box.x + ((float) box.width) / 2 - ((float) msg->width) / 2;
+            float fovPerPixel = (float) zedFOV / static_cast<float>(msg->width);
+            float xCenter = static_cast<float>(box.x) + (static_cast<float>(box.width)) / 2 - (static_cast<float>(msg->width)) / 2;
             objectHeading = xCenter * fovPerPixel;
             msgData.bearing = objectHeading;
 
@@ -177,7 +176,7 @@ namespace mrover {
                 cv::rectangle(sizedImage, detections[i].box, cv::Scalar(0, 0, 0), 1, cv::LINE_8, 0);
 
                 //Put the text on the image
-                cv::Point text_position(80, 80 * (i + 1));
+                cv::Point text_position(80, static_cast<int>(80 * (i + 1)));
                 int font_size = 1;
                 cv::Scalar font_Color(0, 0, 0);
                 int font_weight = 2;

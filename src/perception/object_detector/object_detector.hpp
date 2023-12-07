@@ -1,4 +1,4 @@
-#include "pch.hpp"
+#pragma once
 
 #include "inference_wrapper.hpp"
 #include <opencv2/core/mat.hpp>

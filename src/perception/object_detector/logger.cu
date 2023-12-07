@@ -1,4 +1,5 @@
 #include "logger.cuh"
+#include "pch.hpp"
 
 namespace nvinfer1 {
 
