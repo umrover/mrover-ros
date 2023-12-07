@@ -89,13 +89,13 @@ namespace mrover {
         //Create runtime engine
         IRuntime* runtime = createInferRuntime(mLogger);
 
-        std::filesystem::path enginePath("./tensorrt-engine.engine");
+        std::filesystem::path enginePath("./tensorrt-engine-best.engine");
 
         //Check if engine file exists
         if (exists(enginePath)) {
             // TODO: error checking
             //Load engine from file
-            std::ifstream inputFileStream("./tensorrt-engine.engine", std::ios::binary);
+            std::ifstream inputFileStream("./tensorrt-engine-best.engine", std::ios::binary);
             std::stringstream engineBuffer;
 
             engineBuffer << inputFileStream.rdbuf();
@@ -112,7 +112,7 @@ namespace mrover {
 
             //Save Engine to File
             auto trtModelStream = tempEng->serialize();
-            std::ofstream outputFileStream("./tensorrt-engine.engine", std::ios::binary);
+            std::ofstream outputFileStream("./tensorrt-engine-best.engine", std::ios::binary);
             outputFileStream.write(static_cast<const char*>(trtModelStream->data()), trtModelStream->size());
             outputFileStream.close();
 

@@ -18,7 +18,7 @@ namespace mrover {
         cv::resize(imageView, sizedImage, cv::Size(640, 640));
         cv::cvtColor(sizedImage, sizedImage, cv::COLOR_BGRA2BGR);
 
-        cv::dnn::blobFromImage(sizedImage.clone(), mImageBlob, 1.0 / 255.0, cv::Size{640, 640}, cv::Scalar(), true, false);
+        cv::dnn::blobFromImage(sizedImage, mImageBlob, 1.0 / 255.0, cv::Size{640, 640}, cv::Scalar(), true, false);
         //std::cout << finalMat.elemSize() * 640 * 640 << std::endl;
         //std::cout << finalMat.data << " awdasda" << std::endl;
         mInferenceWrapper.doDetections(mImageBlob);
@@ -146,16 +146,39 @@ namespace mrover {
 
             detections.push_back(result);
         }
-        if(detections.size() != 0) {
-            for(int i = 0; i < detections.size(); i++) {
+        if (!detections.empty()) {
+            Detection firstDetection = detections[0];
+
+            float classConfidence = 0.0;
+            cv::Rect box = firstDetection.box;
+
+            DetectedObject msgData;
+            msgData.object_type = firstDetection.className;
+            msgData.detection_confidence = classConfidence;
+
+            msgData.width = static_cast<float>(box.width);
+            msgData.height = static_cast<float>(box.height);
+
+            //Get the heading
+            float objectHeading;
+            float zedFOV = 54; //54 @ 720; 42 @ 1080
+            float fovPerPixel = (float) zedFOV / (float) (msg->width);
+            float xCenter = (float) box.x + ((float) box.width) / 2 - ((float) msg->width) / 2;
+            objectHeading = xCenter * fovPerPixel;
+            msgData.bearing = objectHeading;
+
+            //publish the data to NAV
+            mDetectionData.publish(msgData);
+
+            for (int i = 0; i < detections.size(); i++) {
                 std::cout << detections[i].className
-                      << i << std::endl;
+                          << i << std::endl;
 
 
                 cv::rectangle(sizedImage, detections[i].box, cv::Scalar(0, 0, 0), 1, cv::LINE_8, 0);
 
                 //Put the text on the image
-                cv::Point text_position(80, 80 * (i+1));
+                cv::Point text_position(80, 80 * (i + 1));
                 int font_size = 1;
                 cv::Scalar font_Color(0, 0, 0);
                 int font_weight = 2;
@@ -190,8 +213,6 @@ namespace mrover {
                 mDebugImgPub.publish(newDebugImageMessage);
             }
             //Print the type of objected detected
-
-
         }
     }
 } // namespace mrover
