@@ -32,14 +32,14 @@ extern TIM_HandleTypeDef htim6;  // 10,000 Hz Update timer
 extern TIM_HandleTypeDef htim7;  // 100 Hz Send timer
 extern TIM_HandleTypeDef htim15; // H-Bridge PWM
 extern TIM_HandleTypeDef htim16; // Message watchdog timer
-extern TIM_HandleTypeDef htim17; // Absolute encoder timer (currently at 20Hz)
+extern TIM_HandleTypeDef htim2; // Absolute encoder timer (currently at 20Hz)
 #define QUADRATURE_TIMER_1 &htim4
 #define QUADRATURE_TIMER_2 &htim3
 #define UPDATE_TIMER &htim6
 #define SEND_TIMER &htim7
 #define PWM_TIMER &htim15
 #define FDCAN_WATCHDOG_TIMER &htim16
-#define ABSOLUTE_ENCODER_TIMER &htim17
+#define ABSOLUTE_ENCODER_TIMER &htim2
 
 namespace mrover {
 
@@ -71,6 +71,7 @@ namespace mrover {
         // Necessary for the timer interrupt to work
         check(HAL_TIM_Base_Start_IT(UPDATE_TIMER) == HAL_OK, Error_Handler);
         check(HAL_TIM_Base_Start_IT(SEND_TIMER) == HAL_OK, Error_Handler);
+        check(HAL_TIM_Base_Start_IT(ABSOLUTE_ENCODER_TIMER) == HAL_OK, Error_Handler);
     }
 
     void fdcan_received_callback() {

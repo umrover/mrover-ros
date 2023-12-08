@@ -18,7 +18,7 @@ namespace mrover {
     }
 
     void Spectral::poll_status_reg(){
-    	m_i2c_bus->async_transmit(SPECTRAL_7b_ADDRESS, I2C_AS72XX_SLAVE_STATUS_REG);
+    	m_i2c_bus->blocking_transmit(SPECTRAL_7b_ADDRESS, I2C_AS72XX_SLAVE_STATUS_REG);
     }
 
     void Spectral::init(){
