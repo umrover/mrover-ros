@@ -35,31 +35,31 @@ macro(mrover_add_nodelet name sources includes)
     # A nodelet runs inside another process so it is a library
     mrover_add_library(${name}_nodelet ${sources} ${includes})
     # Also add a node for quick debugging
-    mrover_add_node(${name}_node ${sources})
+    mrover_add_node(${name} ${sources})
     # Explicitly tell CMake to re-build the nodelet when the node is built
     # CMake cannot tell these are dependent since a node dynamically (at runtime) loads the nodelet as a shared library
-    add_dependencies(${name}_node ${name}_nodelet)
+    add_dependencies(${name} ${name}_nodelet)
     # Allows the source code to split based on whether it is a node or a nodelet
     target_compile_definitions(${name}_nodelet PRIVATE MROVER_IS_NODELET)
     # Optional pre-compiled header (PCH) support
     if (ARGV3)
-        target_precompile_headers(${name}_node PRIVATE ${ARGV3})
+        target_precompile_headers(${name} PRIVATE ${ARGV3})
         target_precompile_headers(${name}_nodelet PRIVATE ${ARGV3})
     endif ()
 endmacro()
 
 macro(mrover_nodelet_link_libraries name)
-    target_link_libraries(${name}_node PRIVATE ${ARGN})
+    target_link_libraries(${name} PRIVATE ${ARGN})
     target_link_libraries(${name}_nodelet PRIVATE ${ARGN})
 endmacro()
 
 macro(mrover_nodelet_include_directories name)
-    target_include_directories(${name}_node SYSTEM PRIVATE ${ARGN})
+    target_include_directories(${name} SYSTEM PRIVATE ${ARGN})
     target_include_directories(${name}_nodelet SYSTEM PRIVATE ${ARGN})
 endmacro()
 
 macro(mrover_nodelet_defines name)
-    target_compile_definitions(${name}_node PRIVATE ${ARGN})
+    target_compile_definitions(${name} PRIVATE ${ARGN})
     target_compile_definitions(${name}_nodelet PRIVATE ${ARGN})
 endmacro()
 

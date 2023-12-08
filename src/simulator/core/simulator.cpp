@@ -1,67 +1,38 @@
-#include "../pch.hpp"
+#include "simulator.hpp"
 
 namespace mrover {
-    template<typename T, auto Creater, auto Deleter>
-    class SDLPointer {
-        std::unique_ptr<T, decltype([](auto* p) { Deleter(p); })> mPointer;
 
-        static auto check(T* result) -> T* {
-            if (!result) throw std::runtime_error(std::format("SDL Error: {}", SDL_GetError()));
-            return result;
-        }
+    auto SimulatorNodelet::onInit() -> void {
+        mNh = getNodeHandle();
+        mPnh = getMTPrivateNodeHandle();
 
-    public:
-        template<typename... Args>
-        explicit SDLPointer(Args&&... args)
-            : mPointer{check(Creater(std::forward<Args>(args)...))} {}
+        mThread = std::jthread{&SimulatorNodelet::update, this};
+    }
 
-        [[nodiscard]] auto get() const noexcept -> T* {
-            return mPointer.get();
-        }
-    };
+    auto SimulatorNodelet::update() -> void {
+        auto window = SDLPointer<SDL_Window, SDL_CreateWindow, SDL_DestroyWindow>{"MRover Simulator", SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED, 640, 480, SDL_WINDOW_OPENGL};
 
-    class SimulatorNodelet : public nodelet::Nodelet {
-        std::jthread mThread;
+        auto context = SDLPointer<std::remove_pointer_t<SDL_GLContext>, SDL_GL_CreateContext, SDL_GL_DeleteContext>{window.get()};
 
-    public:
-        SimulatorNodelet() = default;
+        while (ros::ok()) {
+            SDL_Event event;
 
-        ~SimulatorNodelet() override = default;
-
-        void onInit() override {
-            mThread = std::jthread{&SimulatorNodelet::update, this};
-
-        }
-
-    private:
-        auto update() -> void {
-            auto window = SDLPointer<SDL_Window, SDL_CreateWindow, SDL_DestroyWindow>{"MRover Simulator", SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED, 640, 480, SDL_WINDOW_OPENGL};
-
-            auto context = SDLPointer<std::remove_pointer_t<SDL_GLContext>, SDL_GL_CreateContext, SDL_GL_DeleteContext>{window.get()};
-
-            bool running = true;
-            while (running) {
-                SDL_Event event;
-
-                while (SDL_PollEvent(&event)) {
-                    switch (event.type) {
-                        case SDL_KEYDOWN:
-                            if (event.key.keysym.sym == SDLK_ESCAPE) {
-                                running = false;
-                            }
-                            break;
-                        case SDL_QUIT:
-                            running = false;
-                            break;
-                        default:
-                            break;
-                    }
+            while (SDL_PollEvent(&event)) {
+                switch (event.type) {
+                    case SDL_KEYDOWN:
+                        if (event.key.keysym.sym == SDLK_ESCAPE) {
+                            ros::requestShutdown();
+                        }
+                        break;
+                    case SDL_QUIT:
+                        ros::requestShutdown();
+                        break;
+                    default:
+                        break;
                 }
             }
-
-            ros::requestShutdown();
         }
-    };
+    }
 }
 
 auto main(int argc, char** argv) -> int {

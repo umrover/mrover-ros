@@ -1,0 +1,3 @@
+objects:
+  - type: urdf
+    param_name: robot_description
