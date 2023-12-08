@@ -30,7 +30,7 @@ class tip_detection:
     hit_count_threshold: int
 
     def __init__(self):
-        rospy.Subscriber("imu/imu_only", Imu, self.detect_tip)
+        rospy.Subscriber("imu/imu_only", Imu, self.imu_callback)
         #read the orientation data from the given Imu message, store that value in `self.pose`, then publish that pose to the TF tree.
         self.hit_count = 0
         self.threshold = 0
@@ -38,53 +38,60 @@ class tip_detection:
         self.linear_threshold = 0
         self.time_threshold = 0
         hit_count_threshold = 0
+        odometry_sub = message_filters.Subscriber("global_ekf/odometry", Odometry)
+        odometry_sub.registerCallback(self.odometry_callback)
+        self.x = 0
+        self.y = 0
+        self.z = 0
+        self.w = 0
 
     def imu_callback(self, msg: Imu):
-        self.pose = SE3.from_pos_quat(self.pose.position, np.array([msg.orientation.x, msg.orientation.y, msg.orientation.z, msg.orientation.w]))
-        self.pose.publish_to_tf_tree(self.tf_broadcaster, "map", "base_link")
-        odometry_sub = message_filters.Subscriber("global_ekf/odometry", Odometry)
+        pass
+        # self.pose = SE3.from_pos_quat(self.pose.position, np.array([msg.orientation.x, msg.orientation.y, msg.orientation.z, msg.orientation.w]))
+        # self.pose.publish_to_tf_tree(self.tf_broadcaster, "map", "base_link")
+    
+    def odometry_callback(self, odometry):
+        self.x = abs(odometry.pose.pose.orientation.x)
+        self.y = abs(odometry.pose.pose.orientation.y)
+        self.z = abs(odometry.pose.pose.orientation.z)
+        self.w = abs(odometry.pose.pose.orientation.w)
 
 
     def detect_tip(self, odometry):
     # get rover orientation
-        x = odometry.pose.pose.orientation.x
-        y = odometry.pose.pose.orientation.y
-        z = odometry.pose.pose.orientation.z
-        w = odometry.pose.pose.orientation.w
+        print("x" + str(x))
+        print("y" + str(y))
+        print("z" + str(z))
+        print("w" + str(w))
 
     # hit count set to different threshold values; if more than x values out of 10 point out to the rover tipping over; the rover is tipping over
 
-        if w >= self.threshold or -self.threshold >= w:
-            hit_count +=1
-        elif x >= self.threshold or -self.threshold >= x:
-            hit_count +=1
-        elif y >= self.threshold or -self.threshold >= y:
-            hit_count +=1
+        if w >= self.threshold:
+            self.hit_count +=1
+        elif x >= self.threshold:
+            self.hit_count +=1
+        elif y >= self.threshold:
+            self.hit_count +=1
 
     # checking velocity of rover
-    def first_check(self, odometry):
     # check magnitude of angular velocity for each axis
-        x = odometry.pose.pose.orientation.x
-        y = odometry.pose.pose.orientation.y
-        z = odometry.pose.pose.orientation.z
-        w = odometry.pose.pose.orientation.w
 
     # create the separate angular velocity variables
         angular_velocity_x = odometry.twist.twist.angular.x
         angular_velocity_y = odometry.twist.twist.angular.y
 
         # create the magnitude variables
-        angular_velocity_x_magnitude = [angular_velocity_x]
-        angular_velocity_y_magnitude = [angular_velocity_y]
+        angular_velocity_x_magnitude = abs[angular_velocity_x]
+        angular_velocity_y_magnitude = abs[angular_velocity_y]
 
         #check angular velocity magnitudes of each axis to see if it's above the threshold
 
     # Tipping over (pitch)
         if angular_velocity_x_magnitude > self.angular_threshold:
-            hit_count += 1
+            self.hit_count += 1
     # Rolling over (roll)
         elif angular_velocity_y_magnitude > self.angular_threshold:
-            hit_count += 1
+            self.hit_count += 1
 
     #crates the time difference
     def perform_robotic_tasks(self, time_threshold):
@@ -94,11 +101,6 @@ class tip_detection:
 
     # checking acceleration of rover
     def second_check(self, odometry):
-        x = odometry.pose.pose.orientation.x
-        y = odometry.pose.pose.orientation.y
-        z = odometry.pose.pose.orientation.z
-        w = odometry.pose.pose.orientation.w
-
         linear_acceleration_norm = np.linalg.norm( np.array([odometry.twist.twist.linear.x, odometry.twist.twist.linear.y, odometry.twist.twist.linear.z]))   
         
         rospy.init_node('elapsed_time_example_node', anonymous=True)
@@ -110,22 +112,22 @@ class tip_detection:
         # Extract the elapsed time in seconds
         elapsed_seconds = elapsed_time.to_sec()
 
-        linear_acceleration_x = linear_acceleration_norm.x
-        linear_acceleration_y = linear_acceleration_norm.y
+        linear_acceleration_x = abs(linear_acceleration_norm.x)
+        linear_acceleration_y = abs(linear_acceleration_norm.y)
 
         if linear_acceleration_x == 0 and elapsed_seconds > self.time_threshold:
-            if w >= self.threshold or -self.threshold >= w:
+            if w >= self.threshold:
                 hit_count +=1
-            elif x >= self.threshold or -self.threshold >= x:
+            elif x >= self.threshold:
                 hit_count +=1
-            elif y >= self.threshold or -self.threshold >= y:
+            elif y >= self.threshold:
                 hit_count +=1
         elif linear_acceleration_y == 0 and elapsed_seconds  > self.time_threshold:
-            if w >= self.threshold or -self.threshold >= w:
+            if w >= self.threshold:
                 hit_count +=1
-            elif x >= self.threshold or -self.threshold >= x:
+            elif x >= self.threshold:
                 hit_count +=1
-            elif y >= self.threshold or -self.threshold >= y:
+            elif y >= self.threshold:
                 hit_count +=1
 
     # seeing if hit_count is too big
@@ -145,7 +147,7 @@ if __name__ == "__main__":
     main()
     
 
-    """"
+    """
     check if rover is tipped over over a certain period of time
     if there are a lot of fluctuations over an arbitrary time period,
     then the rover is tipped
@@ -174,4 +176,4 @@ if __name__ == "__main__":
 
     when talking ab multiplying quartonions, it's just adding them
     one 90 deg rotate + one 90 deg rotate = 180 deg rotate
-    """"
+    """

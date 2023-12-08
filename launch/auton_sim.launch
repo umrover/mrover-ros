@@ -3,7 +3,7 @@
  -->
 <launch>
     <arg name="rvizconfig" default="$(find mrover)/config/rviz/auton_sim.rviz"/>
-    <arg name="world_name" default="world_flat"/>
+    <arg name="world_name" default="world"/>
 
     <node name="rviz" pkg="rviz" type="rviz" args="-d $(arg rvizconfig)" required="true"/>
 
