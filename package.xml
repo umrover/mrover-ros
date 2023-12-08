@@ -90,5 +90,6 @@
     <nodelet plugin="${prefix}/plugins/tag_detector_plugin.xml"/>
     <nodelet plugin="${prefix}/plugins/zed_plugin.xml"/>
     <nodelet plugin="${prefix}/plugins/can.xml"/>
+    <nodelet plugin="${prefix}/plugins/sim.xml"/>
   </export>
 </package>

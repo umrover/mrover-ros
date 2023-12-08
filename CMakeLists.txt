@@ -159,9 +159,9 @@ endif ()
 
 ## Simulator
 
-mrover_add_node(simulator src/simulator/*.cpp)
-target_include_directories(simulator PRIVATE ${SDL2_INCLUDE_DIRS})
-target_link_libraries(simulator PRIVATE SDL2)
+mrover_add_nodelet(simulator src/simulator/*.cpp src/simulator src/simulator/pch.hpp)
+mrover_nodelet_include_directories(simulator ${SDL2_INCLUDE_DIRS})
+mrover_nodelet_link_libraries(simulator SDL2)
 
 # TODO
 
