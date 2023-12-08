@@ -2,17 +2,46 @@
 
 namespace mrover {
 
+    auto SimulatorNodelet::parseParams() -> void {
+        XmlRpc::XmlRpcValue objects;
+        mPnh.getParam("objects", objects);
+
+        for (auto const& [name, object]: objects) {
+            if (name == "urdf") mObjects.emplace_back(URDF{object});
+        }
+    }
+
     auto SimulatorNodelet::onInit() -> void {
         mNh = getNodeHandle();
         mPnh = getMTPrivateNodeHandle();
 
-        mThread = std::jthread{&SimulatorNodelet::update, this};
+        parseParams();
+
+        mThread = std::jthread{&SimulatorNodelet::run, this};
     }
 
-    auto SimulatorNodelet::update() -> void {
-        auto window = SDLPointer<SDL_Window, SDL_CreateWindow, SDL_DestroyWindow>{"MRover Simulator", SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED, 640, 480, SDL_WINDOW_OPENGL};
+    auto SimulatorNodelet::renderObject(URDF const& urdf) -> void {}
 
-        auto context = SDLPointer<std::remove_pointer_t<SDL_GLContext>, SDL_GL_CreateContext, SDL_GL_DeleteContext>{window.get()};
+    auto SimulatorNodelet::renderUpdate() -> void {
+        int w{}, h{};
+        SDL_GetWindowSize(mWindow.get(), &w, &h);
+
+        glViewport(0, 0, w, h);
+        glClearColor(0.2f, 0.2f, 0.2f, 1.0f);
+        glClear(GL_COLOR_BUFFER_BIT);
+
+        for (auto const& object: mObjects) {
+            std::visit([&](auto const& o) { renderObject(o); }, object);
+        }
+
+        SDL_GL_SwapWindow(mWindow.get());
+    }
+
+    auto SimulatorNodelet::run() -> void {
+        mWindow = SDLPointer<SDL_Window, SDL_CreateWindow, SDL_DestroyWindow>{"MRover Simulator", SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED, 640, 480, SDL_WINDOW_OPENGL};
+        mGlContext = SDLPointer<std::remove_pointer_t<SDL_GLContext>, SDL_GL_CreateContext, SDL_GL_DeleteContext>{mWindow.get()};
+
+        SDL_GL_SetSwapInterval(1);
 
         while (ros::ok()) {
             SDL_Event event;
@@ -31,6 +60,8 @@ namespace mrover {
                         break;
                 }
             }
+
+            renderUpdate();
         }
     }
 }

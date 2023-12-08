@@ -1,6 +1,7 @@
 #pragma once
 
 #include <SDL2/SDL.h>
+#include <SDL2/SDL_opengl.h>
 
 #include <stdexcept>
 #include <format>
@@ -16,3 +17,6 @@
 #include <urdf/model.h>
 
 #include <params_utils.hpp>
+
+#include <Eigen/Core>
+#include <Eigen/Geometry>

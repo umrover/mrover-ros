@@ -12,11 +12,9 @@ namespace mrover {
     template<typename T>
     T xmlRpcValueToTypeOrDefault(const XmlRpc::XmlRpcValue& parent, const std::string& member, const std::optional<T>& defaultValue = std::nullopt) {
         if (!parent.hasMember(member)) {
-            if (defaultValue.has_value()) {
-                return defaultValue.value();
-            } else {
-                throw std::invalid_argument("Member not found: " + member);
-            }
+            if (defaultValue) return defaultValue.value();
+
+            throw std::invalid_argument(std::format("Member not found: {}", member));
         }
 
         const XmlRpc::XmlRpcValue& value = parent[member];

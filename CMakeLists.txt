@@ -18,6 +18,7 @@ include(cmake/macros.cmake)
 
 # ROS packages list
 set(MROVER_ROS_DEPENDENCIES
+        urdf
         rospy
         roscpp
         rostest
@@ -53,6 +54,7 @@ set(MROVER_CMAKE_INCLUDES
 ### ============ ###
 
 find_package(OpenCV REQUIRED)
+find_package(OpenGL REQUIRED)
 find_package(ZED 2 QUIET)
 find_package(Eigen3 REQUIRED)
 find_package(SDL2 REQUIRED COMPONENTS SDL2)
@@ -160,8 +162,8 @@ endif ()
 ## Simulator
 
 mrover_add_nodelet(simulator src/simulator/*.cpp src/simulator src/simulator/pch.hpp)
-mrover_nodelet_include_directories(simulator ${SDL2_INCLUDE_DIRS})
-mrover_nodelet_link_libraries(simulator SDL2)
+mrover_nodelet_include_directories(simulator ${SDL2_INCLUDE_DIRS} ${OPENGL_INCLUDE_DIR})
+mrover_nodelet_link_libraries(simulator ${SDL2_LIBRARIES} ${OPENGL_LIBRARIES})
 
 # TODO
 

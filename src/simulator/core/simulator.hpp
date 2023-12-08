@@ -2,56 +2,49 @@
 
 #include "../pch.hpp"
 
+#include "sdl_pointer.hpp"
+
 namespace mrover
 {
     struct URDF
     {
         urdf::Model mModel;
 
-        URDF(XmlRpc::XmlRpcValue const& init)
+        explicit URDF(XmlRpc::XmlRpcValue const& init)
         {
+            assert(xmlRpcValueToTypeOrDefault<std::string>(init, "type") == "urdf");
+
             auto paramName = xmlRpcValueToTypeOrDefault<std::string>(init, "param_name");
             mModel.initParam(paramName);
         }
     };
 
-    class SimulatorNodelet : public nodelet::Nodelet
+    using Object = std::variant<URDF>;
+
+    class SimulatorNodelet final : public nodelet::Nodelet
     {
         std::jthread mThread;
 
         ros::NodeHandle mNh, mPnh;
+
+        std::vector<Object> mObjects;
+
+        SDLPointer<SDL_Window, SDL_CreateWindow, SDL_DestroyWindow> mWindow;
+        SDLPointer<std::remove_pointer_t<SDL_GLContext>, SDL_GL_CreateContext, SDL_GL_DeleteContext> mGlContext;
 
     public:
         SimulatorNodelet() = default;
 
         ~SimulatorNodelet() override = default;
 
+        auto parseParams() -> void;
+
         auto onInit() -> void override;
 
-        auto update() -> void;
-    };
+        auto run() -> void;
 
-    template <typename T, auto Creater, auto Deleter>
-    class SDLPointer
-    {
-        std::unique_ptr<T, decltype([](auto* p) { Deleter(p); })> mPointer;
+        auto renderObject(URDF const& urdf) -> void;
 
-        static auto check(T* result) -> T*
-        {
-            if (!result) throw std::runtime_error(std::format("SDL Error: {}", SDL_GetError()));
-            return result;
-        }
-
-    public:
-        template <typename... Args>
-        explicit SDLPointer(Args&&... args)
-            : mPointer{check(Creater(std::forward<Args>(args)...))}
-        {
-        }
-
-        [[nodiscard]] auto get() const noexcept -> T*
-        {
-            return mPointer.get();
-        }
+        auto renderUpdate() -> void;
     };
 }

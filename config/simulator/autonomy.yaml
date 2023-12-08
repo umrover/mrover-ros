@@ -1,3 +1,6 @@
 objects:
   - type: urdf
     param_name: robot_description
+    transform:
+      translation: [ 0, 0, 0 ]
+      rotation: [ 0, 0, 0, 1 ]
