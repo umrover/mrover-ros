@@ -61,6 +61,9 @@ namespace mrover {
         auto async_request(const std::uint16_t address, TSend const& send) -> void {
             // TODO: make sure actually sends to absolute encoder
             check(HAL_I2C_Master_Transmit_DMA(m_i2c, address << 1, address_of<std::uint8_t>(send), sizeof(send)) == HAL_OK, Error_Handler);
+            while (HAL_I2C_GetState(m_i2c) != HAL_I2C_STATE_READY)
+            {
+            }
         }
 
         auto async_read(const std::uint16_t address) -> void {

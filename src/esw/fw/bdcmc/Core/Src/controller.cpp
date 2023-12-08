@@ -32,14 +32,14 @@ extern TIM_HandleTypeDef htim6;  // 10,000 Hz Update timer
 extern TIM_HandleTypeDef htim7;  // 100 Hz Send timer
 extern TIM_HandleTypeDef htim15; // H-Bridge PWM
 extern TIM_HandleTypeDef htim16; // Message watchdog timer
-extern TIM_HandleTypeDef htim17; // Absolute encoder timer (currently at 20Hz)
+extern TIM_HandleTypeDef htim2; // Absolute encoder timer (currently at 20Hz)
 #define QUADRATURE_TIMER_1 &htim4
 #define QUADRATURE_TIMER_2 &htim3
 #define UPDATE_TIMER &htim6
 #define SEND_TIMER &htim7
 #define PWM_TIMER &htim15
 #define FDCAN_WATCHDOG_TIMER &htim16
-#define ABSOLUTE_ENCODER_TIMER &htim17
+#define ABSOLUTE_ENCODER_TIMER &htim2
 
 namespace mrover {
 
@@ -131,14 +131,14 @@ void HAL_PostInit() {
  * \note Timers have to be started with "HAL_TIM_Base_Start_IT" for this interrupt to work for them.
  */
 void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef* htim) {
-    if (htim == UPDATE_TIMER) {
-        mrover::update_callback();
+	if (htim == ABSOLUTE_ENCODER_TIMER) {
+	    mrover::request_absolute_encoder_data_callback();
+	} else if (htim == UPDATE_TIMER) {
+    	mrover::update_callback();
     } else if (htim == SEND_TIMER) {
         mrover::send_callback();
     } else if (htim == FDCAN_WATCHDOG_TIMER) {
         mrover::fdcan_watchdog_expired();
-    } else if (htim == ABSOLUTE_ENCODER_TIMER) {
-        mrover::request_absolute_encoder_data_callback();
     }
     // TODO: check for slow update timer and call on controller to send out i2c frame
 }

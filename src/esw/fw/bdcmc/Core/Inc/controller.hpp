@@ -275,7 +275,12 @@ namespace mrover {
               m_watchdog_timer{watchdog_timer},
               m_quadrature_encoder_timer{quadrature_encoder_timer},
               m_absolute_encoder_i2c{absolute_encoder_i2c},
-              m_limit_switches{limit_switches} {}
+              m_limit_switches{limit_switches} {
+
+            Ratio multiplier = 1;
+            if (!m_absolute_encoder) m_absolute_encoder.emplace(SMBus<uint8_t, uint16_t>{m_absolute_encoder_i2c}, 0, 0, multiplier);
+
+        }
 
         template<typename Command>
         auto process_command(Command const& command) -> void {
