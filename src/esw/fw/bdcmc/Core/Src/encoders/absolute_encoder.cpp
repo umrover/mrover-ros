@@ -29,11 +29,11 @@ namespace mrover {
     }
 
     auto AbsoluteEncoderReader::request_raw_angle() -> void {
-        m_i2cBus.async_request(m_address, 0xFF);
+        m_i2cBus.async_transmit(m_address, 0xFF);
     }
 
     auto AbsoluteEncoderReader::read_raw_angle_into_buffer() -> void {
-        m_i2cBus.async_read(m_address);
+        m_i2cBus.async_receive(m_address);
     }
 
     auto AbsoluteEncoderReader::try_read_buffer() -> std::optional<std::uint64_t> {

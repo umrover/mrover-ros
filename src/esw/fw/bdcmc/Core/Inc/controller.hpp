@@ -398,7 +398,7 @@ namespace mrover {
             }
         }
 
-        auto update_absolute_encoder_data() -> void {
+        auto update_absolute_encoder() -> void {
             std::optional<EncoderReading> reading;
 
             // Only read the encoder if we are configured

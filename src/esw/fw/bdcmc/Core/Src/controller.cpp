@@ -99,8 +99,8 @@ namespace mrover {
         controller.read_absolute_encoder_data();
     }
 
-    void update_absolute_encoder_data_callback() {
-        controller.update_absolute_encoder_data();
+    void update_absolute_encoder_callback() {
+        controller.update_absolute_encoder();
     }
 
     void send_callback() {
@@ -169,7 +169,7 @@ void HAL_I2C_SlaveRxCpltCallback(I2C_HandleTypeDef* hi2c) {}
 void HAL_I2C_SlaveTxCpltCallback(I2C_HandleTypeDef* hi2c) {}
 
 void HAL_I2C_MasterRxCpltCallback(I2C_HandleTypeDef* hi2c) {
-    mrover::update_absolute_encoder_data_callback();
+    mrover::update_absolute_encoder_callback();
 }
 
 void HAL_I2C_MasterTxCpltCallback(I2C_HandleTypeDef* hi2c) {
