@@ -48,6 +48,8 @@ namespace mrover {
 
         glewExperimental = GL_TRUE;
         check(glewInit() == GLEW_OK);
+
+
     }
 
     auto SimulatorNodelet::onInit() -> void try {

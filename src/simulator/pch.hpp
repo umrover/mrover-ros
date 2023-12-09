@@ -7,6 +7,7 @@
 #include <stdexcept>
 #include <thread>
 #include <unordered_set>
+#include <fstream>
 
 #include <nodelet/loader.h>
 #include <nodelet/nodelet.h>

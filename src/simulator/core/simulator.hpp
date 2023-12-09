@@ -8,6 +8,35 @@ using namespace std::literals;
 
 namespace mrover
 {
+    constexpr static GLuint GL_INVALID_HANDLE = 0;
+
+    struct Shader
+    {
+        GLuint handle = GL_INVALID_HANDLE;
+
+        Shader() = default;
+
+        Shader(Shader&& other) noexcept;
+
+        Shader(std::filesystem::path const& path, GLenum type);
+
+        ~Shader();
+    };
+
+    struct Program
+    {
+        Shader vertexShader;
+        Shader fragmentShader;
+
+        GLuint handle = GL_INVALID_HANDLE;
+
+        Program() = default;
+
+        ~Program();
+
+        Program(Shader&& vertexShader, Shader&& fragmentShader);
+    };
+
     struct Mesh
     {
         explicit Mesh(std::string_view uri);
@@ -28,6 +57,8 @@ namespace mrover
         ros::NodeHandle mNh, mPnh;
 
         std::vector<Object> mObjects;
+
+        Program mProgram;
 
         SDLPointer<SDL_Window, SDL_CreateWindow, SDL_DestroyWindow> mWindow;
         SDLPointer<std::remove_pointer_t<SDL_GLContext>, SDL_GL_CreateContext, SDL_GL_DeleteContext> mGlContext;
