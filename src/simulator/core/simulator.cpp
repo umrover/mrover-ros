@@ -78,8 +78,8 @@ namespace mrover {
                 }
             }
         }
-        for (auto const& child: link->child_links) {
-            traverseLinkForRender(urdf, child);
+        for (urdf::JointConstSharedPtr child_joint: link->child_joints) {
+            traverseLinkForRender(urdf, urdf.model.getLink(child_joint->child_link_name));
         }
     }
 
