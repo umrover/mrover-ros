@@ -17,7 +17,7 @@ namespace mrover {
 
         parseParams();
 
-        mThread = std::jthread{&SimulatorNodelet::run, this};
+        mRunThread = std::jthread{&SimulatorNodelet::run, this};
     }
 
     auto SimulatorNodelet::renderObject(URDF const& urdf) -> void {}

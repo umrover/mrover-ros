@@ -9,6 +9,7 @@
 #include <memory>
 #include <thread>
 #include <filesystem>
+#include <unordered_set>
 
 #include <nodelet/loader.h>
 #include <nodelet/nodelet.h>
@@ -20,3 +21,5 @@
 
 #include <Eigen/Core>
 #include <Eigen/Geometry>
+
+#include <mrover/SimulatorParamsConfig.h>

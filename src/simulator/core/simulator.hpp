@@ -6,9 +6,17 @@
 
 namespace mrover
 {
+    struct Mesh
+    {
+        Mesh(std::filesystem::path const& path)
+        {
+        }
+    };
+
     struct URDF
     {
         urdf::Model mModel;
+        std::unordered_map<std::string, Mesh> link_meshes;
 
         explicit URDF(XmlRpc::XmlRpcValue const& init)
         {
@@ -16,6 +24,15 @@ namespace mrover
 
             auto paramName = xmlRpcValueToTypeOrDefault<std::string>(init, "param_name");
             mModel.initParam(paramName);
+
+            for (auto const& [link_name, link] : mModel.links_)
+            {
+                assert(link->visual);
+                assert(link->visual->geometry);
+                assert(link->visual->geometry->type == urdf::Geometry::MESH);
+
+                auto mesh = std::dynamic_pointer_cast<urdf::Mesh>(link->visual->geometry);
+            }
         }
     };
 
@@ -23,7 +40,7 @@ namespace mrover
 
     class SimulatorNodelet final : public nodelet::Nodelet
     {
-        std::jthread mThread;
+        std::jthread mRunThread;
 
         ros::NodeHandle mNh, mPnh;
 
