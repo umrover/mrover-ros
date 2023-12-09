@@ -54,10 +54,6 @@ namespace mrover {
         mNh = getNodeHandle();
         mPnh = getMTPrivateNodeHandle();
 
-        initRender();
-
-        parseParams();
-
         mRunThread = std::jthread{&SimulatorNodelet::run, this};
 
     } catch (std::exception const& e) {
@@ -83,6 +79,10 @@ namespace mrover {
     }
 
     auto SimulatorNodelet::run() -> void try {
+
+        initRender();
+
+        parseParams();
 
         while (ros::ok()) {
             SDL_Event event;
