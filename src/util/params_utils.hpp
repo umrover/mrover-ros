@@ -1,23 +1,25 @@
 #pragma once
 
-#include <XmlRpcValue.h>
 #include <cstdint>
+#include <format>
 #include <optional>
 #include <stdexcept>
 #include <string>
+
+#include <XmlRpcValue.h>
 
 namespace mrover {
 
     // Define a function template for type conversion with a default value
     template<typename T>
-    T xmlRpcValueToTypeOrDefault(const XmlRpc::XmlRpcValue& parent, const std::string& member, const std::optional<T>& defaultValue = std::nullopt) {
+    T xmlRpcValueToTypeOrDefault(XmlRpc::XmlRpcValue const& parent, std::string const& member, std::optional<T> const& defaultValue = std::nullopt) {
         if (!parent.hasMember(member)) {
             if (defaultValue) return defaultValue.value();
 
             throw std::invalid_argument(std::format("Member not found: {}", member));
         }
 
-        const XmlRpc::XmlRpcValue& value = parent[member];
+        XmlRpc::XmlRpcValue const& value = parent[member];
 
         if constexpr (std::is_same_v<T, std::uint8_t>) {
             if (value.getType() != XmlRpc::XmlRpcValue::TypeInt) {

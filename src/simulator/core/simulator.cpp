@@ -2,6 +2,10 @@
 
 namespace mrover {
 
+    static auto check(int result) -> void {
+        if (result) throw std::runtime_error(std::format("SDL Error: {}", SDL_GetError()));
+    }
+
     auto SimulatorNodelet::parseParams() -> void {
         XmlRpc::XmlRpcValue objects;
         mPnh.getParam("objects", objects);
@@ -38,10 +42,17 @@ namespace mrover {
     }
 
     auto SimulatorNodelet::run() -> void {
-        mWindow = SDLPointer<SDL_Window, SDL_CreateWindow, SDL_DestroyWindow>{"MRover Simulator", SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED, 640, 480, SDL_WINDOW_OPENGL};
+        check(SDL_Init(SDL_INIT_VIDEO));
+
+        SDL_DisplayMode displayMode;
+        check(SDL_GetDesktopDisplayMode(0, &displayMode));
+        assert(displayMode.w > 0 && displayMode.h > 0);
+
+        auto w = static_cast<int>(displayMode.w * 0.8), h = static_cast<int>(displayMode.h * 0.8);
+        mWindow = SDLPointer<SDL_Window, SDL_CreateWindow, SDL_DestroyWindow>{"MRover Simulator", SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED, w, h, SDL_WINDOW_OPENGL};
         mGlContext = SDLPointer<std::remove_pointer_t<SDL_GLContext>, SDL_GL_CreateContext, SDL_GL_DeleteContext>{mWindow.get()};
 
-        SDL_GL_SetSwapInterval(1);
+        check(SDL_GL_SetSwapInterval(1));
 
         while (ros::ok()) {
             SDL_Event event;
@@ -64,7 +75,7 @@ namespace mrover {
             renderUpdate();
         }
     }
-}
+} // namespace mrover
 
 auto main(int argc, char** argv) -> int {
     ros::init(argc, argv, "simulator");

@@ -1,7 +1,7 @@
 <launch>
   <rosparam command="load" file="$(find mrover)/config/simulator/autonomy.yaml"/>
 
-  <node name="simulator" pkg="mrover" type="simulator_node" required="true" />
+  <node name="simulator" pkg="mrover" type="simulator" required="true" />
 
   <param name="robot_description" command="xacro $(find mrover)/urdf/rover/rover.urdf.xacro"/>
 </launch>
