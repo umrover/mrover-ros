@@ -1,5 +1,6 @@
 objects:
   - type: urdf
+    name: rover
     param_name: robot_description
     transform:
       translation: [ 0, 0, 0 ]

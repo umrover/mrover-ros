@@ -21,14 +21,16 @@
   <xacro:macro name="box_inertia" params="m w h d">
     <inertial>
       <mass value="${m}"/>
-      <inertia ixx="${m / 12.0 * (d*d + h*h)}" ixy="0.0" ixz="0.0" iyy="${m / 12.0 * (w*w + h*h)}" iyz="0.0" izz="${m / 12.0 * (w*w + d*d)}"/>
+      <inertia ixx="${m / 12.0 * (d*d + h*h)}" ixy="0.0" ixz="0.0" iyy="${m / 12.0 * (w*w + h*h)}" iyz="0.0"
+               izz="${m / 12.0 * (w*w + d*d)}"/>
     </inertial>
   </xacro:macro>
 
   <xacro:macro name="sphere_inertia" params="m r">
     <inertial>
       <mass value="${m}"/>
-      <inertia ixx="${2.0*m*(r*r)/5.0}" ixy="0.0" ixz="0.0" iyy="${2.0*m*(r*r)/5.0}" iyz="0.0" izz="${2.0*m*(r*r)/5.0}"/>
+      <inertia ixx="${2.0*m*(r*r)/5.0}" ixy="0.0" ixz="0.0" iyy="${2.0*m*(r*r)/5.0}" iyz="0.0"
+               izz="${2.0*m*(r*r)/5.0}"/>
     </inertial>
   </xacro:macro>
 
@@ -188,7 +190,7 @@
     </inertial>
   </link>
 
-  <xacro:include filename="$(find mrover)/urdf/rover/rover_gazebo_plugins.urdf.xacro"/>
+  <!--  <xacro:include filename="$(find mrover)/urdf/rover/rover_gazebo_plugins.urdf.xacro"/>-->
   <xacro:wheel side="left" reflect="1"/>
   <xacro:wheel side="right" reflect="-1"/>
 </robot>

@@ -56,10 +56,12 @@ set(MROVER_CMAKE_INCLUDES
 
 find_package(OpenCV REQUIRED)
 find_package(OpenGL REQUIRED)
+find_package(GLEW REQUIRED)
 find_package(ZED 2 QUIET)
 find_package(Eigen3 REQUIRED)
 find_package(SDL2 REQUIRED COMPONENTS SDL2)
 find_package(PkgConfig REQUIRED)
+find_package(Assimp REQUIRED)
 pkg_search_module(NetLink REQUIRED libnl-3.0)
 pkg_search_module(NetLinkRoute REQUIRED libnl-route-3.0)
 if (ZED_FOUND)
@@ -163,8 +165,8 @@ endif ()
 ## Simulator
 
 mrover_add_nodelet(simulator src/simulator/*.cpp src/simulator src/simulator/pch.hpp)
-mrover_nodelet_include_directories(simulator ${SDL2_INCLUDE_DIRS} ${OPENGL_INCLUDE_DIR})
-mrover_nodelet_link_libraries(simulator ${SDL2_LIBRARIES} ${OPENGL_LIBRARIES})
+mrover_nodelet_include_directories(simulator ${SDL2_INCLUDE_DIRS} ${OPENGL_INCLUDE_DIR} ${ASSIMP_INCLUDE_DIRS} ${GLEW_INCLUDE_DIRS})
+mrover_nodelet_link_libraries(simulator ${SDL2_LIBRARIES} ${OPENGL_LIBRARIES} ${ASSIMP_LIBRARIES} ${GLEW_LIBRARIES})
 
 # TODO
 
