@@ -8,6 +8,7 @@
 #include <thread>
 #include <unordered_set>
 #include <fstream>
+#include <source_location>
 
 #include <nodelet/loader.h>
 #include <nodelet/nodelet.h>

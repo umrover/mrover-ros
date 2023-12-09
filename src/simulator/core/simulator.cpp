@@ -49,7 +49,11 @@ namespace mrover {
         glewExperimental = GL_TRUE;
         check(glewInit() == GLEW_OK);
 
-
+        auto shadersPath = std::filesystem::path{std::source_location::current().file_name()}.parent_path() / "shaders";
+        mProgram = {
+                Shader{shadersPath / "pbr.vert", GL_VERTEX_SHADER},
+                Shader{shadersPath / "pbr.frag", GL_FRAGMENT_SHADER}
+        };
     }
 
     auto SimulatorNodelet::onInit() -> void try {
@@ -63,7 +67,29 @@ namespace mrover {
         ros::shutdown();
     }
 
-    auto SimulatorNodelet::renderObject(URDF const& urdf) -> void {}
+    auto traverseLinkForRender(URDF const& urdf, urdf::LinkConstSharedPtr const& link) -> void {
+        if (link->visual && link->visual->geometry) {
+            if (auto urdfMesh = std::dynamic_pointer_cast<urdf::Mesh>(link->visual->geometry)) {
+                for (Mesh const& mesh: urdf.uriToMeshes.at(urdfMesh->filename)) {
+                    glBindVertexArray(mesh.vao);
+                    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, mesh.ebo);
+                    glDrawElements(GL_TRIANGLES, mesh.indicesCount, GL_UNSIGNED_INT, nullptr);
+                    glBindVertexArray(0);
+                }
+            }
+        }
+        for (auto const& child: link->child_links) {
+            traverseLinkForRender(urdf, child);
+        }
+    }
+
+    auto SimulatorNodelet::renderObject(URDF const& urdf) -> void {
+        assert(mProgram.handle != GL_INVALID_HANDLE);
+
+        glUseProgram(mProgram.handle);
+
+        traverseLinkForRender(urdf, urdf.model.getRoot());
+    }
 
     auto SimulatorNodelet::renderUpdate() -> void {
         int w{}, h{};
@@ -113,19 +139,3 @@ namespace mrover {
     }
 
 } // namespace mrover
-
-auto main(int argc, char** argv) -> int {
-    ros::init(argc, argv, "simulator");
-
-    nodelet::Loader nodelet;
-    nodelet.load(ros::this_node::getName(), "mrover/SimulatorNodelet", ros::names::getRemappings(), {});
-
-    ros::spin();
-
-    return EXIT_SUCCESS;
-}
-
-#ifdef MROVER_IS_NODELET
-#include <pluginlib/class_list_macros.h>
-PLUGINLIB_EXPORT_CLASS(mrover::SimulatorNodelet, nodelet::Nodelet)
-#endif

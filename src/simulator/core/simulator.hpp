@@ -8,6 +8,8 @@ using namespace std::literals;
 
 namespace mrover
 {
+    // using uri_hash = std::size_t;
+
     constexpr static GLuint GL_INVALID_HANDLE = 0;
 
     struct Shader
@@ -17,6 +19,10 @@ namespace mrover
         Shader() = default;
 
         Shader(Shader&& other) noexcept;
+        auto operator=(Shader&& other) noexcept -> Shader&;
+
+        Shader(Shader& other) = delete;
+        auto operator=(Shader& other) -> Shader& = delete;
 
         Shader(std::filesystem::path const& path, GLenum type);
 
@@ -32,6 +38,12 @@ namespace mrover
 
         Program() = default;
 
+        Program(Program&& other) noexcept;
+        auto operator=(Program&& other) noexcept -> Program&;
+
+        Program(Program& other) = delete;
+        auto operator=(Program& other) -> Program& = delete;
+
         ~Program();
 
         Program(Shader&& vertexShader, Shader&& fragmentShader);
@@ -39,13 +51,21 @@ namespace mrover
 
     struct Mesh
     {
+        GLuint vao = GL_INVALID_HANDLE;
+        GLuint vbo = GL_INVALID_HANDLE;
+        GLuint ebo = GL_INVALID_HANDLE;
+
+        GLsizei vertexCount{}, indicesCount{};
+
         explicit Mesh(std::string_view uri);
+
+        ~Mesh();
     };
 
     struct URDF
     {
-        urdf::Model mModel;
-        std::unordered_map<std::string, Mesh> mLinkMeshes;
+        urdf::Model model;
+        std::unordered_map<std::string, std::vector<Mesh>> uriToMeshes;
 
         explicit URDF(XmlRpc::XmlRpcValue const& init);
     };

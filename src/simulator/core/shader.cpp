@@ -26,13 +26,20 @@ namespace mrover {
         }
     }
 
-    Shader::Shader(Shader&& other) noexcept
-        : handle{std::exchange(other.handle, GL_INVALID_HANDLE)} {}
+    Shader::Shader(Shader&& other) noexcept {
+        *this = std::move(other);
+    }
+
+    auto Shader::operator=(Shader&& other) noexcept -> Shader& {
+        if (this != &other) {
+            handle = std::exchange(other.handle, GL_INVALID_HANDLE);
+        }
+        return *this;
+    }
 
     Shader::~Shader() {
-        if (handle == GL_INVALID_HANDLE) return;
-
-        glDeleteShader(handle);
+        if (handle != GL_INVALID_HANDLE)
+            glDeleteShader(handle);
     }
 
     Program::Program(Shader&& vertexShader, Shader&& fragmentShader)
@@ -53,9 +60,21 @@ namespace mrover {
         }
     }
 
-    Program::~Program() {
-        if (handle == GL_INVALID_HANDLE) return;
+    Program::Program(Program&& other) noexcept {
+        *this = std::move(other);
+    }
 
-        glDeleteProgram(handle);
+    auto Program::operator=(Program&& other) noexcept -> Program& {
+        if (this != &other) {
+            vertexShader = std::move(other.vertexShader);
+            fragmentShader = std::move(other.fragmentShader);
+            handle = std::exchange(other.handle, GL_INVALID_HANDLE);
+        }
+        return *this;
+    }
+
+    Program::~Program() {
+        if (handle != GL_INVALID_HANDLE)
+            glDeleteProgram(handle);
     }
 }

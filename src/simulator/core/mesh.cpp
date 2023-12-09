@@ -23,31 +23,43 @@ namespace mrover {
         for (std::size_t i = 0; i < scene->mNumMeshes; ++i) {
             aiMesh const* mesh = scene->mMeshes[i];
 
-            GLuint vao;
             glGenVertexArrays(1, &vao);
             glBindVertexArray(vao);
 
-            GLuint vbo;
             glGenBuffers(1, &vbo);
             glBindBuffer(GL_ARRAY_BUFFER, vbo);
-            glBufferData(GL_ARRAY_BUFFER, static_cast<GLsizeiptr>(mesh->mNumVertices * sizeof(aiVector3D)), mesh->mVertices, GL_STATIC_DRAW);
+            glBufferData(GL_ARRAY_BUFFER, static_cast<GLsizeiptr>(mesh->mNumVertices * sizeof(decltype(*mesh->mVertices))), mesh->mVertices, GL_STATIC_DRAW);
+            vertexCount = static_cast<GLsizei>(mesh->mNumVertices);
 
-            GLuint ebo;
             glGenBuffers(1, &ebo);
             glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, ebo);
-
-            std::vector<std::array<uint, 3>> faces(mesh->mNumFaces);
-            for (uint j = 0; j < mesh->mNumFaces; ++j) {
+            std::vector<uint> indices(mesh->mNumFaces * 3);
+            for (uint j = 0, k = 0; j < mesh->mNumFaces; ++j) {
                 aiFace const& face = mesh->mFaces[j];
                 assert(face.mNumIndices == 3);
 
-                faces[j] = {face.mIndices[0], face.mIndices[1], face.mIndices[2]};
+                indices[k++] = face.mIndices[0];
+                indices[k++] = face.mIndices[1];
+                indices[k++] = face.mIndices[2];
             }
-            glBufferData(GL_ELEMENT_ARRAY_BUFFER, static_cast<GLsizeiptr>(faces.size() * sizeof(std::array<uint, 3>)), faces.data(), GL_STATIC_DRAW);
+            glBufferData(GL_ELEMENT_ARRAY_BUFFER, static_cast<GLsizeiptr>(indices.size() * sizeof(decltype(indices)::value_type)), indices.data(), GL_STATIC_DRAW);
+            indicesCount = static_cast<GLsizei>(indices.size());
+
+            glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, sizeof(aiVector3D), nullptr);
+            glEnableVertexAttribArray(0);
 
             glBindVertexArray(0);
 
             ROS_INFO_STREAM(std::format("\tLoaded mesh: {} with {} vertices and {} faces", i, mesh->mNumVertices, mesh->mNumFaces));
         }
+    }
+
+    Mesh::~Mesh() {
+        if (vao != GL_INVALID_HANDLE)
+            glDeleteVertexArrays(1, &vao);
+        if (vbo != GL_INVALID_HANDLE)
+            glDeleteBuffers(1, &vbo);
+        if (ebo != GL_INVALID_HANDLE)
+            glDeleteBuffers(1, &ebo);
     }
 }

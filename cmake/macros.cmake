@@ -35,7 +35,7 @@ macro(mrover_add_nodelet name sources includes)
     # A nodelet runs inside another process so it is a library
     mrover_add_library(${name}_nodelet ${sources} ${includes})
     # Also add a node for quick debugging
-    mrover_add_node(${name} ${sources})
+    mrover_add_node(${name} ${includes}/main.cpp)
     # Explicitly tell CMake to re-build the nodelet when the node is built
     # CMake cannot tell these are dependent since a node dynamically (at runtime) loads the nodelet as a shared library
     add_dependencies(${name} ${name}_nodelet)
