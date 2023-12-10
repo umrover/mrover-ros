@@ -51,11 +51,15 @@ namespace mrover
 
     struct Mesh
     {
-        GLuint vao = GL_INVALID_HANDLE;
-        GLuint vbo = GL_INVALID_HANDLE;
-        GLuint ebo = GL_INVALID_HANDLE;
+        struct Binding
+        {
+            GLuint vao = GL_INVALID_HANDLE;
+            GLuint vbo = GL_INVALID_HANDLE;
+            GLuint ebo = GL_INVALID_HANDLE;
+            GLsizei indicesCount{};
+        };
 
-        GLsizei vertexCount{}, indicesCount{};
+        boost::container::static_vector<Binding, 4> bindings;
 
         explicit Mesh(std::string_view uri);
 
@@ -65,7 +69,7 @@ namespace mrover
     struct URDF
     {
         urdf::Model model;
-        std::unordered_map<std::string, std::vector<Mesh>> uriToMeshes;
+        std::unordered_map<std::string, Mesh> uriToMeshes;
 
         explicit URDF(XmlRpc::XmlRpcValue const& init);
     };
@@ -74,21 +78,37 @@ namespace mrover
 
     class SimulatorNodelet final : public nodelet::Nodelet
     {
+        // Settings
+
+        Sint32 quitKey = SDLK_ESCAPE;
+        Sint32 rightKey = SDLK_d;
+        Sint32 leftKey = SDLK_a;
+        Sint32 forwardKey = SDLK_w;
+        Sint32 backwardKey = SDLK_s;
+
+        // ROS
+
         ros::NodeHandle mNh, mPnh;
 
-        std::vector<Object> mObjects;
-
-        Program mProgram;
+        // Rendering
 
         SDLPointer<SDL_Window, SDL_CreateWindow, SDL_DestroyWindow> mWindow;
         SDLPointer<std::remove_pointer_t<SDL_GLContext>, SDL_GL_CreateContext, SDL_GL_DeleteContext> mGlContext;
 
-        std::jthread mRunThread;
+        Program mShaderProgram;
+
+        // Scene
+
+        std::vector<Object> mObjects;
+
+        SE3 mCameraInWorld;
+
+        std::thread mRunThread;
 
     public:
         SimulatorNodelet() = default;
 
-        ~SimulatorNodelet() override = default;
+        ~SimulatorNodelet() override;
 
         auto initRender() -> void;
 
@@ -99,6 +119,8 @@ namespace mrover
         auto run() -> void;
 
         auto renderObject(URDF const& urdf) -> void;
+
+        auto traverseLinkForRender(URDF const& urdf, urdf::LinkConstSharedPtr const& link) -> void;
 
         auto renderUpdate() -> void;
     };

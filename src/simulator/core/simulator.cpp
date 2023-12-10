@@ -27,6 +27,13 @@ namespace mrover {
         }
     }
 
+    SimulatorNodelet::~SimulatorNodelet() {
+        mRunThread.join();
+        // When you make an OpenGL context it binds to the thread that created it
+        // This destructor is called from another thread, so we need to steal the context before the member destructors are run
+        SDL_GL_MakeCurrent(mWindow.get(), mGlContext.get());
+    }
+
     auto SimulatorNodelet::initRender() -> void {
         check(SDL_Init(SDL_INIT_VIDEO) == SDL_OK);
         NODELET_INFO_STREAM(std::format("Initialized SDL Version: {}.{}.{}", SDL_MAJOR_VERSION, SDL_MINOR_VERSION, SDL_PATCHLEVEL));
@@ -50,7 +57,7 @@ namespace mrover {
         check(glewInit() == GLEW_OK);
 
         auto shadersPath = std::filesystem::path{std::source_location::current().file_name()}.parent_path() / "shaders";
-        mProgram = {
+        mShaderProgram = {
                 Shader{shadersPath / "pbr.vert", GL_VERTEX_SHADER},
                 Shader{shadersPath / "pbr.frag", GL_FRAGMENT_SHADER}
         };
@@ -60,33 +67,67 @@ namespace mrover {
         mNh = getNodeHandle();
         mPnh = getMTPrivateNodeHandle();
 
-        mRunThread = std::jthread{&SimulatorNodelet::run, this};
+        mRunThread = std::thread{&SimulatorNodelet::run, this};
 
     } catch (std::exception const& e) {
         NODELET_FATAL_STREAM(e.what());
         ros::shutdown();
     }
 
-    auto traverseLinkForRender(URDF const& urdf, urdf::LinkConstSharedPtr const& link) -> void {
+    auto perspective(float fovY, float aspect, float zNear, float zFar) -> Eigen::Matrix4f {
+        float theta = fovY * 0.5f;
+        float range = zFar - zNear;
+        float invtan = 1.0f / tanf(theta);
+
+        Eigen::Matrix4f result{};
+        result << invtan / aspect, 0.0f, 0.0f, 0.0f,
+                0.0f, invtan, 0.0f, 0.0f,
+                0.0f, 0.0f, -(zFar + zNear) / range, -1.0f,
+                0.0f, 0.0f, -2.0f * zNear * zFar / range, 0.0f;
+        return result;
+    }
+
+    auto SimulatorNodelet::traverseLinkForRender(URDF const& urdf, urdf::LinkConstSharedPtr const& link) -> void {
+        assert(mShaderProgram.handle != GL_INVALID_HANDLE);
+        glUseProgram(mShaderProgram.handle);
+
+        GLint modelToWorldId = glGetUniformLocation(mShaderProgram.handle, "worldToCamera");
+        assert(modelToWorldId != GL_INVALID_INDEX);
+        GLint worldToCameraId = glGetUniformLocation(mShaderProgram.handle, "modelToWorld");
+        assert(worldToCameraId != GL_INVALID_INDEX);
+        GLint cameraToClipId = glGetUniformLocation(mShaderProgram.handle, "cameraToClip");
+        assert(cameraToClipId != GL_INVALID_INDEX);
+
+        // Eigen::Matrix4f worldToCamera = mCameraInWorld.matrix().inverse();
+        Eigen::Matrix4f worldToCamera = SE3{R3{0.0, 0.0, 10.0}, SO3{}}.matrix().cast<float>();
+        glUniformMatrix4fv(worldToCameraId, 1, GL_FALSE, worldToCamera.data());
+
+        Eigen::Matrix4f modelToWorld = SE3{R3{}, SO3{}}.matrix().cast<float>();
+        glUniformMatrix4fv(modelToWorldId, 1, GL_FALSE, modelToWorld.data());
+
+        Eigen::Matrix4f cameraToClip = perspective(45.0f, 1.0f, 0.1f, 100.0f).cast<float>();
+        glUniformMatrix4fv(cameraToClipId, 1, GL_FALSE, cameraToClip.data());
+
         if (link->visual && link->visual->geometry) {
             if (auto urdfMesh = std::dynamic_pointer_cast<urdf::Mesh>(link->visual->geometry)) {
-                for (Mesh const& mesh: urdf.uriToMeshes.at(urdfMesh->filename)) {
-                    glBindVertexArray(mesh.vao);
-                    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, mesh.ebo);
-                    glDrawElements(GL_TRIANGLES, mesh.indicesCount, GL_UNSIGNED_INT, nullptr);
-                    glBindVertexArray(0);
+                for (Mesh const& mesh = urdf.uriToMeshes.at(urdfMesh->filename);
+                     auto const& [vao, _vbo, _ebo, indicesCount]: mesh.bindings) {
+                    assert(vao != GL_INVALID_HANDLE);
+                    assert(indicesCount > 0);
+
+                    glBindVertexArray(vao);
+                    glDrawElements(GL_TRIANGLES, indicesCount, GL_UNSIGNED_INT, nullptr);
+                    // glBindVertexArray(0);
                 }
             }
         }
-        for (urdf::JointConstSharedPtr child_joint: link->child_joints) {
+        for (urdf::JointSharedPtr const& child_joint: link->child_joints) {
             traverseLinkForRender(urdf, urdf.model.getLink(child_joint->child_link_name));
         }
     }
 
     auto SimulatorNodelet::renderObject(URDF const& urdf) -> void {
-        assert(mProgram.handle != GL_INVALID_HANDLE);
-
-        glUseProgram(mProgram.handle);
+        assert(mShaderProgram.handle != GL_INVALID_HANDLE);
 
         traverseLinkForRender(urdf, urdf.model.getRoot());
     }
@@ -117,11 +158,21 @@ namespace mrover {
 
             while (SDL_PollEvent(&event)) {
                 switch (event.type) {
-                    case SDL_KEYDOWN:
-                        if (event.key.keysym.sym == SDLK_ESCAPE) {
+                    case SDL_KEYDOWN: {
+                        Sint32 key = event.key.keysym.sym;
+                        if (key == quitKey) {
                             ros::requestShutdown();
+                        } else if (key == rightKey) {
+                            mCameraInWorld = SE3{R3{0.0, -0.1, 0}, SO3{}} * mCameraInWorld;
+                        } else if (key == leftKey) {
+                            mCameraInWorld = SE3{R3{0.0, 0.1, 0}, SO3{}} * mCameraInWorld;
+                        } else if (key == forwardKey) {
+                            mCameraInWorld = SE3{R3{0.1, 0.0, 0}, SO3{}} * mCameraInWorld;
+                        } else if (key == backwardKey) {
+                            mCameraInWorld = SE3{R3{-0.1, 0.0, 0}, SO3{}} * mCameraInWorld;
                         }
-                        break;
+                    }
+                    break;
                     case SDL_QUIT:
                         ros::requestShutdown();
                         break;
@@ -132,6 +183,11 @@ namespace mrover {
 
             renderUpdate();
         }
+
+        // mObjects.clear();
+        // { _ = std::move(mShaderProgram); }
+        // { _ = std::move(mGlContext); }
+        // { _ = std::move(mWindow); }
 
     } catch (std::exception const& e) {
         NODELET_FATAL_STREAM(e.what());

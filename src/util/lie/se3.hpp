@@ -27,7 +27,8 @@ public:
     friend class SE3;
 
     // enable_if_t ensures if we add other explicit constructors this one fails quickly
-    template<typename... Args, typename = std::enable_if_t<std::is_constructible_v<AngleAxis, Args...>>>
+    template<typename... Args>
+        requires std::is_constructible_v<AngleAxis, Args...>
     SO3(Args&&... args) : mAngleAxis{std::forward<Args>(args)...} {
     }
 
@@ -70,7 +71,8 @@ public:
 
     SE3(R3 const& position, SO3 const& rotation = {});
 
-    template<typename... Args, typename = std::enable_if_t<std::is_constructible_v<Transform, Args...>>>
+    template<typename... Args>
+        requires std::is_constructible_v<Transform, Args...>
     SE3(Args&&... args) : mTransform{std::forward<Args>(args)...} {
     }
 

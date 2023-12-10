@@ -20,12 +20,13 @@
 
 #include <SDL2/SDL.h>
 
-#include <Eigen/Core>
-#include <Eigen/Geometry>
+#include <se3.hpp>
 
 #include <params_utils.hpp>
 
 #include <mrover/SimulatorParamsConfig.h>
+
+#include <boost/container/static_vector.hpp>
 
 #include <assimp/scene.h>
 #include <assimp/Importer.hpp>
