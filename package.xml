@@ -67,7 +67,7 @@
   <!-- Localization -->
   <depend>rviz_imu_plugin</depend>
   <depend>robot_localization</depend>
-  <depend>nmea_navsat_driver</depend>
+  <depend>rtcm_msgs</depend>
 
   <!-- Navigation -->
   <depend>smach_ros</depend>
