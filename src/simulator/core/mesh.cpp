@@ -26,8 +26,8 @@ namespace mrover {
 
         bindings.reserve(scene->mNumMeshes);
 
-        for (std::size_t i = 0; i < scene->mNumMeshes; ++i) {
-            aiMesh const* mesh = scene->mMeshes[i];
+        for (std::size_t meshIndex = 0; meshIndex < scene->mNumMeshes; ++meshIndex) {
+            aiMesh const* mesh = scene->mMeshes[meshIndex];
 
             auto& [vao, vbo, ebo, indicesCount] = bindings.emplace_back();
 
@@ -39,18 +39,24 @@ namespace mrover {
             assert(ebo != GL_INVALID_HANDLE);
             glBindVertexArray(vao);
 
+            std::vector<Eigen::Vector3f> vertices(mesh->mNumVertices);
+            std::for_each(std::execution::par, mesh->mVertices, mesh->mVertices + mesh->mNumVertices, [&](aiVector3D const& vertex) {
+                std::size_t vertexIndex = &vertex - mesh->mVertices;
+                // Convert to ROS's right-handed x-forward, y-left, z-up
+                vertices[vertexIndex] = Eigen::Vector3f{vertex.x, -vertex.z, vertex.y};
+            });
             glBindBuffer(GL_ARRAY_BUFFER, vbo);
-            glBufferData(GL_ARRAY_BUFFER, static_cast<GLsizeiptr>(mesh->mNumVertices * sizeof(decltype(*mesh->mVertices))), mesh->mVertices, GL_STATIC_DRAW);
+            glBufferData(GL_ARRAY_BUFFER, static_cast<GLsizeiptr>(vertices.size() * sizeof(decltype(vertices)::value_type)), vertices.data(), GL_STATIC_DRAW);
 
             glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, ebo);
             std::vector<uint> indices(mesh->mNumFaces * 3);
-            for (uint j = 0; j < mesh->mNumFaces; ++j) {
-                aiFace const& face = mesh->mFaces[j];
+            for (uint faceIndex = 0; faceIndex < mesh->mNumFaces; ++faceIndex) {
+                aiFace const& face = mesh->mFaces[faceIndex];
                 assert(face.mNumIndices == 3);
 
-                indices[j * 3 + 0] = face.mIndices[0];
-                indices[j * 3 + 1] = face.mIndices[1];
-                indices[j * 3 + 2] = face.mIndices[2];
+                indices[faceIndex * 3 + 0] = face.mIndices[0];
+                indices[faceIndex * 3 + 1] = face.mIndices[1];
+                indices[faceIndex * 3 + 2] = face.mIndices[2];
             }
             glBufferData(GL_ELEMENT_ARRAY_BUFFER, static_cast<GLsizeiptr>(indices.size() * sizeof(decltype(indices)::value_type)), indices.data(), GL_STATIC_DRAW);
             indicesCount = static_cast<GLsizei>(indices.size());
@@ -62,7 +68,7 @@ namespace mrover {
 
             glBindVertexArray(0);
 
-            ROS_INFO_STREAM(std::format("\tLoaded mesh: {} with {} vertices and {} faces", i, mesh->mNumVertices, mesh->mNumFaces));
+            ROS_INFO_STREAM(std::format("\tLoaded mesh: {} with {} vertices and {} faces", meshIndex, mesh->mNumVertices, mesh->mNumFaces));
         }
     }
 

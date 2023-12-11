@@ -9,6 +9,7 @@
 #include <unordered_set>
 #include <fstream>
 #include <source_location>
+#include <execution>
 
 #include <nodelet/loader.h>
 #include <nodelet/nodelet.h>

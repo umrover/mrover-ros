@@ -16,6 +16,7 @@ namespace mrover {
         if (objects.getType() != XmlRpc::XmlRpcValue::TypeArray) throw std::invalid_argument{"objects must be an array"};
 
         for (int i = 0; i < objects.size(); ++i) {
+            // NOLINT(*-loop-convert)
             XmlRpc::XmlRpcValue const& object = objects[i];
 
             auto type = xmlRpcValueToTypeOrDefault<std::string>(object, "type");
@@ -46,6 +47,7 @@ namespace mrover {
 
         auto w = static_cast<int>(displayMode.w * 0.8), h = static_cast<int>(displayMode.h * 0.8);
         mWindow = SDLPointer<SDL_Window, SDL_CreateWindow, SDL_DestroyWindow>{"MRover Simulator", SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED, w, h, SDL_WINDOW_OPENGL};
+        SDL_SetWindowResizable(mWindow.get(), SDL_TRUE);
         NODELET_INFO_STREAM(std::format("Created window of size: {}x{}", w, h));
 
         check(SDL_GL_SetAttribute(SDL_GL_CONTEXT_PROFILE_MASK, SDL_GL_CONTEXT_PROFILE_CORE) == SDL_OK);
@@ -103,7 +105,13 @@ namespace mrover {
         GLint cameraToClipId = glGetUniformLocation(mShaderProgram.handle, "cameraToClip");
         assert(cameraToClipId != GL_INVALID_INDEX);
 
-        Eigen::Matrix4f worldToCamera = mCameraInWorld.matrix().cast<float>();
+        // Convert from ROS's right-handed x-forward, y-left, z-up to OpenGL's right-handed z-backward, x-right, y-up
+        Eigen::Matrix4f rosToGl;
+        rosToGl << 0, -1, 0, 0,
+                0, 0, 1, 0,
+                -1, 0, 0, 0,
+                0, 0, 0, 1;
+        Eigen::Matrix4f worldToCamera = rosToGl * mCameraInWorld.matrix().inverse().cast<float>();
         glUniform(worldToCameraId, worldToCamera);
 
         Eigen::Matrix4f modelToWorld = SE3{R3{}, SO3{}}.matrix().cast<float>();
@@ -168,26 +176,6 @@ namespace mrover {
 
             while (SDL_PollEvent(&event)) {
                 switch (event.type) {
-                    case SDL_KEYDOWN: {
-                        constexpr float speed = 0.1f;
-                        Sint32 key = event.key.keysym.sym;
-                        if (key == quitKey) {
-                            ros::requestShutdown();
-                        } else if (key == rightKey) {
-                            mCameraInWorld = SE3{R3{-speed, 0.0, 0}, SO3{}} * mCameraInWorld;
-                        } else if (key == leftKey) {
-                            mCameraInWorld = SE3{R3{speed, 0.0, 0}, SO3{}} * mCameraInWorld;
-                        } else if (key == forwardKey) {
-                            mCameraInWorld = SE3{R3{0.0, 0.0, speed}, SO3{}} * mCameraInWorld;
-                        } else if (key == backwardKey) {
-                            mCameraInWorld = SE3{R3{0.0, 0.0, -speed}, SO3{}} * mCameraInWorld;
-                        } else if (key == upKey) {
-                            mCameraInWorld = SE3{R3{0.0, speed, 0.0}, SO3{}} * mCameraInWorld;
-                        } else if (key == downKey) {
-                            mCameraInWorld = SE3{R3{0.0, -speed, 0.0}, SO3{}} * mCameraInWorld;
-                        }
-                    }
-                    break;
                     case SDL_QUIT:
                         ros::requestShutdown();
                         break;
@@ -196,13 +184,42 @@ namespace mrover {
                 }
             }
 
+            constexpr float speed = 0.1f;
+
+            Uint8 const* state = SDL_GetKeyboardState(nullptr);\
+            if (state[quitKey]) {
+                ros::requestShutdown();
+            }
+            if (state[rightKey]) {
+                mCameraInWorld = SE3{R3{0.0, -speed, 0}, SO3{}} * mCameraInWorld;
+            }
+            if (state[leftKey]) {
+                mCameraInWorld = SE3{R3{0.0, speed, 0}, SO3{}} * mCameraInWorld;
+            }
+            if (state[forwardKey]) {
+                mCameraInWorld = SE3{R3{speed, 0.0, 0.0}, SO3{}} * mCameraInWorld;
+            }
+            if (state[backwardKey]) {
+                mCameraInWorld = SE3{R3{-speed, 0.0, 0.0}, SO3{}} * mCameraInWorld;
+            }
+            if (state[upKey]) {
+                mCameraInWorld = SE3{R3{0.0, 0.0, speed}, SO3{}} * mCameraInWorld;
+            }
+            if (state[downKey]) {
+                mCameraInWorld = SE3{R3{0.0, 0.0, -speed}, SO3{}} * mCameraInWorld;
+            }
+
+            int dx{}, dy{};
+            SDL_GetRelativeMouseState(&dx, &dy);
+
+            auto turnX = static_cast<double>(dx) * 0.01;
+            auto turnY = static_cast<double>(dy) * 0.01;
+
+            mCameraInWorld = SE3{R3{}, SO3{-turnX, Eigen::Vector3d::UnitZ()}} * mCameraInWorld;
+            mCameraInWorld = SE3{R3{}, SO3{turnY, Eigen::Vector3d::UnitY()}} * mCameraInWorld;
+
             renderUpdate();
         }
-
-        // mObjects.clear();
-        // { _ = std::move(mShaderProgram); }
-        // { _ = std::move(mGlContext); }
-        // { _ = std::move(mWindow); }
 
     } catch (std::exception const& e) {
         NODELET_FATAL_STREAM(e.what());

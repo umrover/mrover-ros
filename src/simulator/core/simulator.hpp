@@ -80,13 +80,13 @@ namespace mrover
     {
         // Settings
 
-        Sint32 quitKey = SDLK_ESCAPE;
-        Sint32 rightKey = SDLK_d;
-        Sint32 leftKey = SDLK_a;
-        Sint32 forwardKey = SDLK_w;
-        Sint32 backwardKey = SDLK_s;
-        Sint32 upKey = SDLK_SPACE;
-        Sint32 downKey = SDLK_LCTRL;
+        Sint32 quitKey = SDL_SCANCODE_ESCAPE;
+        Sint32 rightKey = SDL_SCANCODE_D;
+        Sint32 leftKey = SDL_SCANCODE_A;
+        Sint32 forwardKey = SDL_SCANCODE_W;
+        Sint32 backwardKey = SDL_SCANCODE_S;
+        Sint32 upKey = SDL_SCANCODE_SPACE;
+        Sint32 downKey = SDL_SCANCODE_LCTRL;
 
         // ROS
 
@@ -103,7 +103,7 @@ namespace mrover
 
         std::vector<Object> mObjects;
 
-        SE3 mCameraInWorld{R3{0.0, 0.0, -2.0}, SO3{}};
+        SE3 mCameraInWorld{R3{-2.0, 0.0, 0.0}, SO3{}};
 
         std::thread mRunThread;
 
