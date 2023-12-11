@@ -10,7 +10,7 @@ namespace mrover {
     struct HBridge {
         HBridge() = default;
 
-        explicit HBridge(TIM_HandleTypeDef* timer);
+        explicit HBridge(TIM_HandleTypeDef* timer, Pin forward_pin, Pin reverse_pin);
 
         void write(Percent output) const;
 

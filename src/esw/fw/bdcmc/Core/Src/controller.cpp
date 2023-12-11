@@ -56,6 +56,8 @@ namespace mrover {
         fdcan_bus = FDCAN<InBoundMessage>{DEVICE_ID, DESTINATION_DEVICE_ID, &hfdcan1};
         controller = Controller{
                 PWM_TIMER,
+				Pin{GPIOB, GPIO_PIN_15},
+				Pin{GPIOA, GPIO_PIN_1},
                 fdcan_bus,
                 FDCAN_WATCHDOG_TIMER,
                 QUADRATURE_TIMER_1,
