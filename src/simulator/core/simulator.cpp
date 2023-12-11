@@ -4,6 +4,8 @@ namespace mrover {
 
     constexpr int SDL_OK = 0;
 
+    constexpr float DEG2RAD = std::numbers::pi_v<float> / 180.0f;
+
     static auto check(bool condition) -> void {
         if (!condition) throw std::runtime_error(std::format("SDL Error: {}", SDL_GetError()));
     }
@@ -59,8 +61,7 @@ namespace mrover {
         auto shadersPath = std::filesystem::path{std::source_location::current().file_name()}.parent_path() / "shaders";
         mShaderProgram = {
                 Shader{shadersPath / "pbr.vert", GL_VERTEX_SHADER},
-                Shader{shadersPath / "pbr.frag", GL_FRAGMENT_SHADER}
-        };
+                Shader{shadersPath / "pbr.frag", GL_FRAGMENT_SHADER}};
     }
 
     auto SimulatorNodelet::onInit() -> void try {
@@ -99,14 +100,20 @@ namespace mrover {
         assert(cameraToClipId != GL_INVALID_INDEX);
 
         // Eigen::Matrix4f worldToCamera = mCameraInWorld.matrix().inverse();
-        Eigen::Matrix4f worldToCamera = SE3{R3{0.0, 0.0, 10.0}, SO3{}}.matrix().cast<float>();
-        glUniformMatrix4fv(worldToCameraId, 1, GL_FALSE, worldToCamera.data());
+        Eigen::Matrix4f worldToCamera = SE3{R3{0.0, 0.0, 0.0}, SO3{}}.matrix().cast<float>();
+        glUniform(worldToCameraId, worldToCamera);
 
         Eigen::Matrix4f modelToWorld = SE3{R3{}, SO3{}}.matrix().cast<float>();
-        glUniformMatrix4fv(modelToWorldId, 1, GL_FALSE, modelToWorld.data());
+        glUniform(modelToWorldId, Eigen::Matrix4f::Identity());
 
-        Eigen::Matrix4f cameraToClip = perspective(45.0f, 1.0f, 0.1f, 100.0f).cast<float>();
-        glUniformMatrix4fv(cameraToClipId, 1, GL_FALSE, cameraToClip.data());
+        int w{}, h{};
+        SDL_GetWindowSize(mWindow.get(), &w, &h);
+        float aspect = static_cast<float>(w) / static_cast<float>(h);
+
+        Eigen::Matrix4f cameraToClip = perspective(45.0f * DEG2RAD, aspect, 0.1f, 100.0f).cast<float>();
+        glUniform(cameraToClipId, Eigen::Matrix4f::Identity());
+
+        glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
 
         if (link->visual && link->visual->geometry) {
             if (auto urdfMesh = std::dynamic_pointer_cast<urdf::Mesh>(link->visual->geometry)) {
@@ -171,8 +178,7 @@ namespace mrover {
                         } else if (key == backwardKey) {
                             mCameraInWorld = SE3{R3{-0.1, 0.0, 0}, SO3{}} * mCameraInWorld;
                         }
-                    }
-                    break;
+                    } break;
                     case SDL_QUIT:
                         ros::requestShutdown();
                         break;

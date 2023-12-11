@@ -94,7 +94,7 @@ add_service_files(FILES ${MROVER_SERVICE_FILES})
 
 generate_messages(DEPENDENCIES ${MROVER_MESSAGE_DEPENDENCIES})
 
-generate_dynamic_reconfigure_options(${MROVER_PARAMETERS})
+#generate_dynamic_reconfigure_options(${MROVER_PARAMETERS})
 
 catkin_package()
 

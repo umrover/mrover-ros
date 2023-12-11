@@ -6,8 +6,8 @@
 
 namespace mrover {
 
-    constexpr float DEG2RAD = M_PI / 180.0f;
-    constexpr uint64_t NS_PER_S = 1000000000;
+    constexpr float DEG2RAD = std::numbers::pi_v<float> / 180.0f;
+    constexpr std::uint64_t NS_PER_S = 1000000000;
 
     ros::Time slTime2Ros(sl::Timestamp t) {
         return {static_cast<uint32_t>(t.getNanoseconds() / NS_PER_S),

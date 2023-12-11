@@ -21,6 +21,7 @@
 #include <SDL2/SDL.h>
 
 #include <se3.hpp>
+#include <unsupported/Eigen/OpenGLSupport>
 
 #include <params_utils.hpp>
 
