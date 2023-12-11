@@ -110,7 +110,7 @@ namespace mrover {
         SDL_GetWindowSize(mWindow.get(), &w, &h);
         float aspect = static_cast<float>(w) / static_cast<float>(h);
 
-        Eigen::Matrix4f cameraToClip = perspective(45.0f * DEG2RAD, aspect, 0.2f, 1000.0f).cast<float>();
+        Eigen::Matrix4f cameraToClip = perspective(60.0f * DEG2RAD, aspect, 0.2f, 100.0f).cast<float>();
         glUniform(cameraToClipId, cameraToClip);
 
         glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
@@ -178,6 +178,10 @@ namespace mrover {
                             mCameraInWorld = SE3{R3{0.0, 0.0, speed}, SO3{}} * mCameraInWorld;
                         } else if (key == backwardKey) {
                             mCameraInWorld = SE3{R3{0.0, 0.0, -speed}, SO3{}} * mCameraInWorld;
+                        } else if (key == upKey) {
+                            mCameraInWorld = SE3{R3{0.0, speed, 0.0}, SO3{}} * mCameraInWorld;
+                        } else if (key == downKey) {
+                            mCameraInWorld = SE3{R3{0.0, -speed, 0.0}, SO3{}} * mCameraInWorld;
                         }
                     }
                     break;

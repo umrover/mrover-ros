@@ -85,6 +85,8 @@ namespace mrover
         Sint32 leftKey = SDLK_a;
         Sint32 forwardKey = SDLK_w;
         Sint32 backwardKey = SDLK_s;
+        Sint32 upKey = SDLK_SPACE;
+        Sint32 downKey = SDLK_LCTRL;
 
         // ROS
 
@@ -101,7 +103,7 @@ namespace mrover
 
         std::vector<Object> mObjects;
 
-        SE3 mCameraInWorld{R3{0.0, 0.0, -1.0}, SO3{}};
+        SE3 mCameraInWorld{R3{0.0, 0.0, -2.0}, SO3{}};
 
         std::thread mRunThread;
 
