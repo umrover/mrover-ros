@@ -101,7 +101,7 @@ namespace mrover
 
         std::vector<Object> mObjects;
 
-        SE3 mCameraInWorld;
+        SE3 mCameraInWorld{R3{0.0, 0.0, -1.0}, SO3{}};
 
         std::thread mRunThread;
 

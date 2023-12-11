@@ -16,10 +16,13 @@ namespace mrover {
 
         // aiScene const* scene = importer.ReadFile(uri.data(),aiProcessPreset_TargetRealtime_MaxQuality);
         aiScene const* scene = importer.ReadFile(uri.data(),aiProcessPreset_TargetRealtime_Quality);
-        if (!scene || scene->mFlags & AI_SCENE_FLAGS_INCOMPLETE || !scene->mRootNode) {
-            throw std::runtime_error{std::format("Asset import error: {} on path: {}", importer.GetErrorString(), uri)};
+        if (!scene) {
+            throw std::runtime_error{std::format("Scene import error: {} on path: {}", importer.GetErrorString(), uri)};
         }
-        ROS_INFO_STREAM(std::format("Loaded mesh: {}", uri));
+        ROS_INFO_STREAM(std::format("Loaded scene: {} with mesh count: {}", uri, scene->mNumMeshes));
+        if (scene->mFlags & AI_SCENE_FLAGS_INCOMPLETE) {
+            throw std::runtime_error{std::format("Incomplete asset: {}", uri)};
+        }
 
         bindings.reserve(scene->mNumMeshes);
 

@@ -43,7 +43,7 @@
     <visual>
       <origin rpy="0 0 0" xyz="0 0 0"/>
       <geometry>
-        <mesh filename="package://mrover/urdf/meshes/rover.dae"/>
+        <mesh filename="package://mrover/urdf/meshes/rover2.glb"/>
       </geometry>
     </visual>
     <collision>
@@ -56,12 +56,12 @@
   <xacro:macro name="wheel" params="side reflect">
     <link name="front_${side}_wheel_link">
       <xacro:sphere_inertia m="${wheel_mass}" r="${wheel_radius}"/>
-      <visual>
-        <origin rpy="0 ${min(0, reflect) * PI} 0" xyz="0 0 0"/>
-        <geometry>
-          <mesh filename="package://mrover/urdf/meshes/rover.wheel.dae"/>
-        </geometry>
-      </visual>
+<!--      <visual>-->
+<!--        <origin rpy="0 ${min(0, reflect) * PI} 0" xyz="0 0 0"/>-->
+<!--        <geometry>-->
+<!--          <mesh filename="package://mrover/urdf/meshes/rover.wheel.dae"/>-->
+<!--        </geometry>-->
+<!--      </visual>-->
       <collision>
         <geometry>
           <sphere radius="${wheel_radius}"/>
@@ -71,12 +71,12 @@
 
     <link name="center_${side}_wheel_link">
       <xacro:cylinder_inertia m="${wheel_mass}" r="${wheel_radius}" h="${wheel_width}"/>
-      <visual>
-        <origin rpy="0 ${min(0, reflect) * PI} 0" xyz="0 0 0"/>
-        <geometry>
-          <mesh filename="package://mrover/urdf/meshes/rover.wheel.dae"/>
-        </geometry>
-      </visual>
+<!--      <visual>-->
+<!--        <origin rpy="0 ${min(0, reflect) * PI} 0" xyz="0 0 0"/>-->
+<!--        <geometry>-->
+<!--          <mesh filename="package://mrover/urdf/meshes/rover.wheel.dae"/>-->
+<!--        </geometry>-->
+<!--      </visual>-->
       <collision>
         <geometry>
           <cylinder length="${wheel_width}" radius="${wheel_radius}"/>
@@ -87,12 +87,12 @@
     <link name="back_${side}_wheel_link">
       <xacro:sphere_inertia m="${wheel_mass}" r="${wheel_radius}"/>
 
-      <visual>
-        <origin rpy="0 ${min(0, reflect) * PI} 0" xyz="0 0 0"/>
-        <geometry>
-          <mesh filename="package://mrover/urdf/meshes/rover.wheel.dae"/>
-        </geometry>
-      </visual>
+<!--      <visual>-->
+<!--        <origin rpy="0 ${min(0, reflect) * PI} 0" xyz="0 0 0"/>-->
+<!--        <geometry>-->
+<!--          <mesh filename="package://mrover/urdf/meshes/rover.wheel.dae"/>-->
+<!--        </geometry>-->
+<!--      </visual>-->
       <collision>
         <geometry>
           <sphere radius="${wheel_radius}"/>
@@ -154,12 +154,12 @@
       </geometry>
     </collision>
 
-    <visual>
-      <origin xyz="0 0 0" rpy="0 0 0"/>
-      <geometry>
-        <mesh filename="package://mrover/urdf/meshes/zed2i.dae"/>
-      </geometry>
-    </visual>
+<!--    <visual>-->
+<!--      <origin xyz="0 0 0" rpy="0 0 0"/>-->
+<!--      <geometry>-->
+<!--        <mesh filename="package://mrover/urdf/meshes/zed2i.dae"/>-->
+<!--      </geometry>-->
+<!--    </visual>-->
 
     <inertial>
       <mass value="1e-5"/>

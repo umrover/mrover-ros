@@ -100,18 +100,18 @@ namespace mrover {
         assert(cameraToClipId != GL_INVALID_INDEX);
 
         // Eigen::Matrix4f worldToCamera = mCameraInWorld.matrix().inverse();
-        Eigen::Matrix4f worldToCamera = SE3{R3{0.0, 0.0, 0.0}, SO3{}}.matrix().cast<float>();
+        Eigen::Matrix4f worldToCamera = mCameraInWorld.matrix().cast<float>();
         glUniform(worldToCameraId, worldToCamera);
 
         Eigen::Matrix4f modelToWorld = SE3{R3{}, SO3{}}.matrix().cast<float>();
-        glUniform(modelToWorldId, Eigen::Matrix4f::Identity());
+        glUniform(modelToWorldId, modelToWorld);
 
         int w{}, h{};
         SDL_GetWindowSize(mWindow.get(), &w, &h);
         float aspect = static_cast<float>(w) / static_cast<float>(h);
 
-        Eigen::Matrix4f cameraToClip = perspective(45.0f * DEG2RAD, aspect, 0.1f, 100.0f).cast<float>();
-        glUniform(cameraToClipId, Eigen::Matrix4f::Identity());
+        Eigen::Matrix4f cameraToClip = perspective(45.0f * DEG2RAD, aspect, 0.2f, 1000.0f).cast<float>();
+        glUniform(cameraToClipId, cameraToClip);
 
         glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
 
@@ -166,19 +166,21 @@ namespace mrover {
             while (SDL_PollEvent(&event)) {
                 switch (event.type) {
                     case SDL_KEYDOWN: {
+                        constexpr float speed = 0.1f;
                         Sint32 key = event.key.keysym.sym;
                         if (key == quitKey) {
                             ros::requestShutdown();
                         } else if (key == rightKey) {
-                            mCameraInWorld = SE3{R3{0.0, -0.1, 0}, SO3{}} * mCameraInWorld;
+                            mCameraInWorld = SE3{R3{-speed, 0.0, 0}, SO3{}} * mCameraInWorld;
                         } else if (key == leftKey) {
-                            mCameraInWorld = SE3{R3{0.0, 0.1, 0}, SO3{}} * mCameraInWorld;
+                            mCameraInWorld = SE3{R3{speed, 0.0, 0}, SO3{}} * mCameraInWorld;
                         } else if (key == forwardKey) {
-                            mCameraInWorld = SE3{R3{0.1, 0.0, 0}, SO3{}} * mCameraInWorld;
+                            mCameraInWorld = SE3{R3{0.0, 0.0, speed}, SO3{}} * mCameraInWorld;
                         } else if (key == backwardKey) {
-                            mCameraInWorld = SE3{R3{-0.1, 0.0, 0}, SO3{}} * mCameraInWorld;
+                            mCameraInWorld = SE3{R3{0.0, 0.0, -speed}, SO3{}} * mCameraInWorld;
                         }
-                    } break;
+                    }
+                    break;
                     case SDL_QUIT:
                         ros::requestShutdown();
                         break;
