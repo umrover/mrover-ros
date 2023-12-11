@@ -1,5 +1,7 @@
 #include "zed_wrapper.hpp"
 
+#include <se3.hpp>
+
 namespace mrover {
 
     using namespace std::chrono_literals;

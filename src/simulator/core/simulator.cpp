@@ -192,11 +192,12 @@ namespace mrover {
         int dx{}, dy{};
         SDL_GetRelativeMouseState(&dx, &dy);
 
-        auto turnX = static_cast<double>(dx) * 0.01;
+        auto turnX = static_cast<double>(-dx) * 0.01;
         auto turnY = static_cast<double>(dy) * 0.01;
 
-        mCameraInWorld = SE3{R3{}, SO3{-turnX, Eigen::Vector3d::UnitZ()}} * mCameraInWorld;
-        mCameraInWorld = SE3{R3{}, SO3{turnY, Eigen::Vector3d::UnitY()}} * mCameraInWorld;
+        R3 r3 = mCameraInWorld.position();
+        SO3 so3 = SO3{turnY, Eigen::Vector3d::UnitY()} * mCameraInWorld.rotation() * SO3{turnX, Eigen::Vector3d::UnitZ()};
+        mCameraInWorld = SE3{r3, so3};
     }
 
     auto SimulatorNodelet::run() -> void try {

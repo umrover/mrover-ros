@@ -18,7 +18,6 @@ using R3 = Eigen::Vector3d;
  * @brief A 3D rotation.
  */
 class SO3 {
-private:
     using AngleAxis = Eigen::AngleAxis<double>;
 
     AngleAxis mAngleAxis = AngleAxis::Identity();
@@ -26,9 +25,11 @@ private:
 public:
     friend class SE3;
 
+    SO3() = default;
+
     // enable_if_t ensures if we add other explicit constructors this one fails quickly
     template<typename... Args>
-        requires std::is_constructible_v<AngleAxis, Args...>
+        requires (sizeof...(Args) > 0) && std::is_constructible_v<AngleAxis, Args...>
     SO3(Args&&... args) : mAngleAxis{std::forward<Args>(args)...} {
     }
 
@@ -47,7 +48,6 @@ public:
  * In simpler terms: a 3D rotation followed by a 3D translation.
  */
 class SE3 {
-private:
     using Transform = Eigen::Transform<double, 3, Eigen::Isometry>;
 
     static SE3 fromTf(geometry_msgs::Transform const& transform);
@@ -69,10 +69,12 @@ public:
 
     static void pushToTfTree(tf2_ros::TransformBroadcaster& broadcaster, std::string const& childFrameId, std::string const& parentFrameId, SE3 const& tf);
 
-    SE3(R3 const& position, SO3 const& rotation = {});
+    SE3() = default;
+
+    SE3(R3 const& position, SO3 const& rotation);
 
     template<typename... Args>
-        requires std::is_constructible_v<Transform, Args...>
+        requires (sizeof...(Args) > 0) && std::is_constructible_v<Transform, Args...>
     SE3(Args&&... args) : mTransform{std::forward<Args>(args)...} {
     }
 
