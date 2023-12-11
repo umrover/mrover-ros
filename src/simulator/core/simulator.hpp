@@ -80,18 +80,18 @@ namespace mrover
     {
         // Settings
 
-        Sint32 quitKey = SDL_SCANCODE_ESCAPE;
-        Sint32 rightKey = SDL_SCANCODE_D;
-        Sint32 leftKey = SDL_SCANCODE_A;
-        Sint32 forwardKey = SDL_SCANCODE_W;
-        Sint32 backwardKey = SDL_SCANCODE_S;
-        Sint32 upKey = SDL_SCANCODE_SPACE;
-        Sint32 downKey = SDL_SCANCODE_LCTRL;
+        Sint32 mQuitKey = SDL_SCANCODE_ESCAPE;
+        Sint32 mRightKey = SDL_SCANCODE_D;
+        Sint32 mLeftKey = SDL_SCANCODE_A;
+        Sint32 mForwardKey = SDL_SCANCODE_W;
+        Sint32 mBackwardKey = SDL_SCANCODE_S;
+        Sint32 mUpKey = SDL_SCANCODE_SPACE;
+        Sint32 mDownKey = SDL_SCANCODE_LCTRL;
+        float mFlySpeed = 0.1f;
 
         // ROS
 
-        ros::NodeHandle mNh, mPnh;
-
+        ros::NodeHandle mNh, mPnh;commi
         // Rendering
 
         SDLPointer<SDL_Window, SDL_CreateWindow, SDL_DestroyWindow> mWindow;
@@ -119,6 +119,8 @@ namespace mrover
         auto onInit() -> void override;
 
         auto run() -> void;
+
+        auto freeLook() -> void;
 
         auto renderObject(URDF const& urdf) -> void;
 

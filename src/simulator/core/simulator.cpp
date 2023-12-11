@@ -165,6 +165,40 @@ namespace mrover {
         SDL_GL_SwapWindow(mWindow.get());
     }
 
+    auto SimulatorNodelet::freeLook() -> void {
+        Uint8 const* state = SDL_GetKeyboardState(nullptr);
+        if (state[mQuitKey]) {
+            ros::requestShutdown();
+        }
+        if (state[mRightKey]) {
+            mCameraInWorld = SE3{R3{0.0, -mFlySpeed, 0}, SO3{}} * mCameraInWorld;
+        }
+        if (state[mLeftKey]) {
+            mCameraInWorld = SE3{R3{0.0, mFlySpeed, 0}, SO3{}} * mCameraInWorld;
+        }
+        if (state[mForwardKey]) {
+            mCameraInWorld = SE3{R3{mFlySpeed, 0.0, 0.0}, SO3{}} * mCameraInWorld;
+        }
+        if (state[mBackwardKey]) {
+            mCameraInWorld = SE3{R3{-mFlySpeed, 0.0, 0.0}, SO3{}} * mCameraInWorld;
+        }
+        if (state[mUpKey]) {
+            mCameraInWorld = SE3{R3{0.0, 0.0, mFlySpeed}, SO3{}} * mCameraInWorld;
+        }
+        if (state[mDownKey]) {
+            mCameraInWorld = SE3{R3{0.0, 0.0, -mFlySpeed}, SO3{}} * mCameraInWorld;
+        }
+
+        int dx{}, dy{};
+        SDL_GetRelativeMouseState(&dx, &dy);
+
+        auto turnX = static_cast<double>(dx) * 0.01;
+        auto turnY = static_cast<double>(dy) * 0.01;
+
+        mCameraInWorld = SE3{R3{}, SO3{-turnX, Eigen::Vector3d::UnitZ()}} * mCameraInWorld;
+        mCameraInWorld = SE3{R3{}, SO3{turnY, Eigen::Vector3d::UnitY()}} * mCameraInWorld;
+    }
+
     auto SimulatorNodelet::run() -> void try {
 
         initRender();
@@ -184,39 +218,7 @@ namespace mrover {
                 }
             }
 
-            constexpr float speed = 0.1f;
-
-            Uint8 const* state = SDL_GetKeyboardState(nullptr);\
-            if (state[quitKey]) {
-                ros::requestShutdown();
-            }
-            if (state[rightKey]) {
-                mCameraInWorld = SE3{R3{0.0, -speed, 0}, SO3{}} * mCameraInWorld;
-            }
-            if (state[leftKey]) {
-                mCameraInWorld = SE3{R3{0.0, speed, 0}, SO3{}} * mCameraInWorld;
-            }
-            if (state[forwardKey]) {
-                mCameraInWorld = SE3{R3{speed, 0.0, 0.0}, SO3{}} * mCameraInWorld;
-            }
-            if (state[backwardKey]) {
-                mCameraInWorld = SE3{R3{-speed, 0.0, 0.0}, SO3{}} * mCameraInWorld;
-            }
-            if (state[upKey]) {
-                mCameraInWorld = SE3{R3{0.0, 0.0, speed}, SO3{}} * mCameraInWorld;
-            }
-            if (state[downKey]) {
-                mCameraInWorld = SE3{R3{0.0, 0.0, -speed}, SO3{}} * mCameraInWorld;
-            }
-
-            int dx{}, dy{};
-            SDL_GetRelativeMouseState(&dx, &dy);
-
-            auto turnX = static_cast<double>(dx) * 0.01;
-            auto turnY = static_cast<double>(dy) * 0.01;
-
-            mCameraInWorld = SE3{R3{}, SO3{-turnX, Eigen::Vector3d::UnitZ()}} * mCameraInWorld;
-            mCameraInWorld = SE3{R3{}, SO3{turnY, Eigen::Vector3d::UnitY()}} * mCameraInWorld;
+            freeLook();
 
             renderUpdate();
         }
