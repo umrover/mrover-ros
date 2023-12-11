@@ -58,6 +58,10 @@ namespace mrover {
         glewExperimental = GL_TRUE;
         check(glewInit() == GLEW_OK);
 
+        glEnable(GL_DEPTH_TEST);
+        glDepthMask(GL_FALSE);
+        glDepthFunc(GL_LESS);
+
         auto shadersPath = std::filesystem::path{std::source_location::current().file_name()}.parent_path() / "shaders";
         mShaderProgram = {
                 Shader{shadersPath / "pbr.vert", GL_VERTEX_SHADER},
@@ -76,15 +80,15 @@ namespace mrover {
     }
 
     auto perspective(float fovY, float aspect, float zNear, float zFar) -> Eigen::Matrix4f {
+        // Equivalent to glm::perspectiveRH_NO
         float theta = fovY * 0.5f;
         float range = zFar - zNear;
         float invtan = 1.0f / tanf(theta);
-
-        Eigen::Matrix4f result{};
+        Eigen::Matrix4f result;
         result << invtan / aspect, 0.0f, 0.0f, 0.0f,
                 0.0f, invtan, 0.0f, 0.0f,
-                0.0f, 0.0f, -(zFar + zNear) / range, -1.0f,
-                0.0f, 0.0f, -2.0f * zNear * zFar / range, 0.0f;
+                0.0f, 0.0f, -(zFar + zNear) / range, -2.0f * zFar * zNear / range,
+                0.0f, 0.0f, -1.0f, 0.0f;
         return result;
     }
 
@@ -99,7 +103,6 @@ namespace mrover {
         GLint cameraToClipId = glGetUniformLocation(mShaderProgram.handle, "cameraToClip");
         assert(cameraToClipId != GL_INVALID_INDEX);
 
-        // Eigen::Matrix4f worldToCamera = mCameraInWorld.matrix().inverse();
         Eigen::Matrix4f worldToCamera = mCameraInWorld.matrix().cast<float>();
         glUniform(worldToCameraId, worldToCamera);
 
@@ -110,7 +113,7 @@ namespace mrover {
         SDL_GetWindowSize(mWindow.get(), &w, &h);
         float aspect = static_cast<float>(w) / static_cast<float>(h);
 
-        Eigen::Matrix4f cameraToClip = perspective(60.0f * DEG2RAD, aspect, 0.2f, 100.0f).cast<float>();
+        Eigen::Matrix4f cameraToClip = perspective(60.0f * DEG2RAD, aspect, 0.1f, 100.0f).cast<float>();
         glUniform(cameraToClipId, cameraToClip);
 
         glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
@@ -145,7 +148,7 @@ namespace mrover {
 
         glViewport(0, 0, w, h);
         glClearColor(0.2f, 0.2f, 0.2f, 1.0f);
-        glClear(GL_COLOR_BUFFER_BIT);
+        glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
         for (auto const& object: mObjects) {
             std::visit([&](auto const& o) { renderObject(o); }, object);
