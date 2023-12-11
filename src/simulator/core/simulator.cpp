@@ -105,11 +105,11 @@ namespace mrover {
         GLint cameraToClipId = glGetUniformLocation(mShaderProgram.handle, "cameraToClip");
         assert(cameraToClipId != GL_INVALID_INDEX);
 
-        // Convert from ROS's right-handed x-forward, y-left, z-up to OpenGL's right-handed z-backward, x-right, y-up
+        // Convert from ROS's right-handed +x forward, +y left, +z up to OpenGL's right-handed +x right, +y up, +z backward
         Eigen::Matrix4f rosToGl;
-        rosToGl << 0, -1, 0, 0,
-                0, 0, 1, 0,
-                -1, 0, 0, 0,
+        rosToGl << 0, -1, 0, 0, // OpenGL x = -ROS y
+                0, 0, 1, 0,     // OpenGL y = ROS z
+                -1, 0, 0, 0,    //  OpenGL z = -ROS x
                 0, 0, 0, 1;
         Eigen::Matrix4f worldToCamera = rosToGl * mCameraInWorld.matrix().inverse().cast<float>();
         glUniform(worldToCameraId, worldToCamera);

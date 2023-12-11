@@ -91,7 +91,8 @@ namespace mrover
 
         // ROS
 
-        ros::NodeHandle mNh, mPnh;commi
+        ros::NodeHandle mNh, mPnh;
+
         // Rendering
 
         SDLPointer<SDL_Window, SDL_CreateWindow, SDL_DestroyWindow> mWindow;

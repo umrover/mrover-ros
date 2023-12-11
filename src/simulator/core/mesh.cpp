@@ -11,11 +11,15 @@ namespace mrover {
             throw std::invalid_argument{std::format("Invalid URI: {}", uri)};
         }
 
+        if (!uri.ends_with("glb")) {
+            ROS_WARN_STREAM(std::format("URDF mesh visual importer has only been tested with the glTF binary format (.glb): {}", uri));
+        }
+
         Assimp::Importer importer;
         importer.SetPropertyInteger(AI_CONFIG_PP_SBP_REMOVE, aiPrimitiveType_POINT | aiPrimitiveType_LINE);
 
         // aiScene const* scene = importer.ReadFile(uri.data(),aiProcessPreset_TargetRealtime_MaxQuality);
-        aiScene const* scene = importer.ReadFile(uri.data(),aiProcessPreset_TargetRealtime_Quality);
+        aiScene const* scene = importer.ReadFile(uri.data(), aiProcessPreset_TargetRealtime_Quality);
         if (!scene) {
             throw std::runtime_error{std::format("Scene import error: {} on path: {}", importer.GetErrorString(), uri)};
         }
@@ -42,7 +46,8 @@ namespace mrover {
             std::vector<Eigen::Vector3f> vertices(mesh->mNumVertices);
             std::for_each(std::execution::par, mesh->mVertices, mesh->mVertices + mesh->mNumVertices, [&](aiVector3D const& vertex) {
                 std::size_t vertexIndex = &vertex - mesh->mVertices;
-                // Convert to ROS's right-handed x-forward, y-left, z-up
+                // This importer has only been tested with Blender exporting to glTF
+                // Blender must be using ROS's coordinate system: +x forward, +y left, +z up
                 vertices[vertexIndex] = Eigen::Vector3f{vertex.x, -vertex.z, vertex.y};
             });
             glBindBuffer(GL_ARRAY_BUFFER, vbo);
