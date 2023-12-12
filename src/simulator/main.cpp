@@ -1,4 +1,4 @@
-#include "core/simulator.hpp"
+#include "simulator.hpp"
 
 #ifdef MROVER_IS_NODELET
 

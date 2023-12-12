@@ -54,14 +54,17 @@ set(MROVER_CMAKE_INCLUDES
 ### Dependencies ###
 ### ============ ###
 
+if (MROVER_BUILD_SIM)
+    find_package(OpenGL REQUIRED)
+    find_package(GLEW REQUIRED)
+    find_package(Assimp REQUIRED)
+    find_package(SDL2 REQUIRED COMPONENTS SDL2)
+    find_package(Bullet REQUIRED)
+endif ()
 find_package(OpenCV REQUIRED)
-find_package(OpenGL REQUIRED)
-find_package(GLEW REQUIRED)
 find_package(ZED 2 QUIET)
 find_package(Eigen3 REQUIRED)
-find_package(SDL2 REQUIRED COMPONENTS SDL2)
 find_package(PkgConfig REQUIRED)
-find_package(Assimp REQUIRED)
 pkg_search_module(NetLink REQUIRED libnl-3.0)
 pkg_search_module(NetLinkRoute REQUIRED libnl-route-3.0)
 if (ZED_FOUND)
@@ -143,8 +146,8 @@ mrover_add_esw_bridge_node(test_arm_bridge src/esw/test_arm_bridge/*.cpp)
 
 ## Perception
 
- mrover_add_nodelet(tag_detector src/perception/tag_detector/*.cpp src/perception/tag_detector src/perception/tag_detector/pch.hpp)
- mrover_nodelet_link_libraries(tag_detector opencv_core opencv_objdetect opencv_aruco opencv_imgproc tbb lie)
+mrover_add_nodelet(tag_detector src/perception/tag_detector/*.cpp src/perception/tag_detector src/perception/tag_detector/pch.hpp)
+mrover_nodelet_link_libraries(tag_detector opencv_core opencv_objdetect opencv_aruco opencv_imgproc tbb lie)
 
 if (ZED_FOUND)
     mrover_add_library(streaming src/esw/streaming/*.c* src/esw/streaming)
@@ -164,9 +167,11 @@ endif ()
 
 ## Simulator
 
-mrover_add_nodelet(simulator src/simulator/*.cpp src/simulator src/simulator/pch.hpp)
-mrover_nodelet_include_directories(simulator ${SDL2_INCLUDE_DIRS} ${OPENGL_INCLUDE_DIR} ${ASSIMP_INCLUDE_DIRS} ${GLEW_INCLUDE_DIRS})
-mrover_nodelet_link_libraries(simulator ${SDL2_LIBRARIES} ${OPENGL_LIBRARIES} ${ASSIMP_LIBRARIES} ${GLEW_LIBRARIES} lie tbb)
+if (MROVER_BUILD_SIM)
+    mrover_add_nodelet(simulator src/simulator/*.cpp src/simulator src/simulator/pch.hpp)
+    mrover_nodelet_include_directories(simulator ${SDL2_INCLUDE_DIRS} ${OPENGL_INCLUDE_DIR} ${ASSIMP_INCLUDE_DIRS} ${GLEW_INCLUDE_DIRS} ${BULLET_INCLUDE_DIRS})
+    mrover_nodelet_link_libraries(simulator ${SDL2_LIBRARIES} ${OPENGL_LIBRARIES} ${ASSIMP_LIBRARIES} ${GLEW_LIBRARIES} ${BULLET_LIBRARIES} lie tbb)
+endif ()
 
 # TODO
 

@@ -4,8 +4,6 @@
 
 namespace mrover {
 
-    using namespace std::chrono_literals;
-
     /**
      * Allows us to store enums as strings in the config file.
      * This avoids problems when ZED updates their enum integer values.

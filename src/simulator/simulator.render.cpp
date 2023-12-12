@@ -10,34 +10,25 @@ namespace mrover {
         if (!condition) throw std::runtime_error(std::format("SDL Error: {}", SDL_GetError()));
     }
 
-    auto SimulatorNodelet::parseParams() -> void {
-        XmlRpc::XmlRpcValue objects;
-        mNh.getParam("objects", objects);
-        if (objects.getType() != XmlRpc::XmlRpcValue::TypeArray) throw std::invalid_argument{"objects must be an array"};
-
-        for (int i = 0; i < objects.size(); ++i) {
-            // NOLINT(*-loop-convert)
-            XmlRpc::XmlRpcValue const& object = objects[i];
-
-            auto type = xmlRpcValueToTypeOrDefault<std::string>(object, "type");
-            auto name = xmlRpcValueToTypeOrDefault<std::string>(object, "name", "<unnamed>");
-
-            NODELET_INFO_STREAM(std::format("Loading object: {} of type: {}", name, type));
-
-            if (type == "urdf") {
-                mObjects.emplace_back(URDF{object});
-            }
-        }
-    }
-
-    SimulatorNodelet::~SimulatorNodelet() {
-        mRunThread.join();
-        // When you make an OpenGL context it binds to the thread that created it
-        // This destructor is called from another thread, so we need to steal the context before the member destructors are run
-        SDL_GL_MakeCurrent(mWindow.get(), mGlContext.get());
+    auto perspective(float fovY, float aspect, float zNear, float zFar) -> Eigen::Matrix4f {
+        // Equivalent to glm::perspectiveRH_NO
+        float theta = fovY * 0.5f;
+        float range = zFar - zNear;
+        float invtan = 1.0f / tanf(theta);
+        Eigen::Matrix4f result;
+        result << invtan / aspect, 0.0f, 0.0f, 0.0f,
+                0.0f, invtan, 0.0f, 0.0f,
+                0.0f, 0.0f, -(zFar + zNear) / range, -2.0f * zFar * zNear / range,
+                0.0f, 0.0f, -1.0f, 0.0f;
+        return result;
     }
 
     auto SimulatorNodelet::initRender() -> void {
+        // Force laptops with NVIDIA GPUs to use it instead of the integrated graphics
+        setenv("DRI_PRIME", "1", true);
+        setenv("__NV_PRIME_RENDER_OFFLOAD", "1", true);
+        setenv("__GLX_VENDOR_LIBRARY_NAME", "nvidia", true);
+
         check(SDL_Init(SDL_INIT_VIDEO) == SDL_OK);
         NODELET_INFO_STREAM(std::format("Initialized SDL Version: {}.{}.{}", SDL_MAJOR_VERSION, SDL_MINOR_VERSION, SDL_PATCHLEVEL));
 
@@ -55,7 +46,10 @@ namespace mrover {
         check(SDL_GL_SetAttribute(SDL_GL_CONTEXT_MINOR_VERSION, 1) == SDL_OK);
         mGlContext = SDLPointer<std::remove_pointer_t<SDL_GLContext>, SDL_GL_CreateContext, SDL_GL_DeleteContext>{mWindow.get()};
         check(SDL_GL_SetSwapInterval(1) == SDL_OK);
-        NODELET_INFO_STREAM(std::format("Initialized OpenGL Version: {}.{}", reinterpret_cast<char const*>(glGetString(GL_VERSION)), reinterpret_cast<char const*>(glGetString(GL_SHADING_LANGUAGE_VERSION))));
+        NODELET_INFO_STREAM(std::format("Initialized OpenGL Version: {}", reinterpret_cast<char const*>(glGetString(GL_VERSION))));
+        NODELET_INFO_STREAM(std::format("\tShading Language Version: {}", reinterpret_cast<char const*>(glGetString(GL_SHADING_LANGUAGE_VERSION))));
+        NODELET_INFO_STREAM(std::format("\tVendor: {}", reinterpret_cast<char const*>(glGetString(GL_VENDOR))));
+        NODELET_INFO_STREAM(std::format("\tRenderer: {}", reinterpret_cast<char const*>(glGetString(GL_RENDERER))));
 
         glewExperimental = GL_TRUE;
         check(glewInit() == GLEW_OK);
@@ -68,30 +62,6 @@ namespace mrover {
         mShaderProgram = {
                 Shader{shadersPath / "pbr.vert", GL_VERTEX_SHADER},
                 Shader{shadersPath / "pbr.frag", GL_FRAGMENT_SHADER}};
-    }
-
-    auto SimulatorNodelet::onInit() -> void try {
-        mNh = getNodeHandle();
-        mPnh = getMTPrivateNodeHandle();
-
-        mRunThread = std::thread{&SimulatorNodelet::run, this};
-
-    } catch (std::exception const& e) {
-        NODELET_FATAL_STREAM(e.what());
-        ros::shutdown();
-    }
-
-    auto perspective(float fovY, float aspect, float zNear, float zFar) -> Eigen::Matrix4f {
-        // Equivalent to glm::perspectiveRH_NO
-        float theta = fovY * 0.5f;
-        float range = zFar - zNear;
-        float invtan = 1.0f / tanf(theta);
-        Eigen::Matrix4f result;
-        result << invtan / aspect, 0.0f, 0.0f, 0.0f,
-                0.0f, invtan, 0.0f, 0.0f,
-                0.0f, 0.0f, -(zFar + zNear) / range, -2.0f * zFar * zNear / range,
-                0.0f, 0.0f, -1.0f, 0.0f;
-        return result;
     }
 
     auto SimulatorNodelet::traverseLinkForRender(URDF const& urdf, urdf::LinkConstSharedPtr const& link) -> void {
@@ -163,70 +133,6 @@ namespace mrover {
         }
 
         SDL_GL_SwapWindow(mWindow.get());
-    }
-
-    auto SimulatorNodelet::freeLook() -> void {
-        Uint8 const* state = SDL_GetKeyboardState(nullptr);
-        if (state[mQuitKey]) {
-            ros::requestShutdown();
-        }
-        if (state[mRightKey]) {
-            mCameraInWorld = SE3{R3{0.0, -mFlySpeed, 0}, SO3{}} * mCameraInWorld;
-        }
-        if (state[mLeftKey]) {
-            mCameraInWorld = SE3{R3{0.0, mFlySpeed, 0}, SO3{}} * mCameraInWorld;
-        }
-        if (state[mForwardKey]) {
-            mCameraInWorld = SE3{R3{mFlySpeed, 0.0, 0.0}, SO3{}} * mCameraInWorld;
-        }
-        if (state[mBackwardKey]) {
-            mCameraInWorld = SE3{R3{-mFlySpeed, 0.0, 0.0}, SO3{}} * mCameraInWorld;
-        }
-        if (state[mUpKey]) {
-            mCameraInWorld = SE3{R3{0.0, 0.0, mFlySpeed}, SO3{}} * mCameraInWorld;
-        }
-        if (state[mDownKey]) {
-            mCameraInWorld = SE3{R3{0.0, 0.0, -mFlySpeed}, SO3{}} * mCameraInWorld;
-        }
-
-        int dx{}, dy{};
-        SDL_GetRelativeMouseState(&dx, &dy);
-
-        auto turnX = static_cast<double>(-dx) * 0.01;
-        auto turnY = static_cast<double>(dy) * 0.01;
-
-        R3 r3 = mCameraInWorld.position();
-        SO3 so3 = SO3{turnY, Eigen::Vector3d::UnitY()} * mCameraInWorld.rotation() * SO3{turnX, Eigen::Vector3d::UnitZ()};
-        mCameraInWorld = SE3{r3, so3};
-    }
-
-    auto SimulatorNodelet::run() -> void try {
-
-        initRender();
-
-        parseParams();
-
-        while (ros::ok()) {
-            SDL_Event event;
-
-            while (SDL_PollEvent(&event)) {
-                switch (event.type) {
-                    case SDL_QUIT:
-                        ros::requestShutdown();
-                        break;
-                    default:
-                        break;
-                }
-            }
-
-            freeLook();
-
-            renderUpdate();
-        }
-
-    } catch (std::exception const& e) {
-        NODELET_FATAL_STREAM(e.what());
-        ros::shutdown();
     }
 
 } // namespace mrover

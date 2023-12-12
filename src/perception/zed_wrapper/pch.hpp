@@ -1,16 +1,15 @@
 #pragma once
 
 #include <cassert>
-#include <chrono>
 #include <condition_variable>
 #include <cstdint>
 #include <mutex>
 #include <thread>
 
-#include <boost_cpp23_workaround.hpp>
-
 #include <sl/Camera.hpp>
 #include <thrust/device_vector.h>
+
+#include <boost_cpp23_workaround.hpp>
 
 #include <nodelet/loader.h>
 #include <nodelet/nodelet.h>

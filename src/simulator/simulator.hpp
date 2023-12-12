@@ -1,6 +1,6 @@
 #pragma once
 
-#include "../pch.hpp"
+#include "pch.hpp"
 
 #include "sdl_pointer.hpp"
 
@@ -100,6 +100,14 @@ namespace mrover
 
         Program mShaderProgram;
 
+        // Physics
+
+        std::unique_ptr<btDefaultCollisionConfiguration> mCollisionConfig;
+        std::unique_ptr<btCollisionDispatcher> mDispatcher;
+        std::unique_ptr<btDbvtBroadphase> mOverlappingPairCache;
+        std::unique_ptr<btSequentialImpulseConstraintSolver> mSolver;
+        std::unique_ptr<btDiscreteDynamicsWorld> mWorld;
+
         // Scene
 
         std::vector<Object> mObjects;
@@ -114,6 +122,8 @@ namespace mrover
         ~SimulatorNodelet() override;
 
         auto initRender() -> void;
+
+        auto initPhysics() -> void;
 
         auto parseParams() -> void;
 

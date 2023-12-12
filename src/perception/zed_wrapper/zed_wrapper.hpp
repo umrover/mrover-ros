@@ -9,7 +9,6 @@ namespace mrover {
     using PointCloudGpu = thrust::device_vector<Point>;
 
     class ZedNodelet : public nodelet::Nodelet {
-    private:
         struct Measures {
             ros::Time time;
             sl::Mat leftImage;
