@@ -25,6 +25,9 @@
 
 #include <SDL2/SDL.h>
 
+#include "imgui/backends/imgui_impl_sdl2.h"
+#include "imgui/backends/imgui_impl_opengl3.h"
+
 #include <unsupported/Eigen/OpenGLSupport>
 
 #include <btBulletDynamicsCommon.h>

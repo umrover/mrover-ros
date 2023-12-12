@@ -82,7 +82,8 @@ namespace mrover
 
         // Settings
 
-        Sint32 mQuitKey = SDL_SCANCODE_ESCAPE;
+        Sint32 mQuitKey = SDLK_q;
+        Sint32 mInGuiKey = SDLK_ESCAPE;
         Sint32 mRightKey = SDL_SCANCODE_D;
         Sint32 mLeftKey = SDL_SCANCODE_A;
         Sint32 mForwardKey = SDL_SCANCODE_W;
@@ -103,6 +104,9 @@ namespace mrover
         std::unordered_map<std::string, Mesh> mUriToMesh;
 
         Program mShaderProgram;
+
+        bool mInGui = false;
+        bool mInGuiChangedThisUpdated = false;
 
         // Physics
 
