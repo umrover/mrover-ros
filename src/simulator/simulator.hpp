@@ -82,6 +82,7 @@ namespace mrover
 
         // Settings
 
+        double mTargetFps = 300;
         Sint32 mQuitKey = SDLK_q;
         Sint32 mInGuiKey = SDLK_ESCAPE;
         Sint32 mRightKey = SDL_SCANCODE_D;
@@ -90,6 +91,7 @@ namespace mrover
         Sint32 mBackwardKey = SDL_SCANCODE_S;
         Sint32 mUpKey = SDL_SCANCODE_SPACE;
         Sint32 mDownKey = SDL_SCANCODE_LCTRL;
+
         float mFlySpeed = 0.1f;
 
         // ROS

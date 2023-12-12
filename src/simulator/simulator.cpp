@@ -60,6 +60,8 @@ namespace mrover {
 
         parseParams();
 
+        ros::Rate rate{mTargetFps};
+
         while (ros::ok()) {
             SDL_Event event;
 
@@ -78,8 +80,8 @@ namespace mrover {
                             mInGui = !mInGui;
                             mInGuiChangedThisUpdated = true;
                         }
+                        break;
                     }
-                    break;
                     default:
                         break;
                 }
@@ -94,6 +96,8 @@ namespace mrover {
             renderUpdate();
 
             mInGuiChangedThisUpdated = false;
+
+            rate.sleep();
         }
 
     } catch (std::exception const& e) {

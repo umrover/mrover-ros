@@ -47,7 +47,7 @@ namespace mrover {
         check(SDL_GL_SetAttribute(SDL_GL_DEPTH_SIZE, 24) == SDL_OK);
         check(SDL_GL_SetAttribute(SDL_GL_STENCIL_SIZE, 8) == SDL_OK);
         mGlContext = SDLPointer<std::remove_pointer_t<SDL_GLContext>, SDL_GL_CreateContext, SDL_GL_DeleteContext>{mWindow.get()};
-        check(SDL_GL_SetSwapInterval(1) == SDL_OK);
+        check(SDL_GL_SetSwapInterval(0) == SDL_OK);
         NODELET_INFO_STREAM(std::format("Initialized OpenGL Version: {}", reinterpret_cast<char const*>(glGetString(GL_VERSION))));
         NODELET_INFO_STREAM(std::format("\tShading Language Version: {}", reinterpret_cast<char const*>(glGetString(GL_SHADING_LANGUAGE_VERSION))));
         NODELET_INFO_STREAM(std::format("\tVendor: {}", reinterpret_cast<char const*>(glGetString(GL_VENDOR))));
@@ -140,6 +140,13 @@ namespace mrover {
         ImGui_ImplOpenGL3_NewFrame();
         ImGui_ImplSDL2_NewFrame(mWindow.get());
         ImGui::NewFrame();
+
+        // Draw fps text
+        ImGui::SetNextWindowPos(ImVec2(8, 8));
+        ImGui::SetNextWindowSize(ImVec2(0, 0));
+        ImGui::Begin("FPS", nullptr, ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoSavedSettings);
+        ImGui::Text("FPS: %.1f", ImGui::GetIO().Framerate);
+        ImGui::End();
 
         bool show_demo_window = true;
         ImGui::ShowDemoWindow(&show_demo_window);
