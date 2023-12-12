@@ -12,6 +12,8 @@ namespace mrover
 
     constexpr static GLuint GL_INVALID_HANDLE = 0;
 
+    class SimulatorNodelet;
+
     struct Shader
     {
         GLuint handle = GL_INVALID_HANDLE;
@@ -69,15 +71,15 @@ namespace mrover
     struct URDF
     {
         urdf::Model model;
-        std::unordered_map<std::string, Mesh> uriToMeshes;
 
-        explicit URDF(XmlRpc::XmlRpcValue const& init);
+        URDF(SimulatorNodelet& simulator, XmlRpc::XmlRpcValue const& init);
     };
-
-    using Object = std::variant<URDF>;
 
     class SimulatorNodelet final : public nodelet::Nodelet
     {
+        friend Mesh;
+        friend URDF;
+
         // Settings
 
         Sint32 mQuitKey = SDL_SCANCODE_ESCAPE;
@@ -98,6 +100,8 @@ namespace mrover
         SDLPointer<SDL_Window, SDL_CreateWindow, SDL_DestroyWindow> mWindow;
         SDLPointer<std::remove_pointer_t<SDL_GLContext>, SDL_GL_CreateContext, SDL_GL_DeleteContext> mGlContext;
 
+        std::unordered_map<std::string, Mesh> mUriToMesh;
+
         Program mShaderProgram;
 
         // Physics
@@ -106,11 +110,14 @@ namespace mrover
         std::unique_ptr<btCollisionDispatcher> mDispatcher;
         std::unique_ptr<btDbvtBroadphase> mOverlappingPairCache;
         std::unique_ptr<btSequentialImpulseConstraintSolver> mSolver;
-        std::unique_ptr<btDiscreteDynamicsWorld> mWorld;
+        std::unique_ptr<btDiscreteDynamicsWorld> mPhysicsWorld;
+        std::vector<std::unique_ptr<btCollisionShape>> mCollisionShapes;
+        std::vector<std::unique_ptr<btCollisionObject>> mCollisionObjects;
+        std::vector<std::unique_ptr<btMotionState>> mMotionStates;
 
         // Scene
 
-        std::vector<Object> mObjects;
+        std::vector<URDF> mUrdfs;
 
         SE3 mCameraInWorld{R3{-2.0, 0.0, 0.0}, SO3{}};
 
@@ -133,10 +140,12 @@ namespace mrover
 
         auto freeLook() -> void;
 
-        auto renderObject(URDF const& urdf) -> void;
+        auto renderUrdf(URDF const& urdf) -> void;
 
         auto traverseLinkForRender(URDF const& urdf, urdf::LinkConstSharedPtr const& link) -> void;
 
         auto renderUpdate() -> void;
+
+        auto physicsUpdate() -> void;
     };
 } // namespace mrover

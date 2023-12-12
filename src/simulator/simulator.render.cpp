@@ -94,11 +94,9 @@ namespace mrover {
         Eigen::Matrix4f cameraToClip = perspective(60.0f * DEG2RAD, aspect, 0.1f, 100.0f).cast<float>();
         glUniform(cameraToClipId, cameraToClip);
 
-        glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
-
         if (link->visual && link->visual->geometry) {
             if (auto urdfMesh = std::dynamic_pointer_cast<urdf::Mesh>(link->visual->geometry)) {
-                for (Mesh const& mesh = urdf.uriToMeshes.at(urdfMesh->filename);
+                for (Mesh const& mesh = mUriToMesh.at(urdfMesh->filename);
                      auto const& [vao, _vbo, _ebo, indicesCount]: mesh.bindings) {
                     assert(vao != GL_INVALID_HANDLE);
                     assert(indicesCount > 0);
@@ -114,7 +112,7 @@ namespace mrover {
         }
     }
 
-    auto SimulatorNodelet::renderObject(URDF const& urdf) -> void {
+    auto SimulatorNodelet::renderUrdf(URDF const& urdf) -> void {
         assert(mShaderProgram.handle != GL_INVALID_HANDLE);
 
         traverseLinkForRender(urdf, urdf.model.getRoot());
@@ -128,8 +126,8 @@ namespace mrover {
         glClearColor(0.2f, 0.2f, 0.2f, 1.0f);
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-        for (auto const& object: mObjects) {
-            std::visit([&](auto const& o) { renderObject(o); }, object);
+        for (URDF const& urdf: mUrdfs) {
+            renderUrdf(urdf);
         }
 
         SDL_GL_SwapWindow(mWindow.get());

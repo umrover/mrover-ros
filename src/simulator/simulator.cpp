@@ -2,33 +2,6 @@
 
 namespace mrover {
 
-    auto SimulatorNodelet::parseParams() -> void {
-        XmlRpc::XmlRpcValue objects;
-        mNh.getParam("objects", objects);
-        if (objects.getType() != XmlRpc::XmlRpcValue::TypeArray) throw std::invalid_argument{"objects must be an array"};
-
-        for (int i = 0; i < objects.size(); ++i) {
-            // NOLINT(*-loop-convert)
-            XmlRpc::XmlRpcValue const& object = objects[i];
-
-            auto type = xmlRpcValueToTypeOrDefault<std::string>(object, "type");
-            auto name = xmlRpcValueToTypeOrDefault<std::string>(object, "name", "<unnamed>");
-
-            NODELET_INFO_STREAM(std::format("Loading object: {} of type: {}", name, type));
-
-            if (type == "urdf") {
-                mObjects.emplace_back(URDF{object});
-            }
-        }
-    }
-
-    SimulatorNodelet::~SimulatorNodelet() {
-        mRunThread.join();
-        // When you make an OpenGL context it binds to the thread that created it
-        // This destructor is called from another thread, so we need to steal the context before the member destructors are run
-        SDL_GL_MakeCurrent(mWindow.get(), mGlContext.get());
-    }
-
     auto SimulatorNodelet::onInit() -> void try {
         mNh = getNodeHandle();
         mPnh = getMTPrivateNodeHandle();
@@ -77,6 +50,8 @@ namespace mrover {
 
     auto SimulatorNodelet::run() -> void try {
 
+        initPhysics();
+
         initRender();
 
         parseParams();
@@ -96,12 +71,21 @@ namespace mrover {
 
             freeLook();
 
+            physicsUpdate();
+
             renderUpdate();
         }
 
     } catch (std::exception const& e) {
         NODELET_FATAL_STREAM(e.what());
         ros::shutdown();
+    }
+
+    SimulatorNodelet::~SimulatorNodelet() {
+        mRunThread.join();
+        // When you make an OpenGL context it binds to the thread that created it
+        // This destructor is called from another thread, so we need to steal the context before the member destructors are run
+        SDL_GL_MakeCurrent(mWindow.get(), mGlContext.get());
     }
 
 } // namespace mrover
