@@ -19,13 +19,16 @@ namespace mrover {
         if (!model.initParam(paramName)) throw std::runtime_error{std::format("Failed to parse URDF from param: {}", paramName)};
 
         auto traverse = [&](auto&& self, btRigidBody* parentLinkRb, urdf::LinkConstSharedPtr const& link) -> void {
+            ROS_INFO_STREAM(std::format("Adding link: {}", link->name));
             if (link->visual && link->visual->geometry && link->visual->geometry->type == urdf::Geometry::MESH) {
                 auto mesh = std::dynamic_pointer_cast<urdf::Mesh>(link->visual->geometry);
                 std::string const& uri = mesh->filename;
                 simulator.mUriToMesh.try_emplace(uri, uri);
             }
 
-            btRigidBody::btRigidBodyConstructionInfo rbCreateInfo{0, nullptr, nullptr};
+            btCollisionShape* shape = nullptr;
+            btMotionState* motionState = nullptr;
+            btScalar mass = 0;
             if (link->collision && link->collision->geometry) {
                 switch (link->collision->geometry->type) {
                     case urdf::Geometry::BOX: {
@@ -33,39 +36,50 @@ namespace mrover {
                         assert(box);
 
                         btVector3 boxHalfExtents{static_cast<btScalar>(box->dim.x / 2), static_cast<btScalar>(box->dim.y / 2), static_cast<btScalar>(box->dim.z / 2)};
-                        auto* boxShape = simulator.makeBulletObject<btBoxShape>(simulator.mCollisionShapes, boxHalfExtents);
-                        rbCreateInfo.m_collisionShape = boxShape;
+                        shape = simulator.makeBulletObject<btBoxShape>(simulator.mCollisionShapes, boxHalfExtents);
+                    }
+                    case urdf::Geometry::SPHERE: {
+                        auto sphere = std::dynamic_pointer_cast<urdf::Sphere>(link->collision->geometry);
+                        assert(sphere);
 
-                        rbCreateInfo.m_motionState = simulator.makeBulletObject<btDefaultMotionState>(simulator.mMotionStates, btTransform{btQuaternion{0, 0, 0, 1}, btVector3{0, 0, 0}});
+                        shape = simulator.makeBulletObject<btSphereShape>(simulator.mCollisionShapes, static_cast<btScalar>(sphere->radius));
+                    }
+                    case urdf::Geometry::CYLINDER: {
+                        auto cylinder = std::dynamic_pointer_cast<urdf::Cylinder>(link->collision->geometry);
+                        assert(cylinder);
 
-                        auto mass = static_cast<btScalar>(link->inertial->mass);
-                        rbCreateInfo.m_mass = mass;
-
-                        btVector3 boxInertia{static_cast<btScalar>(link->inertial->ixx), static_cast<btScalar>(link->inertial->iyy), static_cast<btScalar>(link->inertial->izz)};
-                        boxShape->calculateLocalInertia(mass, boxInertia);
+                        btVector3 cylinderHalfExtents{static_cast<btScalar>(cylinder->radius), static_cast<btScalar>(cylinder->length / 2), static_cast<btScalar>(cylinder->radius)};
+                        shape = simulator.makeBulletObject<btCylinderShape>(simulator.mCollisionShapes, cylinderHalfExtents);
                     }
                     default:
-                        break;
+                        throw std::invalid_argument{"Unsupported collision type"};
                 }
             }
-            auto* linkRb = simulator.makeBulletObject<btRigidBody>(simulator.mCollisionObjects, rbCreateInfo);
-            simulator.mPhysicsWorld->addRigidBody(linkRb);
+            if (link->inertial) {
+                mass = static_cast<btScalar>(link->inertial->mass);
 
-            // ReSharper disable once CppDFAConstantConditions
+                if (shape) {
+                    btVector3 inertia{static_cast<btScalar>(link->inertial->ixx), static_cast<btScalar>(link->inertial->iyy), static_cast<btScalar>(link->inertial->izz)};
+                    shape->calculateLocalInertia(mass, inertia);
+                }
+            }
+            auto* linkRb = simulator.makeBulletObject<btRigidBody>(simulator.mCollisionObjects, btRigidBody::btRigidBodyConstructionInfo{mass, motionState, shape});
+            simulator.mDynamicsWorld->addRigidBody(linkRb);
+
             if (parentLinkRb) {
-                // ReSharper disable once CppDFAUnreachableCode
                 urdf::JointConstSharedPtr parentJoint = link->parent_joint;
                 btTransform jointTransform = urdfPoseToBtTransform(parentJoint->parent_to_joint_origin_transform);
 
                 btTypedConstraint* constraint;
                 switch (parentJoint->type) {
                     case urdf::Joint::FIXED: {
-                        constraint = simulator.makeBulletObject<btFixedConstraint>(simulator.mConstraints, *parentLinkRb, *linkRb, jointTransform, btTransform{});
+                        constraint = simulator.makeBulletObject<btFixedConstraint>(simulator.mConstraints, *parentLinkRb, *linkRb, jointTransform, btTransform::getIdentity());
                         break;
                     }
+                    case urdf::Joint::CONTINUOUS:
                     case urdf::Joint::REVOLUTE: {
                         btVector3 axis = urdfVec3ToBtVec3(parentJoint->axis);
-                        auto* hingeConstraint = simulator.makeBulletObject<btHingeConstraint>(simulator.mConstraints, *parentLinkRb, *linkRb, jointTransform.getOrigin(), btVector3{}, btVector3{}, axis);
+                        auto* hingeConstraint = simulator.makeBulletObject<btHingeConstraint>(simulator.mConstraints, *parentLinkRb, *linkRb, jointTransform.getOrigin(), axis, btVector3{}, axis, true);
                         if (parentJoint->limits) {
                             hingeConstraint->setLimit(static_cast<btScalar>(parentJoint->limits->lower), static_cast<btScalar>(parentJoint->limits->upper));
                         }
@@ -75,7 +89,7 @@ namespace mrover {
                     default:
                         throw std::invalid_argument{"Unsupported joint type"};
                 }
-                simulator.mPhysicsWorld->addConstraint(constraint);
+                simulator.mDynamicsWorld->addConstraint(constraint);
             }
 
             for (urdf::LinkConstSharedPtr childLink: link->child_links) {

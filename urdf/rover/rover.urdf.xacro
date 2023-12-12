@@ -41,7 +41,6 @@
   <link name="chassis_link">
     <xacro:box_inertia m="50.0" w="${base_len}" h="${base_width}" d="${base_height}"/>
     <visual>
-      <origin rpy="0 0 0" xyz="0 0 0"/>
       <geometry>
         <mesh filename="package://mrover/urdf/meshes/rover2.glb"/>
       </geometry>
@@ -148,7 +147,6 @@
 
   <link name="camera_link">
     <collision>
-      <origin xyz="0 0 0" rpy="0 0 0"/>
       <geometry>
         <box size="0.01 0.1 0.01"/>
       </geometry>
@@ -177,7 +175,6 @@
 
   <link name="left_camera_link">
     <collision>
-      <origin xyz="0 0 0" rpy="0 0 0"/>
       <geometry>
         <box size="0.06 0.01 0.06"/>
       </geometry>
@@ -185,7 +182,6 @@
 
     <inertial>
       <mass value="1e-5"/>
-      <origin xyz="0 0 0" rpy="0 0 0"/>
       <inertia ixx="1e-6" ixy="0" ixz="0" iyy="1e-6" iyz="0" izz="1e-6"/>
     </inertial>
   </link>

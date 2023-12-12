@@ -83,6 +83,7 @@ namespace mrover
         // Settings
 
         double mTargetFps = 300;
+        bool mHeadless = false;
         Sint32 mQuitKey = SDLK_q;
         Sint32 mInGuiKey = SDLK_ESCAPE;
         Sint32 mRightKey = SDL_SCANCODE_D;
@@ -116,7 +117,7 @@ namespace mrover
         std::unique_ptr<btCollisionDispatcher> mDispatcher;
         std::unique_ptr<btDbvtBroadphase> mOverlappingPairCache;
         std::unique_ptr<btSequentialImpulseConstraintSolver> mSolver;
-        std::unique_ptr<btDiscreteDynamicsWorld> mPhysicsWorld;
+        std::unique_ptr<btDiscreteDynamicsWorld> mDynamicsWorld;
         std::vector<std::unique_ptr<btCollisionShape>> mCollisionShapes;
         std::vector<std::unique_ptr<btCollisionObject>> mCollisionObjects;
         std::vector<std::unique_ptr<btMotionState>> mMotionStates;
