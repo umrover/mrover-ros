@@ -125,7 +125,6 @@ namespace mrover {
     void Inference::doDetections(const cv::Mat& img) const{
         //Do the forward pass on the network
         launchInference(img, mOutputTensor);
-        ROS_INFO_STREAM(static_cast<void*>(mOutputTensor.data));
         //return Parser(outputTensor).parseTensor();
     }
 

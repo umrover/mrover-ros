@@ -48,6 +48,13 @@ namespace mrover {
         // Debug
         LoopProfiler mProfiler{"Object Detector"};
 
+        //TF Member Variables
+        tf2_ros::Buffer mTfBuffer;
+        tf2_ros::TransformListener mTfListener{mTfBuffer};
+        tf2_ros::TransformBroadcaster mTfBroadcaster;
+        std::string mCameraFrameId;
+        std::string mMapFrameId;
+
         void onInit() override;
 
     public:
@@ -56,5 +63,7 @@ namespace mrover {
         ~ObjectDetectorNodelet() override = default;
 
         void imageCallback(sensor_msgs::PointCloud2ConstPtr const& msg);
+
+        std::optional<SE3> getObjectInCamFromPixel(sensor_msgs::PointCloud2ConstPtr const& cloudPtr, size_t u, size_t v) const;
     };
 } // namespace mrover
