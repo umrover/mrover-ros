@@ -27,8 +27,11 @@ public:
 
     SO3() = default;
 
-    template<typename... Args>
-        requires (sizeof...(Args) > 0) && std::is_constructible_v<AngleAxis, Args...>
+    template<
+        typename... Args,
+        typename = std::enable_if_t<std::is_constructible_v<AngleAxis, Args...>>,
+        typename = std::enable_if_t<(sizeof...(Args) > 0)>
+    >
     SO3(Args&&... args) : mAngleAxis{std::forward<Args>(args)...} {
     }
 
@@ -72,8 +75,11 @@ public:
 
     SE3(R3 const& position, SO3 const& rotation);
 
-    template<typename... Args>
-        requires (sizeof...(Args) > 0) && std::is_constructible_v<Transform, Args...>
+    template<
+        typename... Args,
+        typename = std::enable_if_t<std::is_constructible_v<Transform, Args...>>,
+        typename = std::enable_if_t<(sizeof...(Args) > 0)>
+    >
     SE3(Args&&... args) : mTransform{std::forward<Args>(args)...} {
     }
 

@@ -64,58 +64,57 @@ namespace mrover {
                 Shader{shadersPath / "pbr.frag", GL_FRAGMENT_SHADER}};
     }
 
-    auto SimulatorNodelet::traverseLinkForRender(URDF const& urdf, urdf::LinkConstSharedPtr const& link) -> void {
-        assert(mShaderProgram.handle != GL_INVALID_HANDLE);
-        glUseProgram(mShaderProgram.handle);
-
-        GLint modelToWorldId = glGetUniformLocation(mShaderProgram.handle, "worldToCamera");
-        assert(modelToWorldId != GL_INVALID_INDEX);
-        GLint worldToCameraId = glGetUniformLocation(mShaderProgram.handle, "modelToWorld");
-        assert(worldToCameraId != GL_INVALID_INDEX);
-        GLint cameraToClipId = glGetUniformLocation(mShaderProgram.handle, "cameraToClip");
-        assert(cameraToClipId != GL_INVALID_INDEX);
-
-        // Convert from ROS's right-handed +x forward, +y left, +z up to OpenGL's right-handed +x right, +y up, +z backward
-        Eigen::Matrix4f rosToGl;
-        rosToGl << 0, -1, 0, 0, // OpenGL x = -ROS y
-                0, 0, 1, 0,     // OpenGL y = ROS z
-                -1, 0, 0, 0,    //  OpenGL z = -ROS x
-                0, 0, 0, 1;
-        Eigen::Matrix4f worldToCamera = rosToGl * mCameraInWorld.matrix().inverse().cast<float>();
-        glUniform(worldToCameraId, worldToCamera);
-
-        Eigen::Matrix4f modelToWorld = SE3{R3{}, SO3{}}.matrix().cast<float>();
-        glUniform(modelToWorldId, modelToWorld);
-
-        int w{}, h{};
-        SDL_GetWindowSize(mWindow.get(), &w, &h);
-        float aspect = static_cast<float>(w) / static_cast<float>(h);
-
-        Eigen::Matrix4f cameraToClip = perspective(60.0f * DEG2RAD, aspect, 0.1f, 100.0f).cast<float>();
-        glUniform(cameraToClipId, cameraToClip);
-
-        if (link->visual && link->visual->geometry) {
-            if (auto urdfMesh = std::dynamic_pointer_cast<urdf::Mesh>(link->visual->geometry)) {
-                for (Mesh const& mesh = mUriToMesh.at(urdfMesh->filename);
-                     auto const& [vao, _vbo, _ebo, indicesCount]: mesh.bindings) {
-                    assert(vao != GL_INVALID_HANDLE);
-                    assert(indicesCount > 0);
-
-                    glBindVertexArray(vao);
-                    glDrawElements(GL_TRIANGLES, indicesCount, GL_UNSIGNED_INT, nullptr);
-                    // glBindVertexArray(0);
-                }
-            }
-        }
-        for (urdf::JointSharedPtr const& child_joint: link->child_joints) {
-            traverseLinkForRender(urdf, urdf.model.getLink(child_joint->child_link_name));
-        }
-    }
-
     auto SimulatorNodelet::renderUrdf(URDF const& urdf) -> void {
         assert(mShaderProgram.handle != GL_INVALID_HANDLE);
 
-        traverseLinkForRender(urdf, urdf.model.getRoot());
+        auto traverse = [&](auto&& self, urdf::LinkConstSharedPtr const& link) -> void {
+            assert(mShaderProgram.handle != GL_INVALID_HANDLE);
+            glUseProgram(mShaderProgram.handle);
+
+            GLint modelToWorldId = glGetUniformLocation(mShaderProgram.handle, "worldToCamera");
+            assert(modelToWorldId != GL_INVALID_INDEX);
+            GLint worldToCameraId = glGetUniformLocation(mShaderProgram.handle, "modelToWorld");
+            assert(worldToCameraId != GL_INVALID_INDEX);
+            GLint cameraToClipId = glGetUniformLocation(mShaderProgram.handle, "cameraToClip");
+            assert(cameraToClipId != GL_INVALID_INDEX);
+
+            // Convert from ROS's right-handed +x forward, +y left, +z up to OpenGL's right-handed +x right, +y up, +z backward
+            Eigen::Matrix4f rosToGl;
+            rosToGl << 0, -1, 0, 0, // OpenGL x = -ROS y
+                    0, 0, 1, 0,     // OpenGL y = ROS z
+                    -1, 0, 0, 0,    //  OpenGL z = -ROS x
+                    0, 0, 0, 1;
+            Eigen::Matrix4f worldToCamera = rosToGl * mCameraInWorld.matrix().inverse().cast<float>();
+            glUniform(worldToCameraId, worldToCamera);
+
+            Eigen::Matrix4f modelToWorld = SE3{R3{}, SO3{}}.matrix().cast<float>();
+            glUniform(modelToWorldId, modelToWorld);
+
+            int w{}, h{};
+            SDL_GetWindowSize(mWindow.get(), &w, &h);
+            float aspect = static_cast<float>(w) / static_cast<float>(h);
+
+            Eigen::Matrix4f cameraToClip = perspective(60.0f * DEG2RAD, aspect, 0.1f, 100.0f).cast<float>();
+            glUniform(cameraToClipId, cameraToClip);
+
+            if (link->visual && link->visual->geometry) {
+                if (auto urdfMesh = std::dynamic_pointer_cast<urdf::Mesh>(link->visual->geometry)) {
+                    for (Mesh const& mesh = mUriToMesh.at(urdfMesh->filename);
+                         auto const& [vao, _vbo, _ebo, indicesCount]: mesh.bindings) {
+                        assert(vao != GL_INVALID_HANDLE);
+                        assert(indicesCount > 0);
+
+                        glBindVertexArray(vao);
+                        glDrawElements(GL_TRIANGLES, indicesCount, GL_UNSIGNED_INT, nullptr);
+                        // glBindVertexArray(0);
+                    }
+                }
+            }
+            for (urdf::JointSharedPtr const& child_joint: link->child_joints) {
+                self(self, urdf.model.getLink(child_joint->child_link_name));
+            }
+        };
+        traverse(traverse, urdf.model.getRoot());
     }
 
     auto SimulatorNodelet::renderUpdate() -> void {

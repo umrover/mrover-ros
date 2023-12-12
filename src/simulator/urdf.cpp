@@ -6,8 +6,7 @@ namespace mrover {
         auto paramName = xmlRpcValueToTypeOrDefault<std::string>(init, "param_name");
         if (!model.initParam(paramName)) throw std::runtime_error{std::format("Failed to parse URDF from param: {}", paramName)};
 
-        for (auto const& [link_name, link]: model.links_) {
-
+        auto traverse = [&](auto&& self, urdf::LinkConstSharedPtr const& link, SE3 transform) -> void {
             if (link->visual && link->visual->geometry && link->visual->geometry->type == urdf::Geometry::MESH) {
                 auto mesh = std::dynamic_pointer_cast<urdf::Mesh>(link->visual->geometry);
                 std::string const& uri = mesh->filename;
@@ -25,7 +24,13 @@ namespace mrover {
                 auto& rb = simulator.mCollisionObjects.emplace_back(std::make_unique<btRigidBody>(btRigidBody::btRigidBodyConstructionInfo{mass, motionState.get(), boxShape.get(), boxInertia}));
                 simulator.mPhysicsWorld->addRigidBody(dynamic_cast<btRigidBody*>(rb.get()));
             }
-        }
+
+            for (urdf::JointSharedPtr const& child_joint: link->child_joints) {
+                self(self, model.getLink(child_joint->child_link_name), transform);
+            }
+        };
+
+        traverse(traverse, model.getRoot(), SE3{});
     }
 
 }

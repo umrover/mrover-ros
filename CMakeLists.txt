@@ -114,11 +114,10 @@ mrover_add_library(lie src/util/lie/*.cpp src/util/lie)
 
 ## ESW
 
-mrover_add_header_only_library(moteus deps/moteus/lib/cpp/mjbots)
-mrover_add_header_only_library(moteus_fw deps/moteus)
+mrover_add_header_only_library(moteus src/esw/mjbots)
 mrover_add_header_only_library(can_device src/esw/can_device)
 mrover_add_library(motor_library src/esw/motor_library/*.cpp src/esw/motor_library)
-target_link_libraries(motor_library PUBLIC can_device moteus moteus_fw)
+target_link_libraries(motor_library PUBLIC can_device moteus)
 
 # TODO(quintin) Fix this CMake hard coding
 mrover_add_nodelet(can_driver src/esw/can_driver/*.cpp src/esw/can_driver src/esw/can_driver/pch.hpp)
@@ -169,7 +168,7 @@ endif ()
 
 if (MROVER_BUILD_SIM)
     mrover_add_nodelet(simulator src/simulator/*.cpp src/simulator src/simulator/pch.hpp)
-    mrover_nodelet_include_directories(simulator ${SDL2_INCLUDE_DIRS} ${OPENGL_INCLUDE_DIR} ${ASSIMP_INCLUDE_DIRS} ${GLEW_INCLUDE_DIRS} ${BULLET_INCLUDE_DIRS})
+    mrover_nodelet_include_directories(simulator ${SDL2_INCLUDE_DIRS} ${OPENGL_INCLUDE_DIR} ${ASSIMP_INCLUDE_DIRS} ${GLEW_INCLUDE_DIRS} ${BULLET_INCLUDE_DIRS} src/simulator/imgui)
     mrover_nodelet_link_libraries(simulator ${SDL2_LIBRARIES} ${OPENGL_LIBRARIES} ${ASSIMP_LIBRARIES} ${GLEW_LIBRARIES} ${BULLET_LIBRARIES} lie tbb)
 endif ()
 

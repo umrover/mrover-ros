@@ -142,8 +142,6 @@ namespace mrover
 
         auto renderUrdf(URDF const& urdf) -> void;
 
-        auto traverseLinkForRender(URDF const& urdf, urdf::LinkConstSharedPtr const& link) -> void;
-
         auto renderUpdate() -> void;
 
         auto physicsUpdate() -> void;
