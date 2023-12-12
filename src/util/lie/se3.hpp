@@ -32,8 +32,9 @@ public:
         typename = std::enable_if_t<std::is_constructible_v<AngleAxis, Args...>>,
         typename = std::enable_if_t<(sizeof...(Args) > 0)>
     >
-    SO3(Args&&... args) : mAngleAxis{std::forward<Args>(args)...} {
-    }
+    SO3(Args&&... args) : mAngleAxis{std::forward<Args>(args)...} {}
+
+    SO3(double w, double x, double y, double z) : mAngleAxis{Eigen::Quaterniond{w, x, y, z}} {}
 
     [[nodiscard]] SO3 operator*(SO3 const& other) const;
 
@@ -80,8 +81,7 @@ public:
         typename = std::enable_if_t<std::is_constructible_v<Transform, Args...>>,
         typename = std::enable_if_t<(sizeof...(Args) > 0)>
     >
-    SE3(Args&&... args) : mTransform{std::forward<Args>(args)...} {
-    }
+    SE3(Args&&... args) : mTransform{std::forward<Args>(args)...} {}
 
     [[nodiscard]] SE3 operator*(SE3 const& other) const;
 

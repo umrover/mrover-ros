@@ -39,7 +39,7 @@
   <link name="base_link"/>
 
   <link name="chassis_link">
-    <xacro:box_inertia m="3.0" w="${base_len}" h="${base_width}" d="${base_height}"/>
+    <xacro:box_inertia m="50.0" w="${base_len}" h="${base_width}" d="${base_height}"/>
     <visual>
       <origin rpy="0 0 0" xyz="0 0 0"/>
       <geometry>

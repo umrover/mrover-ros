@@ -120,6 +120,16 @@ namespace mrover
         std::vector<std::unique_ptr<btCollisionShape>> mCollisionShapes;
         std::vector<std::unique_ptr<btCollisionObject>> mCollisionObjects;
         std::vector<std::unique_ptr<btMotionState>> mMotionStates;
+        std::vector<std::unique_ptr<btTypedConstraint>> mConstraints;
+
+        template <typename T, typename... Args>
+        T* makeBulletObject(auto& vector, Args&&... args)
+        {
+            auto pointer = std::make_unique<T>(std::forward<Args>(args)...);
+            auto rawPointer = pointer.get();
+            vector.emplace_back(std::move(pointer));
+            return rawPointer;
+        }
 
         // Scene
 
