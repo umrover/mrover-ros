@@ -147,6 +147,8 @@ namespace mrover
 
         auto initRender() -> void;
 
+        auto renderMesh(Mesh const& mesh, Eigen::Matrix4f const& modelToWorld) -> void;
+
         auto initPhysics() -> void;
 
         auto parseParams() -> void;

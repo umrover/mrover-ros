@@ -37,12 +37,14 @@ namespace mrover {
 
                         btVector3 boxHalfExtents{static_cast<btScalar>(box->dim.x / 2), static_cast<btScalar>(box->dim.y / 2), static_cast<btScalar>(box->dim.z / 2)};
                         shape = simulator.makeBulletObject<btBoxShape>(simulator.mCollisionShapes, boxHalfExtents);
+                        break;
                     }
                     case urdf::Geometry::SPHERE: {
                         auto sphere = std::dynamic_pointer_cast<urdf::Sphere>(link->collision->geometry);
                         assert(sphere);
 
                         shape = simulator.makeBulletObject<btSphereShape>(simulator.mCollisionShapes, static_cast<btScalar>(sphere->radius));
+                        break;
                     }
                     case urdf::Geometry::CYLINDER: {
                         auto cylinder = std::dynamic_pointer_cast<urdf::Cylinder>(link->collision->geometry);
@@ -50,6 +52,7 @@ namespace mrover {
 
                         btVector3 cylinderHalfExtents{static_cast<btScalar>(cylinder->radius), static_cast<btScalar>(cylinder->length / 2), static_cast<btScalar>(cylinder->radius)};
                         shape = simulator.makeBulletObject<btCylinderShape>(simulator.mCollisionShapes, cylinderHalfExtents);
+                        break;
                     }
                     default:
                         throw std::invalid_argument{"Unsupported collision type"};
@@ -100,4 +103,4 @@ namespace mrover {
         traverse(traverse, nullptr, model.getRoot());
     }
 
-}
+} // namespace mrover

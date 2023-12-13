@@ -14,7 +14,7 @@ namespace mrover {
         mSolver = std::make_unique<btSequentialImpulseConstraintSolver>();
 
         mDynamicsWorld = std::make_unique<btDiscreteDynamicsWorld>(mDispatcher.get(), mOverlappingPairCache.get(), mSolver.get(), mCollisionConfig.get());
-        mDynamicsWorld->setGravity(btVector3{0, 0, -9.81});
+        mDynamicsWorld->setGravity(btVector3{0, 0, 0});
 
         // Step 1: Create a btStaticPlaneShape object
         btVector3 planeNormal(0, 0, 1); // The plane normal points upwards

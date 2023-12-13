@@ -2,12 +2,24 @@
 
 namespace mrover {
 
+    using namespace std::literals;
+
     constexpr int SDL_OK = 0;
 
     constexpr float DEG2RAD = std::numbers::pi_v<float> / 180.0f;
 
+    static std::string const CUBE_PRIMITIVE_URI = "package://mrover/urdf/meshes/cube.glb";
+    static std::string const SPHERE_PRIMITIVE_URI = "package://mrover/urdf/meshes/sphere.glb";
+    static std::string const CYLINDER_PRIMITIVE_URI = "package://mrover/urdf/meshes/cylinder.glb";
+
     static auto check(bool condition) -> void {
         if (!condition) throw std::runtime_error(std::format("SDL Error: {}", SDL_GetError()));
+    }
+
+    static auto btTransformToSe3(btTransform const& transform) -> SE3 {
+        btVector3 translation = transform.getOrigin();
+        btQuaternion rotation = transform.getRotation();
+        return SE3{R3{translation.x(), translation.y(), translation.z()}, SO3{rotation.w(), rotation.x(), rotation.y(), rotation.z()}};
     }
 
     auto perspective(float fovY, float aspect, float zNear, float zFar) -> Eigen::Matrix4f {
@@ -62,7 +74,12 @@ namespace mrover {
 
         IMGUI_CHECKVERSION();
         ImGui::CreateContext();
-        [[maybe_unused]] ImGuiIO& io = ImGui::GetIO();
+        float ddpi, hdpi, vdpi;
+        SDL_GetDisplayDPI(0, &ddpi, &hdpi, &vdpi);
+        ImGuiIO& io = ImGui::GetIO();
+        ImGuiStyle& style = ImGui::GetStyle();
+        io.FontGlobalScale = ddpi / 128.0f;
+        style.ScaleAllSizes(ddpi / 128.0f);
         ImGui_ImplSDL2_InitForOpenGL(mWindow.get(), mGlContext.get());
         ImGui_ImplOpenGL3_Init("#version 410 core");
 
@@ -70,6 +87,25 @@ namespace mrover {
         mShaderProgram = {
                 Shader{shadersPath / "pbr.vert", GL_VERTEX_SHADER},
                 Shader{shadersPath / "pbr.frag", GL_FRAGMENT_SHADER}};
+
+        mUriToMesh.emplace(CUBE_PRIMITIVE_URI, CUBE_PRIMITIVE_URI);
+        mUriToMesh.emplace(SPHERE_PRIMITIVE_URI, SPHERE_PRIMITIVE_URI);
+        mUriToMesh.emplace(CYLINDER_PRIMITIVE_URI, CYLINDER_PRIMITIVE_URI);
+    }
+
+    auto SimulatorNodelet::renderMesh(Mesh const& mesh, Eigen::Matrix4f const& modelToWorld) -> void {
+        GLint modelToWorldId = glGetUniformLocation(mShaderProgram.handle, "modelToWorld");
+        assert(modelToWorldId != GL_INVALID_INDEX);
+
+        glUniform(modelToWorldId, modelToWorld);
+
+        for (auto const& [vao, _vbo, _ebo, indicesCount]: mesh.bindings) {
+            assert(vao != GL_INVALID_HANDLE);
+            assert(indicesCount > 0);
+
+            glBindVertexArray(vao);
+            glDrawElements(GL_TRIANGLES, indicesCount, GL_UNSIGNED_INT, nullptr);
+        }
     }
 
     auto SimulatorNodelet::renderUrdf(URDF const& urdf) -> void {
@@ -79,43 +115,10 @@ namespace mrover {
             assert(mShaderProgram.handle != GL_INVALID_HANDLE);
             glUseProgram(mShaderProgram.handle);
 
-            GLint modelToWorldId = glGetUniformLocation(mShaderProgram.handle, "worldToCamera");
-            assert(modelToWorldId != GL_INVALID_INDEX);
-            GLint worldToCameraId = glGetUniformLocation(mShaderProgram.handle, "modelToWorld");
-            assert(worldToCameraId != GL_INVALID_INDEX);
-            GLint cameraToClipId = glGetUniformLocation(mShaderProgram.handle, "cameraToClip");
-            assert(cameraToClipId != GL_INVALID_INDEX);
-
-            // Convert from ROS's right-handed +x forward, +y left, +z up to OpenGL's right-handed +x right, +y up, +z backward
-            Eigen::Matrix4f rosToGl;
-            rosToGl << 0, -1, 0, 0, // OpenGL x = -ROS y
-                    0, 0, 1, 0,     // OpenGL y = ROS z
-                    -1, 0, 0, 0,    //  OpenGL z = -ROS x
-                    0, 0, 0, 1;
-            Eigen::Matrix4f worldToCamera = rosToGl * mCameraInWorld.matrix().inverse().cast<float>();
-            glUniform(worldToCameraId, worldToCamera);
-
-            Eigen::Matrix4f modelToWorld = SE3{R3{}, SO3{}}.matrix().cast<float>();
-            glUniform(modelToWorldId, modelToWorld);
-
-            int w{}, h{};
-            SDL_GetWindowSize(mWindow.get(), &w, &h);
-            float aspect = static_cast<float>(w) / static_cast<float>(h);
-
-            Eigen::Matrix4f cameraToClip = perspective(60.0f * DEG2RAD, aspect, 0.1f, 100.0f).cast<float>();
-            glUniform(cameraToClipId, cameraToClip);
-
             if (link->visual && link->visual->geometry) {
                 if (auto urdfMesh = std::dynamic_pointer_cast<urdf::Mesh>(link->visual->geometry)) {
-                    for (Mesh const& mesh = mUriToMesh.at(urdfMesh->filename);
-                         auto const& [vao, _vbo, _ebo, indicesCount]: mesh.bindings) {
-                        assert(vao != GL_INVALID_HANDLE);
-                        assert(indicesCount > 0);
-
-                        glBindVertexArray(vao);
-                        glDrawElements(GL_TRIANGLES, indicesCount, GL_UNSIGNED_INT, nullptr);
-                        // glBindVertexArray(0);
-                    }
+                    Mesh const& mesh = mUriToMesh.at(urdfMesh->filename);
+                    renderMesh(mesh, SE3{}.matrix().cast<float>());
                 }
             }
             for (urdf::JointSharedPtr const& child_joint: link->child_joints) {
@@ -133,8 +136,48 @@ namespace mrover {
         glClearColor(0.2f, 0.2f, 0.2f, 1.0f);
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
 
+        GLint worldToCameraId = glGetUniformLocation(mShaderProgram.handle, "worldToCamera");
+        assert(worldToCameraId != GL_INVALID_INDEX);
+
+        // Convert from ROS's right-handed +x forward, +y left, +z up to OpenGL's right-handed +x right, +y up, +z backward
+        Eigen::Matrix4f rosToGl;
+        rosToGl << 0, -1, 0, 0, // OpenGL x = -ROS y
+                0, 0, 1, 0,     // OpenGL y = ROS z
+                -1, 0, 0, 0,    //  OpenGL z = -ROS x
+                0, 0, 0, 1;
+        Eigen::Matrix4f worldToCamera = rosToGl * mCameraInWorld.matrix().inverse().cast<float>();
+        glUniform(worldToCameraId, worldToCamera);
+
+        GLint cameraToClipId = glGetUniformLocation(mShaderProgram.handle, "cameraToClip");
+        assert(cameraToClipId != GL_INVALID_INDEX);
+
+        float aspect = static_cast<float>(w) / static_cast<float>(h);
+        Eigen::Matrix4f cameraToClip = perspective(60.0f * DEG2RAD, aspect, 0.1f, 100.0f).cast<float>();
+        glUniform(cameraToClipId, cameraToClip);
+
+        glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
         for (URDF const& urdf: mUrdfs) {
             renderUrdf(urdf);
+        }
+
+        glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
+        for (auto const& collisionObject: mCollisionObjects) {
+            btTransform rbInWorld = collisionObject->getWorldTransform();
+            btCollisionShape const* shape = collisionObject->getCollisionShape();
+            Eigen::Matrix4f modelInWorld = btTransformToSe3(rbInWorld).matrix().cast<float>();
+            if (auto* box = dynamic_cast<btBoxShape const*>(shape)) {
+                btVector3 extents = box->getHalfExtentsWithoutMargin();
+                modelInWorld.block<3, 3>(0, 0) *= Eigen::DiagonalMatrix<float, 3>{extents.x(), extents.y(), extents.z()};
+                renderMesh(mUriToMesh.at(CUBE_PRIMITIVE_URI), modelInWorld);
+            } else if (auto* sphere = dynamic_cast<btSphereShape const*>(shape)) {
+                btScalar radius = sphere->getRadius();
+                modelInWorld.block<3, 3>(0, 0) *= Eigen::DiagonalMatrix<float, 3>{radius, radius, radius};
+                renderMesh(mUriToMesh.at(SPHERE_PRIMITIVE_URI), modelInWorld);
+            } else if (auto* cylinder = dynamic_cast<btCylinderShape const*>(shape)) {
+                btVector3 extents = cylinder->getHalfExtentsWithoutMargin();
+                modelInWorld.block<3, 3>(0, 0) *= Eigen::DiagonalMatrix<float, 3>{extents.x(), extents.y(), extents.z()};
+                renderMesh(mUriToMesh.at(CYLINDER_PRIMITIVE_URI), modelInWorld);
+            }
         }
 
         ImGui_ImplOpenGL3_NewFrame();

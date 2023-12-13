@@ -42,7 +42,7 @@
     <xacro:box_inertia m="50.0" w="${base_len}" h="${base_width}" d="${base_height}"/>
     <visual>
       <geometry>
-        <mesh filename="package://mrover/urdf/meshes/rover2.glb"/>
+        <mesh filename="package://mrover/urdf/meshes/cube.glb"/>
       </geometry>
     </visual>
     <collision>
