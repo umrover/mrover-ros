@@ -27,13 +27,13 @@ namespace mrover {
 
 		void update() {
 
-			HAL_ADC_Start_DMA(m_hadc, m_values.data(), m_channels);
+			HAL_ADC_Start_DMA(m_hadc, static_cast<uint32_t*>(static_cast<void*>(m_values.data())), m_channels * (sizeof(uint32_t) / sizeof(uint16_t)));
 		}
 
 	private:
 		ADC_HandleTypeDef* m_hadc;
 		uint8_t m_channels;
-		std::vector<uint32_t> m_values;
+		std::vector<uint16_t> m_values;
 	};
 
 } // namespace mrover
