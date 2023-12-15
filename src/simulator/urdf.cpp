@@ -65,28 +65,28 @@ namespace mrover {
                     shape->calculateLocalInertia(mass, inertia);
                 }
             }
-            btTransform pose;
+            btTransform jointInWorld;
             if (link->parent_joint) {
                 assert(parentLinkRb);
-                auto t1 = parentLinkRb->getWorldTransform();
-                auto t2 = urdfPoseToBtTransform(link->parent_joint->parent_to_joint_origin_transform);
-                pose = t1 * t2;
+                auto parentToWorld = parentLinkRb->getWorldTransform();
+                auto jointInParent = urdfPoseToBtTransform(link->parent_joint->parent_to_joint_origin_transform);
+                jointInWorld = parentToWorld * jointInParent;
             } else {
-                pose = btTransform::getIdentity();
+                jointInWorld = btTransform::getIdentity();
             }
-            auto* motionState = simulator.makeBulletObject<btDefaultMotionState>(simulator.mMotionStates, pose);
+            auto* motionState = simulator.makeBulletObject<btDefaultMotionState>(simulator.mMotionStates, jointInWorld);
             auto* linkRb = simulator.makeBulletObject<btRigidBody>(simulator.mCollisionObjects, btRigidBody::btRigidBodyConstructionInfo{mass, motionState, shape});
             simulator.mDynamicsWorld->addRigidBody(linkRb);
 
             if (urdf::JointConstSharedPtr parentJoint = link->parent_joint) {
                 assert(parentLinkRb);
 
-                btTransform jointTransform = urdfPoseToBtTransform(parentJoint->parent_to_joint_origin_transform);
+                btTransform jointInParent = urdfPoseToBtTransform(parentJoint->parent_to_joint_origin_transform);
 
                 btTypedConstraint* constraint;
                 switch (parentJoint->type) {
                     case urdf::Joint::FIXED: {
-                        constraint = simulator.makeBulletObject<btFixedConstraint>(simulator.mConstraints, *parentLinkRb, *linkRb, jointTransform, btTransform::getIdentity());
+                        constraint = simulator.makeBulletObject<btFixedConstraint>(simulator.mConstraints, *parentLinkRb, *linkRb, jointInParent, btTransform::getIdentity());
                         break;
                     }
                     case urdf::Joint::CONTINUOUS:
@@ -94,7 +94,7 @@ namespace mrover {
                         btVector3 axis = urdfVec3ToBtVec3(parentJoint->axis);
                         btVector3 zero;
                         zero.setZero();
-                        auto* hingeConstraint = simulator.makeBulletObject<btHingeConstraint>(simulator.mConstraints, *parentLinkRb, *linkRb, jointTransform.getOrigin(), zero, axis, axis, true);
+                        auto* hingeConstraint = simulator.makeBulletObject<btHingeConstraint>(simulator.mConstraints, *parentLinkRb, *linkRb, jointInParent.getOrigin(), zero, axis, axis, true);
                         if (parentJoint->limits) {
                             hingeConstraint->setLimit(static_cast<btScalar>(parentJoint->limits->lower), static_cast<btScalar>(parentJoint->limits->upper));
                         }
