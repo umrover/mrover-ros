@@ -43,7 +43,7 @@ set(MROVER_MESSAGE_DEPENDENCIES
 
 set(MROVER_PARAMETERS
         config/DetectorParams.cfg
-        config/simulator/simulator_params.cfg
+        config/simulator/SimulatorParams.cfg
 )
 
 set(MROVER_CMAKE_INCLUDES
@@ -97,7 +97,7 @@ add_service_files(FILES ${MROVER_SERVICE_FILES})
 
 generate_messages(DEPENDENCIES ${MROVER_MESSAGE_DEPENDENCIES})
 
-#generate_dynamic_reconfigure_options(${MROVER_PARAMETERS})
+generate_dynamic_reconfigure_options(${MROVER_PARAMETERS})
 
 catkin_package()
 

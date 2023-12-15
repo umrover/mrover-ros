@@ -27,7 +27,6 @@ namespace mrover {
             }
 
             btCollisionShape* shape = nullptr;
-            btMotionState* motionState = nullptr;
             btScalar mass = 0;
             if (link->collision && link->collision->geometry) {
                 switch (link->collision->geometry->type) {
@@ -50,8 +49,8 @@ namespace mrover {
                         auto cylinder = std::dynamic_pointer_cast<urdf::Cylinder>(link->collision->geometry);
                         assert(cylinder);
 
-                        btVector3 cylinderHalfExtents{static_cast<btScalar>(cylinder->radius), static_cast<btScalar>(cylinder->length / 2), static_cast<btScalar>(cylinder->radius)};
-                        shape = simulator.makeBulletObject<btCylinderShape>(simulator.mCollisionShapes, cylinderHalfExtents);
+                        btVector3 cylinderHalfExtents{static_cast<btScalar>(cylinder->length / 2), static_cast<btScalar>(cylinder->radius), static_cast<btScalar>(cylinder->radius)};
+                        shape = simulator.makeBulletObject<btCylinderShapeX>(simulator.mCollisionShapes, cylinderHalfExtents);
                         break;
                     }
                     default:
@@ -66,11 +65,22 @@ namespace mrover {
                     shape->calculateLocalInertia(mass, inertia);
                 }
             }
+            btTransform pose;
+            if (link->parent_joint) {
+                assert(parentLinkRb);
+                auto t1 = parentLinkRb->getWorldTransform();
+                auto t2 = urdfPoseToBtTransform(link->parent_joint->parent_to_joint_origin_transform);
+                pose = t1 * t2;
+            } else {
+                pose = btTransform::getIdentity();
+            }
+            auto* motionState = simulator.makeBulletObject<btDefaultMotionState>(simulator.mMotionStates, pose);
             auto* linkRb = simulator.makeBulletObject<btRigidBody>(simulator.mCollisionObjects, btRigidBody::btRigidBodyConstructionInfo{mass, motionState, shape});
             simulator.mDynamicsWorld->addRigidBody(linkRb);
 
-            if (parentLinkRb) {
-                urdf::JointConstSharedPtr parentJoint = link->parent_joint;
+            if (urdf::JointConstSharedPtr parentJoint = link->parent_joint) {
+                assert(parentLinkRb);
+
                 btTransform jointTransform = urdfPoseToBtTransform(parentJoint->parent_to_joint_origin_transform);
 
                 btTypedConstraint* constraint;
@@ -82,7 +92,9 @@ namespace mrover {
                     case urdf::Joint::CONTINUOUS:
                     case urdf::Joint::REVOLUTE: {
                         btVector3 axis = urdfVec3ToBtVec3(parentJoint->axis);
-                        auto* hingeConstraint = simulator.makeBulletObject<btHingeConstraint>(simulator.mConstraints, *parentLinkRb, *linkRb, jointTransform.getOrigin(), axis, btVector3{}, axis, true);
+                        btVector3 zero;
+                        zero.setZero();
+                        auto* hingeConstraint = simulator.makeBulletObject<btHingeConstraint>(simulator.mConstraints, *parentLinkRb, *linkRb, jointTransform.getOrigin(), zero, axis, axis, true);
                         if (parentJoint->limits) {
                             hingeConstraint->setLimit(static_cast<btScalar>(parentJoint->limits->lower), static_cast<btScalar>(parentJoint->limits->upper));
                         }
@@ -92,7 +104,7 @@ namespace mrover {
                     default:
                         throw std::invalid_argument{"Unsupported joint type"};
                 }
-                simulator.mDynamicsWorld->addConstraint(constraint);
+                simulator.mDynamicsWorld->addConstraint(constraint, true);
             }
 
             for (urdf::LinkConstSharedPtr childLink: link->child_links) {

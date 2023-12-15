@@ -94,6 +94,9 @@ namespace mrover {
     }
 
     auto SimulatorNodelet::renderMesh(Mesh const& mesh, Eigen::Matrix4f const& modelToWorld) -> void {
+        assert(mShaderProgram.handle != GL_INVALID_HANDLE);
+        glUseProgram(mShaderProgram.handle);
+
         GLint modelToWorldId = glGetUniformLocation(mShaderProgram.handle, "modelToWorld");
         assert(modelToWorldId != GL_INVALID_INDEX);
 
@@ -109,12 +112,7 @@ namespace mrover {
     }
 
     auto SimulatorNodelet::renderUrdf(URDF const& urdf) -> void {
-        assert(mShaderProgram.handle != GL_INVALID_HANDLE);
-
         auto traverse = [&](auto&& self, urdf::LinkConstSharedPtr const& link) -> void {
-            assert(mShaderProgram.handle != GL_INVALID_HANDLE);
-            glUseProgram(mShaderProgram.handle);
-
             if (link->visual && link->visual->geometry) {
                 if (auto urdfMesh = std::dynamic_pointer_cast<urdf::Mesh>(link->visual->geometry)) {
                     Mesh const& mesh = mUriToMesh.at(urdfMesh->filename);
@@ -155,10 +153,10 @@ namespace mrover {
         Eigen::Matrix4f cameraToClip = perspective(60.0f * DEG2RAD, aspect, 0.1f, 100.0f).cast<float>();
         glUniform(cameraToClipId, cameraToClip);
 
-        glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
-        for (URDF const& urdf: mUrdfs) {
-            renderUrdf(urdf);
-        }
+        // glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
+        // for (URDF const& urdf: mUrdfs) {
+        //     renderUrdf(urdf);
+        // }
 
         glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
         for (auto const& collisionObject: mCollisionObjects) {
@@ -166,15 +164,15 @@ namespace mrover {
             btCollisionShape const* shape = collisionObject->getCollisionShape();
             Eigen::Matrix4f modelInWorld = btTransformToSe3(rbInWorld).matrix().cast<float>();
             if (auto* box = dynamic_cast<btBoxShape const*>(shape)) {
-                btVector3 extents = box->getHalfExtentsWithoutMargin();
+                btVector3 extents = box->getHalfExtentsWithoutMargin() * 2;
                 modelInWorld.block<3, 3>(0, 0) *= Eigen::DiagonalMatrix<float, 3>{extents.x(), extents.y(), extents.z()};
                 renderMesh(mUriToMesh.at(CUBE_PRIMITIVE_URI), modelInWorld);
             } else if (auto* sphere = dynamic_cast<btSphereShape const*>(shape)) {
-                btScalar radius = sphere->getRadius();
-                modelInWorld.block<3, 3>(0, 0) *= Eigen::DiagonalMatrix<float, 3>{radius, radius, radius};
+                btScalar diameter = sphere->getRadius() * 2;
+                modelInWorld.block<3, 3>(0, 0) *= Eigen::DiagonalMatrix<float, 3>{diameter, diameter, diameter};
                 renderMesh(mUriToMesh.at(SPHERE_PRIMITIVE_URI), modelInWorld);
-            } else if (auto* cylinder = dynamic_cast<btCylinderShape const*>(shape)) {
-                btVector3 extents = cylinder->getHalfExtentsWithoutMargin();
+            } else if (auto* cylinder = dynamic_cast<btCylinderShapeX const*>(shape)) {
+                btVector3 extents = cylinder->getHalfExtentsWithoutMargin() * 2;
                 modelInWorld.block<3, 3>(0, 0) *= Eigen::DiagonalMatrix<float, 3>{extents.x(), extents.y(), extents.z()};
                 renderMesh(mUriToMesh.at(CYLINDER_PRIMITIVE_URI), modelInWorld);
             }
