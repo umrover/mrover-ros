@@ -49,8 +49,8 @@ namespace mrover {
                         auto cylinder = std::dynamic_pointer_cast<urdf::Cylinder>(link->collision->geometry);
                         assert(cylinder);
 
-                        btVector3 cylinderHalfExtents{static_cast<btScalar>(cylinder->length / 2), static_cast<btScalar>(cylinder->radius), static_cast<btScalar>(cylinder->radius)};
-                        shape = simulator.makeBulletObject<btCylinderShapeX>(simulator.mCollisionShapes, cylinderHalfExtents);
+                        btVector3 cylinderHalfExtents{static_cast<btScalar>(cylinder->radius), static_cast<btScalar>(cylinder->radius), static_cast<btScalar>(cylinder->length / 2)};
+                        shape = simulator.makeBulletObject<btCylinderShapeZ>(simulator.mCollisionShapes, cylinderHalfExtents);
                         break;
                     }
                     default:

@@ -17,8 +17,8 @@ namespace mrover {
     }
 
     static auto btTransformToSe3(btTransform const& transform) -> SE3 {
-        btVector3 translation = transform.getOrigin();
-        btQuaternion rotation = transform.getRotation();
+        btVector3 const& translation = transform.getOrigin();
+        btQuaternion const& rotation = transform.getRotation();
         return SE3{R3{translation.x(), translation.y(), translation.z()}, SO3{rotation.w(), rotation.x(), rotation.y(), rotation.z()}};
     }
 
@@ -162,19 +162,19 @@ namespace mrover {
         for (auto const& collisionObject: mCollisionObjects) {
             btTransform rbInWorld = collisionObject->getWorldTransform();
             btCollisionShape const* shape = collisionObject->getCollisionShape();
-            Eigen::Matrix4f modelInWorld = btTransformToSe3(rbInWorld).matrix().cast<float>();
+            Eigen::Matrix4f worldToModel = btTransformToSe3(rbInWorld).matrix().cast<float>();
             if (auto* box = dynamic_cast<btBoxShape const*>(shape)) {
                 btVector3 extents = box->getHalfExtentsWithoutMargin() * 2;
-                modelInWorld.block<3, 3>(0, 0) *= Eigen::DiagonalMatrix<float, 3>{extents.x(), extents.y(), extents.z()};
-                renderMesh(mUriToMesh.at(CUBE_PRIMITIVE_URI), modelInWorld);
+                worldToModel.block<3, 3>(0, 0) *= Eigen::DiagonalMatrix<float, 3>{extents.x(), extents.y(), extents.z()};
+                renderMesh(mUriToMesh.at(CUBE_PRIMITIVE_URI), worldToModel);
             } else if (auto* sphere = dynamic_cast<btSphereShape const*>(shape)) {
                 btScalar diameter = sphere->getRadius() * 2;
-                modelInWorld.block<3, 3>(0, 0) *= Eigen::DiagonalMatrix<float, 3>{diameter, diameter, diameter};
-                renderMesh(mUriToMesh.at(SPHERE_PRIMITIVE_URI), modelInWorld);
-            } else if (auto* cylinder = dynamic_cast<btCylinderShapeX const*>(shape)) {
+                worldToModel.block<3, 3>(0, 0) *= Eigen::DiagonalMatrix<float, 3>{diameter, diameter, diameter};
+                renderMesh(mUriToMesh.at(SPHERE_PRIMITIVE_URI), worldToModel);
+            } else if (auto* cylinder = dynamic_cast<btCylinderShapeZ const*>(shape)) {
                 btVector3 extents = cylinder->getHalfExtentsWithoutMargin() * 2;
-                modelInWorld.block<3, 3>(0, 0) *= Eigen::DiagonalMatrix<float, 3>{extents.x(), extents.y(), extents.z()};
-                renderMesh(mUriToMesh.at(CYLINDER_PRIMITIVE_URI), modelInWorld);
+                worldToModel.block<3, 3>(0, 0) *= Eigen::DiagonalMatrix<float, 3>{extents.x(), extents.y(), extents.z()};
+                renderMesh(mUriToMesh.at(CYLINDER_PRIMITIVE_URI), worldToModel);
             }
         }
 
