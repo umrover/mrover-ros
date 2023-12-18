@@ -26,7 +26,7 @@ namespace mrover {
                 throw std::invalid_argument("Expected XmlRpcValue of TypeInt for member: " + member);
             }
             return static_cast<std::uint8_t>(static_cast<int>(value));
-        } else if constexpr (std::is_same_v<T, std::string>) {
+        } else if constexpr (std::is_same_v<T, std::string> || std::is_same_v<T, std::filesystem::path>) {
             if (value.getType() != XmlRpc::XmlRpcValue::TypeString) {
                 throw std::invalid_argument("Expected XmlRpcValue of TypeString for member: " + member);
             }

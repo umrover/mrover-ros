@@ -12,13 +12,14 @@
 #include <thread>
 #include <unordered_set>
 
-#include <boost/circular_buffer.hpp>
 #include <boost/container/static_vector.hpp>
+#include <boost/process.hpp>
 
 #include <geometry_msgs/TwistStamped.h>
 #include <nodelet/loader.h>
 #include <nodelet/nodelet.h>
 #include <ros/serialization.h>
+#include <rospack/rospack.h>
 #include <urdf/model.h>
 #include <xmlrpcpp/XmlRpcValue.h>
 

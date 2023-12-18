@@ -1,7 +1,7 @@
 objects:
   - type: urdf
     name: rover
-    file: package://mrover/urdf/rover.urdf.xacro
+    uri: package://mrover/urdf/rover/rover.urdf.xacro
     transform:
       translation: [ 0, 0, 0 ]
       rotation: [ 0, 0, 0, 1 ]

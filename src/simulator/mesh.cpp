@@ -3,14 +3,6 @@
 namespace mrover {
 
     Mesh::Mesh(std::string_view uri) {
-        constexpr auto PACKAGE_URI_PREFIX = "package://mrover/"sv;
-
-        if (uri.starts_with(PACKAGE_URI_PREFIX)) {
-            uri.remove_prefix(PACKAGE_URI_PREFIX.size());
-        } else {
-            throw std::invalid_argument{std::format("Invalid URI: {}", uri)};
-        }
-
         if (!uri.ends_with("glb")) {
             ROS_WARN_STREAM(std::format("URDF mesh visual importer has only been tested with the glTF binary format (.glb): {}", uri));
         }
@@ -19,7 +11,7 @@ namespace mrover {
         importer.SetPropertyInteger(AI_CONFIG_PP_SBP_REMOVE, aiPrimitiveType_POINT | aiPrimitiveType_LINE);
 
         // aiScene const* scene = importer.ReadFile(uri.data(),aiProcessPreset_TargetRealtime_MaxQuality);
-        aiScene const* scene = importer.ReadFile(uri.data(), aiProcessPreset_TargetRealtime_Quality);
+        aiScene const* scene = importer.ReadFile(uriToPath(uri), aiProcessPreset_TargetRealtime_Quality);
         if (!scene) {
             throw std::runtime_error{std::format("Scene import error: {} on path: {}", importer.GetErrorString(), uri)};
         }
@@ -84,4 +76,4 @@ namespace mrover {
             glDeleteBuffers(1, &ebo);
         }
     }
-}
+} // namespace mrover

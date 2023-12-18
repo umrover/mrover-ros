@@ -2,13 +2,6 @@
 
 namespace mrover {
 
-    auto readTextFile(std::filesystem::path const& path) -> std::string {
-        std::ifstream file;
-        file.exceptions(std::ifstream::failbit | std::ifstream::badbit);
-        file.open(path);
-        return {std::istreambuf_iterator{file}, std::istreambuf_iterator<char>{}};
-    }
-
     Shader::Shader(std::filesystem::path const& path, GLenum type) {
         handle = glCreateShader(type);
 

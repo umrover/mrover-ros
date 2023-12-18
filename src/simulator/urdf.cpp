@@ -15,15 +15,15 @@ namespace mrover {
     }
 
     URDF::URDF(SimulatorNodelet& simulator, XmlRpc::XmlRpcValue const& init) {
-        auto fileName = xmlRpcValueToTypeOrDefault<std::string>(init, "file");
-        if (!model.init(paramName)) throw std::runtime_error{std::format("Failed to parse URDF from param: {}", paramName)};
+        auto urdfUri = xmlRpcValueToTypeOrDefault<std::string>(init, "uri");
+        if (!model.initString(performXacro(uriToPath(urdfUri)))) throw std::runtime_error{std::format("Failed to parse URDF from URI: {}", urdfUri)};
 
         auto traverse = [&](auto&& self, btRigidBody* parentLinkRb, urdf::LinkConstSharedPtr const& link) -> void {
             ROS_INFO_STREAM(std::format("Adding link: {}", link->name));
             if (link->visual && link->visual->geometry && link->visual->geometry->type == urdf::Geometry::MESH) {
                 auto mesh = std::dynamic_pointer_cast<urdf::Mesh>(link->visual->geometry);
-                std::string const& uri = mesh->filename;
-                simulator.mUriToMesh.try_emplace(uri, uri);
+                std::string const& fileUri = mesh->filename;
+                simulator.mUriToMesh.try_emplace(fileUri, fileUri);
             }
 
             btCollisionShape* shape = nullptr;

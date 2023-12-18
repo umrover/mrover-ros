@@ -159,4 +159,11 @@ namespace mrover {
 
         auto twistCallback(geometry_msgs::TwistStampedConstPtr const& message) -> void;
     };
+
+    auto uriToPath(std::string_view uri) -> std::filesystem::path;
+
+    auto performXacro(std::filesystem::path const& path) -> std::string;
+
+    auto readTextFile(std::filesystem::path const& path) -> std::string;
+
 } // namespace mrover
