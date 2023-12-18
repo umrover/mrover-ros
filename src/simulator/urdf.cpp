@@ -15,8 +15,8 @@ namespace mrover {
     }
 
     URDF::URDF(SimulatorNodelet& simulator, XmlRpc::XmlRpcValue const& init) {
-        auto paramName = xmlRpcValueToTypeOrDefault<std::string>(init, "param_name");
-        if (!model.initParam(paramName)) throw std::runtime_error{std::format("Failed to parse URDF from param: {}", paramName)};
+        auto fileName = xmlRpcValueToTypeOrDefault<std::string>(init, "file");
+        if (!model.init(paramName)) throw std::runtime_error{std::format("Failed to parse URDF from param: {}", paramName)};
 
         auto traverse = [&](auto&& self, btRigidBody* parentLinkRb, urdf::LinkConstSharedPtr const& link) -> void {
             ROS_INFO_STREAM(std::format("Adding link: {}", link->name));
@@ -68,6 +68,7 @@ namespace mrover {
             btTransform jointInWorld;
             if (link->parent_joint) {
                 assert(parentLinkRb);
+
                 auto parentToWorld = parentLinkRb->getWorldTransform();
                 auto jointInParent = urdfPoseToBtTransform(link->parent_joint->parent_to_joint_origin_transform);
                 jointInWorld = parentToWorld * jointInParent;
@@ -76,6 +77,7 @@ namespace mrover {
             }
             auto* motionState = simulator.makeBulletObject<btDefaultMotionState>(simulator.mMotionStates, jointInWorld);
             auto* linkRb = simulator.makeBulletObject<btRigidBody>(simulator.mCollisionObjects, btRigidBody::btRigidBodyConstructionInfo{mass, motionState, shape});
+            linkRb->setActivationState(DISABLE_DEACTIVATION);
             simulator.mDynamicsWorld->addRigidBody(linkRb);
 
             if (urdf::JointConstSharedPtr parentJoint = link->parent_joint) {

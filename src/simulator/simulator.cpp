@@ -14,7 +14,7 @@ namespace mrover {
     }
 
     auto SimulatorNodelet::freeLook() -> void {
-        if (mInGui) return;
+        if (!mHasFocus || mInGui) return;
 
         Uint8 const* state = SDL_GetKeyboardState(nullptr);
         if (state[mRightKey]) {
@@ -39,17 +39,12 @@ namespace mrover {
         int dx{}, dy{};
         SDL_GetRelativeMouseState(&dx, &dy);
 
-        // Ignore mouse movement if we just exited the GUI
-        // Otherwise there would be a large jump in camera position
-        // Note we still need to call SDL_GetRelativeMouseState to clear the relative mouse state
-        if (!mInGuiChangedThisUpdated) {
-            auto turnX = static_cast<double>(-dx) * 0.01;
-            auto turnY = static_cast<double>(dy) * 0.01;
+        auto turnX = static_cast<double>(-dx) * 0.01;
+        auto turnY = static_cast<double>(dy) * 0.01;
 
-            R3 r3 = mCameraInWorld.position();
-            SO3 so3 = SO3{turnY, Eigen::Vector3d::UnitY()} * mCameraInWorld.rotation() * SO3{turnX, Eigen::Vector3d::UnitZ()};
-            mCameraInWorld = SE3{r3, so3};
-        }
+        R3 r3 = mCameraInWorld.position();
+        SO3 so3 = SO3{turnY, Eigen::Vector3d::UnitY()} * mCameraInWorld.rotation() * SO3{turnX, Eigen::Vector3d::UnitZ()};
+        mCameraInWorld = SE3{r3, so3};
     }
 
     auto SimulatorNodelet::run() -> void try {
@@ -78,7 +73,21 @@ namespace mrover {
                         }
                         if (key == mInGuiKey) {
                             mInGui = !mInGui;
-                            mInGuiChangedThisUpdated = true;
+                            SDL_GetRelativeMouseState(nullptr, nullptr);
+                        }
+                        break;
+                    }
+                    case SDL_WINDOWEVENT: {
+                        switch (event.window.event) {
+                            case SDL_WINDOWEVENT_FOCUS_GAINED:
+                                mHasFocus = true;
+                                SDL_GetRelativeMouseState(nullptr, nullptr);
+                                break;
+                            case SDL_WINDOWEVENT_FOCUS_LOST:
+                                mHasFocus = false;
+                                break;
+                            default:
+                                break;
                         }
                         break;
                     }
@@ -95,14 +104,15 @@ namespace mrover {
 
             renderUpdate();
 
-            mInGuiChangedThisUpdated = false;
-
             rate.sleep();
         }
 
     } catch (std::exception const& e) {
         NODELET_FATAL_STREAM(e.what());
         ros::shutdown();
+    }
+
+    auto SimulatorNodelet::twistCallback(geometry_msgs::TwistStamped::ConstPtr const& message) -> void {
     }
 
     SimulatorNodelet::~SimulatorNodelet() {

@@ -6,16 +6,14 @@
 
 using namespace std::literals;
 
-namespace mrover
-{
+namespace mrover {
     // using uri_hash = std::size_t;
 
     constexpr static GLuint GL_INVALID_HANDLE = 0;
 
     class SimulatorNodelet;
 
-    struct Shader
-    {
+    struct Shader {
         GLuint handle = GL_INVALID_HANDLE;
 
         Shader() = default;
@@ -31,8 +29,7 @@ namespace mrover
         ~Shader();
     };
 
-    struct Program
-    {
+    struct Program {
         Shader vertexShader;
         Shader fragmentShader;
 
@@ -51,10 +48,8 @@ namespace mrover
         Program(Shader&& vertexShader, Shader&& fragmentShader);
     };
 
-    struct Mesh
-    {
-        struct Binding
-        {
+    struct Mesh {
+        struct Binding {
             GLuint vao = GL_INVALID_HANDLE;
             GLuint vbo = GL_INVALID_HANDLE;
             GLuint ebo = GL_INVALID_HANDLE;
@@ -68,15 +63,13 @@ namespace mrover
         ~Mesh();
     };
 
-    struct URDF
-    {
+    struct URDF {
         urdf::Model model;
 
         URDF(SimulatorNodelet& simulator, XmlRpc::XmlRpcValue const& init);
     };
 
-    class SimulatorNodelet final : public nodelet::Nodelet
-    {
+    class SimulatorNodelet final : public nodelet::Nodelet {
         friend Mesh;
         friend URDF;
 
@@ -108,8 +101,8 @@ namespace mrover
 
         Program mShaderProgram;
 
+        bool mHasFocus = false;
         bool mInGui = false;
-        bool mInGuiChangedThisUpdated = false;
 
         // Physics
 
@@ -123,9 +116,8 @@ namespace mrover
         std::vector<std::unique_ptr<btMotionState>> mMotionStates;
         std::vector<std::unique_ptr<btTypedConstraint>> mConstraints;
 
-        template <typename T, typename... Args>
-        T* makeBulletObject(auto& vector, Args&&... args)
-        {
+        template<typename T, typename... Args>
+        T* makeBulletObject(auto& vector, Args&&... args) {
             auto pointer = std::make_unique<T>(std::forward<Args>(args)...);
             auto rawPointer = pointer.get();
             vector.emplace_back(std::move(pointer));
@@ -164,5 +156,7 @@ namespace mrover
         auto renderUpdate() -> void;
 
         auto physicsUpdate() -> void;
+
+        auto twistCallback(geometry_msgs::TwistStampedConstPtr const& message) -> void;
     };
 } // namespace mrover
