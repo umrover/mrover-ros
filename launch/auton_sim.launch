@@ -2,6 +2,7 @@
     This launch file launches everything necessary to run auton code in the simulator.
  -->
 <launch>
+    <arg name="publish_object_location" default="false"/>
     <arg name="rvizconfig" default="$(find mrover)/config/rviz/auton_sim.rviz"/>
     <arg name="world_name" default="world_flat"/>
 
@@ -14,6 +15,13 @@
     <include file="$(find mrover)/launch/simulator.launch">
         <arg name="world_name" value="$(arg world_name)"/>
     </include>
+
+    <node if="$(arg publish_object_location)" 
+          pkg="mrover" type="publish_gazebo_object.py" name="publish_object" args="mallet">
+          <!-- $(arg world_name) should contain the object whose location you are publishing -->
+          <!-- e.g. world_flat_mallet -->
+          <param name="object_name" value="mallet"/>
+    </node>
 
     <node pkg="tf" type="static_transform_publisher" name="zed2i_left_camera_frame_publisher"
           args="0 0 0 0 0 0 1 left_camera_link zed2i_left_camera_frame 100"/>
