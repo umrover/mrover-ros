@@ -237,14 +237,21 @@ class Context:
         self.rover_frame = rospy.get_param("rover_frame")
         self.prev_auton_command = None
 
+    def check_enabled(self, enableMsg: AutonCommand) -> None:
+        self.prev_auton_command = enableMsg
+        if enableMsg.is_enabled:
+            self.course = convert_and_get_course(self, enableMsg)
+        else:
+            self.disable_requested = True
+
     def auton_command_callback(self, enableMsg: AutonCommand) -> None:
         # if previous message is different, update self. If same, ignore
-        if self.prev_auton_command == None or enableMsg != self.prev_auton_command:
-            self.prev_auton_command = enableMsg
-            if enableMsg.is_enabled:
-                self.course = convert_and_get_course(self, enableMsg)
-            else:
-                self.disable_requested = True
+        if self.prev_auton_command == None:
+            self.check_enabled(enableMsg)
+        else:
+            assert self.prev_auton_command is not None
+            if enableMsg.is_enabled != self.prev_auton_command.is_enabled:
+                self.check_enabled(enableMsg)
 
     def stuck_callback(self, msg: Bool):
         self.rover.stuck = msg.data
