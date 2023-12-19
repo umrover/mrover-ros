@@ -141,6 +141,7 @@ find_package(OpenCV REQUIRED)
 find_package(ZED 2 QUIET)
 find_package(gazebo REQUIRED)
 find_package(Eigen3 REQUIRED)
+find_package(manif REQUIRED)
 if (ZED_FOUND)
     # Anything newer than C++17 combined with libstdc++13 is not supported just yet by NVCC (the CUDA compiler)
     set(CMAKE_CUDA_STANDARD 17)
@@ -204,6 +205,11 @@ mrover_add_library(lie src/util/lie/*.cpp src/util/lie)
 ## ESW
 
 mrover_add_node(sim_arm_bridge src/simulator/arm_bridge/*.cpp)
+
+## Localization
+
+mrover_add_node(invariant_ekf src/localization/invariant_ekf/*.cpp src/localization/invariant_ekf/*.hpp)
+target_include_directories(invariant_ekf SYSTEM PRIVATE ${manif_INCLUDE_DIRS})
 
 ## Perception
 
