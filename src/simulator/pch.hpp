@@ -43,4 +43,5 @@
 #include <params_utils.hpp>
 #include <se3.hpp>
 
+#include <mrover/CAN.h>
 #include <mrover/SimulatorParamsConfig.h>

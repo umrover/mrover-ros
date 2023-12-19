@@ -6,7 +6,7 @@ namespace mrover {
         mNh = getNodeHandle();
         mPnh = getMTPrivateNodeHandle();
 
-        mTwistSub = mNh.subscribe("/cmd_vel", 1, &SimulatorNodelet::twistCallback, this);
+        mTwistSub = mNh.subscribe("/cmd_vel", 1, &SimulatorNodelet::canCallback, this);
 
         mRunThread = std::thread{&SimulatorNodelet::run, this};
 
@@ -114,8 +114,7 @@ namespace mrover {
         ros::shutdown();
     }
 
-    auto SimulatorNodelet::twistCallback(geometry_msgs::Twist::ConstPtr const& message) -> void {
-        ROS_INFO_STREAM(std::format("Received twist: {}", message->linear.x));
+    auto SimulatorNodelet::canCallback(CAN const& message) -> void {
         // std::array names{"center_left_wheel_joint", "center_right_wheel_joint", "front_left_wheel_joint", "front_right_wheel_joint", "back_left_wheel_joint", "back_right_wheel_joint"};
         // for (auto const& name: names) {
         //     mJointNameToHinges.at(name)->enableAngularMotor(true, message->linear.x, 1000);

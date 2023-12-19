@@ -167,7 +167,7 @@ namespace mrover {
 
         auto physicsUpdate(ros::Rate const& rate) -> void;
 
-        auto twistCallback(geometry_msgs::Twist::ConstPtr const& message) -> void;
+        auto canCallback(CAN const& message) -> void;
     };
 
     auto uriToPath(std::string_view uri) -> std::filesystem::path;
