@@ -7,7 +7,7 @@
 using namespace std::literals;
 
 namespace mrover {
-    // using uri_hash = std::size_t;
+    // using string_hash = std::size_t;
 
     constexpr static GLuint GL_INVALID_HANDLE = 0;
 
@@ -92,11 +92,14 @@ namespace mrover {
 
         ros::NodeHandle mNh, mPnh;
 
+        ros::Subscriber mTwistSub;
+
         // Rendering
 
         SDLPointer<SDL_Window, SDL_CreateWindow, SDL_DestroyWindow> mWindow;
         SDLPointer<std::remove_pointer_t<SDL_GLContext>, SDL_GL_CreateContext, SDL_GL_DeleteContext> mGlContext;
 
+        // TODO: this should use string hash
         std::unordered_map<std::string, Mesh> mUriToMesh;
 
         Program mShaderProgram;
@@ -111,15 +114,18 @@ namespace mrover {
         std::unique_ptr<btDbvtBroadphase> mOverlappingPairCache;
         std::unique_ptr<btSequentialImpulseConstraintSolver> mSolver;
         std::unique_ptr<btDiscreteDynamicsWorld> mDynamicsWorld;
-        std::vector<std::unique_ptr<btCollisionShape>> mCollisionShapes;
         std::vector<std::unique_ptr<btCollisionObject>> mCollisionObjects;
+        std::vector<std::unique_ptr<btCollisionShape>> mCollisionShapes;
         std::vector<std::unique_ptr<btMotionState>> mMotionStates;
         std::vector<std::unique_ptr<btTypedConstraint>> mConstraints;
+
+        std::unordered_map<std::string, btRigidBody*> mLinkNameToRigidBody;
+        std::unordered_map<std::string, btHingeConstraint*> mJointNameToHinges;
 
         template<typename T, typename... Args>
         T* makeBulletObject(auto& vector, Args&&... args) {
             auto pointer = std::make_unique<T>(std::forward<Args>(args)...);
-            auto rawPointer = pointer.get();
+            auto* rawPointer = pointer.get();
             vector.emplace_back(std::move(pointer));
             return rawPointer;
         }
@@ -157,7 +163,7 @@ namespace mrover {
 
         auto physicsUpdate() -> void;
 
-        auto twistCallback(geometry_msgs::TwistStampedConstPtr const& message) -> void;
+        auto twistCallback(geometry_msgs::Twist::ConstPtr const& message) -> void;
     };
 
     auto uriToPath(std::string_view uri) -> std::filesystem::path;

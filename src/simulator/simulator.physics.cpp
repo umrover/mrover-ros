@@ -36,6 +36,12 @@ namespace mrover {
     }
 
     auto SimulatorNodelet::physicsUpdate() -> void {
+        std::array names{"center_left_wheel_joint", "center_right_wheel_joint", "front_left_wheel_joint", "front_right_wheel_joint", "back_left_wheel_joint", "back_right_wheel_joint"};
+        for (auto const& name: names) {
+            btHingeConstraint* hinge = mJointNameToHinges.at(name);
+            hinge->enableAngularMotor(true, 10, 2.68);
+        }
+
         mDynamicsWorld->stepSimulation(1.0f / 300, 10);
     }
 

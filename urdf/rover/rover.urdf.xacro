@@ -6,7 +6,7 @@
   <xacro:property name="base_height" value="0.6"/>
   <xacro:property name="wheel_radius" value="0.13"/>
   <xacro:property name="wheel_width" value="0.1"/>
-  <xacro:property name="wheel_mass" value="2"/>
+  <xacro:property name="wheel_mass" value="1"/>
 
   <xacro:property name="PI" value="3.141592"/>
 
@@ -36,7 +36,8 @@
 
   <!-- Links -->
 
-  <link name="base_link"/>
+  <link name="base_link">
+  </link>
 
   <link name="chassis_link">
     <xacro:box_inertia m="50.0" w="${base_len}" h="${base_width}" d="${base_height}"/>
@@ -54,7 +55,7 @@
 
   <xacro:macro name="wheel" params="side reflect">
     <link name="front_${side}_wheel_link">
-      <xacro:sphere_inertia m="${wheel_mass}" r="${wheel_radius}"/>
+      <xacro:cylinder_inertia m="${wheel_mass}" r="${wheel_radius}" h="${wheel_width}"/>
       <!--      <visual>-->
       <!--        <origin rpy="0 ${min(0, reflect) * PI} 0" xyz="0 0 0"/>-->
       <!--        <geometry>-->
@@ -63,7 +64,7 @@
       <!--      </visual>-->
       <collision>
         <geometry>
-          <sphere radius="${wheel_radius}"/>
+          <cylinder length="${wheel_width}" radius="${wheel_radius}"/>
         </geometry>
       </collision>
     </link>
@@ -84,7 +85,7 @@
     </link>
 
     <link name="back_${side}_wheel_link">
-      <xacro:sphere_inertia m="${wheel_mass}" r="${wheel_radius}"/>
+      <xacro:cylinder_inertia m="${wheel_mass}" r="${wheel_radius}" h="${wheel_width}"/>
 
       <!--      <visual>-->
       <!--        <origin rpy="0 ${min(0, reflect) * PI} 0" xyz="0 0 0"/>-->
@@ -94,7 +95,7 @@
       <!--      </visual>-->
       <collision>
         <geometry>
-          <sphere radius="${wheel_radius}"/>
+          <cylinder length="${wheel_width}" radius="${wheel_radius}"/>
         </geometry>
       </collision>
     </link>

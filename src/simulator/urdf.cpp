@@ -27,7 +27,8 @@ namespace mrover {
             }
 
             btCollisionShape* shape = nullptr;
-            btScalar mass = 0;
+            btScalar mass = 0.001;
+            btVector3 inertia{0.001, 0.001, 0.001};
             if (link->collision && link->collision->geometry) {
                 switch (link->collision->geometry->type) {
                     case urdf::Geometry::BOX: {
@@ -56,14 +57,12 @@ namespace mrover {
                     default:
                         throw std::invalid_argument{"Unsupported collision type"};
                 }
+            } else {
+                shape = simulator.makeBulletObject<btEmptyShape>(simulator.mCollisionShapes);
             }
             if (link->inertial) {
                 mass = static_cast<btScalar>(link->inertial->mass);
-
-                if (shape) {
-                    btVector3 inertia{static_cast<btScalar>(link->inertial->ixx), static_cast<btScalar>(link->inertial->iyy), static_cast<btScalar>(link->inertial->izz)};
-                    shape->calculateLocalInertia(mass, inertia);
-                }
+                inertia = {static_cast<btScalar>(link->inertial->ixx), static_cast<btScalar>(link->inertial->iyy), static_cast<btScalar>(link->inertial->izz)};
             }
             btTransform jointInWorld;
             if (link->parent_joint) {
@@ -76,7 +75,8 @@ namespace mrover {
                 jointInWorld = btTransform::getIdentity();
             }
             auto* motionState = simulator.makeBulletObject<btDefaultMotionState>(simulator.mMotionStates, jointInWorld);
-            auto* linkRb = simulator.makeBulletObject<btRigidBody>(simulator.mCollisionObjects, btRigidBody::btRigidBodyConstructionInfo{mass, motionState, shape});
+            auto* linkRb = simulator.makeBulletObject<btRigidBody>(simulator.mCollisionObjects, btRigidBody::btRigidBodyConstructionInfo{mass, motionState, shape, inertia});
+            simulator.mLinkNameToRigidBody.emplace(link->name, linkRb);
             linkRb->setActivationState(DISABLE_DEACTIVATION);
             simulator.mDynamicsWorld->addRigidBody(linkRb);
 
@@ -93,13 +93,15 @@ namespace mrover {
                     }
                     case urdf::Joint::CONTINUOUS:
                     case urdf::Joint::REVOLUTE: {
-                        btVector3 axis = urdfVec3ToBtVec3(parentJoint->axis);
-                        btVector3 zero;
-                        zero.setZero();
-                        auto* hingeConstraint = simulator.makeBulletObject<btHingeConstraint>(simulator.mConstraints, *parentLinkRb, *linkRb, jointInParent.getOrigin(), zero, axis, axis, true);
+                        btVector3 axisInJoint = urdfVec3ToBtVec3(parentJoint->axis);
+                        btVector3 axisInParent = jointInParent.getBasis().inverse() * axisInJoint;
+                        auto* hingeConstraint = simulator.makeBulletObject<btHingeConstraint>(simulator.mConstraints, *parentLinkRb, *linkRb, jointInParent.getOrigin(), btTransform::getIdentity().getOrigin(), axisInParent, axisInJoint, true);
                         if (parentJoint->limits) {
                             hingeConstraint->setLimit(static_cast<btScalar>(parentJoint->limits->lower), static_cast<btScalar>(parentJoint->limits->upper));
+                        } else {
+                            hingeConstraint->setLimit(-BT_LARGE_FLOAT, BT_LARGE_FLOAT);
                         }
+                        simulator.mJointNameToHinges.emplace(parentJoint->name, hingeConstraint);
                         constraint = hingeConstraint;
                         break;
                     }
