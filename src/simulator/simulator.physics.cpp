@@ -2,6 +2,8 @@
 
 namespace mrover {
 
+    constexpr static float GRAVITY_Z_ACCELERATION = -9.81f;
+
     auto SimulatorNodelet::initPhysics() -> void {
         NODELET_INFO_STREAM(std::format("Using Bullet Physics Version: {}", btGetVersion()));
 
@@ -14,35 +16,28 @@ namespace mrover {
         mSolver = std::make_unique<btSequentialImpulseConstraintSolver>();
 
         mDynamicsWorld = std::make_unique<btDiscreteDynamicsWorld>(mDispatcher.get(), mOverlappingPairCache.get(), mSolver.get(), mCollisionConfig.get());
-        mDynamicsWorld->setGravity(btVector3{0, 0, -9.81});
+        mDynamicsWorld->setGravity(btVector3{0, 0, GRAVITY_Z_ACCELERATION});
 
-        // Step 1: Create a btStaticPlaneShape object
-        btVector3 planeNormal(0, 0, 1); // The plane normal points upwards
-        btScalar planeConstant = -1;    // The plane passes through the origin
-        btStaticPlaneShape* planeShape = new btStaticPlaneShape(planeNormal, planeConstant);
+        btVector3 planeNormal(0, 0, 1);
+        btScalar planeConstant = -1;
+        auto* planeShape = new btStaticPlaneShape(planeNormal, planeConstant);
 
-        // Step 2: Create a btDefaultMotionState object
-        btDefaultMotionState* motionState = new btDefaultMotionState(btTransform(btQuaternion(0, 0, 0, 1), btVector3(0, 0, 0)));
+        auto* motionState = new btDefaultMotionState(btTransform(btQuaternion(0, 0, 0, 1), btVector3(0, 0, 0)));
 
-        // Step 3: Create a btRigidBody object
-        btScalar mass = 0; // The mass is 0 because the ground is static
-        btVector3 inertia(0, 0, 0);
-        planeShape->calculateLocalInertia(mass, inertia);
-        btRigidBody::btRigidBodyConstructionInfo rigidBodyCI(mass, motionState, planeShape, inertia);
-        btRigidBody* rigidBody = new btRigidBody(rigidBodyCI);
+        btRigidBody::btRigidBodyConstructionInfo rigidBodyCI(0, motionState, planeShape);
+        auto* rigidBody = new btRigidBody(rigidBodyCI);
 
-        // Step 4: Add the rigid body to the btDiscreteDynamicsWorld object
         mDynamicsWorld->addRigidBody(rigidBody);
     }
 
-    auto SimulatorNodelet::physicsUpdate() -> void {
-        std::array names{"center_left_wheel_joint", "center_right_wheel_joint", "front_left_wheel_joint", "front_right_wheel_joint", "back_left_wheel_joint", "back_right_wheel_joint"};
-        for (auto const& name: names) {
+    auto SimulatorNodelet::physicsUpdate(ros::Rate const& rate) -> void {
+        for (auto const& name: {"center_left_wheel_joint", "center_right_wheel_joint", "front_left_wheel_joint", "front_right_wheel_joint", "back_left_wheel_joint", "back_right_wheel_joint"}) {
             btHingeConstraint* hinge = mJointNameToHinges.at(name);
-            hinge->enableAngularMotor(true, 10, 2.68);
+            hinge->enableAngularMotor(true, mFloat1, mFloat2);
         }
 
-        mDynamicsWorld->stepSimulation(1.0f / 300, 10);
+        auto timeStep = static_cast<btScalar>(rate.cycleTime().toSec());
+        mDynamicsWorld->stepSimulation(timeStep, 10);
     }
 
 } // namespace mrover

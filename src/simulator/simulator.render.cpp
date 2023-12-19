@@ -82,8 +82,8 @@ namespace mrover {
         SDL_GetDisplayDPI(0, &ddpi, &hdpi, &vdpi);
         ImGuiIO& io = ImGui::GetIO();
         ImGuiStyle& style = ImGui::GetStyle();
-        io.FontGlobalScale = ddpi / 128.0f;
-        style.ScaleAllSizes(ddpi / 128.0f);
+        io.FontGlobalScale = 2;
+        style.ScaleAllSizes(2);
         ImGui_ImplSDL2_InitForOpenGL(mWindow.get(), mGlContext.get());
         ImGui_ImplOpenGL3_Init("#version 410 core");
 
@@ -188,12 +188,14 @@ namespace mrover {
         // Draw fps text
         ImGui::SetNextWindowPos(ImVec2(8, 8));
         ImGui::SetNextWindowSize(ImVec2(0, 0));
-        ImGui::Begin("FPS", nullptr, ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoSavedSettings);
+        ImGui::Begin("Side", nullptr, ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoSavedSettings);
         ImGui::Text("FPS: %.1f", ImGui::GetIO().Framerate);
-        ImGui::End();
 
-        bool show_demo_window = true;
-        ImGui::ShowDemoWindow(&show_demo_window);
+        ImGui::SliderFloat("Float1", &mFloat1, -100.0f, 100.0f);
+
+        ImGui::SliderFloat("Float2", &mFloat2, 0.0f, 100000.0f);
+
+        ImGui::End();
 
         ImGui::Render();
         ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());

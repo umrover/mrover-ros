@@ -75,7 +75,7 @@ namespace mrover {
 
         // Settings
 
-        double mTargetFps = 300;
+        double mTargetFps = 200;
         bool mHeadless = false;
         Sint32 mQuitKey = SDLK_q;
         Sint32 mInGuiKey = SDLK_ESCAPE;
@@ -87,6 +87,10 @@ namespace mrover {
         Sint32 mDownKey = SDL_SCANCODE_LCTRL;
 
         float mFlySpeed = 0.1f;
+        float mLookSense = 0.004f;
+
+        float mFloat1 = 0.0f;
+        float mFloat2 = 0.0f;
 
         // ROS
 
@@ -161,7 +165,7 @@ namespace mrover {
 
         auto renderUpdate() -> void;
 
-        auto physicsUpdate() -> void;
+        auto physicsUpdate(ros::Rate const& rate) -> void;
 
         auto twistCallback(geometry_msgs::Twist::ConstPtr const& message) -> void;
     };

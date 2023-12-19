@@ -94,12 +94,10 @@ namespace mrover {
                     case urdf::Joint::CONTINUOUS:
                     case urdf::Joint::REVOLUTE: {
                         btVector3 axisInJoint = urdfVec3ToBtVec3(parentJoint->axis);
-                        btVector3 axisInParent = jointInParent.getBasis().inverse() * axisInJoint;
+                        btVector3 axisInParent = jointInParent.getBasis() * axisInJoint;
                         auto* hingeConstraint = simulator.makeBulletObject<btHingeConstraint>(simulator.mConstraints, *parentLinkRb, *linkRb, jointInParent.getOrigin(), btTransform::getIdentity().getOrigin(), axisInParent, axisInJoint, true);
                         if (parentJoint->limits) {
                             hingeConstraint->setLimit(static_cast<btScalar>(parentJoint->limits->lower), static_cast<btScalar>(parentJoint->limits->upper));
-                        } else {
-                            hingeConstraint->setLimit(-BT_LARGE_FLOAT, BT_LARGE_FLOAT);
                         }
                         simulator.mJointNameToHinges.emplace(parentJoint->name, hingeConstraint);
                         constraint = hingeConstraint;
