@@ -145,7 +145,7 @@ namespace mrover {
         Eigen::Matrix4f rosToGl;
         rosToGl << 0, -1, 0, 0, // OpenGL x = -ROS y
                 0, 0, 1, 0,     // OpenGL y = ROS z
-                -1, 0, 0, 0,    //  OpenGL z = -ROS x
+                -1, 0, 0, 0,    // OpenGL z = -ROS x
                 0, 0, 0, 1;
         Eigen::Matrix4f worldToCamera = rosToGl * mCameraInWorld.matrix().inverse().cast<float>();
         glUniform(worldToCameraId, worldToCamera);
@@ -191,7 +191,7 @@ namespace mrover {
         ImGui::Begin("Side", nullptr, ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoSavedSettings);
         ImGui::Text("FPS: %.1f", ImGui::GetIO().Framerate);
 
-        ImGui::SliderFloat("Float1", &mFloat1, -100.0f, 100.0f);
+        ImGui::SliderFloat("Float1", &mFloat1, -20.0f, 20.0f);
 
         ImGui::SliderFloat("Float2", &mFloat2, 0.0f, 100000.0f);
 
