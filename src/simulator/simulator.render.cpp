@@ -16,10 +16,14 @@ namespace mrover {
         if (!condition) throw std::runtime_error(std::format("SDL Error: {}", SDL_GetError()));
     }
 
-    static auto btTransformToSe3(btTransform const& transform) -> SE3 {
+    static auto btTransformToSim3(btTransform const& transform, btVector3 const& scale) -> SIM3 {
         btVector3 const& translation = transform.getOrigin();
         btQuaternion const& rotation = transform.getRotation();
-        return SE3{R3{translation.x(), translation.y(), translation.z()}, SO3{rotation.w(), rotation.x(), rotation.y(), rotation.z()}};
+        return {
+                R3{translation.x(), translation.y(), translation.z()},
+                SO3{rotation.w(), rotation.x(), rotation.y(), rotation.z()},
+                R3{scale.x(), scale.y(), scale.z()},
+        };
     }
 
     auto perspective(float fovY, float aspect, float zNear, float zFar) -> Eigen::Matrix4f {
@@ -93,14 +97,14 @@ namespace mrover {
         mUriToMesh.emplace(CYLINDER_PRIMITIVE_URI, CYLINDER_PRIMITIVE_URI);
     }
 
-    auto SimulatorNodelet::renderMesh(Mesh const& mesh, Eigen::Matrix4f const& modelToWorld) -> void {
+    auto SimulatorNodelet::renderMesh(Mesh const& mesh, SIM3 const& modelToWorld) -> void {
         assert(mShaderProgram.handle != GL_INVALID_HANDLE);
         glUseProgram(mShaderProgram.handle);
 
         GLint modelToWorldId = glGetUniformLocation(mShaderProgram.handle, "modelToWorld");
         assert(modelToWorldId != GL_INVALID_INDEX);
 
-        glUniform(modelToWorldId, modelToWorld);
+        glUniform(modelToWorldId, modelToWorld.matrix().cast<float>());
 
         for (auto const& [vao, _vbo, _ebo, indicesCount]: mesh.bindings) {
             assert(vao != GL_INVALID_HANDLE);
@@ -116,7 +120,7 @@ namespace mrover {
             if (link->visual && link->visual->geometry) {
                 if (auto urdfMesh = std::dynamic_pointer_cast<urdf::Mesh>(link->visual->geometry)) {
                     Mesh const& mesh = mUriToMesh.at(urdfMesh->filename);
-                    renderMesh(mesh, SE3{}.matrix().cast<float>());
+                    renderMesh(mesh, SIM3{});
                 }
             }
             for (urdf::JointSharedPtr const& child_joint: link->child_joints) {
@@ -162,18 +166,17 @@ namespace mrover {
         for (auto const& collisionObject: mCollisionObjects) {
             btTransform rbInWorld = collisionObject->getWorldTransform();
             btCollisionShape const* shape = collisionObject->getCollisionShape();
-            Eigen::Matrix4f worldToModel = btTransformToSe3(rbInWorld).matrix().cast<float>();
             if (auto* box = dynamic_cast<btBoxShape const*>(shape)) {
                 btVector3 extents = box->getHalfExtentsWithoutMargin() * 2;
-                worldToModel.block<3, 3>(0, 0) *= Eigen::DiagonalMatrix<float, 3>{extents.x(), extents.y(), extents.z()};
+                SIM3 worldToModel = btTransformToSim3(rbInWorld, extents);
                 renderMesh(mUriToMesh.at(CUBE_PRIMITIVE_URI), worldToModel);
             } else if (auto* sphere = dynamic_cast<btSphereShape const*>(shape)) {
                 btScalar diameter = sphere->getRadius() * 2;
-                worldToModel.block<3, 3>(0, 0) *= Eigen::DiagonalMatrix<float, 3>{diameter, diameter, diameter};
+                SIM3 worldToModel = btTransformToSim3(rbInWorld, btVector3{diameter, diameter, diameter});
                 renderMesh(mUriToMesh.at(SPHERE_PRIMITIVE_URI), worldToModel);
             } else if (auto* cylinder = dynamic_cast<btCylinderShapeZ const*>(shape)) {
                 btVector3 extents = cylinder->getHalfExtentsWithoutMargin() * 2;
-                worldToModel.block<3, 3>(0, 0) *= Eigen::DiagonalMatrix<float, 3>{extents.x(), extents.y(), extents.z()};
+                SIM3 worldToModel = btTransformToSim3(rbInWorld, extents);
                 renderMesh(mUriToMesh.at(CYLINDER_PRIMITIVE_URI), worldToModel);
             }
         }

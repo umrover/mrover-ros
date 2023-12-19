@@ -145,7 +145,7 @@ namespace mrover {
 
         auto initRender() -> void;
 
-        auto renderMesh(Mesh const& mesh, Eigen::Matrix4f const& modelToWorld) -> void;
+        auto renderMesh(Mesh const& mesh, SIM3 const& modelToWorld) -> void;
 
         auto initPhysics() -> void;
 

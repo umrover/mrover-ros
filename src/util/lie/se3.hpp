@@ -24,17 +24,16 @@ class SO3 {
 
 public:
     friend class SE3;
+    friend class SIM3;
 
     SO3() = default;
 
-    template<
-        typename... Args,
-        typename = std::enable_if_t<std::is_constructible_v<AngleAxis, Args...>>,
-        typename = std::enable_if_t<(sizeof...(Args) > 0)>
-    >
-    SO3(Args&&... args) : mAngleAxis{std::forward<Args>(args)...} {}
-
     SO3(double w, double x, double y, double z) : mAngleAxis{Eigen::Quaterniond{w, x, y, z}} {}
+
+    template<typename... Args,
+             typename = std::enable_if_t<std::is_constructible_v<AngleAxis, Args...>>,
+             typename = std::enable_if_t<(sizeof...(Args) > 0)>>
+    SO3(Args&&... args) : mAngleAxis{std::forward<Args>(args)...} {}
 
     [[nodiscard]] SO3 operator*(SO3 const& other) const;
 
@@ -53,11 +52,11 @@ public:
 class SE3 {
     using Transform = Eigen::Transform<double, 3, Eigen::Isometry>;
 
+    Transform mTransform = Transform::Identity();
+
     static SE3 fromTf(geometry_msgs::Transform const& transform);
 
     static SE3 fromPose(geometry_msgs::Pose const& pose);
-
-    Transform mTransform = Transform::Identity();
 
     [[nodiscard]] geometry_msgs::Pose toPose() const;
 
@@ -65,7 +64,7 @@ class SE3 {
 
     [[nodiscard]] geometry_msgs::PoseStamped toPoseStamped(std::string const& frameId) const;
 
-    [[nodiscard]] geometry_msgs::TransformStamped toTransformStamped(const std::string& parentFrameId, const std::string& childFrameId) const;
+    [[nodiscard]] geometry_msgs::TransformStamped toTransformStamped(std::string const& parentFrameId, std::string const& childFrameId) const;
 
 public:
     [[nodiscard]] static SE3 fromTfTree(tf2_ros::Buffer const& buffer, std::string const& fromFrameId, std::string const& toFrameId);
@@ -76,11 +75,9 @@ public:
 
     SE3(R3 const& position, SO3 const& rotation);
 
-    template<
-        typename... Args,
-        typename = std::enable_if_t<std::is_constructible_v<Transform, Args...>>,
-        typename = std::enable_if_t<(sizeof...(Args) > 0)>
-    >
+    template<typename... Args,
+             typename = std::enable_if_t<std::is_constructible_v<Transform, Args...>>,
+             typename = std::enable_if_t<(sizeof...(Args) > 0)>>
     SE3(Args&&... args) : mTransform{std::forward<Args>(args)...} {}
 
     [[nodiscard]] SE3 operator*(SE3 const& other) const;
@@ -92,4 +89,17 @@ public:
     [[nodiscard]] SO3 rotation() const;
 
     [[nodiscard]] double distanceTo(SE3 const& other) const;
+};
+
+class SIM3 {
+    using Transform = Eigen::Transform<double, 3, Eigen::Affine>;
+
+    Transform mTransform = Transform::Identity();
+
+public:
+    SIM3() = default;
+
+    SIM3(R3 const& position, SO3 const& rotation, R3 const& scale);
+
+    [[nodiscard]] Eigen::Matrix4d matrix() const;
 };
