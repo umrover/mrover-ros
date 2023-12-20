@@ -7,6 +7,7 @@
 using namespace std::literals;
 
 namespace mrover {
+
     // using string_hash = std::size_t;
 
     constexpr static GLuint GL_INVALID_HANDLE = 0;
@@ -96,6 +97,7 @@ namespace mrover {
 
         ros::NodeHandle mNh, mPnh;
 
+        // std::vector<ros::Subscriber> mCanSubs;
         ros::Subscriber mTwistSub;
 
         // Rendering
@@ -167,7 +169,7 @@ namespace mrover {
 
         auto physicsUpdate(ros::Rate const& rate) -> void;
 
-        auto canCallback(CAN const& message) -> void;
+        auto twistCallback(geometry_msgs::Twist::ConstPtr const& twist) -> void;
     };
 
     auto uriToPath(std::string_view uri) -> std::filesystem::path;

@@ -3,7 +3,7 @@
 
   <xacro:property name="base_width" value="0.7357"/>
   <xacro:property name="base_len" value="1.0"/>
-  <xacro:property name="base_height" value="0.6"/>
+  <xacro:property name="base_height" value="0.4"/>
   <xacro:property name="wheel_radius" value="0.13"/>
   <xacro:property name="wheel_width" value="0.1"/>
   <xacro:property name="wheel_mass" value="1"/>
@@ -40,7 +40,7 @@
   </link>
 
   <link name="chassis_link">
-    <xacro:box_inertia m="50.0" w="${base_len}" h="${base_width}" d="${base_height}"/>
+    <xacro:box_inertia m="20.0" w="${base_len}" h="${base_width}" d="${base_height}"/>
     <visual>
       <geometry>
         <mesh filename="package://mrover/urdf/meshes/cube.glb"/>
@@ -53,8 +53,8 @@
     </collision>
   </link>
 
-  <xacro:macro name="wheel" params="side reflect">
-    <link name="front_${side}_wheel_link">
+  <xacro:macro name="wheel" params="name reflect xyz">
+    <link name="${name}_wheel_link">
       <xacro:cylinder_inertia m="${wheel_mass}" r="${wheel_radius}" h="${wheel_width}"/>
       <!--      <visual>-->
       <!--        <origin rpy="0 ${min(0, reflect) * PI} 0" xyz="0 0 0"/>-->
@@ -69,57 +69,35 @@
       </collision>
     </link>
 
-    <link name="center_${side}_wheel_link">
-      <xacro:cylinder_inertia m="${wheel_mass}" r="${wheel_radius}" h="${wheel_width}"/>
-      <!--      <visual>-->
-      <!--        <origin rpy="0 ${min(0, reflect) * PI} 0" xyz="0 0 0"/>-->
-      <!--        <geometry>-->
-      <!--          <mesh filename="package://mrover/urdf/meshes/rover.wheel.dae"/>-->
-      <!--        </geometry>-->
-      <!--      </visual>-->
+    <link name="${name}_axle_link">
+      <xacro:cylinder_inertia m="1.0" r="0.01" h="0.1"/>
+
       <collision>
         <geometry>
-          <cylinder length="${wheel_width}" radius="${wheel_radius}"/>
+          <cylinder length="0.1" radius="0.01"/>
         </geometry>
       </collision>
     </link>
 
-    <link name="back_${side}_wheel_link">
-      <xacro:cylinder_inertia m="${wheel_mass}" r="${wheel_radius}" h="${wheel_width}"/>
-
-      <!--      <visual>-->
-      <!--        <origin rpy="0 ${min(0, reflect) * PI} 0" xyz="0 0 0"/>-->
-      <!--        <geometry>-->
-      <!--          <mesh filename="package://mrover/urdf/meshes/rover.wheel.dae"/>-->
-      <!--        </geometry>-->
-      <!--      </visual>-->
-      <collision>
-        <geometry>
-          <cylinder length="${wheel_width}" radius="${wheel_radius}"/>
-        </geometry>
-      </collision>
-    </link>
-
-    <joint name="front_${side}_wheel_joint" type="continuous">
+    <joint name="${name}_axle_joint" type="continuous">
       <parent link="chassis_link"/>
-      <child link="front_${side}_wheel_link"/>
-      <origin xyz="0.42 ${reflect * (base_width/2 + 0.06)} -0.373" rpy="${-PI/2} 0 0"/>
+      <child link="${name}_axle_link"/>
+      <origin xyz="${xyz}" rpy="${-PI/2} 0 0"/>
       <axis xyz="0 0 1"/>
     </joint>
 
-    <joint name="center_${side}_wheel_joint" type="continuous">
-      <parent link="chassis_link"/>
-      <child link="center_${side}_wheel_link"/>
-      <origin xyz="0 ${reflect * (base_width/2 + 0.06)} -0.373" rpy="${-PI/2} 0 0"/>
+    <joint name="${name}_wheel_joint" type="continuous">
+      <parent link="${name}_axle_link"/>
+      <child link="${name}_wheel_link"/>
+      <origin xyz="0 0 ${reflect * 0.15}" rpy="0 0 0"/>
       <axis xyz="0 0 1"/>
     </joint>
+  </xacro:macro>
 
-    <joint name="back_${side}_wheel_joint" type="continuous">
-      <parent link="chassis_link"/>
-      <child link="back_${side}_wheel_link"/>
-      <origin xyz="-0.42 ${reflect * (base_width/2 + 0.06)} -0.373" rpy="${-PI/2} 0 0"/>
-      <axis xyz="0 0 1"/>
-    </joint>
+  <xacro:macro name="wheels" params="side reflect">
+    <xacro:wheel name="front_${side}" reflect="${reflect}" xyz="0.42 ${reflect * (base_width/2 + 0.06)} -0.373"/>
+    <xacro:wheel name="center_${side}" reflect="${reflect}" xyz="0 ${reflect * (base_width/2 + 0.06)} -0.373"/>
+    <xacro:wheel name="back_${side}" reflect="${reflect}" xyz="-0.42 ${reflect * (base_width/2 + 0.06)} -0.373"/>
   </xacro:macro>
 
   <!-- Joints -->
@@ -188,6 +166,6 @@
   <!--  </link>-->
 
   <xacro:include filename="$(find mrover)/urdf/rover/rover_gazebo_plugins.urdf.xacro"/>
-  <xacro:wheel side="left" reflect="1"/>
-  <xacro:wheel side="right" reflect="-1"/>
+  <xacro:wheels side="left" reflect="1"/>
+  <xacro:wheels side="right" reflect="-1"/>
 </robot>

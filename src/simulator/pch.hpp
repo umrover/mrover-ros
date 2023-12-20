@@ -40,8 +40,12 @@
 #include <assimp/postprocess.h>
 #include <assimp/scene.h>
 
+// #include <moteus/moteus.h>
+
 #include <params_utils.hpp>
 #include <se3.hpp>
+#include <units.hpp>
+// #include <messaging.hpp>
 
 #include <mrover/CAN.h>
 #include <mrover/SimulatorParamsConfig.h>

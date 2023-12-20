@@ -1,7 +1,11 @@
 <launch>
-  <rosparam command="load" file="$(find mrover)/config/simulator/autonomy.yaml"/>
+    <!--    <rosparam command="load" file="$(find mrover)/config/esw.yaml"/>-->
 
-<!--  <node name="simulator" pkg="mrover" type="simulator" required="true" />-->
+    <rosparam command="load" file="$(find mrover)/config/simulator/autonomy.yaml"/>
 
-<!--  <param name="robot_description" command="xacro $(find mrover)/urdf/rover/rover.urdf.xacro"/>-->
+    <!--    <node name="drive_bridge" pkg="mrover" type="drive_bridge" required="true"/>-->
+
+    <!--  <node name="simulator" pkg="mrover" type="simulator" required="true" />-->
+
+    <!--  <param name="robot_description" command="xacro $(find mrover)/urdf/rover/rover.urdf.xacro"/>-->
 </launch>

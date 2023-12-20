@@ -6,7 +6,10 @@ namespace mrover {
         mNh = getNodeHandle();
         mPnh = getMTPrivateNodeHandle();
 
-        mTwistSub = mNh.subscribe("/cmd_vel", 1, &SimulatorNodelet::canCallback, this);
+        // for (std::string channel: {"/can/back_left/out", "/can/back_right/out", "/can/middle_left/out", "/can/middle_right/out", "/can/front_left/out", "/can/front_right/out"}) {
+        //     mCanSubs.emplace_back(mNh.subscribe<CAN>(channel, 1, [this, channel](CAN::ConstPtr const& msg) { canCallback(*msg, channel); }));
+        // }
+        mTwistSub = mNh.subscribe<geometry_msgs::Twist>("/cmd_vel", 1, &SimulatorNodelet::twistCallback, this);
 
         mRunThread = std::thread{&SimulatorNodelet::run, this};
 
@@ -32,10 +35,10 @@ namespace mrover {
             mCameraInWorld = SE3{R3{-mFlySpeed, 0.0, 0.0}, SO3{}} * mCameraInWorld;
         }
         if (state[mUpKey]) {
-            mCameraInWorld = SE3{R3{0.0, 0.0, mFlySpeed}, SO3{}} * mCameraInWorld;
+            mCameraInWorld = mCameraInWorld * SE3{R3{0.0, 0.0, mFlySpeed}, SO3{}};
         }
         if (state[mDownKey]) {
-            mCameraInWorld = SE3{R3{0.0, 0.0, -mFlySpeed}, SO3{}} * mCameraInWorld;
+            mCameraInWorld = mCameraInWorld * SE3{R3{0.0, 0.0, -mFlySpeed}, SO3{}};
         }
 
         int dx{}, dy{};
@@ -114,11 +117,26 @@ namespace mrover {
         ros::shutdown();
     }
 
-    auto SimulatorNodelet::canCallback(CAN const& message) -> void {
-        // std::array names{"center_left_wheel_joint", "center_right_wheel_joint", "front_left_wheel_joint", "front_right_wheel_joint", "back_left_wheel_joint", "back_right_wheel_joint"};
-        // for (auto const& name: names) {
-        //     mJointNameToHinges.at(name)->enableAngularMotor(true, message->linear.x, 1000);
-        // }
+    auto SimulatorNodelet::twistCallback(geometry_msgs::Twist::ConstPtr const& twist) -> void {
+        // TODO: read these from the parameter server
+        constexpr auto WHEEL_DISTANCE_INNER = Meters{0.43};
+        using RadiansPerMeter = compound_unit<Radians, inverse<Meters>>;
+        constexpr auto WHEEL_LINEAR_TO_ANGULAR = RadiansPerMeter{384.615387};
+        constexpr auto MAX_MOTOR_TORQUE = 2.68;
+
+        auto forward = MetersPerSecond{twist->linear.x};
+        auto turn = RadiansPerSecond{twist->angular.z} * 50;
+
+        auto delta = turn * WHEEL_DISTANCE_INNER / Meters{1};
+        RadiansPerSecond left = forward * WHEEL_LINEAR_TO_ANGULAR - delta;
+        RadiansPerSecond right = forward * WHEEL_LINEAR_TO_ANGULAR + delta;
+
+        for (auto const& name: {"center_left_axle_joint", "front_left_axle_joint", "back_left_axle_joint"}) {
+            mJointNameToHinges.at(name)->enableAngularMotor(true, left.get(), MAX_MOTOR_TORQUE);
+        }
+        for (auto const& name: {"center_right_axle_joint", "front_right_axle_joint", "back_right_axle_joint"}) {
+            mJointNameToHinges.at(name)->enableAngularMotor(true, right.get(), MAX_MOTOR_TORQUE);
+        }
     }
 
     SimulatorNodelet::~SimulatorNodelet() {

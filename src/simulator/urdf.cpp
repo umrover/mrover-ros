@@ -19,14 +19,14 @@ namespace mrover {
         if (!model.initString(performXacro(uriToPath(urdfUri)))) throw std::runtime_error{std::format("Failed to parse URDF from URI: {}", urdfUri)};
 
         auto traverse = [&](auto&& self, btRigidBody* parentLinkRb, urdf::LinkConstSharedPtr const& link) -> void {
-            ROS_INFO_STREAM(std::format("Adding link: {}", link->name));
+            ROS_INFO_STREAM(std::format("Processing link: {}", link->name));
             if (link->visual && link->visual->geometry && link->visual->geometry->type == urdf::Geometry::MESH) {
                 auto mesh = std::dynamic_pointer_cast<urdf::Mesh>(link->visual->geometry);
                 std::string const& fileUri = mesh->filename;
                 simulator.mUriToMesh.try_emplace(fileUri, fileUri);
             }
 
-            btCollisionShape* shape = nullptr;
+            btCollisionShape* shape;
             btScalar mass = 0.001;
             btVector3 inertia{0.001, 0.001, 0.001};
             if (link->collision && link->collision->geometry) {
@@ -85,28 +85,55 @@ namespace mrover {
 
                 btTransform jointInParent = urdfPoseToBtTransform(parentJoint->parent_to_joint_origin_transform);
 
-                btTypedConstraint* constraint;
                 switch (parentJoint->type) {
                     case urdf::Joint::FIXED: {
-                        constraint = simulator.makeBulletObject<btFixedConstraint>(simulator.mConstraints, *parentLinkRb, *linkRb, jointInParent, btTransform::getIdentity());
+                        ROS_INFO_STREAM(std::format("Fixed joint {}: {} <-> {}", parentJoint->name, parentJoint->parent_link_name, parentJoint->child_link_name));
+                        auto* constraint = simulator.makeBulletObject<btFixedConstraint>(simulator.mConstraints, *parentLinkRb, *linkRb, jointInParent, btTransform::getIdentity());
+                        simulator.mDynamicsWorld->addConstraint(constraint, true);
                         break;
                     }
                     case urdf::Joint::CONTINUOUS:
                     case urdf::Joint::REVOLUTE: {
                         btVector3 axisInJoint = urdfVec3ToBtVec3(parentJoint->axis);
                         btVector3 axisInParent = jointInParent.getBasis() * axisInJoint;
-                        auto* hingeConstraint = simulator.makeBulletObject<btHingeConstraint>(simulator.mConstraints, *parentLinkRb, *linkRb, jointInParent.getOrigin(), btTransform::getIdentity().getOrigin(), axisInParent, axisInJoint, true);
-                        if (parentJoint->limits) {
-                            hingeConstraint->setLimit(static_cast<btScalar>(parentJoint->limits->lower), static_cast<btScalar>(parentJoint->limits->upper));
+                        if (parentJoint->name.contains("wheel"sv)) {
+                            ROS_INFO_STREAM(std::format("Wheel joint {}: {} <-> {}", parentJoint->name, parentJoint->parent_link_name, parentJoint->child_link_name));
+                            auto* gearConstraint = simulator.makeBulletObject<btGearConstraint>(simulator.mConstraints, *parentLinkRb, *linkRb, axisInParent, axisInJoint, 50.0);
+                            simulator.mDynamicsWorld->addConstraint(gearConstraint, true);
+
+                            // angular constraint on x and y
+                            auto* angularConstraint = simulator.makeBulletObject<btGeneric6DofConstraint>(simulator.mConstraints, *parentLinkRb, *linkRb, jointInParent, btTransform::getIdentity(), true);
+                            angularConstraint->setAngularLowerLimit(btVector3{0, 0, -BT_LARGE_FLOAT});
+                            angularConstraint->setAngularUpperLimit(btVector3{0, 0, BT_LARGE_FLOAT});
+                            angularConstraint->setLinearLowerLimit(btVector3{0, 0, 0});
+                            angularConstraint->setLinearUpperLimit(btVector3{0, 0, 0});
+                            simulator.mDynamicsWorld->addConstraint(angularConstraint, true);
+
+                            // auto* p2pConstraint = simulator.makeBulletObject<btPoint2PointConstraint>(simulator.mConstraints, *parentLinkRb, *linkRb, jointInParent.getOrigin(), btTransform::getIdentity().getOrigin());
+                            // simulator.mDynamicsWorld->addConstraint(p2pConstraint, true);
+                        } else {
+                            ROS_INFO_STREAM(std::format("Hinge joint {}: {} <-> {}", parentJoint->name, parentJoint->parent_link_name, parentJoint->child_link_name));
+                            auto* angularConstraint = simulator.makeBulletObject<btGeneric6DofConstraint>(simulator.mConstraints, *parentLinkRb, *linkRb, jointInParent, btTransform::getIdentity(), true);
+                            angularConstraint->setAngularLowerLimit(btVector3{0, 0, -BT_LARGE_FLOAT});
+                            angularConstraint->setAngularUpperLimit(btVector3{0, 0, BT_LARGE_FLOAT});
+                            angularConstraint->setLinearLowerLimit(btVector3{0, 0, 0});
+                            angularConstraint->setLinearUpperLimit(btVector3{0, 0, 0});
+                            angularConstraint->getRotationalLimitMotor(0)->
+                            simulator.mDynamicsWorld->addConstraint(angularConstraint, true);
+
+                            // auto* hingeConstraint = simulator.makeBulletObject<btHingeConstraint>(simulator.mConstraints, *parentLinkRb, *linkRb, jointInParent.getOrigin(), btTransform::getIdentity().getOrigin(), axisInParent, axisInJoint, true);
+                            // if (parentJoint->limits) {
+                            //     hingeConstraint->setLimit(static_cast<btScalar>(parentJoint->limits->lower), static_cast<btScalar>(parentJoint->limits->upper));
+                            // }
+                            // hingeConstraint->enableAngularMotor(true, 0.0, 2.68);
+                            // simulator.mJointNameToHinges.emplace(parentJoint->name, hingeConstraint);
+                            // simulator.mDynamicsWorld->addConstraint(hingeConstraint, true);
                         }
-                        simulator.mJointNameToHinges.emplace(parentJoint->name, hingeConstraint);
-                        constraint = hingeConstraint;
                         break;
                     }
                     default:
                         throw std::invalid_argument{"Unsupported joint type"};
                 }
-                simulator.mDynamicsWorld->addConstraint(constraint, true);
             }
 
             for (urdf::LinkConstSharedPtr childLink: link->child_links) {

@@ -13,6 +13,7 @@ namespace mrover {
 
         mOverlappingPairCache = std::make_unique<btDbvtBroadphase>();
 
+
         mSolver = std::make_unique<btSequentialImpulseConstraintSolver>();
 
         mDynamicsWorld = std::make_unique<btDiscreteDynamicsWorld>(mDispatcher.get(), mOverlappingPairCache.get(), mSolver.get(), mCollisionConfig.get());
@@ -31,10 +32,10 @@ namespace mrover {
     }
 
     auto SimulatorNodelet::physicsUpdate(ros::Rate const& rate) -> void {
-        for (auto const& name: {"center_left_wheel_joint", "center_right_wheel_joint", "front_left_wheel_joint", "front_right_wheel_joint", "back_left_wheel_joint", "back_right_wheel_joint"}) {
-            btHingeConstraint* hinge = mJointNameToHinges.at(name);
-            hinge->enableAngularMotor(true, mFloat1, 2.68);
-        }
+        // for (auto const& name: {"center_left_wheel_joint", "center_right_wheel_joint", "front_left_wheel_joint", "front_right_wheel_joint", "back_left_wheel_joint", "back_right_wheel_joint"}) {
+        //     btHingeConstraint* hinge = mJointNameToHinges.at(name);
+        //     hinge->enableAngularMotor(true, mFloat1, 2.68);
+        // }
 
         auto timeStep = static_cast<btScalar>(rate.cycleTime().toSec());
         mDynamicsWorld->stepSimulation(timeStep, 10);

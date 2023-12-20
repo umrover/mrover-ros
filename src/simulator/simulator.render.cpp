@@ -195,6 +195,12 @@ namespace mrover {
 
         ImGui::SliderFloat("Float2", &mFloat2, 0.0f, 100000.0f);
 
+        for (auto const& [name, hinge]: mJointNameToHinges) {
+            ImGui::Text("%s", name.c_str());
+            ImGui::SameLine();
+            ImGui::Text("Velocity: %.2f", hinge->getMotorTargetVelocity());
+        }
+
         ImGui::End();
 
         ImGui::Render();
