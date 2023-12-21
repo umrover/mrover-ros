@@ -1,13 +1,13 @@
 <?xml version="1.0"?>
 <robot xmlns:xacro="http://www.ros.org/wiki/xacro" name="rover">
 
-  <xacro:property name="base_width" value="0.7357"/>
-  <xacro:property name="base_len" value="1.0"/>
-  <xacro:property name="base_height" value="0.4"/>
+  <xacro:property name="base_width" value="0.553"/>
+  <xacro:property name="base_len" value="0.482"/>
+  <xacro:property name="base_height" value="0.186"/>
   <xacro:property name="wheel_radius" value="0.13"/>
   <xacro:property name="wheel_width" value="0.1"/>
   <xacro:property name="wheel_mass" value="1"/>
-  <xacro:property name="chassis_mass" value="30"/>
+  <xacro:property name="chassis_mass" value="10"/>
 
   <xacro:property name="PI" value="3.141592"/>
 
@@ -22,7 +22,7 @@
   <xacro:macro name="box_inertia" params="m w h d">
     <inertial>
       <mass value="${m}"/>
-      <inertia ixx="${m / 12.0 * (d*d + h*h)}" ixy="0.0" ixz="0.0" iyy="${m / 12.0 * (w*w + h*h)}" iyz="0.0"
+      <inertia ixx="${m / 12.0 * (d*d + h*h)}" ixy="0" ixz="0" iyy="${m / 12.0 * (w*w + h*h)}" iyz="0"
                izz="${m / 12.0 * (w*w + d*d)}"/>
     </inertial>
   </xacro:macro>
@@ -30,7 +30,7 @@
   <xacro:macro name="sphere_inertia" params="m r">
     <inertial>
       <mass value="${m}"/>
-      <inertia ixx="${2.0*m*(r*r)/5.0}" ixy="0.0" ixz="0.0" iyy="${2.0*m*(r*r)/5.0}" iyz="0.0"
+      <inertia ixx="${2.0*m*(r*r)/5.0}" ixy="0" ixz="0" iyy="${2.0*m*(r*r)/5.0}" iyz="0"
                izz="${2.0*m*(r*r)/5.0}"/>
     </inertial>
   </xacro:macro>
@@ -42,11 +42,11 @@
 
   <link name="chassis_link">
     <xacro:box_inertia m="${chassis_mass}" w="${base_len}" h="${base_width}" d="${base_height}"/>
-    <visual>
-      <geometry>
-        <mesh filename="package://mrover/urdf/meshes/cube.glb"/>
-      </geometry>
-    </visual>
+    <!--    <visual>-->
+    <!--      <geometry>-->
+    <!--        <mesh filename="package://mrover/urdf/meshes/cube.glb"/>-->
+    <!--      </geometry>-->
+    <!--    </visual>-->
     <collision>
       <geometry>
         <box size="${base_len} ${base_width} ${base_height}"/>
@@ -54,7 +54,7 @@
     </collision>
   </link>
 
-  <xacro:macro name="wheel" params="name reflect xyz">
+  <xacro:macro name="wheel" params="name reflect">
     <link name="${name}_wheel_link">
       <xacro:cylinder_inertia m="${wheel_mass}" r="${wheel_radius}" h="${wheel_width}"/>
       <!--      <visual>-->
@@ -72,7 +72,6 @@
 
     <link name="${name}_axle_link">
       <xacro:cylinder_inertia m="1.0" r="0.01" h="0.1"/>
-
       <collision>
         <geometry>
           <cylinder length="0.1" radius="0.01"/>
@@ -80,31 +79,94 @@
       </collision>
     </link>
 
-    <joint name="${name}_axle_joint" type="continuous">
-      <parent link="chassis_link"/>
-      <child link="${name}_axle_link"/>
-      <origin xyz="${xyz}" rpy="${-PI/2} 0 0"/>
-      <axis xyz="0 0 1"/>
-    </joint>
-
-    <joint name="${name}_wheel_joint" type="continuous">
+    <joint name="${name}_axle_link_to_${name}_wheel_link" type="continuous">
       <parent link="${name}_axle_link"/>
       <child link="${name}_wheel_link"/>
-      <origin xyz="0 0 0" rpy="0 0 0"/>
       <axis xyz="0 0 1"/>
+      <limit effort="2.68" velocity="0"/>
     </joint>
   </xacro:macro>
 
   <xacro:macro name="wheels" params="side reflect">
-    <xacro:wheel name="front_${side}" reflect="${reflect}" xyz="0.42 ${reflect * (base_width/2 + 0.06)} -0.373"/>
-    <xacro:wheel name="center_${side}" reflect="${reflect}" xyz="0 ${reflect * (base_width/2 + 0.06)} -0.373"/>
-    <xacro:wheel name="back_${side}" reflect="${reflect}" xyz="-0.42 ${reflect * (base_width/2 + 0.06)} -0.373"/>
+    <xacro:wheel name="front_${side}" reflect="${reflect}"/>
+    <xacro:wheel name="center_${side}" reflect="${reflect}"/>
+    <xacro:wheel name="back_${side}" reflect="${reflect}"/>
+
+    <link name="${side}_bogie_link">
+      <xacro:box_inertia m="2" w="0.5" h="0.5" d="0.5"/>
+      <collision>
+        <origin xyz="-0.14 0.1 0" rpy="0 0 -0.734"/>
+        <geometry>
+          <box size="0.2 0.025 0.025"/>
+        </geometry>
+      </collision>
+      <collision>
+        <origin xyz="0.1 0.088 0" rpy="0 0 0.734"/>
+        <geometry>
+          <box size="0.2 0.025 0.025"/>
+        </geometry>
+      </collision>
+    </link>
+
+    <link name="${side}_rocker_link">
+      <xacro:box_inertia m="2" w="0.5" h="0.5" d="0.5"/>
+      <collision>
+        <origin xyz="-0.11 0.077 0" rpy="0 0 -0.585"/>
+        <geometry>
+          <box size="0.2 0.025 0.025"/>
+        </geometry>
+      </collision>
+      <collision>
+        <origin xyz="0.22 0.15 0" rpy="0 0 0.585"/>
+        <geometry>
+          <box size="0.5 0.025 0.025"/>
+        </geometry>
+      </collision>
+    </link>
+
+    <joint name="chassis_link_to_${side}_rocker_link" type="revolute">
+      <parent link="chassis_link"/>
+      <child link="${side}_rocker_link"/>
+      <origin xyz="0.17 ${reflect * (base_width/2 + 0.05)} 0" rpy="${-PI/2} 0 0"/>
+      <axis xyz="0 0 1"/>
+      0.349066
+      <limit lower="-0.122173" upper="0.523599" effort="0" velocity="0"/>
+    </joint>
+
+    <joint name="${side}_rocker_link_to_front_${side}_axle_link" type="continuous">
+      <parent link="${side}_rocker_link"/>
+      <child link="front_${side}_axle_link"/>
+      <origin xyz="0.42 0.286 ${reflect * 0.05}"/>
+      <axis xyz="0 0 1"/>
+    </joint>
+
+    <joint name="${side}_rocker_link_to_${side}_bogie_link" type="revolute">
+      <parent link="${side}_rocker_link"/>
+      <child link="${side}_bogie_link"/>
+      <origin xyz="-0.202 0.134 0"/>
+      <axis xyz="0 0 1"/>
+      <limit lower="-0.349066" upper="0.349066" effort="0" velocity="0"/>
+    </joint>
+
+    <joint name="${side}_bogie_link_to_center_${side}_axle_link" type="continuous">
+      <parent link="${side}_bogie_link"/>
+      <child link="center_${side}_axle_link"/>
+      <origin xyz="0.174 0.157 ${reflect * 0.05}"/>
+      <axis xyz="0 0 1"/>
+    </joint>
+
+    <joint name="${side}_bogie_link_to_back_${side}_axle_link" type="continuous">
+      <parent link="${side}_bogie_link"/>
+      <child link="back_${side}_axle_link"/>
+      <origin xyz="-0.221 0.157 ${reflect * 0.05}"/>
+      <axis xyz="0 0 1"/>
+    </joint>
   </xacro:macro>
 
   <!-- Joints -->
 
-  <joint name="base_link_to_chassis" type="fixed">
-    <origin xyz="0 0 0.5"/>
+  <joint name="base_link_to_chassis_link" type="fixed">
+    <origin xyz="0 0 0.42"/>
     <parent link="base_link"/>
     <child link="chassis_link"/>
   </joint>

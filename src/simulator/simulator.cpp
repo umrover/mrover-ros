@@ -28,6 +28,8 @@ namespace mrover {
 
         ros::Rate rate{mTargetFps};
 
+        twistCallback(boost::make_shared<geometry_msgs::Twist const>());
+
         while (ros::ok()) {
             SDL_Event event;
 
@@ -71,7 +73,7 @@ namespace mrover {
 
             userControls(rate);
 
-            physicsUpdate(rate);
+            if (mEnablePhysics) physicsUpdate(rate);
 
             renderUpdate();
 

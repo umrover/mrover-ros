@@ -90,7 +90,8 @@ namespace mrover {
         auto shadersPath = std::filesystem::path{std::source_location::current().file_name()}.parent_path() / "shaders";
         mShaderProgram = {
                 Shader{shadersPath / "pbr.vert", GL_VERTEX_SHADER},
-                Shader{shadersPath / "pbr.frag", GL_FRAGMENT_SHADER}};
+                Shader{shadersPath / "pbr.frag", GL_FRAGMENT_SHADER},
+        };
 
         mUriToMesh.emplace(CUBE_PRIMITIVE_URI, CUBE_PRIMITIVE_URI);
         mUriToMesh.emplace(SPHERE_PRIMITIVE_URI, SPHERE_PRIMITIVE_URI);
@@ -164,21 +165,36 @@ namespace mrover {
 
         glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
         for (auto const& collisionObject: mCollisionObjects) {
-            btTransform rbInWorld = collisionObject->getWorldTransform();
+
+            auto renderCollisionObject = [this](auto&& self, btTransform const& shapeToWorld, btCollisionShape const* shape) -> void {
+                if (auto* box = dynamic_cast<btBoxShape const*>(shape)) {
+                    btVector3 extents = box->getHalfExtentsWithoutMargin() * 2;
+                    SIM3 worldToModel = btTransformToSim3(shapeToWorld, extents);
+                    renderMesh(mUriToMesh.at(CUBE_PRIMITIVE_URI), worldToModel);
+                } else if (auto* sphere = dynamic_cast<btSphereShape const*>(shape)) {
+                    btScalar diameter = sphere->getRadius() * 2;
+                    SIM3 worldToModel = btTransformToSim3(shapeToWorld, btVector3{diameter, diameter, diameter});
+                    renderMesh(mUriToMesh.at(SPHERE_PRIMITIVE_URI), worldToModel);
+                } else if (auto* cylinder = dynamic_cast<btCylinderShapeZ const*>(shape)) {
+                    btVector3 extents = cylinder->getHalfExtentsWithoutMargin() * 2;
+                    SIM3 worldToModel = btTransformToSim3(shapeToWorld, extents);
+                    renderMesh(mUriToMesh.at(CYLINDER_PRIMITIVE_URI), worldToModel);
+                } else if (auto* compound = dynamic_cast<btCompoundShape const*>(shape)) {
+                    for (int i = 0; i < compound->getNumChildShapes(); ++i) {
+                        btTransform const& childToParent = compound->getChildTransform(i);
+                        btCollisionShape const* childShape = compound->getChildShape(i);
+                        btTransform childToWorld = shapeToWorld * childToParent;
+                        self(self, childToWorld, childShape);
+                    }
+                } else if (dynamic_cast<btEmptyShape const*>(shape)) {
+                } else {
+                    NODELET_WARN_STREAM_ONCE(std::format("Tried to render unsupported collision shape: {}", shape->getName()));
+                }
+            };
+
+            btTransform const& shapeToWorld = collisionObject->getWorldTransform();
             btCollisionShape const* shape = collisionObject->getCollisionShape();
-            if (auto* box = dynamic_cast<btBoxShape const*>(shape)) {
-                btVector3 extents = box->getHalfExtentsWithoutMargin() * 2;
-                SIM3 worldToModel = btTransformToSim3(rbInWorld, extents);
-                renderMesh(mUriToMesh.at(CUBE_PRIMITIVE_URI), worldToModel);
-            } else if (auto* sphere = dynamic_cast<btSphereShape const*>(shape)) {
-                btScalar diameter = sphere->getRadius() * 2;
-                SIM3 worldToModel = btTransformToSim3(rbInWorld, btVector3{diameter, diameter, diameter});
-                renderMesh(mUriToMesh.at(SPHERE_PRIMITIVE_URI), worldToModel);
-            } else if (auto* cylinder = dynamic_cast<btCylinderShapeZ const*>(shape)) {
-                btVector3 extents = cylinder->getHalfExtentsWithoutMargin() * 2;
-                SIM3 worldToModel = btTransformToSim3(rbInWorld, extents);
-                renderMesh(mUriToMesh.at(CYLINDER_PRIMITIVE_URI), worldToModel);
-            }
+            renderCollisionObject(renderCollisionObject, shapeToWorld, shape);
         }
 
         ImGui_ImplOpenGL3_NewFrame();
@@ -196,6 +212,8 @@ namespace mrover {
         ImGui::SliderFloat("Rover Angular Speed", &mRoverAngularSpeed, 0.01f, 10.0f);
         ImGui::SliderFloat("Fly Speed", &mFlySpeed, 0.01f, 10.0f);
         ImGui::SliderFloat("Look Sense", &mLookSense, 0.0001f, 0.01f);
+        ImGui::InputFloat3("Gravity", mGravityAcceleration.m_floats);
+        ImGui::Checkbox("Enable Physics", &mEnablePhysics);
 
         // ImGui::SliderFloat("Float1", &mFloat1, -20.0f, 20.0f);
         // ImGui::SliderFloat("Float2", &mFloat2, 0.0f, 100000.0f);

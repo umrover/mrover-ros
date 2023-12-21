@@ -101,5 +101,7 @@ public:
 
     SIM3(R3 const& position, SO3 const& rotation, R3 const& scale);
 
-    [[nodiscard]] Eigen::Matrix4d matrix() const;
+    [[nodiscard]] auto matrix() const -> Eigen::Matrix4d;
+
+    [[nodiscard]] auto position() const -> R3;
 };

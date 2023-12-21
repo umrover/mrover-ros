@@ -96,6 +96,8 @@ namespace mrover {
         float mRoverLinearSpeed = 1.0f;
         float mRoverAngularSpeed = 0.5f;
         float mLookSense = 0.004f;
+        btVector3 mGravityAcceleration = {0.0f, 0.0f, -9.81f};
+        bool mEnablePhysics = false;
 
         float mFloat1 = 0.0f;
         float mFloat2 = 0.0f;

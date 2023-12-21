@@ -16,11 +16,13 @@ namespace mrover {
         RadiansPerSecond left = forward * WHEEL_LINEAR_TO_ANGULAR - delta;
         RadiansPerSecond right = forward * WHEEL_LINEAR_TO_ANGULAR + delta;
 
-        for (auto const& name: {"center_left_axle_joint", "front_left_axle_joint", "back_left_axle_joint"}) {
-            mJointNameToHinges.at(name)->enableAngularMotor(true, left.get(), MAX_MOTOR_TORQUE);
+        NODELET_INFO_STREAM_ONCE(std::format("left: {} right: {}", left.get(), right.get()));
+
+        for (auto const& name: {"left_rocker_link_to_front_left_axle_link", "left_bogie_link_to_center_left_axle_link", "left_bogie_link_to_back_left_axle_link"}) {
+            mJointNameToHinges.at(name)->enableAngularMotor(true, -left.get(), MAX_MOTOR_TORQUE);
         }
-        for (auto const& name: {"center_right_axle_joint", "front_right_axle_joint", "back_right_axle_joint"}) {
-            mJointNameToHinges.at(name)->enableAngularMotor(true, right.get(), MAX_MOTOR_TORQUE);
+        for (auto const& name: {"right_rocker_link_to_front_right_axle_link", "right_bogie_link_to_center_right_axle_link", "right_bogie_link_to_back_right_axle_link"}) {
+            mJointNameToHinges.at(name)->enableAngularMotor(true, -right.get(), MAX_MOTOR_TORQUE);
         }
     }
 
