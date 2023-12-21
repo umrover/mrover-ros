@@ -7,6 +7,7 @@
   <xacro:property name="wheel_radius" value="0.13"/>
   <xacro:property name="wheel_width" value="0.1"/>
   <xacro:property name="wheel_mass" value="1"/>
+  <xacro:property name="chassis_mass" value="30"/>
 
   <xacro:property name="PI" value="3.141592"/>
 
@@ -40,7 +41,7 @@
   </link>
 
   <link name="chassis_link">
-    <xacro:box_inertia m="20.0" w="${base_len}" h="${base_width}" d="${base_height}"/>
+    <xacro:box_inertia m="${chassis_mass}" w="${base_len}" h="${base_width}" d="${base_height}"/>
     <visual>
       <geometry>
         <mesh filename="package://mrover/urdf/meshes/cube.glb"/>
@@ -89,7 +90,7 @@
     <joint name="${name}_wheel_joint" type="continuous">
       <parent link="${name}_axle_link"/>
       <child link="${name}_wheel_link"/>
-      <origin xyz="0 0 ${reflect * 0.15}" rpy="0 0 0"/>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
       <axis xyz="0 0 1"/>
     </joint>
   </xacro:macro>

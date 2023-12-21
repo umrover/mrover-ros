@@ -18,40 +18,6 @@ namespace mrover {
         ros::shutdown();
     }
 
-    auto SimulatorNodelet::freeLook() -> void {
-        if (!mHasFocus || mInGui) return;
-
-        Uint8 const* state = SDL_GetKeyboardState(nullptr);
-        if (state[mRightKey]) {
-            mCameraInWorld = SE3{R3{0.0, -mFlySpeed, 0}, SO3{}} * mCameraInWorld;
-        }
-        if (state[mLeftKey]) {
-            mCameraInWorld = SE3{R3{0.0, mFlySpeed, 0}, SO3{}} * mCameraInWorld;
-        }
-        if (state[mForwardKey]) {
-            mCameraInWorld = SE3{R3{mFlySpeed, 0.0, 0.0}, SO3{}} * mCameraInWorld;
-        }
-        if (state[mBackwardKey]) {
-            mCameraInWorld = SE3{R3{-mFlySpeed, 0.0, 0.0}, SO3{}} * mCameraInWorld;
-        }
-        if (state[mUpKey]) {
-            mCameraInWorld = mCameraInWorld * SE3{R3{0.0, 0.0, mFlySpeed}, SO3{}};
-        }
-        if (state[mDownKey]) {
-            mCameraInWorld = mCameraInWorld * SE3{R3{0.0, 0.0, -mFlySpeed}, SO3{}};
-        }
-
-        int dx{}, dy{};
-        SDL_GetRelativeMouseState(&dx, &dy);
-
-        auto turnX = static_cast<double>(-dx) * mLookSense;
-        auto turnY = static_cast<double>(dy) * mLookSense;
-
-        R3 p = mCameraInWorld.position();
-        SO3 q = SO3{turnY, Eigen::Vector3d::UnitY()} * mCameraInWorld.rotation() * SO3{turnX, Eigen::Vector3d::UnitZ()};
-        mCameraInWorld = SE3{p, q};
-    }
-
     auto SimulatorNodelet::run() -> void try {
 
         initPhysics();
@@ -103,7 +69,7 @@ namespace mrover {
 
             SDL_SetRelativeMouseMode(mInGui ? SDL_FALSE : SDL_TRUE);
 
-            freeLook();
+            userControls(rate);
 
             physicsUpdate(rate);
 
@@ -115,28 +81,6 @@ namespace mrover {
     } catch (std::exception const& e) {
         NODELET_FATAL_STREAM(e.what());
         ros::shutdown();
-    }
-
-    auto SimulatorNodelet::twistCallback(geometry_msgs::Twist::ConstPtr const& twist) -> void {
-        // TODO: read these from the parameter server
-        constexpr auto WHEEL_DISTANCE_INNER = Meters{0.43};
-        using RadiansPerMeter = compound_unit<Radians, inverse<Meters>>;
-        constexpr auto WHEEL_LINEAR_TO_ANGULAR = RadiansPerMeter{384.615387};
-        constexpr auto MAX_MOTOR_TORQUE = 2.68;
-
-        auto forward = MetersPerSecond{twist->linear.x};
-        auto turn = RadiansPerSecond{twist->angular.z} * 50;
-
-        auto delta = turn * WHEEL_DISTANCE_INNER / Meters{1};
-        RadiansPerSecond left = forward * WHEEL_LINEAR_TO_ANGULAR - delta;
-        RadiansPerSecond right = forward * WHEEL_LINEAR_TO_ANGULAR + delta;
-
-        for (auto const& name: {"center_left_axle_joint", "front_left_axle_joint", "back_left_axle_joint"}) {
-            mJointNameToHinges.at(name)->enableAngularMotor(true, left.get(), MAX_MOTOR_TORQUE);
-        }
-        for (auto const& name: {"center_right_axle_joint", "front_right_axle_joint", "back_right_axle_joint"}) {
-            mJointNameToHinges.at(name)->enableAngularMotor(true, right.get(), MAX_MOTOR_TORQUE);
-        }
     }
 
     SimulatorNodelet::~SimulatorNodelet() {

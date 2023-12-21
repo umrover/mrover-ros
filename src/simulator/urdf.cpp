@@ -101,33 +101,37 @@ namespace mrover {
                             auto* gearConstraint = simulator.makeBulletObject<btGearConstraint>(simulator.mConstraints, *parentLinkRb, *linkRb, axisInParent, axisInJoint, 50.0);
                             simulator.mDynamicsWorld->addConstraint(gearConstraint, true);
 
-                            // angular constraint on x and y
-                            auto* angularConstraint = simulator.makeBulletObject<btGeneric6DofConstraint>(simulator.mConstraints, *parentLinkRb, *linkRb, jointInParent, btTransform::getIdentity(), true);
-                            angularConstraint->setAngularLowerLimit(btVector3{0, 0, -BT_LARGE_FLOAT});
-                            angularConstraint->setAngularUpperLimit(btVector3{0, 0, BT_LARGE_FLOAT});
-                            angularConstraint->setLinearLowerLimit(btVector3{0, 0, 0});
-                            angularConstraint->setLinearUpperLimit(btVector3{0, 0, 0});
-                            simulator.mDynamicsWorld->addConstraint(angularConstraint, true);
+                            // constraint everything else
+                            // auto* angularConstraint = simulator.makeBulletObject<btGeneric6DofConstraint>(simulator.mConstraints, *parentLinkRb, *linkRb, jointInParent, btTransform::getIdentity(), true);
+                            // angularConstraint->setAngularLowerLimit(btVector3{0, 0, -BT_LARGE_FLOAT});
+                            // angularConstraint->setAngularUpperLimit(btVector3{0, 0, BT_LARGE_FLOAT});
+                            // angularConstraint->setLinearLowerLimit(btVector3{0, 0, 0});
+                            // angularConstraint->setLinearUpperLimit(btVector3{0, 0, 0});
+                            // simulator.mDynamicsWorld->addConstraint(angularConstraint, true);
+
+                            auto* hingeConstraint = simulator.makeBulletObject<btHingeConstraint>(simulator.mConstraints, *parentLinkRb, *linkRb, jointInParent.getOrigin(), btTransform::getIdentity().getOrigin(), axisInParent, axisInJoint, true);
+                            simulator.mDynamicsWorld->addConstraint(hingeConstraint, true);
 
                             // auto* p2pConstraint = simulator.makeBulletObject<btPoint2PointConstraint>(simulator.mConstraints, *parentLinkRb, *linkRb, jointInParent.getOrigin(), btTransform::getIdentity().getOrigin());
                             // simulator.mDynamicsWorld->addConstraint(p2pConstraint, true);
                         } else {
                             ROS_INFO_STREAM(std::format("Hinge joint {}: {} <-> {}", parentJoint->name, parentJoint->parent_link_name, parentJoint->child_link_name));
-                            auto* angularConstraint = simulator.makeBulletObject<btGeneric6DofConstraint>(simulator.mConstraints, *parentLinkRb, *linkRb, jointInParent, btTransform::getIdentity(), true);
-                            angularConstraint->setAngularLowerLimit(btVector3{0, 0, -BT_LARGE_FLOAT});
-                            angularConstraint->setAngularUpperLimit(btVector3{0, 0, BT_LARGE_FLOAT});
-                            angularConstraint->setLinearLowerLimit(btVector3{0, 0, 0});
-                            angularConstraint->setLinearUpperLimit(btVector3{0, 0, 0});
-                            angularConstraint->getRotationalLimitMotor(0)->
-                            simulator.mDynamicsWorld->addConstraint(angularConstraint, true);
 
-                            // auto* hingeConstraint = simulator.makeBulletObject<btHingeConstraint>(simulator.mConstraints, *parentLinkRb, *linkRb, jointInParent.getOrigin(), btTransform::getIdentity().getOrigin(), axisInParent, axisInJoint, true);
-                            // if (parentJoint->limits) {
-                            //     hingeConstraint->setLimit(static_cast<btScalar>(parentJoint->limits->lower), static_cast<btScalar>(parentJoint->limits->upper));
-                            // }
-                            // hingeConstraint->enableAngularMotor(true, 0.0, 2.68);
-                            // simulator.mJointNameToHinges.emplace(parentJoint->name, hingeConstraint);
-                            // simulator.mDynamicsWorld->addConstraint(hingeConstraint, true);
+                            // auto* angularConstraint = simulator.makeBulletObject<btGeneric6DofConstraint>(simulator.mConstraints, *parentLinkRb, *linkRb, jointInParent, btTransform::getIdentity(), true);
+                            // angularConstraint->setAngularLowerLimit(btVector3{0, 0, -BT_LARGE_FLOAT});
+                            // angularConstraint->setAngularUpperLimit(btVector3{0, 0, BT_LARGE_FLOAT});
+                            // angularConstraint->setLinearLowerLimit(btVector3{0, 0, 0});
+                            // angularConstraint->setLinearUpperLimit(btVector3{0, 0, 0});
+                            // angularConstraint->getRotationalLimitMotor(0)->
+                            // simulator.mDynamicsWorld->addConstraint(angularConstraint, true);
+
+                            auto* hingeConstraint = simulator.makeBulletObject<btHingeConstraint>(simulator.mConstraints, *parentLinkRb, *linkRb, jointInParent.getOrigin(), btTransform::getIdentity().getOrigin(), axisInParent, axisInJoint, true);
+                            if (parentJoint->limits) {
+                                hingeConstraint->setLimit(static_cast<btScalar>(parentJoint->limits->lower), static_cast<btScalar>(parentJoint->limits->upper));
+                            }
+                            hingeConstraint->enableAngularMotor(true, 0.0, 2.68);
+                            simulator.mJointNameToHinges.emplace(parentJoint->name, hingeConstraint);
+                            simulator.mDynamicsWorld->addConstraint(hingeConstraint, true);
                         }
                         break;
                     }

@@ -82,8 +82,8 @@ namespace mrover {
         SDL_GetDisplayDPI(0, &ddpi, &hdpi, &vdpi);
         ImGuiIO& io = ImGui::GetIO();
         ImGuiStyle& style = ImGui::GetStyle();
-        io.FontGlobalScale = 2;
-        style.ScaleAllSizes(2);
+        io.FontGlobalScale = 1;
+        style.ScaleAllSizes(1);
         ImGui_ImplSDL2_InitForOpenGL(mWindow.get(), mGlContext.get());
         ImGui_ImplOpenGL3_Init("#version 410 core");
 
@@ -188,18 +188,23 @@ namespace mrover {
         // Draw fps text
         ImGui::SetNextWindowPos(ImVec2(8, 8));
         ImGui::SetNextWindowSize(ImVec2(0, 0));
-        ImGui::Begin("Side", nullptr, ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoSavedSettings);
+        ImGui::Begin("Side", nullptr, ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoMove);
         ImGui::Text("FPS: %.1f", ImGui::GetIO().Framerate);
 
-        ImGui::SliderFloat("Float1", &mFloat1, -20.0f, 20.0f);
+        ImGui::SliderFloat("Target FPS", &mTargetFps, 5.0f, 360.0f);
+        ImGui::SliderFloat("Rover Linear Speed", &mRoverLinearSpeed, 0.01f, 10.0f);
+        ImGui::SliderFloat("Rover Angular Speed", &mRoverAngularSpeed, 0.01f, 10.0f);
+        ImGui::SliderFloat("Fly Speed", &mFlySpeed, 0.01f, 10.0f);
+        ImGui::SliderFloat("Look Sense", &mLookSense, 0.0001f, 0.01f);
 
-        ImGui::SliderFloat("Float2", &mFloat2, 0.0f, 100000.0f);
+        // ImGui::SliderFloat("Float1", &mFloat1, -20.0f, 20.0f);
+        // ImGui::SliderFloat("Float2", &mFloat2, 0.0f, 100000.0f);
 
-        for (auto const& [name, hinge]: mJointNameToHinges) {
-            ImGui::Text("%s", name.c_str());
-            ImGui::SameLine();
-            ImGui::Text("Velocity: %.2f", hinge->getMotorTargetVelocity());
-        }
+        // for (auto const& [name, hinge]: mJointNameToHinges) {
+        //     ImGui::Text("%s", name.c_str());
+        //     ImGui::SameLine();
+        //     ImGui::Text("Velocity: %.2f", hinge->getMotorTargetVelocity());
+        // }
 
         ImGui::End();
 

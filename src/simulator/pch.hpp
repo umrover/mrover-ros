@@ -35,6 +35,8 @@
 #include <unsupported/Eigen/OpenGLSupport>
 
 #include <btBulletDynamicsCommon.h>
+#include <BulletDynamics/MLCPSolvers/btDantzigSolver.h>
+#include <BulletDynamics/MLCPSolvers/btMLCPSolver.h>
 
 #include <assimp/Importer.hpp>
 #include <assimp/postprocess.h>

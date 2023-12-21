@@ -76,18 +76,25 @@ namespace mrover {
 
         // Settings
 
-        double mTargetFps = 200;
+        float mTargetFps = 180;
         bool mHeadless = false;
         Sint32 mQuitKey = SDLK_q;
         Sint32 mInGuiKey = SDLK_ESCAPE;
-        Sint32 mRightKey = SDL_SCANCODE_D;
-        Sint32 mLeftKey = SDL_SCANCODE_A;
-        Sint32 mForwardKey = SDL_SCANCODE_W;
-        Sint32 mBackwardKey = SDL_SCANCODE_S;
-        Sint32 mUpKey = SDL_SCANCODE_SPACE;
-        Sint32 mDownKey = SDL_SCANCODE_LCTRL;
+        Sint32 mCamRightKey = SDL_SCANCODE_D;
+        Sint32 mCamLeftKey = SDL_SCANCODE_A;
+        Sint32 mCamForwardKey = SDL_SCANCODE_W;
+        Sint32 mCamBackwardKey = SDL_SCANCODE_S;
+        Sint32 mCamUpKey = SDL_SCANCODE_SPACE;
+        Sint32 mCamDownKey = SDL_SCANCODE_LCTRL;
+        Sint32 mRoverRightKey = SDL_SCANCODE_L;
+        Sint32 mRoverLeftKey = SDL_SCANCODE_J;
+        Sint32 mRoverForwardKey = SDL_SCANCODE_I;
+        Sint32 mRoverBackwardKey = SDL_SCANCODE_COMMA;
+        Sint32 mRoverStopKey = SDL_SCANCODE_K;
 
-        float mFlySpeed = 0.1f;
+        float mFlySpeed = 5.0f;
+        float mRoverLinearSpeed = 1.0f;
+        float mRoverAngularSpeed = 0.5f;
         float mLookSense = 0.004f;
 
         float mFloat1 = 0.0f;
@@ -118,7 +125,7 @@ namespace mrover {
         std::unique_ptr<btDefaultCollisionConfiguration> mCollisionConfig;
         std::unique_ptr<btCollisionDispatcher> mDispatcher;
         std::unique_ptr<btDbvtBroadphase> mOverlappingPairCache;
-        std::unique_ptr<btSequentialImpulseConstraintSolver> mSolver;
+        std::unique_ptr<btConstraintSolver> mSolver;
         std::unique_ptr<btDiscreteDynamicsWorld> mDynamicsWorld;
         std::vector<std::unique_ptr<btCollisionObject>> mCollisionObjects;
         std::vector<std::unique_ptr<btCollisionShape>> mCollisionShapes;
@@ -161,7 +168,9 @@ namespace mrover {
 
         auto run() -> void;
 
-        auto freeLook() -> void;
+        auto freeLook(ros::Rate const& rate, Uint8 const* keys) -> void;
+
+        auto userControls(ros::Rate const& rate) -> void;
 
         auto renderUrdf(URDF const& urdf) -> void;
 
