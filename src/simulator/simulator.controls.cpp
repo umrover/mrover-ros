@@ -32,7 +32,7 @@ namespace mrover {
             hinge->setTargetVelocity(5, name.contains("left"sv) ? left.get() : right.get());
 
             // btHingeConstraint* hinge = mJointNameToHinges.at(name);
-            // hinge->enableAngularMotor(true, name.contains("left"sv) ? -left.get() : -right.get(), MAX_MOTOR_TORQUE);
+            // hinge->enableAngularMotor(true, name.contains("left"sv) ? left.get() : right.get(), MAX_MOTOR_TORQUE);
         }
     }
 

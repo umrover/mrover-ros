@@ -6,7 +6,7 @@
   <xacro:property name="base_height" value="0.186"/>
   <xacro:property name="wheel_radius" value="0.13"/>
   <xacro:property name="wheel_width" value="0.1"/>
-  <xacro:property name="wheel_mass" value="1"/>
+  <xacro:property name="wheel_mass" value="0.8"/>
   <xacro:property name="chassis_mass" value="15"/>
 
   <xacro:property name="PI" value="3.141592"/>
@@ -71,10 +71,10 @@
     </link>
 
     <link name="${name}_axle_link">
-      <xacro:cylinder_inertia m="1" r="0.01" h="0.1"/>
+      <xacro:cylinder_inertia m="2" r="0.01" h="0.075"/>
       <collision>
         <geometry>
-          <cylinder length="0.1" radius="0.01"/>
+          <cylinder length="0.075" radius="0.01"/>
         </geometry>
       </collision>
     </link>
@@ -127,7 +127,7 @@
     <joint name="chassis_link_to_${side}_rocker_link" type="revolute">
       <parent link="chassis_link"/>
       <child link="${side}_rocker_link"/>
-      <origin xyz="0.17 ${reflect * (base_width/2 + 0.03)} 0" rpy="${-PI/2} 0 0"/>
+      <origin xyz="0.17 ${reflect * (base_width/2 + 0.05)} 0" rpy="${-PI/2} 0 0"/>
       <axis xyz="0 0 1"/>
       <limit lower="-0.122173" upper="0.523599" effort="0" velocity="0"/>
     </joint>
@@ -135,7 +135,7 @@
     <joint name="${side}_rocker_link_to_back_${side}_axle_link" type="continuous">
       <parent link="${side}_rocker_link"/>
       <child link="back_${side}_axle_link"/>
-      <origin xyz="-0.42 0.286 ${reflect * 0.08}"/>
+      <origin xyz="-0.42 0.286 ${reflect * 0.09}"/>
       <axis xyz="0 0 1"/>
     </joint>
 
@@ -150,14 +150,14 @@
     <joint name="${side}_bogie_link_to_front_${side}_axle_link" type="continuous">
       <parent link="${side}_bogie_link"/>
       <child link="front_${side}_axle_link"/>
-      <origin xyz="0.174 0.157 ${reflect * 0.08}"/>
+      <origin xyz="0.174 0.157 ${reflect * 0.09}"/>
       <axis xyz="0 0 1"/>
     </joint>
 
     <joint name="${side}_bogie_link_to_center_${side}_axle_link" type="continuous">
       <parent link="${side}_bogie_link"/>
       <child link="center_${side}_axle_link"/>
-      <origin xyz="-0.221 0.157 ${reflect * 0.08}"/>
+      <origin xyz="-0.221 0.157 ${reflect * 0.09}"/>
       <axis xyz="0 0 1"/>
     </joint>
   </xacro:macro>

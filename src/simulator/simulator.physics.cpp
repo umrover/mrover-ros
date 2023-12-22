@@ -42,7 +42,7 @@ namespace mrover {
             hinge->setMotorTarget(0.0, dt);
         }
 
-        int maxSubSteps = 2;
+        int maxSubSteps = 10;
         int simStepCount = mDynamicsWorld->stepSimulation(dt, maxSubSteps, 1 / 120.0f);
 
         if (auto* mlcpSolver = dynamic_cast<btMLCPSolver*>(mDynamicsWorld->getConstraintSolver())) {
