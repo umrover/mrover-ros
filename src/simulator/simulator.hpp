@@ -58,6 +58,8 @@ namespace mrover {
         };
 
         boost::container::static_vector<Binding, 4> bindings;
+        std::vector<Eigen::Vector3f> vertices;
+        std::vector<uint> indices;
 
         explicit Mesh(std::string_view uri);
 
@@ -138,7 +140,7 @@ namespace mrover {
         std::unordered_map<std::string, btRigidBody*> mLinkNameToRigidBody;
         std::unordered_map<std::string, btHingeConstraint*> mJointNameToHinges;
         std::unordered_map<std::string, btGeneric6DofSpring2Constraint*> mJointNameToSpringHinges;
-
+        std::unordered_map<btBvhTriangleMeshShape*, std::string> mMeshToUri;
 
         template<typename T, typename... Args>
         T* makeBulletObject(auto& vector, Args&&... args) {

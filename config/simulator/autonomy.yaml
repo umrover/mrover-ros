@@ -5,3 +5,9 @@ objects:
     transform:
       translation: [ 0, 0, 0 ]
       rotation: [ 0, 0, 0, 1 ]
+  - type: urdf
+    name: world
+    uri: package://mrover/urdf/world/world.urdf.xacro
+    transform:
+      translation: [ 0, 0, 0 ]
+      rotation: [ 0, 0, 0, 1 ]

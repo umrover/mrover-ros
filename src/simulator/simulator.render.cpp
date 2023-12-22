@@ -187,6 +187,9 @@ namespace mrover {
                         btTransform childToWorld = shapeToWorld * childToParent;
                         self(self, childToWorld, childShape);
                     }
+                } else if (auto* mesh = dynamic_cast<btBvhTriangleMeshShape const*>(shape)) {
+                    SIM3 worldToModel = btTransformToSim3(shapeToWorld, btVector3{1, 1, 1});
+                    renderMesh(mUriToMesh.at(mMeshToUri.at(const_cast<btBvhTriangleMeshShape*>(mesh))), worldToModel);
                 } else if (dynamic_cast<btEmptyShape const*>(shape)) {
                 } else {
                     NODELET_WARN_STREAM_ONCE(std::format("Tried to render unsupported collision shape: {}", shape->getName()));

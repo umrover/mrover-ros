@@ -73,6 +73,28 @@ namespace mrover {
                         shapes.emplace_back(simulator.makeBulletObject<btCylinderShapeZ>(simulator.mCollisionShapes, cylinderHalfExtents), urdfPoseToBtTransform((collision->origin)));
                         break;
                     }
+                    case urdf::Geometry::MESH: {
+                        auto mesh = std::dynamic_pointer_cast<urdf::Mesh>(collision->geometry);
+                        assert(mesh);
+
+                        std::string const& fileUri = mesh->filename;
+                        auto [it, was_inserted] = simulator.mUriToMesh.try_emplace(fileUri, fileUri);
+                        Mesh const& meshData = it->second;
+
+                        auto* triangleMesh = new btTriangleMesh{};
+                        triangleMesh->preallocateVertices(static_cast<int>(meshData.vertices.size()));
+                        triangleMesh->preallocateIndices(static_cast<int>(meshData.indices.size()));
+                        for (std::size_t i = 0; i < meshData.indices.size(); i += 3) {
+                            Eigen::Vector3f v0 = meshData.vertices[meshData.indices[i + 0]];
+                            Eigen::Vector3f v1 = meshData.vertices[meshData.indices[i + 1]];
+                            Eigen::Vector3f v2 = meshData.vertices[meshData.indices[i + 2]];
+                            triangleMesh->addTriangle(btVector3{v0.x(), v0.y(), v0.z()}, btVector3{v1.x(), v1.y(), v1.z()}, btVector3{v2.x(), v2.y(), v2.z()});
+                        }
+                        auto* meshShape = simulator.makeBulletObject<btBvhTriangleMeshShape>(simulator.mCollisionShapes, triangleMesh, true);
+                        shapes.emplace_back(meshShape, urdfPoseToBtTransform(collision->origin));
+                        simulator.mMeshToUri.emplace(meshShape, fileUri);
+                        break;
+                    }
                     default:
                         throw std::invalid_argument{"Unsupported collision type"};
                 }
@@ -162,6 +184,7 @@ namespace mrover {
                                 ROS_INFO_STREAM("\tGear");
                                 auto* gearConstraint = simulator.makeBulletObject<btGearConstraint>(simulator.mConstraints, *parentLinkRb, *linkRb, axisInParent, axisInJoint, 50.0);
                                 simulator.mDynamicsWorld->addConstraint(gearConstraint, true);
+                                linkRb->setFriction(1100);
                             }
                         }
                         break;

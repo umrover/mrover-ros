@@ -10,7 +10,7 @@ namespace mrover {
         constexpr auto MAX_MOTOR_TORQUE = 2.68;
 
         auto forward = MetersPerSecond{twist->linear.x};
-        auto turn = RadiansPerSecond{twist->angular.z} * 50;
+        auto turn = RadiansPerSecond{twist->angular.z} * 500;
 
         auto delta = turn * WHEEL_DISTANCE_INNER / Meters{1};
         RadiansPerSecond left = forward * WHEEL_LINEAR_TO_ANGULAR - delta;

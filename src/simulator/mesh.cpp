@@ -35,7 +35,7 @@ namespace mrover {
             assert(ebo != GL_INVALID_HANDLE);
             glBindVertexArray(vao);
 
-            std::vector<Eigen::Vector3f> vertices(mesh->mNumVertices);
+            vertices.resize(mesh->mNumVertices);
             std::for_each(std::execution::par, mesh->mVertices, mesh->mVertices + mesh->mNumVertices, [&](aiVector3D const& vertex) {
                 std::size_t vertexIndex = &vertex - mesh->mVertices;
                 // This importer has only been tested with Blender exporting to glTF
@@ -46,7 +46,7 @@ namespace mrover {
             glBufferData(GL_ARRAY_BUFFER, static_cast<GLsizeiptr>(vertices.size() * sizeof(decltype(vertices)::value_type)), vertices.data(), GL_STATIC_DRAW);
 
             glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, ebo);
-            std::vector<uint> indices(mesh->mNumFaces * 3);
+            indices.resize(mesh->mNumFaces * 3);
             for (uint faceIndex = 0; faceIndex < mesh->mNumFaces; ++faceIndex) {
                 aiFace const& face = mesh->mFaces[faceIndex];
                 assert(face.mNumIndices == 3);
