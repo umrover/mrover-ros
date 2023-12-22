@@ -38,7 +38,7 @@ namespace mrover {
         for (auto const& name: {"chassis_link_to_left_rocker_link", "chassis_link_to_right_rocker_link"}) {
             btHingeConstraint* hinge = mJointNameToHinges.at(name);
             hinge->enableMotor(true);
-            hinge->setMaxMotorImpulse(0.5);
+            hinge->setMaxMotorImpulse(0.45);
             hinge->setMotorTarget(0.0, dt);
         }
 

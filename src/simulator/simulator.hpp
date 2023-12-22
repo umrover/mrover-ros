@@ -137,6 +137,8 @@ namespace mrover {
 
         std::unordered_map<std::string, btRigidBody*> mLinkNameToRigidBody;
         std::unordered_map<std::string, btHingeConstraint*> mJointNameToHinges;
+        std::unordered_map<std::string, btGeneric6DofSpring2Constraint*> mJointNameToSpringHinges;
+
 
         template<typename T, typename... Args>
         T* makeBulletObject(auto& vector, Args&&... args) {

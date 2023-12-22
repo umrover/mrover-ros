@@ -133,22 +133,37 @@ namespace mrover {
                     case urdf::Joint::REVOLUTE: {
                         btVector3 axisInJoint = urdfPosToBtPos(parentJoint->axis);
                         btVector3 axisInParent = jointInParent.getBasis() * axisInJoint;
-                        if (parentJoint->name.contains("wheel"sv)) {
-                            ROS_INFO_STREAM(std::format("Wheel joint {}: {} <-> {}", parentJoint->name, parentJoint->parent_link_name, parentJoint->child_link_name));
-                            auto* gearConstraint = simulator.makeBulletObject<btGearConstraint>(simulator.mConstraints, *parentLinkRb, *linkRb, axisInParent, axisInJoint, 50.0);
-                            simulator.mDynamicsWorld->addConstraint(gearConstraint, true);
+                        if (parentJoint->name.contains("axle"sv)) {
+                            ROS_INFO_STREAM(std::format("Hinge 2 joint {}: {} <-> {}", parentJoint->name, parentJoint->parent_link_name, parentJoint->child_link_name));
 
-                            auto* hingeConstraint = simulator.makeBulletObject<btHingeConstraint>(simulator.mConstraints, *parentLinkRb, *linkRb, jointInParent.getOrigin(), btTransform::getIdentity().getOrigin(), axisInParent, axisInJoint, true);
-                            simulator.mDynamicsWorld->addConstraint(hingeConstraint, true);
+                            // btVector3 a = jointInWorld.getOrigin();
+                            // btVector3 b{0, 0, 1};
+                            // btVector3 c{0, 1, 0};
+                            auto* constraint = simulator.makeBulletObject<btGeneric6DofSpring2Constraint>(simulator.mConstraints, *parentLinkRb, *linkRb, jointInParent, btTransform::getIdentity());
+                            constraint->setLinearLowerLimit(btVector3{0, -0.05, 0});
+                            constraint->setLinearUpperLimit(btVector3{0, 0.05, 0});
+                            constraint->setAngularLowerLimit(btVector3{0, 0, 1});
+                            constraint->setAngularUpperLimit(btVector3{0, 0, -1});
+                            constraint->enableSpring(1, true);
+                            constraint->setStiffness(1, 500);
+                            constraint->setDamping(1, 2);
+                            constraint->setParam(BT_CONSTRAINT_CFM, 0.15f, 1);
+                            constraint->setParam(BT_CONSTRAINT_ERP, 0.35f, 1);
+                            constraint->setEquilibriumPoint();
+                            simulator.mJointNameToSpringHinges.emplace(parentJoint->name, constraint);
+                            simulator.mDynamicsWorld->addConstraint(constraint, true);
                         } else {
                             ROS_INFO_STREAM(std::format("Hinge joint {}: {} <-> {}", parentJoint->name, parentJoint->parent_link_name, parentJoint->child_link_name));
 
                             auto* hingeConstraint = simulator.makeBulletObject<btHingeConstraint>(simulator.mConstraints, *parentLinkRb, *linkRb, jointInParent.getOrigin(), btTransform::getIdentity().getOrigin(), axisInParent, axisInJoint, true);
-                            if (parentJoint->limits) {
-                                hingeConstraint->setLimit(static_cast<btScalar>(parentJoint->limits->lower), static_cast<btScalar>(parentJoint->limits->upper));
-                            }
+                            if (parentJoint->limits) hingeConstraint->setLimit(static_cast<btScalar>(parentJoint->limits->lower), static_cast<btScalar>(parentJoint->limits->upper));
                             simulator.mJointNameToHinges.emplace(parentJoint->name, hingeConstraint);
                             simulator.mDynamicsWorld->addConstraint(hingeConstraint, true);
+
+                            if (parentJoint->name.contains("wheel"sv)) {
+                                auto* gearConstraint = simulator.makeBulletObject<btGearConstraint>(simulator.mConstraints, *parentLinkRb, *linkRb, axisInParent, axisInJoint, 50.0);
+                                simulator.mDynamicsWorld->addConstraint(gearConstraint, true);
+                            }
                         }
                         break;
                     }
