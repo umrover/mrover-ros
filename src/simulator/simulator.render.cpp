@@ -216,7 +216,7 @@ namespace mrover {
         ImGui::InputFloat3("Gravity", mGravityAcceleration.m_floats);
         ImGui::Checkbox("Enable Physics", &mEnablePhysics);
 
-        // ImGui::SliderFloat("Float1", &mFloat1, -20.0f, 20.0f);
+        ImGui::SliderFloat("Float1", &mFloat1, 0.0f, 5000.0f);
         // ImGui::SliderFloat("Float2", &mFloat2, 0.0f, 100000.0f);
 
         // for (auto const& [name, hinge]: mJointNameToHinges) {

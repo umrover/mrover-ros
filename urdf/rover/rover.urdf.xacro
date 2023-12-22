@@ -135,7 +135,7 @@
     <joint name="${side}_rocker_link_to_back_${side}_axle_link" type="continuous">
       <parent link="${side}_rocker_link"/>
       <child link="back_${side}_axle_link"/>
-      <origin xyz="-0.42 0.286 ${reflect * 0.07}"/>
+      <origin xyz="-0.42 0.286 ${reflect * 0.08}"/>
       <axis xyz="0 0 1"/>
     </joint>
 
@@ -150,14 +150,14 @@
     <joint name="${side}_bogie_link_to_front_${side}_axle_link" type="continuous">
       <parent link="${side}_bogie_link"/>
       <child link="front_${side}_axle_link"/>
-      <origin xyz="0.174 0.157 ${reflect * 0.07}"/>
+      <origin xyz="0.174 0.157 ${reflect * 0.08}"/>
       <axis xyz="0 0 1"/>
     </joint>
 
     <joint name="${side}_bogie_link_to_center_${side}_axle_link" type="continuous">
       <parent link="${side}_bogie_link"/>
       <child link="center_${side}_axle_link"/>
-      <origin xyz="-0.221 0.157 ${reflect * 0.07}"/>
+      <origin xyz="-0.221 0.157 ${reflect * 0.08}"/>
       <axis xyz="0 0 1"/>
     </joint>
   </xacro:macro>
