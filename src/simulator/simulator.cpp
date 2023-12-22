@@ -44,6 +44,9 @@ namespace mrover {
                         if (key == mQuitKey) {
                             ros::requestShutdown();
                         }
+                        if (key == mTogglePhysicsKey) {
+                            mEnablePhysics = !mEnablePhysics;
+                        }
                         if (key == mInGuiKey) {
                             mInGui = !mInGui;
                             SDL_GetRelativeMouseState(nullptr, nullptr);

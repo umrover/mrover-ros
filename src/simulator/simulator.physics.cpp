@@ -33,9 +33,17 @@ namespace mrover {
     auto SimulatorNodelet::physicsUpdate(ros::Rate const& rate) -> void {
         mDynamicsWorld->setGravity(mGravityAcceleration);
 
-        auto timeStep = static_cast<btScalar>(rate.expectedCycleTime().toSec());
+        auto dt = static_cast<btScalar>(rate.expectedCycleTime().toSec());
+
+        for (auto const& name: {"chassis_link_to_left_rocker_link", "chassis_link_to_right_rocker_link"}) {
+            btHingeConstraint* hinge = mJointNameToHinges.at(name);
+            hinge->enableMotor(true);
+            hinge->setMaxMotorImpulse(0.5);
+            hinge->setMotorTarget(0.0, dt);
+        }
+
         int maxSubSteps = 2;
-        int simStepCount = mDynamicsWorld->stepSimulation(timeStep, maxSubSteps, 1 / 120.0f);
+        int simStepCount = mDynamicsWorld->stepSimulation(dt, maxSubSteps, 1 / 120.0f);
 
         if (auto* mlcpSolver = dynamic_cast<btMLCPSolver*>(mDynamicsWorld->getConstraintSolver())) {
             if (int fallbackCount = mlcpSolver->getNumFallbacks()) {

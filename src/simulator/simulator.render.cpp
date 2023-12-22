@@ -78,12 +78,13 @@ namespace mrover {
 
         IMGUI_CHECKVERSION();
         ImGui::CreateContext();
-        float ddpi, hdpi, vdpi;
-        SDL_GetDisplayDPI(0, &ddpi, &hdpi, &vdpi);
+        // float ddpi, hdpi, vdpi;
+        // SDL_GetDisplayDPI(0, &ddpi, &hdpi, &vdpi);
         ImGuiIO& io = ImGui::GetIO();
         ImGuiStyle& style = ImGui::GetStyle();
-        io.FontGlobalScale = 1;
-        style.ScaleAllSizes(1);
+        float scale = w > 3000 ? 2.0f : 1.0f;
+        io.FontGlobalScale = scale;
+        style.ScaleAllSizes(scale);
         ImGui_ImplSDL2_InitForOpenGL(mWindow.get(), mGlContext.get());
         ImGui_ImplOpenGL3_Init("#version 410 core");
 

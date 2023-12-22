@@ -91,6 +91,7 @@ namespace mrover {
         Sint32 mRoverForwardKey = SDL_SCANCODE_I;
         Sint32 mRoverBackwardKey = SDL_SCANCODE_COMMA;
         Sint32 mRoverStopKey = SDL_SCANCODE_K;
+        Sint32 mTogglePhysicsKey = SDLK_p;
 
         float mFlySpeed = 5.0f;
         float mRoverLinearSpeed = 1.0f;
