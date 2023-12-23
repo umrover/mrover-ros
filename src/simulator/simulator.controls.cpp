@@ -16,23 +16,18 @@ namespace mrover {
         RadiansPerSecond left = forward * WHEEL_LINEAR_TO_ANGULAR - delta;
         RadiansPerSecond right = forward * WHEEL_LINEAR_TO_ANGULAR + delta;
 
-        NODELET_INFO_STREAM_THROTTLE(1, std::format("left: {} right: {}", left.get(), right.get()));
-
         for (std::string const& name: {
-                     "left_bogie_link_to_front_left_axle_link",
-                     "left_bogie_link_to_center_left_axle_link",
-                     "left_rocker_link_to_back_left_axle_link",
-                     "right_bogie_link_to_front_right_axle_link",
-                     "right_bogie_link_to_center_right_axle_link",
-                     "right_rocker_link_to_back_right_axle_link",
+                     "rover#left_bogie_link_to_front_left_axle_link",
+                     "rover#left_bogie_link_to_center_left_axle_link",
+                     "rover#left_rocker_link_to_back_left_axle_link",
+                     "rover#right_bogie_link_to_front_right_axle_link",
+                     "rover#right_bogie_link_to_center_right_axle_link",
+                     "rover#right_rocker_link_to_back_right_axle_link",
              }) {
             btGeneric6DofSpring2Constraint* hinge = mJointNameToSpringHinges.at(name);
             hinge->enableMotor(5, true);
             hinge->setMaxMotorForce(5, MAX_MOTOR_TORQUE);
             hinge->setTargetVelocity(5, name.contains("left"sv) ? left.get() : right.get());
-
-            // btHingeConstraint* hinge = mJointNameToHinges.at(name);
-            // hinge->enableAngularMotor(true, name.contains("left"sv) ? left.get() : right.get(), MAX_MOTOR_TORQUE);
         }
     }
 

@@ -71,10 +71,10 @@
     </link>
 
     <link name="${name}_axle_link">
-      <xacro:cylinder_inertia m="2" r="0.01" h="0.075"/>
+      <xacro:cylinder_inertia m="2.5" r="0.05" h="0.075"/>
       <collision>
         <geometry>
-          <cylinder length="0.075" radius="0.01"/>
+          <cylinder length="0.075" radius="0.05"/>
         </geometry>
       </collision>
     </link>

@@ -33,6 +33,7 @@ namespace mrover {
     struct Program {
         Shader vertexShader;
         Shader fragmentShader;
+        std::unordered_map<std::string, GLint> uniforms;
 
         GLuint handle = GL_INVALID_HANDLE;
 
@@ -47,33 +48,48 @@ namespace mrover {
         ~Program();
 
         Program(Shader&& vertexShader, Shader&& fragmentShader);
+
+        template<typename T>
+        auto uniform(std::string const& name, T const& value) -> void {
+            auto it = uniforms.find(name);
+            if (it == uniforms.end()) {
+                GLint location = glGetUniformLocation(handle, name.c_str());
+                if (location == GL_INVALID_INDEX) throw std::runtime_error(std::format("Uniform {} not found", name));
+                std::tie(it, std::ignore) = uniforms.emplace(name, location);
+            }
+            glUniform(it->second, value);
+        }
     };
 
-    struct Mesh {
-        struct Binding {
+    struct Model {
+        struct Mesh {
             GLuint vao = GL_INVALID_HANDLE;
             GLuint vbo = GL_INVALID_HANDLE;
+            GLuint nbo = GL_INVALID_HANDLE;
             GLuint ebo = GL_INVALID_HANDLE;
-            GLsizei indicesCount{};
+
+            std::vector<Eigen::Vector3f> vertices;
+            std::vector<Eigen::Vector3f> normals;
+            std::vector<Eigen::Vector2f> uvs;
+            std::vector<uint> indices;
         };
 
-        boost::container::static_vector<Binding, 4> bindings;
-        std::vector<Eigen::Vector3f> vertices;
-        std::vector<uint> indices;
+        std::vector<Mesh> meshes;
 
-        explicit Mesh(std::string_view uri);
+        explicit Model(std::string_view uri);
 
-        ~Mesh();
+        ~Model();
     };
 
     struct URDF {
+        std::string name;
         urdf::Model model;
 
         URDF(SimulatorNodelet& simulator, XmlRpc::XmlRpcValue const& init);
     };
 
     class SimulatorNodelet final : public nodelet::Nodelet {
-        friend Mesh;
+        friend Model;
         friend URDF;
 
         // Settings
@@ -99,8 +115,11 @@ namespace mrover {
         float mRoverLinearSpeed = 1.0f;
         float mRoverAngularSpeed = 0.5f;
         float mLookSense = 0.004f;
-        btVector3 mGravityAcceleration = {0.0f, 0.0f, -9.81f};
+        float mFov = 60.0f;
+        btVector3 mGravityAcceleration{0.0f, 0.0f, -9.81f};
         bool mEnablePhysics = false;
+        bool mRenderModels = true;
+        bool mRenderWireframeColliders = false;
 
         float mFloat1 = 0.0f;
         float mFloat2 = 0.0f;
@@ -118,7 +137,7 @@ namespace mrover {
         SDLPointer<std::remove_pointer_t<SDL_GLContext>, SDL_GL_CreateContext, SDL_GL_DeleteContext> mGlContext;
 
         // TODO: this should use string hash
-        std::unordered_map<std::string, Mesh> mUriToMesh;
+        std::unordered_map<std::string, Model> mUriToModel;
 
         Program mShaderProgram;
 
@@ -143,11 +162,15 @@ namespace mrover {
         std::unordered_map<btBvhTriangleMeshShape*, std::string> mMeshToUri;
 
         template<typename T, typename... Args>
-        T* makeBulletObject(auto& vector, Args&&... args) {
+        auto makeBulletObject(auto& vector, Args&&... args) -> T* {
             auto pointer = std::make_unique<T>(std::forward<Args>(args)...);
             auto* rawPointer = pointer.get();
             vector.emplace_back(std::move(pointer));
             return rawPointer;
+        }
+
+        static auto globalName(std::string_view modelName, std::string_view linkName) -> std::string {
+            return std::format("{}#{}", modelName, linkName);
         }
 
         // Scene
@@ -165,7 +188,7 @@ namespace mrover {
 
         auto initRender() -> void;
 
-        auto renderMesh(Mesh const& mesh, SIM3 const& modelToWorld) -> void;
+        auto renderModel(Model const& model, SIM3 const& modelToWorld) -> void;
 
         auto initPhysics() -> void;
 
@@ -179,7 +202,9 @@ namespace mrover {
 
         auto userControls(ros::Rate const& rate) -> void;
 
-        auto renderUrdf(URDF const& urdf) -> void;
+        auto renderModels() -> void;
+
+        auto renderWireframeColliders() -> void;
 
         auto renderUpdate() -> void;
 

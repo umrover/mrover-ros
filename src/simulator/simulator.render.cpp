@@ -8,9 +8,10 @@ namespace mrover {
 
     constexpr float DEG2RAD = std::numbers::pi_v<float> / 180.0f;
 
-    static std::string const CUBE_PRIMITIVE_URI = "package://mrover/urdf/meshes/cube.glb";
-    static std::string const SPHERE_PRIMITIVE_URI = "package://mrover/urdf/meshes/sphere.glb";
-    static std::string const CYLINDER_PRIMITIVE_URI = "package://mrover/urdf/meshes/cylinder.glb";
+    static std::string const MESHES_PATH = "package://mrover/urdf/meshes";
+    static std::string const CUBE_PRIMITIVE_URI = std::format("{}/cube.glb", MESHES_PATH);
+    static std::string const SPHERE_PRIMITIVE_URI = std::format("{}/sphere.glb", MESHES_PATH);
+    static std::string const CYLINDER_PRIMITIVE_URI = std::format("{}/cylinder.glb", MESHES_PATH);
 
     static auto check(bool condition) -> void {
         if (!condition) throw std::runtime_error(std::format("SDL Error: {}", SDL_GetError()));
@@ -73,7 +74,6 @@ namespace mrover {
         check(glewInit() == GLEW_OK);
 
         glEnable(GL_DEPTH_TEST);
-        glDepthMask(GL_FALSE);
         glDepthFunc(GL_LESS);
 
         IMGUI_CHECKVERSION();
@@ -82,7 +82,7 @@ namespace mrover {
         // SDL_GetDisplayDPI(0, &ddpi, &hdpi, &vdpi);
         ImGuiIO& io = ImGui::GetIO();
         ImGuiStyle& style = ImGui::GetStyle();
-        float scale = w > 3000 ? 2.0f : 1.0f;
+        float scale = h > 1500 ? 2.0f : 1.0f;
         io.FontGlobalScale = scale;
         style.ScaleAllSizes(scale);
         ImGui_ImplSDL2_InitForOpenGL(mWindow.get(), mGlContext.get());
@@ -94,92 +94,69 @@ namespace mrover {
                 Shader{shadersPath / "pbr.frag", GL_FRAGMENT_SHADER},
         };
 
-        mUriToMesh.emplace(CUBE_PRIMITIVE_URI, CUBE_PRIMITIVE_URI);
-        mUriToMesh.emplace(SPHERE_PRIMITIVE_URI, SPHERE_PRIMITIVE_URI);
-        mUriToMesh.emplace(CYLINDER_PRIMITIVE_URI, CYLINDER_PRIMITIVE_URI);
+        mUriToModel.emplace(CUBE_PRIMITIVE_URI, CUBE_PRIMITIVE_URI);
+        mUriToModel.emplace(SPHERE_PRIMITIVE_URI, SPHERE_PRIMITIVE_URI);
+        mUriToModel.emplace(CYLINDER_PRIMITIVE_URI, CYLINDER_PRIMITIVE_URI);
     }
 
-    auto SimulatorNodelet::renderMesh(Mesh const& mesh, SIM3 const& modelToWorld) -> void {
+    auto SimulatorNodelet::renderModel(Model const& model, SIM3 const& modelToWorld) -> void {
         assert(mShaderProgram.handle != GL_INVALID_HANDLE);
         glUseProgram(mShaderProgram.handle);
 
-        GLint modelToWorldId = glGetUniformLocation(mShaderProgram.handle, "modelToWorld");
-        assert(modelToWorldId != GL_INVALID_INDEX);
+        mShaderProgram.uniform("modelToWorld", modelToWorld.matrix().cast<float>());
 
-        glUniform(modelToWorldId, modelToWorld.matrix().cast<float>());
+        // See: http://www.lighthouse3d.com/tutorials/glsl-12-tutorial/the-normal-matrix/ for why this has to be treated specially
+        // TLDR: it preserves orthogonality between normal vectors and their respective surfaces with any model scaling (including non-uniform)
+        mShaderProgram.uniform("modelToWorldForNormals", modelToWorld.matrix().inverse().transpose().cast<float>());
 
-        for (auto const& [vao, _vbo, _ebo, indicesCount]: mesh.bindings) {
+        for (auto const& [vao, _vbo, _nbo, _ebo, _vertices, _normals, _uvs, indices]: model.meshes) {
             assert(vao != GL_INVALID_HANDLE);
-            assert(indicesCount > 0);
 
             glBindVertexArray(vao);
-            glDrawElements(GL_TRIANGLES, indicesCount, GL_UNSIGNED_INT, nullptr);
+            glDrawElements(GL_TRIANGLES, static_cast<GLsizei>(indices.size()), GL_UNSIGNED_INT, nullptr);
         }
     }
 
-    auto SimulatorNodelet::renderUrdf(URDF const& urdf) -> void {
-        auto traverse = [&](auto&& self, urdf::LinkConstSharedPtr const& link) -> void {
-            if (link->visual && link->visual->geometry) {
-                if (auto urdfMesh = std::dynamic_pointer_cast<urdf::Mesh>(link->visual->geometry)) {
-                    Mesh const& mesh = mUriToMesh.at(urdfMesh->filename);
-                    renderMesh(mesh, SIM3{});
+    auto SimulatorNodelet::renderModels() -> void {
+        glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
+
+        for (URDF const& urdf: mUrdfs) {
+
+            auto renderLink = [&](auto&& self, urdf::LinkConstSharedPtr const& link) -> void {
+                if (link->visual && link->visual->geometry) {
+                    if (auto urdfMesh = std::dynamic_pointer_cast<urdf::Mesh>(link->visual->geometry)) {
+                        Model const& model = mUriToModel.at(urdfMesh->filename);
+                        SIM3 const& worldToModel = btTransformToSim3(mLinkNameToRigidBody.at(globalName(urdf.name, link->name))->getWorldTransform(), btVector3{1, 1, 1});
+                        renderModel(model, worldToModel);
+                    }
                 }
-            }
-            for (urdf::JointSharedPtr const& child_joint: link->child_joints) {
-                self(self, urdf.model.getLink(child_joint->child_link_name));
-            }
-        };
-        traverse(traverse, urdf.model.getRoot());
+                for (urdf::JointSharedPtr const& child_joint: link->child_joints) {
+                    self(self, urdf.model.getLink(child_joint->child_link_name));
+                }
+            };
+
+            renderLink(renderLink, urdf.model.getRoot());
+        }
     }
 
-    auto SimulatorNodelet::renderUpdate() -> void {
-        int w{}, h{};
-        SDL_GetWindowSize(mWindow.get(), &w, &h);
-
-        glViewport(0, 0, w, h);
-        glClearColor(0.2f, 0.2f, 0.2f, 1.0f);
-        glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
-
-        GLint worldToCameraId = glGetUniformLocation(mShaderProgram.handle, "worldToCamera");
-        assert(worldToCameraId != GL_INVALID_INDEX);
-
-        // Convert from ROS's right-handed +x forward, +y left, +z up to OpenGL's right-handed +x right, +y up, +z backward
-        Eigen::Matrix4f rosToGl;
-        rosToGl << 0, -1, 0, 0, // OpenGL x = -ROS y
-                0, 0, 1, 0,     // OpenGL y = ROS z
-                -1, 0, 0, 0,    // OpenGL z = -ROS x
-                0, 0, 0, 1;
-        Eigen::Matrix4f worldToCamera = rosToGl * mCameraInWorld.matrix().inverse().cast<float>();
-        glUniform(worldToCameraId, worldToCamera);
-
-        GLint cameraToClipId = glGetUniformLocation(mShaderProgram.handle, "cameraToClip");
-        assert(cameraToClipId != GL_INVALID_INDEX);
-
-        float aspect = static_cast<float>(w) / static_cast<float>(h);
-        Eigen::Matrix4f cameraToClip = perspective(60.0f * DEG2RAD, aspect, 0.1f, 100.0f).cast<float>();
-        glUniform(cameraToClipId, cameraToClip);
-
-        // glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
-        // for (URDF const& urdf: mUrdfs) {
-        //     renderUrdf(urdf);
-        // }
-
+    auto SimulatorNodelet::renderWireframeColliders() -> void {
         glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
+
         for (auto const& collisionObject: mCollisionObjects) {
 
             auto renderCollisionObject = [this](auto&& self, btTransform const& shapeToWorld, btCollisionShape const* shape) -> void {
                 if (auto* box = dynamic_cast<btBoxShape const*>(shape)) {
                     btVector3 extents = box->getHalfExtentsWithoutMargin() * 2;
                     SIM3 worldToModel = btTransformToSim3(shapeToWorld, extents);
-                    renderMesh(mUriToMesh.at(CUBE_PRIMITIVE_URI), worldToModel);
+                    renderModel(mUriToModel.at(CUBE_PRIMITIVE_URI), worldToModel);
                 } else if (auto* sphere = dynamic_cast<btSphereShape const*>(shape)) {
                     btScalar diameter = sphere->getRadius() * 2;
-                    SIM3 worldToModel = btTransformToSim3(shapeToWorld, btVector3{diameter, diameter, diameter});
-                    renderMesh(mUriToMesh.at(SPHERE_PRIMITIVE_URI), worldToModel);
+                    SIM3 modelToWorld = btTransformToSim3(shapeToWorld, btVector3{diameter, diameter, diameter});
+                    renderModel(mUriToModel.at(SPHERE_PRIMITIVE_URI), modelToWorld);
                 } else if (auto* cylinder = dynamic_cast<btCylinderShapeZ const*>(shape)) {
                     btVector3 extents = cylinder->getHalfExtentsWithoutMargin() * 2;
-                    SIM3 worldToModel = btTransformToSim3(shapeToWorld, extents);
-                    renderMesh(mUriToMesh.at(CYLINDER_PRIMITIVE_URI), worldToModel);
+                    SIM3 modelToWorld = btTransformToSim3(shapeToWorld, extents);
+                    renderModel(mUriToModel.at(CYLINDER_PRIMITIVE_URI), modelToWorld);
                 } else if (auto* compound = dynamic_cast<btCompoundShape const*>(shape)) {
                     for (int i = 0; i < compound->getNumChildShapes(); ++i) {
                         btTransform const& childToParent = compound->getChildTransform(i);
@@ -188,8 +165,8 @@ namespace mrover {
                         self(self, childToWorld, childShape);
                     }
                 } else if (auto* mesh = dynamic_cast<btBvhTriangleMeshShape const*>(shape)) {
-                    SIM3 worldToModel = btTransformToSim3(shapeToWorld, btVector3{1, 1, 1});
-                    renderMesh(mUriToMesh.at(mMeshToUri.at(const_cast<btBvhTriangleMeshShape*>(mesh))), worldToModel);
+                    SIM3 modelToWorld = btTransformToSim3(shapeToWorld, btVector3{1, 1, 1});
+                    renderModel(mUriToModel.at(mMeshToUri.at(const_cast<btBvhTriangleMeshShape*>(mesh))), modelToWorld);
                 } else if (dynamic_cast<btEmptyShape const*>(shape)) {
                 } else {
                     NODELET_WARN_STREAM_ONCE(std::format("Tried to render unsupported collision shape: {}", shape->getName()));
@@ -200,6 +177,37 @@ namespace mrover {
             btCollisionShape const* shape = collisionObject->getCollisionShape();
             renderCollisionObject(renderCollisionObject, shapeToWorld, shape);
         }
+    }
+
+    auto SimulatorNodelet::renderUpdate() -> void {
+        int w{}, h{};
+        SDL_GetWindowSize(mWindow.get(), &w, &h);
+
+
+        glViewport(0, 0, w, h);
+        glClearColor(0.2f, 0.2f, 0.2f, 1.0f);
+        glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
+
+        // Convert from ROS's right-handed +x forward, +y left, +z up to OpenGL's right-handed +x right, +y up, +z backward
+        Eigen::Matrix4f rosToGl;
+        rosToGl << 0, -1, 0, 0, // OpenGL x = -ROS y
+                0, 0, 1, 0,     // OpenGL y = ROS z
+                -1, 0, 0, 0,    // OpenGL z = -ROS x
+                0, 0, 0, 1;
+        Eigen::Matrix4f worldToCamera = rosToGl * mCameraInWorld.matrix().inverse().cast<float>();
+        mShaderProgram.uniform("worldToCamera", worldToCamera);
+
+        float aspect = static_cast<float>(w) / static_cast<float>(h);
+        Eigen::Matrix4f cameraToClip = perspective(mFov * DEG2RAD, aspect, 0.1f, 100.0f).cast<float>();
+        mShaderProgram.uniform("cameraToClip", cameraToClip);
+
+        mShaderProgram.uniform("lightInWorld", Eigen::Vector3f{0, 0, 5});
+        mShaderProgram.uniform("cameraInWorld", mCameraInWorld.position().cast<float>());
+        mShaderProgram.uniform("lightColor", Eigen::Vector3f{1, 1, 1});
+        mShaderProgram.uniform("objectColor", Eigen::Vector3f{0.5, 0.4, 0.1});
+
+        if (mRenderModels) renderModels();
+        if (mRenderWireframeColliders) renderWireframeColliders();
 
         ImGui_ImplOpenGL3_NewFrame();
         ImGui_ImplSDL2_NewFrame(mWindow.get());
@@ -216,10 +224,13 @@ namespace mrover {
         ImGui::SliderFloat("Rover Angular Speed", &mRoverAngularSpeed, 0.01f, 10.0f);
         ImGui::SliderFloat("Fly Speed", &mFlySpeed, 0.01f, 10.0f);
         ImGui::SliderFloat("Look Sense", &mLookSense, 0.0001f, 0.01f);
+        ImGui::SliderFloat("FOV", &mFov, 10.0f, 120.0f);
         ImGui::InputFloat3("Gravity", mGravityAcceleration.m_floats);
-        ImGui::Checkbox("Enable Physics", &mEnablePhysics);
+        ImGui::Checkbox("Enable Physics (P)", &mEnablePhysics);
+        ImGui::Checkbox("Render Models (M)", &mRenderModels);
+        ImGui::Checkbox("Render Wireframe Colliders (C)", &mRenderWireframeColliders);
 
-        ImGui::SliderFloat("Float1", &mFloat1, 0.0f, 5000.0f);
+        // ImGui::SliderFloat("Float1", &mFloat1, 0.0f, 5000.0f);
         // ImGui::SliderFloat("Float2", &mFloat2, 0.0f, 100000.0f);
 
         // for (auto const& [name, hinge]: mJointNameToHinges) {

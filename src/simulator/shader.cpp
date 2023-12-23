@@ -51,6 +51,8 @@ namespace mrover {
             glGetProgramInfoLog(handle, infoLog.size(), nullptr, infoLog.data());
             throw std::runtime_error(std::format("Failed to link program: {}", infoLog.data()));
         }
+
+        ROS_INFO("Successfully created shader program");
     }
 
     Program::Program(Program&& other) noexcept {
@@ -70,4 +72,4 @@ namespace mrover {
         if (handle != GL_INVALID_HANDLE)
             glDeleteProgram(handle);
     }
-}
+} // namespace mrover

@@ -34,15 +34,20 @@ namespace mrover {
         auto urdfUri = xmlRpcValueToTypeOrDefault<std::string>(init, "uri");
         if (!model.initString(performXacro(uriToPath(urdfUri)))) throw std::runtime_error{std::format("Failed to parse URDF from URI: {}", urdfUri)};
 
+        name = xmlRpcValueToTypeOrDefault<std::string>(init, "name");
+
         auto traverse = [&](auto&& self, btRigidBody* parentLinkRb, urdf::LinkConstSharedPtr const& link) -> void {
             ROS_INFO_STREAM(std::format("Processing link: {}", link->name));
             if (link->visual && link->visual->geometry && link->visual->geometry->type == urdf::Geometry::MESH) {
                 auto mesh = std::dynamic_pointer_cast<urdf::Mesh>(link->visual->geometry);
                 std::string const& fileUri = mesh->filename;
-                simulator.mUriToMesh.try_emplace(fileUri, fileUri);
+                simulator.mUriToModel.try_emplace(fileUri, fileUri);
+            }
+            if (std::size_t size = link->visual_array.size(); size > 1) {
+                ROS_WARN_STREAM(std::format("Link {} has {} visual elements, only the first one will be used", link->name, size));
             }
 
-            std::vector<std::pair<btCollisionShape*, btTransform>> shapes;
+            boost::container::static_vector<std::pair<btCollisionShape*, btTransform>, 4> shapes;
             for (urdf::CollisionSharedPtr const& collision: link->collision_array) {
                 if (!collision->geometry) throw std::invalid_argument{"Collision has no geometry"};
 
@@ -78,16 +83,19 @@ namespace mrover {
                         assert(mesh);
 
                         std::string const& fileUri = mesh->filename;
-                        auto [it, was_inserted] = simulator.mUriToMesh.try_emplace(fileUri, fileUri);
-                        Mesh const& meshData = it->second;
+                        auto [it, was_inserted] = simulator.mUriToModel.try_emplace(fileUri, fileUri);
+                        Model const& model = it->second;
+                        if (model.meshes.size() > 1) throw std::invalid_argument{"Mesh collider must be constructed from exactly one mesh"};
+
+                        const auto& [_vao, _vbo, _nbo, _ebo, vertices, _normals, _uvs, indices] = model.meshes.front();
 
                         auto* triangleMesh = new btTriangleMesh{};
-                        triangleMesh->preallocateVertices(static_cast<int>(meshData.vertices.size()));
-                        triangleMesh->preallocateIndices(static_cast<int>(meshData.indices.size()));
-                        for (std::size_t i = 0; i < meshData.indices.size(); i += 3) {
-                            Eigen::Vector3f v0 = meshData.vertices[meshData.indices[i + 0]];
-                            Eigen::Vector3f v1 = meshData.vertices[meshData.indices[i + 1]];
-                            Eigen::Vector3f v2 = meshData.vertices[meshData.indices[i + 2]];
+                        triangleMesh->preallocateVertices(static_cast<int>(vertices.size()));
+                        triangleMesh->preallocateIndices(static_cast<int>(indices.size()));
+                        for (std::size_t i = 0; i < indices.size(); i += 3) {
+                            Eigen::Vector3f v0 = vertices[indices[i + 0]];
+                            Eigen::Vector3f v1 = vertices[indices[i + 1]];
+                            Eigen::Vector3f v2 = vertices[indices[i + 2]];
                             triangleMesh->addTriangle(btVector3{v0.x(), v0.y(), v0.z()}, btVector3{v1.x(), v1.y(), v1.z()}, btVector3{v2.x(), v2.y(), v2.z()});
                         }
                         auto* meshShape = simulator.makeBulletObject<btBvhTriangleMeshShape>(simulator.mCollisionShapes, triangleMesh, true);
@@ -135,7 +143,7 @@ namespace mrover {
             }
             auto* motionState = simulator.makeBulletObject<btDefaultMotionState>(simulator.mMotionStates, jointInWorld);
             auto* linkRb = simulator.makeBulletObject<btRigidBody>(simulator.mCollisionObjects, btRigidBody::btRigidBodyConstructionInfo{mass, motionState, finalShape, inertia});
-            simulator.mLinkNameToRigidBody.emplace(link->name, linkRb);
+            simulator.mLinkNameToRigidBody.emplace(SimulatorNodelet::globalName(name, link->name), linkRb);
             linkRb->setActivationState(DISABLE_DEACTIVATION);
             simulator.mDynamicsWorld->addRigidBody(linkRb);
 
@@ -168,7 +176,7 @@ namespace mrover {
                             constraint->setParam(BT_CONSTRAINT_ERP, 0.35f, 1);
                             constraint->setEquilibriumPoint();
                             constraint->setEquilibriumPoint(1, 0.1);
-                            simulator.mJointNameToSpringHinges.emplace(parentJoint->name, constraint);
+                            simulator.mJointNameToSpringHinges.emplace(SimulatorNodelet::globalName(name, parentJoint->name), constraint);
                             simulator.mDynamicsWorld->addConstraint(constraint, true);
                         } else {
                             btVector3 axisInJoint = urdfPosToBtPos(parentJoint->axis);
@@ -177,7 +185,7 @@ namespace mrover {
                             if (parentJoint->type == urdf::Joint::REVOLUTE) {
                                 hingeConstraint->setLimit(static_cast<btScalar>(parentJoint->limits->lower), static_cast<btScalar>(parentJoint->limits->upper));
                             }
-                            simulator.mJointNameToHinges.emplace(parentJoint->name, hingeConstraint);
+                            simulator.mJointNameToHinges.emplace(SimulatorNodelet::globalName(name, parentJoint->name), hingeConstraint);
                             simulator.mDynamicsWorld->addConstraint(hingeConstraint, true);
 
                             if (link->name.contains("wheel"sv)) {

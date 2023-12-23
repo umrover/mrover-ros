@@ -101,6 +101,7 @@ Checks: >-
   modernize-use-override,
   modernize-use-transparent-functors,
   modernize-use-uncaught-exceptions,
+  modernize-use-trailing-return-type,
   mpi-buffer-deref,
   mpi-type-mismatch,
   openmp-use-default-none,
