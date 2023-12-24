@@ -42,11 +42,11 @@
 
   <link name="chassis_link">
     <xacro:box_inertia m="${chassis_mass}" w="${base_len}" h="${base_width}" d="${base_height}"/>
-    <!--    <visual>-->
-    <!--      <geometry>-->
-    <!--        <mesh filename="package://mrover/urdf/meshes/cube.glb"/>-->
-    <!--      </geometry>-->
-    <!--    </visual>-->
+    <visual>
+      <geometry>
+        <mesh filename="package://mrover/urdf/meshes/rover_chassis.fbx"/>
+      </geometry>
+    </visual>
     <collision>
       <geometry>
         <box size="${base_len} ${base_width} ${base_height}"/>
@@ -54,15 +54,14 @@
     </collision>
   </link>
 
-  <xacro:macro name="wheel" params="name reflect">
-    <link name="${name}_wheel_link">
+  <xacro:macro name="wheel" params="pos side reflect">
+    <link name="${pos}_${side}_wheel_link">
       <xacro:cylinder_inertia m="${wheel_mass}" r="${wheel_radius}" h="${wheel_width}"/>
-      <!--      <visual>-->
-      <!--        <origin rpy="0 ${min(0, reflect) * PI} 0" xyz="0 0 0"/>-->
-      <!--        <geometry>-->
-      <!--          <mesh filename="package://mrover/urdf/meshes/rover.wheel.dae"/>-->
-      <!--        </geometry>-->
-      <!--      </visual>-->
+      <visual>
+        <geometry>
+          <mesh filename="package://mrover/urdf/meshes/rover_${side}_wheel.fbx"/>
+        </geometry>
+      </visual>
       <collision>
         <geometry>
           <cylinder length="${wheel_width}" radius="${wheel_radius}"/>
@@ -70,7 +69,7 @@
       </collision>
     </link>
 
-    <link name="${name}_axle_link">
+    <link name="${pos}_${side}_axle_link">
       <xacro:cylinder_inertia m="2.5" r="0.05" h="0.075"/>
       <collision>
         <geometry>
@@ -79,21 +78,26 @@
       </collision>
     </link>
 
-    <joint name="${name}_axle_link_to_${name}_wheel_link" type="continuous">
-      <parent link="${name}_axle_link"/>
-      <child link="${name}_wheel_link"/>
+    <joint name="${pos}_${side}_axle_link_to_${pos}_${side}_wheel_link" type="continuous">
+      <parent link="${pos}_${side}_axle_link"/>
+      <child link="${pos}_${side}_wheel_link"/>
       <axis xyz="0 0 1"/>
       <limit effort="2.68" velocity="0"/>
     </joint>
   </xacro:macro>
 
   <xacro:macro name="wheels" params="side reflect">
-    <xacro:wheel name="front_${side}" reflect="${reflect}"/>
-    <xacro:wheel name="center_${side}" reflect="${reflect}"/>
-    <xacro:wheel name="back_${side}" reflect="${reflect}"/>
+    <xacro:wheel pos="front" side="${side}" reflect="${reflect}"/>
+    <xacro:wheel pos="center" side="${side}" reflect="${reflect}"/>
+    <xacro:wheel pos="back" side="${side}" reflect="${reflect}"/>
 
     <link name="${side}_bogie_link">
       <xacro:box_inertia m="3" w="0.5" h="0.5" d="0.5"/>
+      <visual>
+        <geometry>
+          <mesh filename="package://mrover/urdf/meshes/rover_${side}_bogie.fbx"/>
+        </geometry>
+      </visual>
       <collision>
         <origin xyz="-0.14 0.1 0" rpy="0 0 -0.734"/>
         <geometry>
@@ -110,6 +114,11 @@
 
     <link name="${side}_rocker_link">
       <xacro:box_inertia m="3" w="0.5" h="0.5" d="0.5"/>
+      <visual>
+        <geometry>
+          <mesh filename="package://mrover/urdf/meshes/rover_${side}_rocker.fbx"/>
+        </geometry>
+      </visual>
       <collision>
         <origin xyz="0.11 0.077 0" rpy="0 0 0.585"/>
         <geometry>

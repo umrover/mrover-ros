@@ -52,6 +52,7 @@
 #include <params_utils.hpp>
 #include <se3.hpp>
 #include <units.hpp>
+#include <loop_profiler.hpp>
 // #include <messaging.hpp>
 
 #include <mrover/CAN.h>

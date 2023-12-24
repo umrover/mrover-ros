@@ -19,7 +19,7 @@ void main() {
         fragmentColor = vec4(baseColor, 1.0);
     } else if (type == TYPE_PBR) {
         // Ambient
-        float ambientStrength = 0.1;
+        float ambientStrength = 0.6;
         vec3 ambient = ambientStrength * lightColor;
         // Diffuse
         vec3 lightDirInWorld = normalize(lightInWorld - positionInWorld);

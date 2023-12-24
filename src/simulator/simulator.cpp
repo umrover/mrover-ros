@@ -31,6 +31,8 @@ namespace mrover {
         twistCallback(boost::make_shared<geometry_msgs::Twist const>());
 
         while (ros::ok()) {
+            mLoopProfiler.beginLoop();
+
             SDL_Event event;
 
             while (SDL_PollEvent(&event)) {
@@ -73,12 +75,16 @@ namespace mrover {
             }
 
             SDL_SetRelativeMouseMode(mInGui ? SDL_FALSE : SDL_TRUE);
+            mLoopProfiler.measureEvent("SDL Events");
 
             userControls(rate);
+            mLoopProfiler.measureEvent("Controls");
 
             if (mEnablePhysics) physicsUpdate(rate);
+            mLoopProfiler.measureEvent("Physics");
 
             renderUpdate();
+            mLoopProfiler.measureEvent("Render");
 
             rate.sleep();
         }

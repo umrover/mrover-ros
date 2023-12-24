@@ -188,6 +188,8 @@ namespace mrover {
 
         std::thread mRunThread;
 
+        LoopProfiler mLoopProfiler{"Simulator"};
+
     public:
         SimulatorNodelet() = default;
 
@@ -227,5 +229,7 @@ namespace mrover {
     auto readTextFile(std::filesystem::path const& path) -> std::string;
 
     auto readTexture(std::filesystem::path const& textureFileName) -> cv::Mat;
+
+    auto urdfPoseToBtTransform(urdf::Pose const& pose) -> btTransform;
 
 } // namespace mrover

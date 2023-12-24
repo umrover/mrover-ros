@@ -140,7 +140,9 @@ namespace mrover {
                 if (link->visual && link->visual->geometry) {
                     if (auto urdfMesh = std::dynamic_pointer_cast<urdf::Mesh>(link->visual->geometry)) {
                         Model const& model = mUriToModel.at(urdfMesh->filename);
-                        SIM3 const& worldToModel = btTransformToSim3(mLinkNameToRigidBody.at(globalName(urdf.name, link->name))->getWorldTransform(), btVector3{1, 1, 1});
+                        btTransform t1 = mLinkNameToRigidBody.at(globalName(urdf.name, link->name))->getWorldTransform();
+                        btTransform t2 = urdfPoseToBtTransform(link->visual->origin);
+                        SIM3 const& worldToModel = btTransformToSim3(t1 * t2, btVector3{1, 1, 1});
                         renderModel(model, worldToModel);
                     }
                 }
