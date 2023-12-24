@@ -57,21 +57,28 @@ namespace mrover {
                 if (location == GL_INVALID_INDEX) throw std::runtime_error(std::format("Uniform {} not found", name));
                 std::tie(it, std::ignore) = uniforms.emplace(name, location);
             }
-            glUniform(it->second, value);
+            GLuint location = it->second;
+            if constexpr (std::is_same_v<T, bool> || std::is_same_v<T, int>) {
+                glUniform1i(location, value);
+            } else {
+                glUniform(location, value);
+            }
         }
     };
 
     struct Model {
         struct Mesh {
-            GLuint vao = GL_INVALID_HANDLE;
-            GLuint vbo = GL_INVALID_HANDLE;
-            GLuint nbo = GL_INVALID_HANDLE;
-            GLuint ebo = GL_INVALID_HANDLE;
+            GLuint vao = GL_INVALID_HANDLE; // Vertex array object
+            GLuint vbo = GL_INVALID_HANDLE; // Vertex buffer object
+            GLuint nbo = GL_INVALID_HANDLE; // Normal buffer object
+            GLuint ebo = GL_INVALID_HANDLE; // Element buffer object
+            GLuint ubo = GL_INVALID_HANDLE; // UV-coordinate buffer object
+            GLuint tbo = GL_INVALID_HANDLE; // Texture buffer object
 
             std::vector<Eigen::Vector3f> vertices;
             std::vector<Eigen::Vector3f> normals;
             std::vector<Eigen::Vector2f> uvs;
-            std::vector<uint> indices;
+            std::vector<std::uint32_t> indices;
         };
 
         std::vector<Mesh> meshes;
@@ -218,5 +225,7 @@ namespace mrover {
     auto performXacro(std::filesystem::path const& path) -> std::string;
 
     auto readTextFile(std::filesystem::path const& path) -> std::string;
+
+    auto readTexture(std::filesystem::path const& textureFileName) -> cv::Mat;
 
 } // namespace mrover

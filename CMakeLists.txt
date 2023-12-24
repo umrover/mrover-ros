@@ -168,8 +168,8 @@ endif ()
 
 if (MROVER_BUILD_SIM)
     mrover_add_nodelet(simulator src/simulator/*.cpp src/simulator src/simulator/pch.hpp)
-    mrover_nodelet_include_directories(simulator ${SDL2_INCLUDE_DIRS} ${OPENGL_INCLUDE_DIR} ${ASSIMP_INCLUDE_DIRS} ${GLEW_INCLUDE_DIRS} ${BULLET_INCLUDE_DIRS} src/simulator/imgui)
-    mrover_nodelet_link_libraries(simulator ${SDL2_LIBRARIES} ${OPENGL_LIBRARIES} ${ASSIMP_LIBRARIES} ${GLEW_LIBRARIES} ${BULLET_LIBRARIES} lie tbb moteus)
+    mrover_nodelet_include_directories(simulator ${SDL2_INCLUDE_DIRS} ${OPENGL_INCLUDE_DIR} ${ASSIMP_INCLUDE_DIRS} ${GLEW_INCLUDE_DIRS} ${BULLET_INCLUDE_DIRS} ${OPENCV_INCLUDE_DIRS} src/simulator/imgui)
+    mrover_nodelet_link_libraries(simulator ${SDL2_LIBRARIES} ${OPENGL_LIBRARIES} ${ASSIMP_LIBRARIES} ${GLEW_LIBRARIES} ${BULLET_LIBRARIES} lie tbb opencv_core opencv_imgcodecs opencv_imgproc)
 endif ()
 
 # TODO

@@ -8,10 +8,10 @@ namespace mrover {
 
     constexpr float DEG2RAD = std::numbers::pi_v<float> / 180.0f;
 
-    static std::string const MESHES_PATH = "package://mrover/urdf/meshes";
-    static std::string const CUBE_PRIMITIVE_URI = std::format("{}/cube.glb", MESHES_PATH);
-    static std::string const SPHERE_PRIMITIVE_URI = std::format("{}/sphere.glb", MESHES_PATH);
-    static std::string const CYLINDER_PRIMITIVE_URI = std::format("{}/cylinder.glb", MESHES_PATH);
+    static std::string const MESHES_PATH = "package://mrover/urdf/meshes/primitives";
+    static std::string const CUBE_PRIMITIVE_URI = std::format("{}/cube.fbx", MESHES_PATH);
+    static std::string const SPHERE_PRIMITIVE_URI = std::format("{}/sphere.fbx", MESHES_PATH);
+    static std::string const CYLINDER_PRIMITIVE_URI = std::format("{}/cylinder.fbx", MESHES_PATH);
 
     static auto check(bool condition) -> void {
         if (!condition) throw std::runtime_error(std::format("SDL Error: {}", SDL_GetError()));
@@ -63,6 +63,8 @@ namespace mrover {
         check(SDL_GL_SetAttribute(SDL_GL_DOUBLEBUFFER, 1) == SDL_OK);
         check(SDL_GL_SetAttribute(SDL_GL_DEPTH_SIZE, 24) == SDL_OK);
         check(SDL_GL_SetAttribute(SDL_GL_STENCIL_SIZE, 8) == SDL_OK);
+        check(SDL_GL_SetAttribute(SDL_GL_MULTISAMPLEBUFFERS, 1) == SDL_OK);
+        check(SDL_GL_SetAttribute(SDL_GL_MULTISAMPLESAMPLES, 4) == SDL_OK);
         mGlContext = SDLPointer<std::remove_pointer_t<SDL_GLContext>, SDL_GL_CreateContext, SDL_GL_DeleteContext>{mWindow.get()};
         check(SDL_GL_SetSwapInterval(0) == SDL_OK);
         NODELET_INFO_STREAM(std::format("Initialized OpenGL Version: {}", reinterpret_cast<char const*>(glGetString(GL_VERSION))));
@@ -93,6 +95,10 @@ namespace mrover {
                 Shader{shadersPath / "pbr.vert", GL_VERTEX_SHADER},
                 Shader{shadersPath / "pbr.frag", GL_FRAGMENT_SHADER},
         };
+        assert(mShaderProgram.handle != GL_INVALID_HANDLE);
+        glUseProgram(mShaderProgram.handle);
+        mShaderProgram.uniform("lightInWorld", Eigen::Vector3f{0, 0, 5});
+        mShaderProgram.uniform("lightColor", Eigen::Vector3f{1, 1, 1});
 
         mUriToModel.emplace(CUBE_PRIMITIVE_URI, CUBE_PRIMITIVE_URI);
         mUriToModel.emplace(SPHERE_PRIMITIVE_URI, SPHERE_PRIMITIVE_URI);
@@ -100,25 +106,33 @@ namespace mrover {
     }
 
     auto SimulatorNodelet::renderModel(Model const& model, SIM3 const& modelToWorld) -> void {
-        assert(mShaderProgram.handle != GL_INVALID_HANDLE);
-        glUseProgram(mShaderProgram.handle);
-
         mShaderProgram.uniform("modelToWorld", modelToWorld.matrix().cast<float>());
 
         // See: http://www.lighthouse3d.com/tutorials/glsl-12-tutorial/the-normal-matrix/ for why this has to be treated specially
         // TLDR: it preserves orthogonality between normal vectors and their respective surfaces with any model scaling (including non-uniform)
         mShaderProgram.uniform("modelToWorldForNormals", modelToWorld.matrix().inverse().transpose().cast<float>());
 
-        for (auto const& [vao, _vbo, _nbo, _ebo, _vertices, _normals, _uvs, indices]: model.meshes) {
-            assert(vao != GL_INVALID_HANDLE);
+        for (Model::Mesh const& mesh: model.meshes) {
+            assert(mesh.vao != GL_INVALID_HANDLE);
 
-            glBindVertexArray(vao);
-            glDrawElements(GL_TRIANGLES, static_cast<GLsizei>(indices.size()), GL_UNSIGNED_INT, nullptr);
+            if (mesh.tbo == GL_INVALID_HANDLE) {
+                mShaderProgram.uniform("hasTexture", false);
+                mShaderProgram.uniform("objectColor", Eigen::Vector3f{1, 1, 1});
+            } else {
+                mShaderProgram.uniform("hasTexture", true);
+                glActiveTexture(GL_TEXTURE0);
+                glBindTexture(GL_TEXTURE_2D, mesh.tbo);
+                mShaderProgram.uniform("textureSampler", 0); // Corresponds to GL_TEXTURE0
+            }
+
+            glBindVertexArray(mesh.vao);
+            glDrawElements(GL_TRIANGLES, static_cast<GLsizei>(mesh.indices.size()), GL_UNSIGNED_INT, nullptr);
         }
     }
 
     auto SimulatorNodelet::renderModels() -> void {
         glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
+        mShaderProgram.uniform("type", 1);
 
         for (URDF const& urdf: mUrdfs) {
 
@@ -141,6 +155,7 @@ namespace mrover {
 
     auto SimulatorNodelet::renderWireframeColliders() -> void {
         glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
+        mShaderProgram.uniform("type", 0);
 
         for (auto const& collisionObject: mCollisionObjects) {
 
@@ -183,7 +198,6 @@ namespace mrover {
         int w{}, h{};
         SDL_GetWindowSize(mWindow.get(), &w, &h);
 
-
         glViewport(0, 0, w, h);
         glClearColor(0.2f, 0.2f, 0.2f, 1.0f);
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
@@ -196,15 +210,11 @@ namespace mrover {
                 0, 0, 0, 1;
         Eigen::Matrix4f worldToCamera = rosToGl * mCameraInWorld.matrix().inverse().cast<float>();
         mShaderProgram.uniform("worldToCamera", worldToCamera);
+        mShaderProgram.uniform("cameraInWorld", mCameraInWorld.position().cast<float>());
 
         float aspect = static_cast<float>(w) / static_cast<float>(h);
         Eigen::Matrix4f cameraToClip = perspective(mFov * DEG2RAD, aspect, 0.1f, 100.0f).cast<float>();
         mShaderProgram.uniform("cameraToClip", cameraToClip);
-
-        mShaderProgram.uniform("lightInWorld", Eigen::Vector3f{0, 0, 5});
-        mShaderProgram.uniform("cameraInWorld", mCameraInWorld.position().cast<float>());
-        mShaderProgram.uniform("lightColor", Eigen::Vector3f{1, 1, 1});
-        mShaderProgram.uniform("objectColor", Eigen::Vector3f{0.5, 0.4, 0.1});
 
         if (mRenderModels) renderModels();
         if (mRenderWireframeColliders) renderWireframeColliders();

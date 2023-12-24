@@ -11,6 +11,7 @@
 #include <stdexcept>
 #include <thread>
 #include <unordered_set>
+#include <charconv>
 
 #include <boost/container/static_vector.hpp>
 #include <boost/process.hpp>
@@ -19,7 +20,7 @@
 #include <nodelet/loader.h>
 #include <nodelet/nodelet.h>
 #include <ros/serialization.h>
-#include <rospack/rospack.h>
+#include <ros/package.h>
 #include <urdf/model.h>
 #include <xmlrpcpp/XmlRpcValue.h>
 
@@ -28,6 +29,10 @@
 #include <GL/gl.h>
 
 #include <SDL2/SDL.h>
+
+#include <opencv2/core.hpp>
+#include <opencv2/imgproc.hpp>
+#include <opencv2/imgcodecs.hpp>
 
 #include "imgui/backends/imgui_impl_opengl3.h"
 #include "imgui/backends/imgui_impl_sdl2.h"
