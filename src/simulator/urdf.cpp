@@ -7,7 +7,7 @@ namespace mrover {
     constexpr float INERTIA_MULTIPLIER = MASS_MULTIPLIER * DISTANCE_MULTIPLIER * DISTANCE_MULTIPLIER;
 
     auto urdfPosToBtPos(urdf::Vector3 const& vec) -> btVector3 {
-        return btVector3{static_cast< btScalar>(vec.x), static_cast<btScalar>(vec.y), static_cast<btScalar>(vec.z)} * DISTANCE_MULTIPLIER;
+        return btVector3{static_cast<btScalar>(vec.x), static_cast<btScalar>(vec.y), static_cast<btScalar>(vec.z)} * DISTANCE_MULTIPLIER;
     }
 
     auto urdfQuatToBtQuat(urdf::Rotation const& quat) -> btQuaternion {
@@ -84,18 +84,21 @@ namespace mrover {
 
                         std::string const& fileUri = mesh->filename;
                         auto [it, was_inserted] = simulator.mUriToModel.try_emplace(fileUri, fileUri);
-                        Model const& model = it->second;
-                        if (model.meshes.size() > 1) throw std::invalid_argument{"Mesh collider must be constructed from exactly one mesh"};
+                        Model& model = it->second;
+
+                        model.waitMeshes();
+
+                        if (model.meshes.size() != 1) throw std::invalid_argument{"Mesh collider must be constructed from exactly one mesh"};
 
                         Model::Mesh const& meshData = model.meshes.front();
 
                         auto* triangleMesh = new btTriangleMesh{};
-                        triangleMesh->preallocateVertices(static_cast<int>(meshData.vertices.size()));
-                        triangleMesh->preallocateIndices(static_cast<int>(meshData.indices.size()));
-                        for (std::size_t i = 0; i < meshData.indices.size(); i += 3) {
-                            Eigen::Vector3f v0 = meshData.vertices[meshData.indices[i + 0]];
-                            Eigen::Vector3f v1 = meshData.vertices[meshData.indices[i + 1]];
-                            Eigen::Vector3f v2 = meshData.vertices[meshData.indices[i + 2]];
+                        triangleMesh->preallocateVertices(static_cast<int>(meshData.vertices.data.size()));
+                        triangleMesh->preallocateIndices(static_cast<int>(meshData.indices.data.size()));
+                        for (std::size_t i = 0; i < meshData.indices.data.size(); i += 3) {
+                            Eigen::Vector3f v0 = meshData.vertices.data[meshData.indices.data[i + 0]];
+                            Eigen::Vector3f v1 = meshData.vertices.data[meshData.indices.data[i + 1]];
+                            Eigen::Vector3f v2 = meshData.vertices.data[meshData.indices.data[i + 2]];
                             triangleMesh->addTriangle(btVector3{v0.x(), v0.y(), v0.z()}, btVector3{v1.x(), v1.y(), v1.z()}, btVector3{v2.x(), v2.y(), v2.z()});
                         }
                         auto* meshShape = simulator.makeBulletObject<btBvhTriangleMeshShape>(simulator.mCollisionShapes, triangleMesh, true);

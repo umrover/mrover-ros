@@ -8,8 +8,9 @@
   <xacro:property name="wheel_width" value="0.1"/>
   <xacro:property name="wheel_mass" value="0.8"/>
   <xacro:property name="chassis_mass" value="15"/>
+  <xacro:property name="wheel_torque" value="2.68"/>
 
-  <xacro:property name="PI" value="3.141592"/>
+  <xacro:property name="TAU" value="6.2831855"/>
 
   <!-- Inertial macros-->
   <xacro:macro name="cylinder_inertia" params="m r h">
@@ -82,7 +83,7 @@
       <parent link="${pos}_${side}_axle_link"/>
       <child link="${pos}_${side}_wheel_link"/>
       <axis xyz="0 0 1"/>
-      <limit effort="2.68" velocity="0"/>
+      <limit effort="${wheel_torque}" velocity="0"/>
     </joint>
   </xacro:macro>
 
@@ -136,7 +137,7 @@
     <joint name="chassis_link_to_${side}_rocker_link" type="revolute">
       <parent link="chassis_link"/>
       <child link="${side}_rocker_link"/>
-      <origin xyz="0.17 ${reflect * (base_width/2 + 0.05)} 0" rpy="${-PI/2} 0 0"/>
+      <origin xyz="0.17 ${reflect * (base_width/2 + 0.05)} 0" rpy="${-TAU/4} 0 0"/>
       <axis xyz="0 0 1"/>
       <limit lower="-0.122173" upper="0.523599" effort="0" velocity="0"/>
     </joint>
@@ -236,7 +237,8 @@
   <!--    </inertial>-->
   <!--  </link>-->
 
-  <xacro:include filename="$(find mrover)/urdf/rover/rover_gazebo_plugins.urdf.xacro"/>
+  <!--  <xacro:include filename="$(find mrover)/urdf/rover/rover_gazebo_plugins.urdf.xacro"/>-->
+  
   <xacro:wheels side="left" reflect="1"/>
   <xacro:wheels side="right" reflect="-1"/>
 </robot>

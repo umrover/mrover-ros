@@ -105,28 +105,49 @@ namespace mrover {
         mUriToModel.emplace(CYLINDER_PRIMITIVE_URI, CYLINDER_PRIMITIVE_URI);
     }
 
-    auto SimulatorNodelet::renderModel(Model const& model, SIM3 const& modelToWorld) -> void {
+    auto SimulatorNodelet::renderModel(Model& model, SIM3 const& modelToWorld) -> void {
+        if (!model.areMeshesReady()) return;
+
         mShaderProgram.uniform("modelToWorld", modelToWorld.matrix().cast<float>());
 
         // See: http://www.lighthouse3d.com/tutorials/glsl-12-tutorial/the-normal-matrix/ for why this has to be treated specially
         // TLDR: it preserves orthogonality between normal vectors and their respective surfaces with any model scaling (including non-uniform)
         mShaderProgram.uniform("modelToWorldForNormals", modelToWorld.matrix().inverse().transpose().cast<float>());
 
-        for (Model::Mesh const& mesh: model.meshes) {
-            assert(mesh.vao != GL_INVALID_HANDLE);
+        for (Model::Mesh& mesh: model.meshes) {
+            if (mesh.vao == GL_INVALID_HANDLE) {
+                glGenVertexArrays(1, &mesh.vao);
+                assert(mesh.vao != GL_INVALID_HANDLE);
+            }
+            glBindVertexArray(mesh.vao);
 
-            if (mesh.tbo == GL_INVALID_HANDLE) {
+            mesh.indices.prepare();
+            if (mesh.vertices.prepare()) {
+                glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, sizeof(decltype(mesh.vertices)::value_type), nullptr);
+                glEnableVertexAttribArray(0);
+            }
+            if (mesh.normals.prepare()) {
+                glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, sizeof(decltype(mesh.normals)::value_type), nullptr);
+                glEnableVertexAttribArray(1);
+            }
+            if (mesh.uvs.prepare()) {
+                glVertexAttribPointer(2, 2, GL_FLOAT, GL_FALSE, sizeof(decltype(mesh.uvs)::value_type), nullptr);
+                glEnableVertexAttribArray(2);
+            }
+            mesh.texture.prepare();
+
+            if (mesh.texture.handle == GL_INVALID_HANDLE) {
                 mShaderProgram.uniform("hasTexture", false);
                 mShaderProgram.uniform("objectColor", Eigen::Vector3f{1, 1, 1});
             } else {
                 mShaderProgram.uniform("hasTexture", true);
                 glActiveTexture(GL_TEXTURE0);
-                glBindTexture(GL_TEXTURE_2D, mesh.tbo);
+                glBindTexture(GL_TEXTURE_2D, mesh.texture.handle);
                 mShaderProgram.uniform("textureSampler", 0); // Corresponds to GL_TEXTURE0
             }
 
-            glBindVertexArray(mesh.vao);
-            glDrawElements(GL_TRIANGLES, static_cast<GLsizei>(mesh.indices.size()), GL_UNSIGNED_INT, nullptr);
+            static_assert(std::is_same_v<decltype(mesh.indices)::value_type, std::uint32_t>);
+            glDrawElements(GL_TRIANGLES, static_cast<GLsizei>(mesh.indices.data.size()), GL_UNSIGNED_INT, nullptr);
         }
     }
 
@@ -139,7 +160,7 @@ namespace mrover {
             auto renderLink = [&](auto&& self, urdf::LinkConstSharedPtr const& link) -> void {
                 if (link->visual && link->visual->geometry) {
                     if (auto urdfMesh = std::dynamic_pointer_cast<urdf::Mesh>(link->visual->geometry)) {
-                        Model const& model = mUriToModel.at(urdfMesh->filename);
+                        Model& model = mUriToModel.at(urdfMesh->filename);
                         btTransform t1 = mLinkNameToRigidBody.at(globalName(urdf.name, link->name))->getWorldTransform();
                         btTransform t2 = urdfPoseToBtTransform(link->visual->origin);
                         SIM3 const& worldToModel = btTransformToSim3(t1 * t2, btVector3{1, 1, 1});

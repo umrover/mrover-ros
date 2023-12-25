@@ -66,24 +66,94 @@ namespace mrover {
         }
     };
 
+    /**
+     * \brief           Buffer that exists on the CPU and GPU
+     * \tparam T        Element type
+     * \tparam GlBufferTarget   OpenGL target (e.g. GL_ARRAY_BUFFER, GL_ELEMENT_ARRAY_BUFFER)
+     *
+     * \note There should be a concept requiring std::is_trivially_copyable_v<T> but for some reason Eigen types are not!
+     */
+    template<typename T, GLenum GlBufferTarget>
+    struct SharedBuffer {
+        using value_type = T;
+
+        GLuint handle = GL_INVALID_HANDLE;
+        std::vector<T> data;
+
+        auto prepare() -> bool {
+            if (data.empty()) return false;
+            if (handle != GL_INVALID_HANDLE) return false;
+
+            glGenBuffers(1, &handle);
+            assert(handle != GL_INVALID_HANDLE);
+
+            // All subsequent global buffer operations will affect this buffer
+            glBindBuffer(GlBufferTarget, handle);
+            // Upload to the GPU
+            glBufferData(GlBufferTarget, static_cast<GLsizeiptr>(data.size() * sizeof(T)), data.data(), GL_STATIC_DRAW);
+
+            return true;
+        }
+
+        ~SharedBuffer() {
+            if (handle != GL_INVALID_HANDLE) glDeleteBuffers(1, &handle);
+        }
+    };
+
+    struct SharedTexture {
+        GLuint handle = GL_INVALID_HANDLE;
+        cv::Mat data;
+
+        auto prepare() -> bool {
+            if (data.empty()) return false;
+            if (handle != GL_INVALID_HANDLE) return false;
+
+            // See: https://learnopengl.com/Getting-started/Textures
+
+            flip(data, data, 0);
+
+            glGenTextures(1, &handle);
+            assert(handle != GL_INVALID_HANDLE);
+            glBindTexture(GL_TEXTURE_2D, handle);
+            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
+            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
+            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
+            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+
+            // Upload to the GPU
+            glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, data.cols, data.rows, 0, GL_BGR, GL_UNSIGNED_BYTE, data.data);
+            // Mipmaps make far away textures look better
+            glGenerateMipmap(GL_TEXTURE_2D);
+
+            return true;
+        }
+
+        ~SharedTexture() {
+            if (handle != GL_INVALID_HANDLE) glDeleteTextures(1, &handle);
+        }
+    };
+
     struct Model {
         struct Mesh {
             GLuint vao = GL_INVALID_HANDLE; // Vertex array object
-            GLuint vbo = GL_INVALID_HANDLE; // Vertex buffer object
-            GLuint nbo = GL_INVALID_HANDLE; // Normal buffer object
-            GLuint ebo = GL_INVALID_HANDLE; // Element buffer object
-            GLuint ubo = GL_INVALID_HANDLE; // UV-coordinate buffer object
-            GLuint tbo = GL_INVALID_HANDLE; // Texture buffer object
 
-            std::vector<Eigen::Vector3f> vertices;
-            std::vector<Eigen::Vector3f> normals;
-            std::vector<Eigen::Vector2f> uvs;
-            std::vector<std::uint32_t> indices;
+            SharedBuffer<Eigen::Vector3f, GL_ARRAY_BUFFER> vertices;
+            SharedBuffer<Eigen::Vector3f, GL_ARRAY_BUFFER> normals;
+            SharedBuffer<Eigen::Vector2f, GL_ARRAY_BUFFER> uvs;
+            SharedBuffer<std::uint32_t, GL_ELEMENT_ARRAY_BUFFER> indices;
+            SharedTexture texture;
         };
 
+        // DO NOT access the mesh unless you are certain it has been set from the async loader
         std::vector<Mesh> meshes;
+        // https://en.cppreference.com/w/cpp/thread/future
+        std::future<decltype(meshes)> asyncMeshesLoader;
 
         explicit Model(std::string_view uri);
+
+        auto waitMeshes() -> void;
+
+        [[nodiscard]] auto areMeshesReady() -> bool;
 
         ~Model();
     };
@@ -186,6 +256,8 @@ namespace mrover {
 
         SE3 mCameraInWorld{R3{-2.0, 0.0, 0.0}, SO3{}};
 
+        // Other
+
         std::thread mRunThread;
 
         LoopProfiler mLoopProfiler{"Simulator"};
@@ -197,7 +269,7 @@ namespace mrover {
 
         auto initRender() -> void;
 
-        auto renderModel(Model const& model, SIM3 const& modelToWorld) -> void;
+        auto renderModel(Model& model, SIM3 const& modelToWorld) -> void;
 
         auto initPhysics() -> void;
 
