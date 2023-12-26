@@ -190,18 +190,19 @@
   <!--  <link name="imu_link"/>-->
 
   <!-- Camera -->
-  <!--  <joint name="camera_joint" type="fixed">-->
-  <!--    <origin xyz="0 0 0.1"/>-->
-  <!--    <parent link="chassis_link"/>-->
-  <!--    <child link="camera_link"/>-->
-  <!--  </joint>-->
+  <joint name="camera_joint" type="fixed">
+    <origin xyz="1 0 0"/>
+    <parent link="chassis_link"/>
+    <child link="camera_link"/>
+  </joint>
 
-  <!--  <link name="camera_link">-->
-  <!--    <collision>-->
-  <!--      <geometry>-->
-  <!--        <box size="0.01 0.1 0.01"/>-->
-  <!--      </geometry>-->
-  <!--    </collision>-->
+  <link name="camera_link">
+    <collision>
+      <geometry>
+        <box size="0.01 0.1 0.01"/>
+      </geometry>
+    </collision>
+  </link>
 
   <!--    <visual>-->
   <!--      <origin xyz="0 0 0" rpy="0 0 0"/>-->
@@ -238,7 +239,7 @@
   <!--  </link>-->
 
   <!--  <xacro:include filename="$(find mrover)/urdf/rover/rover_gazebo_plugins.urdf.xacro"/>-->
-  
+
   <xacro:wheels side="left" reflect="1"/>
   <xacro:wheels side="right" reflect="-1"/>
 </robot>

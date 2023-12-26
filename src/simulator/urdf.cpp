@@ -36,6 +36,12 @@ namespace mrover {
 
         name = xmlRpcValueToTypeOrDefault<std::string>(init, "name");
 
+        auto rootTransform = btTransform::getIdentity();
+        if (init.hasMember("translation")) {
+            std::array<double, 3> translation = xmlRpcValueToNumberArray<3>(init, "translation");
+            rootTransform.setOrigin(btVector3{urdfDistToBtDist(translation[0]), urdfDistToBtDist(translation[1]), urdfDistToBtDist(translation[2])});
+        }
+
         auto traverse = [&](auto&& self, btRigidBody* parentLinkRb, urdf::LinkConstSharedPtr const& link) -> void {
             ROS_INFO_STREAM(std::format("Processing link: {}", link->name));
             if (link->visual && link->visual->geometry && link->visual->geometry->type == urdf::Geometry::MESH) {
@@ -142,7 +148,7 @@ namespace mrover {
                 auto jointInParent = urdfPoseToBtTransform(link->parent_joint->parent_to_joint_origin_transform);
                 jointInWorld = parentToWorld * jointInParent;
             } else {
-                jointInWorld = btTransform::getIdentity();
+                jointInWorld = rootTransform;
             }
             auto* motionState = simulator.makeBulletObject<btDefaultMotionState>(simulator.mMotionStates, jointInWorld);
             auto* linkRb = simulator.makeBulletObject<btRigidBody>(simulator.mCollisionObjects, btRigidBody::btRigidBodyConstructionInfo{mass, motionState, finalShape, inertia});

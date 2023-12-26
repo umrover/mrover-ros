@@ -4,14 +4,13 @@ namespace mrover {
 
     constexpr static auto PACKAGE_URI_PREFIX = "package://"sv;
     constexpr static auto FILE_URI_PREFIX = "file://"sv;
-    constexpr static auto XACRO_BINARY_PATH = "/opt/ros/noetic/bin/xacro"sv;
     constexpr static auto TEXTURE_URI_PREFIX = "package://mrover/urdf/textures"sv;
 
     auto performXacro(std::filesystem::path const& path) -> std::string {
         // xacro is a Python library so unfortunately we have to run it as a subprocess
         std::string output;
         boost::process::ipstream is;
-        boost::process::child c{XACRO_BINARY_PATH.data(), path.c_str(), boost::process::std_out > is};
+        boost::process::child c{boost::process::search_path("xacro"), path.string(), boost::process::std_out > is};
         std::string line;
         while (c.running() && std::getline(is, line) && !line.empty()) {
             output += line + '\n';

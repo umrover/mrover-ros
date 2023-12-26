@@ -13,7 +13,7 @@ namespace mrover {
 
     // Define a function template for type conversion with a default value
     template<typename T>
-    T xmlRpcValueToTypeOrDefault(XmlRpc::XmlRpcValue const& parent, std::string const& member, std::optional<T> const& defaultValue = std::nullopt) {
+    auto xmlRpcValueToTypeOrDefault(XmlRpc::XmlRpcValue const& parent, std::string const& member, std::optional<T> const& defaultValue = std::nullopt) -> T {
         if (!parent.hasMember(member)) {
             if (defaultValue) return defaultValue.value();
 
@@ -47,5 +47,31 @@ namespace mrover {
         }
     }
 
+    template<std::size_t N>
+    auto xmlRpcValueToNumberArray(XmlRpc::XmlRpcValue const& parent, std::string const& member) -> std::array<double, N> {
+        if (!parent.hasMember(member)) {
+            throw std::invalid_argument(std::format("Member not found: {}", member));
+        }
+
+        XmlRpc::XmlRpcValue const& value = parent[member];
+        if (value.getType() != XmlRpc::XmlRpcValue::TypeArray) {
+            throw std::invalid_argument(std::format("Expected XmlRpcValue of TypeArray for member: {}", member));
+        }
+        if (value.size() != N) {
+            throw std::invalid_argument(std::format("Expected array of size {} for member: {}", N, member));
+        }
+
+        std::array<double, N> result;
+        for (int i = 0; i < N; ++i) {
+            if (value[i].getType() == XmlRpc::XmlRpcValue::TypeDouble) {
+                result[i] = static_cast<double>(value[i]);
+            } else if (value[i].getType() == XmlRpc::XmlRpcValue::TypeInt) {
+                result[i] = static_cast<int>(value[i]);
+            } else {
+                throw std::invalid_argument(std::format("Expected XmlRpcValue of TypeDouble or TypeInt for member: {}", member));
+            }
+        }
+        return result;
+    }
 
 } // namespace mrover

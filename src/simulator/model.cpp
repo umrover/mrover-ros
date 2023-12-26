@@ -14,7 +14,7 @@ namespace mrover {
         }
 
         // assimp's scene import is slow on the larger rover models, so we load it in a separate thread
-        asyncMeshesLoader = std::async(std::launch::async, [uri] {
+        asyncMeshesLoader = std::async(std::launch::async, [uri = std::string{uri}] {
             Assimp::Importer importer;
             importer.SetPropertyInteger(AI_CONFIG_PP_SBP_REMOVE, aiPrimitiveType_POINT | aiPrimitiveType_LINE); // Drop points and lines
 
@@ -110,15 +110,18 @@ namespace mrover {
             waitMeshes();
             return true;
         }
+
         return false;
     }
 
     Model::~Model() {
         waitMeshes();
 
-        for (Mesh const& mesh: meshes) {
-            if (mesh.vao == GL_INVALID_HANDLE) continue;
-            glDeleteVertexArrays(1, &mesh.vao);
+        for (Mesh& mesh: meshes) {
+            GLuint vao = std::exchange(mesh.vao, GL_INVALID_HANDLE);
+            if (vao == GL_INVALID_HANDLE) continue;
+
+            glDeleteVertexArrays(1, &vao);
         }
     }
 } // namespace mrover

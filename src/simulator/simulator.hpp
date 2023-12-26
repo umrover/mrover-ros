@@ -2,8 +2,8 @@
 
 #include "pch.hpp"
 
-#include "sdl_pointer.hpp"
 #include "gl_objects.hpp"
+#include "sdl_pointer.hpp"
 
 using namespace std::literals;
 
@@ -43,6 +43,11 @@ namespace mrover {
         urdf::Model model;
 
         URDF(SimulatorNodelet& simulator, XmlRpc::XmlRpcValue const& init);
+    };
+
+    struct Camera {
+        GLuint framebufferHandle = GL_INVALID_HANDLE;
+        GLuint textureHandle = GL_INVALID_HANDLE;
     };
 
     class SimulatorNodelet final : public nodelet::Nodelet {

@@ -2,12 +2,14 @@ objects:
   - type: urdf
     name: rover
     uri: package://mrover/urdf/rover/rover.urdf.xacro
-    transform:
-      translation: [ 0, 0, 0 ]
-      rotation: [ 0, 0, 0, 1 ]
   - type: urdf
     name: world
     uri: package://mrover/urdf/world/world.urdf.xacro
-    transform:
-      translation: [ 0, 0, 0 ]
-      rotation: [ 0, 0, 0, 1 ]
+  - type: urdf
+    name: tag_0
+    uri: package://mrover/urdf/world/tag_0.urdf.xacro
+    translation: [ 0, 2.5, 1 ]
+  - type: urdf
+    name: tag_1
+    uri: package://mrover/urdf/world/tag_1.urdf.xacro
+    translation: [ 0, -2.5, 1 ]
