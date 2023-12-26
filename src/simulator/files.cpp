@@ -10,7 +10,9 @@ namespace mrover {
         // xacro is a Python library so unfortunately we have to run it as a subprocess
         std::string output;
         boost::process::ipstream is;
-        boost::process::child c{boost::process::search_path("xacro"), path.string(), boost::process::std_out > is};
+        boost::filesystem::path xacroPath = boost::process::search_path("xacro");
+        if (xacroPath.empty()) throw std::runtime_error{"Failed to find xacro"};
+        boost::process::child c{xacroPath, path.string(), boost::process::std_out > is};
         std::string line;
         while (c.running() && std::getline(is, line) && !line.empty()) {
             output += line + '\n';

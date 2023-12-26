@@ -62,7 +62,7 @@ namespace mrover {
         check(SDL_GL_SetAttribute(SDL_GL_CONTEXT_MINOR_VERSION, 1) == SDL_OK);
         check(SDL_GL_SetAttribute(SDL_GL_DOUBLEBUFFER, 1) == SDL_OK);
         check(SDL_GL_SetAttribute(SDL_GL_DEPTH_SIZE, 24) == SDL_OK);
-        check(SDL_GL_SetAttribute(SDL_GL_STENCIL_SIZE, 8) == SDL_OK);
+        // check(SDL_GL_SetAttribute(SDL_GL_STENCIL_SIZE, 8) == SDL_OK);
         check(SDL_GL_SetAttribute(SDL_GL_MULTISAMPLEBUFFERS, 1) == SDL_OK);
         check(SDL_GL_SetAttribute(SDL_GL_MULTISAMPLESAMPLES, 4) == SDL_OK);
         mGlContext = SDLPointer<std::remove_pointer_t<SDL_GLContext>, SDL_GL_CreateContext, SDL_GL_DeleteContext>{mWindow.get()};
@@ -77,6 +77,12 @@ namespace mrover {
 
         glEnable(GL_DEPTH_TEST);
         glDepthFunc(GL_LESS);
+
+        glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
+        glPixelStorei(GL_UNPACK_ROW_LENGTH, 0);
+        glPixelStorei(GL_UNPACK_SKIP_PIXELS, 0);
+        glPixelStorei(GL_UNPACK_SKIP_ROWS, 0);
+        glClearColor(0.2f, 0.2f, 0.2f, 1.0f);
 
         IMGUI_CHECKVERSION();
         ImGui::CreateContext();
@@ -221,26 +227,44 @@ namespace mrover {
         int w{}, h{};
         SDL_GetWindowSize(mWindow.get(), &w, &h);
 
-        glViewport(0, 0, w, h);
-        glClearColor(0.2f, 0.2f, 0.2f, 1.0f);
-        glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
-
-        // Convert from ROS's right-handed +x forward, +y left, +z up to OpenGL's right-handed +x right, +y up, +z backward
-        Eigen::Matrix4f rosToGl;
-        rosToGl << 0, -1, 0, 0, // OpenGL x = -ROS y
-                0, 0, 1, 0,     // OpenGL y = ROS z
-                -1, 0, 0, 0,    // OpenGL z = -ROS x
-                0, 0, 0, 1;
-        Eigen::Matrix4f worldToCamera = rosToGl * mCameraInWorld.matrix().inverse().cast<float>();
-        mShaderProgram.uniform("worldToCamera", worldToCamera);
-        mShaderProgram.uniform("cameraInWorld", mCameraInWorld.position().cast<float>());
-
         float aspect = static_cast<float>(w) / static_cast<float>(h);
         Eigen::Matrix4f cameraToClip = perspective(mFov * DEG2RAD, aspect, 0.1f, 100.0f).cast<float>();
         mShaderProgram.uniform("cameraToClip", cameraToClip);
 
-        if (mRenderModels) renderModels();
-        if (mRenderWireframeColliders) renderWireframeColliders();
+        // Convert from ROS's right-handed +x forward, +y left, +z up to OpenGL's right-handed +x right, +y up, +z backward
+        Eigen::Matrix4f rosToGl;
+        rosToGl << 0, -1, 0, 0, // OpenGL x = -ROS y
+                0, 0, 1, 0,     // OpenGL y = +ROS z
+                -1, 0, 0, 0,    // OpenGL z = -ROS x
+                0, 0, 0, 1;
+
+        for (Camera const& camera: mCameras) {
+            SIM3 worldToCamera = btTransformToSim3(mLinkNameToRigidBody.at(camera.linkName)->getWorldTransform(), btVector3{1, 1, 1});
+            mShaderProgram.uniform("cameraInWorld", -worldToCamera.position().cast<float>());
+            mShaderProgram.uniform("worldToCamera", rosToGl * worldToCamera.matrix().cast<float>());
+
+            glBindFramebuffer(GL_FRAMEBUFFER, camera.framebufferHandle);
+            glViewport(0, 0, 640, 480);
+            glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+            renderModels();
+
+            // cv::Mat result = cv::Mat::zeros(480, 640, CV_8UC3);
+            // glBindTexture(GL_TEXTURE_2D, camera.colorTextureHandle);
+            // glGetTexImage(GL_TEXTURE_2D, 0, GL_BGR, GL_UNSIGNED_BYTE, result.data);
+            // cv::imshow(camera.linkName, result);
+        }
+
+        {
+            mShaderProgram.uniform("cameraInWorld", mCameraInWorld.position().cast<float>());
+            Eigen::Matrix4f worldToCamera = rosToGl * mCameraInWorld.matrix().inverse().cast<float>();
+            mShaderProgram.uniform("worldToCamera", worldToCamera);
+
+            glBindFramebuffer(GL_FRAMEBUFFER, 0);
+            glViewport(0, 0, w, h);
+            glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+            if (mRenderModels) renderModels();
+            if (mRenderWireframeColliders) renderWireframeColliders();
+        }
 
         ImGui_ImplOpenGL3_NewFrame();
         ImGui_ImplSDL2_NewFrame(mWindow.get());
@@ -262,6 +286,10 @@ namespace mrover {
         ImGui::Checkbox("Enable Physics (P)", &mEnablePhysics);
         ImGui::Checkbox("Render Models (M)", &mRenderModels);
         ImGui::Checkbox("Render Wireframe Colliders (C)", &mRenderWireframeColliders);
+
+        for (Camera const& camera: mCameras) {
+            ImGui::Image((void*) (intptr_t) camera.colorTextureHandle, ImVec2(640, 480));
+        }
 
         // ImGui::SliderFloat("Float1", &mFloat1, 0.0f, 5000.0f);
         // ImGui::SliderFloat("Float2", &mFloat2, 0.0f, 100000.0f);

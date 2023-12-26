@@ -46,8 +46,11 @@ namespace mrover {
     };
 
     struct Camera {
+        std::string linkName;
+
         GLuint framebufferHandle = GL_INVALID_HANDLE;
-        GLuint textureHandle = GL_INVALID_HANDLE;
+        GLuint colorTextureHandle = GL_INVALID_HANDLE;
+        GLuint depthTextureHandle = GL_INVALID_HANDLE;
     };
 
     class SimulatorNodelet final : public nodelet::Nodelet {
@@ -90,7 +93,6 @@ namespace mrover {
 
         ros::NodeHandle mNh, mPnh;
 
-        // std::vector<ros::Subscriber> mCanSubs;
         ros::Subscriber mTwistSub;
 
         // Rendering
@@ -98,7 +100,6 @@ namespace mrover {
         SDLPointer<SDL_Window, SDL_CreateWindow, SDL_DestroyWindow> mWindow;
         SDLPointer<std::remove_pointer_t<SDL_GLContext>, SDL_GL_CreateContext, SDL_GL_DeleteContext> mGlContext;
 
-        // TODO: this should use string hash
         std::unordered_map<std::string, Model> mUriToModel;
 
         Program mShaderProgram;
@@ -131,15 +132,17 @@ namespace mrover {
             return rawPointer;
         }
 
-        static auto globalName(std::string_view modelName, std::string_view linkName) -> std::string {
-            return std::format("{}#{}", modelName, linkName);
-        }
-
         // Scene
 
         std::vector<URDF> mUrdfs;
 
         SE3 mCameraInWorld{R3{-2.0, 0.0, 0.0}, SO3{}};
+
+        static auto globalName(std::string_view modelName, std::string_view linkName) -> std::string {
+            return std::format("{}#{}", modelName, linkName);
+        }
+
+        std::vector<Camera> mCameras;
 
         // Other
 

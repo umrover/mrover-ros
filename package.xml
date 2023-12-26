@@ -67,7 +67,6 @@
   <!-- Localization -->
   <depend>rviz_imu_plugin</depend>
   <depend>robot_localization</depend>
-  <depend>nmea_navsat_driver</depend>
 
   <!-- Navigation -->
   <depend>smach_ros</depend>
@@ -77,8 +76,6 @@
   <exec_depend>teleop_twist_joy</exec_depend>
 
   <!-- Simulation -->
-  <depend>gazebo_ros</depend>
-  <exec_depend>hector_gazebo</exec_depend>
   <exec_depend>teleop_twist_keyboard</exec_depend>
 
   <!-- Test -->

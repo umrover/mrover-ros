@@ -41,6 +41,10 @@ namespace mrover {
             std::array<double, 3> translation = xmlRpcValueToNumberArray<3>(init, "translation");
             rootTransform.setOrigin(btVector3{urdfDistToBtDist(translation[0]), urdfDistToBtDist(translation[1]), urdfDistToBtDist(translation[2])});
         }
+        if (init.hasMember("rotation")) {
+            std::array<double, 4> rotation = xmlRpcValueToNumberArray<4>(init, "rotation");
+            rootTransform.setRotation(btQuaternion{static_cast<btScalar>(rotation[0]), static_cast<btScalar>(rotation[1]), static_cast<btScalar>(rotation[2]), static_cast<btScalar>(rotation[3])});
+        }
 
         auto traverse = [&](auto&& self, btRigidBody* parentLinkRb, urdf::LinkConstSharedPtr const& link) -> void {
             ROS_INFO_STREAM(std::format("Processing link: {}", link->name));
@@ -155,6 +159,31 @@ namespace mrover {
             simulator.mLinkNameToRigidBody.emplace(SimulatorNodelet::globalName(name, link->name), linkRb);
             linkRb->setActivationState(DISABLE_DEACTIVATION);
             simulator.mDynamicsWorld->addRigidBody(linkRb);
+
+            if (link->name.contains("camera"sv)) {
+                Camera& camera = simulator.mCameras.emplace_back(SimulatorNodelet::globalName(name, link->name));
+
+                glGenFramebuffers(1, &camera.framebufferHandle);
+                glBindFramebuffer(GL_FRAMEBUFFER, camera.framebufferHandle);
+
+                glGenTextures(1, &camera.colorTextureHandle);
+                glBindTexture(GL_TEXTURE_2D, camera.colorTextureHandle);
+                glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, 640, 480, 0, GL_RGB, GL_UNSIGNED_BYTE, nullptr);
+
+                glGenRenderbuffers(1, &camera.depthTextureHandle);
+                glBindRenderbuffer(GL_RENDERBUFFER, camera.depthTextureHandle);
+                glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH_COMPONENT, 640, 480);
+
+                // // Attach the depth texture to the framebuffer
+                glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_RENDERBUFFER, camera.depthTextureHandle);
+
+                glFramebufferTexture(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, camera.colorTextureHandle, 0);
+
+                std::array<GLenum, 1> attachments{GL_COLOR_ATTACHMENT0};
+                glDrawBuffers(attachments.size(), attachments.data());
+
+                if (glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE) throw std::runtime_error{"Framebuffer incomplete"};
+            }
 
             if (urdf::JointConstSharedPtr parentJoint = link->parent_joint) {
                 assert(parentLinkRb);
