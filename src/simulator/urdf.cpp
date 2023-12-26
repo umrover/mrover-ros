@@ -161,16 +161,21 @@ namespace mrover {
             simulator.mDynamicsWorld->addRigidBody(linkRb);
 
             if (link->name.contains("camera"sv)) {
-                Camera& camera = simulator.mCameras.emplace_back(SimulatorNodelet::globalName(name, link->name));
-
-                camera.pcPub = simulator.mNh.advertise<sensor_msgs::PointCloud2>("camera/left/points", 1);
+                Camera& camera = simulator.mCameras.emplace_back(
+                        SimulatorNodelet::globalName(name, link->name),
+                        cv::Size2i{640, 480},
+                        simulator.mNh.advertise<sensor_msgs::PointCloud2>("camera/left/points", 1));
+                camera.colorImage = cv::Mat::zeros(camera.resolution, CV_8UC3);
+                camera.depthImage = cv::Mat::zeros(camera.resolution, CV_32FC1);
 
                 glGenFramebuffers(1, &camera.framebufferHandle);
                 glBindFramebuffer(GL_FRAMEBUFFER, camera.framebufferHandle);
 
+                GLsizei w = camera.resolution.width, h = camera.resolution.height;
+
                 glGenTextures(1, &camera.colorTextureHandle);
                 glBindTexture(GL_TEXTURE_2D, camera.colorTextureHandle);
-                glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, 640, 480, 0, GL_RGB, GL_UNSIGNED_BYTE, nullptr);
+                glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, w, h, 0, GL_RGB, GL_UNSIGNED_BYTE, nullptr);
                 // Following are needed for ImGui to successfully render
                 glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
                 glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
@@ -179,7 +184,7 @@ namespace mrover {
 
                 glGenRenderbuffers(1, &camera.depthTextureHandle);
                 glBindRenderbuffer(GL_RENDERBUFFER, camera.depthTextureHandle);
-                glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH_COMPONENT, 640, 480);
+                glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH_COMPONENT, w, h);
 
                 // // Attach the depth texture to the framebuffer
                 glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_RENDERBUFFER, camera.depthTextureHandle);

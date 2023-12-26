@@ -244,24 +244,26 @@ namespace mrover {
             mShaderProgram.uniform("worldToCamera", rosToGl * cameraInWorld.matrix().inverse().cast<float>());
 
             glBindFramebuffer(GL_FRAMEBUFFER, camera.framebufferHandle);
-            glViewport(0, 0, 640, 480);
+            glViewport(0, 0, camera.resolution.width, camera.resolution.height);
             glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
             renderModels();
 
-            cv::Mat result = cv::Mat::zeros(480, 640, CV_8UC3);
+            if (camera.pcPub.getNumSubscribers() == 0) continue;
+
             glBindTexture(GL_TEXTURE_2D, camera.colorTextureHandle);
-            glGetTexImage(GL_TEXTURE_2D, 0, GL_BGR, GL_UNSIGNED_BYTE, result.data);
+            glGetTexImage(GL_TEXTURE_2D, 0, GL_BGR, GL_UNSIGNED_BYTE, camera.colorImage.data);
 
             mPointCloud->is_bigendian = __BYTE_ORDER__ == __ORDER_BIG_ENDIAN__;
             mPointCloud->is_dense = true;
-            mPointCloud->width = result.cols;
-            mPointCloud->height = result.rows;
+            mPointCloud->width = camera.resolution.width;
+            mPointCloud->height = camera.resolution.height;
             mPointCloud->header.stamp = ros::Time::now();
             mPointCloud->header.frame_id = "map";
             fillPointCloudMessageHeader(mPointCloud);
-            assert(mPointCloud->data.size() == result.total() * sizeof(Point));
+            assert(mPointCloud->data.size() == camera.colorImage.total() * sizeof(Point));
+
             auto* points = reinterpret_cast<Point*>(mPointCloud->data.data());
-            result.forEach<cv::Vec3b>([&](cv::Vec3b& pixel, int const* position) -> void {
+            camera.colorImage.forEach<cv::Vec3b>([&](cv::Vec3b& pixel, int const* position) -> void {
                 int x = position[1], y = position[0];
 
                 Point& point = points[y * mPointCloud->width + x];
@@ -313,7 +315,8 @@ namespace mrover {
         ImGui::Checkbox("Render Wireframe Colliders (C)", &mRenderWireframeColliders);
 
         for (Camera const& camera: mCameras) {
-            ImGui::Image(reinterpret_cast<void*>(static_cast<intptr_t>(camera.colorTextureHandle)), {640, 480}, {0, 1}, {1, 0});
+            auto w = static_cast<float>(camera.resolution.width), h = static_cast<float>(camera.resolution.height);
+            ImGui::Image(reinterpret_cast<void*>(static_cast<intptr_t>(camera.colorTextureHandle)), {w, h}, {0, 1}, {1, 0});
         }
 
         // ImGui::SliderFloat("Float1", &mFloat1, 0.0f, 5000.0f);

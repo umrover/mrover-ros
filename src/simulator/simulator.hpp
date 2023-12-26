@@ -48,12 +48,14 @@ namespace mrover {
 
     struct Camera {
         std::string linkName;
+        cv::Size2i resolution;
+        ros::Publisher pcPub;
 
+        cv::Mat colorImage;
+        cv::Mat depthImage;
         GLuint framebufferHandle = GL_INVALID_HANDLE;
         GLuint colorTextureHandle = GL_INVALID_HANDLE;
         GLuint depthTextureHandle = GL_INVALID_HANDLE;
-
-        ros::Publisher pcPub;
     };
 
     class SimulatorNodelet final : public nodelet::Nodelet {
