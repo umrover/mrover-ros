@@ -163,6 +163,8 @@ namespace mrover {
             if (link->name.contains("camera"sv)) {
                 Camera& camera = simulator.mCameras.emplace_back(SimulatorNodelet::globalName(name, link->name));
 
+                camera.pcPub = simulator.mNh.advertise<sensor_msgs::PointCloud2>("camera/left/points", 1);
+
                 glGenFramebuffers(1, &camera.framebufferHandle);
                 glBindFramebuffer(GL_FRAMEBUFFER, camera.framebufferHandle);
 

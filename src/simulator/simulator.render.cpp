@@ -248,10 +248,35 @@ namespace mrover {
             glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
             renderModels();
 
-            // cv::Mat result = cv::Mat::zeros(480, 640, CV_8UC3);
-            // glBindTexture(GL_TEXTURE_2D, camera.colorTextureHandle);
-            // glGetTexImage(GL_TEXTURE_2D, 0, GL_BGR, GL_UNSIGNED_BYTE, result.data);
-            // cv::imshow(camera.linkName, result);
+            cv::Mat result = cv::Mat::zeros(480, 640, CV_8UC3);
+            glBindTexture(GL_TEXTURE_2D, camera.colorTextureHandle);
+            glGetTexImage(GL_TEXTURE_2D, 0, GL_BGR, GL_UNSIGNED_BYTE, result.data);
+
+            mPointCloud->is_bigendian = __BYTE_ORDER__ == __ORDER_BIG_ENDIAN__;
+            mPointCloud->is_dense = true;
+            mPointCloud->width = result.cols;
+            mPointCloud->height = result.rows;
+            mPointCloud->header.stamp = ros::Time::now();
+            mPointCloud->header.frame_id = "map";
+            fillPointCloudMessageHeader(mPointCloud);
+            assert(mPointCloud->data.size() == result.total() * sizeof(Point));
+            auto* points = reinterpret_cast<Point*>(mPointCloud->data.data());
+            result.forEach<cv::Vec3b>([&](cv::Vec3b& pixel, int const* position) -> void {
+                int x = position[1], y = position[0];
+
+                Point& point = points[y * mPointCloud->width + x];
+                point.b = pixel[0];
+                point.g = pixel[1];
+                point.r = pixel[2];
+                point.x = 0;
+                point.y = 0;
+                point.z = 0;
+                point.normal_x = 0;
+                point.normal_y = 0;
+                point.normal_z = 0;
+                point.curvature = 0;
+            });
+            camera.pcPub.publish(mPointCloud);
         }
 
         {
@@ -276,7 +301,7 @@ namespace mrover {
         ImGui::Begin("Side", nullptr, ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoMove);
         ImGui::Text("FPS: %.1f", ImGui::GetIO().Framerate);
 
-        ImGui::SliderFloat("Target FPS", &mTargetFps, 5.0f, 360.0f);
+        ImGui::SliderFloat("Target FPS", &mTargetFps, 5.0f, 1000.0f);
         ImGui::SliderFloat("Rover Linear Speed", &mRoverLinearSpeed, 0.01f, 10.0f);
         ImGui::SliderFloat("Rover Angular Speed", &mRoverAngularSpeed, 0.01f, 10.0f);
         ImGui::SliderFloat("Fly Speed", &mFlySpeed, 0.01f, 10.0f);

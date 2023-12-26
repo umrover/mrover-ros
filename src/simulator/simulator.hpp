@@ -53,7 +53,7 @@ namespace mrover {
         GLuint colorTextureHandle = GL_INVALID_HANDLE;
         GLuint depthTextureHandle = GL_INVALID_HANDLE;
 
-        ros::Publisher imagePub;
+        ros::Publisher pcPub;
     };
 
     class SimulatorNodelet final : public nodelet::Nodelet {
@@ -97,6 +97,8 @@ namespace mrover {
         ros::NodeHandle mNh, mPnh;
 
         ros::Subscriber mTwistSub;
+
+        sensor_msgs::PointCloud2Ptr mPointCloud = boost::make_shared<sensor_msgs::PointCloud2>();
 
         // Rendering
 

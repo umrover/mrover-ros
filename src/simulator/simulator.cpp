@@ -75,7 +75,7 @@ namespace mrover {
                 }
             }
 
-            SDL_SetRelativeMouseMode(mInGui ? SDL_FALSE : SDL_TRUE);
+            // SDL_SetRelativeMouseMode(mInGui ? SDL_FALSE : SDL_TRUE);
             mLoopProfiler.measureEvent("SDL Events");
 
             userControls(dt);

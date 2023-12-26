@@ -46,7 +46,7 @@ namespace mrover {
             auto it = uniforms.find(name);
             if (it == uniforms.end()) {
                 GLint location = glGetUniformLocation(handle, name.c_str());
-                if (location == GL_INVALID_INDEX) throw std::runtime_error(std::format("Uniform {} not found", name));
+                if (location == GL_INVALID_VALUE) throw std::runtime_error(std::format("Uniform {} not found", name));
                 std::tie(it, std::ignore) = uniforms.emplace(name, location);
             }
             GLuint location = it->second;

@@ -23,6 +23,8 @@
 #include <ros/serialization.h>
 #include <urdf/model.h>
 #include <xmlrpcpp/XmlRpcValue.h>
+#include <sensor_msgs/PointCloud2.h>
+#include <sensor_msgs/point_cloud2_iterator.h>
 
 #include <GL/glew.h>
 
@@ -54,6 +56,7 @@
 #include <params_utils.hpp>
 #include <se3.hpp>
 #include <units.hpp>
+#include <point.hpp>
 // #include <messaging.hpp>
 
 #include <mrover/CAN.h>

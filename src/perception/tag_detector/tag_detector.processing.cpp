@@ -1,7 +1,5 @@
 #include "tag_detector.hpp"
 
-#include "../point.hpp"
-
 namespace mrover {
 
     /**
@@ -18,7 +16,7 @@ namespace mrover {
             return std::nullopt;
         }
 
-        Point point = reinterpret_cast<Point const*>(cloudPtr->data.data())[u + v * cloudPtr->width];
+        auto point = reinterpret_cast<Point const*>(cloudPtr->data.data())[u + v * cloudPtr->width];
 
         if (!std::isfinite(point.x) || !std::isfinite(point.y) || !std::isfinite(point.z)) {
             NODELET_WARN("Tag center point not finite: [%f %f %f]", point.x, point.y, point.z);

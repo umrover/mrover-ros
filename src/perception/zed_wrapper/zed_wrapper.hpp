@@ -2,8 +2,6 @@
 
 #include "pch.hpp"
 
-#include "../point.hpp"
-
 namespace mrover {
 
     using PointCloudGpu = thrust::device_vector<Point>;

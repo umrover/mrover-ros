@@ -27,4 +27,5 @@
 #include <tf2_ros/transform_listener.h>
 
 #include <se3.hpp>
+#include <point.hpp>
 #include <loop_profiler.hpp>
