@@ -167,9 +167,9 @@ namespace mrover {
                 if (link->visual && link->visual->geometry) {
                     if (auto urdfMesh = std::dynamic_pointer_cast<urdf::Mesh>(link->visual->geometry)) {
                         Model& model = mUriToModel.at(urdfMesh->filename);
-                        btTransform t1 = mLinkNameToRigidBody.at(globalName(urdf.name, link->name))->getWorldTransform();
-                        btTransform t2 = urdfPoseToBtTransform(link->visual->origin);
-                        SIM3 const& worldToModel = btTransformToSim3(t1 * t2, btVector3{1, 1, 1});
+                        btTransform linkInWorld = mLinkNameToRigidBody.at(globalName(urdf.name, link->name))->getWorldTransform();
+                        btTransform modelInLink = urdfPoseToBtTransform(link->visual->origin);
+                        SIM3 worldToModel = btTransformToSim3(linkInWorld * modelInLink, btVector3{1, 1, 1});
                         renderModel(model, worldToModel);
                     }
                 }
@@ -239,9 +239,9 @@ namespace mrover {
                 0, 0, 0, 1;
 
         for (Camera const& camera: mCameras) {
-            SIM3 worldToCamera = btTransformToSim3(mLinkNameToRigidBody.at(camera.linkName)->getWorldTransform(), btVector3{1, 1, 1});
-            mShaderProgram.uniform("cameraInWorld", -worldToCamera.position().cast<float>());
-            mShaderProgram.uniform("worldToCamera", rosToGl * worldToCamera.matrix().cast<float>());
+            SIM3 cameraInWorld = btTransformToSim3(mLinkNameToRigidBody.at(camera.linkName)->getWorldTransform(), btVector3{1, 1, 1});
+            mShaderProgram.uniform("cameraInWorld", cameraInWorld.position().cast<float>());
+            mShaderProgram.uniform("worldToCamera", rosToGl * cameraInWorld.matrix().inverse().cast<float>());
 
             glBindFramebuffer(GL_FRAMEBUFFER, camera.framebufferHandle);
             glViewport(0, 0, 640, 480);
@@ -288,7 +288,7 @@ namespace mrover {
         ImGui::Checkbox("Render Wireframe Colliders (C)", &mRenderWireframeColliders);
 
         for (Camera const& camera: mCameras) {
-            ImGui::Image((void*) (intptr_t) camera.colorTextureHandle, ImVec2(640, 480));
+            ImGui::Image(reinterpret_cast<void*>(static_cast<intptr_t>(camera.colorTextureHandle)), {640, 480}, {1, 1}, {0, 0});
         }
 
         // ImGui::SliderFloat("Float1", &mFloat1, 0.0f, 5000.0f);

@@ -169,6 +169,11 @@ namespace mrover {
                 glGenTextures(1, &camera.colorTextureHandle);
                 glBindTexture(GL_TEXTURE_2D, camera.colorTextureHandle);
                 glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, 640, 480, 0, GL_RGB, GL_UNSIGNED_BYTE, nullptr);
+                // Following are needed for ImGui to successfully render
+                glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+                glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+
+                glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, camera.colorTextureHandle, 0);
 
                 glGenRenderbuffers(1, &camera.depthTextureHandle);
                 glBindRenderbuffer(GL_RENDERBUFFER, camera.depthTextureHandle);
@@ -177,12 +182,11 @@ namespace mrover {
                 // // Attach the depth texture to the framebuffer
                 glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_RENDERBUFFER, camera.depthTextureHandle);
 
-                glFramebufferTexture(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, camera.colorTextureHandle, 0);
-
                 std::array<GLenum, 1> attachments{GL_COLOR_ATTACHMENT0};
                 glDrawBuffers(attachments.size(), attachments.data());
 
-                if (glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE) throw std::runtime_error{"Framebuffer incomplete"};
+                if (glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE)
+                    throw std::runtime_error{"Framebuffer incomplete"};
             }
 
             if (urdf::JointConstSharedPtr parentJoint = link->parent_joint) {

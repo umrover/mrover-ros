@@ -14,7 +14,7 @@ namespace mrover {
         if (xacroPath.empty()) throw std::runtime_error{"Failed to find xacro"};
         boost::process::child c{xacroPath, path.string(), boost::process::std_out > is};
         std::string line;
-        while (c.running() && std::getline(is, line) && !line.empty()) {
+        while (c.running() && std::getline(is, line)) {
             output += line + '\n';
         }
         c.wait();
