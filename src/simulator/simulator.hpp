@@ -49,8 +49,10 @@ namespace mrover {
     struct Camera {
         std::string linkName;
         cv::Size2i resolution;
+        float rate;
         ros::Publisher pcPub;
 
+        Clock::time_point lastUpdate = Clock::now();
         cv::Mat colorImage;
         cv::Mat depthImage;
         GLuint framebufferHandle = GL_INVALID_HANDLE;
@@ -64,7 +66,7 @@ namespace mrover {
 
         // Settings
 
-        float mTargetFps = 180;
+        float mTargetUpdateRate = 180;
         bool mHeadless = false;
         Sint32 mQuitKey = SDLK_q;
         Sint32 mInGuiKey = SDLK_ESCAPE;
@@ -164,7 +166,7 @@ namespace mrover {
 
         auto initRender() -> void;
 
-        auto renderModel(Model& model, SIM3 const& modelToWorld) -> void;
+        auto renderModel(Model& model, SIM3 const& modelToWorld, bool isRoverCamera = false) -> void;
 
         auto initPhysics() -> void;
 
@@ -178,7 +180,7 @@ namespace mrover {
 
         auto userControls(Clock::duration dt) -> void;
 
-        auto renderModels() -> void;
+        auto renderModels(bool isRoverCamera) -> void;
 
         auto renderWireframeColliders() -> void;
 

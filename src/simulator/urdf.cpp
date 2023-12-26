@@ -163,7 +163,8 @@ namespace mrover {
             if (link->name.contains("camera"sv)) {
                 Camera& camera = simulator.mCameras.emplace_back(
                         SimulatorNodelet::globalName(name, link->name),
-                        cv::Size2i{640, 480},
+                        cv::Size2i{640 / 2, 480 / 2},
+                        10,
                         simulator.mNh.advertise<sensor_msgs::PointCloud2>("camera/left/points", 1));
                 camera.colorImage = cv::Mat::zeros(camera.resolution, CV_8UC3);
                 camera.depthImage = cv::Mat::zeros(camera.resolution, CV_32FC1);
@@ -180,20 +181,21 @@ namespace mrover {
                 glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
                 glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
 
-                glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, camera.colorTextureHandle, 0);
-
                 glGenRenderbuffers(1, &camera.depthTextureHandle);
                 glBindRenderbuffer(GL_RENDERBUFFER, camera.depthTextureHandle);
                 glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH_COMPONENT, w, h);
 
-                // // Attach the depth texture to the framebuffer
+                // Attach the depth texture to the framebuffer
                 glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_RENDERBUFFER, camera.depthTextureHandle);
 
-                std::array<GLenum, 1> attachments{GL_COLOR_ATTACHMENT0};
+                // Attach the color texture to the framebuffer
+                glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, camera.colorTextureHandle, 0);
+
+                std::array<GLenum, 2> attachments{GL_COLOR_ATTACHMENT0, GL_DEPTH_ATTACHMENT};
                 glDrawBuffers(attachments.size(), attachments.data());
 
-                if (glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE)
-                    throw std::runtime_error{"Framebuffer incomplete"};
+                if (GLenum status = glCheckFramebufferStatus(GL_FRAMEBUFFER); status != GL_FRAMEBUFFER_COMPLETE)
+                    throw std::runtime_error{std::format("Framebuffer incomplete: {:#x}", status)};
             }
 
             if (urdf::JointConstSharedPtr parentJoint = link->parent_joint) {

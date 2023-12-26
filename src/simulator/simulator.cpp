@@ -87,7 +87,7 @@ namespace mrover {
             renderUpdate();
             mLoopProfiler.measureEvent("Render");
 
-            std::this_thread::sleep_until(beginTime + std::chrono::duration_cast<Clock::duration>(std::chrono::duration<float>{1.0f / mTargetFps}));
+            std::this_thread::sleep_until(beginTime + std::chrono::duration_cast<Clock::duration>(std::chrono::duration<float>{1.0f / mTargetUpdateRate}));
             dt = Clock::now() - beginTime;
         }
 

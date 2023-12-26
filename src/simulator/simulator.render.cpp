@@ -63,8 +63,8 @@ namespace mrover {
         check(SDL_GL_SetAttribute(SDL_GL_DOUBLEBUFFER, 1) == SDL_OK);
         check(SDL_GL_SetAttribute(SDL_GL_DEPTH_SIZE, 24) == SDL_OK);
         // check(SDL_GL_SetAttribute(SDL_GL_STENCIL_SIZE, 8) == SDL_OK);
-        check(SDL_GL_SetAttribute(SDL_GL_MULTISAMPLEBUFFERS, 1) == SDL_OK);
-        check(SDL_GL_SetAttribute(SDL_GL_MULTISAMPLESAMPLES, 4) == SDL_OK);
+        // check(SDL_GL_SetAttribute(SDL_GL_MULTISAMPLEBUFFERS, 1) == SDL_OK);
+        // check(SDL_GL_SetAttribute(SDL_GL_MULTISAMPLESAMPLES, 4) == SDL_OK);
         mGlContext = SDLPointer<std::remove_pointer_t<SDL_GLContext>, SDL_GL_CreateContext, SDL_GL_DeleteContext>{mWindow.get()};
         check(SDL_GL_SetSwapInterval(0) == SDL_OK);
         NODELET_INFO_STREAM(std::format("Initialized OpenGL Version: {}", reinterpret_cast<char const*>(glGetString(GL_VERSION))));
@@ -111,7 +111,7 @@ namespace mrover {
         mUriToModel.emplace(CYLINDER_PRIMITIVE_URI, CYLINDER_PRIMITIVE_URI);
     }
 
-    auto SimulatorNodelet::renderModel(Model& model, SIM3 const& modelToWorld) -> void {
+    auto SimulatorNodelet::renderModel(Model& model, SIM3 const& modelToWorld, [[maybe_unused]] bool isRoverCamera) -> void {
         if (!model.areMeshesReady()) return;
 
         mShaderProgram.uniform("modelToWorld", modelToWorld.matrix().cast<float>());
@@ -157,7 +157,7 @@ namespace mrover {
         }
     }
 
-    auto SimulatorNodelet::renderModels() -> void {
+    auto SimulatorNodelet::renderModels(bool isRoverCamera) -> void {
         glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
         mShaderProgram.uniform("type", 1);
 
@@ -170,7 +170,7 @@ namespace mrover {
                         btTransform linkInWorld = mLinkNameToRigidBody.at(globalName(urdf.name, link->name))->getWorldTransform();
                         btTransform modelInLink = urdfPoseToBtTransform(link->visual->origin);
                         SIM3 worldToModel = btTransformToSim3(linkInWorld * modelInLink, btVector3{1, 1, 1});
-                        renderModel(model, worldToModel);
+                        renderModel(model, worldToModel, isRoverCamera);
                     }
                 }
                 for (urdf::JointSharedPtr const& child_joint: link->child_joints) {
@@ -227,18 +227,18 @@ namespace mrover {
         int w{}, h{};
         SDL_GetWindowSize(mWindow.get(), &w, &h);
 
-        float aspect = static_cast<float>(w) / static_cast<float>(h);
-        Eigen::Matrix4f cameraToClip = perspective(mFov * DEG2RAD, aspect, 0.1f, 100.0f).cast<float>();
-        mShaderProgram.uniform("cameraToClip", cameraToClip);
-
         // Convert from ROS's right-handed +x forward, +y left, +z up to OpenGL's right-handed +x right, +y up, +z backward
         Eigen::Matrix4f rosToGl;
         rosToGl << 0, -1, 0, 0, // OpenGL x = -ROS y
-                0, 0, 1, 0,     // OpenGL y = +ROS z
+                0, 0, 1, 0,     // OpenGL y = +ROS zp
                 -1, 0, 0, 0,    // OpenGL z = -ROS x
                 0, 0, 0, 1;
 
-        for (Camera const& camera: mCameras) {
+        for (Camera& camera: mCameras) {
+            float aspect = static_cast<float>(camera.resolution.width) / static_cast<float>(camera.resolution.height);
+            Eigen::Matrix4f cameraToClip = perspective(mFov * DEG2RAD, aspect, 0.1f, 100.0f).cast<float>();
+            mShaderProgram.uniform("cameraToClip", cameraToClip);
+
             SIM3 cameraInWorld = btTransformToSim3(mLinkNameToRigidBody.at(camera.linkName)->getWorldTransform(), btVector3{1, 1, 1});
             mShaderProgram.uniform("cameraInWorld", cameraInWorld.position().cast<float>());
             mShaderProgram.uniform("worldToCamera", rosToGl * cameraInWorld.matrix().inverse().cast<float>());
@@ -246,12 +246,19 @@ namespace mrover {
             glBindFramebuffer(GL_FRAMEBUFFER, camera.framebufferHandle);
             glViewport(0, 0, camera.resolution.width, camera.resolution.height);
             glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-            renderModels();
+            renderModels(true);
 
             if (camera.pcPub.getNumSubscribers() == 0) continue;
 
+            if (Clock::now() - camera.lastUpdate < std::chrono::duration_cast<Clock::duration>(std::chrono::duration<float>{1.0f / camera.rate})) continue;
+
+            camera.lastUpdate = Clock::now();
+
             glBindTexture(GL_TEXTURE_2D, camera.colorTextureHandle);
             glGetTexImage(GL_TEXTURE_2D, 0, GL_BGR, GL_UNSIGNED_BYTE, camera.colorImage.data);
+
+            glBindTexture(GL_TEXTURE_2D, camera.depthTextureHandle);
+            glGetTexImage(GL_TEXTURE_2D, 0, GL_DEPTH_COMPONENT, GL_FLOAT, camera.depthImage.data);
 
             mPointCloud->is_bigendian = __BYTE_ORDER__ == __ORDER_BIG_ENDIAN__;
             mPointCloud->is_dense = true;
@@ -270,9 +277,9 @@ namespace mrover {
                 point.b = pixel[0];
                 point.g = pixel[1];
                 point.r = pixel[2];
-                point.x = 0;
-                point.y = 0;
-                point.z = 0;
+                point.x = camera.depthImage.at<float>(position);
+                point.y = (static_cast<float>(x) / static_cast<float>(camera.resolution.width) - 0.5f) * tanf(mFov * DEG2RAD / 2.0f) * 2.0f;
+                point.z = (static_cast<float>(y) / static_cast<float>(camera.resolution.height) - 0.5f) * tanf(mFov * DEG2RAD / 2.0f) * 2.0f / aspect;
                 point.normal_x = 0;
                 point.normal_y = 0;
                 point.normal_z = 0;
@@ -282,6 +289,10 @@ namespace mrover {
         }
 
         {
+            float aspect = static_cast<float>(w) / static_cast<float>(h);
+            Eigen::Matrix4f cameraToClip = perspective(mFov * DEG2RAD, aspect, 0.1f, 100.0f).cast<float>();
+            mShaderProgram.uniform("cameraToClip", cameraToClip);
+
             mShaderProgram.uniform("cameraInWorld", mCameraInWorld.position().cast<float>());
             Eigen::Matrix4f worldToCamera = rosToGl * mCameraInWorld.matrix().inverse().cast<float>();
             mShaderProgram.uniform("worldToCamera", worldToCamera);
@@ -289,7 +300,7 @@ namespace mrover {
             glBindFramebuffer(GL_FRAMEBUFFER, 0);
             glViewport(0, 0, w, h);
             glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-            if (mRenderModels) renderModels();
+            if (mRenderModels) renderModels(false);
             if (mRenderWireframeColliders) renderWireframeColliders();
         }
 
@@ -303,7 +314,7 @@ namespace mrover {
         ImGui::Begin("Side", nullptr, ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoMove);
         ImGui::Text("FPS: %.1f", ImGui::GetIO().Framerate);
 
-        ImGui::SliderFloat("Target FPS", &mTargetFps, 5.0f, 1000.0f);
+        ImGui::SliderFloat("Target FPS", &mTargetUpdateRate, 5.0f, 1000.0f);
         ImGui::SliderFloat("Rover Linear Speed", &mRoverLinearSpeed, 0.01f, 10.0f);
         ImGui::SliderFloat("Rover Angular Speed", &mRoverAngularSpeed, 0.01f, 10.0f);
         ImGui::SliderFloat("Fly Speed", &mFlySpeed, 0.01f, 10.0f);
@@ -317,6 +328,7 @@ namespace mrover {
         for (Camera const& camera: mCameras) {
             auto w = static_cast<float>(camera.resolution.width), h = static_cast<float>(camera.resolution.height);
             ImGui::Image(reinterpret_cast<void*>(static_cast<intptr_t>(camera.colorTextureHandle)), {w, h}, {0, 1}, {1, 0});
+            ImGui::Image(reinterpret_cast<void*>(static_cast<intptr_t>(camera.depthTextureHandle)), {w, h}, {0, 1}, {1, 0});
         }
 
         // ImGui::SliderFloat("Float1", &mFloat1, 0.0f, 5000.0f);
