@@ -288,7 +288,7 @@ namespace mrover {
         ImGui::Checkbox("Render Wireframe Colliders (C)", &mRenderWireframeColliders);
 
         for (Camera const& camera: mCameras) {
-            ImGui::Image(reinterpret_cast<void*>(static_cast<intptr_t>(camera.colorTextureHandle)), {640, 480}, {1, 1}, {0, 0});
+            ImGui::Image(reinterpret_cast<void*>(static_cast<intptr_t>(camera.colorTextureHandle)), {640, 480}, {0, 1}, {1, 0});
         }
 
         // ImGui::SliderFloat("Float1", &mFloat1, 0.0f, 5000.0f);

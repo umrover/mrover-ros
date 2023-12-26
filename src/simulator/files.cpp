@@ -8,16 +8,16 @@ namespace mrover {
 
     auto performXacro(std::filesystem::path const& path) -> std::string {
         // xacro is a Python library so unfortunately we have to run it as a subprocess
-        std::string output;
-        boost::process::ipstream is;
         boost::filesystem::path xacroPath = boost::process::search_path("xacro");
         if (xacroPath.empty()) throw std::runtime_error{"Failed to find xacro"};
+
+        boost::process::ipstream is;
         boost::process::child c{xacroPath, path.string(), boost::process::std_out > is};
-        std::string line;
-        while (c.running() && std::getline(is, line)) {
-            output += line + '\n';
-        }
+
         c.wait();
+
+        std::string output{std::istreambuf_iterator{is}, std::istreambuf_iterator<char>{}};
+
         if (c.exit_code()) throw std::runtime_error{std::format("Failed to xacro: {}", output)};
 
         return output;

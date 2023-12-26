@@ -26,16 +26,17 @@ namespace mrover {
 
         parseParams();
 
-        ros::Rate rate{mTargetFps};
-
         twistCallback(boost::make_shared<geometry_msgs::Twist const>());
 
-        while (ros::ok()) {
+        for (Clock::duration dt{}; ros::ok();) {
+            Clock::time_point beginTime = Clock::now();
+
             mLoopProfiler.beginLoop();
 
-            SDL_Event event;
+            ros::spinOnce();
+            mLoopProfiler.measureEvent("ROS Callbacks");
 
-            while (SDL_PollEvent(&event)) {
+            for (SDL_Event event; SDL_PollEvent(&event);) {
                 ImGui_ImplSDL2_ProcessEvent(&event);
                 switch (event.type) {
                     case SDL_QUIT:
@@ -74,19 +75,20 @@ namespace mrover {
                 }
             }
 
-            // SDL_SetRelativeMouseMode(mInGui ? SDL_FALSE : SDL_TRUE);
+            SDL_SetRelativeMouseMode(mInGui ? SDL_FALSE : SDL_TRUE);
             mLoopProfiler.measureEvent("SDL Events");
 
-            userControls(rate);
+            userControls(dt);
             mLoopProfiler.measureEvent("Controls");
 
-            if (mEnablePhysics) physicsUpdate(rate);
+            if (mEnablePhysics) physicsUpdate(dt);
             mLoopProfiler.measureEvent("Physics");
 
             renderUpdate();
             mLoopProfiler.measureEvent("Render");
 
-            rate.sleep();
+            std::this_thread::sleep_until(beginTime + std::chrono::duration_cast<Clock::duration>(std::chrono::duration<float>{1.0f / mTargetFps}));
+            dt = Clock::now() - beginTime;
         }
 
     } catch (std::exception const& e) {

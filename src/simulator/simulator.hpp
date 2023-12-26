@@ -9,6 +9,7 @@ using namespace std::literals;
 
 namespace mrover {
 
+    using Clock = std::chrono::high_resolution_clock;
     // using string_hash = std::size_t;
 
     class SimulatorNodelet;
@@ -51,6 +52,8 @@ namespace mrover {
         GLuint framebufferHandle = GL_INVALID_HANDLE;
         GLuint colorTextureHandle = GL_INVALID_HANDLE;
         GLuint depthTextureHandle = GL_INVALID_HANDLE;
+
+        ros::Publisher imagePub;
     };
 
     class SimulatorNodelet final : public nodelet::Nodelet {
@@ -167,9 +170,9 @@ namespace mrover {
 
         auto run() -> void;
 
-        auto freeLook(ros::Rate const& rate, Uint8 const* keys) -> void;
+        auto freeLook(Clock::duration dt, Uint8 const* keys) -> void;
 
-        auto userControls(ros::Rate const& rate) -> void;
+        auto userControls(Clock::duration dt) -> void;
 
         auto renderModels() -> void;
 
@@ -177,7 +180,7 @@ namespace mrover {
 
         auto renderUpdate() -> void;
 
-        auto physicsUpdate(ros::Rate const& rate) -> void;
+        auto physicsUpdate(Clock::duration dt) -> void;
 
         auto twistCallback(geometry_msgs::Twist::ConstPtr const& twist) -> void;
     };

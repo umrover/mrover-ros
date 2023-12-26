@@ -31,8 +31,8 @@ namespace mrover {
         }
     }
 
-    auto SimulatorNodelet::freeLook(ros::Rate const& rate, Uint8 const* keys) -> void {
-        float flySpeed = mFlySpeed * static_cast<float>(rate.expectedCycleTime().toSec());
+    auto SimulatorNodelet::freeLook(Clock::duration dt, Uint8 const* keys) -> void {
+        float flySpeed = mFlySpeed * std::chrono::duration_cast<std::chrono::duration<float>>(dt).count();
         if (keys[mCamRightKey]) {
             mCameraInWorld = SE3{R3{0.0, -flySpeed, 0}, SO3{}} * mCameraInWorld;
         }
@@ -63,12 +63,12 @@ namespace mrover {
         mCameraInWorld = SE3{p, q};
     }
 
-    auto SimulatorNodelet::userControls(ros::Rate const& rate) -> void {
+    auto SimulatorNodelet::userControls(Clock::duration dt) -> void {
         if (!mHasFocus || mInGui) return;
 
         Uint8 const* keys = SDL_GetKeyboardState(nullptr);
 
-        freeLook(rate, keys);
+        freeLook(dt, keys);
 
         std::optional<geometry_msgs::Twist> twist;
         if (keys[mRoverRightKey]) {
