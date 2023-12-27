@@ -163,7 +163,7 @@ namespace mrover {
             if (link->name.contains("camera"sv)) {
                 Camera& camera = simulator.mCameras.emplace_back(
                         SimulatorNodelet::globalName(name, link->name),
-                        cv::Size2i{640 / 2, 480 / 2},
+                        cv::Size2i{1280, 720},
                         10,
                         simulator.mNh.advertise<sensor_msgs::PointCloud2>("camera/left/points", 1));
                 camera.colorImage = cv::Mat::zeros(camera.resolution, CV_8UC3);
@@ -181,18 +181,26 @@ namespace mrover {
                 glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
                 glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
 
-                glGenRenderbuffers(1, &camera.depthTextureHandle);
-                glBindRenderbuffer(GL_RENDERBUFFER, camera.depthTextureHandle);
-                glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH_COMPONENT, w, h);
+                glGenTextures(1, &camera.depthTextureHandle);
+                glBindTexture(GL_TEXTURE_2D, camera.depthTextureHandle);
+                glTexImage2D(GL_TEXTURE_2D, 0, GL_DEPTH_COMPONENT32, w, h, 0, GL_DEPTH_COMPONENT, GL_FLOAT, nullptr);
+                glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+                glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
 
-                // Attach the depth texture to the framebuffer
-                glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_RENDERBUFFER, camera.depthTextureHandle);
+                glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_TEXTURE_2D, camera.depthTextureHandle, 0);
+
+                // glGenRenderbuffers(1, &camera.depthTextureHandle);
+                // glBindRenderbuffer(GL_RENDERBUFFER, camera.depthTextureHandle);
+                // glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH_COMPONENT, w, h);
+                //
+                // // Attach the depth texture to the framebuffer
+                // glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_RENDERBUFFER, camera.depthTextureHandle);
 
                 // Attach the color texture to the framebuffer
                 glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, camera.colorTextureHandle, 0);
 
-                std::array<GLenum, 2> attachments{GL_COLOR_ATTACHMENT0, GL_DEPTH_ATTACHMENT};
-                glDrawBuffers(attachments.size(), attachments.data());
+                // std::array<GLenum, 2> attachments{GL_COLOR_ATTACHMENT0, GL_DEPTH_ATTACHMENT};
+                // glDrawBuffers(attachments.size(), attachments.data());
 
                 if (GLenum status = glCheckFramebufferStatus(GL_FRAMEBUFFER); status != GL_FRAMEBUFFER_COMPLETE)
                     throw std::runtime_error{std::format("Framebuffer incomplete: {:#x}", status)};

@@ -1,4 +1,4 @@
-#version 410 core
+#version 450 core
 
 const int TYPE_UNLIT = 0;
 const int TYPE_PBR = 1;

@@ -153,6 +153,9 @@ namespace mrover {
 
         std::vector<Camera> mCameras;
 
+        static constexpr float NEAR = 0.1f;
+        static constexpr float FAR = 1000.0f;
+
         // Other
 
         std::thread mRunThread;

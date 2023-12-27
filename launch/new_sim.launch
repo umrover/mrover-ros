@@ -1,11 +1,7 @@
 <launch>
-    <!--    <rosparam command="load" file="$(find mrover)/config/esw.yaml"/>-->
+  <rosparam command="load" file="$(find mrover)/config/simulator/autonomy.yaml"/>
+  <include file="$(find mrover)/launch/auton.launch"/>
 
-    <rosparam command="load" file="$(find mrover)/config/simulator/autonomy.yaml"/>
-
-    <!--    <node name="drive_bridge" pkg="mrover" type="drive_bridge" required="true"/>-->
-
-    <!--  <node name="simulator" pkg="mrover" type="simulator" required="true" />-->
-
-    <!--  <param name="robot_description" command="xacro $(find mrover)/urdf/rover/rover.urdf.xacro"/>-->
+  <node pkg="nodelet" type="nodelet" name="simulator_nodelet" required="true"
+        args="load mrover/SimulatorNodelet perception_nodelet_manager" output="screen"/>
 </launch>

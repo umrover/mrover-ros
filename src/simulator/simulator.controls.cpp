@@ -24,7 +24,10 @@ namespace mrover {
                      "rover#right_bogie_link_to_center_right_axle_link",
                      "rover#right_rocker_link_to_back_right_axle_link",
              }) {
-            btGeneric6DofSpring2Constraint* hinge = mJointNameToSpringHinges.at(name);
+            auto it = mJointNameToSpringHinges.find(name);
+            if (it == mJointNameToSpringHinges.end()) continue;
+
+            btGeneric6DofSpring2Constraint* hinge = it->second;
             hinge->enableMotor(5, true);
             hinge->setMaxMotorForce(5, MAX_MOTOR_TORQUE);
             hinge->setTargetVelocity(5, name.contains("left"sv) ? left.get() : right.get());

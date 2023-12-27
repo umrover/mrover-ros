@@ -7,8 +7,7 @@ namespace mrover {
         mNh.getParam("objects", objects);
         if (objects.getType() != XmlRpc::XmlRpcValue::TypeArray) throw std::invalid_argument{"objects must be an array"};
 
-        // NOLINT(*-loop-convert)
-        for (int i = 0; i < objects.size(); ++i) {
+        for (int i = 0; i < objects.size(); ++i) { // NOLINT(*-loop-convert)
             XmlRpc::XmlRpcValue const& object = objects[i];
 
             auto type = xmlRpcValueToTypeOrDefault<std::string>(object, "type");

@@ -59,7 +59,7 @@ namespace mrover {
 
         check(SDL_GL_SetAttribute(SDL_GL_CONTEXT_PROFILE_MASK, SDL_GL_CONTEXT_PROFILE_CORE) == SDL_OK);
         check(SDL_GL_SetAttribute(SDL_GL_CONTEXT_MAJOR_VERSION, 4) == SDL_OK);
-        check(SDL_GL_SetAttribute(SDL_GL_CONTEXT_MINOR_VERSION, 1) == SDL_OK);
+        check(SDL_GL_SetAttribute(SDL_GL_CONTEXT_MINOR_VERSION, 5) == SDL_OK);
         check(SDL_GL_SetAttribute(SDL_GL_DOUBLEBUFFER, 1) == SDL_OK);
         check(SDL_GL_SetAttribute(SDL_GL_DEPTH_SIZE, 24) == SDL_OK);
         // check(SDL_GL_SetAttribute(SDL_GL_STENCIL_SIZE, 8) == SDL_OK);
@@ -76,7 +76,7 @@ namespace mrover {
         check(glewInit() == GLEW_OK);
 
         glEnable(GL_DEPTH_TEST);
-        glDepthFunc(GL_LESS);
+        glDepthFunc(GL_LEQUAL);
 
         glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
         glPixelStorei(GL_UNPACK_ROW_LENGTH, 0);
@@ -94,7 +94,7 @@ namespace mrover {
         io.FontGlobalScale = scale;
         style.ScaleAllSizes(scale);
         ImGui_ImplSDL2_InitForOpenGL(mWindow.get(), mGlContext.get());
-        ImGui_ImplOpenGL3_Init("#version 410 core");
+        ImGui_ImplOpenGL3_Init("#version 450 core");
 
         auto shadersPath = std::filesystem::path{std::source_location::current().file_name()}.parent_path() / "shaders";
         mShaderProgram = {
@@ -236,7 +236,7 @@ namespace mrover {
 
         for (Camera& camera: mCameras) {
             float aspect = static_cast<float>(camera.resolution.width) / static_cast<float>(camera.resolution.height);
-            Eigen::Matrix4f cameraToClip = perspective(mFov * DEG2RAD, aspect, 0.1f, 100.0f).cast<float>();
+            Eigen::Matrix4f cameraToClip = perspective(mFov * DEG2RAD, aspect, NEAR, FAR).cast<float>();
             mShaderProgram.uniform("cameraToClip", cameraToClip);
 
             SIM3 cameraInWorld = btTransformToSim3(mLinkNameToRigidBody.at(camera.linkName)->getWorldTransform(), btVector3{1, 1, 1});
@@ -256,9 +256,11 @@ namespace mrover {
 
             glBindTexture(GL_TEXTURE_2D, camera.colorTextureHandle);
             glGetTexImage(GL_TEXTURE_2D, 0, GL_BGR, GL_UNSIGNED_BYTE, camera.colorImage.data);
+            flip(camera.colorImage, camera.colorImage, 0);
 
             glBindTexture(GL_TEXTURE_2D, camera.depthTextureHandle);
             glGetTexImage(GL_TEXTURE_2D, 0, GL_DEPTH_COMPONENT, GL_FLOAT, camera.depthImage.data);
+            flip(camera.depthImage, camera.depthImage, 0);
 
             mPointCloud->is_bigendian = __BYTE_ORDER__ == __ORDER_BIG_ENDIAN__;
             mPointCloud->is_dense = true;
@@ -271,13 +273,15 @@ namespace mrover {
 
             auto* points = reinterpret_cast<Point*>(mPointCloud->data.data());
             camera.colorImage.forEach<cv::Vec3b>([&](cv::Vec3b& pixel, int const* position) -> void {
+                float depth = 2 * camera.depthImage.at<float>(position) - 1;
+
                 int x = position[1], y = position[0];
 
                 Point& point = points[y * mPointCloud->width + x];
                 point.b = pixel[0];
                 point.g = pixel[1];
                 point.r = pixel[2];
-                point.x = camera.depthImage.at<float>(position);
+                point.x = 2 * NEAR * FAR / (depth * (FAR - NEAR) - (FAR + NEAR));
                 point.y = (static_cast<float>(x) / static_cast<float>(camera.resolution.width) - 0.5f) * tanf(mFov * DEG2RAD / 2.0f) * 2.0f;
                 point.z = (static_cast<float>(y) / static_cast<float>(camera.resolution.height) - 0.5f) * tanf(mFov * DEG2RAD / 2.0f) * 2.0f / aspect;
                 point.normal_x = 0;
@@ -290,7 +294,7 @@ namespace mrover {
 
         {
             float aspect = static_cast<float>(w) / static_cast<float>(h);
-            Eigen::Matrix4f cameraToClip = perspective(mFov * DEG2RAD, aspect, 0.1f, 100.0f).cast<float>();
+            Eigen::Matrix4f cameraToClip = perspective(mFov * DEG2RAD, aspect, NEAR, FAR).cast<float>();
             mShaderProgram.uniform("cameraToClip", cameraToClip);
 
             mShaderProgram.uniform("cameraInWorld", mCameraInWorld.position().cast<float>());
@@ -326,9 +330,8 @@ namespace mrover {
         ImGui::Checkbox("Render Wireframe Colliders (C)", &mRenderWireframeColliders);
 
         for (Camera const& camera: mCameras) {
-            auto w = static_cast<float>(camera.resolution.width), h = static_cast<float>(camera.resolution.height);
-            ImGui::Image(reinterpret_cast<void*>(static_cast<intptr_t>(camera.colorTextureHandle)), {w, h}, {0, 1}, {1, 0});
-            ImGui::Image(reinterpret_cast<void*>(static_cast<intptr_t>(camera.depthTextureHandle)), {w, h}, {0, 1}, {1, 0});
+            float aspect = static_cast<float>(camera.resolution.width) / static_cast<float>(camera.resolution.height);
+            ImGui::Image(reinterpret_cast<void*>(static_cast<intptr_t>(camera.colorTextureHandle)), {320, 320 / aspect}, {0, 1}, {1, 0});
         }
 
         // ImGui::SliderFloat("Float1", &mFloat1, 0.0f, 5000.0f);
