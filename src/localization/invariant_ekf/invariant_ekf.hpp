@@ -7,7 +7,7 @@ using Matrix9d = Eigen::Matrix<double, 9, 9>;
 
 class InvariantEKF {
 public:
-    InvariantEKF(const SE_2_3d& x0, const Matrix9d& P0, const Matrix9d& Q, const Matrix9d& R_gps_default, const Matrix9d& R_accel_default, const Matrix9d& R_mag_default);
+    InvariantEKF(const SE_2_3d& x0, const Matrix9d& P0, const Matrix9d& Q, const Matrix3d& R_gps_default, const Matrix3d& R_accel_default, const Matrix3d& R_mag_default);
 
     InvariantEKF(const InvariantEKF&) = delete;
     InvariantEKF& operator=(const InvariantEKF&) = delete;
