@@ -11,7 +11,14 @@ namespace mrover {
 
     using Clock = std::chrono::high_resolution_clock;
 
-    constexpr float DEG2RAD = std::numbers::pi_v<float> / 180.0f;
+    constexpr static float DEG_TO_RAD = std::numbers::pi_v<float> / 180.0f;
+
+    // Convert from ROS's right-handed +x forward, +y left, +z up to OpenGL's right-handed +x right, +y up, +z backward
+    static auto const ROS_TO_GL = (Eigen::Matrix4f{} << 0, -1, 0, 0, // OpenGL x = -ROS y
+                                   0, 0, 1, 0,                       // OpenGL y = +ROS zp
+                                   -1, 0, 0, 0,                      // OpenGL z = -ROS x
+                                   0, 0, 0, 1)
+                                          .finished();
 
     struct Camera;
     class SimulatorNodelet;
@@ -109,8 +116,6 @@ namespace mrover {
         ros::Subscriber mTwistSub;
 
         ros::Publisher mPosePub;
-
-        sensor_msgs::PointCloud2Ptr mPointCloud = boost::make_shared<sensor_msgs::PointCloud2>();
 
         tf2_ros::Buffer mTfBuffer;
         tf2_ros::TransformListener mTfListener{mTfBuffer};
@@ -221,5 +226,11 @@ namespace mrover {
     auto readTexture(std::filesystem::path const& textureFileName) -> cv::Mat;
 
     auto urdfPoseToBtTransform(urdf::Pose const& pose) -> btTransform;
+
+    auto btTransformToSim3(btTransform const& transform, btVector3 const& scale) -> SIM3;
+
+    auto btTransformToSe3(btTransform const& transform) -> SE3;
+
+    auto perspective(float fovY, float aspect, float zNear, float zFar) -> Eigen::Matrix4f;
 
 } // namespace mrover

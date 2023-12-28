@@ -5,7 +5,7 @@ namespace mrover {
     auto URDF::makeCameraForLink(SimulatorNodelet& simulator, urdf::LinkConstSharedPtr const& link) -> Camera {
         Camera camera{
                 SimulatorNodelet::globalName(name, link->name),
-                {1280, 720},
+                {320, 240},
                 10,
                 simulator.mNh.advertise<sensor_msgs::PointCloud2>("camera/left/points", 1),
         };

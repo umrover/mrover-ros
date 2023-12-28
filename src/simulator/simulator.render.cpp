@@ -13,7 +13,7 @@ namespace mrover {
         if (!condition) throw std::runtime_error(std::format("SDL Error: {}", SDL_GetError()));
     }
 
-    static auto btTransformToSim3(btTransform const& transform, btVector3 const& scale) -> SIM3 {
+    auto btTransformToSim3(btTransform const& transform, btVector3 const& scale) -> SIM3 {
         btVector3 const& p = transform.getOrigin();
         btQuaternion const& q = transform.getRotation();
         return {R3{p.x(), p.y(), p.z()}, SO3{q.w(), q.x(), q.y(), q.z()}, R3{scale.x(), scale.y(), scale.z()}};
@@ -219,37 +219,17 @@ namespace mrover {
         int w{}, h{};
         SDL_GetWindowSize(mWindow.get(), &w, &h);
 
-        // Convert from ROS's right-handed +x forward, +y left, +z up to OpenGL's right-handed +x right, +y up, +z backward
-        Eigen::Matrix4f rosToGl;
-        rosToGl << 0, -1, 0, 0, // OpenGL x = -ROS y
-                0, 0, 1, 0,     // OpenGL y = +ROS zp
-                -1, 0, 0, 0,    // OpenGL z = -ROS x
-                0, 0, 0, 1;
-
         for (Camera& camera: mCameras) {
-            float aspect = static_cast<float>(camera.resolution.width) / static_cast<float>(camera.resolution.height);
-            Eigen::Matrix4f cameraToClip = perspective(mFov * DEG2RAD, aspect, NEAR, FAR).cast<float>();
-            mShaderProgram.uniform("cameraToClip", cameraToClip);
-
-            SIM3 cameraInWorld = btTransformToSim3(mLinkNameToRigidBody.at(camera.linkName)->getWorldTransform(), btVector3{1, 1, 1});
-            mShaderProgram.uniform("cameraInWorld", cameraInWorld.position().cast<float>());
-            mShaderProgram.uniform("worldToCamera", rosToGl * cameraInWorld.matrix().inverse().cast<float>());
-
-            glBindFramebuffer(GL_FRAMEBUFFER, camera.framebufferHandle);
-            glViewport(0, 0, camera.resolution.width, camera.resolution.height);
-            glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-            renderModels(true);
-
             camerasUpdate(camera);
         }
 
         {
             float aspect = static_cast<float>(w) / static_cast<float>(h);
-            Eigen::Matrix4f cameraToClip = perspective(mFov * DEG2RAD, aspect, NEAR, FAR).cast<float>();
+            Eigen::Matrix4f cameraToClip = perspective(mFov * DEG_TO_RAD, aspect, NEAR, FAR).cast<float>();
             mShaderProgram.uniform("cameraToClip", cameraToClip);
 
             mShaderProgram.uniform("cameraInWorld", mCameraInWorld.position().cast<float>());
-            Eigen::Matrix4f worldToCamera = rosToGl * mCameraInWorld.matrix().inverse().cast<float>();
+            Eigen::Matrix4f worldToCamera = ROS_TO_GL * mCameraInWorld.matrix().inverse().cast<float>();
             mShaderProgram.uniform("worldToCamera", worldToCamera);
 
             glBindFramebuffer(GL_FRAMEBUFFER, 0);
