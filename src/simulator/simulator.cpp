@@ -11,6 +11,8 @@ namespace mrover {
         // }
         mTwistSub = mNh.subscribe<geometry_msgs::Twist>("/cmd_vel", 1, &SimulatorNodelet::twistCallback, this);
 
+        mPosePub = mNh.advertise<geometry_msgs::PoseWithCovarianceStamped>("/linearized_pose", 1);
+
         mRunThread = std::thread{&SimulatorNodelet::run, this};
 
     } catch (std::exception const& e) {

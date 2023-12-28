@@ -140,7 +140,6 @@ namespace mrover {
                 ROS_WARN_STREAM(std::format("Link {} has {} visual elements, only the first one will be used", link->name, size));
             }
 
-
             btScalar mass = 1;
             btVector3 inertia{1, 1, 1};
             if (link->inertial) {
@@ -165,6 +164,7 @@ namespace mrover {
             linkRb->setActivationState(DISABLE_DEACTIVATION);
             simulator.mDynamicsWorld->addRigidBody(linkRb);
 
+            // TODO(quintin): Figure out a better way for adding sensors
             if (link->name.contains("camera"sv)) {
                 simulator.mCameras.emplace_back(makeCameraForLink(simulator, link));
             }
@@ -184,7 +184,8 @@ namespace mrover {
                     case urdf::Joint::CONTINUOUS:
                     case urdf::Joint::REVOLUTE: {
                         ROS_INFO_STREAM(std::format("Rotating joint {}: {} <-> {}", parentJoint->name, parentJoint->parent_link_name, parentJoint->child_link_name));
-                        if (link->name.contains("axle"sv)) {
+                        if (model.getName() == "rover"sv && link->name.contains("axle"sv)) {
+                            // TODO(quintin): Seems wrong to embed rover-specific logic in this function
                             ROS_INFO_STREAM("\tSpring");
                             auto* constraint = simulator.makeBulletObject<btGeneric6DofSpring2Constraint>(simulator.mConstraints, *parentLinkRb, *linkRb, jointInParent, btTransform::getIdentity());
                             constraint->setLinearLowerLimit(btVector3{0, -0.02, 0});

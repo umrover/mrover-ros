@@ -13,18 +13,24 @@
 #include <thread>
 #include <unordered_set>
 
+#include <boost_cpp23_workaround.hpp>
+
 #include <boost/container/static_vector.hpp>
 #include <boost/process.hpp>
 
+#include <geometry_msgs/PoseWithCovarianceStamped.h>
 #include <geometry_msgs/TwistStamped.h>
 #include <nodelet/loader.h>
 #include <nodelet/nodelet.h>
 #include <ros/package.h>
 #include <ros/serialization.h>
-#include <urdf/model.h>
-#include <xmlrpcpp/XmlRpcValue.h>
 #include <sensor_msgs/PointCloud2.h>
 #include <sensor_msgs/point_cloud2_iterator.h>
+#include <tf/exceptions.h>
+#include <tf2_ros/transform_broadcaster.h>
+#include <tf2_ros/transform_listener.h>
+#include <urdf/model.h>
+#include <xmlrpcpp/XmlRpcValue.h>
 
 #include <GL/glew.h>
 
@@ -54,9 +60,9 @@
 
 #include <loop_profiler.hpp>
 #include <params_utils.hpp>
+#include <point.hpp>
 #include <se3.hpp>
 #include <units.hpp>
-#include <point.hpp>
 // #include <messaging.hpp>
 
 #include <mrover/CAN.h>

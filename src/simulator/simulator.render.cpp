@@ -2,11 +2,7 @@
 
 namespace mrover {
 
-    using namespace std::literals;
-
     constexpr int SDL_OK = 0;
-
-    constexpr float DEG2RAD = std::numbers::pi_v<float> / 180.0f;
 
     static std::string const MESHES_PATH = "package://mrover/urdf/meshes/primitives";
     static std::string const CUBE_PRIMITIVE_URI = std::format("{}/cube.fbx", MESHES_PATH);
@@ -18,13 +14,9 @@ namespace mrover {
     }
 
     static auto btTransformToSim3(btTransform const& transform, btVector3 const& scale) -> SIM3 {
-        btVector3 const& translation = transform.getOrigin();
-        btQuaternion const& rotation = transform.getRotation();
-        return {
-                R3{translation.x(), translation.y(), translation.z()},
-                SO3{rotation.w(), rotation.x(), rotation.y(), rotation.z()},
-                R3{scale.x(), scale.y(), scale.z()},
-        };
+        btVector3 const& p = transform.getOrigin();
+        btQuaternion const& q = transform.getRotation();
+        return {R3{p.x(), p.y(), p.z()}, SO3{q.w(), q.x(), q.y(), q.z()}, R3{scale.x(), scale.y(), scale.z()}};
     }
 
     auto perspective(float fovY, float aspect, float zNear, float zFar) -> Eigen::Matrix4f {
@@ -248,48 +240,7 @@ namespace mrover {
             glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
             renderModels(true);
 
-            if (camera.pcPub.getNumSubscribers() == 0) continue;
-
-            if (Clock::now() - camera.lastUpdate < std::chrono::duration_cast<Clock::duration>(std::chrono::duration<float>{1.0f / camera.rate})) continue;
-
-            camera.lastUpdate = Clock::now();
-
-            glBindTexture(GL_TEXTURE_2D, camera.colorTextureHandle);
-            glGetTexImage(GL_TEXTURE_2D, 0, GL_BGR, GL_UNSIGNED_BYTE, camera.colorImage.data);
-            flip(camera.colorImage, camera.colorImage, 0);
-
-            glBindTexture(GL_TEXTURE_2D, camera.depthTextureHandle);
-            glGetTexImage(GL_TEXTURE_2D, 0, GL_DEPTH_COMPONENT, GL_FLOAT, camera.depthImage.data);
-            flip(camera.depthImage, camera.depthImage, 0);
-
-            mPointCloud->is_bigendian = __BYTE_ORDER__ == __ORDER_BIG_ENDIAN__;
-            mPointCloud->is_dense = true;
-            mPointCloud->width = camera.resolution.width;
-            mPointCloud->height = camera.resolution.height;
-            mPointCloud->header.stamp = ros::Time::now();
-            mPointCloud->header.frame_id = "map";
-            fillPointCloudMessageHeader(mPointCloud);
-            assert(mPointCloud->data.size() == camera.colorImage.total() * sizeof(Point));
-
-            auto* points = reinterpret_cast<Point*>(mPointCloud->data.data());
-            camera.colorImage.forEach<cv::Vec3b>([&](cv::Vec3b& pixel, int const* position) -> void {
-                float depth = 2 * camera.depthImage.at<float>(position) - 1;
-
-                int x = position[1], y = position[0];
-
-                Point& point = points[y * mPointCloud->width + x];
-                point.b = pixel[0];
-                point.g = pixel[1];
-                point.r = pixel[2];
-                point.x = 2 * NEAR * FAR / (depth * (FAR - NEAR) - (FAR + NEAR));
-                point.y = (static_cast<float>(x) / static_cast<float>(camera.resolution.width) - 0.5f) * tanf(mFov * DEG2RAD / 2.0f) * 2.0f;
-                point.z = (static_cast<float>(y) / static_cast<float>(camera.resolution.height) - 0.5f) * tanf(mFov * DEG2RAD / 2.0f) * 2.0f / aspect;
-                point.normal_x = 0;
-                point.normal_y = 0;
-                point.normal_z = 0;
-                point.curvature = 0;
-            });
-            camera.pcPub.publish(mPointCloud);
+            camerasUpdate(camera);
         }
 
         {

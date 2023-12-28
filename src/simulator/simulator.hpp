@@ -11,6 +11,8 @@ namespace mrover {
 
     using Clock = std::chrono::high_resolution_clock;
 
+    constexpr float DEG2RAD = std::numbers::pi_v<float> / 180.0f;
+
     struct Camera;
     class SimulatorNodelet;
 
@@ -106,7 +108,13 @@ namespace mrover {
 
         ros::Subscriber mTwistSub;
 
+        ros::Publisher mPosePub;
+
         sensor_msgs::PointCloud2Ptr mPointCloud = boost::make_shared<sensor_msgs::PointCloud2>();
+
+        tf2_ros::Buffer mTfBuffer;
+        tf2_ros::TransformListener mTfListener{mTfBuffer};
+        tf2_ros::TransformBroadcaster mTfBroadcaster;
 
         // Rendering
 
@@ -165,6 +173,12 @@ namespace mrover {
         std::thread mRunThread;
 
         LoopProfiler mLoopProfiler{"Simulator"};
+
+        auto camerasUpdate(Camera& camera) -> void;
+
+        auto gpsAndImusUpdate() -> void;
+
+        auto linksToTfUpdate() -> void;
 
     public:
         SimulatorNodelet() = default;

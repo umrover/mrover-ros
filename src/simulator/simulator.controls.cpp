@@ -3,7 +3,7 @@
 namespace mrover {
 
     auto SimulatorNodelet::twistCallback(geometry_msgs::Twist::ConstPtr const& twist) -> void {
-        // TODO: read these from the parameter server
+        // TODO(quintin): Read these from the parameter server
         constexpr auto WHEEL_DISTANCE_INNER = Meters{0.43};
         using RadiansPerMeter = compound_unit<Radians, inverse<Meters>>;
         constexpr auto WHEEL_LINEAR_TO_ANGULAR = RadiansPerMeter{384.615387};
