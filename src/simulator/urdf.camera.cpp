@@ -9,8 +9,6 @@ namespace mrover {
                 10,
                 simulator.mNh.advertise<sensor_msgs::PointCloud2>("camera/left/points", 1),
         };
-        camera.colorImage = cv::Mat::zeros(camera.resolution, CV_8UC3);
-        camera.depthImage = cv::Mat::zeros(camera.resolution, CV_32FC1);
 
         glGenFramebuffers(1, &camera.framebufferHandle);
         glBindFramebuffer(GL_FRAMEBUFFER, camera.framebufferHandle);
@@ -44,6 +42,9 @@ namespace mrover {
 
         // std::array<GLenum, 2> attachments{GL_COLOR_ATTACHMENT0, GL_DEPTH_ATTACHMENT};
         // glDrawBuffers(attachments.size(), attachments.data());
+
+        glGenBuffers(1, &camera.pointCloudArrayHandle);
+        glBindBuffer(GL_TEXTURE_BUFFER, camera.pointCloudArrayHandle);
 
         if (GLenum status = glCheckFramebufferStatus(GL_FRAMEBUFFER); status != GL_FRAMEBUFFER_COMPLETE)
             throw std::runtime_error{std::format("Framebuffer incomplete: {:#x}", status)};

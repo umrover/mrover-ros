@@ -66,11 +66,10 @@ namespace mrover {
         ros::Publisher pcPub;
 
         Clock::time_point lastUpdate = Clock::now();
-        cv::Mat colorImage;
-        cv::Mat depthImage;
         GLuint framebufferHandle = GL_INVALID_HANDLE;
         GLuint colorTextureHandle = GL_INVALID_HANDLE;
         GLuint depthTextureHandle = GL_INVALID_HANDLE;
+        GLuint pointCloudArrayHandle = GL_INVALID_HANDLE;
     };
 
     class SimulatorNodelet final : public nodelet::Nodelet {
