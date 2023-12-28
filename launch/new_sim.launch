@@ -1,6 +1,9 @@
 <launch>
   <rosparam command="load" file="$(find mrover)/config/simulator/autonomy.yaml"/>
-  <include file="$(find mrover)/launch/auton.launch"/>
+  
+  <include file="$(find mrover)/launch/auton.launch">
+    <arg name="use_linearization" value="false"/>
+  </include>
 
   <node pkg="nodelet" type="nodelet" name="simulator_nodelet" required="true"
         args="load mrover/SimulatorNodelet perception_nodelet_manager" output="screen"/>

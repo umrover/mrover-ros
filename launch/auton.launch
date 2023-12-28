@@ -4,6 +4,7 @@
   <arg name="sim" default="false"/>
   <arg name="use_ekf" default="true"/>
   <arg name="ekf_start_delay" default="0"/>
+  <arg name="use_linearization" default="true"/>
 
   <!--
     ==========
@@ -41,10 +42,9 @@
         clear_params="true" launch-prefix="bash -c 'sleep $(arg ekf_start_delay); $0 $@'">
     <remap from="odometry/filtered" to="global_ekf/odometry"/>
   </node>
-
-  <!-- passthrough filter to replace EKF in datapath -->
+  <!-- passthrough filter to replace EKF in data path -->
   <node unless="$(arg use_ekf)" pkg="mrover" type="passthrough_filter.py" name="passthrough_filter"/>
 
   <!-- node to linearize GPS from geodetic to ENU cartesian coords -->
-  <node name="gps_linearization" pkg="mrover" type="gps_linearization.py" output="screen"/>
+  <node if="$(arg use_linearization)" name="gps_linearization" pkg="mrover" type="gps_linearization.py" output="screen"/>
 </launch>

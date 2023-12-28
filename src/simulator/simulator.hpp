@@ -10,8 +10,8 @@ using namespace std::literals;
 namespace mrover {
 
     using Clock = std::chrono::high_resolution_clock;
-    // using string_hash = std::size_t;
 
+    struct Camera;
     class SimulatorNodelet;
 
     struct Model {
@@ -44,6 +44,10 @@ namespace mrover {
         urdf::Model model;
 
         URDF(SimulatorNodelet& simulator, XmlRpc::XmlRpcValue const& init);
+
+        auto makeColliderForLink(SimulatorNodelet& simulator, urdf::LinkConstSharedPtr const& link) -> btCollisionShape*;
+
+        auto makeCameraForLink(SimulatorNodelet& simulator, urdf::LinkConstSharedPtr const& link) -> Camera;
     };
 
     struct Camera {

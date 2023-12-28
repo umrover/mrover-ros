@@ -30,6 +30,89 @@ namespace mrover {
         return btVector3{static_cast<btScalar>(inertia->ixx), static_cast<btScalar>(inertia->iyy), static_cast<btScalar>(inertia->izz)} * INERTIA_MULTIPLIER;
     }
 
+    auto URDF::makeColliderForLink(SimulatorNodelet& simulator, urdf::LinkConstSharedPtr const& link) -> btCollisionShape* {
+        boost::container::static_vector<std::pair<btCollisionShape*, btTransform>, 4> shapes;
+        for (urdf::CollisionSharedPtr const& collision: link->collision_array) {
+            if (!collision->geometry) throw std::invalid_argument{"Collision has no geometry"};
+
+            switch (collision->geometry->type) {
+                case urdf::Geometry::BOX: {
+                    auto box = std::dynamic_pointer_cast<urdf::Box>(collision->geometry);
+                    assert(box);
+
+                    btVector3 boxHalfExtents = urdfPosToBtPos(box->dim) / 2;
+                    shapes.emplace_back(simulator.makeBulletObject<btBoxShape>(simulator.mCollisionShapes, boxHalfExtents), urdfPoseToBtTransform(collision->origin));
+                    break;
+                }
+                case urdf::Geometry::SPHERE: {
+                    auto sphere = std::dynamic_pointer_cast<urdf::Sphere>(collision->geometry);
+                    assert(sphere);
+
+                    btScalar radius = urdfDistToBtDist(sphere->radius);
+                    shapes.emplace_back(simulator.makeBulletObject<btSphereShape>(simulator.mCollisionShapes, radius), urdfPoseToBtTransform(collision->origin));
+                    break;
+                }
+                case urdf::Geometry::CYLINDER: {
+                    auto cylinder = std::dynamic_pointer_cast<urdf::Cylinder>(collision->geometry);
+                    assert(cylinder);
+
+                    btScalar radius = urdfDistToBtDist(cylinder->radius);
+                    btScalar halfLength = urdfDistToBtDist(cylinder->length) / 2;
+                    btVector3 cylinderHalfExtents{radius, radius, halfLength};
+                    shapes.emplace_back(simulator.makeBulletObject<btCylinderShapeZ>(simulator.mCollisionShapes, cylinderHalfExtents), urdfPoseToBtTransform((collision->origin)));
+                    break;
+                }
+                case urdf::Geometry::MESH: {
+                    auto mesh = std::dynamic_pointer_cast<urdf::Mesh>(collision->geometry);
+                    assert(mesh);
+
+                    std::string const& fileUri = mesh->filename;
+                    auto [it, was_inserted] = simulator.mUriToModel.try_emplace(fileUri, fileUri);
+                    Model& model = it->second;
+
+                    model.waitMeshes();
+
+                    if (model.meshes.size() != 1) throw std::invalid_argument{"Mesh collider must be constructed from exactly one mesh"};
+
+                    Model::Mesh const& meshData = model.meshes.front();
+
+                    auto* triangleMesh = new btTriangleMesh{};
+                    triangleMesh->preallocateVertices(static_cast<int>(meshData.vertices.data.size()));
+                    triangleMesh->preallocateIndices(static_cast<int>(meshData.indices.data.size()));
+                    for (std::size_t i = 0; i < meshData.indices.data.size(); i += 3) {
+                        Eigen::Vector3f v0 = meshData.vertices.data[meshData.indices.data[i + 0]];
+                        Eigen::Vector3f v1 = meshData.vertices.data[meshData.indices.data[i + 1]];
+                        Eigen::Vector3f v2 = meshData.vertices.data[meshData.indices.data[i + 2]];
+                        triangleMesh->addTriangle(btVector3{v0.x(), v0.y(), v0.z()}, btVector3{v1.x(), v1.y(), v1.z()}, btVector3{v2.x(), v2.y(), v2.z()});
+                    }
+                    auto* meshShape = simulator.makeBulletObject<btBvhTriangleMeshShape>(simulator.mCollisionShapes, triangleMesh, true);
+                    shapes.emplace_back(meshShape, urdfPoseToBtTransform(collision->origin));
+                    simulator.mMeshToUri.emplace(meshShape, fileUri);
+                    break;
+                }
+                default:
+                    throw std::invalid_argument{"Unsupported collision type"};
+            }
+        }
+        btCollisionShape* finalShape;
+        switch (shapes.size()) {
+            case 0:
+                finalShape = simulator.makeBulletObject<btEmptyShape>(simulator.mCollisionShapes);
+                break;
+            case 1:
+                finalShape = shapes.front().first;
+                break;
+            default:
+                auto* compoundShape = simulator.makeBulletObject<btCompoundShape>(simulator.mCollisionShapes);
+                for (auto const& [shape, transform]: shapes) {
+                    compoundShape->addChildShape(transform, shape);
+                }
+                finalShape = compoundShape;
+                break;
+        }
+        return finalShape;
+    }
+
     URDF::URDF(SimulatorNodelet& simulator, XmlRpc::XmlRpcValue const& init) {
         auto urdfUri = xmlRpcValueToTypeOrDefault<std::string>(init, "uri");
         if (!model.initString(performXacro(uriToPath(urdfUri)))) throw std::runtime_error{std::format("Failed to parse URDF from URI: {}", urdfUri)};
@@ -57,85 +140,6 @@ namespace mrover {
                 ROS_WARN_STREAM(std::format("Link {} has {} visual elements, only the first one will be used", link->name, size));
             }
 
-            boost::container::static_vector<std::pair<btCollisionShape*, btTransform>, 4> shapes;
-            for (urdf::CollisionSharedPtr const& collision: link->collision_array) {
-                if (!collision->geometry) throw std::invalid_argument{"Collision has no geometry"};
-
-                switch (collision->geometry->type) {
-                    case urdf::Geometry::BOX: {
-                        auto box = std::dynamic_pointer_cast<urdf::Box>(collision->geometry);
-                        assert(box);
-
-                        btVector3 boxHalfExtents = urdfPosToBtPos(box->dim) / 2;
-                        shapes.emplace_back(simulator.makeBulletObject<btBoxShape>(simulator.mCollisionShapes, boxHalfExtents), urdfPoseToBtTransform(collision->origin));
-                        break;
-                    }
-                    case urdf::Geometry::SPHERE: {
-                        auto sphere = std::dynamic_pointer_cast<urdf::Sphere>(collision->geometry);
-                        assert(sphere);
-
-                        btScalar radius = urdfDistToBtDist(sphere->radius);
-                        shapes.emplace_back(simulator.makeBulletObject<btSphereShape>(simulator.mCollisionShapes, radius), urdfPoseToBtTransform(collision->origin));
-                        break;
-                    }
-                    case urdf::Geometry::CYLINDER: {
-                        auto cylinder = std::dynamic_pointer_cast<urdf::Cylinder>(collision->geometry);
-                        assert(cylinder);
-
-                        btScalar radius = urdfDistToBtDist(cylinder->radius);
-                        btScalar halfLength = urdfDistToBtDist(cylinder->length) / 2;
-                        btVector3 cylinderHalfExtents{radius, radius, halfLength};
-                        shapes.emplace_back(simulator.makeBulletObject<btCylinderShapeZ>(simulator.mCollisionShapes, cylinderHalfExtents), urdfPoseToBtTransform((collision->origin)));
-                        break;
-                    }
-                    case urdf::Geometry::MESH: {
-                        auto mesh = std::dynamic_pointer_cast<urdf::Mesh>(collision->geometry);
-                        assert(mesh);
-
-                        std::string const& fileUri = mesh->filename;
-                        auto [it, was_inserted] = simulator.mUriToModel.try_emplace(fileUri, fileUri);
-                        Model& model = it->second;
-
-                        model.waitMeshes();
-
-                        if (model.meshes.size() != 1) throw std::invalid_argument{"Mesh collider must be constructed from exactly one mesh"};
-
-                        Model::Mesh const& meshData = model.meshes.front();
-
-                        auto* triangleMesh = new btTriangleMesh{};
-                        triangleMesh->preallocateVertices(static_cast<int>(meshData.vertices.data.size()));
-                        triangleMesh->preallocateIndices(static_cast<int>(meshData.indices.data.size()));
-                        for (std::size_t i = 0; i < meshData.indices.data.size(); i += 3) {
-                            Eigen::Vector3f v0 = meshData.vertices.data[meshData.indices.data[i + 0]];
-                            Eigen::Vector3f v1 = meshData.vertices.data[meshData.indices.data[i + 1]];
-                            Eigen::Vector3f v2 = meshData.vertices.data[meshData.indices.data[i + 2]];
-                            triangleMesh->addTriangle(btVector3{v0.x(), v0.y(), v0.z()}, btVector3{v1.x(), v1.y(), v1.z()}, btVector3{v2.x(), v2.y(), v2.z()});
-                        }
-                        auto* meshShape = simulator.makeBulletObject<btBvhTriangleMeshShape>(simulator.mCollisionShapes, triangleMesh, true);
-                        shapes.emplace_back(meshShape, urdfPoseToBtTransform(collision->origin));
-                        simulator.mMeshToUri.emplace(meshShape, fileUri);
-                        break;
-                    }
-                    default:
-                        throw std::invalid_argument{"Unsupported collision type"};
-                }
-            }
-            btCollisionShape* finalShape;
-            switch (shapes.size()) {
-                case 0:
-                    finalShape = simulator.makeBulletObject<btEmptyShape>(simulator.mCollisionShapes);
-                    break;
-                case 1:
-                    finalShape = shapes.front().first;
-                    break;
-                default:
-                    auto* compoundShape = simulator.makeBulletObject<btCompoundShape>(simulator.mCollisionShapes);
-                    for (auto const& [shape, transform]: shapes) {
-                        compoundShape->addChildShape(transform, shape);
-                    }
-                    finalShape = compoundShape;
-                    break;
-            }
 
             btScalar mass = 1;
             btVector3 inertia{1, 1, 1};
@@ -155,55 +159,14 @@ namespace mrover {
                 jointInWorld = rootTransform;
             }
             auto* motionState = simulator.makeBulletObject<btDefaultMotionState>(simulator.mMotionStates, jointInWorld);
+            auto* finalShape = makeColliderForLink(simulator, link);
             auto* linkRb = simulator.makeBulletObject<btRigidBody>(simulator.mCollisionObjects, btRigidBody::btRigidBodyConstructionInfo{mass, motionState, finalShape, inertia});
             simulator.mLinkNameToRigidBody.emplace(SimulatorNodelet::globalName(name, link->name), linkRb);
             linkRb->setActivationState(DISABLE_DEACTIVATION);
             simulator.mDynamicsWorld->addRigidBody(linkRb);
 
             if (link->name.contains("camera"sv)) {
-                Camera& camera = simulator.mCameras.emplace_back(
-                        SimulatorNodelet::globalName(name, link->name),
-                        cv::Size2i{1280, 720},
-                        10,
-                        simulator.mNh.advertise<sensor_msgs::PointCloud2>("camera/left/points", 1));
-                camera.colorImage = cv::Mat::zeros(camera.resolution, CV_8UC3);
-                camera.depthImage = cv::Mat::zeros(camera.resolution, CV_32FC1);
-
-                glGenFramebuffers(1, &camera.framebufferHandle);
-                glBindFramebuffer(GL_FRAMEBUFFER, camera.framebufferHandle);
-
-                GLsizei w = camera.resolution.width, h = camera.resolution.height;
-
-                glGenTextures(1, &camera.colorTextureHandle);
-                glBindTexture(GL_TEXTURE_2D, camera.colorTextureHandle);
-                glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, w, h, 0, GL_RGB, GL_UNSIGNED_BYTE, nullptr);
-                // Following are needed for ImGui to successfully render
-                glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-                glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-
-                glGenTextures(1, &camera.depthTextureHandle);
-                glBindTexture(GL_TEXTURE_2D, camera.depthTextureHandle);
-                glTexImage2D(GL_TEXTURE_2D, 0, GL_DEPTH_COMPONENT32, w, h, 0, GL_DEPTH_COMPONENT, GL_FLOAT, nullptr);
-                glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-                glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-
-                glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_TEXTURE_2D, camera.depthTextureHandle, 0);
-
-                // glGenRenderbuffers(1, &camera.depthTextureHandle);
-                // glBindRenderbuffer(GL_RENDERBUFFER, camera.depthTextureHandle);
-                // glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH_COMPONENT, w, h);
-                //
-                // // Attach the depth texture to the framebuffer
-                // glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_RENDERBUFFER, camera.depthTextureHandle);
-
-                // Attach the color texture to the framebuffer
-                glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, camera.colorTextureHandle, 0);
-
-                // std::array<GLenum, 2> attachments{GL_COLOR_ATTACHMENT0, GL_DEPTH_ATTACHMENT};
-                // glDrawBuffers(attachments.size(), attachments.data());
-
-                if (GLenum status = glCheckFramebufferStatus(GL_FRAMEBUFFER); status != GL_FRAMEBUFFER_COMPLETE)
-                    throw std::runtime_error{std::format("Framebuffer incomplete: {:#x}", status)};
+                simulator.mCameras.emplace_back(makeCameraForLink(simulator, link));
             }
 
             if (urdf::JointConstSharedPtr parentJoint = link->parent_joint) {
