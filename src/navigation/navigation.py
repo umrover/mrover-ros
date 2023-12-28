@@ -1,7 +1,5 @@
 #!/usr/bin/env python3
 
-import signal
-import sys
 import threading
 
 import rospy
@@ -48,6 +46,7 @@ class Navigation(threading.Thread):
     def stop(self):
         # Requests current state to go into 'terminated' to cleanly exit state machine
         self.state_machine.stop()
+        self.state_machine_server.stop()
         self.join()
         self.state_machine.context.rover.send_drive_stop()
 
@@ -57,18 +56,7 @@ def main():
     rospy.init_node("navigation")
     context = Context()
     navigation = Navigation(context)
-
-    # Define custom handler for Ctrl-C that shuts down smach properly
-    def sigint_handler(_sig, _frame):
-        navigation.stop()
-        rospy.signal_shutdown("keyboard interrupt")
-        try:
-            sys.exit(0)
-        except SystemExit:
-            # TODO: not really sure why needed but it is bugging me! >:(
-            pass
-
-    signal.signal(signal.SIGINT, sigint_handler)
+    rospy.on_shutdown(navigation.stop)
     navigation.start()
 
 
