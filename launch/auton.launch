@@ -26,7 +26,7 @@
   <!-- node to navigate to a series of waypoints, AR tags, and gates -->
   <rosparam command="load" file="$(find mrover)/config/navigation.yaml"/>
   <node name="nav" pkg="mrover" type="navigation.py" output="screen"/>
-  <node name="failure_id" pkg="mrover" type="failure_identification.py"/>
+  <!--  <node name="failure_id" pkg="mrover" type="failure_identification.py"/>-->
 
   <!--
     ============

@@ -2,11 +2,11 @@
 
 layout (local_size_x = 1, local_size_y = 1, local_size_z = 1) in;
 
-// 4x4 matrix
-layout (binding = 0) uniform mat4 inClipToCamera;
-layout (binding = 1) uniform ivec2 inResolution;
-layout (binding = 2, rgb8) uniform image2D inRgbImage;
-layout (binding = 3, r32f) uniform image2D inDepthImage;
+uniform mat4 clipToCamera;
+uniform ivec2 resolution;
+
+layout (rgba8, binding = 0) uniform image2D rgbImage;
+layout (r32f, binding = 1) uniform image2D depthImage;
 
 struct Point {
     float x, y, z;
@@ -15,30 +15,38 @@ struct Point {
     float curvature;
 };
 
-layout (std430, binding = 4) buffer outCloud {
+layout (std430, binding = 2) buffer Cloud {
     Point points[];
-};
+} cloud;
+
+float pack(vec4 rgba) {
+    int r = int(rgba.r * 255.0);
+    int g = int(rgba.g * 255.0);
+    int b = int(rgba.b * 255.0);
+    int a = 255;
+    return intBitsToFloat((a << 24) | (r << 16) | (g << 8) | b);
+}
 
 void main() {
     ivec2 pixel = ivec2(gl_GlobalInvocationID.xy);
-    float depth = imageLoad(inDepthImage, pixel).r;
-    vec3 rgb = imageLoad(inRgbImage, pixel).rgb;
+    float depth = imageLoad(depthImage, pixel).r;
+    float rgb = pack(imageLoad(rgbImage, pixel));
 
     vec4 pointInClip = vec4(
-        2.0 * (float(pixel.x) / float(inResolution.x)) - 1.0,
-        2.0 * (float(pixel.y) / float(inResolution.y)) - 1.0,
+        2.0 * (float(pixel.x) / float(resolution.x)) - 1.0,
+        2.0 * (float(pixel.y) / float(resolution.y)) - 1.0,
         2.0 * depth - 1.0,
         1.0
     );
-    vec4 pointInCamera = inClipToCamera * pointInClip;
+    vec4 pointInCamera = clipToCamera * pointInClip;
     pointInCamera /= pointInCamera.w;
 
-    int flatIndex = pixel.y * inResolution.x + pixel.x;
-        outCloud.points[flatIndex] = Point(
+    int flatIndex = pixel.y * resolution.x + pixel.x;
+    cloud.points[flatIndex] = Point(
         pointInCamera.x,
         pointInCamera.y,
         pointInCamera.z,
-        0.0,
+        rgb,
         0.0,
         0.0,
         0.0,

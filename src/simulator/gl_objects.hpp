@@ -22,24 +22,57 @@ namespace mrover {
         ~Shader();
     };
 
+    template<std::size_t N>
     struct Program {
-        Shader vertexShader;
-        Shader fragmentShader;
+        std::array<Shader, N> shaders;
         std::unordered_map<std::string, GLint> uniforms;
 
         GLuint handle = GL_INVALID_HANDLE;
 
         Program() = default;
 
-        Program(Program&& other) noexcept;
-        auto operator=(Program&& other) noexcept -> Program&;
+        Program(Program&& other) noexcept {
+            *this = std::move(other);
+        }
+
+        auto operator=(Program&& other) noexcept -> Program& {
+            if (this != &other) {
+                shaders = std::move(other.shaders);
+                handle = std::exchange(other.handle, GL_INVALID_HANDLE);
+            }
+            return *this;
+        }
 
         Program(Program& other) = delete;
         auto operator=(Program& other) -> Program& = delete;
 
-        ~Program();
+        ~Program() {
+            if (handle != GL_INVALID_HANDLE)
+                glDeleteProgram(handle);
+        }
 
-        Program(Shader&& vertexShader, Shader&& fragmentShader);
+        explicit Program(std::array<Shader, N>&& shaders) : shaders{std::move(shaders)} {
+            handle = glCreateProgram();
+
+            for (auto& shader: this->shaders) {
+                glAttachShader(handle, shader.handle);
+            }
+
+            glLinkProgram(handle);
+            GLint success{};
+            glGetProgramiv(handle, GL_LINK_STATUS, &success);
+            if (!success) {
+                std::array<GLchar, 4096> infoLog{};
+                glGetProgramInfoLog(handle, infoLog.size(), nullptr, infoLog.data());
+                throw std::runtime_error(std::format("Failed to link program: {}", infoLog.data()));
+            }
+
+            ROS_INFO("Successfully created shader program");
+        }
+
+        template<typename... Args>
+            requires(sizeof...(Args) == N)
+        explicit Program(Args&&... args) : Program{std::array<Shader, N>{std::forward<Args>(args)...}} {}
 
         template<typename T>
         auto uniform(std::string const& name, T const& value) -> void {
@@ -59,8 +92,8 @@ namespace mrover {
     };
 
     /**
-     * \brief           Buffer that exists on the CPU and GPU
-     * \tparam T        Element type
+     * \brief                    Buffer that exists on the CPU and GPU
+     * \tparam T                Element type
      * \tparam GlBufferTarget   OpenGL target (e.g. GL_ARRAY_BUFFER, GL_ELEMENT_ARRAY_BUFFER)
      *
      * \note There should be a concept requiring std::is_trivially_copyable_v<T> but for some reason Eigen types are not!

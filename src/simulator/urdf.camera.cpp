@@ -17,7 +17,7 @@ namespace mrover {
 
         glGenTextures(1, &camera.colorTextureHandle);
         glBindTexture(GL_TEXTURE_2D, camera.colorTextureHandle);
-        glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, w, h, 0, GL_RGB, GL_UNSIGNED_BYTE, nullptr);
+        glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, w, h, 0, GL_RGBA, GL_UNSIGNED_BYTE, nullptr);
         // Following are needed for ImGui to successfully render
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
@@ -44,7 +44,8 @@ namespace mrover {
         // glDrawBuffers(attachments.size(), attachments.data());
 
         glGenBuffers(1, &camera.pointCloudArrayHandle);
-        glBindBuffer(GL_TEXTURE_BUFFER, camera.pointCloudArrayHandle);
+        glBindBuffer(GL_SHADER_STORAGE_BUFFER, camera.pointCloudArrayHandle);
+        glBufferData(GL_SHADER_STORAGE_BUFFER, w * h * sizeof(Point), nullptr, GL_DYNAMIC_COPY);
 
         if (GLenum status = glCheckFramebufferStatus(GL_FRAMEBUFFER); status != GL_FRAMEBUFFER_COMPLETE)
             throw std::runtime_error{std::format("Framebuffer incomplete: {:#x}", status)};

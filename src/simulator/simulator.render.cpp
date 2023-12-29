@@ -89,14 +89,17 @@ namespace mrover {
         ImGui_ImplOpenGL3_Init("#version 450 core");
 
         auto shadersPath = std::filesystem::path{std::source_location::current().file_name()}.parent_path() / "shaders";
-        mShaderProgram = {
+        mPbrProgram = Program<2>{
                 Shader{shadersPath / "pbr.vert", GL_VERTEX_SHADER},
                 Shader{shadersPath / "pbr.frag", GL_FRAGMENT_SHADER},
         };
-        assert(mShaderProgram.handle != GL_INVALID_HANDLE);
-        glUseProgram(mShaderProgram.handle);
-        mShaderProgram.uniform("lightInWorld", Eigen::Vector3f{0, 0, 5});
-        mShaderProgram.uniform("lightColor", Eigen::Vector3f{1, 1, 1});
+        glUseProgram(mPbrProgram.handle);
+        mPbrProgram.uniform("lightInWorld", Eigen::Vector3f{0, 0, 5});
+        mPbrProgram.uniform("lightColor", Eigen::Vector3f{1, 1, 1});
+
+        mPointCloudProgram = Program<1>{
+                Shader{shadersPath / "pc.comp", GL_COMPUTE_SHADER},
+        };
 
         mUriToModel.emplace(CUBE_PRIMITIVE_URI, CUBE_PRIMITIVE_URI);
         mUriToModel.emplace(SPHERE_PRIMITIVE_URI, SPHERE_PRIMITIVE_URI);
@@ -106,11 +109,11 @@ namespace mrover {
     auto SimulatorNodelet::renderModel(Model& model, SIM3 const& modelToWorld, [[maybe_unused]] bool isRoverCamera) -> void {
         if (!model.areMeshesReady()) return;
 
-        mShaderProgram.uniform("modelToWorld", modelToWorld.matrix().cast<float>());
+        mPbrProgram.uniform("modelToWorld", modelToWorld.matrix().cast<float>());
 
         // See: http://www.lighthouse3d.com/tutorials/glsl-12-tutorial/the-normal-matrix/ for why this has to be treated specially
         // TLDR: it preserves orthogonality between normal vectors and their respective surfaces with any model scaling (including non-uniform)
-        mShaderProgram.uniform("modelToWorldForNormals", modelToWorld.matrix().inverse().transpose().cast<float>());
+        mPbrProgram.uniform("modelToWorldForNormals", modelToWorld.matrix().inverse().transpose().cast<float>());
 
         for (Model::Mesh& mesh: model.meshes) {
             if (mesh.vao == GL_INVALID_HANDLE) {
@@ -135,13 +138,13 @@ namespace mrover {
             mesh.texture.prepare();
 
             if (mesh.texture.handle == GL_INVALID_HANDLE) {
-                mShaderProgram.uniform("hasTexture", false);
-                mShaderProgram.uniform("objectColor", Eigen::Vector3f{1, 1, 1});
+                mPbrProgram.uniform("hasTexture", false);
+                mPbrProgram.uniform("objectColor", Eigen::Vector3f{1, 1, 1});
             } else {
-                mShaderProgram.uniform("hasTexture", true);
+                mPbrProgram.uniform("hasTexture", true);
                 glActiveTexture(GL_TEXTURE0);
                 glBindTexture(GL_TEXTURE_2D, mesh.texture.handle);
-                mShaderProgram.uniform("textureSampler", 0); // Corresponds to GL_TEXTURE0
+                mPbrProgram.uniform("textureSampler", 0); // Corresponds to GL_TEXTURE0
             }
 
             static_assert(std::is_same_v<decltype(mesh.indices)::value_type, std::uint32_t>);
@@ -151,7 +154,7 @@ namespace mrover {
 
     auto SimulatorNodelet::renderModels(bool isRoverCamera) -> void {
         glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
-        mShaderProgram.uniform("type", 1);
+        mPbrProgram.uniform("type", 1);
 
         for (URDF const& urdf: mUrdfs) {
 
@@ -176,7 +179,7 @@ namespace mrover {
 
     auto SimulatorNodelet::renderWireframeColliders() -> void {
         glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
-        mShaderProgram.uniform("type", 0);
+        mPbrProgram.uniform("type", 0);
 
         for (auto const& collisionObject: mCollisionObjects) {
 
@@ -224,13 +227,15 @@ namespace mrover {
         }
 
         {
+            glUseProgram(mPbrProgram.handle);
+
             float aspect = static_cast<float>(w) / static_cast<float>(h);
             Eigen::Matrix4f cameraToClip = perspective(mFov * DEG_TO_RAD, aspect, NEAR, FAR).cast<float>();
-            mShaderProgram.uniform("cameraToClip", cameraToClip);
+            mPbrProgram.uniform("cameraToClip", cameraToClip);
 
-            mShaderProgram.uniform("cameraInWorld", mCameraInWorld.position().cast<float>());
+            mPbrProgram.uniform("cameraInWorld", mCameraInWorld.position().cast<float>());
             Eigen::Matrix4f worldToCamera = ROS_TO_GL * mCameraInWorld.matrix().inverse().cast<float>();
-            mShaderProgram.uniform("worldToCamera", worldToCamera);
+            mPbrProgram.uniform("worldToCamera", worldToCamera);
 
             glBindFramebuffer(GL_FRAMEBUFFER, 0);
             glViewport(0, 0, w, h);

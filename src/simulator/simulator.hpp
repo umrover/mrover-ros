@@ -127,7 +127,8 @@ namespace mrover {
 
         std::unordered_map<std::string, Model> mUriToModel;
 
-        Program mShaderProgram;
+        Program<2> mPbrProgram;
+        Program<1> mPointCloudProgram;
 
         bool mHasFocus = false;
         bool mInGui = false;
