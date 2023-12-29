@@ -6,7 +6,7 @@ const int TYPE_PBR = 1;
 uniform int type;
 uniform bool hasTexture;
 uniform vec3 lightInWorld, cameraInWorld, lightColor, objectColor;
-uniform sampler2D textureSampler;
+uniform layout(binding = 0) sampler2D textureSampler;
 
 in vec3 positionInWorld, normalInWorld;
 in vec2 uv;

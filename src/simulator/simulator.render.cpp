@@ -144,7 +144,6 @@ namespace mrover {
                 mPbrProgram.uniform("hasTexture", true);
                 glActiveTexture(GL_TEXTURE0);
                 glBindTexture(GL_TEXTURE_2D, mesh.texture.handle);
-                mPbrProgram.uniform("textureSampler", 0); // Corresponds to GL_TEXTURE0
             }
 
             static_assert(std::is_same_v<decltype(mesh.indices)::value_type, std::uint32_t>);

@@ -1,21 +1,21 @@
 #version 450 core
 
+// One invocation of "main" per pixel in the image
 layout (local_size_x = 1, local_size_y = 1, local_size_z = 1) in;
 
 uniform mat4 clipToCamera;
 uniform ivec2 resolution;
-
-layout (rgba8, binding = 0) uniform image2D rgbImage;
-layout (r32f, binding = 1) uniform image2D depthImage;
+uniform layout(binding = 0) sampler2D rgbImage;
+uniform layout(binding = 1) sampler2D depthImage;
 
 struct Point {
     float x, y, z;
-    float rgb;
+    float rgb; // 3 rgb bytes packed into a float
     float nx, ny, nz;
     float curvature;
 };
 
-layout (std430, binding = 2) buffer Cloud {
+layout (std430, binding = 2) writeonly buffer Cloud {
     Point points[];
 } cloud;
 
@@ -29,8 +29,10 @@ float pack(vec4 rgba) {
 
 void main() {
     ivec2 pixel = ivec2(gl_GlobalInvocationID.xy);
-    float depth = imageLoad(depthImage, pixel).r;
-    float rgb = pack(imageLoad(rgbImage, pixel));
+
+    // I find it offensive that imageLoad ALWAYS returns vec4 despite the format of the underlying image
+    float depth = texelFetch(depthImage, pixel, 0).r;
+    float rgb = pack(texelFetch(rgbImage, pixel, 0));
 
     vec4 pointInClip = vec4(
         2.0 * (float(pixel.x) / float(resolution.x)) - 1.0,

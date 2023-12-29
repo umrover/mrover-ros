@@ -101,7 +101,7 @@ namespace mrover {
         float mLookSense = 0.004f;
         float mFov = 60.0f;
         btVector3 mGravityAcceleration{0.0f, 0.0f, -9.81f};
-        bool mEnablePhysics = false;
+        bool mEnablePhysics = true;
         bool mRenderModels = true;
         bool mRenderWireframeColliders = false;
 

@@ -5,7 +5,7 @@ namespace mrover {
     auto URDF::makeCameraForLink(SimulatorNodelet& simulator, urdf::LinkConstSharedPtr const& link) -> Camera {
         Camera camera{
                 SimulatorNodelet::globalName(name, link->name),
-                {320, 240},
+                {640, 480},
                 10,
                 simulator.mNh.advertise<sensor_msgs::PointCloud2>("camera/left/points", 1),
         };
@@ -17,14 +17,14 @@ namespace mrover {
 
         glGenTextures(1, &camera.colorTextureHandle);
         glBindTexture(GL_TEXTURE_2D, camera.colorTextureHandle);
-        glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, w, h, 0, GL_RGBA, GL_UNSIGNED_BYTE, nullptr);
+        glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, w, h, 0, GL_RGBA, GL_UNSIGNED_BYTE, nullptr);
         // Following are needed for ImGui to successfully render
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
 
         glGenTextures(1, &camera.depthTextureHandle);
         glBindTexture(GL_TEXTURE_2D, camera.depthTextureHandle);
-        glTexImage2D(GL_TEXTURE_2D, 0, GL_DEPTH_COMPONENT32, w, h, 0, GL_DEPTH_COMPONENT, GL_FLOAT, nullptr);
+        glTexImage2D(GL_TEXTURE_2D, 0, GL_DEPTH_COMPONENT32F, w, h, 0, GL_DEPTH_COMPONENT, GL_FLOAT, nullptr);
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
 
