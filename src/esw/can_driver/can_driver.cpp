@@ -123,7 +123,7 @@ namespace mrover {
                 mStream.value(),
                 boost::asio::buffer(&mReadFrame, sizeof(mReadFrame)),
                 // Supply lambda that is called on completion
-                [this](boost::system::error_code const& ec, std::size_t bytes) { // NOLINT(*-no-recursion)
+                [this](boost::system::error_code const& ec, [[maybe_unused]] std::size_t bytes) { // NOLINT(*-no-recursion)
                     checkErrorCode(ec);
                     assert(bytes == sizeof(mReadFrame));
 

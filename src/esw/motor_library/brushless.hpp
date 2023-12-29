@@ -72,7 +72,6 @@ namespace mrover {
 
     private:
         moteus::Controller mController{moteus::Controller::Options{}};
-        double mMeasuredEffort{};
 
         // Function to map throttle to velocity
         RadiansPerSecond mapThrottleToVelocity(Percent throttle);

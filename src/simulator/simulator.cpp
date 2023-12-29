@@ -92,11 +92,24 @@ namespace mrover {
             if (mEnablePhysics) physicsUpdate(dt);
             mLoopProfiler.measureEvent("Physics");
 
+            camerasUpdate();
+            mLoopProfiler.measureEvent("Cameras");
+
             renderUpdate();
             mLoopProfiler.measureEvent("Render");
 
+            guiUpdate();
+            mLoopProfiler.measureEvent("GUI");
+
+            // Apparently modern drivers lazily evaluate render commands until we actually need to present the frame
+            // This explains why this event is comparatively slow
+            SDL_GL_SwapWindow(mWindow.get());
+            mLoopProfiler.measureEvent("Swap");
+
             std::this_thread::sleep_until(beginTime + std::chrono::duration_cast<Clock::duration>(std::chrono::duration<float>{1.0f / mTargetUpdateRate}));
             dt = Clock::now() - beginTime;
+
+            mLoopProfiler.measureEvent("Sleep");
         }
 
     } catch (std::exception const& e) {

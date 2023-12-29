@@ -164,6 +164,14 @@
     link: /usr/bin/clangd
     priority: 160
 
+- name: Set LLD 16 as Default
+  become: True
+  alternatives:
+    name: lld
+    path: /usr/bin/lld-16
+    link: /usr/bin/lld
+    priority: 160
+
 - name: Setup Python Virtual Environment
   pip:
     name:

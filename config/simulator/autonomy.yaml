@@ -12,4 +12,4 @@ objects:
   - type: urdf
     name: tag_1
     uri: package://mrover/urdf/world/tag_1.urdf.xacro
-    translation: [ 10, -10, 1.2 ]
+    translation: [ 15, -14, 2.4 ]

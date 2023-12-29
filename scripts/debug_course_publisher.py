@@ -11,7 +11,7 @@ from util.course_publish_helpers import convert_waypoint_to_gps, publish_waypoin
 """
 The purpose of this file is for testing courses in the sim 
 without needing the auton GUI. You can add waypoints with
-and without fiducials and these will get published to nav
+and without tags and these will get published to nav
 """
 
 
@@ -20,7 +20,7 @@ if __name__ == "__main__":
 
     waypoints = [
         (
-            Waypoint(tag_id=0, tf_id="course0", type=WaypointType(val=WaypointType.NO_SEARCH)),
+            Waypoint(tag_id=2, tf_id="course0", type=WaypointType(val=WaypointType.NO_SEARCH)),
             SE3(position=np.array([4, 4, 0])),
         ),
         (
@@ -28,8 +28,8 @@ if __name__ == "__main__":
             SE3(position=np.array([-2, -2, 0])),
         ),
         (
-            Waypoint(tag_id=0, tf_id="course2", type=WaypointType(val=WaypointType.POST)),
-            SE3(position=np.array([5, -7, 0])),
+            Waypoint(tag_id=1, tf_id="course2", type=WaypointType(val=WaypointType.POST)),
+            SE3(position=np.array([11, -10, 0])),
         )
     ]
 

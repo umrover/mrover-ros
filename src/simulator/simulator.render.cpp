@@ -217,28 +217,24 @@ namespace mrover {
         int w{}, h{};
         SDL_GetWindowSize(mWindow.get(), &w, &h);
 
-        for (Camera& camera: mCameras) {
-            camerasUpdate(camera);
-        }
+        glUseProgram(mPbrProgram.handle);
 
-        {
-            glUseProgram(mPbrProgram.handle);
+        float aspect = static_cast<float>(w) / static_cast<float>(h);
+        Eigen::Matrix4f cameraToClip = perspective(mFov * DEG_TO_RAD, aspect, NEAR, FAR).cast<float>();
+        mPbrProgram.uniform("cameraToClip", cameraToClip);
 
-            float aspect = static_cast<float>(w) / static_cast<float>(h);
-            Eigen::Matrix4f cameraToClip = perspective(mFov * DEG_TO_RAD, aspect, NEAR, FAR).cast<float>();
-            mPbrProgram.uniform("cameraToClip", cameraToClip);
+        mPbrProgram.uniform("cameraInWorld", mCameraInWorld.position().cast<float>());
+        Eigen::Matrix4f worldToCamera = ROS_TO_GL * mCameraInWorld.matrix().inverse().cast<float>();
+        mPbrProgram.uniform("worldToCamera", worldToCamera);
 
-            mPbrProgram.uniform("cameraInWorld", mCameraInWorld.position().cast<float>());
-            Eigen::Matrix4f worldToCamera = ROS_TO_GL * mCameraInWorld.matrix().inverse().cast<float>();
-            mPbrProgram.uniform("worldToCamera", worldToCamera);
+        glBindFramebuffer(GL_FRAMEBUFFER, 0);
+        glViewport(0, 0, w, h);
+        glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+        if (mRenderModels) renderModels(false);
+        if (mRenderWireframeColliders) renderWireframeColliders();
+    }
 
-            glBindFramebuffer(GL_FRAMEBUFFER, 0);
-            glViewport(0, 0, w, h);
-            glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-            if (mRenderModels) renderModels(false);
-            if (mRenderWireframeColliders) renderWireframeColliders();
-        }
-
+    auto SimulatorNodelet::guiUpdate() -> void {
         ImGui_ImplOpenGL3_NewFrame();
         ImGui_ImplSDL2_NewFrame(mWindow.get());
         ImGui::NewFrame();
@@ -285,8 +281,7 @@ namespace mrover {
 
         ImGui::Render();
         ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
-
-        SDL_GL_SwapWindow(mWindow.get());
     }
+
 
 } // namespace mrover

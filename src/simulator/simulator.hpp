@@ -181,7 +181,7 @@ namespace mrover {
 
         LoopProfiler mLoopProfiler{"Simulator"};
 
-        auto camerasUpdate(Camera& camera) -> void;
+        auto camerasUpdate() -> void;
 
         auto gpsAndImusUpdate() -> void;
 
@@ -213,6 +213,8 @@ namespace mrover {
         auto renderWireframeColliders() -> void;
 
         auto renderUpdate() -> void;
+
+        auto guiUpdate() -> void;
 
         auto physicsUpdate(Clock::duration dt) -> void;
 

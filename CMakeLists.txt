@@ -5,10 +5,11 @@ set(CMAKE_CXX_STANDARD 23)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON) # Generate compile_commands.json for clangd
 if (CMAKE_CXX_COMPILER_ID STREQUAL "Clang")
-    add_link_options(-fuse-ld=lld-16) # LLVM lld is faster than GNU ld
+    add_link_options(-fuse-ld=lld) # LLVM lld is faster than GNU ld
 endif ()
-if (CMAKE_BUILD_TYPE STREQUAL "Release")
-    set(MROVER_CPP_COMPILE_OPTIONS -Wall -Wextra -Werror -pedantic)
+set(MROVER_CPP_COMPILE_OPTIONS -Wall -Wextra -pedantic)
+if (MROVER_CI)
+    list(APPEND MROVER_CPP_COMPILE_OPTIONS -Werror)
 endif ()
 
 option(MROVER_BUILD_SIM "Build the simulator" ON)
@@ -114,7 +115,7 @@ mrover_add_library(lie src/util/lie/*.cpp src/util/lie)
 
 ## ESW
 
-mrover_add_header_only_library(moteus src/esw/mjbots)
+mrover_add_vendor_header_only_library(moteus src/esw/mjbots)
 mrover_add_header_only_library(can_device src/esw/can_device)
 mrover_add_library(motor_library src/esw/motor_library/*.cpp src/esw/motor_library)
 target_link_libraries(motor_library PUBLIC can_device moteus)

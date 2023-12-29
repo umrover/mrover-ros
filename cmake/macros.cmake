@@ -25,6 +25,11 @@ macro(mrover_add_header_only_library name includes)
     target_include_directories(${name} INTERFACE ${includes})
 endmacro()
 
+macro(mrover_add_vendor_header_only_library name includes)
+    add_library(${name} INTERFACE)
+    target_include_directories(${name} SYSTEM INTERFACE ${includes})
+endmacro()
+
 macro(mrover_add_node name sources)
     file(GLOB_RECURSE NODE_SOURCES CONFIGURE_DEPENDS ${sources})
     add_executable(${name} ${NODE_SOURCES})
