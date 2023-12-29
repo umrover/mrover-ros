@@ -8,6 +8,8 @@ uniform ivec2 resolution;
 uniform layout(binding = 0) sampler2D rgbImage;
 uniform layout(binding = 1) sampler2D depthImage;
 
+// An array of points is eventually copied to CPU memory
+// As such it must follow the layout defined in "point.hpp"
 struct Point {
     float x, y, z;
     float rgb; // 3 rgb bytes packed into a float

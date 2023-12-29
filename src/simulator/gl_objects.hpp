@@ -135,6 +135,7 @@ namespace mrover {
 
             // See: https://learnopengl.com/Getting-started/Textures
 
+            // OpenCV's (0, 0) is in the top-left, but OpenGL's is bottom-left
             flip(data, data, 0);
 
             glGenTextures(1, &handle);
