@@ -99,7 +99,7 @@ class SearchState(State):
                 self.SPIRAL_COVERAGE_RADIUS,
                 self.DISTANCE_BETWEEN_SPIRALS,
                 self.SEGMENTS_PER_ROTATION,
-                search_center.fiducial_id,
+                search_center.tag_id,
             )
             self.prev_target = None
 

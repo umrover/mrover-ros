@@ -52,6 +52,12 @@ namespace mrover {
                         if (key == mTogglePhysicsKey) {
                             mEnablePhysics = !mEnablePhysics;
                         }
+                        if (key == mToggleRenderModelsKey) {
+                            mRenderModels = !mRenderModels;
+                        }
+                        if (key == mToggleRenderWireframeCollidersKey) {
+                            mRenderWireframeColliders = !mRenderWireframeColliders;
+                        }
                         if (key == mInGuiKey) {
                             mInGui = !mInGui;
                             SDL_GetRelativeMouseState(nullptr, nullptr);

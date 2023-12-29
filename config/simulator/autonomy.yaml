@@ -8,8 +8,8 @@ objects:
   - type: urdf
     name: tag_0
     uri: package://mrover/urdf/world/tag_0.urdf.xacro
-    translation: [ 0, 2.5, 1 ]
+    translation: [ -3, -3, 0.7 ]
   - type: urdf
     name: tag_1
     uri: package://mrover/urdf/world/tag_1.urdf.xacro
-    translation: [ 0, -2.5, 1 ]
+    translation: [ 10, -10, 1.2 ]

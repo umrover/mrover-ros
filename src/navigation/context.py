@@ -100,7 +100,7 @@ class Environment:
             print("CURRENT WAYPOINT IS NONE")
             return None
 
-        return self.get_fid_pos(current_waypoint.fiducial_id, in_odom)
+        return self.get_fid_pos(current_waypoint.tag_id, in_odom)
 
 
 @dataclass
@@ -173,10 +173,10 @@ def convert_gps_to_cartesian(waypoint: GPSWaypoint) -> Tuple[Waypoint, SE3]:
     )
     # zero the z-coordinate of the odom because even though the altitudes are set to zero,
     # two points on a sphere are not going to have the same z coordinate
-    # navigation algorithmns currently require all coordinates to have zero as the z coordinate
+    # navigation algorithms currently require all coordinates to have zero as the z coordinate
     odom[2] = 0
 
-    return Waypoint(fiducial_id=waypoint.id, tf_id=f"course{waypoint.id}", type=waypoint.type), SE3(position=odom)
+    return Waypoint(tag_id=waypoint.tag_id, tf_id=f"course{waypoint.tag_id}", type=waypoint.type), SE3(position=odom)
 
 
 def convert_cartesian_to_gps(coordinate: np.ndarray) -> GPSWaypoint:

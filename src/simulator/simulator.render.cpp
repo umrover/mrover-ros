@@ -252,6 +252,13 @@ namespace mrover {
         ImGui::SliderFloat("Target FPS", &mTargetUpdateRate, 5.0f, 1000.0f);
         ImGui::SliderFloat("Rover Linear Speed", &mRoverLinearSpeed, 0.01f, 10.0f);
         ImGui::SliderFloat("Rover Angular Speed", &mRoverAngularSpeed, 0.01f, 10.0f);
+        if (auto it = mLinkNameToRigidBody.find("rover#base_link"); it != mLinkNameToRigidBody.end()) {
+            btTransform const& baseLinkInMap = it->second->getWorldTransform();
+            btVector3 const& p = baseLinkInMap.getOrigin();
+            btQuaternion const& q = baseLinkInMap.getRotation();
+            ImGui::Text("Rover Position: (%.2f, %.2f, %.2f)", p.x(), p.y(), p.z());
+            ImGui::Text("Rover Orientation: (%.2f, %.2f, %.2f, %.2f)", q.w(), q.x(), q.y(), q.z());
+        }
         ImGui::SliderFloat("Fly Speed", &mFlySpeed, 0.01f, 10.0f);
         ImGui::SliderFloat("Look Sense", &mLookSense, 0.0001f, 0.01f);
         ImGui::SliderFloat("FOV", &mFov, 10.0f, 120.0f);
