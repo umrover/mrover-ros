@@ -43,7 +43,7 @@ void main() {
     vec4 pointInCamera = clipToCamera * pointInClip;
     pointInCamera /= pointInCamera.w;
 
-    int flatIndex = pixel.y * resolution.x + pixel.x;
+    int flatIndex = (resolution.y - pixel.y) * resolution.x + pixel.x;
     cloud.points[flatIndex] = Point(
         pointInCamera.x,
         pointInCamera.y,
