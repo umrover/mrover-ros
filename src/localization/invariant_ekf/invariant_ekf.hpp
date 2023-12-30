@@ -12,19 +12,19 @@ public:
     InvariantEKF(const InvariantEKF&) = delete;
     InvariantEKF& operator=(const InvariantEKF&) = delete;
 
-    void predict(SE_2_3Tangentd const& u, double dt);
+    void predict(const Vector3d& accel, const Vector3d& gyro, double dt);
 
-    void update_gps(Eigen::Vector3d const& z, Matrix3d const& R_gps);
-    void update_gps(Eigen::Vector3d const& z);
+    void update_gps(const Vector3d& z, const Matrix3d& R_gps);
+    void update_gps(const Vector3d& z);
 
-    void update_accel(Eigen::Vector3d const& z, Matrix3d const& R_accel);
-    void update_accel(Eigen::Vector3d const& z);
+    void update_accel(const Vector3d& z, const Matrix3d& R_accel);
+    void update_accel(const Vector3d& z);
 
-    void update_mag(Eigen::Vector3d const& z, Matrix3d const& R_mag);
-    void update_mag(Eigen::Vector3d const& z);
+    void update_mag(const Vector3d& z, const Matrix3d& R_mag);
+    void update_mag(const Vector3d& z);
 
-    [[nodiscard]] SE_2_3d const& get_state() const;
-    [[nodiscard]] Matrix9d const& get_covariance() const;
+    [[nodiscard]] const SE_2_3d& get_state() const;
+    [[nodiscard]] const Matrix9d& get_covariance() const;
 
 private:
     SE_2_3d mX;

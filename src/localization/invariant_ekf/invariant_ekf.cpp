@@ -7,45 +7,36 @@
 InvariantEKF::InvariantEKF(const SE_2_3d& x0, const Matrix9d& P0, const Matrix9d& Q, const Matrix3d& R_gps_default, const Matrix3d& R_accel_default, const Matrix3d& R_mag_default)
     : mX(x0), mP(P0), mQ(Q), mR_gps(R_gps_default), mR_accel(R_accel_default), mR_mag(R_mag_default) {}
 
-void InvariantEKF::predict(SE_2_3Tangentd const& u, double dt) {
-    //use kinematic equations to predict pose based on accel and gyro
+void InvariantEKF::predict(const Vector3d& accel, const Vector3d& gyro, double dt) {
+    // subtract gravity vector from measured acceleration
+    constexpr Eigen::Vector3d g(0, 0, -9.81);
+    Matrix3d R = mX.rotation();
+    Vector3d accel_body = accel + R.transpose() * g;
 
-    //idk if intended to directly apply the u passed in but writing the formula out
-    Eigen::Vector3d g(0, 0, -9.81);
-    Matrix3d R = mX.rotation(); //rotation matrix
+    // use kinematics to compute increments to each state component
+    Vector3d delta_pos = (R.transpose() * mX.linearVelocity() * dt) + (0.5 * accel_body * dt * dt);
+    Vector3d delta_rot = gyro * dt;
+    Vector3d delta_v = accel_body * dt;
 
-    Vector3d lin_acc = u.lin2();
-    Vector3d ang_vel = u.ang();
+    SE_2_3Tangentd u;
+    manif::SE_2_3d::Jacobian F, J_x_x, J_x_u, J_u_x;
 
-    Vector3d acc_adj = lin_acc + R.transpose() * g;
+    // increment state with right plus operation and compute jacobians
+    u << delta_pos, delta_rot, delta_v;
+    mX = mX.rplus(u, J_x_x, J_x_u);
 
-    Vector3d delta_pos = (R.transpose() * mX.linearVelocity() * dt) + (0.5 * acc_adj * dt * dt);
-    Vector3d delta_rot = ang_vel * dt;
-    Vector3d delta_v = acc_adj * dt;
-
-    SE_2_3Tangentd u_est;
-    u_est << delta_pos, delta_rot, delta_v;
-
-    manif::SE_2_3d::Jacobian F;
-    manif::SE_2_3d::Jacobian J_x_x;
-    manif::SE_2_3d::Jacobian J_x_u;
-    manif::SE_2_3d::Jacobian J_u_x;
-
-    mX = mX.plus(u_est, J_x_x, J_x_u);
-
-    //don't understand J_u_x
-    F = J_x_x + (J_x_u * J_u_x); //from example
-    //does Q stay the same throughout? Sola paper uses jacobians here and the other says Q = Cov(wn), same thing?
-    mP = F * mP * F.transpose() + mQ;
+    // TODO: where does this come from? chain rule + Ax + Bu?
+    F = J_x_x + J_x_u * J_u_x;
+    mP = F * mP * F.transpose() + J_x_u * mQ * J_x_u.transpose();
 }
 
 void InvariantEKF::update_gps(Eigen::Vector3d const& z, Matrix3d const& R_gps) {
     //Yk = h_x + noise
-    Vector3d Yk; //gps reading
+    Vector3d Yk;                     //gps reading
     Vector3d h_x = mX.translation(); //what is the jacobian of this
 
     auto test = mX.rotation(); //rotation matrix
-    test = test.inverse(); //inverse of matrix
+    test = test.inverse();     //inverse of matrix
 
     Eigen::Vector3d b(0, 0, 0);
     b = b * test; //rotate vector by the inverse
@@ -54,7 +45,7 @@ void InvariantEKF::update_gps(Eigen::Vector3d const& z, Matrix3d const& R_gps) {
 
     //this gives correct jacobian? does the velocity mess it up? rotation gets cancelled out so left with translation
     //this seems like a stupid way to get the jacobian
-    Vector3d e = mX.act(b, J_h_x); 
+    Vector3d e = mX.act(b, J_h_x);
 
     auto H = J_h_x;
 
@@ -72,7 +63,6 @@ void InvariantEKF::update_gps(Eigen::Vector3d const& z, Matrix3d const& R_gps) {
 
     //cov update
     mP = mP - K_n * S_n * K_n.transpose();
-
 }
 
 void InvariantEKF::update_gps(Eigen::Vector3d const& z) {
