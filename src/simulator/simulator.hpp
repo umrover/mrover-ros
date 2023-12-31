@@ -169,9 +169,13 @@ namespace mrover {
         std::unordered_map<std::string, btGeneric6DofSpring2Constraint*> mJointNameToSpringHinges;
         std::unordered_map<btBvhTriangleMeshShape*, std::string> mMeshToUri;
 
+        struct SaveData {
+            std::vector<std::tuple<std::string, btTransform, btVector3, btVector3>> links;
+        };
+
         int mSelection = 0;
         PeriodicTask mSaveTask{2};
-        boost::circular_buffer<btTransform> mBaseLinkHistory{4096};
+        boost::circular_buffer<SaveData> mBaseLinkHistory{4096};
 
         template<typename T, typename... Args>
         auto makeBulletObject(auto& vector, Args&&... args) -> T* {

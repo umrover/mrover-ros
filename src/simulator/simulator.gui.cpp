@@ -4,7 +4,14 @@ namespace mrover {
 
     auto SimulatorNodelet::guiUpdate() -> void {
         if (mSaveTask.shouldUpdate() && mEnablePhysics) {
-            mBaseLinkHistory.push_back(mLinkNameToRigidBody.at("rover#base_link")->getWorldTransform());
+            SaveData save;
+            for (auto const& [link_name, rb]: mLinkNameToRigidBody) {
+                if (!link_name.starts_with("rover")) continue;
+
+                save.links.emplace_back(link_name, rb->getWorldTransform(), rb->getLinearVelocity(), rb->getAngularVelocity());
+            }
+
+            mBaseLinkHistory.push_back(std::move(save));
         }
 
         ImGui_ImplOpenGL3_NewFrame();
@@ -15,7 +22,14 @@ namespace mrover {
             mSelection = static_cast<int>(mBaseLinkHistory.size()) - 1;
         } else {
             ImGui::SliderInt("Selection", &mSelection, 0, static_cast<int>(mBaseLinkHistory.size()) - 1);
-            mLinkNameToRigidBody.at("rover#base_link")->setWorldTransform(mBaseLinkHistory.at(mSelection));
+
+            for (SaveData const& data = mBaseLinkHistory.at(mSelection); auto const& [link_name, t, lv, av]: data.links) {
+                btRigidBody* rb = mLinkNameToRigidBody.at(link_name);
+                rb->getMotionState()->setWorldTransform(t);
+                rb->setWorldTransform(t);
+                rb->setLinearVelocity(lv);
+                rb->setAngularVelocity(av);
+            }
         }
 
         // Draw fps text
