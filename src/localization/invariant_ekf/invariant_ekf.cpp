@@ -9,7 +9,8 @@ InvariantEKF::InvariantEKF(const SE_2_3d& x0, const Matrix9d& P0, const Matrix9d
 
 void InvariantEKF::predict(const Vector3d& accel, const Vector3d& gyro, double dt) {
     // subtract gravity vector from measured acceleration
-    constexpr Eigen::Vector3d g(0, 0, -9.81);
+    // TODO: make static member variable?
+    const Eigen::Vector3d g(0, 0, -9.81);
     Matrix3d R = mX.rotation();
     Vector3d accel_body = accel + R.transpose() * g;
 

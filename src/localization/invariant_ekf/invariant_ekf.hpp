@@ -9,7 +9,7 @@ class InvariantEKF {
 public:
     InvariantEKF(const SE_2_3d& x0, const Matrix9d& P0, const Matrix9d& Q, const Matrix3d& R_gps_default, const Matrix3d& R_accel_default, const Matrix3d& R_mag_default);
 
-    InvariantEKF(const InvariantEKF&) = delete;
+    InvariantEKF(const InvariantEKF&) = default;
     InvariantEKF& operator=(const InvariantEKF&) = delete;
 
     void predict(const Vector3d& accel, const Vector3d& gyro, double dt);
