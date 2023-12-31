@@ -59,13 +59,30 @@ namespace mrover {
         auto makeCameraForLink(SimulatorNodelet& simulator, urdf::LinkConstSharedPtr const& link) -> Camera;
     };
 
+    struct PeriodicTask {
+        Clock::duration period;
+        Clock::time_point lastUpdate = Clock::now();
+
+        explicit PeriodicTask(Clock::duration period) : period{period} {}
+
+        explicit PeriodicTask(float rate) : PeriodicTask{std::chrono::duration_cast<Clock::duration>(std::chrono::duration<float>{1.0f / rate})} {}
+
+        [[nodiscard]] auto shouldUpdate() -> bool {
+            if (Clock::time_point now = Clock::now(); now - lastUpdate > period) {
+                lastUpdate = now;
+                return true;
+            }
+
+            return false;
+        }
+    };
+
     struct Camera {
         std::string linkName;
         cv::Size2i resolution;
-        float rate;
+        PeriodicTask updateTask;
         ros::Publisher pcPub;
 
-        Clock::time_point lastUpdate = Clock::now();
         GLuint framebufferHandle = GL_INVALID_HANDLE;
         GLuint colorTextureHandle = GL_INVALID_HANDLE;
         GLuint depthTextureHandle = GL_INVALID_HANDLE;
@@ -151,6 +168,10 @@ namespace mrover {
         std::unordered_map<std::string, btHingeConstraint*> mJointNameToHinges;
         std::unordered_map<std::string, btGeneric6DofSpring2Constraint*> mJointNameToSpringHinges;
         std::unordered_map<btBvhTriangleMeshShape*, std::string> mMeshToUri;
+
+        int mSelection = 0;
+        PeriodicTask mSaveTask{2};
+        boost::circular_buffer<btTransform> mBaseLinkHistory{4096};
 
         template<typename T, typename... Args>
         auto makeBulletObject(auto& vector, Args&&... args) -> T* {

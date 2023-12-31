@@ -15,6 +15,7 @@
 
 #include <boost_cpp23_workaround.hpp>
 
+#include <boost/circular_buffer.hpp>
 #include <boost/container/static_vector.hpp>
 #include <boost/process.hpp>
 

@@ -6,7 +6,7 @@ namespace mrover {
         Camera camera{
                 SimulatorNodelet::globalName(name, link->name),
                 {640, 480},
-                10,
+                PeriodicTask{10},
                 simulator.mNh.advertise<sensor_msgs::PointCloud2>("camera/left/points", 1),
         };
 

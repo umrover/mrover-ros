@@ -39,14 +39,14 @@ public:
             size_t threadId = std::hash<std::thread::id>{}(std::this_thread::get_id());
             auto averageLoopMs = std::chrono::duration_cast<DisplayUnits>(averageLoopDuration);
             int hz = averageLoopMs.count() ? DisplayUnits::period::den / averageLoopMs.count() : -1;
-            ROS_INFO_STREAM("[" << mName << "] [" << threadId << "] Total: "
+            ROS_DEBUG_STREAM("[" << mName << "] [" << threadId << "] Total: "
                                  << averageLoopMs.count() << "ms"
                                  << " (" << hz << " Hz)");
             // Print update times for each loop event
             for (auto& [name, durations]: mEventReadings) {
                 Clock::duration averageEventDuration = std::accumulate(durations.begin(), durations.end(), Clock::duration{}) / durations.size();
                 auto averageEventMs = std::chrono::duration_cast<DisplayUnits>(averageEventDuration);
-                ROS_INFO_STREAM("\t" << name << ": " << averageEventMs.count() << "ms");
+                ROS_DEBUG_STREAM("\t" << name << ": " << averageEventMs.count() << "ms");
                 durations.clear();
             }
         }

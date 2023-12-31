@@ -20,9 +20,7 @@ namespace mrover {
             renderModels(true);
 
             if (camera.pcPub.getNumSubscribers() == 0) return;
-
-            if (Clock::now() - camera.lastUpdate < std::chrono::duration_cast<Clock::duration>(std::chrono::duration<float>{1.0f / camera.rate})) return;
-            camera.lastUpdate = Clock::now();
+            if (!camera.updateTask.shouldUpdate()) return;
 
             auto pointCloud = boost::make_shared<sensor_msgs::PointCloud2>();
             pointCloud->is_bigendian = __BYTE_ORDER__ == __ORDER_BIG_ENDIAN__;
