@@ -6,6 +6,9 @@ namespace mrover {
         mNh = getNodeHandle();
         mPnh = getMTPrivateNodeHandle();
 
+        mSaveTask = PeriodicTask{mPnh.param<float>("save_rate", 5)};
+        mSaveHistory = boost::circular_buffer<SaveData>{static_cast<std::size_t>(mPnh.param<int>("save_history", 4096))};
+
         // for (std::string channel: {"/can/back_left/out", "/can/back_right/out", "/can/middle_left/out", "/can/middle_right/out", "/can/front_left/out", "/can/front_right/out"}) {
         //     mCanSubs.emplace_back(mNh.subscribe<CAN>(channel, 1, [this, channel](CAN::ConstPtr const& msg) { canCallback(*msg, channel); }));
         // }

@@ -60,8 +60,10 @@ namespace mrover {
     };
 
     struct PeriodicTask {
-        Clock::duration period;
+        Clock::duration period{};
         Clock::time_point lastUpdate = Clock::now();
+
+        PeriodicTask() = default;
 
         explicit PeriodicTask(Clock::duration period) : period{period} {}
 
@@ -170,12 +172,19 @@ namespace mrover {
         std::unordered_map<btBvhTriangleMeshShape*, std::string> mMeshToUri;
 
         struct SaveData {
-            std::vector<std::tuple<std::string, btTransform, btVector3, btVector3>> links;
+            struct RbData {
+                std::string link;
+                btTransform transform;
+                btVector3 linearVelocity;
+                btVector3 angularVelocity;
+            };
+
+            std::vector<RbData> links;
         };
 
         int mSelection = 0;
-        PeriodicTask mSaveTask{2};
-        boost::circular_buffer<SaveData> mBaseLinkHistory{4096};
+        PeriodicTask mSaveTask;
+        boost::circular_buffer<SaveData> mSaveHistory;
 
         template<typename T, typename... Args>
         auto makeBulletObject(auto& vector, Args&&... args) -> T* {

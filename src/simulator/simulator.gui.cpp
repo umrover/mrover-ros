@@ -11,7 +11,7 @@ namespace mrover {
                 save.links.emplace_back(link_name, rb->getWorldTransform(), rb->getLinearVelocity(), rb->getAngularVelocity());
             }
 
-            mBaseLinkHistory.push_back(std::move(save));
+            mSaveHistory.push_back(std::move(save));
         }
 
         ImGui_ImplOpenGL3_NewFrame();
@@ -19,17 +19,25 @@ namespace mrover {
         ImGui::NewFrame();
 
         if (mEnablePhysics) {
-            mSelection = static_cast<int>(mBaseLinkHistory.size()) - 1;
+            mSelection = static_cast<int>(mSaveHistory.size()) - 1;
         } else {
-            ImGui::SliderInt("Selection", &mSelection, 0, static_cast<int>(mBaseLinkHistory.size()) - 1);
+            ImGui::Begin("History", nullptr, ImGuiWindowFlags_NoTitleBar);
 
-            for (SaveData const& data = mBaseLinkHistory.at(mSelection); auto const& [link_name, t, lv, av]: data.links) {
+            ImGui::SliderInt("History", &mSelection, 0, static_cast<int>(mSaveHistory.size()) - 1, "");
+            std::size_t inverse = mSaveHistory.size() - 1 - static_cast<std::size_t>(mSelection);
+            ImGui::SameLine();
+            ImGui::Text("-%zu", inverse);
+
+            for (SaveData const& data = mSaveHistory.at(mSelection);
+                 auto const& [link_name, transform, linearVelocity, angularVelocity]: data.links) {
                 btRigidBody* rb = mLinkNameToRigidBody.at(link_name);
-                rb->getMotionState()->setWorldTransform(t);
-                rb->setWorldTransform(t);
-                rb->setLinearVelocity(lv);
-                rb->setAngularVelocity(av);
+                rb->getMotionState()->setWorldTransform(transform);
+                rb->setWorldTransform(transform);
+                rb->setLinearVelocity(linearVelocity);
+                rb->setAngularVelocity(angularVelocity);
             }
+
+            ImGui::End();
         }
 
         // Draw fps text
@@ -42,6 +50,8 @@ namespace mrover {
             ImGui::SliderFloat("Look Sense", &mLookSense, 0.0001f, 0.01f);
             ImGui::SliderFloat("FOV", &mFov, 10.0f, 120.0f);
             ImGui::InputFloat3("Gravity", mGravityAcceleration.m_floats);
+            ImGui::SliderFloat("Rover Linear Speed", &mRoverLinearSpeed, 0.01f, 10.0f);
+            ImGui::SliderFloat("Rover Angular Speed", &mRoverAngularSpeed, 0.01f, 10.0f);
             ImGui::Checkbox("Enable Physics (P)", &mEnablePhysics);
             ImGui::Checkbox("Render Models (M)", &mRenderModels);
             ImGui::Checkbox("Render Wireframe Colliders (C)", &mRenderWireframeColliders);
@@ -54,8 +64,6 @@ namespace mrover {
             ImGui::Begin("Telemtry", nullptr);
 
             ImGui::Text("FPS: %.1f", ImGui::GetIO().Framerate);
-            ImGui::SliderFloat("Rover Linear Speed", &mRoverLinearSpeed, 0.01f, 10.0f);
-            ImGui::SliderFloat("Rover Angular Speed", &mRoverAngularSpeed, 0.01f, 10.0f);
             if (auto it = mLinkNameToRigidBody.find("rover#base_link"); it != mLinkNameToRigidBody.end()) {
                 btTransform const& baseLinkInMap = it->second->getWorldTransform();
                 btVector3 const& p = baseLinkInMap.getOrigin();
