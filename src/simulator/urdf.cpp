@@ -99,9 +99,6 @@ namespace mrover {
             case 0:
                 finalShape = simulator.makeBulletObject<btEmptyShape>(simulator.mCollisionShapes);
                 break;
-            case 1:
-                finalShape = shapes.front().first;
-                break;
             default:
                 auto* compoundShape = simulator.makeBulletObject<btCompoundShape>(simulator.mCollisionShapes);
                 for (auto const& [shape, transform]: shapes) {

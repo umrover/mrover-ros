@@ -88,6 +88,16 @@ namespace mrover {
             SDL_SetRelativeMouseMode(mInGui ? SDL_FALSE : SDL_TRUE);
             mLoopProfiler.measureEvent("SDL Events");
 
+            for (auto const& name: {"rover#arm_b_link_to_arm_c_link", "rover#arm_c_link_to_arm_d_link", "rover#arm_d_link_to_arm_e_link"}) {
+                auto it = mJointNameToHinges.find(name);
+                if (it == mJointNameToHinges.end()) continue;
+
+                btHingeConstraint* hinge = it->second;
+                hinge->enableMotor(true);
+                hinge->setMaxMotorImpulse(50.0);
+                hinge->setMotorTarget(0.0, 1.0f / ImGui::GetIO().Framerate);
+            }
+
             userControls(dt);
             mLoopProfiler.measureEvent("Controls");
 

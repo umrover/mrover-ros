@@ -45,7 +45,16 @@
 
   <!-- Joints/Links Macros -->
 
-  <xacro:macro name="arm_link" params="name m x y z">
+  <xacro:macro name="arm_link" params="name m x y z dz:=0">
+<!--    <link name="arm_${name}_axle_link">-->
+<!--      <xacro:cylinder_inertia m="${m}" r="0.05" h="0.075"/>-->
+<!--      <collision>-->
+<!--        <geometry>-->
+<!--          <cylinder length="0.075" radius="0.05"/>-->
+<!--        </geometry>-->
+<!--      </collision>-->
+<!--    </link>-->
+
     <link name="arm_${name}_link">
       <xacro:box_inertia m="${m}" d="${y}" w="${x}" h="${z}"/>
       <visual>
@@ -54,8 +63,9 @@
         </geometry>
       </visual>
       <collision>
+        <origin xyz="${x / 2} 0 ${dz}"/>
         <geometry>
-          <box size="${x} ${y} ${z}"/>
+          <box size="${x * 0.85} ${y} ${z}"/>
         </geometry>
       </collision>
     </link>
@@ -215,9 +225,9 @@
 
   <xacro:arm_link name="a" m="2" x="0.1" y="0.1" z="0.1"/>
   <xacro:arm_link name="b" m="2" x="0.58" y="0.04" z="0.04"/>
-  <xacro:arm_link name="c" m="2" x="0.61" y="0.04" z="0.04"/>
+  <xacro:arm_link name="c" m="2" x="0.61" y="0.04" z="0.04" dz="0.1"/>
   <xacro:arm_link name="d" m="2" x="0.065" y="0.15" z="0.065"/>
-  <xacro:arm_link name="e" m="2" x="0.172" y="0.155" z="0.145"/>
+  <xacro:arm_link name="e" m="2" x="0.172" y="0.155" z="0.032"/>
 
   <joint name="chassis_link_to_arm_a_link" type="fixed">
     <origin xyz="0.164882 0.200235 0.051497"/>
