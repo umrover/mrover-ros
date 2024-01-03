@@ -220,6 +220,23 @@ namespace mrover {
                         }
                         break;
                     }
+                    case urdf::Joint::PRISMATIC: {
+                        ROS_INFO_STREAM(std::format("Prismatic joint {}: {} <-> {}", parentJoint->name, parentJoint->parent_link_name, parentJoint->child_link_name));
+                        // btVector3 axisInJoint = urdfPosToBtPos(parentJoint->axis);
+                        auto constraintTransform = btTransform::getIdentity();
+                        // constraintTransform.setOrigin(axisInJoint);
+                        auto* constraint = simulator.makeBulletObject<btSliderConstraint>(simulator.mConstraints, *parentLinkRb, *linkRb, jointInParent, constraintTransform, true);
+                        constraint->setLowerLinLimit(static_cast<btScalar>(parentJoint->limits->lower));
+                        constraint->setUpperLinLimit(static_cast<btScalar>(parentJoint->limits->upper));
+                        constraint->setLowerAngLimit(0.0f);
+                        constraint->setUpperAngLimit(0.0f);
+                        // constraint->setPoweredLinMotor(true);
+                        // constraint->setMaxLinMotorForce(1000);
+                        // constraint->setTargetLinMotorVelocity(0);
+                        simulator.mJointNameToSliders.emplace(SimulatorNodelet::globalName(name, parentJoint->name), constraint);
+                        simulator.mDynamicsWorld->addConstraint(constraint, true);
+                        break;
+                    }
                     default:
                         throw std::invalid_argument{"Unsupported joint type"};
                 }

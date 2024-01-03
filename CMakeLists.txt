@@ -44,7 +44,6 @@ set(MROVER_MESSAGE_DEPENDENCIES
 
 set(MROVER_PARAMETERS
         config/DetectorParams.cfg
-        config/simulator/SimulatorParams.cfg
 )
 
 set(MROVER_CMAKE_INCLUDES

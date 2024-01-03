@@ -18,6 +18,7 @@
 #include <boost/circular_buffer.hpp>
 #include <boost/container/static_vector.hpp>
 #include <boost/process.hpp>
+#include <boost/range/combine.hpp>
 
 #include <geometry_msgs/PoseWithCovarianceStamped.h>
 #include <geometry_msgs/TwistStamped.h>
@@ -66,5 +67,4 @@
 #include <units.hpp>
 // #include <messaging.hpp>
 
-#include <mrover/CAN.h>
-#include <mrover/SimulatorParamsConfig.h>
+#include <mrover/Position.h>

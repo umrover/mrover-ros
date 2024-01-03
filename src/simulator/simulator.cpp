@@ -13,6 +13,7 @@ namespace mrover {
         //     mCanSubs.emplace_back(mNh.subscribe<CAN>(channel, 1, [this, channel](CAN::ConstPtr const& msg) { canCallback(*msg, channel); }));
         // }
         mTwistSub = mNh.subscribe<geometry_msgs::Twist>("/cmd_vel", 1, &SimulatorNodelet::twistCallback, this);
+        mJointPositionsSub = mNh.subscribe<Position>("/joint_positions", 1, &SimulatorNodelet::jointPositiionsCallback, this);
 
         mPosePub = mNh.advertise<geometry_msgs::PoseWithCovarianceStamped>("/linearized_pose", 1);
 
@@ -30,8 +31,6 @@ namespace mrover {
         initRender();
 
         parseParams();
-
-        twistCallback(boost::make_shared<geometry_msgs::Twist const>());
 
         for (Clock::duration dt{}; ros::ok();) {
             Clock::time_point beginTime = Clock::now();

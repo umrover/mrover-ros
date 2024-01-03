@@ -133,7 +133,7 @@ namespace mrover {
 
         ros::NodeHandle mNh, mPnh;
 
-        ros::Subscriber mTwistSub;
+        ros::Subscriber mTwistSub, mJointPositionsSub;
 
         ros::Publisher mPosePub;
 
@@ -168,6 +168,7 @@ namespace mrover {
 
         std::unordered_map<std::string, btRigidBody*> mLinkNameToRigidBody;
         std::unordered_map<std::string, btHingeConstraint*> mJointNameToHinges;
+        std::unordered_map<std::string, btSliderConstraint*> mJointNameToSliders;
         std::unordered_map<std::string, btGeneric6DofSpring2Constraint*> mJointNameToSpringHinges;
         std::unordered_map<btBvhTriangleMeshShape*, std::string> mMeshToUri;
 
@@ -253,6 +254,8 @@ namespace mrover {
         auto physicsUpdate(Clock::duration dt) -> void;
 
         auto twistCallback(geometry_msgs::Twist::ConstPtr const& twist) -> void;
+
+        auto jointPositiionsCallback(Position::ConstPtr const& positions) -> void;
     };
 
     auto uriToPath(std::string_view uri) -> std::filesystem::path;

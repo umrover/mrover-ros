@@ -28,9 +28,24 @@ namespace mrover {
             if (it == mJointNameToSpringHinges.end()) continue;
 
             btGeneric6DofSpring2Constraint* hinge = it->second;
-            hinge->enableMotor(5, true);
-            hinge->setMaxMotorForce(5, MAX_MOTOR_TORQUE);
-            hinge->setTargetVelocity(5, name.contains("left"sv) ? left.get() : right.get());
+            constexpr int Y_AXIS_INDEX = 3 + 2;
+            hinge->enableMotor(Y_AXIS_INDEX, true);
+            hinge->setMaxMotorForce(Y_AXIS_INDEX, MAX_MOTOR_TORQUE);
+            hinge->setTargetVelocity(Y_AXIS_INDEX, name.contains("left"sv) ? left.get() : right.get());
+        }
+    }
+
+    auto SimulatorNodelet::jointPositiionsCallback(Position::ConstPtr const& positions) -> void {
+        for (auto const& combined: boost::combine(positions->names, positions->positions)) {
+            std::string name = std::format("rover#{}", combined.get<0>());
+
+            auto it = mJointNameToHinges.find(name);
+            if (it == mJointNameToHinges.end()) continue;
+
+            btHingeConstraint* hinge = it->second;
+            hinge->enableMotor(true);
+            hinge->setMaxMotorImpulse(1.0);
+            hinge->setMotorTarget(combined.get<1>(), 1.0f / ImGui::GetIO().Framerate);
         }
     }
 
