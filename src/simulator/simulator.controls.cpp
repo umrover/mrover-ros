@@ -16,37 +16,43 @@ namespace mrover {
         RadiansPerSecond left = forward * WHEEL_LINEAR_TO_ANGULAR - delta;
         RadiansPerSecond right = forward * WHEEL_LINEAR_TO_ANGULAR + delta;
 
-        for (std::string const& name: {
-                     "rover#left_bogie_link_to_front_left_axle_link",
-                     "rover#left_bogie_link_to_center_left_axle_link",
-                     "rover#left_rocker_link_to_back_left_axle_link",
-                     "rover#right_bogie_link_to_front_right_axle_link",
-                     "rover#right_bogie_link_to_center_right_axle_link",
-                     "rover#right_rocker_link_to_back_right_axle_link",
-             }) {
-            auto it = mJointNameToSpringHinges.find(name);
-            if (it == mJointNameToSpringHinges.end()) continue;
+        if (auto it = mUrdfs.find("rover"); it != mUrdfs.end()) {
+            URDF const& rover = it->second;
 
-            btGeneric6DofSpring2Constraint* hinge = it->second;
-            constexpr int Y_AXIS_INDEX = 3 + 2;
-            hinge->enableMotor(Y_AXIS_INDEX, true);
-            hinge->setMaxMotorForce(Y_AXIS_INDEX, MAX_MOTOR_TORQUE);
-            hinge->setTargetVelocity(Y_AXIS_INDEX, name.contains("left"sv) ? left.get() : right.get());
+            // TODO(quintin): motor
         }
+        // for (std::string const& name: {
+        //              "rover#left_bogie_link_to_front_left_axle_link",
+        //              "rover#left_bogie_link_to_center_left_axle_link",
+        //              "rover#left_rocker_link_to_back_left_axle_link",
+        //              "rover#right_bogie_link_to_front_right_axle_link",
+        //              "rover#right_bogie_link_to_center_right_axle_link",
+        //              "rover#right_rocker_link_to_back_right_axle_link",
+        //      }) {
+        //     auto it = mJointNameToSpringHinges.find(name);
+        //     if (it == mJointNameToSpringHinges.end()) continue;
+        //
+        //     btGeneric6DofSpring2Constraint* hinge = it->second;
+        //     constexpr int Y_AXIS_INDEX = 3 + 2;
+        //     hinge->enableMotor(Y_AXIS_INDEX, true);
+        //     hinge->setMaxMotorForce(Y_AXIS_INDEX, MAX_MOTOR_TORQUE);
+        //     hinge->setTargetVelocity(Y_AXIS_INDEX, name.contains("left"sv) ? left.get() : right.get());
+        // }
     }
 
     auto SimulatorNodelet::jointPositiionsCallback(Position::ConstPtr const& positions) -> void {
-        for (auto const& combined: boost::combine(positions->names, positions->positions)) {
-            std::string name = std::format("rover#{}", combined.get<0>());
-
-            auto it = mJointNameToHinges.find(name);
-            if (it == mJointNameToHinges.end()) continue;
-
-            btHingeConstraint* hinge = it->second;
-            hinge->enableMotor(true);
-            hinge->setMaxMotorImpulse(1.0);
-            hinge->setMotorTarget(combined.get<1>(), 1.0f / ImGui::GetIO().Framerate);
-        }
+        // TODO(quintin): motor
+        // for (auto const& combined: boost::combine(positions->names, positions->positions)) {
+        //     std::string name = std::format("rover#{}", combined.get<0>());
+        //
+        //     auto it = mJointNameToHinges.find(name);
+        //     if (it == mJointNameToHinges.end()) continue;
+        //
+        //     btHingeConstraint* hinge = it->second;
+        //     hinge->enableMotor(true);
+        //     hinge->setMaxMotorImpulse(1.0);
+        //     hinge->setMotorTarget(combined.get<1>(), 1.0f / ImGui::GetIO().Framerate);
+        // }
     }
 
     auto SimulatorNodelet::freeLook(Clock::duration dt, Uint8 const* keys) -> void {

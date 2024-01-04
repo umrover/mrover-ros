@@ -51,12 +51,14 @@ namespace mrover {
     struct URDF {
         std::string name;
         urdf::Model model;
+        btMultiBody* physics = nullptr;
+        std::unordered_map<std::string, int> linkNameToIndex;
 
         URDF(SimulatorNodelet& simulator, XmlRpc::XmlRpcValue const& init);
 
-        auto makeColliderForLink(SimulatorNodelet& simulator, urdf::LinkConstSharedPtr const& link) -> btCollisionShape*;
+        auto makeCollisionShapeForLink(SimulatorNodelet& simulator, urdf::LinkConstSharedPtr const& link) -> btCollisionShape*;
 
-        auto makeCameraForLink(SimulatorNodelet& simulator, urdf::LinkConstSharedPtr const& link) -> Camera;
+        auto makeCameraForLink(SimulatorNodelet& simulator, btMultibodyLink const* link) -> Camera;
     };
 
     struct PeriodicTask {
@@ -80,7 +82,7 @@ namespace mrover {
     };
 
     struct Camera {
-        std::string linkName;
+        btMultibodyLink const* link;
         cv::Size2i resolution;
         PeriodicTask updateTask;
         ros::Publisher pcPub;
@@ -122,7 +124,7 @@ namespace mrover {
         float mLookSense = 0.004f;
         float mFov = 60.0f;
         btVector3 mGravityAcceleration{0.0f, 0.0f, -9.81f};
-        bool mEnablePhysics = true;
+        bool mEnablePhysics = false;
         bool mRenderModels = true;
         bool mRenderWireframeColliders = false;
 
@@ -159,17 +161,13 @@ namespace mrover {
         std::unique_ptr<btDefaultCollisionConfiguration> mCollisionConfig;
         std::unique_ptr<btCollisionDispatcher> mDispatcher;
         std::unique_ptr<btDbvtBroadphase> mOverlappingPairCache;
-        std::unique_ptr<btConstraintSolver> mSolver;
-        std::unique_ptr<btDiscreteDynamicsWorld> mDynamicsWorld;
-        std::vector<std::unique_ptr<btCollisionObject>> mCollisionObjects;
+        std::unique_ptr<btMultiBodyConstraintSolver> mSolver;
+        std::unique_ptr<btMultiBodyDynamicsWorld> mDynamicsWorld;
         std::vector<std::unique_ptr<btCollisionShape>> mCollisionShapes;
-        std::vector<std::unique_ptr<btMotionState>> mMotionStates;
-        std::vector<std::unique_ptr<btTypedConstraint>> mConstraints;
+        std::vector<std::unique_ptr<btMultiBody>> mMultiBodies;
+        std::vector<std::unique_ptr<btMultiBodyLinkCollider>> mMultibodyCollider;
+        std::vector<std::unique_ptr<btMultiBodyConstraint>> mMultibodyConstraints;
 
-        std::unordered_map<std::string, btRigidBody*> mLinkNameToRigidBody;
-        std::unordered_map<std::string, btHingeConstraint*> mJointNameToHinges;
-        std::unordered_map<std::string, btSliderConstraint*> mJointNameToSliders;
-        std::unordered_map<std::string, btGeneric6DofSpring2Constraint*> mJointNameToSpringHinges;
         std::unordered_map<btBvhTriangleMeshShape*, std::string> mMeshToUri;
 
         struct SaveData {
@@ -197,13 +195,16 @@ namespace mrover {
 
         // Scene
 
-        std::vector<URDF> mUrdfs;
+        std::unordered_map<std::string, URDF> mUrdfs;
+
+        auto getUrdf(std::string const& name) -> std::optional<std::reference_wrapper<URDF>> {
+            auto it = mUrdfs.find(name);
+            if (it == mUrdfs.end()) return std::nullopt;
+
+            return it->second;
+        }
 
         SE3 mCameraInWorld{R3{-2.0, 0.0, 0.0}, SO3{}};
-
-        static auto globalName(std::string_view modelName, std::string_view linkName) -> std::string {
-            return std::format("{}#{}", modelName, linkName);
-        }
 
         std::vector<Camera> mCameras;
 

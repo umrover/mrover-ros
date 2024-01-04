@@ -10,7 +10,7 @@ namespace mrover {
             Eigen::Matrix4f cameraToClip = perspective(mFov * DEG_TO_RAD, aspect, NEAR, FAR).cast<float>();
             mPbrProgram.uniform("cameraToClip", cameraToClip);
 
-            SE3 cameraInWorld = btTransformToSe3(mLinkNameToRigidBody.at(camera.linkName)->getWorldTransform());
+            SE3 cameraInWorld = btTransformToSe3(camera.link->m_cachedWorldTransform);
             mPbrProgram.uniform("cameraInWorld", cameraInWorld.position().cast<float>());
             mPbrProgram.uniform("worldToCamera", ROS_TO_GL * cameraInWorld.matrix().inverse().cast<float>());
 
@@ -59,23 +59,23 @@ namespace mrover {
     }
 
     auto SimulatorNodelet::gpsAndImusUpdate() -> void {
-        auto it = mLinkNameToRigidBody.find("rover#base_link");
-        if (it == mLinkNameToRigidBody.end()) return;
+        if (auto lookup = getUrdf("rover"); lookup) {
+            URDF const& rover = *lookup;
 
-        btRigidBody* baseLinkRb = it->second;
-        btTransform baseLinkInMap = baseLinkRb->getWorldTransform();
+            btTransform baseLinkInMap = rover.physics->getLink(0).m_cachedWorldTransform;
 
-        geometry_msgs::PoseWithCovarianceStamped pose;
-        pose.header.stamp = ros::Time::now();
-        pose.header.frame_id = "map";
-        pose.pose.pose.position.x = baseLinkInMap.getOrigin().x();
-        pose.pose.pose.position.y = baseLinkInMap.getOrigin().y();
-        pose.pose.pose.position.z = baseLinkInMap.getOrigin().z();
-        pose.pose.pose.orientation.w = baseLinkInMap.getRotation().w();
-        pose.pose.pose.orientation.x = baseLinkInMap.getRotation().x();
-        pose.pose.pose.orientation.y = baseLinkInMap.getRotation().y();
-        pose.pose.pose.orientation.z = baseLinkInMap.getRotation().z();
-        mPosePub.publish(pose);
+            geometry_msgs::PoseWithCovarianceStamped pose;
+            pose.header.stamp = ros::Time::now();
+            pose.header.frame_id = "map";
+            pose.pose.pose.position.x = baseLinkInMap.getOrigin().x();
+            pose.pose.pose.position.y = baseLinkInMap.getOrigin().y();
+            pose.pose.pose.position.z = baseLinkInMap.getOrigin().z();
+            pose.pose.pose.orientation.w = baseLinkInMap.getRotation().w();
+            pose.pose.pose.orientation.x = baseLinkInMap.getRotation().x();
+            pose.pose.pose.orientation.y = baseLinkInMap.getRotation().y();
+            pose.pose.pose.orientation.z = baseLinkInMap.getRotation().z();
+            mPosePub.publish(pose);
+        }
     }
 
 } // namespace mrover

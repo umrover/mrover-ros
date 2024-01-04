@@ -17,25 +17,26 @@ namespace mrover {
 
         mOverlappingPairCache = std::make_unique<btDbvtBroadphase>();
 
-        // mSolver = std::make_unique<btMLCPSolver>(new btDantzigSolver{});
-        mSolver = std::make_unique<btSequentialImpulseConstraintSolver>();
+        mSolver = std::make_unique<btMultiBodyMLCPConstraintSolver>(new btDantzigSolver{});
+        // mSolver = std::make_unique<btSequentialImpulseConstraintSolver>();
 
-        mDynamicsWorld = std::make_unique<btDiscreteDynamicsWorld>(mDispatcher.get(), mOverlappingPairCache.get(), mSolver.get(), mCollisionConfig.get());
-        // mDynamicsWorld->getSolverInfo().m_minimumSolverBatchSize = 1;
+        mDynamicsWorld = std::make_unique<btMultiBodyDynamicsWorld>(mDispatcher.get(), mOverlappingPairCache.get(), mSolver.get(), mCollisionConfig.get());
+        mDynamicsWorld->getSolverInfo().m_minimumSolverBatchSize = 1;
     }
 
     auto SimulatorNodelet::physicsUpdate(Clock::duration dt) -> void {
         mDynamicsWorld->setGravity(mGravityAcceleration);
 
-        for (auto const& name: {"rover#chassis_link_to_left_rocker_link", "rover#chassis_link_to_right_rocker_link"}) {
-            auto it = mJointNameToHinges.find(name);
-            if (it == mJointNameToHinges.end()) continue;
-
-            btHingeConstraint* hinge = it->second;
-            hinge->enableMotor(true);
-            hinge->setMaxMotorImpulse(0.45);
-            hinge->setMotorTarget(0.0, std::chrono::duration_cast<std::chrono::duration<float>>(dt).count());
-        }
+        // TODO(quintin): motor
+        // for (auto const& name: {"rover#chassis_link_to_left_rocker_link", "rover#chassis_link_to_right_rocker_link"}) {
+        //     auto it = mJointNameToHinges.find(name);
+        //     if (it == mJointNameToHinges.end()) continue;
+        //
+        //     btHingeConstraint* hinge = it->second;
+        //     hinge->enableMotor(true);
+        //     hinge->setMaxMotorImpulse(0.45);
+        //     hinge->setMotorTarget(0.0, std::chrono::duration_cast<std::chrono::duration<float>>(dt).count());
+        // }
 
         int maxSubSteps = 10;
         int simStepCount = mDynamicsWorld->stepSimulation(std::chrono::duration_cast<std::chrono::duration<float>>(dt).count(), maxSubSteps, 1 / 120.0f);
@@ -62,23 +63,24 @@ namespace mrover {
 
     auto SimulatorNodelet::linksToTfUpdate() -> void {
 
-        for (URDF const& urdf: mUrdfs) {
+        for (auto const& [_, urdf]: mUrdfs) {
 
-            auto renderLink = [&](auto&& self, urdf::LinkConstSharedPtr const& link) -> void {
-                if (link->parent_joint) {
-                    btRigidBody* parentLinkRb = mLinkNameToRigidBody.at(globalName(urdf.name, link->getParent()->name));
-                    btRigidBody* childLinkRb = mLinkNameToRigidBody.at(globalName(urdf.name, link->name));
-                    SE3 childInParent = btTransformToSe3(parentLinkRb->getWorldTransform().inverseTimes(childLinkRb->getWorldTransform()));
-
-                    SE3::pushToTfTree(mTfBroadcaster, link->name, link->getParent()->name, childInParent);
-                }
-
-                for (urdf::JointSharedPtr const& child_joint: link->child_joints) {
-                    self(self, urdf.model.getLink(child_joint->child_link_name));
-                }
-            };
-
-            renderLink(renderLink, urdf.model.getRoot());
+            // TODO(quintin): tf updates
+            // auto renderLink = [&](auto&& self, urdf::LinkConstSharedPtr const& link) -> void {
+            //     if (link->parent_joint) {
+            //         btRigidBody* parentLinkRb = mLinkNameToRigidBody.at(globalName(urdf.name, link->getParent()->name));
+            //         btRigidBody* childLinkRb = mLinkNameToRigidBody.at(globalName(urdf.name, link->name));
+            //         SE3 childInParent = btTransformToSe3(parentLinkRb->getWorldTransform().inverseTimes(childLinkRb->getWorldTransform()));
+            //
+            //         SE3::pushToTfTree(mTfBroadcaster, link->name, link->getParent()->name, childInParent);
+            //     }
+            //
+            //     for (urdf::JointSharedPtr const& child_joint: link->child_joints) {
+            //         self(self, urdf.model.getLink(child_joint->child_link_name));
+            //     }
+            // };
+            //
+            // renderLink(renderLink, urdf.model.getRoot());
         }
     }
 

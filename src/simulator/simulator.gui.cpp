@@ -5,11 +5,12 @@ namespace mrover {
     auto SimulatorNodelet::guiUpdate() -> void {
         if (mSaveTask.shouldUpdate() && mEnablePhysics) {
             SaveData save;
-            for (auto const& [link_name, rb]: mLinkNameToRigidBody) {
-                if (!link_name.starts_with("rover")) continue;
-
-                save.links.emplace_back(link_name, rb->getWorldTransform(), rb->getLinearVelocity(), rb->getAngularVelocity());
-            }
+            // TODO(quintin): save
+            // for (auto const& [link_name, rb]: mLinkNameToRigidBody) {
+            //     if (!link_name.starts_with("rover")) continue;
+            //
+            //     save.links.emplace_back(link_name, rb->getWorldTransform(), rb->getLinearVelocity(), rb->getAngularVelocity());
+            // }
 
             mSaveHistory.push_back(std::move(save));
         }
@@ -28,14 +29,15 @@ namespace mrover {
             ImGui::SameLine();
             ImGui::Text("-%zu", inverse);
 
-            for (SaveData const& data = mSaveHistory.at(mSelection);
-                 auto const& [link_name, transform, linearVelocity, angularVelocity]: data.links) {
-                btRigidBody* rb = mLinkNameToRigidBody.at(link_name);
-                rb->getMotionState()->setWorldTransform(transform);
-                rb->setWorldTransform(transform);
-                rb->setLinearVelocity(linearVelocity);
-                rb->setAngularVelocity(angularVelocity);
-            }
+            // TODO(quintin): save
+            // for (SaveData const& data = mSaveHistory.at(mSelection);
+            //      auto const& [link_name, transform, linearVelocity, angularVelocity]: data.links) {
+            //     btRigidBody* rb = mLinkNameToRigidBody.at(link_name);
+            //     rb->getMotionState()->setWorldTransform(transform);
+            //     rb->setWorldTransform(transform);
+            //     rb->setLinearVelocity(linearVelocity);
+            //     rb->setAngularVelocity(angularVelocity);
+            // }
 
             ImGui::End();
         }
@@ -64,13 +66,14 @@ namespace mrover {
             ImGui::Begin("Telemtry", nullptr);
 
             ImGui::Text("FPS: %.1f", ImGui::GetIO().Framerate);
-            if (auto it = mLinkNameToRigidBody.find("rover#base_link"); it != mLinkNameToRigidBody.end()) {
-                btTransform const& baseLinkInMap = it->second->getWorldTransform();
-                btVector3 const& p = baseLinkInMap.getOrigin();
-                btQuaternion const& q = baseLinkInMap.getRotation();
-                ImGui::Text("Rover Position: (%.2f, %.2f, %.2f)", p.x(), p.y(), p.z());
-                ImGui::Text("Rover Orientation: (%.2f, %.2f, %.2f, %.2f)", q.w(), q.x(), q.y(), q.z());
-            }
+            // TODO(quintin): rover pos
+            // if (auto it = mLinkNameToRigidBody.find("rover#base_link"); it != mLinkNameToRigidBody.end()) {
+            //     btTransform const& baseLinkInMap = it->second->getWorldTransform();
+            //     btVector3 const& p = baseLinkInMap.getOrigin();
+            //     btQuaternion const& q = baseLinkInMap.getRotation();
+            //     ImGui::Text("Rover Position: (%.2f, %.2f, %.2f)", p.x(), p.y(), p.z());
+            //     ImGui::Text("Rover Orientation: (%.2f, %.2f, %.2f, %.2f)", q.w(), q.x(), q.y(), q.z());
+            // }
 
             for (Camera const& camera: mCameras) {
                 float aspect = static_cast<float>(camera.resolution.width) / static_cast<float>(camera.resolution.height);

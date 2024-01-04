@@ -30,7 +30,7 @@ namespace mrover {
         return btVector3{static_cast<btScalar>(inertia->ixx), static_cast<btScalar>(inertia->iyy), static_cast<btScalar>(inertia->izz)} * INERTIA_MULTIPLIER;
     }
 
-    auto URDF::makeColliderForLink(SimulatorNodelet& simulator, urdf::LinkConstSharedPtr const& link) -> btCollisionShape* {
+    auto URDF::makeCollisionShapeForLink(SimulatorNodelet& simulator, urdf::LinkConstSharedPtr const& link) -> btCollisionShape* {
         boost::container::static_vector<std::pair<btCollisionShape*, btTransform>, 4> shapes;
         for (urdf::CollisionSharedPtr const& collision: link->collision_array) {
             if (!collision->geometry) throw std::invalid_argument{"Collision has no geometry"};
@@ -118,135 +118,108 @@ namespace mrover {
 
         name = xmlRpcValueToTypeOrDefault<std::string>(init, "name");
 
-        auto rootTransform = btTransform::getIdentity();
+        auto rootLinkInMap = btTransform::getIdentity();
         if (init.hasMember("translation")) {
             std::array<double, 3> translation = xmlRpcValueToNumberArray<3>(init, "translation");
-            rootTransform.setOrigin(btVector3{urdfDistToBtDist(translation[0]), urdfDistToBtDist(translation[1]), urdfDistToBtDist(translation[2])});
+            rootLinkInMap.setOrigin(btVector3{urdfDistToBtDist(translation[0]), urdfDistToBtDist(translation[1]), urdfDistToBtDist(translation[2])});
         }
         if (init.hasMember("rotation")) {
             std::array<double, 4> rotation = xmlRpcValueToNumberArray<4>(init, "rotation");
-            rootTransform.setRotation(btQuaternion{static_cast<btScalar>(rotation[0]), static_cast<btScalar>(rotation[1]), static_cast<btScalar>(rotation[2]), static_cast<btScalar>(rotation[3])});
+            rootLinkInMap.setRotation(btQuaternion{static_cast<btScalar>(rotation[0]), static_cast<btScalar>(rotation[1]), static_cast<btScalar>(rotation[2]), static_cast<btScalar>(rotation[3])});
         }
 
-        auto traverse = [&](auto&& self, btRigidBody* parentLinkRb, urdf::LinkConstSharedPtr const& link) -> void {
+        urdf::LinkConstSharedPtr rootLink = model.getRoot();
+        auto* multiBody = physics = simulator.makeBulletObject<btMultiBody>(simulator.mMultiBodies, model.links_.size(), 1, btVector3{1, 1, 1}, false, false);
+        multiBody->setBaseWorldTransform(rootLinkInMap);
+
+        auto traverse = [&](auto&& self, urdf::LinkConstSharedPtr const& link) -> void {
             ROS_INFO_STREAM(std::format("Processing link: {}", link->name));
-            if (link->visual && link->visual->geometry && link->visual->geometry->type == urdf::Geometry::MESH) {
-                auto mesh = std::dynamic_pointer_cast<urdf::Mesh>(link->visual->geometry);
-                std::string const& fileUri = mesh->filename;
-                simulator.mUriToModel.try_emplace(fileUri, fileUri);
+
+            auto linkIndex = static_cast<int>(linkNameToIndex.size());
+            linkNameToIndex.emplace(link->name, linkIndex);
+
+            if (link->name.contains("camera"sv)) {
+                makeCameraForLink(simulator, &multiBody->getLink(linkIndex));
+            }
+
+            if (link->visual && link->visual->geometry) {
+                switch (link->visual->geometry->type) {
+                    case urdf::Geometry::MESH: {
+                        auto mesh = std::dynamic_pointer_cast<urdf::Mesh>(link->visual->geometry);
+                        std::string const& fileUri = mesh->filename;
+                        simulator.mUriToModel.try_emplace(fileUri, fileUri);
+                        break;
+                    }
+                    default: {
+                        ROS_WARN_STREAM("Currently only mesh visuals are supported");
+                    }
+                }
             }
             if (std::size_t size = link->visual_array.size(); size > 1) {
                 ROS_WARN_STREAM(std::format("Link {} has {} visual elements, only the first one will be used", link->name, size));
             }
 
+            auto* collider = simulator.makeBulletObject<btMultiBodyLinkCollider>(simulator.mMultibodyCollider, multiBody, linkIndex);
+            collider->setCollisionShape(makeCollisionShapeForLink(simulator, link));
+
             btScalar mass = 1;
-            btVector3 inertia{1, 1, 1};
+            btVector3 inertia{1, 1, 1}; // TODO(quintin): Is this a sane default?
             if (link->inertial) {
                 mass = urdfMassToBtMass(link->inertial->mass);
                 inertia = urdfInertiaToBtInertia(link->inertial);
             }
 
-            btTransform jointInWorld;
-            if (link->parent_joint) {
-                assert(parentLinkRb);
-
-                auto parentToWorld = parentLinkRb->getWorldTransform();
-                auto jointInParent = urdfPoseToBtTransform(link->parent_joint->parent_to_joint_origin_transform);
-                jointInWorld = parentToWorld * jointInParent;
-            } else {
-                jointInWorld = rootTransform;
-            }
-            auto* motionState = simulator.makeBulletObject<btDefaultMotionState>(simulator.mMotionStates, jointInWorld);
-            auto* finalShape = makeColliderForLink(simulator, link);
-            auto* linkRb = simulator.makeBulletObject<btRigidBody>(simulator.mCollisionObjects, btRigidBody::btRigidBodyConstructionInfo{mass, motionState, finalShape, inertia});
-            simulator.mLinkNameToRigidBody.emplace(SimulatorNodelet::globalName(name, link->name), linkRb);
-            linkRb->setActivationState(DISABLE_DEACTIVATION);
-            simulator.mDynamicsWorld->addRigidBody(linkRb);
-
-            // TODO(quintin): Figure out a better way for adding sensors
-            if (link->name.contains("camera"sv)) {
-                simulator.mCameras.emplace_back(makeCameraForLink(simulator, link));
-            }
-
             if (urdf::JointConstSharedPtr parentJoint = link->parent_joint) {
-                assert(parentLinkRb);
-
+                int parentIndex = linkNameToIndex.at(parentJoint->parent_link_name);
                 btTransform jointInParent = urdfPoseToBtTransform(parentJoint->parent_to_joint_origin_transform);
+                btTransform comInJoint = link->inertial ? urdfPoseToBtTransform(link->inertial->origin) : btTransform::getIdentity();
+                btVector3 axisInJoint = urdfPosToBtPos(parentJoint->axis);
 
                 switch (parentJoint->type) {
                     case urdf::Joint::FIXED: {
                         ROS_INFO_STREAM(std::format("Fixed joint {}: {} <-> {}", parentJoint->name, parentJoint->parent_link_name, parentJoint->child_link_name));
-                        auto* constraint = simulator.makeBulletObject<btFixedConstraint>(simulator.mConstraints, *parentLinkRb, *linkRb, jointInParent, btTransform::getIdentity());
-                        simulator.mDynamicsWorld->addConstraint(constraint, true);
+                        multiBody->setupFixed(linkIndex, mass, inertia, parentIndex, jointInParent.getRotation(), jointInParent.getOrigin(), comInJoint.getOrigin());
                         break;
                     }
                     case urdf::Joint::CONTINUOUS:
                     case urdf::Joint::REVOLUTE: {
                         ROS_INFO_STREAM(std::format("Rotating joint {}: {} <-> {}", parentJoint->name, parentJoint->parent_link_name, parentJoint->child_link_name));
-                        if (model.getName() == "rover"sv && link->name.contains("axle"sv)) {
-                            // TODO(quintin): Seems wrong to embed rover-specific logic in this function
-                            ROS_INFO_STREAM("\tSpring");
-                            auto* constraint = simulator.makeBulletObject<btGeneric6DofSpring2Constraint>(simulator.mConstraints, *parentLinkRb, *linkRb, jointInParent, btTransform::getIdentity());
-                            constraint->setLinearLowerLimit(btVector3{0, -0.02, 0});
-                            constraint->setLinearUpperLimit(btVector3{0, 0.02, 0});
-                            constraint->setAngularLowerLimit(btVector3{0, 0, 1});
-                            constraint->setAngularUpperLimit(btVector3{0, 0, -1});
-                            constraint->enableSpring(1, true);
-                            constraint->setStiffness(1, 40);
-                            constraint->setDamping(1, 2);
-                            constraint->setParam(BT_CONSTRAINT_CFM, 0.15f, 1);
-                            constraint->setParam(BT_CONSTRAINT_ERP, 0.35f, 1);
-                            constraint->setEquilibriumPoint();
-                            constraint->setEquilibriumPoint(1, 0.1);
-                            simulator.mJointNameToSpringHinges.emplace(SimulatorNodelet::globalName(name, parentJoint->name), constraint);
-                            simulator.mDynamicsWorld->addConstraint(constraint, true);
-                        } else {
-                            btVector3 axisInJoint = urdfPosToBtPos(parentJoint->axis);
-                            btVector3 axisInParent = jointInParent.getBasis() * axisInJoint;
-                            auto* hingeConstraint = simulator.makeBulletObject<btHingeConstraint>(simulator.mConstraints, *parentLinkRb, *linkRb, jointInParent.getOrigin(), btTransform::getIdentity().getOrigin(), axisInParent, axisInJoint, true);
-                            if (parentJoint->type == urdf::Joint::REVOLUTE) {
-                                hingeConstraint->setLimit(static_cast<btScalar>(parentJoint->limits->lower), static_cast<btScalar>(parentJoint->limits->upper));
-                            }
-                            simulator.mJointNameToHinges.emplace(SimulatorNodelet::globalName(name, parentJoint->name), hingeConstraint);
-                            simulator.mDynamicsWorld->addConstraint(hingeConstraint, true);
-
-                            if (link->name.contains("wheel"sv)) {
-                                ROS_INFO_STREAM("\tGear");
-                                auto* gearConstraint = simulator.makeBulletObject<btGearConstraint>(simulator.mConstraints, *parentLinkRb, *linkRb, axisInParent, axisInJoint, 50.0);
-                                simulator.mDynamicsWorld->addConstraint(gearConstraint, true);
-                                linkRb->setFriction(1100);
-                            }
+                        multiBody->setupRevolute(linkIndex, mass, inertia, parentIndex, jointInParent.getRotation(), axisInJoint, jointInParent.getOrigin(), comInJoint.getOrigin());
+                        if (parentJoint->type == urdf::Joint::REVOLUTE) {
+                            auto lower = static_cast<btScalar>(parentJoint->limits->lower), upper = static_cast<btScalar>(parentJoint->limits->upper);
+                            auto* limitConstraint = simulator.makeBulletObject<btMultiBodyJointLimitConstraint>(simulator.mMultibodyConstraints, multiBody, linkIndex, lower, upper);
+                            simulator.mDynamicsWorld->addMultiBodyConstraint(limitConstraint);
                         }
+                        // TODO(quintin): Impl
+                        // if (link->name.contains("wheel"sv)) {
+                        //     ROS_INFO_STREAM("\tGear");
+                        //     auto* gearConstraint = simulator.makeBulletObject<btMultiBodyGearConstraint>();
+                        //     simulator.mDynamicsWorld->addMultiBodyConstraint(gearConstraint);
+                        //     multiBody->getLink(linkIndex).m_collider->setFriction(1100);
+                        // }
                         break;
                     }
                     case urdf::Joint::PRISMATIC: {
                         ROS_INFO_STREAM(std::format("Prismatic joint {}: {} <-> {}", parentJoint->name, parentJoint->parent_link_name, parentJoint->child_link_name));
-                        // btVector3 axisInJoint = urdfPosToBtPos(parentJoint->axis);
-                        auto constraintTransform = btTransform::getIdentity();
-                        // constraintTransform.setOrigin(axisInJoint);
-                        auto* constraint = simulator.makeBulletObject<btSliderConstraint>(simulator.mConstraints, *parentLinkRb, *linkRb, jointInParent, constraintTransform, true);
-                        constraint->setLowerLinLimit(static_cast<btScalar>(parentJoint->limits->lower));
-                        constraint->setUpperLinLimit(static_cast<btScalar>(parentJoint->limits->upper));
-                        constraint->setLowerAngLimit(0.0f);
-                        constraint->setUpperAngLimit(0.0f);
-                        // constraint->setPoweredLinMotor(true);
-                        // constraint->setMaxLinMotorForce(1000);
-                        // constraint->setTargetLinMotorVelocity(0);
-                        simulator.mJointNameToSliders.emplace(SimulatorNodelet::globalName(name, parentJoint->name), constraint);
-                        simulator.mDynamicsWorld->addConstraint(constraint, true);
+                        multiBody->setupPrismatic(linkIndex, mass, inertia, parentIndex, jointInParent.getRotation(), axisInJoint, jointInParent.getOrigin(), comInJoint.getOrigin(), true);
                         break;
                     }
                     default:
                         throw std::invalid_argument{"Unsupported joint type"};
                 }
+            } else {
+                multiBody->setupFixed(0, mass, inertia, -1, btQuaternion::getIdentity(), btVector3{0, 0, 0}, btVector3{0, 0, 0});
             }
 
             for (urdf::LinkConstSharedPtr childLink: link->child_links) {
-                self(self, linkRb, childLink);
+                self(self, childLink);
             }
         };
 
-        traverse(traverse, nullptr, model.getRoot());
+        traverse(traverse, model.getRoot());
+
+        multiBody->finalizeMultiDof();
+        simulator.mDynamicsWorld->addMultiBody(multiBody);
     }
 
 } // namespace mrover

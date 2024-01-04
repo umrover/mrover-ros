@@ -156,13 +156,13 @@ namespace mrover {
         glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
         mPbrProgram.uniform("type", 1);
 
-        for (URDF const& urdf: mUrdfs) {
+        for (auto const& [_, urdf]: mUrdfs) {
 
             auto renderLink = [&](auto&& self, urdf::LinkConstSharedPtr const& link) -> void {
                 if (link->visual && link->visual->geometry) {
                     if (auto urdfMesh = std::dynamic_pointer_cast<urdf::Mesh>(link->visual->geometry)) {
                         Model& model = mUriToModel.at(urdfMesh->filename);
-                        btTransform linkInWorld = mLinkNameToRigidBody.at(globalName(urdf.name, link->name))->getWorldTransform();
+                        btTransform linkInWorld = urdf.physics->getLink(urdf.linkNameToIndex.at(link->name)).m_cachedWorldTransform;
                         btTransform modelInLink = urdfPoseToBtTransform(link->visual->origin);
                         SIM3 worldToModel = btTransformToSim3(linkInWorld * modelInLink, btVector3{1, 1, 1});
                         renderModel(model, worldToModel, isRoverCamera);
@@ -181,7 +181,7 @@ namespace mrover {
         glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
         mPbrProgram.uniform("type", 0);
 
-        for (auto const& collisionObject: mCollisionObjects) {
+        for (auto const& collider: mMultibodyCollider) {
 
             auto renderCollisionObject = [this](auto&& self, btTransform const& shapeToWorld, btCollisionShape const* shape) -> void {
                 if (auto* box = dynamic_cast<btBoxShape const*>(shape)) {
@@ -212,8 +212,8 @@ namespace mrover {
                 }
             };
 
-            btTransform const& shapeToWorld = collisionObject->getWorldTransform();
-            btCollisionShape const* shape = collisionObject->getCollisionShape();
+            btTransform const& shapeToWorld = collider->getWorldTransform();
+            btCollisionShape const* shape = collider->getCollisionShape();
             renderCollisionObject(renderCollisionObject, shapeToWorld, shape);
         }
     }

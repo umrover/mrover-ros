@@ -16,7 +16,9 @@ namespace mrover {
             NODELET_INFO_STREAM(std::format("Loading object: {} of type: {}", name, type));
 
             if (type == "urdf") {
-                mUrdfs.emplace_back(*this, object);
+                if (auto [_, was_added] = mUrdfs.try_emplace(name, *this, object); !was_added) {
+                    throw std::invalid_argument{std::format("Duplicate object name: {}", name)};
+                }
             }
         }
     }
