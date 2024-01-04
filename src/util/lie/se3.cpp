@@ -10,6 +10,7 @@ void SE3::pushToTfTree(tf2_ros::TransformBroadcaster& broadcaster, std::string c
 }
 
 SE3::SE3(R3 const& position, SO3 const& rotation) {
+    assert(!position.hasNaN());
     mTransform.translate(position);
     mTransform.rotate(rotation.mAngleAxis);
 }

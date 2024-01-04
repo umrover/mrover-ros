@@ -54,23 +54,22 @@
 #include <BulletDynamics/MLCPSolvers/btMLCPSolver.h>
 #include <BulletDynamics/MLCPSolvers/btDantzigSolver.h>
 #include <BulletDynamics/Featherstone/btMultiBodyLinkCollider.h>
+#include <BulletDynamics/Featherstone/btMultiBodyConstraintSolver.h>
+#include <BulletDynamics/Featherstone/btMultiBodyJointMotor.h>
 #include <BulletDynamics/Featherstone/btMultiBodyDynamicsWorld.h>
 #include <BulletDynamics/Featherstone/btMultiBodyJointLimitConstraint.h>
 #include <BulletDynamics/Featherstone/btMultiBodyMLCPConstraintSolver.h>
 #include <BulletDynamics/Featherstone/btMultiBodyGearConstraint.h>
-#include <BulletDynamics/Featherstone/btMultiBodyJointFeedback.h>
+// #include <BulletDynamics/Featherstone/btMultiBodyJointFeedback.h>
 
 #include <assimp/Importer.hpp>
 #include <assimp/postprocess.h>
 #include <assimp/scene.h>
-
-// #include <moteus/moteus.h>
 
 #include <loop_profiler.hpp>
 #include <params_utils.hpp>
 #include <point.hpp>
 #include <se3.hpp>
 #include <units.hpp>
-// #include <messaging.hpp>
 
 #include <mrover/Position.h>

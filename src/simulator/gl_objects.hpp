@@ -22,6 +22,10 @@ namespace mrover {
         ~Shader();
     };
 
+    /**
+     * \tparam N    Number of shaders in the program.
+     *              E.g. two for traditional shader programs (vertex and fragment)
+     */
     template<std::size_t N>
     struct Program {
         std::array<Shader, N> shaders;
@@ -158,4 +162,5 @@ namespace mrover {
             if (handle != GL_INVALID_HANDLE) glDeleteTextures(1, &handle);
         }
     };
+
 } // namespace mrover

@@ -19,25 +19,20 @@ namespace mrover {
         if (auto it = mUrdfs.find("rover"); it != mUrdfs.end()) {
             URDF const& rover = it->second;
 
-            // TODO(quintin): motor
+            for (std::string const& name: {
+                         "front_left_axle_link",
+                         "center_left_axle_link",
+                         "back_left_axle_link",
+                         "front_right_axle_link",
+                         "center_right_axle_link",
+                         "back_right_axle_link",
+                 }) {
+                auto* motor = (btMultiBodyJointMotor*) rover.physics->getLink(rover.linkNameToIndex.at(name)).m_userPtr;
+
+                motor->setVelocityTarget(name.contains("left"sv) ? left.get() : right.get());
+            }
         }
-        // for (std::string const& name: {
-        //              "rover#left_bogie_link_to_front_left_axle_link",
-        //              "rover#left_bogie_link_to_center_left_axle_link",
-        //              "rover#left_rocker_link_to_back_left_axle_link",
-        //              "rover#right_bogie_link_to_front_right_axle_link",
-        //              "rover#right_bogie_link_to_center_right_axle_link",
-        //              "rover#right_rocker_link_to_back_right_axle_link",
-        //      }) {
-        //     auto it = mJointNameToSpringHinges.find(name);
-        //     if (it == mJointNameToSpringHinges.end()) continue;
-        //
-        //     btGeneric6DofSpring2Constraint* hinge = it->second;
-        //     constexpr int Y_AXIS_INDEX = 3 + 2;
-        //     hinge->enableMotor(Y_AXIS_INDEX, true);
-        //     hinge->setMaxMotorForce(Y_AXIS_INDEX, MAX_MOTOR_TORQUE);
-        //     hinge->setTargetVelocity(Y_AXIS_INDEX, name.contains("left"sv) ? left.get() : right.get());
-        // }
+
     }
 
     auto SimulatorNodelet::jointPositiionsCallback(Position::ConstPtr const& positions) -> void {

@@ -68,11 +68,22 @@ namespace mrover {
             ImGui::Text("FPS: %.1f", ImGui::GetIO().Framerate);
             // TODO(quintin): rover pos
             if (auto it = mUrdfs.find("rover"); it != mUrdfs.end()) {
-                SE3 baseLinkInMap = it->second.linkInWorld("base_link");
+                URDF const& rover = it->second;
+
+                SE3 baseLinkInMap = rover.linkInWorld("base_link");
                 R3 p = baseLinkInMap.position();
                 Eigen::Quaterniond q = baseLinkInMap.rotation().quaternion();
                 ImGui::Text("Rover Position: (%.2f, %.2f, %.2f)", p.x(), p.y(), p.z());
                 ImGui::Text("Rover Orientation: (%.2f, %.2f, %.2f, %.2f)", q.w(), q.x(), q.y(), q.z());
+
+                for (auto const& [name, i] : rover.linkNameToIndex) {
+                    if (i == -1) continue;
+
+                    btScalar vel = rover.physics->getJointVel(i);
+                    btScalar pos = rover.physics->getJointPos(i);
+
+                    ImGui::Text("%s: %.2f, %.2f", name.c_str(), pos, vel);
+                }
             }
 
             for (Camera const& camera: mCameras) {

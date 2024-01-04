@@ -8,19 +8,6 @@ namespace mrover {
         return SE3{R3{p.x(), p.y(), p.z()}, SO3{q.w(), q.x(), q.y(), q.z()}};
     }
 
-    // struct MyOverlapFilterCallback2 : btOverlapFilterCallback {
-    //     MyOverlapFilterCallback2() = default;
-    //
-    //     ~MyOverlapFilterCallback2() override = default;
-    //
-    //     // return true when pairs need collision
-    //     auto needBroadphaseCollision(btBroadphaseProxy* proxy0, btBroadphaseProxy* proxy1) const -> bool override {
-    //         bool collides = (proxy0->m_collisionFilterGroup & proxy1->m_collisionFilterMask) != 0;
-    //         collides = collides && (proxy1->m_collisionFilterGroup & proxy0->m_collisionFilterMask);
-    //         return collides;
-    //     }
-    // };
-
     auto SimulatorNodelet::initPhysics() -> void {
         NODELET_INFO_STREAM(std::format("Using Bullet Physics Version: {}", btGetVersion()));
 
@@ -29,27 +16,14 @@ namespace mrover {
         mDispatcher = std::make_unique<btCollisionDispatcher>(mCollisionConfig.get());
 
         mOverlappingPairCache = std::make_unique<btHashedOverlappingPairCache>();
-        // mOverlappingPairCache->setOverlapFilterCallback(new MyOverlapFilterCallback2{});
 
         mBroadphase = std::make_unique<btDbvtBroadphase>(mOverlappingPairCache.get());
 
-        // mSolver = std::make_unique<btMultiBodyMLCPConstraintSolver>(new btDantzigSolver{});
-        mSolver = std::make_unique<btMultiBodyConstraintSolver>();
+        mSolver = std::make_unique<btMultiBodyMLCPConstraintSolver>(new btDantzigSolver{});
+        // mSolver = std::make_unique<btMultiBodyConstraintSolver>();
 
         mDynamicsWorld = std::make_unique<btMultiBodyDynamicsWorld>(mDispatcher.get(), mBroadphase.get(), mSolver.get(), mCollisionConfig.get());
         // mDynamicsWorld->getSolverInfo().m_minimumSolverBatchSize = 1;
-
-        {
-            btCollisionShape* groundShape = new btStaticPlaneShape(btVector3{0, 0, 1}, 0);
-            btTransform groundTransform;
-            groundTransform.setIdentity();
-            groundTransform.setOrigin(btVector3{0, 0, 0});
-            btDefaultMotionState* groundMotionState = new btDefaultMotionState(groundTransform);
-            btRigidBody::btRigidBodyConstructionInfo groundRigidBodyCI(0, groundMotionState, groundShape, btVector3{0, 0, 0});
-            btRigidBody* groundRigidBody = new btRigidBody(groundRigidBodyCI);
-            groundRigidBody->setFriction(0.5);
-            mDynamicsWorld->addRigidBody(groundRigidBody);
-        }
     }
 
     auto SimulatorNodelet::physicsUpdate(Clock::duration dt) -> void {
@@ -69,20 +43,20 @@ namespace mrover {
         int maxSubSteps = 0;
         int simStepCount = mDynamicsWorld->stepSimulation(std::chrono::duration_cast<std::chrono::duration<float>>(dt).count(), maxSubSteps, 1 / 120.0f);
 
-        // TODO(quintin): Figure out why this fails
-        if (auto* mlcpSolver = dynamic_cast<btMLCPSolver*>(mDynamicsWorld->getConstraintSolver())) {
-            // if (int fallbackCount = mlcpSolver->getNumFallbacks()) {
-            //     NODELET_WARN_STREAM_THROTTLE(1, std::format("MLCP solver failed {} times", fallbackCount));
-            // }
-            mlcpSolver->setNumFallbacks(0);
-        }
+        // // TODO(quintin): Figure out why this fails
+        // if (auto* mlcpSolver = dynamic_cast<btMLCPSolver*>(mDynamicsWorld->getConstraintSolver())) {
+        //     // if (int fallbackCount = mlcpSolver->getNumFallbacks()) {
+        //     //     NODELET_WARN_STREAM_THROTTLE(1, std::format("MLCP solver failed {} times", fallbackCount));
+        //     // }
+        //     mlcpSolver->setNumFallbacks(0);
+        // }
 
-        if (simStepCount) {
-            if (simStepCount > maxSubSteps) {
-                int droppedSteps = simStepCount - maxSubSteps;
-                NODELET_WARN_STREAM(std::format("Dropped {} simulation steps out of {}", droppedSteps, simStepCount));
-            }
-        }
+        // if (simStepCount) {
+        //     if (simStepCount > maxSubSteps) {
+        //         int droppedSteps = simStepCount - maxSubSteps;
+        //         NODELET_WARN_STREAM(std::format("Dropped {} simulation steps out of {}", droppedSteps, simStepCount));
+        //     }
+        // }
 
         linksToTfUpdate();
 
@@ -95,10 +69,10 @@ namespace mrover {
 
             auto publishLink = [&](auto&& self, urdf::LinkConstSharedPtr const& link) -> void {
                 if (link->parent_joint) {
-                    // TODO(quintin): can probably fill this in with rvecs
-                    SE3 parentInWorld = urdf.linkInWorld(link->getParent()->name);
-                    SE3 childInWorld = urdf.linkInWorld(link->name);
-                    SE3 childInParent = parentInWorld.inverse() * childInWorld;
+                    int index = urdf.linkNameToIndex.at(link->name);
+                    // TODO(quintin): figure out why we need to negate rvector
+                    btTransform parentToChild{urdf.physics->getParentToLocalRot(index), -urdf.physics->getRVector(index)};
+                    SE3 childInParent = btTransformToSe3(parentToChild.inverse());
 
                     SE3::pushToTfTree(mTfBroadcaster, link->name, link->getParent()->name, childInParent);
                 }
