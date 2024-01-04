@@ -59,6 +59,8 @@ namespace mrover {
         auto makeCollisionShapeForLink(SimulatorNodelet& simulator, urdf::LinkConstSharedPtr const& link) -> btCollisionShape*;
 
         auto makeCameraForLink(SimulatorNodelet& simulator, btMultibodyLink const* link) -> Camera;
+
+        auto linkInWorld(std::string const& linkName) const -> SE3;
     };
 
     struct PeriodicTask {
@@ -160,7 +162,8 @@ namespace mrover {
 
         std::unique_ptr<btDefaultCollisionConfiguration> mCollisionConfig;
         std::unique_ptr<btCollisionDispatcher> mDispatcher;
-        std::unique_ptr<btDbvtBroadphase> mOverlappingPairCache;
+        std::unique_ptr<btHashedOverlappingPairCache> mOverlappingPairCache;
+        std::unique_ptr<btDbvtBroadphase> mBroadphase;
         std::unique_ptr<btMultiBodyConstraintSolver> mSolver;
         std::unique_ptr<btMultiBodyDynamicsWorld> mDynamicsWorld;
         std::vector<std::unique_ptr<btCollisionShape>> mCollisionShapes;

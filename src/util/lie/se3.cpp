@@ -30,6 +30,10 @@ double SE3::distanceTo(SE3 const& other) const {
     return (position() - other.position()).norm();
 }
 
+auto SE3::inverse() const -> SE3 {
+    return SE3{mTransform.inverse()};
+}
+
 SE3 SE3::operator*(SE3 const& other) const {
     return other.mTransform * mTransform;
 }

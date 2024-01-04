@@ -162,10 +162,10 @@ namespace mrover {
                 if (link->visual && link->visual->geometry) {
                     if (auto urdfMesh = std::dynamic_pointer_cast<urdf::Mesh>(link->visual->geometry)) {
                         Model& model = mUriToModel.at(urdfMesh->filename);
-                        btTransform linkInWorld = urdf.physics->getLink(urdf.linkNameToIndex.at(link->name)).m_cachedWorldTransform;
-                        btTransform modelInLink = urdfPoseToBtTransform(link->visual->origin);
-                        SIM3 worldToModel = btTransformToSim3(linkInWorld * modelInLink, btVector3{1, 1, 1});
-                        renderModel(model, worldToModel, isRoverCamera);
+                        SE3 linkInWorld = urdf.linkInWorld(link->name);
+                        SE3 modelInLink = btTransformToSe3(urdfPoseToBtTransform(link->visual->origin));
+                        SE3 modelInWorld = linkInWorld * modelInLink;
+                        renderModel(model, SIM3{modelInWorld.position(), modelInWorld.rotation(), R3::Ones()}, isRoverCamera);
                     }
                 }
                 for (urdf::JointSharedPtr const& child_joint: link->child_joints) {

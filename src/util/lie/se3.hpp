@@ -89,6 +89,8 @@ public:
     [[nodiscard]] SO3 rotation() const;
 
     [[nodiscard]] double distanceTo(SE3 const& other) const;
+
+    [[nodiscard]] auto inverse() const -> SE3;
 };
 
 class SIM3 {

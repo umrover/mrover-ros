@@ -2,6 +2,7 @@ objects:
   - type: urdf
     name: rover
     uri: package://mrover/urdf/rover/rover.urdf.xacro
+    translation: [ 0, 0, 0.5 ]
   - type: urdf
     name: world
     uri: package://mrover/urdf/world/world.urdf.xacro

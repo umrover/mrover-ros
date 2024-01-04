@@ -10,6 +10,7 @@ namespace mrover {
             Eigen::Matrix4f cameraToClip = perspective(mFov * DEG_TO_RAD, aspect, NEAR, FAR).cast<float>();
             mPbrProgram.uniform("cameraToClip", cameraToClip);
 
+            // TODO(quintin): Change this
             SE3 cameraInWorld = btTransformToSe3(camera.link->m_cachedWorldTransform);
             mPbrProgram.uniform("cameraInWorld", cameraInWorld.position().cast<float>());
             mPbrProgram.uniform("worldToCamera", ROS_TO_GL * cameraInWorld.matrix().inverse().cast<float>());
@@ -62,18 +63,21 @@ namespace mrover {
         if (auto lookup = getUrdf("rover"); lookup) {
             URDF const& rover = *lookup;
 
-            btTransform baseLinkInMap = rover.physics->getLink(0).m_cachedWorldTransform;
+            SE3 baseLinkInMap = rover.linkInWorld("base_link");
 
             geometry_msgs::PoseWithCovarianceStamped pose;
             pose.header.stamp = ros::Time::now();
             pose.header.frame_id = "map";
-            pose.pose.pose.position.x = baseLinkInMap.getOrigin().x();
-            pose.pose.pose.position.y = baseLinkInMap.getOrigin().y();
-            pose.pose.pose.position.z = baseLinkInMap.getOrigin().z();
-            pose.pose.pose.orientation.w = baseLinkInMap.getRotation().w();
-            pose.pose.pose.orientation.x = baseLinkInMap.getRotation().x();
-            pose.pose.pose.orientation.y = baseLinkInMap.getRotation().y();
-            pose.pose.pose.orientation.z = baseLinkInMap.getRotation().z();
+            R3 p = baseLinkInMap.position();
+            pose.pose.pose.position.x = p.x();
+            pose.pose.pose.position.y = p.y();
+            pose.pose.pose.position.z = p.z();
+            Eigen::Quaterniond q = baseLinkInMap.rotation().quaternion();
+            pose.pose.pose.orientation.w = q.w();
+            pose.pose.pose.orientation.x = q.x();
+            pose.pose.pose.orientation.y = q.y();
+            pose.pose.pose.orientation.z = q.z();
+            // TODO(quintin, riley): fill in covariance
             mPosePub.publish(pose);
         }
     }

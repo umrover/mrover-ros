@@ -200,8 +200,7 @@
 
   <!-- Joints/Links -->
 
-  <link name="base_link">
-  </link>
+  <link name="base_link" />
 
   <link name="chassis_link">
     <xacro:box_inertia m="${chassis_mass}" d="${base_len}" w="${base_width}" h="${base_height}"/>

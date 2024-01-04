@@ -128,14 +128,15 @@ namespace mrover {
             rootLinkInMap.setRotation(btQuaternion{static_cast<btScalar>(rotation[0]), static_cast<btScalar>(rotation[1]), static_cast<btScalar>(rotation[2]), static_cast<btScalar>(rotation[3])});
         }
 
-        urdf::LinkConstSharedPtr rootLink = model.getRoot();
-        auto* multiBody = physics = simulator.makeBulletObject<btMultiBody>(simulator.mMultiBodies, model.links_.size(), 1, btVector3{1, 1, 1}, false, false);
+        auto* multiBody = physics = simulator.makeBulletObject<btMultiBody>(simulator.mMultiBodies, model.links_.size() - 1, 0, btVector3{0, 0, 0}, false, false);
         multiBody->setBaseWorldTransform(rootLinkInMap);
+
+        std::vector<btMultiBodyLinkCollider*> colliders;
 
         auto traverse = [&](auto&& self, urdf::LinkConstSharedPtr const& link) -> void {
             ROS_INFO_STREAM(std::format("Processing link: {}", link->name));
 
-            auto linkIndex = static_cast<int>(linkNameToIndex.size());
+            auto linkIndex = static_cast<int>(linkNameToIndex.size()) - 1;
             linkNameToIndex.emplace(link->name, linkIndex);
 
             if (link->name.contains("camera"sv)) {
@@ -160,6 +161,7 @@ namespace mrover {
             }
 
             auto* collider = simulator.makeBulletObject<btMultiBodyLinkCollider>(simulator.mMultibodyCollider, multiBody, linkIndex);
+            colliders.push_back(collider);
             collider->setCollisionShape(makeCollisionShapeForLink(simulator, link));
 
             btScalar mass = 1;
@@ -178,37 +180,39 @@ namespace mrover {
                 switch (parentJoint->type) {
                     case urdf::Joint::FIXED: {
                         ROS_INFO_STREAM(std::format("Fixed joint {}: {} <-> {}", parentJoint->name, parentJoint->parent_link_name, parentJoint->child_link_name));
-                        multiBody->setupFixed(linkIndex, mass, inertia, parentIndex, jointInParent.getRotation(), jointInParent.getOrigin(), comInJoint.getOrigin());
+                        multiBody->setupFixed(linkIndex, mass, inertia, parentIndex, jointInParent.getRotation().inverse(), jointInParent.getOrigin(), comInJoint.getOrigin());
                         break;
                     }
                     case urdf::Joint::CONTINUOUS:
                     case urdf::Joint::REVOLUTE: {
                         ROS_INFO_STREAM(std::format("Rotating joint {}: {} <-> {}", parentJoint->name, parentJoint->parent_link_name, parentJoint->child_link_name));
-                        multiBody->setupRevolute(linkIndex, mass, inertia, parentIndex, jointInParent.getRotation(), axisInJoint, jointInParent.getOrigin(), comInJoint.getOrigin());
+                        multiBody->setupRevolute(linkIndex, mass, inertia, parentIndex, jointInParent.getRotation().inverse(), axisInJoint, jointInParent.getOrigin(), comInJoint.getOrigin());
                         if (parentJoint->type == urdf::Joint::REVOLUTE) {
                             auto lower = static_cast<btScalar>(parentJoint->limits->lower), upper = static_cast<btScalar>(parentJoint->limits->upper);
                             auto* limitConstraint = simulator.makeBulletObject<btMultiBodyJointLimitConstraint>(simulator.mMultibodyConstraints, multiBody, linkIndex, lower, upper);
                             simulator.mDynamicsWorld->addMultiBodyConstraint(limitConstraint);
                         }
-                        // TODO(quintin): Impl
-                        // if (link->name.contains("wheel"sv)) {
-                        //     ROS_INFO_STREAM("\tGear");
-                        //     auto* gearConstraint = simulator.makeBulletObject<btMultiBodyGearConstraint>();
-                        //     simulator.mDynamicsWorld->addMultiBodyConstraint(gearConstraint);
-                        //     multiBody->getLink(linkIndex).m_collider->setFriction(1100);
-                        // }
+                        if (link->name.contains("wheel"sv)) {
+                            ROS_INFO_STREAM("\tGear");
+                            // TODO(quintin): Impl
+                            //     auto* gearConstraint = simulator.makeBulletObject<btMultiBodyGearConstraint>();
+                            //     simulator.mDynamicsWorld->addMultiBodyConstraint(gearConstraint);
+                            collider->setFriction(1100);
+                        }
                         break;
                     }
                     case urdf::Joint::PRISMATIC: {
                         ROS_INFO_STREAM(std::format("Prismatic joint {}: {} <-> {}", parentJoint->name, parentJoint->parent_link_name, parentJoint->child_link_name));
-                        multiBody->setupPrismatic(linkIndex, mass, inertia, parentIndex, jointInParent.getRotation(), axisInJoint, jointInParent.getOrigin(), comInJoint.getOrigin(), true);
+                        multiBody->setupPrismatic(linkIndex, mass, inertia, parentIndex, jointInParent.getRotation().inverse(), axisInJoint, jointInParent.getOrigin(), comInJoint.getOrigin(), true);
                         break;
                     }
                     default:
                         throw std::invalid_argument{"Unsupported joint type"};
                 }
             } else {
-                multiBody->setupFixed(0, mass, inertia, -1, btQuaternion::getIdentity(), btVector3{0, 0, 0}, btVector3{0, 0, 0});
+                multiBody->setBaseMass(mass);
+                multiBody->setBaseInertia(inertia);
+                multiBody->setBaseCollider(collider);
             }
 
             for (urdf::LinkConstSharedPtr childLink: link->child_links) {
@@ -220,6 +224,13 @@ namespace mrover {
 
         multiBody->finalizeMultiDof();
         simulator.mDynamicsWorld->addMultiBody(multiBody);
+
+        simulator.mDynamicsWorld->forwardKinematics();
+
+        for (btMultiBodyLinkCollider* collider: colliders) {
+            collider->setWorldTransform(collider->m_link == -1 ? multiBody->getBaseWorldTransform() : multiBody->getLink(collider->m_link).m_cachedWorldTransform);
+            simulator.mDynamicsWorld->addCollisionObject(collider, btBroadphaseProxy::DefaultFilter, btBroadphaseProxy::AllFilter);
+        }
     }
 
 } // namespace mrover

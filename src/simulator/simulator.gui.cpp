@@ -67,13 +67,13 @@ namespace mrover {
 
             ImGui::Text("FPS: %.1f", ImGui::GetIO().Framerate);
             // TODO(quintin): rover pos
-            // if (auto it = mLinkNameToRigidBody.find("rover#base_link"); it != mLinkNameToRigidBody.end()) {
-            //     btTransform const& baseLinkInMap = it->second->getWorldTransform();
-            //     btVector3 const& p = baseLinkInMap.getOrigin();
-            //     btQuaternion const& q = baseLinkInMap.getRotation();
-            //     ImGui::Text("Rover Position: (%.2f, %.2f, %.2f)", p.x(), p.y(), p.z());
-            //     ImGui::Text("Rover Orientation: (%.2f, %.2f, %.2f, %.2f)", q.w(), q.x(), q.y(), q.z());
-            // }
+            if (auto it = mUrdfs.find("rover"); it != mUrdfs.end()) {
+                SE3 baseLinkInMap = it->second.linkInWorld("base_link");
+                R3 p = baseLinkInMap.position();
+                Eigen::Quaterniond q = baseLinkInMap.rotation().quaternion();
+                ImGui::Text("Rover Position: (%.2f, %.2f, %.2f)", p.x(), p.y(), p.z());
+                ImGui::Text("Rover Orientation: (%.2f, %.2f, %.2f, %.2f)", q.w(), q.x(), q.y(), q.z());
+            }
 
             for (Camera const& camera: mCameras) {
                 float aspect = static_cast<float>(camera.resolution.width) / static_cast<float>(camera.resolution.height);
