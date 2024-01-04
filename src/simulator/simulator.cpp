@@ -92,10 +92,10 @@ namespace mrover {
                 auto it = mJointNameToHinges.find(name);
                 if (it == mJointNameToHinges.end()) continue;
 
-                btHingeConstraint* hinge = it->second;
-                hinge->enableMotor(true);
-                hinge->setMaxMotorImpulse(50.0);
-                hinge->setMotorTarget(0.0, 1.0f / ImGui::GetIO().Framerate);
+                // btHingeConstraint* hinge = it->second;
+                // hinge->enableMotor(true);
+                // hinge->setMaxMotorImpulse(5000.0);
+                // hinge->setMotorTarget(0.0, 1.0f / ImGui::GetIO().Framerate);
             }
 
             userControls(dt);

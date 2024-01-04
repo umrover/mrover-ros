@@ -86,6 +86,8 @@ namespace mrover {
                         triangleMesh->addTriangle(btVector3{v0.x(), v0.y(), v0.z()}, btVector3{v1.x(), v1.y(), v1.z()}, btVector3{v2.x(), v2.y(), v2.z()});
                     }
                     auto* meshShape = simulator.makeBulletObject<btBvhTriangleMeshShape>(simulator.mCollisionShapes, triangleMesh, true);
+                    // TODO(quintin): Configure this in the URDF
+                    meshShape->setMargin(0.01);
                     shapes.emplace_back(meshShape, urdfPoseToBtTransform(collision->origin));
                     simulator.mMeshToUri.emplace(meshShape, fileUri);
                     break;

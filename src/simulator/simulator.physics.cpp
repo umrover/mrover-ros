@@ -17,10 +17,11 @@ namespace mrover {
 
         mOverlappingPairCache = std::make_unique<btDbvtBroadphase>();
 
-        mSolver = std::make_unique<btMLCPSolver>(new btDantzigSolver{});
+        // mSolver = std::make_unique<btMLCPSolver>(new btDantzigSolver{});
+        mSolver = std::make_unique<btSequentialImpulseConstraintSolver>();
 
         mDynamicsWorld = std::make_unique<btDiscreteDynamicsWorld>(mDispatcher.get(), mOverlappingPairCache.get(), mSolver.get(), mCollisionConfig.get());
-        mDynamicsWorld->getSolverInfo().m_minimumSolverBatchSize = 1;
+        // mDynamicsWorld->getSolverInfo().m_minimumSolverBatchSize = 1;
     }
 
     auto SimulatorNodelet::physicsUpdate(Clock::duration dt) -> void {
