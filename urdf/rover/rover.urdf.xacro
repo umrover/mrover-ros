@@ -243,8 +243,8 @@
     <limit lower="0" upper="0.5" effort="0" velocity="0"/>
   </joint>
 
-  <xacro:arm_revolute_joint parent="arm_a" child="arm_b" x="0.034346" y="0" z="0.049024" lower="${-TAU / 4}" upper="0"/>
-  <xacro:arm_revolute_joint parent="arm_b" child="arm_c" x="0.534365" y="0" z="0.009056" lower="0" upper="${TAU / 4}"/>
+  <xacro:arm_revolute_joint parent="arm_a" child="arm_b" x="0.034346" y="0" z="0.049024" lower="${-TAU / 8}" upper="0"/>
+  <xacro:arm_revolute_joint parent="arm_b" child="arm_c" x="0.534365" y="0" z="0.009056" lower="0" upper="${TAU / 2}"/>
   <xacro:arm_revolute_joint parent="arm_c" child="arm_d" x="0.546033" y="0" z="0.088594" lower="0" upper="0"/>
   <xacro:arm_revolute_joint parent="arm_d" child="arm_e" x="0.044886" y="0" z="0" lower="0" upper="0"/>
 

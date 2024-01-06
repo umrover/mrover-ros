@@ -13,7 +13,7 @@ namespace mrover {
         // constexpr auto WHEEL_LINEAR_TO_ANGULAR = compound_unit<Radians, inverse<Meters>>{1 / 0.13};
 
         auto forward = MetersPerSecond{twist->linear.x};
-        auto turn = RadiansPerSecond{twist->angular.z} * 200 * 8;
+        auto turn = RadiansPerSecond{twist->angular.z} * 200 * 7; // TODO(quintin): wtf
 
         auto delta = turn * WHEEL_DISTANCE_INNER / Meters{1};
         RadiansPerSecond left = forward * WHEEL_LINEAR_TO_ANGULAR - delta;

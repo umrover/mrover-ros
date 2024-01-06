@@ -91,10 +91,16 @@ namespace mrover {
             if (auto it = mUrdfs.find("rover"); it != mUrdfs.end()) {
                 URDF const& rover = it->second;
 
-                for (auto const& name: {"arm_a_link", "arm_b_link", "arm_c_link", "arm_d_link", "arm_e_link"}) {
+                for (auto const& name: {"arm_a_link"s, "arm_b_link"s, "arm_c_link"s, "arm_d_link"s, "arm_e_link"s}) {
                     auto* motor = std::bit_cast<btMultiBodyJointMotor*>(rover.physics->getLink(rover.linkNameToIndex.at(name)).m_userPtr);
                     motor->setMaxAppliedImpulse(0.5);
-                    motor->setPositionTarget(0);
+                    if (name == "arm_b_link") {
+                        motor->setPositionTarget(-TAU * 0.125);
+                    } else if (name == "arm_c_link") {
+                        motor->setPositionTarget(TAU * 0.4);
+                    } else {
+                        motor->setPositionTarget(0);
+                    }
                 }
             }
 
