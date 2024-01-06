@@ -7,7 +7,7 @@
   <xacro:property name="base_len" value="0.478"/>
   <xacro:property name="base_height" value="0.183"/>
   <xacro:property name="wheel_radius" value="0.13"/>
-  <xacro:property name="wheel_width" value="0.1"/>
+  <xacro:property name="wheel_width" value="0.08"/>
   <xacro:property name="wheel_mass" value="0.8"/>
   <xacro:property name="chassis_mass" value="15"/>
   <xacro:property name="wheel_torque" value="2.68"/>
@@ -235,7 +235,7 @@
   <xacro:arm_link name="d" m="1" x="0.065" y="0.15" z="0.065"/>
   <xacro:arm_link name="e" m="1" x="0.15" y="0.155" z="0.032"/>
 
-  <joint name="chassis_link_to_arm_a_link" type="fixed">
+  <joint name="chassis_link_to_arm_a_link" type="prismatic">
     <origin xyz="0.164882 0.200235 0.051497"/>
     <parent link="chassis_link"/>
     <child link="arm_a_link"/>

@@ -130,8 +130,7 @@ namespace mrover {
         bool mRenderModels = true;
         bool mRenderWireframeColliders = false;
 
-        float mFloat1 = 0.0f;
-        float mFloat2 = 0.0f;
+        float mFloat = 0.0f;
 
         // ROS
 
@@ -259,7 +258,7 @@ namespace mrover {
 
         auto twistCallback(geometry_msgs::Twist::ConstPtr const& twist) -> void;
 
-        auto jointPositiionsCallback(Position::ConstPtr const& positions) -> void;
+        auto jointPositionsCallback(Position::ConstPtr const& positions) -> void;
     };
 
     auto uriToPath(std::string_view uri) -> std::filesystem::path;

@@ -19,8 +19,8 @@ namespace mrover {
 
         mBroadphase = std::make_unique<btDbvtBroadphase>(mOverlappingPairCache.get());
 
-        mSolver = std::make_unique<btMultiBodyMLCPConstraintSolver>(new btDantzigSolver{});
-        // mSolver = std::make_unique<btMultiBodyConstraintSolver>();
+        // mSolver = std::make_unique<btMultiBodyMLCPConstraintSolver>(new btDantzigSolver{});
+        mSolver = std::make_unique<btMultiBodyConstraintSolver>();
 
         mDynamicsWorld = std::make_unique<btMultiBodyDynamicsWorld>(mDispatcher.get(), mBroadphase.get(), mSolver.get(), mCollisionConfig.get());
         // mDynamicsWorld->getSolverInfo().m_minimumSolverBatchSize = 1;
@@ -29,16 +29,16 @@ namespace mrover {
     auto SimulatorNodelet::physicsUpdate(Clock::duration dt) -> void {
         mDynamicsWorld->setGravity(mGravityAcceleration);
 
-        // TODO(quintin): motor
-        // for (auto const& name: {"rover#chassis_link_to_left_rocker_link", "rover#chassis_link_to_right_rocker_link"}) {
-        //     auto it = mJointNameToHinges.find(name);
-        //     if (it == mJointNameToHinges.end()) continue;
-        //
-        //     btHingeConstraint* hinge = it->second;
-        //     hinge->enableMotor(true);
-        //     hinge->setMaxMotorImpulse(0.45);
-        //     hinge->setMotorTarget(0.0, std::chrono::duration_cast<std::chrono::duration<float>>(dt).count());
-        // }
+        // TODO(quintin): Clean this up
+        if (auto it = mUrdfs.find("rover"); it != mUrdfs.end()) {
+            URDF const& rover = it->second;
+
+            for (auto const& name: {"left_rocker_link", "right_rocker_link"}) {
+                auto* motor = std::bit_cast<btMultiBodyJointMotor*>(rover.physics->getLink(rover.linkNameToIndex.at(name)).m_userPtr);
+                motor->setMaxAppliedImpulse(0.5);
+                motor->setPositionTarget(0);
+            }
+        }
 
         int maxSubSteps = 0;
         int simStepCount = mDynamicsWorld->stepSimulation(std::chrono::duration_cast<std::chrono::duration<float>>(dt).count(), maxSubSteps, 1 / 120.0f);

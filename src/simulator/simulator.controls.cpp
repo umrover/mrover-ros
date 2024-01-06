@@ -6,11 +6,14 @@ namespace mrover {
         // TODO(quintin): Read these from the parameter server
         constexpr auto WHEEL_DISTANCE_INNER = Meters{0.43};
         using RadiansPerMeter = compound_unit<Radians, inverse<Meters>>;
-        constexpr auto WHEEL_LINEAR_TO_ANGULAR = RadiansPerMeter{384.615387};
+        constexpr auto WHEEL_LINEAR_TO_ANGULAR = RadiansPerMeter{1. / .13 * 50.};
         constexpr auto MAX_MOTOR_TORQUE = 2.68;
 
+        // constexpr auto WHEEL_DISTANCE_INNER = Meters{1};
+        // constexpr auto WHEEL_LINEAR_TO_ANGULAR = compound_unit<Radians, inverse<Meters>>{1 / 0.13};
+
         auto forward = MetersPerSecond{twist->linear.x};
-        auto turn = RadiansPerSecond{twist->angular.z} * 500;
+        auto turn = RadiansPerSecond{twist->angular.z} * 200 * 8;
 
         auto delta = turn * WHEEL_DISTANCE_INNER / Meters{1};
         RadiansPerSecond left = forward * WHEEL_LINEAR_TO_ANGULAR - delta;
@@ -27,15 +30,32 @@ namespace mrover {
                          "center_right_axle_link",
                          "back_right_axle_link",
                  }) {
-                auto* motor = (btMultiBodyJointMotor*) rover.physics->getLink(rover.linkNameToIndex.at(name)).m_userPtr;
+                int axle = rover.linkNameToIndex.at(name);
+                auto* motor = std::bit_cast<btMultiBodyJointMotor*>(rover.physics->getLink(axle).m_userPtr);
+                btScalar velocity = (name.contains("left"sv) ? left.get() : right.get()) / 50;
+                motor->setVelocityTarget(velocity);
+                motor->setMaxAppliedImpulse(MAX_MOTOR_TORQUE);
+            }
 
-                motor->setVelocityTarget(name.contains("left"sv) ? left.get() : right.get());
+            for (std::string const& name: {
+                         "front_left_wheel_link",
+                         "center_left_wheel_link",
+                         "back_left_wheel_link",
+                         "front_right_wheel_link",
+                         "center_right_wheel_link",
+                         "back_right_wheel_link",
+                 }) {
+                auto wheel = rover.linkNameToIndex.at(name);
+                auto axle = rover.physics->getParent(wheel);
+                auto* motor = std::bit_cast<btMultiBodyJointMotor*>(rover.physics->getLink(wheel).m_userPtr);
+                btScalar velocity = rover.physics->getJointVel(axle);
+                motor->setVelocityTarget(velocity);
+                motor->setMaxAppliedImpulse(MAX_MOTOR_TORQUE);
             }
         }
-
     }
 
-    auto SimulatorNodelet::jointPositiionsCallback(Position::ConstPtr const& positions) -> void {
+    auto SimulatorNodelet::jointPositionsCallback(Position::ConstPtr const& positions) -> void {
         // TODO(quintin): motor
         // for (auto const& combined: boost::combine(positions->names, positions->positions)) {
         //     std::string name = std::format("rover#{}", combined.get<0>());

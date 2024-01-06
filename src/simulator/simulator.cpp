@@ -13,7 +13,7 @@ namespace mrover {
         //     mCanSubs.emplace_back(mNh.subscribe<CAN>(channel, 1, [this, channel](CAN::ConstPtr const& msg) { canCallback(*msg, channel); }));
         // }
         mTwistSub = mNh.subscribe<geometry_msgs::Twist>("/cmd_vel", 1, &SimulatorNodelet::twistCallback, this);
-        mJointPositionsSub = mNh.subscribe<Position>("/joint_positions", 1, &SimulatorNodelet::jointPositiionsCallback, this);
+        mJointPositionsSub = mNh.subscribe<Position>("/joint_positions", 1, &SimulatorNodelet::jointPositionsCallback, this);
 
         mPosePub = mNh.advertise<geometry_msgs::PoseWithCovarianceStamped>("/linearized_pose", 1);
 
@@ -88,16 +88,15 @@ namespace mrover {
             // SDL_SetRelativeMouseMode(mInGui ? SDL_FALSE : SDL_TRUE);
             mLoopProfiler.measureEvent("SDL Events");
 
-            // TODO(quintin): motor
-            // for (auto const& name: {"rover#arm_b_link_to_arm_c_link", "rover#arm_c_link_to_arm_d_link", "rover#arm_d_link_to_arm_e_link"}) {
-            //     auto it = mJointNameToHinges.find(name);
-            //     if (it == mJointNameToHinges.end()) continue;
-            //
-            //     // btHingeConstraint* hinge = it->second;
-            //     // hinge->enableMotor(true);
-            //     // hinge->setMaxMotorImpulse(5000.0);
-            //     // hinge->setMotorTarget(0.0, 1.0f / ImGui::GetIO().Framerate);
-            // }
+            if (auto it = mUrdfs.find("rover"); it != mUrdfs.end()) {
+                URDF const& rover = it->second;
+
+                for (auto const& name: {"arm_a_link", "arm_b_link", "arm_c_link", "arm_d_link", "arm_e_link"}) {
+                    auto* motor = std::bit_cast<btMultiBodyJointMotor*>(rover.physics->getLink(rover.linkNameToIndex.at(name)).m_userPtr);
+                    motor->setMaxAppliedImpulse(0.5);
+                    motor->setPositionTarget(0);
+                }
+            }
 
             userControls(dt);
             mLoopProfiler.measureEvent("Controls");

@@ -58,6 +58,8 @@ namespace mrover {
             ImGui::Checkbox("Render Models (M)", &mRenderModels);
             ImGui::Checkbox("Render Wireframe Colliders (C)", &mRenderWireframeColliders);
 
+            ImGui::SliderFloat("Float", &mFloat, 0.0f, 1000.0f);
+
             ImGui::EndDisabled();
             ImGui::End();
         }
@@ -66,7 +68,6 @@ namespace mrover {
             ImGui::Begin("Telemtry", nullptr);
 
             ImGui::Text("FPS: %.1f", ImGui::GetIO().Framerate);
-            // TODO(quintin): rover pos
             if (auto it = mUrdfs.find("rover"); it != mUrdfs.end()) {
                 URDF const& rover = it->second;
 
@@ -76,14 +77,14 @@ namespace mrover {
                 ImGui::Text("Rover Position: (%.2f, %.2f, %.2f)", p.x(), p.y(), p.z());
                 ImGui::Text("Rover Orientation: (%.2f, %.2f, %.2f, %.2f)", q.w(), q.x(), q.y(), q.z());
 
-                for (auto const& [name, i] : rover.linkNameToIndex) {
-                    if (i == -1) continue;
-
-                    btScalar vel = rover.physics->getJointVel(i);
-                    btScalar pos = rover.physics->getJointPos(i);
-
-                    ImGui::Text("%s: %.2f, %.2f", name.c_str(), pos, vel);
-                }
+                // for (auto const& [name, i] : rover.linkNameToIndex) {
+                //     if (i == -1) continue;
+                //
+                //     btScalar vel = rover.physics->getJointVel(i);
+                //     btScalar pos = rover.physics->getJointPos(i);
+                //
+                //     ImGui::Text("%s: %.2f, %.2f", name.c_str(), pos, vel);
+                // }
             }
 
             for (Camera const& camera: mCameras) {

@@ -129,7 +129,7 @@ namespace mrover {
         }
 
         std::size_t multiBodyLinkCount = model.links_.size() - 1; // Root link is treated separately by multibody, so subtract it off
-        auto* multiBody = physics = simulator.makeBulletObject<btMultiBody>(simulator.mMultiBodies, multiBodyLinkCount, 0, btVector3{0, 0, 0}, true, false);
+        auto* multiBody = physics = simulator.makeBulletObject<btMultiBody>(simulator.mMultiBodies, multiBodyLinkCount, 0, btVector3{0, 0, 0}, false, false);
         multiBody->setBaseWorldTransform(rootLinkInMap);
 
         std::vector<btMultiBodyLinkCollider*> collidersToFinalize;
@@ -142,7 +142,8 @@ namespace mrover {
             linkNameToIndex.emplace(link->name, linkIndex);
 
             if (link->name.contains("camera"sv)) {
-                makeCameraForLink(simulator, &multiBody->getLink(linkIndex));
+                Camera canera = makeCameraForLink(simulator, &multiBody->getLink(linkIndex));
+                simulator.mCameras.push_back(std::move(canera));
             }
 
             if (link->visual && link->visual->geometry) {
@@ -163,8 +164,10 @@ namespace mrover {
             }
 
             auto* collider = simulator.makeBulletObject<btMultiBodyLinkCollider>(simulator.mMultibodyCollider, multiBody, linkIndex);
+            collider->setFriction(1);
             collidersToFinalize.push_back(collider);
             collider->setCollisionShape(makeCollisionShapeForLink(simulator, link));
+            simulator.mDynamicsWorld->addCollisionObject(collider, btBroadphaseProxy::DefaultFilter, btBroadphaseProxy::AllFilter);
 
             btScalar mass = 1;
             btVector3 inertia{1, 1, 1}; // TODO(quintin): Is this a sane default?
@@ -188,7 +191,7 @@ namespace mrover {
                     case urdf::Joint::CONTINUOUS:
                     case urdf::Joint::REVOLUTE: {
                         ROS_INFO_STREAM(std::format("Rotating joint {}: {} ({}) <-> {} ({})", parentJoint->name, parentJoint->parent_link_name, parentIndex, parentJoint->child_link_name, linkIndex));
-                        multiBody->setupRevolute(linkIndex, mass, inertia, parentIndex, jointInParent.getRotation().inverse(), axisInJoint, jointInParent.getOrigin(), comInJoint.getOrigin());
+                        multiBody->setupRevolute(linkIndex, mass, inertia, parentIndex, jointInParent.getRotation().inverse(), axisInJoint, jointInParent.getOrigin(), comInJoint.getOrigin(), true);
                         if (parentJoint->type == urdf::Joint::REVOLUTE) {
                             auto lower = static_cast<btScalar>(parentJoint->limits->lower), upper = static_cast<btScalar>(parentJoint->limits->upper);
                             auto* limitConstraint = simulator.makeBulletObject<btMultiBodyJointLimitConstraint>(simulator.mMultibodyConstraints, multiBody, linkIndex, lower, upper);
@@ -198,19 +201,16 @@ namespace mrover {
                         if (link->name.contains("wheel"sv)) {
                             ROS_INFO_STREAM("\tGear");
 
-                            auto* gearConstraint = simulator.makeBulletObject<btMultiBodyGearConstraint>(simulator.mMultibodyConstraints, multiBody, parentIndex, multiBody, linkIndex, btVector3{}, btVector3{}, btMatrix3x3{}, btMatrix3x3{});
+                            // auto* gearConstraint = simulator.makeBulletObject<btMultiBodyGearConstraint>(simulator.mMultibodyConstraints, multiBody, parentIndex, multiBody, linkIndex, btVector3{}, btVector3{}, btMatrix3x3{}, btMatrix3x3{});
                             // gearConstraint->setMaxAppliedImpulse(10000);
-                            gearConstraint->setGearRatio(50);
-                            constraintsToFinalize.push_back(gearConstraint);
+                            // gearConstraint->setGearRatio(50);
+                            // gearConstraint->setErp(0.2);
+                            // constraintsToFinalize.push_back(gearConstraint);
 
-                            collider->setFriction(1100);
-                        }
-                        if (link->name.contains("axle"sv) || link->name.contains("rocker"sv)) {
-                            ROS_INFO_STREAM("\tMotor");
-                            auto* motor = simulator.makeBulletObject<btMultiBodyJointMotor>(simulator.mMultibodyConstraints, multiBody, linkIndex, 0, 2.68);
-                            constraintsToFinalize.push_back(motor);
-
-                            multiBody->getLink(linkIndex).m_userPtr = motor;
+                            collider->setRollingFriction(0.0);
+                            collider->setSpinningFriction(0.0);
+                            collider->setFriction(0.8);
+                            collider->setContactStiffnessAndDamping(30000, 1000);
                         }
                         break;
                     }
@@ -221,6 +221,19 @@ namespace mrover {
                     }
                     default:
                         throw std::invalid_argument{"Unsupported joint type"};
+                }
+                switch (parentJoint->type) {
+                    case urdf::Joint::CONTINUOUS:
+                    case urdf::Joint::REVOLUTE:
+                    case urdf::Joint::PRISMATIC: {
+                        ROS_INFO_STREAM("\tMotor");
+                        auto* motor = simulator.makeBulletObject<btMultiBodyJointMotor>(simulator.mMultibodyConstraints, multiBody, linkIndex, 0, 0);
+                        constraintsToFinalize.push_back(motor);
+                        multiBody->getLink(linkIndex).m_userPtr = motor;
+                        break;
+                    }
+                    default:
+                        break;
                 }
 
                 multiBody->getLink(linkIndex).m_collider = collider; // Bullet WHY? Why is this not exposed via a function call? This took a LONG time to figure out btw.
@@ -238,20 +251,25 @@ namespace mrover {
         traverse(traverse, model.getRoot());
 
         multiBody->finalizeMultiDof();
+        btAlignedObjectArray<btQuaternion> q;
+        btAlignedObjectArray<btVector3> m;
+        multiBody->forwardKinematics(q, m);
+        multiBody->updateCollisionObjectWorldTransforms(q, m);
         simulator.mDynamicsWorld->addMultiBody(multiBody);
 
-        simulator.mDynamicsWorld->forwardKinematics(); // Results in the links being properly placed in world space
+        // auto* gearConstraint = simulator.makeBulletObject<btMultiBodyGearConstraint>(simulator.mMultibodyConstraints, multiBody, 0, multiBody, 1, btVector3{}, btVector3{}, btMatrix3x3{}, btMatrix3x3{});
+        // gearConstraint->setMaxAppliedImpulse(10000);
+        // gearConstraint->setGearRatio(-2);
+        // gearConstraint->setErp(0.2);
+        // constraintsToFinalize.push_back(gearConstraint);
 
-        // For some reason you must add colliders and constraints after finalizing the multibody links
-
-        for (btMultiBodyLinkCollider* collider: collidersToFinalize) {
-            collider->setWorldTransform(collider->m_link == -1 ? multiBody->getBaseWorldTransform() : multiBody->getLink(collider->m_link).m_cachedWorldTransform);
-            simulator.mDynamicsWorld->addCollisionObject(collider, btBroadphaseProxy::DefaultFilter, btBroadphaseProxy::AllFilter);
-        }
+        // auto* motor = simulator.makeBulletObject<btMultiBodyJointMotor>(simulator.mMultibodyConstraints, multiBody, 0, 0, 0);
+        // constraintsToFinalize.push_back(motor);
+        // multiBody->getLink(0).m_userPtr = motor;
 
         for (btMultiBodyConstraint* constraint: constraintsToFinalize) {
-            simulator.mDynamicsWorld->addMultiBodyConstraint(constraint);
             constraint->finalizeMultiDof();
+            simulator.mDynamicsWorld->addMultiBodyConstraint(constraint);
         }
     }
 
