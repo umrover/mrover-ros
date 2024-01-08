@@ -12,6 +12,7 @@
 #include <stdexcept>
 #include <thread>
 #include <unordered_set>
+#include <span>
 
 #include <boost_cpp23_workaround.hpp>
 

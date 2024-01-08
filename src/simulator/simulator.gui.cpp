@@ -24,8 +24,8 @@ namespace mrover {
         } else {
             ImGui::Begin("History", nullptr, ImGuiWindowFlags_NoTitleBar);
 
-            ImGui::SliderInt("History", &mSelection, 0, static_cast<int>(mSaveHistory.size()) - 1, "");
-            std::size_t inverse = mSaveHistory.size() - 1 - static_cast<std::size_t>(mSelection);
+            ImGui::SliderInt("History", &mSelection, 0, static_cast<int>(mSaveHistory.size()), "");
+            std::size_t inverse = mSaveHistory.size() - static_cast<std::size_t>(mSelection);
             ImGui::SameLine();
             ImGui::Text("-%zu", inverse);
 
@@ -96,7 +96,7 @@ namespace mrover {
         }
 
         ImGui::Render();
-        ImGui_ImplWGPU_RenderDrawData(ImGui::GetDrawData(), mRenderPassEncoder);
+        ImGui_ImplWGPU_RenderDrawData(ImGui::GetDrawData(), mRenderPass);
 
         // ImGui_ImplWGPU_RenderDrawData(ImDrawData *draw_data, WGPURenderPassEncoder pass_encoder)
     }

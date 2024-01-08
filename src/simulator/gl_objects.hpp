@@ -2,6 +2,8 @@
 
 #include "pch.hpp"
 
+class SimulatorNodelet;
+
 namespace mrover {
 
     /**
@@ -15,21 +17,56 @@ namespace mrover {
         using value_type = T;
 
         std::vector<T> data;
-        wgpu::Buffer handle = nullptr;
 
-        auto prepare() -> bool {
+        wgpu::Buffer buffer = nullptr;
+
+        auto ensureUploaded(wgpu::Device& device, wgpu::Queue& queue, wgpu::BufferUsage const& usage) -> bool {
+            assert(device);
+            assert(queue);
+
             if (data.empty()) return false;
-            // if (handle != GL_INVALID_HANDLE) return false;
+            if (buffer != nullptr) return false;
 
-            // glGenBuffers(1, &handle);
-            // assert(handle != GL_INVALID_HANDLE);
+            wgpu::BufferDescriptor descriptor;
+            descriptor.usage = usage | wgpu::BufferUsage::CopyDst;
+            descriptor.size = static_cast<std::uint32_t>(data.size() * sizeof(T));
+            buffer = device.createBuffer(descriptor);
 
-            // // All subsequent global buffer operations will affect this buffer
-            // glBindBuffer(GlBufferTarget, handle);
-            // // Upload to the GPU
-            // glBufferData(GlBufferTarget, static_cast<GLsizeiptr>(data.size() * sizeof(T)), data.data(), GL_STATIC_DRAW);
+            queue.writeBuffer(buffer, 0, data.data(), descriptor.size);
 
             return true;
+        }
+
+        [[nodiscard]] auto sizeBytes() const -> std::size_t {
+            return data.size() * sizeof(T);
+        }
+    };
+
+    // TODO(quintin): clean up shared behavior between this and other types in this file
+    template<typename T>
+    struct Uniform {
+        T data{};
+
+        wgpu::Device device = nullptr;
+        wgpu::Queue queue = nullptr;
+
+        wgpu::Buffer buffer = nullptr;
+
+        auto init(wgpu::Device& device, wgpu::Queue const& queue) {
+            this->device = device;
+            this->queue = queue;
+
+            wgpu::BufferDescriptor descriptor;
+            descriptor.usage = wgpu::BufferUsage::Uniform | wgpu::BufferUsage::CopyDst;
+            descriptor.size = sizeof(T);
+            buffer = device.createBuffer(descriptor);
+        }
+
+        auto update(T const& value) -> void {
+            assert(queue);
+            assert(buffer);
+
+            queue.writeBuffer(buffer, 0, &value, sizeof(T));
         }
     };
 

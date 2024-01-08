@@ -64,6 +64,7 @@ namespace mrover {
                 }
                 case urdf::Geometry::MESH: {
                     auto mesh = std::dynamic_pointer_cast<urdf::Mesh>(collision->geometry);
+
                     assert(mesh);
 
                     std::string const& fileUri = mesh->filename;

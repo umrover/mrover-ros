@@ -25,8 +25,6 @@ namespace mrover {
 
     struct Model {
         struct Mesh {
-            // GLuint vao = GL_INVALID_HANDLE; // Vertex array object
-
             SharedBuffer<Eigen::Vector3f> vertices;
             SharedBuffer<Eigen::Vector3f> normals;
             SharedBuffer<Eigen::Vector2f> uvs;
@@ -152,6 +150,7 @@ namespace mrover {
         wgpu::Surface mSurface = nullptr;
         wgpu::Adapter mAdapter = nullptr;
         wgpu::Device mDevice = nullptr;
+        std::unique_ptr<wgpu::ErrorCallback> mErrorCallback;
         wgpu::Queue mQueue = nullptr;
         wgpu::SwapChain mSwapChain = nullptr;
 
@@ -160,12 +159,28 @@ namespace mrover {
 
         wgpu::ComputePipeline mPointCloud = nullptr;
 
-        wgpu::RenderPassEncoder mRenderPassEncoder = nullptr;
+        wgpu::RenderPassEncoder mRenderPass = nullptr;
 
         std::unordered_map<std::string, Model> mUriToModel;
 
         bool mHasFocus = false;
         bool mInGui = false;
+
+        Uniform<Eigen::Matrix4f> mModelToWorldUniform;
+        Uniform<Eigen::Matrix4f> mWorldToCameraUniform;
+        Uniform<Eigen::Matrix4f> mCameraToClipUniform;
+        Uniform<Eigen::Matrix4f> mModelToWorldForNormalsUniform;
+
+        Uniform<std::uint32_t> mMaterialUniform;
+        Uniform<std::uint32_t> mHasTextureUniform;
+        Uniform<Eigen::Vector3f> mLightInWorldUniform;
+        Uniform<Eigen::Vector3f> mCameraInWorldUniform;
+        Uniform<Eigen::Vector3f> mLightColorUniform;
+        Uniform<Eigen::Vector3f> mObjectColorUniform;
+        Uniform<std::uint32_t> mTextureSamplerUniform;
+
+        wgpu::BindGroup mVertexBindGroup = nullptr;
+        wgpu::BindGroup mFragmentBindGroup = nullptr;
 
         // Physics
 
@@ -235,7 +250,9 @@ namespace mrover {
 
         auto linksToTfUpdate() -> void;
 
-        auto keyCallback(GLFWwindow* window, int key, int scancode, int action, int mods) -> void;
+        auto keyCallback(int key, int scancode, int action, int mods) -> void;
+
+        auto frameBufferResizedCallback(int width, int height) -> void;
 
     public:
         SimulatorNodelet() = default;
@@ -260,7 +277,7 @@ namespace mrover {
 
         auto userControls(Clock::duration dt) -> void;
 
-        auto renderModels(bool isRoverCamera) -> void;
+        auto renderModels() -> void;
 
         auto renderWireframeColliders() -> void;
 
