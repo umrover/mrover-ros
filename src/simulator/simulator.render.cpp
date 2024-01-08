@@ -1,17 +1,13 @@
+#define WEBGPU_CPP_IMPLEMENTATION
+
 #include "simulator.hpp"
 
 namespace mrover {
 
-    constexpr int SDL_OK = 0;
-
     static std::string const MESHES_PATH = "package://mrover/urdf/meshes/primitives";
-    static std::string const CUBE_PRIMITIVE_URI = std::format("{}/cube.fbx", MESHES_PATH);
-    static std::string const SPHERE_PRIMITIVE_URI = std::format("{}/sphere.fbx", MESHES_PATH);
-    static std::string const CYLINDER_PRIMITIVE_URI = std::format("{}/cylinder.fbx", MESHES_PATH);
-
-    static auto check(bool condition) -> void {
-        if (!condition) throw std::runtime_error(std::format("SDL Error: {}", SDL_GetError()));
-    }
+    static std::string const CUBE_PRIMITIVE_URI = fmt::format("{}/cube.fbx", MESHES_PATH);
+    static std::string const SPHERE_PRIMITIVE_URI = fmt::format("{}/sphere.fbx", MESHES_PATH);
+    static std::string const CYLINDER_PRIMITIVE_URI = fmt::format("{}/cylinder.fbx", MESHES_PATH);
 
     auto btTransformToSim3(btTransform const& transform, btVector3 const& scale) -> SIM3 {
         btVector3 const& p = transform.getOrigin();
@@ -32,211 +28,262 @@ namespace mrover {
         return result;
     }
 
-    auto SimulatorNodelet::initRender() -> void {
+    auto SimulatorNodelet::initWindow() -> void {
+#ifdef __linux__
         // Force laptops with NVIDIA GPUs to use it instead of the integrated graphics
         setenv("DRI_PRIME", "1", true);
         setenv("__NV_PRIME_RENDER_OFFLOAD", "1", true);
         setenv("__GLX_VENDOR_LIBRARY_NAME", "nvidia", true);
+#endif
 
-        check(SDL_Init(SDL_INIT_VIDEO) == SDL_OK);
-        NODELET_INFO_STREAM(std::format("Initialized SDL Version: {}.{}.{}", SDL_MAJOR_VERSION, SDL_MINOR_VERSION, SDL_PATCHLEVEL));
+        if (glfwInit() != GLFW_TRUE) throw std::runtime_error("Failed to initialize GLFW");
+        glfwSetErrorCallback([](int error, char const* description) { throw std::runtime_error(fmt::format("GLFW Error {}: {}", error, description)); });
+        NODELET_INFO_STREAM(fmt::format("Initialized GLFW Version: {}.{}.{}", GLFW_VERSION_MAJOR, GLFW_VERSION_MINOR, GLFW_VERSION_REVISION));
 
-        SDL_DisplayMode displayMode;
-        check(SDL_GetDesktopDisplayMode(0, &displayMode) == SDL_OK);
-        assert(displayMode.w > 0 && displayMode.h > 0);
-
-        auto w = static_cast<int>(displayMode.w * 0.8), h = static_cast<int>(displayMode.h * 0.8);
+        int x, y, w, h;
+        glfwGetMonitorWorkarea(glfwGetPrimaryMonitor(), &x, &y, &w, &h);
 #ifdef NDEBUG
         constexpr auto WINDOW_NAME = "MRover Simulator";
 #else
         constexpr auto WINDOW_NAME = "MRover Simulator (DEBUG BUILD, MAY BE SLOW)";
 #endif
-        mWindow = SDLPointer<SDL_Window, SDL_CreateWindow, SDL_DestroyWindow>{WINDOW_NAME, SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED, w, h, SDL_WINDOW_OPENGL | SDL_WINDOW_RESIZABLE | SDL_WINDOW_ALLOW_HIGHDPI};
-        NODELET_INFO_STREAM(std::format("Created window of size: {}x{}", w, h));
+        glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
+        glfwWindowHint(GLFW_COCOA_RETINA_FRAMEBUFFER, GLFW_FALSE);
+        mWindow = GLFWPointer<GLFWwindow, glfwCreateWindow, glfwDestroyWindow>{w, h, WINDOW_NAME, nullptr, nullptr};
+        NODELET_INFO_STREAM(fmt::format("Created window of size: {}x{}", w, h));
+    }
 
-        check(SDL_GL_SetAttribute(SDL_GL_CONTEXT_PROFILE_MASK, SDL_GL_CONTEXT_PROFILE_CORE) == SDL_OK);
-        check(SDL_GL_SetAttribute(SDL_GL_CONTEXT_MAJOR_VERSION, 4) == SDL_OK);
-        check(SDL_GL_SetAttribute(SDL_GL_CONTEXT_MINOR_VERSION, 5) == SDL_OK);
-        check(SDL_GL_SetAttribute(SDL_GL_DOUBLEBUFFER, 1) == SDL_OK);
-        check(SDL_GL_SetAttribute(SDL_GL_DEPTH_SIZE, 24) == SDL_OK);
-        // check(SDL_GL_SetAttribute(SDL_GL_STENCIL_SIZE, 8) == SDL_OK);
-        // check(SDL_GL_SetAttribute(SDL_GL_MULTISAMPLEBUFFERS, 1) == SDL_OK);
-        // check(SDL_GL_SetAttribute(SDL_GL_MULTISAMPLESAMPLES, 4) == SDL_OK);
-        mGlContext = SDLPointer<std::remove_pointer_t<SDL_GLContext>, SDL_GL_CreateContext, SDL_GL_DeleteContext>{mWindow.get()};
-        check(SDL_GL_SetSwapInterval(0) == SDL_OK);
-        NODELET_INFO_STREAM(std::format("Initialized OpenGL Version: {}", reinterpret_cast<char const*>(glGetString(GL_VERSION))));
-        NODELET_INFO_STREAM(std::format("\tShading Language Version: {}", reinterpret_cast<char const*>(glGetString(GL_SHADING_LANGUAGE_VERSION))));
-        NODELET_INFO_STREAM(std::format("\tVendor: {}", reinterpret_cast<char const*>(glGetString(GL_VENDOR))));
-        NODELET_INFO_STREAM(std::format("\tRenderer: {}", reinterpret_cast<char const*>(glGetString(GL_RENDERER))));
+    auto SimulatorNodelet::initRender() -> void {
+        int w, h;
+        glfwGetWindowSize(mWindow.get(), &w, &h);
 
-        glewExperimental = GL_TRUE;
-        check(glewInit() == GLEW_OK);
+        {
+            wgpu::InstanceDescriptor descriptor{};
+            mInstance.emplace(wgpu::createInstance(descriptor));
+            if (!mInstance.value()) throw std::runtime_error("Failed to create WGPU instance");
+        }
+        {
+            mSurface = glfwGetWGPUSurface(mInstance.value(), mWindow.get());
+        }
+        {
+            wgpu::RequestAdapterOptions options;
+            mAdapter = mInstance->requestAdapter(options);
+            if (!mAdapter.value()) throw std::runtime_error("Failed to request WGPU adapter");
+        }
 
-        glEnable(GL_DEPTH_TEST);
-        glDepthFunc(GL_LEQUAL);
+        mDevice = mAdapter->createDevice();
+        if (!mDevice.value()) throw std::runtime_error("Failed to create WGPU device");
 
-        glClearColor(0.2f, 0.2f, 0.2f, 1.0f);
+        mQueue = mDevice->getQueue();
+        if (!mQueue.value()) throw std::runtime_error("Failed to get WGPU queue");
+
+        {
+            wgpu::SwapChainDescriptor descriptor{};
+            descriptor.usage = wgpu::TextureUsage::RenderAttachment;
+            descriptor.format = wgpu::TextureFormat::BGRA8Unorm;
+            descriptor.width = w;
+            descriptor.height = h;
+            descriptor.presentMode = wgpu::PresentMode::Mailbox;
+            mSwapChain = mDevice->createSwapChain(mSurface.value(), descriptor);
+            if (!mSwapChain.value()) throw std::runtime_error("Failed to create WGPU swap chain");
+        }
+        {
+            wgpu::RenderPipelineDescriptor descriptor{};
+            descriptor.vertex.entryPoint = "vs_main";
+            descriptor.primitive.topology = wgpu::PrimitiveTopology::TriangleList;
+            descriptor.primitive.stripIndexFormat = wgpu::IndexFormat::Uint32;
+            descriptor.primitive.cullMode = wgpu::CullMode::Front;
+            wgpu::FragmentState fragment;
+            fragment.entryPoint = "fs_main";
+            wgpu::BlendState blend;
+            wgpu::ColorTargetState colorTarget;
+            colorTarget.format = wgpu::TextureFormat::BGRA8Unorm;
+            colorTarget.blend = &blend;
+            colorTarget.writeMask = wgpu::ColorWriteMask::All;
+            fragment.targetCount = 1;
+            fragment.targets = &colorTarget;
+            descriptor.fragment = &fragment;
+            mPbr = mDevice->createRenderPipeline(descriptor);
+            if (!mPbr.value()) throw std::runtime_error("Failed to create WGPU render pipeline");
+        }
+
+        {
+            wgpu::ShaderModuleDescriptor shaderDescriptor;
+            shaderDescriptor.label = "PBR Vertex Shader";
+            mPbrVertexShader = mDevice->createShaderModule(shaderDescriptor);
+            if (!mPbrVertexShader.value()) throw std::runtime_error("Failed to create WGPU PBR vertex shader");
+
+            wgpu::ShaderModuleWGSLDescriptor moduleDescriptor;
+            auto shadersPath = std::filesystem::path{std::source_location::current().file_name()}.parent_path() / "shaders";
+            std::string code = readTextFile(shadersPath / "shaders.wgsl");
+            moduleDescriptor.code = code.c_str();
+            moduleDescriptor.chain.sType = wgpu::SType::ShaderModuleWGSLDescriptor;
+
+            shaderDescriptor.nextInChain = &moduleDescriptor.chain;
+        }
+
+        // mPbrProgram = Program<2>{
+        //         Shader{shadersPath / "pbr.vert", GL_VERTEX_SHADER},
+        //         Shader{shadersPath / "pbr.frag", GL_FRAGMENT_SHADER},
+        // };
+        // glUseProgram(mPbrProgram.handle);
+        // mPbrProgram.uniform("lightInWorld", Eigen::Vector3f{0, 0, 5});
+        // mPbrProgram.uniform("lightColor", Eigen::Vector3f{1, 1, 1});
+
+        // try {
+        //     mPointCloudProgram = Program<1>{
+        //             Shader{shadersPath / "pc.comp", GL_COMPUTE_SHADER},
+        //     };
+        // } catch (std::exception const& e) {
+        //     NODELET_WARN_STREAM(e.what());
+        // }
+
+        mUriToModel.emplace(CUBE_PRIMITIVE_URI, CUBE_PRIMITIVE_URI);
+        mUriToModel.emplace(SPHERE_PRIMITIVE_URI, SPHERE_PRIMITIVE_URI);
+        mUriToModel.emplace(CYLINDER_PRIMITIVE_URI, CYLINDER_PRIMITIVE_URI);
 
         IMGUI_CHECKVERSION();
         ImGui::CreateContext();
-        // float ddpi, hdpi, vdpi;
-        // SDL_GetDisplayDPI(0, &ddpi, &hdpi, &vdpi);
+        ImGui_ImplGlfw_InitForOther(mWindow.get(), true);
+        ImGui_ImplWGPU_Init(mDevice.value(), 1, wgpu::TextureFormat::BGRA8Unorm, wgpu::TextureFormat::Undefined);
+
         ImGuiIO& io = ImGui::GetIO();
         ImGuiStyle& style = ImGui::GetStyle();
         float scale = h > 1500 ? 2.0f : 1.0f;
         io.FontGlobalScale = scale;
         style.ScaleAllSizes(scale);
-        ImGui_ImplSDL2_InitForOpenGL(mWindow.get(), mGlContext.get());
-        ImGui_ImplOpenGL3_Init("#version 450 core");
-
-        auto shadersPath = std::filesystem::path{std::source_location::current().file_name()}.parent_path() / "shaders";
-        mPbrProgram = Program<2>{
-                Shader{shadersPath / "pbr.vert", GL_VERTEX_SHADER},
-                Shader{shadersPath / "pbr.frag", GL_FRAGMENT_SHADER},
-        };
-        glUseProgram(mPbrProgram.handle);
-        mPbrProgram.uniform("lightInWorld", Eigen::Vector3f{0, 0, 5});
-        mPbrProgram.uniform("lightColor", Eigen::Vector3f{1, 1, 1});
-
-        mPointCloudProgram = Program<1>{
-                Shader{shadersPath / "pc.comp", GL_COMPUTE_SHADER},
-        };
-
-        mUriToModel.emplace(CUBE_PRIMITIVE_URI, CUBE_PRIMITIVE_URI);
-        mUriToModel.emplace(SPHERE_PRIMITIVE_URI, SPHERE_PRIMITIVE_URI);
-        mUriToModel.emplace(CYLINDER_PRIMITIVE_URI, CYLINDER_PRIMITIVE_URI);
     }
 
     auto SimulatorNodelet::renderModel(Model& model, SIM3 const& modelToWorld, [[maybe_unused]] bool isRoverCamera) -> void {
         if (!model.areMeshesReady()) return;
 
-        mPbrProgram.uniform("modelToWorld", modelToWorld.matrix().cast<float>());
+        // mPbrProgram.uniform("modelToWorld", modelToWorld.matrix().cast<float>());
 
-        // See: http://www.lighthouse3d.com/tutorials/glsl-12-tutorial/the-normal-matrix/ for why this has to be treated specially
-        // TLDR: it preserves orthogonality between normal vectors and their respective surfaces with any model scaling (including non-uniform)
-        mPbrProgram.uniform("modelToWorldForNormals", modelToWorld.matrix().inverse().transpose().cast<float>());
+        // // See: http://www.lighthouse3d.com/tutorials/glsl-12-tutorial/the-normal-matrix/ for why this has to be treated specially
+        // // TLDR: it preserves orthogonality between normal vectors and their respective surfaces with any model scaling (including non-uniform)
+        // mPbrProgram.uniform("modelToWorldForNormals", modelToWorld.matrix().inverse().transpose().cast<float>());
 
-        for (Model::Mesh& mesh: model.meshes) {
-            if (mesh.vao == GL_INVALID_HANDLE) {
-                glGenVertexArrays(1, &mesh.vao);
-                assert(mesh.vao != GL_INVALID_HANDLE);
-            }
-            glBindVertexArray(mesh.vao);
+        // for (Model::Mesh& mesh: model.meshes) {
+        //     if (mesh.vao == GL_INVALID_HANDLE) {
+        //         glGenVertexArrays(1, &mesh.vao);
+        //         assert(mesh.vao != GL_INVALID_HANDLE);
+        //     }
+        //     glBindVertexArray(mesh.vao);
 
-            mesh.indices.prepare();
-            if (mesh.vertices.prepare()) {
-                glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, sizeof(decltype(mesh.vertices)::value_type), nullptr);
-                glEnableVertexAttribArray(0);
-            }
-            if (mesh.normals.prepare()) {
-                glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, sizeof(decltype(mesh.normals)::value_type), nullptr);
-                glEnableVertexAttribArray(1);
-            }
-            if (mesh.uvs.prepare()) {
-                glVertexAttribPointer(2, 2, GL_FLOAT, GL_FALSE, sizeof(decltype(mesh.uvs)::value_type), nullptr);
-                glEnableVertexAttribArray(2);
-            }
-            mesh.texture.prepare();
+        //     mesh.indices.prepare();
+        //     if (mesh.vertices.prepare()) {
+        //         glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, sizeof(decltype(mesh.vertices)::value_type), nullptr);
+        //         glEnableVertexAttribArray(0);
+        //     }
+        //     if (mesh.normals.prepare()) {
+        //         glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, sizeof(decltype(mesh.normals)::value_type), nullptr);
+        //         glEnableVertexAttribArray(1);
+        //     }
+        //     if (mesh.uvs.prepare()) {
+        //         glVertexAttribPointer(2, 2, GL_FLOAT, GL_FALSE, sizeof(decltype(mesh.uvs)::value_type), nullptr);
+        //         glEnableVertexAttribArray(2);
+        //     }
+        //     mesh.texture.prepare();
 
-            if (mesh.texture.handle == GL_INVALID_HANDLE) {
-                mPbrProgram.uniform("hasTexture", false);
-                mPbrProgram.uniform("objectColor", Eigen::Vector3f{1, 1, 1});
-            } else {
-                mPbrProgram.uniform("hasTexture", true);
-                glActiveTexture(GL_TEXTURE0);
-                glBindTexture(GL_TEXTURE_2D, mesh.texture.handle);
-            }
+        //     if (mesh.texture.handle == GL_INVALID_HANDLE) {
+        //         mPbrProgram.uniform("hasTexture", false);
+        //         mPbrProgram.uniform("objectColor", Eigen::Vector3f{1, 1, 1});
+        //     } else {
+        //         mPbrProgram.uniform("hasTexture", true);
+        //         glActiveTexture(GL_TEXTURE0);
+        //         glBindTexture(GL_TEXTURE_2D, mesh.texture.handle);
+        //     }
 
-            static_assert(std::is_same_v<decltype(mesh.indices)::value_type, std::uint32_t>);
-            glDrawElements(GL_TRIANGLES, static_cast<GLsizei>(mesh.indices.data.size()), GL_UNSIGNED_INT, nullptr);
-        }
+        //     static_assert(std::is_same_v<decltype(mesh.indices)::value_type, std::uint32_t>);
+        //     glDrawElements(GL_TRIANGLES, static_cast<GLsizei>(mesh.indices.data.size()), GL_UNSIGNED_INT, nullptr);
+        // }
     }
 
     auto SimulatorNodelet::renderModels(bool isRoverCamera) -> void {
-        glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
-        mPbrProgram.uniform("type", 1);
+        // glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
+        // mPbrProgram.uniform("type", 1);
 
-        for (auto const& [_, urdf]: mUrdfs) {
+        // for (auto const& [_, urdf]: mUrdfs) {
 
-            auto renderLink = [&](auto&& self, urdf::LinkConstSharedPtr const& link) -> void {
-                if (link->visual && link->visual->geometry) {
-                    if (auto urdfMesh = std::dynamic_pointer_cast<urdf::Mesh>(link->visual->geometry)) {
-                        Model& model = mUriToModel.at(urdfMesh->filename);
-                        SE3 linkInWorld = urdf.linkInWorld(link->name);
-                        SE3 modelInLink = btTransformToSe3(urdfPoseToBtTransform(link->visual->origin));
-                        SE3 modelInWorld = linkInWorld * modelInLink;
-                        renderModel(model, SIM3{modelInWorld.position(), modelInWorld.rotation(), R3::Ones()}, isRoverCamera);
-                    }
-                }
-                for (urdf::JointSharedPtr const& child_joint: link->child_joints) {
-                    self(self, urdf.model.getLink(child_joint->child_link_name));
-                }
-            };
+        //     auto renderLink = [&](auto&& self, urdf::LinkConstSharedPtr const& link) -> void {
+        //         if (link->visual && link->visual->geometry) {
+        //             if (auto urdfMesh = std::dynamic_pointer_cast<urdf::Mesh>(link->visual->geometry)) {
+        //                 Model& model = mUriToModel.at(urdfMesh->filename);
+        //                 SE3 linkInWorld = urdf.linkInWorld(link->name);
+        //                 SE3 modelInLink = btTransformToSe3(urdfPoseToBtTransform(link->visual->origin));
+        //                 SE3 modelInWorld = linkInWorld * modelInLink;
+        //                 renderModel(model, SIM3{modelInWorld.position(), modelInWorld.rotation(), R3::Ones()}, isRoverCamera);
+        //             }
+        //         }
+        //         for (urdf::JointSharedPtr const& child_joint: link->child_joints) {
+        //             self(self, urdf.model.getLink(child_joint->child_link_name));
+        //         }
+        //     };
 
-            renderLink(renderLink, urdf.model.getRoot());
-        }
+        //     renderLink(renderLink, urdf.model.getRoot());
+        // }
     }
 
     auto SimulatorNodelet::renderWireframeColliders() -> void {
-        glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
-        mPbrProgram.uniform("type", 0);
+        // glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
+        // mPbrProgram.uniform("type", 0);
 
-        for (auto const& collider: mMultibodyCollider) {
+        // for (auto const& collider: mMultibodyCollider) {
 
-            auto renderCollisionObject = [this](auto&& self, btTransform const& shapeToWorld, btCollisionShape const* shape) -> void {
-                if (auto* box = dynamic_cast<btBoxShape const*>(shape)) {
-                    btVector3 extents = box->getHalfExtentsWithoutMargin() * 2;
-                    SIM3 worldToModel = btTransformToSim3(shapeToWorld, extents);
-                    renderModel(mUriToModel.at(CUBE_PRIMITIVE_URI), worldToModel);
-                } else if (auto* sphere = dynamic_cast<btSphereShape const*>(shape)) {
-                    btScalar diameter = sphere->getRadius() * 2;
-                    SIM3 modelToWorld = btTransformToSim3(shapeToWorld, btVector3{diameter, diameter, diameter});
-                    renderModel(mUriToModel.at(SPHERE_PRIMITIVE_URI), modelToWorld);
-                } else if (auto* cylinder = dynamic_cast<btCylinderShapeZ const*>(shape)) {
-                    btVector3 extents = cylinder->getHalfExtentsWithoutMargin() * 2;
-                    SIM3 modelToWorld = btTransformToSim3(shapeToWorld, extents);
-                    renderModel(mUriToModel.at(CYLINDER_PRIMITIVE_URI), modelToWorld);
-                } else if (auto* compound = dynamic_cast<btCompoundShape const*>(shape)) {
-                    for (int i = 0; i < compound->getNumChildShapes(); ++i) {
-                        btTransform const& childToParent = compound->getChildTransform(i);
-                        btCollisionShape const* childShape = compound->getChildShape(i);
-                        btTransform childToWorld = shapeToWorld * childToParent;
-                        self(self, childToWorld, childShape);
-                    }
-                } else if (auto* mesh = dynamic_cast<btBvhTriangleMeshShape const*>(shape)) {
-                    SIM3 modelToWorld = btTransformToSim3(shapeToWorld, btVector3{1, 1, 1});
-                    renderModel(mUriToModel.at(mMeshToUri.at(const_cast<btBvhTriangleMeshShape*>(mesh))), modelToWorld);
-                } else if (dynamic_cast<btEmptyShape const*>(shape)) {
-                } else {
-                    NODELET_WARN_STREAM_ONCE(std::format("Tried to render unsupported collision shape: {}", shape->getName()));
-                }
-            };
+        //     auto renderCollisionObject = [this](auto&& self, btTransform const& shapeToWorld, btCollisionShape const* shape) -> void {
+        //         if (auto* box = dynamic_cast<btBoxShape const*>(shape)) {
+        //             btVector3 extents = box->getHalfExtentsWithoutMargin() * 2;
+        //             SIM3 worldToModel = btTransformToSim3(shapeToWorld, extents);
+        //             renderModel(mUriToModel.at(CUBE_PRIMITIVE_URI), worldToModel);
+        //         } else if (auto* sphere = dynamic_cast<btSphereShape const*>(shape)) {
+        //             btScalar diameter = sphere->getRadius() * 2;
+        //             SIM3 modelToWorld = btTransformToSim3(shapeToWorld, btVector3{diameter, diameter, diameter});
+        //             renderModel(mUriToModel.at(SPHERE_PRIMITIVE_URI), modelToWorld);
+        //         } else if (auto* cylinder = dynamic_cast<btCylinderShapeZ const*>(shape)) {
+        //             btVector3 extents = cylinder->getHalfExtentsWithoutMargin() * 2;
+        //             SIM3 modelToWorld = btTransformToSim3(shapeToWorld, extents);
+        //             renderModel(mUriToModel.at(CYLINDER_PRIMITIVE_URI), modelToWorld);
+        //         } else if (auto* compound = dynamic_cast<btCompoundShape const*>(shape)) {
+        //             for (int i = 0; i < compound->getNumChildShapes(); ++i) {
+        //                 btTransform const& childToParent = compound->getChildTransform(i);
+        //                 btCollisionShape const* childShape = compound->getChildShape(i);
+        //                 btTransform childToWorld = shapeToWorld * childToParent;
+        //                 self(self, childToWorld, childShape);
+        //             }
+        //         } else if (auto* mesh = dynamic_cast<btBvhTriangleMeshShape const*>(shape)) {
+        //             SIM3 modelToWorld = btTransformToSim3(shapeToWorld, btVector3{1, 1, 1});
+        //             renderModel(mUriToModel.at(mMeshToUri.at(const_cast<btBvhTriangleMeshShape*>(mesh))), modelToWorld);
+        //         } else if (dynamic_cast<btEmptyShape const*>(shape)) {
+        //         } else {
+        //             NODELET_WARN_STREAM_ONCE(fmt::format("Tried to render unsupported collision shape: {}", shape->getName()));
+        //         }
+        //     };
 
-            btTransform const& shapeToWorld = collider->getWorldTransform();
-            btCollisionShape const* shape = collider->getCollisionShape();
-            renderCollisionObject(renderCollisionObject, shapeToWorld, shape);
-        }
+        //     btTransform const& shapeToWorld = collider->getWorldTransform();
+        //     btCollisionShape const* shape = collider->getCollisionShape();
+        //     renderCollisionObject(renderCollisionObject, shapeToWorld, shape);
+        // }
     }
 
     auto SimulatorNodelet::renderUpdate() -> void {
-        int w{}, h{};
-        SDL_GetWindowSize(mWindow.get(), &w, &h);
+        // int w{}, h{};
+        // SDL_GetWindowSize(mWindow.get(), &w, &h);
 
-        glUseProgram(mPbrProgram.handle);
+        // glUseProgram(mPbrProgram.handle);
 
-        float aspect = static_cast<float>(w) / static_cast<float>(h);
-        Eigen::Matrix4f cameraToClip = perspective(mFov * DEG_TO_RAD, aspect, NEAR, FAR).cast<float>();
-        mPbrProgram.uniform("cameraToClip", cameraToClip);
+        // float aspect = static_cast<float>(w) / static_cast<float>(h);
+        // Eigen::Matrix4f cameraToClip = perspective(mFov * DEG_TO_RAD, aspect, NEAR, FAR).cast<float>();
+        // mPbrProgram.uniform("cameraToClip", cameraToClip);
 
-        mPbrProgram.uniform("cameraInWorld", mCameraInWorld.position().cast<float>());
-        Eigen::Matrix4f worldToCamera = ROS_TO_GL * mCameraInWorld.matrix().inverse().cast<float>();
-        mPbrProgram.uniform("worldToCamera", worldToCamera);
+        // mPbrProgram.uniform("cameraInWorld", mCameraInWorld.position().cast<float>());
+        // Eigen::Matrix4f worldToCamera = ROS_TO_GL * mCameraInWorld.matrix().inverse().cast<float>();
+        // mPbrProgram.uniform("worldToCamera", worldToCamera);
 
-        glBindFramebuffer(GL_FRAMEBUFFER, 0);
-        glViewport(0, 0, w, h);
-        glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-        if (mRenderModels) renderModels(false);
-        if (mRenderWireframeColliders) renderWireframeColliders();
+        // glBindFramebuffer(GL_FRAMEBUFFER, 0);
+        // glViewport(0, 0, w, h);
+        // glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+        // if (mRenderModels) renderModels(false);
+        // if (mRenderWireframeColliders) renderWireframeColliders();
     }
 
 } // namespace mrover

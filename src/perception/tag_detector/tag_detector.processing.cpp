@@ -51,12 +51,12 @@ namespace mrover {
         }
         auto* pixelPtr = reinterpret_cast<cv::Vec3b*>(mImg.data);
         auto* pointPtr = reinterpret_cast<Point const*>(msg->data.data());
-        std::for_each(std::execution::par_unseq, pixelPtr, pixelPtr + mImg.total(), [&](cv::Vec3b& pixel) {
-            size_t i = &pixel - pixelPtr;
-            pixel[0] = pointPtr[i].b;
-            pixel[1] = pointPtr[i].g;
-            pixel[2] = pointPtr[i].r;
-        });
+        // std::for_each(std::execution::par_unseq, pixelPtr, pixelPtr + mImg.total(), [&](cv::Vec3b& pixel) {
+        //     size_t i = &pixel - pixelPtr;
+        //     pixel[0] = pointPtr[i].b;
+        //     pixel[1] = pointPtr[i].g;
+        //     pixel[2] = pointPtr[i].r;
+        // });
         mProfiler.measureEvent("Convert");
 
         // Call thresholding
@@ -114,7 +114,7 @@ namespace mrover {
                     NODELET_WARN("Old data for immediate tag");
                 } catch (tf2::LookupException const&) {
                     NODELET_WARN("Expected transform for immediate tag");
-                } catch (tf::ConnectivityException const&) {
+                } catch (tf2::ConnectivityException const&) {
                     NODELET_WARN("Expected connection to odom frame. Is visual odometry running?");
                 }
             }
@@ -147,7 +147,7 @@ namespace mrover {
             mImgMsg.is_bigendian = __BYTE_ORDER__ == __ORDER_BIG_ENDIAN__;
             size_t size = mImgMsg.step * mImgMsg.height;
             mImgMsg.data.resize(size);
-            std::uninitialized_copy(std::execution::par_unseq, mImg.data, mImg.data + size, mImgMsg.data.begin());
+            std::memcpy(mImgMsg.data.data(), mImg.data, size);
             mImgPub.publish(mImgMsg);
         }
 

@@ -15,8 +15,8 @@ namespace mrover {
             mSaveHistory.push_back(std::move(save));
         }
 
-        ImGui_ImplOpenGL3_NewFrame();
-        ImGui_ImplSDL2_NewFrame(mWindow.get());
+        ImGui_ImplWGPU_NewFrame();
+        ImGui_ImplGlfw_NewFrame();
         ImGui::NewFrame();
 
         if (mEnablePhysics) {
@@ -89,14 +89,14 @@ namespace mrover {
 
             for (Camera const& camera: mCameras) {
                 float aspect = static_cast<float>(camera.resolution.width) / static_cast<float>(camera.resolution.height);
-                ImGui::Image(reinterpret_cast<void*>(static_cast<intptr_t>(camera.colorTextureHandle)), {320, 320 / aspect}, {0, 1}, {1, 0});
+                // ImGui::Image(reinterpret_cast<void*>(static_cast<intptr_t>(camera.colorTextureHandle)), {320, 320 / aspect}, {0, 1}, {1, 0});
             }
 
             ImGui::End();
         }
 
         ImGui::Render();
-        ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
+        // ImGui_ImplWGPU_RenderDrawData(ImDrawData *draw_data, WGPURenderPassEncoder pass_encoder)
     }
 
 } // namespace mrover

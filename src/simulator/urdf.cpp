@@ -114,7 +114,7 @@ namespace mrover {
 
     URDF::URDF(SimulatorNodelet& simulator, XmlRpc::XmlRpcValue const& init) {
         auto urdfUri = xmlRpcValueToTypeOrDefault<std::string>(init, "uri");
-        if (!model.initString(performXacro(uriToPath(urdfUri)))) throw std::runtime_error{std::format("Failed to parse URDF from URI: {}", urdfUri)};
+        if (!model.initString(performXacro(uriToPath(urdfUri)))) throw std::runtime_error{fmt::format("Failed to parse URDF from URI: {}", urdfUri)};
 
         name = xmlRpcValueToTypeOrDefault<std::string>(init, "name");
 
@@ -136,7 +136,7 @@ namespace mrover {
         std::vector<btMultiBodyConstraint*> constraintsToFinalize;
 
         auto traverse = [&](auto&& self, urdf::LinkConstSharedPtr const& link) -> void {
-            ROS_INFO_STREAM(std::format("Processing link: {}", link->name));
+            ROS_INFO_STREAM(fmt::format("Processing link: {}", link->name));
 
             auto linkIndex = static_cast<int>(linkNameToIndex.size()) - 1;
             linkNameToIndex.emplace(link->name, linkIndex);
@@ -160,7 +160,7 @@ namespace mrover {
                 }
             }
             if (std::size_t size = link->visual_array.size(); size > 1) {
-                ROS_WARN_STREAM(std::format("Link {} has {} visual elements, only the first one will be used", link->name, size));
+                ROS_WARN_STREAM(fmt::format("Link {} has {} visual elements, only the first one will be used", link->name, size));
             }
 
             auto* collider = simulator.makeBulletObject<btMultiBodyLinkCollider>(simulator.mMultibodyCollider, multiBody, linkIndex);
@@ -184,13 +184,13 @@ namespace mrover {
 
                 switch (parentJoint->type) {
                     case urdf::Joint::FIXED: {
-                        ROS_INFO_STREAM(std::format("Fixed joint {}: {} <-> {}", parentJoint->name, parentJoint->parent_link_name, parentJoint->child_link_name));
+                        ROS_INFO_STREAM(fmt::format("Fixed joint {}: {} <-> {}", parentJoint->name, parentJoint->parent_link_name, parentJoint->child_link_name));
                         multiBody->setupFixed(linkIndex, mass, inertia, parentIndex, jointInParent.getRotation().inverse(), jointInParent.getOrigin(), comInJoint.getOrigin());
                         break;
                     }
                     case urdf::Joint::CONTINUOUS:
                     case urdf::Joint::REVOLUTE: {
-                        ROS_INFO_STREAM(std::format("Rotating joint {}: {} ({}) <-> {} ({})", parentJoint->name, parentJoint->parent_link_name, parentIndex, parentJoint->child_link_name, linkIndex));
+                        ROS_INFO_STREAM(fmt::format("Rotating joint {}: {} ({}) <-> {} ({})", parentJoint->name, parentJoint->parent_link_name, parentIndex, parentJoint->child_link_name, linkIndex));
                         multiBody->setupRevolute(linkIndex, mass, inertia, parentIndex, jointInParent.getRotation().inverse(), axisInJoint, jointInParent.getOrigin(), comInJoint.getOrigin(), true);
                         if (parentJoint->type == urdf::Joint::REVOLUTE) {
                             auto lower = static_cast<btScalar>(parentJoint->limits->lower), upper = static_cast<btScalar>(parentJoint->limits->upper);
@@ -215,7 +215,7 @@ namespace mrover {
                         break;
                     }
                     case urdf::Joint::PRISMATIC: {
-                        ROS_INFO_STREAM(std::format("Prismatic joint {}: {} <-> {}", parentJoint->name, parentJoint->parent_link_name, parentJoint->child_link_name));
+                        ROS_INFO_STREAM(fmt::format("Prismatic joint {}: {} <-> {}", parentJoint->name, parentJoint->parent_link_name, parentJoint->child_link_name));
                         multiBody->setupPrismatic(linkIndex, mass, inertia, parentIndex, jointInParent.getRotation().inverse(), axisInJoint, jointInParent.getOrigin(), comInJoint.getOrigin(), true);
                         break;
                     }

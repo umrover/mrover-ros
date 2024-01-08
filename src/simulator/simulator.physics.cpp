@@ -9,7 +9,7 @@ namespace mrover {
     }
 
     auto SimulatorNodelet::initPhysics() -> void {
-        NODELET_INFO_STREAM(std::format("Using Bullet Physics Version: {}", btGetVersion()));
+        NODELET_INFO_STREAM(fmt::format("Using Bullet Physics Version: {}", btGetVersion()));
 
         mCollisionConfig = std::make_unique<btDefaultCollisionConfiguration>();
 
@@ -29,7 +29,7 @@ namespace mrover {
     auto SimulatorNodelet::physicsUpdate(Clock::duration dt) -> void {
         mDynamicsWorld->setGravity(mGravityAcceleration);
 
-        // TODO(quintin): Clean this up
+        // TODO(quintin): clean this up
         if (auto it = mUrdfs.find("rover"); it != mUrdfs.end()) {
             URDF const& rover = it->second;
 
@@ -40,6 +40,7 @@ namespace mrover {
             }
         }
 
+        // TODO(quintin): clean this up
         int maxSubSteps = 0;
         int simStepCount = mDynamicsWorld->stepSimulation(std::chrono::duration_cast<std::chrono::duration<float>>(dt).count(), maxSubSteps, 1 / 120.0f);
 

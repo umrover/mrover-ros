@@ -1,4 +1,4 @@
-#version 450 core
+#version 400 core
 
 const int TYPE_UNLIT = 0;
 const int TYPE_PBR = 1;
@@ -6,7 +6,7 @@ const int TYPE_PBR = 1;
 uniform int type;
 uniform bool hasTexture;
 uniform vec3 lightInWorld, cameraInWorld, lightColor, objectColor;
-uniform layout(binding = 0) sampler2D textureSampler;
+uniform sampler2D textureSampler;
 
 in vec3 positionInWorld, normalInWorld;
 in vec2 uv;

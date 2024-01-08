@@ -5,19 +5,19 @@
 namespace mrover {
 
     template<typename T, auto Creater, auto Deleter>
-    class SDLPointer {
+    class GLFWPointer {
         std::unique_ptr<T, decltype([](auto* p) { Deleter(p); })> mPointer;
 
         static auto check(T* result) -> T* {
-            if (!result) throw std::runtime_error(std::format("SDL Error: {}", SDL_GetError()));
+            if (!result) throw std::runtime_error("GLFW Error");
             return result;
         }
 
     public:
-        SDLPointer() = default;
+        GLFWPointer() = default;
 
         template<typename... Args>
-        explicit SDLPointer(Args&&... args)
+        explicit GLFWPointer(Args&&... args)
             : mPointer{check(Creater(std::forward<Args>(args)...))} {
         }
 

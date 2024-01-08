@@ -15,7 +15,7 @@ endmacro()
 
 macro(mrover_add_library name sources includes)
     file(GLOB_RECURSE CPP_LIB_SOURCES CONFIGURE_DEPENDS ${sources})
-    add_library(${name} ${CPP_LIB_SOURCES})
+    add_library(${name} ${ARGV3} ${CPP_LIB_SOURCES})
     target_include_directories(${name} PUBLIC ${includes})
     target_rosify(${name})
 endmacro()
@@ -38,7 +38,7 @@ endmacro()
 
 macro(mrover_add_nodelet name sources includes)
     # A nodelet runs inside another process so it is a library
-    mrover_add_library(${name}_nodelet ${sources} ${includes})
+    mrover_add_library(${name}_nodelet ${sources} ${includes} SHARED)
     # Also add a node for quick debugging
     mrover_add_node(${name} ${includes}/main.cpp)
     # Explicitly tell CMake to re-build the nodelet when the node is built

@@ -1,6 +1,17 @@
 cmake_minimum_required(VERSION 3.16)
 project(mrover VERSION 2024.0.0 LANGUAGES CXX)
 
+if (APPLE)
+    # Ensures that homebrew packages are never used over mamba packages
+    set(CMAKE_IGNORE_PATH /opt/homebrew)
+    # Boost uses deprecated C++ library features
+    # Thankfully libcxx has a compatibility mode for this
+    add_definitions(
+        -D_LIBCPP_ENABLE_CXX20_REMOVED_ALLOCATOR_MEMBERS
+        -D_LIBCPP_ENABLE_CXX20_REMOVED_ALLOCATOR_VOID_SPECIALIZATION
+    )
+endif ()
+
 set(CMAKE_CXX_STANDARD 23)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON) # Generate compile_commands.json for clangd
@@ -55,18 +66,20 @@ set(MROVER_CMAKE_INCLUDES
 ### ============ ###
 
 if (MROVER_BUILD_SIM)
+    include(cmake/webgpu.cmake)
+    add_subdirectory(deps/glfw3webgpu)
     find_package(OpenGL REQUIRED)
-    find_package(GLEW REQUIRED)
+    find_package(OpenCL REQUIRED)
     find_package(Assimp REQUIRED)
-    find_package(SDL2 REQUIRED COMPONENTS SDL2)
     find_package(Bullet REQUIRED)
+    find_package(fmt REQUIRED)
 endif ()
 find_package(OpenCV REQUIRED)
 find_package(ZED 2 QUIET)
 find_package(Eigen3 REQUIRED)
 find_package(PkgConfig REQUIRED)
-pkg_search_module(NetLink REQUIRED libnl-3.0)
-pkg_search_module(NetLinkRoute REQUIRED libnl-route-3.0)
+pkg_search_module(NetLink libnl-3.0)
+pkg_search_module(NetLinkRoute libnl-route-3.0)
 if (ZED_FOUND)
     # Anything newer than C++17 combined with libstdc++13 is not supported just yet by NVCC (the CUDA compiler)
     set(CMAKE_CUDA_STANDARD 17)
@@ -146,7 +159,7 @@ mrover_add_esw_bridge_node(test_arm_bridge src/esw/test_arm_bridge/*.cpp)
 ## Perception
 
 mrover_add_nodelet(tag_detector src/perception/tag_detector/*.cpp src/perception/tag_detector src/perception/tag_detector/pch.hpp)
-mrover_nodelet_link_libraries(tag_detector opencv_core opencv_objdetect opencv_aruco opencv_imgproc opencv_highgui tbb lie)
+mrover_nodelet_link_libraries(tag_detector tbb opencv_core opencv_objdetect opencv_aruco opencv_imgproc opencv_highgui fmt::fmt lie)
 
 if (ZED_FOUND)
     mrover_add_library(streaming src/esw/streaming/*.c* src/esw/streaming)
@@ -168,8 +181,9 @@ endif ()
 
 if (MROVER_BUILD_SIM)
     mrover_add_nodelet(simulator src/simulator/*.cpp src/simulator src/simulator/pch.hpp)
-    mrover_nodelet_include_directories(simulator ${SDL2_INCLUDE_DIRS} ${OPENGL_INCLUDE_DIR} ${ASSIMP_INCLUDE_DIRS} ${GLEW_INCLUDE_DIRS} ${BULLET_INCLUDE_DIRS} ${OPENCV_INCLUDE_DIRS} src/simulator/imgui)
-    mrover_nodelet_link_libraries(simulator ${SDL2_LIBRARIES} ${OPENGL_LIBRARIES} ${ASSIMP_LIBRARIES} ${GLEW_LIBRARIES} ${BULLET_LIBRARIES} lie tbb opencv_core opencv_imgcodecs opencv_imgproc)
+    mrover_nodelet_include_directories(simulator ${ASSIMP_INCLUDE_DIRS} ${BULLET_INCLUDE_DIRS} ${OPENCV_INCLUDE_DIRS} src/simulator/imgui)
+    mrover_nodelet_link_libraries(simulator ${ASSIMP_LIBRARIES} ${BULLET_LIBRARIES} glfw3webgpu webgpu tbb glfw fmt::fmt opencv_core opencv_imgcodecs opencv_imgproc lie)
+    mrover_nodelet_defines(simulator BOOST_THREAD_PROVIDES_FUTURE)
 endif ()
 
 # TODO

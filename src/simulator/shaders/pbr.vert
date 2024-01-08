@@ -1,4 +1,4 @@
-#version 450 core
+#version 400 core
 
 uniform mat4 modelToWorld, worldToCamera, cameraToClip, modelToWorldForNormals;
 

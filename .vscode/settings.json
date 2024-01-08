@@ -38,4 +38,9 @@
         "/home/eric/catkin_ws/devel/lib/python3/dist-packages",
         "/opt/ros/noetic/lib/python3/dist-packages"
     ],
+    "cSpell.words": [
+        "Eigen",
+        "GLFW",
+        "wgpu"
+    ],
 }

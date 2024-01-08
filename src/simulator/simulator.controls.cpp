@@ -58,7 +58,7 @@ namespace mrover {
     auto SimulatorNodelet::jointPositionsCallback(Position::ConstPtr const& positions) -> void {
         // TODO(quintin): motor
         // for (auto const& combined: boost::combine(positions->names, positions->positions)) {
-        //     std::string name = std::format("rover#{}", combined.get<0>());
+        //     std::string name = fmt::format("rover#{}", combined.get<0>());
         //
         //     auto it = mJointNameToHinges.find(name);
         //     if (it == mJointNameToHinges.end()) continue;
@@ -70,70 +70,70 @@ namespace mrover {
         // }
     }
 
-    auto SimulatorNodelet::freeLook(Clock::duration dt, Uint8 const* keys) -> void {
-        float flySpeed = mFlySpeed * std::chrono::duration_cast<std::chrono::duration<float>>(dt).count();
-        if (keys[mCamRightKey]) {
-            mCameraInWorld = SE3{R3{0.0, -flySpeed, 0}, SO3{}} * mCameraInWorld;
-        }
-        if (keys[mCamLeftKey]) {
-            mCameraInWorld = SE3{R3{0.0, flySpeed, 0}, SO3{}} * mCameraInWorld;
-        }
-        if (keys[mCamForwardKey]) {
-            mCameraInWorld = SE3{R3{flySpeed, 0.0, 0.0}, SO3{}} * mCameraInWorld;
-        }
-        if (keys[mCamBackwardKey]) {
-            mCameraInWorld = SE3{R3{-flySpeed, 0.0, 0.0}, SO3{}} * mCameraInWorld;
-        }
-        if (keys[mCamUpKey]) {
-            mCameraInWorld = mCameraInWorld * SE3{R3{0.0, 0.0, flySpeed}, SO3{}};
-        }
-        if (keys[mCamDownKey]) {
-            mCameraInWorld = mCameraInWorld * SE3{R3{0.0, 0.0, -flySpeed}, SO3{}};
-        }
+    auto SimulatorNodelet::freeLook(Clock::duration dt) -> void {
+        // float flySpeed = mFlySpeed * std::chrono::duration_cast<std::chrono::duration<float>>(dt).count();
+        // if (keys[mCamRightKey]) {
+        //     mCameraInWorld = SE3{R3{0.0, -flySpeed, 0}, SO3{}} * mCameraInWorld;
+        // }
+        // if (keys[mCamLeftKey]) {
+        //     mCameraInWorld = SE3{R3{0.0, flySpeed, 0}, SO3{}} * mCameraInWorld;
+        // }
+        // if (keys[mCamForwardKey]) {
+        //     mCameraInWorld = SE3{R3{flySpeed, 0.0, 0.0}, SO3{}} * mCameraInWorld;
+        // }
+        // if (keys[mCamBackwardKey]) {
+        //     mCameraInWorld = SE3{R3{-flySpeed, 0.0, 0.0}, SO3{}} * mCameraInWorld;
+        // }
+        // if (keys[mCamUpKey]) {
+        //     mCameraInWorld = mCameraInWorld * SE3{R3{0.0, 0.0, flySpeed}, SO3{}};
+        // }
+        // if (keys[mCamDownKey]) {
+        //     mCameraInWorld = mCameraInWorld * SE3{R3{0.0, 0.0, -flySpeed}, SO3{}};
+        // }
 
-        int dx{}, dy{};
-        SDL_GetRelativeMouseState(&dx, &dy);
+        // int dx{}, dy{};
+        // SDL_GetRelativeMouseState(&dx, &dy);
 
-        auto turnX = static_cast<double>(-dx) * mLookSense;
-        auto turnY = static_cast<double>(dy) * mLookSense;
+        // auto turnX = static_cast<double>(-dx) * mLookSense;
+        // auto turnY = static_cast<double>(dy) * mLookSense;
 
-        R3 p = mCameraInWorld.position();
-        SO3 q = SO3{turnY, Eigen::Vector3d::UnitY()} * mCameraInWorld.rotation() * SO3{turnX, Eigen::Vector3d::UnitZ()};
-        mCameraInWorld = SE3{p, q};
+        // R3 p = mCameraInWorld.position();
+        // SO3 q = SO3{turnY, Eigen::Vector3d::UnitY()} * mCameraInWorld.rotation() * SO3{turnX, Eigen::Vector3d::UnitZ()};
+        // mCameraInWorld = SE3{p, q};
     }
 
     auto SimulatorNodelet::userControls(Clock::duration dt) -> void {
-        if (!mHasFocus || mInGui) return;
+        // if (!mHasFocus || mInGui) return;
 
-        Uint8 const* keys = SDL_GetKeyboardState(nullptr);
+        // Uint8 const* keys = SDL_GetKeyboardState(nullptr);
 
-        freeLook(dt, keys);
+        // freeLook(dt, keys);
 
-        std::optional<geometry_msgs::Twist> twist;
-        if (keys[mRoverRightKey]) {
-            if (!twist) twist.emplace();
-            twist->angular.z = -mRoverAngularSpeed;
-        }
-        if (keys[mRoverLeftKey]) {
-            if (!twist) twist.emplace();
-            twist->angular.z = mRoverAngularSpeed;
-        }
-        if (keys[mRoverForwardKey]) {
-            if (!twist) twist.emplace();
-            twist->linear.x = mRoverLinearSpeed;
-        }
-        if (keys[mRoverBackwardKey]) {
-            if (!twist) twist.emplace();
-            twist->linear.x = -mRoverLinearSpeed;
-        }
-        if (keys[mRoverStopKey]) {
-            if (!twist) twist.emplace();
-            twist->linear.x = 0.0;
-            twist->angular.z = 0.0;
-        }
-        if (twist) {
-            twistCallback(boost::make_shared<geometry_msgs::Twist const>(*twist));
-        }
+        // std::optional<geometry_msgs::Twist> twist;
+        // if (keys[mRoverRightKey]) {
+        //     if (!twist) twist.emplace();
+        //     twist->angular.z = -mRoverAngularSpeed;
+        // }
+        // if (keys[mRoverLeftKey]) {
+        //     if (!twist) twist.emplace();
+        //     twist->angular.z = mRoverAngularSpeed;
+        // }
+        // if (keys[mRoverForwardKey]) {
+        //     if (!twist) twist.emplace();
+        //     twist->linear.x = mRoverLinearSpeed;
+        // }
+        // if (keys[mRoverBackwardKey]) {
+        //     if (!twist) twist.emplace();
+        //     twist->linear.x = -mRoverLinearSpeed;
+        // }
+        // if (keys[mRoverStopKey]) {
+        //     if (!twist) twist.emplace();
+        //     twist->linear.x = 0.0;
+        //     twist->angular.z = 0.0;
+        // }
+        // if (twist) {
+        //     twistCallback(boost::make_shared<geometry_msgs::Twist const>(*twist));
+        // }
     }
 
 } // namespace mrover

@@ -25,19 +25,19 @@ namespace mrover {
 
     struct Model {
         struct Mesh {
-            GLuint vao = GL_INVALID_HANDLE; // Vertex array object
+            // GLuint vao = GL_INVALID_HANDLE; // Vertex array object
 
-            SharedBuffer<Eigen::Vector3f, GL_ARRAY_BUFFER> vertices;
-            SharedBuffer<Eigen::Vector3f, GL_ARRAY_BUFFER> normals;
-            SharedBuffer<Eigen::Vector2f, GL_ARRAY_BUFFER> uvs;
-            SharedBuffer<std::uint32_t, GL_ELEMENT_ARRAY_BUFFER> indices;
+            SharedBuffer<Eigen::Vector3f> vertices;
+            SharedBuffer<Eigen::Vector3f> normals;
+            SharedBuffer<Eigen::Vector2f> uvs;
+            SharedBuffer<std::uint32_t> indices;
             SharedTexture texture;
         };
 
         // DO NOT access the mesh unless you are certain it has been set from the async loader
         std::vector<Mesh> meshes;
         // https://en.cppreference.com/w/cpp/thread/future
-        std::future<decltype(meshes)> asyncMeshesLoader;
+        boost::future<decltype(meshes)> asyncMeshesLoader;
 
         explicit Model(std::string_view uri);
 
@@ -60,7 +60,7 @@ namespace mrover {
 
         auto makeCameraForLink(SimulatorNodelet& simulator, btMultibodyLink const* link) -> Camera;
 
-        auto linkInWorld(std::string const& linkName) const -> SE3;
+        [[nodiscard]] auto linkInWorld(std::string const& linkName) const -> SE3;
     };
 
     struct PeriodicTask {
@@ -89,10 +89,10 @@ namespace mrover {
         PeriodicTask updateTask;
         ros::Publisher pcPub;
 
-        GLuint framebufferHandle = GL_INVALID_HANDLE;
-        GLuint colorTextureHandle = GL_INVALID_HANDLE;
-        GLuint depthTextureHandle = GL_INVALID_HANDLE;
-        GLuint pointCloudArrayHandle = GL_INVALID_HANDLE;
+        // GLuint framebufferHandle = GL_INVALID_HANDLE;
+        // GLuint colorTextureHandle = GL_INVALID_HANDLE;
+        // GLuint depthTextureHandle = GL_INVALID_HANDLE;
+        // GLuint pointCloudArrayHandle = GL_INVALID_HANDLE;
     };
 
     class SimulatorNodelet final : public nodelet::Nodelet {
@@ -103,22 +103,22 @@ namespace mrover {
 
         float mTargetUpdateRate = 180;
         bool mHeadless = false;
-        Sint32 mQuitKey = SDLK_q;
-        Sint32 mInGuiKey = SDLK_ESCAPE;
-        Sint32 mCamRightKey = SDL_SCANCODE_D;
-        Sint32 mCamLeftKey = SDL_SCANCODE_A;
-        Sint32 mCamForwardKey = SDL_SCANCODE_W;
-        Sint32 mCamBackwardKey = SDL_SCANCODE_S;
-        Sint32 mCamUpKey = SDL_SCANCODE_SPACE;
-        Sint32 mCamDownKey = SDL_SCANCODE_LCTRL;
-        Sint32 mRoverRightKey = SDL_SCANCODE_L;
-        Sint32 mRoverLeftKey = SDL_SCANCODE_J;
-        Sint32 mRoverForwardKey = SDL_SCANCODE_I;
-        Sint32 mRoverBackwardKey = SDL_SCANCODE_COMMA;
-        Sint32 mRoverStopKey = SDL_SCANCODE_K;
-        Sint32 mTogglePhysicsKey = SDLK_p;
-        Sint32 mToggleRenderModelsKey = SDLK_m;
-        Sint32 mToggleRenderWireframeCollidersKey = SDLK_c;
+        int mQuitKey = GLFW_KEY_Q;
+        int mInGuiKey = GLFW_KEY_ESCAPE;
+        int mCamRightKey = GLFW_KEY_D;
+        int mCamLeftKey = GLFW_KEY_A;
+        int mCamForwardKey = GLFW_KEY_W;
+        int mCamBackwardKey = GLFW_KEY_S;
+        int mCamUpKey = GLFW_KEY_SPACE;
+        int mCamDownKey = GLFW_KEY_LEFT_CONTROL;
+        int mRoverRightKey = GLFW_KEY_L;
+        int mRoverLeftKey = GLFW_KEY_J;
+        int mRoverForwardKey = GLFW_KEY_I;
+        int mRoverBackwardKey = GLFW_KEY_COMMA;
+        int mRoverStopKey = GLFW_KEY_K;
+        int mTogglePhysicsKey = GLFW_KEY_P;
+        int mToggleRenderModelsKey = GLFW_KEY_M;
+        int mToggleRenderWireframeCollidersKey = GLFW_KEY_C;
 
         float mFlySpeed = 5.0f;
         float mRoverLinearSpeed = 1.0f;
@@ -146,13 +146,21 @@ namespace mrover {
 
         // Rendering
 
-        SDLPointer<SDL_Window, SDL_CreateWindow, SDL_DestroyWindow> mWindow;
-        SDLPointer<std::remove_pointer_t<SDL_GLContext>, SDL_GL_CreateContext, SDL_GL_DeleteContext> mGlContext;
+        GLFWPointer<GLFWwindow, glfwCreateWindow, glfwDestroyWindow> mWindow;
+        std::optional<wgpu::Instance> mInstance;
+        std::optional<wgpu::Surface> mSurface;
+        std::optional<wgpu::Adapter> mAdapter;
+        std::optional<wgpu::Device> mDevice;
+        std::optional<wgpu::Queue> mQueue;
+        std::optional<wgpu::SwapChain> mSwapChain;
+
+        std::optional<wgpu::ShaderModule> mPbrVertexShader;
+        std::optional<wgpu::ShaderModule> mPbrFragmentShader;
+        std::optional<wgpu::RenderPipeline> mPbr;
+
+        std::optional<wgpu::ComputePipeline> mPointCloud;
 
         std::unordered_map<std::string, Model> mUriToModel;
-
-        Program<2> mPbrProgram;
-        Program<1> mPointCloudProgram;
 
         bool mHasFocus = false;
         bool mInGui = false;
@@ -230,6 +238,8 @@ namespace mrover {
 
         ~SimulatorNodelet() override;
 
+        auto initWindow() -> void;
+
         auto initRender() -> void;
 
         auto renderModel(Model& model, SIM3 const& modelToWorld, bool isRoverCamera = false) -> void;
@@ -242,7 +252,7 @@ namespace mrover {
 
         auto run() -> void;
 
-        auto freeLook(Clock::duration dt, Uint8 const* keys) -> void;
+        auto freeLook(Clock::duration dt) -> void;
 
         auto userControls(Clock::duration dt) -> void;
 
