@@ -51,6 +51,30 @@ namespace mrover {
         glfwWindowHint(GLFW_COCOA_RETINA_FRAMEBUFFER, GLFW_FALSE);
         mWindow = GLFWPointer<GLFWwindow, glfwCreateWindow, glfwDestroyWindow>{w, h, WINDOW_NAME, nullptr, nullptr};
         NODELET_INFO_STREAM(fmt::format("Created window of size: {}x{}", w, h));
+
+        glfwSetWindowUserPointer(mWindow.get(), this);
+        glfwSetKeyCallback(mWindow.get(), [](GLFWwindow* window, int key, int scancode, int action, int mods) {
+            auto* simulator = static_cast<SimulatorNodelet*>(glfwGetWindowUserPointer(window));
+            simulator->keyCallback(window, key, scancode, action, mods);
+        });
+    }
+
+    auto SimulatorNodelet::keyCallback(GLFWwindow* window, int key, int scancode, int action, int mods) -> void {
+        if (key == mQuitKey) {
+            ros::requestShutdown();
+        }
+        if (key == mTogglePhysicsKey) {
+            mEnablePhysics = !mEnablePhysics;
+        }
+        if (key == mToggleRenderModelsKey) {
+            mRenderModels = !mRenderModels;
+        }
+        if (key == mToggleRenderWireframeCollidersKey) {
+            mRenderWireframeColliders = !mRenderWireframeColliders;
+        }
+        if (key == mInGuiKey) {
+            mInGui = !mInGui;
+        }
     }
 
     auto SimulatorNodelet::initRender() -> void {
@@ -78,7 +102,7 @@ namespace mrover {
         if (!mQueue.value()) throw std::runtime_error("Failed to get WGPU queue");
 
         {
-            wgpu::SwapChainDescriptor descriptor{};
+            wgpu::SwapChainDescriptor descriptor;
             descriptor.usage = wgpu::TextureUsage::RenderAttachment;
             descriptor.format = wgpu::TextureFormat::BGRA8Unorm;
             descriptor.width = w;
@@ -88,12 +112,27 @@ namespace mrover {
             if (!mSwapChain.value()) throw std::runtime_error("Failed to create WGPU swap chain");
         }
         {
-            wgpu::RenderPipelineDescriptor descriptor{};
+            wgpu::ShaderModuleDescriptor shaderDescriptor;
+            mPbrShaderModule = mDevice->createShaderModule(shaderDescriptor);
+            if (!mPbrShaderModule.value()) throw std::runtime_error("Failed to create WGPU PBR shader module");
+
+            wgpu::ShaderModuleWGSLDescriptor moduleDescriptor;
+            auto shadersPath = std::filesystem::path{std::source_location::current().file_name()}.parent_path() / "shaders";
+            std::string code = readTextFile(shadersPath / "shaders.wgsl");
+            moduleDescriptor.code = code.c_str();
+            moduleDescriptor.chain.sType = wgpu::SType::ShaderModuleWGSLDescriptor;
+
+            shaderDescriptor.nextInChain = &moduleDescriptor.chain;
+        }
+        {
+            wgpu::RenderPipelineDescriptor descriptor;
             descriptor.vertex.entryPoint = "vs_main";
+            descriptor.vertex.module = mPbrShaderModule.value();
             descriptor.primitive.topology = wgpu::PrimitiveTopology::TriangleList;
             descriptor.primitive.stripIndexFormat = wgpu::IndexFormat::Uint32;
             descriptor.primitive.cullMode = wgpu::CullMode::Front;
             wgpu::FragmentState fragment;
+            fragment.module = mPbrShaderModule.value();
             fragment.entryPoint = "fs_main";
             wgpu::BlendState blend;
             wgpu::ColorTargetState colorTarget;
@@ -103,23 +142,8 @@ namespace mrover {
             fragment.targetCount = 1;
             fragment.targets = &colorTarget;
             descriptor.fragment = &fragment;
-            mPbr = mDevice->createRenderPipeline(descriptor);
-            if (!mPbr.value()) throw std::runtime_error("Failed to create WGPU render pipeline");
-        }
-
-        {
-            wgpu::ShaderModuleDescriptor shaderDescriptor;
-            shaderDescriptor.label = "PBR Vertex Shader";
-            mPbrVertexShader = mDevice->createShaderModule(shaderDescriptor);
-            if (!mPbrVertexShader.value()) throw std::runtime_error("Failed to create WGPU PBR vertex shader");
-
-            wgpu::ShaderModuleWGSLDescriptor moduleDescriptor;
-            auto shadersPath = std::filesystem::path{std::source_location::current().file_name()}.parent_path() / "shaders";
-            std::string code = readTextFile(shadersPath / "shaders.wgsl");
-            moduleDescriptor.code = code.c_str();
-            moduleDescriptor.chain.sType = wgpu::SType::ShaderModuleWGSLDescriptor;
-
-            shaderDescriptor.nextInChain = &moduleDescriptor.chain;
+            mPbrPipeline = mDevice->createRenderPipeline(descriptor);
+            if (!mPbrPipeline.value()) throw std::runtime_error("Failed to create WGPU render pipeline");
         }
 
         // mPbrProgram = Program<2>{
@@ -284,6 +308,27 @@ namespace mrover {
         // glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
         // if (mRenderModels) renderModels(false);
         // if (mRenderWireframeColliders) renderWireframeColliders();
+
+        wgpu::TextureView nextTexture = mSwapChain->getCurrentTextureView();
+        if (!nextTexture) throw std::runtime_error("Failed to get WGPU next texture view");
+
+        wgpu::RenderPassColorAttachment colorAttachment;
+        colorAttachment.view = nextTexture;
+        colorAttachment.loadOp = wgpu::LoadOp::Clear;
+        colorAttachment.storeOp = wgpu::StoreOp::Store;
+        colorAttachment.clearValue = {0.9f, 0.1f, 0.2f, 1.0f};
+
+        wgpu::RenderPassDescriptor renderPassDescriptor;
+        renderPassDescriptor.colorAttachmentCount = 1;
+        renderPassDescriptor.colorAttachments = &colorAttachment;
+
+        wgpu::CommandEncoder encoder = mDevice->createCommandEncoder();
+        encoder.beginRenderPass(renderPassDescriptor);
+
+        wgpu::CommandBuffer commands = encoder.finish();
+        mQueue->submit(1, &commands);
+
+        mSwapChain->present();
     }
 
 } // namespace mrover

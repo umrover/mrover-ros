@@ -68,8 +68,6 @@ set(MROVER_CMAKE_INCLUDES
 if (MROVER_BUILD_SIM)
     include(cmake/webgpu.cmake)
     add_subdirectory(deps/glfw3webgpu)
-    find_package(OpenGL REQUIRED)
-    find_package(OpenCL REQUIRED)
     find_package(Assimp REQUIRED)
     find_package(Bullet REQUIRED)
     find_package(fmt REQUIRED)

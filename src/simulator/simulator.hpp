@@ -154,9 +154,8 @@ namespace mrover {
         std::optional<wgpu::Queue> mQueue;
         std::optional<wgpu::SwapChain> mSwapChain;
 
-        std::optional<wgpu::ShaderModule> mPbrVertexShader;
-        std::optional<wgpu::ShaderModule> mPbrFragmentShader;
-        std::optional<wgpu::RenderPipeline> mPbr;
+        std::optional<wgpu::ShaderModule> mPbrShaderModule;
+        std::optional<wgpu::RenderPipeline> mPbrPipeline;
 
         std::optional<wgpu::ComputePipeline> mPointCloud;
 
@@ -232,6 +231,8 @@ namespace mrover {
         auto gpsAndImusUpdate() -> void;
 
         auto linksToTfUpdate() -> void;
+
+        auto keyCallback(GLFWwindow* window, int key, int scancode, int action, int mods) -> void;
 
     public:
         SimulatorNodelet() = default;

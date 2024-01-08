@@ -2,9 +2,16 @@
 
 namespace mrover {
 
+    struct PollGlfw : ros::CallbackInterface {
+        auto call() -> CallResult override {
+            glfwPollEvents();
+            return Success;
+        }
+    };
+
     auto SimulatorNodelet::onInit() -> void try {
         mNh = getNodeHandle();
-        mPnh = getMTPrivateNodeHandle();
+        mPnh = getPrivateNodeHandle();
 
         mSaveTask = PeriodicTask{mPnh.param<float>("save_rate", 5)};
         mSaveHistory = boost::circular_buffer<SaveData>{static_cast<std::size_t>(mPnh.param<int>("save_history", 4096))};
@@ -37,11 +44,6 @@ namespace mrover {
             Clock::time_point beginTime = Clock::now();
 
             mLoopProfiler.beginLoop();
-
-            ros::spinOnce();
-            mLoopProfiler.measureEvent("ROS Callbacks");
-
-            glfwPollEvents();
 
             // for (SDL_Event event; SDL_PollEvent(&event);) {
             //     ImGui_ImplSDL2_ProcessEvent(&event);
@@ -88,8 +90,17 @@ namespace mrover {
             //     }
             // }
 
+            // Note(quintin):
+            // Apple sucks and does not support polling on a non-main thread (which we are currently on)
+            // Instead add to ROS's global callback queue which I think will be served by the main thread
+#ifdef __APPLE__
+            ros::getGlobalCallbackQueue()->addCallback(boost::make_shared<PollGlfw>());
+#else
+            glfwPollEvents();
+#endif
+
             // SDL_SetRelativeMouseMode(mInGui ? SDL_FALSE : SDL_TRUE);
-            mLoopProfiler.measureEvent("SDL Events");
+            mLoopProfiler.measureEvent("GLFW Events");
 
             if (auto it = mUrdfs.find("rover"); it != mUrdfs.end()) {
                 URDF const& rover = it->second;
@@ -121,11 +132,6 @@ namespace mrover {
 
             guiUpdate();
             mLoopProfiler.measureEvent("GUI");
-
-            // Apparently modern drivers lazily evaluate render commands until we actually need to present the frame
-            // This explains why this event is comparatively slow
-            glfwSwapBuffers(mWindow.get());
-            mLoopProfiler.measureEvent("Swap");
 
             std::this_thread::sleep_until(beginTime + std::chrono::duration_cast<Clock::duration>(std::chrono::duration<float>{1.0f / mTargetUpdateRate}));
             dt = Clock::now() - beginTime;

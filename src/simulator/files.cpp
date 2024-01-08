@@ -7,21 +7,17 @@ namespace mrover {
     constexpr static auto TEXTURE_URI_PREFIX = "package://mrover/urdf/textures"sv;
 
     auto performXacro(std::filesystem::path const& path) -> std::string {
-        // // xacro is a Python library so unfortunately we have to run it as a subprocess
-        // boost::filesystem::path xacroPath = boost::process::search_path("xacro");
-        // if (xacroPath.empty()) throw std::runtime_error{"Failed to find xacro"};
+        // "xacro" is a Python library so unfortunately we have to run it as a subprocess
 
-        // boost::process::ipstream is;
-        // boost::process::child c{xacroPath, path.string(), boost::process::std_out > is};
+        std::string command = fmt::format("xacro {}", path.string());
+        std::unique_ptr<FILE, decltype(&pclose)> pipe(popen(command.c_str(), "r"), pclose);
+        if (!pipe) throw std::runtime_error{fmt::format("Failed to xacro: {}", path.string())};
 
-        // c.wait();
+        std::array<char, 128> chunk{};
+        std::string output;
+        while (std::fgets(chunk.data(), chunk.size(), pipe.get()) != nullptr) output += chunk.data();
 
-        // std::string output{std::istreambuf_iterator{is}, std::istreambuf_iterator<char>{}};
-
-        // if (c.exit_code()) throw std::runtime_error{fmt::format("Failed to xacro: {}", output)};
-
-        // return output;
-        return {};
+        return output;
     }
 
     auto readTexture(std::filesystem::path const& textureFileName) -> cv::Mat {
