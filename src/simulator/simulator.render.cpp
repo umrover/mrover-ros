@@ -36,6 +36,7 @@ namespace mrover {
         setenv("__GLX_VENDOR_LIBRARY_NAME", "nvidia", true);
 #endif
 
+        // TODO(quintin): call glfwTerminate via raii
         if (glfwInit() != GLFW_TRUE) throw std::runtime_error("Failed to initialize GLFW");
         glfwSetErrorCallback([](int error, char const* description) { throw std::runtime_error(fmt::format("GLFW Error {}: {}", error, description)); });
         NODELET_INFO_STREAM(fmt::format("Initialized GLFW Version: {}.{}.{}", GLFW_VERSION_MAJOR, GLFW_VERSION_MINOR, GLFW_VERSION_REVISION));
@@ -145,22 +146,6 @@ namespace mrover {
             mPbrPipeline = mDevice->createRenderPipeline(descriptor);
             if (!mPbrPipeline.value()) throw std::runtime_error("Failed to create WGPU render pipeline");
         }
-
-        // mPbrProgram = Program<2>{
-        //         Shader{shadersPath / "pbr.vert", GL_VERTEX_SHADER},
-        //         Shader{shadersPath / "pbr.frag", GL_FRAGMENT_SHADER},
-        // };
-        // glUseProgram(mPbrProgram.handle);
-        // mPbrProgram.uniform("lightInWorld", Eigen::Vector3f{0, 0, 5});
-        // mPbrProgram.uniform("lightColor", Eigen::Vector3f{1, 1, 1});
-
-        // try {
-        //     mPointCloudProgram = Program<1>{
-        //             Shader{shadersPath / "pc.comp", GL_COMPUTE_SHADER},
-        //     };
-        // } catch (std::exception const& e) {
-        //     NODELET_WARN_STREAM(e.what());
-        // }
 
         mUriToModel.emplace(CUBE_PRIMITIVE_URI, CUBE_PRIMITIVE_URI);
         mUriToModel.emplace(SPHERE_PRIMITIVE_URI, SPHERE_PRIMITIVE_URI);
@@ -290,6 +275,24 @@ namespace mrover {
     }
 
     auto SimulatorNodelet::renderUpdate() -> void {
+        wgpu::TextureView nextTexture = mSwapChain->getCurrentTextureView();
+        if (!nextTexture) throw std::runtime_error("Failed to get WGPU next texture view");
+
+        wgpu::RenderPassColorAttachment colorAttachment;
+        colorAttachment.view = nextTexture;
+        colorAttachment.loadOp = wgpu::LoadOp::Clear;
+        colorAttachment.storeOp = wgpu::StoreOp::Store;
+        colorAttachment.clearValue = {0.9f, 0.1f, 0.2f, 1.0f};
+
+        wgpu::RenderPassDescriptor renderPassDescriptor;
+        renderPassDescriptor.colorAttachmentCount = 1;
+        renderPassDescriptor.colorAttachments = &colorAttachment;
+
+        wgpu::CommandEncoder encoder = mDevice->createCommandEncoder();
+        mRenderPassEncoder.emplace(encoder.beginRenderPass(renderPassDescriptor));
+
+        camerasUpdate();
+
         // int w{}, h{};
         // SDL_GetWindowSize(mWindow.get(), &w, &h);
 
@@ -309,21 +312,9 @@ namespace mrover {
         // if (mRenderModels) renderModels(false);
         // if (mRenderWireframeColliders) renderWireframeColliders();
 
-        wgpu::TextureView nextTexture = mSwapChain->getCurrentTextureView();
-        if (!nextTexture) throw std::runtime_error("Failed to get WGPU next texture view");
+        guiUpdate();
 
-        wgpu::RenderPassColorAttachment colorAttachment;
-        colorAttachment.view = nextTexture;
-        colorAttachment.loadOp = wgpu::LoadOp::Clear;
-        colorAttachment.storeOp = wgpu::StoreOp::Store;
-        colorAttachment.clearValue = {0.9f, 0.1f, 0.2f, 1.0f};
-
-        wgpu::RenderPassDescriptor renderPassDescriptor;
-        renderPassDescriptor.colorAttachmentCount = 1;
-        renderPassDescriptor.colorAttachments = &colorAttachment;
-
-        wgpu::CommandEncoder encoder = mDevice->createCommandEncoder();
-        encoder.beginRenderPass(renderPassDescriptor);
+        mRenderPassEncoder->end();
 
         wgpu::CommandBuffer commands = encoder.finish();
         mQueue->submit(1, &commands);

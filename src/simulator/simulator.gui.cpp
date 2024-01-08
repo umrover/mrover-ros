@@ -96,6 +96,8 @@ namespace mrover {
         }
 
         ImGui::Render();
+        ImGui_ImplWGPU_RenderDrawData(ImGui::GetDrawData(), mRenderPassEncoder.value());
+
         // ImGui_ImplWGPU_RenderDrawData(ImDrawData *draw_data, WGPURenderPassEncoder pass_encoder)
     }
 

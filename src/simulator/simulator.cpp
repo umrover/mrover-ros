@@ -124,14 +124,8 @@ namespace mrover {
             if (mEnablePhysics) physicsUpdate(dt);
             mLoopProfiler.measureEvent("Physics");
 
-            camerasUpdate();
-            mLoopProfiler.measureEvent("Cameras");
-
             renderUpdate();
             mLoopProfiler.measureEvent("Render");
-
-            guiUpdate();
-            mLoopProfiler.measureEvent("GUI");
 
             std::this_thread::sleep_until(beginTime + std::chrono::duration_cast<Clock::duration>(std::chrono::duration<float>{1.0f / mTargetUpdateRate}));
             dt = Clock::now() - beginTime;

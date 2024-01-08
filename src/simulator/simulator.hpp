@@ -159,6 +159,8 @@ namespace mrover {
 
         std::optional<wgpu::ComputePipeline> mPointCloud;
 
+        std::optional<wgpu::RenderPassEncoder> mRenderPassEncoder;
+
         std::unordered_map<std::string, Model> mUriToModel;
 
         bool mHasFocus = false;
