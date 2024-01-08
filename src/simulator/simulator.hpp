@@ -146,20 +146,21 @@ namespace mrover {
 
         // Rendering
 
-        GLFWPointer<GLFWwindow, glfwCreateWindow, glfwDestroyWindow> mWindow;
-        std::optional<wgpu::Instance> mInstance;
-        std::optional<wgpu::Surface> mSurface;
-        std::optional<wgpu::Adapter> mAdapter;
-        std::optional<wgpu::Device> mDevice;
-        std::optional<wgpu::Queue> mQueue;
-        std::optional<wgpu::SwapChain> mSwapChain;
+        GlfwInstance mGlfwInstance;
+        GlfwPointer<GLFWwindow, glfwCreateWindow, glfwDestroyWindow> mWindow;
+        wgpu::Instance mWgpuInstance = nullptr;
+        wgpu::Surface mSurface = nullptr;
+        wgpu::Adapter mAdapter = nullptr;
+        wgpu::Device mDevice = nullptr;
+        wgpu::Queue mQueue = nullptr;
+        wgpu::SwapChain mSwapChain = nullptr;
 
-        std::optional<wgpu::ShaderModule> mPbrShaderModule;
-        std::optional<wgpu::RenderPipeline> mPbrPipeline;
+        wgpu::ShaderModule mPbrShaderModule = nullptr;
+        wgpu::RenderPipeline mPbrPipeline = nullptr;
 
-        std::optional<wgpu::ComputePipeline> mPointCloud;
+        wgpu::ComputePipeline mPointCloud = nullptr;
 
-        std::optional<wgpu::RenderPassEncoder> mRenderPassEncoder;
+        wgpu::RenderPassEncoder mRenderPassEncoder = nullptr;
 
         std::unordered_map<std::string, Model> mUriToModel;
 

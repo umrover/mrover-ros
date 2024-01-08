@@ -5,9 +5,8 @@
 namespace mrover {
 
     /**
-     * \brief                    Buffer that exists on the CPU and GPU
-     * \tparam T                Element type
-     * \tparam GlBufferTarget   OpenGL target (e.g. GL_ARRAY_BUFFER, GL_ELEMENT_ARRAY_BUFFER)
+     * \brief       Buffer that exists on the CPU and GPU
+     * \tparam T    Element type
      *
      * \note There should be a concept requiring std::is_trivially_copyable_v<T> but for some reason Eigen types are not!
      */
@@ -16,6 +15,7 @@ namespace mrover {
         using value_type = T;
 
         std::vector<T> data;
+        wgpu::Buffer handle = nullptr;
 
         auto prepare() -> bool {
             if (data.empty()) return false;

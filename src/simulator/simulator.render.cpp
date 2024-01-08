@@ -37,7 +37,7 @@ namespace mrover {
 #endif
 
         // TODO(quintin): call glfwTerminate via raii
-        if (glfwInit() != GLFW_TRUE) throw std::runtime_error("Failed to initialize GLFW");
+        mGlfwInstance.init();
         glfwSetErrorCallback([](int error, char const* description) { throw std::runtime_error(fmt::format("GLFW Error {}: {}", error, description)); });
         NODELET_INFO_STREAM(fmt::format("Initialized GLFW Version: {}.{}.{}", GLFW_VERSION_MAJOR, GLFW_VERSION_MINOR, GLFW_VERSION_REVISION));
 
@@ -50,7 +50,7 @@ namespace mrover {
 #endif
         glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
         glfwWindowHint(GLFW_COCOA_RETINA_FRAMEBUFFER, GLFW_FALSE);
-        mWindow = GLFWPointer<GLFWwindow, glfwCreateWindow, glfwDestroyWindow>{w, h, WINDOW_NAME, nullptr, nullptr};
+        mWindow = GlfwPointer<GLFWwindow, glfwCreateWindow, glfwDestroyWindow>{w, h, WINDOW_NAME, nullptr, nullptr};
         NODELET_INFO_STREAM(fmt::format("Created window of size: {}x{}", w, h));
 
         glfwSetWindowUserPointer(mWindow.get(), this);
@@ -84,23 +84,23 @@ namespace mrover {
 
         {
             wgpu::InstanceDescriptor descriptor{};
-            mInstance.emplace(wgpu::createInstance(descriptor));
-            if (!mInstance.value()) throw std::runtime_error("Failed to create WGPU instance");
+            mWgpuInstance = wgpu::createInstance(descriptor);
+            if (!mWgpuInstance) throw std::runtime_error("Failed to create WGPU instance");
         }
         {
-            mSurface = glfwGetWGPUSurface(mInstance.value(), mWindow.get());
+            mSurface = glfwGetWGPUSurface(mWgpuInstance, mWindow.get());
         }
         {
             wgpu::RequestAdapterOptions options;
-            mAdapter = mInstance->requestAdapter(options);
-            if (!mAdapter.value()) throw std::runtime_error("Failed to request WGPU adapter");
+            mAdapter = mWgpuInstance.requestAdapter(options);
+            if (!mAdapter) throw std::runtime_error("Failed to request WGPU adapter");
         }
 
-        mDevice = mAdapter->createDevice();
-        if (!mDevice.value()) throw std::runtime_error("Failed to create WGPU device");
+        mDevice = mAdapter.createDevice();
+        if (!mDevice) throw std::runtime_error("Failed to create WGPU device");
 
-        mQueue = mDevice->getQueue();
-        if (!mQueue.value()) throw std::runtime_error("Failed to get WGPU queue");
+        mQueue = mDevice.getQueue();
+        if (!mQueue) throw std::runtime_error("Failed to get WGPU queue");
 
         {
             wgpu::SwapChainDescriptor descriptor;
@@ -109,13 +109,13 @@ namespace mrover {
             descriptor.width = w;
             descriptor.height = h;
             descriptor.presentMode = wgpu::PresentMode::Mailbox;
-            mSwapChain = mDevice->createSwapChain(mSurface.value(), descriptor);
-            if (!mSwapChain.value()) throw std::runtime_error("Failed to create WGPU swap chain");
+            mSwapChain = mDevice.createSwapChain(mSurface, descriptor);
+            if (!mSwapChain) throw std::runtime_error("Failed to create WGPU swap chain");
         }
         {
             wgpu::ShaderModuleDescriptor shaderDescriptor;
-            mPbrShaderModule = mDevice->createShaderModule(shaderDescriptor);
-            if (!mPbrShaderModule.value()) throw std::runtime_error("Failed to create WGPU PBR shader module");
+            mPbrShaderModule = mDevice.createShaderModule(shaderDescriptor);
+            if (!mPbrShaderModule) throw std::runtime_error("Failed to create WGPU PBR shader module");
 
             wgpu::ShaderModuleWGSLDescriptor moduleDescriptor;
             auto shadersPath = std::filesystem::path{std::source_location::current().file_name()}.parent_path() / "shaders";
@@ -128,12 +128,12 @@ namespace mrover {
         {
             wgpu::RenderPipelineDescriptor descriptor;
             descriptor.vertex.entryPoint = "vs_main";
-            descriptor.vertex.module = mPbrShaderModule.value();
+            descriptor.vertex.module = mPbrShaderModule;
             descriptor.primitive.topology = wgpu::PrimitiveTopology::TriangleList;
             descriptor.primitive.stripIndexFormat = wgpu::IndexFormat::Uint32;
             descriptor.primitive.cullMode = wgpu::CullMode::Front;
             wgpu::FragmentState fragment;
-            fragment.module = mPbrShaderModule.value();
+            fragment.module = mPbrShaderModule;
             fragment.entryPoint = "fs_main";
             wgpu::BlendState blend;
             wgpu::ColorTargetState colorTarget;
@@ -143,8 +143,8 @@ namespace mrover {
             fragment.targetCount = 1;
             fragment.targets = &colorTarget;
             descriptor.fragment = &fragment;
-            mPbrPipeline = mDevice->createRenderPipeline(descriptor);
-            if (!mPbrPipeline.value()) throw std::runtime_error("Failed to create WGPU render pipeline");
+            mPbrPipeline = mDevice.createRenderPipeline(descriptor);
+            if (!mPbrPipeline) throw std::runtime_error("Failed to create WGPU render pipeline");
         }
 
         mUriToModel.emplace(CUBE_PRIMITIVE_URI, CUBE_PRIMITIVE_URI);
@@ -154,7 +154,7 @@ namespace mrover {
         IMGUI_CHECKVERSION();
         ImGui::CreateContext();
         ImGui_ImplGlfw_InitForOther(mWindow.get(), true);
-        ImGui_ImplWGPU_Init(mDevice.value(), 1, wgpu::TextureFormat::BGRA8Unorm, wgpu::TextureFormat::Undefined);
+        ImGui_ImplWGPU_Init(mDevice, 1, wgpu::TextureFormat::BGRA8Unorm, wgpu::TextureFormat::Undefined);
 
         ImGuiIO& io = ImGui::GetIO();
         ImGuiStyle& style = ImGui::GetStyle();
@@ -275,7 +275,7 @@ namespace mrover {
     }
 
     auto SimulatorNodelet::renderUpdate() -> void {
-        wgpu::TextureView nextTexture = mSwapChain->getCurrentTextureView();
+        wgpu::TextureView nextTexture = mSwapChain.getCurrentTextureView();
         if (!nextTexture) throw std::runtime_error("Failed to get WGPU next texture view");
 
         wgpu::RenderPassColorAttachment colorAttachment;
@@ -288,8 +288,8 @@ namespace mrover {
         renderPassDescriptor.colorAttachmentCount = 1;
         renderPassDescriptor.colorAttachments = &colorAttachment;
 
-        wgpu::CommandEncoder encoder = mDevice->createCommandEncoder();
-        mRenderPassEncoder.emplace(encoder.beginRenderPass(renderPassDescriptor));
+        wgpu::CommandEncoder encoder = mDevice.createCommandEncoder();
+        mRenderPassEncoder = encoder.beginRenderPass(renderPassDescriptor);
 
         camerasUpdate();
 
@@ -314,12 +314,12 @@ namespace mrover {
 
         guiUpdate();
 
-        mRenderPassEncoder->end();
+        mRenderPassEncoder.end();
 
         wgpu::CommandBuffer commands = encoder.finish();
-        mQueue->submit(1, &commands);
+        mQueue.submit(1, &commands);
 
-        mSwapChain->present();
+        mSwapChain.present();
     }
 
 } // namespace mrover
