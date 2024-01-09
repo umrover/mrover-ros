@@ -4,6 +4,9 @@
 
 namespace mrover {
 
+    static const wgpu::TextureFormat COLOR_FORMAT = wgpu::TextureFormat::BGRA8Unorm;
+    static const wgpu::TextureFormat DEPTH_FORMAT = wgpu::TextureFormat::Depth24Plus;
+
     static std::string const MESHES_PATH = "package://mrover/urdf/meshes/primitives";
     static std::string const CUBE_PRIMITIVE_URI = fmt::format("{}/cube.fbx", MESHES_PATH);
     static std::string const SPHERE_PRIMITIVE_URI = fmt::format("{}/sphere.fbx", MESHES_PATH);
@@ -51,12 +54,10 @@ namespace mrover {
 
         glfwSetWindowUserPointer(mWindow.get(), this);
         glfwSetKeyCallback(mWindow.get(), [](GLFWwindow* window, int key, int scancode, int action, int mods) {
-            if (auto* simulator = static_cast<SimulatorNodelet*>(glfwGetWindowUserPointer(window)))
-                simulator->keyCallback(key, scancode, action, mods);
+            if (auto* simulator = static_cast<SimulatorNodelet*>(glfwGetWindowUserPointer(window))) simulator->keyCallback(key, scancode, action, mods);
         });
         glfwSetFramebufferSizeCallback(mWindow.get(), [](GLFWwindow* window, int width, int height) {
-            if (auto* simulator = static_cast<SimulatorNodelet*>(glfwGetWindowUserPointer(window)))
-                simulator->frameBufferResizedCallback(width, height);
+            if (auto* simulator = static_cast<SimulatorNodelet*>(glfwGetWindowUserPointer(window))) simulator->frameBufferResizedCallback(width, height);
         });
         glfwSetWindowFocusCallback(mWindow.get(), [](GLFWwindow* window, int focused) {
             if (auto* simulator = static_cast<SimulatorNodelet*>(glfwGetWindowUserPointer(window))) {
@@ -114,7 +115,7 @@ namespace mrover {
         {
             wgpu::SwapChainDescriptor descriptor;
             descriptor.usage = wgpu::TextureUsage::RenderAttachment;
-            descriptor.format = wgpu::TextureFormat::BGRA8Unorm;
+            descriptor.format = COLOR_FORMAT;
             descriptor.width = width;
             descriptor.height = height;
             descriptor.presentMode = wgpu::PresentMode::Immediate;
@@ -124,13 +125,13 @@ namespace mrover {
         {
             wgpu::TextureDescriptor descriptor;
             descriptor.dimension = wgpu::TextureDimension::_2D;
-            descriptor.format = wgpu::TextureFormat::Depth32Float;
+            descriptor.format = DEPTH_FORMAT;
             descriptor.mipLevelCount = 1;
             descriptor.sampleCount = 1;
             descriptor.size = {static_cast<std::uint32_t>(width), static_cast<std::uint32_t>(height), 1};
             descriptor.usage = wgpu::TextureUsage::RenderAttachment;
             descriptor.viewFormatCount = 1;
-            descriptor.viewFormats = &descriptor.format;
+            descriptor.viewFormats = reinterpret_cast<WGPUTextureFormat const*>(&DEPTH_FORMAT);
             mDepthTexture = mDevice.createTexture(descriptor);
         }
         {
@@ -139,7 +140,7 @@ namespace mrover {
             descriptor.arrayLayerCount = 1;
             descriptor.mipLevelCount = 1;
             descriptor.dimension = wgpu::TextureViewDimension::_2D;
-            descriptor.format = wgpu::TextureFormat::Depth32Float;
+            descriptor.format = DEPTH_FORMAT;
             mDepthTextureView = mDepthTexture.createView(descriptor);
         }
 
@@ -167,7 +168,7 @@ namespace mrover {
             wgpu::DepthStencilState depthStencil;
             depthStencil.depthCompare = wgpu::CompareFunction::Less;
             depthStencil.depthWriteEnabled = true;
-            depthStencil.format = wgpu::TextureFormat::Depth32Float;
+            depthStencil.format = DEPTH_FORMAT;
             depthStencil.stencilFront.compare = wgpu::CompareFunction::Always;
             depthStencil.stencilBack.compare = wgpu::CompareFunction::Always;
             descriptor.depthStencil = &depthStencil;
@@ -223,7 +224,7 @@ namespace mrover {
             blend.alpha.dstFactor = wgpu::BlendFactor::One;
             blend.alpha.operation = wgpu::BlendOperation::Add;
             wgpu::ColorTargetState colorTarget;
-            colorTarget.format = wgpu::TextureFormat::BGRA8Unorm;
+            colorTarget.format = COLOR_FORMAT;
             colorTarget.blend = &blend;
             colorTarget.writeMask = wgpu::ColorWriteMask::All;
             fragment.targetCount = 1;
@@ -287,7 +288,7 @@ namespace mrover {
         IMGUI_CHECKVERSION();
         ImGui::CreateContext();
         ImGui_ImplGlfw_InitForOther(mWindow.get(), true);
-        ImGui_ImplWGPU_Init(mDevice, 1, wgpu::TextureFormat::BGRA8Unorm, wgpu::TextureFormat::Depth32Float);
+        ImGui_ImplWGPU_Init(mDevice, 1, COLOR_FORMAT, DEPTH_FORMAT);
 
         int x, y, w, h;
         glfwGetMonitorWorkarea(glfwGetPrimaryMonitor(), &x, &y, &w, &h);
