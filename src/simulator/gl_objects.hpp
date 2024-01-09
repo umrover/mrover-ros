@@ -20,6 +20,8 @@ namespace mrover {
 
         wgpu::Buffer buffer = nullptr;
 
+        SharedBuffer() = default;
+
         auto enqueueWriteIfUnitialized(wgpu::Device& device, wgpu::Queue& queue, wgpu::BufferUsage const& usage) -> bool {
             assert(device);
             assert(queue);
@@ -44,7 +46,7 @@ namespace mrover {
 
     // TODO(quintin): clean up shared behavior between this and other types in this file
     template<typename T>
-        requires(sizeof(T) % 16 == 0)
+        requires(sizeof(T) % 16 == 0) // Required by WGPU standard, if this does not pass add padding to your type
     struct Uniform {
         T value{};
 
@@ -68,7 +70,7 @@ namespace mrover {
             assert(device);
             assert(buffer);
 
-            device.getQueue().writeBuffer(buffer, 0, std::addressof(this->value), sizeof(T));
+            device.getQueue().writeBuffer(buffer, 0, std::addressof(value), sizeof(T));
         }
     };
 

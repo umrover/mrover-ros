@@ -18,11 +18,10 @@ struct OutVertex {
    @location(2) uv: vec2f,
 }
 @vertex fn vs_main(in: InVertex) -> OutVertex {
-    let modelToClip = vu.cameraToClip * vu.worldToCamera * vu.modelToWorld;
-    // TODO(quintin): Does WGSL support a constructor?
+    let positionInWorld = vu.modelToWorld * vec4(in.positionInModel, 1);
     var out : OutVertex;
-    out.positionInClip = modelToClip * vec4(in.positionInModel, 1);
-    out.positionInWorld = vu.modelToWorld * vec4(in.positionInModel, 1);
+    out.positionInClip = vu.cameraToClip * vu.worldToCamera * positionInWorld;
+    out.positionInWorld = positionInWorld;
     out.normalInWorld = vu.modelToWorldForNormals * vec4(in.normalInModel, 0);
     out.uv = in.uv;
     return out;
@@ -30,22 +29,16 @@ struct OutVertex {
 
 struct FragmentUniforms {
     material: u32,
-    hasTexture: u32,
     lightInWorld: vec4f,
     cameraInWorld: vec4f,
     lightColor: vec4f,
-    objectColor: vec4f,
 }
 @group(1) @binding(0) var<uniform> fu: FragmentUniforms;
 @group(1) @binding(1) var texture: texture_2d<f32>;
 @group(1) @binding(2) var textureSampler: sampler;
 
 @fragment fn fs_main(in: OutVertex) -> @location(0) vec4f {
-    let baseColor = select(
-        fu.objectColor,
-        textureSample(texture, textureSampler, in.uv),
-        fu.hasTexture == 1u,
-    );
+    let baseColor = textureSample(texture, textureSampler, in.uv);
 
     switch (fu.material) {
         case 0: {
@@ -66,9 +59,10 @@ struct FragmentUniforms {
             let spec = pow(max(dot(viewDirInWolrd, reflectDir), 0.0), 32);
             let specular = specularStrength * spec * fu.lightColor;
             // Combination
-            return (ambient + diffuse + specular) * baseColor;
+            return vec4(((ambient + diffuse + specular) * baseColor).rgb, 1);
         }
         default: {
+           // Magenta for error (like Source engine :D)
             return vec4(1, 0, 1, 1);
         }
     }

@@ -28,7 +28,7 @@ namespace mrover {
                 0, invtan, 0, 0,
                 0, 0, zFar / range, -(2 * zFar * zNear) / range,
                 0, 0, 1, 0;
-        return result;
+        return result * ROS_TO_WGPU;
     }
 
     auto SimulatorNodelet::initWindow() -> void {
@@ -86,7 +86,7 @@ namespace mrover {
         }
         {
             wgpu::RequestAdapterOptions options;
-            options.powerPreference = wgpu::PowerPreference::HighPerformance; // Request that laptops use the discrete GPU if available
+            // options.powerPreference = wgpu::PowerPreference::HighPerformance; // Request that laptops use the discrete GPU if available
             mAdapter = mWgpuInstance.requestAdapter(options);
             if (!mAdapter) throw std::runtime_error("Failed to request WGPU adapter");
 
@@ -275,6 +275,9 @@ namespace mrover {
         }
         {
             mFragmentUniforms.init(mDevice);
+
+            mFragmentUniforms.value.lightColor = {1, 1, 1, 1};
+            mFragmentUniforms.value.lightInWorld = {0, 0, 5, 1};
         }
 
         mUriToModel.try_emplace(CUBE_PRIMITIVE_URI, CUBE_PRIMITIVE_URI);
@@ -336,16 +339,8 @@ namespace mrover {
                 mRenderPass.setBindGroup(1, fragmentBindGroup, 0, nullptr);
             }
 
-            // if (mesh.texture.handle == GL_INVALID_HANDLE) {
-            //     mPbrProgram.uniform("hasTexture", false);
-            //     mPbrProgram.uniform("objectColor", Eigen::Vector3f{1, 1, 1});
-            // } else {
-            //     mPbrProgram.uniform("hasTexture", true);
-            //     glActiveTexture(GL_TEXTURE0);
-            //     glBindTexture(GL_TEXTURE_2D, mesh.texture.handle);
-            // }
-
             mVertexUniforms.enqueueWrite();
+            mFragmentUniforms.enqueueWrite();
 
             static_assert(std::is_same_v<decltype(mesh.indices)::value_type, std::uint32_t>);
             mRenderPass.drawIndexed(mesh.indices.data.size(), 1, 0, 0, 0);
@@ -354,7 +349,7 @@ namespace mrover {
 
     auto SimulatorNodelet::renderModels() -> void {
         // glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
-        // mMaterialUniform.update(1);
+        mFragmentUniforms.value.material = 1;
 
         for (auto const& [_, urdf]: mUrdfs) {
 
@@ -450,8 +445,8 @@ namespace mrover {
 
             camerasUpdate();
             {
-                // mCameraInWorldUniform.update(mCameraInWorld.position().cast<float>());
-                mVertexUniforms.value.worldToCamera = ROS_TO_WGPU * mCameraInWorld.matrix().inverse().cast<float>();
+                mVertexUniforms.value.worldToCamera = mCameraInWorld.matrix().inverse().cast<float>();
+                mFragmentUniforms.value.cameraInWorld = mCameraInWorld.position().cast<float>().homogeneous();
 
                 if (mRenderModels) renderModels();
                 if (mRenderWireframeColliders) renderWireframeColliders();

@@ -71,11 +71,19 @@ namespace mrover {
             if (auto it = mUrdfs.find("rover"); it != mUrdfs.end()) {
                 URDF const& rover = it->second;
 
-                SE3 baseLinkInMap = rover.linkInWorld("base_link");
-                R3 p = baseLinkInMap.position();
-                Eigen::Quaterniond q = baseLinkInMap.rotation().quaternion();
-                ImGui::Text("Rover Position: (%.2f, %.2f, %.2f)", p.x(), p.y(), p.z());
-                ImGui::Text("Rover Orientation: (%.2f, %.2f, %.2f, %.2f)", q.w(), q.x(), q.y(), q.z());
+                {
+                    SE3 baseLinkInMap = rover.linkInWorld("base_link");
+                    R3 p = baseLinkInMap.position();
+                    S3 q = baseLinkInMap.rotation().quaternion();
+                    ImGui::Text("Rover Position: (%.2f, %.2f, %.2f)", p.x(), p.y(), p.z());
+                    ImGui::Text("Rover Orientation: (%.2f, %.2f, %.2f, %.2f)", q.w(), q.x(), q.y(), q.z());
+                }
+                {
+                    R3 p = mCameraInWorld.position();
+                    S3 q = mCameraInWorld.rotation().quaternion();
+                    ImGui::Text("Camera Position: (%.2f, %.2f, %.2f)", p.x(), p.y(), p.z());
+                    ImGui::Text("Camera Orientation: (%.2f, %.2f, %.2f, %.2f)", q.w(), q.x(), q.y(), q.z());
+                }
 
                 // for (auto const& [name, i] : rover.linkNameToIndex) {
                 //     if (i == -1) continue;

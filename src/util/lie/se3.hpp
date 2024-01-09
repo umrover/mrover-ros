@@ -13,6 +13,7 @@
 #include <Eigen/Geometry>
 
 using R3 = Eigen::Vector3d;
+using S3 = Eigen::Quaterniond;
 
 /**
  * @brief A 3D rotation.

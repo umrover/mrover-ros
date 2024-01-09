@@ -69,10 +69,10 @@ namespace mrover {
                 }
 
                 if (aiMaterial const* material = scene->mMaterials[mesh->mMaterialIndex]) {
-                    if (material->GetTextureCount(aiTextureType_DIFFUSE) > 0) {
-                        if (aiString path; material->GetTexture(aiTextureType_DIFFUSE, 0, &path) == AI_SUCCESS) {
-                            texture.data = readTexture(path.C_Str());
-                        }
+                    if (aiString path; material->GetTextureCount(aiTextureType_DIFFUSE) > 0 && material->GetTexture(aiTextureType_DIFFUSE, 0, &path) == AI_SUCCESS) {
+                        texture.data = readTexture(path.C_Str());
+                    } else {
+                        texture.data = cv::Mat{1, 1, CV_8UC4, cv::Scalar{255, 255, 255, 255}};
                     }
                     aiString name;
                     material->Get(AI_MATKEY_NAME, name);

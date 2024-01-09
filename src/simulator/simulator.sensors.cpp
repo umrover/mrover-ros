@@ -72,7 +72,7 @@ namespace mrover {
             pose.pose.pose.position.x = p.x();
             pose.pose.pose.position.y = p.y();
             pose.pose.pose.position.z = p.z();
-            Eigen::Quaterniond q = baseLinkInMap.rotation().quaternion();
+            S3 q = baseLinkInMap.rotation().quaternion();
             pose.pose.pose.orientation.w = q.w();
             pose.pose.pose.orientation.x = q.x();
             pose.pose.pose.orientation.y = q.y();
