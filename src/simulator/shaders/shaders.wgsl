@@ -34,5 +34,5 @@ struct OutVertex {
 //@group(1) @binding(6) var textureSampler: sampler;
 
 @fragment fn fs_main(in: OutVertex) -> @location(0) vec4f {
-    return vec4f(1.0, 1.0, 1.0, 1.0);
+    return vec4f(1.0, 0.2, 0.4, 1.0);
 }

@@ -206,6 +206,12 @@ namespace mrover {
             fragment.module = mPbrShaderModule;
             fragment.entryPoint = "fs_main";
             wgpu::BlendState blend;
+            blend.color.srcFactor = wgpu::BlendFactor::SrcAlpha;
+            blend.color.dstFactor = wgpu::BlendFactor::OneMinusSrcAlpha;
+            blend.color.operation = wgpu::BlendOperation::Add;
+            blend.alpha.srcFactor = wgpu::BlendFactor::Zero;
+            blend.alpha.dstFactor = wgpu::BlendFactor::One;
+            blend.alpha.operation = wgpu::BlendOperation::Add;
             wgpu::ColorTargetState colorTarget;
             colorTarget.format = wgpu::TextureFormat::BGRA8Unorm;
             colorTarget.blend = &blend;
