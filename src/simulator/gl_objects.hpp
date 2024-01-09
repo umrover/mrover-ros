@@ -20,7 +20,7 @@ namespace mrover {
 
         wgpu::Buffer buffer = nullptr;
 
-        auto ensureUploaded(wgpu::Device& device, wgpu::Queue& queue, wgpu::BufferUsage const& usage) -> bool {
+        auto enqueueWriteIfUnitialized(wgpu::Device& device, wgpu::Queue& queue, wgpu::BufferUsage const& usage) -> bool {
             assert(device);
             assert(queue);
 
@@ -44,58 +44,97 @@ namespace mrover {
 
     // TODO(quintin): clean up shared behavior between this and other types in this file
     template<typename T>
+        requires(sizeof(T) % 16 == 0)
     struct Uniform {
         T value{};
 
         wgpu::Device device = nullptr;
-        wgpu::Queue queue = nullptr;
 
         wgpu::Buffer buffer = nullptr;
 
-        auto init(wgpu::Device& device, wgpu::Queue const& queue, char const* label) {
+        auto init(wgpu::Device& device) {
+            assert(device);
+            assert(!this->device);
+
             this->device = device;
-            this->queue = queue;
 
             wgpu::BufferDescriptor descriptor;
             descriptor.usage = wgpu::BufferUsage::Uniform | wgpu::BufferUsage::CopyDst;
             descriptor.size = sizeof(T);
-            descriptor.label = label;
             buffer = device.createBuffer(descriptor);
         }
 
-        auto update(T const& value) -> void {
-            assert(queue);
+        auto enqueueWrite() -> void {
+            assert(device);
             assert(buffer);
 
-            this->value = value;
-            queue.writeBuffer(buffer, 0, std::addressof(this->value), sizeof(T));
+            device.getQueue().writeBuffer(buffer, 0, std::addressof(this->value), sizeof(T));
         }
     };
 
     struct SharedTexture {
         cv::Mat data;
 
-        auto prepare() -> bool {
-            if (data.empty()) return false;
-            // if (handle != GL_INVALID_HANDLE) return false;
+        wgpu::Texture texture = nullptr;
+        wgpu::TextureView view = nullptr;
+        wgpu::Sampler sampler = nullptr;
 
-            // // See: https://learnopengl.com/Getting-started/Textures
+        auto prepare(wgpu::Device& device) -> bool {
+            if (data.empty()) return false;
+            if (texture != nullptr) return false;
 
             // // OpenCV's (0, 0) is in the top-left, but OpenGL's is bottom-left
             // flip(data, data, 0);
 
-            // glGenTextures(1, &handle);
-            // assert(handle != GL_INVALID_HANDLE);
-            // glBindTexture(GL_TEXTURE_2D, handle);
-            // glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
-            // glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
-            // glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
-            // glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+            cv::Mat dataToWrite;
+            cvtColor(data, dataToWrite, cv::COLOR_BGR2RGBA);
 
-            // // Upload to the GPU
-            // glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, data.cols, data.rows, 0, GL_BGR, GL_UNSIGNED_BYTE, data.data);
-            // // Mipmaps make far away textures look better
-            // glGenerateMipmap(GL_TEXTURE_2D);
+            std::uint32_t mipLevelCount = std::bit_width(static_cast<std::uint32_t>(std::max(dataToWrite.cols, dataToWrite.rows)));
+
+            wgpu::TextureDescriptor descriptor;
+            descriptor.dimension = wgpu::TextureDimension::_2D;
+            descriptor.size.width = static_cast<std::uint32_t>(dataToWrite.cols);
+            descriptor.size.height = static_cast<std::uint32_t>(dataToWrite.rows);
+            descriptor.size.depthOrArrayLayers = 1;
+            descriptor.mipLevelCount = mipLevelCount;
+            descriptor.sampleCount = 1;
+            descriptor.format = wgpu::TextureFormat::RGBA8Unorm;
+            descriptor.usage = wgpu::TextureUsage::TextureBinding | wgpu::TextureUsage::CopyDst;
+            texture = device.createTexture(descriptor);
+
+            wgpu::TextureViewDescriptor viewDescriptor;
+            viewDescriptor.arrayLayerCount = 1;
+            viewDescriptor.mipLevelCount = descriptor.mipLevelCount;
+            viewDescriptor.dimension = wgpu::TextureViewDimension::_2D;
+            viewDescriptor.format = descriptor.format;
+            view = texture.createView(viewDescriptor);
+
+            wgpu::ImageCopyTexture destination;
+            destination.texture = texture;
+
+            wgpu::SamplerDescriptor samplerDescriptor;
+            samplerDescriptor.addressModeU = wgpu::AddressMode::Repeat;
+            samplerDescriptor.addressModeV = wgpu::AddressMode::Repeat;
+            samplerDescriptor.addressModeW = wgpu::AddressMode::Repeat;
+            samplerDescriptor.minFilter = wgpu::FilterMode::Linear;
+            samplerDescriptor.magFilter = wgpu::FilterMode::Linear;
+            samplerDescriptor.mipmapFilter = wgpu::MipmapFilterMode::Linear;
+            samplerDescriptor.lodMaxClamp = static_cast<float>(descriptor.mipLevelCount);
+            samplerDescriptor.maxAnisotropy = 1;
+            sampler = device.createSampler(samplerDescriptor);
+
+            for (; destination.mipLevel < descriptor.mipLevelCount; ++destination.mipLevel) {
+                wgpu::TextureDataLayout source;
+                source.bytesPerRow = static_cast<std::uint32_t>(dataToWrite.step);
+                source.rowsPerImage = static_cast<std::uint32_t>(dataToWrite.rows);
+                device.getQueue().writeTexture(
+                        destination,
+                        dataToWrite.data, dataToWrite.total() * dataToWrite.elemSize(),
+                        source,
+                        wgpu::Extent3D{static_cast<std::uint32_t>(dataToWrite.cols), static_cast<std::uint32_t>(dataToWrite.rows), 1});
+
+                if (cv::Size nextSize = dataToWrite.size() / 2; nextSize.area() >= 1) resize(dataToWrite, dataToWrite, nextSize, 0, 0);
+            }
 
             return true;
         }

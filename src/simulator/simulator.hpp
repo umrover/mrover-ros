@@ -153,6 +153,8 @@ namespace mrover {
         std::unique_ptr<wgpu::ErrorCallback> mErrorCallback;
         wgpu::Queue mQueue = nullptr;
         wgpu::SwapChain mSwapChain = nullptr;
+        wgpu::Texture mDepthTexture = nullptr;
+        wgpu::TextureView mDepthTextureView = nullptr;
 
         wgpu::ShaderModule mPbrShaderModule = nullptr;
         wgpu::RenderPipeline mPbrPipeline = nullptr;
@@ -166,21 +168,26 @@ namespace mrover {
         bool mHasFocus = false;
         bool mInGui = false;
 
-        Uniform<Eigen::Matrix4f> mModelToWorldUniform;
-        Uniform<Eigen::Matrix4f> mWorldToCameraUniform;
-        Uniform<Eigen::Matrix4f> mCameraToClipUniform;
-        Uniform<Eigen::Matrix4f> mModelToWorldForNormalsUniform;
+        struct VertexUniforms {
+            Eigen::Matrix4f modelToWorld{};
+            Eigen::Matrix4f worldToCamera{};
+            Eigen::Matrix4f cameraToClip{};
+            Eigen::Matrix4f modelToWorldForNormals{};
+        };
+        Uniform<VertexUniforms> mVertexUniforms;
 
-        Uniform<std::uint32_t> mMaterialUniform;
-        Uniform<std::uint32_t> mHasTextureUniform;
-        Uniform<Eigen::Vector3f> mLightInWorldUniform;
-        Uniform<Eigen::Vector3f> mCameraInWorldUniform;
-        Uniform<Eigen::Vector3f> mLightColorUniform;
-        Uniform<Eigen::Vector3f> mObjectColorUniform;
-        Uniform<std::uint32_t> mTextureSamplerUniform;
+        struct FragmentUniforms {
+            std::uint32_t material{};
+            std::uint32_t hasTexture{};
+            Eigen::Vector3f lightInWorld{};
+            Eigen::Vector3f cameraInWorld{};
+            Eigen::Vector3f lightColor{};
+            Eigen::Vector3f objectColor{};
+            std::array<std::byte, 8> _padding{};
+        };
+        Uniform<FragmentUniforms> mFragmentUniforms;
 
         wgpu::BindGroup mVertexBindGroup = nullptr;
-        wgpu::BindGroup mFragmentBindGroup = nullptr;
 
         // Physics
 
@@ -198,14 +205,12 @@ namespace mrover {
         std::unordered_map<btBvhTriangleMeshShape*, std::string> mMeshToUri;
 
         struct SaveData {
-            struct RbData {
+            struct LinkData {
                 std::string link;
-                btTransform transform;
-                btVector3 linearVelocity;
-                btVector3 angularVelocity;
+                btScalar position{};
+                btScalar velocity{};
             };
-
-            std::vector<RbData> links;
+            std::vector<LinkData> links;
         };
 
         int mSelection = 0;
@@ -306,6 +311,6 @@ namespace mrover {
 
     auto btTransformToSe3(btTransform const& transform) -> SE3;
 
-    auto perspective(float fovY, float aspect, float zNear, float zFar) -> Eigen::Matrix4f;
+    auto computeCameraToClip(float fovY, float aspect, float zNear, float zFar) -> Eigen::Matrix4f;
 
 } // namespace mrover

@@ -15,7 +15,7 @@ namespace mrover {
         return {R3{p.x(), p.y(), p.z()}, SO3{q.w(), q.x(), q.y(), q.z()}, R3{scale.x(), scale.y(), scale.z()}};
     }
 
-    auto perspective(float fovY, float aspect, float zNear, float zFar) -> Eigen::Matrix4f {
+    auto computeCameraToClip(float fovY, float aspect, float zNear, float zFar) -> Eigen::Matrix4f {
         // Equivalent to glm::perspectiveLH_ZO
         // WGPU coordinate system is left-handed +x right, +y up, +z forward (same as DirectX)
         // Near and far clip planes correspond to Z values of 0 and +1 respectively (NDC)
@@ -73,8 +73,8 @@ namespace mrover {
     auto SimulatorNodelet::frameBufferResizedCallback(int width, int height) -> void {
         // TODO(quintin): resize framebuffer
         float aspect = static_cast<float>(width) / static_cast<float>(height);
-        Eigen::Matrix4f cameraToClip = perspective(mFov * DEG_TO_RAD, aspect, NEAR, FAR).cast<float>();
-        mCameraToClipUniform.update(cameraToClip);
+        Eigen::Matrix4f cameraToClip = computeCameraToClip(mFov * DEG_TO_RAD, aspect, NEAR, FAR).cast<float>();
+        mVertexUniforms.value.cameraToClip = cameraToClip;
     }
 
     auto SimulatorNodelet::initRender() -> void {
@@ -85,6 +85,7 @@ namespace mrover {
         }
         {
             mSurface = glfwGetWGPUSurface(mWgpuInstance, mWindow.get());
+            if (!mSurface) throw std::runtime_error("Failed to create WGPU surface");
         }
         {
             wgpu::RequestAdapterOptions options;
@@ -110,19 +111,41 @@ namespace mrover {
         mQueue = mDevice.getQueue();
         if (!mQueue) throw std::runtime_error("Failed to get WGPU queue");
 
-        {
-            int width, height;
-            glfwGetFramebufferSize(mWindow.get(), &width, &height);
+        int width, height;
+        glfwGetFramebufferSize(mWindow.get(), &width, &height);
 
+        {
             wgpu::SwapChainDescriptor descriptor;
             descriptor.usage = wgpu::TextureUsage::RenderAttachment;
             descriptor.format = wgpu::TextureFormat::BGRA8Unorm;
             descriptor.width = width;
             descriptor.height = height;
-            descriptor.presentMode = wgpu::PresentMode::Mailbox;
+            descriptor.presentMode = wgpu::PresentMode::Immediate;
             mSwapChain = mDevice.createSwapChain(mSurface, descriptor);
             if (!mSwapChain) throw std::runtime_error("Failed to create WGPU swap chain");
         }
+        {
+            wgpu::TextureDescriptor descriptor;
+            descriptor.dimension = wgpu::TextureDimension::_2D;
+            descriptor.format = wgpu::TextureFormat::Depth32Float;
+            descriptor.mipLevelCount = 1;
+            descriptor.sampleCount = 1;
+            descriptor.size = {static_cast<std::uint32_t>(width), static_cast<std::uint32_t>(height), 1};
+            descriptor.usage = wgpu::TextureUsage::RenderAttachment;
+            descriptor.viewFormatCount = 1;
+            descriptor.viewFormats = &descriptor.format;
+            mDepthTexture = mDevice.createTexture(descriptor);
+        }
+        {
+            wgpu::TextureViewDescriptor descriptor;
+            descriptor.aspect = wgpu::TextureAspect::DepthOnly;
+            descriptor.arrayLayerCount = 1;
+            descriptor.mipLevelCount = 1;
+            descriptor.dimension = wgpu::TextureViewDimension::_2D;
+            descriptor.format = wgpu::TextureFormat::Depth32Float;
+            mDepthTextureView = mDepthTexture.createView(descriptor);
+        }
+
         {
             wgpu::ShaderModuleWGSLDescriptor shaderSourceDescriptor;
             auto shadersPath = std::filesystem::path{std::source_location::current().file_name()}.parent_path() / "shaders";
@@ -144,11 +167,13 @@ namespace mrover {
             descriptor.multisample.count = 1;
             descriptor.multisample.mask = 0xFFFFFFFF;
 
-            // wgpu::DepthStencilState depthStencil;
-            // depthStencil.depthCompare = wgpu::CompareFunction::Less;
-            // depthStencil.depthWriteEnabled = true;
-            // depthStencil.format = wgpu::TextureFormat::Depth32Float;
-            // descriptor.depthStencil = &depthStencil;
+            wgpu::DepthStencilState depthStencil;
+            depthStencil.depthCompare = wgpu::CompareFunction::Less;
+            depthStencil.depthWriteEnabled = true;
+            depthStencil.format = wgpu::TextureFormat::Depth32Float;
+            depthStencil.stencilFront.compare = wgpu::CompareFunction::Always;
+            depthStencil.stencilBack.compare = wgpu::CompareFunction::Always;
+            descriptor.depthStencil = &depthStencil;
 
             {
                 std::array<wgpu::VertexAttribute, 3> attributes{};
@@ -178,27 +203,15 @@ namespace mrover {
                 descriptor.vertex.buffers = vertexBufferLayout.data();
             }
 
-            std::array<wgpu::BindGroupLayoutEntry, 4> vertexBindGroupLayoutEntires{};
-            vertexBindGroupLayoutEntires[0].binding = 0;
-            vertexBindGroupLayoutEntires[0].visibility = wgpu::ShaderStage::Vertex;
-            vertexBindGroupLayoutEntires[0].buffer.type = wgpu::BufferBindingType::Uniform;
-            vertexBindGroupLayoutEntires[0].buffer.minBindingSize = sizeof(Eigen::Matrix4f);
-            vertexBindGroupLayoutEntires[1].binding = 1;
-            vertexBindGroupLayoutEntires[1].visibility = wgpu::ShaderStage::Vertex;
-            vertexBindGroupLayoutEntires[1].buffer.type = wgpu::BufferBindingType::Uniform;
-            vertexBindGroupLayoutEntires[1].buffer.minBindingSize = sizeof(Eigen::Matrix4f);
-            vertexBindGroupLayoutEntires[2].binding = 2;
-            vertexBindGroupLayoutEntires[2].visibility = wgpu::ShaderStage::Vertex;
-            vertexBindGroupLayoutEntires[2].buffer.type = wgpu::BufferBindingType::Uniform;
-            vertexBindGroupLayoutEntires[2].buffer.minBindingSize = sizeof(Eigen::Matrix4f);
-            vertexBindGroupLayoutEntires[3].binding = 3;
-            vertexBindGroupLayoutEntires[3].visibility = wgpu::ShaderStage::Vertex;
-            vertexBindGroupLayoutEntires[3].buffer.type = wgpu::BufferBindingType::Uniform;
-            vertexBindGroupLayoutEntires[3].buffer.minBindingSize = sizeof(Eigen::Matrix4f);
+            wgpu::BindGroupLayoutEntry vertexBindGroupLayoutEntry;
+            vertexBindGroupLayoutEntry.binding = 0;
+            vertexBindGroupLayoutEntry.visibility = wgpu::ShaderStage::Vertex;
+            vertexBindGroupLayoutEntry.buffer.type = wgpu::BufferBindingType::Uniform;
+            vertexBindGroupLayoutEntry.buffer.minBindingSize = sizeof(VertexUniforms);
 
             wgpu::BindGroupLayoutDescriptor vertexBindGroupLayoutDescriptor;
-            vertexBindGroupLayoutDescriptor.entryCount = vertexBindGroupLayoutEntires.size();
-            vertexBindGroupLayoutDescriptor.entries = vertexBindGroupLayoutEntires.data();
+            vertexBindGroupLayoutDescriptor.entryCount = 1;
+            vertexBindGroupLayoutDescriptor.entries = &vertexBindGroupLayoutEntry;
             wgpu::BindGroupLayout vertexBindGroupLayout = mDevice.createBindGroupLayout(vertexBindGroupLayoutDescriptor);
 
 
@@ -220,44 +233,27 @@ namespace mrover {
             fragment.targets = &colorTarget;
             descriptor.fragment = &fragment;
 
-            // std::array<wgpu::BindGroupLayoutEntry, 1> fragmentBindGroupLayoutEntires{};
-            // fragmentBindGroupLayoutEntires[0].binding = 0;
-            // fragmentBindGroupLayoutEntires[0].visibility = wgpu::ShaderStage::Fragment;
-            // fragmentBindGroupLayoutEntires[0].buffer.type = wgpu::BufferBindingType::Uniform;
-            // fragmentBindGroupLayoutEntires[0].buffer.minBindingSize = sizeof(std::uint32_t);
-            // fragmentBindGroupLayoutEntires[1].binding = 1;
-            // fragmentBindGroupLayoutEntires[1].visibility = wgpu::ShaderStage::Fragment;
-            // fragmentBindGroupLayoutEntires[1].buffer.type = wgpu::BufferBindingType::Uniform;
-            // fragmentBindGroupLayoutEntires[1].buffer.minBindingSize = sizeof(std::uint32_t);
-            // fragmentBindGroupLayoutEntires[2].binding = 2;
-            // fragmentBindGroupLayoutEntires[2].visibility = wgpu::ShaderStage::Fragment;
-            // fragmentBindGroupLayoutEntires[2].buffer.type = wgpu::BufferBindingType::Uniform;
-            // fragmentBindGroupLayoutEntires[2].buffer.minBindingSize = sizeof(Eigen::Vector3f);
-            // fragmentBindGroupLayoutEntires[3].binding = 3;
-            // fragmentBindGroupLayoutEntires[3].visibility = wgpu::ShaderStage::Fragment;
-            // fragmentBindGroupLayoutEntires[3].buffer.type = wgpu::BufferBindingType::Uniform;
-            // fragmentBindGroupLayoutEntires[3].buffer.minBindingSize = sizeof(Eigen::Vector3f);
-            // fragmentBindGroupLayoutEntires[4].binding = 4;
-            // fragmentBindGroupLayoutEntires[4].visibility = wgpu::ShaderStage::Fragment;
-            // fragmentBindGroupLayoutEntires[4].buffer.type = wgpu::BufferBindingType::Uniform;
-            // fragmentBindGroupLayoutEntires[4].buffer.minBindingSize = sizeof(Eigen::Vector3f);
-            // fragmentBindGroupLayoutEntires[5].binding = 5;
-            // fragmentBindGroupLayoutEntires[5].visibility = wgpu::ShaderStage::Fragment;
-            // fragmentBindGroupLayoutEntires[5].buffer.type = wgpu::BufferBindingType::Uniform;
-            // fragmentBindGroupLayoutEntires[5].buffer.minBindingSize = sizeof(Eigen::Vector3f);
-            // fragmentBindGroupLayoutEntires[6].binding = 6;
-            // fragmentBindGroupLayoutEntires[6].visibility = wgpu::ShaderStage::Fragment;
-            // fragmentBindGroupLayoutEntires[6].sampler.type = wgpu::SamplerBindingType::Filtering;
-            //
-            // wgpu::BindGroupLayoutDescriptor fragmentBindGroupLayoutDescriptor;
-            // fragmentBindGroupLayoutDescriptor.entryCount = vertexBindGroupLayoutEntires.size();
-            // fragmentBindGroupLayoutDescriptor.entries = vertexBindGroupLayoutEntires.data();
-            // wgpu::BindGroupLayout fragmentBindGroupLayout = mDevice.createBindGroupLayout(fragmentBindGroupLayoutDescriptor);
+            std::array<wgpu::BindGroupLayoutEntry, 3> fragmentBindGroupLayoutEntries{};
+            fragmentBindGroupLayoutEntries[0].binding = 0;
+            fragmentBindGroupLayoutEntries[0].visibility = wgpu::ShaderStage::Fragment;
+            fragmentBindGroupLayoutEntries[0].buffer.type = wgpu::BufferBindingType::Uniform;
+            fragmentBindGroupLayoutEntries[0].buffer.minBindingSize = sizeof(FragmentUniforms);
+            fragmentBindGroupLayoutEntries[1].binding = 1;
+            fragmentBindGroupLayoutEntries[1].visibility = wgpu::ShaderStage::Fragment;
+            fragmentBindGroupLayoutEntries[1].texture.sampleType = wgpu::TextureSampleType::Float;
+            fragmentBindGroupLayoutEntries[1].texture.viewDimension = wgpu::TextureViewDimension::_2D;
+            fragmentBindGroupLayoutEntries[2].binding = 2;
+            fragmentBindGroupLayoutEntries[2].visibility = wgpu::ShaderStage::Fragment;
+            fragmentBindGroupLayoutEntries[2].sampler.type = wgpu::SamplerBindingType::Filtering;
+
+            wgpu::BindGroupLayoutDescriptor fragmentBindGroupLayoutDescriptor;
+            fragmentBindGroupLayoutDescriptor.entryCount = fragmentBindGroupLayoutEntries.size();
+            fragmentBindGroupLayoutDescriptor.entries = fragmentBindGroupLayoutEntries.data();
+            wgpu::BindGroupLayout fragmentBindGroupLayout = mDevice.createBindGroupLayout(fragmentBindGroupLayoutDescriptor);
 
 
             wgpu::PipelineLayoutDescriptor pipelineLayoutDescriptor;
-            // std::array<WGPUBindGroupLayout, 2> bindGroupLayouts{vertexBindGroupLayout, fragmentBindGroupLayout};
-            std::array<WGPUBindGroupLayout, 1> bindGroupLayouts{vertexBindGroupLayout};
+            std::array<WGPUBindGroupLayout, 2> bindGroupLayouts{vertexBindGroupLayout, fragmentBindGroupLayout};
             pipelineLayoutDescriptor.bindGroupLayoutCount = bindGroupLayouts.size();
             pipelineLayoutDescriptor.bindGroupLayouts = bindGroupLayouts.data();
             descriptor.layout = mDevice.createPipelineLayout(pipelineLayoutDescriptor);
@@ -266,50 +262,23 @@ namespace mrover {
             if (!mPbrPipeline) throw std::runtime_error("Failed to create WGPU render pipeline");
         }
         {
-            mModelToWorldUniform.init(mDevice, mQueue, "modelToWorld");
-            mWorldToCameraUniform.init(mDevice, mQueue, "worldToCamera");
-            mCameraToClipUniform.init(mDevice, mQueue, "cameraToClip");
-            mModelToWorldForNormalsUniform.init(mDevice, mQueue, "modelToWorldForNormals");
+            mVertexUniforms.init(mDevice);
 
-            std::array<wgpu::BindGroupEntry, 4> entries{};
-            entries[0].binding = 0;
-            entries[0].buffer = mModelToWorldUniform.buffer;
-            entries[0].offset = 0;
-            entries[0].size = sizeof(Eigen::Matrix4f);
-            entries[1].binding = 1;
-            entries[1].buffer = mWorldToCameraUniform.buffer;
-            entries[1].offset = 0;
-            entries[1].size = sizeof(Eigen::Matrix4f);
-            entries[2].binding = 2;
-            entries[2].buffer = mCameraToClipUniform.buffer;
-            entries[2].offset = 0;
-            entries[2].size = sizeof(Eigen::Matrix4f);
-            entries[3].binding = 3;
-            entries[3].buffer = mModelToWorldForNormalsUniform.buffer;
-            entries[3].offset = 0;
-            entries[3].size = sizeof(Eigen::Matrix4f);
+            wgpu::BindGroupEntry entry;
+            entry.binding = 0;
+            entry.buffer = mVertexUniforms.buffer;
+            entry.offset = 0;
+            entry.size = sizeof(VertexUniforms);
 
             wgpu::BindGroupDescriptor descriptor;
             descriptor.layout = mPbrPipeline.getBindGroupLayout(0);
-            descriptor.entryCount = entries.size();
-            descriptor.entries = entries.data();
+            descriptor.entryCount = 1;
+            descriptor.entries = &entry;
             mVertexBindGroup = mDevice.createBindGroup(descriptor);
         }
-        // {
-        //     mMaterialUniform.init(mDevice, mQueue);
-        //
-        //     std::array<wgpu::BindGroupEntry, 1> entries{};
-        //     entries[0].binding = 0;
-        //     entries[0].buffer = mMaterialUniform.buffer;
-        //     entries[0].offset = 0;
-        //     entries[0].size = sizeof(std::uint32_t);
-        //
-        //     wgpu::BindGroupDescriptor descriptor;
-        //     descriptor.layout = mPbrPipeline.getBindGroupLayout(1);
-        //     descriptor.entryCount = entries.size();
-        //     descriptor.entries = entries.data();
-        //     mFragmentBindGroup = mDevice.createBindGroup(descriptor);
-        // }
+        {
+            mFragmentUniforms.init(mDevice);
+        }
 
         mUriToModel.try_emplace(CUBE_PRIMITIVE_URI, CUBE_PRIMITIVE_URI);
         mUriToModel.try_emplace(SPHERE_PRIMITIVE_URI, SPHERE_PRIMITIVE_URI);
@@ -318,7 +287,7 @@ namespace mrover {
         IMGUI_CHECKVERSION();
         ImGui::CreateContext();
         ImGui_ImplGlfw_InitForOther(mWindow.get(), true);
-        ImGui_ImplWGPU_Init(mDevice, 1, wgpu::TextureFormat::BGRA8Unorm, wgpu::TextureFormat::Undefined);
+        ImGui_ImplWGPU_Init(mDevice, 1, wgpu::TextureFormat::BGRA8Unorm, wgpu::TextureFormat::Depth32Float);
 
         int x, y, w, h;
         glfwGetMonitorWorkarea(glfwGetPrimaryMonitor(), &x, &y, &w, &h);
@@ -333,23 +302,42 @@ namespace mrover {
     auto SimulatorNodelet::renderModel(Model& model, SIM3 const& modelToWorld, [[maybe_unused]] bool isRoverCamera) -> void {
         if (!model.areMeshesReady()) return;
 
-        mModelToWorldUniform.update(modelToWorld.matrix().cast<float>());
+        mVertexUniforms.value.modelToWorld = modelToWorld.matrix().cast<float>();
 
-        // // See: http://www.lighthouse3d.com/tutorials/glsl-12-tutorial/the-normal-matrix/ for why this has to be treated specially
-        // // TLDR: it preserves orthogonality between normal vectors and their respective surfaces with any model scaling (including non-uniform)
-        mModelToWorldForNormalsUniform.update(modelToWorld.matrix().inverse().transpose().cast<float>());
+        // See: http://www.lighthouse3d.com/tutorials/glsl-12-tutorial/the-normal-matrix/ for why this has to be treated specially
+        // TLDR: it preserves orthogonality between normal vectors and their respective surfaces with any model scaling (including non-uniform)
+        mVertexUniforms.value.modelToWorldForNormals = modelToWorld.matrix().inverse().transpose().cast<float>();
 
         for (Model::Mesh& mesh: model.meshes) {
-            mesh.indices.ensureUploaded(mDevice, mQueue, wgpu::BufferUsage::Index);
-            mesh.vertices.ensureUploaded(mDevice, mQueue, wgpu::BufferUsage::Vertex);
-            mesh.normals.ensureUploaded(mDevice, mQueue, wgpu::BufferUsage::Vertex);
-            mesh.uvs.ensureUploaded(mDevice, mQueue, wgpu::BufferUsage::Vertex);
-            mesh.texture.prepare();
+            mesh.indices.enqueueWriteIfUnitialized(mDevice, mQueue, wgpu::BufferUsage::Index);
+            mesh.vertices.enqueueWriteIfUnitialized(mDevice, mQueue, wgpu::BufferUsage::Vertex);
+            mesh.normals.enqueueWriteIfUnitialized(mDevice, mQueue, wgpu::BufferUsage::Vertex);
+            mesh.uvs.enqueueWriteIfUnitialized(mDevice, mQueue, wgpu::BufferUsage::Vertex);
+            mesh.texture.prepare(mDevice);
 
             mRenderPass.setVertexBuffer(0, mesh.vertices.buffer, 0, mesh.vertices.sizeBytes());
             mRenderPass.setVertexBuffer(1, mesh.normals.buffer, 0, mesh.normals.sizeBytes());
             mRenderPass.setVertexBuffer(2, mesh.uvs.buffer, 0, mesh.uvs.sizeBytes());
             mRenderPass.setIndexBuffer(mesh.indices.buffer, wgpu::IndexFormat::Uint32, 0, mesh.indices.sizeBytes());
+
+            {
+                std::array<wgpu::BindGroupEntry, 3> mFragmentBindGroupEntries{};
+                mFragmentBindGroupEntries[0].binding = 0;
+                mFragmentBindGroupEntries[0].buffer = mFragmentUniforms.buffer;
+                mFragmentBindGroupEntries[0].offset = 0;
+                mFragmentBindGroupEntries[0].size = sizeof(FragmentUniforms);
+                mFragmentBindGroupEntries[1].binding = 1;
+                mFragmentBindGroupEntries[1].textureView = mesh.texture.view;
+                mFragmentBindGroupEntries[2].binding = 2;
+                mFragmentBindGroupEntries[2].sampler = mesh.texture.sampler;
+                wgpu::BindGroupDescriptor descriptor;
+                descriptor.layout = mPbrPipeline.getBindGroupLayout(1);
+                descriptor.entryCount = mFragmentBindGroupEntries.size();
+                descriptor.entries = mFragmentBindGroupEntries.data();
+                wgpu::BindGroup fragmentBindGroup = mDevice.createBindGroup(descriptor);
+
+                mRenderPass.setBindGroup(1, fragmentBindGroup, 0, nullptr);
+            }
 
             // if (mesh.texture.handle == GL_INVALID_HANDLE) {
             //     mPbrProgram.uniform("hasTexture", false);
@@ -359,6 +347,8 @@ namespace mrover {
             //     glActiveTexture(GL_TEXTURE0);
             //     glBindTexture(GL_TEXTURE_2D, mesh.texture.handle);
             // }
+
+            mVertexUniforms.enqueueWrite();
 
             static_assert(std::is_same_v<decltype(mesh.indices)::value_type, std::uint32_t>);
             mRenderPass.drawIndexed(mesh.indices.data.size(), 1, 0, 0, 0);
@@ -441,21 +431,30 @@ namespace mrover {
         colorAttachment.storeOp = wgpu::StoreOp::Store;
         colorAttachment.clearValue = {0.1f, 0.1f, 0.1f, 1.0f};
 
+        wgpu::RenderPassDepthStencilAttachment depthStencilAttachment;
+        depthStencilAttachment.view = mDepthTextureView;
+        depthStencilAttachment.depthClearValue = 1.0f;
+        depthStencilAttachment.depthLoadOp = wgpu::LoadOp::Clear;
+        depthStencilAttachment.depthStoreOp = wgpu::StoreOp::Store;
+        depthStencilAttachment.stencilLoadOp = wgpu::LoadOp::Undefined;
+        depthStencilAttachment.stencilStoreOp = wgpu::StoreOp::Undefined;
+        depthStencilAttachment.stencilReadOnly = true;
+
         wgpu::RenderPassDescriptor renderPassDescriptor;
         renderPassDescriptor.colorAttachmentCount = 1;
         renderPassDescriptor.colorAttachments = &colorAttachment;
+        renderPassDescriptor.depthStencilAttachment = &depthStencilAttachment;
 
         wgpu::CommandEncoder encoder = mDevice.createCommandEncoder();
         mRenderPass = encoder.beginRenderPass(renderPassDescriptor);
         {
             mRenderPass.setPipeline(mPbrPipeline);
             mRenderPass.setBindGroup(0, mVertexBindGroup, 0, nullptr);
-            // mRenderPass.setBindGroup(1, mFragmentBindGroup, 0, nullptr);
+
             camerasUpdate();
             {
                 // mCameraInWorldUniform.update(mCameraInWorld.position().cast<float>());
-                Eigen::Matrix4f worldToCamera = ROS_TO_WGPU * mCameraInWorld.matrix().inverse().cast<float>();
-                mWorldToCameraUniform.update(worldToCamera);
+                mVertexUniforms.value.worldToCamera = ROS_TO_WGPU * mCameraInWorld.matrix().inverse().cast<float>();
 
                 if (mRenderModels) renderModels();
                 if (mRenderWireframeColliders) renderWireframeColliders();
@@ -464,6 +463,8 @@ namespace mrover {
         guiUpdate();
 
         mRenderPass.end();
+
+        nextTexture.release();
 
         wgpu::CommandBuffer commands = encoder.finish();
         mQueue.submit(commands);
