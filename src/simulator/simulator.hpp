@@ -13,12 +13,12 @@ namespace mrover {
 
     constexpr static float DEG_TO_RAD = std::numbers::pi_v<float> / 180.0f;
 
-    // Convert from ROS's right-handed +x forward, +y left, +z up to OpenGL's right-handed +x right, +y up, +z backward
-    static auto const ROS_TO_GL = (Eigen::Matrix4f{} << 0, -1, 0, 0, // OpenGL x = -ROS y
-                                   0, 0, 1, 0,                       // OpenGL y = +ROS zp
-                                   -1, 0, 0, 0,                      // OpenGL z = -ROS x
-                                   0, 0, 0, 1)
-                                          .finished();
+    // Convert from ROS's right-handed +x forward, +y left, +z up to WGPU's left-handed +x right, +y up, +z backward
+    static auto const ROS_TO_WGPU = (Eigen::Matrix4f{} << 0, -1, 0, 0, // WGPU x = -ROS y
+                                     0, 0, 1, 0,                       // WGPU y = +ROS z
+                                     1, 0, 0, 0,                       // WGPU z = +ROS x
+                                     0, 0, 0, 1)
+                                            .finished();
 
     struct Camera;
     class SimulatorNodelet;

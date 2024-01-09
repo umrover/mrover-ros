@@ -16,26 +16,22 @@ namespace mrover {
     }
 
     auto perspective(float fovY, float aspect, float zNear, float zFar) -> Eigen::Matrix4f {
-        // Equivalent to glm::perspectiveRH_NO
-        float theta = fovY * 0.5f;
+        // Equivalent to glm::perspectiveLH_ZO
+        // WGPU coordinate system is left-handed +x right, +y up, +z forward (same as DirectX)
+        // Near and far clip planes correspond to Z values of 0 and +1 respectively (NDC)
+        // See: https://www.w3.org/TR/webgpu/#coordinate-systems
+        float theta = fovY * .5f;
         float range = zFar - zNear;
-        float invtan = 1.0f / tanf(theta);
+        float invtan = 1 / std::tan(theta);
         Eigen::Matrix4f result;
-        result << invtan / aspect, 0.0f, 0.0f, 0.0f,
-                0.0f, invtan, 0.0f, 0.0f,
-                0.0f, 0.0f, -(zFar + zNear) / range, -2.0f * zFar * zNear / range,
-                0.0f, 0.0f, -1.0f, 0.0f;
+        result << invtan / aspect, 0, 0, 0,
+                0, invtan, 0, 0,
+                0, 0, zFar / range, -(2 * zFar * zNear) / range,
+                0, 0, 1, 0;
         return result;
     }
 
     auto SimulatorNodelet::initWindow() -> void {
-#ifdef __linux__
-        // Force laptops with NVIDIA GPUs to use it instead of the integrated graphics
-        setenv("DRI_PRIME", "1", true);
-        setenv("__NV_PRIME_RENDER_OFFLOAD", "1", true);
-        setenv("__GLX_VENDOR_LIBRARY_NAME", "nvidia", true);
-#endif
-
         // TODO(quintin): call glfwTerminate via raii
         mGlfwInstance.init();
         glfwSetErrorCallback([](int error, char const* description) { throw std::runtime_error(fmt::format("GLFW Error {}: {}", error, description)); });
@@ -92,8 +88,16 @@ namespace mrover {
         }
         {
             wgpu::RequestAdapterOptions options;
+            options.powerPreference = wgpu::PowerPreference::HighPerformance; // Request that laptops use the discrete GPU if available
             mAdapter = mWgpuInstance.requestAdapter(options);
             if (!mAdapter) throw std::runtime_error("Failed to request WGPU adapter");
+
+            wgpu::AdapterProperties properties;
+            mAdapter.getProperties(&properties);
+
+            ROS_INFO_STREAM(fmt::format("\tWGPU Adapter Name: {}", properties.name));
+            ROS_INFO_STREAM(fmt::format("\tWGPU Adapter Vendor: {}", properties.vendorName));
+            ROS_INFO_STREAM(fmt::format("\tWGPU Adapter Driver: {}", properties.driverDescription));
         }
 
         mDevice = mAdapter.createDevice();
@@ -134,9 +138,11 @@ namespace mrover {
         }
         {
             wgpu::RenderPipelineDescriptor descriptor;
+            descriptor.label = "PBR";
             descriptor.primitive.topology = wgpu::PrimitiveTopology::TriangleList;
-            descriptor.primitive.cullMode = wgpu::CullMode::Front;
+            descriptor.primitive.cullMode = wgpu::CullMode::Back;
             descriptor.multisample.count = 1;
+            descriptor.multisample.mask = 0xFFFFFFFF;
 
             // wgpu::DepthStencilState depthStencil;
             // depthStencil.depthCompare = wgpu::CompareFunction::Less;
@@ -254,10 +260,10 @@ namespace mrover {
             if (!mPbrPipeline) throw std::runtime_error("Failed to create WGPU render pipeline");
         }
         {
-            mModelToWorldUniform.init(mDevice, mQueue);
-            mWorldToCameraUniform.init(mDevice, mQueue);
-            mCameraToClipUniform.init(mDevice, mQueue);
-            mModelToWorldForNormalsUniform.init(mDevice, mQueue);
+            mModelToWorldUniform.init(mDevice, mQueue, "modelToWorld");
+            mWorldToCameraUniform.init(mDevice, mQueue, "worldToCamera");
+            mCameraToClipUniform.init(mDevice, mQueue, "cameraToClip");
+            mModelToWorldForNormalsUniform.init(mDevice, mQueue, "modelToWorldForNormals");
 
             std::array<wgpu::BindGroupEntry, 4> entries{};
             entries[0].binding = 0;
@@ -442,8 +448,8 @@ namespace mrover {
             camerasUpdate();
             {
                 // mCameraInWorldUniform.update(mCameraInWorld.position().cast<float>());
-                // Eigen::Matrix4f worldToCamera = ROS_TO_GL * mCameraInWorld.matrix().inverse().cast<float>();
-                // mWorldToCameraUniform.update(worldToCamera);
+                Eigen::Matrix4f worldToCamera = ROS_TO_WGPU * mCameraInWorld.matrix().inverse().cast<float>();
+                mWorldToCameraUniform.update(worldToCamera);
 
                 if (mRenderModels) renderModels();
                 if (mRenderWireframeColliders) renderWireframeColliders();
@@ -454,7 +460,7 @@ namespace mrover {
         mRenderPass.end();
 
         wgpu::CommandBuffer commands = encoder.finish();
-        mQueue.submit(1, &commands);
+        mQueue.submit(commands);
 
         mSwapChain.present();
     }

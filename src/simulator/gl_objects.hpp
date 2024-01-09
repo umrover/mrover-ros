@@ -45,20 +45,21 @@ namespace mrover {
     // TODO(quintin): clean up shared behavior between this and other types in this file
     template<typename T>
     struct Uniform {
-        T data{};
+        T value{};
 
         wgpu::Device device = nullptr;
         wgpu::Queue queue = nullptr;
 
         wgpu::Buffer buffer = nullptr;
 
-        auto init(wgpu::Device& device, wgpu::Queue const& queue) {
+        auto init(wgpu::Device& device, wgpu::Queue const& queue, char const* label) {
             this->device = device;
             this->queue = queue;
 
             wgpu::BufferDescriptor descriptor;
             descriptor.usage = wgpu::BufferUsage::Uniform | wgpu::BufferUsage::CopyDst;
             descriptor.size = sizeof(T);
+            descriptor.label = label;
             buffer = device.createBuffer(descriptor);
         }
 
@@ -66,7 +67,8 @@ namespace mrover {
             assert(queue);
             assert(buffer);
 
-            queue.writeBuffer(buffer, 0, &value, sizeof(T));
+            this->value = value;
+            queue.writeBuffer(buffer, 0, std::addressof(this->value), sizeof(T));
         }
     };
 

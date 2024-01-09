@@ -84,8 +84,8 @@ if (ZED_FOUND)
     set(CMAKE_CUDA_STANDARD_REQUIRED ON)
     set(CMAKE_CUDA_SEPARABLE_COMPILATION ON)
     set(CMAKE_CUDA_FLAGS "--diag-suppress 108,68")
-    # Jetson Xavier NX is Volta 7.2 architecture
-    # Perception Laptop (A4000, Quadro version of RTX 3080) is Ampere 8.6 architecture
+    # Jetson Xavier NX/AGX has Volta 7.2 architecture
+    # Perception Laptop (A4000, Quadro version of RTX 3080) has Ampere 8.6 architecture
     set(CMAKE_CUDA_ARCHITECTURES 72 86)
     enable_language(CUDA)
 endif ()
@@ -97,6 +97,8 @@ catkin_python_setup()
 foreach (MROVER_CMAKE_INCLUDE ${MROVER_CMAKE_INCLUDES})
     include(${MROVER_CMAKE_INCLUDE})
 endforeach ()
+
+set(BUILD_SHARED_LIBS ON)
 
 ### ======== ###
 ### Messages ###

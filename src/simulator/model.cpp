@@ -90,6 +90,7 @@ namespace mrover {
         if (!asyncMeshesLoader.valid()) return;
 
         meshes = asyncMeshesLoader.get();
+        auto _ = std::move(asyncMeshesLoader);
     }
 
     auto Model::areMeshesReady() -> bool {
