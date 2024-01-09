@@ -26,7 +26,7 @@ class ApproachObjectState(ApproachTargetBaseState):
         pass
 
     def get_target_pos(self, context) -> Optional[int]:
-        object_pos = None  # TODO: replace
+        object_pos = context.env.current_target_pos()
         return object_pos
 
     def determine_next(self, context, finished: bool) -> State:

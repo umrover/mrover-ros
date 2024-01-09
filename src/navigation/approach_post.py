@@ -26,7 +26,7 @@ class NewApproachPostState(ApproachTargetBaseState):
 
     def get_target_pos(self, context) -> Optional[int]:
         # return fid_pos, either position or None
-        fid_pos = context.env.current_fid_pos()
+        fid_pos = context.env.current_target_pos()
         return fid_pos
 
     def determine_next(self, context, finished: bool) -> State:
@@ -54,7 +54,7 @@ class ApproachPostState(State):
         :param ud:  State machine user data
         :return:    Next state
         """
-        fid_pos = context.env.current_fid_pos()
+        fid_pos = context.env.current_target_pos()
         if fid_pos is None:
             return search.SearchState()
 
@@ -68,9 +68,9 @@ class ApproachPostState(State):
             )
             if arrived:
                 context.env.arrived_at_post = True
-                context.env.last_post_location = context.env.current_fid_pos(odom_override=False)
+                context.env.last_post_location = context.env.current_target_pos(odom_override=False)
                 context.course.increment_waypoint()
-                return waypoint.WaypointState()
+                return waypoint.WaypointState() # we want to go to done state now
             context.rover.send_drive_command(cmd_vel)
         except (
             tf2_ros.LookupException,

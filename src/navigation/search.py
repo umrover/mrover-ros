@@ -94,6 +94,7 @@ class SearchState(State):
     def on_enter(self, context) -> None:
         search_center = context.course.current_waypoint()
         if not self.is_recovering:
+            # TODO give different parameters to spiral_traj based on if search_center.type is POST or RUBBER_MALLET (water bottle has diff search state)
             self.traj = SearchTrajectory.spiral_traj(
                 context.rover.get_pose().position[0:2],
                 self.SPIRAL_COVERAGE_RADIUS,
@@ -134,6 +135,15 @@ class SearchState(State):
         )
         context.rover.send_drive_command(cmd_vel)
 
-        if context.env.current_fid_pos() is not None and context.course.look_for_post():
-            return approach_post.ApproachPostState()
+        # TODO get current waypoint
+        # if current waypoint type is POST
+        if context.env.current_target_pos() is not None and context.course.look_for_post(): # indent this if statement 
+            return approach_post.ApproachPostState() # if we see the tag in the ZED, go to ApproachPostState
+                # if we see the tag in the long range camera, go to LongRangeState
+            # if tag id has hit count > 3:
+            #     return long_range.LongRangeState()
+            
+        # elif current waypoint type is RUBBER MALLET
+            # if context.env.current_target_pos() is not None and context.course.look_for_object():
+	            # return approach_object.ApproachObjectState() # if we see the object
         return self

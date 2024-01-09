@@ -64,8 +64,9 @@ class Environment:
     NO_FIDUCIAL: ClassVar[int] = -1
     arrived_at_post: bool = False
     last_post_location: Optional[np.ndarray] = None
-
-    def get_fid_pos(self, fid_id: int, in_odom_frame: bool = True) -> Optional[np.ndarray]:
+    # TODO add dictionary for long range tag id : (time received, our hit counter, bearing)
+    
+    def get_target_pos(self, id: str, in_odom_frame: bool = True) -> Optional[np.ndarray]:
         """
         Retrieves the pose of the given fiducial ID from the TF tree in the odom frame
         if in_odom_frame is True otherwise in the world frame
@@ -73,12 +74,12 @@ class Environment:
         """
         try:
             parent_frame = self.ctx.odom_frame if in_odom_frame else self.ctx.world_frame
-            fid_pose, time = SE3.from_tf_time(
-                self.ctx.tf_buffer, parent_frame=parent_frame, child_frame=f"fiducial{fid_id}"
+            target_pose, time = SE3.from_tf_time(
+                self.ctx.tf_buffer, parent_frame=parent_frame, child_frame=f"{id}"
             )
             now = rospy.Time.now()
             if now.to_sec() - time.to_sec() >= TAG_EXPIRATION_TIME_SECONDS:
-                print(f"TAG EXPIRED {fid_id}!")
+                print(f"EXPIRED {id}!")
                 return None
         except (
             tf2_ros.LookupException,
@@ -86,11 +87,11 @@ class Environment:
             tf2_ros.ExtrapolationException,
         ) as e:
             return None
-        return fid_pose.position
-
-    def current_fid_pos(self, odom_override: bool = True) -> Optional[np.ndarray]:
+        return target_pose.position
+    
+    def current_target_pos(self, odom_override: bool = True) -> Optional[np.ndarray]:
         """
-        Retrieves the position of the current fiducial (and we are looking for it)
+        Retrieves the position of the current fiducial or object (and we are looking for it)
         :param: odom_override if false will force it to be in the map frame
         """
         assert self.ctx.course
@@ -100,7 +101,15 @@ class Environment:
             print("CURRENT WAYPOINT IS NONE")
             return None
 
-        return self.get_fid_pos(current_waypoint.tag_id, in_odom)
+        if current_waypoint.type == WaypointType.POST:
+            return self.get_target_pos(f"fiducial{current_waypoint.tag_id}", in_odom)
+        elif current_waypoint.type == WaypointType.MALLET:
+            return self.get_target_pos("mallet", in_odom)
+        elif current_waypoint.type == WaypointType.WATER_BOTTLE:
+            return self.get_target_pos("water_bottle", in_odom)
+        else:
+            print("CURRENT WAYPOINT IS NOT A POST OR OBJECT")
+            return None
 
 
 @dataclass
@@ -202,6 +211,7 @@ class Context:
     vis_publisher: rospy.Publisher
     course_listener: rospy.Subscriber
     stuck_listener: rospy.Subscriber
+    # TODO create listener for long range cam
 
     # Use these as the primary interfaces in states
     course: Optional[Course]
@@ -242,3 +252,5 @@ class Context:
 
     def stuck_callback(self, msg: Bool):
         self.rover.stuck = msg.data
+
+    # TODO create callback for long range listener
