@@ -65,7 +65,6 @@ namespace mrover {
             }
         });
         if (glfwRawMouseMotionSupported()) glfwSetInputMode(mWindow.get(), GLFW_RAW_MOUSE_MOTION, GLFW_TRUE);
-        centerCursor();
     }
 
     auto SimulatorNodelet::frameBufferResizedCallback(int width, int height) -> void {

@@ -179,10 +179,10 @@ namespace mrover {
         struct FragmentUniforms {
             std::uint32_t material{};
             std::uint32_t hasTexture{};
-            Eigen::Vector3f lightInWorld{};
-            Eigen::Vector3f cameraInWorld{};
-            Eigen::Vector3f lightColor{};
-            Eigen::Vector3f objectColor{};
+            Eigen::Vector4f lightInWorld{};
+            Eigen::Vector4f cameraInWorld{};
+            Eigen::Vector4f lightColor{};
+            Eigen::Vector4f objectColor{};
             std::array<std::byte, 8> _padding{};
         };
         Uniform<FragmentUniforms> mFragmentUniforms;
