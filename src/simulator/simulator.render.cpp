@@ -51,23 +51,21 @@ namespace mrover {
 
         glfwSetWindowUserPointer(mWindow.get(), this);
         glfwSetKeyCallback(mWindow.get(), [](GLFWwindow* window, int key, int scancode, int action, int mods) {
-            auto* simulator = static_cast<SimulatorNodelet*>(glfwGetWindowUserPointer(window));
-            simulator->keyCallback(key, scancode, action, mods);
+            if (auto* simulator = static_cast<SimulatorNodelet*>(glfwGetWindowUserPointer(window)))
+                simulator->keyCallback(key, scancode, action, mods);
         });
         glfwSetFramebufferSizeCallback(mWindow.get(), [](GLFWwindow* window, int width, int height) {
-            auto* simulator = static_cast<SimulatorNodelet*>(glfwGetWindowUserPointer(window));
-            simulator->frameBufferResizedCallback(width, height);
+            if (auto* simulator = static_cast<SimulatorNodelet*>(glfwGetWindowUserPointer(window)))
+                simulator->frameBufferResizedCallback(width, height);
         });
-    }
-
-    auto SimulatorNodelet::keyCallback(int key, [[maybe_unused]] int scancode, int action, [[maybe_unused]] int mods) -> void {
-        if (action == GLFW_PRESS) {
-            if (key == mQuitKey) ros::requestShutdown();
-            if (key == mTogglePhysicsKey) mEnablePhysics = !mEnablePhysics;
-            if (key == mToggleRenderModelsKey) mRenderModels = !mRenderModels;
-            if (key == mToggleRenderWireframeCollidersKey) mRenderWireframeColliders = !mRenderWireframeColliders;
-            if (key == mInGuiKey) mInGui = !mInGui;
-        }
+        glfwSetWindowFocusCallback(mWindow.get(), [](GLFWwindow* window, int focused) {
+            if (auto* simulator = static_cast<SimulatorNodelet*>(glfwGetWindowUserPointer(window))) {
+                simulator->mHasFocus = focused;
+                if (focused && !simulator->mInGui) simulator->centerCursor();
+            }
+        });
+        if (glfwRawMouseMotionSupported()) glfwSetInputMode(mWindow.get(), GLFW_RAW_MOUSE_MOTION, GLFW_TRUE);
+        centerCursor();
     }
 
     auto SimulatorNodelet::frameBufferResizedCallback(int width, int height) -> void {

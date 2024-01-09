@@ -70,70 +70,95 @@ namespace mrover {
         // }
     }
 
+    auto SimulatorNodelet::centerCursor() -> void {
+        Eigen::Vector2i size;
+        glfwGetWindowSize(mWindow.get(), &size.x(), &size.y());
+        Eigen::Vector2d center = size.cast<double>() / 2;
+        glfwSetCursorPos(mWindow.get(), center.x(), center.y());
+    }
+
+    auto SimulatorNodelet::keyCallback(int key, [[maybe_unused]] int scancode, int action, [[maybe_unused]] int mods) -> void {
+        if (action == GLFW_PRESS) {
+            if (key == mQuitKey) ros::requestShutdown();
+            if (key == mTogglePhysicsKey) mEnablePhysics = !mEnablePhysics;
+            if (key == mToggleRenderModelsKey) mRenderModels = !mRenderModels;
+            if (key == mToggleRenderWireframeCollidersKey) mRenderWireframeColliders = !mRenderWireframeColliders;
+            if (key == mInGuiKey) {
+                mInGui = !mInGui;
+                if (!mInGui) centerCursor();
+            }
+        }
+    }
+
     auto SimulatorNodelet::freeLook(Clock::duration dt) -> void {
-        // float flySpeed = mFlySpeed * std::chrono::duration_cast<std::chrono::duration<float>>(dt).count();
-        // if (keys[mCamRightKey]) {
-        //     mCameraInWorld = SE3{R3{0.0, -flySpeed, 0}, SO3{}} * mCameraInWorld;
-        // }
-        // if (keys[mCamLeftKey]) {
-        //     mCameraInWorld = SE3{R3{0.0, flySpeed, 0}, SO3{}} * mCameraInWorld;
-        // }
-        // if (keys[mCamForwardKey]) {
-        //     mCameraInWorld = SE3{R3{flySpeed, 0.0, 0.0}, SO3{}} * mCameraInWorld;
-        // }
-        // if (keys[mCamBackwardKey]) {
-        //     mCameraInWorld = SE3{R3{-flySpeed, 0.0, 0.0}, SO3{}} * mCameraInWorld;
-        // }
-        // if (keys[mCamUpKey]) {
-        //     mCameraInWorld = mCameraInWorld * SE3{R3{0.0, 0.0, flySpeed}, SO3{}};
-        // }
-        // if (keys[mCamDownKey]) {
-        //     mCameraInWorld = mCameraInWorld * SE3{R3{0.0, 0.0, -flySpeed}, SO3{}};
-        // }
+        float flySpeed = mFlySpeed * std::chrono::duration_cast<std::chrono::duration<float>>(dt).count();
+        if (glfwGetKey(mWindow.get(), mCamRightKey) == GLFW_PRESS) {
+            mCameraInWorld = SE3{R3{0.0, -flySpeed, 0}, SO3{}} * mCameraInWorld;
+        }
+        if (glfwGetKey(mWindow.get(), mCamLeftKey) == GLFW_PRESS) {
+            mCameraInWorld = SE3{R3{0.0, flySpeed, 0}, SO3{}} * mCameraInWorld;
+        }
+        if (glfwGetKey(mWindow.get(), mCamForwardKey) == GLFW_PRESS) {
+            mCameraInWorld = SE3{R3{flySpeed, 0.0, 0.0}, SO3{}} * mCameraInWorld;
+        }
+        if (glfwGetKey(mWindow.get(), mCamBackwardKey) == GLFW_PRESS) {
+            mCameraInWorld = SE3{R3{-flySpeed, 0.0, 0.0}, SO3{}} * mCameraInWorld;
+        }
+        if (glfwGetKey(mWindow.get(), mCamUpKey) == GLFW_PRESS) {
+            mCameraInWorld = mCameraInWorld * SE3{R3{0.0, 0.0, flySpeed}, SO3{}};
+        }
+        if (glfwGetKey(mWindow.get(), mCamDownKey) == GLFW_PRESS) {
+            mCameraInWorld = mCameraInWorld * SE3{R3{0.0, 0.0, -flySpeed}, SO3{}};
+        }
 
-        // int dx{}, dy{};
-        // SDL_GetRelativeMouseState(&dx, &dy);
+        Eigen::Vector2i size;
+        glfwGetWindowSize(mWindow.get(), &size.x(), &size.y());
 
-        // auto turnX = static_cast<double>(-dx) * mLookSense;
-        // auto turnY = static_cast<double>(dy) * mLookSense;
+        Eigen::Vector2d center = size.cast<double>() / 2;
 
-        // R3 p = mCameraInWorld.position();
-        // SO3 q = SO3{turnY, Eigen::Vector3d::UnitY()} * mCameraInWorld.rotation() * SO3{turnX, Eigen::Vector3d::UnitZ()};
-        // mCameraInWorld = SE3{p, q};
+        Eigen::Vector2d mouse;
+        glfwGetCursorPos(mWindow.get(), &mouse.x(), &mouse.y());
+
+        Eigen::Vector2d delta = (mouse - center) * mLookSense;
+
+        // TODO(quintin): use lie algebra more here? we have a perturbation in the tangent space
+        R3 p = mCameraInWorld.position();
+        SO3 q = SO3{delta.y(), Eigen::Vector3d::UnitY()} * mCameraInWorld.rotation() * SO3{-delta.x(), Eigen::Vector3d::UnitZ()};
+        mCameraInWorld = SE3{p, q};
+
+        glfwSetCursorPos(mWindow.get(), center.x(), center.y());
     }
 
     auto SimulatorNodelet::userControls(Clock::duration dt) -> void {
-        // if (!mHasFocus || mInGui) return;
+        if (!mHasFocus || mInGui) return;
 
-        // Uint8 const* keys = SDL_GetKeyboardState(nullptr);
+        freeLook(dt);
 
-        // freeLook(dt, keys);
-
-        // std::optional<geometry_msgs::Twist> twist;
-        // if (keys[mRoverRightKey]) {
-        //     if (!twist) twist.emplace();
-        //     twist->angular.z = -mRoverAngularSpeed;
-        // }
-        // if (keys[mRoverLeftKey]) {
-        //     if (!twist) twist.emplace();
-        //     twist->angular.z = mRoverAngularSpeed;
-        // }
-        // if (keys[mRoverForwardKey]) {
-        //     if (!twist) twist.emplace();
-        //     twist->linear.x = mRoverLinearSpeed;
-        // }
-        // if (keys[mRoverBackwardKey]) {
-        //     if (!twist) twist.emplace();
-        //     twist->linear.x = -mRoverLinearSpeed;
-        // }
-        // if (keys[mRoverStopKey]) {
-        //     if (!twist) twist.emplace();
-        //     twist->linear.x = 0.0;
-        //     twist->angular.z = 0.0;
-        // }
-        // if (twist) {
-        //     twistCallback(boost::make_shared<geometry_msgs::Twist const>(*twist));
-        // }
+        std::optional<geometry_msgs::Twist> twist;
+        if (glfwGetKey(mWindow.get(), mRoverRightKey) == GLFW_PRESS) {
+            if (!twist) twist.emplace();
+            twist->angular.z = -mRoverAngularSpeed;
+        }
+        if (glfwGetKey(mWindow.get(), mRoverLeftKey) == GLFW_PRESS) {
+            if (!twist) twist.emplace();
+            twist->angular.z = mRoverAngularSpeed;
+        }
+        if (glfwGetKey(mWindow.get(), mRoverForwardKey) == GLFW_PRESS) {
+            if (!twist) twist.emplace();
+            twist->linear.x = mRoverLinearSpeed;
+        }
+        if (glfwGetKey(mWindow.get(), mRoverBackwardKey) == GLFW_PRESS) {
+            if (!twist) twist.emplace();
+            twist->linear.x = -mRoverLinearSpeed;
+        }
+        if (glfwGetKey(mWindow.get(), mRoverStopKey) == GLFW_PRESS) {
+            if (!twist) twist.emplace();
+            twist->linear.x = 0.0;
+            twist->angular.z = 0.0;
+        }
+        if (twist) {
+            twistCallback(boost::make_shared<geometry_msgs::Twist const>(*twist));
+        }
     }
 
 } // namespace mrover

@@ -45,51 +45,6 @@ namespace mrover {
 
             mLoopProfiler.beginLoop();
 
-            // for (SDL_Event event; SDL_PollEvent(&event);) {
-            //     ImGui_ImplSDL2_ProcessEvent(&event);
-            //     switch (event.type) {
-            //         case SDL_QUIT:
-            //             ros::requestShutdown();
-            //             break;
-            //         case SDL_KEYDOWN: {
-            //             Sint32 key = event.key.keysym.sym;
-            //             if (key == mQuitKey) {
-            //                 ros::requestShutdown();
-            //             }
-            //             if (key == mTogglePhysicsKey) {
-            //                 mEnablePhysics = !mEnablePhysics;
-            //             }
-            //             if (key == mToggleRenderModelsKey) {
-            //                 mRenderModels = !mRenderModels;
-            //             }
-            //             if (key == mToggleRenderWireframeCollidersKey) {
-            //                 mRenderWireframeColliders = !mRenderWireframeColliders;
-            //             }
-            //             if (key == mInGuiKey) {
-            //                 mInGui = !mInGui;
-            //                 SDL_GetRelativeMouseState(nullptr, nullptr);
-            //             }
-            //             break;
-            //         }
-            //         case SDL_WINDOWEVENT: {
-            //             switch (event.window.event) {
-            //                 case SDL_WINDOWEVENT_FOCUS_GAINED:
-            //                     mHasFocus = true;
-            //                     SDL_GetRelativeMouseState(nullptr, nullptr);
-            //                     break;
-            //                 case SDL_WINDOWEVENT_FOCUS_LOST:
-            //                     mHasFocus = false;
-            //                     break;
-            //                 default:
-            //                     break;
-            //             }
-            //             break;
-            //         }
-            //         default:
-            //             break;
-            //     }
-            // }
-
             // Note(quintin):
             // Apple sucks and does not support polling on a non-main thread (which we are currently on)
             // Instead add to ROS's global callback queue which I think will be served by the main thread
@@ -98,8 +53,7 @@ namespace mrover {
 #else
             glfwPollEvents();
 #endif
-
-            // SDL_SetRelativeMouseMode(mInGui ? SDL_FALSE : SDL_TRUE);
+            glfwSetInputMode(mWindow.get(), GLFW_CURSOR, mInGui ? GLFW_CURSOR_NORMAL : GLFW_CURSOR_DISABLED);
             mLoopProfiler.measureEvent("GLFW Events");
 
             if (auto it = mUrdfs.find("rover"); it != mUrdfs.end()) {

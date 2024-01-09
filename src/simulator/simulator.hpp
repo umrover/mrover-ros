@@ -278,6 +278,8 @@ namespace mrover {
 
         auto run() -> void;
 
+        auto centerCursor() -> void;
+
         auto freeLook(Clock::duration dt) -> void;
 
         auto userControls(Clock::duration dt) -> void;
