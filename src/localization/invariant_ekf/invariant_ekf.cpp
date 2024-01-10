@@ -89,6 +89,7 @@ void InvariantEKF::update_mag(Eigen::Vector3d const& z, Matrix3d const& R_mag) {
     auto J_e_x = J_e_xi * J_xi_x;
 
     //final jacobian
+    //source: https://arxiv.org/pdf/2007.14097.pdf
     Eigen::Matrix<double, 9, 9> se_two;
     se_two.block(0,0,3,3) = J_e_x;
     se_two.block(3,3,3,3) = J_e_x;
