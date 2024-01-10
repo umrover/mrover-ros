@@ -4,9 +4,6 @@
 
 namespace mrover {
 
-    static const wgpu::TextureFormat COLOR_FORMAT = wgpu::TextureFormat::BGRA8Unorm;
-    static const wgpu::TextureFormat DEPTH_FORMAT = wgpu::TextureFormat::Depth24Plus;
-
     static std::string const MESHES_PATH = "package://mrover/urdf/meshes/primitives";
     static std::string const CUBE_PRIMITIVE_URI = fmt::format("{}/cube.fbx", MESHES_PATH);
     static std::string const SPHERE_PRIMITIVE_URI = fmt::format("{}/sphere.fbx", MESHES_PATH);
@@ -16,6 +13,31 @@ namespace mrover {
         btVector3 const& p = transform.getOrigin();
         btQuaternion const& q = transform.getRotation();
         return {R3{p.x(), p.y(), p.z()}, SO3{q.w(), q.x(), q.y(), q.z()}, R3{scale.x(), scale.y(), scale.z()}};
+    }
+
+    auto SimulatorNodelet::makeTextureAndView(int width, int height, wgpu::TextureFormat const& format, wgpu::TextureUsage const& usage, wgpu::TextureAspect const& aspect) -> std::pair<wgpu::Texture, wgpu::TextureView> {
+        wgpu::TextureDescriptor textureDescriptor;
+        textureDescriptor.dimension = wgpu::TextureDimension::_2D;
+        textureDescriptor.format = format;
+        textureDescriptor.mipLevelCount = 1;
+        textureDescriptor.sampleCount = 1;
+        textureDescriptor.size = {static_cast<std::uint32_t>(width), static_cast<std::uint32_t>(height), 1};
+        textureDescriptor.usage = usage;
+        textureDescriptor.viewFormatCount = 1;
+        textureDescriptor.viewFormats = reinterpret_cast<WGPUTextureFormat const*>(&format);
+        wgpu::Texture texture = mDevice.createTexture(textureDescriptor);
+        if (!texture) throw std::runtime_error{"Failed to make WGPU texture"};
+
+        wgpu::TextureViewDescriptor textureViewDescriptor;
+        textureViewDescriptor.aspect = aspect;
+        textureViewDescriptor.arrayLayerCount = 1;
+        textureViewDescriptor.mipLevelCount = 1;
+        textureViewDescriptor.dimension = wgpu::TextureViewDimension::_2D;
+        textureViewDescriptor.format = format;
+        wgpu::TextureView textureView = texture.createView(textureViewDescriptor);
+        if (!textureView) throw std::runtime_error{"Failed to make WGPU texture view"};
+
+        return {texture, textureView};
     }
 
     auto computeCameraToClip(float fovY, float aspect, float zNear, float zFar) -> Eigen::Matrix4f {
@@ -70,15 +92,10 @@ namespace mrover {
             }
         });
         if (glfwRawMouseMotionSupported()) glfwSetInputMode(mWindow.get(), GLFW_RAW_MOUSE_MOTION, GLFW_TRUE);
-
-        frameBufferResizedCallback(w, h);
     }
 
     auto SimulatorNodelet::frameBufferResizedCallback(int width, int height) -> void {
         // TODO(quintin): resize framebuffer
-        float aspect = static_cast<float>(width) / static_cast<float>(height);
-        Eigen::Matrix4f cameraToClip = computeCameraToClip(mFov * DEG_TO_RAD, aspect, NEAR, FAR).cast<float>();
-        mSceneUniforms.value.cameraToClip = cameraToClip;
     }
 
     auto SimulatorNodelet::initRender() -> void {
@@ -118,37 +135,16 @@ namespace mrover {
         int width, height;
         glfwGetFramebufferSize(mWindow.get(), &width, &height);
 
-        {
-            wgpu::SwapChainDescriptor descriptor;
-            descriptor.usage = wgpu::TextureUsage::RenderAttachment;
-            descriptor.format = COLOR_FORMAT;
-            descriptor.width = width;
-            descriptor.height = height;
-            descriptor.presentMode = wgpu::PresentMode::Immediate;
-            mSwapChain = mDevice.createSwapChain(mSurface, descriptor);
-            if (!mSwapChain) throw std::runtime_error("Failed to create WGPU swap chain");
-        }
-        {
-            wgpu::TextureDescriptor descriptor;
-            descriptor.dimension = wgpu::TextureDimension::_2D;
-            descriptor.format = DEPTH_FORMAT;
-            descriptor.mipLevelCount = 1;
-            descriptor.sampleCount = 1;
-            descriptor.size = {static_cast<std::uint32_t>(width), static_cast<std::uint32_t>(height), 1};
-            descriptor.usage = wgpu::TextureUsage::RenderAttachment;
-            descriptor.viewFormatCount = 1;
-            descriptor.viewFormats = reinterpret_cast<WGPUTextureFormat const*>(&DEPTH_FORMAT);
-            mDepthTexture = mDevice.createTexture(descriptor);
-        }
-        {
-            wgpu::TextureViewDescriptor descriptor;
-            descriptor.aspect = wgpu::TextureAspect::DepthOnly;
-            descriptor.arrayLayerCount = 1;
-            descriptor.mipLevelCount = 1;
-            descriptor.dimension = wgpu::TextureViewDimension::_2D;
-            descriptor.format = DEPTH_FORMAT;
-            mDepthTextureView = mDepthTexture.createView(descriptor);
-        }
+        wgpu::SwapChainDescriptor descriptor;
+        descriptor.usage = wgpu::TextureUsage::RenderAttachment;
+        descriptor.format = COLOR_FORMAT;
+        descriptor.width = width;
+        descriptor.height = height;
+        descriptor.presentMode = wgpu::PresentMode::Immediate;
+        mSwapChain = mDevice.createSwapChain(mSurface, descriptor);
+        if (!mSwapChain) throw std::runtime_error("Failed to create WGPU swap chain");
+
+        std::tie(mDepthTexture, mDepthTextureView) = makeTextureAndView(width, height, DEPTH_FORMAT, wgpu::TextureUsage::RenderAttachment, wgpu::TextureAspect::DepthOnly);
 
         {
             wgpu::ShaderModuleWGSLDescriptor shaderSourceDescriptor;
@@ -265,22 +261,6 @@ namespace mrover {
             mPbrPipeline = mDevice.createRenderPipeline(descriptor);
             if (!mPbrPipeline) throw std::runtime_error("Failed to create WGPU render pipeline");
         }
-        {
-            mSceneUniforms.init(mDevice);
-            mSceneUniforms.value.lightColor = {1, 1, 1, 1};
-            mSceneUniforms.value.lightInWorld = {0, 0, 5, 1};
-
-            wgpu::BindGroupEntry entry;
-            entry.binding = 0;
-            entry.buffer = mSceneUniforms.buffer;
-            entry.offset = 0;
-            entry.size = sizeof(SceneUniforms);
-            wgpu::BindGroupDescriptor descriptor;
-            descriptor.layout = mPbrPipeline.getBindGroupLayout(1);
-            descriptor.entryCount = 1;
-            descriptor.entries = &entry;
-            mSceneBindGroup = mDevice.createBindGroup(descriptor);
-        }
 
         mUriToModel.try_emplace(CUBE_PRIMITIVE_URI, CUBE_PRIMITIVE_URI);
         mUriToModel.try_emplace(SPHERE_PRIMITIVE_URI, SPHERE_PRIMITIVE_URI);
@@ -301,7 +281,7 @@ namespace mrover {
         style.ScaleAllSizes(scale);
     }
 
-    auto SimulatorNodelet::renderModel(Model& model, Uniform<ModelUniforms>& uniforms, SIM3 const& modelToWorld, [[maybe_unused]] bool isRoverCamera) -> void {
+    auto SimulatorNodelet::renderModel(wgpu::RenderPassEncoder& pass, Model& model, Uniform<ModelUniforms>& uniforms, SIM3 const& modelToWorld, [[maybe_unused]] bool isRoverCamera) -> void {
         if (!model.areMeshesReady()) return;
 
         if (!uniforms.buffer) uniforms.init(mDevice);
@@ -318,12 +298,11 @@ namespace mrover {
             mesh.normals.enqueueWriteIfUnitialized(mDevice, mQueue, wgpu::BufferUsage::Vertex);
             mesh.uvs.enqueueWriteIfUnitialized(mDevice, mQueue, wgpu::BufferUsage::Vertex);
 
-            mesh.texture.prepare(mDevice);
+            mesh.texture.enqueWriteIfUnitialized(mDevice);
 
             std::array<wgpu::BindGroupEntry, 3> bindGroupEntires{};
             bindGroupEntires[0].binding = 0;
             bindGroupEntires[0].buffer = uniforms.buffer;
-            bindGroupEntires[0].offset = 0;
             bindGroupEntires[0].size = sizeof(ModelUniforms);
             bindGroupEntires[1].binding = 1;
             bindGroupEntires[1].textureView = mesh.texture.view;
@@ -335,18 +314,18 @@ namespace mrover {
             descriptor.entries = bindGroupEntires.data();
             wgpu::BindGroup bindGroup = mDevice.createBindGroup(descriptor);
 
-            mRenderPass.setBindGroup(0, bindGroup, 0, nullptr);
-            mRenderPass.setVertexBuffer(0, mesh.vertices.buffer, 0, mesh.vertices.sizeBytes());
-            mRenderPass.setVertexBuffer(1, mesh.normals.buffer, 0, mesh.normals.sizeBytes());
-            mRenderPass.setVertexBuffer(2, mesh.uvs.buffer, 0, mesh.uvs.sizeBytes());
-            mRenderPass.setIndexBuffer(mesh.indices.buffer, wgpu::IndexFormat::Uint32, 0, mesh.indices.sizeBytes());
+            pass.setBindGroup(0, bindGroup, 0, nullptr);
+            pass.setVertexBuffer(0, mesh.vertices.buffer, 0, mesh.vertices.sizeBytes());
+            pass.setVertexBuffer(1, mesh.normals.buffer, 0, mesh.normals.sizeBytes());
+            pass.setVertexBuffer(2, mesh.uvs.buffer, 0, mesh.uvs.sizeBytes());
+            pass.setIndexBuffer(mesh.indices.buffer, wgpu::IndexFormat::Uint32, 0, mesh.indices.sizeBytes());
 
             static_assert(std::is_same_v<decltype(mesh.indices)::value_type, std::uint32_t>);
-            mRenderPass.drawIndexed(mesh.indices.data.size(), 1, 0, 0, 0);
+            pass.drawIndexed(mesh.indices.data.size(), 1, 0, 0, 0);
         }
     }
 
-    auto SimulatorNodelet::renderModels() -> void {
+    auto SimulatorNodelet::renderModels(wgpu::RenderPassEncoder& encoder) -> void {
         for (auto& [_, urdf]: mUrdfs) {
 
             auto renderLink = [&](auto&& self, urdf::LinkConstSharedPtr const& link) -> void {
@@ -356,7 +335,7 @@ namespace mrover {
                         SE3 linkInWorld = urdf.linkInWorld(link->name);
                         SE3 modelInLink = btTransformToSe3(urdfPoseToBtTransform(link->visual->origin));
                         SE3 modelInWorld = linkInWorld * modelInLink;
-                        renderModel(model, urdf.linkNameToUniform[link->name], SIM3{modelInWorld.position(), modelInWorld.rotation(), R3::Ones()});
+                        renderModel(encoder, model, urdf.linkNameToUniform[link->name], SIM3{modelInWorld.position(), modelInWorld.rotation(), R3::Ones()});
                     }
                 }
                 for (urdf::JointSharedPtr const& child_joint: link->child_joints) {
@@ -414,13 +393,11 @@ namespace mrover {
         if (!nextTexture) throw std::runtime_error("Failed to get WGPU next texture view");
 
         wgpu::RenderPassColorAttachment colorAttachment;
-        colorAttachment.view = nextTexture;
         colorAttachment.loadOp = wgpu::LoadOp::Clear;
         colorAttachment.storeOp = wgpu::StoreOp::Store;
         colorAttachment.clearValue = {0.1f, 0.1f, 0.1f, 1.0f};
 
         wgpu::RenderPassDepthStencilAttachment depthStencilAttachment;
-        depthStencilAttachment.view = mDepthTextureView;
         depthStencilAttachment.depthClearValue = 1.0f;
         depthStencilAttachment.depthLoadOp = wgpu::LoadOp::Clear;
         depthStencilAttachment.depthStoreOp = wgpu::StoreOp::Store;
@@ -434,24 +411,57 @@ namespace mrover {
         renderPassDescriptor.depthStencilAttachment = &depthStencilAttachment;
 
         wgpu::CommandEncoder encoder = mDevice.createCommandEncoder();
-        mRenderPass = encoder.beginRenderPass(renderPassDescriptor);
         {
-            mRenderPass.setPipeline(mPbrPipeline);
+            for (Camera& camera: mCameras) {
+                colorAttachment.view = camera.colorTextureView;
+                depthStencilAttachment.view = camera.depthTextureView;
 
-            camerasUpdate();
-            {
-                mSceneUniforms.value.worldToCamera = mCameraInWorld.matrix().inverse().cast<float>();
-                mSceneUniforms.value.cameraInWorld = mCameraInWorld.position().cast<float>().homogeneous();
-                mSceneUniforms.enqueueWrite();
-                mRenderPass.setBindGroup(1, mSceneBindGroup, 0, nullptr);
+                wgpu::RenderPassEncoder pass = encoder.beginRenderPass(renderPassDescriptor);
 
-                if (mRenderModels) renderModels();
-                if (mRenderWireframeColliders) renderWireframeColliders();
+                cameraUpdate(camera, pass);
+
+                pass.end();
             }
         }
-        guiUpdate();
+        {
+            colorAttachment.view = nextTexture;
+            depthStencilAttachment.view = mDepthTextureView;
 
-        mRenderPass.end();
+            wgpu::RenderPassEncoder pass = encoder.beginRenderPass(renderPassDescriptor);
+            pass.setPipeline(mPbrPipeline);
+
+            if (!mSceneUniforms.buffer) {
+                mSceneUniforms.init(mDevice);
+                mSceneUniforms.value.lightColor = {1, 1, 1, 1};
+                mSceneUniforms.value.lightInWorld = {0, 0, 5, 1};
+            }
+
+            int width, height;
+            glfwGetFramebufferSize(mWindow.get(), &width, &height);
+            float aspect = static_cast<float>(width) / static_cast<float>(height);
+            mSceneUniforms.value.cameraToClip = computeCameraToClip(mFovDegrees * DEG_TO_RAD, aspect, NEAR, FAR).cast<float>();
+            mSceneUniforms.value.worldToCamera = mCameraInWorld.matrix().inverse().cast<float>();
+            mSceneUniforms.value.cameraInWorld = mCameraInWorld.position().cast<float>().homogeneous();
+            mSceneUniforms.enqueueWrite();
+
+            wgpu::BindGroupEntry entry;
+            entry.binding = 0;
+            entry.buffer = mSceneUniforms.buffer;
+            entry.size = sizeof(SceneUniforms);
+            wgpu::BindGroupDescriptor descriptor;
+            descriptor.layout = mPbrPipeline.getBindGroupLayout(1);
+            descriptor.entryCount = 1;
+            descriptor.entries = &entry;
+            wgpu::BindGroup bindGroup = mDevice.createBindGroup(descriptor);
+            pass.setBindGroup(1, bindGroup, 0, nullptr);
+
+            if (mRenderModels) renderModels(pass);
+            if (mRenderWireframeColliders) renderWireframeColliders();
+
+            guiUpdate(pass);
+
+            pass.end();
+        }
 
         nextTexture.release();
 

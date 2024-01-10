@@ -2,7 +2,7 @@
 
 namespace mrover {
 
-    auto SimulatorNodelet::guiUpdate() -> void {
+    auto SimulatorNodelet::guiUpdate(wgpu::RenderPassEncoder& pass) -> void {
         if (mSaveTask.shouldUpdate() && mEnablePhysics) {
             SaveData save;
             // TODO(quintin): save
@@ -50,7 +50,7 @@ namespace mrover {
             ImGui::SliderFloat("Target FPS", &mTargetUpdateRate, 5.0f, 1000.0f);
             ImGui::SliderFloat("Fly Speed", &mFlySpeed, 0.01f, 10.0f);
             ImGui::SliderFloat("Look Sense", &mLookSense, 0.0001f, 0.01f);
-            ImGui::SliderFloat("FOV", &mFov, 10.0f, 120.0f);
+            ImGui::SliderFloat("FOV", &mFovDegrees, 10.0f, 120.0f);
             ImGui::InputFloat3("Gravity", mGravityAcceleration.m_floats);
             ImGui::SliderFloat("Rover Linear Speed", &mRoverLinearSpeed, 0.01f, 10.0f);
             ImGui::SliderFloat("Rover Angular Speed", &mRoverAngularSpeed, 0.01f, 10.0f);
@@ -96,15 +96,15 @@ namespace mrover {
             }
 
             for (Camera const& camera: mCameras) {
-                float aspect = static_cast<float>(camera.resolution.width) / static_cast<float>(camera.resolution.height);
-                // ImGui::Image(reinterpret_cast<void*>(static_cast<intptr_t>(camera.colorTextureHandle)), {320, 320 / aspect}, {0, 1}, {1, 0});
+                float aspect = static_cast<float>(camera.resolution.x()) / static_cast<float>(camera.resolution.y());
+                ImGui::Image(camera.colorTextureView, {320, 320 / aspect}, {0, 0}, {1, 1});
             }
 
             ImGui::End();
         }
 
         ImGui::Render();
-        ImGui_ImplWGPU_RenderDrawData(ImGui::GetDrawData(), mRenderPass);
+        ImGui_ImplWGPU_RenderDrawData(ImGui::GetDrawData(), pass);
 
         // ImGui_ImplWGPU_RenderDrawData(ImDrawData *draw_data, WGPURenderPassEncoder pass_encoder)
     }

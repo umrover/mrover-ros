@@ -74,14 +74,14 @@ namespace mrover {
         }
     };
 
-    struct SharedTexture {
+    struct MeshTexture {
         cv::Mat data;
 
         wgpu::Texture texture = nullptr;
         wgpu::TextureView view = nullptr;
         wgpu::Sampler sampler = nullptr;
 
-        auto prepare(wgpu::Device& device) -> bool {
+        auto enqueWriteIfUnitialized(wgpu::Device& device) -> bool {
             if (data.empty()) return false;
             if (texture != nullptr) return false;
 

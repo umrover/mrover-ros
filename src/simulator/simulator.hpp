@@ -20,14 +20,26 @@ namespace mrover {
                                      0, 0, 0, 1)
             .finished();
 
+    static const auto COLOR_FORMAT = wgpu::TextureFormat::BGRA8Unorm;
+    static const auto DEPTH_FORMAT = wgpu::TextureFormat::Depth32Float;
+
     struct Camera;
     class SimulatorNodelet;
 
     struct ModelUniforms {
-        Eigen::Matrix4f modelToWorld{};
-        Eigen::Matrix4f modelToWorldForNormals{};
+        Eigen::Matrix4f modelToWorld;
+        Eigen::Matrix4f modelToWorldForNormals;
 
         std::uint32_t material{};
+    };
+
+    struct SceneUniforms {
+        Eigen::Matrix4f worldToCamera;
+        Eigen::Matrix4f cameraToClip;
+
+        Eigen::Vector4f lightInWorld;
+        Eigen::Vector4f cameraInWorld;
+        Eigen::Vector4f lightColor;
     };
 
     struct Model {
@@ -36,7 +48,7 @@ namespace mrover {
             SharedBuffer<Eigen::Vector3f> normals;
             SharedBuffer<Eigen::Vector2f> uvs;
             SharedBuffer<std::uint32_t> indices;
-            SharedTexture texture;
+            MeshTexture texture;
         };
 
         // DO NOT access the mesh unless you are certain it has been set from the async loader
@@ -93,23 +105,18 @@ namespace mrover {
 
     struct Camera {
         btMultibodyLink const* link;
-        cv::Size2i resolution;
+        Eigen::Vector2i resolution;
         PeriodicTask updateTask;
         ros::Publisher pcPub;
 
-        // GLuint framebufferHandle = GL_INVALID_HANDLE;
-        // GLuint colorTextureHandle = GL_INVALID_HANDLE;
-        // GLuint depthTextureHandle = GL_INVALID_HANDLE;
-        // GLuint pointCloudArrayHandle = GL_INVALID_HANDLE;
-    };
+        wgpu::Texture colorTexture = nullptr;
+        wgpu::TextureView colorTextureView = nullptr;
+        wgpu::Texture depthTexture = nullptr;
+        wgpu::TextureView depthTextureView = nullptr;
+        wgpu::Buffer pointCloudBuffer = nullptr;
 
-    struct SceneUniforms {
-        Eigen::Matrix4f worldToCamera{};
-        Eigen::Matrix4f cameraToClip{};
-
-        Eigen::Vector4f lightInWorld{};
-        Eigen::Vector4f cameraInWorld{};
-        Eigen::Vector4f lightColor{};
+        Uniform<SceneUniforms> sceneUniforms;
+        wgpu::BindGroup sceneBindGroup = nullptr;
     };
 
     class SimulatorNodelet final : public nodelet::Nodelet {
@@ -141,7 +148,7 @@ namespace mrover {
         float mRoverLinearSpeed = 1.0f;
         float mRoverAngularSpeed = 0.5f;
         float mLookSense = 0.004f;
-        float mFov = 60.0f;
+        float mFovDegrees = 60.0f;
         btVector3 mGravityAcceleration{0.0f, 0.0f, -9.81f};
         bool mEnablePhysics = false;
         bool mRenderModels = true;
@@ -180,15 +187,12 @@ namespace mrover {
 
         wgpu::ComputePipeline mPointCloud = nullptr;
 
-        wgpu::RenderPassEncoder mRenderPass = nullptr;
-
         std::unordered_map<std::string, Model> mUriToModel;
 
         bool mHasFocus = false;
         bool mInGui = false;
 
         Uniform<SceneUniforms> mSceneUniforms;
-        wgpu::BindGroup mSceneBindGroup = nullptr;
 
         // Physics
 
@@ -251,7 +255,7 @@ namespace mrover {
 
         LoopProfiler mLoopProfiler{"Simulator"};
 
-        auto camerasUpdate() -> void;
+        auto cameraUpdate(Camera& camera, wgpu::RenderPassEncoder& pass) -> void;
 
         auto gpsAndImusUpdate() -> void;
 
@@ -270,7 +274,7 @@ namespace mrover {
 
         auto initRender() -> void;
 
-        auto renderModel(Model& model, Uniform<ModelUniforms>& uniforms, SIM3 const& modelToWorld, bool isRoverCamera = false) -> void;
+        auto renderModel(wgpu::RenderPassEncoder& pass, Model& model, Uniform<ModelUniforms>& uniforms, SIM3 const& modelToWorld, bool isRoverCamera = false) -> void;
 
         auto initPhysics() -> void;
 
@@ -286,19 +290,21 @@ namespace mrover {
 
         auto userControls(Clock::duration dt) -> void;
 
-        auto renderModels() -> void;
+        auto renderModels(wgpu::RenderPassEncoder& pass) -> void;
 
         auto renderWireframeColliders() -> void;
 
         auto renderUpdate() -> void;
 
-        auto guiUpdate() -> void;
+        auto guiUpdate(wgpu::RenderPassEncoder& pass) -> void;
 
         auto physicsUpdate(Clock::duration dt) -> void;
 
         auto twistCallback(geometry_msgs::Twist::ConstPtr const& twist) -> void;
 
         auto jointPositionsCallback(Position::ConstPtr const& positions) -> void;
+
+        auto makeTextureAndView(int width, int height, wgpu::TextureFormat const& format, wgpu::TextureUsage const& usage, wgpu::TextureAspect const& aspect) -> std::pair<wgpu::Texture, wgpu::TextureView>;
     };
 
     auto uriToPath(std::string_view uri) -> std::filesystem::path;
