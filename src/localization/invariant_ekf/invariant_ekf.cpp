@@ -78,8 +78,21 @@ void InvariantEKF::update_accel(Eigen::Vector3d const& z) {
 //orientation
 void InvariantEKF::update_mag(Eigen::Vector3d const& z, Matrix3d const& R_mag) {
     const Vector3d north(0, 1, 0);
-    manif::SO3<double>::Jacobian x;
-    manif::SE3<double>::Jacobian y;
+    manif::SO3<double> rot = mX.asSO3();
+    manif::SO3<double>::Jacobian J_xi_x;
+    manif::SO3<double>::Jacobian J_e_xi;
+    
+    Vector3d e = rot.inverse(J_xi_x).act(north, J_e_xi);
+    auto J_e_x = J_e_xi * J_xi_x;
+
+    //final jacobian
+    Eigen::Matrix<double, 9, 9> se_two;
+    se_two.block(0,0,3,3) = J_e_x;
+    se_two.block(3,3,0,0) = J_e_x;
+    se_two.block(6,6,3,3) = J_e_x;
+
+    se_two.block(3,0,3,3) = Matrix3d::Identity();
+    se_two.block(6,0,3,3) = Matrix3d::Identity();
 
 }
 
