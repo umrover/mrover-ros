@@ -27,28 +27,25 @@ void InvariantEKF::predict(const Vector3d& accel, const Vector3d& gyro, double d
     mX = mX.rplus(u, J_x_x, J_x_u);
 
     // TODO: where does this come from? chain rule + Ax + Bu?
+    // need to set J_u_x
     F = J_x_x + J_x_u * J_u_x;
     mP = F * mP * F.transpose() + J_x_u * mQ * J_x_u.transpose();
 }
 
-void InvariantEKF::update_gps(Eigen::Vector3d const& z, Matrix3d const& R_gps) {
+//pos
+void InvariantEKF::update_gps(Eigen::Vector3d const& observed_gps, Matrix3d const& R_gps) {
     //Yk = h_x + noise
-    Vector3d Yk;                     //gps reading
     Vector3d h_x = mX.translation(); //what is the jacobian of this
 
-    auto test = mX.rotation(); //rotation matrix
-    test = test.inverse();     //inverse of matrix
-
-    Eigen::Vector3d b(0, 0, 0);
-    b = b * test; //rotate vector by the inverse
-
+    Eigen::Vector3d zero = Eigen::Vector3d::Zero();
     manif::SE_2_3d::Jacobian J_h_x;
 
-    //this gives correct jacobian? does the velocity mess it up? rotation gets cancelled out so left with translation
-    //this seems like a stupid way to get the jacobian
-    Vector3d e = mX.act(b, J_h_x);
-
+    //R(0) + t = t
+    Vector3d e = mX.act(zero, J_h_x);
     auto H = J_h_x;
+
+    //innovation
+    auto z = observed_gps - e; 
 
     //innovation cov
     auto S_n = (H * mP * H.transpose()) + R_gps;
@@ -66,17 +63,25 @@ void InvariantEKF::update_gps(Eigen::Vector3d const& z, Matrix3d const& R_gps) {
     mP = mP - K_n * S_n * K_n.transpose();
 }
 
-void InvariantEKF::update_gps(Eigen::Vector3d const& z) {
-    update_gps(z, mR_gps);
+void InvariantEKF::update_gps(Eigen::Vector3d const& observed_gps) {
+    update_gps(observed_gps, mR_gps);
 }
 
+//vel
 void InvariantEKF::update_accel(Eigen::Vector3d const& z, Matrix3d const& R_accel) {}
 
 void InvariantEKF::update_accel(Eigen::Vector3d const& z) {
     update_accel(z, mR_accel);
 }
 
-void InvariantEKF::update_mag(Eigen::Vector3d const& z, Matrix3d const& R_mag) {}
+
+//orientation
+void InvariantEKF::update_mag(Eigen::Vector3d const& z, Matrix3d const& R_mag) {
+    const Vector3d north(0, 1, 0);
+    manif::SO3<double>::Jacobian x;
+    manif::SE3<double>::Jacobian y;
+
+}
 
 void InvariantEKF::update_mag(Eigen::Vector3d const& z) {
     update_mag(z, mR_mag);

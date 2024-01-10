@@ -14,8 +14,8 @@ public:
 
     void predict(const Vector3d& accel, const Vector3d& gyro, double dt);
 
-    void update_gps(const Vector3d& z, const Matrix3d& R_gps);
-    void update_gps(const Vector3d& z);
+    void update_gps(const Vector3d& observed_gps, const Matrix3d& R_gps);
+    void update_gps(const Vector3d& observed_gps);
 
     void update_accel(const Vector3d& z, const Matrix3d& R_accel);
     void update_accel(const Vector3d& z);
