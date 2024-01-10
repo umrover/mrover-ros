@@ -35,7 +35,7 @@ namespace mrover {
                 if (!mesh->HasNormals()) throw std::invalid_argument{fmt::format("Mesh #{} has no normals", meshIndex)};
                 if (!mesh->HasTextureCoords(0)) throw std::invalid_argument{fmt::format("Mesh #{} has no texture coordinates", meshIndex)};
 
-                auto& [vertices, normals, uvs, indices, texture] = meshes.emplace_back();
+                auto& [vertices, normals, uvs, indices, texture, uniforms, bindGroup] = meshes.emplace_back();
 
                 assert(mesh->HasPositions());
                 vertices.data.resize(mesh->mNumVertices);

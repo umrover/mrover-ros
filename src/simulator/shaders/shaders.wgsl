@@ -1,10 +1,22 @@
-struct VertexUniforms {
-    modelToWorld: mat4x4f,
+struct SceneUniforms {
     worldToCamera: mat4x4f,
     cameraToClip: mat4x4f,
-    modelToWorldForNormals: mat4x4f,
+
+    lightInWorld: vec4f,
+    cameraInWorld: vec4f,
+    lightColor: vec4f,
 }
-@group(0) @binding(0) var<uniform> vu: VertexUniforms;
+@group(1) @binding(0) var<uniform> su: SceneUniforms;
+
+struct MeshUniforms {
+    modelToWorld: mat4x4f,
+    modelToWorldForNormals: mat4x4f,
+
+    material: u32,
+}
+@group(0) @binding(0) var<uniform> mu: MeshUniforms;
+@group(0) @binding(1) var texture: texture_2d<f32>;
+@group(0) @binding(2) var textureSampler: sampler;
 
 struct InVertex {
     @location(0) positionInModel: vec3f,
@@ -18,46 +30,36 @@ struct OutVertex {
    @location(2) uv: vec2f,
 }
 @vertex fn vs_main(in: InVertex) -> OutVertex {
-    let positionInWorld = vu.modelToWorld * vec4(in.positionInModel, 1);
+    let positionInWorld = mu.modelToWorld * vec4(in.positionInModel, 1);
     var out : OutVertex;
-    out.positionInClip = vu.cameraToClip * vu.worldToCamera * positionInWorld;
+    out.positionInClip = su.cameraToClip * su.worldToCamera * positionInWorld;
     out.positionInWorld = positionInWorld;
-    out.normalInWorld = vu.modelToWorldForNormals * vec4(in.normalInModel, 0);
+    out.normalInWorld = mu.modelToWorldForNormals * vec4(in.normalInModel, 0);
     out.uv = in.uv;
     return out;
 }
 
-struct FragmentUniforms {
-    material: u32,
-    lightInWorld: vec4f,
-    cameraInWorld: vec4f,
-    lightColor: vec4f,
-}
-@group(1) @binding(0) var<uniform> fu: FragmentUniforms;
-@group(1) @binding(1) var texture: texture_2d<f32>;
-@group(1) @binding(2) var textureSampler: sampler;
-
 @fragment fn fs_main(in: OutVertex) -> @location(0) vec4f {
     let baseColor = textureSample(texture, textureSampler, in.uv);
 
-    switch (fu.material) {
+    switch (mu.material) {
         case 0: {
             return baseColor;
         }
         case 1: {
             // Ambient
             let ambientStrength = 0.6;
-            let ambient = ambientStrength * fu.lightColor;
+            let ambient = ambientStrength * su.lightColor;
             // Diffuse
-            let lightDirInWorld = normalize(fu.lightInWorld - in.positionInWorld);
+            let lightDirInWorld = normalize(su.lightInWorld - in.positionInWorld);
             let diff = max(dot(in.normalInWorld, lightDirInWorld), 0.0);
-            let diffuse = diff * fu.lightColor;
+            let diffuse = diff * su.lightColor;
             // Specular
             let specularStrength = 0.5;
-            let viewDirInWolrd = normalize(fu.cameraInWorld - in.positionInWorld);
+            let viewDirInWolrd = normalize(su.cameraInWorld - in.positionInWorld);
             let reflectDir = reflect(-lightDirInWorld, in.normalInWorld);
             let spec = pow(max(dot(viewDirInWolrd, reflectDir), 0.0), 32);
-            let specular = specularStrength * spec * fu.lightColor;
+            let specular = specularStrength * spec * su.lightColor;
             // Combination
             return vec4(((ambient + diffuse + specular) * baseColor).rgb, 1);
         }

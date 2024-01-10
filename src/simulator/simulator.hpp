@@ -18,10 +18,17 @@ namespace mrover {
                                      0, 0, 1, 0,                       // WGPU y = +ROS z
                                      1, 0, 0, 0,                       // WGPU z = +ROS x
                                      0, 0, 0, 1)
-                                            .finished();
+            .finished();
 
     struct Camera;
     class SimulatorNodelet;
+
+    struct MeshUniforms {
+        Eigen::Matrix4f modelToWorld{};
+        Eigen::Matrix4f modelToWorldForNormals{};
+
+        std::uint32_t material{};
+    };
 
     struct Model {
         struct Mesh {
@@ -30,6 +37,8 @@ namespace mrover {
             SharedBuffer<Eigen::Vector2f> uvs;
             SharedBuffer<std::uint32_t> indices;
             SharedTexture texture;
+            Uniform<MeshUniforms> uniforms;
+            wgpu::BindGroup bindGroup = nullptr;
         };
 
         // DO NOT access the mesh unless you are certain it has been set from the async loader
@@ -67,9 +76,11 @@ namespace mrover {
 
         PeriodicTask() = default;
 
-        explicit PeriodicTask(Clock::duration period) : period{period} {}
+        explicit PeriodicTask(Clock::duration period)
+            : period{period} {}
 
-        explicit PeriodicTask(float rate) : PeriodicTask{std::chrono::duration_cast<Clock::duration>(std::chrono::duration<float>{1.0f / rate})} {}
+        explicit PeriodicTask(float rate)
+            : PeriodicTask{std::chrono::duration_cast<Clock::duration>(std::chrono::duration<float>{1.0f / rate})} {}
 
         [[nodiscard]] auto shouldUpdate() -> bool {
             if (Clock::time_point now = Clock::now(); now - lastUpdate > period) {
@@ -91,6 +102,15 @@ namespace mrover {
         // GLuint colorTextureHandle = GL_INVALID_HANDLE;
         // GLuint depthTextureHandle = GL_INVALID_HANDLE;
         // GLuint pointCloudArrayHandle = GL_INVALID_HANDLE;
+    };
+
+    struct SceneUniforms {
+        Eigen::Matrix4f worldToCamera{};
+        Eigen::Matrix4f cameraToClip{};
+
+        Eigen::Vector4f lightInWorld{};
+        Eigen::Vector4f cameraInWorld{};
+        Eigen::Vector4f lightColor{};
     };
 
     class SimulatorNodelet final : public nodelet::Nodelet {
@@ -168,24 +188,8 @@ namespace mrover {
         bool mHasFocus = false;
         bool mInGui = false;
 
-        struct VertexUniforms {
-            Eigen::Matrix4f modelToWorld{};
-            Eigen::Matrix4f worldToCamera{};
-            Eigen::Matrix4f cameraToClip{};
-            Eigen::Matrix4f modelToWorldForNormals{};
-        };
-        Uniform<VertexUniforms> mVertexUniforms;
-
-        struct FragmentUniforms {
-            std::uint32_t material{};
-            Eigen::Vector4f lightInWorld{};
-            Eigen::Vector4f cameraInWorld{};
-            Eigen::Vector4f lightColor{};
-            std::array<std::byte, 12> _padding{};
-        };
-        Uniform<FragmentUniforms> mFragmentUniforms;
-
-        wgpu::BindGroup mVertexBindGroup = nullptr;
+        Uniform<SceneUniforms> mSceneUniforms;
+        wgpu::BindGroup mSceneBindGroup = nullptr;
 
         // Physics
 
@@ -208,6 +212,7 @@ namespace mrover {
                 btScalar position{};
                 btScalar velocity{};
             };
+
             std::vector<LinkData> links;
         };
 
