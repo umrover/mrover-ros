@@ -229,7 +229,7 @@ namespace mrover {
             meshBindGroupLayoutEntries[0].binding = 0;
             meshBindGroupLayoutEntries[0].visibility = wgpu::ShaderStage::Fragment | wgpu::ShaderStage::Vertex;
             meshBindGroupLayoutEntries[0].buffer.type = wgpu::BufferBindingType::Uniform;
-            meshBindGroupLayoutEntries[0].buffer.minBindingSize = sizeof(MeshUniforms);
+            meshBindGroupLayoutEntries[0].buffer.minBindingSize = sizeof(ModelUniforms);
             meshBindGroupLayoutEntries[1].binding = 1;
             meshBindGroupLayoutEntries[1].visibility = wgpu::ShaderStage::Fragment;
             meshBindGroupLayoutEntries[1].texture.sampleType = wgpu::TextureSampleType::Float;
@@ -267,7 +267,6 @@ namespace mrover {
         }
         {
             mSceneUniforms.init(mDevice);
-
             mSceneUniforms.value.lightColor = {1, 1, 1, 1};
             mSceneUniforms.value.lightInWorld = {0, 0, 5, 1};
 
@@ -276,7 +275,6 @@ namespace mrover {
             entry.buffer = mSceneUniforms.buffer;
             entry.offset = 0;
             entry.size = sizeof(SceneUniforms);
-
             wgpu::BindGroupDescriptor descriptor;
             descriptor.layout = mPbrPipeline.getBindGroupLayout(1);
             descriptor.entryCount = 1;
@@ -303,13 +301,16 @@ namespace mrover {
         style.ScaleAllSizes(scale);
     }
 
-    auto SimulatorNodelet::renderModel(Model& model, SIM3 const& modelToWorld, [[maybe_unused]] bool isRoverCamera) -> void {
+    auto SimulatorNodelet::renderModel(Model& model, Uniform<ModelUniforms>& uniforms, SIM3 const& modelToWorld, [[maybe_unused]] bool isRoverCamera) -> void {
         if (!model.areMeshesReady()) return;
 
-        Eigen::Matrix4f modelToWorldMat4f = modelToWorld.matrix().cast<float>();
+        if (!uniforms.buffer) uniforms.init(mDevice);
+        uniforms.value.modelToWorld = modelToWorld.matrix().cast<float>();
         // See: http://www.lighthouse3d.com/tutorials/glsl-12-tutorial/the-normal-matrix/ for why this has to be treated specially
         // TLDR: it preserves orthogonality between normal vectors and their respective surfaces with any model scaling (including non-uniform)
-        Eigen::Matrix4f modelToWorldForNormals = modelToWorld.matrix().inverse().transpose().cast<float>();
+        uniforms.value.modelToWorldForNormals = modelToWorld.matrix().inverse().transpose().cast<float>();
+        uniforms.value.material = 1;
+        uniforms.enqueueWrite();
 
         for (Model::Mesh& mesh: model.meshes) {
             mesh.indices.enqueueWriteIfUnitialized(mDevice, mQueue, wgpu::BufferUsage::Index);
@@ -319,31 +320,22 @@ namespace mrover {
 
             mesh.texture.prepare(mDevice);
 
-            if (!mesh.bindGroup) {
-                mesh.uniforms.init(mDevice);
+            std::array<wgpu::BindGroupEntry, 3> bindGroupEntires{};
+            bindGroupEntires[0].binding = 0;
+            bindGroupEntires[0].buffer = uniforms.buffer;
+            bindGroupEntires[0].offset = 0;
+            bindGroupEntires[0].size = sizeof(ModelUniforms);
+            bindGroupEntires[1].binding = 1;
+            bindGroupEntires[1].textureView = mesh.texture.view;
+            bindGroupEntires[2].binding = 2;
+            bindGroupEntires[2].sampler = mesh.texture.sampler;
+            wgpu::BindGroupDescriptor descriptor;
+            descriptor.layout = mPbrPipeline.getBindGroupLayout(0);
+            descriptor.entryCount = bindGroupEntires.size();
+            descriptor.entries = bindGroupEntires.data();
+            wgpu::BindGroup bindGroup = mDevice.createBindGroup(descriptor);
 
-                std::array<wgpu::BindGroupEntry, 3> bindGroupEntires{};
-                bindGroupEntires[0].binding = 0;
-                bindGroupEntires[0].buffer = mesh.uniforms.buffer;
-                bindGroupEntires[0].offset = 0;
-                bindGroupEntires[0].size = sizeof(MeshUniforms);
-                bindGroupEntires[1].binding = 1;
-                bindGroupEntires[1].textureView = mesh.texture.view;
-                bindGroupEntires[2].binding = 2;
-                bindGroupEntires[2].sampler = mesh.texture.sampler;
-                wgpu::BindGroupDescriptor descriptor;
-                descriptor.layout = mPbrPipeline.getBindGroupLayout(0);
-                descriptor.entryCount = bindGroupEntires.size();
-                descriptor.entries = bindGroupEntires.data();
-                mesh.bindGroup = mDevice.createBindGroup(descriptor);
-                if (!mesh.bindGroup) throw std::runtime_error("Failed to create WGPU mesh bind group");
-            }
-            mesh.uniforms.value.modelToWorld = modelToWorldMat4f;
-            mesh.uniforms.value.modelToWorldForNormals = modelToWorldForNormals;
-            mesh.uniforms.value.material = 1;
-            mesh.uniforms.enqueueWrite();
-
-            mRenderPass.setBindGroup(0, mesh.bindGroup, 0, nullptr);
+            mRenderPass.setBindGroup(0, bindGroup, 0, nullptr);
             mRenderPass.setVertexBuffer(0, mesh.vertices.buffer, 0, mesh.vertices.sizeBytes());
             mRenderPass.setVertexBuffer(1, mesh.normals.buffer, 0, mesh.normals.sizeBytes());
             mRenderPass.setVertexBuffer(2, mesh.uvs.buffer, 0, mesh.uvs.sizeBytes());
@@ -355,7 +347,7 @@ namespace mrover {
     }
 
     auto SimulatorNodelet::renderModels() -> void {
-        for (auto const& [_, urdf]: mUrdfs) {
+        for (auto& [_, urdf]: mUrdfs) {
 
             auto renderLink = [&](auto&& self, urdf::LinkConstSharedPtr const& link) -> void {
                 if (link->visual && link->visual->geometry) {
@@ -364,7 +356,7 @@ namespace mrover {
                         SE3 linkInWorld = urdf.linkInWorld(link->name);
                         SE3 modelInLink = btTransformToSe3(urdfPoseToBtTransform(link->visual->origin));
                         SE3 modelInWorld = linkInWorld * modelInLink;
-                        renderModel(model, SIM3{modelInWorld.position(), modelInWorld.rotation(), R3::Ones()});
+                        renderModel(model, urdf.linkNameToUniform[link->name], SIM3{modelInWorld.position(), modelInWorld.rotation(), R3::Ones()});
                     }
                 }
                 for (urdf::JointSharedPtr const& child_joint: link->child_joints) {

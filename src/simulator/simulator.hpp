@@ -23,7 +23,7 @@ namespace mrover {
     struct Camera;
     class SimulatorNodelet;
 
-    struct MeshUniforms {
+    struct ModelUniforms {
         Eigen::Matrix4f modelToWorld{};
         Eigen::Matrix4f modelToWorldForNormals{};
 
@@ -37,8 +37,6 @@ namespace mrover {
             SharedBuffer<Eigen::Vector2f> uvs;
             SharedBuffer<std::uint32_t> indices;
             SharedTexture texture;
-            Uniform<MeshUniforms> uniforms;
-            wgpu::BindGroup bindGroup = nullptr;
         };
 
         // DO NOT access the mesh unless you are certain it has been set from the async loader
@@ -60,6 +58,7 @@ namespace mrover {
         urdf::Model model;
         btMultiBody* physics = nullptr;
         std::unordered_map<std::string, int> linkNameToIndex;
+        std::unordered_map<std::string, Uniform<ModelUniforms>> linkNameToUniform;
 
         URDF(SimulatorNodelet& simulator, XmlRpc::XmlRpcValue const& init);
 
@@ -271,7 +270,7 @@ namespace mrover {
 
         auto initRender() -> void;
 
-        auto renderModel(Model& model, SIM3 const& modelToWorld, bool isRoverCamera = false) -> void;
+        auto renderModel(Model& model, Uniform<ModelUniforms>& uniforms, SIM3 const& modelToWorld, bool isRoverCamera = false) -> void;
 
         auto initPhysics() -> void;
 
