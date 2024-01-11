@@ -3,40 +3,44 @@
 namespace mrover {
 
     auto SimulatorNodelet::guiUpdate(wgpu::RenderPassEncoder& pass) -> void {
-        if (mSaveTask.shouldUpdate() && mEnablePhysics) {
-            SaveData save;
-            // TODO(quintin): save
-            // for (auto const& [link_name, rb]: mLinkNameToRigidBody) {
-            //     if (!link_name.starts_with("rover")) continue;
-            //
-            //     save.links.emplace_back(link_name, rb->getWorldTransform(), rb->getLinearVelocity(), rb->getAngularVelocity());
-            // }
-
-            mSaveHistory.push_back(std::move(save));
-        }
+        // if (mSaveTask.shouldUpdate() && mEnablePhysics) {
+        //     if (auto it = mUrdfs.find("rover"); it != mUrdfs.end()) {
+        //         URDF const& rover = it->second;
+        //
+        //         SaveData save;
+        //         for (int link = -1; link < rover.physics->getNumLinks(); ++link) {
+        //             save.links.emplace_back(rover.physics->getJointPos(link),
+        //                                     rover.physics->getJointVel(link));
+        //         }
+        //         mSaveHistory.push_back(std::move(save));
+        //     }
+        // }
 
         ImGui_ImplWGPU_NewFrame();
         ImGui_ImplGlfw_NewFrame();
         ImGui::NewFrame();
 
-        if (mEnablePhysics) {
-            mSelection = static_cast<int>(mSaveHistory.size()) - 1;
-        } else {
+        if (!mEnablePhysics && !mSaveHistory.empty()) {
             ImGui::Begin("History", nullptr, ImGuiWindowFlags_NoTitleBar);
 
-            ImGui::SliderInt("History", &mSelection, 0, static_cast<int>(mSaveHistory.size()), "");
-            std::size_t inverse = mSaveHistory.size() - static_cast<std::size_t>(mSelection);
-            ImGui::SameLine();
-            ImGui::Text("-%zu", inverse);
+            ImGui::SliderInt("History", &mSelection, -static_cast<int>(mSaveHistory.size()) + 1, 0);
 
-            // TODO(quintin): save
-            // for (SaveData const& data = mSaveHistory.at(mSelection);
-            //      auto const& [link_name, transform, linearVelocity, angularVelocity]: data.links) {
-            //     btRigidBody* rb = mLinkNameToRigidBody.at(link_name);
-            //     rb->getMotionState()->setWorldTransform(transform);
-            //     rb->setWorldTransform(transform);
-            //     rb->setLinearVelocity(linearVelocity);
-            //     rb->setAngularVelocity(angularVelocity);
+            // if (auto it = mUrdfs.find("rover"); it != mUrdfs.end()) {
+            //     URDF const& rover = it->second;
+            //
+            //     SaveData const& saveData = mSaveHistory.at(-mSelection);
+            //     for (int link = -1; link < rover.physics->getNumLinks(); ++link) {
+            //         auto const& [position, velocity] = saveData.links.at(link);
+            //
+            //         rover.physics->setJointPos(link, position);
+            //         rover.physics->setJointVel(link, velocity);
+            //         NODELET_INFO_THROTTLE(1, "%d: %.2f, %.2f", link, position, velocity);
+            //     }
+            //
+            //     btAlignedObjectArray<btQuaternion> q;
+            //     btAlignedObjectArray<btVector3> m;
+            //     rover.physics->forwardKinematics(q, m);
+            //     rover.physics->updateCollisionObjectWorldTransforms(q, m);
             // }
 
             ImGui::End();

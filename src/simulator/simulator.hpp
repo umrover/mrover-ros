@@ -18,10 +18,10 @@ namespace mrover {
                                      0, 0, 1, 0,                       // WGPU y = +ROS z
                                      1, 0, 0, 0,                       // WGPU z = +ROS x
                                      0, 0, 0, 1)
-            .finished();
+                                            .finished();
 
-    static const auto COLOR_FORMAT = wgpu::TextureFormat::BGRA8Unorm;
-    static const auto DEPTH_FORMAT = wgpu::TextureFormat::Depth32Float;
+    static auto const COLOR_FORMAT = wgpu::TextureFormat::BGRA8Unorm;
+    static auto const DEPTH_FORMAT = wgpu::TextureFormat::Depth32Float;
 
     struct Camera;
     class SimulatorNodelet;
@@ -128,6 +128,8 @@ namespace mrover {
         wgpu::BindGroup sceneBindGroup = nullptr;
         Uniform<ComputeUniforms> computeUniforms;
         wgpu::BindGroup computeBindGroup = nullptr;
+
+        std::unique_ptr<wgpu::BufferMapCallback> callback;
     };
 
     class SimulatorNodelet final : public nodelet::Nodelet {
@@ -222,12 +224,10 @@ namespace mrover {
 
         struct SaveData {
             struct LinkData {
-                std::string link;
                 btScalar position{};
                 btScalar velocity{};
             };
-
-            std::vector<LinkData> links;
+            boost::container::static_vector<LinkData, 32> links;
         };
 
         int mSelection = 0;

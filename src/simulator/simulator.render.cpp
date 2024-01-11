@@ -110,7 +110,7 @@ namespace mrover {
         }
         {
             wgpu::RequestAdapterOptions options;
-            // options.powerPreference = wgpu::PowerPreference::HighPerformance; // Request that laptops use the discrete GPU if available
+            options.powerPreference = wgpu::PowerPreference::HighPerformance; // Request that laptops use the discrete GPU if available
             mAdapter = mWgpuInstance.requestAdapter(options);
             if (!mAdapter) throw std::runtime_error("Failed to request WGPU adapter");
 
@@ -447,11 +447,32 @@ namespace mrover {
         wgpu::CommandEncoder encoder = mDevice.createCommandEncoder();
         {
             for (Camera& camera: mCameras) {
-                // TODO(quintin): Move these into camera update
-                colorAttachment.view = camera.colorTextureView;
-                depthStencilAttachment.view = camera.depthTextureView;
+                if (camera.callback) {
+                    mWgpuInstance.processEvents();
+                    if (camera.pointCloudBufferStaging.getMapState() == wgpu::BufferMapState::Mapped) {
+                        auto pointCloud = boost::make_shared<sensor_msgs::PointCloud2>();
+                        pointCloud->is_bigendian = __BYTE_ORDER__ == __ORDER_BIG_ENDIAN__;
+                        pointCloud->is_dense = true;
+                        pointCloud->width = camera.resolution.x();
+                        pointCloud->height = camera.resolution.y();
+                        pointCloud->header.stamp = ros::Time::now();
+                        pointCloud->header.frame_id = "zed2i_left_camera_frame";
+                        fillPointCloudMessageHeader(pointCloud);
 
-                cameraUpdate(camera, encoder, renderPassDescriptor);
+                        std::memcpy(pointCloud->data.data(), camera.pointCloudBufferStaging.getConstMappedRange(0, camera.pointCloudBufferStaging.getSize()), camera.pointCloudBufferStaging.getSize());
+                        camera.pointCloudBufferStaging.unmap();
+                        camera.callback = nullptr;
+
+                        camera.pcPub.publish(pointCloud);
+                    }
+                }
+                if (!camera.callback) {
+                    // TODO(quintin): Move these into camera update
+                    colorAttachment.view = camera.colorTextureView;
+                    depthStencilAttachment.view = camera.depthTextureView;
+
+                    cameraUpdate(camera, encoder, renderPassDescriptor);
+                }
             }
         }
         {
@@ -505,26 +526,9 @@ namespace mrover {
         mSwapChain.present();
 
         for (Camera& camera: mCameras) {
-
-            auto callback = camera.pointCloudBufferStaging.mapAsync(wgpu::MapMode::Read, 0, camera.pointCloudBufferStaging.getSize(), [](wgpu::BufferMapAsyncStatus) {});
-
-            while (camera.pointCloudBufferStaging.getMapState() != wgpu::BufferMapState::Mapped) {
-                mWgpuInstance.processEvents();
+            if (camera.pointCloudBufferStaging.getMapState() == wgpu::BufferMapState::Unmapped) {
+                camera.callback = camera.pointCloudBufferStaging.mapAsync(wgpu::MapMode::Read, 0, camera.pointCloudBufferStaging.getSize(), [](wgpu::BufferMapAsyncStatus const&) {});
             }
-
-            auto pointCloud = boost::make_shared<sensor_msgs::PointCloud2>();
-            pointCloud->is_bigendian = __BYTE_ORDER__ == __ORDER_BIG_ENDIAN__;
-            pointCloud->is_dense = true;
-            pointCloud->width = camera.resolution.x();
-            pointCloud->height = camera.resolution.y();
-            pointCloud->header.stamp = ros::Time::now();
-            pointCloud->header.frame_id = "zed2i_left_camera_frame";
-            fillPointCloudMessageHeader(pointCloud);
-
-            std::memcpy(pointCloud->data.data(), camera.pointCloudBufferStaging.getConstMappedRange(0, camera.pointCloudBufferStaging.getSize()), camera.pointCloudBufferStaging.getSize());
-            camera.pointCloudBufferStaging.unmap();
-
-            camera.pcPub.publish(pointCloud);
         }
 
         commands.release();

@@ -51,12 +51,12 @@ namespace mrover {
         }
         auto* pixelPtr = reinterpret_cast<cv::Vec3b*>(mImg.data);
         auto* pointPtr = reinterpret_cast<Point const*>(msg->data.data());
-        // std::for_each(std::execution::par_unseq, pixelPtr, pixelPtr + mImg.total(), [&](cv::Vec3b& pixel) {
-        //     size_t i = &pixel - pixelPtr;
-        //     pixel[0] = pointPtr[i].b;
-        //     pixel[1] = pointPtr[i].g;
-        //     pixel[2] = pointPtr[i].r;
-        // });
+        std::for_each(std::execution::par_unseq, pixelPtr, pixelPtr + mImg.total(), [&](cv::Vec3b& pixel) {
+            size_t i = &pixel - pixelPtr;
+            pixel[0] = pointPtr[i].b;
+            pixel[1] = pointPtr[i].g;
+            pixel[2] = pointPtr[i].r;
+        });
         mProfiler.measureEvent("Convert");
 
         // Call thresholding
