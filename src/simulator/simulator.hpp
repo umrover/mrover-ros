@@ -130,6 +130,7 @@ namespace mrover {
         wgpu::BindGroup computeBindGroup = nullptr;
 
         std::unique_ptr<wgpu::BufferMapCallback> callback;
+        bool thisUpdate = false;
     };
 
     class SimulatorNodelet final : public nodelet::Nodelet {

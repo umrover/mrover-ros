@@ -6,7 +6,7 @@ namespace mrover {
         Camera camera{
                 link,
                 {640, 480},
-                PeriodicTask{10},
+                PeriodicTask{30},
                 simulator.mNh.advertise<sensor_msgs::PointCloud2>("camera/left/points", 1),
         };
         // TODO(quintin): Why do I have to cast this

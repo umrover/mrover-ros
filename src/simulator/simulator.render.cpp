@@ -466,12 +466,14 @@ namespace mrover {
                         camera.pcPub.publish(pointCloud);
                     }
                 }
-                if (!camera.callback) {
+                if (!camera.callback && camera.updateTask.shouldUpdate()) {
                     // TODO(quintin): Move these into camera update
                     colorAttachment.view = camera.colorTextureView;
                     depthStencilAttachment.view = camera.depthTextureView;
 
                     cameraUpdate(camera, encoder, renderPassDescriptor);
+
+                    camera.thisUpdate = true;
                 }
             }
         }
@@ -526,8 +528,9 @@ namespace mrover {
         mSwapChain.present();
 
         for (Camera& camera: mCameras) {
-            if (camera.pointCloudBufferStaging.getMapState() == wgpu::BufferMapState::Unmapped) {
+            if (camera.thisUpdate) {
                 camera.callback = camera.pointCloudBufferStaging.mapAsync(wgpu::MapMode::Read, 0, camera.pointCloudBufferStaging.getSize(), [](wgpu::BufferMapAsyncStatus const&) {});
+                camera.thisUpdate = false;
             }
         }
 
