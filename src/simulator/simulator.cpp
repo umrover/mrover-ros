@@ -53,7 +53,7 @@ namespace mrover {
 #else
             glfwPollEvents();
 #endif
-            glfwSetInputMode(mWindow.get(), GLFW_CURSOR, mInGui ? GLFW_CURSOR_NORMAL : GLFW_CURSOR_DISABLED);
+            // glfwSetInputMode(mWindow.get(), GLFW_CURSOR, mInGui ? GLFW_CURSOR_NORMAL : GLFW_CURSOR_DISABLED);
             mLoopProfiler.measureEvent("GLFW Events");
 
             if (auto it = mUrdfs.find("rover"); it != mUrdfs.end()) {

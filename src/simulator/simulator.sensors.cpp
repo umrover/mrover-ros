@@ -31,6 +31,8 @@ namespace mrover {
             renderModels(colorPass);
 
             colorPass.end();
+
+            colorPass.release();
         }
         {
             wgpu::ComputePassEncoder computePass = encoder.beginComputePass();
@@ -38,11 +40,11 @@ namespace mrover {
 
             if (!camera.computeUniforms.buffer) camera.computeUniforms.init(mDevice);
             camera.computeUniforms.value.resolution = camera.resolution;
-            camera.computeUniforms.value.clipToCamera = (camera.sceneUniforms.value.cameraToClip * ROS_TO_WGPU).inverse();
+            camera.computeUniforms.value.clipToCamera = camera.sceneUniforms.value.cameraToClip.inverse();
             camera.computeUniforms.enqueueWrite();
 
+            std::size_t pointCloudBufferSize = camera.resolution.x() * camera.resolution.y() * sizeof(Point);
             if (!camera.pointCloudBuffer) {
-                std::size_t pointCloudBufferSize = camera.resolution.x() * camera.resolution.y() * sizeof(Point);
                 {
                     wgpu::BufferDescriptor descriptor;
                     descriptor.usage = wgpu::BufferUsage::Storage | wgpu::BufferUsage::CopySrc;
@@ -78,6 +80,10 @@ namespace mrover {
             computePass.dispatchWorkgroups(camera.resolution.x(), camera.resolution.y(), 1);
 
             computePass.end();
+
+            encoder.copyBufferToBuffer(camera.pointCloudBuffer, 0, camera.pointCloudBufferStaging, 0, camera.pointCloudBuffer.getSize());
+
+            computePass.release();
         }
     }
 

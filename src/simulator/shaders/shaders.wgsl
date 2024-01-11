@@ -87,9 +87,15 @@ struct Point {
 @group(0) @binding(2) var depthImage: texture_depth_2d;
 @group(0) @binding(3) var<storage, read_write> points: array<Point>;
 
+// Take in a normalized (i.e. each component is in [0, 1]) vec4, convert values to bytes, and pack into a float
+fn pack(color: vec4f) -> f32 {
+    let c = vec4u(color * 255);
+    return bitcast<f32>(c.b | (c.g << 8) | (c.r << 16) | (c.a << 24));
+}
+
 // Workgroup size ensures one invocation per pixel
 @compute @workgroup_size(1, 1, 1) fn cs_main(@builtin(global_invocation_id) id: vec3u) {
-    let pixel = vec2u(id.xy);
+    let pixel = id.xy;
 
     let depth = textureLoad(depthImage, pixel, 0);
     let color = textureLoad(colorImage, pixel, 0);
@@ -97,13 +103,13 @@ struct Point {
     let pointInClip = vec4f(
         2 * (vec2f(pixel) / vec2f(cu.resolution)) - 1,
         depth * 2 - 1,
-        1.0
+        1
     );
     let pointInCamera = cu.clipToCamera * pointInClip;
 
-    let flatIndex = (cu.resolution.y - pixel.y) * cu.resolution.x + pixel.x;
+    let flatIndex = pixel.y * cu.resolution.x + pixel.x;
     points[flatIndex].xyz = pointInCamera.xyz / pointInCamera.w;
-    points[flatIndex].rgb = 1;
+    points[flatIndex].rgb = pack(color);
     points[flatIndex].normalXyz = vec3(0, 0, 0);
     points[flatIndex].curvature = 0;
 }

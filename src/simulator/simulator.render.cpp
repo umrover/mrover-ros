@@ -492,6 +492,9 @@ namespace mrover {
             guiUpdate(pass);
 
             pass.end();
+
+            bindGroup.release();
+            pass.release();
         }
 
         nextTexture.release();
@@ -499,32 +502,33 @@ namespace mrover {
         wgpu::CommandBuffer commands = encoder.finish();
         mQueue.submit(commands);
 
-        for (Camera& camera: mCameras) {
-            std::size_t pointCloudBufferSize = camera.resolution.x() * camera.resolution.y() * sizeof(Point);
-
-            encoder.copyBufferToBuffer(camera.pointCloudBuffer, 0, camera.pointCloudBufferStaging, 0, pointCloudBufferSize);
-
-            camera.pointCloudBufferStaging.mapAsync(wgpu::MapMode::Read, 0, pointCloudBufferSize, [&](wgpu::BufferMapAsyncStatus status) {
-                if (status == wgpu::BufferMapAsyncStatus::Success) {
-                    auto pointCloud = boost::make_shared<sensor_msgs::PointCloud2>();
-                    pointCloud->is_bigendian = __BYTE_ORDER__ == __ORDER_BIG_ENDIAN__;
-                    pointCloud->is_dense = true;
-                    pointCloud->width = camera.resolution.x();
-                    pointCloud->height = camera.resolution.y();
-                    pointCloud->header.stamp = ros::Time::now();
-                    pointCloud->header.frame_id = "zed2i_left_camera_frame";
-                    fillPointCloudMessageHeader(pointCloud);
-
-                    std::memcpy(pointCloud->data.data(), camera.pointCloudBufferStaging.getConstMappedRange(0, pointCloudBufferSize), pointCloudBufferSize);
-
-                    camera.pointCloudBufferStaging.unmap();
-                }
-            });
-        }
-
         mSwapChain.present();
 
-        mWgpuInstance.processEvents();
+        for (Camera& camera: mCameras) {
+
+            auto callback = camera.pointCloudBufferStaging.mapAsync(wgpu::MapMode::Read, 0, camera.pointCloudBufferStaging.getSize(), [](wgpu::BufferMapAsyncStatus) {});
+
+            while (camera.pointCloudBufferStaging.getMapState() != wgpu::BufferMapState::Mapped) {
+                mWgpuInstance.processEvents();
+            }
+
+            auto pointCloud = boost::make_shared<sensor_msgs::PointCloud2>();
+            pointCloud->is_bigendian = __BYTE_ORDER__ == __ORDER_BIG_ENDIAN__;
+            pointCloud->is_dense = true;
+            pointCloud->width = camera.resolution.x();
+            pointCloud->height = camera.resolution.y();
+            pointCloud->header.stamp = ros::Time::now();
+            pointCloud->header.frame_id = "zed2i_left_camera_frame";
+            fillPointCloudMessageHeader(pointCloud);
+
+            std::memcpy(pointCloud->data.data(), camera.pointCloudBufferStaging.getConstMappedRange(0, camera.pointCloudBufferStaging.getSize()), camera.pointCloudBufferStaging.getSize());
+            camera.pointCloudBufferStaging.unmap();
+
+            camera.pcPub.publish(pointCloud);
+        }
+
+        commands.release();
+        encoder.release();
     }
 
 } // namespace mrover
