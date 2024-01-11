@@ -43,6 +43,8 @@ public:
     [[nodiscard]] Eigen::Matrix4d matrix() const;
 
     [[nodiscard]] Eigen::Quaterniond quaternion() const;
+
+    EIGEN_MAKE_ALIGNED_OPERATOR_NEW
 };
 
 /**
@@ -92,6 +94,8 @@ public:
     [[nodiscard]] double distanceTo(SE3 const& other) const;
 
     [[nodiscard]] auto inverse() const -> SE3;
+
+    EIGEN_MAKE_ALIGNED_OPERATOR_NEW
 };
 
 class SIM3 {

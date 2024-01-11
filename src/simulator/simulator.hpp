@@ -30,24 +30,30 @@ namespace mrover {
     // As such there is no need to modify data before uploading to the device
 
     struct ModelUniforms {
-        Eigen::Matrix4f modelToWorld;
-        Eigen::Matrix4f modelToWorldForNormals;
+        Eigen::Matrix4f modelToWorld{};
+        Eigen::Matrix4f modelToWorldForNormals{};
 
         std::uint32_t material{};
+
+        EIGEN_MAKE_ALIGNED_OPERATOR_NEW
     };
 
     struct SceneUniforms {
-        Eigen::Matrix4f worldToCamera;
-        Eigen::Matrix4f cameraToClip;
+        Eigen::Matrix4f worldToCamera{};
+        Eigen::Matrix4f cameraToClip{};
 
-        Eigen::Vector4f lightInWorld;
-        Eigen::Vector4f cameraInWorld;
-        Eigen::Vector4f lightColor;
+        Eigen::Vector4f lightInWorld{};
+        Eigen::Vector4f cameraInWorld{};
+        Eigen::Vector4f lightColor{};
+
+        EIGEN_MAKE_ALIGNED_OPERATOR_NEW
     };
 
     struct ComputeUniforms {
-        Eigen::Matrix4f clipToCamera;
-        Eigen::Vector2i resolution;
+        Eigen::Matrix4f clipToCamera{};
+        Eigen::Vector2i resolution{};
+
+        EIGEN_MAKE_ALIGNED_OPERATOR_NEW
     };
 
     struct Model {
@@ -124,13 +130,15 @@ namespace mrover {
         wgpu::Buffer pointCloudBuffer = nullptr;
         wgpu::Buffer pointCloudBufferStaging = nullptr;
 
-        Uniform<SceneUniforms> sceneUniforms;
+        Uniform<SceneUniforms> sceneUniforms{};
         wgpu::BindGroup sceneBindGroup = nullptr;
-        Uniform<ComputeUniforms> computeUniforms;
+        Uniform<ComputeUniforms> computeUniforms{};
         wgpu::BindGroup computeBindGroup = nullptr;
 
-        std::unique_ptr<wgpu::BufferMapCallback> callback;
+        std::unique_ptr<wgpu::BufferMapCallback> callback = nullptr;
         bool thisUpdate = false;
+
+        EIGEN_MAKE_ALIGNED_OPERATOR_NEW
     };
 
     class SimulatorNodelet final : public nodelet::Nodelet {
@@ -269,7 +277,7 @@ namespace mrover {
 
         LoopProfiler mLoopProfiler{"Simulator"};
 
-        auto cameraUpdate(Camera& camera, wgpu::CommandEncoder& encoder, wgpu::RenderPassDescriptor const& colorDescriptor) -> void;
+        auto cameraUpdate(Camera& camera, wgpu::CommandEncoder& encoder, wgpu::RenderPassDescriptor const& passDescriptor) -> void;
 
         auto gpsAndImusUpdate() -> void;
 

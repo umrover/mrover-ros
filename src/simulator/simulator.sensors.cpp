@@ -2,9 +2,9 @@
 
 namespace mrover {
 
-    auto SimulatorNodelet::cameraUpdate(Camera& camera, wgpu::CommandEncoder& encoder, wgpu::RenderPassDescriptor const& colorDescriptor) -> void {
+    auto SimulatorNodelet::cameraUpdate(Camera& camera, wgpu::CommandEncoder& encoder, wgpu::RenderPassDescriptor const& passDescriptor) -> void {
         {
-            wgpu::RenderPassEncoder colorPass = encoder.beginRenderPass(colorDescriptor);
+            wgpu::RenderPassEncoder colorPass = encoder.beginRenderPass(passDescriptor);
             colorPass.setPipeline(mPbrPipeline);
 
             if (!camera.sceneUniforms.buffer) camera.sceneUniforms.init(mDevice);
