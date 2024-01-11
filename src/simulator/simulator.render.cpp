@@ -2,6 +2,9 @@
 
 #include "simulator.hpp"
 
+#include <boost/pool/object_pool.hpp>
+#include <boost/pool/pool_alloc.hpp>
+
 namespace mrover {
 
     static std::string const MESHES_PATH = "package://mrover/urdf/meshes/primitives";
@@ -422,6 +425,21 @@ namespace mrover {
         // }
     }
 
+    // TODO(quintin): Free pointers in here at the end of the progrma
+    boost::container::static_vector<sensor_msgs::PointCloud2*, 32> pointCloudPool;
+
+    auto getPooledPointCloud() -> sensor_msgs::PointCloud2* {
+        if (pointCloudPool.empty()) return new sensor_msgs::PointCloud2{};
+
+        auto* pointCloud = pointCloudPool.back();
+        pointCloudPool.pop_back();
+        return pointCloud;
+    }
+
+    auto returnPooledPointCloud(sensor_msgs::PointCloud2* pointCloud) -> void {
+        pointCloudPool.push_back(pointCloud);
+    }
+
     auto SimulatorNodelet::renderUpdate() -> void {
         wgpu::TextureView nextTexture = mSwapChain.getCurrentTextureView();
         if (!nextTexture) throw std::runtime_error("Failed to get WGPU next texture view");
@@ -450,7 +468,7 @@ namespace mrover {
                 if (camera.callback) {
                     mWgpuInstance.processEvents();
                     if (camera.pointCloudBufferStaging.getMapState() == wgpu::BufferMapState::Mapped) {
-                        auto pointCloud = boost::make_shared<sensor_msgs::PointCloud2>();
+                        auto pointCloud = boost::shared_ptr<sensor_msgs::PointCloud2>{getPooledPointCloud(), &returnPooledPointCloud};
                         pointCloud->is_bigendian = __BYTE_ORDER__ == __ORDER_BIG_ENDIAN__;
                         pointCloud->is_dense = true;
                         pointCloud->width = camera.resolution.x();
@@ -459,7 +477,9 @@ namespace mrover {
                         pointCloud->header.frame_id = "zed2i_left_camera_frame";
                         fillPointCloudMessageHeader(pointCloud);
 
-                        std::memcpy(pointCloud->data.data(), camera.pointCloudBufferStaging.getConstMappedRange(0, camera.pointCloudBufferStaging.getSize()), camera.pointCloudBufferStaging.getSize());
+                        auto* fromCompute = camera.pointCloudBufferStaging.getConstMappedRange(0, camera.pointCloudBufferStaging.getSize());
+                        auto* toMessage = pointCloud->data.data();
+                        std::memcpy(toMessage, fromCompute, camera.pointCloudBufferStaging.getSize());
                         camera.pointCloudBufferStaging.unmap();
                         camera.callback = nullptr;
 

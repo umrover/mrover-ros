@@ -10,6 +10,9 @@ if (APPLE)
         -D_LIBCPP_ENABLE_CXX20_REMOVED_ALLOCATOR_MEMBERS
         -D_LIBCPP_ENABLE_CXX20_REMOVED_ALLOCATOR_VOID_SPECIALIZATION
     )
+    # add imported lib for tbb
+    add_library(tbb SHARED IMPORTED)
+    set_property(TARGET tbb PROPERTY IMPORTED_LOCATION /opt/homebrew/Caskroom/miniforge/base/envs/ros_env/lib/libtbb.12.10.dylib)
 endif ()
 
 set(CMAKE_CXX_STANDARD 23)

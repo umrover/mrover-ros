@@ -2,13 +2,6 @@
 
 namespace mrover {
 
-    struct PollGlfw : ros::CallbackInterface {
-        auto call() -> CallResult override {
-            glfwPollEvents();
-            return Success;
-        }
-    };
-
     auto SimulatorNodelet::onInit() -> void try {
         mNh = getNodeHandle();
         mPnh = getPrivateNodeHandle();
@@ -49,6 +42,12 @@ namespace mrover {
             // Apple sucks and does not support polling on a non-main thread (which we are currently on)
             // Instead add to ROS's global callback queue which I think will be served by the main thread
 #ifdef __APPLE__
+            struct PollGlfw : ros::CallbackInterface {
+                auto call() -> CallResult override {
+                    glfwPollEvents();
+                    return Success;
+                }
+            };
             ros::getGlobalCallbackQueue()->addCallback(boost::make_shared<PollGlfw>());
 #else
             glfwPollEvents();
@@ -63,9 +62,9 @@ namespace mrover {
                     auto* motor = std::bit_cast<btMultiBodyJointMotor*>(rover.physics->getLink(rover.linkNameToIndex.at(name)).m_userPtr);
                     motor->setMaxAppliedImpulse(0.5);
                     if (name == "arm_b_link") {
-                        motor->setPositionTarget(-TAU * 0.125);
+                        motor->setPositionTarget(-TAU * 0.125, 0.5);
                     } else if (name == "arm_c_link") {
-                        motor->setPositionTarget(TAU * 0.4);
+                        motor->setPositionTarget(TAU * 0.4, 0.5);
                     } else {
                         motor->setPositionTarget(0);
                     }
