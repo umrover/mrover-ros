@@ -69,3 +69,41 @@ struct OutVertex {
         }
     }
 }
+
+struct ComputeUniforms {
+    clipToCamera: mat4x4f,
+    resolution: vec2u,
+}
+// An array of points is eventually copied to CPU memory
+// As such it must follow the layout defined in "point.hpp"
+struct Point {
+    xyz: vec3f,
+    rgb: f32, // 3 rgb bytes packed into a 32-bit float
+    normalXyz: vec3f,
+    curvature: f32,
+}
+@group(0) @binding(0) var<uniform> cu: ComputeUniforms;
+@group(0) @binding(1) var colorImage: texture_2d<f32>;
+@group(0) @binding(2) var depthImage: texture_depth_2d;
+@group(0) @binding(3) var<storage, read_write> points: array<Point>;
+
+// Workgroup size ensures one invocation per pixel
+@compute @workgroup_size(1, 1, 1) fn cs_main(@builtin(global_invocation_id) id: vec3u) {
+    let pixel = vec2u(id.xy);
+
+    let depth = textureLoad(depthImage, pixel, 0);
+    let color = textureLoad(colorImage, pixel, 0);
+
+    let pointInClip = vec4f(
+        2 * (vec2f(pixel) / vec2f(cu.resolution)) - 1,
+        depth * 2 - 1,
+        1.0
+    );
+    let pointInCamera = cu.clipToCamera * pointInClip;
+
+    let flatIndex = (cu.resolution.y - pixel.y) * cu.resolution.x + pixel.x;
+    points[flatIndex].xyz = pointInCamera.xyz / pointInCamera.w;
+    points[flatIndex].rgb = 1;
+    points[flatIndex].normalXyz = vec3(0, 0, 0);
+    points[flatIndex].curvature = 0;
+}

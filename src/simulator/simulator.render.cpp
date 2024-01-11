@@ -156,8 +156,8 @@ namespace mrover {
             wgpu::ShaderModuleDescriptor shaderDescriptor;
             shaderDescriptor.nextInChain = &shaderSourceDescriptor.chain;
 
-            mPbrShaderModule = mDevice.createShaderModule(shaderDescriptor);
-            if (!mPbrShaderModule) throw std::runtime_error("Failed to create WGPU PBR shader module");
+            mShaderModule = mDevice.createShaderModule(shaderDescriptor);
+            if (!mShaderModule) throw std::runtime_error("Failed to create WGPU PBR shader module");
         }
         {
             wgpu::RenderPipelineDescriptor descriptor;
@@ -198,13 +198,13 @@ namespace mrover {
                 vertexBufferLayout[2].attributes = attributes.data() + 2;
 
                 descriptor.vertex.entryPoint = "vs_main";
-                descriptor.vertex.module = mPbrShaderModule;
+                descriptor.vertex.module = mShaderModule;
                 descriptor.vertex.bufferCount = vertexBufferLayout.size();
                 descriptor.vertex.buffers = vertexBufferLayout.data();
             }
 
             wgpu::FragmentState fragment;
-            fragment.module = mPbrShaderModule;
+            fragment.module = mShaderModule;
             fragment.entryPoint = "fs_main";
             wgpu::BlendState blend;
             blend.color.srcFactor = wgpu::BlendFactor::SrcAlpha;
@@ -261,6 +261,41 @@ namespace mrover {
             mPbrPipeline = mDevice.createRenderPipeline(descriptor);
             if (!mPbrPipeline) throw std::runtime_error("Failed to create WGPU render pipeline");
         }
+        {
+            std::array<wgpu::BindGroupLayoutEntry, 4> bindGroupLayoutEntries{};
+            bindGroupLayoutEntries[0].binding = 0;
+            bindGroupLayoutEntries[0].visibility = wgpu::ShaderStage::Compute;
+            bindGroupLayoutEntries[0].buffer.type = wgpu::BufferBindingType::Uniform;
+            bindGroupLayoutEntries[0].buffer.minBindingSize = sizeof(ComputeUniforms);
+            bindGroupLayoutEntries[1].binding = 1;
+            bindGroupLayoutEntries[1].visibility = wgpu::ShaderStage::Compute;
+            bindGroupLayoutEntries[1].texture.sampleType = wgpu::TextureSampleType::Float;
+            bindGroupLayoutEntries[1].texture.viewDimension = wgpu::TextureViewDimension::_2D;
+            bindGroupLayoutEntries[2].binding = 2;
+            bindGroupLayoutEntries[2].visibility = wgpu::ShaderStage::Compute;
+            bindGroupLayoutEntries[2].texture.sampleType = wgpu::TextureSampleType::Depth;
+            bindGroupLayoutEntries[2].texture.viewDimension = wgpu::TextureViewDimension::_2D;
+            bindGroupLayoutEntries[3].binding = 3;
+            bindGroupLayoutEntries[3].visibility = wgpu::ShaderStage::Compute;
+            bindGroupLayoutEntries[3].buffer.type = wgpu::BufferBindingType::Storage;
+            bindGroupLayoutEntries[3].buffer.minBindingSize = sizeof(Point);
+
+            wgpu::BindGroupLayoutDescriptor bindGroupLayoutDescriptor;
+            bindGroupLayoutDescriptor.entryCount = bindGroupLayoutEntries.size();
+            bindGroupLayoutDescriptor.entries = bindGroupLayoutEntries.data();
+            wgpu::BindGroupLayout bindGroupLayout = mDevice.createBindGroupLayout(bindGroupLayoutDescriptor);
+
+            wgpu::PipelineLayoutDescriptor layoutDescriptor;
+            layoutDescriptor.bindGroupLayoutCount = 1;
+            layoutDescriptor.bindGroupLayouts = reinterpret_cast<WGPUBindGroupLayout const*>(&bindGroupLayout);
+            wgpu::PipelineLayout layout = mDevice.createPipelineLayout(layoutDescriptor);
+
+            wgpu::ComputePipelineDescriptor descriptor;
+            descriptor.compute.entryPoint = "cs_main";
+            descriptor.compute.module = mShaderModule;
+            descriptor.layout = layout;
+            mPointCloudPipeline = mDevice.createComputePipeline(descriptor);
+        }
 
         mUriToModel.try_emplace(CUBE_PRIMITIVE_URI, CUBE_PRIMITIVE_URI);
         mUriToModel.try_emplace(SPHERE_PRIMITIVE_URI, SPHERE_PRIMITIVE_URI);
@@ -297,7 +332,6 @@ namespace mrover {
             mesh.vertices.enqueueWriteIfUnitialized(mDevice, mQueue, wgpu::BufferUsage::Vertex);
             mesh.normals.enqueueWriteIfUnitialized(mDevice, mQueue, wgpu::BufferUsage::Vertex);
             mesh.uvs.enqueueWriteIfUnitialized(mDevice, mQueue, wgpu::BufferUsage::Vertex);
-
             mesh.texture.enqueWriteIfUnitialized(mDevice);
 
             std::array<wgpu::BindGroupEntry, 3> bindGroupEntires{};
@@ -413,14 +447,11 @@ namespace mrover {
         wgpu::CommandEncoder encoder = mDevice.createCommandEncoder();
         {
             for (Camera& camera: mCameras) {
+                // TODO(quintin): Move these into camera update
                 colorAttachment.view = camera.colorTextureView;
                 depthStencilAttachment.view = camera.depthTextureView;
 
-                wgpu::RenderPassEncoder pass = encoder.beginRenderPass(renderPassDescriptor);
-
-                cameraUpdate(camera, pass);
-
-                pass.end();
+                cameraUpdate(camera, encoder, renderPassDescriptor);
             }
         }
         {
@@ -468,7 +499,32 @@ namespace mrover {
         wgpu::CommandBuffer commands = encoder.finish();
         mQueue.submit(commands);
 
+        for (Camera& camera: mCameras) {
+            std::size_t pointCloudBufferSize = camera.resolution.x() * camera.resolution.y() * sizeof(Point);
+
+            encoder.copyBufferToBuffer(camera.pointCloudBuffer, 0, camera.pointCloudBufferStaging, 0, pointCloudBufferSize);
+
+            camera.pointCloudBufferStaging.mapAsync(wgpu::MapMode::Read, 0, pointCloudBufferSize, [&](wgpu::BufferMapAsyncStatus status) {
+                if (status == wgpu::BufferMapAsyncStatus::Success) {
+                    auto pointCloud = boost::make_shared<sensor_msgs::PointCloud2>();
+                    pointCloud->is_bigendian = __BYTE_ORDER__ == __ORDER_BIG_ENDIAN__;
+                    pointCloud->is_dense = true;
+                    pointCloud->width = camera.resolution.x();
+                    pointCloud->height = camera.resolution.y();
+                    pointCloud->header.stamp = ros::Time::now();
+                    pointCloud->header.frame_id = "zed2i_left_camera_frame";
+                    fillPointCloudMessageHeader(pointCloud);
+
+                    std::memcpy(pointCloud->data.data(), camera.pointCloudBufferStaging.getConstMappedRange(0, pointCloudBufferSize), pointCloudBufferSize);
+
+                    camera.pointCloudBufferStaging.unmap();
+                }
+            });
+        }
+
         mSwapChain.present();
+
+        mWgpuInstance.processEvents();
     }
 
 } // namespace mrover

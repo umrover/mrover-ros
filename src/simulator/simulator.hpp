@@ -26,6 +26,9 @@ namespace mrover {
     struct Camera;
     class SimulatorNodelet;
 
+    // Eigen stores matrices in column-major which is the same as WGPU
+    // As such there is no need to modify data before uploading to the device
+
     struct ModelUniforms {
         Eigen::Matrix4f modelToWorld;
         Eigen::Matrix4f modelToWorldForNormals;
@@ -40,6 +43,11 @@ namespace mrover {
         Eigen::Vector4f lightInWorld;
         Eigen::Vector4f cameraInWorld;
         Eigen::Vector4f lightColor;
+    };
+
+    struct ComputeUniforms {
+        Eigen::Matrix4f clipToCamera;
+        Eigen::Vector2i resolution;
     };
 
     struct Model {
@@ -114,9 +122,12 @@ namespace mrover {
         wgpu::Texture depthTexture = nullptr;
         wgpu::TextureView depthTextureView = nullptr;
         wgpu::Buffer pointCloudBuffer = nullptr;
+        wgpu::Buffer pointCloudBufferStaging = nullptr;
 
         Uniform<SceneUniforms> sceneUniforms;
         wgpu::BindGroup sceneBindGroup = nullptr;
+        Uniform<ComputeUniforms> computeUniforms;
+        wgpu::BindGroup computeBindGroup = nullptr;
     };
 
     class SimulatorNodelet final : public nodelet::Nodelet {
@@ -182,10 +193,10 @@ namespace mrover {
         wgpu::Texture mDepthTexture = nullptr;
         wgpu::TextureView mDepthTextureView = nullptr;
 
-        wgpu::ShaderModule mPbrShaderModule = nullptr;
+        wgpu::ShaderModule mShaderModule = nullptr;
         wgpu::RenderPipeline mPbrPipeline = nullptr;
 
-        wgpu::ComputePipeline mPointCloud = nullptr;
+        wgpu::ComputePipeline mPointCloudPipeline = nullptr;
 
         std::unordered_map<std::string, Model> mUriToModel;
 
@@ -255,7 +266,7 @@ namespace mrover {
 
         LoopProfiler mLoopProfiler{"Simulator"};
 
-        auto cameraUpdate(Camera& camera, wgpu::RenderPassEncoder& pass) -> void;
+        auto cameraUpdate(Camera& camera, wgpu::CommandEncoder& encoder, wgpu::RenderPassDescriptor const& colorDescriptor) -> void;
 
         auto gpsAndImusUpdate() -> void;
 
