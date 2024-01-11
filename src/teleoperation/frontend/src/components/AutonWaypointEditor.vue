@@ -69,7 +69,7 @@
             <button class="btn btn-primary" @click="openModal">Competition Waypoint Entry</button>
           </div>
         </div>
-        <div class="box">
+        <div class="waypoint-container">
           <div class="waypoint-header">
             <h4>All Waypoints</h4>
             <button class="btn btn-primary" @click="clearWaypoint">Clear Waypoints</button>
@@ -96,6 +96,7 @@
       </div>
       <div class="col-wrap" style="left: 50%">
           <!-- <div class="auton-check"> -->
+            <div>
             <AutonModeCheckbox
               ref="autonCheckbox"
               class="auton-checkbox"
@@ -118,9 +119,10 @@
               name="Stuck"
               @toggle="roverStuck = !roverStuck"
             ></Checkbox>
-        <div class="box">
-          <h4 class="waypoint-headers">Current Course</h4>
-          <!-- <draggable v-model="route" class="dragArea" draggable=".item'"> -->
+            </div>
+        <div class="waypoint-container">
+          <h4>Current Course</h4>
+          <div class="waypoints">
             <WaypointItem
               v-for="(waypoint, i) in route"
               :id="id"
@@ -133,7 +135,7 @@
               @togglePost="togglePost($event)"
               @add="addItem($event)"
             />
-          <!-- </draggable> -->
+          </div>
         </div>
       </div>
   
@@ -307,7 +309,6 @@
           "Post 1",
           "Post 2",
           "Post 3",
-          "Gate",
         ],
         compModalLatDeg: Array(8).fill(0),
         compModalLatMin: Array(8).fill(0),
@@ -651,11 +652,6 @@
     width: 49.5%;
   }
   
-  .dragArea {
-    height: 100%;
-  }
-  
-  
   .datagrid {
     display: grid;
     grid-gap: 5%;
@@ -667,11 +663,15 @@
     font-family: sans-serif;
     /* min-height: 16.3vh; */
   }
+
+  .waypoint-container {
+    height: 55%;
+  }
   
   .waypoint-header {
     display: inline-flex;
     align-items: center;
-    /* height: 100%; */
+    height: 15%;
   }
   
   .waypoint-header button {
@@ -683,8 +683,8 @@
   }
 
   .waypoints {
-    height: 30%;
-    overflow-y: hidden;
+    height: 85%;
+    overflow-y: auto;
   }
   
   .wp-input p {
@@ -711,11 +711,6 @@
     float: right;
     width: 50%;
   }
-
-  /* .teleop-stuck-btns {
-    width: 100%;
-    clear:both;
-  } */
   
   .stuck-checkbox {
     /* align-content: center; */
@@ -724,11 +719,6 @@
     width: 50%;
     float:right;
   }
-
-  /* .stuck-check .stuck-checkbox {
-    transform: scale(1.5);
-  } */
-
 
   .auton-checkbox {
     float: left;

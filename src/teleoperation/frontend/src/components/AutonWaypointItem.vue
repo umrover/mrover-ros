@@ -1,5 +1,5 @@
 <template>
-    <div class="shadow my-1 p-3 rounded waypoint-item">
+    <div class="shadow my-1 p-3 rounded">
       <div class="identification">
         <p>{{ waypoint.name }}, ID: {{ waypoint.id }}</p>
       </div>

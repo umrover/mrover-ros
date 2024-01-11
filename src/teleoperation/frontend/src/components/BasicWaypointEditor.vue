@@ -57,11 +57,11 @@
         </div>
       </div>
       <div class="box">
-        <div class="all-waypoints">
-          <h4 class="waypoint-headers">Waypoints</h4>
+        <div class="waypoint-header">
+          <h4>Waypoints</h4>
           <button class="btn btn-primary" @click="clearWaypoint">Clear Waypoints</button>
         </div>
-        <!-- <draggable v-model="storedWaypoints" class="dragArea" draggable=".item'">
+        <div class="waypoints">
           <WaypointItem
             v-for="(waypoint, i) in storedWaypoints"
             :key="i"
@@ -70,13 +70,12 @@
             @delete="deleteItem($event)"
             @find="findWaypoint($event)"
           />
-        </draggable> -->
+        </div>
       </div>
     </div>
   </template>
   
   <script lang="ts">
-  import draggable from "vuedraggable";
   import { convertDMS } from "../utils.js";
   import WaypointItem from "./BasicWaypointItem.vue";
   import { mapMutations, mapGetters } from "vuex";
@@ -132,8 +131,8 @@
       addWaypoint: function (coord: { lat: { d: number; m: number; s: number; }; lon: { d: number; m: number; s: number; }; }) {
         this.storedWaypoints.push({
           name: this.name,
-          lat: (coord.lat.d + coord.lat.m / 60 + coord.lat.s / 3600).toFixed(5),
-          lon: (coord.lon.d + coord.lon.m / 60 + coord.lon.s / 3600).toFixed(5)
+          lat: convertDMS(coord.lat, "D").d,
+          lon: convertDMS(coord.lon, "D").d,
         });
       },
   
@@ -221,7 +220,6 @@
     },
   
     components: {
-      draggable,
       WaypointItem
     }
   };
@@ -241,21 +239,19 @@
     margin-right: 20px;
   }
   
-  .dragArea {
-    height: 100%;
-  }
-  
-  .all-waypoints {
+  .waypoint-header {
     display: inline-flex;
     align-items: center;
+    height: 15%;
   }
   
-  .all-waypoints button {
+  .waypoint-header button {
     margin: 5px;
   }
- 
-  .waypoint-headers {
-    margin: auto;
+
+  .waypoints {
+    height: 85%;
+    overflow-y: auto;
   }
 
   .add-drop {

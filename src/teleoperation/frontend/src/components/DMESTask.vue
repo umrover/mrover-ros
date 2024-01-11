@@ -46,14 +46,14 @@
       <DriveMoteusStateTable :moteus-state-data="moteusState" />
       <ArmMoteusStateTable />
     </div>
-    <!-- <div v-show="false">
+    <div v-show="false">
       <MastGimbalControls></MastGimbalControls>
-    </div> -->
+    </div>
   </div>
 </template>
 
 <script lang="ts">
-import { defineComponent, inject } from 'vue'
+import { defineComponent } from 'vue'
 import { mapState } from 'vuex';
 import PDBFuse from "./PDBFuse.vue";
 import DriveMoteusStateTable from "./DriveMoteusStateTable.vue";
@@ -65,6 +65,7 @@ import Cameras from './Cameras.vue';
 import JointStateTable from "./JointStateTable.vue";
 import OdometryReading from "./OdometryReading.vue";
 import DriveControls from './DriveControls.vue';
+import MastGimbalControls from './MastGimbalControls.vue';
 
 export default defineComponent({
   components: {
@@ -77,7 +78,8 @@ export default defineComponent({
     Cameras,
     JointStateTable,
     OdometryReading,
-    DriveControls
+    DriveControls,
+    MastGimbalControls
   },
 
   props: {
@@ -90,8 +92,6 @@ export default defineComponent({
 
   data() {
     return {
-      // websocket: inject("webSocketService") as WebSocket,
-      // websocket: new WebSocket('ws://localhost:8000/ws/gui'),
       // Default coordinates at MDRS
       odom: {
         latitude_deg: 38.4060250,
@@ -131,18 +131,6 @@ export default defineComponent({
       }
     }
   }
-
-  // created() {
-  //   this.websocket.onmessage = (event) => {
-  //     const msg = JSON.parse(event.data)
-  //     if (msg.type == "joint_state") {
-  //       this.jointState.name = msg.name;
-  //       this.jointState.position = msg.position;
-  //       this.jointState.velocity = msg.velocity;
-  //       this.jointState.effort = msg.effort;
-  //     }
-  //   }
-  // }
 })
 </script>
 
@@ -151,7 +139,7 @@ export default defineComponent({
   display: grid;
   gap: 10px;
   grid-template-columns: 50% 50%;
-  grid-template-rows: repeat(6, auto);
+  grid-template-rows: auto 40vh repeat(4, auto);
   grid-template-areas:
     "header header"
     "map waypoint-editor"

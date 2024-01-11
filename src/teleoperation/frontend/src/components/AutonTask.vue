@@ -42,13 +42,12 @@
         <div
         v-if="!autonEnabled && teleopEnabledCheck"
         v-show="false"
-        class="driveControls"
-    >
+        class="driveControls">
         <DriveControls />
         </div>
-        <!-- <div v-show="false">
-        <MastGimbalControls></MastGimbalControls>
-    </div> -->
+        <div v-show="false">
+        <MastGimbalControls/>
+        </div>
         <div class="conditions">
             <div v-if="!stuck_status" class="shadow p-3 rounded bg-success text-center">
                 <h4>Nominal Conditions</h4>
@@ -68,7 +67,7 @@
 </template>
   
 <script lang="ts">
-import { mapState, mapGetters } from "vuex";
+import { mapActions, mapState, mapGetters } from "vuex";
 import DriveMoteusStateTable from "./DriveMoteusStateTable.vue";
 import AutonRoverMap from "./AutonRoverMap.vue";
 import AutonWaypointEditor from "./AutonWaypointEditor.vue";
@@ -78,6 +77,7 @@ import JointStateTable from "./JointStateTable.vue";
 import OdometryReading from "./OdometryReading.vue";
 import JoystickValues from './JoystickValues.vue';
 import DriveControls from "./DriveControls.vue";
+import MastGimbalControls from "./MastGimbalControls.vue";
 import { quaternionToMapAngle } from "../utils.js";
 import { defineComponent } from "vue";
 
@@ -93,7 +93,8 @@ export default defineComponent({
         JointStateTable,
         OdometryReading,
         JoystickValues,
-        DriveControls
+        DriveControls,
+        MastGimbalControls
     },
 
     data() {
@@ -181,6 +182,10 @@ export default defineComponent({
         }
     },
 
+    methods: {
+        ...mapActions('websocket', ['sendMessage'])
+    },
+
     beforeUnmount: function () {
         this.ledColor = "bg-white";
         window.clearInterval(interval);
@@ -188,7 +193,7 @@ export default defineComponent({
 
     created() {
         interval = setInterval(() => {
-            this.$websocket.send({type: "auton_tfclient"});
+            this.sendMessage({type: "auton_tfclient"});
         }, 1000);
     }
 });
