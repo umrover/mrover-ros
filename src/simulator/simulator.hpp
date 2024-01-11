@@ -227,10 +227,12 @@ namespace mrover {
                 btScalar position{};
                 btScalar velocity{};
             };
+            btVector3 basePosition;
+            btVector3 baseVelocity;
             boost::container::static_vector<LinkData, 32> links;
         };
 
-        int mSelection = 0;
+        int mSaveSelection = 0;
         PeriodicTask mSaveTask;
         boost::circular_buffer<SaveData> mSaveHistory;
 

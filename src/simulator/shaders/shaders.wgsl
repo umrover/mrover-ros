@@ -108,8 +108,12 @@ fn pack(color: vec4f) -> f32 {
     // See: https://www.w3.org/TR/webgpu/#coordinate-systems
     // These coordinate are in NDC (normalized device coordinates)
     let pointInClip = vec4f(
-        2 * (vec2f(pixelInImage) / vec2f(cu.resolution)) - 1,
+        // Map pixel coordinates to [-1, 1]
+        2 * (f32(pixelInImage.x) / f32(cu.resolution.x)) - 1,
+        -2 * (f32(pixelInImage.y) / f32(cu.resolution.y)) + 1,
+        // Depth is already in [0, 1]
         depth,
+        // Homogenous points have w = 1
         1
     );
     let pointInCamera = cu.clipToCamera * pointInClip;
