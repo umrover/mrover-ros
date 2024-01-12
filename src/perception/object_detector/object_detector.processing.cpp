@@ -174,10 +174,9 @@ namespace mrover {
 
             std::pair center(box.x + box.width/2, box.y + box.height/2);
 
-            ROS_INFO("center image coordinates x y: %d %d", center.first, center.second);
+            ROS_INFO("center image coordinates x y: %d %d", center.first * static_cast<float>(msg->width) / sizedImage.cols, center.second * static_cast<float>(msg->height) / sizedImage.rows);
 
-            if (std::optional<SE3> objectLocation = getObjectInCamFromPixel(msg, center.first, center.second); objectLocation) {
-
+            if (std::optional<SE3> objectLocation = getObjectInCamFromPixel(msg, center.first * static_cast<float>(msg->width) / sizedImage.cols, center.second * static_cast<float>(msg->height) / sizedImage.rows); objectLocation) {
                 ROS_INFO("x y z position %f %f %f", objectLocation->position().x(), objectLocation->position().y(), objectLocation->position().z());
 
                 // Publish tag to immediate
@@ -197,7 +196,6 @@ namespace mrover {
                 } catch (tf::LookupException const&) {
                     NODELET_WARN("LOOK UP NOT FOUND");
                 }
-
             }
 
             msgData.width = static_cast<float>(box.width);
@@ -268,7 +266,7 @@ namespace mrover {
             return std::nullopt;
         }
 
-        Point point = reinterpret_cast<Point const*>(cloudPtr->data.data())[u + v * cloudPtr->width];
+        Point point = reinterpret_cast<Point const*>(cloudPtr->data.data())[u + v * cloudPtr->width ];
         if (!std::isfinite(point.x) || !std::isfinite(point.y) || !std::isfinite(point.z)) {
             NODELET_WARN("Tag center point not finite: [%f %f %f]", point.x, point.y, point.z);
             return std::nullopt;
