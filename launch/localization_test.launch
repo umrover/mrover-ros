@@ -8,13 +8,14 @@
 
     <!-- GPS + IMU driver nodes and params -->
     <rosparam command="load" file="$(find mrover)/config/esw.yaml" />
+    <rosparam command="load" file="$(find mrover)/config/ekf.yaml" />
     <node name="imu_driver" pkg="mrover" type="imu_driver.py" output="screen" />
-    <node name="gps_driver" pkg="nmea_navsat_driver" type="nmea_serial_driver">
+    <!-- <node name="gps_driver" pkg="nmea_navsat_driver" type="nmea_serial_driver">
         <remap from="fix" to="gps/fix" />
-    </node>
+    </node> -->
 
     <!-- Reads the GPS topic and convert it to cartesian based on a reference point-->
-    <node pkg="robot_localization" type="navsat_transform_node" name="navsat_transform" clear_params="true">
+    <!-- <node pkg="robot_localization" type="navsat_transform_node" name="navsat_transform" clear_params="true">
         <remap from="gps/fix" to="fix" />
-    </node>
+    </node> -->
 </launch>

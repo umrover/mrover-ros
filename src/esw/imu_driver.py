@@ -70,7 +70,7 @@ def main():
     and adds necessary metadata used for filtering.
     """
     orientation_covariance, gyro_covariance, accel_covariance, mag_pose_covariance = get_covariances()
-    world_frame = rospy.get_param("world_frame")
+    world_frame = rospy.get_param("global_ekf/world_frame")
 
     # publishers for all types of IMU data, queue size is 1 to make sure we don't publish old data
     imu_pub = rospy.Publisher("imu/data", ImuAndMag, queue_size=1)
@@ -117,8 +117,8 @@ def main():
             accel_data = data[4:7]
             gyro_data = data[7:10]
             mag_data = data[10:13]
-            temp_data = data[13]
-            cal_data = [int(n) for n in data[14:18]]
+            cal_data = data[13]
+            # cal_data = [int(n) for n in data[14:18]]
 
         except IndexError:
             rospy.logerr("incomplete msg")
@@ -162,6 +162,12 @@ def main():
         imu_pub.publish(imu_msg)
         temp_pub.publish(temp_msg)
         calibration_pub.publish(calibration_msg)
+        rospy.loginfo(imu_msg)
+        rospy.loginfo(temp_msg)
+        rospy.loginfo(calibration_msg)
+        rospy.loginfo(mag_pose_pub)
+        rospy.loginfo(mag_msg)
+        rospy.loginfo(mag_pose_covariance)
         publish_mag_pose(mag_pose_pub, mag_msg, mag_pose_covariance, world_frame)
 
 

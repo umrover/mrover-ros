@@ -9,7 +9,7 @@ gps_driver:
   frame_id: "base_link"
 
 imu_driver:
-  port: "/dev/imu"
+  port: "/dev/pts/0"
   baud: 115200
   frame_id: "imu_link"
 
