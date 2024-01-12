@@ -61,13 +61,13 @@ namespace mrover {
 		{
 				Pin{UV_LED_0_GPIO_Port, UV_LED_0_Pin},
 				Pin{UV_LED_1_GPIO_Port, UV_LED_1_Pin},
-				Pin{UV_LED_1_GPIO_Port, UV_LED_2_Pin}
+				Pin{UV_LED_2_GPIO_Port, UV_LED_2_Pin}
 		};
         std::array<Pin, 3> white_leds =
 		{
 				Pin{WHITE_LED_0_GPIO_Port, WHITE_LED_0_Pin},
 				Pin{WHITE_LED_1_GPIO_Port, WHITE_LED_1_Pin},
-				Pin{WHITE_LED_1_GPIO_Port, WHITE_LED_2_Pin}
+				Pin{WHITE_LED_2_GPIO_Port, WHITE_LED_2_Pin}
 		};
 
         fdcan_bus = FDCAN<InBoundScienceMessage>{DEVICE_ID, DESTINATION_DEVICE_ID, &hfdcan1};
