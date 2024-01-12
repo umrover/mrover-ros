@@ -30,10 +30,10 @@
         args="load mrover/TagDetectorNodelet perception_nodelet_manager" output="screen">
   </node>
 
-  <node if="$(arg run_object_detector)"
+  <!-- <node if="$(arg run_object_detector)"
         pkg="nodelet" type="nodelet" name="object_detector" respawn="true"
         args="load mrover/ObjectDetectorNodelet perception_nodelet_manager" output="screen">
-  </node>
+  </node> -->
 
   <node pkg="tf" type="static_transform_publisher" name="map_odom_publisher"
         args="1 0 0 0 0 0 map odom 100"/>

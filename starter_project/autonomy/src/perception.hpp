@@ -10,6 +10,7 @@
 // OpenCV Headers, cv namespace
 #include <opencv2/core/mat.hpp>
 #include <opencv2/objdetect.hpp>
+#include <opencv2/aruco.hpp>
 
 // ROS Headers, ros namespace
 #include <ros/node_handle.h>

@@ -3,6 +3,9 @@
 // ROS Headers, ros namespace
 #include <ros/init.h>
 
+#include <opencv2/aruco.hpp>
+#include <opencv2/core.hpp>
+
 int main(int argc, char** argv) {
     ros::init(argc, argv, "starter_project_perception"); // Our node name (See: http://wiki.ros.org/Nodes)
 
