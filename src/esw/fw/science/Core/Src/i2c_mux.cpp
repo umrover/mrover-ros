@@ -2,8 +2,10 @@
 // Hardware PCA9546A
 namespace mrover {
 
-	I2CMux::I2CMux(std::shared_ptr<SMBus<uint8_t, uint16_t>> i2c_bus)
-    	: m_i2c_bus(i2c_bus) {}
+	I2CMux::I2CMux(std::shared_ptr<SMBus<uint8_t, uint16_t>> i2c_bus, Pin reset_pin)
+    	: m_i2c_bus(i2c_bus), m_reset_pin(reset_pin) {
+		reset_pin.write(GPIO_PIN_SET);
+	}
 
     void I2CMux::set_channel(uint8_t channel) {
     	uint8_t go_to_channel = 1 << channel;

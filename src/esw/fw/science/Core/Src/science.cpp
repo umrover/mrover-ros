@@ -28,7 +28,9 @@ namespace mrover {
 
         std::shared_ptr<SMBus<uint8_t, uint16_t>> i2c_bus = std::make_shared<SMBus<uint8_t, uint16_t>>(&hi2c1);
 
-        std::shared_ptr<I2CMux> i2c_mux = std::make_shared<I2CMux>(i2c_bus);
+        std::shared_ptr<I2CMux> i2c_mux = std::make_shared<I2CMux>(
+        		i2c_bus,
+				Pin{I2C_MUX_RST_GPIO_Port, I2C_MUX_RST_Pin});
 
         std::array<Spectral, 3> spectral_sensors = {
         		Spectral(i2c_bus, i2c_mux, 0),
