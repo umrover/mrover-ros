@@ -40,6 +40,18 @@ namespace mrover {
         return {texture, textureView};
     }
 
+    auto SimulatorNodelet::makeFramebuffers(int width, int height) -> void {
+        wgpu::SwapChainDescriptor descriptor;
+        descriptor.usage = wgpu::TextureUsage::RenderAttachment;
+        descriptor.format = COLOR_FORMAT;
+        descriptor.width = width;
+        descriptor.height = height;
+        descriptor.presentMode = wgpu::PresentMode::Fifo;
+        mSwapChain = mDevice.createSwapChain(mSurface, descriptor);
+        if (!mSwapChain) throw std::runtime_error("Failed to create WGPU swap chain");
+        std::tie(mDepthTexture, mDepthTextureView) = makeTextureAndView(width, height, DEPTH_FORMAT, wgpu::TextureUsage::RenderAttachment, wgpu::TextureAspect::DepthOnly);
+    }
+
     auto computeCameraToClip(float fovY, float aspect, float zNear, float zFar) -> Eigen::Matrix4f {
         // Equivalent to glm::perspectiveLH_ZO
         // WGPU coordinate system is left-handed +x right, +y up, +z forward (same as DirectX)
@@ -70,6 +82,7 @@ namespace mrover {
         constexpr auto WINDOW_NAME = "MRover Simulator (DEBUG BUILD, MAY BE SLOW)";
 #endif
         glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
+        glfwWindowHint(GLFW_RESIZABLE, GLFW_TRUE);
         glfwWindowHint(GLFW_COCOA_RETINA_FRAMEBUFFER, GLFW_FALSE);
         mWindow = GlfwPointer<GLFWwindow, glfwCreateWindow, glfwDestroyWindow>{w, h, WINDOW_NAME, nullptr, nullptr};
         NODELET_INFO_STREAM(fmt::format("Created window of size: {}x{}", w, h));
@@ -108,14 +121,7 @@ namespace mrover {
         mDepthTexture.release();
         mSwapChain.release();
 
-        wgpu::SwapChainDescriptor descriptor;
-        descriptor.usage = wgpu::TextureUsage::RenderAttachment;
-        descriptor.format = COLOR_FORMAT;
-        descriptor.width = width;
-        descriptor.height = height;
-        descriptor.presentMode = wgpu::PresentMode::Immediate;
-        mSwapChain = mDevice.createSwapChain(mSurface, descriptor);
-        std::tie(mDepthTexture, mDepthTextureView) = makeTextureAndView(width, height, DEPTH_FORMAT, wgpu::TextureUsage::RenderAttachment, wgpu::TextureAspect::DepthOnly);
+        makeFramebuffers(width, height);
     }
 
     auto SimulatorNodelet::initRender() -> void {
@@ -156,15 +162,7 @@ namespace mrover {
         int width, height;
         glfwGetFramebufferSize(mWindow.get(), &width, &height);
 
-        wgpu::SwapChainDescriptor descriptor;
-        descriptor.usage = wgpu::TextureUsage::RenderAttachment;
-        descriptor.format = COLOR_FORMAT;
-        descriptor.width = width;
-        descriptor.height = height;
-        descriptor.presentMode = wgpu::PresentMode::Immediate;
-        mSwapChain = mDevice.createSwapChain(mSurface, descriptor);
-        if (!mSwapChain) throw std::runtime_error("Failed to create WGPU swap chain");
-        std::tie(mDepthTexture, mDepthTextureView) = makeTextureAndView(width, height, DEPTH_FORMAT, wgpu::TextureUsage::RenderAttachment, wgpu::TextureAspect::DepthOnly);
+        makeFramebuffers(width, height);
 
         {
             wgpu::ShaderModuleWGSLDescriptor shaderSourceDescriptor;

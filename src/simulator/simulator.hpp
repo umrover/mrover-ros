@@ -327,6 +327,8 @@ namespace mrover {
         auto jointPositionsCallback(Position::ConstPtr const& positions) -> void;
 
         auto makeTextureAndView(int width, int height, wgpu::TextureFormat const& format, wgpu::TextureUsage const& usage, wgpu::TextureAspect const& aspect) -> std::pair<wgpu::Texture, wgpu::TextureView>;
+
+        auto makeFramebuffers(int width, int height) -> void;
     };
 
     auto uriToPath(std::string_view uri) -> std::filesystem::path;

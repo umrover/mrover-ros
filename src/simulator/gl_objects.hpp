@@ -42,6 +42,13 @@ namespace mrover {
         [[nodiscard]] auto sizeBytes() const -> std::size_t {
             return data.size() * sizeof(T);
         }
+
+        ~SharedBuffer() {
+            if (buffer) {
+                buffer.destroy();
+                buffer.release();
+            }
+        }
     };
 
     // TODO(quintin): clean up shared behavior between this and other types in this file
@@ -71,6 +78,13 @@ namespace mrover {
             assert(buffer);
 
             device.getQueue().writeBuffer(buffer, 0, std::addressof(value), sizeof(T));
+        }
+
+        ~Uniform() {
+            if (buffer) {
+                buffer.destroy();
+                buffer.release();
+            }
         }
     };
 
@@ -139,6 +153,15 @@ namespace mrover {
             }
 
             return true;
+        }
+
+        ~MeshTexture() {
+            if (sampler) sampler.release();
+            if (view) view.release();
+            if (texture) {
+                texture.destroy();
+                texture.release();
+            }
         }
     };
 
