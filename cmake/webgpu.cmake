@@ -16,7 +16,7 @@ FetchContent_Declare(
 	DOWNLOAD_COMMAND
 		cd ${CMAKE_CURRENT_SOURCE_DIR}/deps/dawn &&
 		git init &&
-		git fetch --depth=1 https://dawn.googlesource.com/dawn chromium/6108 &&
+		git fetch --depth=1 https://dawn.googlesource.com/dawn chromium/6244 &&
 		git reset --hard FETCH_HEAD
 )
 

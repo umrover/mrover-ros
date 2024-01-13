@@ -32,6 +32,7 @@ namespace mrover {
 
             colorPass.end();
 
+            bindGroup.release();
             colorPass.release();
         }
         {
@@ -83,6 +84,7 @@ namespace mrover {
 
             encoder.copyBufferToBuffer(camera.pointCloudBuffer, 0, camera.pointCloudBufferStaging, 0, camera.pointCloudBuffer.getSize());
 
+            bindGroup.release();
             computePass.release();
         }
     }

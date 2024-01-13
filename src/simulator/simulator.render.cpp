@@ -2,9 +2,6 @@
 
 #include "simulator.hpp"
 
-#include <boost/pool/object_pool.hpp>
-#include <boost/pool/pool_alloc.hpp>
-
 namespace mrover {
 
     static std::string const MESHES_PATH = "package://mrover/urdf/meshes/primitives";
@@ -77,6 +74,8 @@ namespace mrover {
         mWindow = GlfwPointer<GLFWwindow, glfwCreateWindow, glfwDestroyWindow>{w, h, WINDOW_NAME, nullptr, nullptr};
         NODELET_INFO_STREAM(fmt::format("Created window of size: {}x{}", w, h));
 
+        if (glfwRawMouseMotionSupported()) glfwSetInputMode(mWindow.get(), GLFW_RAW_MOUSE_MOTION, GLFW_TRUE);
+
         glfwSetWindowUserPointer(mWindow.get(), this);
         glfwSetKeyCallback(mWindow.get(), [](GLFWwindow* window, int key, int scancode, int action, int mods) {
             if (auto* simulator = static_cast<SimulatorNodelet*>(glfwGetWindowUserPointer(window))) {
@@ -94,11 +93,29 @@ namespace mrover {
                 if (focused && !simulator->mInGui) simulator->centerCursor();
             }
         });
-        if (glfwRawMouseMotionSupported()) glfwSetInputMode(mWindow.get(), GLFW_RAW_MOUSE_MOTION, GLFW_TRUE);
+        glfwSetWindowCloseCallback(mWindow.get(), [](GLFWwindow*) {
+            ros::requestShutdown();
+        });
     }
 
     auto SimulatorNodelet::frameBufferResizedCallback(int width, int height) -> void {
-        // TODO(quintin): resize framebuffer
+        if (width == 0 || height == 0) return;
+
+        mQueue.submit(0, nullptr);
+
+        mDepthTextureView.release();
+        mDepthTexture.destroy();
+        mDepthTexture.release();
+        mSwapChain.release();
+
+        wgpu::SwapChainDescriptor descriptor;
+        descriptor.usage = wgpu::TextureUsage::RenderAttachment;
+        descriptor.format = COLOR_FORMAT;
+        descriptor.width = width;
+        descriptor.height = height;
+        descriptor.presentMode = wgpu::PresentMode::Immediate;
+        mSwapChain = mDevice.createSwapChain(mSurface, descriptor);
+        std::tie(mDepthTexture, mDepthTextureView) = makeTextureAndView(width, height, DEPTH_FORMAT, wgpu::TextureUsage::RenderAttachment, wgpu::TextureAspect::DepthOnly);
     }
 
     auto SimulatorNodelet::initRender() -> void {
@@ -114,6 +131,7 @@ namespace mrover {
         {
             wgpu::RequestAdapterOptions options;
             options.powerPreference = wgpu::PowerPreference::HighPerformance; // Request that laptops use the discrete GPU if available
+            options.compatibleSurface = mSurface;
             mAdapter = mWgpuInstance.requestAdapter(options);
             if (!mAdapter) throw std::runtime_error("Failed to request WGPU adapter");
 
@@ -146,7 +164,6 @@ namespace mrover {
         descriptor.presentMode = wgpu::PresentMode::Immediate;
         mSwapChain = mDevice.createSwapChain(mSurface, descriptor);
         if (!mSwapChain) throw std::runtime_error("Failed to create WGPU swap chain");
-
         std::tie(mDepthTexture, mDepthTextureView) = makeTextureAndView(width, height, DEPTH_FORMAT, wgpu::TextureUsage::RenderAttachment, wgpu::TextureAspect::DepthOnly);
 
         {
@@ -241,7 +258,6 @@ namespace mrover {
             meshBindGroupLayourDescriptor.entryCount = meshBindGroupLayoutEntries.size();
             meshBindGroupLayourDescriptor.entries = meshBindGroupLayoutEntries.data();
             wgpu::BindGroupLayout meshBindGroupLayout = mDevice.createBindGroupLayout(meshBindGroupLayourDescriptor);
-
 
             wgpu::BindGroupLayoutEntry sceneBindGroupLayoutEntry;
             sceneBindGroupLayoutEntry.binding = 0;
@@ -359,6 +375,8 @@ namespace mrover {
 
             static_assert(std::is_same_v<decltype(mesh.indices)::value_type, std::uint32_t>);
             pass.drawIndexed(mesh.indices.data.size(), 1, 0, 0, 0);
+
+            bindGroup.release();
         }
     }
 
