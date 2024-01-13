@@ -154,16 +154,16 @@ def main():
             mag=mag_msg,
         )
 
-        temp_msg = Temperature(header=header, temperature=temp_data)
+        # temp_msg = Temperature(header=header, temperature=temp_data)
 
         calibration_msg = CalibrationStatus(header, *cal_data)
 
         # publish each message
         imu_pub.publish(imu_msg)
-        temp_pub.publish(temp_msg)
+        # temp_pub.publish(temp_msg)
         calibration_pub.publish(calibration_msg)
         rospy.loginfo(imu_msg)
-        rospy.loginfo(temp_msg)
+        # rospy.loginfo(temp_msg)
         rospy.loginfo(calibration_msg)
         rospy.loginfo(mag_pose_pub)
         rospy.loginfo(mag_msg)

@@ -1,3 +1,4 @@
+// Basic demo for readings from Adafruit BNO08x
 #include <Adafruit_BNO08x.h>
 
 // For SPI mode, we need a CS pin
@@ -99,7 +100,7 @@ void loop() {
   if (!bno08x.getSensorEvent(&sensorValue)) {
     return;
   }
-    //orientation
+    // orientation
     Serial.print(sensorValue.un.rotationVector.i);
     Serial.print(" ");
     Serial.print(sensorValue.un.rotationVector.j);
@@ -133,7 +134,11 @@ void loop() {
     Serial.print(sensorValue.un.magneticField.z, 6);
     Serial.print(" ");
 
+    Serial.print(sensorValue.un.temperature.value); 
+    Serial.print(" ");
+
     Serial.print(sensorValue.status); 
     Serial.println();
+
 }
 
