@@ -104,7 +104,11 @@ int main(void)
   SystemClock_Config();
 
   /* USER CODE BEGIN SysInit */
-
+#ifdef VECT_TAB_SRAM
+  SCB->VTOR = SRAM_BASE;
+#else
+  SCB->VTOR = FLASH_BASE;
+#endif
   /* USER CODE END SysInit */
 
   /* Initialize all configured peripherals */
@@ -124,7 +128,7 @@ int main(void)
 	TxHeader.TxFrameType = FDCAN_DATA_FRAME;
 	TxHeader.DataLength = FDCAN_DLC_BYTES_12;
 	TxHeader.ErrorStateIndicator = FDCAN_ESI_ACTIVE;
-	TxHeader.BitRateSwitch = FDCAN_BRS_ON;
+	TxHeader.BitRateSwitch = FDCAN_BRS_OFF;
 	TxHeader.FDFormat = FDCAN_FD_CAN;
 	TxHeader.TxEventFifoControl = FDCAN_NO_TX_EVENTS;
 	TxHeader.MessageMarker = 0;
@@ -135,11 +139,16 @@ int main(void)
   /* USER CODE BEGIN WHILE */
   while (1)
   {
-
-	if (HAL_FDCAN_AddMessageToTxFifoQ(&hfdcan1, &TxHeader, TxData)!= HAL_OK)
-	{
-	Error_Handler();
+	 if (HAL_FDCAN_GetTxFifoFreeLevel(&hfdcan1)) {
+		// Free space in the mailbox
+		if (HAL_FDCAN_AddMessageToTxFifoQ(&hfdcan1, &TxHeader, TxData)!= HAL_OK) {
+			Error_Handler();
+		}
+	} else {
+		// Abort oldest message in the mailbox to make room for the new message
+		HAL_FDCAN_AbortTxRequest(&hfdcan1, FDCAN_TX_BUFFER0);
 	}
+	HAL_Delay(100);
     /* USER CODE END WHILE */
 
     /* USER CODE BEGIN 3 */
@@ -210,7 +219,7 @@ static void MX_FDCAN1_Init(void)
   /* USER CODE END FDCAN1_Init 1 */
   hfdcan1.Instance = FDCAN1;
   hfdcan1.Init.ClockDivider = FDCAN_CLOCK_DIV1;
-  hfdcan1.Init.FrameFormat = FDCAN_FRAME_FD_BRS;
+  hfdcan1.Init.FrameFormat = FDCAN_FRAME_FD_NO_BRS;
   hfdcan1.Init.Mode = FDCAN_MODE_NORMAL;
   hfdcan1.Init.AutoRetransmission = ENABLE;
   hfdcan1.Init.TransmitPause = ENABLE;
