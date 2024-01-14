@@ -141,7 +141,7 @@ namespace mrover {
         auto messageId = std::bit_cast<CanFdMessageId>(static_cast<std::uint16_t>(rawId.identifier));
 
         optional_ref<std::string> sourceDeviceName = mDevices.backward(CanFdAddress{
-                .bus = 0, // TODO set correct bus
+                .bus = 1, // TODO set correct bus
                 .id = messageId.source,
         });
         if (!sourceDeviceName) {
@@ -150,7 +150,7 @@ namespace mrover {
         }
 
         optional_ref<std::string> destinationDeviceName = mDevices.backward(CanFdAddress{
-                .bus = 0, // TODO set correct bus
+                .bus = 1, // TODO set correct bus
                 .id = messageId.destination,
         });
         if (!destinationDeviceName) {
