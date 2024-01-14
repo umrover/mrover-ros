@@ -43,7 +43,10 @@ class GPSLinearization:
         self.ref_alt = rospy.get_param("gps_linearization/reference_point_altitude")
         self.world_frame = rospy.get_param("world_frame")
         self.use_dop_covariance = rospy.get_param("global_ekf/use_gps_dop_covariance")
+
+        #config gps and imu convariance matrices
         self.config_gps_covariance = np.array(rospy.get_param("global_ekf/gps_covariance", None))
+        self.config_imu_covariance = np.array(rospy.get_param("global_ekf/imu_orientation_covariance", None))
 
         self.last_gps_msg = None
         self.last_imu_msg = None
@@ -78,7 +81,23 @@ class GPSLinearization:
 
         pose = GPSLinearization.compute_gps_pose(right_cartesian=right_cartesian, left_cartesian=left_cartesian)
 
+        covariance_matrix = np.zeros(6,6)
+        covariance_matrix[:3,:3] = self.config_gps_covariance.reshape(3,3)
+        covariance_matrix[3:, 3:] = self.config_imu_covariance.reshape(3,3)
+
         # TODO: publish to ekf
+        pose_msg = PoseWithCovarianceStamped(
+            header=Header(stamp=rospy.Time.now(), frame_id=self.world_frame),
+            pose=PoseWithCovariance(
+                pose=Pose(
+                    position=Point(*pose.position),
+                    orientation=Quaternion(*pose.rotation.quaternion),
+                ),
+                covariance=covariance_matrix.flatten().tolist(),
+            ),
+        )
+
+        self.pose_publisher.publish(pose_msg)
 
 
 
@@ -118,6 +137,8 @@ class GPSLinearization:
     def compute_gps_pose(right_cartesian, left_cartesian) -> np.ndarray:
         vector_connecting = left_cartesian - right_cartesian
         vector_connecting[2] = 0
+        magnitude = np.linalg.norm(vector_connecting)
+        vector_connecting = vector_connecting / magnitude
 
 
         vector_perp = np.zeros(3,1)
