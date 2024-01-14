@@ -5,9 +5,9 @@
 
 namespace mrover {
 
-    HBridge::HBridge(TIM_HandleTypeDef* timer)
-        : m_forward_pins{GPIOC, GPIO_PIN_6},
-          m_reverse_pins{GPIOB, GPIO_PIN_13},
+    HBridge::HBridge(TIM_HandleTypeDef* timer, Pin forward_pin, Pin reverse_pin)
+        : m_forward_pins{forward_pin},
+          m_reverse_pins{reverse_pin},
           m_timer{timer},
           m_arr_register{&TIM15->ARR},
           m_ccr_register{&TIM15->CCR1},

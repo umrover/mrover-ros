@@ -8,7 +8,7 @@
 
 namespace mrover {
 
-    Spectral::Spectral(std::shared_ptr<SMBus> i2c_bus, std::shared_ptr<I2CMux> i2c_mux, uint8_t i2c_mux_channel)
+    Spectral::Spectral(std::shared_ptr<SMBus<uint8_t, uint16_t>> i2c_bus, std::shared_ptr<I2CMux> i2c_mux, uint8_t i2c_mux_channel)
     	: m_i2c_bus(i2c_bus),
     	  m_i2c_mux(i2c_mux),
 		  m_i2c_mux_channel(i2c_mux_channel) {}
@@ -18,11 +18,14 @@ namespace mrover {
     }
 
     void Spectral::poll_status_reg(){
-    	m_i2c_bus->async_transmit(SPECTRAL_7b_ADDRESS, I2C_AS72XX_SLAVE_STATUS_REG);
+    	m_i2c_mux->set_channel(m_i2c_mux_channel);
+    	m_i2c_bus->blocking_transmit(SPECTRAL_7b_ADDRESS, I2C_AS72XX_SLAVE_STATUS_REG);
     }
 
     void Spectral::init(){
     	assert(!m_initialized);
+    	m_i2c_mux->set_channel(m_i2c_mux_channel);
+
     	// TODO (Alan) figure out if you need to actually poll the
     	// status reg and if while loops will cause potential hangs.
     	uint8_t control_data = 0x28;
@@ -45,15 +48,15 @@ namespace mrover {
 
     	// Waiting on semaphore replaces directly polling status register.
 		osSemaphoreAcquire(spectral_write_status, osWaitForever);
-		m_i2c_bus->blocking_transmit<uint16_t>(SPECTRAL_7b_ADDRESS, CONTROL_SETUP_REG);
+		m_i2c_bus->blocking_transmit(SPECTRAL_7b_ADDRESS, CONTROL_SETUP_REG);
 
 		osSemaphoreAcquire(spectral_write_status, osWaitForever);
-		m_i2c_bus->blocking_transmit<uint16_t>(SPECTRAL_7b_ADDRESS, control_data);
+		m_i2c_bus->blocking_transmit(SPECTRAL_7b_ADDRESS, control_data);
 
 		osSemaphoreAcquire(spectral_write_status, osWaitForever);
 		// Integration time = 2.8ms & 0xFF
 		uint8_t int_time_multiplier = 0xFF;
-		m_i2c_bus->blocking_transmit<uint16_t>(SPECTRAL_7b_ADDRESS, int_time_multiplier);
+		m_i2c_bus->blocking_transmit(SPECTRAL_7b_ADDRESS, int_time_multiplier);
 
 		m_initialized = true;
 		m_error = false;
@@ -81,16 +84,16 @@ namespace mrover {
 
     		// Technically we should we waiting/polling before trying to read from these addresses...
     		osSemaphoreAcquire(spectral_write_status, osWaitForever);
-    		m_i2c_bus->blocking_transmit<uint16_t>(SPECTRAL_7b_ADDRESS, msb_reg_addr);
+    		m_i2c_bus->blocking_transmit(SPECTRAL_7b_ADDRESS, msb_reg_addr);
 
     		osSemaphoreAcquire(spectral_read_status, osWaitForever);
-    		auto msb_result = m_i2c_bus->blocking_receive<uint16_t>(SPECTRAL_7b_ADDRESS);
+    		auto msb_result = m_i2c_bus->blocking_receive(SPECTRAL_7b_ADDRESS);
 
     		osSemaphoreAcquire(spectral_write_status, osWaitForever);
-    		m_i2c_bus->blocking_transmit<uint16_t>(SPECTRAL_7b_ADDRESS, lsb_reg_addr);
+    		m_i2c_bus->blocking_transmit(SPECTRAL_7b_ADDRESS, lsb_reg_addr);
 
     		osSemaphoreAcquire(spectral_read_status, osWaitForever);
-			auto lsb_result = m_i2c_bus->blocking_receive<uint16_t>(SPECTRAL_7b_ADDRESS);
+			auto lsb_result = m_i2c_bus->blocking_receive(SPECTRAL_7b_ADDRESS);
 
     		if(msb_result && lsb_result){
     			channel_data[i] = (((uint16_t)msb_result << 8) | lsb_result);

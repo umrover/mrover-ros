@@ -119,6 +119,7 @@ namespace mrover {
         Radians m_associated_position{};
     };
 
+    template<IsFdcanSerializable TReceive>
     class FDCAN {
         //        constexpr static std::uint8_t NO_DATA = 0x50;
 
@@ -171,7 +172,6 @@ namespace mrover {
          * \tparam TReceive The type of the message to receive
          * \return          Header and message, or none if queue is empty
          */
-        template<IsFdcanSerializable TReceive>
         [[nodiscard]] auto receive() -> std::optional<std::pair<FDCAN_RxHeaderTypeDef, TReceive>> {
             if (HAL_FDCAN_GetRxFifoFillLevel(m_fdcan, FDCAN_RX_FIFO0) == 0)
                 return std::nullopt;

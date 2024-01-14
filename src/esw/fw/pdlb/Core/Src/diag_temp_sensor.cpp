@@ -21,8 +21,9 @@ namespace mrover {
     }
 
     void DiagTempSensor::update_temp() {
-    	float measured_voltage = m_adc_sensor->get_raw_channel_value(m_channel) * 3.3f / 4096.0f;
-    	m_temp = (THRM_A4 * powf(measured_voltage,4)) + (THRM_A3 * powf(measured_voltage,3)) + (THRM_A2 * powf(measured_voltage,2)) + (THRM_A1 *  measured_voltage) + THRM_A0;
+    	uint16_t adc_val = m_adc_sensor->get_raw_channel_value(m_channel);
+    	float measured_volts = (adc_val * 3.3f) / 4096.0f;
+    	m_temp = (THRM_A4 * powf(measured_volts,4)) + (THRM_A3 * powf(measured_volts,3)) + (THRM_A2 * powf(measured_volts,2)) + (THRM_A1 *  measured_volts) + THRM_A0;
     }
 
     float DiagTempSensor::get_temp() {

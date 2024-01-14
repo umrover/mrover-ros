@@ -32,14 +32,14 @@ extern TIM_HandleTypeDef htim6;  // 10,000 Hz Update timer
 extern TIM_HandleTypeDef htim7;  // 100 Hz Send timer
 extern TIM_HandleTypeDef htim15; // H-Bridge PWM
 extern TIM_HandleTypeDef htim16; // Message watchdog timer
-extern TIM_HandleTypeDef htim17; // Absolute encoder timer (currently at 20Hz)
+extern TIM_HandleTypeDef htim2; // Absolute encoder timer (currently at 20Hz)
 #define QUADRATURE_TIMER_1 &htim4
 #define QUADRATURE_TIMER_2 &htim3
 #define UPDATE_TIMER &htim6
 #define SEND_TIMER &htim7
 #define PWM_TIMER &htim15
 #define FDCAN_WATCHDOG_TIMER &htim16
-#define ABSOLUTE_ENCODER_TIMER &htim17
+#define ABSOLUTE_ENCODER_TIMER &htim2
 
 namespace mrover {
 
@@ -49,13 +49,15 @@ namespace mrover {
     // Usually this is the Jetson
     constexpr static std::uint8_t DESTINATION_DEVICE_ID = 0x0;
 
-    FDCAN fdcan_bus;
+    FDCAN<InBoundMessage> fdcan_bus;
     Controller controller;
 
     void init() {
-        fdcan_bus = FDCAN{DEVICE_ID, DESTINATION_DEVICE_ID, &hfdcan1};
+        fdcan_bus = FDCAN<InBoundMessage>{DEVICE_ID, DESTINATION_DEVICE_ID, &hfdcan1};
         controller = Controller{
                 PWM_TIMER,
+				Pin{GPIOB, GPIO_PIN_15},
+				Pin{GPIOA, GPIO_PIN_1},
                 fdcan_bus,
                 FDCAN_WATCHDOG_TIMER,
                 QUADRATURE_TIMER_1,
@@ -71,15 +73,16 @@ namespace mrover {
         // Necessary for the timer interrupt to work
         check(HAL_TIM_Base_Start_IT(UPDATE_TIMER) == HAL_OK, Error_Handler);
         check(HAL_TIM_Base_Start_IT(SEND_TIMER) == HAL_OK, Error_Handler);
+        check(HAL_TIM_Base_Start_IT(ABSOLUTE_ENCODER_TIMER) == HAL_OK, Error_Handler);
     }
 
     void fdcan_received_callback() {
-        std::optional received = fdcan_bus.receive<InBoundMessage>();
+        std::optional<std::pair<FDCAN_RxHeaderTypeDef, InBoundMessage>> received = fdcan_bus.receive();
         if (!received) Error_Handler(); // This function is called WHEN we receive a message so this should never happen
 
         auto const& [header, message] = received.value();
 
-        auto messageId = std::bit_cast<FDCAN::MessageId>(header.Identifier);
+        auto messageId = std::bit_cast<FDCAN<InBoundMessage>::MessageId>(header.Identifier);
 
         if (messageId.destination == DEVICE_ID) {
             controller.receive(message);
@@ -98,8 +101,8 @@ namespace mrover {
         controller.read_absolute_encoder_data();
     }
 
-    void update_absolute_encoder_data_callback() {
-        controller.update_absolute_encoder_data();
+    void update_absolute_encoder_callback() {
+        controller.update_absolute_encoder();
     }
 
     void send_callback() {
@@ -168,7 +171,7 @@ void HAL_I2C_SlaveRxCpltCallback(I2C_HandleTypeDef* hi2c) {}
 void HAL_I2C_SlaveTxCpltCallback(I2C_HandleTypeDef* hi2c) {}
 
 void HAL_I2C_MasterRxCpltCallback(I2C_HandleTypeDef* hi2c) {
-    mrover::update_absolute_encoder_data_callback();
+    mrover::update_absolute_encoder_callback();
 }
 
 void HAL_I2C_MasterTxCpltCallback(I2C_HandleTypeDef* hi2c) {

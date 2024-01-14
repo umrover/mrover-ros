@@ -28,7 +28,7 @@ namespace mrover {
         using Mode = std::variant<std::monostate, PositionMode, VelocityMode>;
 
         /* ==================== Hardware ==================== */
-        FDCAN m_fdcan;
+        FDCAN<InBoundMessage> m_fdcan;
         HBridge m_motor_driver;
         TIM_HandleTypeDef* m_watchdog_timer{};
         bool m_watchdog_enabled{};
@@ -144,7 +144,7 @@ namespace mrover {
             }
             if (message.quad_abs_enc_info.abs_present) {
                 Ratio multiplier = (message.quad_abs_enc_info.abs_is_forward_polarity ? 1 : -1) * message.abs_enc_out_ratio;
-                if (!m_absolute_encoder) m_absolute_encoder.emplace(SMBus{m_absolute_encoder_i2c}, 0, 0, multiplier);
+                if (!m_absolute_encoder) m_absolute_encoder.emplace(SMBus<uint8_t, uint16_t>{m_absolute_encoder_i2c}, 0, 0, multiplier);
             }
 
             m_motor_driver.change_max_pwm(message.max_pwm);
@@ -269,8 +269,8 @@ namespace mrover {
     public:
         Controller() = default;
 
-        Controller(TIM_HandleTypeDef* hbridge_output, FDCAN const& fdcan, TIM_HandleTypeDef* watchdog_timer, TIM_HandleTypeDef* quadrature_encoder_timer, I2C_HandleTypeDef* absolute_encoder_i2c, std::array<LimitSwitch, 4> const& limit_switches)
-            : m_motor_driver{HBridge(hbridge_output)},
+        Controller(TIM_HandleTypeDef* hbridge_output, Pin hbridge_forward_pin, Pin hbridge_backward_pin, FDCAN<InBoundMessage> const& fdcan, TIM_HandleTypeDef* watchdog_timer, TIM_HandleTypeDef* quadrature_encoder_timer, I2C_HandleTypeDef* absolute_encoder_i2c, std::array<LimitSwitch, 4> const& limit_switches)
+            : m_motor_driver{HBridge(hbridge_output, hbridge_forward_pin, hbridge_backward_pin)},
               m_fdcan{fdcan},
               m_watchdog_timer{watchdog_timer},
               m_quadrature_encoder_timer{quadrature_encoder_timer},
@@ -398,7 +398,7 @@ namespace mrover {
             }
         }
 
-        auto update_absolute_encoder_data() -> void {
+        auto update_absolute_encoder() -> void {
             std::optional<EncoderReading> reading;
 
             // Only read the encoder if we are configured
@@ -406,11 +406,15 @@ namespace mrover {
                 reading = m_absolute_encoder->read();
             }
 
-            //TODO: update the controller with the reading
             if (reading) {
-
+                auto const& [position, velocity] = reading.value();
+                if (m_state_after_calib) {
+                    m_position = position - m_state_after_calib->offset_position;
+                }
+                m_velocity = velocity;
             } else {
-
+                m_position = std::nullopt;
+                m_velocity = std::nullopt;
             }
         }
     };
