@@ -128,13 +128,13 @@ extern "C" {
 void HAL_PostInit() {
     mrover::init();
 
-    if (TESTING) {
-        auto tests = mrover::get_test_msgs();
+    #ifdef TESTING
+        const auto tests = mrover::get_test_msgs();
         for (const auto& [test, delay] : tests) {
             mrover::test_received_callback(test);
             HAL_Delay(delay);
         }
-    }
+    #endif
 }
 
 /**
