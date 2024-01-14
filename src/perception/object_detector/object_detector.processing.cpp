@@ -121,7 +121,7 @@ namespace mrover {
                     boxes.emplace_back(left, top, width, height);
                 }
             } else { //YOLO V5
-                throw std::runtime_error("Something is wrong with interpretation");
+                throw std::runtime_error("Something is wrong with interpretation"); 
             }
 
             data += dimensions;
