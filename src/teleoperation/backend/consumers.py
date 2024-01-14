@@ -80,29 +80,44 @@ class GUIConsumer(JsonWebsocketConsumer):
             "joint_a",
             "joint_b",
             "joint_c",
-            "joint_de",
+            "joint_de_pitch",
+            "joint_de_yaw",
             "allen_key",
             "gripper"
         ]
-        self.ra_cmd = JointState(
-            name=[name for name in self.RA_NAMES],
-            position=[nan for _ in self.RA_NAMES],
-            velocity=[0.0 for _ in self.RA_NAMES],
-            effort=[nan for _ in self.RA_NAMES],
-        )
+        
 
         self.ra_slow_mode = False
-        self.ra_cmd_pub = rospy.Publisher("ra_cmd", JointState, queue_size=100)
-        # if msg.arm_mode == "arm_disabled":
-            
-        # elif msg.arm_mode == "ik":
-
-        # elif msg.arm_mode == "position":
-
-        # elif msg.arm_mode == "velocity":
+        self.ra_cmd_pub = rospy.Publisher("arm_controller", JointState, queue_size=100)
+        if msg.arm_mode == "arm_disabled":
+            x= 1
+        elif msg.arm_mode == "ik":
+            x = 1
+        elif msg.arm_mode == "position":
+            self.arm_position_cmd = JointState(
+ 
+             name=[name for name in self.RA_NAMES],
+            position=[nan for _ in self.RA_NAMES],
+            )
+            self.ra_cmd_pub.publish(self.arm_position_cmd)
         
-        # el
-        if msg.arm_mode == "throttle":
+
+        elif msg.arm_mode == "velocity":
+            self.arm_velocity_cmd = JointState(
+ 
+                name=[name for name in self.RA_NAMES],
+                velocity=[0.0 for _ in self.RA_NAMES],
+            )
+            self.ra_cmd_pub.publish(self.arm_velocity_cmd)
+        
+        
+        elif msg.arm_mode == "throttle":
+            self.arm_throttle_cmd = JointState(
+ 
+             name=[name for name in self.RA_NAMES],
+            throttle=[0.0 for _ in self.RA_NAMES],
+        
+        )
             d_pad_x = msg.axes[self.xbox_mappings["d_pad_x"]]
             if d_pad_x > 0.5:
                 self.ra_slow_mode = True
@@ -116,7 +131,7 @@ class GUIConsumer(JsonWebsocketConsumer):
             left_trigger = raw_left_trigger if raw_left_trigger > 0 else 0
             raw_right_trigger = msg.axes[self.xbox_mappings["right_trigger"]]
             right_trigger = raw_right_trigger if raw_right_trigger > 0 else 0
-            self.ra_cmd.velocity = [
+            self.arm_throttle_cmd.throttle = [
                 self.ra_config["joint_a"]["multiplier"] * self.filter_xbox_axis(msg.axes, "left_js_x"),
                 self.ra_config["joint_b"]["multiplier"] * self.filter_xbox_axis(msg.axes, "left_js_y"),
                 self.ra_config["joint_c"]["multiplier"] * self.filter_xbox_axis(msg.axes, "right_js_y"),
@@ -130,11 +145,11 @@ class GUIConsumer(JsonWebsocketConsumer):
 
             for i, name in enumerate(self.RA_NAMES):
                 if self.ra_slow_mode:
-                    self.ra_cmd.velocity[i] *= self.ra_config[name]["slow_mode_multiplier"]
+                    self.arm_throttle_cmd.velocity[i] *= self.ra_config[name]["slow_mode_multiplier"]
                 if self.ra_config[name]["invert"]:
-                    self.ra_cmd.velocity[i] *= -1
+                    self.arm_throttle_cmd.velocity[i] *= -1
 
-            self.ra_cmd_pub.publish(self.ra_cmd)
+            self.ra_cmd_pub.publish(self.arm_throttle_cmd)
 
 
     def handle_joystick_message(self, msg):

@@ -8,7 +8,7 @@
             <input ref="arm-enabled" v-model="arm_mode" type="radio" name="'arm_mode'" value="arm_disabled" />
             Arm Disabled
             <input ref="ik" v-model="arm_mode" type="radio" name="'arm_mode'" value="ik" />
-            Open Loop
+            IK
             <input ref="position" v-model="arm_mode" type="radio" name="'arm_mode'" value="position" />
             Position
             <input ref="velocity" v-model="arm_mode" type="radio" name="'arm_mode'" value="velocity" />
@@ -167,6 +167,7 @@ export default defineComponent({
                 axes: axes,
                 buttons: buttons
             };
+            console.log(arm_mode)
             this.websocket.send(JSON.stringify({type:"arm_values", data:joystickData, arm_mode: arm_mode}))
         },
         toggleArmLaser: function () {
