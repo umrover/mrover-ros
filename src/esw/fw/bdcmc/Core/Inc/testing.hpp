@@ -7,6 +7,19 @@ namespace mrover {
 
         // TODO add tests here
 
+        /*
+         * Tests to Add:
+         *
+         * 1. ConfigCommand (make sure this configures everything that needs to be tested)
+         * 2. EnableLimitSwitchesCommand
+         * 3. AdjustCommand
+         * 4. ThrottleCommand (Test Both Directions, Test Interrupt w/Limit Switches)
+         * 5. VelocityCommand (If PID Configured, Test Both Directions)
+         * 6. PositionCommand (If PID Configured)
+         * 7. IdleCommand
+         */
+
+
         return tests;
     }
 
