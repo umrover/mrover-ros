@@ -8,6 +8,7 @@
 #include <cstdint>
 #include <optional>
 #include <type_traits>
+#include <vector>
 
 namespace mrover {
 

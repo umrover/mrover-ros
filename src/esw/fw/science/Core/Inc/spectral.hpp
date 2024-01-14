@@ -13,6 +13,8 @@
 #include "hardware.hpp"
 #include "i2c_mux.hpp"
 #include <memory>
+#include <array>
+#include <cassert>
 
 namespace mrover {
 

@@ -219,7 +219,7 @@ namespace mrover {
                     .TxFrameType = FDCAN_DATA_FRAME,
                     .DataLength = nearest_fitting_can_fd_frame_size(sizeof(send)),
                     .ErrorStateIndicator = FDCAN_ESI_ACTIVE,
-                    .BitRateSwitch = FDCAN_BRS_ON,
+                    .BitRateSwitch = FDCAN_BRS_OFF,
                     .FDFormat = FDCAN_FD_CAN,
                     .TxEventFifoControl = FDCAN_NO_TX_EVENTS,
             };
