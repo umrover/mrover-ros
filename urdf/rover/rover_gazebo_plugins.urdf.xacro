@@ -18,24 +18,44 @@
       <bodyName>base_link</bodyName>
     </plugin>
 
-    <!-- GPS -->
+    <!-- Rover GPS Left -->
     <plugin name="gazebo_ros_gps" filename="libhector_gazebo_ros_gps.so">
       <updateRate>100.0</updateRate>
-      <bodyName>base_link</bodyName>
-      <frameId>base_link</frameId>
-      <topicName>gps/fix</topicName>
+      <bodyName>rover_gps_left_link</bodyName>
+      <frameId>rover_gps_left_link</frameId>
+      <topicName>gps/fix/rover_gps_left</topicName>
       <velocityTopicName>gps/fix_velocity</velocityTopicName>
-      <referenceLatitude>42.293195</referenceLatitude>
-      <referenceLongitude>-83.7096706</referenceLongitude>
+      <referenceLatitude>42.2931950000000000000000</referenceLatitude>
+      <referenceLongitude>-83.80967060000000000000000</referenceLongitude>
       <referenceHeading>90.0</referenceHeading>
       <referenceAltitude>0.0</referenceAltitude>
       <offset>0 0 0</offset>
       <drift>0.0 0.0 0.0</drift>
-      <gaussianNoise>0.3 0.3 0.3</gaussianNoise>
+      <gaussianNoise>0 0 0</gaussianNoise>
       <velocityDrift>0.0 0.0 0.0</velocityDrift>
-      <velocityGaussianNoise>0.2 0.2 0.2</velocityGaussianNoise>
+      <velocityGaussianNoise>0 0 0</velocityGaussianNoise>
     </plugin>
+
+    <!-- Rover GPS Right -->
+    <plugin name="gazebo_ros_gps" filename="libhector_gazebo_ros_gps.so">
+      <updateRate>100.0</updateRate>
+      <bodyName>rover_gps_right_link</bodyName>
+      <frameId>rover_gps_right_link</frameId>
+      <topicName>gps/fix/rover_gps_right</topicName>
+      <velocityTopicName>gps/fix_velocity</velocityTopicName>
+      <referenceLatitude>42.2931950000000000000000</referenceLatitude>
+      <referenceLongitude>-83.80967060000000000000000</referenceLongitude>
+      <referenceHeading>90.0</referenceHeading>
+      <referenceAltitude>0.0</referenceAltitude>
+      <offset>0 1 0</offset>
+      <drift>0.0 0.0 0.0</drift>
+      <gaussianNoise>0 0 0</gaussianNoise>
+      <velocityDrift>0.0 0.0 0.0</velocityDrift>
+      <velocityGaussianNoise>0 0 0</velocityGaussianNoise>
+    </plugin>
+
   </gazebo>
+
 
   <!-- IMU -->
   <gazebo reference="imu_link">
