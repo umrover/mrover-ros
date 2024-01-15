@@ -32,6 +32,13 @@ namespace mrover {
         ros::shutdown();
     }
 
+    auto spinSleep(Clock::time_point const& until) -> void {
+        //  See: https://blat-blatnik.github.io/computerBear/making-accurate-sleep-function/
+        // Idea: sleep until 1ms before the desired time, then spin until the desired time
+        std::this_thread::sleep_until(until - 1ms);
+        while (Clock::now() < until);
+    }
+
     auto SimulatorNodelet::run() -> void try {
         for (Clock::duration dt{}; ros::ok();) {
             Clock::time_point beginTime = Clock::now();
@@ -80,7 +87,7 @@ namespace mrover {
             renderUpdate();
             mLoopProfiler.measureEvent("Render");
 
-            std::this_thread::sleep_until(beginTime + std::chrono::duration_cast<Clock::duration>(std::chrono::duration<float>{1.0f / mTargetUpdateRate}));
+            spinSleep(beginTime + std::chrono::duration_cast<Clock::duration>(std::chrono::duration<float>{1.0f / mTargetUpdateRate}));
             dt = Clock::now() - beginTime;
 
             mLoopProfiler.measureEvent("Sleep");

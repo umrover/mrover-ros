@@ -46,7 +46,7 @@ namespace mrover {
         descriptor.format = COLOR_FORMAT;
         descriptor.width = width;
         descriptor.height = height;
-        descriptor.presentMode = wgpu::PresentMode::Fifo;
+        descriptor.presentMode = wgpu::PresentMode::Immediate;
         mSwapChain = mDevice.createSwapChain(mSurface, descriptor);
         if (!mSwapChain) throw std::runtime_error("Failed to create WGPU swap chain");
         std::tie(mDepthTexture, mDepthTextureView) = makeTextureAndView(width, height, DEPTH_FORMAT, wgpu::TextureUsage::RenderAttachment, wgpu::TextureAspect::DepthOnly);
