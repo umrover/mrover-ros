@@ -88,14 +88,25 @@ def main():
 
     # create serial connection with Arduino
     ser = serial.Serial(port, baud)
+    if ser.is_open:
+        print("Serial connection successfully opened.")
+    else:
+        print("Failed to open serial connection.")
     attempts = 0
+
+    # print("here")
 
     while not rospy.is_shutdown():
         # try to read a line from the serial connection,
         # if this fails 100 times in a row then end the program
-        try:
+        # print(attempts)
+        try: 
+            # print("try1")
             line = ser.readline()
             attempts = 0
+            # print(line)
+            
+            
         except SerialException:
             attempts += 1
             if attempts > 100:
@@ -104,7 +115,9 @@ def main():
         # parse data into a list of floats,
         # if it fails to parse then skip this message
         try:
+            # print("try2")
             data = [float(val.strip()) for val in line.split()]
+            # print(data)
 
         except ValueError:
             rospy.logerr("invalid msg format")
@@ -112,18 +125,24 @@ def main():
 
         # partition data into different sensors, converting calibration data from float to int
         # if the indices of data don't exist, then skip this message
+        
         try:
+            # print("try3")
             imu_orientation_data = data[:4]
             accel_data = data[4:7]
             gyro_data = data[7:10]
             mag_data = data[10:13]
-            cal_data = data[13]
+            temp_data = data[13]
+            cal_data = int(data[14])
+            # print(cal_data)
+            # print(type(cal_data))
             # cal_data = [int(n) for n in data[14:18]]
 
         except IndexError:
             rospy.logerr("incomplete msg")
             continue
-
+        
+        # print(imu_orientation_data, accel_data, gyro_data, mag_data, temp_data, cal_data)
         # rotate the imu orientation by 90 degrees about the Z axis to convert it to ENU frame
         enu_offset_quat = quaternion_about_axis(np.pi / 2, [0, 0, 1])
         enu_imu_orientation = quaternion_multiply(enu_offset_quat, imu_orientation_data)
@@ -154,20 +173,15 @@ def main():
             mag=mag_msg,
         )
 
-        # temp_msg = Temperature(header=header, temperature=temp_data)
+        temp_msg = Temperature(header=header, temperature=temp_data)
 
-        calibration_msg = CalibrationStatus(header, *cal_data)
+        calibration_msg = CalibrationStatus(header, cal_data)
+        # print(len(data))
 
         # publish each message
         imu_pub.publish(imu_msg)
-        # temp_pub.publish(temp_msg)
+        temp_pub.publish(temp_msg)
         calibration_pub.publish(calibration_msg)
-        rospy.loginfo(imu_msg)
-        # rospy.loginfo(temp_msg)
-        rospy.loginfo(calibration_msg)
-        rospy.loginfo(mag_pose_pub)
-        rospy.loginfo(mag_msg)
-        rospy.loginfo(mag_pose_covariance)
         publish_mag_pose(mag_pose_pub, mag_msg, mag_pose_covariance, world_frame)
 
 
