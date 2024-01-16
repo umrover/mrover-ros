@@ -52,6 +52,10 @@ public:
 
         ROS_ASSERT(cv::imwrite(sstream.str(), cv_ptr->image));
         image_count++;
+
+        if (image_count >= 1) {
+            return;
+        }
     }
 };
 
