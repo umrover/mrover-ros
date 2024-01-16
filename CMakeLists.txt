@@ -30,7 +30,6 @@ if (MROVER_CI)
 endif ()
 
 option(MROVER_BUILD_SIM "Build the simulator" ON)
-option(MROVER_BUILD_PERCEP "Build perception" OFF)
 
 include(cmake/macros.cmake)
 
@@ -79,7 +78,7 @@ if (MROVER_BUILD_SIM)
     find_package(glfw3 REQUIRED)
 endif ()
 find_package(OpenCV REQUIRED)
-find_package(ZED 2 QUIET)
+find_package(ZED QUIET)
 find_package(Eigen3 REQUIRED)
 find_package(PkgConfig REQUIRED)
 pkg_search_module(NetLink libnl-3.0)
@@ -138,9 +137,9 @@ mrover_add_header_only_library(can_device src/esw/can_device)
 mrover_add_library(motor_library src/esw/motor_library/*.cpp src/esw/motor_library)
 target_link_libraries(motor_library PUBLIC can_device moteus)
 
-# TODO(quintin) Fix this CMake hard coding
 mrover_add_nodelet(can_driver src/esw/can_driver/*.cpp src/esw/can_driver src/esw/can_driver/pch.hpp)
 mrover_nodelet_link_libraries(can_driver nl-3 nl-route-3)
+# TODO(quintin): Fix this CMake hard coding
 #mrover_nodelet_link_libraries(can ${NetLink_LIBRARIES} ${NetLinkRoute_LIBRARIES}})
 mrover_nodelet_include_directories(can_driver /usr/include/libnl3)
 
@@ -167,13 +166,15 @@ mrover_add_esw_bridge_node(test_arm_bridge src/esw/test_arm_bridge/*.cpp)
 mrover_add_nodelet(tag_detector src/perception/tag_detector/*.cpp src/perception/tag_detector src/perception/tag_detector/pch.hpp)
 mrover_nodelet_link_libraries(tag_detector tbb opencv_core opencv_objdetect opencv_aruco opencv_imgproc opencv_highgui lie)
 
-if (ZED_FOUND)
+if (CUDA_FOUND)
     mrover_add_library(streaming src/esw/streaming/*.c* src/esw/streaming)
     #    target_link_libraries(streaming PUBLIC opencv_core opencv_cudacodec)
     target_link_libraries(streaming PUBLIC cuda nvidia-encode opencv_core)
     target_include_directories(streaming SYSTEM PUBLIC deps/nvenc)
     target_compile_definitions(streaming PUBLIC BOOST_ASIO_NO_DEPRECATED)
+endif ()
 
+if (ZED_FOUND)
     mrover_add_nodelet(zed src/perception/zed_wrapper/*.c* src/perception/zed_wrapper src/perception/zed_wrapper/pch.hpp)
     mrover_nodelet_include_directories(zed ${ZED_INCLUDE_DIRS} ${CUDA_INCLUDE_DIRS})
     mrover_nodelet_link_libraries(zed ${ZED_LIBRARIES} ${SPECIAL_OS_LIBS} lie)
