@@ -70,6 +70,7 @@ namespace mrover {
 
             mImageResolution = sl::Resolution(imageWidth, imageHeight);
             mPointResolution = sl::Resolution(imageWidth, imageHeight);
+            mNormalsResolution = sl::Resolution(imageWidth, imageHeight);
 
             NODELET_INFO("Resolution: %s image: %zux%zu points: %zux%zu",
                          grabResolutionString.c_str(), mImageResolution.width, mImageResolution.height, mPointResolution.width, mPointResolution.height);
@@ -229,6 +230,8 @@ namespace mrover {
                     throw std::runtime_error("ZED failed to retrieve left image");
                 if (mZed.retrieveMeasure(mGrabMeasures.leftPoints, sl::MEASURE::XYZ, sl::MEM::GPU, mPointResolution) != sl::ERROR_CODE::SUCCESS)
                     throw std::runtime_error("ZED failed to retrieve point cloud");
+                if (mZed.retrieveMeasure(mGrabMeasures.leftNormals, sl::MEASURE::XYZRGBA, sl::MEM::GPU, mNormalsResolution) != sl::ERROR_CODE::SUCCESS)
+                    throw std::runtime_error("ZED failed to retrieve point cloud normals");
 
                 assert(mGrabMeasures.leftImage.timestamp == mGrabMeasures.leftPoints.timestamp);
 

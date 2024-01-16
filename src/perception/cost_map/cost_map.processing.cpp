@@ -2,10 +2,7 @@
 #include "../point.hpp"
 
 #include <Eigen/src/Core/util/ForwardDeclarations.h>
-#include <algorithm>
 #include <pstl/glue_execution_defs.h>
-#include <se3.hpp>
-#include <sensor_msgs/PointCloud2.h>
 
 namespace mrover {
 
@@ -20,7 +17,7 @@ namespace mrover {
 
         auto* points = reinterpret_cast<const Point*>(msg->data.data());
         std::for_each(points, points + msg->width * msg->height, [&](auto& point) {
-            SE3 point_in_zed{R3{point.x, point.y, 0.0}};
+            SE3 point_in_zed{R3{point.x, point.y, 0.0}, {}};
             SE3 point_in_map = zed_to_map * point_in_zed;
 
             int x_index = floor((point_in_map.position().x() - mGlobalGridMsg.info.origin.position.x) / mGlobalGridMsg.info.resolution);
@@ -38,3 +35,20 @@ namespace mrover {
         mCostMapPub.publish(mGlobalGridMsg);
     }
 } // namespace mrover
+
+int main(int argc, char** argv) {
+    ros::init(argc, argv, "costmap");
+
+    // Start Costmap Nodelet
+    nodelet::Loader nodelet;
+    nodelet.load(ros::this_node::getName(), "mrover/CostMapNodelet", ros::names::getRemappings(), {});
+
+    ros::spin();
+
+    return EXIT_SUCCESS;
+}
+
+#ifdef MROVER_IS_NODELET
+#include <pluginlib/class_list_macros.h>
+PLUGINLIB_EXPORT_CLASS(mrover::CostMapNodelet, nodelet::Nodelet)
+#endif

@@ -15,6 +15,7 @@ namespace mrover {
             sl::Mat leftImage;
             sl::Mat rightImage;
             sl::Mat leftPoints;
+            sl::Mat leftNormals;
 
             Measures() = default;
 
@@ -34,7 +35,7 @@ namespace mrover {
 
         PointCloudGpu mPointCloudGpu;
 
-        sl::Resolution mImageResolution, mPointResolution;
+        sl::Resolution mImageResolution, mPointResolution, mNormalsResolution;
         sl::String mSvoPath;
         int mGrabTargetFps{};
         int mDepthConfidence{};
