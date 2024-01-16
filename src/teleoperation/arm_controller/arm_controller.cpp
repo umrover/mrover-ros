@@ -38,15 +38,6 @@ namespace mrover {
 
         ros::Rate rate{frequency};
         while (ros::ok()) {
-            // 1. Check out: https://hive.blog/hive-196387/@juecoree/forward-and-reverse-kinematics-for-3r-planar-manipulator
-            // 2. Create a function that takes in "ik_target" and solves for the linear joint angle (at index 0) and
-            //    the angular joint angles (at indices 1, 2, and 3)
-            // 3. Note that linear joint angle is the y position of the end effector (very simple)
-            // 4. Note that angular will be more difficult, check the posed URL in 1 for help
-            // 5. Fill in values from this function you wrote into "positions" variable
-            // 6. Publish these positions. If in the sim, the sim arm bridge will subscribe to this.
-            //    If on the real rover the arm bridge will subscribe to this.
-            //    On the real rover it is ESW's job to achieve these desired joint angles.
             double x = ik_target.pose.position.x;
             double y = ik_target.pose.position.y;
             double z = ik_target.pose.position.z;
@@ -55,7 +46,7 @@ namespace mrover {
             double q2 = std::acos(C / (2 * LINK_AB * LINK_BC));
             double q1 = std::atan2(z, x) - std::atan2(LINK_BC * std::sin(q2), LINK_AB + LINK_BC * std::cos(q2));
             q1 = std::clamp(q1, -TAU / 8, 0.0);
-            double q3 = q1 + q2;
+            double q3 = -(q1 + q2);
 
             ROS_INFO("x: %f, y: %f, z: %f, q1: %f, q2: %f, q3: %f", x, y, z, q1, q2, q3);
 
@@ -63,10 +54,9 @@ namespace mrover {
                 positions.positions[0] = static_cast<float>(y);
                 positions.positions[1] = static_cast<float>(q1);
                 positions.positions[2] = static_cast<float>(q2);
-                positions.positions[3] = static_cast<float>(-q3);
+                positions.positions[3] = static_cast<float>(q3);
                 position_publisher.publish(positions);
-            } else {
-            }
+            } else {}
 
             rate.sleep();
             ros::spinOnce();
