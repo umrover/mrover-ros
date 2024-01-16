@@ -1,5 +1,12 @@
 add_library(webgpu SHARED IMPORTED)
-set_property(TARGET webgpu PROPERTY IMPORTED_LOCATION ${CMAKE_CURRENT_LIST_DIR}/../deps/dawn/out/Release/src/dawn/native/libwebgpu_dawn.so)
+if (APPLE)
+    set(WEBGPU_SHARED_LIB_NAME "libwebgpu_dawn.dylib")
+else()
+    set(WEBGPU_SHARED_LIB_NAME "libwebgpu_dawn.so")
+endif()
+set(WEBGPU_BUILD_DIR ${CMAKE_CURRENT_LIST_DIR}/../deps/dawn/out/Release)
+set_property(TARGET webgpu PROPERTY IMPORTED_LOCATION ${WEBGPU_BUILD_DIR}/src/dawn/native/${WEBGPU_SHARED_LIB_NAME})
+target_include_directories(webgpu INTERFACE ${CMAKE_CURRENT_LIST_DIR}/../deps/dawn/include ${WEBGPU_BUILD_DIR}/gen/include)
 
 #add_library(webgpu INTERFACE)
 #
