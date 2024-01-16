@@ -72,4 +72,5 @@
 #include <se3.hpp>
 #include <units.hpp>
 
+#include <mrover/IK.h>
 #include <mrover/Position.h>

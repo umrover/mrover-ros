@@ -56,24 +56,24 @@ namespace mrover {
     }
 
     auto SimulatorNodelet::jointPositionsCallback(Position::ConstPtr const& positions) -> void {
-        // TODO(quintin): motor
-        // for (auto const& combined: boost::combine(positions->names, positions->positions)) {
-        //     std::string name = fmt::format("rover#{}", combined.get<0>());
-        //
-        //     auto it = mJointNameToHinges.find(name);
-        //     if (it == mJointNameToHinges.end()) continue;
-        //
-        //     btHingeConstraint* hinge = it->second;
-        //     hinge->enableMotor(true);
-        //     hinge->setMaxMotorImpulse(1.0);
-        //     hinge->setMotorTarget(combined.get<1>(), 1.0f / ImGui::GetIO().Framerate);
-        // }
+        if (auto it = mUrdfs.find("rover"); it != mUrdfs.end()) {
+            URDF const& rover = it->second;
+
+            for (auto const& combined: boost::combine(positions->names, positions->positions)) {
+                int link = rover.linkNameToIndex.at(boost::get<0>(combined));
+                float position = boost::get<1>(combined);
+
+                auto* motor = std::bit_cast<btMultiBodyJointMotor*>(rover.physics->getLink(link).m_userPtr);
+                motor->setMaxAppliedImpulse(0.5);
+                motor->setPositionTarget(position, 0.05);
+            }
+        }
     }
 
     auto SimulatorNodelet::centerCursor() -> void {
         Eigen::Vector2i size;
         glfwGetWindowSize(mWindow.get(), &size.x(), &size.y());
-        Eigen::Vector2d center = size.cast<double>() / 2;
+        Eigen::Vector2i center = size / 2;
         glfwSetCursorPos(mWindow.get(), center.x(), center.y());
     }
 

@@ -181,6 +181,10 @@ if (ZED_FOUND)
     )
 endif ()
 
+## Teleoperation
+
+mrover_add_node(arm_controller src/teleoperation/arm_controller/*.cpp)
+
 ## Simulator
 
 if (MROVER_BUILD_SIM)

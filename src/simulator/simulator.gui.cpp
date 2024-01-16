@@ -8,7 +8,7 @@ namespace mrover {
                 URDF const& rover = it->second;
 
                 SaveData save;
-                save.basePosition = rover.physics->getBasePos();
+                save.baseTransform = rover.physics->getBaseWorldTransform();
                 save.baseVelocity = rover.physics->getBaseVel();
                 for (int link = 0; link < rover.physics->getNumLinks(); ++link) {
                     save.links.emplace_back(rover.physics->getJointPos(link), rover.physics->getJointVel(link));
@@ -31,11 +31,11 @@ namespace mrover {
             if (auto it = mUrdfs.find("rover"); it != mUrdfs.end()) {
                 URDF const& rover = it->second;
 
-                SaveData const& saveData = mSaveHistory.at(mSaveSelection + historySize);
-                rover.physics->setBasePos(saveData.basePosition);
-                rover.physics->setBaseVel(saveData.baseVelocity);
+                const auto& [baseTransform, baseVelocity, links] = mSaveHistory.at(mSaveSelection + historySize);
+                rover.physics->setBaseWorldTransform(baseTransform);
+                rover.physics->setBaseVel(baseVelocity);
                 for (int link = 0; link < rover.physics->getNumLinks(); ++link) {
-                    auto const& [position, velocity] = saveData.links.at(link);
+                    auto const& [position, velocity] = links.at(link);
                     rover.physics->setJointPos(link, position);
                     rover.physics->setJointVel(link, velocity);
                 }
@@ -66,6 +66,8 @@ namespace mrover {
             ImGui::Checkbox("Render Wireframe Colliders (C)", &mRenderWireframeColliders);
 
             ImGui::SliderFloat("Float", &mFloat, 0.0f, 1000.0f);
+
+            ImGui::SliderFloat3("IK", mIkTarget.data(), -1.f, 1.f);
 
             ImGui::EndDisabled();
             ImGui::End();

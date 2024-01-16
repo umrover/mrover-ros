@@ -9,4 +9,6 @@
 
   <node pkg="nodelet" type="nodelet" name="simulator_nodelet"
         args="load mrover/SimulatorNodelet nodelet_manager" output="screen"/>
+
+  <node name="arm_controller" pkg="mrover" type="arm_controller"/>
 </launch>

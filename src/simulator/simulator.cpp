@@ -13,9 +13,11 @@ namespace mrover {
         //     mCanSubs.emplace_back(mNh.scribe<CAN>(channel, 1, [this, channel](CAN::ConstPtr const& msg) { canCallback(*msg, channel); }));
         // }
         mTwistSub = mNh.subscribe<geometry_msgs::Twist>("/cmd_vel", 1, &SimulatorNodelet::twistCallback, this);
-        mJointPositionsSub = mNh.subscribe<Position>("/joint_positions", 1, &SimulatorNodelet::jointPositionsCallback, this);
+        mJointPositionsSub = mNh.subscribe<Position>("/arm_position_cmd", 1, &SimulatorNodelet::jointPositionsCallback, this);
 
         mPosePub = mNh.advertise<geometry_msgs::PoseWithCovarianceStamped>("/linearized_pose", 1);
+
+        mIkTargetPub = mNh.advertise<IK>("/arm_ik", 1);
 
         initWindow();
 
@@ -62,21 +64,26 @@ namespace mrover {
             // glfwSetInputMode(mWindow.get(), GLFW_CURSOR, mInGui ? GLFW_CURSOR_NORMAL : GLFW_CURSOR_DISABLED);
             mLoopProfiler.measureEvent("GLFW Events");
 
-            if (auto it = mUrdfs.find("rover"); it != mUrdfs.end()) {
-                URDF const& rover = it->second;
-
-                for (auto const& name: {"arm_a_link"s, "arm_b_link"s, "arm_c_link"s, "arm_d_link"s, "arm_e_link"s}) {
-                    auto* motor = std::bit_cast<btMultiBodyJointMotor*>(rover.physics->getLink(rover.linkNameToIndex.at(name)).m_userPtr);
-                    motor->setMaxAppliedImpulse(0.5);
-                    if (name == "arm_b_link") {
-                        motor->setPositionTarget(-TAU * 0.125, 0.5);
-                    } else if (name == "arm_c_link") {
-                        motor->setPositionTarget(TAU * 0.4, 0.5);
-                    } else {
-                        motor->setPositionTarget(0);
-                    }
-                }
-            }
+            IK ik;
+            ik.pose.position.x = mIkTarget.x();
+            ik.pose.position.y = mIkTarget.y();
+            ik.pose.position.z = mIkTarget.z();
+            mIkTargetPub.publish(ik);
+            // if (auto it = mUrdfs.find("rover"); it != mUrdfs.end()) {
+            //     URDF const& rover = it->second;
+            //
+            //     for (auto const& name: {"arm_a_link"s, "arm_b_link"s, "arm_c_link"s, "arm_d_link"s, "arm_e_link"s}) {
+            //         auto* motor = std::bit_cast<btMultiBodyJointMotor*>(rover.physics->getLink(rover.linkNameToIndex.at(name)).m_userPtr);
+            //         motor->setMaxAppliedImpulse(0.5);
+            //         if (name == "arm_b_link") {
+            //             motor->setPositionTarget(-TAU * 0.125, 0.5);
+            //         } else if (name == "arm_c_link") {
+            //             motor->setPositionTarget(TAU * 0.4, 0.5);
+            //         } else {
+            //             motor->setPositionTarget(0);
+            //         }
+            //     }
+            // }
 
             userControls(dt);
             mLoopProfiler.measureEvent("Controls");

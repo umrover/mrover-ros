@@ -190,6 +190,9 @@ namespace mrover {
         tf2_ros::TransformListener mTfListener{mTfBuffer};
         tf2_ros::TransformBroadcaster mTfBroadcaster;
 
+        Eigen::Vector3f mIkTarget{0.5, 0.1, 0.5};
+        ros::Publisher mIkTargetPub;
+
         // Rendering
 
         GlfwInstance mGlfwInstance;
@@ -236,7 +239,7 @@ namespace mrover {
                 btScalar position{};
                 btScalar velocity{};
             };
-            btVector3 basePosition;
+            btTransform baseTransform;
             btVector3 baseVelocity;
             boost::container::static_vector<LinkData, 32> links;
         };
