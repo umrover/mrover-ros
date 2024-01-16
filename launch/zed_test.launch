@@ -2,7 +2,7 @@
   <arg name="run_rviz" default="true"/>
   <arg name="run_dynamic_reconfigure" default="true"/>
 
-  <arg name="run_tag_detector" default="true"/>
+  <arg name="run_tag_detector" default="false"/>
   <arg name="run_object_detector" default="true"/>
   <arg name="use_rtabmap_stereo_odom" default="false"/>
   <arg name="use_builtin_visual_odom" default="false"/>
@@ -30,11 +30,11 @@
         args="load mrover/TagDetectorNodelet perception_nodelet_manager" output="screen">
   </node>
 
-  <node if="$(arg run_object_detector)"
+  <!-- <node if="$(arg run_object_detector)"
         pkg="nodelet" type="nodelet" name="object_detector" respawn="true"
         args="load mrover/ObjectDetectorNodelet perception_nodelet_manager" output="screen">
-  </node>
+  </node> -->
 
   <node pkg="tf" type="static_transform_publisher" name="map_odom_publisher"
-        args="1 0 0 0 0 0 map odom 100"/>
+        args="1 0 0 0 0 0 base_link 100"/>
 </launch>

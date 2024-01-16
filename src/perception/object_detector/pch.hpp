@@ -47,9 +47,7 @@
 #include <tf2_ros/transform_listener.h>
 
 #include <mrover/ObjectDetectorParamsConfig.h>
-
 #include <mrover/DetectedObject.h>
-//#include <mrover/DetectedObjects.h>
 
 #include <loop_profiler.hpp>
 #include <se3.hpp>

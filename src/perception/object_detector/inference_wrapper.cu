@@ -18,16 +18,19 @@ using namespace nvinfer1;
 */
 namespace mrover {
 
-    //Initialize the unique_ptr to the inference class
     InferenceWrapper::InferenceWrapper(std::string onnxModelPath, cv::Size const modelInputShape = {640, 640}, std::string classesTxtFile = "") : mInference({}) {
+        //Initialize the unique_ptr to the inference class
         mInference.reset(new Inference(std::move(onnxModelPath), modelInputShape, std::move(classesTxtFile)));
     }
 
+    
     void InferenceWrapper::doDetections(const cv::Mat& img) const {
+        //Execute the forward pass on the inference object
         mInference->doDetections(img);
     }
 
     cv::Mat InferenceWrapper::getOutputTensor() const {
+        //Get the output tensor from the inference object
         return mInference->getOutputTensor();
     }
 

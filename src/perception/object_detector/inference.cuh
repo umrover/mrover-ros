@@ -5,18 +5,15 @@
 
 #include <NvInfer.h>
 
-#include "cuda_raii.cuh"
 #include "logger.cuh"
 
 using nvinfer1::ICudaEngine;
 using nvinfer1::IExecutionContext;
 
-// ROS Mesage -> CV View Matrix -> cv::blobFromImage -> cv::Mat (input)
-// Preallocated CV::Mat of floats of correct size -> transpose into CV::Mat (also preallocated
-
 namespace mrover {
 
     class Inference {
+        //Init Logger
         nvinfer1::Logger mLogger;
 
         //Ptr to the engine
@@ -28,9 +25,6 @@ namespace mrover {
         //Input, output and reference tensors
         cv::Mat mInputTensor;
         cv::Mat mOutputTensor;
-
-        //Cuda Stream
-        std::optional<cudawrapper::CudaStream> mStream{};
 
         //Bindings
         std::array<void*, 2> mBindings{};
@@ -45,22 +39,27 @@ namespace mrover {
         //STATIC FUNCTIONS
         static int getBindingInputIndex(const IExecutionContext* context);
 
-    public:
-        Inference(std::string const& onnxModelPath, cv::Size modelInputShape, std::string const& classesTxtFile);
-
     private:
         //Creates a ptr to the engine
         ICudaEngine* createCudaEngine(std::string const& onnxModelPath);
 
+        //Launch the model execution onto the GPU
         void launchInference(cv::Mat const& input, cv::Mat const& output) const;
 
+        //Init the tensors
         void prepTensors();
 
+        //Init the execution context
         void setUpContext();
 
     public:
+        //Inference Constructor
+        Inference(std::string const& onnxModelPath, cv::Size modelInputShape, std::string const& classesTxtFile);
+
+        //Forward Pass of the model
         void doDetections(const cv::Mat& img) const;
 
+        //Get the output tensor with in a YOLO v8 style data structure 
         cv::Mat getOutputTensor();
     };
 
