@@ -7,9 +7,9 @@
 #include <fmt/core.h>
 
 namespace std {
-    template<typename... Args>
-    auto format(std::string_view format_str, Args&&... args) -> std::string {
-        return fmt::format(format_str, std::forward<Args>(args)...);
+    template<typename... T>
+    FMT_NODISCARD FMT_INLINE auto format(fmt::format_string<T...> fmt, T&&... args) -> std::string {
+        return fmt::format(fmt, std::forward<T>(args)...);
     }
 } // namespace std
 #else

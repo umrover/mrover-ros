@@ -1,5 +1,8 @@
 #pragma once
 
+#include <cmath>
+#include <numbers>
+
 #include <Eigen/Core>
 
 #include <ros/init.h>
