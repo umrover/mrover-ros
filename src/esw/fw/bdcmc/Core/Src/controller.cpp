@@ -21,7 +21,7 @@ extern I2C_HandleTypeDef hi2c1;
  * For each timer, the update rate is determined by the .ioc file.
  *
  * Specifically the ARR value. You can use the following equation: ARR = (MCU Clock Speed) / (Update Rate) / (Prescaler + 1) - 1
- * For the STM32G4 we have a 144 MHz clock speed configured.
+ * For the STM32G4 we have a 140 MHz clock speed configured.
  *
  * You must also set auto reload to true so the interurpt gets called on a cycle.
  */

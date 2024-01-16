@@ -209,7 +209,7 @@ static void MX_FDCAN1_Init(void)
   /* USER CODE END FDCAN1_Init 1 */
   hfdcan1.Instance = FDCAN1;
   hfdcan1.Init.ClockDivider = FDCAN_CLOCK_DIV1;
-  hfdcan1.Init.FrameFormat = FDCAN_FRAME_FD_BRS;
+  hfdcan1.Init.FrameFormat = FDCAN_FRAME_FD_NO_BRS;
   hfdcan1.Init.Mode = FDCAN_MODE_NORMAL;
   hfdcan1.Init.AutoRetransmission = ENABLE;
   hfdcan1.Init.TransmitPause = DISABLE;
@@ -218,7 +218,7 @@ static void MX_FDCAN1_Init(void)
   hfdcan1.Init.NominalSyncJumpWidth = 19;
   hfdcan1.Init.NominalTimeSeg1 = 120;
   hfdcan1.Init.NominalTimeSeg2 = 19;
-  hfdcan1.Init.DataPrescaler = 1;
+  hfdcan1.Init.DataPrescaler = 5;
   hfdcan1.Init.DataSyncJumpWidth = 13;
   hfdcan1.Init.DataTimeSeg1 = 14;
   hfdcan1.Init.DataTimeSeg2 = 13;
@@ -656,9 +656,9 @@ static void MX_TIM16_Init(void)
 
   /* USER CODE END TIM16_Init 1 */
   htim16.Instance = TIM16;
-  htim16.Init.Prescaler = 48;
+  htim16.Init.Prescaler = 512;
   htim16.Init.CounterMode = TIM_COUNTERMODE_UP;
-  htim16.Init.Period = 58774;
+  htim16.Init.Period = 54579;
   htim16.Init.ClockDivision = TIM_CLOCKDIVISION_DIV1;
   htim16.Init.RepetitionCounter = 0;
   htim16.Init.AutoReloadPreload = TIM_AUTORELOAD_PRELOAD_DISABLE;
