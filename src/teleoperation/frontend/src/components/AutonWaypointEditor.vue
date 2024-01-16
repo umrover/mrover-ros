@@ -282,7 +282,6 @@
   
     data() {
       return {
-        // websocket: new WebSocket("ws://localhost:8000/ws/gui"),
         name: "Waypoint",
         id: "0",
         type: 1,
@@ -339,6 +338,7 @@
         autonEnabled: "autonEnabled",
         teleopEnabled: "teleopEnabled",
         clickPoint: "clickPoint",
+        waypointList: "waypointList"
       }),
   
       ...mapGetters("map", {
@@ -386,6 +386,17 @@
     },
   
     watch: {
+      message(msg) {
+        if(msg.type == 'nav_state'){
+          // If still waiting for nav...
+          if ((msg.state == "OffState" && this.autonEnabled) ||
+              (msg.state !== "OffState" && !this.autonEnabled)) {
+            return;
+          }
+          this.autonButtonColor = this.autonEnabled ? "btn-success" : "btn-danger";
+        }
+      },
+      
       route: function (newRoute) {
         const waypoints = newRoute.map((waypoint: { lat: any; lon: any; name: any; }) => {
           const lat = waypoint.lat;
@@ -395,14 +406,16 @@
         this.setRoute(waypoints);
       },
   
-      storedWaypoints: function (newList) {
+      storedWaypoints: {
+        deep: true,
+        handler (newList) {
         const waypoints = newList.map((waypoint: { lat: any; lon: any; name: any; }) => {
           const lat = waypoint.lat;
           const lon = waypoint.lon;
           return { latLng: L.latLng(lat, lon), name: waypoint.name };
         });
         this.setWaypointList(waypoints);
-      },
+      }},
   
       odom_format_in: function (newOdomFormat) {
         this.setOdomFormat(newOdomFormat);
@@ -459,17 +472,6 @@
       ...mapMutations("map", {
         setOdomFormat: "setOdomFormat",
       }),
-
-      message(msg) {
-        if(msg.type == 'nav_state'){
-          // If still waiting for nav...
-          if ((msg.state == "OffState" && this.autonEnabled) ||
-              (msg.state !== "OffState" && !this.autonEnabled)) {
-            return;
-          }
-          this.autonButtonColor = this.autonEnabled ? "btn-success" : "btn-danger";
-        }
-      },
   
       sendAutonCommand() {
         console.log(this.autonEnabled)

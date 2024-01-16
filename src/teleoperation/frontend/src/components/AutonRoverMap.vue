@@ -63,6 +63,7 @@
   </template>
   
   <script lang="ts">
+  import "leaflet/dist/leaflet.css";
   import {
     LMap,
     LTileLayer,
@@ -72,7 +73,6 @@
     LControlScale
   } from "@vue-leaflet/vue-leaflet";
   import { mapGetters, mapMutations } from "vuex";
-  import "leaflet/dist/leaflet.css";
   import L from "../leaflet-rotatedmarker";
   
   const MAX_ODOM_COUNT = 1000;
@@ -121,7 +121,6 @@
         roverMarker: null,
         waypointIcon: null,
         searchPathIcon: null,
-        gatePathIcon: null,
   
         map: null,
         odomCount: 0,
@@ -129,10 +128,6 @@
         odomPath: [],
   
         searchPathPoints: [],
-        gatePathPoints: [],
-  
-        post1: null,
-        post2: null,
   
         findRover: false
       };
@@ -195,10 +190,6 @@
         handler: function () {
           if (this.autonEnabled) {
             this.searchPathPoints = [];
-            this.gatePathPoints = [];
-  
-            this.post1 = null;
-            this.post2 = null;
           }
         }
       }
@@ -222,12 +213,6 @@
         iconAnchor: [16, 16],
         popupAnchor: [0, -32]
       });
-      this.gatePathIcon = L.icon({
-        iconUrl: "map_marker_highlighted.png",
-        iconSize: [64, 64],
-        iconAnchor: [32, 64],
-        popupAnchor: [0, -32]
-      });
   
     //   this.search_path_topic = new ROSLIB.Topic({
     //     ros: this.$ros,
@@ -235,11 +220,6 @@
     //     messageType: "mrover/GPSPointList"
     //   });
   
-    //   this.gate_path_topic = new ROSLIB.Topic({
-    //     ros: this.$ros,
-    //     name: "/gate_path",
-    //     messageType: "mrover/GPSPointList"
-    //   });
   
     //   this.estimated_gate_topic = new ROSLIB.Topic({
     //     ros: this.$ros,
@@ -259,32 +239,12 @@
     //     });
     //   });
   
-    //   this.gate_path_topic.subscribe((msg) => {
-    //     let newGatePath = msg.point;
-    //     this.gatePathPoints = newGatePath.map((gate_path_point) => {
-    //       return {
-    //         latLng: L.latLng(
-    //           gate_path_point.latitude_degrees,
-    //           gate_path_point.longitude_degrees
-    //         )
-    //       };
-    //     });
-    //   });
-  
-    //   this.estimated_gate_topic.subscribe((msg) => {
-    //     this.post1 = L.latLng(
-    //       msg.point[0].latitude_degrees,
-    //       msg.point[0].longitude_degrees
-    //     );
-    //     this.post2 = L.latLng(
-    //       msg.point[1].latitude_degrees,
-    //       msg.point[1].longitude_degrees
-    //     );
-    //   });
     },
     // Pull objects from refs to be able to access data and change w functions
     mounted: function () {
       this.$nextTick(() => {
+        console.log(this.$refs.map);
+        console.log(this.$refs);
         this.map = this.$refs.map.leafletObject;
         this.roverMarker = this.$refs.rover.leafletObject;
       });

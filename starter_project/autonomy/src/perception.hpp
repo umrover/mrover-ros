@@ -2,13 +2,13 @@
 
 // C++ Standard Library Headers, std namespace
 #include <memory>
+#include <opencv2/objdetect/aruco_detector.hpp>
 #include <optional>
 #include <string>
 #include <unordered_map>
 #include <vector>
 
 // OpenCV Headers, cv namespace
-#include <opencv2/aruco.hpp>
 #include <opencv2/core/mat.hpp>
 
 // ROS Headers, ros namespace
