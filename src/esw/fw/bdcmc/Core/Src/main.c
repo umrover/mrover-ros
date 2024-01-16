@@ -218,7 +218,7 @@ static void MX_FDCAN1_Init(void)
   hfdcan1.Init.NominalSyncJumpWidth = 19;
   hfdcan1.Init.NominalTimeSeg1 = 120;
   hfdcan1.Init.NominalTimeSeg2 = 19;
-  hfdcan1.Init.DataPrescaler = 5;
+  hfdcan1.Init.DataPrescaler = 1;
   hfdcan1.Init.DataSyncJumpWidth = 13;
   hfdcan1.Init.DataTimeSeg1 = 14;
   hfdcan1.Init.DataTimeSeg2 = 13;

@@ -7,6 +7,9 @@
 
 #include "main.h"
 
+// Flag for testing
+#define TESTING true
+
 // TODO: enable the watchdog and feed it in the htim6 update loop. make sure when the interrupt fires we disable PWN output. you will probably have to make the interrupt definition
 // TODO: add another timer for absolute encoder? another solution is starting a transaction in the 10,000 Hz update loop if we are done with the previous transaction
 
@@ -89,6 +92,10 @@ namespace mrover {
         }
     }
 
+    void test_received_callback(InBoundMessage message) {
+        controller.receive(message);
+    }
+
     void update_callback() {
         controller.update();
     }
@@ -120,6 +127,14 @@ extern "C" {
 
 void HAL_PostInit() {
     mrover::init();
+
+    #ifdef TESTING
+        const auto tests = mrover::get_test_msgs();
+        for (const auto& [test, delay] : tests) {
+            mrover::test_received_callback(test);
+            HAL_Delay(delay);
+        }
+    #endif
 }
 
 /**
