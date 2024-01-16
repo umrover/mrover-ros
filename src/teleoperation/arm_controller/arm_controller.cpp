@@ -6,10 +6,10 @@ namespace mrover {
     // Constants
 
     // From: arm.urdf.xacro
-    constexpr double LINK_CHASSIS_ARM = 1;
     constexpr double LINK_AB = 0.58;
     constexpr double LINK_BC = 0.55;
-    constexpr double LINK_CD = 0.065;
+    constexpr double TAU = std::numbers::pi * 2;
+    double const OFFSET = std::atan2(0.09, LINK_BC);
 
     // Subscribers
 
@@ -48,38 +48,27 @@ namespace mrover {
             // 6. Publish these positions. If in the sim, the sim arm bridge will subscribe to this.
             //    If on the real rover the arm bridge will subscribe to this.
             //    On the real rover it is ESW's job to achieve these desired joint angles.
+            double x = ik_target.pose.position.x;
             double y = ik_target.pose.position.y;
+            double z = ik_target.pose.position.z;
 
-            double gamma = 0;
+            double C = x * x + z * z - LINK_AB * LINK_AB - LINK_BC * LINK_BC;
+            double q2 = std::acos(C / (2 * LINK_AB * LINK_BC));
+            double q1 = std::atan2(z, x) - std::atan2(LINK_BC * std::sin(q2), LINK_AB + LINK_BC * std::cos(q2));
+            q1 = std::clamp(q1, -TAU / 8, 0.0);
+            double q3 = q1 + q2;
 
-            // position of end of second link
-            double x3 = ik_target.pose.position.x - LINK_CD * std::cos(gamma);
-            double z3 = ik_target.pose.position.z - LINK_CD * std::sin(gamma);
+            ROS_INFO("x: %f, y: %f, z: %f, q1: %f, q2: %f, q3: %f", x, y, z, q1, q2, q3);
 
-            // double alpha = astd::cos((std::pow(x3, 2) + std::pow(z3, 2) - std::pow(LINK_AB, 2) - std::pow(LINK_BC, 2)) / (2 * LINK_AB * LINK_BC));
-            // double beta = astd::sin((LINK_BC * std::sin(alpha)) / sqrt(std::pow(x3, 2) + std::pow(z3, 2)));
-            // double thetaA = atan(z3 / x3) + beta;
-            // double thetaB = -(3.1415 - alpha);
-            // double thetaC = gamma - thetaA - thetaB;
+            if (std::isfinite(q1) && std::isfinite(q2) && std::isfinite(q3)) {
+                positions.positions[0] = static_cast<float>(y);
+                positions.positions[1] = static_cast<float>(q1);
+                positions.positions[2] = static_cast<float>(q2);
+                positions.positions[3] = static_cast<float>(-q3);
+                position_publisher.publish(positions);
+            } else {
+            }
 
-            // double thetaB = -astd::cos((std::pow(x3, 2) + std::pow(z3, 2) - std::pow(LINK_AB, 2) - std::pow(LINK_BC, 2)) / (2 * LINK_AB * LINK_BC));
-            // double thetaA = atan(z3 / x3) + atan((LINK_BC * std::sin(thetaB)) / (LINK_AB + LINK_BC * std::cos(thetaB)));
-            // double thetaC = gamma - thetaA - thetaB;
-
-            double C = sqrt(std::pow(x3, 2) + std::pow(z3, 2));
-            double alpha = std::acos((std::pow(LINK_AB, 2) + std::pow(LINK_BC, 2) - std::pow(C, 2)) / (2 * LINK_AB * LINK_BC));
-            double beta = std::acos((std::pow(LINK_AB, 2) + std::pow(C, 2) - std::pow(LINK_BC, 2)) / (2 * LINK_AB * C));
-            double thetaA = atan(z3 / x3) + beta;
-            double thetaB = -(3.1415 - alpha);
-            double thetaC = gamma - thetaA - thetaB;
-
-            positions.positions[0] = static_cast<float>(y);
-            positions.positions[1] = static_cast<float>(-thetaA);
-            positions.positions[2] = static_cast<float>(-thetaB);
-            positions.positions[3] = static_cast<float>(-thetaC);
-            // positions.positions[4] = static_cast<float>(ik_target.pose.orientation.w);
-
-            position_publisher.publish(positions);
             rate.sleep();
             ros::spinOnce();
         }
