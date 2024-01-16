@@ -149,22 +149,22 @@ namespace mrover {
          * We have limited queue space, so we want to filter out messages that are not intended for us.
          */
         auto configure_filter() const -> void {
-            std::bitset<16> source_bits{m_source};
-            std::bitset<16> destinationBits{m_destination};
-            std::bitset<16> filter = source_bits << 8 | destinationBits;
-
-            std::bitset<15> mask; // 15 lowest bits set for source and destination, 16th (reply bit) and above should be ignored
-            mask.set();
-
-            FDCAN_FilterTypeDef filter_config{
-                    .IdType = FDCAN_EXTENDED_ID,
-                    .FilterIndex = 0,
-                    .FilterType = FDCAN_FILTER_MASK, // Classic filter: FilterID1 = filter, FilterID2 = mask
-                    .FilterConfig = FDCAN_FILTER_TO_RXFIFO0,
-                    .FilterID1 = filter.to_ulong(), // Choose which bits to examine from the incoming ID
-                    .FilterID2 = mask.to_ulong(),   // Ensure that bits that survive the filter match the mask
-            };
-            check(HAL_FDCAN_ConfigFilter(m_fdcan, &filter_config) == HAL_OK, Error_Handler);
+//            std::bitset<16> source_bits{m_source};
+//            std::bitset<16> destinationBits{m_destination};
+//            std::bitset<16> filter = source_bits << 8 | destinationBits;
+//
+//            std::bitset<15> mask; // 15 lowest bits set for source and destination, 16th (reply bit) and above should be ignored
+//            mask.set();
+//
+//            FDCAN_FilterTypeDef filter_config{
+//                    .IdType = FDCAN_EXTENDED_ID,
+//                    .FilterIndex = 0,
+//                    .FilterType = FDCAN_FILTER_MASK, // Classic filter: FilterID1 = filter, FilterID2 = mask
+//                    .FilterConfig = FDCAN_FILTER_TO_RXFIFO0,
+//                    .FilterID1 = filter.to_ulong(), // Choose which bits to examine from the incoming ID
+//                    .FilterID2 = mask.to_ulong(),   // Ensure that bits that survive the filter match the mask
+//            };
+//            check(HAL_FDCAN_ConfigFilter(m_fdcan, &filter_config) == HAL_OK, Error_Handler);
         }
 
         /**
@@ -219,7 +219,7 @@ namespace mrover {
                     .TxFrameType = FDCAN_DATA_FRAME,
                     .DataLength = nearest_fitting_can_fd_frame_size(sizeof(send)),
                     .ErrorStateIndicator = FDCAN_ESI_ACTIVE,
-                    .BitRateSwitch = FDCAN_BRS_ON,
+                    .BitRateSwitch = FDCAN_BRS_OFF,
                     .FDFormat = FDCAN_FD_CAN,
                     .TxEventFifoControl = FDCAN_NO_TX_EVENTS,
             };
