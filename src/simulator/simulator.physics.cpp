@@ -9,7 +9,7 @@ namespace mrover {
     }
 
     auto SimulatorNodelet::initPhysics() -> void {
-        NODELET_INFO_STREAM(fmt::format("Using Bullet Physics Version: {}", btGetVersion()));
+        NODELET_INFO_STREAM(std::format("Using Bullet Physics Version: {}", btGetVersion()));
 
         mCollisionConfig = std::make_unique<btDefaultCollisionConfiguration>();
 

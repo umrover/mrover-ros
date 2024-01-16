@@ -2,11 +2,10 @@
 
 #include <cstdint>
 #include <filesystem>
+#include <format.hpp>
 #include <optional>
 #include <stdexcept>
 #include <string>
-
-#include <fmt/core.h>
 
 #include <XmlRpcValue.h>
 
@@ -18,7 +17,7 @@ namespace mrover {
         if (!parent.hasMember(member)) {
             if (defaultValue) return defaultValue.value();
 
-            throw std::invalid_argument(fmt::format("Member not found: {}", member));
+            throw std::invalid_argument(std::format("Member not found: {}", member));
         }
 
         XmlRpc::XmlRpcValue const& value = parent[member];
@@ -51,15 +50,15 @@ namespace mrover {
     template<std::size_t N>
     auto xmlRpcValueToNumberArray(XmlRpc::XmlRpcValue const& parent, std::string const& member) -> std::array<double, N> {
         if (!parent.hasMember(member)) {
-            throw std::invalid_argument(fmt::format("Member not found: {}", member));
+            throw std::invalid_argument(std::format("Member not found: {}", member));
         }
 
         XmlRpc::XmlRpcValue const& value = parent[member];
         if (value.getType() != XmlRpc::XmlRpcValue::TypeArray) {
-            throw std::invalid_argument(fmt::format("Expected XmlRpcValue of TypeArray for member: {}", member));
+            throw std::invalid_argument(std::format("Expected XmlRpcValue of TypeArray for member: {}", member));
         }
         if (value.size() != N) {
-            throw std::invalid_argument(fmt::format("Expected array of size {} for member: {}", N, member));
+            throw std::invalid_argument(std::format("Expected array of size {} for member: {}", N, member));
         }
 
         std::array<double, N> result;
@@ -69,7 +68,7 @@ namespace mrover {
             } else if (value[i].getType() == XmlRpc::XmlRpcValue::TypeInt) {
                 result[i] = static_cast<int>(value[i]);
             } else {
-                throw std::invalid_argument(fmt::format("Expected XmlRpcValue of TypeDouble or TypeInt for member: {}", member));
+                throw std::invalid_argument(std::format("Expected XmlRpcValue of TypeDouble or TypeInt for member: {}", member));
             }
         }
         return result;

@@ -2,8 +2,8 @@
 
 #include "pch.hpp"
 
-#include "gl_objects.hpp"
-#include "sdl_pointer.hpp"
+#include "wgpu_objects.hpp"
+#include "glfw_pointer.hpp"
 
 using namespace std::literals;
 

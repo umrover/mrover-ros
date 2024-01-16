@@ -10,7 +10,7 @@ namespace mrover {
         // However I could not get Blender to export the textures by filename
         // The only option was to embed them, but that results in needing to decode the data and duplicating it across models
         if (!uri.ends_with("fbx")) {
-            ROS_WARN_STREAM(fmt::format("Model importer has only been tested with the FBX file format: {}", uri));
+            ROS_WARN_STREAM(std::format("Model importer has only been tested with the FBX file format: {}", uri));
         }
 
         // assimp's scene import is slow on the larger rover models, so we load it in a separate thread
@@ -21,10 +21,10 @@ namespace mrover {
             // aiScene const* scene = importer.ReadFile(uri.data(),aiProcessPreset_TargetRealtime_MaxQuality);
             aiScene const* scene = importer.ReadFile(uriToPath(uri), aiProcessPreset_TargetRealtime_Quality | aiProcess_FlipUVs);
             if (!scene) {
-                throw std::runtime_error{fmt::format("Scene import error: {} on path: {}", importer.GetErrorString(), uri)};
+                throw std::runtime_error{std::format("Scene import error: {} on path: {}", importer.GetErrorString(), uri)};
             }
-            ROS_INFO_STREAM(fmt::format("Loaded scene: {} with mesh count: {}", uri, scene->mNumMeshes));
-            if (scene->mFlags & AI_SCENE_FLAGS_INCOMPLETE) throw std::runtime_error{fmt::format("Incomplete asset: {}", uri)};
+            ROS_INFO_STREAM(std::format("Loaded scene: {} with mesh count: {}", uri, scene->mNumMeshes));
+            if (scene->mFlags & AI_SCENE_FLAGS_INCOMPLETE) throw std::runtime_error{std::format("Incomplete asset: {}", uri)};
 
             std::vector<Mesh> meshes;
             meshes.reserve(scene->mNumMeshes);
@@ -32,8 +32,8 @@ namespace mrover {
             for (std::size_t meshIndex = 0; meshIndex < scene->mNumMeshes; ++meshIndex) {
                 aiMesh const* mesh = scene->mMeshes[meshIndex];
 
-                if (!mesh->HasNormals()) throw std::invalid_argument{fmt::format("Mesh #{} has no normals", meshIndex)};
-                if (!mesh->HasTextureCoords(0)) throw std::invalid_argument{fmt::format("Mesh #{} has no texture coordinates", meshIndex)};
+                if (!mesh->HasNormals()) throw std::invalid_argument{std::format("Mesh #{} has no normals", meshIndex)};
+                if (!mesh->HasTextureCoords(0)) throw std::invalid_argument{std::format("Mesh #{} has no texture coordinates", meshIndex)};
 
                 auto& [vertices, normals, uvs, indices, texture] = meshes.emplace_back();
 
@@ -79,10 +79,10 @@ namespace mrover {
                     }
                     aiString name;
                     material->Get(AI_MATKEY_NAME, name);
-                    ROS_INFO_STREAM(fmt::format("\tLoaded material: {}", name.C_Str()));
+                    ROS_INFO_STREAM(std::format("\tLoaded material: {}", name.C_Str()));
                 }
 
-                ROS_INFO_STREAM(fmt::format("\tLoaded mesh: #{} with {} vertices and {} faces", meshIndex, mesh->mNumVertices, mesh->mNumFaces));
+                ROS_INFO_STREAM(std::format("\tLoaded mesh: #{} with {} vertices and {} faces", meshIndex, mesh->mNumVertices, mesh->mNumFaces));
             }
 
             return meshes;

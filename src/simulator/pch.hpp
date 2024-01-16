@@ -4,26 +4,23 @@
 #include <chrono>
 #include <execution>
 #include <filesystem>
-#include <format>
+#include <format.hpp>
 #include <fstream>
 #include <iostream>
 #include <memory>
 #include <source_location>
+#include <span>
 #include <stdexcept>
 #include <thread>
 #include <unordered_set>
-#include <span>
 
 #include <boost_cpp23_workaround.hpp>
 
 #include <boost/circular_buffer.hpp>
 #include <boost/container/static_vector.hpp>
-// #include <boost/process.hpp>
 #include <boost/range/combine.hpp>
 #include <boost/thread.hpp>
 #include <boost/thread/future.hpp>
-
-#include <fmt/core.h>
 
 #include <geometry_msgs/PoseWithCovarianceStamped.h>
 #include <geometry_msgs/TwistStamped.h>

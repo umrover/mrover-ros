@@ -5,9 +5,9 @@
 namespace mrover {
 
     static std::string const MESHES_PATH = "package://mrover/urdf/meshes/primitives";
-    static std::string const CUBE_PRIMITIVE_URI = fmt::format("{}/cube.fbx", MESHES_PATH);
-    static std::string const SPHERE_PRIMITIVE_URI = fmt::format("{}/sphere.fbx", MESHES_PATH);
-    static std::string const CYLINDER_PRIMITIVE_URI = fmt::format("{}/cylinder.fbx", MESHES_PATH);
+    static std::string const CUBE_PRIMITIVE_URI = std::format("{}/cube.fbx", MESHES_PATH);
+    static std::string const SPHERE_PRIMITIVE_URI = std::format("{}/sphere.fbx", MESHES_PATH);
+    static std::string const CYLINDER_PRIMITIVE_URI = std::format("{}/cylinder.fbx", MESHES_PATH);
 
     auto btTransformToSim3(btTransform const& transform, btVector3 const& scale) -> SIM3 {
         btVector3 const& p = transform.getOrigin();
@@ -71,8 +71,8 @@ namespace mrover {
     auto SimulatorNodelet::initWindow() -> void {
         // TODO(quintin): call glfwTerminate via raii
         mGlfwInstance.init();
-        glfwSetErrorCallback([](int error, char const* description) { throw std::runtime_error(fmt::format("GLFW Error {}: {}", error, description)); });
-        NODELET_INFO_STREAM(fmt::format("Initialized GLFW Version: {}.{}.{}", GLFW_VERSION_MAJOR, GLFW_VERSION_MINOR, GLFW_VERSION_REVISION));
+        glfwSetErrorCallback([](int error, char const* description) { throw std::runtime_error(std::format("GLFW Error {}: {}", error, description)); });
+        NODELET_INFO_STREAM(std::format("Initialized GLFW Version: {}.{}.{}", GLFW_VERSION_MAJOR, GLFW_VERSION_MINOR, GLFW_VERSION_REVISION));
 
         int x, y, w, h;
         glfwGetMonitorWorkarea(glfwGetPrimaryMonitor(), &x, &y, &w, &h);
@@ -85,7 +85,7 @@ namespace mrover {
         glfwWindowHint(GLFW_RESIZABLE, GLFW_FALSE);
         glfwWindowHint(GLFW_COCOA_RETINA_FRAMEBUFFER, GLFW_FALSE);
         mWindow = GlfwPointer<GLFWwindow, glfwCreateWindow, glfwDestroyWindow>{w, h, WINDOW_NAME, nullptr, nullptr};
-        NODELET_INFO_STREAM(fmt::format("Created window of size: {}x{}", w, h));
+        NODELET_INFO_STREAM(std::format("Created window of size: {}x{}", w, h));
 
         if (glfwRawMouseMotionSupported()) glfwSetInputMode(mWindow.get(), GLFW_RAW_MOUSE_MOTION, GLFW_TRUE);
 
@@ -144,16 +144,16 @@ namespace mrover {
             wgpu::AdapterProperties properties;
             mAdapter.getProperties(&properties);
 
-            ROS_INFO_STREAM(fmt::format("\tWGPU Adapter Name: {}", properties.name));
-            ROS_INFO_STREAM(fmt::format("\tWGPU Adapter Vendor: {}", properties.vendorName));
-            ROS_INFO_STREAM(fmt::format("\tWGPU Adapter Driver: {}", properties.driverDescription));
+            ROS_INFO_STREAM(std::format("\tWGPU Adapter Name: {}", properties.name));
+            ROS_INFO_STREAM(std::format("\tWGPU Adapter Vendor: {}", properties.vendorName));
+            ROS_INFO_STREAM(std::format("\tWGPU Adapter Driver: {}", properties.driverDescription));
         }
 
         mDevice = mAdapter.createDevice();
         if (!mDevice) throw std::runtime_error("Failed to create WGPU device");
 
         mErrorCallback = mDevice.setUncapturedErrorCallback([](wgpu::ErrorType type, char const* message) {
-            ROS_ERROR_STREAM(fmt::format("WGPU Error {}: {}", static_cast<int>(type), message));
+            ROS_ERROR_STREAM(std::format("WGPU Error {}: {}", static_cast<int>(type), message));
         });
 
         mQueue = mDevice.getQueue();
@@ -431,7 +431,7 @@ namespace mrover {
         //             renderModel(mUriToModel.at(mMeshToUri.at(const_cast<btBvhTriangleMeshShape*>(mesh))), modelToWorld);
         //         } else if (dynamic_cast<btEmptyShape const*>(shape)) {
         //         } else {
-        //             NODELET_WARN_STREAM_ONCE(fmt::format("Tried to render unsupported collision shape: {}", shape->getName()));
+        //             NODELET_WARN_STREAM_ONCE(std::format("Tried to render unsupported collision shape: {}", shape->getName()));
         //         }
         //     };
 

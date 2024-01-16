@@ -2,17 +2,20 @@ cmake_minimum_required(VERSION 3.16)
 project(mrover VERSION 2024.0.0 LANGUAGES CXX)
 
 if (APPLE)
-    # Ensures that homebrew packages are never used over mamba packages
+    # Ensures that homebrew packages are never used over miniforge packages
     set(CMAKE_IGNORE_PATH /opt/homebrew)
     # Boost uses deprecated C++ library features
     # Thankfully libcxx has a compatibility mode for this
     add_definitions(
-        -D_LIBCPP_ENABLE_CXX20_REMOVED_ALLOCATOR_MEMBERS
-        -D_LIBCPP_ENABLE_CXX20_REMOVED_ALLOCATOR_VOID_SPECIALIZATION
+            -D_LIBCPP_ENABLE_CXX20_REMOVED_ALLOCATOR_MEMBERS
+            -D_LIBCPP_ENABLE_CXX20_REMOVED_ALLOCATOR_VOID_SPECIALIZATION
     )
-    # add imported lib for tbb
+    # TODO(quintin): address this
     add_library(tbb SHARED IMPORTED)
     set_property(TARGET tbb PROPERTY IMPORTED_LOCATION /opt/homebrew/Caskroom/miniforge/base/envs/ros_env/lib/libtbb.12.10.dylib)
+
+    find_package(fmt REQUIRED)
+    link_libraries(fmt::fmt)
 endif ()
 
 set(CMAKE_CXX_STANDARD 23)
@@ -75,7 +78,6 @@ if (MROVER_BUILD_SIM)
     find_package(Bullet REQUIRED)
     find_package(glfw3 REQUIRED)
 endif ()
-find_package(fmt REQUIRED)
 find_package(OpenCV REQUIRED)
 find_package(ZED 2 QUIET)
 find_package(Eigen3 REQUIRED)
@@ -163,7 +165,7 @@ mrover_add_esw_bridge_node(test_arm_bridge src/esw/test_arm_bridge/*.cpp)
 ## Perception
 
 mrover_add_nodelet(tag_detector src/perception/tag_detector/*.cpp src/perception/tag_detector src/perception/tag_detector/pch.hpp)
-mrover_nodelet_link_libraries(tag_detector tbb opencv_core opencv_objdetect opencv_aruco opencv_imgproc opencv_highgui fmt::fmt lie)
+mrover_nodelet_link_libraries(tag_detector tbb opencv_core opencv_objdetect opencv_aruco opencv_imgproc opencv_highgui lie)
 
 if (ZED_FOUND)
     mrover_add_library(streaming src/esw/streaming/*.c* src/esw/streaming)
@@ -190,7 +192,7 @@ mrover_add_node(arm_controller src/teleoperation/arm_controller/*.cpp)
 if (MROVER_BUILD_SIM)
     mrover_add_nodelet(simulator src/simulator/*.cpp src/simulator src/simulator/pch.hpp)
     mrover_nodelet_include_directories(simulator ${ASSIMP_INCLUDE_DIRS} ${BULLET_INCLUDE_DIRS} ${OPENCV_INCLUDE_DIRS} src/simulator/imgui)
-    mrover_nodelet_link_libraries(simulator ${ASSIMP_LIBRARIES} ${BULLET_LIBRARIES} glfw3webgpu webgpu glfw tbb fmt::fmt opencv_core opencv_imgcodecs opencv_imgproc lie)
+    mrover_nodelet_link_libraries(simulator ${ASSIMP_LIBRARIES} ${BULLET_LIBRARIES} glfw3webgpu webgpu glfw tbb opencv_core opencv_imgcodecs opencv_imgproc lie)
     mrover_nodelet_defines(simulator BOOST_THREAD_PROVIDES_FUTURE)
 endif ()
 

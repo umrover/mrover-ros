@@ -9,9 +9,9 @@ namespace mrover {
     auto performXacro(std::filesystem::path const& path) -> std::string {
         // "xacro" is a Python library so unfortunately we have to run it as a subprocess
 
-        std::string command = fmt::format("xacro {}", path.string());
+        std::string command = std::format("xacro {}", path.string());
         std::unique_ptr<FILE, decltype(&pclose)> pipe(popen(command.c_str(), "r"), pclose);
-        if (!pipe) throw std::runtime_error{fmt::format("Failed to xacro: {}", path.string())};
+        if (!pipe) throw std::runtime_error{std::format("Failed to xacro: {}", path.string())};
 
         std::array<char, 128> chunk{};
         std::string output;
@@ -21,11 +21,11 @@ namespace mrover {
     }
 
     auto readTexture(std::filesystem::path const& textureFileName) -> cv::Mat {
-        if (textureFileName.has_parent_path()) throw std::invalid_argument{fmt::format("Must be only a filename: {}", textureFileName.string())};
+        if (textureFileName.has_parent_path()) throw std::invalid_argument{std::format("Must be only a filename: {}", textureFileName.string())};
 
-        std::string textureUri = fmt::format("{}/{}", TEXTURE_URI_PREFIX, textureFileName.string());
+        std::string textureUri = std::format("{}/{}", TEXTURE_URI_PREFIX, textureFileName.string());
         cv::Mat texture = imread(uriToPath(textureUri), cv::IMREAD_COLOR);
-        if (texture.empty()) throw std::runtime_error{fmt::format("Failed to load texture: {}", textureUri)};
+        if (texture.empty()) throw std::runtime_error{std::format("Failed to load texture: {}", textureUri)};
 
         return texture;
     }
@@ -43,7 +43,7 @@ namespace mrover {
         } else if (uri.starts_with(FILE_URI_PREFIX)) {
             uri.remove_prefix(FILE_URI_PREFIX.size());
         } else {
-            throw std::invalid_argument{fmt::format("Unsupported URI prefix: {}", uri)};
+            throw std::invalid_argument{std::format("Unsupported URI prefix: {}", uri)};
         }
 
         std::filesystem::path path{uri};
@@ -51,7 +51,7 @@ namespace mrover {
         std::filesystem::path rest = path.lexically_relative(package);
 
         std::filesystem::path packagePath = ros::package::getPath(package);
-        if (packagePath.empty()) throw std::runtime_error{fmt::format("Failed to find package: {}", package.string())};
+        if (packagePath.empty()) throw std::runtime_error{std::format("Failed to find package: {}", package.string())};
 
         return packagePath / rest;
     }
