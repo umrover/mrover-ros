@@ -6,6 +6,7 @@
 #include <random>
 #include "../point.hpp"
 #include <stdexcept>
+#include <algorithm>
 
 
 namespace mrover {
@@ -72,7 +73,7 @@ namespace mrover {
         float modelShapeHeight = 640;
 
         //Set model thresholds
-        float modelScoreThreshold = 0.90;
+        float modelScoreThreshold = 0.95;
         float modelNMSThreshold = 0.50;
 
         //Get x and y scale factors
@@ -109,7 +110,7 @@ namespace mrover {
                     float x = data[0];
                     float y = data[1];
                     float w = data[2];
-                    float h = data[3];
+                     float h = data[3];
 
                     //Cast the corners into integers to be used on pixels
                     int left = static_cast<int>((x - 0.5 * w) * x_factor);
@@ -172,14 +173,21 @@ namespace mrover {
             
             //Get the object's position in 3D from the point cloud
             if (std::optional<SE3> objectLocation = getObjectInCamFromPixel(msg, center.first * static_cast<float>(msg->width) / sizedImage.cols, center.second * static_cast<float>(msg->height) / sizedImage.rows); objectLocation) {
-                // Publish tag to immediate
                 try{
-                    std::string immediateFrameId = "detectedobject";
+                    //Publish Immediate
+                    std::string immediateFrameId = "immediateDetectedObject";
                     SE3::pushToTfTree(mTfBroadcaster, immediateFrameId, mCameraFrameId, objectLocation.value());
 
-                    SE3 tagInsideCamera = SE3::fromTfTree(mTfBuffer, mMapFrameId, immediateFrameId);
+                    //Since the object is seen we need to decrement
+                    mHitCount = std::min(mObjMaxHitcount, mHitCount + mObjIncrementWeight);
 
-                    SE3::pushToTfTree(mTfBroadcaster, "detectedobjectFR", mMapFrameId, tagInsideCamera);
+                    //Only publish to permament if we are confident in the object
+                    if(mHitCount > mObjHitThreshold){
+                        std::string permanentFrameId = "detectedObject";
+                        SE3::pushToTfTree(mTfBroadcaster, permanentFrameId, mCameraFrameId, objectLocation.value());
+                    }
+
+                    SE3 tagInsideCamera = SE3::fromTfTree(mTfBuffer, mMapFrameId, immediateFrameId);
                 } catch (tf2::ExtrapolationException const&) {
                     NODELET_WARN("Old data for immediate tag");
                 } catch (tf2::LookupException const&) {
@@ -218,7 +226,14 @@ namespace mrover {
                 int font_weight = 2;
                 putText(sizedImage, detections[i].className, text_position, cv::FONT_HERSHEY_COMPLEX, font_size, font_Color, font_weight); //Putting the text in the matrix//
             }
+        } else {
+            mHitCount = std::max(0, mHitCount - mObjDecrementWeight);
+            
         }
+
+        //DEBUG TODO REMOVE
+        ROS_INFO("Hit Count: %zu", mHitCount);
+
         if (mDebugImgPub.getNumSubscribers() > 0 || true) {
             ROS_INFO("Publishing Debug Img");
 

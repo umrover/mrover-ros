@@ -60,6 +60,15 @@ namespace mrover {
         std::string mCameraFrameId;
         std::string mMapFrameId;
 
+        //Hit counter
+        int mHitCount;
+
+        //Constants after initialization
+        int mObjIncrementWeight;
+        int mObjDecrementWeight;
+        int mObjHitThreshold;
+        int mObjMaxHitcount;
+
         //Init method
         void onInit() override;
 
