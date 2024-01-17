@@ -51,9 +51,9 @@
         </div>
 
         <div class="add-drop">
-          <button class="btn btn-primary" @click="addWaypoint(input)">Add Waypoint</button>
+          <button class="btn btn-primary" @click="addWaypoint(input, false)">Add Waypoint</button>
           <button class="btn btn-primary" @click="addWaypoint(formatted_odom)">Drop Waypoint</button>
-          <button class="btn btn-primary">Add Drone Position</button>
+          <button class="btn btn-primary" @click="addWaypoint(input, true)">Add Drone Position</button>
         </div>
       </div>
       <div class="box">
@@ -61,7 +61,7 @@
           <h4 class="waypoint-headers">Waypoints</h4>
           <button class="btn btn-primary" @click="clearWaypoint">Clear Waypoints</button>
         </div>
-        <!-- <draggable v-model="storedWaypoints" class="dragArea" draggable=".item'">
+        <!-- <draggable v-model="storedWaypoints" class="dragArea" draggable=".item'"> -->
           <WaypointItem
             v-for="(waypoint, i) in storedWaypoints"
             :key="i"
@@ -70,7 +70,7 @@
             @delete="deleteItem($event)"
             @find="findWaypoint($event)"
           />
-        </draggable> -->
+        <!-- </draggable> -->
       </div>
     </div>
   </template>
@@ -129,11 +129,12 @@
         this.storedWaypoints.splice(payload.index, 1);
       },
   
-      addWaypoint: function (coord: { lat: { d: number; m: number; s: number; }; lon: { d: number; m: number; s: number; }; }) {
+      addWaypoint: function (coord: { lat: { d: number; m: number; s: number; }; lon: { d: number; m: number; s: number; }; }, isDrone: boolean) {
         this.storedWaypoints.push({
           name: this.name,
           lat: (coord.lat.d + coord.lat.m / 60 + coord.lat.s / 3600).toFixed(5),
-          lon: (coord.lon.d + coord.lon.m / 60 + coord.lon.s / 3600).toFixed(5)
+          lon: (coord.lon.d + coord.lon.m / 60 + coord.lon.s / 3600).toFixed(5),
+          drone: isDrone
         });
       },
   
