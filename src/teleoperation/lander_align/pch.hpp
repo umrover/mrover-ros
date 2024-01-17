@@ -10,3 +10,7 @@
 #include <ros/this_node.h>
 #include <ros/names.h>
 #include <ros/node_handle.h>
+
+#include <Eigen/Dense>
+
+#include "../../perception/point.hpp"
