@@ -46,15 +46,6 @@
   <!-- Joints/Links Macros -->
 
   <xacro:macro name="arm_link" params="name m x y z dz:=0">
-<!--    <link name="arm_${name}_axle_link">-->
-<!--      <xacro:cylinder_inertia m="${m}" r="0.05" h="0.075"/>-->
-<!--      <collision>-->
-<!--        <geometry>-->
-<!--          <cylinder length="0.075" radius="0.05"/>-->
-<!--        </geometry>-->
-<!--      </collision>-->
-<!--    </link>-->
-
     <link name="arm_${name}_link">
       <xacro:box_inertia m="${m}" d="${y}" w="${x}" h="${z}"/>
       <visual>
@@ -95,22 +86,6 @@
         </geometry>
       </collision>
     </link>
-
-    <link name="${pos}_${side}_axle_link">
-      <xacro:cylinder_inertia m="2.5" r="0.05" h="0.075"/>
-      <collision>
-        <geometry>
-          <cylinder length="0.075" radius="0.05"/>
-        </geometry>
-      </collision>
-    </link>
-
-    <joint name="${pos}_${side}_axle_link_to_${pos}_${side}_wheel_link" type="continuous">
-      <parent link="${pos}_${side}_axle_link"/>
-      <child link="${pos}_${side}_wheel_link"/>
-      <axis xyz="0 0 1"/>
-      <limit effort="${wheel_torque}" velocity="0"/>
-    </joint>
   </xacro:macro>
 
   <xacro:macro name="wheels" params="side reflect">
@@ -168,11 +143,12 @@
       <limit lower="-0.122173" upper="0.523599" effort="0" velocity="0"/>
     </joint>
 
-    <joint name="${side}_rocker_link_to_back_${side}_axle_link" type="continuous">
+    <joint name="${side}_rocker_link_to_back_${side}_wheel_link" type="continuous">
       <parent link="${side}_rocker_link"/>
-      <child link="back_${side}_axle_link"/>
+      <child link="back_${side}_wheel_link"/>
       <origin xyz="-0.417094 0.28513 ${reflect * 0.09}"/>
       <axis xyz="0 0 1"/>
+      <limit effort="${wheel_torque}" velocity="0"/>
     </joint>
 
     <joint name="${side}_rocker_link_to_${side}_bogie_link" type="revolute">
@@ -183,24 +159,26 @@
       <limit lower="-0.349066" upper="0.349066" effort="0" velocity="0"/>
     </joint>
 
-    <joint name="${side}_bogie_link_to_front_${side}_axle_link" type="continuous">
+    <joint name="${side}_bogie_link_to_front_${side}_wheel_link" type="continuous">
       <parent link="${side}_bogie_link"/>
-      <child link="front_${side}_axle_link"/>
+      <child link="front_${side}_wheel_link"/>
       <origin xyz="0.215233 0.147933 ${reflect * 0.09}"/>
       <axis xyz="0 0 1"/>
+      <limit effort="${wheel_torque}" velocity="0"/>
     </joint>
 
-    <joint name="${side}_bogie_link_to_center_${side}_axle_link" type="continuous">
+    <joint name="${side}_bogie_link_to_center_${side}_wheel_link" type="continuous">
       <parent link="${side}_bogie_link"/>
-      <child link="center_${side}_axle_link"/>
+      <child link="center_${side}_wheel_link"/>
       <origin xyz="-0.173532 0.147659 ${reflect * 0.09}"/>
       <axis xyz="0 0 1"/>
+      <limit effort="${wheel_torque}" velocity="0"/>
     </joint>
   </xacro:macro>
 
   <!-- Joints/Links -->
 
-  <link name="base_link" />
+  <link name="base_link"/>
 
   <link name="chassis_link">
     <xacro:box_inertia m="${chassis_mass}" d="${base_len}" w="${base_width}" h="${base_height}"/>
@@ -243,10 +221,18 @@
     <limit lower="0" upper="0.5" effort="0" velocity="0"/>
   </joint>
 
-  <xacro:arm_revolute_joint parent="arm_a" child="arm_b" x="0.034346" y="0" z="0.049024" lower="${-TAU / 8}" upper="0"/>
-  <xacro:arm_revolute_joint parent="arm_b" child="arm_c" x="0.534365" y="0" z="0.009056" lower="0" upper="${TAU / 2}"/>
-  <xacro:arm_revolute_joint parent="arm_c" child="arm_d" x="0.546033" y="0" z="0.088594" lower="0" upper="0"/>
-  <xacro:arm_revolute_joint parent="arm_d" child="arm_e" x="0.044886" y="0" z="0" lower="0" upper="0"/>
+  <xacro:arm_revolute_joint parent="arm_a" child="arm_b"
+                            x="0.034346" y="0" z="0.049024"
+                            lower="${-TAU / 8}" upper="0"/>
+  <xacro:arm_revolute_joint parent="arm_b" child="arm_c"
+                            x="0.534365" y="0" z="0.009056"
+                            lower="0" upper="${TAU / 2}"/>
+  <xacro:arm_revolute_joint parent="arm_c" child="arm_d"
+                            x="0.546033" y="0" z="0.088594"
+                            lower="0" upper="0"/>
+  <xacro:arm_revolute_joint parent="arm_d" child="arm_e"
+                            x="0.044886" y="0" z="0"
+                            lower="0" upper="0"/>
 
   <xacro:wheels side="left" reflect="1"/>
   <xacro:wheels side="right" reflect="-1"/>

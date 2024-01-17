@@ -136,7 +136,7 @@ namespace mrover {
         wgpu::BindGroup computeBindGroup = nullptr;
 
         std::unique_ptr<wgpu::BufferMapCallback> callback = nullptr;
-        bool thisUpdate = false;
+        bool needsMap = false;
 
         EIGEN_MAKE_ALIGNED_OPERATOR_NEW
     };

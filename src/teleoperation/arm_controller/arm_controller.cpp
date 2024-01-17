@@ -48,7 +48,7 @@ namespace mrover {
             q1 = std::clamp(q1, -TAU / 8, 0.0);
             double q3 = -(q1 + q2);
 
-            ROS_INFO("x: %f, y: %f, z: %f, q1: %f, q2: %f, q3: %f", x, y, z, q1, q2, q3);
+            // ROS_INFO("x: %f, y: %f, z: %f, q1: %f, q2: %f, q3: %f", x, y, z, q1, q2, q3);
 
             if (std::isfinite(q1) && std::isfinite(q2) && std::isfinite(q3)) {
                 positions.positions[0] = static_cast<float>(y);
@@ -56,7 +56,8 @@ namespace mrover {
                 positions.positions[2] = static_cast<float>(q2);
                 positions.positions[3] = static_cast<float>(q3);
                 position_publisher.publish(positions);
-            } else {}
+            } else {
+            }
 
             rate.sleep();
             ros::spinOnce();
