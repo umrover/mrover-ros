@@ -87,6 +87,7 @@
 
   <!-- The export tag contains other, unspecified, tags -->
   <export>
+    <nodelet plugin="${prefix}/plugins/lander_align_plugin.xml"/>
     <nodelet plugin="${prefix}/plugins/tag_detector_plugin.xml"/>
     <nodelet plugin="${prefix}/plugins/zed_plugin.xml"/>
   </export>
