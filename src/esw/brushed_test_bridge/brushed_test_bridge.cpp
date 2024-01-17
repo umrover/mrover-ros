@@ -11,7 +11,7 @@ int main(int argc, char** argv) {
 
     auto brushlessController = std::make_unique<mrover::BrushedController>(nh, "jetson", "devboard");
 
-    ros::Rate rate(1);
+    ros::Rate rate(100);
     while (ros::ok()) {
         brushlessController->setDesiredThrottle(0.8);
         rate.sleep();
