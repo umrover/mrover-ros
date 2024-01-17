@@ -220,6 +220,10 @@ if (ZED_FOUND)
     )
 endif ()
 
+## Teleoperation
+
+mrover_add_nodelet(lander_align src/teleoperation/lander_align/*.cpp src/teleoperation/lander_align src/teleoperation/lander_align/pch.hpp)
+
 ## Simulator
 
 mrover_add_gazebo_plugin(differential_drive_plugin_6w src/simulator/differential_drive_6w.cpp src)
