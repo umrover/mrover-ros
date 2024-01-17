@@ -44,7 +44,7 @@ class GPSLinearization:
         self.world_frame = rospy.get_param("world_frame")
         self.use_dop_covariance = rospy.get_param("global_ekf/use_gps_dop_covariance")
 
-        #config gps and imu convariance matrices
+        # config gps and imu convariance matrices
         self.config_gps_covariance = np.array(rospy.get_param("global_ekf/gps_covariance", None))
         self.config_imu_covariance = np.array(rospy.get_param("global_ekf/imu_orientation_covariance", None))
 
@@ -56,7 +56,6 @@ class GPSLinearization:
 
         sync_gps_sub = message_filters.ApproximateTimeSynchronizer([right_gps_sub, left_gps_sub], 10, 0.5)
         sync_gps_sub.registerCallback(self.gps_callback)
-
 
         rospy.Subscriber("imu/data", ImuAndMag, self.imu_callback)
         self.pose_publisher = rospy.Publisher("linearized_pose", PoseWithCovarianceStamped, queue_size=1)
@@ -73,17 +72,21 @@ class GPSLinearization:
             return
         if np.any(np.isnan([left_gps_msg.latitude, left_gps_msg.longitude, left_gps_msg.altitude])):
             return
-        
+
         ref_coord = np.array([self.ref_lat, self.ref_lon, self.ref_alt])
-        
-        right_cartesian = np.array(geodetic2enu(right_gps_msg.latitude, right_gps_msg.longitude, right_gps_msg.altitude, *ref_coord, deg=True))
-        left_cartesian = np.array(geodetic2enu(left_gps_msg.latitude, left_gps_msg.longitude, left_gps_msg.altitude, *ref_coord, deg=True))
+
+        right_cartesian = np.array(
+            geodetic2enu(right_gps_msg.latitude, right_gps_msg.longitude, right_gps_msg.altitude, *ref_coord, deg=True)
+        )
+        left_cartesian = np.array(
+            geodetic2enu(left_gps_msg.latitude, left_gps_msg.longitude, left_gps_msg.altitude, *ref_coord, deg=True)
+        )
 
         pose = GPSLinearization.compute_gps_pose(right_cartesian=right_cartesian, left_cartesian=left_cartesian)
 
-        covariance_matrix = np.zeros(6,6)
-        covariance_matrix[:3,:3] = self.config_gps_covariance.reshape(3,3)
-        covariance_matrix[3:, 3:] = self.config_imu_covariance.reshape(3,3)
+        covariance_matrix = np.zeros((6, 6))
+        covariance_matrix[:3, :3] = self.config_gps_covariance.reshape(3, 3)
+        covariance_matrix[3:, 3:] = self.config_imu_covariance.reshape(3, 3)
 
         # TODO: publish to ekf
         pose_msg = PoseWithCovarianceStamped(
@@ -98,9 +101,6 @@ class GPSLinearization:
         )
 
         self.pose_publisher.publish(pose_msg)
-
-
-
 
     def imu_callback(self, msg: ImuAndMag):
         """
@@ -140,12 +140,13 @@ class GPSLinearization:
         magnitude = np.linalg.norm(vector_connecting)
         vector_connecting = vector_connecting / magnitude
 
-
-        vector_perp = np.zeros(3,1)
+        vector_perp = np.zeros(shape=(3, 1))
         vector_perp[0] = vector_connecting[1]
         vector_perp[1] = -vector_connecting[0]
 
-        rotation_matrix = np.hstack((vector_perp, vector_connecting, [0,0,1]))
+        rotation_matrix = np.hstack(
+            (vector_perp, np.reshape(vector_connecting, (3, 1)), np.array(object=[[0], [0], [1]]))
+        )
 
         pose = SE3(left_cartesian, SO3.from_matrix(rotation_matrix=rotation_matrix))
 

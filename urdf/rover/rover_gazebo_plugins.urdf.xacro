@@ -23,7 +23,7 @@
       <updateRate>100.0</updateRate>
       <bodyName>rover_gps_left_link</bodyName>
       <frameId>rover_gps_left_link</frameId>
-      <topicName>gps/fix/rover_gps_left</topicName>
+      <topicName>left_gps_driver/fix</topicName>
       <velocityTopicName>gps/fix_velocity</velocityTopicName>
       <referenceLatitude>42.2931950000000000000000</referenceLatitude>
       <referenceLongitude>-83.80967060000000000000000</referenceLongitude>
@@ -41,7 +41,7 @@
       <updateRate>100.0</updateRate>
       <bodyName>rover_gps_right_link</bodyName>
       <frameId>rover_gps_right_link</frameId>
-      <topicName>gps/fix/rover_gps_right</topicName>
+      <topicName>right_gps_driver/fix</topicName>
       <velocityTopicName>gps/fix_velocity</velocityTopicName>
       <referenceLatitude>42.2931950000000000000000</referenceLatitude>
       <referenceLongitude>-83.80967060000000000000000</referenceLongitude>
