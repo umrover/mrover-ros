@@ -34,7 +34,8 @@ namespace mrover {
             URDF const& rover = it->second;
 
             for (auto const& name: {"left_rocker_link", "right_rocker_link"}) {
-                auto* motor = std::bit_cast<btMultiBodyJointMotor*>(rover.physics->getLink(rover.linkNameToIndex.at(name)).m_userPtr);
+                int linkIndex = rover.linkNameToMeta.at(name).index;
+                auto* motor = std::bit_cast<btMultiBodyJointMotor*>(rover.physics->getLink(linkIndex).m_userPtr);
                 motor->setMaxAppliedImpulse(0.5);
                 motor->setPositionTarget(0);
             }
@@ -70,7 +71,7 @@ namespace mrover {
 
             auto publishLink = [&](auto&& self, urdf::LinkConstSharedPtr const& link) -> void {
                 if (link->parent_joint) {
-                    int index = urdf.linkNameToIndex.at(link->name);
+                    int index = urdf.linkNameToMeta.at(link->name).index;
                     // TODO(quintin): figure out why we need to negate rvector
                     btTransform parentToChild{urdf.physics->getParentToLocalRot(index), -urdf.physics->getRVector(index)};
                     SE3 childInParent = btTransformToSe3(parentToChild.inverse());
@@ -88,7 +89,7 @@ namespace mrover {
     }
 
     auto URDF::linkInWorld(std::string const& linkName) const -> SE3 {
-        int index = linkNameToIndex.at(linkName);
+        int index = linkNameToMeta.at(linkName).index;
         return btTransformToSe3(index == -1 ? physics->getBaseWorldTransform() : physics->getLink(index).m_cachedWorldTransform);
     }
 

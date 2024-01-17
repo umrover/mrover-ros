@@ -9,12 +9,6 @@ namespace mrover {
     static std::string const SPHERE_PRIMITIVE_URI = std::format("{}/sphere.fbx", MESHES_PATH);
     static std::string const CYLINDER_PRIMITIVE_URI = std::format("{}/cylinder.fbx", MESHES_PATH);
 
-    auto btTransformToSim3(btTransform const& transform, btVector3 const& scale) -> SIM3 {
-        btVector3 const& p = transform.getOrigin();
-        btQuaternion const& q = transform.getRotation();
-        return {R3{p.x(), p.y(), p.z()}, SO3{q.w(), q.x(), q.y(), q.z()}, R3{scale.x(), scale.y(), scale.z()}};
-    }
-
     auto SimulatorNodelet::makeTextureAndView(int width, int height, wgpu::TextureFormat const& format, wgpu::TextureUsage const& usage, wgpu::TextureAspect const& aspect) -> std::pair<wgpu::Texture, wgpu::TextureView> {
         wgpu::TextureDescriptor textureDescriptor;
         textureDescriptor.dimension = wgpu::TextureDimension::_2D;
@@ -50,6 +44,107 @@ namespace mrover {
         mSwapChain = mDevice.createSwapChain(mSurface, descriptor);
         if (!mSwapChain) throw std::runtime_error("Failed to create WGPU swap chain");
         std::tie(mDepthTexture, mDepthTextureView) = makeTextureAndView(width, height, DEPTH_FORMAT, wgpu::TextureUsage::RenderAttachment, wgpu::TextureAspect::DepthOnly);
+    }
+
+    auto SimulatorNodelet::makeRenderPipelineLayout() -> wgpu::RenderPipelineDescriptor {
+        wgpu::RenderPipelineDescriptor descriptor;
+        descriptor.label = "PBR";
+        descriptor.primitive.topology = wgpu::PrimitiveTopology::TriangleList;
+        descriptor.primitive.cullMode = wgpu::CullMode::Back;
+        descriptor.multisample.count = 1;
+        descriptor.multisample.mask = 0xFFFFFFFF;
+
+        wgpu::DepthStencilState depthStencil;
+        depthStencil.depthCompare = wgpu::CompareFunction::Less;
+        depthStencil.depthWriteEnabled = true;
+        depthStencil.format = DEPTH_FORMAT;
+        depthStencil.stencilFront.compare = wgpu::CompareFunction::Always;
+        depthStencil.stencilBack.compare = wgpu::CompareFunction::Always;
+        descriptor.depthStencil = &depthStencil;
+
+        {
+            std::array<wgpu::VertexAttribute, 3> attributes{};
+            attributes[0].format = wgpu::VertexFormat::Float32x3;
+            attributes[0].shaderLocation = 0;
+            attributes[1].format = wgpu::VertexFormat::Float32x3;
+            attributes[1].shaderLocation = 1;
+            attributes[2].format = wgpu::VertexFormat::Float32x2;
+            attributes[2].shaderLocation = 2;
+            std::array<wgpu::VertexBufferLayout, 3> vertexBufferLayout{};
+            vertexBufferLayout[0].arrayStride = sizeof(float) * 3;
+            vertexBufferLayout[0].stepMode = wgpu::VertexStepMode::Vertex;
+            vertexBufferLayout[0].attributeCount = 1;
+            vertexBufferLayout[0].attributes = attributes.data() + 0;
+            vertexBufferLayout[1].arrayStride = sizeof(float) * 3;
+            vertexBufferLayout[1].stepMode = wgpu::VertexStepMode::Vertex;
+            vertexBufferLayout[1].attributeCount = 1;
+            vertexBufferLayout[1].attributes = attributes.data() + 1;
+            vertexBufferLayout[2].arrayStride = sizeof(float) * 2;
+            vertexBufferLayout[2].stepMode = wgpu::VertexStepMode::Vertex;
+            vertexBufferLayout[2].attributeCount = 1;
+            vertexBufferLayout[2].attributes = attributes.data() + 2;
+
+            descriptor.vertex.entryPoint = "vs_main";
+            descriptor.vertex.module = mShaderModule;
+            descriptor.vertex.bufferCount = vertexBufferLayout.size();
+            descriptor.vertex.buffers = vertexBufferLayout.data();
+        }
+
+        wgpu::FragmentState fragment;
+        fragment.module = mShaderModule;
+        fragment.entryPoint = "fs_main";
+        wgpu::BlendState blend;
+        blend.color.srcFactor = wgpu::BlendFactor::SrcAlpha;
+        blend.color.dstFactor = wgpu::BlendFactor::OneMinusSrcAlpha;
+        blend.color.operation = wgpu::BlendOperation::Add;
+        blend.alpha.srcFactor = wgpu::BlendFactor::Zero;
+        blend.alpha.dstFactor = wgpu::BlendFactor::One;
+        blend.alpha.operation = wgpu::BlendOperation::Add;
+        wgpu::ColorTargetState colorTarget;
+        colorTarget.format = COLOR_FORMAT;
+        colorTarget.blend = &blend;
+        colorTarget.writeMask = wgpu::ColorWriteMask::All;
+        fragment.targetCount = 1;
+        fragment.targets = &colorTarget;
+        descriptor.fragment = &fragment;
+
+        std::array<wgpu::BindGroupLayoutEntry, 3> meshBindGroupLayoutEntries{};
+        meshBindGroupLayoutEntries[0].binding = 0;
+        meshBindGroupLayoutEntries[0].visibility = wgpu::ShaderStage::Fragment | wgpu::ShaderStage::Vertex;
+        meshBindGroupLayoutEntries[0].buffer.type = wgpu::BufferBindingType::Uniform;
+        meshBindGroupLayoutEntries[0].buffer.minBindingSize = sizeof(ModelUniforms);
+        meshBindGroupLayoutEntries[1].binding = 1;
+        meshBindGroupLayoutEntries[1].visibility = wgpu::ShaderStage::Fragment;
+        meshBindGroupLayoutEntries[1].texture.sampleType = wgpu::TextureSampleType::Float;
+        meshBindGroupLayoutEntries[1].texture.viewDimension = wgpu::TextureViewDimension::_2D;
+        meshBindGroupLayoutEntries[2].binding = 2;
+        meshBindGroupLayoutEntries[2].visibility = wgpu::ShaderStage::Fragment;
+        meshBindGroupLayoutEntries[2].sampler.type = wgpu::SamplerBindingType::Filtering;
+
+        wgpu::BindGroupLayoutDescriptor meshBindGroupLayourDescriptor;
+        meshBindGroupLayourDescriptor.entryCount = meshBindGroupLayoutEntries.size();
+        meshBindGroupLayourDescriptor.entries = meshBindGroupLayoutEntries.data();
+        wgpu::BindGroupLayout meshBindGroupLayout = mDevice.createBindGroupLayout(meshBindGroupLayourDescriptor);
+
+        wgpu::BindGroupLayoutEntry sceneBindGroupLayoutEntry;
+        sceneBindGroupLayoutEntry.binding = 0;
+        sceneBindGroupLayoutEntry.visibility = wgpu::ShaderStage::Vertex | wgpu::ShaderStage::Fragment;
+        sceneBindGroupLayoutEntry.buffer.type = wgpu::BufferBindingType::Uniform;
+        sceneBindGroupLayoutEntry.buffer.minBindingSize = sizeof(SceneUniforms);
+
+        wgpu::BindGroupLayoutDescriptor sceneBindGroupLayourDescriptor;
+        sceneBindGroupLayourDescriptor.entryCount = 1;
+        sceneBindGroupLayourDescriptor.entries = &sceneBindGroupLayoutEntry;
+        wgpu::BindGroupLayout sceneBindGroupLayout = mDevice.createBindGroupLayout(sceneBindGroupLayourDescriptor);
+
+
+        wgpu::PipelineLayoutDescriptor pipelineLayoutDescriptor;
+        std::array<WGPUBindGroupLayout, 2> bindGroupLayouts{meshBindGroupLayout, sceneBindGroupLayout};
+        pipelineLayoutDescriptor.bindGroupLayoutCount = bindGroupLayouts.size();
+        pipelineLayoutDescriptor.bindGroupLayouts = bindGroupLayouts.data();
+        descriptor.layout = mDevice.createPipelineLayout(pipelineLayoutDescriptor);
+
+        return descriptor;
     }
 
     auto computeCameraToClip(float fovY, float aspect, float zNear, float zFar) -> Eigen::Matrix4f {
@@ -178,105 +273,14 @@ namespace mrover {
             if (!mShaderModule) throw std::runtime_error("Failed to create WGPU PBR shader module");
         }
         {
-            wgpu::RenderPipelineDescriptor descriptor;
-            descriptor.label = "PBR";
-            descriptor.primitive.topology = wgpu::PrimitiveTopology::TriangleList;
-            descriptor.primitive.cullMode = wgpu::CullMode::Back;
-            descriptor.multisample.count = 1;
-            descriptor.multisample.mask = 0xFFFFFFFF;
-
-            wgpu::DepthStencilState depthStencil;
-            depthStencil.depthCompare = wgpu::CompareFunction::Less;
-            depthStencil.depthWriteEnabled = true;
-            depthStencil.format = DEPTH_FORMAT;
-            depthStencil.stencilFront.compare = wgpu::CompareFunction::Always;
-            depthStencil.stencilBack.compare = wgpu::CompareFunction::Always;
-            descriptor.depthStencil = &depthStencil;
-
-            {
-                std::array<wgpu::VertexAttribute, 3> attributes{};
-                attributes[0].format = wgpu::VertexFormat::Float32x3;
-                attributes[0].shaderLocation = 0;
-                attributes[1].format = wgpu::VertexFormat::Float32x3;
-                attributes[1].shaderLocation = 1;
-                attributes[2].format = wgpu::VertexFormat::Float32x2;
-                attributes[2].shaderLocation = 2;
-                std::array<wgpu::VertexBufferLayout, 3> vertexBufferLayout{};
-                vertexBufferLayout[0].arrayStride = sizeof(float) * 3;
-                vertexBufferLayout[0].stepMode = wgpu::VertexStepMode::Vertex;
-                vertexBufferLayout[0].attributeCount = 1;
-                vertexBufferLayout[0].attributes = attributes.data() + 0;
-                vertexBufferLayout[1].arrayStride = sizeof(float) * 3;
-                vertexBufferLayout[1].stepMode = wgpu::VertexStepMode::Vertex;
-                vertexBufferLayout[1].attributeCount = 1;
-                vertexBufferLayout[1].attributes = attributes.data() + 1;
-                vertexBufferLayout[2].arrayStride = sizeof(float) * 2;
-                vertexBufferLayout[2].stepMode = wgpu::VertexStepMode::Vertex;
-                vertexBufferLayout[2].attributeCount = 1;
-                vertexBufferLayout[2].attributes = attributes.data() + 2;
-
-                descriptor.vertex.entryPoint = "vs_main";
-                descriptor.vertex.module = mShaderModule;
-                descriptor.vertex.bufferCount = vertexBufferLayout.size();
-                descriptor.vertex.buffers = vertexBufferLayout.data();
-            }
-
-            wgpu::FragmentState fragment;
-            fragment.module = mShaderModule;
-            fragment.entryPoint = "fs_main";
-            wgpu::BlendState blend;
-            blend.color.srcFactor = wgpu::BlendFactor::SrcAlpha;
-            blend.color.dstFactor = wgpu::BlendFactor::OneMinusSrcAlpha;
-            blend.color.operation = wgpu::BlendOperation::Add;
-            blend.alpha.srcFactor = wgpu::BlendFactor::Zero;
-            blend.alpha.dstFactor = wgpu::BlendFactor::One;
-            blend.alpha.operation = wgpu::BlendOperation::Add;
-            wgpu::ColorTargetState colorTarget;
-            colorTarget.format = COLOR_FORMAT;
-            colorTarget.blend = &blend;
-            colorTarget.writeMask = wgpu::ColorWriteMask::All;
-            fragment.targetCount = 1;
-            fragment.targets = &colorTarget;
-            descriptor.fragment = &fragment;
-
-            std::array<wgpu::BindGroupLayoutEntry, 3> meshBindGroupLayoutEntries{};
-            meshBindGroupLayoutEntries[0].binding = 0;
-            meshBindGroupLayoutEntries[0].visibility = wgpu::ShaderStage::Fragment | wgpu::ShaderStage::Vertex;
-            meshBindGroupLayoutEntries[0].buffer.type = wgpu::BufferBindingType::Uniform;
-            meshBindGroupLayoutEntries[0].buffer.minBindingSize = sizeof(ModelUniforms);
-            meshBindGroupLayoutEntries[1].binding = 1;
-            meshBindGroupLayoutEntries[1].visibility = wgpu::ShaderStage::Fragment;
-            meshBindGroupLayoutEntries[1].texture.sampleType = wgpu::TextureSampleType::Float;
-            meshBindGroupLayoutEntries[1].texture.viewDimension = wgpu::TextureViewDimension::_2D;
-            meshBindGroupLayoutEntries[2].binding = 2;
-            meshBindGroupLayoutEntries[2].visibility = wgpu::ShaderStage::Fragment;
-            meshBindGroupLayoutEntries[2].sampler.type = wgpu::SamplerBindingType::Filtering;
-
-            wgpu::BindGroupLayoutDescriptor meshBindGroupLayourDescriptor;
-            meshBindGroupLayourDescriptor.entryCount = meshBindGroupLayoutEntries.size();
-            meshBindGroupLayourDescriptor.entries = meshBindGroupLayoutEntries.data();
-            wgpu::BindGroupLayout meshBindGroupLayout = mDevice.createBindGroupLayout(meshBindGroupLayourDescriptor);
-
-            wgpu::BindGroupLayoutEntry sceneBindGroupLayoutEntry;
-            sceneBindGroupLayoutEntry.binding = 0;
-            sceneBindGroupLayoutEntry.visibility = wgpu::ShaderStage::Vertex | wgpu::ShaderStage::Fragment;
-            sceneBindGroupLayoutEntry.buffer.type = wgpu::BufferBindingType::Uniform;
-            sceneBindGroupLayoutEntry.buffer.minBindingSize = sizeof(SceneUniforms);
-
-            wgpu::BindGroupLayoutDescriptor sceneBindGroupLayourDescriptor;
-            sceneBindGroupLayourDescriptor.entryCount = 1;
-            sceneBindGroupLayourDescriptor.entries = &sceneBindGroupLayoutEntry;
-            wgpu::BindGroupLayout sceneBindGroupLayout = mDevice.createBindGroupLayout(sceneBindGroupLayourDescriptor);
-
-
-            wgpu::PipelineLayoutDescriptor pipelineLayoutDescriptor;
-            std::array<WGPUBindGroupLayout, 2> bindGroupLayouts{meshBindGroupLayout, sceneBindGroupLayout};
-            pipelineLayoutDescriptor.bindGroupLayoutCount = bindGroupLayouts.size();
-            pipelineLayoutDescriptor.bindGroupLayouts = bindGroupLayouts.data();
-            descriptor.layout = mDevice.createPipelineLayout(pipelineLayoutDescriptor);
-
-            mPbrPipeline = mDevice.createRenderPipeline(descriptor);
+            mPbrPipeline = mDevice.createRenderPipeline(makeRenderPipelineLayout());
             if (!mPbrPipeline) throw std::runtime_error("Failed to create WGPU render pipeline");
+
+            // wgpu::RenderPipelineDescriptor wireframeLayout = makeRenderPipelineLayout();
+            // wireframeLayout.label = "Wireframe";
+            // wireframeLayout.primitive.topology = wgpu::PrimitiveTopology::LineList;
+            // mWireframePipeline = mDevice.createRenderPipeline(wireframeLayout);
+            // if (!mWireframePipeline) throw std::runtime_error("Failed to create WGPU wireframe render pipeline");
         }
         {
             std::array<wgpu::BindGroupLayoutEntry, 4> bindGroupLayoutEntries{};
@@ -378,19 +382,21 @@ namespace mrover {
         }
     }
 
-    auto SimulatorNodelet::renderModels(wgpu::RenderPassEncoder& encoder) -> void {
+    auto SimulatorNodelet::renderModels(wgpu::RenderPassEncoder& pass) -> void {
         for (auto& [_, urdf]: mUrdfs) {
 
             auto renderLink = [&](auto&& self, urdf::LinkConstSharedPtr const& link) -> void {
-                if (link->visual && link->visual->geometry) {
+                for (std::size_t visualIndex = 0; urdf::VisualSharedPtr const& visual: link->visual_array) {
                     if (auto urdfMesh = std::dynamic_pointer_cast<urdf::Mesh>(link->visual->geometry)) {
                         Model& model = mUriToModel.at(urdfMesh->filename);
                         SE3 linkInWorld = urdf.linkInWorld(link->name);
                         SE3 modelInLink = btTransformToSe3(urdfPoseToBtTransform(link->visual->origin));
                         SE3 modelInWorld = linkInWorld * modelInLink;
-                        renderModel(encoder, model, urdf.linkNameToUniform[link->name], SIM3{modelInWorld.position(), modelInWorld.rotation(), R3::Ones()});
+                        renderModel(pass, model, urdf.linkNameToMeta[link->name].uniforms.at(visualIndex), SIM3{modelInWorld.position(), modelInWorld.rotation(), R3::Ones()});
+                        visualIndex++;
                     }
                 }
+
                 for (urdf::JointSharedPtr const& child_joint: link->child_joints) {
                     self(self, urdf.model.getLink(child_joint->child_link_name));
                 }
@@ -400,13 +406,56 @@ namespace mrover {
         }
     }
 
-    auto SimulatorNodelet::renderWireframeColliders() -> void {
-        // glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
-        // mPbrProgram.uniform("type", 0);
+    auto SimulatorNodelet::renderWireframeColliders(wgpu::RenderPassEncoder& pass) -> void {
+        pass.setPipeline(mWireframePipeline);
+
+        for (auto& [_, urdf]: mUrdfs) {
+
+            auto renderLink = [&](auto&& self, urdf::LinkConstSharedPtr const& link) -> void {
+                URDF::LinkMeta& meta = urdf.linkNameToMeta.at(link->name);
+                btCollisionShape* shape = urdf.physics->getLinkCollider(meta.index)->getCollisionShape();
+                SE3 linkInWorld = urdf.linkInWorld(link->name);
+                SE3 modelInLink = btTransformToSe3(urdfPoseToBtTransform(link->visual->origin));
+                SE3 shapeToWorld = linkInWorld * modelInLink;
+
+                if (auto* box = dynamic_cast<btBoxShape const*>(shape)) {
+                    btVector3 extents = box->getHalfExtentsWithoutMargin() * 2;
+                    SIM3 modelToWorld{shapeToWorld.position(), shapeToWorld.rotation(), R3{extents.x(), extents.y(), extents.z()}};
+                    renderModel(pass, mUriToModel.at(CUBE_PRIMITIVE_URI), meta.uniforms.front(), modelToWorld);
+                } else if (auto* sphere = dynamic_cast<btSphereShape const*>(shape)) {
+                    btScalar diameter = sphere->getRadius() * 2;
+                    SIM3 modelToWorld{shapeToWorld.position(), shapeToWorld.rotation(), R3{diameter, diameter, diameter}};
+                    renderModel(pass, mUriToModel.at(SPHERE_PRIMITIVE_URI), meta.uniforms.front(), modelToWorld);
+                } else if (auto* cylinder = dynamic_cast<btCylinderShapeZ const*>(shape)) {
+                    btVector3 extents = cylinder->getHalfExtentsWithoutMargin() * 2;
+                    SIM3 modelToWorld{shapeToWorld.position(), shapeToWorld.rotation(), R3{extents.x(), extents.y(), extents.z()}};
+                    renderModel(pass, mUriToModel.at(CYLINDER_PRIMITIVE_URI), meta.uniforms.front(), modelToWorld);
+                } else if (auto* compound = dynamic_cast<btCompoundShape const*>(shape)) {
+                    // for (int i = 0; i < compound->getNumChildShapes(); ++i) {
+                    //     btTransform const& childToParent = compound->getChildTransform(i);
+                    //     btCollisionShape const* childShape = compound->getChildShape(i);
+                    //     btTransform childToWorld = shapeToWorld * childToParent;
+                    //     self(self, childToWorld, childShape);
+                    // }
+                } else if (auto* mesh = dynamic_cast<btBvhTriangleMeshShape const*>(shape)) {
+                    SIM3 modelToWorld{shapeToWorld.position(), shapeToWorld.rotation(), R3::Ones()};
+                    renderModel(pass, mUriToModel.at(mMeshToUri.at(const_cast<btBvhTriangleMeshShape*>(mesh))), meta.uniforms.front(), modelToWorld);
+                } else if (dynamic_cast<btEmptyShape const*>(shape)) {
+                } else {
+                    NODELET_WARN_STREAM_ONCE(std::format("Tried to render unsupported collision shape: {}", shape->getName()));
+                }
+
+                for (urdf::JointSharedPtr const& child_joint: link->child_joints) {
+                    self(self, urdf.model.getLink(child_joint->child_link_name));
+                }
+            };
+
+            renderLink(renderLink, urdf.model.getRoot());
+        }
 
         // for (auto const& collider: mMultibodyCollider) {
-
-        //     auto renderCollisionObject = [this](auto&& self, btTransform const& shapeToWorld, btCollisionShape const* shape) -> void {
+        //
+        //     auto renderCollisionObject = [&](auto&& self, btTransform const& shapeToWorld, btCollisionShape const* shape) -> void {
         //         if (auto* box = dynamic_cast<btBoxShape const*>(shape)) {
         //             btVector3 extents = box->getHalfExtentsWithoutMargin() * 2;
         //             SIM3 worldToModel = btTransformToSim3(shapeToWorld, extents);
@@ -428,13 +477,13 @@ namespace mrover {
         //             }
         //         } else if (auto* mesh = dynamic_cast<btBvhTriangleMeshShape const*>(shape)) {
         //             SIM3 modelToWorld = btTransformToSim3(shapeToWorld, btVector3{1, 1, 1});
-        //             renderModel(mUriToModel.at(mMeshToUri.at(const_cast<btBvhTriangleMeshShape*>(mesh))), modelToWorld);
+        //             renderModel(pass, mUriToModel.at(mMeshToUri.at(const_cast<btBvhTriangleMeshShape*>(mesh))), modelToWorld);
         //         } else if (dynamic_cast<btEmptyShape const*>(shape)) {
         //         } else {
         //             NODELET_WARN_STREAM_ONCE(std::format("Tried to render unsupported collision shape: {}", shape->getName()));
         //         }
         //     };
-
+        //
         //     btTransform const& shapeToWorld = collider->getWorldTransform();
         //     btCollisionShape const* shape = collider->getCollisionShape();
         //     renderCollisionObject(renderCollisionObject, shapeToWorld, shape);
@@ -546,7 +595,7 @@ namespace mrover {
             pass.setBindGroup(1, bindGroup, 0, nullptr);
 
             if (mRenderModels) renderModels(pass);
-            if (mRenderWireframeColliders) renderWireframeColliders();
+            if (mRenderWireframeColliders) renderWireframeColliders(pass);
 
             guiUpdate(pass);
 

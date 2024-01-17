@@ -139,16 +139,17 @@ namespace mrover {
         auto traverse = [&](auto&& self, urdf::LinkConstSharedPtr const& link) -> void {
             ROS_INFO_STREAM(std::format("Processing link: {}", link->name));
 
-            auto linkIndex = static_cast<int>(linkNameToIndex.size()) - 1;
-            linkNameToIndex.emplace(link->name, linkIndex);
+            auto linkIndex = static_cast<int>(linkNameToMeta.size()) - 1;
+            auto [it, was_inserted] = linkNameToMeta.emplace(link->name, linkIndex);
+            assert(was_inserted);
 
             if (link->name.contains("camera"sv)) {
                 Camera canera = makeCameraForLink(simulator, &multiBody->getLink(linkIndex));
                 simulator.mCameras.push_back(std::move(canera));
             }
 
-            if (link->visual && link->visual->geometry) {
-                switch (link->visual->geometry->type) {
+            for (urdf::VisualSharedPtr const& visual: link->visual_array) {
+                switch (visual->geometry->type) {
                     case urdf::Geometry::MESH: {
                         auto mesh = std::dynamic_pointer_cast<urdf::Mesh>(link->visual->geometry);
                         std::string const& fileUri = mesh->filename;
@@ -159,9 +160,7 @@ namespace mrover {
                         ROS_WARN_STREAM("Currently only mesh visuals are supported");
                     }
                 }
-            }
-            if (std::size_t size = link->visual_array.size(); size > 1) {
-                ROS_WARN_STREAM(std::format("Link {} has {} visual elements, only the first one will be used", link->name, size));
+                it->second.uniforms.emplace_back();
             }
 
             auto* collider = simulator.makeBulletObject<btMultiBodyLinkCollider>(simulator.mMultibodyCollider, multiBody, linkIndex);
@@ -178,7 +177,7 @@ namespace mrover {
             }
 
             if (urdf::JointConstSharedPtr parentJoint = link->parent_joint) {
-                int parentIndex = linkNameToIndex.at(parentJoint->parent_link_name);
+                int parentIndex = linkNameToMeta.at(parentJoint->parent_link_name).index;
                 btTransform jointInParent = urdfPoseToBtTransform(parentJoint->parent_to_joint_origin_transform);
                 btTransform comInJoint = link->inertial ? urdfPoseToBtTransform(link->inertial->origin) : btTransform::getIdentity();
                 btVector3 axisInJoint = urdfPosToBtPos(parentJoint->axis);

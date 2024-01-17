@@ -23,21 +23,6 @@ namespace mrover {
             URDF const& rover = it->second;
 
             for (std::string const& name: {
-                         "front_left_axle_link",
-                         "center_left_axle_link",
-                         "back_left_axle_link",
-                         "front_right_axle_link",
-                         "center_right_axle_link",
-                         "back_right_axle_link",
-                 }) {
-                int axle = rover.linkNameToIndex.at(name);
-                auto* motor = std::bit_cast<btMultiBodyJointMotor*>(rover.physics->getLink(axle).m_userPtr);
-                btScalar velocity = (name.contains("left"sv) ? left.get() : right.get()) / 50;
-                motor->setVelocityTarget(velocity);
-                motor->setMaxAppliedImpulse(MAX_MOTOR_TORQUE);
-            }
-
-            for (std::string const& name: {
                          "front_left_wheel_link",
                          "center_left_wheel_link",
                          "back_left_wheel_link",
@@ -45,10 +30,9 @@ namespace mrover {
                          "center_right_wheel_link",
                          "back_right_wheel_link",
                  }) {
-                auto wheel = rover.linkNameToIndex.at(name);
-                auto axle = rover.physics->getParent(wheel);
-                auto* motor = std::bit_cast<btMultiBodyJointMotor*>(rover.physics->getLink(wheel).m_userPtr);
-                btScalar velocity = rover.physics->getJointVel(axle);
+                int wheelIndex = rover.linkNameToMeta.at(name).index;
+                auto* motor = std::bit_cast<btMultiBodyJointMotor*>(rover.physics->getLink(wheelIndex).m_userPtr);
+                btScalar velocity = (name.contains("left"sv) ? left.get() : right.get()) / 50;
                 motor->setVelocityTarget(velocity);
                 motor->setMaxAppliedImpulse(MAX_MOTOR_TORQUE);
             }
@@ -60,10 +44,10 @@ namespace mrover {
             URDF const& rover = it->second;
 
             for (auto const& combined: boost::combine(positions->names, positions->positions)) {
-                int link = rover.linkNameToIndex.at(boost::get<0>(combined));
+                int linkIndex = rover.linkNameToMeta.at(boost::get<0>(combined)).index;
                 float position = boost::get<1>(combined);
 
-                auto* motor = std::bit_cast<btMultiBodyJointMotor*>(rover.physics->getLink(link).m_userPtr);
+                auto* motor = std::bit_cast<btMultiBodyJointMotor*>(rover.physics->getLink(linkIndex).m_userPtr);
                 motor->setMaxAppliedImpulse(0.5);
                 motor->setPositionTarget(position, 0.05);
             }

@@ -80,11 +80,15 @@ namespace mrover {
     };
 
     struct URDF {
+        struct LinkMeta {
+            int index{};
+            boost::container::static_vector<Uniform<ModelUniforms>, 2> uniforms;
+        };
+
         std::string name;
         urdf::Model model;
         btMultiBody* physics = nullptr;
-        std::unordered_map<std::string, int> linkNameToIndex;
-        std::unordered_map<std::string, Uniform<ModelUniforms>> linkNameToUniform;
+        std::unordered_map<std::string, LinkMeta> linkNameToMeta;
 
         URDF(SimulatorNodelet& simulator, XmlRpc::XmlRpcValue const& init);
 
@@ -209,6 +213,7 @@ namespace mrover {
 
         wgpu::ShaderModule mShaderModule = nullptr;
         wgpu::RenderPipeline mPbrPipeline = nullptr;
+        wgpu::RenderPipeline mWireframePipeline = nullptr;
 
         wgpu::ComputePipeline mPointCloudPipeline = nullptr;
 
@@ -317,7 +322,7 @@ namespace mrover {
 
         auto renderModels(wgpu::RenderPassEncoder& pass) -> void;
 
-        auto renderWireframeColliders() -> void;
+        auto renderWireframeColliders(wgpu::RenderPassEncoder& pass) -> void;
 
         auto renderUpdate() -> void;
 
@@ -332,6 +337,8 @@ namespace mrover {
         auto makeTextureAndView(int width, int height, wgpu::TextureFormat const& format, wgpu::TextureUsage const& usage, wgpu::TextureAspect const& aspect) -> std::pair<wgpu::Texture, wgpu::TextureView>;
 
         auto makeFramebuffers(int width, int height) -> void;
+
+        auto makeRenderPipelineLayout() -> wgpu::RenderPipelineDescriptor;
     };
 
     auto uriToPath(std::string_view uri) -> std::filesystem::path;
@@ -343,8 +350,6 @@ namespace mrover {
     auto readTexture(std::filesystem::path const& textureFileName) -> cv::Mat;
 
     auto urdfPoseToBtTransform(urdf::Pose const& pose) -> btTransform;
-
-    auto btTransformToSim3(btTransform const& transform, btVector3 const& scale) -> SIM3;
 
     auto btTransformToSe3(btTransform const& transform) -> SE3;
 
