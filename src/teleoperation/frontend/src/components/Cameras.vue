@@ -21,7 +21,7 @@
     </div>
     <h3>All Cameras</h3>
     Capacity:
-    <input v-model="capacity" type="Number" min="2" max="4" />
+    <input v-model="capacity" type="Number" min="2" :max="streamOrder.length" />
     <div v-for="i in camsEnabled.length" :key="i">
       <CameraInfo v-if="camsEnabled[i - 1]" :id="i - 1" :name="names[i - 1]" :stream="getStreamNum(i - 1)"
         @newQuality="changeQuality($event)" @swapStream="swapStream($event)"></CameraInfo>
@@ -32,7 +32,7 @@
 <script lang="ts">
 import CameraSelection from "../components/CameraSelection.vue";
 import CameraInfo from "../components/CameraInfo.vue";
-import { mapActions } from "vuex";
+import { mapActions, mapState } from "vuex";
 
 export default {
   components: {
@@ -54,7 +54,7 @@ export default {
       cameraName: "",
       capacity: 2,
       qualities: new Array(9).fill(-1),
-      streamOrder: [-1, -1, -1, -1],
+      streamOrder: [],
 
       available_sub: null,
       num_available: -1
@@ -62,6 +62,11 @@ export default {
   },
 
   watch: {
+    message(msg) {
+      if (msg.type == "max_streams") {
+        this.streamOrder = new Array(msg.max_streams).fill(-1);
+      }
+    },
     capacity: function (newCap, oldCap) {
       if (newCap < oldCap) {
         var numStreaming = this.streamOrder.filter((index) => index != -1);
@@ -71,26 +76,22 @@ export default {
     }
   },
 
-  created: function () {
-    //   this.available_sub = new ROSLIB.Topic({
-    //     ros: this.$ros,
-    //     name: "available_cameras",
-    //     messageType: "mrover/AvailableCameras"
-    //   });
+  computed: {
+    ...mapState('websocket', ['message'])
+  },
 
-    //   this.available_sub.subscribe((msg) => {
-    //     this.num_available = msg.num_available;
-    //   });
+  created: function () {
+    this.sendMessage({ "type": "max_streams" });
   },
 
   methods: {
     ...mapActions('websocket', ['sendMessage']),
 
     setCamIndex: function (index: number) {
-      //     //every time a button is pressed, it changes cam status and adds/removes from stream
-      //     Vue.set(this.camsEnabled, index, !this.camsEnabled[index]);
-      //     if (this.camsEnabled[index]) this.qualities[index] = 2; //if enabling camera, turn on medium quality
-      //     this.changeStream(index);
+      // every time a button is pressed, it changes cam status and adds/removes from stream
+      this.camsEnabled[index] = !this.camsEnabled[index];
+      if (this.camsEnabled[index]) this.qualities[index] = 2; //if enabling camera, turn on medium quality
+      this.changeStream(index);
     },
 
     sendCameras: function (index: number) {
@@ -110,19 +111,19 @@ export default {
     },
 
     swapStream({ prev, newest }) {
-      //     var temp = this.streamOrder[prev];
-      //     Vue.set(this.streamOrder, prev, this.streamOrder[newest]);
-      //     Vue.set(this.streamOrder, newest, temp);
+      var temp = this.streamOrder[prev];
+      this.streamOrder[prev] = this.streamOrder[newest];
+      this.streamOrder[newest] = temp;
     },
 
     changeStream(index: number) {
-      //     const found = this.streamOrder.includes(index);
-      //     if (found) {
-      //       this.streamOrder.splice(this.streamOrder.indexOf(index), 1);
-      //       this.streamOrder.push(-1);
-      //       this.qualities[index] = -1; //close the stream when sending it to comms
-      //     } else Vue.set(this.streamOrder, this.streamOrder.indexOf(-1), index);
-      //     this.sendCameras(index);
+      const found = this.streamOrder.includes(index);
+      if (found) {
+        this.streamOrder.splice(this.streamOrder.indexOf(index), 1);
+        this.streamOrder.push(-1);
+        this.qualities[index] = -1; //close the stream when sending it to comms
+      } else this.streamOrder[this.streamOrder.indexOf(-1)] = index;
+      this.sendCameras(index);
     },
 
     getStreamNum(index: number) {

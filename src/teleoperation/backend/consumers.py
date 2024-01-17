@@ -43,7 +43,7 @@ class GUIConsumer(JsonWebsocketConsumer):
         self.calibrate_service = rospy.ServiceProxy("arm_calibrate", Trigger)
         self.joy_sub = rospy.Subscriber("/joystick", Joy, self.handle_joystick_message)
         self.led_sub = rospy.Subscriber("/led", LED, self.led_callback)
-        self.change_cameras = rospy.ServiceProxy("change_cameras", ChangeCameras)
+        self.change_cameras_srv = rospy.ServiceProxy("change_cameras", ChangeCameras)
 
     def disconnect(self, close_code):
         self.pdb_sub.unregister()
@@ -71,6 +71,8 @@ class GUIConsumer(JsonWebsocketConsumer):
             self.send_auton_command(message)
         elif message["type"] == "teleop_enabled":
             self.send_teleop_enabled(message)
+        elif message["type"] == "num_resolutions" or message["type"] == "max_streams":
+            self.send_res_streams()
 
     def handle_joystick_message(self, msg):
         mappings = rospy.get_param("teleop/joystick_mappings")
@@ -219,6 +221,12 @@ class GUIConsumer(JsonWebsocketConsumer):
     def change_cameras(self, msg):
         try:
             camera_cmd = CameraCmd(msg["device"], msg["res"])
-            result = self.change_cameras(primary=msg["primary"], camera_cmd)
+            result = self.change_cameras_srv(primary=msg["primary"], camera_cmd=camera_cmd)
         except rospy.ServiceException as e:
             print(f"Service call failed: {e}")
+
+    def send_res_streams(self):
+        res = rospy.get_param("cameras/max_num_resolutions")
+        streams = rospy.get_param("cameras/max_streams")
+        self.send(text_data=json.dumps({"type": "max_resolution", "res": res}))
+        self.send(text_data=json.dumps({"type": "max_streams", "streams": streams}))
