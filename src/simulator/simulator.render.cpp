@@ -509,7 +509,7 @@ namespace mrover {
 
                     cameraUpdate(camera, encoder, renderPassDescriptor);
 
-                    camera.thisUpdate = true;
+                    camera.needsMap = true;
                 }
             }
         }
@@ -564,9 +564,9 @@ namespace mrover {
         mSwapChain.present();
 
         for (Camera& camera: mCameras) {
-            if (camera.thisUpdate) {
+            if (camera.needsMap) {
                 camera.callback = camera.pointCloudBufferStaging.mapAsync(wgpu::MapMode::Read, 0, camera.pointCloudBufferStaging.getSize(), [](wgpu::BufferMapAsyncStatus const&) {});
-                camera.thisUpdate = false;
+                camera.needsMap = false;
             }
         }
 

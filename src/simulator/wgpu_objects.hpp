@@ -149,7 +149,8 @@ namespace mrover {
                         source,
                         wgpu::Extent3D{static_cast<std::uint32_t>(dataToWrite.cols), static_cast<std::uint32_t>(dataToWrite.rows), 1});
 
-                if (cv::Size nextSize = dataToWrite.size() / 2; nextSize.area() >= 1) resize(dataToWrite, dataToWrite, nextSize, 0, 0);
+                if (cv::Size nextSize = dataToWrite.size() / 2; nextSize.area() >= 1)
+                    cv::resize(dataToWrite, dataToWrite, nextSize, 0, 0);
             }
 
             return true;
