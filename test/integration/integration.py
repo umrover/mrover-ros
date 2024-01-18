@@ -27,6 +27,7 @@ class TestIntegration(unittest.TestCase):
         waypoints = [
             (
                 Waypoint(tag_id=0, type=WaypointType(val=WaypointType.NO_SEARCH)),
+                waypoint_in_world,
             ),
         ]
 
