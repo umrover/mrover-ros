@@ -195,7 +195,7 @@ namespace mrover {
         tf2_ros::TransformListener mTfListener{mTfBuffer};
         tf2_ros::TransformBroadcaster mTfBroadcaster;
 
-        Eigen::Vector3f mIkTarget{0.5, 0.1, 0.5};
+        Eigen::Vector3f mIkTarget{1.0, 0.1, 0};
         ros::Publisher mIkTargetPub;
 
         // Rendering
