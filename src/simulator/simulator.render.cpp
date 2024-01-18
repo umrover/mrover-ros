@@ -363,6 +363,8 @@ namespace mrover {
         // See: http://www.lighthouse3d.com/tutorials/glsl-12-tutorial/the-normal-matrix/ for why this has to be treated specially
         // TLDR: it preserves orthogonality between normal vectors and their respective surfaces with any model scaling (including non-uniform)
         uniforms.value.modelToWorldForNormals = modelToWorld.matrix().inverse().transpose().cast<float>();
+        uniforms.value.modelToWorldForNormals.col(3).setZero();
+        uniforms.value.modelToWorldForNormals.row(3).setZero();
         uniforms.value.material = 1;
         uniforms.enqueueWrite();
 

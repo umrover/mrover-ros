@@ -649,7 +649,7 @@ bool ImGui_ImplWGPU_CreateDeviceObjects()
     color_states[0].blend = &blend_state;
     color_states[0].writeMask = WGPUColorWriteMask_All;
 
-    color_states[1].format = WGPUTextureFormat_RGBA8Unorm;
+    color_states[1].format = WGPUTextureFormat_RGBA16Float;
     color_states[1].blend = &blend_state;
     color_states[1].writeMask = WGPUColorWriteMask_None;
 

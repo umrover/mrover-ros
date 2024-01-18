@@ -43,7 +43,8 @@ namespace mrover {
 
         // TODO(quintin): clean this up
         int maxSubSteps = 0;
-        int simStepCount = mDynamicsWorld->stepSimulation(std::chrono::duration_cast<std::chrono::duration<float>>(dt).count(), maxSubSteps, 1 / 120.0f);
+        float updateDuration = std::clamp(std::chrono::duration_cast<std::chrono::duration<float>>(dt).count(), 0.0f, 0.1f);
+        [[maybe_unused]] int simStepCount = mDynamicsWorld->stepSimulation(updateDuration, maxSubSteps, 1 / 120.0f);
 
         // // TODO(quintin): Figure out why this fails
         // if (auto* mlcpSolver = dynamic_cast<btMLCPSolver*>(mDynamicsWorld->getConstraintSolver())) {

@@ -50,7 +50,8 @@ struct OutFragment {
     let baseColor = textureSample(texture, textureSampler, in.uv);
 
     var out : OutFragment;
-    out.normalInCamera = su.worldToCamera * in.normalInWorld;
+    out.normalInCamera = (su.worldToCamera * in.normalInWorld + vec4(1, 1, 1, 0)) / 2;
+    out.normalInCamera.a = 1;
     switch (mu.material) {
         case 0: {
             out.color = vec4(baseColor.rgb, 1);
@@ -129,7 +130,7 @@ fn reproject(pixelInImage: vec2u, depth: f32) -> vec3f {
 
     let depth = textureLoad(depthImage, pixelInImage, 0);
     let color = textureLoad(colorImage, pixelInImage, 0);
-    let normal = textureLoad(normalsImage, pixelInImage, 0);
+    let normal = textureLoad(normalsImage, pixelInImage, 0) * 2 - vec4(1, 1, 1, 0);
 
     let pointInCamera = reproject(pixelInImage, depth);
 

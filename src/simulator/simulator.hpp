@@ -22,7 +22,7 @@ namespace mrover {
 
     static auto const COLOR_FORMAT = wgpu::TextureFormat::BGRA8Unorm;
     static auto const DEPTH_FORMAT = wgpu::TextureFormat::Depth32Float;
-    static auto const NORMAL_FORMAT = wgpu::TextureFormat::BGRA8Unorm;
+    static auto const NORMAL_FORMAT = wgpu::TextureFormat::RGBA16Float;
 
     struct Camera;
     class SimulatorNodelet;
