@@ -47,7 +47,7 @@ namespace mrover {
         msg->height = bgraGpu.getHeight();
         msg->width = bgraGpu.getWidth();
         fillPointCloudMessageHeader(msg);
-        size_t size = msg->width * msg->height;
+        std::size_t size = msg->width * msg->height;
 
         pcGpu.resize(size);
         Point* pcGpuPtr = pcGpu.data().get();

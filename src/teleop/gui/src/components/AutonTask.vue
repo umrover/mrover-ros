@@ -221,7 +221,7 @@ export default {
     }
   },
 
-  beforeDestroy: function () {
+  beforeUnmount: function () {
     this.ledColor = "off";
     this.sendColor();
     window.clearInterval(ledInterval);

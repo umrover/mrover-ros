@@ -3,7 +3,7 @@ name = "mrover"
 version = "2024.0.0"
 description = "MRover Python Code"
 readme = "README.md"
-requires-python = ">=3.10.0"
+requires-python = ">=3.9"
 license = { file = "LICENSE.md" }
 maintainers = [
     { name = "Michigan Mars Rover Team" }
@@ -23,6 +23,8 @@ dependencies = [
     "moteus==0.3.59",
     "pymap3d==3.0.1",
     "aenum==3.1.15",
+    "daphne==4.0.0",
+    "channels==4.0.0",
 ]
 
 [project.optional-dependencies]

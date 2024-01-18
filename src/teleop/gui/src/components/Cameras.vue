@@ -16,6 +16,14 @@
         Change name
       </button>
     </div>
+    Write Frames to File:
+    <ToggleButton
+      id="frames_to_file"
+      :current-state="toggle_enabled"
+      label-enable-text="On"
+      label-disable-text="Off"
+      @change="toggleLimitSwitch"
+    />
     <div class="cameraselection">
       <CameraSelection
         class="cameraspace1"
@@ -47,12 +55,14 @@ import ROSLIB from "roslib/src/RosLib";
 import CameraSelection from "../components/CameraSelection.vue";
 import CameraInfo from "../components/CameraInfo.vue";
 import { mapGetters, mapMutations } from "vuex";
+import ToggleButton from "./ToggleButton.vue";
 
 export default {
   components: {
     CameraSelection,
-    CameraInfo
-  },
+    CameraInfo,
+    ToggleButton
+},
 
   props: {
     primary: {
@@ -69,6 +79,7 @@ export default {
       capacity: 2,
       qualities: new Array(9).fill(-1),
       streamOrder: [-1, -1, -1, -1],
+      toggle_enabled: false,
 
       available_sub: null,
       num_available: -1
@@ -130,7 +141,7 @@ export default {
     sendCameras: function (index) {
       //sends cameras to a service to display on screen
       var res = this.qualities[index];
-      var msg = new ROSLIB.Message({ device: index, resolution: res }); //CameraCmd msg
+      var msg = new ROSLIB.Message({ device: index, resolution: res, write_frames_to_file: this.toggle_enabled}); //CameraCmd msg
 
       var changeCamsService = new ROSLIB.Service({
         ros: this.$ros,
@@ -173,7 +184,11 @@ export default {
     //
     getStreamNum(index) {
       return this.streamOrder.indexOf(index);
-    }
+    },
+
+    toggleLimitSwitch() {
+      this.toggle_enabled = !this.toggle_enabled;
+    },
 
     // ...mapMutations("cameras", {
     //   setCamsEnabled: "setCamsEnabled",

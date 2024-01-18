@@ -30,7 +30,7 @@ export default {
     };
   },
 
-  beforeDestroy: function () {
+  beforeUnmount: function () {
     window.clearInterval(interval);
     document.removeEventListener("keyup", this.keyMonitorUp);
     document.removeEventListener("keydown", this.keyMonitorDown);

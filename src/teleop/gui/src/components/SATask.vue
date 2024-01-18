@@ -97,6 +97,9 @@
         ]"
       />
     </div>
+    <div class="box light-bg carousel">
+      <Carousel></Carousel>
+    </div>
     <div v-show="false">
       <MastGimbalControls></MastGimbalControls>
     </div>
@@ -123,6 +126,7 @@ import CommReadout from "./CommReadout.vue";
 import MCUReset from "./MCUReset.vue";
 import MotorAdjust from "./MotorAdjust.vue";
 import OdometryReading from "./OdometryReading.vue";
+import Carousel from "./Carousel.vue";
 import { disableAutonLED, quaternionToMapAngle } from "../utils.js";
 
 export default {
@@ -141,7 +145,8 @@ export default {
     CommReadout,
     MCUReset,
     MotorAdjust,
-    OdometryReading
+    OdometryReading,
+    Carousel
   },
   data() {
     return {
@@ -219,11 +224,11 @@ export default {
   grid-template-columns: auto auto auto;
   grid-template-rows: 60px 50vh auto auto auto;
   grid-template-areas:
-    "header header header"
-    "map map waypoints"
-    "odom cameras cameras"
-    "arm limit calibration"
-    "pdb moteus jointState";
+    "header header header header"
+    "map map waypoints waypoints"
+    "odom cameras cameras cameras"
+    "arm limit calibration carousel"
+    "pdb moteus jointState jointState";
   font-family: sans-serif;
   height: auto;
 }
@@ -357,6 +362,10 @@ h2 {
   grid-area: calibration;
   display: flex;
   flex-direction: column;
+}
+
+.carousel {
+  grid-area: carousel;
 }
 
 .calibration-checkboxes {

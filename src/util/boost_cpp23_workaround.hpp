@@ -4,7 +4,7 @@
 #include <type_traits>
 
 // Quintin: This is heinous, but it's the only way I can get the whole code to compile with anything greater than C++17
-#ifdef __GNUC__
+#ifdef __GLIBCXX__
 #define GENERATE_ALLOCATOR_SPECIALIZATION(_Tp)                                               \
     namespace std {                                                                          \
                                                                                              \
