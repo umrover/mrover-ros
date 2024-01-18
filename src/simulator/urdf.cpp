@@ -160,7 +160,6 @@ namespace mrover {
                         ROS_WARN_STREAM("Currently only mesh visuals are supported");
                     }
                 }
-                it->second.uniforms.emplace_back();
             }
 
             auto* collider = simulator.makeBulletObject<btMultiBodyLinkCollider>(simulator.mMultibodyCollider, multiBody, linkIndex);
@@ -242,6 +241,9 @@ namespace mrover {
                 multiBody->setBaseInertia(inertia);
                 multiBody->setBaseCollider(collider);
             }
+
+            it->second.collisionUniforms.resize(link->collision_array.size());
+            it->second.visualUniforms.resize(link->visual_array.size());
 
             for (urdf::LinkConstSharedPtr childLink: link->child_links) {
                 self(self, childLink);

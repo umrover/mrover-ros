@@ -46,9 +46,8 @@ namespace mrover {
         std::tie(mDepthTexture, mDepthTextureView) = makeTextureAndView(width, height, DEPTH_FORMAT, wgpu::TextureUsage::RenderAttachment, wgpu::TextureAspect::DepthOnly);
     }
 
-    auto SimulatorNodelet::makeRenderPipelineLayout() -> wgpu::RenderPipelineDescriptor {
+    auto SimulatorNodelet::makeRenderPipelines() -> void {
         wgpu::RenderPipelineDescriptor descriptor;
-        descriptor.label = "PBR";
         descriptor.primitive.topology = wgpu::PrimitiveTopology::TriangleList;
         descriptor.primitive.cullMode = wgpu::CullMode::Back;
         descriptor.multisample.count = 1;
@@ -144,7 +143,12 @@ namespace mrover {
         pipelineLayoutDescriptor.bindGroupLayouts = bindGroupLayouts.data();
         descriptor.layout = mDevice.createPipelineLayout(pipelineLayoutDescriptor);
 
-        return descriptor;
+        mPbrPipeline = mDevice.createRenderPipeline(descriptor);
+        if (!mPbrPipeline) throw std::runtime_error("Failed to create WGPU render pipeline");
+
+        descriptor.primitive.topology = wgpu::PrimitiveTopology::LineList;
+        mWireframePipeline = mDevice.createRenderPipeline(descriptor);
+        if (!mWireframePipeline) throw std::runtime_error("Failed to create WGPU wireframe render pipeline");
     }
 
     auto computeCameraToClip(float fovY, float aspect, float zNear, float zFar) -> Eigen::Matrix4f {
@@ -272,16 +276,7 @@ namespace mrover {
             mShaderModule = mDevice.createShaderModule(shaderDescriptor);
             if (!mShaderModule) throw std::runtime_error("Failed to create WGPU PBR shader module");
         }
-        {
-            mPbrPipeline = mDevice.createRenderPipeline(makeRenderPipelineLayout());
-            if (!mPbrPipeline) throw std::runtime_error("Failed to create WGPU render pipeline");
-
-            // wgpu::RenderPipelineDescriptor wireframeLayout = makeRenderPipelineLayout();
-            // wireframeLayout.label = "Wireframe";
-            // wireframeLayout.primitive.topology = wgpu::PrimitiveTopology::LineList;
-            // mWireframePipeline = mDevice.createRenderPipeline(wireframeLayout);
-            // if (!mWireframePipeline) throw std::runtime_error("Failed to create WGPU wireframe render pipeline");
-        }
+        makeRenderPipelines();
         {
             std::array<wgpu::BindGroupLayoutEntry, 4> bindGroupLayoutEntries{};
             bindGroupLayoutEntries[0].binding = 0;
@@ -387,12 +382,13 @@ namespace mrover {
 
             auto renderLink = [&](auto&& self, urdf::LinkConstSharedPtr const& link) -> void {
                 for (std::size_t visualIndex = 0; urdf::VisualSharedPtr const& visual: link->visual_array) {
-                    if (auto urdfMesh = std::dynamic_pointer_cast<urdf::Mesh>(link->visual->geometry)) {
+                    if (auto urdfMesh = std::dynamic_pointer_cast<urdf::Mesh>(visual->geometry)) {
                         Model& model = mUriToModel.at(urdfMesh->filename);
+                        URDF::LinkMeta& meta = urdf.linkNameToMeta.at(link->name);
                         SE3 linkInWorld = urdf.linkInWorld(link->name);
                         SE3 modelInLink = btTransformToSe3(urdfPoseToBtTransform(link->visual->origin));
                         SE3 modelInWorld = linkInWorld * modelInLink;
-                        renderModel(pass, model, urdf.linkNameToMeta[link->name].uniforms.at(visualIndex), SIM3{modelInWorld.position(), modelInWorld.rotation(), R3::Ones()});
+                        renderModel(pass, model, meta.visualUniforms.at(visualIndex), SIM3{modelInWorld.position(), modelInWorld.rotation(), R3::Ones()});
                         visualIndex++;
                     }
                 }
@@ -413,7 +409,11 @@ namespace mrover {
 
             auto renderLink = [&](auto&& self, urdf::LinkConstSharedPtr const& link) -> void {
                 URDF::LinkMeta& meta = urdf.linkNameToMeta.at(link->name);
-                btCollisionShape* shape = urdf.physics->getLinkCollider(meta.index)->getCollisionShape();
+                btMultiBodyLinkCollider* collider = urdf.physics->getLinkCollider(meta.index);
+                if (!collider) return;
+
+                btCollisionShape* shape = collider->getCollisionShape();
+                assert(shape);
                 SE3 linkInWorld = urdf.linkInWorld(link->name);
                 SE3 modelInLink = btTransformToSe3(urdfPoseToBtTransform(link->visual->origin));
                 SE3 shapeToWorld = linkInWorld * modelInLink;
@@ -421,15 +421,15 @@ namespace mrover {
                 if (auto* box = dynamic_cast<btBoxShape const*>(shape)) {
                     btVector3 extents = box->getHalfExtentsWithoutMargin() * 2;
                     SIM3 modelToWorld{shapeToWorld.position(), shapeToWorld.rotation(), R3{extents.x(), extents.y(), extents.z()}};
-                    renderModel(pass, mUriToModel.at(CUBE_PRIMITIVE_URI), meta.uniforms.front(), modelToWorld);
+                    renderModel(pass, mUriToModel.at(CUBE_PRIMITIVE_URI), meta.collisionUniforms.front(), modelToWorld);
                 } else if (auto* sphere = dynamic_cast<btSphereShape const*>(shape)) {
                     btScalar diameter = sphere->getRadius() * 2;
                     SIM3 modelToWorld{shapeToWorld.position(), shapeToWorld.rotation(), R3{diameter, diameter, diameter}};
-                    renderModel(pass, mUriToModel.at(SPHERE_PRIMITIVE_URI), meta.uniforms.front(), modelToWorld);
+                    renderModel(pass, mUriToModel.at(SPHERE_PRIMITIVE_URI), meta.collisionUniforms.front(), modelToWorld);
                 } else if (auto* cylinder = dynamic_cast<btCylinderShapeZ const*>(shape)) {
                     btVector3 extents = cylinder->getHalfExtentsWithoutMargin() * 2;
                     SIM3 modelToWorld{shapeToWorld.position(), shapeToWorld.rotation(), R3{extents.x(), extents.y(), extents.z()}};
-                    renderModel(pass, mUriToModel.at(CYLINDER_PRIMITIVE_URI), meta.uniforms.front(), modelToWorld);
+                    renderModel(pass, mUriToModel.at(CYLINDER_PRIMITIVE_URI), meta.collisionUniforms.front(), modelToWorld);
                 } else if (auto* compound = dynamic_cast<btCompoundShape const*>(shape)) {
                     // for (int i = 0; i < compound->getNumChildShapes(); ++i) {
                     //     btTransform const& childToParent = compound->getChildTransform(i);
@@ -439,7 +439,7 @@ namespace mrover {
                     // }
                 } else if (auto* mesh = dynamic_cast<btBvhTriangleMeshShape const*>(shape)) {
                     SIM3 modelToWorld{shapeToWorld.position(), shapeToWorld.rotation(), R3::Ones()};
-                    renderModel(pass, mUriToModel.at(mMeshToUri.at(const_cast<btBvhTriangleMeshShape*>(mesh))), meta.uniforms.front(), modelToWorld);
+                    renderModel(pass, mUriToModel.at(mMeshToUri.at(const_cast<btBvhTriangleMeshShape*>(mesh))), meta.collisionUniforms.front(), modelToWorld);
                 } else if (dynamic_cast<btEmptyShape const*>(shape)) {
                 } else {
                     NODELET_WARN_STREAM_ONCE(std::format("Tried to render unsupported collision shape: {}", shape->getName()));
@@ -452,45 +452,9 @@ namespace mrover {
 
             renderLink(renderLink, urdf.model.getRoot());
         }
-
-        // for (auto const& collider: mMultibodyCollider) {
-        //
-        //     auto renderCollisionObject = [&](auto&& self, btTransform const& shapeToWorld, btCollisionShape const* shape) -> void {
-        //         if (auto* box = dynamic_cast<btBoxShape const*>(shape)) {
-        //             btVector3 extents = box->getHalfExtentsWithoutMargin() * 2;
-        //             SIM3 worldToModel = btTransformToSim3(shapeToWorld, extents);
-        //             renderModel(mUriToModel.at(CUBE_PRIMITIVE_URI), worldToModel);
-        //         } else if (auto* sphere = dynamic_cast<btSphereShape const*>(shape)) {
-        //             btScalar diameter = sphere->getRadius() * 2;
-        //             SIM3 modelToWorld = btTransformToSim3(shapeToWorld, btVector3{diameter, diameter, diameter});
-        //             renderModel(mUriToModel.at(SPHERE_PRIMITIVE_URI), modelToWorld);
-        //         } else if (auto* cylinder = dynamic_cast<btCylinderShapeZ const*>(shape)) {
-        //             btVector3 extents = cylinder->getHalfExtentsWithoutMargin() * 2;
-        //             SIM3 modelToWorld = btTransformToSim3(shapeToWorld, extents);
-        //             renderModel(mUriToModel.at(CYLINDER_PRIMITIVE_URI), modelToWorld);
-        //         } else if (auto* compound = dynamic_cast<btCompoundShape const*>(shape)) {
-        //             for (int i = 0; i < compound->getNumChildShapes(); ++i) {
-        //                 btTransform const& childToParent = compound->getChildTransform(i);
-        //                 btCollisionShape const* childShape = compound->getChildShape(i);
-        //                 btTransform childToWorld = shapeToWorld * childToParent;
-        //                 self(self, childToWorld, childShape);
-        //             }
-        //         } else if (auto* mesh = dynamic_cast<btBvhTriangleMeshShape const*>(shape)) {
-        //             SIM3 modelToWorld = btTransformToSim3(shapeToWorld, btVector3{1, 1, 1});
-        //             renderModel(pass, mUriToModel.at(mMeshToUri.at(const_cast<btBvhTriangleMeshShape*>(mesh))), modelToWorld);
-        //         } else if (dynamic_cast<btEmptyShape const*>(shape)) {
-        //         } else {
-        //             NODELET_WARN_STREAM_ONCE(std::format("Tried to render unsupported collision shape: {}", shape->getName()));
-        //         }
-        //     };
-        //
-        //     btTransform const& shapeToWorld = collider->getWorldTransform();
-        //     btCollisionShape const* shape = collider->getCollisionShape();
-        //     renderCollisionObject(renderCollisionObject, shapeToWorld, shape);
-        // }
     }
 
-    // TODO(quintin): Free pointers in here at the end of the progrma
+    // TODO(quintin): Free pointers in here at the end of the program
     boost::container::static_vector<sensor_msgs::PointCloud2*, 32> pointCloudPool;
 
     auto getPooledPointCloud() -> sensor_msgs::PointCloud2* {

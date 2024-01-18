@@ -82,7 +82,8 @@ namespace mrover {
     struct URDF {
         struct LinkMeta {
             int index{};
-            boost::container::static_vector<Uniform<ModelUniforms>, 2> uniforms;
+            boost::container::static_vector<Uniform<ModelUniforms>, 2> visualUniforms;
+            boost::container::static_vector<Uniform<ModelUniforms>, 2> collisionUniforms;
         };
 
         std::string name;
@@ -272,7 +273,7 @@ namespace mrover {
             return it->second;
         }
 
-        SE3 mCameraInWorld{R3{-2.0, 0.0, 0.0}, SO3{}};
+        SE3 mCameraInWorld{R3{-3.0, 0.0, 1.5}, SO3{}};
 
         std::vector<Camera> mCameras;
 
@@ -338,7 +339,7 @@ namespace mrover {
 
         auto makeFramebuffers(int width, int height) -> void;
 
-        auto makeRenderPipelineLayout() -> wgpu::RenderPipelineDescriptor;
+        auto makeRenderPipelines() -> void;
     };
 
     auto uriToPath(std::string_view uri) -> std::filesystem::path;
