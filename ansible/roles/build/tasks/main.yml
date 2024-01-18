@@ -87,8 +87,9 @@
       - python3.10-dev
       - python3.10-venv
       - ros-{{ ros_distro }}-rosbash
-      - libfmt-dev
       - libbullet-dev
+      - libglfw3-dev
+      - xorg-dev
 
 - name: Initialize rosdep
   become: True

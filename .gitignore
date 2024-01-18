@@ -38,3 +38,6 @@ moteus-cal*
 
 # clangd
 .cache/
+
+# macOS
+.DS_Store
