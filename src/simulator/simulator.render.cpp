@@ -409,40 +409,39 @@ namespace mrover {
 
             auto renderLink = [&](auto&& self, urdf::LinkConstSharedPtr const& link) -> void {
                 URDF::LinkMeta& meta = urdf.linkNameToMeta.at(link->name);
-                btMultiBodyLinkCollider* collider = urdf.physics->getLinkCollider(meta.index);
-                if (!collider) return;
 
-                btCollisionShape* shape = collider->getCollisionShape();
-                assert(shape);
-                SE3 linkInWorld = urdf.linkInWorld(link->name);
-                SE3 modelInLink = btTransformToSe3(urdfPoseToBtTransform(link->visual->origin));
-                SE3 shapeToWorld = linkInWorld * modelInLink;
+                if (link->collision) {
+                    btMultiBodyLinkCollider* collider = meta.index == -1 ? urdf.physics->getBaseCollider() : urdf.physics->getLinkCollider(meta.index);
+                    assert(collider);
+                    btCollisionShape* shape = collider->getCollisionShape();
+                    assert(shape);
+                    SE3 linkInWorld = urdf.linkInWorld(link->name);
 
-                if (auto* box = dynamic_cast<btBoxShape const*>(shape)) {
-                    btVector3 extents = box->getHalfExtentsWithoutMargin() * 2;
-                    SIM3 modelToWorld{shapeToWorld.position(), shapeToWorld.rotation(), R3{extents.x(), extents.y(), extents.z()}};
-                    renderModel(pass, mUriToModel.at(CUBE_PRIMITIVE_URI), meta.collisionUniforms.front(), modelToWorld);
-                } else if (auto* sphere = dynamic_cast<btSphereShape const*>(shape)) {
-                    btScalar diameter = sphere->getRadius() * 2;
-                    SIM3 modelToWorld{shapeToWorld.position(), shapeToWorld.rotation(), R3{diameter, diameter, diameter}};
-                    renderModel(pass, mUriToModel.at(SPHERE_PRIMITIVE_URI), meta.collisionUniforms.front(), modelToWorld);
-                } else if (auto* cylinder = dynamic_cast<btCylinderShapeZ const*>(shape)) {
-                    btVector3 extents = cylinder->getHalfExtentsWithoutMargin() * 2;
-                    SIM3 modelToWorld{shapeToWorld.position(), shapeToWorld.rotation(), R3{extents.x(), extents.y(), extents.z()}};
-                    renderModel(pass, mUriToModel.at(CYLINDER_PRIMITIVE_URI), meta.collisionUniforms.front(), modelToWorld);
-                } else if (auto* compound = dynamic_cast<btCompoundShape const*>(shape)) {
-                    // for (int i = 0; i < compound->getNumChildShapes(); ++i) {
-                    //     btTransform const& childToParent = compound->getChildTransform(i);
-                    //     btCollisionShape const* childShape = compound->getChildShape(i);
-                    //     btTransform childToWorld = shapeToWorld * childToParent;
-                    //     self(self, childToWorld, childShape);
-                    // }
-                } else if (auto* mesh = dynamic_cast<btBvhTriangleMeshShape const*>(shape)) {
-                    SIM3 modelToWorld{shapeToWorld.position(), shapeToWorld.rotation(), R3::Ones()};
-                    renderModel(pass, mUriToModel.at(mMeshToUri.at(const_cast<btBvhTriangleMeshShape*>(mesh))), meta.collisionUniforms.front(), modelToWorld);
-                } else if (dynamic_cast<btEmptyShape const*>(shape)) {
-                } else {
-                    NODELET_WARN_STREAM_ONCE(std::format("Tried to render unsupported collision shape: {}", shape->getName()));
+                    if (auto* compound = dynamic_cast<btCompoundShape*>(shape)) {
+                        for (int i = 0; i < compound->getNumChildShapes(); ++i) {
+                            SE3 modelInLink = btTransformToSe3(urdfPoseToBtTransform(link->collision_array.at(i)->origin));
+                            SE3 shapeToWorld = modelInLink * linkInWorld;
+                            auto* shape = compound->getChildShape(i);
+                            if (auto* box = dynamic_cast<btBoxShape const*>(shape)) {
+                                btVector3 extents = box->getHalfExtentsWithoutMargin() * 2;
+                                SIM3 modelToWorld{shapeToWorld.position(), shapeToWorld.rotation(), R3{extents.x(), extents.y(), extents.z()}};
+                                renderModel(pass, mUriToModel.at(CUBE_PRIMITIVE_URI), meta.collisionUniforms.at(i), modelToWorld);
+                            } else if (auto* sphere = dynamic_cast<btSphereShape const*>(shape)) {
+                                btScalar diameter = sphere->getRadius() * 2;
+                                SIM3 modelToWorld{shapeToWorld.position(), shapeToWorld.rotation(), R3{diameter, diameter, diameter}};
+                                renderModel(pass, mUriToModel.at(SPHERE_PRIMITIVE_URI), meta.collisionUniforms.at(i), modelToWorld);
+                            } else if (auto* cylinder = dynamic_cast<btCylinderShapeZ const*>(shape)) {
+                                btVector3 extents = cylinder->getHalfExtentsWithoutMargin() * 2;
+                                SIM3 modelToWorld{shapeToWorld.position(), shapeToWorld.rotation(), R3{extents.x(), extents.y(), extents.z()}};
+                                renderModel(pass, mUriToModel.at(CYLINDER_PRIMITIVE_URI), meta.collisionUniforms.at(i), modelToWorld);
+                            } else if (auto* mesh = dynamic_cast<btBvhTriangleMeshShape const*>(shape)) {
+                                SIM3 modelToWorld{shapeToWorld.position(), shapeToWorld.rotation(), R3::Ones()};
+                                renderModel(pass, mUriToModel.at(mMeshToUri.at(const_cast<btBvhTriangleMeshShape*>(mesh))), meta.collisionUniforms.at(i), modelToWorld);
+                            } else {
+                                NODELET_WARN_STREAM_ONCE(std::format("Tried to render unsupported collision shape: {}", shape->getName()));
+                            }
+                        }
+                    }
                 }
 
                 for (urdf::JointSharedPtr const& child_joint: link->child_joints) {
