@@ -27,11 +27,11 @@
 #include <sensor_msgs/image_encodings.h>
 #include <sensor_msgs/point_cloud2_iterator.h>
 #include <std_srvs/SetBool.h>
-#include <tf/exceptions.h>
 #include <tf2_ros/transform_broadcaster.h>
 #include <tf2_ros/transform_listener.h>
 
 #include <mrover/TagDetectorParamsConfig.h>
 
 #include <loop_profiler.hpp>
+#include <point.hpp>
 #include <se3.hpp>

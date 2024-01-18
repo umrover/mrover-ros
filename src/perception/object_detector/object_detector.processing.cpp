@@ -163,10 +163,11 @@ namespace mrover {
 
             //Fill out the msgData information to be published to the topic
             DetectedObject msgData;
-            msgData.object_type = firstDetection.className;
-            msgData.detection_confidence = classConfidence;
-            msgData.width = static_cast<float>(box.width);
-            msgData.height = static_cast<float>(box.height);
+            // TODO(quintin): Correct to new data type
+            // msgData.object_type = firstDetection.className;
+            // msgData.detection_confidence = classConfidence;
+            // msgData.width = static_cast<float>(box.width);
+            // msgData.height = static_cast<float>(box.height);
 
             //Calculate the center of the box
             std::pair center(box.x + box.width/2, box.y + box.height/2);
