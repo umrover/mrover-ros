@@ -43,6 +43,7 @@ namespace mrover {
         descriptor.presentMode = wgpu::PresentMode::Immediate;
         mSwapChain = mDevice.createSwapChain(mSurface, descriptor);
         if (!mSwapChain) throw std::runtime_error("Failed to create WGPU swap chain");
+        std::tie(mNormalTexture, mNormalTextureView) = makeTextureAndView(width, height, NORMAL_FORMAT, wgpu::TextureUsage::RenderAttachment, wgpu::TextureAspect::All);
         std::tie(mDepthTexture, mDepthTextureView) = makeTextureAndView(width, height, DEPTH_FORMAT, wgpu::TextureUsage::RenderAttachment, wgpu::TextureAspect::DepthOnly);
     }
 
@@ -103,8 +104,13 @@ namespace mrover {
         colorTarget.format = COLOR_FORMAT;
         colorTarget.blend = &blend;
         colorTarget.writeMask = wgpu::ColorWriteMask::All;
-        fragment.targetCount = 1;
-        fragment.targets = &colorTarget;
+        wgpu::ColorTargetState normalTarget;
+        normalTarget.format = NORMAL_FORMAT;
+        normalTarget.blend = &blend;
+        normalTarget.writeMask = wgpu::ColorWriteMask::All;
+        std::array targets{colorTarget, normalTarget};
+        fragment.targetCount = targets.size();
+        fragment.targets = targets.data();
         descriptor.fragment = &fragment;
 
         std::array<wgpu::BindGroupLayoutEntry, 3> meshBindGroupLayoutEntries{};
@@ -138,9 +144,9 @@ namespace mrover {
 
 
         wgpu::PipelineLayoutDescriptor pipelineLayoutDescriptor;
-        std::array<WGPUBindGroupLayout, 2> bindGroupLayouts{meshBindGroupLayout, sceneBindGroupLayout};
+        std::array bindGroupLayouts{meshBindGroupLayout, sceneBindGroupLayout};
         pipelineLayoutDescriptor.bindGroupLayoutCount = bindGroupLayouts.size();
-        pipelineLayoutDescriptor.bindGroupLayouts = bindGroupLayouts.data();
+        pipelineLayoutDescriptor.bindGroupLayouts = reinterpret_cast<WGPUBindGroupLayout const*>(bindGroupLayouts.data());
         descriptor.layout = mDevice.createPipelineLayout(pipelineLayoutDescriptor);
 
         mPbrPipeline = mDevice.createRenderPipeline(descriptor);
@@ -218,6 +224,9 @@ namespace mrover {
         mDepthTextureView.release();
         mDepthTexture.destroy();
         mDepthTexture.release();
+        mNormalTextureView.release();
+        mNormalTexture.destroy();
+        mNormalTexture.release();
         mSwapChain.release();
 
         makeFramebuffers(width, height);
@@ -278,7 +287,7 @@ namespace mrover {
         }
         makeRenderPipelines();
         {
-            std::array<wgpu::BindGroupLayoutEntry, 4> bindGroupLayoutEntries{};
+            std::array<wgpu::BindGroupLayoutEntry, 5> bindGroupLayoutEntries{};
             bindGroupLayoutEntries[0].binding = 0;
             bindGroupLayoutEntries[0].visibility = wgpu::ShaderStage::Compute;
             bindGroupLayoutEntries[0].buffer.type = wgpu::BufferBindingType::Uniform;
@@ -289,12 +298,16 @@ namespace mrover {
             bindGroupLayoutEntries[1].texture.viewDimension = wgpu::TextureViewDimension::_2D;
             bindGroupLayoutEntries[2].binding = 2;
             bindGroupLayoutEntries[2].visibility = wgpu::ShaderStage::Compute;
-            bindGroupLayoutEntries[2].texture.sampleType = wgpu::TextureSampleType::Depth;
+            bindGroupLayoutEntries[2].texture.sampleType = wgpu::TextureSampleType::Float;
             bindGroupLayoutEntries[2].texture.viewDimension = wgpu::TextureViewDimension::_2D;
             bindGroupLayoutEntries[3].binding = 3;
             bindGroupLayoutEntries[3].visibility = wgpu::ShaderStage::Compute;
-            bindGroupLayoutEntries[3].buffer.type = wgpu::BufferBindingType::Storage;
-            bindGroupLayoutEntries[3].buffer.minBindingSize = sizeof(Point);
+            bindGroupLayoutEntries[3].texture.sampleType = wgpu::TextureSampleType::Depth;
+            bindGroupLayoutEntries[3].texture.viewDimension = wgpu::TextureViewDimension::_2D;
+            bindGroupLayoutEntries[4].binding = 4;
+            bindGroupLayoutEntries[4].visibility = wgpu::ShaderStage::Compute;
+            bindGroupLayoutEntries[4].buffer.type = wgpu::BufferBindingType::Storage;
+            bindGroupLayoutEntries[4].buffer.minBindingSize = sizeof(Point);
 
             wgpu::BindGroupLayoutDescriptor bindGroupLayoutDescriptor;
             bindGroupLayoutDescriptor.entryCount = bindGroupLayoutEntries.size();
@@ -472,10 +485,14 @@ namespace mrover {
         wgpu::TextureView nextTexture = mSwapChain.getCurrentTextureView();
         if (!nextTexture) throw std::runtime_error("Failed to get WGPU next texture view");
 
-        wgpu::RenderPassColorAttachment colorAttachment;
+        std::array<wgpu::RenderPassColorAttachment, 2> colorAttachments{};
+        auto& [colorAttachment, normalAttachment] = colorAttachments;
         colorAttachment.loadOp = wgpu::LoadOp::Clear;
         colorAttachment.storeOp = wgpu::StoreOp::Store;
         colorAttachment.clearValue = {mSkyColor.x(), mSkyColor.y(), mSkyColor.z(), mSkyColor.w()};
+        normalAttachment.loadOp = wgpu::LoadOp::Clear;
+        normalAttachment.storeOp = wgpu::StoreOp::Store;
+        normalAttachment.clearValue = {0, 0, 0, 0};
 
         wgpu::RenderPassDepthStencilAttachment depthStencilAttachment;
         depthStencilAttachment.depthClearValue = 1.0f;
@@ -486,8 +503,8 @@ namespace mrover {
         depthStencilAttachment.stencilReadOnly = true;
 
         wgpu::RenderPassDescriptor renderPassDescriptor;
-        renderPassDescriptor.colorAttachmentCount = 1;
-        renderPassDescriptor.colorAttachments = &colorAttachment;
+        renderPassDescriptor.colorAttachmentCount = colorAttachments.size();
+        renderPassDescriptor.colorAttachments = colorAttachments.data();
         renderPassDescriptor.depthStencilAttachment = &depthStencilAttachment;
 
         wgpu::CommandEncoder encoder = mDevice.createCommandEncoder();
@@ -517,6 +534,7 @@ namespace mrover {
                 if (!camera.callback && camera.updateTask.shouldUpdate()) {
                     // TODO(quintin): Move these into camera update
                     colorAttachment.view = camera.colorTextureView;
+                    normalAttachment.view = camera.normalTextureView;
                     depthStencilAttachment.view = camera.depthTextureView;
 
                     cameraUpdate(camera, encoder, renderPassDescriptor);
@@ -527,6 +545,7 @@ namespace mrover {
         }
         {
             colorAttachment.view = nextTexture;
+            normalAttachment.view = mNormalTextureView;
             depthStencilAttachment.view = mDepthTextureView;
 
             wgpu::RenderPassEncoder pass = encoder.beginRenderPass(renderPassDescriptor);
@@ -563,9 +582,9 @@ namespace mrover {
             guiUpdate(pass);
 
             pass.end();
+            pass.release();
 
             bindGroup.release();
-            pass.release();
         }
 
         nextTexture.release();

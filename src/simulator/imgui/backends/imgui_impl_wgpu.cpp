@@ -141,11 +141,18 @@ struct Uniforms {
 @group(0) @binding(1) var s: sampler;
 @group(1) @binding(0) var t: texture_2d<f32>;
 
+struct FragmentOutput {
+    @location(0) color: vec4<f32>,
+    @location(1) ignored: vec4<f32>,
+};
+
 @fragment
-fn main(in: VertexOutput) -> @location(0) vec4<f32> {
+fn main(in: VertexOutput) -> FragmentOutput {
     let color = in.color * textureSample(t, s, in.uv);
     let corrected_color = pow(color.rgb, vec3<f32>(uniforms.gamma));
-    return vec4<f32>(corrected_color, color.a);
+    var out: FragmentOutput;
+    out.color = vec4<f32>(corrected_color, color.a);
+    return out;
 }
 )";
 
@@ -635,16 +642,21 @@ bool ImGui_ImplWGPU_CreateDeviceObjects()
     blend_state.color.srcFactor = WGPUBlendFactor_SrcAlpha;
     blend_state.color.dstFactor = WGPUBlendFactor_OneMinusSrcAlpha;
 
-    WGPUColorTargetState color_state = {};
-    color_state.format = bd->renderTargetFormat;
-    color_state.blend = &blend_state;
-    color_state.writeMask = WGPUColorWriteMask_All;
+    WGPUColorTargetState color_states[2]{};
+
+    color_states[0].format = bd->renderTargetFormat;
+    color_states[0].blend = &blend_state;
+    color_states[0].writeMask = WGPUColorWriteMask_All;
+
+    color_states[1].format = WGPUTextureFormat_RGBA8Unorm;
+    color_states[1].blend = &blend_state;
+    color_states[1].writeMask = WGPUColorWriteMask_None;
 
     WGPUFragmentState fragment_state = {};
     fragment_state.module = pixel_shader_desc.module;
     fragment_state.entryPoint = pixel_shader_desc.entryPoint;
-    fragment_state.targetCount = 1;
-    fragment_state.targets = &color_state;
+    fragment_state.targetCount = 2;
+    fragment_state.targets = color_states;
 
     graphics_pipeline_desc.fragment = &fragment_state;
 

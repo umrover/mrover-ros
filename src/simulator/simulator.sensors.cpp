@@ -60,17 +60,19 @@ namespace mrover {
                 }
             }
 
-            std::array<wgpu::BindGroupEntry, 4> entries;
+            std::array<wgpu::BindGroupEntry, 5> entries;
             entries[0].binding = 0;
             entries[0].buffer = camera.computeUniforms.buffer;
             entries[0].size = sizeof(ComputeUniforms);
             entries[1].binding = 1;
             entries[1].textureView = camera.colorTextureView;
             entries[2].binding = 2;
-            entries[2].textureView = camera.depthTextureView;
+            entries[2].textureView = camera.normalTextureView;
             entries[3].binding = 3;
-            entries[3].buffer = camera.pointCloudBuffer;
-            entries[3].size = camera.resolution.x() * camera.resolution.y() * sizeof(Point);
+            entries[3].textureView = camera.depthTextureView;
+            entries[4].binding = 4;
+            entries[4].buffer = camera.pointCloudBuffer;
+            entries[4].size = camera.resolution.x() * camera.resolution.y() * sizeof(Point);
             wgpu::BindGroupDescriptor descriptor;
             descriptor.layout = mPointCloudPipeline.getBindGroupLayout(0);
             descriptor.entryCount = entries.size();

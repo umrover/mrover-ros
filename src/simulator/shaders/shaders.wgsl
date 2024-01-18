@@ -42,12 +42,18 @@ struct OutVertex {
     return out;
 }
 
-@fragment fn fs_main(in: OutVertex) -> @location(0) vec4f {
+struct OutFragment {
+    @location(0) color: vec4f,
+    @location(1) normalInWorld: vec4f,
+}
+@fragment fn fs_main(in: OutVertex) -> OutFragment {
     let baseColor = textureSample(texture, textureSampler, in.uv);
 
+    var out : OutFragment;
+    out.normalInWorld = in.normalInWorld;
     switch (mu.material) {
         case 0: {
-            return baseColor;
+            out.color = vec4(baseColor.rgb, 1);
         }
         case 1: {
             // Ambient
@@ -64,13 +70,14 @@ struct OutVertex {
             let spec = pow(max(dot(viewDirInWolrd, reflectDir), 0.0), 32);
             let specular = specularStrength * spec * su.lightColor;
             // Combination
-            return vec4(((ambient + diffuse + specular) * baseColor).rgb, 1);
+            out.color = vec4(((ambient + diffuse + specular) * baseColor).rgb, 1);
         }
         default: {
-           // Magenta for error (like Source engine :D)
-            return vec4(1, 0, 1, 1);
+            // Magenta for error (like Source engine :D)
+            out.color = vec4(1, 0, 1, 1);
         }
     }
+    return out;
 }
 
 struct ComputeUniforms {
@@ -87,8 +94,9 @@ struct Point {
 }
 @group(0) @binding(0) var<uniform> cu: ComputeUniforms;
 @group(0) @binding(1) var colorImage: texture_2d<f32>;
-@group(0) @binding(2) var depthImage: texture_depth_2d;
-@group(0) @binding(3) var<storage, read_write> points: array<Point>;
+@group(0) @binding(2) var normalsImage: texture_2d<f32>;
+@group(0) @binding(3) var depthImage: texture_depth_2d;
+@group(0) @binding(4) var<storage, read_write> points: array<Point>;
 
 // Convert a BGRA color with float values in [0, 1] to a byte vector in [0, 255]
 // Then pack the bytes into a 32-bit float in RGBA order
@@ -121,6 +129,7 @@ fn reproject(pixelInImage: vec2u, depth: f32) -> vec3f {
 
     let depth = textureLoad(depthImage, pixelInImage, 0);
     let color = textureLoad(colorImage, pixelInImage, 0);
+    let normal = textureLoad(normalsImage, pixelInImage, 0);
 
     let pointInCamera = reproject(pixelInImage, depth);
 
@@ -129,6 +138,6 @@ fn reproject(pixelInImage: vec2u, depth: f32) -> vec3f {
     let flatIndex = pixelInImage.y * cu.resolution.x + pixelInImage.x;
     points[flatIndex].xyz = pointInCamera;
     points[flatIndex].rgb = pack(color);
-    points[flatIndex].normalXyz = vec3(0, 0, 0);
+    points[flatIndex].normalXyz = normal.xyz / normal.w;
     points[flatIndex].curvature = 0;
 }

@@ -22,6 +22,7 @@ namespace mrover {
 
     static auto const COLOR_FORMAT = wgpu::TextureFormat::BGRA8Unorm;
     static auto const DEPTH_FORMAT = wgpu::TextureFormat::Depth32Float;
+    static auto const NORMAL_FORMAT = wgpu::TextureFormat::RGBA8Unorm;
 
     struct Camera;
     class SimulatorNodelet;
@@ -132,6 +133,8 @@ namespace mrover {
         wgpu::TextureView colorTextureView = nullptr;
         wgpu::Texture depthTexture = nullptr;
         wgpu::TextureView depthTextureView = nullptr;
+        wgpu::Texture normalTexture = nullptr;
+        wgpu::TextureView normalTextureView = nullptr;
         wgpu::Buffer pointCloudBuffer = nullptr;
         wgpu::Buffer pointCloudBufferStaging = nullptr;
 
@@ -211,6 +214,8 @@ namespace mrover {
         wgpu::SwapChain mSwapChain = nullptr;
         wgpu::Texture mDepthTexture = nullptr;
         wgpu::TextureView mDepthTextureView = nullptr;
+        wgpu::Texture mNormalTexture = nullptr;
+        wgpu::TextureView mNormalTextureView = nullptr;
 
         wgpu::ShaderModule mShaderModule = nullptr;
         wgpu::RenderPipeline mPbrPipeline = nullptr;
