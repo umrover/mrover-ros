@@ -54,12 +54,12 @@ class Navigation(threading.Thread):
 
 
 def main():
-    rospy.loginfo("===== navigation starting =====")
     rospy.init_node("navigation")
     context = Context()
     navigation = Navigation(context)
     rospy.on_shutdown(navigation.stop)
     navigation.start()
+    rospy.loginfo("Navigation starting")
 
 
 if __name__ == "__main__":

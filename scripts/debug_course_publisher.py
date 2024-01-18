@@ -30,7 +30,7 @@ if __name__ == "__main__":
         (
             Waypoint(tag_id=1, type=WaypointType(val=WaypointType.POST)),
             SE3(position=np.array([11, -10, 0])),
-        ),
+        )
     ]
 
     publish_waypoints([convert_waypoint_to_gps(waypoint) for waypoint in waypoints])

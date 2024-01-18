@@ -96,7 +96,7 @@ export default {
     },
   },
 
-  beforeDestroy: function () {
+  beforeUnmount: function () {
     this.openLoop = false;
     this.carousel_pub.publish(this.messageObject);
 

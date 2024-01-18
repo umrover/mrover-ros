@@ -11,7 +11,7 @@ Eigen::Matrix4d SO3::matrix() const {
 }
 
 SO3 SO3::operator*(SO3 const& other) const {
-    return quaternion() * other.quaternion();
+    return other.quaternion() * quaternion();
 }
 
 R3 SO3::operator*(R3 const& other) const {

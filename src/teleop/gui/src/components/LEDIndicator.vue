@@ -2,7 +2,7 @@
   <div class="wrap">
     <span :class="['led', color]"></span>
     <div>
-      <span class="name" v-if="show_name">{{ name }}</span>
+      <span v-if="show_name" class="name">{{ name }}</span>
     </div>
   </div>
 </template>

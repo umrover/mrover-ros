@@ -84,7 +84,7 @@ export default {
     }
   },
 
-  beforeDestroy: function () {
+  beforeUnmount: function () {
     this.enabled = false;
     this.cache_pub.publish(this.messageObject);
 
