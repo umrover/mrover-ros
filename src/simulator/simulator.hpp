@@ -225,6 +225,8 @@ namespace mrover {
 
         Uniform<SceneUniforms> mSceneUniforms;
 
+        Eigen::Vector4f mSkyColor{0.05f, 0.8f, 0.92f, 1.0f};
+
         // Physics
 
         std::unique_ptr<btDefaultCollisionConfiguration> mCollisionConfig;

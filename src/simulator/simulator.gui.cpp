@@ -65,7 +65,12 @@ namespace mrover {
             ImGui::Checkbox("Render Models (M)", &mRenderModels);
             ImGui::Checkbox("Render Wireframe Colliders (C)", &mRenderWireframeColliders);
 
-            ImGui::SliderFloat("Float", &mFloat, 0.0f, 1000.0f);
+            if (ImGui::BeginCombo("Sky Color", std::format("R: {:.3f} G: {:.3f} B: {:.3f} A: {:.3f}", mSkyColor[0], mSkyColor[1], mSkyColor[2], mSkyColor[3]).c_str(), ImGuiComboFlags_HeightLargest)) {
+                ImGui::ColorPicker4("Sky Color", mSkyColor.data());
+                ImGui::EndCombo();
+            }
+
+            // ImGui::SliderFloat("Float", &mFloat, 0.0f, 1000.0f);
 
             ImGui::SliderFloat3("IK", mIkTarget.data(), -1.f, 1.f);
 
