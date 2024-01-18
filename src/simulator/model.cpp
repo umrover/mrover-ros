@@ -72,10 +72,14 @@ namespace mrover {
                     if (aiString path; material->GetTextureCount(aiTextureType_DIFFUSE) > 0 && material->GetTexture(aiTextureType_DIFFUSE, 0, &path) == AI_SUCCESS) {
                         texture.data = readTexture(path.C_Str());
                     } else {
-                        // TODO(quintin):
-                        // Is there really a better way than just using a 1x1 white texture?
-                        // It seems like you cannot bind an empty sampler like in OpenGL
-                        texture.data = cv::Mat{1, 1, CV_8UC4, cv::Scalar{255, 255, 255, 255}};
+                        // Create a 1x1 texture with the diffuse color
+                        cv::Scalar color = cv::Scalar::all(255);
+                        if (aiColor4D colorFromModel; material->Get(AI_MATKEY_COLOR_DIFFUSE, colorFromModel) == AI_SUCCESS) {
+                            color = cv::Scalar{colorFromModel.b, colorFromModel.g, colorFromModel.r, colorFromModel.a}; // BGRA => RGBA
+                            cv::pow(color, 1 / 2.2, color);                                                             // Undo Gamma correction
+                            color *= 255;
+                        }
+                        texture.data = cv::Mat{1, 1, CV_8UC4, color};
                     }
                     aiString name;
                     material->Get(AI_MATKEY_NAME, name);
@@ -109,12 +113,6 @@ namespace mrover {
 
     Model::~Model() {
         waitMeshes();
-
-        // for (Mesh& mesh: meshes) {
-        //     GLuint vao = std::exchange(mesh.vao, GL_INVALID_HANDLE);
-        //     if (vao == GL_INVALID_HANDLE) continue;
-
-        //     glDeleteVertexArrays(1, &vao);
-        // }
     }
+
 } // namespace mrover

@@ -59,7 +59,7 @@ namespace mrover {
                     btScalar radius = urdfDistToBtDist(cylinder->radius);
                     btScalar halfLength = urdfDistToBtDist(cylinder->length) / 2;
                     btVector3 cylinderHalfExtents{radius, radius, halfLength};
-                    shapes.emplace_back(simulator.makeBulletObject<btCylinderShapeZ>(simulator.mCollisionShapes, cylinderHalfExtents), urdfPoseToBtTransform((collision->origin)));
+                    shapes.emplace_back(simulator.makeBulletObject<btCylinderShapeZ>(simulator.mCollisionShapes, cylinderHalfExtents), urdfPoseToBtTransform(collision->origin));
                     break;
                 }
                 case urdf::Geometry::MESH: {
