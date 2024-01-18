@@ -98,13 +98,7 @@ fn pack(color: vec4f) -> f32 {
     return bitcast<f32>(c.b | (c.g << 8) | (c.r << 16));
 }
 
-// Workgroup size ensures one invocation per pixel
-@compute @workgroup_size(1, 1, 1) fn cs_main(@builtin(global_invocation_id) id: vec3u) {
-    let pixelInImage = id.xy; // 2D pixel coordinate in the camera image
-
-    let depth = textureLoad(depthImage, pixelInImage, 0);
-    let color = textureLoad(colorImage, pixelInImage, 0);
-
+fn reproject(pixelInImage: vec2u, depth: f32) -> vec3f {
     // See: https://www.w3.org/TR/webgpu/#coordinate-systems
     // These coordinate are in NDC (normalized device coordinates)
     let pointInClip = vec4f(
@@ -113,15 +107,27 @@ fn pack(color: vec4f) -> f32 {
         -2 * (f32(pixelInImage.y) / f32(cu.resolution.y)) + 1,
         // Depth is already in [0, 1]
         depth,
-        // Homogenous points have w = 1
+        // Homogenous points have w=1
         1
     );
     let pointInCamera = cu.clipToCamera * pointInClip;
+    // Dehomogenize
+    return pointInCamera.xyz / pointInCamera.w;
+}
+
+// Workgroup size ensures one invocation per pixel
+@compute @workgroup_size(1, 1, 1) fn cs_main(@builtin(global_invocation_id) id: vec3u) {
+    let pixelInImage = id.xy; // 2D pixel coordinate in the camera image
+
+    let depth = textureLoad(depthImage, pixelInImage, 0);
+    let color = textureLoad(colorImage, pixelInImage, 0);
+
+    let pointInCamera = reproject(pixelInImage, depth);
 
     // "points" is really a 2D array, but WGSL does not support 2D arrays with dynamic sizing
     // This "flattens" (maps) a 2D index to a 1D index
     let flatIndex = pixelInImage.y * cu.resolution.x + pixelInImage.x;
-    points[flatIndex].xyz = pointInCamera.xyz / pointInCamera.w;
+    points[flatIndex].xyz = pointInCamera;
     points[flatIndex].rgb = pack(color);
     points[flatIndex].normalXyz = vec3(0, 0, 0);
     points[flatIndex].curvature = 0;
