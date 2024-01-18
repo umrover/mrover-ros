@@ -13,4 +13,4 @@
 
 #include <Eigen/Dense>
 
-#include "../../perception/point.hpp"
+#include "point.hpp"
