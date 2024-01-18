@@ -44,13 +44,13 @@ struct OutVertex {
 
 struct OutFragment {
     @location(0) color: vec4f,
-    @location(1) normalInWorld: vec4f,
+    @location(1) normalInCamera: vec4f,
 }
 @fragment fn fs_main(in: OutVertex) -> OutFragment {
     let baseColor = textureSample(texture, textureSampler, in.uv);
 
     var out : OutFragment;
-    out.normalInWorld = in.normalInWorld;
+    out.normalInCamera = su.worldToCamera * in.normalInWorld;
     switch (mu.material) {
         case 0: {
             out.color = vec4(baseColor.rgb, 1);
@@ -138,6 +138,6 @@ fn reproject(pixelInImage: vec2u, depth: f32) -> vec3f {
     let flatIndex = pixelInImage.y * cu.resolution.x + pixelInImage.x;
     points[flatIndex].xyz = pointInCamera;
     points[flatIndex].rgb = pack(color);
-    points[flatIndex].normalXyz = normal.xyz / normal.w;
+    points[flatIndex].normalXyz = normal.xyz;
     points[flatIndex].curvature = 0;
 }

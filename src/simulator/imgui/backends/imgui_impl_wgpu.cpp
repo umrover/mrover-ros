@@ -143,7 +143,7 @@ struct Uniforms {
 
 struct FragmentOutput {
     @location(0) color: vec4<f32>,
-    @location(1) ignored: vec4<f32>,
+    @location(1) normal: vec4<f32>,
 };
 
 @fragment
@@ -152,6 +152,7 @@ fn main(in: VertexOutput) -> FragmentOutput {
     let corrected_color = pow(color.rgb, vec3<f32>(uniforms.gamma));
     var out: FragmentOutput;
     out.color = vec4<f32>(corrected_color, color.a);
+    out.normal = vec4<f32>(0.0, 0.0, 0.0, 0.0);
     return out;
 }
 )";

@@ -93,21 +93,31 @@ namespace mrover {
         wgpu::FragmentState fragment;
         fragment.module = mShaderModule;
         fragment.entryPoint = "fs_main";
-        wgpu::BlendState blend;
-        blend.color.srcFactor = wgpu::BlendFactor::SrcAlpha;
-        blend.color.dstFactor = wgpu::BlendFactor::OneMinusSrcAlpha;
-        blend.color.operation = wgpu::BlendOperation::Add;
-        blend.alpha.srcFactor = wgpu::BlendFactor::Zero;
-        blend.alpha.dstFactor = wgpu::BlendFactor::One;
-        blend.alpha.operation = wgpu::BlendOperation::Add;
+
+        wgpu::BlendState colorBlend;
+        colorBlend.color.srcFactor = wgpu::BlendFactor::SrcAlpha;
+        colorBlend.color.dstFactor = wgpu::BlendFactor::OneMinusSrcAlpha;
+        colorBlend.color.operation = wgpu::BlendOperation::Add;
+        colorBlend.alpha.srcFactor = wgpu::BlendFactor::Zero;
+        colorBlend.alpha.dstFactor = wgpu::BlendFactor::One;
+        colorBlend.alpha.operation = wgpu::BlendOperation::Add;
         wgpu::ColorTargetState colorTarget;
         colorTarget.format = COLOR_FORMAT;
-        colorTarget.blend = &blend;
+        colorTarget.blend = &colorBlend;
         colorTarget.writeMask = wgpu::ColorWriteMask::All;
+
+        wgpu::BlendState normalBlend;
+        normalBlend.color.srcFactor = wgpu::BlendFactor::SrcAlpha;
+        normalBlend.color.dstFactor = wgpu::BlendFactor::OneMinusSrcAlpha;
+        normalBlend.color.operation = wgpu::BlendOperation::Add;
+        normalBlend.alpha.srcFactor = wgpu::BlendFactor::Zero;
+        normalBlend.alpha.dstFactor = wgpu::BlendFactor::One;
+        normalBlend.alpha.operation = wgpu::BlendOperation::Add;
         wgpu::ColorTargetState normalTarget;
         normalTarget.format = NORMAL_FORMAT;
-        normalTarget.blend = &blend;
+        normalTarget.blend = &normalBlend;
         normalTarget.writeMask = wgpu::ColorWriteMask::All;
+
         std::array targets{colorTarget, normalTarget};
         fragment.targetCount = targets.size();
         fragment.targets = targets.data();
@@ -492,7 +502,7 @@ namespace mrover {
         colorAttachment.clearValue = {mSkyColor.x(), mSkyColor.y(), mSkyColor.z(), mSkyColor.w()};
         normalAttachment.loadOp = wgpu::LoadOp::Clear;
         normalAttachment.storeOp = wgpu::StoreOp::Store;
-        normalAttachment.clearValue = {0, 0, 0, 1};
+        normalAttachment.clearValue = {0, 0, 0, 0};
 
         wgpu::RenderPassDepthStencilAttachment depthStencilAttachment;
         depthStencilAttachment.depthClearValue = 1.0f;
