@@ -233,11 +233,9 @@ namespace mrover {
         }
 
         //DEBUG TODO REMOVE
-        ROS_INFO("Hit Count: %zu", mHitCount);
+        ROS_INFO_STREAM(std::format("Hit count: {}", mHitCount));
 
         if (mDebugImgPub.getNumSubscribers() > 0 || true) {
-            ROS_INFO("Publishing Debug Img");
-
             // Init sensor msg image
             sensor_msgs::Image newDebugImageMessage;//I chose regular msg not ptr so it can be used outside of this process
 

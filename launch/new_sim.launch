@@ -1,14 +1,17 @@
 <launch>
-    <rosparam command="load" file="$(find mrover)/config/simulator/autonomy.yaml"/>
+  <arg name="use_tensorrt" default="false"/>
 
-    <include file="$(find mrover)/launch/auton.launch">
-        <arg name="sim" value="true"/>
-        <arg name="ekf_start_delay" value="1"/>
-        <arg name="use_linearization" value="false"/>
-    </include>
+  <rosparam command="load" file="$(find mrover)/config/simulator/autonomy.yaml"/>
 
-    <node pkg="nodelet" type="nodelet" name="simulator_nodelet"
-          args="load mrover/SimulatorNodelet nodelet_manager" output="screen"/>
+  <include file="$(find mrover)/launch/auton.launch">
+    <arg name="sim" value="true"/>
+    <arg name="ekf_start_delay" value="1"/>
+    <arg name="use_linearization" value="false"/>
+    <arg name="use_tensorrt" value="$(arg use_tensorrt)"/>
+  </include>
 
-    <node name="arm_controller" pkg="mrover" type="arm_controller" output="screen"/>
+  <node pkg="nodelet" type="nodelet" name="simulator_nodelet"
+        args="load mrover/SimulatorNodelet nodelet_manager" output="screen"/>
+
+  <node name="arm_controller" pkg="mrover" type="arm_controller" output="screen"/>
 </launch>

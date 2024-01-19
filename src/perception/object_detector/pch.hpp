@@ -45,6 +45,7 @@
 #include <tf/exceptions.h>
 #include <tf2_ros/transform_broadcaster.h>
 #include <tf2_ros/transform_listener.h>
+#include <ros/package.h>
 
 #include <mrover/ObjectDetectorParamsConfig.h>
 #include <mrover/DetectedObject.h>

@@ -5,6 +5,7 @@
   <arg name="use_ekf" default="true"/>
   <arg name="ekf_start_delay" default="0"/>
   <arg name="use_linearization" default="true"/>
+  <arg name="use_tensorrt" default="false"/>
 
   <!--
     ==========
@@ -17,6 +18,10 @@
   <node if="$(arg run_tag_detector)"
         pkg="nodelet" type="nodelet" name="tag_detector"
         args="load mrover/TagDetectorNodelet nodelet_manager" output="screen"/>
+
+  <node if="$(arg use_tensorrt)"
+        pkg="nodelet" type="nodelet" name="object_detector_nodelet"
+        args="load mrover/ObjectDetectorNodelet nodelet_manager" output="screen"/>
 
   <!--
     ===========
