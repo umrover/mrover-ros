@@ -90,6 +90,7 @@
       - libbullet-dev
       - libglfw3-dev
       - xorg-dev
+      - libx11-xcb-dev
 
 - name: Initialize rosdep
   become: True
