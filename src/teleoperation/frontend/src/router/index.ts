@@ -2,6 +2,7 @@ import { createWebHistory, createRouter } from "vue-router";
 import Menu from "../components/Menu.vue";
 import DMESTask from "../components/DMESTask.vue";
 import AutonTask from "../components/AutonTask.vue";
+import Rover3D from "../components/Rover3D.vue";
 
 const routes = [
   {
@@ -29,6 +30,11 @@ const routes = [
     path: "/AutonTask",
     name: "AutonTask",
     component: AutonTask,
+  },
+  {
+    path: "/Control",
+    name: "Control",
+    component: Rover3D,
   },
 ];
 const router = createRouter({
