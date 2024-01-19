@@ -135,6 +135,7 @@ class GPSLinearization:
 
     @staticmethod
     def compute_gps_pose(right_cartesian, left_cartesian) -> np.ndarray:
+        # TODO: give simulated GPS non zero altitude so we can stop erasing the z component
         left_cartesian[2] = 0
         right_cartesian[2] = 0
         vector_connecting = left_cartesian - right_cartesian
@@ -149,8 +150,12 @@ class GPSLinearization:
         rotation_matrix = np.hstack(
             (vector_perp, np.reshape(vector_connecting, (3, 1)), np.array(object=[[0], [0], [1]]))
         )
+        
+        # temporary fix, assumes base_link is exactly in the middle of the two GPS antennas
+        # TODO: use static tf from base_link to left_antenna instead
+        rover_position = (left_cartesian + right_cartesian) / 2
 
-        pose = SE3(left_cartesian, SO3.from_matrix(rotation_matrix=rotation_matrix))
+        pose = SE3(rover_position, SO3.from_matrix(rotation_matrix=rotation_matrix))
 
         return pose
 

@@ -24,6 +24,7 @@ class GPSSim:
         self.ground_truth_sub = rospy.Subscriber("ground_truth", Odometry, self.ground_truth_callback)
     
     def ground_truth_callback(self, msg: Odometry):
+        # don't publish directly from here to reduce rate from 1kHz to 10Hz
         self.latest_odom = msg
 
     def publish_gps(self):

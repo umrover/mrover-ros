@@ -142,19 +142,19 @@
 
 
   <!-- GPS -->
-  <link name="rover_gps_left_link" />
-  <joint name="rover_gps_left" type="fixed">
+  <link name="left_gps_link" />
+  <joint name="left_gps" type="fixed">
     <origin xyz="0 1 0" />
     <parent link="chassis_link" />
-    <child link="rover_gps_left_link" />
+    <child link="left_gps_link" />
   </joint>
 
 
-  <link name="rover_gps_right_link" />
-  <joint name="rover_gps_right" type="fixed">
+  <link name="right_gps_link" />
+  <joint name="right_gps" type="fixed">
     <origin xyz="0 -1 0" />
     <parent link="chassis_link" />
-    <child link="rover_gps_right_link" />
+    <child link="right_gps_link" />
   </joint>
 
   <!-- Camera -->
