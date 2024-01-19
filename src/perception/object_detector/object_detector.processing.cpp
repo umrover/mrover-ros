@@ -173,7 +173,7 @@ namespace mrover {
             std::pair center(box.x + box.width/2, box.y + box.height/2);
             
             //Get the object's position in 3D from the point cloud
-            if (std::optional<SE3> objectLocation = getObjectInCamFromPixel(msg, center.first * static_cast<float>(msg->width) / sizedImage.cols, center.second * static_cast<float>(msg->height) / sizedImage.rows); objectLocation) {
+            if (std::optional<SE3> objectLocation = getObjectInCamFromPixel(msg, center.first * static_cast<float>(msg->width) / sizedImage.cols, center.second * static_cast<float>(msg->height) / sizedImage.rows, box.width, box.height); objectLocation) {
                 try{
                     //Publish Immediate
                     std::string immediateFrameId = "immediateDetectedObject";
@@ -268,7 +268,7 @@ namespace mrover {
         }
     }
 
-    std::optional<SE3> ObjectDetectorNodelet::getObjectInCamFromPixel(sensor_msgs::PointCloud2ConstPtr const& cloudPtr, size_t u, size_t v) const {
+    std::optional<SE3> ObjectDetectorNodelet::getObjectInCamFromPixel(sensor_msgs::PointCloud2ConstPtr const& cloudPtr, size_t u, size_t v, size_t width, size_t height) {
         assert(cloudPtr);
 
         if (u >= cloudPtr->width || v >= cloudPtr->height) {
@@ -276,10 +276,38 @@ namespace mrover {
             return std::nullopt;
         }
 
-        Point point = reinterpret_cast<Point const*>(cloudPtr->data.data())[u + v * cloudPtr->width ];
-        if (!std::isfinite(point.x) || !std::isfinite(point.y) || !std::isfinite(point.z)) {
-            NODELET_WARN("Tag center point not finite: [%f %f %f]", point.x, point.y, point.z);
-            return std::nullopt;
+        return spiralSearchInImg(cloudPtr, u, v, width, height);
+    }
+
+    std::optional<SE3> ObjectDetectorNodelet::spiralSearchInImg(sensor_msgs::PointCloud2ConstPtr const& cloudPtr, size_t xCenter, size_t yCenter, size_t width, size_t height){
+        size_t currX = xCenter;
+        size_t currY = yCenter;
+        size_t radius = 0;
+        float t = 0;
+        
+        bool isPointValid = false;
+
+        Point point;
+
+        size_t smallDim = std::min(width, height);
+
+
+        while(!isPointValid){
+            
+            currX = xCenter + std::cos(t * 1.0/16) * radius;
+            currX = yCenter + std::sin(t * 1.0/16) * radius;
+
+            point = reinterpret_cast<Point const*>(cloudPtr->data.data())[currX + currY * cloudPtr->width];
+            isPointValid = (!std::isfinite(point.x) || !std::isfinite(point.y) || !std::isfinite(point.z));
+
+
+            if(static_cast<int>(t) % 16 == 0){
+                radius++;
+            }
+
+            if(radius >= smallDim){
+                return std::nullopt;
+            }
         }
 
         return std::make_optional<SE3>(R3{point.x, point.y, point.z}, SO3{});

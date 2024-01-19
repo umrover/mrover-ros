@@ -73,8 +73,10 @@ namespace mrover {
         void onInit() override;
 
         //Function to get SE3 from the point cloud
-        std::optional<SE3> getObjectInCamFromPixel(sensor_msgs::PointCloud2ConstPtr const& cloudPtr, size_t u, size_t v) const;
+        std::optional<SE3> getObjectInCamFromPixel(sensor_msgs::PointCloud2ConstPtr const& cloudPtr, size_t u, size_t v, size_t width, size_t height);
 
+        std::optional<SE3> spiralSearchInImg(sensor_msgs::PointCloud2ConstPtr const& cloudPtr, size_t xCenter, size_t yCenter, size_t width, size_t height);
+    
     public:
         //Node constructor
         ObjectDetectorNodelet() = default;
