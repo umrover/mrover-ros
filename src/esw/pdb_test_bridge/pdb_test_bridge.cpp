@@ -1,8 +1,15 @@
 #include "messaging.hpp"
 #include "ros/ros.h"
 #include "std_srvs/SetBool.h"
-#include <mrover/HeaterData.h>
+#include <mrover/LED.h>
+
 #include <stdexcept>
+#include <chrono>
+#include <thread>
+
+void sleep(int ms);
+void set_arm_laser_enable(ros::ServiceClient& client, bool enable);
+void set_auton_led(ros::Publisher& publisher, bool red, bool green, bool blue, bool blinking);
 
 int main(int argc, char** argv) {
     ros::init(argc, argv, "science_test_bridge");
@@ -16,10 +23,12 @@ int main(int argc, char** argv) {
 
     try {
         ROS_INFO("Enabling arm laser...");
-        test_arm_laser_enable(true);
+        set_arm_laser_enable(service_client, true);
+
+        sleep(1000);
 
         ROS_INFO("Disabling arm laser...");
-        test_arm_laser_enable(false);
+        set_arm_laser_enable(service_client, false);
     } catch (std::exception const& e) {
         ROS_ERROR("Arm laser test FAILED: %s", e.what());
         return 1;
@@ -28,19 +37,60 @@ int main(int argc, char** argv) {
     ROS_INFO("****END ARM LASER TEST****");
 
     /* Auton LED Test */
-    
+    ROS_INFO("****BEGIN AUTON LED TEST****");
+    ros::Publisher ledPublisher = nh.advertise<mrover::LED>("led", 1);
+
+    ROS_INFO("RED SOLID");
+    set_auton_led(ledPublisher, true, false, false, false);
+    sleep(1000);
+
+    ROS_INFO("RED BLINKING");
+    set_auton_led(ledPublisher, true, false, false, true);
+    sleep(1000);
+
+    ROS_INFO("GREEN SOLID");
+    set_auton_led(ledPublisher, false, true, false, false);
+    sleep(1000);
+
+    ROS_INFO("GREEN BLINKING");
+    set_auton_led(ledPublisher, false, true, false, true);
+    sleep(1000);
+
+    ROS_INFO("BLUE SOLID");
+    set_auton_led(ledPublisher, false, false, true, false);
+    sleep(1000);
+
+    ROS_INFO("BLUE BLINKING");
+    set_auton_led(ledPublisher, false, false, true, true);
+    sleep(1000);
+
+    set_auton_led(ledPublisher, false, false, false, false);
+    ROS_INFO("****END AUTON LED TEST****");
 
     return 0;
 }
 
-void test_arm_laser_enable(bool enable) {
+void sleep(int ms) {
+    std::this_thread::sleep_for(std::chrono::milliseconds(ms));
+}
+
+void set_arm_laser_enable(ros::ServiceClient& client, bool enable) {
     std_srvs::SetBool::Request request;
         request.data = enable;
 
-    if (auto resp_code = std_srvs::SetBool::Response resp; service_client.call(request, resp); resp_code) {
+    if (std_srvs::SetBool::Response resp; client.call(request, resp)) {
         ROS_INFO("Response: %s", resp.message.c_str());
     } else {
         ROS_ERROR("Failed to call service");
-        throw std::runtime_error(resp_code);
+        throw std::runtime_error(resp.message);
     }
+}
+
+void set_auton_led(ros::Publisher& publisher, bool red, bool green, bool blue, bool blinking) {
+    mrover::LED ledMessage{};
+    ledMessage.red = red;
+    ledMessage.green = green;
+    ledMessage.blue = blue;
+    ledMessage.is_blinking = blinking;
+    publisher.publish(ledMessage);
 }
