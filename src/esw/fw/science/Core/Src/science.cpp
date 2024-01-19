@@ -28,7 +28,9 @@ namespace mrover {
 
         std::shared_ptr<SMBus<uint8_t, uint16_t>> i2c_bus = std::make_shared<SMBus<uint8_t, uint16_t>>(&hi2c1);
 
-        std::shared_ptr<I2CMux> i2c_mux = std::make_shared<I2CMux>(i2c_bus);
+        std::shared_ptr<I2CMux> i2c_mux = std::make_shared<I2CMux>(
+        		i2c_bus,
+				Pin{I2C_MUX_RST_GPIO_Port, I2C_MUX_RST_Pin});
 
         std::array<Spectral, 3> spectral_sensors = {
         		Spectral(i2c_bus, i2c_mux, 0),
@@ -61,13 +63,13 @@ namespace mrover {
 		{
 				Pin{UV_LED_0_GPIO_Port, UV_LED_0_Pin},
 				Pin{UV_LED_1_GPIO_Port, UV_LED_1_Pin},
-				Pin{UV_LED_1_GPIO_Port, UV_LED_2_Pin}
+				Pin{UV_LED_2_GPIO_Port, UV_LED_2_Pin}
 		};
         std::array<Pin, 3> white_leds =
 		{
 				Pin{WHITE_LED_0_GPIO_Port, WHITE_LED_0_Pin},
 				Pin{WHITE_LED_1_GPIO_Port, WHITE_LED_1_Pin},
-				Pin{WHITE_LED_1_GPIO_Port, WHITE_LED_2_Pin}
+				Pin{WHITE_LED_2_GPIO_Port, WHITE_LED_2_Pin}
 		};
 
         fdcan_bus = FDCAN<InBoundScienceMessage>{DEVICE_ID, DESTINATION_DEVICE_ID, &hfdcan1};

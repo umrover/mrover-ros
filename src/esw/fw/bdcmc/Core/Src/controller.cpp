@@ -7,6 +7,9 @@
 
 #include "main.h"
 
+// Flag for testing
+#define TESTING true
+
 // TODO: enable the watchdog and feed it in the htim6 update loop. make sure when the interrupt fires we disable PWN output. you will probably have to make the interrupt definition
 // TODO: add another timer for absolute encoder? another solution is starting a transaction in the 10,000 Hz update loop if we are done with the previous transaction
 
@@ -21,7 +24,7 @@ extern I2C_HandleTypeDef hi2c1;
  * For each timer, the update rate is determined by the .ioc file.
  *
  * Specifically the ARR value. You can use the following equation: ARR = (MCU Clock Speed) / (Update Rate) / (Prescaler + 1) - 1
- * For the STM32G4 we have a 144 MHz clock speed configured.
+ * For the STM32G4 we have a 140 MHz clock speed configured.
  *
  * You must also set auto reload to true so the interurpt gets called on a cycle.
  */
@@ -32,14 +35,14 @@ extern TIM_HandleTypeDef htim6;  // 10,000 Hz Update timer
 extern TIM_HandleTypeDef htim7;  // 100 Hz Send timer
 extern TIM_HandleTypeDef htim15; // H-Bridge PWM
 extern TIM_HandleTypeDef htim16; // Message watchdog timer
-extern TIM_HandleTypeDef htim17; // Absolute encoder timer (currently at 20Hz)
+extern TIM_HandleTypeDef htim2; // Absolute encoder timer (currently at 20Hz)
 #define QUADRATURE_TIMER_1 &htim4
 #define QUADRATURE_TIMER_2 &htim3
 #define UPDATE_TIMER &htim6
 #define SEND_TIMER &htim7
 #define PWM_TIMER &htim15
 #define FDCAN_WATCHDOG_TIMER &htim16
-#define ABSOLUTE_ENCODER_TIMER &htim17
+#define ABSOLUTE_ENCODER_TIMER &htim2
 
 namespace mrover {
 
@@ -56,6 +59,8 @@ namespace mrover {
         fdcan_bus = FDCAN<InBoundMessage>{DEVICE_ID, DESTINATION_DEVICE_ID, &hfdcan1};
         controller = Controller{
                 PWM_TIMER,
+				Pin{GPIOB, GPIO_PIN_15},
+				Pin{GPIOA, GPIO_PIN_1},
                 fdcan_bus,
                 FDCAN_WATCHDOG_TIMER,
                 QUADRATURE_TIMER_1,
@@ -71,6 +76,7 @@ namespace mrover {
         // Necessary for the timer interrupt to work
         check(HAL_TIM_Base_Start_IT(UPDATE_TIMER) == HAL_OK, Error_Handler);
         check(HAL_TIM_Base_Start_IT(SEND_TIMER) == HAL_OK, Error_Handler);
+        check(HAL_TIM_Base_Start_IT(ABSOLUTE_ENCODER_TIMER) == HAL_OK, Error_Handler);
     }
 
     void fdcan_received_callback() {
@@ -86,6 +92,10 @@ namespace mrover {
         }
     }
 
+    void test_received_callback(InBoundMessage message) {
+        controller.receive(message);
+    }
+
     void update_callback() {
         controller.update();
     }
@@ -98,8 +108,8 @@ namespace mrover {
         controller.read_absolute_encoder_data();
     }
 
-    void update_absolute_encoder_data_callback() {
-        controller.update_absolute_encoder_data();
+    void update_absolute_encoder_callback() {
+        controller.update_absolute_encoder();
     }
 
     void send_callback() {
@@ -117,6 +127,14 @@ extern "C" {
 
 void HAL_PostInit() {
     mrover::init();
+
+    #ifdef TESTING
+        const auto tests = mrover::get_test_msgs();
+        for (const auto& [test, delay] : tests) {
+            mrover::test_received_callback(test);
+            HAL_Delay(delay);
+        }
+    #endif
 }
 
 /**
@@ -168,7 +186,7 @@ void HAL_I2C_SlaveRxCpltCallback(I2C_HandleTypeDef* hi2c) {}
 void HAL_I2C_SlaveTxCpltCallback(I2C_HandleTypeDef* hi2c) {}
 
 void HAL_I2C_MasterRxCpltCallback(I2C_HandleTypeDef* hi2c) {
-    mrover::update_absolute_encoder_data_callback();
+    mrover::update_absolute_encoder_callback();
 }
 
 void HAL_I2C_MasterTxCpltCallback(I2C_HandleTypeDef* hi2c) {

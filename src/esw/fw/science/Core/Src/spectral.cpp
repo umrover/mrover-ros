@@ -18,11 +18,14 @@ namespace mrover {
     }
 
     void Spectral::poll_status_reg(){
-    	m_i2c_bus->async_transmit(SPECTRAL_7b_ADDRESS, I2C_AS72XX_SLAVE_STATUS_REG);
+    	m_i2c_mux->set_channel(m_i2c_mux_channel);
+    	m_i2c_bus->blocking_transmit(SPECTRAL_7b_ADDRESS, I2C_AS72XX_SLAVE_STATUS_REG);
     }
 
     void Spectral::init(){
     	assert(!m_initialized);
+    	m_i2c_mux->set_channel(m_i2c_mux_channel);
+
     	// TODO (Alan) figure out if you need to actually poll the
     	// status reg and if while loops will cause potential hangs.
     	uint8_t control_data = 0x28;
