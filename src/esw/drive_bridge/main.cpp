@@ -72,12 +72,12 @@ void moveDrive(geometry_msgs::Twist::ConstPtr const& msg) {
     RadiansPerSecond right = forward * WHEEL_LINEAR_TO_ANGULAR + delta;
 
     std::unordered_map<std::string, RadiansPerSecond> driveCommandVelocities{
-            {"FrontLeft", left},
-            {"FrontRight", right},
-            {"MiddleLeft", left},
-            {"MiddleRight", right},
-            {"BackLeft", left},
-            {"BackRight", right},
+            {"front_left", left},
+            {"front_right", right},
+            {"middle_left", left},
+            {"middle_right", right},
+            {"back_left", left},
+            {"back_right", right},
     };
 
     for (auto [name, angularVelocity]: driveCommandVelocities) {
