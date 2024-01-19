@@ -7,6 +7,13 @@
   <arg name="use_rtabmap_stereo_odom" default="false"/>
   <arg name="use_builtin_visual_odom" default="false"/>
 
+  <!-- ZED DETECTION PARAMS -->
+  <arg name="obj_increment_weight" default="3"/>
+  <arg name="obj_decrement_weight" default="1"/>
+  <arg name="obj_hitcount_threshold" default="50"/>
+  <arg name="obj_hitcount_max" default="500"/>
+
+
   <group if="$(arg run_rviz)">
     <arg name="rvizconfig" default="$(find mrover)/config/rviz/zed_test.rviz"/>
     <node name="rviz" pkg="rviz" type="rviz" args="-d $(arg rvizconfig)"/>
@@ -21,14 +28,13 @@
           args="manager" output="screen"/>
 
   <include file="$(find mrover)/launch/zed.launch">
-    <arg name="use_rtabmap_stereo_odom" value="$(arg use_rtabmap_stereo_odom)"/>
     <arg name="use_builtin_visual_odom" value="$(arg use_builtin_visual_odom)"/>
   </include>
 
-    <node if="$(arg run_object_detector)"
+    <!-- <node if="$(arg run_object_detector)"
           pkg="nodelet" type="nodelet" name="object_detector" respawn="true"
           args="load mrover/ObjectDetectorNodelet perception_nodelet_manager" output="screen">
-    </node>
+    </node> -->
 
     <node if="$(arg run_tag_detector)"
           pkg="nodelet" type="nodelet" name="tag_detector" respawn="true"
