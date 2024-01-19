@@ -98,7 +98,7 @@ namespace mrover {
         Eigen::Vector2i size;
         glfwGetWindowSize(mWindow.get(), &size.x(), &size.y());
 
-        Eigen::Vector2d center = size.cast<double>() / 2;
+        Eigen::Vector2d center = (size / 2).cast<double>();
 
         Eigen::Vector2d mouse;
         glfwGetCursorPos(mWindow.get(), &mouse.x(), &mouse.y());
@@ -110,7 +110,7 @@ namespace mrover {
         SO3 q = SO3{delta.y(), Eigen::Vector3d::UnitY()} * mCameraInWorld.rotation() * SO3{-delta.x(), Eigen::Vector3d::UnitZ()};
         mCameraInWorld = SE3{p, q};
 
-        glfwSetCursorPos(mWindow.get(), center.x(), center.y());
+        centerCursor();
     }
 
     auto SimulatorNodelet::userControls(Clock::duration dt) -> void {
