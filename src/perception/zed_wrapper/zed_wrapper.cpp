@@ -142,7 +142,7 @@ namespace mrover {
                     mIsSwapReady = false;
                     mPcThreadProfiler.measureEvent("Wait");
 
-                    fillPointCloudMessageFromGpu(mPcMeasures.leftPoints, mPcMeasures.leftImage, mPointCloudGpu, pointCloudMsg);
+                    fillPointCloudMessageFromGpu(mPcMeasures.leftPoints, mPcMeasures.leftImage, mPcMeasures.leftNormals, mPointCloudGpu, pointCloudMsg);
                     pointCloudMsg->header.seq = mPointCloudUpdateTick;
                     pointCloudMsg->header.stamp = mPcMeasures.time;
                     pointCloudMsg->header.frame_id = "zed2i_left_camera_frame";
@@ -230,7 +230,7 @@ namespace mrover {
                     throw std::runtime_error("ZED failed to retrieve left image");
                 if (mZed.retrieveMeasure(mGrabMeasures.leftPoints, sl::MEASURE::XYZ, sl::MEM::GPU, mPointResolution) != sl::ERROR_CODE::SUCCESS)
                     throw std::runtime_error("ZED failed to retrieve point cloud");
-                if (mZed.retrieveMeasure(mGrabMeasures.leftNormals, sl::MEASURE::XYZRGBA, sl::MEM::GPU, mNormalsResolution) != sl::ERROR_CODE::SUCCESS)
+                if (mZed.retrieveMeasure(mGrabMeasures.leftNormals, sl::MEASURE::NORMALS, sl::MEM::GPU, mNormalsResolution) != sl::ERROR_CODE::SUCCESS)
                     throw std::runtime_error("ZED failed to retrieve point cloud normals");
 
                 assert(mGrabMeasures.leftImage.timestamp == mGrabMeasures.leftPoints.timestamp);
@@ -320,6 +320,7 @@ namespace mrover {
         sl::Mat::swap(other.leftImage, leftImage);
         sl::Mat::swap(other.rightImage, rightImage);
         sl::Mat::swap(other.leftPoints, leftPoints);
+        sl::Mat::swap(other.leftNormals, leftNormals);
         std::swap(time, other.time);
         return *this;
     }
