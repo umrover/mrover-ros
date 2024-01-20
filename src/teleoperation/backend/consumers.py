@@ -2,7 +2,7 @@ import json
 from channels.generic.websocket import JsonWebsocketConsumer
 import rospy
 from std_srvs.srv import SetBool, Trigger
-from mrover.msg import PDLB, ControllerState, AutonCommand, GPSWaypoint, LED, StateMachineStateUpdate
+from mrover.msg import PDLB, ControllerState, AutonCommand, GPSWaypoint, LED, StateMachineStateUpdate, Throttle
 from mrover.srv import EnableDevice
 from std_msgs.msg import String, Bool
 from sensor_msgs.msg import JointState, NavSatFix
@@ -72,6 +72,8 @@ class GUIConsumer(JsonWebsocketConsumer):
             self.send_auton_command(message)
         elif message["type"] == "teleop_enabled":
             self.send_teleop_enabled(message)
+        elif message["type"] == "mast_gimbal":
+            self.mast_gimbal(message)
 
     def handle_joystick_message(self, msg):
         mappings = rospy.get_param("teleop/joystick_mappings")
@@ -231,5 +233,8 @@ class GUIConsumer(JsonWebsocketConsumer):
         )
 
     def mast_gimbal(self, msg):
+        pwr = rospy.get_param("teleop/mast_gimbal_power")
         pub = rospy.Publisher("/mast_gimbal_throttle_cmd", Throttle, queue_size=1)
-        pub.publish(Throttle(["mast_gimbal_x", "mast_gimbal_y"], msg["throttles"]))
+        rot_pwr = msg["throttles"][0] * pwr["rotation_pwr"]
+        up_down_pwr = msg["throttles"][1] * pwr["up_down_pwr"]
+        pub.publish(Throttle(["mast_gimbal_x", "mast_gimbal_y"], [rot_pwr, up_down_pwr]))
