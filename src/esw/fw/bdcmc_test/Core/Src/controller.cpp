@@ -60,7 +60,7 @@ namespace mrover {
         controller = Controller{
                 PWM_TIMER,
 				Pin{GPIOB, GPIO_PIN_15},
-				Pin{GPIOA, GPIO_PIN_1},
+				Pin{GPIOC, GPIO_PIN_6},
                 fdcan_bus,
                 FDCAN_WATCHDOG_TIMER,
                 QUADRATURE_TIMER_1,
