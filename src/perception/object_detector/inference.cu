@@ -1,8 +1,6 @@
 #include "inference.cuh"
 
 #include <NvInfer.h>
-#include <NvInferRuntime.h>
-#include <NvInferRuntimeBase.h>
 #include <NvOnnxParser.h>
 #include <cstdio>
 #include <cuda_runtime_api.h>
@@ -26,7 +24,7 @@ namespace mrover {
 
     Inference::Inference(std::filesystem::path const& onnxModelPath) {
         //Create the engine object from either the file or from onnx file
-        mEngine = std::unique_ptr<ICudaEngine, Destroy<ICudaEngine>>{createCudaEngine(onnxModelPath)};
+        mEngine = std::unique_ptr<ICudaEngine>{createCudaEngine(onnxModelPath)};
         if (!mEngine) throw std::runtime_error("Failed to create CUDA engine");
 
         mLogger.log(ILogger::Severity::kINFO, "Created CUDA Engine");
@@ -48,22 +46,22 @@ namespace mrover {
         constexpr auto explicitBatch = 1U << static_cast<uint32_t>(NetworkDefinitionCreationFlag::kEXPLICIT_BATCH);
 
         //Init logger
-        std::unique_ptr<IBuilder, Destroy<IBuilder>> builder{createInferBuilder(mLogger)};
+        std::unique_ptr<IBuilder> builder{createInferBuilder(mLogger)};
         if (!builder) throw std::runtime_error("Failed to create Infer Builder");
         mLogger.log(ILogger::Severity::kINFO, "Created Infer Builder");
 
         //Init Network
-        std::unique_ptr<INetworkDefinition, Destroy<INetworkDefinition>> network{builder->createNetworkV2(explicitBatch)};
+        std::unique_ptr<INetworkDefinition> network{builder->createNetworkV2(explicitBatch)};
         if (!network) throw std::runtime_error("Failed to create Network Definition");
         mLogger.log(ILogger::Severity::kINFO, "Created Network Definition");
 
         //Init the onnx file parser
-        std::unique_ptr<nvonnxparser::IParser, Destroy<nvonnxparser::IParser>> parser{nvonnxparser::createParser(*network, mLogger)};
+        std::unique_ptr<nvonnxparser::IParser> parser{nvonnxparser::createParser(*network, mLogger)};
         if (!parser) throw std::runtime_error("Failed to create ONNX Parser");
         mLogger.log(ILogger::Severity::kINFO, "Created ONNX Parser");
 
         //Init the builder
-        std::unique_ptr<IBuilderConfig, Destroy<IBuilderConfig>> config{builder->createBuilderConfig()};
+        std::unique_ptr<IBuilderConfig> config{builder->createBuilderConfig()};
         if (!config) throw std::runtime_error("Failed to create Builder Config");
         mLogger.log(ILogger::Severity::kINFO, "Created Builder Config");
 
@@ -75,7 +73,7 @@ namespace mrover {
         //Create runtime engine
         IRuntime* runtime = createInferRuntime(mLogger);
 
-        // TODO: use relative to package
+        //Define the engine file location relative to the mrover package
         std::filesystem::path packagePath = ros::package::getPath("mrover");
         std::filesystem::path enginePath = packagePath / "data" / "tensorrt-engine-best.engine";
 

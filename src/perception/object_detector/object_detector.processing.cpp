@@ -53,6 +53,7 @@ namespace mrover {
         int rows = output.rows;
         int dimensions = output.cols;
         bool yolov8 = false;
+
         // yolov5 has an output of shape (batchSize, 25200, 85) (Num classes + box[x,y,w,h] + confidence[c])
         // yolov8 has an output of shape (batchSize, 84,  8400) (Num classes + box[x,y,w,h])
         if (dimensions > rows) // Check if the shape[2] is more than shape[1] (yolov8)
@@ -123,7 +124,7 @@ namespace mrover {
                     boxes.emplace_back(left, top, width, height);
                 }
             } else { //YOLO V5
-                throw std::runtime_error("Something is wrong with interpretation"); 
+                throw std::runtime_error("Something is wrong Model with interpretation"); 
             }
 
             data += dimensions;
@@ -156,10 +157,7 @@ namespace mrover {
             //Get the first detection to locate in 3D
             Detection firstDetection = detections[0];
 
-            //Get the associated confidence with the object
             float classConfidence = firstDetection.confidence;
-
-            //Get the associated box with the object
             cv::Rect box = firstDetection.box;
 
             //Fill out the msgData information to be published to the topic
@@ -170,10 +168,9 @@ namespace mrover {
             // msgData.width = static_cast<float>(box.width);
             // msgData.height = static_cast<float>(box.height);
 
-            //Calculate the center of the box
             std::pair center(box.x + box.width/2, box.y + box.height/2);
             
-            //Get the object's position in 3D from the point cloud
+            //Get the object's position in 3D from the point cloud and run this statement if the optional has a value
             if (std::optional<SE3> objectLocation = getObjectInCamFromPixel(msg, center.first * static_cast<float>(msg->width) / sizedImage.cols, center.second * static_cast<float>(msg->height) / sizedImage.rows, box.width, box.height); objectLocation) {
                 try{
                     //Publish Immediate
@@ -232,9 +229,6 @@ namespace mrover {
             mHitCount = std::max(0, mHitCount - mObjDecrementWeight);
             
         }
-
-        //DEBUG TODO REMOVE
-        ROS_INFO_STREAM(std::format("Hit count: {}", mHitCount));
 
         if (mDebugImgPub.getNumSubscribers() > 0 || true) {
             // Init sensor msg image

@@ -17,10 +17,10 @@ namespace mrover {
         nvinfer1::Logger mLogger;
 
         //Ptr to the engine
-        std::unique_ptr<ICudaEngine, nvinfer1::Destroy<ICudaEngine>> mEngine{};
+        std::unique_ptr<ICudaEngine> mEngine{};
 
         //Ptr to the context
-        std::unique_ptr<IExecutionContext, nvinfer1::Destroy<IExecutionContext>> mContext{};
+        std::unique_ptr<IExecutionContext> mContext{};
 
         //Input, output and reference tensors
         cv::Mat mInputTensor;

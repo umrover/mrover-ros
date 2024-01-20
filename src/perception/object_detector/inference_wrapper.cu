@@ -1,6 +1,5 @@
 #include "inference_wrapper.hpp"
 
-#include <NvInferRuntimeBase.h>
 #include <opencv4/opencv2/core/mat.hpp>
 
 #include "inference.cuh"
@@ -30,7 +29,6 @@ namespace mrover {
     }
 
     cv::Mat InferenceWrapper::getOutputTensor() const {
-        //Get the output tensor from the inference object
         return mInference->getOutputTensor();
     }
 
