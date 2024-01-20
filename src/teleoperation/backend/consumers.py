@@ -29,25 +29,32 @@ def quadratic(val: float) -> float:
 class GUIConsumer(JsonWebsocketConsumer):
     def connect(self):
         self.accept()
+
+        # Publishers
+        self.twist_pub = rospy.Publisher("/cmd_vel", Twist, queue_size=100)
+        self.led_pub = rospy.Publisher("/auton_led_cmd", String, queue_size=1)
+        self.auton_cmd_pub = rospy.Publisher("/auton/command", AutonCommand, queue_size=100)
+        self.teleop_pub = rospy.Publisher("/teleop_enabled", Bool, queue_size=1)
+        self.mast_gimbal_pub = rospy.Publisher("/mast_gimbal_throttle_cmd", Throttle, queue_size=1)
+
+        # Subscribers
         self.pdb_sub = rospy.Subscriber("/pdb_data", PDLB, self.pdb_callback)
         self.arm_moteus_sub = rospy.Subscriber("/arm_controller_data", ControllerState, self.arm_controller_callback)
-        self.drive_moteus_sub = rospy.Subscriber(
-            "/drive_controller_data", ControllerState, self.drive_controller_callback
-        )
-        # self.calibration_sub = rospy.Subscriber('/calibration_checkbox', Calibrated, self.calibration_checkbox_callback)
-        self.laser_service = rospy.ServiceProxy("enable_mosfet_device", SetBool)
+        self.drive_moteus_sub = rospy.Subscriber( "/drive_controller_data", ControllerState, self.drive_controller_callback)
         self.gps_fix = rospy.Subscriber("/gps/fix", NavSatFix, self.gps_fix_callback)
-        # self.limit_switch_service = rospy.ServiceProxy("enable_limit_switches", EnableDevice)
         self.joint_state_sub = rospy.Subscriber("/drive_joint_data", JointState, self.joint_state_callback)
-        self.calibrate_service = rospy.ServiceProxy("arm_calibrate", Trigger)
         self.led_sub = rospy.Subscriber("/led", LED, self.led_callback)
         self.nav_state_sub = rospy.Subscriber("/nav_state", StateMachineStateUpdate, self.nav_state_callback)
+
+        # Services
+        self.laser_service = rospy.ServiceProxy("enable_mosfet_device", SetBool)
+        self.calibrate_service = rospy.ServiceProxy("arm_calibrate", Trigger)
+        
 
     def disconnect(self, close_code):
         self.pdb_sub.unregister()
         self.arm_moteus_sub.unregister()
         self.drive_moteus_sub.unregister()
-        # self.calibration_sub.unregister()
         self.joint_state_sub.unregister()
         self.gps_fix.unregister()
         self.led_sub.unregister()
@@ -82,7 +89,7 @@ class GUIConsumer(JsonWebsocketConsumer):
         wheel_radius = rospy.get_param("wheel/radius")
         max_angular_speed = max_wheel_speed / wheel_radius
 
-        twist_pub = rospy.Publisher("/cmd_vel", Twist, queue_size=100)
+        
 
         # Super small deadzone so we can safely e-stop with dampen switch
         dampen = deadzone(msg["axes"][mappings["dampen"]], 0.01)
@@ -116,7 +123,7 @@ class GUIConsumer(JsonWebsocketConsumer):
         twist_msg.linear.x = linear
         twist_msg.angular.z = angular
 
-        twist_pub.publish(twist_msg)
+        self.twist_pub.publish(twist_msg)
 
         self.send(
             text_data=json.dumps(
@@ -172,10 +179,9 @@ class GUIConsumer(JsonWebsocketConsumer):
         )
 
     def disable_auton_led(self):
-        led_pub = rospy.Publisher("/auton_led_cmd", String, queue_size=1)
         message = String()
         message.data = "off"
-        led_pub.publish(message)
+        self.led_pub.publish(message)
 
     def joint_state_callback(self, msg):
         self.send(
@@ -197,18 +203,16 @@ class GUIConsumer(JsonWebsocketConsumer):
             )
         )
 
-    def send_auton_command(self, msg):
-        cmd_pub = rospy.Publisher("/auton/command", AutonCommand, queue_size=100)
+    def send_auton_command(self, msg):   
         waypoints = []
         for w in msg["waypoints"]:
             waypoints.append(GPSWaypoint(w["latitude_degrees"], w["longitude_degrees"], w["tag_id"], w["type"]))
 
         message = AutonCommand(msg["is_enabled"], waypoints)
-        cmd_pub.publish(message)
+        self.auton_cmd_pub.publish(message)
 
     def send_teleop_enabled(self, msg):
-        teleop_pub = rospy.Publisher("/teleop_enabled", Bool, queue_size=1)
-        teleop_pub.publish(msg["data"])
+        self.teleop_pub.publish(msg["data"])
 
     def led_callback(self, msg):
         self.send(
@@ -234,7 +238,6 @@ class GUIConsumer(JsonWebsocketConsumer):
 
     def mast_gimbal(self, msg):
         pwr = rospy.get_param("teleop/mast_gimbal_power")
-        pub = rospy.Publisher("/mast_gimbal_throttle_cmd", Throttle, queue_size=1)
         rot_pwr = msg["throttles"][0] * pwr["rotation_pwr"]
         up_down_pwr = msg["throttles"][1] * pwr["up_down_pwr"]
-        pub.publish(Throttle(["mast_gimbal_x", "mast_gimbal_y"], [rot_pwr, up_down_pwr]))
+        self.mast_gimbal_pub.publish(Throttle(["mast_gimbal_x", "mast_gimbal_y"], [rot_pwr, up_down_pwr]))

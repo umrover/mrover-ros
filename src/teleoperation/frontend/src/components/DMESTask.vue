@@ -8,13 +8,16 @@
         <img src="help.png" alt="Help" title="Help" width="48" height="48" />
       </div>
       <div class="helpscreen"></div>
-      <div class="helpimages" style="
-          display: flex;
-          align-items: center;
-          justify-content: space-evenly;
-        ">
-        <img src="joystick.png" alt="Joystick" title="Joystick Controls"
-          style="width: auto; height: 70%; display: inline-block" />
+      <div
+        class="helpimages"
+        style="display: flex; align-items: center; justify-content: space-evenly"
+      >
+        <img
+          src="joystick.png"
+          alt="Joystick"
+          title="Joystick Controls"
+          style="width: auto; height: 70%; display: inline-block"
+        />
       </div>
     </div>
 
@@ -46,25 +49,26 @@
       <DriveMoteusStateTable :moteus-state-data="moteusState" />
       <ArmMoteusStateTable />
     </div>
-    <!-- <div v-show="false">
+    <div v-show="false">
       <MastGimbalControls></MastGimbalControls>
-    </div> -->
+    </div>
   </div>
 </template>
 
 <script lang="ts">
-import { defineComponent, inject } from 'vue'
-import { mapState } from 'vuex';
-import PDBFuse from "./PDBFuse.vue";
-import DriveMoteusStateTable from "./DriveMoteusStateTable.vue";
-import ArmMoteusStateTable from "./ArmMoteusStateTable.vue";
-import ArmControls from "./ArmControls.vue";
-import BasicMap from "./BasicRoverMap.vue";
-import BasicWaypointEditor from './BasicWaypointEditor.vue';
-import Cameras from './Cameras.vue';
-import JointStateTable from "./JointStateTable.vue";
-import OdometryReading from "./OdometryReading.vue";
-import DriveControls from './DriveControls.vue';
+import { defineComponent } from 'vue'
+import { mapState } from 'vuex'
+import PDBFuse from './PDBFuse.vue'
+import DriveMoteusStateTable from './DriveMoteusStateTable.vue'
+import ArmMoteusStateTable from './ArmMoteusStateTable.vue'
+import ArmControls from './ArmControls.vue'
+import BasicMap from './BasicRoverMap.vue'
+import BasicWaypointEditor from './BasicWaypointEditor.vue'
+import Cameras from './Cameras.vue'
+import JointStateTable from './JointStateTable.vue'
+import OdometryReading from './OdometryReading.vue'
+import DriveControls from './DriveControls.vue'
+import MastGimbalControls from './MastGimbalControls.vue'
 
 export default defineComponent({
   components: {
@@ -77,7 +81,8 @@ export default defineComponent({
     Cameras,
     JointStateTable,
     OdometryReading,
-    DriveControls
+    DriveControls,
+    MastGimbalControls
   },
 
   props: {
@@ -85,27 +90,24 @@ export default defineComponent({
       type: String,
       required: true
     }
-    
   },
 
   data() {
     return {
-      // websocket: inject("webSocketService") as WebSocket,
-      // websocket: new WebSocket('ws://localhost:8000/ws/gui'),
       // Default coordinates at MDRS
       odom: {
-        latitude_deg: 38.4060250,
+        latitude_deg: 38.406025,
         longitude_deg: -110.7923723,
         bearing_deg: 0,
         altitude: 0,
         speed: 0
       },
-      
+
       // Default object isn't empty, so has to be initialized to ""
       moteusState: {
-        name: ["", "", "", "", "", ""],
-        error: ["", "", "", "", "", ""],
-        state: ["", "", "", "", "", ""]
+        name: ['', '', '', '', '', ''],
+        error: ['', '', '', '', '', ''],
+        state: ['', '', '', '', '', '']
       },
 
       jointState: {
@@ -123,26 +125,14 @@ export default defineComponent({
 
   watch: {
     message(msg) {
-      if (msg.type == "joint_state") {
-        this.jointState.name = msg.name;
-        this.jointState.position = msg.position;
-        this.jointState.velocity = msg.velocity;
-        this.jointState.effort = msg.effort;
+      if (msg.type == 'joint_state') {
+        this.jointState.name = msg.name
+        this.jointState.position = msg.position
+        this.jointState.velocity = msg.velocity
+        this.jointState.effort = msg.effort
       }
     }
   }
-
-  // created() {
-  //   this.websocket.onmessage = (event) => {
-  //     const msg = JSON.parse(event.data)
-  //     if (msg.type == "joint_state") {
-  //       this.jointState.name = msg.name;
-  //       this.jointState.position = msg.position;
-  //       this.jointState.velocity = msg.velocity;
-  //       this.jointState.effort = msg.effort;
-  //     }
-  //   }
-  // }
 })
 </script>
 
@@ -153,12 +143,12 @@ export default defineComponent({
   grid-template-columns: 50% 50%;
   grid-template-rows: repeat(6, auto);
   grid-template-areas:
-    "header header"
-    "map waypoint-editor"
-    "map odom"
-    "map cameras"
-    "arm-controls drive-vel-data"
-    "moteus pdb";
+    'header header'
+    'map waypoint-editor'
+    'map odom'
+    'map cameras'
+    'arm-controls drive-vel-data'
+    'moteus pdb';
   font-family: sans-serif;
   height: auto;
 }
@@ -167,14 +157,12 @@ export default defineComponent({
   display: grid;
   gap: 10px;
   grid-template-columns: repeat(2, auto);
-  ;
   grid-template-rows: repeat(4, auto);
-  ;
   grid-template-areas:
-    "header header"
-    "cameras arm-controls"
-    "drive-vel-data moteus"
-    "pdb pdb";
+    'header header'
+    'cameras arm-controls'
+    'drive-vel-data moteus'
+    'pdb pdb';
   font-family: sans-serif;
   height: auto;
 }
@@ -215,8 +203,8 @@ export default defineComponent({
   cursor: pointer;
 }
 
-.help:hover~.helpscreen,
-.help:hover~.helpimages {
+.help:hover ~ .helpscreen,
+.help:hover ~ .helpimages {
   visibility: visible;
 }
 

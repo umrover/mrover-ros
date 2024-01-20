@@ -1,39 +1,39 @@
-import { createWebHistory, createRouter } from "vue-router";
-import Menu from "../components/Menu.vue";
-import DMESTask from "../components/DMESTask.vue";
-import AutonTask from "../components/AutonTask.vue";
+import { createWebHistory, createRouter } from 'vue-router'
+import Menu from '../components/Menu.vue'
+import DMESTask from '../components/DMESTask.vue'
+import AutonTask from '../components/AutonTask.vue'
 
 const routes = [
   {
-    path: "/",
-    name: "Menu",
-    component: Menu,
+    path: '/',
+    name: 'Menu',
+    component: Menu
   },
   {
-    path: "/DMTask",
-    name: "DMTask",
+    path: '/DMTask',
+    name: 'DMTask',
     component: DMESTask,
     props: {
-      type: "DM",
-    },
+      type: 'DM'
+    }
   },
   {
-    path: "/ESTask",
-    name: "ESTask",
+    path: '/ESTask',
+    name: 'ESTask',
     component: DMESTask,
     props: {
-      type: "ES",
-    },
+      type: 'ES'
+    }
   },
   {
-    path: "/AutonTask",
-    name: "AutonTask",
-    component: AutonTask,
-  },
-];
+    path: '/AutonTask',
+    name: 'AutonTask',
+    component: AutonTask
+  }
+]
 const router = createRouter({
   history: createWebHistory(),
-  routes,
-});
+  routes
+})
 
-export default router;
+export default router

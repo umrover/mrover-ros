@@ -4,7 +4,7 @@
     <canvas id="canvas"></canvas>
   </div>
 </template>
-<!-- <script src="../../../streaming/embuild/stream_client.js"></script> -->
+<script src="../../../streaming/embuild/stream_client.js"></script>
 
 <script lang="ts">
 import { defineComponent } from 'vue'

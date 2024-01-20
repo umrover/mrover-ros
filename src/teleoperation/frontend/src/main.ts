@@ -9,8 +9,8 @@ import './app.scss' //custom CSS override file
 
 // ws.onopen = () => {
 // 	  console.log('WebSocket connection opened successfully.');
-	  const app:App<Element> = createApp(App);
-	//   app.provide('webSocketService', ws);
-	  app.use(router).use(store).mount('#app');
-	  store.dispatch('websocket/setupWebSocket');
+const app: App<Element> = createApp(App)
+//   app.provide('webSocketService', ws);
+app.use(router).use(store).mount('#app')
+store.dispatch('websocket/setupWebSocket')
 // }
