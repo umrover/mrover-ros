@@ -192,7 +192,9 @@ namespace mrover {
 
         ros::Subscriber mTwistSub, mJointPositionsSub;
 
-        ros::Publisher mPosePub;
+        ros::Publisher mLinearizedPosePub;
+        ros::Publisher mLeftGpsPub;
+        ros::Publisher mRightGpsPub;
 
         tf2_ros::Buffer mTfBuffer;
         tf2_ros::TransformListener mTfListener{mTfBuffer};

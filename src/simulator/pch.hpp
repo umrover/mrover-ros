@@ -24,6 +24,7 @@
 
 #include <geometry_msgs/PoseWithCovarianceStamped.h>
 #include <geometry_msgs/TwistStamped.h>
+#include <sensor_msgs/NavSatFix.h>
 #include <nodelet/loader.h>
 #include <nodelet/nodelet.h>
 #include <ros/package.h>

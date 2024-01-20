@@ -15,7 +15,10 @@ namespace mrover {
         mTwistSub = mNh.subscribe<geometry_msgs::Twist>("/cmd_vel", 1, &SimulatorNodelet::twistCallback, this);
         mJointPositionsSub = mNh.subscribe<Position>("/arm_position_cmd", 1, &SimulatorNodelet::jointPositionsCallback, this);
 
-        mPosePub = mNh.advertise<geometry_msgs::PoseWithCovarianceStamped>("/linearized_pose", 1);
+        // mLinearizedPosePub = mNh.advertise<geometry_msgs::PoseWithCovarianceStamped>("/linearized_pose", 1);
+
+        mLeftGpsPub = mNh.advertise<sensor_msgs::NavSatFix>("/right_gps_driver/fix", 1);
+        mRightGpsPub = mNh.advertise<sensor_msgs::NavSatFix>("/left_gps_driver/fix", 1);
 
         mIkTargetPub = mNh.advertise<IK>("/arm_ik", 1);
 

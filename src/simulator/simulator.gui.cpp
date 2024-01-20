@@ -2,6 +2,10 @@
 
 namespace mrover {
 
+    auto r3ToBtVector3(R3 const& r3) -> btVector3 {
+        return btVector3{static_cast<btScalar>(r3.x()), static_cast<btScalar>(r3.y()), static_cast<btScalar>(r3.z())};
+    }
+
     auto SimulatorNodelet::guiUpdate(wgpu::RenderPassEncoder& pass) -> void {
         if (mSaveTask.shouldUpdate() && mEnablePhysics) {
             if (auto it = mUrdfs.find("rover"); it != mUrdfs.end()) {
@@ -31,7 +35,7 @@ namespace mrover {
             if (auto it = mUrdfs.find("rover"); it != mUrdfs.end()) {
                 URDF const& rover = it->second;
 
-                const auto& [baseTransform, baseVelocity, links] = mSaveHistory.at(mSaveSelection + historySize);
+                auto const& [baseTransform, baseVelocity, links] = mSaveHistory.at(mSaveSelection + historySize);
                 rover.physics->setBaseWorldTransform(baseTransform);
                 rover.physics->setBaseVel(baseVelocity);
                 for (int link = 0; link < rover.physics->getNumLinks(); ++link) {
@@ -107,6 +111,13 @@ namespace mrover {
                 //
                 //     ImGui::Text("%s: %.2f, %.2f", name.c_str(), pos, vel);
                 // }
+            }
+
+            {
+                R3 rayStart = mCameraInWorld.position();
+                R3 rayEnd = rayStart + mCameraInWorld.rotation().quaternion() * R3{100, 0, 0};
+                // btMul
+                // mDynamicsWorld->rayTest(r3ToBtVector3(rayStart), r3ToBtVector3(rayEnd), [
             }
 
             for (Camera const& camera: mCameras) {

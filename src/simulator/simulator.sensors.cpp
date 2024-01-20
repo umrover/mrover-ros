@@ -91,26 +91,44 @@ namespace mrover {
         }
     }
 
+    auto computeNavSatFix(SE3 const& gpuInMap) -> sensor_msgs::NavSatFix {
+        sensor_msgs::NavSatFix gps;
+        gps.header.stamp = ros::Time::now();
+        gps.header.frame_id = "map";
+        // TODO(riley): fill in values
+        return gps;
+    }
+
     auto SimulatorNodelet::gpsAndImusUpdate() -> void {
         if (auto lookup = getUrdf("rover"); lookup) {
             URDF const& rover = *lookup;
 
-            SE3 baseLinkInMap = rover.linkInWorld("base_link");
+            if (mLinearizedPosePub) {
+                SE3 baseLinkInMap = rover.linkInWorld("base_link");
+                geometry_msgs::PoseWithCovarianceStamped pose;
+                pose.header.stamp = ros::Time::now();
+                pose.header.frame_id = "map";
+                R3 p = baseLinkInMap.position();
+                pose.pose.pose.position.x = p.x();
+                pose.pose.pose.position.y = p.y();
+                pose.pose.pose.position.z = p.z();
+                S3 q = baseLinkInMap.rotation().quaternion();
+                pose.pose.pose.orientation.w = q.w();
+                pose.pose.pose.orientation.x = q.x();
+                pose.pose.pose.orientation.y = q.y();
+                pose.pose.pose.orientation.z = q.z();
+                // TODO(quintin, riley): fill in covariance
+                mLinearizedPosePub.publish(pose);
+            }
 
-            geometry_msgs::PoseWithCovarianceStamped pose;
-            pose.header.stamp = ros::Time::now();
-            pose.header.frame_id = "map";
-            R3 p = baseLinkInMap.position();
-            pose.pose.pose.position.x = p.x();
-            pose.pose.pose.position.y = p.y();
-            pose.pose.pose.position.z = p.z();
-            S3 q = baseLinkInMap.rotation().quaternion();
-            pose.pose.pose.orientation.w = q.w();
-            pose.pose.pose.orientation.x = q.x();
-            pose.pose.pose.orientation.y = q.y();
-            pose.pose.pose.orientation.z = q.z();
-            // TODO(quintin, riley): fill in covariance
-            mPosePub.publish(pose);
+            if (mLeftGpsPub) {
+                SE3 leftGpsInMap = rover.linkInWorld("left_gps");
+                mLeftGpsPub.publish(computeNavSatFix(leftGpsInMap));
+            }
+            if (mRightGpsPub) {
+                SE3 rightGpsInMap = rover.linkInWorld("right_gps");
+                mRightGpsPub.publish(computeNavSatFix(rightGpsInMap));
+            }
         }
     }
 
