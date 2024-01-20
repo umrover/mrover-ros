@@ -157,16 +157,7 @@ namespace mrover {
             //Get the first detection to locate in 3D
             Detection firstDetection = detections[0];
 
-            float classConfidence = firstDetection.confidence;
             cv::Rect box = firstDetection.box;
-
-            //Fill out the msgData information to be published to the topic
-            DetectedObject msgData;
-            // TODO(quintin): Correct to new data type
-            // msgData.object_type = firstDetection.className;
-            // msgData.detection_confidence = classConfidence;
-            // msgData.width = static_cast<float>(box.width);
-            // msgData.height = static_cast<float>(box.height);
 
             std::pair center(box.x + box.width/2, box.y + box.height/2);
             
@@ -198,16 +189,6 @@ namespace mrover {
                 }
             }
 
-            //Get the heading
-            float objectHeading;
-            float zedFOV = 54; //54 @ 720; 42 @ 1080
-            float fovPerPixel = (float) zedFOV / static_cast<float>(modelShapeWidth);
-            float xCenter = static_cast<float>(box.x) + (static_cast<float>(box.width) / 2) - (static_cast<float>(modelShapeWidth) / 2);
-            objectHeading = xCenter * fovPerPixel;
-            msgData.bearing = objectHeading;
-
-            //Publish the data to the topic
-            mDetectionData.publish(msgData);
 
             //Draw the detected object's bounding boxes on the image for each of the objects detected
             for (size_t i = 0; i < detections.size(); i++) {

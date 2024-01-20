@@ -31,7 +31,6 @@ namespace mrover {
 
         // Publishers
         ros::Publisher mDebugImgPub;
-        ros::Publisher mDetectionData;
 
         // Subscribers
         ros::Subscriber mImgSub;

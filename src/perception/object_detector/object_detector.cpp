@@ -17,7 +17,6 @@ namespace mrover {
         //Create the publishers and subscribers for the detected image and the debug image
         mImgSub = mNh.subscribe("/camera/left/points", 1, &ObjectDetectorNodelet::imageCallback, this);
         mDebugImgPub = mNh.advertise<sensor_msgs::Image>("/object_detector/debug_img", 1);
-        mDetectionData = mNh.advertise<DetectedObject>("/object_detector/detected_object", 1);
 
         //Create the Reference Frames
         mNh.param<std::string>("camera_frame", mCameraFrameId, "zed2i_left_camera_frame");
