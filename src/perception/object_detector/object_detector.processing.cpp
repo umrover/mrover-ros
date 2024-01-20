@@ -7,6 +7,7 @@
 #include "../point.hpp"
 #include <stdexcept>
 #include <algorithm>
+#include <math.h>
 
 
 namespace mrover {
@@ -284,24 +285,26 @@ namespace mrover {
         size_t currY = yCenter;
         size_t radius = 0;
         float t = 0;
+        int numPts = 16;
         
-        bool isPointValid = false;
+        bool isPointInvalid = true;
 
         Point point;
 
         size_t smallDim = std::min(width, height);
 
 
-        while(!isPointValid){
+        while(isPointInvalid){
             
-            currX = xCenter + std::cos(t * 1.0/16) * radius;
-            currX = yCenter + std::sin(t * 1.0/16) * radius;
+            currX = xCenter + std::cos(t * 1.0/numPts * 2 * M_PI) * radius;
+            currX = yCenter + std::sin(t * 1.0/numPts * 2 * M_PI) * radius;
 
             point = reinterpret_cast<Point const*>(cloudPtr->data.data())[currX + currY * cloudPtr->width];
-            isPointValid = (!std::isfinite(point.x) || !std::isfinite(point.y) || !std::isfinite(point.z));
+            isPointInvalid = (!std::isfinite(point.x) || !std::isfinite(point.y) || !std::isfinite(point.z));
+            if(isPointInvalid) NODELET_WARN("Tag center point not finite: [%f %f %f]", point.x, point.y, point.z);
 
 
-            if(static_cast<int>(t) % 16 == 0){
+            if(static_cast<int>(t) % numPts == 0){
                 radius++;
             }
 
