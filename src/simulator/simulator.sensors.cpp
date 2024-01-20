@@ -91,12 +91,35 @@ namespace mrover {
         }
     }
 
-    auto computeNavSatFix(SE3 const& gpuInMap) -> sensor_msgs::NavSatFix {
-        sensor_msgs::NavSatFix gps;
-        gps.header.stamp = ros::Time::now();
-        gps.header.frame_id = "map";
-        // TODO(riley): fill in values
-        return gps;
+    Eigen::Vector3d cartesian_to_geodetic(R3 const& cartesian, Eigen::Vector3d const& ref_geodetic, double ref_heading) {
+        constexpr double equatorial_radius = 6378137.0;
+        constexpr double flattening = 1.0 / 298.257223563;
+        constexpr double eccentricity2 = 2 * flattening - flattening * flattening;
+        using std::sin, std::cos, std::pow, std::sqrt, std::numbers::pi;
+
+        auto lat0 = ref_geodetic(0);
+        auto lon0 = ref_geodetic(1);
+        auto h0 = ref_geodetic(2);
+        double temp = 1.0 / (1.0 - eccentricity2 * sin(lat0 * pi / 180.0) * sin(lat0 * pi / 180.0));
+        double prime_vertical_radius = equatorial_radius * sqrt(temp);
+        double radius_north = prime_vertical_radius * (1 - eccentricity2) * temp;
+        double radius_east = prime_vertical_radius * cos(lat0 * pi / 180.0);
+
+        double lat = lat0 + (cos(ref_heading) * cartesian.x() + sin(ref_heading) * cartesian.y()) / radius_north * 180.0 / pi;
+        double lon = lon0 - (-sin(ref_heading) * cartesian.x() + cos(ref_heading) * cartesian.y()) / radius_east * 180.0 / pi;
+        double alt = h0 + cartesian.z();
+        return {lat, lon, alt};
+    }
+
+    auto computeNavSatFix(SE3 const& gpuInMap, Eigen::Vector3d const& ref_geodetic, double ref_heading) -> sensor_msgs::NavSatFix {
+        sensor_msgs::NavSatFix gps_msg;
+        gps_msg.header.stamp = ros::Time::now();
+        gps_msg.header.frame_id = "map";
+        auto geodetic = cartesian_to_geodetic(gpuInMap.position(), ref_geodetic, ref_heading);
+        gps_msg.latitude = geodetic(0);
+        gps_msg.longitude = geodetic(1);
+        gps_msg.altitude = geodetic(2);
+        return gps_msg;
     }
 
     auto SimulatorNodelet::gpsAndImusUpdate() -> void {
