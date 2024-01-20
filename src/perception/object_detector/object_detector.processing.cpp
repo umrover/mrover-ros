@@ -291,13 +291,14 @@ namespace mrover {
 
         Point point;
 
-        size_t smallDim = std::min(width, height);
+        size_t smallDim = std::min(width/2, height/2);
 
 
         while(isPointInvalid){
             
             currX = xCenter + std::cos(t * 1.0/numPts * 2 * M_PI) * radius;
-            currX = yCenter + std::sin(t * 1.0/numPts * 2 * M_PI) * radius;
+            currY = yCenter + std::sin(t * 1.0/numPts * 2 * M_PI) * radius;
+            ROS_INFO("x, y: %zu, %zu", currX, currY);
 
             point = reinterpret_cast<Point const*>(cloudPtr->data.data())[currX + currY * cloudPtr->width];
             isPointInvalid = (!std::isfinite(point.x) || !std::isfinite(point.y) || !std::isfinite(point.z));
@@ -307,6 +308,7 @@ namespace mrover {
             if(static_cast<int>(t) % numPts == 0){
                 radius++;
             }
+            t++;
 
             if(radius >= smallDim){
                 return std::nullopt;
