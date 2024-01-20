@@ -34,7 +34,6 @@ namespace mrover {
                     xmlRpcValueToTypeOrDefault<double>(gpsLinearization, "reference_point_altitude"),
             };
             mGpsLinerizationReferenceHeading = xmlRpcValueToTypeOrDefault<double>(gpsLinearization, "reference_heading");
-            ROS_INFO_STREAM("Point:" << mGpsLinerizationReferencePoint);
         }
     }
 

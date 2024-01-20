@@ -17,8 +17,9 @@ namespace mrover {
 
         // mLinearizedPosePub = mNh.advertise<geometry_msgs::PoseWithCovarianceStamped>("/linearized_pose", 1);
 
-        mLeftGpsPub = mNh.advertise<sensor_msgs::NavSatFix>("/right_gps_driver/fix", 1);
-        mRightGpsPub = mNh.advertise<sensor_msgs::NavSatFix>("/left_gps_driver/fix", 1);
+        mLeftGpsPub = mNh.advertise<sensor_msgs::NavSatFix>("/left_gps_driver/fix", 1);
+        mRightGpsPub = mNh.advertise<sensor_msgs::NavSatFix>("/right_gps_driver/fix", 1);
+        mImuPub = mNh.advertise<ImuAndMag>("/imu", 1);
         mGpsTask = PeriodicTask{mPnh.param<float>("gps_rate", 10)};
         mImuTask = PeriodicTask{mPnh.param<float>("imu_rate", 100)};
 

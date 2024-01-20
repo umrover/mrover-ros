@@ -106,8 +106,8 @@ namespace mrover {
         double radiusEast = primeVerticalRadius * cos(lat0);
 
         double referenceHeadingRadians = referenceHeadingDegrees * DEG_TO_RAD;
-        double lat = lat0 + (cos(referenceHeadingRadians) * cartesian.x() + sin(referenceHeadingRadians) * cartesian.y()) / radiusNorth / DEG_TO_RAD;
-        double lon = lon0 - (-sin(referenceHeadingRadians) * cartesian.x() + cos(referenceHeadingRadians) * cartesian.y()) / radiusEast / DEG_TO_RAD;
+        double lat = (lat0 + (cos(referenceHeadingRadians) * cartesian.x() + sin(referenceHeadingRadians) * cartesian.y()) / radiusNorth) / DEG_TO_RAD;
+        double lon = (lon0 - (-sin(referenceHeadingRadians) * cartesian.x() + cos(referenceHeadingRadians) * cartesian.y()) / radiusEast) / DEG_TO_RAD;
         double alt = h0 + cartesian.z();
         return {lat, lon, alt};
     }
@@ -170,15 +170,14 @@ namespace mrover {
                 mLinearizedPosePub.publish(pose);
             }
 
-            if (mLeftGpsPub && mGpsTask.shouldUpdate()) {
+            if (mGpsTask.shouldUpdate()) {
                 SE3 leftGpsInMap = rover.linkInWorld("left_gps");
                 mLeftGpsPub.publish(computeNavSatFix(leftGpsInMap, mGpsLinerizationReferencePoint, mGpsLinerizationReferenceHeading));
-            }
-            if (mRightGpsPub && mGpsTask.shouldUpdate()) {
+
                 SE3 rightGpsInMap = rover.linkInWorld("right_gps");
                 mRightGpsPub.publish(computeNavSatFix(rightGpsInMap, mGpsLinerizationReferencePoint, mGpsLinerizationReferenceHeading));
             }
-            if (mImuPub && mImuTask.shouldUpdate()) {
+            if (mImuTask.shouldUpdate()) {
                 R3 imuAngularVelocity = btVector3ToR3(rover.physics->getBaseOmega());
                 R3 roverLinearVelocity = btVector3ToR3(rover.physics->getBaseVel());
                 R3 imuLinearAcceleration = (roverLinearVelocity - mRoverLinearVelocity) / std::chrono::duration_cast<std::chrono::duration<float>>(dt).count();
