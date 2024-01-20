@@ -18,9 +18,9 @@ using namespace nvinfer1;
 */
 namespace mrover {
 
-    InferenceWrapper::InferenceWrapper(std::string onnxModelPath, cv::Size const modelInputShape = {640, 640}, std::string classesTxtFile = "") : mInference({}) {
+    InferenceWrapper::InferenceWrapper(std::string onnxModelPath) : mInference({}) {
         //Initialize the unique_ptr to the inference class
-        mInference.reset(new Inference(std::move(onnxModelPath), modelInputShape, std::move(classesTxtFile)));
+        mInference.reset(new Inference(std::move(onnxModelPath)));
     }
 
     

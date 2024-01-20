@@ -1,6 +1,6 @@
 #pragma once
 
-#include <algorithm>//TODO: clean up :)
+#include <algorithm>
 #include <array>
 #include <cassert>
 #include <cmath>
@@ -17,17 +17,6 @@
 #include <string>
 #include <type_traits>
 #include <unordered_map>
-#include <cassert>
-#include <cmath>
-#include <cstdint>
-#include <execution>
-#include <limits>
-#include <numeric>
-#include <optional>
-#include <string>
-#include <type_traits>
-#include <unordered_map>
-
 
 #include <boost_cpp23_workaround.hpp>
 

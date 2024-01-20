@@ -17,7 +17,7 @@ namespace mrover {
         ~InferenceWrapper() = default;
 
         //Inference Wrapper Constructor
-        InferenceWrapper(std::string onnxModelPath, cv::Size const modelInputShape, std::string classesTxtFile);
+        InferenceWrapper(std::string onnxModelPath);
 
         //Forward Pass on the model
         void doDetections(cv::Mat const& img) const;

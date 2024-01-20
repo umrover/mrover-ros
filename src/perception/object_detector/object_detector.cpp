@@ -12,17 +12,12 @@ namespace mrover {
         std::filesystem::path packagePath = ros::package::getPath("mrover");
         std::filesystem::path modelPath = packagePath / "data" / "best.onnx";
 
-        // TODO: resolution should be a parameter
-        // TODO: get size of the model from the model itself
-        // TODO: remove empty string
-        mInferenceWrapper = InferenceWrapper{modelPath, cv::Size{640, 640}, ""};
+        mInferenceWrapper = InferenceWrapper{modelPath};
 
         //Create the publishers and subscribers for the detected image and the debug image
         mImgSub = mNh.subscribe("/camera/left/points", 1, &ObjectDetectorNodelet::imageCallback, this);
         mDebugImgPub = mNh.advertise<sensor_msgs::Image>("/object_detector/debug_img", 1);
         mDetectionData = mNh.advertise<DetectedObject>("/object_detector/detected_object", 1);
-
-        //READ ROS PARAMETERS
 
         //Create the Reference Frames
         mNh.param<std::string>("camera_frame", mCameraFrameId, "zed2i_left_camera_frame");

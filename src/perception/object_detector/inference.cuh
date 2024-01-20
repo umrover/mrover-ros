@@ -29,9 +29,6 @@ namespace mrover {
         //Bindings
         std::array<void*, 2> mBindings{};
 
-        //ONNX Model Path
-        std::string mOnnxModelPath{};
-
         //Size of Model
         cv::Size mModelInputShape;
         cv::Size mModelOutputShape;
@@ -41,7 +38,7 @@ namespace mrover {
 
     private:
         //Creates a ptr to the engine
-        ICudaEngine* createCudaEngine(std::string const& onnxModelPath);
+        ICudaEngine* createCudaEngine(std::filesystem::path const& onnxModelPath);
 
         //Launch the model execution onto the GPU
         void launchInference(cv::Mat const& input, cv::Mat const& output) const;
@@ -54,7 +51,7 @@ namespace mrover {
 
     public:
         //Inference Constructor
-        Inference(std::string const& onnxModelPath, cv::Size modelInputShape, std::string const& classesTxtFile);
+        Inference(std::filesystem::path const& onnxModelPath);
 
         //Forward Pass of the model
         void doDetections(const cv::Mat& img) const;

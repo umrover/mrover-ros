@@ -24,12 +24,11 @@ namespace mrover {
     constexpr static char const* INPUT_BINDING_NAME = "images";
     constexpr static char const* OUTPUT_BINDING_NAME = "output0";
 
-    Inference::Inference(std::string const& onnxModelPath, cv::Size modelInputShape = {640, 640}, std::string const& classesTxtFile = "") {
+    Inference::Inference(std::filesystem::path const& onnxModelPath) {
         //Create the engine object from either the file or from onnx file
         mEngine = std::unique_ptr<ICudaEngine, Destroy<ICudaEngine>>{createCudaEngine(onnxModelPath)};
         if (!mEngine) throw std::runtime_error("Failed to create CUDA engine");
 
-        //Log the Engine was created
         mLogger.log(ILogger::Severity::kINFO, "Created CUDA Engine");
 
         //Check some assumptions about the model
@@ -44,8 +43,8 @@ namespace mrover {
         prepTensors();
     }
 
-    ICudaEngine* Inference::createCudaEngine(std::string const& onnxModelPath) {
-        // See link sfor additional context
+    ICudaEngine* Inference::createCudaEngine(std::filesystem::path const& onnxModelPath) {
+        //Define the size of Batches
         constexpr auto explicitBatch = 1U << static_cast<uint32_t>(NetworkDefinitionCreationFlag::kEXPLICIT_BATCH);
 
         //Init logger
