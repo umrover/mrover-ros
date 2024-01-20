@@ -1,0 +1,2 @@
+string machineName
+StateMachineTransition[] transitions

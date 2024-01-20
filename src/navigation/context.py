@@ -11,13 +11,12 @@ import rospy
 import tf2_ros
 from geometry_msgs.msg import Twist
 from mrover.msg import Waypoint, GPSWaypoint, EnableAuton, WaypointType, GPSPointList
-from shapely.geometry import Point
 from std_msgs.msg import Time, Bool
-from util.SE3 import SE3
-from util.ros_utils import get_rosparam
 from visualization_msgs.msg import Marker
 
-from drive import DriveController
+from util.SE3 import SE3
+
+from navigation.drive import DriveController
 
 TAG_EXPIRATION_TIME_SECONDS = 60
 
@@ -101,7 +100,7 @@ class Environment:
             print("CURRENT WAYPOINT IS NONE")
             return None
 
-        return self.get_fid_pos(current_waypoint.fiducial_id, in_odom)
+        return self.get_fid_pos(current_waypoint.tag_id, in_odom)
 
 
 @dataclass
@@ -118,7 +117,7 @@ class Course:
         """
         Gets the pose of the waypoint with the given index
         """
-        waypoint_frame = self.course_data.waypoints[wp_idx].tf_id
+        waypoint_frame = f"course{wp_idx}"
         return SE3.from_tf_tree(self.ctx.tf_buffer, parent_frame="map", child_frame=waypoint_frame)
 
     def current_waypoint_pose(self) -> SE3:
@@ -155,14 +154,14 @@ class Course:
 
 def setup_course(ctx: Context, waypoints: List[Tuple[Waypoint, SE3]]) -> Course:
     all_waypoint_info = []
-    for waypoint_info, pose in waypoints:
+    for wp_idx, (waypoint_info, pose) in enumerate(waypoints):
         all_waypoint_info.append(waypoint_info)
-        pose.publish_to_tf_tree(tf_broadcaster, "map", waypoint_info.tf_id)
+        pose.publish_to_tf_tree(tf_broadcaster, "map", f"course{wp_idx}")
     # make the course out of just the pure waypoint objects which is the 0th elt in the tuple
     return Course(ctx=ctx, course_data=mrover.msg.Course([waypoint[0] for waypoint in waypoints]))
 
 
-def convert_gps_to_cartesian(waypoint: GPSWaypoint) -> Waypoint:
+def convert_gps_to_cartesian(waypoint: GPSWaypoint) -> Tuple[Waypoint, SE3]:
     """
     Converts a GPSWaypoint into a "Waypoint" used for publishing to the CourseService.
     """
@@ -174,10 +173,10 @@ def convert_gps_to_cartesian(waypoint: GPSWaypoint) -> Waypoint:
     )
     # zero the z-coordinate of the odom because even though the altitudes are set to zero,
     # two points on a sphere are not going to have the same z coordinate
-    # navigation algorithmns currently require all coordinates to have zero as the z coordinate
+    # navigation algorithms currently require all coordinates to have zero as the z coordinate
     odom[2] = 0
 
-    return Waypoint(fiducial_id=waypoint.id, tf_id=f"course{waypoint.id}", type=waypoint.type), SE3(position=odom)
+    return Waypoint(tag_id=waypoint.tag_id, type=waypoint.type), SE3(position=odom)
 
 
 def convert_cartesian_to_gps(coordinate: np.ndarray) -> GPSWaypoint:

@@ -5,6 +5,7 @@ from typing import Tuple, Optional
 
 import numpy as np
 from geometry_msgs.msg import Twist
+
 from util.SE3 import SE3
 from util.np_utils import angle_to_rotate, normalized
 from util.ros_utils import get_rosparam
@@ -71,33 +72,33 @@ class DriveController:
         # if we are at the target position, reset the controller and return a zero command
         if abs(linear_error) < completion_thresh:
             self.reset()
-            return (Twist(), True)
+            return Twist(), True
 
         if self._driver_state == self.DriveMode.STOPPED:
             # if the drive mode is STOP (we know we aren't at the target) so we must start moving towards it
             # just switch to the TURN_IN_PLACE state for now under the assumption that we need to turn to face the target
             # return a zero command and False to indicate we aren't at the target (and are also not in the correct state to figure out how to get there)
             self._driver_state = self.DriveMode.TURN_IN_PLACE
-            return (Twist(), False)
+            return Twist(), False
 
         elif self._driver_state == self.DriveMode.TURN_IN_PLACE:
             # if we are in the TURN_IN_PLACE state, we need to turn to face the target
             # if we are within the turn threshold to face the target, we can start driving straight towards it
             if abs(angular_error) < turn_in_place_thresh:
                 self._driver_state = self.DriveMode.DRIVE_FORWARD
-                return (Twist(), False)
+                return Twist(), False
 
             # IVT (Intermediate Value Theorem) check. If the sign of the angular error has changed, this means we've crossed through 0 error
             # in order to prevent osciallation, we 'give up' and just switch to the drive forward state
             elif self._last_angular_error is not None and np.sign(self._last_angular_error) != np.sign(angular_error):
                 self._driver_state = self.DriveMode.DRIVE_FORWARD
-                return (Twist(), False)
+                return Twist(), False
 
             # if neither of those things are true, we need to turn in place towards our target heading, so set the z component of the output Twist message
             else:
                 cmd_vel = Twist()
                 cmd_vel.angular.z = np.clip(angular_error * TURNING_P, MIN_TURNING_EFFORT, MAX_TURNING_EFFORT)
-                return (cmd_vel, False)
+                return cmd_vel, False
 
         elif self._driver_state == self.DriveMode.DRIVE_FORWARD:
             # if we are driving straight towards the target and our last angular error was inside the threshold
@@ -112,13 +113,13 @@ class DriveController:
             cur_angular_is_outside = abs(angular_error) >= turn_in_place_thresh
             if cur_angular_is_outside and last_angular_was_inside:
                 self._driver_state = self.DriveMode.TURN_IN_PLACE
-                return (Twist(), False)
+                return Twist(), False
             # otherwise we compute a drive command with both a linear and angular component in the Twist message
             else:
                 cmd_vel = Twist()
                 cmd_vel.linear.x = np.clip(linear_error * DRIVING_P, MIN_DRIVING_EFFORT, MAX_DRIVING_EFFORT)
                 cmd_vel.angular.z = np.clip(angular_error * TURNING_P, MIN_TURNING_EFFORT, MAX_TURNING_EFFORT)
-                return (cmd_vel, False)
+                return cmd_vel, False
         else:
             raise ValueError(f"Invalid drive state {self._driver_state}")
 
@@ -189,7 +190,7 @@ class DriveController:
 
         if np.linalg.norm(target_pos - rover_pos) < completion_thresh:
             self.reset()
-            return (Twist(), True)
+            return Twist(), True
 
         if path_start is not None:
             target_pos = self.get_lookahead_pt(path_start, target_pos, rover_pos, LOOKAHEAD_DISTANCE)
