@@ -19,6 +19,8 @@ namespace mrover {
 
         mLeftGpsPub = mNh.advertise<sensor_msgs::NavSatFix>("/right_gps_driver/fix", 1);
         mRightGpsPub = mNh.advertise<sensor_msgs::NavSatFix>("/left_gps_driver/fix", 1);
+        mGpsTask = PeriodicTask{mPnh.param<float>("gps_rate", 10)};
+        mImuTask = PeriodicTask{mPnh.param<float>("imu_rate", 100)};
 
         mIkTargetPub = mNh.advertise<IK>("/arm_ik", 1);
 

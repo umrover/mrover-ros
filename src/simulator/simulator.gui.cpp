@@ -115,7 +115,7 @@ namespace mrover {
 
             {
                 R3 rayStart = mCameraInWorld.position();
-                R3 rayEnd = rayStart + mCameraInWorld.rotation().quaternion() * R3{100, 0, 0};
+                R3 rayEnd = rayStart + mCameraInWorld.rotation().matrix().col(0);
                 // btMul
                 // mDynamicsWorld->rayTest(r3ToBtVector3(rayStart), r3ToBtVector3(rayEnd), [
             }

@@ -63,7 +63,7 @@ namespace mrover {
 
         linksToTfUpdate();
 
-        gpsAndImusUpdate();
+        gpsAndImusUpdate(dt);
     }
 
     auto SimulatorNodelet::linksToTfUpdate() -> void {

@@ -21,7 +21,6 @@
 #include <boost/range/combine.hpp>
 #include <boost/thread.hpp>
 #include <boost/thread/future.hpp>
-
 #include <geometry_msgs/PoseWithCovarianceStamped.h>
 #include <geometry_msgs/TwistStamped.h>
 #include <sensor_msgs/NavSatFix.h>
@@ -72,3 +71,4 @@
 
 #include <mrover/IK.h>
 #include <mrover/Position.h>
+#include <mrover/ImuAndMag.h>
