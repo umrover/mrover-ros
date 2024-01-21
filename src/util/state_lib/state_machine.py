@@ -2,7 +2,7 @@ import time
 from collections import defaultdict
 from dataclasses import dataclass
 from enum import Enum
-from threading import Lock
+from threading import Lock, Event
 from typing import DefaultDict, Set, List, Callable, Any, Optional
 
 from util.state_lib.state import State, ExitState
@@ -32,8 +32,7 @@ class StateMachine:
     off_state: Optional[State]
     log_level: LogLevel
     logger: Callable[[str], None]
-    on: bool
-    onLock: Lock
+    stop_event: Event
 
     def __init__(
         self,
@@ -53,8 +52,7 @@ class StateMachine:
         self.off_state = None
         self.log_level = log_level
         self.logger = logger
-        self.on = True
-        self.onLock = Lock()
+        self.stop_event = Event()
 
     def __update(self):
         with self.state_lock:
@@ -77,8 +75,7 @@ class StateMachine:
                 self.current_state.on_enter(self.context)
 
     def stop(self):
-        with self.onLock:
-            self.on = False
+        self.stop_event.set()
 
     def run(self, update_rate: float = float("inf"), warning_handle: Callable = print):
         """
@@ -88,15 +85,12 @@ class StateMachine:
         """
         target_loop_time = None if update_rate == float("inf") else (1.0 / update_rate)
         self.current_state.on_enter(self.context)
-        is_on = True
 
-        while is_on:
+        while not self.stop_event.is_set():
             start = time.time()
             self.__update()
             if isinstance(self.current_state, ExitState):
                 break
-            with self.onLock:
-                is_on = self.on
             elapsed_time = time.time() - start
             if target_loop_time is not None and elapsed_time < target_loop_time:
                 time.sleep(target_loop_time - elapsed_time)
