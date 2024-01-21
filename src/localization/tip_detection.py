@@ -17,10 +17,6 @@ from util.ros_utils import get_rosparam
 from nav_msgs.msg import Odometry
 from util.SE3 import SE3
 
-# detect what the pitch is like in the function
-# if the pitch is too high, make it a fail state
-# do fail states later?
-
 
 class TipDetection:
     hit_count: int
@@ -35,22 +31,26 @@ class TipDetection:
         # read the orientation data from the given Imu message, store that value in `self.pose`, then publish that pose to the TF tree.
         self.hit_count = 0
         self.orientation_threshold = 0.5
+        # these velocity thresholds mean the rover's always gonna be "tipping" if it's moving, right ? -audrey
+        # so, need to change to something else? why are we testing velocity?
         self.velocity_threshold_x = .025
         self.velocity_threshold_y = .01
         self.time_threshold = 1
         self.hit_count_threshold = 5
         odometry_sub = message_filters.Subscriber("global_ekf/odometry", Odometry)
         odometry_sub.registerCallback(self.odometry_callback)
-        self.x = 0
-        self.y = 0
-        self.z = 0
-        self.w = 0
+        # self.x = 0
+        # self.y = 0
+        # self.z = 0
+        # self.w = 0
+
 
     def imu_callback(self, msg: Imu):
         pass
-        # self.pose = SE3.from_pos_quat(self.pose.position, np.array([msg.orientation.x, msg.orientation.y, msg.orientation.z, msg.orientation.w]))
-        # self.pose.publish_to_tf_tree(self.tf_broadcaster, "map", "base_link")
+        
 
+    # every time data is gotten from odometry, odometry_callback() is called from init()
+    # calling the rest of the functions like detect_tip() in odometry_callback()
     def odometry_callback(self, odometry):
         self.x = abs(odometry.pose.pose.orientation.x)
         self.y = abs(odometry.pose.pose.orientation.y)
@@ -62,6 +62,7 @@ class TipDetection:
         self.second_check(odometry)
         self.check_for_hit_count(self.hit_count)
 
+
     # checking the rover's velocity
     def detect_tip(self, odometry):
         # printing rover orientation
@@ -70,8 +71,7 @@ class TipDetection:
         rospy.loginfo("self.z" + str(self.z))
         rospy.loginfo("self.w" + str(self.w))
 
-        # hit count set to different threshold values; if more than x values out of 10 point out to the rover tipping over; the rover is tipping over
-
+        # checking if orientation exceeds orientation_threshold, then increment hit_count
         if self.w >= self.orientation_threshold:
             self.hit_count += 1
         elif self.x >= self.orientation_threshold:
@@ -80,24 +80,20 @@ class TipDetection:
             self.hit_count += 1
 
         # checking velocity of rover
-        # check magnitude of angular velocity for each axis
 
         # create the separate angular velocity variables
-        angular_velocity_x = odometry.twist.twist.angular.x
-        angular_velocity_y = odometry.twist.twist.angular.y
-
-        # create the magnitude variables
-        angular_velocity_x_magnitude = abs(angular_velocity_x)
-        angular_velocity_y_magnitude = abs(angular_velocity_y)
+        angular_velocity_x = abs(odometry.twist.twist.angular.x)
+        angular_velocity_y = abs(odometry.twist.twist.angular.y)
 
         # check angular velocity magnitudes of each axis to see if it's above the threshold
 
         # Tipping over (pitch)
-        if angular_velocity_x_magnitude > self.velocity_threshold_x:
+        if angular_velocity_x >= self.velocity_threshold_x:
             self.hit_count += 1
         # Rolling over (roll)
-        elif angular_velocity_y_magnitude > self.velocity_threshold_y:
+        elif angular_velocity_y >= self.velocity_threshold_y:
             self.hit_count += 1
+
 
     # crates the time difference
     def perform_robotic_tasks(self, time_threshold):
@@ -105,7 +101,9 @@ class TipDetection:
         rospy.loginfo("performing tasks...")
         rospy.sleep(time_threshold)  # Simulate a x second delay
 
+
     # checking acceleration of rover
+    # why don't we have an acceleration threshold? why are we using orientation threshold? -audrey
     def second_check(self, odometry):        
         start_time = rospy.Time.now()
         self.perform_robotic_tasks(self.time_threshold)
@@ -118,6 +116,8 @@ class TipDetection:
         linear_acceleration_x = abs(odometry.twist.twist.linear.x)
         linear_acceleration_y = abs(odometry.twist.twist.linear.y)
 
+        # checking if the acceleration exceeds our threshold ?
+        # not sure why we're checking for 0, need clarification ^^ -audrey
         if linear_acceleration_x == 0 and elapsed_seconds > self.time_threshold:
             if self.w >= self.orientation_threshold:
                 hit_count += 1
@@ -133,10 +133,11 @@ class TipDetection:
             elif self.y >= self.orientation_threshold:
                 hit_count += 1
 
+
     # seeing if hit_count is too big
     def check_for_hit_count(self, hit_count):
         if hit_count > self.hit_count_threshold:
-            print("tipping")
+            rospy.loginfo("tipping")
 
 
 def main():
@@ -144,7 +145,7 @@ def main():
     rospy.init_node("tip_detection")
     TipDetection()
 
-    # rospy.spin()  # idk what this is im copying from failure_identification
+    rospy.spin() # taken from failure identification but idk what it does exactly
 
 
 if __name__ == "__main__":
