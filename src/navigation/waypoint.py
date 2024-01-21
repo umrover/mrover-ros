@@ -61,7 +61,7 @@ class WaypointState(State):
                     # We finished a waypoint associated with a tag id, but we have not seen it yet.
                     return search.SearchState()
                 # TODO elif looking for water bottle:
-	                # return obstacle_avoidance.ObstacleAvoidanceSearchState()
+	                # return water_bottle_search.WaterBottleSearchState()
 
             if context.rover.stuck:
                 context.rover.previous_state = self

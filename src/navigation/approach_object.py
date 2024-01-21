@@ -15,8 +15,6 @@ class ApproachObjectState(ApproachTargetBaseState):
     Transitions:
     -If arrived at target: DoneState
     -Did not arrive at target: ApproachObjectState
-    -Arrived at the waypoint where the fiducial should be but have not seen it yet: SearchState
-    -Stuck?
     """
 
     def on_enter(self, context):

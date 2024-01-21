@@ -62,8 +62,8 @@ class Environment:
 
     ctx: Context
     NO_FIDUCIAL: ClassVar[int] = -1
-    arrived_at_post: bool = False
-    last_post_location: Optional[np.ndarray] = None
+    arrived_at_post: bool = False # TODO change to arrived_at_target
+    last_post_location: Optional[np.ndarray] = None # TODO change to last_target_location
     # TODO add dictionary for long range tag id : (time received, our hit counter, bearing)
     
     def get_target_pos(self, id: str, in_odom_frame: bool = True) -> Optional[np.ndarray]:
@@ -156,6 +156,8 @@ class Course:
             return waypoint.type.val == mrover.msg.WaypointType.POST
         else:
             return False
+        
+    # TODO add look_for_object()
 
     def is_complete(self) -> bool:
         return self.waypoint_index == len(self.course_data.waypoints)

@@ -1,3 +1,5 @@
 int32 NO_SEARCH = 0
 int32 POST = 1
+int32 MALLET = 2
+int32 WATER_BOTTLE = 3
 int32 val
