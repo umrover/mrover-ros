@@ -9,7 +9,7 @@ import pymap3d
 import rospy
 import tf2_ros
 from geometry_msgs.msg import Twist
-from mrover.msg import Waypoint, GPSWaypoint, WaypointType, GPSPointList, CourseData as CourseMsg
+from mrover.msg import Waypoint, GPSWaypoint, WaypointType, GPSPointList, Course as CourseMsg
 from mrover.srv import EnableAuton, EnableAutonRequest, EnableAutonResponse
 from navigation.drive import DriveController
 from std_msgs.msg import Time, Bool
@@ -79,9 +79,9 @@ class Environment:
                 print(f"TAG EXPIRED {fid_id}!")
                 return None
         except (
-                tf2_ros.LookupException,
-                tf2_ros.ConnectivityException,
-                tf2_ros.ExtrapolationException,
+            tf2_ros.LookupException,
+            tf2_ros.ConnectivityException,
+            tf2_ros.ExtrapolationException,
         ) as e:
             return None
         return fid_pose.position
