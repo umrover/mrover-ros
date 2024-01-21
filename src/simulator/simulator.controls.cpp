@@ -107,7 +107,7 @@ namespace mrover {
 
         // TODO(quintin): use lie algebra more here? we have a perturbation in the tangent space
         R3 p = mCameraInWorld.position();
-        SO3 q = SO3{delta.y(), Eigen::Vector3d::UnitY()} * mCameraInWorld.rotation() * SO3{-delta.x(), Eigen::Vector3d::UnitZ()};
+        SO3 q = SO3{delta.y(), R3::UnitY()} * mCameraInWorld.rotation() * SO3{-delta.x(), R3::UnitZ()};
         mCameraInWorld = SE3{p, q};
 
         centerCursor();

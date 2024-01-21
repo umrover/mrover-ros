@@ -114,10 +114,28 @@ namespace mrover {
             }
 
             {
-                R3 rayStart = mCameraInWorld.position();
-                R3 rayEnd = rayStart + mCameraInWorld.rotation().matrix().col(0);
-                // btMul
-                // mDynamicsWorld->rayTest(r3ToBtVector3(rayStart), r3ToBtVector3(rayEnd), [
+                Eigen::Vector2d cursorInWindow;
+                glfwGetCursorPos(mWindow.get(), &cursorInWindow.x(), &cursorInWindow.y());
+                Eigen::Vector2i windowSize;
+                glfwGetWindowSize(mWindow.get(), &windowSize.x(), &windowSize.y());
+                Eigen::Vector2f cursorInNdc{
+                        cursorInWindow.x() / windowSize.x() * 2 - 1,
+                        1 - 2 * cursorInWindow.y() / windowSize.y(),
+                };
+                Eigen::Vector4f cursorInWorld = (mSceneUniforms.value.cameraToClip.matrix() * mSceneUniforms.value.worldToCamera.matrix()).inverse() * Eigen::Vector4f{cursorInNdc.x(), cursorInNdc.y(), NEAR, 1};
+                cursorInWorld /= cursorInWorld.w();
+
+                auto rayStart = btVector3{cursorInWorld.x(), cursorInWorld.y(), cursorInWorld.z()};
+                auto rayEnd = rayStart + r3ToBtVector3(mCameraInWorld.rotation().matrix().col(0)) * 100;
+
+                btMultiBodyDynamicsWorld::ClosestRayResultCallback rayCallback{rayStart, rayEnd};
+                mDynamicsWorld->rayTest(rayStart, rayEnd, rayCallback);
+                if (rayCallback.hasHit()) {
+                    btVector3 const& hitPoint = rayCallback.m_hitPointWorld;
+                    ImGui::Text("Cursor: (%.2f, %.2f, %.2f)", hitPoint.x(), hitPoint.y(), hitPoint.z());
+                } else {
+                    ImGui::Text("Cursor: None");
+                }
             }
 
             for (Camera const& camera: mCameras) {
