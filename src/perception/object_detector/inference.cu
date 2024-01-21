@@ -37,7 +37,7 @@ namespace mrover {
         //Create the execution context
         setUpContext();
 
-        //Init the io tensors
+        //Init the io tensors on the GPU
         prepTensors();
     }
 
@@ -170,13 +170,14 @@ namespace mrover {
 
         assert(mContext);
         //Create an appropriately sized output tensor
-        Dims const outputTensorDims = mEngine->getTensorShape(OUTPUT_BINDING_NAME);
+        Dims const oOUTPUTutputTensorDims = mEngine->getTensorShape(OUTPUT_BINDING_NAME);
         for (int i = 0; i < outputTensorDims.nbDims; i++) {
             char message[512];
             std::snprintf(message, sizeof(message), "size %d %d", i, outputTensorDims.d[i]);
             mLogger.log(nvinfer1::ILogger::Severity::kINFO, message);
         }
 
+        //Create the mat wrapper around the output matrix for ease of use
         mOutputTensor = cv::Mat::zeros(outputTensorDims.d[1], outputTensorDims.d[2], CV_MAKE_TYPE(CV_32F, 1));
     }
 

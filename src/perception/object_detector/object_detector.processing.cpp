@@ -154,7 +154,6 @@ namespace mrover {
 
         //If there are detections locate them in 3D
         if (!detections.empty()) {
-            //Get the first detection to locate in 3D
             Detection firstDetection = detections[0];
 
             cv::Rect box = firstDetection.box;
@@ -168,7 +167,7 @@ namespace mrover {
                     std::string immediateFrameId = "immediateDetectedObject";
                     SE3::pushToTfTree(mTfBroadcaster, immediateFrameId, mCameraFrameId, objectLocation.value());
 
-                    //Since the object is seen we need to decrement
+                    //Since the object is seen we need to increment the hit counter
                     mHitCount = std::min(mObjMaxHitcount, mHitCount + mObjIncrementWeight);
 
                     //Only publish to permament if we are confident in the object
@@ -211,25 +210,19 @@ namespace mrover {
             
         }
 
+        //We only want to publish the debug image if there is something lsitening, to reduce the operations going on
         if (mDebugImgPub.getNumSubscribers() > 0 || true) {
-            // Init sensor msg image
             sensor_msgs::Image newDebugImageMessage;//I chose regular msg not ptr so it can be used outside of this process
 
             //Convert the image back to BGRA for ROS
             cv::cvtColor(sizedImage, sizedImage, cv::COLOR_BGR2BGRA);
 
-            //Fill in the msg image size
             newDebugImageMessage.height = sizedImage.rows;
             newDebugImageMessage.width = sizedImage.cols;
-
-            //Fill in the encoding type
             newDebugImageMessage.encoding = sensor_msgs::image_encodings::BGRA8;
-
-            //Calculate the step for the imgMsg
             newDebugImageMessage.step = sizedImage.channels() * sizedImage.cols;
             newDebugImageMessage.is_bigendian = __BYTE_ORDER__ == __ORDER_BIG_ENDIAN__;
 
-            //Pointer to the the image data
             auto imgPtr = sizedImage.data;
 
             //Calculate the image size
@@ -239,19 +232,18 @@ namespace mrover {
             //Copy the data to the image
             memcpy(newDebugImageMessage.data.data(), imgPtr, size);
 
-            //Publish the image to the topic
             mDebugImgPub.publish(newDebugImageMessage);
         }
     }
 
     std::optional<SE3> ObjectDetectorNodelet::getObjectInCamFromPixel(sensor_msgs::PointCloud2ConstPtr const& cloudPtr, size_t u, size_t v, size_t width, size_t height) {
         assert(cloudPtr);
-
         if (u >= cloudPtr->width || v >= cloudPtr->height) {
             NODELET_WARN("Tag center out of bounds: [%zu %zu]", u, v);
             return std::nullopt;
         }
 
+        //Search for the pnt in a spiral pattern
         return spiralSearchInImg(cloudPtr, u, v, width, height);
     }
 
@@ -259,32 +251,34 @@ namespace mrover {
         size_t currX = xCenter;
         size_t currY = yCenter;
         size_t radius = 0;
-        float t = 0;
+        int t = 0;
         int numPts = 16;
-        
         bool isPointInvalid = true;
-
         Point point;
 
+        //Find the smaller of the two box dimensions so we know the max spiral radius
         size_t smallDim = std::min(width/2, height/2);
 
 
         while(isPointInvalid){
-            
+            //This is the parametric equation to spiral around the center pnt
             currX = xCenter + std::cos(t * 1.0/numPts * 2 * M_PI) * radius;
             currY = yCenter + std::sin(t * 1.0/numPts * 2 * M_PI) * radius;
-            ROS_INFO("x, y: %zu, %zu", currX, currY);
 
+            //Grab the point from the pntCloud and determine if its a finite pnt
             point = reinterpret_cast<Point const*>(cloudPtr->data.data())[currX + currY * cloudPtr->width];
             isPointInvalid = (!std::isfinite(point.x) || !std::isfinite(point.y) || !std::isfinite(point.z));
             if(isPointInvalid) NODELET_WARN("Tag center point not finite: [%f %f %f]", point.x, point.y, point.z);
 
-
+            //After a full circle increase the radius
             if(static_cast<int>(t) % numPts == 0){
                 radius++;
             }
+
+            //Increase the parameter
             t++;
 
+            //If we reach the edge of the box we stop spiraling
             if(radius >= smallDim){
                 return std::nullopt;
             }
