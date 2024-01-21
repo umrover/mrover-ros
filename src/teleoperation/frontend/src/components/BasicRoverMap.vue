@@ -12,20 +12,6 @@
       <l-marker ref="rover" :lat-lng="odomLatLng" :icon="locationIcon" />
 
       <div v-for="(waypoint, index) in waypointList" :key="index">
-        <!-- <div v-if="index === highlightedWaypoint">
-          <l-marker :lat-lng="waypoint.latLng" :icon="highlightedWaypointIcon">
-            <l-tooltip :options="{ permanent: 'true', direction: 'top' }">
-              {{ waypoint.name }}, {{ index }}
-            </l-tooltip>
-          </l-marker>
-        </div>
-        <div v-else>
-          <l-marker :lat-lng="waypoint.latLng" :icon="waypointIcon">
-            <l-tooltip :options="{ permanent: 'true', direction: 'top' }">
-              {{ waypoint.name }}, {{ index }}
-            </l-tooltip>
-          </l-marker>
-        </div> -->
         <l-marker :lat-lng="waypoint.latLng" :icon="getWaypointIcon(waypoint.drone)">
           <l-tooltip :options="{ permanent: 'true', direction: 'top' }">
             {{ waypoint.name }}, {{ index }}
