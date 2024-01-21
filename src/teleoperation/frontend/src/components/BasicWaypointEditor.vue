@@ -172,10 +172,11 @@ export default {
   watch: {
     storedWaypoints: {
       handler: function (newList) {
-        const waypoints = newList.map((waypoint: { lat: any; lon: any; name: any }) => {
+        const waypoints = newList.map((waypoint: { lat: any; lon: any; name: any, drone: any}) => {
           return {
             latLng: L.latLng(waypoint.lat, waypoint.lon),
-            name: waypoint.name
+            name: waypoint.name,
+            drone: waypoint.drone
           }
         })
         this.setWaypointList(waypoints)
