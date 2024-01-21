@@ -17,7 +17,7 @@ dependencies = [
     "Django==4.2.5",
     "empy==3.3.4",
     "numpy==1.26.0",
-    "pandas==2.1.0",
+    "pandas==2.2.0",
     "shapely==2.0.1",
     "pyserial==3.5",
     "moteus==0.3.59",
