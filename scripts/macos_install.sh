@@ -4,7 +4,7 @@
 set -Eeuo pipefail
 
 if ! command -v mamba; then
-    brew install mambaforge
+    brew install miniforge
     mamba init zsh
     echo "Please restart your shell and re-run"
     exit 1
