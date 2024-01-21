@@ -48,8 +48,8 @@ class ApproachTargetBaseState(State):
             )
             next_state = self.determine_next(arrived)
             if arrived:
-                context.env.arrived_at_post = True  # TODO: change post to target?
-                context.env.last_post_location = self.get_target_pos()  # TODO: change post to target?
+                context.env.arrived_at_target = True
+                context.env.last_target_location = self.get_target_pos()
                 context.course.increment_waypoint()
             else:
                 context.rover.send_drive_command(cmd_vel)

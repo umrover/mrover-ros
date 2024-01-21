@@ -62,10 +62,11 @@ class Environment:
 
     ctx: Context
     NO_FIDUCIAL: ClassVar[int] = -1
-    arrived_at_post: bool = False # TODO change to arrived_at_target
-    last_post_location: Optional[np.ndarray] = None # TODO change to last_target_location
+    arrived_at_target: bool = None
+    last_target_location: Optional[np.ndarray] = None
     # TODO add dictionary for long range tag id : (time received, our hit counter, bearing)
-    
+    tag_data_dict = {}
+
     def get_target_pos(self, id: str, in_odom_frame: bool = True) -> Optional[np.ndarray]:
         """
         Retrieves the pose of the given fiducial ID from the TF tree in the odom frame
@@ -74,9 +75,7 @@ class Environment:
         """
         try:
             parent_frame = self.ctx.odom_frame if in_odom_frame else self.ctx.world_frame
-            target_pose, time = SE3.from_tf_time(
-                self.ctx.tf_buffer, parent_frame=parent_frame, child_frame=f"{id}"
-            )
+            target_pose, time = SE3.from_tf_time(self.ctx.tf_buffer, parent_frame=parent_frame, child_frame=f"{id}")
             now = rospy.Time.now()
             if now.to_sec() - time.to_sec() >= TAG_EXPIRATION_TIME_SECONDS:
                 print(f"EXPIRED {id}!")
@@ -88,7 +87,7 @@ class Environment:
         ) as e:
             return None
         return target_pose.position
-    
+
     def current_target_pos(self, odom_override: bool = True) -> Optional[np.ndarray]:
         """
         Retrieves the position of the current fiducial or object (and we are looking for it)
@@ -156,8 +155,20 @@ class Course:
             return waypoint.type.val == mrover.msg.WaypointType.POST
         else:
             return False
-        
-    # TODO add look_for_object()
+
+    def look_for_object(self) -> bool:
+        """
+        Returns whether the currently active waypoint (if it exists) indicates
+        that we should go to either the mallet or the water bottle.
+        """
+        waypoint = self.current_waypoint()
+        if waypoint is not None:
+            return (
+                waypoint.type.val == mrover.msg.WaypointType.MALLET
+                or waypoint.type.val == mrover.msg.WaypointType.WATER_BOTTLE
+            )
+        else:
+            return False
 
     def is_complete(self) -> bool:
         return self.waypoint_index == len(self.course_data.waypoints)
@@ -213,7 +224,7 @@ class Context:
     vis_publisher: rospy.Publisher
     course_listener: rospy.Subscriber
     stuck_listener: rospy.Subscriber
-    # TODO create listener for long range cam
+    long_range_cam_listener: rospy.Subscriber
 
     # Use these as the primary interfaces in states
     course: Optional[Course]
@@ -243,6 +254,8 @@ class Context:
         self.world_frame = rospy.get_param("world_frame")
         self.odom_frame = rospy.get_param("odom_frame")
         self.rover_frame = rospy.get_param("rover_frame")
+        self.tag_data_listener = rospy.Subscriber("tag_data", list, self.tag_data_callback)
+        self.long_range_cam_listener = rospy.Subscriber("long_range_cam", Bool, self.long_range_cam_listener)
 
     def recv_enable_auton(self, req: mrover.srv.PublishEnableAutonRequest) -> mrover.srv.PublishEnableAutonResponse:
         enable_msg = req.enableMsg
@@ -255,4 +268,10 @@ class Context:
     def stuck_callback(self, msg: Bool):
         self.rover.stuck = msg.data
 
-    # TODO create callback for long range listener
+    def tag_data_callback(self, tags: list) -> None:
+        for tag in tags:
+            tag_id = tag["id"]
+            hit_count = tag["hitCount"]
+            bearing = tag["bearing"]
+            time_received = rospy.Time()
+            self.env.tag_data_dict[tag_id] = (time_received, hit_count, bearing)
