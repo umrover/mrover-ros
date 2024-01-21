@@ -1,12 +1,14 @@
 #include "pch.hpp"
 
+using manif::SE3d;
+
 namespace mrover {
 
     struct Tag {
         int id = -1;
         int hitCount = 0;
         cv::Point2f imageCenter{};
-        std::optional<SE3> tagInCam;
+        std::optional<SE3d> tagInCam;
     };
 
     class TagDetectorNodelet : public nodelet::Nodelet {
@@ -53,7 +55,7 @@ namespace mrover {
 
         void publishThresholdedImage();
 
-        std::optional<SE3> getTagInCamFromPixel(sensor_msgs::PointCloud2ConstPtr const& cloudPtr, size_t u, size_t v);
+        std::optional<SE3d> getTagInCamFromPixel(sensor_msgs::PointCloud2ConstPtr const& cloudPtr, size_t u, size_t v);
 
     public:
         TagDetectorNodelet() = default;

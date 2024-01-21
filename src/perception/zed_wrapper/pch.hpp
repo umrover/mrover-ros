@@ -26,6 +26,7 @@
 #include <tf2_ros/transform_broadcaster.h>
 #include <tf2_ros/transform_listener.h>
 
-#include <se3.hpp>
-#include <point.hpp>
 #include <loop_profiler.hpp>
+#include <manif/manif.h>
+#include <point.hpp>
+#include <se3.hpp>

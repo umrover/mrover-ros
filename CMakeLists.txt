@@ -81,6 +81,7 @@ endif ()
 find_package(OpenCV REQUIRED)
 find_package(ZED QUIET)
 find_package(Eigen3 REQUIRED)
+find_package(manif REQUIRED)
 find_package(PkgConfig REQUIRED)
 pkg_search_module(NetLink libnl-3.0)
 pkg_search_module(NetLinkRoute libnl-route-3.0)
@@ -130,6 +131,7 @@ catkin_package()
 ## Libraries
 
 mrover_add_library(lie src/util/lie/*.cpp src/util/lie)
+mrover_add_header_only_library(manif ${manif_INCLUDE_DIRS})
 
 ## ESW
 
@@ -167,7 +169,7 @@ endif ()
 ## Perception
 
 mrover_add_nodelet(tag_detector src/perception/tag_detector/*.cpp src/perception/tag_detector src/perception/tag_detector/pch.hpp)
-mrover_nodelet_link_libraries(tag_detector opencv_core opencv_objdetect opencv_aruco opencv_imgproc opencv_highgui lie)
+mrover_nodelet_link_libraries(tag_detector opencv_core opencv_objdetect opencv_aruco opencv_imgproc opencv_highgui lie manif)
 
 if (CUDA_FOUND)
     mrover_add_library(streaming src/esw/streaming/*.c* src/esw/streaming)
@@ -180,7 +182,7 @@ endif ()
 if (ZED_FOUND)
     mrover_add_nodelet(zed src/perception/zed_wrapper/*.c* src/perception/zed_wrapper src/perception/zed_wrapper/pch.hpp)
     mrover_nodelet_include_directories(zed ${ZED_INCLUDE_DIRS} ${CUDA_INCLUDE_DIRS})
-    mrover_nodelet_link_libraries(zed ${ZED_LIBRARIES} ${SPECIAL_OS_LIBS} lie)
+    mrover_nodelet_link_libraries(zed ${ZED_LIBRARIES} ${SPECIAL_OS_LIBS} lie manif)
     mrover_nodelet_defines(zed
             ALLOW_BUILD_DEBUG # Ignore ZED warnings about Debug mode
             __CUDA_INCLUDE_COMPILER_INTERNAL_HEADERS__ # Eigen includes some files it should not, ignore
@@ -196,7 +198,7 @@ mrover_add_node(arm_controller src/teleoperation/arm_controller/*.cpp)
 if (MROVER_BUILD_SIM)
     mrover_add_nodelet(simulator src/simulator/*.cpp src/simulator src/simulator/pch.hpp)
     mrover_nodelet_include_directories(simulator ${ASSIMP_INCLUDE_DIRS} ${BULLET_INCLUDE_DIRS} ${OPENCV_INCLUDE_DIRS} src/simulator/imgui)
-    mrover_nodelet_link_libraries(simulator ${ASSIMP_LIBRARIES} ${BULLET_LIBRARIES} glfw3webgpu webgpu glfw opencv_core opencv_imgcodecs opencv_imgproc lie)
+    mrover_nodelet_link_libraries(simulator ${ASSIMP_LIBRARIES} ${BULLET_LIBRARIES} glfw3webgpu webgpu glfw opencv_core opencv_imgcodecs opencv_imgproc lie manif)
     mrover_nodelet_defines(simulator BOOST_THREAD_PROVIDES_FUTURE)
 endif ()
 

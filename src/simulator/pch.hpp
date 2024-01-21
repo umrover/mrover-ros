@@ -23,11 +23,11 @@
 #include <boost/thread/future.hpp>
 #include <geometry_msgs/PoseWithCovarianceStamped.h>
 #include <geometry_msgs/TwistStamped.h>
-#include <sensor_msgs/NavSatFix.h>
 #include <nodelet/loader.h>
 #include <nodelet/nodelet.h>
 #include <ros/package.h>
 #include <ros/serialization.h>
+#include <sensor_msgs/NavSatFix.h>
 #include <sensor_msgs/PointCloud2.h>
 #include <sensor_msgs/point_cloud2_iterator.h>
 #include <tf2_ros/transform_broadcaster.h>
@@ -64,11 +64,12 @@
 #include <assimp/scene.h>
 
 #include <loop_profiler.hpp>
+#include <manif/manif.h>
 #include <params_utils.hpp>
 #include <point.hpp>
 #include <se3.hpp>
 #include <units.hpp>
 
 #include <mrover/IK.h>
-#include <mrover/Position.h>
 #include <mrover/ImuAndMag.h>
+#include <mrover/Position.h>
