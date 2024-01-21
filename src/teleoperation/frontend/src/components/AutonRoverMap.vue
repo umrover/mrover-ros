@@ -144,6 +144,7 @@ export default {
     }
   },
   watch: {
+    waypointList: {handler: function() {console.log(this.waypointList)}},
     odom: {
       handler: function (val) {
         // Trigger every time rover odom is changed
@@ -209,22 +210,10 @@ export default {
       iconAnchor: [16, 16],
       popupAnchor: [0, -32]
     })
-    this.gatePathIcon = L.icon({
-      iconUrl: 'map_marker_highlighted.png',
-      iconSize: [64, 64],
-      iconAnchor: [32, 64],
-      popupAnchor: [0, -32]
-    })
 
     //   this.search_path_topic = new ROSLIB.Topic({
     //     ros: this.$ros,
     //     name: "/search_path",
-    //     messageType: "mrover/GPSPointList"
-    //   });
-
-    //   this.estimated_gate_topic = new ROSLIB.Topic({
-    //     ros: this.$ros,
-    //     name: "/estimated_gate_location",
     //     messageType: "mrover/GPSPointList"
     //   });
 

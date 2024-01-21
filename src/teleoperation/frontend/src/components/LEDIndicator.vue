@@ -25,7 +25,7 @@ export default {
   },
   computed: {
     color: function () {
-      return this.connected ? 'green' : 'red'
+      return this.connected ? 'bg-success' : 'bg-danger'
     }
   }
 }
@@ -43,12 +43,7 @@ export default {
   border-radius: 8px;
   border: 1px solid;
 }
-.green {
-  background-color: lightgreen;
-}
-.red {
-  background-color: red;
-}
+
 .name {
   margin-left: 5px;
 }

@@ -92,7 +92,6 @@
 </template>
 
 <script lang="ts">
-import draggable from 'vuedraggable'
 import { convertDMS } from '../utils.js'
 import WaypointItem from './BasicWaypointItem.vue'
 import { mapMutations, mapGetters } from 'vuex'
@@ -170,14 +169,17 @@ export default {
   },
 
   watch: {
-    storedWaypoints: function (newList) {
-      const waypoints = newList.map((waypoint: { lat: any; lon: any; name: any }) => {
-        return {
-          latLng: L.latLng(waypoint.lat, waypoint.lon),
-          name: waypoint.name
-        }
-      })
-      this.setWaypointList(waypoints)
+    storedWaypoints: {
+      handler: function (newList) {
+        const waypoints = newList.map((waypoint: { lat: any; lon: any; name: any }) => {
+          return {
+            latLng: L.latLng(waypoint.lat, waypoint.lon),
+            name: waypoint.name
+          }
+        })
+        this.setWaypointList(waypoints)
+      },
+      deep: true
     },
 
     odom_format_in: function (newOdomFormat) {
@@ -234,7 +236,6 @@ export default {
   },
 
   components: {
-    draggable,
     WaypointItem
   }
 }

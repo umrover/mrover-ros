@@ -2,7 +2,7 @@
   <div class="wrapper">
     <div class="shadow p-3 mb-5 header">
       <h1>Menu</h1>
-      <img class="logo" src="mrover.png" alt="MRover" title="MRover" width="200" />
+      <img class="logo" src="/mrover.png" alt="MRover" title="MRover" width="200" />
     </div>
 
     <div class="pages">

@@ -407,13 +407,16 @@ export default {
       this.setRoute(waypoints)
     },
 
-    storedWaypoints: function (newList) {
+    storedWaypoints: { 
+      handler: function (newList) {
       const waypoints = newList.map((waypoint: { lat: any; lon: any; name: any }) => {
         const lat = waypoint.lat
         const lon = waypoint.lon
         return { latLng: L.latLng(lat, lon), name: waypoint.name }
       })
       this.setWaypointList(waypoints)
+    },
+      deep: true
     },
 
     odom_format_in: function (newOdomFormat) {
@@ -485,7 +488,6 @@ export default {
     },
 
     sendAutonCommand() {
-      console.log(this.autonEnabled)
       if (this.autonEnabled) {
         this.sendMessage({
           type: 'auton_command',

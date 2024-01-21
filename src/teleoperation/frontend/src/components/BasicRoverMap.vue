@@ -96,18 +96,18 @@ export default {
 
   created: function () {
     this.locationIcon = L.icon({
-      iconUrl: 'location_marker_icon.png',
+      iconUrl: '/location_marker_icon.png',
       iconSize: [64, 64],
       iconAnchor: [32, 32]
     })
     this.waypointIcon = L.icon({
-      iconUrl: 'map_marker.png',
+      iconUrl: '/map_marker.png',
       iconSize: [64, 64],
       iconAnchor: [32, 64],
       popupAnchor: [0, -32]
     })
     this.highlightedWaypointIcon = L.icon({
-      iconUrl: 'map_marker_highlighted.png',
+      iconUrl: '/map_marker_highlighted.png',
       iconSize: [64, 64],
       iconAnchor: [32, 64],
       popupAnchor: [0, -32]
@@ -192,7 +192,7 @@ export default {
   mounted: function () {
     this.$nextTick(() => {
       this.map = this.$refs.map.mapObject
-      this.roverMarker = this.$refs.rover.mapObject
+      // this.roverMarker = this.$refs.rover.mapObject
     })
   }
 }
