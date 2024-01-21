@@ -112,11 +112,11 @@ namespace mrover {
         return {lat, lon, alt};
     }
 
-    auto computeNavSatFix(SE3 const& gpuInMap, Eigen::Vector3d const& referenceGeodetic, double referenceHeadingDegrees) -> sensor_msgs::NavSatFix {
+    auto computeNavSatFix(SE3 const& gpsInMap, Eigen::Vector3d const& referenceGeodetic, double referenceHeadingDegrees) -> sensor_msgs::NavSatFix {
         sensor_msgs::NavSatFix gpsMessage;
         gpsMessage.header.stamp = ros::Time::now();
         gpsMessage.header.frame_id = "map";
-        auto geodetic = cartesianToGeodetic(gpuInMap.position(), referenceGeodetic, referenceHeadingDegrees);
+        auto geodetic = cartesianToGeodetic(gpsInMap.position(), referenceGeodetic, referenceHeadingDegrees);
         gpsMessage.latitude = geodetic(0);
         gpsMessage.longitude = geodetic(1);
         gpsMessage.altitude = geodetic(2);
