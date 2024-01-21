@@ -1,0 +1,13 @@
+using sysbus
+
+mach create
+machine LoadPlatformDescription @stm32g431.repl
+machine StartGdbServer 3333
+
+macro reset
+"""
+    sysbus LoadELF @Build/bdcmc.elf
+
+"""
+
+runMacro $reset

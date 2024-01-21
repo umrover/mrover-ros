@@ -1,129 +1,52 @@
-from abc import ABC, abstractmethod
-from typing import List, Optional
-
-import smach
-from aenum import Enum, NoAlias
 from geometry_msgs.msg import Twist
 
-from context import Context
+from util.state_lib.state import State
+
+from navigation import waypoint
 
 
-class BaseState(smach.State, ABC):
-    """
-    Custom base state which handles termination cleanly via smach preemption.
-    """
-
-    context: Context
-    own_transitions: List[str]  # any transitions that map back to the same state
-
-    def __init__(
-        self,
-        context: Context,
-        own_transitions: List[str],
-        add_outcomes: Optional[List[str]] = None,
-        add_input_keys: Optional[List[str]] = None,
-        add_output_keys: Optional[List[str]] = None,
-    ):
-        add_outcomes = add_outcomes or []
-        add_input_keys = add_input_keys or []
-        add_output_keys = add_output_keys or []
-        self.own_transitions = own_transitions
-        super().__init__(
-            add_outcomes + ["terminated", "off"],
-            add_input_keys + ["waypoint_index"],
-            add_output_keys + ["waypoint_index"],
-        )
-        self.context = context
-
-    def execute(self, ud):
-        """
-        Override execute method to add logic for early termination.
-        Base classes should override evaluate instead of this!
-        :param ud:  State machine user data
-        :return:    Next state, 'terminated' if we want to quit early
-        """
-        if self.preempt_requested():
-            self.service_preempt()
-            self.context.rover.stuck = False
-            return "terminated"
-        if self.context.disable_requested:
-            self.context.disable_requested = False
-            self.context.course = None
-            self.context.rover.stuck = False
-            self.context.rover.driver.reset()
-            self.reset()
-            return "off"
-        transition = self.evaluate(ud)
-
-        if transition in self.own_transitions:
-            # we are staying in the same state
-            return transition
-        else:
-            # we are exiting the state so cleanup
-            self.reset()
-            return transition
-
-    def reset(self):
-        """
-        Is called anytime we transition out of the current state.
-        Override this function to reset any state variables
-        that need to reset everytime we exit the state.
-        """
+class DoneState(State):
+    def on_enter(self, context) -> None:
         pass
 
-    @abstractmethod
-    def evaluate(self, ud: smach.UserData) -> str:
-        """Override me instead of execute!"""
-        ...
+    def on_exit(self, context) -> None:
+        pass
 
-
-class DoneStateTransitions(Enum):
-    _settings_ = NoAlias
-
-    idle = "DoneState"
-    begin_course = "WaypointState"
-
-
-class DoneState(BaseState):
-    def __init__(self, context: Context):
-        super().__init__(
-            context,
-            [DoneStateTransitions.idle.name],  # type: ignore
-            add_outcomes=[transition.name for transition in DoneStateTransitions],  # type: ignore
-        )
-
-    def evaluate(self, ud):
+    def on_loop(self, context):
         # Check if we have a course to traverse
-        if self.context.course and (not self.context.course.is_complete()):
-            return DoneStateTransitions.begin_course.name  # type: ignore
+        if context.course and (not context.course.is_complete()):
+            return waypoint.WaypointState()
 
         # Stop rover
         cmd_vel = Twist()
-        self.context.rover.send_drive_command(cmd_vel)
-        return DoneStateTransitions.idle.name  # type: ignore
+        context.rover.send_drive_command(cmd_vel)
+        return self
 
 
-class OffStateTransitions(Enum):
-    _settings_ = NoAlias
+class OffState(State):
+    def on_enter(self, context) -> None:
+        pass
 
-    idle = "OffState"
-    begin_course = "WaypointState"
+    def on_exit(self, context) -> None:
+        pass
+
+    def on_loop(self, context):
+        if context.course and (not context.course.is_complete()):
+            return waypoint.WaypointState()
+
+        cmd_vel = Twist()
+        context.rover.send_drive_command(cmd_vel)
+        return self
 
 
-class OffState(BaseState):
-    def __init__(self, context: Context):
-        super().__init__(
-            context,
-            [OffStateTransitions.idle.name],  # type: ignore
-            add_outcomes=[transition.name for transition in OffStateTransitions],  # type: ignore
-        )
-        self.stop_count = 0
-
-    def evaluate(self, ud):
-        # Check if we need to ignore on
-        if self.context.course and (not self.context.course.is_complete()):
-            self.stop_count = 0
-            return OffStateTransitions.begin_course.name  # type: ignore
-
-        return OffStateTransitions.idle.name  # type: ignore
-        # We have determined the Rover is off, now ignore Rover on ...
+def off_check(context) -> bool:
+    """
+    function that state machine will call to check if the rover is turned off.
+    """
+    if context.disable_requested:
+        context.disable_requested = False
+        context.course = None
+        context.rover.stuck = False
+        context.rover.driver.reset()
+        return True
+    return False

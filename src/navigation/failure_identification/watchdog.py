@@ -1,7 +1,8 @@
 from typing import Tuple
 
 import numpy as np
-from pandas import DataFrame
+import pandas as pd
+
 from util.SO3 import SO3
 from util.ros_utils import get_rosparam
 
@@ -11,14 +12,14 @@ LINEAR_THRESHOLD = get_rosparam("watchdog/linear_threshold", 0.55)
 
 
 class WatchDog:
-    def get_start_end_positions(self, dataframe: DataFrame) -> Tuple[np.ndarray, np.ndarray]:
+    def get_start_end_positions(self, dataframe: pd.DataFrame) -> Tuple[np.ndarray, np.ndarray]:
         start_x, start_y, start_z = dataframe["x"].iloc[0], dataframe["y"].iloc[0], dataframe["z"].iloc[0]
         start_pos = np.array([start_x, start_y, start_z])
         end_x, end_y, end_z = dataframe["x"].iloc[-1], dataframe["y"].iloc[-1], dataframe["z"].iloc[-1]
         end_pos = np.array([end_x, end_y, end_z])
         return start_pos, end_pos
 
-    def get_start_end_rotations(self, dataframe: DataFrame) -> Tuple[SO3, SO3]:
+    def get_start_end_rotations(self, dataframe: pd.DataFrame) -> Tuple[SO3, SO3]:
         start_rot = np.array(
             [
                 dataframe["rot_x"].iloc[0],
@@ -37,7 +38,7 @@ class WatchDog:
         )
         return SO3(start_rot), SO3(end_rot)
 
-    def get_start_end_time(self, dataframe: DataFrame) -> Tuple[float, float]:
+    def get_start_end_time(self, dataframe: pd.DataFrame) -> Tuple[float, float]:
         start_time = dataframe["time"].iloc[0]
         end_time = dataframe["time"].iloc[-1]
         return start_time, end_time
@@ -79,7 +80,7 @@ class WatchDog:
         print(linear_velocity, LINEAR_THRESHOLD)
         return linear_velocity < LINEAR_THRESHOLD
 
-    def is_stuck(self, dataframe: DataFrame) -> bool:
+    def is_stuck(self, dataframe: pd.DataFrame) -> bool:
         if len(dataframe) > WINDOW_SIZE:
             dataframe_sliced = dataframe.tail(WINDOW_SIZE)
             # get the start and end position and rotation

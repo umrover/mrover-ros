@@ -1,19 +1,17 @@
-# Python
+# Python Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]
 *$py.class
 .mypy_cache/
 *.egg-info/
-/venv/
+venv/
 
 # Common IDE's, ideally this should be in global gitignore per user
 .vscode/
 .idea/
-.cache/
-cmake-build*/
-/build/
+/cmake-build*/
 
-# GUI Files
+#GUI Files
 node_modules/
 /src/teleop/gui/dist/
 /src/teleop/gui/src/static/map
@@ -27,8 +25,19 @@ package-lock.json*
 # Bag Files
 /bags/
 
+# Catkin
+/build/
+/devel/
+/logs/
+
 # Moteus
 moteus-cal*
 
 # CSV
 *.csv
+
+# clangd
+.cache/
+
+# macOS
+.DS_Store
