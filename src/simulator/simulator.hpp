@@ -192,7 +192,9 @@ namespace mrover {
 
         ros::Subscriber mTwistSub, mJointPositionsSub;
 
-        ros::Publisher mPosePub;
+        ros::Publisher mGroundTruthPub;
+        ros::Publisher mGpsPub;
+        ros::Publisher mImuPub;
 
         tf2_ros::Buffer mTfBuffer;
         tf2_ros::TransformListener mTfListener{mTfBuffer};
@@ -200,6 +202,12 @@ namespace mrover {
 
         Eigen::Vector3f mIkTarget{1.0, 0.1, 0};
         ros::Publisher mIkTargetPub;
+
+        R3 mGpsLinerizationReferencePoint{};
+        double mGpsLinerizationReferenceHeading{};
+
+        PeriodicTask mGpsTask;
+        PeriodicTask mImuTask;
 
         // Rendering
 
@@ -269,6 +277,8 @@ namespace mrover {
             return rawPointer;
         }
 
+        R3 mRoverLinearVelocity{};
+
         // Scene
 
         std::unordered_map<std::string, URDF> mUrdfs;
@@ -295,7 +305,7 @@ namespace mrover {
 
         auto cameraUpdate(Camera& camera, wgpu::CommandEncoder& encoder, wgpu::RenderPassDescriptor const& passDescriptor) -> void;
 
-        auto gpsAndImusUpdate() -> void;
+        auto gpsAndImusUpdate(Clock::duration dt) -> void;
 
         auto linksToTfUpdate() -> void;
 

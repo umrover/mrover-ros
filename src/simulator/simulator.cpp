@@ -9,13 +9,14 @@ namespace mrover {
         mSaveTask = PeriodicTask{mPnh.param<float>("save_rate", 5)};
         mSaveHistory = boost::circular_buffer<SaveData>{static_cast<std::size_t>(mPnh.param<int>("save_history", 4096))};
 
-        // for (std::string channel: {"/can/back_left/out", "/can/back_right/out", "/can/middle_left/out", "/can/middle_right/out", "/can/front_left/out", "/can/front_right/out"}) {
-        //     mCanSubs.emplace_back(mNh.scribe<CAN>(channel, 1, [this, channel](CAN::ConstPtr const& msg) { canCallback(*msg, channel); }));
-        // }
         mTwistSub = mNh.subscribe<geometry_msgs::Twist>("/cmd_vel", 1, &SimulatorNodelet::twistCallback, this);
         mJointPositionsSub = mNh.subscribe<Position>("/arm_position_cmd", 1, &SimulatorNodelet::jointPositionsCallback, this);
 
-        mPosePub = mNh.advertise<geometry_msgs::PoseWithCovarianceStamped>("/linearized_pose", 1);
+        mGroundTruthPub = mNh.advertise<nav_msgs::Odometry>("/ground_truth", 1);
+        mGpsPub = mNh.advertise<sensor_msgs::NavSatFix>("/gps/fix", 1);
+        mImuPub = mNh.advertise<ImuAndMag>("/imu/data", 1);
+        mGpsTask = PeriodicTask{mPnh.param<float>("gps_rate", 10)};
+        mImuTask = PeriodicTask{mPnh.param<float>("imu_rate", 100)};
 
         mIkTargetPub = mNh.advertise<IK>("/arm_ik", 1);
 

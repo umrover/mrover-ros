@@ -237,16 +237,29 @@
   <xacro:wheels side="left" reflect="1"/>
   <xacro:wheels side="right" reflect="-1"/>
 
-  <!-- TODO(quintin): Add IMU -->
+  <joint name="chassis_link_to_left_gps" type="fixed">
+    <origin xyz="0 0.1 0"/>
+    <parent link="chassis_link"/>
+    <child link="left_gps"/>
+  </joint>
 
-  <!-- IMU -->
-  <!--  <joint name="imu_joint" type="fixed">-->
-  <!--    <origin xyz="0 0 0.2"/>-->
-  <!--    <parent link="chassis_link"/>-->
-  <!--    <child link="imu_link"/>-->
-  <!--  </joint>-->
+  <link name="left_gps"/>
 
-  <!--  <link name="imu_link"/>-->
+  <joint name="chassis_link_to_right_gps" type="fixed">
+    <origin xyz="0 -0.1 0"/>
+    <parent link="chassis_link"/>
+    <child link="right_gps"/>
+  </joint>
+
+  <link name="right_gps"/>
+
+  <joint name="chassis_link_to_imu" type="fixed">
+    <origin xyz="0 0 0"/>
+    <parent link="chassis_link"/>
+    <child link="imu"/>
+  </joint>
+
+  <link name="imu"/>
 
   <!-- TODO(quintin): Import the ZED URDF here -->
 

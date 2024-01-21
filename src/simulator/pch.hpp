@@ -21,13 +21,13 @@
 #include <boost/range/combine.hpp>
 #include <boost/thread.hpp>
 #include <boost/thread/future.hpp>
-
-#include <geometry_msgs/PoseWithCovarianceStamped.h>
 #include <geometry_msgs/TwistStamped.h>
+#include <nav_msgs/Odometry.h>
 #include <nodelet/loader.h>
 #include <nodelet/nodelet.h>
 #include <ros/package.h>
 #include <ros/serialization.h>
+#include <sensor_msgs/NavSatFix.h>
 #include <sensor_msgs/PointCloud2.h>
 #include <sensor_msgs/point_cloud2_iterator.h>
 #include <tf2_ros/transform_broadcaster.h>
@@ -70,4 +70,5 @@
 #include <units.hpp>
 
 #include <mrover/IK.h>
+#include <mrover/ImuAndMag.h>
 #include <mrover/Position.h>

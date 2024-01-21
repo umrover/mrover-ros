@@ -47,6 +47,7 @@ namespace mrover {
 
     void BrushlessController::setDesiredVelocity(RadiansPerSecond velocity) {
         updateLastConnection();
+        ROS_INFO("rad/s %f", std::clamp(velocity, mMinVelocity, mMaxVelocity).get());
         RevolutionsPerSecond velocity_rev_s = std::clamp(velocity, mMinVelocity, mMaxVelocity);
         // ROS_WARN("%7.3f   %7.3f",
         //  velocity.get(), velocity_rev_s.get());
@@ -57,6 +58,7 @@ namespace mrover {
                     .position = std::numeric_limits<double>::quiet_NaN(),
                     .velocity = velocity_rev_s.get(),
             };
+            ROS_INFO("rev/s %f", velocity_rev_s.get());
 
             moteus::CanFdFrame positionFrame = mController.MakePosition(command);
             mDevice.publish_moteus_frame(positionFrame);
@@ -76,14 +78,14 @@ namespace mrover {
         assert(msg->source == mControllerName);
         assert(msg->destination == mName);
         auto result = moteus::Query::Parse(msg->data.data(), msg->data.size());
-        ROS_INFO("%3d p/v/t=(%7.3f,%7.3f,%7.3f)  v/t/f=(%5.1f,%5.1f,%3d)",
-                 result.mode,
-                 result.position,
-                 result.velocity,
-                 result.torque,
-                 result.voltage,
-                 result.temperature,
-                 result.fault);
+        // ROS_INFO("%3d p/v/t=(%7.3f,%7.3f,%7.3f)  v/t/f=(%5.1f,%5.1f,%3d)",
+        //          result.mode,
+        //          result.position,
+        //          result.velocity,
+        //          result.torque,
+        //          result.voltage,
+        //          result.temperature,
+        //          result.fault);
 
         mCurrentPosition = mrover::Radians{
                 mrover::Revolutions{result.position}}; // moteus stores position in revolutions.

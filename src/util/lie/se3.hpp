@@ -40,7 +40,7 @@ public:
 
     [[nodiscard]] R3 operator*(R3 const& other) const;
 
-    [[nodiscard]] Eigen::Matrix4d matrix() const;
+    [[nodiscard]] Eigen::Matrix3d matrix() const;
 
     [[nodiscard]] Eigen::Quaterniond quaternion() const;
 

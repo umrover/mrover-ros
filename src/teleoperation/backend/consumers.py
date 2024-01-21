@@ -1,15 +1,17 @@
 import json
-from channels.generic.websocket import JsonWebsocketConsumer
-import rospy
-from std_srvs.srv import SetBool, Trigger
-from mrover.msg import PDLB, ControllerState, AutonCommand, GPSWaypoint, LED, StateMachineStateUpdate, Throttle
-from mrover.srv import EnableDevice
-from std_msgs.msg import String, Bool
-from sensor_msgs.msg import JointState, NavSatFix
-from geometry_msgs.msg import Twist
 from math import copysign
-import typing
-import tf
+
+from channels.generic.websocket import JsonWebsocketConsumer
+
+import rospy
+import tf2_ros
+from geometry_msgs.msg import Twist
+from mrover.msg import PDLB, ControllerState, GPSWaypoint, LED, StateMachineStateUpdate, Throttle
+from mrover.srv import EnableAuton
+from sensor_msgs.msg import JointState, NavSatFix
+from std_msgs.msg import String, Bool
+from std_srvs.srv import SetBool, Trigger
+from util.SE3 import SE3
 
 
 # If below threshold, make output zero
@@ -23,7 +25,7 @@ def deadzone(magnitude: float, threshold: float) -> float:
 
 
 def quadratic(val: float) -> float:
-    return copysign(val**2, val)
+    return copysign(val ** 2, val)
 
 
 class GUIConsumer(JsonWebsocketConsumer):
@@ -44,6 +46,9 @@ class GUIConsumer(JsonWebsocketConsumer):
         self.joint_state_sub = rospy.Subscriber("/drive_joint_data", JointState, self.joint_state_callback)
         self.led_sub = rospy.Subscriber("/led", LED, self.led_callback)
         self.nav_state_sub = rospy.Subscriber("/nav_state", StateMachineStateUpdate, self.nav_state_callback)
+        self.tf_buffer = tf2_ros.Buffer()
+        self.tf_listener = tf2_ros.TransformListener(self.tf_buffer)
+        self.enable_auton = rospy.ServiceProxy("enable_auton", EnableAuton)
 
         # Services
         self.laser_service = rospy.ServiceProxy("enable_mosfet_device", SetBool)
@@ -208,13 +213,26 @@ class GUIConsumer(JsonWebsocketConsumer):
             )
         )
 
-    def send_auton_command(self, msg):   
-        waypoints = []
-        for w in msg["waypoints"]:
-            waypoints.append(GPSWaypoint(w["latitude_degrees"], w["longitude_degrees"], w["tag_id"], w["type"]))
+    # def send_auton_command(self, msg):   
+    #     waypoints = []
+    #     for w in msg["waypoints"]:
+    #         waypoints.append(GPSWaypoint(w["latitude_degrees"], w["longitude_degrees"], w["tag_id"], w["type"]))
 
-        message = AutonCommand(msg["is_enabled"], waypoints)
-        self.auton_cmd_pub.publish(message)
+    #     message = AutonCommand(msg["is_enabled"], waypoints)
+    #     self.auton_cmd_pub.publish(message)
+    def send_auton_command(self, msg):
+        self.enable_auton(
+            msg["is_enabled"],
+            [
+                GPSWaypoint(
+                    waypoint["latitude_degrees"],
+                    waypoint["longitude_degrees"],
+                    waypoint["tag_id"],
+                    waypoint["type"],
+                )
+                for waypoint in msg["waypoints"]
+            ],
+        )
 
     def send_teleop_enabled(self, msg):
         self.teleop_pub.publish(msg["data"])
@@ -230,13 +248,12 @@ class GUIConsumer(JsonWebsocketConsumer):
         self.send(text_data=json.dumps({"type": "nav_state", "state": msg.state}))
 
     def auton_bearing(self, msg):
-        listener = tf.TransformListener()
-        trans, rot = listener.lookupTransform("map", "base_link", rospy.Time(O))
+        base_link_in_map = SE3.from_tf_tree(self.tf_buffer, "map", "base_link")
         self.send(
             text_data=json.dumps(
                 {
                     "type": "auton_tfclient",
-                    "rotation": rot,
+                    "rotation": base_link_in_map.rotation.quaternion,
                 }
             )
         )
