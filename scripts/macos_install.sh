@@ -10,24 +10,26 @@ if ! command -v mamba; then
     exit 1
 fi
 
-brew install git-lfs ccache cmake ninja
-git lfs install
+if ! command -v git-lfs; then
+    brew install git-lfs
+    git lfs install
+fi
 
-mamba deactivate
-./scripts/build_dawn.sh
-
-# See: https://robostack.github.io/GettingStarted.html
-mamba create python=3.9 -n ros_env
-mamba activate ros_env
-conda config --env --add channels conda-forge
-conda config --env --add channels robostack-staging
-conda config --env --remove channels defaults || true
+if ! conda info --envs | grep -q ros_env; then
+    # See: https://robostack.github.io/GettingStarted.html
+    mamba create python=3.9 -n ros_env
+    mamba activate ros_env
+    conda config --env --add channels conda-forge
+    conda config --env --add channels robostack-staging
+    conda config --env --remove channels defaults || true
+else
+    mamba activate ros_env
+fi
 
 mamba install catkin_tools ros-noetic-ros-base ros-noetic-rviz ros-noetic-xacro ros-noetic-robot-localization
-mamba install compilers cmake pkg-config make opencv assimp bullet glfw fmt
+mamba install compilers ccache ninja cmake pkg-config make opencv assimp bullet glfw fmt
 
-git submodule update --init
+# git submodule update --init deps/dawn
+./scripts/build_dawn.sh
 
-mamba activate ros_env
 pip3 install -e ".[dev]"
-
