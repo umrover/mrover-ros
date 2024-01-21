@@ -110,7 +110,7 @@
     data() {
       return {
         // Default Center at MDRS
-        center: L.latLng(38.4060250, -110.7923723),
+        center: L.latLng(42.293195, -83.7096706),
         attribution:
           '&copy; <a href="http://osm.org/copyright">OpenStreetMap</a> contributors',
         online: true,

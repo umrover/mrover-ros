@@ -1,15 +1,16 @@
 import json
-from channels.generic.websocket import JsonWebsocketConsumer
-import rospy
-from std_srvs.srv import SetBool, Trigger
-from mrover.msg import PDLB, ControllerState, AutonCommand, GPSWaypoint, LED, StateMachineStateUpdate, Throttle
-from mrover.srv import EnableDevice
-from std_msgs.msg import String, Bool
-from sensor_msgs.msg import JointState, NavSatFix
-from geometry_msgs.msg import Twist
 from math import copysign
-import typing
-import tf
+
+from channels.generic.websocket import JsonWebsocketConsumer
+
+import rospy
+import tf2_ros
+from geometry_msgs.msg import Twist
+from mrover.msg import PDLB, ControllerState, AutonCommand, GPSWaypoint, LED, StateMachineStateUpdate, Throttle
+from sensor_msgs.msg import JointState, NavSatFix
+from std_msgs.msg import String, Bool
+from std_srvs.srv import SetBool, Trigger
+from util.SE3 import SE3
 
 
 # If below threshold, make output zero
@@ -23,7 +24,7 @@ def deadzone(magnitude: float, threshold: float) -> float:
 
 
 def quadratic(val: float) -> float:
-    return copysign(val**2, val)
+    return copysign(val ** 2, val)
 
 
 class GUIConsumer(JsonWebsocketConsumer):
@@ -42,6 +43,8 @@ class GUIConsumer(JsonWebsocketConsumer):
         self.calibrate_service = rospy.ServiceProxy("arm_calibrate", Trigger)
         self.led_sub = rospy.Subscriber("/led", LED, self.led_callback)
         self.nav_state_sub = rospy.Subscriber("/nav_state", StateMachineStateUpdate, self.nav_state_callback)
+        self.tf_buffer = tf2_ros.Buffer()
+        self.tf_listener = tf2_ros.TransformListener(self.tf_buffer)
 
     def disconnect(self, close_code):
         self.pdb_sub.unregister()
@@ -221,13 +224,12 @@ class GUIConsumer(JsonWebsocketConsumer):
         self.send(text_data=json.dumps({"type": "nav_state", "state": msg.state}))
 
     def auton_bearing(self, msg):
-        listener = tf.TransformListener()
-        trans, rot = listener.lookupTransform("map", "base_link", rospy.Time(O))
+        base_link_in_map = SE3.from_tf_tree(self.tf_buffer, "map", "base_link")
         self.send(
             text_data=json.dumps(
                 {
                     "type": "auton_tfclient",
-                    "rotation": rot,
+                    "rotation": base_link_in_map.rotation.quaternion,
                 }
             )
         )
