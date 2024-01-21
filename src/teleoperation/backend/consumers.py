@@ -6,7 +6,8 @@ from channels.generic.websocket import JsonWebsocketConsumer
 import rospy
 import tf2_ros
 from geometry_msgs.msg import Twist
-from mrover.msg import PDLB, ControllerState, AutonCommand, GPSWaypoint, LED, StateMachineStateUpdate, Throttle
+from mrover.msg import PDLB, ControllerState, GPSWaypoint, LED, StateMachineStateUpdate, Throttle
+from mrover.srv import EnableAuton
 from sensor_msgs.msg import JointState, NavSatFix
 from std_msgs.msg import String, Bool
 from std_srvs.srv import SetBool, Trigger
@@ -45,6 +46,7 @@ class GUIConsumer(JsonWebsocketConsumer):
         self.nav_state_sub = rospy.Subscriber("/nav_state", StateMachineStateUpdate, self.nav_state_callback)
         self.tf_buffer = tf2_ros.Buffer()
         self.tf_listener = tf2_ros.TransformListener(self.tf_buffer)
+        self.enable_auton = rospy.ServiceProxy("enable_auton", EnableAuton)
 
     def disconnect(self, close_code):
         self.pdb_sub.unregister()
@@ -201,13 +203,18 @@ class GUIConsumer(JsonWebsocketConsumer):
         )
 
     def send_auton_command(self, msg):
-        cmd_pub = rospy.Publisher("/auton/command", AutonCommand, queue_size=100)
-        waypoints = []
-        for w in msg["waypoints"]:
-            waypoints.append(GPSWaypoint(w["latitude_degrees"], w["longitude_degrees"], w["tag_id"], w["type"]))
-
-        message = AutonCommand(msg["is_enabled"], waypoints)
-        cmd_pub.publish(message)
+        self.enable_auton(
+            msg["is_enabled"],
+            [
+                GPSWaypoint(
+                    waypoint["latitude_degrees"],
+                    waypoint["longitude_degrees"],
+                    waypoint["tag_id"],
+                    waypoint["type"],
+                )
+                for waypoint in msg["waypoints"]
+            ],
+        )
 
     def send_teleop_enabled(self, msg):
         teleop_pub = rospy.Publisher("/teleop_enabled", Bool, queue_size=1)
