@@ -2,17 +2,7 @@
   <div class="wrapper">
     <div class="shadow p-3 mb-5 header">
       <h1>Menu</h1>
-<<<<<<< HEAD
-      <img
-        class="logo"
-        src="mrover.png"
-        alt="MRover"
-        title="MRover"
-        width="200"
-      />
-=======
       <img class="logo" src="/mrover.png" alt="MRover" title="MRover" width="200" />
->>>>>>> 9720704e91b679513a528bf4bb0e7521bcdaec68
     </div>
 
     <div class="pages">
@@ -31,26 +21,14 @@
 </template>
 
 <script lang="ts">
-<<<<<<< HEAD
-import { inject } from 'vue'
-=======
->>>>>>> 9720704e91b679513a528bf4bb0e7521bcdaec68
 import MenuButton from './MenuButton.vue'
 export default {
   components: {
     MenuButton
   }
-<<<<<<< HEAD
-};
-
-</script>
-<style scoped>
-
-=======
 }
 </script>
 <style scoped>
->>>>>>> 9720704e91b679513a528bf4bb0e7521bcdaec68
 .header {
   grid-area: header;
   display: flex;
@@ -81,16 +59,8 @@ export default {
   grid-gap: 10px;
   grid-template-columns: 1fr;
   grid-template-rows: auto 1fr;
-<<<<<<< HEAD
-  grid-template-areas: "header" "pages";
-  font-family: sans-serif;
-  height: auto;
-}
-</style>
-=======
   grid-template-areas: 'header' 'pages';
   font-family: sans-serif;
   height: auto;
 }
 </style>
->>>>>>> 9720704e91b679513a528bf4bb0e7521bcdaec68

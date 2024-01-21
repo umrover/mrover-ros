@@ -30,13 +30,8 @@
 </template>
 
 <script lang="ts">
-<<<<<<< HEAD
-import { convertDMS } from "../utils.js";
-import { mapGetters } from "vuex";
-=======
 import { convertDMS } from '../utils.js'
 import { mapGetters } from 'vuex'
->>>>>>> 9720704e91b679513a528bf4bb0e7521bcdaec68
 // import IMUCalibration from "./IMUCalibration.vue";
 // import FlightAttitudeIndicator from "./FlightAttitudeIndicator.vue";
 export default {
@@ -57,39 +52,19 @@ export default {
     }),
     formatted_odom: function () {
       return {
-<<<<<<< HEAD
-        lat: convertDMS(
-          { d: this.odom.latitude_deg, m: 0, s: 0 },
-          this.odom_format
-        ),
-        lon: convertDMS(
-          { d: this.odom.longitude_deg, m: 0, s: 0 },
-          this.odom_format
-        ),
-      };
-=======
         lat: convertDMS({ d: this.odom.latitude_deg, m: 0, s: 0 }, this.odom_format),
         lon: convertDMS({ d: this.odom.longitude_deg, m: 0, s: 0 }, this.odom_format)
       }
->>>>>>> 9720704e91b679513a528bf4bb0e7521bcdaec68
     },
     min_enabled: function () {
       return this.odom_format != 'D'
     },
     sec_enabled: function () {
-<<<<<<< HEAD
-      return this.odom_format == "DMS";
-    },
-    alt_available: function () {
-      // return isNan(this.odom.altitude);
-      return false;
-=======
       return this.odom_format == 'DMS'
     },
     alt_available: function () {
       // return isNan(this.odom.altitude);
       return false
->>>>>>> 9720704e91b679513a528bf4bb0e7521bcdaec68
     }
   }
 }
@@ -137,10 +112,4 @@ export default {
 .imu {
   grid-area: imu;
 }
-<<<<<<< HEAD
-
-
 </style>
-=======
-</style>
->>>>>>> 9720704e91b679513a528bf4bb0e7521bcdaec68
