@@ -87,6 +87,10 @@
       - python3.10-dev
       - python3.10-venv
       - ros-{{ ros_distro }}-rosbash
+      - libbullet-dev
+      - libglfw3-dev
+      - xorg-dev
+      - libx11-xcb-dev
 
 - name: Initialize rosdep
   become: True
@@ -159,6 +163,14 @@
     name: clangd
     path: /usr/bin/clangd-16
     link: /usr/bin/clangd
+    priority: 160
+
+- name: Set LLD 16 as Default
+  become: True
+  alternatives:
+    name: lld
+    path: /usr/bin/lld-16
+    link: /usr/bin/lld
     priority: 160
 
 - name: Setup Python Virtual Environment

@@ -7,4 +7,5 @@ class BackendConfig(AppConfig):
     name = "backend"
 
     def ready(self):
-        rospy.init_node("teleop")
+        # Disabling signals prevents hanging when you Ctrl-C the server
+        rospy.init_node("teleop", disable_signals=True)

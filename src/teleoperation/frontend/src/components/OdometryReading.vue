@@ -1,7 +1,6 @@
 <template>
   <div class="odom-wrap">
     <div class="odom">
-
       <p>Current odometry reading:</p>
       <div>
         <p>{{ formatted_odom.lat.d }}º</p>
@@ -31,8 +30,13 @@
 </template>
 
 <script lang="ts">
+<<<<<<< HEAD
 import { convertDMS } from "../utils.js";
 import { mapGetters } from "vuex";
+=======
+import { convertDMS } from '../utils.js'
+import { mapGetters } from 'vuex'
+>>>>>>> 9720704e91b679513a528bf4bb0e7521bcdaec68
 // import IMUCalibration from "./IMUCalibration.vue";
 // import FlightAttitudeIndicator from "./FlightAttitudeIndicator.vue";
 export default {
@@ -48,11 +52,12 @@ export default {
   },
 
   computed: {
-    ...mapGetters("map", {
-      odom_format: "odomFormat"
+    ...mapGetters('map', {
+      odom_format: 'odomFormat'
     }),
     formatted_odom: function () {
       return {
+<<<<<<< HEAD
         lat: convertDMS(
           { d: this.odom.latitude_deg, m: 0, s: 0 },
           this.odom_format
@@ -62,20 +67,32 @@ export default {
           this.odom_format
         ),
       };
+=======
+        lat: convertDMS({ d: this.odom.latitude_deg, m: 0, s: 0 }, this.odom_format),
+        lon: convertDMS({ d: this.odom.longitude_deg, m: 0, s: 0 }, this.odom_format)
+      }
+>>>>>>> 9720704e91b679513a528bf4bb0e7521bcdaec68
     },
     min_enabled: function () {
-      return this.odom_format != "D";
+      return this.odom_format != 'D'
     },
     sec_enabled: function () {
+<<<<<<< HEAD
       return this.odom_format == "DMS";
     },
     alt_available: function () {
       // return isNan(this.odom.altitude);
       return false;
+=======
+      return this.odom_format == 'DMS'
+    },
+    alt_available: function () {
+      // return isNan(this.odom.altitude);
+      return false
+>>>>>>> 9720704e91b679513a528bf4bb0e7521bcdaec68
     }
-  },
-  
-};
+  }
+}
 </script>
 
 <style scoped>
@@ -92,8 +109,8 @@ export default {
   flex-direction: row;
   gap: 10px;
   grid-template-areas:
-    "odom flightIndicator"
-    "imu flightIndicator";
+    'odom flightIndicator'
+    'imu flightIndicator';
   height: auto;
   width: auto;
 }
@@ -113,13 +130,17 @@ export default {
   grid-area: odom;
 }
 
-.flightIndicator{
+.flightIndicator {
   grid-area: flightIndicator;
 }
 
-.imu{
+.imu {
   grid-area: imu;
 }
+<<<<<<< HEAD
 
 
 </style>
+=======
+</style>
+>>>>>>> 9720704e91b679513a528bf4bb0e7521bcdaec68
