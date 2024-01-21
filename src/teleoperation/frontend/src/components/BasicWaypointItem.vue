@@ -49,7 +49,7 @@ button {
 }
 
 .drone-waypoint {
-  background-color: aqua;
+  background-color: limegreen;
 }
 
 </style>
