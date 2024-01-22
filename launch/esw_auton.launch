@@ -1,7 +1,0 @@
-<launch>
-
-    <include file="$(find mrover)/launch/esw_generic.launch" />
-    <node name="led" pkg="mrover" type="led" />
-    <node name="led_hw_bridge" pkg="mrover" type="led_hw_bridge" />
-
-</launch>
