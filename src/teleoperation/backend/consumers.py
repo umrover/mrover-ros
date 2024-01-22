@@ -32,7 +32,7 @@ class GUIConsumer(JsonWebsocketConsumer):
     def connect(self):
         self.accept()
         # Publishers
-        self.twist_pub = rospy.Publisher("/cmd_vel", Twist, queue_size=100)
+        self.twist_pub = rospy.Publisher("/cmd_vel", Twist, queue_size=1)
         self.led_pub = rospy.Publisher("/auton_led_cmd", String, queue_size=1)
         self.teleop_pub = rospy.Publisher("/teleop_enabled", Bool, queue_size=1)
         self.mast_gimbal_pub = rospy.Publisher("/mast_gimbal_throttle_cmd", Throttle, queue_size=1)
