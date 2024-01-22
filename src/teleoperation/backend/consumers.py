@@ -32,16 +32,16 @@ class GUIConsumer(JsonWebsocketConsumer):
     def connect(self):
         self.accept()
         # Publishers
-        self.twist_pub = rospy.Publisher("/cmd_vel", Twist, queue_size=100)
+        self.twist_pub = rospy.Publisher("/cmd_vel", Twist, queue_size=1)
         self.led_pub = rospy.Publisher("/auton_led_cmd", String, queue_size=1)
-        # self.auton_cmd_pub = rospy.Publisher("/auton/command", AutonCommand, queue_size=100)
         self.teleop_pub = rospy.Publisher("/teleop_enabled", Bool, queue_size=1)
         self.mast_gimbal_pub = rospy.Publisher("/mast_gimbal_throttle_cmd", Throttle, queue_size=1)
 
         # Subscribers
         self.pdb_sub = rospy.Subscriber("/pdb_data", PDLB, self.pdb_callback)
         self.arm_moteus_sub = rospy.Subscriber("/arm_controller_data", ControllerState, self.arm_controller_callback)
-        self.drive_moteus_sub = rospy.Subscriber( "/drive_controller_data", ControllerState, self.drive_controller_callback)
+        self.drive_moteus_sub = rospy.Subscriber("/drive_controller_data", ControllerState,
+                                                 self.drive_controller_callback)
         self.gps_fix = rospy.Subscriber("/gps/fix", NavSatFix, self.gps_fix_callback)
         self.joint_state_sub = rospy.Subscriber("/drive_joint_data", JointState, self.joint_state_callback)
         self.led_sub = rospy.Subscriber("/led", LED, self.led_callback)
@@ -60,8 +60,6 @@ class GUIConsumer(JsonWebsocketConsumer):
         self.max_wheel_speed = rospy.get_param("rover/max_speed")
         self.wheel_radius = rospy.get_param("wheel/radius")
         self.max_angular_speed = self.max_wheel_speed / self.wheel_radius
-
-        
 
     def disconnect(self, close_code):
         self.pdb_sub.unregister()
@@ -100,8 +98,8 @@ class GUIConsumer(JsonWebsocketConsumer):
             rospy.logerr(e)
 
     def handle_joystick_message(self, msg):
-     
-        # Super small deadzone so we can safely e-stop with dampen switch
+
+        # Tiny deadzone so we can safely e-stop with dampen switch
         dampen = deadzone(msg["axes"][self.mappings["dampen"]], 0.01)
 
         # Makes dampen [0,1] instead of [-1,1]
@@ -109,7 +107,8 @@ class GUIConsumer(JsonWebsocketConsumer):
         # (-1*dampen) because the top of the dampen switch is -1.0
         dampen = -1 * ((-1 * dampen) + 1) / 2
 
-        linear = deadzone(msg["axes"][self.mappings["forward_back"]] * self.drive_config["forward_back"]["multiplier"], 0.05)
+        linear = deadzone(msg["axes"][self.mappings["forward_back"]] * self.drive_config["forward_back"]["multiplier"],
+                          0.05)
 
         # Convert from [0,1] to [0, self_max_wheel_speed] and apply dampen
         linear *= self.max_wheel_speed * dampen
@@ -194,8 +193,8 @@ class GUIConsumer(JsonWebsocketConsumer):
         self.led_pub.publish(message)
 
     def joint_state_callback(self, msg):
-        msg.position = [x*self.wheel_radius for x in msg.position]
-        msg.velocity = [x*self.wheel_radius for x in msg.velocity]
+        msg.position = [x * self.wheel_radius for x in msg.position]
+        msg.velocity = [x * self.wheel_radius for x in msg.velocity]
         self.send(
             text_data=json.dumps(
                 {
@@ -215,13 +214,6 @@ class GUIConsumer(JsonWebsocketConsumer):
             )
         )
 
-    # def send_auton_command(self, msg):   
-    #     waypoints = []
-    #     for w in msg["waypoints"]:
-    #         waypoints.append(GPSWaypoint(w["latitude_degrees"], w["longitude_degrees"], w["tag_id"], w["type"]))
-
-    #     message = AutonCommand(msg["is_enabled"], waypoints)
-    #     self.auton_cmd_pub.publish(message)
     def send_auton_command(self, msg):
         self.enable_auton(
             msg["is_enabled"],

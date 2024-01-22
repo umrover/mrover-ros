@@ -62,33 +62,33 @@ namespace mrover {
         depthStencil.stencilBack.compare = wgpu::CompareFunction::Always;
         descriptor.depthStencil = &depthStencil;
 
-        {
-            std::array<wgpu::VertexAttribute, 3> attributes{};
-            attributes[0].format = wgpu::VertexFormat::Float32x3;
-            attributes[0].shaderLocation = 0;
-            attributes[1].format = wgpu::VertexFormat::Float32x3;
-            attributes[1].shaderLocation = 1;
-            attributes[2].format = wgpu::VertexFormat::Float32x2;
-            attributes[2].shaderLocation = 2;
-            std::array<wgpu::VertexBufferLayout, 3> vertexBufferLayout{};
-            vertexBufferLayout[0].arrayStride = sizeof(float) * 3;
-            vertexBufferLayout[0].stepMode = wgpu::VertexStepMode::Vertex;
-            vertexBufferLayout[0].attributeCount = 1;
-            vertexBufferLayout[0].attributes = attributes.data() + 0;
-            vertexBufferLayout[1].arrayStride = sizeof(float) * 3;
-            vertexBufferLayout[1].stepMode = wgpu::VertexStepMode::Vertex;
-            vertexBufferLayout[1].attributeCount = 1;
-            vertexBufferLayout[1].attributes = attributes.data() + 1;
-            vertexBufferLayout[2].arrayStride = sizeof(float) * 2;
-            vertexBufferLayout[2].stepMode = wgpu::VertexStepMode::Vertex;
-            vertexBufferLayout[2].attributeCount = 1;
-            vertexBufferLayout[2].attributes = attributes.data() + 2;
 
-            descriptor.vertex.entryPoint = "vs_main";
-            descriptor.vertex.module = mShaderModule;
-            descriptor.vertex.bufferCount = vertexBufferLayout.size();
-            descriptor.vertex.buffers = vertexBufferLayout.data();
-        }
+        std::array<wgpu::VertexAttribute, 3> attributes{};
+        attributes[0].format = wgpu::VertexFormat::Float32x3;
+        attributes[0].shaderLocation = 0;
+        attributes[1].format = wgpu::VertexFormat::Float32x3;
+        attributes[1].shaderLocation = 1;
+        attributes[2].format = wgpu::VertexFormat::Float32x2;
+        attributes[2].shaderLocation = 2;
+        std::array<wgpu::VertexBufferLayout, 3> vertexBufferLayout{};
+        vertexBufferLayout[0].arrayStride = sizeof(float) * 3;
+        vertexBufferLayout[0].stepMode = wgpu::VertexStepMode::Vertex;
+        vertexBufferLayout[0].attributeCount = 1;
+        vertexBufferLayout[0].attributes = attributes.data() + 0;
+        vertexBufferLayout[1].arrayStride = sizeof(float) * 3;
+        vertexBufferLayout[1].stepMode = wgpu::VertexStepMode::Vertex;
+        vertexBufferLayout[1].attributeCount = 1;
+        vertexBufferLayout[1].attributes = attributes.data() + 1;
+        vertexBufferLayout[2].arrayStride = sizeof(float) * 2;
+        vertexBufferLayout[2].stepMode = wgpu::VertexStepMode::Vertex;
+        vertexBufferLayout[2].attributeCount = 1;
+        vertexBufferLayout[2].attributes = attributes.data() + 2;
+
+        descriptor.vertex.entryPoint = "vs_main";
+        descriptor.vertex.module = mShaderModule;
+        descriptor.vertex.bufferCount = vertexBufferLayout.size();
+        descriptor.vertex.buffers = vertexBufferLayout.data();
+
 
         wgpu::FragmentState fragment;
         fragment.module = mShaderModule;
