@@ -195,6 +195,7 @@ namespace mrover {
         ros::Publisher mGroundTruthPub;
         ros::Publisher mGpsPub;
         ros::Publisher mImuPub;
+        ros::Publisher mMotorStatusPub;
 
         tf2_ros::Buffer mTfBuffer;
         tf2_ros::TransformListener mTfListener{mTfBuffer};
@@ -306,6 +307,8 @@ namespace mrover {
         auto cameraUpdate(Camera& camera, wgpu::CommandEncoder& encoder, wgpu::RenderPassDescriptor const& passDescriptor) -> void;
 
         auto gpsAndImusUpdate(Clock::duration dt) -> void;
+
+        auto motorStatusUpdate() -> void;
 
         auto linksToTfUpdate() -> void;
 

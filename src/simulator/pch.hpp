@@ -27,6 +27,7 @@
 #include <nodelet/nodelet.h>
 #include <ros/package.h>
 #include <ros/serialization.h>
+#include <sensor_msgs/JointState.h>
 #include <sensor_msgs/NavSatFix.h>
 #include <sensor_msgs/PointCloud2.h>
 #include <sensor_msgs/point_cloud2_iterator.h>
@@ -71,4 +72,5 @@
 
 #include <mrover/IK.h>
 #include <mrover/ImuAndMag.h>
+#include <mrover/MotorsStatus.h>
 #include <mrover/Position.h>
