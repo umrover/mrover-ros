@@ -22,7 +22,7 @@ namespace mrover {
 
         // topic: long_range_cam/image
         //todo
-        mImgSub = mNh.subscribe(, 1, &LongRangeTagDetectorNodelet::imageCallback, this);
+        mImgSub = mNh.subscribe("long_range_cam/image", 1, &LongRangeTagDetectorNodelet::imageCallback, this);
         mDictionary = cv::makePtr<cv::aruco::Dictionary>(cv::aruco::getPredefinedDictionary(dictionaryNumber));
         mServiceEnableDetections = mNh.advertiseService("enable_detections", &LongRangeTagDetectorNodelet::enableDetectionsCallback, this);
 

@@ -10,12 +10,9 @@ namespace mrover {
 
     using namespace std::chrono_literals;
 
-
-    // gst-launch-1.0 -e -v v4l2src device=/dev/video4 ! videoconvert ! videoscale ! videorate ! "video/x-raw,format=I420,width=640,height=480,framerate=30/1" ! x264enc key-int-max=15 ! rtph264pay ! udpsink host=localhost port=5000
-    // gst-launch-1.0 -v udpsrc uri=udp://localhost:5000 ! application/x-rtp,media=video,clock-rate=90000,encoding-name=H264,payload=96 ! rtph264depay ! avdec_h264 ! autovideosink
     /**
-        * @brief Load config, open the camera, and start our threads
-        */
+    * @brief Load config, open the camera, and start our threads
+    */
     void LongRangeCamNodelet::onInit() {
         try {
             mGrabThread = std::jthread(&LongRangeCamNodelet::grabUpdate, this);
@@ -26,8 +23,6 @@ namespace mrover {
     }
 
     void fillImageMessage(cv::Mat& bgra, sensor_msgs::ImagePtr const& msg) {
-        // TODO: Uncomment this
-        // assert(img.channels() == 4);
         assert(msg);
 
         msg->height = bgra.rows;
@@ -52,7 +47,7 @@ namespace mrover {
         mImgPub = mNh.advertise<sensor_msgs::Image>("long_range_cam/image", 1);
         // While dtor not called
         while (ros::ok()) {
-            cv::VideoCapture mCapture{std::format("v4l2src device=/dev/video4 ! videoconvert ! video/x-raw,width={},height={},format=I420,framerate={}/1 ! appsink", 1920, 1080, 5), cv::CAP_GSTREAMER};
+            cv::VideoCapture mCapture{std::format("v4l2src device=/dev/arducam ! videoconvert ! video/x-raw,width={},height={},format=I420,framerate={}/1 ! appsink", 1920, 1080, 5), cv::CAP_GSTREAMER};
             if (!mCapture.isOpened()) {
                 throw std::runtime_error("Long range cam failed to open");
             }
