@@ -34,7 +34,7 @@ class GUIConsumer(JsonWebsocketConsumer):
         # Publishers
         self.twist_pub = rospy.Publisher("/cmd_vel", Twist, queue_size=100)
         self.led_pub = rospy.Publisher("/auton_led_cmd", String, queue_size=1)
-        self.auton_cmd_pub = rospy.Publisher("/auton/command", AutonCommand, queue_size=100)
+        # self.auton_cmd_pub = rospy.Publisher("/auton/command", AutonCommand, queue_size=100)
         self.teleop_pub = rospy.Publisher("/teleop_enabled", Bool, queue_size=1)
         self.mast_gimbal_pub = rospy.Publisher("/mast_gimbal_throttle_cmd", Throttle, queue_size=1)
 
@@ -92,9 +92,11 @@ class GUIConsumer(JsonWebsocketConsumer):
                 self.send_auton_command(message)
             elif message["type"] == "teleop_enabled":
                 self.send_teleop_enabled(message)
+            elif message["type"] == "auton_tfclient":
+                self.auton_bearing()
             elif message["type"] == "mast_gimbal":
                 self.mast_gimbal(message)
-        except rospy.ROSException as e:
+        except Exception as e:
             rospy.logerr(e)
 
     def handle_joystick_message(self, msg):
@@ -247,13 +249,13 @@ class GUIConsumer(JsonWebsocketConsumer):
     def nav_state_callback(self, msg):
         self.send(text_data=json.dumps({"type": "nav_state", "state": msg.state}))
 
-    def auton_bearing(self, msg):
+    def auton_bearing(self):
         base_link_in_map = SE3.from_tf_tree(self.tf_buffer, "map", "base_link")
         self.send(
             text_data=json.dumps(
                 {
                     "type": "auton_tfclient",
-                    "rotation": base_link_in_map.rotation.quaternion,
+                    "rotation": base_link_in_map.rotation.quaternion.tolist(),
                 }
             )
         )
