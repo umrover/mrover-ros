@@ -98,7 +98,7 @@ namespace mrover {
                 SE3 roverInMap = btTransformToSe3(rover.physics->getBaseWorldTransform());
 
                 if (double roverDistanceToHammer = (hammerInMap.position() - roverInMap.position()).norm();
-                    roverDistanceToHammer < 1.0) {
+                    roverDistanceToHammer < mPublishHammerDistanceThreshold) {
                     SE3::pushToTfTree(mTfBroadcaster, "hammer", "map", hammerInMap);
                 }
             }

@@ -18,7 +18,7 @@ namespace mrover {
                                      0, 0, 1, 0,                       // WGPU y = +ROS z
                                      1, 0, 0, 0,                       // WGPU z = +ROS x
                                      0, 0, 0, 1)
-                                            .finished();
+            .finished();
 
     static auto const COLOR_FORMAT = wgpu::TextureFormat::BGRA8Unorm;
     static auto const DEPTH_FORMAT = wgpu::TextureFormat::Depth32Float;
@@ -206,6 +206,8 @@ namespace mrover {
         R3 mGpsLinerizationReferencePoint{};
         double mGpsLinerizationReferenceHeading{};
 
+        double mPublishHammerDistanceThreshold = 4.0;
+
         PeriodicTask mGpsTask;
         PeriodicTask mImuTask;
 
@@ -260,6 +262,7 @@ namespace mrover {
                 btScalar position{};
                 btScalar velocity{};
             };
+
             btTransform baseTransform;
             btVector3 baseVelocity;
             boost::container::static_vector<LinkData, 32> links;
