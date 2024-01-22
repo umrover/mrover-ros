@@ -149,7 +149,7 @@ namespace mrover {
     }
 
     auto SimulatorNodelet::gpsAndImusUpdate(Clock::duration dt) -> void {
-        if (auto lookup = getUrdf("rover"); lookup) {
+        if (auto lookup = getUrdf("rover")) {
             URDF const& rover = *lookup;
 
             {
