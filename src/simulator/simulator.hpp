@@ -35,8 +35,6 @@ namespace mrover {
         Eigen::Matrix4f modelToWorld{};
         Eigen::Matrix4f modelToWorldForNormals{};
 
-        std::uint32_t material{};
-
         EIGEN_MAKE_ALIGNED_OPERATOR_NEW
     };
 

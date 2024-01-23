@@ -366,7 +366,6 @@ namespace mrover {
         uniforms.value.modelToWorldForNormals = modelToWorld.matrix().inverse().transpose().cast<float>();
         uniforms.value.modelToWorldForNormals.col(3).setZero();
         uniforms.value.modelToWorldForNormals.row(3).setZero();
-        uniforms.value.material = 1;
         uniforms.enqueueWrite();
 
         for (Model::Mesh& mesh: model.meshes) {
