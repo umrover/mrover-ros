@@ -96,6 +96,15 @@ namespace mrover {
         ImGui_ImplWGPU_Shutdown();
         ImGui_ImplGlfw_Shutdown();
         ImGui::DestroyContext();
+
+        for (int i = mDynamicsWorld->getNumConstraints() - 1; i >= 0; --i) {
+            mDynamicsWorld->removeConstraint(mDynamicsWorld->getConstraint(i));
+        }
+
+        for (int i = mDynamicsWorld->getNumCollisionObjects() - 1; i >= 0; --i) {
+            btCollisionObject* object = mDynamicsWorld->getCollisionObjectArray()[i];
+            mDynamicsWorld->removeCollisionObject(object);
+        }
     }
 
 } // namespace mrover
