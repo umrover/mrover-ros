@@ -3,11 +3,10 @@
 namespace mrover {
 
     auto URDF::makeCameraForLink(SimulatorNodelet& simulator, btMultibodyLink const* link) -> Camera {
-        Camera camera{
-                link,
-                {640, 480},
-                PeriodicTask{20},
-        };
+        Camera camera;
+        camera.link = link;
+        camera.resolution = {640, 480};
+        camera.updateTask = PeriodicTask{20};
         // TODO(quintin): Why do I have to cast this
         wgpu::TextureUsage usage = static_cast<wgpu::TextureUsage::W>(wgpu::TextureUsage::RenderAttachment | wgpu::TextureUsage::TextureBinding);
         wgpu::TextureUsage colorUsage = static_cast<wgpu::TextureUsage::W>(usage | wgpu::TextureUsage::CopySrc);

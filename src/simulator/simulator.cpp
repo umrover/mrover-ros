@@ -10,7 +10,9 @@ namespace mrover {
         mSaveHistory = boost::circular_buffer<SaveData>{static_cast<std::size_t>(mPnh.param<int>("save_history", 4096))};
 
         mTwistSub = mNh.subscribe<geometry_msgs::Twist>("/cmd_vel", 1, &SimulatorNodelet::twistCallback, this);
-        mJointPositionsSub = mNh.subscribe<Position>("/arm_position_cmd", 1, &SimulatorNodelet::jointPositionsCallback, this);
+        mArmPositionsSub = mNh.subscribe<Position>("/arm_position_cmd", 1, &SimulatorNodelet::armPositionsCallback, this);
+        mArmVelocitiesSub = mNh.subscribe<Velocity>("/arm_velocity_cmd", 1, &SimulatorNodelet::armVelocitiesCallback, this);
+        mArmThrottlesSub = mNh.subscribe<Throttle>("/arm_throttle_cmd", 1, &SimulatorNodelet::armThrottlesCallback, this);
 
         mGroundTruthPub = mNh.advertise<nav_msgs::Odometry>("/ground_truth", 1);
         mGpsPub = mNh.advertise<sensor_msgs::NavSatFix>("/gps/fix", 1);
@@ -72,21 +74,6 @@ namespace mrover {
             ik.pose.position.y = mIkTarget.y();
             ik.pose.position.z = mIkTarget.z();
             mIkTargetPub.publish(ik);
-            // if (auto it = mUrdfs.find("rover"); it != mUrdfs.end()) {
-            //     URDF const& rover = it->second;
-            //
-            //     for (auto const& name: {"arm_a_link"s, "arm_b_link"s, "arm_c_link"s, "arm_d_link"s, "arm_e_link"s}) {
-            //         auto* motor = std::bit_cast<btMultiBodyJointMotor*>(rover.physics->getLink(rover.linkNameToIndex.at(name)).m_userPtr);
-            //         motor->setMaxAppliedImpulse(0.5);
-            //         if (name == "arm_b_link") {
-            //             motor->setPositionTarget(-TAU * 0.125, 0.5);
-            //         } else if (name == "arm_c_link") {
-            //             motor->setPositionTarget(TAU * 0.4, 0.5);
-            //         } else {
-            //             motor->setPositionTarget(0);
-            //         }
-            //     }
-            // }
 
             userControls(dt);
             mLoopProfiler.measureEvent("Controls");

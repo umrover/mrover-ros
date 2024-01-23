@@ -35,6 +35,9 @@ namespace mrover {
             };
             mGpsLinerizationReferenceHeading = xmlRpcValueToTypeOrDefault<double>(gpsLinearization, "reference_heading");
         }
+        {
+            mPublishHammerDistanceThreshold = mPnh.param<float>("publish_hammer_distance_threshold", 4);
+        }
     }
 
 } // namespace mrover

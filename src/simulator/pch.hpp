@@ -74,3 +74,5 @@
 #include <mrover/IK.h>
 #include <mrover/ImuAndMag.h>
 #include <mrover/Position.h>
+#include <mrover/Throttle.h>
+#include <mrover/Velocity.h>

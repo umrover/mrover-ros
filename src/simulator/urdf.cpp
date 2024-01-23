@@ -271,4 +271,11 @@ namespace mrover {
         }
     }
 
+    auto SimulatorNodelet::getUrdf(std::string const& name) -> std::optional<std::reference_wrapper<URDF>> {
+        auto it = mUrdfs.find(name);
+        if (it == mUrdfs.end()) return std::nullopt;
+
+        return it->second;
+    }
+
 } // namespace mrover

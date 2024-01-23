@@ -22,7 +22,13 @@
         </visual>
         <collision>
             <geometry>
-                <cylinder radius="0.08" length="0.25"/>
+                <cylinder radius="0.09" length="0.31"/>
+            </geometry>
+        </collision>
+        <collision>
+            <origin rpy="0 0 0" xyz="0 0 0.16"/>
+            <geometry>
+                <cylinder radius="0.07" length="0.05"/>
             </geometry>
         </collision>
     </link>
