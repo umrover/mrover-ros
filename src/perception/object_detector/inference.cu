@@ -170,7 +170,7 @@ namespace mrover {
 
         assert(mContext);
         //Create an appropriately sized output tensor
-        Dims const oOUTPUTutputTensorDims = mEngine->getTensorShape(OUTPUT_BINDING_NAME);
+        Dims const outputTensorDims = mEngine->getTensorShape(OUTPUT_BINDING_NAME);
         for (int i = 0; i < outputTensorDims.nbDims; i++) {
             char message[512];
             std::snprintf(message, sizeof(message), "size %d %d", i, outputTensorDims.d[i]);

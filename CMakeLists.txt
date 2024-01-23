@@ -178,6 +178,7 @@ if (CUDA_FOUND)
 endif ()
 
 if (ZED_FOUND)
+    # object_detector
     mrover_add_nodelet(object_detector src/perception/object_detector/*.c* src/perception/object_detector src/perception/object_detector/pch.hpp)
     mrover_nodelet_link_libraries(object_detector PRIVATE opencv_core opencv_dnn opencv_imgproc lie nvinfer nvonnxparser tbb)
     # Temporary
@@ -186,6 +187,13 @@ if (ZED_FOUND)
     mrover_nodelet_defines(object_detector
             __CUDA_INCLUDE_COMPILER_INTERNAL_HEADERS__ # Eigen includes some files it should not, ignore
     )
+
+    #image_capture
+    mrover_add_nodelet(image_capture src/perception/image_capture/*.c* src/perception/image_capture src/perception/image_capture/pch.hpp )
+    mrover_nodelet_link_libraries(image_capture PRIVATE opencv_core opencv_dnn opencv_imgproc lie )
+    # Temporary
+    mrover_nodelet_link_libraries(image_capture PRIVATE opencv_imgcodecs)
+    mrover_nodelet_link_libraries(image_capture PRIVATE opencv_highgui)
 
     mrover_add_nodelet(zed src/perception/zed_wrapper/*.c* src/perception/zed_wrapper src/perception/zed_wrapper/pch.hpp)
     mrover_nodelet_include_directories(zed ${ZED_INCLUDE_DIRS} ${CUDA_INCLUDE_DIRS})
