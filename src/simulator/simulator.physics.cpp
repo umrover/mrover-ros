@@ -91,15 +91,17 @@ namespace mrover {
         if (auto roverOpt = getUrdf("rover")) {
             URDF const& rover = *roverOpt;
 
-            if (auto hammerOpt = getUrdf("hammer")) {
-                URDF const& hammer = *hammerOpt;
+            for (std::string model: {"hammer", "bottle"}) {
+                if (auto hammerOpt = getUrdf(model)) {
+                    URDF const& hammer = *hammerOpt;
 
-                SE3 hammerInMap = btTransformToSe3(hammer.physics->getBaseWorldTransform());
-                SE3 roverInMap = btTransformToSe3(rover.physics->getBaseWorldTransform());
+                    SE3 hammerInMap = btTransformToSe3(hammer.physics->getBaseWorldTransform());
+                    SE3 roverInMap = btTransformToSe3(rover.physics->getBaseWorldTransform());
 
-                if (double roverDistanceToHammer = (hammerInMap.position() - roverInMap.position()).norm();
-                    roverDistanceToHammer < mPublishHammerDistanceThreshold) {
-                    SE3::pushToTfTree(mTfBroadcaster, "hammer", "map", hammerInMap);
+                    if (double roverDistanceToHammer = (hammerInMap.position() - roverInMap.position()).norm();
+                        roverDistanceToHammer < mPublishHammerDistanceThreshold) {
+                        SE3::pushToTfTree(mTfBroadcaster, model, "map", hammerInMap);
+                    }
                 }
             }
         }

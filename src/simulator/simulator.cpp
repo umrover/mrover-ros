@@ -28,6 +28,8 @@ namespace mrover {
 
         parseParams();
 
+        twistCallback(boost::make_shared<geometry_msgs::Twist>());
+
         mRunThread = std::thread{&SimulatorNodelet::run, this};
 
     } catch (std::exception const& e) {

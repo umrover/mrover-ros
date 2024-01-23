@@ -265,16 +265,6 @@ namespace mrover {
         multiBody->updateCollisionObjectWorldTransforms(q, m);
         simulator.mDynamicsWorld->addMultiBody(multiBody);
 
-        // auto* gearConstraint = simulator.makeBulletObject<btMultiBodyGearConstraint>(simulator.mMultibodyConstraints, multiBody, 0, multiBody, 1, btVector3{}, btVector3{}, btMatrix3x3{}, btMatrix3x3{});
-        // gearConstraint->setMaxAppliedImpulse(10000);
-        // gearConstraint->setGearRatio(-2);
-        // gearConstraint->setErp(0.2);
-        // constraintsToFinalize.push_back(gearConstraint);
-
-        // auto* motor = simulator.makeBulletObject<btMultiBodyJointMotor>(simulator.mMultibodyConstraints, multiBody, 0, 0, 0);
-        // constraintsToFinalize.push_back(motor);
-        // multiBody->getLink(0).m_userPtr = motor;
-
         for (btMultiBodyConstraint* constraint: constraintsToFinalize) {
             constraint->finalizeMultiDof();
             simulator.mDynamicsWorld->addMultiBodyConstraint(constraint);
