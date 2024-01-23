@@ -41,12 +41,14 @@ namespace mrover {
         forEachWithMotor(message->names, message->positions, [&](btMultiBodyJointMotor* motor, float position) {
             motor->setMaxAppliedImpulse(0.5);
             motor->setPositionTarget(position, 0.05);
+            motor->setVelocityTarget(0, 1);
         });
     }
 
     auto SimulatorNodelet::armVelocitiesCallback(Velocity::ConstPtr const& message) -> void {
         forEachWithMotor(message->names, message->velocities, [&](btMultiBodyJointMotor* motor, float velocity) {
             motor->setMaxAppliedImpulse(0.5);
+            motor->setPositionTarget(0, 0);
             motor->setVelocityTarget(velocity, 0.5);
         });
     }
@@ -54,6 +56,7 @@ namespace mrover {
     auto SimulatorNodelet::armThrottlesCallback(Throttle::ConstPtr const& message) -> void {
         forEachWithMotor(message->names, message->throttles, [&](btMultiBodyJointMotor* motor, float throttle) {
             motor->setMaxAppliedImpulse(0.5);
+            motor->setPositionTarget(0, 0);
             motor->setVelocityTarget(throttle, 0.5);
         });
     }

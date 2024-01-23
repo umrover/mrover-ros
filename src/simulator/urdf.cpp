@@ -197,20 +197,9 @@ namespace mrover {
                     case urdf::Joint::REVOLUTE: {
                         ROS_INFO_STREAM(std::format("Rotating joint {}: {} ({}) <-> {} ({})", parentJoint->name, parentJoint->parent_link_name, parentIndex, parentJoint->child_link_name, linkIndex));
                         multiBody->setupRevolute(linkIndex, mass, inertia, parentIndex, jointInParent.getRotation().inverse(), axisInJoint, jointInParent.getOrigin(), comInJoint.getOrigin(), true);
-                        if (parentJoint->type == urdf::Joint::REVOLUTE) {
-                            auto lower = static_cast<btScalar>(parentJoint->limits->lower), upper = static_cast<btScalar>(parentJoint->limits->upper);
-                            auto* limitConstraint = simulator.makeBulletObject<btMultiBodyJointLimitConstraint>(simulator.mMultibodyConstraints, multiBody, linkIndex, lower, upper);
-                            constraintsToFinalize.push_back(limitConstraint);
-                        }
 
                         if (link->name.contains("wheel"sv)) {
-                            ROS_INFO_STREAM("\tGear");
-
-                            // auto* gearConstraint = simulator.makeBulletObject<btMultiBodyGearConstraint>(simulator.mMultibodyConstraints, multiBody, parentIndex, multiBody, linkIndex, btVector3{}, btVector3{}, btMatrix3x3{}, btMatrix3x3{});
-                            // gearConstraint->setMaxAppliedImpulse(10000);
-                            // gearConstraint->setGearRatio(50);
-                            // gearConstraint->setErp(0.2);
-                            // constraintsToFinalize.push_back(gearConstraint);
+                            ROS_INFO_STREAM("\tWheel");
 
                             collider->setRollingFriction(0.0);
                             collider->setSpinningFriction(0.0);
@@ -236,6 +225,16 @@ namespace mrover {
                         constraintsToFinalize.push_back(motor);
                         multiBody->getLink(linkIndex).m_userPtr = motor;
                         break;
+                    }
+                    default:
+                        break;
+                }
+                switch (parentJoint->type) {
+                    case urdf::Joint::REVOLUTE:
+                    case urdf::Joint::PRISMATIC: {
+                        auto lower = static_cast<btScalar>(parentJoint->limits->lower), upper = static_cast<btScalar>(parentJoint->limits->upper);
+                        auto* limitConstraint = simulator.makeBulletObject<btMultiBodyJointLimitConstraint>(simulator.mMultibodyConstraints, multiBody, linkIndex, lower, upper);
+                        constraintsToFinalize.push_back(limitConstraint);
                     }
                     default:
                         break;
