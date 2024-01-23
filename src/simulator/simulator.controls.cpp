@@ -74,7 +74,6 @@ namespace mrover {
             if (key == mTogglePhysicsKey) mEnablePhysics = !mEnablePhysics;
             if (key == mToggleRenderModelsKey) mRenderModels = !mRenderModels;
             if (key == mToggleRenderWireframeCollidersKey) mRenderWireframeColliders = !mRenderWireframeColliders;
-            if (key == mToggleIkKey) mPublishIk = !mPublishIk;
             if (key == mInGuiKey) {
                 mInGui = !mInGui;
                 if (!mInGui) centerCursor();

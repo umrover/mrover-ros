@@ -181,7 +181,6 @@ namespace mrover {
         int mTogglePhysicsKey = GLFW_KEY_P;
         int mToggleRenderModelsKey = GLFW_KEY_M;
         int mToggleRenderWireframeCollidersKey = GLFW_KEY_C;
-        int mToggleIkKey = GLFW_KEY_I;
 
         float mFlySpeed = 5.0f;
         float mRoverLinearSpeed = 1.0f;
