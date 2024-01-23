@@ -59,7 +59,7 @@ teleop:
       multiplier: 1
     left_right:
       # Can be disabled here since left_right axis sucks
-      enabled: false
+      enabled: true
       multiplier: 1
     twist:
       multiplier: 0.7
@@ -82,8 +82,8 @@ teleop:
     y: 3
   
   joystick_mappings:
-    left_right: 0
-    forward_back: 1
+    left_right: 1
+    forward_back: 0
     twist: 2
     dampen: 3
     pan: 4
@@ -106,7 +106,7 @@ teleop:
 
   # Mappings from site name to index in which values will be sent
   # for each site, mostly for heaters and which syringe servos we want to use
-  carousel_site_mappings:
+  site_mappings:
     A: 0
     B: 1
     C: 2
