@@ -35,11 +35,11 @@ class StateMachine:
     stop_event: Event
 
     def __init__(
-        self,
-        initial_state: State,
-        name: str,
-        log_level: LogLevel = LogLevel.DEBUG,
-        logger: Callable[[str], None] = print,
+            self,
+            initial_state: State,
+            name: str,
+            log_level: LogLevel = LogLevel.DEBUG,
+            logger: Callable[[str], None] = print,
     ):
         self.current_state = initial_state
         self.state_lock = Lock()

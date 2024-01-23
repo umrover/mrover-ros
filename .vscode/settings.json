@@ -34,4 +34,9 @@
     //// Miscellaneous
     "redhat.telemetry.enabled": false,
     "editor.formatOnSave": true,
+    "cSpell.words": [
+        "Eigen",
+        "GLFW",
+        "wgpu"
+    ],
 }
