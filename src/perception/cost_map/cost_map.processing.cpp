@@ -15,7 +15,7 @@ namespace mrover {
 
         SE3 zed_to_map = SE3::fromTfTree(tf_buffer, "zed2i_left_camera_frame", "map");
 
-        auto* points = reinterpret_cast<const Point*>(msg->data.data());
+        auto* points = reinterpret_cast<Point const*>(msg->data.data());
         std::for_each(points, points + msg->width * msg->height, [&](auto& point) {
             SE3 point_in_zed{R3{point.x, point.y, 0.0}, {}};
             SE3 point_in_map = zed_to_map * point_in_zed;
@@ -35,20 +35,3 @@ namespace mrover {
         mCostMapPub.publish(mGlobalGridMsg);
     }
 } // namespace mrover
-
-int main(int argc, char** argv) {
-    ros::init(argc, argv, "costmap");
-
-    // Start Costmap Nodelet
-    nodelet::Loader nodelet;
-    nodelet.load(ros::this_node::getName(), "mrover/CostMapNodelet", ros::names::getRemappings(), {});
-
-    ros::spin();
-
-    return EXIT_SUCCESS;
-}
-
-#ifdef MROVER_IS_NODELET
-#include <pluginlib/class_list_macros.h>
-PLUGINLIB_EXPORT_CLASS(mrover::CostMapNodelet, nodelet::Nodelet)
-#endif
