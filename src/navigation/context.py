@@ -101,7 +101,7 @@ class Environment:
         if current_waypoint.type == WaypointType.POST:
             return self.get_target_pos(f"fiducial{current_waypoint.tag_id}", in_odom)
         elif current_waypoint.type == WaypointType.MALLET:
-            return self.get_target_pos("mallet", in_odom)
+            return self.get_target_pos("hammer", in_odom)
         elif current_waypoint.type == WaypointType.WATER_BOTTLE:
             return self.get_target_pos("water_bottle", in_odom)
         else:
