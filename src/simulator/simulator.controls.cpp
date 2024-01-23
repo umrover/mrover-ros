@@ -9,11 +9,8 @@ namespace mrover {
         constexpr auto WHEEL_LINEAR_TO_ANGULAR = RadiansPerMeter{1. / .13};
         constexpr auto MAX_MOTOR_TORQUE = 2.68;
 
-        // constexpr auto WHEEL_DISTANCE_INNER = Meters{1};
-        // constexpr auto WHEEL_LINEAR_TO_ANGULAR = compound_unit<Radians, inverse<Meters>>{1 / 0.13};
-
         auto forward = MetersPerSecond{twist->linear.x};
-        auto turn = RadiansPerSecond{twist->angular.z};
+        auto turn = RadiansPerSecond{twist->angular.z} * 3; // TODO(quintin): Remove this hack
 
         auto delta = turn / Radians{1} * WHEEL_DISTANCE_INNER;
 
@@ -74,6 +71,7 @@ namespace mrover {
             if (key == mTogglePhysicsKey) mEnablePhysics = !mEnablePhysics;
             if (key == mToggleRenderModelsKey) mRenderModels = !mRenderModels;
             if (key == mToggleRenderWireframeCollidersKey) mRenderWireframeColliders = !mRenderWireframeColliders;
+            if (key == mToggleIkKey) mPublishIk = !mPublishIk;
             if (key == mInGuiKey) {
                 mInGui = !mInGui;
                 if (!mInGui) centerCursor();
@@ -84,22 +82,22 @@ namespace mrover {
     auto SimulatorNodelet::freeLook(Clock::duration dt) -> void {
         float flySpeed = mFlySpeed * std::chrono::duration_cast<std::chrono::duration<float>>(dt).count();
         if (glfwGetKey(mWindow.get(), mCamRightKey) == GLFW_PRESS) {
-            mCameraInWorld = SE3{R3{0.0, -flySpeed, 0}, SO3{}} * mCameraInWorld;
+            mCameraInWorld = SE3{R3{0, -flySpeed, 0}, SO3{}} * mCameraInWorld;
         }
         if (glfwGetKey(mWindow.get(), mCamLeftKey) == GLFW_PRESS) {
-            mCameraInWorld = SE3{R3{0.0, flySpeed, 0}, SO3{}} * mCameraInWorld;
+            mCameraInWorld = SE3{R3{0, flySpeed, 0}, SO3{}} * mCameraInWorld;
         }
         if (glfwGetKey(mWindow.get(), mCamForwardKey) == GLFW_PRESS) {
-            mCameraInWorld = SE3{R3{flySpeed, 0.0, 0.0}, SO3{}} * mCameraInWorld;
+            mCameraInWorld = SE3{R3{flySpeed, 0, 0}, SO3{}} * mCameraInWorld;
         }
         if (glfwGetKey(mWindow.get(), mCamBackwardKey) == GLFW_PRESS) {
-            mCameraInWorld = SE3{R3{-flySpeed, 0.0, 0.0}, SO3{}} * mCameraInWorld;
+            mCameraInWorld = SE3{R3{-flySpeed, 0, 0}, SO3{}} * mCameraInWorld;
         }
         if (glfwGetKey(mWindow.get(), mCamUpKey) == GLFW_PRESS) {
-            mCameraInWorld = mCameraInWorld * SE3{R3{0.0, 0.0, flySpeed}, SO3{}};
+            mCameraInWorld = mCameraInWorld * SE3{R3{0, 0, flySpeed}, SO3{}};
         }
         if (glfwGetKey(mWindow.get(), mCamDownKey) == GLFW_PRESS) {
-            mCameraInWorld = mCameraInWorld * SE3{R3{0.0, 0.0, -flySpeed}, SO3{}};
+            mCameraInWorld = mCameraInWorld * SE3{R3{0, 0, -flySpeed}, SO3{}};
         }
 
         Eigen::Vector2i size;
@@ -121,6 +119,14 @@ namespace mrover {
     }
 
     auto SimulatorNodelet::userControls(Clock::duration dt) -> void {
+        if (mPublishIk) {
+            IK ik;
+            ik.pose.position.x = mIkTarget.x();
+            ik.pose.position.y = mIkTarget.y();
+            ik.pose.position.z = mIkTarget.z();
+            mIkTargetPub.publish(ik);
+        }
+
         if (!mHasFocus || mInGui) return;
 
         freeLook(dt);
@@ -144,8 +150,8 @@ namespace mrover {
         }
         if (glfwGetKey(mWindow.get(), mRoverStopKey) == GLFW_PRESS) {
             if (!twist) twist.emplace();
-            twist->linear.x = 0.0;
-            twist->angular.z = 0.0;
+            twist->linear.x = 0;
+            twist->angular.z = 0;
         }
         if (twist) {
             twistCallback(boost::make_shared<geometry_msgs::Twist const>(*twist));

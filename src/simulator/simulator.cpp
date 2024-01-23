@@ -69,12 +69,6 @@ namespace mrover {
             // glfwSetInputMode(mWindow.get(), GLFW_CURSOR, mInGui ? GLFW_CURSOR_NORMAL : GLFW_CURSOR_DISABLED);
             mLoopProfiler.measureEvent("GLFW Events");
 
-            IK ik;
-            ik.pose.position.x = mIkTarget.x();
-            ik.pose.position.y = mIkTarget.y();
-            ik.pose.position.z = mIkTarget.z();
-            mIkTargetPub.publish(ik);
-
             userControls(dt);
             mLoopProfiler.measureEvent("Controls");
 

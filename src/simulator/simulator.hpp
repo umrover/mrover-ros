@@ -181,10 +181,11 @@ namespace mrover {
         int mTogglePhysicsKey = GLFW_KEY_P;
         int mToggleRenderModelsKey = GLFW_KEY_M;
         int mToggleRenderWireframeCollidersKey = GLFW_KEY_C;
+        int mToggleIkKey = GLFW_KEY_I;
 
         float mFlySpeed = 5.0f;
         float mRoverLinearSpeed = 1.0f;
-        float mRoverAngularSpeed = 1.5f;
+        float mRoverAngularSpeed = 0.5f;
         float mLookSense = 0.004f;
         float mFovDegrees = 60.0f;
         btVector3 mGravityAcceleration{0.0f, 0.0f, -9.81f};
@@ -208,7 +209,8 @@ namespace mrover {
         tf2_ros::TransformListener mTfListener{mTfBuffer};
         tf2_ros::TransformBroadcaster mTfBroadcaster;
 
-        Eigen::Vector3f mIkTarget{1.0, 0.1, 0};
+        bool mPublishIk = true;
+        Eigen::Vector3f mIkTarget{0.125, 0.1, 0};
         ros::Publisher mIkTargetPub;
 
         R3 mGpsLinerizationReferencePoint{};
@@ -370,7 +372,8 @@ namespace mrover {
                 URDF const& rover = it->second;
 
                 for (auto const& combined: boost::combine(names, values)) {
-                    int linkIndex = rover.linkNameToMeta.at(boost::get<0>(combined)).index;
+                    std::string const& name = boost::get<0>(combined);
+                    int linkIndex = rover.linkNameToMeta.at(name).index;
                     float value = boost::get<1>(combined);
 
                     auto* motor = std::bit_cast<btMultiBodyJointMotor*>(rover.physics->getLink(linkIndex).m_userPtr);
