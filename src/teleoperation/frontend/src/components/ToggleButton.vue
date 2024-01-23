@@ -43,7 +43,6 @@ export default defineComponent({
         return this.currentState
       },
       set(newValue: Boolean) {
-        console.log(newValue)
         this.$emit('change', newValue)
       }
     }

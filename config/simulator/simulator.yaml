@@ -18,3 +18,7 @@ objects:
     name: hammer
     uri: package://mrover/urdf/world/hammer.urdf.xacro
     translation: [ 5, 0, 0.5 ]
+  - type: urdf
+    name: bottle
+    uri: package://mrover/urdf/world/bottle.urdf.xacro
+    translation: [ 5, 5, 0.5 ]

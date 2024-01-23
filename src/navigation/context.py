@@ -54,7 +54,7 @@ class Rover:
 @dataclass
 class Environment:
     """
-    Context class to represent the rover's envrionment
+    Context class to represent the rover's environment
     Information such as locations of fiducials or obstacles
     """
 

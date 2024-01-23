@@ -1,39 +1,26 @@
 <template>
   <div class="wrap">
     <!-- Leaflet Map Definition-->
-    <l-map ref="map" class="map" :zoom="22" :center="center" @click="getClickedLatLon($event)">
+    <l-map @ready="onMapReady" ref="map" class="map" :zoom="22" :center="center" @click="getClickedLatLon($event)">
       <l-control-scale :imperial="false" />
       <!-- Tile Layer for map background -->
-      <l-tile-layer
-        ref="tileLayer"
-        :url="online ? onlineUrl : offlineUrl"
-        :attribution="attribution"
-        :options="online ? onlineTileOptions : offlineTileOptions"
-      />
+      <l-tile-layer ref="tileLayer" :url="online ? onlineUrl : offlineUrl" :attribution="attribution"
+        :options="online ? onlineTileOptions : offlineTileOptions" />
 
       <!-- Markers for rover location -->
       <!-- TODO: Figure out if we still want these -->
       <l-marker ref="rover" :lat-lng="odomLatLng" :icon="locationIcon" />
 
       <!-- Waypoint Icons -->
-      <l-marker
-        v-for="(waypoint, index) in waypointList"
-        :key="index"
-        :lat-lng="waypoint.latLng"
-        :icon="waypointIcon"
-      >
+      <l-marker v-for="(waypoint, index) in waypointList" :key="index" :lat-lng="waypoint.latLng" :icon="waypointIcon">
         <l-tooltip :options="{ permanent: 'true', direction: 'top' }">
           {{ waypoint.name }}, {{ index }}
         </l-tooltip>
       </l-marker>
 
       <!-- Search Path Icons -->
-      <l-marker
-        v-for="(search_path_point, index) in searchPathPoints"
-        :key="index"
-        :lat-lng="search_path_point.latLng"
-        :icon="searchPathIcon"
-      >
+      <l-marker v-for="(search_path_point, index) in searchPathPoints" :key="index" :lat-lng="search_path_point.latLng"
+        :icon="searchPathIcon">
         <l-tooltip>Search Path {{ index }}</l-tooltip>
       </l-marker>
 
@@ -258,8 +245,7 @@ export default {
   },
   data() {
     return {
-      // Default Center at MDRS
-      center: L.latLng(38.406025, -110.7923723),
+      center: L.latLng(42.293195, -83.7096706),
       attribution: '&copy; <a href="http://osm.org/copyright">OpenStreetMap</a> contributors',
       online: true,
       onlineUrl: onlineUrl,
@@ -305,7 +291,6 @@ export default {
     }
   },
   watch: {
-    waypointList: {handler: function() {console.log(this.waypointList)}},
     odom: {
       handler: function (val) {
         // Trigger every time rover odom is changed
@@ -322,6 +307,7 @@ export default {
         }
 
         // Update the rover marker using bearing angle
+        // console.log(this.roverMarker)
         this.roverMarker.setRotationAngle(angle)
 
         this.roverMarker.setLatLng(latLng)
@@ -514,13 +500,18 @@ export default {
   },
   // Pull objects from refs to be able to access data and change w functions
   mounted: function () {
-    this.$nextTick(() => {
-      this.map = this.$refs.map.leafletObject
-      this.roverMarker = this.$refs.rover.leafletObject
-    })
+   
   },
 
   methods: {
+
+    onMapReady: function(ready) {
+        this.$nextTick(() => {
+        this.map = this.$refs.map.leafletObject
+        console.log(this.$refs.rover)
+        this.roverMarker = this.$refs.rover.leafletObject
+      })
+    },
     // Event listener for setting store values to get data to waypoint Editor
     getClickedLatLon: function (e: { latlng: { lat: any; lng: any } }) {
       this.setClickPoint({
@@ -564,6 +555,7 @@ export default {
     'map'
     'controls';
 }
+
 .custom-tooltip {
   display: inline-block;
   margin: 10px 20px;

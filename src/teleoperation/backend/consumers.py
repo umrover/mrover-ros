@@ -28,28 +28,24 @@ def deadzone(magnitude: float, threshold: float) -> float:
 
 
 def quadratic(val: float) -> float:
-    return copysign(val ** 2, val)
+    return copysign(val**2, val)
 
 
 class GUIConsumer(JsonWebsocketConsumer):
     def connect(self):
-        
-       
-
-        
-        
         self.accept()
         # Publishers
-        self.twist_pub = rospy.Publisher("/cmd_vel", Twist, queue_size=100)
+        self.twist_pub = rospy.Publisher("/cmd_vel", Twist, queue_size=1)
         self.led_pub = rospy.Publisher("/auton_led_cmd", String, queue_size=1)
-        self.auton_cmd_pub = rospy.Publisher("/auton/command", AutonCommand, queue_size=100)
         self.teleop_pub = rospy.Publisher("/teleop_enabled", Bool, queue_size=1)
         self.mast_gimbal_pub = rospy.Publisher("/mast_gimbal_throttle_cmd", Throttle, queue_size=1)
 
         # Subscribers
         self.pdb_sub = rospy.Subscriber("/pdb_data", PDLB, self.pdb_callback)
         self.arm_moteus_sub = rospy.Subscriber("/arm_controller_data", ControllerState, self.arm_controller_callback)
-        self.drive_moteus_sub = rospy.Subscriber( "/drive_controller_data", ControllerState, self.drive_controller_callback)
+        self.drive_moteus_sub = rospy.Subscriber(
+            "/drive_controller_data", ControllerState, self.drive_controller_callback
+        )
         self.gps_fix = rospy.Subscriber("/gps/fix", NavSatFix, self.gps_fix_callback)
         self.joint_state_sub = rospy.Subscriber("/drive_joint_data", JointState, self.joint_state_callback)
         self.led_sub = rospy.Subscriber("/led", LED, self.led_callback)
@@ -57,13 +53,15 @@ class GUIConsumer(JsonWebsocketConsumer):
         self.tf_buffer = tf2_ros.Buffer()
         self.tf_listener = tf2_ros.TransformListener(self.tf_buffer)
         self.enable_auton = rospy.ServiceProxy("enable_auton", EnableAuton)
-        self.calibration_checkbox_sub = rospy.Subscriber('/calibration_checkbox', Calibrated, self.calibration_checkbox_callback)
-        self.joy_sub = rospy.Subscriber('/joystick', Joy, self.handle_joystick_message)
-        self.arm_joystick_sub = rospy.Subscriber('/xbox/ra_control', Joy, self.handle_arm_message)
+        self.calibration_checkbox_sub = rospy.Subscriber(
+            "/calibration_checkbox", Calibrated, self.calibration_checkbox_callback
+        )
+        self.joy_sub = rospy.Subscriber("/joystick", Joy, self.handle_joystick_message)
+        self.arm_joystick_sub = rospy.Subscriber("/xbox/ra_control", Joy, self.handle_arm_message)
         # Services
         self.laser_service = rospy.ServiceProxy("enable_mosfet_device", SetBool)
         self.calibrate_service = rospy.ServiceProxy("arm_calibrate", Trigger)
-        self.arm_adjust_service = rospy.ServiceProxy("arm_adjust",AdjustMotor )
+        self.arm_adjust_service = rospy.ServiceProxy("arm_adjust", AdjustMotor)
 
         # ROS Parameters
         self.mappings = rospy.get_param("teleop/joystick_mappings")
@@ -71,8 +69,6 @@ class GUIConsumer(JsonWebsocketConsumer):
         self.max_wheel_speed = rospy.get_param("rover/max_speed")
         self.wheel_radius = rospy.get_param("wheel/radius")
         self.max_angular_speed = self.max_wheel_speed / self.wheel_radius
-
-        
 
     def disconnect(self, close_code):
         self.pdb_sub.unregister()
@@ -103,82 +99,88 @@ class GUIConsumer(JsonWebsocketConsumer):
                 self.calibrate_motors_callback(message)
             elif message["type"] == "arm_adjust":
                 self.arm_adjust(message)
-            elif message['type'] == "change_ra_mode":
+            elif message["type"] == "change_ra_mode":
                 self.handle_joystick_message(message)
-            elif message['type'] == "arm_values":
+            elif message["type"] == "arm_values":
                 self.handle_arm_message(message)
             elif message["type"] == "auton_command":
                 self.send_auton_command(message)
             elif message["type"] == "teleop_enabled":
                 self.send_teleop_enabled(message)
+            elif message["type"] == "auton_tfclient":
+                self.auton_bearing()
             elif message["type"] == "mast_gimbal":
                 self.mast_gimbal(message)
-        except rospy.ROSException as e:
+        except Exception as e:
             rospy.logerr(e)
 
-    def handle_arm_message(self,msg):
-        self.ra_config = rospy.get_param("teleop/ra_controls")  #could be different name
+    def handle_arm_message(self, msg):
+        self.ra_config = rospy.get_param("teleop/ra_controls")  # could be different name
         self.velocity_config = rospy.get_param("esw/brushless_motors/controllers")
         self.xbox_mappings = rospy.get_param("teleop/xbox_mappings")
         self.sa_config = rospy.get_param("teleop/sa_controls")
         DEFAULT_ARM_DEADZONE = 0.15
-        self.RA_NAMES = [
-            "joint_a",
-            "joint_b",
-            "joint_c",
-            "joint_de_pitch",
-            "joint_de_yaw",
-            "allen_key",
-            "gripper"
-        ]
-        
+        self.RA_NAMES = ["joint_a", "joint_b", "joint_c", "joint_de_pitch", "joint_de_yaw", "allen_key", "gripper"]
 
         self.ra_slow_mode = False
         self.arm_throttle_cmd_pub = rospy.Publisher("arm_throttle_cmd", Throttle, queue_size=100)
         self.arm_velocity_cmd_pub = rospy.Publisher("arm_velocity_cmd", Velocity, queue_size=100)
         self.arm_position_cmd_pub = rospy.Publisher("arm_position_cmd", Position, queue_size=100)
         if msg.arm_mode == "arm_disabled":
-            x= 1
+            x = 1
         elif msg.arm_mode == "ik":
             x = 1
         elif msg.arm_mode == "position":
             self.arm_position_cmd = Position(
- 
-             name=self.RA_NAMES,
-            position=[nan for _ in self.RA_NAMES],
+                name=self.RA_NAMES,
+                position=[nan for _ in self.RA_NAMES],
             )
             self.arm_position_cmd_pub.publish(self.arm_position_cmd)
-        
 
         elif msg.arm_mode == "velocity":
-            
             self.arm_velocity_cmd = Velocity(
- 
-                name= self.RA_NAMES,
+                name=self.RA_NAMES,
                 velocity=[0.0 for _ in self.RA_NAMES],
             )
 
             self.arm_velocity_cmd.velocity = [
-                (filter_xbox_axis(msg["axes"], "left_js_x")+ 1) * (self.velocity_config["joint_a"]["max_velocity"] - self.velocity_config["joint_a"]["min_velocity"]) / (1 - (-1)) - self.velocity_config["joint_a"]["min_velocity"],
-               (filter_xbox_axis(msg["axes"], "left_js_y")+ 1) * (self.velocity_config["joint_a"]["max_velocity"] - self.velocity_config["joint_a"]["min_velocity"]) / (1 - (-1)) - self.velocity_config["joint_a"]["min_velocity"],
-                (filter_xbox_axis(msg["axes"], "right_js_y")+ 1) * (self.velocity_config["joint_c"]["max_velocity"] - self.velocity_config["joint_c"]["min_velocity"]) / (1 - (-1)) - self.velocity_config["joint_c"]["min_velocity"],
-                (filter_xbox_axis(msg["axes"], "right_js_x")+ 1) * (self.velocity_config["joint_de_0"]["max_velocity"] - self.velocity_config["joint_de_0"]["min_velocity"]) / (1 - (-1)) - self.velocity_config["joint_de_1"]["min_velocity"],
-                (filter_xbox_axis(msg["axes"], "right_js_x")+ 1) * (self.velocity_config["joint_de_1"]["max_velocity"] - self.velocity_config["joint_de_0"]["min_velocity"]) / (1 - (-1)) - self.velocity_config["joint_de_1"]["min_velocity"],
+                (filter_xbox_axis(msg["axes"], "left_js_x") + 1)
+                * (self.velocity_config["joint_a"]["max_velocity"] - self.velocity_config["joint_a"]["min_velocity"])
+                / (1 - (-1))
+                - self.velocity_config["joint_a"]["min_velocity"],
+                (filter_xbox_axis(msg["axes"], "left_js_y") + 1)
+                * (self.velocity_config["joint_a"]["max_velocity"] - self.velocity_config["joint_a"]["min_velocity"])
+                / (1 - (-1))
+                - self.velocity_config["joint_a"]["min_velocity"],
+                (filter_xbox_axis(msg["axes"], "right_js_y") + 1)
+                * (self.velocity_config["joint_c"]["max_velocity"] - self.velocity_config["joint_c"]["min_velocity"])
+                / (1 - (-1))
+                - self.velocity_config["joint_c"]["min_velocity"],
+                (filter_xbox_axis(msg["axes"], "right_js_x") + 1)
+                * (
+                    self.velocity_config["joint_de_0"]["max_velocity"]
+                    - self.velocity_config["joint_de_0"]["min_velocity"]
+                )
+                / (1 - (-1))
+                - self.velocity_config["joint_de_1"]["min_velocity"],
+                (filter_xbox_axis(msg["axes"], "right_js_x") + 1)
+                * (
+                    self.velocity_config["joint_de_1"]["max_velocity"]
+                    - self.velocity_config["joint_de_0"]["min_velocity"]
+                )
+                / (1 - (-1))
+                - self.velocity_config["joint_de_1"]["min_velocity"],
                 ##(filter_xbox_axis(msg.axes, "left_js_x")+ 1) * (self.velocity_config["joint_a"]["max_velocity"] - self.velocity_config["joint_a"]["min_velocity"]) / (1 - (-1)) - self.velocity_config["joint_a"]["min_velocity"],
-
                 self.ra_config["finger"]["multiplier"] * filter_xbox_button(msg["buttons"], "y", "a"),
                 self.ra_config["gripper"]["multiplier"] * filter_xbox_button(msg["buttons"], "b", "x"),
             ]
             self.arm_velocity_cmd_pub.publish(self.arm_velocity_cmd)
-        
-        
+
         elif msg.arm_mode == "throttle":
             self.arm_throttle_cmd = Throttle(
- 
-             name=self.RA_NAMES,
-            throttle=[0.0 for _ in self.RA_NAMES],
-        
-        )
+                name=self.RA_NAMES,
+                throttle=[0.0 for _ in self.RA_NAMES],
+            )
             d_pad_x = msg.axes[self.xbox_mappings["d_pad_x"]]
             if d_pad_x > 0.5:
                 self.ra_slow_mode = True
@@ -197,8 +199,7 @@ class GUIConsumer(JsonWebsocketConsumer):
                 self.ra_config["joint_b"]["multiplier"] * filter_xbox_axis(msg["axes"], "left_js_y"),
                 self.ra_config["joint_c"]["multiplier"] * filter_xbox_axis(msg["axes"], "right_js_y"),
                 self.ra_config["joint_d"]["multiplier"] * filter_xbox_axis(msg["axes"], "right_js_x"),
-               self.ra_config["joint_d"]["multiplier"] * filter_xbox_axis(msg["axes"], "right_js_x"),
-
+                self.ra_config["joint_d"]["multiplier"] * filter_xbox_axis(msg["axes"], "right_js_x"),
                 self.ra_config["finger"]["multiplier"] * filter_xbox_button(msg["buttons"], "y", "a"),
                 self.ra_config["gripper"]["multiplier"] * filter_xbox_button(msg["buttons"], "b", "x"),
             ]
@@ -210,13 +211,14 @@ class GUIConsumer(JsonWebsocketConsumer):
                     self.arm_throttle_cmd.velocity[i] *= -1
 
             self.ra_arm_throttle_pub.publish(self.arm_throttle_cmd)
+
         def filter_xbox_axis(
-        self,
-        axes_array: "List[float]",
-        axis_name: str,
-        deadzone_threshold: float = DEFAULT_ARM_DEADZONE,
-        quad_control: bool = False,
-    ) -> float:
+            self,
+            axes_array: "List[float]",
+            axis_name: str,
+            deadzone_threshold: float = DEFAULT_ARM_DEADZONE,
+            quad_control: bool = False,
+        ) -> float:
             """
             Applies various filtering functions to an axis for controlling the arm
             :param axes_array: Axis array from sensor_msgs/Joy, each value is a float from [-1,1]
@@ -239,7 +241,6 @@ class GUIConsumer(JsonWebsocketConsumer):
             """
             return button_array[self.xbox_mappings[pos_button]] - button_array[self.xbox_mappings[neg_button]]
 
-
     def handle_joystick_message(self, msg):
         mappings = rospy.get_param("teleop/joystick_mappings")
         drive_config = rospy.get_param("teleop/drive_controls")
@@ -251,17 +252,19 @@ class GUIConsumer(JsonWebsocketConsumer):
 
         # Super small deadzone so we can safely e-stop with dampen switch
         dampen = deadzone(msg.axes[mappings["dampen"]], 0.01)
-        
 
     def handle_joystick_message(self, msg):
-     
+        # Tiny deadzone so we can safely e-stop with dampen switch
+        dampen = deadzone(msg["axes"][self.mappings["dampen"]], 0.01)
 
         # Makes dampen [0,1] instead of [-1,1]
         # negative sign required to drive forward by default instead of backward
         # (-1*dampen) because the top of the dampen switch is -1.0
         dampen = -1 * ((-1 * dampen) + 1) / 2
 
-        linear = deadzone(msg["axes"][self.mappings["forward_back"]] * self.drive_config["forward_back"]["multiplier"], 0.05)
+        linear = deadzone(
+            msg["axes"][self.mappings["forward_back"]] * self.drive_config["forward_back"]["multiplier"], 0.05
+        )
 
         # Convert from [0,1] to [0, self_max_wheel_speed] and apply dampen
         linear *= self.max_wheel_speed * dampen
@@ -346,8 +349,8 @@ class GUIConsumer(JsonWebsocketConsumer):
         self.led_pub.publish(message)
 
     def joint_state_callback(self, msg):
-        msg.position = [x*self.wheel_radius for x in msg.position]
-        msg.velocity = [x*self.wheel_radius for x in msg.velocity]
+        msg.position = [x * self.wheel_radius for x in msg.position]
+        msg.velocity = [x * self.wheel_radius for x in msg.velocity]
         self.send(
             text_data=json.dumps(
                 {
@@ -367,13 +370,6 @@ class GUIConsumer(JsonWebsocketConsumer):
             )
         )
 
-    # def send_auton_command(self, msg):   
-    #     waypoints = []
-    #     for w in msg["waypoints"]:
-    #         waypoints.append(GPSWaypoint(w["latitude_degrees"], w["longitude_degrees"], w["tag_id"], w["type"]))
-
-    #     message = AutonCommand(msg["is_enabled"], waypoints)
-    #     self.auton_cmd_pub.publish(message)
     def send_auton_command(self, msg):
         self.enable_auton(
             msg["is_enabled"],
@@ -401,13 +397,13 @@ class GUIConsumer(JsonWebsocketConsumer):
     def nav_state_callback(self, msg):
         self.send(text_data=json.dumps({"type": "nav_state", "state": msg.state}))
 
-    def auton_bearing(self, msg):
+    def auton_bearing(self):
         base_link_in_map = SE3.from_tf_tree(self.tf_buffer, "map", "base_link")
         self.send(
             text_data=json.dumps(
                 {
                     "type": "auton_tfclient",
-                    "rotation": base_link_in_map.rotation.quaternion,
+                    "rotation": base_link_in_map.rotation.quaternion.tolist(),
                 }
             )
         )

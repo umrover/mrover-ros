@@ -2,93 +2,92 @@
 
 namespace mrover {
 
-    auto SimulatorNodelet::cameraUpdate(Camera& camera, wgpu::CommandEncoder& encoder, wgpu::RenderPassDescriptor const& passDescriptor) -> void {
-        {
-            wgpu::RenderPassEncoder colorPass = encoder.beginRenderPass(passDescriptor);
-            colorPass.setPipeline(mPbrPipeline);
+    auto SimulatorNodelet::renderCamera(Camera& camera, wgpu::CommandEncoder& encoder, wgpu::RenderPassDescriptor const& passDescriptor) -> void {
+        wgpu::RenderPassEncoder colorPass = encoder.beginRenderPass(passDescriptor);
+        colorPass.setPipeline(mPbrPipeline);
 
-            if (!camera.sceneUniforms.buffer) camera.sceneUniforms.init(mDevice);
-            camera.sceneUniforms.value.lightColor = {1, 1, 1, 1};
-            camera.sceneUniforms.value.lightInWorld = {0, 0, 5, 1};
-            float aspect = static_cast<float>(camera.resolution.x()) / static_cast<float>(camera.resolution.y());
-            camera.sceneUniforms.value.cameraToClip = computeCameraToClip(mFovDegrees * DEG_TO_RAD, aspect, NEAR, FAR).cast<float>();
-            SE3 cameraInWorld = btTransformToSe3(camera.link->m_cachedWorldTransform);
-            camera.sceneUniforms.value.worldToCamera = cameraInWorld.matrix().inverse().cast<float>();
-            camera.sceneUniforms.value.cameraInWorld = cameraInWorld.position().cast<float>().homogeneous();
-            camera.sceneUniforms.enqueueWrite();
+        if (!camera.sceneUniforms.buffer) camera.sceneUniforms.init(mDevice);
+        camera.sceneUniforms.value.lightColor = {1, 1, 1, 1};
+        camera.sceneUniforms.value.lightInWorld = {0, 0, 5, 1};
+        float aspect = static_cast<float>(camera.resolution.x()) / static_cast<float>(camera.resolution.y());
+        camera.sceneUniforms.value.cameraToClip = computeCameraToClip(mFovDegrees * DEG_TO_RAD, aspect, NEAR, FAR).cast<float>();
+        SE3 cameraInWorld = btTransformToSe3(camera.link->m_cachedWorldTransform);
+        camera.sceneUniforms.value.worldToCamera = cameraInWorld.matrix().inverse().cast<float>();
+        camera.sceneUniforms.value.cameraInWorld = cameraInWorld.position().cast<float>().homogeneous();
+        camera.sceneUniforms.enqueueWrite();
 
-            wgpu::BindGroupEntry entry;
-            entry.binding = 0;
-            entry.buffer = camera.sceneUniforms.buffer;
-            entry.size = sizeof(SceneUniforms);
-            wgpu::BindGroupDescriptor descriptor;
-            descriptor.layout = mPbrPipeline.getBindGroupLayout(1);
-            descriptor.entryCount = 1;
-            descriptor.entries = &entry;
-            wgpu::BindGroup bindGroup = mDevice.createBindGroup(descriptor);
-            colorPass.setBindGroup(1, bindGroup, 0, nullptr);
+        wgpu::BindGroupEntry entry;
+        entry.binding = 0;
+        entry.buffer = camera.sceneUniforms.buffer;
+        entry.size = sizeof(SceneUniforms);
+        wgpu::BindGroupDescriptor descriptor;
+        descriptor.layout = mPbrPipeline.getBindGroupLayout(1);
+        descriptor.entryCount = 1;
+        descriptor.entries = &entry;
+        wgpu::BindGroup bindGroup = mDevice.createBindGroup(descriptor);
+        colorPass.setBindGroup(1, bindGroup, 0, nullptr);
 
-            renderModels(colorPass);
+        renderModels(colorPass);
 
-            colorPass.end();
+        colorPass.end();
 
-            bindGroup.release();
-            colorPass.release();
-        }
-        {
-            wgpu::ComputePassEncoder computePass = encoder.beginComputePass();
-            computePass.setPipeline(mPointCloudPipeline);
+        bindGroup.release();
+        colorPass.release();
+    }
 
-            if (!camera.computeUniforms.buffer) camera.computeUniforms.init(mDevice);
-            camera.computeUniforms.value.resolution = camera.resolution;
-            camera.computeUniforms.value.clipToCamera = camera.sceneUniforms.value.cameraToClip.inverse();
-            camera.computeUniforms.enqueueWrite();
+    auto SimulatorNodelet::computeStereoCamera(StereoCamera& stereoCamera, wgpu::CommandEncoder& encoder) -> void {
+        wgpu::ComputePassEncoder computePass = encoder.beginComputePass();
+        computePass.setPipeline(mPointCloudPipeline);
 
-            std::size_t pointCloudBufferSize = camera.resolution.x() * camera.resolution.y() * sizeof(Point);
-            if (!camera.pointCloudBuffer) {
-                {
-                    wgpu::BufferDescriptor descriptor;
-                    descriptor.usage = wgpu::BufferUsage::Storage | wgpu::BufferUsage::CopySrc;
-                    descriptor.size = pointCloudBufferSize;
-                    camera.pointCloudBuffer = mDevice.createBuffer(descriptor);
-                }
-                {
-                    wgpu::BufferDescriptor descriptor;
-                    descriptor.usage = wgpu::BufferUsage::CopyDst | wgpu::BufferUsage::MapRead;
-                    descriptor.size = pointCloudBufferSize;
-                    camera.pointCloudBufferStaging = mDevice.createBuffer(descriptor);
-                }
+        if (!stereoCamera.computeUniforms.buffer) stereoCamera.computeUniforms.init(mDevice);
+        stereoCamera.computeUniforms.value.resolution = stereoCamera.base.resolution;
+        stereoCamera.computeUniforms.value.clipToCamera = stereoCamera.base.sceneUniforms.value.cameraToClip.inverse();
+        stereoCamera.computeUniforms.enqueueWrite();
+
+        std::size_t pointCloudBufferSize = stereoCamera.base.resolution.x() * stereoCamera.base.resolution.y() * sizeof(Point);
+        if (!stereoCamera.pointCloudBuffer) {
+            {
+                wgpu::BufferDescriptor descriptor;
+                descriptor.usage = wgpu::BufferUsage::Storage | wgpu::BufferUsage::CopySrc;
+                descriptor.size = pointCloudBufferSize;
+                stereoCamera.pointCloudBuffer = mDevice.createBuffer(descriptor);
             }
-
-            std::array<wgpu::BindGroupEntry, 5> entries;
-            entries[0].binding = 0;
-            entries[0].buffer = camera.computeUniforms.buffer;
-            entries[0].size = sizeof(ComputeUniforms);
-            entries[1].binding = 1;
-            entries[1].textureView = camera.colorTextureView;
-            entries[2].binding = 2;
-            entries[2].textureView = camera.normalTextureView;
-            entries[3].binding = 3;
-            entries[3].textureView = camera.depthTextureView;
-            entries[4].binding = 4;
-            entries[4].buffer = camera.pointCloudBuffer;
-            entries[4].size = camera.resolution.x() * camera.resolution.y() * sizeof(Point);
-            wgpu::BindGroupDescriptor descriptor;
-            descriptor.layout = mPointCloudPipeline.getBindGroupLayout(0);
-            descriptor.entryCount = entries.size();
-            descriptor.entries = entries.data();
-            wgpu::BindGroup bindGroup = mDevice.createBindGroup(descriptor);
-            computePass.setBindGroup(0, bindGroup, 0, nullptr);
-
-            computePass.dispatchWorkgroups(camera.resolution.x(), camera.resolution.y(), 1);
-
-            computePass.end();
-
-            encoder.copyBufferToBuffer(camera.pointCloudBuffer, 0, camera.pointCloudBufferStaging, 0, camera.pointCloudBuffer.getSize());
-
-            bindGroup.release();
-            computePass.release();
+            {
+                wgpu::BufferDescriptor descriptor;
+                descriptor.usage = wgpu::BufferUsage::CopyDst | wgpu::BufferUsage::MapRead;
+                descriptor.size = pointCloudBufferSize;
+                stereoCamera.base.stagingBuffer = mDevice.createBuffer(descriptor);
+            }
         }
+
+        std::array<wgpu::BindGroupEntry, 5> entries;
+        entries[0].binding = 0;
+        entries[0].buffer = stereoCamera.computeUniforms.buffer;
+        entries[0].size = sizeof(ComputeUniforms);
+        entries[1].binding = 1;
+        entries[1].textureView = stereoCamera.base.colorTextureView;
+        entries[2].binding = 2;
+        entries[2].textureView = stereoCamera.base.normalTextureView;
+        entries[3].binding = 3;
+        entries[3].textureView = stereoCamera.base.depthTextureView;
+        entries[4].binding = 4;
+        entries[4].buffer = stereoCamera.pointCloudBuffer;
+        entries[4].size = stereoCamera.base.resolution.x() * stereoCamera.base.resolution.y() * sizeof(Point);
+        wgpu::BindGroupDescriptor descriptor;
+        descriptor.layout = mPointCloudPipeline.getBindGroupLayout(0);
+        descriptor.entryCount = entries.size();
+        descriptor.entries = entries.data();
+        wgpu::BindGroup bindGroup = mDevice.createBindGroup(descriptor);
+        computePass.setBindGroup(0, bindGroup, 0, nullptr);
+
+        computePass.dispatchWorkgroups(stereoCamera.base.resolution.x(), stereoCamera.base.resolution.y(), 1);
+
+        computePass.end();
+
+        encoder.copyBufferToBuffer(stereoCamera.pointCloudBuffer, 0, stereoCamera.base.stagingBuffer, 0, stereoCamera.pointCloudBuffer.getSize());
+
+        bindGroup.release();
+        computePass.release();
     }
 
     auto cartesianToGeodetic(R3 const& cartesian, Eigen::Vector3d const& referenceGeodetic, double referenceHeadingDegrees) -> Eigen::Vector3d {
@@ -149,7 +148,7 @@ namespace mrover {
     }
 
     auto SimulatorNodelet::gpsAndImusUpdate(Clock::duration dt) -> void {
-        if (auto lookup = getUrdf("rover"); lookup) {
+        if (auto lookup = getUrdf("rover")) {
             URDF const& rover = *lookup;
 
             {

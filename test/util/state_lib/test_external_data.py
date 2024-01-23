@@ -70,7 +70,7 @@ class RunningState(State):
 
 
 if __name__ == "__main__":
-    sm = StateMachine(WaitingState(), "RandomForeverStateMachine")
+    sm = StateMachine[Context](WaitingState(), "RandomForeverStateMachine")
     sm.add_transition(WaitingState(), RunningState())
     sm.add_transition(RunningState(), WaitingState())
     sm.add_transition(RunningState(), RunningState())
