@@ -73,19 +73,19 @@ namespace mrover {
 
                     model.waitMeshes();
 
-                    if (model.meshes.size() != 1) throw std::invalid_argument{"Mesh collider must be constructed from exactly one mesh"};
-
-                    Model::Mesh const& meshData = model.meshes.front();
-
                     auto* triangleMesh = new btTriangleMesh{};
-                    triangleMesh->preallocateVertices(static_cast<int>(meshData.vertices.data.size()));
-                    triangleMesh->preallocateIndices(static_cast<int>(meshData.indices.data.size()));
-                    for (std::size_t i = 0; i < meshData.indices.data.size(); i += 3) {
-                        Eigen::Vector3f v0 = meshData.vertices.data[meshData.indices.data[i + 0]];
-                        Eigen::Vector3f v1 = meshData.vertices.data[meshData.indices.data[i + 1]];
-                        Eigen::Vector3f v2 = meshData.vertices.data[meshData.indices.data[i + 2]];
-                        triangleMesh->addTriangle(btVector3{v0.x(), v0.y(), v0.z()}, btVector3{v1.x(), v1.y(), v1.z()}, btVector3{v2.x(), v2.y(), v2.z()});
+                    triangleMesh->preallocateVertices(static_cast<int>(model.meshes.front().vertices.data.size()));
+                    triangleMesh->preallocateIndices(static_cast<int>(model.meshes.front().indices.data.size()));
+
+                    for (Model::Mesh const& meshData: model.meshes) {
+                        for (std::size_t i = 0; i < meshData.indices.data.size(); i += 3) {
+                            Eigen::Vector3f v0 = meshData.vertices.data[meshData.indices.data[i + 0]];
+                            Eigen::Vector3f v1 = meshData.vertices.data[meshData.indices.data[i + 1]];
+                            Eigen::Vector3f v2 = meshData.vertices.data[meshData.indices.data[i + 2]];
+                            triangleMesh->addTriangle(btVector3{v0.x(), v0.y(), v0.z()}, btVector3{v1.x(), v1.y(), v1.z()}, btVector3{v2.x(), v2.y(), v2.z()});
+                        }
                     }
+
                     auto* meshShape = simulator.makeBulletObject<btBvhTriangleMeshShape>(simulator.mCollisionShapes, triangleMesh, true);
                     // TODO(quintin): Configure this in the URDF
                     meshShape->setMargin(0.01);
