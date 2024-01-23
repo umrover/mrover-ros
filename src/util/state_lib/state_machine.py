@@ -70,7 +70,7 @@ class StateMachine(Generic[ContextType]):
             raise Exception(f"Invalid transition from {current_state} to {next_state}")
         if type(next_state) is not type(current_state):
             if self.log_level == LogLevel.DEBUG or self.log_level == LogLevel.VERBOSE:
-                self.logger(f"{self.name} state machine, transistioning to {str(next_state)}")
+                self.logger(f"{self.name} state machine, transitioning to {str(next_state)}")
             current_state.on_exit(self.context)
             self.transition_log.append(TransitionRecord(time.time(), str(current_state), str(next_state)))
             with self.state_lock:
@@ -85,6 +85,7 @@ class StateMachine(Generic[ContextType]):
         Runs the state machine until it returns an ExitState.
         Aims for as close to update_rate_hz, updates per second
         :param update_rate: targeted updates per second
+        :param warning_handle: function to call when a warning is raised
         """
         target_loop_time = None if update_rate == float("inf") else (1.0 / update_rate)
         self.current_state.on_enter(self.context)
