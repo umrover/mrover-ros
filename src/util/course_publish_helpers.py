@@ -1,9 +1,10 @@
 from typing import List, Tuple
 
 import pymap3d
+
 import rospy
-from mrover.msg import EnableAuton, GPSWaypoint, Waypoint
-from mrover.srv import PublishEnableAuton
+from mrover.msg import GPSWaypoint, Waypoint
+from mrover.srv import EnableAuton
 from util.SE3 import SE3
 
 REF_LAT = rospy.get_param("gps_linearization/reference_point_latitude")
@@ -13,9 +14,8 @@ REF_LON = rospy.get_param("gps_linearization/reference_point_longitude")
 def publish_waypoints(waypoints: List[GPSWaypoint]):
     rospy.wait_for_service("enable_auton")
     try:
-        publish_enable = rospy.ServiceProxy("enable_auton", PublishEnableAuton)
-        msg = EnableAuton(waypoints, True)
-        publish_enable(msg)
+        publish_enable = rospy.ServiceProxy("enable_auton", EnableAuton)
+        publish_enable(True, waypoints)
     except rospy.ServiceException as e:
         print(f"Service call failed: {e}")
 

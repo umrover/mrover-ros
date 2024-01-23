@@ -2,8 +2,8 @@
 
 #include "pch.hpp"
 
-#include "wgpu_objects.hpp"
 #include "glfw_pointer.hpp"
+#include "wgpu_objects.hpp"
 
 using namespace std::literals;
 
@@ -25,6 +25,7 @@ namespace mrover {
     static auto const NORMAL_FORMAT = wgpu::TextureFormat::RGBA16Float;
 
     struct Camera;
+    struct StereoCamera;
     class SimulatorNodelet;
 
     // Eigen stores matrices in column-major which is the same as WGPU
@@ -33,8 +34,6 @@ namespace mrover {
     struct ModelUniforms {
         Eigen::Matrix4f modelToWorld{};
         Eigen::Matrix4f modelToWorldForNormals{};
-
-        std::uint32_t material{};
 
         EIGEN_MAKE_ALIGNED_OPERATOR_NEW
     };
@@ -124,10 +123,10 @@ namespace mrover {
     };
 
     struct Camera {
-        btMultibodyLink const* link;
+        btMultibodyLink const* link = nullptr;
         Eigen::Vector2i resolution;
         PeriodicTask updateTask;
-        ros::Publisher pcPub;
+        ros::Publisher pub;
 
         wgpu::Texture colorTexture = nullptr;
         wgpu::TextureView colorTextureView = nullptr;
@@ -135,16 +134,25 @@ namespace mrover {
         wgpu::TextureView depthTextureView = nullptr;
         wgpu::Texture normalTexture = nullptr;
         wgpu::TextureView normalTextureView = nullptr;
-        wgpu::Buffer pointCloudBuffer = nullptr;
-        wgpu::Buffer pointCloudBufferStaging = nullptr;
 
         Uniform<SceneUniforms> sceneUniforms{};
         wgpu::BindGroup sceneBindGroup = nullptr;
-        Uniform<ComputeUniforms> computeUniforms{};
-        wgpu::BindGroup computeBindGroup = nullptr;
+
+        wgpu::Buffer stagingBuffer = nullptr;
 
         std::unique_ptr<wgpu::BufferMapCallback> callback = nullptr;
         bool needsMap = false;
+
+        EIGEN_MAKE_ALIGNED_OPERATOR_NEW
+    };
+
+    struct StereoCamera {
+        Camera base;
+
+        wgpu::Buffer pointCloudBuffer = nullptr;
+
+        Uniform<ComputeUniforms> computeUniforms{};
+        wgpu::BindGroup computeBindGroup = nullptr;
 
         EIGEN_MAKE_ALIGNED_OPERATOR_NEW
     };
@@ -190,16 +198,26 @@ namespace mrover {
 
         ros::NodeHandle mNh, mPnh;
 
-        ros::Subscriber mTwistSub, mJointPositionsSub;
+        ros::Subscriber mTwistSub, mArmPositionsSub, mArmVelocitiesSub, mArmThrottlesSub;
 
-        ros::Publisher mPosePub;
+        ros::Publisher mGroundTruthPub;
+        ros::Publisher mGpsPub;
+        ros::Publisher mImuPub;
 
         tf2_ros::Buffer mTfBuffer;
         tf2_ros::TransformListener mTfListener{mTfBuffer};
         tf2_ros::TransformBroadcaster mTfBroadcaster;
 
-        Eigen::Vector3f mIkTarget{1.0, 0.1, 0};
+        bool mPublishIk = true;
+        Eigen::Vector3f mIkTarget{0.125, 0.1, 0};
         ros::Publisher mIkTargetPub;
+
+        R3 mGpsLinerizationReferencePoint{};
+        double mGpsLinerizationReferenceHeading{};
+        double mPublishHammerDistanceThreshold{};
+
+        PeriodicTask mGpsTask;
+        PeriodicTask mImuTask;
 
         // Rendering
 
@@ -252,6 +270,7 @@ namespace mrover {
                 btScalar position{};
                 btScalar velocity{};
             };
+
             btTransform baseTransform;
             btVector3 baseVelocity;
             boost::container::static_vector<LinkData, 32> links;
@@ -269,19 +288,17 @@ namespace mrover {
             return rawPointer;
         }
 
+        R3 mRoverLinearVelocity{};
+
         // Scene
 
         std::unordered_map<std::string, URDF> mUrdfs;
 
-        auto getUrdf(std::string const& name) -> std::optional<std::reference_wrapper<URDF>> {
-            auto it = mUrdfs.find(name);
-            if (it == mUrdfs.end()) return std::nullopt;
-
-            return it->second;
-        }
+        auto getUrdf(std::string const& name) -> std::optional<std::reference_wrapper<URDF>>;
 
         SE3 mCameraInWorld{R3{-3.0, 0.0, 1.5}, SO3{}};
 
+        std::vector<StereoCamera> mStereoCameras;
         std::vector<Camera> mCameras;
 
         static constexpr float NEAR = 0.1f;
@@ -293,9 +310,11 @@ namespace mrover {
 
         LoopProfiler mLoopProfiler{"Simulator"};
 
-        auto cameraUpdate(Camera& camera, wgpu::CommandEncoder& encoder, wgpu::RenderPassDescriptor const& passDescriptor) -> void;
+        auto renderCamera(Camera& camera, wgpu::CommandEncoder& encoder, wgpu::RenderPassDescriptor const& passDescriptor) -> void;
 
-        auto gpsAndImusUpdate() -> void;
+        auto computeStereoCamera(StereoCamera& stereoCamera, wgpu::CommandEncoder& encoder) -> void;
+
+        auto gpsAndImusUpdate(Clock::duration dt) -> void;
 
         auto linksToTfUpdate() -> void;
 
@@ -340,7 +359,28 @@ namespace mrover {
 
         auto twistCallback(geometry_msgs::Twist::ConstPtr const& twist) -> void;
 
-        auto jointPositionsCallback(Position::ConstPtr const& positions) -> void;
+        auto armPositionsCallback(Position::ConstPtr const& message) -> void;
+
+        auto armVelocitiesCallback(Velocity::ConstPtr const& message) -> void;
+
+        auto armThrottlesCallback(Throttle::ConstPtr const& message) -> void;
+
+        template<typename F, typename N, typename V>
+        auto forEachWithMotor(N const& names, V const& values, F&& function) -> void {
+            if (auto it = mUrdfs.find("rover"); it != mUrdfs.end()) {
+                URDF const& rover = it->second;
+
+                for (auto const& combined: boost::combine(names, values)) {
+                    std::string const& name = boost::get<0>(combined);
+                    int linkIndex = rover.linkNameToMeta.at(name).index;
+                    float value = boost::get<1>(combined);
+
+                    auto* motor = std::bit_cast<btMultiBodyJointMotor*>(rover.physics->getLink(linkIndex).m_userPtr);
+                    assert(motor);
+                    function(motor, value);
+                }
+            }
+        }
 
         auto makeTextureAndView(int width, int height, wgpu::TextureFormat const& format, wgpu::TextureUsage const& usage, wgpu::TextureAspect const& aspect) -> std::pair<wgpu::Texture, wgpu::TextureView>;
 

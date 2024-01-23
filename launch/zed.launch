@@ -1,14 +1,15 @@
 <launch>
     <!-- 'zed' (ZED 1) or 'zed2i' (ZED 2i) -->
-    <arg name="zed_model" default="zed2i" />
+    <arg name="zed_model" default="zed" />
 
     <!-- Use ZED's built-in VO (called positional tracking) -->
-    <arg name="use_builtin_visual_odom" default="false"/>
+    <arg name="use_builtin_visual_odom" default="false" />
 
     <rosparam command="load" file="$(find mrover)/config/perception.yaml" />
-    <node pkg="nodelet" type="nodelet" name="zed" respawn="true"
-          args="load mrover/ZedNodelet nodelet_manager" output="screen">
-        <param name="use_builtin_visual_odom" value="$(arg use_builtin_visual_odom)"/>
+
+    <node pkg="nodelet" type="nodelet" name="zed_nodelet" respawn="true"
+        args="load mrover/ZedNodelet nodelet_manager" output="screen">
+        <param name="use_builtin_visual_odom" value="$(arg use_builtin_visual_odom)" />
     </node>
 
     <!-- Static TF publisher for ZED mount-->
