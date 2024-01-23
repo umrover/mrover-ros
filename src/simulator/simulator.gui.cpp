@@ -76,7 +76,10 @@ namespace mrover {
 
             // ImGui::SliderFloat("Float", &mFloat, 0.0f, 1000.0f);
 
-            ImGui::SliderFloat3("IK", mIkTarget.data(), -1.f, 1.f);
+            ImGui::Checkbox("Publish IK", &mPublishIk);
+            if (mPublishIk) {
+                ImGui::SliderFloat3("IK Target", mIkTarget.data(), -1.f, 1.f);
+            }
 
             ImGui::EndDisabled();
             ImGui::End();

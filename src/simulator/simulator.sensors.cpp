@@ -183,4 +183,30 @@ namespace mrover {
         }
     }
 
+    auto SimulatorNodelet::motorStatusUpdate() -> void {
+        if (auto lookup = getUrdf("rover"); lookup) {
+            URDF const& rover = *lookup;
+            sensor_msgs::JointState jointState;
+            MotorsStatus status;
+            jointState.header.stamp = ros::Time::now();
+            jointState.header.frame_id = "map";
+            for (auto& position: {"front", "center", "back"}) {
+                for (auto& side: {"left", "right"}) {
+                    std::string linkName = std::format("{}_{}_wheel_link", position, side);
+                    int index = rover.linkNameToMeta.at(linkName).index;
+                    double pos = rover.physics->getJointPos(index);
+                    double vel = rover.physics->getJointVel(index);
+                    double torque = rover.physics->getJointTorque(index);
+                    status.name.push_back(linkName);
+                    jointState.name.push_back(linkName);
+                    jointState.position.push_back(pos);
+                    jointState.velocity.push_back(vel);
+                    jointState.effort.push_back(torque);
+                }
+            }
+            status.joint_states = jointState;
+            mMotorStatusPub.publish(status);
+        }
+    }
+
 } // namespace mrover
