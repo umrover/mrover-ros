@@ -19,6 +19,7 @@ namespace mrover {
         mImuPub = mNh.advertise<ImuAndMag>("/imu/data", 1);
         mGpsTask = PeriodicTask{mPnh.param<float>("gps_rate", 10)};
         mImuTask = PeriodicTask{mPnh.param<float>("imu_rate", 100)};
+        mMotorStatusPub = mNh.advertise<MotorsStatus>("/drive_status", 1);
 
         mIkTargetPub = mNh.advertise<IK>("/arm_ik", 1);
 
