@@ -264,7 +264,7 @@ namespace mrover {
         std::vector<std::unique_ptr<btMultiBodyLinkCollider>> mMultibodyCollider;
         std::vector<std::unique_ptr<btMultiBodyConstraint>> mMultibodyConstraints;
 
-        std::unordered_map<btBvhTriangleMeshShape*, std::string> mMeshToUri;
+        std::unordered_map<btCollisionShape*, std::string> mMeshToUri;
 
         struct SaveData {
             struct LinkData {
