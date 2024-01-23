@@ -144,8 +144,14 @@ namespace mrover {
             assert(was_inserted);
 
             if (link->name.contains("camera"sv)) {
-                Camera canera = makeCameraForLink(simulator, &multiBody->getLink(linkIndex));
-                simulator.mCameras.push_back(std::move(canera));
+                Camera camera = makeCameraForLink(simulator, &multiBody->getLink(linkIndex));
+                if (link->name.contains("zed")) {
+                    camera.pub = simulator.mNh.advertise<sensor_msgs::PointCloud2>("camera/left/points", 1);
+                    simulator.mStereoCameras.emplace_back(std::move(camera));
+                } else {
+                    camera.pub = simulator.mNh.advertise<sensor_msgs::Image>("long_range_image", 1);
+                    simulator.mCameras.push_back(std::move(camera));
+                }
             }
 
             for (urdf::VisualSharedPtr const& visual: link->visual_array) {

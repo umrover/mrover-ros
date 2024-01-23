@@ -102,18 +102,10 @@ namespace mrover {
                     ImGui::Text("Camera Position: (%.2f, %.2f, %.2f)", p.x(), p.y(), p.z());
                     ImGui::Text("Camera Orientation: (%.2f, %.2f, %.2f, %.2f)", q.w(), q.x(), q.y(), q.z());
                 }
-
-                // for (auto const& [name, i] : rover.linkNameToIndex) {
-                //     if (i == -1) continue;
-                //
-                //     btScalar vel = rover.physics->getJointVel(i);
-                //     btScalar pos = rover.physics->getJointPos(i);
-                //
-                //     ImGui::Text("%s: %.2f, %.2f", name.c_str(), pos, vel);
-                // }
             }
 
             {
+                // TODO(quintin): This does not work when the cursor is not in the middle of the screen...
                 Eigen::Vector2d cursorInWindow;
                 glfwGetCursorPos(mWindow.get(), &cursorInWindow.x(), &cursorInWindow.y());
                 Eigen::Vector2i windowSize;

@@ -25,6 +25,7 @@ namespace mrover {
     static auto const NORMAL_FORMAT = wgpu::TextureFormat::RGBA16Float;
 
     struct Camera;
+    struct StereoCamera;
     class SimulatorNodelet;
 
     // Eigen stores matrices in column-major which is the same as WGPU
@@ -124,10 +125,10 @@ namespace mrover {
     };
 
     struct Camera {
-        btMultibodyLink const* link;
+        btMultibodyLink const* link = nullptr;
         Eigen::Vector2i resolution;
         PeriodicTask updateTask;
-        ros::Publisher pcPub;
+        ros::Publisher pub;
 
         wgpu::Texture colorTexture = nullptr;
         wgpu::TextureView colorTextureView = nullptr;
@@ -135,16 +136,25 @@ namespace mrover {
         wgpu::TextureView depthTextureView = nullptr;
         wgpu::Texture normalTexture = nullptr;
         wgpu::TextureView normalTextureView = nullptr;
-        wgpu::Buffer pointCloudBuffer = nullptr;
-        wgpu::Buffer pointCloudBufferStaging = nullptr;
 
         Uniform<SceneUniforms> sceneUniforms{};
         wgpu::BindGroup sceneBindGroup = nullptr;
-        Uniform<ComputeUniforms> computeUniforms{};
-        wgpu::BindGroup computeBindGroup = nullptr;
+
+        wgpu::Buffer stagingBuffer = nullptr;
 
         std::unique_ptr<wgpu::BufferMapCallback> callback = nullptr;
         bool needsMap = false;
+
+        EIGEN_MAKE_ALIGNED_OPERATOR_NEW
+    };
+
+    struct StereoCamera {
+        Camera base;
+
+        wgpu::Buffer pointCloudBuffer = nullptr;
+
+        Uniform<ComputeUniforms> computeUniforms{};
+        wgpu::BindGroup computeBindGroup = nullptr;
 
         EIGEN_MAKE_ALIGNED_OPERATOR_NEW
     };
@@ -295,6 +305,7 @@ namespace mrover {
 
         SE3 mCameraInWorld{R3{-3.0, 0.0, 1.5}, SO3{}};
 
+        std::vector<StereoCamera> mStereoCameras;
         std::vector<Camera> mCameras;
 
         static constexpr float NEAR = 0.1f;
@@ -306,7 +317,9 @@ namespace mrover {
 
         LoopProfiler mLoopProfiler{"Simulator"};
 
-        auto cameraUpdate(Camera& camera, wgpu::CommandEncoder& encoder, wgpu::RenderPassDescriptor const& passDescriptor) -> void;
+        auto renderCamera(Camera& camera, wgpu::CommandEncoder& encoder, wgpu::RenderPassDescriptor const& passDescriptor) -> void;
+
+        auto computeStereoCamera(StereoCamera& stereoCamera, wgpu::CommandEncoder& encoder) -> void;
 
         auto gpsAndImusUpdate(Clock::duration dt) -> void;
 
