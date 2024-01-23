@@ -46,7 +46,6 @@ showcounter = 0 #something to demonstrate the change
 def my_callback(inp):
     #evaluate the keyboard input
     image_capturepy.showcounter += 1
-    print('You Entered:', inp, ' Counter is at:', image_capturepy.showcounter)
 
 #start the Keyboard thread
 
