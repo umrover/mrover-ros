@@ -4,49 +4,54 @@
       <span v-if="currentState">{{ labelEnableText }}</span>
       <span v-if="!currentState">{{ labelDisableText }}</span>
     </label>
-    <input class="form-check-input" type="checkbox" role="switch" v-model="checkedValue" :id="id + '_button'">
+    <input
+      class="form-check-input"
+      type="checkbox"
+      role="switch"
+      v-model="checkedValue"
+      :id="id + '_button'"
+    />
   </div>
 </template>
-  
-<script lang="ts">
-import  { defineComponent } from 'vue'
 
-  export default defineComponent({
-    props: {
-      labelEnableText: {
-        type: String,
-        required: true,
-      },
-      labelDisableText: {
-        type: String,
-        required: true,
-      },
-      id: {
-        type: String,
-        default: "primary",
-      },
-      currentState: {
-        type: Boolean,
-        required: true,
-      },
+<script lang="ts">
+import { defineComponent } from 'vue'
+
+export default defineComponent({
+  props: {
+    labelEnableText: {
+      type: String,
+      required: true
     },
-    emits: ["change"],
-    computed: {
-      checkedValue: {
-        get() {
-          return this.currentState;
-        },
-        set(newValue: Boolean) {
-          console.log(newValue);
-          this.$emit("change", newValue);
-        },
-      },
+    labelDisableText: {
+      type: String,
+      required: true
     },
-  });
-  </script>
-  <style scoped>
-  .form-check-input:checked {
-    background-color: var(--bs-primary);
-    border-color: var(--bs-primary);
+    id: {
+      type: String,
+      default: 'primary'
+    },
+    currentState: {
+      type: Boolean,
+      required: true
+    }
+  },
+  emits: ['change'],
+  computed: {
+    checkedValue: {
+      get() {
+        return this.currentState
+      },
+      set(newValue: Boolean) {
+        this.$emit('change', newValue)
+      }
+    }
   }
-  </style>
+})
+</script>
+<style scoped>
+.form-check-input:checked {
+  background-color: var(--bs-primary);
+  border-color: var(--bs-primary);
+}
+</style>

@@ -1,4 +1,3 @@
 #!/bin/bash
 
-cd frontend
-bun run dev
+bun run --cwd frontend dev

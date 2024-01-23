@@ -6,18 +6,16 @@ namespace mrover {
         // TODO(quintin): Read these from the parameter server
         constexpr auto WHEEL_DISTANCE_INNER = Meters{0.43};
         using RadiansPerMeter = compound_unit<Radians, inverse<Meters>>;
-        constexpr auto WHEEL_LINEAR_TO_ANGULAR = RadiansPerMeter{1. / .13 * 50.};
+        constexpr auto WHEEL_LINEAR_TO_ANGULAR = RadiansPerMeter{1. / .13};
         constexpr auto MAX_MOTOR_TORQUE = 2.68;
 
-        // constexpr auto WHEEL_DISTANCE_INNER = Meters{1};
-        // constexpr auto WHEEL_LINEAR_TO_ANGULAR = compound_unit<Radians, inverse<Meters>>{1 / 0.13};
-
         auto forward = MetersPerSecond{twist->linear.x};
-        auto turn = RadiansPerSecond{twist->angular.z} * 200 * 7; // TODO(quintin): wtf
+        auto turn = RadiansPerSecond{twist->angular.z} * 3; // TODO(quintin): Remove this hack
 
-        auto delta = turn * WHEEL_DISTANCE_INNER / Meters{1};
-        RadiansPerSecond left = forward * WHEEL_LINEAR_TO_ANGULAR - delta;
-        RadiansPerSecond right = forward * WHEEL_LINEAR_TO_ANGULAR + delta;
+        auto delta = turn / Radians{1} * WHEEL_DISTANCE_INNER;
+
+        RadiansPerSecond left = (forward - delta) * WHEEL_LINEAR_TO_ANGULAR;
+        RadiansPerSecond right = (forward + delta) * WHEEL_LINEAR_TO_ANGULAR;
 
         if (auto it = mUrdfs.find("rover"); it != mUrdfs.end()) {
             URDF const& rover = it->second;
@@ -32,26 +30,35 @@ namespace mrover {
                  }) {
                 int wheelIndex = rover.linkNameToMeta.at(name).index;
                 auto* motor = std::bit_cast<btMultiBodyJointMotor*>(rover.physics->getLink(wheelIndex).m_userPtr);
-                btScalar velocity = (name.contains("left"sv) ? left.get() : right.get()) / 50;
+                btScalar velocity = name.contains("left"sv) ? left.get() : right.get();
                 motor->setVelocityTarget(velocity);
                 motor->setMaxAppliedImpulse(MAX_MOTOR_TORQUE);
             }
         }
     }
 
-    auto SimulatorNodelet::jointPositionsCallback(Position::ConstPtr const& positions) -> void {
-        if (auto it = mUrdfs.find("rover"); it != mUrdfs.end()) {
-            URDF const& rover = it->second;
+    auto SimulatorNodelet::armPositionsCallback(Position::ConstPtr const& message) -> void {
+        forEachWithMotor(message->names, message->positions, [&](btMultiBodyJointMotor* motor, float position) {
+            motor->setMaxAppliedImpulse(0.5);
+            motor->setPositionTarget(position, 0.05);
+            motor->setVelocityTarget(0, 1);
+        });
+    }
 
-            for (auto const& combined: boost::combine(positions->names, positions->positions)) {
-                int linkIndex = rover.linkNameToMeta.at(boost::get<0>(combined)).index;
-                float position = boost::get<1>(combined);
+    auto SimulatorNodelet::armVelocitiesCallback(Velocity::ConstPtr const& message) -> void {
+        forEachWithMotor(message->names, message->velocities, [&](btMultiBodyJointMotor* motor, float velocity) {
+            motor->setMaxAppliedImpulse(0.5);
+            motor->setPositionTarget(0, 0);
+            motor->setVelocityTarget(velocity, 0.5);
+        });
+    }
 
-                auto* motor = std::bit_cast<btMultiBodyJointMotor*>(rover.physics->getLink(linkIndex).m_userPtr);
-                motor->setMaxAppliedImpulse(0.5);
-                motor->setPositionTarget(position, 0.05);
-            }
-        }
+    auto SimulatorNodelet::armThrottlesCallback(Throttle::ConstPtr const& message) -> void {
+        forEachWithMotor(message->names, message->throttles, [&](btMultiBodyJointMotor* motor, float throttle) {
+            motor->setMaxAppliedImpulse(0.5);
+            motor->setPositionTarget(0, 0);
+            motor->setVelocityTarget(throttle, 0.5);
+        });
     }
 
     auto SimulatorNodelet::centerCursor() -> void {
@@ -77,22 +84,22 @@ namespace mrover {
     auto SimulatorNodelet::freeLook(Clock::duration dt) -> void {
         float flySpeed = mFlySpeed * std::chrono::duration_cast<std::chrono::duration<float>>(dt).count();
         if (glfwGetKey(mWindow.get(), mCamRightKey) == GLFW_PRESS) {
-            mCameraInWorld = SE3{R3{0.0, -flySpeed, 0}, SO3{}} * mCameraInWorld;
+            mCameraInWorld = SE3{R3{0, -flySpeed, 0}, SO3{}} * mCameraInWorld;
         }
         if (glfwGetKey(mWindow.get(), mCamLeftKey) == GLFW_PRESS) {
-            mCameraInWorld = SE3{R3{0.0, flySpeed, 0}, SO3{}} * mCameraInWorld;
+            mCameraInWorld = SE3{R3{0, flySpeed, 0}, SO3{}} * mCameraInWorld;
         }
         if (glfwGetKey(mWindow.get(), mCamForwardKey) == GLFW_PRESS) {
-            mCameraInWorld = SE3{R3{flySpeed, 0.0, 0.0}, SO3{}} * mCameraInWorld;
+            mCameraInWorld = SE3{R3{flySpeed, 0, 0}, SO3{}} * mCameraInWorld;
         }
         if (glfwGetKey(mWindow.get(), mCamBackwardKey) == GLFW_PRESS) {
-            mCameraInWorld = SE3{R3{-flySpeed, 0.0, 0.0}, SO3{}} * mCameraInWorld;
+            mCameraInWorld = SE3{R3{-flySpeed, 0, 0}, SO3{}} * mCameraInWorld;
         }
         if (glfwGetKey(mWindow.get(), mCamUpKey) == GLFW_PRESS) {
-            mCameraInWorld = mCameraInWorld * SE3{R3{0.0, 0.0, flySpeed}, SO3{}};
+            mCameraInWorld = mCameraInWorld * SE3{R3{0, 0, flySpeed}, SO3{}};
         }
         if (glfwGetKey(mWindow.get(), mCamDownKey) == GLFW_PRESS) {
-            mCameraInWorld = mCameraInWorld * SE3{R3{0.0, 0.0, -flySpeed}, SO3{}};
+            mCameraInWorld = mCameraInWorld * SE3{R3{0, 0, -flySpeed}, SO3{}};
         }
 
         Eigen::Vector2i size;
@@ -107,13 +114,21 @@ namespace mrover {
 
         // TODO(quintin): use lie algebra more here? we have a perturbation in the tangent space
         R3 p = mCameraInWorld.position();
-        SO3 q = SO3{delta.y(), Eigen::Vector3d::UnitY()} * mCameraInWorld.rotation() * SO3{-delta.x(), Eigen::Vector3d::UnitZ()};
+        SO3 q = SO3{delta.y(), R3::UnitY()} * mCameraInWorld.rotation() * SO3{-delta.x(), R3::UnitZ()};
         mCameraInWorld = SE3{p, q};
 
         centerCursor();
     }
 
     auto SimulatorNodelet::userControls(Clock::duration dt) -> void {
+        if (mPublishIk) {
+            IK ik;
+            ik.pose.position.x = mIkTarget.x();
+            ik.pose.position.y = mIkTarget.y();
+            ik.pose.position.z = mIkTarget.z();
+            mIkTargetPub.publish(ik);
+        }
+
         if (!mHasFocus || mInGui) return;
 
         freeLook(dt);
@@ -137,8 +152,8 @@ namespace mrover {
         }
         if (glfwGetKey(mWindow.get(), mRoverStopKey) == GLFW_PRESS) {
             if (!twist) twist.emplace();
-            twist->linear.x = 0.0;
-            twist->angular.z = 0.0;
+            twist->linear.x = 0;
+            twist->angular.z = 0;
         }
         if (twist) {
             twistCallback(boost::make_shared<geometry_msgs::Twist const>(*twist));

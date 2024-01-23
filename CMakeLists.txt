@@ -10,18 +10,19 @@ if (APPLE)
             -D_LIBCPP_ENABLE_CXX20_REMOVED_ALLOCATOR_MEMBERS
             -D_LIBCPP_ENABLE_CXX20_REMOVED_ALLOCATOR_VOID_SPECIALIZATION
     )
-    # TODO(quintin): address this
-    add_library(tbb SHARED IMPORTED)
-    set_property(TARGET tbb PROPERTY IMPORTED_LOCATION /opt/homebrew/Caskroom/miniforge/base/envs/ros_env/lib/libtbb.12.10.dylib)
 
     find_package(fmt REQUIRED)
     link_libraries(fmt::fmt)
+else ()
+    # TODO(quintin): Fix this
+    find_package(TBB REQUIRED)
+    link_libraries(TBB::tbb)
 endif ()
 
 set(CMAKE_CXX_STANDARD 23)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON) # Generate compile_commands.json for clangd
-if (CMAKE_CXX_COMPILER_ID STREQUAL "Clang")
+if (NOT APPLE AND CMAKE_CXX_COMPILER_ID STREQUAL "Clang")
     add_link_options(-fuse-ld=lld) # LLVM lld is faster than GNU ld
 endif ()
 set(MROVER_CPP_COMPILE_OPTIONS -Wall -Wextra -pedantic)
@@ -133,7 +134,7 @@ mrover_add_library(lie src/util/lie/*.cpp src/util/lie)
 
 ## ESW
 
-if (UNIX AND NOT APPLE)
+if (NOT APPLE)
     mrover_add_vendor_header_only_library(moteus src/esw/mjbots)
     mrover_add_header_only_library(can_device src/esw/can_device)
     mrover_add_library(motor_library src/esw/motor_library/*.cpp src/esw/motor_library)
@@ -167,15 +168,15 @@ endif ()
 ## Perception
 
 mrover_add_nodelet(tag_detector src/perception/tag_detector/*.cpp src/perception/tag_detector src/perception/tag_detector/pch.hpp)
-mrover_nodelet_link_libraries(tag_detector tbb opencv_core opencv_objdetect opencv_aruco opencv_imgproc opencv_highgui lie)
+mrover_nodelet_link_libraries(tag_detector opencv_core opencv_objdetect opencv_aruco opencv_imgproc opencv_highgui lie)
 
-if (CUDA_FOUND)
-    mrover_add_library(streaming src/esw/streaming/*.c* src/esw/streaming)
-    #    target_link_libraries(streaming PUBLIC opencv_core opencv_cudacodec)
-    target_link_libraries(streaming PUBLIC cuda nvidia-encode opencv_core)
-    target_include_directories(streaming SYSTEM PUBLIC deps/nvenc)
-    target_compile_definitions(streaming PUBLIC BOOST_ASIO_NO_DEPRECATED)
-endif ()
+# if (CUDA_FOUND)
+#     mrover_add_library(streaming src/esw/streaming/*.c* src/esw/streaming)
+#     #    target_link_libraries(streaming PUBLIC opencv_core opencv_cudacodec)
+#     target_link_libraries(streaming PUBLIC cuda nvidia-encode opencv_core)
+#     target_include_directories(streaming SYSTEM PUBLIC deps/nvenc)
+#     target_compile_definitions(streaming PUBLIC BOOST_ASIO_NO_DEPRECATED)
+# endif ()
 
 if (ZED_FOUND)
     # object_detector
@@ -214,7 +215,7 @@ mrover_add_node(arm_controller src/teleoperation/arm_controller/*.cpp)
 if (MROVER_BUILD_SIM)
     mrover_add_nodelet(simulator src/simulator/*.cpp src/simulator src/simulator/pch.hpp)
     mrover_nodelet_include_directories(simulator ${ASSIMP_INCLUDE_DIRS} ${BULLET_INCLUDE_DIRS} ${OPENCV_INCLUDE_DIRS} src/simulator/imgui)
-    mrover_nodelet_link_libraries(simulator ${ASSIMP_LIBRARIES} ${BULLET_LIBRARIES} glfw3webgpu webgpu glfw tbb opencv_core opencv_imgcodecs opencv_imgproc lie)
+    mrover_nodelet_link_libraries(simulator ${ASSIMP_LIBRARIES} ${BULLET_LIBRARIES} glfw3webgpu webgpu glfw opencv_core opencv_imgcodecs opencv_imgproc lie)
     mrover_nodelet_defines(simulator BOOST_THREAD_PROVIDES_FUTURE)
 endif ()
 

@@ -119,6 +119,9 @@
 - name: Upgrade Bun
   command: ~/.bun/bin/bun upgrade
 
+- name: Install Bun Packages
+  command: ~/.bun/bin/bun install --cwd {{ catkin_workspace }}/src/mrover/src/teleoperation/frontend
+
 - name: Install Catkin Profiles
   synchronize:
     src: files/profiles

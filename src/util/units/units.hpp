@@ -334,7 +334,7 @@ namespace mrover {
     using Hours = Unit<default_rep_t, std::ratio<3600>, zero_exp_t, zero_exp_t, std::ratio<1>>;
     using Hertz = inverse<Seconds>;
     using Radians = Unit<default_rep_t, std::ratio<1>, zero_exp_t, zero_exp_t, zero_exp_t, std::ratio<1>>;
-    using tau_ratio_t = std::ratio<628318530717958647, 1000000000000000000>; // TODO(quintin) is this 0-head play?
+    using tau_ratio_t = std::ratio<62831853071795864, 10000000000000000>; // TODO(quintin) is this 0-head play?
     using Revolutions = Unit<default_rep_t, tau_ratio_t, zero_exp_t, zero_exp_t, zero_exp_t, std::ratio<1>>;
     using RadiansPerSecond = compound_unit<Radians, inverse<Seconds>>;
     using Amperes = Unit<default_rep_t, std::ratio<1>, zero_exp_t, zero_exp_t, zero_exp_t, zero_exp_t, std::ratio<1>>;

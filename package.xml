@@ -68,13 +68,9 @@
   <depend>robot_localization</depend>
 
   <!-- Navigation -->
-  <depend>smach_ros</depend>
-  <depend>control_msgs</depend>
 
-  <!-- Teleop -->
+  <!-- Utility -->
   <exec_depend>teleop_twist_joy</exec_depend>
-
-  <!-- Simulation -->
   <exec_depend>teleop_twist_keyboard</exec_depend>
 
   <!-- Test -->
