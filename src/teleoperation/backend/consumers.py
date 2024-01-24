@@ -6,7 +6,7 @@ from channels.generic.websocket import JsonWebsocketConsumer
 import rospy
 import tf2_ros
 from geometry_msgs.msg import Twist
-from mrover.msg import PDLB, ControllerState, GPSWaypoint, LED, StateMachineStateUpdate, Throttle
+from mrover.msg import PDLB, ControllerState, GPSWaypoint, WaypointType, LED, StateMachineStateUpdate, Throttle
 from mrover.srv import EnableAuton
 from sensor_msgs.msg import JointState, NavSatFix
 from std_msgs.msg import String, Bool
@@ -25,7 +25,7 @@ def deadzone(magnitude: float, threshold: float) -> float:
 
 
 def quadratic(val: float) -> float:
-    return copysign(val ** 2, val)
+    return copysign(val**2, val)
 
 
 class GUIConsumer(JsonWebsocketConsumer):
@@ -40,8 +40,9 @@ class GUIConsumer(JsonWebsocketConsumer):
         # Subscribers
         self.pdb_sub = rospy.Subscriber("/pdb_data", PDLB, self.pdb_callback)
         self.arm_moteus_sub = rospy.Subscriber("/arm_controller_data", ControllerState, self.arm_controller_callback)
-        self.drive_moteus_sub = rospy.Subscriber("/drive_controller_data", ControllerState,
-                                                 self.drive_controller_callback)
+        self.drive_moteus_sub = rospy.Subscriber(
+            "/drive_controller_data", ControllerState, self.drive_controller_callback
+        )
         self.gps_fix = rospy.Subscriber("/gps/fix", NavSatFix, self.gps_fix_callback)
         self.joint_state_sub = rospy.Subscriber("/drive_joint_data", JointState, self.joint_state_callback)
         self.led_sub = rospy.Subscriber("/led", LED, self.led_callback)
@@ -98,7 +99,6 @@ class GUIConsumer(JsonWebsocketConsumer):
             rospy.logerr(e)
 
     def handle_joystick_message(self, msg):
-
         # Tiny deadzone so we can safely e-stop with dampen switch
         dampen = deadzone(msg["axes"][self.mappings["dampen"]], 0.01)
 
@@ -107,8 +107,9 @@ class GUIConsumer(JsonWebsocketConsumer):
         # (-1*dampen) because the top of the dampen switch is -1.0
         dampen = -1 * ((-1 * dampen) + 1) / 2
 
-        linear = deadzone(msg["axes"][self.mappings["forward_back"]] * self.drive_config["forward_back"]["multiplier"],
-                          0.05)
+        linear = deadzone(
+            msg["axes"][self.mappings["forward_back"]] * self.drive_config["forward_back"]["multiplier"], 0.05
+        )
 
         # Convert from [0,1] to [0, self_max_wheel_speed] and apply dampen
         linear *= self.max_wheel_speed * dampen
@@ -219,10 +220,10 @@ class GUIConsumer(JsonWebsocketConsumer):
             msg["is_enabled"],
             [
                 GPSWaypoint(
+                    waypoint["tag_id"],
                     waypoint["latitude_degrees"],
                     waypoint["longitude_degrees"],
-                    waypoint["tag_id"],
-                    waypoint["type"],
+                    WaypointType(waypoint["type"]),
                 )
                 for waypoint in msg["waypoints"]
             ],

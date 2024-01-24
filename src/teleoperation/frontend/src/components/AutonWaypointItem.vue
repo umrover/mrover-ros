@@ -3,25 +3,6 @@
     <div class="identification">
       <p>{{ waypoint.name }}, ID: {{ waypoint.id }}</p>
     </div>
-    <div class="row">
-      <div class="col text-center">
-        <button class="btn btn-danger" @click="$emit('add', { in_route: in_route, index: index })">
-          Add
-        </button>
-        <button
-          :class="['btn', waypoint.post ? 'btn-success' : 'btn-danger']"
-          @click="$emit('togglePost', { in_route: in_route, index: index })"
-        >
-          Post
-        </button>
-        <button
-          class="btn btn-danger"
-          @click="$emit('delete', { in_route: in_route, index: index })"
-        >
-          Delete
-        </button>
-      </div>
-    </div>
     <div class="location">
       <p>{{ output.lat.d }}º</p>
       <p v-if="min_enabled">{{ output.lat.m }}'</p>
@@ -31,6 +12,19 @@
       <p v-if="min_enabled">{{ output.lon.m }}'</p>
       <p v-if="sec_enabled">{{ output.lon.s }}"</p>
       W
+    </div>
+    <div class="row">
+      <div class="col text-center">
+        <button v-if="!in_route" class="btn btn-danger" @click="$emit('add', { in_route: in_route, index: index })">
+          Add
+        </button>
+        <button
+          class="btn btn-danger"
+          @click="$emit('delete', { in_route: in_route, index: index })"
+        >
+          Delete
+        </button>
+      </div>
     </div>
   </div>
 </template>
