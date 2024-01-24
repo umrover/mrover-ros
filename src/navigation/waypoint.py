@@ -3,7 +3,7 @@ import tf2_ros
 from util.ros_utils import get_rosparam
 from util.state_lib.state import State
 
-from navigation import search, recovery, approach_post, post_backup, state
+from navigation import search, recovery, approach_post, post_backup, state, approach_object
 
 
 class WaypointState(State):
@@ -36,13 +36,12 @@ class WaypointState(State):
 
         if context.course.look_for_post():
             if context.env.current_target_pos() is not None:
-                return approach_post.ApproachPostState()
-        # TODO:
-        #     elif tag id has hit count > 3:
+                return approach_post.ApproachPostState() 
+        #   TODO: elif tag id has hit count > 3:
         #         return long_range.LongRangeState()
-        # elif context.course.look_for_object():
-        #     if context.env.current_target_pos() is not None: 
-        #     return approach_object.ApproachObjectState()
+        elif context.course.look_for_object():
+            if context.env.current_target_pos() is not None: 
+                return approach_object.ApproachObjectState()
 
         # Attempt to find the waypoint in the TF tree and drive to it
         try:
@@ -57,8 +56,8 @@ class WaypointState(State):
                 if not context.course.look_for_post():
                     # We finished a regular waypoint, go onto the next one
                     context.course.increment_waypoint()
-                else: # TODO: elif looking for post or mallet
-                    # We finished a waypoint associated with a tag id, but we have not seen it yet.
+                elif context.course.look_for_post() or context.course.look_for_object():
+                    # We finished a waypoint associated with a post or mallet, but we have not seen it yet.
                     return search.SearchState()
                 # TODO elif looking for water bottle:
 	                # return water_bottle_search.WaterBottleSearchState()

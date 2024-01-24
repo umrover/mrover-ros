@@ -10,7 +10,7 @@ from mrover.msg import GPSPointList, WaypointType
 from util.ros_utils import get_rosparam
 from util.state_lib.state import State
 
-from navigation import approach_post, recovery, waypoint
+from navigation import approach_post, approach_object, recovery, waypoint
 from navigation.context import convert_cartesian_to_gps
 from navigation.trajectory import Trajectory
 
@@ -96,7 +96,6 @@ class SearchState(State):
         search_center = context.course.current_waypoint()
 
         if not self.is_recovering:
-            # TODO give different parameters to spiral_traj based on if search_center.type is POST or MALLET (water bottle has diff search state)
             if search_center.type == WaypointType.POST:
                 self.traj = SearchTrajectory.spiral_traj(
                     context.rover.get_pose().position[0:2],
@@ -147,15 +146,14 @@ class SearchState(State):
         )
         context.rover.send_drive_command(cmd_vel)
 
-        # TODO get current waypoint
-        # if current waypoint type is POST
-        if context.env.current_target_pos() is not None and context.course.look_for_post():  # indent this if statement
-            return approach_post.ApproachPostState()  # if we see the tag in the ZED, go to ApproachPostState
-            # if we see the tag in the long range camera, go to LongRangeState
-            # if tag id has hit count > 3:
-            #     return long_range.LongRangeState()
-
-        # elif current waypoint type is MALLET
-        # if context.env.current_target_pos() is not None and context.course.look_for_object():
-        # return approach_object.ApproachObjectState() # if we see the object
+        current_waypoint = context.course.current_waypoint()
+        if current_waypoint.type == "POST":
+            if context.env.current_target_pos() is not None and context.course.look_for_post():
+                return approach_post.ApproachPostState()  # if we see the tag in the ZED, go to ApproachPostState
+                # if we see the tag in the long range camera, go to LongRangeState
+                # if tag id has hit count > 3:
+                #     return long_range.LongRangeState()
+        elif current_waypoint.type == "MALLET":
+            if context.env.current_target_pos() is not None and context.course.look_for_object():
+                return approach_object.ApproachObjectState() # if we see the object
         return self
