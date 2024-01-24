@@ -75,11 +75,21 @@ set(MROVER_CMAKE_INCLUDES
 ### ============ ###
 
 if (MROVER_BUILD_SIM)
-    include(cmake/webgpu.cmake)
-    add_subdirectory(deps/glfw3webgpu)
-    find_package(Assimp REQUIRED)
+    # Apparently Assimp has different names on different systems
+    # find_package is case-sensitive so try both
+    find_package(Assimp QUIET)
+    find_package(assimp QUIET)
+    if (NOT Assimp_FOUND AND NOT assimp_FOUND)
+        message(FATAL_ERROR "Assimp not found")
+    endif ()
+
     find_package(Bullet REQUIRED)
+
     find_package(glfw3 REQUIRED)
+
+    include(cmake/webgpu.cmake)
+
+    add_subdirectory(deps/glfw3webgpu)
 endif ()
 find_package(OpenCV REQUIRED)
 find_package(ZED QUIET)
