@@ -1,3 +1,4 @@
+<template>
   <div class="calibration-wrapper">
     <Checkbox :name="name" @toggle="toggleCalibration"> </Checkbox>
     <span class="led">

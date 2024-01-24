@@ -283,10 +283,9 @@ h2 {
 
 /* Grid area declarations */
 .map {
-<<<<<<< HEAD
     grid-area: map;
 }
-
+.waypoints{
   grid-area: waypoints;
 }
 

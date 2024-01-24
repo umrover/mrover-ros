@@ -81,8 +81,4 @@ export default {
     background-color: green;
     color: white;
   } */
-<<<<<<< HEAD
-  </style>
-=======
 </style>
->>>>>>> 9720704e91b679513a528bf4bb0e7521bcdaec68
