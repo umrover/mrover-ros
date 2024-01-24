@@ -20,8 +20,10 @@ namespace mrover {
                 SE3 point_in_zed{R3{point->x, point->y, 0.0}, {}};
                 SE3 point_in_map = zed_to_map * point_in_zed;
 
-                int x_index = floor((point_in_map.position().x() - mGlobalGridMsg.info.origin.position.x) / mGlobalGridMsg.info.resolution);
-                int y_index = floor((point_in_map.position().y() - mGlobalGridMsg.info.origin.position.y) / mGlobalGridMsg.info.resolution);
+                double x = point_in_map.position().x();
+                double y = point_in_map.position().y();
+                int x_index = floor((x - mGlobalGridMsg.info.origin.position.x) / mGlobalGridMsg.info.resolution);
+                int y_index = floor((y - mGlobalGridMsg.info.origin.position.y) / mGlobalGridMsg.info.resolution);
                 auto i = mGlobalGridMsg.info.width * y_index + x_index;
 
                 // dot unit normal with <0, 0, 1>
