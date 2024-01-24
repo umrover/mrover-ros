@@ -63,7 +63,7 @@ class Environment:
     arrived_at_target: bool = None
     last_target_location: Optional[np.ndarray] = None
     # TODO add dictionary for long range tag id : (time received, our hit counter, bearing)
-    tag_data_dict = {}
+    # tag_data_dict = {}
 
     def get_target_pos(self, id: str, in_odom_frame: bool = True) -> Optional[np.ndarray]:
         """
@@ -162,8 +162,8 @@ class Course:
         waypoint = self.current_waypoint()
         if waypoint is not None:
             return (
-                waypoint.type.val == mrover.msg.WaypointType.MALLET
-                or waypoint.type.val == mrover.msg.WaypointType.WATER_BOTTLE
+                waypoint.type.val == WaypointType.MALLET
+                or waypoint.type.val == WaypointType.WATER_BOTTLE
             )
         else:
             return False
@@ -222,7 +222,7 @@ class Context:
     vis_publisher: rospy.Publisher
     course_listener: rospy.Subscriber
     stuck_listener: rospy.Subscriber
-    long_range_cam_listener: rospy.Subscriber
+    # tag_data_listener: rospy.Subscriber
 
     # Use these as the primary interfaces in states
     course: Optional[Course]
@@ -252,8 +252,7 @@ class Context:
         self.world_frame = rospy.get_param("world_frame")
         self.odom_frame = rospy.get_param("odom_frame")
         self.rover_frame = rospy.get_param("rover_frame")
-        self.tag_data_listener = rospy.Subscriber("tag_data", list, self.tag_data_callback)
-        self.long_range_cam_listener = rospy.Subscriber("long_range_cam", Bool, self.long_range_cam_listener)
+        # self.tag_data_listener = rospy.Subscriber("tag_data", list, self.tag_data_callback)
 
     def recv_enable_auton(self, req: EnableAutonRequest) -> EnableAutonResponse:
         if req.enable:
@@ -265,10 +264,10 @@ class Context:
     def stuck_callback(self, msg: Bool):
         self.rover.stuck = msg.data
 
-    def tag_data_callback(self, tags: list) -> None:
-        for tag in tags:
-            tag_id = tag["id"]
-            hit_count = tag["hitCount"]
-            bearing = tag["bearing"]
-            time_received = rospy.Time()
-            self.env.tag_data_dict[tag_id] = (time_received, hit_count, bearing)
+    # def tag_data_callback(self, tags: list) -> None:
+    #     for tag in tags:
+    #         tag_id = tag["id"]
+    #         hit_count = tag["hitCount"]
+    #         bearing = tag["bearing"]
+    #         time_received = rospy.Time()
+    #         self.env.tag_data_dict[tag_id] = (time_received, hit_count, bearing)

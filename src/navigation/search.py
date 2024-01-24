@@ -4,8 +4,8 @@ from dataclasses import dataclass
 from typing import Optional
 
 import numpy as np
-from mrover.msg import GPSPointList
-import mrover.msg
+from mrover.msg import GPSPointList, WaypointType
+
 
 from util.ros_utils import get_rosparam
 from util.state_lib.state import State
@@ -96,8 +96,8 @@ class SearchState(State):
         search_center = context.course.current_waypoint()
 
         if not self.is_recovering:
-            # TODO give different parameters to spiral_traj based on if search_center.type is POST or RUBBER_MALLET (water bottle has diff search state)
-            if search_center.type == mrover.msg.WaypointType.POST:
+            # TODO give different parameters to spiral_traj based on if search_center.type is POST or MALLET (water bottle has diff search state)
+            if search_center.type == WaypointType.POST:
                 self.traj = SearchTrajectory.spiral_traj(
                     context.rover.get_pose().position[0:2],
                     self.SPIRAL_COVERAGE_RADIUS,
@@ -106,7 +106,7 @@ class SearchState(State):
                     search_center.tag_id,
                 )
 
-            if mrover.msg.WaypointType.RUBBER_MALLET:
+            if WaypointType.MALLET:
                 self.traj = SearchTrajectory.spiral_traj(
                     context.rover.get_pose().position[0:2],
                     self.SPIRAL_COVERAGE_RADIUS / 2,
@@ -155,7 +155,7 @@ class SearchState(State):
             # if tag id has hit count > 3:
             #     return long_range.LongRangeState()
 
-        # elif current waypoint type is RUBBER MALLET
+        # elif current waypoint type is MALLET
         # if context.env.current_target_pos() is not None and context.course.look_for_object():
         # return approach_object.ApproachObjectState() # if we see the object
         return self

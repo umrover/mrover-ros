@@ -30,8 +30,8 @@ class WaypointState(State):
             return state.DoneState()
 
         # if we are at a post currently (from a previous leg), backup to avoid collision
-        if context.env.arrived_at_post:
-            context.env.arrived_at_post = False
+        if context.env.arrived_at_target:
+            context.env.arrived_at_target = False
             return post_backup.PostBackupState()
 
         if context.course.look_for_post():
@@ -57,7 +57,7 @@ class WaypointState(State):
                 if not context.course.look_for_post():
                     # We finished a regular waypoint, go onto the next one
                     context.course.increment_waypoint()
-                else: # TODO: elif looking for post or rubber mallet
+                else: # TODO: elif looking for post or mallet
                     # We finished a waypoint associated with a tag id, but we have not seen it yet.
                     return search.SearchState()
                 # TODO elif looking for water bottle:
