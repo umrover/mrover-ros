@@ -17,6 +17,9 @@ else ()
     # TODO(quintin): Fix this
     find_package(TBB REQUIRED)
     link_libraries(TBB::tbb)
+
+    add_compile_options(-Wno-gnu-include-next)
+    include_directories(BEFORE src/preload)
 endif ()
 
 set(CMAKE_CXX_STANDARD 23)
