@@ -3,8 +3,6 @@
 #include <algorithm>
 #include <cstdint>
 
-#include <boost_cpp23_workaround.hpp>
-
 #include <nav_msgs/OccupancyGrid.h>
 #include <nodelet/loader.h>
 #include <nodelet/nodelet.h>
