@@ -9,8 +9,6 @@
 #include <sl/Camera.hpp>
 #include <thrust/device_vector.h>
 
-#include <boost_cpp23_workaround.hpp>
-
 #include <nodelet/loader.h>
 #include <nodelet/nodelet.h>
 #include <ros/init.h>
