@@ -42,7 +42,8 @@
 </template>
   
 <script lang ="ts">
-import { inject, defineComponent } from 'vue';
+import { defineComponent } from 'vue';
+import { mapActions } from 'vuex';
 import ToggleButton from "./ToggleButton.vue";
 import CalibrationCheckbox from "./CalibrationCheckbox.vue";
 import JointAdjust from "./MotorAdjust.vue";
@@ -139,6 +140,7 @@ export default defineComponent({
     // },
 
     methods: {
+        ...mapActions('websocket', ['sendMessage']),
         // updateArmMode: function (newMode: any, oldMode: string) {
         //     const armData = {
         //         mode: newMode
@@ -167,12 +169,11 @@ export default defineComponent({
                 axes: axes,
                 buttons: buttons
             };
-            console.log(arm_mode)
-            this.websocket.send(JSON.stringify({type:"arm_values", data:joystickData, arm_mode: arm_mode}))
+            this.sendMessage({type:"arm_values", data:joystickData, arm_mode: arm_mode})
         },
         toggleArmLaser: function () {
             this.laser_enabled = !this.laser_enabled;
-            this.websocket.send(JSON.stringify({type:"laser_service", data:this.laser_enabled}))
+            this.sendMessage({type:"laser_service", data:this.laser_enabled})
             
          }
     }
