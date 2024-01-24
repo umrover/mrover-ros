@@ -60,7 +60,7 @@ namespace mrover {
         controller = Controller{
                 PWM_TIMER,
 				Pin{GPIOB, GPIO_PIN_15},
-				Pin{GPIOA, GPIO_PIN_1},
+				Pin{GPIOC, GPIO_PIN_6},
                 fdcan_bus,
                 FDCAN_WATCHDOG_TIMER,
                 QUADRATURE_TIMER_1,
@@ -128,13 +128,13 @@ extern "C" {
 void HAL_PostInit() {
     mrover::init();
 
-//    #ifdef TESTING
-////        const auto tests = mrover::get_test_msgs();
-//        for (const auto& [test, delay] : tests) {
-//            mrover::test_received_callback(test);
-//            HAL_Delay(delay);
-//        }
-//    #endif
+    #ifdef TESTING
+//        const auto tests = mrover::get_test_msgs();
+        for (const auto& [test, delay] : tests) {
+            mrover::test_received_callback(test);
+            HAL_Delay(delay);
+        }
+    #endif
 }
 
 /**
